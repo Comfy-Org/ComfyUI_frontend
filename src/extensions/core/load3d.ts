@@ -29,6 +29,12 @@ app.registerExtension({
 
         containerToLoad3D.set(container.id, load3d)
 
+        node.onMouseEnter = function () {
+          if (load3d) {
+            load3d.refreshViewport()
+          }
+        }
+
         node.onResize = function () {
           if (load3d) {
             load3d.handleResize()
@@ -191,6 +197,12 @@ app.registerExtension({
         const load3d = new Load3dAnimation(container)
 
         containerToLoad3D.set(container.id, load3d)
+
+        node.onMouseEnter = function () {
+          if (load3d) {
+            load3d.refreshViewport()
+          }
+        }
 
         node.onResize = function () {
           if (load3d) {
@@ -362,6 +374,12 @@ app.registerExtension({
 
         containerToLoad3D.set(container.id, load3d)
 
+        node.onMouseEnter = function () {
+          if (load3d) {
+            load3d.refreshViewport()
+          }
+        }
+
         node.onResize = function () {
           if (load3d) {
             load3d.handleResize()
@@ -481,6 +499,12 @@ app.registerExtension({
         const load3d = new Load3dAnimation(container)
 
         containerToLoad3D.set(container.id, load3d)
+
+        node.onMouseEnter = function () {
+          if (load3d) {
+            load3d.refreshViewport()
+          }
+        }
 
         node.onResize = function () {
           if (load3d) {
