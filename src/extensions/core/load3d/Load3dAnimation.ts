@@ -14,8 +14,11 @@ class Load3dAnimation extends Load3d {
   animationSelect: HTMLSelectElement = {} as HTMLSelectElement
   speedSelect: HTMLSelectElement = {} as HTMLSelectElement
 
-  constructor(container: Element | HTMLElement) {
-    super(container)
+  constructor(
+    container: Element | HTMLElement,
+    createPreview: boolean = false
+  ) {
+    super(container, createPreview)
     this.createPlayPauseButton(container)
     this.createAnimationList(container)
     this.createSpeedSelect(container)
@@ -202,12 +205,6 @@ class Load3dAnimation extends Load3d {
 
     if (this.animationClips.length > 0) {
       this.playPauseContainer.style.display = 'block'
-    } else {
-      this.playPauseContainer.style.display = 'none'
-    }
-
-    if (this.animationClips.length > 0) {
-      this.playPauseContainer.style.display = 'block'
       this.animationSelect.style.display = 'block'
       this.speedSelect.style.display = 'block'
       this.updateAnimationList()
@@ -330,6 +327,11 @@ class Load3dAnimation extends Load3d {
   startAnimation() {
     const animate = () => {
       this.animationFrameId = requestAnimationFrame(animate)
+
+      if (this.isPreviewVisible) {
+        this.updatePreviewRender()
+      }
+
       const delta = this.clock.getDelta()
 
       if (this.currentAnimation && this.isAnimationPlaying) {

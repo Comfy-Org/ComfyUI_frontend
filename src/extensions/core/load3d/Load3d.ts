@@ -45,8 +45,20 @@ class Load3d {
   gridSwitcherContainer: HTMLDivElement = {} as HTMLDivElement
   node: LGraphNode = {} as LGraphNode
   bgColorInput: HTMLInputElement = {} as HTMLInputElement
+  fovSliderContainer: HTMLDivElement = {} as HTMLDivElement
+  lightSliderContainer: HTMLDivElement = {} as HTMLDivElement
+  previewRenderer: THREE.WebGLRenderer | null = null
+  previewCamera: THREE.Camera | null = null
+  previewContainer: HTMLDivElement = {} as HTMLDivElement
+  targetWidth: number = 1024
+  targetHeight: number = 1024
+  previewToggleContainer: HTMLDivElement = {} as HTMLDivElement
+  isPreviewVisible: boolean = true
 
-  constructor(container: Element | HTMLElement) {
+  constructor(
+    container: Element | HTMLElement,
+    createPreview: boolean = false
+  ) {
     this.scene = new THREE.Scene()
 
     this.perspectiveCamera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000)
@@ -123,12 +135,16 @@ class Load3d {
     this.standardMaterial = this.createSTLMaterial()
 
     this.createViewHelper(container)
-
     this.createGridSwitcher(container)
-
     this.createCameraSwitcher(container)
-
     this.createColorPicker(container)
+    this.createFOVSlider(container)
+    this.createLightIntensitySlider(container)
+
+    if (createPreview) {
+      this.createPreviewToggle(container)
+      this.createCapturePreview(container)
+    }
 
     this.handleResize()
 
@@ -154,6 +170,161 @@ class Load3d {
       return defaultValue
     }
     return this.node.properties[name]
+  }
+
+  createCapturePreview(container: Element | HTMLElement) {
+    this.previewRenderer = new THREE.WebGLRenderer({
+      alpha: true,
+      antialias: true
+    })
+    this.previewRenderer.setSize(this.targetWidth, this.targetHeight)
+    this.previewRenderer.setClearColor(0x282828)
+
+    this.previewContainer = document.createElement('div')
+    this.previewContainer.style.cssText = `
+      position: absolute;
+      right: 0px;
+      bottom: 0px;
+      background: rgba(0, 0, 0, 0.2);
+      display: block;
+    `
+    this.previewContainer.appendChild(this.previewRenderer.domElement)
+
+    this.previewContainer.style.display = this.isPreviewVisible
+      ? 'block'
+      : 'none'
+
+    container.appendChild(this.previewContainer)
+  }
+
+  updatePreviewRender() {
+    if (!this.previewRenderer || !this.previewContainer) return
+
+    if (
+      !this.previewCamera ||
+      (this.activeCamera instanceof THREE.PerspectiveCamera &&
+        !(this.previewCamera instanceof THREE.PerspectiveCamera)) ||
+      (this.activeCamera instanceof THREE.OrthographicCamera &&
+        !(this.previewCamera instanceof THREE.OrthographicCamera))
+    ) {
+      this.previewCamera = this.activeCamera.clone()
+    }
+
+    this.previewCamera.position.copy(this.activeCamera.position)
+    this.previewCamera.rotation.copy(this.activeCamera.rotation)
+
+    const aspect = this.targetWidth / this.targetHeight
+
+    if (this.activeCamera instanceof THREE.OrthographicCamera) {
+      const activeOrtho = this.activeCamera as THREE.OrthographicCamera
+      const previewOrtho = this.previewCamera as THREE.OrthographicCamera
+
+      const frustumHeight =
+        (activeOrtho.top - activeOrtho.bottom) / activeOrtho.zoom
+
+      const frustumWidth = frustumHeight * aspect
+
+      previewOrtho.top = frustumHeight / 2
+      previewOrtho.left = -frustumWidth / 2
+      previewOrtho.right = frustumWidth / 2
+      previewOrtho.bottom = -frustumHeight / 2
+      previewOrtho.zoom = 1
+
+      previewOrtho.updateProjectionMatrix()
+    } else {
+      ;(this.previewCamera as THREE.PerspectiveCamera).aspect = aspect
+      ;(this.previewCamera as THREE.PerspectiveCamera).fov = (
+        this.activeCamera as THREE.PerspectiveCamera
+      ).fov
+    }
+
+    this.previewCamera.lookAt(this.controls.target)
+
+    const previewWidth = 120
+    const previewHeight = (previewWidth * this.targetHeight) / this.targetWidth
+    this.previewRenderer.setSize(previewWidth, previewHeight, false)
+    this.previewRenderer.render(this.scene, this.previewCamera)
+  }
+
+  createPreviewToggle(container: Element | HTMLElement) {
+    this.previewToggleContainer = document.createElement('div')
+    this.previewToggleContainer.style.position = 'absolute'
+    this.previewToggleContainer.style.top = '128px'
+    this.previewToggleContainer.style.left = '3px'
+    this.previewToggleContainer.style.width = '20px'
+    this.previewToggleContainer.style.height = '20px'
+    this.previewToggleContainer.style.cursor = 'pointer'
+    this.previewToggleContainer.style.display = 'flex'
+    this.previewToggleContainer.style.alignItems = 'center'
+    this.previewToggleContainer.style.justifyContent = 'center'
+    this.previewToggleContainer.style.borderRadius = '2px'
+    this.previewToggleContainer.title = 'Toggle Preview'
+
+    const eyeIcon = document.createElement('div')
+    eyeIcon.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+    `
+
+    const updateButtonState = () => {
+      if (this.isPreviewVisible) {
+        this.previewToggleContainer.style.backgroundColor =
+          'rgba(255, 255, 255, 0.2)'
+      } else {
+        this.previewToggleContainer.style.backgroundColor = 'transparent'
+      }
+    }
+
+    this.previewToggleContainer.addEventListener('mouseenter', () => {
+      if (!this.isPreviewVisible) {
+        this.previewToggleContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
+      }
+    })
+
+    this.previewToggleContainer.addEventListener('mouseleave', () => {
+      if (!this.isPreviewVisible) {
+        this.previewToggleContainer.style.backgroundColor = 'transparent'
+      }
+    })
+
+    this.previewToggleContainer.addEventListener('click', (event) => {
+      event.stopPropagation()
+
+      this.setPreviewVisible(!this.isPreviewVisible)
+
+      updateButtonState()
+    })
+
+    this.previewToggleContainer.appendChild(eyeIcon)
+
+    container.appendChild(this.previewToggleContainer)
+
+    this.isPreviewVisible = this.loadNodeProperty('Preview Visible', true)
+
+    updateButtonState()
+  }
+
+  setPreviewVisible(visible: boolean) {
+    if (!this.previewContainer) return
+
+    this.isPreviewVisible = visible
+
+    this.previewContainer.style.display = this.isPreviewVisible
+      ? 'block'
+      : 'none'
+
+    this.storeNodeProperty('Preview Visible', this.isPreviewVisible)
+  }
+
+  updatePreviewSize() {
+    if (!this.previewContainer) return
+
+    const previewWidth = 120
+    const previewHeight = (previewWidth * this.targetHeight) / this.targetWidth
+
+    this.previewRenderer?.setSize(previewWidth, previewHeight, false)
   }
 
   createViewHelper(container: Element | HTMLElement) {
@@ -187,8 +358,8 @@ class Load3d {
   createGridSwitcher(container: Element | HTMLElement) {
     this.gridSwitcherContainer = document.createElement('div')
     this.gridSwitcherContainer.style.position = 'absolute'
-    this.gridSwitcherContainer.style.top = '28px' // 修改这里，让按钮在相机按钮下方
-    this.gridSwitcherContainer.style.left = '3px' // 与相机按钮左对齐
+    this.gridSwitcherContainer.style.top = '28px'
+    this.gridSwitcherContainer.style.left = '3px'
     this.gridSwitcherContainer.style.width = '20px'
     this.gridSwitcherContainer.style.height = '20px'
     this.gridSwitcherContainer.style.cursor = 'pointer'
@@ -323,11 +494,256 @@ class Load3d {
     container.appendChild(colorPickerContainer)
   }
 
+  createFOVSlider(container: Element | HTMLElement) {
+    this.fovSliderContainer = document.createElement('div')
+    this.fovSliderContainer.style.position = 'absolute'
+    this.fovSliderContainer.style.top = '78px'
+    this.fovSliderContainer.style.left = '3px'
+    this.fovSliderContainer.style.display = 'flex'
+    this.fovSliderContainer.style.alignItems = 'center'
+    this.fovSliderContainer.title = 'FOV (Perspective Camera Only)'
+
+    const wrapper = document.createElement('div')
+    wrapper.style.position = 'relative'
+    wrapper.style.display = 'flex'
+    wrapper.style.alignItems = 'center'
+
+    const iconContainer = document.createElement('div')
+    iconContainer.style.width = '20px'
+    iconContainer.style.height = '20px'
+    iconContainer.style.cursor = 'pointer'
+    iconContainer.style.display = 'flex'
+    iconContainer.style.alignItems = 'center'
+    iconContainer.style.justifyContent = 'center'
+    iconContainer.style.borderRadius = '2px'
+
+    const fovIcon = document.createElement('div')
+    fovIcon.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+        <path d="M3 12h4"/>
+        <path d="M17 12h4"/>
+        <path d="M12 3v4"/>
+        <path d="M12 17v4"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+    `
+    fovIcon.style.display = 'flex'
+    fovIcon.style.alignItems = 'center'
+    fovIcon.style.justifyContent = 'center'
+    iconContainer.appendChild(fovIcon)
+
+    const sliderContainer = document.createElement('div')
+    sliderContainer.style.position = 'absolute'
+    sliderContainer.style.left = '25px'
+    sliderContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.7)'
+    sliderContainer.style.padding = '5px'
+    sliderContainer.style.borderRadius = '4px'
+    sliderContainer.style.display = 'none'
+    sliderContainer.style.width = '150px'
+    sliderContainer.style.zIndex = '1000'
+
+    const slider = document.createElement('input')
+    slider.type = 'range'
+    slider.min = '10'
+    slider.max = '150'
+    slider.value = '75'
+    slider.style.width = '100%'
+    slider.style.height = '10px'
+
+    slider.addEventListener('input', (event) => {
+      const value = parseInt((event.target as HTMLInputElement).value)
+      this.setFOV(value)
+      this.storeNodeProperty('FOV', value)
+    })
+
+    let isHovered = false
+
+    const showSlider = () => {
+      if (this.activeCamera === this.perspectiveCamera) {
+        sliderContainer.style.display = 'block'
+        iconContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
+        isHovered = true
+      }
+    }
+
+    const hideSlider = () => {
+      isHovered = false
+      setTimeout(() => {
+        if (!isHovered) {
+          sliderContainer.style.display = 'none'
+          iconContainer.style.backgroundColor = 'transparent'
+        }
+      }, 100)
+    }
+
+    iconContainer.addEventListener('mouseenter', showSlider)
+    iconContainer.addEventListener('mouseleave', hideSlider)
+    sliderContainer.addEventListener('mouseenter', () => {
+      isHovered = true
+    })
+    sliderContainer.addEventListener('mouseleave', hideSlider)
+
+    sliderContainer.appendChild(slider)
+    wrapper.appendChild(iconContainer)
+    wrapper.appendChild(sliderContainer)
+    this.fovSliderContainer.appendChild(wrapper)
+    container.appendChild(this.fovSliderContainer)
+
+    this.updateFOVSliderVisibility()
+  }
+
+  updateFOVSliderVisibility() {
+    if (this.activeCamera === this.perspectiveCamera) {
+      this.fovSliderContainer.style.display = 'block'
+    } else {
+      this.fovSliderContainer.style.display = 'none'
+    }
+  }
+
+  setTargetSize(width: number, height: number) {
+    this.targetWidth = width
+    this.targetHeight = height
+    this.updatePreviewSize()
+    if (this.previewRenderer && this.previewCamera) {
+      if (this.previewCamera instanceof THREE.PerspectiveCamera) {
+        this.previewCamera.aspect = width / height
+        this.previewCamera.updateProjectionMatrix()
+      } else if (this.previewCamera instanceof THREE.OrthographicCamera) {
+        const frustumSize = 10
+        const aspect = width / height
+        this.previewCamera.left = (-frustumSize * aspect) / 2
+        this.previewCamera.right = (frustumSize * aspect) / 2
+        this.previewCamera.updateProjectionMatrix()
+      }
+    }
+  }
+
   setFOV(fov: number) {
     if (this.activeCamera === this.perspectiveCamera) {
       this.perspectiveCamera.fov = fov
       this.perspectiveCamera.updateProjectionMatrix()
       this.renderer.render(this.scene, this.activeCamera)
+    }
+
+    if (
+      this.previewRenderer &&
+      this.previewCamera instanceof THREE.PerspectiveCamera
+    ) {
+      this.previewCamera.fov = fov
+      this.previewCamera.updateProjectionMatrix()
+      this.previewRenderer.render(this.scene, this.previewCamera)
+    }
+  }
+
+  createLightIntensitySlider(container: Element | HTMLElement) {
+    this.lightSliderContainer = document.createElement('div')
+    this.lightSliderContainer.style.position = 'absolute'
+    this.lightSliderContainer.style.top = '103px'
+    this.lightSliderContainer.style.left = '3px'
+    this.lightSliderContainer.style.display = 'flex'
+    this.lightSliderContainer.style.alignItems = 'center'
+    this.lightSliderContainer.title = 'Light Intensity'
+
+    const wrapper = document.createElement('div')
+    wrapper.style.position = 'relative'
+    wrapper.style.display = 'flex'
+    wrapper.style.alignItems = 'center'
+
+    const iconContainer = document.createElement('div')
+    iconContainer.style.width = '20px'
+    iconContainer.style.height = '20px'
+    iconContainer.style.cursor = 'pointer'
+    iconContainer.style.display = 'flex'
+    iconContainer.style.alignItems = 'center'
+    iconContainer.style.justifyContent = 'center'
+    iconContainer.style.borderRadius = '2px'
+
+    const lightIcon = document.createElement('div')
+    lightIcon.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+        <circle cx="12" cy="12" r="5"/>
+        <line x1="12" y1="1" x2="12" y2="3"/>
+        <line x1="12" y1="21" x2="12" y2="23"/>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+        <line x1="1" y1="12" x2="3" y2="12"/>
+        <line x1="21" y1="12" x2="23" y2="12"/>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+      </svg>
+    `
+    lightIcon.style.display = 'flex'
+    lightIcon.style.alignItems = 'center'
+    lightIcon.style.justifyContent = 'center'
+    iconContainer.appendChild(lightIcon)
+
+    const sliderContainer = document.createElement('div')
+    sliderContainer.style.position = 'absolute'
+    sliderContainer.style.left = '25px'
+    sliderContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.7)'
+    sliderContainer.style.padding = '5px'
+    sliderContainer.style.borderRadius = '4px'
+    sliderContainer.style.display = 'none'
+    sliderContainer.style.width = '150px'
+    sliderContainer.style.zIndex = '1000'
+
+    const slider = document.createElement('input')
+    slider.type = 'range'
+    slider.min = '1'
+    slider.max = '20'
+    slider.step = '1'
+    slider.value = '5'
+    slider.style.width = '100%'
+    slider.style.height = '10px'
+
+    slider.addEventListener('input', (event) => {
+      const value = parseFloat((event.target as HTMLInputElement).value)
+      this.setLightIntensity(value)
+      this.storeNodeProperty('Light Intensity', value)
+    })
+
+    let isHovered = false
+
+    const showSlider = () => {
+      sliderContainer.style.display = 'block'
+      iconContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
+      isHovered = true
+    }
+
+    const hideSlider = () => {
+      isHovered = false
+      setTimeout(() => {
+        if (!isHovered) {
+          sliderContainer.style.display = 'none'
+          iconContainer.style.backgroundColor = 'transparent'
+        }
+      }, 100)
+    }
+
+    iconContainer.addEventListener('mouseenter', showSlider)
+    iconContainer.addEventListener('mouseleave', hideSlider)
+    sliderContainer.addEventListener('mouseenter', () => {
+      isHovered = true
+    })
+    sliderContainer.addEventListener('mouseleave', hideSlider)
+
+    sliderContainer.appendChild(slider)
+    wrapper.appendChild(iconContainer)
+    wrapper.appendChild(sliderContainer)
+    this.lightSliderContainer.appendChild(wrapper)
+    container.appendChild(this.lightSliderContainer)
+
+    const savedIntensity = this.loadNodeProperty('Light Intensity', 5)
+    slider.value = savedIntensity.toString()
+    this.setLightIntensity(savedIntensity)
+    this.updateLightIntensitySliderVisibility()
+  }
+
+  updateLightIntensitySliderVisibility() {
+    if (this.materialMode === 'original') {
+      this.lightSliderContainer.style.display = 'block'
+    } else {
+      this.lightSliderContainer.style.display = 'none'
     }
   }
 
@@ -416,6 +832,8 @@ class Load3d {
 
   setMaterialMode(mode: 'original' | 'normal' | 'wireframe' | 'depth') {
     this.materialMode = mode
+
+    this.updateLightIntensitySliderVisibility()
 
     if (this.currentModel) {
       if (mode === 'depth') {
@@ -567,6 +985,11 @@ class Load3d {
       }
     }
 
+    if (this.previewCamera) {
+      this.previewCamera = null
+    }
+    this.previewCamera = this.activeCamera.clone()
+
     this.activeCamera.position.copy(position)
     this.activeCamera.rotation.copy(rotation)
 
@@ -585,8 +1008,11 @@ class Load3d {
     )
     this.viewHelper.center = this.controls.target
 
+    this.updateFOVSliderVisibility()
+
     this.storeNodeProperty('Camera Type', this.getCurrentCameraType())
     this.handleResize()
+    this.updatePreviewRender()
   }
 
   getCurrentCameraType(): 'perspective' | 'orthographic' {
@@ -624,6 +1050,11 @@ class Load3d {
   startAnimation() {
     const animate = () => {
       this.animationFrameId = requestAnimationFrame(animate)
+
+      if (this.isPreviewVisible) {
+        this.updatePreviewRender()
+      }
+
       const delta = this.clock.getDelta()
 
       if (this.viewHelper.animating) {
@@ -725,6 +1156,7 @@ class Load3d {
     this.controls.dispose()
     this.viewHelper.dispose()
     this.renderer.dispose()
+    this.fovSliderContainer.remove()
     this.renderer.domElement.remove()
     this.scene.clear()
   }
@@ -921,6 +1353,7 @@ class Load3d {
     }
 
     this.renderer.setSize(width, height)
+    this.setTargetSize(this.targetWidth, this.targetHeight)
   }
 
   animate = () => {
@@ -936,6 +1369,7 @@ class Load3d {
   ): Promise<{ scene: string; mask: string }> {
     return new Promise(async (resolve, reject) => {
       try {
+        this.updatePreviewSize()
         const originalWidth = this.renderer.domElement.width
         const originalHeight = this.renderer.domElement.height
         const originalClearColor = this.renderer.getClearColor(
