@@ -159,5 +159,5 @@ export interface IBaseWidget<TElement extends HTMLElement = HTMLElement> {
    * @return Returning `true` from this callback forces Litegraph to ignore the event and
    * not process it any further.
    */
-  onPointerDown(pointer: CanvasPointer, node: LGraphNode, canvas: LGraphCanvas): boolean
+  onPointerDown?(pointer: CanvasPointer, node: LGraphNode, canvas: LGraphCanvas): boolean
 }

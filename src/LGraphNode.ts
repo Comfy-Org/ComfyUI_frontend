@@ -32,6 +32,7 @@ import { BadgePosition, LGraphBadge } from "./LGraphBadge"
 import { type LGraphNodeConstructor, LiteGraph } from "./litegraph"
 import { isInRectangle, isInRect, snapPoint } from "./measure"
 import { LLink } from "./LLink"
+import { BooleanWidget } from "./widgets/BooleanWidget"
 
 export type NodeId = number | string
 
@@ -1655,15 +1656,26 @@ export class LGraphNode implements Positionable, IPinnable {
     if (type == "combo" && !w.options.values) {
       throw "LiteGraph addWidget('combo',...) requires to pass values in options: { values:['red','blue'] }"
     }
-    this.widgets.push(w)
+
+    const widget = this.addCustomWidget(w)
     this.setSize(this.computeSize())
-    return w
+    return widget
   }
 
   addCustomWidget(custom_widget: IWidget): IWidget {
     this.widgets ||= []
-    this.widgets.push(custom_widget)
-    return custom_widget
+
+    let widget: IWidget
+    switch (custom_widget.type) {
+    case "toggle":
+      widget = new BooleanWidget(custom_widget)
+      break
+    default:
+      widget = custom_widget
+    }
+
+    this.widgets.push(widget)
+    return widget
   }
 
   move(deltaX: number, deltaY: number): void {
