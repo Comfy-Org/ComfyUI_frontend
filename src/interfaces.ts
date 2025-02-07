@@ -3,6 +3,7 @@ import type { LGraphNode, NodeId } from "./LGraphNode"
 import type { LinkDirection, RenderShape } from "./types/globalEnums"
 import type { LinkId, LLink } from "./LLink"
 import type { Reroute, RerouteId } from "./Reroute"
+import type { IWidget } from "./types/widgets"
 
 export type Dictionary<T> = { [key: string]: T }
 
@@ -217,7 +218,13 @@ export interface INodeSlot {
   locked?: boolean
   nameLocked?: boolean
   pos?: Point
-  widget?: unknown
+  /**
+   * A widget that was converted to this input slot.
+   * For PrimitiveNode, the widget is on output slot to offer type information.
+   * See https://github.com/Comfy-Org/ComfyUI_frontend/blob/117c8be3a05823b40016781cf9b68129672c9af7/src/extensions/core/widgetInputs.ts
+   * for more information.
+   */
+  widget?: IWidget
 }
 
 export interface INodeFlags {
