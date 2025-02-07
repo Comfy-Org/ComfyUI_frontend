@@ -57,7 +57,7 @@ import {
   isInRect,
   snapPoint,
 } from "./measure"
-import { drawSlot, LabelPosition, strokeShape } from "./draw"
+import { LabelPosition, strokeShape } from "./draw"
 import { DragAndScale } from "./DragAndScale"
 import { LinkReleaseContextExtended, LiteGraph, clamp } from "./litegraph"
 import { stringOrEmpty, stringOrNull } from "./strings"
@@ -4857,7 +4857,6 @@ export class LGraphCanvas implements ConnectionColorContext {
     node.onDrawForeground?.(ctx, this, this.canvas)
 
     // connection slots
-    ctx.textAlign = horizontal ? "center" : "left"
     ctx.font = this.inner_text_font
 
     const render_text = !low_quality
@@ -4868,13 +4867,12 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     const out_slot = this.connecting_links?.[0]?.output
     const in_slot = this.connecting_links?.[0]?.input
-    ctx.lineWidth = 1
 
     let max_y = 0
     const slot_pos = new Float32Array(2) // to reuse
 
     // render inputs and outputs
-    if (!node.flags.collapsed) {
+    if (!node.collapsed) {
       // input connection slots
       if (node.inputs) {
         for (let i = 0; i < node.inputs.length; i++) {
@@ -4890,8 +4888,6 @@ export class LGraphCanvas implements ConnectionColorContext {
             : LiteGraph.NODE_TEXT_COLOR
           ctx.globalAlpha = isValid ? editor_alpha : 0.4 * editor_alpha
 
-          ctx.fillStyle = slot.renderingColor(this)
-
           const pos = node.getConnectionPos(true, i, slot_pos)
           pos[0] -= node.pos[0]
           pos[1] -= node.pos[1]
@@ -4899,22 +4895,20 @@ export class LGraphCanvas implements ConnectionColorContext {
             max_y = pos[1] + LiteGraph.NODE_SLOT_HEIGHT * 0.5
           }
 
-          drawSlot(ctx, slot, pos, {
+          slot.draw(ctx, {
+            pos,
+            colorContext: this,
+            labelColor: label_color,
+            labelPosition: LabelPosition.Right,
             horizontal,
-            low_quality,
-            render_text,
-            label_color,
-            label_position: LabelPosition.Right,
-            // Input slot is not stroked.
-            do_stroke: false,
+            lowQuality: low_quality,
+            renderText: render_text,
             highlight,
           })
         }
       }
 
       // output connection slots
-      ctx.textAlign = horizontal ? "center" : "right"
-      ctx.strokeStyle = "black"
       if (node.outputs) {
         for (let i = 0; i < node.outputs.length; i++) {
           const slot = toClass(NodeOutputSlot, node.outputs[i])
@@ -4938,14 +4932,14 @@ export class LGraphCanvas implements ConnectionColorContext {
             max_y = pos[1] + LiteGraph.NODE_SLOT_HEIGHT * 0.5
           }
 
-          ctx.fillStyle = slot.renderingColor(this)
-          drawSlot(ctx, slot, pos, {
+          slot.draw(ctx, {
+            pos,
+            colorContext: this,
+            labelColor: label_color,
+            labelPosition: LabelPosition.Left,
             horizontal,
-            low_quality,
-            render_text,
-            label_color,
-            label_position: LabelPosition.Left,
-            do_stroke: true,
+            lowQuality: low_quality,
+            renderText: render_text,
             highlight,
           })
         }
@@ -5905,11 +5899,12 @@ export class LGraphCanvas implements ConnectionColorContext {
       const outline_color = w.advanced ? LiteGraph.WIDGET_ADVANCED_OUTLINE_COLOR : LiteGraph.WIDGET_OUTLINE_COLOR
 
       if (w === this.link_over_widget) {
-        ctx.fillStyle = this.default_connection_color_byType[this.link_over_widget_type] ||
-          this.default_connection_color.input_on
-
         // Manually draw a slot next to the widget simulating an input
-        drawSlot(ctx, {}, [10, y + 10], {})
+        new NodeInputSlot({
+          name: "",
+          type: this.link_over_widget_type,
+          link: 0,
+        }).draw(ctx, { pos: [10, y + 10], colorContext: this })
       }
 
       w.last_y = y
