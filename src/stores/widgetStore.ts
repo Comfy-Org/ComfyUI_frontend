@@ -2,6 +2,11 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { ComfyWidgetConstructor, ComfyWidgets } from '@/scripts/widgets'
+import {
+  ComboInputSpecV2,
+  InputSpec,
+  isComboInputSpecV1
+} from '@/types/apiTypes'
 
 import type { BaseInputSpec } from './nodeDefStore'
 
@@ -38,10 +43,37 @@ export const useWidgetStore = defineStore('widget', () => {
     }
   }
 
+  function getDefaultValue(inputData: InputSpec) {
+    if (Array.isArray(inputData[0]))
+      return getDefaultValue(transformComboInput(inputData))
+
+    const widgetType = getWidgetType(inputData[0], inputData[1].name)
+
+    const [_, props] = inputData
+    if (props.default) return props.default
+
+    if (widgetType === 'COMBO' && props.options?.length) return props.options[0]
+    if (props.type === 'remote') return 'Loading...'
+    return undefined
+  }
+
+  const transformComboInput = (inputData: InputSpec): ComboInputSpecV2 => {
+    return isComboInputSpecV1(inputData)
+      ? [
+          'COMBO',
+          {
+            options: inputData[0],
+            ...Object(inputData[1])
+          }
+        ]
+      : inputData
+  }
+
   return {
     widgets,
     getWidgetType,
     inputIsWidget,
-    registerCustomWidgets
+    registerCustomWidgets,
+    getDefaultValue
   }
 })

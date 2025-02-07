@@ -10,8 +10,10 @@ import TiptapTableRow from '@tiptap/extension-table-row'
 import TiptapStarterKit from '@tiptap/starter-kit'
 import { Markdown as TiptapMarkdown } from 'tiptap-markdown'
 
+import { useRemoteWidget } from '@/hooks/remoteWidgetHook'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
+import { useWidgetStore } from '@/stores/widgetStore'
 import { InputSpec } from '@/types/apiTypes'
 
 import { api } from './api'
@@ -558,16 +560,47 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
     return res
   },
   COMBO(node, inputName, inputData: InputSpec) {
-    const type = inputData[0]
-    let defaultValue = type[0]
-    if (inputData[1] && inputData[1].default) {
-      defaultValue = inputData[1].default
-    }
+    const widgetStore = useWidgetStore()
+
+    const { type, options } = inputData[1]
+    const defaultValue = widgetStore.getDefaultValue(inputData)
+
     const res = {
       widget: node.addWidget('combo', inputName, defaultValue, () => {}, {
-        values: type
+        values: options ?? inputData[0]
       })
     }
+
+    if (type === 'remote') {
+      const remoteWidget = useRemoteWidget(inputData)
+
+      const origOptions = res.widget.options
+      res.widget.options = new Proxy(
+        origOptions as Record<string | symbol, any>,
+        {
+          get(target, prop: string | symbol) {
+            if (prop !== 'values') return target[prop]
+
+            remoteWidget.fetchOptions().then((options) => {
+              if (!options || !options.length) return
+
+              const isUninitialized =
+                res.widget.value === remoteWidget.defaultValue &&
+                !res.widget.options.values?.includes(remoteWidget.defaultValue)
+              if (isUninitialized) {
+                res.widget.value = options[0]
+                res.widget.callback?.(options[0])
+                node.graph?.setDirtyCanvas(true)
+              }
+            })
+
+            const current = remoteWidget.getCacheEntry()
+            return current?.data || widgetStore.getDefaultValue(inputData)
+          }
+        }
+      )
+    }
+
     if (inputData[1]?.control_after_generate) {
       // TODO make combo handle a widget node type?
       res.widget.linkedWidgets = addValueControlWidgets(
