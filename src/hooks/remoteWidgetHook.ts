@@ -16,7 +16,7 @@ export interface CacheEntry<T> {
 
 const dataCache = new Map<string, CacheEntry<any>>()
 
-const getCacheKey = (inputData: InputSpec): string => {
+const createCacheKey = (inputData: InputSpec): string => {
   const { route, query_params = {}, refresh = 0 } = inputData[1]
 
   const paramsKey = Object.entries(query_params)
@@ -47,7 +47,7 @@ async function fetchData<T>(
 export function useRemoteWidget<T>(inputData: InputSpec) {
   const { refresh = 0 } = inputData[1]
   const isPermanent = refresh <= 0
-  const cacheKey = getCacheKey(inputData)
+  const cacheKey = createCacheKey(inputData)
   const defaultValue = useWidgetStore().getDefaultValue(inputData)
 
   const setSuccess = (entry: CacheEntry<T>, data: T[]) => {
