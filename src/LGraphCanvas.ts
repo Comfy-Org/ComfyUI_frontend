@@ -67,6 +67,7 @@ import { getAllNestedItems, findFirstNode } from "./utils/collections"
 import { CanvasPointer } from "./CanvasPointer"
 import { BooleanWidget } from "./widgets/BooleanWidget"
 import { toClass } from "./utils/type"
+import { NodeInputSlot, NodeOutputSlot, type ConnectionColorContext } from "./NodeSlot"
 
 interface IShowSearchOptions {
   node_to?: LGraphNode
@@ -177,7 +178,7 @@ interface IPasteFromClipboardOptions {
  * This class is in charge of rendering one graph inside a canvas. And provides all the interaction required.
  * Valid callbacks are: onNodeSelected, onNodeDeselected, onShowNodePanel, onNodeDblClicked
  */
-export class LGraphCanvas {
+export class LGraphCanvas implements ConnectionColorContext {
   // Optimised buffers used during rendering
   static #temp = new Float32Array(4)
   static #temp_vec2 = new Float32Array(2)
@@ -4877,9 +4878,7 @@ export class LGraphCanvas {
       // input connection slots
       if (node.inputs) {
         for (let i = 0; i < node.inputs.length; i++) {
-          const slot = node.inputs[i]
-
-          const slot_type = slot.type
+          const slot = toClass(NodeInputSlot, node.inputs[i])
 
           // change opacity of incompatible slots when dragging a connection
           const isValid =
@@ -4891,15 +4890,7 @@ export class LGraphCanvas {
             : LiteGraph.NODE_TEXT_COLOR
           ctx.globalAlpha = isValid ? editor_alpha : 0.4 * editor_alpha
 
-          ctx.fillStyle =
-            slot.link != null
-              ? slot.color_on ||
-                this.default_connection_color_byType[slot_type] ||
-                this.default_connection_color.input_on
-              : slot.color_off ||
-                this.default_connection_color_byTypeOff[slot_type] ||
-                this.default_connection_color_byType[slot_type] ||
-                this.default_connection_color.input_off
+          ctx.fillStyle = slot.renderingColor(this)
 
           const pos = node.getConnectionPos(true, i, slot_pos)
           pos[0] -= node.pos[0]
@@ -4926,7 +4917,7 @@ export class LGraphCanvas {
       ctx.strokeStyle = "black"
       if (node.outputs) {
         for (let i = 0; i < node.outputs.length; i++) {
-          const slot = node.outputs[i]
+          const slot = toClass(NodeOutputSlot, node.outputs[i])
 
           const slot_type = slot.type
 
@@ -4947,16 +4938,7 @@ export class LGraphCanvas {
             max_y = pos[1] + LiteGraph.NODE_SLOT_HEIGHT * 0.5
           }
 
-          ctx.fillStyle =
-            slot.links && slot.links.length
-              ? slot.color_on ||
-                this.default_connection_color_byType[slot_type] ||
-                this.default_connection_color.output_on
-              : slot.color_off ||
-                this.default_connection_color_byTypeOff[slot_type] ||
-                this.default_connection_color_byType[slot_type] ||
-                this.default_connection_color.output_off
-
+          ctx.fillStyle = slot.renderingColor(this)
           drawSlot(ctx, slot, pos, {
             horizontal,
             low_quality,

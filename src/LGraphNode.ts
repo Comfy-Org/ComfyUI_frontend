@@ -33,6 +33,7 @@ import { type LGraphNodeConstructor, LiteGraph } from "./litegraph"
 import { isInRectangle, isInRect, snapPoint } from "./measure"
 import { LLink } from "./LLink"
 import { BooleanWidget } from "./widgets/BooleanWidget"
+import { NodeInputSlot, NodeOutputSlot } from "./NodeSlot"
 
 export type NodeId = number | string
 
@@ -1308,7 +1309,7 @@ export class LGraphNode implements Positionable, IPinnable {
     type?: ISlotType,
     extra_info?: object,
   ): INodeOutputSlot {
-    const output = { name: name, type: type, links: null }
+    const output = new NodeOutputSlot({ name: name, type: type, links: null })
     if (extra_info) {
       for (const i in extra_info) {
         output[i] = extra_info[i]
@@ -1334,7 +1335,7 @@ export class LGraphNode implements Positionable, IPinnable {
   addOutputs(array: [string, ISlotType, Record<string, unknown>][]): void {
     for (let i = 0; i < array.length; ++i) {
       const info = array[i]
-      const o = { name: info[0], type: info[1], links: null }
+      const o = new NodeOutputSlot({ name: info[0], type: info[1], links: null })
       if (array[2]) {
         for (const j in info[2]) {
           o[j] = info[2][j]
@@ -1383,7 +1384,7 @@ export class LGraphNode implements Positionable, IPinnable {
    */
   addInput(name: string, type: ISlotType, extra_info?: object): INodeInputSlot {
     type = type || 0
-    const input: INodeInputSlot = { name: name, type: type, link: null }
+    const input: INodeInputSlot = new NodeInputSlot({ name: name, type: type, link: null })
     if (extra_info) {
       for (const i in extra_info) {
         input[i] = extra_info[i]
@@ -1408,7 +1409,7 @@ export class LGraphNode implements Positionable, IPinnable {
   addInputs(array: [string, ISlotType, Record<string, unknown>][]): void {
     for (let i = 0; i < array.length; ++i) {
       const info = array[i]
-      const o: INodeInputSlot = { name: info[0], type: info[1], link: null }
+      const o: INodeInputSlot = new NodeInputSlot({ name: info[0], type: info[1], link: null })
       // TODO: Checking the wrong variable here - confirm no downstream consumers, then remove.
       if (array[2]) {
         for (const j in info[2]) {
