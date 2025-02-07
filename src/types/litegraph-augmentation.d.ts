@@ -105,10 +105,6 @@ declare module '@comfyorg/litegraph' {
     /** Callback for pasting an image file into the node */
     pasteFile?(file: File): void
   }
-
-  interface INodeSlot {
-    widget?: unknown & { name?: string }
-  }
 }
 
 /**
