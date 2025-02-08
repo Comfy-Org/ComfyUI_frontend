@@ -38,6 +38,7 @@ import { NumberWidget } from "./widgets/NumberWidget"
 import { ButtonWidget } from "./widgets/ButtonWidget"
 import { NodeInputSlot, NodeOutputSlot } from "./NodeSlot"
 import { TextWidget } from "./widgets/TextWidget"
+import { SliderWidget } from "./widgets/SliderWidget"
 
 export type NodeId = number | string
 
@@ -1687,6 +1688,9 @@ export class LGraphNode implements Positionable, IPinnable {
     case "text":
     case "string":
       widget = new TextWidget(custom_widget)
+      break
+    case "slider":
+      widget = new SliderWidget(custom_widget)
       break
     default:
       widget = custom_widget

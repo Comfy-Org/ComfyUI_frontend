@@ -72,6 +72,7 @@ import { ComboWidget } from "./widgets/ComboWidget"
 import { NumberWidget } from "./widgets/NumberWidget"
 import { ButtonWidget } from "./widgets/ButtonWidget"
 import { TextWidget } from "./widgets/TextWidget"
+import { SliderWidget } from "./widgets/SliderWidget"
 
 interface IShowSearchOptions {
   node_to?: LGraphNode
@@ -2574,17 +2575,15 @@ export class LGraphCanvas implements ConnectionColorContext {
       }
       break
     case "slider": {
-      if (widget.options.read_only) break
-
-      pointer.onDrag = (eMove) => {
-        const x = eMove.canvasX - node.pos[0]
-        const slideFactor = clamp((x - 15) / (width - 30), 0, 1)
-        widget.value = widget.options.min + (widget.options.max - widget.options.min) * slideFactor
-        if (oldValue != widget.value) {
-          setWidgetValue(this, node, widget, widget.value)
-        }
-        this.dirty_canvas = true
-      }
+      pointer.onClick = () => toClass(SliderWidget, widget).onClick({
+        e,
+        node,
+        canvas: this,
+      })
+      pointer.onDrag = eMove => toClass(SliderWidget, widget).onDrag({
+        e: eMove,
+        node,
+      })
       break
     }
     case "number": {
@@ -5845,50 +5844,9 @@ export class LGraphCanvas implements ConnectionColorContext {
       case "toggle":
         toClass(BooleanWidget, w).drawWidget(ctx, { y, width: widget_width, show_text, margin })
         break
-      case "slider": {
-        ctx.fillStyle = background_color
-        ctx.fillRect(margin, y, widget_width - margin * 2, H)
-        const range = w.options.max - w.options.min
-        let nvalue = (w.value - w.options.min) / range
-        if (nvalue < 0.0) nvalue = 0.0
-        if (nvalue > 1.0) nvalue = 1.0
-        ctx.fillStyle = w.options.hasOwnProperty("slider_color")
-          ? w.options.slider_color
-          : active_widget == w
-            ? "#89A"
-            : "#678"
-        ctx.fillRect(margin, y, nvalue * (widget_width - margin * 2), H)
-        if (show_text && !w.disabled)
-          ctx.strokeRect(margin, y, widget_width - margin * 2, H)
-        if (w.marker) {
-          let marker_nvalue = (w.marker - w.options.min) / range
-          if (marker_nvalue < 0.0) marker_nvalue = 0.0
-          if (marker_nvalue > 1.0) marker_nvalue = 1.0
-          ctx.fillStyle = w.options.hasOwnProperty("marker_color")
-            ? w.options.marker_color
-            : "#AA9"
-          ctx.fillRect(
-            margin + marker_nvalue * (widget_width - margin * 2),
-            y,
-            2,
-            H,
-          )
-        }
-        if (show_text) {
-          ctx.textAlign = "center"
-          ctx.fillStyle = text_color
-          ctx.fillText(
-            (w.label || w.name) +
-            "  " +
-            Number(w.value).toFixed(
-              w.options.precision != null ? w.options.precision : 3,
-            ),
-            widget_width * 0.5,
-            y + H * 0.7,
-          )
-        }
+      case "slider":
+        toClass(SliderWidget, w).drawWidget(ctx, { y, width: widget_width, show_text, margin })
         break
-      }
       case "combo":
         toClass(ComboWidget, w).drawWidget(ctx, { y, width: widget_width, show_text, margin })
         break

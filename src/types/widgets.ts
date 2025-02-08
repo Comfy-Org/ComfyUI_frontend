@@ -21,6 +21,14 @@ export interface IWidgetOptions<TValue = unknown> extends Record<string, unknown
   callback?: IWidget["callback"]
 }
 
+export interface IWidgetSliderOptions extends IWidgetOptions<number> {
+  min: number
+  max: number
+  step: number
+  slider_color?: CanvasColour
+  marker_color?: CanvasColour
+}
+
 /**
  * A widget for a node.
  * All types are based on IBaseWidget - additions can be made there or directly on individual types.
@@ -36,6 +44,7 @@ export type IWidget =
   | IMultilineStringWidget
   | IComboWidget
   | ICustomWidget
+  | ISliderWidget
 
 export interface IBooleanWidget extends IBaseWidget {
   type?: "toggle"
@@ -44,8 +53,14 @@ export interface IBooleanWidget extends IBaseWidget {
 
 /** Any widget that uses a numeric backing */
 export interface INumericWidget extends IBaseWidget {
-  type?: "slider" | "number"
+  type?: "number"
   value: number
+}
+
+export interface ISliderWidget extends IBaseWidget {
+  type?: "slider"
+  value: number
+  options: IWidgetSliderOptions
 }
 
 /** A combo-box widget (dropdown, select, etc) */
