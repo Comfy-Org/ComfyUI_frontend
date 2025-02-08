@@ -1,5 +1,6 @@
 // @ts-strict-ignore
 import type { IWidget } from '@comfyorg/litegraph'
+import type { IStringWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
 import type { DOMWidget } from '@/scripts/domWidget'
 import { useToastStore } from '@/stores/toastStore'
@@ -37,7 +38,7 @@ function getResourceURL(
 }
 
 async function uploadFile(
-  audioWidget: IWidget,
+  audioWidget: IStringWidget,
   audioUIWidget: DOMWidget<HTMLAudioElement, string>,
   file: File,
   updateNode: boolean,
@@ -151,9 +152,9 @@ app.registerExtension({
     return {
       AUDIOUPLOAD(node, inputName: string) {
         // The widget that allows user to select file.
-        const audioWidget: IWidget = node.widgets.find(
+        const audioWidget = node.widgets.find(
           (w: IWidget) => w.name === 'audio'
-        )
+        ) as IStringWidget
         const audioUIWidget = node.widgets.find(
           (w: IWidget) => w.name === 'audioUI'
         ) as unknown as DOMWidget<HTMLAudioElement, string>
