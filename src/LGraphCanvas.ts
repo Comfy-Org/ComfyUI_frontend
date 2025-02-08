@@ -71,6 +71,7 @@ import { NodeInputSlot, NodeOutputSlot, type ConnectionColorContext } from "./No
 import { ComboWidget } from "./widgets/ComboWidget"
 import { NumberWidget } from "./widgets/NumberWidget"
 import { ButtonWidget } from "./widgets/ButtonWidget"
+import { TextWidget } from "./widgets/TextWidget"
 
 interface IShowSearchOptions {
   node_to?: LGraphNode
@@ -2625,13 +2626,11 @@ export class LGraphCanvas implements ConnectionColorContext {
       break
     case "string":
     case "text":
-      pointer.onClick = () => this.prompt(
-        "Value",
-        widget.value,
-        (v: any) => setWidgetValue(this, node, widget, v),
+      pointer.onClick = () => toClass(TextWidget, widget).onClick({
         e,
-        widget.options ? widget.options.multiline : false,
-      )
+        node,
+        canvas: this,
+      })
       break
     default:
       // Legacy custom widget callback
@@ -5898,36 +5897,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         break
       case "string":
       case "text":
-        ctx.textAlign = "left"
-        ctx.strokeStyle = outline_color
-        ctx.fillStyle = background_color
-        ctx.beginPath()
-
-        if (show_text)
-          ctx.roundRect(margin, y, widget_width - margin * 2, H, [H * 0.5])
-        else
-          ctx.rect(margin, y, widget_width - margin * 2, H)
-        ctx.fill()
-        if (show_text) {
-          if (!w.disabled) ctx.stroke()
-          ctx.save()
-          ctx.beginPath()
-          ctx.rect(margin, y, widget_width - margin * 2, H)
-          ctx.clip()
-
-          // ctx.stroke();
-          ctx.fillStyle = secondary_text_color
-          const label = w.label || w.name
-          if (label != null) ctx.fillText(label, margin * 2, y + H * 0.7)
-          ctx.fillStyle = text_color
-          ctx.textAlign = "right"
-          ctx.fillText(
-            String(w.value).substr(0, 30),
-            widget_width - margin * 2,
-            y + H * 0.7,
-          ) // 30 chars max
-          ctx.restore()
-        }
+        toClass(TextWidget, w).drawWidget(ctx, { y, width: widget_width, show_text, margin })
         break
         // Custom widgets
       default:

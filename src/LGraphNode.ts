@@ -37,6 +37,7 @@ import { ComboWidget } from "./widgets/ComboWidget"
 import { NumberWidget } from "./widgets/NumberWidget"
 import { ButtonWidget } from "./widgets/ButtonWidget"
 import { NodeInputSlot, NodeOutputSlot } from "./NodeSlot"
+import { TextWidget } from "./widgets/TextWidget"
 
 export type NodeId = number | string
 
@@ -1682,6 +1683,10 @@ export class LGraphNode implements Positionable, IPinnable {
       break
     case "button":
       widget = new ButtonWidget(custom_widget)
+      break
+    case "text":
+    case "string":
+      widget = new TextWidget(custom_widget)
       break
     default:
       widget = custom_widget
