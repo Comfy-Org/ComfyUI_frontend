@@ -661,66 +661,6 @@ export class LiteGraphGlobal {
     }
   }
 
-  /**
-   * Wrapper to load files (from url using fetch or from file using FileReader)
-   * @param url the url of the file (or the file itself)
-   * @param type an string to know how to fetch it: "text","arraybuffer","json","blob"
-   * @param on_complete callback(data)
-   * @param on_error in case of an error
-   * @returns returns the object used to
-   */
-  fetchFile(
-    url: string | URL | Request | Blob,
-    type: string,
-    on_complete: (data: string | ArrayBuffer) => void,
-    on_error: (error: unknown) => void,
-  ): void | Promise<void> {
-    if (!url) return null
-
-    type = type || "text"
-    if (typeof url === "string") {
-      if (url.substr(0, 4) == "http" && this.proxy)
-        url = this.proxy + url.substr(url.indexOf(":") + 3)
-
-      return fetch(url)
-        .then(function (response) {
-          if (!response.ok)
-            throw new Error("File not found") // it will be catch below
-          if (type == "arraybuffer")
-            return response.arrayBuffer()
-          else if (type == "text" || type == "string")
-            return response.text()
-          else if (type == "json")
-            return response.json()
-          else if (type == "blob")
-            return response.blob()
-        })
-        .then(function (data: string | ArrayBuffer): void {
-          on_complete?.(data)
-        })
-        .catch(function (error) {
-          console.error("error fetching file:", url)
-          on_error?.(error)
-        })
-    } else if (url instanceof File || url instanceof Blob) {
-      const reader = new FileReader()
-      reader.onload = function (e) {
-        let v = e.target.result
-        if (type == "json")
-          // @ts-ignore
-          v = JSON.parse(v)
-        on_complete?.(v)
-      }
-      if (type == "arraybuffer")
-        return reader.readAsArrayBuffer(url)
-      else if (type == "text" || type == "json")
-        return reader.readAsText(url)
-      else if (type == "blob")
-        return reader.readAsBinaryString(url)
-    }
-    return null
-  }
-
   // used to create nodes from wrapping functions
   getParameterNames(func: (...args: any) => any): string[] {
     return (func + "")
