@@ -33,6 +33,7 @@ import { type LGraphNodeConstructor, LiteGraph } from "./litegraph"
 import { isInRectangle, isInRect, snapPoint } from "./measure"
 import { LLink } from "./LLink"
 import { BooleanWidget } from "./widgets/BooleanWidget"
+import { ComboWidget } from "./widgets/ComboWidget"
 import { NodeInputSlot, NodeOutputSlot } from "./NodeSlot"
 
 export type NodeId = number | string
@@ -1670,6 +1671,9 @@ export class LGraphNode implements Positionable, IPinnable {
     switch (custom_widget.type) {
     case "toggle":
       widget = new BooleanWidget(custom_widget)
+      break
+    case "combo":
+      widget = new ComboWidget(custom_widget)
       break
     default:
       widget = custom_widget
