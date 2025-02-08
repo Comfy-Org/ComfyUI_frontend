@@ -70,6 +70,7 @@ import { toClass } from "./utils/type"
 import { NodeInputSlot, NodeOutputSlot, type ConnectionColorContext } from "./NodeSlot"
 import { ComboWidget } from "./widgets/ComboWidget"
 import { NumberWidget } from "./widgets/NumberWidget"
+import { ButtonWidget } from "./widgets/ButtonWidget"
 
 interface IShowSearchOptions {
   node_to?: LGraphNode
@@ -2564,9 +2565,11 @@ export class LGraphCanvas implements ConnectionColorContext {
     switch (widget.type) {
     case "button":
       pointer.onClick = () => {
-        widget.callback?.(widget, this, node, pos, e)
-        widget.clicked = true
-        this.dirty_canvas = true
+        toClass(ButtonWidget, widget).onClick({
+          e,
+          node,
+          canvas: this,
+        })
       }
       break
     case "slider": {
@@ -5838,20 +5841,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
       switch (w.type) {
       case "button":
-        ctx.fillStyle = background_color
-        if (w.clicked) {
-          ctx.fillStyle = "#AAA"
-          w.clicked = false
-          this.dirty_canvas = true
-        }
-        ctx.fillRect(margin, y, widget_width - margin * 2, H)
-        if (show_text && !w.disabled)
-          ctx.strokeRect(margin, y, widget_width - margin * 2, H)
-        if (show_text) {
-          ctx.textAlign = "center"
-          ctx.fillStyle = text_color
-          ctx.fillText(w.label || w.name, widget_width * 0.5, y + H * 0.7)
-        }
+        toClass(ButtonWidget, w).drawWidget(ctx, { y, width: widget_width, show_text, margin })
         break
       case "toggle":
         toClass(BooleanWidget, w).drawWidget(ctx, { y, width: widget_width, show_text, margin })

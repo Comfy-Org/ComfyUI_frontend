@@ -35,6 +35,7 @@ import { LLink } from "./LLink"
 import { BooleanWidget } from "./widgets/BooleanWidget"
 import { ComboWidget } from "./widgets/ComboWidget"
 import { NumberWidget } from "./widgets/NumberWidget"
+import { ButtonWidget } from "./widgets/ButtonWidget"
 import { NodeInputSlot, NodeOutputSlot } from "./NodeSlot"
 
 export type NodeId = number | string
@@ -1678,6 +1679,9 @@ export class LGraphNode implements Positionable, IPinnable {
       break
     case "number":
       widget = new NumberWidget(custom_widget)
+      break
+    case "button":
+      widget = new ButtonWidget(custom_widget)
       break
     default:
       widget = custom_widget
