@@ -1,5 +1,5 @@
 <template>
-  <div class="controls-container">
+  <div class="absolute top-0 left-0 w-full h-full pointer-events-none">
     <Load3DControls
       :backgroundColor="backgroundColor"
       :showGrid="showGrid"
@@ -9,9 +9,18 @@
       ref="load3dControlsRef"
     />
 
-    <div class="animation-controls" v-if="animations && animations.length > 0">
+    <div
+      v-if="animations && animations.length > 0"
+      class="absolute top-0 left-0 w-full flex justify-center pt-2 gap-2 items-center pointer-events-auto z-10"
+    >
       <Button class="p-button-rounded p-button-text" @click="togglePlay">
-        <i :class="['pi', playing ? 'pi-pause' : 'pi-play']"></i>
+        <i
+          :class="[
+            'pi',
+            playing ? 'pi-pause' : 'pi-play',
+            'text-white text-lg'
+          ]"
+        ></i>
       </Button>
 
       <Select
@@ -20,7 +29,7 @@
         optionLabel="name"
         optionValue="value"
         @change="speedChange"
-        class="speed-dropdown"
+        class="w-24"
       />
 
       <Select
@@ -29,7 +38,7 @@
         optionLabel="name"
         optionValue="index"
         @change="animationChange"
-        class="animation-dropdown"
+        class="w-32"
       />
     </div>
   </div>
@@ -87,7 +96,6 @@ const onUpdateBackgroundColor = (color: string) =>
 
 const togglePlay = () => {
   playing.value = !playing.value
-
   emit('togglePlay', playing.value)
 }
 
@@ -107,39 +115,3 @@ defineExpose({
   showGrid
 })
 </script>
-
-<style scoped>
-.controls-container {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-
-.animation-controls {
-  position: absolute;
-  top: 8px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  pointer-events: auto;
-  z-index: 2;
-}
-
-.pi {
-  color: white;
-  font-size: 1.2rem;
-}
-
-.speed-dropdown {
-  width: 5rem;
-}
-
-.animation-dropdown {
-  width: 8rem;
-}
-</style>

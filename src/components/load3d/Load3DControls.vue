@@ -1,7 +1,9 @@
 <template>
-  <div class="view-controls">
+  <div
+    class="absolute top-2 left-2 flex flex-col gap-2 pointer-events-auto z-20"
+  >
     <Button class="p-button-rounded p-button-text" @click="toggleCamera">
-      <i class="pi pi-camera"></i>
+      <i class="pi pi-camera text-white text-lg"></i>
     </Button>
 
     <Button
@@ -9,11 +11,11 @@
       :class="{ 'p-button-outlined': showGrid }"
       @click="toggleGrid"
     >
-      <i class="pi pi-table"></i>
+      <i class="pi pi-table text-white text-lg"></i>
     </Button>
 
     <Button class="p-button-rounded p-button-text" @click="openColorPicker">
-      <i class="pi pi-palette"></i>
+      <i class="pi pi-palette text-white text-lg"></i>
       <input
         type="color"
         ref="colorPickerRef"
@@ -21,7 +23,7 @@
         @input="
           updateBackgroundColor(($event.target as HTMLInputElement).value)
         "
-        class="color-input"
+        class="absolute opacity-0 w-0 h-0 p-0 m-0 pointer-events-none"
       />
     </Button>
   </div>
@@ -68,31 +70,3 @@ defineExpose({
   showGrid
 })
 </script>
-
-<style scoped>
-.view-controls {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  pointer-events: auto;
-  z-index: 2;
-}
-
-.pi {
-  color: white;
-  font-size: 1.2rem;
-}
-
-.color-input {
-  position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
-  padding: 0;
-  margin: 0;
-  pointer-events: none;
-}
-</style>
