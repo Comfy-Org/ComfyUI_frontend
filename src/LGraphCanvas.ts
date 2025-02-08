@@ -2695,8 +2695,11 @@ export class LGraphCanvas implements ConnectionColorContext {
     }
     case "toggle":
       pointer.onClick = () => {
-        widget.value = !widget.value
-        setWidgetValue(this, node, widget, widget.value)
+        toClass(BooleanWidget, widget).onClick({
+          e,
+          node,
+          canvas: this,
+        })
       }
       break
     case "string":

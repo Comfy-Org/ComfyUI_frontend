@@ -1,5 +1,8 @@
-import { IBooleanWidget } from "@/types/widgets"
+import type { IBooleanWidget } from "@/types/widgets"
 import { BaseWidget } from "./BaseWidget"
+import type { CanvasMouseEvent } from "@/types/events"
+import type { LGraphNode } from "@/LGraphNode"
+import type { LGraphCanvas } from "@/LGraphCanvas"
 
 export class BooleanWidget extends BaseWidget implements IBooleanWidget {
   // IBooleanWidget properties
@@ -12,14 +15,6 @@ export class BooleanWidget extends BaseWidget implements IBooleanWidget {
     this.value = widget.value
   }
 
-  /**
-   * Draws the widget
-   * @param ctx - The canvas context
-   * @param options - The options for drawing the widget
-   *
-   * @note Not naming this `draw` as `draw` conflicts with the `draw` method in
-   * custom widgets.
-   */
   override drawWidget(ctx: CanvasRenderingContext2D, options: {
     y: number
     width: number
@@ -64,5 +59,13 @@ export class BooleanWidget extends BaseWidget implements IBooleanWidget {
         y + H * 0.7,
       )
     }
+  }
+
+  override onClick(options: {
+    e: CanvasMouseEvent
+    node: LGraphNode
+    canvas: LGraphCanvas
+  }) {
+    this.setValue(!this.value, options)
   }
 }
