@@ -222,14 +222,16 @@ export class DragAndScale {
     const rect = this.element.getBoundingClientRect()
     if (!rect) return
 
-    zooming_center = zooming_center || [rect.width * 0.5, rect.height * 0.5]
-    zooming_center[0] -= rect.x
-    zooming_center[1] -= rect.y
-    const center = this.convertCanvasToOffset(zooming_center)
+    zooming_center = zooming_center ?? [rect.width * 0.5, rect.height * 0.5]
+
+    const normalizedCenter: Point = [
+      zooming_center[0] - rect.x,
+      zooming_center[1] - rect.y,
+    ]
+    const center = this.convertCanvasToOffset(normalizedCenter)
     this.scale = value
     if (Math.abs(this.scale - 1) < 0.01) this.scale = 1
-
-    const new_center = this.convertCanvasToOffset(zooming_center)
+    const new_center = this.convertCanvasToOffset(normalizedCenter)
     const delta_offset = [
       new_center[0] - center[0],
       new_center[1] - center[1],
