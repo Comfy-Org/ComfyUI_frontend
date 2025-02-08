@@ -522,7 +522,7 @@ export class LGraphCanvas implements ConnectionColorContext {
   /** If true, enable drag zoom. Ctrl+Shift+Drag Up/Down: zoom canvas. */
   dragZoomEnabled: boolean = false
   /** The start position of the drag zoom. */
-  #zoom_drag_start: { x: number, y: number, scale: number } | null = null
+  #dragZoomStart: { pos: Point, scale: number } | null = null
 
   getMenuOptions?(): IContextMenuValue[]
   getExtraMenuOptions?(
@@ -2006,7 +2006,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
   processMouseDown(e: PointerEvent): void {
     if (this.dragZoomEnabled && e.ctrlKey && e.shiftKey && !e.altKey && e.buttons) {
-      this.#zoom_drag_start = { x: e.x, y: e.y, scale: this.ds.scale }
+      this.#dragZoomStart = { pos: [e.x, e.y], scale: this.ds.scale }
       return
     }
 
@@ -2765,20 +2765,17 @@ export class LGraphCanvas implements ConnectionColorContext {
   #processDragZoom(e: PointerEvent): void {
     // stop canvas zoom action
     if (!e.buttons) {
-      this.#zoom_drag_start = null
+      this.#dragZoomStart = null
       return
     }
 
     // calculate delta
-    const deltaY = e.y - this.#zoom_drag_start.y
-    const startScale = this.#zoom_drag_start.scale
+    const deltaY = e.y - this.#dragZoomStart.pos[1]
+    const startScale = this.#dragZoomStart.scale
 
     const scale = startScale - deltaY / 100
 
-    this.ds.changeScale(scale, [
-      this.#zoom_drag_start.x,
-      this.#zoom_drag_start.y,
-    ])
+    this.ds.changeScale(scale, this.#dragZoomStart.pos)
     this.graph.change()
   }
 
@@ -2786,7 +2783,7 @@ export class LGraphCanvas implements ConnectionColorContext {
    * Called when a mouse move event has to be processed
    */
   processMouseMove(e: PointerEvent): void {
-    if (this.dragZoomEnabled && e.ctrlKey && e.shiftKey && this.#zoom_drag_start) {
+    if (this.dragZoomEnabled && e.ctrlKey && e.shiftKey && this.#dragZoomStart) {
       this.#processDragZoom(e)
       return
     }
