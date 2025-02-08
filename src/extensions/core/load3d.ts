@@ -1,5 +1,6 @@
 // @ts-strict-ignore
 import { IWidget } from '@comfyorg/litegraph'
+import type { IStringWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import { nextTick } from 'vue'
 
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
@@ -65,7 +66,7 @@ app.registerExtension({
           if (fileInput.files?.length) {
             const modelWidget = node.widgets?.find(
               (w: IWidget) => w.name === 'model_file'
-            )
+            ) as IStringWidget
             const uploadPath = await Load3dUtils.uploadFile(
               load3d,
               fileInput.files[0],
@@ -234,7 +235,7 @@ app.registerExtension({
           if (fileInput.files?.length) {
             const modelWidget = node.widgets?.find(
               (w: IWidget) => w.name === 'model_file'
-            )
+            ) as IStringWidget
             const uploadPath = await Load3dUtils.uploadFile(
               load3d,
               fileInput.files[0],

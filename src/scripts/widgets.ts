@@ -1,6 +1,10 @@
 // @ts-strict-ignore
 import type { LGraphNode } from '@comfyorg/litegraph'
 import type { IWidget } from '@comfyorg/litegraph'
+import type {
+  IComboWidget,
+  IStringWidget
+} from '@comfyorg/litegraph/dist/types/widgets'
 import { Editor as TiptapEditor } from '@tiptap/core'
 import TiptapLink from '@tiptap/extension-link'
 import TiptapTable from '@tiptap/extension-table'
@@ -568,7 +572,7 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
     const res = {
       widget: node.addWidget('combo', inputName, defaultValue, () => {}, {
         values: options ?? inputData[0]
-      })
+      }) as IComboWidget
     }
 
     if (type === 'remote') {
@@ -617,7 +621,7 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
     // TODO make image upload handle a custom node type?
     const imageWidget = node.widgets.find(
       (w) => w.name === (inputData[1]?.widget ?? 'image')
-    )
+    ) as IStringWidget
     let uploadWidget
 
     function showImage(name) {
