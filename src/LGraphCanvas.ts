@@ -69,6 +69,7 @@ import { BooleanWidget } from "./widgets/BooleanWidget"
 import { toClass } from "./utils/type"
 import { NodeInputSlot, NodeOutputSlot, type ConnectionColorContext } from "./NodeSlot"
 import { ComboWidget } from "./widgets/ComboWidget"
+import { NumberWidget } from "./widgets/NumberWidget"
 
 interface IShowSearchOptions {
   node_to?: LGraphNode
@@ -2583,54 +2584,20 @@ export class LGraphCanvas implements ConnectionColorContext {
       break
     }
     case "number": {
-      const delta = x < 40
-        ? -1
-        : x > width - 40
-          ? 1
-          : 0
-      pointer.onClick = (upEvent) => {
-        // Left/right arrows
-        let newValue = widget.value + delta * 0.1 * (widget.options.step || 1)
-        if (widget.options.min != null && newValue < widget.options.min) {
-          newValue = widget.options.min
-        }
-        if (widget.options.max != null && newValue > widget.options.max) {
-          newValue = widget.options.max
-        }
-        if (newValue !== widget.value) setWidgetValue(this, node, widget, newValue)
-
-        if (delta !== 0) return
-
-        // Click in widget centre area - prompt user for input
-        this.prompt("Value", widget.value, (v: string) => {
-          // check if v is a valid equation or a number
-          if (/^[0-9+\-*/()\s]+|\d+\.\d+$/.test(v)) {
-            // solve the equation if possible
-            try {
-              v = eval(v)
-            } catch { }
-          }
-          widget.value = Number(v)
-          setWidgetValue(this, node, widget, widget.value)
-        }, e)
-        this.dirty_canvas = true
+      const numberWidget = toClass(NumberWidget, widget)
+      pointer.onClick = () => {
+        numberWidget.onClick({
+          e,
+          node,
+          canvas: this,
+        })
       }
-
       // Click & drag from widget centre area
       pointer.onDrag = (eMove) => {
-        const x = eMove.canvasX - node.pos[0]
-        if (delta && (x > -3 && x < width + 3)) return
-
-        let newValue = widget.value
-        if (eMove.deltaX) newValue += eMove.deltaX * 0.1 * (widget.options.step || 1)
-
-        if (widget.options.min != null && newValue < widget.options.min) {
-          newValue = widget.options.min
-        }
-        if (widget.options.max != null && newValue > widget.options.max) {
-          newValue = widget.options.max
-        }
-        if (newValue !== widget.value) setWidgetValue(this, node, widget, newValue)
+        numberWidget.onDrag({
+          e: eMove,
+          node,
+        })
       }
       break
     }
@@ -5937,85 +5904,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         toClass(ComboWidget, w).drawWidget(ctx, { y, width: widget_width, show_text, margin })
         break
       case "number":
-        ctx.textAlign = "left"
-        ctx.strokeStyle = outline_color
-        ctx.fillStyle = background_color
-        ctx.beginPath()
-        if (show_text)
-          ctx.roundRect(margin, y, widget_width - margin * 2, H, [H * 0.5])
-        else ctx.rect(margin, y, widget_width - margin * 2, H)
-        ctx.fill()
-        if (show_text) {
-          if (!w.disabled) ctx.stroke()
-          ctx.fillStyle = text_color
-          if (!w.disabled) {
-            ctx.beginPath()
-            ctx.moveTo(margin + 16, y + 5)
-            ctx.lineTo(margin + 6, y + H * 0.5)
-            ctx.lineTo(margin + 16, y + H - 5)
-            ctx.fill()
-            ctx.beginPath()
-            ctx.moveTo(widget_width - margin - 16, y + 5)
-            ctx.lineTo(widget_width - margin - 6, y + H * 0.5)
-            ctx.lineTo(widget_width - margin - 16, y + H - 5)
-            ctx.fill()
-          }
-          ctx.fillStyle = secondary_text_color
-          ctx.fillText(w.label || w.name, margin * 2 + 5, y + H * 0.7)
-          ctx.fillStyle = text_color
-          ctx.textAlign = "right"
-          if (w.type == "number") {
-            ctx.fillText(
-              Number(w.value).toFixed(
-                w.options.precision !== undefined
-                  ? w.options.precision
-                  : 3,
-              ),
-              widget_width - margin * 2 - 20,
-              y + H * 0.7,
-            )
-          } else {
-            let v = String(w.value)
-            if (w.options.values) {
-              let values = w.options.values
-              if (typeof values === "function")
-              // @ts-expect-error
-                values = values()
-              if (values && !Array.isArray(values))
-                v = values[w.value]
-            }
-            const labelWidth = ctx.measureText(w.label || w.name).width + margin * 2
-            const inputWidth = widget_width - margin * 4
-            const availableWidth = inputWidth - labelWidth
-            const textWidth = ctx.measureText(v).width
-            if (textWidth > availableWidth) {
-              const ELLIPSIS = "\u2026"
-              const ellipsisWidth = ctx.measureText(ELLIPSIS).width
-              const charWidthAvg = ctx.measureText("a").width
-              if (availableWidth <= ellipsisWidth) {
-                v = "\u2024" // One dot leader
-              } else {
-                v = `${v}`
-                const overflowWidth = (textWidth + ellipsisWidth) - availableWidth
-                // Only first 3 characters need to be measured precisely
-                if (overflowWidth + charWidthAvg * 3 > availableWidth) {
-                  const preciseRange = availableWidth + charWidthAvg * 3
-                  const preTruncateCt = Math.floor((preciseRange - ellipsisWidth) / charWidthAvg)
-                  v = v.substr(0, preTruncateCt)
-                }
-                while (ctx.measureText(v).width + ellipsisWidth > availableWidth) {
-                  v = v.substr(0, v.length - 1)
-                }
-                v += ELLIPSIS
-              }
-            }
-            ctx.fillText(
-              v,
-              widget_width - margin * 2 - 20,
-              y + H * 0.7,
-            )
-          }
-        }
+        toClass(NumberWidget, w).drawWidget(ctx, { y, width: widget_width, show_text, margin })
         break
       case "string":
       case "text":

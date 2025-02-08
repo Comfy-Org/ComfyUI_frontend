@@ -16,7 +16,7 @@ import type {
   Size,
 } from "./interfaces"
 import type { LGraph } from "./LGraph"
-import type { IBaseWidget, IWidget, TWidgetValue } from "./types/widgets"
+import type { IWidget, TWidgetValue } from "./types/widgets"
 import type { ISerialisedNode } from "./types/serialisation"
 import type { LGraphCanvas } from "./LGraphCanvas"
 import type { CanvasMouseEvent } from "./types/events"
@@ -34,6 +34,7 @@ import { isInRectangle, isInRect, snapPoint } from "./measure"
 import { LLink } from "./LLink"
 import { BooleanWidget } from "./widgets/BooleanWidget"
 import { ComboWidget } from "./widgets/ComboWidget"
+import { NumberWidget } from "./widgets/NumberWidget"
 import { NodeInputSlot, NodeOutputSlot } from "./NodeSlot"
 
 export type NodeId = number | string
@@ -1674,6 +1675,9 @@ export class LGraphNode implements Positionable, IPinnable {
       break
     case "combo":
       widget = new ComboWidget(custom_widget)
+      break
+    case "number":
+      widget = new NumberWidget(custom_widget)
       break
     default:
       widget = custom_widget

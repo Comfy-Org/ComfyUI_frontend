@@ -83,11 +83,20 @@ export abstract class BaseWidget implements IBaseWidget {
    * Handles the click event for the widget
    * @param options - The options for handling the click event
    */
-  abstract onClick(options: {
+  onClick(options: {
     e: CanvasMouseEvent
     node: LGraphNode
     canvas: LGraphCanvas
-  }): void
+  }): void {}
+
+  /**
+   * Handles the drag event for the widget
+   * @param options - The options for handling the drag event
+   */
+  onDrag(options: {
+    e: CanvasMouseEvent
+    node: LGraphNode
+  }): void {}
 
   /**
    * Sets the value of the widget
