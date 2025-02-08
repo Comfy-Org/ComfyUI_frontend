@@ -1,7 +1,7 @@
 {
   "clipboard": {
     "errorMessage": "클립보드에 복사하지 못했습니다",
-    "errorNotSupported": "당신의 브라우저에서 클립보드 API가 지원되지 않습니다",
+    "errorNotSupported": "브라우저가 클립보드 API를 지원하지 않습니다.",
     "successMessage": "클립보드에 복사됨"
   },
   "color": {
@@ -14,16 +14,16 @@
     "yellow": "노란색"
   },
   "contextMenu": {
-    " to input": " 입력으로",
-    " to widget": " 위젯으로",
+    " to input": " 위젯을 입력으로",
+    " to widget": " 입력을 위젯으로",
     "Add Group": "그룹 추가",
-    "Add Group For Selected Nodes": "선택된 노드에 대한 그룹 추가",
+    "Add Group For Selected Nodes": "선택한 노드 그룹 추가",
     "Add Node": "노드 추가",
-    "Bypass": "우회",
+    "Bypass": "실행 건너뛰기",
     "Clone": "복제",
-    "Collapse": "축소",
+    "Collapse": "접기",
     "Colors": "색상",
-    "Convert ": "변환 ",
+    "Convert ": "[변환] ",
     "Convert Input to Widget": "입력을 위젯으로 변환",
     "Convert Widget to Input": "위젯을 입력으로 변환",
     "Convert to Group Node": "그룹 노드로 변환",
@@ -40,7 +40,7 @@
     "Properties Panel": "속성 패널",
     "Remove": "제거",
     "Resize": "크기 조정",
-    "Save Selected as Template": "선택 항목을 템플릿으로 저장",
+    "Save Selected as Template": "선택된 부분을 템플릿으로 저장",
     "Search": "검색",
     "Shapes": "형태",
     "Title": "제목",
@@ -87,8 +87,8 @@
     "reinstall": "재설치"
   },
   "desktopUpdate": {
-    "description": "ComfyUI 데스크톱은 새로운 종속성을 설치하고 있습니다. 이 작업은 몇 분 정도 걸릴 수 있습니다.",
-    "terminalDefaultMessage": "업데이트로부터의 콘솔 출력은 여기에 표시됩니다.",
+    "description": "ComfyUI 데스크톱이 새로운 종속성을 설치하고 있습니다. 이 작업은 몇 분 정도 걸릴 수 있습니다.",
+    "terminalDefaultMessage": "업데이트 콘솔 출력은 여기에 표시됩니다.",
     "title": "ComfyUI 데스크톱 업데이트 중"
   },
   "downloadGit": {
