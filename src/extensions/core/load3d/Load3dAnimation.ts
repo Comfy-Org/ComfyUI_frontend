@@ -19,15 +19,19 @@ class Load3dAnimation extends Load3d {
   }
 
   protected mountControls() {
-    super.mountControls()
-
     const controlsMount = document.createElement('div')
     controlsMount.style.pointerEvents = 'auto'
     this.controlsContainer.appendChild(controlsMount)
 
     this.controlsApp = createApp(Load3DAnimationControls, {
+      backgroundColor: '#282828',
+      showGrid: true,
       animations: [],
       playing: false,
+      onToggleCamera: () => this.toggleCamera(),
+      onToggleGrid: (show: boolean) => this.toggleGrid(show),
+      onUpdateBackgroundColor: (color: string) =>
+        this.setBackgroundColor(color),
       onTogglePlay: (play: boolean) => this.toggleAnimation(play),
       onSpeedChange: (speed: number) => this.setAnimationSpeed(speed),
       onAnimationChange: (selectedAnimation: number) =>

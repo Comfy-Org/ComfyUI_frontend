@@ -62,6 +62,11 @@ const updateBackgroundColor = (color: string) => {
 const openColorPicker = () => {
   colorPickerRef.value?.click()
 }
+
+defineExpose({
+  backgroundColor,
+  showGrid
+})
 </script>
 
 <style scoped>
