@@ -874,7 +874,6 @@ class Load3d {
     this.renderer.setClearColor(new THREE.Color(color))
     this.renderer.render(this.scene, this.activeCamera)
 
-    console.log('setBackgroundColor in 3d')
     if (this.controlsApp?._instance?.exposed) {
       this.controlsApp._instance.exposed.backgroundColor.value = color
     }

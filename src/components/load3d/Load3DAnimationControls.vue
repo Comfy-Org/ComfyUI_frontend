@@ -6,6 +6,7 @@
       @toggleCamera="onToggleCamera"
       @toggleGrid="onToggleGrid"
       @updateBackgroundColor="onUpdateBackgroundColor"
+      ref="load3dControlsRef"
     />
 
     <div class="animation-controls" v-if="animations && animations.length > 0">
@@ -37,7 +38,7 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Select from 'primevue/select'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 import Load3DControls from '@/components/load3d/Load3DControls.vue'
 
@@ -63,6 +64,7 @@ const selectedSpeed = ref(1)
 const selectedAnimation = ref(0)
 const backgroundColor = ref(props.backgroundColor)
 const showGrid = ref(props.showGrid)
+const load3dControlsRef = ref(null)
 
 const speedOptions = [
   { name: '0.1x', value: 0.1 },
@@ -71,6 +73,10 @@ const speedOptions = [
   { name: '1.5x', value: 1.5 },
   { name: '2x', value: 2 }
 ]
+
+watch(backgroundColor, (newValue) => {
+  load3dControlsRef.value.backgroundColor = newValue
+})
 
 const onToggleCamera = () => {
   emit('toggleCamera')
