@@ -57,7 +57,7 @@ import {
   isInRect,
   snapPoint,
 } from "./measure"
-import { LabelPosition, strokeShape } from "./draw"
+import { strokeShape } from "./draw"
 import { DragAndScale } from "./DragAndScale"
 import { LinkReleaseContextExtended, LiteGraph } from "./litegraph"
 import { stringOrEmpty, stringOrNull } from "./strings"
@@ -4736,7 +4736,6 @@ export class LGraphCanvas implements ConnectionColorContext {
           pos,
           colorContext: this,
           labelColor: label_color,
-          labelPosition: LabelPosition.Right,
           horizontal,
           lowQuality: low_quality,
           renderText: render_text,
@@ -4771,7 +4770,6 @@ export class LGraphCanvas implements ConnectionColorContext {
           pos,
           colorContext: this,
           labelColor: label_color,
-          labelPosition: LabelPosition.Left,
           horizontal,
           lowQuality: low_quality,
           renderText: render_text,

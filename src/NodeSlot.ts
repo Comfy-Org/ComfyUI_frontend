@@ -200,12 +200,13 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
     return this.link != null
   }
 
-  override draw(ctx: CanvasRenderingContext2D, options: Omit<IDrawOptions, "doStroke">) {
+  override draw(ctx: CanvasRenderingContext2D, options: Omit<IDrawOptions, "doStroke" | "labelPosition">) {
     const originalTextAlign = ctx.textAlign
     ctx.textAlign = options.horizontal ? "center" : "left"
 
     super.draw(ctx, {
       ...options,
+      labelPosition: LabelPosition.Right,
       doStroke: false,
     })
 
@@ -229,7 +230,7 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
     return this.links != null && this.links.length > 0
   }
 
-  override draw(ctx: CanvasRenderingContext2D, options: Omit<IDrawOptions, "doStroke">) {
+  override draw(ctx: CanvasRenderingContext2D, options: Omit<IDrawOptions, "doStroke" | "labelPosition">) {
     const originalTextAlign = ctx.textAlign
     const originalStrokeStyle = ctx.strokeStyle
     ctx.textAlign = options.horizontal ? "center" : "right"
@@ -237,6 +238,7 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
 
     super.draw(ctx, {
       ...options,
+      labelPosition: LabelPosition.Left,
       doStroke: true,
     })
 
