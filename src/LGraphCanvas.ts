@@ -4826,19 +4826,9 @@ export class LGraphCanvas implements ConnectionColorContext {
           x = node._collapsed_width * 0.5
           y = -LiteGraph.NODE_TITLE_HEIGHT
         }
-        ctx.fillStyle = "#686"
-        ctx.beginPath()
-        if (slot.type === LiteGraph.EVENT || slot.shape === RenderShape.BOX) {
-          ctx.rect(x - 7 + 0.5, y - 4, 14, 8)
-        } else if (slot.shape === RenderShape.ARROW) {
-          ctx.moveTo(x + 8, y)
-          ctx.lineTo(x + -4, y - 4)
-          ctx.lineTo(x + -4, y + 4)
-          ctx.closePath()
-        } else {
-          ctx.arc(x, y, 4, 0, Math.PI * 2)
-        }
-        ctx.fill()
+        toClass(NodeInputSlot, input_slot).drawCollapsed(ctx, {
+          pos: [x, y],
+        })
       }
 
       if (output_slot) {
@@ -4848,21 +4838,9 @@ export class LGraphCanvas implements ConnectionColorContext {
           x = node._collapsed_width * 0.5
           y = 0
         }
-        ctx.fillStyle = "#686"
-        ctx.strokeStyle = "black"
-        ctx.beginPath()
-        if (slot.type === LiteGraph.EVENT || slot.shape === RenderShape.BOX) {
-          ctx.rect(x - 7 + 0.5, y - 4, 14, 8)
-        } else if (slot.shape === RenderShape.ARROW) {
-          ctx.moveTo(x + 6, y)
-          ctx.lineTo(x - 6, y - 4)
-          ctx.lineTo(x - 6, y + 4)
-          ctx.closePath()
-        } else {
-          ctx.arc(x, y, 4, 0, Math.PI * 2)
-        }
-        ctx.fill()
-        // ctx.stroke();
+        toClass(NodeOutputSlot, output_slot).drawCollapsed(ctx, {
+          pos: [x, y],
+        })
       }
     }
 

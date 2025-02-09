@@ -186,6 +186,39 @@ export abstract class NodeSlot implements INodeSlot {
     ctx.strokeStyle = originalStrokeStyle
     ctx.lineWidth = originalLineWidth
   }
+
+  drawCollapsed(ctx: CanvasRenderingContext2D, options: { pos: Point }) {
+    const [x, y] = options.pos
+
+    // Save original styles
+    const originalFillStyle = ctx.fillStyle
+
+    ctx.fillStyle = "#686"
+    ctx.beginPath()
+
+    if (this.type === SlotType.Event || this.shape === RenderShape.BOX) {
+      ctx.rect(x - 7 + 0.5, y - 4, 14, 8)
+    } else if (this.shape === RenderShape.ARROW) {
+      // Adjust arrow direction based on whether this is an input or output slot
+      const isInput = this instanceof NodeInputSlot
+      if (isInput) {
+        ctx.moveTo(x + 8, y)
+        ctx.lineTo(x - 4, y - 4)
+        ctx.lineTo(x - 4, y + 4)
+      } else {
+        ctx.moveTo(x + 6, y)
+        ctx.lineTo(x - 6, y - 4)
+        ctx.lineTo(x - 6, y + 4)
+      }
+      ctx.closePath()
+    } else {
+      ctx.arc(x, y, 4, 0, Math.PI * 2)
+    }
+    ctx.fill()
+
+    // Restore original styles
+    ctx.fillStyle = originalFillStyle
+  }
 }
 
 export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
