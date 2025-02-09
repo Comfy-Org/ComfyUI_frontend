@@ -25,6 +25,15 @@ jobs:
       run: |
         npm ci
         npm run build
+    - name: Run lint
+      run: |
+        npm run lint
+    - name: Run typecheck
+      run: |
+        npm run typecheck
+    - name: Run format
+      run: |
+        npm run format
     - name: Run vitest tests
       run: |
         npm test -- --reporter=verbose
