@@ -4,7 +4,7 @@ import { computed, markRaw, ref } from 'vue'
 
 import { api } from '@/scripts/api'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { defaultGraphJSON } from '@/scripts/defaultGraph'
+import { fetchDefaultGraph } from '@/scripts/defaultGraph'
 import { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 import { getPathDetails } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
@@ -141,7 +141,7 @@ export interface WorkflowStore {
   createTemporary: (
     path?: string,
     workflowData?: ComfyWorkflowJSON
-  ) => ComfyWorkflow
+  ) => Promise<ComfyWorkflow>
   renameWorkflow: (workflow: ComfyWorkflow, newPath: string) => Promise<void>
   deleteWorkflow: (workflow: ComfyWorkflow) => Promise<void>
   saveWorkflow: (workflow: ComfyWorkflow) => Promise<void>
@@ -277,7 +277,10 @@ export const useWorkflowStore = defineStore('workflow', () => {
     return newPath
   }
 
-  const createTemporary = (path?: string, workflowData?: ComfyWorkflowJSON) => {
+  const createTemporary = async (
+    path?: string,
+    workflowData?: ComfyWorkflowJSON
+  ) => {
     const fullPath = getUnconflictedPath(
       ComfyWorkflow.basePath + (path ?? 'Unsaved Workflow.json')
     )
@@ -289,7 +292,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
     workflow.originalContent = workflow.content = workflowData
       ? JSON.stringify(workflowData)
-      : defaultGraphJSON
+      : JSON.stringify(await fetchDefaultGraph())
 
     workflowLookup.value[workflow.path] = workflow
     return workflow

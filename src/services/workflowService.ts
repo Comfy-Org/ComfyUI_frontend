@@ -1,11 +1,11 @@
-import { LGraphCanvas } from '@comfyorg/litegraph'
 import type { Vector2 } from '@comfyorg/litegraph'
+import { LGraphCanvas } from '@comfyorg/litegraph'
 import { toRaw } from 'vue'
 
 import { t } from '@/i18n'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
+import { blankGraph, fetchDefaultGraph } from '@/scripts/defaultGraph'
 import { downloadBlob } from '@/scripts/utils'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
@@ -95,7 +95,7 @@ export const useWorkflowService = () => {
       await renameWorkflow(workflow, newPath)
       await workflowStore.saveWorkflow(workflow)
     } else {
-      const tempWorkflow = workflowStore.createTemporary(
+      const tempWorkflow = await workflowStore.createTemporary(
         newKey,
         workflow.activeState as ComfyWorkflowJSON
       )
@@ -120,6 +120,7 @@ export const useWorkflowService = () => {
    * Load the default workflow
    */
   const loadDefaultWorkflow = async () => {
+    const defaultGraph = await fetchDefaultGraph()
     await app.loadGraphData(defaultGraph)
   }
 
@@ -311,7 +312,7 @@ export const useWorkflowService = () => {
 
     if (value === null || typeof value === 'string') {
       const path = value as string | null
-      const tempWorkflow = workflowStore.createTemporary(
+      const tempWorkflow = await workflowStore.createTemporary(
         path ? appendJsonExt(path) : undefined,
         workflowData
       )
