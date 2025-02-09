@@ -40,13 +40,7 @@ jobs:
       with:
         repository: "Comfy-Org/ComfyUI_devtools"
         path: "ComfyUI/custom_nodes/ComfyUI_devtools"
-
-    - name: Checkout ComfyUI_examples
-      uses: actions/checkout@v4
-      with:
-        repository: "comfyanonymous/ComfyUI_examples"
-        path: "ComfyUI_frontend/tests-ui/ComfyUI_examples"
-        ref: 58b2e103bb8e424b66044fd07f1d3a6d80834ed4
+        ref: a9c49e4c57464da41ec346deb4a9eeeb00a52c9a
 
     - uses: actions/setup-node@v3
       with:
