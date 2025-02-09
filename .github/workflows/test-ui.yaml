@@ -17,7 +17,7 @@ jobs:
     steps:
     - uses: Comfy-Org/ComfyUI_frontend_setup_action@v2.2
       with:
-        devtools_ref: 3c8c30877198e6600a3afabe6d57799503b6a6c8
+        devtools_ref: a9c49e4c57464da41ec346deb4a9eeeb00a52c9a
     - name: Run Jest tests
       run: |
         npm run test:generate
@@ -29,7 +29,7 @@ jobs:
     steps:
     - uses: Comfy-Org/ComfyUI_frontend_setup_action@v2.2
       with:
-        devtools_ref: 3c8c30877198e6600a3afabe6d57799503b6a6c8
+        devtools_ref: a9c49e4c57464da41ec346deb4a9eeeb00a52c9a
     - name: Install Playwright Browsers
       run: npx playwright install chromium --with-deps
       working-directory: ComfyUI_frontend
@@ -48,7 +48,7 @@ jobs:
     steps:
     - uses: Comfy-Org/ComfyUI_frontend_setup_action@v2.2
       with:
-        devtools_ref: 3c8c30877198e6600a3afabe6d57799503b6a6c8
+        devtools_ref: a9c49e4c57464da41ec346deb4a9eeeb00a52c9a
     - name: Install Playwright Browsers
       run: npx playwright install chromium --with-deps
       working-directory: ComfyUI_frontend
@@ -67,7 +67,7 @@ jobs:
     steps:
     - uses: Comfy-Org/ComfyUI_frontend_setup_action@v2.2
       with:
-        devtools_ref: 3c8c30877198e6600a3afabe6d57799503b6a6c8
+        devtools_ref: a9c49e4c57464da41ec346deb4a9eeeb00a52c9a
     - name: Install Playwright Browsers
       run: npx playwright install chromium --with-deps
       working-directory: ComfyUI_frontend
