@@ -1,4 +1,4 @@
-import type { Dictionary, Direction, IBoundaryNodes } from "../interfaces"
+import type { Direction, IBoundaryNodes } from "../interfaces"
 import type { LGraphNode } from "../LGraphNode"
 
 /**

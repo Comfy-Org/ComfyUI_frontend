@@ -16,12 +16,12 @@ import type {
   Size,
 } from "./interfaces"
 import type { LGraph } from "./LGraph"
-import type { IWidget, TWidgetType, TWidgetValue } from "./types/widgets"
+import type { IWidget, TWidgetValue } from "./types/widgets"
 import type { ISerialisedNode } from "./types/serialisation"
 import type { LGraphCanvas } from "./LGraphCanvas"
 import type { CanvasMouseEvent } from "./types/events"
 import type { DragAndScale } from "./DragAndScale"
-import type { Reroute, RerouteId } from "./Reroute"
+import type { RerouteId } from "./Reroute"
 import {
   LGraphEventMode,
   NodeSlotType,

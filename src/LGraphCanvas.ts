@@ -22,7 +22,7 @@ import type {
   ReadOnlyPoint,
   ReadOnlyRect,
 } from "./interfaces"
-import type { IBaseWidget, IWidget, TWidgetValue } from "./types/widgets"
+import type { IWidget } from "./types/widgets"
 import { LGraphNode, type NodeId } from "./LGraphNode"
 import type {
   CanvasDragEvent,
@@ -59,21 +59,14 @@ import {
 } from "./measure"
 import { LabelPosition, strokeShape } from "./draw"
 import { DragAndScale } from "./DragAndScale"
-import { LinkReleaseContextExtended, LiteGraph, clamp } from "./litegraph"
+import { LinkReleaseContextExtended, LiteGraph } from "./litegraph"
 import { stringOrEmpty, stringOrNull } from "./strings"
 import { alignNodes, distributeNodes, getBoundaryNodes } from "./utils/arrange"
 import { Reroute, type RerouteId } from "./Reroute"
 import { getAllNestedItems, findFirstNode } from "./utils/collections"
 import { CanvasPointer } from "./CanvasPointer"
-import { BooleanWidget } from "./widgets/BooleanWidget"
 import { toClass } from "./utils/type"
 import { NodeInputSlot, NodeOutputSlot, type ConnectionColorContext } from "./NodeSlot"
-import { ComboWidget } from "./widgets/ComboWidget"
-import { NumberWidget } from "./widgets/NumberWidget"
-import { ButtonWidget } from "./widgets/ButtonWidget"
-import { TextWidget } from "./widgets/TextWidget"
-import { SliderWidget } from "./widgets/SliderWidget"
-import { BaseWidget } from "./widgets/BaseWidget"
 import { WIDGET_TYPE_MAP } from "./widgets/widgetMap"
 
 interface IShowSearchOptions {

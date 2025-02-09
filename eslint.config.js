@@ -2,6 +2,7 @@ import globals from "globals"
 import eslint from "@eslint/js"
 import tseslint from "typescript-eslint"
 import stylistic from "@stylistic/eslint-plugin"
+import unusedImports from "eslint-plugin-unused-imports"
 
 export default tseslint.config(
   { files: ["**/*.{js,mjs,ts,mts}"] },
@@ -160,5 +161,16 @@ export default tseslint.config(
       "@typescript-eslint/no-unused-vars": "error",
     },
     files: ["test/**/*.ts"],
+  },
+  {
+    plugins: {
+      "unused-imports": unusedImports,
+    },
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unused-vars": "off",
+      "@typescript-eslint/prefer-as-const": "off",
+      "unused-imports/no-unused-imports": "error",
+    },
   },
 )
