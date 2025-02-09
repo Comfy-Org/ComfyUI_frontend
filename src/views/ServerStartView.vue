@@ -25,9 +25,9 @@
             @click="openLogs"
           />
           <Button
-            icon="pi pi-refresh"
-            :label="t('serverStart.reinstall')"
-            @click="reinstall"
+            icon="pi pi-wrench"
+            :label="t('serverStart.troubleshoot')"
+            @click="troubleshoot"
           />
         </div>
         <Button
@@ -52,6 +52,7 @@ import { useI18n } from 'vue-i18n'
 
 import BaseTerminal from '@/components/bottomPanel/tabs/terminal/BaseTerminal.vue'
 import type { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
+import router from '@/router'
 import { electronAPI } from '@/utils/envUtil'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
@@ -88,7 +89,7 @@ const terminalCreated = (
   terminal.options.cursorInactiveStyle = 'block'
 }
 
-const reinstall = () => electron.reinstall()
+const troubleshoot = () => electron.startTroubleshooting()
 const reportIssue = () => {
   window.open('https://forum.comfy.org/c/v1-feedback/', '_blank')
 }
