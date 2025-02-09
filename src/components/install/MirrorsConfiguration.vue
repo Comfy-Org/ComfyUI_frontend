@@ -80,11 +80,28 @@ const getTorchMirrorItem = (device: TorchDeviceType): UVMirror => {
   }
 }
 
-const mirrors = computed<[UVMirror, ModelRef<string>][]>(() => [
-  [PYTHON_MIRROR, pythonMirror],
-  [PYPI_MIRROR, pypiMirror],
-  [getTorchMirrorItem(device), torchMirror]
-])
+const userIsInChina = ref(false)
+onMounted(async () => {
+  userIsInChina.value = await isInChina()
+})
+
+const useFallbackMirror = (mirror: UVMirror) => ({
+  ...mirror,
+  mirror: mirror.fallbackMirror
+})
+
+const mirrors = computed<[UVMirror, ModelRef<string>][]>(() =>
+  (
+    [
+      [PYTHON_MIRROR, pythonMirror],
+      [PYPI_MIRROR, pypiMirror],
+      [getTorchMirrorItem(device), torchMirror]
+    ] as [UVMirror, ModelRef<string>][]
+  ).map(([item, modelValue]) => [
+    userIsInChina.value ? useFallbackMirror(item) : item,
+    modelValue
+  ])
+)
 
 const validationStates = ref<ValidationState[]>(
   mirrors.value.map(() => ValidationState.IDLE)
@@ -100,15 +117,6 @@ const validationStateTooltip = computed(() => {
       return t('install.settings.mirrorsReachable')
     default:
       return t('install.settings.checkingMirrors')
-  }
-})
-
-onMounted(async () => {
-  // Check if user is in China and set fallback mirrors directly
-  if (await isInChina()) {
-    for (const [item, modelValue] of mirrors.value) {
-      modelValue.value = item.fallbackMirror
-    }
   }
 })
 </script>
