@@ -5712,8 +5712,8 @@ export class LGraphCanvas implements ConnectionColorContext {
     node: LGraphNode,
     posY: number,
     ctx: CanvasRenderingContext2D,
-  ) {
-    if (!node.widgets || !node.widgets.length) return 0
+  ): void {
+    if (!node.widgets || !node.widgets.length) return
     const width = node.size[0]
     const widgets = node.widgets
     posY += 2
