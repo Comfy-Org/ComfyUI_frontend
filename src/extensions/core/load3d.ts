@@ -281,7 +281,7 @@ app.registerExtension({
 
     const [oldWidth, oldHeight] = node.size
 
-    node.setSize([Math.max(oldWidth, 300), Math.max(oldHeight, 700)])
+    node.setSize([Math.max(oldWidth, 400), Math.max(oldHeight, 700)])
 
     await nextTick()
 
@@ -415,7 +415,7 @@ app.registerExtension({
 
     const [oldWidth, oldHeight] = node.size
 
-    node.setSize([Math.max(oldWidth, 300), Math.max(oldHeight, 550)])
+    node.setSize([Math.max(oldWidth, 400), Math.max(oldHeight, 550)])
 
     await nextTick()
 

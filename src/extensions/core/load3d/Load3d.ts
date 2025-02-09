@@ -7,7 +7,9 @@ import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader'
+import { App, createApp } from 'vue'
 
+import Load3DControls from '@/components/load3d/Load3DControls.vue'
 import { useToastStore } from '@/stores/toastStore'
 
 class Load3d {
@@ -44,7 +46,9 @@ class Load3d {
   cameraSwitcherContainer: HTMLDivElement = {} as HTMLDivElement
   gridSwitcherContainer: HTMLDivElement = {} as HTMLDivElement
   node: LGraphNode = {} as LGraphNode
-  bgColorInput: HTMLInputElement = {} as HTMLInputElement
+
+  protected controlsApp: App | null = null
+  protected controlsContainer: HTMLDivElement
 
   constructor(container: Element | HTMLElement) {
     this.scene = new THREE.Scene()
@@ -124,15 +128,37 @@ class Load3d {
 
     this.createViewHelper(container)
 
-    this.createGridSwitcher(container)
+    this.controlsContainer = document.createElement('div')
+    this.controlsContainer.style.position = 'absolute'
+    this.controlsContainer.style.top = '0'
+    this.controlsContainer.style.left = '0'
+    this.controlsContainer.style.width = '100%'
+    this.controlsContainer.style.height = '100%'
+    this.controlsContainer.style.pointerEvents = 'none'
+    this.controlsContainer.style.zIndex = '1'
+    container.appendChild(this.controlsContainer)
 
-    this.createCameraSwitcher(container)
-
-    this.createColorPicker(container)
+    this.mountControls()
 
     this.handleResize()
 
     this.startAnimation()
+  }
+
+  protected mountControls() {
+    const controlsMount = document.createElement('div')
+    controlsMount.style.pointerEvents = 'auto'
+    this.controlsContainer.appendChild(controlsMount)
+
+    this.controlsApp = createApp(Load3DControls, {
+      backgroundColor: '#282828',
+      showGrid: true,
+      onToggleCamera: () => this.toggleCamera(),
+      onToggleGrid: (show: boolean) => this.toggleGrid(show),
+      onUpdateBackgroundColor: (color: string) => this.setBackgroundColor(color)
+    })
+
+    this.controlsApp.mount(controlsMount)
   }
 
   setNode(node: LGraphNode) {
@@ -184,145 +210,6 @@ class Load3d {
     this.viewHelper.center = this.controls.target
   }
 
-  createGridSwitcher(container: Element | HTMLElement) {
-    this.gridSwitcherContainer = document.createElement('div')
-    this.gridSwitcherContainer.style.position = 'absolute'
-    this.gridSwitcherContainer.style.top = '28px' // 修改这里，让按钮在相机按钮下方
-    this.gridSwitcherContainer.style.left = '3px' // 与相机按钮左对齐
-    this.gridSwitcherContainer.style.width = '20px'
-    this.gridSwitcherContainer.style.height = '20px'
-    this.gridSwitcherContainer.style.cursor = 'pointer'
-    this.gridSwitcherContainer.style.alignItems = 'center'
-    this.gridSwitcherContainer.style.justifyContent = 'center'
-    this.gridSwitcherContainer.style.transition = 'background-color 0.2s'
-
-    const gridIcon = document.createElement('div')
-    gridIcon.innerHTML = `
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-      <path d="M3 3h18v18H3z"/>
-      <path d="M3 9h18"/>
-      <path d="M3 15h18"/>
-      <path d="M9 3v18"/>
-      <path d="M15 3v18"/>
-    </svg>
-  `
-
-    const updateButtonState = () => {
-      if (this.gridHelper.visible) {
-        this.gridSwitcherContainer.style.backgroundColor =
-          'rgba(255, 255, 255, 0.2)'
-      } else {
-        this.gridSwitcherContainer.style.backgroundColor = 'transparent'
-      }
-    }
-
-    updateButtonState()
-
-    this.gridSwitcherContainer.addEventListener('mouseenter', () => {
-      if (!this.gridHelper.visible) {
-        this.gridSwitcherContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
-      }
-    })
-
-    this.gridSwitcherContainer.addEventListener('mouseleave', () => {
-      if (!this.gridHelper.visible) {
-        this.gridSwitcherContainer.style.backgroundColor = 'transparent'
-      }
-    })
-
-    this.gridSwitcherContainer.title = 'Toggle Grid'
-
-    this.gridSwitcherContainer.addEventListener('click', (event) => {
-      event.stopPropagation()
-      this.toggleGrid(!this.gridHelper.visible)
-      updateButtonState()
-    })
-
-    this.gridSwitcherContainer.appendChild(gridIcon)
-    container.appendChild(this.gridSwitcherContainer)
-  }
-
-  createCameraSwitcher(container: Element | HTMLElement) {
-    this.cameraSwitcherContainer = document.createElement('div')
-    this.cameraSwitcherContainer.style.position = 'absolute'
-    this.cameraSwitcherContainer.style.top = '3px'
-    this.cameraSwitcherContainer.style.left = '3px'
-    this.cameraSwitcherContainer.style.width = '20px'
-    this.cameraSwitcherContainer.style.height = '20px'
-    this.cameraSwitcherContainer.style.cursor = 'pointer'
-    this.cameraSwitcherContainer.style.alignItems = 'center'
-    this.cameraSwitcherContainer.style.justifyContent = 'center'
-
-    const cameraIcon = document.createElement('div')
-    cameraIcon.innerHTML = `
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-        <path d="M18 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Z"/>
-        <path d="m12 12 4-2.4"/>
-        <circle cx="12" cy="12" r="3"/>
-      </svg>
-    `
-    this.cameraSwitcherContainer.addEventListener('mouseenter', () => {
-      this.cameraSwitcherContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
-    })
-
-    this.cameraSwitcherContainer.addEventListener('mouseleave', () => {
-      this.cameraSwitcherContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.3)'
-    })
-
-    this.cameraSwitcherContainer.title =
-      'Switch Camera (Perspective/Orthographic)'
-
-    this.cameraSwitcherContainer.addEventListener('click', (event) => {
-      event.stopPropagation()
-      this.toggleCamera()
-    })
-
-    this.cameraSwitcherContainer.appendChild(cameraIcon)
-
-    container.appendChild(this.cameraSwitcherContainer)
-  }
-
-  createColorPicker(container: Element | HTMLElement) {
-    const colorPickerContainer = document.createElement('div')
-    colorPickerContainer.style.position = 'absolute'
-    colorPickerContainer.style.top = '53px'
-    colorPickerContainer.style.left = '3px'
-    colorPickerContainer.style.width = '20px'
-    colorPickerContainer.style.height = '20px'
-    colorPickerContainer.style.cursor = 'pointer'
-    colorPickerContainer.style.alignItems = 'center'
-    colorPickerContainer.style.justifyContent = 'center'
-    colorPickerContainer.title = 'Background Color'
-
-    const colorInput = document.createElement('input')
-    colorInput.type = 'color'
-    colorInput.style.opacity = '0'
-    colorInput.style.position = 'absolute'
-    colorInput.style.width = '100%'
-    colorInput.style.height = '100%'
-    colorInput.style.cursor = 'pointer'
-
-    const colorIcon = document.createElement('div')
-    colorIcon.innerHTML = `
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-        <rect x="3" y="3" width="18" height="18" rx="2"/>
-        <path d="M12 3v18"/>
-        <path d="M3 12h18"/>
-      </svg>
-    `
-
-    colorInput.addEventListener('input', (event) => {
-      const color = (event.target as HTMLInputElement).value
-      this.setBackgroundColor(color)
-      this.storeNodeProperty('Background Color', color)
-    })
-
-    this.bgColorInput = colorInput
-    colorPickerContainer.appendChild(colorInput)
-    colorPickerContainer.appendChild(colorIcon)
-    container.appendChild(colorPickerContainer)
-  }
-
   setFOV(fov: number) {
     if (this.activeCamera === this.perspectiveCamera) {
       this.perspectiveCamera.fov = fov
@@ -350,15 +237,6 @@ class Load3d {
     zoom: number
     cameraType: 'perspective' | 'orthographic'
   }) {
-    if (
-      this.activeCamera !==
-      (state.cameraType === 'perspective'
-        ? this.perspectiveCamera
-        : this.orthographicCamera)
-    ) {
-      //this.toggleCamera(state.cameraType)
-    }
-
     this.activeCamera.position.copy(state.position)
 
     this.controls.target.copy(state.target)
@@ -725,6 +603,10 @@ class Load3d {
     this.controls.dispose()
     this.viewHelper.dispose()
     this.renderer.dispose()
+    if (this.controlsApp) {
+      this.controlsApp.unmount()
+      this.controlsApp = null
+    }
     this.renderer.domElement.remove()
     this.scene.clear()
   }
@@ -992,9 +874,11 @@ class Load3d {
     this.renderer.setClearColor(new THREE.Color(color))
     this.renderer.render(this.scene, this.activeCamera)
 
-    if (this.bgColorInput) {
-      this.bgColorInput.value = color
+    if (this.controlsApp?._instance?.exposed) {
+      this.controlsApp._instance.exposed.backgroundColor.value = color
     }
+
+    this.storeNodeProperty('Background Color', color)
   }
 }
 

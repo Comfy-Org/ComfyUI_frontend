@@ -1,5 +1,8 @@
+import PrimeVue from 'primevue/config'
 import * as THREE from 'three'
+import { createApp } from 'vue'
 
+import Load3DAnimationControls from '@/components/load3d/Load3DAnimationControls.vue'
 import Load3d from '@/extensions/core/load3d/Load3d'
 
 class Load3dAnimation extends Load3d {
@@ -10,164 +13,47 @@ class Load3dAnimation extends Load3d {
   isAnimationPlaying: boolean = false
 
   animationSpeed: number = 1.0
-  playPauseContainer: HTMLDivElement = {} as HTMLDivElement
-  animationSelect: HTMLSelectElement = {} as HTMLSelectElement
-  speedSelect: HTMLSelectElement = {} as HTMLSelectElement
 
   constructor(container: Element | HTMLElement) {
     super(container)
-    this.createPlayPauseButton(container)
-    this.createAnimationList(container)
-    this.createSpeedSelect(container)
   }
 
-  createAnimationList(container: Element | HTMLElement) {
-    this.animationSelect = document.createElement('select')
-    Object.assign(this.animationSelect.style, {
-      position: 'absolute',
-      top: '3px',
-      left: '50%',
-      transform: 'translateX(15px)',
-      width: '90px',
-      height: '20px',
-      backgroundColor: 'rgba(0, 0, 0, 0.3)',
-      color: 'white',
-      border: 'none',
-      borderRadius: '4px',
-      fontSize: '12px',
-      padding: '0 8px',
-      cursor: 'pointer',
-      display: 'none',
-      outline: 'none'
+  protected mountControls() {
+    const controlsMount = document.createElement('div')
+    controlsMount.style.pointerEvents = 'auto'
+    this.controlsContainer.appendChild(controlsMount)
+
+    this.controlsApp = createApp(Load3DAnimationControls, {
+      backgroundColor: '#282828',
+      showGrid: true,
+      animations: [],
+      playing: false,
+      onToggleCamera: () => this.toggleCamera(),
+      onToggleGrid: (show: boolean) => this.toggleGrid(show),
+      onUpdateBackgroundColor: (color: string) =>
+        this.setBackgroundColor(color),
+      onTogglePlay: (play: boolean) => this.toggleAnimation(play),
+      onSpeedChange: (speed: number) => this.setAnimationSpeed(speed),
+      onAnimationChange: (selectedAnimation: number) =>
+        this.updateSelectedAnimation(selectedAnimation)
     })
 
-    this.animationSelect.addEventListener('mouseenter', () => {
-      this.animationSelect.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
-    })
-
-    this.animationSelect.addEventListener('mouseleave', () => {
-      this.animationSelect.style.backgroundColor = 'rgba(0, 0, 0, 0.3)'
-    })
-
-    this.animationSelect.addEventListener('change', (event) => {
-      const select = event.target as HTMLSelectElement
-      this.updateSelectedAnimation(select.selectedIndex)
-    })
-
-    container.appendChild(this.animationSelect)
+    this.controlsApp.use(PrimeVue)
+    this.controlsApp.mount(controlsMount)
   }
 
   updateAnimationList() {
-    this.animationSelect.innerHTML = ''
-    this.animationClips.forEach((clip, index) => {
-      const option = document.createElement('option')
-      option.value = index.toString()
-      option.text = clip.name || `Animation ${index + 1}`
-      option.selected = index === this.selectedAnimationIndex
-      this.animationSelect.appendChild(option)
-    })
-  }
-
-  createPlayPauseButton(container: Element | HTMLElement) {
-    this.playPauseContainer = document.createElement('div')
-    this.playPauseContainer.style.position = 'absolute'
-    this.playPauseContainer.style.top = '3px'
-    this.playPauseContainer.style.left = '50%'
-    this.playPauseContainer.style.transform = 'translateX(-50%)'
-    this.playPauseContainer.style.width = '20px'
-    this.playPauseContainer.style.height = '20px'
-    this.playPauseContainer.style.cursor = 'pointer'
-    this.playPauseContainer.style.alignItems = 'center'
-    this.playPauseContainer.style.justifyContent = 'center'
-
-    const updateButtonState = () => {
-      const icon = this.playPauseContainer.querySelector('svg')
-      if (icon) {
-        if (this.isAnimationPlaying) {
-          icon.innerHTML = `
-            <path d="M6 4h4v16H6zM14 4h4v16h-4z"/>
-          `
-          this.playPauseContainer.title = 'Pause Animation'
-        } else {
-          icon.innerHTML = `
-            <path d="M8 5v14l11-7z"/>
-          `
-          this.playPauseContainer.title = 'Play Animation'
-        }
+    if (this.controlsApp?._instance?.exposed) {
+      if (this.animationClips.length > 0) {
+        this.controlsApp._instance.exposed.animations.value =
+          this.animationClips.map((clip, index) => ({
+            name: clip.name || `Animation ${index + 1}`,
+            index
+          }))
+      } else {
+        this.controlsApp._instance.exposed.animations.value = []
       }
     }
-
-    const playIcon = document.createElement('div')
-    playIcon.innerHTML = `
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-        <path d="M8 5v14l11-7z"/>
-      </svg>
-    `
-
-    this.playPauseContainer.addEventListener('mouseenter', () => {
-      this.playPauseContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
-    })
-
-    this.playPauseContainer.addEventListener('mouseleave', () => {
-      this.playPauseContainer.style.backgroundColor = 'transparent'
-    })
-
-    this.playPauseContainer.addEventListener('click', (event) => {
-      event.stopPropagation()
-      this.toggleAnimation()
-      updateButtonState()
-    })
-
-    this.playPauseContainer.appendChild(playIcon)
-    container.appendChild(this.playPauseContainer)
-
-    this.playPauseContainer.style.display = 'none'
-  }
-
-  createSpeedSelect(container: Element | HTMLElement) {
-    this.speedSelect = document.createElement('select')
-    Object.assign(this.speedSelect.style, {
-      position: 'absolute',
-      top: '3px',
-      left: '50%',
-      transform: 'translateX(-75px)',
-      width: '60px',
-      height: '20px',
-      backgroundColor: 'rgba(0, 0, 0, 0.3)',
-      color: 'white',
-      border: 'none',
-      borderRadius: '4px',
-      fontSize: '12px',
-      padding: '0 8px',
-      cursor: 'pointer',
-      display: 'none',
-      outline: 'none'
-    })
-
-    const speeds = [0.1, 0.5, 1, 1.5, 2]
-    speeds.forEach((speed) => {
-      const option = document.createElement('option')
-      option.value = speed.toString()
-      option.text = `${speed}x`
-      option.selected = speed === 1
-      this.speedSelect.appendChild(option)
-    })
-
-    this.speedSelect.addEventListener('mouseenter', () => {
-      this.speedSelect.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
-    })
-
-    this.speedSelect.addEventListener('mouseleave', () => {
-      this.speedSelect.style.backgroundColor = 'rgba(0, 0, 0, 0.3)'
-    })
-
-    this.speedSelect.addEventListener('change', (event) => {
-      const select = event.target as HTMLSelectElement
-      const newSpeed = parseFloat(select.value)
-      this.setAnimationSpeed(newSpeed)
-    })
-
-    container.appendChild(this.speedSelect)
   }
 
   protected async setupModel(model: THREE.Object3D) {
@@ -200,22 +86,7 @@ class Load3dAnimation extends Load3d {
       }
     }
 
-    if (this.animationClips.length > 0) {
-      this.playPauseContainer.style.display = 'block'
-    } else {
-      this.playPauseContainer.style.display = 'none'
-    }
-
-    if (this.animationClips.length > 0) {
-      this.playPauseContainer.style.display = 'block'
-      this.animationSelect.style.display = 'block'
-      this.speedSelect.style.display = 'block'
-      this.updateAnimationList()
-    } else {
-      this.playPauseContainer.style.display = 'none'
-      this.animationSelect.style.display = 'none'
-      this.speedSelect.style.display = 'none'
-    }
+    this.updateAnimationList()
   }
 
   setAnimationSpeed(speed: number) {
@@ -261,7 +132,9 @@ class Load3dAnimation extends Load3d {
 
     this.animationActions = [action]
 
-    this.updateAnimationList()
+    if (this.controlsApp?._instance?.exposed) {
+      this.controlsApp._instance.exposed.selectedAnimation.value = index
+    }
   }
 
   clearModel() {
@@ -277,23 +150,12 @@ class Load3dAnimation extends Load3d {
     this.isAnimationPlaying = false
     this.animationSpeed = 1.0
 
+    if (this.controlsApp?._instance?.exposed) {
+      this.controlsApp._instance.exposed.animations.value = []
+      this.controlsApp._instance.exposed.selectedAnimation.value = 0
+    }
+
     super.clearModel()
-
-    if (this.animationSelect) {
-      this.animationSelect.style.display = 'none'
-      this.animationSelect.innerHTML = ''
-    }
-
-    if (this.speedSelect) {
-      this.speedSelect.style.display = 'none'
-      this.speedSelect.value = '1'
-    }
-  }
-
-  getAnimationNames(): string[] {
-    return this.animationClips.map((clip, index) => {
-      return clip.name || `Animation ${index + 1}`
-    })
   }
 
   toggleAnimation(play?: boolean) {
@@ -304,15 +166,8 @@ class Load3dAnimation extends Load3d {
 
     this.isAnimationPlaying = play ?? !this.isAnimationPlaying
 
-    const icon = this.playPauseContainer.querySelector('svg')
-    if (icon) {
-      if (this.isAnimationPlaying) {
-        icon.innerHTML = '<path d="M6 4h4v16H6zM14 4h4v16h-4z"/>'
-        this.playPauseContainer.title = 'Pause Animation'
-      } else {
-        icon.innerHTML = '<path d="M8 5v14l11-7z"/>'
-        this.playPauseContainer.title = 'Play Animation'
-      }
+    if (this.controlsApp?._instance?.exposed) {
+      this.controlsApp._instance.exposed.playing.value = this.isAnimationPlaying
     }
 
     this.animationActions.forEach((action) => {
