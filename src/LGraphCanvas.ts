@@ -4703,9 +4703,6 @@ export class LGraphCanvas implements ConnectionColorContext {
       LiteGraph.NODE_SELECTED_TITLE_COLOR ??
       LiteGraph.NODE_TEXT_COLOR
 
-    const out_slot = this.connecting_links?.[0]?.output
-    const in_slot = this.connecting_links?.[0]?.input
-
     let max_y = 0
     const slot_pos = new Float32Array(2) // to reuse
 
@@ -4716,9 +4713,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         const slot = toClass(NodeInputSlot, input)
 
         // change opacity of incompatible slots when dragging a connection
-        const isValid =
-          !this.connecting_links ||
-          (out_slot && LiteGraph.isValidConnection(slot.type, out_slot.type))
+        const isValid = slot.isValidTarget(this.connecting_links?.[0])
         const highlight = isValid && node.mouseOver?.inputId === i
         const label_color = highlight
           ? highlightColour
@@ -4747,12 +4742,8 @@ export class LGraphCanvas implements ConnectionColorContext {
       for (const [i, output] of (node.outputs ?? []).entries()) {
         const slot = toClass(NodeOutputSlot, output)
 
-        const slot_type = slot.type
-
         // change opacity of incompatible slots when dragging a connection
-        const isValid =
-          !this.connecting_links ||
-          (in_slot && LiteGraph.isValidConnection(slot_type, in_slot.type))
+        const isValid = slot.isValidTarget(this.connecting_links?.[0])
         const highlight = isValid && node.mouseOver?.outputId === i
         const label_color = highlight
           ? highlightColour

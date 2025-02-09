@@ -1,8 +1,9 @@
-import type { CanvasColour, Dictionary, INodeInputSlot, INodeOutputSlot, INodeSlot, ISlotType, Point } from "./interfaces"
+import type { CanvasColour, ConnectingLink, Dictionary, INodeInputSlot, INodeOutputSlot, INodeSlot, ISlotType, Point } from "./interfaces"
 import type { IWidget } from "./types/widgets"
 import type { LinkId } from "./LLink"
 import { LinkDirection, RenderShape } from "./types/globalEnums"
 import { LabelPosition, SlotShape, SlotType } from "./draw"
+import { LiteGraph } from "./litegraph"
 
 export interface ConnectionColorContext {
   default_connection_color: {
@@ -47,6 +48,12 @@ export abstract class NodeSlot implements INodeSlot {
     this.name = slot.name
     this.type = slot.type
   }
+
+  /**
+   * Whether this slot is a valid target for a dragging link.
+   * @param link - The link to check against.
+   */
+  abstract isValidTarget(link: ConnectingLink | null): boolean
 
   /**
    * The label to display in the UI.
@@ -233,6 +240,12 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
     return this.link != null
   }
 
+  override isValidTarget(link: ConnectingLink | null): boolean {
+    if (!link) return true
+
+    return !!link.output && LiteGraph.isValidConnection(this.type, link.output.type)
+  }
+
   override draw(ctx: CanvasRenderingContext2D, options: Omit<IDrawOptions, "doStroke" | "labelPosition">) {
     const originalTextAlign = ctx.textAlign
     ctx.textAlign = options.horizontal ? "center" : "left"
@@ -257,6 +270,12 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
     this.links = slot.links
     this._data = slot._data
     this.slot_index = slot.slot_index
+  }
+
+  override isValidTarget(link: ConnectingLink | null): boolean {
+    if (!link) return true
+
+    return !!link.input && LiteGraph.isValidConnection(this.type, link.input.type)
   }
 
   override isConnected(): boolean {
