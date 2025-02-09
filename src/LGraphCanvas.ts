@@ -4712,75 +4712,71 @@ export class LGraphCanvas implements ConnectionColorContext {
     // render inputs and outputs
     if (!node.collapsed) {
       // input connection slots
-      if (node.inputs) {
-        for (let i = 0; i < node.inputs.length; i++) {
-          const slot = toClass(NodeInputSlot, node.inputs[i])
+      for (const [i, input] of (node.inputs ?? []).entries()) {
+        const slot = toClass(NodeInputSlot, input)
 
-          // change opacity of incompatible slots when dragging a connection
-          const isValid =
-            !this.connecting_links ||
-            (out_slot && LiteGraph.isValidConnection(slot.type, out_slot.type))
-          const highlight = isValid && node.mouseOver?.inputId === i
-          const label_color = highlight
-            ? highlightColour
-            : LiteGraph.NODE_TEXT_COLOR
-          ctx.globalAlpha = isValid ? editor_alpha : 0.4 * editor_alpha
+        // change opacity of incompatible slots when dragging a connection
+        const isValid =
+          !this.connecting_links ||
+          (out_slot && LiteGraph.isValidConnection(slot.type, out_slot.type))
+        const highlight = isValid && node.mouseOver?.inputId === i
+        const label_color = highlight
+          ? highlightColour
+          : LiteGraph.NODE_TEXT_COLOR
+        ctx.globalAlpha = isValid ? editor_alpha : 0.4 * editor_alpha
 
-          const pos = node.getConnectionPos(true, i, slot_pos)
-          pos[0] -= node.pos[0]
-          pos[1] -= node.pos[1]
-          if (max_y < pos[1] + LiteGraph.NODE_SLOT_HEIGHT * 0.5) {
-            max_y = pos[1] + LiteGraph.NODE_SLOT_HEIGHT * 0.5
-          }
-
-          slot.draw(ctx, {
-            pos,
-            colorContext: this,
-            labelColor: label_color,
-            labelPosition: LabelPosition.Right,
-            horizontal,
-            lowQuality: low_quality,
-            renderText: render_text,
-            highlight,
-          })
+        const pos = node.getConnectionPos(true, i, slot_pos)
+        pos[0] -= node.pos[0]
+        pos[1] -= node.pos[1]
+        if (max_y < pos[1] + LiteGraph.NODE_SLOT_HEIGHT * 0.5) {
+          max_y = pos[1] + LiteGraph.NODE_SLOT_HEIGHT * 0.5
         }
+
+        slot.draw(ctx, {
+          pos,
+          colorContext: this,
+          labelColor: label_color,
+          labelPosition: LabelPosition.Right,
+          horizontal,
+          lowQuality: low_quality,
+          renderText: render_text,
+          highlight,
+        })
       }
 
       // output connection slots
-      if (node.outputs) {
-        for (let i = 0; i < node.outputs.length; i++) {
-          const slot = toClass(NodeOutputSlot, node.outputs[i])
+      for (const [i, output] of (node.outputs ?? []).entries()) {
+        const slot = toClass(NodeOutputSlot, output)
 
-          const slot_type = slot.type
+        const slot_type = slot.type
 
-          // change opacity of incompatible slots when dragging a connection
-          const isValid =
-            !this.connecting_links ||
-            (in_slot && LiteGraph.isValidConnection(slot_type, in_slot.type))
-          const highlight = isValid && node.mouseOver?.outputId === i
-          const label_color = highlight
-            ? highlightColour
-            : LiteGraph.NODE_TEXT_COLOR
-          ctx.globalAlpha = isValid ? editor_alpha : 0.4 * editor_alpha
+        // change opacity of incompatible slots when dragging a connection
+        const isValid =
+          !this.connecting_links ||
+          (in_slot && LiteGraph.isValidConnection(slot_type, in_slot.type))
+        const highlight = isValid && node.mouseOver?.outputId === i
+        const label_color = highlight
+          ? highlightColour
+          : LiteGraph.NODE_TEXT_COLOR
+        ctx.globalAlpha = isValid ? editor_alpha : 0.4 * editor_alpha
 
-          const pos = node.getConnectionPos(false, i, slot_pos)
-          pos[0] -= node.pos[0]
-          pos[1] -= node.pos[1]
-          if (max_y < pos[1] + LiteGraph.NODE_SLOT_HEIGHT * 0.5) {
-            max_y = pos[1] + LiteGraph.NODE_SLOT_HEIGHT * 0.5
-          }
-
-          slot.draw(ctx, {
-            pos,
-            colorContext: this,
-            labelColor: label_color,
-            labelPosition: LabelPosition.Left,
-            horizontal,
-            lowQuality: low_quality,
-            renderText: render_text,
-            highlight,
-          })
+        const pos = node.getConnectionPos(false, i, slot_pos)
+        pos[0] -= node.pos[0]
+        pos[1] -= node.pos[1]
+        if (max_y < pos[1] + LiteGraph.NODE_SLOT_HEIGHT * 0.5) {
+          max_y = pos[1] + LiteGraph.NODE_SLOT_HEIGHT * 0.5
         }
+
+        slot.draw(ctx, {
+          pos,
+          colorContext: this,
+          labelColor: label_color,
+          labelPosition: LabelPosition.Left,
+          horizontal,
+          lowQuality: low_quality,
+          renderText: render_text,
+          highlight,
+        })
       }
 
       ctx.textAlign = "left"
