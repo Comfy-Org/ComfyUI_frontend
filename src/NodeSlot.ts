@@ -19,7 +19,7 @@ export interface ConnectionColorContext {
 interface IDrawOptions {
   pos: Point
   colorContext: ConnectionColorContext
-  labelColor?: string
+  labelColor?: CanvasColour
   labelPosition?: LabelPosition
   horizontal?: boolean
   lowQuality?: boolean

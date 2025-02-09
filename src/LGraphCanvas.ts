@@ -66,7 +66,7 @@ import { Reroute, type RerouteId } from "./Reroute"
 import { getAllNestedItems, findFirstNode } from "./utils/collections"
 import { CanvasPointer } from "./CanvasPointer"
 import { toClass } from "./utils/type"
-import { NodeInputSlot, NodeOutputSlot, type ConnectionColorContext } from "./NodeSlot"
+import { type ConnectionColorContext } from "./NodeSlot"
 import { WIDGET_TYPE_MAP } from "./widgets/widgetMap"
 
 interface IShowSearchOptions {
@@ -4643,7 +4643,6 @@ export class LGraphCanvas implements ConnectionColorContext {
     const shape = node._shape || RenderShape.BOX
     const size = LGraphCanvas.#temp_vec2
     LGraphCanvas.#temp_vec2.set(node.size)
-    const horizontal = node.horizontal // || node.flags.horizontal;
 
     if (node.flags.collapsed) {
       ctx.font = this.inner_text_font
@@ -4697,76 +4696,14 @@ export class LGraphCanvas implements ConnectionColorContext {
     // connection slots
     ctx.font = this.inner_text_font
 
-    const render_text = !low_quality
-    const highlightColour =
-      LiteGraph.NODE_TEXT_HIGHLIGHT_COLOR ??
-      LiteGraph.NODE_SELECTED_TITLE_COLOR ??
-      LiteGraph.NODE_TEXT_COLOR
-
-    let max_y = 0
-    const slot_pos = new Float32Array(2) // to reuse
-
     // render inputs and outputs
     if (!node.collapsed) {
-      // input connection slots
-      for (const [i, input] of (node.inputs ?? []).entries()) {
-        const slot = toClass(NodeInputSlot, input)
-
-        // change opacity of incompatible slots when dragging a connection
-        const isValid = slot.isValidTarget(this.connecting_links?.[0])
-        const highlight = isValid && node.mouseOver?.inputId === i
-        const label_color = highlight
-          ? highlightColour
-          : LiteGraph.NODE_TEXT_COLOR
-        ctx.globalAlpha = isValid ? editor_alpha : 0.4 * editor_alpha
-
-        const pos = node.getConnectionPos(true, i, slot_pos)
-        pos[0] -= node.pos[0]
-        pos[1] -= node.pos[1]
-        if (max_y < pos[1] + LiteGraph.NODE_SLOT_HEIGHT * 0.5) {
-          max_y = pos[1] + LiteGraph.NODE_SLOT_HEIGHT * 0.5
-        }
-
-        slot.draw(ctx, {
-          pos,
-          colorContext: this,
-          labelColor: label_color,
-          horizontal,
-          lowQuality: low_quality,
-          renderText: render_text,
-          highlight,
-        })
-      }
-
-      // output connection slots
-      for (const [i, output] of (node.outputs ?? []).entries()) {
-        const slot = toClass(NodeOutputSlot, output)
-
-        // change opacity of incompatible slots when dragging a connection
-        const isValid = slot.isValidTarget(this.connecting_links?.[0])
-        const highlight = isValid && node.mouseOver?.outputId === i
-        const label_color = highlight
-          ? highlightColour
-          : LiteGraph.NODE_TEXT_COLOR
-        ctx.globalAlpha = isValid ? editor_alpha : 0.4 * editor_alpha
-
-        const pos = node.getConnectionPos(false, i, slot_pos)
-        pos[0] -= node.pos[0]
-        pos[1] -= node.pos[1]
-        if (max_y < pos[1] + LiteGraph.NODE_SLOT_HEIGHT * 0.5) {
-          max_y = pos[1] + LiteGraph.NODE_SLOT_HEIGHT * 0.5
-        }
-
-        slot.draw(ctx, {
-          pos,
-          colorContext: this,
-          labelColor: label_color,
-          horizontal,
-          lowQuality: low_quality,
-          renderText: render_text,
-          highlight,
-        })
-      }
+      const max_y = node.drawSlots(ctx, {
+        colorContext: this,
+        connectingLink: this.connecting_links?.[0],
+        editorAlpha: this.editor_alpha,
+        lowQuality: this.low_quality,
+      })
 
       ctx.textAlign = "left"
       ctx.globalAlpha = 1
