@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 import { useWidgetStore } from '@/stores/widgetStore'
-import type { InputSpec } from '@/types/apiTypes'
+import type { InputSpec, RemoteWidgetConfig } from '@/types/apiTypes'
 
 export interface CacheEntry<T> {
   data: T[]
@@ -16,8 +16,8 @@ export interface CacheEntry<T> {
 
 const dataCache = new Map<string, CacheEntry<any>>()
 
-const createCacheKey = (inputData: InputSpec): string => {
-  const { route, query_params = {}, refresh = 0 } = inputData[1]
+const createCacheKey = (config: RemoteWidgetConfig): string => {
+  const { route, query_params = {}, refresh = 0 } = config
 
   const paramsKey = Object.entries(query_params)
     .sort(([a], [b]) => a.localeCompare(b))
@@ -32,10 +32,10 @@ const getBackoff = (retryCount: number) => {
 }
 
 async function fetchData<T>(
-  inputData: InputSpec,
+  config: RemoteWidgetConfig,
   controller: AbortController
 ): Promise<T[]> {
-  const { route, response_key, query_params } = inputData[1]
+  const { route, response_key, query_params } = config
   const res = await axios.get(route, {
     params: query_params,
     signal: controller.signal,
@@ -45,9 +45,10 @@ async function fetchData<T>(
 }
 
 export function useRemoteWidget<T>(inputData: InputSpec) {
-  const { refresh = 0 } = inputData[1]
+  const config: RemoteWidgetConfig = inputData[1].remote
+  const { refresh = 0 } = config
   const isPermanent = refresh <= 0
-  const cacheKey = createCacheKey(inputData)
+  const cacheKey = createCacheKey(config)
   const defaultValue = useWidgetStore().getDefaultValue(inputData)
 
   const setSuccess = (entry: CacheEntry<T>, data: T[]) => {
@@ -113,10 +114,7 @@ export function useRemoteWidget<T>(inputData: InputSpec) {
       currentEntry.error = null
       currentEntry.controller = new AbortController()
 
-      currentEntry.fetchPromise = fetchData<T>(
-        inputData,
-        currentEntry.controller
-      )
+      currentEntry.fetchPromise = fetchData<T>(config, currentEntry.controller)
       const data = await currentEntry.fetchPromise
 
       setSuccess(currentEntry, data)

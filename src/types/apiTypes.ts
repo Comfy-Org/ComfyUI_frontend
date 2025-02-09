@@ -269,6 +269,13 @@ function inputSpec<TType extends ZodType, TSpec extends ZodType>(
   ])
 }
 
+const zRemoteWidgetConfig = z.object({
+  route: z.string().url().or(z.string().startsWith('/')),
+  refresh: z.number().gte(128).safe().or(z.number().lte(0).safe()).optional(),
+  response_key: z.string().optional(),
+  query_params: z.record(z.string(), z.string()).optional()
+})
+
 const zBaseInputSpecValue = z
   .object({
     default: z.any().optional(),
@@ -332,11 +339,7 @@ const zStringInputSpec = inputSpec([
 const zComboInputProps = zBaseInputSpecValue.extend({
   control_after_generate: z.boolean().optional(),
   image_upload: z.boolean().optional(),
-  type: z.enum(['remote']).optional(),
-  route: z.string().url().or(z.string().startsWith('/')).optional(),
-  refresh: z.number().gte(128).safe().or(z.number().lte(0).safe()).optional(),
-  response_key: z.string().optional(),
-  query_params: z.record(z.string(), z.string()).optional()
+  remote: zRemoteWidgetConfig.optional()
 })
 
 // Dropdown Selection.
@@ -594,3 +597,4 @@ export type UserDataFullInfo = z.infer<typeof zUserDataFullInfo>
 export type TerminalSize = z.infer<typeof zTerminalSize>
 export type LogEntry = z.infer<typeof zLogEntry>
 export type LogsRawResponse = z.infer<typeof zLogRawResponse>
+export type RemoteWidgetConfig = z.infer<typeof zRemoteWidgetConfig>

@@ -565,8 +565,7 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
   },
   COMBO(node, inputName, inputData: InputSpec) {
     const widgetStore = useWidgetStore()
-
-    const { type, options } = inputData[1]
+    const { remote, options } = inputData[1]
     const defaultValue = widgetStore.getDefaultValue(inputData)
 
     const res = {
@@ -575,7 +574,7 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
       }) as IComboWidget
     }
 
-    if (type === 'remote') {
+    if (remote) {
       const remoteWidget = useRemoteWidget(inputData)
 
       const origOptions = res.widget.options

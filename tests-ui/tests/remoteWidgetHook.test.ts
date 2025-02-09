@@ -35,10 +35,11 @@ function createMockInputData(overrides = {}): ComboInputSpecV2 {
     'COMBO',
     {
       name: 'test_widget',
-      type: 'remote',
-      route: `/api/test/${Date.now()}${Math.random().toString(36).substring(2, 15)}`,
-      refresh: 0,
-      ...overrides
+      remote: {
+        route: `/api/test/${Date.now()}${Math.random().toString(36).substring(2, 15)}`,
+        refresh: 0,
+        ...overrides
+      }
     }
   ]
 }

@@ -53,7 +53,7 @@ export const useWidgetStore = defineStore('widget', () => {
     if (props.default) return props.default
 
     if (widgetType === 'COMBO' && props.options?.length) return props.options[0]
-    if (props.type === 'remote') return 'Loading...'
+    if (props.remote) return 'Loading...'
     return undefined
   }
 
