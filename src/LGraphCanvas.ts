@@ -4803,9 +4803,6 @@ export class LGraphCanvas implements ConnectionColorContext {
           node,
           widgets_y,
           ctx,
-          this.node_widget && this.node_widget[0] == node
-            ? this.node_widget[1]
-            : null,
         )
       }
     } else if (this.render_collapsed_slots) {
@@ -5722,7 +5719,6 @@ export class LGraphCanvas implements ConnectionColorContext {
     node: LGraphNode,
     posY: number,
     ctx: CanvasRenderingContext2D,
-    active_widget: IWidget,
   ) {
     if (!node.widgets || !node.widgets.length) return 0
     const width = node.size[0]

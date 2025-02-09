@@ -1,5 +1,5 @@
-import { LiteGraph, type Vector2 } from "./litegraph"
-import type { CanvasColour, INodeSlot, Rect } from "./interfaces"
+import { LiteGraph } from "./litegraph"
+import type { CanvasColour, Rect } from "./interfaces"
 import { LinkDirection, RenderShape, TitleMode } from "./types/globalEnums"
 
 export enum SlotType {
