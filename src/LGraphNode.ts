@@ -32,8 +32,9 @@ import { BadgePosition, LGraphBadge } from "./LGraphBadge"
 import { type LGraphNodeConstructor, LiteGraph } from "./litegraph"
 import { isInRectangle, isInRect, snapPoint } from "./measure"
 import { LLink } from "./LLink"
-import { NodeInputSlot, NodeOutputSlot } from "./NodeSlot"
+import { ConnectionColorContext, NodeInputSlot, NodeOutputSlot } from "./NodeSlot"
 import { WIDGET_TYPE_MAP } from "./widgets/widgetMap"
+import { toClass } from "./utils/type"
 export type NodeId = number | string
 
 export interface INodePropertyInfo {
@@ -3085,5 +3086,64 @@ export class LGraphNode implements Positionable, IPinnable {
         madeAnyConnections ||= !!result
       }
     }
+  }
+
+  drawWidgets(ctx: CanvasRenderingContext2D, options: {
+    y: number
+    colorContext: ConnectionColorContext
+    linkOverWidget: IWidget
+    linkOverWidgetType: ISlotType
+    lowQuality?: boolean
+    editorAlpha?: number
+  }): void {
+    if (!this.widgets) return
+
+    const { y, colorContext, linkOverWidget, linkOverWidgetType, lowQuality = false, editorAlpha = 1 } = options
+    let posY = y
+    if (this.horizontal || this.widgets_up) {
+      posY = 2
+    }
+    if (this.widgets_start_y != null) posY = this.widgets_start_y
+
+    const width = this.size[0]
+    const widgets = this.widgets
+    posY += 2
+    const H = LiteGraph.NODE_WIDGET_HEIGHT
+    const show_text = !lowQuality
+    ctx.save()
+    ctx.globalAlpha = editorAlpha
+    const margin = 15
+
+    for (const w of widgets) {
+      if (w.hidden || (w.advanced && !this.showAdvanced)) continue
+      const y = w.y || posY
+      const outline_color = w.advanced ? LiteGraph.WIDGET_ADVANCED_OUTLINE_COLOR : LiteGraph.WIDGET_OUTLINE_COLOR
+
+      if (w === linkOverWidget) {
+        // Manually draw a slot next to the widget simulating an input
+        new NodeInputSlot({
+          name: "",
+          type: linkOverWidgetType,
+          link: 0,
+        }).draw(ctx, { pos: [10, y + 10], colorContext })
+      }
+
+      w.last_y = y
+      ctx.strokeStyle = outline_color
+      ctx.fillStyle = "#222"
+      ctx.textAlign = "left"
+      if (w.disabled) ctx.globalAlpha *= 0.5
+      const widget_width = w.width || width
+
+      const WidgetClass = WIDGET_TYPE_MAP[w.type]
+      if (WidgetClass) {
+        toClass(WidgetClass, w).drawWidget(ctx, { y, width: widget_width, show_text, margin })
+      } else {
+        w.draw?.(ctx, this, widget_width, y, H)
+      }
+      posY += (w.computeSize ? w.computeSize(widget_width)[1] : H) + 4
+      ctx.globalAlpha = editorAlpha
+    }
+    ctx.restore()
   }
 }

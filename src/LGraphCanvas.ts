@@ -4780,18 +4780,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       ctx.textAlign = "left"
       ctx.globalAlpha = 1
 
-      if (node.widgets) {
-        let widgets_y = max_y
-        if (horizontal || node.widgets_up) {
-          widgets_y = 2
-        }
-        if (node.widgets_start_y != null) widgets_y = node.widgets_start_y
-        this.drawNodeWidgets(
-          node,
-          widgets_y,
-          ctx,
-        )
-      }
+      this.drawNodeWidgets(node, max_y, ctx)
     } else if (this.render_collapsed_slots) {
       // if collapsed
       let input_slot = null
@@ -5679,54 +5668,22 @@ export class LGraphCanvas implements ConnectionColorContext {
 
   /**
    * draws the widgets stored inside a node
+   * @deprecated Use {@link LGraphNode.drawWidgets} instead.
+   * @note Currently there are extensions hijacking this function, so we cannot remove it.
    */
   drawNodeWidgets(
     node: LGraphNode,
     posY: number,
     ctx: CanvasRenderingContext2D,
   ): void {
-    if (!node.widgets || !node.widgets.length) return
-    const width = node.size[0]
-    const widgets = node.widgets
-    posY += 2
-    const H = LiteGraph.NODE_WIDGET_HEIGHT
-    const show_text = !this.low_quality
-    ctx.save()
-    ctx.globalAlpha = this.editor_alpha
-    const margin = 15
-
-    for (const w of widgets) {
-      if (w.hidden || (w.advanced && !node.showAdvanced)) continue
-      const y = w.y || posY
-      const outline_color = w.advanced ? LiteGraph.WIDGET_ADVANCED_OUTLINE_COLOR : LiteGraph.WIDGET_OUTLINE_COLOR
-
-      if (w === this.link_over_widget) {
-        // Manually draw a slot next to the widget simulating an input
-        new NodeInputSlot({
-          name: "",
-          type: this.link_over_widget_type,
-          link: 0,
-        }).draw(ctx, { pos: [10, y + 10], colorContext: this })
-      }
-
-      w.last_y = y
-      ctx.strokeStyle = outline_color
-      ctx.fillStyle = "#222"
-      ctx.textAlign = "left"
-      if (w.disabled) ctx.globalAlpha *= 0.5
-      const widget_width = w.width || width
-
-      const WidgetClass = WIDGET_TYPE_MAP[w.type]
-      if (WidgetClass) {
-        toClass(WidgetClass, w).drawWidget(ctx, { y, width: widget_width, show_text, margin })
-      } else {
-        w.draw?.(ctx, node, widget_width, y, H)
-      }
-      posY += (w.computeSize ? w.computeSize(widget_width)[1] : H) + 4
-      ctx.globalAlpha = this.editor_alpha
-    }
-    ctx.restore()
-    ctx.textAlign = "left"
+    node.drawWidgets(ctx, {
+      y: posY,
+      colorContext: this,
+      linkOverWidget: this.link_over_widget,
+      linkOverWidgetType: this.link_over_widget_type,
+      lowQuality: this.low_quality,
+      editorAlpha: this.editor_alpha,
+    })
   }
 
   /**
