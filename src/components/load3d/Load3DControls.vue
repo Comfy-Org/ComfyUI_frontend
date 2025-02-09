@@ -26,27 +26,83 @@
         class="absolute opacity-0 w-0 h-0 p-0 m-0 pointer-events-none"
       />
     </Button>
+
+    <div class="relative" v-if="showLightIntensityButton">
+      <Button
+        class="p-button-rounded p-button-text"
+        @click="toggleLightIntensity"
+      >
+        <i class="pi pi-sun text-white text-lg"></i>
+      </Button>
+      <div
+        v-show="showLightIntensity"
+        class="absolute left-12 top-0 bg-black bg-opacity-50 p-4 rounded-lg shadow-lg"
+        style="width: 150px"
+      >
+        <Slider
+          v-model="lightIntensity"
+          class="w-full"
+          @change="updateLightIntensity"
+          :min="1"
+          :max="20"
+          :step="1"
+        />
+      </div>
+    </div>
+
+    <div class="relative" v-if="showFOVButton">
+      <Button class="p-button-rounded p-button-text" @click="toggleFOV">
+        <i class="pi pi-expand text-white text-lg"></i>
+      </Button>
+      <div
+        v-show="showFOV"
+        class="absolute left-12 top-0 bg-black bg-opacity-50 p-4 rounded-lg shadow-lg"
+        style="width: 150px"
+      >
+        <Slider
+          v-model="fov"
+          class="w-full"
+          @change="updateFOV"
+          :min="10"
+          :max="150"
+          :step="1"
+        />
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import { ref } from 'vue'
+import Slider from 'primevue/slider'
+import { onMounted, onUnmounted, ref } from 'vue'
 
 const props = defineProps<{
   backgroundColor: string
   showGrid: boolean
+  lightIntensity: number
+  showLightIntensityButton: boolean
+  fov: number
+  showFOVButton: boolean
 }>()
 
 const emit = defineEmits<{
   (e: 'toggleCamera'): void
   (e: 'toggleGrid', value: boolean): void
   (e: 'updateBackgroundColor', color: string): void
+  (e: 'updateLightIntensity', value: number): void
+  (e: 'updateFOV', value: number): void
 }>()
 
 const backgroundColor = ref(props.backgroundColor)
 const showGrid = ref(props.showGrid)
 const colorPickerRef = ref<HTMLInputElement | null>(null)
+const lightIntensity = ref(props.lightIntensity)
+const showLightIntensity = ref(false)
+const showLightIntensityButton = ref(props.showLightIntensityButton)
+const fov = ref(props.fov)
+const showFOV = ref(false)
+const showFOVButton = ref(props.showFOVButton)
 
 const toggleCamera = () => {
   emit('toggleCamera')
@@ -65,8 +121,45 @@ const openColorPicker = () => {
   colorPickerRef.value?.click()
 }
 
+const toggleLightIntensity = () => {
+  showLightIntensity.value = !showLightIntensity.value
+}
+
+const updateLightIntensity = () => {
+  emit('updateLightIntensity', lightIntensity.value)
+}
+
+const toggleFOV = () => {
+  showFOV.value = !showFOV.value
+}
+
+const updateFOV = () => {
+  emit('updateFOV', fov.value)
+}
+
+const closeSlider = (e: MouseEvent) => {
+  const target = e.target as HTMLElement
+
+  if (!target.closest('.relative')) {
+    showLightIntensity.value = false
+    showFOV.value = false
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', closeSlider)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', closeSlider)
+})
+
 defineExpose({
   backgroundColor,
-  showGrid
+  showGrid,
+  lightIntensity,
+  showLightIntensityButton,
+  fov,
+  showFOVButton
 })
 </script>

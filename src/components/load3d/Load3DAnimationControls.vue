@@ -3,9 +3,15 @@
     <Load3DControls
       :backgroundColor="backgroundColor"
       :showGrid="showGrid"
+      :lightIntensity="lightIntensity"
+      :showLightIntensityButton="showLightIntensityButton"
+      :fov="fov"
+      :showFOVButton="showFOVButton"
       @toggleCamera="onToggleCamera"
       @toggleGrid="onToggleGrid"
       @updateBackgroundColor="onUpdateBackgroundColor"
+      @updateLightIntensity="onUpdateLightIntensity"
+      @updateFOV="onUpdateFOV"
       ref="load3dControlsRef"
     />
 
@@ -56,6 +62,10 @@ const props = defineProps<{
   playing: boolean
   backgroundColor: string
   showGrid: boolean
+  lightIntensity: number
+  showLightIntensityButton: boolean
+  fov: number
+  showFOVButton: boolean
 }>()
 
 const emit = defineEmits<{
@@ -65,6 +75,8 @@ const emit = defineEmits<{
   (e: 'togglePlay', value: boolean): void
   (e: 'speedChange', value: number): void
   (e: 'animationChange', value: number): void
+  (e: 'updateLightIntensity', value: number): void
+  (e: 'updateFOV', value: number): void
 }>()
 
 const animations = ref(props.animations)
@@ -73,6 +85,10 @@ const selectedSpeed = ref(1)
 const selectedAnimation = ref(0)
 const backgroundColor = ref(props.backgroundColor)
 const showGrid = ref(props.showGrid)
+const lightIntensity = ref(props.lightIntensity)
+const showLightIntensityButton = ref(props.showLightIntensityButton)
+const fov = ref(props.fov)
+const showFOVButton = ref(props.showFOVButton)
 const load3dControlsRef = ref(null)
 
 const speedOptions = [
@@ -87,12 +103,28 @@ watch(backgroundColor, (newValue) => {
   load3dControlsRef.value.backgroundColor = newValue
 })
 
+watch(showLightIntensityButton, (newValue) => {
+  load3dControlsRef.value.showLightIntensityButton = newValue
+})
+
+watch(showFOVButton, (newValue) => {
+  load3dControlsRef.value.showFOVButton = newValue
+})
+
 const onToggleCamera = () => {
   emit('toggleCamera')
 }
 const onToggleGrid = (value: boolean) => emit('toggleGrid', value)
 const onUpdateBackgroundColor = (color: string) =>
   emit('updateBackgroundColor', color)
+
+const onUpdateLightIntensity = (lightIntensity: number) => {
+  emit('updateLightIntensity', lightIntensity)
+}
+
+const onUpdateFOV = (fov: number) => {
+  emit('updateFOV', fov)
+}
 
 const togglePlay = () => {
   playing.value = !playing.value
@@ -112,6 +144,10 @@ defineExpose({
   selectedAnimation,
   playing,
   backgroundColor,
-  showGrid
+  showGrid,
+  lightIntensity,
+  showLightIntensityButton,
+  fov,
+  showFOVButton
 })
 </script>

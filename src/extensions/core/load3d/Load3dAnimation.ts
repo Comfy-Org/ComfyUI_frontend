@@ -28,6 +28,10 @@ class Load3dAnimation extends Load3d {
       showGrid: true,
       animations: [],
       playing: false,
+      lightIntensity: 5,
+      showLightIntensityButton: true,
+      fov: 75,
+      showFOVButton: true,
       onToggleCamera: () => this.toggleCamera(),
       onToggleGrid: (show: boolean) => this.toggleGrid(show),
       onUpdateBackgroundColor: (color: string) =>
@@ -35,7 +39,10 @@ class Load3dAnimation extends Load3d {
       onTogglePlay: (play: boolean) => this.toggleAnimation(play),
       onSpeedChange: (speed: number) => this.setAnimationSpeed(speed),
       onAnimationChange: (selectedAnimation: number) =>
-        this.updateSelectedAnimation(selectedAnimation)
+        this.updateSelectedAnimation(selectedAnimation),
+      onUpdateLightIntensity: (lightIntensity: number) =>
+        this.setLightIntensity(lightIntensity),
+      onUpdateFOV: (fov: number) => this.setFOV(fov)
     })
 
     this.controlsApp.use(PrimeVue)

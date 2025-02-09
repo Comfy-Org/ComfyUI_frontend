@@ -130,10 +130,6 @@ app.registerExtension({
 
     const material = node.widgets.find((w: IWidget) => w.name === 'material')
 
-    const lightIntensity = node.widgets.find(
-      (w: IWidget) => w.name === 'light_intensity'
-    )
-
     const upDirection = node.widgets.find(
       (w: IWidget) => w.name === 'up_direction'
     )
@@ -148,7 +144,6 @@ app.registerExtension({
       'input',
       modelWidget,
       material,
-      lightIntensity,
       upDirection,
       fov,
       cameraState
@@ -299,10 +294,6 @@ app.registerExtension({
 
     const material = node.widgets.find((w: IWidget) => w.name === 'material')
 
-    const lightIntensity = node.widgets.find(
-      (w: IWidget) => w.name === 'light_intensity'
-    )
-
     const upDirection = node.widgets.find(
       (w: IWidget) => w.name === 'up_direction'
     )
@@ -317,7 +308,6 @@ app.registerExtension({
       'input',
       modelWidget,
       material,
-      lightIntensity,
       upDirection,
       fov,
       cameraState
@@ -433,10 +423,6 @@ app.registerExtension({
 
     const material = node.widgets.find((w: IWidget) => w.name === 'material')
 
-    const lightIntensity = node.widgets.find(
-      (w: IWidget) => w.name === 'light_intensity'
-    )
-
     const upDirection = node.widgets.find(
       (w: IWidget) => w.name === 'up_direction'
     )
@@ -462,14 +448,7 @@ app.registerExtension({
 
       const config = new Load3DConfiguration(load3d)
 
-      config.configure(
-        'output',
-        modelWidget,
-        material,
-        lightIntensity,
-        upDirection,
-        fov
-      )
+      config.configure('output', modelWidget, material, upDirection, fov)
     }
   }
 })
@@ -563,10 +542,6 @@ app.registerExtension({
 
     const material = node.widgets.find((w: IWidget) => w.name === 'material')
 
-    const lightIntensity = node.widgets.find(
-      (w: IWidget) => w.name === 'light_intensity'
-    )
-
     const upDirection = node.widgets.find(
       (w: IWidget) => w.name === 'up_direction'
     )
@@ -592,14 +567,7 @@ app.registerExtension({
 
       const config = new Load3DConfiguration(load3d)
 
-      config.configure(
-        'output',
-        modelWidget,
-        material,
-        lightIntensity,
-        upDirection,
-        fov
-      )
+      config.configure('output', modelWidget, material, upDirection, fov)
     }
   }
 })

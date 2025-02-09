@@ -153,9 +153,17 @@ class Load3d {
     this.controlsApp = createApp(Load3DControls, {
       backgroundColor: '#282828',
       showGrid: true,
+      lightIntensity: 5,
+      showLightIntensityButton: true,
+      fov: 75,
+      showFOVButton: true,
       onToggleCamera: () => this.toggleCamera(),
       onToggleGrid: (show: boolean) => this.toggleGrid(show),
-      onUpdateBackgroundColor: (color: string) => this.setBackgroundColor(color)
+      onUpdateBackgroundColor: (color: string) =>
+        this.setBackgroundColor(color),
+      onUpdateLightIntensity: (lightIntensity: number) =>
+        this.setLightIntensity(lightIntensity),
+      onUpdateFOV: (fov: number) => this.setFOV(fov)
     })
 
     this.controlsApp.mount(controlsMount)
@@ -215,6 +223,8 @@ class Load3d {
       this.perspectiveCamera.fov = fov
       this.perspectiveCamera.updateProjectionMatrix()
       this.renderer.render(this.scene, this.activeCamera)
+
+      this.storeNodeProperty('FOV', fov)
     }
   }
 
@@ -294,6 +304,11 @@ class Load3d {
 
   setMaterialMode(mode: 'original' | 'normal' | 'wireframe' | 'depth') {
     this.materialMode = mode
+
+    if (this.controlsApp?._instance?.exposed) {
+      this.controlsApp._instance.exposed.showLightIntensityButton.value =
+        mode == 'original'
+    }
 
     if (this.currentModel) {
       if (mode === 'depth') {
@@ -463,6 +478,11 @@ class Load3d {
     )
     this.viewHelper.center = this.controls.target
 
+    if (this.controlsApp?._instance?.exposed) {
+      this.controlsApp._instance.exposed.showFOVButton.value =
+        this.getCurrentCameraType() == 'perspective'
+    }
+
     this.storeNodeProperty('Camera Type', this.getCurrentCameraType())
     this.handleResize()
   }
@@ -497,6 +517,8 @@ class Load3d {
         light.intensity = intensity * 0.5
       }
     })
+
+    this.storeNodeProperty('Light Intensity', intensity)
   }
 
   startAnimation() {
