@@ -22,7 +22,7 @@ import type {
   ReadOnlyPoint,
   ReadOnlyRect,
 } from "./interfaces"
-import type { IWidget, TWidgetValue } from "./types/widgets"
+import type { IBaseWidget, IWidget, TWidgetValue } from "./types/widgets"
 import { LGraphNode, type NodeId } from "./LGraphNode"
 import type {
   CanvasDragEvent,
@@ -73,6 +73,8 @@ import { NumberWidget } from "./widgets/NumberWidget"
 import { ButtonWidget } from "./widgets/ButtonWidget"
 import { TextWidget } from "./widgets/TextWidget"
 import { SliderWidget } from "./widgets/SliderWidget"
+import { BaseWidget } from "./widgets/BaseWidget"
+import { WIDGET_TYPE_MAP } from "./widgets/widgetMap"
 
 interface IShowSearchOptions {
   node_to?: LGraphNode
@@ -2556,88 +2558,29 @@ export class LGraphCanvas implements ConnectionColorContext {
       if (handled) return
     }
 
-    const width = widget.width || node.width
-
     const oldValue = widget.value
 
     const pos = this.graph_mouse
     const x = pos[0] - node.pos[0]
     const y = pos[1] - node.pos[1]
 
-    switch (widget.type) {
-    case "button":
-      pointer.onClick = () => {
-        toClass(ButtonWidget, widget).onClick({
-          e,
-          node,
-          canvas: this,
-        })
-      }
-      break
-    case "slider": {
-      pointer.onClick = () => toClass(SliderWidget, widget).onClick({
+    const WidgetClass = WIDGET_TYPE_MAP[widget.type]
+    if (WidgetClass) {
+      const widgetInstance = toClass(WidgetClass, widget)
+      pointer.onClick = () => widgetInstance.onClick({
         e,
         node,
         canvas: this,
       })
-      pointer.onDrag = eMove => toClass(SliderWidget, widget).onDrag({
+      pointer.onDrag = eMove => widgetInstance.onDrag({
         e: eMove,
         node,
       })
-      break
-    }
-    case "number": {
-      const numberWidget = toClass(NumberWidget, widget)
-      pointer.onClick = () => {
-        numberWidget.onClick({
-          e,
-          node,
-          canvas: this,
-        })
-      }
-      // Click & drag from widget centre area
-      pointer.onDrag = (eMove) => {
-        numberWidget.onDrag({
-          e: eMove,
-          node,
-        })
-      }
-      break
-    }
-    case "combo": {
-      pointer.onClick = () => {
-        toClass(ComboWidget, widget).onClick({
-          e,
-          node,
-          canvas: this,
-        })
-      }
-      break
-    }
-    case "toggle":
-      pointer.onClick = () => {
-        toClass(BooleanWidget, widget).onClick({
-          e,
-          node,
-          canvas: this,
-        })
-      }
-      break
-    case "string":
-    case "text":
-      pointer.onClick = () => toClass(TextWidget, widget).onClick({
-        e,
-        node,
-        canvas: this,
-      })
-      break
-    default:
-      // Legacy custom widget callback
+    } else {
       if (widget.mouse) {
         const result = widget.mouse(e, [x, y], node)
         if (result != null) this.dirty_canvas = result
       }
-      break
     }
 
     // value changed
@@ -2656,26 +2599,6 @@ export class LGraphCanvas implements ConnectionColorContext {
       }
 
       this.node_widget = null
-    }
-
-    function setWidgetValue(
-      canvas: LGraphCanvas,
-      node: LGraphNode,
-      widget: IWidget,
-      value: TWidgetValue,
-    ) {
-      const v = widget.type === "number" ? Number(value) : value
-      widget.value = v
-      if (
-        widget.options?.property &&
-        node.properties[widget.options.property] !== undefined
-      ) {
-        node.setProperty(widget.options.property, v)
-      }
-      widget.callback?.(widget.value, canvas, node, pos, e)
-
-      node.onWidgetChanged?.(widget.name, v, oldValue, widget)
-      node.graph._version++
     }
   }
 
@@ -5809,13 +5732,9 @@ export class LGraphCanvas implements ConnectionColorContext {
     const show_text = !this.low_quality
     ctx.save()
     ctx.globalAlpha = this.editor_alpha
-    const background_color = LiteGraph.WIDGET_BGCOLOR
-    const text_color = LiteGraph.WIDGET_TEXT_COLOR
-    const secondary_text_color = LiteGraph.WIDGET_SECONDARY_TEXT_COLOR
     const margin = 15
 
-    for (let i = 0; i < widgets.length; ++i) {
-      const w = widgets[i]
+    for (const w of widgets) {
       if (w.hidden || (w.advanced && !node.showAdvanced)) continue
       const y = w.y || posY
       const outline_color = w.advanced ? LiteGraph.WIDGET_ADVANCED_OUTLINE_COLOR : LiteGraph.WIDGET_OUTLINE_COLOR
@@ -5833,34 +5752,14 @@ export class LGraphCanvas implements ConnectionColorContext {
       ctx.strokeStyle = outline_color
       ctx.fillStyle = "#222"
       ctx.textAlign = "left"
-      // ctx.lineWidth = 2;
       if (w.disabled) ctx.globalAlpha *= 0.5
       const widget_width = w.width || width
 
-      switch (w.type) {
-      case "button":
-        toClass(ButtonWidget, w).drawWidget(ctx, { y, width: widget_width, show_text, margin })
-        break
-      case "toggle":
-        toClass(BooleanWidget, w).drawWidget(ctx, { y, width: widget_width, show_text, margin })
-        break
-      case "slider":
-        toClass(SliderWidget, w).drawWidget(ctx, { y, width: widget_width, show_text, margin })
-        break
-      case "combo":
-        toClass(ComboWidget, w).drawWidget(ctx, { y, width: widget_width, show_text, margin })
-        break
-      case "number":
-        toClass(NumberWidget, w).drawWidget(ctx, { y, width: widget_width, show_text, margin })
-        break
-      case "string":
-      case "text":
-        toClass(TextWidget, w).drawWidget(ctx, { y, width: widget_width, show_text, margin })
-        break
-        // Custom widgets
-      default:
+      const WidgetClass = WIDGET_TYPE_MAP[w.type]
+      if (WidgetClass) {
+        toClass(WidgetClass, w).drawWidget(ctx, { y, width: widget_width, show_text, margin })
+      } else {
         w.draw?.(ctx, node, widget_width, y, H)
-        break
       }
       posY += (w.computeSize ? w.computeSize(widget_width)[1] : H) + 4
       ctx.globalAlpha = this.editor_alpha

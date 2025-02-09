@@ -16,7 +16,7 @@ import type {
   Size,
 } from "./interfaces"
 import type { LGraph } from "./LGraph"
-import type { IWidget, TWidgetValue } from "./types/widgets"
+import type { IWidget, TWidgetType, TWidgetValue } from "./types/widgets"
 import type { ISerialisedNode } from "./types/serialisation"
 import type { LGraphCanvas } from "./LGraphCanvas"
 import type { CanvasMouseEvent } from "./types/events"
@@ -32,14 +32,8 @@ import { BadgePosition, LGraphBadge } from "./LGraphBadge"
 import { type LGraphNodeConstructor, LiteGraph } from "./litegraph"
 import { isInRectangle, isInRect, snapPoint } from "./measure"
 import { LLink } from "./LLink"
-import { BooleanWidget } from "./widgets/BooleanWidget"
-import { ComboWidget } from "./widgets/ComboWidget"
-import { NumberWidget } from "./widgets/NumberWidget"
-import { ButtonWidget } from "./widgets/ButtonWidget"
 import { NodeInputSlot, NodeOutputSlot } from "./NodeSlot"
-import { TextWidget } from "./widgets/TextWidget"
-import { SliderWidget } from "./widgets/SliderWidget"
-
+import { WIDGET_TYPE_MAP } from "./widgets/widgetMap"
 export type NodeId = number | string
 
 export interface INodePropertyInfo {
@@ -1668,36 +1662,12 @@ export class LGraphNode implements Positionable, IPinnable {
     return widget
   }
 
-  addCustomWidget(custom_widget: IWidget): IWidget {
+  addCustomWidget<T extends IWidget>(custom_widget: T): T {
     this.widgets ||= []
-
-    let widget: IWidget
-    switch (custom_widget.type) {
-    case "toggle":
-      widget = new BooleanWidget(custom_widget)
-      break
-    case "combo":
-      widget = new ComboWidget(custom_widget)
-      break
-    case "number":
-      widget = new NumberWidget(custom_widget)
-      break
-    case "button":
-      widget = new ButtonWidget(custom_widget)
-      break
-    case "text":
-    case "string":
-      widget = new TextWidget(custom_widget)
-      break
-    case "slider":
-      widget = new SliderWidget(custom_widget)
-      break
-    default:
-      widget = custom_widget
-    }
-
+    const WidgetClass = WIDGET_TYPE_MAP[custom_widget.type]
+    const widget = WidgetClass ? new WidgetClass(custom_widget) as IWidget : custom_widget
     this.widgets.push(widget)
-    return widget
+    return widget as T
   }
 
   move(deltaX: number, deltaY: number): void {

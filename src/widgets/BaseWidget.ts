@@ -2,7 +2,7 @@ import { Point } from "@/interfaces"
 import { LiteGraph } from "@/litegraph"
 import type { CanvasPointer, LGraphCanvas, LGraphNode, Size } from "@/litegraph"
 import type { CanvasMouseEvent, CanvasPointerEvent } from "@/types/events"
-import type { IBaseWidget, IWidget, IWidgetOptions, TWidgetValue } from "@/types/widgets"
+import type { IBaseWidget, IWidget, IWidgetOptions, TWidgetType, TWidgetValue } from "@/types/widgets"
 
 export abstract class BaseWidget implements IBaseWidget {
   linkedWidgets?: IWidget[]
@@ -11,7 +11,7 @@ export abstract class BaseWidget implements IBaseWidget {
   label?: string
   clicked?: boolean
   name?: string
-  type?: "string" | "number" | "combo" | "button" | "toggle" | "slider" | "text" | "multiline" | "custom"
+  type?: TWidgetType
   value?: TWidgetValue
   y?: number
   last_y?: number
