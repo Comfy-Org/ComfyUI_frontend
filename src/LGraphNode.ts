@@ -3146,4 +3146,53 @@ export class LGraphNode implements Positionable, IPinnable {
     }
     ctx.restore()
   }
+
+  /**
+   * When {@link LGraphNode.collapsed} is `true`, this method draws the node's collapsed slots.
+   */
+  drawCollapsedSlots(ctx: CanvasRenderingContext2D): void {
+    // if collapsed
+    let input_slot: INodeInputSlot | null = null
+    let output_slot: INodeOutputSlot | null = null
+
+    // get first connected slot to render
+    for (const slot of this.inputs ?? []) {
+      if (slot.link == null) {
+        continue
+      }
+      input_slot = slot
+      break
+    }
+    for (const slot of this.outputs ?? []) {
+      if (!slot.links || !slot.links.length) {
+        continue
+      }
+      output_slot = slot
+      break
+    }
+
+    if (input_slot) {
+      let x = 0
+      let y = LiteGraph.NODE_TITLE_HEIGHT * -0.5 // center
+      if (this.horizontal) {
+        x = this._collapsed_width * 0.5
+        y = -LiteGraph.NODE_TITLE_HEIGHT
+      }
+      toClass(NodeInputSlot, input_slot).drawCollapsed(ctx, {
+        pos: [x, y],
+      })
+    }
+
+    if (output_slot) {
+      let x = this._collapsed_width
+      let y = LiteGraph.NODE_TITLE_HEIGHT * -0.5 // center
+      if (this.horizontal) {
+        x = this._collapsed_width * 0.5
+        y = 0
+      }
+      toClass(NodeOutputSlot, output_slot).drawCollapsed(ctx, {
+        pos: [x, y],
+      })
+    }
+  }
 }

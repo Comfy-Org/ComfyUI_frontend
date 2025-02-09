@@ -4782,55 +4782,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
       this.drawNodeWidgets(node, max_y, ctx)
     } else if (this.render_collapsed_slots) {
-      // if collapsed
-      let input_slot = null
-      let output_slot = null
-      let slot
-
-      // get first connected slot to render
-      if (node.inputs) {
-        for (let i = 0; i < node.inputs.length; i++) {
-          slot = node.inputs[i]
-          if (slot.link == null) {
-            continue
-          }
-          input_slot = slot
-          break
-        }
-      }
-      if (node.outputs) {
-        for (let i = 0; i < node.outputs.length; i++) {
-          slot = node.outputs[i]
-          if (!slot.links || !slot.links.length) {
-            continue
-          }
-          output_slot = slot
-        }
-      }
-
-      if (input_slot) {
-        let x = 0
-        let y = LiteGraph.NODE_TITLE_HEIGHT * -0.5 // center
-        if (horizontal) {
-          x = node._collapsed_width * 0.5
-          y = -LiteGraph.NODE_TITLE_HEIGHT
-        }
-        toClass(NodeInputSlot, input_slot).drawCollapsed(ctx, {
-          pos: [x, y],
-        })
-      }
-
-      if (output_slot) {
-        let x = node._collapsed_width
-        let y = LiteGraph.NODE_TITLE_HEIGHT * -0.5 // center
-        if (horizontal) {
-          x = node._collapsed_width * 0.5
-          y = 0
-        }
-        toClass(NodeOutputSlot, output_slot).drawCollapsed(ctx, {
-          pos: [x, y],
-        })
-      }
+      node.drawCollapsedSlots(ctx)
     }
 
     if (node.clip_area) {
