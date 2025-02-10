@@ -475,12 +475,10 @@ LGraphNode.prototype.addDOMWidget = function <
     onRemoved?.call(this)
   }
 
-  // Add type for SIZE symbol
-  const sizeSymbol = SIZE
   // @ts-ignore index with symbol
-  if (!this[sizeSymbol]) {
+  if (!this[SIZE]) {
     // @ts-ignore index with symbol
-    this[sizeSymbol] = true
+    this[SIZE] = true
     const onResize = this.onResize
     this.onResize = function (size: Size) {
       options.beforeResize?.call(widget, this)
