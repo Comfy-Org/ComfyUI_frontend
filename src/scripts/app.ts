@@ -35,7 +35,6 @@ import {
   type NodeId,
   validateComfyWorkflow
 } from '@/types/comfyWorkflow'
-import { ExtensionManager } from '@/types/extensionTypes'
 import { ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
 import { isImageNode } from '@/utils/litegraphUtil'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
@@ -108,7 +107,7 @@ export class ComfyApp {
   vueAppReady: boolean
   api: ComfyApi
   ui: ComfyUI
-  extensionManager: ExtensionManager
+  extensionManager: ReturnType<typeof useWorkspaceStore>
   _nodeOutputs: Record<string, any>
   nodePreviewImages: Record<string, string[]>
   graph: LGraph
