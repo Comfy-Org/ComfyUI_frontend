@@ -482,7 +482,7 @@ LGraphNode.prototype.addDOMWidget = function <
     // @ts-ignore index with symbol
     this[sizeSymbol] = true
     const onResize = this.onResize
-    this.onResize = function (size: [number, number]) {
+    this.onResize = function (size: Size) {
       options.beforeResize?.call(widget, this)
       computeSize.call(this, size)
       onResize?.call(this, size)
