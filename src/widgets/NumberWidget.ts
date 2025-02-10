@@ -146,8 +146,9 @@ export class NumberWidget extends BaseWidget implements INumericWidget {
   override onDrag(options: {
     e: CanvasMouseEvent
     node: LGraphNode
+    canvas: LGraphCanvas
   }) {
-    const { e, node } = options
+    const { e, node, canvas } = options
     const width = this.width || node.width
     const x = e.canvasX - node.pos[0]
     const delta = x < 40
@@ -168,9 +169,7 @@ export class NumberWidget extends BaseWidget implements INumericWidget {
       newValue = this.options.max
     }
     if (newValue !== this.value) {
-      this.value = newValue
-      return true
+      this.setValue(newValue, { e, node, canvas })
     }
-    return false
   }
 }

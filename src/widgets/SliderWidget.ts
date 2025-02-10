@@ -119,6 +119,7 @@ export class SliderWidget extends BaseWidget implements ISliderWidget {
   override onDrag(options: {
     e: CanvasMouseEvent
     node: LGraphNode
+    canvas: LGraphCanvas
   }) {
     if (this.options.read_only) return false
 
@@ -131,9 +132,7 @@ export class SliderWidget extends BaseWidget implements ISliderWidget {
     const newValue = this.options.min + (this.options.max - this.options.min) * slideFactor
 
     if (newValue !== this.value) {
-      this.value = newValue
-      return true
+      this.setValue(newValue, options)
     }
-    return false
   }
 }

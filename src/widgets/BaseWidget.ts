@@ -96,6 +96,7 @@ export abstract class BaseWidget implements IBaseWidget {
   onDrag(options: {
     e: CanvasMouseEvent
     node: LGraphNode
+    canvas: LGraphCanvas
   }): void {}
 
   /**
