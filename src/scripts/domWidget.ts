@@ -282,6 +282,115 @@ LGraphCanvas.prototype.computeVisibleNodes = function (): LGraphNode[] {
   return visibleNodes
 }
 
+export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
+  implements DOMWidget<T, V>
+{
+  type: 'custom'
+  name: string
+  element: T
+  options: DOMWidgetOptions<T, V>
+  computedHeight?: number
+  callback?: (value: V) => void
+  private mouseDownHandler?: (event: MouseEvent) => void
+
+  constructor(
+    name: string,
+    type: string,
+    element: T,
+    options: DOMWidgetOptions<T, V> = {}
+  ) {
+    // @ts-expect-error custom widget type
+    this.type = type
+    this.name = name
+    this.element = element
+    this.options = options
+
+    if (element.blur) {
+      this.mouseDownHandler = (event) => {
+        if (!element.contains(event.target as HTMLElement)) {
+          element.blur()
+        }
+      }
+      document.addEventListener('mousedown', this.mouseDownHandler)
+    }
+  }
+
+  get value(): V {
+    return this.options.getValue?.() ?? undefined
+  }
+
+  set value(v: V) {
+    this.options.setValue?.(v)
+    this.callback?.(this.value)
+  }
+
+  draw(
+    ctx: CanvasRenderingContext2D,
+    node: LGraphNode,
+    widgetWidth: number,
+    y: number
+  ): void {
+    if (this.computedHeight == null) {
+      computeSize.call(node, node.size)
+    }
+
+    const { offset, scale } = app.canvas.ds
+    const hidden =
+      (!!this.options.hideOnZoom && app.canvas.low_quality) ||
+      this.computedHeight <= 0 ||
+      // @ts-expect-error custom widget type
+      this.type === 'converted-widget' ||
+      // @ts-expect-error custom widget type
+      this.type === 'hidden'
+
+    this.element.dataset.shouldHide = hidden ? 'true' : 'false'
+    const isInVisibleNodes = this.element.dataset.isInVisibleNodes === 'true'
+    const isCollapsed = this.element.dataset.collapsed === 'true'
+    const actualHidden = hidden || !isInVisibleNodes || isCollapsed
+    const wasHidden = this.element.hidden
+    this.element.hidden = actualHidden
+    this.element.style.display = actualHidden ? 'none' : null
+
+    if (actualHidden && !wasHidden) {
+      this.options.onHide?.(this)
+    }
+    if (actualHidden) {
+      return
+    }
+
+    const elRect = ctx.canvas.getBoundingClientRect()
+    const margin = 10
+    const top = node.pos[0] + offset[0] + margin
+    const left = node.pos[1] + offset[1] + margin + y
+
+    Object.assign(this.element.style, {
+      transformOrigin: '0 0',
+      transform: `scale(${scale})`,
+      left: `${top * scale}px`,
+      top: `${left * scale}px`,
+      width: `${widgetWidth - margin * 2}px`,
+      height: `${(this.computedHeight ?? 50) - margin * 2}px`,
+      position: 'absolute',
+      zIndex: app.graph.nodes.indexOf(node),
+      pointerEvents: app.canvas.read_only ? 'none' : 'auto'
+    })
+
+    if (useSettingStore().get('Comfy.DOMClippingEnabled')) {
+      this.element.style.clipPath = getClipPath(node, this.element, elRect)
+      this.element.style.willChange = 'clip-path'
+    }
+
+    this.options.onDraw?.(this)
+  }
+
+  onRemove(): void {
+    if (this.mouseDownHandler) {
+      document.removeEventListener('mousedown', this.mouseDownHandler)
+    }
+    this.element.remove()
+  }
+}
+
 LGraphNode.prototype.addDOMWidget = function <
   T extends HTMLElement,
   V extends object | string
@@ -299,16 +408,6 @@ LGraphNode.prototype.addDOMWidget = function <
   element.hidden = true
   element.style.display = 'none'
 
-  let mouseDownHandler
-  if (element.blur) {
-    mouseDownHandler = (event) => {
-      if (!element.contains(event.target)) {
-        element.blur()
-      }
-    }
-    document.addEventListener('mousedown', mouseDownHandler)
-  }
-
   const { nodeData } = this.constructor
   const tooltip = (nodeData?.input.required?.[name] ??
     nodeData?.input.optional?.[name])?.[1]?.tooltip
@@ -316,86 +415,7 @@ LGraphNode.prototype.addDOMWidget = function <
     element.title = tooltip
   }
 
-  const widget: DOMWidget<T, V> = {
-    // @ts-expect-error All unrecognized types will be treated the same way as 'custom'
-    // in litegraph internally.
-    type,
-    name,
-    get value(): V {
-      return options.getValue?.() ?? undefined
-    },
-    set value(v: V) {
-      options.setValue?.(v)
-      widget.callback?.(widget.value)
-    },
-    draw: function (
-      ctx: CanvasRenderingContext2D,
-      node: LGraphNode,
-      widgetWidth: number,
-      y: number,
-      widgetHeight: number
-    ) {
-      if (widget.computedHeight == null) {
-        computeSize.call(node, node.size)
-      }
-
-      const { offset, scale } = app.canvas.ds
-
-      const hidden =
-        (!!options.hideOnZoom && app.canvas.low_quality) ||
-        widget.computedHeight <= 0 ||
-        // @ts-expect-error Used by widgetInputs.ts
-        widget.type === 'converted-widget' ||
-        // @ts-expect-error Used by groupNode.ts
-        widget.type === 'hidden'
-
-      element.dataset.shouldHide = hidden ? 'true' : 'false'
-      const isInVisibleNodes = element.dataset.isInVisibleNodes === 'true'
-      const isCollapsed = element.dataset.collapsed === 'true'
-      const actualHidden = hidden || !isInVisibleNodes || isCollapsed
-      const wasHidden = element.hidden
-      element.hidden = actualHidden
-      element.style.display = actualHidden ? 'none' : null
-      if (actualHidden && !wasHidden) {
-        widget.options.onHide?.(widget)
-      }
-      if (actualHidden) {
-        return
-      }
-
-      const elRect = ctx.canvas.getBoundingClientRect()
-      const margin = 10
-      const top = node.pos[0] + offset[0] + margin
-      const left = node.pos[1] + offset[1] + margin + y
-
-      Object.assign(element.style, {
-        transformOrigin: '0 0',
-        transform: `scale(${scale})`,
-        left: `${top * scale}px`,
-        top: `${left * scale}px`,
-        width: `${widgetWidth - margin * 2}px`,
-        height: `${(widget.computedHeight ?? 50) - margin * 2}px`,
-        position: 'absolute',
-        zIndex: app.graph.nodes.indexOf(node),
-        pointerEvents: app.canvas.read_only ? 'none' : 'auto'
-      })
-
-      if (useSettingStore().get('Comfy.DOMClippingEnabled')) {
-        element.style.clipPath = getClipPath(node, element, elRect)
-        element.style.willChange = 'clip-path'
-      }
-
-      this.options.onDraw?.(widget)
-    },
-    element,
-    options,
-    onRemove() {
-      if (mouseDownHandler) {
-        document.removeEventListener('mousedown', mouseDownHandler)
-      }
-      element.remove()
-    }
-  }
+  const widget = new DOMWidgetImpl(name, type, element, options)
 
   for (const evt of options.selectOn) {
     element.addEventListener(evt, () => {
