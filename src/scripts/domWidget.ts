@@ -1,5 +1,6 @@
 import { LGraphCanvas, LGraphNode, LiteGraph } from '@comfyorg/litegraph'
 import type { Vector4 } from '@comfyorg/litegraph'
+import { Size } from '@comfyorg/litegraph'
 import type {
   ICustomWidget,
   IWidget,
@@ -133,7 +134,7 @@ function isDomWidget(
   return !!widget.element
 }
 
-function computeSize(this: LGraphNode, size: [number, number]): void {
+function computeSize(this: LGraphNode, size: Size): void {
   if (!this.widgets?.[0]?.last_y) return
 
   let y = this.widgets[0].last_y
@@ -353,7 +354,7 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
     y: number
   ): void {
     if (this.computedHeight == null) {
-      computeSize.call(node, [node.size[0], node.size[1]])
+      computeSize.call(node, node.size)
     }
 
     const { offset, scale } = app.canvas.ds
@@ -484,7 +485,7 @@ LGraphNode.prototype.addDOMWidget = function <
     const onResize = this.onResize
     this.onResize = function (size: [number, number]) {
       options.beforeResize?.call(widget, this)
-      computeSize.call(this, [size[0], size[1]])
+      computeSize.call(this, size)
       onResize?.call(this, size)
       options.afterResize?.call(widget, this)
     }
