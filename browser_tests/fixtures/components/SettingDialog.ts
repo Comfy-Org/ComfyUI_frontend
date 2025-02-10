@@ -3,6 +3,10 @@ import { Page } from '@playwright/test'
 export class SettingDialog {
   constructor(public readonly page: Page) {}
 
+  get root() {
+    return this.page.locator('div.settings-container')
+  }
+
   async open() {
     const button = this.page.locator('button.comfy-settings-btn:visible')
     await button.click()

@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 
+import { SettingParams } from '../src/types/settingTypes'
 import { comfyPageFixture as test } from './fixtures/ComfyPage'
 
 test.describe('Topbar commands', () => {
@@ -133,6 +134,90 @@ test.describe('Topbar commands', () => {
       await comfyPage.settingDialog.toggleBooleanSetting('Comfy.TestSetting')
       expect(await comfyPage.getSetting('Comfy.TestSetting')).toBe(true)
       expect(await comfyPage.page.evaluate(() => window['changeCount'])).toBe(2)
+    })
+
+    test.describe('Passing through attrs to setting components', () => {
+      const testCases: Array<{
+        config: Partial<SettingParams>
+        selector: string
+      }> = [
+        {
+          config: {
+            type: 'boolean',
+            defaultValue: true
+          },
+          selector: '.p-toggleswitch.p-component'
+        },
+        {
+          config: {
+            type: 'number',
+            defaultValue: 10
+          },
+          selector: '.p-inputnumber input'
+        },
+        {
+          config: {
+            type: 'slider',
+            defaultValue: 10
+          },
+          selector: '.p-slider.p-component'
+        },
+        {
+          config: {
+            type: 'combo',
+            defaultValue: 'foo',
+            options: ['foo', 'bar', 'baz']
+          },
+          selector: '.p-select.p-component'
+        },
+        {
+          config: {
+            type: 'text',
+            defaultValue: 'Hello'
+          },
+          selector: '.p-inputtext'
+        },
+        {
+          config: {
+            type: 'color',
+            defaultValue: '#000000'
+          },
+          selector: '.p-colorpicker-preview'
+        }
+      ] as const
+
+      for (const { config, selector } of testCases) {
+        test(`${config.type} component should respect disabled attr`, async ({
+          comfyPage
+        }) => {
+          await comfyPage.page.evaluate((config) => {
+            window['app'].registerExtension({
+              name: 'TestExtension1',
+              settings: [
+                {
+                  id: 'Comfy.TestSetting',
+                  name: 'Test',
+                  // The `disabled` attr is common to all settings components
+                  attrs: { disabled: true },
+                  ...config
+                }
+              ]
+            })
+          }, config)
+
+          await comfyPage.settingDialog.open()
+          const component = comfyPage.settingDialog.root
+            .getByText('TestSetting Test')
+            .locator(selector)
+
+          const isDisabled = await component.evaluate((el) =>
+            el.tagName === 'INPUT'
+              ? (el as HTMLInputElement).disabled
+              : el.classList.contains('p-disabled')
+          )
+          expect(isDisabled).toBe(true)
+        })
+      }
     })
   })
 
