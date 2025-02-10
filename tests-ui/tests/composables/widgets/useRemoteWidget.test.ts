@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-import { useRemoteWidget } from '@/hooks/remoteWidgetHook'
+import { useRemoteWidget } from '@/composables/widgets/useRemoteWidget'
 import type { ComboInputSpecV2 } from '@/types/apiTypes'
 
 jest.mock('axios', () => ({
