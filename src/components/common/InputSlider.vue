@@ -8,6 +8,7 @@
       :min="min"
       :max="max"
       :step="step"
+      v-bind="$attrs"
     />
     <InputNumber
       :modelValue="modelValue"
@@ -70,4 +71,8 @@ const updateValue = (newValue: number | null) => {
   localValue.value = newValue
   emit('update:modelValue', newValue)
 }
+
+defineOptions({
+  inheritAttrs: false
+})
 </script>

@@ -1,6 +1,6 @@
 <template>
   <div class="color-picker-wrapper flex items-center gap-2">
-    <ColorPicker v-model="modelValue" />
+    <ColorPicker v-model="modelValue" v-bind="$attrs" />
     <InputText v-model="modelValue" class="w-28" :placeholder="label" />
   </div>
 </template>
@@ -14,4 +14,8 @@ defineProps<{
   defaultValue?: string
   label?: string
 }>()
+
+defineOptions({
+  inheritAttrs: false
+})
 </script>
