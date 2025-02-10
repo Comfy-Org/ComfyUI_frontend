@@ -151,7 +151,6 @@ app.registerExtension({
       height
     )
 
-    // @ts-expect-error hacky override
     sceneWidget.serializeValue = async () => {
       node.properties['Camera Info'] = load3d.getCameraState()
 
@@ -314,7 +313,6 @@ app.registerExtension({
       height
     )
 
-    // @ts-expect-error hacky override
     sceneWidget.serializeValue = async () => {
       node.properties['Camera Info'] = load3d.getCameraState()
 

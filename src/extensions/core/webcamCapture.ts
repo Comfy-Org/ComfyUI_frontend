@@ -101,10 +101,8 @@ app.registerExtension({
       capture
     )
     btn.disabled = true
-    // @ts-expect-error hacky override
     btn.serializeValue = () => undefined
 
-    // @ts-expect-error hacky override
     camera.serializeValue = async () => {
       if (captureOnQueue.value) {
         capture()

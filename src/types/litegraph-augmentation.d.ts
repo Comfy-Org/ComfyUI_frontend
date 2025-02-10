@@ -16,6 +16,7 @@ declare module '@comfyorg/litegraph/dist/types/widgets' {
   interface IBaseWidget {
     onRemove?: () => void
     beforeQueued?: () => unknown
+    serializeValue?: (node: LGraphNode, index: number) => Promise<unknown>
   }
 }
 
@@ -43,8 +44,7 @@ declare module '@comfyorg/litegraph' {
     onExecuted?(output: any): void
     onNodeCreated?(this: LGraphNode): void
     setInnerNodes?(nodes: LGraphNode[]): void
-    // TODO: Requires several coercion changes to runtime code.
-    getInnerNodes?() // : LGraphNode[]
+    getInnerNodes?(): LGraphNode[]
     convertToNodes?(): LGraphNode[]
     recreate?(): Promise<LGraphNode>
     refreshComboInNode?(defs: Record<string, ComfyNodeDef>)
