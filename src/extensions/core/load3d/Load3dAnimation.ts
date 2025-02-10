@@ -14,11 +14,14 @@ class Load3dAnimation extends Load3d {
 
   animationSpeed: number = 1.0
 
-  constructor(container: Element | HTMLElement) {
-    super(container)
+  constructor(
+    container: Element | HTMLElement,
+    options: { createPreview?: boolean } = {}
+  ) {
+    super(container, options)
   }
 
-  protected mountControls() {
+  protected mountControls(options: { createPreview?: boolean } = {}) {
     const controlsMount = document.createElement('div')
     controlsMount.style.pointerEvents = 'auto'
     this.controlsContainer.appendChild(controlsMount)
@@ -26,16 +29,26 @@ class Load3dAnimation extends Load3d {
     this.controlsApp = createApp(Load3DAnimationControls, {
       backgroundColor: '#282828',
       showGrid: true,
+      showPreview: options.createPreview,
       animations: [],
       playing: false,
+      lightIntensity: 5,
+      showLightIntensityButton: true,
+      fov: 75,
+      showFOVButton: true,
+      showPreviewButton: options.createPreview,
       onToggleCamera: () => this.toggleCamera(),
       onToggleGrid: (show: boolean) => this.toggleGrid(show),
+      onTogglePreview: (show: boolean) => this.togglePreview(show),
       onUpdateBackgroundColor: (color: string) =>
         this.setBackgroundColor(color),
       onTogglePlay: (play: boolean) => this.toggleAnimation(play),
       onSpeedChange: (speed: number) => this.setAnimationSpeed(speed),
       onAnimationChange: (selectedAnimation: number) =>
-        this.updateSelectedAnimation(selectedAnimation)
+        this.updateSelectedAnimation(selectedAnimation),
+      onUpdateLightIntensity: (lightIntensity: number) =>
+        this.setLightIntensity(lightIntensity),
+      onUpdateFOV: (fov: number) => this.setFOV(fov)
     })
 
     this.controlsApp.use(PrimeVue)
@@ -185,6 +198,11 @@ class Load3dAnimation extends Load3d {
   startAnimation() {
     const animate = () => {
       this.animationFrameId = requestAnimationFrame(animate)
+
+      if (this.showPreview) {
+        this.updatePreviewRender()
+      }
+
       const delta = this.clock.getDelta()
 
       if (this.currentAnimation && this.isAnimationPlaying) {
