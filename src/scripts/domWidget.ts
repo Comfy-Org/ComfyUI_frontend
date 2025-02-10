@@ -1,6 +1,5 @@
 import { LGraphCanvas, LGraphNode, LiteGraph } from '@comfyorg/litegraph'
-import type { Vector4 } from '@comfyorg/litegraph'
-import { Size } from '@comfyorg/litegraph'
+import type { Size, Vector4 } from '@comfyorg/litegraph'
 import type {
   ICustomWidget,
   IWidget,
