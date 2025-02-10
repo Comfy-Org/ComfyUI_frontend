@@ -14,8 +14,11 @@ class Load3dAnimation extends Load3d {
 
   animationSpeed: number = 1.0
 
-  constructor(container: Element | HTMLElement) {
-    super(container)
+  constructor(
+    container: Element | HTMLElement,
+    options: { createPreview?: boolean } = {}
+  ) {
+    super(container, options)
   }
 
   protected mountControls() {
@@ -26,14 +29,17 @@ class Load3dAnimation extends Load3d {
     this.controlsApp = createApp(Load3DAnimationControls, {
       backgroundColor: '#282828',
       showGrid: true,
+      showPreview: true,
       animations: [],
       playing: false,
       lightIntensity: 5,
       showLightIntensityButton: true,
       fov: 75,
       showFOVButton: true,
+      showPreviewButton: true,
       onToggleCamera: () => this.toggleCamera(),
       onToggleGrid: (show: boolean) => this.toggleGrid(show),
+      onTogglePreview: (show: boolean) => this.togglePreview(show),
       onUpdateBackgroundColor: (color: string) =>
         this.setBackgroundColor(color),
       onTogglePlay: (play: boolean) => this.toggleAnimation(play),
@@ -192,6 +198,11 @@ class Load3dAnimation extends Load3d {
   startAnimation() {
     const animate = () => {
       this.animationFrameId = requestAnimationFrame(animate)
+
+      if (this.showPreview) {
+        this.updatePreviewRender()
+      }
+
       const delta = this.clock.getDelta()
 
       if (this.currentAnimation && this.isAnimationPlaying) {

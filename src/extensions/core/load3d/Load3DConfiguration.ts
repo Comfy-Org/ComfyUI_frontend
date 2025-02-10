@@ -13,6 +13,8 @@ class Load3DConfiguration {
     material: IWidget,
     upDirection: IWidget,
     cameraState?: any,
+    width: IWidget | null = null,
+    height: IWidget | null = null,
     postModelUpdateFunc?: (load3d: Load3d) => void
   ) {
     this.setupModelHandling(
@@ -23,7 +25,22 @@ class Load3DConfiguration {
     )
     this.setupMaterial(material)
     this.setupDirection(upDirection)
+    this.setupTargetSize(width, height)
     this.setupDefaultProperties()
+  }
+
+  private setupTargetSize(width: IWidget | null, height: IWidget | null) {
+    if (width && height) {
+      this.load3d.setTargetSize(width.value as number, height.value as number)
+
+      width.callback = (value: number) => {
+        this.load3d.setTargetSize(value, height.value as number)
+      }
+
+      height.callback = (value: number) => {
+        this.load3d.setTargetSize(width.value as number, value)
+      }
+    }
   }
 
   private setupModelHandling(

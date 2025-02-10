@@ -43,14 +43,21 @@ class Load3d {
   originalRotation: THREE.Euler | null = null
   viewHelper: ViewHelper = {} as ViewHelper
   viewHelperContainer: HTMLDivElement = {} as HTMLDivElement
-  cameraSwitcherContainer: HTMLDivElement = {} as HTMLDivElement
-  gridSwitcherContainer: HTMLDivElement = {} as HTMLDivElement
+  previewRenderer: THREE.WebGLRenderer | null = null
+  previewCamera: THREE.Camera | null = null
+  previewContainer: HTMLDivElement = {} as HTMLDivElement
+  targetWidth: number = 1024
+  targetHeight: number = 1024
+  showPreview: boolean = true
   node: LGraphNode = {} as LGraphNode
 
   protected controlsApp: App | null = null
   protected controlsContainer: HTMLDivElement
 
-  constructor(container: Element | HTMLElement) {
+  constructor(
+    container: Element | HTMLElement,
+    options: { createPreview?: boolean } = {}
+  ) {
     this.scene = new THREE.Scene()
 
     this.perspectiveCamera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000)
@@ -126,7 +133,11 @@ class Load3d {
 
     this.standardMaterial = this.createSTLMaterial()
 
-    this.createViewHelper(container)
+    if (options && options.createPreview) {
+      this.createViewHelper(container)
+    }
+
+    this.createCapturePreview(container)
 
     this.controlsContainer = document.createElement('div')
     this.controlsContainer.style.position = 'absolute'
@@ -153,12 +164,15 @@ class Load3d {
     this.controlsApp = createApp(Load3DControls, {
       backgroundColor: '#282828',
       showGrid: true,
+      showPreview: true,
       lightIntensity: 5,
       showLightIntensityButton: true,
       fov: 75,
       showFOVButton: true,
+      showPreviewButton: true,
       onToggleCamera: () => this.toggleCamera(),
       onToggleGrid: (show: boolean) => this.toggleGrid(show),
+      onTogglePreview: (show: boolean) => this.togglePreview(show),
       onUpdateBackgroundColor: (color: string) =>
         this.setBackgroundColor(color),
       onUpdateLightIntensity: (lightIntensity: number) =>
@@ -188,6 +202,106 @@ class Load3d {
       return defaultValue
     }
     return this.node.properties[name]
+  }
+
+  createCapturePreview(container: Element | HTMLElement) {
+    this.previewRenderer = new THREE.WebGLRenderer({
+      alpha: true,
+      antialias: true
+    })
+    this.previewRenderer.setSize(this.targetWidth, this.targetHeight)
+    this.previewRenderer.setClearColor(0x282828)
+
+    this.previewContainer = document.createElement('div')
+    this.previewContainer.style.cssText = `
+      position: absolute;
+      right: 0px;
+      bottom: 0px;
+      background: rgba(0, 0, 0, 0.2);
+      display: block;
+    `
+    this.previewContainer.appendChild(this.previewRenderer.domElement)
+
+    this.previewContainer.style.display = this.showPreview ? 'block' : 'none'
+
+    container.appendChild(this.previewContainer)
+  }
+
+  updatePreviewRender() {
+    if (!this.previewRenderer || !this.previewContainer || !this.showPreview)
+      return
+
+    if (
+      !this.previewCamera ||
+      (this.activeCamera instanceof THREE.PerspectiveCamera &&
+        !(this.previewCamera instanceof THREE.PerspectiveCamera)) ||
+      (this.activeCamera instanceof THREE.OrthographicCamera &&
+        !(this.previewCamera instanceof THREE.OrthographicCamera))
+    ) {
+      this.previewCamera = this.activeCamera.clone()
+    }
+
+    this.previewCamera.position.copy(this.activeCamera.position)
+    this.previewCamera.rotation.copy(this.activeCamera.rotation)
+
+    const aspect = this.targetWidth / this.targetHeight
+
+    if (this.activeCamera instanceof THREE.OrthographicCamera) {
+      const activeOrtho = this.activeCamera as THREE.OrthographicCamera
+      const previewOrtho = this.previewCamera as THREE.OrthographicCamera
+
+      const frustumHeight =
+        (activeOrtho.top - activeOrtho.bottom) / activeOrtho.zoom
+
+      const frustumWidth = frustumHeight * aspect
+
+      previewOrtho.top = frustumHeight / 2
+      previewOrtho.left = -frustumWidth / 2
+      previewOrtho.right = frustumWidth / 2
+      previewOrtho.bottom = -frustumHeight / 2
+      previewOrtho.zoom = 1
+
+      previewOrtho.updateProjectionMatrix()
+    } else {
+      ;(this.previewCamera as THREE.PerspectiveCamera).aspect = aspect
+      ;(this.previewCamera as THREE.PerspectiveCamera).fov = (
+        this.activeCamera as THREE.PerspectiveCamera
+      ).fov
+    }
+
+    this.previewCamera.lookAt(this.controls.target)
+
+    const previewWidth = 120
+    const previewHeight = (previewWidth * this.targetHeight) / this.targetWidth
+    this.previewRenderer.setSize(previewWidth, previewHeight, false)
+    this.previewRenderer.render(this.scene, this.previewCamera)
+  }
+
+  updatePreviewSize() {
+    if (!this.previewContainer) return
+
+    const previewWidth = 120
+    const previewHeight = (previewWidth * this.targetHeight) / this.targetWidth
+
+    this.previewRenderer?.setSize(previewWidth, previewHeight, false)
+  }
+
+  setTargetSize(width: number, height: number) {
+    this.targetWidth = width
+    this.targetHeight = height
+    this.updatePreviewSize()
+    if (this.previewRenderer && this.previewCamera) {
+      if (this.previewCamera instanceof THREE.PerspectiveCamera) {
+        this.previewCamera.aspect = width / height
+        this.previewCamera.updateProjectionMatrix()
+      } else if (this.previewCamera instanceof THREE.OrthographicCamera) {
+        const frustumSize = 10
+        const aspect = width / height
+        this.previewCamera.left = (-frustumSize * aspect) / 2
+        this.previewCamera.right = (frustumSize * aspect) / 2
+        this.previewCamera.updateProjectionMatrix()
+      }
+    }
   }
 
   createViewHelper(container: Element | HTMLElement) {
@@ -225,6 +339,15 @@ class Load3d {
       this.renderer.render(this.scene, this.activeCamera)
 
       this.storeNodeProperty('FOV', fov)
+    }
+
+    if (
+      this.previewRenderer &&
+      this.previewCamera instanceof THREE.PerspectiveCamera
+    ) {
+      this.previewCamera.fov = fov
+      this.previewCamera.updateProjectionMatrix()
+      this.previewRenderer.render(this.scene, this.previewCamera)
     }
   }
 
@@ -460,6 +583,11 @@ class Load3d {
       }
     }
 
+    if (this.previewCamera) {
+      this.previewCamera = null
+    }
+    this.previewCamera = this.activeCamera.clone()
+
     this.activeCamera.position.copy(position)
     this.activeCamera.rotation.copy(rotation)
 
@@ -485,6 +613,7 @@ class Load3d {
 
     this.storeNodeProperty('Camera Type', this.getCurrentCameraType())
     this.handleResize()
+    this.updatePreviewRender()
   }
 
   getCurrentCameraType(): 'perspective' | 'orthographic' {
@@ -498,6 +627,16 @@ class Load3d {
       this.gridHelper.visible = showGrid
 
       this.storeNodeProperty('Show Grid', showGrid)
+    }
+  }
+
+  togglePreview(showPreview: boolean) {
+    if (this.previewRenderer) {
+      this.showPreview = showPreview
+
+      this.previewContainer.style.display = this.showPreview ? 'block' : 'none'
+
+      this.storeNodeProperty('Show Preview', showPreview)
     }
   }
 
@@ -524,6 +663,11 @@ class Load3d {
   startAnimation() {
     const animate = () => {
       this.animationFrameId = requestAnimationFrame(animate)
+
+      if (this.showPreview) {
+        this.updatePreviewRender()
+      }
+
       const delta = this.clock.getDelta()
 
       if (this.viewHelper.animating) {
@@ -825,6 +969,7 @@ class Load3d {
     }
 
     this.renderer.setSize(width, height)
+    this.setTargetSize(this.targetWidth, this.targetHeight)
   }
 
   animate = () => {
@@ -840,6 +985,7 @@ class Load3d {
   ): Promise<{ scene: string; mask: string }> {
     return new Promise(async (resolve, reject) => {
       try {
+        this.updatePreviewSize()
         const originalWidth = this.renderer.domElement.width
         const originalHeight = this.renderer.domElement.height
         const originalClearColor = this.renderer.getClearColor(

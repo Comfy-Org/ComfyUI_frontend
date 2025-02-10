@@ -26,7 +26,7 @@ app.registerExtension({
         container.id = `comfy-load-3d-${load3dNode.length}`
         container.classList.add('comfy-load-3d')
 
-        const load3d = new Load3d(container)
+        const load3d = new Load3d(container, { createPreview: true })
 
         containerToLoad3D.set(container.id, load3d)
 
@@ -138,18 +138,26 @@ app.registerExtension({
 
     const config = new Load3DConfiguration(load3d)
 
-    config.configure('input', modelWidget, material, upDirection, cameraState)
+    const width = node.widgets.find((w: IWidget) => w.name === 'width')
+    const height = node.widgets.find((w: IWidget) => w.name === 'height')
 
-    const w = node.widgets.find((w: IWidget) => w.name === 'width')
-    const h = node.widgets.find((w: IWidget) => w.name === 'height')
+    config.configure(
+      'input',
+      modelWidget,
+      material,
+      upDirection,
+      cameraState,
+      width,
+      height
+    )
 
     // @ts-expect-error hacky override
     sceneWidget.serializeValue = async () => {
       node.properties['Camera Info'] = load3d.getCameraState()
 
       const { scene: imageData, mask: maskData } = await load3d.captureScene(
-        w.value,
-        h.value
+        width.value,
+        height.value
       )
 
       const [data, dataMask] = await Promise.all([
@@ -181,7 +189,7 @@ app.registerExtension({
         container.id = `comfy-load-3d-animation-${load3dNode.length}`
         container.classList.add('comfy-load-3d-animation')
 
-        const load3d = new Load3dAnimation(container)
+        const load3d = new Load3dAnimation(container, { createPreview: true })
 
         containerToLoad3D.set(container.id, load3d)
 
@@ -293,10 +301,18 @@ app.registerExtension({
 
     const config = new Load3DConfiguration(load3d)
 
-    config.configure('input', modelWidget, material, upDirection, cameraState)
+    const width = node.widgets.find((w: IWidget) => w.name === 'width')
+    const height = node.widgets.find((w: IWidget) => w.name === 'height')
 
-    const w = node.widgets.find((w: IWidget) => w.name === 'width')
-    const h = node.widgets.find((w: IWidget) => w.name === 'height')
+    config.configure(
+      'input',
+      modelWidget,
+      material,
+      upDirection,
+      cameraState,
+      width,
+      height
+    )
 
     // @ts-expect-error hacky override
     sceneWidget.serializeValue = async () => {
@@ -305,8 +321,8 @@ app.registerExtension({
       load3d.toggleAnimation(false)
 
       const { scene: imageData, mask: maskData } = await load3d.captureScene(
-        w.value,
-        h.value
+        width.value,
+        height.value
       )
 
       const [data, dataMask] = await Promise.all([
@@ -343,7 +359,7 @@ app.registerExtension({
         container.id = `comfy-preview-3d-${load3dNode.length}`
         container.classList.add('comfy-preview-3d')
 
-        const load3d = new Load3d(container)
+        const load3d = new Load3d(container, { createPreview: false })
 
         containerToLoad3D.set(container.id, load3d)
 
@@ -456,7 +472,7 @@ app.registerExtension({
         container.id = `comfy-preview-3d-animation-${load3dNode.length}`
         container.classList.add('comfy-preview-3d-animation')
 
-        const load3d = new Load3dAnimation(container)
+        const load3d = new Load3dAnimation(container, { createPreview: false })
 
         containerToLoad3D.set(container.id, load3d)
 

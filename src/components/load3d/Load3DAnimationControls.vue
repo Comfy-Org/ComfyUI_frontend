@@ -3,12 +3,15 @@
     <Load3DControls
       :backgroundColor="backgroundColor"
       :showGrid="showGrid"
+      :showPreview="showPreview"
       :lightIntensity="lightIntensity"
       :showLightIntensityButton="showLightIntensityButton"
       :fov="fov"
       :showFOVButton="showFOVButton"
+      :showPreviewButton="showPreviewButton"
       @toggleCamera="onToggleCamera"
       @toggleGrid="onToggleGrid"
+      @togglePreview="onTogglePreview"
       @updateBackgroundColor="onUpdateBackgroundColor"
       @updateLightIntensity="onUpdateLightIntensity"
       @updateFOV="onUpdateFOV"
@@ -62,15 +65,18 @@ const props = defineProps<{
   playing: boolean
   backgroundColor: string
   showGrid: boolean
+  showPreview: boolean
   lightIntensity: number
   showLightIntensityButton: boolean
   fov: number
   showFOVButton: boolean
+  showPreviewButton: boolean
 }>()
 
 const emit = defineEmits<{
   (e: 'toggleCamera'): void
   (e: 'toggleGrid', value: boolean): void
+  (e: 'togglePreview', value: boolean): void
   (e: 'updateBackgroundColor', color: string): void
   (e: 'togglePlay', value: boolean): void
   (e: 'speedChange', value: number): void
@@ -85,10 +91,12 @@ const selectedSpeed = ref(1)
 const selectedAnimation = ref(0)
 const backgroundColor = ref(props.backgroundColor)
 const showGrid = ref(props.showGrid)
+const showPreview = ref(props.showPreview)
 const lightIntensity = ref(props.lightIntensity)
 const showLightIntensityButton = ref(props.showLightIntensityButton)
 const fov = ref(props.fov)
 const showFOVButton = ref(props.showFOVButton)
+const showPreviewButton = ref(props.showPreviewButton)
 const load3dControlsRef = ref(null)
 
 const speedOptions = [
@@ -111,10 +119,17 @@ watch(showFOVButton, (newValue) => {
   load3dControlsRef.value.showFOVButton = newValue
 })
 
+watch(showPreviewButton, (newValue) => {
+  load3dControlsRef.value.showPreviewButton = newValue
+})
+
 const onToggleCamera = () => {
   emit('toggleCamera')
 }
 const onToggleGrid = (value: boolean) => emit('toggleGrid', value)
+const onTogglePreview = (value: boolean) => {
+  emit('togglePreview', value)
+}
 const onUpdateBackgroundColor = (color: string) =>
   emit('updateBackgroundColor', color)
 

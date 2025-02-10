@@ -69,6 +69,18 @@
         />
       </div>
     </div>
+
+    <div v-if="showPreviewButton">
+      <Button class="p-button-rounded p-button-text" @click="togglePreview">
+        <i
+          :class="[
+            'pi',
+            showPreview ? 'pi-eye' : 'pi-eye-slash',
+            'text-white text-lg'
+          ]"
+        ></i>
+      </Button>
+    </div>
   </div>
 </template>
 
@@ -80,10 +92,12 @@ import { onMounted, onUnmounted, ref } from 'vue'
 const props = defineProps<{
   backgroundColor: string
   showGrid: boolean
+  showPreview: boolean
   lightIntensity: number
   showLightIntensityButton: boolean
   fov: number
   showFOVButton: boolean
+  showPreviewButton: boolean
 }>()
 
 const emit = defineEmits<{
@@ -92,10 +106,12 @@ const emit = defineEmits<{
   (e: 'updateBackgroundColor', color: string): void
   (e: 'updateLightIntensity', value: number): void
   (e: 'updateFOV', value: number): void
+  (e: 'togglePreview', value: boolean): void
 }>()
 
 const backgroundColor = ref(props.backgroundColor)
 const showGrid = ref(props.showGrid)
+const showPreview = ref(props.showPreview)
 const colorPickerRef = ref<HTMLInputElement | null>(null)
 const lightIntensity = ref(props.lightIntensity)
 const showLightIntensity = ref(false)
@@ -103,6 +119,7 @@ const showLightIntensityButton = ref(props.showLightIntensityButton)
 const fov = ref(props.fov)
 const showFOV = ref(false)
 const showFOVButton = ref(props.showFOVButton)
+const showPreviewButton = ref(props.showPreviewButton)
 
 const toggleCamera = () => {
   emit('toggleCamera')
@@ -111,6 +128,11 @@ const toggleCamera = () => {
 const toggleGrid = () => {
   showGrid.value = !showGrid.value
   emit('toggleGrid', showGrid.value)
+}
+
+const togglePreview = () => {
+  showPreview.value = !showPreview.value
+  emit('togglePreview', showPreview.value)
 }
 
 const updateBackgroundColor = (color: string) => {
@@ -160,6 +182,7 @@ defineExpose({
   lightIntensity,
   showLightIntensityButton,
   fov,
-  showFOVButton
+  showFOVButton,
+  showPreviewButton
 })
 </script>
