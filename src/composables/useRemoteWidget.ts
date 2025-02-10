@@ -146,6 +146,8 @@ export function useRemoteWidget<
   const onRefresh = () => {
     if (config.control_after_refresh) {
       const data = getCachedValue()
+      if (!Array.isArray(data)) return // control_after_refresh is only supported for array values
+
       switch (config.control_after_refresh) {
         case 'first':
           widget.value = data[0] ?? defaultValue
@@ -174,7 +176,7 @@ export function useRemoteWidget<
    * @returns the most recently computed value of the widget.
    */
   function getCachedValue() {
-    return dataCache.get(cacheKey)?.data as T[]
+    return dataCache.get(cacheKey)?.data as T
   }
 
   /**
