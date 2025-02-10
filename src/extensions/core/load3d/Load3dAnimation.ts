@@ -21,7 +21,7 @@ class Load3dAnimation extends Load3d {
     super(container, options)
   }
 
-  protected mountControls() {
+  protected mountControls(options: { createPreview?: boolean } = {}) {
     const controlsMount = document.createElement('div')
     controlsMount.style.pointerEvents = 'auto'
     this.controlsContainer.appendChild(controlsMount)
@@ -29,14 +29,14 @@ class Load3dAnimation extends Load3d {
     this.controlsApp = createApp(Load3DAnimationControls, {
       backgroundColor: '#282828',
       showGrid: true,
-      showPreview: true,
+      showPreview: options.createPreview,
       animations: [],
       playing: false,
       lightIntensity: 5,
       showLightIntensityButton: true,
       fov: 75,
       showFOVButton: true,
-      showPreviewButton: true,
+      showPreviewButton: options.createPreview,
       onToggleCamera: () => this.toggleCamera(),
       onToggleGrid: (show: boolean) => this.toggleGrid(show),
       onTogglePreview: (show: boolean) => this.togglePreview(show),

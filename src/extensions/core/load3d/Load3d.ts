@@ -133,11 +133,11 @@ class Load3d {
 
     this.standardMaterial = this.createSTLMaterial()
 
-    if (options && options.createPreview) {
-      this.createViewHelper(container)
-    }
+    this.createViewHelper(container)
 
-    this.createCapturePreview(container)
+    if (options && options.createPreview) {
+      this.createCapturePreview(container)
+    }
 
     this.controlsContainer = document.createElement('div')
     this.controlsContainer.style.position = 'absolute'
@@ -149,14 +149,14 @@ class Load3d {
     this.controlsContainer.style.zIndex = '1'
     container.appendChild(this.controlsContainer)
 
-    this.mountControls()
+    this.mountControls(options)
 
     this.handleResize()
 
     this.startAnimation()
   }
 
-  protected mountControls() {
+  protected mountControls(options: { createPreview?: boolean } = {}) {
     const controlsMount = document.createElement('div')
     controlsMount.style.pointerEvents = 'auto'
     this.controlsContainer.appendChild(controlsMount)
@@ -164,12 +164,12 @@ class Load3d {
     this.controlsApp = createApp(Load3DControls, {
       backgroundColor: '#282828',
       showGrid: true,
-      showPreview: true,
+      showPreview: options.createPreview,
       lightIntensity: 5,
       showLightIntensityButton: true,
       fov: 75,
       showFOVButton: true,
-      showPreviewButton: true,
+      showPreviewButton: options.createPreview,
       onToggleCamera: () => this.toggleCamera(),
       onToggleGrid: (show: boolean) => this.toggleGrid(show),
       onTogglePreview: (show: boolean) => this.togglePreview(show),
