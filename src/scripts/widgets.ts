@@ -14,7 +14,7 @@ import TiptapTableRow from '@tiptap/extension-table-row'
 import TiptapStarterKit from '@tiptap/starter-kit'
 import { Markdown as TiptapMarkdown } from 'tiptap-markdown'
 
-import { useRemoteWidget } from '@/hooks/remoteWidgetHook'
+import { useRemoteWidget } from '@/composables/useRemoteWidget'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useWidgetStore } from '@/stores/widgetStore'
@@ -575,7 +575,13 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
     }
 
     if (remote) {
-      const remoteWidget = useRemoteWidget(inputData)
+      const remoteWidget = useRemoteWidget({
+        inputData,
+        defaultValue,
+        node,
+        widget: res.widget
+      })
+      if (remote.refresh_button) remoteWidget.addRefreshButton()
 
       const origOptions = res.widget.options
       res.widget.options = new Proxy(
@@ -583,22 +589,7 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
         {
           get(target, prop: string | symbol) {
             if (prop !== 'values') return target[prop]
-
-            remoteWidget.fetchOptions().then((options) => {
-              if (!options || !options.length) return
-
-              const isUninitialized =
-                res.widget.value === remoteWidget.defaultValue &&
-                !res.widget.options.values?.includes(remoteWidget.defaultValue)
-              if (isUninitialized) {
-                res.widget.value = options[0]
-                res.widget.callback?.(options[0])
-                node.graph?.setDirtyCanvas(true)
-              }
-            })
-
-            const current = remoteWidget.getCacheEntry()
-            return current?.data || widgetStore.getDefaultValue(inputData)
+            return remoteWidget.getValue()
           }
         }
       )
@@ -622,6 +613,7 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
       (w) => w.name === (inputData[1]?.widget ?? 'image')
     ) as IStringWidget
     let uploadWidget
+    const { image_folder = 'input' } = inputData[1] ?? {}
 
     function showImage(name) {
       const img = new Image()
@@ -636,7 +628,7 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
         name = name.substring(folder_separator + 1)
       }
       img.src = api.apiURL(
-        `/view?filename=${encodeURIComponent(name)}&type=input&subfolder=${subfolder}${app.getPreviewFormatParam()}${app.getRandParam()}`
+        `/view?filename=${encodeURIComponent(name)}&type=${image_folder}&subfolder=${subfolder}${app.getPreviewFormatParam()}${app.getRandParam()}`
       )
       node.setSizeForImage?.()
     }
