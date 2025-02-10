@@ -1,8 +1,9 @@
 // @ts-strict-ignore
 import { LGraphCanvas, LGraphNode, LiteGraph } from '@comfyorg/litegraph'
 import type { Vector4 } from '@comfyorg/litegraph'
-import {
+import type {
   ICustomWidget,
+  IWidget,
   IWidgetOptions
 } from '@comfyorg/litegraph/dist/types/widgets'
 
@@ -120,7 +121,13 @@ function getClipPath(
   return ''
 }
 
-function computeSize(size: [number, number]): void {
+function isDomWidget(
+  widget: IWidget
+): widget is DOMWidget<HTMLElement, object> {
+  return !!widget.element
+}
+
+function computeSize(this: LGraphNode, size: [number, number]): void {
   if (this.widgets?.[0]?.last_y == null) return
 
   let y = this.widgets[0].last_y
@@ -129,12 +136,14 @@ function computeSize(size: [number, number]): void {
   let widgetHeight = 0
   let dom = []
   for (const w of this.widgets) {
+    // @ts-expect-error custom widget type
     if (w.type === 'converted-widget') {
       // Ignore
+      // @ts-expect-error custom widget type
       delete w.computedHeight
     } else if (w.computeSize) {
       widgetHeight += w.computeSize()[1] + 4
-    } else if (w.element) {
+    } else if (isDomWidget(w)) {
       // Extract DOM widget size info
       const styles = getComputedStyle(w.element)
       let minHeight =
@@ -144,14 +153,17 @@ function computeSize(size: [number, number]): void {
         w.options.getMaxHeight?.() ??
         parseInt(styles.getPropertyValue('--comfy-widget-max-height'))
 
-      let prefHeight =
+      let prefHeight: string | number =
         w.options.getHeight?.() ??
         styles.getPropertyValue('--comfy-widget-height')
+      // @ts-expect-error number has no endsWith
       if (prefHeight.endsWith?.('%')) {
         prefHeight =
           size[1] *
+          // @ts-expect-error number has no substring
           (parseFloat(prefHeight.substring(0, prefHeight.length - 1)) / 100)
       } else {
+        // @ts-expect-error number is not assignable to param of type string
         prefHeight = parseInt(prefHeight)
         if (isNaN(minHeight)) {
           minHeight = prefHeight
@@ -241,7 +253,9 @@ function computeSize(size: [number, number]): void {
   // Position each of the widgets
   for (const w of this.widgets) {
     w.y = y
+    // @ts-expect-error custom widget type
     if (w.computedHeight) {
+      // @ts-expect-error custom widget type
       y += w.computedHeight
     } else if (w.computeSize) {
       y += w.computeSize()[1] + 4
@@ -253,9 +267,7 @@ function computeSize(size: [number, number]): void {
 
 // Override the compute visible nodes function to allow us to hide/show DOM elements when the node goes offscreen
 const elementWidgets = new Set()
-//@ts-ignore
 const computeVisibleNodes = LGraphCanvas.prototype.computeVisibleNodes
-//@ts-ignore
 LGraphCanvas.prototype.computeVisibleNodes = function (): LGraphNode[] {
   const visibleNodes = computeVisibleNodes.apply(this, arguments)
 
