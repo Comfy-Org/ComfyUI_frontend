@@ -596,40 +596,44 @@ export class LGraphNode implements Positionable, IPinnable {
       this.title = this.constructor.title
     }
 
-    this.inputs ??= []
-    this.inputs = this.inputs.map(input => toClass(NodeInputSlot, input))
-    for (const [i, input] of this.inputs.entries()) {
-      const link = this.graph ? this.graph._links.get(input.link) : null
-      this.onConnectionsChange?.(NodeSlotType.INPUT, i, true, link, input)
-      this.onInputAdded?.(input)
+    if (this.inputs) {
+      for (let i = 0; i < this.inputs.length; ++i) {
+        const input = this.inputs[i]
+        const link = this.graph ? this.graph._links.get(input.link) : null
+        this.onConnectionsChange?.(NodeSlotType.INPUT, i, true, link, input)
+        this.onInputAdded?.(input)
+      }
     }
 
-    this.outputs ??= []
-    this.outputs = this.outputs.map(output => toClass(NodeOutputSlot, output))
-    for (const [i, output] of this.outputs.entries()) {
-      if (!output.links) {
-        continue
+    if (this.outputs) {
+      for (let i = 0; i < this.outputs.length; ++i) {
+        const output = this.outputs[i]
+        if (!output.links) {
+          continue
+        }
+        for (let j = 0; j < output.links.length; ++j) {
+          const link = this.graph
+            ? this.graph._links.get(output.links[j])
+            : null
+          this.onConnectionsChange?.(NodeSlotType.OUTPUT, i, true, link, output)
+        }
+        this.onOutputAdded?.(output)
       }
-      for (const linkId of output.links) {
-        const link = this.graph
-          ? this.graph._links.get(linkId)
-          : null
-        this.onConnectionsChange?.(NodeSlotType.OUTPUT, i, true, link, output)
-      }
-      this.onOutputAdded?.(output)
     }
 
     if (this.widgets) {
-      for (const w of this.widgets) {
+      for (let i = 0; i < this.widgets.length; ++i) {
+        const w = this.widgets[i]
         if (!w) continue
 
         if (w.options?.property && this.properties[w.options.property] != undefined)
           w.value = JSON.parse(JSON.stringify(this.properties[w.options.property]))
       }
-
-      for (const [i, value] of (info.widgets_values ?? []).entries()) {
-        if (this.widgets[i]) {
-          this.widgets[i].value = value
+      if (info.widgets_values) {
+        for (let i = 0; i < info.widgets_values.length; ++i) {
+          if (this.widgets[i]) {
+            this.widgets[i].value = info.widgets_values[i]
+          }
         }
       }
     }
