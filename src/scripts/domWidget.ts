@@ -218,12 +218,7 @@ function computeSize(this: LGraphNode, size: [number, number]): void {
     }
   }
 
-  // Ensure this.imgs exists before accessing
-  if (
-    this.imgs &&
-    this.widgets &&
-    !this.widgets.find((w) => w.name === ANIM_PREVIEW_WIDGET)
-  ) {
+  if (this.imgs && !this.widgets?.find((w) => w.name === ANIM_PREVIEW_WIDGET)) {
     freeSpace -= 220
   }
 
