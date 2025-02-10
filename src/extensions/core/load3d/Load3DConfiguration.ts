@@ -12,7 +12,6 @@ class Load3DConfiguration {
     modelWidget: IWidget,
     material: IWidget,
     upDirection: IWidget,
-    fov: IWidget,
     cameraState?: any,
     postModelUpdateFunc?: (load3d: Load3d) => void
   ) {

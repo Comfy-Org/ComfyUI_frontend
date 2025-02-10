@@ -134,20 +134,11 @@ app.registerExtension({
       (w: IWidget) => w.name === 'up_direction'
     )
 
-    const fov = node.widgets.find((w: IWidget) => w.name === 'fov')
-
     let cameraState = node.properties['Camera Info']
 
     const config = new Load3DConfiguration(load3d)
 
-    config.configure(
-      'input',
-      modelWidget,
-      material,
-      upDirection,
-      fov,
-      cameraState
-    )
+    config.configure('input', modelWidget, material, upDirection, cameraState)
 
     const w = node.widgets.find((w: IWidget) => w.name === 'width')
     const h = node.widgets.find((w: IWidget) => w.name === 'height')
@@ -298,20 +289,11 @@ app.registerExtension({
       (w: IWidget) => w.name === 'up_direction'
     )
 
-    const fov = node.widgets.find((w: IWidget) => w.name === 'fov')
-
     let cameraState = node.properties['Camera Info']
 
     const config = new Load3DConfiguration(load3d)
 
-    config.configure(
-      'input',
-      modelWidget,
-      material,
-      upDirection,
-      fov,
-      cameraState
-    )
+    config.configure('input', modelWidget, material, upDirection, cameraState)
 
     const w = node.widgets.find((w: IWidget) => w.name === 'width')
     const h = node.widgets.find((w: IWidget) => w.name === 'height')
@@ -427,8 +409,6 @@ app.registerExtension({
       (w: IWidget) => w.name === 'up_direction'
     )
 
-    const fov = node.widgets.find((w: IWidget) => w.name === 'fov')
-
     const onExecuted = node.onExecuted
 
     node.onExecuted = function (message: any) {
@@ -448,7 +428,7 @@ app.registerExtension({
 
       const config = new Load3DConfiguration(load3d)
 
-      config.configure('output', modelWidget, material, upDirection, fov)
+      config.configure('output', modelWidget, material, upDirection)
     }
   }
 })
@@ -546,8 +526,6 @@ app.registerExtension({
       (w: IWidget) => w.name === 'up_direction'
     )
 
-    const fov = node.widgets.find((w: IWidget) => w.name === 'fov')
-
     const onExecuted = node.onExecuted
 
     node.onExecuted = function (message: any) {
@@ -567,7 +545,7 @@ app.registerExtension({
 
       const config = new Load3DConfiguration(load3d)
 
-      config.configure('output', modelWidget, material, upDirection, fov)
+      config.configure('output', modelWidget, material, upDirection)
     }
   }
 })
