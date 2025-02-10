@@ -20,13 +20,20 @@ interface Rect {
   y: number
 }
 
+interface DOMSizeInfo {
+  minHeight: number
+  prefHeight: number
+  w: DOMWidget<HTMLElement, object>
+  diff?: number
+}
+
 export interface DOMWidget<T extends HTMLElement, V extends object | string>
   extends ICustomWidget<T> {
   // All unrecognized types will be treated the same way as 'custom' in litegraph internally.
   type: 'custom'
   name: string
   computedHeight?: number
-  element?: T
+  element: T
   options: DOMWidgetOptions<T, V>
   value: V
   y?: number
@@ -128,13 +135,13 @@ function isDomWidget(
 }
 
 function computeSize(this: LGraphNode, size: [number, number]): void {
-  if (this.widgets?.[0]?.last_y == null) return
+  if (!this.widgets?.[0]?.last_y) return
 
   let y = this.widgets[0].last_y
   let freeSpace = size[1] - y
 
   let widgetHeight = 0
-  let dom = []
+  let dom: DOMSizeInfo[] = []
   for (const w of this.widgets) {
     // @ts-expect-error custom widget type
     if (w.type === 'converted-widget') {
@@ -212,8 +219,12 @@ function computeSize(this: LGraphNode, size: [number, number]): void {
     }
   }
 
-  if (this.imgs && !this.widgets.find((w) => w.name === ANIM_PREVIEW_WIDGET)) {
-    // Allocate space for image
+  // Ensure this.imgs exists before accessing
+  if (
+    this.imgs &&
+    this.widgets &&
+    !this.widgets.find((w) => w.name === ANIM_PREVIEW_WIDGET)
+  ) {
     freeSpace -= 220
   }
 
@@ -268,8 +279,11 @@ function computeSize(this: LGraphNode, size: [number, number]): void {
 // Override the compute visible nodes function to allow us to hide/show DOM elements when the node goes offscreen
 const elementWidgets = new Set()
 const computeVisibleNodes = LGraphCanvas.prototype.computeVisibleNodes
-LGraphCanvas.prototype.computeVisibleNodes = function (): LGraphNode[] {
-  const visibleNodes = computeVisibleNodes.apply(this, arguments)
+LGraphCanvas.prototype.computeVisibleNodes = function (
+  nodes?: LGraphNode[],
+  out?: LGraphNode[]
+): LGraphNode[] {
+  const visibleNodes = computeVisibleNodes.call(this, nodes, out)
 
   for (const node of app.graph.nodes) {
     if (elementWidgets.has(node)) {
@@ -327,7 +341,7 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
     }
   }
 
-  get value(): V {
+  get value(): V | undefined {
     return this.options.getValue?.() ?? undefined
   }
 
@@ -343,7 +357,7 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
     y: number
   ): void {
     if (this.computedHeight == null) {
-      computeSize.call(node, node.size)
+      computeSize.call(node, [node.size[0], node.size[1]])
     }
 
     const { offset, scale } = app.canvas.ds
@@ -440,8 +454,8 @@ LGraphNode.prototype.addDOMWidget = function <
   elementWidgets.add(this)
 
   const collapse = this.collapse
-  this.collapse = function () {
-    collapse.apply(this, arguments)
+  this.collapse = function (force?: boolean) {
+    collapse.call(this, force)
     if (this.flags?.collapsed) {
       element.hidden = true
       element.style.display = 'none'
@@ -450,8 +464,8 @@ LGraphNode.prototype.addDOMWidget = function <
   }
 
   const { onConfigure } = this
-  this.onConfigure = function () {
-    onConfigure?.apply(this, arguments)
+  this.onConfigure = function (serializedNode: any) {
+    onConfigure?.call(this, serializedNode)
     element.dataset.collapsed = this.flags?.collapsed ? 'true' : 'false'
   }
 
@@ -459,16 +473,20 @@ LGraphNode.prototype.addDOMWidget = function <
   this.onRemoved = function () {
     element.remove()
     elementWidgets.delete(this)
-    onRemoved?.apply(this, arguments)
+    onRemoved?.call(this)
   }
 
-  if (!this[SIZE]) {
-    this[SIZE] = true
+  // Add type for SIZE symbol
+  const sizeSymbol = SIZE
+  // @ts-ignore index with symbol
+  if (!this[sizeSymbol]) {
+    // @ts-ignore index with symbol
+    this[sizeSymbol] = true
     const onResize = this.onResize
-    this.onResize = function (size) {
+    this.onResize = function (size: [number, number]) {
       options.beforeResize?.call(widget, this)
-      computeSize.call(this, size)
-      onResize?.apply(this, arguments)
+      computeSize.call(this, [size[0], size[1]])
+      onResize?.call(this, size)
       options.afterResize?.call(widget, this)
     }
   }
