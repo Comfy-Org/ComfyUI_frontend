@@ -292,7 +292,7 @@ LGraphCanvas.prototype.computeVisibleNodes = function (
           const wasHidden = w.element.hidden
           const actualHidden = hidden || shouldOtherwiseHide || isCollapsed
           w.element.hidden = actualHidden
-          w.element.style.display = actualHidden ? 'none' : 'block'
+          w.element.style.display = actualHidden ? 'none' : ''
           if (actualHidden && !wasHidden) {
             w.options.onHide?.(w as DOMWidget<HTMLElement, object>)
           }
@@ -371,7 +371,7 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
     const actualHidden = hidden || !isInVisibleNodes || isCollapsed
     const wasHidden = this.element.hidden
     this.element.hidden = actualHidden
-    this.element.style.display = actualHidden ? 'none' : 'block'
+    this.element.style.display = actualHidden ? 'none' : ''
 
     if (actualHidden && !wasHidden) {
       this.options.onHide?.(this)
