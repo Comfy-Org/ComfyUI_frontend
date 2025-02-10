@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { LGraphCanvas, LGraphNode, LiteGraph } from '@comfyorg/litegraph'
 import type { Vector4 } from '@comfyorg/litegraph'
 import type {
@@ -88,7 +87,7 @@ function getClipPath(
   canvasRect: DOMRect
 ): string {
   const selectedNode: LGraphNode = Object.values(
-    app.canvas.selected_nodes
+    app.canvas.selected_nodes ?? {}
   )[0] as LGraphNode
   if (selectedNode && selectedNode !== node) {
     const elRect = element.getBoundingClientRect()
@@ -233,7 +232,7 @@ function computeSize(this: LGraphNode, size: [number, number]): void {
   if (freeSpace < 0) {
     // Not enough space for all widgets so we need to grow
     size[1] -= freeSpace
-    this.graph.setDirtyCanvas(true)
+    this.graph?.setDirtyCanvas(true)
   } else {
     // Share the space between each
     const growDiff = freeSpace - growBy
@@ -256,7 +255,9 @@ function computeSize(this: LGraphNode, size: [number, number]): void {
       // Grow any that are auto height
       const shared = freeSpace / canGrow.length
       for (const d of canGrow) {
-        d.w.computedHeight += shared
+        if (d.w.computedHeight) {
+          d.w.computedHeight += shared
+        }
       }
     }
   }
@@ -288,7 +289,7 @@ LGraphCanvas.prototype.computeVisibleNodes = function (
   for (const node of app.graph.nodes) {
     if (elementWidgets.has(node)) {
       const hidden = visibleNodes.indexOf(node) === -1
-      for (const w of node.widgets) {
+      for (const w of node.widgets ?? []) {
         if (w.element) {
           w.element.dataset.isInVisibleNodes = hidden ? 'false' : 'true'
           const shouldOtherwiseHide = w.element.dataset.shouldHide === 'true'
@@ -296,7 +297,7 @@ LGraphCanvas.prototype.computeVisibleNodes = function (
           const wasHidden = w.element.hidden
           const actualHidden = hidden || shouldOtherwiseHide || isCollapsed
           w.element.hidden = actualHidden
-          w.element.style.display = actualHidden ? 'none' : null
+          w.element.style.display = actualHidden ? 'none' : 'block'
           if (actualHidden && !wasHidden) {
             w.options.onHide?.(w as DOMWidget<HTMLElement, object>)
           }
@@ -341,8 +342,8 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
     }
   }
 
-  get value(): V | undefined {
-    return this.options.getValue?.() ?? undefined
+  get value(): V {
+    return this.options.getValue?.() ?? ('' as V)
   }
 
   set value(v: V) {
@@ -363,7 +364,7 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
     const { offset, scale } = app.canvas.ds
     const hidden =
       (!!this.options.hideOnZoom && app.canvas.low_quality) ||
-      this.computedHeight <= 0 ||
+      (this.computedHeight ?? 0) <= 0 ||
       // @ts-expect-error custom widget type
       this.type === 'converted-widget' ||
       // @ts-expect-error custom widget type
@@ -375,7 +376,7 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
     const actualHidden = hidden || !isInVisibleNodes || isCollapsed
     const wasHidden = this.element.hidden
     this.element.hidden = actualHidden
-    this.element.style.display = actualHidden ? 'none' : null
+    this.element.style.display = actualHidden ? 'none' : 'block'
 
     if (actualHidden && !wasHidden) {
       this.options.onHide?.(this)
@@ -402,7 +403,8 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
     })
 
     if (useSettingStore().get('Comfy.DOMClippingEnabled')) {
-      this.element.style.clipPath = getClipPath(node, this.element, elRect)
+      const clipPath = getClipPath(node, this.element, elRect)
+      this.element.style.clipPath = clipPath ?? 'none'
       this.element.style.willChange = 'clip-path'
     }
 
@@ -443,7 +445,9 @@ LGraphNode.prototype.addDOMWidget = function <
 
   const widget = new DOMWidgetImpl(name, type, element, options)
 
-  for (const evt of options.selectOn) {
+  // Ensure selectOn exists before iteration
+  const selectEvents = options.selectOn ?? ['focus', 'click']
+  for (const evt of selectEvents) {
     element.addEventListener(evt, () => {
       app.canvas.selectNode(this)
       app.canvas.bringToFront(this)
