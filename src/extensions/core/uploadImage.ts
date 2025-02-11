@@ -15,7 +15,7 @@ app.registerExtension({
     const config = imageInputSpec?.[1] ?? {}
     const { image_upload = false, image_folder = 'input' } = config
 
-    if (image_upload && nodeData.input?.required) {
+    if (image_upload && nodeData?.input?.required) {
       nodeData.input.required.upload = ['IMAGEUPLOAD', { image_folder }]
     }
   }
