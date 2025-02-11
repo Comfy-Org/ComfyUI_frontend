@@ -15,6 +15,7 @@ import TiptapStarterKit from '@tiptap/starter-kit'
 import { Markdown as TiptapMarkdown } from 'tiptap-markdown'
 
 import { useFloatWidget } from '@/composables/widgets/useFloatWidget'
+import { useIntWidget } from '@/composables/widgets/useIntWidget'
 import { useRemoteWidget } from '@/composables/widgets/useRemoteWidget'
 import { useStringWidget } from '@/composables/widgets/useStringWidget'
 import { useSettingStore } from '@/stores/settingStore'
@@ -436,9 +437,7 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
   'INT:seed': seedWidget,
   'INT:noise_seed': seedWidget,
   FLOAT: useFloatWidget(),
-  INT(node, inputName, inputData: InputSpec, app) {
-    return createIntWidget(node, inputName, inputData, app)
-  },
+  INT: useIntWidget(),
   BOOLEAN(node, inputName, inputData) {
     let defaultVal = false
     let options = {}
