@@ -15,6 +15,7 @@ import TiptapStarterKit from '@tiptap/starter-kit'
 import { Markdown as TiptapMarkdown } from 'tiptap-markdown'
 
 import { useRemoteWidget } from '@/composables/widgets/useRemoteWidget'
+import { useStringWidget } from '@/composables/widgets/useStringWidget'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useWidgetStore } from '@/stores/widgetStore'
@@ -335,52 +336,6 @@ function createIntWidget(
   }
 }
 
-function addMultilineWidget(node, name: string, opts, app: ComfyApp) {
-  const inputEl = document.createElement('textarea')
-  inputEl.className = 'comfy-multiline-input'
-  inputEl.value = opts.defaultVal
-  inputEl.placeholder = opts.placeholder || name
-  if (app.vueAppReady) {
-    inputEl.spellcheck = useSettingStore().get(
-      'Comfy.TextareaWidget.Spellcheck'
-    )
-  }
-
-  const widget = node.addDOMWidget(name, 'customtext', inputEl, {
-    getValue() {
-      return inputEl.value
-    },
-    setValue(v) {
-      inputEl.value = v
-    }
-  })
-  widget.inputEl = inputEl
-
-  inputEl.addEventListener('input', () => {
-    widget.callback?.(widget.value)
-  })
-
-  inputEl.addEventListener('pointerdown', (event: PointerEvent) => {
-    if (event.button === 1) {
-      app.canvas.processMouseDown(event)
-    }
-  })
-
-  inputEl.addEventListener('pointermove', (event: PointerEvent) => {
-    if ((event.buttons & 4) === 4) {
-      app.canvas.processMouseMove(event)
-    }
-  })
-
-  inputEl.addEventListener('pointerup', (event: PointerEvent) => {
-    if (event.button === 1) {
-      app.canvas.processMouseUp(event)
-    }
-  })
-
-  return { minWidth: 400, minHeight: 200, widget }
-}
-
 function addMarkdownWidget(node, name: string, opts, app: ComfyApp) {
   TiptapMarkdown.configure({
     html: false,
@@ -528,29 +483,7 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
       widget: node.addWidget('toggle', inputName, defaultVal, () => {}, options)
     }
   },
-  STRING(node, inputName, inputData: InputSpec, app) {
-    const defaultVal = inputData[1].default || ''
-    const multiline = !!inputData[1].multiline
-
-    let res
-    if (multiline) {
-      res = addMultilineWidget(
-        node,
-        inputName,
-        { defaultVal, ...inputData[1] },
-        app
-      )
-    } else {
-      res = {
-        widget: node.addWidget('text', inputName, defaultVal, () => {}, {})
-      }
-    }
-
-    if (inputData[1].dynamicPrompts != undefined)
-      res.widget.dynamicPrompts = inputData[1].dynamicPrompts
-
-    return res
-  },
+  STRING: useStringWidget(),
   MARKDOWN(node, inputName, inputData: InputSpec, app) {
     const defaultVal = inputData[1].default || ''
 
