@@ -2,12 +2,13 @@ import type { LGraphNode } from '@comfyorg/litegraph'
 import type { IStringWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
 import { api } from '@/scripts/api'
+import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { useToastStore } from '@/stores/toastStore'
 import type { ComfyApp } from '@/types'
 import type { InputSpec } from '@/types/apiTypes'
 
 export const useImageUploadWidget = () => {
-  const widgetConstructor = (
+  const widgetConstructor: ComfyWidgetConstructor = (
     node: LGraphNode,
     inputName: string,
     inputData: InputSpec,

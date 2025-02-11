@@ -8,6 +8,7 @@ import TiptapTableRow from '@tiptap/extension-table-row'
 import TiptapStarterKit from '@tiptap/starter-kit'
 import { Markdown as TiptapMarkdown } from 'tiptap-markdown'
 
+import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import type { ComfyApp } from '@/types'
 import type { InputSpec } from '@/types/apiTypes'
 
@@ -101,13 +102,13 @@ function addMarkdownWidget(
 }
 
 export const useMarkdownWidget = () => {
-  const widgetConstructor = (
+  const widgetConstructor: ComfyWidgetConstructor = (
     node: LGraphNode,
     inputName: string,
     inputData: InputSpec,
     app: ComfyApp
   ) => {
-    const defaultVal = inputData[1].default || ''
+    const defaultVal = inputData[1]?.default || ''
     return addMarkdownWidget(
       node,
       inputName,

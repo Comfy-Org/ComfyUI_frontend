@@ -20,7 +20,7 @@ export type ComfyWidgetConstructor = (
   node: LGraphNode,
   inputName: string,
   inputData: InputSpec,
-  app?: ComfyApp,
+  app: ComfyApp,
   widgetName?: string
 ) => { widget: IWidget; minWidth?: number; minHeight?: number }
 

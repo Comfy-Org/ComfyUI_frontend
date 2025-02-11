@@ -1,5 +1,6 @@
 import type { IWidget, LGraphNode } from '@comfyorg/litegraph'
 
+import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { useSettingStore } from '@/stores/settingStore'
 import type { ComfyApp } from '@/types'
 import type { InputSpec } from '@/types/apiTypes'
@@ -57,14 +58,14 @@ function addMultilineWidget(
 }
 
 export const useStringWidget = () => {
-  const widgetConstructor = (
+  const widgetConstructor: ComfyWidgetConstructor = (
     node: LGraphNode,
     inputName: string,
     inputData: InputSpec,
     app: ComfyApp
   ) => {
-    const defaultVal = inputData[1].default || ''
-    const multiline = !!inputData[1].multiline
+    const defaultVal = inputData[1]?.default || ''
+    const multiline = !!inputData[1]?.multiline
 
     let res: { widget: IWidget }
     if (multiline) {
