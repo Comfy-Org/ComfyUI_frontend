@@ -17,6 +17,12 @@ declare module '@comfyorg/litegraph/dist/types/widgets' {
     onRemove?: () => void
     beforeQueued?: () => unknown
     serializeValue?: (node: LGraphNode, index: number) => Promise<unknown>
+
+    /**
+     * If the widget supports dynamic prompts, this will be set to true.
+     * See extensions/core/dynamicPrompts.ts
+     */
+    dynamicPrompts?: boolean
   }
 }
 
