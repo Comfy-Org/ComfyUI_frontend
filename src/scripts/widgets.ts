@@ -1,18 +1,16 @@
 // @ts-strict-ignore
 import type { LGraphNode } from '@comfyorg/litegraph'
 import type { IWidget } from '@comfyorg/litegraph'
-import type { IComboWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
 import { useBooleanWidget } from '@/composables/widgets/useBooleanWidget'
+import { useComboWidget } from '@/composables/widgets/useComboWidget'
 import { useFloatWidget } from '@/composables/widgets/useFloatWidget'
 import { useImageUploadWidget } from '@/composables/widgets/useImageUploadWidget'
 import { useIntWidget } from '@/composables/widgets/useIntWidget'
 import { useMarkdownWidget } from '@/composables/widgets/useMarkdownWidget'
-import { useRemoteWidget } from '@/composables/widgets/useRemoteWidget'
 import { useSeedWidget } from '@/composables/widgets/useSeedWidget'
 import { useStringWidget } from '@/composables/widgets/useStringWidget'
 import { useSettingStore } from '@/stores/settingStore'
-import { useWidgetStore } from '@/stores/widgetStore'
 import type { InputSpec } from '@/types/apiTypes'
 
 import type { ComfyApp } from './app'
@@ -255,49 +253,6 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
   BOOLEAN: useBooleanWidget(),
   STRING: useStringWidget(),
   MARKDOWN: useMarkdownWidget(),
-  COMBO(node, inputName, inputData: InputSpec) {
-    const widgetStore = useWidgetStore()
-    const { remote, options } = inputData[1]
-    const defaultValue = widgetStore.getDefaultValue(inputData)
-
-    const res = {
-      widget: node.addWidget('combo', inputName, defaultValue, () => {}, {
-        values: options ?? inputData[0]
-      }) as IComboWidget
-    }
-
-    if (remote) {
-      const remoteWidget = useRemoteWidget({
-        inputData,
-        defaultValue,
-        node,
-        widget: res.widget
-      })
-      if (remote.refresh_button) remoteWidget.addRefreshButton()
-
-      const origOptions = res.widget.options
-      res.widget.options = new Proxy(
-        origOptions as Record<string | symbol, any>,
-        {
-          get(target, prop: string | symbol) {
-            if (prop !== 'values') return target[prop]
-            return remoteWidget.getValue()
-          }
-        }
-      )
-    }
-
-    if (inputData[1]?.control_after_generate) {
-      // TODO make combo handle a widget node type?
-      res.widget.linkedWidgets = addValueControlWidgets(
-        node,
-        res.widget,
-        undefined,
-        undefined,
-        inputData
-      )
-    }
-    return res
-  },
+  COMBO: useComboWidget(),
   IMAGEUPLOAD: useImageUploadWidget()
 }
