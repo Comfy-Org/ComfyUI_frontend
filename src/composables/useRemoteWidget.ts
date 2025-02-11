@@ -34,26 +34,27 @@ const createCacheKey = (config: RemoteWidgetConfig): string => {
 const getBackoff = (retryCount: number) =>
   Math.min(1000 * Math.pow(2, retryCount), 512)
 
-const isInitialized = (entry: CacheEntry<any> | undefined) =>
+const isInitialized = (entry: CacheEntry<unknown> | undefined) =>
   entry?.data && entry?.timestamp && entry.timestamp > 0
 
-const isStale = (entry: CacheEntry<any> | undefined, ttl: number) =>
+const isStale = (entry: CacheEntry<unknown> | undefined, ttl: number) =>
   entry?.timestamp && Date.now() - entry.timestamp >= ttl
 
-const isFetching = (entry: CacheEntry<any> | undefined) =>
+const isFetching = (entry: CacheEntry<unknown> | undefined) =>
   entry?.fetchPromise !== undefined
 
-const isFailed = (entry: CacheEntry<any> | undefined) => entry?.failed === true
+const isFailed = (entry: CacheEntry<unknown> | undefined) =>
+  entry?.failed === true
 
-const isBackingOff = (entry: CacheEntry<any> | undefined) =>
+const isBackingOff = (entry: CacheEntry<unknown> | undefined) =>
   entry?.error &&
   entry?.lastErrorTime &&
   Date.now() - entry.lastErrorTime < getBackoff(entry.retryCount || 0)
 
-const fetchData = async <T>(
+const fetchData = async (
   config: RemoteWidgetConfig,
   controller: AbortController
-): Promise<T> => {
+) => {
   const { route, response_key, query_params, timeout = TIMEOUT } = config
   const res = await axios.get(route, {
     params: query_params,
@@ -129,7 +130,7 @@ export function useRemoteWidget<
 
     try {
       currentEntry.controller = new AbortController()
-      currentEntry.fetchPromise = fetchData<T>(config, currentEntry.controller)
+      currentEntry.fetchPromise = fetchData(config, currentEntry.controller)
       const data = await currentEntry.fetchPromise
 
       setSuccess(currentEntry, data)
