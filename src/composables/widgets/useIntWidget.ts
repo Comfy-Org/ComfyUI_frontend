@@ -1,7 +1,11 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
 import type { INumericWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
-import type { ComfyWidgetConstructor } from '@/scripts/widgets'
+import type { ComfyApp } from '@/scripts/app'
+import {
+  type ComfyWidgetConstructor,
+  addValueControlWidget
+} from '@/scripts/widgets'
 import { useSettingStore } from '@/stores/settingStore'
 import { InputSpec } from '@/types/apiTypes'
 import { getNumberDefaults } from '@/utils/mathUtil'
@@ -10,7 +14,9 @@ export const useIntWidget = () => {
   const widgetConstructor: ComfyWidgetConstructor = (
     node: LGraphNode,
     inputName: string,
-    inputData: InputSpec
+    inputData: InputSpec,
+    app?: ComfyApp,
+    widgetName?: string
   ) => {
     const settingStore = useSettingStore()
     const sliderEnabled = !settingStore.get('Comfy.DisableSliders')
@@ -28,7 +34,7 @@ export const useIntWidget = () => {
     })
     config.precision = 0
 
-    return {
+    const result = {
       widget: node.addWidget(
         widgetType,
         inputName,
@@ -44,6 +50,20 @@ export const useIntWidget = () => {
         config
       )
     }
+
+    if (inputData[1]?.control_after_generate) {
+      const seedControl = addValueControlWidget(
+        node,
+        result.widget,
+        'randomize',
+        undefined,
+        widgetName,
+        inputData
+      )
+      result.widget.linkedWidgets = [seedControl]
+    }
+
+    return result
   }
   return widgetConstructor
 }

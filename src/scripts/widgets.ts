@@ -17,6 +17,7 @@ import { Markdown as TiptapMarkdown } from 'tiptap-markdown'
 import { useFloatWidget } from '@/composables/widgets/useFloatWidget'
 import { useIntWidget } from '@/composables/widgets/useIntWidget'
 import { useRemoteWidget } from '@/composables/widgets/useRemoteWidget'
+import { useSeedWidget } from '@/composables/widgets/useSeedWidget'
 import { useStringWidget } from '@/composables/widgets/useStringWidget'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
@@ -50,36 +51,6 @@ export function updateControlWidgetLabel(widget) {
 
 export const IS_CONTROL_WIDGET = Symbol()
 const HAS_EXECUTED = Symbol()
-
-function getNumberDefaults(
-  inputData: InputSpec,
-  defaultStep,
-  precision,
-  enable_rounding
-) {
-  let defaultVal = inputData[1]['default']
-  let { min, max, step, round } = inputData[1]
-
-  if (defaultVal == undefined) defaultVal = 0
-  if (min == undefined) min = 0
-  if (max == undefined) max = 2048
-  if (step == undefined) step = defaultStep
-  // precision is the number of decimal places to show.
-  // by default, display the the smallest number of decimal places such that changes of size step are visible.
-  if (precision == undefined) {
-    precision = Math.max(-Math.floor(Math.log10(step)), 0)
-  }
-
-  if (enable_rounding && (round == undefined || round === true)) {
-    // by default, round the value to those decimal places shown.
-    round = Math.round(1000000 * Math.pow(0.1, precision)) / 1000000
-  }
-
-  return {
-    val: defaultVal,
-    config: { min, max, step: 10.0 * step, round, precision }
-  }
-}
 
 export function addValueControlWidget(
   node,
@@ -284,60 +255,6 @@ export function addValueControlWidgets(
   return widgets
 }
 
-function seedWidget(node, inputName, inputData: InputSpec, app, widgetName) {
-  const seed = createIntWidget(node, inputName, inputData, app, true)
-  const seedControl = addValueControlWidget(
-    node,
-    seed.widget,
-    'randomize',
-    undefined,
-    widgetName,
-    inputData
-  )
-
-  seed.widget.linkedWidgets = [seedControl]
-  return seed
-}
-
-function createIntWidget(
-  node,
-  inputName,
-  inputData: InputSpec,
-  app,
-  isSeedInput: boolean = false
-) {
-  const control = inputData[1]?.control_after_generate
-  if (!isSeedInput && control) {
-    return seedWidget(
-      node,
-      inputName,
-      inputData,
-      app,
-      typeof control === 'string' ? control : undefined
-    )
-  }
-
-  let widgetType = isSlider(inputData[1]['display'], app)
-  const { val, config } = getNumberDefaults(inputData, 1, 0, true)
-  Object.assign(config, { precision: 0 })
-  return {
-    widget: node.addWidget(
-      widgetType,
-      inputName,
-      val,
-      function (v) {
-        const s = this.options.step / 10
-        let sh = this.options.min % s
-        if (isNaN(sh)) {
-          sh = 0
-        }
-        this.value = Math.round((v - sh) / s) * s + sh
-      },
-      config
-    )
-  }
-}
-
 function addMarkdownWidget(node, name: string, opts, app: ComfyApp) {
   TiptapMarkdown.configure({
     html: false,
@@ -425,19 +342,13 @@ function addMarkdownWidget(node, name: string, opts, app: ComfyApp) {
   return { minWidth: 400, minHeight: 200, widget }
 }
 
-function isSlider(display, app) {
-  if (app.ui.settings.getSettingValue('Comfy.DisableSliders')) {
-    return 'number'
-  }
-
-  return display === 'slider' ? 'slider' : 'number'
-}
+const SeedWidget = useSeedWidget()
 
 export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
-  'INT:seed': seedWidget,
-  'INT:noise_seed': seedWidget,
-  FLOAT: useFloatWidget(),
+  'INT:seed': SeedWidget,
+  'INT:noise_seed': SeedWidget,
   INT: useIntWidget(),
+  FLOAT: useFloatWidget(),
   BOOLEAN(node, inputName, inputData) {
     let defaultVal = false
     let options = {}
