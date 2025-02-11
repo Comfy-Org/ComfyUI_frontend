@@ -32,7 +32,7 @@ test.describe('Remote COMBO Widget', () => {
 
   const waitForWidgetUpdate = async (comfyPage: ComfyPage) => {
     // Force re-render to trigger first access of widget's options
-    await comfyPage.page.mouse.click(100, 100)
+    await comfyPage.page.mouse.click(400, 300)
     await comfyPage.page.waitForTimeout(256)
   }
 
@@ -221,9 +221,15 @@ test.describe('Remote COMBO Widget', () => {
 
       const nodeName = 'Remote Widget Node'
       await addRemoteWidgetNode(comfyPage, nodeName)
+      await waitForWidgetUpdate(comfyPage)
 
-      // Wait for a few retries
-      await comfyPage.page.waitForTimeout(1024)
+      // Wait for timeout and backoff, then force re-render, repeat
+      const requestTimeout = 512
+      await comfyPage.page.waitForTimeout(requestTimeout)
+      await waitForWidgetUpdate(comfyPage)
+      await comfyPage.page.waitForTimeout(requestTimeout * 2)
+      await waitForWidgetUpdate(comfyPage)
+      await comfyPage.page.waitForTimeout(requestTimeout * 3)
 
       // Verify exponential backoff between retries
       const intervals = timestamps.slice(1).map((t, i) => t - timestamps[i])
