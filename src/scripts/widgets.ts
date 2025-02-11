@@ -50,7 +50,7 @@ export function addValueControlWidget(
   values?: unknown,
   widgetName?: string,
   inputData?: InputSpec
-) {
+): IWidget {
   let name = inputData?.[1]?.control_after_generate
   if (typeof name !== 'string') {
     name = widgetName
@@ -74,7 +74,7 @@ export function addValueControlWidgets(
   defaultValue?: string,
   options?: Record<string, any>,
   inputData?: InputSpec
-) {
+): IWidget[] {
   if (!defaultValue) defaultValue = 'randomize'
   if (!options) options = {}
 
@@ -90,7 +90,7 @@ export function addValueControlWidgets(
     return name
   }
 
-  const widgets = []
+  const widgets: IWidget[] = []
   const valueControl = node.addWidget(
     'combo',
     getName('control_after_generate', 'controlAfterGenerateName'),
