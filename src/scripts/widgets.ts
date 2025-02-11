@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import type { LGraphNode } from '@comfyorg/litegraph'
 import type { IWidget } from '@comfyorg/litegraph'
 import type {
@@ -32,13 +31,13 @@ function controlValueRunBefore() {
   return useSettingStore().get('Comfy.WidgetControlMode') === 'before'
 }
 
-export function updateControlWidgetLabel(widget) {
+export function updateControlWidgetLabel(widget: IWidget) {
   let replacement = 'after'
   let find = 'before'
   if (controlValueRunBefore()) {
     ;[find, replacement] = [replacement, find]
   }
-  widget.label = (widget.label ?? widget.name).replace(find, replacement)
+  widget.label = (widget.label ?? widget.name ?? '').replace(find, replacement)
 }
 
 export const IS_CONTROL_WIDGET = Symbol()
@@ -79,7 +78,7 @@ export function addValueControlWidgets(
   if (!defaultValue) defaultValue = 'randomize'
   if (!options) options = {}
 
-  const getName = (defaultName, optionName) => {
+  const getName = (defaultName: string, optionName: string) => {
     let name = defaultName
     if (options[optionName]) {
       name = options[optionName]
@@ -105,13 +104,14 @@ export function addValueControlWidgets(
 
   valueControl.tooltip =
     'Allows the linked widget to be changed automatically, for example randomizing the noise seed.'
+  // @ts-ignore index with symbol
   valueControl[IS_CONTROL_WIDGET] = true
   updateControlWidgetLabel(valueControl)
   widgets.push(valueControl)
 
   const isCombo = targetWidget.type === 'combo'
   let comboFilter: IStringWidget
-  if (isCombo) {
+  if (isCombo && valueControl.options.values) {
     valueControl.options.values.push('increment-wrap')
   }
   if (isCombo && options.addFilterList !== false) {
@@ -135,7 +135,7 @@ export function addValueControlWidgets(
     var v = valueControl.value
 
     if (isCombo && v !== 'fixed') {
-      let values = targetWidget.options.values
+      let values = targetWidget.options.values ?? []
       const filter = comboFilter?.value
       if (filter) {
         let check
@@ -156,7 +156,7 @@ export function addValueControlWidgets(
           check = (item: string) => item.toLocaleLowerCase().includes(lower)
         }
         values = values.filter((item: string) => check(item))
-        if (!values.length && targetWidget.options.values.length) {
+        if (!values.length && targetWidget.options.values?.length) {
           console.warn(
             'Filter for node ' + node.id + ' has filtered out all items',
             filter
@@ -191,16 +191,15 @@ export function addValueControlWidgets(
       if (current_index >= 0) {
         let value = values[current_index]
         targetWidget.value = value
-        targetWidget.callback(value)
+        targetWidget.callback?.(value)
       }
     } else {
       //number
-      let min = targetWidget.options.min
-      let max = targetWidget.options.max
+      let { min = 0, max = 1, step = 1 } = targetWidget.options
       // limit to something that javascript can handle
       max = Math.min(1125899906842624, max)
       min = Math.max(-1125899906842624, min)
-      let range = (max - min) / (targetWidget.options.step / 10)
+      let range = (max - min) / (step / 10)
 
       //adjust values based on valueControl Behaviour
       switch (v) {
@@ -208,17 +207,15 @@ export function addValueControlWidgets(
           break
         case 'increment':
           // @ts-expect-error targetWidget.value can be number or string
-          targetWidget.value += targetWidget.options.step / 10
+          targetWidget.value += step / 10
           break
         case 'decrement':
           // @ts-expect-error targetWidget.value can be number or string
-          targetWidget.value -= targetWidget.options.step / 10
+          targetWidget.value -= step / 10
           break
         case 'randomize':
           targetWidget.value =
-            Math.floor(Math.random() * range) *
-              (targetWidget.options.step / 10) +
-            min
+            Math.floor(Math.random() * range) * (step / 10) + min
           break
         default:
           break
@@ -229,17 +226,19 @@ export function addValueControlWidgets(
       if (targetWidget.value < min) targetWidget.value = min
       // @ts-expect-error targetWidget.value can be number or string
       if (targetWidget.value > max) targetWidget.value = max
-      targetWidget.callback(targetWidget.value)
+      targetWidget.callback?.(targetWidget.value)
     }
   }
 
   valueControl.beforeQueued = () => {
     if (controlValueRunBefore()) {
       // Don't run on first execution
+      // @ts-ignore index with symbol
       if (valueControl[HAS_EXECUTED]) {
         applyWidgetControl()
       }
     }
+    // @ts-ignore index with symbol
     valueControl[HAS_EXECUTED] = true
   }
 
