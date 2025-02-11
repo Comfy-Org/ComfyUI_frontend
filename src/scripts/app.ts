@@ -203,13 +203,13 @@ export class ComfyApp {
     this.vueAppReady = false
     this.ui = new ComfyUI(this)
     this.api = api
-    this.bodyTop = $el('div.comfyui-body-top', { parent: document.body })
-    this.bodyLeft = $el('div.comfyui-body-left', { parent: document.body })
-    this.bodyRight = $el('div.comfyui-body-right', { parent: document.body })
-    this.bodyBottom = $el('div.comfyui-body-bottom', { parent: document.body })
-    this.canvasContainer = $el('div.graph-canvas-container', {
-      parent: document.body
-    })
+    // Dummy placeholder elements before GraphCanvas is mounted.
+    this.bodyTop = $el('div.comfyui-body-top')
+    this.bodyLeft = $el('div.comfyui-body-left')
+    this.bodyRight = $el('div.comfyui-body-right')
+    this.bodyBottom = $el('div.comfyui-body-bottom')
+    this.canvasContainer = $el('div.graph-canvas-container')
+
     this.menu = new ComfyAppMenu(this)
     this.bypassBgColor = '#FF00FF'
 
@@ -774,6 +774,12 @@ export class ComfyApp {
    * Set up the app on the page
    */
   async setup(canvasEl: HTMLCanvasElement) {
+    this.bodyTop = document.getElementById('comfyui-body-top')
+    this.bodyLeft = document.getElementById('comfyui-body-left')
+    this.bodyRight = document.getElementById('comfyui-body-right')
+    this.bodyBottom = document.getElementById('comfyui-body-bottom')
+    this.canvasContainer = document.getElementById('graph-canvas-container')
+
     this.canvasEl = canvasEl
     this.resizeCanvas()
 

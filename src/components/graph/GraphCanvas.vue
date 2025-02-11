@@ -1,28 +1,31 @@
 <template>
-  <teleport to=".graph-canvas-container">
-    <!-- Load splitter overlay only after comfyApp is ready. -->
-    <!-- If load immediately, the top-level splitter stateKey won't be correctly
-    synced with the stateStorage (localStorage). -->
-    <LiteGraphCanvasSplitterOverlay
-      v-if="comfyAppReady && betaMenuEnabled && !workspaceStore.focusMode"
-    >
-      <template #side-bar-panel>
-        <SideToolbar />
-      </template>
-      <template #bottom-panel>
-        <BottomPanel />
-      </template>
-      <template #graph-canvas-panel>
-        <SecondRowWorkflowTabs
-          v-if="workflowTabsPosition === 'Topbar (2nd-row)'"
-        />
-        <GraphCanvasMenu v-if="canvasMenuEnabled" />
-      </template>
-    </LiteGraphCanvasSplitterOverlay>
-    <TitleEditor />
-    <GraphCanvasMenu v-if="!betaMenuEnabled && canvasMenuEnabled" />
-    <canvas ref="canvasRef" id="graph-canvas" tabindex="1" />
-  </teleport>
+  <!-- Load splitter overlay only after comfyApp is ready. -->
+  <!-- If load immediately, the top-level splitter stateKey won't be correctly
+  synced with the stateStorage (localStorage). -->
+  <LiteGraphCanvasSplitterOverlay
+    v-if="comfyAppReady && betaMenuEnabled && !workspaceStore.focusMode"
+  >
+    <template #side-bar-panel>
+      <SideToolbar />
+    </template>
+    <template #bottom-panel>
+      <BottomPanel />
+    </template>
+    <template #graph-canvas-panel>
+      <SecondRowWorkflowTabs
+        v-if="workflowTabsPosition === 'Topbar (2nd-row)'"
+      />
+      <GraphCanvasMenu v-if="canvasMenuEnabled" />
+    </template>
+  </LiteGraphCanvasSplitterOverlay>
+  <TitleEditor />
+  <GraphCanvasMenu v-if="!betaMenuEnabled && canvasMenuEnabled" />
+  <canvas
+    ref="canvasRef"
+    id="graph-canvas"
+    tabindex="1"
+    class="w-full h-full touch-none"
+  />
   <NodeSearchboxPopover />
   <NodeTooltip v-if="tooltipEnabled" />
   <NodeBadge />

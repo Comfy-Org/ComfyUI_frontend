@@ -1,8 +1,18 @@
 <template>
-  <!-- Top menu bar needs to load before the GraphCanvas as it needs to host
-  the menu buttons added by legacy extension scripts.-->
-  <TopMenubar />
-  <GraphCanvas @ready="onGraphReady" />
+  <div class="comfyui-body grid h-screen w-screen overflow-hidden">
+    <div class="comfyui-body-top" id="comfyui-body-top">
+      <TopMenubar v-if="useNewMenu === 'Top'" />
+    </div>
+    <div class="comfyui-body-bottom" id="comfyui-body-bottom">
+      <TopMenubar v-if="useNewMenu === 'Bottom'" />
+    </div>
+    <div class="comfyui-body-left" id="comfyui-body-left" />
+    <div class="comfyui-body-right" id="comfyui-body-right" />
+    <div class="graph-canvas-container" id="graph-canvas-container">
+      <GraphCanvas @ready="onGraphReady" />
+    </div>
+  </div>
+
   <GlobalToast />
   <UnloadWindowConfirmDialog v-if="!isElectron()" />
   <BrowserTabTitle />
@@ -13,7 +23,7 @@
 import { useEventListener } from '@vueuse/core'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
-import { onBeforeUnmount, onMounted, watch, watchEffect } from 'vue'
+import { computed, onBeforeUnmount, onMounted, watch, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import BrowserTabTitle from '@/components/BrowserTabTitle.vue'
@@ -126,9 +136,11 @@ watchEffect(() => {
   }
 })
 
+const useNewMenu = computed(() => {
+  return settingStore.get('Comfy.UseNewMenu')
+})
 watchEffect(() => {
-  const useNewMenu = settingStore.get('Comfy.UseNewMenu')
-  if (useNewMenu === 'Disabled') {
+  if (useNewMenu.value === 'Disabled') {
     app.ui.menuContainer.style.setProperty('display', 'block')
     app.ui.restoreMenuPosition()
   } else {
@@ -226,3 +238,85 @@ const onGraphReady = () => {
   )
 }
 </script>
+
+<style scoped>
+.comfyui-body {
+  grid-template-columns: auto 1fr auto;
+  grid-template-rows: auto 1fr auto;
+}
+
+/**
+  +------------------+------------------+------------------+
+  |                                                        |
+  |  .comfyui-body-                                        |
+  |       top                                              |
+  | (spans all cols)                                       |
+  |                                                        |
+  +------------------+------------------+------------------+
+  |                  |                  |                  |
+  | .comfyui-body-   |   #graph-canvas  | .comfyui-body-   |
+  |      left        |                  |      right       |
+  |                  |                  |                  |
+  |                  |                  |                  |
+  +------------------+------------------+------------------+
+  |                                                        |
+  |  .comfyui-body-                                        |
+  |      bottom                                            |
+  | (spans all cols)                                       |
+  |                                                        |
+  +------------------+------------------+------------------+
+*/
+
+.comfyui-body-top {
+  order: -5;
+  /* Span across all columns */
+  grid-column: 1/-1;
+  /* Position at the first row */
+  grid-row: 1;
+  /* Top menu bar dropdown needs to be above of graph canvas splitter overlay which is z-index: 999 */
+  /* Top menu bar z-index needs to be higher than bottom menu bar z-index as by default
+  pysssss's image feed is located at body-bottom, and it can overlap with the queue button, which
+  is located in body-top. */
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+}
+
+.comfyui-body-left {
+  order: -4;
+  /* Position in the first column */
+  grid-column: 1;
+  /* Position below the top element */
+  grid-row: 2;
+  z-index: 10;
+  display: flex;
+}
+
+.graph-canvas-container {
+  width: 100%;
+  height: 100%;
+  order: -3;
+  grid-column: 2;
+  grid-row: 2;
+  position: relative;
+  overflow: hidden;
+}
+
+.comfyui-body-right {
+  order: -2;
+  z-index: 10;
+  grid-column: 3;
+  grid-row: 2;
+}
+
+.comfyui-body-bottom {
+  order: 4;
+  /* Span across all columns */
+  grid-column: 1/-1;
+  grid-row: 3;
+  /* Bottom menu bar dropdown needs to be above of graph canvas splitter overlay which is z-index: 999 */
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+}
+</style>
