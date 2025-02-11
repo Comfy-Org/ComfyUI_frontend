@@ -14,6 +14,7 @@ import TiptapTableRow from '@tiptap/extension-table-row'
 import TiptapStarterKit from '@tiptap/starter-kit'
 import { Markdown as TiptapMarkdown } from 'tiptap-markdown'
 
+import { useFloatWidget } from '@/composables/widgets/useFloatWidget'
 import { useRemoteWidget } from '@/composables/widgets/useRemoteWidget'
 import { useStringWidget } from '@/composables/widgets/useStringWidget'
 import { useSettingStore } from '@/stores/settingStore'
@@ -434,40 +435,7 @@ function isSlider(display, app) {
 export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
   'INT:seed': seedWidget,
   'INT:noise_seed': seedWidget,
-  FLOAT(node, inputName, inputData: InputSpec, app) {
-    let widgetType: 'number' | 'slider' = isSlider(inputData[1]['display'], app)
-    let precision = app.ui.settings.getSettingValue(
-      'Comfy.FloatRoundingPrecision'
-    )
-    let disable_rounding = app.ui.settings.getSettingValue(
-      'Comfy.DisableFloatRounding'
-    )
-    if (precision == 0) precision = undefined
-    const { val, config } = getNumberDefaults(
-      inputData,
-      0.5,
-      precision,
-      !disable_rounding
-    )
-    return {
-      widget: node.addWidget(
-        widgetType,
-        inputName,
-        val,
-        function (v) {
-          if (config.round) {
-            this.value =
-              Math.round((v + Number.EPSILON) / config.round) * config.round
-            if (this.value > config.max) this.value = config.max
-            if (this.value < config.min) this.value = config.min
-          } else {
-            this.value = v
-          }
-        },
-        config
-      )
-    }
-  },
+  FLOAT: useFloatWidget(),
   INT(node, inputName, inputData: InputSpec, app) {
     return createIntWidget(node, inputName, inputData, app)
   },
