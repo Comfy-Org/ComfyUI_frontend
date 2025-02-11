@@ -439,6 +439,18 @@ LGraphNode.prototype.addDOMWidget = function <
   }
 
   const widget = new DOMWidgetImpl(name, type, element, options)
+  // Workaround for https://github.com/Comfy-Org/ComfyUI_frontend/issues/2493
+  // Some custom nodes are explicitly expecting getter and setter of `value`
+  // property to be on instance instead of prototype.
+  Object.defineProperty(widget, 'value', {
+    get(this: DOMWidgetImpl<T, V>): V {
+      return this.options.getValue?.() ?? ('' as V)
+    },
+    set(this: DOMWidgetImpl<T, V>, v: V) {
+      this.options.setValue?.(v)
+      this.callback?.(this.value)
+    }
+  })
 
   // Ensure selectOn exists before iteration
   const selectEvents = options.selectOn ?? ['focus', 'click']
