@@ -30,6 +30,21 @@ test.describe('Remote COMBO Widget', () => {
     }, nodeName)
   }
 
+  const getWidgetValue = async (comfyPage: ComfyPage, nodeName: string) => {
+    return await comfyPage.page.evaluate((name) => {
+      const node = window['app'].graph.nodes.find((node) => node.title === name)
+      return node.widgets[0].value
+    }, nodeName)
+  }
+
+  const clickRefreshButton = (comfyPage: ComfyPage, nodeName: string) => {
+    return comfyPage.page.evaluate((name) => {
+      const node = window['app'].graph.nodes.find((node) => node.title === name)
+      const buttonWidget = node.widgets.find((w) => w.name === 'refresh')
+      return buttonWidget?.callback()
+    }, nodeName)
+  }
+
   const waitForWidgetUpdate = async (comfyPage: ComfyPage) => {
     // Force re-render to trigger first access of widget's options
     await comfyPage.page.mouse.click(400, 300)
@@ -234,6 +249,65 @@ test.describe('Remote COMBO Widget', () => {
       // Verify exponential backoff between retries
       const intervals = timestamps.slice(1).map((t, i) => t - timestamps[i])
       expect(intervals[1]).toBeGreaterThan(intervals[0])
+    })
+
+    test('clicking refresh button forces a refresh', async ({ comfyPage }) => {
+      await comfyPage.page.route(
+        '**/api/models/checkpoints**',
+        async (route) => {
+          await route.fulfill({
+            body: JSON.stringify([`${Date.now()}`]),
+            status: 200
+          })
+        }
+      )
+
+      const nodeName = 'Remote Widget Node With Refresh Button'
+
+      // Trigger initial fetch when adding node to the graph
+      await addRemoteWidgetNode(comfyPage, nodeName)
+      await waitForWidgetUpdate(comfyPage)
+      const initialOptions = await getWidgetOptions(comfyPage, nodeName)
+
+      // Click refresh button
+      await clickRefreshButton(comfyPage, nodeName)
+
+      // Verify refresh occurred
+      const refreshedOptions = await getWidgetOptions(comfyPage, nodeName)
+      expect(refreshedOptions).not.toEqual(initialOptions)
+    })
+
+    test('control_after_refresh is applied after refresh', async ({
+      comfyPage
+    }) => {
+      const options = [
+        ['first option', 'second option', 'third option'],
+        ['new first option', 'first option', 'second option', 'third option']
+      ]
+      await comfyPage.page.route(
+        '**/api/models/checkpoints**',
+        async (route) => {
+          const next = options.shift()
+          await route.fulfill({
+            body: JSON.stringify(next),
+            status: 200
+          })
+        }
+      )
+
+      const nodeName =
+        'Remote Widget Node With Refresh Button and Control After Refresh'
+
+      // Trigger initial fetch when adding node to the graph
+      await addRemoteWidgetNode(comfyPage, nodeName)
+      await waitForWidgetUpdate(comfyPage)
+
+      // Click refresh button
+      await clickRefreshButton(comfyPage, nodeName)
+
+      // Verify the selected value of the widget is the first option in the refreshed list
+      const refreshedValue = await getWidgetValue(comfyPage, nodeName)
+      expect(refreshedValue).toEqual('new first option')
     })
   })
 
