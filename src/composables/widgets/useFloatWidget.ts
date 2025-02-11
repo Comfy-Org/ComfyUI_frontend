@@ -7,13 +7,15 @@ import type { InputSpec } from '@/types/apiTypes'
 import { getNumberDefaults } from '@/utils/mathUtil'
 
 export const useFloatWidget = () => {
-  const settingStore = useSettingStore()
-
   const widgetConstructor: ComfyWidgetConstructor = (
     node: LGraphNode,
     inputName: string,
     inputData: InputSpec
   ) => {
+    // TODO: Move to outer scope to avoid re-initializing on every call
+    // Blocked on ComfyWidgets lazy initialization.
+
+    const settingStore = useSettingStore()
     const sliderEnabled = !settingStore.get('Comfy.DisableSliders')
     const inputOptions = inputData[1]
 
