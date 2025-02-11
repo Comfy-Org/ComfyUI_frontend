@@ -239,4 +239,8 @@ watch([isDragging, isOverlappingWithTopMenu], ([dragging, overlapping]) => {
 :deep(.p-panel-header) {
   display: none;
 }
+
+.drag-handle {
+  @apply w-3 h-max;
+}
 </style>
