@@ -21,7 +21,7 @@ export const useKeybindingService = () => {
     // Ignore non-modifier keybindings if typing in input fields
     const target = event.composedPath()[0] as HTMLElement
     if (
-      !keyCombo.hasModifier &&
+      (!keyCombo.hasModifier || keyCombo.isShiftOnly) &&
       (target.tagName === 'TEXTAREA' ||
         target.tagName === 'INPUT' ||
         (target.tagName === 'SPAN' &&

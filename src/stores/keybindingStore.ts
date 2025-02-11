@@ -76,6 +76,15 @@ export class KeyComboImpl implements KeyCombo {
     return ['Control', 'Meta', 'Alt', 'Shift'].includes(this.key)
   }
 
+  get modifierCount(): number {
+    const modifiers = [this.ctrl, this.alt, this.shift]
+    return modifiers.reduce((acc, cur) => acc + Number(cur), 0)
+  }
+
+  get isShiftOnly(): boolean {
+    return this.shift && this.modifierCount === 1
+  }
+
   getKeySequences(): string[] {
     const sequences: string[] = []
     if (this.ctrl) {
