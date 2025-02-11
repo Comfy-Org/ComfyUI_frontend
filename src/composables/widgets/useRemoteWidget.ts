@@ -183,13 +183,13 @@ export function useRemoteWidget<
   /**
    * Getter of the remote property of the widget (e.g., options.values, value, etc.).
    * Starts the fetch process then returns the cached value immediately.
-   * @param onFullfilled - Optional callback to be called when the fetch is resolved.
+   * @param onFulfilled - Optional callback to be called when the fetch is resolved.
    * @returns the most recent value of the widget.
    */
-  function getValue(onFullfilled?: () => void) {
+  function getValue(onFulfilled?: () => void) {
     fetchValue().then((data) => {
       if (isFirstLoad()) onFirstLoad(data)
-      onFullfilled?.()
+      onFulfilled?.()
     })
     return getCachedValue() ?? defaultValue
   }
