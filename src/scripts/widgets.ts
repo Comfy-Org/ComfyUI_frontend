@@ -14,7 +14,6 @@ import TiptapTableRow from '@tiptap/extension-table-row'
 import TiptapStarterKit from '@tiptap/starter-kit'
 import { Markdown as TiptapMarkdown } from 'tiptap-markdown'
 
-
 import { useFloatWidget } from '@/composables/widgets/useFloatWidget'
 import { useIntWidget } from '@/composables/widgets/useIntWidget'
 import { useRemoteWidget } from '@/composables/widgets/useRemoteWidget'
