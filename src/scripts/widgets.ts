@@ -433,6 +433,7 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
       (w) => w.name === (inputData[1]?.widget ?? 'image')
     ) as IStringWidget
     let uploadWidget
+    const { image_folder = 'input' } = inputData[1] ?? {}
 
     function showImage(name) {
       const img = new Image()
@@ -447,7 +448,7 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
         name = name.substring(folder_separator + 1)
       }
       img.src = api.apiURL(
-        `/view?filename=${encodeURIComponent(name)}&type=input&subfolder=${subfolder}${app.getPreviewFormatParam()}${app.getRandParam()}`
+        `/view?filename=${encodeURIComponent(name)}&type=${image_folder}&subfolder=${subfolder}${app.getPreviewFormatParam()}${app.getRandParam()}`
       )
       node.setSizeForImage?.()
     }
