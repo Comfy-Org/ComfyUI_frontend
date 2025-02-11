@@ -14,7 +14,11 @@ import TiptapTableRow from '@tiptap/extension-table-row'
 import TiptapStarterKit from '@tiptap/starter-kit'
 import { Markdown as TiptapMarkdown } from 'tiptap-markdown'
 
-import { useRemoteWidget } from '@/composables/useRemoteWidget'
+
+import { useFloatWidget } from '@/composables/widgets/useFloatWidget'
+import { useIntWidget } from '@/composables/widgets/useIntWidget'
+import { useRemoteWidget } from '@/composables/widgets/useRemoteWidget'
+import { useStringWidget } from '@/composables/widgets/useStringWidget'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useWidgetStore } from '@/stores/widgetStore'
@@ -335,52 +339,6 @@ function createIntWidget(
   }
 }
 
-function addMultilineWidget(node, name: string, opts, app: ComfyApp) {
-  const inputEl = document.createElement('textarea')
-  inputEl.className = 'comfy-multiline-input'
-  inputEl.value = opts.defaultVal
-  inputEl.placeholder = opts.placeholder || name
-  if (app.vueAppReady) {
-    inputEl.spellcheck = useSettingStore().get(
-      'Comfy.TextareaWidget.Spellcheck'
-    )
-  }
-
-  const widget = node.addDOMWidget(name, 'customtext', inputEl, {
-    getValue() {
-      return inputEl.value
-    },
-    setValue(v) {
-      inputEl.value = v
-    }
-  })
-  widget.inputEl = inputEl
-
-  inputEl.addEventListener('input', () => {
-    widget.callback?.(widget.value)
-  })
-
-  inputEl.addEventListener('pointerdown', (event: PointerEvent) => {
-    if (event.button === 1) {
-      app.canvas.processMouseDown(event)
-    }
-  })
-
-  inputEl.addEventListener('pointermove', (event: PointerEvent) => {
-    if ((event.buttons & 4) === 4) {
-      app.canvas.processMouseMove(event)
-    }
-  })
-
-  inputEl.addEventListener('pointerup', (event: PointerEvent) => {
-    if (event.button === 1) {
-      app.canvas.processMouseUp(event)
-    }
-  })
-
-  return { minWidth: 400, minHeight: 200, widget }
-}
-
 function addMarkdownWidget(node, name: string, opts, app: ComfyApp) {
   TiptapMarkdown.configure({
     html: false,
@@ -479,43 +437,8 @@ function isSlider(display, app) {
 export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
   'INT:seed': seedWidget,
   'INT:noise_seed': seedWidget,
-  FLOAT(node, inputName, inputData: InputSpec, app) {
-    let widgetType: 'number' | 'slider' = isSlider(inputData[1]['display'], app)
-    let precision = app.ui.settings.getSettingValue(
-      'Comfy.FloatRoundingPrecision'
-    )
-    let disable_rounding = app.ui.settings.getSettingValue(
-      'Comfy.DisableFloatRounding'
-    )
-    if (precision == 0) precision = undefined
-    const { val, config } = getNumberDefaults(
-      inputData,
-      0.5,
-      precision,
-      !disable_rounding
-    )
-    return {
-      widget: node.addWidget(
-        widgetType,
-        inputName,
-        val,
-        function (v) {
-          if (config.round) {
-            this.value =
-              Math.round((v + Number.EPSILON) / config.round) * config.round
-            if (this.value > config.max) this.value = config.max
-            if (this.value < config.min) this.value = config.min
-          } else {
-            this.value = v
-          }
-        },
-        config
-      )
-    }
-  },
-  INT(node, inputName, inputData: InputSpec, app) {
-    return createIntWidget(node, inputName, inputData, app)
-  },
+  FLOAT: useFloatWidget(),
+  INT: useIntWidget(),
   BOOLEAN(node, inputName, inputData) {
     let defaultVal = false
     let options = {}
@@ -528,29 +451,7 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
       widget: node.addWidget('toggle', inputName, defaultVal, () => {}, options)
     }
   },
-  STRING(node, inputName, inputData: InputSpec, app) {
-    const defaultVal = inputData[1].default || ''
-    const multiline = !!inputData[1].multiline
-
-    let res
-    if (multiline) {
-      res = addMultilineWidget(
-        node,
-        inputName,
-        { defaultVal, ...inputData[1] },
-        app
-      )
-    } else {
-      res = {
-        widget: node.addWidget('text', inputName, defaultVal, () => {}, {})
-      }
-    }
-
-    if (inputData[1].dynamicPrompts != undefined)
-      res.widget.dynamicPrompts = inputData[1].dynamicPrompts
-
-    return res
-  },
+  STRING: useStringWidget(),
   MARKDOWN(node, inputName, inputData: InputSpec, app) {
     const defaultVal = inputData[1].default || ''
 

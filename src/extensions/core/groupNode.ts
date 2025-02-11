@@ -856,6 +856,7 @@ export class GroupNodeHandler {
         for (let i = 0; i < c.nodes.length; i++) {
           let id = innerNodes?.[i]?.id
           // Use existing IDs if they are set on the inner nodes
+          // @ts-expect-error id can be string or number
           if (id == null || isNaN(id)) {
             id = undefined
           } else {

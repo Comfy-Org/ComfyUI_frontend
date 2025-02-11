@@ -26,7 +26,7 @@ app.registerExtension({
         container.id = `comfy-load-3d-${load3dNode.length}`
         container.classList.add('comfy-load-3d')
 
-        const load3d = new Load3d(container)
+        const load3d = new Load3d(container, { createPreview: true })
 
         containerToLoad3D.set(container.id, load3d)
 
@@ -130,40 +130,33 @@ app.registerExtension({
 
     const material = node.widgets.find((w: IWidget) => w.name === 'material')
 
-    const lightIntensity = node.widgets.find(
-      (w: IWidget) => w.name === 'light_intensity'
-    )
-
     const upDirection = node.widgets.find(
       (w: IWidget) => w.name === 'up_direction'
     )
-
-    const fov = node.widgets.find((w: IWidget) => w.name === 'fov')
 
     let cameraState = node.properties['Camera Info']
 
     const config = new Load3DConfiguration(load3d)
 
+    const width = node.widgets.find((w: IWidget) => w.name === 'width')
+    const height = node.widgets.find((w: IWidget) => w.name === 'height')
+
     config.configure(
       'input',
       modelWidget,
       material,
-      lightIntensity,
       upDirection,
-      fov,
-      cameraState
+      cameraState,
+      width,
+      height
     )
 
-    const w = node.widgets.find((w: IWidget) => w.name === 'width')
-    const h = node.widgets.find((w: IWidget) => w.name === 'height')
-
-    // @ts-expect-error hacky override
     sceneWidget.serializeValue = async () => {
       node.properties['Camera Info'] = load3d.getCameraState()
 
       const { scene: imageData, mask: maskData } = await load3d.captureScene(
-        w.value,
-        h.value
+        width.value,
+        height.value
       )
 
       const [data, dataMask] = await Promise.all([
@@ -195,7 +188,7 @@ app.registerExtension({
         container.id = `comfy-load-3d-animation-${load3dNode.length}`
         container.classList.add('comfy-load-3d-animation')
 
-        const load3d = new Load3dAnimation(container)
+        const load3d = new Load3dAnimation(container, { createPreview: true })
 
         containerToLoad3D.set(container.id, load3d)
 
@@ -299,42 +292,35 @@ app.registerExtension({
 
     const material = node.widgets.find((w: IWidget) => w.name === 'material')
 
-    const lightIntensity = node.widgets.find(
-      (w: IWidget) => w.name === 'light_intensity'
-    )
-
     const upDirection = node.widgets.find(
       (w: IWidget) => w.name === 'up_direction'
     )
-
-    const fov = node.widgets.find((w: IWidget) => w.name === 'fov')
 
     let cameraState = node.properties['Camera Info']
 
     const config = new Load3DConfiguration(load3d)
 
+    const width = node.widgets.find((w: IWidget) => w.name === 'width')
+    const height = node.widgets.find((w: IWidget) => w.name === 'height')
+
     config.configure(
       'input',
       modelWidget,
       material,
-      lightIntensity,
       upDirection,
-      fov,
-      cameraState
+      cameraState,
+      width,
+      height
     )
 
-    const w = node.widgets.find((w: IWidget) => w.name === 'width')
-    const h = node.widgets.find((w: IWidget) => w.name === 'height')
-
-    // @ts-expect-error hacky override
     sceneWidget.serializeValue = async () => {
       node.properties['Camera Info'] = load3d.getCameraState()
 
       load3d.toggleAnimation(false)
 
       const { scene: imageData, mask: maskData } = await load3d.captureScene(
-        w.value,
-        h.value
+        width.value,
+        height.value
       )
 
       const [data, dataMask] = await Promise.all([
@@ -371,7 +357,7 @@ app.registerExtension({
         container.id = `comfy-preview-3d-${load3dNode.length}`
         container.classList.add('comfy-preview-3d')
 
-        const load3d = new Load3d(container)
+        const load3d = new Load3d(container, { createPreview: false })
 
         containerToLoad3D.set(container.id, load3d)
 
@@ -433,15 +419,9 @@ app.registerExtension({
 
     const material = node.widgets.find((w: IWidget) => w.name === 'material')
 
-    const lightIntensity = node.widgets.find(
-      (w: IWidget) => w.name === 'light_intensity'
-    )
-
     const upDirection = node.widgets.find(
       (w: IWidget) => w.name === 'up_direction'
     )
-
-    const fov = node.widgets.find((w: IWidget) => w.name === 'fov')
 
     const onExecuted = node.onExecuted
 
@@ -462,14 +442,7 @@ app.registerExtension({
 
       const config = new Load3DConfiguration(load3d)
 
-      config.configure(
-        'output',
-        modelWidget,
-        material,
-        lightIntensity,
-        upDirection,
-        fov
-      )
+      config.configure('output', modelWidget, material, upDirection)
     }
   }
 })
@@ -497,7 +470,7 @@ app.registerExtension({
         container.id = `comfy-preview-3d-animation-${load3dNode.length}`
         container.classList.add('comfy-preview-3d-animation')
 
-        const load3d = new Load3dAnimation(container)
+        const load3d = new Load3dAnimation(container, { createPreview: false })
 
         containerToLoad3D.set(container.id, load3d)
 
@@ -563,15 +536,9 @@ app.registerExtension({
 
     const material = node.widgets.find((w: IWidget) => w.name === 'material')
 
-    const lightIntensity = node.widgets.find(
-      (w: IWidget) => w.name === 'light_intensity'
-    )
-
     const upDirection = node.widgets.find(
       (w: IWidget) => w.name === 'up_direction'
     )
-
-    const fov = node.widgets.find((w: IWidget) => w.name === 'fov')
 
     const onExecuted = node.onExecuted
 
@@ -592,14 +559,7 @@ app.registerExtension({
 
       const config = new Load3DConfiguration(load3d)
 
-      config.configure(
-        'output',
-        modelWidget,
-        material,
-        lightIntensity,
-        upDirection,
-        fov
-      )
+      config.configure('output', modelWidget, material, upDirection)
     }
   }
 })

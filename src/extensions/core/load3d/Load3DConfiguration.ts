@@ -11,10 +11,10 @@ class Load3DConfiguration {
     loadFolder: 'input' | 'output',
     modelWidget: IWidget,
     material: IWidget,
-    lightIntensity: IWidget,
     upDirection: IWidget,
-    fov: IWidget,
     cameraState?: any,
+    width: IWidget | null = null,
+    height: IWidget | null = null,
     postModelUpdateFunc?: (load3d: Load3d) => void
   ) {
     this.setupModelHandling(
@@ -24,10 +24,23 @@ class Load3DConfiguration {
       postModelUpdateFunc
     )
     this.setupMaterial(material)
-    this.setupLighting(lightIntensity)
     this.setupDirection(upDirection)
-    this.setupCamera(fov)
+    this.setupTargetSize(width, height)
     this.setupDefaultProperties()
+  }
+
+  private setupTargetSize(width: IWidget | null, height: IWidget | null) {
+    if (width && height) {
+      this.load3d.setTargetSize(width.value as number, height.value as number)
+
+      width.callback = (value: number) => {
+        this.load3d.setTargetSize(value, height.value as number)
+      }
+
+      height.callback = (value: number) => {
+        this.load3d.setTargetSize(width.value as number, value)
+      }
+    }
   }
 
   private setupModelHandling(
@@ -56,13 +69,6 @@ class Load3DConfiguration {
     )
   }
 
-  private setupLighting(lightIntensity: IWidget) {
-    lightIntensity.callback = (value: number) => {
-      this.load3d.setLightIntensity(value)
-    }
-    this.load3d.setLightIntensity(lightIntensity.value as number)
-  }
-
   private setupDirection(upDirection: IWidget) {
     upDirection.callback = (
       value: 'original' | '-x' | '+x' | '-y' | '+y' | '-z' | '+z'
@@ -72,13 +78,6 @@ class Load3DConfiguration {
     this.load3d.setUpDirection(
       upDirection.value as 'original' | '-x' | '+x' | '-y' | '+y' | '-z' | '+z'
     )
-  }
-
-  private setupCamera(fov: IWidget) {
-    fov.callback = (value: number) => {
-      this.load3d.setFOV(value)
-    }
-    this.load3d.setFOV(fov.value as number)
   }
 
   private setupDefaultProperties() {
@@ -94,6 +93,14 @@ class Load3DConfiguration {
     const bgColor = this.load3d.loadNodeProperty('Background Color', '#282828')
 
     this.load3d.setBackgroundColor(bgColor)
+
+    const lightIntensity = this.load3d.loadNodeProperty('Light Intensity', '5')
+
+    this.load3d.setLightIntensity(lightIntensity)
+
+    const fov = this.load3d.loadNodeProperty('FOV', '75')
+
+    this.load3d.setFOV(fov)
   }
 
   private createModelUpdateHandler(

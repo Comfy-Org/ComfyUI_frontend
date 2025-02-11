@@ -26,8 +26,10 @@ try {
 
   // Create the PR
   console.log('Creating PR...')
+  const prBody = `Automated update of litegraph to version ${newVersion}.
+Ref: https://github.com/Comfy-Org/litegraph.js/releases/tag/v${newVersion}`
   execSync(
-    `gh pr create --title "Update litegraph ${newVersion}" --label "dependencies" --body "Automated update of litegraph to version ${newVersion}"`,
+    `gh pr create --title "Update litegraph ${newVersion}" --label "dependencies" --body "${prBody}"`,
     { stdio: 'inherit' }
   )
 

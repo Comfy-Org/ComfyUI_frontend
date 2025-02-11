@@ -10,8 +10,7 @@ useExtensionService().registerExtension({
     if (node.widgets) {
       // Locate dynamic prompt text widgets
       // Include any widgets with dynamicPrompts set to true, and customtext
-      // @ts-expect-error dynamicPrompts is not typed
-      const widgets = node.widgets.filter((n) => n.dynamicPrompts)
+      const widgets = node.widgets.filter((w) => w.dynamicPrompts)
       for (const widget of widgets) {
         // Override the serialization of the value to resolve dynamic prompts for all widgets supporting it in this node
         // @ts-expect-error hacky override

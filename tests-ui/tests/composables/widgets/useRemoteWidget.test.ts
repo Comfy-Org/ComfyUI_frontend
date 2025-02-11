@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-import { useRemoteWidget } from '@/composables/useRemoteWidget'
+import { useRemoteWidget } from '@/composables/widgets/useRemoteWidget'
 import type { ComboInputSpecV2 } from '@/types/apiTypes'
 
 jest.mock('axios', () => ({
@@ -23,6 +23,7 @@ jest.mock('@/stores/settingStore', () => ({
 
 const FIRST_BACKOFF = 1000 // backoff is 1s on first retry
 const DEFAULT_VALUE = 'Loading...'
+
 
 function createMockInputData(overrides = {}): ComboInputSpecV2 {
   return [
@@ -74,6 +75,7 @@ async function getResolvedValue(hook: ReturnType<typeof useRemoteWidget>) {
   await responsePromise
   return hook.getCachedValue()
 }
+
 
 describe('useRemoteWidget', () => {
   let mockInputData: ComboInputSpecV2
