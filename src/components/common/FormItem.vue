@@ -2,7 +2,11 @@
 <template>
   <div class="flex flex-row items-center gap-2">
     <div class="form-label flex flex-grow items-center">
-      <span class="text-muted" :class="props.labelClass">
+      <span
+        class="text-muted"
+        :class="props.labelClass"
+        :id="`${props.id}-label`"
+      >
         <slot name="name-prefix"></slot>
         {{ props.item.name }}
         <i
@@ -17,6 +21,7 @@
       <component
         :is="markRaw(getFormComponent(props.item))"
         :id="props.id"
+        :aria-labelledby="`${props.id}-label`"
         v-model:modelValue="formValue"
         v-bind="getFormAttrs(props.item)"
       />
