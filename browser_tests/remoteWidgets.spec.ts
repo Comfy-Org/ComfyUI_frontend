@@ -194,7 +194,7 @@ test.describe('Remote COMBO Widget', () => {
       const initialOptions = await getWidgetOptions(comfyPage, nodeName)
 
       // Wait for the refresh (TTL) to expire
-      await comfyPage.page.waitForTimeout(302)
+      await comfyPage.page.waitForTimeout(512)
       await comfyPage.page.mouse.click(100, 100)
 
       const refreshedOptions = await getWidgetOptions(comfyPage, nodeName)
