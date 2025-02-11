@@ -15,7 +15,7 @@ export const useIntWidget = () => {
     node: LGraphNode,
     inputName: string,
     inputData: InputSpec,
-    app?: ComfyApp,
+    app: ComfyApp,
     widgetName?: string
   ) => {
     const settingStore = useSettingStore()

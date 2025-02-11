@@ -13,7 +13,7 @@ export const useSeedWidget = () => {
     node: LGraphNode,
     inputName: string,
     inputData: InputSpec,
-    app?: ComfyApp,
+    app: ComfyApp,
     widgetName?: string
   ) => {
     inputData[1] = {
