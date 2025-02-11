@@ -281,7 +281,13 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
     }
 
     if (remote) {
-      const remoteWidget = useRemoteWidget(inputData)
+      const remoteWidget = useRemoteWidget({
+        inputData,
+        defaultValue,
+        node,
+        widget: res.widget
+      })
+      if (remote.refresh_button) remoteWidget.addRefreshButton()
 
       const origOptions = res.widget.options
       res.widget.options = new Proxy(
@@ -289,22 +295,7 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
         {
           get(target, prop: string | symbol) {
             if (prop !== 'values') return target[prop]
-
-            remoteWidget.fetchOptions().then((options) => {
-              if (!options || !options.length) return
-
-              const isUninitialized =
-                res.widget.value === remoteWidget.defaultValue &&
-                !res.widget.options.values?.includes(remoteWidget.defaultValue)
-              if (isUninitialized) {
-                res.widget.value = options[0]
-                res.widget.callback?.(options[0])
-                node.graph?.setDirtyCanvas(true)
-              }
-            })
-
-            const current = remoteWidget.getCacheEntry()
-            return current?.data || widgetStore.getDefaultValue(inputData)
+            return remoteWidget.getValue()
           }
         }
       )

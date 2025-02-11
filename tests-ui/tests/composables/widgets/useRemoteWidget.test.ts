@@ -21,14 +21,8 @@ jest.mock('@/stores/settingStore', () => ({
   })
 }))
 
-jest.mock('@/stores/widgetStore', () => ({
-  useWidgetStore: () => ({
-    widgets: {},
-    getDefaultValue: jest.fn().mockReturnValue('Loading...')
-  })
-}))
-
 const FIRST_BACKOFF = 1000 // backoff is 1s on first retry
+const DEFAULT_VALUE = 'Loading...'
 
 function createMockInputData(overrides = {}): ComboInputSpecV2 {
   return [
@@ -44,6 +38,13 @@ function createMockInputData(overrides = {}): ComboInputSpecV2 {
   ]
 }
 
+const createMockOptions = (inputOverrides = {}) => ({
+  inputData: createMockInputData(inputOverrides),
+  defaultValue: DEFAULT_VALUE,
+  node: {} as any,
+  widget: {} as any
+})
+
 function mockAxiosResponse(data: unknown, status = 200) {
   jest.mocked(axios.get).mockResolvedValueOnce({ data, status })
 }
@@ -55,14 +56,23 @@ function mockAxiosError(error: Error | string) {
 
 function createHookWithData(data: unknown, inputOverrides = {}) {
   mockAxiosResponse(data)
-  const hook = useRemoteWidget(createMockInputData(inputOverrides))
+  const hook = useRemoteWidget(createMockOptions(inputOverrides))
   return hook
 }
 
 async function setupHookWithResponse(data: unknown, inputOverrides = {}) {
   const hook = createHookWithData(data, inputOverrides)
-  const result = await hook.fetchOptions()
+  const result = await getResolvedValue(hook)
   return { hook, result }
+}
+
+async function getResolvedValue(hook: ReturnType<typeof useRemoteWidget>) {
+  // Create a promise that resolves when the fetch is complete
+  const responsePromise = new Promise<void>((resolve) => {
+    hook.getValue(() => resolve())
+  })
+  await responsePromise
+  return hook.getCachedValue()
 }
 
 describe('useRemoteWidget', () => {
@@ -86,25 +96,26 @@ describe('useRemoteWidget', () => {
 
   describe('initialization', () => {
     it('should create hook with default values', () => {
-      const hook = useRemoteWidget(mockInputData)
-      expect(hook.getCacheEntry()).toBeUndefined()
-      expect(hook.defaultValue).toBe('Loading...')
+      const hook = useRemoteWidget(createMockOptions())
+      expect(hook.getCachedValue()).toBeUndefined()
+      expect(hook.getValue()).toBe('Loading...')
     })
 
     it('should generate consistent cache keys', () => {
-      const hook1 = useRemoteWidget(mockInputData)
-      const hook2 = useRemoteWidget(mockInputData)
-      expect(hook1.getCacheKey()).toBe(hook2.getCacheKey())
+      const options = createMockOptions()
+      const hook1 = useRemoteWidget(options)
+      const hook2 = useRemoteWidget(options)
+      expect(hook1.cacheKey).toBe(hook2.cacheKey)
     })
 
     it('should handle query params in cache key', () => {
       const hook1 = useRemoteWidget(
-        createMockInputData({ query_params: { a: 1 } })
+        createMockOptions({ query_params: { a: 1 } })
       )
       const hook2 = useRemoteWidget(
-        createMockInputData({ query_params: { a: 2 } })
+        createMockOptions({ query_params: { a: 2 } })
       )
-      expect(hook1.getCacheKey()).not.toBe(hook2.getCacheKey())
+      expect(hook1.cacheKey).not.toBe(hook2.cacheKey)
     })
   })
 
@@ -114,7 +125,7 @@ describe('useRemoteWidget', () => {
       const { hook, result } = await setupHookWithResponse(mockData)
       expect(result).toEqual(mockData)
       expect(jest.mocked(axios.get)).toHaveBeenCalledWith(
-        hook.getCacheKey().split(';')[0], // Get the route part from cache key
+        hook.cacheKey.split(';')[0], // Get the route part from cache key
         expect.any(Object)
       )
     })
@@ -140,9 +151,7 @@ describe('useRemoteWidget', () => {
       const error = new Error('Network error')
       mockAxiosError(error)
 
-      const hook = useRemoteWidget(mockInputData)
-      const data = await hook.fetchOptions()
-      expect(data).toBe('Loading...')
+      const { hook } = await setupHookWithResponse([])
 
       const entry = hook.getCacheEntry()
       expect(entry?.error).toBeTruthy()
@@ -155,26 +164,22 @@ describe('useRemoteWidget', () => {
     })
 
     it('should handle malformed response data', async () => {
-      const hook = useRemoteWidget(mockInputData)
-      const { defaultValue } = hook
+      const hook = useRemoteWidget(createMockOptions())
 
       mockAxiosResponse(null)
-      const data1 = await hook.fetchOptions()
+      const data1 = hook.getValue()
 
       mockAxiosResponse(undefined)
-      const data2 = await hook.fetchOptions()
+      const data2 = hook.getValue()
 
-      expect(data1).toBe(defaultValue)
-      expect(data2).toBe(defaultValue)
+      expect(data1).toBe(DEFAULT_VALUE)
+      expect(data2).toBe(DEFAULT_VALUE)
     })
 
     it('should handle non-200 status codes', async () => {
       mockAxiosError('Request failed with status code 404')
 
-      const hook = useRemoteWidget(mockInputData)
-      const data = await hook.fetchOptions()
-
-      expect(data).toBe('Loading...')
+      const { hook } = await setupHookWithResponse([])
       const entry = hook.getCacheEntry()
       expect(entry?.error?.message).toBe('Request failed with status code 404')
     })
@@ -195,34 +200,34 @@ describe('useRemoteWidget', () => {
         const mockData = ['data that is permanent after initialization']
         const { hook } = await setupHookWithResponse(mockData)
 
-        await hook.fetchOptions()
-        await hook.fetchOptions()
+        await getResolvedValue(hook)
+        await getResolvedValue(hook)
 
         expect(jest.mocked(axios.get)).toHaveBeenCalledTimes(1)
       })
 
-      it('permanent widgets should re-fetch if forceUpdate is called', async () => {
+      it('permanent widgets should re-fetch if refreshValue is called', async () => {
         const mockData = ['data that is permanent after initialization']
         const { hook } = await setupHookWithResponse(mockData)
 
-        await hook.fetchOptions()
+        await getResolvedValue(hook)
         const refreshedData = ['data that user forced to be fetched']
         mockAxiosResponse(refreshedData)
 
-        await hook.forceUpdate()
-        const data = await hook.fetchOptions()
+        hook.refreshValue()
+        const data = await getResolvedValue(hook)
         expect(data).toEqual(refreshedData)
       })
 
       it('permanent widgets should still retry if request fails', async () => {
         mockAxiosError('Network error')
 
-        const hook = useRemoteWidget(mockInputData)
-        await hook.fetchOptions()
+        const hook = useRemoteWidget(createMockOptions())
+        await getResolvedValue(hook)
         expect(jest.mocked(axios.get)).toHaveBeenCalledTimes(1)
 
         jest.setSystemTime(Date.now() + FIRST_BACKOFF)
-        const secondData = await hook.fetchOptions()
+        const secondData = await getResolvedValue(hook)
         expect(secondData).toBe('Loading...')
         expect(jest.mocked(axios.get)).toHaveBeenCalledTimes(2)
       })
@@ -230,8 +235,8 @@ describe('useRemoteWidget', () => {
       it('should treat empty refresh field as permanent', async () => {
         const { hook } = await setupHookWithResponse(['data that is permanent'])
 
-        await hook.fetchOptions()
-        await hook.fetchOptions()
+        await getResolvedValue(hook)
+        await getResolvedValue(hook)
 
         expect(jest.mocked(axios.get)).toHaveBeenCalledTimes(1)
       })
@@ -246,7 +251,7 @@ describe('useRemoteWidget', () => {
       mockAxiosResponse(mockData2)
 
       jest.setSystemTime(Date.now() + refresh)
-      const newData = await hook.fetchOptions()
+      const newData = await getResolvedValue(hook)
 
       expect(newData).toEqual(mockData2)
       expect(jest.mocked(axios.get)).toHaveBeenCalledTimes(2)
@@ -258,7 +263,7 @@ describe('useRemoteWidget', () => {
       })
 
       jest.setSystemTime(Date.now() + 128)
-      await hook.fetchOptions()
+      await getResolvedValue(hook)
 
       expect(jest.mocked(axios.get)).toHaveBeenCalledTimes(1)
     })
@@ -271,12 +276,12 @@ describe('useRemoteWidget', () => {
 
       mockAxiosError('Network error')
       jest.setSystemTime(Date.now() + refresh)
-      await hook.fetchOptions()
+      await getResolvedValue(hook)
       expect(jest.mocked(axios.get)).toHaveBeenCalledTimes(2)
 
       mockAxiosResponse(['second success'])
       jest.setSystemTime(Date.now() + FIRST_BACKOFF)
-      const thirdData = await hook.fetchOptions()
+      const thirdData = await getResolvedValue(hook)
       expect(thirdData).toEqual(['second success'])
       expect(jest.mocked(axios.get)).toHaveBeenCalledTimes(3)
     })
@@ -289,7 +294,7 @@ describe('useRemoteWidget', () => {
 
       mockAxiosError('Network error')
       jest.setSystemTime(Date.now() + refresh)
-      const secondData = await hook.fetchOptions()
+      const secondData = await getResolvedValue(hook)
 
       expect(secondData).toEqual(['a valid value'])
       expect(jest.mocked(axios.get)).toHaveBeenCalledTimes(2)
@@ -308,33 +313,33 @@ describe('useRemoteWidget', () => {
     it('should implement exponential backoff on errors', async () => {
       mockAxiosError('Network error')
 
-      const hook = useRemoteWidget(mockInputData)
-      await hook.fetchOptions()
+      const hook = useRemoteWidget(createMockOptions())
+      await getResolvedValue(hook)
       const entry1 = hook.getCacheEntry()
       expect(entry1?.error).toBeTruthy()
 
-      await hook.fetchOptions()
+      await getResolvedValue(hook)
       expect(jest.mocked(axios.get)).toHaveBeenCalledTimes(1)
 
       jest.setSystemTime(Date.now() + 500)
-      await hook.fetchOptions()
+      await getResolvedValue(hook)
       expect(jest.mocked(axios.get)).toHaveBeenCalledTimes(1) // Still backing off
 
       jest.setSystemTime(Date.now() + 3000)
-      await hook.fetchOptions()
+      await getResolvedValue(hook)
       expect(jest.mocked(axios.get)).toHaveBeenCalledTimes(2)
       expect(entry1?.data).toBeDefined()
     })
 
     it('should reset error state on successful fetch', async () => {
       mockAxiosError('Network error')
-      const hook = useRemoteWidget(mockInputData)
-      const firstData = await hook.fetchOptions()
+      const hook = useRemoteWidget(createMockOptions())
+      const firstData = await getResolvedValue(hook)
       expect(firstData).toBe('Loading...')
 
       jest.setSystemTime(Date.now() + 3000)
       mockAxiosResponse(['option1'])
-      const secondData = await hook.fetchOptions()
+      const secondData = await getResolvedValue(hook)
       expect(secondData).toEqual(['option1'])
 
       const entry = hook.getCacheEntry()
@@ -344,14 +349,14 @@ describe('useRemoteWidget', () => {
 
     it('should save successful data after backoff', async () => {
       mockAxiosError('Network error')
-      const hook = useRemoteWidget(mockInputData)
-      await hook.fetchOptions()
+      const hook = useRemoteWidget(createMockOptions())
+      await getResolvedValue(hook)
       const entry1 = hook.getCacheEntry()
       expect(entry1?.error).toBeTruthy()
 
       jest.setSystemTime(Date.now() + 3000)
       mockAxiosResponse(['success after backoff'])
-      const secondData = await hook.fetchOptions()
+      const secondData = await getResolvedValue(hook)
       expect(secondData).toEqual(['success after backoff'])
 
       const entry2 = hook.getCacheEntry()
@@ -363,24 +368,24 @@ describe('useRemoteWidget', () => {
       mockAxiosError('Network error')
       mockAxiosError('Network error')
       mockAxiosError('Network error')
-      const hook = useRemoteWidget(mockInputData)
-      await hook.fetchOptions()
+      const hook = useRemoteWidget(createMockOptions())
+      await getResolvedValue(hook)
       const entry1 = hook.getCacheEntry()
       expect(entry1?.error).toBeTruthy()
 
       jest.setSystemTime(Date.now() + 3000)
-      const secondData = await hook.fetchOptions()
+      const secondData = await getResolvedValue(hook)
       expect(secondData).toBe('Loading...')
       expect(entry1?.error).toBeDefined()
 
       jest.setSystemTime(Date.now() + 9000)
-      const thirdData = await hook.fetchOptions()
+      const thirdData = await getResolvedValue(hook)
       expect(thirdData).toBe('Loading...')
       expect(entry1?.error).toBeDefined()
 
       jest.setSystemTime(Date.now() + 120_000)
       mockAxiosResponse(['success after multiple backoffs'])
-      const fourthData = await hook.fetchOptions()
+      const fourthData = await getResolvedValue(hook)
       expect(fourthData).toEqual(['success after multiple backoffs'])
 
       const entry2 = hook.getCacheEntry()
@@ -392,20 +397,20 @@ describe('useRemoteWidget', () => {
   describe('cache management', () => {
     it('should clear cache entries', async () => {
       const { hook } = await setupHookWithResponse(['to be cleared'])
-      expect(hook.getCacheEntry()).toBeDefined()
+      expect(hook.getCachedValue()).toBeDefined()
 
-      hook.forceUpdate()
-      expect(hook.getCacheEntry()).toBeUndefined()
+      hook.refreshValue()
+      expect(hook.getCachedValue()).toBe(DEFAULT_VALUE)
     })
 
     it('should prevent duplicate in-flight requests', async () => {
       const promise = Promise.resolve({ data: ['non-duplicate'] })
       jest.mocked(axios.get).mockImplementationOnce(() => promise)
 
-      const hook = useRemoteWidget(mockInputData)
+      const hook = useRemoteWidget(createMockOptions())
       const [result1, result2] = await Promise.all([
-        hook.fetchOptions(),
-        hook.fetchOptions()
+        getResolvedValue(hook),
+        getResolvedValue(hook)
       ])
 
       expect(result1).toBe(result2)
@@ -416,40 +421,43 @@ describe('useRemoteWidget', () => {
   describe('concurrent access and multiple instances', () => {
     it('should handle concurrent hook instances with same route', async () => {
       mockAxiosResponse(['shared data'])
-      const hook1 = useRemoteWidget(mockInputData)
-      const hook2 = useRemoteWidget(mockInputData)
+      const options = createMockOptions()
+      const hook1 = useRemoteWidget(options)
+      const hook2 = useRemoteWidget(options)
 
-      const [data1, data2] = await Promise.all([
-        hook1.fetchOptions(),
-        hook2.fetchOptions()
-      ])
+      // Since they have the same route, only one request will be made
+      await Promise.race([getResolvedValue(hook1), getResolvedValue(hook2)])
+
+      const data1 = hook1.getValue()
+      const data2 = hook2.getValue()
 
       expect(data1).toEqual(['shared data'])
       expect(data2).toEqual(['shared data'])
       expect(jest.mocked(axios.get)).toHaveBeenCalledTimes(1)
-      expect(hook1.getCacheEntry()).toBe(hook2.getCacheEntry())
+      expect(hook1.getCachedValue()).toBe(hook2.getCachedValue())
     })
 
     it('should use shared cache across multiple hooks', async () => {
       mockAxiosResponse(['shared data'])
-      const hook1 = useRemoteWidget(mockInputData)
-      const hook2 = useRemoteWidget(mockInputData)
-      const hook3 = useRemoteWidget(mockInputData)
-      const hook4 = useRemoteWidget(mockInputData)
+      const options = createMockOptions()
+      const hook1 = useRemoteWidget(options)
+      const hook2 = useRemoteWidget(options)
+      const hook3 = useRemoteWidget(options)
+      const hook4 = useRemoteWidget(options)
 
-      const data1 = await hook1.fetchOptions()
-      const data2 = await hook2.fetchOptions()
-      const data3 = await hook3.fetchOptions()
-      const data4 = await hook4.fetchOptions()
+      const data1 = await getResolvedValue(hook1)
+      const data2 = await getResolvedValue(hook2)
+      const data3 = await getResolvedValue(hook3)
+      const data4 = await getResolvedValue(hook4)
 
       expect(data1).toEqual(['shared data'])
       expect(data2).toBe(data1)
       expect(data3).toBe(data1)
       expect(data4).toBe(data1)
       expect(jest.mocked(axios.get)).toHaveBeenCalledTimes(1)
-      expect(hook1.getCacheEntry()).toBe(hook2.getCacheEntry())
-      expect(hook2.getCacheEntry()).toBe(hook3.getCacheEntry())
-      expect(hook3.getCacheEntry()).toBe(hook4.getCacheEntry())
+      expect(hook1.getCachedValue()).toBe(hook2.getCachedValue())
+      expect(hook2.getCachedValue()).toBe(hook3.getCachedValue())
+      expect(hook3.getCachedValue()).toBe(hook4.getCachedValue())
     })
 
     it('should handle rapid cache clearing during fetch', async () => {
@@ -460,15 +468,17 @@ describe('useRemoteWidget', () => {
 
       jest.mocked(axios.get).mockImplementationOnce(() => delayedPromise)
 
-      const hook = useRemoteWidget(mockInputData)
-      const fetchPromise = hook.fetchOptions()
-      hook.forceUpdate()
+      const hook = useRemoteWidget(createMockOptions())
+      hook.getValue()
+      hook.refreshValue()
 
       resolvePromise!({ data: ['delayed data'] })
-      const data = await fetchPromise
+      const data = await getResolvedValue(hook)
 
-      expect(data).toEqual(['delayed data'])
-      expect(hook.getCacheEntry()).toBeUndefined()
+      // The value should be the default value because the refreshValue
+      // clears the cache and the fetch is aborted
+      expect(data).toEqual(DEFAULT_VALUE)
+      expect(hook.getCachedValue()).toBe(DEFAULT_VALUE)
     })
 
     it('should handle widget destroyed during fetch', async () => {
@@ -479,8 +489,8 @@ describe('useRemoteWidget', () => {
 
       jest.mocked(axios.get).mockImplementationOnce(() => delayedPromise)
 
-      let hook = useRemoteWidget(mockInputData)
-      const fetchPromise = hook.fetchOptions()
+      let hook = useRemoteWidget(createMockOptions())
+      const fetchPromise = hook.getValue()
 
       hook = null as any
 
@@ -488,10 +498,10 @@ describe('useRemoteWidget', () => {
       await fetchPromise
 
       expect(hook).toBeNull()
-      hook = useRemoteWidget(mockInputData)
+      hook = useRemoteWidget(createMockOptions())
 
-      const data2 = await hook.fetchOptions()
-      expect(data2).toEqual(['delayed data'])
+      const data2 = await getResolvedValue(hook)
+      expect(data2).toEqual(DEFAULT_VALUE)
     })
   })
 })

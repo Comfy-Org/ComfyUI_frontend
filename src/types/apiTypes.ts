@@ -273,7 +273,11 @@ const zRemoteWidgetConfig = z.object({
   route: z.string().url().or(z.string().startsWith('/')),
   refresh: z.number().gte(128).safe().or(z.number().lte(0).safe()).optional(),
   response_key: z.string().optional(),
-  query_params: z.record(z.string(), z.string()).optional()
+  query_params: z.record(z.string(), z.string()).optional(),
+  refresh_button: z.boolean().optional(),
+  control_after_refresh: z.enum(['first', 'last']).optional(),
+  timeout: z.number().gte(0).optional(),
+  max_retries: z.number().gte(0).optional()
 })
 
 const zBaseInputSpecValue = z

@@ -1,17 +1,21 @@
+import { LGraphNode } from '@comfyorg/litegraph'
+import { IWidget } from '@comfyorg/litegraph'
 import axios from 'axios'
 
-import { useWidgetStore } from '@/stores/widgetStore'
 import type { InputSpec, RemoteWidgetConfig } from '@/types/apiTypes'
 
+const MAX_RETRIES = 5
+const TIMEOUT = 4096
+
 export interface CacheEntry<T> {
-  data: T[]
-  timestamp: number
-  loading: boolean
-  error: Error | null
-  fetchPromise?: Promise<T[]>
+  data: T
+  timestamp?: number
+  error?: Error | null
+  fetchPromise?: Promise<T>
   controller?: AbortController
-  lastErrorTime: number
-  retryCount: number
+  lastErrorTime?: number
+  retryCount?: number
+  failed?: boolean
 }
 
 const dataCache = new Map<string, CacheEntry<any>>()
@@ -27,31 +31,55 @@ const createCacheKey = (config: RemoteWidgetConfig): string => {
   return [route, `r=${refresh}`, paramsKey].join(';')
 }
 
-const getBackoff = (retryCount: number) => {
-  return Math.min(1000 * Math.pow(2, retryCount), 512)
-}
+const getBackoff = (retryCount: number) =>
+  Math.min(1000 * Math.pow(2, retryCount), 512)
 
-async function fetchData<T>(
+const isInitialized = (entry: CacheEntry<unknown> | undefined) =>
+  entry?.data && entry?.timestamp && entry.timestamp > 0
+
+const isStale = (entry: CacheEntry<unknown> | undefined, ttl: number) =>
+  entry?.timestamp && Date.now() - entry.timestamp >= ttl
+
+const isFetching = (entry: CacheEntry<unknown> | undefined) =>
+  entry?.fetchPromise !== undefined
+
+const isFailed = (entry: CacheEntry<unknown> | undefined) =>
+  entry?.failed === true
+
+const isBackingOff = (entry: CacheEntry<unknown> | undefined) =>
+  entry?.error &&
+  entry?.lastErrorTime &&
+  Date.now() - entry.lastErrorTime < getBackoff(entry.retryCount || 0)
+
+const fetchData = async (
   config: RemoteWidgetConfig,
   controller: AbortController
-): Promise<T[]> {
-  const { route, response_key, query_params } = config
+) => {
+  const { route, response_key, query_params, timeout = TIMEOUT } = config
   const res = await axios.get(route, {
     params: query_params,
     signal: controller.signal,
-    validateStatus: (status) => status === 200
+    timeout
   })
   return response_key ? res.data[response_key] : res.data
 }
 
-export function useRemoteWidget<T>(inputData: InputSpec) {
+export function useRemoteWidget<
+  T extends string | number | boolean | object
+>(options: {
+  inputData: InputSpec
+  defaultValue: T
+  node: LGraphNode
+  widget: IWidget
+}) {
+  const { inputData, defaultValue, node, widget } = options
   const config: RemoteWidgetConfig = inputData[1].remote
-  const { refresh = 0 } = config
+  const { refresh = 0, max_retries = MAX_RETRIES } = config
   const isPermanent = refresh <= 0
   const cacheKey = createCacheKey(config)
-  const defaultValue = useWidgetStore().getDefaultValue(inputData)
+  let isLoaded = false
 
-  const setSuccess = (entry: CacheEntry<T>, data: T[]) => {
+  const setSuccess = (entry: CacheEntry<T>, data: T) => {
     entry.retryCount = 0
     entry.lastErrorTime = 0
     entry.error = null
@@ -64,57 +92,45 @@ export function useRemoteWidget<T>(inputData: InputSpec) {
     entry.lastErrorTime = Date.now()
     entry.error = error instanceof Error ? error : new Error(String(error))
     entry.data ??= defaultValue
-  }
-
-  const isInitialized = () => {
-    const entry = dataCache.get(cacheKey)
-    return entry?.data && entry.timestamp > 0
-  }
-
-  const isStale = () => {
-    const entry = dataCache.get(cacheKey)
-    return entry?.timestamp && Date.now() - entry.timestamp >= refresh
-  }
-
-  const isFetching = () => {
-    const entry = dataCache.get(cacheKey)
-    return entry?.fetchPromise
-  }
-
-  const isBackingOff = () => {
-    const entry = dataCache.get(cacheKey)
-    return (
-      entry?.error &&
-      entry.lastErrorTime &&
-      Date.now() - entry.lastErrorTime < getBackoff(entry.retryCount)
-    )
-  }
-
-  const fetchOptions = async () => {
-    const entry = dataCache.get(cacheKey)
-
-    const isValid = isInitialized() && (isPermanent || !isStale())
-    if (isValid || isBackingOff()) return entry!.data
-    if (isFetching()) return entry!.fetchPromise
-
-    const currentEntry: CacheEntry<T> = entry || {
-      data: defaultValue,
-      timestamp: 0,
-      loading: false,
-      error: null,
-      fetchPromise: undefined,
-      controller: undefined,
-      retryCount: 0,
-      lastErrorTime: 0
+    entry.fetchPromise = undefined
+    if (entry.retryCount >= max_retries) {
+      setFailed(entry)
     }
+  }
+
+  const setFailed = (entry: CacheEntry<T>) => {
+    dataCache.set(cacheKey, {
+      data: entry.data ?? defaultValue,
+      failed: true
+    })
+  }
+
+  const isFirstLoad = () => {
+    return !isLoaded && isInitialized(dataCache.get(cacheKey))
+  }
+
+  const onFirstLoad = (data: T[]) => {
+    isLoaded = true
+    widget.value = data[0]
+    widget.callback?.(widget.value)
+    node.graph?.setDirtyCanvas(true)
+  }
+
+  const fetchValue = async () => {
+    const entry = dataCache.get(cacheKey)
+
+    if (isFailed(entry)) return entry!.data
+
+    const isValid =
+      isInitialized(entry) && (isPermanent || !isStale(entry, refresh))
+    if (isValid || isBackingOff(entry) || isFetching(entry)) return entry!.data
+
+    const currentEntry: CacheEntry<T> = entry || { data: defaultValue }
     dataCache.set(cacheKey, currentEntry)
 
     try {
-      currentEntry.loading = true
-      currentEntry.error = null
       currentEntry.controller = new AbortController()
-
-      currentEntry.fetchPromise = fetchData<T>(config, currentEntry.controller)
+      currentEntry.fetchPromise = fetchData(config, currentEntry.controller)
       const data = await currentEntry.fetchPromise
 
       setSuccess(currentEntry, data)
@@ -123,21 +139,83 @@ export function useRemoteWidget<T>(inputData: InputSpec) {
       setError(currentEntry, err)
       return currentEntry.data
     } finally {
-      currentEntry.loading = false
       currentEntry.fetchPromise = undefined
       currentEntry.controller = undefined
     }
   }
 
+  const onRefresh = () => {
+    if (config.control_after_refresh) {
+      const data = getCachedValue()
+      if (!Array.isArray(data)) return // control_after_refresh is only supported for array values
+
+      switch (config.control_after_refresh) {
+        case 'first':
+          widget.value = data[0] ?? defaultValue
+          break
+        case 'last':
+          widget.value = data.at(-1) ?? defaultValue
+          break
+      }
+      widget.callback?.(widget.value)
+      node.graph?.setDirtyCanvas(true)
+    }
+  }
+
+  /**
+   * Clear the widget's cached value, forcing a refresh on next access (e.g., a new render)
+   */
+  const clearCachedValue = () => {
+    const entry = dataCache.get(cacheKey)
+    if (!entry) return
+    if (entry.fetchPromise) entry.controller?.abort() // Abort in-flight request
+    dataCache.delete(cacheKey)
+  }
+
+  /**
+   * Get the cached value of the widget without starting a new fetch.
+   * @returns the most recently computed value of the widget.
+   */
+  function getCachedValue() {
+    return dataCache.get(cacheKey)?.data as T
+  }
+
+  /**
+   * Getter of the remote property of the widget (e.g., options.values, value, etc.).
+   * Starts the fetch process then returns the cached value immediately.
+   * @param onFulfilled - Optional callback to be called when the fetch is resolved.
+   * @returns the most recent value of the widget.
+   */
+  function getValue(onFulfilled?: () => void) {
+    fetchValue().then((data) => {
+      if (isFirstLoad()) onFirstLoad(data)
+      onFulfilled?.()
+    })
+    return getCachedValue() ?? defaultValue
+  }
+
+  /**
+   * Force the widget to refresh its value
+   */
+  function refreshValue() {
+    clearCachedValue()
+    getValue(onRefresh)
+  }
+
+  /**
+   * Add a refresh button to the node that, when clicked, will force the widget to refresh
+   */
+  function addRefreshButton() {
+    node.addWidget('button', 'refresh', 'refresh', refreshValue)
+  }
+
   return {
-    getCacheKey: () => cacheKey,
+    getCachedValue,
+    getValue,
+    refreshValue,
+    addRefreshButton,
     getCacheEntry: () => dataCache.get(cacheKey),
-    forceUpdate: () => {
-      const entry = dataCache.get(cacheKey)
-      if (entry?.fetchPromise) entry.controller?.abort() // Abort in-flight request
-      dataCache.delete(cacheKey)
-    },
-    fetchOptions,
-    defaultValue
+
+    cacheKey
   }
 }
