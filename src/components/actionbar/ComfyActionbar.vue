@@ -4,7 +4,7 @@
     :style="style"
     :class="{ 'is-dragging': isDragging, 'is-docked': isDocked }"
   >
-    <div class="actionbar-content flex items-center" ref="panelRef">
+    <div class="actionbar-content flex items-center select-none" ref="panelRef">
       <span class="drag-handle cursor-move mr-2 p-0!" ref="dragHandleRef">
       </span>
       <ComfyQueueButton />
