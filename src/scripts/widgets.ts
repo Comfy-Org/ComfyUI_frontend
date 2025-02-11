@@ -343,27 +343,11 @@ function addMarkdownWidget(node, name: string, opts, app: ComfyApp) {
 }
 
 const SeedWidget = useSeedWidget()
-const IntWidget = useIntWidget()
 
 export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
   'INT:seed': SeedWidget,
   'INT:noise_seed': SeedWidget,
-  INT: (
-    node: LGraphNode,
-    inputName: string,
-    inputData: InputSpec,
-    app: ComfyApp,
-    widgetName: string
-  ) => {
-    const control: boolean = inputData[1]?.control_after_generate
-    return (control ? SeedWidget : IntWidget)(
-      node,
-      inputName,
-      inputData,
-      app,
-      widgetName
-    )
-  },
+  INT: useIntWidget(),
   FLOAT: useFloatWidget(),
   BOOLEAN(node, inputName, inputData) {
     let defaultVal = false
