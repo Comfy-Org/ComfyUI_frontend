@@ -5,17 +5,10 @@ import type {
   IComboWidget,
   IStringWidget
 } from '@comfyorg/litegraph/dist/types/widgets'
-import { Editor as TiptapEditor } from '@tiptap/core'
-import TiptapLink from '@tiptap/extension-link'
-import TiptapTable from '@tiptap/extension-table'
-import TiptapTableCell from '@tiptap/extension-table-cell'
-import TiptapTableHeader from '@tiptap/extension-table-header'
-import TiptapTableRow from '@tiptap/extension-table-row'
-import TiptapStarterKit from '@tiptap/starter-kit'
-import { Markdown as TiptapMarkdown } from 'tiptap-markdown'
 
 import { useFloatWidget } from '@/composables/widgets/useFloatWidget'
 import { useIntWidget } from '@/composables/widgets/useIntWidget'
+import { useMarkdownWidget } from '@/composables/widgets/useMarkdownWidget'
 import { useRemoteWidget } from '@/composables/widgets/useRemoteWidget'
 import { useSeedWidget } from '@/composables/widgets/useSeedWidget'
 import { useStringWidget } from '@/composables/widgets/useStringWidget'
@@ -255,93 +248,6 @@ export function addValueControlWidgets(
   return widgets
 }
 
-function addMarkdownWidget(node, name: string, opts, app: ComfyApp) {
-  TiptapMarkdown.configure({
-    html: false,
-    breaks: true,
-    transformPastedText: true
-  })
-  const editor = new TiptapEditor({
-    extensions: [
-      TiptapStarterKit,
-      TiptapMarkdown,
-      TiptapLink,
-      TiptapTable,
-      TiptapTableCell,
-      TiptapTableHeader,
-      TiptapTableRow
-    ],
-    content: opts.defaultVal,
-    editable: false
-  })
-
-  const inputEl = editor.options.element
-  inputEl.classList.add('comfy-markdown')
-  const textarea = document.createElement('textarea')
-  inputEl.append(textarea)
-
-  const widget = node.addDOMWidget(name, 'MARKDOWN', inputEl, {
-    getValue() {
-      return textarea.value
-    },
-    setValue(v) {
-      textarea.value = v
-      editor.commands.setContent(v)
-    }
-  })
-  widget.inputEl = inputEl
-
-  editor.options.element.addEventListener(
-    'pointerdown',
-    (event: PointerEvent) => {
-      if (event.button !== 0) {
-        app.canvas.processMouseDown(event)
-        return
-      }
-      if (event.target instanceof HTMLAnchorElement) {
-        return
-      }
-      inputEl.classList.add('editing')
-      setTimeout(() => {
-        textarea.focus()
-      }, 0)
-    }
-  )
-
-  textarea.addEventListener('blur', () => {
-    inputEl.classList.remove('editing')
-  })
-
-  textarea.addEventListener('change', () => {
-    editor.commands.setContent(textarea.value)
-    widget.callback?.(widget.value)
-  })
-
-  inputEl.addEventListener('keydown', (event: KeyboardEvent) => {
-    event.stopPropagation()
-  })
-
-  inputEl.addEventListener('pointerdown', (event: PointerEvent) => {
-    if (event.button === 1) {
-      app.canvas.processMouseDown(event)
-    }
-  })
-
-  inputEl.addEventListener('pointermove', (event: PointerEvent) => {
-    if ((event.buttons & 4) === 4) {
-      app.canvas.processMouseMove(event)
-    }
-  })
-
-  inputEl.addEventListener('pointerup', (event: PointerEvent) => {
-    if (event.button === 1) {
-      app.canvas.processMouseUp(event)
-    }
-  })
-
-  return { minWidth: 400, minHeight: 200, widget }
-}
-
 const SeedWidget = useSeedWidget()
 
 export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
@@ -362,18 +268,7 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
     }
   },
   STRING: useStringWidget(),
-  MARKDOWN(node, inputName, inputData: InputSpec, app) {
-    const defaultVal = inputData[1].default || ''
-
-    let res
-    res = addMarkdownWidget(
-      node,
-      inputName,
-      { defaultVal, ...inputData[1] },
-      app
-    )
-    return res
-  },
+  MARKDOWN: useMarkdownWidget(),
   COMBO(node, inputName, inputData: InputSpec) {
     const widgetStore = useWidgetStore()
     const { remote, options } = inputData[1]
