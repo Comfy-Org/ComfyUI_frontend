@@ -1468,9 +1468,7 @@ export class ComfyApp {
               for (const widget of node.widgets) {
                 // Allow widgets to run callbacks after a prompt has been queued
                 // e.g. random seed after every gen
-                // @ts-expect-error
                 if (widget.afterQueued) {
-                  // @ts-expect-error
                   widget.afterQueued()
                 }
               }

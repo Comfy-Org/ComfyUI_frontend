@@ -1,6 +1,9 @@
-// @ts-strict-ignore
 import type { LGraphNode } from '@comfyorg/litegraph'
 import type { IWidget } from '@comfyorg/litegraph'
+import type {
+  IComboWidget,
+  IStringWidget
+} from '@comfyorg/litegraph/dist/types/widgets'
 
 import { useBooleanWidget } from '@/composables/widgets/useBooleanWidget'
 import { useComboWidget } from '@/composables/widgets/useComboWidget'
@@ -28,34 +31,34 @@ function controlValueRunBefore() {
   return useSettingStore().get('Comfy.WidgetControlMode') === 'before'
 }
 
-export function updateControlWidgetLabel(widget) {
+export function updateControlWidgetLabel(widget: IWidget) {
   let replacement = 'after'
   let find = 'before'
   if (controlValueRunBefore()) {
     ;[find, replacement] = [replacement, find]
   }
-  widget.label = (widget.label ?? widget.name).replace(find, replacement)
+  widget.label = (widget.label ?? widget.name ?? '').replace(find, replacement)
 }
 
 export const IS_CONTROL_WIDGET = Symbol()
 const HAS_EXECUTED = Symbol()
 
 export function addValueControlWidget(
-  node,
-  targetWidget,
-  defaultValue = 'randomize',
-  values,
-  widgetName,
-  inputData: InputSpec
-) {
-  let name = inputData[1]?.control_after_generate
+  node: LGraphNode,
+  targetWidget: IWidget,
+  defaultValue?: string,
+  values?: unknown,
+  widgetName?: string,
+  inputData?: InputSpec
+): IWidget {
+  let name = inputData?.[1]?.control_after_generate
   if (typeof name !== 'string') {
     name = widgetName
   }
   const widgets = addValueControlWidgets(
     node,
     targetWidget,
-    defaultValue,
+    defaultValue ?? 'randomize',
     {
       addFilterList: false,
       controlAfterGenerateName: name
@@ -66,16 +69,16 @@ export function addValueControlWidget(
 }
 
 export function addValueControlWidgets(
-  node,
-  targetWidget,
-  defaultValue = 'randomize',
-  options,
-  inputData: InputSpec
-) {
+  node: LGraphNode,
+  targetWidget: IWidget,
+  defaultValue?: string,
+  options?: Record<string, any>,
+  inputData?: InputSpec
+): IWidget[] {
   if (!defaultValue) defaultValue = 'randomize'
   if (!options) options = {}
 
-  const getName = (defaultName, optionName) => {
+  const getName = (defaultName: string, optionName: string) => {
     let name = defaultName
     if (options[optionName]) {
       name = options[optionName]
@@ -87,7 +90,7 @@ export function addValueControlWidgets(
     return name
   }
 
-  const widgets = []
+  const widgets: IWidget[] = []
   const valueControl = node.addWidget(
     'combo',
     getName('control_after_generate', 'controlAfterGenerateName'),
@@ -97,16 +100,18 @@ export function addValueControlWidgets(
       values: ['fixed', 'increment', 'decrement', 'randomize'],
       serialize: false // Don't include this in prompt.
     }
-  )
+  ) as IComboWidget
+
   valueControl.tooltip =
     'Allows the linked widget to be changed automatically, for example randomizing the noise seed.'
+  // @ts-ignore index with symbol
   valueControl[IS_CONTROL_WIDGET] = true
   updateControlWidgetLabel(valueControl)
   widgets.push(valueControl)
 
   const isCombo = targetWidget.type === 'combo'
-  let comboFilter
-  if (isCombo) {
+  let comboFilter: IStringWidget
+  if (isCombo && valueControl.options.values) {
     valueControl.options.values.push('increment-wrap')
   }
   if (isCombo && options.addFilterList !== false) {
@@ -118,7 +123,7 @@ export function addValueControlWidgets(
       {
         serialize: false // Don't include this in prompt.
       }
-    )
+    ) as IStringWidget
     updateControlWidgetLabel(comboFilter)
     comboFilter.tooltip =
       "Allows for filtering the list of values when changing the value via the control generate mode. Allows for RegEx matches in the format /abc/ to only filter to values containing 'abc'."
@@ -130,14 +135,14 @@ export function addValueControlWidgets(
     var v = valueControl.value
 
     if (isCombo && v !== 'fixed') {
-      let values = targetWidget.options.values
+      let values = targetWidget.options.values ?? []
       const filter = comboFilter?.value
       if (filter) {
         let check
         if (filter.startsWith('/') && filter.endsWith('/')) {
           try {
             const regex = new RegExp(filter.substring(1, filter.length - 1))
-            check = (item) => regex.test(item)
+            check = (item: string) => regex.test(item)
           } catch (error) {
             console.error(
               'Error constructing RegExp filter for node ' + node.id,
@@ -148,16 +153,17 @@ export function addValueControlWidgets(
         }
         if (!check) {
           const lower = filter.toLocaleLowerCase()
-          check = (item) => item.toLocaleLowerCase().includes(lower)
+          check = (item: string) => item.toLocaleLowerCase().includes(lower)
         }
-        values = values.filter((item) => check(item))
-        if (!values.length && targetWidget.options.values.length) {
+        values = values.filter((item: string) => check(item))
+        if (!values.length && targetWidget.options.values?.length) {
           console.warn(
             'Filter for node ' + node.id + ' has filtered out all items',
             filter
           )
         }
       }
+      // @ts-expect-error targetWidget.value can be number or string
       let current_index = values.indexOf(targetWidget.value)
       let current_length = values.length
 
@@ -185,52 +191,54 @@ export function addValueControlWidgets(
       if (current_index >= 0) {
         let value = values[current_index]
         targetWidget.value = value
-        targetWidget.callback(value)
+        targetWidget.callback?.(value)
       }
     } else {
       //number
-      let min = targetWidget.options.min
-      let max = targetWidget.options.max
+      let { min = 0, max = 1, step = 1 } = targetWidget.options
       // limit to something that javascript can handle
       max = Math.min(1125899906842624, max)
       min = Math.max(-1125899906842624, min)
-      let range = (max - min) / (targetWidget.options.step / 10)
+      let range = (max - min) / (step / 10)
 
       //adjust values based on valueControl Behaviour
       switch (v) {
         case 'fixed':
           break
         case 'increment':
-          targetWidget.value += targetWidget.options.step / 10
+          // @ts-expect-error targetWidget.value can be number or string
+          targetWidget.value += step / 10
           break
         case 'decrement':
-          targetWidget.value -= targetWidget.options.step / 10
+          // @ts-expect-error targetWidget.value can be number or string
+          targetWidget.value -= step / 10
           break
         case 'randomize':
           targetWidget.value =
-            Math.floor(Math.random() * range) *
-              (targetWidget.options.step / 10) +
-            min
+            Math.floor(Math.random() * range) * (step / 10) + min
           break
         default:
           break
       }
       /*check if values are over or under their respective
        * ranges and set them to min or max.*/
+      // @ts-expect-error targetWidget.value can be number or string
       if (targetWidget.value < min) targetWidget.value = min
-
+      // @ts-expect-error targetWidget.value can be number or string
       if (targetWidget.value > max) targetWidget.value = max
-      targetWidget.callback(targetWidget.value)
+      targetWidget.callback?.(targetWidget.value)
     }
   }
 
   valueControl.beforeQueued = () => {
     if (controlValueRunBefore()) {
       // Don't run on first execution
+      // @ts-ignore index with symbol
       if (valueControl[HAS_EXECUTED]) {
         applyWidgetControl()
       }
     }
+    // @ts-ignore index with symbol
     valueControl[HAS_EXECUTED] = true
   }
 
