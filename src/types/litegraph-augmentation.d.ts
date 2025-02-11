@@ -16,6 +16,7 @@ declare module '@comfyorg/litegraph/dist/types/widgets' {
   interface IBaseWidget {
     onRemove?: () => void
     beforeQueued?: () => unknown
+    afterQueued?: () => unknown
     serializeValue?: (node: LGraphNode, index: number) => Promise<unknown>
 
     /**

@@ -1,6 +1,10 @@
 // @ts-strict-ignore
 import type { LGraphNode } from '@comfyorg/litegraph'
 import type { IWidget } from '@comfyorg/litegraph'
+import type {
+  IComboWidget,
+  IStringWidget
+} from '@comfyorg/litegraph/dist/types/widgets'
 
 import { useBooleanWidget } from '@/composables/widgets/useBooleanWidget'
 import { useComboWidget } from '@/composables/widgets/useComboWidget'
@@ -41,21 +45,21 @@ export const IS_CONTROL_WIDGET = Symbol()
 const HAS_EXECUTED = Symbol()
 
 export function addValueControlWidget(
-  node,
-  targetWidget,
-  defaultValue = 'randomize',
-  values,
-  widgetName,
-  inputData: InputSpec
+  node: LGraphNode,
+  targetWidget: IWidget,
+  defaultValue?: string,
+  values?: unknown,
+  widgetName?: string,
+  inputData?: InputSpec
 ) {
-  let name = inputData[1]?.control_after_generate
+  let name = inputData?.[1]?.control_after_generate
   if (typeof name !== 'string') {
     name = widgetName
   }
   const widgets = addValueControlWidgets(
     node,
     targetWidget,
-    defaultValue,
+    defaultValue ?? 'randomize',
     {
       addFilterList: false,
       controlAfterGenerateName: name
@@ -66,11 +70,11 @@ export function addValueControlWidget(
 }
 
 export function addValueControlWidgets(
-  node,
-  targetWidget,
-  defaultValue = 'randomize',
-  options,
-  inputData: InputSpec
+  node: LGraphNode,
+  targetWidget: IWidget,
+  defaultValue?: string,
+  options?: Record<string, any>,
+  inputData?: InputSpec
 ) {
   if (!defaultValue) defaultValue = 'randomize'
   if (!options) options = {}
@@ -97,7 +101,8 @@ export function addValueControlWidgets(
       values: ['fixed', 'increment', 'decrement', 'randomize'],
       serialize: false // Don't include this in prompt.
     }
-  )
+  ) as IComboWidget
+
   valueControl.tooltip =
     'Allows the linked widget to be changed automatically, for example randomizing the noise seed.'
   valueControl[IS_CONTROL_WIDGET] = true
@@ -105,7 +110,7 @@ export function addValueControlWidgets(
   widgets.push(valueControl)
 
   const isCombo = targetWidget.type === 'combo'
-  let comboFilter
+  let comboFilter: IStringWidget
   if (isCombo) {
     valueControl.options.values.push('increment-wrap')
   }
@@ -118,7 +123,7 @@ export function addValueControlWidgets(
       {
         serialize: false // Don't include this in prompt.
       }
-    )
+    ) as IStringWidget
     updateControlWidgetLabel(comboFilter)
     comboFilter.tooltip =
       "Allows for filtering the list of values when changing the value via the control generate mode. Allows for RegEx matches in the format /abc/ to only filter to values containing 'abc'."
@@ -137,7 +142,7 @@ export function addValueControlWidgets(
         if (filter.startsWith('/') && filter.endsWith('/')) {
           try {
             const regex = new RegExp(filter.substring(1, filter.length - 1))
-            check = (item) => regex.test(item)
+            check = (item: string) => regex.test(item)
           } catch (error) {
             console.error(
               'Error constructing RegExp filter for node ' + node.id,
@@ -148,9 +153,9 @@ export function addValueControlWidgets(
         }
         if (!check) {
           const lower = filter.toLocaleLowerCase()
-          check = (item) => item.toLocaleLowerCase().includes(lower)
+          check = (item: string) => item.toLocaleLowerCase().includes(lower)
         }
-        values = values.filter((item) => check(item))
+        values = values.filter((item: string) => check(item))
         if (!values.length && targetWidget.options.values.length) {
           console.warn(
             'Filter for node ' + node.id + ' has filtered out all items',
@@ -158,6 +163,7 @@ export function addValueControlWidgets(
           )
         }
       }
+      // @ts-expect-error targetWidget.value can be number or string
       let current_index = values.indexOf(targetWidget.value)
       let current_length = values.length
 
@@ -201,9 +207,11 @@ export function addValueControlWidgets(
         case 'fixed':
           break
         case 'increment':
+          // @ts-expect-error targetWidget.value can be number or string
           targetWidget.value += targetWidget.options.step / 10
           break
         case 'decrement':
+          // @ts-expect-error targetWidget.value can be number or string
           targetWidget.value -= targetWidget.options.step / 10
           break
         case 'randomize':
@@ -217,8 +225,9 @@ export function addValueControlWidgets(
       }
       /*check if values are over or under their respective
        * ranges and set them to min or max.*/
+      // @ts-expect-error targetWidget.value can be number or string
       if (targetWidget.value < min) targetWidget.value = min
-
+      // @ts-expect-error targetWidget.value can be number or string
       if (targetWidget.value > max) targetWidget.value = max
       targetWidget.callback(targetWidget.value)
     }
