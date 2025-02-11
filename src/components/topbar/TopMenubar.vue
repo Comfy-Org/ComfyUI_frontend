@@ -1,35 +1,33 @@
 <template>
-  <teleport :to="teleportTarget">
-    <div
-      ref="topMenuRef"
-      class="comfyui-menu flex items-center"
-      v-show="showTopMenu"
-      :class="{ dropzone: isDropZone, 'dropzone-active': isDroppable }"
-    >
-      <h1 class="comfyui-logo mx-2 app-drag">ComfyUI</h1>
-      <CommandMenubar />
-      <div class="flex-grow min-w-0 app-drag h-full">
-        <WorkflowTabs v-if="workflowTabsPosition === 'Topbar'" />
-      </div>
-      <div class="comfyui-menu-right flex-shrink-0" ref="menuRight"></div>
-      <Actionbar />
-      <BottomPanelToggleButton class="flex-shrink-0" />
-      <Button
-        class="flex-shrink-0"
-        icon="pi pi-bars"
-        severity="secondary"
-        text
-        v-tooltip="{ value: $t('menu.hideMenu'), showDelay: 300 }"
-        :aria-label="$t('menu.hideMenu')"
-        @click="workspaceState.focusMode = true"
-        @contextmenu="showNativeMenu"
-      />
-      <div
-        v-show="menuSetting !== 'Bottom'"
-        class="window-actions-spacer flex-shrink-0"
-      />
+  <div
+    ref="topMenuRef"
+    class="comfyui-menu flex items-center"
+    v-show="showTopMenu"
+    :class="{ dropzone: isDropZone, 'dropzone-active': isDroppable }"
+  >
+    <h1 class="comfyui-logo mx-2 app-drag">ComfyUI</h1>
+    <CommandMenubar />
+    <div class="flex-grow min-w-0 app-drag h-full">
+      <WorkflowTabs v-if="workflowTabsPosition === 'Topbar'" />
     </div>
-  </teleport>
+    <div class="comfyui-menu-right flex-shrink-0" ref="menuRight"></div>
+    <Actionbar />
+    <BottomPanelToggleButton class="flex-shrink-0" />
+    <Button
+      class="flex-shrink-0"
+      icon="pi pi-bars"
+      severity="secondary"
+      text
+      v-tooltip="{ value: $t('menu.hideMenu'), showDelay: 300 }"
+      :aria-label="$t('menu.hideMenu')"
+      @click="workspaceState.focusMode = true"
+      @contextmenu="showNativeMenu"
+    />
+    <div
+      v-show="menuSetting !== 'Bottom'"
+      class="window-actions-spacer flex-shrink-0"
+    />
+  </div>
 
   <!-- Virtual top menu for native window (drag handle) -->
   <div
@@ -64,11 +62,6 @@ const workflowTabsPosition = computed(() =>
 )
 const menuSetting = computed(() => settingStore.get('Comfy.UseNewMenu'))
 const betaMenuEnabled = computed(() => menuSetting.value !== 'Disabled')
-const teleportTarget = computed(() =>
-  settingStore.get('Comfy.UseNewMenu') === 'Top'
-    ? '.comfyui-body-top'
-    : '.comfyui-body-bottom'
-)
 const showTopMenu = computed(
   () => betaMenuEnabled.value && !workspaceState.focusMode
 )
