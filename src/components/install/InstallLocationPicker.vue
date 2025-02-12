@@ -20,7 +20,7 @@
           />
           <InputIcon
             class="pi pi-info-circle"
-            v-tooltip="$t('install.installLocationTooltip')"
+            v-tooltip.top="$t('install.installLocationTooltip')"
           />
         </IconField>
         <Button icon="pi pi-folder" @click="browsePath" class="w-12" />
