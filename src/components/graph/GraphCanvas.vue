@@ -14,8 +14,9 @@
     <template #graph-canvas-panel>
       <SecondRowWorkflowTabs
         v-if="workflowTabsPosition === 'Topbar (2nd-row)'"
+        class="pointer-events-auto"
       />
-      <GraphCanvasMenu v-if="canvasMenuEnabled" />
+      <GraphCanvasMenu v-if="canvasMenuEnabled" class="pointer-events-auto" />
     </template>
   </LiteGraphCanvasSplitterOverlay>
   <TitleEditor />
