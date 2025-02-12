@@ -5,7 +5,7 @@
     <Button class="p-button-rounded p-button-text" @click="toggleCamera">
       <i
         class="pi pi-camera text-white text-lg"
-        v-tooltip.right="{ value: 'Switch Camera', showDelay: 300 }"
+        v-tooltip.right="{ value: t('load3d.switchCamera'), showDelay: 300 }"
       ></i>
     </Button>
 
@@ -13,7 +13,7 @@
       class="p-button-rounded p-button-text"
       :class="{ 'p-button-outlined': showGrid }"
       @click="toggleGrid"
-      v-tooltip.right="'Toggle Grid'"
+      v-tooltip.right="{ value: t('load3d.showGrid'), showDelay: 300 }"
     >
       <i class="pi pi-table text-white text-lg"></i>
     </Button>
@@ -21,7 +21,7 @@
     <Button class="p-button-rounded p-button-text" @click="openColorPicker">
       <i
         class="pi pi-palette text-white text-lg"
-        v-tooltip.right="{ value: 'Background Color', showDelay: 300 }"
+        v-tooltip.right="{ value: t('load3d.backgroundColor'), showDelay: 300 }"
       ></i>
       <input
         type="color"
@@ -41,7 +41,10 @@
       >
         <i
           class="pi pi-sun text-white text-lg"
-          v-tooltip.right="{ value: 'Light Intensity', showDelay: 300 }"
+          v-tooltip.right="{
+            value: t('load3d.lightIntensity'),
+            showDelay: 300
+          }"
         ></i>
       </Button>
       <div
@@ -64,7 +67,7 @@
       <Button class="p-button-rounded p-button-text" @click="toggleFOV">
         <i
           class="pi pi-expand text-white text-lg"
-          v-tooltip.right="{ value: 'FOV', showDelay: 300 }"
+          v-tooltip.right="{ value: t('load3d.fov'), showDelay: 300 }"
         ></i>
       </Button>
       <div
@@ -91,7 +94,7 @@
             showPreview ? 'pi-eye' : 'pi-eye-slash',
             'text-white text-lg'
           ]"
-          v-tooltip.right="{ value: 'Preview Output', showDelay: 300 }"
+          v-tooltip.right="{ value: t('load3d.previewOutput'), showDelay: 300 }"
         ></i>
       </Button>
     </div>
@@ -102,6 +105,8 @@
 import Button from 'primevue/button'
 import Slider from 'primevue/slider'
 import { onMounted, onUnmounted, ref } from 'vue'
+
+import { t } from '@/i18n'
 
 const props = defineProps<{
   backgroundColor: string

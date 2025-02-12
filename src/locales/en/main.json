@@ -769,5 +769,13 @@
     "successMessage": "Copied to clipboard",
     "errorMessage": "Failed to copy to clipboard",
     "errorNotSupported": "Clipboard API not supported in your browser"
+  },
+  "load3d": {
+    "switchCamera": "Switch Camera",
+    "showGrid": "Show Grid",
+    "backgroundColor": "Background Color",
+    "lightIntensity": "Light Intensity",
+    "fov": "FOV",
+    "previewOutput": "Preview Output"
   }
 }

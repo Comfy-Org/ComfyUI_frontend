@@ -1,4 +1,5 @@
 import PrimeVue from 'primevue/config'
+import Tooltip from 'primevue/tooltip'
 import * as THREE from 'three'
 import { createApp } from 'vue'
 
@@ -52,6 +53,7 @@ class Load3dAnimation extends Load3d {
     })
 
     this.controlsApp.use(PrimeVue)
+    this.controlsApp.directive('tooltip', Tooltip)
     this.controlsApp.mount(controlsMount)
   }
 
