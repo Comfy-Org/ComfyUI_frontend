@@ -735,6 +735,7 @@
       "deleteFailedTitle": "删除失败",
       "deleted": "工作流已删除",
       "dirtyClose": "以下文件已被更改。您想在关闭之前保存它们吗？",
+      "dirtyCloseHint": "按住 Shift 关闭而不提示",
       "dirtyCloseTitle": "保存更改？",
       "workflowTreeType": {
         "bookmarks": "书签",
