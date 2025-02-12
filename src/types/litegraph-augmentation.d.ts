@@ -24,6 +24,12 @@ declare module '@comfyorg/litegraph/dist/types/widgets' {
      * See extensions/core/dynamicPrompts.ts
      */
     dynamicPrompts?: boolean
+
+    /**
+     * The computed height of the widget. Used by customized node resize logic.
+     * See scripts/domWidget.ts for more details.
+     */
+    computedHeight?: number
   }
 }
 

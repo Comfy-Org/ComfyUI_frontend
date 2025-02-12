@@ -371,9 +371,7 @@ export const useLitegraphService = () => {
         shiftY = w.last_y
         if (w.computeSize) {
           shiftY += w.computeSize()[1] + 4
-          // @ts-expect-error computedHeight only exists for DOMWidget
         } else if (w.computedHeight) {
-          // @ts-expect-error computedHeight only exists for DOMWidget
           shiftY += w.computedHeight
         } else {
           shiftY += LiteGraph.NODE_WIDGET_HEIGHT + 4

@@ -31,7 +31,6 @@ export interface DOMWidget<T extends HTMLElement, V extends object | string>
   // All unrecognized types will be treated the same way as 'custom' in litegraph internally.
   type: 'custom'
   name: string
-  computedHeight?: number
   element: T
   options: DOMWidgetOptions<T, V>
   value: V
@@ -260,9 +259,7 @@ function computeSize(this: LGraphNode, size: Size): void {
   // Position each of the widgets
   for (const w of this.widgets) {
     w.y = y
-    // @ts-expect-error custom widget type
     if (w.computedHeight) {
-      // @ts-expect-error custom widget type
       y += w.computedHeight
     } else if (w.computeSize) {
       y += w.computeSize()[1] + 4
