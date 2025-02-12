@@ -37,7 +37,6 @@ app.registerExtension({
 
         this.onConnectionsChange = (type, index, connected, link_info) => {
           if (app.configuringGraph) return
-          this.applyOrientation()
 
           // Prevent multiple connections to different types when we have no input
           if (connected && type === LiteGraph.OUTPUT) {
@@ -157,7 +156,6 @@ app.registerExtension({
               ? displayType
               : ''
             node.size = node.computeSize()
-            node.applyOrientation()
 
             for (const l of node.outputs[0].links || []) {
               const link = app.graph.links[l]
@@ -238,7 +236,6 @@ app.registerExtension({
                 this.outputs[0].name = ''
               }
               this.size = this.computeSize()
-              this.applyOrientation()
               app.graph.setDirtyCanvas(true, true)
             }
           },
@@ -251,35 +248,10 @@ app.registerExtension({
                 !RerouteNode.defaultVisibility
               )
             }
-          },
-          {
-            // naming is inverted with respect to LiteGraphNode.horizontal
-            // LiteGraphNode.horizontal == true means that
-            // each slot in the inputs and outputs are laid out horizontally,
-            // which is the opposite of the visual orientation of the inputs and outputs as a node
-            content:
-              'Set ' + (this.properties.horizontal ? 'Horizontal' : 'Vertical'),
-            callback: () => {
-              this.properties.horizontal = !this.properties.horizontal
-              this.applyOrientation()
-            }
           }
         )
         return []
       }
-      applyOrientation() {
-        this.horizontal = this.properties.horizontal
-        if (this.horizontal) {
-          // we correct the input position, because LiteGraphNode.horizontal
-          // doesn't account for title presence
-          // which reroute nodes don't have
-          this.inputs[0].pos = [this.size[0] / 2, 0]
-        } else {
-          delete this.inputs[0].pos
-        }
-        app.graph.setDirtyCanvas(true, true)
-      }
-
       computeSize(): [number, number] {
         return [
           this.properties.showOutputText && this.outputs && this.outputs.length
