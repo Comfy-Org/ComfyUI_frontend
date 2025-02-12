@@ -2,6 +2,7 @@ import _ from 'lodash'
 import { defineStore } from 'pinia'
 import { Ref, computed, ref, toRaw } from 'vue'
 
+import { RESERVED_BY_TEXT_INPUT } from '@/constants/reservedKeyCombos'
 import { KeyCombo, Keybinding } from '@/types/keyBindingTypes'
 
 export class KeybindingImpl implements Keybinding {
@@ -83,6 +84,14 @@ export class KeyComboImpl implements KeyCombo {
 
   get isShiftOnly(): boolean {
     return this.shift && this.modifierCount === 1
+  }
+
+  get isReservedByTextInput(): boolean {
+    return (
+      !this.hasModifier ||
+      this.isShiftOnly ||
+      RESERVED_BY_TEXT_INPUT.has(this.toString())
+    )
   }
 
   getKeySequences(): string[] {
