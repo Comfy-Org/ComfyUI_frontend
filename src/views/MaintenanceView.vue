@@ -1,7 +1,7 @@
 <template>
   <BaseViewTemplate dark>
     <div
-      class="min-w-full min-h-full font-sans w-screen h-screen grid justify-around text-neutral-300 bg-neutral-900 dark-theme pointer-events-auto overflow-y-auto"
+      class="min-w-full min-h-full font-sans w-screen h-screen grid justify-around text-neutral-300 bg-neutral-900 dark-theme overflow-y-auto"
     >
       <div class="max-w-screen-sm w-screen m-8 relative">
         <!-- Header -->

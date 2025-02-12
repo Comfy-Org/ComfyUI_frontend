@@ -1,6 +1,6 @@
 <template>
   <div
-    class="comfy-vue-node-search-container flex justify-center items-center w-full min-w-96 pointer-events-auto"
+    class="comfy-vue-node-search-container flex justify-center items-center w-full min-w-96"
   >
     <div
       class="comfy-vue-node-preview-container absolute left-[-350px] top-[50px]"

@@ -20,7 +20,7 @@
 
     <div
       v-if="animations && animations.length > 0"
-      class="absolute top-0 left-0 w-full flex justify-center pt-2 gap-2 items-center pointer-events-auto z-10"
+      class="absolute top-0 left-0 w-full flex justify-center pt-2 gap-2 items-center z-10"
     >
       <Button class="p-button-rounded p-button-text" @click="togglePlay">
         <i

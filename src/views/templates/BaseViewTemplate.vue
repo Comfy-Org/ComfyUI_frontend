@@ -1,6 +1,6 @@
 <template>
   <div
-    class="font-sans w-screen h-screen flex flex-col pointer-events-auto"
+    class="font-sans w-screen h-screen flex flex-col"
     :class="[
       props.dark
         ? 'text-neutral-300 bg-neutral-900 dark-theme'
