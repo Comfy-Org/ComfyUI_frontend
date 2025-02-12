@@ -117,8 +117,6 @@ app.registerExtension({
 
     const load3d = useLoad3dService().getLoad3d(node)
 
-    load3d.setNode(node)
-
     const modelWidget = node.widgets.find(
       (w: IWidget) => w.name === 'model_file'
     )
@@ -275,8 +273,6 @@ app.registerExtension({
 
     const load3d = useLoad3dService().getLoad3d(node) as Load3dAnimation
 
-    load3d.setNode(node)
-
     const modelWidget = node.widgets.find(
       (w: IWidget) => w.name === 'model_file'
     )
@@ -398,8 +394,6 @@ app.registerExtension({
 
     const load3d = useLoad3dService().getLoad3d(node)
 
-    load3d.setNode(node)
-
     const modelWidget = node.widgets.find(
       (w: IWidget) => w.name === 'model_file'
     )
@@ -508,8 +502,6 @@ app.registerExtension({
     await nextTick()
 
     const load3d = useLoad3dService().getLoad3d(node)
-
-    load3d.setNode(node)
 
     const modelWidget = node.widgets.find(
       (w: IWidget) => w.name === 'model_file'
