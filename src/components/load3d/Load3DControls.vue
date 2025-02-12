@@ -3,19 +3,26 @@
     class="absolute top-2 left-2 flex flex-col gap-2 pointer-events-auto z-20"
   >
     <Button class="p-button-rounded p-button-text" @click="toggleCamera">
-      <i class="pi pi-camera text-white text-lg"></i>
+      <i
+        class="pi pi-camera text-white text-lg"
+        v-tooltip.right="{ value: 'Switch Camera', showDelay: 300 }"
+      ></i>
     </Button>
 
     <Button
       class="p-button-rounded p-button-text"
       :class="{ 'p-button-outlined': showGrid }"
       @click="toggleGrid"
+      v-tooltip.right="'Toggle Grid'"
     >
       <i class="pi pi-table text-white text-lg"></i>
     </Button>
 
     <Button class="p-button-rounded p-button-text" @click="openColorPicker">
-      <i class="pi pi-palette text-white text-lg"></i>
+      <i
+        class="pi pi-palette text-white text-lg"
+        v-tooltip.right="{ value: 'Background Color', showDelay: 300 }"
+      ></i>
       <input
         type="color"
         ref="colorPickerRef"
@@ -32,7 +39,10 @@
         class="p-button-rounded p-button-text"
         @click="toggleLightIntensity"
       >
-        <i class="pi pi-sun text-white text-lg"></i>
+        <i
+          class="pi pi-sun text-white text-lg"
+          v-tooltip.right="{ value: 'Light Intensity', showDelay: 300 }"
+        ></i>
       </Button>
       <div
         v-show="showLightIntensity"
@@ -52,7 +62,10 @@
 
     <div class="relative" v-if="showFOVButton">
       <Button class="p-button-rounded p-button-text" @click="toggleFOV">
-        <i class="pi pi-expand text-white text-lg"></i>
+        <i
+          class="pi pi-expand text-white text-lg"
+          v-tooltip.right="{ value: 'FOV', showDelay: 300 }"
+        ></i>
       </Button>
       <div
         v-show="showFOV"
@@ -78,6 +91,7 @@
             showPreview ? 'pi-eye' : 'pi-eye-slash',
             'text-white text-lg'
           ]"
+          v-tooltip.right="{ value: 'Preview Output', showDelay: 300 }"
         ></i>
       </Button>
     </div>
