@@ -31,7 +31,6 @@ export interface DOMWidget<T extends HTMLElement, V extends object | string>
   // All unrecognized types will be treated the same way as 'custom' in litegraph internally.
   type: 'custom'
   name: string
-  computedHeight?: number
   element: T
   options: DOMWidgetOptions<T, V>
   value: V
