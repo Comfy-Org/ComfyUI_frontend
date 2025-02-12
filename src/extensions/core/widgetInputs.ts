@@ -5,6 +5,7 @@ import type {
   IWidget,
   LiteGraphCanvasEvent
 } from '@comfyorg/litegraph'
+import type { IFoundSlot } from '@comfyorg/litegraph'
 
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
@@ -777,6 +778,23 @@ app.registerExtension({
       convertToInput(this, widget, config)
       return true
     }
+
+    nodeType.prototype.getExtraSlotMenuOptions = function (
+      this: LGraphNode,
+      slot: IFoundSlot
+    ) {
+      if (!slot.input || !slot.input.widget) return []
+
+      const widget = this.widgets.find((w) => w.name === slot.input.widget.name)
+      if (!widget) return []
+      return [
+        {
+          content: `Convert to widget`,
+          callback: () => convertToWidget(this, widget)
+        }
+      ]
+    }
+
     nodeType.prototype.getExtraMenuOptions = function (_, options) {
       const r = origGetExtraMenuOptions
         ? origGetExtraMenuOptions.apply(this, arguments)
