@@ -21,7 +21,6 @@ interface IDrawOptions {
   colorContext: ConnectionColorContext
   labelColor?: CanvasColour
   labelPosition?: LabelPosition
-  horizontal?: boolean
   lowQuality?: boolean
   renderText?: boolean
   doStroke?: boolean
@@ -92,7 +91,6 @@ export abstract class NodeSlot implements INodeSlot {
       colorContext,
       labelColor = "#AAA",
       labelPosition = LabelPosition.Right,
-      horizontal = false,
       lowQuality = false,
       renderText = true,
       highlight = false,
@@ -116,11 +114,7 @@ export abstract class NodeSlot implements INodeSlot {
     ctx.fillStyle = this.renderingColor(colorContext)
     ctx.lineWidth = 1
     if (slot_type === SlotType.Event || slot_shape === SlotShape.Box) {
-      if (horizontal) {
-        ctx.rect(pos[0] - 5 + 0.5, pos[1] - 8 + 0.5, 10, 14)
-      } else {
-        ctx.rect(pos[0] - 6 + 0.5, pos[1] - 5 + 0.5, 14, 10)
-      }
+      ctx.rect(pos[0] - 6 + 0.5, pos[1] - 5 + 0.5, 14, 10)
     } else if (slot_shape === SlotShape.Arrow) {
       ctx.moveTo(pos[0] + 8, pos[1] + 0.5)
       ctx.lineTo(pos[0] - 4, pos[1] + 6 + 0.5)
@@ -173,13 +167,13 @@ export abstract class NodeSlot implements INodeSlot {
         ctx.fillStyle = labelColor
 
         if (labelPosition === LabelPosition.Right) {
-          if (horizontal || this.dir == LinkDirection.UP) {
+          if (this.dir == LinkDirection.UP) {
             ctx.fillText(text, pos[0], pos[1] - 10)
           } else {
             ctx.fillText(text, pos[0] + 10, pos[1] + 5)
           }
         } else {
-          if (horizontal || this.dir == LinkDirection.DOWN) {
+          if (this.dir == LinkDirection.DOWN) {
             ctx.fillText(text, pos[0], pos[1] - 8)
           } else {
             ctx.fillText(text, pos[0] - 10, pos[1] + 5)
@@ -248,7 +242,7 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
 
   override draw(ctx: CanvasRenderingContext2D, options: Omit<IDrawOptions, "doStroke" | "labelPosition">) {
     const originalTextAlign = ctx.textAlign
-    ctx.textAlign = options.horizontal ? "center" : "left"
+    ctx.textAlign = "left"
 
     super.draw(ctx, {
       ...options,
@@ -285,7 +279,7 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
   override draw(ctx: CanvasRenderingContext2D, options: Omit<IDrawOptions, "doStroke" | "labelPosition">) {
     const originalTextAlign = ctx.textAlign
     const originalStrokeStyle = ctx.strokeStyle
-    ctx.textAlign = options.horizontal ? "center" : "right"
+    ctx.textAlign = "right"
     ctx.strokeStyle = "black"
 
     super.draw(ctx, {

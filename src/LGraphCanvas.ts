@@ -2406,7 +2406,7 @@ export class LGraphCanvas implements ConnectionColorContext {
                   input: input,
                   output: null,
                   pos: pos,
-                  direction: node.horizontal !== true ? LinkDirection.RIGHT : LinkDirection.CENTER,
+                  direction: LinkDirection.RIGHT,
                 })
               }
 
@@ -3213,29 +3213,18 @@ export class LGraphCanvas implements ConnectionColorContext {
         const input = node.inputs[i]
         const link_pos = node.getConnectionPos(true, i)
         let is_inside = false
-        if (node.horizontal) {
-          is_inside = isInRectangle(
-            canvasx,
-            canvasy,
-            link_pos[0] - 5,
-            link_pos[1] - 10,
-            10,
-            20,
-          )
-        } else {
-          // TODO: Find a cheap way to measure text, and do it on node label change instead of here
-          // Input icon width + text approximation
-          const width =
-            20 + ((input.label?.length ?? input.localized_name?.length ?? input.name?.length) || 3) * 7
-          is_inside = isInRectangle(
-            canvasx,
-            canvasy,
-            link_pos[0] - 10,
-            link_pos[1] - 10,
-            width,
-            20,
-          )
-        }
+        // TODO: Find a cheap way to measure text, and do it on node label change instead of here
+        // Input icon width + text approximation
+        const width =
+          20 + ((input.label?.length ?? input.localized_name?.length ?? input.name?.length) || 3) * 7
+        is_inside = isInRectangle(
+          canvasx,
+          canvasy,
+          link_pos[0] - 10,
+          link_pos[1] - 10,
+          width,
+          20,
+        )
         if (is_inside) {
           if (slot_pos) {
             slot_pos[0] = link_pos[0]
@@ -3260,26 +3249,14 @@ export class LGraphCanvas implements ConnectionColorContext {
     if (node.outputs) {
       for (let i = 0, l = node.outputs.length; i < l; ++i) {
         const link_pos = node.getConnectionPos(false, i)
-        let is_inside = false
-        if (node.horizontal) {
-          is_inside = isInRectangle(
-            canvasx,
-            canvasy,
-            link_pos[0] - 5,
-            link_pos[1] - 10,
-            10,
-            20,
-          )
-        } else {
-          is_inside = isInRectangle(
-            canvasx,
-            canvasy,
-            link_pos[0] - 10,
-            link_pos[1] - 10,
-            40,
-            20,
-          )
-        }
+        const is_inside = isInRectangle(
+          canvasx,
+          canvasy,
+          link_pos[0] - 10,
+          link_pos[1] - 10,
+          40,
+          20,
+        )
         if (is_inside) {
           if (slot_pos) {
             slot_pos[0] = link_pos[0]
@@ -4232,13 +4209,9 @@ export class LGraphCanvas implements ConnectionColorContext {
           let connDir = connInOrOut?.dir
           if (connDir == null) {
             if (link.output)
-              connDir = link.node.horizontal
-                ? LinkDirection.DOWN
-                : LinkDirection.RIGHT
+              connDir = LinkDirection.RIGHT
             else
-              connDir = link.node.horizontal
-                ? LinkDirection.UP
-                : LinkDirection.LEFT
+              connDir = LinkDirection.LEFT
           }
           const connShape = connInOrOut?.shape
 
@@ -5047,10 +5020,10 @@ export class LGraphCanvas implements ConnectionColorContext {
         if (!start_slot || !end_slot) continue
         const start_dir =
           start_slot.dir ||
-          (start_node.horizontal ? LinkDirection.DOWN : LinkDirection.RIGHT)
+          LinkDirection.RIGHT
         const end_dir =
           end_slot.dir ||
-          (node.horizontal ? LinkDirection.UP : LinkDirection.LEFT)
+          LinkDirection.LEFT
 
         // Has reroutes
         if (reroutes.length) {

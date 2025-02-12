@@ -45,9 +45,7 @@ export interface INodePropertyInfo {
   default_value: unknown
 }
 
-export type INodeProperties = Dictionary<unknown> & {
-  horizontal?: boolean
-}
+export type INodeProperties = Dictionary<unknown>
 
 export interface IMouseOverData {
   inputId: number | null
@@ -92,7 +90,6 @@ general properties:
     + unsafe_execution: not allowed for safe execution
     + skip_repeated_outputs: when adding new outputs, it wont show if there is one already connected
     + resizable: if set to false it wont be resizable with the mouse
-    + horizontal: slots are distributed horizontally
     + widgets_start_y: widgets start at y distance from the top of the node
 
 flags object:
@@ -242,7 +239,6 @@ export class LGraphNode implements Positionable, IPinnable {
   _collapsed_width: number
   /** Called once at the start of every frame.  Caller may change the values in {@link out}, which will be reflected in {@link boundingRect}. */
   onBounding?(this: LGraphNode, out: Rect): void
-  horizontal?: boolean
   console?: string[]
   _level: number
   _shape?: RenderShape
@@ -2608,17 +2604,10 @@ export class LGraphNode implements Positionable, IPinnable {
 
     if (this.flags.collapsed) {
       const w = this._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH
-      if (this.horizontal) {
-        out[0] = this.pos[0] + w * 0.5
-        out[1] = is_input
-          ? this.pos[1] - LiteGraph.NODE_TITLE_HEIGHT
-          : this.pos[1]
-      } else {
-        out[0] = is_input
-          ? this.pos[0]
-          : this.pos[0] + w
-        out[1] = this.pos[1] - LiteGraph.NODE_TITLE_HEIGHT * 0.5
-      }
+      out[0] = is_input
+        ? this.pos[0]
+        : this.pos[0] + w
+      out[1] = this.pos[1] - LiteGraph.NODE_TITLE_HEIGHT * 0.5
       return out
     }
 
@@ -2645,15 +2634,6 @@ export class LGraphNode implements Positionable, IPinnable {
     ) {
       out[0] = this.pos[0] + this.outputs[slot_number].pos[0]
       out[1] = this.pos[1] + this.outputs[slot_number].pos[1]
-      return out
-    }
-
-    // horizontal distributed slots
-    if (this.horizontal) {
-      out[0] = this.pos[0] + (slot_number + 0.5) * (this.size[0] / num_slots)
-      out[1] = is_input
-        ? this.pos[1] - LiteGraph.NODE_TITLE_HEIGHT
-        : this.pos[1] + this.size[1]
       return out
     }
 
@@ -3100,7 +3080,7 @@ export class LGraphNode implements Positionable, IPinnable {
 
     const { y, colorContext, linkOverWidget, linkOverWidgetType, lowQuality = false, editorAlpha = 1 } = options
     let posY = y
-    if (this.horizontal || this.widgets_up) {
+    if (this.widgets_up) {
       posY = 2
     }
     if (this.widgets_start_y != null) posY = this.widgets_start_y
@@ -3172,24 +3152,16 @@ export class LGraphNode implements Positionable, IPinnable {
     }
 
     if (input_slot) {
-      let x = 0
-      let y = LiteGraph.NODE_TITLE_HEIGHT * -0.5 // center
-      if (this.horizontal) {
-        x = this._collapsed_width * 0.5
-        y = -LiteGraph.NODE_TITLE_HEIGHT
-      }
+      const x = 0
+      const y = LiteGraph.NODE_TITLE_HEIGHT * -0.5 // center
       toClass(NodeInputSlot, input_slot).drawCollapsed(ctx, {
         pos: [x, y],
       })
     }
 
     if (output_slot) {
-      let x = this._collapsed_width
-      let y = LiteGraph.NODE_TITLE_HEIGHT * -0.5 // center
-      if (this.horizontal) {
-        x = this._collapsed_width * 0.5
-        y = 0
-      }
+      const x = this._collapsed_width
+      const y = LiteGraph.NODE_TITLE_HEIGHT * -0.5 // center
       toClass(NodeOutputSlot, output_slot).drawCollapsed(ctx, {
         pos: [x, y],
       })
@@ -3238,7 +3210,6 @@ export class LGraphNode implements Positionable, IPinnable {
         pos,
         colorContext,
         labelColor: label_color,
-        horizontal: this.horizontal,
         lowQuality,
         renderText: !lowQuality,
         highlight,
@@ -3267,7 +3238,6 @@ export class LGraphNode implements Positionable, IPinnable {
         pos,
         colorContext,
         labelColor: label_color,
-        horizontal: this.horizontal,
         lowQuality,
         renderText: !lowQuality,
         highlight,

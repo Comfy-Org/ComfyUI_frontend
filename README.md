@@ -32,7 +32,7 @@ Try it in the [demo site](https://tamats.com/projects/litegraph/editor).
 - Customizable theme (colors, shapes, background)
 - Callbacks to personalize every action/drawing/event of nodes
 - Graphs can be executed in NodeJS
-- Highly customizable nodes (color, shape, slots vertical or horizontal, widgets, custom rendering)
+- Highly customizable nodes (color, shape, widgets, custom rendering)
 - Easy to integrate in any JS application (one single file, no dependencies)
 - Typescript support
 
