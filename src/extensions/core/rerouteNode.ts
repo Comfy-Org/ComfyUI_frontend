@@ -156,7 +156,6 @@ app.registerExtension({
               ? displayType
               : ''
             node.size = node.computeSize()
-            node.applyOrientation()
 
             for (const l of node.outputs[0].links || []) {
               const link = app.graph.links[l]
