@@ -468,59 +468,6 @@ dialog::backdrop {
   justify-content: center;
 }
 
-/* General CSS for tables */
-
-.comfy-table {
-  border-collapse: collapse;
-  color: var(--input-text);
-  font-family: Arial, sans-serif;
-  width: 100%;
-}
-
-.comfy-table caption {
-  position: sticky;
-  top: 0;
-  background-color: var(--bg-color);
-  color: var(--input-text);
-  font-size: 1rem;
-  font-weight: bold;
-  padding: 8px;
-  text-align: center;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.comfy-table caption .comfy-btn {
-  position: absolute;
-  top: -2px;
-  right: 0;
-  bottom: 0;
-  cursor: pointer;
-  border: none;
-  height: 100%;
-  border-radius: 0;
-  aspect-ratio: 1/1;
-  user-select: none;
-  font-size: 20px;
-}
-
-.comfy-table caption .comfy-btn:focus {
-  outline: none;
-}
-
-.comfy-table tr:nth-child(even) {
-  background-color: var(--tr-even-bg-color);
-}
-
-.comfy-table tr:nth-child(odd) {
-  background-color: var(--tr-odd-bg-color);
-}
-
-.comfy-table td,
-.comfy-table th {
-  border: 1px solid var(--border-color);
-  padding: 8px;
-}
-
 /* Context menu */
 
 .litegraph .dialog {
