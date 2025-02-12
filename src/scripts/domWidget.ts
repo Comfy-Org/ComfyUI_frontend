@@ -260,9 +260,7 @@ function computeSize(this: LGraphNode, size: Size): void {
   // Position each of the widgets
   for (const w of this.widgets) {
     w.y = y
-    // @ts-expect-error custom widget type
     if (w.computedHeight) {
-      // @ts-expect-error custom widget type
       y += w.computedHeight
     } else if (w.computeSize) {
       y += w.computeSize()[1] + 4
