@@ -311,6 +311,14 @@
       "maxLength": "Сообщение слишком длинное"
     }
   },
+  "load3d": {
+    "backgroundColor": "Цвет фона",
+    "fov": "Угол обзора",
+    "lightIntensity": "Интенсивность света",
+    "previewOutput": "Предварительный просмотр",
+    "showGrid": "Показать сетку",
+    "switchCamera": "Переключить камеру"
+  },
   "maintenance": {
     "None": "Нет",
     "OK": "OK",

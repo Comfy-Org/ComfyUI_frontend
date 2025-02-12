@@ -311,6 +311,14 @@
       "maxLength": "メッセージが長すぎます"
     }
   },
+  "load3d": {
+    "backgroundColor": "背景色",
+    "fov": "FOV",
+    "lightIntensity": "光の強度",
+    "previewOutput": "出力のプレビュー",
+    "showGrid": "グリッドを表示",
+    "switchCamera": "カメラを切り替える"
+  },
   "maintenance": {
     "None": "なし",
     "OK": "OK",

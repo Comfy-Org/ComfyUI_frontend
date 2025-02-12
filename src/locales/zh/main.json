@@ -311,6 +311,14 @@
       "maxLength": "消息过长"
     }
   },
+  "load3d": {
+    "backgroundColor": "背景颜色",
+    "fov": "视场",
+    "lightIntensity": "光照强度",
+    "previewOutput": "预览输出",
+    "showGrid": "显示网格",
+    "switchCamera": "切换摄像头"
+  },
   "maintenance": {
     "None": "无",
     "OK": "确定",
