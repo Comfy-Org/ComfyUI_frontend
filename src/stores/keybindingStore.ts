@@ -2,6 +2,7 @@ import _ from 'lodash'
 import { defineStore } from 'pinia'
 import { Ref, computed, ref, toRaw } from 'vue'
 
+import { RESERVED_BY_TEXT_INPUT } from '@/constants/reservedKeyCombos'
 import { KeyCombo, Keybinding } from '@/types/keyBindingTypes'
 
 export class KeybindingImpl implements Keybinding {
@@ -74,6 +75,23 @@ export class KeyComboImpl implements KeyCombo {
 
   get isModifier(): boolean {
     return ['Control', 'Meta', 'Alt', 'Shift'].includes(this.key)
+  }
+
+  get modifierCount(): number {
+    const modifiers = [this.ctrl, this.alt, this.shift]
+    return modifiers.reduce((acc, cur) => acc + Number(cur), 0)
+  }
+
+  get isShiftOnly(): boolean {
+    return this.shift && this.modifierCount === 1
+  }
+
+  get isReservedByTextInput(): boolean {
+    return (
+      !this.hasModifier ||
+      this.isShiftOnly ||
+      RESERVED_BY_TEXT_INPUT.has(this.toString())
+    )
   }
 
   getKeySequences(): string[] {

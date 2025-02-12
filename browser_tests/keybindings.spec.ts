@@ -35,4 +35,20 @@ test.describe('Keybindings', () => {
       true
     )
   })
+
+  test('Should not trigger keybinding reserved by text input when typing in input fields', async ({
+    comfyPage
+  }) => {
+    await comfyPage.registerKeybinding({ key: 'Ctrl+v' }, () => {
+      window['TestCommand'] = true
+    })
+
+    const textBox = comfyPage.widgetTextBox
+    await textBox.click()
+    await textBox.press('Control+v')
+    await expect(textBox).toBeFocused()
+    expect(await comfyPage.page.evaluate(() => window['TestCommand'])).toBe(
+      undefined
+    )
+  })
 })
