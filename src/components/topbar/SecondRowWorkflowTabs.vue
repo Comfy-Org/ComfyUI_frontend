@@ -1,5 +1,5 @@
 <template>
-  <div class="absolute top-0 left-0 w-auto max-w-full pointer-events-auto">
+  <div class="absolute top-0 left-0 w-auto max-w-full">
     <WorkflowTabs />
   </div>
 </template>

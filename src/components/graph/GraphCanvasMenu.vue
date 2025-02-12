@@ -1,6 +1,6 @@
 <template>
   <ButtonGroup
-    class="p-buttongroup-vertical absolute bottom-[10px] right-[10px] z-[1000] pointer-events-auto"
+    class="p-buttongroup-vertical absolute bottom-[10px] right-[10px] z-[1000]"
   >
     <Button
       severity="secondary"

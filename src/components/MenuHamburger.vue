@@ -57,6 +57,6 @@ const positionCSS = computed<CSSProperties>(() =>
 
 <style scoped>
 .comfy-menu-hamburger {
-  @apply pointer-events-auto fixed z-[9999] flex flex-row;
+  @apply fixed z-[9999] flex flex-row;
 }
 </style>
