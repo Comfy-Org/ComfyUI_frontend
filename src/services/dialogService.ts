@@ -133,7 +133,8 @@ export const useDialogService = () => {
     title,
     message,
     type = 'default',
-    itemList = []
+    itemList = [],
+    hint
   }: {
     /** Dialog heading */
     title: string
@@ -141,8 +142,9 @@ export const useDialogService = () => {
     message: string
     /** Pre-configured dialog type */
     type?: ConfirmationDialogType
-    /** Displayed as an unorderd list immediately below the message body */
+    /** Displayed as an unordered list immediately below the message body */
     itemList?: string[]
+    hint?: string
   }): Promise<boolean | null> {
     return new Promise((resolve) => {
       const options: ShowDialogOptions = {
@@ -153,7 +155,8 @@ export const useDialogService = () => {
           message,
           type,
           itemList,
-          onConfirm: resolve
+          onConfirm: resolve,
+          hint
         },
         dialogComponentProps: {
           onClose: () => resolve(null)

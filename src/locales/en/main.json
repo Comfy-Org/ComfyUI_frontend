@@ -315,6 +315,7 @@
       "deleteFailed": "Attempt to delete the workflow failed.",
       "dirtyCloseTitle": "Save Changes?",
       "dirtyClose": "The files below have been changed.  Would you like to save them before closing?",
+      "dirtyCloseHint": "Hold Shift to close without prompt",
       "confirmOverwriteTitle": "Overwrite existing file?",
       "confirmOverwrite": "The file below already exists. Would you like to overwrite it?",
       "workflowTreeType": {

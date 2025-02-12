@@ -188,14 +188,17 @@ export const useWorkflowService = () => {
    */
   const closeWorkflow = async (
     workflow: ComfyWorkflow,
-    options: { warnIfUnsaved: boolean } = { warnIfUnsaved: true }
+    options: { warnIfUnsaved: boolean; hint?: string } = {
+      warnIfUnsaved: true
+    }
   ): Promise<boolean> => {
     if (workflow.isModified && options.warnIfUnsaved) {
       const confirmed = await dialogService.confirm({
         title: t('sideToolbar.workflowTab.dirtyCloseTitle'),
         type: 'dirtyClose',
         message: t('sideToolbar.workflowTab.dirtyClose'),
-        itemList: [workflow.path]
+        itemList: [workflow.path],
+        hint: options.hint
       })
       // Cancel
       if (confirmed === null) return false

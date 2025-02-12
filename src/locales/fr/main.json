@@ -735,6 +735,7 @@
       "deleteFailedTitle": "Échec de la suppression",
       "deleted": "Flux de travail supprimé",
       "dirtyClose": "Les fichiers ci-dessous ont été modifiés. Souhaitez-vous les enregistrer avant de fermer ?",
+      "dirtyCloseHint": "Maintenez Shift pour fermer sans invite",
       "dirtyCloseTitle": "Enregistrer les modifications ?",
       "workflowTreeType": {
         "bookmarks": "Favoris",

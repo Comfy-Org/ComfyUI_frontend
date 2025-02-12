@@ -735,6 +735,7 @@
       "deleteFailedTitle": "삭제 실패",
       "deleted": "워크플로가 삭제되었습니다.",
       "dirtyClose": "아래 파일들이 변경되었습니다. 닫기 전에 저장하시겠습니까?",
+      "dirtyCloseHint": "프롬프트 없이 닫으려면 Shift를 누르세요",
       "dirtyCloseTitle": "변경 사항 저장",
       "workflowTreeType": {
         "bookmarks": "북마크",

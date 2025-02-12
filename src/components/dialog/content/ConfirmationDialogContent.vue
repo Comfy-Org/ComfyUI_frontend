@@ -4,6 +4,15 @@
     <ul v-if="itemList?.length" class="pl-4 m-0 flex flex-col gap-2">
       <li v-for="item of itemList" :key="item">{{ item }}</li>
     </ul>
+    <Message
+      v-if="hint"
+      icon="pi pi-info-circle"
+      severity="secondary"
+      size="small"
+      variant="simple"
+    >
+      {{ hint }}
+    </Message>
     <div class="flex gap-4 justify-end">
       <Button
         :label="$t('g.cancel')"
@@ -63,6 +72,7 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
+import Message from 'primevue/message'
 
 import type { ConfirmationDialogType } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -72,6 +82,7 @@ const props = defineProps<{
   type: ConfirmationDialogType
   onConfirm: (value?: boolean) => void
   itemList?: string[]
+  hint?: string
 }>()
 
 const onCancel = () => useDialogStore().closeDialog()
