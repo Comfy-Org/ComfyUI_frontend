@@ -7,6 +7,7 @@ import type {
 } from '@comfyorg/litegraph'
 
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useSettingStore } from '@/stores/settingStore'
 import type { InputSpec } from '@/types/apiTypes'
 
 import { app } from '../../scripts/app'
@@ -718,17 +719,16 @@ export function mergeIfValid(
   return { customConfig }
 }
 
-let useConversionSubmenusSetting
 app.registerExtension({
   name: 'Comfy.WidgetInputs',
-  init() {
-    useConversionSubmenusSetting = app.ui.settings.addSetting({
+  settings: [
+    {
       id: 'Comfy.NodeInputConversionSubmenus',
       name: 'In the node context menu, place the entries that convert between input/widget in sub-menus.',
       type: 'boolean',
       defaultValue: true
-    })
-  },
+    }
+  ],
   setup() {
     app.canvas.getWidgetLinkType = function (widget, node) {
       const nodeDefStore = useNodeDefStore()
@@ -832,7 +832,7 @@ app.registerExtension({
 
         //Convert.. main menu
         if (toInput.length) {
-          if (useConversionSubmenusSetting.value) {
+          if (useSettingStore().get('Comfy.NodeInputConversionSubmenus')) {
             options.push({
               content: 'Convert Widget to Input',
               submenu: {
@@ -844,7 +844,7 @@ app.registerExtension({
           }
         }
         if (toWidget.length) {
-          if (useConversionSubmenusSetting.value) {
+          if (useSettingStore().get('Comfy.NodeInputConversionSubmenus')) {
             options.push({
               content: 'Convert Input to Widget',
               submenu: {
