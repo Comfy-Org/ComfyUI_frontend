@@ -59,7 +59,7 @@
       ],
       "properties": {
         "showOutputText": false,
-        "horizontal": false
+        "horizontal": true
       }
     },
     {
