@@ -458,7 +458,15 @@ export class LGraphNode implements Positionable, IPinnable {
     canvasElement: HTMLCanvasElement,
   ): void
   onMouseLeave?(this: LGraphNode, e: CanvasMouseEvent): void
+  /**
+   * Override the default slot menu options.
+   */
   getSlotMenuOptions?(this: LGraphNode, slot: IFoundSlot): IContextMenuValue[]
+  /**
+   * Add extra menu options to the slot context menu.
+   */
+  getExtraSlotMenuOptions?(this: LGraphNode, slot: IFoundSlot): IContextMenuValue[]
+
   // FIXME: Re-typing
   onDropItem?(this: LGraphNode, event: Event): boolean
   onDropData?(

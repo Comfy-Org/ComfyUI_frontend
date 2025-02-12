@@ -7393,6 +7393,10 @@ export class LGraphCanvas implements ConnectionColorContext {
         }
         if (!_slot.nameLocked)
           menu_info.push({ content: "Rename Slot", slot: slot })
+
+        if (node.getExtraSlotMenuOptions) {
+          menu_info.push(...node.getExtraSlotMenuOptions(slot))
+        }
       }
       // @ts-expect-error Slot type can be number and has number checks
       options.title = (slot.input ? slot.input.type : slot.output.type) || "*"
