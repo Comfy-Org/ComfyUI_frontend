@@ -75,8 +75,6 @@ const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
   flex-direction: column;
   align-items: center;
 
-  pointer-events: auto;
-
   width: var(--sidebar-width);
   height: 100%;
 
