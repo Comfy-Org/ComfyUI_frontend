@@ -311,6 +311,14 @@
       "maxLength": "메시지가 너무 깁니다"
     }
   },
+  "load3d": {
+    "backgroundColor": "배경색",
+    "fov": "FOV",
+    "lightIntensity": "조명 강도",
+    "previewOutput": "출력 미리보기",
+    "showGrid": "그리드 표시",
+    "switchCamera": "카메라 전환"
+  },
   "maintenance": {
     "None": "없음",
     "OK": "확인",

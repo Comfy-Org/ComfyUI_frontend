@@ -311,6 +311,14 @@
       "maxLength": "Message trop long"
     }
   },
+  "load3d": {
+    "backgroundColor": "Couleur de fond",
+    "fov": "FOV",
+    "lightIntensity": "Intensité de la lumière",
+    "previewOutput": "Aperçu de la sortie",
+    "showGrid": "Afficher la grille",
+    "switchCamera": "Changer de caméra"
+  },
   "maintenance": {
     "None": "Aucun",
     "OK": "OK",

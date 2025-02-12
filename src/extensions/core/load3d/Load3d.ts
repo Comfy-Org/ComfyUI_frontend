@@ -1,4 +1,5 @@
 import { LGraphNode } from '@comfyorg/litegraph'
+import Tooltip from 'primevue/tooltip'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper'
@@ -180,6 +181,7 @@ class Load3d {
       onUpdateFOV: (fov: number) => this.setFOV(fov)
     })
 
+    this.controlsApp.directive('tooltip', Tooltip)
     this.controlsApp.mount(controlsMount)
   }
 

@@ -1,19 +1,26 @@
 <template>
   <div class="absolute top-2 left-2 flex flex-col gap-2 z-20">
     <Button class="p-button-rounded p-button-text" @click="toggleCamera">
-      <i class="pi pi-camera text-white text-lg"></i>
+      <i
+        class="pi pi-camera text-white text-lg"
+        v-tooltip.right="{ value: t('load3d.switchCamera'), showDelay: 300 }"
+      ></i>
     </Button>
 
     <Button
       class="p-button-rounded p-button-text"
       :class="{ 'p-button-outlined': showGrid }"
       @click="toggleGrid"
+      v-tooltip.right="{ value: t('load3d.showGrid'), showDelay: 300 }"
     >
       <i class="pi pi-table text-white text-lg"></i>
     </Button>
 
     <Button class="p-button-rounded p-button-text" @click="openColorPicker">
-      <i class="pi pi-palette text-white text-lg"></i>
+      <i
+        class="pi pi-palette text-white text-lg"
+        v-tooltip.right="{ value: t('load3d.backgroundColor'), showDelay: 300 }"
+      ></i>
       <input
         type="color"
         ref="colorPickerRef"
@@ -30,7 +37,13 @@
         class="p-button-rounded p-button-text"
         @click="toggleLightIntensity"
       >
-        <i class="pi pi-sun text-white text-lg"></i>
+        <i
+          class="pi pi-sun text-white text-lg"
+          v-tooltip.right="{
+            value: t('load3d.lightIntensity'),
+            showDelay: 300
+          }"
+        ></i>
       </Button>
       <div
         v-show="showLightIntensity"
@@ -50,7 +63,10 @@
 
     <div class="relative" v-if="showFOVButton">
       <Button class="p-button-rounded p-button-text" @click="toggleFOV">
-        <i class="pi pi-expand text-white text-lg"></i>
+        <i
+          class="pi pi-expand text-white text-lg"
+          v-tooltip.right="{ value: t('load3d.fov'), showDelay: 300 }"
+        ></i>
       </Button>
       <div
         v-show="showFOV"
@@ -76,6 +92,7 @@
             showPreview ? 'pi-eye' : 'pi-eye-slash',
             'text-white text-lg'
           ]"
+          v-tooltip.right="{ value: t('load3d.previewOutput'), showDelay: 300 }"
         ></i>
       </Button>
     </div>
@@ -86,6 +103,8 @@
 import Button from 'primevue/button'
 import Slider from 'primevue/slider'
 import { onMounted, onUnmounted, ref } from 'vue'
+
+import { t } from '@/i18n'
 
 const props = defineProps<{
   backgroundColor: string

@@ -33,6 +33,8 @@ export class Load3dService {
 
     const instance = new Load3dClass(container, { createPreview: !isPreview })
 
+    instance.setNode(node)
+
     this.nodeToLoad3dMap.set(node, instance)
 
     return instance
