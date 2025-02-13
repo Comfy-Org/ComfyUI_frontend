@@ -1,5 +1,8 @@
 <template>
-  <div class="flex h-96" data-testid="template-workflows-content">
+  <div
+    class="flex h-96 overflow-y-hidden"
+    data-testid="template-workflows-content"
+  >
     <div class="relative">
       <ProgressSpinner
         v-if="!workflowTemplatesStore.isLoaded"
@@ -9,7 +12,9 @@
         :model-value="selectedTab"
         @update:model-value="handleTabSelection"
         :options="tabs"
-        optionLabel="title"
+        option-group-label="label"
+        option-label="title"
+        option-group-children="modules"
         scroll-height="auto"
         class="overflow-y-auto w-64 h-full"
         listStyle="max-height:unset"
@@ -24,7 +29,10 @@
       :key="`${selectedTab.moduleName}${selectedTab.title}`"
     >
       <template #item="slotProps">
-        <div @click="loadWorkflow(slotProps.data.name)" class="p-2">
+        <div
+          @click="loadWorkflow(slotProps.data.name)"
+          class="p-2 justify-items-center"
+        >
           <TemplateWorkflowCard
             :sourceModule="selectedTab.moduleName"
             :template="slotProps.data"
@@ -77,9 +85,7 @@ const selectedTab = ref<WorkflowTemplates | null>(
 )
 const workflowLoading = ref<string | null>(null)
 
-const tabs = computed<WorkflowTemplates[]>(
-  () => workflowTemplatesStore.templates
-)
+const tabs = computed(() => workflowTemplatesStore.groupedTemplates)
 
 onMounted(async () => {
   await workflowTemplatesStore.loadWorkflowTemplates()

@@ -1,32 +1,43 @@
+import { groupBy } from 'lodash'
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import { computed } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 
 import { CORE_TEMPLATES } from '@/constants/coreTemplates'
 import { api } from '@/scripts/api'
-import type { WorkflowTemplates } from '@/types/workflowTemplateTypes'
+import type {
+  TemplateGroup,
+  WorkflowTemplates
+} from '@/types/workflowTemplateTypes'
 
 export const useWorkflowTemplatesStore = defineStore(
   'workflowTemplates',
   () => {
-    const customTemplates = ref<{ [moduleName: string]: string[] }>({})
+    const customTemplates = shallowRef<{ [moduleName: string]: string[] }>({})
     const isLoaded = ref(false)
     const defaultTemplate: WorkflowTemplates = CORE_TEMPLATES[0]
 
-    const templates = computed<WorkflowTemplates[]>(() => [
-      ...CORE_TEMPLATES,
-      ...Object.entries(customTemplates.value).map(
-        ([moduleName, templates]) => ({
-          moduleName,
-          title: moduleName,
-          templates: templates.map((template) => ({
-            name: template,
-            mediaType: 'image',
-            mediaSubtype: 'png'
-          }))
-        })
-      )
-    ])
+    const groupedTemplates = computed<TemplateGroup[]>(() => {
+      const allTemplates = [
+        ...CORE_TEMPLATES,
+        ...Object.entries(customTemplates.value).map(
+          ([moduleName, templates]) => ({
+            moduleName,
+            title: moduleName,
+            templates: templates.map((name) => ({
+              name,
+              mediaType: 'image',
+              mediaSubtype: 'jpg'
+            }))
+          })
+        )
+      ]
+
+      return Object.entries(
+        groupBy(allTemplates, (t) =>
+          t.moduleName === 'default' ? 'ComfyUI Examples' : 'Custom Nodes'
+        )
+      ).map(([label, modules]) => ({ label, modules }))
+    })
 
     async function loadWorkflowTemplates() {
       try {
@@ -40,10 +51,9 @@ export const useWorkflowTemplatesStore = defineStore(
     }
 
     return {
-      templates,
+      groupedTemplates,
       defaultTemplate,
       isLoaded,
-
       loadWorkflowTemplates
     }
   }

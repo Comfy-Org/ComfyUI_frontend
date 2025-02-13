@@ -10,3 +10,7 @@ export interface WorkflowTemplates {
   templates: TemplateInfo[]
   title: string
 }
+export interface TemplateGroup {
+  label: string
+  modules: WorkflowTemplates[]
+}

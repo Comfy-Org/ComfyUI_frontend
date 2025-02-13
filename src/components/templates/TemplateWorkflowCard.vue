@@ -65,7 +65,7 @@ const title = computed(() => {
         `templateWorkflows.template.${categoryTitle}.${template.name}`,
         template.name
       )
-    : template.name
+    : template.name ?? `${sourceModule} Template`
 })
 </script>
 

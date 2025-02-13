@@ -19,26 +19,7 @@ export const CORE_TEMPLATES = [
           'https://comfyanonymous.github.io/ComfyUI_examples/img2img/'
       },
       {
-        name: 'embedding_example',
-        mediaType: 'image',
-        mediaSubtype: 'png',
-        tutorialUrl:
-          'https://comfyanonymous.github.io/ComfyUI_examples/textual_inversion_embeddings/'
-      },
-      {
-        name: 'gligen_textbox_example',
-        mediaType: 'image',
-        mediaSubtype: 'png',
-        tutorialUrl: 'https://comfyanonymous.github.io/ComfyUI_examples/gligen/'
-      },
-      {
         name: 'lora',
-        mediaType: 'image',
-        mediaSubtype: 'png',
-        tutorialUrl: 'https://comfyanonymous.github.io/ComfyUI_examples/lora/'
-      },
-      {
-        name: 'lora_multiple',
         mediaType: 'image',
         mediaSubtype: 'png',
         tutorialUrl: 'https://comfyanonymous.github.io/ComfyUI_examples/lora/'
@@ -63,6 +44,25 @@ export const CORE_TEMPLATES = [
         mediaSubtype: 'png',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/inpaint/'
+      },
+      {
+        name: 'embedding_example',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        tutorialUrl:
+          'https://comfyanonymous.github.io/ComfyUI_examples/textual_inversion_embeddings/'
+      },
+      {
+        name: 'gligen_textbox_example',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        tutorialUrl: 'https://comfyanonymous.github.io/ComfyUI_examples/gligen/'
+      },
+      {
+        name: 'lora_multiple',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        tutorialUrl: 'https://comfyanonymous.github.io/ComfyUI_examples/lora/'
       }
     ]
   },
