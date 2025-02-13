@@ -7,6 +7,7 @@ import type {
 } from '@comfyorg/litegraph/dist/types/widgets'
 
 import { useSettingStore } from '@/stores/settingStore'
+import { SpaceRequest, distributeSpace } from '@/utils/spaceDistribution'
 
 import { ANIM_PREVIEW_WIDGET, app } from './app'
 
@@ -21,7 +22,7 @@ interface Rect {
 
 interface DOMSizeInfo {
   minHeight: number
-  prefHeight: number
+  prefHeight?: number
   w: DOMWidget<HTMLElement, object>
   diff?: number
 }
@@ -136,8 +137,10 @@ function computeSize(this: LGraphNode, size: Size): void {
   let y = this.widgets[0].last_y
   let freeSpace = size[1] - y
 
-  let widgetHeight = 0
-  let dom: DOMSizeInfo[] = []
+  // Collect fixed height widgets first
+  let fixedWidgetHeight = 0
+  const domWidgets: DOMSizeInfo[] = []
+
   for (const w of this.widgets) {
     // @ts-expect-error custom widget type
     if (w.type === 'converted-widget') {
@@ -145,7 +148,7 @@ function computeSize(this: LGraphNode, size: Size): void {
       // @ts-expect-error custom widget type
       delete w.computedHeight
     } else if (w.computeSize) {
-      widgetHeight += w.computeSize()[1] + 4
+      fixedWidgetHeight += w.computeSize()[1] + 4
     } else if (isDomWidget(w)) {
       // Extract DOM widget size info
       const styles = getComputedStyle(w.element)
@@ -172,89 +175,50 @@ function computeSize(this: LGraphNode, size: Size): void {
           minHeight = prefHeight
         }
       }
-      if (isNaN(minHeight)) {
-        minHeight = 50
-      }
-      if (!isNaN(maxHeight)) {
-        if (!isNaN(prefHeight)) {
-          prefHeight = Math.min(prefHeight, maxHeight)
-        } else {
-          prefHeight = maxHeight
-        }
-      }
-      dom.push({
+
+      domWidgets.push({
         minHeight,
-        prefHeight,
+        prefHeight: isNaN(prefHeight)
+          ? undefined
+          : Math.min(prefHeight, maxHeight ?? Infinity),
         w
       })
     } else {
-      widgetHeight += LiteGraph.NODE_WIDGET_HEIGHT + 4
-    }
-  }
-
-  freeSpace -= widgetHeight
-
-  // Calculate sizes with all widgets at their min height
-  const prefGrow = [] // Nodes that want to grow to their prefd size
-  const canGrow = [] // Nodes that can grow to auto size
-  let growBy = 0
-  for (const d of dom) {
-    freeSpace -= d.minHeight
-    if (isNaN(d.prefHeight)) {
-      canGrow.push(d)
-      d.w.computedHeight = d.minHeight
-    } else {
-      const diff = d.prefHeight - d.minHeight
-      if (diff > 0) {
-        prefGrow.push(d)
-        growBy += diff
-        d.diff = diff
-      } else {
-        d.w.computedHeight = d.minHeight
-      }
+      fixedWidgetHeight += LiteGraph.NODE_WIDGET_HEIGHT + 4
     }
   }
 
   if (this.imgs && !this.widgets?.find((w) => w.name === ANIM_PREVIEW_WIDGET)) {
-    freeSpace -= 220
+    fixedWidgetHeight += 220
   }
 
+  // Calculate remaining space for DOM widgets
+  freeSpace -= fixedWidgetHeight
   this.freeWidgetSpace = freeSpace
 
-  if (freeSpace < 0) {
-    // Not enough space for all widgets so we need to grow
-    size[1] -= freeSpace
-    this.graph?.setDirtyCanvas(true)
-  } else {
-    // Share the space between each
-    const growDiff = freeSpace - growBy
-    if (growDiff > 0) {
-      // All pref sizes can be fulfilled
-      freeSpace = growDiff
-      for (const d of prefGrow) {
-        d.w.computedHeight = d.prefHeight
-      }
-    } else {
-      // We need to grow evenly
-      const shared = -growDiff / prefGrow.length
-      for (const d of prefGrow) {
-        d.w.computedHeight = d.prefHeight - shared
-      }
-      freeSpace = 0
-    }
+  // Prepare space requests for distribution
+  const spaceRequests = domWidgets.map((d) => ({
+    minSize: d.minHeight,
+    maxSize: d.prefHeight
+  }))
 
-    if (freeSpace > 0 && canGrow.length) {
-      // Grow any that are auto height
-      const shared = freeSpace / canGrow.length
-      for (const d of canGrow) {
-        if (d.w.computedHeight) {
-          d.w.computedHeight += shared
-        }
-      }
-    }
+  // Distribute space among DOM widgets
+  const allocations = distributeSpace(Math.max(0, freeSpace), spaceRequests)
+
+  // Apply computed heights
+  domWidgets.forEach((d, i) => {
+    d.w.computedHeight = allocations[i]
+  })
+
+  // If we need more space, grow the node
+  const totalNeeded =
+    fixedWidgetHeight + allocations.reduce((sum, h) => sum + h, 0)
+  if (totalNeeded > size[1] - this.widgets[0].last_y) {
+    size[1] = totalNeeded + this.widgets[0].last_y
+    this.graph?.setDirtyCanvas(true)
   }
 
-  // Position each of the widgets
+  // Position widgets
   for (const w of this.widgets) {
     w.y = y
     if (w.computedHeight) {
