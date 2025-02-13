@@ -53,6 +53,7 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
           :style="{
             color: litegraphColors.WIDGET_SECONDARY_TEXT_COLOR
           }"
+          v-tooltip="'test for tooltip'"
         >
           {{ widgetInput.name }}
         </div>
