@@ -756,10 +756,72 @@
   },
   "templateWorkflows": {
     "template": {
-      "default": "默认",
-      "flux_schnell": "Flux Schnell",
-      "image2image": "图像到图像",
-      "upscale": "2步放大"
+      "3D": {
+        "stable_zero123_example": "稳定Zero123"
+      },
+      "Audio": {
+        "stable_audio_example": "稳定音频"
+      },
+      "Basics": {
+        "default": "图像生成",
+        "embedding_example": "嵌入",
+        "gligen_textbox_example": "Gligen文本框",
+        "image2image": "图像到图像",
+        "inpain_model_outpainting": "Inpaint模型Outpainting",
+        "inpaint_example": "Inpaint",
+        "lora": "Lora",
+        "lora_multiple": "Lora多个",
+        "yosemite_outpaint_example": "优胜美地Outpaint"
+      },
+      "Comfy - Area Composition": {
+        "area_composition": "区域构成",
+        "area_composition_reversed": "区域构成反转",
+        "area_composition_square_area_for_subject": "主题的区域构成方形区域"
+      },
+      "ControlNet": {
+        "2_pass_pose_worship": "2通道姿势崇拜",
+        "controlnet_example": "ControlNet",
+        "depth_controlnet": "深度ControlNet",
+        "depth_t2i_adapter": "深度T2I适配器",
+        "mixing_controlnets": "混合ControlNets"
+      },
+      "Flux": {
+        "flux_canny_model_example": "Flux Canny Model",
+        "flux_depth_lora_example": "Flux Depth Lora",
+        "flux_dev_example": "Flux Dev",
+        "flux_fill_inpaint_example": "Flux Inpaint",
+        "flux_fill_outpaint_example": "Flux Outpaint",
+        "flux_redux_model_example": "Flux Redux Model",
+        "flux_schnell": "Flux Schnell"
+      },
+      "SD3.5": {
+        "sd3.5_large_blur": "SD3.5大模糊",
+        "sd3.5_large_canny_controlnet_example": "SD3.5大型Canny ControlNet",
+        "sd3.5_large_depth": "SD3.5大深度",
+        "sd3.5_simple_example": "SD3.5简单"
+      },
+      "SDXL": {
+        "sdxl_refiner_prompt_example": "SDXL Refiner提示",
+        "sdxl_revision_text_prompts": "SDXL修订文本提示",
+        "sdxl_revision_zero_positive": "SDXL修订零正",
+        "sdxl_simple_example": "SDXL简单",
+        "sdxlturbo_example": "SDXL Turbo"
+      },
+      "Upscaling": {
+        "esrgan_example": "ESRGAN",
+        "hiresfix_esrgan_workflow": "HiresFix ESRGAN工作流",
+        "hiresfix_latent_workflow": "HiresFix潜在工作流",
+        "latent_upscale_different_prompt_model": "潜在升级不同提示模型",
+        "upscale": "升级"
+      },
+      "Video": {
+        "hunyuan_video_text_to_video": "Hunyuan视频文本到视频",
+        "image_to_video": "图像到视频",
+        "ltxv_image_to_video": "LTXV图像到视频",
+        "ltxv_text_to_video": "LTXV文本到视频",
+        "mochi_text_to_video_example": "Mochi文本到视频",
+        "txt_to_image_to_video": "文本到图像到视频"
+      }
     },
     "title": "从模板开始"
   },
