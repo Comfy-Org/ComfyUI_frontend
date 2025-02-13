@@ -1,62 +1,6 @@
 export const CORE_TEMPLATES = [
   {
     moduleName: 'default',
-    title: 'Flux',
-    type: 'image',
-    templates: [
-      {
-        name: 'flux_dev_checkpoint_example',
-        mediaType: 'image',
-        mediaSubtype: 'png',
-        tutorialUrl:
-          'https://comfyanonymous.github.io/ComfyUI_examples/flux/#flux-dev-1'
-      },
-      {
-        name: 'flux_schnell',
-        mediaType: 'image',
-        mediaSubtype: 'png',
-        tutorialUrl:
-          'https://comfyanonymous.github.io/ComfyUI_examples/flux/#flux-schnell-1'
-      },
-      {
-        name: 'flux_fill_inpaint_example',
-        mediaType: 'image',
-        mediaSubtype: 'png',
-        tutorialUrl:
-          'https://comfyanonymous.github.io/ComfyUI_examples/flux/#fill-inpainting-model'
-      },
-      {
-        name: 'flux_fill_outpaint_example',
-        mediaType: 'image',
-        mediaSubtype: 'png',
-        tutorialUrl:
-          'https://comfyanonymous.github.io/ComfyUI_examples/flux/#fill-inpainting-model'
-      },
-      {
-        name: 'flux_canny_model_example',
-        mediaType: 'image',
-        mediaSubtype: 'png',
-        tutorialUrl:
-          'https://comfyanonymous.github.io/ComfyUI_examples/flux/#canny-and-depth'
-      },
-      {
-        name: 'flux_redux_model_example',
-        mediaType: 'image',
-        mediaSubtype: 'png',
-        tutorialUrl:
-          'https://comfyanonymous.github.io/ComfyUI_examples/flux/#redux'
-      },
-      {
-        name: 'flux_depth_lora_example',
-        mediaType: 'image',
-        mediaSubtype: 'png',
-        tutorialUrl:
-          'https://comfyanonymous.github.io/ComfyUI_examples/flux/#canny-and-depth'
-      }
-    ]
-  },
-  {
-    moduleName: 'default',
     title: 'Basics',
     type: 'image',
     templates: [
@@ -119,6 +63,62 @@ export const CORE_TEMPLATES = [
         mediaSubtype: 'png',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/inpaint/'
+      }
+    ]
+  },
+  {
+    moduleName: 'default',
+    title: 'Flux',
+    type: 'image',
+    templates: [
+      {
+        name: 'flux_dev_checkpoint_example',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        tutorialUrl:
+          'https://comfyanonymous.github.io/ComfyUI_examples/flux/#flux-dev-1'
+      },
+      {
+        name: 'flux_schnell',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        tutorialUrl:
+          'https://comfyanonymous.github.io/ComfyUI_examples/flux/#flux-schnell-1'
+      },
+      {
+        name: 'flux_fill_inpaint_example',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        tutorialUrl:
+          'https://comfyanonymous.github.io/ComfyUI_examples/flux/#fill-inpainting-model'
+      },
+      {
+        name: 'flux_fill_outpaint_example',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        tutorialUrl:
+          'https://comfyanonymous.github.io/ComfyUI_examples/flux/#fill-inpainting-model'
+      },
+      {
+        name: 'flux_canny_model_example',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        tutorialUrl:
+          'https://comfyanonymous.github.io/ComfyUI_examples/flux/#canny-and-depth'
+      },
+      {
+        name: 'flux_redux_model_example',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        tutorialUrl:
+          'https://comfyanonymous.github.io/ComfyUI_examples/flux/#redux'
+      },
+      {
+        name: 'flux_depth_lora_example',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        tutorialUrl:
+          'https://comfyanonymous.github.io/ComfyUI_examples/flux/#canny-and-depth'
       }
     ]
   },
