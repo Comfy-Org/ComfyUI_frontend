@@ -67,8 +67,6 @@ export interface DOMWidgetOptions<
   getMaxHeight?: () => number
   getHeight?: () => string | number
   onDraw?: (widget: DOMWidget<T, V>) => void
-  beforeResize?: (this: DOMWidget<T, V>, node: LGraphNode) => void
-  afterResize?: (this: DOMWidget<T, V>, node: LGraphNode) => void
 }
 
 function intersect(a: Rect, b: Rect): Vector4 | null {
@@ -490,10 +488,8 @@ LGraphNode.prototype.addDOMWidget = function <
     this[SIZE] = true
     const onResize = this.onResize
     this.onResize = function (size: Size) {
-      options.beforeResize?.call(widget, this)
       computeSize.call(this, size)
       onResize?.call(this, size)
-      options.afterResize?.call(widget, this)
     }
   }
 
