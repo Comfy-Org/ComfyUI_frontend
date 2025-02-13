@@ -1,5 +1,6 @@
 import { LGraphCanvas, LGraphNode, LiteGraph } from '@comfyorg/litegraph'
 import type { Size, Vector4 } from '@comfyorg/litegraph'
+import type { ISerialisedNode } from '@comfyorg/litegraph/dist/types/serialisation'
 import type {
   ICustomWidget,
   IWidget,
@@ -201,7 +202,7 @@ function computeSize(this: LGraphNode, size: Size): void {
 }
 
 // Override the compute visible nodes function to allow us to hide/show DOM elements when the node goes offscreen
-const elementWidgets = new Set()
+const elementWidgets = new Set<LGraphNode>()
 const computeVisibleNodes = LGraphCanvas.prototype.computeVisibleNodes
 LGraphCanvas.prototype.computeVisibleNodes = function (
   nodes?: LGraphNode[],
@@ -380,6 +381,7 @@ LGraphNode.prototype.addDOMWidget = function <
   T extends HTMLElement,
   V extends object | string
 >(
+  this: LGraphNode,
   name: string,
   type: string,
   element: T,
@@ -427,23 +429,26 @@ LGraphNode.prototype.addDOMWidget = function <
   elementWidgets.add(this)
 
   const collapse = this.collapse
-  this.collapse = function (force?: boolean) {
+  this.collapse = function (this: LGraphNode, force?: boolean) {
     collapse.call(this, force)
-    if (this.flags?.collapsed) {
+    if (this.collapsed) {
       element.hidden = true
       element.style.display = 'none'
     }
-    element.dataset.collapsed = this.flags?.collapsed ? 'true' : 'false'
+    element.dataset.collapsed = this.collapsed ? 'true' : 'false'
   }
 
   const { onConfigure } = this
-  this.onConfigure = function (serializedNode: any) {
+  this.onConfigure = function (
+    this: LGraphNode,
+    serializedNode: ISerialisedNode
+  ) {
     onConfigure?.call(this, serializedNode)
-    element.dataset.collapsed = this.flags?.collapsed ? 'true' : 'false'
+    element.dataset.collapsed = this.collapsed ? 'true' : 'false'
   }
 
   const onRemoved = this.onRemoved
-  this.onRemoved = function () {
+  this.onRemoved = function (this: LGraphNode) {
     element.remove()
     elementWidgets.delete(this)
     onRemoved?.call(this)
@@ -454,7 +459,7 @@ LGraphNode.prototype.addDOMWidget = function <
     // @ts-ignore index with symbol
     this[SIZE] = true
     const onResize = this.onResize
-    this.onResize = function (size: Size) {
+    this.onResize = function (this: LGraphNode, size: Size) {
       options.beforeResize?.call(widget, this)
       computeSize.call(this, size)
       onResize?.call(this, size)
