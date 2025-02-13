@@ -1,17 +1,14 @@
 {
-  "last_node_id": 48,
+  "last_node_id": 49,
   "last_link_id": 44,
   "nodes": [
     {
       "id": 15,
       "type": "CLIPTextEncode",
-      "pos": [1139.1103087741085, -121.78948886648053],
-      "size": {
-        "0": 210,
-        "1": 54
-      },
+      "pos": [1139.11, -121.79],
+      "size": [210, 54],
       "flags": {},
-      "order": 16,
+      "order": 17,
       "mode": 0,
       "inputs": [
         {
@@ -22,16 +19,10 @@
         {
           "name": "text",
           "type": "STRING",
-          "link": 21,
           "widget": {
-            "name": "text",
-            "config": [
-              "STRING",
-              {
-                "multiline": true
-              }
-            ]
+            "name": "text"
           },
+          "link": 21,
           "slot_index": 1
         }
       ],
@@ -55,13 +46,10 @@
     {
       "id": 16,
       "type": "CLIPTextEncode",
-      "pos": [1139.1103087741085, -31.789488866480543],
-      "size": {
-        "0": 210,
-        "1": 54
-      },
+      "pos": [1139.11, -31.79],
+      "size": [210, 54],
       "flags": {},
-      "order": 17,
+      "order": 18,
       "mode": 0,
       "inputs": [
         {
@@ -72,16 +60,10 @@
         {
           "name": "text",
           "type": "STRING",
-          "link": 22,
           "widget": {
-            "name": "text",
-            "config": [
-              "STRING",
-              {
-                "multiline": true
-              }
-            ]
+            "name": "text"
           },
+          "link": 22,
           "slot_index": 1
         }
       ],
@@ -103,33 +85,27 @@
     {
       "id": 14,
       "type": "PrimitiveNode",
-      "pos": [117.74066078186034, 335.1799162292478],
-      "size": {
-        "0": 300,
-        "1": 160
-      },
+      "pos": [117.74, 335.18],
+      "size": [300, 160],
       "flags": {},
       "order": 0,
       "mode": 0,
+      "inputs": [],
       "outputs": [
         {
           "name": "STRING",
           "type": "STRING",
-          "links": [18, 22],
           "widget": {
-            "name": "text",
-            "config": [
-              "STRING",
-              {
-                "multiline": true
-              }
-            ]
+            "name": "text"
           },
+          "links": [18, 22],
           "slot_index": 0
         }
       ],
       "title": "Negative Prompt (Text)",
-      "properties": {},
+      "properties": {
+        "Run widget replace on values": false
+      },
       "widgets_values": ["text, watermark"],
       "color": "#322",
       "bgcolor": "#533"
@@ -137,33 +113,27 @@
     {
       "id": 13,
       "type": "PrimitiveNode",
-      "pos": [117.74066078186034, 135.179916229248],
-      "size": {
-        "0": 300,
-        "1": 160
-      },
+      "pos": [117.74, 135.18],
+      "size": [300, 160],
       "flags": {},
       "order": 1,
       "mode": 0,
+      "inputs": [],
       "outputs": [
         {
           "name": "STRING",
           "type": "STRING",
-          "links": [16, 21],
           "widget": {
-            "name": "text",
-            "config": [
-              "STRING",
-              {
-                "multiline": true
-              }
-            ]
+            "name": "text"
           },
+          "links": [16, 21],
           "slot_index": 0
         }
       ],
       "title": "Positive Prompt (Text)",
-      "properties": {},
+      "properties": {
+        "Run widget replace on values": false
+      },
       "widgets_values": [
         "evening sunset scenery blue sky nature, glass bottle with a galaxy in it"
       ],
@@ -174,13 +144,12 @@
       "id": 36,
       "type": "Note",
       "pos": [-74, -470],
-      "size": {
-        "0": 315.70074462890625,
-        "1": 147.9551239013672
-      },
+      "size": [315.7, 147.96],
       "flags": {},
       "order": 2,
       "mode": 0,
+      "inputs": [],
+      "outputs": [],
       "title": "Note - Load Checkpoint BASE",
       "properties": {
         "text": ""
@@ -195,13 +164,12 @@
       "id": 37,
       "type": "Note",
       "pos": [610, -460],
-      "size": {
-        "0": 330,
-        "1": 140
-      },
+      "size": [330, 140],
       "flags": {},
       "order": 3,
       "mode": 0,
+      "inputs": [],
+      "outputs": [],
       "title": "Note - Load Checkpoint REFINER",
       "properties": {
         "text": ""
@@ -215,14 +183,13 @@
     {
       "id": 38,
       "type": "Note",
-      "pos": [126.74066078186036, 534.1799162292467],
-      "size": {
-        "0": 284.3257141113281,
-        "1": 123.88604736328125
-      },
+      "pos": [126.74, 534.18],
+      "size": [284.33, 123.89],
       "flags": {},
       "order": 4,
       "mode": 0,
+      "inputs": [],
+      "outputs": [],
       "title": "Note - Text Prompts",
       "properties": {
         "text": ""
@@ -237,13 +204,12 @@
       "id": 40,
       "type": "Note",
       "pos": [1325, 234],
-      "size": {
-        "0": 451.5049743652344,
-        "1": 424.4164123535156
-      },
+      "size": [451.5, 424.42],
       "flags": {},
       "order": 5,
       "mode": 0,
+      "inputs": [],
+      "outputs": [],
       "title": "Note - KSampler  ADVANCED General Information",
       "properties": {
         "text": ""
@@ -257,14 +223,12 @@
     {
       "id": 5,
       "type": "EmptyLatentImage",
-      "pos": [544.5041024540301, 651.1200708259006],
-      "size": {
-        "0": 300,
-        "1": 110
-      },
+      "pos": [544.5, 651.12],
+      "size": [300, 110],
       "flags": {},
       "order": 6,
       "mode": 0,
+      "inputs": [],
       "outputs": [
         {
           "name": "LATENT",
@@ -283,13 +247,10 @@
     {
       "id": 17,
       "type": "VAEDecode",
-      "pos": [2220.7710413363047, 129.6025938601699],
-      "size": {
-        "0": 200,
-        "1": 50
-      },
+      "pos": [2220.77, 129.6],
+      "size": [200, 50],
       "flags": {},
-      "order": 22,
+      "order": 23,
       "mode": 0,
       "inputs": [
         {
@@ -307,28 +268,28 @@
         {
           "name": "IMAGE",
           "type": "IMAGE",
-          "links": [28],
           "shape": 3,
+          "links": [28],
           "slot_index": 0
         }
       ],
       "properties": {
         "Node name for S&R": "VAEDecode"
       },
+      "widgets_values": [],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 41,
       "type": "Note",
-      "pos": [2160.7710413363047, 229.60259386016995],
-      "size": {
-        "0": 320,
-        "1": 120
-      },
+      "pos": [2160.77, 229.6],
+      "size": [320, 120],
       "flags": {},
       "order": 7,
       "mode": 0,
+      "inputs": [],
+      "outputs": [],
       "title": "Note - VAE Decoder",
       "properties": {
         "text": ""
@@ -342,14 +303,13 @@
     {
       "id": 42,
       "type": "Note",
-      "pos": [564.5041024540307, 801.1200708259006],
-      "size": {
-        "0": 260,
-        "1": 210
-      },
+      "pos": [564.5, 801.12],
+      "size": [260, 210],
       "flags": {},
       "order": 8,
       "mode": 0,
+      "inputs": [],
+      "outputs": [],
       "title": "Note - Empty Latent Image",
       "properties": {
         "text": ""
@@ -364,13 +324,12 @@
       "id": 43,
       "type": "Note",
       "pos": [1125, 70],
-      "size": {
-        "0": 240,
-        "1": 80
-      },
+      "size": [240, 80],
       "flags": {},
       "order": 9,
       "mode": 0,
+      "inputs": [],
+      "outputs": [],
       "title": "Note - CLIP Encode (REFINER)",
       "properties": {
         "text": ""
@@ -384,13 +343,10 @@
     {
       "id": 6,
       "type": "CLIPTextEncode",
-      "pos": [599.4967909953033, 269.4780241240285],
-      "size": {
-        "0": 210,
-        "1": 54
-      },
+      "pos": [599.5, 269.48],
+      "size": [210, 54],
       "flags": {},
-      "order": 18,
+      "order": 19,
       "mode": 0,
       "inputs": [
         {
@@ -401,16 +357,10 @@
         {
           "name": "text",
           "type": "STRING",
-          "link": 16,
           "widget": {
-            "name": "text",
-            "config": [
-              "STRING",
-              {
-                "multiline": true
-              }
-            ]
+            "name": "text"
           },
+          "link": 16,
           "slot_index": 1
         }
       ],
@@ -434,13 +384,10 @@
     {
       "id": 7,
       "type": "CLIPTextEncode",
-      "pos": [599.4967909953033, 359.4780241240287],
-      "size": {
-        "0": 210,
-        "1": 54
-      },
+      "pos": [599.5, 359.48],
+      "size": [210, 54],
       "flags": {},
-      "order": 19,
+      "order": 20,
       "mode": 0,
       "inputs": [
         {
@@ -451,16 +398,10 @@
         {
           "name": "text",
           "type": "STRING",
-          "link": 18,
           "widget": {
-            "name": "text",
-            "config": [
-              "STRING",
-              {
-                "multiline": true
-              }
-            ]
+            "name": "text"
           },
+          "link": 18,
           "slot_index": 1
         }
       ],
@@ -482,14 +423,13 @@
     {
       "id": 39,
       "type": "Note",
-      "pos": [599.4967909953033, 449.4780241240287],
-      "size": {
-        "0": 210,
-        "1": 80
-      },
+      "pos": [599.5, 449.48],
+      "size": [210, 80],
       "flags": {},
       "order": 10,
       "mode": 0,
+      "inputs": [],
+      "outputs": [],
       "title": "Note - CLIP Encode (BASE)",
       "properties": {
         "text": ""
@@ -504,12 +444,9 @@
       "id": 11,
       "type": "KSamplerAdvanced",
       "pos": [1800, 130],
-      "size": {
-        "0": 300,
-        "1": 340
-      },
+      "size": [300, 340],
       "flags": {},
-      "order": 21,
+      "order": 22,
       "mode": 0,
       "inputs": [
         {
@@ -536,43 +473,27 @@
         {
           "name": "steps",
           "type": "INT",
-          "link": 38,
           "widget": {
-            "name": "steps",
-            "config": [
-              "INT",
-              {
-                "default": 20,
-                "min": 1,
-                "max": 10000
-              }
-            ]
+            "name": "steps"
           },
+          "link": 38,
           "slot_index": 4
         },
         {
           "name": "start_at_step",
           "type": "INT",
-          "link": 44,
           "widget": {
-            "name": "start_at_step",
-            "config": [
-              "INT",
-              {
-                "default": 0,
-                "min": 0,
-                "max": 10000
-              }
-            ]
-          }
+            "name": "start_at_step"
+          },
+          "link": 44
         }
       ],
       "outputs": [
         {
           "name": "LATENT",
           "type": "LATENT",
-          "links": [25],
           "shape": 3,
+          "links": [25],
           "slot_index": 0
         }
       ],
@@ -599,33 +520,31 @@
       "id": 12,
       "type": "CheckpointLoaderSimple",
       "pos": [600, -611],
-      "size": {
-        "0": 350,
-        "1": 100
-      },
+      "size": [350, 100],
       "flags": {},
       "order": 11,
       "mode": 0,
+      "inputs": [],
       "outputs": [
         {
           "name": "MODEL",
           "type": "MODEL",
-          "links": [14],
           "shape": 3,
+          "links": [14],
           "slot_index": 0
         },
         {
           "name": "CLIP",
           "type": "CLIP",
-          "links": [19, 20],
           "shape": 3,
+          "links": [19, 20],
           "slot_index": 1
         },
         {
           "name": "VAE",
           "type": "VAE",
-          "links": [34],
           "shape": 3,
+          "links": [34],
           "slot_index": 2
         }
       ],
@@ -641,13 +560,11 @@
       "id": 4,
       "type": "CheckpointLoaderSimple",
       "pos": [-90, -620],
-      "size": {
-        "0": 350,
-        "1": 100
-      },
+      "size": [350, 100],
       "flags": {},
       "order": 12,
       "mode": 0,
+      "inputs": [],
       "outputs": [
         {
           "name": "MODEL",
@@ -680,12 +597,9 @@
       "id": 19,
       "type": "SaveImage",
       "pos": [2600, 130],
-      "size": {
-        "0": 565.774658203125,
-        "1": 596.3757934570312
-      },
+      "size": [565.77, 596.38],
       "flags": {},
-      "order": 23,
+      "order": 24,
       "mode": 0,
       "inputs": [
         {
@@ -694,6 +608,7 @@
           "link": 28
         }
       ],
+      "outputs": [],
       "properties": {},
       "widgets_values": ["ComfyUI"],
       "color": "#222",
@@ -702,35 +617,27 @@
     {
       "id": 47,
       "type": "PrimitiveNode",
-      "pos": [1037.5286840013239, 881.6113881513106],
-      "size": {
-        "0": 210,
-        "1": 82
-      },
+      "pos": [1037.53, 881.61],
+      "size": [210, 82],
       "flags": {},
       "order": 13,
       "mode": 0,
+      "inputs": [],
       "outputs": [
         {
           "name": "INT",
           "type": "INT",
-          "links": [43, 44],
           "widget": {
-            "name": "end_at_step",
-            "config": [
-              "INT",
-              {
-                "default": 10000,
-                "min": 0,
-                "max": 10000
-              }
-            ]
+            "name": "end_at_step"
           },
+          "links": [43, 44],
           "slot_index": 0
         }
       ],
       "title": "end_at_step",
-      "properties": {},
+      "properties": {
+        "Run widget replace on values": false
+      },
       "widgets_values": [20, "fixed"],
       "color": "#432",
       "bgcolor": "#653"
@@ -738,34 +645,26 @@
     {
       "id": 45,
       "type": "PrimitiveNode",
-      "pos": [1039.5286840013239, 734.6113881513106],
-      "size": {
-        "0": 210,
-        "1": 82
-      },
+      "pos": [1039.53, 734.61],
+      "size": [210, 82],
       "flags": {},
       "order": 14,
       "mode": 0,
+      "inputs": [],
       "outputs": [
         {
           "name": "INT",
           "type": "INT",
-          "links": [38, 41],
           "widget": {
-            "name": "steps",
-            "config": [
-              "INT",
-              {
-                "default": 20,
-                "min": 1,
-                "max": 10000
-              }
-            ]
-          }
+            "name": "steps"
+          },
+          "links": [38, 41]
         }
       ],
       "title": "steps",
-      "properties": {},
+      "properties": {
+        "Run widget replace on values": false
+      },
       "widgets_values": [25, "fixed"],
       "color": "#432",
       "bgcolor": "#653"
@@ -774,10 +673,12 @@
       "id": 48,
       "type": "Note",
       "pos": [1036, 1018],
-      "size": [213.90769258609475, 110.17156742821044],
+      "size": [213.91, 110.17],
       "flags": {},
       "order": 15,
       "mode": 0,
+      "inputs": [],
+      "outputs": [],
       "properties": {
         "text": ""
       },
@@ -791,12 +692,9 @@
       "id": 10,
       "type": "KSamplerAdvanced",
       "pos": [1000, 230],
-      "size": {
-        "0": 300,
-        "1": 334
-      },
+      "size": [300, 334],
       "flags": {},
-      "order": 20,
+      "order": 21,
       "mode": 0,
       "inputs": [
         {
@@ -822,35 +720,19 @@
         {
           "name": "steps",
           "type": "INT",
-          "link": 41,
           "widget": {
-            "name": "steps",
-            "config": [
-              "INT",
-              {
-                "default": 20,
-                "min": 1,
-                "max": 10000
-              }
-            ]
+            "name": "steps"
           },
+          "link": 41,
           "slot_index": 4
         },
         {
           "name": "end_at_step",
           "type": "INT",
-          "link": 43,
           "widget": {
-            "name": "end_at_step",
-            "config": [
-              "INT",
-              {
-                "default": 10000,
-                "min": 0,
-                "max": 10000
-              }
-            ]
+            "name": "end_at_step"
           },
+          "link": 43,
           "slot_index": 5
         }
       ],
@@ -858,8 +740,8 @@
         {
           "name": "LATENT",
           "type": "LATENT",
-          "links": [13],
           "shape": 3,
+          "links": [13],
           "slot_index": 0
         }
       ],
@@ -881,6 +763,23 @@
       ],
       "color": "#223",
       "bgcolor": "#335"
+    },
+    {
+      "id": 49,
+      "type": "MarkdownNote",
+      "pos": [-105, -255],
+      "size": [225, 60],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "\ud83d\udec8 [Learn more about this workflow](https://comfyanonymous.github.io/ComfyUI_examples/sdxl/)"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
     }
   ],
   "links": [
@@ -910,48 +809,77 @@
   ],
   "groups": [
     {
+      "id": 1,
       "title": "Base Prompt",
-      "bounding": [579, 189, 252, 361],
-      "color": "#3f789e"
+      "bounding": [585, 195, 252, 361],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
     },
     {
+      "id": 2,
       "title": "Refiner Prompt",
-      "bounding": [1102, -201, 282, 372],
-      "color": "#3f789e"
+      "bounding": [1095, -195, 282, 372],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
     },
     {
+      "id": 3,
       "title": "Text Prompts",
-      "bounding": [98, 52, 339, 622],
-      "color": "#3f789e"
+      "bounding": [105, 45, 339, 622],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
     },
     {
+      "id": 4,
       "title": "Load in BASE SDXL Model",
-      "bounding": [-100, -700, 369, 399],
-      "color": "#a1309b"
+      "bounding": [-105, -705, 369, 399],
+      "color": "#a1309b",
+      "font_size": 24,
+      "flags": {}
     },
     {
+      "id": 5,
       "title": "Load in REFINER SDXL Model",
-      "bounding": [581, -700, 391, 400],
-      "color": "#a1309b"
+      "bounding": [585, -705, 391, 400],
+      "color": "#a1309b",
+      "font_size": 24,
+      "flags": {}
     },
     {
+      "id": 6,
       "title": "Empty Latent Image",
-      "bounding": [524, 577, 339, 443],
-      "color": "#a1309b"
+      "bounding": [525, 570, 339, 443],
+      "color": "#a1309b",
+      "font_size": 24,
+      "flags": {}
     },
     {
+      "id": 7,
       "title": "VAE Decoder",
-      "bounding": [2142, 51, 360, 350],
-      "color": "#b06634"
+      "bounding": [2145, 45, 360, 350],
+      "color": "#b06634",
+      "font_size": 24,
+      "flags": {}
     },
     {
+      "id": 8,
       "title": "Step Control",
-      "bounding": [1005, 623, 284, 524],
-      "color": "#3f789e"
+      "bounding": [1005, 630, 284, 524],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
     }
   ],
   "config": {},
-  "extra": {},
+  "extra": {
+    "ds": {
+      "scale": 0.78,
+      "offset": [685.2, 1020.68]
+    }
+  },
   "version": 0.4,
   "models": [
     {

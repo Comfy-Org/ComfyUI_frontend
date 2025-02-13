@@ -1,28 +1,20 @@
 {
-  "last_node_id": 27,
+  "last_node_id": 28,
   "last_link_id": 79,
   "nodes": [
     {
       "id": 8,
       "type": "VAEDecode",
       "pos": [1209, 188],
-      "size": {
-        "0": 210,
-        "1": 46
-      },
+      "size": [210, 46],
       "flags": {},
-      "order": 8,
+      "order": 9,
       "mode": 0,
       "inputs": [
         {
           "name": "samples",
           "type": "LATENT",
           "link": 7
-        },
-        {
-          "name": "vae",
-          "type": "VAE",
-          "link": 79
         }
       ],
       "outputs": [
@@ -33,20 +25,16 @@
           "slot_index": 0
         }
       ],
-      "properties": {
-        "Node name for S&R": "VAEDecode"
-      }
+      "properties": { "Node name for S&R": "VAEDecode" },
+      "widgets_values": []
     },
     {
       "id": 3,
       "type": "KSampler",
       "pos": [863, 186],
-      "size": {
-        "0": 315,
-        "1": 262
-      },
+      "size": [315, 262],
       "flags": {},
-      "order": 7,
+      "order": 8,
       "mode": 0,
       "inputs": [
         {
@@ -78,9 +66,7 @@
           "slot_index": 0
         }
       ],
-      "properties": {
-        "Node name for S&R": "KSampler"
-      },
+      "properties": { "Node name for S&R": "KSampler" },
       "widgets_values": [
         1023216319780679,
         "randomize",
@@ -95,20 +81,11 @@
       "id": 24,
       "type": "CLIPTextEncode",
       "pos": [-260, -340],
-      "size": {
-        "0": 422.84503173828125,
-        "1": 164.31304931640625
-      },
+      "size": [422.84503173828125, 164.31304931640625],
       "flags": {},
-      "order": 4,
+      "order": 5,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 67
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "CONDITIONING",
@@ -117,9 +94,7 @@
           "slot_index": 0
         }
       ],
-      "properties": {
-        "Node name for S&R": "CLIPTextEncode"
-      },
+      "properties": { "Node name for S&R": "CLIPTextEncode" },
       "widgets_values": [
         "photograph scenery landscape, snow beautiful scenery mountain, glass bottle; purple galaxy bottle; sun"
       ]
@@ -128,20 +103,11 @@
       "id": 7,
       "type": "CLIPTextEncode",
       "pos": [300, 230],
-      "size": {
-        "0": 425.27801513671875,
-        "1": 180.6060791015625
-      },
+      "size": [425.27801513671875, 180.6060791015625],
       "flags": {},
-      "order": 3,
+      "order": 4,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 5
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "CONDITIONING",
@@ -150,21 +116,16 @@
           "slot_index": 0
         }
       ],
-      "properties": {
-        "Node name for S&R": "CLIPTextEncode"
-      },
+      "properties": { "Node name for S&R": "CLIPTextEncode" },
       "widgets_values": ["text, watermark"]
     },
     {
       "id": 9,
       "type": "SaveImage",
       "pos": [1495, 167],
-      "size": {
-        "0": 493.6289978027344,
-        "1": 561.5360717773438
-      },
+      "size": [493.6289978027344, 561.5360717773438],
       "flags": {},
-      "order": 9,
+      "order": 10,
       "mode": 0,
       "inputs": [
         {
@@ -173,6 +134,7 @@
           "link": 9
         }
       ],
+      "outputs": [],
       "properties": {},
       "widgets_values": ["gligen/testing"]
     },
@@ -180,13 +142,11 @@
       "id": 5,
       "type": "EmptyLatentImage",
       "pos": [410, 460],
-      "size": {
-        "0": 315,
-        "1": 106
-      },
+      "size": [315, 106],
       "flags": {},
       "order": 0,
       "mode": 0,
+      "inputs": [],
       "outputs": [
         {
           "name": "LATENT",
@@ -195,21 +155,16 @@
           "slot_index": 0
         }
       ],
-      "properties": {
-        "Node name for S&R": "EmptyLatentImage"
-      },
+      "properties": { "Node name for S&R": "EmptyLatentImage" },
       "widgets_values": [768, 768, 1]
     },
     {
       "id": 27,
       "type": "GLIGENTextBoxApply",
       "pos": [770, -340],
-      "size": {
-        "0": 437.21990966796875,
-        "1": 382.67840576171875
-      },
+      "size": [437.21990966796875, 382.67840576171875],
       "flags": {},
-      "order": 6,
+      "order": 7,
       "mode": 0,
       "inputs": [
         {
@@ -236,21 +191,16 @@
           "slot_index": 0
         }
       ],
-      "properties": {
-        "Node name for S&R": "GLIGENTextBoxApply"
-      },
+      "properties": { "Node name for S&R": "GLIGENTextBoxApply" },
       "widgets_values": ["sun", 144, 144, 416, 16]
     },
     {
       "id": 21,
       "type": "GLIGENTextBoxApply",
       "pos": [270, -340],
-      "size": {
-        "0": 437.21990966796875,
-        "1": 382.67840576171875
-      },
+      "size": [437.21990966796875, 382.67840576171875],
       "flags": {},
-      "order": 5,
+      "order": 6,
       "mode": 0,
       "inputs": [
         {
@@ -277,22 +227,18 @@
           "slot_index": 0
         }
       ],
-      "properties": {
-        "Node name for S&R": "GLIGENTextBoxApply"
-      },
+      "properties": { "Node name for S&R": "GLIGENTextBoxApply" },
       "widgets_values": ["purple galaxy bottle", 192, 304, 176, 272]
     },
     {
       "id": 10,
       "type": "GLIGENLoader",
       "pos": [-230, -70],
-      "size": {
-        "0": 390,
-        "1": 60
-      },
+      "size": [390, 60],
       "flags": {},
       "order": 1,
       "mode": 0,
+      "inputs": [],
       "outputs": [
         {
           "name": "GLIGEN",
@@ -301,22 +247,18 @@
           "slot_index": 0
         }
       ],
-      "properties": {
-        "Node name for S&R": "GLIGENLoader"
-      },
+      "properties": { "Node name for S&R": "GLIGENLoader" },
       "widgets_values": ["gligen_sd14_textbox_pruned.safetensors"]
     },
     {
       "id": 4,
       "type": "CheckpointLoaderSimple",
       "pos": [-220, 130],
-      "size": {
-        "0": 315,
-        "1": 98
-      },
+      "size": [315, 98],
       "flags": {},
       "order": 2,
       "mode": 0,
+      "inputs": [],
       "outputs": [
         {
           "name": "MODEL",
@@ -337,10 +279,25 @@
           "slot_index": 2
         }
       ],
-      "properties": {
-        "Node name for S&R": "CheckpointLoaderSimple"
-      },
+      "properties": { "Node name for S&R": "CheckpointLoaderSimple" },
       "widgets_values": ["v1-5-pruned-emaonly-fp16.safetensors"]
+    },
+    {
+      "id": 28,
+      "type": "MarkdownNote",
+      "pos": [-210, 285],
+      "size": [225, 60],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "🛈 [Learn more about this workflow](https://comfyanonymous.github.io/ComfyUI_examples/gligen/)"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
     }
   ],
   "links": [
@@ -362,18 +319,29 @@
   ],
   "groups": [
     {
+      "id": 1,
       "title": "Base Prompt",
-      "bounding": [-310, -462, 518, 302],
-      "color": "#3f789e"
+      "bounding": [-315, -465, 518, 302],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
     },
     {
+      "id": 2,
       "title": "GLIGEN (for best results the elements should match some elements in the base prompt)",
-      "bounding": [250, -460, 980, 529],
-      "color": "#A88"
+      "bounding": [255, -465, 980, 529],
+      "color": "#A88",
+      "font_size": 24,
+      "flags": {}
     }
   ],
   "config": {},
-  "extra": {},
+  "extra": {
+    "ds": {
+      "scale": 0.7964225260331085,
+      "offset": [433.5856291844491, 361.8134164659593]
+    }
+  },
   "version": 0.4,
   "models": [
     {

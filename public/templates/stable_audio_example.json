@@ -1,5 +1,5 @@
 {
-  "last_node_id": 17,
+  "last_node_id": 18,
   "last_link_id": 26,
   "nodes": [
     {
@@ -8,7 +8,7 @@
       "pos": [864, 96],
       "size": [315, 262],
       "flags": {},
-      "order": 5,
+      "order": 6,
       "mode": 0,
       "inputs": [
         {
@@ -94,7 +94,7 @@
       "pos": [384, 96],
       "size": [432, 144],
       "flags": {},
-      "order": 3,
+      "order": 4,
       "mode": 0,
       "inputs": [
         {
@@ -124,7 +124,7 @@
       "pos": [384, 288],
       "size": [432, 144],
       "flags": {},
-      "order": 4,
+      "order": 5,
       "mode": 0,
       "inputs": [
         {
@@ -152,7 +152,7 @@
       "id": 10,
       "type": "CLIPLoader",
       "pos": [0, 96],
-      "size": [335.6534118652344, 82],
+      "size": [335.65, 82],
       "flags": {},
       "order": 1,
       "mode": 0,
@@ -199,7 +199,7 @@
       "pos": [1200, 96],
       "size": [210, 46],
       "flags": {},
-      "order": 6,
+      "order": 7,
       "mode": 0,
       "inputs": [
         {
@@ -232,9 +232,9 @@
       "id": 13,
       "type": "SaveAudio",
       "pos": [1440, 96],
-      "size": [355.22216796875, 100],
+      "size": [355.22, 100],
       "flags": {},
-      "order": 7,
+      "order": 8,
       "mode": 0,
       "inputs": [
         {
@@ -248,6 +248,23 @@
         "Node name for S&R": "SaveAudio"
       },
       "widgets_values": ["audio/ComfyUI", ""]
+    },
+    {
+      "id": 18,
+      "type": "MarkdownNote",
+      "pos": [15, 390],
+      "size": [225, 60],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "\ud83d\udec8 [Learn more about this workflow](https://comfyanonymous.github.io/ComfyUI_examples/audio/)"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
     }
   ],
   "links": [
@@ -266,7 +283,7 @@
   "extra": {
     "ds": {
       "scale": 1,
-      "offset": [201.777587890625, 380.0001525878906]
+      "offset": [201.78, 380.0]
     }
   },
   "version": 0.4,

@@ -1,5 +1,5 @@
 {
-  "last_node_id": 76,
+  "last_node_id": 77,
   "last_link_id": 182,
   "nodes": [
     {
@@ -22,7 +22,7 @@
       "properties": {
         "Node name for S&R": "CLIPLoader"
       },
-      "widgets_values": ["t5xxl_fp16.safetensors", "ltxv"]
+      "widgets_values": ["t5xxl_fp16.safetensors", "ltxv", "default"]
     },
     {
       "id": 8,
@@ -30,7 +30,7 @@
       "pos": [1600, 30],
       "size": [210, 46],
       "flags": {},
-      "order": 10,
+      "order": 11,
       "mode": 0,
       "inputs": [
         {
@@ -61,9 +61,9 @@
       "id": 69,
       "type": "LTXVConditioning",
       "pos": [920, 60],
-      "size": [223.8660125732422, 78],
+      "size": [223.87, 78],
       "flags": {},
-      "order": 8,
+      "order": 9,
       "mode": 0,
       "inputs": [
         {
@@ -100,9 +100,9 @@
       "id": 72,
       "type": "SamplerCustom",
       "pos": [1201, 32],
-      "size": [355.20001220703125, 230],
+      "size": [355.2, 230],
       "flags": {},
-      "order": 9,
+      "order": 10,
       "mode": 0,
       "inputs": [
         {
@@ -215,14 +215,14 @@
       "pos": [856, 531],
       "size": [315, 154],
       "flags": {},
-      "order": 7,
+      "order": 8,
       "mode": 0,
       "inputs": [
         {
           "name": "latent",
           "type": "LATENT",
-          "link": 168,
-          "shape": 7
+          "shape": 7,
+          "link": 168
         }
       ],
       "outputs": [
@@ -242,9 +242,9 @@
       "id": 6,
       "type": "CLIPTextEncode",
       "pos": [420, 190],
-      "size": [422.84503173828125, 164.31304931640625],
+      "size": [422.85, 164.31],
       "flags": {},
-      "order": 5,
+      "order": 6,
       "mode": 0,
       "inputs": [
         {
@@ -275,9 +275,9 @@
       "id": 7,
       "type": "CLIPTextEncode",
       "pos": [420, 390],
-      "size": [425.27801513671875, 180.6060791015625],
+      "size": [425.28, 180.61],
       "flags": {},
-      "order": 6,
+      "order": 7,
       "mode": 0,
       "inputs": [
         {
@@ -348,7 +348,7 @@
       "pos": [1830, 30],
       "size": [680, 610],
       "flags": {},
-      "order": 11,
+      "order": 12,
       "mode": 0,
       "inputs": [
         {
@@ -360,6 +360,23 @@
       "outputs": [],
       "properties": {},
       "widgets_values": ["ComfyUI", 24, false, 90, "default"]
+    },
+    {
+      "id": 77,
+      "type": "MarkdownNote",
+      "pos": [45, 600],
+      "size": [225, 60],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "\ud83d\udec8 [Learn more about this workflow](https://comfyanonymous.github.io/ComfyUI_examples/ltxv/)"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
     }
   ],
   "links": [
@@ -380,7 +397,12 @@
   ],
   "groups": [],
   "config": {},
-  "extra": {},
+  "extra": {
+    "ds": {
+      "scale": 0.65,
+      "offset": [1490.32, 926.49]
+    }
+  },
   "version": 0.4,
   "models": [
     {

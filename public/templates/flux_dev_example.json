@@ -1,6 +1,6 @@
 {
-  "last_node_id": 44,
-  "last_link_id": 123,
+  "last_node_id": 38,
+  "last_link_id": 116,
   "nodes": [
     {
       "id": 11,
@@ -36,7 +36,7 @@
       "pos": [480, 1008],
       "size": [315, 106],
       "flags": {},
-      "order": 19,
+      "order": 14,
       "mode": 0,
       "inputs": [
         {
@@ -87,7 +87,7 @@
       "pos": [480, 144],
       "size": [317.4, 58],
       "flags": {},
-      "order": 18,
+      "order": 13,
       "mode": 0,
       "inputs": [
         {
@@ -101,7 +101,7 @@
           "name": "CONDITIONING",
           "type": "CONDITIONING",
           "shape": 3,
-          "links": [122],
+          "links": [42],
           "slot_index": 0
         }
       ],
@@ -113,12 +113,48 @@
       "bgcolor": "#355"
     },
     {
+      "id": 22,
+      "type": "BasicGuider",
+      "pos": [576, 48],
+      "size": [222.35, 46],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 54,
+          "slot_index": 0
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 42,
+          "slot_index": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "shape": 3,
+          "links": [30],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": []
+    },
+    {
       "id": 13,
       "type": "SamplerCustomAdvanced",
       "pos": [864, 192],
       "size": [272.36, 124.54],
       "flags": {},
-      "order": 22,
+      "order": 16,
       "mode": 0,
       "inputs": [
         {
@@ -192,7 +228,7 @@
       "properties": {
         "Node name for S&R": "RandomNoise"
       },
-      "widgets_values": [958831004022715, "randomize"],
+      "widgets_values": [219670278747233, "randomize"],
       "color": "#2a363b",
       "bgcolor": "#3f5159"
     },
@@ -202,7 +238,7 @@
       "pos": [866, 367],
       "size": [210, 46],
       "flags": {},
-      "order": 23,
+      "order": 17,
       "mode": 0,
       "inputs": [
         {
@@ -230,12 +266,45 @@
       "widgets_values": []
     },
     {
+      "id": 6,
+      "type": "CLIPTextEncode",
+      "pos": [384, 240],
+      "size": [422.85, 164.31],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 10
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [41],
+          "slot_index": 0
+        }
+      ],
+      "title": "CLIP Text Encode (Positive Prompt)",
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        "cute anime girl with massive fluffy fennec ears and a big fluffy tail blonde messy long hair blue eyes wearing a maid outfit with a long black gold leaf pattern dress and a white apron mouth open holding a fancy black forest cake with candles on top in the kitchen of an old dark Victorian mansion lit by candlelight with a bright window to the foggy forest and very expensive stuff everywhere"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
       "id": 30,
       "type": "ModelSamplingFlux",
       "pos": [480, 1152],
       "size": [315, 130],
       "flags": {},
-      "order": 16,
+      "order": 12,
       "mode": 0,
       "inputs": [
         {
@@ -283,7 +352,7 @@
       "pos": [480, 624],
       "size": [315, 106],
       "flags": {},
-      "order": 15,
+      "order": 11,
       "mode": 0,
       "inputs": [
         {
@@ -394,7 +463,7 @@
       "properties": {
         "Node name for S&R": "UNETLoader"
       },
-      "widgets_values": ["flux1-dev.safetensors", "default"],
+      "widgets_values": ["flux1-dev-fp8.safetensors", "default"],
       "color": "#223",
       "bgcolor": "#335"
     },
@@ -404,7 +473,7 @@
       "pos": [1155, 196],
       "size": [985.3, 1060.38],
       "flags": {},
-      "order": 24,
+      "order": 18,
       "mode": 0,
       "inputs": [
         {
@@ -473,249 +542,24 @@
         "text": ""
       },
       "widgets_values": [
-        "If you get an error in any of the nodes above make sure the files are in the correct directories.\n\nSee the top of the examples page for the links : https://comfyanonymous.github.io/ComfyUI_examples/flux/\n\nflux1-dev.safetensors goes in: ComfyUI/models/unet/\n\nt5xxl_fp16.safetensors and clip_l.safetensors go in: ComfyUI/models/clip/\n\nae.safetensors goes in: ComfyUI/models/vae/\n\n\nTip: You can set the weight_dtype above to one of the fp8 types if you have memory issues."
+        "If you get an error in any of the nodes above make sure the files are in the correct directories.\n\nSee the top of the examples page for the links : https://comfyanonymous.github.io/ComfyUI_examples/flux/\n\nflux1-dev-fp8.safetensors goes in: ComfyUI/models/unet/\n\nt5xxl_fp16.safetensors and clip_l.safetensors go in: ComfyUI/models/clip/\n\nae.safetensors goes in: ComfyUI/models/vae/\n\n\nTip: You can set the weight_dtype above to one of the fp8 types if you have memory issues."
       ],
       "color": "#432",
       "bgcolor": "#653"
     },
     {
-      "id": 39,
-      "type": "CLIPVisionEncode",
-      "pos": [420, -300],
-      "size": [290, 78],
-      "flags": {},
-      "order": 17,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "clip_vision",
-          "type": "CLIP_VISION",
-          "link": 117
-        },
-        {
-          "name": "image",
-          "type": "IMAGE",
-          "link": 118
-        }
-      ],
-      "outputs": [
-        {
-          "name": "CLIP_VISION_OUTPUT",
-          "type": "CLIP_VISION_OUTPUT",
-          "links": [120],
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "CLIPVisionEncode"
-      },
-      "widgets_values": ["center"]
-    },
-    {
-      "id": 40,
-      "type": "LoadImage",
-      "pos": [60, -300],
-      "size": [315, 314],
+      "id": 38,
+      "type": "MarkdownNote",
+      "pos": [45, 930],
+      "size": [225, 60],
       "flags": {},
       "order": 9,
       "mode": 0,
       "inputs": [],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [118]
-        },
-        {
-          "name": "MASK",
-          "type": "MASK",
-          "links": null
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "LoadImage"
-      },
-      "widgets_values": ["sd3_controlnet_example.png", "image"]
-    },
-    {
-      "id": 42,
-      "type": "StyleModelLoader",
-      "pos": [400, -180],
-      "size": [340, 60],
-      "flags": {},
-      "order": 10,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "STYLE_MODEL",
-          "type": "STYLE_MODEL",
-          "links": [119]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "StyleModelLoader"
-      },
-      "widgets_values": ["flux1-redux-dev.safetensors"]
-    },
-    {
-      "id": 38,
-      "type": "CLIPVisionLoader",
-      "pos": [60, -410],
-      "size": [370, 60],
-      "flags": {},
-      "order": 11,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "CLIP_VISION",
-          "type": "CLIP_VISION",
-          "links": [117],
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "CLIPVisionLoader"
-      },
-      "widgets_values": ["sigclip_vision_patch14_384.safetensors"]
-    },
-    {
-      "id": 41,
-      "type": "StyleModelApply",
-      "pos": [760, -300],
-      "size": [320, 122],
-      "flags": {},
-      "order": 20,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "conditioning",
-          "type": "CONDITIONING",
-          "link": 122
-        },
-        {
-          "name": "style_model",
-          "type": "STYLE_MODEL",
-          "link": 119
-        },
-        {
-          "name": "clip_vision_output",
-          "type": "CLIP_VISION_OUTPUT",
-          "shape": 7,
-          "link": 120
-        }
-      ],
-      "outputs": [
-        {
-          "name": "CONDITIONING",
-          "type": "CONDITIONING",
-          "links": [123],
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "StyleModelApply"
-      },
-      "widgets_values": [1, "multiply"]
-    },
-    {
-      "id": 22,
-      "type": "BasicGuider",
-      "pos": [960, 66],
-      "size": [222.35, 46],
-      "flags": {},
-      "order": 21,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "model",
-          "type": "MODEL",
-          "link": 54,
-          "slot_index": 0
-        },
-        {
-          "name": "conditioning",
-          "type": "CONDITIONING",
-          "link": 123,
-          "slot_index": 1
-        }
-      ],
-      "outputs": [
-        {
-          "name": "GUIDER",
-          "type": "GUIDER",
-          "shape": 3,
-          "links": [30],
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "BasicGuider"
-      },
-      "widgets_values": []
-    },
-    {
-      "id": 43,
-      "type": "Note",
-      "pos": [1130, -440],
-      "size": [345.9, 182.31],
-      "flags": {},
-      "order": 12,
-      "mode": 0,
-      "inputs": [],
       "outputs": [],
       "properties": {},
       "widgets_values": [
-        "The redux model lets you prompt with images. It can be used with any Flux1 dev or schnell model workflow.\n\nYou can chain multiple \"Apply Style Model\" nodes if you want to mix multiple images together."
-      ],
-      "color": "#432",
-      "bgcolor": "#653"
-    },
-    {
-      "id": 6,
-      "type": "CLIPTextEncode",
-      "pos": [384, 240],
-      "size": [422.85, 164.31],
-      "flags": {},
-      "order": 14,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 10
-        }
-      ],
-      "outputs": [
-        {
-          "name": "CONDITIONING",
-          "type": "CONDITIONING",
-          "links": [41],
-          "slot_index": 0
-        }
-      ],
-      "title": "CLIP Text Encode (Positive Prompt)",
-      "properties": {
-        "Node name for S&R": "CLIPTextEncode"
-      },
-      "widgets_values": ["cute anime girl with massive fluffy fennec ears"],
-      "color": "#232",
-      "bgcolor": "#353"
-    },
-    {
-      "id": 44,
-      "type": "MarkdownNote",
-      "pos": [60, 915],
-      "size": [225, 60],
-      "flags": {},
-      "order": 13,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [],
-      "properties": {},
-      "widgets_values": [
-        "\ud83d\udec8 [Learn more about this workflow](https://comfyanonymous.github.io/ComfyUI_examples/flux/#redux)"
+        "\ud83d\udec8 [Learn more about this workflow](https://comfyanonymous.github.io/ComfyUI_examples/flux/#flux-dev-1)"
       ],
       "color": "#432",
       "bgcolor": "#653"
@@ -731,6 +575,7 @@
     [30, 22, 0, 13, 1, "GUIDER"],
     [37, 25, 0, 13, 0, "NOISE"],
     [41, 6, 0, 26, 0, "CONDITIONING"],
+    [42, 26, 0, 22, 1, "CONDITIONING"],
     [54, 30, 0, 22, 0, "MODEL"],
     [55, 30, 0, 17, 0, "MODEL"],
     [56, 12, 0, 30, 0, "MODEL"],
@@ -738,29 +583,14 @@
     [113, 35, 0, 27, 1, "INT"],
     [114, 35, 0, 30, 2, "INT"],
     [115, 34, 0, 30, 1, "INT"],
-    [116, 27, 0, 13, 4, "LATENT"],
-    [117, 38, 0, 39, 0, "CLIP_VISION"],
-    [118, 40, 0, 39, 1, "IMAGE"],
-    [119, 42, 0, 41, 1, "STYLE_MODEL"],
-    [120, 39, 0, 41, 2, "CLIP_VISION_OUTPUT"],
-    [122, 26, 0, 41, 0, "CONDITIONING"],
-    [123, 41, 0, 22, 1, "CONDITIONING"]
+    [116, 27, 0, 13, 4, "LATENT"]
   ],
-  "groups": [
-    {
-      "id": 1,
-      "title": "Redux Model",
-      "bounding": [45, -480, 1040, 507.6],
-      "color": "#3f789e",
-      "font_size": 24,
-      "flags": {}
-    }
-  ],
+  "groups": [],
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.9,
-      "offset": [139.8, 57.78]
+      "scale": 1.1,
+      "offset": [-0.18, 2.29]
     },
     "groupNodes": {
       "EmptyLatentImage": {
@@ -936,16 +766,6 @@
       "name": "flux1-dev-fp8.safetensors",
       "url": "https://huggingface.co/Comfy-Org/flux1-dev/resolve/main/flux1-dev-fp8.safetensors?download=true",
       "directory": "diffusion_models"
-    },
-    {
-      "name": "sigclip_vision_patch14_384.safetensors",
-      "url": "https://huggingface.co/Comfy-Org/sigclip_vision_384/resolve/main/sigclip_vision_patch14_384.safetensors?download=true",
-      "directory": "clip_vision"
-    },
-    {
-      "name": "flux1-redux-dev.safetensors",
-      "url": "https://huggingface.co/black-forest-labs/FLUX.1-Redux-dev/resolve/main/flux1-redux-dev.safetensors",
-      "directory": "style_models"
     }
   ]
 }

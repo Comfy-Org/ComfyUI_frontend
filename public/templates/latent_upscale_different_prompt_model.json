@@ -1,18 +1,16 @@
 {
-  "last_node_id": 32,
+  "last_node_id": 33,
   "last_link_id": 62,
   "nodes": [
     {
       "id": 4,
       "type": "CheckpointLoaderSimple",
       "pos": [-60, 229],
-      "size": {
-        "0": 315,
-        "1": 98
-      },
+      "size": [315, 98],
       "flags": {},
       "order": 0,
       "mode": 0,
+      "inputs": [],
       "outputs": [
         {
           "name": "MODEL",
@@ -42,13 +40,11 @@
       "id": 13,
       "type": "CheckpointLoaderSimple",
       "pos": [1296, -571],
-      "size": {
-        "0": 315,
-        "1": 98
-      },
+      "size": [315, 98],
       "flags": {},
       "order": 1,
       "mode": 0,
+      "inputs": [],
       "outputs": [
         {
           "name": "MODEL",
@@ -77,12 +73,9 @@
       "id": 6,
       "type": "CLIPTextEncode",
       "pos": [370, 40],
-      "size": {
-        "0": 510,
-        "1": 220
-      },
+      "size": [510, 220],
       "flags": {},
-      "order": 3,
+      "order": 4,
       "mode": 0,
       "inputs": [
         {
@@ -110,12 +103,9 @@
       "id": 7,
       "type": "CLIPTextEncode",
       "pos": [370, 300],
-      "size": {
-        "0": 510,
-        "1": 190
-      },
+      "size": [510, 190],
       "flags": {},
-      "order": 4,
+      "order": 5,
       "mode": 0,
       "inputs": [
         {
@@ -143,13 +133,11 @@
       "id": 5,
       "type": "EmptyLatentImage",
       "pos": [560, 540],
-      "size": {
-        "0": 315,
-        "1": 106
-      },
+      "size": [315, 106],
       "flags": {},
       "order": 2,
       "mode": 0,
+      "inputs": [],
       "outputs": [
         {
           "name": "LATENT",
@@ -167,12 +155,9 @@
       "id": 8,
       "type": "VAEDecode",
       "pos": [1280, 140],
-      "size": {
-        "0": 210,
-        "1": 46
-      },
+      "size": [210, 46],
       "flags": {},
-      "order": 9,
+      "order": 10,
       "mode": 0,
       "inputs": [
         {
@@ -196,18 +181,16 @@
       ],
       "properties": {
         "Node name for S&R": "VAEDecode"
-      }
+      },
+      "widgets_values": []
     },
     {
       "id": 10,
       "type": "SaveImage",
       "pos": [1540, 140],
-      "size": {
-        "0": 1174.1312255859375,
-        "1": 734.1587524414062
-      },
+      "size": [1174.13, 734.16],
       "flags": {},
-      "order": 11,
+      "order": 12,
       "mode": 0,
       "inputs": [
         {
@@ -216,6 +199,7 @@
           "link": 10
         }
       ],
+      "outputs": [],
       "properties": {},
       "widgets_values": ["ComfyUI"]
     },
@@ -223,12 +207,9 @@
       "id": 22,
       "type": "CLIPSetLastLayer",
       "pos": [1670, -550],
-      "size": {
-        "0": 315,
-        "1": 58
-      },
+      "size": [315, 58],
       "flags": {},
-      "order": 5,
+      "order": 6,
       "mode": 0,
       "inputs": [
         {
@@ -254,12 +235,9 @@
       "id": 15,
       "type": "CLIPTextEncode",
       "pos": [2060, -920],
-      "size": {
-        "0": 662.3788452148438,
-        "1": 313.10162353515625
-      },
+      "size": [662.38, 313.1],
       "flags": {},
-      "order": 8,
+      "order": 9,
       "mode": 0,
       "inputs": [
         {
@@ -287,12 +265,9 @@
       "id": 14,
       "type": "CLIPTextEncode",
       "pos": [2060, -550],
-      "size": {
-        "0": 660,
-        "1": 300
-      },
+      "size": [660, 300],
       "flags": {},
-      "order": 7,
+      "order": 8,
       "mode": 0,
       "inputs": [
         {
@@ -320,12 +295,9 @@
       "id": 11,
       "type": "VAEDecode",
       "pos": [3240, -750],
-      "size": {
-        "0": 210,
-        "1": 46
-      },
+      "size": [210, 46],
       "flags": {},
-      "order": 13,
+      "order": 14,
       "mode": 0,
       "inputs": [
         {
@@ -349,18 +321,16 @@
       ],
       "properties": {
         "Node name for S&R": "VAEDecode"
-      }
+      },
+      "widgets_values": []
     },
     {
       "id": 12,
       "type": "SaveImage",
       "pos": [3540, -750],
-      "size": {
-        "0": 1868.09375,
-        "1": 1101.470947265625
-      },
+      "size": [1868.09, 1101.47],
       "flags": {},
-      "order": 14,
+      "order": 15,
       "mode": 0,
       "inputs": [
         {
@@ -369,6 +339,7 @@
           "link": 12
         }
       ],
+      "outputs": [],
       "properties": {},
       "widgets_values": ["ComfyUI"]
     },
@@ -376,12 +347,9 @@
       "id": 32,
       "type": "KSampler",
       "pos": [2830, -750],
-      "size": {
-        "0": 315,
-        "1": 262
-      },
+      "size": [315, 262],
       "flags": {},
-      "order": 12,
+      "order": 13,
       "mode": 0,
       "inputs": [
         {
@@ -409,8 +377,8 @@
         {
           "name": "LATENT",
           "type": "LATENT",
-          "links": [60],
           "shape": 3,
+          "links": [60],
           "slot_index": 0
         }
       ],
@@ -424,19 +392,16 @@
         13,
         "dpmpp_sde",
         "simple",
-        0.4999999999999999
+        0.5
       ]
     },
     {
       "id": 27,
       "type": "LatentUpscaleBy",
       "pos": [1510, -160],
-      "size": {
-        "0": 325.412841796875,
-        "1": 82
-      },
+      "size": [325.41, 82],
       "flags": {},
-      "order": 10,
+      "order": 11,
       "mode": 0,
       "inputs": [
         {
@@ -450,8 +415,8 @@
         {
           "name": "LATENT",
           "type": "LATENT",
-          "links": [59],
           "shape": 3,
+          "links": [59],
           "slot_index": 0
         }
       ],
@@ -464,12 +429,9 @@
       "id": 3,
       "type": "KSampler",
       "pos": [920, 140],
-      "size": {
-        "0": 318.5013427734375,
-        "1": 262
-      },
+      "size": [318.5, 262],
       "flags": {},
-      "order": 6,
+      "order": 7,
       "mode": 0,
       "inputs": [
         {
@@ -513,6 +475,23 @@
         "simple",
         1
       ]
+    },
+    {
+      "id": 33,
+      "type": "MarkdownNote",
+      "pos": [-45, 375],
+      "size": [225, 60],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "\ud83d\udec8 [Learn more about this workflow](https://comfyanonymous.github.io/ComfyUI_examples/2_pass_txt2img/#more-examples)"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
     }
   ],
   "links": [
@@ -539,6 +518,11 @@
   ],
   "groups": [],
   "config": {},
-  "extra": {},
+  "extra": {
+    "ds": {
+      "scale": 0.76,
+      "offset": [1200.17, 444.58]
+    }
+  },
   "version": 0.4
 }

@@ -1,14 +1,14 @@
 {
-  "last_node_id": 22,
+  "last_node_id": 23,
   "last_link_id": 40,
   "nodes": [
     {
       "id": 3,
       "type": "KSampler",
-      "pos": [1843.739990234375, 476.5599365234375],
+      "pos": [1843.74, 476.56],
       "size": [315, 262],
       "flags": {},
-      "order": 10,
+      "order": 11,
       "mode": 0,
       "inputs": [
         {
@@ -56,10 +56,10 @@
     {
       "id": 8,
       "type": "VAEDecode",
-      "pos": [2183.739990234375, 476.5599365234375],
+      "pos": [2183.74, 476.56],
       "size": [210, 46],
       "flags": {},
-      "order": 11,
+      "order": 12,
       "mode": 0,
       "inputs": [
         {
@@ -90,9 +90,9 @@
       "id": 10,
       "type": "SaveAnimatedWEBP",
       "pos": [1654, 829],
-      "size": [741.6685791015625, 564.5909423828125],
+      "size": [741.67, 564.59],
       "flags": {},
-      "order": 12,
+      "order": 13,
       "mode": 0,
       "inputs": [
         {
@@ -110,10 +110,10 @@
     {
       "id": 12,
       "type": "SVD_img2vid_Conditioning",
-      "pos": [1463.739990234375, 496.5599365234375],
+      "pos": [1463.74, 496.56],
       "size": [315, 218],
       "flags": {},
-      "order": 8,
+      "order": 9,
       "mode": 0,
       "inputs": [
         {
@@ -164,10 +164,10 @@
     {
       "id": 14,
       "type": "VideoLinearCFGGuidance",
-      "pos": [1463.739990234375, 366.5599365234375],
+      "pos": [1463.74, 366.56],
       "size": [315, 58],
       "flags": {},
-      "order": 5,
+      "order": 4,
       "mode": 0,
       "inputs": [
         {
@@ -194,9 +194,9 @@
       "id": 15,
       "type": "ImageOnlyCheckpointLoader",
       "pos": [1050, 320],
-      "size": [369.6000061035156, 98],
+      "size": [369.6, 98],
       "flags": {},
-      "order": 2,
+      "order": 0,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -266,10 +266,10 @@
     {
       "id": 17,
       "type": "KSampler",
-      "pos": [802.4000244140625, 566.4000244140625],
+      "pos": [802.4, 566.4],
       "size": [315, 262],
       "flags": {},
-      "order": 6,
+      "order": 7,
       "mode": 0,
       "inputs": [
         {
@@ -319,10 +319,10 @@
     {
       "id": 18,
       "type": "CLIPTextEncode",
-      "pos": [342.4000244140625, 516.4000244140625],
+      "pos": [342.4, 516.4],
       "size": [390, 130],
       "flags": {},
-      "order": 3,
+      "order": 5,
       "mode": 0,
       "inputs": [
         {
@@ -350,10 +350,10 @@
     {
       "id": 19,
       "type": "CLIPTextEncode",
-      "pos": [342.4000244140625, 696.4000244140625],
+      "pos": [342.4, 696.4],
       "size": [390, 130],
       "flags": {},
-      "order": 4,
+      "order": 6,
       "mode": 0,
       "inputs": [
         {
@@ -379,10 +379,10 @@
     {
       "id": 20,
       "type": "VAEDecode",
-      "pos": [1172.4000244140625, 566.4000244140625],
+      "pos": [1172.4, 566.4],
       "size": [210, 46],
       "flags": {},
-      "order": 7,
+      "order": 8,
       "mode": 0,
       "inputs": [
         {
@@ -414,10 +414,10 @@
     {
       "id": 21,
       "type": "PreviewImage",
-      "pos": [1152.4000244140625, 656.4000244140625],
-      "size": [275.9453125, 246],
+      "pos": [1152.4, 656.4],
+      "size": [275.95, 246],
       "flags": {},
-      "order": 9,
+      "order": 10,
       "mode": 0,
       "inputs": [
         {
@@ -435,10 +435,10 @@
     {
       "id": 22,
       "type": "EmptyLatentImage",
-      "pos": [422.4000244140625, 866.4000244140625],
+      "pos": [422.4, 866.4],
       "size": [310, 110],
       "flags": {},
-      "order": 0,
+      "order": 2,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -453,6 +453,23 @@
         "Node name for S&R": "EmptyLatentImage"
       },
       "widgets_values": [1024, 576, 1]
+    },
+    {
+      "id": 23,
+      "type": "MarkdownNote",
+      "pos": [0, 660],
+      "size": [225, 60],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "\ud83d\udec8 [Learn more about this workflow](https://comfyanonymous.github.io/ComfyUI_examples/video/#image-to-video)"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
     }
   ],
   "links": [
@@ -498,8 +515,8 @@
   "config": {},
   "extra": {
     "ds": {
-      "scale": 1.1723706889054117,
-      "offset": [-214.4225933518411, -34.97529823759274]
+      "scale": 1.13,
+      "offset": [502.97, -29.59]
     }
   },
   "version": 0.4,

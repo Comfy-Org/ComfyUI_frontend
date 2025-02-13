@@ -1,5 +1,5 @@
 {
-  "last_node_id": 39,
+  "last_node_id": 40,
   "last_link_id": 79,
   "nodes": [
     {
@@ -8,7 +8,7 @@
       "pos": [863, 187],
       "size": [315, 262],
       "flags": {},
-      "order": 6,
+      "order": 7,
       "mode": 0,
       "inputs": [
         {
@@ -57,9 +57,9 @@
       "id": 6,
       "type": "CLIPTextEncode",
       "pos": [415, 186],
-      "size": [422.84503173828125, 164.31304931640625],
+      "size": [422.85, 164.31],
       "flags": {},
-      "order": 4,
+      "order": 5,
       "mode": 0,
       "inputs": [
         {
@@ -87,9 +87,9 @@
       "id": 7,
       "type": "CLIPTextEncode",
       "pos": [413, 389],
-      "size": [425.27801513671875, 180.6060791015625],
+      "size": [425.28, 180.61],
       "flags": {},
-      "order": 5,
+      "order": 6,
       "mode": 0,
       "inputs": [
         {
@@ -117,7 +117,7 @@
       "pos": [1210, 190],
       "size": [210, 46],
       "flags": {},
-      "order": 7,
+      "order": 8,
       "mode": 0,
       "inputs": [
         {
@@ -150,7 +150,7 @@
       "pos": [520, 620],
       "size": [315, 130],
       "flags": {},
-      "order": 3,
+      "order": 0,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -170,9 +170,9 @@
       "id": 28,
       "type": "SaveAnimatedWEBP",
       "pos": [1460, 190],
-      "size": [847.3048706054688, 602.0325317382812],
+      "size": [847.3, 602.03],
       "flags": {},
-      "order": 8,
+      "order": 9,
       "mode": 0,
       "inputs": [
         {
@@ -191,7 +191,7 @@
       "pos": [420, 40],
       "size": [315, 82],
       "flags": {},
-      "order": 0,
+      "order": 1,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -213,7 +213,7 @@
       "pos": [40, 270],
       "size": [315, 82],
       "flags": {},
-      "order": 1,
+      "order": 2,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -233,9 +233,9 @@
       "id": 39,
       "type": "VAELoader",
       "pos": [890, 500],
-      "size": [278.68310546875, 58],
+      "size": [278.68, 58],
       "flags": {},
-      "order": 2,
+      "order": 3,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -249,6 +249,23 @@
         "Node name for S&R": "VAELoader"
       },
       "widgets_values": ["mochi_vae.safetensors"]
+    },
+    {
+      "id": 40,
+      "type": "MarkdownNote",
+      "pos": [45, 405],
+      "size": [225, 60],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "\ud83d\udec8 [Learn more about this workflow](https://comfyanonymous.github.io/ComfyUI_examples/mochi/)"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
     }
   ],
   "links": [
@@ -266,8 +283,8 @@
   "config": {},
   "extra": {
     "ds": {
-      "scale": 1.0964902196045423,
-      "offset": [35.418457591568696, 115.47684064429285]
+      "scale": 1.1,
+      "offset": [35.42, 115.48]
     }
   },
   "version": 0.4,

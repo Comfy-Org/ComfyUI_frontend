@@ -1,18 +1,17 @@
 {
-  "last_node_id": 48,
+  "last_node_id": 49,
   "last_link_id": 44,
   "nodes": [
     {
       "id": 36,
       "type": "Note",
       "pos": [-74, -470],
-      "size": {
-        "0": 315.70074462890625,
-        "1": 147.9551239013672
-      },
+      "size": [315.7, 147.96],
       "flags": {},
       "order": 0,
       "mode": 0,
+      "inputs": [],
+      "outputs": [],
       "title": "Note - Load Checkpoint BASE",
       "properties": {
         "text": ""
@@ -27,13 +26,12 @@
       "id": 37,
       "type": "Note",
       "pos": [610, -460],
-      "size": {
-        "0": 330,
-        "1": 140
-      },
+      "size": [330, 140],
       "flags": {},
       "order": 1,
       "mode": 0,
+      "inputs": [],
+      "outputs": [],
       "title": "Note - Load Checkpoint REFINER",
       "properties": {
         "text": ""
@@ -48,13 +46,12 @@
       "id": 40,
       "type": "Note",
       "pos": [1325, 234],
-      "size": {
-        "0": 451.5049743652344,
-        "1": 424.4164123535156
-      },
+      "size": [451.5, 424.42],
       "flags": {},
       "order": 2,
       "mode": 0,
+      "inputs": [],
+      "outputs": [],
       "title": "Note - KSampler  ADVANCED General Information",
       "properties": {
         "text": ""
@@ -68,14 +65,12 @@
     {
       "id": 5,
       "type": "EmptyLatentImage",
-      "pos": [544.5041024540301, 651.1200708259006],
-      "size": {
-        "0": 300,
-        "1": 110
-      },
+      "pos": [544.5, 651.12],
+      "size": [300, 110],
       "flags": {},
       "order": 3,
       "mode": 0,
+      "inputs": [],
       "outputs": [
         {
           "name": "LATENT",
@@ -94,13 +89,10 @@
     {
       "id": 17,
       "type": "VAEDecode",
-      "pos": [2220.7710413363047, 129.6025938601699],
-      "size": {
-        "0": 200,
-        "1": 50
-      },
+      "pos": [2220.77, 129.6],
+      "size": [200, 50],
       "flags": {},
-      "order": 17,
+      "order": 18,
       "mode": 0,
       "inputs": [
         {
@@ -118,28 +110,28 @@
         {
           "name": "IMAGE",
           "type": "IMAGE",
-          "links": [28],
           "shape": 3,
+          "links": [28],
           "slot_index": 0
         }
       ],
       "properties": {
         "Node name for S&R": "VAEDecode"
       },
+      "widgets_values": [],
       "color": "#332922",
       "bgcolor": "#593930"
     },
     {
       "id": 41,
       "type": "Note",
-      "pos": [2160.7710413363047, 229.60259386016995],
-      "size": {
-        "0": 320,
-        "1": 120
-      },
+      "pos": [2160.77, 229.6],
+      "size": [320, 120],
       "flags": {},
       "order": 4,
       "mode": 0,
+      "inputs": [],
+      "outputs": [],
       "title": "Note - VAE Decoder",
       "properties": {
         "text": ""
@@ -153,14 +145,13 @@
     {
       "id": 42,
       "type": "Note",
-      "pos": [564.5041024540307, 801.1200708259006],
-      "size": {
-        "0": 260,
-        "1": 210
-      },
+      "pos": [564.5, 801.12],
+      "size": [260, 210],
       "flags": {},
       "order": 5,
       "mode": 0,
+      "inputs": [],
+      "outputs": [],
       "title": "Note - Empty Latent Image",
       "properties": {
         "text": ""
@@ -175,12 +166,9 @@
       "id": 11,
       "type": "KSamplerAdvanced",
       "pos": [1800, 130],
-      "size": {
-        "0": 300,
-        "1": 340
-      },
+      "size": [300, 340],
       "flags": {},
-      "order": 16,
+      "order": 17,
       "mode": 0,
       "inputs": [
         {
@@ -207,43 +195,27 @@
         {
           "name": "steps",
           "type": "INT",
-          "link": 38,
           "widget": {
-            "name": "steps",
-            "config": [
-              "INT",
-              {
-                "default": 20,
-                "min": 1,
-                "max": 10000
-              }
-            ]
+            "name": "steps"
           },
+          "link": 38,
           "slot_index": 4
         },
         {
           "name": "start_at_step",
           "type": "INT",
-          "link": 44,
           "widget": {
-            "name": "start_at_step",
-            "config": [
-              "INT",
-              {
-                "default": 0,
-                "min": 0,
-                "max": 10000
-              }
-            ]
-          }
+            "name": "start_at_step"
+          },
+          "link": 44
         }
       ],
       "outputs": [
         {
           "name": "LATENT",
           "type": "LATENT",
-          "links": [25],
           "shape": 3,
+          "links": [25],
           "slot_index": 0
         }
       ],
@@ -270,33 +242,31 @@
       "id": 12,
       "type": "CheckpointLoaderSimple",
       "pos": [600, -611],
-      "size": {
-        "0": 350,
-        "1": 100
-      },
+      "size": [350, 100],
       "flags": {},
       "order": 6,
       "mode": 0,
+      "inputs": [],
       "outputs": [
         {
           "name": "MODEL",
           "type": "MODEL",
-          "links": [14],
           "shape": 3,
+          "links": [14],
           "slot_index": 0
         },
         {
           "name": "CLIP",
           "type": "CLIP",
-          "links": [19, 20],
           "shape": 3,
+          "links": [19, 20],
           "slot_index": 1
         },
         {
           "name": "VAE",
           "type": "VAE",
-          "links": [34],
           "shape": 3,
+          "links": [34],
           "slot_index": 2
         }
       ],
@@ -312,13 +282,11 @@
       "id": 4,
       "type": "CheckpointLoaderSimple",
       "pos": [-90, -620],
-      "size": {
-        "0": 350,
-        "1": 100
-      },
+      "size": [350, 100],
       "flags": {},
       "order": 7,
       "mode": 0,
+      "inputs": [],
       "outputs": [
         {
           "name": "MODEL",
@@ -350,35 +318,27 @@
     {
       "id": 47,
       "type": "PrimitiveNode",
-      "pos": [1037.5286840013239, 881.6113881513106],
-      "size": {
-        "0": 210,
-        "1": 82
-      },
+      "pos": [1037.53, 881.61],
+      "size": [210, 82],
       "flags": {},
       "order": 8,
       "mode": 0,
+      "inputs": [],
       "outputs": [
         {
           "name": "INT",
           "type": "INT",
-          "links": [43, 44],
           "widget": {
-            "name": "end_at_step",
-            "config": [
-              "INT",
-              {
-                "default": 10000,
-                "min": 0,
-                "max": 10000
-              }
-            ]
+            "name": "end_at_step"
           },
+          "links": [43, 44],
           "slot_index": 0
         }
       ],
       "title": "end_at_step",
-      "properties": {},
+      "properties": {
+        "Run widget replace on values": false
+      },
       "widgets_values": [20, "fixed"],
       "color": "#432",
       "bgcolor": "#653"
@@ -386,34 +346,26 @@
     {
       "id": 45,
       "type": "PrimitiveNode",
-      "pos": [1039.5286840013239, 734.6113881513106],
-      "size": {
-        "0": 210,
-        "1": 82
-      },
+      "pos": [1039.53, 734.61],
+      "size": [210, 82],
       "flags": {},
       "order": 9,
       "mode": 0,
+      "inputs": [],
       "outputs": [
         {
           "name": "INT",
           "type": "INT",
-          "links": [38, 41],
           "widget": {
-            "name": "steps",
-            "config": [
-              "INT",
-              {
-                "default": 20,
-                "min": 1,
-                "max": 10000
-              }
-            ]
-          }
+            "name": "steps"
+          },
+          "links": [38, 41]
         }
       ],
       "title": "steps",
-      "properties": {},
+      "properties": {
+        "Run widget replace on values": false
+      },
       "widgets_values": [25, "fixed"],
       "color": "#432",
       "bgcolor": "#653"
@@ -422,10 +374,12 @@
       "id": 48,
       "type": "Note",
       "pos": [1036, 1018],
-      "size": [213.90769258609475, 110.17156742821044],
+      "size": [213.91, 110.17],
       "flags": {},
       "order": 10,
       "mode": 0,
+      "inputs": [],
+      "outputs": [],
       "properties": {
         "text": ""
       },
@@ -439,12 +393,9 @@
       "id": 10,
       "type": "KSamplerAdvanced",
       "pos": [1000, 230],
-      "size": {
-        "0": 300,
-        "1": 334
-      },
+      "size": [300, 334],
       "flags": {},
-      "order": 15,
+      "order": 16,
       "mode": 0,
       "inputs": [
         {
@@ -470,35 +421,19 @@
         {
           "name": "steps",
           "type": "INT",
-          "link": 41,
           "widget": {
-            "name": "steps",
-            "config": [
-              "INT",
-              {
-                "default": 20,
-                "min": 1,
-                "max": 10000
-              }
-            ]
+            "name": "steps"
           },
+          "link": 41,
           "slot_index": 4
         },
         {
           "name": "end_at_step",
           "type": "INT",
-          "link": 43,
           "widget": {
-            "name": "end_at_step",
-            "config": [
-              "INT",
-              {
-                "default": 10000,
-                "min": 0,
-                "max": 10000
-              }
-            ]
+            "name": "end_at_step"
           },
+          "link": 43,
           "slot_index": 5
         }
       ],
@@ -506,8 +441,8 @@
         {
           "name": "LATENT",
           "type": "LATENT",
-          "links": [13],
           "shape": 3,
+          "links": [13],
           "slot_index": 0
         }
       ],
@@ -536,7 +471,7 @@
       "pos": [1110, -90],
       "size": [340, 140],
       "flags": {},
-      "order": 12,
+      "order": 13,
       "mode": 0,
       "inputs": [
         {
@@ -566,7 +501,7 @@
       "pos": [1110, -270],
       "size": [340, 140],
       "flags": {},
-      "order": 11,
+      "order": 12,
       "mode": 0,
       "inputs": [
         {
@@ -598,7 +533,7 @@
       "pos": [610, 30],
       "size": [320, 160],
       "flags": {},
-      "order": 13,
+      "order": 14,
       "mode": 0,
       "inputs": [
         {
@@ -628,7 +563,7 @@
       "pos": [610, 240],
       "size": [320, 150],
       "flags": {},
-      "order": 14,
+      "order": 15,
       "mode": 0,
       "inputs": [
         {
@@ -656,9 +591,9 @@
       "id": 19,
       "type": "SaveImage",
       "pos": [2600, 130],
-      "size": [735.552734375, 823.98193359375],
+      "size": [735.55, 823.98],
       "flags": {},
-      "order": 18,
+      "order": 19,
       "mode": 0,
       "inputs": [
         {
@@ -667,10 +602,28 @@
           "link": 28
         }
       ],
+      "outputs": [],
       "properties": {},
       "widgets_values": ["ComfyUI"],
       "color": "#222",
       "bgcolor": "#000"
+    },
+    {
+      "id": 49,
+      "type": "MarkdownNote",
+      "pos": [-90, -255],
+      "size": [225, 60],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "\ud83d\udec8 [Learn more about this workflow](https://comfyanonymous.github.io/ComfyUI_examples/sdxl/)"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
     }
   ],
   "links": [
@@ -696,43 +649,69 @@
   ],
   "groups": [
     {
+      "id": 1,
       "title": "Base Prompt",
-      "bounding": [585, -54, 366, 463],
-      "color": "#3f789e"
+      "bounding": [585, -60, 366, 463],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
     },
     {
+      "id": 2,
       "title": "Refiner Prompt",
-      "bounding": [1089, -355, 376, 429],
-      "color": "#3f789e"
+      "bounding": [1095, -360, 376, 429],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
     },
     {
+      "id": 3,
       "title": "Load in BASE SDXL Model",
-      "bounding": [-100, -700, 369, 399],
-      "color": "#a1309b"
+      "bounding": [-105, -705, 369, 399],
+      "color": "#a1309b",
+      "font_size": 24,
+      "flags": {}
     },
     {
+      "id": 4,
       "title": "Load in REFINER SDXL Model",
-      "bounding": [581, -700, 391, 400],
-      "color": "#a1309b"
+      "bounding": [585, -705, 391, 400],
+      "color": "#a1309b",
+      "font_size": 24,
+      "flags": {}
     },
     {
+      "id": 5,
       "title": "Empty Latent Image",
-      "bounding": [524, 577, 339, 443],
-      "color": "#a1309b"
+      "bounding": [525, 570, 339, 443],
+      "color": "#a1309b",
+      "font_size": 24,
+      "flags": {}
     },
     {
+      "id": 6,
       "title": "VAE Decoder",
-      "bounding": [2142, 51, 360, 350],
-      "color": "#b06634"
+      "bounding": [2145, 45, 360, 350],
+      "color": "#b06634",
+      "font_size": 24,
+      "flags": {}
     },
     {
+      "id": 7,
       "title": "Step Control",
-      "bounding": [1005, 623, 284, 524],
-      "color": "#3f789e"
+      "bounding": [1005, 630, 284, 524],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
     }
   ],
   "config": {},
-  "extra": {},
+  "extra": {
+    "ds": {
+      "scale": 0.63,
+      "offset": [1264.03, 812.09]
+    }
+  },
   "version": 0.4,
   "models": [
     {

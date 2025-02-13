@@ -1,5 +1,5 @@
 {
-  "last_node_id": 77,
+  "last_node_id": 78,
   "last_link_id": 215,
   "nodes": [
     {
@@ -15,8 +15,8 @@
         {
           "name": "SAMPLER",
           "type": "SAMPLER",
-          "links": [19],
-          "shape": 3
+          "shape": 3,
+          "links": [19]
         }
       ],
       "properties": {
@@ -30,7 +30,7 @@
       "pos": [478, 860],
       "size": [315, 106],
       "flags": {},
-      "order": 9,
+      "order": 10,
       "mode": 0,
       "inputs": [
         {
@@ -44,8 +44,8 @@
         {
           "name": "SIGMAS",
           "type": "SIGMAS",
-          "links": [20],
-          "shape": 3
+          "shape": 3,
+          "links": [20]
         }
       ],
       "properties": {
@@ -57,9 +57,9 @@
       "id": 26,
       "type": "FluxGuidance",
       "pos": [520, 100],
-      "size": [317.4000244140625, 58],
+      "size": [317.4, 58],
       "flags": {},
-      "order": 11,
+      "order": 12,
       "mode": 0,
       "inputs": [
         {
@@ -72,9 +72,9 @@
         {
           "name": "CONDITIONING",
           "type": "CONDITIONING",
+          "shape": 3,
           "links": [129],
-          "slot_index": 0,
-          "shape": 3
+          "slot_index": 0
         }
       ],
       "properties": {
@@ -87,7 +87,7 @@
     {
       "id": 45,
       "type": "EmptyHunyuanLatentVideo",
-      "pos": [475.540771484375, 432.673583984375],
+      "pos": [475.54, 432.67],
       "size": [315, 130],
       "flags": {},
       "order": 1,
@@ -110,9 +110,9 @@
       "id": 22,
       "type": "BasicGuider",
       "pos": [600, 0],
-      "size": [222.3482666015625, 46],
+      "size": [222.35, 46],
       "flags": {},
-      "order": 12,
+      "order": 13,
       "mode": 0,
       "inputs": [
         {
@@ -132,9 +132,9 @@
         {
           "name": "GUIDER",
           "type": "GUIDER",
+          "shape": 3,
           "links": [30],
-          "slot_index": 0,
-          "shape": 3
+          "slot_index": 0
         }
       ],
       "properties": {
@@ -148,7 +148,7 @@
       "pos": [360, 0],
       "size": [210, 58],
       "flags": {},
-      "order": 10,
+      "order": 11,
       "mode": 0,
       "inputs": [
         {
@@ -183,9 +183,9 @@
         {
           "name": "VAE",
           "type": "VAE",
+          "shape": 3,
           "links": [206, 211],
-          "slot_index": 0,
-          "shape": 3
+          "slot_index": 0
         }
       ],
       "properties": {
@@ -206,9 +206,9 @@
         {
           "name": "CLIP",
           "type": "CLIP",
+          "shape": 3,
           "links": [205],
-          "slot_index": 0,
-          "shape": 3
+          "slot_index": 0
         }
       ],
       "properties": {
@@ -217,16 +217,17 @@
       "widgets_values": [
         "clip_l.safetensors",
         "llava_llama3_fp8_scaled.safetensors",
-        "hunyuan_video"
+        "hunyuan_video",
+        "default"
       ]
     },
     {
       "id": 73,
       "type": "VAEDecodeTiled",
       "pos": [1150, 200],
-      "size": [210, 102],
+      "size": [210, 150],
       "flags": {},
-      "order": 15,
+      "order": 16,
       "mode": 0,
       "inputs": [
         {
@@ -251,7 +252,7 @@
       "properties": {
         "Node name for S&R": "VAEDecodeTiled"
       },
-      "widgets_values": [256, 64]
+      "widgets_values": [256, 64, 64, 8]
     },
     {
       "id": 8,
@@ -259,7 +260,7 @@
       "pos": [1150, 90],
       "size": [210, 46],
       "flags": {},
-      "order": 14,
+      "order": 15,
       "mode": 2,
       "inputs": [
         {
@@ -316,9 +317,9 @@
         {
           "name": "MODEL",
           "type": "MODEL",
+          "shape": 3,
           "links": [190, 209],
-          "slot_index": 0,
-          "shape": 3
+          "slot_index": 0
         }
       ],
       "properties": {
@@ -349,9 +350,9 @@
       "id": 13,
       "type": "SamplerCustomAdvanced",
       "pos": [860, 200],
-      "size": [272.3617858886719, 124.53733825683594],
+      "size": [272.36, 124.54],
       "flags": {},
-      "order": 13,
+      "order": 14,
       "mode": 0,
       "inputs": [
         {
@@ -389,15 +390,15 @@
         {
           "name": "output",
           "type": "LATENT",
+          "shape": 3,
           "links": [181, 210],
-          "slot_index": 0,
-          "shape": 3
+          "slot_index": 0
         },
         {
           "name": "denoised_output",
           "type": "LATENT",
-          "links": null,
-          "shape": 3
+          "shape": 3,
+          "links": null
         }
       ],
       "properties": {
@@ -409,9 +410,9 @@
       "id": 44,
       "type": "CLIPTextEncode",
       "pos": [420, 200],
-      "size": [422.84503173828125, 164.31304931640625],
+      "size": [422.85, 164.31],
       "flags": {},
-      "order": 8,
+      "order": 9,
       "mode": 0,
       "inputs": [
         {
@@ -444,7 +445,7 @@
       "pos": [1410, 200],
       "size": [315, 366],
       "flags": {},
-      "order": 16,
+      "order": 17,
       "mode": 0,
       "inputs": [
         {
@@ -470,8 +471,8 @@
         {
           "name": "NOISE",
           "type": "NOISE",
-          "links": [37],
-          "shape": 3
+          "shape": 3,
+          "links": [37]
         }
       ],
       "properties": {
@@ -480,6 +481,23 @@
       "widgets_values": [1, "randomize"],
       "color": "#2a363b",
       "bgcolor": "#3f5159"
+    },
+    {
+      "id": 78,
+      "type": "MarkdownNote",
+      "pos": [0, 525],
+      "size": [225, 60],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "\ud83d\udec8 [Learn more about this workflow](https://comfyanonymous.github.io/ComfyUI_examples/hunyuan_video/)"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
     }
   ],
   "links": [
@@ -503,7 +521,11 @@
   "groups": [],
   "config": {},
   "extra": {
-    "groupNodes": {}
+    "groupNodes": {},
+    "ds": {
+      "scale": 0.86,
+      "offset": [315.94, 195.23]
+    }
   },
   "version": 0.4,
   "models": [

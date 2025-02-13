@@ -1,14 +1,14 @@
 {
-  "last_node_id": 36,
+  "last_node_id": 37,
   "last_link_id": 57,
   "nodes": [
     {
       "id": 6,
       "type": "CLIPTextEncode",
       "pos": [384, 192],
-      "size": [422.84503173828125, 164.31304931640625],
+      "size": [422.85, 164.31],
       "flags": {},
-      "order": 3,
+      "order": 4,
       "mode": 0,
       "inputs": [
         {
@@ -41,7 +41,7 @@
       "pos": [1151, 195],
       "size": [210, 46],
       "flags": {},
-      "order": 7,
+      "order": 8,
       "mode": 0,
       "inputs": [
         {
@@ -72,9 +72,9 @@
       "id": 9,
       "type": "SaveImage",
       "pos": [1375, 194],
-      "size": [985.3012084960938, 1060.3828125],
+      "size": [985.3, 1060.38],
       "flags": {},
-      "order": 8,
+      "order": 9,
       "mode": 0,
       "inputs": [
         {
@@ -118,7 +118,7 @@
       "pos": [48, 192],
       "size": [315, 98],
       "flags": {},
-      "order": 2,
+      "order": 1,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -155,7 +155,7 @@
       "pos": [816, 192],
       "size": [315, 262],
       "flags": {},
-      "order": 6,
+      "order": 7,
       "mode": 0,
       "inputs": [
         {
@@ -205,11 +205,11 @@
       "id": 33,
       "type": "CLIPTextEncode",
       "pos": [390, 400],
-      "size": [422.84503173828125, 164.31304931640625],
+      "size": [422.85, 164.31],
       "flags": {
         "collapsed": true
       },
-      "order": 4,
+      "order": 5,
       "mode": 0,
       "inputs": [
         {
@@ -236,31 +236,12 @@
       "bgcolor": "#533"
     },
     {
-      "id": 34,
-      "type": "Note",
-      "pos": [831, 501],
-      "size": [282.8617858886719, 164.08004760742188],
-      "flags": {},
-      "order": 1,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [],
-      "properties": {
-        "text": ""
-      },
-      "widgets_values": [
-        "Note that Flux dev and schnell do not have any negative prompt so CFG should be set to 1.0. Setting CFG to 1.0 means the negative prompt is ignored."
-      ],
-      "color": "#432",
-      "bgcolor": "#653"
-    },
-    {
       "id": 35,
       "type": "FluxGuidance",
       "pos": [576, 96],
-      "size": [211.60000610351562, 58],
+      "size": [211.6, 58],
       "flags": {},
-      "order": 5,
+      "order": 6,
       "mode": 0,
       "inputs": [
         {
@@ -282,6 +263,42 @@
         "Node name for S&R": "FluxGuidance"
       },
       "widgets_values": [3.5]
+    },
+    {
+      "id": 37,
+      "type": "MarkdownNote",
+      "pos": [60, 345],
+      "size": [225, 60],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "\ud83d\udec8 [Learn more about this workflow](https://comfyanonymous.github.io/ComfyUI_examples/flux/#flux-dev-1)"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 34,
+      "type": "Note",
+      "pos": [825, 510],
+      "size": [282.86, 164.08],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "Note that Flux dev and schnell do not have any negative prompt so CFG should be set to 1.0. Setting CFG to 1.0 means the negative prompt is ignored."
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
     }
   ],
   "links": [
@@ -300,8 +317,8 @@
   "config": {},
   "extra": {
     "ds": {
-      "scale": 1.1,
-      "offset": [-26.589059860274613, -54.534600602439575]
+      "scale": 0.8,
+      "offset": [350.72, 161.55]
     }
   },
   "version": 0.4,

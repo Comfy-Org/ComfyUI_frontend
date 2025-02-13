@@ -1,17 +1,14 @@
 {
-  "last_node_id": 26,
+  "last_node_id": 27,
   "last_link_id": 55,
   "nodes": [
     {
       "id": 8,
       "type": "VAEDecode",
-      "pos": [1207.799932861331, 375.6999450683598],
-      "size": {
-        "0": 210,
-        "1": 46
-      },
+      "pos": [1207.8, 375.7],
+      "size": [210, 46],
       "flags": {},
-      "order": 4,
+      "order": 5,
       "mode": 0,
       "inputs": [
         {
@@ -35,18 +32,16 @@
       ],
       "properties": {
         "Node name for S&R": "VAEDecode"
-      }
+      },
+      "widgets_values": []
     },
     {
       "id": 3,
       "type": "KSampler",
       "pos": [868, 376],
-      "size": {
-        "0": 315,
-        "1": 262
-      },
+      "size": [315, 262],
       "flags": {},
-      "order": 3,
+      "order": 4,
       "mode": 0,
       "inputs": [
         {
@@ -95,12 +90,9 @@
       "id": 25,
       "type": "SaveImage",
       "pos": [1459, 378],
-      "size": {
-        "0": 262.2880859375,
-        "1": 308.6523742675781
-      },
+      "size": [262.29, 308.65],
       "flags": {},
-      "order": 5,
+      "order": 6,
       "mode": 0,
       "inputs": [
         {
@@ -109,6 +101,7 @@
           "link": 49
         }
       ],
+      "outputs": [],
       "properties": {},
       "widgets_values": ["3d/ComfyUI"]
     },
@@ -116,26 +109,24 @@
       "id": 23,
       "type": "LoadImage",
       "pos": [175, 438],
-      "size": {
-        "0": 316.5220947265625,
-        "1": 405.7098693847656
-      },
+      "size": [316.52, 405.71],
       "flags": {},
       "order": 0,
       "mode": 0,
+      "inputs": [],
       "outputs": [
         {
           "name": "IMAGE",
           "type": "IMAGE",
-          "links": [51],
           "shape": 3,
+          "links": [51],
           "slot_index": 0
         },
         {
           "name": "MASK",
           "type": "MASK",
-          "links": null,
-          "shape": 3
+          "shape": 3,
+          "links": null
         }
       ],
       "properties": {
@@ -147,12 +138,9 @@
       "id": 26,
       "type": "StableZero123_Conditioning",
       "pos": [514, 394],
-      "size": {
-        "0": 315,
-        "1": 194
-      },
+      "size": [315, 194],
       "flags": {},
-      "order": 2,
+      "order": 3,
       "mode": 0,
       "inputs": [
         {
@@ -175,22 +163,22 @@
         {
           "name": "positive",
           "type": "CONDITIONING",
-          "links": [53],
           "shape": 3,
+          "links": [53],
           "slot_index": 0
         },
         {
           "name": "negative",
           "type": "CONDITIONING",
-          "links": [54],
           "shape": 3,
+          "links": [54],
           "slot_index": 1
         },
         {
           "name": "latent",
           "type": "LATENT",
-          "links": [55],
           "shape": 3,
+          "links": [55],
           "slot_index": 2
         }
       ],
@@ -203,33 +191,31 @@
       "id": 15,
       "type": "ImageOnlyCheckpointLoader",
       "pos": [89, 290],
-      "size": {
-        "0": 369.6000061035156,
-        "1": 98
-      },
+      "size": [369.6, 98],
       "flags": {},
       "order": 1,
       "mode": 0,
+      "inputs": [],
       "outputs": [
         {
           "name": "MODEL",
           "type": "MODEL",
-          "links": [42],
           "shape": 3,
+          "links": [42],
           "slot_index": 0
         },
         {
           "name": "CLIP_VISION",
           "type": "CLIP_VISION",
-          "links": [50],
           "shape": 3,
+          "links": [50],
           "slot_index": 1
         },
         {
           "name": "VAE",
           "type": "VAE",
-          "links": [26, 52],
           "shape": 3,
+          "links": [26, 52],
           "slot_index": 2
         }
       ],
@@ -237,6 +223,23 @@
         "Node name for S&R": "ImageOnlyCheckpointLoader"
       },
       "widgets_values": ["stable_zero123.ckpt"]
+    },
+    {
+      "id": 27,
+      "type": "MarkdownNote",
+      "pos": [-75, 450],
+      "size": [225, 60],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "\ud83d\udec8 [Learn more about this workflow](https://comfyanonymous.github.io/ComfyUI_examples/3d/)"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
     }
   ],
   "links": [
@@ -253,7 +256,12 @@
   ],
   "groups": [],
   "config": {},
-  "extra": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [439.73, 40.67]
+    }
+  },
   "version": 0.4,
   "models": [
     {

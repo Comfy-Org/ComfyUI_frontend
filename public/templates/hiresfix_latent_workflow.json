@@ -1,17 +1,14 @@
 {
-  "last_node_id": 16,
+  "last_node_id": 17,
   "last_link_id": 23,
   "nodes": [
     {
       "id": 8,
       "type": "VAEDecode",
-      "pos": [1235.7215957031258, 577.1878720703122],
-      "size": {
-        "0": 210,
-        "1": 46
-      },
+      "pos": [1235.72, 577.19],
+      "size": [210, 46],
       "flags": {},
-      "order": 5,
+      "order": 6,
       "mode": 0,
       "inputs": [
         {
@@ -35,18 +32,16 @@
       ],
       "properties": {
         "Node name for S&R": "VAEDecode"
-      }
+      },
+      "widgets_values": []
     },
     {
       "id": 10,
       "type": "LatentUpscale",
       "pos": [1238, 170],
-      "size": {
-        "0": 315,
-        "1": 130
-      },
+      "size": [315, 130],
       "flags": {},
-      "order": 6,
+      "order": 7,
       "mode": 0,
       "inputs": [
         {
@@ -71,12 +66,9 @@
       "id": 13,
       "type": "VAEDecode",
       "pos": [1961, 125],
-      "size": {
-        "0": 210,
-        "1": 46
-      },
+      "size": [210, 46],
       "flags": {},
-      "order": 9,
+      "order": 10,
       "mode": 0,
       "inputs": [
         {
@@ -100,18 +92,16 @@
       ],
       "properties": {
         "Node name for S&R": "VAEDecode"
-      }
+      },
+      "widgets_values": []
     },
     {
       "id": 6,
       "type": "CLIPTextEncode",
       "pos": [374, 171],
-      "size": {
-        "0": 422.84503173828125,
-        "1": 164.31304931640625
-      },
+      "size": [422.85, 164.31],
       "flags": {},
-      "order": 2,
+      "order": 3,
       "mode": 0,
       "inputs": [
         {
@@ -139,12 +129,9 @@
       "id": 7,
       "type": "CLIPTextEncode",
       "pos": [377, 381],
-      "size": {
-        "0": 425.27801513671875,
-        "1": 180.6060791015625
-      },
+      "size": [425.28, 180.61],
       "flags": {},
-      "order": 3,
+      "order": 4,
       "mode": 0,
       "inputs": [
         {
@@ -170,13 +157,11 @@
       "id": 5,
       "type": "EmptyLatentImage",
       "pos": [435, 600],
-      "size": {
-        "0": 315,
-        "1": 106
-      },
+      "size": [315, 106],
       "flags": {},
       "order": 0,
       "mode": 0,
+      "inputs": [],
       "outputs": [
         {
           "name": "LATENT",
@@ -194,12 +179,9 @@
       "id": 11,
       "type": "KSampler",
       "pos": [1585, 114],
-      "size": {
-        "0": 315,
-        "1": 262
-      },
+      "size": [315, 262],
       "flags": {},
-      "order": 8,
+      "order": 9,
       "mode": 0,
       "inputs": [
         {
@@ -252,12 +234,9 @@
       "id": 12,
       "type": "SaveImage",
       "pos": [2203, 123],
-      "size": {
-        "0": 407.53717041015625,
-        "1": 468.13226318359375
-      },
+      "size": [407.54, 468.13],
       "flags": {},
-      "order": 10,
+      "order": 11,
       "mode": 0,
       "inputs": [
         {
@@ -266,6 +245,7 @@
           "link": 17
         }
       ],
+      "outputs": [],
       "properties": {},
       "widgets_values": ["ComfyUI"]
     },
@@ -273,12 +253,9 @@
       "id": 3,
       "type": "KSampler",
       "pos": [845, 172],
-      "size": {
-        "0": 315,
-        "1": 262
-      },
+      "size": [315, 262],
       "flags": {},
-      "order": 4,
+      "order": 5,
       "mode": 0,
       "inputs": [
         {
@@ -327,13 +304,11 @@
       "id": 16,
       "type": "CheckpointLoaderSimple",
       "pos": [24, 315],
-      "size": {
-        "0": 315,
-        "1": 98
-      },
+      "size": [315, 98],
       "flags": {},
       "order": 1,
       "mode": 0,
+      "inputs": [],
       "outputs": [
         {
           "name": "MODEL",
@@ -362,10 +337,10 @@
     {
       "id": 9,
       "type": "SaveImage",
-      "pos": [1495.7215957031258, 576.1878720703122],
-      "size": [232.9403301043692, 282.4336258387117],
+      "pos": [1495.72, 576.19],
+      "size": [232.94, 282.43],
       "flags": {},
-      "order": 7,
+      "order": 8,
       "mode": 0,
       "inputs": [
         {
@@ -374,8 +349,26 @@
           "link": 9
         }
       ],
+      "outputs": [],
       "properties": {},
       "widgets_values": ["ComfyUI"]
+    },
+    {
+      "id": 17,
+      "type": "MarkdownNote",
+      "pos": [0, 780],
+      "size": [225, 60],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "\ud83d\udec8 [Learn more about this workflow](https://comfyanonymous.github.io/ComfyUI_examples/2_pass_txt2img/)"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
     }
   ],
   "links": [
@@ -399,28 +392,45 @@
   ],
   "groups": [
     {
+      "id": 1,
       "title": "Txt2Img",
-      "bounding": [-1, 30, 1211, 708],
-      "color": "#a1309b"
+      "bounding": [0, 30, 1211, 708],
+      "color": "#a1309b",
+      "font_size": 24,
+      "flags": {}
     },
     {
+      "id": 2,
       "title": "Save Intermediate Image",
-      "bounding": [1225, 500, 516, 196],
-      "color": "#3f789e"
+      "bounding": [1230, 495, 516, 196],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
     },
     {
+      "id": 3,
       "title": "Hires Fix",
-      "bounding": [1224, 29, 710, 464],
-      "color": "#b58b2a"
+      "bounding": [1230, 30, 710, 464],
+      "color": "#b58b2a",
+      "font_size": 24,
+      "flags": {}
     },
     {
+      "id": 4,
       "title": "Save Final Image",
-      "bounding": [1949, 31, 483, 199],
-      "color": "#3f789e"
+      "bounding": [1950, 30, 483, 199],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
     }
   ],
   "config": {},
-  "extra": {},
+  "extra": {
+    "ds": {
+      "scale": 0.97,
+      "offset": [419.13, 209.33]
+    }
+  },
   "version": 0.4,
   "models": [
     {

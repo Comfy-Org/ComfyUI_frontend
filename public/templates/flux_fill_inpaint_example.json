@@ -1,16 +1,16 @@
 {
-  "last_node_id": 44,
+  "last_node_id": 45,
   "last_link_id": 100,
   "nodes": [
     {
       "id": 7,
       "type": "CLIPTextEncode",
       "pos": [307, 282],
-      "size": [425.27801513671875, 180.6060791015625],
+      "size": [425.28, 180.61],
       "flags": {
         "collapsed": true
       },
-      "order": 5,
+      "order": 6,
       "mode": 0,
       "inputs": [
         {
@@ -61,9 +61,9 @@
       "id": 26,
       "type": "FluxGuidance",
       "pos": [593, 44],
-      "size": [317.4000244140625, 58],
+      "size": [317.4, 58],
       "flags": {},
-      "order": 7,
+      "order": 8,
       "mode": 0,
       "inputs": [
         {
@@ -76,9 +76,9 @@
         {
           "name": "CONDITIONING",
           "type": "CONDITIONING",
+          "shape": 3,
           "links": [80],
-          "slot_index": 0,
-          "shape": 3
+          "slot_index": 0
         }
       ],
       "properties": {
@@ -105,15 +105,20 @@
       "properties": {
         "Node name for S&R": "DualCLIPLoader"
       },
-      "widgets_values": ["clip_l.safetensors", "t5xxl_fp16.safetensors", "flux"]
+      "widgets_values": [
+        "clip_l.safetensors",
+        "t5xxl_fp16.safetensors",
+        "flux",
+        "default"
+      ]
     },
     {
       "id": 39,
       "type": "DifferentialDiffusion",
       "pos": [1001, -68],
-      "size": [277.20001220703125, 26],
+      "size": [277.2, 26],
       "flags": {},
-      "order": 6,
+      "order": 7,
       "mode": 0,
       "inputs": [
         {
@@ -141,7 +146,7 @@
       "pos": [1620, 98],
       "size": [210, 46],
       "flags": {},
-      "order": 10,
+      "order": 11,
       "mode": 0,
       "inputs": [
         {
@@ -172,9 +177,9 @@
       "id": 38,
       "type": "InpaintModelConditioning",
       "pos": [952, 78],
-      "size": [302.4000244140625, 138],
+      "size": [302.4, 138],
       "flags": {},
-      "order": 8,
+      "order": 9,
       "mode": 0,
       "inputs": [
         {
@@ -232,9 +237,9 @@
       "id": 9,
       "type": "SaveImage",
       "pos": [1877, 101],
-      "size": [828.9535522460938, 893.8475341796875],
+      "size": [828.95, 893.85],
       "flags": {},
-      "order": 11,
+      "order": 12,
       "mode": 0,
       "inputs": [
         {
@@ -253,7 +258,7 @@
       "pos": [1280, 100],
       "size": [315, 262],
       "flags": {},
-      "order": 9,
+      "order": 10,
       "mode": 0,
       "inputs": [
         {
@@ -324,7 +329,7 @@
       "id": 17,
       "type": "LoadImage",
       "pos": [587, 312],
-      "size": [315, 314.0000305175781],
+      "size": [315, 314.0],
       "flags": {},
       "order": 3,
       "mode": 0,
@@ -333,16 +338,16 @@
         {
           "name": "IMAGE",
           "type": "IMAGE",
+          "shape": 3,
           "links": [99],
-          "slot_index": 0,
-          "shape": 3
+          "slot_index": 0
         },
         {
           "name": "MASK",
           "type": "MASK",
+          "shape": 3,
           "links": [100],
-          "slot_index": 1,
-          "shape": 3
+          "slot_index": 1
         }
       ],
       "properties": {
@@ -354,9 +359,9 @@
       "id": 23,
       "type": "CLIPTextEncode",
       "pos": [144, -7],
-      "size": [422.84503173828125, 164.31304931640625],
+      "size": [422.85, 164.31],
       "flags": {},
-      "order": 4,
+      "order": 5,
       "mode": 0,
       "inputs": [
         {
@@ -382,6 +387,23 @@
       ],
       "color": "#232",
       "bgcolor": "#353"
+    },
+    {
+      "id": 45,
+      "type": "MarkdownNote",
+      "pos": [-225, 255],
+      "size": [225, 60],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "\ud83d\udec8 [Learn more about this workflow](https://comfyanonymous.github.io/ComfyUI_examples/flux/#fill-inpainting-model)"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
     }
   ],
   "links": [
@@ -406,8 +428,8 @@
   "config": {},
   "extra": {
     "ds": {
-      "scale": 1.2100000000000006,
-      "offset": [264.68970566035966, 161.4467785071371]
+      "scale": 1.21,
+      "offset": [566.62, 207.73]
     }
   },
   "version": 0.4,

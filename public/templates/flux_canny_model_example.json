@@ -1,16 +1,16 @@
 {
-  "last_node_id": 35,
+  "last_node_id": 36,
   "last_link_id": 70,
   "nodes": [
     {
       "id": 7,
       "type": "CLIPTextEncode",
       "pos": [307, 282],
-      "size": [425.27801513671875, 180.6060791015625],
+      "size": [425.28, 180.61],
       "flags": {
         "collapsed": true
       },
-      "order": 6,
+      "order": 7,
       "mode": 0,
       "inputs": [
         {
@@ -39,7 +39,7 @@
       "id": 17,
       "type": "LoadImage",
       "pos": [220, 530],
-      "size": [315, 314.0000305175781],
+      "size": [315, 314.0],
       "flags": {},
       "order": 0,
       "mode": 0,
@@ -48,15 +48,15 @@
         {
           "name": "IMAGE",
           "type": "IMAGE",
+          "shape": 3,
           "links": [49],
-          "slot_index": 0,
-          "shape": 3
+          "slot_index": 0
         },
         {
           "name": "MASK",
           "type": "MASK",
-          "links": null,
-          "shape": 3
+          "shape": 3,
+          "links": null
         }
       ],
       "properties": {
@@ -68,9 +68,9 @@
       "id": 19,
       "type": "PreviewImage",
       "pos": [899, 532],
-      "size": [571.5869140625, 625.5296020507812],
+      "size": [571.59, 625.53],
       "flags": {},
-      "order": 7,
+      "order": 8,
       "mode": 0,
       "inputs": [
         {
@@ -91,7 +91,7 @@
       "pos": [1290, 40],
       "size": [315, 262],
       "flags": {},
-      "order": 10,
+      "order": 11,
       "mode": 0,
       "inputs": [
         {
@@ -140,9 +140,9 @@
       "id": 35,
       "type": "InstructPixToPixConditioning",
       "pos": [1040, 50],
-      "size": [235.1999969482422, 86],
+      "size": [235.2, 86],
       "flags": {},
-      "order": 9,
+      "order": 10,
       "mode": 0,
       "inputs": [
         {
@@ -197,7 +197,7 @@
       "pos": [1620, 40],
       "size": [210, 46],
       "flags": {},
-      "order": 11,
+      "order": 12,
       "mode": 0,
       "inputs": [
         {
@@ -228,9 +228,9 @@
       "id": 9,
       "type": "SaveImage",
       "pos": [1850, 40],
-      "size": [828.9535522460938, 893.8475341796875],
+      "size": [828.95, 893.85],
       "flags": {},
-      "order": 12,
+      "order": 13,
       "mode": 0,
       "inputs": [
         {
@@ -269,9 +269,9 @@
       "id": 26,
       "type": "FluxGuidance",
       "pos": [700, 50],
-      "size": [317.4000244140625, 58],
+      "size": [317.4, 58],
       "flags": {},
-      "order": 8,
+      "order": 9,
       "mode": 0,
       "inputs": [
         {
@@ -284,9 +284,9 @@
         {
           "name": "CONDITIONING",
           "type": "CONDITIONING",
+          "shape": 3,
           "links": [67],
-          "slot_index": 0,
-          "shape": 3
+          "slot_index": 0
         }
       ],
       "properties": {
@@ -298,9 +298,9 @@
       "id": 23,
       "type": "CLIPTextEncode",
       "pos": [260, 50],
-      "size": [422.84503173828125, 164.31304931640625],
+      "size": [422.85, 164.31],
       "flags": {},
-      "order": 5,
+      "order": 6,
       "mode": 0,
       "inputs": [
         {
@@ -346,7 +346,12 @@
       "properties": {
         "Node name for S&R": "DualCLIPLoader"
       },
-      "widgets_values": ["clip_l.safetensors", "t5xxl_fp16.safetensors", "flux"]
+      "widgets_values": [
+        "clip_l.safetensors",
+        "t5xxl_fp16.safetensors",
+        "flux",
+        "default"
+      ]
     },
     {
       "id": 31,
@@ -376,7 +381,7 @@
       "pos": [560, 530],
       "size": [315, 82],
       "flags": {},
-      "order": 4,
+      "order": 5,
       "mode": 0,
       "inputs": [
         {
@@ -389,15 +394,32 @@
         {
           "name": "IMAGE",
           "type": "IMAGE",
+          "shape": 3,
           "links": [26, 70],
-          "slot_index": 0,
-          "shape": 3
+          "slot_index": 0
         }
       ],
       "properties": {
         "Node name for S&R": "Canny"
       },
       "widgets_values": [0.15, 0.3]
+    },
+    {
+      "id": 36,
+      "type": "MarkdownNote",
+      "pos": [-75, 270],
+      "size": [225, 60],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "\ud83d\udec8 [Learn more about this workflow](https://comfyanonymous.github.io/ComfyUI_examples/flux/#canny-and-depth)"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
     }
   ],
   "links": [
@@ -422,8 +444,8 @@
   "config": {},
   "extra": {
     "ds": {
-      "scale": 1.2100000000000009,
-      "offset": [95.2115677027007, 125.98441549849056]
+      "scale": 0.67,
+      "offset": [553.16, 455.34]
     }
   },
   "version": 0.4,
