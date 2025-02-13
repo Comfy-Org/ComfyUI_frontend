@@ -361,7 +361,7 @@
     "title": "Get Started with a Template",
     "template": {
       "Flux": {
-        "flux_dev_example": "Flux Dev",
+        "flux_dev_checkpoint_example": "Flux Dev",
         "flux_schnell": "Flux Schnell",
         "flux_fill_inpaint_example": "Flux Inpaint",
         "flux_fill_outpaint_example": "Flux Outpaint",
