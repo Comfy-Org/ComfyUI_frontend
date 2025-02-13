@@ -1,14 +1,12 @@
 <template>
-  <Card :data-testid="`template-workflow-${workflowName}`">
+  <Card :data-testid="`template-workflow-${template.name}`" class="w-64">
     <template #header>
       <div class="flex items-center justify-center">
-        <div
-          class="relative overflow-hidden rounded-t-lg cursor-pointer w-64 h-64"
-        >
+        <div class="relative overflow-hidden rounded-t-lg cursor-pointer">
           <img
             v-if="!imageError"
             :src="thumbnailSrc"
-            :alt="subtitle"
+            :alt="title"
             class="w-64 h-64 rounded-t-lg object-cover thumbnail"
             @error="imageError = true"
           />
@@ -30,7 +28,9 @@
       </div>
     </template>
     <template #subtitle>
-      {{ subtitle }}
+      <div class="text-center">
+        {{ title }}
+      </div>
     </template>
   </Card>
 </template>
@@ -41,66 +41,37 @@ import ProgressSpinner from 'primevue/progressspinner'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-const {
-  moduleName,
-  workflowName,
-  categoryName,
-  loading,
-  type = 'image'
-} = defineProps<{
-  moduleName: string
-  workflowName: string
-  categoryName: string
+import { TemplateInfo } from '@/types/workflowTemplateTypes'
+
+const { sourceModule, categoryTitle, loading, template } = defineProps<{
+  sourceModule: string
+  categoryTitle: string
   loading: boolean
-  type?: string
+  template: TemplateInfo
 }>()
 
 const { t } = useI18n()
 
-const thumbnailSrc = computed(() => {
-  switch (moduleName) {
-    case 'default':
-      return `/templates/${workflowName}_1${thumbnailExt.value}`
-    default:
-      return `/api/workflow_templates/${moduleName}/${workflowName}${thumbnailExt.value}`
-  }
-})
-
-const thumbnailExt = computed(() => {
-  switch (type) {
-    case 'video':
-      return '.webp'
-    case 'audio':
-      return '.flac'
-    case 'image':
-    default:
-      return '.png'
-  }
-})
-
-const subtitle = computed(() => {
-  switch (moduleName) {
-    case 'default':
-      // Default templates have translations
-      return t(
-        `templateWorkflows.template.${categoryName}.${workflowName}`,
-        workflowName
-      )
-    default:
-      return workflowName ?? `${moduleName} workflow`
-  }
-})
-
 const imageError = ref(false)
+
+const thumbnailSrc = computed(() =>
+  sourceModule === 'default'
+    ? `/templates/${template.name}_1.${template.mediaSubtype}`
+    : `/api/workflow_templates/${sourceModule}/${template.name}.${template.mediaSubtype}`
+)
+const title = computed(() => {
+  return sourceModule !== 'default'
+    ? template.name
+    : t(
+        `templateWorkflows.template.${categoryTitle}.${template.name}`,
+        template.name
+      )
+})
 </script>
 
 <style lang="css" scoped>
 .p-card {
   --p-card-body-padding: 10px 0 0 0;
   overflow: hidden;
-}
-
-:deep(.p-card-subtitle) {
-  text-align: center;
 }
 </style>
