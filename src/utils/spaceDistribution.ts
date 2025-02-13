@@ -15,17 +15,13 @@ export function distributeSpace(
 ): number[] {
   // Handle edge cases
   if (requests.length === 0) return []
-  if (totalSpace <= 0) {
-    return requests.map(() => 0)
-  }
 
   // Calculate total minimum space needed
   const totalMinSize = requests.reduce((sum, req) => sum + req.minSize, 0)
 
-  // If we can't meet minimum requirements, distribute proportionally to minSize
+  // If we can't meet minimum requirements, return the minimum sizes
   if (totalSpace < totalMinSize) {
-    const ratio = totalSpace / totalMinSize
-    return requests.map((req) => req.minSize * ratio)
+    return requests.map((req) => req.minSize)
   }
 
   // Initialize allocations with minimum sizes

@@ -29,6 +29,11 @@ describe('distributeSpace', () => {
 
   it('should handle negative total space', () => {
     const requests: SpaceRequest[] = [{ minSize: 100 }, { minSize: 100 }]
-    expect(distributeSpace(-100, requests)).toEqual([0, 0])
+    expect(distributeSpace(-100, requests)).toEqual([100, 100])
+  })
+
+  it('should handle total space smaller than minimum sizes', () => {
+    const requests: SpaceRequest[] = [{ minSize: 100 }, { minSize: 100 }]
+    expect(distributeSpace(100, requests)).toEqual([100, 100])
   })
 })
