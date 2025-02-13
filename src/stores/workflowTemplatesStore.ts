@@ -19,7 +19,11 @@ export const useWorkflowTemplatesStore = defineStore(
         ([moduleName, templates]) => ({
           moduleName,
           title: moduleName,
-          templates
+          templates: templates.map((template) => ({
+            name: template,
+            mediaType: 'image',
+            mediaSubtype: 'png'
+          }))
         })
       )
     ])
