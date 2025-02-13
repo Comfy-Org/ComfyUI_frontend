@@ -3,19 +3,32 @@
     <template #header>
       <div class="flex items-center justify-center">
         <div class="relative overflow-hidden rounded-t-lg cursor-pointer">
-          <img
-            v-if="!imageError"
-            :src="thumbnailSrc"
-            :alt="title"
-            class="w-64 h-64 rounded-t-lg object-cover thumbnail"
-            @error="imageError = true"
-          />
-          <div v-else class="w-64 h-64 content-center text-center">
-            <i class="pi pi-file" style="font-size: 4rem"></i>
-          </div>
-          <a>
+          <template v-if="template.mediaType === 'audio'">
+            <div class="w-64 h-64 flex items-center justify-center p-4 z-20">
+              <audio
+                controls
+                class="w-full relative z-20"
+                :src="thumbnailSrc"
+                @error="imageError = true"
+                @click.stop
+              />
+            </div>
+          </template>
+          <template v-else>
+            <img
+              v-if="!imageError"
+              :src="thumbnailSrc"
+              :alt="title"
+              class="w-64 h-64 rounded-t-lg object-cover thumbnail"
+              @error="imageError = true"
+            />
+            <div v-else class="w-64 h-64 content-center text-center">
+              <i class="pi pi-file" style="font-size: 4rem"></i>
+            </div>
+          </template>
+          <a @click="$emit('loadWorkflow', template.name)">
             <div
-              class="absolute top-0 left-0 w-64 h-64 overflow-hidden opacity-0 transition duration-300 ease-in-out hover:opacity-100 bg-opacity-50 bg-black flex items-center justify-center"
+              class="absolute top-0 left-0 w-64 h-64 overflow-hidden opacity-0 transition duration-300 ease-in-out hover:opacity-100 bg-opacity-50 bg-black flex items-center justify-center z-10"
             >
               <i class="pi pi-play-circle" style="color: white"></i>
             </div>
@@ -56,7 +69,7 @@ const imageError = ref(false)
 
 const thumbnailSrc = computed(() =>
   sourceModule === 'default'
-    ? `/templates/${template.name}_1.${template.mediaSubtype}`
+    ? `/templates/${template.name}.${template.mediaSubtype}`
     : `/api/workflow_templates/${sourceModule}/${template.name}.${template.mediaSubtype}`
 )
 const title = computed(() => {
@@ -67,6 +80,10 @@ const title = computed(() => {
       )
     : template.name ?? `${sourceModule} Template`
 })
+
+defineEmits<{
+  loadWorkflow: [name: string]
+}>()
 </script>
 
 <style lang="css" scoped>

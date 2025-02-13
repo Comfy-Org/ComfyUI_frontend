@@ -29,15 +29,13 @@
       :key="`${selectedTab.moduleName}${selectedTab.title}`"
     >
       <template #item="slotProps">
-        <div
-          @click="loadWorkflow(slotProps.data.name)"
-          class="p-2 justify-items-center"
-        >
+        <div class="p-2 justify-items-center">
           <TemplateWorkflowCard
             :sourceModule="selectedTab.moduleName"
             :template="slotProps.data"
             :loading="slotProps.data.name === workflowLoading"
             :categoryTitle="selectedTab.title"
+            @loadWorkflow="loadWorkflow"
           />
         </div>
       </template>

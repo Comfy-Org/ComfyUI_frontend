@@ -221,7 +221,7 @@ export const CORE_TEMPLATES = [
       {
         name: 'txt_to_image_to_video',
         mediaType: 'image',
-        mediaSubtype: 'mp4',
+        mediaSubtype: 'webp',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/video/#image-to-video'
       },
