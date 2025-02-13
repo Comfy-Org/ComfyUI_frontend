@@ -30,6 +30,19 @@ declare module '@comfyorg/litegraph/dist/types/widgets' {
      * See scripts/domWidget.ts for more details.
      */
     computedHeight?: number
+
+    /**
+     * Compute the layout size of the widget. Overrides {@link IBaseWidget.computeSize}.
+     */
+    computeLayoutSize?: (
+      this: IBaseWidget,
+      node: LGraphNode
+    ) => {
+      minHeight: number
+      maxHeight?: number
+      minWidth: number
+      maxWidth?: number
+    }
   }
 }
 

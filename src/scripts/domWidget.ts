@@ -20,10 +20,10 @@ interface Rect {
   y: number
 }
 
-interface DOMSizeInfo {
+interface SizeInfo {
   minHeight: number
   prefHeight?: number
-  w: DOMWidget<HTMLElement, object>
+  w: IWidget
   diff?: number
 }
 
@@ -127,12 +127,6 @@ function getClipPath(
   return ''
 }
 
-function isDomWidget(
-  widget: IWidget
-): widget is DOMWidget<HTMLElement, object> {
-  return !!widget.element
-}
-
 function computeSize(this: LGraphNode, size: Size): void {
   if (!this.widgets?.[0]?.last_y) return
 
@@ -141,7 +135,7 @@ function computeSize(this: LGraphNode, size: Size): void {
 
   // Collect fixed height widgets first
   let fixedWidgetHeight = 0
-  const domWidgets: DOMSizeInfo[] = []
+  const layoutWidgets: SizeInfo[] = []
 
   for (const w of this.widgets) {
     // @ts-expect-error custom widget type
@@ -149,42 +143,15 @@ function computeSize(this: LGraphNode, size: Size): void {
       // Ignore
       // @ts-expect-error custom widget type
       delete w.computedHeight
-    } else if (w.computeSize) {
-      fixedWidgetHeight += w.computeSize()[1] + 4
-    } else if (isDomWidget(w)) {
-      // Extract DOM widget size info
-      const styles = getComputedStyle(w.element)
-      let minHeight =
-        w.options.getMinHeight?.() ??
-        parseInt(styles.getPropertyValue('--comfy-widget-min-height'))
-      let maxHeight =
-        w.options.getMaxHeight?.() ??
-        parseInt(styles.getPropertyValue('--comfy-widget-max-height'))
-
-      let prefHeight: string | number =
-        w.options.getHeight?.() ??
-        styles.getPropertyValue('--comfy-widget-height')
-      // @ts-expect-error number has no endsWith
-      if (prefHeight.endsWith?.('%')) {
-        prefHeight =
-          size[1] *
-          // @ts-expect-error number has no substring
-          (parseFloat(prefHeight.substring(0, prefHeight.length - 1)) / 100)
-      } else {
-        // @ts-expect-error number is not assignable to param of type string
-        prefHeight = parseInt(prefHeight)
-        if (isNaN(minHeight)) {
-          minHeight = prefHeight
-        }
-      }
-
-      domWidgets.push({
-        minHeight: isNaN(minHeight) ? 50 : minHeight,
-        prefHeight: isNaN(prefHeight)
-          ? undefined
-          : Math.min(prefHeight, maxHeight ?? Infinity),
+    } else if (w.computeLayoutSize) {
+      const { minHeight, maxHeight } = w.computeLayoutSize(this)
+      layoutWidgets.push({
+        minHeight,
+        prefHeight: maxHeight,
         w
       })
+    } else if (w.computeSize) {
+      fixedWidgetHeight += w.computeSize()[1] + 4
     } else {
       fixedWidgetHeight += LiteGraph.NODE_WIDGET_HEIGHT + 4
     }
@@ -199,7 +166,7 @@ function computeSize(this: LGraphNode, size: Size): void {
   this.freeWidgetSpace = freeSpace
 
   // Prepare space requests for distribution
-  const spaceRequests = domWidgets.map((d) => ({
+  const spaceRequests = layoutWidgets.map((d) => ({
     minSize: d.minHeight,
     maxSize: d.prefHeight
   }))
@@ -208,7 +175,7 @@ function computeSize(this: LGraphNode, size: Size): void {
   const allocations = distributeSpace(Math.max(0, freeSpace), spaceRequests)
 
   // Apply computed heights
-  domWidgets.forEach((d, i) => {
+  layoutWidgets.forEach((d, i) => {
     d.w.computedHeight = allocations[i]
   })
 
@@ -305,6 +272,40 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
   set value(v: V) {
     this.options.setValue?.(v)
     this.callback?.(this.value)
+  }
+
+  /** Extract DOM widget size info */
+  computeLayoutSize(node: LGraphNode) {
+    const styles = getComputedStyle(this.element)
+    let minHeight =
+      this.options.getMinHeight?.() ??
+      parseInt(styles.getPropertyValue('--comfy-widget-min-height'))
+    let maxHeight =
+      this.options.getMaxHeight?.() ??
+      parseInt(styles.getPropertyValue('--comfy-widget-max-height'))
+
+    let prefHeight: string | number =
+      this.options.getHeight?.() ??
+      styles.getPropertyValue('--comfy-widget-height')
+
+    if (typeof prefHeight === 'string' && prefHeight.endsWith?.('%')) {
+      prefHeight =
+        node.size[1] *
+        (parseFloat(prefHeight.substring(0, prefHeight.length - 1)) / 100)
+    } else {
+      prefHeight =
+        typeof prefHeight === 'number' ? prefHeight : parseInt(prefHeight)
+
+      if (isNaN(minHeight)) {
+        minHeight = prefHeight
+      }
+    }
+
+    return {
+      minHeight: isNaN(minHeight) ? 50 : minHeight,
+      maxHeight: isNaN(maxHeight) ? undefined : maxHeight,
+      minWidth: 0
+    }
   }
 
   draw(
