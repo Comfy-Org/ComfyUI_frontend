@@ -7,7 +7,7 @@ import type {
 } from '@comfyorg/litegraph/dist/types/widgets'
 
 import { useSettingStore } from '@/stores/settingStore'
-import { SpaceRequest, distributeSpace } from '@/utils/spaceDistribution'
+import { distributeSpace } from '@/utils/spaceDistribution'
 
 import { ANIM_PREVIEW_WIDGET, app } from './app'
 
