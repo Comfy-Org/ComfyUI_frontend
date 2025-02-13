@@ -177,7 +177,7 @@ function computeSize(this: LGraphNode, size: Size): void {
       }
 
       domWidgets.push({
-        minHeight,
+        minHeight: isNaN(minHeight) ? 50 : minHeight,
         prefHeight: isNaN(prefHeight)
           ? undefined
           : Math.min(prefHeight, maxHeight ?? Infinity),
