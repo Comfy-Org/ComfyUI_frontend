@@ -25,7 +25,9 @@
           "slot_index": 0
         }
       ],
-      "properties": { "Node name for S&R": "VAEDecode" },
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
       "widgets_values": []
     },
     {
@@ -66,7 +68,9 @@
           "slot_index": 0
         }
       ],
-      "properties": { "Node name for S&R": "KSampler" },
+      "properties": {
+        "Node name for S&R": "KSampler"
+      },
       "widgets_values": [
         1023216319780679,
         "randomize",
@@ -81,7 +85,7 @@
       "id": 24,
       "type": "CLIPTextEncode",
       "pos": [-260, -340],
-      "size": [422.84503173828125, 164.31304931640625],
+      "size": [422.85, 164.31],
       "flags": {},
       "order": 5,
       "mode": 0,
@@ -94,7 +98,9 @@
           "slot_index": 0
         }
       ],
-      "properties": { "Node name for S&R": "CLIPTextEncode" },
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
       "widgets_values": [
         "photograph scenery landscape, snow beautiful scenery mountain, glass bottle; purple galaxy bottle; sun"
       ]
@@ -103,7 +109,7 @@
       "id": 7,
       "type": "CLIPTextEncode",
       "pos": [300, 230],
-      "size": [425.27801513671875, 180.6060791015625],
+      "size": [425.28, 180.61],
       "flags": {},
       "order": 4,
       "mode": 0,
@@ -116,14 +122,16 @@
           "slot_index": 0
         }
       ],
-      "properties": { "Node name for S&R": "CLIPTextEncode" },
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
       "widgets_values": ["text, watermark"]
     },
     {
       "id": 9,
       "type": "SaveImage",
       "pos": [1495, 167],
-      "size": [493.6289978027344, 561.5360717773438],
+      "size": [493.63, 561.54],
       "flags": {},
       "order": 10,
       "mode": 0,
@@ -155,14 +163,16 @@
           "slot_index": 0
         }
       ],
-      "properties": { "Node name for S&R": "EmptyLatentImage" },
+      "properties": {
+        "Node name for S&R": "EmptyLatentImage"
+      },
       "widgets_values": [768, 768, 1]
     },
     {
       "id": 27,
       "type": "GLIGENTextBoxApply",
       "pos": [770, -340],
-      "size": [437.21990966796875, 382.67840576171875],
+      "size": [437.22, 382.68],
       "flags": {},
       "order": 7,
       "mode": 0,
@@ -191,14 +201,16 @@
           "slot_index": 0
         }
       ],
-      "properties": { "Node name for S&R": "GLIGENTextBoxApply" },
+      "properties": {
+        "Node name for S&R": "GLIGENTextBoxApply"
+      },
       "widgets_values": ["sun", 144, 144, 416, 16]
     },
     {
       "id": 21,
       "type": "GLIGENTextBoxApply",
       "pos": [270, -340],
-      "size": [437.21990966796875, 382.67840576171875],
+      "size": [437.22, 382.68],
       "flags": {},
       "order": 6,
       "mode": 0,
@@ -227,7 +239,9 @@
           "slot_index": 0
         }
       ],
-      "properties": { "Node name for S&R": "GLIGENTextBoxApply" },
+      "properties": {
+        "Node name for S&R": "GLIGENTextBoxApply"
+      },
       "widgets_values": ["purple galaxy bottle", 192, 304, 176, 272]
     },
     {
@@ -247,7 +261,9 @@
           "slot_index": 0
         }
       ],
-      "properties": { "Node name for S&R": "GLIGENLoader" },
+      "properties": {
+        "Node name for S&R": "GLIGENLoader"
+      },
       "widgets_values": ["gligen_sd14_textbox_pruned.safetensors"]
     },
     {
@@ -279,7 +295,9 @@
           "slot_index": 2
         }
       ],
-      "properties": { "Node name for S&R": "CheckpointLoaderSimple" },
+      "properties": {
+        "Node name for S&R": "CheckpointLoaderSimple"
+      },
       "widgets_values": ["v1-5-pruned-emaonly-fp16.safetensors"]
     },
     {
@@ -294,7 +312,7 @@
       "outputs": [],
       "properties": {},
       "widgets_values": [
-        "🛈 [Learn more about this workflow](https://comfyanonymous.github.io/ComfyUI_examples/gligen/)"
+        "\ud83d\udec8 [Learn more about this workflow](https://comfyanonymous.github.io/ComfyUI_examples/gligen/)"
       ],
       "color": "#432",
       "bgcolor": "#653"
@@ -338,21 +356,21 @@
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.7964225260331085,
-      "offset": [433.5856291844491, 361.8134164659593]
+      "scale": 0.8,
+      "offset": [433.59, 361.81]
     }
   },
   "version": 0.4,
   "models": [
     {
-      "name": "gligen_sd14_textbox_pruned.safetensors",
-      "url": "https://huggingface.co/comfyanonymous/GLIGEN_pruned_safetensors/resolve/main/gligen_sd14_textbox_pruned.safetensors?download=true",
-      "directory": "gligen"
-    },
-    {
       "name": "v1-5-pruned-emaonly-fp16.safetensors",
       "url": "https://huggingface.co/Comfy-Org/stable-diffusion-v1-5-archive/resolve/main/v1-5-pruned-emaonly-fp16.safetensors?download=true",
       "directory": "checkpoints"
+    },
+    {
+      "name": "gligen_sd14_textbox_pruned.safetensors",
+      "url": "https://huggingface.co/comfyanonymous/GLIGEN_pruned_safetensors/resolve/main/gligen_sd14_textbox_pruned.safetensors?download=true",
+      "directory": "gligen"
     }
   ]
 }

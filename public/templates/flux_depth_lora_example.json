@@ -378,7 +378,7 @@
       "properties": {
         "Node name for S&R": "UNETLoader"
       },
-      "widgets_values": ["flux1-dev.safetensors", "default"]
+      "widgets_values": ["flux1-depth-dev.safetensors", "default"]
     },
     {
       "id": 40,
@@ -431,9 +431,9 @@
       "directory": "clip"
     },
     {
-      "name": "clip_l.safetensors",
-      "url": "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/clip_l.safetensors?download=true",
-      "directory": "clip"
+      "name": "flux1-dev-fp8.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/flux1-dev/resolve/main/flux1-dev-fp8.safetensors?download=true",
+      "directory": "checkpoints"
     },
     {
       "name": "ae.safetensors",
@@ -441,9 +441,14 @@
       "directory": "vae"
     },
     {
-      "name": "flux1-dev-fp8.safetensors",
-      "url": "https://huggingface.co/Comfy-Org/flux1-dev/resolve/main/flux1-dev-fp8.safetensors?download=true",
+      "name": "flux1-depth-dev.safetensors",
+      "url": "https://huggingface.co/black-forest-labs/FLUX.1-Depth-dev/resolve/main/flux1-depth-dev.safetensors?download=true",
       "directory": "diffusion_models"
+    },
+    {
+      "name": "clip_l.safetensors",
+      "url": "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/clip_l.safetensors?download=true",
+      "directory": "clip"
     },
     {
       "name": "flux1-depth-dev-lora.safetensors",

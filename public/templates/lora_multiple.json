@@ -339,11 +339,6 @@
   "version": 0.4,
   "models": [
     {
-      "name": "epiNoiseoffset_v2.safetensors",
-      "url": "https://civitai.com/api/download/models/16576?type=Model&format=SafeTensor&size=full&fp=fp16",
-      "directory": "loras"
-    },
-    {
       "name": "theovercomer8sContrastFix_sd15.safetensors",
       "url": "https://civitai.com/api/download/models/10350?type=Model&format=SafeTensor&size=full&fp=fp16",
       "directory": "loras"
@@ -352,6 +347,11 @@
       "name": "v1-5-pruned-emaonly-fp16.safetensors",
       "url": "https://huggingface.co/Comfy-Org/stable-diffusion-v1-5-archive/resolve/main/v1-5-pruned-emaonly-fp16.safetensors?download=true",
       "directory": "checkpoints"
+    },
+    {
+      "name": "epiNoiseoffset_v2.safetensors",
+      "url": "https://civitai.com/api/download/models/16576?type=Model&format=SafeTensor&size=full&fp=fp16",
+      "directory": "loras"
     }
   ]
 }

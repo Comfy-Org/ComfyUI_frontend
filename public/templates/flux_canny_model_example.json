@@ -456,9 +456,14 @@
       "directory": "clip"
     },
     {
-      "name": "clip_l.safetensors",
-      "url": "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/clip_l.safetensors?download=true",
-      "directory": "clip"
+      "name": "flux1-canny-dev-lora.safetensors",
+      "url": "https://huggingface.co/black-forest-labs/FLUX.1-Canny-dev-lora/resolve/main/flux1-canny-dev-lora.safetensors?download=true",
+      "directory": "loras"
+    },
+    {
+      "name": "flux1-dev-fp8.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/flux1-dev/resolve/main/flux1-dev-fp8.safetensors?download=true",
+      "directory": "checkpoints"
     },
     {
       "name": "ae.safetensors",
@@ -466,14 +471,14 @@
       "directory": "vae"
     },
     {
-      "name": "flux1-dev-fp8.safetensors",
-      "url": "https://huggingface.co/Comfy-Org/flux1-dev/resolve/main/flux1-dev-fp8.safetensors?download=true",
+      "name": "flux1-canny-dev.safetensors",
+      "url": "https://huggingface.co/black-forest-labs/FLUX.1-Canny-dev/resolve/main/flux1-canny-dev.safetensors?download=true",
       "directory": "diffusion_models"
     },
     {
-      "name": "flux1-canny-dev-lora.safetensors",
-      "url": "https://huggingface.co/black-forest-labs/FLUX.1-Canny-dev-lora/resolve/main/flux1-canny-dev-lora.safetensors?download=true",
-      "directory": "loras"
+      "name": "clip_l.safetensors",
+      "url": "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/clip_l.safetensors?download=true",
+      "directory": "clip"
     }
   ]
 }

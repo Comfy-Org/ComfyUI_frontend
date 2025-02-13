@@ -289,14 +289,14 @@
   "version": 0.4,
   "models": [
     {
-      "name": "stable_audio_open_1.0.safetensors",
-      "url": "https://huggingface.co/stabilityai/stable-audio-open-1.0/resolve/main/model.safetensors?download=true",
-      "directory": "checkpoints"
-    },
-    {
       "name": "t5_base.safetensors",
       "url": "https://huggingface.co/google-t5/t5-base/resolve/main/model.safetensors",
       "directory": "clip"
+    },
+    {
+      "name": "stable_audio_open_1.0.safetensors",
+      "url": "https://huggingface.co/stabilityai/stable-audio-open-1.0/resolve/main/model.safetensors?download=true",
+      "directory": "checkpoints"
     }
   ]
 }

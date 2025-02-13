@@ -349,5 +349,12 @@
       "offset": [359.29, 119.05]
     }
   },
-  "version": 0.4
+  "version": 0.4,
+  "models": [
+    {
+      "name": "512-inpainting-ema.safetensors",
+      "url": "https://huggingface.co/stabilityai/stable-diffusion-2-inpainting/resolve/main/512-inpainting-ema.safetensors?download=true",
+      "directory": "checkpoints"
+    }
+  ]
 }

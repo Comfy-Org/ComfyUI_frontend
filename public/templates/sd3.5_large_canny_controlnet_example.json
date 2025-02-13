@@ -457,14 +457,14 @@
   "version": 0.4,
   "models": [
     {
-      "name": "sd3.5_large_fp8_scaled.safetensors",
-      "url": "https://huggingface.co/Comfy-Org/stable-diffusion-3.5-fp8/resolve/main/sd3.5_large_fp8_scaled.safetensors?download=true",
-      "directory": "checkpoints"
-    },
-    {
       "name": "sd3.5_large_controlnet_canny.safetensors",
       "url": "https://huggingface.co/stabilityai/stable-diffusion-3.5-controlnets/resolve/main/sd3.5_large_controlnet_canny.safetensors?download=true",
       "directory": "controlnet"
+    },
+    {
+      "name": "sd3.5_large_fp8_scaled.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/stable-diffusion-3.5-fp8/resolve/main/sd3.5_large_fp8_scaled.safetensors?download=true",
+      "directory": "checkpoints"
     }
   ]
 }

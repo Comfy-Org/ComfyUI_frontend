@@ -290,19 +290,19 @@
   "version": 0.4,
   "models": [
     {
-      "name": "mochi_preview_bf16.safetensors",
-      "url": "https://huggingface.co/Comfy-Org/mochi_preview_repackaged/resolve/main/split_files/diffusion_models/mochi_preview_bf16.safetensors?download=true",
-      "directory": "diffusion_models"
-    },
-    {
-      "name": "t5xxl_fp16.safetensors",
-      "url": "https://huggingface.co/Comfy-Org/mochi_preview_repackaged/resolve/main/split_files/text_encoders/t5xxl_fp16.safetensors?download=true",
-      "directory": "text_encoders"
-    },
-    {
       "name": "mochi_vae.safetensors",
       "url": "https://huggingface.co/Comfy-Org/mochi_preview_repackaged/resolve/main/split_files/vae/mochi_vae.safetensors?download=true",
       "directory": "vae"
+    },
+    {
+      "name": "t5xxl_fp16.safetensors",
+      "url": "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp16.safetensors?download=true",
+      "directory": "clip"
+    },
+    {
+      "name": "mochi_preview_bf16.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/mochi_preview_repackaged/resolve/main/split_files/diffusion_models/mochi_preview_bf16.safetensors?download=true",
+      "directory": "diffusion_models"
     }
   ]
 }

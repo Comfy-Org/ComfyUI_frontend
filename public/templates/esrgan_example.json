@@ -250,7 +250,7 @@
       "properties": {
         "Node name for S&R": "CheckpointLoaderSimple"
       },
-      "widgets_values": ["v1-5-pruned-emaonly.ckpt"]
+      "widgets_values": ["v1-5-pruned-emaonly-fp16.safetensors"]
     },
     {
       "id": 5,
@@ -315,6 +315,11 @@
   },
   "version": 0.4,
   "models": [
+    {
+      "name": "v1-5-pruned-emaonly-fp16.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/stable-diffusion-v1-5-archive/resolve/main/v1-5-pruned-emaonly-fp16.safetensors?download=true",
+      "directory": "checkpoints"
+    },
     {
       "name": "RealESRGAN_x4plus.pth",
       "url": "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth",

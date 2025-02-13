@@ -276,7 +276,7 @@
       "properties": {
         "Node name for S&R": "CheckpointLoaderSimple"
       },
-      "widgets_values": ["v1-5-pruned-emaonly.ckpt"]
+      "widgets_values": ["v1-5-pruned-emaonly-fp16.safetensors"]
     },
     {
       "id": 24,
@@ -361,6 +361,11 @@
       "name": "t2iadapter_depth_sd14v1.pth",
       "url": "https://huggingface.co/TencentARC/T2I-Adapter/resolve/main/models/t2iadapter_depth_sd14v1.pth?download=true",
       "directory": "controlnet"
+    },
+    {
+      "name": "v1-5-pruned-emaonly-fp16.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/stable-diffusion-v1-5-archive/resolve/main/v1-5-pruned-emaonly-fp16.safetensors?download=true",
+      "directory": "checkpoints"
     }
   ]
 }
