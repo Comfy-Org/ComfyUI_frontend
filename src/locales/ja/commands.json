@@ -42,10 +42,10 @@
     "label": "ビューをリセット"
   },
   "Comfy_Canvas_ToggleLinkVisibility": {
-    "label": "キャンバスのリンクの可視性を切り替え"
+    "label": "キャンバスのリンク表示を切り替える"
   },
   "Comfy_Canvas_ToggleLock": {
-    "label": "キャンバスのロックを切り替え"
+    "label": "キャンバスのロックを切り替える"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "選択したノードのバイパス/バイパス解除"
@@ -123,7 +123,7 @@
     "label": "デフォルトのワークフローを読み込む"
   },
   "Comfy_NewBlankWorkflow": {
-    "label": "新しい空白のワークフロー"
+    "label": "新しい空のワークフロー"
   },
   "Comfy_OpenClipspace": {
     "label": "クリップスペース"
@@ -171,13 +171,13 @@
     "label": "検索ボックスの切り替え"
   },
   "Workspace_ToggleBottomPanel": {
-    "label": "ボトムパネルの切り替え"
+    "label": "パネル下部の切り替え"
   },
   "Workspace_ToggleBottomPanelTab_command-terminal": {
-    "label": "ターミナルボトムパネルの切り替え"
+    "label": "ターミナルパネル下部の切り替え"
   },
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
-    "label": "ログボトムパネルの切り替え"
+    "label": "ログパネル下部の切り替え"
   },
   "Workspace_ToggleFocusMode": {
     "label": "フォーカスモードの切り替え"
