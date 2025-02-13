@@ -10,7 +10,7 @@
     <DataTable
       :value="commandsData"
       v-model:selection="selectedCommandData"
-      :global-filter-fields="['id']"
+      :global-filter-fields="['id', 'label']"
       :filters="filters"
       selectionMode="single"
       stripedRows
