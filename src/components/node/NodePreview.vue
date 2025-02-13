@@ -82,6 +82,7 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
 
 <script setup lang="ts">
 import _ from 'lodash'
+import { Tooltip } from 'primevue'
 import { computed } from 'vue'
 
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -126,6 +127,8 @@ const truncateDefaultValue = (value: any, charLimit: number = 32): string => {
 
   return _.truncate(stringValue, { length: charLimit })
 }
+
+const vTooltip = Tooltip
 </script>
 
 <style scoped>
