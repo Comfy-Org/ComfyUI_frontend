@@ -756,10 +756,72 @@
   },
   "templateWorkflows": {
     "template": {
-      "default": "Génération d'images",
-      "flux_schnell": "Flux Schnell",
-      "image2image": "Image à Image",
-      "upscale": "Upscale en 2 passes"
+      "3D": {
+        "stable_zero123_example": "Stable Zero123"
+      },
+      "Audio": {
+        "stable_audio_example": "Stable Audio"
+      },
+      "Basics": {
+        "default": "Génération d'Image",
+        "embedding_example": "Intégration",
+        "gligen_textbox_example": "Boîte de Texte Gligen",
+        "image2image": "Image à Image",
+        "inpain_model_outpainting": "Modèle Inpaint Outpainting",
+        "inpaint_example": "Inpaint",
+        "lora": "Lora",
+        "lora_multiple": "Lora Multiple",
+        "yosemite_outpaint_example": "Yosemite Outpaint"
+      },
+      "Comfy - Area Composition": {
+        "area_composition": "Composition de Zone",
+        "area_composition_reversed": "Composition de Zone Inversée",
+        "area_composition_square_area_for_subject": "Composition de Zone Carrée pour le Sujet"
+      },
+      "ControlNet": {
+        "2_pass_pose_worship": "2 Passes Pose Worship",
+        "controlnet_example": "ControlNet",
+        "depth_controlnet": "Profondeur ControlNet",
+        "depth_t2i_adapter": "Adaptateur Profondeur T2I",
+        "mixing_controlnets": "Mélange de ControlNets"
+      },
+      "Flux": {
+        "flux_canny_model_example": "Flux Canny Model",
+        "flux_depth_lora_example": "Flux Depth Lora",
+        "flux_dev_example": "Flux Dev",
+        "flux_fill_inpaint_example": "Flux Inpaint",
+        "flux_fill_outpaint_example": "Flux Outpaint",
+        "flux_redux_model_example": "Flux Redux Model",
+        "flux_schnell": "Flux Schnell"
+      },
+      "SD3.5": {
+        "sd3.5_large_blur": "SD3.5 Grand Flou",
+        "sd3.5_large_canny_controlnet_example": "SD3.5 Grand Canny ControlNet",
+        "sd3.5_large_depth": "SD3.5 Grande Profondeur",
+        "sd3.5_simple_example": "SD3.5 Simple"
+      },
+      "SDXL": {
+        "sdxl_refiner_prompt_example": "SDXL Refiner Prompt",
+        "sdxl_revision_text_prompts": "Révisions de Texte SDXL",
+        "sdxl_revision_zero_positive": "Révision Zéro Positive SDXL",
+        "sdxl_simple_example": "SDXL Simple",
+        "sdxlturbo_example": "SDXL Turbo"
+      },
+      "Upscaling": {
+        "esrgan_example": "ESRGAN",
+        "hiresfix_esrgan_workflow": "Flux de Travail ESRGAN HiresFix",
+        "hiresfix_latent_workflow": "Flux de Travail Latent HiresFix",
+        "latent_upscale_different_prompt_model": "Modèle d'Agrandissement Latent Différent Prompt",
+        "upscale": "Agrandissement"
+      },
+      "Video": {
+        "hunyuan_video_text_to_video": "Texte à Vidéo Hunyuan",
+        "image_to_video": "Image à Vidéo",
+        "ltxv_image_to_video": "LTXV Image à Vidéo",
+        "ltxv_text_to_video": "LTXV Texte à Vidéo",
+        "mochi_text_to_video_example": "Exemple de Texte à Vidéo Mochi",
+        "txt_to_image_to_video": "Texte à Image à Vidéo"
+      }
     },
     "title": "Commencez avec un modèle"
   },

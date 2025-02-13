@@ -756,10 +756,72 @@
   },
   "templateWorkflows": {
     "template": {
-      "default": "画像生成",
-      "flux_schnell": "Flux Schnell",
-      "image2image": "画像から画像へ",
-      "upscale": "2パスアップスケール"
+      "3D": {
+        "stable_zero123_example": "Stable Zero123"
+      },
+      "Audio": {
+        "stable_audio_example": "Stable Audio"
+      },
+      "Basics": {
+        "default": "画像生成",
+        "embedding_example": "埋め込み",
+        "gligen_textbox_example": "Gligenテキストボックス",
+        "image2image": "画像から画像へ",
+        "inpain_model_outpainting": "InpaintモデルのOutpainting",
+        "inpaint_example": "Inpaint",
+        "lora": "Lora",
+        "lora_multiple": "Lora複数",
+        "yosemite_outpaint_example": "Yosemite Outpaint"
+      },
+      "Comfy - Area Composition": {
+        "area_composition": "エリア構成",
+        "area_composition_reversed": "エリア構成反転",
+        "area_composition_square_area_for_subject": "主題のためのエリア構成スクエアエリア"
+      },
+      "ControlNet": {
+        "2_pass_pose_worship": "2 Pass Pose Worship",
+        "controlnet_example": "ControlNet",
+        "depth_controlnet": "Depth ControlNet",
+        "depth_t2i_adapter": "Depth T2Iアダプタ",
+        "mixing_controlnets": "ControlNetsの混合"
+      },
+      "Flux": {
+        "flux_canny_model_example": "Flux Cannyモデル",
+        "flux_depth_lora_example": "Flux Depth Lora",
+        "flux_dev_example": "Flux Dev",
+        "flux_fill_inpaint_example": "Flux Inpaint",
+        "flux_fill_outpaint_example": "Flux Outpaint",
+        "flux_redux_model_example": "Flux Reduxモデル",
+        "flux_schnell": "Flux Schnell"
+      },
+      "SD3.5": {
+        "sd3.5_large_blur": "SD3.5 Large Blur",
+        "sd3.5_large_canny_controlnet_example": "SD3.5 Large Canny ControlNet",
+        "sd3.5_large_depth": "SD3.5 Large Depth",
+        "sd3.5_simple_example": "SD3.5シンプル"
+      },
+      "SDXL": {
+        "sdxl_refiner_prompt_example": "SDXL Refinerプロンプト",
+        "sdxl_revision_text_prompts": "SDXL Revisionテキストプロンプト",
+        "sdxl_revision_zero_positive": "SDXL Revisionゼロポジティブ",
+        "sdxl_simple_example": "SDXLシンプル",
+        "sdxlturbo_example": "SDXLターボ"
+      },
+      "Upscaling": {
+        "esrgan_example": "ESRGAN",
+        "hiresfix_esrgan_workflow": "HiresFix ESRGANワークフロー",
+        "hiresfix_latent_workflow": "HiresFix Latentワークフロー",
+        "latent_upscale_different_prompt_model": "Latent Upscale異なるプロンプトモデル",
+        "upscale": "アップスケール"
+      },
+      "Video": {
+        "hunyuan_video_text_to_video": "Hunyuanビデオテキストからビデオへ",
+        "image_to_video": "画像からビデオへ",
+        "ltxv_image_to_video": "LTXV画像からビデオへ",
+        "ltxv_text_to_video": "LTXVテキストからビデオへ",
+        "mochi_text_to_video_example": "Mochiテキストからビデオへ",
+        "txt_to_image_to_video": "テキストから画像へ、画像からビデオへ"
+      }
     },
     "title": "テンプレートを利用して開始"
   },

@@ -756,10 +756,72 @@
   },
   "templateWorkflows": {
     "template": {
-      "default": "이미지 생성",
-      "flux_schnell": "FLUX Schenll",
-      "image2image": "이미지에서 이미지로",
-      "upscale": "2단계 업스케일"
+      "3D": {
+        "stable_zero123_example": "Stable Zero123"
+      },
+      "Audio": {
+        "stable_audio_example": "Stable Audio"
+      },
+      "Basics": {
+        "default": "이미지 생성",
+        "embedding_example": "임베딩",
+        "gligen_textbox_example": "Gligen 텍스트박스",
+        "image2image": "이미지에서 이미지로",
+        "inpain_model_outpainting": "Inpaint 모델 Outpainting",
+        "inpaint_example": "Inpaint",
+        "lora": "Lora",
+        "lora_multiple": "Lora 다중",
+        "yosemite_outpaint_example": "Yosemite Outpaint"
+      },
+      "Comfy - Area Composition": {
+        "area_composition": "영역 구성",
+        "area_composition_reversed": "영역 구성 반전",
+        "area_composition_square_area_for_subject": "주제에 대한 영역 구성 사각형"
+      },
+      "ControlNet": {
+        "2_pass_pose_worship": "2 패스 포즈 워십",
+        "controlnet_example": "ControlNet",
+        "depth_controlnet": "Depth ControlNet",
+        "depth_t2i_adapter": "Depth T2I 어댑터",
+        "mixing_controlnets": "ControlNets 혼합"
+      },
+      "Flux": {
+        "flux_canny_model_example": "Flux Canny 모델",
+        "flux_depth_lora_example": "Flux Depth Lora",
+        "flux_dev_example": "Flux 개발",
+        "flux_fill_inpaint_example": "Flux Inpaint",
+        "flux_fill_outpaint_example": "Flux Outpaint",
+        "flux_redux_model_example": "Flux Redux 모델",
+        "flux_schnell": "Flux Schnell"
+      },
+      "SD3.5": {
+        "sd3.5_large_blur": "SD3.5 큰 Blur",
+        "sd3.5_large_canny_controlnet_example": "SD3.5 큰 Canny ControlNet",
+        "sd3.5_large_depth": "SD3.5 큰 Depth",
+        "sd3.5_simple_example": "SD3.5 간단한 예"
+      },
+      "SDXL": {
+        "sdxl_refiner_prompt_example": "SDXL Refiner 프롬프트",
+        "sdxl_revision_text_prompts": "SDXL Revision 텍스트 프롬프트",
+        "sdxl_revision_zero_positive": "SDXL Revision Zero Positive",
+        "sdxl_simple_example": "SDXL 간단한 예",
+        "sdxlturbo_example": "SDXL Turbo"
+      },
+      "Upscaling": {
+        "esrgan_example": "ESRGAN",
+        "hiresfix_esrgan_workflow": "HiresFix ESRGAN 워크플로우",
+        "hiresfix_latent_workflow": "HiresFix Latent 워크플로우",
+        "latent_upscale_different_prompt_model": "Latent Upscale 다른 프롬프트 모델",
+        "upscale": "업스케일"
+      },
+      "Video": {
+        "hunyuan_video_text_to_video": "Hunyuan 비디오 텍스트에서 비디오로",
+        "image_to_video": "이미지에서 비디오로",
+        "ltxv_image_to_video": "LTXV 이미지에서 비디오로",
+        "ltxv_text_to_video": "LTXV 텍스트에서 비디오로",
+        "mochi_text_to_video_example": "Mochi 텍스트에서 비디오로",
+        "txt_to_image_to_video": "텍스트에서 이미지로, 그리고 비디오로"
+      }
     },
     "title": "템플릿으로 시작하기"
   },
