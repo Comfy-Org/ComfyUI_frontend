@@ -60,12 +60,12 @@ const thumbnailSrc = computed(() =>
     : `/api/workflow_templates/${sourceModule}/${template.name}.${template.mediaSubtype}`
 )
 const title = computed(() => {
-  return sourceModule !== 'default'
-    ? template.name
-    : t(
+  return sourceModule === 'default'
+    ? t(
         `templateWorkflows.template.${categoryTitle}.${template.name}`,
         template.name
       )
+    : template.name
 })
 </script>
 

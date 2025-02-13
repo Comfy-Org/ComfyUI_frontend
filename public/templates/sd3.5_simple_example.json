@@ -297,7 +297,7 @@
     {
       "name": "sd3.5_large_fp8_scaled.safetensors",
       "url": "https://huggingface.co/Comfy-Org/stable-diffusion-3.5-fp8/resolve/main/sd3.5_large_fp8_scaled.safetensors?download=true",
-      "directory": "models"
+      "directory": "checkpoints"
     }
   ]
 }
