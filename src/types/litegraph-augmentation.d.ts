@@ -24,25 +24,6 @@ declare module '@comfyorg/litegraph/dist/types/widgets' {
      * See extensions/core/dynamicPrompts.ts
      */
     dynamicPrompts?: boolean
-
-    /**
-     * The computed height of the widget. Used by customized node resize logic.
-     * See scripts/domWidget.ts for more details.
-     */
-    computedHeight?: number
-
-    /**
-     * Compute the layout size of the widget. Overrides {@link IBaseWidget.computeSize}.
-     */
-    computeLayoutSize?: (
-      this: IBaseWidget,
-      node: LGraphNode
-    ) => {
-      minHeight: number
-      maxHeight?: number
-      minWidth: number
-      maxWidth?: number
-    }
   }
 }
 
@@ -126,8 +107,6 @@ declare module '@comfyorg/litegraph' {
 
     /** @deprecated Unused */
     imageOffset?: number
-    /** Set by DOM widgets */
-    freeWidgetSpace?: number
     /** Callback for pasting an image file into the node */
     pasteFile?(file: File): void
   }
