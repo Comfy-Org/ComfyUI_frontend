@@ -161,6 +161,10 @@ export class LGraphNode implements Positionable, IPinnable {
     return `${LiteGraph.NODE_TEXT_SIZE}px Arial`
   }
 
+  get innerFontStyle(): string {
+    return `normal ${LiteGraph.NODE_SUBTEXT_SIZE}px Arial`
+  }
+
   graph: LGraph | null = null
   id: NodeId
   type: string | null = null
@@ -1681,25 +1685,31 @@ export class LGraphNode implements Positionable, IPinnable {
    * Internal method to measure the node for rendering.  Prefer {@link boundingRect} where possible.
    *
    * Populates {@link out} with the results in graph space.
+   * Populates {@link _collapsed_width} with the collapsed width if the node is collapsed.
    * Adjusts for title and collapsed status, but does not call {@link onBounding}.
    * @param out `x, y, width, height` are written to this array.
-   * @param pad Expands the area by this amount on each side.  Default: 0
+   * @param ctx The canvas context to use for measuring text.
    */
-  measure(out: Rect, pad = 0): void {
+  measure(out: Rect, ctx: CanvasRenderingContext2D): void {
     const titleMode = this.title_mode
     const renderTitle =
       titleMode != TitleMode.TRANSPARENT_TITLE &&
       titleMode != TitleMode.NO_TITLE
     const titleHeight = renderTitle ? LiteGraph.NODE_TITLE_HEIGHT : 0
 
-    out[0] = this.pos[0] - pad
-    out[1] = this.pos[1] + -titleHeight - pad
+    out[0] = this.pos[0]
+    out[1] = this.pos[1] + -titleHeight
     if (!this.flags?.collapsed) {
-      out[2] = this.size[0] + 2 * pad
-      out[3] = this.size[1] + titleHeight + 2 * pad
+      out[2] = this.size[0]
+      out[3] = this.size[1] + titleHeight
     } else {
-      out[2] = (this._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH) + 2 * pad
-      out[3] = LiteGraph.NODE_TITLE_HEIGHT + 2 * pad
+      ctx.font = this.innerFontStyle
+      this._collapsed_width = Math.min(
+        this.size[0],
+        ctx.measureText(this.getTitle() ?? "").width + LiteGraph.NODE_TITLE_HEIGHT * 2,
+      )
+      out[2] = (this._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH)
+      out[3] = LiteGraph.NODE_TITLE_HEIGHT
     }
   }
 
@@ -1726,9 +1736,9 @@ export class LGraphNode implements Positionable, IPinnable {
    * Calculates the render area of this node, populating both {@link boundingRect} and {@link renderArea}.
    * Called automatically at the start of every frame.
    */
-  updateArea(): void {
+  updateArea(ctx: CanvasRenderingContext2D): void {
     const bounds = this.#boundingRect
-    this.measure(bounds)
+    this.measure(bounds, ctx)
     this.onBounding?.(bounds)
 
     const renderArea = this.#renderArea

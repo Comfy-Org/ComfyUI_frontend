@@ -4052,7 +4052,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     const _nodes = nodes || this.graph._nodes
     for (const node of _nodes) {
-      node.updateArea()
+      node.updateArea(this.ctx)
       // Not in visible area
       if (!overlapBounding(this.visible_area, node.renderArea)) continue
 
@@ -4615,19 +4615,10 @@ export class LGraphCanvas implements ConnectionColorContext {
     // clip if required (mask)
     const shape = node._shape || RenderShape.BOX
     const size = LGraphCanvas.#temp_vec2
-    LGraphCanvas.#temp_vec2.set(node.size)
+    size.set(node.renderingSize)
 
-    if (node.flags.collapsed) {
+    if (node.collapsed) {
       ctx.font = this.inner_text_font
-      const title = node.getTitle ? node.getTitle() : node.title
-      if (title != null) {
-        node._collapsed_width = Math.min(
-          node.size[0],
-          ctx.measureText(title).width + LiteGraph.NODE_TITLE_HEIGHT * 2,
-        ) // LiteGraph.NODE_COLLAPSED_WIDTH;
-        size[0] = node._collapsed_width
-        size[1] = 0
-      }
     }
 
     if (node.clip_area) {
@@ -4807,7 +4798,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     // Normalised node dimensions
     const area = LGraphCanvas.#tmp_area
-    node.measure(area)
+    area.set(node.boundingRect)
     area[0] -= node.pos[0]
     area[1] -= node.pos[1]
 
