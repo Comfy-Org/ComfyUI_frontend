@@ -81,7 +81,7 @@ export const useStringWidget = () => {
       }
     }
 
-    if (inputData[1].dynamicPrompts != undefined)
+    if (inputData[1]?.dynamicPrompts != undefined)
       res.widget.dynamicPrompts = inputData[1].dynamicPrompts
 
     return res

@@ -20,7 +20,7 @@ export const useFloatWidget = () => {
     const inputOptions = inputData[1]
 
     const widgetType = sliderEnabled
-      ? inputOptions.display === 'slider'
+      ? inputOptions?.display === 'slider'
         ? 'slider'
         : 'number'
       : 'number'

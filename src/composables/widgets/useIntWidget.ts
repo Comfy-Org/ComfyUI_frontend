@@ -22,7 +22,7 @@ export const useIntWidget = () => {
     const sliderEnabled = !settingStore.get('Comfy.DisableSliders')
     const inputOptions = inputData[1]
     const widgetType = sliderEnabled
-      ? inputOptions.display === 'slider'
+      ? inputOptions?.display === 'slider'
         ? 'slider'
         : 'number'
       : 'number'
