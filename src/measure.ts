@@ -1,7 +1,6 @@
 // @ts-strict-ignore
 import type {
   Point,
-  Positionable,
   ReadOnlyPoint,
   ReadOnlyRect,
   Rect,
@@ -331,7 +330,7 @@ export function findPointOnCurve(
 }
 
 export function createBounds(
-  objects: Iterable<Positionable>,
+  objects: Iterable<{ boundingRect: ReadOnlyRect }>,
   padding: number = 10,
 ): ReadOnlyRect | null {
   const bounds = new Float32Array([Infinity, Infinity, -Infinity, -Infinity])

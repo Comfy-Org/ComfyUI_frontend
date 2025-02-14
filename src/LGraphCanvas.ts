@@ -4672,9 +4672,10 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     // render inputs and outputs
     if (!node.collapsed) {
-      const max_y = node.drawSlots(ctx, {
-        colorContext: this,
+      node.layoutSlots()
+      node.drawSlots(ctx, {
         connectingLink: this.connecting_links?.[0],
+        colorContext: this,
         editorAlpha: this.editor_alpha,
         lowQuality: this.low_quality,
       })
@@ -4682,6 +4683,11 @@ export class LGraphCanvas implements ConnectionColorContext {
       ctx.textAlign = "left"
       ctx.globalAlpha = 1
 
+      const slotsBounds = createBounds(
+        node.slots.map(slot => slot._layoutElement),
+        /** padding= */ 0,
+      )
+      const max_y = slotsBounds ? slotsBounds[1] + slotsBounds[3] : 0
       this.drawNodeWidgets(node, max_y, ctx)
     } else if (this.render_collapsed_slots) {
       node.drawCollapsedSlots(ctx)

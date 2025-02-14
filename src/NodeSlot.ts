@@ -27,6 +27,24 @@ interface IDrawOptions {
   highlight?: boolean
 }
 
+export function serializeSlot<T extends INodeSlot>(slot: T): T {
+  const serialized = { ...slot }
+  delete serialized._layoutElement
+  if ("_data" in serialized) {
+    delete serialized._data
+  }
+  return serialized
+}
+
+export function toNodeSlotClass(slot: INodeSlot): NodeSlot {
+  if (isINodeInputSlot(slot)) {
+    return new NodeInputSlot(slot)
+  } else if (isINodeOutputSlot(slot)) {
+    return new NodeOutputSlot(slot)
+  }
+  throw new Error("Invalid slot type")
+}
+
 export abstract class NodeSlot implements INodeSlot {
   name: string
   localized_name?: string
@@ -222,6 +240,10 @@ export abstract class NodeSlot implements INodeSlot {
   }
 }
 
+export function isINodeInputSlot(slot: INodeSlot): slot is INodeInputSlot {
+  return "link" in slot
+}
+
 export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
   link: LinkId | null
 
@@ -252,6 +274,10 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
 
     ctx.textAlign = originalTextAlign
   }
+}
+
+export function isINodeOutputSlot(slot: INodeSlot): slot is INodeOutputSlot {
+  return "links" in slot
 }
 
 export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {

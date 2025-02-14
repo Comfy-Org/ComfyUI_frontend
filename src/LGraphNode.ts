@@ -8,6 +8,7 @@ import type {
   INodeFlags,
   INodeInputSlot,
   INodeOutputSlot,
+  INodeSlot,
   IOptionalSlotData,
   IPinnable,
   ISlotType,
@@ -34,9 +35,10 @@ import { BadgePosition, LGraphBadge } from "./LGraphBadge"
 import { type LGraphNodeConstructor, LiteGraph } from "./litegraph"
 import { isInRectangle, isInRect, snapPoint } from "./measure"
 import { LLink } from "./LLink"
-import { ConnectionColorContext, NodeInputSlot, NodeOutputSlot } from "./NodeSlot"
+import { ConnectionColorContext, isINodeInputSlot, NodeInputSlot, NodeOutputSlot, serializeSlot, toNodeSlotClass } from "./NodeSlot"
 import { WIDGET_TYPE_MAP } from "./widgets/widgetMap"
 import { toClass } from "./utils/type"
+import { LayoutElement } from "./utils/layout"
 export type NodeId = number | string
 
 export interface INodePropertyInfo {
@@ -666,15 +668,8 @@ export class LGraphNode implements Positionable, IPinnable {
     if (this.constructor === LGraphNode && this.last_serialization)
       return this.last_serialization
 
-    if (this.inputs) o.inputs = this.inputs
-
-    if (this.outputs) {
-      // clear outputs last data (because data in connections is never serialized but stored inside the outputs info)
-      for (let i = 0; i < this.outputs.length; i++) {
-        delete this.outputs[i]._data
-      }
-      o.outputs = this.outputs
-    }
+    if (this.inputs) o.inputs = this.inputs.map(serializeSlot)
+    if (this.outputs) o.outputs = this.outputs.map(serializeSlot)
 
     if (this.title && this.title != this.constructor.title) o.title = this.title
 
@@ -3180,78 +3175,84 @@ export class LGraphNode implements Positionable, IPinnable {
     return LiteGraph.NODE_TEXT_HIGHLIGHT_COLOR ?? LiteGraph.NODE_SELECTED_TITLE_COLOR ?? LiteGraph.NODE_TEXT_COLOR
   }
 
+  get slots(): INodeSlot[] {
+    return [...this.inputs, ...this.outputs]
+  }
+
+  layoutSlot(slot: INodeSlot, options: {
+    slotIndex: number
+  }): void {
+    const { slotIndex } = options
+    const isInput = isINodeInputSlot(slot)
+    const pos = this.getConnectionPos(isInput, slotIndex)
+
+    slot._layoutElement = new LayoutElement({
+      value: slot,
+      boundingRect: [
+        pos[0] - this.pos[0] - LiteGraph.NODE_SLOT_HEIGHT * 0.5,
+        pos[1] - this.pos[1] - LiteGraph.NODE_SLOT_HEIGHT * 0.5,
+        LiteGraph.NODE_SLOT_HEIGHT,
+        LiteGraph.NODE_SLOT_HEIGHT,
+      ],
+    })
+  }
+
+  layoutSlots(): void {
+    for (const [i, slot] of this.inputs.entries()) {
+      this.layoutSlot(slot, {
+        slotIndex: i,
+      })
+    }
+    for (const [i, slot] of this.outputs.entries()) {
+      this.layoutSlot(slot, {
+        slotIndex: i,
+      })
+    }
+  }
+
+  #getMouseOverSlot(slot: INodeSlot): INodeSlot | null {
+    const isInput = isINodeInputSlot(slot)
+    const mouseOverId = this.mouseOver?.[isInput ? "inputId" : "outputId"] ?? -1
+    if (mouseOverId === -1) {
+      return null
+    }
+    return isInput ? this.inputs[mouseOverId] : this.outputs[mouseOverId]
+  }
+
+  #isMouseOverSlot(slot: INodeSlot): boolean {
+    return this.#getMouseOverSlot(slot) === slot
+  }
+
   /**
    * Draws the node's input and output slots.
-   * @returns The maximum y-coordinate of the slots.
-   * TODO: Calculate the bounding box of the slots and return it instead of the maximum y-coordinate.
    */
   drawSlots(ctx: CanvasRenderingContext2D, options: {
-    colorContext: ConnectionColorContext
     connectingLink: ConnectingLink | null
+    colorContext: ConnectionColorContext
     editorAlpha: number
     lowQuality: boolean
-  }): number {
-    const { colorContext, connectingLink, editorAlpha, lowQuality } = options
-    let max_y = 0
+  }) {
+    const { connectingLink, colorContext, editorAlpha, lowQuality } = options
 
-    // input connection slots
-    // Reuse slot_pos to avoid creating a new Float32Array on each iteration
-    const slot_pos = new Float32Array(2)
-    for (const [i, input] of (this.inputs ?? []).entries()) {
-      const slot = toClass(NodeInputSlot, input)
-
+    for (const slot of this.slots) {
       // change opacity of incompatible slots when dragging a connection
-      const isValid = slot.isValidTarget(connectingLink)
-      const highlight = isValid && this.mouseOver?.inputId === i
-      const label_color = highlight
+      const layoutElement = slot._layoutElement
+      const slotInstance = toNodeSlotClass(slot)
+      const isValid = slotInstance.isValidTarget(connectingLink)
+      const highlight = isValid && this.#isMouseOverSlot(slot)
+      const labelColor = highlight
         ? this.highlightColor
         : LiteGraph.NODE_TEXT_COLOR
       ctx.globalAlpha = isValid ? editorAlpha : 0.4 * editorAlpha
 
-      const pos = this.getConnectionPos(true, i, /* out= */slot_pos)
-      pos[0] -= this.pos[0]
-      pos[1] -= this.pos[1]
-
-      max_y = Math.max(max_y, pos[1] + LiteGraph.NODE_SLOT_HEIGHT * 0.5)
-
-      slot.draw(ctx, {
-        pos,
+      slotInstance.draw(ctx, {
+        pos: layoutElement.center,
         colorContext,
-        labelColor: label_color,
+        labelColor,
         lowQuality,
         renderText: !lowQuality,
         highlight,
       })
     }
-
-    // output connection slots
-    for (const [i, output] of (this.outputs ?? []).entries()) {
-      const slot = toClass(NodeOutputSlot, output)
-
-      // change opacity of incompatible slots when dragging a connection
-      const isValid = slot.isValidTarget(connectingLink)
-      const highlight = isValid && this.mouseOver?.outputId === i
-      const label_color = highlight
-        ? this.highlightColor
-        : LiteGraph.NODE_TEXT_COLOR
-      ctx.globalAlpha = isValid ? editorAlpha : 0.4 * editorAlpha
-
-      const pos = this.getConnectionPos(false, i, /* out= */slot_pos)
-      pos[0] -= this.pos[0]
-      pos[1] -= this.pos[1]
-
-      max_y = Math.max(max_y, pos[1] + LiteGraph.NODE_SLOT_HEIGHT * 0.5)
-
-      slot.draw(ctx, {
-        pos,
-        colorContext,
-        labelColor: label_color,
-        lowQuality,
-        renderText: !lowQuality,
-        highlight,
-      })
-    }
-
-    return max_y
   }
 }
