@@ -5574,14 +5574,6 @@ export class LGraphCanvas implements ConnectionColorContext {
     ctx.restore()
   }
 
-  adjustNodesSize(): void {
-    const nodes = this.graph._nodes
-    for (let i = 0; i < nodes.length; ++i) {
-      nodes[i].size = nodes[i].computeSize()
-    }
-    this.setDirty(true, true)
-  }
-
   /**
    * resizes the canvas to a given size, if no size is passed, then it tries to fill the parentNode
    * @todo Remove or rewrite
