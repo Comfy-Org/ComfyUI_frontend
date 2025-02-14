@@ -10,7 +10,7 @@ jest.mock('@/scripts/widgets', () => ({
 describe('useComboWidget', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    jest.clearAllMocks() // Clear mock state between tests
+    jest.clearAllMocks()
   })
 
   it('should handle undefined spec', () => {
@@ -19,7 +19,7 @@ describe('useComboWidget', () => {
       addWidget: jest.fn().mockReturnValue({ options: {} } as any)
     }
 
-    const inputSpec: InputSpec = ['INT', undefined]
+    const inputSpec: InputSpec = ['COMBO', undefined]
 
     const widget = constructor(
       mockNode as any,
@@ -34,7 +34,7 @@ describe('useComboWidget', () => {
       undefined, // default value
       expect.any(Function), // callback
       expect.objectContaining({
-        values: 'INT'
+        values: 'COMBO'
       })
     )
     expect(widget).toEqual({
