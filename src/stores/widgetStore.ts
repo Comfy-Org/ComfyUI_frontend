@@ -47,9 +47,11 @@ export const useWidgetStore = defineStore('widget', () => {
     if (Array.isArray(inputData[0]))
       return getDefaultValue(transformComboInput(inputData))
 
-    const widgetType = getWidgetType(inputData[0], inputData[1].name)
+    const widgetType = getWidgetType(inputData[0], inputData[1]?.name)
 
     const [_, props] = inputData
+
+    if (!props) return undefined
     if (props.default) return props.default
 
     if (widgetType === 'COMBO' && props.options?.length) return props.options[0]
@@ -63,7 +65,7 @@ export const useWidgetStore = defineStore('widget', () => {
           'COMBO',
           {
             options: inputData[0],
-            ...Object(inputData[1])
+            ...Object(inputData[1] || {})
           }
         ]
       : inputData
