@@ -88,17 +88,22 @@ class Load3DConfiguration {
     this.load3d.toggleCamera(cameraType)
 
     const showGrid = this.load3d.loadNodeProperty('Show Grid', true)
+
     this.load3d.toggleGrid(showGrid)
+
+    const showPreview = this.load3d.loadNodeProperty('Show Preview', true)
+
+    this.load3d.togglePreview(showPreview)
 
     const bgColor = this.load3d.loadNodeProperty('Background Color', '#282828')
 
     this.load3d.setBackgroundColor(bgColor)
 
-    const lightIntensity = this.load3d.loadNodeProperty('Light Intensity', '5')
+    const lightIntensity = this.load3d.loadNodeProperty('Light Intensity', 5)
 
     this.load3d.setLightIntensity(lightIntensity)
 
-    const fov = this.load3d.loadNodeProperty('FOV', '75')
+    const fov = this.load3d.loadNodeProperty('FOV', 75)
 
     this.load3d.setFOV(fov)
   }

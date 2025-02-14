@@ -1,4 +1,5 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
+import { toRaw } from 'vue'
 
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dAnimation from '@/extensions/core/load3d/Load3dAnimation'
@@ -21,8 +22,10 @@ export class Load3dService {
     container: HTMLElement,
     type: 'Load3D' | 'Load3DAnimation' | 'Preview3D' | 'Preview3DAnimation'
   ) {
-    if (this.nodeToLoad3dMap.has(node)) {
-      this.removeLoad3d(node)
+    const rawNode = toRaw(node)
+
+    if (this.nodeToLoad3dMap.has(rawNode)) {
+      this.removeLoad3d(rawNode)
     }
 
     const isAnimation = type.includes('Animation')
@@ -31,17 +34,32 @@ export class Load3dService {
 
     const isPreview = type.includes('Preview')
 
-    const instance = new Load3dClass(container, { createPreview: !isPreview })
+    const instance = new Load3dClass(container, {
+      createPreview: !isPreview,
+      node: rawNode
+    })
 
-    instance.setNode(node)
+    rawNode.onMouseEnter = function () {
+      instance.refreshViewport()
+    }
 
-    this.nodeToLoad3dMap.set(node, instance)
+    rawNode.onResize = function () {
+      instance.handleResize()
+    }
+
+    rawNode.onDrawBackground = function () {
+      instance.renderer.domElement.hidden = this.flags.collapsed ?? false
+    }
+
+    this.nodeToLoad3dMap.set(rawNode, instance)
 
     return instance
   }
 
   getLoad3d(node: LGraphNode): Load3d | Load3dAnimation | null {
-    return this.nodeToLoad3dMap.get(node) || null
+    const rawNode = toRaw(node)
+
+    return this.nodeToLoad3dMap.get(rawNode) || null
   }
 
   getNodeByLoad3d(load3d: Load3d | Load3dAnimation): LGraphNode | null {
@@ -54,10 +72,14 @@ export class Load3dService {
   }
 
   removeLoad3d(node: LGraphNode) {
-    const instance = this.nodeToLoad3dMap.get(node)
+    const rawNode = toRaw(node)
+
+    const instance = this.nodeToLoad3dMap.get(rawNode)
+
     if (instance) {
       instance.remove()
-      this.nodeToLoad3dMap.delete(node)
+
+      this.nodeToLoad3dMap.delete(rawNode)
     }
   }
 

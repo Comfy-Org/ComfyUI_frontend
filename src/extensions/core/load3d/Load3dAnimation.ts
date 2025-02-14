@@ -6,6 +6,11 @@ import { createApp } from 'vue'
 import Load3DAnimationControls from '@/components/load3d/Load3DAnimationControls.vue'
 import Load3d from '@/extensions/core/load3d/Load3d'
 
+interface AnimationItem {
+  name: string
+  index: number
+}
+
 class Load3dAnimation extends Load3d {
   currentAnimation: THREE.AnimationMixer | null = null
   animationActions: THREE.AnimationAction[] = []
@@ -22,53 +27,17 @@ class Load3dAnimation extends Load3d {
     super(container, options)
   }
 
-  protected mountControls(options: { createPreview?: boolean } = {}) {
-    const controlsMount = document.createElement('div')
-    controlsMount.style.pointerEvents = 'auto'
-    this.controlsContainer.appendChild(controlsMount)
-
-    this.controlsApp = createApp(Load3DAnimationControls, {
-      backgroundColor: '#282828',
-      showGrid: true,
-      showPreview: options.createPreview,
-      animations: [],
-      playing: false,
-      lightIntensity: 5,
-      showLightIntensityButton: true,
-      fov: 75,
-      showFOVButton: true,
-      showPreviewButton: options.createPreview,
-      onToggleCamera: () => this.toggleCamera(),
-      onToggleGrid: (show: boolean) => this.toggleGrid(show),
-      onTogglePreview: (show: boolean) => this.togglePreview(show),
-      onUpdateBackgroundColor: (color: string) =>
-        this.setBackgroundColor(color),
-      onTogglePlay: (play: boolean) => this.toggleAnimation(play),
-      onSpeedChange: (speed: number) => this.setAnimationSpeed(speed),
-      onAnimationChange: (selectedAnimation: number) =>
-        this.updateSelectedAnimation(selectedAnimation),
-      onUpdateLightIntensity: (lightIntensity: number) =>
-        this.setLightIntensity(lightIntensity),
-      onUpdateFOV: (fov: number) => this.setFOV(fov)
-    })
-
-    this.controlsApp.use(PrimeVue)
-    this.controlsApp.directive('tooltip', Tooltip)
-    this.controlsApp.mount(controlsMount)
-  }
-
   updateAnimationList() {
-    if (this.controlsApp?._instance?.exposed) {
-      if (this.animationClips.length > 0) {
-        this.controlsApp._instance.exposed.animations.value =
-          this.animationClips.map((clip, index) => ({
-            name: clip.name || `Animation ${index + 1}`,
-            index
-          }))
-      } else {
-        this.controlsApp._instance.exposed.animations.value = []
-      }
+    let updatedAnimationList: AnimationItem[] = []
+
+    if (this.animationClips.length > 0) {
+      updatedAnimationList = this.animationClips.map((clip, index) => ({
+        name: clip.name || `Animation ${index + 1}`,
+        index
+      }))
     }
+
+    this.emitEvent('animationListChange', updatedAnimationList)
   }
 
   protected async setupModel(model: THREE.Object3D) {
@@ -146,10 +115,6 @@ class Load3dAnimation extends Load3d {
     }
 
     this.animationActions = [action]
-
-    if (this.controlsApp?._instance?.exposed) {
-      this.controlsApp._instance.exposed.selectedAnimation.value = index
-    }
   }
 
   clearModel() {
@@ -165,10 +130,7 @@ class Load3dAnimation extends Load3d {
     this.isAnimationPlaying = false
     this.animationSpeed = 1.0
 
-    if (this.controlsApp?._instance?.exposed) {
-      this.controlsApp._instance.exposed.animations.value = []
-      this.controlsApp._instance.exposed.selectedAnimation.value = 0
-    }
+    this.emitEvent('animationListChange', [])
 
     super.clearModel()
   }
@@ -180,10 +142,6 @@ class Load3dAnimation extends Load3d {
     }
 
     this.isAnimationPlaying = play ?? !this.isAnimationPlaying
-
-    if (this.controlsApp?._instance?.exposed) {
-      this.controlsApp._instance.exposed.playing.value = this.isAnimationPlaying
-    }
 
     this.animationActions.forEach((action) => {
       if (this.isAnimationPlaying) {
@@ -231,4 +189,5 @@ class Load3dAnimation extends Load3d {
   }
 }
 
+export { AnimationItem }
 export default Load3dAnimation
