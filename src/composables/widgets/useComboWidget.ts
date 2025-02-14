@@ -15,7 +15,7 @@ export const useComboWidget = () => {
     inputData: InputSpec
   ) => {
     const widgetStore = useWidgetStore()
-    const { remote, options } = inputData[1]
+    const { remote, options } = inputData[1] || {}
     const defaultValue = widgetStore.getDefaultValue(inputData)
 
     const res = {
