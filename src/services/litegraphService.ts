@@ -142,7 +142,7 @@ export const useLitegraphService = () => {
         const s = this.computeSize()
         s[0] = Math.max(config.minWidth, s[0] * 1.5)
         s[1] = Math.max(config.minHeight, s[1])
-        this.size = s
+        this.setSize(s)
         this.serialize_widgets = true
 
         extensionService.invokeExtensionsAsync('nodeCreated', this)

@@ -155,7 +155,7 @@ app.registerExtension({
             node.outputs[0].name = node.properties.showOutputText
               ? displayType
               : ''
-            node.size = node.computeSize()
+            node.setSize(node.computeSize())
 
             for (const l of node.outputs[0].links || []) {
               const link = app.graph.links[l]
@@ -214,7 +214,7 @@ app.registerExtension({
           const cloned = RerouteNode.prototype.clone.apply(this)
           cloned.removeOutput(0)
           cloned.addOutput(this.properties.showOutputText ? '*' : '', '*')
-          cloned.size = cloned.computeSize()
+          cloned.setSize(cloned.computeSize())
           return cloned
         }
 
@@ -235,7 +235,7 @@ app.registerExtension({
               } else {
                 this.outputs[0].name = ''
               }
-              this.size = this.computeSize()
+              this.setSize(this.computeSize())
               app.graph.setDirtyCanvas(true, true)
             }
           },
