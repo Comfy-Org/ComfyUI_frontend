@@ -1163,8 +1163,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     if (!node) return
 
     const fApplyMultiNode = function (node: LGraphNode) {
-      node.size = node.computeSize()
-      node.onResize?.(node.size)
+      node.setSize(node.computeSize())
     }
 
     const canvas = LGraphCanvas.active_canvas
