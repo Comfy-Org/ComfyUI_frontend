@@ -1147,7 +1147,7 @@ export class ComfyApp {
       const size = node.computeSize()
       size[0] = Math.max(node.size[0], size[0])
       size[1] = Math.max(node.size[1], size[1])
-      node.size = size
+      node.setSize(size)
       if (node.widgets) {
         // If you break something in the backend and want to patch workflows in the frontend
         // This is the place to do this

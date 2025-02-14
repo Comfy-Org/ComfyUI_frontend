@@ -285,10 +285,10 @@ class PrimitiveNode extends LGraphNode {
     }
 
     // Use the biggest dimensions in case the widgets caused the node to grow
-    this.size = [
+    this.setSize([
       Math.max(this.size[0], oldWidth),
       Math.max(this.size[1], oldHeight)
-    ]
+    ])
 
     if (!recreating) {
       // Grow our node more if required

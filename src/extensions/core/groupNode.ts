@@ -833,10 +833,10 @@ export class GroupNodeHandler {
       groupNode.setInnerNodes(nodes)
       groupNode[GROUP].populateWidgets()
       app.graph.add(groupNode)
-      groupNode.size = [
+      groupNode.setSize([
         Math.max(groupNode.size[0], sz[0]),
         Math.max(groupNode.size[1], sz[1])
-      ]
+      ])
 
       // Remove all converted nodes and relink them
       const builder = new GroupNodeBuilder(nodes)
