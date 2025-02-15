@@ -16,6 +16,7 @@ export default defineConfig({
 
   plugins: [
     dts({
+      copyDtsFiles: true,
       rollupTypes: true,
       tsconfigPath: 'tsconfig.types.json'
     })
