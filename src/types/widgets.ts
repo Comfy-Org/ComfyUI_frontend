@@ -122,8 +122,25 @@ export interface IBaseWidget<TElement extends HTMLElement = HTMLElement> {
   /** Widget type (see {@link TWidgetType}) */
   type?: TWidgetType
   value?: TWidgetValue
+
+  /**
+   * The computed height of the widget. Used by customized node resize logic.
+   * See scripts/domWidget.ts for more details.
+   */
+  computedHeight?: number
+
+  /**
+   * The starting y position of the widget after layout.
+   */
   y?: number
+
+  /**
+   * The y position of the widget after drawing (rendering).
+   * @deprecated There is no longer dynamic y adjustment on rendering anymore.
+   * Use {@link IBaseWidget.y} instead.
+   */
   last_y?: number
+
   width?: number
   disabled?: boolean
 
@@ -159,7 +176,29 @@ export interface IBaseWidget<TElement extends HTMLElement = HTMLElement> {
     y: number,
     H: number,
   ): void
+
+  /**
+   * Compute the size of the widget.
+   * @param width The width of the widget.
+   * @deprecated Use {@link IBaseWidget.computeLayoutSize} instead.
+   * @returns The size of the widget.
+   */
   computeSize?(width?: number): Size
+
+  /**
+   * Compute the layout size of the widget. Overrides {@link IBaseWidget.computeSize}.
+   * @param node The node this widget belongs to.
+   * @returns The layout size of the widget.
+   */
+  computeLayoutSize?: (
+    this: IBaseWidget,
+    node: LGraphNode
+  ) => {
+    minHeight: number
+    maxHeight?: number
+    minWidth: number
+    maxWidth?: number
+  }
 
   /**
    * Callback for pointerdown events, allowing custom widgets to register callbacks to occur

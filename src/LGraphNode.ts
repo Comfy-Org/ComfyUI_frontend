@@ -19,7 +19,7 @@ import type {
   Size,
 } from "./interfaces"
 import type { LGraph } from "./LGraph"
-import type { IWidget, TWidgetValue } from "./types/widgets"
+import type { IBaseWidget, IWidget, TWidgetValue } from "./types/widgets"
 import type { ISerialisedNode } from "./types/serialisation"
 import type { LGraphCanvas } from "./LGraphCanvas"
 import type { CanvasMouseEvent } from "./types/events"
@@ -39,6 +39,8 @@ import { ConnectionColorContext, isINodeInputSlot, NodeInputSlot, NodeOutputSlot
 import { WIDGET_TYPE_MAP } from "./widgets/widgetMap"
 import { toClass } from "./utils/type"
 import { LayoutElement } from "./utils/layout"
+import { distributeSpace } from "./utils/spaceDistribution"
+
 export type NodeId = number | string
 
 export interface INodePropertyInfo {
@@ -176,6 +178,12 @@ export class LGraphNode implements Positionable, IPinnable {
   properties_info: INodePropertyInfo[] = []
   flags: INodeFlags = {}
   widgets?: IWidget[]
+  /**
+   * The amount of space available for widgets to grow into.
+   * @see {@link layoutWidgets}
+   */
+  freeWidgetSpace?: number
+
   locked?: boolean
 
   // Execution order, automatically computed during run
@@ -1517,13 +1525,18 @@ export class LGraphNode implements Positionable, IPinnable {
 
     let widgets_height = 0
     if (this.widgets?.length) {
-      for (let i = 0, l = this.widgets.length; i < l; ++i) {
-        const widget = this.widgets[i]
+      for (const widget of this.widgets) {
         if (widget.hidden || (widget.advanced && !this.showAdvanced)) continue
 
-        widgets_height += widget.computeSize
-          ? widget.computeSize(size[0])[1] + 4
-          : LiteGraph.NODE_WIDGET_HEIGHT + 4
+        let widget_height = 0
+        if (widget.computeLayoutSize) {
+          widget_height += widget.computeLayoutSize(this).minHeight
+        } else if (widget.computeSize) {
+          widget_height += widget.computeSize(size[0])[1]
+        } else {
+          widget_height += LiteGraph.NODE_WIDGET_HEIGHT
+        }
+        widgets_height += widget_height + 4
       }
       widgets_height += 8
     }
@@ -2792,8 +2805,14 @@ export class LGraphNode implements Positionable, IPinnable {
    * Returns the height of the node, including the title bar.
    */
   get height() {
-    const bodyHeight = this.collapsed ? 0 : this.size[1]
-    return LiteGraph.NODE_TITLE_HEIGHT + bodyHeight
+    return LiteGraph.NODE_TITLE_HEIGHT + this.bodyHeight
+  }
+
+  /**
+   * Returns the height of the node, excluding the title bar.
+   */
+  get bodyHeight() {
+    return this.collapsed ? 0 : this.size[1]
   }
 
   drawBadges(ctx: CanvasRenderingContext2D, { gap = 2 } = {}): void {
@@ -3082,7 +3101,6 @@ export class LGraphNode implements Positionable, IPinnable {
   }
 
   drawWidgets(ctx: CanvasRenderingContext2D, options: {
-    y: number
     colorContext: ConnectionColorContext
     linkOverWidget: IWidget
     linkOverWidgetType: ISlotType
@@ -3091,16 +3109,10 @@ export class LGraphNode implements Positionable, IPinnable {
   }): void {
     if (!this.widgets) return
 
-    const { y, colorContext, linkOverWidget, linkOverWidgetType, lowQuality = false, editorAlpha = 1 } = options
-    let posY = y
-    if (this.widgets_up) {
-      posY = 2
-    }
-    if (this.widgets_start_y != null) posY = this.widgets_start_y
+    const { colorContext, linkOverWidget, linkOverWidgetType, lowQuality = false, editorAlpha = 1 } = options
 
     const width = this.size[0]
     const widgets = this.widgets
-    posY += 2
     const H = LiteGraph.NODE_WIDGET_HEIGHT
     const show_text = !lowQuality
     ctx.save()
@@ -3109,7 +3121,7 @@ export class LGraphNode implements Positionable, IPinnable {
 
     for (const w of widgets) {
       if (w.hidden || (w.advanced && !this.showAdvanced)) continue
-      const y = w.y || posY
+      const y = w.y
       const outline_color = w.advanced ? LiteGraph.WIDGET_ADVANCED_OUTLINE_COLOR : LiteGraph.WIDGET_OUTLINE_COLOR
 
       if (w === linkOverWidget) {
@@ -3134,7 +3146,6 @@ export class LGraphNode implements Positionable, IPinnable {
       } else {
         w.draw?.(ctx, this, widget_width, y, H)
       }
-      posY += (w.computeSize ? w.computeSize(widget_width)[1] : H) + 4
       ctx.globalAlpha = editorAlpha
     }
     ctx.restore()
@@ -3263,6 +3274,75 @@ export class LGraphNode implements Positionable, IPinnable {
         renderText: !lowQuality,
         highlight,
       })
+    }
+  }
+
+  /**
+   * Lays out the node's widgets vertically.
+   * Sets following properties on each widget:
+   * -  {@link IBaseWidget.computedHeight}
+   * -  {@link IBaseWidget.y}
+   */
+  layoutWidgets(options: { widgetStartY: number }): void {
+    if (!this.widgets || !this.widgets.length) return
+
+    const bodyHeight = this.bodyHeight
+    const widgetStartY = this.widgets_start_y ?? (
+      (this.widgets_up ? 0 : options.widgetStartY) + 2
+    )
+
+    let freeSpace = bodyHeight - widgetStartY
+
+    // Collect fixed height widgets first
+    let fixedWidgetHeight = 0
+    const growableWidgets: {
+      minHeight: number
+      prefHeight: number
+      w: IBaseWidget
+    }[] = []
+
+    for (const w of this.widgets) {
+      if (w.computeLayoutSize) {
+        const { minHeight, maxHeight } = w.computeLayoutSize(this)
+        growableWidgets.push({
+          minHeight,
+          prefHeight: maxHeight,
+          w,
+        })
+      } else if (w.computeSize) {
+        const height = w.computeSize()[1] + 4
+        w.computedHeight = height
+        fixedWidgetHeight += height
+      } else {
+        const height = LiteGraph.NODE_WIDGET_HEIGHT + 4
+        w.computedHeight = height
+        fixedWidgetHeight += height
+      }
+    }
+
+    // Calculate remaining space for DOM widgets
+    freeSpace -= fixedWidgetHeight
+    this.freeWidgetSpace = freeSpace
+
+    // Prepare space requests for distribution
+    const spaceRequests = growableWidgets.map(d => ({
+      minSize: d.minHeight,
+      maxSize: d.prefHeight,
+    }))
+
+    // Distribute space among DOM widgets
+    const allocations = distributeSpace(Math.max(0, freeSpace), spaceRequests)
+
+    // Apply computed heights
+    growableWidgets.forEach((d, i) => {
+      d.w.computedHeight = allocations[i]
+    })
+
+    // Position widgets
+    let y = widgetStartY
+    for (const w of this.widgets) {
+      w.y = y
+      y += w.computedHeight
     }
   }
 }
