@@ -1,16 +1,14 @@
-import { LGraphCanvas, LGraphNode, LiteGraph } from '@comfyorg/litegraph'
+import { LGraphCanvas, LGraphNode } from '@comfyorg/litegraph'
 import type { Size, Vector4 } from '@comfyorg/litegraph'
 import type { ISerialisedNode } from '@comfyorg/litegraph/dist/types/serialisation'
 import type {
   ICustomWidget,
-  IWidget,
   IWidgetOptions
 } from '@comfyorg/litegraph/dist/types/widgets'
 
 import { useSettingStore } from '@/stores/settingStore'
-import { distributeSpace } from '@/utils/spaceDistribution'
 
-import { ANIM_PREVIEW_WIDGET, app } from './app'
+import { app } from './app'
 
 const SIZE = Symbol()
 
@@ -19,13 +17,6 @@ interface Rect {
   width: number
   x: number
   y: number
-}
-
-interface SizeInfo {
-  minHeight: number
-  prefHeight?: number
-  w: IWidget
-  diff?: number
 }
 
 export interface DOMWidget<T extends HTMLElement, V extends object | string>
@@ -128,79 +119,6 @@ function getClipPath(
   return ''
 }
 
-function computeSize(this: LGraphNode, size: Size): void {
-  if (!this.widgets?.[0]?.last_y) return
-
-  let y = this.widgets[0].last_y
-  let freeSpace = size[1] - y
-
-  // Collect fixed height widgets first
-  let fixedWidgetHeight = 0
-  const layoutWidgets: SizeInfo[] = []
-
-  for (const w of this.widgets) {
-    // @ts-expect-error custom widget type
-    if (w.type === 'converted-widget') {
-      // Ignore
-      // @ts-expect-error custom widget type
-      delete w.computedHeight
-    } else if (w.computeLayoutSize) {
-      const { minHeight, maxHeight } = w.computeLayoutSize(this)
-      layoutWidgets.push({
-        minHeight,
-        prefHeight: maxHeight,
-        w
-      })
-    } else if (w.computeSize) {
-      fixedWidgetHeight += w.computeSize()[1] + 4
-    } else {
-      fixedWidgetHeight += LiteGraph.NODE_WIDGET_HEIGHT + 4
-    }
-  }
-
-  if (this.imgs && !this.widgets?.find((w) => w.name === ANIM_PREVIEW_WIDGET)) {
-    fixedWidgetHeight += 220
-  }
-
-  // Calculate remaining space for DOM widgets
-  freeSpace -= fixedWidgetHeight
-  this.freeWidgetSpace = freeSpace
-
-  // Prepare space requests for distribution
-  const spaceRequests = layoutWidgets.map((d) => ({
-    minSize: d.minHeight,
-    maxSize: d.prefHeight
-  }))
-
-  // Distribute space among DOM widgets
-  const allocations = distributeSpace(Math.max(0, freeSpace), spaceRequests)
-
-  // Apply computed heights
-  layoutWidgets.forEach((d, i) => {
-    d.w.computedHeight = allocations[i]
-  })
-
-  // If we need more space, grow the node
-  const totalNeeded =
-    fixedWidgetHeight + allocations.reduce((sum, h) => sum + h, 0)
-  if (totalNeeded > size[1] - this.widgets[0].last_y) {
-    size[1] = totalNeeded + this.widgets[0].last_y
-    this.graph?.setDirtyCanvas(true)
-  }
-
-  // Position widgets
-  for (const w of this.widgets) {
-    w.y = y
-    if (w.computedHeight) {
-      y += w.computedHeight
-    } else if (w.computeSize) {
-      y += w.computeSize()[1] + 4
-    } else {
-      y += LiteGraph.NODE_WIDGET_HEIGHT + 4
-    }
-  }
-}
-
 // Override the compute visible nodes function to allow us to hide/show DOM elements when the node goes offscreen
 const elementWidgets = new Set<LGraphNode>()
 const computeVisibleNodes = LGraphCanvas.prototype.computeVisibleNodes
@@ -277,6 +195,15 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
 
   /** Extract DOM widget size info */
   computeLayoutSize(node: LGraphNode) {
+    // @ts-expect-error custom widget type
+    if (this.type === 'hidden') {
+      return {
+        minHeight: 0,
+        maxHeight: 0,
+        minWidth: 0
+      }
+    }
+
     const styles = getComputedStyle(this.element)
     let minHeight =
       this.options.getMinHeight?.() ??
@@ -315,10 +242,6 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
     widgetWidth: number,
     y: number
   ): void {
-    if (this.computedHeight == null) {
-      computeSize.call(node, node.size)
-    }
-
     const { offset, scale } = app.canvas.ds
     const hidden =
       (!!this.options.hideOnZoom && app.canvas.low_quality) ||
@@ -461,7 +384,6 @@ LGraphNode.prototype.addDOMWidget = function <
     const onResize = this.onResize
     this.onResize = function (this: LGraphNode, size: Size) {
       options.beforeResize?.call(widget, this)
-      computeSize.call(this, size)
       onResize?.call(this, size)
       options.afterResize?.call(widget, this)
     }
