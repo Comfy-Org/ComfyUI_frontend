@@ -195,6 +195,15 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
 
   /** Extract DOM widget size info */
   computeLayoutSize(node: LGraphNode) {
+    // @ts-expect-error custom widget type
+    if (this.type === 'hidden') {
+      return {
+        minHeight: 0,
+        maxHeight: 0,
+        minWidth: 0
+      }
+    }
+
     const styles = getComputedStyle(this.element)
     let minHeight =
       this.options.getMinHeight?.() ??
