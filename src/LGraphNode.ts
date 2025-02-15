@@ -1529,10 +1529,10 @@ export class LGraphNode implements Positionable, IPinnable {
         if (widget.hidden || (widget.advanced && !this.showAdvanced)) continue
 
         let widget_height = 0
-        if (widget.computeLayoutSize) {
-          widget_height += widget.computeLayoutSize(this).minHeight
-        } else if (widget.computeSize) {
+        if (widget.computeSize) {
           widget_height += widget.computeSize(size[0])[1]
+        } else if (widget.computeLayoutSize) {
+          widget_height += widget.computeLayoutSize(this).minHeight
         } else {
           widget_height += LiteGraph.NODE_WIDGET_HEIGHT
         }
@@ -3302,17 +3302,17 @@ export class LGraphNode implements Positionable, IPinnable {
     }[] = []
 
     for (const w of this.widgets) {
-      if (w.computeLayoutSize) {
+      if (w.computeSize) {
+        const height = w.computeSize()[1] + 4
+        w.computedHeight = height
+        fixedWidgetHeight += height
+      } else if (w.computeLayoutSize) {
         const { minHeight, maxHeight } = w.computeLayoutSize(this)
         growableWidgets.push({
           minHeight,
           prefHeight: maxHeight,
           w,
         })
-      } else if (w.computeSize) {
-        const height = w.computeSize()[1] + 4
-        w.computedHeight = height
-        fixedWidgetHeight += height
       } else {
         const height = LiteGraph.NODE_WIDGET_HEIGHT + 4
         w.computedHeight = height

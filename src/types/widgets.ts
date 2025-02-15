@@ -178,7 +178,7 @@ export interface IBaseWidget<TElement extends HTMLElement = HTMLElement> {
   ): void
 
   /**
-   * Compute the size of the widget.
+   * Compute the size of the widget. Overrides {@link IBaseWidget.computeSize}.
    * @param width The width of the widget.
    * @deprecated Use {@link IBaseWidget.computeLayoutSize} instead.
    * @returns The size of the widget.
@@ -186,7 +186,7 @@ export interface IBaseWidget<TElement extends HTMLElement = HTMLElement> {
   computeSize?(width?: number): Size
 
   /**
-   * Compute the layout size of the widget. Overrides {@link IBaseWidget.computeSize}.
+   * Compute the layout size of the widget.
    * @param node The node this widget belongs to.
    * @returns The layout size of the widget.
    */
