@@ -1,15 +1,14 @@
-import { LGraphCanvas, LGraphNode, LiteGraph } from '@comfyorg/litegraph'
+import { LGraphCanvas, LGraphNode } from '@comfyorg/litegraph'
 import type { Size, Vector4 } from '@comfyorg/litegraph'
 import type { ISerialisedNode } from '@comfyorg/litegraph/dist/types/serialisation'
 import type {
   ICustomWidget,
-  IWidget,
   IWidgetOptions
 } from '@comfyorg/litegraph/dist/types/widgets'
 
 import { useSettingStore } from '@/stores/settingStore'
 
-import { ANIM_PREVIEW_WIDGET, app } from './app'
+import { app } from './app'
 
 const SIZE = Symbol()
 
@@ -18,13 +17,6 @@ interface Rect {
   width: number
   x: number
   y: number
-}
-
-interface SizeInfo {
-  minHeight: number
-  prefHeight?: number
-  w: IWidget
-  diff?: number
 }
 
 export interface DOMWidget<T extends HTMLElement, V extends object | string>
