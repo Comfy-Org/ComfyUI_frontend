@@ -93,6 +93,7 @@
                 WorkflowTreeType.Bookmarks
               ).children
             "
+            :selectionKeys="selectionKeys"
           >
             <template #node="{ node }">
               <WorkflowTreeLeaf :node="node" />
@@ -110,6 +111,7 @@
               renderTreeNode(workflowsTree, WorkflowTreeType.Browse).children
             "
             v-model:expandedKeys="expandedKeys"
+            :selectionKeys="selectionKeys"
             v-if="workflowStore.persistedWorkflows.length > 0"
           >
             <template #node="{ node }">
