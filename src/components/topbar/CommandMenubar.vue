@@ -8,7 +8,7 @@
       item: 'relative'
     }"
   >
-    <template #item="{ item, props }">
+    <template #item="{ item, props, root }">
       <a
         class="p-menubar-item-link"
         v-bind="props.action"
@@ -23,6 +23,7 @@
         >
           {{ item.comfyCommand.keybinding.combo.toString() }}
         </span>
+        <i v-if="!root && item.items" class="ml-auto pi pi-angle-right" />
       </a>
     </template>
   </Menubar>
@@ -64,10 +65,6 @@ const translatedItems = computed(() =>
 </script>
 
 <style scoped>
-.top-menubar :deep(.p-menubar-item-link) svg {
-  display: none;
-}
-
 :deep(.p-menubar-submenu.dropdown-direction-up) {
   @apply top-auto bottom-full flex-col-reverse;
 }
