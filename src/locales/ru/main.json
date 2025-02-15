@@ -756,10 +756,72 @@
   },
   "templateWorkflows": {
     "template": {
-      "default": "Генерация изображений",
-      "flux_schnell": "Flux Schnell",
-      "image2image": "Изображение в изображение",
-      "upscale": "2-этапный апскейл"
+      "3D": {
+        "stable_zero123_example": "Stable Zero123"
+      },
+      "Audio": {
+        "stable_audio_example": "Stable Audio"
+      },
+      "Basics": {
+        "default": "Генерация изображений",
+        "embedding_example": "Встраивание",
+        "gligen_textbox_example": "Gligen Textbox",
+        "image2image": "Изображение в изображение",
+        "inpain_model_outpainting": "Inpaint Model Outpainting",
+        "inpaint_example": "Inpaint",
+        "lora": "Lora",
+        "lora_multiple": "Lora Multiple",
+        "yosemite_outpaint_example": "Yosemite Outpaint"
+      },
+      "Comfy - Area Composition": {
+        "area_composition": "Композиция области",
+        "area_composition_reversed": "Обратная композиция области",
+        "area_composition_square_area_for_subject": "Композиция области квадратной области для субъекта"
+      },
+      "ControlNet": {
+        "2_pass_pose_worship": "2 Pass Pose Worship",
+        "controlnet_example": "ControlNet",
+        "depth_controlnet": "Depth ControlNet",
+        "depth_t2i_adapter": "Depth T2I Adapter",
+        "mixing_controlnets": "Mixing ControlNets"
+      },
+      "Flux": {
+        "flux_canny_model_example": "Flux Canny Model",
+        "flux_depth_lora_example": "Flux Depth Lora",
+        "flux_dev_example": "Flux Dev",
+        "flux_fill_inpaint_example": "Flux Inpaint",
+        "flux_fill_outpaint_example": "Flux Outpaint",
+        "flux_redux_model_example": "Flux Redux Model",
+        "flux_schnell": "Flux Schnell"
+      },
+      "SD3.5": {
+        "sd3.5_large_blur": "SD3.5 Large Blur",
+        "sd3.5_large_canny_controlnet_example": "SD3.5 Large Canny ControlNet",
+        "sd3.5_large_depth": "SD3.5 Large Depth",
+        "sd3.5_simple_example": "SD3.5 Simple"
+      },
+      "SDXL": {
+        "sdxl_refiner_prompt_example": "SDXL Refiner Prompt",
+        "sdxl_revision_text_prompts": "SDXL Revision Text Prompts",
+        "sdxl_revision_zero_positive": "SDXL Revision Zero Positive",
+        "sdxl_simple_example": "SDXL Simple",
+        "sdxlturbo_example": "SDXL Turbo"
+      },
+      "Upscaling": {
+        "esrgan_example": "ESRGAN",
+        "hiresfix_esrgan_workflow": "HiresFix ESRGAN Workflow",
+        "hiresfix_latent_workflow": "HiresFix Latent Workflow",
+        "latent_upscale_different_prompt_model": "Latent Upscale Different Prompt Model",
+        "upscale": "Увеличение"
+      },
+      "Video": {
+        "hunyuan_video_text_to_video": "Hunyuan Video Text to Video",
+        "image_to_video": "Изображение в видео",
+        "ltxv_image_to_video": "LTXV Image to Video",
+        "ltxv_text_to_video": "LTXV Text to Video",
+        "mochi_text_to_video_example": "Mochi Text to Video",
+        "txt_to_image_to_video": "Текст в изображение в видео"
+      }
     },
     "title": "Начните с шаблона"
   },

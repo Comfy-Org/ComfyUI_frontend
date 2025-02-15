@@ -360,10 +360,72 @@
   "templateWorkflows": {
     "title": "Get Started with a Template",
     "template": {
-      "default": "Image Generation",
-      "image2image": "Image to Image",
-      "upscale": "2 Pass Upscale",
-      "flux_schnell": "Flux Schnell"
+      "Flux": {
+        "flux_dev_checkpoint_example": "Flux Dev",
+        "flux_schnell": "Flux Schnell",
+        "flux_fill_inpaint_example": "Flux Inpaint",
+        "flux_fill_outpaint_example": "Flux Outpaint",
+        "flux_canny_model_example": "Flux Canny Model",
+        "flux_redux_model_example": "Flux Redux Model",
+        "flux_depth_lora_example": "Flux Depth Lora"
+      },
+      "Basics": {
+        "default": "Image Generation",
+        "image2image": "Image to Image",
+        "embedding_example": "Embedding",
+        "gligen_textbox_example": "Gligen Textbox",
+        "lora": "Lora",
+        "lora_multiple": "Lora Multiple",
+        "inpaint_example": "Inpaint",
+        "yosemite_outpaint_example": "Yosemite Outpaint",
+        "inpain_model_outpainting": "Inpaint Model Outpainting"
+      },
+      "ControlNet": {
+        "controlnet_example": "ControlNet",
+        "2_pass_pose_worship": "2 Pass Pose Worship",
+        "depth_controlnet": "Depth ControlNet",
+        "depth_t2i_adapter": "Depth T2I Adapter",
+        "mixing_controlnets": "Mixing ControlNets"
+      },
+      "Upscaling": {
+        "upscale": "Upscale",
+        "esrgan_example": "ESRGAN",
+        "hiresfix_latent_workflow": "HiresFix Latent Workflow",
+        "hiresfix_esrgan_workflow": "HiresFix ESRGAN Workflow",
+        "latent_upscale_different_prompt_model": "Latent Upscale Different Prompt Model"
+      },
+      "Video": {
+        "image_to_video": "Image to Video",
+        "txt_to_image_to_video": "Text to Image to Video",
+        "ltxv_image_to_video": "LTXV Image to Video",
+        "ltxv_text_to_video": "LTXV Text to Video",
+        "mochi_text_to_video_example": "Mochi Text to Video",
+        "hunyuan_video_text_to_video": "Hunyuan Video Text to Video"
+      },
+      "SD3.5": {
+        "sd3.5_simple_example": "SD3.5 Simple",
+        "sd3.5_large_canny_controlnet_example": "SD3.5 Large Canny ControlNet",
+        "sd3.5_large_depth": "SD3.5 Large Depth",
+        "sd3.5_large_blur": "SD3.5 Large Blur"
+      },
+      "SDXL": {
+        "sdxl_simple_example": "SDXL Simple",
+        "sdxl_refiner_prompt_example": "SDXL Refiner Prompt",
+        "sdxl_revision_text_prompts": "SDXL Revision Text Prompts",
+        "sdxl_revision_zero_positive": "SDXL Revision Zero Positive",
+        "sdxlturbo_example": "SDXL Turbo"
+      },
+      "Comfy - Area Composition": {
+        "area_composition": "Area Composition",
+        "area_composition_reversed": "Area Composition Reversed",
+        "area_composition_square_area_for_subject": "Area Composition Square Area for Subject"
+      },
+      "3D": {
+        "stable_zero123_example": "Stable Zero123"
+      },
+      "Audio": {
+        "stable_audio_example": "Stable Audio"
+      }
     }
   },
   "graphCanvasMenu": {

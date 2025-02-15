@@ -1,5 +1,8 @@
 <template>
-  <div class="flex h-96" data-testid="template-workflows-content">
+  <div
+    class="flex h-96 overflow-y-hidden"
+    data-testid="template-workflows-content"
+  >
     <div class="relative">
       <ProgressSpinner
         v-if="!workflowTemplatesStore.isLoaded"
@@ -9,7 +12,9 @@
         :model-value="selectedTab"
         @update:model-value="handleTabSelection"
         :options="tabs"
-        optionLabel="title"
+        option-group-label="label"
+        option-label="title"
+        option-group-children="modules"
         scroll-height="auto"
         class="overflow-y-auto w-64 h-full"
         listStyle="max-height:unset"
@@ -19,16 +24,18 @@
       class="carousel justify-center"
       :value="selectedTab.templates"
       :responsive-options="responsiveOptions"
-      :numVisible="4"
-      :numScroll="3"
-      :key="selectedTab.moduleName"
+      :num-visible="4"
+      :num-scroll="3"
+      :key="`${selectedTab.moduleName}${selectedTab.title}`"
     >
       <template #item="slotProps">
-        <div @click="loadWorkflow(slotProps.data)" class="p-2">
+        <div class="p-2 justify-items-center">
           <TemplateWorkflowCard
-            :moduleName="selectedTab.moduleName"
-            :workflowName="slotProps.data"
-            :loading="slotProps.data === workflowLoading"
+            :sourceModule="selectedTab.moduleName"
+            :template="slotProps.data"
+            :loading="slotProps.data.name === workflowLoading"
+            :categoryTitle="selectedTab.title"
+            @loadWorkflow="loadWorkflow"
           />
         </div>
       </template>
@@ -48,21 +55,9 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useWorkflowTemplatesStore } from '@/stores/workflowTemplatesStore'
-
-interface WorkflowTemplatesTab {
-  moduleName: string
-  title: string
-  templates: string[]
-}
+import type { WorkflowTemplates } from '@/types/workflowTemplateTypes'
 
 const { t } = useI18n()
-
-//These default templates are provided by the frontend
-const comfyUITemplates: WorkflowTemplatesTab = {
-  moduleName: 'default',
-  title: 'ComfyUI',
-  templates: ['default', 'image2image', 'upscale', 'flux_schnell']
-}
 
 const responsiveOptions = ref([
   {
@@ -83,25 +78,18 @@ const responsiveOptions = ref([
 ])
 
 const workflowTemplatesStore = useWorkflowTemplatesStore()
-const selectedTab = ref<WorkflowTemplatesTab>(comfyUITemplates)
+const selectedTab = ref<WorkflowTemplates | null>(
+  workflowTemplatesStore?.defaultTemplate
+)
 const workflowLoading = ref<string | null>(null)
 
-const tabs = computed<WorkflowTemplatesTab[]>(() => {
-  return [
-    comfyUITemplates,
-    ...Object.entries(workflowTemplatesStore.items).map(([key, value]) => ({
-      moduleName: key,
-      title: key,
-      templates: value
-    }))
-  ]
-})
+const tabs = computed(() => workflowTemplatesStore.groupedTemplates)
 
 onMounted(async () => {
   await workflowTemplatesStore.loadWorkflowTemplates()
 })
 
-const handleTabSelection = (selection: WorkflowTemplatesTab | null) => {
+const handleTabSelection = (selection: WorkflowTemplates | null) => {
   //Listbox allows deselecting so this special case is ignored here
   if (selection !== selectedTab.value && selection !== null)
     selectedTab.value = selection
