@@ -1,5 +1,4 @@
 # Setting test expectation screenshots for Playwright
-
 name: Update Playwright Expectations
 
 on:

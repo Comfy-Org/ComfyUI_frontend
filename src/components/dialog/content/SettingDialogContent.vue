@@ -280,7 +280,7 @@ watch(activeCategory, (_, oldValue) => {
 
 <style>
 .settings-tab-panels {
-  padding-top: 0px !important;
+  padding-top: 0 !important;
 }
 </style>
 

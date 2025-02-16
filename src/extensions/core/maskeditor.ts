@@ -475,7 +475,7 @@ var styles = `
   #maskEditor_sidePanelColorSelectSettings {
     flex-direction: column;
   }
-  
+
   .maskEditor_sidePanel_paintBucket_Container {
     width: 180px;
     display: flex;
@@ -490,7 +490,7 @@ var styles = `
     gap: 5px;
     height: 30px;
   }
-  
+
   #maskEditor_sidePanelVisibilityToggle {
     position: absolute;
     right: 0;

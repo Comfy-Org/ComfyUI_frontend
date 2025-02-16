@@ -254,7 +254,7 @@ useEventListener(document, 'litegraph:canvas', canvasEventHandler)
 }
 @media all and (max-width: 768px) {
   .invisible-dialog-root {
-    margin-left: 0px;
+    margin-left: 0;
   }
 }
 

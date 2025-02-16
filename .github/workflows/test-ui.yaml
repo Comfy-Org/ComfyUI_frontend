@@ -2,14 +2,9 @@ name: Tests CI
 
 on:
   push:
-    branches:
-      - main
-      - master
+    branches: [ main, master ]
   pull_request:
-    branches:
-      - main
-      - master
-      - 'dev*'
+    branches: [ main, master, dev* ]
 
 jobs:
   jest-tests:
