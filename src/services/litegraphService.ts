@@ -10,15 +10,16 @@ import { Vector2 } from '@comfyorg/litegraph'
 import { IBaseWidget, IWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
 import { st } from '@/i18n'
-import { api } from '@/scripts/api'
 import { ANIM_PREVIEW_WIDGET, ComfyApp, app } from '@/scripts/app'
 import { $el } from '@/scripts/ui'
 import { calculateImageGrid, createImageHost } from '@/scripts/ui/imagePreview'
 import { useCanvasStore } from '@/stores/graphStore'
+import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useToastStore } from '@/stores/toastStore'
-import { ComfyNodeDef, ExecutedWsMessage } from '@/types/apiTypes'
+import { ComfyNodeDef } from '@/types/apiTypes'
 import type { NodeId } from '@/types/comfyWorkflow'
 import { normalizeI18nKey } from '@/utils/formatUtil'
+import { is_all_same_aspect_ratio } from '@/utils/imageUtil'
 import { isImageNode } from '@/utils/litegraphUtil'
 
 import { useExtensionService } from './extensionService'
@@ -404,30 +405,22 @@ export const useLitegraphService = () => {
     ) {
       if (this.flags.collapsed) return
 
-      const imgURLs: (string[] | string)[] = []
-      let imagesChanged = false
-
-      const output: ExecutedWsMessage['output'] = app.nodeOutputs[this.id + '']
-      if (output?.images && this.images !== output.images) {
-        this.animatedImages = output?.animated?.find(Boolean)
+      let imgURLs: string[] = []
+      const nodeOutputStore = useNodeOutputStore()
+      const output = nodeOutputStore.getNodeOutputs(this)
+      let imagesChanged = nodeOutputStore.isImagesChanged(this)
+      if (output && imagesChanged) {
+        this.animatedImages = output.animated?.find(Boolean)
         this.images = output.images
-        imagesChanged = true
-        const preview = this.animatedImages ? '' : app.getPreviewFormatParam()
-
-        for (const params of output.images) {
-          const imgUrlPart = new URLSearchParams(params).toString()
-          const rand = app.getRandParam()
-          const imgUrl = api.apiURL(`/view?${imgUrlPart}${preview}${rand}`)
-          imgURLs.push(imgUrl)
-        }
+        imgURLs = nodeOutputStore.getNodeImageUrls(this)
       }
 
-      const preview = app.nodePreviewImages[this.id + '']
+      const preview = nodeOutputStore.getNodePreviews(this)
       if (this.preview !== preview) {
         this.preview = preview
         imagesChanged = true
         if (preview != null) {
-          imgURLs.push(preview)
+          imgURLs.push(...preview)
         }
       }
 
@@ -454,20 +447,8 @@ export const useLitegraphService = () => {
             }
           })
         } else {
-          this.imgs = null
+          this.imgs = undefined
         }
-      }
-
-      const is_all_same_aspect_ratio = (imgs: HTMLImageElement[]) => {
-        // assume: imgs.length >= 2
-        const ratio = imgs[0].naturalWidth / imgs[0].naturalHeight
-
-        for (let i = 1; i < imgs.length; i++) {
-          const this_ratio = imgs[i].naturalWidth / imgs[i].naturalHeight
-          if (ratio != this_ratio) return false
-        }
-
-        return true
       }
 
       // Nothing to do
