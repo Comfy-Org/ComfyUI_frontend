@@ -76,12 +76,16 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
     >
       {{ nodeDef.description }}
     </div>
+    <div>
+      <Select v-model="selectedAnimation" />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import _ from 'lodash'
-import { computed } from 'vue'
+import Select from 'primevue/select'
+import { computed, ref } from 'vue'
 
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useWidgetStore } from '@/stores/widgetStore'
@@ -93,6 +97,8 @@ const props = defineProps({
     required: true
   }
 })
+
+const selectedAnimation = ref(0)
 
 const colorPaletteStore = useColorPaletteStore()
 const litegraphColors = computed(
