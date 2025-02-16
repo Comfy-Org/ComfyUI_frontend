@@ -31,7 +31,10 @@
       :title="$t('issueReport.submitErrorReport')"
       error-type="graphExecutionError"
       :extra-fields="[stackTraceField]"
-      :tags="{ exceptionMessage: props.error.exception_message }"
+      :tags="{
+        exceptionMessage: props.error.exception_message,
+        nodeType: props.error.node_type
+      }"
     />
     <div class="action-container">
       <FindIssueButton
@@ -90,10 +93,7 @@ const stackTraceField = computed<ReportField>(() => {
     label: t('issueReport.stackTrace'),
     value: 'StackTrace',
     optIn: true,
-    getData: () => ({
-      nodeType: props.error.node_type,
-      stackTrace: props.error.traceback?.join('\n')
-    })
+    getData: () => props.error.traceback?.join('\n')
   }
 })
 
