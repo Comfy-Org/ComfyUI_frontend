@@ -1,5 +1,7 @@
 <template>
-  <div class="absolute top-2 left-2 flex flex-col gap-2 z-20">
+  <div
+    class="absolute top-2 left-2 flex flex-col gap-2 pointer-events-auto z-20"
+  >
     <Button class="p-button-rounded p-button-text" @click="toggleCamera">
       <i
         class="pi pi-camera text-white text-lg"
