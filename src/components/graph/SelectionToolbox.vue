@@ -39,17 +39,32 @@ const positionSelectionToolbox = (canvas: LGraphCanvas) => {
   })
 }
 
+// Register listener on canvas creation.
 watch(
   () => canvasStore.canvas,
   (canvas: LGraphCanvas | null) => {
-    if (!canvas) {
-      return
-    }
+    if (!canvas) return
 
     canvas.onSelectionChange = useChainCallback(canvas.onSelectionChange, () =>
       positionSelectionToolbox(canvas)
     )
   },
   { immediate: true }
+)
+
+watch(
+  () => {
+    const canvas = canvasStore.canvas
+    if (!canvas) return null
+    return {
+      scale: canvas.ds.state.scale,
+      offset: [canvas.ds.state.offset[0], canvas.ds.state.offset[1]]
+    }
+  },
+  (state) => {
+    if (!state) return
+
+    positionSelectionToolbox(canvasStore.canvas as LGraphCanvas)
+  }
 )
 </script>
