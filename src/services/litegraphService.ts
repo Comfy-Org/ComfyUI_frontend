@@ -406,16 +406,16 @@ export const useLitegraphService = () => {
       if (this.flags.collapsed) return
 
       let imgURLs: string[] = []
-      const nodeImages = useNodeOutputStore()
-      const output = nodeImages.getNodeOutputs(this)
-      let imagesChanged = nodeImages.isImagesChanged(this)
+      const nodeOutputStore = useNodeOutputStore()
+      const output = nodeOutputStore.getNodeOutputs(this)
+      let imagesChanged = nodeOutputStore.isImagesChanged(this)
       if (output && imagesChanged) {
         this.animatedImages = output.animated?.find(Boolean)
         this.images = output.images
-        imgURLs = nodeImages.getNodeImageUrls(this)
+        imgURLs = nodeOutputStore.getNodeImageUrls(this)
       }
 
-      const preview = nodeImages.getNodePreviews(this)
+      const preview = nodeOutputStore.getNodePreviews(this)
       if (this.preview !== preview) {
         this.preview = preview
         imagesChanged = true
