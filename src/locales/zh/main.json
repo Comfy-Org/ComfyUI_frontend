@@ -794,11 +794,11 @@
         "flux_redux_model_example": "Flux Redux Model",
         "flux_schnell": "Flux Schnell"
       },
-      "SD3-5": {
-        "sd3-5_large_blur": "SD3.5 大型模糊",
-        "sd3-5_large_canny_controlnet_example": "SD3.5 大型 Canny 控制网",
-        "sd3-5_large_depth": "SD3.5 大型深度",
-        "sd3-5_simple_example": "SD3.5 简单"
+      "SD3_5": {
+        "sd3_5_large_blur": "SD3.5 Large 模糊",
+        "sd3_5_large_canny_controlnet_example": "SD3.5 Large Canny 控制网",
+        "sd3_5_large_depth": "SD3.5 Large 深度",
+        "sd3_5_simple_example": "SD3.5 简易示例"
       },
       "SDXL": {
         "sdxl_refiner_prompt_example": "SDXL Refiner提示",

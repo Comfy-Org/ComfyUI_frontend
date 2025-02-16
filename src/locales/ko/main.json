@@ -794,11 +794,11 @@
         "flux_redux_model_example": "Flux Redux 모델",
         "flux_schnell": "Flux Schnell"
       },
-      "SD3-5": {
-        "sd3-5_large_blur": "SD3.5 큰 흐림",
-        "sd3-5_large_canny_controlnet_example": "SD3.5 큰 캐니 컨트롤넷",
-        "sd3-5_large_depth": "SD3.5 큰 깊이",
-        "sd3-5_simple_example": "SD3.5 간단한 예시"
+      "SD3_5": {
+        "sd3_5_large_blur": "SD3.5 큰 흐림",
+        "sd3_5_large_canny_controlnet_example": "SD3.5 큰 캐니 컨트롤넷",
+        "sd3_5_large_depth": "SD3.5 큰 깊이",
+        "sd3_5_simple_example": "SD3.5 간단한 예시"
       },
       "SDXL": {
         "sdxl_refiner_prompt_example": "SDXL Refiner 프롬프트",
