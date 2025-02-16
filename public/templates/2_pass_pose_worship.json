@@ -668,21 +668,6 @@
       "name": "control_v11p_sd15_openpose_fp16.safetensors",
       "url": "https://huggingface.co/comfyanonymous/ControlNet-v1-1_fp16_safetensors/resolve/main/control_v11p_sd15_openpose_fp16.safetensors",
       "directory": "controlnet"
-    },
-    {
-      "name": "Anything-V3.0.ckpt",
-      "url": "https://huggingface.co/xiaolxl/Stable-diffusion-models/resolve/main/Anything-V3.0.ckpt?download=true",
-      "directory": "checkpoints"
-    },
-    {
-      "name": "AOM3A3.safetensors",
-      "url": "https://huggingface.co/WarriorMama777/OrangeMixs/resolve/eb7490173381625e0403dd52b8051cb969093dc1/Models/AbyssOrangeMix3/AOM3A3.safetensors?download=true",
-      "directory": "checkpoints"
-    },
-    {
-      "name": "kl-f8-anime2.ckpt",
-      "url": "https://huggingface.co/hakurei/waifu-diffusion-v1-4/resolve/main/vae/kl-f8-anime2.ckpt?download=true",
-      "directory": "vae"
     }
   ]
 }

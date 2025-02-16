@@ -484,19 +484,9 @@
       "directory": "controlnet"
     },
     {
-      "name": "AOM3A1.safetensors",
-      "url": "https://huggingface.co/Eata/Model_V1/resolve/main/AOM3A1.safetensors?download=true",
-      "directory": "checkpoints"
-    },
-    {
       "name": "control_v11p_sd15_openpose_fp16.safetensors",
       "url": "https://huggingface.co/comfyanonymous/ControlNet-v1-1_fp16_safetensors/resolve/main/control_v11p_sd15_openpose_fp16.safetensors",
       "directory": "controlnet"
-    },
-    {
-      "name": "kl-f8-anime2.ckpt",
-      "url": "https://huggingface.co/hakurei/waifu-diffusion-v1-4/resolve/main/vae/kl-f8-anime2.ckpt?download=true",
-      "directory": "vae"
     }
   ]
 }

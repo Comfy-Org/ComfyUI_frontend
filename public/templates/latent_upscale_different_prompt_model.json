@@ -524,17 +524,5 @@
       "offset": [1200.17, 444.58]
     }
   },
-  "version": 0.4,
-  "models": [
-    {
-      "name": "wd-illusion-fp16.safetensors",
-      "url": "https://huggingface.co/waifu-diffusion/wd-1-5-beta3/resolve/main/wd-illusion-fp16.safetensors?download=true",
-      "directory": "checkpoints"
-    },
-    {
-      "name": "cardosAnime_v10.safetensors",
-      "url": "https://huggingface.co/jomcs/NeverEnding_Dream-Feb19-2023/resolve/07c9bc67d4ac9a85b68321d9b62f20c00171d8d5/CarDos%20Anime/cardosAnime_v10.safetensors?download=true",
-      "directory": "checkpoints"
-    }
-  ]
+  "version": 0.4
 }
