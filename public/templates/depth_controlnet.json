@@ -324,7 +324,7 @@
       "outputs": [],
       "properties": {},
       "widgets_values": [
-        "\ud83d\udec8 [Learn more about this workflow](https://comfyanonymous.github.io/ComfyUI_examples/controlnet/#pose-controlnet)"
+        "\ud83d\udec8 [Learn more about this workflow](https://comfyanonymous.github.io/ComfyUI_examples/controlnet/#t2i-adapter-vs-controlnets)"
       ],
       "color": "#432",
       "bgcolor": "#653"
