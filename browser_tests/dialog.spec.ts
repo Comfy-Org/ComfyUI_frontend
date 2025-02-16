@@ -85,8 +85,8 @@ test.describe('Missing models warning', () => {
       status: 200,
       body: JSON.stringify([
         {
-          name: 'clip',
-          folders: ['ComfyUI/models/clip']
+          name: 'text_encoders',
+          folders: ['ComfyUI/models/text_encoders']
         }
       ])
     }
@@ -109,7 +109,7 @@ test.describe('Missing models warning', () => {
       ])
     }
     comfyPage.page.route(
-      '**/api/experiment/models/clip',
+      '**/api/experiment/models/text_encoders',
       (route) => route.fulfill(clipModelsRes),
       { times: 1 }
     )

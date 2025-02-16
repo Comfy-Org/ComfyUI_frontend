@@ -297,7 +297,7 @@
     {
       "name": "t5xxl_fp16.safetensors",
       "url": "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp16.safetensors?download=true",
-      "directory": "clip"
+      "directory": "text_encoders"
     },
     {
       "name": "mochi_preview_bf16.safetensors",

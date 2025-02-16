@@ -18,7 +18,7 @@
     {
       "name": "fake_model.safetensors",
       "url": "http://localhost:8188/api/devtools/fake_model.safetensors",
-      "directory": "clip"
+      "directory": "text_encoders"
     }
   ],
   "version": 0.4

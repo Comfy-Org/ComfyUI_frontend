@@ -291,7 +291,7 @@
     {
       "name": "t5_base.safetensors",
       "url": "https://huggingface.co/google-t5/t5-base/resolve/main/model.safetensors",
-      "directory": "clip"
+      "directory": "text_encoders"
     },
     {
       "name": "stable_audio_open_1.0.safetensors",
