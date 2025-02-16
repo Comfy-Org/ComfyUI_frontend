@@ -55,6 +55,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { TemplateInfo } from '@/types/workflowTemplateTypes'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 
 const { sourceModule, categoryTitle, loading, template } = defineProps<{
   sourceModule: string
@@ -75,8 +76,7 @@ const thumbnailSrc = computed(() =>
 const title = computed(() => {
   return sourceModule === 'default'
     ? t(
-        `templateWorkflows.template.${categoryTitle}.${template.name}`,
-        template.name
+        `templateWorkflows.template.${normalizeI18nKey(categoryTitle)}.${normalizeI18nKey(template.name)}`
       )
     : template.name ?? `${sourceModule} Template`
 })

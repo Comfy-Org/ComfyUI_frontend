@@ -759,6 +759,11 @@
       "3D": {
         "stable_zero123_example": "Stable Zero123"
       },
+      "Area Composition": {
+        "area_composition": "Композиция области",
+        "area_composition_reversed": "Обратная композиция области",
+        "area_composition_square_area_for_subject": "Композиция области квадратной области для субъекта"
+      },
       "Audio": {
         "stable_audio_example": "Stable Audio"
       },
@@ -772,11 +777,6 @@
         "lora": "Lora",
         "lora_multiple": "Lora Multiple",
         "yosemite_outpaint_example": "Yosemite Outpaint"
-      },
-      "Comfy - Area Composition": {
-        "area_composition": "Композиция области",
-        "area_composition_reversed": "Обратная композиция области",
-        "area_composition_square_area_for_subject": "Композиция области квадратной области для субъекта"
       },
       "ControlNet": {
         "2_pass_pose_worship": "2 Pass Pose Worship",
@@ -794,11 +794,11 @@
         "flux_redux_model_example": "Flux Redux Model",
         "flux_schnell": "Flux Schnell"
       },
-      "SD3.5": {
-        "sd3.5_large_blur": "SD3.5 Large Blur",
-        "sd3.5_large_canny_controlnet_example": "SD3.5 Large Canny ControlNet",
-        "sd3.5_large_depth": "SD3.5 Large Depth",
-        "sd3.5_simple_example": "SD3.5 Simple"
+      "SD3_5": {
+        "sd3_5_large_blur": "SD3.5 Большое размытие",
+        "sd3_5_large_canny_controlnet_example": "SD3.5 Большой Canny ControlNet",
+        "sd3_5_large_depth": "SD3.5 Большая глубина",
+        "sd3_5_simple_example": "SD3.5 Простой"
       },
       "SDXL": {
         "sdxl_refiner_prompt_example": "SDXL Refiner Prompt",

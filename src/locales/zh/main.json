@@ -759,6 +759,11 @@
       "3D": {
         "stable_zero123_example": "稳定Zero123"
       },
+      "Area Composition": {
+        "area_composition": "区域构成",
+        "area_composition_reversed": "反向区域构成",
+        "area_composition_square_area_for_subject": "主题的方形区域构成"
+      },
       "Audio": {
         "stable_audio_example": "稳定音频"
       },
@@ -772,11 +777,6 @@
         "lora": "Lora",
         "lora_multiple": "Lora多个",
         "yosemite_outpaint_example": "优胜美地Outpaint"
-      },
-      "Comfy - Area Composition": {
-        "area_composition": "区域构成",
-        "area_composition_reversed": "区域构成反转",
-        "area_composition_square_area_for_subject": "主题的区域构成方形区域"
       },
       "ControlNet": {
         "2_pass_pose_worship": "2通道姿势崇拜",
@@ -794,11 +794,11 @@
         "flux_redux_model_example": "Flux Redux Model",
         "flux_schnell": "Flux Schnell"
       },
-      "SD3.5": {
-        "sd3.5_large_blur": "SD3.5大模糊",
-        "sd3.5_large_canny_controlnet_example": "SD3.5大型Canny ControlNet",
-        "sd3.5_large_depth": "SD3.5大深度",
-        "sd3.5_simple_example": "SD3.5简单"
+      "SD3_5": {
+        "sd3_5_large_blur": "SD3.5 Large 模糊",
+        "sd3_5_large_canny_controlnet_example": "SD3.5 Large Canny 控制网",
+        "sd3_5_large_depth": "SD3.5 Large 深度",
+        "sd3_5_simple_example": "SD3.5 简易示例"
       },
       "SDXL": {
         "sdxl_refiner_prompt_example": "SDXL Refiner提示",

@@ -402,11 +402,11 @@
         "mochi_text_to_video_example": "Mochi Text to Video",
         "hunyuan_video_text_to_video": "Hunyuan Video Text to Video"
       },
-      "SD3.5": {
-        "sd3.5_simple_example": "SD3.5 Simple",
-        "sd3.5_large_canny_controlnet_example": "SD3.5 Large Canny ControlNet",
-        "sd3.5_large_depth": "SD3.5 Large Depth",
-        "sd3.5_large_blur": "SD3.5 Large Blur"
+      "SD3_5": {
+        "sd3_5_simple_example": "SD3.5 Simple",
+        "sd3_5_large_canny_controlnet_example": "SD3.5 Large Canny ControlNet",
+        "sd3_5_large_depth": "SD3.5 Large Depth",
+        "sd3_5_large_blur": "SD3.5 Large Blur"
       },
       "SDXL": {
         "sdxl_simple_example": "SDXL Simple",
@@ -415,7 +415,7 @@
         "sdxl_revision_zero_positive": "SDXL Revision Zero Positive",
         "sdxlturbo_example": "SDXL Turbo"
       },
-      "Comfy - Area Composition": {
+      "Area Composition": {
         "area_composition": "Area Composition",
         "area_composition_reversed": "Area Composition Reversed",
         "area_composition_square_area_for_subject": "Area Composition Square Area for Subject"
