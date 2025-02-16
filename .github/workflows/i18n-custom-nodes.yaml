@@ -41,7 +41,7 @@ jobs:
       with:
         repository: ${{ inputs.owner }}/${{ inputs.repository }}
         path: 'ComfyUI/custom_nodes/${{ inputs.repository }}'
-    - uses: actions/setup-node@v3
+    - uses: actions/setup-node@v4
       with:
         node-version: lts/*
     - uses: actions/setup-python@v4
