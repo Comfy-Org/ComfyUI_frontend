@@ -16,9 +16,10 @@
 import { LGraphGroup, LGraphNode, LiteGraph } from '@comfyorg/litegraph'
 import type { LiteGraphCanvasEvent } from '@comfyorg/litegraph'
 import { useEventListener } from '@vueuse/core'
-import { CSSProperties, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'
+import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
 import { app } from '@/scripts/app'
 import { useCanvasStore, useTitleEditorStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
@@ -27,14 +28,7 @@ const settingStore = useSettingStore()
 
 const showInput = ref(false)
 const editedTitle = ref('')
-const inputStyle = ref<CSSProperties>({
-  position: 'fixed',
-  left: '0px',
-  top: '0px',
-  width: '200px',
-  height: '20px',
-  fontSize: '12px'
-})
+const { style: inputStyle, updatePosition } = useAbsolutePosition()
 
 const titleEditorStore = useTitleEditorStore()
 const canvasStore = useCanvasStore()
@@ -63,36 +57,23 @@ watch(
 
     if (target instanceof LGraphGroup) {
       const group = target
-      const [x, y] = group.pos
-      const [w, h] = group.size
-
-      const [left, top] = app.canvasPosToClientPos([x, y])
-      inputStyle.value.left = `${left}px`
-      inputStyle.value.top = `${top}px`
-
-      const width = w * app.canvas.ds.scale
-      const height = group.titleHeight * app.canvas.ds.scale
-      inputStyle.value.width = `${width}px`
-      inputStyle.value.height = `${height}px`
-
-      const fontSize = group.font_size * app.canvas.ds.scale
-      inputStyle.value.fontSize = `${fontSize}px`
+      updatePosition(
+        {
+          pos: group.pos,
+          size: [group.size[0], group.titleHeight]
+        },
+        { fontSize: group.font_size }
+      )
     } else if (target instanceof LGraphNode) {
       const node = target
       const [x, y] = node.getBounding()
-      const canvasWidth = node.width
-      const canvasHeight = LiteGraph.NODE_TITLE_HEIGHT
-
-      const [left, top] = app.canvasPosToClientPos([x, y])
-      inputStyle.value.left = `${left}px`
-      inputStyle.value.top = `${top}px`
-
-      const width = canvasWidth * app.canvas.ds.scale
-      const height = canvasHeight * app.canvas.ds.scale
-      inputStyle.value.width = `${width}px`
-      inputStyle.value.height = `${height}px`
-      const fontSize = 12 * app.canvas.ds.scale
-      inputStyle.value.fontSize = `${fontSize}px`
+      updatePosition(
+        {
+          pos: [x, y],
+          size: [node.width, LiteGraph.NODE_TITLE_HEIGHT]
+        },
+        { fontSize: 12 }
+      )
     }
   }
 )
