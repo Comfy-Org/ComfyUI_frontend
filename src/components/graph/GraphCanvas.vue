@@ -28,6 +28,7 @@
     class="w-full h-full touch-none"
   />
   <NodeSearchboxPopover />
+  <SelectionToolbox />
   <NodeTooltip v-if="tooltipEnabled" />
   <NodeBadge />
 </template>
@@ -40,6 +41,7 @@ import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
 import NodeBadge from '@/components/graph/NodeBadge.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
+import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
