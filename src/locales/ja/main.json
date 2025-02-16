@@ -788,7 +788,7 @@
       "Flux": {
         "flux_canny_model_example": "Flux Cannyモデル",
         "flux_depth_lora_example": "Flux Depth Lora",
-        "flux_dev_example": "Flux Dev",
+        "flux_dev_checkpoint_example": "Flux Dev",
         "flux_fill_inpaint_example": "Flux Inpaint",
         "flux_fill_outpaint_example": "Flux Outpaint",
         "flux_redux_model_example": "Flux Reduxモデル",
