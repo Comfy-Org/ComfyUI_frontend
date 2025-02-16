@@ -1,5 +1,5 @@
 import '@comfyorg/litegraph'
-import type { LLink } from '@comfyorg/litegraph'
+import type { LLink, Size } from '@comfyorg/litegraph'
 
 import type { DOMWidget } from '@/scripts/domWidget'
 import type { ComfyNodeDef } from '@/types/apiTypes'
@@ -17,13 +17,26 @@ declare module '@comfyorg/litegraph/dist/types/widgets' {
     onRemove?: () => void
     beforeQueued?: () => unknown
     afterQueued?: () => unknown
-    serializeValue?: (node: LGraphNode, index: number) => Promise<unknown>
+    serializeValue?: (
+      node: LGraphNode,
+      index: number
+    ) => Promise<unknown> | unknown
 
     /**
      * If the widget supports dynamic prompts, this will be set to true.
      * See extensions/core/dynamicPrompts.ts
      */
     dynamicPrompts?: boolean
+
+    /**
+     * Widget conversion fields
+     */
+    origType?: string
+    origComputeSize?: (width: number) => Size
+    origSerializeValue?: (
+      node: LGraphNode,
+      index: number
+    ) => Promise<unknown> | unknown
   }
 }
 

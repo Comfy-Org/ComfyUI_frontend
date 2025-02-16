@@ -6,6 +6,7 @@ import type {
   LiteGraphCanvasEvent
 } from '@comfyorg/litegraph'
 import type { IFoundSlot } from '@comfyorg/litegraph'
+import { INodeSlot } from '@comfyorg/litegraph'
 
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
@@ -422,11 +423,11 @@ class PrimitiveNode extends LGraphNode {
   }
 }
 
-export function getWidgetConfig(slot) {
+export function getWidgetConfig(slot: INodeSlot) {
   return slot.widget[CONFIG] ?? slot.widget[GET_CONFIG]?.() ?? ['*', {}]
 }
 
-function getConfig(widgetName) {
+function getConfig(widgetName: string) {
   const { nodeData } = this.constructor
   return (
     nodeData?.input?.required?.[widgetName] ??
@@ -434,21 +435,33 @@ function getConfig(widgetName) {
   )
 }
 
-function isConvertibleWidget(widget, config) {
+function isConvertibleWidget(widget: IWidget, config: InputSpec): boolean {
   return (
     (VALID_TYPES.includes(widget.type) || VALID_TYPES.includes(config[0])) &&
     !widget.options?.forceInput
   )
 }
 
-function hideWidget(node, widget, suffix = '') {
+function hideWidget(
+  node: LGraphNode,
+  widget: IWidget,
+  options: { suffix?: string; holdSpace?: boolean } = {}
+) {
+  const { suffix = '', holdSpace = true } = options
+
   if (widget.type?.startsWith(CONVERTED_TYPE)) return
   widget.origType = widget.type
   widget.origComputeSize = widget.computeSize
   widget.origSerializeValue = widget.serializeValue
-  widget.computeSize = () => [0, -4] // -4 is due to the gap litegraph adds between widgets automatically
+  // @ts-expect-error custom widget type
   widget.type = CONVERTED_TYPE + suffix
-  widget.serializeValue = () => {
+  if (holdSpace) {
+    widget.computeSize = () => [0, LiteGraph.NODE_WIDGET_HEIGHT]
+  } else {
+    // -4 is due to the gap litegraph adds between widgets automatically
+    widget.computeSize = () => [0, -4]
+  }
+  widget.serializeValue = (node: LGraphNode, index: number) => {
     // Prevent serializing the widget if we have no input linked
     if (!node.inputs) {
       return undefined
@@ -459,19 +472,20 @@ function hideWidget(node, widget, suffix = '') {
       return undefined
     }
     return widget.origSerializeValue
-      ? widget.origSerializeValue()
+      ? widget.origSerializeValue(node, index)
       : widget.value
   }
 
   // Hide any linked widgets, e.g. seed+seedControl
   if (widget.linkedWidgets) {
     for (const w of widget.linkedWidgets) {
-      hideWidget(node, w, ':' + widget.name)
+      hideWidget(node, w, { suffix: ':' + widget.name, holdSpace: false })
     }
   }
 }
 
-function showWidget(widget) {
+function showWidget(widget: IWidget) {
+  // @ts-expect-error custom widget type
   widget.type = widget.origType
   widget.computeSize = widget.origComputeSize
   widget.serializeValue = widget.origSerializeValue
@@ -517,7 +531,7 @@ export function convertToInput(
   return input
 }
 
-function convertToWidget(node, widget) {
+function convertToWidget(node: LGraphNode, widget: IWidget) {
   showWidget(widget)
   const [oldWidth, oldHeight] = node.size
   node.removeInput(node.inputs.findIndex((i) => i.widget?.name === widget.name))
@@ -542,7 +556,7 @@ function getWidgetType(config: InputSpec) {
   return { type }
 }
 
-function isValidCombo(combo, obj) {
+function isValidCombo(combo: string[], obj: unknown) {
   // New input isnt a combo
   if (!(obj instanceof Array)) {
     console.log(`connection rejected: tried to connect combo to ${obj}`)
