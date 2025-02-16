@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - master
+      - core/*
     paths:
       - "package.json"
 
@@ -40,9 +41,9 @@ jobs:
           files: |
             dist.zip
           tag_name: v${{ steps.current_version.outputs.version }}
-          draft: false
+          draft: true
           prerelease: false
-          make_latest: "true"
+          make_latest: "false"
           generate_release_notes: true
   publish_types:
     runs-on: ubuntu-latest
