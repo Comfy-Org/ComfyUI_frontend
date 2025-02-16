@@ -5,8 +5,11 @@ import { app } from '@/scripts/app'
 import { useCanvasStore } from '@/stores/graphStore'
 
 export interface PositionConfig {
+  /* The position of the element on litegraph canvas */
   pos: Vector2
+  /* The size of the element on litegraph canvas */
   size: Size
+  /* The scale factor of the canvas */
   scale?: number
 }
 
