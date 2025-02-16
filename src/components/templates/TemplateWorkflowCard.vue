@@ -67,6 +67,11 @@ const { t } = useI18n()
 
 const imageError = ref(false)
 
+const normalizeName = (name: string) => {
+  // Convert dots to dashes as dots are reserved as path separators (e.g. 'category.key')
+  return name.replace(/\./g, '-')
+}
+
 const thumbnailSrc = computed(() =>
   sourceModule === 'default'
     ? `/templates/${template.name}.${template.mediaSubtype}`
@@ -75,8 +80,7 @@ const thumbnailSrc = computed(() =>
 const title = computed(() => {
   return sourceModule === 'default'
     ? t(
-        `templateWorkflows.template.${categoryTitle}.${template.name}`,
-        template.name
+        `templateWorkflows.template.${normalizeName(categoryTitle)}.${normalizeName(template.name)}`
       )
     : template.name ?? `${sourceModule} Template`
 })
