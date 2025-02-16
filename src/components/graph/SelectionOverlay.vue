@@ -1,18 +1,17 @@
+<!-- This component is used to bound the selected items on the canvas. -->
 <template>
-  <div class="selection-toolbox-container" :style="style" v-show="visible">
-    <Toolbar>
-      <template #start>
-        <Button label="Select All" />
-      </template>
-    </Toolbar>
+  <div
+    class="selection-overlay-container pointer-events-none"
+    :style="style"
+    v-show="visible"
+  >
+    <slot></slot>
   </div>
 </template>
 
 <script setup lang="ts">
 import { createBounds } from '@comfyorg/litegraph'
 import type { LGraphCanvas } from '@comfyorg/litegraph'
-import Button from 'primevue/button'
-import Toolbar from 'primevue/toolbar'
 import { ref, watch } from 'vue'
 
 import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
@@ -24,7 +23,7 @@ const { style, updatePosition } = useAbsolutePosition()
 
 const visible = ref(false)
 
-const positionSelectionToolbox = (canvas: LGraphCanvas) => {
+const positionSelectionOverlay = (canvas: LGraphCanvas) => {
   const selectedItems = canvas.selectedItems
   if (!selectedItems.size) {
     visible.value = false
@@ -46,7 +45,7 @@ watch(
     if (!canvas) return
 
     canvas.onSelectionChange = useChainCallback(canvas.onSelectionChange, () =>
-      positionSelectionToolbox(canvas)
+      positionSelectionOverlay(canvas)
     )
   },
   { immediate: true }
@@ -64,7 +63,23 @@ watch(
   (state) => {
     if (!state) return
 
-    positionSelectionToolbox(canvasStore.canvas as LGraphCanvas)
+    positionSelectionOverlay(canvasStore.canvas as LGraphCanvas)
+  }
+)
+
+watch(
+  () => canvasStore.canvas?.state?.draggingItems,
+  (draggingItems) => {
+    visible.value = !draggingItems
+    if (draggingItems === false) {
+      positionSelectionOverlay(canvasStore.canvas as LGraphCanvas)
+    }
   }
 )
 </script>
+
+<style scoped>
+.selection-overlay-container > * {
+  pointer-events: auto;
+}
+</style>
