@@ -268,7 +268,7 @@
       "outputs": [],
       "properties": {},
       "widgets_values": [
-        "\ud83d\udec8 [Learn more about this workflow](https://comfyanonymous.github.io/ComfyUI_examples/inpaint/#outpainting)"
+        "\ud83d\udec8 [Learn more about this workflow](https://comfyanonymous.github.io/ComfyUI_examples/lora/)"
       ],
       "color": "#432",
       "bgcolor": "#653"
