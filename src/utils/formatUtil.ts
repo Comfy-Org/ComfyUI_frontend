@@ -1,3 +1,5 @@
+import { ResultItem } from '@/types/apiTypes'
+
 export function formatCamelCase(str: string): string {
   // Check if the string is camel case
   const isCamelCase = /^([A-Z][a-z]*)+$/.test(str)
@@ -212,4 +214,21 @@ export function isValidUrl(url: string): boolean {
   } catch {
     return false
   }
+}
+
+const createAnnotation = (rootFolder = 'input'): string =>
+  rootFolder !== 'input' ? ` [${rootFolder}]` : ''
+
+const createPath = (filename: string, subfolder = ''): string =>
+  subfolder ? `${subfolder}/${filename}` : filename
+
+/** Creates annotated filepath in format used by folder_paths.py */
+export function createAnnotatedPath(
+  item: string | ResultItem,
+  options: { rootFolder?: string; subfolder?: string } = {}
+): string {
+  const { rootFolder = 'input', subfolder } = options
+  if (typeof item === 'string')
+    return `${createPath(item, subfolder)}${createAnnotation(rootFolder)}`
+  return `${createPath(item.filename ?? '', item.subfolder)}${createAnnotation(item.type)}`
 }
