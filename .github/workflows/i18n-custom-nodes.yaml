@@ -1,4 +1,5 @@
 name: Update Locales for given custom node repository
+
 on:
   workflow_dispatch:
     inputs:
@@ -23,19 +24,19 @@ jobs:
     - name: Checkout ComfyUI
       uses: actions/checkout@v4
       with:
-        repository: 'comfyanonymous/ComfyUI'
-        path: 'ComfyUI'
+        repository: comfyanonymous/ComfyUI
+        path: ComfyUI
         ref: master
     - name: Checkout ComfyUI_frontend
       uses: actions/checkout@v4
       with:
-        repository: 'Comfy-Org/ComfyUI_frontend'
-        path: 'ComfyUI_frontend'
+        repository: Comfy-Org/ComfyUI_frontend
+        path: ComfyUI_frontend
     - name: Checkout ComfyUI_devtools
       uses: actions/checkout@v4
       with:
-        repository: 'Comfy-Org/ComfyUI_devtools'
-        path: 'ComfyUI/custom_nodes/ComfyUI_devtools'
+        repository: Comfy-Org/ComfyUI_devtools
+        path: ComfyUI/custom_nodes/ComfyUI_devtools
     - name: Checkout custom node repository
       uses: actions/checkout@v4
       with:
@@ -43,7 +44,7 @@ jobs:
         path: 'ComfyUI/custom_nodes/${{ inputs.repository }}'
     - uses: actions/setup-node@v4
       with:
-        node-version: lts/*
+        node-version: 'lts/*'
     - uses: actions/setup-python@v4
       with:
         python-version: '3.10'
@@ -53,14 +54,12 @@ jobs:
         pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
         pip install -r requirements.txt
         pip install wait-for-it
-      shell: bash
       working-directory: ComfyUI
     - name: Install custom node requirements
       run: |
         if [ -f "requirements.txt" ]; then
           pip install -r requirements.txt
         fi
-      shell: bash
       working-directory: ComfyUI/custom_nodes/${{ inputs.repository }}
     - name: Build & Install ComfyUI_frontend
       run: |
@@ -68,14 +67,12 @@ jobs:
         npm run build
         rm -rf ../ComfyUI/web/*
         mv dist/* ../ComfyUI/web/
-      shell: bash
       working-directory: ComfyUI_frontend
     - name: Start ComfyUI server
       run: |
         python main.py --cpu --multi-user &
         wait-for-it --service 127.0.0.1:8188 -t 600
       working-directory: ComfyUI
-      shell: bash
     - name: Install Playwright Browsers
       run: npx playwright install chromium --with-deps
       working-directory: ComfyUI_frontend
@@ -153,7 +150,7 @@ jobs:
         echo "Pushing changes to ${{ inputs.fork_owner }}/${{ inputs.repository }}"
         git push -f git@github.com:${{ inputs.fork_owner }}/${{ inputs.repository }}.git update-locales
 
-    - name: Create PR 
+    - name: Create PR
       working-directory: ComfyUI/custom_nodes/${{ inputs.repository }}
       run: |
         # Create PR using gh cli

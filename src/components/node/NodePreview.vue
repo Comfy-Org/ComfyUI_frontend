@@ -240,7 +240,7 @@ const truncateDefaultValue = (value: any, charLimit: number = 32): string => {
 }
 
 ._sb_col {
-  border: 0px solid #000;
+  border: 0 solid #000;
   display: flex;
   align-items: flex-end;
   flex-direction: row-reverse;

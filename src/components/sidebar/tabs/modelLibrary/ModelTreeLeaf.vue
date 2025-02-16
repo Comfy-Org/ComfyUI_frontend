@@ -133,7 +133,7 @@ onUnmounted(() => {
   left: 0;
   height: 1.5rem;
   vertical-align: top;
-  width: 0px;
+  width: 0;
 }
 .model-lib-model-icon {
   background-size: cover;

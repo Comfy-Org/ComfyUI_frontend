@@ -2,12 +2,10 @@ name: Create Release Draft
 
 on:
   pull_request:
-    types: [closed]
-    branches:
-      - main
-      - master
+    types: [ closed ]
+    branches: [ main, master ]
     paths:
-      - "package.json"
+      - 'package.json'
 
 jobs:
   draft_release:
@@ -20,7 +18,7 @@ jobs:
         uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: lts/*
+          node-version: 'lts/*'
       - name: Get current version
         id: current_version
         run: echo ::set-output name=version::$(node -p "require('./package.json').version")
@@ -42,7 +40,7 @@ jobs:
           tag_name: v${{ steps.current_version.outputs.version }}
           draft: false
           prerelease: false
-          make_latest: "true"
+          make_latest: true
           generate_release_notes: true
   publish_types:
     runs-on: ubuntu-latest
@@ -53,12 +51,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: lts/*
-          registry-url: "https://registry.npmjs.org"
+          node-version: 'lts/*'
+          registry-url: https://registry.npmjs.org
       - run: npm ci
       - run: npm run build:types
       - name: Publish package
         run: npm publish --access public
-        working-directory: ./dist
+        working-directory: dist
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

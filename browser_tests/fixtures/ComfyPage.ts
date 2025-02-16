@@ -278,8 +278,8 @@ export class ComfyPage {
     await this.page.addStyleTag({
       content: `
       * {
-				font-family: 'Roboto Mono', 'Noto Color Emoji';
-			}`
+        font-family: 'Roboto Mono', 'Noto Color Emoji';
+      }`
     })
     await this.page.waitForFunction(() => document.fonts.ready)
     await this.page.waitForFunction(

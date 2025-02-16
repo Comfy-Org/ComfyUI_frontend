@@ -1,6 +1,6 @@
 <!--
   A refresh button that disables and shows a progress spinner whilst active.
-  
+
   Usage:
   ```vue
     <RefreshButton
