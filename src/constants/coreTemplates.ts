@@ -6,8 +6,6 @@ export const CORE_TEMPLATES = [
     templates: [
       {
         name: 'default',
-        tutorialUrl:
-          'https://github.com/comfyanonymous/ComfyUI/wiki/Basic-Tutorial',
         mediaType: 'image',
         mediaSubtype: 'png'
       },
@@ -139,14 +137,14 @@ export const CORE_TEMPLATES = [
         mediaType: 'image',
         mediaSubtype: 'png',
         tutorialUrl:
-          'https://comfyanonymous.github.io/ComfyUI_examples/controlnet/#2-pass-pose-worship'
+          'https://comfyanonymous.github.io/ComfyUI_examples/controlnet/#pose-controlnet'
       },
       {
         name: 'depth_controlnet',
         mediaType: 'image',
         mediaSubtype: 'png',
         tutorialUrl:
-          'https://comfyanonymous.github.io/ComfyUI_examples/controlnet/#pose-controlnet'
+          'https://comfyanonymous.github.io/ComfyUI_examples/controlnet/#t2i-adapter-vs-controlnets'
       },
       {
         name: 'depth_t2i_adapter',
