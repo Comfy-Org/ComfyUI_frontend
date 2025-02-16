@@ -13,7 +13,6 @@ useExtensionService().registerExtension({
       const widgets = node.widgets.filter((w) => w.dynamicPrompts)
       for (const widget of widgets) {
         // Override the serialization of the value to resolve dynamic prompts for all widgets supporting it in this node
-        // @ts-expect-error hacky override
         widget.serializeValue = (workflowNode, widgetIndex) => {
           if (typeof widget.value !== 'string') return widget.value
 
