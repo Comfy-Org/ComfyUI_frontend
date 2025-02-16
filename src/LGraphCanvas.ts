@@ -4662,13 +4662,10 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     // render inputs and outputs
     if (!node.collapsed) {
-      node.layoutSlots()
-      const slotsBounds = createBounds(
-        node.slots.map(slot => slot._layoutElement),
-        /** padding= */ 0,
-      )
+      const slotsBounds = node.layoutSlots()
       const widgetStartY = slotsBounds ? slotsBounds[1] + slotsBounds[3] : 0
       node.layoutWidgets({ widgetStartY })
+      node.layoutWidgetInputSlots()
 
       node.drawSlots(ctx, {
         connectingLink: this.connecting_links?.[0],

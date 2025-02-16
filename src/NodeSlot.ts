@@ -45,6 +45,14 @@ export function toNodeSlotClass(slot: INodeSlot): NodeSlot {
   throw new Error("Invalid slot type")
 }
 
+/**
+ * Whether this slot is an input slot and attached to a widget.
+ * @param slot - The slot to check.
+ */
+export function isWidgetInputSlot(slot: INodeSlot): boolean {
+  return isINodeInputSlot(slot) && !!slot.widget
+}
+
 export abstract class NodeSlot implements INodeSlot {
   name: string
   localized_name?: string

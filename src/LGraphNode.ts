@@ -33,9 +33,9 @@ import {
 } from "./types/globalEnums"
 import { BadgePosition, LGraphBadge } from "./LGraphBadge"
 import { type LGraphNodeConstructor, LiteGraph } from "./litegraph"
-import { isInRectangle, isInRect, snapPoint } from "./measure"
+import { isInRectangle, isInRect, snapPoint, createBounds } from "./measure"
 import { LLink } from "./LLink"
-import { ConnectionColorContext, isINodeInputSlot, NodeInputSlot, NodeOutputSlot, serializeSlot, toNodeSlotClass } from "./NodeSlot"
+import { ConnectionColorContext, isINodeInputSlot, isWidgetInputSlot, NodeInputSlot, NodeOutputSlot, serializeSlot, toNodeSlotClass } from "./NodeSlot"
 import { WIDGET_TYPE_MAP } from "./widgets/widgetMap"
 import { toClass } from "./utils/type"
 import { LayoutElement } from "./utils/layout"
@@ -3218,17 +3218,26 @@ export class LGraphNode implements Positionable, IPinnable {
     })
   }
 
-  layoutSlots(): void {
+  layoutSlots(): ReadOnlyRect | null {
+    const slots: LayoutElement<INodeSlot>[] = []
+
     for (const [i, slot] of this.inputs.entries()) {
+      /** Widget input slots are handled in {@link layoutWidgetInputSlots} */
+      if (isWidgetInputSlot(slot)) continue
+
       this.layoutSlot(slot, {
         slotIndex: i,
       })
+      slots.push(slot._layoutElement)
     }
     for (const [i, slot] of this.outputs.entries()) {
       this.layoutSlot(slot, {
         slotIndex: i,
       })
+      slots.push(slot._layoutElement)
     }
+
+    return slots.length ? createBounds(slots, /** padding= */ 0) : null
   }
 
   #getMouseOverSlot(slot: INodeSlot): INodeSlot | null {
@@ -3343,6 +3352,32 @@ export class LGraphNode implements Positionable, IPinnable {
     for (const w of this.widgets) {
       w.y = y
       y += w.computedHeight
+    }
+  }
+
+  /**
+   * Lays out the node's widget input slots.
+   */
+  layoutWidgetInputSlots(): void {
+    if (!this.widgets) return
+
+    const slotByWidgetName = new Map<string, INodeInputSlot & { index: number }>()
+
+    for (const [i, slot] of this.inputs.entries()) {
+      if (!isWidgetInputSlot(slot)) continue
+
+      slotByWidgetName.set(slot.widget?.name, { ...slot, index: i })
+    }
+    if (!slotByWidgetName.size) return
+
+    for (const widget of this.widgets) {
+      const slot = slotByWidgetName.get(widget.name)
+      if (!slot) continue
+
+      const actualSlot = this.inputs[slot.index]
+      const offset = LiteGraph.NODE_SLOT_HEIGHT * 0.5
+      actualSlot.pos = [offset, widget.y + offset]
+      this.layoutSlot(actualSlot, { slotIndex: slot.index })
     }
   }
 }
