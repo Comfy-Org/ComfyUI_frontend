@@ -408,7 +408,7 @@
     {
       "name": "t5xxl_fp16.safetensors",
       "url": "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp16.safetensors?download=true",
-      "directory": "clip"
+      "directory": "text_encoders"
     },
     {
       "name": "ltx-video-2b-v0.9.safetensors",
