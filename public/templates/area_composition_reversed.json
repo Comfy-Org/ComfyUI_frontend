@@ -959,16 +959,6 @@
   "version": 0.4,
   "models": [
     {
-      "name": "Anything-V3.0.ckpt",
-      "url": "https://huggingface.co/xiaolxl/Stable-diffusion-models/resolve/main/Anything-V3.0.ckpt?download=true",
-      "directory": "checkpoints"
-    },
-    {
-      "name": "AbyssOrangeMix2_hard.safetensors",
-      "url": "https://huggingface.co/WarriorMama777/OrangeMixs/resolve/main/Models/AbyssOrangeMix2/AbyssOrangeMix2_hard.safetensors?download=true",
-      "directory": "checkpoints"
-    },
-    {
       "name": "vae-ft-mse-840000-ema-pruned.safetensors",
       "url": "https://huggingface.co/stabilityai/sd-vae-ft-mse-original/resolve/main/vae-ft-mse-840000-ema-pruned.safetensors?download=true",
       "directory": "vae"

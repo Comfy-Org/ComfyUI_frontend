@@ -372,11 +372,6 @@
   "version": 0.4,
   "models": [
     {
-      "name": "Anything-V3.0.ckpt",
-      "url": "https://huggingface.co/xiaolxl/Stable-diffusion-models/resolve/main/Anything-V3.0.ckpt?download=true",
-      "directory": "checkpoints"
-    },
-    {
       "name": "control_v11p_sd15_scribble_fp16.safetensors",
       "url": "https://huggingface.co/comfyanonymous/ControlNet-v1-1_fp16_safetensors/resolve/main/control_v11p_sd15_scribble_fp16.safetensors?download=true",
       "directory": "controlnet"
