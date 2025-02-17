@@ -29,7 +29,8 @@
   />
   <NodeSearchboxPopover />
   <SelectionOverlay>
-    <div class="w-full h-full bg-red-500"></div>
+    <!-- Placeholder for selection overlay testing. -->
+    <!-- <div class="w-full h-full bg-red-500"></div> -->
   </SelectionOverlay>
   <NodeTooltip v-if="tooltipEnabled" />
   <NodeBadge />
