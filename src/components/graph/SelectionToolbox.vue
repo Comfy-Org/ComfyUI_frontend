@@ -9,12 +9,15 @@
     <Button
       severity="secondary"
       text
+      icon="pi pi-thumbtack"
       @click="() => commandStore.execute('Comfy.Canvas.ToggleSelected.Pin')"
-    >
-      <template #icon>
-        <i-lucide:pin />
-      </template>
-    </Button>
+    />
+    <Button
+      severity="danger"
+      text
+      icon="pi pi-trash"
+      @click="() => commandStore.execute('Comfy.Canvas.DeleteSelectedItems')"
+    />
   </Panel>
 </template>
 
