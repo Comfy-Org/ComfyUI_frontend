@@ -28,7 +28,7 @@
     class="w-full h-full touch-none"
   />
   <NodeSearchboxPopover />
-  <SelectionOverlay>
+  <SelectionOverlay v-if="selectionToolboxEnabled">
     <SelectionToolbox />
   </SelectionOverlay>
   <NodeTooltip v-if="tooltipEnabled" />
@@ -44,11 +44,12 @@ import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
 import NodeBadge from '@/components/graph/NodeBadge.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
 import SelectionOverlay from '@/components/graph/SelectionOverlay.vue'
+import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import SecondRowWorkflowTabs from '@/components/topbar/SecondRowWorkflowTabs.vue'
-import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
+import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
 import { useCopy } from '@/composables/useCopy'
@@ -70,7 +71,6 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { useChainCallback } from '@/composables/functional/useChainCallback'
 
 const emit = defineEmits(['ready'])
 const canvasRef = ref<HTMLCanvasElement | null>(null)
@@ -88,6 +88,9 @@ const canvasMenuEnabled = computed(() =>
   settingStore.get('Comfy.Graph.CanvasMenu')
 )
 const tooltipEnabled = computed(() => settingStore.get('Comfy.EnableTooltips'))
+const selectionToolboxEnabled = computed(() =>
+  settingStore.get('Comfy.Canvas.SelectionToolbox')
+)
 
 watchEffect(() => {
   nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')

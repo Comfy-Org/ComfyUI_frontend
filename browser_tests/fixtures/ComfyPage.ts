@@ -896,9 +896,10 @@ export const comfyPageFixture = base.extend<{ comfyPage: ComfyPage }>({
     try {
       await comfyPage.setupSettings({
         'Comfy.UseNewMenu': 'Disabled',
-        // Hide canvas menu/info by default.
+        // Hide canvas menu/info/selection toolbox by default.
         'Comfy.Graph.CanvasInfo': false,
         'Comfy.Graph.CanvasMenu': false,
+        'Comfy.Canvas.SelectionToolbox': false,
         // Hide all badges by default.
         'Comfy.NodeBadge.NodeIdBadgeMode': NodeBadgeMode.None,
         'Comfy.NodeBadge.NodeSourceBadgeMode': NodeBadgeMode.None,
