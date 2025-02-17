@@ -757,7 +757,7 @@
   "templateWorkflows": {
     "template": {
       "3D": {
-        "stable_zero123_example": "Stable Zero123"
+        "stable_zero123_example": "스테이블 제로123"
       },
       "Area Composition": {
         "area_composition": "영역 구성",
@@ -765,47 +765,47 @@
         "area_composition_square_area_for_subject": "주제를 위한 사각형 영역 구성"
       },
       "Audio": {
-        "stable_audio_example": "Stable Audio"
+        "stable_audio_example": "스테이블 오디오"
       },
       "Basics": {
         "default": "이미지 생성",
-        "embedding_example": "임베딩",
-        "gligen_textbox_example": "Gligen 텍스트박스",
-        "image2image": "이미지에서 이미지로",
-        "inpain_model_outpainting": "Inpaint 모델 Outpainting",
-        "inpaint_example": "Inpaint",
-        "lora": "Lora",
-        "lora_multiple": "Lora 다중",
-        "yosemite_outpaint_example": "Yosemite Outpaint"
+        "embedding_example": "임베딩 예제",
+        "gligen_textbox_example": "글리젠 텍스트박스 예제",
+        "image2image": "이미지로 이미지 생성 예제",
+        "inpain_model_outpainting": "인페인트 모델 아웃페인팅",
+        "inpaint_example": "인페인트",
+        "lora": "로라",
+        "lora_multiple": "다중 로라",
+        "yosemite_outpaint_example": "요세미티 아웃페인트 예제"
       },
       "ControlNet": {
-        "2_pass_pose_worship": "2 패스 포즈 워십",
-        "controlnet_example": "ControlNet",
-        "depth_controlnet": "Depth ControlNet",
-        "depth_t2i_adapter": "Depth T2I 어댑터",
-        "mixing_controlnets": "ControlNets 혼합"
+        "2_pass_pose_worship": "2 패스 경배 포즈",
+        "controlnet_example": "컨트롤넷",
+        "depth_controlnet": "깊이 컨트롤넷",
+        "depth_t2i_adapter": "깊이 T2I 어댑터",
+        "mixing_controlnets": "컨트롤넷 섞기"
       },
       "Flux": {
-        "flux_canny_model_example": "Flux Canny 모델",
-        "flux_depth_lora_example": "Flux Depth Lora",
-        "flux_dev_checkpoint_example": "Flux Dev",
-        "flux_fill_inpaint_example": "Flux Inpaint",
-        "flux_fill_outpaint_example": "Flux Outpaint",
-        "flux_redux_model_example": "Flux Redux 모델",
-        "flux_schnell": "Flux Schnell"
+        "flux_canny_model_example": "FLUX 캐니 모델 예제",
+        "flux_depth_lora_example": "FLUX 깊이 로라 예제",
+        "flux_dev_checkpoint_example": "FLUX Dev 예제",
+        "flux_fill_inpaint_example": "FLUX 인페인트 예제",
+        "flux_fill_outpaint_example": "FLUX 아웃페인트 예제",
+        "flux_redux_model_example": "FLUX Redux 모델 예제",
+        "flux_schnell": "FLUX Schnell"
       },
       "SD3_5": {
-        "sd3_5_large_blur": "SD3.5 큰 흐림",
-        "sd3_5_large_canny_controlnet_example": "SD3.5 큰 캐니 컨트롤넷",
-        "sd3_5_large_depth": "SD3.5 큰 깊이",
-        "sd3_5_simple_example": "SD3.5 간단한 예시"
+        "sd3_5_large_blur": "SD3.5 Large 블러 컨트롤넷",
+        "sd3_5_large_canny_controlnet_example": "SD3.5 Large 캐니 컨트롤넷",
+        "sd3_5_large_depth": "SD3.5 Large 깊이 컨트롤넷",
+        "sd3_5_simple_example": "간단한 SD3.5 예제"
       },
       "SDXL": {
-        "sdxl_refiner_prompt_example": "SDXL Refiner 프롬프트",
+        "sdxl_refiner_prompt_example": "SDXL 리파이너 프롬프트",
         "sdxl_revision_text_prompts": "SDXL Revision 텍스트 프롬프트",
         "sdxl_revision_zero_positive": "SDXL Revision Zero Positive",
-        "sdxl_simple_example": "SDXL 간단한 예",
-        "sdxlturbo_example": "SDXL Turbo"
+        "sdxl_simple_example": "간단한 SDXL 예제",
+        "sdxlturbo_example": "SDXL 터보"
       },
       "Upscaling": {
         "esrgan_example": "ESRGAN",
@@ -815,12 +815,12 @@
         "upscale": "업스케일"
       },
       "Video": {
-        "hunyuan_video_text_to_video": "Hunyuan 비디오 텍스트에서 비디오로",
-        "image_to_video": "이미지에서 비디오로",
-        "ltxv_image_to_video": "LTXV 이미지에서 비디오로",
-        "ltxv_text_to_video": "LTXV 텍스트에서 비디오로",
-        "mochi_text_to_video_example": "Mochi 텍스트에서 비디오로",
-        "txt_to_image_to_video": "텍스트에서 이미지로, 그리고 비디오로"
+        "hunyuan_video_text_to_video": "텍스트 -> 비디오 (Hunyuan Video)",
+        "image_to_video": "이미지 -> 동영상",
+        "ltxv_image_to_video": "이미지 -> 동영상 (LTXV)",
+        "ltxv_text_to_video": "텍스트 -> 동영상 (LTXV)",
+        "mochi_text_to_video_example": "텍스트 -> 동영상 (Mochi)",
+        "txt_to_image_to_video": "텍스트 -> 이미지 -> 동영상"
       }
     },
     "title": "템플릿으로 시작하기"
