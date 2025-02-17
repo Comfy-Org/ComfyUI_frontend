@@ -52,8 +52,10 @@ watch(
     }
     editedTitle.value = target.title
     showInput.value = true
-    previousCanvasDraggable.value = canvasStore.canvas!.allow_dragcanvas
-    canvasStore.canvas!.allow_dragcanvas = false
+    const canvas = canvasStore.canvas!
+    previousCanvasDraggable.value = canvas.allow_dragcanvas
+    canvas.allow_dragcanvas = false
+    const scale = canvas.ds.scale
 
     if (target instanceof LGraphGroup) {
       const group = target
@@ -62,7 +64,7 @@ watch(
           pos: group.pos,
           size: [group.size[0], group.titleHeight]
         },
-        { fontSize: group.font_size }
+        { fontSize: `${group.font_size * scale}px` }
       )
     } else if (target instanceof LGraphNode) {
       const node = target
@@ -72,7 +74,7 @@ watch(
           pos: [x, y],
           size: [node.width, LiteGraph.NODE_TITLE_HEIGHT]
         },
-        { fontSize: 12 }
+        { fontSize: `${12 * scale}px` }
       )
     }
   }
