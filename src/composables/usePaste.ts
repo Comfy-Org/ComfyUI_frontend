@@ -28,7 +28,7 @@ export const usePaste = () => {
     // Did you mean 'Clipboard'?ts(2551)
     // TODO: Not sure what the code wants to do.
     let data = e.clipboardData || window.clipboardData
-    const items = data.items
+    const items: DataTransferItemList = data.items
 
     // Look for image paste data
     for (const item of items) {
@@ -54,7 +54,13 @@ export const usePaste = () => {
           graph.change()
         }
         const blob = item.getAsFile()
-        imageNode?.pasteFile?.(blob)
+        if (blob) imageNode?.pasteFile?.(blob)
+
+        imageNode?.pasteFiles?.(
+          Array.from(items)
+            .map((i) => i.getAsFile())
+            .filter((f) => f !== null)
+        )
         return
       }
     }

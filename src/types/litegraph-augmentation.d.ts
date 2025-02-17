@@ -122,6 +122,8 @@ declare module '@comfyorg/litegraph' {
     imageOffset?: number
     /** Callback for pasting an image file into the node */
     pasteFile?(file: File): void
+    /** Callback for pasting multiple files into the node */
+    pasteFiles?(files: File[]): void
   }
 }
 
