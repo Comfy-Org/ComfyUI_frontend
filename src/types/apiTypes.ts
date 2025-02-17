@@ -349,6 +349,7 @@ const zComboInputProps = zBaseInputSpecValue.extend({
   control_after_generate: z.boolean().optional(),
   image_upload: z.boolean().optional(),
   image_folder: z.enum(['input', 'output', 'temp']).optional(),
+  allow_batch: z.boolean().optional(),
   remote: zRemoteWidgetConfig.optional()
 })
 

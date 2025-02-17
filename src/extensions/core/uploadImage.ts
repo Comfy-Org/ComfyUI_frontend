@@ -1,22 +1,41 @@
-import { ComfyNodeDef, InputSpec } from '@/types/apiTypes'
+import { ComfyNodeDef, InputSpec, isComboInputSpecV1 } from '@/types/apiTypes'
 
 import { app } from '../../scripts/app'
 
 // Adds an upload button to the nodes
 
+const isImageComboInput = (inputSpec: InputSpec) => {
+  const [inputName, inputOptions] = inputSpec
+  if (!inputOptions || inputOptions['image_upload'] !== true) return false
+  return isComboInputSpecV1(inputSpec) || inputName === 'COMBO'
+}
+
+const createUploadInput = (
+  imageInputName: string,
+  imageInputOptions: InputSpec
+): InputSpec => [
+  'IMAGEUPLOAD',
+  {
+    ...imageInputOptions[1],
+    imageInputName
+  }
+]
+
 app.registerExtension({
   name: 'Comfy.UploadImage',
   beforeRegisterNodeDef(nodeType, nodeData: ComfyNodeDef) {
-    // Check if there is a required input named 'image' in the nodeData
-    const imageInputSpec: InputSpec | undefined =
-      nodeData?.input?.required?.image
+    const { input } = nodeData ?? {}
+    const { required } = input ?? {}
+    if (!required) return
 
-    // Get the config from the image input spec if it exists
-    const config = imageInputSpec?.[1] ?? {}
-    const { image_upload = false, image_folder = 'input' } = config
+    const found = Object.entries(required).find(([_, input]) =>
+      isImageComboInput(input)
+    )
 
-    if (image_upload && nodeData?.input?.required) {
-      nodeData.input.required.upload = ['IMAGEUPLOAD', { image_folder }]
+    // If image combo input found, attach upload input
+    if (found) {
+      const [inputName, inputSpec] = found
+      required.upload = createUploadInput(inputName, inputSpec)
     }
   }
 })
