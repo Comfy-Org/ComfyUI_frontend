@@ -566,6 +566,16 @@ export function useCoreCommands(): ComfyCommand[] {
       function: () => {
         window.open('https://forum.comfy.org/', '_blank')
       }
+    },
+    {
+      id: 'Comfy.Canvas.DeleteSelectedItems',
+      icon: 'pi pi-trash',
+      label: 'Delete Selected Items',
+      versionAdded: '1.10.5',
+      function: () => {
+        app.canvas.deleteSelected()
+        app.canvas.setDirty(true, true)
+      }
     }
   ]
 }
