@@ -29,8 +29,7 @@
   />
   <NodeSearchboxPopover />
   <SelectionOverlay>
-    <!-- Placeholder for selection overlay testing. -->
-    <!-- <div class="w-full h-full bg-red-500"></div> -->
+    <SelectionToolbox />
   </SelectionOverlay>
   <NodeTooltip v-if="tooltipEnabled" />
   <NodeBadge />
@@ -49,6 +48,7 @@ import TitleEditor from '@/components/graph/TitleEditor.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import SecondRowWorkflowTabs from '@/components/topbar/SecondRowWorkflowTabs.vue'
+import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
 import { useCopy } from '@/composables/useCopy'
@@ -70,6 +70,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { useChainCallback } from '@/composables/functional/useChainCallback'
 
 const emit = defineEmits(['ready'])
 const canvasRef = ref<HTMLCanvasElement | null>(null)
@@ -191,6 +192,11 @@ onMounted(async () => {
   window['graph'] = comfyApp.graph
 
   comfyAppReady.value = true
+
+  comfyApp.canvas.onSelectionChange = useChainCallback(
+    comfyApp.canvas.onSelectionChange,
+    () => canvasStore.updateSelectedItems()
+  )
 
   // Load color palette
   colorPaletteStore.customPalettes = settingStore.get(

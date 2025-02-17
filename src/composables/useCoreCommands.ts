@@ -399,6 +399,7 @@ export function useCoreCommands(): ComfyCommand[] {
             item.pin(!item.pinned)
           }
         }
+        app.canvas.setDirty(true, true)
       }
     },
     {

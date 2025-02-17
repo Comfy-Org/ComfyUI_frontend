@@ -1,7 +1,7 @@
 <!-- This component is used to bound the selected items on the canvas. -->
 <template>
   <div
-    class="selection-overlay-container pointer-events-none"
+    class="selection-overlay-container pointer-events-none border-1 border-dashed border-gray-300 rounded-md"
     :style="style"
     v-show="visible"
   >
