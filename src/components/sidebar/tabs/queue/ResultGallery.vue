@@ -16,6 +16,12 @@
         onMousedown: onMaskMouseDown,
         onMouseup: onMaskMouseUp,
         'data-mask': true
+      },
+      prevButton: {
+        style: 'position: fixed !important'
+      },
+      nextButton: {
+        style: 'position: fixed !important'
       }
     }"
   >
