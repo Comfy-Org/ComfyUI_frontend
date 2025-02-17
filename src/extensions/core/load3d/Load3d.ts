@@ -198,8 +198,8 @@ class Load3d {
     this.previewContainer = document.createElement('div')
     this.previewContainer.style.cssText = `
       position: absolute;
-      right: 0px;
-      bottom: 0px;
+      right: 0;
+      bottom: 0;
       background: rgba(0, 0, 0, 0.2);
       display: block;
     `

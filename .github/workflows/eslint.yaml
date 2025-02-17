@@ -2,10 +2,7 @@ name: ESLint
 
 on:
   pull_request:
-    branches:
-      - main
-      - master
-      - 'dev*'
+    branches: [ main, master, dev* ]
 
 jobs:
   eslint:
@@ -15,6 +12,6 @@ jobs:
     - name: Use Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: lts/*
+        node-version: 'lts/*'
     - run: npm ci
     - run: npm run lint
