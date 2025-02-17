@@ -1,5 +1,6 @@
 /**
  * Creates a getter/setter pair that transforms values on access if they have changed.
+ * Does not observe deep changes.
  *
  * @example
  * const { get, set } = useValueTransform<ResultItem[], string[]>(
@@ -12,7 +13,7 @@ export function useValueTransform<Internal, External>(
   transform: (value: Internal) => External,
   initialValue: Internal
 ) {
-  let internalValue = initialValue
+  let internalValue: Internal = initialValue
   let cachedValue: External = transform(initialValue)
   let isChanged = false
 
