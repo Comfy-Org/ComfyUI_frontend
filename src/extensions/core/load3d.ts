@@ -1,8 +1,11 @@
 // @ts-strict-ignore
 import { IWidget } from '@comfyorg/litegraph'
-import type { IStringWidget } from '@comfyorg/litegraph/dist/types/widgets'
-import { nextTick } from 'vue'
+import { IStringWidget } from '@comfyorg/litegraph/dist/types/widgets'
+import PrimeVue from 'primevue/config'
+import { createApp, h, nextTick, render } from 'vue'
 
+import Load3D from '@/components/load3d/Load3D.vue'
+import Load3DAnimation from '@/components/load3d/Load3DAnimation.vue'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import Load3dAnimation from '@/extensions/core/load3d/Load3dAnimation'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
@@ -21,51 +24,54 @@ app.registerExtension({
         const container = document.createElement('div')
         container.classList.add('comfy-load-3d')
 
-        const load3d = useLoad3dService().registerLoad3d(
-          node,
-          container,
-          'Load3D'
-        )
+        /* Hold off for now
+        const mountComponent = () => {
+          const vnode = h(Load3D, {
+            node: node,
+            type: 'Load3D'
+          })
 
-        node.onMouseEnter = function () {
-          if (load3d) {
-            load3d.refreshViewport()
-          }
+          render(vnode, container)
         }
+         */
 
-        node.onResize = function () {
-          if (load3d) {
-            load3d.handleResize()
-          }
-        }
+        let controlsApp = createApp(Load3D, {
+          node: node,
+          type: 'Load3D'
+        })
+
+        controlsApp.mount(container)
 
         const origOnRemoved = node.onRemoved
 
         node.onRemoved = function () {
-          if (load3d) {
-            load3d.remove()
+          /*
+          render(null, container)
+
+          container.remove()
+           */
+
+          if (controlsApp) {
+            controlsApp.unmount()
+            controlsApp = null
           }
 
-          useLoad3dService().removeLoad3d(node)
-
           origOnRemoved?.apply(this, [])
-        }
-
-        node.onDrawBackground = function () {
-          load3d.renderer.domElement.hidden = this.flags.collapsed ?? false
         }
 
         const fileInput = document.createElement('input')
         fileInput.type = 'file'
         fileInput.accept = '.gltf,.glb,.obj,.mtl,.fbx,.stl'
         fileInput.style.display = 'none'
+
         fileInput.onchange = async () => {
           if (fileInput.files?.length) {
             const modelWidget = node.widgets?.find(
               (w: IWidget) => w.name === 'model_file'
             ) as IStringWidget
+
             const uploadPath = await Load3dUtils.uploadFile(
-              load3d,
+              useLoad3dService().getLoad3d(node),
               fileInput.files[0],
               fileInput
             ).catch((error) => {
@@ -88,7 +94,8 @@ app.registerExtension({
         })
 
         node.addWidget('button', 'clear', 'clear', () => {
-          load3d.clearModel()
+          useLoad3dService().getLoad3d(node).clearModel()
+
           const modelWidget = node.widgets?.find(
             (w: IWidget) => w.name === 'model_file'
           )
@@ -96,6 +103,8 @@ app.registerExtension({
             modelWidget.value = ''
           }
         })
+
+        //mountComponent()
 
         return {
           widget: node.addDOMWidget(inputName, 'LOAD_3D', container)
@@ -177,38 +186,41 @@ app.registerExtension({
 
         container.classList.add('comfy-load-3d-animation')
 
-        const load3d = useLoad3dService().registerLoad3d(
-          node,
-          container,
-          'Load3DAnimation'
-        )
+        /*
+          const mountComponent = () => {
+          const vnode = h(Load3DAnimation, {
+            node: node,
+            type: 'Load3DAnimation'
+          })
 
-        node.onMouseEnter = function () {
-          if (load3d) {
-            load3d.refreshViewport()
-          }
+          render(vnode, container)
         }
+         */
 
-        node.onResize = function () {
-          if (load3d) {
-            load3d.handleResize()
-          }
-        }
+        let controlsApp = createApp(Load3DAnimation, {
+          node: node,
+          type: 'Load3DAnimation'
+        })
+
+        controlsApp.use(PrimeVue)
+
+        controlsApp.mount(container)
 
         const origOnRemoved = node.onRemoved
 
         node.onRemoved = function () {
-          if (load3d) {
-            load3d.remove()
+          /*
+          render(null, container)
+
+          container.remove()
+           */
+
+          if (controlsApp) {
+            controlsApp.unmount()
+            controlsApp = null
           }
 
-          useLoad3dService().removeLoad3d(node)
-
           origOnRemoved?.apply(this, [])
-        }
-
-        node.onDrawBackground = function () {
-          load3d.renderer.domElement.hidden = this.flags.collapsed ?? false
         }
 
         const fileInput = document.createElement('input')
@@ -221,7 +233,7 @@ app.registerExtension({
               (w: IWidget) => w.name === 'model_file'
             ) as IStringWidget
             const uploadPath = await Load3dUtils.uploadFile(
-              load3d,
+              useLoad3dService().getLoad3d(node),
               fileInput.files[0],
               fileInput
             ).catch((error) => {
@@ -244,7 +256,7 @@ app.registerExtension({
         })
 
         node.addWidget('button', 'clear', 'clear', () => {
-          load3d.clearModel()
+          useLoad3dService().getLoad3d(node).clearModel()
           const modelWidget = node.widgets?.find(
             (w: IWidget) => w.name === 'model_file'
           )
@@ -252,6 +264,8 @@ app.registerExtension({
             modelWidget.value = ''
           }
         })
+
+        //mountComponent()
 
         return {
           widget: node.addDOMWidget(inputName, 'LOAD_3D_ANIMATION', container)
@@ -342,39 +356,42 @@ app.registerExtension({
 
         container.classList.add('comfy-preview-3d')
 
-        const load3d = useLoad3dService().registerLoad3d(
-          node,
-          container,
-          'Preview3D'
-        )
+        /*
+        const mountComponent = () => {
+          const vnode = h(Load3D, {
+            node: node,
+            type: 'Preview3D'
+          })
 
-        node.onMouseEnter = function () {
-          if (load3d) {
-            load3d.refreshViewport()
-          }
+          render(vnode, container)
         }
+         */
 
-        node.onResize = function () {
-          if (load3d) {
-            load3d.handleResize()
-          }
-        }
+        let controlsApp = createApp(Load3D, {
+          node: node,
+          type: 'Preview3D'
+        })
+
+        controlsApp.mount(container)
 
         const origOnRemoved = node.onRemoved
 
         node.onRemoved = function () {
-          if (load3d) {
-            load3d.remove()
-          }
+          /*
+          render(null, container)
 
-          useLoad3dService().removeLoad3d(node)
+          container.remove()
+           */
+
+          if (controlsApp) {
+            controlsApp.unmount()
+            controlsApp = null
+          }
 
           origOnRemoved?.apply(this, [])
         }
 
-        node.onDrawBackground = function () {
-          load3d.renderer.domElement.hidden = this.flags.collapsed ?? false
-        }
+        //mountComponent()
 
         return {
           widget: node.addDOMWidget(inputName, 'PREVIEW_3D', container)
@@ -447,38 +464,30 @@ app.registerExtension({
 
         container.classList.add('comfy-preview-3d-animation')
 
-        const load3d = useLoad3dService().registerLoad3d(
-          node,
-          container,
-          'Preview3DAnimation'
-        )
+        let controlsApp = createApp(Load3DAnimation, {
+          node: node,
+          type: 'Preview3DAnimation'
+        })
 
-        node.onMouseEnter = function () {
-          if (load3d) {
-            load3d.refreshViewport()
-          }
-        }
+        controlsApp.use(PrimeVue)
 
-        node.onResize = function () {
-          if (load3d) {
-            load3d.handleResize()
-          }
-        }
+        controlsApp.mount(container)
 
         const origOnRemoved = node.onRemoved
 
         node.onRemoved = function () {
-          if (load3d) {
-            load3d.remove()
+          /*
+          render(null, container)
+
+          container.remove()
+           */
+
+          if (controlsApp) {
+            controlsApp.unmount()
+            controlsApp = null
           }
 
-          useLoad3dService().removeLoad3d(node)
-
           origOnRemoved?.apply(this, [])
-        }
-
-        node.onDrawBackground = function () {
-          load3d.renderer.domElement.hidden = this.flags.collapsed ?? false
         }
 
         return {

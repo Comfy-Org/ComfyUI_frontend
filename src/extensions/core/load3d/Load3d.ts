@@ -8,10 +8,13 @@ import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader'
-import { App, createApp } from 'vue'
 
-import Load3DControls from '@/components/load3d/Load3DControls.vue'
 import { useToastStore } from '@/stores/toastStore'
+
+interface Load3DOptions {
+  createPreview?: boolean
+  node?: LGraphNode
+}
 
 class Load3d {
   scene: THREE.Scene
@@ -51,14 +54,15 @@ class Load3d {
   targetHeight: number = 1024
   showPreview: boolean = true
   node: LGraphNode = {} as LGraphNode
-
-  protected controlsApp: App | null = null
-  protected controlsContainer: HTMLDivElement
+  private listeners: { [key: string]: Function[] } = {}
 
   constructor(
     container: Element | HTMLElement,
-    options: { createPreview?: boolean } = {}
+    options: Load3DOptions = {
+      node: {} as LGraphNode
+    }
   ) {
+    this.node = options.node || ({} as LGraphNode)
     this.scene = new THREE.Scene()
 
     this.perspectiveCamera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000)
@@ -140,53 +144,30 @@ class Load3d {
       this.createCapturePreview(container)
     }
 
-    this.controlsContainer = document.createElement('div')
-    this.controlsContainer.style.position = 'absolute'
-    this.controlsContainer.style.top = '0'
-    this.controlsContainer.style.left = '0'
-    this.controlsContainer.style.width = '100%'
-    this.controlsContainer.style.height = '100%'
-    this.controlsContainer.style.pointerEvents = 'none'
-    this.controlsContainer.style.zIndex = '1'
-    container.appendChild(this.controlsContainer)
-
-    this.mountControls(options)
-
     this.handleResize()
 
     this.startAnimation()
   }
 
-  protected mountControls(options: { createPreview?: boolean } = {}) {
-    const controlsMount = document.createElement('div')
-    controlsMount.style.pointerEvents = 'auto'
-    this.controlsContainer.appendChild(controlsMount)
-
-    this.controlsApp = createApp(Load3DControls, {
-      backgroundColor: '#282828',
-      showGrid: true,
-      showPreview: options.createPreview,
-      lightIntensity: 5,
-      showLightIntensityButton: true,
-      fov: 75,
-      showFOVButton: true,
-      showPreviewButton: options.createPreview,
-      onToggleCamera: () => this.toggleCamera(),
-      onToggleGrid: (show: boolean) => this.toggleGrid(show),
-      onTogglePreview: (show: boolean) => this.togglePreview(show),
-      onUpdateBackgroundColor: (color: string) =>
-        this.setBackgroundColor(color),
-      onUpdateLightIntensity: (lightIntensity: number) =>
-        this.setLightIntensity(lightIntensity),
-      onUpdateFOV: (fov: number) => this.setFOV(fov)
-    })
-
-    this.controlsApp.directive('tooltip', Tooltip)
-    this.controlsApp.mount(controlsMount)
+  addEventListener(event: string, callback: Function) {
+    if (!this.listeners[event]) {
+      this.listeners[event] = []
+    }
+    this.listeners[event].push(callback)
   }
 
-  setNode(node: LGraphNode) {
-    this.node = node
+  removeEventListener(event: string, callback: Function) {
+    if (this.listeners[event]) {
+      this.listeners[event] = this.listeners[event].filter(
+        (cb) => cb !== callback
+      )
+    }
+  }
+
+  emitEvent(event: string, data?: any) {
+    if (this.listeners[event]) {
+      this.listeners[event].forEach((callback) => callback(data))
+    }
   }
 
   storeNodeProperty(name: string, value: any) {
@@ -339,8 +320,6 @@ class Load3d {
       this.perspectiveCamera.fov = fov
       this.perspectiveCamera.updateProjectionMatrix()
       this.renderer.render(this.scene, this.activeCamera)
-
-      this.storeNodeProperty('FOV', fov)
     }
 
     if (
@@ -351,6 +330,8 @@ class Load3d {
       this.previewCamera.updateProjectionMatrix()
       this.previewRenderer.render(this.scene, this.previewCamera)
     }
+
+    this.emitEvent('fovChange', fov)
   }
 
   getCameraState() {
@@ -429,11 +410,6 @@ class Load3d {
 
   setMaterialMode(mode: 'original' | 'normal' | 'wireframe' | 'depth') {
     this.materialMode = mode
-
-    if (this.controlsApp?._instance?.exposed) {
-      this.controlsApp._instance.exposed.showLightIntensityButton.value =
-        mode == 'original'
-    }
 
     if (this.currentModel) {
       if (mode === 'depth') {
@@ -528,6 +504,8 @@ class Load3d {
       })
 
       this.renderer.render(this.scene, this.activeCamera)
+
+      this.emitEvent('materialModeChange', mode)
     }
   }
 
@@ -608,14 +586,10 @@ class Load3d {
     )
     this.viewHelper.center = this.controls.target
 
-    if (this.controlsApp?._instance?.exposed) {
-      this.controlsApp._instance.exposed.showFOVButton.value =
-        this.getCurrentCameraType() == 'perspective'
-    }
-
-    this.storeNodeProperty('Camera Type', this.getCurrentCameraType())
     this.handleResize()
     this.updatePreviewRender()
+
+    this.emitEvent('cameraTypeChange', cameraType)
   }
 
   getCurrentCameraType(): 'perspective' | 'orthographic' {
@@ -627,9 +601,9 @@ class Load3d {
   toggleGrid(showGrid: boolean) {
     if (this.gridHelper) {
       this.gridHelper.visible = showGrid
-
-      this.storeNodeProperty('Show Grid', showGrid)
     }
+
+    this.emitEvent('showGridChange', showGrid)
   }
 
   togglePreview(showPreview: boolean) {
@@ -637,9 +611,9 @@ class Load3d {
       this.showPreview = showPreview
 
       this.previewContainer.style.display = this.showPreview ? 'block' : 'none'
-
-      this.storeNodeProperty('Show Preview', showPreview)
     }
+
+    this.emitEvent('showPreviewChange', showPreview)
   }
 
   setLightIntensity(intensity: number) {
@@ -659,7 +633,7 @@ class Load3d {
       }
     })
 
-    this.storeNodeProperty('Light Intensity', intensity)
+    this.emitEvent('lightIntensityChange', intensity)
   }
 
   startAnimation() {
@@ -771,10 +745,6 @@ class Load3d {
     this.controls.dispose()
     this.viewHelper.dispose()
     this.renderer.dispose()
-    if (this.controlsApp) {
-      this.controlsApp.unmount()
-      this.controlsApp = null
-    }
     this.renderer.domElement.remove()
     this.scene.clear()
   }
@@ -1044,11 +1014,7 @@ class Load3d {
     this.renderer.setClearColor(new THREE.Color(color))
     this.renderer.render(this.scene, this.activeCamera)
 
-    if (this.controlsApp?._instance?.exposed) {
-      this.controlsApp._instance.exposed.backgroundColor.value = color
-    }
-
-    this.storeNodeProperty('Background Color', color)
+    this.emitEvent('backgroundColorChange', color)
   }
 }
 
