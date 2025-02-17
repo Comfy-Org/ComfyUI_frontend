@@ -165,7 +165,7 @@ export const CORE_TEMPLATES = [
         mediaType: 'image',
         mediaSubtype: 'png',
         tutorialUrl:
-          'https://comfyanonymous.github.io/ComfyUI_examples/upscale_models/'
+          'https://comfyanonymous.github.io/ComfyUI_examples/2_pass_txt2img/'
       },
       {
         name: 'esrgan_example',
@@ -173,13 +173,6 @@ export const CORE_TEMPLATES = [
         mediaSubtype: 'png',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/upscale_models/'
-      },
-      {
-        name: 'hiresfix_latent_workflow',
-        mediaType: 'image',
-        mediaSubtype: 'png',
-        tutorialUrl:
-          'https://comfyanonymous.github.io/ComfyUI_examples/2_pass_txt2img/'
       },
       {
         name: 'hiresfix_esrgan_workflow',

@@ -482,11 +482,6 @@
       "directory": "checkpoints"
     },
     {
-      "name": "sd_xl_refiner_1.0.safetensors",
-      "url": "https://huggingface.co/stabilityai/stable-diffusion-xl-refiner-1.0/resolve/main/sd_xl_refiner_1.0.safetensors?download=true",
-      "directory": "checkpoints"
-    },
-    {
       "name": "clip_vision_g.safetensors",
       "url": "https://huggingface.co/comfyanonymous/clip_vision_g/resolve/main/clip_vision_g.safetensors?download=true",
       "directory": "clip_vision"
