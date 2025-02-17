@@ -1,4 +1,4 @@
-/** 
+/**
    Extended types for litegraph, to be merged upstream once it has stabilized.
    Augmenting the LiteGraph type really didn't want to work, however doing it like this seems to allow it.
 */

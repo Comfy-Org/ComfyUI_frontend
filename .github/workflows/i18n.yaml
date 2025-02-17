@@ -1,4 +1,5 @@
 name: Update Locales
+
 on:
   pull_request:
     branches: [ main, master, dev* ]

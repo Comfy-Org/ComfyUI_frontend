@@ -45,7 +45,7 @@
   bottom: var(--bottom);
   z-index: 2000;
   max-height: calc(100vh - var(--limit) - 10px);
-  box-shadow: 3px 3px 5px 0px rgba(0, 0, 0, 0.3);
+  box-shadow: 3px 3px 5px 0 rgba(0, 0, 0, 0.3);
 }
 
 .comfyui-popup:not(.open) {
@@ -295,4 +295,3 @@
 .comfyui-body-bottom .lt-sm.comfyui-menu > .comfyui-menu-button{
   bottom: 41px;
 }
-
