@@ -775,8 +775,7 @@
         "inpain_model_outpainting": "인페인트 모델 아웃페인팅",
         "inpaint_example": "인페인트",
         "lora": "로라",
-        "lora_multiple": "다중 로라",
-        "yosemite_outpaint_example": "요세미티 아웃페인트 예제"
+        "lora_multiple": "다중 로라"
       },
       "ControlNet": {
         "2_pass_pose_worship": "2 패스 경배 포즈",

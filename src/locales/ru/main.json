@@ -775,8 +775,7 @@
         "inpain_model_outpainting": "Inpaint Model Outpainting",
         "inpaint_example": "Inpaint",
         "lora": "Lora",
-        "lora_multiple": "Lora Multiple",
-        "yosemite_outpaint_example": "Yosemite Outpaint"
+        "lora_multiple": "Lora Multiple"
       },
       "ControlNet": {
         "2_pass_pose_worship": "2 Pass Pose Worship",

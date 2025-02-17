@@ -775,8 +775,7 @@
         "inpain_model_outpainting": "Inpaint模型Outpainting",
         "inpaint_example": "Inpaint",
         "lora": "Lora",
-        "lora_multiple": "Lora多个",
-        "yosemite_outpaint_example": "优胜美地Outpaint"
+        "lora_multiple": "Lora多个"
       },
       "ControlNet": {
         "2_pass_pose_worship": "2通道姿势崇拜",
