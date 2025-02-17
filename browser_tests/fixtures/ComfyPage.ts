@@ -885,10 +885,10 @@ export class ComfyPage {
 }
 
 export const comfyPageFixture = base.extend<{ comfyPage: ComfyPage }>({
-  comfyPage: async ({ page, request }, use) => {
+  comfyPage: async ({ page, request }, use, testInfo) => {
     const comfyPage = new ComfyPage(page, request)
 
-    const { parallelIndex } = comfyPageFixture.info()
+    const { parallelIndex } = testInfo
     const username = `playwright-test-${parallelIndex}`
     const userId = await comfyPage.setupUser(username)
     comfyPage.userIds[parallelIndex] = userId
