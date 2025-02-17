@@ -3711,6 +3711,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       }
       for (const item of notSelected) this.select(item)
     }
+    this.onSelectionChange?.(this.selected_nodes)
   }
 
   /**
