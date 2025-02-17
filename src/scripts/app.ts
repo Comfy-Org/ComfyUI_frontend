@@ -10,7 +10,7 @@ import {
 import type { Rect, Vector2 } from '@comfyorg/litegraph'
 import _ from 'lodash'
 import type { ToastMessageOptions } from 'primevue/toast'
-import { shallowReactive } from 'vue'
+import { reactive } from 'vue'
 
 import { st } from '@/i18n'
 import { useDialogService } from '@/services/dialogService'
@@ -795,10 +795,10 @@ export class ComfyApp {
 
     this.#addAfterConfigureHandler()
 
-    // Make LGraphCanvas.state shallow reactive so that any change on the root
-    // object triggers reactivity.
     this.canvas = new LGraphCanvas(canvasEl, this.graph)
-    this.canvas.state = shallowReactive(this.canvas.state)
+    // Make canvas states reactive so we can observe changes on them.
+    this.canvas.state = reactive(this.canvas.state)
+    this.canvas.ds.state = reactive(this.canvas.ds.state)
 
     this.ctx = canvasEl.getContext('2d')
 

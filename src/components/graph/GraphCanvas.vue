@@ -28,6 +28,10 @@
     class="w-full h-full touch-none"
   />
   <NodeSearchboxPopover />
+  <SelectionOverlay>
+    <!-- Placeholder for selection overlay testing. -->
+    <!-- <div class="w-full h-full bg-red-500"></div> -->
+  </SelectionOverlay>
   <NodeTooltip v-if="tooltipEnabled" />
   <NodeBadge />
 </template>
@@ -40,6 +44,7 @@ import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
 import NodeBadge from '@/components/graph/NodeBadge.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
+import SelectionOverlay from '@/components/graph/SelectionOverlay.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
