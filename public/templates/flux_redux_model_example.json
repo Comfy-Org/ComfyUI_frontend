@@ -473,7 +473,7 @@
         "text": ""
       },
       "widgets_values": [
-        "If you get an error in any of the nodes above make sure the files are in the correct directories.\n\nSee the top of the examples page for the links : https://comfyanonymous.github.io/ComfyUI_examples/flux/\n\nflux1-dev.safetensors goes in: ComfyUI/models/unet/\n\nt5xxl_fp16.safetensors and clip_l.safetensors go in: ComfyUI/models/clip/\n\nae.safetensors goes in: ComfyUI/models/vae/\n\n\nTip: You can set the weight_dtype above to one of the fp8 types if you have memory issues."
+        "If you get an error in any of the nodes above make sure the files are in the correct directories.\n\nSee the top of the examples page for the links : https://comfyanonymous.github.io/ComfyUI_examples/flux/\n\nflux1-dev.safetensors goes in: ComfyUI/models/diffusion_models/\n\nt5xxl_fp16.safetensors and clip_l.safetensors go in: ComfyUI/models/text_encoders/\n\nae.safetensors goes in: ComfyUI/models/vae/\n\n\nTip: You can set the weight_dtype above to one of the fp8 types if you have memory issues."
       ],
       "color": "#432",
       "bgcolor": "#653"
@@ -923,7 +923,7 @@
       "directory": "text_encoders"
     },
     {
-      "name": "flux1-dev-fp8.safetensors",
+      "name": "flux1-dev.safetensors",
       "url": "https://huggingface.co/black-forest-labs/FLUX.1-dev/resolve/main/flux1-dev.safetensors?download=true",
       "directory": "diffusion_models"
     },
@@ -933,18 +933,13 @@
       "directory": "clip_vision"
     },
     {
-      "name": "flux1-dev-fp8.safetensors",
-      "url": "https://huggingface.co/Comfy-Org/flux1-dev/resolve/main/flux1-dev-fp8.safetensors?download=true",
-      "directory": "checkpoints"
-    },
-    {
       "name": "ae.safetensors",
       "url": "https://huggingface.co/black-forest-labs/FLUX.1-schnell/resolve/main/ae.safetensors?download=true",
       "directory": "vae"
     },
     {
       "name": "flux1-redux-dev.safetensors",
-      "url": "https://huggingface.co/black-forest-labs/FLUX.1-Redux-dev/resolve/main/flux1-redux-dev.safetensors",
+      "url": "https://huggingface.co/black-forest-labs/FLUX.1-Redux-dev/resolve/main/flux1-redux-dev.safetensors?download=true",
       "directory": "style_models"
     },
     {
