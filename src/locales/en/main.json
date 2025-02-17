@@ -377,8 +377,7 @@
         "lora": "Lora",
         "lora_multiple": "Lora Multiple",
         "inpaint_example": "Inpaint",
-        "yosemite_outpaint_example": "Yosemite Outpaint",
-        "inpain_model_outpainting": "Inpaint Model Outpainting"
+        "inpain_model_outpainting": "Outpaint"
       },
       "ControlNet": {
         "controlnet_example": "ControlNet",
