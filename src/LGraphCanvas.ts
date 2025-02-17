@@ -3917,11 +3917,11 @@ export class LGraphCanvas implements ConnectionColorContext {
       }
     }
 
-    this.selectedItems.clear()
     this.selected_nodes = {}
     this.selectedItems.clear()
     this.current_node = null
     this.highlighted_links = {}
+    this.onSelectionChange?.(this.selected_nodes)
     this.setDirty(true)
     graph.afterChange()
     this.emitAfterChange()
