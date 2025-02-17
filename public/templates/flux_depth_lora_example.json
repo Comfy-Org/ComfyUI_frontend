@@ -431,11 +431,6 @@
       "directory": "text_encoders"
     },
     {
-      "name": "flux1-dev-fp8.safetensors",
-      "url": "https://huggingface.co/Comfy-Org/flux1-dev/resolve/main/flux1-dev-fp8.safetensors?download=true",
-      "directory": "checkpoints"
-    },
-    {
       "name": "ae.safetensors",
       "url": "https://huggingface.co/black-forest-labs/FLUX.1-schnell/resolve/main/ae.safetensors?download=true",
       "directory": "vae"
