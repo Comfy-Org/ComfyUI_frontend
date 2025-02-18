@@ -138,9 +138,9 @@ const filterOptions = ref([
 const filter = ref<MaintenanceFilter>(filterOptions.value[1])
 
 /** If valid, leave the validation window. */
-const completeValidation = async (alertOnFail = true) => {
+const completeValidation = async () => {
   const isValid = await electron.Validation.complete()
-  if (alertOnFail && !isValid) {
+  if (!isValid) {
     toast.add({
       severity: 'error',
       summary: t('g.error'),
@@ -159,14 +159,6 @@ watch(
   () => taskStore.isRunningTerminalCommand,
   (value) => {
     terminalVisible.value = value
-  }
-)
-
-// If we're running a fix that may resolve all issues, auto-recheck and continue if everything is OK
-watch(
-  () => taskStore.isRunningInstallationFix,
-  (value, oldValue) => {
-    if (!value && oldValue) completeValidation(false)
   }
 )
 
