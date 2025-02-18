@@ -52,7 +52,6 @@ import { useI18n } from 'vue-i18n'
 
 import BaseTerminal from '@/components/bottomPanel/tabs/terminal/BaseTerminal.vue'
 import type { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
-import router from '@/router'
 import { electronAPI } from '@/utils/envUtil'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
