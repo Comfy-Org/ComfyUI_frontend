@@ -27,6 +27,7 @@ import { ref, watch } from 'vue'
 import ColorCustomizationSelector from '@/components/common/ColorCustomizationSelector.vue'
 import { useCanvasStore } from '@/stores/graphStore'
 import { setItemColor } from '@/utils/litegraphUtil'
+import { adjustColor } from '@/utils/colorUtil'
 
 const NO_COLOR_OPTION = { name: 'No Color', value: 'No Color' }
 
@@ -37,7 +38,7 @@ const colorOptions = ref<{ name: string; value: string }[]>([
   NO_COLOR_OPTION,
   ...Object.entries(LGraphCanvas.node_colors).map(([name, color]) => ({
     name,
-    value: color.bgcolor
+    value: adjustColor(color.bgcolor, { })
   }))
 ])
 
