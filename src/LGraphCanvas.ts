@@ -1590,6 +1590,8 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     this.selected_nodes = {}
     this.selected_group = null
+    this.selectedItems.clear()
+    this.onSelectionChange?.(this.selected_nodes)
 
     this.visible_nodes = []
     this.node_over = null
