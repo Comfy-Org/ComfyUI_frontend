@@ -152,6 +152,7 @@ test.describe('Color Palette', () => {
     // doesn't update the store immediately.
     await comfyPage.setup()
 
+    await comfyPage.loadWorkflow('every_node_color')
     await comfyPage.setSetting('Comfy.ColorPalette', 'obsidian_dark')
     await expect(comfyPage.canvas).toHaveScreenshot(
       'custom-color-palette-obsidian-dark.png'
@@ -232,7 +233,7 @@ test.describe('Node Color Adjustments', () => {
     const workflow = await comfyPage.page.evaluate(() => {
       return localStorage.getItem('workflow')
     })
-    for (const node of JSON.parse(workflow).nodes) {
+    for (const node of JSON.parse(workflow ?? '{}').nodes) {
       if (node.bgcolor) expect(node.bgcolor).not.toMatch(/hsla/)
       if (node.color) expect(node.color).not.toMatch(/hsla/)
     }
