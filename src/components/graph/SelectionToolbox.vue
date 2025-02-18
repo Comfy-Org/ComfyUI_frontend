@@ -1,6 +1,6 @@
 <template>
   <Panel
-    class="selection-toolbox absolute left-1/2"
+    class="selection-toolbox absolute left-1/2 rounded-lg"
     :pt="{
       header: 'hidden',
       content: 'p-0 flex flex-row'
