@@ -20,37 +20,10 @@
       <Divider />
       <div class="field color-field">
         <label for="color">{{ $t('g.color') }}</label>
-        <div class="color-picker-container">
-          <SelectButton
-            v-model="selectedColor"
-            :options="colorOptions"
-            optionLabel="name"
-            dataKey="value"
-            :allow-empty="false"
-          >
-            <template #option="slotProps">
-              <div
-                v-if="slotProps.option.value !== 'custom'"
-                :style="{
-                  width: '20px',
-                  height: '20px',
-                  backgroundColor: slotProps.option.value,
-                  borderRadius: '50%'
-                }"
-              ></div>
-              <i
-                v-else
-                class="pi pi-palette"
-                :style="{ fontSize: '1.2rem' }"
-                v-tooltip="$t('color.custom')"
-              ></i>
-            </template>
-          </SelectButton>
-          <ColorPicker
-            v-if="selectedColor.value === 'custom'"
-            v-model="customColor"
-          />
-        </div>
+        <ColorCustomizationSelector
+          v-model="finalColor"
+          :color-options="colorOptions"
+        />
       </div>
     </div>
     <template #footer>
@@ -72,13 +45,13 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import ColorPicker from 'primevue/colorpicker'
 import Dialog from 'primevue/dialog'
 import Divider from 'primevue/divider'
 import SelectButton from 'primevue/selectbutton'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import ColorCustomizationSelector from '@/components/common/ColorCustomizationSelector.vue'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 
 const { t } = useI18n()
@@ -118,29 +91,24 @@ const colorOptions = [
   { name: t('color.green'), value: '#28a745' },
   { name: t('color.red'), value: '#dc3545' },
   { name: t('color.pink'), value: '#e83e8c' },
-  { name: t('color.yellow'), value: '#ffc107' },
-  { name: t('color.custom'), value: 'custom' }
+  { name: t('color.yellow'), value: '#ffc107' }
 ]
 
 const defaultIcon = iconOptions.find(
   (option) => option.value === nodeBookmarkStore.defaultBookmarkIcon
 )
-const defaultColor = colorOptions.find(
-  (option) => option.value === nodeBookmarkStore.defaultBookmarkColor
-)
 
 const selectedIcon = ref<{ name: string; value: string }>(defaultIcon)
-const selectedColor = ref<{ name: string; value: string }>(defaultColor)
-const finalColor = computed(() =>
-  selectedColor.value.value === 'custom'
-    ? `#${customColor.value}`
-    : selectedColor.value.value
+const finalColor = ref(
+  props.initialColor || nodeBookmarkStore.defaultBookmarkColor
 )
 
-const customColor = ref('000000')
-
-const closeDialog = () => {
-  visible.value = false
+const resetCustomization = () => {
+  selectedIcon.value =
+    iconOptions.find((option) => option.value === props.initialIcon) ||
+    defaultIcon
+  finalColor.value =
+    props.initialColor || nodeBookmarkStore.defaultBookmarkColor
 }
 
 const confirmCustomization = () => {
@@ -148,21 +116,8 @@ const confirmCustomization = () => {
   closeDialog()
 }
 
-const resetCustomization = () => {
-  selectedIcon.value =
-    iconOptions.find((option) => option.value === props.initialIcon) ||
-    defaultIcon
-  const colorOption = colorOptions.find(
-    (option) => option.value === props.initialColor
-  )
-  if (!props.initialColor) {
-    selectedColor.value = defaultColor
-  } else if (!colorOption) {
-    customColor.value = props.initialColor.replace('#', '')
-    selectedColor.value = { name: t('color.custom'), value: 'custom' }
-  } else {
-    selectedColor.value = colorOption
-  }
+const closeDialog = () => {
+  visible.value = false
 }
 
 watch(
@@ -188,12 +143,6 @@ watch(
 .field {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-}
-
-.color-picker-container {
-  display: flex;
-  align-items: center;
   gap: 0.5rem;
 }
 </style>
