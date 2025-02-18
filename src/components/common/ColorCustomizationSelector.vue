@@ -18,11 +18,7 @@
             borderRadius: '50%'
           }"
         ></div>
-        <i
-          v-else
-          class="pi pi-palette text-lg"
-          v-tooltip="$t('color.custom')"
-        ></i>
+        <i v-else class="pi pi-palette text-lg"></i>
       </template>
     </SelectButton>
     <ColorPicker
