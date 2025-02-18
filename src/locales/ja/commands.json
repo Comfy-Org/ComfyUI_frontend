@@ -35,6 +35,9 @@
   "Comfy_BrowseTemplates": {
     "label": "テンプレートを参照"
   },
+  "Comfy_Canvas_DeleteSelectedItems": {
+    "label": "選択したアイテムを削除"
+  },
   "Comfy_Canvas_FitView": {
     "label": "選択したノードにビューを合わせる"
   },

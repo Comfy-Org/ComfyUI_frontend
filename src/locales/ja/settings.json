@@ -25,6 +25,9 @@
     },
     "tooltip": "システムタイトルバーを非表示にするにはカスタムオプションを選択してください"
   },
+  "Comfy_Canvas_SelectionToolbox": {
+    "name": "選択ツールボックスを表示"
+  },
   "Comfy_ConfirmClear": {
     "name": "ワークフローをクリアする際に確認を要求する"
   },

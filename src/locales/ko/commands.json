@@ -35,6 +35,9 @@
   "Comfy_BrowseTemplates": {
     "label": "템플릿 탐색"
   },
+  "Comfy_Canvas_DeleteSelectedItems": {
+    "label": "선택한 항목 삭제"
+  },
   "Comfy_Canvas_FitView": {
     "label": "선택한 노드에 뷰 맞추기"
   },

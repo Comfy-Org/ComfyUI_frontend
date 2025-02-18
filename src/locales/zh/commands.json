@@ -35,6 +35,9 @@
   "Comfy_BrowseTemplates": {
     "label": "浏览模板"
   },
+  "Comfy_Canvas_DeleteSelectedItems": {
+    "label": "删除选定的项目"
+  },
   "Comfy_Canvas_FitView": {
     "label": "适应视图到选中节点"
   },

@@ -25,6 +25,9 @@
       "custom": "custom"
     }
   },
+  "Comfy_Canvas_SelectionToolbox": {
+    "name": "Show selection toolbox"
+  },
   "Comfy_ConfirmClear": {
     "name": "Require confirmation when clearing workflow"
   },

@@ -25,6 +25,9 @@
     },
     "tooltip": "Choisissez l'option personnalisée pour masquer la barre de titre du système"
   },
+  "Comfy_Canvas_SelectionToolbox": {
+    "name": "Afficher la boîte à outils de sélection"
+  },
   "Comfy_ConfirmClear": {
     "name": "Demander une confirmation lors de l'effacement du flux de travail"
   },

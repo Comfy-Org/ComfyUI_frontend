@@ -35,6 +35,9 @@
   "Comfy_BrowseTemplates": {
     "label": "Просмотр шаблонов"
   },
+  "Comfy_Canvas_DeleteSelectedItems": {
+    "label": "Удалить выбранные элементы"
+  },
   "Comfy_Canvas_FitView": {
     "label": "Подогнать вид к выбранным нодам"
   },
