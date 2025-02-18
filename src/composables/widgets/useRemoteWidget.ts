@@ -78,6 +78,7 @@ export function useRemoteWidget<
   const isPermanent = refresh <= 0
   const cacheKey = createCacheKey(config)
   let isLoaded = false
+  let refreshQueued = false
 
   const setSuccess = (entry: CacheEntry<T>, data: T) => {
     entry.retryCount = 0
@@ -183,12 +184,15 @@ export function useRemoteWidget<
   /**
    * Getter of the remote property of the widget (e.g., options.values, value, etc.).
    * Starts the fetch process then returns the cached value immediately.
-   * @param onFulfilled - Optional callback to be called when the fetch is resolved.
    * @returns the most recent value of the widget.
    */
   function getValue(onFulfilled?: () => void) {
     fetchValue().then((data) => {
       if (isFirstLoad()) onFirstLoad(data)
+      if (refreshQueued && data !== defaultValue) {
+        onRefresh()
+        refreshQueued = false
+      }
       onFulfilled?.()
     })
     return getCachedValue() ?? defaultValue
@@ -197,22 +201,23 @@ export function useRemoteWidget<
   /**
    * Force the widget to refresh its value
    */
-  function refreshValue() {
+  widget.refresh = function () {
+    refreshQueued = true
     clearCachedValue()
-    getValue(onRefresh)
+    getValue()
   }
 
   /**
    * Add a refresh button to the node that, when clicked, will force the widget to refresh
    */
   function addRefreshButton() {
-    node.addWidget('button', 'refresh', 'refresh', refreshValue)
+    node.addWidget('button', 'refresh', 'refresh', widget.refresh)
   }
 
   return {
     getCachedValue,
     getValue,
-    refreshValue,
+    refreshValue: widget.refresh,
     addRefreshButton,
     getCacheEntry: () => dataCache.get(cacheKey),
 

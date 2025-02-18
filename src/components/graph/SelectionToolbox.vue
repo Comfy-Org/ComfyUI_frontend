@@ -18,6 +18,13 @@
       icon="pi pi-trash"
       @click="() => commandStore.execute('Comfy.Canvas.DeleteSelectedItems')"
     />
+    <Button
+      v-if="isRefreshable"
+      severity="info"
+      text
+      icon="pi pi-refresh"
+      @click="refreshSelected"
+    />
   </Panel>
 </template>
 
@@ -25,9 +32,11 @@
 import Button from 'primevue/button'
 import Panel from 'primevue/panel'
 
+import { useRefreshableSelection } from '@/composables/useRefreshableSelection'
 import { useCommandStore } from '@/stores/commandStore'
 
 const commandStore = useCommandStore()
+const { isRefreshable, refreshSelected } = useRefreshableSelection()
 </script>
 
 <style scoped>
