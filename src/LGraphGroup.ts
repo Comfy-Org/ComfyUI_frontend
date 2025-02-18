@@ -33,7 +33,7 @@ export class LGraphGroup implements Positionable, IPinnable {
   static defaultColour = "#335"
 
   id: number
-  color: string
+  color?: string
   title: string
   font?: string
   font_size: number = LiteGraph.DEFAULT_GROUP_FONT || 24
@@ -153,18 +153,19 @@ export class LGraphGroup implements Positionable, IPinnable {
 
     const [x, y] = this._pos
     const [width, height] = this._size
+    const color = this.color || defaultColour
 
     // Titlebar
     ctx.globalAlpha = 0.25 * graphCanvas.editor_alpha
-    ctx.fillStyle = this.color || defaultColour
-    ctx.strokeStyle = this.color || defaultColour
+    ctx.fillStyle = color
+    ctx.strokeStyle = color
     ctx.beginPath()
     ctx.rect(x + 0.5, y + 0.5, width, font_size * 1.4)
     ctx.fill()
 
     // Group background, border
-    ctx.fillStyle = this.color
-    ctx.strokeStyle = this.color
+    ctx.fillStyle = color
+    ctx.strokeStyle = color
     ctx.beginPath()
     ctx.rect(x + 0.5, y + 0.5, width, height)
     ctx.fill()
