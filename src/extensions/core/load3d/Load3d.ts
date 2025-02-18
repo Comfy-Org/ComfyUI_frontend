@@ -53,6 +53,7 @@ class Load3d {
   targetWidth: number = 1024
   targetHeight: number = 1024
   showPreview: boolean = true
+  previewWidth: number = 120
   node: LGraphNode = {} as LGraphNode
   private listeners: { [key: string]: Function[] } = {}
 
@@ -205,6 +206,22 @@ class Load3d {
     `
     this.previewContainer.appendChild(this.previewRenderer.domElement)
 
+    this.previewContainer.addEventListener('wheel', (event) => {
+      event.preventDefault()
+      event.stopPropagation()
+
+      const delta = event.deltaY
+
+      if (delta > 0) {
+        this.previewWidth = Math.max(120, this.previewWidth - 10)
+      } else {
+        this.previewWidth = Math.min(240, this.previewWidth + 10)
+      }
+
+      this.updatePreviewSize()
+      this.updatePreviewRender()
+    })
+
     this.previewContainer.style.display = this.showPreview ? 'block' : 'none'
 
     container.appendChild(this.previewContainer)
@@ -254,19 +271,19 @@ class Load3d {
 
     this.previewCamera.lookAt(this.controls.target)
 
-    const previewWidth = 120
-    const previewHeight = (previewWidth * this.targetHeight) / this.targetWidth
-    this.previewRenderer.setSize(previewWidth, previewHeight, false)
+    const previewHeight =
+      (this.previewWidth * this.targetHeight) / this.targetWidth
+    this.previewRenderer.setSize(this.previewWidth, previewHeight, false)
     this.previewRenderer.render(this.scene, this.previewCamera)
   }
 
   updatePreviewSize() {
     if (!this.previewContainer) return
 
-    const previewWidth = 120
-    const previewHeight = (previewWidth * this.targetHeight) / this.targetWidth
+    const previewHeight =
+      (this.previewWidth * this.targetHeight) / this.targetWidth
 
-    this.previewRenderer?.setSize(previewWidth, previewHeight, false)
+    this.previewRenderer?.setSize(this.previewWidth, previewHeight, false)
   }
 
   setTargetSize(width: number, height: number) {
