@@ -1,7 +1,7 @@
 <!-- This component is used to bound the selected items on the canvas. -->
 <template>
   <div
-    class="selection-overlay-container pointer-events-none"
+    class="selection-overlay-container pointer-events-none z-40"
     :class="{
       'show-border': showBorder
     }"
