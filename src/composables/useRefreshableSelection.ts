@@ -4,17 +4,13 @@ import { computed, ref, watchEffect } from 'vue'
 
 import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
+import { isLGraphNode } from '@/utils/litegraphUtil'
 
 interface RefreshableItem {
   refresh: () => Promise<void> | void
 }
 
 type RefreshableWidget = IWidget & RefreshableItem
-
-const isLGraphNode = (item: unknown): item is LGraphNode => {
-  const name = item?.constructor?.name
-  return name === 'ComfyNode' || name === 'LGraphNode'
-}
 
 const isRefreshableWidget = (widget: IWidget): widget is RefreshableWidget =>
   'refresh' in widget && typeof widget.refresh === 'function'

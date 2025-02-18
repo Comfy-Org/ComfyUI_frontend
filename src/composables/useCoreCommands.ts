@@ -366,6 +366,7 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.3.11',
       function: () => {
         toggleSelectedNodesMode(LGraphEventMode.NEVER)
+        app.canvas.setDirty(true, true)
       }
     },
     {
@@ -375,6 +376,7 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.3.11',
       function: () => {
         toggleSelectedNodesMode(LGraphEventMode.BYPASS)
+        app.canvas.setDirty(true, true)
       }
     },
     {
@@ -386,6 +388,7 @@ export function useCoreCommands(): ComfyCommand[] {
         getSelectedNodes().forEach((node) => {
           node.pin(!node.pinned)
         })
+        app.canvas.setDirty(true, true)
       }
     },
     {
@@ -411,6 +414,7 @@ export function useCoreCommands(): ComfyCommand[] {
         getSelectedNodes().forEach((node) => {
           node.collapse()
         })
+        app.canvas.setDirty(true, true)
       }
     },
     {

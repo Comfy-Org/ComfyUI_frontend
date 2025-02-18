@@ -17,3 +17,8 @@ export function addToComboValues(widget: IComboWidget, value: string) {
     widget.options.values.push(value)
   }
 }
+
+export const isLGraphNode = (item: unknown): item is LGraphNode => {
+  const name = item?.constructor?.name
+  return name === 'ComfyNode' || name === 'LGraphNode'
+}
