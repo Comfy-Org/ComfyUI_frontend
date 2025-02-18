@@ -4,7 +4,7 @@
       severity="secondary"
       text
       icon="pi pi-circle-fill"
-      @click="() => (showColorPicker = true)"
+      @click="() => (showColorPicker = !showColorPicker)"
     />
     <div
       v-if="showColorPicker"
@@ -22,9 +22,11 @@
 <script setup lang="ts">
 import { LGraphCanvas } from '@comfyorg/litegraph'
 import Button from 'primevue/button'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 import ColorCustomizationSelector from '@/components/common/ColorCustomizationSelector.vue'
+import { useCanvasStore } from '@/stores/graphStore'
+import { setItemColor } from '@/utils/litegraphUtil'
 
 const NO_COLOR_OPTION = { name: 'No Color', value: 'No Color' }
 
@@ -38,6 +40,30 @@ const colorOptions = ref<{ name: string; value: string }[]>([
     value: color.bgcolor
   }))
 ])
+
+watch(color, (colorValue) => {
+  const option = colorOptions.value.find(
+    (option) => option.value === colorValue
+  )
+  if (option) {
+    applyColor(option.name)
+  }
+  showColorPicker.value = false
+})
+
+const canvasStore = useCanvasStore()
+const applyColor = (colorName: string) => {
+  const colorOption =
+    colorName === NO_COLOR_OPTION.name
+      ? null
+      : LGraphCanvas.node_colors[colorName]
+
+  for (const item of canvasStore.selectedItems) {
+    setItemColor(item, colorOption)
+  }
+
+  canvasStore.canvas?.setDirty(true, true)
+}
 </script>
 
 <style scoped>
@@ -46,6 +72,6 @@ const colorOptions = ref<{ name: string; value: string }[]>([
 }
 
 :deep(.p-togglebutton) {
-  @apply p-2;
+  @apply py-2 px-1;
 }
 </style>
