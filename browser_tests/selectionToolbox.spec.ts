@@ -9,9 +9,7 @@ test.describe('Selection Toolbox', () => {
     await comfyPage.setSetting('Comfy.Canvas.SelectionToolbox', true)
   })
 
-  test('shows/hides selection toolbox based on setting', async ({
-    comfyPage
-  }) => {
+  test('shows selection toolbox', async ({ comfyPage }) => {
     // By default, selection toolbox should be enabled
     expect(
       await comfyPage.page.locator('.selection-overlay-container').isVisible()
@@ -68,5 +66,29 @@ test.describe('Selection Toolbox', () => {
     await expect(
       comfyPage.page.locator('.selection-toolbox .pi-refresh')
     ).toBeVisible()
+  })
+
+  test('displays bypass button in toolbox when nodes are selected', async ({
+    comfyPage
+  }) => {
+    // A group + a KSampler node
+    await comfyPage.loadWorkflow('single_group')
+
+    // Select group + node should show bypass button
+    await comfyPage.page.focus('canvas')
+    await comfyPage.page.keyboard.press('Control+A')
+    await expect(
+      comfyPage.page.locator(
+        '.selection-toolbox *[data-testid="bypass-button"]'
+      )
+    ).toBeVisible()
+
+    // Deselect node (Only group is selected) should hide bypass button
+    await comfyPage.selectNodes(['KSampler'])
+    await expect(
+      comfyPage.page.locator(
+        '.selection-toolbox *[data-testid="bypass-button"]'
+      )
+    ).not.toBeVisible()
   })
 })

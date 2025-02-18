@@ -13,6 +13,7 @@
       @click="
         () => commandStore.execute('Comfy.Canvas.ToggleSelectedNodes.Bypass')
       "
+      data-testid="bypass-button"
     >
       <template #icon>
         <i-game-icons:detour />
