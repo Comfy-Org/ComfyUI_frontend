@@ -23,6 +23,11 @@ declare module '@comfyorg/litegraph/dist/types/widgets' {
     ) => Promise<unknown> | unknown
 
     /**
+     * Refreshes the widget's value or options from its remote source.
+     */
+    refresh?: () => unknown
+
+    /**
      * If the widget supports dynamic prompts, this will be set to true.
      * See extensions/core/dynamicPrompts.ts
      */

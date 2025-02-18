@@ -57,4 +57,16 @@ test.describe('Selection Toolbox', () => {
       comfyPage.page.locator('.selection-overlay-container.show-border')
     ).not.toBeVisible()
   })
+
+  test('displays refresh button in toolbox when all nodes are selected', async ({
+    comfyPage
+  }) => {
+    // Select all nodes
+    await comfyPage.page.focus('canvas')
+    await comfyPage.page.keyboard.press('Control+A')
+
+    await expect(
+      comfyPage.page.locator('.selection-toolbox .pi-refresh')
+    ).toBeVisible()
+  })
 })

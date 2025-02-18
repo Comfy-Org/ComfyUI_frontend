@@ -176,6 +176,23 @@ test.describe('Remote COMBO Widget', () => {
   })
 
   test.describe('Refresh Behavior', () => {
+    test('refresh button is visible in selection toolbar when node is selected', async ({
+      comfyPage
+    }) => {
+      await comfyPage.setSetting('Comfy.Canvas.SelectionToolbox', true)
+
+      const nodeName = 'Remote Widget Node'
+      await addRemoteWidgetNode(comfyPage, nodeName)
+      await waitForWidgetUpdate(comfyPage)
+
+      // Select remote widget node
+      await comfyPage.page.keyboard.press('Control+A')
+
+      await expect(
+        comfyPage.page.locator('.selection-toolbox .pi-refresh')
+      ).toBeVisible()
+    })
+
     test('refreshes options when TTL expires', async ({ comfyPage }) => {
       // Fulfill each request with a unique timestamp
       await comfyPage.page.route(
