@@ -747,5 +747,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     },
     defaultValue: 0.6,
     versionAdded: '1.9.1'
+  },
+  {
+    id: 'Comfy.Canvas.SelectionToolbox',
+    category: ['LiteGraph', 'Canvas', 'SelectionToolbox'],
+    name: 'Show selection toolbox',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.10.5'
   }
 ]

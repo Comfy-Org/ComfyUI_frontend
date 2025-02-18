@@ -35,6 +35,9 @@
   "Comfy_BrowseTemplates": {
     "label": "Browse Templates"
   },
+  "Comfy_Canvas_DeleteSelectedItems": {
+    "label": "Delete Selected Items"
+  },
   "Comfy_Canvas_FitView": {
     "label": "Fit view to selected nodes"
   },

@@ -25,6 +25,9 @@
     },
     "tooltip": "选择自定义选项以隐藏系统标题栏"
   },
+  "Comfy_Canvas_SelectionToolbox": {
+    "name": "显示选择工具箱"
+  },
   "Comfy_ConfirmClear": {
     "name": "清除工作流时需要确认"
   },

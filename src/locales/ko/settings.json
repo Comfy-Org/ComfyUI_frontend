@@ -25,6 +25,9 @@
     },
     "tooltip": "시스템 제목 표시 줄을 숨기려면 사용자 정의 옵션을 선택하세요"
   },
+  "Comfy_Canvas_SelectionToolbox": {
+    "name": "선택 도구 상자 표시"
+  },
   "Comfy_ConfirmClear": {
     "name": "워크플로 비우기 시 확인 요구"
   },

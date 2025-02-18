@@ -2,6 +2,9 @@
 <template>
   <div
     class="selection-overlay-container pointer-events-none"
+    :class="{
+      'show-border': showBorder
+    }"
     :style="style"
     v-show="visible"
   >
@@ -22,9 +25,12 @@ const canvasStore = useCanvasStore()
 const { style, updatePosition } = useAbsolutePosition()
 
 const visible = ref(false)
+const showBorder = ref(false)
 
 const positionSelectionOverlay = (canvas: LGraphCanvas) => {
   const selectedItems = canvas.selectedItems
+  showBorder.value = selectedItems.size > 1
+
   if (!selectedItems.size) {
     visible.value = false
     return
@@ -81,5 +87,9 @@ watch(
 <style scoped>
 .selection-overlay-container > * {
   pointer-events: auto;
+}
+
+.show-border {
+  @apply border-dashed rounded-md border-2 border-[var(--border-color)];
 }
 </style>
