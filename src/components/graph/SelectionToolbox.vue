@@ -6,6 +6,7 @@
       content: 'p-0 flex flex-row'
     }"
   >
+    <ColorPickerButton />
     <Button
       v-if="nodeSelected"
       severity="secondary"
@@ -46,6 +47,7 @@ import Button from 'primevue/button'
 import Panel from 'primevue/panel'
 import { computed } from 'vue'
 
+import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
 import { useRefreshableSelection } from '@/composables/useRefreshableSelection'
 import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
