@@ -203,19 +203,32 @@ class Load3d {
       bottom: 0;
       background: rgba(0, 0, 0, 0.2);
       display: block;
+      transition: border-color 0.1s ease;
     `
     this.previewContainer.appendChild(this.previewRenderer.domElement)
+
+    const MIN_PREVIEW_WIDTH = 120
+    const MAX_PREVIEW_WIDTH = 240
 
     this.previewContainer.addEventListener('wheel', (event) => {
       event.preventDefault()
       event.stopPropagation()
 
       const delta = event.deltaY
+      const oldWidth = this.previewWidth
 
       if (delta > 0) {
-        this.previewWidth = Math.max(120, this.previewWidth - 10)
+        this.previewWidth = Math.max(MIN_PREVIEW_WIDTH, this.previewWidth - 10)
       } else {
-        this.previewWidth = Math.min(240, this.previewWidth + 10)
+        this.previewWidth = Math.min(MAX_PREVIEW_WIDTH, this.previewWidth + 10)
+      }
+
+      if (
+        oldWidth !== this.previewWidth &&
+        (this.previewWidth === MIN_PREVIEW_WIDTH ||
+          this.previewWidth === MAX_PREVIEW_WIDTH)
+      ) {
+        this.flashPreviewBorder()
       }
 
       this.updatePreviewSize()
@@ -225,6 +238,19 @@ class Load3d {
     this.previewContainer.style.display = this.showPreview ? 'block' : 'none'
 
     container.appendChild(this.previewContainer)
+  }
+
+  flashPreviewBorder() {
+    const originalBorder = this.previewContainer.style.border
+    const originalBoxShadow = this.previewContainer.style.boxShadow
+
+    this.previewContainer.style.border = '2px solid rgba(255, 255, 255, 0.8)'
+    this.previewContainer.style.boxShadow = '0 0 8px rgba(255, 255, 255, 0.5)'
+
+    setTimeout(() => {
+      this.previewContainer.style.border = originalBorder
+      this.previewContainer.style.boxShadow = originalBoxShadow
+    }, 100)
   }
 
   updatePreviewRender() {
