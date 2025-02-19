@@ -1,5 +1,5 @@
 import type { ColorOption, IWidget } from '@comfyorg/litegraph'
-import { LGraphGroup, LGraphNode } from '@comfyorg/litegraph'
+import { LGraphNode, isColorable } from '@comfyorg/litegraph'
 import type { IComboWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import _ from 'lodash'
 
@@ -31,10 +31,7 @@ export const isLGraphNode = (item: unknown): item is LGraphNode => {
  * @returns The color option of the item.
  */
 export const getItemsColorOption = (items: unknown[]): ColorOption | null => {
-  const validItems = _.filter(
-    items,
-    (item) => item instanceof LGraphNode || item instanceof LGraphGroup
-  )
+  const validItems = _.filter(items, isColorable)
   if (_.isEmpty(validItems)) return null
 
   const colorOptions = _.map(validItems, (item) => item.getColorOption())

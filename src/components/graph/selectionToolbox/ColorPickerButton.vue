@@ -38,12 +38,7 @@
 
 <script setup lang="ts">
 import type { ColorOption as CanvasColorOption } from '@comfyorg/litegraph'
-import {
-  LGraphCanvas,
-  LGraphGroup,
-  LGraphNode,
-  LiteGraph
-} from '@comfyorg/litegraph'
+import { LGraphCanvas, LiteGraph, isColorable } from '@comfyorg/litegraph'
 import Button from 'primevue/button'
 import SelectButton from 'primevue/selectbutton'
 import { computed, ref, watch } from 'vue'
@@ -107,7 +102,7 @@ const applyColor = (colorName: string) => {
       : LGraphCanvas.node_colors[colorName]
 
   for (const item of canvasStore.selectedItems) {
-    if (item instanceof LGraphNode || item instanceof LGraphGroup) {
+    if (isColorable(item)) {
       item.setColorOption(colorOption)
     }
   }
