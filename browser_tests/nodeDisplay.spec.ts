@@ -53,4 +53,11 @@ test.describe('Optional input', () => {
     await comfyPage.loadWorkflow('simple_slider')
     await expect(comfyPage.canvas).toHaveScreenshot('simple_slider.png')
   })
+  test('unknown converted widget', async ({ comfyPage }) => {
+    await comfyPage.setSetting('Comfy.Workflow.ShowMissingNodesWarning', false)
+    await comfyPage.loadWorkflow('missing_nodes_converted_widget')
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'missing_nodes_converted_widget.png'
+    )
+  })
 })
