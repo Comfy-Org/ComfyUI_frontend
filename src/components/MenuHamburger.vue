@@ -13,7 +13,7 @@
       :aria-label="$t('menu.showMenu')"
       aria-live="assertive"
       @click="exitFocusMode"
-      @contextmenu="showNativeMenu"
+      @contextmenu="showNativeSystemMenu"
     />
     <div v-show="menuSetting !== 'Bottom'" class="window-actions-spacer" />
   </div>
@@ -26,7 +26,7 @@ import { CSSProperties, computed, watchEffect } from 'vue'
 import { app } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { showNativeMenu } from '@/utils/envUtil'
+import { showNativeSystemMenu } from '@/utils/envUtil'
 
 const workspaceState = useWorkspaceStore()
 const settingStore = useSettingStore()
