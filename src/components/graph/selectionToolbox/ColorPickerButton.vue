@@ -7,7 +7,7 @@
     >
       <template #icon>
         <div class="flex items-center gap-1">
-          <i class="pi pi-circle-fill" />
+          <i class="pi pi-circle-fill" :style="{ color: currentColor }" />
           <i class="pi pi-chevron-down" :style="{ fontSize: '0.5rem' }" />
         </div>
       </template>
@@ -36,6 +36,7 @@
 </template>
 
 <script setup lang="ts">
+import type { ColorOption as CanvasColorOption } from '@comfyorg/litegraph'
 import {
   LGraphCanvas,
   LGraphGroup,
@@ -49,12 +50,15 @@ import { computed, ref, watch } from 'vue'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@/utils/colorUtil'
+import { getItemsColorOption } from '@/utils/litegraphUtil'
 
 const canvasStore = useCanvasStore()
 const colorPaletteStore = useColorPaletteStore()
 const isLightTheme = computed(
   () => colorPaletteStore.completedActivePalette.light_theme
 )
+const toLightThemeColor = (color: string) =>
+  adjustColor(color, { lightness: 0.5 })
 
 const showColorPicker = ref(false)
 
@@ -70,7 +74,7 @@ const NO_COLOR_OPTION: ColorOption = {
   name: 'No Color',
   value: {
     dark: LiteGraph.NODE_DEFAULT_BGCOLOR,
-    light: adjustColor(LiteGraph.NODE_DEFAULT_BGCOLOR, { lightness: 0.5 })
+    light: toLightThemeColor(LiteGraph.NODE_DEFAULT_BGCOLOR)
   }
 }
 const colorOptions: ColorOption[] = [
@@ -79,7 +83,7 @@ const colorOptions: ColorOption[] = [
     name,
     value: {
       dark: color.bgcolor,
-      light: adjustColor(color.bgcolor, { lightness: 0.5 })
+      light: toLightThemeColor(color.bgcolor)
     }
   }))
 ]
@@ -104,6 +108,24 @@ const applyColor = (colorName: string) => {
 
   canvasStore.canvas?.setDirty(true, true)
 }
+
+const currentColorOption = ref<CanvasColorOption | null>(null)
+const currentColor = computed(() =>
+  currentColorOption.value
+    ? isLightTheme.value
+      ? toLightThemeColor(currentColorOption.value?.bgcolor)
+      : currentColorOption.value?.bgcolor
+    : null
+)
+
+watch(
+  () => canvasStore.selectedItems,
+  (newSelectedItems) => {
+    showColorPicker.value = false
+    selectedColorOption.value = null
+    currentColorOption.value = getItemsColorOption(newSelectedItems)
+  }
+)
 </script>
 
 <style scoped>
