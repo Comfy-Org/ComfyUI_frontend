@@ -1680,8 +1680,4 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
       console.error("Error loading graph:", err)
     }
   }
-
-  onNodeTrace(node?: LGraphNode, msg?: string) {
-    // TODO
-  }
 }

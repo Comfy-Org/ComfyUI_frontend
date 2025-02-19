@@ -2711,8 +2711,6 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     this.console.push(msg)
     if (this.console.length > LGraphNode.MAX_CONSOLE)
       this.console.shift()
-
-    this.graph.onNodeTrace?.(this, msg)
   }
 
   /* Forces to redraw or the main canvas (LGraphNode) or the bg canvas (links) */
