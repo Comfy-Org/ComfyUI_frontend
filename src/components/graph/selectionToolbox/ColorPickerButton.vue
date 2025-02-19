@@ -28,6 +28,7 @@
             :style="{
               color: isLightTheme ? option.value.light : option.value.dark
             }"
+            v-tooltip.top="option.localizedName"
           />
         </template>
       </SelectButton>
@@ -46,12 +47,14 @@ import {
 import Button from 'primevue/button'
 import SelectButton from 'primevue/selectbutton'
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useCanvasStore } from '@/stores/graphStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@/utils/colorUtil'
 import { getItemsColorOption } from '@/utils/litegraphUtil'
 
+const { t } = useI18n()
 const canvasStore = useCanvasStore()
 const colorPaletteStore = useColorPaletteStore()
 const isLightTheme = computed(
@@ -64,6 +67,7 @@ const showColorPicker = ref(false)
 
 type ColorOption = {
   name: string
+  localizedName: string
   value: {
     dark: string
     light: string
@@ -71,7 +75,8 @@ type ColorOption = {
 }
 
 const NO_COLOR_OPTION: ColorOption = {
-  name: 'No Color',
+  name: 'noColor',
+  localizedName: t('color.noColor'),
   value: {
     dark: LiteGraph.NODE_DEFAULT_BGCOLOR,
     light: toLightThemeColor(LiteGraph.NODE_DEFAULT_BGCOLOR)
@@ -81,6 +86,7 @@ const colorOptions: ColorOption[] = [
   NO_COLOR_OPTION,
   ...Object.entries(LGraphCanvas.node_colors).map(([name, color]) => ({
     name,
+    localizedName: t(`color.${name}`),
     value: {
       dark: color.bgcolor,
       light: toLightThemeColor(color.bgcolor)
@@ -107,6 +113,7 @@ const applyColor = (colorName: string) => {
   }
 
   canvasStore.canvas?.setDirty(true, true)
+  currentColorOption.value = colorOption
 }
 
 const currentColorOption = ref<CanvasColorOption | null>(null)

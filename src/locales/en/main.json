@@ -93,12 +93,18 @@
     }
   },
   "color": {
+    "noColor": "No Color",
     "default": "Default",
     "blue": "Blue",
     "green": "Green",
     "red": "Red",
     "pink": "Pink",
     "yellow": "Yellow",
+    "brown": "Brown",
+    "pale_blue": "Pale Blue",
+    "cyan": "Cyan",
+    "purple": "Purple",
+    "black": "Black",
     "custom": "Custom"
   },
   "contextMenu": {
