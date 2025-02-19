@@ -5,11 +5,17 @@
     "successMessage": "Copié dans le presse-papiers"
   },
   "color": {
+    "black": "Noir",
     "blue": "Bleu",
+    "brown": "Marron",
     "custom": "Personnalisé",
+    "cyan": "Cyan",
     "default": "Par défaut",
     "green": "Vert",
+    "noColor": "Pas de couleur",
+    "pale_blue": "Bleu pâle",
     "pink": "Rose",
+    "purple": "Violet",
     "red": "Rouge",
     "yellow": "Jaune"
   },

@@ -5,11 +5,17 @@
     "successMessage": "已复制到剪贴板"
   },
   "color": {
+    "black": "黑色",
     "blue": "蓝色",
+    "brown": "棕色",
     "custom": "自定义",
+    "cyan": "青色",
     "default": "默认",
     "green": "绿色",
+    "noColor": "无色",
+    "pale_blue": "淡蓝色",
     "pink": "粉色",
+    "purple": "紫色",
     "red": "红色",
     "yellow": "黄色"
   },
