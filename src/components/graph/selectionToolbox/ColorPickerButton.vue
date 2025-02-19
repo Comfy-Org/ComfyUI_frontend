@@ -3,9 +3,15 @@
     <Button
       severity="secondary"
       text
-      icon="pi pi-circle-fill"
       @click="() => (showColorPicker = !showColorPicker)"
-    />
+    >
+      <template #icon>
+        <div class="flex items-center gap-1">
+          <i class="pi pi-circle-fill" />
+          <i class="pi pi-chevron-down" :style="{ fontSize: '0.5rem' }" />
+        </div>
+      </template>
+    </Button>
     <div
       v-if="showColorPicker"
       class="color-picker-container absolute -top-10 left-1/2"
