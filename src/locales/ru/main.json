@@ -654,9 +654,9 @@
       "ready": "Завершение…",
       "starting-server": "Запуск сервера ComfyUI…"
     },
-    "reinstall": "Переустановить",
     "reportIssue": "Сообщить о проблеме",
-    "showTerminal": "Показать терминал"
+    "showTerminal": "Показать терминал",
+    "troubleshoot": "Устранение неполадок"
   },
   "settingsCategories": {
     "About": "О программе",
