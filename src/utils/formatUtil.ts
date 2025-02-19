@@ -232,3 +232,41 @@ export function createAnnotatedPath(
     return `${createPath(item, subfolder)}${createAnnotation(rootFolder)}`
   return `${createPath(item.filename ?? '', item.subfolder)}${createAnnotation(item.type)}`
 }
+
+/**
+ * Parses a filepath into its filename and subfolder components.
+ *
+ * @example
+ * parseFilePath('folder/file.txt')    // → { filename: 'file.txt', subfolder: 'folder' }
+ * parseFilePath('/folder/file.txt')   // → { filename: 'file.txt', subfolder: 'folder' }
+ * parseFilePath('file.txt')           // → { filename: 'file.txt', subfolder: '' }
+ * parseFilePath('folder//file.txt')   // → { filename: 'file.txt', subfolder: 'folder' }
+ *
+ * @param filepath The filepath to parse
+ * @returns Object containing filename and subfolder
+ */
+export function parseFilePath(filepath: string): {
+  filename: string
+  subfolder: string
+} {
+  if (!filepath?.trim()) return { filename: '', subfolder: '' }
+
+  const normalizedPath = filepath
+    .replace(/[\\/]+/g, '/') // Normalize path separators
+    .replace(/^\//, '') // Remove leading slash
+    .replace(/\/$/, '') // Remove trailing slash
+
+  const lastSlashIndex = normalizedPath.lastIndexOf('/')
+
+  if (lastSlashIndex === -1) {
+    return {
+      filename: normalizedPath,
+      subfolder: ''
+    }
+  }
+
+  return {
+    filename: normalizedPath.slice(lastSlashIndex + 1),
+    subfolder: normalizedPath.slice(0, lastSlashIndex)
+  }
+}
