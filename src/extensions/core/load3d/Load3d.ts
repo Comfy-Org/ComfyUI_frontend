@@ -223,9 +223,6 @@ class Load3d {
         this.previewWidth = Math.min(MAX_PREVIEW_WIDTH, this.previewWidth + 10)
       }
 
-      console.log('oldWidth', oldWidth)
-      console.log('this.previewWidth', this.previewWidth)
-
       if (
         oldWidth !== this.previewWidth &&
         (this.previewWidth === MIN_PREVIEW_WIDTH ||
