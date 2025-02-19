@@ -21,7 +21,7 @@
       v-tooltip="{ value: $t('menu.hideMenu'), showDelay: 300 }"
       :aria-label="$t('menu.hideMenu')"
       @click="workspaceState.focusMode = true"
-      @contextmenu="showNativeMenu"
+      @contextmenu="showNativeSystemMenu"
     />
     <div
       v-show="menuSetting !== 'Bottom'"
@@ -52,7 +52,7 @@ import {
   electronAPI,
   isElectron,
   isNativeWindow,
-  showNativeMenu
+  showNativeSystemMenu
 } from '@/utils/envUtil'
 
 const workspaceState = useWorkspaceStore()
