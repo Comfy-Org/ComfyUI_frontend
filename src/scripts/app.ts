@@ -27,6 +27,7 @@ import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { ComfyWorkflow } from '@/stores/workflowStore'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyNodeDef } from '@/types/apiTypes'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
@@ -650,7 +651,7 @@ export class ComfyApp {
       const opacity = useSettingStore().get('Comfy.Node.Opacity')
       if (opacity) adjustments.opacity = opacity
 
-      if (useSettingStore().get('Comfy.ColorPalette') === 'light') {
+      if (useColorPaletteStore().completedActivePalette.light_theme) {
         adjustments.lightness = 0.5
 
         // Lighten title bar of colored nodes on light theme
