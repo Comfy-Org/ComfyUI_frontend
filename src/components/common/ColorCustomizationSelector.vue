@@ -34,15 +34,20 @@ import ColorPicker from 'primevue/colorpicker'
 import SelectButton from 'primevue/selectbutton'
 import { computed, onMounted, ref, watch } from 'vue'
 
-const { modelValue, colorOptions } = defineProps<{
+const {
+  modelValue,
+  colorOptions,
+  allowCustom = true
+} = defineProps<{
   modelValue: string | null
   colorOptions: { name: Exclude<string, '_custom'>; value: string }[]
+  allowCustom?: boolean
 }>()
 
 const customColorOption = { name: '_custom', value: '' }
 const colorOptionsWithCustom = computed(() => [
   ...colorOptions,
-  customColorOption
+  ...(allowCustom ? [customColorOption] : [])
 ])
 
 const emit = defineEmits<{

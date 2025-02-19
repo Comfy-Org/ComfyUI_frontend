@@ -5,11 +5,17 @@
     "successMessage": "クリップボードにコピーしました"
   },
   "color": {
+    "black": "黒",
     "blue": "青",
+    "brown": "ブラウン",
     "custom": "カスタム",
+    "cyan": "シアン",
     "default": "デフォルト",
     "green": "緑",
+    "noColor": "色なし",
+    "pale_blue": "淡い青",
     "pink": "ピンク",
+    "purple": "パープル",
     "red": "赤",
     "yellow": "黄色"
   },
