@@ -155,7 +155,7 @@ test.describe('Color Palette', () => {
     await comfyPage.loadWorkflow('every_node_color')
     await comfyPage.setSetting('Comfy.ColorPalette', 'obsidian_dark')
     await expect(comfyPage.canvas).toHaveScreenshot(
-      'custom-color-palette-obsidian-dark.png'
+      'custom-color-palette-obsidian-dark-all-colors.png'
     )
     await comfyPage.setSetting('Comfy.ColorPalette', 'light_red')
     await comfyPage.nextFrame()
