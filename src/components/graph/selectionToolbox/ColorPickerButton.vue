@@ -36,7 +36,12 @@
 </template>
 
 <script setup lang="ts">
-import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
+import {
+  LGraphCanvas,
+  LGraphGroup,
+  LGraphNode,
+  LiteGraph
+} from '@comfyorg/litegraph'
 import Button from 'primevue/button'
 import SelectButton from 'primevue/selectbutton'
 import { computed, ref, watch } from 'vue'
@@ -44,7 +49,6 @@ import { computed, ref, watch } from 'vue'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@/utils/colorUtil'
-import { setItemColor } from '@/utils/litegraphUtil'
 
 const canvasStore = useCanvasStore()
 const colorPaletteStore = useColorPaletteStore()
@@ -93,7 +97,9 @@ const applyColor = (colorName: string) => {
       : LGraphCanvas.node_colors[colorName]
 
   for (const item of canvasStore.selectedItems) {
-    setItemColor(item, colorOption)
+    if (item instanceof LGraphNode || item instanceof LGraphGroup) {
+      item.setColorOption(colorOption)
+    }
   }
 
   canvasStore.canvas?.setDirty(true, true)
