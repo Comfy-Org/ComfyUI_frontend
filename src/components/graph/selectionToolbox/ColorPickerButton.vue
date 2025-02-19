@@ -20,28 +20,40 @@
 </template>
 
 <script setup lang="ts">
-import { LGraphCanvas } from '@comfyorg/litegraph'
+import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
 import Button from 'primevue/button'
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import ColorCustomizationSelector from '@/components/common/ColorCustomizationSelector.vue'
 import { useCanvasStore } from '@/stores/graphStore'
-import { setItemColor } from '@/utils/litegraphUtil'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@/utils/colorUtil'
-
-const NO_COLOR_OPTION = { name: 'No Color', value: 'No Color' }
+import { setItemColor } from '@/utils/litegraphUtil'
 
 const showColorPicker = ref(false)
-const color = ref(NO_COLOR_OPTION.value)
 
-const colorOptions = ref<{ name: string; value: string }[]>([
-  NO_COLOR_OPTION,
-  ...Object.entries(LGraphCanvas.node_colors).map(([name, color]) => ({
-    name,
-    value: adjustColor(color.bgcolor, { })
+const NO_COLOR_OPTION = {
+  name: 'No Color',
+  value: LiteGraph.NODE_DEFAULT_BGCOLOR
+}
+const colorPaletteStore = useColorPaletteStore()
+const lightness = computed(() =>
+  colorPaletteStore.completedActivePalette.light_theme ? 0.5 : 0
+)
+const colorOptions = computed<{ name: string; value: string }[]>(() =>
+  [
+    NO_COLOR_OPTION,
+    ...Object.entries(LGraphCanvas.node_colors).map(([name, color]) => ({
+      name,
+      value: color.bgcolor
+    }))
+  ].map((option) => ({
+    ...option,
+    value: adjustColor(option.value, { lightness: lightness.value })
   }))
-])
+)
 
+const color = ref(colorOptions.value[0].value)
 watch(color, (colorValue) => {
   const option = colorOptions.value.find(
     (option) => option.value === colorValue
