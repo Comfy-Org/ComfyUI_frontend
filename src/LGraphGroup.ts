@@ -64,23 +64,20 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
       : "#AAA"
   }
 
-  /** The color option used to set {@link color}. */
-  #colorOption: ColorOption | null = null
-
   /** @inheritdoc {@link IColorable.setColorOption} */
   setColorOption(colorOption: ColorOption | null): void {
     if (colorOption == null) {
       delete this.color
-      this.#colorOption = null
     } else {
       this.color = colorOption.groupcolor
-      this.#colorOption = colorOption
     }
   }
 
   /** @inheritdoc {@link IColorable.getColorOption} */
   getColorOption(): ColorOption | null {
-    return this.#colorOption
+    return Object.values(LGraphCanvas.node_colors).find(
+      colorOption => colorOption.groupcolor === this.color,
+    ) ?? null
   }
 
   /** Position of the group, as x,y co-ordinates in graph space */

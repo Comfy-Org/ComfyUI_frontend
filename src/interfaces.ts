@@ -84,6 +84,13 @@ export interface IColorable {
 }
 
 /**
+ * Checks if an object is an instance of {@link IColorable}.
+ */
+export const isColorable = (obj: unknown): obj is IColorable => {
+  return typeof obj === "object" && obj !== null && "setColorOption" in obj && "getColorOption" in obj
+}
+
+/**
  * An object that can be pinned.
  *
  * Prevents the object being accidentally moved or resized by mouse interaction.

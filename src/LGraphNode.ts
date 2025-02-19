@@ -23,7 +23,7 @@ import type {
 import type { LGraph } from "./LGraph"
 import type { IBaseWidget, IWidget, TWidgetValue } from "./types/widgets"
 import type { ISerialisedNode } from "./types/serialisation"
-import type { LGraphCanvas } from "./LGraphCanvas"
+import { LGraphCanvas } from "./LGraphCanvas"
 import type { CanvasMouseEvent } from "./types/events"
 import type { DragAndScale } from "./DragAndScale"
 import type { RerouteId } from "./Reroute"
@@ -236,25 +236,23 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     return this.boxcolor || colState || LiteGraph.NODE_DEFAULT_BOXCOLOR
   }
 
-  /** The color option used to set {@link color} and {@link bgcolor}. */
-  #colorOption: ColorOption | null = null
-
   /** @inheritdoc {@link IColorable.setColorOption} */
   setColorOption(colorOption: ColorOption | null): void {
     if (colorOption == null) {
       delete this.color
       delete this.bgcolor
-      this.#colorOption = null
     } else {
       this.color = colorOption.color
       this.bgcolor = colorOption.bgcolor
-      this.#colorOption = colorOption
     }
   }
 
   /** @inheritdoc {@link IColorable.getColorOption} */
   getColorOption(): ColorOption | null {
-    return this.#colorOption
+    return Object.values(LGraphCanvas.node_colors).find(
+      colorOption =>
+        colorOption.color === this.color && colorOption.bgcolor === this.bgcolor,
+    ) ?? null
   }
 
   exec_version: number
