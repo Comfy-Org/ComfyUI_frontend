@@ -3222,8 +3222,10 @@ export class LGraphNode implements Positionable, IPinnable {
     const slots: LayoutElement<INodeSlot>[] = []
 
     for (const [i, slot] of this.inputs.entries()) {
+      // Unrecognized nodes (Nodes with error) has inputs but no widgets. Treat
+      // converted inputs as normal inputs.
       /** Widget input slots are handled in {@link layoutWidgetInputSlots} */
-      if (isWidgetInputSlot(slot)) continue
+      if (this.widgets?.length && isWidgetInputSlot(slot)) continue
 
       this.layoutSlot(slot, {
         slotIndex: i,
