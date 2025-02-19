@@ -36,24 +36,32 @@ const NO_COLOR_OPTION = {
   name: 'No Color',
   value: LiteGraph.NODE_DEFAULT_BGCOLOR
 }
-const colorPaletteStore = useColorPaletteStore()
-const lightness = computed(() =>
-  colorPaletteStore.completedActivePalette.light_theme ? 0.5 : 0
-)
-const colorOptions = computed<{ name: string; value: string }[]>(() =>
-  [
-    NO_COLOR_OPTION,
-    ...Object.entries(LGraphCanvas.node_colors).map(([name, color]) => ({
-      name,
-      value: color.bgcolor
-    }))
-  ].map((option) => ({
-    ...option,
-    value: adjustColor(option.value, { lightness: lightness.value })
+const darkThemeColorOptions = [
+  NO_COLOR_OPTION,
+  ...Object.entries(LGraphCanvas.node_colors).map(([name, color]) => ({
+    name,
+    value: color.bgcolor
   }))
-)
+]
+const lightThemeColorOptions = darkThemeColorOptions.map((option) => ({
+  ...option,
+  value: adjustColor(option.value, { lightness: 0.5 })
+}))
 
+const colorPaletteStore = useColorPaletteStore()
+const colorOptions = computed<{ name: string; value: string }[]>(() =>
+  colorPaletteStore.completedActivePalette.light_theme
+    ? lightThemeColorOptions
+    : darkThemeColorOptions
+)
 const color = ref(colorOptions.value[0].value)
+watch(colorOptions, (newOptions, oldOptions) => {
+  const oldOption = oldOptions.find((option) => option.value === color.value)
+  const newValue = newOptions.find((option) => option.name === oldOption?.name)
+  if (newValue) {
+    color.value = newValue.value
+  }
+})
 watch(color, (colorValue) => {
   const option = colorOptions.value.find(
     (option) => option.value === colorValue
