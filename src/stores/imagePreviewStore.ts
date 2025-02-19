@@ -3,15 +3,14 @@ import { defineStore } from 'pinia'
 
 import { api } from '@/scripts/api'
 import { ExecutedWsMessage, ResultItem } from '@/types/apiTypes'
+import { parseFilePath } from '@/utils/formatUtil'
 
 const toOutputs = (
   filenames: string[],
   type: string
 ): ExecutedWsMessage['output'] => {
   return {
-    images: filenames.map((image) => {
-      return { filename: image, subfolder: '', type }
-    })
+    images: filenames.map((image) => ({ type, ...parseFilePath(image) }))
   }
 }
 
