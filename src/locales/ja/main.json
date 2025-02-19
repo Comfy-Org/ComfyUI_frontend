@@ -654,9 +654,9 @@
       "ready": "完了中...",
       "starting-server": "ComfyUIサーバーを起動中..."
     },
-    "reinstall": "再インストール",
     "reportIssue": "問題を報告",
-    "showTerminal": "ターミナルを表示"
+    "showTerminal": "ターミナルを表示",
+    "troubleshoot": "トラブルシューティング"
   },
   "settingsCategories": {
     "About": "情報",

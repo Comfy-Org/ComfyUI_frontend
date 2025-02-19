@@ -654,9 +654,9 @@
       "ready": "마무리 중...",
       "starting-server": "ComfyUI 서버 시작 중..."
     },
-    "reinstall": "재설치",
     "reportIssue": "문제 보고",
-    "showTerminal": "터미널 보기"
+    "showTerminal": "터미널 보기",
+    "troubleshoot": "문제 해결"
   },
   "settingsCategories": {
     "About": "정보",

@@ -654,9 +654,9 @@
       "ready": "Finalisation...",
       "starting-server": "Démarrage du serveur ComfyUI..."
     },
-    "reinstall": "Réinstaller",
     "reportIssue": "Signaler un problème",
-    "showTerminal": "Afficher le terminal"
+    "showTerminal": "Afficher le terminal",
+    "troubleshoot": "Dépannage"
   },
   "settingsCategories": {
     "About": "À Propos",
