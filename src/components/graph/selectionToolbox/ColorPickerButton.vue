@@ -17,7 +17,8 @@
       class="color-picker-container absolute -top-10 left-1/2"
     >
       <SelectButton
-        v-model="selectedColorOption"
+        :modelValue="selectedColorOption"
+        @update:modelValue="applyColor"
         :options="colorOptions"
         optionLabel="name"
         dataKey="value"
@@ -91,25 +92,22 @@ const colorOptions: ColorOption[] = [
 ]
 
 const selectedColorOption = ref<ColorOption | null>(null)
-watch(selectedColorOption, (colorOption) => {
-  applyColor(colorOption?.name ?? NO_COLOR_OPTION.name)
-  showColorPicker.value = false
-})
-
-const applyColor = (colorName: string) => {
-  const colorOption =
+const applyColor = (colorOption: ColorOption | null) => {
+  const colorName = colorOption?.name ?? NO_COLOR_OPTION.name
+  const canvasColorOption =
     colorName === NO_COLOR_OPTION.name
       ? null
       : LGraphCanvas.node_colors[colorName]
 
   for (const item of canvasStore.selectedItems) {
     if (isColorable(item)) {
-      item.setColorOption(colorOption)
+      item.setColorOption(canvasColorOption)
     }
   }
 
   canvasStore.canvas?.setDirty(true, true)
-  currentColorOption.value = colorOption
+  currentColorOption.value = canvasColorOption
+  showColorPicker.value = false
 }
 
 const currentColorOption = ref<CanvasColorOption | null>(null)
