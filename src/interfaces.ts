@@ -66,6 +66,24 @@ export interface Positionable extends Parent<Positionable> {
 }
 
 /**
+ * A color option to customize the color of {@link LGraphNode} or {@link LGraphGroup}.
+ * @see {@link LGraphCanvas.node_colors}
+ */
+export interface ColorOption {
+  color: string
+  bgcolor: string
+  groupcolor: string
+}
+
+/**
+ * An object that can be colored with a {@link ColorOption}.
+ */
+export interface IColorable {
+  setColorOption(colorOption: ColorOption | null): void
+  getColorOption(): ColorOption | null
+}
+
+/**
  * An object that can be pinned.
  *
  * Prevents the object being accidentally moved or resized by mouse interaction.

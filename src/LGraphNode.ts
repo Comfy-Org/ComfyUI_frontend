@@ -1,8 +1,10 @@
 // @ts-strict-ignore
 import type {
   CanvasColour,
+  ColorOption,
   ConnectingLink,
   Dictionary,
+  IColorable,
   IContextMenuValue,
   IFoundSlot,
   INodeFlags,
@@ -142,7 +144,7 @@ export interface LGraphNode {
  * @param {string} name a name for the node
  */
 // eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
-export class LGraphNode implements Positionable, IPinnable {
+export class LGraphNode implements Positionable, IPinnable, IColorable {
   // Static properties used by dynamic child classes
   static title?: string
   static MAX_CONSOLE?: number
@@ -232,6 +234,27 @@ export class LGraphNode implements Positionable, IPinnable {
     }
 
     return this.boxcolor || colState || LiteGraph.NODE_DEFAULT_BOXCOLOR
+  }
+
+  /** The color option used to set {@link color} and {@link bgcolor}. */
+  #colorOption: ColorOption | null = null
+
+  /** @inheritdoc {@link IColorable.setColorOption} */
+  setColorOption(colorOption: ColorOption | null): void {
+    if (colorOption == null) {
+      delete this.color
+      delete this.bgcolor
+      this.#colorOption = null
+    } else {
+      this.color = colorOption.color
+      this.bgcolor = colorOption.bgcolor
+      this.#colorOption = colorOption
+    }
+  }
+
+  /** @inheritdoc {@link IColorable.getColorOption} */
+  getColorOption(): ColorOption | null {
+    return this.#colorOption
   }
 
   exec_version: number

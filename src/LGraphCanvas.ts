@@ -21,6 +21,8 @@ import type {
   LinkSegment,
   ReadOnlyPoint,
   ReadOnlyRect,
+  ColorOption,
+  IColorable,
 } from "./interfaces"
 import type { IWidget } from "./types/widgets"
 import { LGraphNode, type NodeId } from "./LGraphNode"
@@ -198,7 +200,7 @@ export class LGraphCanvas implements ConnectionColorContext {
   static gradients: Record<string, CanvasGradient> = {} // cache of gradients
 
   static search_limit = -1
-  static node_colors = {
+  static node_colors: Record<string, ColorOption> = {
     red: { color: "#322", bgcolor: "#533", groupcolor: "#A88" },
     brown: { color: "#332922", bgcolor: "#593930", groupcolor: "#b06634" },
     green: { color: "#232", bgcolor: "#353", groupcolor: "#8A8" },
@@ -1428,23 +1430,12 @@ export class LGraphCanvas implements ConnectionColorContext {
       node: node,
     })
 
-    function inner_clicked(v: { value: string | number }) {
+    function inner_clicked(v: { value: string | null }) {
       if (!node) return
 
-      const color = v.value ? LGraphCanvas.node_colors[v.value] : null
-
-      const fApplyColor = function (node: LGraphNode) {
-        if (color) {
-          if (node instanceof LGraphGroup) {
-            node.color = color.groupcolor
-          } else {
-            node.color = color.color
-            node.bgcolor = color.bgcolor
-          }
-        } else {
-          delete node.color
-          delete node.bgcolor
-        }
+      const fApplyColor = function (item: IColorable) {
+        const colorOption = v.value ? LGraphCanvas.node_colors[v.value] : null
+        item.setColorOption(colorOption)
       }
 
       const canvas = LGraphCanvas.active_canvas
