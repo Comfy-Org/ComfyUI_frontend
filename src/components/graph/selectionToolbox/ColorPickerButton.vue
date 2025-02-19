@@ -29,6 +29,7 @@
               color: isLightTheme ? option.value.light : option.value.dark
             }"
             v-tooltip.top="option.localizedName"
+            :data-testid="option.name"
           />
         </template>
       </SelectButton>

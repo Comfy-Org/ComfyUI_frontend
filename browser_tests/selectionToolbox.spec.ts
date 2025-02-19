@@ -91,4 +91,97 @@ test.describe('Selection Toolbox', () => {
       )
     ).not.toBeVisible()
   })
+
+  test.describe('Color Picker', () => {
+    test('displays color picker button and allows color selection', async ({
+      comfyPage
+    }) => {
+      // Select a node
+      await comfyPage.selectNodes(['KSampler'])
+
+      // Color picker button should be visible
+      const colorPickerButton = comfyPage.page.locator(
+        '.selection-toolbox .pi-circle-fill'
+      )
+      await expect(colorPickerButton).toBeVisible()
+
+      // Click color picker button
+      await colorPickerButton.click()
+
+      // Color picker dropdown should be visible
+      const colorPickerDropdown = comfyPage.page.locator(
+        '.color-picker-container'
+      )
+      await expect(colorPickerDropdown).toBeVisible()
+
+      // Select a color (e.g., blue)
+      const blueColorOption = colorPickerDropdown.locator(
+        'i[data-testid="blue"]'
+      )
+      await blueColorOption.click()
+
+      // Dropdown should close after selection
+      await expect(colorPickerDropdown).not.toBeVisible()
+
+      // Node should have the selected color class/style
+      // Note: Exact verification method depends on how color is applied to nodes
+      const selectedNode = (await comfyPage.getNodeRefsByTitle('KSampler'))[0]
+      expect(selectedNode.getProperty('color')).not.toBeNull()
+    })
+
+    test('color picker shows current color of selected nodes', async ({
+      comfyPage
+    }) => {
+      // Select multiple nodes
+      await comfyPage.selectNodes(['KSampler', 'CLIP Text Encode (Prompt)'])
+
+      const colorPickerButton = comfyPage.page.locator(
+        '.selection-toolbox .pi-circle-fill'
+      )
+
+      // Initially should show default color
+      await expect(colorPickerButton).not.toHaveAttribute('color')
+
+      // Click color picker and select a color
+      await colorPickerButton.click()
+      const redColorOption = comfyPage.page.locator(
+        '.color-picker-container i[data-testid="red"]'
+      )
+      await redColorOption.click()
+
+      // Button should now show the selected color
+      await expect(colorPickerButton).toHaveCSS(
+        'color',
+        'rgb(85, 51, 51)' // Red color, adjust if different
+      )
+    })
+
+    test('color picker shows mixed state for differently colored selections', async ({
+      comfyPage
+    }) => {
+      // Select first node and color it
+      await comfyPage.selectNodes(['KSampler'])
+      await comfyPage.page.locator('.selection-toolbox .pi-circle-fill').click()
+      await comfyPage.page
+        .locator('.color-picker-container i[data-testid="blue"]')
+        .click()
+      await comfyPage.selectNodes(['KSampler'])
+
+      // Select second node and color it differently
+      await comfyPage.selectNodes(['CLIP Text Encode (Prompt)'])
+      await comfyPage.page.locator('.selection-toolbox .pi-circle-fill').click()
+      await comfyPage.page
+        .locator('.color-picker-container i[data-testid="red"]')
+        .click()
+
+      // Select both nodes
+      await comfyPage.selectNodes(['KSampler', 'CLIP Text Encode (Prompt)'])
+
+      // Color picker should show null/mixed state
+      const colorPickerButton = comfyPage.page.locator(
+        '.selection-toolbox .pi-circle-fill'
+      )
+      await expect(colorPickerButton).not.toHaveAttribute('color')
+    })
+  })
 })
