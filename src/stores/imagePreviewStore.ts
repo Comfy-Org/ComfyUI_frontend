@@ -24,11 +24,19 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     return app.nodeOutputs[node.id + '']
   }
 
+  /**
+   * @returns The urls of the previews for the node.
+   * @example
+   * getNodePreviews(node) // → ['blob:http://localhost:8188/a85de46a-fee1-4871-b7ad-a11c297d0009']
+   */
   function getNodePreviews(node: LGraphNode): string[] {
     return app.nodePreviewImages[node.id + '']
   }
 
   function getNodeImageUrls(node: LGraphNode): string[] {
+    const previews = getNodePreviews(node)
+    if (previews?.length) return previews
+
     const outputs = getNodeOutputs(node)
     if (!outputs?.images?.length) return []
 
