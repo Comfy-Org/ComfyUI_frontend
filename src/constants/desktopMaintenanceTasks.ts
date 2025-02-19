@@ -27,7 +27,7 @@ export const DESKTOP_MAINTENANCE_TASKS: Readonly<MaintenanceTask>[] = [
   },
   {
     id: 'git',
-    headerImg: '/assets/images/Git-Logo-White.svg',
+    headerImg: 'assets/images/Git-Logo-White.svg',
     execute: () => openUrl('https://git-scm.com/downloads/'),
     name: 'Download git',
     shortDescription: 'Open the git download page.',
