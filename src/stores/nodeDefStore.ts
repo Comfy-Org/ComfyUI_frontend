@@ -61,7 +61,8 @@ export interface ComboInputSpec extends BaseInputSpec<any> {
   type: 'COMBO'
   comboOptions: any[]
   controlAfterGenerate?: boolean
-  imageUpload?: boolean
+  image_upload?: boolean
+  video_upload?: boolean
 }
 
 export class ComfyInputsSpec {
@@ -190,6 +191,9 @@ export class ComfyNodeDefImpl implements ComfyNodeDef {
   readonly outputs: ComfyOutputsSpec
   readonly nodeSource: NodeSource
 
+  _isImageNode?: boolean
+  _isVideoNode?: boolean
+
   constructor(obj: ComfyNodeDef) {
     this.name = obj.name
     this.display_name = obj.display_name
@@ -244,6 +248,19 @@ export class ComfyNodeDefImpl implements ComfyNodeDef {
 
   get isCoreNode(): boolean {
     return this.nodeSource.type === NodeSourceType.Core
+  }
+
+  get isImageNode(): boolean {
+    return (this._isImageNode ??= this.inputs.all.some(
+      (input) => input.type === 'COMBO' && 'image_upload' in input
+    ))
+  }
+
+  get isVideoNode(): boolean {
+    console.log('isVideoNode', this.inputs.all)
+    return (this._isVideoNode ??= this.inputs.all.some(
+      (input) => input.type === 'COMBO' && 'video_upload' in input
+    ))
   }
 
   get nodeLifeCycleBadgeText(): string {
