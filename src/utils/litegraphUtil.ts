@@ -69,7 +69,6 @@ export function getImageTop(node: LGraphNode) {
     } else if (w.computedHeight) {
       shiftY += w.computedHeight
     } else {
-      console.log('NODE_WIDGET_HEIGHT', LiteGraph.NODE_WIDGET_HEIGHT)
       shiftY += LiteGraph.NODE_WIDGET_HEIGHT + 4
     }
   } else {

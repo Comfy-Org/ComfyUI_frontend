@@ -215,9 +215,11 @@ export function isValidUrl(url: string): boolean {
     return false
   }
 }
+const hasAnnotation = (filepath: string): boolean =>
+  /\[(input|output|temp)\]/i.test(filepath)
 
-const createAnnotation = (rootFolder = 'input'): string =>
-  rootFolder !== 'input' ? ` [${rootFolder}]` : ''
+const createAnnotation = (filepath: string, rootFolder = 'input'): string =>
+  !hasAnnotation(filepath) && rootFolder !== 'input' ? ` [${rootFolder}]` : ''
 
 const createPath = (filename: string, subfolder = ''): string =>
   subfolder ? `${subfolder}/${filename}` : filename
@@ -229,8 +231,8 @@ export function createAnnotatedPath(
 ): string {
   const { rootFolder = 'input', subfolder } = options
   if (typeof item === 'string')
-    return `${createPath(item, subfolder)}${createAnnotation(rootFolder)}`
-  return `${createPath(item.filename ?? '', item.subfolder)}${createAnnotation(item.type)}`
+    return `${createPath(item, subfolder)}${createAnnotation(item, rootFolder)}`
+  return `${createPath(item.filename ?? '', item.subfolder)}${item.type ? createAnnotation(item.type, rootFolder) : ''}`
 }
 
 /**

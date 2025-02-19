@@ -9,7 +9,7 @@ import {
 import { Vector2 } from '@comfyorg/litegraph'
 import { IBaseWidget, IWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
-import { useNodeImage } from '@/composables/useNodeImage'
+import { useNodeImage, useNodeVideo } from '@/composables/useNodeImage'
 import { st } from '@/i18n'
 import { ANIM_PREVIEW_WIDGET, ComfyApp, app } from '@/scripts/app'
 import { $el } from '@/scripts/ui'
@@ -387,14 +387,26 @@ export const useLitegraphService = () => {
       if (this.flags.collapsed) return
 
       const nodeOutputStore = useNodeOutputStore()
+
       const output = nodeOutputStore.getNodeOutputs(this)
-
       const preview = nodeOutputStore.getNodePreviews(this)
-      if (preview && this.preview !== preview) {
-        nodeOutputStore.setNodeOutputs(this, preview)
-        useNodeImage(this).show(preview)
-      }
 
+      const isNewOutput = output && this.images !== output.images
+      const isNewPreview = preview && this.preview !== preview
+
+      if (isNewPreview) this.preview = preview
+      if (isNewOutput) this.images = output.images
+
+      if (isNewOutput || isNewPreview) {
+        this.animatedImages = output?.animated?.find(Boolean)
+        
+        if (this.animatedImages) {
+          useNodeVideo(this).showPreview()
+        } else {
+          useNodeImage(this).showPreview()
+        }
+      }
+      
       // Nothing to do
       if (!this.imgs?.length) return
 
@@ -402,7 +414,6 @@ export const useLitegraphService = () => {
         (w) => w.name === ANIM_PREVIEW_WIDGET
       )
 
-      this.animatedImages = output?.animated?.find(Boolean)
       if (this.animatedImages) {
         // Instead of using the canvas we'll use a IMG
         if (widgetIdx > -1) {

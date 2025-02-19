@@ -5,6 +5,7 @@ import { useNodeImage, useNodeVideo } from '@/composables/useNodeImage'
 import { useNodeImageUpload } from '@/composables/useNodeImageUpload'
 import { useValueTransform } from '@/composables/useValueTransform'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
+import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import type { ComfyApp } from '@/types'
 import type { InputSpec, ResultItem } from '@/types/apiTypes'
 import { createAnnotatedPath } from '@/utils/formatUtil'
@@ -34,12 +35,13 @@ export const useImageUploadWidget = () => {
   ) => {
     const inputOptions = inputData[1] ?? {}
     const { imageInputName, allow_batch, image_folder = 'input' } = inputOptions
+    const nodeOutputStore = useNodeOutputStore()
 
     const isVideo = !!inputOptions.video_upload
     const accept = isVideo ? ACCEPTED_VIDEO_TYPES : ACCEPTED_IMAGE_TYPES
-    const { show } = isVideo ? useNodeVideo(node) : useNodeImage(node)
-    const fileFilter = isVideo ? isVideoFile : isImageFile
+    const { showPreview } = isVideo ? useNodeVideo(node) : useNodeImage(node)
 
+    const fileFilter = isVideo ? isVideoFile : isImageFile
     const fileComboWidget = findFileComboWidget(node, imageInputName)
     const initialFile = `${fileComboWidget.value}`
     const formatPath = (value: InternalFile) =>
@@ -86,7 +88,7 @@ export const useImageUploadWidget = () => {
     // Add our own callback to the combo widget to render an image when it changes
     const cb = node.callback
     fileComboWidget.callback = function (...args) {
-      show(fileComboWidget.value)
+      nodeOutputStore.setNodeOutputs(node, fileComboWidget.value)
       if (cb) return cb.apply(this, args)
     }
 
@@ -94,7 +96,8 @@ export const useImageUploadWidget = () => {
     // The value isnt set immediately so we need to wait a moment
     // No change callbacks seem to be fired on initial setting of the value
     requestAnimationFrame(() => {
-      show(fileComboWidget.value)
+      nodeOutputStore.setNodeOutputs(node, fileComboWidget.value)
+      showPreview()
     })
 
     return { widget: uploadWidget }

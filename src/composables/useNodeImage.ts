@@ -2,27 +2,33 @@ import type { LGraphNode } from '@comfyorg/litegraph'
 
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 
+const VIDEO_WIDGET_NAME = 'video-preview' as const
 const VIDEO_DEFAULT_OPTIONS = {
   playsInline: true,
   controls: true,
   loop: true
 } as const
 
-interface NodePreviewOptions<T> {
+type MediaElement = HTMLImageElement | HTMLVideoElement
+
+interface NodePreviewOptions<T extends MediaElement> {
   loadElement: (url: string) => Promise<T | null>
   onLoaded?: (elements: T[]) => void
   onFailedLoading?: () => void
 }
 
-export const useNodePreview = <T extends HTMLElement>(
+const createContainer = () => {
+  const container = document.createElement('div')
+  container.classList.add('comfy-img-preview')
+  return container
+}
+
+export const useNodePreview = <T extends MediaElement>(
   node: LGraphNode,
   options: NodePreviewOptions<T>
 ) => {
   const { loadElement, onLoaded, onFailedLoading } = options
   const nodeOutputStore = useNodeOutputStore()
-
-  let isLoading = false
-  let isFailedLoading = false
 
   const loadElements = async (urls: string[]) =>
     Promise.all(urls.map(loadElement))
@@ -34,34 +40,36 @@ export const useNodePreview = <T extends HTMLElement>(
 
   /**
    * Displays media element(s) on the node.
-   * @param output - A filename, path, or array of filenames/paths to display.
    */
-  function show(output: string | string[]) {
-    if (!output || isLoading || isFailedLoading) return
+  function showPreview() {
+    if (node.isLoading) return
 
-    isLoading = true
-    nodeOutputStore.setNodeOutputs(node, output)
     const outputUrls = nodeOutputStore.getNodeImageUrls(node)
+    if (!outputUrls?.length) return
+
+    node.isLoading = true
 
     loadElements(outputUrls)
       .then((elements) => {
-        const validElements = elements.filter((el) => el !== null)
-        if (!validElements?.length) return
-
+        console.count('rendered')
+        const validElements = elements.filter(
+          (el): el is NonNullable<Awaited<T>> => el !== null
+        )
+        if (validElements.length) {
         onLoaded?.(validElements)
         render()
+        }
       })
-      .catch((err) => {
-        isFailedLoading = true
+      .catch(() => {
         onFailedLoading?.()
       })
       .finally(() => {
-        isLoading = false
+        node.isLoading = false
       })
   }
 
   return {
-    show
+    showPreview
   }
 }
 
@@ -69,21 +77,17 @@ export const useNodePreview = <T extends HTMLElement>(
  * Attaches a preview image to a node.
  */
 export const useNodeImage = (node: LGraphNode) => {
-  const nodeOutputStore = useNodeOutputStore()
-
-  const loadElement = (url: string) => {
-    return new Promise<HTMLImageElement | null>((resolve) => {
+  const loadElement = (url: string): Promise<HTMLImageElement | null> =>
+    new Promise((resolve) => {
       const img = new Image()
       img.onload = () => resolve(img)
       img.onerror = () => resolve(null)
       img.src = url
       return img
     })
-  }
 
   const onLoaded = (elements: HTMLImageElement[]) => {
     node.imageIndex = null
-    node.images = nodeOutputStore.getNodeOutputs(node)?.images
     node.imgs = elements
   }
 
@@ -100,13 +104,8 @@ export const useNodeImage = (node: LGraphNode) => {
  * Attaches a preview video to a node.
  */
 export const useNodeVideo = (node: LGraphNode) => {
-  const container = document.createElement('div')
-  container.classList.add('comfy-img-preview')
-
-  let loaded = false
-
-  const loadElement = (url: string) => {
-    return new Promise<HTMLVideoElement | null>((resolve) => {
+  const loadElement = (url: string): Promise<HTMLVideoElement | null> =>
+    new Promise((resolve) => {
       const video = document.createElement('video')
       Object.assign(video, VIDEO_DEFAULT_OPTIONS)
       video.onloadeddata = () => resolve(video)
@@ -114,29 +113,33 @@ export const useNodeVideo = (node: LGraphNode) => {
       video.src = url
       return video
     })
-  }
 
-  const addVideoDomWidget = () => {
-    node.addDOMWidget('video-preview', 'video', container, {
-      hideOnZoom: false
-    })
+  const addVideoDomWidget = (container: HTMLElement) => {
+    const hasWidget = node.widgets?.some((w) => w.name === VIDEO_WIDGET_NAME)
+    if (!hasWidget) {
+      node.addDOMWidget(VIDEO_WIDGET_NAME, 'video', container, {
+        hideOnZoom: false
+      })
+    }
   }
 
   const onLoaded = (videoElements: HTMLVideoElement[]) => {
     const videoElement = videoElements[0]
     if (!videoElement) return
 
-    if (!loaded) {
-      addVideoDomWidget()
-      container.replaceChildren(videoElement)
-      loaded = true
-    } else {
-      container.appendChild(videoElement)
+    if (!node.videoContainer) {
+      node.videoContainer = createContainer()
+      addVideoDomWidget(node.videoContainer)
     }
+
+    node.videoContainer.replaceChildren(videoElement)
   }
 
   return useNodePreview(node, {
     loadElement,
-    onLoaded
+    onLoaded,
+    onFailedLoading: () => {
+      node.videoContainer = undefined
+    }
   })
 }

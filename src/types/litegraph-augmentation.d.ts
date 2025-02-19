@@ -109,8 +109,12 @@ declare module '@comfyorg/litegraph' {
     ): DOMWidget
 
     animatedImages?: boolean
-    imgs?: HTMLImageElement[]
+    imgs?: (HTMLImageElement | HTMLVideoElement)[]
     images?: ExecutedWsMessage['output']
+    /** Container for the node's video preview */
+    videoContainer?: HTMLElement
+    /** Whether the node's preview media is loading */
+    isLoading: boolean
 
     preview: string[]
     /** Index of the currently selected image on a multi-image node such as Preview Image */
