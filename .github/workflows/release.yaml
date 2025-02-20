@@ -6,7 +6,8 @@ on:
     branches:
       - main
       - master
-      - core/*
+      - 'core/*'
+      - 'desktop/*'
     paths:
       - "package.json"
 
