@@ -69,7 +69,12 @@ test('collect-i18n-general', async ({ comfyPage }) => {
         name: setting.name,
         tooltip: setting.tooltip,
         category: setting.category,
-        options: setting.options
+        options:
+          typeof setting.options === 'function'
+            ? // @ts-expect-error: Audit and deprecate usage of legacy options type:
+              // (value) => [string | {text: string, value: string}]
+              setting.options(setting.defaultValue ?? '')
+            : setting.options
       }))
   })
 
