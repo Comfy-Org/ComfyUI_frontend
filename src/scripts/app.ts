@@ -405,7 +405,7 @@ export class ComfyApp {
         }
         workflow.extra.ds = {
           scale: self.canvas.ds.scale,
-          offset: self.canvas.ds.offset
+          offset: [...self.canvas.ds.offset]
         }
       } else if (workflow.extra?.ds) {
         // Clear any old view data
