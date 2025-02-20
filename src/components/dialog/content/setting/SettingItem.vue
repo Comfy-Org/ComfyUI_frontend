@@ -35,7 +35,7 @@ function translateOptions(options: (SettingOption | string)[]) {
   if (typeof options === 'function') {
     // @ts-expect-error: Audit and deprecate usage of legacy options type:
     // (value) => [string | {text: string, value: string}]
-    return translateOptions([options(props.setting.value ?? '')])
+    return translateOptions(options(props.setting.value ?? ''))
   }
 
   return options.map((option) => {
