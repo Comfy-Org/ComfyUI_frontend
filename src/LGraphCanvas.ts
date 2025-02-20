@@ -785,7 +785,6 @@ export class LGraphCanvas implements ConnectionColorContext {
     options: IContextMenuOptions,
     event: MouseEvent,
     prev_menu: ContextMenu,
-    node: LGraphNode,
   ): void {
     new LiteGraph.ContextMenu(["Vertically", "Horizontally"], {
       event,
@@ -1347,13 +1346,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     node.graph.afterChange(/* ? */)
   }
 
-  static onMenuNodePin(
-    value: IContextMenuValue,
-    options: IContextMenuOptions,
-    e: MouseEvent,
-    menu: ContextMenu,
-    node: LGraphNode,
-  ): void {}
+  static onMenuNodePin(): void {}
 
   static onMenuNodeMode(
     value: IContextMenuValue,
@@ -2367,7 +2360,7 @@ export class LGraphCanvas implements ConnectionColorContext {
           this.#dirty()
         }
 
-        pointer.onDragEnd = (upEvent) => {
+        pointer.onDragEnd = () => {
           this.#dirty()
           graph.afterChange(this.resizing_node)
         }
@@ -3158,7 +3151,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     this.updateMouseOverNodes(null, e)
   }
 
-  processMouseCancel(e: PointerEvent): void {
+  processMouseCancel(): void {
     console.warn("Pointer cancel!")
     this.pointer.reset()
   }
@@ -5881,7 +5874,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       default: {
         // check for defaults nodes for this slottype
 
-        const nodeCreated = that.createDefaultNodeForSlot(Object.assign<ICreateNodeOptions, ICreateNodeOptions>(opts, {
+        that.createDefaultNodeForSlot(Object.assign<ICreateNodeOptions, ICreateNodeOptions>(opts, {
           position: [opts.e.canvasX, opts.e.canvasY],
           nodeType: v,
           afterRerouteId,

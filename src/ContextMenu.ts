@@ -346,7 +346,6 @@ export class ContextMenu {
     element: HTMLDivElement,
     event_name: string,
     params: MouseEvent,
-    origin?: unknown,
   ): CustomEvent {
     const evt = document.createEvent("CustomEvent")
     evt.initCustomEvent(event_name, true, true, params) // canBubble, cancelable, detail

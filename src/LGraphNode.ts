@@ -1064,7 +1064,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     const trigS = this.findInputSlot("onTrigger")
     // !trigS ||
     if (trigS == -1) {
-      const input = this.addInput("onTrigger", LiteGraph.EVENT, {
+      this.addInput("onTrigger", LiteGraph.EVENT, {
         optional: true,
         nameLocked: true,
       })
@@ -1077,7 +1077,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     const trigS = this.findOutputSlot("onExecuted")
     // !trigS ||
     if (trigS == -1) {
-      const output = this.addOutput("onExecuted", LiteGraph.ACTION, {
+      this.addOutput("onExecuted", LiteGraph.ACTION, {
         optional: true,
         nameLocked: true,
       })

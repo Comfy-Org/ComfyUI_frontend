@@ -584,8 +584,6 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     if (L.length != this._nodes.length && LiteGraph.debug)
       console.warn("something went wrong, nodes missing")
 
-    const l = L.length
-
     /** Ensure type is set */
     type OrderedLGraphNode = LGraphNode & { order: number }
 

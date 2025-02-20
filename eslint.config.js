@@ -63,7 +63,6 @@ export default tseslint.config(
       "@typescript-eslint/no-empty-object-type": "off",
 
       // "@typescript-eslint/prefer-readonly-parameter-types": "error",
-      "@typescript-eslint/no-unused-vars": "off",
       // "@typescript-eslint/no-unsafe-function-type": "off",
 
       "@stylistic/max-len": [
@@ -167,10 +166,9 @@ export default tseslint.config(
       "unused-imports": unusedImports,
     },
     rules: {
-      "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-unused-vars": "off",
-      "@typescript-eslint/prefer-as-const": "off",
       "unused-imports/no-unused-imports": "error",
+      "unused-imports/no-unused-vars": "warn",
     },
   },
 )
