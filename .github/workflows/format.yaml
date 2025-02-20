@@ -2,7 +2,7 @@ name: Prettier Check
 
 on:
   pull_request:
-    branches: [ main, master, dev* ]
+    branches: [ main, master, dev*, core/*, desktop/* ]
 
 jobs:
   prettier:
