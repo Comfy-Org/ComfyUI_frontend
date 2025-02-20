@@ -2550,7 +2550,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         node,
         canvas: this,
       })
-      pointer.onDrag = eMove => widgetInstance.onDrag({
+      pointer.onDrag = eMove => widgetInstance.onDrag?.({
         e: eMove,
         node,
         canvas: this,
