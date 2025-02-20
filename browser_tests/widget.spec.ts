@@ -84,3 +84,19 @@ test.describe('Number widget', () => {
     ).toBeDefined()
   })
 })
+
+test.describe('Dynamic widget manipulation', () => {
+  test('Auto expand node when widget is added dynamically', async ({
+    comfyPage
+  }) => {
+    await comfyPage.loadWorkflow('single_ksampler')
+    await comfyPage.page.waitForTimeout(300)
+
+    await comfyPage.page.evaluate(() => {
+      window['graph'].nodes[0].addWidget('number', 'new_widget', 10)
+      window['graph'].setDirtyCanvas(true, true)
+    })
+
+    await expect(comfyPage.canvas).toHaveScreenshot('ksampler_widget_added.png')
+  })
+})
