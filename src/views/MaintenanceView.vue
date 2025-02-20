@@ -135,12 +135,12 @@ const filterOptions = ref([
 ])
 
 /** Filter binding; can be set to show all tasks, or only errors. */
-const filter = ref<MaintenanceFilter>(filterOptions.value[1])
+const filter = ref<MaintenanceFilter>(filterOptions.value[0])
 
 /** If valid, leave the validation window. */
-const completeValidation = async (alertOnFail = true) => {
+const completeValidation = async () => {
   const isValid = await electron.Validation.complete()
-  if (alertOnFail && !isValid) {
+  if (!isValid) {
     toast.add({
       severity: 'error',
       summary: t('g.error'),
@@ -162,18 +162,13 @@ watch(
   }
 )
 
-// If we're running a fix that may resolve all issues, auto-recheck and continue if everything is OK
-watch(
-  () => taskStore.isRunningInstallationFix,
-  (value, oldValue) => {
-    if (!value && oldValue) completeValidation(false)
-  }
-)
-
 onMounted(async () => {
   electron.Validation.onUpdate(processUpdate)
 
   const update = await electron.Validation.getStatus()
+  if (Object.values(update).some((x) => x === 'error')) {
+    filter.value = filterOptions.value[1]
+  }
   processUpdate(update)
 })
 

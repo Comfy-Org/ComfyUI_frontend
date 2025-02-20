@@ -25,9 +25,9 @@
             @click="openLogs"
           />
           <Button
-            icon="pi pi-refresh"
-            :label="t('serverStart.reinstall')"
-            @click="reinstall"
+            icon="pi pi-wrench"
+            :label="t('serverStart.troubleshoot')"
+            @click="troubleshoot"
           />
         </div>
         <Button
@@ -88,7 +88,7 @@ const terminalCreated = (
   terminal.options.cursorInactiveStyle = 'block'
 }
 
-const reinstall = () => electron.reinstall()
+const troubleshoot = () => electron.startTroubleshooting()
 const reportIssue = () => {
   window.open('https://forum.comfy.org/c/v1-feedback/', '_blank')
 }
