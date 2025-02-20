@@ -32,6 +32,9 @@ const props = defineProps<{
 
 const { t } = useI18n()
 function translateOptions(options: (SettingOption | string)[]) {
+  // @ts-expect-error: Audit and deprecate usage of legacy options type:
+  // (value) => [string | {text: string, value: string}]
+  if (typeof options === 'function') return translateOptions(options())
   return options.map((option) => {
     const optionLabel = typeof option === 'string' ? option : option.text
     const optionValue = typeof option === 'string' ? option : option.value
