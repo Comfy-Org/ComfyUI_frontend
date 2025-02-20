@@ -280,5 +280,22 @@ test.describe('Topbar commands', () => {
       await comfyPage.confirmDialog.click('confirm')
       expect(await comfyPage.page.evaluate(() => window['value'])).toBe(true)
     })
+
+    test('Should allow dismissing a dialog', async ({ comfyPage }) => {
+      await comfyPage.page.evaluate(() => {
+        window['value'] = 'foo'
+        window['app'].extensionManager.dialog
+          .confirm({
+            title: 'Test Confirm',
+            message: 'Test Confirm Message'
+          })
+          .then((value: boolean) => {
+            window['value'] = value
+          })
+      })
+
+      await comfyPage.confirmDialog.click('reject')
+      expect(await comfyPage.page.evaluate(() => window['value'])).toBeNull()
+    })
   })
 })

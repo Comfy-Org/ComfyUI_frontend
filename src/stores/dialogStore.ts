@@ -43,18 +43,13 @@ export const useDialogStore = defineStore('dialog', () => {
   }
 
   function closeDialog(options?: { key: string }) {
-    if (!options) {
-      dialogStack.value.pop()
-      return
-    }
+    const targetDialog = options
+      ? dialogStack.value.find((d) => d.key === options.key)
+      : dialogStack.value[0]
+    if (!targetDialog) return
 
-    const dialogKey = options.key
-
-    const index = dialogStack.value.findIndex((d) => d.key === dialogKey)
-    if (index === -1) {
-      return
-    }
-    dialogStack.value.splice(index, 1)
+    targetDialog.dialogComponentProps?.onClose?.()
+    dialogStack.value.splice(dialogStack.value.indexOf(targetDialog), 1)
   }
 
   function createDialog(options: {
@@ -93,7 +88,6 @@ export const useDialogStore = defineStore('dialog', () => {
           dialog.dialogComponentProps.maximized = false
         },
         onAfterHide: () => {
-          options.dialogComponentProps?.onClose?.()
           closeDialog(dialog)
         },
         pt: {
