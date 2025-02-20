@@ -2,9 +2,9 @@ name: Vitest Tests
 
 on:
   push:
-    branches: [ main, master, dev* ]
+    branches: [ main, master, dev*, core/*, desktop/* ]
   pull_request:
-    branches: [ main, master, dev* ]
+    branches: [ main, master, dev*, core/*, desktop/* ]
 
 jobs:
   test:
