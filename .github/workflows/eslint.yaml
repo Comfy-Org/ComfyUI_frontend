@@ -6,8 +6,8 @@ on:
       - main
       - master
       - 'dev*'
-      - core/*
-      - desktop/*
+      - 'core/*'
+      - 'desktop/*'
 
 jobs:
   eslint:

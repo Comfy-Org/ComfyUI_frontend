@@ -6,15 +6,15 @@ on:
       - main
       - master
       - 'dev*'
-      - core/*
-      - desktop/*
+      - 'core/*'
+      - 'desktop/*'
   pull_request:
     branches:
       - main
       - master
       - 'dev*'
-      - core/*
-      - desktop/*
+      - 'core/*'
+      - 'desktop/*'
 
 jobs:
   test:
