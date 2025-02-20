@@ -6,10 +6,7 @@ on:
     branches:
       - main
       - master
-      - 'core/*'
       - 'desktop/*'
-    paths:
-      - "package.json"
 
 jobs:
   draft_release:
