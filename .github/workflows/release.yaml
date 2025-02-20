@@ -2,8 +2,8 @@ name: Create Release Draft
 
 on:
   pull_request:
-    types: [ closed ]
-    branches: [ main, core/* ]
+    types: [closed]
+    branches: [main, core/*, desktop/*]
     paths:
       - 'package.json'
 
