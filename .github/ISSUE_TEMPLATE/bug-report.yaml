@@ -58,33 +58,13 @@ body:
   - type: textarea
     attributes:
       label: Browser Logs
-      description: |
-        Please copy the output from your browser logs here. You can access this by pressing F12 to toggle the developer tools, then navigating to the Console tab. You can right click and select "Save As" then drag the file into this section.
-
-        <details>
-
-        <summary>Click to show how to open the browser console</summary>
-
-        ![OpenDevTools](https://github.com/user-attachments/assets/4505621e-34f0-4b66-b9d0-2e1a9133a635)
-
-        ![ConsoleTab](https://github.com/user-attachments/assets/cc96c0db-2880-40bb-93a2-c035360c41b2)
-
-        </details>
+      description: 'Please copy the output from your browser logs here. You can access this by pressing F12 to toggle the developer tools, then navigating to the Console tab.'
     validations:
       required: true
   - type: textarea
     attributes:
       label: Setting JSON
-      description: |
-        Please upload the setting file here. The setting file is located at `user/default/comfy.settings.json`
-
-        <details>
-
-        <summary>Click to show how to open the models directory</summary>
-
-        ![OpenFolder](https://github.com/user-attachments/assets/254e41c7-6335-4d6a-a7dd-c93ab74a9d5e)
-
-        </details>
+      description: 'Please upload the setting file here. The setting file is located at `user/default/comfy.settings.json`'
     validations:
       required: true
   - type: dropdown
