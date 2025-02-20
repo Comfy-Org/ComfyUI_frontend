@@ -1493,28 +1493,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     menu: ContextMenu,
     node: LGraphNode,
   ): void {
-    if (!node) throw "no node passed"
-
-    const graph = node.graph
-    graph.beforeChange()
-
-    const fApplyMultiNode = function (node: LGraphNode) {
-      if (node.removable === false) return
-
-      graph.remove(node)
-    }
-
-    const canvas = LGraphCanvas.active_canvas
-    if (!canvas.selected_nodes || Object.keys(canvas.selected_nodes).length <= 1) {
-      fApplyMultiNode(node)
-    } else {
-      for (const i in canvas.selected_nodes) {
-        fApplyMultiNode(canvas.selected_nodes[i])
-      }
-    }
-
-    graph.afterChange()
-    canvas.setDirty(true, true)
+    LGraphCanvas.active_canvas.deleteSelected()
   }
 
   static onMenuNodeClone(
