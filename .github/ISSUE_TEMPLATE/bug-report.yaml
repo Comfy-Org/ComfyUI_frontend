@@ -16,7 +16,18 @@ body:
   - type: textarea
     attributes:
       label: Frontend Version
-      description: 'What is the frontend version you are using? You can check this in the settings dialog'
+      description: |
+        What is the frontend version you are using? You can check this in the settings dialog.
+
+        <details>
+
+        <summary>Click to show where to find the version</summary>
+
+        Open the setting by clicking the cog icon in the bottom-left of the screen, then click `About`.
+
+        ![Desktop version](https://github.com/user-attachments/assets/eb741720-00c1-4d45-b0a2-341a45d089c5)
+
+        </details>
     validations:
       required: true
   - type: textarea
@@ -72,7 +83,8 @@ body:
         - Other
   - type: textarea
     attributes:
-      label: Other
-      description: 'Any other additional information you think might be helpful.'
+      label: Other Information
+      description: 'Any other context, details, or screenshots that might help solve the issue.'
+      placeholder: 'Add any other relevant information here...'
     validations:
       required: false
