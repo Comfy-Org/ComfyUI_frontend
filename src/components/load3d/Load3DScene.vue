@@ -19,6 +19,7 @@ const props = defineProps<{
   fov: number
   cameraType: 'perspective' | 'orthographic'
   showPreview: boolean
+  backgroundImage: string
   extraListeners?: Record<string, (value: any) => void>
 }>()
 
@@ -34,7 +35,8 @@ const eventConfig = {
   fovChange: (value: number) => emit('fovChange', value),
   cameraTypeChange: (value: string) => emit('cameraTypeChange', value),
   showGridChange: (value: boolean) => emit('showGridChange', value),
-  showPreviewChange: (value: boolean) => emit('showPreviewChange', value)
+  showPreviewChange: (value: boolean) => emit('showPreviewChange', value),
+  backgroundImageChange: (value: string) => emit('backgroundImageChange', value)
 } as const
 
 watchEffect(() => {
@@ -47,6 +49,7 @@ watchEffect(() => {
     rawLoad3d.setFOV(props.fov)
     rawLoad3d.toggleCamera(props.cameraType)
     rawLoad3d.togglePreview(props.showPreview)
+    rawLoad3d.setBackgroundImage(props.backgroundImage)
   }
 })
 
@@ -58,6 +61,7 @@ const emit = defineEmits<{
   (e: 'cameraTypeChange', cameraType: string): void
   (e: 'showGridChange', showGrid: boolean): void
   (e: 'showPreviewChange', showPreview: boolean): void
+  (e: 'backgroundImageChange', backgroundImage: string): void
 }>()
 
 const handleEvents = (action: 'add' | 'remove') => {

@@ -169,12 +169,6 @@ class Load3dAnimation extends Load3d {
         this.currentAnimation.update(delta)
       }
 
-      this.controls.update()
-
-      this.renderer.clear()
-
-      this.renderer.render(this.scene, this.activeCamera)
-
       if (this.viewHelper.animating) {
         this.viewHelper.update(delta)
 
@@ -183,6 +177,25 @@ class Load3dAnimation extends Load3d {
         }
       }
 
+      this.renderer.clear()
+
+      if (this.backgroundMesh && this.backgroundTexture) {
+        const material = this.backgroundMesh.material as THREE.MeshBasicMaterial
+        if (material.map) {
+          const currentToneMapping = this.renderer.toneMapping
+          const currentExposure = this.renderer.toneMappingExposure
+
+          this.renderer.toneMapping = THREE.NoToneMapping
+
+          this.renderer.render(this.backgroundScene, this.backgroundCamera)
+
+          this.renderer.toneMapping = currentToneMapping
+          this.renderer.toneMappingExposure = currentExposure
+        }
+      }
+
+      this.controls.update()
+      this.renderer.render(this.scene, this.activeCamera)
       this.viewHelper.render(this.renderer)
     }
     animate()

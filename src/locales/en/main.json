@@ -845,6 +845,8 @@
     "backgroundColor": "Background Color",
     "lightIntensity": "Light Intensity",
     "fov": "FOV",
-    "previewOutput": "Preview Output"
+    "previewOutput": "Preview Output",
+    "uploadBackgroundImage": "Upload Background Image",
+    "removeBackgroundImage": "Remove Background Image"
   }
 }

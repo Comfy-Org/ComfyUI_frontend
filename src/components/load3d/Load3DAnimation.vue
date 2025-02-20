@@ -15,6 +15,7 @@
       :playing="playing"
       :selectedSpeed="selectedSpeed"
       :selectedAnimation="selectedAnimation"
+      :backgroundImage="backgroundImage"
       @materialModeChange="listenMaterialModeChange"
       @backgroundColorChange="listenBackgroundColorChange"
       @lightIntensityChange="listenLightIntensityChange"
@@ -22,6 +23,7 @@
       @cameraTypeChange="listenCameraTypeChange"
       @showGridChange="listenShowGridChange"
       @showPreviewChange="listenShowPreviewChange"
+      @backgroundImageChange="listenBackgroundImageChange"
       @animationListChange="animationListChange"
     />
     <div class="absolute top-0 left-0 w-full h-full pointer-events-none">
@@ -35,6 +37,8 @@
         :showFOVButton="showFOVButton"
         :showPreviewButton="showPreviewButton"
         :cameraType="cameraType"
+        :hasBackgroundImage="hasBackgroundImage"
+        @updateBackgroundImage="handleBackgroundImageUpdate"
         @switchCamera="switchCamera"
         @toggleGrid="toggleGrid"
         @updateBackgroundColor="handleBackgroundColorChange"
@@ -60,6 +64,7 @@ import Load3DAnimationControls from '@/components/load3d/Load3DAnimationControls
 import Load3DAnimationScene from '@/components/load3d/Load3DAnimationScene.vue'
 import Load3DControls from '@/components/load3d/Load3DControls.vue'
 import type { AnimationItem } from '@/extensions/core/load3d/Load3dAnimation'
+import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 
 const props = defineProps<{
   node: any
@@ -75,11 +80,13 @@ const showLightIntensityButton = ref(true)
 const fov = ref(75)
 const showFOVButton = ref(true)
 const cameraType = ref<'perspective' | 'orthographic'>('perspective')
+const hasBackgroundImage = ref(false)
 
 const animations = ref<AnimationItem[]>([])
 const playing = ref(false)
 const selectedSpeed = ref(1)
 const selectedAnimation = ref(0)
+const backgroundImage = ref('')
 
 const showPreviewButton = computed(() => {
   return !props.type.includes('Preview')
@@ -110,6 +117,19 @@ const handleUpdateLightIntensity = (value: number) => {
   lightIntensity.value = value
 
   node.value.properties['Light Intensity'] = lightIntensity.value
+}
+
+const handleBackgroundImageUpdate = async (file: File | null) => {
+  if (!file) {
+    hasBackgroundImage.value = false
+    backgroundImage.value = ''
+    node.value.properties['Background Image'] = ''
+    return
+  }
+
+  backgroundImage.value = await Load3dUtils.uploadFile(file)
+
+  node.value.properties['Background Image'] = backgroundImage.value
 }
 
 const handleUpdateFOV = (value: number) => {
@@ -176,5 +196,13 @@ const listenShowGridChange = (value: boolean) => {
 
 const listenShowPreviewChange = (value: boolean) => {
   showPreview.value = value
+}
+
+const listenBackgroundImageChange = (value: string) => {
+  backgroundImage.value = value
+
+  if (backgroundImage.value && backgroundImage.value !== '') {
+    hasBackgroundImage.value = true
+  }
 }
 </script>
