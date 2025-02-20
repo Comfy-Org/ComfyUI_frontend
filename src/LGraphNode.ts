@@ -3374,6 +3374,15 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       w.y = y
       y += w.computedHeight
     }
+
+    // Grow the node if necessary.
+    // Ref: https://github.com/Comfy-Org/ComfyUI_frontend/issues/2652
+    // TODO: Move the layout logic before drawing of the node shape, so we don't
+    // need to trigger extra round of rendering.
+    if (y > bodyHeight) {
+      this.setSize([this.size[0], y])
+      this.graph.setDirtyCanvas(false, true)
+    }
   }
 
   /**
