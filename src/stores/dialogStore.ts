@@ -43,18 +43,10 @@ export const useDialogStore = defineStore('dialog', () => {
   }
 
   function closeDialog(options?: { key: string }) {
-    let targetDialog: DialogInstance | undefined
-
-    if (!options) {
-      targetDialog = dialogStack.value.pop()
-    } else {
-      const dialogKey = options.key
-      targetDialog = dialogStack.value.find((d) => d.key === dialogKey)
-    }
-
-    if (!targetDialog) {
-      return
-    }
+    const targetDialog = options
+      ? dialogStack.value.find((d) => d.key === options.key)
+      : dialogStack.value[0]
+    if (!targetDialog) return
 
     targetDialog.dialogComponentProps?.onClose?.()
     dialogStack.value.splice(dialogStack.value.indexOf(targetDialog), 1)
