@@ -1304,6 +1304,17 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   }
 
   /**
+   * Expands the node size to fit its content.
+   */
+  expandToFitContent(): void {
+    const newSize = this.computeSize()
+    this.setSize([
+      Math.max(this.size[0], newSize[0]),
+      Math.max(this.size[1], newSize[1]),
+    ])
+  }
+
+  /**
    * add a new property to this node
    * @param type string defining the output type ("vec3","number",...)
    * @param extra_info this can be used to have special properties of the property (like values, etc)
@@ -1355,7 +1366,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     if (LiteGraph.auto_load_slot_types)
       LiteGraph.registerNodeAndSlotType(this, type, true)
 
-    this.setSize(this.computeSize())
+    this.expandToFitContent()
     this.setDirtyCanvas(true, true)
     return output
   }
@@ -1382,7 +1393,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
         LiteGraph.registerNodeAndSlotType(this, info[1], true)
     }
 
-    this.setSize(this.computeSize())
+    this.expandToFitContent()
     this.setDirtyCanvas(true, true)
   }
 
@@ -1404,7 +1415,6 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       }
     }
 
-    this.setSize(this.computeSize())
     this.onOutputRemoved?.(slot)
     this.setDirtyCanvas(true, true)
   }
@@ -1425,7 +1435,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
     this.inputs ||= []
     this.inputs.push(input)
-    this.setSize(this.computeSize())
+    this.expandToFitContent()
 
     this.onInputAdded?.(input)
     LiteGraph.registerNodeAndSlotType(this, type)
@@ -1456,7 +1466,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       LiteGraph.registerNodeAndSlotType(this, info[1])
     }
 
-    this.setSize(this.computeSize())
+    this.expandToFitContent()
     this.setDirtyCanvas(true, true)
   }
 
@@ -1474,7 +1484,6 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
       link.target_slot -= 1
     }
-    this.setSize(this.computeSize())
     this.onInputRemoved?.(slot, slot_info[0])
     this.setDirtyCanvas(true, true)
   }
@@ -1696,7 +1705,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     }
 
     const widget = this.addCustomWidget(w)
-    this.setSize(this.computeSize())
+    this.expandToFitContent()
     return widget
   }
 
@@ -2774,13 +2783,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     if (!this.widgets?.some(w => w.advanced)) return
     this.graph._version++
     this.showAdvanced = !this.showAdvanced
-    const prefSize = this.computeSize()
-    if (this.size[0] < prefSize[0] || this.size[1] < prefSize[1]) {
-      this.setSize([
-        Math.max(this.size[0], prefSize[0]),
-        Math.max(this.size[1], prefSize[1]),
-      ])
-    }
+    this.expandToFitContent()
     this.setDirtyCanvas(true, true)
   }
 
