@@ -1227,9 +1227,8 @@ export class ComfyApp {
     return graph.serialize({ sortNodes })
   }
 
-  async graphToPrompt(graph = this.graph, clean = true) {
+  async graphToPrompt(graph = this.graph) {
     return graphToPrompt(graph, {
-      clean,
       sortNodes: useSettingStore().get('Comfy.Workflow.SortNodeIdOnSave')
     })
   }
