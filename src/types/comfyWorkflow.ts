@@ -5,6 +5,7 @@ import { fromZodError } from 'zod-validation-error'
 // innerNode.id = `${this.node.id}:${i}`
 // Remove it after GroupNode is redesigned.
 export const zNodeId = z.union([z.number().int(), z.string()])
+export const zNodeInputName = z.string()
 export type NodeId = z.infer<typeof zNodeId>
 export const zSlotIndex = z.union([
   z.number().int(),
@@ -96,7 +97,7 @@ const zNodeOutput = z
 
 const zNodeInput = z
   .object({
-    name: z.string(),
+    name: zNodeInputName,
     type: zDataType,
     link: z.number().nullable().optional(),
     slot_index: zSlotIndex.optional()
@@ -251,3 +252,24 @@ export async function validateComfyWorkflow(
   onError(`Invalid workflow against zod schema:\n${error}`)
   return null
 }
+
+/**
+ * API format workflow for direct API usage.
+ */
+const zNodeInputValue = z.union([
+  // For widget values (can be any type)
+  z.any(),
+  // For node links [nodeId, slotIndex]
+  z.tuple([zNodeId, zSlotIndex])
+])
+
+const zNodeData = z.object({
+  inputs: z.record(zNodeInputName, zNodeInputValue),
+  class_type: z.string(),
+  _meta: z.object({
+    title: z.string()
+  })
+})
+
+export const zComfyApiWorkflow = z.record(zNodeId, zNodeData)
+export type ComfyApiWorkflow = z.infer<typeof zComfyApiWorkflow>
