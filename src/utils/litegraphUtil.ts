@@ -1,6 +1,5 @@
 import type { ColorOption, IWidget } from '@comfyorg/litegraph'
-import { LGraphGroup } from '@comfyorg/litegraph'
-import { LGraphNode, isColorable } from '@comfyorg/litegraph'
+import { LGraphGroup, LGraphNode, isColorable } from '@comfyorg/litegraph'
 import type { IComboWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import _ from 'lodash'
 
