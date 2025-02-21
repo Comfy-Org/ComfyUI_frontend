@@ -136,32 +136,11 @@ declare module '@comfyorg/litegraph' {
  * Extended types for litegraph, to be merged upstream once it has stabilized.
  */
 declare module '@comfyorg/litegraph' {
-  interface INodeInputSlot {
-    pos?: [number, number]
-  }
-
+  /**
+   * widgets_values is set to LGraphNode by `LGraphNode.configure`, but it is not
+   * used by litegraph internally. We should remove the dependency on it later.
+   */
   interface LGraphNode {
     widgets_values?: unknown[]
-  }
-
-  interface LGraphCanvas {
-    /** This is in the litegraph types but has incorrect return type */
-    isOverNodeInput(
-      node: LGraphNode,
-      canvasX: number,
-      canvasY: number,
-      slotPos: Vector2
-    ): number
-
-    isOverNodeOutput(
-      node: LGraphNode,
-      canvasX: number,
-      canvasY: number,
-      slotPos: Vector2
-    ): number
-  }
-
-  interface ContextMenu {
-    root?: HTMLDivElement
   }
 }
