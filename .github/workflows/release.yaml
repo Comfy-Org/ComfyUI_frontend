@@ -3,7 +3,7 @@ name: Create Release Draft
 on:
   pull_request:
     types: [ closed ]
-    branches: [ main, master ]
+    branches: [ main, core/* ]
     paths:
       - 'package.json'
 
@@ -38,9 +38,10 @@ jobs:
           files: |
             dist.zip
           tag_name: v${{ steps.current_version.outputs.version }}
-          draft: false
+          target_commitish: ${{ github.event.pull_request.base.ref }}
+          make_latest: ${{ github.event.pull_request.base.ref == 'main' }}
+          draft: true
           prerelease: false
-          make_latest: true
           generate_release_notes: true
   publish_types:
     runs-on: ubuntu-latest
