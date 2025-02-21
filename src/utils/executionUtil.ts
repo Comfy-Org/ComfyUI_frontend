@@ -2,6 +2,8 @@
 import type { LGraph } from '@comfyorg/litegraph'
 import { LGraphEventMode } from '@comfyorg/litegraph'
 
+import type { ComfyPrompt, ComfyWorkflowJSON } from '@/types/comfyWorkflow'
+
 /**
  * Converts the current graph workflow for sending to the API.
  * Note: Node widgets are updated before serialization to prepare queueing.
@@ -10,7 +12,7 @@ import { LGraphEventMode } from '@comfyorg/litegraph'
 export const graphToPrompt = async (
   graph: LGraph,
   options: { clean?: boolean; sortNodes?: boolean } = {}
-) => {
+): Promise<{ workflow: ComfyWorkflowJSON; output: ComfyPrompt }> => {
   const { clean = true, sortNodes = false } = options
 
   for (const outerNode of graph.computeExecutionOrder(false)) {
@@ -35,7 +37,8 @@ export const graphToPrompt = async (
     }
   }
 
-  const workflow = graph.serialize({ sortNodes })
+  // @ts-expect-error Convert ISerializedGraph to ComfyWorkflowJSON
+  const workflow = graph.serialize({ sortNodes }) as ComfyWorkflowJSON
 
   // Remove localized_name from the workflow
   for (const node of workflow.nodes) {
