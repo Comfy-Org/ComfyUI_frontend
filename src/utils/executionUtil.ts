@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import type { LGraph } from '@comfyorg/litegraph'
 import { LGraphEventMode } from '@comfyorg/litegraph'
 
@@ -37,20 +36,19 @@ export const graphToPrompt = async (
     }
   }
 
-  // @ts-expect-error Convert ISerializedGraph to ComfyWorkflowJSON
-  const workflow = graph.serialize({ sortNodes }) as ComfyWorkflowJSON
+  const workflow = graph.serialize({ sortNodes })
 
   // Remove localized_name from the workflow
   for (const node of workflow.nodes) {
-    for (const slot of node.inputs) {
+    for (const slot of node.inputs ?? []) {
       delete slot.localized_name
     }
-    for (const slot of node.outputs) {
+    for (const slot of node.outputs ?? []) {
       delete slot.localized_name
     }
   }
 
-  const output = {}
+  const output: ComfyApiWorkflow = {}
   // Process nodes in order of execution
   for (const outerNode of graph.computeExecutionOrder(false)) {
     const skipNode =
@@ -73,14 +71,17 @@ export const graphToPrompt = async (
         continue
       }
 
-      const inputs = {}
+      const inputs: ComfyApiWorkflow[string]['inputs'] = {}
       const widgets = node.widgets
 
       // Store all widget values
       if (widgets) {
         for (let i = 0; i < widgets.length; i++) {
           const widget = widgets[i]
-          if (!widget.options || widget.options.serialize !== false) {
+          if (
+            widget.name &&
+            (!widget.options || widget.options.serialize !== false)
+          ) {
             inputs[widget.name] = widget.serializeValue
               ? await widget.serializeValue(node, i)
               : widget.value
@@ -99,7 +100,7 @@ export const graphToPrompt = async (
           ) {
             let found = false
             if (parent.isVirtualNode) {
-              link = parent.getInputLink(link.origin_slot)
+              link = link ? parent.getInputLink(link.origin_slot) : null
               if (link) {
                 parent = parent.getInputNode(link.target_slot)
                 if (parent) {
@@ -150,17 +151,16 @@ export const graphToPrompt = async (
         }
       }
 
-      const node_data = {
+      output[String(node.id)] = {
         inputs,
-        class_type: node.comfyClass
+        // TODO(huchenlei): Filter out all nodes that cannot be mapped to a
+        // comfyClass.
+        class_type: node.comfyClass!,
+        // Ignored by the backend.
+        _meta: {
+          title: node.title
+        }
       }
-
-      // Ignored by the backend.
-      node_data['_meta'] = {
-        title: node.title
-      }
-
-      output[String(node.id)] = node_data
     }
   }
 
@@ -179,5 +179,6 @@ export const graphToPrompt = async (
     }
   }
 
-  return { workflow, output }
+  // @ts-expect-error Convert ISerializedGraph to ComfyWorkflowJSON
+  return { workflow: workflow as ComfyWorkflowJSON, output }
 }
