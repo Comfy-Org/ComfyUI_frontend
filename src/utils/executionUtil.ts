@@ -13,21 +13,6 @@ export const graphToPrompt = async (
   options: { sortNodes?: boolean } = {}
 ): Promise<{ workflow: ComfyWorkflowJSON; output: ComfyApiWorkflow }> => {
   const { sortNodes = false } = options
-
-  for (const outerNode of graph.computeExecutionOrder(false)) {
-    const innerNodes = outerNode.getInnerNodes
-      ? outerNode.getInnerNodes()
-      : [outerNode]
-    for (const node of innerNodes) {
-      if (node.isVirtualNode) {
-        // Don't serialize frontend only nodes but let them make changes
-        if (node.applyToGraph) {
-          node.applyToGraph()
-        }
-      }
-    }
-  }
-
   const workflow = graph.serialize({ sortNodes })
 
   // Remove localized_name from the workflow
