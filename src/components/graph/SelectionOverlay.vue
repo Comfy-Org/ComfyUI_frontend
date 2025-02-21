@@ -76,9 +76,17 @@ watch(
 watch(
   () => canvasStore.canvas?.state?.draggingItems,
   (draggingItems) => {
-    visible.value = !draggingItems
+    // Litegraph draggingItems state can end early before the bounding boxes of
+    // the selected items are updated. Delay to make sure we put the overlay in
+    // the correct position.
+    // https://github.com/Comfy-Org/ComfyUI_frontend/issues/2656
     if (draggingItems === false) {
-      positionSelectionOverlay(canvasStore.canvas as LGraphCanvas)
+      setTimeout(() => {
+        visible.value = true
+        positionSelectionOverlay(canvasStore.canvas as LGraphCanvas)
+      }, 100)
+    } else {
+      visible.value = false
     }
   }
 )
