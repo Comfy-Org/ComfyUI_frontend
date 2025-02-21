@@ -73,7 +73,6 @@ declare module '@comfyorg/litegraph' {
     convertToNodes?(): LGraphNode[]
     recreate?(): Promise<LGraphNode>
     refreshComboInNode?(defs: Record<string, ComfyNodeDef>)
-    applyToGraph?(extraLinks?: LLink[]): void
     updateLink?(link: LLink): LLink | null
     onExecutionStart?(): unknown
     /**
