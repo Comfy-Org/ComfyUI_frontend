@@ -6,7 +6,7 @@
       content: 'p-0 flex flex-row'
     }"
   >
-    <ColorPickerButton />
+    <ColorPickerButton v-if="nodeSelected || groupSelected" />
     <Button
       v-if="nodeSelected"
       severity="secondary"
@@ -21,6 +21,7 @@
       </template>
     </Button>
     <Button
+      v-if="nodeSelected || groupSelected"
       severity="secondary"
       text
       icon="pi pi-thumbtack"
@@ -51,13 +52,16 @@ import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerBu
 import { useRefreshableSelection } from '@/composables/useRefreshableSelection'
 import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
-import { isLGraphNode } from '@/utils/litegraphUtil'
+import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
 const { isRefreshable, refreshSelected } = useRefreshableSelection()
 const nodeSelected = computed(() =>
   canvasStore.selectedItems.some(isLGraphNode)
+)
+const groupSelected = computed(() =>
+  canvasStore.selectedItems.some(isLGraphGroup)
 )
 </script>
 
