@@ -39,7 +39,7 @@ import {
 import { ExtensionManager } from '@/types/extensionTypes'
 import { ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
-import { isImageNode } from '@/utils/litegraphUtil'
+import { executeWidgetsCallback, isImageNode } from '@/utils/litegraphUtil'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import { type ComfyApi, api } from './api'
@@ -1260,7 +1260,7 @@ export class ComfyApp {
     return '(unknown error)'
   }
 
-  async queuePrompt(number, batchCount = 1) {
+  async queuePrompt(number: number, batchCount: number = 1): Promise<boolean> {
     this.#queueItems.push({ number, batchCount })
 
     // Only have one action process the items so each one gets a unique seed correctly
@@ -1276,8 +1276,11 @@ export class ComfyApp {
         ;({ number, batchCount } = this.#queueItems.pop())
 
         for (let i = 0; i < batchCount; i++) {
-          const p = await this.graphToPrompt()
+          // Allow widgets to run callbacks before a prompt has been queued
+          // e.g. random seed before every gen
+          executeWidgetsCallback(this.graph.nodes, 'beforeQueued')
 
+          const p = await this.graphToPrompt()
           try {
             const res = await api.queuePrompt(number, p)
             this.lastNodeErrors = res.node_errors
@@ -1303,19 +1306,12 @@ export class ComfyApp {
             break
           }
 
-          for (const n of p.workflow.nodes) {
-            const node = this.graph.getNodeById(n.id)
-            if (node.widgets) {
-              for (const widget of node.widgets) {
-                // Allow widgets to run callbacks after a prompt has been queued
-                // e.g. random seed after every gen
-                if (widget.afterQueued) {
-                  widget.afterQueued()
-                }
-              }
-            }
-          }
-
+          // Allow widgets to run callbacks after a prompt has been queued
+          // e.g. random seed after every gen
+          executeWidgetsCallback(
+            p.workflow.nodes.map((n) => this.graph.getNodeById(n.id)),
+            'afterQueued'
+          )
           this.canvas.draw(true, true)
           await this.ui.queue.update()
         }

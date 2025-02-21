@@ -15,14 +15,6 @@ export const graphToPrompt = async (
   const { sortNodes = false } = options
 
   for (const outerNode of graph.computeExecutionOrder(false)) {
-    if (outerNode.widgets) {
-      for (const widget of outerNode.widgets) {
-        // Allow widgets to run callbacks before a prompt has been queued
-        // e.g. random seed before every gen
-        widget.beforeQueued?.()
-      }
-    }
-
     const innerNodes = outerNode.getInnerNodes
       ? outerNode.getInnerNodes()
       : [outerNode]

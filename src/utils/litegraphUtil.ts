@@ -42,3 +42,14 @@ export const getItemsColorOption = (items: unknown[]): ColorOption | null => {
     ? _.head(colorOptions)!
     : null
 }
+
+export function executeWidgetsCallback(
+  nodes: LGraphNode[],
+  callbackName: 'onRemove' | 'beforeQueued' | 'afterQueued'
+) {
+  for (const node of nodes) {
+    for (const widget of node.widgets ?? []) {
+      widget[callbackName]?.()
+    }
+  }
+}
