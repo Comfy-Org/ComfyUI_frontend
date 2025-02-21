@@ -1,5 +1,4 @@
 import { LGraphNode } from '@comfyorg/litegraph'
-import Tooltip from 'primevue/tooltip'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper'
@@ -9,6 +8,7 @@ import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader'
 
+import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { useToastStore } from '@/stores/toastStore'
 
 interface Load3DOptions {
@@ -55,7 +55,17 @@ class Load3d {
   showPreview: boolean = true
   previewWidth: number = 120
   node: LGraphNode = {} as LGraphNode
-  private listeners: { [key: string]: Function[] } = {}
+  listeners: { [key: string]: Function[] } = {}
+
+  backgroundScene: THREE.Scene
+  backgroundCamera: THREE.OrthographicCamera
+  backgroundMesh: THREE.Mesh | null = null
+  backgroundTexture: THREE.Texture | null = null
+
+  previewBackgroundScene: THREE.Scene
+  previewBackgroundCamera: THREE.OrthographicCamera
+  previewBackgroundMesh: THREE.Mesh | null = null
+  previewBackgroundTexture: THREE.Texture | null = null
 
   constructor(
     container: Element | HTMLElement,
@@ -75,8 +85,8 @@ class Load3d {
       frustumSize / 2,
       frustumSize / 2,
       -frustumSize / 2,
-      0.1,
-      1000
+      0.01,
+      10000
     )
     this.orthographicCamera.position.set(5, 5, 5)
 
@@ -89,6 +99,8 @@ class Load3d {
     this.renderer.setSize(300, 300)
     this.renderer.setClearColor(0x282828)
     this.renderer.autoClear = false
+
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace
 
     const rendererDomElement: HTMLCanvasElement = this.renderer.domElement
 
@@ -145,9 +157,143 @@ class Load3d {
       this.createCapturePreview(container)
     }
 
+    this.backgroundScene = new THREE.Scene()
+    this.backgroundCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, -1, 1)
+    this.previewBackgroundScene = this.backgroundScene.clone()
+    this.previewBackgroundCamera = this.backgroundCamera.clone()
+
+    const planeGeometry = new THREE.PlaneGeometry(2, 2)
+    const planeMaterial = new THREE.MeshBasicMaterial({
+      transparent: true,
+      depthWrite: false,
+      depthTest: false,
+      side: THREE.DoubleSide
+    })
+
+    this.backgroundMesh = new THREE.Mesh(planeGeometry, planeMaterial)
+    this.backgroundMesh.position.set(0, 0, 0)
+
+    this.previewBackgroundMesh = this.backgroundMesh.clone()
+
+    this.backgroundScene.add(this.backgroundMesh)
+    this.previewBackgroundScene.add(this.previewBackgroundMesh)
+
     this.handleResize()
 
     this.startAnimation()
+  }
+
+  updateBackgroundSize(
+    backgroundTexture: THREE.Texture | null,
+    backgroundMesh: THREE.Mesh | null,
+    targetWidth: number,
+    targetHeight: number
+  ) {
+    if (!backgroundTexture || !backgroundMesh) return
+
+    const material = backgroundMesh.material as THREE.MeshBasicMaterial
+
+    if (!material.map) return
+
+    const imageAspect =
+      backgroundTexture.image.width / backgroundTexture.image.height
+    const targetAspect = targetWidth / targetHeight
+
+    if (imageAspect > targetAspect) {
+      backgroundMesh.scale.set(imageAspect / targetAspect, 1, 1)
+    } else {
+      backgroundMesh.scale.set(1, targetAspect / imageAspect, 1)
+    }
+
+    material.needsUpdate = true
+  }
+
+  async setBackgroundImage(uploadPath: string) {
+    if (uploadPath === '') {
+      this.removeBackgroundImage()
+      return
+    }
+
+    let imageUrl = Load3dUtils.getResourceURL(
+      ...Load3dUtils.splitFilePath(uploadPath)
+    )
+
+    if (!imageUrl.startsWith('/api')) {
+      imageUrl = '/api' + imageUrl
+    }
+
+    try {
+      const textureLoader = new THREE.TextureLoader()
+      const texture = await new Promise<THREE.Texture>((resolve, reject) => {
+        textureLoader.load(imageUrl, resolve, undefined, reject)
+      })
+
+      if (this.backgroundTexture) {
+        this.backgroundTexture.dispose()
+      }
+
+      if (this.previewBackgroundTexture) {
+        this.previewBackgroundTexture.dispose()
+      }
+
+      texture.colorSpace = THREE.SRGBColorSpace
+
+      this.backgroundTexture = texture
+      this.previewBackgroundTexture = texture
+
+      const material = this.backgroundMesh?.material as THREE.MeshBasicMaterial
+      material.map = texture
+      material.needsUpdate = true
+
+      const material2 = this.previewBackgroundMesh
+        ?.material as THREE.MeshBasicMaterial
+      material2.map = texture
+      material2.needsUpdate = true
+
+      this.backgroundMesh?.position.set(0, 0, 0)
+      this.previewBackgroundMesh?.position.set(0, 0, 0)
+
+      this.updateBackgroundSize(
+        this.previewBackgroundTexture,
+        this.previewBackgroundMesh,
+        this.targetWidth,
+        this.targetHeight
+      )
+
+      this.emitEvent('backgroundImageChange', uploadPath)
+    } catch (error) {
+      console.error('Error loading background image:', error)
+    }
+  }
+
+  removeBackgroundImage() {
+    if (this.backgroundMesh) {
+      const material = this.backgroundMesh.material as THREE.MeshBasicMaterial
+      material.map = null
+      material.needsUpdate = true
+    }
+
+    if (this.previewBackgroundMesh) {
+      const material2 = this.previewBackgroundMesh
+        .material as THREE.MeshBasicMaterial
+      material2.map = null
+      material2.needsUpdate = true
+    }
+
+    if (this.backgroundTexture) {
+      this.backgroundTexture.dispose()
+      this.backgroundTexture = null
+    }
+
+    if (this.previewBackgroundTexture) {
+      this.previewBackgroundTexture.dispose()
+      this.previewBackgroundTexture = null
+    }
+
+    this.renderer.render(this.scene, this.activeCamera)
+    if (this.previewRenderer && this.previewCamera) {
+      this.previewRenderer.render(this.scene, this.previewCamera)
+    }
   }
 
   addEventListener(event: string, callback: Function) {
@@ -191,10 +337,14 @@ class Load3d {
   createCapturePreview(container: Element | HTMLElement) {
     this.previewRenderer = new THREE.WebGLRenderer({
       alpha: true,
-      antialias: true
+      antialias: true,
+      preserveDrawingBuffer: true
     })
     this.previewRenderer.setSize(this.targetWidth, this.targetHeight)
     this.previewRenderer.setClearColor(0x282828)
+    this.previewRenderer.autoClear = false
+
+    this.previewRenderer.outputColorSpace = THREE.SRGBColorSpace
 
     this.previewContainer = document.createElement('div')
     this.previewContainer.style.cssText = `
@@ -293,6 +443,7 @@ class Load3d {
       ;(this.previewCamera as THREE.PerspectiveCamera).fov = (
         this.activeCamera as THREE.PerspectiveCamera
       ).fov
+      ;(this.previewCamera as THREE.PerspectiveCamera).updateProjectionMatrix()
     }
 
     this.previewCamera.lookAt(this.controls.target)
@@ -300,6 +451,30 @@ class Load3d {
     const previewHeight =
       (this.previewWidth * this.targetHeight) / this.targetWidth
     this.previewRenderer.setSize(this.previewWidth, previewHeight, false)
+
+    this.previewRenderer.outputColorSpace = THREE.SRGBColorSpace
+
+    this.previewRenderer.clear()
+
+    if (this.previewBackgroundMesh && this.previewBackgroundTexture) {
+      const material = this.previewBackgroundMesh
+        .material as THREE.MeshBasicMaterial
+      if (material.map) {
+        const currentToneMapping = this.previewRenderer.toneMapping
+        const currentExposure = this.previewRenderer.toneMappingExposure
+
+        this.previewRenderer.toneMapping = THREE.NoToneMapping
+
+        this.previewRenderer.render(
+          this.previewBackgroundScene,
+          this.previewBackgroundCamera
+        )
+
+        this.previewRenderer.toneMapping = currentToneMapping
+        this.previewRenderer.toneMappingExposure = currentExposure
+      }
+    }
+
     this.previewRenderer.render(this.scene, this.previewCamera)
   }
 
@@ -313,9 +488,23 @@ class Load3d {
   }
 
   setTargetSize(width: number, height: number) {
+    const oldAspect = this.targetWidth / this.targetHeight
+
     this.targetWidth = width
     this.targetHeight = height
+
     this.updatePreviewSize()
+
+    const newAspect = width / height
+    if (Math.abs(oldAspect - newAspect) > 0.001) {
+      this.updateBackgroundSize(
+        this.previewBackgroundTexture,
+        this.previewBackgroundMesh,
+        width,
+        height
+      )
+    }
+
     if (this.previewRenderer && this.previewCamera) {
       if (this.previewCamera instanceof THREE.PerspectiveCamera) {
         this.previewCamera.aspect = width / height
@@ -698,6 +887,22 @@ class Load3d {
       }
 
       this.renderer.clear()
+
+      if (this.backgroundMesh && this.backgroundTexture) {
+        const material = this.backgroundMesh.material as THREE.MeshBasicMaterial
+        if (material.map) {
+          const currentToneMapping = this.renderer.toneMapping
+          const currentExposure = this.renderer.toneMappingExposure
+
+          this.renderer.toneMapping = THREE.NoToneMapping
+
+          this.renderer.render(this.backgroundScene, this.backgroundCamera)
+
+          this.renderer.toneMapping = currentToneMapping
+          this.renderer.toneMappingExposure = currentExposure
+        }
+      }
+
       this.controls.update()
       this.renderer.render(this.scene, this.activeCamera)
       this.viewHelper.render(this.renderer)
@@ -783,6 +988,24 @@ class Load3d {
   remove() {
     if (this.animationFrameId !== null) {
       cancelAnimationFrame(this.animationFrameId)
+    }
+
+    if (this.backgroundTexture) {
+      this.backgroundTexture.dispose()
+    }
+
+    if (this.previewBackgroundTexture) {
+      this.previewBackgroundTexture.dispose()
+    }
+
+    if (this.backgroundMesh) {
+      this.backgroundMesh.geometry.dispose()
+      ;(this.backgroundMesh.material as THREE.Material).dispose()
+    }
+
+    if (this.previewBackgroundMesh) {
+      this.previewBackgroundMesh.geometry.dispose()
+      ;(this.previewBackgroundMesh.material as THREE.Material).dispose()
     }
 
     this.controls.dispose()
@@ -984,6 +1207,16 @@ class Load3d {
     }
 
     this.renderer.setSize(width, height)
+
+    if (this.backgroundTexture && this.backgroundMesh) {
+      this.updateBackgroundSize(
+        this.backgroundTexture,
+        this.backgroundMesh,
+        width,
+        height
+      )
+    }
+
     this.setTargetSize(this.targetWidth, this.targetHeight)
   }
 
@@ -1007,6 +1240,8 @@ class Load3d {
           new THREE.Color()
         )
         const originalClearAlpha = this.renderer.getClearAlpha()
+        const originalToneMapping = this.renderer.toneMapping
+        const originalExposure = this.renderer.toneMappingExposure
 
         this.renderer.setSize(width, height)
 
@@ -1023,7 +1258,29 @@ class Load3d {
           this.orthographicCamera.updateProjectionMatrix()
         }
 
+        if (this.backgroundTexture && this.backgroundMesh) {
+          this.updateBackgroundSize(
+            this.backgroundTexture,
+            this.backgroundMesh,
+            width,
+            height
+          )
+        }
+
         this.renderer.clear()
+
+        if (this.backgroundMesh && this.backgroundTexture) {
+          const material = this.backgroundMesh
+            .material as THREE.MeshBasicMaterial
+
+          if (material.map) {
+            this.renderer.toneMapping = THREE.NoToneMapping
+            this.renderer.render(this.backgroundScene, this.backgroundCamera)
+            this.renderer.toneMapping = originalToneMapping
+            this.renderer.toneMappingExposure = originalExposure
+          }
+        }
+
         this.renderer.render(this.scene, this.activeCamera)
         const sceneData = this.renderer.domElement.toDataURL('image/png')
 

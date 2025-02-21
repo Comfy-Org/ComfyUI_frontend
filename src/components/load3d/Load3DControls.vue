@@ -1,6 +1,6 @@
 <template>
   <div
-    class="absolute top-2 left-2 flex flex-col gap-2 pointer-events-auto z-20"
+    class="absolute top-2 left-2 flex flex-col pointer-events-auto z-20 bg-gray-700 bg-opacity-30 rounded-lg"
   >
     <Button class="p-button-rounded p-button-text" @click="switchCamera">
       <i
@@ -20,21 +20,60 @@
       ></i>
     </Button>
 
-    <Button class="p-button-rounded p-button-text" @click="openColorPicker">
-      <i
-        class="pi pi-palette text-white text-lg"
-        v-tooltip.right="{ value: t('load3d.backgroundColor'), showDelay: 300 }"
-      ></i>
-      <input
-        type="color"
-        ref="colorPickerRef"
-        :value="backgroundColor"
-        @input="
-          updateBackgroundColor(($event.target as HTMLInputElement).value)
-        "
-        class="absolute opacity-0 w-0 h-0 p-0 m-0 pointer-events-none"
-      />
-    </Button>
+    <div v-if="!hasBackgroundImage">
+      <Button class="p-button-rounded p-button-text" @click="openColorPicker">
+        <i
+          class="pi pi-palette text-white text-lg"
+          v-tooltip.right="{
+            value: t('load3d.backgroundColor'),
+            showDelay: 300
+          }"
+        ></i>
+        <input
+          type="color"
+          ref="colorPickerRef"
+          :value="backgroundColor"
+          @input="
+            updateBackgroundColor(($event.target as HTMLInputElement).value)
+          "
+          class="absolute opacity-0 w-0 h-0 p-0 m-0 pointer-events-none"
+        />
+      </Button>
+    </div>
+
+    <div v-if="!hasBackgroundImage">
+      <Button class="p-button-rounded p-button-text" @click="openImagePicker">
+        <i
+          class="pi pi-image text-white text-lg"
+          v-tooltip.right="{
+            value: t('load3d.uploadBackgroundImage'),
+            showDelay: 300
+          }"
+        ></i>
+        <input
+          type="file"
+          ref="imagePickerRef"
+          accept="image/*"
+          @change="uploadBackgroundImage"
+          class="absolute opacity-0 w-0 h-0 p-0 m-0 pointer-events-none"
+        />
+      </Button>
+    </div>
+
+    <div v-if="hasBackgroundImage">
+      <Button
+        class="p-button-rounded p-button-text"
+        @click="removeBackgroundImage"
+      >
+        <i
+          class="pi pi-times text-white text-lg"
+          v-tooltip.right="{
+            value: t('load3d.removeBackgroundImage'),
+            showDelay: 300
+          }"
+        ></i>
+      </Button>
+    </div>
 
     <div class="relative show-light-intensity" v-if="showLightIntensityButton">
       <Button
@@ -123,6 +162,7 @@ const props = defineProps<{
   showFOVButton: boolean
   showPreviewButton: boolean
   cameraType: 'perspective' | 'orthographic'
+  hasBackgroundImage?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -132,6 +172,7 @@ const emit = defineEmits<{
   (e: 'updateLightIntensity', value: number): void
   (e: 'updateFOV', value: number): void
   (e: 'togglePreview', value: boolean): void
+  (e: 'updateBackgroundImage', file: File | null): void
 }>()
 
 const backgroundColor = ref(props.backgroundColor)
@@ -145,6 +186,8 @@ const fov = ref(props.fov)
 const showFOV = ref(false)
 const showFOVButton = ref(props.showFOVButton)
 const showPreviewButton = ref(props.showPreviewButton)
+const hasBackgroundImage = ref(props.hasBackgroundImage)
+const imagePickerRef = ref<HTMLInputElement | null>(null)
 
 const switchCamera = () => {
   emit('switchCamera')
@@ -196,6 +239,26 @@ const closeSlider = (e: MouseEvent) => {
   }
 }
 
+const openImagePicker = () => {
+  imagePickerRef.value?.click()
+}
+
+const uploadBackgroundImage = (event: Event) => {
+  const input = event.target as HTMLInputElement
+
+  hasBackgroundImage.value = true
+
+  if (input.files && input.files[0]) {
+    emit('updateBackgroundImage', input.files[0])
+  }
+}
+
+const removeBackgroundImage = () => {
+  hasBackgroundImage.value = false
+
+  emit('updateBackgroundImage', null)
+}
+
 watch(
   () => props.backgroundColor,
   (newValue) => {
@@ -242,6 +305,13 @@ watch(
   () => props.showPreview,
   (newValue) => {
     showPreview.value = newValue
+  }
+)
+
+watch(
+  () => props.hasBackgroundImage,
+  (newValue) => {
+    hasBackgroundImage.value = newValue
   }
 )
 

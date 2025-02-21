@@ -322,8 +322,10 @@
     "fov": "视场",
     "lightIntensity": "光照强度",
     "previewOutput": "预览输出",
+    "removeBackgroundImage": "移除背景图片",
     "showGrid": "显示网格",
-    "switchCamera": "切换摄像头"
+    "switchCamera": "切换摄像头",
+    "uploadBackgroundImage": "上传背景图片"
   },
   "maintenance": {
     "None": "无",

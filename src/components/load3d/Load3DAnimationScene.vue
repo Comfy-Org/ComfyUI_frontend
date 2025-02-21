@@ -9,6 +9,7 @@
     :cameraType="cameraType"
     :showPreview="showPreview"
     :extraListeners="animationListeners"
+    :backgroundImage="backgroundImage"
     @materialModeChange="listenMaterialModeChange"
     @backgroundColorChange="listenBackgroundColorChange"
     @lightIntensityChange="listenLightIntensityChange"
@@ -39,6 +40,7 @@ const props = defineProps<{
   playing: boolean
   selectedSpeed: number
   selectedAnimation: number
+  backgroundImage: string
 }>()
 
 const node = ref(props.node)

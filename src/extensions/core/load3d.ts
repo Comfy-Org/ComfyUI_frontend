@@ -9,6 +9,7 @@ import Load3DAnimation from '@/components/load3d/Load3DAnimation.vue'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import Load3dAnimation from '@/extensions/core/load3d/Load3dAnimation'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useLoad3dService } from '@/services/load3dService'
 import { useToastStore } from '@/stores/toastStore'
@@ -71,13 +72,20 @@ app.registerExtension({
             ) as IStringWidget
 
             const uploadPath = await Load3dUtils.uploadFile(
-              useLoad3dService().getLoad3d(node),
-              fileInput.files[0],
-              fileInput
+              fileInput.files[0]
             ).catch((error) => {
               console.error('File upload failed:', error)
               useToastStore().addAlert('File upload failed')
             })
+
+            const modelUrl = api.apiURL(
+              Load3dUtils.getResourceURL(
+                ...Load3dUtils.splitFilePath(uploadPath),
+                'input'
+              )
+            )
+
+            await useLoad3dService().getLoad3d(node).loadModel(modelUrl)
 
             if (uploadPath && modelWidget) {
               if (!modelWidget.options?.values?.includes(uploadPath)) {
@@ -232,14 +240,22 @@ app.registerExtension({
             const modelWidget = node.widgets?.find(
               (w: IWidget) => w.name === 'model_file'
             ) as IStringWidget
+
             const uploadPath = await Load3dUtils.uploadFile(
-              useLoad3dService().getLoad3d(node),
-              fileInput.files[0],
-              fileInput
+              fileInput.files[0]
             ).catch((error) => {
               console.error('File upload failed:', error)
               useToastStore().addAlert('File upload failed')
             })
+
+            const modelUrl = api.apiURL(
+              Load3dUtils.getResourceURL(
+                ...Load3dUtils.splitFilePath(uploadPath),
+                'input'
+              )
+            )
+
+            await useLoad3dService().getLoad3d(node).loadModel(modelUrl)
 
             if (uploadPath && modelWidget) {
               if (!modelWidget.options?.values?.includes(uploadPath)) {

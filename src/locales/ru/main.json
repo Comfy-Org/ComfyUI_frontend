@@ -322,8 +322,10 @@
     "fov": "Угол обзора",
     "lightIntensity": "Интенсивность света",
     "previewOutput": "Предварительный просмотр",
+    "removeBackgroundImage": "Удалить фоновое изображение",
     "showGrid": "Показать сетку",
-    "switchCamera": "Переключить камеру"
+    "switchCamera": "Переключить камеру",
+    "uploadBackgroundImage": "Загрузить фоновое изображение"
   },
   "maintenance": {
     "None": "Нет",

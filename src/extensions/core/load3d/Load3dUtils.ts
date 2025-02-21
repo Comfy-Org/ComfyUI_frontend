@@ -28,11 +28,7 @@ class Load3dUtils {
     return await resp.json()
   }
 
-  static async uploadFile(
-    load3d: Load3d,
-    file: File,
-    fileInput?: HTMLInputElement
-  ) {
+  static async uploadFile(file: File) {
     let uploadPath
 
     try {
@@ -49,36 +45,11 @@ class Load3dUtils {
         const data = await resp.json()
         let path = data.name
 
-        if (data.subfolder) path = data.subfolder + '/' + path
+        if (data.subfolder) {
+          path = data.subfolder + '/' + path
+        }
 
         uploadPath = path
-
-        const modelUrl = api.apiURL(
-          this.getResourceURL(...this.splitFilePath(path), 'input')
-        )
-        await load3d.loadModel(modelUrl, file.name)
-
-        const fileExt = file.name.split('.').pop()?.toLowerCase()
-        if (fileExt === 'obj' && fileInput?.files) {
-          try {
-            const mtlFile = Array.from(fileInput.files).find((f) =>
-              f.name.toLowerCase().endsWith('.mtl')
-            )
-
-            if (mtlFile) {
-              const mtlFormData = new FormData()
-              mtlFormData.append('image', mtlFile)
-              mtlFormData.append('subfolder', '3d')
-
-              await api.fetchApi('/upload/image', {
-                method: 'POST',
-                body: mtlFormData
-              })
-            }
-          } catch (mtlError) {
-            console.warn('Failed to upload MTL file:', mtlError)
-          }
-        }
       } else {
         useToastStore().addAlert(resp.status + ' - ' + resp.statusText)
       }

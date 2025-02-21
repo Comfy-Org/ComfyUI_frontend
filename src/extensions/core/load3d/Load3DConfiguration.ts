@@ -106,6 +106,10 @@ class Load3DConfiguration {
     const fov = this.load3d.loadNodeProperty('FOV', 75)
 
     this.load3d.setFOV(fov)
+
+    const backgroundImage = this.load3d.loadNodeProperty('Background Image', '')
+
+    this.load3d.setBackgroundImage(backgroundImage)
   }
 
   private createModelUpdateHandler(
