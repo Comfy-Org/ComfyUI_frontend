@@ -271,5 +271,5 @@ const zNodeData = z.object({
   })
 })
 
-export const zComfyPrompt = z.record(zNodeId, zNodeData)
-export type ComfyPrompt = z.infer<typeof zComfyPrompt>
+export const zComfyApiWorkflow = z.record(zNodeId, zNodeData)
+export type ComfyApiWorkflow = z.infer<typeof zComfyApiWorkflow>

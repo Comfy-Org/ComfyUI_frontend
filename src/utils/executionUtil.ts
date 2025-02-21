@@ -2,7 +2,7 @@
 import type { LGraph } from '@comfyorg/litegraph'
 import { LGraphEventMode } from '@comfyorg/litegraph'
 
-import type { ComfyPrompt, ComfyWorkflowJSON } from '@/types/comfyWorkflow'
+import type { ComfyApiWorkflow, ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 
 /**
  * Converts the current graph workflow for sending to the API.
@@ -12,7 +12,7 @@ import type { ComfyPrompt, ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 export const graphToPrompt = async (
   graph: LGraph,
   options: { clean?: boolean; sortNodes?: boolean } = {}
-): Promise<{ workflow: ComfyWorkflowJSON; output: ComfyPrompt }> => {
+): Promise<{ workflow: ComfyWorkflowJSON; output: ComfyApiWorkflow }> => {
   const { clean = true, sortNodes = false } = options
 
   for (const outerNode of graph.computeExecutionOrder(false)) {
