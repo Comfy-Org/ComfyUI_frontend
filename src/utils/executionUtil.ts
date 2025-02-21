@@ -1,6 +1,7 @@
 import type { LGraph } from '@comfyorg/litegraph'
 import { LGraphEventMode } from '@comfyorg/litegraph'
 
+import { isPrimitiveNode } from '@/nodes/PrimitiveNode'
 import type { ComfyApiWorkflow, ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 
 /**
@@ -13,6 +14,18 @@ export const graphToPrompt = async (
   options: { sortNodes?: boolean } = {}
 ): Promise<{ workflow: ComfyWorkflowJSON; output: ComfyApiWorkflow }> => {
   const { sortNodes = false } = options
+
+  for (const outerNode of graph.computeExecutionOrder(false)) {
+    const innerNodes = outerNode.getInnerNodes
+      ? outerNode.getInnerNodes()
+      : [outerNode]
+    for (const node of innerNodes) {
+      if (isPrimitiveNode(node)) {
+        node.applyToGraph()
+      }
+    }
+  }
+
   const workflow = graph.serialize({ sortNodes })
 
   // Remove localized_name from the workflow

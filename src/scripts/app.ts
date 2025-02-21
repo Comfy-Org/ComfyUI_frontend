@@ -13,7 +13,6 @@ import type { ToastMessageOptions } from 'primevue/toast'
 import { reactive } from 'vue'
 
 import { st } from '@/i18n'
-import { isPrimitiveNode } from '@/nodes/PrimitiveNode'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -1280,17 +1279,6 @@ export class ComfyApp {
           // Allow widgets to run callbacks before a prompt has been queued
           // e.g. random seed before every gen
           executeWidgetsCallback(this.graph.nodes, 'beforeQueued')
-
-          for (const outerNode of this.graph.computeExecutionOrder(false)) {
-            const innerNodes = outerNode.getInnerNodes
-              ? outerNode.getInnerNodes()
-              : [outerNode]
-            for (const node of innerNodes) {
-              if (isPrimitiveNode(node)) {
-                node.applyToGraph()
-              }
-            }
-          }
 
           const p = await this.graphToPrompt()
           try {
