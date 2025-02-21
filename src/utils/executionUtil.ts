@@ -10,9 +10,9 @@ import type { ComfyApiWorkflow, ComfyWorkflowJSON } from '@/types/comfyWorkflow'
  */
 export const graphToPrompt = async (
   graph: LGraph,
-  options: { clean?: boolean; sortNodes?: boolean } = {}
+  options: { sortNodes?: boolean } = {}
 ): Promise<{ workflow: ComfyWorkflowJSON; output: ComfyApiWorkflow }> => {
-  const { clean = true, sortNodes = false } = options
+  const { sortNodes = false } = options
 
   for (const outerNode of graph.computeExecutionOrder(false)) {
     if (outerNode.widgets) {
@@ -165,16 +165,14 @@ export const graphToPrompt = async (
   }
 
   // Remove inputs connected to removed nodes
-  if (clean) {
-    for (const o in output) {
-      for (const i in output[o].inputs) {
-        if (
-          Array.isArray(output[o].inputs[i]) &&
-          output[o].inputs[i].length === 2 &&
-          !output[output[o].inputs[i][0]]
-        ) {
-          delete output[o].inputs[i]
-        }
+  for (const o in output) {
+    for (const i in output[o].inputs) {
+      if (
+        Array.isArray(output[o].inputs[i]) &&
+        output[o].inputs[i].length === 2 &&
+        !output[output[o].inputs[i][0]]
+      ) {
+        delete output[o].inputs[i]
       }
     }
   }
