@@ -1,4 +1,5 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
+import { Positionable } from '@comfyorg/litegraph/dist/interfaces'
 
 import type { ComfyApp } from '@/scripts/app'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
@@ -97,6 +98,14 @@ export interface ComfyExtension {
    * @returns An array of {[widget name]: widget data}
    */
   getCustomWidgets?(app: ComfyApp): Promise<Widgets> | Widgets
+
+  /**
+   * Allows the extension to add additional commands to the selection toolbox
+   * @param selectedItem The selected item on the canvas
+   * @returns An array of command ids to add to the selection toolbox
+   */
+  getSelectionToolboxCommands?(selectedItem: Positionable): string[]
+
   /**
    * Allows the extension to add additional handling to the node before it is registered with **LGraph**
    * @param nodeType The node class (not an instance)

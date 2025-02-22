@@ -298,4 +298,45 @@ test.describe('Topbar commands', () => {
       expect(await comfyPage.page.evaluate(() => window['value'])).toBeNull()
     })
   })
+
+  test.describe('Selection Toolbox', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.setSetting('Comfy.Canvas.SelectionToolbox', true)
+    })
+
+    test('Should allow adding commands to selection toolbox', async ({
+      comfyPage
+    }) => {
+      // Register an extension with a selection toolbox command
+      await comfyPage.page.evaluate(() => {
+        window['app'].registerExtension({
+          name: 'TestExtension1',
+          commands: [
+            {
+              id: 'test.selection.command',
+              label: 'Test Command',
+              icon: 'pi pi-star',
+              function: () => {
+                window['selectionCommandExecuted'] = true
+              }
+            }
+          ],
+          getSelectionToolboxCommands: () => ['test.selection.command']
+        })
+      })
+
+      await comfyPage.selectNodes(['CLIP Text Encode (Prompt)'])
+
+      // Click the command button in the selection toolbox
+      const toolboxButton = comfyPage.page.locator(
+        '.selection-toolbox button:has(.pi-star)'
+      )
+      await toolboxButton.click()
+
+      // Verify the command was executed
+      expect(
+        await comfyPage.page.evaluate(() => window['selectionCommandExecuted'])
+      ).toBe(true)
+    })
+  })
 })
