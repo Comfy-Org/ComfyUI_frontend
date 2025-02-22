@@ -21,7 +21,7 @@ export const usePaste = () => {
   ) => {
     if (!node) return
 
-    const blob = items[0].getAsFile()
+    const blob = items[0]?.getAsFile()
     if (!blob) return
 
     node.pasteFile?.(blob)
