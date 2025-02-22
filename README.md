@@ -468,7 +468,7 @@ We will support custom icons later.
 ![image](https://github.com/user-attachments/assets/7bff028a-bf91-4cab-bf97-55c243b3f5e0)
 </details>
 
-<details>
+<details id='extension-api-selection-toolbox'>
   <summary>v1.10.9: Selection Toolbox API</summary>
 
 Extensions can register commands that appear in the selection toolbox when specific items are selected on the canvas.
