@@ -321,6 +321,7 @@
     "backgroundColor": "背景色",
     "fov": "FOV",
     "lightIntensity": "光の強度",
+    "loadingModel": "3Dモデルを読み込んでいます...",
     "previewOutput": "出力のプレビュー",
     "removeBackgroundImage": "背景画像を削除",
     "showGrid": "グリッドを表示",

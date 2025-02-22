@@ -321,6 +321,7 @@
     "backgroundColor": "背景颜色",
     "fov": "视场",
     "lightIntensity": "光照强度",
+    "loadingModel": "正在加载3D模型...",
     "previewOutput": "预览输出",
     "removeBackgroundImage": "移除背景图片",
     "showGrid": "显示网格",
