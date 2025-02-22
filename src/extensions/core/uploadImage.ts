@@ -39,7 +39,7 @@ app.registerExtension({
       isMediaUploadComboInput(input)
     )
 
-    // If image combo input found, attach upload input
+    // If media combo input found, attach upload input
     if (found) {
       const [inputName, inputSpec] = found
       required.upload = createUploadInput(inputName, inputSpec)

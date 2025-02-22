@@ -51,7 +51,6 @@ export const useNodePreview = <T extends MediaElement>(
 
     loadElements(outputUrls)
       .then((elements) => {
-        console.count('rendered')
         const validElements = elements.filter(
           (el): el is NonNullable<Awaited<T>> => el !== null
         )

@@ -22,8 +22,9 @@ export const usePaste = () => {
     if (!node) return
 
     const blob = items[0].getAsFile()
-    if (blob) node?.pasteFile?.(blob)
+    if (!blob) return
 
+    node.pasteFile?.(blob)
     node.pasteFiles?.(
       Array.from(items)
         .map((i) => i.getAsFile())

@@ -53,7 +53,7 @@ const hasInputProperty = (
 }
 
 type ImageNode = LGraphNode & { imgs: HTMLImageElement[] }
-type VideoNode = LGraphNode & { videoContainer: HTMLVideoElement }
+type VideoNode = LGraphNode & { videoContainer: HTMLElement }
 
 export function isImageNode(node: LGraphNode | undefined): node is ImageNode {
   if (!node) return false
