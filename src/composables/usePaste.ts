@@ -52,8 +52,10 @@ export const usePaste = () => {
     const isImageNodeSelected = isNodeSelected && isImageNode(currentNode)
     const isVideoNodeSelected = isNodeSelected && isVideoNode(currentNode)
 
-    let imageNode = isImageNodeSelected ? currentNode : null
-    const videoNode = isVideoNodeSelected ? currentNode : null
+    let imageNode: LGraphNode | null = isImageNodeSelected ? currentNode : null
+    const videoNode: LGraphNode | null = isVideoNodeSelected
+      ? currentNode
+      : null
 
     // Look for image paste data
     for (const item of items) {

@@ -21,7 +21,7 @@ import { ComfyNodeDef } from '@/types/apiTypes'
 import type { NodeId } from '@/types/comfyWorkflow'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { is_all_same_aspect_ratio } from '@/utils/imageUtil'
-import { getImageTop, isImageNode } from '@/utils/litegraphUtil'
+import { getImageTop, isImageNode, isVideoNode } from '@/utils/litegraphUtil'
 
 import { useExtensionService } from './extensionService'
 
@@ -399,14 +399,14 @@ export const useLitegraphService = () => {
 
       if (isNewOutput || isNewPreview) {
         this.animatedImages = output?.animated?.find(Boolean)
-        
-        if (this.animatedImages) {
+
+        if (this.animatedImages || isVideoNode(this)) {
           useNodeVideo(this).showPreview()
         } else {
           useNodeImage(this).showPreview()
         }
       }
-      
+
       // Nothing to do
       if (!this.imgs?.length) return
 

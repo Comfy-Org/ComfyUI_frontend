@@ -52,7 +52,10 @@ const hasInputProperty = (
   return inputs.some((input) => input?.[1]?.[property])
 }
 
-export function isImageNode(node: LGraphNode | undefined): boolean {
+type ImageNode = LGraphNode & { imgs: HTMLImageElement[] }
+type VideoNode = LGraphNode & { videoContainer: HTMLVideoElement }
+
+export function isImageNode(node: LGraphNode | undefined): node is ImageNode {
   if (!node) return false
   if (node.imgs?.length && hasImageElements(node.imgs)) return true
   if (!node.widgets) return false
@@ -60,8 +63,11 @@ export function isImageNode(node: LGraphNode | undefined): boolean {
   return hasInputProperty(node, IMAGE_NODE_PROPERTY)
 }
 
-export function isVideoNode(node: LGraphNode | undefined): boolean {
+export function isVideoNode(node: LGraphNode | undefined): node is VideoNode {
   if (!node) return false
+  if (node.videoContainer) return true
+  if (!node.widgets) return false
+
   return hasInputProperty(node, VIDEO_NODE_PROPERTY)
 }
 
