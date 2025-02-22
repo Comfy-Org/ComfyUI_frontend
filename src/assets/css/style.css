@@ -532,6 +532,12 @@ dialog::backdrop {
   height: var(--comfy-img-preview-height);
 }
 
+.comfy-img-preview video {
+  object-fit: contain;
+  height: 100%;
+  width: 100%;
+}
+
 .comfy-missing-nodes li button {
   font-size: 12px;
   margin-left: 5px;
