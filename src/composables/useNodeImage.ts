@@ -56,8 +56,8 @@ export const useNodePreview = <T extends MediaElement>(
           (el): el is NonNullable<Awaited<T>> => el !== null
         )
         if (validElements.length) {
-        onLoaded?.(validElements)
-        render()
+          onLoaded?.(validElements)
+          render()
         }
       })
       .catch(() => {
@@ -133,6 +133,7 @@ export const useNodeVideo = (node: LGraphNode) => {
     }
 
     node.videoContainer.replaceChildren(videoElement)
+    node.imageOffset = 64
   }
 
   return useNodePreview(node, {
