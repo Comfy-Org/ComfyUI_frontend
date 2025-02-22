@@ -468,6 +468,35 @@ We will support custom icons later.
 ![image](https://github.com/user-attachments/assets/7bff028a-bf91-4cab-bf97-55c243b3f5e0)
 </details>
 
+<details>
+  <summary>v1.10.9: Selection Toolbox API</summary>
+
+Extensions can register commands that appear in the selection toolbox when specific items are selected on the canvas.
+
+```js
+app.registerExtension({
+  name: 'TestExtension1',
+  commands: [
+    {
+      id: 'test.selection.command',
+      label: 'Test Command',
+      icon: 'pi pi-star',
+      function: () => {
+        // Command logic here
+      }
+    }
+  ],
+  // Return an array of command IDs to show in the selection toolbox
+  // when an item is selected
+  getSelectionToolboxCommands: (selectedItem) => ['test.selection.command']
+})
+```
+
+The selection toolbox will display the command button when items are selected:
+![Image](https://github.com/user-attachments/assets/28d91267-c0a9-4bd5-a7c4-36e8ec44c9bd)
+
+</details>
+
 ## Development
 
 ### Tech Stack
