@@ -63,8 +63,8 @@ import { computed, ref } from 'vue'
 import Load3DAnimationControls from '@/components/load3d/Load3DAnimationControls.vue'
 import Load3DAnimationScene from '@/components/load3d/Load3DAnimationScene.vue'
 import Load3DControls from '@/components/load3d/Load3DControls.vue'
-import type { AnimationItem } from '@/extensions/core/load3d/Load3dAnimation'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import { AnimationItem } from '@/extensions/core/load3d/interfaces'
 
 const props = defineProps<{
   node: any

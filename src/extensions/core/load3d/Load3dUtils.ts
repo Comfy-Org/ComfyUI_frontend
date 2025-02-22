@@ -1,4 +1,3 @@
-import Load3d from '@/extensions/core/load3d/Load3d'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useToastStore } from '@/stores/toastStore'

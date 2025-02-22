@@ -1,11 +1,14 @@
 <template>
-  <div ref="container" class="w-full h-full"></div>
+  <div ref="container" class="w-full h-full relative">
+    <LoadingOverlay ref="loadingOverlayRef" />
+  </div>
 </template>
 
 <script setup lang="ts">
 import { LGraphNode } from '@comfyorg/litegraph'
 import { onMounted, onUnmounted, ref, toRaw, watchEffect } from 'vue'
 
+import LoadingOverlay from '@/components/load3d/LoadingOverlay.vue'
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dAnimation from '@/extensions/core/load3d/Load3dAnimation'
 import { useLoad3dService } from '@/services/load3dService'
@@ -26,6 +29,7 @@ const props = defineProps<{
 const container = ref<HTMLElement | null>(null)
 const node = ref(props.node)
 const load3d = ref<Load3d | Load3dAnimation | null>(null)
+const loadingOverlayRef = ref<InstanceType<typeof LoadingOverlay> | null>(null)
 
 const eventConfig = {
   materialModeChange: (value: string) => emit('materialModeChange', value),
@@ -36,7 +40,10 @@ const eventConfig = {
   cameraTypeChange: (value: string) => emit('cameraTypeChange', value),
   showGridChange: (value: boolean) => emit('showGridChange', value),
   showPreviewChange: (value: boolean) => emit('showPreviewChange', value),
-  backgroundImageChange: (value: string) => emit('backgroundImageChange', value)
+  backgroundImageChange: (value: string) =>
+    emit('backgroundImageChange', value),
+  modelLoadingStart: () => loadingOverlayRef.value?.startLoading(),
+  modelLoadingEnd: () => loadingOverlayRef.value?.endLoading()
 } as const
 
 watchEffect(() => {

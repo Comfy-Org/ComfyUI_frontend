@@ -1,206 +1,130 @@
-import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
+import { LGraphNode } from '@comfyorg/litegraph'
 import * as THREE from 'three'
-import { createApp } from 'vue'
 
-import Load3DAnimationControls from '@/components/load3d/Load3DAnimationControls.vue'
-import Load3d from '@/extensions/core/load3d/Load3d'
-
-interface AnimationItem {
-  name: string
-  index: number
-}
+import { AnimationManager } from './AnimationManager'
+import Load3d from './Load3d'
+import { Load3DOptions } from './interfaces'
 
 class Load3dAnimation extends Load3d {
-  currentAnimation: THREE.AnimationMixer | null = null
-  animationActions: THREE.AnimationAction[] = []
-  animationClips: THREE.AnimationClip[] = []
-  selectedAnimationIndex: number = 0
-  isAnimationPlaying: boolean = false
-
-  animationSpeed: number = 1.0
+  private animationManager: AnimationManager
 
   constructor(
     container: Element | HTMLElement,
-    options: { createPreview?: boolean } = {}
+    options: Load3DOptions = {
+      node: {} as LGraphNode
+    }
   ) {
     super(container, options)
+
+    this.animationManager = new AnimationManager(
+      this.eventManager,
+      this.getCurrentModel.bind(this)
+    )
+
+    this.animationManager.init()
+
+    this.overrideAnimationLoop()
   }
 
-  updateAnimationList() {
-    let updatedAnimationList: AnimationItem[] = []
-
-    if (this.animationClips.length > 0) {
-      updatedAnimationList = this.animationClips.map((clip, index) => ({
-        name: clip.name || `Animation ${index + 1}`,
-        index
-      }))
-    }
-
-    this.emitEvent('animationListChange', updatedAnimationList)
+  private getCurrentModel(): THREE.Object3D | null {
+    return this.modelManager.currentModel
   }
 
-  protected async setupModel(model: THREE.Object3D) {
-    await super.setupModel(model)
-
-    if (this.currentAnimation) {
-      this.currentAnimation.stopAllAction()
-      this.animationActions = []
+  private overrideAnimationLoop(): void {
+    if (this.animationFrameId !== null) {
+      cancelAnimationFrame(this.animationFrameId)
     }
 
-    let animations: THREE.AnimationClip[] = []
-    if (model.animations?.length > 0) {
-      animations = model.animations
-    } else if (this.originalModel && 'animations' in this.originalModel) {
-      animations = (
-        this.originalModel as unknown as { animations: THREE.AnimationClip[] }
-      ).animations
-    }
-
-    if (animations.length > 0) {
-      this.animationClips = animations
-      if (model.type === 'Scene') {
-        this.currentAnimation = new THREE.AnimationMixer(model)
-      } else {
-        this.currentAnimation = new THREE.AnimationMixer(this.currentModel!)
-      }
-
-      if (this.animationClips.length > 0) {
-        this.updateSelectedAnimation(0)
-      }
-    }
-
-    this.updateAnimationList()
-  }
-
-  setAnimationSpeed(speed: number) {
-    this.animationSpeed = speed
-    this.animationActions.forEach((action) => {
-      action.setEffectiveTimeScale(speed)
-    })
-  }
-
-  updateSelectedAnimation(index: number) {
-    if (
-      !this.currentAnimation ||
-      !this.animationClips ||
-      index >= this.animationClips.length
-    ) {
-      console.warn('Invalid animation update request')
-      return
-    }
-
-    this.animationActions.forEach((action) => {
-      action.stop()
-    })
-    this.currentAnimation.stopAllAction()
-    this.animationActions = []
-
-    this.selectedAnimationIndex = index
-    const clip = this.animationClips[index]
-
-    const action = this.currentAnimation.clipAction(clip)
-
-    action.setEffectiveTimeScale(this.animationSpeed)
-
-    action.reset()
-    action.clampWhenFinished = false
-    action.loop = THREE.LoopRepeat
-
-    if (this.isAnimationPlaying) {
-      action.play()
-    } else {
-      action.play()
-      action.paused = true
-    }
-
-    this.animationActions = [action]
-  }
-
-  clearModel() {
-    if (this.currentAnimation) {
-      this.animationActions.forEach((action) => {
-        action.stop()
-      })
-      this.currentAnimation = null
-    }
-    this.animationActions = []
-    this.animationClips = []
-    this.selectedAnimationIndex = 0
-    this.isAnimationPlaying = false
-    this.animationSpeed = 1.0
-
-    this.emitEvent('animationListChange', [])
-
-    super.clearModel()
-  }
-
-  toggleAnimation(play?: boolean) {
-    if (!this.currentAnimation || this.animationActions.length === 0) {
-      console.warn('No animation to toggle')
-      return
-    }
-
-    this.isAnimationPlaying = play ?? !this.isAnimationPlaying
-
-    this.animationActions.forEach((action) => {
-      if (this.isAnimationPlaying) {
-        action.paused = false
-        if (action.time === 0 || action.time === action.getClip().duration) {
-          action.reset()
-        }
-      } else {
-        action.paused = true
-      }
-    })
-  }
-
-  startAnimation() {
     const animate = () => {
       this.animationFrameId = requestAnimationFrame(animate)
 
-      if (this.showPreview) {
-        this.updatePreviewRender()
+      if (this.previewManager.showPreview) {
+        this.previewManager.updatePreviewRender()
       }
 
       const delta = this.clock.getDelta()
 
-      if (this.currentAnimation && this.isAnimationPlaying) {
-        this.currentAnimation.update(delta)
-      }
+      this.animationManager.update(delta)
 
-      if (this.viewHelper.animating) {
-        this.viewHelper.update(delta)
+      this.viewHelperManager.update(delta)
 
-        if (!this.viewHelper.animating) {
-          this.storeNodeProperty('Camera Info', this.getCameraState())
-        }
-      }
+      this.controlsManager.update()
 
       this.renderer.clear()
+      this.sceneManager.renderBackground()
+      this.renderer.render(
+        this.sceneManager.scene,
+        this.cameraManager.activeCamera
+      )
 
-      if (this.backgroundMesh && this.backgroundTexture) {
-        const material = this.backgroundMesh.material as THREE.MeshBasicMaterial
-        if (material.map) {
-          const currentToneMapping = this.renderer.toneMapping
-          const currentExposure = this.renderer.toneMappingExposure
-
-          this.renderer.toneMapping = THREE.NoToneMapping
-
-          this.renderer.render(this.backgroundScene, this.backgroundCamera)
-
-          this.renderer.toneMapping = currentToneMapping
-          this.renderer.toneMappingExposure = currentExposure
-        }
+      if (this.viewHelperManager.viewHelper.render) {
+        this.viewHelperManager.viewHelper.render(this.renderer)
       }
-
-      this.controls.update()
-      this.renderer.render(this.scene, this.activeCamera)
-      this.viewHelper.render(this.renderer)
     }
+
     animate()
+  }
+
+  async loadModel(url: string, originalFileName?: string): Promise<void> {
+    await super.loadModel(url, originalFileName)
+
+    if (this.modelManager.currentModel) {
+      this.animationManager.setupModelAnimations(
+        this.modelManager.currentModel,
+        this.modelManager.originalModel
+      )
+    }
+  }
+
+  clearModel(): void {
+    this.animationManager.dispose()
+    super.clearModel()
+  }
+
+  updateAnimationList(): void {
+    this.animationManager.updateAnimationList()
+  }
+
+  setAnimationSpeed(speed: number): void {
+    this.animationManager.setAnimationSpeed(speed)
+  }
+
+  updateSelectedAnimation(index: number): void {
+    this.animationManager.updateSelectedAnimation(index)
+  }
+
+  toggleAnimation(play?: boolean): void {
+    this.animationManager.toggleAnimation(play)
+  }
+
+  get isAnimationPlaying(): boolean {
+    return this.animationManager.isAnimationPlaying
+  }
+
+  get animationSpeed(): number {
+    return this.animationManager.animationSpeed
+  }
+
+  get selectedAnimationIndex(): number {
+    return this.animationManager.selectedAnimationIndex
+  }
+
+  get animationClips(): THREE.AnimationClip[] {
+    return this.animationManager.animationClips
+  }
+
+  get animationActions(): THREE.AnimationAction[] {
+    return this.animationManager.animationActions
+  }
+
+  get currentAnimation(): THREE.AnimationMixer | null {
+    return this.animationManager.currentAnimation
+  }
+
+  remove(): void {
+    this.animationManager.dispose()
+    super.remove()
   }
 }
 
-export { AnimationItem }
 export default Load3dAnimation
