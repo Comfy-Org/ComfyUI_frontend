@@ -61,8 +61,7 @@ export interface ComboInputSpec extends BaseInputSpec<any> {
   type: 'COMBO'
   comboOptions: any[]
   controlAfterGenerate?: boolean
-  image_upload?: boolean
-  video_upload?: boolean
+  imageUpload?: boolean
 }
 
 export class ComfyInputsSpec {
