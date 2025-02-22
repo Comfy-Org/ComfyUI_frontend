@@ -569,7 +569,7 @@ export function isValidCombo(combo: string[], obj: unknown) {
   return true
 }
 
-export function isPrimitiveNode(node: LGraphNode): node is PrimitiveNode {
+function isPrimitiveNode(node: LGraphNode): node is PrimitiveNode {
   return node.type === 'PrimitiveNode'
 }
 
