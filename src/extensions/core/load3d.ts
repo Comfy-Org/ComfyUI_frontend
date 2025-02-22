@@ -174,6 +174,8 @@ app.registerExtension({
         Load3dUtils.uploadTempImage(maskData, 'scene_mask')
       ])
 
+      load3d.handleResize()
+
       return {
         image: `threed/${data.name} [temp]`,
         mask: `threed/${dataMask.name} [temp]`
@@ -344,6 +346,8 @@ app.registerExtension({
         Load3dUtils.uploadTempImage(imageData, 'scene'),
         Load3dUtils.uploadTempImage(maskData, 'scene_mask')
       ])
+
+      load3d.handleResize()
 
       return {
         image: `threed/${data.name} [temp]`,

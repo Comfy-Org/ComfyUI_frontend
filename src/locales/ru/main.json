@@ -321,6 +321,7 @@
     "backgroundColor": "Цвет фона",
     "fov": "Угол обзора",
     "lightIntensity": "Интенсивность света",
+    "loadingModel": "Загрузка 3D модели...",
     "previewOutput": "Предварительный просмотр",
     "removeBackgroundImage": "Удалить фоновое изображение",
     "showGrid": "Показать сетку",

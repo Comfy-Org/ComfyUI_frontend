@@ -321,6 +321,7 @@
     "backgroundColor": "Couleur de fond",
     "fov": "FOV",
     "lightIntensity": "Intensité de la lumière",
+    "loadingModel": "Chargement du modèle 3D...",
     "previewOutput": "Aperçu de la sortie",
     "removeBackgroundImage": "Supprimer l'image de fond",
     "showGrid": "Afficher la grille",
