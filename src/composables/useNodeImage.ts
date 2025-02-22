@@ -8,6 +8,8 @@ const VIDEO_DEFAULT_OPTIONS = {
   controls: true,
   loop: true
 } as const
+const MEDIA_LOAD_TIMEOUT = 8192 as const
+const MAX_RETRIES = 1 as const
 
 type MediaElement = HTMLImageElement | HTMLVideoElement
 
@@ -23,6 +25,9 @@ const createContainer = () => {
   return container
 }
 
+const createTimeout = (ms: number) =>
+  new Promise<null>((resolve) => setTimeout(() => resolve(null), ms))
+
 export const useNodePreview = <T extends MediaElement>(
   node: LGraphNode,
   options: NodePreviewOptions<T>
@@ -30,8 +35,24 @@ export const useNodePreview = <T extends MediaElement>(
   const { loadElement, onLoaded, onFailedLoading } = options
   const nodeOutputStore = useNodeOutputStore()
 
+  const loadElementWithTimeout = async (
+    url: string,
+    retryCount = 0
+  ): Promise<T | null> => {
+    const result = await Promise.race([
+      loadElement(url),
+      createTimeout(MEDIA_LOAD_TIMEOUT)
+    ])
+
+    if (result === null && retryCount < MAX_RETRIES) {
+      return loadElementWithTimeout(url, retryCount + 1)
+    }
+
+    return result
+  }
+
   const loadElements = async (urls: string[]) =>
-    Promise.all(urls.map(loadElement))
+    Promise.all(urls.map((url) => loadElementWithTimeout(url)))
 
   const render = () => {
     node.setSizeForImage?.()
@@ -82,7 +103,6 @@ export const useNodeImage = (node: LGraphNode) => {
       img.onload = () => resolve(img)
       img.onerror = () => resolve(null)
       img.src = url
-      return img
     })
 
   const onLoaded = (elements: HTMLImageElement[]) => {
@@ -110,7 +130,6 @@ export const useNodeVideo = (node: LGraphNode) => {
       video.onloadeddata = () => resolve(video)
       video.onerror = () => resolve(null)
       video.src = url
-      return video
     })
 
   const addVideoDomWidget = (container: HTMLElement) => {
