@@ -1,7 +1,6 @@
 import type { LGraph } from '@comfyorg/litegraph'
 import { LGraphEventMode } from '@comfyorg/litegraph'
 
-import { isPrimitiveNode } from '@/nodes/PrimitiveNode'
 import type { ComfyApiWorkflow, ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 
 /**
@@ -20,8 +19,11 @@ export const graphToPrompt = async (
       ? outerNode.getInnerNodes()
       : [outerNode]
     for (const node of innerNodes) {
-      if (isPrimitiveNode(node)) {
-        node.applyToGraph()
+      if (node.isVirtualNode) {
+        // Don't serialize frontend only nodes but let them make changes
+        if (node.applyToGraph) {
+          node.applyToGraph()
+        }
       }
     }
   }
