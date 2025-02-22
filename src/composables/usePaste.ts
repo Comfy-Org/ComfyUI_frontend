@@ -4,9 +4,9 @@ import { useEventListener } from '@vueuse/core'
 
 import { app } from '@/scripts/app'
 import { useCanvasStore } from '@/stores/graphStore'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
+import { isImageNode, isVideoNode } from '@/utils/litegraphUtil'
 
 /**
  * Adds a handler on paste that extracts and loads images or workflows from pasted JSON data
@@ -14,13 +14,6 @@ import { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 export const usePaste = () => {
   const workspaceStore = useWorkspaceStore()
   const canvasStore = useCanvasStore()
-  const nodeDefStore = useNodeDefStore()
-
-  const isImageNode = (node: LGraphNode) =>
-    !!node.imgs || nodeDefStore.fromLGraphNode(node)?.isImageNode
-
-  const isVideoNode = (node: LGraphNode) =>
-    nodeDefStore.fromLGraphNode(node)?.isVideoNode
 
   const pasteItemOnNode = (
     items: DataTransferItemList,

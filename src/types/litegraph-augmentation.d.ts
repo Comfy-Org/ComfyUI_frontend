@@ -109,7 +109,7 @@ declare module '@comfyorg/litegraph' {
     ): DOMWidget
 
     animatedImages?: boolean
-    imgs?: (HTMLImageElement | HTMLVideoElement)[]
+    imgs?: HTMLImageElement[]
     images?: ExecutedWsMessage['output']
     /** Container for the node's video preview */
     videoContainer?: HTMLElement
