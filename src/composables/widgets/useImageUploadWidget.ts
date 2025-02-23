@@ -76,12 +76,16 @@ export const useImageUploadWidget = () => {
     })
 
     // Create the button widget for selecting the files
-    const uploadWidget = node.addWidget('button', inputName, 'image', () =>
-      openFileSelection()
+    const uploadWidget = node.addWidget(
+      'button',
+      inputName,
+      'image',
+      () => openFileSelection(),
+      {
+        serialize: false
+      }
     )
     uploadWidget.label = 'choose file to upload'
-    // @ts-expect-error serialize is not typed
-    uploadWidget.serialize = false
 
     // TODO: Explain this?
     // @ts-expect-error LGraphNode.callback is not typed
