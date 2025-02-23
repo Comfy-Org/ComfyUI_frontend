@@ -79,18 +79,16 @@ export const graphToPrompt = async (
 
         let link = node.getInputLink(i)
         while (parent.mode === LGraphEventMode.BYPASS || parent.isVirtualNode) {
+          if (!link) break
+
           let found = false
           if (parent.isVirtualNode) {
-            link = link ? parent.getInputLink(link.origin_slot) : null
+            link = parent.getInputLink(link.origin_slot)
             if (link) {
               parent = parent.getInputNode(link.target_slot)
               if (parent) found = true
             }
-          } else if (
-            link &&
-            parent.mode === LGraphEventMode.BYPASS &&
-            parent.inputs
-          ) {
+          } else if (parent.mode === LGraphEventMode.BYPASS && parent.inputs) {
             const parentInputIndexes = Object.keys(parent.inputs).map(Number)
             const indexes = [link.origin_slot].concat(parentInputIndexes)
             for (const index of indexes) {
