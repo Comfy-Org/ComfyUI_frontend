@@ -94,13 +94,13 @@ export const graphToPrompt = async (
             const parentInputIndexes = Object.keys(parent.inputs).map(Number)
             const indexes = [link.origin_slot].concat(parentInputIndexes)
             for (const index of indexes) {
-              if (parent.inputs[index]?.type === input.type) {
-                link = parent.getInputLink(index)
-                if (link) parent = parent.getInputNode(index)
+              if (parent.inputs[index]?.type !== input.type) continue
 
-                found = true
-                break
-              }
+              link = parent.getInputLink(index)
+              if (link) parent = parent.getInputNode(index)
+
+              found = true
+              break
             }
           }
 
