@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 
 import { api } from '@/scripts/api'
-import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
+import { blankGraph as defaultGraph } from '@/scripts/defaultGraph'
 import {
   ComfyWorkflow,
   LoadedComfyWorkflow,
@@ -21,6 +21,7 @@ jest.mock('@/scripts/api', () => ({
 describe('useWorkflowStore', () => {
   let store: ReturnType<typeof useWorkflowStore>
   let bookmarkStore: ReturnType<typeof useWorkflowBookmarkStore>
+  const defaultGraphJSON = JSON.stringify(defaultGraph)
 
   const syncRemoteWorkflows = async (filenames: string[]) => {
     ;(api.listUserDataFullInfo as jest.Mock).mockResolvedValue(
@@ -56,7 +57,7 @@ describe('useWorkflowStore', () => {
     })
 
     it('should exclude temporary workflows', async () => {
-      const workflow = store.createTemporary('c.json')
+      const workflow = await store.createTemporary('c.json')
       await syncRemoteWorkflows(['a.json', 'b.json'])
       expect(store.workflows.length).toBe(3)
       expect(store.workflows.filter((w) => w.isTemporary)).toEqual([workflow])
@@ -64,17 +65,17 @@ describe('useWorkflowStore', () => {
   })
 
   describe('createTemporary', () => {
-    it('should create a temporary workflow with a unique path', () => {
-      const workflow = store.createTemporary()
+    it('should create a temporary workflow with a unique path', async () => {
+      const workflow = await store.createTemporary()
       expect(workflow.path).toBe('workflows/Unsaved Workflow.json')
 
-      const workflow2 = store.createTemporary()
+      const workflow2 = await store.createTemporary()
       expect(workflow2.path).toBe('workflows/Unsaved Workflow (2).json')
     })
 
     it('should create a temporary workflow not clashing with persisted workflows', async () => {
       await syncRemoteWorkflows(['a.json'])
-      const workflow = store.createTemporary('a.json')
+      const workflow = await store.createTemporary('a.json')
       expect(workflow.path).toBe('workflows/a (2).json')
     })
   })
@@ -82,7 +83,7 @@ describe('useWorkflowStore', () => {
   describe('openWorkflow', () => {
     it('should load and open a temporary workflow', async () => {
       // Create a test workflow
-      const workflow = store.createTemporary('test.json')
+      const workflow = await store.createTemporary('test.json')
       const mockWorkflowData = { nodes: [], links: [] }
 
       // Mock the load response
@@ -102,7 +103,7 @@ describe('useWorkflowStore', () => {
     })
 
     it('should not reload an already active workflow', async () => {
-      const workflow = await store.createTemporary('test.json').load()
+      const workflow = await (await store.createTemporary('test.json')).load()
       jest.spyOn(workflow, 'load')
 
       // Set as active workflow
@@ -255,7 +256,7 @@ describe('useWorkflowStore', () => {
 
   describe('renameWorkflow', () => {
     it('should rename workflow and update bookmarks', async () => {
-      const workflow = store.createTemporary('dir/test.json')
+      const workflow = await store.createTemporary('dir/test.json')
 
       // Set up initial bookmark
       expect(workflow.path).toBe('workflows/dir/test.json')
@@ -280,7 +281,7 @@ describe('useWorkflowStore', () => {
     })
 
     it('should rename workflow without affecting bookmarks if not bookmarked', async () => {
-      const workflow = store.createTemporary('test.json')
+      const workflow = await store.createTemporary('test.json')
 
       // Verify not bookmarked initially
       expect(bookmarkStore.isBookmarked(workflow.path)).toBe(false)
@@ -305,7 +306,7 @@ describe('useWorkflowStore', () => {
 
   describe('closeWorkflow', () => {
     it('should close a workflow', async () => {
-      const workflow = store.createTemporary('test.json')
+      const workflow = await store.createTemporary('test.json')
       await store.openWorkflow(workflow)
       expect(store.isOpen(workflow)).toBe(true)
       expect(store.getWorkflowByPath(workflow.path)).not.toBeNull()
@@ -317,7 +318,7 @@ describe('useWorkflowStore', () => {
 
   describe('deleteWorkflow', () => {
     it('should close and delete an open workflow', async () => {
-      const workflow = store.createTemporary('test.json')
+      const workflow = await store.createTemporary('test.json')
 
       // Mock the necessary methods
       jest.spyOn(workflow, 'delete').mockResolvedValue()
@@ -333,7 +334,7 @@ describe('useWorkflowStore', () => {
     })
 
     it('should remove bookmark when deleting a bookmarked workflow', async () => {
-      const workflow = store.createTemporary('test.json')
+      const workflow = await store.createTemporary('test.json')
 
       // Mock delete method
       jest.spyOn(workflow, 'delete').mockResolvedValue()
