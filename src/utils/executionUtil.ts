@@ -86,9 +86,7 @@ export const graphToPrompt = async (
               link = link ? parent.getInputLink(link.origin_slot) : null
               if (link) {
                 parent = parent.getInputNode(link.target_slot)
-                if (parent) {
-                  found = true
-                }
+                if (parent) found = true
               }
             } else if (
               link &&
@@ -100,18 +98,15 @@ export const graphToPrompt = async (
               for (const input of inputs) {
                 if (parent.inputs[input]?.type === node.inputs[i].type) {
                   link = parent.getInputLink(input)
-                  if (link) {
-                    parent = parent.getInputNode(input)
-                  }
+                  if (link) parent = parent.getInputNode(input)
+
                   found = true
                   break
                 }
               }
             }
 
-            if (!found) {
-              break
-            }
+            if (!found) break
           }
 
           if (link) {
