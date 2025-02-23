@@ -200,6 +200,8 @@ app.registerExtension({
         )
         uploadWidget.label = 'choose file to upload'
 
+        node.previewMediaType = 'audio'
+
         return { widget: uploadWidget }
       }
     }

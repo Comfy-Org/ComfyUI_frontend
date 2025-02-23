@@ -8,67 +8,23 @@ import {
 import type { IComboWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import _ from 'lodash'
 
-import { ComfyInputsSpec, ComfyNodeDef, InputSpec } from '@/types/apiTypes'
-
-const IMAGE_NODE_PROPERTY = 'image_upload'
-const VIDEO_NODE_PROPERTY = 'video_upload'
-
-const getNodeData = (node: LGraphNode): ComfyNodeDef | undefined =>
-  node.constructor?.nodeData as ComfyNodeDef | undefined
-
-const getInputSpecsFromData = (
-  inputData: ComfyInputsSpec | undefined
-): InputSpec[] => {
-  if (!inputData) return []
-
-  const { required, optional } = inputData
-  const inputSpecs: InputSpec[] = []
-  if (required) {
-    for (const value of Object.values(required)) {
-      inputSpecs.push(value)
-    }
-  }
-  if (optional) {
-    for (const value of Object.values(optional)) {
-      inputSpecs.push(value)
-    }
-  }
-  return inputSpecs
+type ImageNode = LGraphNode & { imgs: HTMLImageElement[] | undefined }
+type VideoNode = LGraphNode & {
+  videoContainer: HTMLElement | undefined
+  imgs: HTMLVideoElement[] | undefined
 }
-
-const hasImageElements = (imgs: unknown[]): boolean =>
-  Array.isArray(imgs) &&
-  imgs.some((img): img is HTMLImageElement => img instanceof HTMLImageElement)
-
-const hasInputProperty = (
-  node: LGraphNode | undefined,
-  property: string
-): boolean => {
-  if (!node) return false
-  const nodeData = getNodeData(node)
-  if (!nodeData?.input) return false
-
-  const inputs = getInputSpecsFromData(nodeData.input)
-  return inputs.some((input) => input?.[1]?.[property])
-}
-
-type ImageNode = LGraphNode & { imgs: HTMLImageElement[] }
-type VideoNode = LGraphNode & { videoContainer: HTMLElement }
 
 export function isImageNode(node: LGraphNode | undefined): node is ImageNode {
   if (!node) return false
-  if (node.imgs?.length && hasImageElements(node.imgs)) return true
-  if (!node.widgets) return false
-
-  return hasInputProperty(node, IMAGE_NODE_PROPERTY)
+  return (
+    node.previewMediaType === 'image' ||
+    (node.previewMediaType !== 'video' && !!node.imgs?.length)
+  )
 }
 
 export function isVideoNode(node: LGraphNode | undefined): node is VideoNode {
   if (!node) return false
-  if (node.videoContainer) return true
-  if (!node.widgets) return false
-
-  return hasInputProperty(node, VIDEO_NODE_PROPERTY)
+  return node.previewMediaType === 'video' || !!node.videoContainer
 }
 
 export function addToComboValues(widget: IComboWidget, value: string) {

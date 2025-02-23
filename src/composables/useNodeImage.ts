@@ -97,6 +97,8 @@ export const useNodePreview = <T extends MediaElement>(
  * Attaches a preview image to a node.
  */
 export const useNodeImage = (node: LGraphNode) => {
+  node.previewMediaType = 'image'
+
   const loadElement = (url: string): Promise<HTMLImageElement | null> =>
     new Promise((resolve) => {
       const img = new Image()
@@ -123,6 +125,8 @@ export const useNodeImage = (node: LGraphNode) => {
  * Attaches a preview video to a node.
  */
 export const useNodeVideo = (node: LGraphNode) => {
+  node.previewMediaType = 'video'
+
   const loadElement = (url: string): Promise<HTMLVideoElement | null> =>
     new Promise((resolve) => {
       const video = document.createElement('video')
