@@ -150,11 +150,7 @@ export const graphToPrompt = async (
   // Remove inputs connected to removed nodes
   for (const { inputs } of Object.values(output)) {
     for (const [i, input] of Object.entries(inputs)) {
-      if (
-        Array.isArray(input) &&
-        input.length === 2 &&
-        !output[input[0]]
-      ) {
+      if (Array.isArray(input) && input.length === 2 && !output[input[0]]) {
         delete inputs[i]
       }
     }
