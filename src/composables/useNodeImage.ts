@@ -136,7 +136,8 @@ export const useNodeVideo = (node: LGraphNode) => {
     const hasWidget = node.widgets?.some((w) => w.name === VIDEO_WIDGET_NAME)
     if (!hasWidget) {
       node.addDOMWidget(VIDEO_WIDGET_NAME, 'video', container, {
-        hideOnZoom: false
+        hideOnZoom: false,
+        serialize: false
       })
     }
   }
