@@ -75,51 +75,48 @@ export const graphToPrompt = async (
       // Store all node links
       for (let i = 0; i < node.inputs.length; i++) {
         let parent = node.getInputNode(i)
-        if (parent) {
-          let link = node.getInputLink(i)
-          while (
-            parent.mode === LGraphEventMode.BYPASS ||
-            parent.isVirtualNode
-          ) {
-            let found = false
-            if (parent.isVirtualNode) {
-              link = link ? parent.getInputLink(link.origin_slot) : null
-              if (link) {
-                parent = parent.getInputNode(link.target_slot)
-                if (parent) found = true
-              }
-            } else if (
-              link &&
-              parent.mode === LGraphEventMode.BYPASS &&
-              parent.inputs
-            ) {
-              const parentInputs = Object.keys(parent.inputs).map(Number)
-              const inputs = [link.origin_slot].concat(parentInputs)
-              for (const input of inputs) {
-                if (parent.inputs[input]?.type === node.inputs[i].type) {
-                  link = parent.getInputLink(input)
-                  if (link) parent = parent.getInputNode(input)
+        if (!parent) continue
 
-                  found = true
-                  break
-                }
+        let link = node.getInputLink(i)
+        while (parent.mode === LGraphEventMode.BYPASS || parent.isVirtualNode) {
+          let found = false
+          if (parent.isVirtualNode) {
+            link = link ? parent.getInputLink(link.origin_slot) : null
+            if (link) {
+              parent = parent.getInputNode(link.target_slot)
+              if (parent) found = true
+            }
+          } else if (
+            link &&
+            parent.mode === LGraphEventMode.BYPASS &&
+            parent.inputs
+          ) {
+            const parentInputs = Object.keys(parent.inputs).map(Number)
+            const inputs = [link.origin_slot].concat(parentInputs)
+            for (const input of inputs) {
+              if (parent.inputs[input]?.type === node.inputs[i].type) {
+                link = parent.getInputLink(input)
+                if (link) parent = parent.getInputNode(input)
+
+                found = true
+                break
               }
             }
-
-            if (!found) break
           }
 
+          if (!found) break
+        }
+
+        if (link) {
+          if (parent?.updateLink) {
+            link = parent.updateLink(link)
+          }
           if (link) {
-            if (parent?.updateLink) {
-              link = parent.updateLink(link)
-            }
-            if (link) {
-              inputs[node.inputs[i].name] = [
-                String(link.origin_id),
-                // @ts-expect-error link.origin_slot is already number.
-                parseInt(link.origin_slot)
-              ]
-            }
+            inputs[node.inputs[i].name] = [
+              String(link.origin_id),
+              // @ts-expect-error link.origin_slot is already number.
+              parseInt(link.origin_slot)
+            ]
           }
         }
       }
