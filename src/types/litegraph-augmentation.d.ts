@@ -11,6 +11,12 @@ declare module '@comfyorg/litegraph/dist/types/widgets' {
   interface IWidgetOptions {
     /** Currently used by DOM widgets only.  Declaring here reduces complexity. */
     onHide?: (widget: DOMWidget) => void
+    /**
+     * Controls whether the widget's value is included in the API workflow/prompt.
+     * - If false, the value will be excluded from the API workflow but still serialized as part of the graph state
+     * - If true or undefined, the value will be included in both the API workflow and graph state
+     */
+    serialize?: boolean
   }
 
   interface IBaseWidget {
