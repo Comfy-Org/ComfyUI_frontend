@@ -89,14 +89,15 @@ export const graphToPrompt = async (
             // Maintains existing behaviour if parent.getInputLink is overriden
             break
           } else if (parent.mode === LGraphEventMode.BYPASS) {
-            // Bypass nodes by finding first link with matching type
+            // Bypass nodes by finding first input with matching type
             const parentInputIndexes = Object.keys(parent.inputs).map(Number)
-            // Try the same slot number first
+            // Prioritise exact slot index
             const indexes = [link.origin_slot].concat(parentInputIndexes)
 
             const matchingIndex = indexes.find(
               (index) => parent.inputs[index]?.type === input.type
             )
+            // No input types match
             if (matchingIndex === undefined) break
 
             link = parent.getInputLink(matchingIndex)
@@ -106,6 +107,7 @@ export const graphToPrompt = async (
 
         if (link) {
           if (parent?.updateLink) {
+            // groupNode
             link = parent.updateLink(link)
           }
           if (link) {
