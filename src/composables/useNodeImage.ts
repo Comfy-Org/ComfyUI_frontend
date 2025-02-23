@@ -76,7 +76,6 @@ export const useNodePreview = <T extends MediaElement>(
           (el): el is NonNullable<Awaited<T>> => el !== null
         )
         if (validElements.length) {
-          console.count('render count:')
           onLoaded?.(validElements)
           render()
         }
@@ -98,6 +97,8 @@ export const useNodePreview = <T extends MediaElement>(
  * Attaches a preview image to a node.
  */
 export const useNodeImage = (node: LGraphNode) => {
+  node.previewMediaType = 'image'
+
   const loadElement = (url: string): Promise<HTMLImageElement | null> =>
     new Promise((resolve) => {
       const img = new Image()
@@ -109,7 +110,6 @@ export const useNodeImage = (node: LGraphNode) => {
   const onLoaded = (elements: HTMLImageElement[]) => {
     node.imageIndex = null
     node.imgs = elements
-    node.previewMediaType = 'image'
   }
 
   return useNodePreview(node, {
@@ -125,6 +125,8 @@ export const useNodeImage = (node: LGraphNode) => {
  * Attaches a preview video to a node.
  */
 export const useNodeVideo = (node: LGraphNode) => {
+  node.previewMediaType = 'video'
+
   const loadElement = (url: string): Promise<HTMLVideoElement | null> =>
     new Promise((resolve) => {
       const video = document.createElement('video')
@@ -147,8 +149,6 @@ export const useNodeVideo = (node: LGraphNode) => {
   const onLoaded = (videoElements: HTMLVideoElement[]) => {
     const videoElement = videoElements[0]
     if (!videoElement) return
-
-    node.previewMediaType = 'video'
 
     if (!node.videoContainer) {
       node.videoContainer = createContainer()
