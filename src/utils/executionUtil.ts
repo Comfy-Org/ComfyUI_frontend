@@ -49,15 +49,12 @@ export const graphToPrompt = async (
         ? outerNode.getInnerNodes()
         : [outerNode]
     for (const node of innerNodes) {
-      if (node.isVirtualNode) {
-        continue
-      }
-
       if (
+        node.isVirtualNode ||
+        // Don't serialize muted nodes
         node.mode === LGraphEventMode.NEVER ||
         node.mode === LGraphEventMode.BYPASS
       ) {
-        // Don't serialize muted nodes
         continue
       }
 
