@@ -13,6 +13,7 @@ import { useIntWidget } from '@/composables/widgets/useIntWidget'
 import { useMarkdownWidget } from '@/composables/widgets/useMarkdownWidget'
 import { useSeedWidget } from '@/composables/widgets/useSeedWidget'
 import { useStringWidget } from '@/composables/widgets/useStringWidget'
+import { t } from '@/i18n'
 import { useSettingStore } from '@/stores/settingStore'
 import type { InputSpec } from '@/types/apiTypes'
 
@@ -32,12 +33,11 @@ function controlValueRunBefore() {
 }
 
 export function updateControlWidgetLabel(widget: IWidget) {
-  let replacement = 'after'
-  let find = 'before'
   if (controlValueRunBefore()) {
-    ;[find, replacement] = [replacement, find]
+    widget.label = t('g.control_before_generate')
+  } else {
+    widget.label = t('g.control_after_generate')
   }
-  widget.label = (widget.label ?? widget.name ?? '').replace(find, replacement)
 }
 
 export const IS_CONTROL_WIDGET = Symbol()
