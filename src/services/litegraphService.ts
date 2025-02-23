@@ -82,7 +82,8 @@ export const useLitegraphService = () => {
               )
             }
             if (config.widget) {
-              config.widget.label = st(nameKey, inputName)
+              const fallback = config.widget.label ?? inputName
+              config.widget.label = st(nameKey, fallback)
             }
           } else {
             // Node connection inputs
