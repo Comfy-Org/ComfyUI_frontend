@@ -848,6 +848,8 @@
     "previewOutput": "Preview Output",
     "uploadBackgroundImage": "Upload Background Image",
     "removeBackgroundImage": "Remove Background Image",
-    "loadingModel": "Loading 3D Model..."
+    "loadingModel": "Loading 3D Model...",
+    "upDirection": "Up Direction",
+    "materialMode": "Material Mode"
   }
 }

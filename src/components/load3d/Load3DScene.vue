@@ -11,6 +11,11 @@ import { onMounted, onUnmounted, ref, toRaw, watchEffect } from 'vue'
 import LoadingOverlay from '@/components/load3d/LoadingOverlay.vue'
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dAnimation from '@/extensions/core/load3d/Load3dAnimation'
+import {
+  CameraType,
+  MaterialMode,
+  UpDirection
+} from '@/extensions/core/load3d/interfaces'
 import { useLoad3dService } from '@/services/load3dService'
 
 const props = defineProps<{
@@ -20,9 +25,11 @@ const props = defineProps<{
   showGrid: boolean
   lightIntensity: number
   fov: number
-  cameraType: 'perspective' | 'orthographic'
+  cameraType: CameraType
   showPreview: boolean
   backgroundImage: string
+  upDirection: UpDirection
+  materialMode: MaterialMode
   extraListeners?: Record<string, (value: any) => void>
 }>()
 
@@ -42,6 +49,7 @@ const eventConfig = {
   showPreviewChange: (value: boolean) => emit('showPreviewChange', value),
   backgroundImageChange: (value: string) =>
     emit('backgroundImageChange', value),
+  upDirectionChange: (value: string) => emit('upDirectionChange', value),
   modelLoadingStart: () => loadingOverlayRef.value?.startLoading(),
   modelLoadingEnd: () => loadingOverlayRef.value?.endLoading()
 } as const
@@ -57,6 +65,8 @@ watchEffect(() => {
     rawLoad3d.toggleCamera(props.cameraType)
     rawLoad3d.togglePreview(props.showPreview)
     rawLoad3d.setBackgroundImage(props.backgroundImage)
+    rawLoad3d.setUpDirection(props.upDirection)
+    rawLoad3d.setMaterialMode(props.materialMode)
   }
 })
 
@@ -69,6 +79,7 @@ const emit = defineEmits<{
   (e: 'showGridChange', showGrid: boolean): void
   (e: 'showPreviewChange', showPreview: boolean): void
   (e: 'backgroundImageChange', backgroundImage: string): void
+  (e: 'upDirectionChange', upDirection: string): void
 }>()
 
 const handleEvents = (action: 'add' | 'remove') => {
