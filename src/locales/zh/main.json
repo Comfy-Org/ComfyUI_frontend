@@ -124,6 +124,8 @@
     "command": "指令",
     "confirm": "确认",
     "continue": "继续",
+    "control_after_generate": "生成后控制",
+    "control_before_generate": "生成前控制",
     "copyToClipboard": "复制到剪贴板",
     "currentUser": "当前用户",
     "customize": "自定义",
@@ -321,10 +323,13 @@
     "backgroundColor": "背景颜色",
     "fov": "视场",
     "lightIntensity": "光照强度",
+    "loadingModel": "正在加载3D模型...",
+    "materialMode": "材料模式",
     "previewOutput": "预览输出",
     "removeBackgroundImage": "移除背景图片",
     "showGrid": "显示网格",
     "switchCamera": "切换摄像头",
+    "upDirection": "向上方向",
     "uploadBackgroundImage": "上传背景图片"
   },
   "maintenance": {

@@ -6,7 +6,6 @@ import { useNodePaste } from '@/composables/useNodePaste'
 import { api } from '@/scripts/api'
 import { useToastStore } from '@/stores/toastStore'
 
-const ACCEPTED_IMAGE_TYPES = 'image/jpeg,image/png,image/webp'
 const PASTED_IMAGE_EXPIRY_MS = 2000
 
 const uploadFile = async (file: File, isPasted: boolean) => {
@@ -32,6 +31,11 @@ interface ImageUploadOptions {
   fileFilter?: (file: File) => boolean
   onUploadComplete: (paths: string[]) => void
   allow_batch?: boolean
+  /**
+   * The file types to accept.
+   * @example 'image/png,image/jpeg,image/webp,video/webm,video/mp4'
+   */
+  accept?: string
 }
 
 /**
@@ -41,7 +45,7 @@ export const useNodeImageUpload = (
   node: LGraphNode,
   options: ImageUploadOptions
 ) => {
-  const { fileFilter, onUploadComplete, allow_batch } = options
+  const { fileFilter, onUploadComplete, allow_batch, accept } = options
 
   const isPastedFile = (file: File): boolean =>
     file.name === 'image.png' &&
@@ -81,7 +85,7 @@ export const useNodeImageUpload = (
   const { openFileSelection } = useNodeFileInput({
     fileFilter,
     allow_batch,
-    accept: ACCEPTED_IMAGE_TYPES,
+    accept,
     onSelect: handleUploadBatch
   })
 

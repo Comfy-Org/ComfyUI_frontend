@@ -124,6 +124,8 @@
     "command": "Команда",
     "confirm": "Подтвердить",
     "continue": "Продолжить",
+    "control_after_generate": "управление после генерации",
+    "control_before_generate": "управление до генерации",
     "copyToClipboard": "Скопировать в буфер обмена",
     "currentUser": "Текущий пользователь",
     "customize": "Настроить",
@@ -321,10 +323,13 @@
     "backgroundColor": "Цвет фона",
     "fov": "Угол обзора",
     "lightIntensity": "Интенсивность света",
+    "loadingModel": "Загрузка 3D модели...",
+    "materialMode": "Режим Материала",
     "previewOutput": "Предварительный просмотр",
     "removeBackgroundImage": "Удалить фоновое изображение",
     "showGrid": "Показать сетку",
     "switchCamera": "Переключить камеру",
+    "upDirection": "Направление Вверх",
     "uploadBackgroundImage": "Загрузить фоновое изображение"
   },
   "maintenance": {

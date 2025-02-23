@@ -124,6 +124,8 @@
     "command": "Commande",
     "confirm": "Confirmer",
     "continue": "Continuer",
+    "control_after_generate": "contrôle après génération",
+    "control_before_generate": "contrôle avant génération",
     "copyToClipboard": "Copier dans le presse-papiers",
     "currentUser": "Utilisateur actuel",
     "customize": "Personnaliser",
@@ -321,10 +323,13 @@
     "backgroundColor": "Couleur de fond",
     "fov": "FOV",
     "lightIntensity": "Intensité de la lumière",
+    "loadingModel": "Chargement du modèle 3D...",
+    "materialMode": "Mode Matériel",
     "previewOutput": "Aperçu de la sortie",
     "removeBackgroundImage": "Supprimer l'image de fond",
     "showGrid": "Afficher la grille",
     "switchCamera": "Changer de caméra",
+    "upDirection": "Direction Haut",
     "uploadBackgroundImage": "Télécharger l'image de fond"
   },
   "maintenance": {

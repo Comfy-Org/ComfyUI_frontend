@@ -14,16 +14,12 @@ export const graphToPrompt = async (
 ): Promise<{ workflow: ComfyWorkflowJSON; output: ComfyApiWorkflow }> => {
   const { sortNodes = false } = options
 
-  for (const outerNode of graph.computeExecutionOrder(false)) {
-    const innerNodes = outerNode.getInnerNodes
-      ? outerNode.getInnerNodes()
-      : [outerNode]
-    for (const node of innerNodes) {
-      if (node.isVirtualNode) {
-        // Don't serialize frontend only nodes but let them make changes
-        if (node.applyToGraph) {
-          node.applyToGraph()
-        }
+  for (const node of graph.computeExecutionOrder(false)) {
+    const innerNodes = node.getInnerNodes ? node.getInnerNodes() : [node]
+    for (const innerNode of innerNodes) {
+      // Don't serialize frontend only nodes but let them make changes
+      if (innerNode.isVirtualNode) {
+        innerNode.applyToGraph?.()
       }
     }
   }
@@ -51,94 +47,75 @@ export const graphToPrompt = async (
         ? outerNode.getInnerNodes()
         : [outerNode]
     for (const node of innerNodes) {
-      if (node.isVirtualNode) {
-        continue
-      }
-
       if (
+        node.isVirtualNode ||
+        // Don't serialize muted nodes
         node.mode === LGraphEventMode.NEVER ||
         node.mode === LGraphEventMode.BYPASS
       ) {
-        // Don't serialize muted nodes
         continue
       }
 
       const inputs: ComfyApiWorkflow[string]['inputs'] = {}
-      const widgets = node.widgets
+      const { widgets } = node
 
       // Store all widget values
       if (widgets) {
-        for (let i = 0; i < widgets.length; i++) {
-          const widget = widgets[i]
-          if (
-            widget.name &&
-            (!widget.options || widget.options.serialize !== false)
-          ) {
-            inputs[widget.name] = widget.serializeValue
-              ? await widget.serializeValue(node, i)
-              : widget.value
-          }
+        for (const [i, widget] of widgets.entries()) {
+          if (!widget.name || widget.options?.serialize === false) continue
+
+          inputs[widget.name] = widget.serializeValue
+            ? await widget.serializeValue(node, i)
+            : widget.value
         }
       }
 
       // Store all node links
-      for (let i = 0; i < node.inputs.length; i++) {
+      for (const [i, input] of node.inputs.entries()) {
         let parent = node.getInputNode(i)
-        if (parent) {
-          let link = node.getInputLink(i)
-          while (
-            parent.mode === LGraphEventMode.BYPASS ||
-            parent.isVirtualNode
-          ) {
-            let found = false
-            if (parent.isVirtualNode) {
-              link = link ? parent.getInputLink(link.origin_slot) : null
-              if (link) {
-                parent = parent.getInputNode(link.target_slot)
-                if (parent) {
-                  found = true
-                }
-              }
-            } else if (link && parent.mode === LGraphEventMode.BYPASS) {
-              let all_inputs = [link.origin_slot]
-              if (parent.inputs) {
-                // @ts-expect-error convert list of strings to list of numbers
-                all_inputs = all_inputs.concat(Object.keys(parent.inputs))
-                for (let parent_input in all_inputs) {
-                  // @ts-expect-error assign string to number
-                  parent_input = all_inputs[parent_input]
-                  if (
-                    parent.inputs[parent_input]?.type === node.inputs[i].type
-                  ) {
-                    // @ts-expect-error convert string to number
-                    link = parent.getInputLink(parent_input)
-                    if (link) {
-                      // @ts-expect-error convert string to number
-                      parent = parent.getInputNode(parent_input)
-                    }
-                    found = true
-                    break
-                  }
-                }
-              }
-            }
+        if (!parent) continue
 
-            if (!found) {
-              break
-            }
+        let link = node.getInputLink(i)
+        while (parent.mode === LGraphEventMode.BYPASS || parent.isVirtualNode) {
+          if (!link) break
+
+          if (parent.isVirtualNode) {
+            link = parent.getInputLink(link.origin_slot)
+            if (!link) break
+
+            parent = parent.getInputNode(link.target_slot)
+            if (!parent) break
+          } else if (!parent.inputs) {
+            // Maintains existing behaviour if parent.getInputLink is overriden
+            break
+          } else if (parent.mode === LGraphEventMode.BYPASS) {
+            // Bypass nodes by finding first input with matching type
+            const parentInputIndexes = Object.keys(parent.inputs).map(Number)
+            // Prioritise exact slot index
+            const indexes = [link.origin_slot].concat(parentInputIndexes)
+
+            const matchingIndex = indexes.find(
+              (index) => parent.inputs[index]?.type === input.type
+            )
+            // No input types match
+            if (matchingIndex === undefined) break
+
+            link = parent.getInputLink(matchingIndex)
+            if (link) parent = parent.getInputNode(matchingIndex)
           }
+        }
 
+        if (link) {
+          if (parent?.updateLink) {
+            // groupNode
+            link = parent.updateLink(link)
+          }
           if (link) {
-            if (parent?.updateLink) {
-              link = parent.updateLink(link)
-            }
-            if (link) {
-              inputs[node.inputs[i].name] = [
-                String(link.origin_id),
-                // @ts-expect-error link.origin_slot is already number.
-                parseInt(link.origin_slot)
-              ]
-            }
+            inputs[input.name] = [
+              String(link.origin_id),
+              // @ts-expect-error link.origin_slot is already number.
+              parseInt(link.origin_slot)
+            ]
           }
         }
       }
@@ -157,14 +134,10 @@ export const graphToPrompt = async (
   }
 
   // Remove inputs connected to removed nodes
-  for (const o in output) {
-    for (const i in output[o].inputs) {
-      if (
-        Array.isArray(output[o].inputs[i]) &&
-        output[o].inputs[i].length === 2 &&
-        !output[output[o].inputs[i][0]]
-      ) {
-        delete output[o].inputs[i]
+  for (const { inputs } of Object.values(output)) {
+    for (const [i, input] of Object.entries(inputs)) {
+      if (Array.isArray(input) && input.length === 2 && !output[input[0]]) {
+        delete inputs[i]
       }
     }
   }

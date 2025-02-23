@@ -11,6 +11,12 @@ declare module '@comfyorg/litegraph/dist/types/widgets' {
   interface IWidgetOptions {
     /** Currently used by DOM widgets only.  Declaring here reduces complexity. */
     onHide?: (widget: DOMWidget) => void
+    /**
+     * Controls whether the widget's value is included in the API workflow/prompt.
+     * - If false, the value will be excluded from the API workflow but still serialized as part of the graph state
+     * - If true or undefined, the value will be included in both the API workflow and graph state
+     */
+    serialize?: boolean
   }
 
   interface IBaseWidget {
@@ -68,12 +74,17 @@ declare module '@comfyorg/litegraph' {
     onGraphConfigured?(): void
     onExecuted?(output: any): void
     onNodeCreated?(this: LGraphNode): void
+    /** @deprecated groupNode */
     setInnerNodes?(nodes: LGraphNode[]): void
+    /** Originally a group node API. */
     getInnerNodes?(): LGraphNode[]
+    /** @deprecated groupNode */
     convertToNodes?(): LGraphNode[]
     recreate?(): Promise<LGraphNode>
     refreshComboInNode?(defs: Record<string, ComfyNodeDef>)
+    /** Used by virtual nodes (primitives) to insert their values into the graph prior to queueing. */
     applyToGraph?(extraLinks?: LLink[]): void
+    /** @deprecated groupNode */
     updateLink?(link: LLink): LLink | null
     onExecutionStart?(): unknown
     /**
@@ -111,6 +122,10 @@ declare module '@comfyorg/litegraph' {
     animatedImages?: boolean
     imgs?: HTMLImageElement[]
     images?: ExecutedWsMessage['output']
+    /** Container for the node's video preview */
+    videoContainer?: HTMLElement
+    /** Whether the node's preview media is loading */
+    isLoading?: boolean
 
     preview: string[]
     /** Index of the currently selected image on a multi-image node such as Preview Image */

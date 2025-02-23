@@ -1,16 +1,21 @@
 {
-  "0": "{",
   "clipboard": {
     "errorMessage": "클립보드에 복사하지 못했습니다",
     "errorNotSupported": "브라우저가 클립보드 API를 지원하지 않습니다.",
     "successMessage": "클립보드에 복사됨"
   },
   "color": {
+    "black": "검정색",
     "blue": "파란색",
+    "brown": "갈색",
     "custom": "사용자 정의",
+    "cyan": "청록색",
     "default": "기본값",
     "green": "초록색",
+    "noColor": "색 없음",
+    "pale_blue": "흐린 파랑색",
     "pink": "분홍색",
+    "purple": "보라색",
     "red": "빨간색",
     "yellow": "노란색"
   },
@@ -119,6 +124,8 @@
     "command": "명령",
     "confirm": "확인",
     "continue": "계속",
+    "control_after_generate": "생성 후 제어",
+    "control_before_generate": "생성 전 제어",
     "copyToClipboard": "클립보드에 복사",
     "currentUser": "현재 사용자",
     "customize": "사용자 정의",
@@ -316,9 +323,14 @@
     "backgroundColor": "배경색",
     "fov": "FOV",
     "lightIntensity": "조명 강도",
+    "loadingModel": "3D 모델 로딩 중...",
+    "materialMode": "재질 모드",
     "previewOutput": "출력 미리보기",
+    "removeBackgroundImage": "배경 이미지 제거",
     "showGrid": "그리드 표시",
-    "switchCamera": "카메라 전환"
+    "switchCamera": "카메라 전환",
+    "upDirection": "위 방향",
+    "uploadBackgroundImage": "배경 이미지 업로드"
   },
   "maintenance": {
     "None": "없음",

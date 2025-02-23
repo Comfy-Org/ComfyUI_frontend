@@ -5,7 +5,7 @@ import { api } from '@/scripts/api'
 import { ExecutedWsMessage, ResultItem } from '@/types/apiTypes'
 import { parseFilePath } from '@/utils/formatUtil'
 
-const toOutputs = (
+const createOutputs = (
   filenames: string[],
   type: string
 ): ExecutedWsMessage['output'] => {
@@ -14,62 +14,56 @@ const toOutputs = (
   }
 }
 
-const getPreviewParam = (node: LGraphNode) => {
+const getPreviewParam = (node: LGraphNode): string => {
   if (node.animatedImages) return ''
   return app.getPreviewFormatParam()
 }
 
 export const useNodeOutputStore = defineStore('nodeOutput', () => {
-  function getNodeOutputs(node: LGraphNode): ExecutedWsMessage['output'] {
-    return app.nodeOutputs[node.id + '']
+  const getNodeId = (node: LGraphNode): string => node.id.toString()
+
+  function getNodeOutputs(
+    node: LGraphNode
+  ): ExecutedWsMessage['output'] | undefined {
+    return app.nodeOutputs[getNodeId(node)]
   }
 
-  function getNodePreviews(node: LGraphNode): string[] {
-    return app.nodePreviewImages[node.id + '']
+  function getNodePreviews(node: LGraphNode): string[] | undefined {
+    return app.nodePreviewImages[getNodeId(node)]
   }
 
-  function getNodeImageUrls(node: LGraphNode): string[] {
+  function getNodeImageUrls(node: LGraphNode): string[] | undefined {
+    const previews = getNodePreviews(node)
+    if (previews?.length) return previews
+
     const outputs = getNodeOutputs(node)
-    if (!outputs?.images?.length) return []
+    if (!outputs?.images?.length) return
+
+    const rand = app.getRandParam()
+    const previewParam = getPreviewParam(node)
 
     return outputs.images.map((image) => {
       const imgUrlPart = new URLSearchParams(image)
-      const rand = app.getRandParam()
-      const previewParam = getPreviewParam(node)
       return api.apiURL(`/view?${imgUrlPart}${previewParam}${rand}`)
     })
-  }
-
-  /**
-   * Checks if the node's images have changed from what's stored
-   * @returns true if images have changed, false otherwise
-   */
-  function isImagesChanged(node: LGraphNode): boolean {
-    const currentImages = node.images || []
-    const { images: newImages } = getNodeOutputs(node) ?? {}
-    if (!newImages?.length) return false
-
-    return currentImages !== newImages
   }
 
   function setNodeOutputs(
     node: LGraphNode,
     filenames: string | string[] | ResultItem,
-    options: { folder?: string } = {}
+    { folder = 'input' }: { folder?: string } = {}
   ) {
-    if (!filenames) return
+    if (!filenames || !node) return
 
-    const { folder = 'input' } = options
-    const nodeId = node.id + ''
+    const nodeId = getNodeId(node)
 
     if (typeof filenames === 'string') {
-      app.nodeOutputs[nodeId] = toOutputs([filenames], folder)
+      app.nodeOutputs[nodeId] = createOutputs([filenames], folder)
     } else if (!Array.isArray(filenames)) {
       app.nodeOutputs[nodeId] = filenames
     } else {
-      const resultItems = toOutputs(filenames, folder)
+      const resultItems = createOutputs(filenames, folder)
       if (!resultItems?.images?.length) return
-
       app.nodeOutputs[nodeId] = resultItems
     }
   }
@@ -78,7 +72,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     getNodeOutputs,
     getNodeImageUrls,
     getNodePreviews,
-    setNodeOutputs,
-    isImagesChanged
+    setNodeOutputs
   }
 })

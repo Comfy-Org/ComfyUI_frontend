@@ -2,6 +2,7 @@ import type { IWidget } from '@comfyorg/litegraph'
 
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import { MaterialMode } from '@/extensions/core/load3d/interfaces'
 import { api } from '@/scripts/api'
 
 class Load3DConfiguration {
@@ -10,21 +11,11 @@ class Load3DConfiguration {
   configure(
     loadFolder: 'input' | 'output',
     modelWidget: IWidget,
-    material: IWidget,
-    upDirection: IWidget,
     cameraState?: any,
     width: IWidget | null = null,
-    height: IWidget | null = null,
-    postModelUpdateFunc?: (load3d: Load3d) => void
+    height: IWidget | null = null
   ) {
-    this.setupModelHandling(
-      modelWidget,
-      loadFolder,
-      cameraState,
-      postModelUpdateFunc
-    )
-    this.setupMaterial(material)
-    this.setupDirection(upDirection)
+    this.setupModelHandling(modelWidget, loadFolder, cameraState)
     this.setupTargetSize(width, height)
     this.setupDefaultProperties()
   }
@@ -46,38 +37,16 @@ class Load3DConfiguration {
   private setupModelHandling(
     modelWidget: IWidget,
     loadFolder: 'input' | 'output',
-    cameraState?: any,
-    postModelUpdateFunc?: (load3d: Load3d) => void
+    cameraState?: any
   ) {
     const onModelWidgetUpdate = this.createModelUpdateHandler(
       loadFolder,
-      cameraState,
-      postModelUpdateFunc
+      cameraState
     )
     if (modelWidget.value) {
       onModelWidgetUpdate(modelWidget.value)
     }
     modelWidget.callback = onModelWidgetUpdate
-  }
-
-  private setupMaterial(material: IWidget) {
-    material.callback = (value: 'original' | 'normal' | 'wireframe') => {
-      this.load3d.setMaterialMode(value)
-    }
-    this.load3d.setMaterialMode(
-      material.value as 'original' | 'normal' | 'wireframe'
-    )
-  }
-
-  private setupDirection(upDirection: IWidget) {
-    upDirection.callback = (
-      value: 'original' | '-x' | '+x' | '-y' | '+y' | '-z' | '+z'
-    ) => {
-      this.load3d.setUpDirection(value)
-    }
-    this.load3d.setUpDirection(
-      upDirection.value as 'original' | '-x' | '+x' | '-y' | '+y' | '-z' | '+z'
-    )
   }
 
   private setupDefaultProperties() {
@@ -114,8 +83,7 @@ class Load3DConfiguration {
 
   private createModelUpdateHandler(
     loadFolder: 'input' | 'output',
-    cameraState?: any,
-    postModelUpdateFunc?: (load3d: Load3d) => void
+    cameraState?: any
   ) {
     let isFirstLoad = true
     return async (value: string | number | boolean | object) => {
@@ -131,9 +99,19 @@ class Load3DConfiguration {
 
       await this.load3d.loadModel(modelUrl, filename)
 
-      if (postModelUpdateFunc) {
-        postModelUpdateFunc(this.load3d)
-      }
+      const upDirection = this.load3d.loadNodeProperty(
+        'Up Direction',
+        'original'
+      )
+
+      this.load3d.setUpDirection(upDirection)
+
+      const materialMode = this.load3d.loadNodeProperty(
+        'Material Mode',
+        'original'
+      )
+
+      this.load3d.setMaterialMode(materialMode)
 
       if (isFirstLoad && cameraState && typeof cameraState === 'object') {
         try {

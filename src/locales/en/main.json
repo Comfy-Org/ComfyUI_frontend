@@ -74,7 +74,9 @@
     "success": "Success",
     "ok": "OK",
     "feedback": "Feedback",
-    "continue": "Continue"
+    "continue": "Continue",
+    "control_after_generate": "control after generate",
+    "control_before_generate": "control before generate"
   },
   "issueReport": {
     "submitErrorReport": "Submit Error Report (Optional)",
@@ -847,6 +849,9 @@
     "fov": "FOV",
     "previewOutput": "Preview Output",
     "uploadBackgroundImage": "Upload Background Image",
-    "removeBackgroundImage": "Remove Background Image"
+    "removeBackgroundImage": "Remove Background Image",
+    "loadingModel": "Loading 3D Model...",
+    "upDirection": "Up Direction",
+    "materialMode": "Material Mode"
   }
 }
