@@ -91,10 +91,9 @@ export const graphToPrompt = async (
                 }
               }
             } else if (link && parent.mode === LGraphEventMode.BYPASS) {
-              let all_inputs = [link.origin_slot]
               if (parent.inputs) {
                 // @ts-expect-error convert list of strings to list of numbers
-                all_inputs = all_inputs.concat(Object.keys(parent.inputs))
+                const all_inputs = [link.origin_slot].concat(Object.keys(parent.inputs))
                 for (let parent_input in all_inputs) {
                   // @ts-expect-error assign string to number
                   parent_input = all_inputs[parent_input]
