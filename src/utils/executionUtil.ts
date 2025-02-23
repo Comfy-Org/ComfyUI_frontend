@@ -88,6 +88,7 @@ export const graphToPrompt = async (
             parent = parent.getInputNode(link.target_slot)
             if (!parent) break
           } else if (!parent.inputs) {
+            // Maintains existing behaviour if parent.getInputLink is overriden
             break
           } else if (parent.mode === LGraphEventMode.BYPASS) {
             // Bypass nodes by finding first link with matching type
