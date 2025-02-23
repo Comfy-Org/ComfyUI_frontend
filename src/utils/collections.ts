@@ -10,13 +10,13 @@ import { LGraphNode } from "@/LGraphNode"
  */
 export function getAllNestedItems(items: ReadonlySet<Positionable>): Set<Positionable> {
   const allItems = new Set<Positionable>()
-  items?.forEach(x => addRecursively(x, allItems))
+  if (items) for (const x of items) addRecursively(x, allItems)
   return allItems
 
   function addRecursively(item: Positionable, flatSet: Set<Positionable>): void {
     if (flatSet.has(item) || item.pinned) return
     flatSet.add(item)
-    item.children?.forEach(x => addRecursively(x, flatSet))
+    if (item.children) for (const x of item.children) addRecursively(x, flatSet)
   }
 }
 

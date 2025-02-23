@@ -1235,8 +1235,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     if (this.graph) this.graph._last_trigger_time = LiteGraph.getTime()
 
     // for every link attached here
-    for (let k = 0; k < links.length; ++k) {
-      const id = links[k]
+    for (const id of links) {
       // to skip links
       if (link_id != null && link_id != id) continue
 
@@ -1282,8 +1281,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     if (!links || !links.length) return
 
     // for every link attached here
-    for (let k = 0; k < links.length; ++k) {
-      const id = links[k]
+    for (const id of links) {
       // to skip links
       if (link_id != null && link_id != id) continue
 
@@ -1407,8 +1405,8 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       if (!this.outputs[i] || !this.outputs[i].links) continue
 
       const links = this.outputs[i].links
-      for (let j = 0; j < links.length; ++j) {
-        const link = this.graph._links.get(links[j])
+      for (const linkId of links) {
+        const link = this.graph._links.get(linkId)
         if (!link) continue
 
         link.origin_slot -= 1
@@ -2411,8 +2409,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     target_node.inputs[targetIndex].link = link_info.id
 
     // Reroutes
-    LLink.getReroutes(graph, link_info)
-      .forEach(x => x?.linkIds.add(nextId))
+    for (const x of LLink.getReroutes(graph, link_info)) x?.linkIds.add(nextId)
     graph._version++
 
     // link_info has been created now, so its updated
@@ -2743,8 +2740,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
     const list = this.graph.list_of_graphcanvas
 
-    for (let i = 0; i < list.length; ++i) {
-      const c = list[i]
+    for (const c of list) {
       // releasing somebody elses capture?!
       if (!v && c.node_capturing_input != this) continue
 
@@ -3362,9 +3358,9 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     const allocations = distributeSpace(Math.max(0, freeSpace), spaceRequests)
 
     // Apply computed heights
-    growableWidgets.forEach((d, i) => {
+    for (const [i, d] of growableWidgets.entries()) {
       d.w.computedHeight = allocations[i]
-    })
+    }
 
     // Position widgets
     let y = widgetStartY

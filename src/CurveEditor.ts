@@ -71,15 +71,13 @@ export class CurveEditor {
     ctx.strokeStyle = line_color
     if (inactive) ctx.globalAlpha = 0.5
     ctx.beginPath()
-    for (let i = 0; i < points.length; ++i) {
-      const p = points[i]
+    for (const p of points) {
       ctx.lineTo(p[0] * w, (1.0 - p[1]) * h)
     }
     ctx.stroke()
     ctx.globalAlpha = 1
     if (!inactive)
-      for (let i = 0; i < points.length; ++i) {
-        const p = points[i]
+      for (const [i, p] of points.entries()) {
         ctx.fillStyle = this.selected == i
           ? "#FFF"
           : this.nearest == i ? "#DDD" : "#AAA"

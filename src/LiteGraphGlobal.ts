@@ -390,8 +390,7 @@ export class LiteGraphGlobal {
       allTypes = ["*"]
     }
 
-    for (let i = 0; i < allTypes.length; ++i) {
-      let slotType = allTypes[i]
+    for (let slotType of allTypes) {
       if (slotType === "") slotType = "*"
 
       const registerTo = out
@@ -556,15 +555,15 @@ export class LiteGraphGlobal {
     const tmp = document.getElementsByTagName("script")
     // weird, this array changes by its own, so we use a copy
     const script_files = []
-    for (let i = 0; i < tmp.length; i++) {
-      script_files.push(tmp[i])
+    for (const element of tmp) {
+      script_files.push(element)
     }
 
     const docHeadObj = document.getElementsByTagName("head")[0]
     folder_wildcard = document.location.href + folder_wildcard
 
-    for (let i = 0; i < script_files.length; i++) {
-      const src = script_files[i].src
+    for (const script_file of script_files) {
+      const src = script_file.src
       if (!src || src.substr(0, folder_wildcard.length) != folder_wildcard)
         continue
 
@@ -574,7 +573,7 @@ export class LiteGraphGlobal {
         dynamicScript.type = "text/javascript"
         dynamicScript.src = src
         docHeadObj.appendChild(dynamicScript)
-        docHeadObj.removeChild(script_files[i])
+        docHeadObj.removeChild(script_file)
       } catch (err) {
         if (this.throw_errors) throw err
         if (this.debug) console.log("Error while reloading " + src)
@@ -637,9 +636,9 @@ export class LiteGraphGlobal {
     // Check all permutations to see if one is valid
     const supported_types_a = type_a.split(",")
     const supported_types_b = type_b.split(",")
-    for (let i = 0; i < supported_types_a.length; ++i) {
-      for (let j = 0; j < supported_types_b.length; ++j) {
-        if (this.isValidConnection(supported_types_a[i], supported_types_b[j]))
+    for (const a of supported_types_a) {
+      for (const b of supported_types_b) {
+        if (this.isValidConnection(a, b))
           return true
       }
     }
@@ -865,16 +864,16 @@ export class LiteGraphGlobal {
     const elements = ref_window.document.querySelectorAll(".litecontextmenu")
     if (!elements.length) return
 
-    const result = []
-    for (let i = 0; i < elements.length; i++) {
-      result.push(elements[i])
+    const results = []
+    for (const element of elements) {
+      results.push(element)
     }
 
-    for (let i = 0; i < result.length; i++) {
-      if (result[i].close) {
-        result[i].close()
-      } else if (result[i].parentNode) {
-        result[i].parentNode.removeChild(result[i])
+    for (const result of results) {
+      if (result.close) {
+        result.close()
+      } else if (result.parentNode) {
+        result.parentNode.removeChild(result)
       }
     }
   }

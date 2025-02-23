@@ -238,8 +238,8 @@ export class ContextMenu {
     const setAriaExpanded = () => {
       const entries = this.root.querySelectorAll("div.litemenu-entry.has_submenu")
       if (entries) {
-        for (let i = 0; i < entries.length; i++) {
-          entries[i].setAttribute("aria-expanded", "false")
+        for (const entry of entries) {
+          entry.setAttribute("aria-expanded", "false")
         }
       }
       element.setAttribute("aria-expanded", "true")
