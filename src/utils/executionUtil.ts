@@ -95,17 +95,13 @@ export const graphToPrompt = async (
             // Try the same slot number first
             const indexes = [link.origin_slot].concat(parentInputIndexes)
 
-            let found = false
-            for (const index of indexes) {
-              if (parent.inputs[index]?.type !== input.type) continue
+            const matchingIndex = indexes.find(
+              (index) => parent.inputs[index]?.type === input.type
+            )
+            if (matchingIndex === undefined) break
 
-              link = parent.getInputLink(index)
-              if (link) parent = parent.getInputNode(index)
-
-              found = true
-              break
-            }
-            if (!found) break
+            link = parent.getInputLink(matchingIndex)
+            if (link) parent = parent.getInputNode(matchingIndex)
           }
         }
 
