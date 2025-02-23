@@ -74,12 +74,17 @@ declare module '@comfyorg/litegraph' {
     onGraphConfigured?(): void
     onExecuted?(output: any): void
     onNodeCreated?(this: LGraphNode): void
+    /** @deprecated groupNode */
     setInnerNodes?(nodes: LGraphNode[]): void
+    /** Originally a group node API. */
     getInnerNodes?(): LGraphNode[]
+    /** @deprecated groupNode */
     convertToNodes?(): LGraphNode[]
     recreate?(): Promise<LGraphNode>
     refreshComboInNode?(defs: Record<string, ComfyNodeDef>)
+    /** Used by virtual nodes (primitives) to insert their values into the graph prior to queueing. */
     applyToGraph?(extraLinks?: LLink[]): void
+    /** @deprecated groupNode */
     updateLink?(link: LLink): LLink | null
     onExecutionStart?(): unknown
     /**
