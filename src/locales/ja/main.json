@@ -124,6 +124,8 @@
     "command": "コマンド",
     "confirm": "確認",
     "continue": "続ける",
+    "control_after_generate": "生成後の制御",
+    "control_before_generate": "生成前の制御",
     "copyToClipboard": "クリップボードにコピー",
     "currentUser": "現在のユーザー",
     "customize": "カスタマイズ",
