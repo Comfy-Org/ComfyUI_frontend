@@ -19,11 +19,9 @@ export const graphToPrompt = async (
       ? outerNode.getInnerNodes()
       : [outerNode]
     for (const node of innerNodes) {
+      // Don't serialize frontend only nodes but let them make changes
       if (node.isVirtualNode) {
-        // Don't serialize frontend only nodes but let them make changes
-        if (node.applyToGraph) {
-          node.applyToGraph()
-        }
+        node.applyToGraph?.()
       }
     }
   }
