@@ -1934,11 +1934,10 @@ export class LGraphCanvas implements ConnectionColorContext {
    */
   updateMouseOverNodes(node: LGraphNode, e: CanvasMouseEvent): void {
     const nodes = this.graph._nodes
-    const l = nodes.length
-    for (let i = 0; i < l; ++i) {
-      if (nodes[i].mouseOver && node != nodes[i]) {
+    for (const otherNode of nodes) {
+      if (otherNode.mouseOver && node != otherNode) {
         // mouse leave
-        nodes[i].mouseOver = null
+        otherNode.mouseOver = null
         this._highlight_input = null
         this._highlight_pos = null
         this.link_over_widget = null
@@ -1946,7 +1945,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         // Hover transitions
         // TODO: Implement single lerp ease factor for current progress on hover in/out.
         // In drawNode, multiply by ease factor and differential value (e.g. bg alpha +0.5).
-        nodes[i].lostFocusAt = LiteGraph.getTime()
+        otherNode.lostFocusAt = LiteGraph.getTime()
 
         this.node_over?.onMouseLeave?.(e)
         this.node_over = null
@@ -2340,10 +2339,11 @@ export class LGraphCanvas implements ConnectionColorContext {
         return
       }
 
+      const { inputs, outputs } = node
+
       // Outputs
-      if (node.outputs) {
-        for (let i = 0, l = node.outputs.length; i < l; ++i) {
-          const output = node.outputs[i]
+      if (outputs) {
+        for (const [i, output] of outputs.entries()) {
           const link_pos = node.getConnectionPos(false, i)
           if (isInRectangle(x, y, link_pos[0] - 15, link_pos[1] - 10, 30, 20)) {
             // Drag multiple output links
@@ -2400,9 +2400,8 @@ export class LGraphCanvas implements ConnectionColorContext {
       }
 
       // Inputs
-      if (node.inputs) {
-        for (let i = 0, l = node.inputs.length; i < l; ++i) {
-          const input = node.inputs[i]
+      if (inputs) {
+        for (const [i, input] of inputs.entries()) {
           const link_pos = node.getConnectionPos(true, i)
           if (isInRectangle(x, y, link_pos[0] - 15, link_pos[1] - 10, 30, 20)) {
             pointer.onDoubleClick = () => node.onInputDblClick?.(i, e)
@@ -2572,10 +2571,11 @@ export class LGraphCanvas implements ConnectionColorContext {
       let mClikSlot: INodeSlot | false = false
       let mClikSlot_index: number | false = false
       let mClikSlot_isOut: boolean = false
+      const { inputs, outputs } = node
+
       // search for outputs
-      if (node.outputs) {
-        for (let i = 0, l = node.outputs.length; i < l; ++i) {
-          const output = node.outputs[i]
+      if (outputs) {
+        for (const [i, output] of outputs.entries()) {
           const link_pos = node.getConnectionPos(false, i)
           if (isInRectangle(e.canvasX, e.canvasY, link_pos[0] - 15, link_pos[1] - 10, 30, 20)) {
             mClikSlot = output
@@ -2587,9 +2587,8 @@ export class LGraphCanvas implements ConnectionColorContext {
       }
 
       // search for inputs
-      if (node.inputs) {
-        for (let i = 0, l = node.inputs.length; i < l; ++i) {
-          const input = node.inputs[i]
+      if (inputs) {
+        for (const [i, input] of inputs.entries()) {
           const link_pos = node.getConnectionPos(true, i)
           if (isInRectangle(e.canvasX, e.canvasY, link_pos[0] - 15, link_pos[1] - 10, 30, 20)) {
             mClikSlot = input
@@ -2604,7 +2603,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         const alphaPosY =
           0.5 -
           (mClikSlot_index + 1) /
-          (mClikSlot_isOut ? node.outputs.length : node.inputs.length)
+          (mClikSlot_isOut ? outputs.length : inputs.length)
         const node_bounding = node.getBounding()
         // estimate a position: this is a bad semi-bad-working mess .. REFACTOR with
         // a correct autoplacement that knows about the others slots and nodes
@@ -3164,9 +3163,9 @@ export class LGraphCanvas implements ConnectionColorContext {
     canvasy: number,
     slot_pos?: Point,
   ): number {
-    if (node.inputs) {
-      for (let i = 0, l = node.inputs.length; i < l; ++i) {
-        const input = node.inputs[i]
+    const { inputs } = node
+    if (inputs) {
+      for (const [i, input] of inputs.entries()) {
         const link_pos = node.getConnectionPos(true, i)
         let is_inside = false
         // TODO: Find a cheap way to measure text, and do it on node label change instead of here
@@ -3202,8 +3201,9 @@ export class LGraphCanvas implements ConnectionColorContext {
     canvasy: number,
     slot_pos?: Point,
   ): number {
-    if (node.outputs) {
-      for (let i = 0, l = node.outputs.length; i < l; ++i) {
+    const { outputs } = node
+    if (outputs) {
+      for (let i = 0; i < outputs.length; ++i) {
         const link_pos = node.getConnectionPos(false, i)
         const is_inside = isInRectangle(
           canvasx,

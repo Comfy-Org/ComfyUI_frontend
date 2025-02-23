@@ -248,8 +248,8 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
     // safe clear
     if (this._nodes) {
-      for (let i = 0; i < this._nodes.length; ++i) {
-        this._nodes[i].onRemoved?.()
+      for (const _node of this._nodes) {
+        _node.onRemoved?.()
       }
     }
 
@@ -481,9 +481,9 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   updateExecutionOrder(): void {
     this._nodes_in_order = this.computeExecutionOrder(false)
     this._nodes_executable = []
-    for (let i = 0; i < this._nodes_in_order.length; ++i) {
-      if (this._nodes_in_order[i].onExecute) {
-        this._nodes_executable.push(this._nodes_in_order[i])
+    for (const node of this._nodes_in_order) {
+      if (node.onExecute) {
+        this._nodes_executable.push(node)
       }
     }
   }
@@ -500,8 +500,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     const remaining_links: Record<NodeId, number> = {} // to a
 
     // search for the nodes without inputs (starting nodes)
-    for (let i = 0, l = this._nodes.length; i < l; ++i) {
-      const node = this._nodes[i]
+    for (const node of this._nodes) {
       if (only_onExecute && !node.onExecute) {
         continue
       }
@@ -510,8 +509,8 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
       let num = 0 // num of input connections
       if (node.inputs) {
-        for (let j = 0, l2 = node.inputs.length; j < l2; j++) {
-          if (node.inputs[j]?.link != null) {
+        for (const input of node.inputs) {
+          if (input?.link != null) {
             num += 1
           }
         }
@@ -539,16 +538,14 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
       if (!node.outputs) continue
 
       // for every output
-      for (let i = 0; i < node.outputs.length; i++) {
-        const output = node.outputs[i]
+      for (const output of node.outputs) {
         // not connected
         // TODO: Confirm functionality, clean condition
         if (output?.links == null || output.links.length == 0)
           continue
 
         // for every connection
-        for (let j = 0; j < output.links.length; j++) {
-          const link_id = output.links[j]
+        for (const link_id of output.links) {
           const link = this._links.get(link_id)
           if (!link) continue
 
@@ -729,9 +726,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     const nodes = this._nodes_in_order ? this._nodes_in_order : this._nodes
     if (!nodes) return
 
-    for (let j = 0, l = nodes.length; j < l; ++j) {
-      const node = nodes[j]
-
+    for (const node of nodes) {
       if (!node[eventname] || node.mode != mode) continue
       if (params === undefined) {
         node[eventname]()
@@ -758,10 +753,10 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     action: T,
     params?: ParamsArray<LGraphCanvas, T>,
   ): void {
-    if (!this.list_of_graphcanvas) return
+    const { list_of_graphcanvas } = this
+    if (!list_of_graphcanvas) return
 
-    for (let i = 0; i < this.list_of_graphcanvas.length; ++i) {
-      const c = this.list_of_graphcanvas[i]
+    for (const c of list_of_graphcanvas) {
       c[action]?.apply(c, params)
     }
   }
@@ -869,18 +864,18 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
     this.beforeChange() // sure? - almost sure is wrong
 
+    const { inputs, outputs } = node
+
     // disconnect inputs
-    if (node.inputs) {
-      for (let i = 0; i < node.inputs.length; i++) {
-        const slot = node.inputs[i]
+    if (inputs) {
+      for (const [i, slot] of inputs.entries()) {
         if (slot.link != null) node.disconnectInput(i)
       }
     }
 
     // disconnect outputs
-    if (node.outputs) {
-      for (let i = 0; i < node.outputs.length; i++) {
-        const slot = node.outputs[i]
+    if (outputs) {
+      for (const [i, slot] of outputs.entries()) {
         if (slot.links?.length) node.disconnectOutput(i)
       }
     }
@@ -892,9 +887,9 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     this._version++
 
     // remove from canvas render
-    if (this.list_of_graphcanvas) {
-      for (let i = 0; i < this.list_of_graphcanvas.length; ++i) {
-        const canvas = this.list_of_graphcanvas[i]
+    const { list_of_graphcanvas } = this
+    if (list_of_graphcanvas) {
+      for (const canvas of list_of_graphcanvas) {
         if (canvas.selected_nodes[node.id])
           delete canvas.selected_nodes[node.id]
       }
@@ -936,9 +931,10 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   findNodesByClass(classObject: Function, result?: LGraphNode[]): LGraphNode[] {
     result = result || []
     result.length = 0
-    for (let i = 0, l = this._nodes.length; i < l; ++i) {
-      if (this._nodes[i].constructor === classObject)
-        result.push(this._nodes[i])
+    const { _nodes } = this
+    for (const node of _nodes) {
+      if (node.constructor === classObject)
+        result.push(node)
     }
     return result
   }
@@ -952,9 +948,10 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     const matchType = type.toLowerCase()
     result = result || []
     result.length = 0
-    for (let i = 0, l = this._nodes.length; i < l; ++i) {
-      if (this._nodes[i].type?.toLowerCase() == matchType)
-        result.push(this._nodes[i])
+    const { _nodes } = this
+    for (const node of _nodes) {
+      if (node.type?.toLowerCase() == matchType)
+        result.push(node)
     }
     return result
   }
@@ -965,9 +962,10 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
    * @returns the node or null
    */
   findNodeByTitle(title: string): LGraphNode | null {
-    for (let i = 0, l = this._nodes.length; i < l; ++i) {
-      if (this._nodes[i].title == title)
-        return this._nodes[i]
+    const { _nodes } = this
+    for (const node of _nodes) {
+      if (node.title == title)
+        return node
     }
     return null
   }
@@ -979,9 +977,10 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
    */
   findNodesByTitle(title: string): LGraphNode[] {
     const result: LGraphNode[] = []
-    for (let i = 0, l = this._nodes.length; i < l; ++i) {
-      if (this._nodes[i].title == title)
-        result.push(this._nodes[i])
+    const { _nodes } = this
+    for (const node of _nodes) {
+      if (node.title == title)
+        result.push(node)
     }
     return result
   }
@@ -1078,14 +1077,14 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
    * this replaces the ones using the old version with the new version
    */
   checkNodeTypes() {
-    for (let i = 0; i < this._nodes.length; i++) {
-      const node = this._nodes[i]
+    const { _nodes } = this
+    for (const [i, node] of _nodes.entries()) {
       const ctor = LiteGraph.registered_node_types[node.type]
       if (node.constructor == ctor) continue
 
       console.log("node being replaced by newer version: " + node.type)
       const newnode = LiteGraph.createNode(node.type)
-      this._nodes[i] = newnode
+      _nodes[i] = newnode
       newnode.configure(node.serialize())
       newnode.graph = this
       this._nodes_by_id[newnode.id] = newnode
@@ -1107,8 +1106,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
       LiteGraph.GraphInput,
       this._input_nodes,
     )
-    for (let i = 0; i < this._input_nodes.length; ++i) {
-      const node = this._input_nodes[i]
+    for (const node of this._input_nodes) {
       if (node.properties.name != action) continue
 
       // wrap node.onAction(action, param);
@@ -1598,8 +1596,8 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     // create nodes
     this._nodes = []
     if (nodesData) {
-      for (let i = 0, l = nodesData.length; i < l; ++i) {
-        const n_info = nodesData[i] // stored info
+      for (const n_info of nodesData) {
+        // stored info
         let node = LiteGraph.createNode(n_info.type, n_info.title)
         if (!node) {
           if (LiteGraph.debug) console.log("Node not found or has errors: " + n_info.type)
@@ -1617,8 +1615,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
       }
 
       // configure nodes afterwards so they can reach each other
-      for (let i = 0, l = nodesData.length; i < l; ++i) {
-        const n_info = nodesData[i]
+      for (const n_info of nodesData) {
         const node = this.getNodeById(n_info.id)
         node?.configure(n_info)
       }
@@ -1626,11 +1623,12 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
     // groups
     this._groups.length = 0
-    if (data.groups) {
-      for (let i = 0; i < data.groups.length; ++i) {
+    const groupData = data.groups
+    if (groupData) {
+      for (const data of groupData) {
         // TODO: Search/remove these global object refs
         const group = new LiteGraph.LGraphGroup()
-        group.configure(data.groups[i])
+        group.configure(data)
         this.add(group)
       }
     }

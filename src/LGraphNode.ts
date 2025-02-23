@@ -668,8 +668,9 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
       if (info.widgets_values) {
         for (let i = 0; i < info.widgets_values.length; ++i) {
-          if (this.widgets[i]) {
-            this.widgets[i].value = info.widgets_values[i]
+          const widget = this.widgets[i]
+          if (widget) {
+            widget.value = info.widgets_values[i]
           }
         }
       }
@@ -2474,6 +2475,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     // get output slot
     const output = this.outputs[slot]
     if (!output || !output.links || output.links.length == 0) return false
+    const { links } = output
 
     // one of the output links in this slot
     const graph = this.graph
@@ -2482,13 +2484,12 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
         target_node = graph.getNodeById(target_node)
       if (!target_node) throw "Target Node not found"
 
-      for (let i = 0, l = output.links.length; i < l; i++) {
-        const link_id = output.links[i]
+      for (const [i, link_id] of links.entries()) {
         const link_info = graph._links.get(link_id)
 
         // is the link we are searching for...
         if (link_info.target_id == target_node.id) {
-          output.links.splice(i, 1) // remove here
+          links.splice(i, 1) // remove here
           const input = target_node.inputs[link_info.target_slot]
           input.link = null // remove there
 
@@ -2519,8 +2520,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       }
     } else {
       // all the links in this output slot
-      for (let i = 0, l = output.links.length; i < l; i++) {
-        const link_id = output.links[i]
+      for (const link_id of links) {
         const link_info = graph._links.get(link_id)
         // bug: it happens sometimes
         if (!link_info) continue
