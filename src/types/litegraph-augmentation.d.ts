@@ -115,6 +115,8 @@ declare module '@comfyorg/litegraph' {
     videoContainer?: HTMLElement
     /** Whether the node's preview media is loading */
     isLoading?: boolean
+    /** The content type of the node's preview media */
+    previewMediaType?: 'image' | 'video' | 'audio' | 'model'
 
     preview: string[]
     /** Index of the currently selected image on a multi-image node such as Preview Image */

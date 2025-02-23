@@ -76,6 +76,7 @@ export const useNodePreview = <T extends MediaElement>(
           (el): el is NonNullable<Awaited<T>> => el !== null
         )
         if (validElements.length) {
+          console.count('render count:')
           onLoaded?.(validElements)
           render()
         }
@@ -108,6 +109,7 @@ export const useNodeImage = (node: LGraphNode) => {
   const onLoaded = (elements: HTMLImageElement[]) => {
     node.imageIndex = null
     node.imgs = elements
+    node.previewMediaType = 'image'
   }
 
   return useNodePreview(node, {
@@ -145,6 +147,8 @@ export const useNodeVideo = (node: LGraphNode) => {
   const onLoaded = (videoElements: HTMLVideoElement[]) => {
     const videoElement = videoElements[0]
     if (!videoElement) return
+
+    node.previewMediaType = 'video'
 
     if (!node.videoContainer) {
       node.videoContainer = createContainer()
