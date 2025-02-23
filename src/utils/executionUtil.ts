@@ -59,20 +59,16 @@ export const graphToPrompt = async (
       }
 
       const inputs: ComfyApiWorkflow[string]['inputs'] = {}
-      const widgets = node.widgets
+      const { widgets } = node
 
       // Store all widget values
       if (widgets) {
-        for (let i = 0; i < widgets.length; i++) {
-          const widget = widgets[i]
-          if (
-            widget.name &&
-            (!widget.options || widget.options.serialize !== false)
-          ) {
-            inputs[widget.name] = widget.serializeValue
-              ? await widget.serializeValue(node, i)
-              : widget.value
-          }
+        for (const [i, widget] of widgets.entries()) {
+          if (!widget.name || widget.options?.serialize === false) continue
+
+          inputs[widget.name] = widget.serializeValue
+            ? await widget.serializeValue(node, i)
+            : widget.value
         }
       }
 
