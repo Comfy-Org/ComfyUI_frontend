@@ -324,10 +324,12 @@
     "fov": "FOV",
     "lightIntensity": "Intensité de la lumière",
     "loadingModel": "Chargement du modèle 3D...",
+    "materialMode": "Mode Matériel",
     "previewOutput": "Aperçu de la sortie",
     "removeBackgroundImage": "Supprimer l'image de fond",
     "showGrid": "Afficher la grille",
     "switchCamera": "Changer de caméra",
+    "upDirection": "Direction Haut",
     "uploadBackgroundImage": "Télécharger l'image de fond"
   },
   "maintenance": {

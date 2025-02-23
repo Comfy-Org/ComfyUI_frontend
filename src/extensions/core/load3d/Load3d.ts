@@ -254,6 +254,7 @@ class Load3d {
 
   setUpDirection(direction: UpDirection): void {
     this.modelManager.setUpDirection(direction)
+
     this.renderer.render(
       this.sceneManager.scene,
       this.cameraManager.activeCamera

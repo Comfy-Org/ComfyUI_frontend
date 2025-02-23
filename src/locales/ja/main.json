@@ -324,10 +324,12 @@
     "fov": "FOV",
     "lightIntensity": "光の強度",
     "loadingModel": "3Dモデルを読み込んでいます...",
+    "materialMode": "マテリアルモード",
     "previewOutput": "出力のプレビュー",
     "removeBackgroundImage": "背景画像を削除",
     "showGrid": "グリッドを表示",
     "switchCamera": "カメラを切り替える",
+    "upDirection": "上方向",
     "uploadBackgroundImage": "背景画像をアップロード"
   },
   "maintenance": {

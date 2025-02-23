@@ -9,13 +9,14 @@
       :fov="fov"
       :cameraType="cameraType"
       :showPreview="showPreview"
-      :materialMode="materialMode"
       :showFOVButton="showFOVButton"
       :showLightIntensityButton="showLightIntensityButton"
       :playing="playing"
       :selectedSpeed="selectedSpeed"
       :selectedAnimation="selectedAnimation"
       :backgroundImage="backgroundImage"
+      :upDirection="upDirection"
+      :materialMode="materialMode"
       @materialModeChange="listenMaterialModeChange"
       @backgroundColorChange="listenBackgroundColorChange"
       @lightIntensityChange="listenLightIntensityChange"
@@ -25,6 +26,7 @@
       @showPreviewChange="listenShowPreviewChange"
       @backgroundImageChange="listenBackgroundImageChange"
       @animationListChange="animationListChange"
+      @upDirectionChange="listenUpDirectionChange"
     />
     <div class="absolute top-0 left-0 w-full h-full pointer-events-none">
       <Load3DControls
@@ -38,6 +40,8 @@
         :showPreviewButton="showPreviewButton"
         :cameraType="cameraType"
         :hasBackgroundImage="hasBackgroundImage"
+        :upDirection="upDirection"
+        :materialMode="materialMode"
         @updateBackgroundImage="handleBackgroundImageUpdate"
         @switchCamera="switchCamera"
         @toggleGrid="toggleGrid"
@@ -45,6 +49,8 @@
         @updateLightIntensity="handleUpdateLightIntensity"
         @togglePreview="togglePreview"
         @updateFOV="handleUpdateFOV"
+        @updateUpDirection="handleUpdateUpDirection"
+        @updateMaterialMode="handleUpdateMaterialMode"
       />
       <Load3DAnimationControls
         :animations="animations"
@@ -64,7 +70,12 @@ import Load3DAnimationControls from '@/components/load3d/Load3DAnimationControls
 import Load3DAnimationScene from '@/components/load3d/Load3DAnimationScene.vue'
 import Load3DControls from '@/components/load3d/Load3DControls.vue'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
-import { AnimationItem } from '@/extensions/core/load3d/interfaces'
+import {
+  AnimationItem,
+  CameraType,
+  MaterialMode,
+  UpDirection
+} from '@/extensions/core/load3d/interfaces'
 
 const props = defineProps<{
   node: any
@@ -138,9 +149,20 @@ const handleUpdateFOV = (value: number) => {
   node.value.properties['FOV'] = fov.value
 }
 
-const materialMode = ref<'original' | 'normal' | 'wireframe' | 'depth'>(
-  'original'
-)
+const materialMode = ref<MaterialMode>('original')
+const upDirection = ref<UpDirection>('original')
+
+const handleUpdateUpDirection = (value: UpDirection) => {
+  upDirection.value = value
+
+  node.value.properties['Up Direction'] = value
+}
+
+const handleUpdateMaterialMode = (value: MaterialMode) => {
+  materialMode.value = value
+
+  node.value.properties['Material Mode'] = value
+}
 
 const handleBackgroundColorChange = (value: string) => {
   backgroundColor.value = value
@@ -164,12 +186,14 @@ const animationListChange = (value: any) => {
   animations.value = value
 }
 
-const listenMaterialModeChange = (
-  mode: 'original' | 'normal' | 'wireframe' | 'depth'
-) => {
+const listenMaterialModeChange = (mode: MaterialMode) => {
   materialMode.value = mode
 
   showLightIntensityButton.value = mode === 'original'
+}
+
+const listenUpDirectionChange = (value: UpDirection) => {
+  upDirection.value = value
 }
 
 const listenBackgroundColorChange = (value: string) => {
@@ -184,7 +208,7 @@ const listenFOVChange = (value: number) => {
   fov.value = value
 }
 
-const listenCameraTypeChange = (value: 'perspective' | 'orthographic') => {
+const listenCameraTypeChange = (value: CameraType) => {
   cameraType.value = value
 
   showFOVButton.value = cameraType.value === 'perspective'
