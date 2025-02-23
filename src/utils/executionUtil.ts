@@ -91,12 +91,12 @@ export const graphToPrompt = async (
             parent.mode === LGraphEventMode.BYPASS &&
             parent.inputs
           ) {
-            const parentInputs = Object.keys(parent.inputs).map(Number)
-            const inputs = [link.origin_slot].concat(parentInputs)
-            for (const input of inputs) {
-              if (parent.inputs[input]?.type === node.inputs[i].type) {
-                link = parent.getInputLink(input)
-                if (link) parent = parent.getInputNode(input)
+            const parentInputIndexes = Object.keys(parent.inputs).map(Number)
+            const indexes = [link.origin_slot].concat(parentInputIndexes)
+            for (const index of indexes) {
+              if (parent.inputs[index]?.type === node.inputs[i].type) {
+                link = parent.getInputLink(index)
+                if (link) parent = parent.getInputNode(index)
 
                 found = true
                 break
