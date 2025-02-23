@@ -1,4 +1,4 @@
-import type { CanvasColour, ConnectingLink, Dictionary, INodeInputSlot, INodeOutputSlot, INodeSlot, ISlotType, Point } from "./interfaces"
+import type { CanvasColour, ConnectingLink, Dictionary, INodeInputSlot, INodeOutputSlot, INodeSlot, ISlotType, IWidgetInputSlot, Point } from "./interfaces"
 import type { IWidget } from "./types/widgets"
 import type { LinkId } from "./LLink"
 import { LinkDirection, RenderShape } from "./types/globalEnums"
@@ -33,6 +33,10 @@ export function serializeSlot<T extends INodeSlot>(slot: T): T {
   if ("_data" in serialized) {
     delete serialized._data
   }
+  // Widget input slots' pos is calculated during layout, so we don't need to serialize it.
+  if (isWidgetInputSlot(slot) && "pos" in serialized) {
+    delete serialized.pos
+  }
   return serialized
 }
 
@@ -49,7 +53,7 @@ export function toNodeSlotClass(slot: INodeSlot): NodeSlot {
  * Whether this slot is an input slot and attached to a widget.
  * @param slot - The slot to check.
  */
-export function isWidgetInputSlot(slot: INodeSlot): boolean {
+export function isWidgetInputSlot(slot: INodeSlot): slot is IWidgetInputSlot {
   return isINodeInputSlot(slot) && !!slot.widget
 }
 

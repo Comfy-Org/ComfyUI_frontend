@@ -266,6 +266,10 @@ export interface INodeInputSlot extends INodeSlot {
   _layoutElement?: LayoutElement<INodeInputSlot>
 }
 
+export interface IWidgetInputSlot extends INodeInputSlot {
+  widget: IWidget
+}
+
 export interface INodeOutputSlot extends INodeSlot {
   links: LinkId[] | null
   _data?: unknown
