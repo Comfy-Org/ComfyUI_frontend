@@ -90,21 +90,21 @@ export const graphToPrompt = async (
                   found = true
                 }
               }
-            } else if (link && parent.mode === LGraphEventMode.BYPASS) {
-              if (parent.inputs) {
-                const parentInputs = Object.keys(parent.inputs).map(Number)
-                const inputs = [link.origin_slot].concat(parentInputs)
-                for (const input of inputs) {
-                  if (
-                    parent.inputs[input]?.type === node.inputs[i].type
-                  ) {
-                    link = parent.getInputLink(input)
-                    if (link) {
-                      parent = parent.getInputNode(input)
-                    }
-                    found = true
-                    break
+            } else if (
+              link &&
+              parent.mode === LGraphEventMode.BYPASS &&
+              parent.inputs
+            ) {
+              const parentInputs = Object.keys(parent.inputs).map(Number)
+              const inputs = [link.origin_slot].concat(parentInputs)
+              for (const input of inputs) {
+                if (parent.inputs[input]?.type === node.inputs[i].type) {
+                  link = parent.getInputLink(input)
+                  if (link) {
+                    parent = parent.getInputNode(input)
                   }
+                  found = true
+                  break
                 }
               }
             }
