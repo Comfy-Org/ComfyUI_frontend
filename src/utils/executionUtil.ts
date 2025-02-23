@@ -81,18 +81,21 @@ export const graphToPrompt = async (
         while (parent.mode === LGraphEventMode.BYPASS || parent.isVirtualNode) {
           if (!link) break
 
-          let found = false
           if (parent.isVirtualNode) {
             link = parent.getInputLink(link.origin_slot)
-            if (link) {
-              parent = parent.getInputNode(link.target_slot)
-              if (parent) found = true
-            }
-          } else if (parent.mode === LGraphEventMode.BYPASS && parent.inputs) {
+            if (!link) break
+
+            parent = parent.getInputNode(link.target_slot)
+            if (!parent) break
+          } else if (!parent.inputs) {
+            break
+          } else if (parent.mode === LGraphEventMode.BYPASS) {
             // Bypass nodes by finding first link with matching type
             const parentInputIndexes = Object.keys(parent.inputs).map(Number)
             // Try the same slot number first
             const indexes = [link.origin_slot].concat(parentInputIndexes)
+
+            let found = false
             for (const index of indexes) {
               if (parent.inputs[index]?.type !== input.type) continue
 
@@ -102,9 +105,8 @@ export const graphToPrompt = async (
               found = true
               break
             }
+            if (!found) break
           }
-
-          if (!found) break
         }
 
         if (link) {
