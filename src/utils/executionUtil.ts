@@ -73,7 +73,7 @@ export const graphToPrompt = async (
       }
 
       // Store all node links
-      for (let i = 0; i < node.inputs.length; i++) {
+      for (const [i, input] of node.inputs.entries()) {
         let parent = node.getInputNode(i)
         if (!parent) continue
 
@@ -94,7 +94,7 @@ export const graphToPrompt = async (
             const parentInputIndexes = Object.keys(parent.inputs).map(Number)
             const indexes = [link.origin_slot].concat(parentInputIndexes)
             for (const index of indexes) {
-              if (parent.inputs[index]?.type === node.inputs[i].type) {
+              if (parent.inputs[index]?.type === input.type) {
                 link = parent.getInputLink(index)
                 if (link) parent = parent.getInputNode(index)
 
@@ -112,7 +112,7 @@ export const graphToPrompt = async (
             link = parent.updateLink(link)
           }
           if (link) {
-            inputs[node.inputs[i].name] = [
+            inputs[input.name] = [
               String(link.origin_id),
               // @ts-expect-error link.origin_slot is already number.
               parseInt(link.origin_slot)
