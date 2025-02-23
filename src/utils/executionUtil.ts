@@ -14,14 +14,12 @@ export const graphToPrompt = async (
 ): Promise<{ workflow: ComfyWorkflowJSON; output: ComfyApiWorkflow }> => {
   const { sortNodes = false } = options
 
-  for (const outerNode of graph.computeExecutionOrder(false)) {
-    const innerNodes = outerNode.getInnerNodes
-      ? outerNode.getInnerNodes()
-      : [outerNode]
-    for (const node of innerNodes) {
+  for (const node of graph.computeExecutionOrder(false)) {
+    const innerNodes = node.getInnerNodes ? node.getInnerNodes() : [node]
+    for (const innerNode of innerNodes) {
       // Don't serialize frontend only nodes but let them make changes
-      if (node.isVirtualNode) {
-        node.applyToGraph?.()
+      if (innerNode.isVirtualNode) {
+        innerNode.applyToGraph?.()
       }
     }
   }
