@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import type {
   Dictionary,
   IContextMenuValue,
@@ -25,6 +24,7 @@ import { type LinkId, LLink } from "./LLink"
 import { MapProxyHandler } from "./MapProxyHandler"
 import { isSortaInsideOctagon } from "./measure"
 import { getAllNestedItems } from "./utils/collections"
+import { stringOrEmpty } from "./strings"
 
 interface IGraphInput {
   name: string
@@ -121,6 +121,9 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   extra: Record<any, any> = {}
   inputs: Dictionary<IGraphInput> = {}
   outputs: Dictionary<IGraphInput> = {}
+
+  /** @deprecated Deserialising a workflow sets this unused property. */
+  version?: number
 
   /** @returns Whether the graph has no items */
   get empty(): boolean {
@@ -341,6 +344,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   }
 
   /**
+   * @deprecated Will be removed in 0.9
    * Starts running this graph every interval milliseconds.
    * @param interval amount of milliseconds between executions, if 0 then it renders to the monitor refresh rate
    */
@@ -386,6 +390,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   }
 
   /**
+   * @deprecated Will be removed in 0.9
    * Stops the execution loop of the graph
    */
   stop(): void {
@@ -622,6 +627,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   }
 
   /**
+   * @deprecated Will be removed in 0.9
    * Returns all the nodes that could affect this one (ancestors) by crawling all the inputs recursively.
    * It doesn't include the node itself
    * @returns an array with all the LGraphNodes that affect this node, in order of execution
@@ -649,6 +655,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     }
 
     ancestors.sort(function (a, b) {
+      // @ts-ignore deprecated
       return a.order - b.order
     })
     return ancestors
@@ -719,6 +726,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   }
 
   /**
+   * @deprecated Will be removed in 0.9
    * Sends an event to all the nodes, useful to trigger stuff
    * @param eventname the name of the event (function to be called)
    * @param params parameters in array format
@@ -734,12 +742,16 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     if (!nodes) return
 
     for (const node of nodes) {
+      // @ts-ignore deprecated
       if (!node[eventname] || node.mode != mode) continue
       if (params === undefined) {
+        // @ts-ignore deprecated
         node[eventname]()
       } else if (params && params.constructor === Array) {
+        // @ts-ignore deprecated
         node[eventname].apply(node, params)
       } else {
+        // @ts-ignore deprecated
         node[eventname](params)
       }
     }
@@ -1079,6 +1091,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   }
 
   /**
+   * @deprecated Will be removed in 0.9
    * Checks that the node type matches the node type registered,
    * used when replacing a nodetype by a newer version during execution
    * this replaces the ones using the old version with the new version
@@ -1086,11 +1099,14 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   checkNodeTypes() {
     const { _nodes } = this
     for (const [i, node] of _nodes.entries()) {
+      // @ts-ignore deprecated
       const ctor = LiteGraph.registered_node_types[node.type]
       if (node.constructor == ctor) continue
 
       console.log("node being replaced by newer version: " + node.type)
+      // @ts-ignore deprecated
       const newnode = LiteGraph.createNode(node.type)
+      if (!newnode) continue
       _nodes[i] = newnode
       newnode.configure(node.serialize())
       newnode.graph = this
@@ -1479,7 +1495,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
    * Mutating the properties of the return object may result in changes to your graph.
    * It is intended for use with {@link structuredClone} or {@link JSON.stringify}.
    */
-  asSerialisable(options?: { sortNodes: boolean }): SerialisableGraph {
+  asSerialisable(options?: { sortNodes: boolean }): Required<SerialisableGraph> {
     const { config, state, extra } = this
 
     const nodeList = !LiteGraph.use_uuids && options?.sortNodes
@@ -1493,7 +1509,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     const links = [...this._links.values()].map(x => x.asSerialisable())
     const reroutes = [...this.reroutes.values()].map(x => x.asSerialisable())
 
-    const data: SerialisableGraph = {
+    const data: Required<SerialisableGraph> = {
       version: LGraph.serialisedSchemaVersion,
       config,
       state,
@@ -1595,6 +1611,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
         i === "reroutes"
       )
         continue
+      // @ts-ignore #574 Legacy property assignment
       this[i] = data[i]
     }
 
@@ -1605,12 +1622,12 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     if (nodesData) {
       for (const n_info of nodesData) {
         // stored info
-        let node = LiteGraph.createNode(n_info.type, n_info.title)
+        let node = LiteGraph.createNode(String(n_info.type), n_info.title)
         if (!node) {
           if (LiteGraph.debug) console.log("Node not found or has errors: " + n_info.type)
 
           // in case of error we create a replacement node to avoid losing info
-          node = new LGraphNode(undefined)
+          node = new LGraphNode("")
           node.last_serialization = n_info
           node.has_errors = true
           error = true
@@ -1653,12 +1670,12 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   load(url: string | Blob | URL | File, callback: () => void) {
     const that = this
 
-    // LEGACY: This was changed from constructor === File/Blob
     // from file
     if (url instanceof Blob || url instanceof File) {
       const reader = new FileReader()
       reader.addEventListener("load", function (event) {
-        const data = JSON.parse(event.target.result.toString())
+        const result = stringOrEmpty(event.target?.result)
+        const data = JSON.parse(result)
         that.configure(data)
         callback?.()
       })

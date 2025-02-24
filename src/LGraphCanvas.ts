@@ -465,7 +465,7 @@ export class LGraphCanvas implements ConnectionColorContext {
   node_in_panel?: LGraphNode
   last_mouse: ReadOnlyPoint = [0, 0]
   last_mouseclick: number = 0
-  graph!: LGraph
+  graph!: LGraph | null
   canvas: HTMLCanvasElement
   bgcanvas: HTMLCanvasElement
   ctx?: CanvasRenderingContext2D

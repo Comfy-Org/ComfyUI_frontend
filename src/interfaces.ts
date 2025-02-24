@@ -184,7 +184,7 @@ type ReadOnlyTypedArray<T extends TypedArrays | TypedBigIntArrays> =
   Omit<T, "fill" | "copyWithin" | "reverse" | "set" | "sort" | "subarray">
 
 /** Union of property names that are of type Match */
-export type KeysOfType<T, Match> = { [P in keyof T]: T[P] extends Match ? P : never }[keyof T]
+export type KeysOfType<T, Match> = Exclude<{ [P in keyof T]: T[P] extends Match ? P : never }[keyof T], undefined>
 
 /** A new type that contains only the properties of T that are of type Match */
 export type PickByType<T, Match> = { [P in keyof T]: Extract<T[P], Match> }
