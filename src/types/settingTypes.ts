@@ -4,6 +4,7 @@ export type SettingInputType =
   | 'boolean'
   | 'number'
   | 'slider'
+  | 'knob'
   | 'combo'
   | 'text'
   | 'image'
