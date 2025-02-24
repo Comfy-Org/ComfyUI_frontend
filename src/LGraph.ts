@@ -66,7 +66,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   static STATUS_STOPPED = 1
   static STATUS_RUNNING = 2
 
-  _version: number
+  _version: number = -1
   /** The backing store for links.  Keys are wrapped in String() */
   _links: Map<LinkId, LLink> = new Map()
   /**
@@ -82,38 +82,45 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
    */
   links: Map<LinkId, LLink> & Record<LinkId, LLink>
   list_of_graphcanvas: LGraphCanvas[] | null
-  status: number
+  status: number = LGraph.STATUS_STOPPED
 
-  state: LGraphState
+  state: LGraphState = {
+    lastGroupId: 0,
+    lastNodeId: 0,
+    lastLinkId: 0,
+    lastRerouteId: 0,
+  }
 
-  _nodes: LGraphNode[]
-  _nodes_by_id: Record<NodeId, LGraphNode>
-  _nodes_in_order: LGraphNode[]
-  _nodes_executable: LGraphNode[] | null
-  _groups: LGraphGroup[]
-  iteration: number
-  globaltime: number
-  runningtime: number
-  fixedtime: number
-  fixedtime_lapse: number
-  elapsed_time: number
-  last_update_time: number
-  starttime: number
-  catch_errors: boolean
-  execution_timer_id: number | null
-  errors_in_execution: boolean
-  execution_time: number
+  _nodes: LGraphNode[] = []
+  _nodes_by_id: Record<NodeId, LGraphNode> = {}
+  _nodes_in_order: LGraphNode[] = []
+  _nodes_executable: LGraphNode[] | null = null
+  _groups: LGraphGroup[] = []
+  iteration: number = 0
+  globaltime: number = 0
+  /** @deprecated Unused */
+  runningtime: number = 0
+  fixedtime: number = 0
+  fixedtime_lapse: number = 0.01
+  elapsed_time: number = 0.01
+  last_update_time: number = 0
+  starttime: number = 0
+  catch_errors: boolean = true
+  execution_timer_id?: number | null
+  errors_in_execution?: boolean
+  /** @deprecated Unused */
+  execution_time!: number
   _last_trigger_time?: number
   filter?: string
   /** Must contain serialisable values, e.g. primitive types */
-  config: LGraphConfig
-  vars: Dictionary<unknown>
-  nodes_executing: boolean[]
-  nodes_actioning: (string | boolean)[]
-  nodes_executedAction: string[]
-  extra: Record<any, any>
-  inputs: Dictionary<IGraphInput>
-  outputs: Dictionary<IGraphInput>
+  config: LGraphConfig = {}
+  vars: Dictionary<unknown> = {}
+  nodes_executing: boolean[] = []
+  nodes_actioning: (string | boolean)[] = []
+  nodes_executedAction: string[] = []
+  extra: Record<any, any> = {}
+  inputs: Dictionary<IGraphInput> = {}
+  outputs: Dictionary<IGraphInput> = {}
 
   /** @returns Whether the graph has no items */
   get empty(): boolean {
