@@ -140,7 +140,6 @@ LiteGraphGlobal {
   "alt_drag_do_clone_nodes": false,
   "alwaysSnapToGrid": undefined,
   "auto_load_slot_types": false,
-  "auto_sort_node_types": false,
   "catch_exceptions": true,
   "click_do_break_link_to": false,
   "context_menu_scaling": false,

@@ -147,8 +147,6 @@ export class LiteGraphGlobal {
 
   /** used to add extra features to the search box */
   searchbox_extras = {}
-  /** [true!] If set to true, will automatically sort node types / categories in the context menus */
-  auto_sort_node_types = false
 
   /** [true!] this make the nodes box (top left circle) coloured when triggered (execute/action), visual feedback */
   node_box_coloured_when_on = false
@@ -423,21 +421,6 @@ export class LiteGraphGlobal {
   }
 
   /**
-   * Adds this method to all nodetypes, existing and to be created
-   * (You can add it to LGraphNode.prototype but then existing node types wont have it)
-   */
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
-  addNodeMethod(name: string, func: Function): void {
-    LGraphNode.prototype[name] = func
-    for (const i in this.registered_node_types) {
-      const type = this.registered_node_types[i]
-      // keep old in case of replacing
-      if (type.prototype[name]) type.prototype["_" + name] = type.prototype[name]
-      type.prototype[name] = func
-    }
-  }
-
-  /**
    * Create a node of a given type with a name. The node is not attached to any graph yet.
    * @param type full name of the node class. p.e. "math/sin"
    * @param title a name to distinguish from other nodes
@@ -519,12 +502,6 @@ export class LiteGraphGlobal {
       }
     }
 
-    if (this.auto_sort_node_types) {
-      r.sort(function (a, b) {
-        return a.title.localeCompare(b.title)
-      })
-    }
-
     return r
   }
 
@@ -547,7 +524,7 @@ export class LiteGraphGlobal {
     for (const i in categories) {
       result.push(i)
     }
-    return this.auto_sort_node_types ? result.sort() : result
+    return result
   }
 
   // debug purposes: reloads all the js scripts that matches a wildcard
@@ -766,13 +743,6 @@ export class LiteGraphGlobal {
   }
 
   getTime: () => number
-
-  compareObjects(a: object, b: object): boolean {
-    for (const i in a) {
-      if (a[i] != b[i]) return false
-    }
-    return true
-  }
 
   distance = distance
 
