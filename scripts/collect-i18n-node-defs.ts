@@ -2,7 +2,7 @@ import * as fs from 'fs'
 
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
 import type { ComfyApi } from '../src/scripts/api'
-import { ComfyNodeDefImpl } from '../src/stores/nodeDefStore'
+import { ComfyInputsSpec, ComfyNodeDefImpl } from '../src/stores/nodeDefStore'
 import { normalizeI18nKey } from '../src/utils/formatUtil'
 
 const localePath = './src/locales/en/main.json'
@@ -35,6 +35,69 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
       })
       .sort((a, b) => a[0].localeCompare(b[0]))
   )
+
+  async function extractWidgetLabels() {
+    const nodeLabels = {}
+
+    for (const nodeDef of nodeDefs) {
+      const labels = await comfyPage.page.evaluate(async (def) => {
+        try {
+          // Create and add node to graph
+          const node = window['LiteGraph'].createNode(
+            def.name,
+            def.display_name
+          )
+          window['app'].graph.add(node)
+
+          // Get node instance and check for widgets
+          const nodeInstance = window['app'].graph.getNodeById(node.id)
+          if (!nodeInstance?.widgets) return {}
+
+          const getAllInputNames = (inputs: ComfyInputsSpec) => {
+            return [
+              ...Object.values(inputs?.optional ?? {}),
+              ...Object.values(inputs?.required ?? {})
+            ]
+              .filter((input) => input && input.name !== undefined)
+              .map((input) => input.name)
+          }
+
+          // Get input names for comparison
+          const nodeInputNames = getAllInputNames(def.inputs)
+
+          // Collect runtime-generated widget labels
+          const labels = {}
+          for (const widget of nodeInstance.widgets) {
+            if (!widget?.name) continue
+            const isRuntimeGenerated = !nodeInputNames.includes(widget.name)
+            if (isRuntimeGenerated) {
+              console.warn(widget.label)
+              const label = widget.label ?? widget.name
+              labels[widget.name] = label
+            }
+          }
+
+          return labels
+        } finally {
+          // Cleanup
+          window['app'].graph.clear()
+        }
+      }, nodeDef)
+
+      // Format and store labels if any were found
+      if (Object.keys(labels ?? {}).length > 0) {
+        nodeLabels[nodeDef.name] = Object.fromEntries(
+          Object.entries(labels)
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map(([key, value]) => [normalizeI18nKey(key), { name: value }])
+        )
+      }
+    }
+
+    return nodeLabels
+  }
+
+  const nodeDefLabels = await extractWidgetLabels()
 
   function extractInputs(nodeDef: ComfyNodeDefImpl) {
     const inputs = Object.fromEntries(
@@ -88,15 +151,22 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
   const allNodeDefsLocale = Object.fromEntries(
     nodeDefs
       .sort((a, b) => a.name.localeCompare(b.name))
-      .map((nodeDef) => [
-        normalizeI18nKey(nodeDef.name),
-        {
-          display_name: nodeDef.display_name ?? nodeDef.name,
-          description: nodeDef.description || undefined,
-          inputs: extractInputs(nodeDef),
-          outputs: extractOutputs(nodeDef)
+      .map((nodeDef) => {
+        const inputs = {
+          ...extractInputs(nodeDef),
+          ...(nodeDefLabels[nodeDef.name] ?? {})
         }
-      ])
+
+        return [
+          normalizeI18nKey(nodeDef.name),
+          {
+            display_name: nodeDef.display_name ?? nodeDef.name,
+            description: nodeDef.description || undefined,
+            inputs: Object.keys(inputs).length > 0 ? inputs : undefined,
+            outputs: extractOutputs(nodeDef)
+          }
+        ]
+      })
   )
 
   const allNodeCategoriesLocale = Object.fromEntries(

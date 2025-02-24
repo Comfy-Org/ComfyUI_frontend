@@ -10,6 +10,8 @@
     :showPreview="showPreview"
     :extraListeners="animationListeners"
     :backgroundImage="backgroundImage"
+    :upDirection="upDirection"
+    :materialMode="materialMode"
     @materialModeChange="listenMaterialModeChange"
     @backgroundColorChange="listenBackgroundColorChange"
     @lightIntensityChange="listenLightIntensityChange"
@@ -24,6 +26,11 @@
 import { ref, watch } from 'vue'
 
 import Load3DScene from '@/components/load3d/Load3DScene.vue'
+import {
+  CameraType,
+  MaterialMode,
+  UpDirection
+} from '@/extensions/core/load3d/interfaces'
 
 const props = defineProps<{
   node: any
@@ -32,9 +39,10 @@ const props = defineProps<{
   showGrid: boolean
   lightIntensity: number
   fov: number
-  cameraType: 'perspective' | 'orthographic'
+  cameraType: CameraType
   showPreview: boolean
-  materialMode: 'original' | 'normal' | 'wireframe' | 'depth'
+  materialMode: MaterialMode
+  upDirection: UpDirection
   showFOVButton: boolean
   showLightIntensityButton: boolean
   playing: boolean
@@ -50,6 +58,7 @@ const fov = ref(props.fov)
 const lightIntensity = ref(props.lightIntensity)
 const cameraType = ref(props.cameraType)
 const showGrid = ref(props.showGrid)
+const upDirection = ref(props.upDirection)
 const materialMode = ref(props.materialMode)
 const showFOVButton = ref(props.showFOVButton)
 const showLightIntensityButton = ref(props.showLightIntensityButton)
@@ -91,6 +100,20 @@ watch(
 )
 
 watch(
+  () => props.upDirection,
+  (newValue) => {
+    upDirection.value = newValue
+  }
+)
+
+watch(
+  () => props.materialMode,
+  (newValue) => {
+    materialMode.value = newValue
+  }
+)
+
+watch(
   () => props.showPreview,
   (newValue) => {
     showPreview.value = newValue
@@ -122,9 +145,7 @@ const emit = defineEmits<{
   (e: 'animationListChange', animationList: string): void
 }>()
 
-const listenMaterialModeChange = (
-  mode: 'original' | 'normal' | 'wireframe' | 'depth'
-) => {
+const listenMaterialModeChange = (mode: MaterialMode) => {
   materialMode.value = mode
 
   showLightIntensityButton.value = mode === 'original'
@@ -142,7 +163,7 @@ const listenFOVChange = (value: number) => {
   fov.value = value
 }
 
-const listenCameraTypeChange = (value: 'perspective' | 'orthographic') => {
+const listenCameraTypeChange = (value: CameraType) => {
   cameraType.value = value
 
   showFOVButton.value = cameraType.value === 'perspective'

@@ -1,15 +1,74 @@
-import type { ColorOption, IWidget } from '@comfyorg/litegraph'
-import { LGraphGroup, LGraphNode, isColorable } from '@comfyorg/litegraph'
+import type { ColorOption } from '@comfyorg/litegraph'
+import {
+  LGraphGroup,
+  LGraphNode,
+  LiteGraph,
+  isColorable
+} from '@comfyorg/litegraph'
 import type { IComboWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import _ from 'lodash'
 
-export function isImageNode(node: LGraphNode) {
-  return (
-    node.imgs ||
-    (node &&
-      node.widgets &&
-      node.widgets.findIndex((obj: IWidget) => obj.name === 'image') >= 0)
-  )
+import { ComfyInputsSpec, ComfyNodeDef, InputSpec } from '@/types/apiTypes'
+
+const IMAGE_NODE_PROPERTY = 'image_upload'
+const VIDEO_NODE_PROPERTY = 'video_upload'
+
+const getNodeData = (node: LGraphNode): ComfyNodeDef | undefined =>
+  node.constructor?.nodeData as ComfyNodeDef | undefined
+
+const getInputSpecsFromData = (
+  inputData: ComfyInputsSpec | undefined
+): InputSpec[] => {
+  if (!inputData) return []
+
+  const { required, optional } = inputData
+  const inputSpecs: InputSpec[] = []
+  if (required) {
+    for (const value of Object.values(required)) {
+      inputSpecs.push(value)
+    }
+  }
+  if (optional) {
+    for (const value of Object.values(optional)) {
+      inputSpecs.push(value)
+    }
+  }
+  return inputSpecs
+}
+
+const hasImageElements = (imgs: unknown[]): boolean =>
+  Array.isArray(imgs) &&
+  imgs.some((img): img is HTMLImageElement => img instanceof HTMLImageElement)
+
+const hasInputProperty = (
+  node: LGraphNode | undefined,
+  property: string
+): boolean => {
+  if (!node) return false
+  const nodeData = getNodeData(node)
+  if (!nodeData?.input) return false
+
+  const inputs = getInputSpecsFromData(nodeData.input)
+  return inputs.some((input) => input?.[1]?.[property])
+}
+
+type ImageNode = LGraphNode & { imgs: HTMLImageElement[] }
+type VideoNode = LGraphNode & { videoContainer: HTMLElement }
+
+export function isImageNode(node: LGraphNode | undefined): node is ImageNode {
+  if (!node) return false
+  if (node.imgs?.length && hasImageElements(node.imgs)) return true
+  if (!node.widgets) return false
+
+  return hasInputProperty(node, IMAGE_NODE_PROPERTY)
+}
+
+export function isVideoNode(node: LGraphNode | undefined): node is VideoNode {
+  if (!node) return false
+  if (node.videoContainer) return true
+  if (!node.widgets) return false
+
+  return hasInputProperty(node, VIDEO_NODE_PROPERTY)
 }
 
 export function addToComboValues(widget: IComboWidget, value: string) {
@@ -55,4 +114,24 @@ export function executeWidgetsCallback(
       widget[callbackName]?.()
     }
   }
+}
+
+export function getImageTop(node: LGraphNode) {
+  let shiftY: number
+  if (node.imageOffset != null) {
+    return node.imageOffset
+  } else if (node.widgets?.length) {
+    const w = node.widgets[node.widgets.length - 1]
+    shiftY = w.last_y ?? 0
+    if (w.computeSize) {
+      shiftY += w.computeSize()[1] + 4
+    } else if (w.computedHeight) {
+      shiftY += w.computedHeight
+    } else {
+      shiftY += LiteGraph.NODE_WIDGET_HEIGHT + 4
+    }
+  } else {
+    return node.computeSize()[1]
+  }
+  return shiftY
 }

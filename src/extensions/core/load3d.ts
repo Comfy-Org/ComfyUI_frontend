@@ -138,12 +138,6 @@ app.registerExtension({
       (w: IWidget) => w.name === 'model_file'
     )
 
-    const material = node.widgets.find((w: IWidget) => w.name === 'material')
-
-    const upDirection = node.widgets.find(
-      (w: IWidget) => w.name === 'up_direction'
-    )
-
     let cameraState = node.properties['Camera Info']
 
     const config = new Load3DConfiguration(load3d)
@@ -151,15 +145,7 @@ app.registerExtension({
     const width = node.widgets.find((w: IWidget) => w.name === 'width')
     const height = node.widgets.find((w: IWidget) => w.name === 'height')
 
-    config.configure(
-      'input',
-      modelWidget,
-      material,
-      upDirection,
-      cameraState,
-      width,
-      height
-    )
+    config.configure('input', modelWidget, cameraState, width, height)
 
     sceneWidget.serializeValue = async () => {
       node.properties['Camera Info'] = load3d.getCameraState()
@@ -173,6 +159,8 @@ app.registerExtension({
         Load3dUtils.uploadTempImage(imageData, 'scene'),
         Load3dUtils.uploadTempImage(maskData, 'scene_mask')
       ])
+
+      load3d.handleResize()
 
       return {
         image: `threed/${data.name} [temp]`,
@@ -307,12 +295,6 @@ app.registerExtension({
       (w: IWidget) => w.name === 'model_file'
     )
 
-    const material = node.widgets.find((w: IWidget) => w.name === 'material')
-
-    const upDirection = node.widgets.find(
-      (w: IWidget) => w.name === 'up_direction'
-    )
-
     let cameraState = node.properties['Camera Info']
 
     const config = new Load3DConfiguration(load3d)
@@ -320,15 +302,7 @@ app.registerExtension({
     const width = node.widgets.find((w: IWidget) => w.name === 'width')
     const height = node.widgets.find((w: IWidget) => w.name === 'height')
 
-    config.configure(
-      'input',
-      modelWidget,
-      material,
-      upDirection,
-      cameraState,
-      width,
-      height
-    )
+    config.configure('input', modelWidget, cameraState, width, height)
 
     sceneWidget.serializeValue = async () => {
       node.properties['Camera Info'] = load3d.getCameraState()
@@ -344,6 +318,8 @@ app.registerExtension({
         Load3dUtils.uploadTempImage(imageData, 'scene'),
         Load3dUtils.uploadTempImage(maskData, 'scene_mask')
       ])
+
+      load3d.handleResize()
 
       return {
         image: `threed/${data.name} [temp]`,
@@ -431,12 +407,6 @@ app.registerExtension({
       (w: IWidget) => w.name === 'model_file'
     )
 
-    const material = node.widgets.find((w: IWidget) => w.name === 'material')
-
-    const upDirection = node.widgets.find(
-      (w: IWidget) => w.name === 'up_direction'
-    )
-
     const onExecuted = node.onExecuted
 
     node.onExecuted = function (message: any) {
@@ -456,7 +426,7 @@ app.registerExtension({
 
       const config = new Load3DConfiguration(load3d)
 
-      config.configure('output', modelWidget, material, upDirection)
+      config.configure('output', modelWidget)
     }
   }
 })
@@ -532,12 +502,6 @@ app.registerExtension({
       (w: IWidget) => w.name === 'model_file'
     )
 
-    const material = node.widgets.find((w: IWidget) => w.name === 'material')
-
-    const upDirection = node.widgets.find(
-      (w: IWidget) => w.name === 'up_direction'
-    )
-
     const onExecuted = node.onExecuted
 
     node.onExecuted = function (message: any) {
@@ -557,7 +521,7 @@ app.registerExtension({
 
       const config = new Load3DConfiguration(load3d)
 
-      config.configure('output', modelWidget, material, upDirection)
+      config.configure('output', modelWidget)
     }
   }
 })

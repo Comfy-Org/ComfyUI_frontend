@@ -6,7 +6,7 @@ import { app } from '@/scripts/app'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
-import { isImageNode } from '@/utils/litegraphUtil'
+import { isImageNode, isVideoNode } from '@/utils/litegraphUtil'
 
 /**
  * Adds a handler on paste that extracts and loads images or workflows from pasted JSON data
@@ -14,6 +14,23 @@ import { isImageNode } from '@/utils/litegraphUtil'
 export const usePaste = () => {
   const workspaceStore = useWorkspaceStore()
   const canvasStore = useCanvasStore()
+
+  const pasteItemOnNode = (
+    items: DataTransferItemList,
+    node: LGraphNode | null
+  ) => {
+    if (!node) return
+
+    const blob = items[0]?.getAsFile()
+    if (!blob) return
+
+    node.pasteFile?.(blob)
+    node.pasteFiles?.(
+      Array.from(items)
+        .map((i) => i.getAsFile())
+        .filter((f) => f !== null)
+    )
+  }
 
   useEventListener(document, 'paste', async (e: ClipboardEvent) => {
     // ctrl+shift+v is used to paste nodes with connections
@@ -30,38 +47,38 @@ export const usePaste = () => {
     let data = e.clipboardData || window.clipboardData
     const items: DataTransferItemList = data.items
 
+    const currentNode = canvas.current_node as LGraphNode
+    const isNodeSelected = currentNode?.is_selected
+
+    const isImageNodeSelected = isNodeSelected && isImageNode(currentNode)
+    const isVideoNodeSelected = isNodeSelected && isVideoNode(currentNode)
+
+    let imageNode: LGraphNode | null = isImageNodeSelected ? currentNode : null
+    const videoNode: LGraphNode | null = isVideoNodeSelected
+      ? currentNode
+      : null
+
     // Look for image paste data
     for (const item of items) {
       if (item.type.startsWith('image/')) {
-        let imageNode: LGraphNode | null = null
-
-        // If an image node is selected, paste into it
-        const currentNode = canvas.current_node as LGraphNode
-        if (
-          currentNode &&
-          currentNode.is_selected &&
-          isImageNode(currentNode)
-        ) {
-          imageNode = currentNode
-        }
-
-        // No image node selected: add a new one
         if (!imageNode) {
+          // No image node selected: add a new one
           const newNode = LiteGraph.createNode('LoadImage')
           // @ts-expect-error array to Float32Array
           newNode.pos = [...canvas.graph_mouse]
           imageNode = graph.add(newNode) ?? null
           graph.change()
         }
-        const blob = item.getAsFile()
-        if (blob) imageNode?.pasteFile?.(blob)
-
-        imageNode?.pasteFiles?.(
-          Array.from(items)
-            .map((i) => i.getAsFile())
-            .filter((f) => f !== null)
-        )
+        pasteItemOnNode(items, imageNode)
         return
+      } else if (item.type.startsWith('video/')) {
+        if (!videoNode) {
+          // No video node selected: add a new one
+          // TODO: when video node exists
+        } else {
+          pasteItemOnNode(items, videoNode)
+          return
+        }
       }
     }
 

@@ -4,10 +4,17 @@ import { app } from '../../scripts/app'
 
 // Adds an upload button to the nodes
 
-const isImageComboInput = (inputSpec: InputSpec) => {
+const isMediaUploadComboInput = (inputSpec: InputSpec) => {
   const [inputName, inputOptions] = inputSpec
-  if (!inputOptions || inputOptions['image_upload'] !== true) return false
-  return isComboInputSpecV1(inputSpec) || inputName === 'COMBO'
+  if (!inputOptions) return false
+
+  const isUploadInput =
+    inputOptions['image_upload'] === true ||
+    inputOptions['video_upload'] === true
+
+  return (
+    isUploadInput && (isComboInputSpecV1(inputSpec) || inputName === 'COMBO')
+  )
 }
 
 const createUploadInput = (
@@ -29,10 +36,10 @@ app.registerExtension({
     if (!required) return
 
     const found = Object.entries(required).find(([_, input]) =>
-      isImageComboInput(input)
+      isMediaUploadComboInput(input)
     )
 
-    // If image combo input found, attach upload input
+    // If media combo input found, attach upload input
     if (found) {
       const [inputName, inputSpec] = found
       required.upload = createUploadInput(inputName, inputSpec)

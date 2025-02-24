@@ -10,6 +10,8 @@
       :cameraType="cameraType"
       :showPreview="showPreview"
       :backgroundImage="backgroundImage"
+      :upDirection="upDirection"
+      :materialMode="materialMode"
       @materialModeChange="listenMaterialModeChange"
       @backgroundColorChange="listenBackgroundColorChange"
       @lightIntensityChange="listenLightIntensityChange"
@@ -18,6 +20,7 @@
       @showGridChange="listenShowGridChange"
       @showPreviewChange="listenShowPreviewChange"
       @backgroundImageChange="listenBackgroundImageChange"
+      @upDirectionChange="listenUpDirectionChange"
     />
     <Load3DControls
       :backgroundColor="backgroundColor"
@@ -30,6 +33,8 @@
       :showPreviewButton="showPreviewButton"
       :cameraType="cameraType"
       :hasBackgroundImage="hasBackgroundImage"
+      :upDirection="upDirection"
+      :materialMode="materialMode"
       @updateBackgroundImage="handleBackgroundImageUpdate"
       @switchCamera="switchCamera"
       @toggleGrid="toggleGrid"
@@ -37,6 +42,8 @@
       @updateLightIntensity="handleUpdateLightIntensity"
       @togglePreview="togglePreview"
       @updateFOV="handleUpdateFOV"
+      @updateUpDirection="handleUpdateUpDirection"
+      @updateMaterialMode="handleUpdateMaterialMode"
     />
   </div>
 </template>
@@ -47,6 +54,11 @@ import { computed, ref } from 'vue'
 import Load3DControls from '@/components/load3d/Load3DControls.vue'
 import Load3DScene from '@/components/load3d/Load3DScene.vue'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import {
+  CameraType,
+  MaterialMode,
+  UpDirection
+} from '@/extensions/core/load3d/interfaces'
 
 const props = defineProps<{
   node: any
@@ -61,9 +73,11 @@ const lightIntensity = ref(5)
 const showLightIntensityButton = ref(true)
 const fov = ref(75)
 const showFOVButton = ref(true)
-const cameraType = ref<'perspective' | 'orthographic'>('perspective')
+const cameraType = ref<CameraType>('perspective')
 const hasBackgroundImage = ref(false)
 const backgroundImage = ref('')
+const upDirection = ref<UpDirection>('original')
+const materialMode = ref<MaterialMode>('original')
 
 const showPreviewButton = computed(() => {
   return !props.type.includes('Preview')
@@ -115,22 +129,32 @@ const handleUpdateFOV = (value: number) => {
   node.value.properties['FOV'] = fov.value
 }
 
-const materialMode = ref<'original' | 'normal' | 'wireframe' | 'depth'>(
-  'original'
-)
-
 const handleBackgroundColorChange = (value: string) => {
   backgroundColor.value = value
 
   node.value.properties['Background Color'] = value
 }
 
-const listenMaterialModeChange = (
-  mode: 'original' | 'normal' | 'wireframe' | 'depth'
-) => {
+const handleUpdateUpDirection = (value: UpDirection) => {
+  upDirection.value = value
+
+  node.value.properties['Up Direction'] = value
+}
+
+const handleUpdateMaterialMode = (value: MaterialMode) => {
+  materialMode.value = value
+
+  node.value.properties['Material Mode'] = value
+}
+
+const listenMaterialModeChange = (mode: MaterialMode) => {
   materialMode.value = mode
 
   showLightIntensityButton.value = mode === 'original'
+}
+
+const listenUpDirectionChange = (value: UpDirection) => {
+  upDirection.value = value
 }
 
 const listenBackgroundColorChange = (value: string) => {
@@ -145,7 +169,7 @@ const listenFOVChange = (value: number) => {
   fov.value = value
 }
 
-const listenCameraTypeChange = (value: 'perspective' | 'orthographic') => {
+const listenCameraTypeChange = (value: CameraType) => {
   cameraType.value = value
   showFOVButton.value = cameraType.value === 'perspective'
 }
