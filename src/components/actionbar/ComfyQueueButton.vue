@@ -50,7 +50,14 @@
         :disabled="!hasPendingTasks"
         text
         :aria-label="$t('sideToolbar.queueTab.clearPendingTasks')"
-        @click="() => commandStore.execute('Comfy.ClearPendingTasks')"
+        @click="
+          () => {
+            if (queueCountStore.count.value > 1) {
+              commandStore.execute('Comfy.ClearPendingTasks')
+            }
+            queueMode = 'disabled'
+          }
+        "
       />
     </ButtonGroup>
   </div>
@@ -113,7 +120,9 @@ const queueModeMenuItems = computed(() =>
 )
 
 const executingPrompt = computed(() => !!queueCountStore.count.value)
-const hasPendingTasks = computed(() => queueCountStore.count.value > 1)
+const hasPendingTasks = computed(
+  () => queueCountStore.count.value > 1 || queueMode.value !== 'disabled'
+)
 
 const commandStore = useCommandStore()
 const queuePrompt = (e: MouseEvent) => {
