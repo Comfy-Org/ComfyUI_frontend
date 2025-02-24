@@ -1,4 +1,5 @@
 // @ts-strict-ignore
+import type { Rect, Vector2 } from '@comfyorg/litegraph'
 import {
   LGraph,
   LGraphCanvas,
@@ -7,7 +8,6 @@ import {
   LiteGraph,
   strokeShape
 } from '@comfyorg/litegraph'
-import type { Rect, Vector2 } from '@comfyorg/litegraph'
 import _ from 'lodash'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { reactive } from 'vue'
@@ -43,7 +43,7 @@ import { executeWidgetsCallback, isImageNode } from '@/utils/litegraphUtil'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import { type ComfyApi, api } from './api'
-import { defaultGraph } from './defaultGraph'
+import { fetchDefaultGraph } from './defaultGraph'
 import {
   getFlacMetadata,
   getLatentMetadata,
@@ -1020,7 +1020,7 @@ export class ComfyApp {
 
     let reset_invalid_values = false
     if (!graphData) {
-      graphData = defaultGraph
+      graphData = await fetchDefaultGraph()
       reset_invalid_values = true
     }
 
