@@ -4,6 +4,7 @@ import type { IStringWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
 import { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
 import { useNodeFileInput } from '@/composables/node/useNodeFileInput'
+import { useNodePaste } from '@/composables/node/useNodePaste'
 import type { DOMWidget } from '@/scripts/domWidget'
 import { useToastStore } from '@/stores/toastStore'
 import { ComfyNodeDef } from '@/types/apiTypes'
@@ -188,6 +189,8 @@ app.registerExtension({
           return files
         }
 
+        const isAudioFile = (file: File) => file.type.startsWith('audio/')
+
         const { openFileSelection } = useNodeFileInput(node, {
           accept: 'audio/*',
           onSelect: handleUpload
@@ -204,8 +207,13 @@ app.registerExtension({
         uploadWidget.label = 'choose file to upload'
 
         useNodeDragAndDrop(node, {
-          fileFilter: (file) => file.type.startsWith('audio/'),
+          fileFilter: isAudioFile,
           onDrop: handleUpload
+        })
+
+        useNodePaste(node, {
+          fileFilter: isAudioFile,
+          onPaste: handleUpload
         })
 
         node.previewMediaType = 'audio'

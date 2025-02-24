@@ -6,7 +6,7 @@ import { app } from '@/scripts/app'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
-import { isImageNode, isVideoNode } from '@/utils/litegraphUtil'
+import { isAudioNode, isImageNode, isVideoNode } from '@/utils/litegraphUtil'
 
 /**
  * Adds a handler on paste that extracts and loads images or workflows from pasted JSON data
@@ -52,8 +52,10 @@ export const usePaste = () => {
 
     const isImageNodeSelected = isNodeSelected && isImageNode(currentNode)
     const isVideoNodeSelected = isNodeSelected && isVideoNode(currentNode)
+    const isAudioNodeSelected = isNodeSelected && isAudioNode(currentNode)
 
     let imageNode: LGraphNode | null = isImageNodeSelected ? currentNode : null
+    let audioNode: LGraphNode | null = isAudioNodeSelected ? currentNode : null
     const videoNode: LGraphNode | null = isVideoNodeSelected
       ? currentNode
       : null
@@ -79,6 +81,17 @@ export const usePaste = () => {
           pasteItemOnNode(items, videoNode)
           return
         }
+      } else if (item.type.startsWith('audio/')) {
+        if (!audioNode) {
+          // No audio node selected: add a new one
+          const newNode = LiteGraph.createNode('LoadAudio')
+          // @ts-expect-error array to Float32Array
+          newNode.pos = [...canvas.graph_mouse]
+          audioNode = graph?.add(newNode) ?? null
+          graph?.change()
+        }
+        pasteItemOnNode(items, audioNode)
+        return
       }
     }
 
