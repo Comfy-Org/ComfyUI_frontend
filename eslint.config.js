@@ -3,6 +3,7 @@ import unusedImports from 'eslint-plugin-unused-imports'
 import pluginVue from 'eslint-plugin-vue'
 import globals from 'globals'
 import tseslint from 'typescript-eslint'
+import stylistic from '@stylistic/eslint-plugin'
 
 export default [
   {
@@ -32,6 +33,15 @@ export default [
   },
   {
     rules: {
+      '@stylistic/eol-last': 'warning',
+      '@stylistic/no-multiple-empty-lines': [
+        'warning',
+        {
+          'maxBOF': 0,
+          'maxEOF': 0
+        }
+      ],
+      '@stylistic/no-trailing-spaces': 'warning',
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unused-vars': 'off',
       '@typescript-eslint/prefer-as-const': 'off'
@@ -39,6 +49,7 @@ export default [
   },
   {
     plugins: {
+      '@stylistic': stylistic,
       'unused-imports': unusedImports
     },
     rules: {
