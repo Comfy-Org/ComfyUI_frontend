@@ -29,7 +29,7 @@ export class CameraManager implements CameraManagerInterface {
   }
 
   DEFAULT_PERSPECTIVE_CAMERA = {
-    fov: 75,
+    fov: 35,
     aspect: 1
   }
 
@@ -99,6 +99,11 @@ export class CameraManager implements CameraManagerInterface {
     const rotation = oldCamera.rotation.clone()
     const target = this.controls?.target.clone() || new THREE.Vector3()
 
+    const oldZoom =
+      oldCamera instanceof THREE.OrthographicCamera
+        ? oldCamera.zoom
+        : (oldCamera as THREE.PerspectiveCamera).zoom
+
     if (!cameraType) {
       this.activeCamera =
         oldCamera === this.perspectiveCamera
@@ -117,6 +122,14 @@ export class CameraManager implements CameraManagerInterface {
 
     this.activeCamera.position.copy(position)
     this.activeCamera.rotation.copy(rotation)
+
+    if (this.activeCamera instanceof THREE.OrthographicCamera) {
+      this.activeCamera.zoom = oldZoom
+      this.activeCamera.updateProjectionMatrix()
+    } else if (this.activeCamera instanceof THREE.PerspectiveCamera) {
+      this.activeCamera.zoom = oldZoom
+      this.activeCamera.updateProjectionMatrix()
+    }
 
     if (this.controls) {
       this.controls.object = this.activeCamera

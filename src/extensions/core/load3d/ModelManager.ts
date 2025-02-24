@@ -152,7 +152,6 @@ export class ModelManager implements ModelManagerInterface {
               transparent: false,
               opacity: 1.0
             })
-            child.geometry.computeVertexNormals()
             break
 
           case 'wireframe':
