@@ -66,8 +66,8 @@ export const usePaste = () => {
           const newNode = LiteGraph.createNode('LoadImage')
           // @ts-expect-error array to Float32Array
           newNode.pos = [...canvas.graph_mouse]
-          imageNode = graph.add(newNode) ?? null
-          graph.change()
+          imageNode = graph?.add(newNode) ?? null
+          graph?.change()
         }
         pasteItemOnNode(items, imageNode)
         return

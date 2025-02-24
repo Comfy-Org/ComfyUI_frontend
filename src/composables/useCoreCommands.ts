@@ -337,7 +337,7 @@ export function useCoreCommands(): ComfyCommand[] {
           'Comfy.GroupSelectedNodes.Padding'
         )
         group.resizeTo(canvas.selectedItems, padding)
-        canvas.graph.add(group)
+        canvas.graph?.add(group)
         useTitleEditorStore().titleEditorTarget = group
       }
     },
