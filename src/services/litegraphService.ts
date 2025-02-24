@@ -600,7 +600,7 @@ export const useLitegraphService = () => {
       // Draw image size text below the image
       ctx.fillStyle = LiteGraph.NODE_TEXT_COLOR
       ctx.textAlign = 'center'
-      const sizeText = `${Math.round(img.naturalWidth)} ×  ${Math.round(img.naturalHeight)}`
+      const sizeText = `${Math.round(img.naturalWidth)} × ${Math.round(img.naturalHeight)}`
       const textY = y + h + 10
       ctx.fillText(sizeText, x + w / 2, textY)
 
