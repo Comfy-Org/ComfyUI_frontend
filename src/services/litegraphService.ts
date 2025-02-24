@@ -469,8 +469,9 @@ export const useLitegraphService = () => {
 
       const shiftY = getImageTop(this)
 
+      const IMAGE_TEXT_SIZE_TEXT_HEIGHT = 15
       const dw = this.size[0]
-      const dh = this.size[1] - shiftY
+      const dh = this.size[1] - shiftY - IMAGE_TEXT_SIZE_TEXT_HEIGHT
 
       if (imageIndex == null) {
         // No image selected; draw thumbnails of all
@@ -581,8 +582,9 @@ export const useLitegraphService = () => {
         return
       }
       // Draw individual
-      let w = this.imgs[imageIndex].naturalWidth
-      let h = this.imgs[imageIndex].naturalHeight
+      const img = this.imgs[imageIndex]
+      let w = img.naturalWidth
+      let h = img.naturalHeight
 
       const scaleX = dw / w
       const scaleY = dh / h
@@ -593,7 +595,14 @@ export const useLitegraphService = () => {
 
       const x = (dw - w) / 2
       const y = (dh - h) / 2 + shiftY
-      ctx.drawImage(this.imgs[imageIndex], x, y, w, h)
+      ctx.drawImage(img, x, y, w, h)
+
+      // Draw image size text below the image
+      ctx.fillStyle = LiteGraph.NODE_TEXT_COLOR
+      ctx.textAlign = 'center'
+      const sizeText = `${Math.round(img.naturalWidth)} × ${Math.round(img.naturalHeight)}`
+      const textY = y + h + 10
+      ctx.fillText(sizeText, x + w / 2, textY)
 
       const drawButton = (
         x: number,
