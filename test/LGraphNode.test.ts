@@ -1,10 +1,10 @@
 import { describe, expect } from "vitest"
 import { LGraphNode } from "@/litegraph"
 import { NodeInputSlot, NodeOutputSlot } from "@/NodeSlot"
-import { lgTest } from "./lgTest"
+import { test } from "./testExtensions"
 
 describe("LGraphNode", () => {
-  lgTest("should serialize position/size correctly", () => {
+  test("should serialize position/size correctly", () => {
     const node = new LGraphNode("TestNode")
     node.pos = [10, 10]
     expect(node.pos).toEqual(new Float32Array([10, 10]))
@@ -15,7 +15,7 @@ describe("LGraphNode", () => {
     expect(node.serialize().size).toEqual([100, 100])
   })
 
-  lgTest("should configure inputs correctly", () => {
+  test("should configure inputs correctly", () => {
     const node = new LGraphNode("TestNode")
     node.configure({
       id: 0,
@@ -32,7 +32,7 @@ describe("LGraphNode", () => {
     expect(node.inputs.length).toEqual(1)
   })
 
-  lgTest("should configure outputs correctly", () => {
+  test("should configure outputs correctly", () => {
     const node = new LGraphNode("TestNode")
     node.configure({
       id: 0,

@@ -1,9 +1,9 @@
 import { describe } from "vitest"
 import { LGraph, LiteGraph } from "@/litegraph"
-import { lgTest } from "./lgTest"
+import { test } from "./testExtensions"
 
 describe.concurrent("LGraph", () => {
-  lgTest("can be instantiated", ({ expect }) => {
+  test("can be instantiated", ({ expect }) => {
     // @ts-expect-error Intentional - extra holds any / all consumer data that should be serialised
     const graph = new LGraph({ extra: "TestGraph" })
     expect(graph).toBeInstanceOf(LGraph)
@@ -11,28 +11,28 @@ describe.concurrent("LGraph", () => {
     expect(graph.extra).toBe("TestGraph")
   })
 
-  lgTest("populates optional values", ({ expect, minimalSerialisableGraph }) => {
+  test("populates optional values", ({ expect, minimalSerialisableGraph }) => {
     const dGraph = new LGraph(minimalSerialisableGraph)
     expect(dGraph.links).toBeInstanceOf(Map)
     expect(dGraph.nodes).toBeInstanceOf(Array)
     expect(dGraph.groups).toBeInstanceOf(Array)
   })
 
-  lgTest("matches previous snapshot", ({ expect, minimalSerialisableGraph, basicSerialisableGraph }) => {
+  test("matches previous snapshot", ({ expect, minimalSerialisableGraph, basicSerialisableGraph }) => {
     const minLGraph = new LGraph(minimalSerialisableGraph)
     expect(minLGraph).toMatchSnapshot("minLGraph")
     const basicLGraph = new LGraph(basicSerialisableGraph)
     expect(basicLGraph).toMatchSnapshot("basicLGraph")
   })
 
-  lgTest("supports schema v0.4 graphs", ({ expect, oldSchemaGraph }) => {
+  test("supports schema v0.4 graphs", ({ expect, oldSchemaGraph }) => {
     const fromOldSchema = new LGraph(oldSchemaGraph)
     expect(fromOldSchema).toMatchSnapshot("oldSchemaGraph")
   })
 })
 
 describe.concurrent("Legacy LGraph Compatibility Layer", () => {
-  lgTest("can be extended via prototype", ({ expect, minimalGraph }) => {
+  test("can be extended via prototype", ({ expect, minimalGraph }) => {
     // @ts-expect-error Should always be an error.
     LGraph.prototype.newMethod = function () {
       return "New method added via prototype"
@@ -41,7 +41,7 @@ describe.concurrent("Legacy LGraph Compatibility Layer", () => {
     expect(minimalGraph.newMethod()).toBe("New method added via prototype")
   })
 
-  lgTest("is correctly assigned to LiteGraph", ({ expect }) => {
+  test("is correctly assigned to LiteGraph", ({ expect }) => {
     expect(LiteGraph.LGraph).toBe(LGraph)
   })
 })
