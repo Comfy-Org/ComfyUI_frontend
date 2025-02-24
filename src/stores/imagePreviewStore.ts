@@ -4,6 +4,7 @@ import { defineStore } from 'pinia'
 import { api } from '@/scripts/api'
 import { ExecutedWsMessage, ResultItem } from '@/types/apiTypes'
 import { parseFilePath } from '@/utils/formatUtil'
+import { isVideoNode } from '@/utils/litegraphUtil'
 
 const createOutputs = (
   filenames: string[],
@@ -15,7 +16,7 @@ const createOutputs = (
 }
 
 const getPreviewParam = (node: LGraphNode): string => {
-  if (node.animatedImages) return ''
+  if (node.animatedImages || isVideoNode(node)) return ''
   return app.getPreviewFormatParam()
 }
 
