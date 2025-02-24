@@ -2,7 +2,10 @@
   <div
     class="batch-count"
     :class="props.class"
-    v-tooltip.bottom="$t('menu.batchCount')"
+    v-tooltip.bottom="{
+      value: $t('menu.batchCount'),
+      showDelay: 600
+    }"
     :aria-label="$t('menu.batchCount')"
   >
     <InputNumber
