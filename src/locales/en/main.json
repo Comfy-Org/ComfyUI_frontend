@@ -852,6 +852,10 @@
     "removeBackgroundImage": "Remove Background Image",
     "loadingModel": "Loading 3D Model...",
     "upDirection": "Up Direction",
-    "materialMode": "Material Mode"
+    "materialMode": "Material Mode",
+    "scene": "Scene",
+    "model": "Model",
+    "camera": "Camera",
+    "light": "Light"
   }
 }

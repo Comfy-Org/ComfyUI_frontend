@@ -23,7 +23,7 @@
             @click="selectCategory(category)"
           >
             <i :class="getCategoryIcon(category)"></i>
-            <span class="text-white">{{ label }}</span>
+            <span class="text-white">{{ t(label) }}</span>
           </Button>
         </div>
       </div>
@@ -283,10 +283,10 @@ const props = defineProps<{
 const isMenuOpen = ref(false)
 const activeCategory = ref<'scene' | 'model' | 'camera' | 'light'>('scene')
 const categories = {
-  scene: 'scene',
-  model: 'model',
-  camera: 'camera',
-  light: 'light'
+  scene: 'load3d.scene',
+  model: 'load3d.model',
+  camera: 'load3d.camera',
+  light: 'load3d.light'
 }
 
 const toggleMenu = () => {
