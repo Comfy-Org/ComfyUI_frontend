@@ -129,7 +129,7 @@ declare module '@comfyorg/litegraph' {
     /** @deprecated Unused */
     inputHeight?: unknown
 
-    /** @deprecated Unused */
+    /** The y offset of the image preview to the top of the node body. */
     imageOffset?: number
     /** Callback for pasting an image file into the node */
     pasteFile?(file: File): void
