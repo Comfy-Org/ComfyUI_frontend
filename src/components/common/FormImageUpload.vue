@@ -45,7 +45,7 @@
 import Button from 'primevue/button'
 import { ref } from 'vue'
 
-const props = defineProps<{
+defineProps<{
   modelValue: string
 }>()
 
