@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import type { Point, Rect } from "./interfaces"
 import { clamp, LGraphCanvas } from "./litegraph"
 import { distance } from "./measure"
@@ -9,10 +8,10 @@ export class CurveEditor {
   points: Point[]
   selected: number
   nearest: number
-  size: Rect
+  size: Rect | null
   must_update: boolean
   margin: number
-  _nearest: number
+  _nearest?: number
 
   constructor(points: Point[]) {
     this.points = points
@@ -23,7 +22,7 @@ export class CurveEditor {
     this.margin = 5
   }
 
-  static sampleCurve(f: number, points: Point[]): number {
+  static sampleCurve(f: number, points: Point[]): number | undefined {
     if (!points) return
 
     for (let i = 0; i < points.length - 1; ++i) {
@@ -89,12 +88,13 @@ export class CurveEditor {
   }
 
   // localpos is mouse in curve editor space
-  onMouseDown(localpos: Point, graphcanvas: LGraphCanvas): boolean {
+  onMouseDown(localpos: Point, graphcanvas: LGraphCanvas): boolean | undefined {
     const points = this.points
     if (!points) return
     if (localpos[1] < 0) return
 
     // this.captureInput(true);
+    if (this.size == null) throw new Error("CurveEditor.size was null or undefined.")
     const w = this.size[0] - this.margin * 2
     const h = this.size[1] - this.margin * 2
     const x = localpos[0] - this.margin
@@ -123,6 +123,7 @@ export class CurveEditor {
     const s = this.selected
     if (s < 0) return
 
+    if (this.size == null) throw new Error("CurveEditor.size was null or undefined.")
     const x = (localpos[0] - this.margin) / (this.size[0] - this.margin * 2)
     const y = (localpos[1] - this.margin) / (this.size[1] - this.margin * 2)
     const curvepos: Point = [
@@ -168,6 +169,7 @@ export class CurveEditor {
     if (!points) return -1
 
     max_dist = max_dist || 30
+    if (this.size == null) throw new Error("CurveEditor.size was null or undefined.")
     const w = this.size[0] - this.margin * 2
     const h = this.size[1] - this.margin * 2
     const num = points.length
