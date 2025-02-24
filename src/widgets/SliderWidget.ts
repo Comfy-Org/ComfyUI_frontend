@@ -10,12 +10,14 @@ export class SliderWidget extends BaseWidget implements ISliderWidget {
   declare type: "slider"
   declare value: number
   declare options: IWidgetSliderOptions
+  marker?: number
 
   constructor(widget: ISliderWidget) {
     super(widget)
     this.type = "slider"
     this.value = widget.value
     this.options = widget.options
+    this.marker = widget.marker
   }
 
   /**

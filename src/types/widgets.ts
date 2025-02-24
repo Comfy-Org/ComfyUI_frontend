@@ -62,6 +62,7 @@ export interface ISliderWidget extends IBaseWidget {
   type?: "slider"
   value: number
   options: IWidgetSliderOptions
+  marker?: number
 }
 
 /** A combo-box widget (dropdown, select, etc) */
@@ -122,7 +123,6 @@ export interface IBaseWidget<TElement extends HTMLElement = HTMLElement> {
   linkedWidgets?: IWidget[]
 
   options: IWidgetOptions
-  marker?: number
   label?: string
   name?: string
   /** Widget type (see {@link TWidgetType}) */

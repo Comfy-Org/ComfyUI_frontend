@@ -7,9 +7,7 @@ import type { IBaseWidget, IWidget, IWidgetOptions, TWidgetType, TWidgetValue } 
 export abstract class BaseWidget implements IBaseWidget {
   linkedWidgets?: IWidget[]
   options: IWidgetOptions<unknown>
-  marker?: number
   label?: string
-  clicked?: boolean
   name?: string
   type?: TWidgetType
   value?: TWidgetValue
