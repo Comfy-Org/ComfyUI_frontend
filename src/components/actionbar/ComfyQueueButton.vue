@@ -52,7 +52,9 @@
         :aria-label="$t('sideToolbar.queueTab.clearPendingTasks')"
         @click="
           () => {
-            commandStore.execute('Comfy.ClearPendingTasks')
+            if (queueCountStore.count.value > 1) {
+              commandStore.execute('Comfy.ClearPendingTasks')
+            }
             queueMode = 'disabled'
           }
         "
