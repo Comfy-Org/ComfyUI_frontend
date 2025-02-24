@@ -27,6 +27,10 @@ export function isVideoNode(node: LGraphNode | undefined): node is VideoNode {
   return node.previewMediaType === 'video' || !!node.videoContainer
 }
 
+export function isAudioNode(node: LGraphNode | undefined): boolean {
+  return !!node && node.previewMediaType === 'audio'
+}
+
 export function addToComboValues(widget: IComboWidget, value: string) {
   if (!widget.options) widget.options = { values: [] }
   if (!widget.options.values) widget.options.values = []
