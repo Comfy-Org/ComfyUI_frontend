@@ -39,6 +39,7 @@ import { type Component, markRaw } from 'vue'
 import CustomFormValue from '@/components/common/CustomFormValue.vue'
 import FormColorPicker from '@/components/common/FormColorPicker.vue'
 import FormImageUpload from '@/components/common/FormImageUpload.vue'
+import InputKnob from '@/components/common/InputKnob.vue'
 import InputSlider from '@/components/common/InputSlider.vue'
 import UrlInput from '@/components/common/UrlInput.vue'
 import { FormItem } from '@/types/settingTypes'
@@ -91,6 +92,8 @@ function getFormComponent(item: FormItem): Component {
       return InputNumber
     case 'slider':
       return InputSlider
+    case 'knob':
+      return InputKnob
     case 'combo':
       return Select
     case 'image':
@@ -109,6 +112,11 @@ function getFormComponent(item: FormItem): Component {
 .form-input :deep(.input-slider) .p-inputnumber input,
 .form-input :deep(.input-slider) .slider-part {
   @apply w-20;
+}
+
+.form-input :deep(.input-knob) .p-inputnumber input,
+.form-input :deep(.input-knob) .knob-part {
+  @apply w-32;
 }
 
 .form-input :deep(.p-inputtext),
