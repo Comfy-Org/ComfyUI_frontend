@@ -2,6 +2,7 @@
 import type { IWidget } from '@comfyorg/litegraph'
 import type { IStringWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
+import { useNodeDragAndDrop } from '@/composables/useNodeDragAndDrop'
 import { useNodeFileInput } from '@/composables/useNodeFileInput'
 import type { DOMWidget } from '@/scripts/domWidget'
 import { useToastStore } from '@/stores/toastStore'
@@ -180,13 +181,16 @@ app.registerExtension({
           }
         }
 
+        const handleUpload = async (files: File[]) => {
+          if (files?.length) {
+            await uploadFile(audioWidget, audioUIWidget, files[0], true)
+          }
+          return files
+        }
+
         const { openFileSelection } = useNodeFileInput(node, {
           accept: 'audio/*',
-          onSelect: (files) => {
-            if (files?.length) {
-              uploadFile(audioWidget, audioUIWidget, files[0], true)
-            }
-          }
+          onSelect: handleUpload
         })
 
         // The widget to pop up the upload dialog.
@@ -199,7 +203,10 @@ app.registerExtension({
         )
         uploadWidget.label = 'choose file to upload'
 
-        node.previewMediaType = 'audio'
+        useNodeDragAndDrop(node, {
+          fileFilter: (file) => file.type.startsWith('audio/'),
+          onDrop: handleUpload
+        })
 
         return { widget: uploadWidget }
       }
