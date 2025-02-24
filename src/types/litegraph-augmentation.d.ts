@@ -129,6 +129,8 @@ declare module '@comfyorg/litegraph' {
     videoContainer?: HTMLElement
     /** Whether the node's preview media is loading */
     isLoading?: boolean
+    /** The content type of the node's preview media */
+    previewMediaType?: 'image' | 'video' | 'audio' | 'model'
 
     preview: string[]
     /** Index of the currently selected image on a multi-image node such as Preview Image */
@@ -141,7 +143,7 @@ declare module '@comfyorg/litegraph' {
     /** @deprecated Unused */
     inputHeight?: unknown
 
-    /** @deprecated Unused */
+    /** The y offset of the image preview to the top of the node body. */
     imageOffset?: number
     /** Callback for pasting an image file into the node */
     pasteFile?(file: File): void

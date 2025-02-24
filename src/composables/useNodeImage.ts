@@ -10,6 +10,7 @@ const VIDEO_DEFAULT_OPTIONS = {
 } as const
 const MEDIA_LOAD_TIMEOUT = 8192 as const
 const MAX_RETRIES = 1 as const
+const VIDEO_PIXEL_OFFSET = 64 as const
 
 type MediaElement = HTMLImageElement | HTMLVideoElement
 
@@ -54,11 +55,6 @@ export const useNodePreview = <T extends MediaElement>(
   const loadElements = async (urls: string[]) =>
     Promise.all(urls.map((url) => loadElementWithTimeout(url)))
 
-  const render = () => {
-    node.setSizeForImage?.()
-    node.graph?.setDirtyCanvas(true)
-  }
-
   /**
    * Displays media element(s) on the node.
    */
@@ -77,7 +73,7 @@ export const useNodePreview = <T extends MediaElement>(
         )
         if (validElements.length) {
           onLoaded?.(validElements)
-          render()
+          node.graph?.setDirtyCanvas(true)
         }
       })
       .catch(() => {
@@ -97,6 +93,8 @@ export const useNodePreview = <T extends MediaElement>(
  * Attaches a preview image to a node.
  */
 export const useNodeImage = (node: LGraphNode) => {
+  node.previewMediaType = 'image'
+
   const loadElement = (url: string): Promise<HTMLImageElement | null> =>
     new Promise((resolve) => {
       const img = new Image()
@@ -108,6 +106,7 @@ export const useNodeImage = (node: LGraphNode) => {
   const onLoaded = (elements: HTMLImageElement[]) => {
     node.imageIndex = null
     node.imgs = elements
+    node.setSizeForImage?.()
   }
 
   return useNodePreview(node, {
@@ -123,6 +122,8 @@ export const useNodeImage = (node: LGraphNode) => {
  * Attaches a preview video to a node.
  */
 export const useNodeVideo = (node: LGraphNode) => {
+  node.previewMediaType = 'video'
+
   const loadElement = (url: string): Promise<HTMLVideoElement | null> =>
     new Promise((resolve) => {
       const video = document.createElement('video')
@@ -152,7 +153,8 @@ export const useNodeVideo = (node: LGraphNode) => {
     }
 
     node.videoContainer.replaceChildren(videoElement)
-    node.imageOffset = 64
+    node.imageOffset = VIDEO_PIXEL_OFFSET
+    node.setSizeForImage?.(true)
   }
 
   return useNodePreview(node, {
