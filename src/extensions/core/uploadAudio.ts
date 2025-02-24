@@ -183,7 +183,7 @@ app.registerExtension({
 
         const handleUpload = async (files: File[]) => {
           if (files?.length) {
-            await uploadFile(audioWidget, audioUIWidget, files[0], true)
+            uploadFile(audioWidget, audioUIWidget, files[0], true)
           }
           return files
         }
@@ -207,6 +207,8 @@ app.registerExtension({
           fileFilter: (file) => file.type.startsWith('audio/'),
           onDrop: handleUpload
         })
+
+        node.previewMediaType = 'audio'
 
         return { widget: uploadWidget }
       }
