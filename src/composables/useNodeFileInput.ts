@@ -1,5 +1,7 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
 
+import { useChainCallback } from './functional/useChainCallback'
+
 interface FileInputOptions {
   accept?: string
   allow_batch?: boolean
@@ -30,16 +32,12 @@ export function useNodeFileInput(node: LGraphNode, options: FileInputOptions) {
     }
   }
 
-  const originalOnRemoved = node.onRemoved
-  node.onRemoved = function (...args) {
+  node.onRemoved = useChainCallback(node.onRemoved, () => {
     if (fileInput) {
       fileInput.onchange = null
       fileInput = null
     }
-    if (originalOnRemoved) {
-      originalOnRemoved.apply(this, args)
-    }
-  }
+  })
 
   return {
     openFileSelection: () => fileInput?.click()
