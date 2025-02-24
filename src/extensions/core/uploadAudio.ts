@@ -183,7 +183,9 @@ app.registerExtension({
         const { openFileSelection } = useNodeFileInput(node, {
           accept: 'audio/*',
           onSelect: (files) => {
-            uploadFile(audioWidget, audioUIWidget, files[0], true)
+            if (files?.length) {
+              uploadFile(audioWidget, audioUIWidget, files[0], true)
+            }
           }
         })
 
