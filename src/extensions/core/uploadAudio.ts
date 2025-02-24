@@ -2,6 +2,7 @@
 import type { IWidget } from '@comfyorg/litegraph'
 import type { IStringWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
+import { useNodeFileInput } from '@/composables/useNodeFileInput'
 import type { DOMWidget } from '@/scripts/domWidget'
 import { useToastStore } from '@/stores/toastStore'
 import { ComfyNodeDef } from '@/types/apiTypes'
@@ -179,23 +180,19 @@ app.registerExtension({
           }
         }
 
-        const fileInput = document.createElement('input')
-        fileInput.type = 'file'
-        fileInput.accept = 'audio/*'
-        fileInput.style.display = 'none'
-        fileInput.onchange = () => {
-          if (fileInput.files.length) {
-            uploadFile(audioWidget, audioUIWidget, fileInput.files[0], true)
+        const { openFileSelection } = useNodeFileInput(node, {
+          accept: 'audio/*',
+          onSelect: (files) => {
+            uploadFile(audioWidget, audioUIWidget, files[0], true)
           }
-        }
+        })
+
         // The widget to pop up the upload dialog.
         const uploadWidget = node.addWidget(
           'button',
           inputName,
-          /* value=*/ '',
-          () => {
-            fileInput.click()
-          },
+          '',
+          openFileSelection,
           { serialize: false }
         )
         uploadWidget.label = 'choose file to upload'

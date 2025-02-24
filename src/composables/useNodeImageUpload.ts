@@ -82,7 +82,7 @@ export const useNodeImageUpload = (
   })
 
   // Handle file input
-  const { openFileSelection } = useNodeFileInput({
+  const { openFileSelection } = useNodeFileInput(node, {
     fileFilter,
     allow_batch,
     accept,
