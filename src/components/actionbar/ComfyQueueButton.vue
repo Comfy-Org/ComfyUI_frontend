@@ -8,11 +8,12 @@
       @click="queuePrompt"
       :model="queueModeMenuItems"
       data-testid="queue-button"
-      v-tooltip.bottom="
-        workspaceStore.shiftDown
+      v-tooltip.bottom="{
+        value: workspaceStore.shiftDown
           ? $t('menu.queueWorkflowFront')
-          : $t('menu.queueWorkflow')
-      "
+          : $t('menu.queueWorkflow'),
+        showDelay: 600
+      }"
     >
       <template #icon>
         <i-lucide:list-start v-if="workspaceStore.shiftDown" />
@@ -27,14 +28,20 @@
           :severity="item.key === queueMode ? 'primary' : 'secondary'"
           size="small"
           text
-          v-tooltip="item.tooltip"
+          v-tooltip="{
+            value: item.tooltip,
+            showDelay: 600
+          }"
         />
       </template>
     </SplitButton>
     <BatchCountEdit />
     <ButtonGroup class="execution-actions flex flex-nowrap">
       <Button
-        v-tooltip.bottom="$t('menu.interrupt')"
+        v-tooltip.bottom="{
+          value: $t('menu.interrupt'),
+          showDelay: 600
+        }"
         icon="pi pi-times"
         :severity="executingPrompt ? 'danger' : 'secondary'"
         :disabled="!executingPrompt"
@@ -44,13 +51,23 @@
       >
       </Button>
       <Button
-        v-tooltip.bottom="$t('sideToolbar.queueTab.clearPendingTasks')"
+        v-tooltip.bottom="{
+          value: $t('sideToolbar.queueTab.clearPendingTasks'),
+          showDelay: 600
+        }"
         icon="pi pi-stop"
         :severity="hasPendingTasks ? 'danger' : 'secondary'"
         :disabled="!hasPendingTasks"
         text
         :aria-label="$t('sideToolbar.queueTab.clearPendingTasks')"
-        @click="() => commandStore.execute('Comfy.ClearPendingTasks')"
+        @click="
+          () => {
+            if (queueCountStore.count.value > 1) {
+              commandStore.execute('Comfy.ClearPendingTasks')
+            }
+            queueMode = 'disabled'
+          }
+        "
       />
     </ButtonGroup>
   </div>
@@ -113,7 +130,9 @@ const queueModeMenuItems = computed(() =>
 )
 
 const executingPrompt = computed(() => !!queueCountStore.count.value)
-const hasPendingTasks = computed(() => queueCountStore.count.value > 1)
+const hasPendingTasks = computed(
+  () => queueCountStore.count.value > 1 || queueMode.value !== 'disabled'
+)
 
 const commandStore = useCommandStore()
 const queuePrompt = (e: MouseEvent) => {

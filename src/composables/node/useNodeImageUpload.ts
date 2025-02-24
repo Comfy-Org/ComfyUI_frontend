@@ -1,8 +1,8 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
 
-import { useNodeDragAndDrop } from '@/composables/useNodeDragAndDrop'
-import { useNodeFileInput } from '@/composables/useNodeFileInput'
-import { useNodePaste } from '@/composables/useNodePaste'
+import { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
+import { useNodeFileInput } from '@/composables/node/useNodeFileInput'
+import { useNodePaste } from '@/composables/node/useNodePaste'
 import { api } from '@/scripts/api'
 import { useToastStore } from '@/stores/toastStore'
 
