@@ -1,6 +1,6 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
 
-import { useChainCallback } from './functional/useChainCallback'
+import { useChainCallback } from '@/composables/functional/useChainCallback'
 
 interface FileInputOptions {
   accept?: string

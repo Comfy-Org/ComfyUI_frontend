@@ -9,7 +9,7 @@ import {
 import { Vector2 } from '@comfyorg/litegraph'
 import { IBaseWidget, IWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
-import { useNodeImage, useNodeVideo } from '@/composables/useNodeImage'
+import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
 import { st } from '@/i18n'
 import { ANIM_PREVIEW_WIDGET, ComfyApp, app } from '@/scripts/app'
 import { $el } from '@/scripts/ui'
