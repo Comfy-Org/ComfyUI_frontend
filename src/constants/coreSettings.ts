@@ -342,6 +342,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: false
   },
   {
+    id: 'Comfy.DisableKnobs',
+    category: ['LiteGraph', 'Node Widget', 'DisableKnobs'],
+    name: 'Disable node widget knobs',
+    type: 'boolean',
+    defaultValue: false
+  },
+  {
     id: 'Comfy.DisableFloatRounding',
     category: ['LiteGraph', 'Node Widget', 'DisableFloatRounding'],
     name: 'Disable default float widget rounding.',
