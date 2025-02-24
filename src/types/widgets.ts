@@ -45,6 +45,7 @@ export type IWidget =
   | IComboWidget
   | ICustomWidget
   | ISliderWidget
+  | IButtonWidget
 
 export interface IBooleanWidget extends IBaseWidget {
   type?: "toggle"
@@ -74,8 +75,14 @@ export type IStringWidgetType = IStringWidget["type"] | IMultilineStringWidget["
 
 /** A widget with a string value */
 export interface IStringWidget extends IBaseWidget {
-  type?: "string" | "text" | "button"
+  type?: "string" | "text"
   value: string
+}
+
+export interface IButtonWidget extends IBaseWidget {
+  type?: "button"
+  value: undefined
+  clicked: boolean
 }
 
 /** A widget with a string value and a multiline text input */
@@ -117,7 +124,6 @@ export interface IBaseWidget<TElement extends HTMLElement = HTMLElement> {
   options: IWidgetOptions
   marker?: number
   label?: string
-  clicked?: boolean
   name?: string
   /** Widget type (see {@link TWidgetType}) */
   type?: TWidgetType

@@ -12,7 +12,7 @@ export class TextWidget extends BaseWidget implements IStringWidget {
 
   constructor(widget: IStringWidget) {
     super(widget)
-    this.type = widget.type as "text" | "string"
+    this.type = widget.type ?? "string"
     this.value = widget.value?.toString() ?? ""
   }
 

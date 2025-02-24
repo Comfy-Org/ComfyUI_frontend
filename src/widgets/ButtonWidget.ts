@@ -1,19 +1,20 @@
-import type { IStringWidget, IWidgetOptions } from "@/types/widgets"
+import type { IButtonWidget, IWidgetOptions } from "@/types/widgets"
 import { BaseWidget } from "./BaseWidget"
 import type { LGraphNode } from "@/LGraphNode"
 import type { CanvasMouseEvent } from "@/types/events"
 import type { LGraphCanvas } from "@/LGraphCanvas"
 
-export class ButtonWidget extends BaseWidget implements IStringWidget {
-  // IStringWidget properties
+export class ButtonWidget extends BaseWidget implements IButtonWidget {
+  // IButtonWidget properties
   declare type: "button"
-  declare value: string
   declare options: IWidgetOptions<boolean>
+  declare clicked: boolean
+  declare value: undefined
 
-  constructor(widget: IStringWidget) {
+  constructor(widget: IButtonWidget) {
     super(widget)
     this.type = "button"
-    this.value = widget.value ?? ""
+    this.clicked = widget.clicked ?? false
   }
 
   /**
