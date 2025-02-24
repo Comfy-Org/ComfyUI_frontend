@@ -1,8 +1,8 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
 import { IComboWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
-import { useNodeImage, useNodeVideo } from '@/composables/useNodeImage'
-import { useNodeImageUpload } from '@/composables/useNodeImageUpload'
+import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
+import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 import { useValueTransform } from '@/composables/useValueTransform'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
