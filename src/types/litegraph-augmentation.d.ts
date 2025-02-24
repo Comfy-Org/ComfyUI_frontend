@@ -1,7 +1,7 @@
 import '@comfyorg/litegraph'
 import type { LLink, Size } from '@comfyorg/litegraph'
 
-import type { DOMWidget } from '@/scripts/domWidget'
+import type { DOMWidget, DOMWidgetOptions } from '@/scripts/domWidget'
 import type { ComfyNodeDef } from '@/types/apiTypes'
 
 import type { NodeId } from './comfyWorkflow'
@@ -112,12 +112,15 @@ declare module '@comfyorg/litegraph' {
      */
     isVirtualNode?: boolean
 
-    addDOMWidget(
+    addDOMWidget<
+      T extends HTMLElement = HTMLElement,
+      V extends object | string = string
+    >(
       name: string,
       type: string,
-      element: HTMLElement,
-      options?: Record<string, any>
-    ): DOMWidget
+      element: T,
+      options?: DOMWidgetOptions<T, V>
+    ): DOMWidget<T, V>
 
     animatedImages?: boolean
     imgs?: HTMLImageElement[]

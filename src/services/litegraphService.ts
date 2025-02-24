@@ -432,11 +432,14 @@ export const useLitegraphService = () => {
             host.el,
             {
               host,
+              // @ts-expect-error `getHeight` of image host returns void instead of number.
               getHeight: host.getHeight,
               onDraw: host.onDraw,
               hideOnZoom: false
             }
-          )
+          ) as IWidget & {
+            options: { host: ReturnType<typeof createImageHost> }
+          }
           widget.serializeValue = () => undefined
           widget.options.host.updateImages(this.imgs)
         }

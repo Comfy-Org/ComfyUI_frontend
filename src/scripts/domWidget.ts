@@ -28,6 +28,12 @@ export interface DOMWidget<T extends HTMLElement, V extends object | string>
   options: DOMWidgetOptions<T, V>
   value: V
   y?: number
+  /**
+   * @deprecated Legacy property used by some extensions for customtext
+   * (textarea) widgets. Use `element` instead as it provides the same
+   * functionality and works for all DOMWidget types.
+   */
+  inputEl?: T
   callback?: (value: V) => void
   /**
    * Draw the widget on the canvas.
