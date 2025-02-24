@@ -72,7 +72,7 @@ class Load3DConfiguration {
 
     this.load3d.setLightIntensity(lightIntensity)
 
-    const fov = this.load3d.loadNodeProperty('FOV', 75)
+    const fov = this.load3d.loadNodeProperty('FOV', 35)
 
     this.load3d.setFOV(fov)
 

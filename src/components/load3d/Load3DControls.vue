@@ -559,6 +559,6 @@ onUnmounted(() => {
 })
 
 const getCameraIcon = computed(() => {
-  return props.cameraType === 'perspective' ? 'pi-camera' : 'pi-th-large'
+  return props.cameraType === 'perspective' ? 'pi-camera' : 'pi-camera'
 })
 </script>

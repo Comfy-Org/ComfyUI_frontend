@@ -32,7 +32,7 @@ export class SceneManager implements SceneManagerInterface {
     this.getActiveCamera = getActiveCamera
     this.getControls = getControls
 
-    this.gridHelper = new THREE.GridHelper(10, 10)
+    this.gridHelper = new THREE.GridHelper(20, 20)
     this.gridHelper.position.set(0, 0, 0)
     this.scene.add(this.gridHelper)
 
