@@ -252,6 +252,29 @@
       }
     }
   },
+  "CLIPTextEncodeLumina2": {
+    "description": "CLIPモデルを使用してシステムプロンプトとユーザープロンプトをエンコードし、特定の画像の生成をガイドするために使用できる埋め込みを生成します。",
+    "display_name": "CLIP Text Encode for Lumina2",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "テキストのエンコードに使用されるCLIPモデル。"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Lumina2は2種類のシステムプロンプトを提供します：Superior: あなたは、テキストプロンプトまたはユーザープロンプトに基づいて優れた画像と画像テキストの整列度を生成するためのアシスタントです。 Alignment: あなたは、テキストプロンプトに基づいて高品質の画像と最高度の画像テキストの整列度を生成するためのアシスタントです。"
+      },
+      "user_prompt": {
+        "name": "user_prompt",
+        "tooltip": "エンコードするテキスト。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "拡散モデルをガイドするために使用される埋め込まれたテキストを含む条件付け。"
+      }
+    }
+  },
   "CLIPTextEncodePixArtAlpha": {
     "description": "テキストをエンコードし、PixArt Alphaの解像度条件を設定します。PixArt Sigmaには適用されません。",
     "display_name": "CLIPTextEncodePixArtAlpha",
@@ -1078,6 +1101,15 @@
       }
     }
   },
+  "DevToolsNodeWithBooleanInput": {
+    "description": "ブール入力を持つノード",
+    "display_name": "ブール入力付きノード",
+    "inputs": {
+      "boolean_input": {
+        "name": "boolean_input"
+      }
+    }
+  },
   "DevToolsNodeWithForceInput": {
     "description": "強制入力を持つノード",
     "display_name": "強制入力ノード",
@@ -1133,6 +1165,9 @@
     "description": "シード入力付きのノード",
     "display_name": "シード入力付きノード",
     "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
       "seed": {
         "name": "シード"
       }
@@ -1174,6 +1209,57 @@
       },
       "target_module": {
         "name": "ターゲットモジュール"
+      }
+    }
+  },
+  "DevToolsRemoteWidgetNode": {
+    "description": "リモートエンドポイントから遅延してオプションを取得するノード",
+    "display_name": "リモートウィジェットノード",
+    "inputs": {
+      "remote_widget_value": {
+        "name": "remote_widget_value"
+      }
+    }
+  },
+  "DevToolsRemoteWidgetNodeWithControlAfterRefresh": {
+    "description": "リモートエンドポイントから遅延してオプションを取得し、手動でオプションを再読み込みする更新ボタンを持ち、更新時に最初のオプションを選択するノード",
+    "display_name": "更新ボタンと更新後の制御付きリモートウィジェットノード",
+    "inputs": {
+      "refresh": {
+        "name": "refresh"
+      },
+      "remote_widget_value": {
+        "name": "remote_widget_value"
+      }
+    }
+  },
+  "DevToolsRemoteWidgetNodeWithParams": {
+    "description": "クエリパラメータを持つリモートエンドポイントから遅延してオプションを取得するノード",
+    "display_name": "ソートクエリパラメータ付きリモートウィジェットノード",
+    "inputs": {
+      "remote_widget_value": {
+        "name": "remote_widget_value"
+      }
+    }
+  },
+  "DevToolsRemoteWidgetNodeWithRefresh": {
+    "description": "リモートエンドポイントから遅延してオプションを取得し、オプションを300msごとに更新するノード",
+    "display_name": "300ms更新付きリモートウィジェットノード",
+    "inputs": {
+      "remote_widget_value": {
+        "name": "remote_widget_value"
+      }
+    }
+  },
+  "DevToolsRemoteWidgetNodeWithRefreshButton": {
+    "description": "リモートエンドポイントから遅延してオプションを取得し、手動でオプションを再読み込みする更新ボタンを持つノード",
+    "display_name": "更新ボタン付きリモートウィジェットノード",
+    "inputs": {
+      "refresh": {
+        "name": "refresh"
+      },
+      "remote_widget_value": {
+        "name": "remote_widget_value"
       }
     }
   },
@@ -1429,6 +1515,15 @@
     "inputs": {
       "sigmas": {
         "name": "sigmas"
+      }
+    }
+  },
+  "FluxDisableGuidance": {
+    "description": "このノードはFluxおよびFluxのようなモデルのガイダンス埋め込みを完全に無効にします",
+    "display_name": "FluxDisableGuidance",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
       }
     }
   },
@@ -1939,6 +2034,9 @@
         "name": "cfg",
         "tooltip": "Classifier-Free Guidanceスケールは、創造性とプロンプトへの遵守のバランスを取ります。値が高いほど、生成される画像はプロンプトにより近くなりますが、値が高すぎると品質に悪影響を及ぼす可能性があります。"
       },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
       "denoise": {
         "name": "ノイズ除去",
         "tooltip": "適用されるデノイズの量。値が低いほど、初期画像の構造を維持し、画像から画像へのサンプリングが可能になります。"
@@ -1990,6 +2088,9 @@
       },
       "cfg": {
         "name": "cfg"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
       },
       "end_at_step": {
         "name": "ステップ終了"
@@ -2425,14 +2526,8 @@
   "Load3D": {
     "display_name": "3Dを読み込む",
     "inputs": {
-      "bg_color": {
-        "name": "背景色"
-      },
-      "camera_type": {
-        "name": "カメラタイプ"
-      },
-      "fov": {
-        "name": "fov"
+      "clear": {
+        "name": "クリア"
       },
       "height": {
         "name": "高さ"
@@ -2440,23 +2535,17 @@
       "image": {
         "name": "画像"
       },
-      "light_intensity": {
-        "name": "光の強度"
-      },
       "material": {
         "name": "素材"
       },
       "model_file": {
         "name": "モデルファイル"
       },
-      "show_grid": {
-        "name": "グリッドを表示"
-      },
       "up_direction": {
         "name": "上方向"
       },
-      "view": {
-        "name": "ビュー"
+      "upload 3d model": {
+        "name": "3Dモデルのアップロード"
       },
       "width": {
         "name": "幅"
@@ -2477,17 +2566,8 @@
   "Load3DAnimation": {
     "display_name": "3Dを読み込む - アニメーション",
     "inputs": {
-      "animation_speed": {
-        "name": "アニメーション速度"
-      },
-      "bg_color": {
-        "name": "背景色"
-      },
-      "camera_type": {
-        "name": "カメラタイプ"
-      },
-      "fov": {
-        "name": "fov"
+      "clear": {
+        "name": "クリア"
       },
       "height": {
         "name": "高さ"
@@ -2495,23 +2575,17 @@
       "image": {
         "name": "画像"
       },
-      "light_intensity": {
-        "name": "光の強度"
-      },
       "material": {
         "name": "素材"
       },
       "model_file": {
         "name": "モデルファイル"
       },
-      "show_grid": {
-        "name": "グリッドを表示"
-      },
       "up_direction": {
         "name": "上方向"
       },
-      "view": {
-        "name": "ビュー"
+      "upload 3d model": {
+        "name": "3Dモデルのアップロード"
       },
       "width": {
         "name": "幅"
@@ -2534,6 +2608,12 @@
     "inputs": {
       "audio": {
         "name": "オーディオ"
+      },
+      "audioUI": {
+        "name": "audioUI"
+      },
+      "upload": {
+        "name": "アップロードするファイルを選択"
       }
     }
   },
@@ -2542,6 +2622,9 @@
     "inputs": {
       "image": {
         "name": "画像"
+      },
+      "upload": {
+        "name": "アップロードするファイルを選択"
       }
     }
   },
@@ -2553,6 +2636,24 @@
       },
       "image": {
         "name": "画像"
+      },
+      "upload": {
+        "name": "アップロードするファイルを選択"
+      }
+    }
+  },
+  "LoadImageOutput": {
+    "description": "出力フォルダから画像を読み込みます。更新ボタンをクリックすると、ノードは画像リストを更新し、自動的に最初の画像を選択します。これにより、簡単に反復処理が可能になります。",
+    "display_name": "画像の読み込み（出力から）",
+    "inputs": {
+      "image": {
+        "name": "画像"
+      },
+      "refresh": {
+        "name": "更新"
+      },
+      "upload": {
+        "name": "アップロードするファイルを選択"
       }
     }
   },
@@ -2682,6 +2783,17 @@
     "inputs": {
       "mask": {
         "name": "マスク"
+      }
+    }
+  },
+  "ModelComputeDtype": {
+    "display_name": "ModelComputeDtype",
+    "inputs": {
+      "dtype": {
+        "name": "dtype"
+      },
+      "model": {
+        "name": "モデル"
       }
     }
   },
@@ -2853,6 +2965,256 @@
       },
       "out": {
         "name": "出力"
+      }
+    }
+  },
+  "ModelMergeCosmos14B": {
+    "display_name": "ModelMergeCosmos14B",
+    "inputs": {
+      "affline_norm_": {
+        "name": "affline_norm."
+      },
+      "blocks_block0_": {
+        "name": "blocks.block0."
+      },
+      "blocks_block10_": {
+        "name": "blocks.block10."
+      },
+      "blocks_block11_": {
+        "name": "blocks.block11."
+      },
+      "blocks_block12_": {
+        "name": "blocks.block12."
+      },
+      "blocks_block13_": {
+        "name": "blocks.block13."
+      },
+      "blocks_block14_": {
+        "name": "blocks.block14."
+      },
+      "blocks_block15_": {
+        "name": "blocks.block15."
+      },
+      "blocks_block16_": {
+        "name": "blocks.block16."
+      },
+      "blocks_block17_": {
+        "name": "blocks.block17."
+      },
+      "blocks_block18_": {
+        "name": "blocks.block18."
+      },
+      "blocks_block19_": {
+        "name": "blocks.block19."
+      },
+      "blocks_block1_": {
+        "name": "blocks.block1."
+      },
+      "blocks_block20_": {
+        "name": "blocks.block20."
+      },
+      "blocks_block21_": {
+        "name": "blocks.block21."
+      },
+      "blocks_block22_": {
+        "name": "blocks.block22."
+      },
+      "blocks_block23_": {
+        "name": "blocks.block23."
+      },
+      "blocks_block24_": {
+        "name": "blocks.block24."
+      },
+      "blocks_block25_": {
+        "name": "blocks.block25."
+      },
+      "blocks_block26_": {
+        "name": "blocks.block26."
+      },
+      "blocks_block27_": {
+        "name": "blocks.block27."
+      },
+      "blocks_block28_": {
+        "name": "blocks.block28."
+      },
+      "blocks_block29_": {
+        "name": "blocks.block29."
+      },
+      "blocks_block2_": {
+        "name": "blocks.block2."
+      },
+      "blocks_block30_": {
+        "name": "blocks.block30."
+      },
+      "blocks_block31_": {
+        "name": "blocks.block31."
+      },
+      "blocks_block32_": {
+        "name": "blocks.block32."
+      },
+      "blocks_block33_": {
+        "name": "blocks.block33."
+      },
+      "blocks_block34_": {
+        "name": "blocks.block34."
+      },
+      "blocks_block35_": {
+        "name": "blocks.block35."
+      },
+      "blocks_block3_": {
+        "name": "blocks.block3."
+      },
+      "blocks_block4_": {
+        "name": "blocks.block4."
+      },
+      "blocks_block5_": {
+        "name": "blocks.block5."
+      },
+      "blocks_block6_": {
+        "name": "blocks.block6."
+      },
+      "blocks_block7_": {
+        "name": "blocks.block7."
+      },
+      "blocks_block8_": {
+        "name": "blocks.block8."
+      },
+      "blocks_block9_": {
+        "name": "blocks.block9."
+      },
+      "extra_pos_embedder_": {
+        "name": "extra_pos_embedder."
+      },
+      "final_layer_": {
+        "name": "final_layer."
+      },
+      "model1": {
+        "name": "モデル1"
+      },
+      "model2": {
+        "name": "モデル2"
+      },
+      "pos_embedder_": {
+        "name": "pos_embedder."
+      },
+      "t_embedder_": {
+        "name": "t_embedder."
+      },
+      "x_embedder_": {
+        "name": "x_embedder."
+      }
+    }
+  },
+  "ModelMergeCosmos7B": {
+    "display_name": "ModelMergeCosmos7B",
+    "inputs": {
+      "affline_norm_": {
+        "name": "affline_norm."
+      },
+      "blocks_block0_": {
+        "name": "blocks.block0."
+      },
+      "blocks_block10_": {
+        "name": "blocks.block10."
+      },
+      "blocks_block11_": {
+        "name": "blocks.block11."
+      },
+      "blocks_block12_": {
+        "name": "blocks.block12."
+      },
+      "blocks_block13_": {
+        "name": "blocks.block13."
+      },
+      "blocks_block14_": {
+        "name": "blocks.block14."
+      },
+      "blocks_block15_": {
+        "name": "blocks.block15."
+      },
+      "blocks_block16_": {
+        "name": "blocks.block16."
+      },
+      "blocks_block17_": {
+        "name": "blocks.block17."
+      },
+      "blocks_block18_": {
+        "name": "blocks.block18."
+      },
+      "blocks_block19_": {
+        "name": "blocks.block19."
+      },
+      "blocks_block1_": {
+        "name": "blocks.block1."
+      },
+      "blocks_block20_": {
+        "name": "blocks.block20."
+      },
+      "blocks_block21_": {
+        "name": "blocks.block21."
+      },
+      "blocks_block22_": {
+        "name": "blocks.block22."
+      },
+      "blocks_block23_": {
+        "name": "blocks.block23."
+      },
+      "blocks_block24_": {
+        "name": "blocks.block24."
+      },
+      "blocks_block25_": {
+        "name": "blocks.block25."
+      },
+      "blocks_block26_": {
+        "name": "blocks.block26."
+      },
+      "blocks_block27_": {
+        "name": "blocks.block27."
+      },
+      "blocks_block2_": {
+        "name": "blocks.block2."
+      },
+      "blocks_block3_": {
+        "name": "blocks.block3."
+      },
+      "blocks_block4_": {
+        "name": "blocks.block4."
+      },
+      "blocks_block5_": {
+        "name": "blocks.block5."
+      },
+      "blocks_block6_": {
+        "name": "blocks.block6."
+      },
+      "blocks_block7_": {
+        "name": "blocks.block7."
+      },
+      "blocks_block8_": {
+        "name": "blocks.block8."
+      },
+      "blocks_block9_": {
+        "name": "blocks.block9."
+      },
+      "extra_pos_embedder_": {
+        "name": "extra_pos_embedder."
+      },
+      "final_layer_": {
+        "name": "final_layer."
+      },
+      "model1": {
+        "name": "モデル1"
+      },
+      "model2": {
+        "name": "モデル2"
+      },
+      "pos_embedder_": {
+        "name": "pos_embedder."
+      },
+      "t_embedder_": {
+        "name": "t_embedder."
+      },
+      "x_embedder_": {
+        "name": "x_embedder."
       }
     }
   },
@@ -4305,17 +4667,8 @@
   "Preview3D": {
     "display_name": "3Dプレビュー",
     "inputs": {
-      "bg_color": {
-        "name": "背景色"
-      },
-      "camera_type": {
-        "name": "カメラタイプ"
-      },
-      "fov": {
-        "name": "fov"
-      },
-      "light_intensity": {
-        "name": "光の強度"
+      "image": {
+        "name": "画像"
       },
       "material": {
         "name": "マテリアル"
@@ -4323,14 +4676,25 @@
       "model_file": {
         "name": "モデルファイル"
       },
-      "show_grid": {
-        "name": "グリッドを表示"
+      "up_direction": {
+        "name": "上方向"
+      }
+    }
+  },
+  "Preview3DAnimation": {
+    "display_name": "プレビュー 3D - アニメーション",
+    "inputs": {
+      "image": {
+        "name": "画像"
+      },
+      "material": {
+        "name": "素材"
+      },
+      "model_file": {
+        "name": "モデルファイル"
       },
       "up_direction": {
         "name": "上方向"
-      },
-      "view": {
-        "name": "ビュー"
       }
     }
   },
@@ -4339,6 +4703,9 @@
     "inputs": {
       "audio": {
         "name": "オーディオ"
+      },
+      "audioUI": {
+        "name": "オーディオUI"
       }
     }
   },
@@ -4354,6 +4721,9 @@
   "RandomNoise": {
     "display_name": "ランダムノイズ",
     "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
       "noise_seed": {
         "name": "ノイズシード"
       }
@@ -4378,6 +4748,20 @@
       },
       "latents": {
         "name": "潜在変数"
+      }
+    }
+  },
+  "RenormCFG": {
+    "display_name": "RenormCFG",
+    "inputs": {
+      "cfg_trunc": {
+        "name": "cfg_trunc"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "renorm_cfg": {
+        "name": "renorm_cfg"
       }
     }
   },
@@ -4547,6 +4931,9 @@
       },
       "cfg": {
         "name": "cfg"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
       },
       "latent_image": {
         "name": "潜在画像"
@@ -4799,6 +5186,9 @@
       "audio": {
         "name": "オーディオ"
       },
+      "audioUI": {
+        "name": "audioUI"
+      },
       "filename_prefix": {
         "name": "ファイル名_プレフィックス"
       }
@@ -4834,6 +5224,27 @@
       },
       "samples": {
         "name": "サンプル"
+      }
+    }
+  },
+  "SaveWEBM": {
+    "display_name": "SaveWEBM",
+    "inputs": {
+      "codec": {
+        "name": "コーデック"
+      },
+      "crf": {
+        "name": "crf",
+        "tooltip": "crfが高いほどファイルサイズは小さくなりますが、品質は低下します。逆に、crfが低いほど品質は高くなりますが、ファイルサイズは大きくなります。"
+      },
+      "filename_prefix": {
+        "name": "ファイル名の接頭辞"
+      },
+      "fps": {
+        "name": "fps"
+      },
+      "images": {
+        "name": "画像"
       }
     }
   },
@@ -5529,6 +5940,9 @@
       },
       "image": {
         "name": "画像"
+      },
+      "waiting for camera___": {
+        "name": "カメラ待ち..."
       },
       "width": {
         "name": "幅"

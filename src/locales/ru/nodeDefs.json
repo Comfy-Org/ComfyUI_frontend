@@ -252,6 +252,29 @@
       }
     }
   },
+  "CLIPTextEncodeLumina2": {
+    "description": "Кодирует системный запрос и запрос пользователя с помощью модели CLIP во встраиваемый элемент, который можно использовать для направления модели диффузии на генерацию конкретных изображений.",
+    "display_name": "CLIP Text Encode для Lumina2",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "Модель CLIP, используемая для кодирования текста."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Lumina2 предоставляет два типа системных запросов: Высший: Вы - помощник, разработанный для генерации высококачественных изображений с наивысшей степенью соответствия текста и изображения на основе текстовых запросов или запросов пользователя. Соответствие: Вы - помощник, разработанный для генерации высококачественных изображений с наивысшей степенью соответствия текста и изображения на основе текстовых запросов."
+      },
+      "user_prompt": {
+        "name": "user_prompt",
+        "tooltip": "Текст для кодирования."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Условие, содержащее встроенный текст, используемый для направления модели диффузии."
+      }
+    }
+  },
   "CLIPTextEncodePixArtAlpha": {
     "description": "Кодирует текст и устанавливает условие разрешения для PixArt Alpha. Не применяется к PixArt Sigma.",
     "display_name": "CLIPTextEncodePixArtAlpha",
@@ -1078,6 +1101,15 @@
       }
     }
   },
+  "DevToolsNodeWithBooleanInput": {
+    "description": "Узел с булевым вводом",
+    "display_name": "Узел с булевым вводом",
+    "inputs": {
+      "boolean_input": {
+        "name": "boolean_input"
+      }
+    }
+  },
   "DevToolsNodeWithForceInput": {
     "description": "Нода с принудительным вводом",
     "display_name": "Нода с принудительным вводом",
@@ -1133,6 +1165,9 @@
     "description": "Нода с входным сидом",
     "display_name": "Нода с входным сидом",
     "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
       "seed": {
         "name": "сид"
       }
@@ -1174,6 +1209,57 @@
       },
       "target_module": {
         "name": "целевой модуль"
+      }
+    }
+  },
+  "DevToolsRemoteWidgetNode": {
+    "description": "Узел, который лениво получает опции с удаленного конечного пункта",
+    "display_name": "Удаленный виджет узла",
+    "inputs": {
+      "remote_widget_value": {
+        "name": "remote_widget_value"
+      }
+    }
+  },
+  "DevToolsRemoteWidgetNodeWithControlAfterRefresh": {
+    "description": "Узел, который лениво получает опции с удаленного конечного пункта и имеет кнопку обновления для ручной перезагрузки опций и выбора первой опции при обновлении",
+    "display_name": "Удаленный виджет узла с кнопкой обновления и контролем после обновления",
+    "inputs": {
+      "refresh": {
+        "name": "refresh"
+      },
+      "remote_widget_value": {
+        "name": "remote_widget_value"
+      }
+    }
+  },
+  "DevToolsRemoteWidgetNodeWithParams": {
+    "description": "Узел, который лениво получает опции с удаленного конечного пункта с параметрами запроса",
+    "display_name": "Удаленный виджет узла с параметром сортировки запроса",
+    "inputs": {
+      "remote_widget_value": {
+        "name": "remote_widget_value"
+      }
+    }
+  },
+  "DevToolsRemoteWidgetNodeWithRefresh": {
+    "description": "Узел, который лениво получает опции с удаленного конечного пункта и обновляет опции каждые 300 мс",
+    "display_name": "Удаленный виджет узла с обновлением каждые 300 мс",
+    "inputs": {
+      "remote_widget_value": {
+        "name": "remote_widget_value"
+      }
+    }
+  },
+  "DevToolsRemoteWidgetNodeWithRefreshButton": {
+    "description": "Узел, который лениво получает опции с удаленного конечного пункта и имеет кнопку обновления для ручной перезагрузки опций",
+    "display_name": "Удаленный виджет узла с кнопкой обновления",
+    "inputs": {
+      "refresh": {
+        "name": "refresh"
+      },
+      "remote_widget_value": {
+        "name": "remote_widget_value"
       }
     }
   },
@@ -1429,6 +1515,15 @@
     "inputs": {
       "sigmas": {
         "name": "sigmas"
+      }
+    }
+  },
+  "FluxDisableGuidance": {
+    "description": "Этот узел полностью отключает встраиваемое руководство на Flux и подобных моделях Flux",
+    "display_name": "FluxDisableGuidance",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
       }
     }
   },
@@ -1939,6 +2034,9 @@
         "name": "cfg",
         "tooltip": "Масштаб без классификатора балансирует креативность и соблюдение запроса. Более высокие значения приводят к изображениям, более точно соответствующим запросу, однако слишком высокие значения негативно скажутся на качестве."
       },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
       "denoise": {
         "name": "шумоподавление",
         "tooltip": "Количество уменьшения шума, более низкие значения сохранят структуру начального изображения, позволяя выборку изображений."
@@ -1990,6 +2088,9 @@
       },
       "cfg": {
         "name": "cfg"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
       },
       "end_at_step": {
         "name": "закончить_на_шаге"
@@ -2425,14 +2526,8 @@
   "Load3D": {
     "display_name": "Загрузить 3D",
     "inputs": {
-      "bg_color": {
-        "name": "цвет_фона"
-      },
-      "camera_type": {
-        "name": "тип_камеры"
-      },
-      "fov": {
-        "name": "поле зрения"
+      "clear": {
+        "name": "clear"
       },
       "height": {
         "name": "высота"
@@ -2440,23 +2535,17 @@
       "image": {
         "name": "изображение"
       },
-      "light_intensity": {
-        "name": "интенсивность_света"
-      },
       "material": {
         "name": "материал"
       },
       "model_file": {
         "name": "файл_модели"
       },
-      "show_grid": {
-        "name": "показать_сетку"
-      },
       "up_direction": {
         "name": "направление_вверх"
       },
-      "view": {
-        "name": "вид"
+      "upload 3d model": {
+        "name": "upload 3d model"
       },
       "width": {
         "name": "ширина"
@@ -2477,17 +2566,8 @@
   "Load3DAnimation": {
     "display_name": "Загрузить 3D — Анимация",
     "inputs": {
-      "animation_speed": {
-        "name": "скорость_анимации"
-      },
-      "bg_color": {
-        "name": "цвет_фона"
-      },
-      "camera_type": {
-        "name": "тип_камеры"
-      },
-      "fov": {
-        "name": "поле зрения"
+      "clear": {
+        "name": "clear"
       },
       "height": {
         "name": "высота"
@@ -2495,23 +2575,17 @@
       "image": {
         "name": "изображение"
       },
-      "light_intensity": {
-        "name": "интенсивность_света"
-      },
       "material": {
         "name": "материал"
       },
       "model_file": {
         "name": "файл_модели"
       },
-      "show_grid": {
-        "name": "показать_сетку"
-      },
       "up_direction": {
         "name": "направление_вверх"
       },
-      "view": {
-        "name": "вид"
+      "upload 3d model": {
+        "name": "upload 3d model"
       },
       "width": {
         "name": "ширина"
@@ -2534,6 +2608,12 @@
     "inputs": {
       "audio": {
         "name": "аудио"
+      },
+      "audioUI": {
+        "name": "audioUI"
+      },
+      "upload": {
+        "name": "выберите файл для загрузки"
       }
     }
   },
@@ -2542,6 +2622,9 @@
     "inputs": {
       "image": {
         "name": "изображение"
+      },
+      "upload": {
+        "name": "выберите файл для загрузки"
       }
     }
   },
@@ -2553,6 +2636,24 @@
       },
       "image": {
         "name": "изображение"
+      },
+      "upload": {
+        "name": "выберите файл для загрузки"
+      }
+    }
+  },
+  "LoadImageOutput": {
+    "description": "Загрузите изображение из папки вывода. При нажатии кнопки обновления, узел обновит список изображений и автоматически выберет первое изображение, что позволяет легко итерировать.",
+    "display_name": "Загрузить изображение (из выходных данных)",
+    "inputs": {
+      "image": {
+        "name": "изображение"
+      },
+      "refresh": {
+        "name": "обновить"
+      },
+      "upload": {
+        "name": "выберите файл для загрузки"
       }
     }
   },
@@ -2682,6 +2783,17 @@
     "inputs": {
       "mask": {
         "name": "маска"
+      }
+    }
+  },
+  "ModelComputeDtype": {
+    "display_name": "ModelComputeDtype",
+    "inputs": {
+      "dtype": {
+        "name": "dtype"
+      },
+      "model": {
+        "name": "модель"
       }
     }
   },
@@ -2853,6 +2965,256 @@
       },
       "out": {
         "name": "выход"
+      }
+    }
+  },
+  "ModelMergeCosmos14B": {
+    "display_name": "ModelMergeCosmos14B",
+    "inputs": {
+      "affline_norm_": {
+        "name": "affline_norm."
+      },
+      "blocks_block0_": {
+        "name": "blocks.block0."
+      },
+      "blocks_block10_": {
+        "name": "blocks.block10."
+      },
+      "blocks_block11_": {
+        "name": "blocks.block11."
+      },
+      "blocks_block12_": {
+        "name": "blocks.block12."
+      },
+      "blocks_block13_": {
+        "name": "blocks.block13."
+      },
+      "blocks_block14_": {
+        "name": "blocks.block14."
+      },
+      "blocks_block15_": {
+        "name": "blocks.block15."
+      },
+      "blocks_block16_": {
+        "name": "blocks.block16."
+      },
+      "blocks_block17_": {
+        "name": "blocks.block17."
+      },
+      "blocks_block18_": {
+        "name": "blocks.block18."
+      },
+      "blocks_block19_": {
+        "name": "blocks.block19."
+      },
+      "blocks_block1_": {
+        "name": "blocks.block1."
+      },
+      "blocks_block20_": {
+        "name": "blocks.block20."
+      },
+      "blocks_block21_": {
+        "name": "blocks.block21."
+      },
+      "blocks_block22_": {
+        "name": "blocks.block22."
+      },
+      "blocks_block23_": {
+        "name": "blocks.block23."
+      },
+      "blocks_block24_": {
+        "name": "blocks.block24."
+      },
+      "blocks_block25_": {
+        "name": "blocks.block25."
+      },
+      "blocks_block26_": {
+        "name": "blocks.block26."
+      },
+      "blocks_block27_": {
+        "name": "blocks.block27."
+      },
+      "blocks_block28_": {
+        "name": "blocks.block28."
+      },
+      "blocks_block29_": {
+        "name": "blocks.block29."
+      },
+      "blocks_block2_": {
+        "name": "blocks.block2."
+      },
+      "blocks_block30_": {
+        "name": "blocks.block30."
+      },
+      "blocks_block31_": {
+        "name": "blocks.block31."
+      },
+      "blocks_block32_": {
+        "name": "blocks.block32."
+      },
+      "blocks_block33_": {
+        "name": "blocks.block33."
+      },
+      "blocks_block34_": {
+        "name": "blocks.block34."
+      },
+      "blocks_block35_": {
+        "name": "blocks.block35."
+      },
+      "blocks_block3_": {
+        "name": "blocks.block3."
+      },
+      "blocks_block4_": {
+        "name": "blocks.block4."
+      },
+      "blocks_block5_": {
+        "name": "blocks.block5."
+      },
+      "blocks_block6_": {
+        "name": "blocks.block6."
+      },
+      "blocks_block7_": {
+        "name": "blocks.block7."
+      },
+      "blocks_block8_": {
+        "name": "blocks.block8."
+      },
+      "blocks_block9_": {
+        "name": "blocks.block9."
+      },
+      "extra_pos_embedder_": {
+        "name": "extra_pos_embedder."
+      },
+      "final_layer_": {
+        "name": "final_layer."
+      },
+      "model1": {
+        "name": "модель1"
+      },
+      "model2": {
+        "name": "модель2"
+      },
+      "pos_embedder_": {
+        "name": "pos_embedder."
+      },
+      "t_embedder_": {
+        "name": "t_embedder."
+      },
+      "x_embedder_": {
+        "name": "x_embedder."
+      }
+    }
+  },
+  "ModelMergeCosmos7B": {
+    "display_name": "ModelMergeCosmos7B",
+    "inputs": {
+      "affline_norm_": {
+        "name": "affline_norm."
+      },
+      "blocks_block0_": {
+        "name": "blocks.block0."
+      },
+      "blocks_block10_": {
+        "name": "blocks.block10."
+      },
+      "blocks_block11_": {
+        "name": "blocks.block11."
+      },
+      "blocks_block12_": {
+        "name": "blocks.block12."
+      },
+      "blocks_block13_": {
+        "name": "blocks.block13."
+      },
+      "blocks_block14_": {
+        "name": "blocks.block14."
+      },
+      "blocks_block15_": {
+        "name": "blocks.block15."
+      },
+      "blocks_block16_": {
+        "name": "blocks.block16."
+      },
+      "blocks_block17_": {
+        "name": "blocks.block17."
+      },
+      "blocks_block18_": {
+        "name": "blocks.block18."
+      },
+      "blocks_block19_": {
+        "name": "blocks.block19."
+      },
+      "blocks_block1_": {
+        "name": "blocks.block1."
+      },
+      "blocks_block20_": {
+        "name": "blocks.block20."
+      },
+      "blocks_block21_": {
+        "name": "blocks.block21."
+      },
+      "blocks_block22_": {
+        "name": "blocks.block22."
+      },
+      "blocks_block23_": {
+        "name": "blocks.block23."
+      },
+      "blocks_block24_": {
+        "name": "blocks.block24."
+      },
+      "blocks_block25_": {
+        "name": "blocks.block25."
+      },
+      "blocks_block26_": {
+        "name": "blocks.block26."
+      },
+      "blocks_block27_": {
+        "name": "blocks.block27."
+      },
+      "blocks_block2_": {
+        "name": "blocks.block2."
+      },
+      "blocks_block3_": {
+        "name": "blocks.block3."
+      },
+      "blocks_block4_": {
+        "name": "blocks.block4."
+      },
+      "blocks_block5_": {
+        "name": "blocks.block5."
+      },
+      "blocks_block6_": {
+        "name": "blocks.block6."
+      },
+      "blocks_block7_": {
+        "name": "blocks.block7."
+      },
+      "blocks_block8_": {
+        "name": "blocks.block8."
+      },
+      "blocks_block9_": {
+        "name": "blocks.block9."
+      },
+      "extra_pos_embedder_": {
+        "name": "extra_pos_embedder."
+      },
+      "final_layer_": {
+        "name": "final_layer."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "pos_embedder_": {
+        "name": "pos_embedder."
+      },
+      "t_embedder_": {
+        "name": "t_embedder."
+      },
+      "x_embedder_": {
+        "name": "x_embedder."
       }
     }
   },
@@ -4305,17 +4667,8 @@
   "Preview3D": {
     "display_name": "Предварительный просмотр 3D",
     "inputs": {
-      "bg_color": {
-        "name": "цвет_фона"
-      },
-      "camera_type": {
-        "name": "тип_камеры"
-      },
-      "fov": {
-        "name": "поле зрения"
-      },
-      "light_intensity": {
-        "name": "интенсивность_света"
+      "image": {
+        "name": "изображение"
       },
       "material": {
         "name": "материал"
@@ -4323,14 +4676,25 @@
       "model_file": {
         "name": "файл_модели"
       },
-      "show_grid": {
-        "name": "показать_сетку"
+      "up_direction": {
+        "name": "направление_вверх"
+      }
+    }
+  },
+  "Preview3DAnimation": {
+    "display_name": "Предварительный просмотр 3D - Анимация",
+    "inputs": {
+      "image": {
+        "name": "изображение"
+      },
+      "material": {
+        "name": "материал"
+      },
+      "model_file": {
+        "name": "файл_модели"
       },
       "up_direction": {
         "name": "направление_вверх"
-      },
-      "view": {
-        "name": "вид"
       }
     }
   },
@@ -4339,6 +4703,9 @@
     "inputs": {
       "audio": {
         "name": "аудио"
+      },
+      "audioUI": {
+        "name": "audioUI"
       }
     }
   },
@@ -4354,6 +4721,9 @@
   "RandomNoise": {
     "display_name": "Случайный шум",
     "inputs": {
+      "control_after_generate": {
+        "name": "контроль_после_генерации"
+      },
       "noise_seed": {
         "name": "сид_шума"
       }
@@ -4378,6 +4748,20 @@
       },
       "latents": {
         "name": "латенты"
+      }
+    }
+  },
+  "RenormCFG": {
+    "display_name": "RenormCFG",
+    "inputs": {
+      "cfg_trunc": {
+        "name": "cfg_trunc"
+      },
+      "model": {
+        "name": "модель"
+      },
+      "renorm_cfg": {
+        "name": "renorm_cfg"
       }
     }
   },
@@ -4547,6 +4931,9 @@
       },
       "cfg": {
         "name": "cfg"
+      },
+      "control_after_generate": {
+        "name": "контроль после генерации"
       },
       "latent_image": {
         "name": "латентное_изображение"
@@ -4799,6 +5186,9 @@
       "audio": {
         "name": "аудио"
       },
+      "audioUI": {
+        "name": "audioUI"
+      },
       "filename_prefix": {
         "name": "префикс_названия_файла"
       }
@@ -4834,6 +5224,27 @@
       },
       "samples": {
         "name": "образцы"
+      }
+    }
+  },
+  "SaveWEBM": {
+    "display_name": "SaveWEBM",
+    "inputs": {
+      "codec": {
+        "name": "кодек"
+      },
+      "crf": {
+        "name": "crf",
+        "tooltip": "Большее значение crf означает нижнее качество с меньшим размером файла, меньшее значение crf означает высшее качество большего размера файла."
+      },
+      "filename_prefix": {
+        "name": "префикс_имени_файла"
+      },
+      "fps": {
+        "name": "fps"
+      },
+      "images": {
+        "name": "изображения"
       }
     }
   },
@@ -5529,6 +5940,9 @@
       },
       "image": {
         "name": "изображение"
+      },
+      "waiting for camera___": {
+        "name": "в ожидании камеры..."
       },
       "width": {
         "name": "ширина"

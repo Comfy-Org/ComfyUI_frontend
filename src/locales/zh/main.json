@@ -477,6 +477,7 @@
     "controlnet": "ControlNet",
     "create": "创建",
     "custom_sampling": "自定义采样",
+    "debug": "调试",
     "deprecated": "已弃用",
     "flux": "Flux",
     "gligen": "GLIGEN",

@@ -477,6 +477,7 @@
     "controlnet": "controlnet",
     "create": "créer",
     "custom_sampling": "échantillonnage_personnalisé",
+    "debug": "débogage",
     "deprecated": "déprécié",
     "flux": "flux",
     "gligen": "gligen",

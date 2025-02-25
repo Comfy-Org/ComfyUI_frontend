@@ -477,6 +477,7 @@
     "controlnet": "コントロールネット",
     "create": "作成",
     "custom_sampling": "カスタムサンプリング",
+    "debug": "デバッグ",
     "deprecated": "非推奨",
     "flux": "flux",
     "gligen": "グライジェン",
