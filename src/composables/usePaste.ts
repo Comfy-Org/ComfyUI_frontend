@@ -37,14 +37,14 @@ export const usePaste = () => {
     // this is handled by litegraph
     if (workspaceStore.shiftDown) return
 
-    const canvas = canvasStore.canvas
+    const { canvas } = canvasStore
     if (!canvas) return
 
-    const graph = canvas.graph
+    const { graph } = canvas
     let data: DataTransfer | string | null = e.clipboardData
     if (!data) throw new Error('No clipboard data on clipboard event')
 
-    const items = data.items
+    const { items } = data
 
     const currentNode = canvas.current_node as LGraphNode
     const isNodeSelected = currentNode?.is_selected
