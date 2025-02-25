@@ -32,7 +32,7 @@ export const usePaste = () => {
     )
   }
 
-  useEventListener(document, 'paste', async (e: ClipboardEvent) => {
+  useEventListener(document, 'paste', async (e) => {
     // ctrl+shift+v is used to paste nodes with connections
     // this is handled by litegraph
     if (workspaceStore.shiftDown) return
