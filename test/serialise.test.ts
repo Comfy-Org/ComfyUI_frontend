@@ -3,7 +3,7 @@ import { LGraph, LGraphGroup, LGraphNode } from "@/litegraph"
 import { test } from "./testExtensions"
 import type { ISerialisedGraph } from "@/types/serialisation"
 
-describe.concurrent("LGraph Serialisation", () => {
+describe("LGraph Serialisation", () => {
   test("can (de)serialise node / group titles", ({ expect, minimalGraph }) => {
     const nodeTitle = "Test Node"
     const groupTitle = "Test Group"

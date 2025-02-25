@@ -33,5 +33,7 @@ export default defineConfig({
   test: {
     alias: { "@/": path.resolve(__dirname, "./src/") },
     environment: "jsdom",
+    restoreMocks: true,
+    unstubGlobals: true,
   },
 })

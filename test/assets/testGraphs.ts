@@ -57,6 +57,7 @@ export const basicSerialisableGraph: SerialisableGraph = {
   nodes: [
     {
       id: 1,
+      type: "mustBeSet",
     },
   ],
   links: [],
