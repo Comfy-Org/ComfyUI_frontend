@@ -477,6 +477,7 @@
     "controlnet": "컨트롤넷",
     "create": "생성",
     "custom_sampling": "사용자 정의 샘플링",
+    "debug": "디버그",
     "deprecated": "지원 중단",
     "flux": "flux",
     "gligen": "글리젠",
