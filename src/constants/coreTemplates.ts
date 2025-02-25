@@ -7,12 +7,12 @@ export const CORE_TEMPLATES = [
       {
         name: 'default',
         mediaType: 'image',
-        mediaSubtype: 'jpg'
+        mediaSubtype: 'png'
       },
       {
         name: 'image2image',
         mediaType: 'image',
-        mediaSubtype: 'jpg',
+        mediaSubtype: 'png',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/img2img/'
       },
