@@ -893,7 +893,8 @@ export class LGraphCanvas implements ConnectionColorContext {
   /** @param options Parameter is never used */
   static showMenuNodeOptionalInputs(
     v: unknown,
-    options: INodeInputSlot[],
+    /** Unused - immediately overwritten */
+    _options: boolean,
     e: MouseEvent,
     prev_menu: ContextMenu,
     node: LGraphNode,
@@ -905,9 +906,9 @@ export class LGraphCanvas implements ConnectionColorContext {
     const canvas = LGraphCanvas.active_canvas
     const ref_window = canvas.getCanvasWindow()
 
-    options = node.onGetInputs
+    const options = node.onGetInputs
       ? node.onGetInputs()
-      : node.optional_inputs
+      : undefined
 
     let entries: IOptionalSlotData<INodeInputSlot>[] = []
     if (options) {
@@ -973,7 +974,8 @@ export class LGraphCanvas implements ConnectionColorContext {
   /** @param options Parameter is never used */
   static showMenuNodeOptionalOutputs(
     v: unknown,
-    options: INodeOutputSlot[],
+    /** Unused - immediately overwritten */
+    _options: INodeOutputSlot[],
     e: unknown,
     prev_menu: ContextMenu,
     node: LGraphNode,
@@ -984,9 +986,9 @@ export class LGraphCanvas implements ConnectionColorContext {
     const canvas = LGraphCanvas.active_canvas
     const ref_window = canvas.getCanvasWindow()
 
-    options = node.onGetOutputs
+    const options = node.onGetOutputs
       ? node.onGetOutputs()
-      : node.optional_outputs
+      : undefined
 
     let entries: IOptionalSlotData<INodeOutputSlot>[] = []
     if (options) {
