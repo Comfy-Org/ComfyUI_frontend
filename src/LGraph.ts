@@ -869,7 +869,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
       if (index != -1) {
         this._groups.splice(index, 1)
       }
-      node.graph = null
+      node.graph = undefined
       this._version++
       this.setDirtyCanvas(true, true)
       this.change()
