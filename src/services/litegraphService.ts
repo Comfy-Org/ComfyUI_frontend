@@ -4,10 +4,10 @@ import {
   type INodeInputSlot,
   LGraphEventMode,
   LGraphNode,
-  LiteGraph
+  LiteGraph,
+  RenderShape
 } from '@comfyorg/litegraph'
 import { Vector2 } from '@comfyorg/litegraph'
-import { RenderShape } from '@comfyorg/litegraph/dist/types/globalEnums'
 import { IBaseWidget, IWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
