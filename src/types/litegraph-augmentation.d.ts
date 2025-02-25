@@ -82,8 +82,6 @@ declare module '@comfyorg/litegraph' {
     convertToNodes?(): LGraphNode[]
     recreate?(): Promise<LGraphNode>
     refreshComboInNode?(defs: Record<string, ComfyNodeDef>)
-    /** Used by virtual nodes (primitives) to insert their values into the graph prior to queueing. */
-    applyToGraph?(extraLinks?: LLink[]): void
     /** @deprecated groupNode */
     updateLink?(link: LLink): LLink | null
     onExecutionStart?(): unknown

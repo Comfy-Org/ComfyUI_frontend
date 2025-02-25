@@ -11,6 +11,7 @@ import { INodeSlot } from '@comfyorg/litegraph'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 import type { InputSpec } from '@/types/apiTypes'
+import { isPrimitiveNode } from '@/utils/typeGuardUtil'
 
 import { app } from '../../scripts/app'
 import { applyTextReplacements } from '../../scripts/utils'
@@ -30,10 +31,8 @@ const CONFIG = Symbol()
 const GET_CONFIG = Symbol()
 const TARGET = Symbol() // Used for reroutes to specify the real target widget
 
-interface PrimitiveNode extends LGraphNode {}
-
 const replacePropertyName = 'Run widget replace on values'
-class PrimitiveNode extends LGraphNode {
+export class PrimitiveNode extends LGraphNode {
   controlValues: any[]
   lastType: string
   static category: string
@@ -575,10 +574,6 @@ function isValidCombo(combo: string[], obj: unknown) {
   }
 
   return true
-}
-
-function isPrimitiveNode(node: LGraphNode): node is PrimitiveNode {
-  return node.type === 'PrimitiveNode'
 }
 
 export function setWidgetConfig(slot, config, target?: IWidget) {

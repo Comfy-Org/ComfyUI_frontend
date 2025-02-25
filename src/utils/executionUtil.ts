@@ -2,6 +2,7 @@ import type { LGraph } from '@comfyorg/litegraph'
 import { LGraphEventMode } from '@comfyorg/litegraph'
 
 import type { ComfyApiWorkflow, ComfyWorkflowJSON } from '@/types/comfyWorkflow'
+import { isPrimitiveNode } from '@/utils/typeGuardUtil'
 
 /**
  * Converts the current graph workflow for sending to the API.
@@ -17,8 +18,7 @@ export const graphToPrompt = async (
   for (const node of graph.computeExecutionOrder(false)) {
     const innerNodes = node.getInnerNodes ? node.getInnerNodes() : [node]
     for (const innerNode of innerNodes) {
-      // Don't serialize frontend only nodes but let them make changes
-      if (innerNode.isVirtualNode) {
+      if (isPrimitiveNode(innerNode)) {
         innerNode.applyToGraph?.()
       }
     }
