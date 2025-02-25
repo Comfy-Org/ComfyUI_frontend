@@ -6251,46 +6251,11 @@ export class LGraphCanvas implements ConnectionColorContext {
         if (that.onSearchBoxSelection) {
           that.onSearchBoxSelection(name, event, graphcanvas)
         } else {
-          const extra = LiteGraph.searchbox_extras[name.toLowerCase()]
-          if (extra) name = extra.type
-
           graphcanvas.graph.beforeChange()
           const node = LiteGraph.createNode(name)
           if (node) {
             node.pos = graphcanvas.convertEventToCanvasOffset(event)
             graphcanvas.graph.add(node, false)
-          }
-
-          if (extra?.data) {
-            if (extra.data.properties) {
-              for (const i in extra.data.properties) {
-                node.addProperty(i, extra.data.properties[i])
-              }
-            }
-            if (extra.data.inputs) {
-              node.inputs = []
-              for (const i in extra.data.inputs) {
-                node.addOutput(
-                  extra.data.inputs[i][0],
-                  extra.data.inputs[i][1],
-                )
-              }
-            }
-            if (extra.data.outputs) {
-              node.outputs = []
-              for (const i in extra.data.outputs) {
-                node.addOutput(
-                  extra.data.outputs[i][0],
-                  extra.data.outputs[i][1],
-                )
-              }
-            }
-            if (extra.data.title) {
-              node.title = extra.data.title
-            }
-            if (extra.data.json) {
-              node.configure(extra.data.json)
-            }
           }
 
           // join node after inserting
@@ -6405,24 +6370,6 @@ export class LGraphCanvas implements ConnectionColorContext {
         if (options.do_type_filter && that.search_box) {
           sIn = that.search_box.querySelector(".slot_in_type_filter")
           sOut = that.search_box.querySelector(".slot_out_type_filter")
-        }
-
-        // extras
-        for (const i in LiteGraph.searchbox_extras) {
-          const extra = LiteGraph.searchbox_extras[i]
-          if (
-            (!options.show_all_if_empty || str) &&
-            extra.desc.toLowerCase().indexOf(str) === -1
-          )
-            continue
-          const ctor = LiteGraph.registered_node_types[extra.type]
-          if (ctor && ctor.filter != filter) continue
-          if (!inner_test_filter(extra.type)) continue
-
-          addResult(extra.desc, "searchbox_extra")
-          if (LGraphCanvas.search_limit !== -1 && c++ > LGraphCanvas.search_limit) {
-            break
-          }
         }
 
         let filtered = null

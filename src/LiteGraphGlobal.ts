@@ -145,7 +145,7 @@ export class LiteGraphGlobal {
   /** used to store vars between graphs */
   Globals = {}
 
-  /** used to add extra features to the search box */
+  /** @deprecated Unused and will be deleted. */
   searchbox_extras = {}
 
   /** [true!] this make the nodes box (top left circle) coloured when triggered (execute/action), visual feedback */
@@ -621,20 +621,6 @@ export class LiteGraphGlobal {
     }
 
     return false
-  }
-
-  /**
-   * Register a string in the search box so when the user types it it will recommend this node
-   * @param node_type the node recommended
-   * @param description text to show next to it
-   * @param data it could contain info of how the node should be configured
-   */
-  registerSearchboxExtra(node_type: any, description: string, data: any): void {
-    this.searchbox_extras[description.toLowerCase()] = {
-      type: node_type,
-      desc: description,
-      data: data,
-    }
   }
 
   // used to create nodes from wrapping functions
