@@ -25,7 +25,7 @@ import type {
 import { isColorable } from "./typeGuards"
 import type { SlotShape, LabelPosition, SlotDirection, SlotType } from "./draw"
 import type { IWidget } from "./types/widgets"
-import type { RenderShape, TitleMode } from "./types/globalEnums"
+import { RenderShape, TitleMode } from "./types/globalEnums"
 import type { CanvasEventDetail } from "./types/events"
 import { LiteGraphGlobal } from "./LiteGraphGlobal"
 import { loadPolyfills } from "./polyfills"
@@ -79,6 +79,7 @@ export {
 }
 export { IWidget }
 export { LGraphBadge, BadgePosition }
+export { RenderShape, TitleMode }
 export { SlotShape, LabelPosition, SlotDirection, SlotType }
 export { EaseFunction, LinkMarkerShape, LGraphEventMode } from "./types/globalEnums"
 export type {
