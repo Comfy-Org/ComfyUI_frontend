@@ -32,20 +32,19 @@ export const usePaste = () => {
     )
   }
 
-  useEventListener(document, 'paste', async (e: ClipboardEvent) => {
+  useEventListener(document, 'paste', async (e) => {
     // ctrl+shift+v is used to paste nodes with connections
     // this is handled by litegraph
     if (workspaceStore.shiftDown) return
 
-    const canvas = canvasStore.canvas
+    const { canvas } = canvasStore
     if (!canvas) return
 
-    const graph = canvas.graph
-    // @ts-expect-error: Property 'clipboardData' does not exist on type 'Window & typeof globalThis'.
-    // Did you mean 'Clipboard'?ts(2551)
-    // TODO: Not sure what the code wants to do.
-    let data = e.clipboardData || window.clipboardData
-    const items: DataTransferItemList = data.items
+    const { graph } = canvas
+    let data: DataTransfer | string | null = e.clipboardData
+    if (!data) throw new Error('No clipboard data on clipboard event')
+
+    const { items } = data
 
     const currentNode = canvas.current_node as LGraphNode
     const isNodeSelected = currentNode?.is_selected
@@ -66,9 +65,8 @@ export const usePaste = () => {
         if (!imageNode) {
           // No image node selected: add a new one
           const newNode = LiteGraph.createNode('LoadImage')
-          // @ts-expect-error array to Float32Array
-          newNode.pos = [...canvas.graph_mouse]
-          imageNode = graph?.add(newNode) ?? null
+          newNode.pos = [canvas.graph_mouse[0], canvas.graph_mouse[1]]
+          if (newNode) imageNode = graph?.add(newNode) ?? null
           graph?.change()
         }
         pasteItemOnNode(items, imageNode)
@@ -85,9 +83,8 @@ export const usePaste = () => {
         if (!audioNode) {
           // No audio node selected: add a new one
           const newNode = LiteGraph.createNode('LoadAudio')
-          // @ts-expect-error array to Float32Array
-          newNode.pos = [...canvas.graph_mouse]
-          audioNode = graph?.add(newNode) ?? null
+          newNode.pos = [canvas.graph_mouse[0], canvas.graph_mouse[1]]
+          if (newNode) audioNode = graph?.add(newNode) ?? null
           graph?.change()
         }
         pasteItemOnNode(items, audioNode)
