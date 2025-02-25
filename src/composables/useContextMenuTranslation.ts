@@ -30,7 +30,7 @@ export const useContextMenuTranslation = () => {
   LGraphCanvas.prototype.getCanvasMenuOptions = getCanvasCenterMenuOptions
 
   function translateMenus(
-    values: (IContextMenuValue | string)[] | undefined,
+    values: (IContextMenuValue | string | null)[] | undefined,
     options: IContextMenuOptions
   ) {
     if (!values) return
