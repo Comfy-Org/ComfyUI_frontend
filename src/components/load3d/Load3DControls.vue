@@ -349,8 +349,8 @@ const showMaterialMode = ref(false)
 const materialModes: MaterialMode[] = [
   'original',
   'normal',
-  'wireframe',
-  'depth'
+  'wireframe'
+  //'depth' disable for now
 ]
 
 const switchCamera = () => {
