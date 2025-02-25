@@ -815,7 +815,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    * @param slot
    * @param data
    */
-  setOutputData(slot: number, data: unknown): void {
+  setOutputData(slot: number, data: number | string | boolean | { toToolTip?(): string }): void {
     if (!this.outputs) return
 
     // this maybe slow and a niche case

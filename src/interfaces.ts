@@ -128,9 +128,9 @@ export interface LinkSegment {
   _centreAngle?: number
 
   /** Output node ID */
-  readonly origin_id: NodeId
+  readonly origin_id: NodeId | undefined
   /** Output slot index */
-  readonly origin_slot: number
+  readonly origin_slot: number | undefined
 }
 
 export interface IInputOrOutput {

@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import type {
   CanvasColour,
   LinkNetwork,
@@ -46,9 +45,9 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   /** @inheritdoc */
   _centreAngle?: number
 
-  #color?: CanvasColour
+  #color?: CanvasColour | null
   /** Custom colour for this link only */
-  public get color(): CanvasColour {
+  public get color(): CanvasColour | null | undefined {
     return this.#color
   }
 
@@ -108,7 +107,9 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     network: LinkNetwork,
     linkSegment: LinkSegment,
   ): Reroute[] {
-    return network.reroutes.get(linkSegment.parentId)
+    if (!linkSegment.parentId) return []
+    return network.reroutes
+      .get(linkSegment.parentId)
       ?.getReroutes() ?? []
   }
 
@@ -125,7 +126,9 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     linkSegment: LinkSegment,
     rerouteId: RerouteId,
   ): Reroute | null | undefined {
-    return network.reroutes.get(linkSegment.parentId)
+    if (!linkSegment.parentId) return
+    return network.reroutes
+      .get(linkSegment.parentId)
       ?.findNextReroute(rerouteId)
   }
 

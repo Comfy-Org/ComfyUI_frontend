@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import type {
   CanvasColour,
   LinkSegment,
@@ -31,12 +30,12 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
 
   #parentId?: RerouteId
   /** @inheritdoc */
-  public get parentId(): RerouteId {
+  public get parentId(): RerouteId | undefined {
     return this.#parentId
   }
 
   /** Ignores attempts to create an infinite loop. @inheritdoc */
-  public set parentId(value: RerouteId) {
+  public set parentId(value) {
     if (value === this.id) return
     if (this.getReroutes() === null) return
     this.#parentId = value
@@ -98,16 +97,22 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
   /** @inheritdoc */
   get origin_id(): NodeId | undefined {
     // if (!this.linkIds.size) return this.#network.deref()?.reroutes.get(this.parentId)
-    return this.#network.deref()
-      ?.links.get(this.linkIds.values().next().value)
-      ?.origin_id
+    const nextId = this.linkIds.values().next().value
+    return nextId === undefined
+      ? undefined
+      : this.#network.deref()
+        ?.links.get(nextId)
+        ?.origin_id
   }
 
   /** @inheritdoc */
   get origin_slot(): number | undefined {
-    return this.#network.deref()
-      ?.links.get(this.linkIds.values().next().value)
-      ?.origin_slot
+    const nextId = this.linkIds.values().next().value
+    return nextId === undefined
+      ? undefined
+      : this.#network.deref()
+        ?.links.get(nextId)
+        ?.origin_slot
   }
 
   /**
@@ -200,6 +205,7 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
     if (this.#parentId === withParentId) return this
     if (visited.has(this)) return null
     visited.add(this)
+    if (this.#parentId === undefined) return
 
     return this.#network
       .deref()
@@ -279,7 +285,7 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
    */
   draw(ctx: CanvasRenderingContext2D): void {
     const { pos } = this
-    ctx.fillStyle = this._colour
+    ctx.fillStyle = this._colour ?? "#18184d"
     ctx.beginPath()
     ctx.arc(pos[0], pos[1], Reroute.radius, 0, 2 * Math.PI)
     ctx.fill()
