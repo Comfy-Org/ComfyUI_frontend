@@ -118,6 +118,8 @@
     "add": "Ajouter",
     "back": "Retour",
     "cancel": "Annuler",
+    "capture": "capture",
+    "choose_file_to_upload": "choisissez le fichier à télécharger",
     "close": "Fermer",
     "color": "Couleur",
     "comingSoon": "Bientôt disponible",

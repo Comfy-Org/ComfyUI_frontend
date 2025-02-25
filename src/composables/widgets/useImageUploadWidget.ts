@@ -4,6 +4,7 @@ import { IComboWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
 import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 import { useValueTransform } from '@/composables/useValueTransform'
+import { t } from '@/i18n'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import type { ComfyApp } from '@/types'
@@ -85,7 +86,7 @@ export const useImageUploadWidget = () => {
         serialize: false
       }
     )
-    uploadWidget.label = 'choose file to upload'
+    uploadWidget.label = t('g.choose_file_to_upload')
 
     // TODO: Explain this?
     // @ts-expect-error LGraphNode.callback is not typed
