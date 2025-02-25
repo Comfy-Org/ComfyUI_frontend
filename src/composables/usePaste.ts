@@ -41,10 +41,9 @@ export const usePaste = () => {
     if (!canvas) return
 
     const graph = canvas.graph
-    // @ts-expect-error: Property 'clipboardData' does not exist on type 'Window & typeof globalThis'.
-    // Did you mean 'Clipboard'?ts(2551)
-    // TODO: Not sure what the code wants to do.
-    let data = e.clipboardData || window.clipboardData
+    let data = e.clipboardData
+    if (!data) throw new Error('No clipboard data on clipboard event')
+
     const items: DataTransferItemList = data.items
 
     const currentNode = canvas.current_node as LGraphNode
