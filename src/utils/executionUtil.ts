@@ -76,7 +76,10 @@ export const graphToPrompt = async (
         if (!parent) continue
 
         let link = node.getInputLink(i)
-        while (parent?.mode === LGraphEventMode.BYPASS || parent?.isVirtualNode) {
+        while (
+          parent?.mode === LGraphEventMode.BYPASS ||
+          parent?.isVirtualNode
+        ) {
           if (!link) break
 
           if (parent.isVirtualNode) {
