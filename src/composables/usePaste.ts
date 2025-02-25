@@ -41,7 +41,7 @@ export const usePaste = () => {
     if (!canvas) return
 
     const graph = canvas.graph
-    let data = e.clipboardData
+    let data: DataTransfer | string | null = e.clipboardData
     if (!data) throw new Error('No clipboard data on clipboard event')
 
     const items: DataTransferItemList = data.items
