@@ -397,9 +397,8 @@
         "mixing_controlnets": "Mixing ControlNets"
       },
       "Upscaling": {
-        "upscale": "Upscale",
         "esrgan_example": "ESRGAN",
-        "hiresfix_latent_workflow": "HiresFix Latent Workflow",
+        "hiresfix_latent_workflow": "Upscale",
         "hiresfix_esrgan_workflow": "HiresFix ESRGAN Workflow",
         "latent_upscale_different_prompt_model": "Latent Upscale Different Prompt Model"
       },
