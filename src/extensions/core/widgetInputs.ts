@@ -515,6 +515,7 @@ export function convertToInput(
   const [oldWidth, oldHeight] = node.size
   const inputIsOptional = !!widget.options?.inputIsOptional
   const input = node.addInput(widget.name, type, {
+    // @ts-expect-error [GET_CONFIG] is not a valid property of IWidget
     widget: { name: widget.name, [GET_CONFIG]: () => config },
     ...(inputIsOptional ? { shape: LiteGraph.SlotShape.HollowCircle } : {})
   })

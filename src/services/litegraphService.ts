@@ -7,6 +7,7 @@ import {
   LiteGraph
 } from '@comfyorg/litegraph'
 import { Vector2 } from '@comfyorg/litegraph'
+import { RenderShape } from '@comfyorg/litegraph/dist/types/globalEnums'
 import { IBaseWidget, IWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
@@ -89,7 +90,7 @@ export const useLitegraphService = () => {
             // Node connection inputs
             const shapeOptions = inputIsRequired
               ? {}
-              : { shape: LiteGraph.SlotShape.HollowCircle }
+              : { shape: RenderShape.HollowCircle }
             const inputOptions = {
               ...shapeOptions,
               localized_name: st(nameKey, inputName)
