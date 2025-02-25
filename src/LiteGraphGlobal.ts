@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { LGraph } from "./LGraph"
 import { LLink } from "./LLink"
 import { LGraphGroup } from "./LGraphGroup"
@@ -146,7 +145,7 @@ export class LiteGraphGlobal {
   Globals = {}
 
   /** @deprecated Unused and will be deleted. */
-  searchbox_extras = {}
+  searchbox_extras: Dictionary<unknown> = {}
 
   /** [true!] this make the nodes box (top left circle) coloured when triggered (execute/action), visual feedback */
   node_box_coloured_when_on = false
@@ -322,6 +321,7 @@ export class LiteGraphGlobal {
 
     // extend class
     for (const i in LGraphNode.prototype) {
+      // @ts-ignore #576 This functionality is deprecated and should be removed.
       base_class.prototype[i] ||= LGraphNode.prototype[i]
     }
 
@@ -354,7 +354,7 @@ export class LiteGraphGlobal {
       : type
     if (!base_class) throw "node type not found: " + type
 
-    delete this.registered_node_types[base_class.type]
+    delete this.registered_node_types[String(base_class.type)]
 
     const name = base_class.constructor.name
     if (name) delete this.Nodes[name]
@@ -430,7 +430,7 @@ export class LiteGraphGlobal {
     type: string,
     title?: string,
     options?: Dictionary<unknown>,
-  ): LGraphNode {
+  ): LGraphNode | null {
     const base_class = this.registered_node_types[type]
     if (!base_class) {
       if (this.debug) console.log(`GraphNode type "${type}" not registered.`)
@@ -460,12 +460,13 @@ export class LiteGraphGlobal {
     node.flags ||= {}
     // call onresize?
     node.size ||= node.computeSize()
-    node.pos ||= this.DEFAULT_POSITION.concat()
+    node.pos ||= [this.DEFAULT_POSITION[0], this.DEFAULT_POSITION[1]]
     node.mode ||= LGraphEventMode.ALWAYS
 
     // extra options
     if (options) {
       for (const i in options) {
+        // @ts-ignore #577 Requires interface
         node[i] = options[i]
       }
     }
@@ -511,7 +512,7 @@ export class LiteGraphGlobal {
    * @returns array with all the names of the categories
    */
   getNodeTypesCategories(filter: string): string[] {
-    const categories = { "": 1 }
+    const categories: Dictionary<number> = { "": 1 }
     for (const i in this.registered_node_types) {
       const type = this.registered_node_types[i]
       if (type.category && !type.skip_list) {
@@ -561,13 +562,15 @@ export class LiteGraphGlobal {
   }
 
   // separated just to improve if it doesn't work
-  cloneObject<T extends object>(obj: T, target?: T): T {
+  /** @deprecated Prefer {@link structuredClone} */
+  cloneObject<T extends object>(obj: T, target?: T): T | null {
     if (obj == null) return null
 
     const r = JSON.parse(JSON.stringify(obj))
     if (!target) return r
 
     for (const i in r) {
+      // @ts-ignore deprecated
       target[i] = r[i]
     }
     return target
@@ -826,7 +829,7 @@ export class LiteGraphGlobal {
     }
 
     for (const result of results) {
-      if (result.close) {
+      if ("close" in result && typeof result.close === "function") {
         result.close()
       } else if (result.parentNode) {
         result.parentNode.removeChild(result)
