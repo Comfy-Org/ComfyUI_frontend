@@ -65,8 +65,10 @@ export const usePaste = () => {
         if (!imageNode) {
           // No image node selected: add a new one
           const newNode = LiteGraph.createNode('LoadImage')
-          newNode.pos = [canvas.graph_mouse[0], canvas.graph_mouse[1]]
-          if (newNode) imageNode = graph?.add(newNode) ?? null
+          if (newNode) {
+            newNode.pos = [canvas.graph_mouse[0], canvas.graph_mouse[1]]
+            imageNode = graph?.add(newNode) ?? null
+          }
           graph?.change()
         }
         pasteItemOnNode(items, imageNode)
@@ -83,8 +85,10 @@ export const usePaste = () => {
         if (!audioNode) {
           // No audio node selected: add a new one
           const newNode = LiteGraph.createNode('LoadAudio')
-          newNode.pos = [canvas.graph_mouse[0], canvas.graph_mouse[1]]
-          if (newNode) audioNode = graph?.add(newNode) ?? null
+          if (newNode) {
+            newNode.pos = [canvas.graph_mouse[0], canvas.graph_mouse[1]]
+            audioNode = graph?.add(newNode) ?? null
+          }
           graph?.change()
         }
         pasteItemOnNode(items, audioNode)
