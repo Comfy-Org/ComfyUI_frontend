@@ -148,6 +148,14 @@ declare module '@comfyorg/litegraph' {
     /** Callback for pasting multiple files into the node */
     pasteFiles?(files: File[]): void
   }
+  /**
+   * Only used by the Primitive node. Primitive node is using the widget property
+   * to store/access the widget config.
+   * We should remove this hacky solution once we have a proper solution.
+   */
+  interface INodeOutputSlot {
+    widget?: IWidget
+  }
 }
 
 /**

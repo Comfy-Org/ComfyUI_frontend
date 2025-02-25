@@ -1,12 +1,12 @@
 // @ts-strict-ignore
 import { LGraphNode, LiteGraph } from '@comfyorg/litegraph'
 import type {
+  IFoundSlot,
   INodeInputSlot,
+  INodeOutputSlot,
   IWidget,
   LiteGraphCanvasEvent
 } from '@comfyorg/litegraph'
-import type { IFoundSlot } from '@comfyorg/litegraph'
-import { INodeSlot } from '@comfyorg/litegraph'
 
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
@@ -422,7 +422,7 @@ export class PrimitiveNode extends LGraphNode {
   }
 }
 
-export function getWidgetConfig(slot: INodeSlot) {
+export function getWidgetConfig(slot: INodeInputSlot | INodeOutputSlot) {
   return slot.widget[CONFIG] ?? slot.widget[GET_CONFIG]?.() ?? ['*', {}]
 }
 
