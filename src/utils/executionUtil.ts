@@ -76,7 +76,7 @@ export const graphToPrompt = async (
         if (!parent) continue
 
         let link = node.getInputLink(i)
-        while (parent.mode === LGraphEventMode.BYPASS || parent.isVirtualNode) {
+        while (parent?.mode === LGraphEventMode.BYPASS || parent?.isVirtualNode) {
           if (!link) break
 
           if (parent.isVirtualNode) {
@@ -95,7 +95,7 @@ export const graphToPrompt = async (
             const indexes = [link.origin_slot].concat(parentInputIndexes)
 
             const matchingIndex = indexes.find(
-              (index) => parent.inputs[index]?.type === input.type
+              (index) => parent?.inputs[index]?.type === input.type
             )
             // No input types match
             if (matchingIndex === undefined) break
