@@ -4,7 +4,8 @@ import {
   type INodeInputSlot,
   LGraphEventMode,
   LGraphNode,
-  LiteGraph
+  LiteGraph,
+  RenderShape
 } from '@comfyorg/litegraph'
 import { Vector2 } from '@comfyorg/litegraph'
 import { IBaseWidget, IWidget } from '@comfyorg/litegraph/dist/types/widgets'
@@ -89,7 +90,7 @@ export const useLitegraphService = () => {
             // Node connection inputs
             const shapeOptions = inputIsRequired
               ? {}
-              : { shape: LiteGraph.SlotShape.HollowCircle }
+              : { shape: RenderShape.HollowCircle }
             const inputOptions = {
               ...shapeOptions,
               localized_name: st(nameKey, inputName)
