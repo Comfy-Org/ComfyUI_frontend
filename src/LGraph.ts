@@ -206,7 +206,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   onGetNodeMenuOptions?(options: IContextMenuValue[], node: LGraphNode): void
   onNodeConnectionChange?(
     nodeSlotType: ISlotType,
-    targetNode: LGraphNode,
+    targetNode: LGraphNode | null | undefined,
     slotIndex: number,
     sourceNode?: LGraphNode,
     sourceSlotIndex?: number,
@@ -570,8 +570,11 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
             continue
           }
 
-          if (set_level && (!target_node._level || target_node._level <= node._level)) {
-            target_node._level = node._level + 1
+          if (set_level) {
+            node._level ??= 0
+            if (!target_node._level || target_node._level <= node._level) {
+              target_node._level = node._level + 1
+            }
           }
 
           // mark as visited

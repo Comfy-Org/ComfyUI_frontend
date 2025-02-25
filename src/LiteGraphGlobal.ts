@@ -15,7 +15,7 @@ import {
 } from "./types/globalEnums"
 import { LGraphNode } from "./LGraphNode"
 import { SlotShape, SlotDirection, SlotType, LabelPosition } from "./draw"
-import type { Dictionary, ISlotType, Rect } from "./interfaces"
+import type { Dictionary, ISlotType, Rect, WhenNullish } from "./interfaces"
 import { distance, isInsideRectangle, overlapBounding } from "./measure"
 import { Reroute } from "./Reroute"
 
@@ -563,8 +563,8 @@ export class LiteGraphGlobal {
 
   // separated just to improve if it doesn't work
   /** @deprecated Prefer {@link structuredClone} */
-  cloneObject<T extends object>(obj: T, target?: T): T | null {
-    if (obj == null) return null
+  cloneObject<T extends object | undefined | null>(obj: T, target?: T): WhenNullish<T, null> {
+    if (obj == null) return null as WhenNullish<T, null>
 
     const r = JSON.parse(JSON.stringify(obj))
     if (!target) return r

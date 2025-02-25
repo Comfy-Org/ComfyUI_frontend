@@ -35,7 +35,7 @@ export class ContextMenu {
    * - ignore_item_callbacks: ignores the callback inside the item, it just calls the options.callback
    * - event: you can pass a MouseEvent, this way the ContextMenu appears in that position
    */
-  constructor(values: (IContextMenuValue | string)[], options: IContextMenuOptions) {
+  constructor(values: (IContextMenuValue | string | null)[], options: IContextMenuOptions) {
     options ||= {}
     this.options = options
 

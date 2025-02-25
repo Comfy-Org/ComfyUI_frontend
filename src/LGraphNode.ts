@@ -190,7 +190,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
   // Execution order, automatically computed during run
   order?: number
-  mode: LGraphEventMode
+  mode?: LGraphEventMode
   last_serialization?: ISerialisedNode
   serialize_widgets?: boolean
   /**
@@ -221,8 +221,9 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
   /** The box color used to render the node. */
   get renderingBoxColor(): string {
-    let colState = LiteGraph.node_box_coloured_by_mode && LiteGraph.NODE_MODES_COLORS[this.mode]
-      ? LiteGraph.NODE_MODES_COLORS[this.mode]
+    const mode = this.mode ?? LGraphEventMode.ALWAYS
+    let colState = LiteGraph.node_box_coloured_by_mode && LiteGraph.NODE_MODES_COLORS[mode]
+      ? LiteGraph.NODE_MODES_COLORS[mode]
       : undefined
 
     if (LiteGraph.node_box_coloured_when_on) {
@@ -255,10 +256,10 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     ) ?? null
   }
 
-  exec_version: number
+  exec_version?: number
   action_call?: string
-  execute_triggered: number
-  action_triggered: number
+  execute_triggered?: number
+  action_triggered?: number
   widgets_up?: boolean
   widgets_start_y?: number
   lostFocusAt?: number
@@ -271,11 +272,11 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    * The width of the node when collapsed.
    * Updated by {@link LGraphCanvas.drawNode}
    */
-  _collapsed_width: number
+  _collapsed_width?: number
   /** Called once at the start of every frame.  Caller may change the values in {@link out}, which will be reflected in {@link boundingRect}. */
   onBounding?(this: LGraphNode, out: Rect): void
   console?: string[]
-  _level: number
+  _level?: number
   _shape?: RenderShape
   mouseOver?: IMouseOverData
   redraw_on_mouse?: boolean
@@ -345,7 +346,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     return this.flags.collapsed ? [this._collapsed_width, 0] : this._size
   }
 
-  get shape(): RenderShape {
+  get shape(): RenderShape | undefined {
     return this._shape
   }
 
@@ -378,7 +379,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     return this._shape || this.constructor.shape || LiteGraph.NODE_DEFAULT_SHAPE
   }
 
-  public get is_selected(): boolean {
+  public get is_selected(): boolean | undefined {
     return this.selected
   }
 
@@ -421,7 +422,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     type: ISlotType,
     index: number,
     isConnected: boolean,
-    link_info: LLink,
+    link_info: LLink | null | undefined,
     inputOrOutput: INodeInputSlot | INodeOutputSlot,
   ): void
   onInputAdded?(this: LGraphNode, input: INodeInputSlot): void
@@ -513,8 +514,8 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   onOutputDblClick?(this: LGraphNode, index: number, e: CanvasMouseEvent): void
   // TODO: Return type
   onGetPropertyInfo?(this: LGraphNode, property: string): any
-  onNodeOutputAdd?(this: LGraphNode, value): void
-  onNodeInputAdd?(this: LGraphNode, value): void
+  onNodeOutputAdd?(this: LGraphNode, value: unknown): void
+  onNodeInputAdd?(this: LGraphNode, value: unknown): void
   onMenuNodeInputs?(
     this: LGraphNode,
     entries: IOptionalSlotData<INodeInputSlot>[],
@@ -612,17 +613,22 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
         continue
       }
 
+      // @ts-ignore #594
       if (info[j] == null) {
         continue
+      // @ts-ignore #594
       } else if (typeof info[j] == "object") {
-        // object
+        // @ts-ignore #594
         if (this[j]?.configure) {
+          // @ts-ignore #594
           this[j]?.configure(info[j])
         } else {
+          // @ts-ignore #594
           this[j] = LiteGraph.cloneObject(info[j], this[j])
         }
       } else {
         // value
+        // @ts-ignore #594
         this[j] = info[j]
       }
     }
@@ -711,6 +717,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
         if (this.widgets[i])
           o.widgets_values[i] = this.widgets[i].value
         else
+          // @ts-ignore #595 No-null
           o.widgets_values[i] = null
       }
     }
@@ -728,7 +735,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   }
 
   /* Creates a clone of this node */
-  clone(): LGraphNode {
+  clone(): LGraphNode | null {
     const node = LiteGraph.createNode(this.type)
     if (!node) return null
 
@@ -3049,7 +3056,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    * @returns `true` if any new links were established, otherwise `false`.
    * @todo Decision: Change API to return array of new links instead?
    */
-  connectInputToOutput(): boolean {
+  connectInputToOutput(): boolean | undefined {
     const { inputs, outputs, graph } = this
     if (!inputs || !outputs) return
 

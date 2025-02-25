@@ -143,7 +143,7 @@ export interface LiteGraphCanvasEvent extends CustomEvent<CanvasEventDetail> {}
 /** https://github.com/jagenjo/litegraph.js/blob/master/guides/README.md#lgraphnode */
 
 export interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
-  title?: string
+  title: string
   type?: string
   size?: Size
   min_height?: number

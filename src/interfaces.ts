@@ -13,6 +13,12 @@ export type NullableProperties<T> = {
   [P in keyof T]: T[P] | null
 }
 
+/**
+ * If {@link T} is `null` or `undefined`, evaluates to {@link Result}. Otherwise, evaluates to {@link T}.
+ * Useful for functions that return e.g. `undefined` when a param is nullish.
+ */
+export type WhenNullish<T, Result> = T & {} | (T extends null ? Result : T extends undefined ? Result : T & {})
+
 export type CanvasColour = string | CanvasGradient | CanvasPattern
 
 /** An object containing a set of child objects */

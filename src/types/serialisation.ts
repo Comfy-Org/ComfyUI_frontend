@@ -91,7 +91,7 @@ export interface ISerialisedGroup {
   id: number
   title: string
   bounding: number[]
-  color: string
+  color?: string
   font_size: number
   flags?: IGraphGroupFlags
 }
