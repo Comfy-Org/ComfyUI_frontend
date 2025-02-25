@@ -44,7 +44,7 @@ export const usePaste = () => {
     let data: DataTransfer | string | null = e.clipboardData
     if (!data) throw new Error('No clipboard data on clipboard event')
 
-    const items: DataTransferItemList = data.items
+    const items = data.items
 
     const currentNode = canvas.current_node as LGraphNode
     const isNodeSelected = currentNode?.is_selected
