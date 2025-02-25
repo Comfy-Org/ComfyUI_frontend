@@ -1,4 +1,5 @@
 // @ts-strict-ignore
+import { t } from '@/i18n'
 import { useToastStore } from '@/stores/toastStore'
 
 import { api } from '../../scripts/api'
@@ -140,7 +141,7 @@ app.registerExtension({
         h.value = video.videoHeight || 480
       }
       btn.disabled = false
-      btn.label = 'capture'
+      btn.label = t('g.capture')
     })
   }
 })

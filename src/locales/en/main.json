@@ -76,7 +76,9 @@
     "feedback": "Feedback",
     "continue": "Continue",
     "control_after_generate": "control after generate",
-    "control_before_generate": "control before generate"
+    "control_before_generate": "control before generate",
+    "choose_file_to_upload": "choose file to upload",
+    "capture": "capture"
   },
   "issueReport": {
     "submitErrorReport": "Submit Error Report (Optional)",
