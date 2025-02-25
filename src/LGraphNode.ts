@@ -42,6 +42,7 @@ import { WIDGET_TYPE_MAP } from "./widgets/widgetMap"
 import { toClass } from "./utils/type"
 import { LayoutElement } from "./utils/layout"
 import { distributeSpace } from "./utils/spaceDistribution"
+import { NullGraphError } from "./infrastructure/NullGraphError"
 
 export type NodeId = number | string
 
@@ -343,7 +344,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    * The size of the node used for rendering.
    */
   get renderingSize(): Size {
-    return this.flags.collapsed ? [this._collapsed_width, 0] : this._size
+    return this.flags.collapsed ? [this._collapsed_width ?? 0, 0] : this._size
   }
 
   get shape(): RenderShape | undefined {
@@ -640,7 +641,9 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     this.inputs ??= []
     this.inputs = this.inputs.map(input => toClass(NodeInputSlot, input))
     for (const [i, input] of this.inputs.entries()) {
-      const link = this.graph ? this.graph._links.get(input.link) : null
+      const link = this.graph && input.link != null
+        ? this.graph._links.get(input.link)
+        : null
       this.onConnectionsChange?.(NodeSlotType.INPUT, i, true, link, input)
       this.onInputAdded?.(input)
     }
@@ -691,7 +694,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     // create serialization object
     const o: ISerialisedNode = {
       id: this.id,
-      type: this.type,
+      type: this.type ?? undefined,
       pos: [this.pos[0], this.pos[1]],
       size: [this.size[0], this.size[1]],
       flags: LiteGraph.cloneObject(this.flags),
@@ -736,6 +739,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
   /* Creates a clone of this node */
   clone(): LGraphNode | null {
+    if (this.type == null) return null
     const node = LiteGraph.createNode(this.type)
     if (!node) return null
 
@@ -829,6 +833,8 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     // store data in the output itself in case we want to debug
     output_info._data = data
 
+    if (!this.graph) throw new NullGraphError()
+
     // if there are connections, pass the data to the connections
     if (this.outputs[slot].links) {
       for (let i = 0; i < this.outputs[slot].links.length; i++) {
@@ -850,11 +856,15 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     // store data in the output itself in case we want to debug
     output_info.type = type
 
+    if (!this.graph) throw new NullGraphError()
+
     // if there are connections, pass the data to the connections
     if (this.outputs[slot].links) {
       for (let i = 0; i < this.outputs[slot].links.length; i++) {
         const link_id = this.outputs[slot].links[i]
-        this.graph._links.get(link_id).type = type
+        const link = this.graph._links.get(link_id)
+        if (!link) continue
+        link.type = type
       }
     }
   }
@@ -869,6 +879,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     if (!this.inputs) return
 
     if (slot >= this.inputs.length || this.inputs[slot].link == null) return
+    if (!this.graph) throw new NullGraphError()
 
     const link_id = this.inputs[slot].link
     const link = this.graph._links.get(link_id)
@@ -895,9 +906,10 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    * @param slot
    * @returns datatype in string format
    */
-  getInputDataType(slot: number): ISlotType {
+  getInputDataType(slot: number): ISlotType | null {
     if (!this.inputs) return null
     if (slot >= this.inputs.length || this.inputs[slot].link == null) return null
+    if (!this.graph) throw new NullGraphError()
 
     const link_id = this.inputs[slot].link
     const link = this.graph._links.get(link_id)
@@ -940,7 +952,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    * tells you info about an input connection (which node, type, etc)
    * @returns object or null { link: id, name: string, type: string or 0 }
    */
-  getInputInfo(slot: number): INodeInputSlot {
+  getInputInfo(slot: number): INodeInputSlot | null {
     return !this.inputs || !(slot < this.inputs.length)
       ? null
       : this.inputs[slot]
@@ -952,9 +964,12 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    */
   getInputLink(slot: number): LLink | null {
     if (!this.inputs) return null
+
     if (slot < this.inputs.length) {
+      if (!this.graph) throw new NullGraphError()
+
       const slot_info = this.inputs[slot]
-      return this.graph._links.get(slot_info.link)
+      return this.graph._links.get(slot_info.link) ?? null
     }
     return null
   }
@@ -963,12 +978,13 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    * returns the node connected in the input slot
    * @returns node or null
    */
-  getInputNode(slot: number): LGraphNode {
+  getInputNode(slot: number): LGraphNode | null {
     if (!this.inputs) return null
     if (slot >= this.inputs.length) return null
 
     const input = this.inputs[slot]
     if (!input || input.link === null) return null
+    if (!this.graph) throw new NullGraphError()
 
     const link_info = this.graph._links.get(input.link)
     if (!link_info) return null
@@ -984,6 +1000,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     if (!this.inputs || !this.inputs.length) {
       return this.properties ? this.properties[name] : null
     }
+    if (!this.graph) throw new NullGraphError()
 
     for (let i = 0, l = this.inputs.length; i < l; ++i) {
       const input_info = this.inputs[i]
@@ -1011,7 +1028,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    * tells you info about an output connection (which node, type, etc)
    * @returns object or null { name: string, type: string, links: [ ids of links in number ] }
    */
-  getOutputInfo(slot: number): INodeOutputSlot {
+  getOutputInfo(slot: number): INodeOutputSlot | null {
     return !this.outputs || !(slot < this.outputs.length)
       ? null
       : this.outputs[slot]
@@ -1022,7 +1039,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    */
   isOutputConnected(slot: number): boolean {
     if (!this.outputs) return false
-    return slot < this.outputs.length && this.outputs[slot].links?.length > 0
+    return slot < this.outputs.length && Number(this.outputs[slot].links?.length) > 0
   }
 
   /**
@@ -1032,7 +1049,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     if (!this.outputs) return false
 
     for (let i = 0; i < this.outputs.length; ++i) {
-      if (this.outputs[i].links && this.outputs[i].links.length) {
+      if (this.outputs[i].links && this.outputs[i].links?.length) {
         return true
       }
     }
@@ -1042,13 +1059,14 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   /**
    * retrieves all the nodes connected to this output slot
    */
-  getOutputNodes(slot: number): LGraphNode[] {
+  getOutputNodes(slot: number): LGraphNode[] | null {
     if (!this.outputs || this.outputs.length == 0) return null
 
     if (slot >= this.outputs.length) return null
 
     const output = this.outputs[slot]
     if (!output.links || output.links.length == 0) return null
+    if (!this.graph) throw new NullGraphError()
 
     const r: LGraphNode[] = []
     for (let i = 0; i < output.links.length; i++) {
@@ -1212,8 +1230,8 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   triggerSlot(
     slot: number,
     param: unknown,
-    link_id: number,
-    options: { action_call?: any },
+    link_id: number | null,
+    options?: { action_call?: any },
   ): void {
     options = options || {}
     if (!this.outputs) return
@@ -1232,7 +1250,8 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     const links = output.links
     if (!links || !links.length) return
 
-    if (this.graph) this.graph._last_trigger_time = LiteGraph.getTime()
+    if (!this.graph) throw new NullGraphError()
+    this.graph._last_trigger_time = LiteGraph.getTime()
 
     // for every link attached here
     for (const id of links) {
@@ -1279,6 +1298,8 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
     const links = output.links
     if (!links || !links.length) return
+
+    if (!this.graph) throw new NullGraphError()
 
     // for every link attached here
     for (const id of links) {
@@ -1401,6 +1422,8 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   removeOutput(slot: number): void {
     this.disconnectOutput(slot)
     this.outputs.splice(slot, 1)
+    if (!this.graph) throw new NullGraphError()
+
     for (let i = slot; i < this.outputs.length; ++i) {
       if (!this.outputs[i] || !this.outputs[i].links) continue
 
@@ -1474,6 +1497,8 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   removeInput(slot: number): void {
     this.disconnectInput(slot)
     const slot_info = this.inputs.splice(slot, 1)
+    if (!this.graph) throw new NullGraphError()
+
     for (let i = slot; i < this.inputs.length; ++i) {
       if (!this.inputs[i]) continue
 
@@ -2177,6 +2202,8 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     }
     const opts = Object.assign(optsDef, options)
 
+    if (!this.graph) throw new NullGraphError()
+
     if (node && typeof node === "number") {
       node = this.graph.getNodeById(node)
     }
@@ -2478,18 +2505,21 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
     // one of the output links in this slot
     const graph = this.graph
+    if (!graph) throw new NullGraphError()
+
     if (target_node) {
-      if (typeof target_node === "number")
-        target_node = graph.getNodeById(target_node)
-      if (!target_node) throw "Target Node not found"
+      const target = typeof target_node === "number"
+        ? graph.getNodeById(target_node)
+        : target_node
+      if (!target) throw "Target Node not found"
 
       for (const [i, link_id] of links.entries()) {
         const link_info = graph._links.get(link_id)
 
         // is the link we are searching for...
-        if (link_info.target_id == target_node.id) {
+        if (link_info?.target_id == target.id) {
           links.splice(i, 1) // remove here
-          const input = target_node.inputs[link_info.target_slot]
+          const input = target.inputs[link_info.target_slot]
           input.link = null // remove there
 
           // remove the link from the links pool
@@ -2497,7 +2527,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
           graph._version++
 
           // link_info hasn't been modified so its ok
-          target_node.onConnectionsChange?.(
+          target.onConnectionsChange?.(
             NodeSlotType.INPUT,
             link_info.target_slot,
             false,
@@ -2513,7 +2543,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
           )
 
           graph.onNodeConnectionChange?.(NodeSlotType.OUTPUT, this, slot)
-          graph.onNodeConnectionChange?.(NodeSlotType.INPUT, target_node, link_info.target_slot)
+          graph.onNodeConnectionChange?.(NodeSlotType.INPUT, target, link_info.target_slot)
           break
         }
       }
@@ -2524,16 +2554,16 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
         // bug: it happens sometimes
         if (!link_info) continue
 
-        target_node = graph.getNodeById(link_info.target_id)
+        const target = graph.getNodeById(link_info.target_id)
         graph._version++
 
-        if (target_node) {
-          const input = target_node.inputs[link_info.target_slot]
+        if (target) {
+          const input = target.inputs[link_info.target_slot]
           // remove other side link
           input.link = null
 
           // link_info hasn't been modified so its ok
-          target_node.onConnectionsChange?.(
+          target.onConnectionsChange?.(
             NodeSlotType.INPUT,
             link_info.target_slot,
             false,
@@ -2552,7 +2582,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
           output,
         )
         graph.onNodeConnectionChange?.(NodeSlotType.OUTPUT, this, slot)
-        graph.onNodeConnectionChange?.(NodeSlotType.INPUT, target_node, link_info.target_slot)
+        graph.onNodeConnectionChange?.(NodeSlotType.INPUT, target, link_info.target_slot)
       }
       output.links = null
     }
@@ -2589,6 +2619,8 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     const link_id = this.inputs[slot].link
     if (link_id != null) {
       this.inputs[slot].link = null
+
+      if (!this.graph) throw new NullGraphError()
 
       // remove other side
       const link_info = this.graph._links.get(link_id)
@@ -2763,6 +2795,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    */
   collapse(force?: boolean): void {
     if (!this.collapsible && !force) return
+    if (!this.graph) throw new NullGraphError()
     this.graph._version++
     this.flags.collapsed = !this.flags.collapsed
     this.setDirtyCanvas(true, true)
@@ -2773,6 +2806,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    */
   toggleAdvanced() {
     if (!this.widgets?.some(w => w.advanced)) return
+    if (!this.graph) throw new NullGraphError()
     this.graph._version++
     this.showAdvanced = !this.showAdvanced
     this.expandToFitContent()
@@ -3059,6 +3093,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   connectInputToOutput(): boolean | undefined {
     const { inputs, outputs, graph } = this
     if (!inputs || !outputs) return
+    if (!graph) throw new NullGraphError()
 
     const { _links } = graph
     let madeAnyConnections = false
@@ -3072,7 +3107,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       const inNode = graph.getNodeById(inLink?.origin_id)
       if (!inNode) continue
 
-      bypassAllLinks(output, inNode, inLink)
+      bypassAllLinks(output, inNode, inLink, graph)
     }
     // Configured to only use index-to-index matching
     if (!(this.flags.keepAllLinksOnBypass ?? LGraphNode.keepAllLinksOnBypass))
@@ -3087,13 +3122,13 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       for (const output of outputs) {
         if (!LiteGraph.isValidConnection(input.type, output.type)) continue
 
-        bypassAllLinks(output, inNode, inLink)
+        bypassAllLinks(output, inNode, inLink, graph)
         break
       }
     }
     return madeAnyConnections
 
-    function bypassAllLinks(output: INodeOutputSlot, inNode: LGraphNode, inLink: LLink) {
+    function bypassAllLinks(output: INodeOutputSlot, inNode: LGraphNode, inLink: LLink, graph: LGraph) {
       const outLinks = output.links
         ?.map(x => _links.get(x))
         .filter(x => !!x)
@@ -3369,6 +3404,8 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       w.y = y
       y += w.computedHeight
     }
+
+    if (!this.graph) throw new NullGraphError()
 
     // Grow the node if necessary.
     // Ref: https://github.com/Comfy-Org/ComfyUI_frontend/issues/2652
