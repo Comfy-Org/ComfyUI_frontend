@@ -1063,10 +1063,8 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
   addOnTriggerInput(): number {
     const trigS = this.findInputSlot("onTrigger")
-    // !trigS ||
     if (trigS == -1) {
       this.addInput("onTrigger", LiteGraph.EVENT, {
-        optional: true,
         nameLocked: true,
       })
       return this.findInputSlot("onTrigger")
@@ -1076,10 +1074,8 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
   addOnExecutedOutput(): number {
     const trigS = this.findOutputSlot("onExecuted")
-    // !trigS ||
     if (trigS == -1) {
       this.addOutput("onExecuted", LiteGraph.ACTION, {
-        optional: true,
         nameLocked: true,
       })
       return this.findOutputSlot("onExecuted")
@@ -1349,7 +1345,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   addOutput(
     name?: string,
     type?: ISlotType,
-    extra_info?: object,
+    extra_info?: Partial<INodeOutputSlot>,
   ): INodeOutputSlot {
     const output = new NodeOutputSlot({ name: name, type: type, links: null })
     if (extra_info) {
@@ -1374,7 +1370,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    * add a new output slot to use in this node
    * @param array of triplets like [[name,type,extra_info],[...]]
    */
-  addOutputs(array: [string, ISlotType, Record<string, unknown>][]): void {
+  addOutputs(array: [string, ISlotType, Partial<INodeOutputSlot>][]): void {
     for (let i = 0; i < array.length; ++i) {
       const info = array[i]
       const o = new NodeOutputSlot({ name: info[0], type: info[1], links: null })
@@ -1423,7 +1419,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    * @param type string defining the input type ("vec3","number",...), it its a generic one use 0
    * @param extra_info this can be used to have special properties of an input (label, color, position, etc)
    */
-  addInput(name: string, type: ISlotType, extra_info?: object): INodeInputSlot {
+  addInput(name: string, type: ISlotType, extra_info?: Partial<INodeInputSlot>): INodeInputSlot {
     type = type || 0
     const input: INodeInputSlot = new NodeInputSlot({ name: name, type: type, link: null })
     if (extra_info) {
@@ -1447,7 +1443,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    * add several new input slots in this node
    * @param array of triplets like [[name,type,extra_info],[...]]
    */
-  addInputs(array: [string, ISlotType, Record<string, unknown>][]): void {
+  addInputs(array: [string, ISlotType, Partial<INodeInputSlot>][]): void {
     for (let i = 0; i < array.length; ++i) {
       const info = array[i]
       const o: INodeInputSlot = new NodeInputSlot({ name: info[0], type: info[1], link: null })
