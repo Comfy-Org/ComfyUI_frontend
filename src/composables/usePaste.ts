@@ -65,8 +65,7 @@ export const usePaste = () => {
         if (!imageNode) {
           // No image node selected: add a new one
           const newNode = LiteGraph.createNode('LoadImage')
-          // @ts-expect-error array to Float32Array
-          newNode.pos = [...canvas.graph_mouse]
+          newNode.pos = [canvas.graph_mouse[0], canvas.graph_mouse[1]]
           imageNode = graph?.add(newNode) ?? null
           graph?.change()
         }
@@ -84,8 +83,7 @@ export const usePaste = () => {
         if (!audioNode) {
           // No audio node selected: add a new one
           const newNode = LiteGraph.createNode('LoadAudio')
-          // @ts-expect-error array to Float32Array
-          newNode.pos = [...canvas.graph_mouse]
+          newNode.pos = [canvas.graph_mouse[0], canvas.graph_mouse[1]]
           audioNode = graph?.add(newNode) ?? null
           graph?.change()
         }
