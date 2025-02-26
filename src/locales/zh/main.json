@@ -831,8 +831,7 @@
         "esrgan_example": "ESRGAN",
         "hiresfix_esrgan_workflow": "HiresFix ESRGAN工作流",
         "hiresfix_latent_workflow": "HiresFix潜在工作流",
-        "latent_upscale_different_prompt_model": "潜在升级不同提示模型",
-        "upscale": "升级"
+        "latent_upscale_different_prompt_model": "潜在升级不同提示模型"
       },
       "Video": {
         "hunyuan_video_text_to_video": "Hunyuan视频文本到视频",

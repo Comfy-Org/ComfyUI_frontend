@@ -831,8 +831,7 @@
         "esrgan_example": "ESRGAN",
         "hiresfix_esrgan_workflow": "Flux de Travail ESRGAN HiresFix",
         "hiresfix_latent_workflow": "Flux de Travail Latent HiresFix",
-        "latent_upscale_different_prompt_model": "Modèle d'Agrandissement Latent Différent Prompt",
-        "upscale": "Agrandissement"
+        "latent_upscale_different_prompt_model": "Modèle d'Agrandissement Latent Différent Prompt"
       },
       "Video": {
         "hunyuan_video_text_to_video": "Texte à Vidéo Hunyuan",
