@@ -2,10 +2,13 @@
   <Card
     ref="cardRef"
     :data-testid="`template-workflow-${template.name}`"
-    class="w-64"
+    class="w-64 group"
   >
     <template #header>
-      <div class="flex items-center justify-center">
+      <div
+        class="flex items-center justify-center cursor-pointer"
+        @click="$emit('loadWorkflow', template.name)"
+      >
         <div class="relative overflow-hidden rounded-t-lg">
           <template v-if="template.mediaType === 'audio'">
             <AudioThumbnail :src="baseThumbnailSrc" />
@@ -15,6 +18,7 @@
               :base-image-src="baseThumbnailSrc"
               :overlay-image-src="overlayThumbnailSrc"
               :alt="title"
+              :is-hovered="isHovered"
             />
           </template>
           <template v-else-if="template.thumbnailVariant === 'hoverDissolve'">
@@ -44,15 +48,10 @@
       </div>
     </template>
     <template #subtitle>
-      <div class="flex justify-center py-2">
-        <Button
-          :label="title"
-          :loading="loading"
-          icon="pi pi-play-circle"
-          variant="outlined"
-          size="small"
-          @click="$emit('loadWorkflow', template.name)"
-        />
+      <div
+        class="text-center py-2 opacity-85 group-hover:opacity-100 transition-opacity"
+      >
+        {{ title }}
       </div>
     </template>
   </Card>
@@ -60,7 +59,6 @@
 
 <script setup lang="ts">
 import { useElementHover } from '@vueuse/core'
-import Button from 'primevue/button'
 import Card from 'primevue/card'
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed, ref } from 'vue'
