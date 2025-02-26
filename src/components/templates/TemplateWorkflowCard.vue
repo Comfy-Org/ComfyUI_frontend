@@ -33,6 +33,7 @@
             <DefaultThumbnail
               :src="baseThumbnailSrc"
               :alt="title"
+              :is-hovered="isHovered"
               :hover-zoom="
                 template.thumbnailVariant === 'zoomHover'
                   ? UPSCALE_ZOOM_SCALE
@@ -71,8 +72,8 @@ import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDisso
 import { TemplateInfo } from '@/types/workflowTemplateTypes'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
-const UPSCALE_ZOOM_SCALE = 38 // for upscale templates, exaggerate the hover zoom
-const DEFAULT_ZOOM_SCALE = 6
+const UPSCALE_ZOOM_SCALE = 16 // for upscale templates, exaggerate the hover zoom
+const DEFAULT_ZOOM_SCALE = 5
 
 const { sourceModule, categoryTitle, loading, template } = defineProps<{
   sourceModule: string
