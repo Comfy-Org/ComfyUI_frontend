@@ -2,13 +2,20 @@ import * as fs from 'fs'
 
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
 import type { ComfyApi } from '../src/scripts/api'
-import { ComfyInputsSpec, ComfyNodeDefImpl } from '../src/stores/nodeDefStore'
+import { ComfyNodeDefImpl } from '../src/stores/nodeDefStore'
 import { normalizeI18nKey } from '../src/utils/formatUtil'
 
 const localePath = './src/locales/en/main.json'
 const nodeDefsPath = './src/locales/en/nodeDefs.json'
 
 test('collect-i18n-node-defs', async ({ comfyPage }) => {
+  // Mock view route
+  comfyPage.page.route('**/view**', async (route) => {
+    await route.fulfill({
+      body: JSON.stringify({})
+    })
+  })
+
   const nodeDefs: ComfyNodeDefImpl[] = Object.values(
     await comfyPage.page.evaluate(async () => {
       const api = window['app'].api as ComfyApi
@@ -40,57 +47,46 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
     const nodeLabels = {}
 
     for (const nodeDef of nodeDefs) {
-      const labels = await comfyPage.page.evaluate(async (def) => {
-        try {
-          // Create and add node to graph
-          const node = window['LiteGraph'].createNode(
-            def.name,
-            def.display_name
-          )
-          window['app'].graph.add(node)
+      const inputNames = [
+        ...Object.values(nodeDef.inputs?.optional ?? {}),
+        ...Object.values(nodeDef.inputs?.required ?? {})
+      ]
+        .filter((input) => input?.name)
+        .map((input) => input.name)
 
-          // Get node instance and check for widgets
-          const nodeInstance = window['app'].graph.getNodeById(node.id)
-          if (!nodeInstance?.widgets) return {}
+      if (!inputNames.length) continue
 
-          const getAllInputNames = (inputs: ComfyInputsSpec) => {
-            return [
-              ...Object.values(inputs?.optional ?? {}),
-              ...Object.values(inputs?.required ?? {})
-            ]
-              .filter((input) => input && input.name !== undefined)
-              .map((input) => input.name)
-          }
+      try {
+        const widgetsMappings = await comfyPage.page.evaluate(
+          (args) => {
+            const [nodeName, displayName, inputNames] = args
+            const node = window['LiteGraph'].createNode(nodeName, displayName)
+            if (!node.widgets?.length) return {}
+            return Object.fromEntries(
+              node.widgets
+                .filter((w) => w?.name && !inputNames.includes(w.name))
+                .map((w) => [w.name, w.label])
+            )
+          },
+          [nodeDef.name, nodeDef.display_name, inputNames]
+        )
 
-          // Get input names for comparison
-          const nodeInputNames = getAllInputNames(def.inputs)
-
-          // Collect runtime-generated widget labels
-          const labels = {}
-          for (const widget of nodeInstance.widgets) {
-            if (!widget?.name) continue
-            const isRuntimeGenerated = !nodeInputNames.includes(widget.name)
-            if (isRuntimeGenerated) {
-              console.warn(widget.label)
-              const label = widget.label ?? widget.name
-              labels[widget.name] = label
-            }
-          }
-
-          return labels
-        } finally {
-          // Cleanup
-          window['app'].graph.clear()
-        }
-      }, nodeDef)
-
-      // Format and store labels if any were found
-      if (Object.keys(labels ?? {}).length > 0) {
-        nodeLabels[nodeDef.name] = Object.fromEntries(
-          Object.entries(labels)
+        // Format runtime widgets
+        const runtimeWidgets = Object.fromEntries(
+          Object.entries(widgetsMappings)
             .sort((a, b) => a[0].localeCompare(b[0]))
             .map(([key, value]) => [normalizeI18nKey(key), { name: value }])
         )
+
+        if (Object.keys(runtimeWidgets).length > 0) {
+          nodeLabels[nodeDef.name] = runtimeWidgets
+        }
+      } catch (error) {
+        console.error(
+          `Failed to extract widgets from ${nodeDef.name}: ${error}`
+        )
+      } finally {
+        await comfyPage.nextFrame()
       }
     }
 
