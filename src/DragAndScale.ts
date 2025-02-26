@@ -1,9 +1,4 @@
-// @ts-strict-ignore
 import type { Point, Rect, Rect32 } from "./interfaces"
-import type { CanvasMouseEvent } from "./types/events"
-
-import { LiteGraph } from "./litegraph"
-import { isInRect } from "./measure"
 
 export interface DragAndScaleState {
   offset: Point
@@ -26,13 +21,10 @@ export class DragAndScale {
   last_mouse: Point
   element?: HTMLCanvasElement
   visible_area: Rect32
-  _binded_mouse_callback
   dragging?: boolean
   viewport?: Rect
 
   onredraw?(das: DragAndScale): void
-  /** @deprecated */
-  onmouse?(e: unknown): boolean
 
   get offset(): Point {
     return this.state.offset
@@ -50,39 +42,18 @@ export class DragAndScale {
     this.state.scale = value
   }
 
-  constructor(element?: HTMLCanvasElement, skip_events?: boolean) {
+  constructor(element?: HTMLCanvasElement) {
     this.state = {
       offset: new Float32Array([0, 0]),
       scale: 1,
     }
     this.max_scale = 10
     this.min_scale = 0.1
-    this.onredraw = null
     this.enabled = true
     this.last_mouse = [0, 0]
-    this.element = null
     this.visible_area = new Float32Array(4)
 
-    if (element) {
-      this.element = element
-      if (!skip_events) {
-        this.bindEvents(element)
-      }
-    }
-  }
-
-  /** @deprecated Has not been kept up to date */
-  bindEvents(element: Node): void {
-    this.last_mouse = new Float32Array(2)
-
-    this._binded_mouse_callback = this.onMouse.bind(this)
-
-    LiteGraph.pointerListenerAdd(element, "down", this._binded_mouse_callback)
-    LiteGraph.pointerListenerAdd(element, "move", this._binded_mouse_callback)
-    LiteGraph.pointerListenerAdd(element, "up", this._binded_mouse_callback)
-
-    element.addEventListener("mousewheel", this._binded_mouse_callback, false)
-    element.addEventListener("wheel", this._binded_mouse_callback, false)
+    this.element = element
   }
 
   computeVisibleArea(viewport: Rect): void {
@@ -106,81 +77,6 @@ export class DragAndScale {
     this.visible_area[1] = starty
     this.visible_area[2] = endx - startx
     this.visible_area[3] = endy - starty
-  }
-
-  /** @deprecated Has not been kept up to date */
-  onMouse(e: CanvasMouseEvent) {
-    if (!this.enabled) {
-      return
-    }
-
-    const canvas = this.element
-    const rect = canvas.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
-    // FIXME: "canvasx" / y are not referenced anywhere - wrong case
-    // @ts-expect-error Incorrect case
-    e.canvasx = x
-    // @ts-expect-error Incorrect case
-    e.canvasy = y
-    e.dragging = this.dragging
-
-    const is_inside = !this.viewport || isInRect(x, y, this.viewport)
-
-    let ignore = false
-    if (this.onmouse) {
-      ignore = this.onmouse(e)
-    }
-
-    if (e.type == LiteGraph.pointerevents_method + "down" && is_inside) {
-      this.dragging = true
-      LiteGraph.pointerListenerRemove(canvas, "move", this._binded_mouse_callback)
-      LiteGraph.pointerListenerAdd(document, "move", this._binded_mouse_callback)
-      LiteGraph.pointerListenerAdd(document, "up", this._binded_mouse_callback)
-    } else if (e.type == LiteGraph.pointerevents_method + "move") {
-      if (!ignore) {
-        const deltax = x - this.last_mouse[0]
-        const deltay = y - this.last_mouse[1]
-        if (this.dragging) {
-          this.mouseDrag(deltax, deltay)
-        }
-      }
-    } else if (e.type == LiteGraph.pointerevents_method + "up") {
-      this.dragging = false
-      LiteGraph.pointerListenerRemove(document, "move", this._binded_mouse_callback)
-      LiteGraph.pointerListenerRemove(document, "up", this._binded_mouse_callback)
-      LiteGraph.pointerListenerAdd(canvas, "move", this._binded_mouse_callback)
-    } else if (
-      is_inside &&
-      (e.type == "mousewheel" || e.type == "wheel" || e.type == "DOMMouseScroll")
-    ) {
-      // @ts-expect-error Deprecated
-      e.eventType = "mousewheel"
-      // @ts-expect-error Deprecated
-      if (e.type == "wheel") e.wheel = -e.deltaY
-      // @ts-expect-error Deprecated
-      else e.wheel = e.wheelDeltaY != null ? e.wheelDeltaY : e.detail * -60
-
-      // from stack overflow
-      // @ts-expect-error Deprecated
-      e.delta = e.wheelDelta
-        // @ts-expect-error Deprecated
-        ? e.wheelDelta / 40
-        : e.deltaY
-          ? -e.deltaY / 3
-          : 0
-      // @ts-expect-error Deprecated
-      this.changeDeltaScale(1.0 + e.delta * 0.05)
-    }
-
-    this.last_mouse[0] = x
-    this.last_mouse[1] = y
-
-    if (is_inside) {
-      e.preventDefault()
-      e.stopPropagation()
-      return false
-    }
   }
 
   toCanvasContext(ctx: CanvasRenderingContext2D): void {
