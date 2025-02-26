@@ -1,38 +1,45 @@
 <template>
-  <Card :data-testid="`template-workflow-${template.name}`" class="w-64">
+  <Card
+    ref="cardRef"
+    :data-testid="`template-workflow-${template.name}`"
+    class="w-64 group"
+  >
     <template #header>
-      <div class="flex items-center justify-center">
-        <div class="relative overflow-hidden rounded-t-lg cursor-pointer">
+      <div
+        class="flex items-center justify-center cursor-pointer"
+        @click="$emit('loadWorkflow', template.name)"
+      >
+        <div class="relative overflow-hidden rounded-t-lg">
           <template v-if="template.mediaType === 'audio'">
-            <div class="w-64 h-64 flex items-center justify-center p-4 z-20">
-              <audio
-                controls
-                class="w-full relative z-20"
-                :src="thumbnailSrc"
-                @error="imageError = true"
-                @click.stop
-              />
-            </div>
+            <AudioThumbnail :src="baseThumbnailSrc" />
+          </template>
+          <template v-else-if="template.thumbnailVariant === 'compareSlider'">
+            <CompareSliderThumbnail
+              :base-image-src="baseThumbnailSrc"
+              :overlay-image-src="overlayThumbnailSrc"
+              :alt="title"
+              :is-hovered="isHovered"
+            />
+          </template>
+          <template v-else-if="template.thumbnailVariant === 'hoverDissolve'">
+            <HoverDissolveThumbnail
+              :base-image-src="baseThumbnailSrc"
+              :overlay-image-src="overlayThumbnailSrc"
+              :alt="title"
+              :is-hovered="isHovered"
+            />
           </template>
           <template v-else>
-            <img
-              v-if="!imageError"
-              :src="thumbnailSrc"
+            <DefaultThumbnail
+              :src="baseThumbnailSrc"
               :alt="title"
-              class="w-64 h-64 rounded-t-lg object-cover thumbnail"
-              @error="imageError = true"
+              :hover-zoom="
+                template.thumbnailVariant === 'zoomHover'
+                  ? UPSCALE_ZOOM_SCALE
+                  : DEFAULT_ZOOM_SCALE
+              "
             />
-            <div v-else class="w-64 h-64 content-center text-center">
-              <i class="pi pi-file" style="font-size: 4rem"></i>
-            </div>
           </template>
-          <a @click="$emit('loadWorkflow', template.name)">
-            <div
-              class="absolute top-0 left-0 w-64 h-64 overflow-hidden opacity-0 transition duration-300 ease-in-out hover:opacity-100 bg-opacity-50 bg-black flex items-center justify-center z-10"
-            >
-              <i class="pi pi-play-circle" style="color: white"></i>
-            </div>
-          </a>
           <ProgressSpinner
             v-if="loading"
             class="absolute inset-0 z-1 w-3/12 h-full"
@@ -41,7 +48,9 @@
       </div>
     </template>
     <template #subtitle>
-      <div class="text-center">
+      <div
+        class="text-center py-2 opacity-85 group-hover:opacity-100 transition-opacity"
+      >
         {{ title }}
       </div>
     </template>
@@ -49,13 +58,21 @@
 </template>
 
 <script setup lang="ts">
+import { useElementHover } from '@vueuse/core'
 import Card from 'primevue/card'
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue'
+import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSliderThumbnail.vue'
+import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
+import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDissolveThumbnail.vue'
 import { TemplateInfo } from '@/types/workflowTemplateTypes'
 import { normalizeI18nKey } from '@/utils/formatUtil'
+
+const UPSCALE_ZOOM_SCALE = 38 // for upscale templates, exaggerate the hover zoom
+const DEFAULT_ZOOM_SCALE = 6
 
 const { sourceModule, categoryTitle, loading, template } = defineProps<{
   sourceModule: string
@@ -66,13 +83,23 @@ const { sourceModule, categoryTitle, loading, template } = defineProps<{
 
 const { t } = useI18n()
 
-const imageError = ref(false)
+const cardRef = ref<HTMLElement | null>(null)
+const isHovered = useElementHover(cardRef)
 
 const thumbnailSrc = computed(() =>
   sourceModule === 'default'
-    ? `/templates/${template.name}.${template.mediaSubtype}`
-    : `/api/workflow_templates/${sourceModule}/${template.name}.${template.mediaSubtype}`
+    ? `/templates/${template.name}`
+    : `/api/workflow_templates/${sourceModule}/${template.name}`
 )
+
+const baseThumbnailSrc = computed(
+  () => `${thumbnailSrc.value}-1.${template.mediaSubtype}`
+)
+
+const overlayThumbnailSrc = computed(
+  () => `${thumbnailSrc.value}-2.${template.mediaSubtype}`
+)
+
 const title = computed(() => {
   return sourceModule === 'default'
     ? t(
