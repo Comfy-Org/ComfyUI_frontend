@@ -1,11 +1,11 @@
 import type {
   Dictionary,
   IContextMenuValue,
-  LinkNetwork,
   ISlotType,
+  LinkNetwork,
+  LinkSegment,
   MethodNames,
   Point,
-  LinkSegment,
   Positionable,
 } from "./interfaces"
 import type {
@@ -14,17 +14,18 @@ import type {
   SerialisableGraph,
   SerialisableReroute,
 } from "./types/serialisation"
-import { Reroute, RerouteId } from "./Reroute"
-import { LGraphEventMode } from "./types/globalEnums"
-import { LiteGraph } from "./litegraph"
+
 import { LGraphCanvas } from "./LGraphCanvas"
 import { LGraphGroup } from "./LGraphGroup"
-import { type NodeId, LGraphNode } from "./LGraphNode"
+import { LGraphNode, type NodeId } from "./LGraphNode"
+import { LiteGraph } from "./litegraph"
 import { type LinkId, LLink } from "./LLink"
 import { MapProxyHandler } from "./MapProxyHandler"
 import { isSortaInsideOctagon } from "./measure"
-import { getAllNestedItems } from "./utils/collections"
+import { Reroute, RerouteId } from "./Reroute"
 import { stringOrEmpty } from "./strings"
+import { LGraphEventMode } from "./types/globalEnums"
+import { getAllNestedItems } from "./utils/collections"
 
 interface IGraphInput {
   name: string

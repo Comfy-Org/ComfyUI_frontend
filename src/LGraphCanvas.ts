@@ -1,42 +1,62 @@
 // @ts-strict-ignore
+import type { ContextMenu } from "./ContextMenu"
 import type {
   CanvasColour,
+  ColorOption,
+  ConnectingLink,
   Dictionary,
   Direction,
   IBoundaryNodes,
+  IColorable,
   IContextMenuOptions,
-  INodeSlot,
+  IContextMenuValue,
   INodeInputSlot,
   INodeOutputSlot,
+  INodeSlot,
   IOptionalSlotData,
+  ISlotType,
+  LinkSegment,
+  NullableProperties,
   Point,
+  Positionable,
+  ReadOnlyPoint,
+  ReadOnlyRect,
   Rect,
   Rect32,
   Size,
-  IContextMenuValue,
-  ISlotType,
-  ConnectingLink,
-  NullableProperties,
-  Positionable,
-  LinkSegment,
-  ReadOnlyPoint,
-  ReadOnlyRect,
-  ColorOption,
-  IColorable,
 } from "./interfaces"
-import type { IWidget } from "./types/widgets"
-import { LGraphNode, type NodeId } from "./LGraphNode"
+import type { LGraph } from "./LGraph"
 import type {
   CanvasDragEvent,
-  CanvasMouseEvent,
   CanvasEventDetail,
+  CanvasMouseEvent,
   CanvasPointerEvent,
   CanvasPointerExtensions,
 } from "./types/events"
 import type { ClipboardItems } from "./types/serialisation"
-import { LLink, type LinkId } from "./LLink"
-import type { LGraph } from "./LGraph"
-import type { ContextMenu } from "./ContextMenu"
+import type { IWidget } from "./types/widgets"
+
+import { CanvasPointer } from "./CanvasPointer"
+import { DragAndScale } from "./DragAndScale"
+import { strokeShape } from "./draw"
+import { LGraphGroup } from "./LGraphGroup"
+import { LGraphNode, type NodeId } from "./LGraphNode"
+import { LinkReleaseContextExtended, LiteGraph } from "./litegraph"
+import { type LinkId, LLink } from "./LLink"
+import {
+  containsRect,
+  createBounds,
+  distance,
+  findPointOnCurve,
+  isInRect,
+  isInRectangle,
+  isPointInRect,
+  overlapBounding,
+  snapPoint,
+} from "./measure"
+import { type ConnectionColorContext } from "./NodeSlot"
+import { Reroute, type RerouteId } from "./Reroute"
+import { stringOrEmpty, stringOrNull } from "./strings"
 import {
   CanvasItem,
   EaseFunction,
@@ -47,28 +67,9 @@ import {
   RenderShape,
   TitleMode,
 } from "./types/globalEnums"
-import { LGraphGroup } from "./LGraphGroup"
-import {
-  distance,
-  overlapBounding,
-  isPointInRect,
-  findPointOnCurve,
-  containsRect,
-  isInRectangle,
-  createBounds,
-  isInRect,
-  snapPoint,
-} from "./measure"
-import { strokeShape } from "./draw"
-import { DragAndScale } from "./DragAndScale"
-import { LinkReleaseContextExtended, LiteGraph } from "./litegraph"
-import { stringOrEmpty, stringOrNull } from "./strings"
 import { alignNodes, distributeNodes, getBoundaryNodes } from "./utils/arrange"
-import { Reroute, type RerouteId } from "./Reroute"
-import { getAllNestedItems, findFirstNode } from "./utils/collections"
-import { CanvasPointer } from "./CanvasPointer"
+import { findFirstNode, getAllNestedItems } from "./utils/collections"
 import { toClass } from "./utils/type"
-import { type ConnectionColorContext } from "./NodeSlot"
 import { WIDGET_TYPE_MAP } from "./widgets/widgetMap"
 
 interface IShowSearchOptions {

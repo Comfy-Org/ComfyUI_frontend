@@ -10,19 +10,21 @@ import type {
 } from "./interfaces"
 import type { LGraph } from "./LGraph"
 import type { ISerialisedGroup } from "./types/serialisation"
-import { LiteGraph } from "./litegraph"
+
+import { NullGraphError } from "@/infrastructure/NullGraphError"
+
+import { strokeShape } from "./draw"
 import { LGraphCanvas } from "./LGraphCanvas"
+import { LGraphNode } from "./LGraphNode"
+import { LiteGraph } from "./litegraph"
 import {
   containsCentre,
   containsRect,
+  createBounds,
   isInRectangle,
   isPointInRect,
-  createBounds,
   snapPoint,
 } from "./measure"
-import { LGraphNode } from "./LGraphNode"
-import { strokeShape } from "./draw"
-import { NullGraphError } from "@/infrastructure/NullGraphError"
 
 export interface IGraphGroupFlags extends Record<string, unknown> {
   pinned?: true

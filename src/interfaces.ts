@@ -1,8 +1,8 @@
 import type { ContextMenu } from "./ContextMenu"
 import type { LGraphNode, NodeId } from "./LGraphNode"
-import type { LinkDirection, RenderShape } from "./types/globalEnums"
 import type { LinkId, LLink } from "./LLink"
 import type { Reroute, RerouteId } from "./Reroute"
+import type { LinkDirection, RenderShape } from "./types/globalEnums"
 import type { IWidget } from "./types/widgets"
 import type { LayoutElement } from "./utils/layout"
 

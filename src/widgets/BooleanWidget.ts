@@ -1,8 +1,9 @@
-import type { IBooleanWidget } from "@/types/widgets"
-import { BaseWidget } from "./BaseWidget"
-import type { CanvasMouseEvent } from "@/types/events"
-import type { LGraphNode } from "@/LGraphNode"
 import type { LGraphCanvas } from "@/LGraphCanvas"
+import type { LGraphNode } from "@/LGraphNode"
+import type { CanvasMouseEvent } from "@/types/events"
+import type { IBooleanWidget } from "@/types/widgets"
+
+import { BaseWidget } from "./BaseWidget"
 
 export class BooleanWidget extends BaseWidget implements IBooleanWidget {
   // IBooleanWidget properties

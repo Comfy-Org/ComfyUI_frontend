@@ -1,5 +1,6 @@
-import { LiteGraph } from "./litegraph"
 import type { CanvasColour, Rect } from "./interfaces"
+
+import { LiteGraph } from "./litegraph"
 import { LinkDirection, RenderShape, TitleMode } from "./types/globalEnums"
 
 export enum SlotType {

@@ -4,6 +4,7 @@ import tseslint from "typescript-eslint"
 import stylistic from "@stylistic/eslint-plugin"
 import jsdoc from "eslint-plugin-jsdoc"
 import unusedImports from "eslint-plugin-unused-imports"
+import eslintPluginSimpleImportSort from "eslint-plugin-simple-import-sort"
 
 export default tseslint.config(
   { files: ["**/*.{js,mjs,ts,mts}"] },
@@ -205,6 +206,23 @@ export default tseslint.config(
       "@typescript-eslint/no-unused-vars": "off",
       "unused-imports/no-unused-imports": "error",
       "unused-imports/no-unused-vars": "error",
+    },
+  },
+
+  // Sort imports
+  {
+    plugins: {
+      "simple-import-sort": eslintPluginSimpleImportSort,
+    },
+    rules: {
+      "simple-import-sort/imports": [
+        "error",
+        {
+          // The default grouping, but with type imports first as a separate group.
+          groups: [["^.*\\u0000$"], ["^\\u0000"], ["^node:"], ["^@?\\w"], ["^"], ["^\\."]],
+        },
+      ],
+      "simple-import-sort/exports": "error",
     },
   },
 )

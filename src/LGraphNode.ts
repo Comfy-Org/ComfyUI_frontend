@@ -1,4 +1,5 @@
 // @ts-strict-ignore
+import type { DragAndScale } from "./DragAndScale"
 import type {
   CanvasColour,
   ColorOption,
@@ -21,28 +22,28 @@ import type {
   Size,
 } from "./interfaces"
 import type { LGraph } from "./LGraph"
-import type { IBaseWidget, IWidget, TWidgetValue, TWidgetType, IWidgetOptions } from "./types/widgets"
-import type { ISerialisedNode } from "./types/serialisation"
-import { LGraphCanvas } from "./LGraphCanvas"
-import type { CanvasMouseEvent } from "./types/events"
-import type { DragAndScale } from "./DragAndScale"
 import type { RerouteId } from "./Reroute"
+import type { CanvasMouseEvent } from "./types/events"
+import type { ISerialisedNode } from "./types/serialisation"
+import type { IBaseWidget, IWidget, IWidgetOptions, TWidgetType, TWidgetValue } from "./types/widgets"
+
+import { NullGraphError } from "./infrastructure/NullGraphError"
+import { BadgePosition, LGraphBadge } from "./LGraphBadge"
+import { LGraphCanvas } from "./LGraphCanvas"
+import { type LGraphNodeConstructor, LiteGraph } from "./litegraph"
+import { LLink } from "./LLink"
+import { createBounds, isInRect, isInRectangle, snapPoint } from "./measure"
+import { ConnectionColorContext, isINodeInputSlot, isWidgetInputSlot, NodeInputSlot, NodeOutputSlot, serializeSlot, toNodeSlotClass } from "./NodeSlot"
 import {
   LGraphEventMode,
   NodeSlotType,
-  TitleMode,
   RenderShape,
+  TitleMode,
 } from "./types/globalEnums"
-import { BadgePosition, LGraphBadge } from "./LGraphBadge"
-import { type LGraphNodeConstructor, LiteGraph } from "./litegraph"
-import { isInRectangle, isInRect, snapPoint, createBounds } from "./measure"
-import { LLink } from "./LLink"
-import { ConnectionColorContext, isINodeInputSlot, isWidgetInputSlot, NodeInputSlot, NodeOutputSlot, serializeSlot, toNodeSlotClass } from "./NodeSlot"
-import { WIDGET_TYPE_MAP } from "./widgets/widgetMap"
-import { toClass } from "./utils/type"
 import { LayoutElement } from "./utils/layout"
 import { distributeSpace } from "./utils/spaceDistribution"
-import { NullGraphError } from "./infrastructure/NullGraphError"
+import { toClass } from "./utils/type"
+import { WIDGET_TYPE_MAP } from "./widgets/widgetMap"
 
 export type NodeId = number | string
 

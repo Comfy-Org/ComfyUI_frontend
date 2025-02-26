@@ -5,6 +5,7 @@ import type {
   ReadOnlyRect,
   Rect,
 } from "./interfaces"
+
 import { LinkDirection } from "./types/globalEnums"
 
 /**

@@ -2,10 +2,10 @@
  * Event interfaces for event extension
  */
 
+import type { LGraphGroup } from "../LGraphGroup"
+import type { LGraphNode } from "../LGraphNode"
 import type { ConnectingLink, LinkReleaseContextExtended } from "../litegraph"
 import type { IWidget } from "./widgets"
-import type { LGraphNode } from "../LGraphNode"
-import type { LGraphGroup } from "../LGraphGroup"
 
 /** For Canvas*Event - adds graph space co-ordinates (property names are shipped) */
 export interface ICanvasPosition {

@@ -1,9 +1,11 @@
-import type { ISliderWidget, IWidgetSliderOptions } from "@/types/widgets"
-import { BaseWidget } from "./BaseWidget"
+import type { LGraphCanvas } from "@/LGraphCanvas"
 import type { LGraphNode } from "@/LGraphNode"
 import type { CanvasMouseEvent } from "@/types/events"
-import type { LGraphCanvas } from "@/LGraphCanvas"
+import type { ISliderWidget, IWidgetSliderOptions } from "@/types/widgets"
+
 import { clamp } from "@/litegraph"
+
+import { BaseWidget } from "./BaseWidget"
 
 export class SliderWidget extends BaseWidget implements ISliderWidget {
   // ISliderWidget properties

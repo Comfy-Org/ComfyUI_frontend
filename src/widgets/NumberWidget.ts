@@ -1,8 +1,9 @@
-import type { INumericWidget, IWidgetOptions } from "@/types/widgets"
-import { BaseWidget } from "./BaseWidget"
+import type { LGraphCanvas } from "@/LGraphCanvas"
 import type { LGraphNode } from "@/LGraphNode"
 import type { CanvasMouseEvent } from "@/types/events"
-import type { LGraphCanvas } from "@/LGraphCanvas"
+import type { INumericWidget, IWidgetOptions } from "@/types/widgets"
+
+import { BaseWidget } from "./BaseWidget"
 
 export class NumberWidget extends BaseWidget implements INumericWidget {
   // INumberWidget properties

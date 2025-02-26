@@ -1,9 +1,9 @@
 import type {
-  ISlotType,
   Dictionary,
   INodeFlags,
   INodeInputSlot,
   INodeOutputSlot,
+  ISlotType,
   Point,
   Size,
 } from "../interfaces"

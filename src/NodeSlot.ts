@@ -1,9 +1,10 @@
 import type { CanvasColour, ConnectingLink, Dictionary, INodeInputSlot, INodeOutputSlot, INodeSlot, ISlotType, IWidgetInputSlot, Point } from "./interfaces"
-import type { IWidget } from "./types/widgets"
 import type { LinkId } from "./LLink"
-import { LinkDirection, RenderShape } from "./types/globalEnums"
+import type { IWidget } from "./types/widgets"
+
 import { LabelPosition, SlotShape, SlotType } from "./draw"
 import { LiteGraph } from "./litegraph"
+import { LinkDirection, RenderShape } from "./types/globalEnums"
 import { ISerialisedNodeOutputSlot } from "./types/serialisation"
 import { ISerialisedNodeInputSlot } from "./types/serialisation"
 

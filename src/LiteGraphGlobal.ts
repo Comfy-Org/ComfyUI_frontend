@@ -1,10 +1,16 @@
-import { LGraph } from "./LGraph"
-import { LLink } from "./LLink"
-import { LGraphGroup } from "./LGraphGroup"
-import { DragAndScale } from "./DragAndScale"
-import { LGraphCanvas } from "./LGraphCanvas"
+import type { Dictionary, ISlotType, Rect, WhenNullish } from "./interfaces"
+
 import { ContextMenu } from "./ContextMenu"
 import { CurveEditor } from "./CurveEditor"
+import { DragAndScale } from "./DragAndScale"
+import { LabelPosition, SlotDirection, SlotShape, SlotType } from "./draw"
+import { LGraph } from "./LGraph"
+import { LGraphCanvas } from "./LGraphCanvas"
+import { LGraphGroup } from "./LGraphGroup"
+import { LGraphNode } from "./LGraphNode"
+import { LLink } from "./LLink"
+import { distance, isInsideRectangle, overlapBounding } from "./measure"
+import { Reroute } from "./Reroute"
 import {
   LGraphEventMode,
   LinkDirection,
@@ -13,11 +19,6 @@ import {
   RenderShape,
   TitleMode,
 } from "./types/globalEnums"
-import { LGraphNode } from "./LGraphNode"
-import { SlotShape, SlotDirection, SlotType, LabelPosition } from "./draw"
-import type { Dictionary, ISlotType, Rect, WhenNullish } from "./interfaces"
-import { distance, isInsideRectangle, overlapBounding } from "./measure"
-import { Reroute } from "./Reroute"
 
 /**
  * The Global Scope. It contains all the registered node classes.

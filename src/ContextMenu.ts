@@ -1,5 +1,6 @@
 // @ts-strict-ignore
 import type { IContextMenuOptions, IContextMenuValue } from "./interfaces"
+
 import { LiteGraph } from "./litegraph"
 
 interface ContextMenuDivElement extends HTMLDivElement {

@@ -1,6 +1,7 @@
 // @ts-strict-ignore
 import type { Point, Rect, Rect32 } from "./interfaces"
 import type { CanvasMouseEvent } from "./types/events"
+
 import { LiteGraph } from "./litegraph"
 import { isInRect } from "./measure"
 

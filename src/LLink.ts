@@ -1,7 +1,7 @@
 import type {
   CanvasColour,
-  LinkNetwork,
   ISlotType,
+  LinkNetwork,
   LinkSegment,
 } from "./interfaces"
 import type { NodeId } from "./LGraphNode"

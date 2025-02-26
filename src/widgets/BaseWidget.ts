@@ -1,8 +1,9 @@
-import { Point } from "@/interfaces"
-import { LiteGraph } from "@/litegraph"
 import type { CanvasPointer, LGraphCanvas, LGraphNode, Size } from "@/litegraph"
 import type { CanvasMouseEvent, CanvasPointerEvent } from "@/types/events"
 import type { IBaseWidget, IWidget, IWidgetOptions, TWidgetType, TWidgetValue } from "@/types/widgets"
+
+import { Point } from "@/interfaces"
+import { LiteGraph } from "@/litegraph"
 
 export abstract class BaseWidget implements IBaseWidget {
   linkedWidgets?: IWidget[]

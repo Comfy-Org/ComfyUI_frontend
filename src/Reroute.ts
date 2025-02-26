@@ -1,15 +1,16 @@
 import type {
   CanvasColour,
-  LinkSegment,
   LinkNetwork,
+  LinkSegment,
   Point,
   Positionable,
   ReadOnlyRect,
 } from "./interfaces"
-import { LLink, type LinkId } from "./LLink"
-import type { SerialisableReroute, Serialisable } from "./types/serialisation"
-import { distance } from "./measure"
 import type { NodeId } from "./LGraphNode"
+import type { Serialisable, SerialisableReroute } from "./types/serialisation"
+
+import { type LinkId, LLink } from "./LLink"
+import { distance } from "./measure"
 
 export type RerouteId = number
 

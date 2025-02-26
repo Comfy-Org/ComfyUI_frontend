@@ -1,8 +1,9 @@
-import type { IStringWidget, IWidgetOptions } from "@/types/widgets"
-import { BaseWidget } from "./BaseWidget"
+import type { LGraphCanvas } from "@/LGraphCanvas"
 import type { LGraphNode } from "@/LGraphNode"
 import type { CanvasMouseEvent } from "@/types/events"
-import type { LGraphCanvas } from "@/LGraphCanvas"
+import type { IStringWidget, IWidgetOptions } from "@/types/widgets"
+
+import { BaseWidget } from "./BaseWidget"
 
 export class TextWidget extends BaseWidget implements IStringWidget {
   // IStringWidget properties

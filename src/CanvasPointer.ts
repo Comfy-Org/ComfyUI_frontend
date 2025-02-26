@@ -1,5 +1,6 @@
 // @ts-strict-ignore
 import type { CanvasPointerEvent } from "./types/events"
+
 import { dist2 } from "./measure"
 
 /**
