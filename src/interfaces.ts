@@ -289,7 +289,7 @@ export interface ConnectingLink extends IInputOrOutput {
   afterRerouteId?: RerouteId
 }
 
-interface IContextMenuBase {
+interface IContextMenuBase<TExtra = unknown> {
   title?: string
   className?: string
   callback?(
@@ -297,7 +297,7 @@ interface IContextMenuBase {
     options?: unknown,
     event?: MouseEvent,
     previous_menu?: ContextMenu,
-    node?: LGraphNode,
+    extra?: TExtra,
   ): void | boolean
 }
 
@@ -317,7 +317,7 @@ export interface IContextMenuOptions extends IContextMenuBase {
   autoopen?: boolean
 }
 
-export interface IContextMenuValue extends IContextMenuBase {
+export interface IContextMenuValue<TExtra = unknown> extends IContextMenuBase<TExtra> {
   value?: string
   content: string
   has_submenu?: boolean

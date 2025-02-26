@@ -7140,7 +7140,6 @@ export class LGraphCanvas implements ConnectionColorContext {
         {
           content: "Add Node",
           has_submenu: true,
-          // @ts-expect-error Might be broken?  Or just param overlap
           callback: LGraphCanvas.onMenuAdd,
         },
         { content: "Add Group", callback: LGraphCanvas.onGroupAdd },
@@ -7164,7 +7163,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
   // called by processContextMenu to extract the menu list
   getNodeMenuOptions(node: LGraphNode): IContextMenuValue[] {
-    let options: IContextMenuValue[] = null
+    let options: IContextMenuValue<LGraphNode>[] = null
 
     if (node.getMenuOptions) {
       options = node.getMenuOptions(this)

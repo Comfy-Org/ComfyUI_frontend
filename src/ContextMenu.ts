@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import type { IContextMenuOptions, IContextMenuValue } from "./interfaces"
 
 import { LiteGraph } from "./litegraph"
@@ -20,7 +19,7 @@ export interface ContextMenu {
  */
 // eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export class ContextMenu {
-  options?: IContextMenuOptions
+  options: IContextMenuOptions
   parentMenu?: ContextMenu
   root: ContextMenuDivElement
   current_submenu?: ContextMenu
@@ -45,7 +44,7 @@ export class ContextMenu {
     if (parent) {
       if (!(parent instanceof ContextMenu)) {
         console.error("parentMenu must be of class ContextMenu, ignoring it")
-        options.parentMenu = null
+        options.parentMenu = undefined
       } else {
         this.parentMenu = parent
         this.parentMenu.lock = true
@@ -66,7 +65,7 @@ export class ContextMenu {
       eventClass !== "PointerEvent"
     ) {
       console.error(`Event passed to ContextMenu is not of type MouseEvent or CustomEvent. Ignoring it. (${eventClass})`)
-      options.event = null
+      options.event = undefined
     }
 
     const root: ContextMenuDivElement = document.createElement("div")
@@ -83,10 +82,9 @@ export class ContextMenu {
     }, 100)
 
     // this prevents the default context browser menu to open in case this menu was created when pressing right button
-    LiteGraph.pointerListenerAdd(
-      root,
-      "up",
-      function (e: MouseEvent) {
+    root.addEventListener(
+      "pointerup",
+      function (e) {
         // console.log("pointerevents: ContextMenu up root prevent");
         e.preventDefault()
         return true
@@ -95,7 +93,7 @@ export class ContextMenu {
     )
     root.addEventListener(
       "contextmenu",
-      function (e: MouseEvent) {
+      function (e) {
         // right button
         if (e.button != 2) return false
         e.preventDefault()
@@ -104,10 +102,9 @@ export class ContextMenu {
       true,
     )
 
-    LiteGraph.pointerListenerAdd(
-      root,
-      "down",
-      (e: MouseEvent) => {
+    root.addEventListener(
+      "pointerdown",
+      (e) => {
         // console.log("pointerevents: ContextMenu down");
         if (e.button == 2) {
           this.close()
@@ -136,13 +133,14 @@ export class ContextMenu {
       if (typeof name !== "string") {
         name = name != null
           ? name.content === undefined ? String(name) : name.content
-          : name as null | undefined
+          : name
       }
 
+      // @ts-ignore https://github.com/Comfy-Org/litegraph.js/issues/578
       this.addItem(name, value, options)
     }
 
-    LiteGraph.pointerListenerAdd(root, "enter", function () {
+    root.addEventListener("pointerenter", function () {
       if (root.closing_timer) {
         clearTimeout(root.closing_timer)
       }
@@ -190,8 +188,8 @@ export class ContextMenu {
   }
 
   addItem(
-    name: string,
-    value: IContextMenuValue | string,
+    name: string | null,
+    value: IContextMenuValue | string | null,
     options: IContextMenuOptions,
   ): HTMLElement {
     options ||= {}
@@ -204,10 +202,11 @@ export class ContextMenu {
     if (value === null) {
       element.classList.add("separator")
     } else {
+      const innerHtml = name === null ? "" : String(name)
       if (typeof value === "string") {
-        element.innerHTML = name
+        element.innerHTML = innerHtml
       } else {
-        element.innerHTML = value?.title ?? name
+        element.innerHTML = value?.title ?? innerHtml
 
         if (value.disabled) {
           disabled = true
@@ -225,7 +224,7 @@ export class ContextMenu {
       element.setAttribute("role", "menuitem")
 
       if (typeof value === "function") {
-        element.dataset["value"] = name
+        element.dataset["value"] = String(name)
         element.onclick_callback = value
       } else {
         element.dataset["value"] = String(value)
@@ -235,7 +234,7 @@ export class ContextMenu {
     this.root.appendChild(element)
     if (!disabled) element.addEventListener("click", inner_onclick)
     if (!disabled && options.autoopen)
-      LiteGraph.pointerListenerAdd(element, "enter", inner_over)
+      element.addEventListener("pointerenter", inner_over)
 
     const setAriaExpanded = () => {
       const entries = this.root.querySelectorAll("div.litemenu-entry.has_submenu")
@@ -327,7 +326,7 @@ export class ContextMenu {
     this.root.remove()
     if (this.parentMenu && !ignore_parent_menu) {
       this.parentMenu.lock = false
-      this.parentMenu.current_submenu = null
+      this.parentMenu.current_submenu = undefined
       if (e === undefined) {
         this.parentMenu.close()
       } else if (e && !ContextMenu.isCursorOverElement(e, this.parentMenu.root)) {
@@ -365,7 +364,7 @@ export class ContextMenu {
       : this
   }
 
-  getFirstEvent(): MouseEvent {
+  getFirstEvent(): MouseEvent | undefined {
     return this.options.parentMenu
       ? this.options.parentMenu.getFirstEvent()
       : this.options.event
