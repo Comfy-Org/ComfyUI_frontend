@@ -123,9 +123,10 @@ export type TWidgetValue = IWidget["value"]
 export interface IBaseWidget<TElement extends HTMLElement = HTMLElement> {
   linkedWidgets?: IWidget[]
 
+  name: string
   options: IWidgetOptions
+
   label?: string
-  name?: string
   /** Widget type (see {@link TWidgetType}) */
   type?: TWidgetType
   value?: TWidgetValue

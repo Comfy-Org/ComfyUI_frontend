@@ -7,9 +7,9 @@ import { LiteGraph } from "@/litegraph"
 
 export abstract class BaseWidget implements IBaseWidget {
   linkedWidgets?: IWidget[]
+  name: string
   options: IWidgetOptions<unknown>
   label?: string
-  name?: string
   type?: TWidgetType
   value?: TWidgetValue
   y?: number
@@ -40,6 +40,7 @@ export abstract class BaseWidget implements IBaseWidget {
 
   constructor(widget: IBaseWidget) {
     Object.assign(this, widget)
+    this.name = widget.name
     this.options = widget.options
   }
 

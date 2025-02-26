@@ -39,7 +39,7 @@ export function serializeSlot(slot: INodeInputSlot | INodeOutputSlot): ISerialis
     _layoutElement: undefined,
     _data: undefined,
     pos: isWidgetInputSlot(slot) ? undefined : slot.pos,
-    widget: isWidgetInputSlot(slot) && slot.widget?.name ? { name: slot.widget.name } : undefined,
+    widget: isWidgetInputSlot(slot) ? { name: slot.widget.name } : undefined,
   }, value => value === undefined) as ISerialisedNodeInputSlot | ISerialisedNodeOutputSlot
 }
 
