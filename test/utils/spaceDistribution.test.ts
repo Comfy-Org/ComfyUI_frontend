@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { type SpaceRequest, distributeSpace } from "@/utils/spaceDistribution"
+
+import { distributeSpace, type SpaceRequest } from "@/utils/spaceDistribution"
 
 describe("distributeSpace", () => {
   it("should distribute space according to minimum sizes when space is limited", () => {

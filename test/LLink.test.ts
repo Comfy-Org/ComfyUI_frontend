@@ -1,5 +1,7 @@
 import { describe, expect } from "vitest"
+
 import { LLink } from "@/litegraph"
+
 import { test } from "./testExtensions"
 
 describe("LLink", () => {

@@ -20,6 +20,7 @@ const antfuLint = {
 }
 
 export default tseslint.config(
+  { ignores: [".*/**", "dist/**", "scripts/**"] },
   { files: ["**/*.{js,mjs,ts,mts}"] },
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
@@ -131,10 +132,6 @@ export default tseslint.config(
         "error",
         { consistent: true, multiline: true },
       ],
-      "@stylistic/object-curly-newline": [
-        "error",
-        { consistent: true, multiline: true },
-      ],
       // "@stylistic/object-property-newline": ["error", { allowAllPropertiesOnSameLine: true }],
       // "@stylistic/object-property-newline": "error",
       "@stylistic/one-var-declaration-per-line": "error",
@@ -226,6 +223,7 @@ export default tseslint.config(
   {
     rules: {
       "antfu/consistent-chaining": "error",
+      "antfu/consistent-list-newline": "error",
     },
   },
 

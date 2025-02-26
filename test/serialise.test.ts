@@ -1,7 +1,10 @@
-import { describe } from "vitest"
-import { LGraph, LGraphGroup, LGraphNode } from "@/litegraph"
-import { test } from "./testExtensions"
 import type { ISerialisedGraph } from "@/types/serialisation"
+
+import { describe } from "vitest"
+
+import { LGraph, LGraphGroup, LGraphNode } from "@/litegraph"
+
+import { test } from "./testExtensions"
 
 describe("LGraph Serialisation", () => {
   test("can (de)serialise node / group titles", ({ expect, minimalGraph }) => {

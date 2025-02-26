@@ -1,6 +1,8 @@
 import { describe, expect } from "vitest"
+
 import { clamp, LGraphCanvas, LiteGraph } from "@/litegraph"
 import { LiteGraphGlobal } from "@/LiteGraphGlobal"
+
 import { test } from "./testExtensions"
 
 describe.concurrent("Litegraph module", () => {

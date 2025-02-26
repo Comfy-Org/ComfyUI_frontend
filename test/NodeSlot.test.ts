@@ -1,6 +1,7 @@
-import { describe, it, expect } from "vitest"
-import { serializeSlot } from "@/NodeSlot"
+import { describe, expect, it } from "vitest"
+
 import { INodeInputSlot, INodeOutputSlot } from "@/interfaces"
+import { serializeSlot } from "@/NodeSlot"
 
 describe("NodeSlot", () => {
   describe("serializeSlot", () => {

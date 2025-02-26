@@ -1,8 +1,11 @@
-import { test as baseTest } from "vitest"
 import type { ISerialisedGraph, SerialisableGraph } from "../src/types/serialisation"
+
+import { test as baseTest } from "vitest"
+
 import { LGraph } from "@/LGraph"
-import { basicSerialisableGraph, minimalSerialisableGraph, oldSchemaGraph } from "./assets/testGraphs"
 import { LiteGraph } from "@/litegraph"
+
+import { basicSerialisableGraph, minimalSerialisableGraph, oldSchemaGraph } from "./assets/testGraphs"
 
 interface LitegraphFixtures {
   minimalGraph: LGraph

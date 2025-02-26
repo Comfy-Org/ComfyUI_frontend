@@ -27,8 +27,9 @@
     "watch": "vite build --watch",
     "release": "node scripts/release.js",
     "test": "vitest",
-    "lint": "eslint src",
-    "lint:fix": "eslint src --fix",
+    "lint": "eslint",
+    "lint:fix": "eslint --fix",
+    "lint:ci": "eslint src",
     "format": "prettier --check './src/*.{js,ts,tsx,vue,mts}'",
     "format:fix": "prettier --write './src/*.{js,ts,tsx,vue,mts}'"
   },

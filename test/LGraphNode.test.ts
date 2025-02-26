@@ -1,6 +1,8 @@
 import { describe, expect } from "vitest"
+
 import { LGraphNode } from "@/litegraph"
 import { NodeInputSlot, NodeOutputSlot } from "@/NodeSlot"
+
 import { test } from "./testExtensions"
 
 describe("LGraphNode", () => {

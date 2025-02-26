@@ -1,5 +1,7 @@
 import { describe } from "vitest"
+
 import { LGraph } from "@/litegraph"
+
 import { dirtyTest } from "./testExtensions"
 
 describe("LGraph configure()", () => {
