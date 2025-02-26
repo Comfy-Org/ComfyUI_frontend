@@ -40,7 +40,7 @@ export interface SerialisableGraph {
   extra?: Record<any, any>
 }
 
-export type ISerialisedNodeInputSlot = Omit<INodeInputSlot, "_layoutElement"> & {
+export type ISerialisedNodeInputSlot = Omit<INodeInputSlot, "_layoutElement" | "widget"> & {
   widget?: { name: string }
 }
 export type ISerialisedNodeOutputSlot = Omit<INodeOutputSlot, "_layoutElement" | "_data">
