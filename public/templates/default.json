@@ -268,6 +268,23 @@
       "widgets_values": [
         "v1-5-pruned-emaonly-fp16.safetensors"
       ]
+    },
+    {
+      "id": 10,
+      "type": "MarkdownNote",
+      "pos": [30, 630],
+      "size": [315, 88],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "🛈 Need more details? Check out [docs.comfy.org/get_started](https://docs.comfy.org/get_started/gettingstarted)"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
     }
   ],
   "links": [
