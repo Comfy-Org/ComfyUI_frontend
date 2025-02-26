@@ -1,38 +1,35 @@
 import { expect } from '@playwright/test'
 import fs from 'fs'
-import path from 'path'
 
-import { CORE_TEMPLATES } from '../src/constants/coreTemplates'
 import { comfyPageFixture as test } from './fixtures/ComfyPage'
 
 test.describe('Templates', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.setSetting('Comfy.Workflow.ShowMissingModelsWarning', false)
-    await comfyPage.setSetting('Comfy.Workflow.ShowMissingNodesWarning', false)
   })
 
-  const getTemplatePath = (filename: string) =>
-    path.join('public', 'templates', filename)
-
-  const getAllTemplates = () =>
-    CORE_TEMPLATES.flatMap((category) => category.templates)
-
-  test('Workflow files exist for all templates', async () => {
-    for (const template of getAllTemplates()) {
-      const { name } = template
-      const workflowPath = getTemplatePath(`${name}.json`)
-      expect(fs.existsSync(workflowPath), `Missing workflow: ${name}`).toBe(
-        true
+  test('should have a JSON workflow file for each template', async ({
+    comfyPage
+  }) => {
+    for (const template of comfyPage.templates.getAllTemplates()) {
+      const workflowPath = comfyPage.templates.getTemplatePath(
+        `${template.name}.json`
       )
+      expect(
+        fs.existsSync(workflowPath),
+        `Missing workflow: ${template.name}`
+      ).toBe(true)
     }
   })
 
-  test('Template thumbnail media files exist for all templates', async () => {
-    for (const template of getAllTemplates()) {
+  test('should have all required thumbnail media for each template', async ({
+    comfyPage
+  }) => {
+    for (const template of comfyPage.templates.getAllTemplates()) {
       const { name, mediaSubtype, thumbnailVariant } = template
       const baseMedia = `${name}-1.${mediaSubtype}`
-      const basePath = getTemplatePath(baseMedia)
+      const basePath = comfyPage.templates.getTemplatePath(baseMedia)
 
       // Check base thumbnail
       expect(
@@ -40,13 +37,13 @@ test.describe('Templates', () => {
         `Missing base thumbnail: ${baseMedia}`
       ).toBe(true)
 
-      // Check second thumbnail for thumbnail variants that use two images
+      // Check second thumbnail for variants that need it
       if (
         thumbnailVariant === 'compareSlider' ||
         thumbnailVariant === 'hoverDissolve'
       ) {
         const secondMedia = `${name}-2.${mediaSubtype}`
-        const secondPath = getTemplatePath(secondMedia)
+        const secondPath = comfyPage.templates.getTemplatePath(secondMedia)
         expect(
           fs.existsSync(secondPath),
           `Missing second thumbnail: ${secondMedia} required for ${thumbnailVariant}`

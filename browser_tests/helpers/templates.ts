@@ -1,4 +1,8 @@
 import { Locator, Page } from '@playwright/test'
+import path from 'path'
+
+import { CORE_TEMPLATES } from '../../src/constants/coreTemplates'
+import { TemplateInfo } from '../../src/types/workflowTemplateTypes'
 
 export class ComfyTemplates {
   readonly content: Locator
@@ -12,5 +16,13 @@ export class ComfyTemplates {
       .getByTestId(`template-workflow-${id}`)
       .locator('a')
       .click()
+  }
+
+  getAllTemplates(): TemplateInfo[] {
+    return CORE_TEMPLATES.flatMap((category) => category.templates)
+  }
+
+  getTemplatePath(filename: string): string {
+    return path.join('public', 'templates', filename)
   }
 }
