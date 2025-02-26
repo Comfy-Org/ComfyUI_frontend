@@ -7,25 +7,25 @@ export const CORE_TEMPLATES = [
       {
         name: 'default',
         mediaType: 'image',
-        mediaSubtype: 'png'
+        mediaSubtype: 'webp'
       },
       {
         name: 'image2image',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/img2img/'
       },
       {
         name: 'lora',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         tutorialUrl: 'https://comfyanonymous.github.io/ComfyUI_examples/lora/'
       },
       {
         name: 'inpaint_example',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         thumbnailVariant: 'compareSlider',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/inpaint/'
@@ -33,7 +33,7 @@ export const CORE_TEMPLATES = [
       {
         name: 'inpain_model_outpainting',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         thumbnailVariant: 'compareSlider',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/inpaint/#outpainting'
@@ -41,20 +41,20 @@ export const CORE_TEMPLATES = [
       {
         name: 'embedding_example',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/textual_inversion_embeddings/'
       },
       {
         name: 'gligen_textbox_example',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         tutorialUrl: 'https://comfyanonymous.github.io/ComfyUI_examples/gligen/'
       },
       {
         name: 'lora_multiple',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         tutorialUrl: 'https://comfyanonymous.github.io/ComfyUI_examples/lora/'
       }
     ]
@@ -67,21 +67,21 @@ export const CORE_TEMPLATES = [
       {
         name: 'flux_dev_checkpoint_example',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/flux/#flux-dev-1'
       },
       {
         name: 'flux_schnell',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/flux/#flux-schnell-1'
       },
       {
         name: 'flux_fill_inpaint_example',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         thumbnailVariant: 'compareSlider',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/flux/#fill-inpainting-model'
@@ -89,7 +89,7 @@ export const CORE_TEMPLATES = [
       {
         name: 'flux_fill_outpaint_example',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         thumbnailVariant: 'compareSlider',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/flux/#fill-inpainting-model'
@@ -97,7 +97,7 @@ export const CORE_TEMPLATES = [
       {
         name: 'flux_canny_model_example',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         thumbnailVariant: 'hoverDissolve',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/flux/#canny-and-depth'
@@ -105,7 +105,7 @@ export const CORE_TEMPLATES = [
       {
         name: 'flux_depth_lora_example',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         thumbnailVariant: 'hoverDissolve',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/flux/#canny-and-depth'
@@ -113,7 +113,7 @@ export const CORE_TEMPLATES = [
       {
         name: 'flux_redux_model_example',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/flux/#redux'
       }
@@ -127,7 +127,7 @@ export const CORE_TEMPLATES = [
       {
         name: 'controlnet_example',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         thumbnailVariant: 'hoverDissolve',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/controlnet/'
@@ -135,7 +135,7 @@ export const CORE_TEMPLATES = [
       {
         name: '2_pass_pose_worship',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         thumbnailVariant: 'hoverDissolve',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/controlnet/#pose-controlnet'
@@ -143,7 +143,7 @@ export const CORE_TEMPLATES = [
       {
         name: 'depth_controlnet',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         thumbnailVariant: 'hoverDissolve',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/controlnet/#t2i-adapter-vs-controlnets'
@@ -151,7 +151,7 @@ export const CORE_TEMPLATES = [
       {
         name: 'depth_t2i_adapter',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         thumbnailVariant: 'hoverDissolve',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/controlnet/#t2i-adapter-vs-controlnets'
@@ -159,7 +159,7 @@ export const CORE_TEMPLATES = [
       {
         name: 'mixing_controlnets',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         thumbnailVariant: 'hoverDissolve',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/controlnet/#mixing-controlnets'
@@ -174,7 +174,7 @@ export const CORE_TEMPLATES = [
       {
         name: 'hiresfix_latent_workflow',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         thumbnailVariant: 'zoomHover',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/2_pass_txt2img/'
@@ -182,7 +182,7 @@ export const CORE_TEMPLATES = [
       {
         name: 'esrgan_example',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         thumbnailVariant: 'zoomHover',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/upscale_models/'
@@ -190,7 +190,7 @@ export const CORE_TEMPLATES = [
       {
         name: 'hiresfix_esrgan_workflow',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         thumbnailVariant: 'zoomHover',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/2_pass_txt2img/#non-latent-upscaling'
@@ -198,7 +198,7 @@ export const CORE_TEMPLATES = [
       {
         name: 'latent_upscale_different_prompt_model',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         thumbnailVariant: 'zoomHover',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/2_pass_txt2img/#more-examples'
@@ -259,14 +259,14 @@ export const CORE_TEMPLATES = [
       {
         name: 'sd3.5_simple_example',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/sd3/#sd35'
       },
       {
         name: 'sd3.5_large_canny_controlnet_example',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         thumbnailVariant: 'hoverDissolve',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/sd3/#sd35-controlnets'
@@ -274,7 +274,7 @@ export const CORE_TEMPLATES = [
       {
         name: 'sd3.5_large_depth',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         thumbnailVariant: 'hoverDissolve',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/sd3/#sd35-controlnets'
@@ -282,7 +282,7 @@ export const CORE_TEMPLATES = [
       {
         name: 'sd3.5_large_blur',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         thumbnailVariant: 'hoverDissolve',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/sd3/#sd35-controlnets'
@@ -297,33 +297,33 @@ export const CORE_TEMPLATES = [
       {
         name: 'sdxl_simple_example',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         tutorialUrl: 'https://comfyanonymous.github.io/ComfyUI_examples/sdxl/'
       },
       {
         name: 'sdxl_refiner_prompt_example',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         tutorialUrl: 'https://comfyanonymous.github.io/ComfyUI_examples/sdxl/'
       },
       {
         name: 'sdxl_revision_text_prompts',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/sdxl/#revision'
       },
       {
         name: 'sdxl_revision_zero_positive',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/sdxl/#revision'
       },
       {
         name: 'sdxlturbo_example',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/sdturbo/'
       }
@@ -337,21 +337,21 @@ export const CORE_TEMPLATES = [
       {
         name: 'area_composition',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/area_composition/'
       },
       {
         name: 'area_composition_reversed',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/area_composition/'
       },
       {
         name: 'area_composition_square_area_for_subject',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/area_composition/#increasing-consistency-of-images-with-area-composition'
       }
@@ -365,7 +365,7 @@ export const CORE_TEMPLATES = [
       {
         name: 'stable_zero123_example',
         mediaType: 'image',
-        mediaSubtype: 'png',
+        mediaSubtype: 'webp',
         tutorialUrl: 'https://comfyanonymous.github.io/ComfyUI_examples/3d/'
       }
     ]
