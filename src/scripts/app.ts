@@ -1571,15 +1571,16 @@ export class ComfyApp {
       // Allow primitive nodes to handle refresh
       node.refreshComboInNode?.(defs)
 
-      if (!def) continue
+      if (!def?.input) continue
 
       for (const widgetNum in node.widgets) {
         const widget = node.widgets[widgetNum]
-        if (
-          widget.type == 'combo' &&
-          def['input']['required'][widget.name] !== undefined
-        ) {
-          widget.options.values = def['input']['required'][widget.name][0]
+        if (widget.type === 'combo') {
+          if (def['input'].required?.[widget.name] !== undefined) {
+            widget.options.values = def['input'].required[widget.name][0]
+          } else if (def['input'].optional?.[widget.name] !== undefined) {
+            widget.options.values = def['input'].optional[widget.name][0]
+          }
         }
       }
     }
