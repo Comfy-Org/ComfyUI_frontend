@@ -14,7 +14,7 @@ export class ComfyTemplates {
   async loadTemplate(id: string) {
     await this.content
       .getByTestId(`template-workflow-${id}`)
-      .locator('a')
+      .getByRole('img')
       .click()
   }
 
