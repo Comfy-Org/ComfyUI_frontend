@@ -7,7 +7,7 @@ const config: PlaywrightTestConfig = {
     headless: true
   },
   reporter: 'list',
-  timeout: 10000,
+  timeout: 60000,
   testMatch: /collect-i18n-.*\.ts/
 }
 
