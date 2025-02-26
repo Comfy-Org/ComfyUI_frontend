@@ -225,6 +225,10 @@ export default tseslint.config(
       "antfu/consistent-chaining": "error",
       "antfu/consistent-list-newline": "error",
       "antfu/curly": "error",
+      "antfu/import-dedupe": "error",
+      "antfu/no-import-dist": "error",
+      "antfu/no-ts-export-equal": "error",
+      "antfu/top-level-function": "error",
     },
   },
 

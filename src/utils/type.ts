@@ -13,6 +13,6 @@ export function toClass<P, C>(cls: new (plain: P) => C, obj: P | C): C {
 /**
  * Checks if an object is an instance of {@link IColorable}.
  */
-export const isColorable = (obj: unknown): obj is IColorable => {
+export function isColorable(obj: unknown): obj is IColorable {
   return typeof obj === "object" && obj !== null && "setColorOption" in obj && "getColorOption" in obj
 }
