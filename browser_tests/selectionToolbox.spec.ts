@@ -4,6 +4,9 @@ import { comfyPageFixture } from './fixtures/ComfyPage'
 
 const test = comfyPageFixture
 
+const BLUE_COLOR = 'rgb(51, 51, 85)'
+const RED_COLOR = 'rgb(85, 51, 51)'
+
 test.describe('Selection Toolbox', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.Canvas.SelectionToolbox', true)
@@ -150,10 +153,7 @@ test.describe('Selection Toolbox', () => {
       await redColorOption.click()
 
       // Button should now show the selected color
-      await expect(colorPickerButton).toHaveCSS(
-        'color',
-        'rgb(85, 51, 51)' // Red color, adjust if different
-      )
+      await expect(colorPickerButton).toHaveCSS('color', RED_COLOR)
     })
 
     test('color picker shows mixed state for differently colored selections', async ({
@@ -182,6 +182,29 @@ test.describe('Selection Toolbox', () => {
         '.selection-toolbox .pi-circle-fill'
       )
       await expect(colorPickerButton).not.toHaveAttribute('color')
+    })
+
+    test('color picker shows correct color when selecting pre-colored node', async ({
+      comfyPage
+    }) => {
+      // First color a node
+      await comfyPage.selectNodes(['KSampler'])
+      await comfyPage.page.locator('.selection-toolbox .pi-circle-fill').click()
+      await comfyPage.page
+        .locator('.color-picker-container i[data-testid="blue"]')
+        .click()
+
+      // Clear selection
+      await comfyPage.selectNodes(['KSampler'])
+
+      // Re-select the node
+      await comfyPage.selectNodes(['KSampler'])
+
+      // Color picker button should show the correct color
+      const colorPickerButton = comfyPage.page.locator(
+        '.selection-toolbox .pi-circle-fill'
+      )
+      await expect(colorPickerButton).toHaveCSS('color', BLUE_COLOR)
     })
   })
 })
