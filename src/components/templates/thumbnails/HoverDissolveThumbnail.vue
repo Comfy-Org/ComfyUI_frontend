@@ -4,11 +4,13 @@
       <img
         :src="baseImageSrc"
         :alt="alt"
+        draggable="false"
         class="absolute inset-0 w-64 h-64 object-cover"
       />
       <img
         :src="overlayImageSrc"
         :alt="alt"
+        draggable="false"
         class="absolute inset-0 w-64 h-64 object-cover transition-opacity duration-300"
         :class="{ 'opacity-100': isHovered, 'opacity-0': !isHovered }"
       />

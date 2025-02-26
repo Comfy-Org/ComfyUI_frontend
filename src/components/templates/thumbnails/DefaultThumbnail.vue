@@ -4,6 +4,7 @@
       <img
         :src="src"
         :alt="alt"
+        draggable="false"
         class="w-64 h-64 object-cover transform-gpu transition-transform duration-300 ease-out"
         :style="
           isHovered ? { transform: `scale(${1 + hoverZoom / 100})` } : undefined
