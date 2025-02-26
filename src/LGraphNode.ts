@@ -1898,9 +1898,10 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
         continue
       }
 
-      const h = widget.computeSize
-        ? widget.computeSize(nodeWidth)[1]
-        : LiteGraph.NODE_WIDGET_HEIGHT
+      const h = widget.computedHeight ??
+        widget.computeSize?.(nodeWidth)[1] ??
+        LiteGraph.NODE_WIDGET_HEIGHT
+
       const w = widget.width || nodeWidth
       if (
         widget.last_y !== undefined &&
