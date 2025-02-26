@@ -29,9 +29,9 @@ export function loadPolyfills() {
 
       // make it compatible with official one
       if (Array.isArray(radius)) {
-        if (radius.length == 1)
+        if (radius.length == 1) {
           top_left_radius = top_right_radius = bottom_left_radius = bottom_right_radius = radius[0]
-        else if (radius.length == 2) {
+        } else if (radius.length == 2) {
           top_left_radius = bottom_right_radius = radius[0]
           top_right_radius = bottom_left_radius = radius[1]
         } else if (radius.length == 4) {

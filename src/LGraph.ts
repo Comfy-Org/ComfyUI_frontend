@@ -1625,8 +1625,9 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
         i == "links" ||
         i === "state" ||
         i === "reroutes"
-      )
+      ) {
         continue
+      }
       // @ts-ignore #574 Legacy property assignment
       this[i] = data[i]
     }

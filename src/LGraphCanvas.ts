@@ -1267,16 +1267,19 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     let dialogCloseTimer = null
     dialog.addEventListener("mouseleave", function () {
-      if (LiteGraph.dialog_close_on_mouse_leave)
-        if (!dialog.is_modified && LiteGraph.dialog_close_on_mouse_leave)
+      if (LiteGraph.dialog_close_on_mouse_leave) {
+        if (!dialog.is_modified && LiteGraph.dialog_close_on_mouse_leave) {
           dialogCloseTimer = setTimeout(
             dialog.close,
             LiteGraph.dialog_close_on_mouse_leave_delay,
           )
+        }
+      }
     })
     dialog.addEventListener("mouseenter", function () {
-      if (LiteGraph.dialog_close_on_mouse_leave)
+      if (LiteGraph.dialog_close_on_mouse_leave) {
         if (dialogCloseTimer) clearTimeout(dialogCloseTimer)
+      }
     })
 
     function inner() {
@@ -1381,9 +1384,9 @@ export class LGraphCanvas implements ConnectionColorContext {
 
       const kV = Object.values(LiteGraph.NODE_MODES).indexOf(v)
       const fApplyMultiNode = function (node) {
-        if (kV >= 0 && LiteGraph.NODE_MODES[kV])
+        if (kV >= 0 && LiteGraph.NODE_MODES[kV]) {
           node.changeMode(kV)
-        else {
+        } else {
           console.warn("unexpected mode: " + v)
           node.changeMode(LGraphEventMode.ALWAYS)
         }
@@ -5120,8 +5123,9 @@ export class LGraphCanvas implements ConnectionColorContext {
         this.#snapToGrid &&
         this.isDragging &&
         this.selectedItems.has(reroute)
-      )
+      ) {
         this.drawSnapGuide(ctx, reroute, RenderShape.CIRCLE)
+      }
       reroute.draw(ctx)
     }
     ctx.globalAlpha = 1
@@ -5931,12 +5935,14 @@ export class LGraphCanvas implements ConnectionColorContext {
     let prevent_timeout = 0
     LiteGraph.pointerListenerAdd(dialog, "leave", function () {
       if (prevent_timeout) return
-      if (LiteGraph.dialog_close_on_mouse_leave)
-        if (!dialog.is_modified && LiteGraph.dialog_close_on_mouse_leave)
+      if (LiteGraph.dialog_close_on_mouse_leave) {
+        if (!dialog.is_modified && LiteGraph.dialog_close_on_mouse_leave) {
           dialogCloseTimer = setTimeout(
             dialog.close,
             LiteGraph.dialog_close_on_mouse_leave_delay,
           )
+        }
+      }
     })
     LiteGraph.pointerListenerAdd(dialog, "enter", function () {
       if (LiteGraph.dialog_close_on_mouse_leave && dialogCloseTimer)
@@ -6069,9 +6075,9 @@ export class LGraphCanvas implements ConnectionColorContext {
     }
     dialog.innerHTML += "<div class='helper'></div>"
 
-    if (root_document.fullscreenElement)
+    if (root_document.fullscreenElement) {
       root_document.fullscreenElement.appendChild(dialog)
-    else {
+    } else {
       root_document.body.appendChild(dialog)
       root_document.body.style.overflow = "hidden"
     }
@@ -6203,8 +6209,9 @@ export class LGraphCanvas implements ConnectionColorContext {
         if (
           options.type_filter_in == LiteGraph.EVENT ||
           options.type_filter_in == LiteGraph.ACTION
-        )
+        ) {
           options.type_filter_in = "_event_"
+        }
         /* this will filter on * .. but better do it manually in case
                 else if(options.type_filter_in === "" || options.type_filter_in === 0)
                     options.type_filter_in = "*"; */
@@ -6238,8 +6245,9 @@ export class LGraphCanvas implements ConnectionColorContext {
         if (
           options.type_filter_out == LiteGraph.EVENT ||
           options.type_filter_out == LiteGraph.ACTION
-        )
+        ) {
           options.type_filter_out = "_event_"
+        }
         /* this will filter on * .. but better do it manually in case
                 else if(options.type_filter_out === "" || options.type_filter_out === 0)
                     options.type_filter_out = "*"; */
@@ -6252,8 +6260,9 @@ export class LGraphCanvas implements ConnectionColorContext {
             options.type_filter_out !== false &&
             (options.type_filter_out + "").toLowerCase() ==
             (aSlots[iK] + "").toLowerCase()
-          )
+          ) {
             opt.selected = true
+          }
         }
         selOut.addEventListener("change", function () {
           refreshHelper()
@@ -6440,9 +6449,10 @@ export class LGraphCanvas implements ConnectionColorContext {
                 inTypeOverride: sIn && sIn.value ? "*" : false,
                 outTypeOverride: sOut && sOut.value ? "*" : false,
               })
-            )
+            ) {
               // @ts-expect-error
               filtered_extra.push(i)
+            }
           }
           // @ts-expect-error
           for (const extraItem of filtered_extra) {
@@ -6496,8 +6506,9 @@ export class LGraphCanvas implements ConnectionColorContext {
             (!options.show_all_if_empty || str) &&
             type.toLowerCase().indexOf(str) === -1 &&
             (!ctor.title || ctor.title.toLowerCase().indexOf(str) === -1)
-          )
+          ) {
             return false
+          }
 
           // filter by slot IN, OUT types
           if (options.do_type_filter && !opts.skipFilter) {
@@ -6670,8 +6681,9 @@ export class LGraphCanvas implements ConnectionColorContext {
         info?.values &&
         typeof info.values === "object" &&
         info.values[value] != undefined
-      )
+      ) {
         value = info.values[value]
+      }
 
       if (typeof node.properties[property] == "number") {
         value = Number(value)
@@ -6765,15 +6777,17 @@ export class LGraphCanvas implements ConnectionColorContext {
     dialog.addEventListener("mouseleave", function () {
       if (prevent_timeout) return
 
-      if (!dialog.is_modified && LiteGraph.dialog_close_on_mouse_leave)
+      if (!dialog.is_modified && LiteGraph.dialog_close_on_mouse_leave) {
         dialogCloseTimer = setTimeout(
           dialog.close,
           LiteGraph.dialog_close_on_mouse_leave_delay,
         )
+      }
     })
     dialog.addEventListener("mouseenter", function () {
-      if (options.closeOnLeave || LiteGraph.dialog_close_on_mouse_leave)
+      if (options.closeOnLeave || LiteGraph.dialog_close_on_mouse_leave) {
         if (dialogCloseTimer) clearTimeout(dialogCloseTimer)
+      }
     })
     const selInDia = dialog.querySelectorAll("select")
     // if filtering, check focus changed to comboboxes and prevent closing
@@ -6905,11 +6919,11 @@ export class LGraphCanvas implements ConnectionColorContext {
       elem.options = options
       elem.value = value
 
-      if (type == "code")
+      if (type == "code") {
         elem.addEventListener("click", function () {
           root.inner_showCodePad(this.dataset["property"])
         })
-      else if (type == "boolean") {
+      } else if (type == "boolean") {
         elem.classList.add("boolean")
         if (value) elem.classList.add("bool-on")
         elem.addEventListener("click", function () {

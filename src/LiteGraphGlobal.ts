@@ -602,8 +602,9 @@ export class LiteGraphGlobal {
       !type_b ||
       type_a == type_b ||
       (type_a == this.EVENT && type_b == this.ACTION)
-    )
+    ) {
       return true
+    }
 
     // Enforce string type to handle toLowerCase call (-1 number not ok)
     type_a = String(type_a)

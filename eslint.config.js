@@ -224,6 +224,7 @@ export default tseslint.config(
     rules: {
       "antfu/consistent-chaining": "error",
       "antfu/consistent-list-newline": "error",
+      "antfu/curly": "error",
     },
   },
 

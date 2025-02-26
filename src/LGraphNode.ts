@@ -1213,8 +1213,9 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
         !output ||
         output.type !== LiteGraph.EVENT ||
         (action && output.name != action)
-      )
+      ) {
         continue
+      }
       this.triggerSlot(i, param, null, options)
     }
   }
@@ -1893,8 +1894,9 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
         (widget.disabled && !includeDisabled) ||
         widget.hidden ||
         (widget.advanced && !this.showAdvanced)
-      )
+      ) {
         continue
+      }
 
       const h = widget.computeSize
         ? widget.computeSize(nodeWidth)[1]
@@ -1903,8 +1905,9 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       if (
         widget.last_y !== undefined &&
         isInRectangle(x, y, 6, widget.last_y, w - 12, h)
-      )
+      ) {
         return widget
+      }
     }
     return null
   }
@@ -2972,14 +2975,14 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       }
 
       ctx.fillStyle = this.renderingBoxColor
-      if (low_quality)
+      if (low_quality) {
         ctx.fillRect(
           title_height * 0.5 - box_size * 0.5,
           title_height * -0.5 - box_size * 0.5,
           box_size,
           box_size,
         )
-      else {
+      } else {
         ctx.beginPath()
         ctx.arc(
           title_height * 0.5,

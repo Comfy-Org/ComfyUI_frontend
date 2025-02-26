@@ -8,10 +8,12 @@ export class MapProxyHandler<V> implements ProxyHandler<Map<number | string, V>>
     p: string | symbol,
   ): PropertyDescriptor | undefined {
     const value = this.get(target, p)
-    if (value) return {
-      configurable: true,
-      enumerable: true,
-      value,
+    if (value) {
+      return {
+        configurable: true,
+        enumerable: true,
+        value,
+      }
     }
   }
 

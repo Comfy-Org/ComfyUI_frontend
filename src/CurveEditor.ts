@@ -77,7 +77,7 @@ export class CurveEditor {
     }
     ctx.stroke()
     ctx.globalAlpha = 1
-    if (!inactive)
+    if (!inactive) {
       for (const [i, p] of points.entries()) {
         ctx.fillStyle = this.selected == i
           ? "#FFF"
@@ -86,6 +86,7 @@ export class CurveEditor {
         ctx.arc(p[0] * w, (1.0 - p[1]) * h, 2, 0, Math.PI * 2)
         ctx.fill()
       }
+    }
     ctx.restore()
   }
 
