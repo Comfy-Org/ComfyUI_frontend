@@ -8,10 +8,7 @@ import globals from "globals"
 import tseslint from "typescript-eslint"
 
 const rules = Object.fromEntries(
-  Object.entries(eslintPluginAntfu.rules)
-    .map(
-      ([id]) => [`antfu/${id}`, "off"],
-    ),
+  Object.entries(eslintPluginAntfu.rules).map(([id]) => [`antfu/${id}`, "off"]),
 )
 const antfuLint = {
   name: "antfu/without-if-newline-or-imports",
@@ -214,7 +211,15 @@ export default tseslint.config(
     rules: {
       "@typescript-eslint/no-unused-vars": "off",
       "unused-imports/no-unused-imports": "error",
-      "unused-imports/no-unused-vars": "error",
+      "unused-imports/no-unused-vars": [
+        "error",
+        {
+          vars: "all",
+          varsIgnorePattern: "^_",
+          args: "after-used",
+          argsIgnorePattern: "^_",
+        },
+      ],
     },
   },
 
@@ -242,7 +247,14 @@ export default tseslint.config(
         "error",
         {
           // The default grouping, but with type imports first as a separate group.
-          groups: [["^.*\\u0000$"], ["^\\u0000"], ["^node:"], ["^@?\\w"], ["^"], ["^\\."]],
+          groups: [
+            ["^.*\\u0000$"],
+            ["^\\u0000"],
+            ["^node:"],
+            ["^@?\\w"],
+            ["^"],
+            ["^\\."],
+          ],
         },
       ],
       "simple-import-sort/exports": "error",

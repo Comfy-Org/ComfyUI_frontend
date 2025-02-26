@@ -7,6 +7,7 @@ import { LiteGraph } from "./litegraph"
 import { LinkDirection, RenderShape } from "./types/globalEnums"
 import { ISerialisedNodeOutputSlot } from "./types/serialisation"
 import { ISerialisedNodeInputSlot } from "./types/serialisation"
+import { omitBy } from "./utils/object"
 
 export interface ConnectionColorContext {
   default_connection_color: {
@@ -33,16 +34,13 @@ interface IDrawOptions {
 export function serializeSlot(slot: INodeInputSlot): ISerialisedNodeInputSlot
 export function serializeSlot(slot: INodeOutputSlot): ISerialisedNodeOutputSlot
 export function serializeSlot(slot: INodeInputSlot | INodeOutputSlot): ISerialisedNodeInputSlot | ISerialisedNodeOutputSlot {
-  const serialized = { ...slot }
-  delete serialized._layoutElement
-  if ("_data" in serialized) {
-    delete serialized._data
-  }
-  // Widget input slots' pos is calculated during layout, so we don't need to serialize it.
-  if (isWidgetInputSlot(slot) && "pos" in serialized) {
-    delete serialized.pos
-  }
-  return serialized
+  return omitBy({
+    ...slot,
+    _layoutElement: undefined,
+    _data: undefined,
+    pos: isWidgetInputSlot(slot) ? undefined : slot.pos,
+    widget: isWidgetInputSlot(slot) && slot.widget?.name ? { name: slot.widget.name } : undefined,
+  }, value => value === undefined) as ISerialisedNodeInputSlot | ISerialisedNodeOutputSlot
 }
 
 export function toNodeSlotClass(slot: INodeSlot): NodeSlot {

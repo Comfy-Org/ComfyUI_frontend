@@ -46,5 +46,27 @@ describe("NodeSlot", () => {
       const serialized = serializeSlot(normalSlot)
       expect(serialized).toHaveProperty("pos")
     })
+
+    it("preserves only widget name during serialization", () => {
+      const widgetInputSlot: INodeInputSlot = {
+        name: "test-id",
+        type: "STRING",
+        link: null,
+        widget: {
+          name: "test-widget",
+          type: "combo",
+          value: "test-value-1",
+          options: {
+            values: ["test-value-1", "test-value-2"],
+          },
+        },
+      }
+
+      const serialized = serializeSlot(widgetInputSlot)
+      expect(serialized.widget).toEqual({ name: "test-widget" })
+      expect(serialized.widget).not.toHaveProperty("type")
+      expect(serialized.widget).not.toHaveProperty("value")
+      expect(serialized.widget).not.toHaveProperty("options")
+    })
   })
 })
