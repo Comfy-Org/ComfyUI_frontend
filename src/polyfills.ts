@@ -73,7 +73,7 @@ export function loadPolyfills() {
       this.lineTo(x, y + bottom_left_radius)
       this.quadraticCurveTo(x, y, x + top_left_radius, y)
     }
-  } // if
+  }
 
   if (typeof window != "undefined" && !window["requestAnimationFrame"]) {
     window.requestAnimationFrame =

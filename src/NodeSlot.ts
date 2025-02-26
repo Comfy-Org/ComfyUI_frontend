@@ -55,7 +55,7 @@ export function toNodeSlotClass(slot: INodeSlot): NodeSlot {
 
 /**
  * Whether this slot is an input slot and attached to a widget.
- * @param slot - The slot to check.
+ * @param slot The slot to check.
  */
 export function isWidgetInputSlot(slot: INodeSlot): slot is IWidgetInputSlot {
   return isINodeInputSlot(slot) && !!slot.widget
@@ -84,7 +84,7 @@ export abstract class NodeSlot implements INodeSlot {
 
   /**
    * Whether this slot is a valid target for a dragging link.
-   * @param link - The link to check against.
+   * @param link The link to check against.
    */
   abstract isValidTarget(link: ConnectingLink | null): boolean
 

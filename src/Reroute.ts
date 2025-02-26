@@ -29,7 +29,6 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
   #network: WeakRef<LinkNetwork>
 
   #parentId?: RerouteId
-  /** @inheritdoc */
   public get parentId(): RerouteId | undefined {
     return this.#parentId
   }

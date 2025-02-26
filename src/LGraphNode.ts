@@ -823,8 +823,6 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     if (!this.outputs) return
 
     // this maybe slow and a niche case
-    // if(slot && slot.constructor === String)
-    // slot = this.findOutputSlot(slot);
     if (slot == -1 || slot >= this.outputs.length) return
 
     const output_info = this.outputs[slot]
@@ -1107,9 +1105,6 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   onAfterExecuteNode(param: unknown, options?: { action_call?: any }) {
     const trigS = this.findOutputSlot("onExecuted")
     if (trigS != -1) {
-      // console.debug(this.id+":"+this.order+" triggering slot onAfterExecute");
-      // console.debug(param);
-      // console.debug(options);
       this.triggerSlot(trigS, param, null, options)
     }
   }
@@ -1117,7 +1112,6 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   changeMode(modeTo: number): boolean {
     switch (modeTo) {
     case LGraphEventMode.ON_EVENT:
-      // this.addOnExecutedOutput();
       break
 
     case LGraphEventMode.ON_TRIGGER:
@@ -1152,19 +1146,20 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       // enable this to give the event an ID
       options.action_call ||= this.id + "_exec_" + Math.floor(Math.random() * 9999)
 
-      this.graph.nodes_executing[this.id] = true // .push(this.id);
+      this.graph.nodes_executing[this.id] = true
       this.onExecute(param, options)
-      this.graph.nodes_executing[this.id] = false // .pop();
+      this.graph.nodes_executing[this.id] = false
 
       // save execution/action ref
       this.exec_version = this.graph.iteration
       if (options?.action_call) {
-        this.action_call = options.action_call // if (param)
+        this.action_call = options.action_call
         this.graph.nodes_executedAction[this.id] = options.action_call
       }
     }
-    this.execute_triggered = 2 // the nFrames it will be used (-- each step), means "how old" is the event
-    this.onAfterExecuteNode?.(param, options) // callback
+    // the nFrames it will be used (-- each step), means "how old" is the event
+    this.execute_triggered = 2
+    this.onAfterExecuteNode?.(param, options)
   }
 
   /**
@@ -1181,17 +1176,18 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       // enable this to give the event an ID
       options.action_call ||= this.id + "_" + (action ? action : "action") + "_" + Math.floor(Math.random() * 9999)
 
-      this.graph.nodes_actioning[this.id] = action ? action : "actioning" // .push(this.id);
+      this.graph.nodes_actioning[this.id] = action ? action : "actioning"
       this.onAction(action, param, options)
-      this.graph.nodes_actioning[this.id] = false // .pop();
+      this.graph.nodes_actioning[this.id] = false
 
       // save execution/action ref
       if (options?.action_call) {
-        this.action_call = options.action_call // if (param)
+        this.action_call = options.action_call
         this.graph.nodes_executedAction[this.id] = options.action_call
       }
     }
-    this.action_triggered = 2 // the nFrames it will be used (-- each step), means "how old" is the event
+    // the nFrames it will be used (-- each step), means "how old" is the event
+    this.action_triggered = 2
     this.onAfterExecuteNode?.(param, options)
   }
 
@@ -1279,7 +1275,6 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
           options.action_call = this.id + "_act_" + Math.floor(Math.random() * 9999)
         // pass the action name
         const target_connection = node.inputs[link_info.target_slot]
-        // wrap node.onAction(target_connection.name, param);
         node.actionDo(target_connection.name, param, options)
       }
     }
@@ -1544,7 +1539,8 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     )
     const size = out || new Float32Array([0, 0])
     rows = Math.max(rows, 1)
-    const font_size = LiteGraph.NODE_TEXT_SIZE // although it should be graphcanvas.inner_text_font size
+    // although it should be graphcanvas.inner_text_font size
+    const font_size = LiteGraph.NODE_TEXT_SIZE
 
     const title_width = compute_text_size(this.title)
     let input_width = 0
@@ -2139,7 +2135,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     const length = slots?.length
     if (!length) return -1
 
-    // !! empty string type is considered 0, * !!
+    // Empty string and * match anything (type:  0)
     if (type == "" || type == "*") type = 0
     const sourceTypes = String(type).toLowerCase()
       .split(",")
@@ -2519,9 +2515,11 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
         // is the link we are searching for...
         if (link_info?.target_id == target.id) {
-          links.splice(i, 1) // remove here
+          // remove here
+          links.splice(i, 1)
           const input = target.inputs[link_info.target_slot]
-          input.link = null // remove there
+          // remove there
+          input.link = null
 
           // remove the link from the links pool
           graph._links.delete(link_id)
@@ -3060,8 +3058,9 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       if (this.collapsed) {
         ctx.textAlign = "left"
         ctx.fillText(
-          title.substr(0, 20), // avoid urls too long
-          title_height, // + measure.width * 0.5,
+          // avoid urls too long
+          title.substr(0, 20),
+          title_height,
           LiteGraph.NODE_TITLE_TEXT_Y - title_height,
         )
         ctx.textAlign = "left"
@@ -3227,7 +3226,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
     if (input_slot) {
       const x = 0
-      const y = LiteGraph.NODE_TITLE_HEIGHT * -0.5 // center
+      const y = LiteGraph.NODE_TITLE_HEIGHT * -0.5
       toClass(NodeInputSlot, input_slot).drawCollapsed(ctx, {
         pos: [x, y],
       })
@@ -3235,7 +3234,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
     if (output_slot) {
       const x = this._collapsed_width
-      const y = LiteGraph.NODE_TITLE_HEIGHT * -0.5 // center
+      const y = LiteGraph.NODE_TITLE_HEIGHT * -0.5
       toClass(NodeOutputSlot, output_slot).drawCollapsed(ctx, {
         pos: [x, y],
       })

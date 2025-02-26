@@ -134,7 +134,8 @@ export class LiteGraphGlobal {
   debug = false
   catch_exceptions = true
   throw_errors = true
-  allow_scripts = false // if set to true some nodes like Formula would be allowed to evaluate code that comes from unsafe sources (like node configuration), which could lead to exploits
+  /** if set to true some nodes like Formula would be allowed to evaluate code that comes from unsafe sources (like node configuration), which could lead to exploits */
+  allow_scripts = false
   /** nodetypes by string */
   registered_node_types: Record<string, typeof LGraphNode> = {}
   /** used for dropping files in the canvas */
@@ -787,7 +788,8 @@ export class LiteGraphGlobal {
   hex2num(hex: string): number[] {
     if (hex.charAt(0) == "#") {
       hex = hex.slice(1)
-    } // Remove the '#' char - if there is one.
+    // Remove the '#' char - if there is one.
+    }
     hex = hex.toUpperCase()
     const hex_alphabets = "0123456789ABCDEF"
     const value = new Array(3)

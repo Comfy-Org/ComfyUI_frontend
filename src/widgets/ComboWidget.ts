@@ -19,8 +19,8 @@ export class ComboWidget extends BaseWidget implements IComboWidget {
 
   /**
    * Draws the widget
-   * @param ctx - The canvas context
-   * @param options - The options for drawing the widget
+   * @param ctx The canvas context
+   * @param options The options for drawing the widget
    */
   override drawWidget(ctx: CanvasRenderingContext2D, options: {
     y: number
@@ -100,7 +100,8 @@ export class ComboWidget extends BaseWidget implements IComboWidget {
         const charWidthAvg = ctx.measureText("a").width
 
         if (availableWidth <= ellipsisWidth) {
-          displayValue = "\u2024" // One dot leader
+          // One dot leader
+          displayValue = "\u2024"
         } else {
           displayValue = `${displayValue}`
           const overflowWidth = (textWidth + ellipsisWidth) - availableWidth
@@ -160,7 +161,8 @@ export class ComboWidget extends BaseWidget implements IComboWidget {
     // Handle left/right arrow clicks
     if (delta) {
       let index = -1
-      canvas.last_mouseclick = 0 // avoids double click event
+      // avoids double click event
+      canvas.last_mouseclick = 0
       index = typeof values === "object"
         ? values_list.indexOf(String(this.value)) + delta
         // @ts-expect-error handle non-string values

@@ -61,7 +61,8 @@ export interface Positionable extends Parent<Positionable> {
 
   /**
    * Cached position & size as `x, y, width, height`.
-   * @readonly See {@link move}
+   * @readonly
+   * @see {@link move}
    */
   readonly boundingRect: ReadOnlyRect
 

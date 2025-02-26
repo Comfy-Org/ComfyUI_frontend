@@ -78,7 +78,8 @@ export class ContextMenu {
     root.style.pointerEvents = "none"
     setTimeout(function () {
       root.style.pointerEvents = "auto"
-    }, 100) // delay so the mouse up event is not caught by this element
+    // delay so the mouse up event is not caught by this element
+    }, 100)
 
     // this prevents the default context browser menu to open in case this menu was created when pressing right button
     LiteGraph.pointerListenerAdd(
@@ -348,7 +349,7 @@ export class ContextMenu {
     params: MouseEvent,
   ): CustomEvent {
     const evt = document.createEvent("CustomEvent")
-    evt.initCustomEvent(event_name, true, true, params) // canBubble, cancelable, detail
+    evt.initCustomEvent(event_name, true, true, params)
     if (element.dispatchEvent) element.dispatchEvent(evt)
     // @ts-expect-error
     else if (element.__events) element.__events.dispatchEvent(evt)

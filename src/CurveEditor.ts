@@ -17,7 +17,8 @@ export class CurveEditor {
     this.points = points
     this.selected = -1
     this.nearest = -1
-    this.size = null // stores last size used
+    // stores last size used
+    this.size = null
     this.must_update = true
     this.margin = 5
   }

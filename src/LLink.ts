@@ -73,7 +73,8 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     this.parentId = parentId
 
     this._data = null
-    this._pos = new Float32Array(2) // center
+    // center
+    this._pos = new Float32Array(2)
   }
 
   /** @deprecated Use {@link LLink.create} */

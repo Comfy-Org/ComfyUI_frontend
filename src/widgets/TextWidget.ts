@@ -18,8 +18,8 @@ export class TextWidget extends BaseWidget implements IStringWidget {
 
   /**
    * Draws the widget
-   * @param ctx - The canvas context
-   * @param options - The options for drawing the widget
+   * @param ctx The canvas context
+   * @param options The options for drawing the widget
    */
   override drawWidget(ctx: CanvasRenderingContext2D, options: {
     y: number
@@ -65,7 +65,8 @@ export class TextWidget extends BaseWidget implements IStringWidget {
       ctx.fillStyle = this.text_color
       ctx.textAlign = "right"
       ctx.fillText(
-        String(this.value).substr(0, 30), // 30 chars max
+        // 30 chars max
+        String(this.value).substr(0, 30),
         widget_width - margin * 2,
         y + H * 0.7,
       )

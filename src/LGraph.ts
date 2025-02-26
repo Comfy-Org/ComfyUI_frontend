@@ -254,7 +254,8 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
       lastRerouteId: 0,
     }
 
-    this._version = -1 // used to detect changes
+    // used to detect changes
+    this._version = -1
 
     // safe clear
     if (this._nodes) {
@@ -266,8 +267,10 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     // nodes
     this._nodes = []
     this._nodes_by_id = {}
-    this._nodes_in_order = [] // nodes sorted in execution order
-    this._nodes_executable = null // nodes that contain onExecute sorted in execution order
+    // nodes sorted in execution order
+    this._nodes_in_order = []
+    // nodes that contain onExecute sorted in execution order
+    this._nodes_executable = null
 
     this._links.clear()
     this.reroutes.clear()
@@ -281,7 +284,8 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     // custom data
     this.config = {}
     this.vars = {}
-    this.extra = {} // to store custom data
+    // to store custom data
+    this.extra = {}
 
     // timing
     this.globaltime = 0
@@ -508,8 +512,9 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     const L: LGraphNode[] = []
     const S: LGraphNode[] = []
     const M: Dictionary<LGraphNode> = {}
-    const visited_links: Record<NodeId, boolean> = {} // to avoid repeating links
-    const remaining_links: Record<NodeId, number> = {} // to a
+    // to avoid repeating links
+    const visited_links: Record<NodeId, boolean> = {}
+    const remaining_links: Record<NodeId, number> = {}
 
     // search for the nodes without inputs (starting nodes)
     for (const node of this._nodes) {
@@ -517,9 +522,11 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
         continue
       }
 
-      M[node.id] = node // add to pending nodes
+      // add to pending nodes
+      M[node.id] = node
 
-      let num = 0 // num of input connections
+      // num of input connections
+      let num = 0
       if (node.inputs) {
         for (const input of node.inputs) {
           if (input?.link != null) {
@@ -544,8 +551,10 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
       const node = S.shift()
       if (node === undefined) break
 
-      L.push(node) // add to ordered list
-      delete M[node.id] // remove from the pending nodes
+      // add to ordered list
+      L.push(node)
+      // remove from the pending nodes
+      delete M[node.id]
 
       if (!node.outputs) continue
 
@@ -858,7 +867,8 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     this.setDirtyCanvas(true)
     this.change()
 
-    return node // to chain actions
+    // to chain actions
+    return node
   }
 
   /**
@@ -884,7 +894,8 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     // cannot be removed
     if (node.ignore_remove) return
 
-    this.beforeChange() // sure? - almost sure is wrong
+    // sure? - almost sure is wrong
+    this.beforeChange()
 
     const { inputs, outputs } = node
 
@@ -929,7 +940,8 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     this.canvasAction(c => c.checkPanels())
 
     this.setDirtyCanvas(true, true)
-    this.afterChange() // sure? - almost sure is wrong
+    // sure? - almost sure is wrong
+    this.afterChange()
     this.change()
 
     this.updateExecutionOrder()
@@ -1637,8 +1649,10 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
           // continue;
         }
 
-        node.id = n_info.id // id it or it will create a new id
-        this.add(node, true) // add before configure, otherwise configure cannot create links
+        // id it or it will create a new id
+        node.id = n_info.id
+        // add before configure, otherwise configure cannot create links
+        this.add(node, true)
       }
 
       // configure nodes afterwards so they can reach each other

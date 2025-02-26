@@ -2,6 +2,7 @@ import globals from "globals"
 import eslint from "@eslint/js"
 import tseslint from "typescript-eslint"
 import stylistic from "@stylistic/eslint-plugin"
+import jsdoc from "eslint-plugin-jsdoc"
 import unusedImports from "eslint-plugin-unused-imports"
 
 export default tseslint.config(
@@ -27,10 +28,45 @@ export default tseslint.config(
         tsconfigRootDir: import.meta.dirname,
       },
     },
+    settings: {
+      jsdoc: {
+        mode: "typescript",
+      },
+    },
   },
   {
     ignores: ["./dist/**/*"],
   },
+
+  // JSDoc
+  jsdoc.configs["flat/contents-typescript-error"],
+  jsdoc.configs["flat/logical-typescript-error"],
+  jsdoc.configs["flat/stylistic-typescript-error"],
+  {
+    rules: {
+      "jsdoc/check-param-names": [
+        "error",
+        {
+          disableMissingParamChecks: true,
+          disableExtraPropertyReporting: true,
+          checkRestProperty: false,
+          checkDestructured: false,
+        },
+      ],
+      "jsdoc/check-tag-names": ["error", { definedTags: ["remarks"] }],
+      "jsdoc/multiline-blocks": "error",
+      // Disabling
+      "jsdoc/empty-tags": "off",
+      "jsdoc/lines-before-block": "off",
+      "jsdoc/match-description": "off",
+      "jsdoc/no-undefined-types": "off",
+      "jsdoc/text-escaping": "off",
+      "jsdoc/valid-types": "off",
+      "jsdoc/informative-docs": "off",
+    },
+  },
+
+  // Base, TypeScript, and Stylistic
   {
     rules: {
       // TODO: Update when TypeScript has been cleaned

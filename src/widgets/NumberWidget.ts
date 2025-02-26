@@ -18,8 +18,8 @@ export class NumberWidget extends BaseWidget implements INumericWidget {
 
   /**
    * Draws the widget
-   * @param ctx - The canvas context
-   * @param options - The options for drawing the widget
+   * @param ctx The canvas context
+   * @param options The options for drawing the widget
    */
   override drawWidget(ctx: CanvasRenderingContext2D, options: {
     y: number
@@ -141,7 +141,7 @@ export class NumberWidget extends BaseWidget implements INumericWidget {
 
   /**
    * Handles drag events for the number widget
-   * @param options - The options for handling the drag event
+   * @param options The options for handling the drag event
    */
   override onDrag(options: {
     e: CanvasMouseEvent

@@ -64,10 +64,9 @@ export abstract class BaseWidget implements IBaseWidget {
 
   /**
    * Draws the widget
-   * @param ctx - The canvas context
-   * @param options - The options for drawing the widget
-   *
-   * @note Not naming this `draw` as `draw` conflicts with the `draw` method in
+   * @param ctx The canvas context
+   * @param options The options for drawing the widget
+   * @remarks Not naming this `draw` as `draw` conflicts with the `draw` method in
    * custom widgets.
    */
   abstract drawWidget(ctx: CanvasRenderingContext2D, options: {
@@ -79,7 +78,7 @@ export abstract class BaseWidget implements IBaseWidget {
 
   /**
    * Handles the click event for the widget
-   * @param options - The options for handling the click event
+   * @param options The options for handling the click event
    */
   abstract onClick(options: {
     e: CanvasMouseEvent
@@ -89,7 +88,7 @@ export abstract class BaseWidget implements IBaseWidget {
 
   /**
    * Handles the drag event for the widget
-   * @param options - The options for handling the drag event
+   * @param options The options for handling the drag event
    */
   onDrag?(options: {
     e: CanvasMouseEvent
@@ -99,8 +98,8 @@ export abstract class BaseWidget implements IBaseWidget {
 
   /**
    * Sets the value of the widget
-   * @param value - The value to set
-   * @param options - The options for setting the value
+   * @param value The value to set
+   * @param options The options for setting the value
    */
   setValue(value: TWidgetValue, options: {
     e: CanvasMouseEvent

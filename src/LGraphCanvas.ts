@@ -106,11 +106,11 @@ interface ICreateNodeOptions {
 
   // FIXME: Should not be optional
   /** choose a nodetype to add, AUTO to set at first good */
-  nodeType?: string // nodeNewType
+  nodeType?: string
   /** adjust x,y */
-  posAdd?: Point // -alphaPosY*30]
+  posAdd?: Point
   /** alpha, adjust the position x,y based on the new node size w,h */
-  posSizeFix?: Point // -alphaPosY*2*/
+  posSizeFix?: Point
   e?: CanvasMouseEvent
   allow_searchbox?: boolean
   /** See {@link LGraphCanvas.showSearchBox} */
@@ -170,7 +170,7 @@ interface ClipboardPasteResult {
 
 /** Options for {@link LGraphCanvas.pasteFromClipboard}. */
 interface IPasteFromClipboardOptions {
-  /** If true, connect the inputs of the pasted items to the outputs of the nodes they are connected to. */
+  /** If `true`, always attempt to connect inputs of pasted nodes - including to nodes that were not pasted. */
   connectInputs?: boolean
   /** The position to paste the items at. */
   position?: Point
@@ -197,7 +197,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
   /** Initialised from LiteGraphGlobal static block to avoid circular dependency. */
   static link_type_colors: Record<string, string>
-  static gradients: Record<string, CanvasGradient> = {} // cache of gradients
+  static gradients: Record<string, CanvasGradient> = {}
 
   static search_limit = -1
   static node_colors: Record<string, ColorOption> = {
@@ -357,9 +357,9 @@ export class LGraphCanvas implements ConnectionColorContext {
   default_link_color: string
   default_connection_color: {
     input_off: string
-    input_on: string // "#BBD"
+    input_on: string
     output_off: string
-    output_on: string // "#BBD"
+    output_on: string
   }
 
   default_connection_color_byType: Dictionary<CanvasColour>
@@ -581,16 +581,18 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     this.ds = new DragAndScale()
     this.pointer = new CanvasPointer(this.canvas)
-    this.zoom_modify_alpha = true // otherwise it generates ugly patterns when scaling down too much
-    this.zoom_speed = 1.1 // in range (1.01, 2.5). Less than 1 will invert the zoom direction
+    // otherwise it generates ugly patterns when scaling down too much
+    this.zoom_modify_alpha = true
+    // in range (1.01, 2.5). Less than 1 will invert the zoom direction
+    this.zoom_speed = 1.1
 
     this.node_title_color = LiteGraph.NODE_TITLE_COLOR
     this.default_link_color = LiteGraph.LINK_COLOR
     this.default_connection_color = {
       input_off: "#778",
-      input_on: "#7F7", // "#BBD"
+      input_on: "#7F7",
       output_off: "#778",
-      output_on: "#7F7", // "#BBD"
+      output_on: "#7F7",
     }
     this.default_connection_color_byType = {
       /* number: "#7F7",
@@ -604,8 +606,10 @@ export class LGraphCanvas implements ConnectionColorContext {
     }
 
     this.highquality_render = true
-    this.use_gradients = false // set to true to render titlebar with gradients
-    this.editor_alpha = 1 // used for transition
+    // set to true to render titlebar with gradients
+    this.use_gradients = false
+    // used for transition
+    this.editor_alpha = 1
     this.pause_rendering = false
     this.clear_background = true
     this.clear_background_color = "#222"
@@ -614,22 +618,29 @@ export class LGraphCanvas implements ConnectionColorContext {
     this.show_info = true
     this.allow_dragcanvas = true
     this.allow_dragnodes = true
-    this.allow_interaction = true // allow to control widgets, buttons, collapse, etc
-    this.multi_select = false // allow selecting multi nodes without pressing extra keys
+    // allow to control widgets, buttons, collapse, etc
+    this.allow_interaction = true
+    // allow selecting multi nodes without pressing extra keys
+    this.multi_select = false
     this.allow_searchbox = true
-    this.allow_reconnect_links = true // allows to change a connection with having to redo it again
-    this.align_to_grid = false // snap to grid
+    // allows to change a connection with having to redo it again
+    this.allow_reconnect_links = true
+    // snap to grid
+    this.align_to_grid = false
 
     this.drag_mode = false
     this.dragging_rectangle = null
 
-    this.filter = null // allows to filter to only accept some type of nodes in a graph
+    // allows to filter to only accept some type of nodes in a graph
+    this.filter = null
 
-    this.set_canvas_dirty_on_mouse_event = true // forces to redraw the canvas on mouse events (except move)
+    // forces to redraw the canvas on mouse events (except move)
+    this.set_canvas_dirty_on_mouse_event = true
     this.always_render_background = false
     this.render_shadows = true
     this.render_canvas_border = true
-    this.render_connections_shadows = false // too much cpu
+    // too much cpu
+    this.render_connections_shadows = false
     this.render_connections_border = true
     this.render_curved_connections = false
     this.render_connection_arrows = false
@@ -666,9 +677,11 @@ export class LGraphCanvas implements ConnectionColorContext {
     this.last_mouse_position = [0, 0]
     this.visible_area = this.ds.visible_area
     this.visible_links = []
-    this.connecting_links = null // Explicitly null-checked
+    // Explicitly null-checked
+    this.connecting_links = null
 
-    this.viewport = options.viewport || null // to constraint render area to a portion of the canvas
+    // to constraint render area to a portion of the canvas
+    this.viewport = options.viewport || null
 
     // link canvas and graph
     graph?.attachCanvas(this)
@@ -890,7 +903,7 @@ export class LGraphCanvas implements ConnectionColorContext {
   static onMenuCollapseAll() {}
   static onMenuNodeEdit() {}
 
-  /** @param options Parameter is never used */
+  /** @param _options Parameter is never used */
   static showMenuNodeOptionalInputs(
     v: unknown,
     /** Unused - immediately overwritten */
@@ -971,7 +984,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     return false
   }
 
-  /** @param options Parameter is never used */
+  /** @param _options Parameter is never used */
   static showMenuNodeOptionalOutputs(
     v: unknown,
     /** Unused - immediately overwritten */
@@ -1004,8 +1017,9 @@ export class LGraphCanvas implements ConnectionColorContext {
           node.flags.skip_repeated_outputs &&
           node.findOutputSlot(entry[0]) != -1
         ) {
+          // skip the ones already on
           continue
-        } // skip the ones already on
+        }
         let label = entry[0]
         entry[2] ||= {}
         if (entry[2].label) {
@@ -1025,7 +1039,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       // canvas.allow_addOutSlot_onExecuted
       if (node.findOutputSlot("onExecuted") == -1) {
         // @ts-expect-error Events
-        entries.push({ content: "On Executed", value: ["onExecuted", LiteGraph.EVENT, { nameLocked: true }], className: "event" }) // , opts: {}
+        entries.push({ content: "On Executed", value: ["onExecuted", LiteGraph.EVENT, { nameLocked: true }], className: "event" })
       }
     }
     // add callback for modifing the menu elements onMenuNodeOutputs
@@ -1214,7 +1228,8 @@ export class LGraphCanvas implements ConnectionColorContext {
           // ESC
           dialog.close()
         } else if (e.keyCode == 13) {
-          inner() // save
+          // save
+          inner()
           // @ts-expect-error Intentional - undefined if not present
         } else if (e.keyCode != 13 && e.target.localName != "textarea") {
           return
@@ -1256,7 +1271,7 @@ export class LGraphCanvas implements ConnectionColorContext {
           dialogCloseTimer = setTimeout(
             dialog.close,
             LiteGraph.dialog_close_on_mouse_leave_delay,
-          ) // dialog.close();
+          )
     })
     dialog.addEventListener("mouseenter", function () {
       if (LiteGraph.dialog_close_on_mouse_leave)
@@ -1305,7 +1320,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     menu: ContextMenu,
     node: LGraphNode,
   ): void {
-    node.graph.beforeChange(/* ? */)
+    node.graph.beforeChange()
 
     const fApplyMultiNode = function (node) {
       node.collapse()
@@ -1320,7 +1335,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       }
     }
 
-    node.graph.afterChange(/* ? */)
+    node.graph.afterChange()
   }
 
   static onMenuToggleAdvanced(
@@ -1330,7 +1345,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     menu: ContextMenu,
     node: LGraphNode,
   ): void {
-    node.graph.beforeChange(/* ? */)
+    node.graph.beforeChange()
     const fApplyMultiNode = function (node: LGraphNode) {
       node.toggleAdvanced()
     }
@@ -1343,7 +1358,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         fApplyMultiNode(graphcanvas.selected_nodes[i])
       }
     }
-    node.graph.afterChange(/* ? */)
+    node.graph.afterChange()
   }
 
   static onMenuNodePin(): void {}
@@ -1464,7 +1479,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     function inner_clicked(v) {
       if (!node) return
 
-      node.graph.beforeChange(/* ? */) // node
+      node.graph.beforeChange()
 
       const fApplyMultiNode = function (node) {
         node.shape = v
@@ -1479,7 +1494,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         }
       }
 
-      node.graph.afterChange(/* ? */) // node
+      node.graph.afterChange()
       canvas.setDirty(true)
     }
 
@@ -1637,7 +1652,8 @@ export class LGraphCanvas implements ConnectionColorContext {
     element.className += " lgraphcanvas"
     element.data = this
     // @ts-expect-error Likely safe to remove.  A decent default, but expectation is to be configured by calling app.
-    element.tabindex = "1" // to allow key events
+    // to allow key events
+    element.tabindex = "1"
 
     // Background canvas: To render objects behind nodes (background, links, groups)
     this.bgcanvas = null
@@ -1692,7 +1708,8 @@ export class LGraphCanvas implements ConnectionColorContext {
     const canvas = this.canvas
 
     const ref_window = this.getCanvasWindow()
-    const document = ref_window.document // hack used when moving canvas between windows
+    // hack used when moving canvas between windows
+    const document = ref_window.document
 
     this._mousedown_callback = this.processMouseDown.bind(this)
     this._mousewheel_callback = this.processMouseWheel.bind(this)
@@ -1702,10 +1719,12 @@ export class LGraphCanvas implements ConnectionColorContext {
     this._mouseout_callback = this.processMouseOut.bind(this)
     this._mousecancel_callback = this.processMouseCancel.bind(this)
 
-    LiteGraph.pointerListenerAdd(canvas, "down", this._mousedown_callback, true) // down do not need to store the binded
+    // down do not need to store the binded
+    LiteGraph.pointerListenerAdd(canvas, "down", this._mousedown_callback, true)
     canvas.addEventListener("mousewheel", this._mousewheel_callback, false)
 
-    LiteGraph.pointerListenerAdd(canvas, "up", this._mouseup_callback, true) // CHECK: ??? binded or not
+    // CHECK: ??? binded or not
+    LiteGraph.pointerListenerAdd(canvas, "up", this._mouseup_callback, true)
     LiteGraph.pointerListenerAdd(canvas, "move", this._mousemove_callback)
     canvas.addEventListener("pointerout", this._mouseout_callback)
     canvas.addEventListener("pointercancel", this._mousecancel_callback, true)
@@ -1721,7 +1740,8 @@ export class LGraphCanvas implements ConnectionColorContext {
     this._key_callback = this.processKey.bind(this)
 
     canvas.addEventListener("keydown", this._key_callback, true)
-    document.addEventListener("keyup", this._key_callback, true) // in document, otherwise it doesn't fire keyup
+    // in document, otherwise it doesn't fire keyup
+    document.addEventListener("keyup", this._key_callback, true)
 
     // Dropping Stuff over nodes ************************************
     this._ondrop_callback = this.processDrop.bind(this)
@@ -2820,7 +2840,8 @@ export class LGraphCanvas implements ConnectionColorContext {
                   LiteGraph.isValidConnection(firstLink.output.type, node.inputs[inputId].type)
                 ) {
                   highlightPos = pos
-                  highlightInput = node.inputs[inputId] // XXX CHECK THIS
+                  // XXX CHECK THIS
+                  highlightInput = node.inputs[inputId]
                 }
               }
             } else if (firstLink.input) {
@@ -2875,7 +2896,7 @@ export class LGraphCanvas implements ConnectionColorContext {
             underPointer |= CanvasItem.ResizeSe
           }
         }
-      } // end
+      }
 
       // send event to node if capturing input (used with widgets that allow drag outside of the area of the node)
       if (this.node_capturing_input && this.node_capturing_input != node) {
@@ -3032,7 +3053,8 @@ export class LGraphCanvas implements ConnectionColorContext {
               const slot = this.isOverNodeOutput(node, x, y)
 
               if (slot != -1) {
-                node.connect(slot, link.node, link.slot, link.afterRerouteId) // this is inverted has output-input nature like
+                // this is inverted has output-input nature like
+                node.connect(slot, link.node, link.slot, link.afterRerouteId)
               } else {
                 // not on top of an input
                 // look for a good slot
@@ -3235,7 +3257,6 @@ export class LGraphCanvas implements ConnectionColorContext {
     if (!this.graph) return
 
     let block_default = false
-    // console.log(e); //debug
     // @ts-expect-error
     if (e.target.localName == "input") return
 
@@ -3381,7 +3402,6 @@ export class LGraphCanvas implements ConnectionColorContext {
 
   /**
    * Pastes the items from the canvas "clipbaord" - a local storage variable.
-   * @param connectInputs If `true`, always attempt to connect inputs of pasted nodes - including to nodes that were not pasted.
    */
   _pasteFromClipboard(options: IPasteFromClipboardOptions = {}): ClipboardPasteResult {
     const {
@@ -5297,7 +5317,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         }
       } else {
         return
-      } // unknown
+      }
     }
 
     // rendering the outline of the connection can be a little bit slow
@@ -5494,7 +5514,7 @@ export class LGraphCanvas implements ConnectionColorContext {
   /**
    * draws the widgets stored inside a node
    * @deprecated Use {@link LGraphNode.drawWidgets} instead.
-   * @note Currently there are extensions hijacking this function, so we cannot remove it.
+   * @remarks Currently there are extensions hijacking this function, so we cannot remove it.
    */
   drawNodeWidgets(
     node: LGraphNode,
@@ -5523,9 +5543,10 @@ export class LGraphCanvas implements ConnectionColorContext {
     const drawSnapGuides = this.#snapToGrid && this.isDragging
 
     for (const group of groups) {
+      // out of the visible area
       if (!overlapBounding(this.visible_area, group._bounding)) {
         continue
-      } // out of the visible area
+      }
 
       // Draw snap shadow
       if (drawSnapGuides && this.selectedItems.has(group))
@@ -5911,7 +5932,7 @@ export class LGraphCanvas implements ConnectionColorContext {
           dialogCloseTimer = setTimeout(
             dialog.close,
             LiteGraph.dialog_close_on_mouse_leave_delay,
-          ) // dialog.close();
+          )
     })
     LiteGraph.pointerListenerAdd(dialog, "enter", function () {
       if (LiteGraph.dialog_close_on_mouse_leave && dialogCloseTimer)
@@ -6012,10 +6033,13 @@ export class LGraphCanvas implements ConnectionColorContext {
       slot_from: null,
       node_from: null,
       node_to: null,
-      do_type_filter: LiteGraph.search_filter_enabled, // TODO check for registered_slot_[in/out]_types not empty // this will be checked for functionality enabled : filter on slot type, in and out
+      // TODO check for registered_slot_[in/out]_types not empty
+      // this will be checked for functionality enabled : filter on slot type, in and out
+      do_type_filter: LiteGraph.search_filter_enabled,
 
+      // these are default: pass to set initially set values
       // @ts-expect-error
-      type_filter_in: false, // these are default: pass to set initially set values
+      type_filter_in: false,
 
       type_filter_out: false,
       show_general_if_none_on_typefilter: true,
@@ -6063,9 +6087,10 @@ export class LGraphCanvas implements ConnectionColorContext {
       canvas.focus()
       root_document.body.style.overflow = ""
 
+      // important, if canvas loses focus keys wont be captured
       setTimeout(function () {
         that.canvas.focus()
-      }, 20) // important, if canvas loses focus keys wont be captured
+      }, 20)
       dialog.parentNode?.removeChild(dialog)
     }
 
@@ -6168,7 +6193,8 @@ export class LGraphCanvas implements ConnectionColorContext {
     if (options.do_type_filter) {
       if (selIn) {
         const aSlots = LiteGraph.slot_types_in
-        const nSlots = aSlots.length // this for object :: Object.keys(aSlots).length;
+        // this for object :: Object.keys(aSlots).length;
+        const nSlots = aSlots.length
 
         if (
           options.type_filter_in == LiteGraph.EVENT ||
@@ -6202,7 +6228,8 @@ export class LGraphCanvas implements ConnectionColorContext {
       }
       if (selOut) {
         const aSlots = LiteGraph.slot_types_out
-        const nSlots = aSlots.length // this for object :: Object.keys(aSlots).length;
+        // this for object :: Object.keys(aSlots).length;
+        const nSlots = aSlots.length
 
         if (
           options.type_filter_out == LiteGraph.EVENT ||
@@ -6279,7 +6306,8 @@ export class LGraphCanvas implements ConnectionColorContext {
               iS = options.slot_from
               break
             default:
-              iS = 0 // try with first if no name set
+              // try with first if no name set
+              iS = 0
             }
             if (typeof options.node_from.outputs[iS] !== "undefined") {
               if (iS !== false && iS > -1) {
@@ -6307,7 +6335,8 @@ export class LGraphCanvas implements ConnectionColorContext {
               iS = options.slot_from
               break
             default:
-              iS = 0 // try with first if no name set
+              // try with first if no name set
+              iS = 0
             }
             if (typeof options.node_to.inputs[iS] !== "undefined") {
               if (iS !== false && iS > -1) {
@@ -6377,7 +6406,8 @@ export class LGraphCanvas implements ConnectionColorContext {
         let filtered = null
         if (Array.prototype.filter) {
           // filter supported
-          const keys = Object.keys(LiteGraph.registered_node_types) // types
+          // types
+          const keys = Object.keys(LiteGraph.registered_node_types)
           filtered = keys.filter(inner_test_filter)
         } else {
           filtered = []
@@ -6611,7 +6641,8 @@ export class LGraphCanvas implements ConnectionColorContext {
             dialog.close()
           } else if (e.keyCode == 13) {
             // ENTER
-            inner() // save
+            // save
+            inner()
           } else if (e.keyCode != 13) {
             dialog.modified()
             return
@@ -6734,7 +6765,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         dialogCloseTimer = setTimeout(
           dialog.close,
           LiteGraph.dialog_close_on_mouse_leave_delay,
-        ) // dialog.close();
+        )
     })
     dialog.addEventListener("mouseenter", function () {
       if (options.closeOnLeave || LiteGraph.dialog_close_on_mouse_leave)
@@ -7034,7 +7065,8 @@ export class LGraphCanvas implements ConnectionColorContext {
 
       node.onShowCustomPanelInfo?.(panel)
 
-      panel.footer.innerHTML = "" // clear
+      // clear
+      panel.footer.innerHTML = ""
       panel.addButton("Delete", function () {
         if (node.block_delete)
           return
@@ -7408,7 +7440,8 @@ export class LGraphCanvas implements ConnectionColorContext {
             // ESC
             dialog.close()
           } else if (e.keyCode == 13) {
-            inner() // save
+            // save
+            inner()
           } else if (
             e.keyCode != 13 &&
             (e.target as Element).localName != "textarea"

@@ -216,7 +216,7 @@ export interface IBaseWidget<TElement extends HTMLElement = HTMLElement> {
    * @param pointer The CanvasPointer handling this event
    * @param node The node this widget belongs to
    * @param canvas The LGraphCanvas where this event originated
-   * @return Returning `true` from this callback forces Litegraph to ignore the event and
+   * @returns Returning `true` from this callback forces Litegraph to ignore the event and
    * not process it any further.
    */
   onPointerDown?(pointer: CanvasPointer, node: LGraphNode, canvas: LGraphCanvas): boolean
