@@ -5,6 +5,7 @@ import { comfyPageFixture } from './fixtures/ComfyPage'
 const test = comfyPageFixture
 
 const BLUE_COLOR = 'rgb(51, 51, 85)'
+const RED_COLOR = 'rgb(85, 51, 51)'
 
 test.describe('Selection Toolbox', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -152,7 +153,7 @@ test.describe('Selection Toolbox', () => {
       await redColorOption.click()
 
       // Button should now show the selected color
-      await expect(colorPickerButton).toHaveCSS('color', BLUE_COLOR)
+      await expect(colorPickerButton).toHaveCSS('color', RED_COLOR)
     })
 
     test('color picker shows mixed state for differently colored selections', async ({
