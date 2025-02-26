@@ -244,14 +244,6 @@ export interface INodeSlot {
   nameLocked?: boolean
   pos?: Point
   /**
-   * A widget that was converted to this input slot.
-   * For PrimitiveNode, the widget is on output slot to offer type information.
-   * See https://github.com/Comfy-Org/ComfyUI_frontend/blob/117c8be3a05823b40016781cf9b68129672c9af7/src/extensions/core/widgetInputs.ts
-   * for more information.
-   */
-  widget?: IWidget
-
-  /**
    * A layout element that is used internally to position the slot.
    * Set by {@link LGraphNode.#layoutSlots}.
    */
@@ -270,6 +262,10 @@ export interface INodeFlags {
 export interface INodeInputSlot extends INodeSlot {
   link: LinkId | null
   _layoutElement?: LayoutElement<INodeInputSlot>
+  /**
+   * A widget that is linked to this input slot.
+   */
+  widget?: IWidget
 }
 
 export interface IWidgetInputSlot extends INodeInputSlot {
