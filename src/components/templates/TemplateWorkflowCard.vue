@@ -44,17 +44,23 @@
       </div>
     </template>
     <template #subtitle>
-      <a @click="$emit('loadWorkflow', template.name)">
-        <div class="text-center hover:text-highlight cursor-pointer">
-          {{ title }}
-        </div>
-      </a>
+      <div class="flex justify-center py-2">
+        <Button
+          :label="title"
+          :loading="loading"
+          icon="pi pi-play-circle"
+          variant="outlined"
+          size="small"
+          @click="$emit('loadWorkflow', template.name)"
+        />
+      </div>
     </template>
   </Card>
 </template>
 
 <script setup lang="ts">
 import { useElementHover } from '@vueuse/core'
+import Button from 'primevue/button'
 import Card from 'primevue/card'
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed, ref } from 'vue'
