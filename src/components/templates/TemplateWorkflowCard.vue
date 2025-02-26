@@ -2,7 +2,7 @@
   <Card
     ref="cardRef"
     :data-testid="`template-workflow-${template.name}`"
-    class="w-64 group"
+    class="w-64 group template-card"
   >
     <template #header>
       <div
@@ -117,6 +117,16 @@ defineEmits<{
 <style lang="css" scoped>
 .p-card {
   --p-card-body-padding: 10px 0 0 0;
+  border-radius: 1rem;
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.08),
+    0 4px 6px -4px rgba(0, 0, 0, 0.05),
+    0 20px 25px -5px rgba(0, 0, 0, 0.03);
   overflow: hidden;
+}
+
+.p-card-content,
+.p-card-body {
+  border-radius: 1rem;
 }
 </style>
