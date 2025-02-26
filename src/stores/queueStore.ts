@@ -142,7 +142,15 @@ export class TaskItemImpl {
     this.taskType = taskType
     this.prompt = prompt
     this.status = status
-    this.outputs = outputs ?? {}
+    // Remove animated outputs from the outputs object
+    // outputs.animated is an array of boolean values that indicates if the images
+    // array in the result are animated or not.
+    // The queueStore does not use this information.
+    // It is part of the legacy API response. We should redesign the backend API.
+    // https://github.com/Comfy-Org/ComfyUI_frontend/issues/2739
+    this.outputs = _.mapValues(outputs ?? {}, (nodeOutputs) =>
+      _.omit(nodeOutputs, 'animated')
+    )
     this.flatOutputs = flatOutputs ?? this.calculateFlatOutputs()
   }
 
