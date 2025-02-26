@@ -6,9 +6,9 @@
       content: 'p-0 flex flex-row'
     }"
   >
-    <ColorPickerButton v-if="nodeSelected || groupSelected" />
+    <ColorPickerButton v-show="nodeSelected || groupSelected" />
     <Button
-      v-if="nodeSelected"
+      v-show="nodeSelected"
       severity="secondary"
       text
       @click="
@@ -21,7 +21,7 @@
       </template>
     </Button>
     <Button
-      v-if="nodeSelected || groupSelected"
+      v-show="nodeSelected || groupSelected"
       severity="secondary"
       text
       icon="pi pi-thumbtack"
@@ -34,7 +34,7 @@
       @click="() => commandStore.execute('Comfy.Canvas.DeleteSelectedItems')"
     />
     <Button
-      v-if="isRefreshable"
+      v-show="isRefreshable"
       severity="info"
       text
       icon="pi pi-refresh"
