@@ -343,6 +343,7 @@ export class GroupNodeConfig {
 
             const widget = [targetWidget[0], config]
             const res = mergeIfValid(
+              // @ts-expect-error invalid slot type
               {
                 widget
               },
@@ -477,6 +478,7 @@ export class GroupNodeConfig {
       const primitiveConfig = primitiveDef.input.required.value
       const output = { widget: primitiveConfig }
       const config = mergeIfValid(
+        // @ts-expect-error invalid slot type
         output,
         targetWidget,
         false,
