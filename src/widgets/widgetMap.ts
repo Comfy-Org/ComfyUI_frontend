@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import type { IBaseWidget } from "@/types/widgets"
 
 import { BaseWidget } from "./BaseWidget"
@@ -14,11 +13,18 @@ type WidgetConstructor = {
 }
 
 export const WIDGET_TYPE_MAP: Record<string, WidgetConstructor> = {
+  // @ts-ignore https://github.com/Comfy-Org/litegraph.js/issues/616
   button: ButtonWidget,
+  // @ts-ignore #616
   toggle: BooleanWidget,
+  // @ts-ignore #616
   slider: SliderWidget,
+  // @ts-ignore #616
   combo: ComboWidget,
+  // @ts-ignore #616
   number: NumberWidget,
+  // @ts-ignore #616
   string: TextWidget,
+  // @ts-ignore #616
   text: TextWidget,
 }

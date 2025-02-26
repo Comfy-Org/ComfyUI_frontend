@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import type { CanvasPointerEvent } from "./types/events"
 
 import { dist2 } from "./measure"
@@ -47,7 +46,7 @@ export class CanvasPointer {
   /** The element this PointerState should capture input against when dragging. */
   element: Element
   /** Pointer ID used by drag capture. */
-  pointerId: number
+  pointerId?: number
 
   /** Set to true when if the pointer moves far enough after a down event, before the corresponding up event is fired. */
   dragStarted: boolean = false
@@ -273,7 +272,9 @@ export class CanvasPointer {
     }
 
     const { element, pointerId } = this
-    if (element.hasPointerCapture(pointerId))
+    this.pointerId = undefined
+    if (typeof pointerId === "number" && element.hasPointerCapture(pointerId)) {
       element.releasePointerCapture(pointerId)
+    }
   }
 }

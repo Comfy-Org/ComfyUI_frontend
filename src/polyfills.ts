@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 // API *************************************************
 // like rect but rounded corners
 export function loadPolyfills() {
@@ -9,12 +8,12 @@ export function loadPolyfills() {
   ) {
     // @ts-expect-error Slightly broken polyfill - radius_low not impl. anywhere
     window.CanvasRenderingContext2D.prototype.roundRect = function (
-      x,
-      y,
-      w,
-      h,
-      radius,
-      radius_low,
+      x: number,
+      y: number,
+      w: number,
+      h: number,
+      radius: number | number[],
+      radius_low: number | number[],
     ) {
       let top_left_radius = 0
       let top_right_radius = 0
@@ -29,7 +28,7 @@ export function loadPolyfills() {
       if (radius_low === undefined) radius_low = radius
 
       // make it compatible with official one
-      if (radius != null && radius.constructor === Array) {
+      if (Array.isArray(radius)) {
         if (radius.length == 1)
           top_left_radius = top_right_radius = bottom_left_radius = bottom_right_radius = radius[0]
         else if (radius.length == 2) {
@@ -47,8 +46,10 @@ export function loadPolyfills() {
         // old using numbers
         top_left_radius = radius || 0
         top_right_radius = radius || 0
-        bottom_left_radius = radius_low || 0
-        bottom_right_radius = radius_low || 0
+
+        const low = !Array.isArray(radius_low) && radius_low ? radius_low : 0
+        bottom_left_radius = low
+        bottom_right_radius = low
       }
 
       // top right

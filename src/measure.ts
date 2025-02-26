@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import type {
   Point,
   ReadOnlyPoint,
@@ -233,6 +232,7 @@ export function rotateLink(
   case to:
   case LinkDirection.CENTER:
   case LinkDirection.NONE:
+  default:
     // Nothing to do
     return
 
