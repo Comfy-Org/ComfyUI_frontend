@@ -3,6 +3,7 @@ export interface TemplateInfo {
   tutorialUrl?: string
   mediaType: string
   mediaSubtype: string
+  thumbnailVariant?: string
 }
 
 export interface WorkflowTemplates {

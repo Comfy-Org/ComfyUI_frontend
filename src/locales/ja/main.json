@@ -831,8 +831,7 @@
         "esrgan_example": "ESRGAN",
         "hiresfix_esrgan_workflow": "HiresFix ESRGANワークフロー",
         "hiresfix_latent_workflow": "HiresFix Latentワークフロー",
-        "latent_upscale_different_prompt_model": "Latent Upscale異なるプロンプトモデル",
-        "upscale": "アップスケール"
+        "latent_upscale_different_prompt_model": "Latent Upscale異なるプロンプトモデル"
       },
       "Video": {
         "hunyuan_video_text_to_video": "Hunyuanビデオテキストからビデオへ",
