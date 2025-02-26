@@ -4,18 +4,21 @@ import type {
   IFoundSlot,
   INodeInputSlot,
   INodeOutputSlot,
+  ISlotType,
   IWidget,
-  LiteGraphCanvasEvent
+  LLink,
+  LiteGraphCanvasEvent,
+  Vector2
 } from '@comfyorg/litegraph'
+import type { CanvasMouseEvent } from '@comfyorg/litegraph/dist/types/events'
 
+import { app } from '@/scripts/app'
+import { applyTextReplacements } from '@/scripts/utils'
+import { ComfyWidgets, addValueControlWidgets } from '@/scripts/widgets'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 import type { InputSpec } from '@/types/apiTypes'
 import { isPrimitiveNode } from '@/utils/typeGuardUtil'
-
-import { app } from '../../scripts/app'
-import { applyTextReplacements } from '../../scripts/utils'
-import { ComfyWidgets, addValueControlWidgets } from '../../scripts/widgets'
 
 const CONVERTED_TYPE = 'converted-widget'
 const VALID_TYPES = [
@@ -47,11 +50,11 @@ export class PrimitiveNode extends LGraphNode {
     }
   }
 
-  applyToGraph(extraLinks = []) {
+  applyToGraph(extraLinks: LLink[] = []) {
     if (!this.outputs[0].links?.length) return
 
-    function get_links(node) {
-      let links = []
+    function get_links(node: LGraphNode): number[] {
+      let links: number[] = []
       for (const l of node.outputs[0].links) {
         const linkInfo = app.graph.links[l]
         const n = node.graph.getNodeById(linkInfo.target_id)
@@ -77,7 +80,7 @@ export class PrimitiveNode extends LGraphNode {
     for (const linkInfo of links) {
       const node = this.graph.getNodeById(linkInfo.target_id)
       const input = node.inputs[linkInfo.target_slot]
-      let widget
+      let widget: IWidget | undefined
       if (input.widget[TARGET]) {
         widget = input.widget[TARGET]
       } else {
@@ -95,7 +98,7 @@ export class PrimitiveNode extends LGraphNode {
             app.canvas,
             node,
             app.canvas.graph_mouse,
-            {}
+            {} as CanvasMouseEvent
           )
         }
       }
@@ -136,7 +139,7 @@ export class PrimitiveNode extends LGraphNode {
     }
   }
 
-  onConnectionsChange(_, index, connected) {
+  onConnectionsChange(type: ISlotType, index: number, connected: boolean) {
     if (app.configuringGraph) {
       // Dont run while the graph is still setting up
       return
@@ -157,7 +160,13 @@ export class PrimitiveNode extends LGraphNode {
     }
   }
 
-  onConnectOutput(slot, type, input, target_node, target_slot) {
+  onConnectOutput(
+    slot: number,
+    type: string,
+    input: INodeInputSlot,
+    target_node: LGraphNode,
+    target_slot: number
+  ) {
     // Fires before the link is made allowing us to reject it if it isn't valid
     // No widget, we cant connect
     if (!input.widget) {
@@ -168,7 +177,7 @@ export class PrimitiveNode extends LGraphNode {
       const valid = this.#isValidConnection(input)
       if (valid) {
         // On connect of additional outputs, copy our value to their widget
-        this.applyToGraph([{ target_id: target_node.id, target_slot }])
+        this.applyToGraph([{ target_id: target_node.id, target_slot } as LLink])
       }
       return valid
     }
@@ -216,7 +225,13 @@ export class PrimitiveNode extends LGraphNode {
     )
   }
 
-  #createWidget(inputData, node, widgetName, recreating, targetWidget) {
+  #createWidget(
+    inputData: InputSpec,
+    node: LGraphNode,
+    widgetName: string,
+    recreating: boolean,
+    targetWidget: IWidget | undefined
+  ) {
     let type = inputData[0]
 
     if (type instanceof Array) {
@@ -225,7 +240,7 @@ export class PrimitiveNode extends LGraphNode {
 
     // Store current size as addWidget resizes the node
     const [oldWidth, oldHeight] = this.size
-    let widget
+    let widget: IWidget | undefined
     if (type in ComfyWidgets) {
       widget = (ComfyWidgets[type](this, 'value', inputData, app) || {}).widget
     } else {
@@ -576,7 +591,11 @@ function isValidCombo(combo: string[], obj: unknown) {
   return true
 }
 
-export function setWidgetConfig(slot, config, target?: IWidget) {
+export function setWidgetConfig(
+  slot: INodeInputSlot | INodeOutputSlot,
+  config: InputSpec,
+  target?: IWidget
+) {
   if (!slot.widget) return
   if (config) {
     slot.widget[GET_CONFIG] = () => config
@@ -585,7 +604,7 @@ export function setWidgetConfig(slot, config, target?: IWidget) {
     delete slot.widget
   }
 
-  if (slot.link) {
+  if ('link' in slot) {
     const link = app.graph.links[slot.link]
     if (link) {
       const originNode = app.graph.getNodeById(link.origin_id)
@@ -602,12 +621,12 @@ export function setWidgetConfig(slot, config, target?: IWidget) {
 }
 
 export function mergeIfValid(
-  output,
-  config2,
+  output: INodeOutputSlot | INodeInputSlot,
+  config2: InputSpec,
   forceUpdate?: boolean,
   recreateWidget?: () => void,
   config1?: unknown
-) {
+): { customConfig: Record<string, unknown> } {
   if (!config1) {
     config1 = getWidgetConfig(output)
   }
@@ -625,7 +644,7 @@ export function mergeIfValid(
     ...Object.keys(config2[1] ?? {})
   ])
 
-  let customConfig
+  let customConfig: Record<string, unknown> | undefined
   const getCustomConfig = () => {
     if (!customConfig) {
       if (typeof structuredClone === 'undefined') {
@@ -965,7 +984,7 @@ app.registerExtension({
       return r
     }
 
-    function isNodeAtPos(pos) {
+    function isNodeAtPos(pos: Vector2) {
       for (const n of app.graph.nodes) {
         if (n.pos[0] === pos[0] && n.pos[1] === pos[1]) {
           return true
@@ -1022,11 +1041,11 @@ app.registerExtension({
     // Prevent connecting COMBO lists to converted inputs that dont match types
     const onConnectInput = nodeType.prototype.onConnectInput
     nodeType.prototype.onConnectInput = function (
-      targetSlot,
-      type,
-      output,
-      originNode,
-      originSlot
+      targetSlot: number,
+      type: string,
+      output: INodeOutputSlot,
+      originNode: LGraphNode,
+      originSlot: number
     ) {
       // @ts-expect-error onConnectInput has 5 arguments
       const v = onConnectInput?.(this, arguments)
