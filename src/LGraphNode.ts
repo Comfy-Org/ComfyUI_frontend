@@ -707,8 +707,8 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     if (this.constructor === LGraphNode && this.last_serialization)
       return this.last_serialization
 
-    if (this.inputs) o.inputs = this.inputs.map(serializeSlot)
-    if (this.outputs) o.outputs = this.outputs.map(serializeSlot)
+    if (this.inputs) o.inputs = this.inputs.map(input => serializeSlot(input))
+    if (this.outputs) o.outputs = this.outputs.map(output => serializeSlot(output))
 
     if (this.title && this.title != this.constructor.title) o.title = this.title
 

@@ -4,6 +4,8 @@ import type { LinkId } from "./LLink"
 import { LinkDirection, RenderShape } from "./types/globalEnums"
 import { LabelPosition, SlotShape, SlotType } from "./draw"
 import { LiteGraph } from "./litegraph"
+import { ISerialisedNodeOutputSlot } from "./types/serialisation"
+import { ISerialisedNodeInputSlot } from "./types/serialisation"
 
 export interface ConnectionColorContext {
   default_connection_color: {
@@ -27,7 +29,9 @@ interface IDrawOptions {
   highlight?: boolean
 }
 
-export function serializeSlot<T extends INodeSlot>(slot: T): T {
+export function serializeSlot(slot: INodeInputSlot): ISerialisedNodeInputSlot
+export function serializeSlot(slot: INodeOutputSlot): ISerialisedNodeOutputSlot
+export function serializeSlot(slot: INodeInputSlot | INodeOutputSlot): ISerialisedNodeInputSlot | ISerialisedNodeOutputSlot {
   const serialized = { ...slot }
   delete serialized._layoutElement
   if ("_data" in serialized) {
