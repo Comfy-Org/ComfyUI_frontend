@@ -2138,8 +2138,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
     // Empty string and * match anything (type:  0)
     if (type == "" || type == "*") type = 0
-    const sourceTypes = String(type).toLowerCase()
-      .split(",")
+    const sourceTypes = String(type).toLowerCase().split(",")
 
     // Run the search
     let occupiedSlot: number | TSlot | null = null
@@ -2147,8 +2146,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       const slot: TSlot & IGenericLinkOrLinks = slots[i]
       const destTypes = slot.type == "0" || slot.type == "*"
         ? ["0"]
-        : String(slot.type).toLowerCase()
-          .split(",")
+        : String(slot.type).toLowerCase().split(",")
 
       for (const sourceType of sourceTypes) {
         // TODO: Remove _event_ entirely.

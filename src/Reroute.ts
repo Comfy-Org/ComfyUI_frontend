@@ -100,8 +100,10 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
     const nextId = this.linkIds.values().next().value
     return nextId === undefined
       ? undefined
-      : this.#network.deref()
-        ?.links.get(nextId)
+      : this.#network
+        .deref()
+        ?.links
+        .get(nextId)
         ?.origin_id
   }
 
@@ -110,8 +112,10 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
     const nextId = this.linkIds.values().next().value
     return nextId === undefined
       ? undefined
-      : this.#network.deref()
-        ?.links.get(nextId)
+      : this.#network
+        .deref()
+        ?.links
+        .get(nextId)
         ?.origin_slot
   }
 
@@ -209,7 +213,8 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
 
     return this.#network
       .deref()
-      ?.reroutes.get(this.#parentId)
+      ?.reroutes
+      .get(this.#parentId)
       ?.findNextReroute(withParentId, visited)
   }
 

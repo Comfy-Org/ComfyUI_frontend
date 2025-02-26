@@ -1,10 +1,23 @@
-import globals from "globals"
 import eslint from "@eslint/js"
-import tseslint from "typescript-eslint"
 import stylistic from "@stylistic/eslint-plugin"
+import eslintPluginAntfu from "eslint-plugin-antfu"
 import jsdoc from "eslint-plugin-jsdoc"
-import unusedImports from "eslint-plugin-unused-imports"
 import eslintPluginSimpleImportSort from "eslint-plugin-simple-import-sort"
+import unusedImports from "eslint-plugin-unused-imports"
+import globals from "globals"
+import tseslint from "typescript-eslint"
+
+const rules = Object.fromEntries(
+  Object.entries(eslintPluginAntfu.rules)
+    .map(
+      ([id]) => [`antfu/${id}`, "off"],
+    ),
+)
+const antfuLint = {
+  name: "antfu/without-if-newline-or-imports",
+  plugins: { antfu: eslintPluginAntfu },
+  rules,
+}
 
 export default tseslint.config(
   { files: ["**/*.{js,mjs,ts,mts}"] },
@@ -133,7 +146,6 @@ export default tseslint.config(
       ],
 
       "@stylistic/function-paren-newline": ["error", "multiline-arguments"],
-      "@stylistic/newline-per-chained-call": "error",
 
       "@stylistic/array-bracket-spacing": "error",
       "@stylistic/arrow-parens": "error",
@@ -206,6 +218,14 @@ export default tseslint.config(
       "@typescript-eslint/no-unused-vars": "off",
       "unused-imports/no-unused-imports": "error",
       "unused-imports/no-unused-vars": "error",
+    },
+  },
+
+  // Antfu
+  antfuLint,
+  {
+    rules: {
+      "antfu/consistent-chaining": "error",
     },
   },
 
