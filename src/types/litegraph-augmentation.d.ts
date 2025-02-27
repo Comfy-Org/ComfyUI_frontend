@@ -17,6 +17,10 @@ declare module '@comfyorg/litegraph/dist/types/widgets' {
      * - If true or undefined, the value will be included in both the API workflow and graph state
      */
     serialize?: boolean
+    /**
+     * Rounding value for numeric float widgets.
+     */
+    round?: number
   }
 
   interface IBaseWidget {

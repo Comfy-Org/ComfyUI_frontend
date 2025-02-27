@@ -1,10 +1,26 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
 import type { INumericWidget } from '@comfyorg/litegraph/dist/types/widgets'
+import _ from 'lodash'
 
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { useSettingStore } from '@/stores/settingStore'
 import { getNumberDefaults } from '@/utils/mathUtil'
+
+function onFloatValueChange(this: INumericWidget, v: number) {
+  this.value = this.options.round
+    ? _.clamp(
+        Math.round((v + Number.EPSILON) / this.options.round) *
+          this.options.round,
+        this.options.min ?? -Infinity,
+        this.options.max ?? Infinity
+      )
+    : v
+}
+
+export const _for_testing = {
+  onFloatValueChange
+}
 
 export const useFloatWidget = () => {
   const widgetConstructor: ComfyWidgetConstructor = (
@@ -40,16 +56,7 @@ export const useFloatWidget = () => {
         widgetType,
         inputName,
         val,
-        function (this: INumericWidget, v: number) {
-          if (config.round) {
-            this.value =
-              Math.round((v + Number.EPSILON) / config.round) * config.round
-            if (this.value > config.max) this.value = config.max
-            if (this.value < config.min) this.value = config.min
-          } else {
-            this.value = v
-          }
-        },
+        onFloatValueChange,
         config
       )
     }
