@@ -7,14 +7,13 @@ import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { useSettingStore } from '@/stores/settingStore'
 import { getNumberDefaults } from '@/utils/mathUtil'
 
-// Extract the value change function for testing
 export function onFloatValueChange(this: INumericWidget, v: number) {
   this.value = this.options.round
     ? _.clamp(
         Math.round((v + Number.EPSILON) / this.options.round) *
           this.options.round,
-        this.options.min!,
-        this.options.max!
+        this.options.min ?? -Infinity,
+        this.options.max ?? Infinity
       )
     : v
 }
