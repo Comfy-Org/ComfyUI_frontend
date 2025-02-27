@@ -1,5 +1,6 @@
 import axios from 'axios'
 
+import type { ComfyWorkflowJSON, NodeId } from '@/schemas/comfyWorkflow'
 import type {
   ComfyNodeDef,
   EmbeddingsResponse,
@@ -26,7 +27,6 @@ import type {
   UserDataFullInfo
 } from '@/types/apiTypes'
 import { validateComfyNodeDef } from '@/types/apiTypes'
-import type { ComfyWorkflowJSON, NodeId } from '@/types/comfyWorkflow'
 
 interface QueuePromptRequestBody {
   client_id: string

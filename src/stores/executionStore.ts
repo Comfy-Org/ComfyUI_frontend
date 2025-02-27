@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import type { ComfyNode, ComfyWorkflowJSON } from '@/schemas/comfyWorkflow'
 import { api } from '@/scripts/api'
 import type {
   ExecutedWsMessage,
@@ -10,7 +11,6 @@ import type {
   ProgressWsMessage,
   StatusWsMessage
 } from '@/types/apiTypes'
-import type { ComfyNode, ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 
 import { ComfyWorkflow } from './workflowStore'
 

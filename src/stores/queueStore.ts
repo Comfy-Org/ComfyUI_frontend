@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { toRaw } from 'vue'
 import { computed, ref } from 'vue'
 
+import type { ComfyWorkflowJSON, NodeId } from '@/schemas/comfyWorkflow'
 import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import type {
@@ -14,7 +15,6 @@ import type {
   TaskStatus,
   TaskType
 } from '@/types/apiTypes'
-import type { ComfyWorkflowJSON, NodeId } from '@/types/comfyWorkflow'
 
 // Task type used in the API.
 export type APITaskType = 'queue' | 'history'

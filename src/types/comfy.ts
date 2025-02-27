@@ -1,11 +1,11 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
 import { Positionable } from '@comfyorg/litegraph/dist/interfaces'
 
+import type { ComfyWorkflowJSON } from '@/schemas/comfyWorkflow'
 import type { ComfyApp } from '@/scripts/app'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import type { ComfyCommand } from '@/stores/commandStore'
 import type { ComfyNodeDef } from '@/types/apiTypes'
-import type { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
 import type { Keybinding } from '@/types/keyBindingTypes'
 import type { SettingParams } from '@/types/settingTypes'
