@@ -81,7 +81,7 @@ export function applyTextReplacements(app: ComfyApp, value: string): string {
       return match
     }
 
-    return ((widget.value ?? '') + '').replaceAll(/\/|\\/g, '_')
+    return ((widget.value ?? '') + '').replaceAll(/[\/\?<>\\:\*\|"\x00-\x1F\x7F]/g, '_')
   })
 }
 
