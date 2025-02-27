@@ -1,4 +1,4 @@
-import { ResultItem } from '@/types/apiTypes'
+import { ResultItem } from '@/schemas/apiTypes'
 
 export function formatCamelCase(str: string): string {
   // Check if the string is camel case

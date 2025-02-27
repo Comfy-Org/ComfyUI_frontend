@@ -1,8 +1,8 @@
 import '@comfyorg/litegraph'
 import type { LLink, Size } from '@comfyorg/litegraph'
 
+import type { ComfyNodeDef } from '@/schemas/apiTypes'
 import type { DOMWidget, DOMWidgetOptions } from '@/scripts/domWidget'
-import type { ComfyNodeDef } from '@/types/apiTypes'
 
 import type { NodeId } from '../schemas/comfyWorkflow'
 

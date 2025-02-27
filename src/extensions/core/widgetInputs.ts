@@ -12,12 +12,12 @@ import type {
 } from '@comfyorg/litegraph'
 import type { CanvasMouseEvent } from '@comfyorg/litegraph/dist/types/events'
 
+import type { InputSpec } from '@/schemas/apiTypes'
 import { app } from '@/scripts/app'
 import { applyTextReplacements, clone } from '@/scripts/utils'
 import { ComfyWidgets, addValueControlWidgets } from '@/scripts/widgets'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
-import type { InputSpec } from '@/types/apiTypes'
 import { isPrimitiveNode } from '@/utils/typeGuardUtil'
 
 const CONVERTED_TYPE = 'converted-widget'

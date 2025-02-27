@@ -1,7 +1,7 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
 
+import type { InputSpec } from '@/schemas/apiTypes'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
-import type { InputSpec } from '@/types/apiTypes'
 
 export const useBooleanWidget = () => {
   const widgetConstructor: ComfyWidgetConstructor = (

@@ -5,15 +5,15 @@ import type { TreeNode } from 'primevue/treenode'
 import { computed, ref } from 'vue'
 
 import {
-  NodeSearchService,
-  type SearchAuxScore
-} from '@/services/nodeSearchService'
-import {
   type ComfyInputsSpec as ComfyInputsSpecSchema,
   type ComfyNodeDef,
   type ComfyOutputTypesSpec as ComfyOutputTypesSpecSchema,
   type InputSpec
-} from '@/types/apiTypes'
+} from '@/schemas/apiTypes'
+import {
+  NodeSearchService,
+  type SearchAuxScore
+} from '@/services/nodeSearchService'
 import {
   type NodeSource,
   NodeSourceType,

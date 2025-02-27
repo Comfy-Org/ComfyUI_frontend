@@ -3,11 +3,10 @@ import { ZodType, z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
 import { zComfyWorkflow, zNodeId } from '@/schemas/comfyWorkflow'
-
-import { colorPalettesSchema } from './colorPaletteTypes'
-import { zKeybinding } from './keyBindingTypes'
-import { NodeBadgeMode } from './nodeSource'
-import { LinkReleaseTriggerAction } from './searchBoxTypes'
+import { colorPalettesSchema } from '@/types/colorPaletteTypes'
+import { zKeybinding } from '@/types/keyBindingTypes'
+import { NodeBadgeMode } from '@/types/nodeSource'
+import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 
 const zNodeType = z.string()
 const zQueueIndex = z.number()

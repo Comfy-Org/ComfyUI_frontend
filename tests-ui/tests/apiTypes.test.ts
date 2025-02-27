@@ -2,7 +2,7 @@
 import fs from 'fs'
 import path from 'path'
 
-import { ComfyNodeDef, validateComfyNodeDef } from '@/types/apiTypes'
+import { ComfyNodeDef, validateComfyNodeDef } from '@/schemas/apiTypes'
 
 const EXAMPLE_NODE_DEF: ComfyNodeDef = {
   input: {

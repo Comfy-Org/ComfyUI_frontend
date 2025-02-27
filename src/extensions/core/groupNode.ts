@@ -3,6 +3,7 @@ import { type LGraph, LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
 import { LGraphNode, type NodeId } from '@comfyorg/litegraph/dist/LGraphNode'
 
 import { t } from '@/i18n'
+import type { ComfyNodeDef } from '@/schemas/apiTypes'
 import {
   ComfyLink,
   ComfyNode,
@@ -11,7 +12,6 @@ import {
 import { useDialogService } from '@/services/dialogService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useToastStore } from '@/stores/toastStore'
-import type { ComfyNodeDef } from '@/types/apiTypes'
 import { ComfyExtension } from '@/types/comfy'
 import { deserialiseAndCreate, serialise } from '@/utils/vintageClipboard'
 

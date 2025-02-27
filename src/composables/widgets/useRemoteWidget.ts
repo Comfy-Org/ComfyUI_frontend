@@ -2,7 +2,7 @@ import { LGraphNode } from '@comfyorg/litegraph'
 import { IWidget } from '@comfyorg/litegraph'
 import axios from 'axios'
 
-import type { InputSpec, RemoteWidgetConfig } from '@/types/apiTypes'
+import type { InputSpec, RemoteWidgetConfig } from '@/schemas/apiTypes'
 
 const MAX_RETRIES = 5
 const TIMEOUT = 4096

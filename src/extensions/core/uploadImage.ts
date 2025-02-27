@@ -1,4 +1,4 @@
-import { ComfyNodeDef, InputSpec, isComboInputSpecV1 } from '@/types/apiTypes'
+import { ComfyNodeDef, InputSpec, isComboInputSpecV1 } from '@/schemas/apiTypes'
 
 import { app } from '../../scripts/app'
 
