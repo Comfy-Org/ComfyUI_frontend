@@ -393,9 +393,6 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     return this.constructor.title_mode ?? TitleMode.NORMAL_TITLE
   }
 
-  // Used in group node
-  setInnerNodes?(this: LGraphNode, nodes: LGraphNode[]): void
-
   onConnectInput?(
     this: LGraphNode,
     target_slot: number,
