@@ -27,6 +27,6 @@ export function getNumberDefaults(
 
   return {
     val: defaultVal,
-    config: { min, max, step: 10.0 * step, round, precision }
+    config: { min, max, step, round, precision }
   }
 }
