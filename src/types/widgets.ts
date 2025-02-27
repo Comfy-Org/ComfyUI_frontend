@@ -12,7 +12,14 @@ export interface IWidgetOptions<TValue = unknown> extends Record<string, unknown
   marker_color?: CanvasColour
   precision?: number
   read_only?: boolean
+  /**
+   * @deprecated Use {@link IWidgetOptions.step2} instead.
+   * The legacy step is scaled up by 10x in the legacy frontend logic.
+   */
   step?: number
+  /** The step value for numeric widgets. */
+  step2?: number
+
   y?: number
   multiline?: boolean
   // TODO: Confirm this
@@ -25,7 +32,7 @@ export interface IWidgetOptions<TValue = unknown> extends Record<string, unknown
 export interface IWidgetSliderOptions extends IWidgetOptions<number> {
   min: number
   max: number
-  step: number
+  step2: number
   slider_color?: CanvasColour
   marker_color?: CanvasColour
 }
@@ -33,7 +40,7 @@ export interface IWidgetSliderOptions extends IWidgetOptions<number> {
 export interface IWidgetKnobOptions extends IWidgetOptions<number> {
   min: number
   max: number
-  step: number
+  step2: number
   slider_color?: CanvasColour // TODO: Replace with knob color
   marker_color?: CanvasColour
   gradient_stops?: string

@@ -4,6 +4,7 @@ import type { IKnobWidget, IWidgetKnobOptions } from "@/types/widgets"
 import { LGraphCanvas } from "@/LGraphCanvas"
 import { clamp } from "@/litegraph"
 import { CanvasMouseEvent } from "@/types/events"
+import { getWidgetStep } from "@/utils/widget"
 
 import { BaseWidget } from "./BaseWidget"
 
@@ -214,8 +215,8 @@ export class KnobWidget extends BaseWidget implements IKnobWidget {
   }): void {
     if (this.options.read_only) return
     const { e } = options
-    const step = this.options.step
-    // Shift to move by 10% increments, there is no division by 10 due to the front-end multiplier
+    const step = getWidgetStep(this.options) * 10
+    // Shift to move by 10% increments
     const maxMinDifference = (this.options.max - this.options.min)
     const maxMinDifference10pct = maxMinDifference / 10
     const step_for = {
@@ -243,9 +244,8 @@ export class KnobWidget extends BaseWidget implements IKnobWidget {
       : (use_y
         ? step_for.delta_y
         : step)
-    // HACK: For some reason, the front-end multiplies step by 10, this brings it down to the advertised value
-    // SEE: src/utils/mathUtil.ts@getNumberDefaults in front end
-    const deltaValue = adjustment * step_with_shift_modifier / 10
+
+    const deltaValue = adjustment * step_with_shift_modifier
     const newValue = clamp(
       this.value + deltaValue,
       this.options.min,

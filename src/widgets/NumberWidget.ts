@@ -3,6 +3,8 @@ import type { LGraphNode } from "@/LGraphNode"
 import type { CanvasMouseEvent } from "@/types/events"
 import type { INumericWidget, IWidgetOptions } from "@/types/widgets"
 
+import { getWidgetStep } from "@/utils/widget"
+
 import { BaseWidget } from "./BaseWidget"
 
 export class NumberWidget extends BaseWidget implements INumericWidget {
@@ -111,7 +113,7 @@ export class NumberWidget extends BaseWidget implements INumericWidget {
 
     if (delta) {
       // Handle left/right arrow clicks
-      let newValue = this.value + delta * 0.1 * (this.options.step || 1)
+      let newValue = this.value + delta * getWidgetStep(this.options)
       if (this.options.min != null && newValue < this.options.min) {
         newValue = this.options.min
       }
@@ -161,7 +163,7 @@ export class NumberWidget extends BaseWidget implements INumericWidget {
     if (delta && (x > -3 && x < width + 3)) return
 
     let newValue = this.value
-    if (e.deltaX) newValue += e.deltaX * 0.1 * (this.options.step || 1)
+    if (e.deltaX) newValue += e.deltaX * getWidgetStep(this.options)
 
     if (this.options.min != null && newValue < this.options.min) {
       newValue = this.options.min
