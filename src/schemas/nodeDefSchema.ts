@@ -30,72 +30,57 @@ const zRemoteWidgetConfig = z.object({
   max_retries: z.number().gte(0).optional()
 })
 
-const zBaseInputSpecValue = z
+const zBaseInputOptions = z
   .object({
     default: z.any().optional(),
     defaultInput: z.boolean().optional(),
     forceInput: z.boolean().optional(),
-    lazy: z.boolean().optional(),
-    rawLink: z.boolean().optional(),
     tooltip: z.string().optional(),
     hidden: z.boolean().optional(),
-    advanced: z.boolean().optional()
+    advanced: z.boolean().optional(),
+    /** Backend-only properties. */
+    rawLink: z.boolean().optional(),
+    lazy: z.boolean().optional()
   })
   .passthrough()
 
-const zIntInputSpec = inputSpec([
-  z.literal('INT'),
-  zBaseInputSpecValue.extend({
-    min: z.number().optional(),
-    max: z.number().optional(),
-    step: z.number().optional(),
-    // Note: Many node authors are using INT to pass list of INT.
-    // TODO: Add list of ints type.
-    default: z.union([z.number(), z.array(z.number())]).optional(),
-    /**
-     * If true, a linked widget will be added to the node to select the mode
-     * of `control_after_generate`.
-     */
-    control_after_generate: z.boolean().optional()
-  })
-])
+const zNumericInputOptions = zBaseInputOptions.extend({
+  min: z.number().optional(),
+  max: z.number().optional(),
+  step: z.number().optional(),
+  // Note: Many node authors are using INT/FLOAT to pass list of INT/FLOAT.
+  default: z.union([z.number(), z.array(z.number())]).optional()
+})
 
-const zFloatInputSpec = inputSpec([
-  z.literal('FLOAT'),
-  zBaseInputSpecValue.extend({
-    min: z.number().optional(),
-    max: z.number().optional(),
-    step: z.number().optional(),
-    round: z.union([z.number(), z.literal(false)]).optional(),
-    // Note: Many node authors are using FLOAT to pass list of FLOAT.
-    // TODO: Add list of floats type.
-    default: z.union([z.number(), z.array(z.number())]).optional()
-  })
-])
+const zIntInputOptions = zNumericInputOptions.extend({
+  /**
+   * If true, a linked widget will be added to the node to select the mode
+   * of `control_after_generate`.
+   */
+  control_after_generate: z.boolean().optional()
+})
 
-const zBooleanInputSpec = inputSpec([
-  z.literal('BOOLEAN'),
-  zBaseInputSpecValue.extend({
-    label_on: z.string().optional(),
-    label_off: z.string().optional(),
-    default: z.boolean().optional()
-  })
-])
+const zFloatInputOptions = zNumericInputOptions.extend({
+  round: z.union([z.number(), z.literal(false)]).optional()
+})
 
-const zStringInputSpec = inputSpec([
-  z.literal('STRING'),
-  zBaseInputSpecValue.extend({
-    default: z.string().optional(),
-    multiline: z.boolean().optional(),
-    dynamicPrompts: z.boolean().optional(),
+const zBooleanInputOptions = zBaseInputOptions.extend({
+  label_on: z.string().optional(),
+  label_off: z.string().optional(),
+  default: z.boolean().optional()
+})
 
-    // Multiline-only fields
-    defaultVal: z.string().optional(),
-    placeholder: z.string().optional()
-  })
-])
+const zStringInputOptions = zBaseInputOptions.extend({
+  default: z.string().optional(),
+  multiline: z.boolean().optional(),
+  dynamicPrompts: z.boolean().optional(),
 
-const zComboInputProps = zBaseInputSpecValue.extend({
+  // Multiline-only fields
+  defaultVal: z.string().optional(),
+  placeholder: z.string().optional()
+})
+
+const zComboInputOptions = zBaseInputOptions.extend({
   control_after_generate: z.boolean().optional(),
   image_upload: z.boolean().optional(),
   image_folder: z.enum(['input', 'output', 'temp']).optional(),
@@ -103,27 +88,74 @@ const zComboInputProps = zBaseInputSpecValue.extend({
   remote: zRemoteWidgetConfig.optional()
 })
 
-// Dropdown Selection.
+const zIntInputSpec = inputSpec([z.literal('INT'), zIntInputOptions])
+const zFloatInputSpec = inputSpec([z.literal('FLOAT'), zFloatInputOptions])
+const zBooleanInputSpec = inputSpec([
+  z.literal('BOOLEAN'),
+  zBooleanInputOptions
+])
+const zStringInputSpec = inputSpec([z.literal('STRING'), zStringInputOptions])
 const zComboInputSpec = inputSpec(
-  [z.array(z.any()), zComboInputProps],
+  [z.array(z.any()), zComboInputOptions],
+  /* allowUpcast=*/ false
+)
+const zComboInputSpecV2 = inputSpec(
+  [z.literal('COMBO'), zComboInputOptions],
   /* allowUpcast=*/ false
 )
 
-const zComboInputSpecV2 = inputSpec(
-  [z.literal('COMBO'), zComboInputProps],
-  /* allowUpcast=*/ false
-)
 export function isComboInputSpecV1(
   inputSpec: InputSpec
 ): inputSpec is ComboInputSpec {
   return Array.isArray(inputSpec[0])
 }
 
-const excludedLiterals = new Set(['INT', 'FLOAT', 'BOOLEAN', 'STRING', 'COMBO'])
+export function isIntInputSpec(
+  inputSpec: InputSpec
+): inputSpec is IntInputSpec {
+  return inputSpec[0] === 'INT'
+}
 
+export function isFloatInputSpec(
+  inputSpec: InputSpec
+): inputSpec is FloatInputSpec {
+  return inputSpec[0] === 'FLOAT'
+}
+
+export function isBooleanInputSpec(
+  inputSpec: InputSpec
+): inputSpec is BooleanInputSpec {
+  return inputSpec[0] === 'BOOLEAN'
+}
+
+export function isStringInputSpec(
+  inputSpec: InputSpec
+): inputSpec is StringInputSpec {
+  return inputSpec[0] === 'STRING'
+}
+
+export function isComboInputSpecV2(
+  inputSpec: InputSpec
+): inputSpec is ComboInputSpecV2 {
+  return inputSpec[0] === 'COMBO'
+}
+
+export function isCustomInputSpec(
+  inputSpec: InputSpec
+): inputSpec is CustomInputSpec {
+  return typeof inputSpec[0] === 'string' && !excludedLiterals.has(inputSpec[0])
+}
+
+export function isComboInputSpec(
+  inputSpec: InputSpec
+): inputSpec is ComboInputSpec | ComboInputSpecV2 {
+  return isComboInputSpecV1(inputSpec) || isComboInputSpecV2(inputSpec)
+}
+
+const excludedLiterals = new Set(['INT', 'FLOAT', 'BOOLEAN', 'STRING', 'COMBO'])
 const zCustomInputSpec = inputSpec([
   z.string().refine((value) => !excludedLiterals.has(value)),
-  zBaseInputSpecValue
+  zBaseInputOptions
 ])
 
 const zInputSpec = z.union([
@@ -167,13 +199,26 @@ const zComfyNodeDef = z.object({
 })
 
 // `/object_info`
-export type ComboInputSpec = z.infer<typeof zComboInputSpec>
-export type ComboInputSpecV2 = z.infer<typeof zComboInputSpecV2>
-export type InputSpec = z.infer<typeof zInputSpec>
 export type ComfyInputsSpec = z.infer<typeof zComfyInputsSpec>
 export type ComfyOutputTypesSpec = z.infer<typeof zComfyOutputTypesSpec>
 export type ComfyNodeDef = z.infer<typeof zComfyNodeDef>
 export type RemoteWidgetConfig = z.infer<typeof zRemoteWidgetConfig>
+
+// Input specs
+export type IntInputOptions = z.infer<typeof zIntInputOptions>
+export type FloatInputOptions = z.infer<typeof zFloatInputOptions>
+export type BooleanInputOptions = z.infer<typeof zBooleanInputOptions>
+export type StringInputOptions = z.infer<typeof zStringInputOptions>
+export type ComboInputOptions = z.infer<typeof zComboInputOptions>
+
+export type IntInputSpec = z.infer<typeof zIntInputSpec>
+export type FloatInputSpec = z.infer<typeof zFloatInputSpec>
+export type BooleanInputSpec = z.infer<typeof zBooleanInputSpec>
+export type StringInputSpec = z.infer<typeof zStringInputSpec>
+export type ComboInputSpec = z.infer<typeof zComboInputSpec>
+export type ComboInputSpecV2 = z.infer<typeof zComboInputSpecV2>
+export type CustomInputSpec = z.infer<typeof zCustomInputSpec>
+export type InputSpec = z.infer<typeof zInputSpec>
 
 export function validateComfyNodeDef(
   data: any,
