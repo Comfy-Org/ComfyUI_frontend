@@ -13,7 +13,7 @@ import type {
 import type { CanvasMouseEvent } from '@comfyorg/litegraph/dist/types/events'
 
 import { app } from '@/scripts/app'
-import { applyTextReplacements } from '@/scripts/utils'
+import { applyTextReplacements, clone } from '@/scripts/utils'
 import { ComfyWidgets, addValueControlWidgets } from '@/scripts/widgets'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
@@ -647,11 +647,7 @@ export function mergeIfValid(
   let customConfig: Record<string, unknown> | undefined
   const getCustomConfig = () => {
     if (!customConfig) {
-      if (typeof structuredClone === 'undefined') {
-        customConfig = JSON.parse(JSON.stringify(config1[1] ?? {}))
-      } else {
-        customConfig = structuredClone(config1[1] ?? {})
-      }
+      customConfig = clone(config1[1] ?? {})
     }
     return customConfig
   }
