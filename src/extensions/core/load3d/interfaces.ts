@@ -60,7 +60,6 @@ export interface CameraManagerInterface extends BaseManager {
   perspectiveCamera: THREE.PerspectiveCamera
   orthographicCamera: THREE.OrthographicCamera
   getCurrentCameraType(): CameraType
-  refreshCamera(): void
   toggleCamera(cameraType?: CameraType): void
   setFOV(fov: number): void
   setCameraState(state: CameraState): void

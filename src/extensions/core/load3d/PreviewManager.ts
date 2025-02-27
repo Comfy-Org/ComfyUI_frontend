@@ -153,6 +153,51 @@ export class PreviewManager implements PreviewManagerInterface {
     this.previewRenderer?.setSize(this.previewWidth, previewHeight, false)
   }
 
+  syncWithMainCamera(): void {
+    if (!this.previewRenderer || !this.previewContainer || !this.showPreview) {
+      return
+    }
+
+    this.previewCamera = this.getActiveCamera().clone()
+
+    this.previewCamera.position.copy(this.getActiveCamera().position)
+    this.previewCamera.rotation.copy(this.getActiveCamera().rotation)
+
+    const aspect = this.targetWidth / this.targetHeight
+
+    if (this.getActiveCamera() instanceof THREE.OrthographicCamera) {
+      const activeOrtho = this.getActiveCamera() as THREE.OrthographicCamera
+      const previewOrtho = this.previewCamera as THREE.OrthographicCamera
+
+      previewOrtho.zoom = activeOrtho.zoom
+
+      const frustumHeight =
+        (activeOrtho.top - activeOrtho.bottom) / activeOrtho.zoom
+      const frustumWidth = frustumHeight * aspect
+
+      previewOrtho.top = frustumHeight / 2
+      previewOrtho.left = -frustumWidth / 2
+      previewOrtho.right = frustumWidth / 2
+      previewOrtho.bottom = -frustumHeight / 2
+
+      previewOrtho.updateProjectionMatrix()
+    } else {
+      const activePerspective =
+        this.getActiveCamera() as THREE.PerspectiveCamera
+      const previewPerspective = this.previewCamera as THREE.PerspectiveCamera
+
+      previewPerspective.fov = activePerspective.fov
+      previewPerspective.zoom = activePerspective.zoom
+      previewPerspective.aspect = aspect
+
+      previewPerspective.updateProjectionMatrix()
+    }
+
+    this.previewCamera.lookAt(this.getControls().target)
+
+    this.updatePreviewRender()
+  }
+
   updatePreviewRender(): void {
     if (!this.previewRenderer || !this.previewContainer || !this.showPreview)
       return

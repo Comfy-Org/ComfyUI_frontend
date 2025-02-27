@@ -215,6 +215,10 @@ class Load3d {
 
   setCameraState(state: CameraState): void {
     this.cameraManager.setCameraState(state)
+
+    if (this.previewManager.showPreview) {
+      this.previewManager.syncWithMainCamera()
+    }
   }
 
   getCameraState(): CameraState {
@@ -267,10 +271,6 @@ class Load3d {
 
   togglePreview(showPreview: boolean): void {
     this.previewManager.togglePreview(showPreview)
-  }
-
-  refreshCamera(): void {
-    this.cameraManager.refreshCamera()
   }
 
   setTargetSize(width: number, height: number): void {
