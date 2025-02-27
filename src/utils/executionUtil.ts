@@ -4,7 +4,7 @@ import { LGraphEventMode } from '@comfyorg/litegraph'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
-} from '@/schemas/comfyWorkflow'
+} from '@/schemas/comfyWorkflowSchema'
 
 /**
  * Converts the current graph workflow for sending to the API.

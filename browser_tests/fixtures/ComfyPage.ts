@@ -7,7 +7,7 @@ import * as fs from 'fs'
 
 import type { useWorkspaceStore } from '../../src/stores/workspaceStore'
 import type { NodeId } from '../../src/types/comfyWorkflow'
-import type { KeyCombo } from '../../src/types/keyBindingTypes'
+import type { KeyCombo } from '../../src/types/keyBindingSchema'
 import { NodeBadgeMode } from '../../src/types/nodeSource'
 import { ComfyActionbar } from '../helpers/actionbar'
 import { ComfyTemplates } from '../helpers/templates'

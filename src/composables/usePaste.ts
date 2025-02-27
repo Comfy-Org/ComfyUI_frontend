@@ -2,7 +2,7 @@ import { LiteGraph } from '@comfyorg/litegraph'
 import type { LGraphNode } from '@comfyorg/litegraph'
 import { useEventListener } from '@vueuse/core'
 
-import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflow'
+import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import { app } from '@/scripts/app'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'

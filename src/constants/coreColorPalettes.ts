@@ -7,7 +7,7 @@ import solarized from '@/assets/palettes/solarized.json'
 import type {
   ColorPalettes,
   CompletedPalette
-} from '@/schemas/colorPaletteTypes'
+} from '@/schemas/colorPaletteSchema'
 
 export const CORE_COLOR_PALETTES: ColorPalettes = {
   dark,

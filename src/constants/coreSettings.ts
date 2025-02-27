@@ -1,8 +1,8 @@
 import { LinkMarkerShape } from '@comfyorg/litegraph'
 import { LiteGraph } from '@comfyorg/litegraph'
 
-import type { ColorPalettes } from '@/schemas/colorPaletteTypes'
-import type { Keybinding } from '@/schemas/keyBindingTypes'
+import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
+import type { Keybinding } from '@/schemas/keyBindingSchema'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 import type { SettingParams } from '@/types/settingTypes'

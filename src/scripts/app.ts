@@ -18,7 +18,7 @@ import {
   type ComfyWorkflowJSON,
   type NodeId,
   validateComfyWorkflow
-} from '@/schemas/comfyWorkflow'
+} from '@/schemas/comfyWorkflowSchema'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'

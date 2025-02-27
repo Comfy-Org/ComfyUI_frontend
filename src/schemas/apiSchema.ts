@@ -2,9 +2,9 @@ import { LinkMarkerShape } from '@comfyorg/litegraph'
 import { ZodType, z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
-import { colorPalettesSchema } from '@/schemas/colorPaletteTypes'
-import { zComfyWorkflow, zNodeId } from '@/schemas/comfyWorkflow'
-import { zKeybinding } from '@/schemas/keyBindingTypes'
+import { colorPalettesSchema } from '@/schemas/colorPaletteSchema'
+import { zComfyWorkflow, zNodeId } from '@/schemas/comfyWorkflowSchema'
+import { zKeybinding } from '@/schemas/keyBindingSchema'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 

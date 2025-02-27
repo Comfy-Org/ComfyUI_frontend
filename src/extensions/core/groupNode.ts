@@ -8,7 +8,7 @@ import {
   ComfyLink,
   ComfyNode,
   ComfyWorkflowJSON
-} from '@/schemas/comfyWorkflow'
+} from '@/schemas/comfyWorkflowSchema'
 import { useDialogService } from '@/services/dialogService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useToastStore } from '@/stores/toastStore'

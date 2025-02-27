@@ -8,7 +8,7 @@ import {
   Colors,
   type Palette,
   paletteSchema
-} from '@/schemas/colorPaletteTypes'
+} from '@/schemas/colorPaletteSchema'
 import { app } from '@/scripts/app'
 import { downloadBlob, uploadFile } from '@/scripts/utils'
 import { useNodeDefStore } from '@/stores/nodeDefStore'

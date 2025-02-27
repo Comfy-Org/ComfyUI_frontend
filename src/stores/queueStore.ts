@@ -12,7 +12,7 @@ import type {
   TaskStatus,
   TaskType
 } from '@/schemas/apiSchema'
-import type { ComfyWorkflowJSON, NodeId } from '@/schemas/comfyWorkflow'
+import type { ComfyWorkflowJSON, NodeId } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 

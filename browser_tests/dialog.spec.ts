@@ -1,6 +1,6 @@
 import { Locator, expect } from '@playwright/test'
 
-import { Keybinding } from '../src/types/keyBindingTypes'
+import { Keybinding } from '../src/types/keyBindingSchema'
 import { comfyPageFixture as test } from './fixtures/ComfyPage'
 
 test.describe('Load workflow warning', () => {

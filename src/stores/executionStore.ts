@@ -9,7 +9,10 @@ import type {
   ProgressWsMessage,
   StatusWsMessage
 } from '@/schemas/apiSchema'
-import type { ComfyNode, ComfyWorkflowJSON } from '@/schemas/comfyWorkflow'
+import type {
+  ComfyNode,
+  ComfyWorkflowJSON
+} from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
 
 import { ComfyWorkflow } from './workflowStore'
