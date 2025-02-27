@@ -10,6 +10,29 @@ import {
 import { useSettingStore } from '@/stores/settingStore'
 import { getNumberDefaults } from '@/utils/mathUtil'
 
+function onValueChange(this: INumericWidget, v: number) {
+  // For integers, always round to the nearest step
+  // step === 0 is invalid, assign 1 if options.step is 0
+  const step = this.options.step2 || 1
+
+  if (step === 1) {
+    // Simple case: round to nearest integer
+    this.value = Math.round(v)
+  } else {
+    // Round to nearest multiple of step
+    // First, determine if min value creates an offset
+    const min = this.options.min ?? 0
+    const offset = min % step
+
+    // Round to nearest step, accounting for offset
+    this.value = Math.round((v - offset) / step) * step + offset
+  }
+}
+
+export const _for_testing = {
+  onValueChange
+}
+
 export const useIntWidget = () => {
   const widgetConstructor: ComfyWidgetConstructor = (
     node: LGraphNode,
@@ -35,20 +58,7 @@ export const useIntWidget = () => {
     config.precision = 0
 
     const result = {
-      widget: node.addWidget(
-        widgetType,
-        inputName,
-        val,
-        function (this: INumericWidget, v: number) {
-          const s = this.options.step2 || 1
-          let sh = (this.options.min ?? 0) % s
-          if (isNaN(sh)) {
-            sh = 0
-          }
-          this.value = Math.round((v - sh) / s) * s + sh
-        },
-        config
-      )
+      widget: node.addWidget(widgetType, inputName, val, onValueChange, config)
     }
 
     if (inputData[1]?.control_after_generate) {
