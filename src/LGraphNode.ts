@@ -712,13 +712,14 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
     if (this.properties) o.properties = LiteGraph.cloneObject(this.properties)
 
-    if (this.widgets && this.serialize_widgets) {
+    const { widgets } = this
+    if (widgets && this.serialize_widgets) {
       o.widgets_values = []
-      for (let i = 0; i < this.widgets.length; ++i) {
-        if (this.widgets[i])
-          o.widgets_values[i] = this.widgets[i].value
+      for (const [i, widget] of widgets.entries()) {
+        if (widget)
+          o.widgets_values[i] = widget.value
         else
-          // @ts-ignore #595 No-null
+        // @ts-ignore #595 No-null
           o.widgets_values[i] = null
       }
     }
@@ -743,19 +744,18 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
     // we clone it because serialize returns shared containers
     const data = LiteGraph.cloneObject(this.serialize())
+    const { inputs, outputs } = data
 
     // remove links
-    if (data.inputs) {
-      for (let i = 0; i < data.inputs.length; ++i) {
-        data.inputs[i].link = null
+    if (inputs) {
+      for (const element of inputs) {
+        element.link = null
       }
     }
 
-    if (data.outputs) {
-      for (let i = 0; i < data.outputs.length; ++i) {
-        if (data.outputs[i].links) {
-          data.outputs[i].links.length = 0
-        }
+    if (outputs) {
+      for (const { links } of outputs) {
+        if (links) links.length = 0
       }
     }
 
@@ -798,10 +798,8 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     if (this.onPropertyChanged?.(name, value, prev_value) === false)
       this.properties[name] = prev_value
 
-    // widgets could be linked to properties
     if (this.widgets) {
-      for (let i = 0; i < this.widgets.length; ++i) {
-        const w = this.widgets[i]
+      for (const w of this.widgets) {
         if (!w) continue
 
         if (w.options.property == name) {
@@ -818,12 +816,13 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    * @param data
    */
   setOutputData(slot: number, data: number | string | boolean | { toToolTip?(): string }): void {
-    if (!this.outputs) return
+    const { outputs } = this
+    if (!outputs) return
 
     // this maybe slow and a niche case
-    if (slot == -1 || slot >= this.outputs.length) return
+    if (slot == -1 || slot >= outputs.length) return
 
-    const output_info = this.outputs[slot]
+    const output_info = outputs[slot]
     if (!output_info) return
 
     // store data in the output itself in case we want to debug
@@ -832,10 +831,10 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     if (!this.graph) throw new NullGraphError()
 
     // if there are connections, pass the data to the connections
-    if (this.outputs[slot].links) {
-      for (let i = 0; i < this.outputs[slot].links.length; i++) {
-        const link_id = this.outputs[slot].links[i]
-        const link = this.graph._links.get(link_id)
+    const { links } = outputs[slot]
+    if (links) {
+      for (const id of links) {
+        const link = this.graph._links.get(id)
         if (link) link.data = data
       }
     }
@@ -845,9 +844,10 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    * sets the output data type, useful when you want to be able to overwrite the data type
    */
   setOutputDataType(slot: number, type: ISlotType): void {
-    if (!this.outputs) return
-    if (slot == -1 || slot >= this.outputs.length) return
-    const output_info = this.outputs[slot]
+    const { outputs } = this
+    if (!outputs || (slot == -1 || slot >= outputs.length)) return
+
+    const output_info = outputs[slot]
     if (!output_info) return
     // store data in the output itself in case we want to debug
     output_info.type = type
@@ -855,10 +855,10 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     if (!this.graph) throw new NullGraphError()
 
     // if there are connections, pass the data to the connections
-    if (this.outputs[slot].links) {
-      for (let i = 0; i < this.outputs[slot].links.length; i++) {
-        const link_id = this.outputs[slot].links[i]
-        const link = this.graph._links.get(link_id)
+    const { links } = outputs[slot]
+    if (links) {
+      for (const id of links) {
+        const link = this.graph._links.get(id)
         if (!link) continue
         link.type = type
       }
@@ -993,15 +993,15 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    * @returns value
    */
   getInputOrProperty(name: string): unknown {
-    if (!this.inputs || !this.inputs.length) {
+    const { inputs } = this
+    if (!inputs?.length) {
       return this.properties ? this.properties[name] : null
     }
     if (!this.graph) throw new NullGraphError()
 
-    for (let i = 0, l = this.inputs.length; i < l; ++i) {
-      const input_info = this.inputs[i]
-      if (name == input_info.name && input_info.link != null) {
-        const link = this.graph._links.get(input_info.link)
+    for (const input of inputs) {
+      if (name == input.name && input.link != null) {
+        const link = this.graph._links.get(input.link)
         if (link) return link.data
       }
     }
@@ -1042,12 +1042,11 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    * tells you if there is any connection in the output slots
    */
   isAnyOutputConnected(): boolean {
-    if (!this.outputs) return false
+    const { outputs } = this
+    if (!outputs) return false
 
-    for (let i = 0; i < this.outputs.length; ++i) {
-      if (this.outputs[i].links && this.outputs[i].links?.length) {
-        return true
-      }
+    for (const output of outputs) {
+      if (output.links?.length) return true
     }
     return false
   }
@@ -1056,18 +1055,18 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    * retrieves all the nodes connected to this output slot
    */
   getOutputNodes(slot: number): LGraphNode[] | null {
-    if (!this.outputs || this.outputs.length == 0) return null
+    const { outputs } = this
+    if (!outputs || outputs.length == 0) return null
 
-    if (slot >= this.outputs.length) return null
+    if (slot >= outputs.length) return null
 
-    const output = this.outputs[slot]
-    if (!output.links || output.links.length == 0) return null
+    const { links } = outputs[slot]
+    if (!links || links.length == 0) return null
     if (!this.graph) throw new NullGraphError()
 
     const r: LGraphNode[] = []
-    for (let i = 0; i < output.links.length; i++) {
-      const link_id = output.links[i]
-      const link = this.graph._links.get(link_id)
+    for (const id of links) {
+      const link = this.graph._links.get(id)
       if (link) {
         const target_node = this.graph.getNodeById(link.target_id)
         if (target_node) {
@@ -1198,14 +1197,14 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     param: unknown,
     options: { action_call?: any },
   ): void {
-    if (!this.outputs || !this.outputs.length) {
+    const { outputs } = this
+    if (!outputs || !outputs.length) {
       return
     }
 
     if (this.graph) this.graph._last_trigger_time = LiteGraph.getTime()
 
-    for (let i = 0; i < this.outputs.length; ++i) {
-      const output = this.outputs[i]
+    for (const [i, output] of outputs.entries()) {
       if (
         !output ||
         output.type !== LiteGraph.EVENT ||
@@ -1389,8 +1388,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    * @param array of triplets like [[name,type,extra_info],[...]]
    */
   addOutputs(array: [string, ISlotType, Partial<INodeOutputSlot>][]): void {
-    for (let i = 0; i < array.length; ++i) {
-      const info = array[i]
+    for (const info of array) {
       const o = new NodeOutputSlot({ name: info[0], type: info[1], links: null })
       if (array[2]) {
         for (const j in info[2]) {
@@ -1415,13 +1413,14 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    */
   removeOutput(slot: number): void {
     this.disconnectOutput(slot)
-    this.outputs.splice(slot, 1)
+    const { outputs } = this
+    outputs.splice(slot, 1)
 
-    for (let i = slot; i < this.outputs.length; ++i) {
-      if (!this.outputs[i] || !this.outputs[i].links) continue
+    for (let i = slot; i < outputs.length; ++i) {
+      const output = outputs[i]
+      if (!output || !output.links) continue
 
-      const links = this.outputs[i].links
-      for (const linkId of links) {
+      for (const linkId of output.links) {
         if (!this.graph) throw new NullGraphError()
 
         const link = this.graph._links.get(linkId)
@@ -1465,8 +1464,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    * @param array of triplets like [[name,type,extra_info],[...]]
    */
   addInputs(array: [string, ISlotType, Partial<INodeInputSlot>][]): void {
-    for (let i = 0; i < array.length; ++i) {
-      const info = array[i]
+    for (const info of array) {
       const o: INodeInputSlot = new NodeInputSlot({ name: info[0], type: info[1], link: null })
       // TODO: Checking the wrong variable here - confirm no downstream consumers, then remove.
       if (array[2]) {
@@ -1491,13 +1489,15 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    */
   removeInput(slot: number): void {
     this.disconnectInput(slot)
-    const slot_info = this.inputs.splice(slot, 1)
+    const { inputs } = this
+    const slot_info = inputs.splice(slot, 1)
 
-    for (let i = slot; i < this.inputs.length; ++i) {
-      if (!this.inputs[i]) continue
+    for (let i = slot; i < inputs.length; ++i) {
+      const input = inputs[i]
+      if (!input) continue
 
       if (!this.graph) throw new NullGraphError()
-      const link = this.graph._links.get(this.inputs[i].link)
+      const link = this.graph._links.get(input.link)
       if (!link) continue
 
       link.target_slot -= 1
@@ -1532,9 +1532,10 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     const ctorSize = this.constructor.size
     if (ctorSize) return [ctorSize[0], ctorSize[1]]
 
+    const { inputs, outputs } = this
     let rows = Math.max(
-      this.inputs ? this.inputs.length : 1,
-      this.outputs ? this.outputs.length : 1,
+      inputs ? inputs.length : 1,
+      outputs ? outputs.length : 1,
     )
     const size = out || new Float32Array([0, 0])
     rows = Math.max(rows, 1)
@@ -1545,9 +1546,8 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     let input_width = 0
     let output_width = 0
 
-    if (this.inputs) {
-      for (let i = 0, l = this.inputs.length; i < l; ++i) {
-        const input = this.inputs[i]
+    if (inputs) {
+      for (const input of inputs) {
         const text = input.label || input.localized_name || input.name || ""
         const text_width = compute_text_size(text)
         if (input_width < text_width)
@@ -1555,9 +1555,8 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       }
     }
 
-    if (this.outputs) {
-      for (let i = 0, l = this.outputs.length; i < l; ++i) {
-        const output = this.outputs[i]
+    if (outputs) {
+      for (const output of outputs) {
         const text = output.label || output.localized_name || output.name || ""
         const text_width = compute_text_size(text)
         if (output_width < text_width)
@@ -1637,10 +1636,11 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
     // there are several ways to define info about a property
     // legacy mode
-    if (this.properties_info) {
-      for (let i = 0; i < this.properties_info.length; ++i) {
-        if (this.properties_info[i].name == property) {
-          info = this.properties_info[i]
+    const { properties_info } = this
+    if (properties_info) {
+      for (const propInfo of properties_info) {
+        if (propInfo.name == property) {
+          info = propInfo
           break
         }
       }
@@ -1844,9 +1844,10 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   getSlotInPosition(x: number, y: number): IFoundSlot | null {
     // search for inputs
     const link_pos = new Float32Array(2)
-    if (this.inputs) {
-      for (let i = 0, l = this.inputs.length; i < l; ++i) {
-        const input = this.inputs[i]
+    const { inputs, outputs } = this
+
+    if (inputs) {
+      for (const [i, input] of inputs.entries()) {
         this.getConnectionPos(true, i, link_pos)
         if (isInRectangle(x, y, link_pos[0] - 10, link_pos[1] - 5, 20, 10)) {
           return { input, slot: i, link_pos }
@@ -1854,9 +1855,8 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       }
     }
 
-    if (this.outputs) {
-      for (let i = 0, l = this.outputs.length; i < l; ++i) {
-        const output = this.outputs[i]
+    if (outputs) {
+      for (const [i, output] of outputs.entries()) {
         this.getConnectionPos(false, i, link_pos)
         if (isInRectangle(x, y, link_pos[0] - 10, link_pos[1] - 5, 20, 10)) {
           return { output, slot: i, link_pos }
@@ -1919,11 +1919,12 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   findInputSlot<TReturn extends false>(name: string, returnObj?: TReturn): number
   findInputSlot<TReturn extends true>(name: string, returnObj?: TReturn): INodeInputSlot
   findInputSlot(name: string, returnObj: boolean = false) {
-    if (!this.inputs) return -1
+    const { inputs } = this
+    if (!inputs) return -1
 
-    for (let i = 0, l = this.inputs.length; i < l; ++i) {
-      if (name == this.inputs[i].name) {
-        return !returnObj ? i : this.inputs[i]
+    for (const [i, input] of inputs.entries()) {
+      if (name == input.name) {
+        return !returnObj ? i : input
       }
     }
     return -1
@@ -1938,11 +1939,12 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   findOutputSlot<TReturn extends false>(name: string, returnObj?: TReturn): number
   findOutputSlot<TReturn extends true>(name: string, returnObj?: TReturn): INodeOutputSlot
   findOutputSlot(name: string, returnObj: boolean = false) {
-    if (!this.outputs) return -1
+    const { outputs } = this
+    if (!outputs) return -1
 
-    for (let i = 0, l = this.outputs.length; i < l; ++i) {
-      if (name == this.outputs[i].name) {
-        return !returnObj ? i : this.outputs[i]
+    for (const [i, output] of outputs.entries()) {
+      if (name == output.name) {
+        return !returnObj ? i : output
       }
     }
     return -1
