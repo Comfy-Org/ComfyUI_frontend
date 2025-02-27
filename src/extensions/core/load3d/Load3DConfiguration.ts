@@ -18,6 +18,7 @@ class Load3DConfiguration {
     this.setupModelHandling(modelWidget, loadFolder, cameraState)
     this.setupTargetSize(width, height)
     this.setupDefaultProperties()
+    this.load3d.refreshCamera()
   }
 
   private setupTargetSize(width: IWidget | null, height: IWidget | null) {
