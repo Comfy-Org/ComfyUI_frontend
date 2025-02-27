@@ -166,7 +166,8 @@ const zProperties = z
     ['Node name for S&R']: z.string().optional(),
     cnr_id: zCnrId.optional(),
     aux_id: zAuxId.optional(),
-    ver: zVersion.optional()
+    ver: zVersion.optional(),
+    models: z.array(zModelFile).optional()
   })
   .passthrough()
 
@@ -265,6 +266,7 @@ export const zComfyWorkflow1 = z
   })
   .passthrough()
 
+export type ModelFile = z.infer<typeof zModelFile>
 export type NodeInput = z.infer<typeof zNodeInput>
 export type NodeOutput = z.infer<typeof zNodeOutput>
 export type ComfyLink = z.infer<typeof zComfyLink>
