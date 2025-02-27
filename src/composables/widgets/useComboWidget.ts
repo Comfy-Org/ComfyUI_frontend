@@ -1,7 +1,7 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
 import type { IComboWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
-import type { InputSpec } from '@/schemas/apiSchema'
+import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { addValueControlWidgets } from '@/scripts/widgets'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { useWidgetStore } from '@/stores/widgetStore'

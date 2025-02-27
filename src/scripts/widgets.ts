@@ -14,7 +14,7 @@ import { useMarkdownWidget } from '@/composables/widgets/useMarkdownWidget'
 import { useSeedWidget } from '@/composables/widgets/useSeedWidget'
 import { useStringWidget } from '@/composables/widgets/useStringWidget'
 import { t } from '@/i18n'
-import type { InputSpec } from '@/schemas/apiSchema'
+import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { useSettingStore } from '@/stores/settingStore'
 
 import type { ComfyApp } from './app'

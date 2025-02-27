@@ -12,7 +12,7 @@ import type {
 } from '@comfyorg/litegraph'
 import type { CanvasMouseEvent } from '@comfyorg/litegraph/dist/types/events'
 
-import type { InputSpec } from '@/schemas/apiSchema'
+import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import { applyTextReplacements, clone } from '@/scripts/utils'
 import { ComfyWidgets, addValueControlWidgets } from '@/scripts/widgets'

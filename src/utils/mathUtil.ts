@@ -1,4 +1,4 @@
-import type { InputSpec } from '@/schemas/apiSchema'
+import type { InputSpec } from '@/schemas/nodeDefSchema'
 
 export function getNumberDefaults(
   inputOptions: InputSpec[1],

@@ -2,7 +2,7 @@ import {
   ComfyNodeDef,
   InputSpec,
   isComboInputSpecV1
-} from '@/schemas/apiSchema'
+} from '@/schemas/nodeDefSchema'
 
 import { app } from '../../scripts/app'
 
