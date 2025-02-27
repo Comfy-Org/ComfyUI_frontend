@@ -49,7 +49,7 @@ export type NodeId = number | string
 
 export interface INodePropertyInfo {
   name: string
-  type: string
+  type?: string
   default_value: unknown
 }
 
@@ -716,11 +716,8 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     if (widgets && this.serialize_widgets) {
       o.widgets_values = []
       for (const [i, widget] of widgets.entries()) {
-        if (widget)
-          o.widgets_values[i] = widget.value
-        else
         // @ts-ignore #595 No-null
-          o.widgets_values[i] = null
+        o.widgets_values[i] = widget ? widget.value : null
       }
     }
 
@@ -748,8 +745,8 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
     // remove links
     if (inputs) {
-      for (const element of inputs) {
-        element.link = null
+      for (const input of inputs) {
+        input.link = null
       }
     }
 
@@ -763,7 +760,6 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
     if (LiteGraph.use_uuids) data.id = LiteGraph.uuidv4()
 
-    // remove links
     node.configure(data)
 
     return node
@@ -1335,13 +1331,9 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     name: string,
     default_value: unknown,
     type?: string,
-    extra_info?: Dictionary<unknown>,
+    extra_info?: Partial<INodePropertyInfo>,
   ): INodePropertyInfo {
-    const o: INodePropertyInfo = {
-      name: name,
-      type: type,
-      default_value: default_value,
-    }
+    const o: INodePropertyInfo = { name, type, default_value }
     if (extra_info) {
       for (const i in extra_info) {
         o[i] = extra_info[i]
@@ -1360,11 +1352,11 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    * @param extra_info this can be used to have special properties of an output (label, special color, position, etc)
    */
   addOutput(
-    name?: string,
-    type?: ISlotType,
+    name: string,
+    type: ISlotType,
     extra_info?: Partial<INodeOutputSlot>,
   ): INodeOutputSlot {
-    const output = new NodeOutputSlot({ name: name, type: type, links: null })
+    const output = new NodeOutputSlot({ name, type, links: null })
     if (extra_info) {
       for (const i in extra_info) {
         output[i] = extra_info[i]
@@ -1426,7 +1418,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
         const link = this.graph._links.get(linkId)
         if (!link) continue
 
-        link.origin_slot -= 1
+        link.origin_slot--
       }
     }
 
@@ -1500,7 +1492,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       const link = this.graph._links.get(input.link)
       if (!link) continue
 
-      link.target_slot -= 1
+      link.target_slot--
     }
     this.onInputRemoved?.(slot, slot_info[0])
     this.setDirtyCanvas(true, true)
