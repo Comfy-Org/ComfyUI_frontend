@@ -1,52 +1,74 @@
 <template>
   <div
-    class="flex h-96 overflow-y-hidden"
+    class="flex flex-col h-[83vh] w-[89vw] mx-auto overflow-hidden"
     data-testid="template-workflows-content"
   >
-    <div class="relative">
-      <ProgressSpinner
-        v-if="!workflowTemplatesStore.isLoaded"
-        class="absolute w-8 h-full inset-0"
-      />
-      <Listbox
-        :model-value="selectedTab"
-        @update:model-value="handleTabSelection"
-        :options="tabs"
-        option-group-label="label"
-        option-label="title"
-        option-group-children="modules"
-        scroll-height="auto"
-        class="overflow-y-auto w-64 h-full"
-        listStyle="max-height:unset"
-      />
-    </div>
-    <Carousel
-      class="carousel justify-center"
-      :value="selectedTab.templates"
-      :responsive-options="responsiveOptions"
-      :num-visible="4"
-      :num-scroll="3"
-      :key="`${selectedTab.moduleName}${selectedTab.title}`"
-    >
-      <template #item="slotProps">
-        <div class="p-2 justify-items-center">
-          <TemplateWorkflowCard
-            :sourceModule="selectedTab.moduleName"
-            :template="slotProps.data"
-            :loading="slotProps.data.name === workflowLoading"
-            :categoryTitle="selectedTab.title"
-            @loadWorkflow="loadWorkflow"
-          />
+    <Divider
+      class="m-0 [&::before]:border-surface-border/70 [&::before]:border-t-4"
+    />
+    <div class="flex flex-1">
+      <div class="relative">
+        <ProgressSpinner
+          v-if="!workflowTemplatesStore.isLoaded"
+          class="absolute w-8 h-full inset-0"
+        />
+        <ScrollPanel style="width: 20rem; height: calc(85vh - 48px)">
+          <Listbox
+            :model-value="selectedTab"
+            @update:model-value="handleTabSelection"
+            :options="tabs"
+            option-group-label="label"
+            option-label="title"
+            option-group-children="modules"
+            scroll-height="auto"
+            class="w-full border-0 bg-transparent [&_.p-listbox-list]:p-0 [&_.p-listbox-option]:px-12 [&_.p-listbox-option]:py-3 [&_.p-listbox-option]:text-lg"
+            listStyle="max-height:unset"
+          >
+            <template #optiongroup="slotProps">
+              <div class="section-header px-12">
+                <h2 class="text-lg">{{ slotProps.option.label }}</h2>
+              </div>
+            </template>
+          </Listbox>
+        </ScrollPanel>
+      </div>
+      <div class="relative mx-[-1px]">
+        <Divider
+          layout="vertical"
+          class="h-full p-0 m-0 [&::before]:border-l-4 [&::before]:border-surface-border/70"
+        />
+      </div>
+      <ScrollPanel>
+        <div v-if="selectedTab" class="flex flex-col px-12">
+          <div class="section-header">
+            <h2 class="text-lg">{{ selectedTab.title }}</h2>
+          </div>
+          <div class="flex flex-wrap gap-8">
+            <div
+              v-for="template in selectedTab.templates"
+              :key="template.name"
+              class="flex-none"
+            >
+              <TemplateWorkflowCard
+                :sourceModule="selectedTab.moduleName"
+                :template="template"
+                :loading="template.name === workflowLoading"
+                :categoryTitle="selectedTab.title"
+                @loadWorkflow="loadWorkflow"
+              />
+            </div>
+          </div>
         </div>
-      </template>
-    </Carousel>
+      </ScrollPanel>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import Carousel from 'primevue/carousel'
+import Divider from 'primevue/divider'
 import Listbox from 'primevue/listbox'
 import ProgressSpinner from 'primevue/progressspinner'
+import ScrollPanel from 'primevue/scrollpanel'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -58,24 +80,6 @@ import { useWorkflowTemplatesStore } from '@/stores/workflowTemplatesStore'
 import type { WorkflowTemplates } from '@/types/workflowTemplateTypes'
 
 const { t } = useI18n()
-
-const responsiveOptions = ref([
-  {
-    breakpoint: '1660px',
-    numVisible: 3,
-    numScroll: 2
-  },
-  {
-    breakpoint: '1360px',
-    numVisible: 2,
-    numScroll: 1
-  },
-  {
-    breakpoint: '960px',
-    numVisible: 1,
-    numScroll: 1
-  }
-])
 
 const workflowTemplatesStore = useWorkflowTemplatesStore()
 const selectedTab = ref<WorkflowTemplates | null>(
@@ -121,8 +125,14 @@ const loadWorkflow = async (id: string) => {
 }
 </script>
 
-<style lang="css" scoped>
-.carousel {
-  width: 66vw;
+<style scoped>
+.section-header {
+  @apply py-3 text-left;
+}
+
+:deep(.p-listbox-option-group) {
+  padding: 0;
+  text-align: left;
+  color: inherit;
 }
 </style>
