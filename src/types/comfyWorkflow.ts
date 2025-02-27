@@ -114,9 +114,59 @@ const zFlags = z
   })
   .passthrough()
 
+const repoLikeIdPattern = /^[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?$/
+const githubUsernamePattern = /^(?!-)(?!.*--)[a-zA-Z0-9-]+(?<!-)$/
+const gitHashPattern = /^[0-9a-f]{4,40}$/i
+const semverPattern =
+  /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([\da-z-]+(?:\.[\da-z-]+)*))?(?:\+([\da-z-]+(?:\.[\da-z-]+)*))?$/
+
+// Shared schema for Comfy Node Registry IDs and GitHub repo names
+const zRepoLikeId = z
+  .string()
+  .min(1)
+  .max(100)
+  .regex(repoLikeIdPattern, {
+    message: "ID can only contain ASCII letters, digits, '_', '-', and '.'"
+  })
+  .refine((id) => !/^[_\-.]|[_\-.]$/.test(id), {
+    message: "ID must not start or end with '_', '-', or '.'"
+  })
+
+const zCnrId = zRepoLikeId
+const zGithubRepoName = zRepoLikeId
+
+// GitHub username/organization schema
+const zGithubUsername = z
+  .string()
+  .min(1)
+  .max(39)
+  .regex(githubUsernamePattern, 'Invalid GitHub username/org')
+
+// Auxiliary ID identifies node packs not installed via the Comfy Node Registry
+const zAuxId = z
+  .string()
+  .regex(/^[^/]+\/[^/]+$/, "Invalid format. Must be 'github-user/repo-name'")
+  .transform((id) => id.split('/'))
+  .refine(
+    ([username, repo]) =>
+      zGithubUsername.safeParse(username).success &&
+      zGithubRepoName.safeParse(repo).success,
+    "Invalid aux_id: Must be valid 'github-username/github-repo-name'"
+  )
+  .transform(([username, repo]) => `${username}/${repo}`)
+
+const zSemVer = z
+  .string()
+  .regex(semverPattern, 'Invalid semantic version (x.y.z)')
+const zGitHash = z.string().regex(gitHashPattern, 'Invalid Git commit hash')
+const zVersion = z.union([zSemVer, zGitHash])
+
 const zProperties = z
   .object({
-    ['Node name for S&R']: z.string().optional()
+    ['Node name for S&R']: z.string().optional(),
+    cnr_id: zCnrId.optional(),
+    aux_id: zAuxId.optional(),
+    ver: zVersion.optional()
   })
   .passthrough()
 

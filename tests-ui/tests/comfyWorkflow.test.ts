@@ -124,4 +124,74 @@ describe('parseComfyWorkflow', () => {
     ]
     expect(await validateComfyWorkflow(workflow)).not.toBeNull()
   })
+
+  describe('workflow.nodes.properties.aux_id', () => {
+    const validAuxIds = [
+      'valid/valid',
+      'valid-username-with-dash/valid_github-repo-name-with-underscore'
+    ]
+    it.each(validAuxIds)('valid aux_id: %s', async (aux_id) => {
+      const workflow = JSON.parse(JSON.stringify(defaultGraph))
+      workflow.nodes[0].properties.aux_id = aux_id
+      expect(await validateComfyWorkflow(workflow)).not.toBeNull()
+    })
+    const invalidAuxIds = [
+      'invalid spaces in username/repo',
+      'invalid-chars-name-$/repo',
+      'github-name/invalid spaces in repo',
+      'not-both-names-with-slash'
+    ]
+    it.each(invalidAuxIds)('invalid aux_id: %s', async (aux_id) => {
+      const workflow = JSON.parse(JSON.stringify(defaultGraph))
+      workflow.nodes[0].properties.aux_id = aux_id
+      expect(await validateComfyWorkflow(workflow)).toBeNull()
+    })
+  })
+
+  describe('workflow.nodes.properties.cnr_id', () => {
+    const validCnrIds = ['valid', 'valid-with-dash', 'valid_with_underscores']
+    it.each(validCnrIds)('valid cnr_id: %s', async (cnr_id) => {
+      const workflow = JSON.parse(JSON.stringify(defaultGraph))
+      workflow.nodes[0].properties.cnr_id = cnr_id
+      expect(await validateComfyWorkflow(workflow)).not.toBeNull()
+    })
+
+    const invalidCnrIds = ['invalid cnr-id', 'invalid^cnr-id', 'invalid cnr id']
+    it.each(invalidCnrIds)('invalid cnr_id: %s', async (cnr_id) => {
+      const workflow = JSON.parse(JSON.stringify(defaultGraph))
+      workflow.nodes[0].properties.cnr_id = cnr_id
+      expect(await validateComfyWorkflow(workflow)).toBeNull()
+    })
+  })
+
+  describe('workflow.nodes.properties.ver', () => {
+    const validVersionStrings = [
+      // Semver
+      '0.1.0',
+      '0.1.0-alpha',
+      '0.1.0-alpha.1',
+      '1.3.321',
+      // Git hash
+      '080e6d4af809a46852d1c4b7ed85f06e8a3a72be'
+    ]
+    it.each(validVersionStrings)('valid version: %s', async (ver) => {
+      const workflow = JSON.parse(JSON.stringify(defaultGraph))
+      workflow.nodes[0].properties.ver = ver
+      expect(await validateComfyWorkflow(workflow)).not.toBeNull()
+    })
+
+    const invalidVersionStrings = [
+      // Semver
+      '0.1-alpha',
+      '0. 1.0',
+      '0.0.0.0',
+      // Git hash
+      '080e6d4af809a46852d1c4b7ed85f06e8a3a72be-invalid'
+    ]
+    it.each(invalidVersionStrings)('invalid version: %s', async (ver) => {
+      const workflow = JSON.parse(JSON.stringify(defaultGraph))
+      workflow.nodes[0].properties.ver = ver
+      expect(await validateComfyWorkflow(workflow)).toBeNull()
+    })
+  })
 })
