@@ -3,11 +3,11 @@ import { Positionable } from '@comfyorg/litegraph/dist/interfaces'
 
 import type { ComfyNodeDef } from '@/schemas/apiTypes'
 import type { ComfyWorkflowJSON } from '@/schemas/comfyWorkflow'
+import type { Keybinding } from '@/schemas/keyBindingTypes'
 import type { ComfyApp } from '@/scripts/app'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import type { ComfyCommand } from '@/stores/commandStore'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
-import type { Keybinding } from '@/types/keyBindingTypes'
 import type { SettingParams } from '@/types/settingTypes'
 
 export type Widgets = Record<string, ComfyWidgetConstructor>
