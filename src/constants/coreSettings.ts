@@ -657,9 +657,9 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip: 'The maximum number of tasks that show in the queue history.',
     type: 'slider',
     attrs: {
-      min: 16,
+      min: 2,
       max: 256,
-      step: 16
+      step: 2
     },
     defaultValue: 64,
     versionAdded: '1.4.12'
