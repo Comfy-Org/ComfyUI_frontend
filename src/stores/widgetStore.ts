@@ -2,10 +2,10 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import {
-  ComboInputSpecV2,
-  InputSpec,
+  type ComboInputSpecV2,
+  type InputSpec,
   isComboInputSpecV1
-} from '@/schemas/apiSchema'
+} from '@/schemas/nodeDefSchema'
 import { ComfyWidgetConstructor, ComfyWidgets } from '@/scripts/widgets'
 
 import type { BaseInputSpec } from './nodeDefStore'

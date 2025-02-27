@@ -9,7 +9,7 @@ import {
   type ComfyNodeDef,
   type ComfyOutputTypesSpec as ComfyOutputTypesSpecSchema,
   type InputSpec
-} from '@/schemas/apiSchema'
+} from '@/schemas/nodeDefSchema'
 import {
   NodeSearchService,
   type SearchAuxScore
