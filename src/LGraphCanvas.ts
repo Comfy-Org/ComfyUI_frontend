@@ -3592,10 +3592,10 @@ export class LGraphCanvas implements ConnectionColorContext {
           if (node.onDropData) {
             // prepare reader
             const reader = new FileReader()
-            reader.onload = function (event) {
+            reader.addEventListener("load", function (event) {
               const data = event.target.result
               node.onDropData(data, filename, file)
-            }
+            })
 
             // read data
             const type = file.type.split("/")[0]
@@ -4521,9 +4521,9 @@ export class LGraphCanvas implements ConnectionColorContext {
           this._bg_img.name = this.background_image
           this._bg_img.src = this.background_image
           const that = this
-          this._bg_img.onload = function () {
+          this._bg_img.addEventListener("load", function () {
             that.draw(true, true)
-          }
+          })
         }
 
         let pattern = this._pattern

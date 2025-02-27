@@ -63,7 +63,6 @@ export default tseslint.config(
       "unicorn/no-this-assignment": "off",
       "unicorn/no-useless-switch-case": "off",
       "unicorn/no-zero-fractions": "off",
-      "unicorn/prefer-add-event-listener": "off",
       "unicorn/prefer-blob-reading-methods": "off",
       "unicorn/prefer-default-parameters": "off",
       "unicorn/prefer-math-min-max": "off",

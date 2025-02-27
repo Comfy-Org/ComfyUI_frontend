@@ -2760,10 +2760,10 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     img.ready = false
 
     const dirty = () => this.setDirtyCanvas(true)
-    img.onload = function (this: AsyncImageElement) {
+    img.addEventListener("load", function (this: AsyncImageElement) {
       this.ready = true
       dirty()
-    }
+    })
     return img
   }
 

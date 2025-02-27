@@ -1713,8 +1713,8 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
       that.configure(data)
       callback?.()
     })
-    req.onerror = function (err) {
+    req.addEventListener("error", (err) => {
       console.error("Error loading graph:", err)
-    }
+    })
   }
 }
