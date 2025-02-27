@@ -1067,7 +1067,8 @@ export class ComfyApp {
       }
 
       // Collect models metadata from node
-      if (n.properties?.models) embeddedModels.push(...n.properties.models)
+      if (n.properties?.models?.length)
+        embeddedModels.push(...n.properties.models)
     }
 
     // Merge models from the workflow's root-level 'models' field
