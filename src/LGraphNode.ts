@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import type { DragAndScale } from "./DragAndScale"
 import type {
   CanvasColour,
@@ -556,7 +555,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     size: Size,
     scale: number,
     title_text_font: string,
-    selected: boolean,
+    selected?: boolean,
   ): void
   onDrawTitleBox?(
     this: LGraphNode,
@@ -680,7 +679,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     }
 
     // Sync the state of this.resizable.
-    if (this.pinned) this.pin(true)
+    if (this.pinned) this.resizable = false
 
     this.onConfigure?.(info)
   }
@@ -756,6 +755,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       }
     }
 
+    // @ts-ignore Exceptional case: id is removed so that the graph can assign a new one on add.
     delete data.id
 
     if (LiteGraph.use_uuids) data.id = LiteGraph.uuidv4()
@@ -960,8 +960,10 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     if (slot < this.inputs.length) {
       if (!this.graph) throw new NullGraphError()
 
-      const slot_info = this.inputs[slot]
-      return this.graph._links.get(slot_info.link) ?? null
+      const input = this.inputs[slot]
+      if (input.link != null) {
+        return this.graph._links.get(input.link) ?? null
+      }
     }
     return null
   }
@@ -1138,15 +1140,19 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     if (this.onExecute) {
       // enable this to give the event an ID
       options.action_call ||= this.id + "_exec_" + Math.floor(Math.random() * 9999)
+      if (!this.graph) throw new NullGraphError()
 
+      // @ts-ignore Technically it works when id is a string. Array gets props.
       this.graph.nodes_executing[this.id] = true
       this.onExecute(param, options)
+      // @ts-ignore deprecated
       this.graph.nodes_executing[this.id] = false
 
       // save execution/action ref
       this.exec_version = this.graph.iteration
       if (options?.action_call) {
         this.action_call = options.action_call
+        // @ts-ignore deprecated
         this.graph.nodes_executedAction[this.id] = options.action_call
       }
     }
@@ -1168,14 +1174,18 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     if (this.onAction) {
       // enable this to give the event an ID
       options.action_call ||= this.id + "_" + (action || "action") + "_" + Math.floor(Math.random() * 9999)
+      if (!this.graph) throw new NullGraphError()
 
+      // @ts-ignore deprecated
       this.graph.nodes_actioning[this.id] = action || "actioning"
       this.onAction(action, param, options)
+      // @ts-ignore deprecated
       this.graph.nodes_actioning[this.id] = false
 
       // save execution/action ref
       if (options?.action_call) {
         this.action_call = options.action_call
+        // @ts-ignore deprecated
         this.graph.nodes_executedAction[this.id] = options.action_call
       }
     }
@@ -1334,11 +1344,8 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     extra_info?: Partial<INodePropertyInfo>,
   ): INodePropertyInfo {
     const o: INodePropertyInfo = { name, type, default_value }
-    if (extra_info) {
-      for (const i in extra_info) {
-        o[i] = extra_info[i]
-      }
-    }
+    if (extra_info) Object.assign(o, extra_info)
+
     this.properties_info ||= []
     this.properties_info.push(o)
     this.properties ||= {}
@@ -1357,11 +1364,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     extra_info?: Partial<INodeOutputSlot>,
   ): INodeOutputSlot {
     const output = new NodeOutputSlot({ name, type, links: null })
-    if (extra_info) {
-      for (const i in extra_info) {
-        output[i] = extra_info[i]
-      }
-    }
+    if (extra_info) Object.assign(output, extra_info)
 
     this.outputs ||= []
     this.outputs.push(output)
@@ -1382,11 +1385,8 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   addOutputs(array: [string, ISlotType, Partial<INodeOutputSlot>][]): void {
     for (const info of array) {
       const o = new NodeOutputSlot({ name: info[0], type: info[1], links: null })
-      if (array[2]) {
-        for (const j in info[2]) {
-          o[j] = info[2][j]
-        }
-      }
+      // TODO: Checking the wrong variable here - confirm no downstream consumers, then remove.
+      if (array[2]) Object.assign(o, info[2])
 
       this.outputs ||= []
       this.outputs.push(o)
@@ -1434,11 +1434,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   addInput(name: string, type: ISlotType, extra_info?: Partial<INodeInputSlot>): INodeInputSlot {
     type = type || 0
     const input: INodeInputSlot = new NodeInputSlot({ name: name, type: type, link: null })
-    if (extra_info) {
-      for (const i in extra_info) {
-        input[i] = extra_info[i]
-      }
-    }
+    if (extra_info) Object.assign(input, extra_info)
 
     this.inputs ||= []
     this.inputs.push(input)
@@ -1459,11 +1455,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     for (const info of array) {
       const o: INodeInputSlot = new NodeInputSlot({ name: info[0], type: info[1], link: null })
       // TODO: Checking the wrong variable here - confirm no downstream consumers, then remove.
-      if (array[2]) {
-        for (const j in info[2]) {
-          o[j] = info[2][j]
-        }
-      }
+      if (array[2]) Object.assign(o, info[2])
 
       this.inputs ||= []
       this.inputs.push(o)
@@ -1486,7 +1478,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
     for (let i = slot; i < inputs.length; ++i) {
       const input = inputs[i]
-      if (!input) continue
+      if (!input?.link) continue
 
       if (!this.graph) throw new NullGraphError()
       const link = this.graph._links.get(input.link)
@@ -1638,8 +1630,8 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       }
     }
     // litescene mode using the constructor
-    if (this.constructor["@" + property])
-      info = this.constructor["@" + property]
+    // @ts-ignore deprecated https://github.com/Comfy-Org/litegraph.js/issues/639
+    if (this.constructor["@" + property]) info = this.constructor["@" + property]
 
     if (this.constructor.widgets_info?.[property])
       info = this.constructor.widgets_info[property]
@@ -1695,7 +1687,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       type: type.toLowerCase(),
       name: name,
       value: value,
-      callback: typeof callback !== "function" ? null : callback,
+      callback: typeof callback !== "function" ? undefined : callback,
       options,
     }
 
@@ -2197,7 +2189,10 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     if (!this.graph) throw new NullGraphError()
 
     if (node && typeof node === "number") {
-      node = this.graph.getNodeById(node)
+      const nodeById = this.graph.getNodeById(node)
+      if (!nodeById) return null
+
+      node = nodeById
     }
     const slot = node.findSlotByType(findInputs, slotType, false, true)
     if (slot >= 0 && slot !== null) return slot
@@ -2298,7 +2293,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     afterRerouteId?: RerouteId,
   ): LLink | null {
     // Allow legacy API support for searching target_slot by string, without mutating the input variables
-    let targetIndex: number
+    let targetIndex: number | null
 
     const graph = this.graph
     if (!graph) {
@@ -2321,7 +2316,10 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     }
 
     if (target_node && typeof target_node === "number") {
-      target_node = graph.getNodeById(target_node)
+      const nodeById = graph.getNodeById(target_node)
+      if (!nodeById) throw "target node is null"
+
+      target_node = nodeById
     }
     if (!target_node) throw "target node is null"
 
@@ -2369,7 +2367,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     let changed = false
 
     const input = target_node.inputs[targetIndex]
-    let link_info: LLink = null
+    let link_info: LLink | null = null
     const output = this.outputs[slot]
 
     if (!this.outputs[slot]) return null
@@ -2623,7 +2621,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
         if (!target_node) return false
 
         const output = target_node.outputs[link_info.origin_slot]
-        if (!(output?.links?.length > 0)) return false
+        if (!(output?.links?.length)) return false
 
         // search in the inputs list for this link
         let i = 0
@@ -2734,9 +2732,10 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   }
 
   /* Console output */
-  trace(msg?: string): void {
+  trace(msg: string): void {
     this.console ||= []
     this.console.push(msg)
+    // @ts-ignore deprecated
     if (this.console.length > LGraphNode.MAX_CONSOLE)
       this.console.shift()
   }
@@ -2772,6 +2771,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       if (!v && c.node_capturing_input != this) continue
 
       // change
+      // @ts-ignore Strict mode plugin detects an error that doesn't exist.
       c.node_capturing_input = v ? this : null
     }
   }
@@ -2816,9 +2816,9 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    * Toggles pinned state if no value is provided.
    */
   pin(v?: boolean): void {
-    if (this.graph) {
-      this.graph._version++
-    }
+    if (!this.graph) throw new NullGraphError()
+
+    this.graph._version++
     this.flags.pinned = v ?? !this.flags.pinned
     this.resizable = !this.pinned
     // Delete the flag if unpinned, so that we don't get unnecessary
@@ -3010,7 +3010,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    */
   drawTitleText(ctx: CanvasRenderingContext2D, options: {
     scale: number
-    default_title_color?: string
+    default_title_color: string
     low_quality?: boolean
     title_height?: number
   }): void {
@@ -3095,10 +3095,13 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
     // First pass: only match exactly index-to-index
     for (const [index, input] of inputs.entries()) {
+      if (input.link == null) continue
+
       const output = outputs[index]
       if (!output || !LiteGraph.isValidConnection(input.type, output.type)) continue
 
       const inLink = _links.get(input.link)
+      if (!inLink) continue
       const inNode = graph.getNodeById(inLink?.origin_id)
       if (!inNode) continue
 
@@ -3110,7 +3113,10 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
     // Second pass: match any remaining links
     for (const input of inputs) {
+      if (input.link == null) continue
+
       const inLink = _links.get(input.link)
+      if (!inLink) continue
       const inNode = graph.getNodeById(inLink?.origin_id)
       if (!inNode) continue
 
@@ -3174,6 +3180,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
           name: "",
           type: linkOverWidgetType,
           link: 0,
+          // @ts-ignore https://github.com/Comfy-Org/litegraph.js/issues/616
         }).draw(ctx, { pos: [10, y + 10], colorContext })
       }
 
@@ -3234,6 +3241,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       const x = this._collapsed_width
       const y = LiteGraph.NODE_TITLE_HEIGHT * -0.5
       toClass(NodeOutputSlot, output_slot).drawCollapsed(ctx, {
+        // @ts-ignore8 https://github.com/Comfy-Org/litegraph.js/issues/616
         pos: [x, y],
       })
     }
@@ -3277,12 +3285,14 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       this.layoutSlot(slot, {
         slotIndex: i,
       })
+      // @ts-ignore https://github.com/Comfy-Org/litegraph.js/issues/616
       slots.push(slot._layoutElement)
     }
     for (const [i, slot] of this.outputs.entries()) {
       this.layoutSlot(slot, {
         slotIndex: i,
       })
+      // @ts-ignore https://github.com/Comfy-Org/litegraph.js/issues/616
       slots.push(slot._layoutElement)
     }
 
@@ -3325,6 +3335,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       ctx.globalAlpha = isValid ? editorAlpha : 0.4 * editorAlpha
 
       slotInstance.draw(ctx, {
+      // @ts-ignore https://github.com/Comfy-Org/litegraph.js/issues/616
         pos: layoutElement.center,
         colorContext,
         labelColor,
@@ -3368,6 +3379,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
         const { minHeight, maxHeight } = w.computeLayoutSize(this)
         growableWidgets.push({
           minHeight,
+          // @ts-ignore https://github.com/Comfy-Org/litegraph.js/issues/616
           prefHeight: maxHeight,
           w,
         })
@@ -3400,6 +3412,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     let y = widgetStartY
     for (const w of this.widgets) {
       w.y = y
+      // @ts-ignore https://github.com/Comfy-Org/litegraph.js/issues/616
       y += w.computedHeight
     }
 
@@ -3436,6 +3449,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
       const actualSlot = this.inputs[slot.index]
       const offset = LiteGraph.NODE_SLOT_HEIGHT * 0.5
+      // @ts-ignore https://github.com/Comfy-Org/litegraph.js/issues/616
       actualSlot.pos = [offset, widget.y + offset]
       this.layoutSlot(actualSlot, { slotIndex: slot.index })
     }
