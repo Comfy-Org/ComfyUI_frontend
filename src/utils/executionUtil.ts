@@ -1,7 +1,10 @@
 import type { LGraph } from '@comfyorg/litegraph'
 import { LGraphEventMode } from '@comfyorg/litegraph'
 
-import type { ComfyApiWorkflow, ComfyWorkflowJSON } from '@/types/comfyWorkflow'
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
+} from '@/schemas/comfyWorkflowSchema'
 
 /**
  * Converts the current graph workflow for sending to the API.

@@ -4,7 +4,10 @@ import github from '@/assets/palettes/github.json'
 import light from '@/assets/palettes/light.json'
 import nord from '@/assets/palettes/nord.json'
 import solarized from '@/assets/palettes/solarized.json'
-import type { ColorPalettes, CompletedPalette } from '@/types/colorPaletteTypes'
+import type {
+  ColorPalettes,
+  CompletedPalette
+} from '@/schemas/colorPaletteSchema'
 
 export const CORE_COLOR_PALETTES: ColorPalettes = {
   dark,

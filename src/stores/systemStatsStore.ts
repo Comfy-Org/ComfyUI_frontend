@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
+import type { SystemStats } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
-import type { SystemStats } from '@/types/apiTypes'
 
 export const useSystemStatsStore = defineStore('systemStats', () => {
   const systemStats = ref<SystemStats | null>(null)

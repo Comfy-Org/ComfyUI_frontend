@@ -2,10 +2,10 @@ import _ from 'lodash'
 import { defineStore } from 'pinia'
 import { computed, markRaw, ref } from 'vue'
 
+import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { defaultGraphJSON } from '@/scripts/defaultGraph'
-import { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 import { getPathDetails } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
 

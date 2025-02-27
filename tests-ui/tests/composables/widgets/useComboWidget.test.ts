@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 
 import { useComboWidget } from '@/composables/widgets/useComboWidget'
-import type { InputSpec } from '@/types/apiTypes'
+import type { InputSpec } from '@/schemas/apiSchema'
 
 jest.mock('@/scripts/widgets', () => ({
   addValueControlWidgets: jest.fn()

@@ -1,6 +1,6 @@
 // @ts-strict-ignore
+import { Settings } from '@/schemas/apiSchema'
 import type { ComfyApp } from '@/scripts/app'
-import { Settings } from '@/types/apiTypes'
 
 import type { ComfyComponent } from '.'
 import { $el } from '../../ui'

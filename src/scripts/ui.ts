@@ -1,10 +1,10 @@
 // @ts-strict-ignore
+import { type StatusWsMessageStatus, TaskItem } from '@/schemas/apiSchema'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { type StatusWsMessageStatus, TaskItem } from '@/types/apiTypes'
 
 import { api } from './api'
 import { ComfyApp, app } from './app'

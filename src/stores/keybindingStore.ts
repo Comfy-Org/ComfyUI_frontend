@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import { Ref, computed, ref, toRaw } from 'vue'
 
 import { RESERVED_BY_TEXT_INPUT } from '@/constants/reservedKeyCombos'
-import { KeyCombo, Keybinding } from '@/types/keyBindingTypes'
+import { KeyCombo, Keybinding } from '@/schemas/keyBindingSchema'
 
 export class KeybindingImpl implements Keybinding {
   commandId: string

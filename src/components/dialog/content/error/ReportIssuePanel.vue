@@ -117,16 +117,16 @@ import { useToast } from 'primevue/usetoast'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
 import {
   type IssueReportFormData,
-  type ReportField,
   issueReportSchema
-} from '@/types/issueReportTypes'
+} from '@/schemas/issueReportSchema'
+import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import type {
   DefaultField,
-  IssueReportPanelProps
+  IssueReportPanelProps,
+  ReportField
 } from '@/types/issueReportTypes'
 import { isElectron } from '@/utils/envUtil'
 

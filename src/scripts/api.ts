@@ -24,9 +24,9 @@ import type {
   SystemStats,
   User,
   UserDataFullInfo
-} from '@/types/apiTypes'
-import { validateComfyNodeDef } from '@/types/apiTypes'
-import type { ComfyWorkflowJSON, NodeId } from '@/types/comfyWorkflow'
+} from '@/schemas/apiSchema'
+import { validateComfyNodeDef } from '@/schemas/apiSchema'
+import type { ComfyWorkflowJSON, NodeId } from '@/schemas/comfyWorkflowSchema'
 
 interface QueuePromptRequestBody {
   client_id: string

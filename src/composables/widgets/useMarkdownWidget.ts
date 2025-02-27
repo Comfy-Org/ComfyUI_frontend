@@ -8,9 +8,9 @@ import TiptapTableRow from '@tiptap/extension-table-row'
 import TiptapStarterKit from '@tiptap/starter-kit'
 import { Markdown as TiptapMarkdown } from 'tiptap-markdown'
 
+import type { InputSpec } from '@/schemas/apiSchema'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import type { ComfyApp } from '@/types'
-import type { InputSpec } from '@/types/apiTypes'
 
 function addMarkdownWidget(
   node: LGraphNode,

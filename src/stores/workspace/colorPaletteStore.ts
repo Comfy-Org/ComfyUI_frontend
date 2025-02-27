@@ -11,7 +11,7 @@ import type {
   ColorPalettes,
   CompletedPalette,
   Palette
-} from '@/types/colorPaletteTypes'
+} from '@/schemas/colorPaletteSchema'
 
 export const useColorPaletteStore = defineStore('colorPalette', () => {
   const customPalettes = ref<ColorPalettes>({})

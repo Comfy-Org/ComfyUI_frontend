@@ -4,12 +4,16 @@ import { toRaw } from 'vue'
 import { fromZodError } from 'zod-validation-error'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import {
+  Colors,
+  type Palette,
+  paletteSchema
+} from '@/schemas/colorPaletteSchema'
 import { app } from '@/scripts/app'
 import { downloadBlob, uploadFile } from '@/scripts/utils'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import { Colors, type Palette, paletteSchema } from '@/types/colorPaletteTypes'
 
 export const useColorPaletteService = () => {
   const colorPaletteStore = useColorPaletteStore()

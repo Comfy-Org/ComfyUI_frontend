@@ -1,13 +1,13 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
 import type { INumericWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
+import { InputSpec } from '@/schemas/apiSchema'
 import type { ComfyApp } from '@/scripts/app'
 import {
   type ComfyWidgetConstructor,
   addValueControlWidget
 } from '@/scripts/widgets'
 import { useSettingStore } from '@/stores/settingStore'
-import { InputSpec } from '@/types/apiTypes'
 import { getNumberDefaults } from '@/utils/mathUtil'
 
 export const useIntWidget = () => {

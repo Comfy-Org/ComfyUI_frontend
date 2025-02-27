@@ -8,7 +8,7 @@ import type {
   HistoryTaskItem,
   TaskItem,
   TaskOutput
-} from '../../../src/types/apiTypes'
+} from '../../../src/schemas/apiSchema'
 import type { ComfyPage } from '../ComfyPage'
 
 /** keyof TaskOutput[string] */

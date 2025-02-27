@@ -1,10 +1,10 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
 import type { IComboWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
+import type { InputSpec } from '@/schemas/apiSchema'
 import { addValueControlWidgets } from '@/scripts/widgets'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { useWidgetStore } from '@/stores/widgetStore'
-import type { InputSpec } from '@/types/apiTypes'
 
 import { useRemoteWidget } from './useRemoteWidget'
 

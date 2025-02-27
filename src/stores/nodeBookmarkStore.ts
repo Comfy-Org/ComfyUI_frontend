@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import type { TreeNode } from 'primevue/treenode'
 import { computed } from 'vue'
 
-import type { BookmarkCustomization } from '@/types/apiTypes'
+import type { BookmarkCustomization } from '@/schemas/apiSchema'
 
 import { useNodeDefStore } from './nodeDefStore'
 import { ComfyNodeDefImpl, createDummyFolderNodeDef } from './nodeDefStore'

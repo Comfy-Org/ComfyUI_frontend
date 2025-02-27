@@ -4,10 +4,10 @@ import * as jsondiffpatch from 'jsondiffpatch'
 import _ from 'lodash'
 import log from 'loglevel'
 
+import type { ExecutedWsMessage } from '@/schemas/apiSchema'
+import type { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import { useExecutionStore } from '@/stores/executionStore'
 import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
-import type { ExecutedWsMessage } from '@/types/apiTypes'
-import type { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 
 import { api } from './api'
 import type { ComfyApp } from './app'

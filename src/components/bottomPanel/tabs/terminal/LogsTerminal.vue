@@ -16,9 +16,9 @@ import ProgressSpinner from 'primevue/progressspinner'
 import { Ref, onMounted, onUnmounted, ref } from 'vue'
 
 import type { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
+import { LogEntry, LogsWsMessage, TerminalSize } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
-import { LogEntry, LogsWsMessage, TerminalSize } from '@/types/apiTypes'
 
 import BaseTerminal from './BaseTerminal.vue'
 
