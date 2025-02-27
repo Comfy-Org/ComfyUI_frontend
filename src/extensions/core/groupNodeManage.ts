@@ -107,10 +107,9 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
   }
 
   getGroupData() {
-    this.groupNodeType =
-      LiteGraph.registered_node_types[
-        `${PREFIX}${SEPARATOR}` + this.selectedGroup
-      ]
+    this.groupNodeType = LiteGraph.registered_node_types[
+      `${PREFIX}${SEPARATOR}` + this.selectedGroup
+    ] as LGraphNodeConstructor<LGraphNode>
     this.groupNodeDef = this.groupNodeType.nodeData
     this.groupData = GroupNodeHandler.getGroupData(this.groupNodeType)
   }

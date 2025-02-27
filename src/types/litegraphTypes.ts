@@ -49,8 +49,9 @@ export class ConnectingLinkImpl implements ConnectingLink {
       this.releaseSlotType === 'output' ? newNode.outputs : newNode.inputs
     if (!newNodeSlots) return
 
-    const newNodeSlot = newNodeSlots.findIndex((slot: INodeSlot) =>
-      LiteGraph.isValidConnection(slot.type, this.type)
+    const newNodeSlot = newNodeSlots.findIndex(
+      (slot: INodeSlot) =>
+        this.type && LiteGraph.isValidConnection(slot.type, this.type)
     )
 
     if (newNodeSlot === -1) {
