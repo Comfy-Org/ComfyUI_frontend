@@ -40,7 +40,7 @@ export const useIntWidget = () => {
         inputName,
         val,
         function (this: INumericWidget, v: number) {
-          const s = (this.options.step ?? 1) / 10
+          const s = this.options.step2 || 1
           let sh = (this.options.min ?? 0) % s
           if (isNaN(sh)) {
             sh = 0
