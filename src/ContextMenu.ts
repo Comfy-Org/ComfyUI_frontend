@@ -122,7 +122,7 @@ export class ContextMenu {
       const element = document.createElement("div")
       element.className = "litemenu-title"
       element.innerHTML = options.title
-      root.appendChild(element)
+      root.append(element)
     }
 
     // entries
@@ -132,7 +132,7 @@ export class ContextMenu {
 
       if (typeof name !== "string") {
         name = name != null
-          ? name.content === undefined ? String(name) : name.content
+          ? (name.content === undefined ? String(name) : name.content)
           : name
       }
 
@@ -151,9 +151,9 @@ export class ContextMenu {
     const root_document = ownerDocument || document
 
     if (root_document.fullscreenElement)
-      root_document.fullscreenElement.appendChild(root)
+      root_document.fullscreenElement.append(root)
     else
-      root_document.body.appendChild(root)
+      root_document.body.append(root)
 
     // compute best position
     let left = options.left || 0
@@ -231,7 +231,7 @@ export class ContextMenu {
       }
     }
 
-    this.root.appendChild(element)
+    this.root.append(element)
     if (!disabled) element.addEventListener("click", inner_onclick)
     if (!disabled && options.autoopen)
       element.addEventListener("pointerenter", inner_over)

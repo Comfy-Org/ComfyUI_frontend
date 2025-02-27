@@ -140,10 +140,10 @@ export class KnobWidget extends BaseWidget implements IKnobWidget {
       arc_center.y,
     )
     const gs = gradient_stops.split(";")
-    gs.forEach((stop, index) => {
+    for (const [index, stop] of gs.entries()) {
       console.log(stop)
       gradient.addColorStop(index, stop.trim())
-    })
+    }
 
     ctx.strokeStyle = gradient
     const value_end_angle =
@@ -240,9 +240,9 @@ export class KnobWidget extends BaseWidget implements IKnobWidget {
 
     const step_with_shift_modifier = e.shiftKey
       ? step_for.shift
-      : use_y
+      : (use_y
         ? step_for.delta_y
-        : step
+        : step)
     // HACK: For some reason, the front-end multiplies step by 10, this brings it down to the advertised value
     // SEE: src/utils/mathUtil.ts@getNumberDefaults in front end
     const deltaValue = adjustment * step_with_shift_modifier / 10

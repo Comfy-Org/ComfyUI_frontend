@@ -1213,7 +1213,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     dialog.innerHTML =
       "<span class='name'></span><input autofocus type='text' class='value'/><button>OK</button>"
     dialog.close = function () {
-      dialog.parentNode?.removeChild(dialog)
+      dialog.remove()
     }
     const title = dialog.querySelector(".name")
     title.innerText = property
@@ -1261,7 +1261,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     const button = dialog.querySelector("button")
     button.addEventListener("click", inner)
-    canvasEl.parentNode.appendChild(dialog)
+    canvasEl.parentNode.append(dialog)
 
     input?.focus()
 
@@ -1293,7 +1293,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         value = Boolean(value)
       }
       node[property] = value
-      dialog.parentNode?.removeChild(dialog)
+      dialog.remove()
       canvas.setDirty(true, true)
     }
   }
@@ -5924,13 +5924,13 @@ export class LGraphCanvas implements ConnectionColorContext {
     dialog.close = function () {
       that.prompt_box = null
       if (dialog.parentNode) {
-        dialog.parentNode.removeChild(dialog)
+        dialog.remove()
       }
     }
 
     const graphcanvas = LGraphCanvas.active_canvas
     const canvas = graphcanvas.canvas
-    canvas.parentNode.appendChild(dialog)
+    canvas.parentNode.append(dialog)
 
     if (this.ds.scale > 1) dialog.style.transform = "scale(" + this.ds.scale + ")"
 
@@ -6079,9 +6079,9 @@ export class LGraphCanvas implements ConnectionColorContext {
     dialog.innerHTML += "<div class='helper'></div>"
 
     if (root_document.fullscreenElement) {
-      root_document.fullscreenElement.appendChild(dialog)
+      root_document.fullscreenElement.append(dialog)
     } else {
-      root_document.body.appendChild(dialog)
+      root_document.body.append(dialog)
       root_document.body.style.overflow = "hidden"
     }
 
@@ -6104,7 +6104,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       setTimeout(function () {
         that.canvas.focus()
       }, 20)
-      dialog.parentNode?.removeChild(dialog)
+      dialog.remove()
     }
 
     if (this.ds.scale > 1) {
@@ -6222,7 +6222,7 @@ export class LGraphCanvas implements ConnectionColorContext {
           const opt = document.createElement("option")
           opt.value = aSlots[iK]
           opt.innerHTML = aSlots[iK]
-          selIn.appendChild(opt)
+          selIn.append(opt)
           if (
             // @ts-expect-error
             options.type_filter_in !== false &&
@@ -6258,7 +6258,7 @@ export class LGraphCanvas implements ConnectionColorContext {
           const opt = document.createElement("option")
           opt.value = aSlots[iK]
           opt.innerHTML = aSlots[iK]
-          selOut.appendChild(opt)
+          selOut.append(opt)
           if (
             options.type_filter_out !== false &&
             (options.type_filter_out + "").toLowerCase() ==
@@ -6561,7 +6561,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         help.addEventListener("click", function () {
           select(unescape(this.dataset["type"]))
         })
-        helper.appendChild(help)
+        helper.append(help)
       }
     }
 
@@ -6744,7 +6744,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     dialog.style.left = offsetx + "px"
     dialog.style.top = offsety + "px"
 
-    this.canvas.parentNode.appendChild(dialog)
+    this.canvas.parentNode.append(dialog)
 
     // acheck for input and use default behaviour: save on enter, close on esc
     if (options.checkForInput) {
@@ -6772,7 +6772,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       dialog.is_modified = true
     }
     dialog.close = function () {
-      dialog.parentNode?.removeChild(dialog)
+      dialog.remove()
     }
 
     let dialogCloseTimer = null
@@ -6832,7 +6832,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       close.addEventListener("click", function () {
         root.close()
       })
-      root.header.appendChild(close)
+      root.header.append(close)
     }
     root.title_element = root.querySelector(".dialog-title")
     root.title_element.innerText = title
@@ -6842,10 +6842,8 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     root.close = function () {
       if (typeof root.onClose == "function") root.onClose()
-      root.parentNode?.removeChild(root)
-      /* XXX CHECK THIS */
-      this.parentNode?.removeChild(this)
-      /* XXX this was not working, was fixed with an IF, check this */
+      root.remove()
+      this.remove()
     }
 
     // function to swap panel content
@@ -6881,8 +6879,8 @@ export class LGraphCanvas implements ConnectionColorContext {
       const elem = document.createElement("div")
       if (classname) elem.className = classname
       elem.innerHTML = code
-      if (on_footer) root.footer.appendChild(elem)
-      else root.content.appendChild(elem)
+      if (on_footer) root.footer.append(elem)
+      else root.content.append(elem)
       return elem
     }
 
@@ -6893,14 +6891,14 @@ export class LGraphCanvas implements ConnectionColorContext {
       elem.options = options
       elem.classList.add("btn")
       elem.addEventListener("click", callback)
-      root.footer.appendChild(elem)
+      root.footer.append(elem)
       return elem
     }
 
     root.addSeparator = function () {
       const elem = document.createElement("div")
       elem.className = "separator"
-      root.content.appendChild(elem)
+      root.content.append(elem)
     }
 
     root.addWidget = function (type, name, value, options, callback) {
@@ -6982,7 +6980,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         })
       }
 
-      root.content.appendChild(elem)
+      root.content.append(elem)
 
       function innerChange(name, value) {
         options.callback?.(name, value, options)
@@ -7105,7 +7103,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       const fDoneWith = function () {
         panel.toggleAltContent(false)
         panel.toggleFooterVisibility(true)
-        textarea.parentNode.removeChild(textarea)
+        textarea.remove()
         panel.classList.add("settings")
         panel.classList.remove("centered")
         inner_refresh()
@@ -7125,15 +7123,15 @@ export class LGraphCanvas implements ConnectionColorContext {
         node.setProperty(propname, textarea.value)
         fDoneWith()
       })
-      panel.alt_content.appendChild(assign)
+      panel.alt_content.append(assign)
       const button = panel.addButton("Close", fDoneWith)
       button.style.float = "right"
-      panel.alt_content.appendChild(button)
+      panel.alt_content.append(button)
     }
 
     inner_refresh()
 
-    this.canvas.parentNode.appendChild(panel)
+    this.canvas.parentNode.append(panel)
   }
 
   checkPanels(): void {

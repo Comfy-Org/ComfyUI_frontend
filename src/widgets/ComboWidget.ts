@@ -147,9 +147,9 @@ export class ComboWidget extends BaseWidget implements IComboWidget {
     // Determine if clicked on left/right arrows
     const delta = x < 40
       ? -1
-      : x > width - 40
+      : (x > width - 40
         ? 1
-        : 0
+        : 0)
 
     // Get values
     let values = this.options.values

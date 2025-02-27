@@ -91,7 +91,7 @@ export type {
 } from "./types/serialisation"
 
 export function clamp(v: number, a: number, b: number): number {
-  return a > v ? a : b < v ? b : v
+  return a > v ? a : (b < v ? b : v)
 }
 
 // Load legacy polyfills

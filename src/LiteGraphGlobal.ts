@@ -552,8 +552,8 @@ export class LiteGraphGlobal {
         const dynamicScript = document.createElement("script")
         dynamicScript.type = "text/javascript"
         dynamicScript.src = src
-        docHeadObj.appendChild(dynamicScript)
-        docHeadObj.removeChild(script_file)
+        docHeadObj.append(dynamicScript)
+        script_file.remove()
       } catch (err) {
         if (this.throw_errors) throw err
         if (this.debug) console.log("Error while reloading " + src)
@@ -583,7 +583,7 @@ export class LiteGraphGlobal {
    */
   uuidv4(): string {
     // @ts-ignore
-    return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, a =>
+    return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replaceAll(/[018]/g, a =>
       (a ^ ((Math.random() * 16) >> (a / 4))).toString(16))
   }
 
@@ -632,12 +632,12 @@ export class LiteGraphGlobal {
   // used to create nodes from wrapping functions
   getParameterNames(func: (...args: any) => any): string[] {
     return (func + "")
-      .replace(/\/\/.*$/gm, "") // strip single-line comments
-      .replace(/\s+/g, "") // strip white space
-      .replace(/\/\*[^*/]*\*\//g, "") // strip multi-line comments  /**/
+      .replaceAll(/\/\/.*$/gm, "") // strip single-line comments
+      .replaceAll(/\s+/g, "") // strip white space
+      .replaceAll(/\/\*[^*/]*\*\//g, "") // strip multi-line comments  /**/
       .split("){", 1)[0]
       .replace(/^[^(]*\(/, "") // extract the parameters
-      .replace(/=[^,]+/g, "") // strip any ES6 defaults
+      .replaceAll(/=[^,]+/g, "") // strip any ES6 defaults
       .split(",")
       .filter(Boolean) // split & filter [""]
   }
@@ -836,7 +836,7 @@ export class LiteGraphGlobal {
       if ("close" in result && typeof result.close === "function") {
         result.close()
       } else if (result.parentNode) {
-        result.parentNode.removeChild(result)
+        result.remove()
       }
     }
   }

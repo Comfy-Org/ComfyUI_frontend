@@ -81,7 +81,7 @@ export class CurveEditor {
       for (const [i, p] of points.entries()) {
         ctx.fillStyle = this.selected == i
           ? "#FFF"
-          : this.nearest == i ? "#DDD" : "#AAA"
+          : (this.nearest == i ? "#DDD" : "#AAA")
         ctx.beginPath()
         ctx.arc(p[0] * w, (1.0 - p[1]) * h, 2, 0, Math.PI * 2)
         ctx.fill()

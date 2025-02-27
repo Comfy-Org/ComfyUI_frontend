@@ -27,7 +27,7 @@ export enum CanvasItem {
   /** No items / none */
   Nothing = 0,
   /** At least one node */
-  Node = 1 << 0,
+  Node = 1,
   /** At least one group */
   Group = 1 << 1,
   /** A reroute (not its path) */

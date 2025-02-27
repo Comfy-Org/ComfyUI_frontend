@@ -231,9 +231,9 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     if (LiteGraph.node_box_coloured_when_on) {
       colState = this.action_triggered
         ? "#FFF"
-        : this.execute_triggered
+        : (this.execute_triggered
           ? "#AAA"
-          : colState
+          : colState)
     }
 
     return this.boxcolor || colState || LiteGraph.NODE_DEFAULT_BOXCOLOR
