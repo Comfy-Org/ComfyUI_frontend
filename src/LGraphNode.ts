@@ -2762,10 +2762,10 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     img.src = LiteGraph.node_images_path + url
     img.ready = false
 
-    const that = this
+    const dirty = () => this.setDirtyCanvas(true)
     img.onload = function (this: AsyncImageElement) {
       this.ready = true
-      that.setDirtyCanvas(true)
+      dirty()
     }
     return img
   }

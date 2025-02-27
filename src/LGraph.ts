@@ -364,7 +364,6 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     this.starttime = LiteGraph.getTime()
     this.last_update_time = this.starttime
     interval ||= 0
-    const that = this
 
     // execute once per frame
     if (
@@ -372,24 +371,24 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
       typeof window != "undefined" &&
       window.requestAnimationFrame
     ) {
-      function on_frame() {
-        if (that.execution_timer_id != -1) return
+      const on_frame = () => {
+        if (this.execution_timer_id != -1) return
 
         window.requestAnimationFrame(on_frame)
-        that.onBeforeStep?.()
-        that.runStep(1, !that.catch_errors)
-        that.onAfterStep?.()
+        this.onBeforeStep?.()
+        this.runStep(1, !this.catch_errors)
+        this.onAfterStep?.()
       }
       this.execution_timer_id = -1
       on_frame()
     } else {
       // execute every 'interval' ms
       // @ts-expect-error
-      this.execution_timer_id = setInterval(function () {
+      this.execution_timer_id = setInterval(() => {
         // execute
-        that.onBeforeStep?.()
-        that.runStep(1, !that.catch_errors)
-        that.onAfterStep?.()
+        this.onBeforeStep?.()
+        this.runStep(1, !this.catch_errors)
+        this.onAfterStep?.()
       }, interval)
     }
   }
@@ -468,11 +467,11 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
         this.onAfterExecute?.()
         this.errors_in_execution = false
-      } catch (err) {
+      } catch (error) {
         this.errors_in_execution = true
-        if (LiteGraph.throw_errors) throw err
+        if (LiteGraph.throw_errors) throw error
 
-        if (LiteGraph.debug) console.log("Error during execution: " + err)
+        if (LiteGraph.debug) console.log("Error during execution: " + error)
         this.stop()
       }
     }
@@ -661,7 +660,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
       for (let i = 0; i < current.inputs.length; ++i) {
         const input = current.getInputNode(i)
-        if (input && ancestors.indexOf(input) == -1) {
+        if (input && !ancestors.includes(input)) {
           pending.push(input)
         }
       }
@@ -1128,8 +1127,8 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
       newnode.graph = this
       this._nodes_by_id[newnode.id] = newnode
 
-      if (node.inputs) newnode.inputs = node.inputs.concat()
-      if (node.outputs) newnode.outputs = node.outputs.concat()
+      if (node.inputs) newnode.inputs = [...node.inputs]
+      if (node.outputs) newnode.outputs = [...node.outputs]
     }
     this.updateExecutionOrder()
   }
@@ -1707,7 +1706,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     const req = new XMLHttpRequest()
     req.open("GET", url, true)
     req.send(null)
-    req.onload = function () {
+    req.addEventListener("load", function () {
       if (req.status !== 200) {
         console.error("Error loading graph:", req.status, req.response)
         return
@@ -1715,7 +1714,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
       const data = JSON.parse(req.response)
       that.configure(data)
       callback?.()
-    }
+    })
     req.onerror = function (err) {
       console.error("Error loading graph:", err)
     }

@@ -6959,7 +6959,13 @@ export class LGraphCanvas implements ConnectionColorContext {
         value_element.addEventListener("click", function (event) {
           const values = options.values || []
           const propname = this.parentNode.dataset["property"]
-          const elem_that = this
+          const inner_clicked = (v) => {
+            // node.setProperty(propname,v);
+            // graphcanvas.dirty_canvas = true;
+            this.textContent = v
+            innerChange(propname, v)
+            return false
+          }
           new LiteGraph.ContextMenu(
             values,
             {
@@ -6970,13 +6976,6 @@ export class LGraphCanvas implements ConnectionColorContext {
             // @ts-expect-error
             ref_window,
           )
-          function inner_clicked(v) {
-            // node.setProperty(propname,v);
-            // graphcanvas.dirty_canvas = true;
-            elem_that.textContent = v
-            innerChange(propname, v)
-            return false
-          }
         })
       }
 
@@ -7004,24 +7003,23 @@ export class LGraphCanvas implements ConnectionColorContext {
     this.SELECTED_NODE = node
     this.closePanels()
     const ref_window = this.getCanvasWindow()
-    const graphcanvas = this
     const panel = this.createPanel(node.title || "", {
       closable: true,
       window: ref_window,
-      onOpen: function () {
-        graphcanvas.NODEPANEL_IS_OPEN = true
+      onOpen: () => {
+        this.NODEPANEL_IS_OPEN = true
       },
-      onClose: function () {
-        graphcanvas.NODEPANEL_IS_OPEN = false
-        graphcanvas.node_panel = null
+      onClose: () => {
+        this.NODEPANEL_IS_OPEN = false
+        this.node_panel = null
       },
     })
-    graphcanvas.node_panel = panel
+    this.node_panel = panel
     panel.id = "node-panel"
     panel.node = node
     panel.classList.add("settings")
 
-    function inner_refresh() {
+    const inner_refresh = () => {
       // clear
       panel.content.innerHTML = ""
       // @ts-expect-error ctor props
@@ -7029,8 +7027,8 @@ export class LGraphCanvas implements ConnectionColorContext {
 
       panel.addHTML("<h3>Properties</h3>")
 
-      const fUpdate = function (name, value) {
-        graphcanvas.graph.beforeChange(node)
+      const fUpdate = (name, value) => {
+        this.graph.beforeChange(node)
         switch (name) {
         case "Title":
           node.title = value
@@ -7056,8 +7054,8 @@ export class LGraphCanvas implements ConnectionColorContext {
           node.setProperty(name, value)
           break
         }
-        graphcanvas.graph.afterChange()
-        graphcanvas.dirty_canvas = true
+        this.graph.afterChange()
+        this.dirty_canvas = true
       }
 
       panel.addWidget("string", "Title", node.title, {}, fUpdate)
@@ -7311,7 +7309,6 @@ export class LGraphCanvas implements ConnectionColorContext {
   }
 
   processContextMenu(node: LGraphNode, event: CanvasMouseEvent): void {
-    const that = this
     const canvas = LGraphCanvas.active_canvas
     const ref_window = canvas.getCanvasWindow()
 
@@ -7404,6 +7401,12 @@ export class LGraphCanvas implements ConnectionColorContext {
     // @ts-expect-error Remove param ref_window - unused
     new LiteGraph.ContextMenu(menu_info, options, ref_window)
 
+    const createDialog = (options: IDialogOptions) => this.createDialog(
+      "<span class='name'>Name</span><input autofocus type='text'/><button>OK</button>",
+      options,
+    )
+    const setDirty = () => this.setDirty(true)
+
     function inner_option_clicked(v, options) {
       if (!v) return
 
@@ -7432,10 +7435,8 @@ export class LGraphCanvas implements ConnectionColorContext {
         const slot_info = info.input
           ? node.getInputInfo(info.slot)
           : node.getOutputInfo(info.slot)
-        const dialog = that.createDialog(
-          "<span class='name'>Name</span><input autofocus type='text'/><button>OK</button>",
-          options,
-        )
+        const dialog = createDialog(options)
+
         const input = dialog.querySelector("input")
         if (input && slot_info) {
           input.value = slot_info.label || ""
@@ -7446,7 +7447,7 @@ export class LGraphCanvas implements ConnectionColorContext {
             if (slot_info) {
               slot_info.label = input.value
             }
-            that.setDirty(true)
+            setDirty()
           }
           dialog.close()
           node.graph.afterChange()
