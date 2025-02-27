@@ -3,6 +3,7 @@ import stylistic from "@stylistic/eslint-plugin"
 import eslintPluginAntfu from "eslint-plugin-antfu"
 import jsdoc from "eslint-plugin-jsdoc"
 import eslintPluginSimpleImportSort from "eslint-plugin-simple-import-sort"
+import eslintPluginUnicorn from "eslint-plugin-unicorn"
 import unusedImports from "eslint-plugin-unused-imports"
 import globals from "globals"
 import tseslint from "typescript-eslint"
@@ -14,6 +15,12 @@ const antfuLint = {
   name: "antfu/without-if-newline-or-imports",
   plugins: { antfu: eslintPluginAntfu },
   rules,
+}
+
+const unicornRecommended = eslintPluginUnicorn.configs.recommended
+
+for (const id of Object.keys(unicornRecommended.rules)) {
+  unicornRecommended.rules[id] = "off"
 }
 
 export default tseslint.config(
@@ -48,6 +55,18 @@ export default tseslint.config(
   },
   {
     ignores: ["./dist/**/*"],
+  },
+
+  // Unicorn
+  unicornRecommended,
+  {
+    rules: {
+      "unicorn/better-regex": "error",
+
+      // Node rules: dev dependency config, etc.
+      "unicorn/prefer-node-protocol": "error",
+      "unicorn/prefer-module": "error",
+    },
   },
 
   // JSDoc

@@ -1,12 +1,13 @@
 /// <reference types='vitest' />
-import path from "path"
+import path from "node:path"
+
 import { defineConfig } from "vite"
 import dts from "vite-plugin-dts"
 
 export default defineConfig({
   build: {
     lib: {
-      entry: path.resolve(__dirname, "src/litegraph"),
+      entry: path.resolve(import.meta.dirname, "src/litegraph"),
       name: "litegraph.js",
       fileName: format => `litegraph.${format}.js`,
       formats: ["es", "umd"],
@@ -31,7 +32,7 @@ export default defineConfig({
     alias: { "@": "/src" },
   },
   test: {
-    alias: { "@/": path.resolve(__dirname, "./src/") },
+    alias: { "@/": path.resolve(import.meta.dirname, "./src/") },
     environment: "jsdom",
     restoreMocks: true,
     unstubGlobals: true,

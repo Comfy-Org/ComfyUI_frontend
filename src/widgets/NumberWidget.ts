@@ -127,7 +127,7 @@ export class NumberWidget extends BaseWidget implements INumericWidget {
     // Handle center click - show prompt
     canvas.prompt("Value", this.value, (v: string) => {
       // Check if v is a valid equation or a number
-      if (/^[0-9+\-*/()\s]+|\d+\.\d+$/.test(v)) {
+      if (/^[\d\s()*+/-]+|\d+\.\d+$/.test(v)) {
         // Solve the equation if possible
         try {
           v = eval(v)
