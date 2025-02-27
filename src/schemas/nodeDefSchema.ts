@@ -30,72 +30,61 @@ const zRemoteWidgetConfig = z.object({
   max_retries: z.number().gte(0).optional()
 })
 
-const zBaseInputSpecValue = z
+const zBaseInputOptions = z
   .object({
     default: z.any().optional(),
     defaultInput: z.boolean().optional(),
     forceInput: z.boolean().optional(),
-    lazy: z.boolean().optional(),
-    rawLink: z.boolean().optional(),
     tooltip: z.string().optional(),
     hidden: z.boolean().optional(),
-    advanced: z.boolean().optional()
+    advanced: z.boolean().optional(),
+    /** Backend-only properties. */
+    rawLink: z.boolean().optional(),
+    lazy: z.boolean().optional()
   })
   .passthrough()
 
-const zIntInputSpec = inputSpec([
-  z.literal('INT'),
-  zBaseInputSpecValue.extend({
-    min: z.number().optional(),
-    max: z.number().optional(),
-    step: z.number().optional(),
-    // Note: Many node authors are using INT to pass list of INT.
-    // TODO: Add list of ints type.
-    default: z.union([z.number(), z.array(z.number())]).optional(),
-    /**
-     * If true, a linked widget will be added to the node to select the mode
-     * of `control_after_generate`.
-     */
-    control_after_generate: z.boolean().optional()
-  })
-])
+const zIntInputOptions = zBaseInputOptions.extend({
+  min: z.number().optional(),
+  max: z.number().optional(),
+  step: z.number().optional(),
+  // Note: Many node authors are using INT to pass list of INT.
+  // TODO: Add list of ints type.
+  default: z.union([z.number(), z.array(z.number())]).optional(),
+  /**
+   * If true, a linked widget will be added to the node to select the mode
+   * of `control_after_generate`.
+   */
+  control_after_generate: z.boolean().optional()
+})
 
-const zFloatInputSpec = inputSpec([
-  z.literal('FLOAT'),
-  zBaseInputSpecValue.extend({
-    min: z.number().optional(),
-    max: z.number().optional(),
-    step: z.number().optional(),
-    round: z.union([z.number(), z.literal(false)]).optional(),
-    // Note: Many node authors are using FLOAT to pass list of FLOAT.
-    // TODO: Add list of floats type.
-    default: z.union([z.number(), z.array(z.number())]).optional()
-  })
-])
+const zFloatInputOptions = zBaseInputOptions.extend({
+  min: z.number().optional(),
+  max: z.number().optional(),
+  step: z.number().optional(),
+  round: z.union([z.number(), z.literal(false)]).optional(),
+  // Note: Many node authors are using FLOAT to pass list of FLOAT.
+  // TODO: Add list of floats type.
+  default: z.union([z.number(), z.array(z.number())]).optional()
+})
 
-const zBooleanInputSpec = inputSpec([
-  z.literal('BOOLEAN'),
-  zBaseInputSpecValue.extend({
-    label_on: z.string().optional(),
-    label_off: z.string().optional(),
-    default: z.boolean().optional()
-  })
-])
+const zBooleanInputOptions = zBaseInputOptions.extend({
+  label_on: z.string().optional(),
+  label_off: z.string().optional(),
+  default: z.boolean().optional()
+})
 
-const zStringInputSpec = inputSpec([
-  z.literal('STRING'),
-  zBaseInputSpecValue.extend({
-    default: z.string().optional(),
-    multiline: z.boolean().optional(),
-    dynamicPrompts: z.boolean().optional(),
+const zStringInputOptions = zBaseInputOptions.extend({
+  default: z.string().optional(),
+  multiline: z.boolean().optional(),
+  dynamicPrompts: z.boolean().optional(),
 
-    // Multiline-only fields
-    defaultVal: z.string().optional(),
-    placeholder: z.string().optional()
-  })
-])
+  // Multiline-only fields
+  defaultVal: z.string().optional(),
+  placeholder: z.string().optional()
+})
 
-const zComboInputProps = zBaseInputSpecValue.extend({
+const zComboInputOptions = zBaseInputOptions.extend({
   control_after_generate: z.boolean().optional(),
   image_upload: z.boolean().optional(),
   image_folder: z.enum(['input', 'output', 'temp']).optional(),
@@ -103,16 +92,22 @@ const zComboInputProps = zBaseInputSpecValue.extend({
   remote: zRemoteWidgetConfig.optional()
 })
 
-// Dropdown Selection.
+const zIntInputSpec = inputSpec([z.literal('INT'), zIntInputOptions])
+const zFloatInputSpec = inputSpec([z.literal('FLOAT'), zFloatInputOptions])
+const zBooleanInputSpec = inputSpec([
+  z.literal('BOOLEAN'),
+  zBooleanInputOptions
+])
+const zStringInputSpec = inputSpec([z.literal('STRING'), zStringInputOptions])
 const zComboInputSpec = inputSpec(
-  [z.array(z.any()), zComboInputProps],
+  [z.array(z.any()), zComboInputOptions],
+  /* allowUpcast=*/ false
+)
+const zComboInputSpecV2 = inputSpec(
+  [z.literal('COMBO'), zComboInputOptions],
   /* allowUpcast=*/ false
 )
 
-const zComboInputSpecV2 = inputSpec(
-  [z.literal('COMBO'), zComboInputProps],
-  /* allowUpcast=*/ false
-)
 export function isComboInputSpecV1(
   inputSpec: InputSpec
 ): inputSpec is ComboInputSpec {
@@ -120,10 +115,9 @@ export function isComboInputSpecV1(
 }
 
 const excludedLiterals = new Set(['INT', 'FLOAT', 'BOOLEAN', 'STRING', 'COMBO'])
-
 const zCustomInputSpec = inputSpec([
   z.string().refine((value) => !excludedLiterals.has(value)),
-  zBaseInputSpecValue
+  zBaseInputOptions
 ])
 
 const zInputSpec = z.union([
