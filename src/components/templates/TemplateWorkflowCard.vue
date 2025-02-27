@@ -2,7 +2,7 @@
   <Card
     ref="cardRef"
     :data-testid="`template-workflow-${template.name}`"
-    class="w-64 group template-card"
+    class="w-64 template-card rounded-2xl overflow-hidden cursor-pointer shadow-[0_10px_15px_-3px_rgba(0,0,0,0.08),0_4px_6px_-4px_rgba(0,0,0,0.05)] [&_.p-card-body]:p-0 [&_.p-card-content]:rounded-2xl [&_.p-card-body]:rounded-2xl"
   >
     <template #header>
       <div
@@ -48,11 +48,27 @@
         </div>
       </div>
     </template>
-    <template #subtitle>
-      <div
-        class="text-center py-2 opacity-85 group-hover:opacity-100 transition-opacity"
-      >
-        {{ title }}
+    <template #content>
+      <div class="flex items-center px-4 py-3 group/card">
+        <div class="flex-1">
+          <h3
+            class="text-lg font-normal text-surface-900 dark:text-surface-0 line-clamp-1"
+          >
+            {{ title }}
+          </h3>
+          <p
+            class="text-sm text-surface-600 dark:text-surface-400 line-clamp-2"
+          >
+            {{ template.description }}
+          </p>
+        </div>
+        <div
+          class="flex items-center justify-center ml-4 w-10 h-10 rounded-full bg-surface-100 dark:bg-surface-800"
+        >
+          <i
+            class="pi pi-angle-right text-2xl text-surface-600 dark:text-surface-400"
+          ></i>
+        </div>
       </div>
     </template>
   </Card>
@@ -115,16 +131,6 @@ defineEmits<{
 </script>
 
 <style lang="css" scoped>
-.p-card {
-  --p-card-body-padding: 10px 0 0 0;
-  border-radius: 1rem;
-  box-shadow:
-    0 10px 15px -3px rgba(0, 0, 0, 0.08),
-    0 4px 6px -4px rgba(0, 0, 0, 0.05),
-    0 20px 25px -5px rgba(0, 0, 0, 0.03);
-  overflow: hidden;
-}
-
 .p-card-content,
 .p-card-body {
   border-radius: 1rem;
