@@ -25,7 +25,7 @@ export class MapProxyHandler<V> implements ProxyHandler<Map<number | string, V>>
   }
 
   ownKeys(target: Map<number | string, V>): ArrayLike<string | symbol> {
-    return [...target.keys()].map(x => String(x))
+    return [...target.keys()].map(String)
   }
 
   get(target: Map<number | string, V>, p: string | symbol): any {

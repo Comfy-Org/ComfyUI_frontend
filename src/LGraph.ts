@@ -426,9 +426,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     const start = LiteGraph.getTime()
     this.globaltime = 0.001 * (start - this.starttime)
 
-    const nodes = this._nodes_executable
-      ? this._nodes_executable
-      : this._nodes
+    const nodes = this._nodes_executable || this._nodes
     if (!nodes) return
 
     limit = limit || nodes.length
@@ -750,7 +748,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   ): void {
     mode = mode || LGraphEventMode.ALWAYS
 
-    const nodes = this._nodes_in_order ? this._nodes_in_order : this._nodes
+    const nodes = this._nodes_in_order || this._nodes
     if (!nodes) return
 
     for (const node of nodes) {

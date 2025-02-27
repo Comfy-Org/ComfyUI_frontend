@@ -1225,14 +1225,14 @@ export class LGraphCanvas implements ConnectionColorContext {
       })
       input.addEventListener("keydown", function (e: KeyboardEvent) {
         dialog.is_modified = true
-        if (e.keyCode == 27) {
+        if (e.key == "Escape") {
           // ESC
           dialog.close()
-        } else if (e.keyCode == 13) {
+        } else if (e.key == "Enter") {
           // save
           inner()
           // @ts-expect-error Intentional - undefined if not present
-        } else if (e.keyCode != 13 && e.target.localName != "textarea") {
+        } else if (e.target.localName != "textarea") {
           return
         }
         e.preventDefault()
@@ -1384,7 +1384,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
       const kV = Object.values(LiteGraph.NODE_MODES).indexOf(v)
       const fApplyMultiNode = function (node) {
-        if (kV >= 0 && LiteGraph.NODE_MODES[kV]) {
+        if (kV !== -1 && LiteGraph.NODE_MODES[kV]) {
           node.changeMode(kV)
         } else {
           console.warn("unexpected mode: " + v)
@@ -5841,8 +5841,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     const options = ["Add Node", null]
 
     if (opts.allow_searchbox) {
-      options.push("Search")
-      options.push(null)
+      options.push("Search", null)
     }
 
     // get defaults nodes for this slottype
@@ -5979,11 +5978,11 @@ export class LGraphCanvas implements ConnectionColorContext {
     const input = value_element
     input.addEventListener("keydown", function (e: KeyboardEvent) {
       dialog.is_modified = true
-      if (e.keyCode == 27) {
+      if (e.key == "Escape") {
         // ESC
         dialog.close()
       } else if (
-        e.keyCode == 13 &&
+        e.key == "Enter" &&
         (e.target as Element).localName != "textarea"
       ) {
         if (callback) {
@@ -6169,17 +6168,17 @@ export class LGraphCanvas implements ConnectionColorContext {
         this.focus()
       })
       input.addEventListener("keydown", function (e) {
-        if (e.keyCode == 38) {
+        if (e.key == "ArrowUp") {
           // UP
           changeSelection(false)
-        } else if (e.keyCode == 40) {
+        } else if (e.key == "ArrowDown") {
           // DOWN
           changeSelection(true)
-        } else if (e.keyCode == 27) {
+        } else if (e.key == "Escape") {
           // ESC
           // @ts-expect-error Panel?
           dialog.close()
-        } else if (e.keyCode == 13) {
+        } else if (e.key == "Enter") {
           if (selected) {
             select(unescape(selected.dataset["type"]))
           } else if (first) {
@@ -6316,7 +6315,7 @@ export class LGraphCanvas implements ConnectionColorContext {
                 ? options.node_from.findOutputSlot(options.slot_from.name)
                 : -1
               // @ts-expect-error change interface check
-              if (iS == -1 && typeof options.slot_from.slot_index !== "undefined") iS = options.slot_from.slot_index
+              if (iS == -1 && options.slot_from.slot_index !== undefined) iS = options.slot_from.slot_index
               break
             case "number":
               iS = options.slot_from
@@ -6325,7 +6324,7 @@ export class LGraphCanvas implements ConnectionColorContext {
               // try with first if no name set
               iS = 0
             }
-            if (typeof options.node_from.outputs[iS] !== "undefined") {
+            if (options.node_from.outputs[iS] !== undefined) {
               if (iS !== false && iS > -1) {
                 options.node_from.connectByType(iS, node, options.node_from.outputs[iS].type)
               }
@@ -6345,7 +6344,7 @@ export class LGraphCanvas implements ConnectionColorContext {
                 ? options.node_to.findInputSlot(options.slot_from.name)
                 : -1
               // @ts-expect-error change interface check
-              if (iS == -1 && typeof options.slot_from.slot_index !== "undefined") iS = options.slot_from.slot_index
+              if (iS == -1 && options.slot_from.slot_index !== undefined) iS = options.slot_from.slot_index
               break
             case "number":
               iS = options.slot_from
@@ -6354,7 +6353,7 @@ export class LGraphCanvas implements ConnectionColorContext {
               // try with first if no name set
               iS = 0
             }
-            if (typeof options.node_to.inputs[iS] !== "undefined") {
+            if (options.node_to.inputs[iS] !== undefined) {
               if (iS !== false && iS > -1) {
                 // try connection
                 options.node_to.connectByTypeOutput(iS, node, options.node_to.inputs[iS].type)
@@ -6424,7 +6423,7 @@ export class LGraphCanvas implements ConnectionColorContext {
           // filter supported
           // types
           const keys = Object.keys(LiteGraph.registered_node_types)
-          filtered = keys.filter(inner_test_filter)
+          filtered = keys.filter(x => inner_test_filter(x))
         } else {
           filtered = []
           for (const i in LiteGraph.registered_node_types) {
@@ -6488,13 +6487,11 @@ export class LGraphCanvas implements ConnectionColorContext {
 
         function inner_test_filter(
           type: string,
-          optsIn?:
-            | number
-            | {
-              inTypeOverride?: string | boolean
-              outTypeOverride?: string | boolean
-              skipFilter?: boolean
-            },
+          optsIn?: {
+            inTypeOverride?: string | boolean
+            outTypeOverride?: string | boolean
+            skipFilter?: boolean
+          },
         ): boolean {
           optsIn = optsIn || {}
           const optsDef = {
@@ -6654,14 +6651,14 @@ export class LGraphCanvas implements ConnectionColorContext {
         // @ts-expect-error
         input.value = v
         input.addEventListener("keydown", function (e) {
-          if (e.keyCode == 27) {
+          if (e.key == "Escape") {
             // ESC
             dialog.close()
-          } else if (e.keyCode == 13) {
+          } else if (e.key == "Enter") {
             // ENTER
             // save
             inner()
-          } else if (e.keyCode != 13) {
+          } else {
             dialog.modified()
             return
           }
@@ -6754,9 +6751,9 @@ export class LGraphCanvas implements ConnectionColorContext {
         for (const iX of aI) {
           iX.addEventListener("keydown", function (e) {
             dialog.modified()
-            if (e.keyCode == 27) {
+            if (e.key == "Escape") {
               dialog.close()
-            } else if (e.keyCode != 13) {
+            } else if (e.key != "Enter") {
               return
             }
             // set value ?
@@ -6850,7 +6847,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     root.toggleAltContent = function (force: unknown) {
       let vTo: string
       let vAlt: string
-      if (typeof force != "undefined") {
+      if (force !== undefined) {
         vTo = force ? "block" : "none"
         vAlt = force ? "none" : "block"
       } else {
@@ -6863,7 +6860,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     root.toggleFooterVisibility = function (force: unknown) {
       let vTo: string
-      if (typeof force != "undefined") {
+      if (force !== undefined) {
         vTo = force ? "block" : "none"
       } else {
         vTo = root.footer.style.display != "block" ? "block" : "none"
@@ -7035,7 +7032,7 @@ export class LGraphCanvas implements ConnectionColorContext {
           break
         case "Mode": {
           const kV = Object.values(LiteGraph.NODE_MODES).indexOf(value)
-          if (kV >= 0 && LiteGraph.NODE_MODES[kV]) {
+          if (kV !== -1 && LiteGraph.NODE_MODES[kV]) {
             node.changeMode(kV)
           } else {
             console.warn("unexpected mode: " + value)
@@ -7284,8 +7281,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         content: "Align Selected To",
         has_submenu: true,
         callback: LGraphCanvas.onNodeAlign,
-      })
-      options.push({
+      }, {
         content: "Distribute Nodes",
         has_submenu: true,
         callback: LGraphCanvas.createDistributeMenu,
@@ -7455,16 +7451,13 @@ export class LGraphCanvas implements ConnectionColorContext {
         dialog.querySelector("button").addEventListener("click", inner)
         input.addEventListener("keydown", function (e) {
           dialog.is_modified = true
-          if (e.keyCode == 27) {
+          if (e.key == "Escape") {
             // ESC
             dialog.close()
-          } else if (e.keyCode == 13) {
+          } else if (e.key == "Enter") {
             // save
             inner()
-          } else if (
-            e.keyCode != 13 &&
-            (e.target as Element).localName != "textarea"
-          ) {
+          } else if ((e.target as Element).localName != "textarea") {
             return
           }
           e.preventDefault()

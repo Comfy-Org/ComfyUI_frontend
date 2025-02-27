@@ -33,7 +33,7 @@ export class CurveEditor {
       if (pn[0] < f) continue
 
       const r = pn[0] - p[0]
-      if (Math.abs(r) < 0.00001) return p[1]
+      if (Math.abs(r) < 0.000_01) return p[1]
 
       const local_f = (f - p[0]) / r
       return p[1] * (1.0 - local_f) + pn[1] * local_f
@@ -177,7 +177,7 @@ export class CurveEditor {
     const h = this.size[1] - this.margin * 2
     const num = points.length
     const p2: Point = [0, 0]
-    let min_dist = 1000000
+    let min_dist = 1_000_000
     let closest = -1
 
     for (let i = 0; i < num; ++i) {

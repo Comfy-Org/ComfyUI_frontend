@@ -33,8 +33,8 @@ export class KnobWidget extends BaseWidget implements IKnobWidget {
     return {
       minHeight: 60,
       minWidth: 20,
-      maxHeight: 1000000,
-      maxWidth: 1000000,
+      maxHeight: 1_000_000,
+      maxWidth: 1_000_000,
     }
   }
 

@@ -1172,9 +1172,9 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     options = options || {}
     if (this.onAction) {
       // enable this to give the event an ID
-      options.action_call ||= this.id + "_" + (action ? action : "action") + "_" + Math.floor(Math.random() * 9999)
+      options.action_call ||= this.id + "_" + (action || "action") + "_" + Math.floor(Math.random() * 9999)
 
-      this.graph.nodes_actioning[this.id] = action ? action : "actioning"
+      this.graph.nodes_actioning[this.id] = action || "actioning"
       this.onAction(action, param, options)
       this.graph.nodes_actioning[this.id] = false
 
@@ -2255,7 +2255,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     if (slotIndex !== null)
       return this.connect(slot, target_node, slotIndex, optsIn?.afterRerouteId)
 
-    console.debug("[connectByType]: no way to connect type: ", target_slotType, " to node: ", target_node)
+    console.debug("[connectByType]: no way to connect type:", target_slotType, "to node:", target_node)
     return null
   }
 
@@ -2286,7 +2286,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     if (slotIndex !== null)
       return source_node.connect(slotIndex, this, slot, optsIn?.afterRerouteId)
 
-    console.debug("[connectByType]: no way to connect type: ", source_slotType, " to node: ", source_node)
+    console.debug("[connectByType]: no way to connect type:", source_slotType, "to node:", source_node)
     return null
   }
 
