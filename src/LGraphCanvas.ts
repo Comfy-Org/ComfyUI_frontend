@@ -1165,7 +1165,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
   static decodeHTML(str: string): string {
     const e = document.createElement("div")
-    e.innerText = str
+    e.textContent = str
     return e.innerHTML
   }
 
@@ -1216,7 +1216,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       dialog.remove()
     }
     const title = dialog.querySelector(".name")
-    title.innerText = property
+    title.textContent = property
     const input = dialog.querySelector(".value")
     if (input) {
       input.value = value
@@ -5970,7 +5970,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     this.prompt_box = dialog
 
     const name_element: HTMLSpanElement = dialog.querySelector(".name")
-    name_element.innerText = title
+    name_element.textContent = title
     const value_element: HTMLTextAreaElement | HTMLInputElement =
       dialog.querySelector(".value")
     value_element.value = value
@@ -6544,13 +6544,13 @@ export class LGraphCanvas implements ConnectionColorContext {
 
         const nodeType = LiteGraph.registered_node_types[type]
         if (nodeType?.title) {
-          help.innerText = nodeType?.title
+          help.textContent = nodeType?.title
           const typeEl = document.createElement("span")
           typeEl.className = "litegraph lite-search-item-type"
           typeEl.textContent = type
           help.append(typeEl)
         } else {
-          help.innerText = type
+          help.textContent = type
         }
 
         help.dataset["type"] = escape(type)
@@ -6835,7 +6835,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       root.header.append(close)
     }
     root.title_element = root.querySelector(".dialog-title")
-    root.title_element.innerText = title
+    root.title_element.textContent = title
     root.content = root.querySelector(".dialog-content")
     root.alt_content = root.querySelector(".dialog-alt-content")
     root.footer = root.querySelector(".dialog-footer")
@@ -6887,7 +6887,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     root.addButton = function (name, callback, options) {
       // TODO: any kludge
       const elem: any = document.createElement("button")
-      elem.innerText = name
+      elem.textContent = name
       elem.options = options
       elem.classList.add("btn")
       elem.addEventListener("click", callback)
@@ -6911,10 +6911,10 @@ export class LGraphCanvas implements ConnectionColorContext {
       const elem: any = document.createElement("div")
       elem.className = "property"
       elem.innerHTML = "<span class='property_name'></span><span class='property_value'></span>"
-      elem.querySelector(".property_name").innerText = options.label || name
+      elem.querySelector(".property_name").textContent = options.label || name
       // TODO: any kludge
       const value_element: any = elem.querySelector(".property_value")
-      value_element.innerText = str_value
+      value_element.textContent = str_value
       elem.dataset["property"] = name
       elem.dataset["type"] = options.type || type
       elem.options = options
@@ -6931,7 +6931,7 @@ export class LGraphCanvas implements ConnectionColorContext {
           const propname = this.dataset["property"]
           this.value = !this.value
           this.classList.toggle("bool-on")
-          this.querySelector(".property_value").innerText = this.value
+          this.querySelector(".property_value").textContent = this.value
             ? "true"
             : "false"
           innerChange(propname, this.value)
@@ -6946,7 +6946,7 @@ export class LGraphCanvas implements ConnectionColorContext {
           }
         })
         value_element.addEventListener("blur", function () {
-          let v = this.innerText
+          let v = this.textContent
           const propname = this.parentNode.dataset["property"]
           const proptype = this.parentNode.dataset["type"]
           if (proptype == "number") v = Number(v)
@@ -6954,7 +6954,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         })
       } else if (type == "enum" || type == "combo") {
         const str_value = LGraphCanvas.getPropertyPrintableValue(value, options.values)
-        value_element.innerText = str_value
+        value_element.textContent = str_value
 
         value_element.addEventListener("click", function (event) {
           const values = options.values || []
@@ -6973,7 +6973,7 @@ export class LGraphCanvas implements ConnectionColorContext {
           function inner_clicked(v) {
             // node.setProperty(propname,v);
             // graphcanvas.dirty_canvas = true;
-            elem_that.innerText = v
+            elem_that.textContent = v
             innerChange(propname, v)
             return false
           }
