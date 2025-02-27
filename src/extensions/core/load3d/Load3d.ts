@@ -269,6 +269,10 @@ class Load3d {
     this.previewManager.togglePreview(showPreview)
   }
 
+  refreshCamera(): void {
+    this.cameraManager.refreshCamera()
+  }
+
   setTargetSize(width: number, height: number): void {
     this.previewManager.setTargetSize(width, height)
   }

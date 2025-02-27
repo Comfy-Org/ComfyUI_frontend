@@ -92,6 +92,12 @@ export class CameraManager implements CameraManagerInterface {
       : 'orthographic'
   }
 
+  refreshCamera() {
+    // TODO need to improve the logic here
+    this.toggleCamera()
+    this.toggleCamera()
+  }
+
   toggleCamera(cameraType?: CameraType): void {
     const oldCamera = this.activeCamera
 
