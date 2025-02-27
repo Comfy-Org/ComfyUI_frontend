@@ -211,6 +211,19 @@ export const CORE_TEMPLATES = [
     type: 'video',
     templates: [
       {
+        name: 'text_to_video_wan',
+        mediaType: 'image',
+        mediaSubtype: 'webp',
+        tutorialUrl: 'https://comfyanonymous.github.io/ComfyUI_examples/wan/'
+      },
+      {
+        name: 'image_to_video_wan_example',
+        mediaType: 'image',
+        mediaSubtype: 'webp',
+        tutorialUrl:
+          'https://comfyanonymous.github.io/ComfyUI_examples/wan/#image-to-video'
+      },
+      {
         name: 'ltxv_image_to_video',
         mediaType: 'image',
         mediaSubtype: 'webp',
