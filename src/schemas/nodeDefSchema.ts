@@ -44,13 +44,16 @@ const zBaseInputOptions = z
   })
   .passthrough()
 
-const zIntInputOptions = zBaseInputOptions.extend({
+const zNumericInputOptions = zBaseInputOptions.extend({
   min: z.number().optional(),
   max: z.number().optional(),
   step: z.number().optional(),
   // Note: Many node authors are using INT to pass list of INT.
   // TODO: Add list of ints type.
-  default: z.union([z.number(), z.array(z.number())]).optional(),
+  default: z.union([z.number(), z.array(z.number())]).optional()
+})
+
+const zIntInputOptions = zNumericInputOptions.extend({
   /**
    * If true, a linked widget will be added to the node to select the mode
    * of `control_after_generate`.
@@ -58,14 +61,8 @@ const zIntInputOptions = zBaseInputOptions.extend({
   control_after_generate: z.boolean().optional()
 })
 
-const zFloatInputOptions = zBaseInputOptions.extend({
-  min: z.number().optional(),
-  max: z.number().optional(),
-  step: z.number().optional(),
-  round: z.union([z.number(), z.literal(false)]).optional(),
-  // Note: Many node authors are using FLOAT to pass list of FLOAT.
-  // TODO: Add list of floats type.
-  default: z.union([z.number(), z.array(z.number())]).optional()
+const zFloatInputOptions = zNumericInputOptions.extend({
+  round: z.union([z.number(), z.literal(false)]).optional()
 })
 
 const zBooleanInputOptions = zBaseInputOptions.extend({
