@@ -166,6 +166,13 @@ export type ComfyOutputTypesSpec = z.infer<typeof zComfyOutputTypesSpec>
 export type ComfyNodeDef = z.infer<typeof zComfyNodeDef>
 export type RemoteWidgetConfig = z.infer<typeof zRemoteWidgetConfig>
 
+// Input specs
+export type IntInputOptions = z.infer<typeof zIntInputOptions>
+export type FloatInputOptions = z.infer<typeof zFloatInputOptions>
+export type BooleanInputOptions = z.infer<typeof zBooleanInputOptions>
+export type StringInputOptions = z.infer<typeof zStringInputOptions>
+export type ComboInputOptions = z.infer<typeof zComboInputOptions>
+
 export function validateComfyNodeDef(
   data: any,
   onError: (error: string) => void = console.warn
