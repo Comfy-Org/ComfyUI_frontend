@@ -78,6 +78,19 @@ test.describe('Missing models warning', () => {
     await expect(downloadButton).toBeVisible()
   })
 
+  test('Should display a warning when missing models are found in node properties', async ({
+    comfyPage
+  }) => {
+    // Load workflow that has a node with models metadata at the node level
+    await comfyPage.loadWorkflow('missing_models_from_node_properties')
+
+    const missingModelsWarning = comfyPage.page.locator('.comfy-missing-models')
+    await expect(missingModelsWarning).toBeVisible()
+
+    const downloadButton = missingModelsWarning.getByLabel('Download')
+    await expect(downloadButton).toBeVisible()
+  })
+
   test('Should not display a warning when no missing models are found', async ({
     comfyPage
   }) => {
