@@ -85,6 +85,7 @@ const zComboInputOptions = zBaseInputOptions.extend({
   image_upload: z.boolean().optional(),
   image_folder: z.enum(['input', 'output', 'temp']).optional(),
   allow_batch: z.boolean().optional(),
+  video_upload: z.boolean().optional(),
   remote: zRemoteWidgetConfig.optional()
 })
 
