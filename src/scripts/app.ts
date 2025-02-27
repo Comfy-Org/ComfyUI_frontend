@@ -13,7 +13,7 @@ import type { ToastMessageOptions } from 'primevue/toast'
 import { reactive } from 'vue'
 
 import { st } from '@/i18n'
-import type { ComfyNodeDef } from '@/schemas/apiTypes'
+import type { ComfyNodeDef } from '@/schemas/apiSchema'
 import {
   type ComfyWorkflowJSON,
   type NodeId,

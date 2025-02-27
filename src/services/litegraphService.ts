@@ -12,7 +12,7 @@ import { IBaseWidget, IWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
 import { st } from '@/i18n'
-import { ComfyNodeDef } from '@/schemas/apiTypes'
+import { ComfyNodeDef } from '@/schemas/apiSchema'
 import type { NodeId } from '@/schemas/comfyWorkflow'
 import { ANIM_PREVIEW_WIDGET, ComfyApp, app } from '@/scripts/app'
 import { $el } from '@/scripts/ui'

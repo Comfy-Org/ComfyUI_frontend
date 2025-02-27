@@ -5,7 +5,7 @@ import {
   ComboInputSpecV2,
   InputSpec,
   isComboInputSpecV1
-} from '@/schemas/apiTypes'
+} from '@/schemas/apiSchema'
 import { ComfyWidgetConstructor, ComfyWidgets } from '@/scripts/widgets'
 
 import type { BaseInputSpec } from './nodeDefStore'

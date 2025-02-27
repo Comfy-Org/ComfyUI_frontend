@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import type { TreeNode } from 'primevue/treenode'
 import { computed, ref } from 'vue'
 
-import type { Settings } from '@/schemas/apiTypes'
+import type { Settings } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { SettingParams } from '@/types/settingTypes'

@@ -1,5 +1,5 @@
 // @ts-strict-ignore
-import { type StatusWsMessageStatus, TaskItem } from '@/schemas/apiTypes'
+import { type StatusWsMessageStatus, TaskItem } from '@/schemas/apiSchema'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useCommandStore } from '@/stores/commandStore'

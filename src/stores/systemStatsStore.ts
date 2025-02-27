@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-import type { SystemStats } from '@/schemas/apiTypes'
+import type { SystemStats } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 
 export const useSystemStatsStore = defineStore('systemStats', () => {

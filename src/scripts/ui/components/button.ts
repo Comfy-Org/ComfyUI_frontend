@@ -1,5 +1,5 @@
 // @ts-strict-ignore
-import { Settings } from '@/schemas/apiTypes'
+import { Settings } from '@/schemas/apiSchema'
 import type { ComfyApp } from '@/scripts/app'
 
 import type { ComfyComponent } from '.'

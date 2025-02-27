@@ -11,7 +11,7 @@ import type {
   TaskPrompt,
   TaskStatus,
   TaskType
-} from '@/schemas/apiTypes'
+} from '@/schemas/apiSchema'
 import type { ComfyWorkflowJSON, NodeId } from '@/schemas/comfyWorkflow'
 import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'

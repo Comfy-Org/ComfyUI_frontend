@@ -1,7 +1,7 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
 import { Positionable } from '@comfyorg/litegraph/dist/interfaces'
 
-import type { ComfyNodeDef } from '@/schemas/apiTypes'
+import type { ComfyNodeDef } from '@/schemas/apiSchema'
 import type { ComfyWorkflowJSON } from '@/schemas/comfyWorkflow'
 import type { Keybinding } from '@/schemas/keyBindingTypes'
 import type { ComfyApp } from '@/scripts/app'

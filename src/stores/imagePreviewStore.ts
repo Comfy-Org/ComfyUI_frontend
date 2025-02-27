@@ -1,7 +1,7 @@
 import { LGraphNode } from '@comfyorg/litegraph'
 import { defineStore } from 'pinia'
 
-import { ExecutedWsMessage, ResultItem } from '@/schemas/apiTypes'
+import { ExecutedWsMessage, ResultItem } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { parseFilePath } from '@/utils/formatUtil'
 import { isVideoNode } from '@/utils/litegraphUtil'

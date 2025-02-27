@@ -8,7 +8,7 @@ import type {
   ExecutionStartWsMessage,
   ProgressWsMessage,
   StatusWsMessage
-} from '@/schemas/apiTypes'
+} from '@/schemas/apiSchema'
 import type { ComfyNode, ComfyWorkflowJSON } from '@/schemas/comfyWorkflow'
 import { api } from '@/scripts/api'
 

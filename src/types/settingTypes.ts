@@ -1,4 +1,4 @@
-import type { Settings } from '@/schemas/apiTypes'
+import type { Settings } from '@/schemas/apiSchema'
 
 export type SettingInputType =
   | 'boolean'

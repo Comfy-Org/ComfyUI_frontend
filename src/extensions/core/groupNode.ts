@@ -3,7 +3,7 @@ import { type LGraph, LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
 import { LGraphNode, type NodeId } from '@comfyorg/litegraph/dist/LGraphNode'
 
 import { t } from '@/i18n'
-import type { ComfyNodeDef } from '@/schemas/apiTypes'
+import type { ComfyNodeDef } from '@/schemas/apiSchema'
 import {
   ComfyLink,
   ComfyNode,

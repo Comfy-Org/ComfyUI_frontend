@@ -1,7 +1,7 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
 import type { INumericWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
-import { InputSpec } from '@/schemas/apiTypes'
+import { InputSpec } from '@/schemas/apiSchema'
 import type { ComfyApp } from '@/scripts/app'
 import {
   type ComfyWidgetConstructor,
