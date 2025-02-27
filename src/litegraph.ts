@@ -1,94 +1,18 @@
-import type { LabelPosition, SlotDirection, SlotShape, SlotType } from "./draw"
+import type { ContextMenu } from "./ContextMenu"
 import type { ConnectingLink, Point } from "./interfaces"
 import type {
-  CanvasColour,
-  ColorOption,
-  Direction,
-  IBoundaryNodes,
-  IColorable,
   IContextMenuOptions,
-  IContextMenuValue,
-  IFoundSlot,
-  IInputOrOutput,
-  INodeFlags,
-  INodeInputSlot,
-  INodeOutputSlot,
   INodeSlot,
-  IOptionalSlotData,
-  ISlotType,
-  KeysOfType,
-  MethodNames,
-  PickByType,
-  Rect,
-  Rect32,
   Size,
 } from "./interfaces"
+import type { LGraphNode } from "./LGraphNode"
 import type { CanvasEventDetail } from "./types/events"
 import type { RenderShape, TitleMode } from "./types/globalEnums"
-import type { IWidget } from "./types/widgets"
 
-import { ContextMenu } from "./ContextMenu"
-import { CurveEditor } from "./CurveEditor"
-import { DragAndScale } from "./DragAndScale"
-import { LGraph } from "./LGraph"
-import { BadgePosition, LGraphBadge } from "./LGraphBadge"
-import { LGraphCanvas, type LGraphCanvasState } from "./LGraphCanvas"
-import { LGraphGroup } from "./LGraphGroup"
-import { LGraphNode } from "./LGraphNode"
 import { LiteGraphGlobal } from "./LiteGraphGlobal"
-import { LLink } from "./LLink"
 import { loadPolyfills } from "./polyfills"
 
 export const LiteGraph = new LiteGraphGlobal()
-export {
-  ContextMenu,
-  CurveEditor,
-  DragAndScale,
-  LGraph,
-  LGraphCanvas,
-  LGraphCanvasState,
-  LGraphGroup,
-  LGraphNode,
-  LLink,
-}
-export {
-  CanvasColour,
-  ColorOption,
-  ConnectingLink,
-  Direction,
-  IBoundaryNodes,
-  IColorable,
-  IContextMenuOptions,
-  IContextMenuValue,
-  IFoundSlot,
-  IInputOrOutput,
-  INodeFlags,
-  INodeInputSlot,
-  INodeOutputSlot,
-  INodeSlot,
-  IOptionalSlotData,
-  ISlotType,
-  KeysOfType,
-  MethodNames,
-  PickByType,
-  Rect,
-  Rect32,
-  Size,
-}
-export { isColorable } from "./utils/type"
-export { IWidget }
-export { BadgePosition, LGraphBadge }
-export { LabelPosition, SlotDirection, SlotShape, SlotType }
-export { CanvasPointer } from "./CanvasPointer"
-export { strokeShape } from "./draw"
-export { createBounds } from "./measure"
-export { Reroute } from "./Reroute"
-export { CanvasItem, EaseFunction, LGraphEventMode, LinkMarkerShape, RenderShape, TitleMode } from "./types/globalEnums"
-export type {
-  ISerialisedGraph,
-  SerialisableGraph,
-  SerialisableLLink,
-} from "./types/serialisation"
 
 export function clamp(v: number, a: number, b: number): number {
   return a > v ? a : (b < v ? b : v)
@@ -162,3 +86,57 @@ export interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
 }
 
 // End backwards compat
+
+export { CanvasPointer } from "./CanvasPointer"
+export { ContextMenu } from "./ContextMenu"
+export { CurveEditor } from "./CurveEditor"
+export { DragAndScale } from "./DragAndScale"
+export { LabelPosition, SlotDirection, SlotShape, SlotType } from "./draw"
+export { strokeShape } from "./draw"
+export type {
+  CanvasColour,
+  ColorOption,
+  ConnectingLink,
+  Direction,
+  IBoundaryNodes,
+  IColorable,
+  IContextMenuOptions,
+  IContextMenuValue,
+  IFoundSlot,
+  IInputOrOutput,
+  INodeFlags,
+  INodeInputSlot,
+  INodeOutputSlot,
+  INodeSlot,
+  IOptionalSlotData,
+  ISlotType,
+  KeysOfType,
+  MethodNames,
+  PickByType,
+  Rect,
+  Rect32,
+  Size,
+} from "./interfaces"
+export { LGraph } from "./LGraph"
+export { BadgePosition, LGraphBadge } from "./LGraphBadge"
+export { LGraphCanvas, type LGraphCanvasState } from "./LGraphCanvas"
+export { LGraphGroup } from "./LGraphGroup"
+export { LGraphNode } from "./LGraphNode"
+export { LLink } from "./LLink"
+export { createBounds } from "./measure"
+export { Reroute } from "./Reroute"
+export {
+  CanvasItem,
+  EaseFunction,
+  LGraphEventMode,
+  LinkMarkerShape,
+  RenderShape,
+  TitleMode,
+} from "./types/globalEnums"
+export type {
+  ISerialisedGraph,
+  SerialisableGraph,
+  SerialisableLLink,
+} from "./types/serialisation"
+export type { IWidget } from "./types/widgets"
+export { isColorable } from "./utils/type"
