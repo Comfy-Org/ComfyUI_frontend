@@ -39,6 +39,7 @@ import type { IWidget } from "./types/widgets"
 import { CanvasPointer } from "./CanvasPointer"
 import { DragAndScale } from "./DragAndScale"
 import { strokeShape } from "./draw"
+import { NullGraphError } from "./infrastructure/NullGraphError"
 import { LGraphGroup } from "./LGraphGroup"
 import { LGraphNode, type NodeId } from "./LGraphNode"
 import { LinkReleaseContextExtended, LiteGraph } from "./litegraph"
@@ -702,6 +703,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     const group = new LiteGraph.LGraphGroup()
     group.pos = canvas.convertEventToCanvasOffset(mouse_event)
+    if (!canvas.graph) throw new NullGraphError()
     canvas.graph.add(group)
   }
 
@@ -816,6 +818,8 @@ export class LGraphCanvas implements ConnectionColorContext {
     if (!graph) return
 
     function inner_onMenuAdded(base_category: string, prev_menu: ContextMenu): void {
+      if (!graph) return
+
       const categories = LiteGraph
         .getNodeTypesCategories(canvas.filter || graph.filter)
         .filter(function (category) {
@@ -823,26 +827,23 @@ export class LGraphCanvas implements ConnectionColorContext {
         })
       const entries = []
 
-      categories.map(function (category) {
+      for (const category of categories) {
         if (!category) return
 
-        const base_category_regex = new RegExp("^(" + base_category + ")")
+        const base_category_regex = new RegExp(`^(${base_category})`)
         const category_name = category
           .replace(base_category_regex, "")
-          .split("/")[0]
+          .split("/", 1)[0]
         const category_path =
           base_category === ""
-            ? category_name + "/"
-            : base_category + category_name + "/"
+            ? `${category_name}/`
+            : `${base_category}${category_name}/`
 
         let name = category_name
-        if (name.includes("::"))
-          // in case it has a namespace like "shader::math/rand" it hides the namespace
-          name = name.split("::")[1]
+        // in case it has a namespace like "shader::math/rand" it hides the namespace
+        if (name.includes("::")) name = name.split("::", 2)[1]
 
-        const index = entries.findIndex(function (entry) {
-          return entry.value === category_path
-        })
+        const index = entries.findIndex(entry => entry.value === category_path)
         if (index === -1) {
           entries.push({
             value: category_path,
@@ -853,13 +854,14 @@ export class LGraphCanvas implements ConnectionColorContext {
             },
           })
         }
-      })
+      }
 
       const nodes = LiteGraph.getNodeTypesInCategory(
         base_category.slice(0, -1),
         canvas.filter || graph.filter,
       )
-      nodes.map(function (node) {
+
+      for (const node of nodes) {
         if (node.skip_list) return
 
         const entry = {
@@ -867,6 +869,8 @@ export class LGraphCanvas implements ConnectionColorContext {
           content: node.title,
           has_submenu: false,
           callback: function (value, event, mouseEvent, contextMenu) {
+            if (!canvas.graph) throw new NullGraphError()
+
             const first_event = contextMenu.getFirstEvent()
             canvas.graph.beforeChange()
             const node = LiteGraph.createNode(value.value)
@@ -881,7 +885,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         }
 
         entries.push(entry)
-      })
+      }
 
       // @ts-expect-error Remove param ref_window - unused
       new LiteGraph.ContextMenu(entries, { event: e, parentMenu: prev_menu }, ref_window)
@@ -963,6 +967,8 @@ export class LGraphCanvas implements ConnectionColorContext {
       v.callback?.call(that, node, v, e, prev)
 
       if (!v.value) return
+      if (!node.graph) throw new NullGraphError()
+
       node.graph.beforeChange()
       node.addInput(v.value[0], v.value[1], v.value[2])
 
@@ -1078,6 +1084,8 @@ export class LGraphCanvas implements ConnectionColorContext {
       }
 
       const graph = node.graph
+      if (!graph) throw new NullGraphError()
+
       graph.beforeChange()
       node.addOutput(v.value[0], v.value[1], v.value[2])
 
@@ -1314,6 +1322,8 @@ export class LGraphCanvas implements ConnectionColorContext {
     menu: ContextMenu,
     node: LGraphNode,
   ): void {
+    if (!node.graph) throw new NullGraphError()
+
     node.graph.beforeChange()
 
     const fApplyMultiNode = function (node) {
@@ -1339,6 +1349,8 @@ export class LGraphCanvas implements ConnectionColorContext {
     menu: ContextMenu,
     node: LGraphNode,
   ): void {
+    if (!node.graph) throw new NullGraphError()
+
     node.graph.beforeChange()
     const fApplyMultiNode = function (node: LGraphNode) {
       node.toggleAdvanced()
@@ -1472,6 +1484,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     function inner_clicked(v) {
       if (!node) return
+      if (!node.graph) throw new NullGraphError()
 
       node.graph.beforeChange()
 
@@ -1507,6 +1520,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     node: LGraphNode,
   ): void {
     const graph = node.graph
+    if (!graph) throw new NullGraphError()
     graph.beforeChange()
 
     const newSelected = new Set<LGraphNode>()
@@ -1518,6 +1532,8 @@ export class LGraphCanvas implements ConnectionColorContext {
       if (!newnode) return
 
       newnode.pos = [node.pos[0] + 5, node.pos[1] + 5]
+      if (!node.graph) throw new NullGraphError()
+
       node.graph.add(newnode)
       newNodes.add(newnode)
     }
@@ -1950,6 +1966,8 @@ export class LGraphCanvas implements ConnectionColorContext {
    * @param e MouseEvent that is triggering this
    */
   updateMouseOverNodes(node: LGraphNode, e: CanvasMouseEvent): void {
+    if (!this.graph) throw new NullGraphError()
+
     const nodes = this.graph._nodes
     for (const otherNode of nodes) {
       if (otherNode.mouseOver && node != otherNode) {
@@ -2067,6 +2085,8 @@ export class LGraphCanvas implements ConnectionColorContext {
       dragRect[3] = 1
 
       pointer.onClick = (eUp) => {
+        if (!graph) throw new NullGraphError()
+
         // Click, not drag
         const clickedItem = node ??
           (this.reroutesEnabled ? graph.getRerouteOnPos(eUp.canvasX, eUp.canvasY) : null) ??
@@ -2299,6 +2319,8 @@ export class LGraphCanvas implements ConnectionColorContext {
     node: LGraphNode,
   ): void {
     const { pointer, graph } = this
+    if (!graph) throw new NullGraphError()
+
     const x = e.canvasX
     const y = e.canvasY
 
@@ -2555,6 +2577,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     // value changed
     if (oldValue != widget.value) {
       node.onWidgetChanged?.(widget.name, widget.value, oldValue, widget)
+      if (!node.graph) throw new NullGraphError()
       node.graph._version++
     }
 
@@ -2661,6 +2684,8 @@ export class LGraphCanvas implements ConnectionColorContext {
       this.#dragZoomStart = null
       return
     }
+
+    if (!this.graph) throw new NullGraphError()
 
     // calculate delta
     const deltaY = e.y - this.#dragZoomStart.pos[1]
@@ -3415,6 +3440,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     if (!data) return
 
     const { graph } = this
+    if (!graph) throw new NullGraphError()
     graph.beforeChange()
 
     // Parse & initialise
@@ -3615,6 +3641,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     const ext = LGraphCanvas.getFileExtension(file.name).toLowerCase()
     const nodetype = LiteGraph.node_types_by_file_extension[ext]
     if (!nodetype) return
+    if (!this.graph) throw new NullGraphError()
 
     this.graph.beforeChange()
     const node = LiteGraph.createNode(nodetype.type)
@@ -3635,6 +3662,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     // Process drag
     // Convert Point pair (pos, offset) to Rect
     const { graph, selectedItems } = this
+    if (!graph) throw new NullGraphError()
 
     const w = Math.abs(dragRect[2])
     const h = Math.abs(dragRect[3])
@@ -3805,10 +3833,12 @@ export class LGraphCanvas implements ConnectionColorContext {
   }
 
   get empty(): boolean {
+    if (!this.graph) throw new NullGraphError()
     return this.graph.empty
   }
 
   get positionableItems() {
+    if (!this.graph) throw new NullGraphError()
     return this.graph.positionableItems()
   }
 
@@ -3897,6 +3927,8 @@ export class LGraphCanvas implements ConnectionColorContext {
    */
   deleteSelected(): void {
     const { graph } = this
+    if (!graph) throw new NullGraphError()
+
     this.emitBeforeChange()
     graph.beforeChange()
 
@@ -4020,22 +4052,28 @@ export class LGraphCanvas implements ConnectionColorContext {
    * brings a node to front (above all other nodes)
    */
   bringToFront(node: LGraphNode): void {
-    const i = this.graph._nodes.indexOf(node)
+    const { graph } = this
+    if (!graph) throw new NullGraphError()
+
+    const i = graph._nodes.indexOf(node)
     if (i == -1) return
 
-    this.graph._nodes.splice(i, 1)
-    this.graph._nodes.push(node)
+    graph._nodes.splice(i, 1)
+    graph._nodes.push(node)
   }
 
   /**
    * sends a node to the back (below all other nodes)
    */
   sendToBack(node: LGraphNode): void {
-    const i = this.graph._nodes.indexOf(node)
+    const { graph } = this
+    if (!graph) throw new NullGraphError()
+
+    const i = graph._nodes.indexOf(node)
     if (i == -1) return
 
-    this.graph._nodes.splice(i, 1)
-    this.graph._nodes.unshift(node)
+    graph._nodes.splice(i, 1)
+    graph._nodes.unshift(node)
   }
 
   /**
@@ -4047,6 +4085,7 @@ export class LGraphCanvas implements ConnectionColorContext {
   computeVisibleNodes(nodes?: LGraphNode[], out?: LGraphNode[]): LGraphNode[] {
     const visible_nodes = out || []
     visible_nodes.length = 0
+    if (!this.graph) throw new NullGraphError()
 
     const _nodes = nodes || this.graph._nodes
     for (const node of _nodes) {
@@ -4074,7 +4113,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     // Compute node size before drawing links.
     if (this.dirty_canvas || force_canvas)
-      this.computeVisibleNodes(null, this.visible_nodes)
+      this.computeVisibleNodes(undefined, this.visible_nodes)
 
     if (
       this.dirty_bgcanvas ||
@@ -4943,6 +4982,8 @@ export class LGraphCanvas implements ConnectionColorContext {
     const rendered = this.renderedPaths
     rendered.clear()
     if (this.links_render_mode === LinkRenderType.HIDDEN_LINK) return
+    if (!this.graph) throw new NullGraphError()
+
     const visibleReroutes: Reroute[] = []
 
     const now = LiteGraph.getTime()
@@ -5589,6 +5630,8 @@ export class LGraphCanvas implements ConnectionColorContext {
 
   showLinkMenu(segment: LinkSegment, e: CanvasMouseEvent): boolean {
     const { graph } = this
+    if (!graph) throw new NullGraphError()
+
     const node_left = graph.getNodeById(segment.origin_id)
     const fromType = node_left?.outputs?.[segment.origin_slot]?.type ?? "*"
 
@@ -5605,6 +5648,8 @@ export class LGraphCanvas implements ConnectionColorContext {
     })
 
     function inner_clicked(this: LGraphCanvas, v: string, options: unknown, e: MouseEvent) {
+      if (!graph) throw new NullGraphError()
+
       switch (v) {
       case "Add Node":
         LGraphCanvas.onMenuAdd(null, null, e, menu, function (node) {
@@ -5754,6 +5799,8 @@ export class LGraphCanvas implements ConnectionColorContext {
           }
 
           // add the node
+          if (!this.graph) throw new NullGraphError()
+
           this.graph.add(newNode)
           newNode.pos = [
             opts.position[0] + opts.posAdd[0] + (opts.posSizeFix[0] ? opts.posSizeFix[0] * newNode.size[0] : 0),
@@ -6284,6 +6331,8 @@ export class LGraphCanvas implements ConnectionColorContext {
         if (that.onSearchBoxSelection) {
           that.onSearchBoxSelection(name, event, graphcanvas)
         } else {
+          if (!graphcanvas.graph) throw new NullGraphError()
+
           graphcanvas.graph.beforeChange()
           const node = LiteGraph.createNode(name)
           if (node) {
@@ -6396,6 +6445,8 @@ export class LGraphCanvas implements ConnectionColorContext {
       } else {
         let c = 0
         str = str.toLowerCase()
+        if (!graphcanvas.graph) throw new NullGraphError()
+
         const filter = graphcanvas.filter || graphcanvas.graph.filter
 
         // FIXME: any
@@ -7350,6 +7401,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       menu_info = this.getNodeMenuOptions(node)
     } else {
       menu_info = this.getCanvasMenuOptions()
+      if (!this.graph) throw new NullGraphError()
 
       // Check for reroutes
       if (this.reroutesEnabled && this.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
@@ -7357,7 +7409,11 @@ export class LGraphCanvas implements ConnectionColorContext {
         if (reroute) {
           menu_info.unshift({
             content: "Delete Reroute",
-            callback: () => this.graph.removeReroute(reroute.id),
+            callback: () => {
+              if (!this.graph) throw new NullGraphError()
+
+              this.graph.removeReroute(reroute.id)
+            },
           }, null)
         }
       }
@@ -7396,6 +7452,8 @@ export class LGraphCanvas implements ConnectionColorContext {
       if (!v) return
 
       if (v.content == "Remove Slot") {
+        if (!node.graph) throw new NullGraphError()
+
         const info = v.slot
         node.graph.beforeChange()
         if (info.input) {
@@ -7406,6 +7464,8 @@ export class LGraphCanvas implements ConnectionColorContext {
         node.graph.afterChange()
         return
       } else if (v.content == "Disconnect Links") {
+        if (!node.graph) throw new NullGraphError()
+
         const info = v.slot
         node.graph.beforeChange()
         if (info.output) {
@@ -7427,6 +7487,8 @@ export class LGraphCanvas implements ConnectionColorContext {
           input.value = slot_info.label || ""
         }
         const inner = function () {
+          if (!node.graph) throw new NullGraphError()
+
           node.graph.beforeChange()
           if (input.value) {
             if (slot_info) {
