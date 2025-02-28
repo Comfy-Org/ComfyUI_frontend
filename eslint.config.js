@@ -71,7 +71,6 @@ export default tseslint.config(
       "unicorn/prefer-structured-clone": "off",
       "unicorn/prefer-switch": "off",
       "unicorn/prefer-ternary": "off",
-      "unicorn/prefer-includes": "off",
 
       // Disable rules
       "unicorn/consistent-function-scoping": "off",

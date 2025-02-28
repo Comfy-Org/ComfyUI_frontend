@@ -613,7 +613,7 @@ export class LiteGraphGlobal {
     type_b = type_b.toLowerCase()
 
     // For nodes supporting multiple connection types
-    if (type_a.indexOf(",") == -1 && type_b.indexOf(",") == -1)
+    if (!type_a.includes(",") && !type_b.includes(","))
       return type_a == type_b
 
     // Check all permutations to see if one is valid

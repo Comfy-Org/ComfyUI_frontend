@@ -836,7 +836,7 @@ export class LGraphCanvas implements ConnectionColorContext {
             : base_category + category_name + "/"
 
         let name = category_name
-        if (name.indexOf("::") != -1)
+        if (name.includes("::"))
           // in case it has a namespace like "shader::math/rand" it hides the namespace
           name = name.split("::")[1]
 
@@ -6493,8 +6493,8 @@ export class LGraphCanvas implements ConnectionColorContext {
           if (filter && ctor.filter != filter) return false
           if (
             (!options.show_all_if_empty || str) &&
-            type.toLowerCase().indexOf(str) === -1 &&
-            (!ctor.title || ctor.title.toLowerCase().indexOf(str) === -1)
+            !type.toLowerCase().includes(str) &&
+            (!ctor.title || !ctor.title.toLowerCase().includes(str))
           ) {
             return false
           }
