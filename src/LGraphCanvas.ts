@@ -491,26 +491,26 @@ export class LGraphCanvas implements ConnectionColorContext {
   /** @deprecated See {@link LGraphCanvas.resizingGroup} */
   selected_group_resizing?: boolean
   /** @deprecated See {@link pointer}.{@link CanvasPointer.dragStarted dragStarted} */
-  last_mouse_dragging: boolean
-  onMouseDown: (arg0: CanvasMouseEvent) => void
+  last_mouse_dragging?: boolean
+  onMouseDown?: (arg0: CanvasMouseEvent) => void
   _highlight_pos?: Point
   _highlight_input?: INodeInputSlot
   // TODO: Check if panels are used
   /** @deprecated Panels */
-  node_panel
+  node_panel?: any
   /** @deprecated Panels */
-  options_panel
-  onDropItem: (e: Event) => any
-  _bg_img: HTMLImageElement
+  options_panel?: any
+  onDropItem?: (e: Event) => any
+  _bg_img?: HTMLImageElement
   _pattern?: CanvasPattern
-  _pattern_img: HTMLImageElement
+  _pattern_img?: HTMLImageElement
   // TODO: This looks like another panel thing
-  prompt_box: IDialog
-  search_box: HTMLDivElement
+  prompt_box?: IDialog | null
+  search_box?: HTMLDivElement
   /** @deprecated Panels */
-  SELECTED_NODE: LGraphNode
+  SELECTED_NODE?: LGraphNode
   /** @deprecated Panels */
-  NODEPANEL_IS_OPEN: boolean
+  NODEPANEL_IS_OPEN?: boolean
 
   /** Once per frame check of snap to grid value.  @todo Update on change. */
   #snapToGrid?: number
@@ -581,7 +581,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     this.background_image = LGraphCanvas.DEFAULT_BACKGROUND_IMAGE
 
     this.ds = new DragAndScale()
-    this.pointer = new CanvasPointer(this.canvas)
+    this.pointer = new CanvasPointer(canvas)
     // otherwise it generates ugly patterns when scaling down too much
     this.zoom_modify_alpha = true
     // in range (1.01, 2.5). Less than 1 will invert the zoom direction
@@ -655,21 +655,6 @@ export class LGraphCanvas implements ConnectionColorContext {
     this.graph_mouse = [0, 0]
     this.canvas_mouse = this.graph_mouse
 
-    // to personalize the search box
-    this.onSearchBox = null
-    this.onSearchBoxSelection = null
-
-    // callbacks
-    this.onMouse = null
-    this.onDrawBackground = null
-    this.onDrawForeground = null
-    this.onDrawOverlay = null
-    this.onDrawLinkTooltip = null
-    this.onNodeMoved = null
-    this.onSelectionChange = null
-    this.onBeforeChange = null
-    this.onAfterChange = null
-
     this.connections_width = 3
 
     this.current_node = null
@@ -685,7 +670,12 @@ export class LGraphCanvas implements ConnectionColorContext {
     this.viewport = options.viewport || null
 
     // link canvas and graph
+    this.graph = graph
     graph?.attachCanvas(this)
+
+    // TypeScript strict workaround: cannot use method to initialize properties.
+    this.canvas = undefined!
+    this.bgcanvas = undefined!
 
     this.setCanvas(canvas, options.skip_events)
     this.clear()
@@ -1660,12 +1650,10 @@ export class LGraphCanvas implements ConnectionColorContext {
     element.tabindex = "1"
 
     // Background canvas: To render objects behind nodes (background, links, groups)
-    this.bgcanvas = null
-    if (!this.bgcanvas) {
-      this.bgcanvas = document.createElement("canvas")
-      this.bgcanvas.width = this.canvas.width
-      this.bgcanvas.height = this.canvas.height
-    }
+    this.bgcanvas = document.createElement("canvas")
+    this.bgcanvas.width = this.canvas.width
+    this.bgcanvas.height = this.canvas.height
+
     if (element.getContext == null) {
       if (element.localName != "canvas") {
         throw "Element supplied for LGraphCanvas must be a <canvas> element, you passed a " +
@@ -2575,6 +2563,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       // Legacy custom widget callback
       if (widget.mouse) {
         const { eUp } = pointer
+        if (!eUp) return
         const { canvasX, canvasY } = eUp
         widget.mouse(eUp, [canvasX - node.pos[0], canvasY - node.pos[1]], node)
       }
