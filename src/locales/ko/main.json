@@ -515,6 +515,21 @@
     "video": "비디오",
     "video_models": "비디오 모델"
   },
+  "nodeMetadata": {
+    "models": {
+      "add": "모델 추가",
+      "fields": {
+        "directory": "디렉토리",
+        "name": "이름",
+        "url": "URL"
+      },
+      "modelUpdateFailed": "잘못된 모델 메타데이터. 노드가 업데이트되지 않았습니다.",
+      "modelUpdated": "모델이 업데이트되었습니다",
+      "remove": "모델 제거",
+      "save": "모델 메타데이터 저장",
+      "title": "노드 모델 메타데이터 편집"
+    }
+  },
   "nodeTemplates": {
     "enterName": "이름 입력",
     "saveAsTemplate": "템플릿으로 저장"

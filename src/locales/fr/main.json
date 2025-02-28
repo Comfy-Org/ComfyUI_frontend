@@ -515,6 +515,21 @@
     "video": "vidéo",
     "video_models": "modèles_vidéo"
   },
+  "nodeMetadata": {
+    "models": {
+      "add": "Ajouter un modèle",
+      "fields": {
+        "directory": "Répertoire",
+        "name": "Nom",
+        "url": "URL"
+      },
+      "modelUpdateFailed": "Métadonnées du modèle non valides. Nœud non mis à jour.",
+      "modelUpdated": "Modèle mis à jour",
+      "remove": "Supprimer le modèle",
+      "save": "Enregistrer les métadonnées des modèles",
+      "title": "Modifier les métadonnées des modèles de nœuds"
+    }
+  },
   "nodeTemplates": {
     "enterName": "Entrez le nom",
     "saveAsTemplate": "Enregistrer comme modèle"

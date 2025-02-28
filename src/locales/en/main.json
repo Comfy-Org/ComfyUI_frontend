@@ -81,7 +81,7 @@
     "capture": "capture"
   },
   "nodeMetadata": {
-    "models" : {
+    "models": {
       "title": "Edit Node Models Metadata",
       "save": "Save Models Metadata",
       "add": "Add Model",

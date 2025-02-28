@@ -515,6 +515,21 @@
     "video": "ビデオ",
     "video_models": "ビデオモデル"
   },
+  "nodeMetadata": {
+    "models": {
+      "add": "モデルを追加",
+      "fields": {
+        "directory": "ディレクトリ",
+        "name": "名前",
+        "url": "URL"
+      },
+      "modelUpdateFailed": "無効なモデルメタデータ。ノードは更新されませんでした。",
+      "modelUpdated": "モデルが更新されました",
+      "remove": "モデルを削除",
+      "save": "モデルメタデータを保存",
+      "title": "ノードモデルメタデータの編集"
+    }
+  },
   "nodeTemplates": {
     "enterName": "名前を入力",
     "saveAsTemplate": "テンプレートとして保存"
