@@ -8,11 +8,13 @@ on:
       - 'package.json'
 
 jobs:
-  draft_release:
+  build:
     runs-on: ubuntu-latest
     if: >
       github.event.pull_request.merged == true &&
       contains(github.event.pull_request.labels.*.name, 'Release')
+    outputs:
+      version: ${{ steps.current_version.outputs.version }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -21,7 +23,7 @@ jobs:
           node-version: 'lts/*'
       - name: Get current version
         id: current_version
-        run: echo ::set-output name=version::$(node -p "require('./package.json').version")
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
       - name: Build project
         env:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
@@ -29,6 +31,24 @@ jobs:
           npm ci
           npm run build
           npm run zipdist
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-files
+          path: |
+            dist/
+            dist.zip
+
+  draft_release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-files
       - name: Create release
         id: create_release
         uses: softprops/action-gh-release@v2
@@ -37,17 +57,47 @@ jobs:
         with:
           files: |
             dist.zip
-          tag_name: v${{ steps.current_version.outputs.version }}
+          tag_name: v${{ needs.build.outputs.version }}
           target_commitish: ${{ github.event.pull_request.base.ref }}
           make_latest: ${{ github.event.pull_request.base.ref == 'main' }}
           draft: true
           prerelease: false
           generate_release_notes: true
-  publish_types:
+
+  publish_pypi:
+    needs: build
     runs-on: ubuntu-latest
-    if: >
-      github.event.pull_request.merged == true &&
-      contains(github.event.pull_request.labels.*.name, 'Release')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-files
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      - name: Install build dependencies
+        run: python -m pip install build
+      - name: Setup pypi package
+        run: |
+          mkdir -p comfyui_frontend_package/comfyui_frontend_package/static/
+          cp -r dist/* comfyui_frontend_package/comfyui_frontend_package/static/
+      - name: Build pypi package
+        run: python -m build
+        working-directory: comfyui_frontend_package
+        env:
+          COMFYUI_FRONTEND_VERSION: ${{ needs.build.outputs.version }}
+      - name: Publish pypi package
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_TOKEN }}
+          packages-dir: comfyui_frontend_package/dist
+
+  publish_types:
+    needs: build
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
