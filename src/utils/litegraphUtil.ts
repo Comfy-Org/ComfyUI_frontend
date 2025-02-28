@@ -8,11 +8,33 @@ import {
 import type { IComboWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import _ from 'lodash'
 
+import { ModelFile } from '@/schemas/comfyWorkflowSchema'
+
 type ImageNode = LGraphNode & { imgs: HTMLImageElement[] | undefined }
 type VideoNode = LGraphNode & {
   videoContainer: HTMLElement | undefined
   imgs: HTMLVideoElement[] | undefined
 }
+type ModelNode = LGraphNode & {
+  properties: {
+    models?: ModelFile[]
+  }
+}
+
+const MODEL_OUTPUT_TYPES = new Set([
+  'MODEL',
+  'CLIP',
+  'VAE',
+  'CONTROL_NET',
+  'UPSCALE_MODEL',
+  'CLIP_VISION',
+  'STYLE_MODEL',
+  'GLIGEN',
+  'HOOKS',
+  'UPSCALE_MODEL',
+  'PHOTOMAKER',
+  'SAM_MODEL'
+])
 
 export function isImageNode(node: LGraphNode | undefined): node is ImageNode {
   if (!node) return false
@@ -31,6 +53,13 @@ export function isAudioNode(node: LGraphNode | undefined): boolean {
   return !!node && node.previewMediaType === 'audio'
 }
 
+export const isModelNode = (node: unknown): node is ModelNode => {
+  if (!isLGraphNode(node)) return false
+  if (node.properties?.models) return true
+  if (!node.outputs?.length) return false
+  return node.outputs.some((output) => MODEL_OUTPUT_TYPES.has(`${output.type}`))
+}
+
 export function addToComboValues(widget: IComboWidget, value: string) {
   if (!widget.options) widget.options = { values: [] }
   if (!widget.options.values) widget.options.values = []
@@ -46,27 +75,6 @@ export const isLGraphNode = (item: unknown): item is LGraphNode => {
 export const isLGraphGroup = (item: unknown): item is LGraphGroup => {
   return item instanceof LGraphGroup
 }
-
-const modelOutputTypes = new Set([
-  'MODEL',
-  'CLIP',
-  'VAE',
-  'CONTROL_NET',
-  'UPSCALE_MODEL',
-  'CLIP_VISION',
-  'STYLE_MODEL',
-  'GLIGEN',
-  'HOOKS',
-  'UPSCALE_MODEL',
-  'PHOTOMAKER',
-  'SAM_MODEL'
-])
-
-export const isModelNode = (node: LGraphNode): boolean => {
-  if (!node?.outputs?.length) return false
-  return node.outputs.some((output) => modelOutputTypes.has(`${output.type}`))
-}
-
 /**
  * Get the color option of all canvas items if they are all the same.
  * @param items - The items to get the color option of.

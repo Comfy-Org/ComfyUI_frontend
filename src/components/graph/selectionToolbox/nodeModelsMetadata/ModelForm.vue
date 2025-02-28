@@ -1,10 +1,9 @@
 <template>
   <Form
-    :id="isFirst ? 'node-models-form' : undefined"
-    @submit="$emit('submit', $event)"
-    :resolver="zodResolver(zModelFile)"
-    :initial-values="model"
     v-slot="$form"
+    :resolver="zodResolver(zModelFile)"
+    :initial-values="node.properties?.models?.[index]"
+    @submit="handleSubmit"
   >
     <div class="flex flex-col gap-2">
       <div class="p-2 surface-ground rounded-lg">
@@ -19,7 +18,7 @@
         <div class="flex flex-col gap-2">
           <InputGroup>
             <InputGroupAddon>
-              <i class="pi pi-file-pdf" />
+              <i class="pi pi-file" />
             </InputGroupAddon>
             <FormField v-slot="$field" name="name">
               <IftaLabel>
@@ -29,7 +28,7 @@
                   class="h-full"
                 />
                 <label :for="`model-name-${index}`">
-                  {{ $t('nodeMetadata.models.fields.name') }}
+                  {{ $t('nodeMetadata.models.fields.filename') }}
                 </label>
               </IftaLabel>
             </FormField>
@@ -82,7 +81,7 @@
             severity="danger"
             text
             size="small"
-            @click="$emit('remove')"
+            @click="emit('remove')"
           />
           <Button
             v-if="isLast"
@@ -90,25 +89,23 @@
             icon="pi pi-plus"
             text
             size="small"
-            @click="$emit('add')"
+            @click="emit('add')"
+          />
+          <Button
+            icon="pi pi-check"
+            severity="primary"
+            size="small"
+            :disabled="!$form.valid"
+            type="submit"
           />
         </div>
-        <Button
-          v-if="showSaveButton"
-          type="submit"
-          icon="pi pi-check"
-          severity="primary"
-          size="small"
-          v-tooltip="$t('nodeMetadata.models.save')"
-          form="node-models-form"
-        />
       </div>
     </div>
   </Form>
 </template>
 
 <script setup lang="ts">
-import { Form, FormField, type FormSubmitEvent } from '@primevue/forms'
+import { Form, FormField } from '@primevue/forms'
 // @ts-expect-error https://github.com/primefaces/primevue/issues/6722
 import { zodResolver } from '@primevue/forms/resolvers/zod'
 import { InputGroup } from 'primevue'
@@ -117,20 +114,40 @@ import IftaLabel from 'primevue/iftalabel'
 import InputGroupAddon from 'primevue/inputgroupaddon'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
+import { useToast } from 'primevue/usetoast'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { type ModelFile, zModelFile } from '@/schemas/comfyWorkflowSchema'
+import { app } from '@/scripts/app'
 
-defineProps<{
-  model: ModelFile
+const toast = useToast()
+const { t } = useI18n()
+
+const { nodeId, index } = defineProps<{
   index: number
-  isFirst: boolean
   isLast: boolean
-  showSaveButton: boolean
+  nodeId: string | number
 }>()
 
-defineEmits<{
-  (e: 'submit', event: FormSubmitEvent): void
+const emit = defineEmits<{
   (e: 'remove'): void
   (e: 'add'): void
 }>()
+
+const node = computed(() => app.graph.getNodeById(nodeId))
+
+const handleSubmit = (event: { values: ModelFile; valid: boolean }) => {
+  if (!event.valid) return
+
+  node.value.properties ||= {}
+  node.value.properties.models ||= []
+  node.value.properties.models[index] = event.values
+
+  toast.add({
+    severity: 'success',
+    summary: t('nodeMetadata.models.success'),
+    life: 3000
+  })
+}
 </script>

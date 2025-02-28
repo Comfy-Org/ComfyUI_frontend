@@ -83,13 +83,11 @@
   "nodeMetadata": {
     "models": {
       "title": "Edit Node Models Metadata",
-      "save": "Save Models Metadata",
       "add": "Add Model",
       "remove": "Remove Model",
-      "modelUpdated": "Model updated",
-      "modelUpdateFailed": "Invalid model metadata. Node not updated.",
+      "success": "Node models metadata updated",
       "fields": {
-        "name": "Name",
+        "filename": "Filename",
         "directory": "Directory",
         "url": "URL"
       }
