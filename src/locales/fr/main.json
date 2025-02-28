@@ -520,13 +520,11 @@
       "add": "Ajouter un modèle",
       "fields": {
         "directory": "Répertoire",
-        "name": "Nom",
+        "filename": "Nom de fichier",
         "url": "URL"
       },
-      "modelUpdateFailed": "Métadonnées du modèle non valides. Nœud non mis à jour.",
-      "modelUpdated": "Modèle mis à jour",
       "remove": "Supprimer le modèle",
-      "save": "Enregistrer les métadonnées des modèles",
+      "success": "Métadonnées des modèles de nœuds mises à jour",
       "title": "Modifier les métadonnées des modèles de nœuds"
     }
   },

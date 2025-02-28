@@ -520,13 +520,11 @@
       "add": "모델 추가",
       "fields": {
         "directory": "디렉토리",
-        "name": "이름",
+        "filename": "파일명",
         "url": "URL"
       },
-      "modelUpdateFailed": "잘못된 모델 메타데이터. 노드가 업데이트되지 않았습니다.",
-      "modelUpdated": "모델이 업데이트되었습니다",
       "remove": "모델 제거",
-      "save": "모델 메타데이터 저장",
+      "success": "노드 모델 메타데이터가 업데이트되었습니다",
       "title": "노드 모델 메타데이터 편집"
     }
   },

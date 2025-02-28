@@ -520,13 +520,11 @@
       "add": "添加模型",
       "fields": {
         "directory": "目录",
-        "name": "名称",
+        "filename": "文件名",
         "url": "URL"
       },
-      "modelUpdateFailed": "模型元数据无效。节点未更新。",
-      "modelUpdated": "模型已更新",
       "remove": "移除模型",
-      "save": "保存模型元数据",
+      "success": "节点模型元数据已更新",
       "title": "编辑节点模型元数据"
     }
   },
