@@ -468,6 +468,7 @@ export class ComfyPage {
     const getFileType = (fileName: string) => {
       if (fileName.endsWith('.png')) return 'image/png'
       if (fileName.endsWith('.webp')) return 'image/webp'
+      if (fileName.endsWith('.webm')) return 'video/webm'
       if (fileName.endsWith('.json')) return 'application/json'
       return 'application/octet-stream'
     }
