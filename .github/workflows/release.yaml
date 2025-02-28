@@ -32,7 +32,7 @@ jobs:
           npm run build
           npm run zipdist
       - name: Upload dist artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dist-files
           path: |
@@ -46,7 +46,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Download dist artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: dist-files
       - name: Create release
@@ -71,7 +71,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Download dist artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: dist-files
       - name: Set up Python
