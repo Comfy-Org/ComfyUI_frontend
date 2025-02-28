@@ -20,6 +20,7 @@ import {
   validateComfyWorkflow
 } from '@/schemas/comfyWorkflowSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { getFromWebmFile } from '@/scripts/metadata/ebml'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -1405,6 +1406,15 @@ export class ComfyApp {
         this.loadGraphData(JSON.parse(workflow), true, true, fileName)
       } else if (prompt) {
         this.loadApiJson(JSON.parse(prompt), fileName)
+      } else {
+        this.showErrorOnFileLoad(file)
+      }
+    } else if (file.type === 'video/webm') {
+      const webmInfo = await getFromWebmFile(file)
+      if (webmInfo.workflow) {
+        this.loadGraphData(webmInfo.workflow, true, true, fileName)
+      } else if (webmInfo.prompt) {
+        this.loadApiJson(webmInfo.prompt, fileName)
       } else {
         this.showErrorOnFileLoad(file)
       }

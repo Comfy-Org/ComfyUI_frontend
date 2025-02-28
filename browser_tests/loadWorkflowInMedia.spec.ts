@@ -7,7 +7,8 @@ test.describe('Load Workflow in Media', () => {
     'workflow.webp',
     'edited_workflow.webp',
     'no_workflow.webp',
-    'large_workflow.webp'
+    'large_workflow.webp',
+    'workflow.webm'
   ].forEach(async (fileName) => {
     test(`Load workflow in ${fileName}`, async ({ comfyPage }) => {
       await comfyPage.dragAndDropFile(fileName)
