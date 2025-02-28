@@ -80,6 +80,21 @@
     "choose_file_to_upload": "choose file to upload",
     "capture": "capture"
   },
+  "nodeMetadata": {
+    "models" : {
+      "title": "Edit Node Models Metadata",
+      "save": "Save Models Metadata",
+      "add": "Add Model",
+      "remove": "Remove Model",
+      "modelUpdated": "Model updated",
+      "modelUpdateFailed": "Invalid model metadata. Node not updated.",
+      "fields": {
+        "name": "Name",
+        "directory": "Directory",
+        "url": "URL"
+      }
+    }
+  },
   "issueReport": {
     "submitErrorReport": "Submit Error Report (Optional)",
     "provideEmail": "Give us your email (optional)",

@@ -31,12 +31,12 @@ const zVector2 = z.union([
 ])
 
 // Definition of an AI model file used in the workflow.
-const zModelFile = z.object({
-  name: z.string(),
+export const zModelFile = z.object({
+  name: z.string().min(1, 'Name cannot be empty'),
   url: z.string().url(),
   hash: z.string().optional(),
   hash_type: z.string().optional(),
-  directory: z.string()
+  directory: z.string().min(1, 'Directory cannot be empty')
 })
 
 const zGraphState = z

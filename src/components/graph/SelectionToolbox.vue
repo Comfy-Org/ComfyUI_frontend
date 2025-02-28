@@ -27,6 +27,9 @@
       icon="pi pi-thumbtack"
       @click="() => commandStore.execute('Comfy.Canvas.ToggleSelected.Pin')"
     />
+    <NodeModelsButton
+      v-if="modelNodeSelected && canvasStore.selectedItems.length === 1"
+    />
     <Button
       severity="danger"
       text
@@ -57,22 +60,29 @@ import Panel from 'primevue/panel'
 import { computed } from 'vue'
 
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
+import NodeModelsButton from '@/components/graph/selectionToolbox/nodeModelsMetadata/NodeModelsButton.vue'
 import { useRefreshableSelection } from '@/composables/useRefreshableSelection'
 import { useExtensionService } from '@/services/extensionService'
 import { ComfyCommand, useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
-import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
+import { isLGraphGroup, isLGraphNode, isModelNode } from '@/utils/litegraphUtil'
 
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
 const extensionService = useExtensionService()
 const { isRefreshable, refreshSelected } = useRefreshableSelection()
-const nodeSelected = computed(() =>
-  canvasStore.selectedItems.some(isLGraphNode)
+const selectedNodes = computed(() =>
+  canvasStore.selectedItems.filter(isLGraphNode)
 )
-const groupSelected = computed(() =>
-  canvasStore.selectedItems.some(isLGraphGroup)
+const selectedModelNodes = computed(() =>
+  selectedNodes.value.filter(isModelNode)
 )
+const selectedGroups = computed(() =>
+  canvasStore.selectedItems.filter(isLGraphGroup)
+)
+const nodeSelected = computed(() => selectedNodes.value.length > 0)
+const groupSelected = computed(() => selectedGroups.value.length > 0)
+const modelNodeSelected = computed(() => selectedModelNodes.value.length > 0)
 
 const extensionToolboxCommands = computed<ComfyCommand[]>(() => {
   const commandIds = new Set<string>(
