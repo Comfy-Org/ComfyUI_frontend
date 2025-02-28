@@ -437,8 +437,8 @@ export class LGraphCanvas implements ConnectionColorContext {
   autoresize: boolean
   static active_canvas: LGraphCanvas
   static onMenuNodeOutputs?(
-    entries: IOptionalSlotData<INodeOutputSlot>[],
-  ): IOptionalSlotData<INodeOutputSlot>[]
+    entries: (IOptionalSlotData<INodeOutputSlot> | null)[],
+  ): (IOptionalSlotData<INodeOutputSlot> | null)[]
   frame = 0
   last_draw_time = 0
   render_time = 0
@@ -467,7 +467,7 @@ export class LGraphCanvas implements ConnectionColorContext {
   node_in_panel?: LGraphNode
   last_mouse: ReadOnlyPoint = [0, 0]
   last_mouseclick: number = 0
-  graph!: LGraph | null
+  graph: LGraph | null
   canvas: HTMLCanvasElement
   bgcanvas: HTMLCanvasElement
   ctx?: CanvasRenderingContext2D
@@ -811,13 +811,25 @@ export class LGraphCanvas implements ConnectionColorContext {
     e: MouseEvent,
     prev_menu: ContextMenu,
     callback?: (node: LGraphNode) => void,
-  ): boolean {
+  ): boolean | undefined {
     const canvas = LGraphCanvas.active_canvas
     const ref_window = canvas.getCanvasWindow()
     const graph = canvas.graph
     if (!graph) return
 
-    function inner_onMenuAdded(base_category: string, prev_menu: ContextMenu): void {
+    inner_onMenuAdded("", prev_menu)
+    return false
+
+    type AddNodeMenu = Omit<IContextMenuValue, "callback"> & {
+      callback: (
+        value: { value: string },
+        event: Event,
+        mouseEvent: MouseEvent,
+        contextMenu: ContextMenu
+      ) => void
+    }
+
+    function inner_onMenuAdded(base_category: string, prev_menu?: ContextMenu): void {
       if (!graph) return
 
       const categories = LiteGraph
@@ -825,7 +837,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         .filter(function (category) {
           return category.startsWith(base_category)
         })
-      const entries = []
+      const entries: AddNodeMenu[] = []
 
       for (const category of categories) {
         if (!category) return
@@ -864,7 +876,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       for (const node of nodes) {
         if (node.skip_list) return
 
-        const entry = {
+        const entry: AddNodeMenu = {
           value: node.type,
           content: node.title,
           has_submenu: false,
@@ -890,9 +902,6 @@ export class LGraphCanvas implements ConnectionColorContext {
       // @ts-expect-error Remove param ref_window - unused
       new LiteGraph.ContextMenu(entries, { event: e, parentMenu: prev_menu }, ref_window)
     }
-
-    inner_onMenuAdded("", prev_menu)
-    return false
   }
 
   static onMenuCollapseAll() {}
@@ -906,7 +915,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     e: MouseEvent,
     prev_menu: ContextMenu,
     node: LGraphNode,
-  ): boolean {
+  ): boolean | undefined {
     if (!node) return
 
     // FIXME: Static function this
@@ -918,7 +927,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       ? node.onGetInputs()
       : undefined
 
-    let entries: IOptionalSlotData<INodeInputSlot>[] = []
+    let entries: (IOptionalSlotData<INodeInputSlot> | null)[] = []
     if (options) {
       for (const entry of options) {
         if (!entry) {
@@ -989,7 +998,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     e: unknown,
     prev_menu: ContextMenu,
     node: LGraphNode,
-  ): boolean {
+  ): boolean | undefined {
     if (!node) return
 
     const that = this
@@ -1000,7 +1009,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       ? node.onGetOutputs()
       : undefined
 
-    let entries: IOptionalSlotData<INodeOutputSlot>[] = []
+    let entries: (IOptionalSlotData<INodeOutputSlot> | null)[] = []
     if (options) {
       for (const entry of options) {
         if (!entry) {
@@ -1105,7 +1114,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     e: MouseEvent,
     prev_menu: ContextMenu,
     node: LGraphNode,
-  ): boolean {
+  ): boolean | undefined {
     if (!node || !node.properties) return
 
     const canvas = LGraphCanvas.active_canvas
@@ -1619,7 +1628,7 @@ export class LGraphCanvas implements ConnectionColorContext {
   /**
    * @returns the visually active graph (in case there are more in the stack)
    */
-  getCurrentGraph(): LGraph {
+  getCurrentGraph(): LGraph | null {
     return this.graph
   }
 
@@ -2967,11 +2976,11 @@ export class LGraphCanvas implements ConnectionColorContext {
    */
   #startDraggingItems(item: Positionable, pointer: CanvasPointer, sticky = false): void {
     this.emitBeforeChange()
-    this.graph.beforeChange()
+    this.graph?.beforeChange()
     // Ensure that dragging is properly cleaned up, on success or failure.
     pointer.finally = () => {
       this.isDragging = false
-      this.graph.afterChange()
+      this.graph?.afterChange()
       this.emitAfterChange()
     }
 
@@ -2986,7 +2995,7 @@ export class LGraphCanvas implements ConnectionColorContext {
   #processDraggedItems(e: CanvasPointerEvent): void {
     const { graph } = this
     if (e.shiftKey || LiteGraph.alwaysSnapToGrid)
-      graph.snapToGrid(this.selectedItems)
+      graph?.snapToGrid(this.selectedItems)
 
     this.dirty_canvas = true
     this.dirty_bgcanvas = true
@@ -3276,7 +3285,7 @@ export class LGraphCanvas implements ConnectionColorContext {
   /**
    * process a key event
    */
-  processKey(e: KeyboardEvent): boolean | null {
+  processKey(e: KeyboardEvent): boolean | null | undefined {
     this.#shiftDown = e.shiftKey
     if (!this.graph) return
 
@@ -3360,7 +3369,7 @@ export class LGraphCanvas implements ConnectionColorContext {
    * @param items The items to copy.  If nullish, all selected items are copied.
    */
   copyToClipboard(items?: Iterable<Positionable>): void {
-    const serialisable: ClipboardItems = {
+    const serialisable: Required<ClipboardItems> = {
       nodes: [],
       groups: [],
       reroutes: [],
@@ -3381,7 +3390,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
         // Links
         const links = item.inputs
-          ?.map(input => this.graph._links.get(input?.link)?.asSerialisable())
+          ?.map(input => this.graph?._links.get(input?.link)?.asSerialisable())
           .filter(x => !!x)
 
         if (!links) continue
@@ -4164,7 +4173,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     // TODO: Set snapping value when changed instead of once per frame
     this.#snapToGrid = this.#shiftDown || LiteGraph.alwaysSnapToGrid
-      ? this.graph.getSnapToGridSize()
+      ? this.graph?.getSnapToGridSize()
       : undefined
 
     // clear
@@ -7349,7 +7358,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     const ref_window = canvas.getCanvasWindow()
 
     // TODO: Remove type kludge
-    let menu_info: (IContextMenuValue | string)[] = null
+    let menu_info: (IContextMenuValue | string)[]
     const options: IContextMenuOptions = {
       event: event,
       callback: inner_option_clicked,
@@ -7359,7 +7368,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     if (node) options.title = node.type
 
     // check if mouse is in input
-    let slot: ReturnType<LGraphNode["getSlotInPosition"]> = null
+    let slot: ReturnType<LGraphNode["getSlotInPosition"]>
     if (node) {
       slot = node.getSlotInPosition(event.canvasX, event.canvasY)
       LGraphCanvas.active_node = node

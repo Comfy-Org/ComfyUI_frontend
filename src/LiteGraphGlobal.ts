@@ -492,7 +492,7 @@ export class LiteGraphGlobal {
    * @param category category name
    * @returns array with all the node classes
    */
-  getNodeTypesInCategory(category: string, filter: any) {
+  getNodeTypesInCategory(category: string, filter?: string) {
     const r = []
     for (const i in this.registered_node_types) {
       const type = this.registered_node_types[i]
@@ -513,7 +513,7 @@ export class LiteGraphGlobal {
    * @param filter only nodes with ctor.filter equal can be shown
    * @returns array with all the names of the categories
    */
-  getNodeTypesCategories(filter: string): string[] {
+  getNodeTypesCategories(filter?: string): string[] {
     const categories: Dictionary<number> = { "": 1 }
     for (const i in this.registered_node_types) {
       const type = this.registered_node_types[i]

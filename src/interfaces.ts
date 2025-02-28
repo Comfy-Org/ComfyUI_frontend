@@ -319,7 +319,7 @@ export interface IContextMenuOptions extends IContextMenuBase {
 
 export interface IContextMenuValue<TExtra = unknown> extends IContextMenuBase<TExtra> {
   value?: string
-  content: string
+  content: string | undefined
   has_submenu?: boolean
   disabled?: boolean
   submenu?: IContextMenuSubmenu
