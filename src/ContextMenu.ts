@@ -63,7 +63,7 @@ export class ContextMenu<TValue = unknown> {
 
     const root: ContextMenuDivElement<TValue> = document.createElement("div")
     let classes = "litegraph litecontextmenu litemenubar-panel"
-    if (options.className) classes += " " + options.className
+    if (options.className) classes += ` ${options.className}`
     root.className = classes
     root.style.minWidth = "100"
     root.style.minHeight = "100"
@@ -172,8 +172,8 @@ export class ContextMenu<TValue = unknown> {
         top = body_rect.height - root_rect.height - 10
     }
 
-    root.style.left = left + "px"
-    root.style.top = top + "px"
+    root.style.left = `${left}px`
+    root.style.top = `${top}px`
 
     if (LiteGraph.context_menu_scaling && options.scale) {
       root.style.transform = `scale(${Math.round(options.scale * 4) * 0.25})`
@@ -211,7 +211,7 @@ export class ContextMenu<TValue = unknown> {
           element.setAttribute("aria-haspopup", "true")
           element.setAttribute("aria-expanded", "false")
         }
-        if (value.className) element.className += " " + value.className
+        if (value.className) element.className += ` ${value.className}`
       }
       element.value = value
       element.setAttribute("role", "menuitem")
@@ -325,7 +325,7 @@ export class ContextMenu<TValue = unknown> {
       } else if (e && !ContextMenu.isCursorOverElement(e, this.parentMenu.root)) {
         ContextMenu.trigger(
           this.parentMenu.root,
-          LiteGraph.pointerevents_method + "leave",
+          `${LiteGraph.pointerevents_method}leave`,
           e,
         )
       }

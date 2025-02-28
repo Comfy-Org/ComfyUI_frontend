@@ -77,12 +77,9 @@ export class SliderWidget extends BaseWidget implements ISliderWidget {
     if (show_text) {
       ctx.textAlign = "center"
       ctx.fillStyle = this.text_color
+      const fixedValue = Number(this.value).toFixed(this.options.precision ?? 3)
       ctx.fillText(
-        (this.label || this.name) +
-        "  " +
-        Number(this.value).toFixed(
-          this.options.precision != null ? this.options.precision : 3,
-        ),
+        `${this.label || this.name}  ${fixedValue}`,
         widget_width * 0.5,
         y + H * 0.7,
       )

@@ -312,7 +312,7 @@ export class LiteGraphGlobal {
       throw "Cannot register a simple object, it must be a class with a prototype"
     base_class.type = type
 
-    if (this.debug) console.log("Node registered: " + type)
+    if (this.debug) console.log("Node registered:", type)
 
     const classname = base_class.name
 
@@ -329,7 +329,7 @@ export class LiteGraphGlobal {
 
     const prev = this.registered_node_types[type]
     if (prev) {
-      console.log("replacing node type: " + type)
+      console.log("replacing node type:", type)
     }
 
     this.registered_node_types[type] = base_class
@@ -354,7 +354,7 @@ export class LiteGraphGlobal {
     const base_class = typeof type === "string"
       ? this.registered_node_types[type]
       : type
-    if (!base_class) throw "node type not found: " + type
+    if (!base_class) throw `node type not found: ${String(type)}`
 
     delete this.registered_node_types[String(base_class.type)]
 
@@ -548,7 +548,7 @@ export class LiteGraphGlobal {
         continue
 
       try {
-        if (this.debug) console.log("Reloading: " + src)
+        if (this.debug) console.log("Reloading:", src)
         const dynamicScript = document.createElement("script")
         dynamicScript.type = "text/javascript"
         dynamicScript.src = src
@@ -556,7 +556,7 @@ export class LiteGraphGlobal {
         script_file.remove()
       } catch (error) {
         if (this.throw_errors) throw error
-        if (this.debug) console.log("Error while reloading " + src)
+        if (this.debug) console.log("Error while reloading", src)
       }
     }
 
@@ -631,7 +631,7 @@ export class LiteGraphGlobal {
 
   // used to create nodes from wrapping functions
   getParameterNames(func: (...args: any) => any): string[] {
-    return (func + "")
+    return String(func)
       .replaceAll(/\/\/.*$/gm, "") // strip single-line comments
       .replaceAll(/\s+/g, "") // strip white space
       .replaceAll(/\/\*[^*/]*\*\//g, "") // strip multi-line comments  /**/
@@ -654,7 +654,7 @@ export class LiteGraphGlobal {
     // convert pointerevents to touch event when not available
     if (sMethod == "pointer" && !window.PointerEvent) {
       console.warn("sMethod=='pointer' && !window.PointerEvent")
-      console.log("Converting pointer[" + sEvent + "] : down move up cancel enter TO touchstart touchmove touchend, etc ..")
+      console.log(`Converting pointer[${sEvent}] : down move up cancel enter TO touchstart touchmove touchend, etc ..`)
       switch (sEvent) {
       case "down": {
         sMethod = "touch"
@@ -682,7 +682,7 @@ export class LiteGraphGlobal {
       }
       // case "over": case "out": not used at now
       default: {
-        console.warn("PointerEvent not available in this browser ? The event " + sEvent + " would not be called")
+        console.warn(`PointerEvent not available in this browser ? The event ${sEvent} would not be called`)
       }
       }
     }
@@ -740,15 +740,15 @@ export class LiteGraphGlobal {
 
   colorToString(c: [number, number, number, number]): string {
     return (
-      "rgba(" +
-      Math.round(c[0] * 255).toFixed() +
-      "," +
-      Math.round(c[1] * 255).toFixed() +
-      "," +
-      Math.round(c[2] * 255).toFixed() +
-      "," +
-      (c.length == 4 ? c[3].toFixed(2) : "1.0") +
-      ")"
+      `rgba(${
+        Math.round(c[0] * 255).toFixed()
+      },${
+        Math.round(c[1] * 255).toFixed()
+      },${
+        Math.round(c[2] * 255).toFixed()
+      },${
+        c.length == 4 ? c[3].toFixed(2) : "1.0"
+      })`
     )
   }
 

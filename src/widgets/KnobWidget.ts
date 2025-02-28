@@ -186,12 +186,9 @@ export class KnobWidget extends BaseWidget implements IKnobWidget {
     if (show_text) {
       ctx.textAlign = "center"
       ctx.fillStyle = this.text_color
+      const fixedValue = Number(this.value).toFixed(this.options.precision ?? 3)
       ctx.fillText(
-        (this.label || this.name) +
-        "\n" +
-        Number(this.value).toFixed(
-          this.options.precision != null ? this.options.precision : 3,
-        ),
+        `${this.label || this.name}\n${fixedValue}`,
         widget_width * 0.5,
         y + effective_height * 0.5,
       )

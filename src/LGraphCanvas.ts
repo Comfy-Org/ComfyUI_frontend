@@ -58,7 +58,7 @@ import {
 } from "./measure"
 import { type ConnectionColorContext } from "./NodeSlot"
 import { Reroute, type RerouteId } from "./Reroute"
-import { stringOrEmpty, stringOrNull } from "./strings"
+import { stringOrEmpty } from "./strings"
 import {
   CanvasItem,
   EaseFunction,
@@ -888,6 +888,7 @@ export class LGraphCanvas implements ConnectionColorContext {
             canvas.graph.beforeChange()
             const node = LiteGraph.createNode(value.value)
             if (node) {
+              if (!first_event) throw new TypeError("Context menu event was null. This should not occure in normal usage.")
               node.pos = canvas.convertEventToCanvasOffset(first_event)
               canvas.graph.add(node)
             }
@@ -919,8 +920,6 @@ export class LGraphCanvas implements ConnectionColorContext {
   ): boolean | undefined {
     if (!node) return
 
-    // FIXME: Static function this
-    const that = this
     const canvas = LGraphCanvas.active_canvas
     const ref_window = canvas.getCanvasWindow()
 
@@ -971,10 +970,10 @@ export class LGraphCanvas implements ConnectionColorContext {
       ref_window,
     )
 
-    function inner_clicked(v: IContextMenuValue<INodeSlotContextItem>, e: MouseEvent, prev: ContextMenu<INodeSlotContextItem>) {
+    function inner_clicked(this: ContextMenuDivElement<INodeSlotContextItem>, v: IContextMenuValue<INodeSlotContextItem>, e: MouseEvent, prev: ContextMenu<INodeSlotContextItem>) {
       if (!node) return
 
-      v.callback?.call(that, node, v, e, prev)
+      v.callback?.call(this, node, v, e, prev)
 
       if (!v.value) return
       if (!node.graph) throw new NullGraphError()
@@ -1109,7 +1108,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
   /** @param value Parameter is never used */
   static onShowMenuNodeProperties(
-    value: unknown,
+    value: string | number | boolean | object,
     options: unknown,
     e: MouseEvent,
     prev_menu: ContextMenu<string>,
@@ -1130,14 +1129,11 @@ export class LGraphCanvas implements ConnectionColorContext {
         value = LGraphCanvas.getPropertyPrintableValue(value, info.values)
 
       // value could contain invalid html characters, clean that
-      value = LGraphCanvas.decodeHTML(stringOrNull(value))
+      value = LGraphCanvas.decodeHTML(stringOrEmpty(value))
       entries.push({
-        content: "<span class='property_name'>" +
-          (info.label || i) +
-          "</span>" +
-          "<span class='property_value'>" +
-          value +
-          "</span>",
+        content:
+         `<span class='property_name'>${info.label || i}</span>` +
+         `<span class='property_value'>${value}</span>`,
         value: i,
       })
     }
@@ -1170,6 +1166,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     return false
   }
 
+  /** @deprecated */
   static decodeHTML(str: string): string {
     const e = document.createElement("div")
     e.textContent = str
@@ -1259,11 +1256,11 @@ export class LGraphCanvas implements ConnectionColorContext {
     }
 
     if (e) {
-      dialog.style.left = e.clientX + offsetx + "px"
-      dialog.style.top = e.clientY + offsety + "px"
+      dialog.style.left = `${e.clientX + offsetx}px`
+      dialog.style.top = `${e.clientY + offsety}px`
     } else {
-      dialog.style.left = canvasEl.width * 0.5 + offsetx + "px"
-      dialog.style.top = canvasEl.height * 0.5 + offsety + "px"
+      dialog.style.left = `${canvasEl.width * 0.5 + offsetx}px`
+      dialog.style.top = `${canvasEl.height * 0.5 + offsety}px`
     }
 
     const button = dialog.querySelector("button")
@@ -1321,7 +1318,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         desc_value = k
         break
       }
-      return String(value) + " (" + desc_value + ")"
+      return `${String(value)} (${desc_value})`
     }
   }
 
@@ -1399,7 +1396,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         if (kV !== -1 && LiteGraph.NODE_MODES[kV]) {
           node.changeMode(kV)
         } else {
-          console.warn("unexpected mode: " + v)
+          console.warn(`unexpected mode: ${v}`)
           node.changeMode(LGraphEventMode.ALWAYS)
         }
       }
@@ -1437,13 +1434,8 @@ export class LGraphCanvas implements ConnectionColorContext {
       const color = LGraphCanvas.node_colors[i]
       value = {
         value: i,
-        content: "<span style='display: block; color: #999; padding-left: 4px; border-left: 8px solid " +
-          color.color +
-          "; background-color:" +
-          color.bgcolor +
-          "'>" +
-          i +
-          "</span>",
+        content: `<span style='display: block; color: #999; padding-left: 4px;` +
+          ` border-left: 8px solid ${color.color}; background-color:${color.bgcolor}'>${i}</span>`,
       }
       values.push(value)
     }
@@ -1682,8 +1674,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     if (element.getContext == null) {
       if (element.localName != "canvas") {
-        throw "Element supplied for LGraphCanvas must be a <canvas> element, you passed a " +
-          element.localName
+        throw `Element supplied for LGraphCanvas must be a <canvas> element, you passed a ${element.localName}`
       }
       throw "This browser doesn't support Canvas"
     }
@@ -4476,11 +4467,11 @@ export class LGraphCanvas implements ConnectionColorContext {
     ctx.fillStyle = "#888"
     ctx.textAlign = "left"
     if (this.graph) {
-      ctx.fillText("T: " + this.graph.globaltime.toFixed(2) + "s", 5, 13 * 1)
-      ctx.fillText("I: " + this.graph.iteration, 5, 13 * 2)
-      ctx.fillText("N: " + this.graph._nodes.length + " [" + this.visible_nodes.length + "]", 5, 13 * 3)
-      ctx.fillText("V: " + this.graph._version, 5, 13 * 4)
-      ctx.fillText("FPS:" + this.fps.toFixed(2), 5, 13 * 5)
+      ctx.fillText(`T: ${this.graph.globaltime.toFixed(2)}s`, 5, 13 * 1)
+      ctx.fillText(`I: ${this.graph.iteration}`, 5, 13 * 2)
+      ctx.fillText(`N: ${this.graph._nodes.length} [${this.visible_nodes.length}]`, 5, 13 * 3)
+      ctx.fillText(`V: ${this.graph._version}`, 5, 13 * 4)
+      ctx.fillText(`FPS:${this.fps.toFixed(2)}`, 5, 13 * 5)
     } else {
       ctx.fillText("No graph selected", 5, 13 * 1)
     }
@@ -4774,13 +4765,13 @@ export class LGraphCanvas implements ConnectionColorContext {
     if (typeof data === "number")
       text = data.toFixed(2)
     else if (typeof data === "string")
-      text = "\"" + data + "\""
+      text = `"${data}"`
     else if (typeof data === "boolean")
       text = String(data)
     else if (data.toToolTip)
       text = data.toToolTip()
     else
-      text = "[" + data.constructor.name + "]"
+      text = `[${data.constructor.name}]`
 
     if (text == null) return
 
@@ -5709,7 +5700,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     const isTo = !isFrom && opts.nodeTo && opts.slotTo !== null
 
     if (!isFrom && !isTo) {
-      console.warn("No data passed to createDefaultNodeForSlot " + opts.nodeFrom + " " + opts.slotFrom + " " + opts.nodeTo + " " + opts.slotTo)
+      console.warn(`No data passed to createDefaultNodeForSlot`, opts.nodeFrom, opts.slotFrom, opts.nodeTo, opts.slotTo)
       return false
     }
     if (!opts.nodeType) {
@@ -5736,7 +5727,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       break
     case "undefined":
     default:
-      console.warn("Cant get slot information " + slotX)
+      console.warn("Cant get slot information", slotX)
       return false
     }
 
@@ -5831,7 +5822,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
           return true
         }
-        console.log("failed creating " + nodeNewType)
+        console.log(`failed creating ${nodeNewType}`)
       }
     }
     return false
@@ -5880,7 +5871,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       slotX = isFrom ? nodeX.outputs[slotX] : nodeX.inputs[slotX]
       break
     default:
-      console.warn("Cant get slot information " + slotX)
+      console.warn("Cant get slot information", slotX)
       return
     }
 
@@ -5977,7 +5968,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     const canvas = graphcanvas.canvas
     canvas.parentNode.append(dialog)
 
-    if (this.ds.scale > 1) dialog.style.transform = "scale(" + this.ds.scale + ")"
+    if (this.ds.scale > 1) dialog.style.transform = `scale(${this.ds.scale})`
 
     let dialogCloseTimer = null
     let prevent_timeout = 0
@@ -6058,11 +6049,11 @@ export class LGraphCanvas implements ConnectionColorContext {
     }
 
     if (event) {
-      dialog.style.left = event.clientX + offsetx + "px"
-      dialog.style.top = event.clientY + offsety + "px"
+      dialog.style.left = `${event.clientX + offsetx}px`
+      dialog.style.top = `${event.clientY + offsety}px`
     } else {
-      dialog.style.left = canvas.width * 0.5 + offsetx + "px"
-      dialog.style.top = canvas.height * 0.5 + offsety + "px"
+      dialog.style.left = `${canvas.width * 0.5 + offsetx}px`
+      dialog.style.top = `${canvas.height * 0.5 + offsety}px`
     }
 
     setTimeout(function () {
@@ -6153,7 +6144,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     }
 
     if (this.ds.scale > 1) {
-      dialog.style.transform = "scale(" + this.ds.scale + ")"
+      dialog.style.transform = `scale(${this.ds.scale})`
     }
 
     // hide on mouse leave
@@ -6271,8 +6262,8 @@ export class LGraphCanvas implements ConnectionColorContext {
           if (
             // @ts-expect-error
             options.type_filter_in !== false &&
-            (options.type_filter_in + "").toLowerCase() ==
-            (aSlots[iK] + "").toLowerCase()
+            String(options.type_filter_in).toLowerCase() ==
+            String(aSlots[iK]).toLowerCase()
           ) {
             // selIn.selectedIndex ..
             opt.selected = true
@@ -6306,8 +6297,8 @@ export class LGraphCanvas implements ConnectionColorContext {
           selOut.append(opt)
           if (
             options.type_filter_out !== false &&
-            (options.type_filter_out + "").toLowerCase() ==
-            (aSlots[iK] + "").toLowerCase()
+            String(options.type_filter_out).toLowerCase() ==
+            String(aSlots[iK]).toLowerCase()
           ) {
             opt.selected = true
           }
@@ -6323,13 +6314,13 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     const left = (event ? event.clientX : rect.left + rect.width * 0.5) - 80
     const top = (event ? event.clientY : rect.top + rect.height * 0.5) - 20
-    dialog.style.left = left + "px"
-    dialog.style.top = top + "px"
+    dialog.style.left = `${left}px`
+    dialog.style.top = `${top}px`
 
     // To avoid out of screen problems
     if (event.layerY > rect.height - 200)
       // @ts-expect-error
-      helper.style.maxHeight = rect.height - event.layerY - 20 + "px"
+      helper.style.maxHeight = `${rect.height - event.layerY - 20}px`
 
     requestAnimationFrame(function () {
       input.focus()
@@ -6603,7 +6594,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         help.dataset["type"] = escape(type)
         help.className = "litegraph lite-search-item"
         if (className) {
-          help.className += " " + className
+          help.className += ` ${className}`
         }
         help.addEventListener("click", function () {
           select(unescape(this.dataset["type"]))
@@ -6641,32 +6632,20 @@ export class LGraphCanvas implements ConnectionColorContext {
       for (const i in info.values) {
         const v = Array.isArray(info.values) ? info.values[i] : i
 
-        input_html +=
-          "<option value='" +
-          v +
-          "' " +
-          (v == node.properties[property] ? "selected" : "") +
-          ">" +
-          info.values[i] +
-          "</option>"
+        const selected = v == node.properties[property] ? "selected" : ""
+        input_html += `<option value='${v}' ${selected}>${info.values[i]}</option>`
       }
       input_html += "</select>"
     } else if (type == "boolean" || type == "toggle") {
-      input_html =
-        "<input autofocus type='checkbox' class='value' " +
-        (node.properties[property] ? "checked" : "") +
-        "/>"
+      const checked = node.properties[property] ? "checked" : ""
+      input_html = `<input autofocus type='checkbox' class='value' ${checked}/>`
     } else {
-      console.warn("unknown type: " + type)
+      console.warn(`unknown type: ${type}`)
       return
     }
 
     const dialog = this.createDialog(
-      "<span class='name'>" +
-      (info.label || property) +
-      "</span>" +
-      input_html +
-      "<button>OK</button>",
+      `<span class='name'>${info.label || property}</span>${input_html}<button>OK</button>`,
       options,
     )
 
@@ -6788,8 +6767,8 @@ export class LGraphCanvas implements ConnectionColorContext {
       offsety += this.canvas.height * 0.5
     }
 
-    dialog.style.left = offsetx + "px"
-    dialog.style.top = offsety + "px"
+    dialog.style.left = `${offsetx}px`
+    dialog.style.top = `${offsety}px`
 
     this.canvas.parentNode.append(dialog)
 
@@ -7085,7 +7064,7 @@ export class LGraphCanvas implements ConnectionColorContext {
           if (kV !== -1 && LiteGraph.NODE_MODES[kV]) {
             node.changeMode(kV)
           } else {
-            console.warn("unexpected mode: " + value)
+            console.warn(`unexpected mode: ${value}`)
           }
           break
         }
@@ -7094,7 +7073,7 @@ export class LGraphCanvas implements ConnectionColorContext {
             node.color = LGraphCanvas.node_colors[value].color
             node.bgcolor = LGraphCanvas.node_colors[value].bgcolor
           } else {
-            console.warn("unexpected color: " + value)
+            console.warn(`unexpected color: ${value}`)
           }
           break
         default:

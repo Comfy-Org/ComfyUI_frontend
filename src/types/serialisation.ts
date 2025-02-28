@@ -9,7 +9,7 @@ import type {
 } from "../interfaces"
 import type { LGraph, LGraphState } from "../LGraph"
 import type { IGraphGroupFlags, LGraphGroup } from "../LGraphGroup"
-import type { LGraphNode, NodeId } from "../LGraphNode"
+import type { LGraphNode, NodeId, NodeProperty } from "../LGraphNode"
 import type { LiteGraph } from "../litegraph"
 import type { LinkId, LLink } from "../LLink"
 import type { RerouteId } from "../Reroute"
@@ -57,7 +57,7 @@ export interface ISerialisedNode {
   mode?: number
   outputs?: ISerialisedNodeOutputSlot[]
   inputs?: ISerialisedNodeInputSlot[]
-  properties?: Dictionary<unknown>
+  properties?: Dictionary<NodeProperty | undefined>
   shape?: RenderShape
   boxcolor?: string
   color?: string

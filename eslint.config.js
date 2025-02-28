@@ -124,6 +124,8 @@ export default tseslint.config(
   // Base, TypeScript, and Stylistic
   {
     rules: {
+      "prefer-template": "error",
+
       // TODO: Update when TypeScript has been cleaned
       "prefer-spread": "off",
       "no-empty": "off",

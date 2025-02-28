@@ -469,7 +469,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
         this.errors_in_execution = true
         if (LiteGraph.throw_errors) throw error
 
-        if (LiteGraph.debug) console.log("Error during execution: " + error)
+        if (LiteGraph.debug) console.log("Error during execution:", error)
         this.stop()
       }
     }
@@ -1116,7 +1116,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
       const ctor = LiteGraph.registered_node_types[node.type]
       if (node.constructor == ctor) continue
 
-      console.log("node being replaced by newer version: " + node.type)
+      console.log("node being replaced by newer version:", node.type)
       // @ts-ignore deprecated
       const newnode = LiteGraph.createNode(node.type)
       if (!newnode) continue
@@ -1638,7 +1638,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
         // stored info
         let node = LiteGraph.createNode(String(n_info.type), n_info.title)
         if (!node) {
-          if (LiteGraph.debug) console.log("Node not found or has errors: " + n_info.type)
+          if (LiteGraph.debug) console.log("Node not found or has errors:", n_info.type)
 
           // in case of error we create a replacement node to avoid losing info
           node = new LGraphNode("")

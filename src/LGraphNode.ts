@@ -46,13 +46,13 @@ import { WIDGET_TYPE_MAP } from "./widgets/widgetMap"
 
 export type NodeId = number | string
 
+export type NodeProperty = string | number | boolean | object
+
 export interface INodePropertyInfo {
   name: string
   type?: string
-  default_value: unknown
+  default_value: NodeProperty | undefined
 }
-
-export type INodeProperties = Dictionary<unknown>
 
 export interface IMouseOverData {
   inputId: number | null
@@ -177,7 +177,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   outputs: INodeOutputSlot[] = []
   // Not used
   connections: unknown[] = []
-  properties: INodeProperties = {}
+  properties: Dictionary<NodeProperty | undefined> = {}
   properties_info: INodePropertyInfo[] = []
   flags: INodeFlags = {}
   widgets?: IWidget[]
@@ -1139,7 +1139,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     options = options || {}
     if (this.onExecute) {
       // enable this to give the event an ID
-      options.action_call ||= this.id + "_exec_" + Math.floor(Math.random() * 9999)
+      options.action_call ||= `${this.id}_exec_${Math.floor(Math.random() * 9999)}`
       if (!this.graph) throw new NullGraphError()
 
       // @ts-ignore Technically it works when id is a string. Array gets props.
@@ -1173,7 +1173,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     options = options || {}
     if (this.onAction) {
       // enable this to give the event an ID
-      options.action_call ||= this.id + "_" + (action || "action") + "_" + Math.floor(Math.random() * 9999)
+      options.action_call ||= `${this.id}_${action || "action"}_${Math.floor(Math.random() * 9999)}`
       if (!this.graph) throw new NullGraphError()
 
       // @ts-ignore deprecated
@@ -1270,13 +1270,13 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       if (node.mode === LGraphEventMode.ON_TRIGGER) {
         // generate unique trigger ID if not present
         if (!options.action_call)
-          options.action_call = this.id + "_trigg_" + Math.floor(Math.random() * 9999)
+          options.action_call = `${this.id}_trigg_${Math.floor(Math.random() * 9999)}`
         // -- wrapping node.onExecute(param); --
         node.doExecute?.(param, options)
       } else if (node.onAction) {
         // generate unique action ID if not present
         if (!options.action_call)
-          options.action_call = this.id + "_act_" + Math.floor(Math.random() * 9999)
+          options.action_call = `${this.id}_act_${Math.floor(Math.random() * 9999)}`
         // pass the action name
         const target_connection = node.inputs[link_info.target_slot]
         node.actionDo(target_connection.name, param, options)
@@ -1339,7 +1339,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    */
   addProperty(
     name: string,
-    default_value: unknown,
+    default_value: NodeProperty | undefined,
     type?: string,
     extra_info?: Partial<INodePropertyInfo>,
   ): INodePropertyInfo {
@@ -1631,7 +1631,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     }
     // litescene mode using the constructor
     // @ts-ignore deprecated https://github.com/Comfy-Org/litegraph.js/issues/639
-    if (this.constructor["@" + property]) info = this.constructor["@" + property]
+    if (this.constructor[`@${property}`]) info = this.constructor[`@${property}`]
 
     if (this.constructor.widgets_info?.[property])
       info = this.constructor.widgets_info[property]
@@ -2307,7 +2307,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     if (typeof slot === "string") {
       slot = this.findOutputSlot(slot)
       if (slot == -1) {
-        if (LiteGraph.debug) console.log("Connect: Error, no slot of name " + slot)
+        if (LiteGraph.debug) console.log(`Connect: Error, no slot of name ${slot}`)
         return null
       }
     } else if (!this.outputs || slot >= this.outputs.length) {
@@ -2330,7 +2330,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     if (typeof target_slot === "string") {
       targetIndex = target_node.findInputSlot(target_slot)
       if (targetIndex == -1) {
-        if (LiteGraph.debug) console.log("Connect: Error, no slot of name " + targetIndex)
+        if (LiteGraph.debug) console.log(`Connect: Error, no slot of name ${targetIndex}`)
         return null
       }
     } else if (target_slot === LiteGraph.EVENT) {
@@ -2480,7 +2480,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     if (typeof slot === "string") {
       slot = this.findOutputSlot(slot)
       if (slot == -1) {
-        if (LiteGraph.debug) console.log("Connect: Error, no slot of name " + slot)
+        if (LiteGraph.debug) console.log(`Connect: Error, no slot of name ${slot}`)
         return false
       }
     } else if (!this.outputs || slot >= this.outputs.length) {
@@ -2595,7 +2595,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     if (typeof slot === "string") {
       slot = this.findInputSlot(slot)
       if (slot == -1) {
-        if (LiteGraph.debug) console.log("Connect: Error, no slot of name " + slot)
+        if (LiteGraph.debug) console.log(`Connect: Error, no slot of name ${slot}`)
         return false
       }
     } else if (!this.inputs || slot >= this.inputs.length) {
