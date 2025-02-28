@@ -11,7 +11,7 @@ import type {
   INodeInputSlot,
   INodeOutputSlot,
   INodeSlot,
-  IOptionalSlotData,
+  INodeSlotContextItem,
   IPinnable,
   ISlotType,
   Point,
@@ -516,14 +516,14 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   onNodeInputAdd?(this: LGraphNode, value: unknown): void
   onMenuNodeInputs?(
     this: LGraphNode,
-    entries: IOptionalSlotData<INodeInputSlot>[],
-  ): IOptionalSlotData<INodeInputSlot>[]
+    entries: (IContextMenuValue<INodeSlotContextItem> | null)[],
+  ): (IContextMenuValue<INodeSlotContextItem> | null)[]
   onMenuNodeOutputs?(
     this: LGraphNode,
-    entries: IOptionalSlotData<INodeOutputSlot>[],
-  ): IOptionalSlotData<INodeOutputSlot>[]
-  onGetInputs?(this: LGraphNode): INodeInputSlot[]
-  onGetOutputs?(this: LGraphNode): INodeOutputSlot[]
+    entries: (IContextMenuValue<INodeSlotContextItem> | null)[],
+  ): (IContextMenuValue<INodeSlotContextItem> | null)[]
+  onGetInputs?(this: LGraphNode): INodeSlotContextItem[]
+  onGetOutputs?(this: LGraphNode): INodeSlotContextItem[]
   onMouseUp?(this: LGraphNode, e: CanvasMouseEvent, pos: Point): void
   onMouseEnter?(this: LGraphNode, e: CanvasMouseEvent): void
   /** Blocks drag if return value is truthy. @param pos Offset from {@link LGraphNode.pos}. */

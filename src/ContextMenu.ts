@@ -1,28 +1,21 @@
-import type { IContextMenuOptions, IContextMenuValue } from "./interfaces"
+import type { ContextMenuDivElement, IContextMenuOptions, IContextMenuValue } from "./interfaces"
 
 import { LiteGraph } from "./litegraph"
 
-interface ContextMenuDivElement extends HTMLDivElement {
-  value?: IContextMenuValue | string
-  onclick_callback?: never
-  closing_timer?: number
-}
-
 // TODO: Replace this pattern with something more modern.
-// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
-export interface ContextMenu {
-  constructor: new (...args: ConstructorParameters<typeof ContextMenu>) => ContextMenu
+export interface ContextMenu<TValue = unknown> {
+  constructor: new (...args: ConstructorParameters<typeof ContextMenu<TValue>>) => ContextMenu<TValue>
 }
 
 /**
  * ContextMenu from LiteGUI
  */
 // eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
-export class ContextMenu {
-  options: IContextMenuOptions
-  parentMenu?: ContextMenu
-  root: ContextMenuDivElement
-  current_submenu?: ContextMenu
+export class ContextMenu<TValue = unknown> {
+  options: IContextMenuOptions<TValue>
+  parentMenu?: ContextMenu<TValue>
+  root: ContextMenuDivElement<TValue>
+  current_submenu?: ContextMenu<TValue>
   lock?: boolean
 
   /**
@@ -35,7 +28,7 @@ export class ContextMenu {
    * - ignore_item_callbacks: ignores the callback inside the item, it just calls the options.callback
    * - event: you can pass a MouseEvent, this way the ContextMenu appears in that position
    */
-  constructor(values: (IContextMenuValue | string | null)[], options: IContextMenuOptions) {
+  constructor(values: (string | IContextMenuValue<TValue> | null)[], options: IContextMenuOptions<TValue>) {
     options ||= {}
     this.options = options
 
@@ -68,7 +61,7 @@ export class ContextMenu {
       options.event = undefined
     }
 
-    const root: ContextMenuDivElement = document.createElement("div")
+    const root: ContextMenuDivElement<TValue> = document.createElement("div")
     let classes = "litegraph litecontextmenu litemenubar-panel"
     if (options.className) classes += " " + options.className
     root.className = classes
@@ -189,12 +182,12 @@ export class ContextMenu {
 
   addItem(
     name: string | null,
-    value: IContextMenuValue | string | null,
-    options: IContextMenuOptions,
+    value: string | IContextMenuValue<TValue> | null,
+    options: IContextMenuOptions<TValue>,
   ): HTMLElement {
     options ||= {}
 
-    const element: ContextMenuDivElement = document.createElement("div")
+    const element: ContextMenuDivElement<TValue> = document.createElement("div")
     element.className = "litemenu-entry submenu"
 
     let disabled = false
@@ -246,7 +239,7 @@ export class ContextMenu {
       element.setAttribute("aria-expanded", "true")
     }
 
-    function inner_over(this: ContextMenuDivElement, e: MouseEvent) {
+    function inner_over(this: ContextMenuDivElement<TValue>, e: MouseEvent) {
       const value = this.value
       if (!value || !(value as IContextMenuValue).has_submenu) return
 
@@ -257,7 +250,7 @@ export class ContextMenu {
 
     // menu option clicked
     const that = this
-    function inner_onclick(this: ContextMenuDivElement, e: MouseEvent) {
+    function inner_onclick(this: ContextMenuDivElement<TValue>, e: MouseEvent) {
       const value = this.value
       let close_parent = true
 
@@ -358,7 +351,7 @@ export class ContextMenu {
   }
 
   // returns the top most menu
-  getTopMenu(): ContextMenu {
+  getTopMenu(): ContextMenu<TValue> {
     return this.options.parentMenu
       ? this.options.parentMenu.getTopMenu()
       : this

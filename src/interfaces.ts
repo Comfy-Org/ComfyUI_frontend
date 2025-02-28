@@ -289,22 +289,15 @@ export interface ConnectingLink extends IInputOrOutput {
   afterRerouteId?: RerouteId
 }
 
-interface IContextMenuBase<TExtra = unknown> {
+interface IContextMenuBase {
   title?: string
   className?: string
-  callback?(
-    value?: unknown,
-    options?: unknown,
-    event?: MouseEvent,
-    previous_menu?: ContextMenu,
-    extra?: TExtra,
-  ): void | boolean
 }
 
 /** ContextMenu */
-export interface IContextMenuOptions extends IContextMenuBase {
+export interface IContextMenuOptions<TValue = unknown> extends IContextMenuBase {
   ignore_item_callbacks?: boolean
-  parentMenu?: ContextMenu
+  parentMenu?: ContextMenu<TValue>
   event?: MouseEvent
   extra?: unknown
   /** @deprecated Context menu scrolling is now controlled by the browser */
@@ -315,19 +308,42 @@ export interface IContextMenuOptions extends IContextMenuBase {
   scale?: number
   node?: LGraphNode
   autoopen?: boolean
+  callback?(
+    value?: string | IContextMenuValue<TValue>,
+    options?: unknown,
+    event?: MouseEvent,
+    previous_menu?: ContextMenu<TValue>,
+    extra?: unknown,
+  ): void | boolean
 }
 
-export interface IContextMenuValue<TExtra = unknown> extends IContextMenuBase<TExtra> {
-  value?: string
+export interface IContextMenuValue<TValue = unknown, TExtra = unknown, TCallbackValue = unknown> extends IContextMenuBase {
+  value?: TValue
   content: string | undefined
   has_submenu?: boolean
   disabled?: boolean
-  submenu?: IContextMenuSubmenu
+  submenu?: IContextMenuSubmenu<TValue>
   property?: string
   type?: string
   slot?: IFoundSlot
+  callback?(
+    this: ContextMenuDivElement<TValue>,
+    value?: TCallbackValue,
+    options?: unknown,
+    event?: MouseEvent,
+    previous_menu?: ContextMenu<TValue>,
+    extra?: TExtra,
+  ): void | boolean
 }
 
-export interface IContextMenuSubmenu extends IContextMenuOptions {
-  options: ConstructorParameters<typeof ContextMenu>[0]
+export interface IContextMenuSubmenu<TValue = unknown> extends IContextMenuOptions<TValue> {
+  options: ConstructorParameters<typeof ContextMenu<TValue>>[0]
 }
+
+export interface ContextMenuDivElement<TValue = unknown> extends HTMLDivElement {
+  value?: string | IContextMenuValue<TValue>
+  onclick_callback?: never
+  closing_timer?: number
+}
+
+export type INodeSlotContextItem = [string, ISlotType, Partial<INodeInputSlot & INodeOutputSlot>]

@@ -4,6 +4,7 @@ import type {
   CanvasColour,
   ColorOption,
   ConnectingLink,
+  ContextMenuDivElement,
   Dictionary,
   Direction,
   IBoundaryNodes,
@@ -13,7 +14,7 @@ import type {
   INodeInputSlot,
   INodeOutputSlot,
   INodeSlot,
-  IOptionalSlotData,
+  INodeSlotContextItem,
   ISlotType,
   LinkSegment,
   NullableProperties,
@@ -437,8 +438,8 @@ export class LGraphCanvas implements ConnectionColorContext {
   autoresize: boolean
   static active_canvas: LGraphCanvas
   static onMenuNodeOutputs?(
-    entries: (IOptionalSlotData<INodeOutputSlot> | null)[],
-  ): (IOptionalSlotData<INodeOutputSlot> | null)[]
+    entries: (IContextMenuValue<INodeSlotContextItem> | null)[],
+  ): (IContextMenuValue<INodeSlotContextItem> | null)[]
   frame = 0
   last_draw_time = 0
   render_time = 0
@@ -746,7 +747,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     value: IContextMenuValue,
     options: IContextMenuOptions,
     event: MouseEvent,
-    prev_menu: ContextMenu,
+    prev_menu: ContextMenu<string>,
     node: LGraphNode,
   ): void {
     new LiteGraph.ContextMenu(["Top", "Bottom", "Left", "Right"], {
@@ -769,7 +770,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     value: IContextMenuValue,
     options: IContextMenuOptions,
     event: MouseEvent,
-    prev_menu: ContextMenu,
+    prev_menu: ContextMenu<string>,
   ): void {
     new LiteGraph.ContextMenu(["Top", "Bottom", "Left", "Right"], {
       event: event,
@@ -790,7 +791,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     value: IContextMenuValue,
     options: IContextMenuOptions,
     event: MouseEvent,
-    prev_menu: ContextMenu,
+    prev_menu: ContextMenu<string>,
   ): void {
     new LiteGraph.ContextMenu(["Vertically", "Horizontally"], {
       event,
@@ -809,8 +810,8 @@ export class LGraphCanvas implements ConnectionColorContext {
     node: LGraphNode,
     options: IContextMenuOptions,
     e: MouseEvent,
-    prev_menu: ContextMenu,
-    callback?: (node: LGraphNode) => void,
+    prev_menu: ContextMenu<string>,
+    callback?: (node: LGraphNode | null) => void,
   ): boolean | undefined {
     const canvas = LGraphCanvas.active_canvas
     const ref_window = canvas.getCanvasWindow()
@@ -820,16 +821,16 @@ export class LGraphCanvas implements ConnectionColorContext {
     inner_onMenuAdded("", prev_menu)
     return false
 
-    type AddNodeMenu = Omit<IContextMenuValue, "callback"> & {
+    type AddNodeMenu = Omit<IContextMenuValue<string>, "callback"> & {
       callback: (
         value: { value: string },
         event: Event,
         mouseEvent: MouseEvent,
-        contextMenu: ContextMenu
+        contextMenu: ContextMenu<string>
       ) => void
     }
 
-    function inner_onMenuAdded(base_category: string, prev_menu?: ContextMenu): void {
+    function inner_onMenuAdded(base_category: string, prev_menu?: ContextMenu<string>): void {
       if (!graph) return
 
       const categories = LiteGraph
@@ -913,7 +914,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     /** Unused - immediately overwritten */
     _options: boolean,
     e: MouseEvent,
-    prev_menu: ContextMenu,
+    prev_menu: ContextMenu<INodeSlotContextItem>,
     node: LGraphNode,
   ): boolean | undefined {
     if (!node) return
@@ -927,7 +928,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       ? node.onGetInputs()
       : undefined
 
-    let entries: (IOptionalSlotData<INodeInputSlot> | null)[] = []
+    let entries: (IContextMenuValue<INodeSlotContextItem> | null)[] = []
     if (options) {
       for (const entry of options) {
         if (!entry) {
@@ -942,7 +943,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         }
 
         entry[2].removable = true
-        const data: IOptionalSlotData<INodeInputSlot> = { content: label, value: entry }
+        const data: IContextMenuValue<INodeSlotContextItem> = { content: label, value: entry }
         if (entry[1] == LiteGraph.ACTION) {
           data.className = "event"
         }
@@ -958,7 +959,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       return
     }
 
-    new LiteGraph.ContextMenu(
+    new LiteGraph.ContextMenu<INodeSlotContextItem>(
       entries,
       {
         event: e,
@@ -970,7 +971,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       ref_window,
     )
 
-    function inner_clicked(v, e, prev) {
+    function inner_clicked(v: IContextMenuValue<INodeSlotContextItem>, e: MouseEvent, prev: ContextMenu<INodeSlotContextItem>) {
       if (!node) return
 
       v.callback?.call(that, node, v, e, prev)
@@ -1009,7 +1010,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       ? node.onGetOutputs()
       : undefined
 
-    let entries: (IOptionalSlotData<INodeOutputSlot> | null)[] = []
+    let entries: (IContextMenuValue<INodeSlotContextItem> | null)[] = []
     if (options) {
       for (const entry of options) {
         if (!entry) {
@@ -1032,7 +1033,7 @@ export class LGraphCanvas implements ConnectionColorContext {
           label = entry[2].label
         }
         entry[2].removable = true
-        const data: IOptionalSlotData<INodeOutputSlot> = { content: label, value: entry }
+        const data: IContextMenuValue<INodeSlotContextItem> = { content: label, value: entry }
         if (entry[1] == LiteGraph.EVENT) {
           data.className = "event"
         }
@@ -1044,7 +1045,6 @@ export class LGraphCanvas implements ConnectionColorContext {
     if (LiteGraph.do_add_triggers_slots) {
       // canvas.allow_addOutSlot_onExecuted
       if (node.findOutputSlot("onExecuted") == -1) {
-        // @ts-expect-error Events
         entries.push({ content: "On Executed", value: ["onExecuted", LiteGraph.EVENT, { nameLocked: true }], className: "event" })
       }
     }
@@ -1066,7 +1066,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       ref_window,
     )
 
-    function inner_clicked(v, e, prev) {
+    function inner_clicked(v: IContextMenuValue<INodeSlotContextItem>, e: any, prev: any) {
       if (!node) return
 
       // TODO: This is a static method, so the below "that" appears broken.
@@ -1112,7 +1112,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     value: unknown,
     options: unknown,
     e: MouseEvent,
-    prev_menu: ContextMenu,
+    prev_menu: ContextMenu<string>,
     node: LGraphNode,
   ): boolean | undefined {
     if (!node || !node.properties) return
@@ -1120,7 +1120,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     const canvas = LGraphCanvas.active_canvas
     const ref_window = canvas.getCanvasWindow()
 
-    const entries = []
+    const entries: IContextMenuValue<string>[] = []
     for (const i in node.properties) {
       value = node.properties[i] !== undefined ? node.properties[i] : " "
       if (typeof value == "object")
@@ -1145,7 +1145,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       return
     }
 
-    new LiteGraph.ContextMenu(
+    new LiteGraph.ContextMenu<string>(
       entries,
       {
         event: e,
@@ -1158,7 +1158,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       ref_window,
     )
 
-    function inner_clicked(v: { value: any }) {
+    function inner_clicked(this: ContextMenuDivElement, v: { value: any }) {
       if (!node) return
 
       const rect = this.getBoundingClientRect()
@@ -1203,10 +1203,10 @@ export class LGraphCanvas implements ConnectionColorContext {
 
   // TODO refactor :: this is used fot title but not for properties!
   static onShowPropertyEditor(
-    item: { property: string, type: string },
+    item: { property: keyof LGraphNode, type: string },
     options: IContextMenuOptions,
     e: MouseEvent,
-    menu: ContextMenu,
+    menu: ContextMenu<string>,
     node: LGraphNode,
   ): void {
     const property = item.property || "title"
@@ -1299,6 +1299,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       } else if (item.type == "Boolean") {
         value = Boolean(value)
       }
+      // @ts-expect-error Requires refactor.
       node[property] = value
       dialog.remove()
       canvas.setDirty(true, true)
@@ -1418,15 +1419,15 @@ export class LGraphCanvas implements ConnectionColorContext {
 
   /** @param value Parameter is never used */
   static onMenuNodeColors(
-    value: IContextMenuValue,
+    value: IContextMenuValue<string>,
     options: IContextMenuOptions,
     e: MouseEvent,
-    menu: ContextMenu,
+    menu: ContextMenu<string>,
     node: LGraphNode,
   ): boolean {
     if (!node) throw "no node for color"
 
-    const values: IContextMenuValue[] = []
+    const values: IContextMenuValue<string, unknown, { value: string | null }>[] = []
     values.push({
       value: null,
       content: "<span style='display: block; padding-left: 4px;'>No color</span>",
@@ -1446,14 +1447,14 @@ export class LGraphCanvas implements ConnectionColorContext {
       }
       values.push(value)
     }
-    new LiteGraph.ContextMenu(values, {
+    new LiteGraph.ContextMenu<string>(values, {
       event: e,
       callback: inner_clicked,
       parentMenu: menu,
       node: node,
     })
 
-    function inner_clicked(v: { value: string | null }) {
+    function inner_clicked(v: IContextMenuValue<string>) {
       if (!node) return
 
       const fApplyColor = function (item: IColorable) {
@@ -5650,7 +5651,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     const title = "data" in segment && segment.data != null
       ? segment.data.constructor.name
       : null
-    const menu = new LiteGraph.ContextMenu(options, {
+    const menu = new LiteGraph.ContextMenu<string>(options, {
       event: e,
       title,
       callback: inner_clicked.bind(this),
@@ -5905,7 +5906,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     }
 
     // build menu
-    const menu = new LiteGraph.ContextMenu(options, {
+    const menu = new LiteGraph.ContextMenu<string>(options, {
       event: opts.e,
       title:
         (slotX && slotX.name != ""
@@ -7222,7 +7223,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
   // called by processContextMenu to extract the menu list
   getNodeMenuOptions(node: LGraphNode): IContextMenuValue[] {
-    let options: IContextMenuValue<LGraphNode>[] = null
+    let options: IContextMenuValue<unknown, LGraphNode>[] = null
 
     if (node.getMenuOptions) {
       options = node.getMenuOptions(this)
@@ -7358,7 +7359,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     const ref_window = canvas.getCanvasWindow()
 
     // TODO: Remove type kludge
-    let menu_info: (IContextMenuValue | string)[]
+    let menu_info: (IContextMenuValue | string | null)[]
     const options: IContextMenuOptions = {
       event: event,
       callback: inner_option_clicked,
