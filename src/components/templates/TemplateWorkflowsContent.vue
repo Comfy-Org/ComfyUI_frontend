@@ -4,7 +4,7 @@
     data-testid="template-workflows-content"
   >
     <Divider
-      class="m-0 [&::before]:border-surface-border/70 [&::before]:border-t-4"
+      class="m-0 [&::before]:border-surface-border/70 [&::before]:border-t-2"
     />
     <div class="flex flex-1">
       <div class="relative">
@@ -20,12 +20,16 @@
             option-group-label="label"
             option-label="title"
             option-group-children="modules"
-            scroll-height="auto"
-            class="w-full border-0 bg-transparent [&_.p-listbox-list]:p-0 [&_.p-listbox-option]:px-12 [&_.p-listbox-option]:py-3 [&_.p-listbox-option]:text-lg"
+            :pt="{
+              root: { class: 'w-full border-0 bg-transparent' },
+              list: { class: 'p-0' },
+              option: { class: 'px-12 py-3 text-lg' },
+              optionGroup: { class: 'p-0 text-left text-inherit' }
+            }"
             listStyle="max-height:unset"
           >
             <template #optiongroup="slotProps">
-              <div class="section-header px-12">
+              <div class="text-left py-3 px-12">
                 <h2 class="text-lg">{{ slotProps.option.label }}</h2>
               </div>
             </template>
@@ -35,12 +39,12 @@
       <div class="relative mx-[-1px]">
         <Divider
           layout="vertical"
-          class="h-full p-0 m-0 [&::before]:border-l-4 [&::before]:border-surface-border/70"
+          class="h-full p-0 m-0 [&::before]:border-l-2 [&::before]:border-surface-border/70"
         />
       </div>
       <ScrollPanel>
         <div v-if="selectedTab" class="flex flex-col px-12">
-          <div class="section-header">
+          <div class="py-3 text-left">
             <h2 class="text-lg">{{ selectedTab.title }}</h2>
           </div>
           <div class="flex flex-wrap gap-8">
@@ -124,15 +128,3 @@ const loadWorkflow = async (id: string) => {
   return false
 }
 </script>
-
-<style scoped>
-.section-header {
-  @apply py-3 text-left;
-}
-
-:deep(.p-listbox-option-group) {
-  padding: 0;
-  text-align: left;
-  color: inherit;
-}
-</style>
