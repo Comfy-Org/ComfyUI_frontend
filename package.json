@@ -20,7 +20,6 @@
     "format": "prettier --write './**/*.{js,ts,tsx,vue,mts}'",
     "format:check": "prettier --check './**/*.{js,ts,tsx,vue,mts}'",
     "test:jest": "jest --config jest.config.ts",
-    "test:generate": "npx tsx tests-ui/setup",
     "test:browser": "npx playwright test",
     "test:component": "vitest run src/components/",
     "prepare": "husky || true",

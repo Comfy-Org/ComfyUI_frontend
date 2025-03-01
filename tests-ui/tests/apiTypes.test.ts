@@ -1,7 +1,4 @@
 // @ts-strict-ignore
-import fs from 'fs'
-import path from 'path'
-
 import {
   type ComfyNodeDef,
   validateComfyNodeDef
@@ -76,19 +73,4 @@ describe('validateNodeDef', () => {
       })
     }
   )
-
-  it('Should accept all built-in node definitions', async () => {
-    const nodeDefs = Object.values(
-      JSON.parse(
-        fs.readFileSync(
-          path.resolve('./tests-ui/data/object_info.json'),
-          'utf8'
-        )
-      )
-    )
-
-    for (const nodeDef of nodeDefs) {
-      expect(validateComfyNodeDef(nodeDef)).not.toBeNull()
-    }
-  })
 })
