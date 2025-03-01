@@ -826,7 +826,11 @@ app.registerExtension({
       ]
     }
 
-    nodeType.prototype.getExtraMenuOptions = function (_, options) {
+    nodeType.prototype.getExtraMenuOptions = function (
+      this: LGraphNode,
+      _,
+      options
+    ) {
       const r = origGetExtraMenuOptions
         ? origGetExtraMenuOptions.apply(this, arguments)
         : undefined
@@ -909,7 +913,7 @@ app.registerExtension({
       return r
     }
 
-    nodeType.prototype.onGraphConfigured = function () {
+    nodeType.prototype.onGraphConfigured = function (this: LGraphNode) {
       if (!this.inputs) return
       this.widgets ??= []
 
@@ -921,7 +925,9 @@ app.registerExtension({
           }
 
           // Cleanup old widget config
+          // @ts-expect-error WidgetRef
           if (input.widget.config) {
+            // @ts-expect-error WidgetRef
             if (input.widget.config[0] instanceof Array) {
               // If we are an old converted combo then replace the input type and the stored link data
               input.type = 'COMBO'
@@ -931,6 +937,7 @@ app.registerExtension({
                 link.type = input.type
               }
             }
+            // @ts-expect-error WidgetRef
             delete input.widget.config
           }
 
@@ -938,14 +945,14 @@ app.registerExtension({
           if (w) {
             hideWidget(this, w)
           } else {
-            convertToWidget(this, input)
+            convertToWidget(this, w)
           }
         }
       }
     }
 
     const origOnNodeCreated = nodeType.prototype.onNodeCreated
-    nodeType.prototype.onNodeCreated = function () {
+    nodeType.prototype.onNodeCreated = function (this: LGraphNode) {
       const r = origOnNodeCreated ? origOnNodeCreated.apply(this) : undefined
 
       // When node is created, convert any force/default inputs
@@ -965,7 +972,7 @@ app.registerExtension({
     }
 
     const origOnConfigure = nodeType.prototype.onConfigure
-    nodeType.prototype.onConfigure = function () {
+    nodeType.prototype.onConfigure = function (this: LGraphNode) {
       const r = origOnConfigure
         ? origOnConfigure.apply(this, arguments)
         : undefined
@@ -998,7 +1005,10 @@ app.registerExtension({
     // Double click a widget input to automatically attach a primitive
     const origOnInputDblClick = nodeType.prototype.onInputDblClick
     const ignoreDblClick = Symbol()
-    nodeType.prototype.onInputDblClick = function (slot) {
+    nodeType.prototype.onInputDblClick = function (
+      this: LGraphNode,
+      slot: number
+    ) {
       const r = origOnInputDblClick
         ? origOnInputDblClick.apply(this, arguments)
         : undefined
@@ -1043,6 +1053,7 @@ app.registerExtension({
     // Prevent connecting COMBO lists to converted inputs that dont match types
     const onConnectInput = nodeType.prototype.onConnectInput
     nodeType.prototype.onConnectInput = function (
+      this: LGraphNode,
       targetSlot: number,
       type: string,
       output: INodeOutputSlot,
