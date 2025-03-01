@@ -8,7 +8,7 @@ export const CORE_TEMPLATES = [
         name: 'default',
         mediaType: 'image',
         mediaSubtype: 'webp',
-        description: 'Generate high-quality images from text descriptions.'
+        description: 'Generate images from text descriptions.'
       },
       {
         name: 'image2image',
@@ -22,8 +22,7 @@ export const CORE_TEMPLATES = [
         name: 'lora',
         mediaType: 'image',
         mediaSubtype: 'webp',
-        description:
-          'Apply LoRA models to enhance image generation with specialized styles or subjects.',
+        description: 'Apply LoRA models for specialized styles or subjects.',
         tutorialUrl: 'https://comfyanonymous.github.io/ComfyUI_examples/lora/'
       },
       {
@@ -48,8 +47,7 @@ export const CORE_TEMPLATES = [
         name: 'embedding_example',
         mediaType: 'image',
         mediaSubtype: 'webp',
-        description:
-          'Use textual inversion for consistent styles and convenient prompting.',
+        description: 'Use textual inversion for consistent styles',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/textual_inversion_embeddings/'
       },
@@ -57,7 +55,7 @@ export const CORE_TEMPLATES = [
         name: 'gligen_textbox_example',
         mediaType: 'image',
         mediaSubtype: 'webp',
-        description: 'Specify the location and size of objects in the image',
+        description: 'Specify the location and size of objects.',
         tutorialUrl: 'https://comfyanonymous.github.io/ComfyUI_examples/gligen/'
       },
       {
@@ -216,8 +214,7 @@ export const CORE_TEMPLATES = [
         name: 'hiresfix_esrgan_workflow',
         mediaType: 'image',
         mediaSubtype: 'webp',
-        description:
-          'Guide image generation by using upscale models during intermediate steps.',
+        description: 'Use upscale models during intermediate steps.',
         thumbnailVariant: 'zoomHover',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/2_pass_txt2img/#non-latent-upscaling'
@@ -226,8 +223,7 @@ export const CORE_TEMPLATES = [
         name: 'latent_upscale_different_prompt_model',
         mediaType: 'image',
         mediaSubtype: 'webp',
-        description:
-          'Upscale during intermediate steps with different prompts each pass',
+        description: 'Upscale and change prompt across passes',
         thumbnailVariant: 'zoomHover',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/2_pass_txt2img/#more-examples'
