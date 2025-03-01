@@ -1,4 +1,6 @@
 // @ts-strict-ignore
+import { describe, expect, it } from 'vitest'
+
 import {
   BooleanInputSpec,
   ComfyInputsSpec,
@@ -7,8 +9,6 @@ import {
   IntInputSpec,
   StringInputSpec
 } from '@/stores/nodeDefStore'
-
-// Adjust the import path as needed
 
 describe('ComfyInputsSpec', () => {
   it('should transform a plain object to ComfyInputsSpec instance', () => {

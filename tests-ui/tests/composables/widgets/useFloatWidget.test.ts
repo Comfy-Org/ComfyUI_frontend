@@ -1,10 +1,12 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { _for_testing } from '@/composables/widgets/useFloatWidget'
 
-jest.mock('@/scripts/widgets', () => ({
-  addValueControlWidgets: jest.fn()
+vi.mock('@/scripts/widgets', () => ({
+  addValueControlWidgets: vi.fn()
 }))
 
-jest.mock('@/stores/settingStore', () => ({
+vi.mock('@/stores/settingStore', () => ({
   useSettingStore: () => ({
     settings: {}
   })

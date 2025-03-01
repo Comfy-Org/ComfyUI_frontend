@@ -1,13 +1,13 @@
-module.exports = async function () {
-  jest.mock('vue-i18n', () => {
-    return {
-      useI18n: jest.fn()
-    }
-  })
+import { vi } from 'vitest'
 
-  jest.mock('jsondiffpatch', () => {
-    return {
-      diff: jest.fn()
-    }
-  })
-}
+vi.mock('vue-i18n', () => {
+  return {
+    useI18n: vi.fn()
+  }
+})
+
+vi.mock('jsondiffpatch', () => {
+  return {
+    diff: vi.fn()
+  }
+})

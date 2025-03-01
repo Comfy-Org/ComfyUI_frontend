@@ -3,7 +3,7 @@
 import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
 import Galleria from 'primevue/galleria'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import ComfyImage from '@/components/common/ComfyImage.vue'
 import { ResultItemImpl } from '@/stores/queueStore'

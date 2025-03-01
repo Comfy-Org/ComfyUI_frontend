@@ -921,7 +921,7 @@ export class ComfyApp {
   }
 
   /**
-   * Remove the impl after groupNode jest tests are removed.
+   * Remove the impl after groupNode unit tests are removed.
    * @deprecated Use useWidgetStore().getWidgetType instead
    */
   getWidgetType(inputData, inputName: string) {
