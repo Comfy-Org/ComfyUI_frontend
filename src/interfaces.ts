@@ -136,9 +136,9 @@ export interface LinkSegment {
 
 export interface IInputOrOutput {
   // If an input, this will be defined
-  input?: INodeInputSlot
+  input?: INodeInputSlot | null
   // If an output, this will be defined
-  output?: INodeOutputSlot
+  output?: INodeOutputSlot | null
 }
 
 export interface IFoundSlot extends IInputOrOutput {

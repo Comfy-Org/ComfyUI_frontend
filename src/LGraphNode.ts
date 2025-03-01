@@ -279,7 +279,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   console?: string[]
   _level?: number
   _shape?: RenderShape
-  mouseOver?: IMouseOverData
+  mouseOver?: IMouseOverData | null
   redraw_on_mouse?: boolean
   resizable?: boolean
   clonable?: boolean

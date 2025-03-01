@@ -199,7 +199,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   onOutputTypeChanged?(name: string, type: string): void
   onOutputRemoved?(name: string): void
   onBeforeChange?(graph: LGraph, info?: LGraphNode): void
-  onAfterChange?(graph: LGraph, info?: LGraphNode): void
+  onAfterChange?(graph: LGraph, info?: LGraphNode | null): void
   onConnectionChange?(node: LGraphNode): void
   on_change?(graph: LGraph): void
   onSerialize?(data: ISerialisedGraph | SerialisableGraph): void
@@ -1352,7 +1352,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   }
 
   // used to resend actions, called after any change is made to the graph
-  afterChange(info?: LGraphNode): void {
+  afterChange(info?: LGraphNode | null): void {
     this.onAfterChange?.(this, info)
     this.canvasAction(c => c.onAfterChange?.(this))
   }
