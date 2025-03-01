@@ -481,8 +481,6 @@ export class LGraphCanvas implements ConnectionColorContext {
   _mousecancel_callback?(e: PointerEvent): void
   _key_callback?(e: KeyboardEvent): void
   _ondrop_callback?(e: DragEvent): unknown
-  /** @deprecated WebGL */
-  gl?: never
   bgctx?: CanvasRenderingContext2D | null
   is_rendering?: boolean
   /** @deprecated Panels */
@@ -1675,14 +1673,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       throw "This browser doesn't support Canvas"
     }
 
-    const ctx = (this.ctx = element.getContext("2d"))
-    if (ctx == null) {
-      // @ts-expect-error WebGL
-      if (!element.webgl_enabled) {
-        console.warn("This canvas seems to be WebGL, enabling WebGL renderer")
-      }
-      this.enableWebGL()
-    }
+    this.ctx = element.getContext("2d")
 
     if (!skip_events) this.bindEvents()
   }
@@ -1782,37 +1773,6 @@ export class LGraphCanvas implements ConnectionColorContext {
     this._ondrop_callback = undefined
 
     this._events_binded = false
-  }
-
-  /**
-   * this function allows to render the canvas using WebGL instead of Canvas2D
-   * this is useful if you plant to render 3D objects inside your nodes, it uses litegl.js for webgl and canvas2DtoWebGL to emulate the Canvas2D calls in webGL
-   */
-  enableWebGL(): void {
-    // TODO: Delete or move all webgl to a module and never load it.
-    // @ts-expect-error
-    if (typeof GL === "undefined") {
-      throw "litegl.js must be included to use a WebGL canvas"
-    }
-    // @ts-expect-error
-    if (typeof enableWebGLCanvas === "undefined") {
-      throw "webglCanvas.js must be included to use this feature"
-    }
-
-    // @ts-expect-error
-    this.gl = this.ctx = enableWebGLCanvas(this.canvas)
-    // @ts-expect-error
-    this.ctx.webgl = true
-    this.bgcanvas = this.canvas
-    this.bgctx = this.gl
-    // @ts-expect-error
-    this.canvas.webgl_enabled = true
-
-    /*
-    GL.create({ canvas: this.bgcanvas });
-    this.bgctx = enableWebGLCanvas( this.bgcanvas );
-    window.gl = this.gl;
-    */
   }
 
   /**
@@ -4123,7 +4083,6 @@ export class LGraphCanvas implements ConnectionColorContext {
       this.ctx = this.bgcanvas.getContext("2d")
     }
     const ctx = this.ctx
-    // maybe is using webgl...
     if (!ctx) return
 
     const canvas = this.canvas
@@ -4323,11 +4282,6 @@ export class LGraphCanvas implements ConnectionColorContext {
     this.onDrawOverlay?.(ctx)
 
     if (area) ctx.restore()
-
-    // FIXME: Remove this hook
-    // this is a function I use in webgl renderer
-    // @ts-expect-error
-    if (ctx.finish2D) ctx.finish2D()
   }
 
   /** @returns If the pointer is over a link centre marker, the link segment it belongs to.  Otherwise, `undefined`.  */
