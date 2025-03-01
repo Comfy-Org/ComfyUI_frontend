@@ -20,6 +20,7 @@ export const useComboWidget = () => {
 
     const res = {
       widget: node.addWidget('combo', inputName, defaultValue, () => {}, {
+        // @ts-expect-error InputSpec is not typed correctly
         values: options ?? inputData[0]
       }) as IComboWidget
     }
@@ -31,6 +32,7 @@ export const useComboWidget = () => {
         node,
         widget: res.widget
       })
+      // @ts-expect-error InputSpec is not typed correctly
       if (remote.refresh_button) remoteWidget.addRefreshButton()
 
       const origOptions = res.widget.options

@@ -1606,8 +1606,10 @@ export class ComfyApp {
         const widget = node.widgets[widgetNum]
         if (widget.type === 'combo') {
           if (def['input'].required?.[widget.name] !== undefined) {
+            // @ts-expect-error InputSpec is not typed correctly
             widget.options.values = def['input'].required[widget.name][0]
           } else if (def['input'].optional?.[widget.name] !== undefined) {
+            // @ts-expect-error InputSpec is not typed correctly
             widget.options.values = def['input'].optional[widget.name][0]
           }
         }

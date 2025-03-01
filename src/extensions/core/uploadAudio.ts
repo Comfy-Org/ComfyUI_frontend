@@ -91,6 +91,7 @@ app.registerExtension({
       // @ts-expect-error ComfyNode
       ['LoadAudio', 'SaveAudio', 'PreviewAudio'].includes(nodeType.comfyClass)
     ) {
+      // @ts-expect-error InputSpec is not typed correctly
       nodeData.input.required.audioUI = ['AUDIO_UI']
     }
   },
@@ -149,6 +150,7 @@ app.registerExtension({
   name: 'Comfy.UploadAudio',
   async beforeRegisterNodeDef(nodeType, nodeData: ComfyNodeDef) {
     if (nodeData?.input?.required?.audio?.[1]?.audio_upload === true) {
+      // @ts-expect-error InputSpec is not typed correctly
       nodeData.input.required.upload = ['AUDIOUPLOAD']
     }
   },

@@ -74,11 +74,13 @@ export const useLitegraphService = () => {
             if (widgetType === 'COMBO') {
               Object.assign(
                 config,
+                // @ts-expect-error InputSpec is not typed correctly
                 app.widgets.COMBO(this, inputName, inputData, app) || {}
               )
             } else {
               Object.assign(
                 config,
+                // @ts-expect-error InputSpec is not typed correctly
                 app.widgets[widgetType](this, inputName, inputData, app) || {}
               )
             }
@@ -95,6 +97,7 @@ export const useLitegraphService = () => {
               ...shapeOptions,
               localized_name: st(nameKey, inputName)
             }
+            // @ts-expect-error InputSpec is not typed correctly
             this.addInput(inputName, type, inputOptions)
             widgetCreated = false
           }
@@ -104,15 +107,19 @@ export const useLitegraphService = () => {
             if (!inputIsRequired) {
               config.widget.options.inputIsOptional = true
             }
+            // @ts-expect-error InputSpec is not typed correctly
             if (inputData[1]?.forceInput) {
               config.widget.options.forceInput = true
             }
+            // @ts-expect-error InputSpec is not typed correctly
             if (inputData[1]?.defaultInput) {
               config.widget.options.defaultInput = true
             }
+            // @ts-expect-error InputSpec is not typed correctly
             if (inputData[1]?.advanced) {
               config.widget.advanced = true
             }
+            // @ts-expect-error InputSpec is not typed correctly
             if (inputData[1]?.hidden) {
               config.widget.hidden = true
             }

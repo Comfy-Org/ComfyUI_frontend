@@ -337,6 +337,7 @@ app.registerExtension({
       // @ts-expect-error ComfyNode
       ['Preview3D'].includes(nodeType.comfyClass)
     ) {
+      // @ts-expect-error InputSpec is not typed correctly
       nodeData.input.required.image = ['PREVIEW_3D']
     }
   },
@@ -439,6 +440,7 @@ app.registerExtension({
       // @ts-expect-error ComfyNode
       ['Preview3DAnimation'].includes(nodeType.comfyClass)
     ) {
+      // @ts-expect-error InputSpec is not typed correctly
       nodeData.input.required.image = ['PREVIEW_3D_ANIMATION']
     }
   },

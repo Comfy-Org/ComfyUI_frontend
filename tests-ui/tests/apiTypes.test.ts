@@ -9,7 +9,7 @@ import {
 const EXAMPLE_NODE_DEF: ComfyNodeDef = {
   input: {
     required: {
-      ckpt_name: [['model1.safetensors', 'model2.ckpt']]
+      ckpt_name: [['model1.safetensors', 'model2.ckpt'], {}]
     }
   },
   output: ['MODEL', 'CLIP', 'VAE'],

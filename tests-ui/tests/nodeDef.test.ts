@@ -1,6 +1,7 @@
 // @ts-strict-ignore
 import { describe, expect, it } from 'vitest'
 
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import {
   BooleanInputSpec,
   ComfyInputsSpec,
@@ -27,7 +28,7 @@ describe('ComfyInputsSpec', () => {
       hidden: {
         someHiddenValue: 42
       }
-    }
+    } as ComfyNodeDef['input']
 
     const result = new ComfyInputsSpec(plainObject)
 
@@ -43,7 +44,7 @@ describe('ComfyInputsSpec', () => {
         intInput: ['INT', { min: 0, max: 100, default: 50 }],
         stringInput: ['STRING', { default: 'Hello', multiline: true }]
       }
-    }
+    } as ComfyNodeDef['input']
 
     const result = new ComfyInputsSpec(plainObject)
 
@@ -68,7 +69,7 @@ describe('ComfyInputsSpec', () => {
         ],
         floatInput: ['FLOAT', { min: 0, max: 1, step: 0.1 }]
       }
-    }
+    } as ComfyNodeDef['input']
 
     const result = new ComfyInputsSpec(plainObject)
 
@@ -88,7 +89,7 @@ describe('ComfyInputsSpec', () => {
       optional: {
         comboInput: [[1, 2, 3], { default: 2 }]
       }
-    }
+    } as ComfyNodeDef['input']
 
     const result = new ComfyInputsSpec(plainObject)
     expect(result.optional.comboInput.type).toBe('COMBO')
@@ -100,7 +101,7 @@ describe('ComfyInputsSpec', () => {
       optional: {
         comboInput: [[1, 2, 3], {}]
       }
-    }
+    } as ComfyNodeDef['input']
 
     const result = new ComfyInputsSpec(plainObject)
     expect(result.optional.comboInput.type).toBe('COMBO')
@@ -113,7 +114,7 @@ describe('ComfyInputsSpec', () => {
       optional: {
         customInput: ['CUSTOM_TYPE', { default: 'custom value' }]
       }
-    }
+    } as ComfyNodeDef['input']
 
     const result = new ComfyInputsSpec(plainObject)
     expect(result.optional.customInput.type).toBe('CUSTOM_TYPE')
@@ -126,7 +127,7 @@ describe('ComfyInputsSpec', () => {
         someHiddenValue: 42,
         anotherHiddenValue: { nested: 'object' }
       }
-    }
+    } as ComfyNodeDef['input']
 
     const result = new ComfyInputsSpec(plainObject)
 
@@ -163,7 +164,7 @@ describe('ComfyNodeDefImpl', () => {
       output: ['INT'],
       output_is_list: [false],
       output_name: ['intOutput']
-    }
+    } as ComfyNodeDef
 
     const result = new ComfyNodeDefImpl(plainObject)
 
@@ -201,7 +202,7 @@ describe('ComfyNodeDefImpl', () => {
       output_is_list: [false],
       output_name: ['intOutput'],
       deprecated: true
-    }
+    } as ComfyNodeDef
 
     const result = new ComfyNodeDefImpl(plainObject)
     expect(result.deprecated).toBe(true)
@@ -224,7 +225,7 @@ describe('ComfyNodeDefImpl', () => {
       output: ['INT'],
       output_is_list: [false],
       output_name: ['intOutput']
-    }
+    } as ComfyNodeDef
 
     const result = new ComfyNodeDefImpl(plainObject)
     expect(result.deprecated).toBe(true)
@@ -393,7 +394,7 @@ describe('ComfyNodeDefImpl', () => {
       output: ['INT'],
       output_is_list: [false],
       output_name: ['result']
-    }
+    } as ComfyNodeDef
 
     const result = new ComfyNodeDefImpl(plainObject)
 

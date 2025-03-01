@@ -2,7 +2,7 @@ import type { LGraphNode } from '@comfyorg/litegraph'
 import type { INumericWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import _ from 'lodash'
 
-import type { InputSpec } from '@/schemas/nodeDefSchema'
+import type { FloatInputOptions, InputSpec } from '@/schemas/nodeDefSchema'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { useSettingStore } from '@/stores/settingStore'
 import { getNumberDefaults } from '@/utils/mathUtil'
@@ -45,11 +45,14 @@ export const useFloatWidget = () => {
       settingStore.get('Comfy.FloatRoundingPrecision') || undefined
     const enableRounding = !settingStore.get('Comfy.DisableFloatRounding')
 
-    const { val, config } = getNumberDefaults(inputOptions, {
-      defaultStep: 0.5,
-      precision,
-      enableRounding
-    })
+    const { val, config } = getNumberDefaults(
+      inputOptions as FloatInputOptions,
+      {
+        defaultStep: 0.5,
+        precision,
+        enableRounding
+      }
+    )
 
     return {
       widget: node.addWidget(
@@ -57,6 +60,7 @@ export const useFloatWidget = () => {
         inputName,
         val,
         onFloatValueChange,
+        // @ts-expect-error InputSpec is not typed correctly
         config
       )
     }

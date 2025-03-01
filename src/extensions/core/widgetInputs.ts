@@ -245,6 +245,7 @@ export class PrimitiveNode extends LGraphNode {
     if (type in ComfyWidgets) {
       widget = (ComfyWidgets[type](this, 'value', inputData, app) || {}).widget
     } else {
+      // @ts-expect-error InputSpec is not typed correctly
       widget = this.addWidget(type, 'value', null, () => {}, {})
     }
 
@@ -452,6 +453,7 @@ function getConfig(widgetName: string) {
 
 function isConvertibleWidget(widget: IWidget, config: InputSpec): boolean {
   return (
+    // @ts-expect-error InputSpec is not typed correctly
     (VALID_TYPES.includes(widget.type) || VALID_TYPES.includes(config[0])) &&
     !widget.options?.forceInput
   )
@@ -677,6 +679,7 @@ export function mergeIfValid(
             return
           }
           getCustomConfig()[k] =
+            // @ts-expect-error InputSpec is not typed correctly
             v1 == null ? v2 : v2 == null ? v1 : Math.max(v1, v2)
           continue
         } else if (k === 'max') {
@@ -686,6 +689,7 @@ export function mergeIfValid(
             return
           }
           getCustomConfig()[k] =
+            // @ts-expect-error InputSpec is not typed correctly
             v1 == null ? v2 : v2 == null ? v1 : Math.min(v1, v2)
           continue
         } else if (k === 'step') {
@@ -703,6 +707,7 @@ export function mergeIfValid(
               v2 = v1
               v1 = a
             }
+            // @ts-expect-error InputSpec is not typed correctly
             if (v1 % v2) {
               console.log(
                 'connection rejected: steps not divisible',
