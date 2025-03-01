@@ -60,7 +60,7 @@
           <p
             class="line-clamp-2 text-sm text-surface-600 dark:text-surface-400 text-muted"
           >
-            {{ template.description }}
+            {{ template.description.replace(/[-_]/g, ' ') }}
           </p>
         </div>
         <div
@@ -104,22 +104,24 @@ const { t } = useI18n()
 const cardRef = ref<HTMLElement | null>(null)
 const isHovered = useElementHover(cardRef)
 
-const thumbnailSrc = computed(() =>
-  sourceModule === 'default'
-    ? `/templates/${template.name}`
-    : `/api/workflow_templates/${sourceModule}/${template.name}`
-)
+const getThumbnailUrl = (index = '') => {
+  const basePath =
+    sourceModule === 'default'
+      ? `/templates/${template.name}`
+      : `/api/workflow_templates/${sourceModule}/${template.name}`
+
+  // For default templates, we append -1 or -2 for the different images
+  // For custom templates, we don't append any index
+  const indexSuffix = sourceModule === 'default' && index ? `-${index}` : ''
+
+  return `${basePath}${indexSuffix}.${template.mediaSubtype}`
+}
 
 const baseThumbnailSrc = computed(() =>
-  sourceModule === 'default'
-    ? `${thumbnailSrc.value}-1.${template.mediaSubtype}`
-    : `${thumbnailSrc.value}.${template.mediaSubtype}`
+  getThumbnailUrl(sourceModule === 'default' ? '1' : '')
 )
-
 const overlayThumbnailSrc = computed(() =>
-  sourceModule === 'default'
-    ? `${thumbnailSrc.value}-2.${template.mediaSubtype}`
-    : `${thumbnailSrc.value}.${template.mediaSubtype}`
+  getThumbnailUrl(sourceModule === 'default' ? '2' : '')
 )
 
 const title = computed(() => {
