@@ -1,6 +1,7 @@
 // @ts-strict-ignore
+import { applyTextReplacements } from '@/utils/searchAndReplace'
+
 import { app } from '../../scripts/app'
-import { applyTextReplacements } from '../../scripts/utils'
 
 // Use widget values and dates in output filenames
 
@@ -21,7 +22,7 @@ app.registerExtension({
 
         const widget = this.widgets.find((w) => w.name === 'filename_prefix')
         widget.serializeValue = () => {
-          return applyTextReplacements(app, widget.value)
+          return applyTextReplacements(app.graph.nodes, widget.value)
         }
 
         return r
