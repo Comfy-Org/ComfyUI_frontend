@@ -69,13 +69,11 @@ jobs:
         npm ci
         npm install ../litegraph
         npm run build
-        rm -rf ../ComfyUI/web/*
-        mv dist/* ../ComfyUI/web/
       working-directory: ComfyUI_frontend
 
     - name: Start ComfyUI server
       run: |
-        python main.py --cpu --multi-user &
+        python main.py --cpu --multi-user --front-end-root ../ComfyUI_frontend/dist &
         wait-for-it --service 127.0.0.1:8188 -t 600
       working-directory: ComfyUI
 
