@@ -4,8 +4,7 @@
     :data-testid="`template-workflow-${template.name}`"
     class="w-64 template-card rounded-2xl overflow-hidden cursor-pointer shadow-[0_10px_15px_-3px_rgba(0,0,0,0.08),0_4px_6px_-4px_rgba(0,0,0,0.05)]"
     :pt="{
-      body: { class: 'p-0 rounded-2xl' },
-      content: { class: 'rounded-2xl' }
+      body: { class: 'p-0' }
     }"
     @click="emit('loadWorkflow', template.name)"
   >
@@ -51,21 +50,21 @@
       </div>
     </template>
     <template #content>
-      <div class="flex items-center px-4 py-3 group/card">
+      <div class="flex items-center px-4 py-3">
         <div class="flex-1">
           <h3
-            class="text-lg font-normal text-surface-900 dark:text-surface-0 line-clamp-1"
+            class="line-clamp-1 text-lg font-normal text-surface-900 dark:text-surface-0"
           >
             {{ title }}
           </h3>
           <p
-            class="text-sm text-surface-600 dark:text-surface-400 line-clamp-2"
+            class="line-clamp-2 text-sm text-surface-600 dark:text-surface-400"
           >
             {{ template.description }}
           </p>
         </div>
         <div
-          class="flex items-center justify-center ml-4 w-10 h-10 rounded-full bg-surface-100 dark:bg-surface-800"
+          class="flex md:hidden xl:flex items-center justify-center ml-4 w-10 h-10 rounded-full bg-surface-100 dark:bg-surface-800"
         >
           <i
             class="pi pi-angle-right text-2xl text-surface-600 dark:text-surface-400"
