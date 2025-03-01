@@ -14,8 +14,8 @@ export class ConnectingLinkImpl implements ConnectingLink {
   constructor(
     public node: LGraphNode,
     public slot: number,
-    public input: INodeInputSlot | undefined,
-    public output: INodeOutputSlot | undefined,
+    public input: INodeInputSlot | null | undefined,
+    public output: INodeOutputSlot | null | undefined,
     public pos: Vector2,
     public afterRerouteId?: RerouteId
   ) {}
