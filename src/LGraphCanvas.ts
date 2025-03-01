@@ -473,13 +473,13 @@ export class LGraphCanvas implements ConnectionColorContext {
   bgcanvas: HTMLCanvasElement
   ctx?: CanvasRenderingContext2D | null
   _events_binded?: boolean
-  _mousedown_callback?(e: PointerEvent): boolean
-  _mousewheel_callback?(e: WheelEvent): boolean
-  _mousemove_callback?(e: PointerEvent): boolean
-  _mouseup_callback?(e: PointerEvent): boolean
-  _mouseout_callback?(e: PointerEvent): boolean
-  _mousecancel_callback?(e: PointerEvent): boolean
-  _key_callback?(e: KeyboardEvent): boolean
+  _mousedown_callback?(e: PointerEvent): void
+  _mousewheel_callback?(e: WheelEvent): void
+  _mousemove_callback?(e: PointerEvent): void
+  _mouseup_callback?(e: PointerEvent): void
+  _mouseout_callback?(e: PointerEvent): void
+  _mousecancel_callback?(e: PointerEvent): void
+  _key_callback?(e: KeyboardEvent): void
   _ondrop_callback?(e: DragEvent): unknown
   /** @deprecated WebGL */
   gl?: never
@@ -1709,7 +1709,6 @@ export class LGraphCanvas implements ConnectionColorContext {
       return
     }
 
-    // console.log("pointerevents: bindEvents");
     const canvas = this.canvas
 
     const ref_window = this.getCanvasWindow()
@@ -1718,32 +1717,29 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     this._mousedown_callback = this.processMouseDown.bind(this)
     this._mousewheel_callback = this.processMouseWheel.bind(this)
-    // why mousemove and mouseup were not binded here?
     this._mousemove_callback = this.processMouseMove.bind(this)
     this._mouseup_callback = this.processMouseUp.bind(this)
     this._mouseout_callback = this.processMouseOut.bind(this)
     this._mousecancel_callback = this.processMouseCancel.bind(this)
 
-    // down do not need to store the binded
-    LiteGraph.pointerListenerAdd(canvas, "down", this._mousedown_callback, true)
+    canvas.addEventListener("pointerdown", this._mousedown_callback, true)
     canvas.addEventListener("wheel", this._mousewheel_callback, false)
 
-    // CHECK: ??? binded or not
-    LiteGraph.pointerListenerAdd(canvas, "up", this._mouseup_callback, true)
-    LiteGraph.pointerListenerAdd(canvas, "move", this._mousemove_callback)
+    canvas.addEventListener("pointerup", this._mouseup_callback, true)
+    canvas.addEventListener("pointermove", this._mousemove_callback)
     canvas.addEventListener("pointerout", this._mouseout_callback)
     canvas.addEventListener("pointercancel", this._mousecancel_callback, true)
 
     canvas.addEventListener("contextmenu", this._doNothing)
 
-    // Keyboard ******************
+    // Keyboard
     this._key_callback = this.processKey.bind(this)
 
     canvas.addEventListener("keydown", this._key_callback, true)
-    // in document, otherwise it doesn't fire keyup
+    // keyup event must be bound on the document
     document.addEventListener("keyup", this._key_callback, true)
 
-    // Dropping Stuff over nodes ************************************
+    // Dropping Stuff over nodes
     this._ondrop_callback = this.processDrop.bind(this)
 
     canvas.addEventListener("dragover", this._doNothing, false)
@@ -1764,32 +1760,26 @@ export class LGraphCanvas implements ConnectionColorContext {
     }
 
     // console.log("pointerevents: unbindEvents");
-    const ref_window = this.getCanvasWindow()
-    const document = ref_window.document
+    const { document } = this.getCanvasWindow()
+    const { canvas } = this
 
-    this.canvas.removeEventListener("pointercancel", this._mousecancel_callback)
-    this.canvas.removeEventListener("pointerout", this._mouseout_callback)
-    LiteGraph.pointerListenerRemove(this.canvas, "move", this._mousemove_callback)
-    LiteGraph.pointerListenerRemove(this.canvas, "up", this._mouseup_callback)
-    LiteGraph.pointerListenerRemove(this.canvas, "down", this._mousedown_callback)
-    this.canvas.removeEventListener(
-      "mousewheel",
-      this._mousewheel_callback,
-    )
-    this.canvas.removeEventListener(
-      "DOMMouseScroll",
-      this._mousewheel_callback,
-    )
-    this.canvas.removeEventListener("keydown", this._key_callback)
-    document.removeEventListener("keyup", this._key_callback)
-    this.canvas.removeEventListener("contextmenu", this._doNothing)
-    this.canvas.removeEventListener("drop", this._ondrop_callback)
-    this.canvas.removeEventListener("dragenter", this._doReturnTrue)
+    // Assertions: removing nullish is fine.
+    canvas.removeEventListener("pointercancel", this._mousecancel_callback!)
+    canvas.removeEventListener("pointerout", this._mouseout_callback!)
+    canvas.removeEventListener("pointermove", this._mousemove_callback!)
+    canvas.removeEventListener("pointerup", this._mouseup_callback!)
+    canvas.removeEventListener("pointerdown", this._mousedown_callback!)
+    canvas.removeEventListener("wheel", this._mousewheel_callback!)
+    canvas.removeEventListener("keydown", this._key_callback!)
+    document.removeEventListener("keyup", this._key_callback!)
+    canvas.removeEventListener("contextmenu", this._doNothing)
+    canvas.removeEventListener("drop", this._ondrop_callback!)
+    canvas.removeEventListener("dragenter", this._doReturnTrue)
 
-    this._mousedown_callback = null
-    this._mousewheel_callback = null
-    this._key_callback = null
-    this._ondrop_callback = null
+    this._mousedown_callback = undefined
+    this._mousewheel_callback = undefined
+    this._key_callback = undefined
+    this._ondrop_callback = undefined
 
     this._events_binded = false
   }

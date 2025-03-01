@@ -127,6 +127,8 @@ export default tseslint.config(
       "prefer-template": "error",
 
       // TODO: Update when TypeScript has been cleaned
+      // https://github.com/Comfy-Org/litegraph.js/issues/657
+      "@typescript-eslint/no-unnecessary-type-assertion": "off",
       "prefer-spread": "off",
       "no-empty": "off",
       "no-prototype-builtins": "off",
