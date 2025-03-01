@@ -47,6 +47,7 @@ describe('useModelStore', () => {
   beforeEach(async () => {
     setActivePinia(createPinia())
     store = useModelStore()
+    vi.resetAllMocks()
   })
 
   it('should load models', async () => {
