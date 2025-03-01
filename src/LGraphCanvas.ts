@@ -75,9 +75,9 @@ import { toClass } from "./utils/type"
 import { WIDGET_TYPE_MAP } from "./widgets/widgetMap"
 
 interface IShowSearchOptions {
-  node_to?: LGraphNode
-  node_from?: LGraphNode
-  slot_from: number | INodeOutputSlot | INodeInputSlot
+  node_to?: LGraphNode | null
+  node_from?: LGraphNode | null
+  slot_from: number | INodeOutputSlot | INodeInputSlot | null | undefined
   type_filter_in?: ISlotType
   type_filter_out?: ISlotType | false
 
@@ -471,7 +471,7 @@ export class LGraphCanvas implements ConnectionColorContext {
   graph: LGraph | null
   canvas: HTMLCanvasElement
   bgcanvas: HTMLCanvasElement
-  ctx?: CanvasRenderingContext2D | null
+  ctx: CanvasRenderingContext2D
   _events_binded?: boolean
   _mousedown_callback?(e: PointerEvent): void
   _mousewheel_callback?(e: WheelEvent): void
@@ -522,11 +522,11 @@ export class LGraphCanvas implements ConnectionColorContext {
   /** The start position of the drag zoom. */
   #dragZoomStart: { pos: Point, scale: number } | null = null
 
-  getMenuOptions?(): IContextMenuValue[]
+  getMenuOptions?(): IContextMenuValue<string>[]
   getExtraMenuOptions?(
     canvas: LGraphCanvas,
-    options: IContextMenuValue[],
-  ): IContextMenuValue[]
+    options: IContextMenuValue<string>[],
+  ): IContextMenuValue<string>[]
   static active_node: LGraphNode
   /** called before modifying the graph */
   onBeforeChange?(graph: LGraph): void
@@ -676,6 +676,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     // TypeScript strict workaround: cannot use method to initialize properties.
     this.canvas = undefined!
     this.bgcanvas = undefined!
+    this.ctx = undefined!
 
     this.setCanvas(canvas, options.skip_events)
     this.clear()
@@ -805,10 +806,10 @@ export class LGraphCanvas implements ConnectionColorContext {
   }
 
   static onMenuAdd(
-    node: LGraphNode,
-    options: IContextMenuOptions,
+    value: unknown,
+    options: unknown,
     e: MouseEvent,
-    prev_menu: ContextMenu<string>,
+    prev_menu?: ContextMenu<string>,
     callback?: (node: LGraphNode | null) => void,
   ): boolean | undefined {
     const canvas = LGraphCanvas.active_canvas
@@ -1663,14 +1664,14 @@ export class LGraphCanvas implements ConnectionColorContext {
     this.bgcanvas.width = this.canvas.width
     this.bgcanvas.height = this.canvas.height
 
-    if (element.getContext == null) {
+    const ctx = element.getContext?.("2d")
+    if (ctx == null) {
       if (element.localName != "canvas") {
         throw `Element supplied for LGraphCanvas must be a <canvas> element, you passed a ${element.localName}`
       }
       throw "This browser doesn't support Canvas"
     }
-
-    this.ctx = element.getContext("2d")
+    this.ctx = ctx
 
     if (!skip_events) this.bindEvents()
   }
@@ -2050,26 +2051,28 @@ export class LGraphCanvas implements ConnectionColorContext {
     // clone node ALT dragging
     if (LiteGraph.alt_drag_do_clone_nodes && e.altKey && !e.ctrlKey && node && this.allow_interaction) {
       const node_data = node.clone()?.serialize()
-      const cloned = LiteGraph.createNode(node_data.type)
-      if (cloned) {
-        cloned.configure(node_data)
-        cloned.pos[0] += 5
-        cloned.pos[1] += 5
+      if (node_data?.type != null) {
+        const cloned = LiteGraph.createNode(node_data.type)
+        if (cloned) {
+          cloned.configure(node_data)
+          cloned.pos[0] += 5
+          cloned.pos[1] += 5
 
-        if (this.allow_dragnodes) {
-          pointer.onDragStart = (pointer) => {
-            graph.add(cloned, false)
-            this.#startDraggingItems(cloned, pointer)
-          }
-          pointer.onDragEnd = e => this.#processDraggedItems(e)
-        } else {
+          if (this.allow_dragnodes) {
+            pointer.onDragStart = (pointer) => {
+              graph.add(cloned, false)
+              this.#startDraggingItems(cloned, pointer)
+            }
+            pointer.onDragEnd = e => this.#processDraggedItems(e)
+          } else {
           // TODO: Check if before/after change are necessary here.
-          graph.beforeChange()
-          graph.add(cloned, false)
-          graph.afterChange()
-        }
+            graph.beforeChange()
+            graph.add(cloned, false)
+            graph.afterChange()
+          }
 
-        return
+          return
+        }
       }
     }
 
@@ -2083,9 +2086,15 @@ export class LGraphCanvas implements ConnectionColorContext {
         if (reroute) {
           if (e.shiftKey) {
             // Connect new link from reroute
-            const link = graph._links.get(reroute.linkIds.values().next().value)
+            const linkId = reroute.linkIds.values().next().value
+            if (linkId == null) return
+
+            const link = graph._links.get(linkId)
+            if (!link) return
 
             const outputNode = graph.getNodeById(link.origin_id)
+            if (!outputNode) return
+
             const slot = link.origin_slot
             const connecting: ConnectingLink = {
               node: outputNode,
@@ -2130,6 +2139,9 @@ export class LGraphCanvas implements ConnectionColorContext {
 
           if (e.shiftKey && !e.altKey) {
             const slot = linkSegment.origin_slot
+            if (slot == null) return console.warn("Connecting link from corrupt link segment: `slot` null", linkSegment)
+            if (linkSegment.origin_id == null) return console.warn("Connecting link from corrupt link segment: `origin_id` null", linkSegment)
+
             const originNode = graph._nodes_by_id[linkSegment.origin_id]
 
             const connecting: ConnectingLink = {
@@ -2168,7 +2180,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
       // Groups
       const group = graph.getGroupOnPos(x, y)
-      this.selected_group = group
+      this.selected_group = group ?? null
       if (group) {
         if (group.isInResize(x, y)) {
           // Resize group
@@ -2186,7 +2198,7 @@ export class LGraphCanvas implements ConnectionColorContext {
               eMove.canvasY - group.pos[1] - offsetY,
             ]
             // Unless snapping.
-            snapPoint(pos, this.#snapToGrid)
+            if (this.#snapToGrid) snapPoint(pos, this.#snapToGrid)
 
             const resized = group.resize(pos[0], pos[1])
             if (resized) this.dirty_bgcanvas = true
@@ -2301,7 +2313,7 @@ export class LGraphCanvas implements ConnectionColorContext {
             eMove.canvasY - node.pos[1] - offsetY,
           ]
           // Unless snapping.
-          snapPoint(pos, this.#snapToGrid)
+          if (this.#snapToGrid) snapPoint(pos, this.#snapToGrid)
 
           const min = node.computeSize()
           pos[0] = Math.max(min[0], pos[0])
@@ -2328,10 +2340,12 @@ export class LGraphCanvas implements ConnectionColorContext {
           const link_pos = node.getConnectionPos(false, i)
           if (isInRectangle(x, y, link_pos[0] - 15, link_pos[1] - 10, 30, 20)) {
             // Drag multiple output links
-            if (e.shiftKey && output.links?.length > 0) {
+            if (e.shiftKey && output.links?.length) {
               this.connecting_links = []
               for (const linkId of output.links) {
                 const link = graph._links.get(linkId)
+                if (!link) continue
+
                 const slot = link.target_slot
                 const linked_node = graph._nodes_by_id[link.target_id]
                 const input = linked_node.inputs[slot]
@@ -4079,10 +4093,8 @@ export class LGraphCanvas implements ConnectionColorContext {
   drawFrontCanvas(): void {
     this.dirty_canvas = false
 
-    const ctx = this.ctx
-    if (!ctx) return
+    const { ctx, canvas } = this
 
-    const canvas = this.canvas
     // @ts-expect-error
     if (ctx.start2D && !this.viewport) {
       // @ts-expect-error
@@ -6542,7 +6554,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     node: LGraphNode,
     property: string,
     options: IDialogOptions,
-  ): IDialog {
+  ): IDialog | undefined {
     if (!node || node.properties[property] === undefined) return
 
     options = options || {}
@@ -7102,8 +7114,8 @@ export class LGraphCanvas implements ConnectionColorContext {
     }
   }
 
-  getCanvasMenuOptions(): IContextMenuValue[] {
-    let options: IContextMenuValue[] = null
+  getCanvasMenuOptions(): IContextMenuValue<string>[] {
+    let options: IContextMenuValue<string>[]
     if (this.getMenuOptions) {
       options = this.getMenuOptions()
     } else {
@@ -7260,7 +7272,8 @@ export class LGraphCanvas implements ConnectionColorContext {
     return options
   }
 
-  getGroupMenuOptions(group: LGraphGroup): IContextMenuValue[] {
+  /** @deprecated */
+  getGroupMenuOptions(group: LGraphGroup) {
     console.warn("LGraphCanvas.getGroupMenuOptions is deprecated, use LGraphGroup.getMenuOptions instead")
     return group.getMenuOptions()
   }
@@ -7369,13 +7382,15 @@ export class LGraphCanvas implements ConnectionColorContext {
     )
     const setDirty = () => this.setDirty(true)
 
-    function inner_option_clicked(v, options) {
+    function inner_option_clicked(v: IContextMenuValue<unknown>, options: IDialogOptions) {
       if (!v) return
 
       if (v.content == "Remove Slot") {
-        if (!node.graph) throw new NullGraphError()
+        if (!node?.graph) throw new NullGraphError()
 
         const info = v.slot
+        if (!info) throw new TypeError("Found-slot info was null when processing context menu.")
+
         node.graph.beforeChange()
         if (info.input) {
           node.removeInput(info.slot)
@@ -7385,9 +7400,11 @@ export class LGraphCanvas implements ConnectionColorContext {
         node.graph.afterChange()
         return
       } else if (v.content == "Disconnect Links") {
-        if (!node.graph) throw new NullGraphError()
+        if (!node?.graph) throw new NullGraphError()
 
         const info = v.slot
+        if (!info) throw new TypeError("Found-slot info was null when processing context menu.")
+
         node.graph.beforeChange()
         if (info.output) {
           node.disconnectOutput(info.slot)
@@ -7397,7 +7414,11 @@ export class LGraphCanvas implements ConnectionColorContext {
         node.graph.afterChange()
         return
       } else if (v.content == "Rename Slot") {
+        if (!node) throw new TypeError("`node` was null when processing the context menu.")
+
         const info = v.slot
+        if (!info) throw new TypeError("Found-slot info was null when processing context menu.")
+
         const slot_info = info.input
           ? node.getInputInfo(info.slot)
           : node.getOutputInfo(info.slot)
@@ -7411,7 +7432,7 @@ export class LGraphCanvas implements ConnectionColorContext {
           if (!node.graph) throw new NullGraphError()
 
           node.graph.beforeChange()
-          if (input.value) {
+          if (input?.value) {
             if (slot_info) {
               slot_info.label = input.value
             }
@@ -7420,7 +7441,9 @@ export class LGraphCanvas implements ConnectionColorContext {
           dialog.close()
           node.graph.afterChange()
         }
-        dialog.querySelector("button").addEventListener("click", inner)
+        dialog.querySelector("button")?.addEventListener("click", inner)
+        if (!input) throw new TypeError("Input element was null when processing context menu.")
+
         input.addEventListener("keydown", function (e) {
           dialog.is_modified = true
           if (e.key == "Escape") {
