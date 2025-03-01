@@ -1,4 +1,5 @@
 import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
@@ -10,11 +11,11 @@ import {
 } from '@/stores/workflowStore'
 
 // Add mock for api at the top of the file
-jest.mock('@/scripts/api', () => ({
+vi.mock('@/scripts/api', () => ({
   api: {
-    getUserData: jest.fn(),
-    storeUserData: jest.fn(),
-    listUserDataFullInfo: jest.fn()
+    getUserData: vi.fn(),
+    storeUserData: vi.fn(),
+    listUserDataFullInfo: vi.fn()
   }
 }))
 
@@ -23,10 +24,10 @@ describe('useWorkflowStore', () => {
   let bookmarkStore: ReturnType<typeof useWorkflowBookmarkStore>
 
   const syncRemoteWorkflows = async (filenames: string[]) => {
-    ;(api.listUserDataFullInfo as jest.Mock).mockResolvedValue(
+    vi.mocked(api.listUserDataFullInfo).mockResolvedValue(
       filenames.map((filename) => ({
         path: filename,
-        modified: new Date().toISOString(),
+        modified: new Date().getTime(),
         size: 1 // size !== -1 for remote workflows
       }))
     )
@@ -37,16 +38,16 @@ describe('useWorkflowStore', () => {
     setActivePinia(createPinia())
     store = useWorkflowStore()
     bookmarkStore = useWorkflowBookmarkStore()
-    jest.clearAllMocks()
+    vi.clearAllMocks()
 
     // Add default mock implementations
-    ;(api.getUserData as jest.Mock).mockResolvedValue({
+    vi.mocked(api.getUserData).mockResolvedValue({
       status: 200,
       json: () => Promise.resolve({ favorites: [] })
-    })
-    ;(api.storeUserData as jest.Mock).mockResolvedValue({
+    } as Response)
+    vi.mocked(api.storeUserData).mockResolvedValue({
       status: 200
-    })
+    } as Response)
   })
 
   describe('syncWorkflows', () => {
@@ -86,7 +87,7 @@ describe('useWorkflowStore', () => {
       const mockWorkflowData = { nodes: [], links: [] }
 
       // Mock the load response
-      jest.spyOn(workflow, 'load').mockImplementation(async () => {
+      vi.spyOn(workflow, 'load').mockImplementation(async () => {
         workflow.changeTracker = { activeState: mockWorkflowData } as any
         return workflow as LoadedComfyWorkflow
       })
@@ -103,7 +104,7 @@ describe('useWorkflowStore', () => {
 
     it('should not reload an already active workflow', async () => {
       const workflow = await store.createTemporary('test.json').load()
-      jest.spyOn(workflow, 'load')
+      vi.spyOn(workflow, 'load')
 
       // Set as active workflow
       store.activeWorkflow = workflow
@@ -121,10 +122,10 @@ describe('useWorkflowStore', () => {
       expect(workflow.path).toBe('workflows/a.json')
       expect(workflow.isLoaded).toBe(false)
       expect(workflow.isTemporary).toBe(false)
-      ;(api.getUserData as jest.Mock).mockResolvedValue({
+      vi.mocked(api.getUserData).mockResolvedValue({
         status: 200,
         text: () => Promise.resolve(defaultGraphJSON)
-      })
+      } as Response)
       await workflow.load()
 
       expect(workflow.isLoaded).toBe(true)
@@ -142,10 +143,10 @@ describe('useWorkflowStore', () => {
       expect(workflow).not.toBeNull()
       expect(workflow.path).toBe('workflows/a.json')
       expect(workflow.isLoaded).toBe(false)
-      ;(api.getUserData as jest.Mock).mockResolvedValue({
+      vi.mocked(api.getUserData).mockResolvedValue({
         status: 200,
         text: () => Promise.resolve(defaultGraphJSON)
-      })
+      } as Response)
 
       const loadedWorkflow = await store.openWorkflow(workflow)
 
@@ -175,10 +176,10 @@ describe('useWorkflowStore', () => {
       workflowA = store.getWorkflowByPath('workflows/a.json')!
       workflowB = store.getWorkflowByPath('workflows/b.json')!
       workflowC = store.getWorkflowByPath('workflows/c.json')!
-      ;(api.getUserData as jest.Mock).mockResolvedValue({
+      vi.mocked(api.getUserData).mockResolvedValue({
         status: 200,
         text: () => Promise.resolve(defaultGraphJSON)
-      })
+      } as Response)
     })
 
     it('should open workflows adjacent to the active workflow', async () => {
@@ -263,12 +264,12 @@ describe('useWorkflowStore', () => {
       expect(bookmarkStore.isBookmarked(workflow.path)).toBe(true)
 
       // Mock super.rename
-      jest
-        .spyOn(Object.getPrototypeOf(workflow), 'rename')
-        .mockImplementation(async function (this: any, newPath: string) {
+      vi.spyOn(Object.getPrototypeOf(workflow), 'rename').mockImplementation(
+        async function (this: any, newPath: string) {
           this.path = newPath
           return this
-        } as any)
+        } as any
+      )
 
       // Perform rename
       const newPath = 'workflows/dir/renamed.json'
@@ -286,12 +287,12 @@ describe('useWorkflowStore', () => {
       expect(bookmarkStore.isBookmarked(workflow.path)).toBe(false)
 
       // Mock super.rename
-      jest
-        .spyOn(Object.getPrototypeOf(workflow), 'rename')
-        .mockImplementation(async function (this: any, newPath: string) {
+      vi.spyOn(Object.getPrototypeOf(workflow), 'rename').mockImplementation(
+        async function (this: any, newPath: string) {
           this.path = newPath
           return this
-        } as any)
+        } as any
+      )
 
       // Perform rename
       const newName = 'renamed'
@@ -320,7 +321,7 @@ describe('useWorkflowStore', () => {
       const workflow = store.createTemporary('test.json')
 
       // Mock the necessary methods
-      jest.spyOn(workflow, 'delete').mockResolvedValue()
+      vi.spyOn(workflow, 'delete').mockResolvedValue()
 
       // Open the workflow first
       await store.openWorkflow(workflow)
@@ -336,7 +337,7 @@ describe('useWorkflowStore', () => {
       const workflow = store.createTemporary('test.json')
 
       // Mock delete method
-      jest.spyOn(workflow, 'delete').mockResolvedValue()
+      vi.spyOn(workflow, 'delete').mockResolvedValue()
 
       // Bookmark the workflow
       bookmarkStore.setBookmarked(workflow.path, true)
@@ -359,9 +360,9 @@ describe('useWorkflowStore', () => {
       const mockState = { nodes: [] }
       workflow.changeTracker = {
         activeState: mockState,
-        reset: jest.fn()
+        reset: vi.fn()
       } as any
-      ;(api.storeUserData as jest.Mock).mockResolvedValue({
+      vi.mocked(api.storeUserData).mockResolvedValue({
         status: 200,
         json: () =>
           Promise.resolve({
@@ -369,7 +370,7 @@ describe('useWorkflowStore', () => {
             modified: Date.now(),
             size: 2
           })
-      })
+      } as Response)
 
       // Save the workflow
       await workflow.save()
@@ -389,9 +390,9 @@ describe('useWorkflowStore', () => {
       const mockState = { nodes: [] }
       workflow.changeTracker = {
         activeState: mockState,
-        reset: jest.fn()
+        reset: vi.fn()
       } as any
-      ;(api.storeUserData as jest.Mock).mockResolvedValue({
+      vi.mocked(api.storeUserData).mockResolvedValue({
         status: 200,
         json: () =>
           Promise.resolve({
@@ -399,7 +400,7 @@ describe('useWorkflowStore', () => {
             modified: Date.now(),
             size: 2
           })
-      })
+      } as Response)
 
       // Save the workflow
       await workflow.save()
@@ -423,9 +424,9 @@ describe('useWorkflowStore', () => {
       const mockState = { nodes: [] }
       workflow.changeTracker = {
         activeState: mockState,
-        reset: jest.fn()
+        reset: vi.fn()
       } as any
-      ;(api.storeUserData as jest.Mock).mockResolvedValue({
+      vi.mocked(api.storeUserData).mockResolvedValue({
         status: 200,
         json: () =>
           Promise.resolve({
@@ -433,7 +434,7 @@ describe('useWorkflowStore', () => {
             modified: Date.now(),
             size: 2
           })
-      })
+      } as Response)
 
       // Save the workflow with new path
       const newWorkflow = await workflow.saveAs('workflows/new-test.json')

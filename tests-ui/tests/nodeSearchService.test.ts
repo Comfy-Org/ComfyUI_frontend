@@ -1,4 +1,6 @@
 // @ts-strict-ignore
+import { describe, expect, it } from 'vitest'
+
 import { NodeSearchService } from '@/services/nodeSearchService'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 

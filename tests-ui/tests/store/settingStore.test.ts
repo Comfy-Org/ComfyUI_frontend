@@ -1,4 +1,5 @@
 import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -6,19 +7,19 @@ import { getSettingInfo, useSettingStore } from '@/stores/settingStore'
 import type { SettingParams } from '@/types/settingTypes'
 
 // Mock the api
-jest.mock('@/scripts/api', () => ({
+vi.mock('@/scripts/api', () => ({
   api: {
-    getSettings: jest.fn(),
-    storeSetting: jest.fn()
+    getSettings: vi.fn(),
+    storeSetting: vi.fn()
   }
 }))
 
 // Mock the app
-jest.mock('@/scripts/app', () => ({
+vi.mock('@/scripts/app', () => ({
   app: {
     ui: {
       settings: {
-        dispatchChange: jest.fn()
+        dispatchChange: vi.fn()
       }
     }
   }
@@ -30,7 +31,7 @@ describe('useSettingStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     store = useSettingStore()
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('should initialize with empty settings', () => {
@@ -42,7 +43,7 @@ describe('useSettingStore', () => {
   describe('loadSettingValues', () => {
     it('should load settings from API', async () => {
       const mockSettings = { 'test.setting': 'value' }
-      ;(api.getSettings as jest.Mock).mockResolvedValue(mockSettings)
+      vi.mocked(api.getSettings).mockResolvedValue(mockSettings as any)
 
       await store.loadSettingValues()
 
@@ -123,8 +124,8 @@ describe('useSettingStore', () => {
     })
 
     it('should set value and trigger onChange', async () => {
-      const onChangeMock = jest.fn()
-      const dispatchChangeMock = app.ui.settings.dispatchChange as jest.Mock
+      const onChangeMock = vi.fn()
+      const dispatchChangeMock = vi.mocked(app.ui.settings.dispatchChange)
       const setting: SettingParams = {
         id: 'test.setting',
         name: 'test.setting',

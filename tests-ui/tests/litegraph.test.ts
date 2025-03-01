@@ -1,6 +1,5 @@
-import { LiteGraph } from '@comfyorg/litegraph'
-import { LGraph } from '@comfyorg/litegraph'
-import { LGraphNode } from '@comfyorg/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@comfyorg/litegraph'
+import { describe, expect, it } from 'vitest'
 
 function swapNodes(nodes: LGraphNode[]) {
   const firstNode = nodes[0]

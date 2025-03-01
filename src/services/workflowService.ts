@@ -275,7 +275,7 @@ export const useWorkflowService = () => {
    * a new graph.
    */
   const beforeLoadNewGraph = () => {
-    // Use workspaceStore here as it is patched in jest tests.
+    // Use workspaceStore here as it is patched in unit tests.
     const workflowStore = useWorkspaceStore().workflow
     const activeWorkflow = workflowStore.activeWorkflow
     if (activeWorkflow) {
@@ -298,7 +298,7 @@ export const useWorkflowService = () => {
     value: string | ComfyWorkflow | null,
     workflowData: ComfyWorkflowJSON
   ) => {
-    // Use workspaceStore here as it is patched in jest tests.
+    // Use workspaceStore here as it is patched in unit tests.
     const workflowStore = useWorkspaceStore().workflow
     if (typeof value === 'string') {
       const workflow = workflowStore.getWorkflowByPath(

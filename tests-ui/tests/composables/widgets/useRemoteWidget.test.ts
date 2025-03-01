@@ -1,21 +1,26 @@
 import axios from 'axios'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useRemoteWidget } from '@/composables/widgets/useRemoteWidget'
 import type { ComboInputSpecV2 } from '@/schemas/nodeDefSchema'
 
-jest.mock('axios', () => ({
-  get: jest.fn()
-}))
+vi.mock('axios', () => {
+  return {
+    default: {
+      get: vi.fn()
+    }
+  }
+})
 
-jest.mock('@/i18n', () => ({
+vi.mock('@/i18n', () => ({
   i18n: {
     global: {
-      t: jest.fn((key) => key)
+      t: vi.fn((key) => key)
     }
   }
 }))
 
-jest.mock('@/stores/settingStore', () => ({
+vi.mock('@/stores/settingStore', () => ({
   useSettingStore: () => ({
     settings: {}
   })
@@ -46,12 +51,12 @@ const createMockOptions = (inputOverrides = {}) => ({
 })
 
 function mockAxiosResponse(data: unknown, status = 200) {
-  jest.mocked(axios.get).mockResolvedValueOnce({ data, status })
+  vi.mocked(axios.get).mockResolvedValueOnce({ data, status })
 }
 
 function mockAxiosError(error: Error | string) {
   const err = error instanceof Error ? error : new Error(error)
-  jest.mocked(axios.get).mockRejectedValueOnce(err)
+  vi.mocked(axios.get).mockRejectedValueOnce(err)
 }
 
 function createHookWithData(data: unknown, inputOverrides = {}) {
@@ -79,19 +84,19 @@ describe('useRemoteWidget', () => {
   let mockInputData: ComboInputSpecV2
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     // Reset mocks
-    jest.mocked(axios.get).mockReset()
+    vi.mocked(axios.get).mockReset()
     // Reset cache between tests
-    jest.spyOn(Map.prototype, 'get').mockClear()
-    jest.spyOn(Map.prototype, 'set').mockClear()
-    jest.spyOn(Map.prototype, 'delete').mockClear()
+    vi.spyOn(Map.prototype, 'get').mockClear()
+    vi.spyOn(Map.prototype, 'set').mockClear()
+    vi.spyOn(Map.prototype, 'delete').mockClear()
 
     mockInputData = createMockInputData()
   })
 
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('initialization', () => {
@@ -124,7 +129,7 @@ describe('useRemoteWidget', () => {
       const mockData = ['optionA', 'optionB']
       const { hook, result } = await setupHookWithResponse(mockData)
       expect(result).toEqual(mockData)
-      expect(jest.mocked(axios.get)).toHaveBeenCalledWith(
+      expect(vi.mocked(axios.get)).toHaveBeenCalledWith(
         hook.cacheKey.split(';')[0], // Get the route part from cache key
         expect.any(Object)
       )
@@ -187,12 +192,12 @@ describe('useRemoteWidget', () => {
 
   describe('refresh behavior', () => {
     beforeEach(() => {
-      jest.useFakeTimers()
+      vi.useFakeTimers()
     })
 
     afterEach(() => {
-      jest.useRealTimers()
-      jest.clearAllMocks()
+      vi.useRealTimers()
+      vi.clearAllMocks()
     })
 
     describe('permanent widgets (no refresh)', () => {
@@ -203,7 +208,7 @@ describe('useRemoteWidget', () => {
         await getResolvedValue(hook)
         await getResolvedValue(hook)
 
-        expect(jest.mocked(axios.get)).toHaveBeenCalledTimes(1)
+        expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
       })
 
       it('permanent widgets should re-fetch if refreshValue is called', async () => {
@@ -224,12 +229,12 @@ describe('useRemoteWidget', () => {
 
         const hook = useRemoteWidget(createMockOptions())
         await getResolvedValue(hook)
-        expect(jest.mocked(axios.get)).toHaveBeenCalledTimes(1)
+        expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
 
-        jest.setSystemTime(Date.now() + FIRST_BACKOFF)
+        vi.setSystemTime(Date.now() + FIRST_BACKOFF)
         const secondData = await getResolvedValue(hook)
         expect(secondData).toBe('Loading...')
-        expect(jest.mocked(axios.get)).toHaveBeenCalledTimes(2)
+        expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(2)
       })
 
       it('should treat empty refresh field as permanent', async () => {
@@ -238,7 +243,7 @@ describe('useRemoteWidget', () => {
         await getResolvedValue(hook)
         await getResolvedValue(hook)
 
-        expect(jest.mocked(axios.get)).toHaveBeenCalledTimes(1)
+        expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
       })
     })
 
@@ -250,11 +255,11 @@ describe('useRemoteWidget', () => {
       const { hook } = await setupHookWithResponse(mockData1, { refresh })
       mockAxiosResponse(mockData2)
 
-      jest.setSystemTime(Date.now() + refresh)
+      vi.setSystemTime(Date.now() + refresh)
       const newData = await getResolvedValue(hook)
 
       expect(newData).toEqual(mockData2)
-      expect(jest.mocked(axios.get)).toHaveBeenCalledTimes(2)
+      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(2)
     })
 
     it('should not refresh when data is not stale', async () => {
@@ -262,10 +267,10 @@ describe('useRemoteWidget', () => {
         refresh: 512
       })
 
-      jest.setSystemTime(Date.now() + 128)
+      vi.setSystemTime(Date.now() + 128)
       await getResolvedValue(hook)
 
-      expect(jest.mocked(axios.get)).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
     })
 
     it('should use backoff instead of refresh after error', async () => {
@@ -275,15 +280,15 @@ describe('useRemoteWidget', () => {
       })
 
       mockAxiosError('Network error')
-      jest.setSystemTime(Date.now() + refresh)
+      vi.setSystemTime(Date.now() + refresh)
       await getResolvedValue(hook)
-      expect(jest.mocked(axios.get)).toHaveBeenCalledTimes(2)
+      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(2)
 
       mockAxiosResponse(['second success'])
-      jest.setSystemTime(Date.now() + FIRST_BACKOFF)
+      vi.setSystemTime(Date.now() + FIRST_BACKOFF)
       const thirdData = await getResolvedValue(hook)
       expect(thirdData).toEqual(['second success'])
-      expect(jest.mocked(axios.get)).toHaveBeenCalledTimes(3)
+      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(3)
     })
 
     it('should use last valid value after error', async () => {
@@ -293,21 +298,21 @@ describe('useRemoteWidget', () => {
       })
 
       mockAxiosError('Network error')
-      jest.setSystemTime(Date.now() + refresh)
+      vi.setSystemTime(Date.now() + refresh)
       const secondData = await getResolvedValue(hook)
 
       expect(secondData).toEqual(['a valid value'])
-      expect(jest.mocked(axios.get)).toHaveBeenCalledTimes(2)
+      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(2)
     })
   })
 
   describe('error handling and backoff', () => {
     beforeEach(() => {
-      jest.useFakeTimers()
+      vi.useFakeTimers()
     })
 
     afterEach(() => {
-      jest.useRealTimers()
+      vi.useRealTimers()
     })
 
     it('should implement exponential backoff on errors', async () => {
@@ -319,15 +324,15 @@ describe('useRemoteWidget', () => {
       expect(entry1?.error).toBeTruthy()
 
       await getResolvedValue(hook)
-      expect(jest.mocked(axios.get)).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
 
-      jest.setSystemTime(Date.now() + 500)
+      vi.setSystemTime(Date.now() + 500)
       await getResolvedValue(hook)
-      expect(jest.mocked(axios.get)).toHaveBeenCalledTimes(1) // Still backing off
+      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1) // Still backing off
 
-      jest.setSystemTime(Date.now() + 3000)
+      vi.setSystemTime(Date.now() + 3000)
       await getResolvedValue(hook)
-      expect(jest.mocked(axios.get)).toHaveBeenCalledTimes(2)
+      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(2)
       expect(entry1?.data).toBeDefined()
     })
 
@@ -337,7 +342,7 @@ describe('useRemoteWidget', () => {
       const firstData = await getResolvedValue(hook)
       expect(firstData).toBe('Loading...')
 
-      jest.setSystemTime(Date.now() + 3000)
+      vi.setSystemTime(Date.now() + 3000)
       mockAxiosResponse(['option1'])
       const secondData = await getResolvedValue(hook)
       expect(secondData).toEqual(['option1'])
@@ -354,7 +359,7 @@ describe('useRemoteWidget', () => {
       const entry1 = hook.getCacheEntry()
       expect(entry1?.error).toBeTruthy()
 
-      jest.setSystemTime(Date.now() + 3000)
+      vi.setSystemTime(Date.now() + 3000)
       mockAxiosResponse(['success after backoff'])
       const secondData = await getResolvedValue(hook)
       expect(secondData).toEqual(['success after backoff'])
@@ -373,17 +378,17 @@ describe('useRemoteWidget', () => {
       const entry1 = hook.getCacheEntry()
       expect(entry1?.error).toBeTruthy()
 
-      jest.setSystemTime(Date.now() + 3000)
+      vi.setSystemTime(Date.now() + 3000)
       const secondData = await getResolvedValue(hook)
       expect(secondData).toBe('Loading...')
       expect(entry1?.error).toBeDefined()
 
-      jest.setSystemTime(Date.now() + 9000)
+      vi.setSystemTime(Date.now() + 9000)
       const thirdData = await getResolvedValue(hook)
       expect(thirdData).toBe('Loading...')
       expect(entry1?.error).toBeDefined()
 
-      jest.setSystemTime(Date.now() + 120_000)
+      vi.setSystemTime(Date.now() + 120_000)
       mockAxiosResponse(['success after multiple backoffs'])
       const fourthData = await getResolvedValue(hook)
       expect(fourthData).toEqual(['success after multiple backoffs'])
@@ -405,7 +410,7 @@ describe('useRemoteWidget', () => {
 
     it('should prevent duplicate in-flight requests', async () => {
       const promise = Promise.resolve({ data: ['non-duplicate'] })
-      jest.mocked(axios.get).mockImplementationOnce(() => promise)
+      vi.mocked(axios.get).mockImplementationOnce(() => promise)
 
       const hook = useRemoteWidget(createMockOptions())
       const [result1, result2] = await Promise.all([
@@ -414,7 +419,7 @@ describe('useRemoteWidget', () => {
       ])
 
       expect(result1).toBe(result2)
-      expect(jest.mocked(axios.get)).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
     })
   })
 
@@ -433,7 +438,7 @@ describe('useRemoteWidget', () => {
 
       expect(data1).toEqual(['shared data'])
       expect(data2).toEqual(['shared data'])
-      expect(jest.mocked(axios.get)).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
       expect(hook1.getCachedValue()).toBe(hook2.getCachedValue())
     })
 
@@ -454,7 +459,7 @@ describe('useRemoteWidget', () => {
       expect(data2).toBe(data1)
       expect(data3).toBe(data1)
       expect(data4).toBe(data1)
-      expect(jest.mocked(axios.get)).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
       expect(hook1.getCachedValue()).toBe(hook2.getCachedValue())
       expect(hook2.getCachedValue()).toBe(hook3.getCachedValue())
       expect(hook3.getCachedValue()).toBe(hook4.getCachedValue())
@@ -466,7 +471,7 @@ describe('useRemoteWidget', () => {
         resolvePromise = resolve
       })
 
-      jest.mocked(axios.get).mockImplementationOnce(() => delayedPromise)
+      vi.mocked(axios.get).mockImplementationOnce(() => delayedPromise)
 
       const hook = useRemoteWidget(createMockOptions())
       hook.getValue()
@@ -487,7 +492,7 @@ describe('useRemoteWidget', () => {
         resolvePromise = resolve
       })
 
-      jest.mocked(axios.get).mockImplementationOnce(() => delayedPromise)
+      vi.mocked(axios.get).mockImplementationOnce(() => delayedPromise)
 
       let hook = useRemoteWidget(createMockOptions())
       const fetchPromise = hook.getValue()

@@ -1,22 +1,29 @@
 import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useComboWidget } from '@/composables/widgets/useComboWidget'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 
-jest.mock('@/scripts/widgets', () => ({
-  addValueControlWidgets: jest.fn()
+vi.mock('@/stores/widgetStore', () => ({
+  useWidgetStore: () => ({
+    getDefaultValue: vi.fn()
+  })
+}))
+
+vi.mock('@/scripts/widgets', () => ({
+  addValueControlWidgets: vi.fn()
 }))
 
 describe('useComboWidget', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('should handle undefined spec', () => {
     const constructor = useComboWidget()
     const mockNode = {
-      addWidget: jest.fn().mockReturnValue({ options: {} } as any)
+      addWidget: vi.fn().mockReturnValue({ options: {} } as any)
     }
 
     const inputSpec: InputSpec = ['COMBO', undefined]

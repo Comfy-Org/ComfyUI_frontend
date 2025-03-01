@@ -1,5 +1,6 @@
 // @ts-strict-ignore
 import fs from 'fs'
+import { describe, expect, it } from 'vitest'
 
 import { validateComfyWorkflow } from '@/schemas/comfyWorkflowSchema'
 import { defaultGraph } from '@/scripts/defaultGraph'

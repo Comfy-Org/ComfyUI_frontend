@@ -56,23 +56,6 @@ jobs:
             ComfyUI_frontend
           key: comfyui-setup-${{ steps.cache-key.outputs.key }}
 
-  jest-tests:
-    needs: setup
-    runs-on: ubuntu-latest
-    steps:
-      - name: Restore cached setup
-        uses: actions/cache@v3
-        with:
-          path: |
-            ComfyUI
-            ComfyUI_frontend
-          key: comfyui-setup-${{ needs.setup.outputs.cache-key }}
-
-      - name: Run Jest tests
-        run: |
-          npm run test:jest -- --verbose
-        working-directory: ComfyUI_frontend
-
   playwright-tests:
     needs: setup
     runs-on: ubuntu-latest
