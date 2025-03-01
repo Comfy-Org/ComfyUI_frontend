@@ -1,5 +1,5 @@
 <template>
-  <BaseThumbnail>
+  <BaseThumbnail :is-hovered="isHovered">
     <img :src="baseImageSrc" :alt="alt" class="w-full h-full object-cover" />
     <div ref="containerRef" class="absolute inset-0">
       <img
@@ -26,6 +26,8 @@ import { ref, watch } from 'vue'
 
 import BaseThumbnail from '@/components/templates/thumbnails/BaseThumbnail.vue'
 
+const SLIDER_START_POSITION = 21
+
 const { isHovered } = defineProps<{
   baseImageSrc: string
   overlayImageSrc: string
@@ -33,7 +35,7 @@ const { isHovered } = defineProps<{
   isHovered?: boolean
 }>()
 
-const sliderPosition = ref(21)
+const sliderPosition = ref(SLIDER_START_POSITION)
 const containerRef = ref<HTMLElement | null>(null)
 
 const { elementX, elementWidth, isOutside } = useMouseInElement(containerRef)

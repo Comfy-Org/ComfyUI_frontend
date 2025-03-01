@@ -1,5 +1,5 @@
 <template>
-  <BaseThumbnail>
+  <BaseThumbnail :is-hovered="isHovered">
     <div class="relative w-full h-full">
       <img
         :src="baseImageSrc"

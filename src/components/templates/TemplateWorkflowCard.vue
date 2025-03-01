@@ -2,13 +2,14 @@
   <Card
     ref="cardRef"
     :data-testid="`template-workflow-${template.name}`"
-    class="w-64 group"
+    class="w-64 template-card rounded-2xl overflow-hidden cursor-pointer shadow-[0_10px_15px_-3px_rgba(0,0,0,0.08),0_4px_6px_-4px_rgba(0,0,0,0.05)]"
+    :pt="{
+      body: { class: 'p-0' }
+    }"
+    @click="$emit('loadWorkflow', template.name)"
   >
     <template #header>
-      <div
-        class="flex items-center justify-center cursor-pointer"
-        @click="$emit('loadWorkflow', template.name)"
-      >
+      <div class="flex items-center justify-center">
         <div class="relative overflow-hidden rounded-t-lg">
           <template v-if="template.mediaType === 'audio'">
             <AudioThumbnail :src="baseThumbnailSrc" />
@@ -33,6 +34,7 @@
             <DefaultThumbnail
               :src="baseThumbnailSrc"
               :alt="title"
+              :is-hovered="isHovered"
               :hover-zoom="
                 template.thumbnailVariant === 'zoomHover'
                   ? UPSCALE_ZOOM_SCALE
@@ -47,11 +49,23 @@
         </div>
       </div>
     </template>
-    <template #subtitle>
-      <div
-        class="text-center py-2 opacity-85 group-hover:opacity-100 transition-opacity"
-      >
-        {{ title }}
+    <template #content>
+      <div class="flex items-center px-4 py-3">
+        <div class="flex-1">
+          <h3
+            class="line-clamp-1 text-lg font-normal text-surface-900 dark:text-surface-100"
+          >
+            {{ title }}
+          </h3>
+          <p class="line-clamp-2 text-sm text-surface-600 dark:text text-muted">
+            {{ template.description.replace(/[-_]/g, ' ') }}
+          </p>
+        </div>
+        <div
+          class="flex md:hidden xl:flex items-center justify-center ml-4 w-10 h-10 rounded-full bg-surface-100"
+        >
+          <i class="pi pi-angle-right text-2xl"></i>
+        </div>
       </div>
     </template>
   </Card>
@@ -71,8 +85,8 @@ import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDisso
 import { TemplateInfo } from '@/types/workflowTemplateTypes'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
-const UPSCALE_ZOOM_SCALE = 38 // for upscale templates, exaggerate the hover zoom
-const DEFAULT_ZOOM_SCALE = 6
+const UPSCALE_ZOOM_SCALE = 16 // for upscale templates, exaggerate the hover zoom
+const DEFAULT_ZOOM_SCALE = 5
 
 const { sourceModule, categoryTitle, loading, template } = defineProps<{
   sourceModule: string
@@ -86,18 +100,23 @@ const { t } = useI18n()
 const cardRef = ref<HTMLElement | null>(null)
 const isHovered = useElementHover(cardRef)
 
-const thumbnailSrc = computed(() =>
-  sourceModule === 'default'
-    ? `/templates/${template.name}`
-    : `/api/workflow_templates/${sourceModule}/${template.name}`
-)
+const getThumbnailUrl = (index = '') => {
+  const basePath =
+    sourceModule === 'default'
+      ? `/templates/${template.name}`
+      : `/api/workflow_templates/${sourceModule}/${template.name}`
 
-const baseThumbnailSrc = computed(
-  () => `${thumbnailSrc.value}-1.${template.mediaSubtype}`
-)
+  // For templates from custom nodes, multiple images is not yet supported
+  const indexSuffix = sourceModule === 'default' && index ? `-${index}` : ''
 
-const overlayThumbnailSrc = computed(
-  () => `${thumbnailSrc.value}-2.${template.mediaSubtype}`
+  return `${basePath}${indexSuffix}.${template.mediaSubtype}`
+}
+
+const baseThumbnailSrc = computed(() =>
+  getThumbnailUrl(sourceModule === 'default' ? '1' : '')
+)
+const overlayThumbnailSrc = computed(() =>
+  getThumbnailUrl(sourceModule === 'default' ? '2' : '')
 )
 
 const title = computed(() => {
@@ -112,10 +131,3 @@ defineEmits<{
   loadWorkflow: [name: string]
 }>()
 </script>
-
-<style lang="css" scoped>
-.p-card {
-  --p-card-body-padding: 10px 0 0 0;
-  overflow: hidden;
-}
-</style>
