@@ -61,10 +61,11 @@
 
 <script setup lang="ts">
 import { useBreakpoints } from '@vueuse/core'
+import { useAsyncState } from '@vueuse/core'
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import TemplateWorkflowCard from '@/components/templates/TemplateWorkflowCard.vue'
@@ -90,16 +91,17 @@ const toggleSideNav = () => {
 watch(isSmallScreen, toggleSideNav)
 
 const workflowTemplatesStore = useWorkflowTemplatesStore()
+const { isReady } = useAsyncState(
+  workflowTemplatesStore.loadWorkflowTemplates,
+  null
+)
+
 const selectedTab = ref<WorkflowTemplates | null>(
-  workflowTemplatesStore?.defaultTemplate
+  workflowTemplatesStore.defaultTemplate
 )
 const workflowLoading = ref<string | null>(null)
 
 const tabs = computed(() => workflowTemplatesStore.groupedTemplates)
-
-onMounted(async () => {
-  await workflowTemplatesStore.loadWorkflowTemplates()
-})
 
 const handleTabSelection = (selection: WorkflowTemplates | null) => {
   //Listbox allows deselecting so this special case is ignored here
@@ -114,6 +116,8 @@ const handleTabSelection = (selection: WorkflowTemplates | null) => {
 }
 
 const loadWorkflow = async (id: string) => {
+  if (!isReady.value) return
+
   workflowLoading.value = id
   let json
   if (selectedTab.value.moduleName === 'default') {
