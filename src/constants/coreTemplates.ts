@@ -22,7 +22,8 @@ export const CORE_TEMPLATES = [
         name: 'lora',
         mediaType: 'image',
         mediaSubtype: 'webp',
-        description: 'Create images using custom-trained LoRA models.',
+        description:
+          'Apply LoRA models to enhance image generation with specialized styles or subjects.',
         tutorialUrl: 'https://comfyanonymous.github.io/ComfyUI_examples/lora/'
       },
       {
@@ -47,7 +48,8 @@ export const CORE_TEMPLATES = [
         name: 'embedding_example',
         mediaType: 'image',
         mediaSubtype: 'webp',
-        description: 'Use textual inversion for consistent styles.',
+        description:
+          'Use textual inversion for consistent styles and convenient prompting.',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/textual_inversion_embeddings/'
       },
@@ -55,7 +57,7 @@ export const CORE_TEMPLATES = [
         name: 'gligen_textbox_example',
         mediaType: 'image',
         mediaSubtype: 'webp',
-        description: 'Place text in specific image regions.',
+        description: 'Specify the location and size of objects in the image',
         tutorialUrl: 'https://comfyanonymous.github.io/ComfyUI_examples/gligen/'
       },
       {
@@ -128,7 +130,8 @@ export const CORE_TEMPLATES = [
         name: 'flux_redux_model_example',
         mediaType: 'image',
         mediaSubtype: 'webp',
-        description: 'Generate images with Flux Redux model.',
+        description:
+          'Transfer style from a reference image to guide image generation with Flux.',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/flux/#redux'
       }
@@ -170,7 +173,7 @@ export const CORE_TEMPLATES = [
         name: 'depth_t2i_adapter',
         mediaType: 'image',
         mediaSubtype: 'webp',
-        description: 'Generate depth-aware images with T2I.',
+        description: 'Quickly generate depth-aware images with a T2I adapter.',
         thumbnailVariant: 'hoverDissolve',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/controlnet/#t2i-adapter-vs-controlnets'
@@ -204,7 +207,7 @@ export const CORE_TEMPLATES = [
         name: 'esrgan_example',
         mediaType: 'image',
         mediaSubtype: 'webp',
-        description: 'Upscale images with ESRGAN models.',
+        description: 'Use upscale models to enhance image quality.',
         thumbnailVariant: 'zoomHover',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/upscale_models/'
@@ -213,7 +216,8 @@ export const CORE_TEMPLATES = [
         name: 'hiresfix_esrgan_workflow',
         mediaType: 'image',
         mediaSubtype: 'webp',
-        description: 'High-quality upscaling with ESRGAN.',
+        description:
+          'Guide image generation by using upscale models during intermediate steps.',
         thumbnailVariant: 'zoomHover',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/2_pass_txt2img/#non-latent-upscaling'
@@ -222,7 +226,8 @@ export const CORE_TEMPLATES = [
         name: 'latent_upscale_different_prompt_model',
         mediaType: 'image',
         mediaSubtype: 'webp',
-        description: 'Upscale with different prompts per pass.',
+        description:
+          'Upscale during intermediate steps with different prompts each pass',
         thumbnailVariant: 'zoomHover',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/2_pass_txt2img/#more-examples'
@@ -235,18 +240,20 @@ export const CORE_TEMPLATES = [
     type: 'video',
     templates: [
       {
-        name: 'ltxv_image_to_video',
-        mediaType: 'image',
-        mediaSubtype: 'webp',
-        description: 'Convert still images into videos.',
-        tutorialUrl: 'https://comfyanonymous.github.io/ComfyUI_examples/ltxv/'
-      },
-      {
         name: 'ltxv_text_to_video',
         mediaType: 'image',
         mediaSubtype: 'webp',
         description: 'Generate videos from text descriptions.',
-        tutorialUrl: 'https://comfyanonymous.github.io/ComfyUI_examples/ltxv/'
+        tutorialUrl:
+          'https://comfyanonymous.github.io/ComfyUI_examples/ltxv/#text-to-video'
+      },
+      {
+        name: 'ltxv_image_to_video',
+        mediaType: 'image',
+        mediaSubtype: 'webp',
+        description: 'Convert still images into videos.',
+        tutorialUrl:
+          'https://comfyanonymous.github.io/ComfyUI_examples/ltxv/#image-to-video'
       },
       {
         name: 'mochi_text_to_video_example',
@@ -275,7 +282,8 @@ export const CORE_TEMPLATES = [
         name: 'txt_to_image_to_video',
         mediaType: 'image',
         mediaSubtype: 'webp',
-        description: 'Create videos from text via images.',
+        description:
+          'Generate images from text and then convert them into videos.',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/video/#image-to-video'
       }
@@ -298,7 +306,8 @@ export const CORE_TEMPLATES = [
         name: 'sd3.5_large_canny_controlnet_example',
         mediaType: 'image',
         mediaSubtype: 'webp',
-        description: 'Use ControlNet with SD 3.5.',
+        description:
+          'Use edge detection to guide image generation with SD 3.5.',
         thumbnailVariant: 'hoverDissolve',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/sd3/#sd35-controlnets'
@@ -316,7 +325,8 @@ export const CORE_TEMPLATES = [
         name: 'sd3.5_large_blur',
         mediaType: 'image',
         mediaSubtype: 'webp',
-        description: 'Generate images with blur control.',
+        description:
+          'Generate images from blurred reference images with SD 3.5.',
         thumbnailVariant: 'hoverDissolve',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/sd3/#sd35-controlnets'
@@ -346,7 +356,8 @@ export const CORE_TEMPLATES = [
         name: 'sdxl_revision_text_prompts',
         mediaType: 'image',
         mediaSubtype: 'webp',
-        description: 'Revise SDXL outputs with text.',
+        description:
+          'Transfer concepts from reference images to guide image generation with SDXL.',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/sdxl/#revision'
       },
@@ -354,7 +365,8 @@ export const CORE_TEMPLATES = [
         name: 'sdxl_revision_zero_positive',
         mediaType: 'image',
         mediaSubtype: 'webp',
-        description: 'Use zero-shot revision with SDXL.',
+        description:
+          'Add text prompts alongside reference images to guide image generation with SDXL.',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/sdxl/#revision'
       },
@@ -362,7 +374,7 @@ export const CORE_TEMPLATES = [
         name: 'sdxlturbo_example',
         mediaType: 'image',
         mediaSubtype: 'webp',
-        description: 'Generate images quickly with SDXL Turbo.',
+        description: 'Generate images in a single step with SDXL Turbo.',
         tutorialUrl:
           'https://comfyanonymous.github.io/ComfyUI_examples/sdturbo/'
       }
