@@ -4,9 +4,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useRemoteWidget } from '@/composables/widgets/useRemoteWidget'
 import type { ComboInputSpecV2 } from '@/schemas/nodeDefSchema'
 
-vi.mock('axios', () => ({
-  get: vi.fn()
-}))
+vi.mock('axios', () => {
+  return {
+    default: {
+      get: vi.fn()
+    }
+  }
+})
 
 vi.mock('@/i18n', () => ({
   i18n: {
