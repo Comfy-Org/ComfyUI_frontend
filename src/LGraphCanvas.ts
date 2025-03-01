@@ -453,7 +453,7 @@ export class LGraphCanvas implements ConnectionColorContext {
   /** @deprecated See {@link LGraphCanvas.selectedItems} */
   selected_group: LGraphGroup | null = null
   visible_nodes: LGraphNode[] = []
-  node_over?: LGraphNode | null
+  node_over?: LGraphNode
   node_capturing_input?: LGraphNode | null
   highlighted_links: Dictionary<boolean> = {}
   link_over_widget?: IWidget
@@ -1572,7 +1572,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     this.onSelectionChange?.(this.selected_nodes)
 
     this.visible_nodes = []
-    this.node_over = null
+    this.node_over = undefined
     this.node_capturing_input = null
     this.connecting_links = null
     this.highlighted_links = {}
@@ -1657,9 +1657,6 @@ export class LGraphCanvas implements ConnectionColorContext {
     // TODO: classList.add
     element.className += " lgraphcanvas"
     element.data = this
-    // @ts-expect-error Likely safe to remove.  A decent default, but expectation is to be configured by calling app.
-    // to allow key events
-    element.tabindex = "1"
 
     // Background canvas: To render objects behind nodes (background, links, groups)
     this.bgcanvas = document.createElement("canvas")
@@ -1866,7 +1863,7 @@ export class LGraphCanvas implements ConnectionColorContext {
   getWidgetAtCursor(node?: LGraphNode): IWidget | null {
     node ??= this.node_over
 
-    if (!node.widgets) return null
+    if (!node?.widgets) return null
 
     const graphPos = this.graph_mouse
     const x = graphPos[0] - node.pos[0]
@@ -1925,7 +1922,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         otherNode.lostFocusAt = LiteGraph.getTime()
 
         this.node_over?.onMouseLeave?.(e)
-        this.node_over = null
+        this.node_over = undefined
         this.dirty_canvas = true
       }
     }
@@ -2012,6 +2009,8 @@ export class LGraphCanvas implements ConnectionColorContext {
 
   #processPrimaryButton(e: CanvasPointerEvent, node: LGraphNode) {
     const { pointer, graph } = this
+    if (!graph) throw new NullGraphError()
+
     const x = e.canvasX
     const y = e.canvasY
 
@@ -2027,8 +2026,6 @@ export class LGraphCanvas implements ConnectionColorContext {
       dragRect[3] = 1
 
       pointer.onClick = (eUp) => {
-        if (!graph) throw new NullGraphError()
-
         // Click, not drag
         const clickedItem = node ??
           (this.reroutesEnabled ? graph.getRerouteOnPos(eUp.canvasX, eUp.canvasY) : null) ??
@@ -4079,9 +4076,6 @@ export class LGraphCanvas implements ConnectionColorContext {
   drawFrontCanvas(): void {
     this.dirty_canvas = false
 
-    if (!this.ctx) {
-      this.ctx = this.bgcanvas.getContext("2d")
-    }
     const ctx = this.ctx
     if (!ctx) return
 
