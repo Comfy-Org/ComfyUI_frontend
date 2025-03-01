@@ -799,7 +799,10 @@ app.registerExtension({
     // Add menu options to convert to/from widgets
     const origGetExtraMenuOptions = nodeType.prototype.getExtraMenuOptions
     // @ts-expect-error adding extra property
-    nodeType.prototype.convertWidgetToInput = function (widget) {
+    nodeType.prototype.convertWidgetToInput = function (
+      this: LGraphNode,
+      widget: IWidget
+    ) {
       const config = getConfig.call(this, widget.name) ?? [
         widget.type,
         widget.options || {}
