@@ -4,6 +4,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useComboWidget } from '@/composables/widgets/useComboWidget'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 
+vi.mock('@/stores/widgetStore', () => ({
+  useWidgetStore: () => ({
+    getDefaultValue: vi.fn()
+  })
+}))
+
 vi.mock('@/scripts/widgets', () => ({
   addValueControlWidgets: vi.fn()
 }))
