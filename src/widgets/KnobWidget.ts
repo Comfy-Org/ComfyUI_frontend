@@ -142,7 +142,6 @@ export class KnobWidget extends BaseWidget implements IKnobWidget {
     )
     const gs = gradient_stops.split(";")
     for (const [index, stop] of gs.entries()) {
-      console.log(stop)
       gradient.addColorStop(index, stop.trim())
     }
 
@@ -212,14 +211,15 @@ export class KnobWidget extends BaseWidget implements IKnobWidget {
   }): void {
     if (this.options.read_only) return
     const { e } = options
-    const step = getWidgetStep(this.options) * 10
+    const step = getWidgetStep(this.options)
     // Shift to move by 10% increments
-    const maxMinDifference = (this.options.max - this.options.min)
-    const maxMinDifference10pct = maxMinDifference / 10
+    const range = (this.options.max - this.options.min)
+    const range_10_percent = range / 10
+    const range_1_percent = range / 100
     const step_for = {
       delta_x: step,
-      shift: maxMinDifference > step ? maxMinDifference - (maxMinDifference % step) : step,
-      delta_y: maxMinDifference10pct > step ? maxMinDifference10pct - (maxMinDifference10pct % step) : step, // 1% increments
+      shift: range_10_percent > step ? range_10_percent - (range_10_percent % step) : step,
+      delta_y: range_1_percent > step ? range_1_percent - (range_1_percent % step) : step, // 1% increments
     }
 
     const use_y = Math.abs(e.movementY) > Math.abs(e.movementX)
