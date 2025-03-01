@@ -109,12 +109,16 @@ const thumbnailSrc = computed(() =>
     : `/api/workflow_templates/${sourceModule}/${template.name}`
 )
 
-const baseThumbnailSrc = computed(
-  () => `${thumbnailSrc.value}-1.${template.mediaSubtype}`
+const baseThumbnailSrc = computed(() =>
+  sourceModule === 'default'
+    ? `${thumbnailSrc.value}-1.${template.mediaSubtype}`
+    : `${thumbnailSrc.value}.${template.mediaSubtype}`
 )
 
-const overlayThumbnailSrc = computed(
-  () => `${thumbnailSrc.value}-2.${template.mediaSubtype}`
+const overlayThumbnailSrc = computed(() =>
+  sourceModule === 'default'
+    ? `${thumbnailSrc.value}-2.${template.mediaSubtype}`
+    : `${thumbnailSrc.value}.${template.mediaSubtype}`
 )
 
 const title = computed(() => {
