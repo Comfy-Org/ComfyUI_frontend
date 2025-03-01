@@ -6,6 +6,7 @@ import MissingModelsWarning from '@/components/dialog/content/MissingModelsWarni
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
 import SettingDialogContent from '@/components/dialog/content/SettingDialogContent.vue'
 import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.vue'
+import TemplateWorkflowsDialogHeader from '@/components/dialog/header/TemplateWorkflowsDialogHeader.vue'
 import TemplateWorkflowsContent from '@/components/templates/TemplateWorkflowsContent.vue'
 import { t } from '@/i18n'
 import { type ShowDialogOptions, useDialogStore } from '@/stores/dialogStore'
@@ -80,6 +81,12 @@ export const useDialogService = () => {
       key: 'global-template-workflows',
       title: t('templateWorkflows.title'),
       component: TemplateWorkflowsContent,
+      headerComponent: TemplateWorkflowsDialogHeader,
+      dialogComponentProps: {
+        pt: {
+          content: { class: '!px-0' }
+        }
+      },
       props
     })
   }
