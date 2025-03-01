@@ -7,6 +7,7 @@
     class="global-dialog"
     v-bind="item.dialogComponentProps"
     :auto-z-index="false"
+    :pt="item.dialogComponentProps.pt"
     :pt:mask:style="{ zIndex: baseZIndex + index + 1 }"
     :aria-labelledby="item.key"
   >
