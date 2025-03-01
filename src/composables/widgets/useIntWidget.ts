@@ -1,14 +1,13 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
 import type { INumericWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
-import type { InputSpec, IntInputOptions } from '@/schemas/nodeDefSchema'
+import { type InputSpec, isIntInputSpec } from '@/schemas/nodeDefSchema'
 import type { ComfyApp } from '@/scripts/app'
 import {
   type ComfyWidgetConstructor,
   addValueControlWidget
 } from '@/scripts/widgets'
 import { useSettingStore } from '@/stores/settingStore'
-import { getNumberDefaults } from '@/utils/mathUtil'
 
 function onValueChange(this: INumericWidget, v: number) {
   // For integers, always round to the nearest step
@@ -41,28 +40,39 @@ export const useIntWidget = () => {
     app: ComfyApp,
     widgetName?: string
   ) => {
+    if (!isIntInputSpec(inputData)) {
+      throw new Error(`Invalid input data: ${inputData}`)
+    }
+
     const settingStore = useSettingStore()
     const sliderEnabled = !settingStore.get('Comfy.DisableSliders')
-    const inputOptions = inputData[1]
+    const inputOptions = inputData[1] ?? {}
     const widgetType = sliderEnabled
       ? inputOptions?.display === 'slider'
         ? 'slider'
         : 'number'
       : 'number'
 
-    const { val, config } = getNumberDefaults(inputOptions as IntInputOptions, {
-      defaultStep: 1,
-      precision: 0,
-      enableRounding: true
-    })
-    config.precision = 0
-
+    const step = inputOptions.step ?? 1
+    const defaultValue = inputOptions.default ?? 0
     const result = {
-      // @ts-expect-error InputSpec is not typed correctly
-      widget: node.addWidget(widgetType, inputName, val, onValueChange, config)
+      widget: node.addWidget(
+        widgetType,
+        inputName,
+        defaultValue,
+        onValueChange,
+        {
+          min: inputOptions.min ?? 0,
+          max: inputOptions.max ?? 2048,
+          /** @deprecated Use step2 instead. The 10x value is a legacy implementation. */
+          step: step * 10,
+          step2: step,
+          precision: 0
+        }
+      )
     }
 
-    if (inputData[1]?.control_after_generate) {
+    if (inputOptions.control_after_generate) {
       const seedControl = addValueControlWidget(
         node,
         result.widget,
