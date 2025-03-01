@@ -1162,6 +1162,7 @@ export class GroupNodeHandler {
             def?.input?.optional?.[old.inputName]
           if (!input) continue
 
+          // @ts-expect-error InputSpec is not typed correctly
           widget.options.values = input[0]
 
           if (

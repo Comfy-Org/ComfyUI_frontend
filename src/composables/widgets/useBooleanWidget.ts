@@ -17,6 +17,7 @@ export const useBooleanWidget = () => {
     }
 
     return {
+      // @ts-expect-error InputSpec is not typed correctly
       widget: node.addWidget('toggle', inputName, defaultVal, () => {}, options)
     }
   }

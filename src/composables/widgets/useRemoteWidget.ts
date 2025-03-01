@@ -73,7 +73,7 @@ export function useRemoteWidget<
   widget: IWidget
 }) {
   const { inputData, defaultValue, node, widget } = options
-  const config: RemoteWidgetConfig = inputData[1].remote
+  const config = (inputData[1]?.remote ?? {}) as RemoteWidgetConfig
   const { refresh = 0, max_retries = MAX_RETRIES } = config
   const isPermanent = refresh <= 0
   const cacheKey = createCacheKey(config)

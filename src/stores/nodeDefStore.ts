@@ -270,7 +270,7 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDef> = {
     name: 'Reroute',
     display_name: 'Reroute',
     category: 'utils',
-    input: { required: { '': ['*'] }, optional: {} },
+    input: { required: { '': ['*', {}] }, optional: {} },
     output: ['*'],
     output_name: [''],
     output_is_list: [false],

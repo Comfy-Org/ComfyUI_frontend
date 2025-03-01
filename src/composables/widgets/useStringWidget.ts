@@ -82,6 +82,7 @@ export const useStringWidget = () => {
     }
 
     if (inputData[1]?.dynamicPrompts != undefined)
+      // @ts-expect-error InputSpec is not typed correctly
       res.widget.dynamicPrompts = inputData[1].dynamicPrompts
 
     return res

@@ -44,9 +44,11 @@ export const useImageUploadWidget = () => {
     const { showPreview } = isVideo ? useNodeVideo(node) : useNodeImage(node)
 
     const fileFilter = isVideo ? isVideoFile : isImageFile
+    // @ts-expect-error InputSpec is not typed correctly
     const fileComboWidget = findFileComboWidget(node, imageInputName)
     const initialFile = `${fileComboWidget.value}`
     const formatPath = (value: InternalFile) =>
+      // @ts-expect-error InputSpec is not typed correctly
       createAnnotatedPath(value, { rootFolder: image_folder })
 
     const transform = (internalValue: InternalValue): ExposedValue => {
@@ -66,6 +68,7 @@ export const useImageUploadWidget = () => {
 
     // Setup file upload handling
     const { openFileSelection } = useNodeImageUpload(node, {
+      // @ts-expect-error InputSpec is not typed correctly
       allow_batch,
       fileFilter,
       accept,

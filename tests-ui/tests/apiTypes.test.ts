@@ -9,7 +9,7 @@ import {
 const EXAMPLE_NODE_DEF: ComfyNodeDef = {
   input: {
     required: {
-      ckpt_name: [['model1.safetensors', 'model2.ckpt']]
+      ckpt_name: [['model1.safetensors', 'model2.ckpt'], {}]
     }
   },
   output: ['MODEL', 'CLIP', 'VAE'],
@@ -31,8 +31,6 @@ describe('validateNodeDef', () => {
   })
 
   describe.each([
-    [{ ckpt_name: 'foo' }, ['foo', {}]],
-    [{ ckpt_name: ['foo'] }, ['foo', {}]],
     [{ ckpt_name: ['foo', { default: 1 }] }, ['foo', { default: 1 }]],
     // Extra input spec should be preserved
     [{ ckpt_name: ['foo', { bar: 1 }] }, ['foo', { bar: 1 }]],

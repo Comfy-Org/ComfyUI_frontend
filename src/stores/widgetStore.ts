@@ -47,6 +47,7 @@ export const useWidgetStore = defineStore('widget', () => {
     if (Array.isArray(inputData[0]))
       return getDefaultValue(transformComboInput(inputData))
 
+    // @ts-expect-error InputSpec is not typed correctly
     const widgetType = getWidgetType(inputData[0], inputData[1]?.name)
 
     const [_, props] = inputData
@@ -54,12 +55,14 @@ export const useWidgetStore = defineStore('widget', () => {
     if (!props) return undefined
     if (props.default) return props.default
 
+    // @ts-expect-error InputSpec is not typed correctly
     if (widgetType === 'COMBO' && props.options?.length) return props.options[0]
     if (props.remote) return 'Loading...'
     return undefined
   }
 
   const transformComboInput = (inputData: InputSpec): ComboInputSpecV2 => {
+    // @ts-expect-error InputSpec is not typed correctly
     return isComboInputSpecV1(inputData)
       ? [
           'COMBO',

@@ -1,7 +1,7 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
 import type { INumericWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
-import type { InputSpec } from '@/schemas/nodeDefSchema'
+import type { InputSpec, IntInputOptions } from '@/schemas/nodeDefSchema'
 import type { ComfyApp } from '@/scripts/app'
 import {
   type ComfyWidgetConstructor,
@@ -50,7 +50,7 @@ export const useIntWidget = () => {
         : 'number'
       : 'number'
 
-    const { val, config } = getNumberDefaults(inputOptions, {
+    const { val, config } = getNumberDefaults(inputOptions as IntInputOptions, {
       defaultStep: 1,
       precision: 0,
       enableRounding: true
@@ -58,6 +58,7 @@ export const useIntWidget = () => {
     config.precision = 0
 
     const result = {
+      // @ts-expect-error InputSpec is not typed correctly
       widget: node.addWidget(widgetType, inputName, val, onValueChange, config)
     }
 

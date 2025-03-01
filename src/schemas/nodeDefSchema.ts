@@ -1,23 +1,5 @@
-import type { ZodType } from 'zod'
 import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
-
-function inputSpec<TType extends ZodType, TSpec extends ZodType>(
-  spec: [TType, TSpec],
-  allowUpcast: boolean = true
-) {
-  const [inputType, inputSpec] = spec
-  // e.g. "INT" => ["INT", {}]
-  const upcastTypes = allowUpcast
-    ? [inputType.transform((type) => [type, {}])]
-    : []
-
-  return z.union([
-    z.tuple([inputType, inputSpec]),
-    z.tuple([inputType]).transform(([type]) => [type, {}]),
-    ...upcastTypes
-  ])
-}
 
 const zRemoteWidgetConfig = z.object({
   route: z.string().url().or(z.string().startsWith('/')),
@@ -89,21 +71,27 @@ const zComboInputOptions = zBaseInputOptions.extend({
   remote: zRemoteWidgetConfig.optional()
 })
 
-const zIntInputSpec = inputSpec([z.literal('INT'), zIntInputOptions])
-const zFloatInputSpec = inputSpec([z.literal('FLOAT'), zFloatInputOptions])
-const zBooleanInputSpec = inputSpec([
-  z.literal('BOOLEAN'),
-  zBooleanInputOptions
+const zIntInputSpec = z.tuple([z.literal('INT'), zIntInputOptions.optional()])
+const zFloatInputSpec = z.tuple([
+  z.literal('FLOAT'),
+  zFloatInputOptions.optional()
 ])
-const zStringInputSpec = inputSpec([z.literal('STRING'), zStringInputOptions])
-const zComboInputSpec = inputSpec(
-  [z.array(z.any()), zComboInputOptions],
-  /* allowUpcast=*/ false
-)
-const zComboInputSpecV2 = inputSpec(
-  [z.literal('COMBO'), zComboInputOptions],
-  /* allowUpcast=*/ false
-)
+const zBooleanInputSpec = z.tuple([
+  z.literal('BOOLEAN'),
+  zBooleanInputOptions.optional()
+])
+const zStringInputSpec = z.tuple([
+  z.literal('STRING'),
+  zStringInputOptions.optional()
+])
+const zComboInputSpec = z.tuple([
+  z.array(z.union([z.string(), z.number()])),
+  zComboInputOptions.optional()
+])
+const zComboInputSpecV2 = z.tuple([
+  z.literal('COMBO'),
+  zComboInputOptions.optional()
+])
 
 export function isComboInputSpecV1(
   inputSpec: InputSpec
@@ -154,9 +142,9 @@ export function isComboInputSpec(
 }
 
 const excludedLiterals = new Set(['INT', 'FLOAT', 'BOOLEAN', 'STRING', 'COMBO'])
-const zCustomInputSpec = inputSpec([
+const zCustomInputSpec = z.tuple([
   z.string().refine((value) => !excludedLiterals.has(value)),
-  zBaseInputOptions
+  zBaseInputOptions.optional()
 ])
 
 const zInputSpec = z.union([

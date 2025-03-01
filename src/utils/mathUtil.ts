@@ -1,7 +1,10 @@
-import type { InputSpec } from '@/schemas/nodeDefSchema'
+import type {
+  FloatInputOptions,
+  IntInputOptions
+} from '@/schemas/nodeDefSchema'
 
 export function getNumberDefaults(
-  inputOptions: InputSpec[1],
+  inputOptions: IntInputOptions | FloatInputOptions,
   options: {
     defaultStep: number
     precision?: number
