@@ -53,6 +53,7 @@ export const useIntWidget = () => {
         : 'number'
       : 'number'
 
+    const step = inputOptions.step ?? 1
     const defaultValue = inputOptions.default ?? 0
     const result = {
       widget: node.addWidget(
@@ -64,8 +65,8 @@ export const useIntWidget = () => {
           min: inputOptions.min ?? 0,
           max: inputOptions.max ?? 2048,
           /** @deprecated Use step2 instead. The 10x value is a legacy implementation. */
-          step: (inputOptions.step ?? 1) * 10,
-          step2: inputOptions.step ?? 1,
+          step: step * 10,
+          step2: step,
           precision: 0
         }
       )

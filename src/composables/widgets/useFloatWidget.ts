@@ -44,7 +44,7 @@ export const useFloatWidget = () => {
         : 'number'
       : 'number'
 
-    const step = inputOptions.step ?? 1
+    const step = inputOptions.step ?? 0.5
     const precision =
       settingStore.get('Comfy.FloatRoundingPrecision') ||
       Math.max(0, -Math.floor(Math.log10(step)))
@@ -65,8 +65,8 @@ export const useFloatWidget = () => {
               ? (1_000_000 * Math.pow(0.1, precision)) / 1_000_000
               : (inputOptions.round as number),
           /** @deprecated Use step2 instead. The 10x value is a legacy implementation. */
-          step: (inputOptions.step ?? 1) * 10.0,
-          step2: inputOptions.step ?? 1,
+          step: step * 10.0,
+          step2: step,
           precision
         }
       )
