@@ -22,4 +22,6 @@ jobs:
       run: npm ci
 
     - name: Run Vitest tests
-      run: npm run test:component
+      run: |
+        npm run test:component
+        npm run test:unit
