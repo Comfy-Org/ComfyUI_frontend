@@ -36,18 +36,6 @@ jobs:
         with:
           node-version: lts/*
 
-      - uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-
-      - name: Install requirements
-        run: |
-          python -m pip install --upgrade pip
-          pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
-          pip install -r requirements.txt
-          pip install wait-for-it
-        working-directory: ComfyUI
-
       - name: Build & Install ComfyUI_frontend
         run: |
           npm ci
@@ -80,6 +68,18 @@ jobs:
             ComfyUI_frontend
           key: comfyui-setup-${{ needs.setup.outputs.cache-key }}
 
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install requirements
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt
+          pip install wait-for-it
+        working-directory: ComfyUI
+
       - name: Start ComfyUI server
         run: |
           python main.py --cpu --multi-user &
@@ -107,6 +107,18 @@ jobs:
             ComfyUI
             ComfyUI_frontend
           key: comfyui-setup-${{ needs.setup.outputs.cache-key }}
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install requirements
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt
+          pip install wait-for-it
+        working-directory: ComfyUI
 
       - name: Start ComfyUI server
         run: |
