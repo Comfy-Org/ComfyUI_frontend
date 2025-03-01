@@ -547,7 +547,7 @@ navigate to `http://<server_ip>:5173` (e.g. `http://192.168.2.20:5173` here), to
 ### Unit Test
 
 - `npm i` to install all dependencies
-- `npm run test:jest` to execute all unit tests.
+- `npm run test:unit` to execute all unit tests.
 
 ### Component Test
 
