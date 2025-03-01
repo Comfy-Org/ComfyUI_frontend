@@ -1730,7 +1730,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     // down do not need to store the binded
     LiteGraph.pointerListenerAdd(canvas, "down", this._mousedown_callback, true)
-    canvas.addEventListener("mousewheel", this._mousewheel_callback, false)
+    canvas.addEventListener("wheel", this._mousewheel_callback, false)
 
     // CHECK: ??? binded or not
     LiteGraph.pointerListenerAdd(canvas, "up", this._mouseup_callback, true)
@@ -1739,11 +1739,6 @@ export class LGraphCanvas implements ConnectionColorContext {
     canvas.addEventListener("pointercancel", this._mousecancel_callback, true)
 
     canvas.addEventListener("contextmenu", this._doNothing)
-    canvas.addEventListener(
-      "DOMMouseScroll",
-      this._mousewheel_callback,
-      false,
-    )
 
     // Keyboard ******************
     this._key_callback = this.processKey.bind(this)
