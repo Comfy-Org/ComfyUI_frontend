@@ -300,7 +300,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     this.resizeTo([...this.children, ...this._nodes, ...nodes], padding)
   }
 
-  getMenuOptions(): (IContextMenuValue<string> | null)[] {
+  getMenuOptions(): (IContextMenuValue<string> | IContextMenuValue<string | null> | null)[] {
     return [
       {
         content: this.pinned ? "Unpin" : "Pin",

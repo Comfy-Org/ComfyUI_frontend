@@ -42,7 +42,7 @@ import { DragAndScale } from "./DragAndScale"
 import { strokeShape } from "./draw"
 import { NullGraphError } from "./infrastructure/NullGraphError"
 import { LGraphGroup } from "./LGraphGroup"
-import { LGraphNode, type NodeId } from "./LGraphNode"
+import { LGraphNode, type NodeId, type NodeProperty } from "./LGraphNode"
 import { LinkReleaseContextExtended, LiteGraph } from "./litegraph"
 import { type LinkId, LLink } from "./LLink"
 import {
@@ -428,7 +428,7 @@ export class LGraphCanvas implements ConnectionColorContext {
   over_link_center: LinkSegment | null
   last_mouse_position: Point
   /** The visible area of this canvas.  Tightly coupled with {@link ds}. */
-  visible_area?: Rect32
+  visible_area: Rect32
   /** Contains all links and reroutes that were rendered.  Repopulated every render cycle. */
   renderedPaths: Set<LinkSegment> = new Set()
   visible_links?: LLink[]
@@ -453,8 +453,8 @@ export class LGraphCanvas implements ConnectionColorContext {
   /** @deprecated See {@link LGraphCanvas.selectedItems} */
   selected_group: LGraphGroup | null = null
   visible_nodes: LGraphNode[] = []
-  node_over?: LGraphNode
-  node_capturing_input?: LGraphNode
+  node_over?: LGraphNode | null
+  node_capturing_input?: LGraphNode | null
   highlighted_links: Dictionary<boolean> = {}
   link_over_widget?: IWidget
   link_over_widget_type?: string
@@ -463,15 +463,15 @@ export class LGraphCanvas implements ConnectionColorContext {
   dirty_bgcanvas: boolean = true
   /** A map of nodes that require selective-redraw */
   dirty_nodes = new Map<NodeId, LGraphNode>()
-  dirty_area?: Rect
+  dirty_area?: Rect | null
   /** @deprecated Unused */
-  node_in_panel?: LGraphNode
+  node_in_panel?: LGraphNode | null
   last_mouse: ReadOnlyPoint = [0, 0]
   last_mouseclick: number = 0
   graph: LGraph | null
   canvas: HTMLCanvasElement
   bgcanvas: HTMLCanvasElement
-  ctx?: CanvasRenderingContext2D
+  ctx?: CanvasRenderingContext2D | null
   _events_binded?: boolean
   _mousedown_callback?(e: PointerEvent): boolean
   _mousewheel_callback?(e: WheelEvent): boolean
@@ -483,7 +483,7 @@ export class LGraphCanvas implements ConnectionColorContext {
   _ondrop_callback?(e: DragEvent): unknown
   /** @deprecated WebGL */
   gl?: never
-  bgctx?: CanvasRenderingContext2D
+  bgctx?: CanvasRenderingContext2D | null
   is_rendering?: boolean
   /** @deprecated Panels */
   block_click?: boolean
@@ -995,15 +995,13 @@ export class LGraphCanvas implements ConnectionColorContext {
     v: unknown,
     /** Unused - immediately overwritten */
     _options: INodeOutputSlot[],
-    e: unknown,
-    prev_menu: ContextMenu,
+    e: MouseEvent,
+    prev_menu: ContextMenu<INodeSlotContextItem>,
     node: LGraphNode,
   ): boolean | undefined {
     if (!node) return
 
-    const that = this
     const canvas = LGraphCanvas.active_canvas
-    const ref_window = canvas.getCanvasWindow()
 
     const options = node.onGetOutputs
       ? node.onGetOutputs()
@@ -1053,7 +1051,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     if (!entries.length) return
 
-    new LiteGraph.ContextMenu(
+    new LiteGraph.ContextMenu<INodeSlotContextItem>(
       entries,
       {
         event: e,
@@ -1061,15 +1059,13 @@ export class LGraphCanvas implements ConnectionColorContext {
         parentMenu: prev_menu,
         node: node,
       },
-      // @ts-expect-error Unused
-      ref_window,
     )
 
-    function inner_clicked(v: IContextMenuValue<INodeSlotContextItem>, e: any, prev: any) {
+    function inner_clicked(this: ContextMenuDivElement<INodeSlotContextItem>, v: IContextMenuValue<INodeSlotContextItem>, e: any, prev: any) {
       if (!node) return
 
       // TODO: This is a static method, so the below "that" appears broken.
-      if (v.callback) v.callback.call(that, node, v, e, prev)
+      if (v.callback) v.callback.call(this, node, v, e, prev)
 
       if (!v.value) return
 
@@ -1108,7 +1104,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
   /** @param value Parameter is never used */
   static onShowMenuNodeProperties(
-    value: string | number | boolean | object,
+    value: NodeProperty | undefined,
     options: unknown,
     e: MouseEvent,
     prev_menu: ContextMenu<string>,
@@ -1209,51 +1205,49 @@ export class LGraphCanvas implements ConnectionColorContext {
     const property = item.property || "title"
     const value = node[property]
 
-    // TODO: Remove "any" kludge
-    // TODO refactor :: use createDialog ?
-    const dialog: any = document.createElement("div")
-    dialog.is_modified = false
-    dialog.className = "graphdialog"
-    dialog.innerHTML =
-      "<span class='name'></span><input autofocus type='text' class='value'/><button>OK</button>"
-    dialog.close = function () {
-      dialog.remove()
-    }
-    const title = dialog.querySelector(".name")
+    const title = document.createElement("span")
+    title.className = "name"
     title.textContent = property
-    const input = dialog.querySelector(".value")
-    if (input) {
-      input.value = value
-      input.addEventListener("blur", function () {
-        this.focus()
-      })
-      input.addEventListener("keydown", function (e: KeyboardEvent) {
-        dialog.is_modified = true
-        if (e.key == "Escape") {
-          // ESC
-          dialog.close()
-        } else if (e.key == "Enter") {
-          // save
-          inner()
-          // @ts-expect-error Intentional - undefined if not present
-        } else if (e.target.localName != "textarea") {
-          return
-        }
-        e.preventDefault()
-        e.stopPropagation()
-      })
-    }
+
+    const input = document.createElement("input")
+    Object.assign(input, { type: "text", className: "value", autofocus: true })
+
+    const button = document.createElement("button")
+    button.textContent = "OK"
+
+    // TODO refactor :: use createDialog ?
+    const dialog = Object.assign(document.createElement("div"), {
+      is_modified: false,
+      className: "graphdialog",
+      close: () => dialog.remove(),
+    })
+    dialog.append(title, input, button)
+
+    input.value = String(value)
+    input.addEventListener("blur", function () {
+      this.focus()
+    })
+    input.addEventListener("keydown", (e: KeyboardEvent) => {
+      dialog.is_modified = true
+      if (e.key == "Escape") {
+        // ESC
+        dialog.close()
+      } else if (e.key == "Enter") {
+        // save
+        inner()
+      } else if (!e.target || !("localName" in e.target) || e.target.localName != "textarea") {
+        return
+      }
+      e.preventDefault()
+      e.stopPropagation()
+    })
 
     const canvas = LGraphCanvas.active_canvas
     const canvasEl = canvas.canvas
 
     const rect = canvasEl.getBoundingClientRect()
-    let offsetx = -20
-    let offsety = -20
-    if (rect) {
-      offsetx -= rect.left
-      offsety -= rect.top
-    }
+    const offsetx = rect ? -20 - rect.left : -20
+    const offsety = rect ? -20 - rect.top : -20
 
     if (e) {
       dialog.style.left = `${e.clientX + offsetx}px`
@@ -1263,13 +1257,14 @@ export class LGraphCanvas implements ConnectionColorContext {
       dialog.style.top = `${canvasEl.height * 0.5 + offsety}px`
     }
 
-    const button = dialog.querySelector("button")
     button.addEventListener("click", inner)
+
+    if (canvasEl.parentNode == null) throw new TypeError("canvasEl.parentNode was null")
     canvasEl.parentNode.append(dialog)
 
-    input?.focus()
+    input.focus()
 
-    let dialogCloseTimer = null
+    let dialogCloseTimer: ReturnType<typeof setTimeout> | null = null
     dialog.addEventListener("mouseleave", function () {
       if (LiteGraph.dialog_close_on_mouse_leave) {
         if (!dialog.is_modified && LiteGraph.dialog_close_on_mouse_leave) {
@@ -1290,7 +1285,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       if (input) setValue(input.value)
     }
 
-    function setValue(value) {
+    function setValue(value: NodeProperty) {
       if (item.type == "Number") {
         value = Number(value)
       } else if (item.type == "Boolean") {
@@ -1303,7 +1298,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     }
   }
 
-  static getPropertyPrintableValue(value: unknown, values: unknown[] | object): string {
+  static getPropertyPrintableValue(value: unknown, values: unknown[] | object): string | undefined {
     if (!values) return String(value)
 
     if (Array.isArray(values)) {
@@ -1313,6 +1308,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     if (typeof values === "object") {
       let desc_value = ""
       for (const k in values) {
+        // @ts-ignore deprecated #578
         if (values[k] != value) continue
 
         desc_value = k
@@ -1333,7 +1329,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     node.graph.beforeChange()
 
-    const fApplyMultiNode = function (node) {
+    const fApplyMultiNode = function (node: LGraphNode) {
       node.collapse()
     }
 
@@ -1388,11 +1384,11 @@ export class LGraphCanvas implements ConnectionColorContext {
       { event: e, callback: inner_clicked, parentMenu: menu, node: node },
     )
 
-    function inner_clicked(v) {
+    function inner_clicked(v: string) {
       if (!node) return
 
       const kV = Object.values(LiteGraph.NODE_MODES).indexOf(v)
-      const fApplyMultiNode = function (node) {
+      const fApplyMultiNode = function (node: LGraphNode) {
         if (kV !== -1 && LiteGraph.NODE_MODES[kV]) {
           node.changeMode(kV)
         } else {
@@ -1416,15 +1412,15 @@ export class LGraphCanvas implements ConnectionColorContext {
 
   /** @param value Parameter is never used */
   static onMenuNodeColors(
-    value: IContextMenuValue<string>,
+    value: IContextMenuValue<string | null>,
     options: IContextMenuOptions,
     e: MouseEvent,
-    menu: ContextMenu<string>,
+    menu: ContextMenu<string | null>,
     node: LGraphNode,
   ): boolean {
     if (!node) throw "no node for color"
 
-    const values: IContextMenuValue<string, unknown, { value: string | null }>[] = []
+    const values: IContextMenuValue<string | null, unknown, { value: string | null }>[] = []
     values.push({
       value: null,
       content: "<span style='display: block; padding-left: 4px;'>No color</span>",
@@ -1439,7 +1435,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       }
       values.push(value)
     }
-    new LiteGraph.ContextMenu<string>(values, {
+    new LiteGraph.ContextMenu<string | null>(values, {
       event: e,
       callback: inner_clicked,
       parentMenu: menu,
@@ -1469,28 +1465,28 @@ export class LGraphCanvas implements ConnectionColorContext {
   }
 
   static onMenuNodeShapes(
-    value: IContextMenuValue,
-    options: IContextMenuOptions,
+    value: IContextMenuValue<typeof LiteGraph.VALID_SHAPES[number]>,
+    options: IContextMenuOptions<typeof LiteGraph.VALID_SHAPES[number]>,
     e: MouseEvent,
-    menu: ContextMenu,
+    menu: ContextMenu<typeof LiteGraph.VALID_SHAPES[number]>,
     node: LGraphNode,
   ): boolean {
     if (!node) throw "no node passed"
 
-    new LiteGraph.ContextMenu(LiteGraph.VALID_SHAPES, {
+    new LiteGraph.ContextMenu<typeof LiteGraph.VALID_SHAPES[number]>(LiteGraph.VALID_SHAPES, {
       event: e,
       callback: inner_clicked,
       parentMenu: menu,
       node: node,
     })
 
-    function inner_clicked(v) {
+    function inner_clicked(v: typeof LiteGraph.VALID_SHAPES[number]) {
       if (!node) return
       if (!node.graph) throw new NullGraphError()
 
       node.graph.beforeChange()
 
-      const fApplyMultiNode = function (node) {
+      const fApplyMultiNode = function (node: LGraphNode) {
         node.shape = v
       }
 
