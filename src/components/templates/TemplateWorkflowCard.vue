@@ -58,7 +58,7 @@
             {{ title }}
           </h3>
           <p
-            class="line-clamp-2 text-sm text-surface-600 dark:text-surface-400"
+            class="line-clamp-2 text-sm text-surface-600 dark:text-surface-400 text-muted"
           >
             {{ template.description }}
           </p>

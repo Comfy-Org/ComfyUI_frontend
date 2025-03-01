@@ -108,7 +108,7 @@ const handleTabSelection = (selection: WorkflowTemplates | null) => {
   if (selection !== selectedTab.value && selection !== null) {
     selectedTab.value = selection
 
-    // Close the sidebar on tablet when a category is selected
+    // On small screens, close the sidebar when a category is selected
     if (isSmallScreen.value) {
       isSideNavOpen.value = false
     }
