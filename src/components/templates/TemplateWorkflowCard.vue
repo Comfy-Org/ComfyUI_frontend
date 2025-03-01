@@ -2,13 +2,15 @@
   <Card
     ref="cardRef"
     :data-testid="`template-workflow-${template.name}`"
-    class="w-64 template-card rounded-2xl overflow-hidden cursor-pointer shadow-[0_10px_15px_-3px_rgba(0,0,0,0.08),0_4px_6px_-4px_rgba(0,0,0,0.05)] [&_.p-card-body]:p-0 [&_.p-card-content]:rounded-2xl [&_.p-card-body]:rounded-2xl"
+    class="w-64 template-card rounded-2xl overflow-hidden cursor-pointer shadow-[0_10px_15px_-3px_rgba(0,0,0,0.08),0_4px_6px_-4px_rgba(0,0,0,0.05)]"
+    :pt="{
+      body: { class: 'p-0 rounded-2xl' },
+      content: { class: 'rounded-2xl' }
+    }"
+    @click="emit('loadWorkflow', template.name)"
   >
     <template #header>
-      <div
-        class="flex items-center justify-center cursor-pointer"
-        @click="$emit('loadWorkflow', template.name)"
-      >
+      <div class="flex items-center justify-center">
         <div class="relative overflow-hidden rounded-t-lg">
           <template v-if="template.mediaType === 'audio'">
             <AudioThumbnail :src="baseThumbnailSrc" />
@@ -129,14 +131,7 @@ const title = computed(() => {
     : template.name ?? `${sourceModule} Template`
 })
 
-defineEmits<{
+const emit = defineEmits<{
   loadWorkflow: [name: string]
 }>()
 </script>
-
-<style lang="css" scoped>
-.p-card-content,
-.p-card-body {
-  border-radius: 1rem;
-}
-</style>
