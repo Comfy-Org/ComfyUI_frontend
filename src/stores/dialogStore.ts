@@ -1,12 +1,21 @@
 // We should consider moving to https://primevue.org/dynamicdialog/ once everything is in Vue.
 // Currently we need to bridge between legacy app code and Vue app with a Pinia store.
+import { merge } from 'lodash'
 import { defineStore } from 'pinia'
+import type { DialogPassThroughOptions } from 'primevue/dialog'
 import { type Component, markRaw, ref } from 'vue'
 
-interface DialogComponentProps {
+import type GlobalDialog from '@/components/dialog/GlobalDialog.vue'
+
+interface CustomDialogComponentProps {
   maximizable?: boolean
+  maximized?: boolean
   onClose?: () => void
+  pt?: DialogPassThroughOptions
 }
+
+type DialogComponentProps = InstanceType<typeof GlobalDialog>['$props'] &
+  CustomDialogComponentProps
 
 interface DialogInstance {
   key: string
@@ -15,7 +24,7 @@ interface DialogInstance {
   headerComponent?: Component
   component: Component
   contentProps: Record<string, any>
-  dialogComponentProps: Record<string, any>
+  dialogComponentProps: DialogComponentProps
 }
 
 export interface ShowDialogOptions {
@@ -90,13 +99,13 @@ export const useDialogStore = defineStore('dialog', () => {
         onAfterHide: () => {
           closeDialog(dialog)
         },
-        pt: {
+        pt: merge(options.dialogComponentProps?.pt || {}, {
           root: {
             onMousedown: () => {
               riseDialog(dialog)
             }
           }
-        }
+        })
       }
     }
     dialogStack.value.push(dialog)
