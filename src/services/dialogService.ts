@@ -6,8 +6,8 @@ import MissingModelsWarning from '@/components/dialog/content/MissingModelsWarni
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
 import SettingDialogContent from '@/components/dialog/content/SettingDialogContent.vue'
 import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.vue'
-import TemplateWorkflowsDialogHeader from '@/components/dialog/header/TemplateWorkflowsDialogHeader.vue'
 import TemplateWorkflowsContent from '@/components/templates/TemplateWorkflowsContent.vue'
+import TemplateWorkflowsDialogHeader from '@/components/templates/TemplateWorkflowsDialogHeader.vue'
 import { t } from '@/i18n'
 import { type ShowDialogOptions, useDialogStore } from '@/stores/dialogStore'
 

@@ -6,7 +6,7 @@
     :pt="{
       body: { class: 'p-0' }
     }"
-    @click="emit('loadWorkflow', template.name)"
+    @click="$emit('loadWorkflow', template.name)"
   >
     <template #header>
       <div class="flex items-center justify-center">
@@ -53,22 +53,18 @@
       <div class="flex items-center px-4 py-3">
         <div class="flex-1">
           <h3
-            class="line-clamp-1 text-lg font-normal text-surface-900 dark:text-surface-0"
+            class="line-clamp-1 text-lg font-normal text-surface-900 dark:text-surface-100"
           >
             {{ title }}
           </h3>
-          <p
-            class="line-clamp-2 text-sm text-surface-600 dark:text-surface-400 text-muted"
-          >
+          <p class="line-clamp-2 text-sm text-surface-600 dark:text text-muted">
             {{ template.description.replace(/[-_]/g, ' ') }}
           </p>
         </div>
         <div
-          class="flex md:hidden xl:flex items-center justify-center ml-4 w-10 h-10 rounded-full bg-surface-100 dark:bg-surface-800"
+          class="flex md:hidden xl:flex items-center justify-center ml-4 w-10 h-10 rounded-full bg-surface-100"
         >
-          <i
-            class="pi pi-angle-right text-2xl text-surface-600 dark:text-surface-400"
-          ></i>
+          <i class="pi pi-angle-right text-2xl"></i>
         </div>
       </div>
     </template>
@@ -110,8 +106,7 @@ const getThumbnailUrl = (index = '') => {
       ? `/templates/${template.name}`
       : `/api/workflow_templates/${sourceModule}/${template.name}`
 
-  // For default templates, we append -1 or -2 for the different images
-  // For custom templates, we don't append any index
+  // For templates from custom nodes, multiple images is not yet supported
   const indexSuffix = sourceModule === 'default' && index ? `-${index}` : ''
 
   return `${basePath}${indexSuffix}.${template.mediaSubtype}`
@@ -132,7 +127,7 @@ const title = computed(() => {
     : template.name ?? `${sourceModule} Template`
 })
 
-const emit = defineEmits<{
+defineEmits<{
   loadWorkflow: [name: string]
 }>()
 </script>
