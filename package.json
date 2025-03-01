@@ -9,9 +9,9 @@
   "style": "./dist/css/litegraph.css",
   "exports": {
     ".": {
+      "types": "./dist/litegraph.d.ts",
       "import": "./dist/litegraph.es.js",
-      "require": "./dist/litegraph.umd.js",
-      "types": "./dist/litegraph.d.ts"
+      "require": "./dist/litegraph.umd.js"
     },
     "./style.css": "./dist/css/litegraph.css"
   },
