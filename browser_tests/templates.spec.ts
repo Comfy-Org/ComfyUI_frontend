@@ -12,7 +12,8 @@ test.describe('Templates', () => {
   test('should have a JSON workflow file for each template', async ({
     comfyPage
   }) => {
-    for (const template of comfyPage.templates.getAllTemplates()) {
+    const templates = await comfyPage.templates.getAllTemplates()
+    for (const template of templates) {
       const workflowPath = comfyPage.templates.getTemplatePath(
         `${template.name}.json`
       )
@@ -26,7 +27,8 @@ test.describe('Templates', () => {
   test('should have all required thumbnail media for each template', async ({
     comfyPage
   }) => {
-    for (const template of comfyPage.templates.getAllTemplates()) {
+    const templates = await comfyPage.templates.getAllTemplates()
+    for (const template of templates) {
       const { name, mediaSubtype, thumbnailVariant } = template
       const baseMedia = `${name}-1.${mediaSubtype}`
       const basePath = comfyPage.templates.getTemplatePath(baseMedia)

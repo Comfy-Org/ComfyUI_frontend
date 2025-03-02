@@ -20,7 +20,7 @@
         class="absolute translate-x-0 top-0 left-0 h-full w-80 shadow-md z-5 transition-transform duration-300 ease-in-out"
       >
         <ProgressSpinner
-          v-if="!workflowTemplatesStore.isLoaded"
+          v-if="!workflowTemplatesStore.isLoaded || !isReady"
           class="absolute w-8 h-full inset-0"
         />
         <TemplateWorkflowsSideNav
@@ -36,7 +36,7 @@
           'pl-8': !isSideNavOpen && isSmallScreen
         }"
       >
-        <div v-if="selectedTab" class="flex flex-col px-12 pb-4">
+        <div v-if="isReady && selectedTab" class="flex flex-col px-12 pb-4">
           <div class="py-3 text-left">
             <h2 class="text-lg">{{ selectedTab.title }}</h2>
           </div>
@@ -96,9 +96,13 @@ const { isReady } = useAsyncState(
   null
 )
 
-const selectedTab = ref<WorkflowTemplates | null>(
-  workflowTemplatesStore.defaultTemplate
-)
+const selectedTab = ref<WorkflowTemplates | null>()
+const selectFirstTab = () => {
+  const firstTab = workflowTemplatesStore.groupedTemplates[0].modules[0]
+  handleTabSelection(firstTab)
+}
+watch(isReady, selectFirstTab, { once: true })
+
 const workflowLoading = ref<string | null>(null)
 
 const tabs = computed(() => workflowTemplatesStore.groupedTemplates)
