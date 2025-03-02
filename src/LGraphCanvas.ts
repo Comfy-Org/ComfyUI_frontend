@@ -448,9 +448,6 @@ export class LGraphCanvas implements ConnectionColorContext {
   readonly viewport?: Rect
   autoresize: boolean
   static active_canvas: LGraphCanvas
-  static onMenuNodeOutputs?(
-    entries: (IContextMenuValue<INodeSlotContextItem> | null)[],
-  ): (IContextMenuValue<INodeSlotContextItem> | null)[]
   frame = 0
   last_draw_time = 0
   render_time = 0
@@ -920,87 +917,6 @@ export class LGraphCanvas implements ConnectionColorContext {
   static onMenuNodeEdit() {}
 
   /** @param _options Parameter is never used */
-  static showMenuNodeOptionalInputs(
-    v: unknown,
-    /** Unused - immediately overwritten */
-    _options: boolean,
-    e: MouseEvent,
-    prev_menu: ContextMenu<INodeSlotContextItem>,
-    node: LGraphNode,
-  ): boolean | undefined {
-    if (!node) return
-
-    const canvas = LGraphCanvas.active_canvas
-    const ref_window = canvas.getCanvasWindow()
-
-    const options = node.onGetInputs
-      ? node.onGetInputs()
-      : undefined
-
-    let entries: (IContextMenuValue<INodeSlotContextItem> | null)[] = []
-    if (options) {
-      for (const entry of options) {
-        if (!entry) {
-          entries.push(null)
-          continue
-        }
-        let label = entry[0]
-        entry[2] ||= {}
-
-        if (entry[2].label) {
-          label = entry[2].label
-        }
-
-        entry[2].removable = true
-        const data: IContextMenuValue<INodeSlotContextItem> = { content: label, value: entry }
-        if (entry[1] == LiteGraph.ACTION) {
-          data.className = "event"
-        }
-        entries.push(data)
-      }
-    }
-
-    const retEntries = node.onMenuNodeInputs?.(entries)
-    if (retEntries) entries = retEntries
-
-    if (!entries.length) {
-      console.log("no input entries")
-      return
-    }
-
-    new LiteGraph.ContextMenu<INodeSlotContextItem>(
-      entries,
-      {
-        event: e,
-        callback: inner_clicked,
-        parentMenu: prev_menu,
-        node: node,
-      },
-      // @ts-expect-error Unused param
-      ref_window,
-    )
-
-    function inner_clicked(this: ContextMenuDivElement<INodeSlotContextItem>, v: IContextMenuValue<INodeSlotContextItem>, e: MouseEvent, prev: ContextMenu<INodeSlotContextItem>) {
-      if (!node) return
-
-      v.callback?.call(this, node, v, e, prev)
-
-      if (!v.value) return
-      if (!node.graph) throw new NullGraphError()
-
-      node.graph.beforeChange()
-      node.addInput(v.value[0], v.value[1], v.value[2])
-
-      // callback to the node when adding a slot
-      node.onNodeInputAdd?.(v.value)
-      canvas.setDirty(true, true)
-      node.graph.afterChange()
-    }
-
-    return false
-  }
-
-  /** @param _options Parameter is never used */
   static showMenuNodeOptionalOutputs(
     v: unknown,
     /** Unused - immediately overwritten */
@@ -1013,42 +929,8 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     const canvas = LGraphCanvas.active_canvas
 
-    const options = node.onGetOutputs
-      ? node.onGetOutputs()
-      : undefined
-
     let entries: (IContextMenuValue<INodeSlotContextItem> | null)[] = []
-    if (options) {
-      for (const entry of options) {
-        if (!entry) {
-          // separator?
-          entries.push(null)
-          continue
-        }
 
-        if (
-          node.flags &&
-          node.flags.skip_repeated_outputs &&
-          node.findOutputSlot(entry[0]) != -1
-        ) {
-          // skip the ones already on
-          continue
-        }
-        let label = entry[0]
-        entry[2] ||= {}
-        if (entry[2].label) {
-          label = entry[2].label
-        }
-        entry[2].removable = true
-        const data: IContextMenuValue<INodeSlotContextItem> = { content: label, value: entry }
-        if (entry[1] == LiteGraph.EVENT) {
-          data.className = "event"
-        }
-        entries.push(data)
-      }
-    }
-
-    if (this.onMenuNodeOutputs) entries = this.onMenuNodeOutputs(entries)
     if (LiteGraph.do_add_triggers_slots) {
       // canvas.allow_addOutSlot_onExecuted
       if (node.findOutputSlot("onExecuted") == -1) {
@@ -7213,7 +7095,6 @@ export class LGraphCanvas implements ConnectionColorContext {
           content: "Inputs",
           has_submenu: true,
           disabled: true,
-          callback: LGraphCanvas.showMenuNodeOptionalInputs,
         },
         {
           content: "Outputs",
@@ -7286,12 +7167,6 @@ export class LGraphCanvas implements ConnectionColorContext {
         null,
       )
     }
-
-    const inputs = node.onGetInputs?.()
-    if (inputs?.length) options[0].disabled = false
-
-    const outputs = node.onGetOutputs?.()
-    if (outputs?.length) options[1].disabled = false
 
     const extra = node.getExtraMenuOptions?.(this, options)
     if (Array.isArray(extra) && extra.length > 0) {

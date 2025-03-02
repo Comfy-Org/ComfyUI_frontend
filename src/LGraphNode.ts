@@ -522,8 +522,6 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     this: LGraphNode,
     entries: (IContextMenuValue<INodeSlotContextItem> | null)[],
   ): (IContextMenuValue<INodeSlotContextItem> | null)[]
-  onGetInputs?(this: LGraphNode): INodeSlotContextItem[]
-  onGetOutputs?(this: LGraphNode): INodeSlotContextItem[]
   onMouseUp?(this: LGraphNode, e: CanvasMouseEvent, pos: Point): void
   onMouseEnter?(this: LGraphNode, e: CanvasMouseEvent): void
   /** Blocks drag if return value is truthy. @param pos Offset from {@link LGraphNode.pos}. */
