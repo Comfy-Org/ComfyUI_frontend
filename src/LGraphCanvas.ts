@@ -1308,7 +1308,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     }
   }
 
-  static getPropertyPrintableValue(value: unknown, values: unknown[] | object): string | undefined {
+  static getPropertyPrintableValue(value: unknown, values: unknown[] | object | undefined): string | undefined {
     if (!values) return String(value)
 
     if (Array.isArray(values)) {
@@ -1919,7 +1919,7 @@ export class LGraphCanvas implements ConnectionColorContext {
    * @param node The node that the mouse is now over
    * @param e MouseEvent that is triggering this
    */
-  updateMouseOverNodes(node: LGraphNode, e: CanvasMouseEvent): void {
+  updateMouseOverNodes(node: LGraphNode | null, e: CanvasMouseEvent): void {
     if (!this.graph) throw new NullGraphError()
 
     const nodes = this.graph._nodes
@@ -2416,6 +2416,8 @@ export class LGraphCanvas implements ConnectionColorContext {
             if (input.link !== null) {
               // before disconnecting
               const link_info = graph._links.get(input.link)
+              if (!link_info) throw new TypeError("Input link ID was invalid.")
+
               const slot = link_info.origin_slot
               const linked_node = graph._nodes_by_id[link_info.origin_id]
               if (
@@ -2427,6 +2429,8 @@ export class LGraphCanvas implements ConnectionColorContext {
               ) {
                 node.disconnectInput(i)
               } else if (e.shiftKey || this.allow_reconnect_links) {
+                if (!linked_node) throw new TypeError("linked_node was null")
+
                 const connecting: ConnectingLink = {
                   node: linked_node,
                   slot,
@@ -2652,15 +2656,17 @@ export class LGraphCanvas implements ConnectionColorContext {
       return
     }
 
+    const start = this.#dragZoomStart
+    if (!start) throw new TypeError("Drag-zoom state object was null")
     if (!this.graph) throw new NullGraphError()
 
     // calculate delta
-    const deltaY = e.y - this.#dragZoomStart.pos[1]
-    const startScale = this.#dragZoomStart.scale
+    const deltaY = e.y - start.pos[1]
+    const startScale = start.scale
 
     const scale = startScale - deltaY / 100
 
-    this.ds.changeScale(scale, this.#dragZoomStart.pos)
+    this.ds.changeScale(scale, start.pos)
     this.graph.change()
   }
 
@@ -6066,14 +6072,35 @@ export class LGraphCanvas implements ConnectionColorContext {
     const canvas = graphcanvas.canvas
     const root_document = canvas.ownerDocument || document
 
-    const dialog = document.createElement("div")
+    const input = Object.assign(document.createElement("input"), {
+      autofocus: true,
+      type: "text",
+      className: "value rounded",
+    } satisfies Partial<HTMLInputElement>)
+
+    const dialog = Object.assign(document.createElement("div"), {
+      close(this: HTMLDivElement) {
+        that.search_box = undefined
+        this.blur()
+        canvas.focus()
+        root_document.body.style.overflow = ""
+
+        // important, if canvas loses focus keys wont be captured
+        setTimeout(canvas.focus, 20)
+        dialog.remove()
+      },
+    } satisfies Partial<HTMLDivElement> & ICloseable)
     dialog.className = "litegraph litesearchbox graphdialog rounded"
-    dialog.innerHTML = "<span class='name'>Search</span> <input autofocus type='text' class='value rounded'/>"
+    dialog.innerHTML = "<span class='name'>Search</span> "
+    dialog.append(input)
+
     if (options.do_type_filter) {
       dialog.innerHTML += "<select class='slot_in_type_filter'><option value=''></option></select>"
       dialog.innerHTML += "<select class='slot_out_type_filter'><option value=''></option></select>"
     }
-    dialog.innerHTML += "<div class='helper'></div>"
+    const helper = document.createElement("div")
+    helper.className = "helper"
+    dialog.append(helper)
 
     if (root_document.fullscreenElement) {
       root_document.fullscreenElement.append(dialog)
@@ -6088,20 +6115,6 @@ export class LGraphCanvas implements ConnectionColorContext {
     if (options.do_type_filter) {
       selIn = dialog.querySelector(".slot_in_type_filter")
       selOut = dialog.querySelector(".slot_out_type_filter")
-    }
-
-    // @ts-expect-error Panel?
-    dialog.close = function () {
-      that.search_box = null
-      this.blur()
-      canvas.focus()
-      root_document.body.style.overflow = ""
-
-      // important, if canvas loses focus keys wont be captured
-      setTimeout(function () {
-        that.canvas.focus()
-      }, 20)
-      dialog.remove()
     }
 
     if (this.ds.scale > 1) {
@@ -6119,13 +6132,12 @@ export class LGraphCanvas implements ConnectionColorContext {
           timeout_close = null
         }
       })
-      LiteGraph.pointerListenerAdd(dialog, "leave", function () {
-        if (prevent_timeout)
-          return
-        timeout_close = setTimeout(function () {
-          // @ts-expect-error Panel?
-          dialog.close()
-        }, typeof options.hide_on_mouse_leave === "number" ? options.hide_on_mouse_leave : 500)
+      dialog.addEventListener("pointerleave", function () {
+        if (prevent_timeout) return
+
+        const hideDelay = options.hide_on_mouse_leave
+        const delay = typeof hideDelay === "number" ? hideDelay : 500
+        timeout_close = setTimeout(dialog.close, delay)
       })
       // if filtering, check focus changed to comboboxes and prevent closing
       if (options.do_type_filter) {
@@ -6154,13 +6166,10 @@ export class LGraphCanvas implements ConnectionColorContext {
     that.search_box?.close()
     that.search_box = dialog
 
-    const helper = dialog.querySelector(".helper")
-
     let first = null
     let timeout = null
     let selected = null
 
-    const input = dialog.querySelector("input")
     if (input) {
       input.addEventListener("blur", function () {
         this.focus()
@@ -6174,7 +6183,6 @@ export class LGraphCanvas implements ConnectionColorContext {
           changeSelection(true)
         } else if (e.key == "Escape") {
           // ESC
-          // @ts-expect-error Panel?
           dialog.close()
         } else if (e.key == "Enter") {
           if (selected) {
@@ -6182,7 +6190,6 @@ export class LGraphCanvas implements ConnectionColorContext {
           } else if (first) {
             select(first)
           } else {
-            // @ts-expect-error Panel?
             dialog.close()
           }
         } else {
@@ -6280,7 +6287,6 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     // To avoid out of screen problems
     if (event.layerY > rect.height - 200)
-      // @ts-expect-error
       helper.style.maxHeight = `${rect.height - event.layerY - 20}px`
 
     requestAnimationFrame(function () {
@@ -6367,7 +6373,6 @@ export class LGraphCanvas implements ConnectionColorContext {
         }
       }
 
-      // @ts-expect-error Panel?
       dialog.close()
     }
 
