@@ -10,7 +10,7 @@ jobs:
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
-    - uses: Comfy-Org/ComfyUI_frontend_setup_action@v2.2
+    - uses: Comfy-Org/ComfyUI_frontend_setup_action@v2.3
     - name: Install Playwright Browsers
       run: npx playwright install chromium --with-deps
       working-directory: ComfyUI_frontend
