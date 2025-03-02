@@ -1,3 +1,7 @@
+/*
+Taken from: https://github.com/gkjohnson/threejs-sandbox/tree/master/conditional-lines
+under MIT license
+ */
 import { Color, ShaderLib, ShaderMaterial, UniformsUtils } from 'three'
 
 export class ColoredShadowMaterial extends ShaderMaterial {

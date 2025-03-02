@@ -1,3 +1,7 @@
+/*
+Taken from: https://github.com/gkjohnson/threejs-sandbox/tree/master/conditional-lines
+under MIT license
+ */
 import * as THREE from 'three'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 
