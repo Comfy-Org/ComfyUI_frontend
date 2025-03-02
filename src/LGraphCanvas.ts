@@ -3468,14 +3468,14 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     // Nodes
     for (const info of parsed.nodes) {
-      const node = LiteGraph.createNode(info.type)
+      const node = info.type == null ? null : LiteGraph.createNode(info.type)
       if (!node) {
         // failedNodes.push(info)
         continue
       }
 
       nodes.set(info.id, node)
-      info.id = undefined
+      info.id = -1
 
       node.configure(info)
       graph.add(node)
@@ -3494,6 +3494,8 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     // Remap reroute parentIds for pasted reroutes
     for (const reroute of reroutes.values()) {
+      if (reroute.parentId == null) continue
+
       const mapped = reroutes.get(reroute.parentId)
       if (mapped) reroute.parentId = mapped.id
     }
@@ -3501,8 +3503,9 @@ export class LGraphCanvas implements ConnectionColorContext {
     // Links
     for (const info of parsed.links) {
       // Find the copied node / reroute ID
-      let outNode = nodes.get(info.origin_id)
-      let afterRerouteId = reroutes.get(info.parentId)?.id
+      let outNode: LGraphNode | null | undefined = nodes.get(info.origin_id)
+      let afterRerouteId: number | undefined
+      if (info.parentId != null) afterRerouteId = reroutes.get(info.parentId)?.id
 
       // If it wasn't copied, use the original graph value
       if (connectInputs && LiteGraph.ctrl_shift_v_paste_connect_unselected_outputs) {
@@ -3558,7 +3561,7 @@ export class LGraphCanvas implements ConnectionColorContext {
   /**
    * process a item drop event on top the canvas
    */
-  processDrop(e: DragEvent): boolean {
+  processDrop(e: DragEvent): boolean | undefined {
     e.preventDefault()
     this.adjustMouseEvent(e)
     const x = e.clientX
@@ -3576,19 +3579,20 @@ export class LGraphCanvas implements ConnectionColorContext {
     }
 
     if (node.onDropFile || node.onDropData) {
-      const files = e.dataTransfer.files
-      if (files && files.length) {
+      const files = e.dataTransfer?.files
+      if (files?.length) {
         for (let i = 0; i < files.length; i++) {
-          const file = e.dataTransfer.files[0]
+          const file = files[0]
           const filename = file.name
           node.onDropFile?.(file)
 
           if (node.onDropData) {
             // prepare reader
             const reader = new FileReader()
-            reader.addEventListener("load", function (event) {
-              const data = event.target.result
-              node.onDropData(data, filename, file)
+            reader.addEventListener("load", (event) => {
+              const data = event.target?.result
+              if (!data) return
+              node.onDropData?.(data, filename, file)
             })
 
             // read data
@@ -3612,9 +3616,12 @@ export class LGraphCanvas implements ConnectionColorContext {
       : false
   }
 
-  // called if the graph doesn't have a default drop item behaviour
+  /**
+   * called if the graph doesn't have a default drop item behaviour
+   * @deprecated This relies on the already-broken node_type_by_file_extension
+   */
   checkDropItem(e: CanvasDragEvent): void {
-    if (!e.dataTransfer.files.length) return
+    if (!e.dataTransfer?.files.length) return
 
     const file = e.dataTransfer.files[0]
     const ext = LGraphCanvas.getFileExtension(file.name).toLowerCase()
@@ -3624,6 +3631,8 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     this.graph.beforeChange()
     const node = LiteGraph.createNode(nodetype.type)
+    if (!node) throw new TypeError("Deprecated checkDropItem")
+
     node.pos = [e.canvasX, e.canvasY]
     this.graph.add(node)
     node.onDropFile?.(file)
@@ -3859,7 +3868,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     if (!this.graph) return
 
     const selected = this.selectedItems
-    let wasSelected: Positionable
+    let wasSelected: Positionable | undefined
     for (const sel of selected) {
       if (sel === keepSelected) {
         wasSelected = sel
@@ -4214,7 +4223,6 @@ export class LGraphCanvas implements ConnectionColorContext {
         // current connection (the one being dragged by the mouse)
         for (const link of this.connecting_links) {
           ctx.lineWidth = this.connections_width
-          let link_color = null
 
           const connInOrOut = link.output || link.input
 
@@ -4228,16 +4236,14 @@ export class LGraphCanvas implements ConnectionColorContext {
           }
           const connShape = connInOrOut?.shape
 
-          switch (connType) {
-          case LiteGraph.EVENT:
-            link_color = LiteGraph.EVENT_LINK_COLOR
-            break
-          default:
-            link_color = LiteGraph.CONNECTING_LINK_COLOR
-          }
+          const link_color = connType === LiteGraph.EVENT
+            ? LiteGraph.EVENT_LINK_COLOR
+            : LiteGraph.CONNECTING_LINK_COLOR
 
           // If not using reroutes, link.afterRerouteId should be undefined.
-          const pos = this.graph.reroutes.get(link.afterRerouteId)?.pos ?? link.pos
+          const pos = link.afterRerouteId == null
+            ? link.pos
+            : (this.graph.reroutes.get(link.afterRerouteId)?.pos ?? link.pos)
           const highlightPos = this.#getHighlightPosition()
           // the connection being dragged by the mouse
           this.renderLink(
@@ -5154,9 +5160,9 @@ export class LGraphCanvas implements ConnectionColorContext {
     ctx: CanvasRenderingContext2D,
     a: ReadOnlyPoint,
     b: ReadOnlyPoint,
-    link: LLink,
+    link: LLink | null,
     skip_border: boolean,
-    flow: number,
+    flow: number | null,
     color: CanvasColour,
     start_dir: LinkDirection,
     end_dir: LinkDirection,
@@ -7522,7 +7528,6 @@ export class LGraphCanvas implements ConnectionColorContext {
     }
     const easeFunction = easeFunctions[easing] ?? easeFunctions.linear
 
-    let animationId = null
     const startTimestamp = performance.now()
     const startX = this.ds.offset[0]
     const startY = this.ds.offset[1]
@@ -7530,8 +7535,6 @@ export class LGraphCanvas implements ConnectionColorContext {
     const cw = this.canvas.width / window.devicePixelRatio
     const ch = this.canvas.height / window.devicePixelRatio
     let targetScale = startScale
-    let targetX = startX
-    let targetY = startY
 
     if (zoom > 0) {
       const targetScaleX = (zoom * cw) / Math.max(bounds[2], 300)
@@ -7541,8 +7544,8 @@ export class LGraphCanvas implements ConnectionColorContext {
       // Ensure we don't go over the max scale
       targetScale = Math.min(targetScaleX, targetScaleY, this.ds.max_scale)
     }
-    targetX = -bounds[0] - bounds[2] * 0.5 + (cw * 0.5) / targetScale
-    targetY = -bounds[1] - bounds[3] * 0.5 + (ch * 0.5) / targetScale
+    const targetX = -bounds[0] - bounds[2] * 0.5 + (cw * 0.5) / targetScale
+    const targetY = -bounds[1] - bounds[3] * 0.5 + (ch * 0.5) / targetScale
 
     const animate = (timestamp: number) => {
       const elapsed = timestamp - startTimestamp
@@ -7564,7 +7567,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         cancelAnimationFrame(animationId)
       }
     }
-    animationId = requestAnimationFrame(animate)
+    let animationId = requestAnimationFrame(animate)
   }
 
   /**
@@ -7575,7 +7578,10 @@ export class LGraphCanvas implements ConnectionColorContext {
     const items = this.selectedItems.size
       ? Array.from(this.selectedItems)
       : this.positionableItems
-    this.animateToBounds(createBounds(items), options)
+    const bounds = createBounds(items)
+    if (!bounds) throw new TypeError("Attempted to fit to view but could not calculate bounds.")
+
+    this.animateToBounds(bounds, options)
   }
 }
 

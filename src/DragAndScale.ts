@@ -56,7 +56,7 @@ export class DragAndScale {
     this.element = element
   }
 
-  computeVisibleArea(viewport: Rect): void {
+  computeVisibleArea(viewport: Rect | undefined): void {
     if (!this.element) {
       this.visible_area[0] = this.visible_area[1] = this.visible_area[2] = this.visible_area[3] = 0
       return

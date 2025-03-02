@@ -139,8 +139,8 @@ export class LiteGraphGlobal {
   allow_scripts = false
   /** nodetypes by string */
   registered_node_types: Record<string, typeof LGraphNode> = {}
-  /** used for dropping files in the canvas */
-  node_types_by_file_extension = {}
+  /** @deprecated used for dropping files in the canvas.  It appears the code that enables this was removed, but the object remains and is references by built-in drag drop. */
+  node_types_by_file_extension: Record<string, { type: string }> = {}
   /** node types by classname */
   Nodes: Record<string, typeof LGraphNode> = {}
   /** used to store vars between graphs */
