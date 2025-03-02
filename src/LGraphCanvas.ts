@@ -6042,10 +6042,10 @@ export class LGraphCanvas implements ConnectionColorContext {
 
   showSearchBox(
     event: MouseEvent,
-    options?: IShowSearchOptions,
+    searchOptions?: IShowSearchOptions,
   ): HTMLDivElement {
     // proposed defaults
-    const def_options: IShowSearchOptions = {
+    const options: IShowSearchOptions = {
       slot_from: null,
       node_from: null,
       node_to: null,
@@ -6064,7 +6064,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       show_all_if_empty: true,
       show_all_on_open: LiteGraph.search_show_all_on_open,
     }
-    options = Object.assign(def_options, options || {})
+    Object.assign(options, searchOptions)
 
     // console.log(options);
     const that = this
@@ -6078,8 +6078,9 @@ export class LGraphCanvas implements ConnectionColorContext {
       className: "value rounded",
     } satisfies Partial<HTMLInputElement>)
 
-    const dialog = Object.assign(document.createElement("div"), {
-      close(this: HTMLDivElement) {
+    const div = document.createElement("div")
+    const dialog = Object.assign(div, {
+      close(this: typeof div) {
         that.search_box = undefined
         this.blur()
         canvas.focus()
@@ -6125,7 +6126,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     if (options.hide_on_mouse_leave) {
       // FIXME: Remove "any" kludge
       let prevent_timeout: any = false
-      let timeout_close = null
+      let timeout_close: ReturnType<typeof setTimeout> | null = null
       LiteGraph.pointerListenerAdd(dialog, "enter", function () {
         if (timeout_close) {
           clearTimeout(timeout_close)
@@ -6141,6 +6142,9 @@ export class LGraphCanvas implements ConnectionColorContext {
       })
       // if filtering, check focus changed to comboboxes and prevent closing
       if (options.do_type_filter) {
+        if (!selIn) throw new TypeError("selIn was null when showing search box")
+        if (!selOut) throw new TypeError("selOut was null when showing search box")
+
         selIn.addEventListener("click", function () {
           prevent_timeout++
         })
@@ -6166,9 +6170,9 @@ export class LGraphCanvas implements ConnectionColorContext {
     that.search_box?.close()
     that.search_box = dialog
 
-    let first = null
-    let timeout = null
-    let selected = null
+    let first: string | null = null
+    let timeout: ReturnType<typeof setTimeout> | null = null
+    let selected: ChildNode | null = null
 
     if (input) {
       input.addEventListener("blur", function () {
@@ -6185,8 +6189,8 @@ export class LGraphCanvas implements ConnectionColorContext {
           // ESC
           dialog.close()
         } else if (e.key == "Enter") {
-          if (selected) {
-            select(unescape(selected.dataset["type"]))
+          if (selected instanceof HTMLElement) {
+            select(unescape(String(selected.dataset.type)))
           } else if (first) {
             select(first)
           } else {
@@ -6286,15 +6290,15 @@ export class LGraphCanvas implements ConnectionColorContext {
     dialog.style.top = `${top}px`
 
     // To avoid out of screen problems
-    if (event.layerY > rect.height - 200)
+    if (event.layerY > rect.height - 200) {
       helper.style.maxHeight = `${rect.height - event.layerY - 20}px`
-
+    }
     requestAnimationFrame(function () {
       input.focus()
     })
     if (options.show_all_on_open) refreshHelper()
 
-    function select(name) {
+    function select(name: string) {
       if (name) {
         if (that.onSearchBoxSelection) {
           that.onSearchBoxSelection(name, event, graphcanvas)
@@ -6317,6 +6321,8 @@ export class LGraphCanvas implements ConnectionColorContext {
               iS = options.node_from.findOutputSlot(options.slot_from)
               break
             case "object":
+              if (options.slot_from == null) throw new TypeError("options.slot_from was null when showing search box")
+
               iS = options.slot_from.name
                 ? options.node_from.findOutputSlot(options.slot_from.name)
                 : -1
@@ -6332,6 +6338,8 @@ export class LGraphCanvas implements ConnectionColorContext {
             }
             if (options.node_from.outputs[iS] !== undefined) {
               if (iS !== false && iS > -1) {
+                if (node == null) throw new TypeError("options.slot_from was null when showing search box")
+
                 options.node_from.connectByType(iS, node, options.node_from.outputs[iS].type)
               }
             } else {
@@ -6346,6 +6354,8 @@ export class LGraphCanvas implements ConnectionColorContext {
               iS = options.node_to.findInputSlot(options.slot_from)
               break
             case "object":
+              if (options.slot_from == null) throw new TypeError("options.slot_from was null when showing search box")
+
               iS = options.slot_from.name
                 ? options.node_to.findInputSlot(options.slot_from.name)
                 : -1
@@ -6361,6 +6371,7 @@ export class LGraphCanvas implements ConnectionColorContext {
             }
             if (options.node_to.inputs[iS] !== undefined) {
               if (iS !== false && iS > -1) {
+                if (node == null) throw new TypeError("options.slot_from was null when showing search box")
                 // try connection
                 options.node_to.connectByTypeOutput(iS, node, options.node_to.inputs[iS].type)
               }
@@ -6376,23 +6387,24 @@ export class LGraphCanvas implements ConnectionColorContext {
       dialog.close()
     }
 
-    function changeSelection(forward) {
+    function changeSelection(forward: boolean) {
       const prev = selected
       if (!selected) {
         selected = forward
           ? helper.childNodes[0]
           : helper.childNodes[helper.childNodes.length]
-      } else {
+      } else if (selected instanceof Element) {
         selected.classList.remove("selected")
         selected = forward
           ? selected.nextSibling
           : selected.previousSibling
         selected ||= prev
       }
-      if (!selected) return
 
-      selected.classList.add("selected")
-      selected.scrollIntoView({ block: "end", behavior: "smooth" })
+      if (selected instanceof Element) {
+        selected.classList.add("selected")
+        selected.scrollIntoView({ block: "end", behavior: "smooth" })
+      }
     }
 
     function refreshHelper() {
@@ -6425,18 +6437,8 @@ export class LGraphCanvas implements ConnectionColorContext {
           sOut = that.search_box.querySelector(".slot_out_type_filter")
         }
 
-        let filtered = null
-        if (Array.prototype.filter) {
-          // filter supported
-          // types
-          const keys = Object.keys(LiteGraph.registered_node_types)
-          filtered = keys.filter(x => inner_test_filter(x))
-        } else {
-          filtered = []
-          for (const i in LiteGraph.registered_node_types) {
-            if (inner_test_filter(i)) filtered.push(i)
-          }
-        }
+        const keys = Object.keys(LiteGraph.registered_node_types)
+        const filtered = keys.filter(x => inner_test_filter(x))
 
         for (const item of filtered) {
           addResult(item)
@@ -6563,7 +6565,7 @@ export class LGraphCanvas implements ConnectionColorContext {
           help.className += ` ${className}`
         }
         help.addEventListener("click", function () {
-          select(unescape(this.dataset["type"]))
+          select(unescape(String(this.dataset.type)))
         })
         helper.append(help)
       }
@@ -6615,10 +6617,10 @@ export class LGraphCanvas implements ConnectionColorContext {
       options,
     )
 
-    let input: HTMLInputElement | HTMLSelectElement
+    let input: HTMLInputElement | HTMLSelectElement | null
     if ((type == "enum" || type == "combo") && info.values) {
       input = dialog.querySelector("select")
-      input.addEventListener("change", function (e) {
+      input?.addEventListener("change", function (e) {
         dialog.modified()
         setValue((e.target as HTMLSelectElement)?.value)
       })
@@ -6665,13 +6667,15 @@ export class LGraphCanvas implements ConnectionColorContext {
     input?.focus()
 
     const button = dialog.querySelector("button")
+    if (!button) throw new TypeError("Show edit property value button was null.")
     button.addEventListener("click", inner)
 
     function inner() {
-      setValue(input.value)
+      setValue(input?.value)
     }
+    const dirty = () => this.#dirty()
 
-    function setValue(value: string | number) {
+    function setValue(value: string | number | undefined) {
       if (
         info?.values &&
         typeof info.values === "object" &&
@@ -6694,7 +6698,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       node.onPropertyChanged?.(property, value)
       options.onclose?.()
       dialog.close()
-      this.setDirty(true, true)
+      dirty()
     }
 
     return dialog
