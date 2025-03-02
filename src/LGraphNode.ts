@@ -472,8 +472,8 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   getExtraMenuOptions?(
     this: LGraphNode,
     canvas: LGraphCanvas,
-    options: IContextMenuValue[],
-  ): IContextMenuValue[]
+    options: (IContextMenuValue<unknown> | null)[],
+  ): (IContextMenuValue<unknown> | null)[]
   getMenuOptions?(this: LGraphNode, canvas: LGraphCanvas): IContextMenuValue[]
   onAdded?(this: LGraphNode, graph: LGraph): void
   onDrawCollapsed?(
@@ -3152,7 +3152,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
   drawWidgets(ctx: CanvasRenderingContext2D, options: {
     colorContext: ConnectionColorContext
-    linkOverWidget: IWidget
+    linkOverWidget: IWidget | null | undefined
     linkOverWidgetType: ISlotType
     lowQuality?: boolean
     editorAlpha?: number
@@ -3316,7 +3316,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    * Draws the node's input and output slots.
    */
   drawSlots(ctx: CanvasRenderingContext2D, options: {
-    connectingLink: ConnectingLink | null
+    connectingLink: ConnectingLink | undefined
     colorContext: ConnectionColorContext
     editorAlpha: number
     lowQuality: boolean

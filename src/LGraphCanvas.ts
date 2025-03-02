@@ -442,7 +442,7 @@ export class LGraphCanvas implements ConnectionColorContext {
   visible_area: Rect32
   /** Contains all links and reroutes that were rendered.  Repopulated every render cycle. */
   renderedPaths: Set<LinkSegment> = new Set()
-  visible_links?: LLink[]
+  visible_links: LLink[]
   connecting_links: ConnectingLink[] | null
   /** The viewport of this canvas.  Tightly coupled with {@link ds}. */
   readonly viewport?: Rect
@@ -513,7 +513,7 @@ export class LGraphCanvas implements ConnectionColorContext {
   options_panel?: any
   onDropItem?: (e: Event) => any
   _bg_img?: HTMLImageElement
-  _pattern?: CanvasPattern
+  _pattern?: CanvasPattern | null
   _pattern_img?: HTMLImageElement
   // TODO: This looks like another panel thing
   prompt_box?: PromptDialog | null
@@ -551,7 +551,7 @@ export class LGraphCanvas implements ConnectionColorContext {
   /** called when rendering a tooltip */
   onDrawLinkTooltip?: (
     ctx: CanvasRenderingContext2D,
-    link: LLink,
+    link: LLink | null,
     canvas?: LGraphCanvas,
   ) => boolean
 
@@ -4474,6 +4474,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       this.bgctx = this.bgcanvas.getContext("2d")
     }
     const ctx = this.bgctx
+    if (!ctx) throw new TypeError("Background canvas context was null.")
     // TODO: Remove this
     // @ts-expect-error
     if (ctx.start) ctx.start()
@@ -4719,7 +4720,8 @@ export class LGraphCanvas implements ConnectionColorContext {
     if (this.linkMarkerShape === LinkMarkerShape.Arrow) {
       const transform = ctx.getTransform()
       ctx.translate(pos[0], pos[1])
-      if (Number.isFinite(link._centreAngle)) ctx.rotate(link._centreAngle)
+      // Assertion: Number.isFinite guarantees this is a number.
+      if (Number.isFinite(link._centreAngle)) ctx.rotate(link._centreAngle as number)
       ctx.moveTo(-2, -3)
       ctx.lineTo(+4, 0)
       ctx.lineTo(-2, +3)
@@ -4739,7 +4741,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     // @ts-expect-error TODO: Better value typing
     if (this.onDrawLinkTooltip?.(ctx, link, this) == true) return
 
-    let text: string = null
+    let text: string | null = null
 
     if (typeof data === "number")
       text = data.toFixed(2)
@@ -5039,7 +5041,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
         // Has reroutes
         if (reroutes.length) {
-          let startControl: Point
+          let startControl: Point | undefined
 
           const l = reroutes.length
           for (let j = 0; j < l; j++) {
@@ -5163,7 +5165,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     link: LLink | null,
     skip_border: boolean,
     flow: number | null,
-    color: CanvasColour,
+    color: CanvasColour | null,
     start_dir: LinkDirection,
     end_dir: LinkDirection,
     {
@@ -5545,6 +5547,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     node.drawWidgets(ctx, {
       colorContext: this,
       linkOverWidget: this.link_over_widget,
+      // @ts-ignore https://github.com/Comfy-Org/litegraph.js/issues/616
       linkOverWidgetType: this.link_over_widget_type,
       lowQuality: this.low_quality,
       editorAlpha: this.editor_alpha,
@@ -5953,7 +5956,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     if (this.ds.scale > 1) dialog.style.transform = `scale(${this.ds.scale})`
 
-    let dialogCloseTimer = null
+    let dialogCloseTimer: ReturnType<typeof setTimeout>
     let prevent_timeout = 0
     LiteGraph.pointerListenerAdd(dialog, "leave", function () {
       if (prevent_timeout) return
@@ -5988,10 +5991,9 @@ export class LGraphCanvas implements ConnectionColorContext {
     this.prompt_box?.close()
     this.prompt_box = dialog
 
-    const name_element: HTMLSpanElement = dialog.querySelector(".name")
+    const name_element: HTMLSpanElement | null = dialog.querySelector(".name")
     name_element.textContent = title
-    const value_element: HTMLTextAreaElement | HTMLInputElement =
-      dialog.querySelector(".value")
+    const value_element: HTMLInputElement | null = dialog.querySelector(".value")
     value_element.value = value
     value_element.select()
 
@@ -6042,7 +6044,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     setTimeout(function () {
       input.focus()
       const clickTime = Date.now()
-      function handleOutsideClick(e: MouseEvent) {
+      function handleOutsideClick(e: Event) {
         if (e.target === canvas && Date.now() - clickTime > 256) {
           dialog.close()
           canvas.parentNode.removeEventListener("click", handleOutsideClick)
@@ -6791,7 +6793,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       }
     }
 
-    let dialogCloseTimer = null
+    let dialogCloseTimer: ReturnType<typeof setTimeout> | null = null
     let prevent_timeout = 0
     dialog.addEventListener("mouseleave", function () {
       if (prevent_timeout) return
@@ -6891,7 +6893,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       this.content.innerHTML = ""
     }
 
-    root.addHTML = function (code, classname, on_footer) {
+    root.addHTML = function (code: string, classname: string, on_footer: any) {
       const elem = document.createElement("div")
       if (classname) elem.className = classname
       elem.innerHTML = code
@@ -6900,7 +6902,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       return elem
     }
 
-    root.addButton = function (name, callback, options) {
+    root.addButton = function (name: any, callback: any, options: any) {
       // TODO: any kludge
       const elem: any = document.createElement("button")
       elem.textContent = name
@@ -6917,19 +6919,19 @@ export class LGraphCanvas implements ConnectionColorContext {
       root.content.append(elem)
     }
 
-    root.addWidget = function (type, name, value, options, callback) {
+    root.addWidget = function (type: string, name: any, value: unknown, options: { label?: any, type?: any, values?: any, callback?: any }, callback: (arg0: any, arg1: any, arg2: any) => void) {
       options = options || {}
       let str_value = String(value)
       type = type.toLowerCase()
-      if (type == "number") str_value = value.toFixed(3)
+      if (type == "number" && typeof value === "number") str_value = value.toFixed(3)
 
       // FIXME: any kludge
-      const elem: any = document.createElement("div")
+      const elem: HTMLDivElement & { options?: unknown, value?: unknown } = document.createElement("div")
       elem.className = "property"
       elem.innerHTML = "<span class='property_name'></span><span class='property_value'></span>"
       elem.querySelector(".property_name").textContent = options.label || name
       // TODO: any kludge
-      const value_element: any = elem.querySelector(".property_value")
+      const value_element: HTMLSpanElement | null = elem.querySelector(".property_value")
       value_element.textContent = str_value
       elem.dataset["property"] = name
       elem.dataset["type"] = options.type || type
@@ -6943,17 +6945,19 @@ export class LGraphCanvas implements ConnectionColorContext {
       } else if (type == "boolean") {
         elem.classList.add("boolean")
         if (value) elem.classList.add("bool-on")
-        elem.addEventListener("click", function () {
-          const propname = this.dataset["property"]
-          this.value = !this.value
-          this.classList.toggle("bool-on")
-          this.querySelector(".property_value").textContent = this.value
+        elem.addEventListener("click", () => {
+          const propname = elem.dataset["property"]
+          elem.value = !elem.value
+          elem.classList.toggle("bool-on")
+          if (!value_element) throw new TypeError("Property name element was null.")
+
+          value_element.textContent = elem.value
             ? "true"
             : "false"
-          innerChange(propname, this.value)
+          innerChange(propname, elem.value)
         })
       } else if (type == "string" || type == "number") {
-        value_element.setAttribute("contenteditable", true)
+        value_element.setAttribute("contenteditable", "true")
         value_element.addEventListener("keydown", function (e) {
           // allow for multiline
           if (e.code == "Enter" && (type != "string" || !e.shiftKey)) {
@@ -6962,9 +6966,9 @@ export class LGraphCanvas implements ConnectionColorContext {
           }
         })
         value_element.addEventListener("blur", function () {
-          let v = this.textContent
-          const propname = this.parentNode.dataset["property"]
-          const proptype = this.parentNode.dataset["type"]
+          let v: string | number | null = this.textContent
+          const propname = this.parentElement?.dataset["property"]
+          const proptype = this.parentElement?.dataset["type"]
           if (proptype == "number") v = Number(v)
           innerChange(propname, v)
         })
@@ -6974,8 +6978,8 @@ export class LGraphCanvas implements ConnectionColorContext {
 
         value_element.addEventListener("click", function (event) {
           const values = options.values || []
-          const propname = this.parentNode.dataset["property"]
-          const inner_clicked = (v) => {
+          const propname = this.parentElement?.dataset["property"]
+          const inner_clicked = (v: string | null) => {
             // node.setProperty(propname,v);
             // graphcanvas.dirty_canvas = true;
             this.textContent = v
@@ -6997,7 +7001,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
       root.content.append(elem)
 
-      function innerChange(name, value) {
+      function innerChange(name: string | undefined, value: unknown) {
         options.callback?.(name, value, options)
         callback?.(name, value, options)
       }
@@ -7044,13 +7048,17 @@ export class LGraphCanvas implements ConnectionColorContext {
 
       panel.addHTML("<h3>Properties</h3>")
 
-      const fUpdate = (name, value) => {
+      const fUpdate = (name: string, value: string | number | boolean | object | undefined) => {
         this.graph.beforeChange(node)
         switch (name) {
         case "Title":
+          if (typeof value !== "string") throw new TypeError("Attempting to set title to non-string value.")
+
           node.title = value
           break
         case "Mode": {
+          if (typeof value !== "string") throw new TypeError("Attempting to set mode to non-string value.")
+
           const kV = Object.values(LiteGraph.NODE_MODES).indexOf(value)
           if (kV !== -1 && LiteGraph.NODE_MODES[kV]) {
             node.changeMode(kV)
@@ -7060,6 +7068,8 @@ export class LGraphCanvas implements ConnectionColorContext {
           break
         }
         case "Color":
+          if (typeof value !== "string") throw new TypeError("Attempting to set colour to non-string value.")
+
           if (LGraphCanvas.node_colors[value]) {
             node.color = LGraphCanvas.node_colors[value].color
             node.bgcolor = LGraphCanvas.node_colors[value].bgcolor
@@ -7109,12 +7119,12 @@ export class LGraphCanvas implements ConnectionColorContext {
       }).classList.add("delete")
     }
 
-    panel.inner_showCodePad = function (propname) {
+    panel.inner_showCodePad = function (propname: string) {
       panel.classList.remove("settings")
       panel.classList.add("centered")
 
       panel.alt_content.innerHTML = "<textarea class='code'></textarea>"
-      const textarea = panel.alt_content.querySelector("textarea")
+      const textarea: HTMLTextAreaElement = panel.alt_content.querySelector("textarea")
       const fDoneWith = function () {
         panel.toggleAltContent(false)
         panel.toggleFooterVisibility(true)
@@ -7123,8 +7133,8 @@ export class LGraphCanvas implements ConnectionColorContext {
         panel.classList.remove("centered")
         inner_refresh()
       }
-      textarea.value = node.properties[propname]
-      textarea.addEventListener("keydown", function (e) {
+      textarea.value = String(node.properties[propname])
+      textarea.addEventListener("keydown", function (e: KeyboardEvent) {
         if (e.code == "Enter" && e.ctrlKey) {
           node.setProperty(propname, textarea.value)
           fDoneWith()
@@ -7192,8 +7202,8 @@ export class LGraphCanvas implements ConnectionColorContext {
   }
 
   // called by processContextMenu to extract the menu list
-  getNodeMenuOptions(node: LGraphNode): IContextMenuValue[] {
-    let options: IContextMenuValue<unknown, LGraphNode>[] = null
+  getNodeMenuOptions(node: LGraphNode) {
+    let options: (IContextMenuValue<string> | IContextMenuValue<string | null> | IContextMenuValue<INodeSlotContextItem> | IContextMenuValue<unknown, LGraphNode> | IContextMenuValue<typeof LiteGraph.VALID_SHAPES[number]> | null)[]
 
     if (node.getMenuOptions) {
       options = node.getMenuOptions(this)
@@ -7219,7 +7229,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         },
         {
           content: "Properties Panel",
-          callback: function (item, options, e, menu, node) { LGraphCanvas.active_canvas.showShowNodePanel(node) },
+          callback: function (item: any, options: any, e: any, menu: any, node: LGraphNode) { LGraphCanvas.active_canvas.showShowNodePanel(node) },
         },
         null,
         {

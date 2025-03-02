@@ -85,7 +85,7 @@ export abstract class NodeSlot implements INodeSlot {
    * Whether this slot is a valid target for a dragging link.
    * @param link The link to check against.
    */
-  abstract isValidTarget(link: ConnectingLink | null): boolean
+  abstract isValidTarget(link: ConnectingLink | undefined): boolean
 
   /**
    * The label to display in the UI.
@@ -271,7 +271,7 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
     return this.link != null
   }
 
-  override isValidTarget(link: ConnectingLink | null): boolean {
+  override isValidTarget(link: ConnectingLink | undefined): boolean {
     if (!link) return true
 
     return !!link.output && LiteGraph.isValidConnection(this.type, link.output.type)
@@ -307,7 +307,7 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
     this.slot_index = slot.slot_index
   }
 
-  override isValidTarget(link: ConnectingLink | null): boolean {
+  override isValidTarget(link: ConnectingLink | undefined): boolean {
     if (!link) return true
 
     return !!link.input && LiteGraph.isValidConnection(this.type, link.input.type)
