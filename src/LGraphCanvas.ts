@@ -827,7 +827,6 @@ export class LGraphCanvas implements ConnectionColorContext {
     const canvas = LGraphCanvas.active_canvas
     const ref_window = canvas.getCanvasWindow()
     const graph = canvas.graph
-    if (!graph) return
 
     inner_onMenuAdded("", prev_menu)
     return false
