@@ -661,8 +661,3 @@ This will make the new language selectable in the application's settings.
 
 Start the development server, switch to the new language, and verify the translations.
 You can switch languages by opening the ComfyUI Settings and selecting from the `ComfyUI > Locale` dropdown box.
-
-## Deploy
-
-- Option 1: Set `DEPLOY_COMFYUI_DIR` in `.env` and run `npm run deploy`.
-- Option 2: Copy everything under `dist/` to `ComfyUI/web/` in your ComfyUI checkout manually.
