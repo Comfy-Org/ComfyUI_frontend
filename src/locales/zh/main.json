@@ -335,6 +335,7 @@
     "scene": "场景",
     "showGrid": "显示网格",
     "switchCamera": "切换摄像头",
+    "switchingMaterialMode": "切换材质模式中...",
     "upDirection": "向上方向",
     "uploadBackgroundImage": "上传背景图片"
   },

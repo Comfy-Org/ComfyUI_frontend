@@ -105,7 +105,7 @@
       </div>
 
       <div v-if="activeCategory === 'model'" class="flex flex-col">
-        <div class="relative show-up-direction">
+        <div v-if="notMaterialLineart" class="relative show-up-direction">
           <Button
             class="p-button-rounded p-button-text"
             @click="toggleUpDirection"
@@ -278,6 +278,7 @@ const props = defineProps<{
   hasBackgroundImage?: boolean
   upDirection: UpDirection
   materialMode: MaterialMode
+  isAnimation: boolean
 }>()
 
 const isMenuOpen = ref(false)
@@ -346,12 +347,25 @@ const upDirections: UpDirection[] = [
   '+z'
 ]
 const showMaterialMode = ref(false)
-const materialModes: MaterialMode[] = [
-  'original',
-  'normal',
-  'wireframe'
-  //'depth' disable for now
-]
+
+const materialModes = computed(() => {
+  const modes: MaterialMode[] = [
+    'original',
+    'normal',
+    'wireframe'
+    //'depth' disable for now
+  ]
+
+  if (!props.isAnimation) {
+    modes.push('lineart')
+  }
+
+  return modes
+})
+
+const notMaterialLineart = computed(() => {
+  return props.materialMode !== 'lineart'
+})
 
 const switchCamera = () => {
   emit('switchCamera')

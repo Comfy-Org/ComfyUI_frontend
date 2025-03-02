@@ -8,7 +8,12 @@ import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader'
 
-export type MaterialMode = 'original' | 'normal' | 'wireframe' | 'depth'
+export type MaterialMode =
+  | 'original'
+  | 'normal'
+  | 'wireframe'
+  | 'depth'
+  | 'lineart'
 export type UpDirection = 'original' | '-x' | '+x' | '-y' | '+y' | '-z' | '+z'
 export type CameraType = 'perspective' | 'orthographic'
 

@@ -335,6 +335,7 @@
     "scene": "Scène",
     "showGrid": "Afficher la grille",
     "switchCamera": "Changer de caméra",
+    "switchingMaterialMode": "Changement de mode de matériau...",
     "upDirection": "Direction Haut",
     "uploadBackgroundImage": "Télécharger l'image de fond"
   },

@@ -7,7 +7,7 @@
       <div class="flex flex-col items-center">
         <div class="spinner"></div>
         <div class="text-white mt-4 text-lg">
-          {{ t('load3d.loadingModel') }}
+          {{ loadingMessage }}
         </div>
       </div>
     </div>
@@ -20,9 +20,11 @@ import { ref } from 'vue'
 import { t } from '@/i18n'
 
 const modelLoading = ref(false)
+const loadingMessage = ref('')
 
-const startLoading = () => {
+const startLoading = (message?: string) => {
   modelLoading.value = true
+  loadingMessage.value = message || t('load3d.loadingModel')
 }
 
 const endLoading = () => {
