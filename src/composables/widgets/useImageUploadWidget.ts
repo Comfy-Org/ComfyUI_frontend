@@ -106,7 +106,7 @@ export const useImageUploadWidget = () => {
     // No change callbacks seem to be fired on initial setting of the value
     requestAnimationFrame(() => {
       nodeOutputStore.setNodeOutputs(node, fileComboWidget.value)
-      showPreview()
+      showPreview({ block: false })
     })
 
     return { widget: uploadWidget }
