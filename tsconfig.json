@@ -1,5 +1,7 @@
 {
   "compilerOptions": {
+    "noEmit": true,
+
     "target": "ES2022",
     "useDefineForClassFields": true,
     "module": "ESNext",
@@ -12,7 +14,7 @@
     "emitDecoratorMetadata": true,
 
     /* Linting */
-    // "strict": true,
+    "strict": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
@@ -27,12 +29,7 @@
     // TODO: Remove workaround from initial vite impl: public/src
     "typeRoots": ["src/types", "node_modules/@types", "public/src"],
     "outDir": "./dist",
-    "rootDir": "./",
-    "plugins": [
-      {
-        "name": "typescript-strict-plugin"
-      }
-    ]
+    "rootDir": "./"
   },
   "include": ["src/**/*"]
 }

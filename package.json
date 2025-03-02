@@ -20,8 +20,7 @@
   },
   "private": false,
   "scripts": {
-    "typecheck": "tsc --noEmit && tsc-strict",
-    "build": "npm run typecheck && vite build",
+    "build": "tsc && vite build",
     "dev": "vite",
     "preview": "vite preview",
     "watch": "vite build --watch",
@@ -65,7 +64,6 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.6.3",
     "typescript-eslint": "^8.25.0",
-    "typescript-strict-plugin": "^2.4.4",
     "vite": "^6.2.0",
     "vite-plugin-dts": "^4.3.0",
     "vitest": "^3.0.7"

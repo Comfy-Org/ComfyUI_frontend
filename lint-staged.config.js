@@ -5,8 +5,7 @@ export default {
 
   "*.{ts,mts}": stagedFiles => [
     ...prettierAndEslint(stagedFiles),
-    "tsc --noEmit",
-    "tsc-strict",
+    "tsc",
   ],
 }
 

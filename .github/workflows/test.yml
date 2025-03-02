@@ -5,35 +5,32 @@ on:
     branches:
       - main
       - master
-      - 'dev*'
+      - "dev*"
   pull_request:
     branches:
       - main
       - master
-      - 'dev*'
+      - "dev*"
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-    - uses: actions/setup-node@v3
-      with:
-        node-version: lts/*
-    - name: Build
-      run: |
-        npm ci
-        npm run build
-    - name: Run lint
-      run: |
-        npm run lint:ci
-    - name: Run typecheck
-      run: |
-        npm run typecheck
-    - name: Run format
-      run: |
-        npm run format
-    - name: Run vitest tests
-      run: |
-        npm test -- --reporter=verbose
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: actions/setup-node@v3
+        with:
+          node-version: lts/*
+      - name: Build
+        run: |
+          npm ci
+          npm run build
+      - name: Run lint
+        run: |
+          npm run lint:ci
+      - name: Run format
+        run: |
+          npm run format
+      - name: Run vitest tests
+        run: |
+          npm test -- --reporter=verbose
