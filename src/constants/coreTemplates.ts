@@ -429,7 +429,7 @@ export const CORE_TEMPLATES = [
       {
         name: 'stable_audio_example',
         mediaType: 'audio',
-        mediaSubtype: 'flac',
+        mediaSubtype: 'mp3',
         description: 'Generate audio from text descriptions.',
         tutorialUrl: 'https://comfyanonymous.github.io/ComfyUI_examples/audio/'
       }
