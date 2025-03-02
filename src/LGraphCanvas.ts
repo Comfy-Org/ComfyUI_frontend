@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import type { ContextMenu } from "./ContextMenu"
 import type {
   CanvasColour,
@@ -1161,7 +1160,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     input.focus()
 
-    let dialogCloseTimer: ReturnType<typeof setTimeout> | null = null
+    let dialogCloseTimer: ReturnType<typeof setTimeout>
     dialog.addEventListener("mouseleave", function () {
       if (LiteGraph.dialog_close_on_mouse_leave) {
         if (!dialog.is_modified && LiteGraph.dialog_close_on_mouse_leave) {
@@ -1267,8 +1266,6 @@ export class LGraphCanvas implements ConnectionColorContext {
     node.graph.afterChange()
   }
 
-  static onMenuNodePin(): void {}
-
   static onMenuNodeMode(
     value: IContextMenuValue,
     options: IContextMenuOptions,
@@ -1365,8 +1362,8 @@ export class LGraphCanvas implements ConnectionColorContext {
     value: IContextMenuValue<typeof LiteGraph.VALID_SHAPES[number]>,
     options: IContextMenuOptions<typeof LiteGraph.VALID_SHAPES[number]>,
     e: MouseEvent,
-    menu: ContextMenu<typeof LiteGraph.VALID_SHAPES[number]>,
-    node: LGraphNode,
+    menu?: ContextMenu<typeof LiteGraph.VALID_SHAPES[number]>,
+    node?: LGraphNode,
   ): boolean {
     if (!node) throw "no node passed"
 
@@ -4545,7 +4542,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       size,
       color,
       bgcolor,
-      node.selected,
+      !!node.selected,
     )
 
     if (!low_quality) {
@@ -4791,8 +4788,8 @@ export class LGraphCanvas implements ConnectionColorContext {
     }
 
     // these counter helps in conditioning drawing based on if the node has been executed or an action occurred
-    if (node.execute_triggered > 0) node.execute_triggered--
-    if (node.action_triggered > 0) node.action_triggered--
+    if (node.execute_triggered != null && node.execute_triggered > 0) node.execute_triggered--
+    if (node.action_triggered != null && node.action_triggered > 0) node.action_triggered--
   }
 
   /**
@@ -4822,7 +4819,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     // Normalise boundingRect to pos to snap
     snapGuide[0] += offsetX
     snapGuide[1] += offsetY
-    snapPoint(snapGuide, this.#snapToGrid)
+    if (this.#snapToGrid) snapPoint(snapGuide, this.#snapToGrid)
     snapGuide[0] -= offsetX
     snapGuide[1] -= offsetY
 
@@ -4942,7 +4939,7 @@ export class LGraphCanvas implements ConnectionColorContext {
                 LGraphCanvas.link_type_colors[link.type] ||
                 this.default_link_color
 
-              const prevReroute = this.graph.reroutes.get(reroute.parentId)
+              const prevReroute = reroute.parentId == null ? undefined : this.graph.reroutes.get(reroute.parentId)
               const startPos = prevReroute?.pos ?? start_node_slotpos
               reroute.calculateAngle(this.last_draw_time, this.graph, startPos)
 
@@ -4970,11 +4967,14 @@ export class LGraphCanvas implements ConnectionColorContext {
             startControl = [dist * reroute.cos, dist * reroute.sin]
           }
 
+          // Use runtime fallback; TypeScript cannot evaluate this correctly.
+          const segmentStartPos = points.at(-2) ?? start_node_slotpos
+
           // Render final link segment
           this.renderLink(
             ctx,
-            points.at(-2),
-            points.at(-1),
+            segmentStartPos,
+            end_node_slotpos,
             link,
             false,
             0,
@@ -5078,14 +5078,14 @@ export class LGraphCanvas implements ConnectionColorContext {
         ? "#FFF"
         : color ||
           link?.color ||
-          LGraphCanvas.link_type_colors[link.type] ||
+          (link?.type != null && LGraphCanvas.link_type_colors[link.type]) ||
           this.default_link_color
     const startDir = start_dir || LinkDirection.RIGHT
     const endDir = end_dir || LinkDirection.LEFT
 
     const dist = this.links_render_mode == LinkRenderType.SPLINE_LINK && (!endControl || !startControl)
       ? distance(a, b)
-      : null
+      : 0
 
     // TODO: Subline code below was inserted in the wrong place - should be before this statement
     if (this.render_connections_border && !this.low_quality) {
@@ -5292,7 +5292,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       if (this.linkMarkerShape === LinkMarkerShape.Arrow) {
         const transform = ctx.getTransform()
         ctx.translate(pos[0], pos[1])
-        ctx.rotate(linkSegment._centreAngle)
+        if (linkSegment._centreAngle) ctx.rotate(linkSegment._centreAngle)
         // The math is off, but it currently looks better in chromium
         ctx.moveTo(-3.2, -5)
         ctx.lineTo(+7, 0)
@@ -5476,14 +5476,15 @@ export class LGraphCanvas implements ConnectionColorContext {
   resize(width?: number, height?: number): void {
     if (!width && !height) {
       const parent = this.canvas.parentElement
+      if (!parent) throw new TypeError("Attempted to resize canvas, but parent element was null.")
       width = parent.offsetWidth
       height = parent.offsetHeight
     }
 
     if (this.canvas.width == width && this.canvas.height == height) return
 
-    this.canvas.width = width
-    this.canvas.height = height
+    this.canvas.width = width ?? 0
+    this.canvas.height = height ?? 0
     this.bgcanvas.width = this.canvas.width
     this.bgcanvas.height = this.canvas.height
     this.setDirty(true, true)
@@ -5872,6 +5873,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     const graphcanvas = LGraphCanvas.active_canvas
     const canvas = graphcanvas.canvas
+    if (!canvas.parentNode) throw new TypeError("canvas element parentNode was null when opening a prompt.")
     canvas.parentNode.append(dialog)
 
     if (this.ds.scale > 1) dialog.style.transform = `scale(${this.ds.scale})`
@@ -5912,8 +5914,12 @@ export class LGraphCanvas implements ConnectionColorContext {
     this.prompt_box = dialog
 
     const name_element: HTMLSpanElement | null = dialog.querySelector(".name")
+    if (!name_element) throw new TypeError("name_element was null")
+
     name_element.textContent = title
     const value_element: HTMLInputElement | null = dialog.querySelector(".value")
+    if (!value_element) throw new TypeError("value_element was null")
+
     value_element.value = value
     value_element.select()
 
@@ -5939,6 +5945,8 @@ export class LGraphCanvas implements ConnectionColorContext {
     })
 
     const button = dialog.querySelector("button")
+    if (!button) throw new TypeError("button was null when opening prompt")
+
     button.addEventListener("click", function () {
       callback?.(input.value)
       that.setDirty(true)
@@ -5967,12 +5975,12 @@ export class LGraphCanvas implements ConnectionColorContext {
       function handleOutsideClick(e: Event) {
         if (e.target === canvas && Date.now() - clickTime > 256) {
           dialog.close()
-          canvas.parentNode.removeEventListener("click", handleOutsideClick)
-          canvas.parentNode.removeEventListener("touchend", handleOutsideClick)
+          canvas.parentElement?.removeEventListener("click", handleOutsideClick)
+          canvas.parentElement?.removeEventListener("touchend", handleOutsideClick)
         }
       }
-      canvas.parentNode.addEventListener("click", handleOutsideClick)
-      canvas.parentNode.addEventListener("touchend", handleOutsideClick)
+      canvas.parentElement?.addEventListener("click", handleOutsideClick)
+      canvas.parentElement?.addEventListener("touchend", handleOutsideClick)
     }, 10)
 
     return dialog
@@ -6689,6 +6697,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     dialog.style.left = `${offsetx}px`
     dialog.style.top = `${offsety}px`
 
+    if (!this.canvas.parentNode) throw new TypeError("Canvas parent element was null.")
     this.canvas.parentNode.append(dialog)
 
     // acheck for input and use default behaviour: save on enter, close on esc
@@ -6713,7 +6722,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       }
     }
 
-    let dialogCloseTimer: ReturnType<typeof setTimeout> | null = null
+    let dialogCloseTimer: ReturnType<typeof setTimeout>
     let prevent_timeout = 0
     dialog.addEventListener("mouseleave", function () {
       if (prevent_timeout) return
@@ -6849,9 +6858,13 @@ export class LGraphCanvas implements ConnectionColorContext {
       const elem: HTMLDivElement & { options?: unknown, value?: unknown } = document.createElement("div")
       elem.className = "property"
       elem.innerHTML = "<span class='property_name'></span><span class='property_value'></span>"
-      elem.querySelector(".property_name").textContent = options.label || name
+      const nameSpan = elem.querySelector(".property_name")
+      if (!nameSpan) throw new TypeError("Property name element was null.")
+
+      nameSpan.textContent = options.label || name
       // TODO: any kludge
       const value_element: HTMLSpanElement | null = elem.querySelector(".property_value")
+      if (!value_element) throw new TypeError("Property name element was null.")
       value_element.textContent = str_value
       elem.dataset["property"] = name
       elem.dataset["type"] = options.type || type
@@ -6877,6 +6890,7 @@ export class LGraphCanvas implements ConnectionColorContext {
           innerChange(propname, elem.value)
         })
       } else if (type == "string" || type == "number") {
+        if (!value_element) throw new TypeError("Property name element was null.")
         value_element.setAttribute("contenteditable", "true")
         value_element.addEventListener("keydown", function (e) {
           // allow for multiline
@@ -6894,7 +6908,8 @@ export class LGraphCanvas implements ConnectionColorContext {
         })
       } else if (type == "enum" || type == "combo") {
         const str_value = LGraphCanvas.getPropertyPrintableValue(value, options.values)
-        value_element.textContent = str_value
+        if (!value_element) throw new TypeError("Property name element was null.")
+        value_element.textContent = str_value ?? ""
 
         value_element.addEventListener("click", function (event) {
           const values = options.values || []
@@ -6969,6 +6984,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       panel.addHTML("<h3>Properties</h3>")
 
       const fUpdate = (name: string, value: string | number | boolean | object | undefined) => {
+        if (!this.graph) throw new NullGraphError()
         this.graph.beforeChange(node)
         switch (name) {
         case "Title":
@@ -7007,7 +7023,8 @@ export class LGraphCanvas implements ConnectionColorContext {
 
       panel.addWidget("string", "Title", node.title, {}, fUpdate)
 
-      panel.addWidget("combo", "Mode", LiteGraph.NODE_MODES[node.mode], { values: LiteGraph.NODE_MODES }, fUpdate)
+      const mode = node.mode == null ? undefined : LiteGraph.NODE_MODES[node.mode]
+      panel.addWidget("combo", "Mode", mode, { values: LiteGraph.NODE_MODES }, fUpdate)
 
       const nodeCol = node.color !== undefined
         ? Object.keys(LGraphCanvas.node_colors).filter(function (nK) { return LGraphCanvas.node_colors[nK].color == node.color })
@@ -7032,8 +7049,9 @@ export class LGraphCanvas implements ConnectionColorContext {
       // clear
       panel.footer.innerHTML = ""
       panel.addButton("Delete", function () {
-        if (node.block_delete)
-          return
+        if (node.block_delete) return
+        if (!node.graph) throw new NullGraphError()
+
         node.graph.remove(node)
         panel.close()
       }).classList.add("delete")
@@ -7076,12 +7094,14 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     inner_refresh()
 
+    if (!this.canvas.parentNode) throw new TypeError("showNodePanel - this.canvas.parentNode was null")
     this.canvas.parentNode.append(panel)
   }
 
   checkPanels(): void {
     if (!this.canvas) return
 
+    if (!this.canvas.parentNode) throw new TypeError("checkPanels - this.canvas.parentNode was null")
     const panels = this.canvas.parentNode.querySelectorAll(".litegraph.dialog")
     for (const panel of panels) {
       // @ts-expect-error Panel
@@ -7182,9 +7202,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       options.push(
         {
           content: node.pinned ? "Unpin" : "Pin",
-          callback: (...args) => {
-            // @ts-expect-error Not impl.
-            LGraphCanvas.onMenuNodePin(...args)
+          callback: () => {
             for (const i in this.selected_nodes) {
               const node = this.selected_nodes[i]
               node.pin()
@@ -7276,6 +7294,8 @@ export class LGraphCanvas implements ConnectionColorContext {
             menu_info.push({ content: "Disconnect Links", slot: slot })
 
           const _slot = slot.input || slot.output
+          if (!_slot) throw new TypeError("Both in put and output slots were null when processing context menu.")
+
           if (_slot.removable) {
             menu_info.push(
               _slot.locked
