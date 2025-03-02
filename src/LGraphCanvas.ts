@@ -123,15 +123,17 @@ interface ICreateNodeOptions {
   ) => HTMLDivElement | void
 }
 
-interface ICloseableDiv extends HTMLDivElement {
-  close?(): void
+interface ICloseable {
+  close(): void
 }
 
-interface IDialog extends ICloseableDiv {
-  modified?(): void
-  close?(): void
-  is_modified?: boolean
+interface IDialogExtensions extends ICloseable {
+  modified(): void
+  is_modified: boolean
 }
+
+interface IDialog extends HTMLDivElement, IDialogExtensions {}
+type PromptDialog = Omit<IDialog, "modified">
 
 interface IDialogOptions {
   position?: Point
@@ -177,6 +179,15 @@ interface IPasteFromClipboardOptions {
   connectInputs?: boolean
   /** The position to paste the items at. */
   position?: Point
+}
+
+interface ICreatePanelOptions {
+  closable?: any
+  window?: any
+  onOpen?: () => void
+  onClose?: () => void
+  width?: any
+  height?: any
 }
 
 /**
@@ -505,7 +516,7 @@ export class LGraphCanvas implements ConnectionColorContext {
   _pattern?: CanvasPattern
   _pattern_img?: HTMLImageElement
   // TODO: This looks like another panel thing
-  prompt_box?: IDialog | null
+  prompt_box?: PromptDialog | null
   search_box?: HTMLDivElement
   /** @deprecated Panels */
   SELECTED_NODE?: LGraphNode
@@ -3336,12 +3347,14 @@ export class LGraphCanvas implements ConnectionColorContext {
         serialisable.nodes.push(cloned)
 
         // Links
-        const links = item.inputs
-          ?.map(input => this.graph?._links.get(input?.link)?.asSerialisable())
-          .filter(x => !!x)
+        if (item.inputs) {
+          for (const { link: linkId } of item.inputs) {
+            if (linkId == null) continue
 
-        if (!links) continue
-        serialisable.links.push(...links)
+            const link = this.graph?._links.get(linkId)?.asSerialisable()
+            if (link) serialisable.links.push(link)
+          }
+        }
       } else if (item instanceof LGraphGroup) {
         // Groups
         serialisable.groups.push(item.serialize())
@@ -5895,18 +5908,22 @@ export class LGraphCanvas implements ConnectionColorContext {
     const that = this
     title = title || ""
 
-    const dialog: IDialog = document.createElement("div")
-    dialog.is_modified = false
-    dialog.className = "graphdialog rounded"
-    dialog.innerHTML = multiline
-      ? "<span class='name'></span> <textarea autofocus class='value'></textarea><button class='rounded'>OK</button>"
-      : "<span class='name'></span> <input autofocus type='text' class='value'/><button class='rounded'>OK</button>"
-    dialog.close = function () {
-      that.prompt_box = null
-      if (dialog.parentNode) {
-        dialog.remove()
-      }
-    }
+    const customProperties = {
+      is_modified: false,
+      className: "graphdialog rounded",
+      innerHTML: multiline
+        ? "<span class='name'></span> <textarea autofocus class='value'></textarea><button class='rounded'>OK</button>"
+        : "<span class='name'></span> <input autofocus type='text' class='value'/><button class='rounded'>OK</button>",
+      close() {
+        that.prompt_box = null
+        if (dialog.parentNode) {
+          dialog.remove()
+        }
+      },
+    } satisfies Partial<IDialog>
+
+    const div = document.createElement("div")
+    const dialog: PromptDialog = Object.assign(div, customProperties)
 
     const graphcanvas = LGraphCanvas.active_canvas
     const canvas = graphcanvas.canvas
@@ -6686,10 +6703,21 @@ export class LGraphCanvas implements ConnectionColorContext {
       closeOnLeave_checkModified: true,
     }
     options = Object.assign(def_options, options || {})
-    const dialog: IDialog = document.createElement("div")
-    dialog.className = "graphdialog"
-    dialog.innerHTML = html
-    dialog.is_modified = false
+
+    const customProperties = {
+      className: "graphdialog",
+      innerHTML: html,
+      is_modified: false,
+      modified() {
+        this.is_modified = true
+      },
+      close(this: IDialog) {
+        this.remove()
+      },
+    } satisfies Partial<IDialog>
+
+    const div = document.createElement("div")
+    const dialog: IDialog = Object.assign(div, customProperties)
 
     const rect = this.canvas.getBoundingClientRect()
     let offsetx = -20
@@ -6738,13 +6766,6 @@ export class LGraphCanvas implements ConnectionColorContext {
       }
     }
 
-    dialog.modified = function () {
-      dialog.is_modified = true
-    }
-    dialog.close = function () {
-      dialog.remove()
-    }
-
     let dialogCloseTimer = null
     let prevent_timeout = 0
     dialog.addEventListener("mouseleave", function () {
@@ -6781,7 +6802,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     return dialog
   }
 
-  createPanel(title, options) {
+  createPanel(title: string, options: ICreatePanelOptions) {
     options = options || {}
 
     const ref_window = options.window || window
@@ -6959,14 +6980,15 @@ export class LGraphCanvas implements ConnectionColorContext {
       return elem
     }
 
-    if (root.onOpen && typeof root.onOpen == "function") root.onOpen()
+    if (typeof root.onOpen == "function") root.onOpen()
 
     return root
   }
 
   closePanels(): void {
-    document.querySelector<ICloseableDiv>("#node-panel")?.close()
-    document.querySelector<ICloseableDiv>("#option-panel")?.close()
+    type MightHaveClose = HTMLDivElement & Partial<ICloseable>
+    document.querySelector<MightHaveClose>("#node-panel")?.close?.()
+    document.querySelector<MightHaveClose>("#option-panel")?.close?.()
   }
 
   showShowNodePanel(node: LGraphNode): void {
@@ -7290,49 +7312,47 @@ export class LGraphCanvas implements ConnectionColorContext {
       extra: node,
     }
 
-    if (node) options.title = node.type
-
-    // check if mouse is in input
-    let slot: ReturnType<LGraphNode["getSlotInPosition"]>
     if (node) {
-      slot = node.getSlotInPosition(event.canvasX, event.canvasY)
+      options.title = node.type ?? undefined
       LGraphCanvas.active_node = node
-    }
 
-    if (slot) {
-      // on slot
-      menu_info = []
-      if (node.getSlotMenuOptions) {
-        menu_info = node.getSlotMenuOptions(slot)
+      // check if mouse is in input
+      const slot = node.getSlotInPosition(event.canvasX, event.canvasY)
+      if (slot) {
+        // on slot
+        menu_info = []
+        if (node.getSlotMenuOptions) {
+          menu_info = node.getSlotMenuOptions(slot)
+        } else {
+          if (slot?.output?.links?.length)
+            menu_info.push({ content: "Disconnect Links", slot: slot })
+
+          const _slot = slot.input || slot.output
+          if (_slot.removable) {
+            menu_info.push(
+              _slot.locked
+                ? "Cannot remove"
+                : { content: "Remove Slot", slot: slot },
+            )
+          }
+          if (!_slot.nameLocked)
+            menu_info.push({ content: "Rename Slot", slot: slot })
+
+          if (node.getExtraSlotMenuOptions) {
+            menu_info.push(...node.getExtraSlotMenuOptions(slot))
+          }
+        }
+        // @ts-expect-error Slot type can be number and has number checks
+        options.title = (slot.input ? slot.input.type : slot.output.type) || "*"
+        if (slot.input && slot.input.type == LiteGraph.ACTION)
+          options.title = "Action"
+
+        if (slot.output && slot.output.type == LiteGraph.EVENT)
+          options.title = "Event"
       } else {
-        if (slot?.output?.links?.length)
-          menu_info.push({ content: "Disconnect Links", slot: slot })
-
-        const _slot = slot.input || slot.output
-        if (_slot.removable) {
-          menu_info.push(
-            _slot.locked
-              ? "Cannot remove"
-              : { content: "Remove Slot", slot: slot },
-          )
-        }
-        if (!_slot.nameLocked)
-          menu_info.push({ content: "Rename Slot", slot: slot })
-
-        if (node.getExtraSlotMenuOptions) {
-          menu_info.push(...node.getExtraSlotMenuOptions(slot))
-        }
+        // on node
+        menu_info = this.getNodeMenuOptions(node)
       }
-      // @ts-expect-error Slot type can be number and has number checks
-      options.title = (slot.input ? slot.input.type : slot.output.type) || "*"
-      if (slot.input && slot.input.type == LiteGraph.ACTION)
-        options.title = "Action"
-
-      if (slot.output && slot.output.type == LiteGraph.EVENT)
-        options.title = "Event"
-    } else if (node) {
-      // on node
-      menu_info = this.getNodeMenuOptions(node)
     } else {
       menu_info = this.getCanvasMenuOptions()
       if (!this.graph) throw new NullGraphError()
