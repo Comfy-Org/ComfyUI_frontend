@@ -35,6 +35,7 @@
       :hasBackgroundImage="hasBackgroundImage"
       :upDirection="upDirection"
       :materialMode="materialMode"
+      :isAnimation="false"
       @updateBackgroundImage="handleBackgroundImageUpdate"
       @switchCamera="switchCamera"
       @toggleGrid="toggleGrid"

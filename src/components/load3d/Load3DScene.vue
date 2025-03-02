@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { LGraphNode } from '@comfyorg/litegraph'
-import { onMounted, onUnmounted, ref, toRaw, watchEffect } from 'vue'
+import { onMounted, onUnmounted, ref, toRaw, watch, watchEffect } from 'vue'
 
 import LoadingOverlay from '@/components/load3d/LoadingOverlay.vue'
 import Load3d from '@/extensions/core/load3d/Load3d'
@@ -16,6 +16,7 @@ import {
   MaterialMode,
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
+import { t } from '@/i18n'
 import { useLoad3dService } from '@/services/load3dService'
 
 const props = defineProps<{
@@ -50,8 +51,12 @@ const eventConfig = {
   backgroundImageChange: (value: string) =>
     emit('backgroundImageChange', value),
   upDirectionChange: (value: string) => emit('upDirectionChange', value),
-  modelLoadingStart: () => loadingOverlayRef.value?.startLoading(),
-  modelLoadingEnd: () => loadingOverlayRef.value?.endLoading()
+  modelLoadingStart: () =>
+    loadingOverlayRef.value?.startLoading(t('load3d.loadingModel')),
+  modelLoadingEnd: () => loadingOverlayRef.value?.endLoading(),
+  materialLoadingStart: () =>
+    loadingOverlayRef.value?.startLoading(t('load3d.switchingMaterialMode')),
+  materialLoadingEnd: () => loadingOverlayRef.value?.endLoading()
 } as const
 
 watchEffect(() => {
@@ -66,9 +71,19 @@ watchEffect(() => {
     rawLoad3d.togglePreview(props.showPreview)
     rawLoad3d.setBackgroundImage(props.backgroundImage)
     rawLoad3d.setUpDirection(props.upDirection)
-    rawLoad3d.setMaterialMode(props.materialMode)
   }
 })
+
+watch(
+  () => props.materialMode,
+  (newValue) => {
+    if (load3d.value) {
+      const rawLoad3d = toRaw(load3d.value)
+
+      rawLoad3d.setMaterialMode(newValue)
+    }
+  }
+)
 
 const emit = defineEmits<{
   (e: 'materialModeChange', materialMode: string): void

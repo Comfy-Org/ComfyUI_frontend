@@ -858,6 +858,7 @@
     "scene": "Scene",
     "model": "Model",
     "camera": "Camera",
-    "light": "Light"
+    "light": "Light",
+    "switchingMaterialMode": "Switching Material Mode..."
   }
 }
