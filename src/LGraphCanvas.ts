@@ -497,7 +497,7 @@ export class LGraphCanvas implements ConnectionColorContext {
   /** @deprecated Panels */
   block_click?: boolean
   /** @deprecated Panels */
-  last_click_position?: Point
+  last_click_position?: Point | null
   resizing_node?: LGraphNode | null
   /** @deprecated See {@link LGraphCanvas.resizingGroup} */
   selected_group_resizing?: boolean
@@ -545,7 +545,7 @@ export class LGraphCanvas implements ConnectionColorContext {
   onAfterChange?(graph: LGraph): void
   onClear?: () => void
   /** called after moving a node @deprecated Does not handle multi-node move, and can return the wrong node. */
-  onNodeMoved?: (node_dragged: LGraphNode) => void
+  onNodeMoved?: (node_dragged: LGraphNode | undefined) => void
   /** called if the selection changes */
   onSelectionChange?: (selected: Dictionary<Positionable>) => void
   /** called when rendering a tooltip */
@@ -2794,9 +2794,9 @@ export class LGraphCanvas implements ConnectionColorContext {
             const firstLink = this.connecting_links[0]
 
             // Default: nothing highlighted
-            let highlightPos: Point = null
-            let highlightInput: INodeInputSlot = null
-            let linkOverWidget: IWidget = null
+            let highlightPos: Point | null = null
+            let highlightInput: INodeInputSlot | null = null
+            let linkOverWidget: IWidget | null = null
 
             if (firstLink.node === node) {
               // Cannot connect link from a node to itself
@@ -2810,6 +2810,8 @@ export class LGraphCanvas implements ConnectionColorContext {
                     widgetLinkType &&
                     LiteGraph.isValidConnection(firstLink.output.type, widgetLinkType)
                   ) {
+                    if (firstLink.output.slot_index == null) throw new TypeError("Connecting link output.slot_index was null.")
+
                     if (firstLink.node.isValidWidgetLink?.(firstLink.output.slot_index, node, overWidget) !== false) {
                       linkOverWidget = overWidget
                       this.link_over_widget_type = widgetLinkType
@@ -2878,7 +2880,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         const segment = this.#getLinkCentreOnPos(e)
         if (this.over_link_center !== segment) {
           underPointer |= CanvasItem.Link
-          this.over_link_center = segment
+          this.over_link_center = segment ?? null
           this.dirty_bgcanvas = true
         }
 
@@ -3065,17 +3067,6 @@ export class LGraphCanvas implements ConnectionColorContext {
             }
           }
         } else if (firstLink.input || firstLink.output) {
-          const linkReleaseContext = firstLink.output
-            ? {
-              node_from: firstLink.node,
-              slot_from: firstLink.output,
-              type_filter_in: firstLink.output.type,
-            }
-            : {
-              node_to: firstLink.node,
-              slot_from: firstLink.input,
-              type_filter_out: firstLink.input.type,
-            }
           // For external event only.
           const linkReleaseContextExtended: LinkReleaseContextExtended = {
             links: this.connecting_links,
@@ -3088,6 +3079,18 @@ export class LGraphCanvas implements ConnectionColorContext {
           // No longer in use
           // add menu when releasing link in empty space
           if (LiteGraph.release_link_on_empty_shows_menu) {
+            const linkReleaseContext = firstLink.output
+              ? {
+                node_from: firstLink.node,
+                slot_from: firstLink.output,
+                type_filter_in: firstLink.output.type,
+              }
+              : {
+                node_to: firstLink.node,
+                slot_from: firstLink.input,
+                type_filter_out: firstLink.input?.type,
+              }
+
             if (e.shiftKey) {
               if (this.allow_searchbox) {
                 this.showSearchBox(e, linkReleaseContext)
@@ -3402,7 +3405,7 @@ export class LGraphCanvas implements ConnectionColorContext {
   /**
    * Pastes the items from the canvas "clipbaord" - a local storage variable.
    */
-  _pasteFromClipboard(options: IPasteFromClipboardOptions = {}): ClipboardPasteResult {
+  _pasteFromClipboard(options: IPasteFromClipboardOptions = {}): ClipboardPasteResult | undefined {
     const {
       connectInputs = false,
       position = this.graph_mouse,
@@ -3429,6 +3432,8 @@ export class LGraphCanvas implements ConnectionColorContext {
     let offsetX = Infinity
     let offsetY = Infinity
     for (const item of [...parsed.nodes, ...parsed.reroutes]) {
+      if (item.pos == null) throw new TypeError("Invalid node encounterd on paste.  `pos` was null.")
+
       if (item.pos[0] < offsetX) offsetX = item.pos[0]
       if (item.pos[1] < offsetY) offsetY = item.pos[1]
     }
@@ -3453,7 +3458,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     // Groups
     for (const info of parsed.groups) {
-      info.id = undefined
+      info.id = -1
 
       const group = new LGraphGroup()
       group.configure(info)
@@ -3480,10 +3485,9 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     // Reroutes
     for (const info of parsed.reroutes) {
-      const { id } = info
-      info.id = undefined
+      const { id, ...rerouteInfo } = info
 
-      const reroute = graph.setReroute(info)
+      const reroute = graph.setReroute(rerouteInfo)
       created.push(reroute)
       reroutes.set(id, reroute)
     }
@@ -3705,7 +3709,7 @@ export class LGraphCanvas implements ConnectionColorContext {
    */
   processSelect<TPositionable extends Positionable = LGraphNode>(
     item: TPositionable | null | undefined,
-    e: CanvasMouseEvent,
+    e: CanvasMouseEvent | undefined,
     sticky: boolean = false,
   ): void {
     const addModifier = e?.shiftKey

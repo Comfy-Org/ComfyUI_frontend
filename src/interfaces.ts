@@ -19,6 +19,9 @@ export type NullableProperties<T> = {
  */
 export type WhenNullish<T, Result> = T & {} | (T extends null ? Result : T extends undefined ? Result : T & {})
 
+/** A type with each of the {@link Properties} made optional. */
+export type OptionalProps<T, Properties extends keyof T> = Omit<T, Properties> & { [K in Properties]?: T[K] }
+
 export type CanvasColour = string | CanvasGradient | CanvasPattern
 
 /** An object containing a set of child objects */

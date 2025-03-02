@@ -61,18 +61,18 @@ export class CanvasPointer {
 
   /**
    * If `true`, {@link eDown}, {@link eMove}, and {@link eUp} will be set to
-   * `null` when {@link reset} is called.
+   * `undefined` when {@link reset} is called.
    *
    * Default: `true`
    */
   clearEventsOnReset: boolean = true
 
   /** The last pointerdown event for the primary button */
-  eDown: CanvasPointerEvent | null = null
+  eDown?: CanvasPointerEvent
   /** The last pointermove event for the primary button */
-  eMove: CanvasPointerEvent | null = null
+  eMove?: CanvasPointerEvent
   /** The last pointerup event for the primary button */
-  eUp: CanvasPointerEvent | null = null
+  eUp?: CanvasPointerEvent
 
   /**
    * If set, as soon as the mouse moves outside the click drift threshold, this action is run once.
@@ -266,9 +266,9 @@ export class CanvasPointer {
     this.dragStarted = false
 
     if (this.clearEventsOnReset) {
-      this.eDown = null
-      this.eMove = null
-      this.eUp = null
+      this.eDown = undefined
+      this.eMove = undefined
+      this.eUp = undefined
     }
 
     const { element, pointerId } = this

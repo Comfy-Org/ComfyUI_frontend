@@ -5,6 +5,7 @@ import type {
   LinkNetwork,
   LinkSegment,
   MethodNames,
+  OptionalProps,
   Point,
   Positionable,
 } from "./interfaces"
@@ -1395,7 +1396,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
    * Creates the object if it does not exist.
    * @param serialisedReroute See {@link SerialisableReroute}
    */
-  setReroute({ id, parentId, pos, linkIds }: SerialisableReroute): Reroute {
+  setReroute({ id, parentId, pos, linkIds }: OptionalProps<SerialisableReroute, "id">): Reroute {
     id ??= ++this.state.lastRerouteId
     if (id > this.state.lastRerouteId) this.state.lastRerouteId = id
 
