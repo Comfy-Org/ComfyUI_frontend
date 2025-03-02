@@ -46,6 +46,6 @@ jobs:
           body: |
             Automated version bump to ${{ steps.bump-version.outputs.NEW_VERSION }}
           branch: version-bump-${{ steps.bump-version.outputs.NEW_VERSION }}
-          base: main
+          base: master
           labels: |
             Release
