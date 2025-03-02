@@ -22,8 +22,8 @@ export const usePaste = () => {
   ) => {
     if (!node) return
 
-    const filteredItems = Array.from(items).filter(
-      (item) => item.type === contentType
+    const filteredItems = Array.from(items).filter((item) =>
+      item.type.startsWith(contentType)
     )
 
     const blob = filteredItems[0]?.getAsFile()
