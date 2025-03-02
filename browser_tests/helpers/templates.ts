@@ -1,8 +1,10 @@
 import { Locator, Page } from '@playwright/test'
 import path from 'path'
 
-import { CORE_TEMPLATES } from '../../src/constants/coreTemplates'
-import { TemplateInfo } from '../../src/types/workflowTemplateTypes'
+import {
+  TemplateInfo,
+  WorkflowTemplates
+} from '../../src/types/workflowTemplateTypes'
 
 export class ComfyTemplates {
   readonly content: Locator
@@ -18,8 +20,11 @@ export class ComfyTemplates {
       .click()
   }
 
-  getAllTemplates(): TemplateInfo[] {
-    return CORE_TEMPLATES.flatMap((category) => category.templates)
+  async getAllTemplates(): Promise<TemplateInfo[]> {
+    const templates: WorkflowTemplates[] = await this.page.evaluate(() =>
+      window['app'].api.getCoreWorkflowTemplates()
+    )
+    return templates.flatMap((t) => t.templates)
   }
 
   getTemplatePath(filename: string): string {
