@@ -29,6 +29,7 @@ jobs:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         run: |
           npm ci
+          npm run fetch-templates
           npm run build
           npm run zipdist
       - name: Upload dist artifact

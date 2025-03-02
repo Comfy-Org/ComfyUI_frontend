@@ -39,6 +39,7 @@ jobs:
       - name: Build ComfyUI_frontend
         run: |
           npm ci
+          npm run fetch-templates
           npm run build
         working-directory: ComfyUI_frontend
 
