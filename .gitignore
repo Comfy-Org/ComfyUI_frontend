@@ -52,3 +52,6 @@ dist.zip
 # Workflow templates assets
 # Hosted on https://github.com/Comfy-Org/workflow_templates
 /public/templates/
+
+# Temporary repository directory
+templates_repo/

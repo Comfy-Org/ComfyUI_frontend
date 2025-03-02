@@ -18,15 +18,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Checkout workflow templates
-        uses: actions/checkout@v4
-        with:
-          repository: Comfy-Org/workflow_templates
-          path: workflow_templates
-      - name: Move workflow templates
-        run: |
-          mkdir -p public
-          mv workflow_templates/templates public/templates
       - uses: actions/setup-node@v4
         with:
           node-version: 'lts/*'
@@ -38,6 +29,7 @@ jobs:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         run: |
           npm ci
+          npm run fetch-templates
           npm run build
           npm run zipdist
       - name: Upload dist artifact
