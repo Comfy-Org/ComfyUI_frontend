@@ -31,8 +31,22 @@
 
 ## Release Schedule
 
-### Nightly Release
+The project follows a structured release process for each minor version, consisting of three distinct phases:
 
+1. **Development Phase** - 1 week
+   - Active development of new features
+   - Code changes merged to the development branch
+
+2. **Feature Freeze** - 1 week
+   - No new features accepted
+   - Only bug fixes are cherry-picked to the release branch
+   - Testing and stabilization of the codebase
+
+3. **Publication**
+   - Release is published at the end of the freeze period
+   - Version is finalized and made available to all users
+
+### Nightly Releases
 Nightly releases are published daily at [https://github.com/Comfy-Org/ComfyUI_frontend/releases](https://github.com/Comfy-Org/ComfyUI_frontend/releases).
 
 To use the latest nightly release, add the following command line argument to your ComfyUI launch script:
@@ -41,18 +55,17 @@ To use the latest nightly release, add the following command line argument to yo
 --front-end-version Comfy-Org/ComfyUI_frontend@latest
 ```
 
-#### For Windows Stand-alone Build Users
+## Overlapping Release Cycles
+The development of successive minor versions overlaps. For example, while version 1.1 is in feature freeze, development for version 1.2 begins simultaneously.
 
-Edit your `run_cpu.bat` or `run_nvidia_gpu.bat` file as follows:
+### Example Release Cycle
 
-```bat
-.\python_embeded\python.exe -s ComfyUI\main.py --windows-standalone-build --front-end-version Comfy-Org/ComfyUI_frontend@latest
-pause
-```
-
-### Stable Release
-
-Stable releases are published bi-weekly in the ComfyUI main repository.
+| Week | Date Range | Version 1.1 | Version 1.2 | Version 1.3 | Patch Releases |
+|------|------------|-------------|-------------|-------------|----------------|
+| 1 | Mar 1-7 | Development | - | - | - |
+| 2 | Mar 8-14 | Feature Freeze | Development | - | 1.1.0 through 1.1.6 (daily) |
+| 3 | Mar 15-21 | Released | Feature Freeze | Development | 1.1.7 through 1.1.13 (daily)<br>1.2.0 through 1.2.6 (daily) |
+| 4 | Mar 22-28 | - | Released | Feature Freeze | 1.2.7 through 1.2.13 (daily)<br>1.3.0 through 1.3.6 (daily) |
 
 ## Release Summary
 
