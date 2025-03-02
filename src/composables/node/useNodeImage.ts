@@ -20,6 +20,11 @@ interface NodePreviewOptions<T extends MediaElement> {
   onFailedLoading?: () => void
 }
 
+interface ShowPreviewOptions {
+  /** If true, blocks new loading operations until the current operation is complete. */
+  block?: boolean
+}
+
 const createContainer = () => {
   const container = document.createElement('div')
   container.classList.add('comfy-img-preview')
@@ -58,13 +63,13 @@ export const useNodePreview = <T extends MediaElement>(
   /**
    * Displays media element(s) on the node.
    */
-  function showPreview() {
+  function showPreview(options: ShowPreviewOptions = {}) {
     if (node.isLoading) return
 
     const outputUrls = nodeOutputStore.getNodeImageUrls(node)
     if (!outputUrls?.length) return
 
-    node.isLoading = true
+    if (options?.block) node.isLoading = true
 
     loadElements(outputUrls)
       .then((elements) => {
