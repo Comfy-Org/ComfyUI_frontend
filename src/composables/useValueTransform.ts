@@ -3,11 +3,12 @@
  * Does not observe deep changes.
  *
  * @example
- * const { get, set } = useValueTransform<ResultItem[], string[]>(
- *   items => items.map(formatPath)
- * )
- *
+ * const transformFunction = (items: string[]) => items.map(item => `root/${item}.ext`)
+ * const { get, set } = useValueTransform(transformFunction, [])
  * Object.defineProperty(obj, 'value', { get, set })
+ *
+ * obj.value = ['filename1', 'filename2']
+ * console.log(obj.value) // ["root/filename1.ext", "root/filename2.ext"]
  */
 export function useValueTransform<Internal, External>(
   transform: (value: Internal) => External,
