@@ -15,18 +15,23 @@ export const usePaste = () => {
   const workspaceStore = useWorkspaceStore()
   const canvasStore = useCanvasStore()
 
-  const pasteItemOnNode = (
+  const pasteItemsOnNode = (
     items: DataTransferItemList,
-    node: LGraphNode | null
+    node: LGraphNode | null,
+    contentType: string
   ) => {
     if (!node) return
 
-    const blob = items[0]?.getAsFile()
+    const filteredItems = Array.from(items).filter((item) =>
+      item.type.startsWith(contentType)
+    )
+
+    const blob = filteredItems[0]?.getAsFile()
     if (!blob) return
 
     node.pasteFile?.(blob)
     node.pasteFiles?.(
-      Array.from(items)
+      Array.from(filteredItems)
         .map((i) => i.getAsFile())
         .filter((f) => f !== null)
     )
@@ -71,14 +76,14 @@ export const usePaste = () => {
           }
           graph?.change()
         }
-        pasteItemOnNode(items, imageNode)
+        pasteItemsOnNode(items, imageNode, 'image')
         return
       } else if (item.type.startsWith('video/')) {
         if (!videoNode) {
           // No video node selected: add a new one
           // TODO: when video node exists
         } else {
-          pasteItemOnNode(items, videoNode)
+          pasteItemsOnNode(items, videoNode, 'video')
           return
         }
       } else if (item.type.startsWith('audio/')) {
@@ -91,7 +96,7 @@ export const usePaste = () => {
           }
           graph?.change()
         }
-        pasteItemOnNode(items, audioNode)
+        pasteItemsOnNode(items, audioNode, 'audio')
         return
       }
     }
