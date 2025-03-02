@@ -157,7 +157,7 @@ export class ComboWidget extends BaseWidget implements IComboWidget {
       // @ts-expect-error handle () => string[] type that is not typed in IWidgetOptions
       values = values(this, node)
     }
-    // @ts-ignore Record<string, string> is not typed in IWidgetOptions
+    // @ts-expect-error Record<string, string> is not typed in IWidgetOptions
     const values_list = Array.isArray(values) ? values : Object.keys(values)
 
     // Handle left/right arrow clicks
@@ -187,7 +187,7 @@ export class ComboWidget extends BaseWidget implements IComboWidget {
     }
 
     // Handle center click - show dropdown menu
-    // @ts-ignore Record<string, string> is not typed in IWidgetOptions
+    // @ts-expect-error Record<string, string> is not typed in IWidgetOptions
     const text_values = values != values_list ? Object.values(values) : values
     new LiteGraph.ContextMenu(text_values, {
       scale: Math.max(1, canvas.ds.scale),

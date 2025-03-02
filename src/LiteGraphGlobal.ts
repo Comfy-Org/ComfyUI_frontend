@@ -323,7 +323,7 @@ export class LiteGraphGlobal {
 
     // extend class
     for (const i in LGraphNode.prototype) {
-      // @ts-ignore #576 This functionality is deprecated and should be removed.
+      // @ts-expect-error #576 This functionality is deprecated and should be removed.
       base_class.prototype[i] ||= LGraphNode.prototype[i]
     }
 
@@ -468,7 +468,7 @@ export class LiteGraphGlobal {
     // extra options
     if (options) {
       for (const i in options) {
-        // @ts-ignore #577 Requires interface
+        // @ts-expect-error #577 Requires interface
         node[i] = options[i]
       }
     }
@@ -572,7 +572,7 @@ export class LiteGraphGlobal {
     if (!target) return r
 
     for (const i in r) {
-      // @ts-ignore deprecated
+      // @ts-expect-error deprecated
       target[i] = r[i]
     }
     return target
@@ -582,7 +582,7 @@ export class LiteGraphGlobal {
    * https://gist.github.com/jed/982883?permalink_comment_id=852670#gistcomment-852670
    */
   uuidv4(): string {
-    // @ts-ignore
+    // @ts-expect-error
     return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replaceAll(/[018]/g, a =>
       (a ^ ((Math.random() * 16) >> (a / 4))).toString(16))
   }

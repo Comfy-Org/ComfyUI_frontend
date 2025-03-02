@@ -1204,7 +1204,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     if (typeof values === "object") {
       let desc_value = ""
       for (const k in values) {
-        // @ts-ignore deprecated #578
+        // @ts-expect-error deprecated #578
         if (values[k] != value) continue
 
         desc_value = k
@@ -2406,17 +2406,17 @@ export class LGraphCanvas implements ConnectionColorContext {
     const x = pos[0] - node.pos[0]
     const y = pos[1] - node.pos[1]
 
-    // @ts-ignore https://github.com/Comfy-Org/litegraph.js/issues/616
+    // @ts-expect-error https://github.com/Comfy-Org/litegraph.js/issues/616
     const WidgetClass = WIDGET_TYPE_MAP[widget.type]
     if (WidgetClass) {
       const widgetInstance = toClass(WidgetClass, widget)
-      // @ts-ignore https://github.com/Comfy-Org/litegraph.js/issues/616
+      // @ts-expect-error https://github.com/Comfy-Org/litegraph.js/issues/616
       pointer.onClick = () => widgetInstance.onClick({
         e,
         node,
         canvas: this,
       })
-      // @ts-ignore https://github.com/Comfy-Org/litegraph.js/issues/616
+      // @ts-expect-error https://github.com/Comfy-Org/litegraph.js/issues/616
       pointer.onDrag = eMove => widgetInstance.onDrag?.({
         e: eMove,
         node,
@@ -5434,7 +5434,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     node.drawWidgets(ctx, {
       colorContext: this,
       linkOverWidget: this.link_over_widget,
-      // @ts-ignore https://github.com/Comfy-Org/litegraph.js/issues/616
+      // @ts-expect-error https://github.com/Comfy-Org/litegraph.js/issues/616
       linkOverWidgetType: this.link_over_widget_type,
       lowQuality: this.low_quality,
       editorAlpha: this.editor_alpha,

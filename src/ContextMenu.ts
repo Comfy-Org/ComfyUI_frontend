@@ -129,7 +129,6 @@ export class ContextMenu<TValue = unknown> {
           : name
       }
 
-      // @ts-ignore https://github.com/Comfy-Org/litegraph.js/issues/578
       this.addItem(name, value, options)
     }
 
