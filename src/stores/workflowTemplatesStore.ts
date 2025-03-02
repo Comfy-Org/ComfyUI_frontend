@@ -1,8 +1,8 @@
+import axios from 'axios'
 import { groupBy } from 'lodash'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
-import { CORE_TEMPLATES } from '@/constants/coreTemplates'
 import { api } from '@/scripts/api'
 import type {
   TemplateGroup,
@@ -13,12 +13,12 @@ export const useWorkflowTemplatesStore = defineStore(
   'workflowTemplates',
   () => {
     const customTemplates = shallowRef<{ [moduleName: string]: string[] }>({})
+    const coreTemplates = shallowRef<WorkflowTemplates[]>([])
     const isLoaded = ref(false)
-    const defaultTemplate: WorkflowTemplates = CORE_TEMPLATES[0]
 
     const groupedTemplates = computed<TemplateGroup[]>(() => {
       const allTemplates = [
-        ...CORE_TEMPLATES,
+        ...coreTemplates.value,
         ...Object.entries(customTemplates.value).map(
           ([moduleName, templates]) => ({
             moduleName,
@@ -44,6 +44,8 @@ export const useWorkflowTemplatesStore = defineStore(
       try {
         if (!isLoaded.value) {
           customTemplates.value = await api.getWorkflowTemplates()
+          const resp = await axios.get('/templates/index.json')
+          if (resp.status === 200) coreTemplates.value = resp.data
           isLoaded.value = true
         }
       } catch (error) {
@@ -53,7 +55,6 @@ export const useWorkflowTemplatesStore = defineStore(
 
     return {
       groupedTemplates,
-      defaultTemplate,
       isLoaded,
       loadWorkflowTemplates
     }
