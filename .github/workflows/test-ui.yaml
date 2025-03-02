@@ -32,7 +32,7 @@ jobs:
           path: 'ComfyUI/custom_nodes/ComfyUI_devtools'
           ref: '080e6d4af809a46852d1c4b7ed85f06e8a3a72be'
 
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: lts/*
 
