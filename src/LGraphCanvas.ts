@@ -5497,34 +5497,46 @@ export class LGraphCanvas implements ConnectionColorContext {
     const { graph } = this
     if (!graph) throw new NullGraphError()
 
-    const node_left = graph.getNodeById(segment.origin_id)
-    const fromType = node_left?.outputs?.[segment.origin_slot]?.type ?? "*"
+    const title = "data" in segment && segment.data != null
+      ? segment.data.constructor.name
+      : undefined
+
+    const { origin_id, origin_slot } = segment
+    if (origin_id == null || origin_slot == null) {
+      new LiteGraph.ContextMenu<string>(["Link has no origin"], {
+        event: e,
+        title,
+      })
+      return false
+    }
+
+    const node_left = graph.getNodeById(origin_id)
+    const fromType = node_left?.outputs?.[origin_slot]?.type
 
     const options = ["Add Node", null, "Delete", null]
     if (this.reroutesEnabled) options.splice(1, 0, "Add Reroute")
 
-    const title = "data" in segment && segment.data != null
-      ? segment.data.constructor.name
-      : null
     const menu = new LiteGraph.ContextMenu<string>(options, {
       event: e,
       title,
       callback: inner_clicked.bind(this),
     })
 
+    return false
+
     function inner_clicked(this: LGraphCanvas, v: string, options: unknown, e: MouseEvent) {
       if (!graph) throw new NullGraphError()
 
       switch (v) {
       case "Add Node":
-        LGraphCanvas.onMenuAdd(null, null, e, menu, function (node) {
-          if (!node.inputs?.length || !node.outputs?.length) return
+        LGraphCanvas.onMenuAdd(null, null, e, menu, (node) => {
+          if (!node?.inputs?.length || !node?.outputs?.length || origin_slot == null) return
 
           // leave the connection type checking inside connectByType
           const options = this.reroutesEnabled
             ? { afterRerouteId: segment.parentId }
             : undefined
-          if (node_left.connectByType(segment.origin_slot, node, fromType, options)) {
+          if (node_left?.connectByType(origin_slot, node, fromType ?? "*", options)) {
             node.pos[0] -= node.size[0] * 0.5
           }
         })
@@ -5543,8 +5555,6 @@ export class LGraphCanvas implements ConnectionColorContext {
       default:
       }
     }
-
-    return false
   }
 
   createDefaultNodeForSlot(optPass: ICreateNodeOptions): boolean {
