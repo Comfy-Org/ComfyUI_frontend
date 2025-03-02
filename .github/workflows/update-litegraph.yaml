@@ -1,0 +1,43 @@
+name: Update Litegraph Dependency
+
+on:
+  workflow_dispatch:
+
+jobs:
+  update-litegraph:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Update litegraph
+        run: npm install @comfyorg/litegraph@latest
+
+      - name: Get new version
+        id: get-version
+        run: |
+          NEW_VERSION=$(node -e "console.log(JSON.parse(require('fs').readFileSync('./package-lock.json')).packages['node_modules/@comfyorg/litegraph'].version)")
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.PR_GH_TOKEN }}
+          commit-message: '[chore] Update litegraph to ${{ steps.get-version.outputs.NEW_VERSION }}'
+          title: '[chore] Update litegraph to ${{ steps.get-version.outputs.NEW_VERSION }}'
+          body: |
+            Automated update of litegraph to version ${{ steps.get-version.outputs.NEW_VERSION }}.
+            Ref: https://github.com/Comfy-Org/litegraph.js/releases/tag/v${{ steps.get-version.outputs.NEW_VERSION }}
+          branch: update-litegraph-${{ steps.get-version.outputs.NEW_VERSION }}
+          base: main
+          labels: |
+            dependencies
