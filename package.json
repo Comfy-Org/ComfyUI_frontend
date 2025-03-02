@@ -24,7 +24,6 @@
     "dev": "vite",
     "preview": "vite preview",
     "watch": "vite build --watch",
-    "release": "node scripts/release.js",
     "test": "vitest",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
