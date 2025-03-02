@@ -33,7 +33,6 @@ const VALID_TYPES = [
 ]
 const CONFIG = Symbol()
 const GET_CONFIG = Symbol()
-const TARGET = Symbol() // Used for reroutes to specify the real target widget
 
 const replacePropertyName = 'Run widget replace on values'
 export class PrimitiveNode extends LGraphNode {
@@ -54,22 +53,8 @@ export class PrimitiveNode extends LGraphNode {
   applyToGraph(extraLinks: LLink[] = []) {
     if (!this.outputs[0].links?.length) return
 
-    function get_links(node: LGraphNode): number[] {
-      let links: number[] = []
-      for (const l of node.outputs[0].links) {
-        const linkInfo = app.graph.links[l]
-        const n = node.graph.getNodeById(linkInfo.target_id)
-        if (n.type == 'Reroute') {
-          links = links.concat(get_links(n))
-        } else {
-          links.push(l)
-        }
-      }
-      return links
-    }
-
     let links = [
-      ...get_links(this).map((l) => app.graph.links[l]),
+      ...this.outputs[0].links.map((l) => app.graph.links[l]),
       ...extraLinks
     ]
     let v = this.widgets?.[0].value
@@ -82,13 +67,9 @@ export class PrimitiveNode extends LGraphNode {
       const node = this.graph.getNodeById(linkInfo.target_id)
       const input = node.inputs[linkInfo.target_slot]
       let widget: IWidget | undefined
-      if (input.widget[TARGET]) {
-        widget = input.widget[TARGET]
-      } else {
-        const widgetName = (input.widget as { name: string }).name
-        if (widgetName) {
-          widget = node.widgets.find((w) => w.name === widgetName)
-        }
+      const widgetName = (input.widget as { name: string }).name
+      if (widgetName) {
+        widget = node.widgets.find((w) => w.name === widgetName)
       }
 
       if (widget) {
@@ -221,8 +202,7 @@ export class PrimitiveNode extends LGraphNode {
       widget[CONFIG] ?? config,
       theirNode,
       widget.name,
-      recreating,
-      widget[TARGET]
+      recreating
     )
   }
 
@@ -230,8 +210,7 @@ export class PrimitiveNode extends LGraphNode {
     inputData: InputSpec,
     node: LGraphNode,
     widgetName: string,
-    recreating: boolean,
-    targetWidget: IWidget | undefined
+    recreating: boolean
   ) {
     let type = inputData[0]
 
@@ -249,9 +228,7 @@ export class PrimitiveNode extends LGraphNode {
       widget = this.addWidget(type, 'value', null, () => {}, {})
     }
 
-    if (targetWidget) {
-      widget.value = targetWidget.value
-    } else if (node?.widgets && widget) {
+    if (node?.widgets && widget) {
       const theirWidget = node.widgets.find((w) => w.name === widgetName)
       if (theirWidget) {
         widget.value = theirWidget.value
@@ -596,13 +573,11 @@ function isValidCombo(combo: string[], obj: unknown) {
 
 export function setWidgetConfig(
   slot: INodeInputSlot | INodeOutputSlot,
-  config: InputSpec,
-  target?: IWidget
+  config: InputSpec
 ) {
   if (!slot.widget) return
   if (config) {
     slot.widget[GET_CONFIG] = () => config
-    slot.widget[TARGET] = target
   } else {
     delete slot.widget
   }
