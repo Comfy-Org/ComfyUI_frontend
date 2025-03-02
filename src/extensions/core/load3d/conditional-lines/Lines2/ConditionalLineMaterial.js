@@ -1,3 +1,7 @@
+/*
+Taken from: https://github.com/gkjohnson/threejs-sandbox/tree/master/conditional-lines
+under MIT license
+ */
 import { ShaderMaterial, UniformsLib, UniformsUtils, Vector2 } from 'three'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial'
 
