@@ -29,6 +29,7 @@ import {
   type ComfyNodeDef,
   validateComfyNodeDef
 } from '@/schemas/nodeDefSchema'
+import { WorkflowTemplates } from '@/types/workflowTemplateTypes'
 
 interface QueuePromptRequestBody {
   client_id: string
@@ -412,6 +413,14 @@ export class ComfyApi extends EventTarget {
   }> {
     const res = await this.fetchApi('/workflow_templates')
     return await res.json()
+  }
+
+  /**
+   * Gets the index of core workflow templates.
+   */
+  async getCoreWorkflowTemplates(): Promise<WorkflowTemplates[]> {
+    const res = await axios.get('/templates/index.json')
+    return res.status === 200 ? res.data : []
   }
 
   /**

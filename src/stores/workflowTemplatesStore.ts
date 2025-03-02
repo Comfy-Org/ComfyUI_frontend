@@ -1,4 +1,3 @@
-import axios from 'axios'
 import { groupBy } from 'lodash'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
@@ -44,8 +43,7 @@ export const useWorkflowTemplatesStore = defineStore(
       try {
         if (!isLoaded.value) {
           customTemplates.value = await api.getWorkflowTemplates()
-          const resp = await axios.get('/templates/index.json')
-          if (resp.status === 200) coreTemplates.value = resp.data
+          coreTemplates.value = await api.getCoreWorkflowTemplates()
           isLoaded.value = true
         }
       } catch (error) {
