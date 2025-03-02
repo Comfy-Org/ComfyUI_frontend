@@ -144,7 +144,6 @@ app.registerExtension({
           const color = LGraphCanvas.link_type_colors[displayType]
 
           let widgetConfig
-          let targetWidget
           let widgetType
           // Update the types of each node
           for (const node of updateNodes) {
@@ -171,11 +170,6 @@ app.registerExtension({
                     widgetConfig = config[1] ?? {}
                     widgetType = config[0]
                   }
-                  if (!targetWidget) {
-                    targetWidget = targetNode.widgets?.find(
-                      (w) => w.name === (targetInput.widget as any).name
-                    )
-                  }
 
                   const merged = mergeIfValid(targetInput, [
                     config[0],
@@ -192,11 +186,10 @@ app.registerExtension({
           for (const node of updateNodes) {
             if (widgetConfig && outputType) {
               node.inputs[0].widget = { name: 'value' }
-              setWidgetConfig(
-                node.inputs[0],
-                [widgetType ?? displayType, widgetConfig],
-                targetWidget
-              )
+              setWidgetConfig(node.inputs[0], [
+                widgetType ?? displayType,
+                widgetConfig
+              ])
             } else {
               setWidgetConfig(node.inputs[0], null)
             }
