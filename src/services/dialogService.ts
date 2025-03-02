@@ -3,6 +3,7 @@ import ExecutionErrorDialogContent from '@/components/dialog/content/ExecutionEr
 import IssueReportDialogContent from '@/components/dialog/content/IssueReportDialogContent.vue'
 import LoadWorkflowWarning from '@/components/dialog/content/LoadWorkflowWarning.vue'
 import MissingModelsWarning from '@/components/dialog/content/MissingModelsWarning.vue'
+import NodeSearchDialogContent from '@/components/dialog/content/NodeSearchDialogContent.vue'
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
 import SettingDialogContent from '@/components/dialog/content/SettingDialogContent.vue'
 import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.vue'
@@ -20,6 +21,22 @@ export type ConfirmationDialogType =
 
 export const useDialogService = () => {
   const dialogStore = useDialogStore()
+  function showNodeSearchDialog(
+    props: InstanceType<typeof NodeSearchDialogContent>['$props']
+  ) {
+    dialogStore.showDialog({
+      key: 'global-node-search',
+      component: NodeSearchDialogContent,
+      props,
+      dialogComponentProps: {
+        pt: {
+          header: { class: '!p-0' },
+          content: { class: 'overflow-hidden !p-0' }
+        }
+      }
+    })
+  }
+
   function showLoadWorkflowWarning(
     props: InstanceType<typeof LoadWorkflowWarning>['$props']
   ) {
@@ -182,6 +199,7 @@ export const useDialogService = () => {
     showExecutionErrorDialog,
     showTemplateWorkflowsDialog,
     showIssueReportDialog,
+    showNodeSearchDialog,
     prompt,
     confirm
   }

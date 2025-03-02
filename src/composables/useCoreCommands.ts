@@ -57,6 +57,18 @@ export function useCoreCommands(): ComfyCommand[] {
 
   return [
     {
+      id: 'Comfy.RegistryNodeSearch',
+      icon: 'pi pi-search',
+      label: 'Search Registry',
+      function: () => {
+        dialogService.showNodeSearchDialog({
+          class: 'h-[85vh] !overflow-y-hidden',
+          title: 'Search Registry',
+          subtitle: 'Search for nodes in the registry'
+        })
+      }
+    },
+    {
       id: 'Comfy.NewBlankWorkflow',
       icon: 'pi pi-plus',
       label: 'New Blank Workflow',
