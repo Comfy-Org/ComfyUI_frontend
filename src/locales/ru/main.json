@@ -335,6 +335,7 @@
     "scene": "Сцена",
     "showGrid": "Показать сетку",
     "switchCamera": "Переключить камеру",
+    "switchingMaterialMode": "Переключение режима материала...",
     "upDirection": "Направление Вверх",
     "uploadBackgroundImage": "Загрузить фоновое изображение"
   },

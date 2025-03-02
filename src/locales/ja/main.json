@@ -335,6 +335,7 @@
     "scene": "シーン",
     "showGrid": "グリッドを表示",
     "switchCamera": "カメラを切り替える",
+    "switchingMaterialMode": "マテリアルモードの切り替え中...",
     "upDirection": "上方向",
     "uploadBackgroundImage": "背景画像をアップロード"
   },
