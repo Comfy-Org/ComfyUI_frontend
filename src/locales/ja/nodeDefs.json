@@ -589,6 +589,35 @@
       }
     }
   },
+  "ConditioningSetAreaPercentageVideo": {
+    "display_name": "ビデオの条件設定エリアのパーセンテージ",
+    "inputs": {
+      "conditioning": {
+        "name": "条件設定"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "strength": {
+        "name": "強度"
+      },
+      "temporal": {
+        "name": "時間的"
+      },
+      "width": {
+        "name": "幅"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      },
+      "z": {
+        "name": "z"
+      }
+    }
+  },
   "ConditioningSetAreaStrength": {
     "display_name": "条件付けエリア強度",
     "inputs": {
@@ -1068,206 +1097,6 @@
       },
       "y": {
         "name": "y"
-      }
-    }
-  },
-  "DevToolsDeprecatedNode": {
-    "description": "非推奨のノード",
-    "display_name": "非推奨ノード"
-  },
-  "DevToolsErrorRaiseNode": {
-    "description": "開発目的のためにエラーを発生させる",
-    "display_name": "エラーを発生させる"
-  },
-  "DevToolsErrorRaiseNodeWithMessage": {
-    "description": "開発目的のためにメッセージ付きのエラーを発生させる",
-    "display_name": "メッセージ付きエラーを発生させる",
-    "inputs": {
-      "message": {
-        "name": "メッセージ"
-      }
-    }
-  },
-  "DevToolsExperimentalNode": {
-    "description": "実験的なノード",
-    "display_name": "実験的ノード"
-  },
-  "DevToolsLongComboDropdown": {
-    "description": "長いコンボドロップダウン",
-    "display_name": "ロングコンボドロップダウン",
-    "inputs": {
-      "option": {
-        "name": "オプション"
-      }
-    }
-  },
-  "DevToolsNodeWithBooleanInput": {
-    "description": "ブール入力を持つノード",
-    "display_name": "ブール入力付きノード",
-    "inputs": {
-      "boolean_input": {
-        "name": "boolean_input"
-      }
-    }
-  },
-  "DevToolsNodeWithForceInput": {
-    "description": "強制入力を持つノード",
-    "display_name": "強制入力ノード",
-    "inputs": {
-      "float_input": {
-        "name": "float_input"
-      },
-      "int_input": {
-        "name": "int_input"
-      },
-      "int_input_widget": {
-        "name": "int_input_widget"
-      }
-    }
-  },
-  "DevToolsNodeWithOnlyOptionalInput": {
-    "description": "オプション入力のみを持つノード",
-    "display_name": "オプション入力のみのノード",
-    "inputs": {
-      "clip": {
-        "name": "clip"
-      },
-      "text": {
-        "name": "テキスト"
-      }
-    }
-  },
-  "DevToolsNodeWithOptionalInput": {
-    "description": "オプション入力を持つノード",
-    "display_name": "オプション入力ノード",
-    "inputs": {
-      "optional_input": {
-        "name": "オプション入力"
-      },
-      "required_input": {
-        "name": "必須入力"
-      }
-    }
-  },
-  "DevToolsNodeWithOutputList": {
-    "description": "出力リストを持つノード",
-    "display_name": "出力リストノード",
-    "outputs": {
-      "0": {
-        "name": "整数出力"
-      },
-      "1": {
-        "name": "整数リスト出力"
-      }
-    }
-  },
-  "DevToolsNodeWithSeedInput": {
-    "description": "シード入力付きのノード",
-    "display_name": "シード入力付きノード",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後の制御"
-      },
-      "seed": {
-        "name": "シード"
-      }
-    }
-  },
-  "DevToolsNodeWithStringInput": {
-    "description": "文字列入力を持つノード",
-    "display_name": "文字列入力ノード",
-    "inputs": {
-      "string_input": {
-        "name": "文字列入力"
-      }
-    }
-  },
-  "DevToolsNodeWithUnionInput": {
-    "description": "ユニオン入力を持つノード",
-    "display_name": "ユニオン入力ノード",
-    "inputs": {
-      "int_input": {
-        "name": "整数入力"
-      },
-      "string_input": {
-        "name": "文字列入力"
-      },
-      "string_or_int_input": {
-        "name": "文字列または整数入力"
-      }
-    }
-  },
-  "DevToolsObjectPatchNode": {
-    "description": "オブジェクトパッチを適用するノード",
-    "display_name": "オブジェクトパッチノード",
-    "inputs": {
-      "dummy_float": {
-        "name": "ダミーフロート"
-      },
-      "model": {
-        "name": "モデル"
-      },
-      "target_module": {
-        "name": "ターゲットモジュール"
-      }
-    }
-  },
-  "DevToolsRemoteWidgetNode": {
-    "description": "リモートエンドポイントから遅延してオプションを取得するノード",
-    "display_name": "リモートウィジェットノード",
-    "inputs": {
-      "remote_widget_value": {
-        "name": "remote_widget_value"
-      }
-    }
-  },
-  "DevToolsRemoteWidgetNodeWithControlAfterRefresh": {
-    "description": "リモートエンドポイントから遅延してオプションを取得し、手動でオプションを再読み込みする更新ボタンを持ち、更新時に最初のオプションを選択するノード",
-    "display_name": "更新ボタンと更新後の制御付きリモートウィジェットノード",
-    "inputs": {
-      "refresh": {
-        "name": "refresh"
-      },
-      "remote_widget_value": {
-        "name": "remote_widget_value"
-      }
-    }
-  },
-  "DevToolsRemoteWidgetNodeWithParams": {
-    "description": "クエリパラメータを持つリモートエンドポイントから遅延してオプションを取得するノード",
-    "display_name": "ソートクエリパラメータ付きリモートウィジェットノード",
-    "inputs": {
-      "remote_widget_value": {
-        "name": "remote_widget_value"
-      }
-    }
-  },
-  "DevToolsRemoteWidgetNodeWithRefresh": {
-    "description": "リモートエンドポイントから遅延してオプションを取得し、オプションを300msごとに更新するノード",
-    "display_name": "300ms更新付きリモートウィジェットノード",
-    "inputs": {
-      "remote_widget_value": {
-        "name": "remote_widget_value"
-      }
-    }
-  },
-  "DevToolsRemoteWidgetNodeWithRefreshButton": {
-    "description": "リモートエンドポイントから遅延してオプションを取得し、手動でオプションを再読み込みする更新ボタンを持つノード",
-    "display_name": "更新ボタン付きリモートウィジェットノード",
-    "inputs": {
-      "refresh": {
-        "name": "refresh"
-      },
-      "remote_widget_value": {
-        "name": "remote_widget_value"
-      }
-    }
-  },
-  "DevToolsSimpleSlider": {
-    "display_name": "シンプルスライダー",
-    "inputs": {
-      "value": {
-        "name": "値"
       }
     }
   },
@@ -2527,7 +2356,6 @@
     "display_name": "3Dを読み込む",
     "inputs": {
       "clear": {
-        "name": "クリア"
       },
       "height": {
         "name": "高さ"
@@ -2545,7 +2373,6 @@
         "name": "上方向"
       },
       "upload 3d model": {
-        "name": "3Dモデルのアップロード"
       },
       "width": {
         "name": "幅"
@@ -2567,7 +2394,6 @@
     "display_name": "3Dを読み込む - アニメーション",
     "inputs": {
       "clear": {
-        "name": "クリア"
       },
       "height": {
         "name": "高さ"
@@ -2585,7 +2411,6 @@
         "name": "上方向"
       },
       "upload 3d model": {
-        "name": "3Dモデルのアップロード"
       },
       "width": {
         "name": "幅"
@@ -2650,7 +2475,6 @@
         "name": "画像"
       },
       "refresh": {
-        "name": "更新"
       },
       "upload": {
         "name": "アップロードするファイルを選択"
@@ -5929,6 +5753,49 @@
       }
     }
   },
+  "WanImageToVideo": {
+    "display_name": "Wan画像からビデオへ",
+    "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "clip_vision_output": {
+        "name": "clipビジョン出力"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "length": {
+        "name": "長さ"
+      },
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      },
+      "start_image": {
+        "name": "開始画像"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ"
+      },
+      "1": {
+        "name": "ネガティブ"
+      },
+      "2": {
+        "name": "潜在"
+      }
+    }
+  },
   "WebcamCapture": {
     "display_name": "ウェブカメラキャプチャ",
     "inputs": {
@@ -5942,7 +5809,6 @@
         "name": "画像"
       },
       "waiting for camera___": {
-        "name": "カメラ待ち..."
       },
       "width": {
         "name": "幅"

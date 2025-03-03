@@ -589,6 +589,35 @@
       }
     }
   },
+  "ConditioningSetAreaPercentageVideo": {
+    "display_name": "调节设置区域百分比视频",
+    "inputs": {
+      "conditioning": {
+        "name": "调节"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "strength": {
+        "name": "强度"
+      },
+      "temporal": {
+        "name": "时间"
+      },
+      "width": {
+        "name": "宽度"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      },
+      "z": {
+        "name": "z"
+      }
+    }
+  },
   "ConditioningSetAreaStrength": {
     "display_name": "条件采样区域强度",
     "inputs": {
@@ -1068,206 +1097,6 @@
       },
       "y": {
         "name": "y"
-      }
-    }
-  },
-  "DevToolsDeprecatedNode": {
-    "description": "一个已弃用的节点",
-    "display_name": "已弃用节点"
-  },
-  "DevToolsErrorRaiseNode": {
-    "description": "出于开发目的引发错误",
-    "display_name": "引发错误"
-  },
-  "DevToolsErrorRaiseNodeWithMessage": {
-    "description": "出于开发目的引发带消息的错误",
-    "display_name": "带消息的引发错误",
-    "inputs": {
-      "message": {
-        "name": "消息"
-      }
-    }
-  },
-  "DevToolsExperimentalNode": {
-    "description": "一个实验性的节点",
-    "display_name": "实验性节点"
-  },
-  "DevToolsLongComboDropdown": {
-    "description": "一个长组合下拉菜单",
-    "display_name": "长组合下拉菜单",
-    "inputs": {
-      "option": {
-        "name": "选项"
-      }
-    }
-  },
-  "DevToolsNodeWithBooleanInput": {
-    "description": "具有布尔输入的节点",
-    "display_name": "具有布尔输入的节点",
-    "inputs": {
-      "boolean_input": {
-        "name": "boolean_input"
-      }
-    }
-  },
-  "DevToolsNodeWithForceInput": {
-    "description": "一个具有强制输入的节点",
-    "display_name": "强制输入节点",
-    "inputs": {
-      "float_input": {
-        "name": "浮点数输入"
-      },
-      "int_input": {
-        "name": "整数输入"
-      },
-      "int_input_widget": {
-        "name": "整数输入小部件"
-      }
-    }
-  },
-  "DevToolsNodeWithOnlyOptionalInput": {
-    "description": "一个仅有可选输入的节点",
-    "display_name": "仅有可选输入的节点",
-    "inputs": {
-      "clip": {
-        "name": "剪辑"
-      },
-      "text": {
-        "name": "文本"
-      }
-    }
-  },
-  "DevToolsNodeWithOptionalInput": {
-    "description": "一个具有可选输入的节点",
-    "display_name": "具有可选输入的节点",
-    "inputs": {
-      "optional_input": {
-        "name": "可选输入"
-      },
-      "required_input": {
-        "name": "必需输入"
-      }
-    }
-  },
-  "DevToolsNodeWithOutputList": {
-    "description": "一个具有输出列表的节点",
-    "display_name": "具有输出列表的节点",
-    "outputs": {
-      "0": {
-        "name": "整数输出"
-      },
-      "1": {
-        "name": "整数列表输出"
-      }
-    }
-  },
-  "DevToolsNodeWithSeedInput": {
-    "description": "一个带有种子输入的节点",
-    "display_name": "带种子输入的节点",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成后的控制"
-      },
-      "seed": {
-        "name": "种子"
-      }
-    }
-  },
-  "DevToolsNodeWithStringInput": {
-    "description": "一个具有字符串输入的节点",
-    "display_name": "具有字符串输入的节点",
-    "inputs": {
-      "string_input": {
-        "name": "字符串输入"
-      }
-    }
-  },
-  "DevToolsNodeWithUnionInput": {
-    "description": "一个具有联合输入的节点",
-    "display_name": "具有联合输入的节点",
-    "inputs": {
-      "int_input": {
-        "name": "整数输入"
-      },
-      "string_input": {
-        "name": "字符串输入"
-      },
-      "string_or_int_input": {
-        "name": "字符串或整数输入"
-      }
-    }
-  },
-  "DevToolsObjectPatchNode": {
-    "description": "一个应用对象补丁的节点",
-    "display_name": "对象补丁节点",
-    "inputs": {
-      "dummy_float": {
-        "name": "虚拟浮点数"
-      },
-      "model": {
-        "name": "模型"
-      },
-      "target_module": {
-        "name": "目标模块"
-      }
-    }
-  },
-  "DevToolsRemoteWidgetNode": {
-    "description": "从远程端点懒加载选项的节点",
-    "display_name": "远程小部件节点",
-    "inputs": {
-      "remote_widget_value": {
-        "name": "remote_widget_value"
-      }
-    }
-  },
-  "DevToolsRemoteWidgetNodeWithControlAfterRefresh": {
-    "description": "从远程端点懒加载选项并具有刷新按钮手动重新加载选项并在刷新时选择第一个选项的节点",
-    "display_name": "带有刷新按钮和刷新后控制的远程小部件节点",
-    "inputs": {
-      "refresh": {
-        "name": "refresh"
-      },
-      "remote_widget_value": {
-        "name": "remote_widget_value"
-      }
-    }
-  },
-  "DevToolsRemoteWidgetNodeWithParams": {
-    "description": "带有查询参数从远程端点懒加载选项的节点",
-    "display_name": "带有排序查询参数的远程小部件节点",
-    "inputs": {
-      "remote_widget_value": {
-        "name": "remote_widget_value"
-      }
-    }
-  },
-  "DevToolsRemoteWidgetNodeWithRefresh": {
-    "description": "从远程端点懒加载选项并每300毫秒刷新选项的节点",
-    "display_name": "带有300ms刷新的远程小部件节点",
-    "inputs": {
-      "remote_widget_value": {
-        "name": "remote_widget_value"
-      }
-    }
-  },
-  "DevToolsRemoteWidgetNodeWithRefreshButton": {
-    "description": "从远程端点懒加载选项并具有刷新按钮手动重新加载选项的节点",
-    "display_name": "带有刷新按钮的远程小部件节点",
-    "inputs": {
-      "refresh": {
-        "name": "refresh"
-      },
-      "remote_widget_value": {
-        "name": "remote_widget_value"
-      }
-    }
-  },
-  "DevToolsSimpleSlider": {
-    "display_name": "简单滑块",
-    "inputs": {
-      "value": {
-        "name": "值"
       }
     }
   },
@@ -2527,7 +2356,6 @@
     "display_name": "加载3D",
     "inputs": {
       "clear": {
-        "name": "clear"
       },
       "height": {
         "name": "高度"
@@ -2545,7 +2373,6 @@
         "name": "上方向"
       },
       "upload 3d model": {
-        "name": "上传3d模型"
       },
       "width": {
         "name": "宽度"
@@ -2567,7 +2394,6 @@
     "display_name": "加载3D动画",
     "inputs": {
       "clear": {
-        "name": "clear"
       },
       "height": {
         "name": "高度"
@@ -2585,7 +2411,6 @@
         "name": "上方向"
       },
       "upload 3d model": {
-        "name": "上传3d模型"
       },
       "width": {
         "name": "宽度"
@@ -2650,7 +2475,6 @@
         "name": "图像"
       },
       "refresh": {
-        "name": "刷新"
       },
       "upload": {
         "name": "选择文件上传"
@@ -5929,6 +5753,49 @@
       }
     }
   },
+  "WanImageToVideo": {
+    "display_name": "Wan图像到视频",
+    "inputs": {
+      "batch_size": {
+        "name": "批量大小"
+      },
+      "clip_vision_output": {
+        "name": "clip视觉输出"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "长度"
+      },
+      "negative": {
+        "name": "负面"
+      },
+      "positive": {
+        "name": "正面"
+      },
+      "start_image": {
+        "name": "开始图像"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正面"
+      },
+      "1": {
+        "name": "负面"
+      },
+      "2": {
+        "name": "潜在"
+      }
+    }
+  },
   "WebcamCapture": {
     "display_name": "网络摄像头捕获",
     "inputs": {
@@ -5942,7 +5809,6 @@
         "name": "图像"
       },
       "waiting for camera___": {
-        "name": "等待相机..."
       },
       "width": {
         "name": "宽度"
