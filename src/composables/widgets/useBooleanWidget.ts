@@ -1,6 +1,6 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
 
-import type { InputSpec } from '@/schemas/nodeDefSchema'
+import { type InputSpec, isBooleanInputSpec } from '@/schemas/nodeDefSchema'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 
 export const useBooleanWidget = () => {
@@ -9,7 +9,11 @@ export const useBooleanWidget = () => {
     inputName: string,
     inputData: InputSpec
   ) => {
-    const inputOptions = inputData[1]
+    if (!isBooleanInputSpec(inputData)) {
+      throw new Error(`Invalid input data: ${inputData}`)
+    }
+
+    const inputOptions = inputData[1] ?? {}
     const defaultVal = inputOptions?.default ?? false
     const options = {
       on: inputOptions?.label_on,
@@ -17,7 +21,6 @@ export const useBooleanWidget = () => {
     }
 
     return {
-      // @ts-expect-error InputSpec is not typed correctly
       widget: node.addWidget('toggle', inputName, defaultVal, () => {}, options)
     }
   }
