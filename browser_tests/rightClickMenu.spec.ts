@@ -4,25 +4,19 @@ import { NodeBadgeMode } from '../src/types/nodeSource'
 import { comfyPageFixture as test } from './fixtures/ComfyPage'
 
 test.describe('Canvas Right Click Menu', () => {
-  // See https://github.com/comfyanonymous/ComfyUI/issues/3883
-  // Right-click menu on canvas's option sequence is not stable.
-  test.skip('Can add node', async ({ comfyPage }) => {
+  test('Can add node', async ({ comfyPage }) => {
     await comfyPage.rightClickCanvas()
     await expect(comfyPage.canvas).toHaveScreenshot('right-click-menu.png')
     await comfyPage.page.getByText('Add Node').click()
     await comfyPage.nextFrame()
-    await expect(comfyPage.canvas).toHaveScreenshot('add-node-menu.png')
     await comfyPage.page.getByText('loaders').click()
     await comfyPage.nextFrame()
-    await expect(comfyPage.canvas).toHaveScreenshot('add-node-menu-loaders.png')
     await comfyPage.page.getByText('Load VAE').click()
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('add-node-node-added.png')
   })
 
-  // See https://github.com/comfyanonymous/ComfyUI/issues/3883
-  // Right-click menu on canvas's option sequence is not stable.
-  test.skip('Can add group', async ({ comfyPage }) => {
+  test('Can add group', async ({ comfyPage }) => {
     await comfyPage.rightClickCanvas()
     await expect(comfyPage.canvas).toHaveScreenshot('right-click-menu.png')
     await comfyPage.page.getByText('Add Group', { exact: true }).click()
