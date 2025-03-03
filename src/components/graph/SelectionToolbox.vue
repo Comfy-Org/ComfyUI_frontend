@@ -15,6 +15,10 @@
         () => commandStore.execute('Comfy.Canvas.ToggleSelectedNodes.Bypass')
       "
       data-testid="bypass-button"
+      v-tooltip.top="{
+        value: t('commands.Comfy_Canvas_ToggleSelectedNodes_Bypass.label'),
+        showDelay: 1000
+      }"
     >
       <template #icon>
         <i-game-icons:detour />
@@ -26,12 +30,20 @@
       text
       icon="pi pi-thumbtack"
       @click="() => commandStore.execute('Comfy.Canvas.ToggleSelected.Pin')"
+      v-tooltip.top="{
+        value: t('commands.Comfy_Canvas_ToggleSelectedNodes_Pin.label'),
+        showDelay: 1000
+      }"
     />
     <Button
       severity="danger"
       text
       icon="pi pi-trash"
       @click="() => commandStore.execute('Comfy.Canvas.DeleteSelectedItems')"
+      v-tooltip.top="{
+        value: t('commands.Comfy_Canvas_DeleteSelectedItems.label'),
+        showDelay: 1000
+      }"
     />
     <Button
       v-show="isRefreshable"
@@ -47,6 +59,11 @@
       text
       :icon="typeof command.icon === 'function' ? command.icon() : command.icon"
       @click="() => commandStore.execute(command.id)"
+      v-tooltip.top="{
+        value:
+          st(`commands.${normalizeI18nKey(command.id)}.label`, '') || undefined,
+        showDelay: 1000
+      }"
     />
   </Panel>
 </template>
@@ -58,9 +75,11 @@ import { computed } from 'vue'
 
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
 import { useRefreshableSelection } from '@/composables/useRefreshableSelection'
+import { st, t } from '@/i18n'
 import { useExtensionService } from '@/services/extensionService'
 import { ComfyCommand, useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 
 const commandStore = useCommandStore()
