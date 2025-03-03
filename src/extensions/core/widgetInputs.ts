@@ -551,26 +551,6 @@ function getWidgetType(config: InputSpec) {
   return { type }
 }
 
-function isValidCombo(combo: string[], obj: unknown) {
-  // New input isnt a combo
-  if (!(obj instanceof Array)) {
-    console.log(`connection rejected: tried to connect combo to ${obj}`)
-    return false
-  }
-  // New input combo has a different size
-  if (combo.length !== obj.length) {
-    console.log(`connection rejected: combo lists dont match`)
-    return false
-  }
-  // New input combo has different elements
-  if (combo.find((v, i) => obj[i] !== v)) {
-    console.log(`connection rejected: combo lists dont match`)
-    return false
-  }
-
-  return true
-}
-
 export function setWidgetConfig(
   slot: INodeInputSlot | INodeOutputSlot,
   config: InputSpec
@@ -930,37 +910,6 @@ app.registerExtension({
       }, 300)
 
       return r
-    }
-
-    // Prevent connecting COMBO lists to converted inputs that dont match types
-    const onConnectInput = nodeType.prototype.onConnectInput
-    nodeType.prototype.onConnectInput = function (
-      this: LGraphNode,
-      targetSlot: number,
-      type: string,
-      output: INodeOutputSlot,
-      originNode: LGraphNode,
-      originSlot: number
-    ) {
-      // @ts-expect-error onConnectInput has 5 arguments
-      const v = onConnectInput?.(this, arguments)
-      // Not a combo, ignore
-      if (type !== 'COMBO') return v
-      // Primitive output, allow that to handle
-      if (originNode.outputs[originSlot].widget) return v
-
-      // Ensure target is also a combo
-      const targetCombo = this.inputs[targetSlot].widget?.[GET_CONFIG]?.()?.[0]
-      if (!targetCombo || !(targetCombo instanceof Array)) return v
-
-      // Check they match
-      const originConfig =
-        originNode.constructor?.nodeData?.output?.[originSlot]
-      if (!originConfig || !isValidCombo(targetCombo, originConfig)) {
-        return false
-      }
-
-      return v
     }
   },
   registerCustomNodes() {

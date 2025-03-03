@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
+const zComboOption = z.union([z.string(), z.number()])
 const zRemoteWidgetConfig = z.object({
   route: z.string().url().or(z.string().startsWith('/')),
   refresh: z.number().gte(128).safe().or(z.number().lte(0).safe()).optional(),
@@ -71,7 +72,7 @@ const zComboInputOptions = zBaseInputOptions.extend({
   allow_batch: z.boolean().optional(),
   video_upload: z.boolean().optional(),
   remote: zRemoteWidgetConfig.optional(),
-  options: z.array(z.union([z.string(), z.number()])).optional()
+  options: z.array(zComboOption).optional()
 })
 
 const zIntInputSpec = z.tuple([z.literal('INT'), zIntInputOptions.optional()])
@@ -87,8 +88,12 @@ const zStringInputSpec = z.tuple([
   z.literal('STRING'),
   zStringInputOptions.optional()
 ])
+/**
+ * Legacy combo syntax.
+ * @deprecated Use `zComboInputSpecV2` instead.
+ */
 const zComboInputSpec = z.tuple([
-  z.array(z.union([z.string(), z.number()])),
+  z.array(zComboOption),
   zComboInputOptions.optional()
 ])
 const zComboInputSpecV2 = z.tuple([
@@ -193,7 +198,7 @@ const zComfyInputsSpec = z.object({
 })
 
 const zComfyNodeDataType = z.string()
-const zComfyComboOutput = z.array(z.any())
+const zComfyComboOutput = z.array(zComboOption)
 const zComfyOutputTypesSpec = z.array(
   z.union([zComfyNodeDataType, zComfyComboOutput])
 )
