@@ -24,9 +24,9 @@ export const useComboWidget = () => {
 
     const widgetStore = useWidgetStore()
     const inputOptions = inputData[1] ?? {}
-    const comboOptions = isComboInputSpecV2(inputData)
-      ? inputOptions.options
-      : inputData[0]
+    const comboOptions =
+      (isComboInputSpecV2(inputData) ? inputOptions.options : inputData[0]) ??
+      []
 
     const defaultValue = widgetStore.getDefaultValue(inputData)
 
