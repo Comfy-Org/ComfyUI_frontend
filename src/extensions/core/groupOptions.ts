@@ -32,16 +32,17 @@ app.registerExtension({
         this.graph_mouse[1]
       )
       if (!group) {
-        options.push({
-          content: 'Add Group For Selected Nodes',
-          disabled: !this.selectedItems?.size,
-          callback: () => {
-            const group = new LGraphGroup()
-            addNodesToGroup(group, this.selectedItems)
-            this.graph.add(group)
-            this.graph.change()
-          }
-        })
+        if (this.selectedItems.size > 0) {
+          options.push({
+            content: 'Add Group For Selected Nodes',
+            callback: () => {
+              const group = new LGraphGroup()
+              addNodesToGroup(group, this.selectedItems)
+              this.graph.add(group)
+              this.graph.change()
+            }
+          })
+        }
 
         return options
       }
