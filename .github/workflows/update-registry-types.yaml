@@ -33,6 +33,7 @@ jobs:
           repository: Comfy-Org/comfy-api
           path: comfy-api
           token: ${{ secrets.COMFY_API_PAT }}
+          clean: true
 
       - name: Get API commit information
         id: api-info
@@ -40,21 +41,22 @@ jobs:
           cd comfy-api
           API_COMMIT=$(git rev-parse --short HEAD)
           echo "commit=${API_COMMIT}" >> $GITHUB_OUTPUT
+          cd ..
 
       - name: Generate API types
         run: |
           echo "Generating TypeScript types from comfy-api@${{ steps.api-info.outputs.commit }}..."
-          npx openapi-typescript comfy-api/openapi.yml --output src/types/comfyRegistryTypes.ts
+          npx openapi-typescript ./comfy-api/openapi.yml --output ./src/types/comfyRegistryTypes.ts
 
       - name: Validate generated types
         run: |
-          if [ ! -f src/types/comfyRegistryTypes.ts ]; then
+          if [ ! -f ./src/types/comfyRegistryTypes.ts ]; then
             echo "Error: Types file was not generated."
             exit 1
           fi
 
           # Check if file is not empty
-          if [ ! -s src/types/comfyRegistryTypes.ts ]; then
+          if [ ! -s ./src/types/comfyRegistryTypes.ts ]; then
             echo "Error: Generated types file is empty."
             exit 1
           fi
@@ -62,7 +64,7 @@ jobs:
       - name: Check for changes
         id: check-changes
         run: |
-          if [[ -z $(git status --porcelain src/types/comfyRegistryTypes.ts) ]]; then
+          if [[ -z $(git status --porcelain ./src/types/comfyRegistryTypes.ts) ]]; then
             echo "No changes to Comfy Registry API types detected."
             echo "changed=false" >> $GITHUB_OUTPUT
             exit 0
@@ -91,3 +93,5 @@ jobs:
           base: main
           labels: CNR
           delete-branch: true
+          add-paths: |
+            src/types/comfyRegistryTypes.ts
