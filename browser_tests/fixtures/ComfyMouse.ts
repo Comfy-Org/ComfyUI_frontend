@@ -61,7 +61,7 @@ export class ComfyMouse implements Omit<Mouse, 'move'> {
     const { steps } = options
 
     await this.nextFrame()
-    
+
     await this.move(from, { steps })
     await this.drag(to, options)
     await this.drop(options)
@@ -69,7 +69,7 @@ export class ComfyMouse implements Omit<Mouse, 'move'> {
 
   /** @see {@link Mouse.move} */
   async move(to: Position, options = ComfyMouse.defaultOptions) {
-    await this.mouse.move(to.x, to.y, options);
+    await this.mouse.move(to.x, to.y, options)
     await this.nextFrame()
   }
 

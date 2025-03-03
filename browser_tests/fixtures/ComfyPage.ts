@@ -11,6 +11,7 @@ import type { useWorkspaceStore } from '../../src/stores/workspaceStore'
 import { NodeBadgeMode } from '../../src/types/nodeSource'
 import { ComfyActionbar } from '../helpers/actionbar'
 import { ComfyTemplates } from '../helpers/templates'
+import { ComfyMouse } from './ComfyMouse'
 import { ComfyNodeSearchBox } from './components/ComfyNodeSearchBox'
 import { SettingDialog } from './components/SettingDialog'
 import {
@@ -22,7 +23,6 @@ import { Topbar } from './components/Topbar'
 import type { Position, Size } from './types'
 import { NodeReference } from './utils/litegraphUtils'
 import TaskHistory from './utils/taskHistory'
-import { ComfyMouse } from './ComfyMouse'
 
 dotenv.config()
 
