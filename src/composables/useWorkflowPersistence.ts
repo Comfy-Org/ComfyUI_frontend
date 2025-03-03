@@ -4,7 +4,7 @@ import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { getStorageValue, setStorageValue } from '@/scripts/utils'
 import { useWorkflowService } from '@/services/workflowService'
-import { useModelStore } from '@/stores/modelStore'
+import { useCommandStore } from '@/stores/commandStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 
@@ -50,8 +50,8 @@ export function useWorkflowPersistence() {
   const loadDefaultWorkflow = async () => {
     if (!settingStore.get('Comfy.TutorialCompleted')) {
       await settingStore.set('Comfy.TutorialCompleted', true)
-      await useModelStore().loadModelFolders()
-      await useWorkflowService().loadTutorialWorkflow()
+      await useWorkflowService().loadBlankWorkflow()
+      await useCommandStore().execute('Comfy.BrowseTemplates')
     } else {
       await comfyApp.loadGraphData()
     }

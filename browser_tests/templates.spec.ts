@@ -73,4 +73,17 @@ test.describe('Templates', () => {
       expect(await comfyPage.getGraphNodesCount()).toBeGreaterThan(0)
     }).toPass({ timeout: 250 })
   })
+
+  test('dialog should be automatically shown to first-time users', async ({
+    comfyPage
+  }) => {
+    // Set the tutorial as not completed to mark the user as a first-time user
+    await comfyPage.setSetting('Comfy.TutorialCompleted', false)
+
+    // Load the page
+    await comfyPage.setup({ clearStorage: true })
+
+    // Expect the templates dialog to be shown
+    expect(await comfyPage.templates.content.isVisible()).toBe(true)
+  })
 })
