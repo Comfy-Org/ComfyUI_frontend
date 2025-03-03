@@ -1,4 +1,4 @@
-name: Update API Types
+name: Update Comfy Registry API Types
 
 on:
   # Manual trigger
@@ -9,7 +9,7 @@ on:
     types: [comfy-api-updated]
 
 jobs:
-  update-api-types:
+  update-registry-types:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout ComfyUI_frontend
@@ -90,7 +90,7 @@ jobs:
           gh pr create \
             --title "Update Comfy Registry API types from comfy-api@${{ steps.api-info.outputs.commit }}" \
             --body "Automated update of Comfy Registry API types from the latest comfy-api OpenAPI specification." \
-            --label "dependencies,auto-generated" \
+            --label "CNR,auto-generated" \
             --base main \
             --head $BRANCH
         env:
