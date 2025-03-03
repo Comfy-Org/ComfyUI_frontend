@@ -1,4 +1,5 @@
-name: Create a release
+name: Create GitHub Release
+description: Automatically creates a release when a PR is merged that both that changes package.json and has the Release label.
 
 on:
   pull_request:
@@ -18,12 +19,17 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
       - uses: actions/setup-node@v3
         with:
           node-version: lts/*
+
       - name: Get current version
         id: current_version
-        run: echo ::set-output name=version::$(node -p "require('./package.json').version")
+        run: |
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+
       - name: Create release
         id: create_release
         uses: softprops/action-gh-release@v2
@@ -35,6 +41,7 @@ jobs:
           prerelease: false
           generate_release_notes: true
           make_latest: "true"
+
   publish:
     runs-on: ubuntu-latest
     if: >
@@ -42,10 +49,12 @@ jobs:
       contains(github.event.pull_request.labels.*.name, 'Release')
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v3
         with:
           node-version: lts/*
           registry-url: "https://registry.npmjs.org"
+
       - run: npm ci
       - run: npm run build
       - run: npm publish --access public

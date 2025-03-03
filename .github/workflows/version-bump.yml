@@ -1,17 +1,15 @@
-name: Version Bump
+name: Release a New Version
+description: Creates a PR to increment the version. When the PR is merged, it will automatically create a release.
 
 on:
   workflow_dispatch:
     inputs:
       version_type:
-        description: 'Version increment type'
+        description: Version increment type
         required: true
-        default: 'patch'
-        type: 'choice'
-        options:
-          - patch
-          - minor
-          - major
+        default: patch
+        type: choice
+        options: [patch, minor, major]
 
 jobs:
   bump-version:
@@ -28,7 +26,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: lts/*
-          cache: 'npm'
+          cache: "npm"
 
       - name: Bump version
         id: bump-version
@@ -37,14 +35,20 @@ jobs:
           NEW_VERSION=$(node -p "require('./package.json').version")
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
 
+      - name: Format PR string
+        id: capitalised
+        run: |
+          CAPITALISED_TYPE=${${{ github.event.inputs.version_type }}@u}
+          echo "capitalised=$CAPITALISED_TYPE" >> $GITHUB_OUTPUT
+
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.PR_GH_TOKEN }}
-          commit-message: '[release] Bump version to ${{ steps.bump-version.outputs.NEW_VERSION }}'
-          title: '${{ steps.bump-version.outputs.NEW_VERSION }}'
+          commit-message: "[Release] Increment version to ${{ steps.bump-version.outputs.NEW_VERSION }}"
+          title: ${{ steps.bump-version.outputs.NEW_VERSION }}
           body: |
-            Automated version bump to ${{ steps.bump-version.outputs.NEW_VERSION }}
+            ${{ steps.capitalised.outputs.capitalised }} version increment to ${{ steps.bump-version.outputs.NEW_VERSION }}
           branch: version-bump-${{ steps.bump-version.outputs.NEW_VERSION }}
           base: master
           labels: |

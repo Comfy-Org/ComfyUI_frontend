@@ -1,16 +1,10 @@
-name: Tests CI
+name: Unit Test, Lint, and Format
 
 on:
   push:
-    branches:
-      - main
-      - master
-      - "dev*"
+    branches: [main, master, "dev*"]
   pull_request:
-    branches:
-      - main
-      - master
-      - "dev*"
+    branches: [main, master, "dev*"]
 
 jobs:
   test:
@@ -18,19 +12,24 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - uses: actions/setup-node@v3
         with:
           node-version: lts/*
+
       - name: Build
         run: |
           npm ci
           npm run build
+
       - name: Run lint
         run: |
           npm run lint:ci
+
       - name: Run format
         run: |
           npm run format
+
       - name: Run vitest tests
         run: |
           npm test -- --reporter=verbose
