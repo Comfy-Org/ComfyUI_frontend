@@ -16,6 +16,8 @@ import {
   isIntInputSpec
 } from '@/schemas/nodeDefSchema'
 
+import { lcm } from './mathUtil'
+
 const IGNORE_KEYS = new Set<string>([
   'default',
   'forceInput',
@@ -48,15 +50,19 @@ const mergeNumericInputSpec = <T extends IntInputSpec | FloatInputSpec>(
     return null
   }
 
-  // Take intersection of ranges
-  const mergedRange = {
+  const step1 = options1.step ?? 1
+  const step2 = options2.step ?? 1
+
+  const mergedOptions = {
+    // Take intersection of ranges
     min: Math.max(range1.min, range2.min),
-    max: Math.min(range1.max, range2.max)
+    max: Math.min(range1.max, range2.max),
+    step: lcm(step1, step2)
   }
 
   return mergeCommonInputSpec(
-    [type, { ...options1, ...mergedRange }] as unknown as T,
-    [type, { ...options2, ...mergedRange }] as unknown as T
+    [type, { ...options1, ...mergedOptions }] as unknown as T,
+    [type, { ...options2, ...mergedOptions }] as unknown as T
   )
 }
 
