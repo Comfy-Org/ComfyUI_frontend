@@ -11,6 +11,7 @@ import type { useWorkspaceStore } from '../../src/stores/workspaceStore'
 import { NodeBadgeMode } from '../../src/types/nodeSource'
 import { ComfyActionbar } from '../helpers/actionbar'
 import { ComfyTemplates } from '../helpers/templates'
+import { ComfyMouse } from './ComfyMouse'
 import { ComfyNodeSearchBox } from './components/ComfyNodeSearchBox'
 import { SettingDialog } from './components/SettingDialog'
 import {
@@ -910,7 +911,10 @@ export class ComfyPage {
   }
 }
 
-export const comfyPageFixture = base.extend<{ comfyPage: ComfyPage }>({
+export const comfyPageFixture = base.extend<{
+  comfyPage: ComfyPage
+  comfyMouse: ComfyMouse
+}>({
   comfyPage: async ({ page, request }, use, testInfo) => {
     const comfyPage = new ComfyPage(page, request)
 
@@ -941,6 +945,10 @@ export const comfyPageFixture = base.extend<{ comfyPage: ComfyPage }>({
 
     await comfyPage.setup()
     await use(comfyPage)
+  },
+  comfyMouse: async ({ comfyPage }, use) => {
+    const comfyMouse = new ComfyMouse(comfyPage)
+    use(comfyMouse)
   }
 })
 
