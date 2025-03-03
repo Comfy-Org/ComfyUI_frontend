@@ -852,7 +852,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       const entries: AddNodeMenu[] = []
 
       for (const category of categories) {
-        if (!category) return
+        if (!category) continue
 
         const base_category_regex = new RegExp(`^(${base_category})`)
         const category_name = category
@@ -886,7 +886,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       )
 
       for (const node of nodes) {
-        if (node.skip_list) return
+        if (node.skip_list) continue
 
         const entry: AddNodeMenu = {
           value: node.type,
