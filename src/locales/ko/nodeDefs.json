@@ -189,7 +189,7 @@
     }
   },
   "CLIPTextEncode": {
-    "description": "CLIP 모델을 사용하여 텍스트 프롬프트를 인코딩하여 확산 모델이 특정 이미지를 생성하도록 안내하는 임베딩으로 변환합니다.",
+    "description": "CLIP 모델을 사용하여 텍스트 프롬프트를 인코딩하여 확산 모델이 특정 이미지를 생성하도록 유도하는 임베딩으로 변환합니다.",
     "display_name": "CLIP 텍스트 인코딩 (프롬프트)",
     "inputs": {
       "clip": {
@@ -203,7 +203,7 @@
     },
     "outputs": {
       "0": {
-        "tooltip": "확산 모델을 안내하는 데 사용되는 임베디드 텍스트를 포함하는 조건부입니다."
+        "tooltip": "확산 모델을 유도하는 데 사용되는 텍스트 임베딩을 포함하는 조건입니다."
       }
     }
   },
@@ -254,7 +254,7 @@
   },
   "CLIPTextEncodeLumina2": {
     "description": "CLIP 모델을 사용하여 시스템 프롬프트와 사용자 프롬프트를 인코딩하여 특정 이미지를 생성하는 데 사용할 수 있는 임베딩으로 변환합니다.",
-    "display_name": "CLIP Text Encode for Lumina2",
+    "display_name": "CLIP 텍스트 인코딩 (Lumina2)",
     "inputs": {
       "clip": {
         "name": "clip",
@@ -262,7 +262,7 @@
       },
       "system_prompt": {
         "name": "system_prompt",
-        "tooltip": "Lumina2는 두 가지 유형의 시스템 프롬프트를 제공합니다:Superior: 텍스트 프롬프트 또는 사용자 프롬프트를 기반으로 우수한 이미지-텍스트 정렬 정도로 우수한 이미지를 생성하도록 설계된 보조입니다. Alignment: 텍스트 프롬프트를 기반으로 이미지-텍스트 정렬의 최고 수준으로 고품질 이미지를 생성하도록 설계된 보조입니다."
+        "tooltip": "Lumina2는 두 가지 유형의 시스템 프롬프트를 제공합니다.\nSuperior: 텍스트 프롬프트 또는 사용자 프롬프트를 기반으로 우수한 이미지-텍스트 정렬 정도로 우수한 이미지를 생성하도록 설계된 도우미입니다.\nAlignment: 텍스트 프롬프트를 기반으로 이미지-텍스트 정렬의 최고 수준으로 고품질 이미지를 생성하도록 설계된 도우미입니다."
       },
       "user_prompt": {
         "name": "user_prompt",
@@ -271,7 +271,7 @@
     },
     "outputs": {
       "0": {
-        "tooltip": "확산 모델을 안내하는 데 사용되는 임베디드 텍스트를 포함하는 조건입니다."
+        "tooltip": "확산 모델을 유도하는 데 사용되는 텍스트 임베딩을 포함하는 조건입니다."
       }
     }
   },
@@ -1520,10 +1520,10 @@
   },
   "FluxDisableGuidance": {
     "description": "이 노드는 Flux 및 Flux와 유사한 모델에서 가이던스 임베드를 완전히 비활성화합니다",
-    "display_name": "FluxDisableGuidance",
+    "display_name": "가이드 비활성화 (FLUX)",
     "inputs": {
       "conditioning": {
-        "name": "conditioning"
+        "name": "조건"
       }
     }
   },
@@ -2527,7 +2527,7 @@
     "display_name": "3D 로드",
     "inputs": {
       "clear": {
-        "name": "clear"
+        "name": "재설정"
       },
       "height": {
         "name": "높이"
@@ -2545,7 +2545,7 @@
         "name": "위 방향"
       },
       "upload 3d model": {
-        "name": "3d 모델 업로드"
+        "name": "3D 모델 업로드"
       },
       "width": {
         "name": "너비"
@@ -2567,7 +2567,7 @@
     "display_name": "3D 로드 - 애니메이션",
     "inputs": {
       "clear": {
-        "name": "clear"
+        "name": "재설정"
       },
       "height": {
         "name": "높이"
@@ -2585,7 +2585,7 @@
         "name": "위 방향"
       },
       "upload 3d model": {
-        "name": "3d 모델 업로드"
+        "name": "3D 모델 업로드"
       },
       "width": {
         "name": "너비"
@@ -2643,7 +2643,7 @@
     }
   },
   "LoadImageOutput": {
-    "description": "출력 폴더에서 이미지를 로드합니다. 새로 고침 버튼을 클릭하면 노드는 이미지 목록을 업데이트하고 자동으로 첫 번째 이미지를 선택하여 쉬운 반복을 가능하게 합니다.",
+    "description": "입력(input) 폴더 대신 출력(output) 폴더에서 이미지를 로드합니다. 새로 고침 버튼을 클릭하면 노드는 이미지 목록을 업데이트하고 자동으로 첫 번째 이미지를 선택하여 쉬운 반복을 가능하게 합니다.",
     "display_name": "이미지 로드 (출력에서)",
     "inputs": {
       "image": {
@@ -2969,7 +2969,7 @@
     }
   },
   "ModelMergeCosmos14B": {
-    "display_name": "ModelMergeCosmos14B",
+    "display_name": "모델 병합 (Cosmos 14B)",
     "inputs": {
       "affline_norm_": {
         "name": "affline_norm."
@@ -3106,7 +3106,7 @@
     }
   },
   "ModelMergeCosmos7B": {
-    "display_name": "ModelMergeCosmos7B",
+    "display_name": "모델 병합 (Cosmos 7B)",
     "inputs": {
       "affline_norm_": {
         "name": "affline_norm."
@@ -5187,7 +5187,7 @@
         "name": "오디오"
       },
       "audioUI": {
-        "name": "audioUI"
+        "name": "오디오UI"
       },
       "filename_prefix": {
         "name": "파일명 접두사"
@@ -5228,7 +5228,7 @@
     }
   },
   "SaveWEBM": {
-    "display_name": "SaveWEBM",
+    "display_name": "동영상 저장 (WEBM)",
     "inputs": {
       "codec": {
         "name": "코덱"
