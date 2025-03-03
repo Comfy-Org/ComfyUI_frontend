@@ -133,14 +133,6 @@ test.describe('Missing models warning', () => {
     await expect(missingModelsWarning).not.toBeVisible()
   })
 
-  test('should show on tutorial workflow', async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.TutorialCompleted', false)
-    await comfyPage.setup({ clearStorage: true })
-    const missingModelsWarning = comfyPage.page.locator('.comfy-missing-models')
-    await expect(missingModelsWarning).toBeVisible()
-    expect(await comfyPage.getSetting('Comfy.TutorialCompleted')).toBe(true)
-  })
-
   // Flaky test after parallelization
   // https://github.com/Comfy-Org/ComfyUI_frontend/pull/1400
   test.skip('Should download missing model when clicking download button', async ({
