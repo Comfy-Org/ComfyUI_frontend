@@ -14,10 +14,10 @@ import type { CanvasMouseEvent } from '@comfyorg/litegraph/dist/types/events'
 
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
-import { clone } from '@/scripts/utils'
 import { ComfyWidgets, addValueControlWidgets } from '@/scripts/widgets'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
+import { mergeInputSpec } from '@/utils/nodeDefUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 import { isPrimitiveNode } from '@/utils/typeGuardUtil'
 
@@ -603,113 +603,17 @@ export function mergeIfValid(
   config2: InputSpec,
   forceUpdate?: boolean,
   recreateWidget?: () => void,
-  config1?: unknown
-): { customConfig: Record<string, unknown> } {
+  config1?: InputSpec
+): { customConfig: InputSpec[1] } {
   if (!config1) {
     config1 = getWidgetConfig(output)
   }
 
-  if (config1[0] instanceof Array) {
-    if (!isValidCombo(config1[0], config2[0])) return
-  } else if (config1[0] !== config2[0]) {
-    // Types dont match
-    console.log(`connection rejected: types dont match`, config1[0], config2[0])
-    return
-  }
+  const customSpec = mergeInputSpec(config1, config2)
 
-  const keys = new Set([
-    ...Object.keys(config1[1] ?? {}),
-    ...Object.keys(config2[1] ?? {})
-  ])
-
-  let customConfig: Record<string, unknown> | undefined
-  const getCustomConfig = () => {
-    if (!customConfig) {
-      customConfig = clone(config1[1] ?? {})
-    }
-    return customConfig
-  }
-
-  const isNumber = config1[0] === 'INT' || config1[0] === 'FLOAT'
-  for (const k of keys.values()) {
-    if (
-      k !== 'default' &&
-      k !== 'forceInput' &&
-      k !== 'defaultInput' &&
-      k !== 'control_after_generate' &&
-      k !== 'multiline' &&
-      k !== 'tooltip' &&
-      k !== 'dynamicPrompts'
-    ) {
-      let v1 = config1[1][k]
-      let v2 = config2[1]?.[k]
-
-      if (v1 === v2 || (!v1 && !v2)) continue
-
-      if (isNumber) {
-        if (k === 'min') {
-          const theirMax = config2[1]?.['max']
-          if (theirMax != null && v1 > theirMax) {
-            console.log('connection rejected: min > max', v1, theirMax)
-            return
-          }
-          getCustomConfig()[k] =
-            // @ts-expect-error InputSpec is not typed correctly
-            v1 == null ? v2 : v2 == null ? v1 : Math.max(v1, v2)
-          continue
-        } else if (k === 'max') {
-          const theirMin = config2[1]?.['min']
-          if (theirMin != null && v1 < theirMin) {
-            console.log('connection rejected: max < min', v1, theirMin)
-            return
-          }
-          getCustomConfig()[k] =
-            // @ts-expect-error InputSpec is not typed correctly
-            v1 == null ? v2 : v2 == null ? v1 : Math.min(v1, v2)
-          continue
-        } else if (k === 'step') {
-          let step
-          if (v1 == null) {
-            // No current step
-            step = v2
-          } else if (v2 == null) {
-            // No new step
-            step = v1
-          } else {
-            if (v1 < v2) {
-              // Ensure v1 is larger for the mod
-              const a = v2
-              v2 = v1
-              v1 = a
-            }
-            // @ts-expect-error InputSpec is not typed correctly
-            if (v1 % v2) {
-              console.log(
-                'connection rejected: steps not divisible',
-                'current:',
-                v1,
-                'new:',
-                v2
-              )
-              return
-            }
-
-            step = v1
-          }
-
-          getCustomConfig()[k] = step
-          continue
-        }
-      }
-
-      console.log(`connection rejected: config ${k} values dont match`, v1, v2)
-      return
-    }
-  }
-
-  if (customConfig || forceUpdate) {
-    if (customConfig) {
-      output.widget[CONFIG] = [config1[0], customConfig]
+  if (customSpec || forceUpdate) {
+    if (customSpec) {
+      output.widget[CONFIG] = customSpec
     }
 
     const widget = recreateWidget?.call(this)
@@ -723,7 +627,7 @@ export function mergeIfValid(
     }
   }
 
-  return { customConfig }
+  return { customConfig: customSpec[1] }
 }
 
 app.registerExtension({

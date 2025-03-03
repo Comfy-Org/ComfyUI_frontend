@@ -3,8 +3,8 @@ import type { IComboWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
 import {
   type InputSpec,
-  isComboInputSpec,
-  isComboInputSpecV2
+  getComboSpecComboOptions,
+  isComboInputSpec
 } from '@/schemas/nodeDefSchema'
 import { addValueControlWidgets } from '@/scripts/widgets'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
@@ -24,9 +24,7 @@ export const useComboWidget = () => {
 
     const widgetStore = useWidgetStore()
     const inputOptions = inputData[1] ?? {}
-    const comboOptions =
-      (isComboInputSpecV2(inputData) ? inputOptions.options : inputData[0]) ??
-      []
+    const comboOptions = getComboSpecComboOptions(inputData)
 
     const defaultValue = widgetStore.getDefaultValue(inputData)
 
