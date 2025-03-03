@@ -11,16 +11,18 @@ on:
 jobs:
   update-registry-types:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
-      - name: Checkout ComfyUI_frontend
+      - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 'lts/*'
+          node-version: lts/*
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
@@ -69,29 +71,23 @@ jobs:
             echo "changed=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Create PR for API type changes
+      - name: Create Pull Request
         if: steps.check-changes.outputs.changed == 'true'
-        run: |
-          git config --global user.name "GitHub Actions Bot"
-          git config --global user.email "actions@github.com"
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.PR_GH_TOKEN }}
+          commit-message: '[chore] Update Comfy Registry API types from comfy-api@${{ steps.api-info.outputs.commit }}'
+          title: '[chore] Update Comfy Registry API types from comfy-api@${{ steps.api-info.outputs.commit }}'
+          body: |
+            ## Automated API Type Update
 
-          # Create branch with timestamp
-          DATE=$(date '+%Y-%m-%d')
-          TIMESTAMP=$(date '+%s')
-          BRANCH="update-registry-types-${DATE}-${TIMESTAMP}"
-          git checkout -b $BRANCH
+            This PR updates the Comfy Registry API types from the latest comfy-api OpenAPI specification.
 
-          # Commit changes
-          git add src/types/comfyRegistryTypes.ts
-          git commit -m "[chore] Update Comfy Registry API types from comfy-api@${{ steps.api-info.outputs.commit }}"
-          git push origin $BRANCH
+            - API commit: ${{ steps.api-info.outputs.commit }}
+            - Generated on: ${{ github.event.repository.updated_at }}
 
-          # Create PR
-          gh pr create \
-            --title "Update Comfy Registry API types from comfy-api@${{ steps.api-info.outputs.commit }}" \
-            --body "Automated update of Comfy Registry API types from the latest comfy-api OpenAPI specification." \
-            --label "CNR,auto-generated" \
-            --base main \
-            --head $BRANCH
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            These types are automatically generated using openapi-typescript.
+          branch: update-registry-types-${{ steps.api-info.outputs.commit }}
+          base: main
+          labels: CNR
+          delete-branch: true
