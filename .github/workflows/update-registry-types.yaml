@@ -71,6 +71,16 @@ jobs:
             echo "changed=true" >> $GITHUB_OUTPUT
           fi
 
+      - name: Remove comfy-api directory
+        if: steps.check-changes.outputs.changed == 'true'
+        run: |
+          rm -rf comfy-api
+
+          if [ -d "comfy-api" ]; then
+            echo "Error: comfy-api directory still exists."
+            exit 1
+          fi
+
       - name: Create Pull Request
         if: steps.check-changes.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@v7
