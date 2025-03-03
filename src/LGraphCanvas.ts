@@ -4179,7 +4179,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         if (eDown && eMove) {
           // Do not scale the selection box
           const transform = ctx.getTransform()
-          const ratio = window.devicePixelRatio
+          const ratio = Math.max(1, window.devicePixelRatio)
           ctx.setTransform(ratio, 0, 0, ratio, 0, 0)
 
           const x = eDown.safeOffsetX
