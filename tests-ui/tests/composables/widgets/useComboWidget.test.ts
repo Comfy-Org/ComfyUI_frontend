@@ -41,7 +41,7 @@ describe('useComboWidget', () => {
       undefined, // default value
       expect.any(Function), // callback
       expect.objectContaining({
-        values: 'COMBO'
+        values: []
       })
     )
     expect(widget).toEqual({

@@ -1,7 +1,11 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
 import type { IComboWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
-import type { InputSpec } from '@/schemas/nodeDefSchema'
+import {
+  type InputSpec,
+  isComboInputSpec,
+  isComboInputSpecV2
+} from '@/schemas/nodeDefSchema'
 import { addValueControlWidgets } from '@/scripts/widgets'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { useWidgetStore } from '@/stores/widgetStore'
@@ -14,26 +18,32 @@ export const useComboWidget = () => {
     inputName: string,
     inputData: InputSpec
   ) => {
+    if (!isComboInputSpec(inputData)) {
+      throw new Error(`Invalid input data: ${inputData}`)
+    }
+
     const widgetStore = useWidgetStore()
-    const { remote, options } = inputData[1] || {}
+    const inputOptions = inputData[1] ?? {}
+    const comboOptions =
+      (isComboInputSpecV2(inputData) ? inputOptions.options : inputData[0]) ??
+      []
+
     const defaultValue = widgetStore.getDefaultValue(inputData)
 
     const res = {
       widget: node.addWidget('combo', inputName, defaultValue, () => {}, {
-        // @ts-expect-error InputSpec is not typed correctly
-        values: options ?? inputData[0]
+        values: comboOptions
       }) as IComboWidget
     }
 
-    if (remote) {
+    if (inputOptions.remote) {
       const remoteWidget = useRemoteWidget({
         inputData,
         defaultValue,
         node,
         widget: res.widget
       })
-      // @ts-expect-error InputSpec is not typed correctly
-      if (remote.refresh_button) remoteWidget.addRefreshButton()
+      if (inputOptions.remote.refresh_button) remoteWidget.addRefreshButton()
 
       const origOptions = res.widget.options
       res.widget.options = new Proxy(
@@ -47,7 +57,7 @@ export const useComboWidget = () => {
       )
     }
 
-    if (inputData[1]?.control_after_generate) {
+    if (inputOptions.control_after_generate) {
       res.widget.linkedWidgets = addValueControlWidgets(
         node,
         res.widget,
