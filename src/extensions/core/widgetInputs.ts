@@ -866,7 +866,6 @@ app.registerExtension({
 
     // Double click a widget input to automatically attach a primitive
     const origOnInputDblClick = nodeType.prototype.onInputDblClick
-    const ignoreDblClick = Symbol()
     nodeType.prototype.onInputDblClick = function (
       this: LGraphNode,
       slot: number
@@ -876,7 +875,7 @@ app.registerExtension({
         : undefined
 
       const input = this.inputs[slot]
-      if (!input.widget || !input[ignoreDblClick]) {
+      if (!input.widget) {
         // Not a widget input or already handled input
         if (
           !(input.type in ComfyWidgets) &&
@@ -902,12 +901,6 @@ app.registerExtension({
       node.pos = pos
       node.connect(0, this, slot)
       node.title = input.name
-
-      // Prevent adding duplicates due to triple clicking
-      input[ignoreDblClick] = true
-      setTimeout(() => {
-        delete input[ignoreDblClick]
-      }, 300)
 
       return r
     }
