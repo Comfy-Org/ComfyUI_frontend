@@ -35,7 +35,6 @@ app.registerExtension({
         if (this.selectedItems.size > 0) {
           options.push({
             content: 'Add Group For Selected Nodes',
-            disabled: !this.selectedItems?.size,
             callback: () => {
               const group = new LGraphGroup()
               addNodesToGroup(group, this.selectedItems)
