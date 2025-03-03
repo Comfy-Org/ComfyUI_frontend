@@ -4,7 +4,6 @@ import { toRaw } from 'vue'
 
 import { t } from '@/i18n'
 import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
-import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { downloadBlob } from '@/scripts/utils'
@@ -121,18 +120,6 @@ export const useWorkflowService = () => {
    */
   const loadDefaultWorkflow = async () => {
     await app.loadGraphData(defaultGraph)
-  }
-
-  /**
-   * Load the tutorial workflow
-   */
-  const loadTutorialWorkflow = async () => {
-    const tutorialWorkflow = await fetch(
-      api.fileURL('/templates/default.json')
-    ).then((r) => r.json())
-    await app.loadGraphData(tutorialWorkflow, false, false, 'tutorial', {
-      showMissingModelsDialog: true
-    })
   }
 
   /**
@@ -386,7 +373,6 @@ export const useWorkflowService = () => {
     saveWorkflow,
     loadDefaultWorkflow,
     loadBlankWorkflow,
-    loadTutorialWorkflow,
     reloadCurrentWorkflow,
     openWorkflow,
     closeWorkflow,

@@ -4,6 +4,7 @@ import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { getStorageValue, setStorageValue } from '@/scripts/utils'
 import { useWorkflowService } from '@/services/workflowService'
+import { useCommandStore } from '@/stores/commandStore'
 import { useModelStore } from '@/stores/modelStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
@@ -50,8 +51,11 @@ export function useWorkflowPersistence() {
   const loadDefaultWorkflow = async () => {
     if (!settingStore.get('Comfy.TutorialCompleted')) {
       await settingStore.set('Comfy.TutorialCompleted', true)
+      // Ensure model folders are loaded so missing models dialog can be shown to new users
       await useModelStore().loadModelFolders()
-      await useWorkflowService().loadTutorialWorkflow()
+
+      await useWorkflowService().loadBlankWorkflow()
+      await useCommandStore().execute('Comfy.BrowseTemplates')
     } else {
       await comfyApp.loadGraphData()
     }
