@@ -1,6 +1,6 @@
 import type { IWidget, LGraphNode } from '@comfyorg/litegraph'
 
-import type { InputSpec } from '@/schemas/nodeDefSchema'
+import { type InputSpec, isStringInputSpec } from '@/schemas/nodeDefSchema'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { useSettingStore } from '@/stores/settingStore'
 import type { ComfyApp } from '@/types'
@@ -64,15 +64,20 @@ export const useStringWidget = () => {
     inputData: InputSpec,
     app: ComfyApp
   ) => {
-    const defaultVal = inputData[1]?.default || ''
-    const multiline = !!inputData[1]?.multiline
+    if (!isStringInputSpec(inputData)) {
+      throw new Error(`Invalid input data: ${inputData}`)
+    }
+
+    const inputOptions = inputData[1] ?? {}
+    const defaultVal = inputOptions.default ?? ''
+    const multiline = inputOptions.multiline
 
     let res: { widget: IWidget }
     if (multiline) {
       res = addMultilineWidget(
         node,
         inputName,
-        { defaultVal, ...inputData[1] },
+        { defaultVal, ...inputOptions },
         app
       )
     } else {
@@ -81,9 +86,9 @@ export const useStringWidget = () => {
       }
     }
 
-    if (inputData[1]?.dynamicPrompts != undefined)
-      // @ts-expect-error InputSpec is not typed correctly
-      res.widget.dynamicPrompts = inputData[1].dynamicPrompts
+    if (inputOptions.dynamicPrompts != undefined) {
+      res.widget.dynamicPrompts = inputOptions.dynamicPrompts
+    }
 
     return res
   }
