@@ -2236,7 +2236,8 @@ export class LGraphCanvas implements ConnectionColorContext {
           if (isInRectangle(x, y, link_pos[0] - 15, link_pos[1] - 10, 30, 20)) {
             // Drag multiple output links
             if (e.shiftKey && output.links?.length) {
-              this.connecting_links = []
+              const connectingLinks: ConnectingLink[] = []
+
               for (const linkId of output.links) {
                 const link = graph._links.get(linkId)
                 if (!link) continue
@@ -2245,18 +2246,21 @@ export class LGraphCanvas implements ConnectionColorContext {
                 const otherNode = graph._nodes_by_id[link.target_id]
                 const input = otherNode.inputs[slot]
                 const pos = otherNode.getConnectionPos(true, slot)
+                const firstRerouteId = LLink.getReroutes(graph, link).at(0)?.id
 
-                this.connecting_links.push({
+                connectingLinks.push({
                   node: otherNode,
                   slot,
                   input,
                   output: null,
                   pos,
                   direction: LinkDirection.RIGHT,
+                  afterRerouteId: firstRerouteId,
                   link,
                 })
               }
 
+              this.connecting_links = connectingLinks
               return
             }
 
