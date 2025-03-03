@@ -48,9 +48,10 @@ const mergeNumericInputSpec = <T extends IntInputSpec | FloatInputSpec>(
     return null
   }
 
+  // Take intersection of ranges
   const mergedRange = {
-    min: Math.min(range1.min, range2.min),
-    max: Math.max(range1.max, range2.max)
+    min: Math.max(range1.min, range2.min),
+    max: Math.min(range1.max, range2.max)
   }
 
   return mergeCommonInputSpec(
@@ -105,10 +106,17 @@ const mergeCommonInputSpec = <T extends InputSpec>(
     : null
 }
 
-export const mergeInputSpec = <T extends InputSpec>(
-  spec1: T,
-  spec2: T
-): T | null => {
+/**
+ * Merges two input specs.
+ *
+ * @param spec1 - The first input spec.
+ * @param spec2 - The second input spec.
+ * @returns The merged input spec, or null if the specs are not mergeable.
+ */
+export const mergeInputSpec = (
+  spec1: InputSpec,
+  spec2: InputSpec
+): InputSpec | null => {
   const type1 = getInputSpecType(spec1)
   const type2 = getInputSpecType(spec2)
 
