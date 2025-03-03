@@ -21,6 +21,9 @@ export const useWidgetStore = defineStore('widget', () => {
   function getWidgetType(type: string, inputName: string) {
     if (type === 'COMBO') {
       return 'COMBO'
+      /**
+       * @deprecated Group node logic. Remove once group node feature is removed.
+       */
     } else if (`${type}:${inputName}` in widgets.value) {
       return `${type}:${inputName}`
     } else if (type in widgets.value) {
