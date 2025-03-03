@@ -2170,7 +2170,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     node: LGraphNode,
     slotType: ISlotType,
     options?: ConnectByTypeOptions,
-  ): number | null {
+  ): number | undefined {
     // LEGACY: Old options names
     if (options && typeof options === "object") {
       if ("firstFreeIfInputGeneralInCase" in options) options.wildcardToTyped = !!options.firstFreeIfInputGeneralInCase
@@ -2188,7 +2188,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
     if (node && typeof node === "number") {
       const nodeById = this.graph.getNodeById(node)
-      if (!nodeById) return null
+      if (!nodeById) return
 
       node = nodeById
     }
@@ -2217,7 +2217,6 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
         : node.findOutputSlotFree(opt)
       if (nonEventSlot >= 0) return nonEventSlot
     }
-    return null
   }
 
   /**
@@ -2239,7 +2238,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       target_slotType,
       optsIn,
     )
-    if (slotIndex !== null)
+    if (slotIndex !== undefined)
       return this.connect(slot, target_node, slotIndex, optsIn?.afterRerouteId)
 
     console.debug("[connectByType]: no way to connect type:", target_slotType, "to node:", target_node)
@@ -2270,7 +2269,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       source_slotType,
       optsIn,
     )
-    if (slotIndex !== null)
+    if (slotIndex !== undefined)
       return source_node.connect(slotIndex, this, slot, optsIn?.afterRerouteId)
 
     console.debug("[connectByType]: no way to connect type:", source_slotType, "to node:", source_node)
