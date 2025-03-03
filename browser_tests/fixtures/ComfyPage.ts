@@ -22,6 +22,7 @@ import { Topbar } from './components/Topbar'
 import type { Position, Size } from './types'
 import { NodeReference } from './utils/litegraphUtils'
 import TaskHistory from './utils/taskHistory'
+import { ComfyMouse } from './ComfyMouse'
 
 dotenv.config()
 
@@ -910,7 +911,10 @@ export class ComfyPage {
   }
 }
 
-export const comfyPageFixture = base.extend<{ comfyPage: ComfyPage }>({
+export const comfyPageFixture = base.extend<{
+  comfyPage: ComfyPage
+  comfyMouse: ComfyMouse
+}>({
   comfyPage: async ({ page, request }, use, testInfo) => {
     const comfyPage = new ComfyPage(page, request)
 
@@ -941,6 +945,10 @@ export const comfyPageFixture = base.extend<{ comfyPage: ComfyPage }>({
 
     await comfyPage.setup()
     await use(comfyPage)
+  },
+  comfyMouse: async ({ comfyPage }, use) => {
+    const comfyMouse = new ComfyMouse(comfyPage)
+    use(comfyMouse)
   }
 })
 
