@@ -589,6 +589,35 @@
       }
     }
   },
+  "ConditioningSetAreaPercentageVideo": {
+    "display_name": "조건부 설정 영역 비율 비디오",
+    "inputs": {
+      "conditioning": {
+        "name": "조건부"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "strength": {
+        "name": "강도"
+      },
+      "temporal": {
+        "name": "시간적"
+      },
+      "width": {
+        "name": "너비"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      },
+      "z": {
+        "name": "z"
+      }
+    }
+  },
   "ConditioningSetAreaStrength": {
     "display_name": "조건 (영역 강도 설정)",
     "inputs": {
@@ -1068,206 +1097,6 @@
       },
       "y": {
         "name": "y"
-      }
-    }
-  },
-  "DevToolsDeprecatedNode": {
-    "description": "지원 중단된 노드",
-    "display_name": "지원 중단된 노드"
-  },
-  "DevToolsErrorRaiseNode": {
-    "description": "개발 목적으로 오류를 발생시킵니다",
-    "display_name": "오류 발생"
-  },
-  "DevToolsErrorRaiseNodeWithMessage": {
-    "description": "개발 목적으로 메시지와 함께 오류를 발생시킵니다",
-    "display_name": "메시지와 함께 오류 발생",
-    "inputs": {
-      "message": {
-        "name": "메시지"
-      }
-    }
-  },
-  "DevToolsExperimentalNode": {
-    "description": "실험적 노드",
-    "display_name": "실험적 노드"
-  },
-  "DevToolsLongComboDropdown": {
-    "description": "긴 콤보 드롭다운",
-    "display_name": "긴 콤보 드롭다운",
-    "inputs": {
-      "option": {
-        "name": "옵션"
-      }
-    }
-  },
-  "DevToolsNodeWithBooleanInput": {
-    "description": "논리 입력이 있는 노드",
-    "display_name": "논리 입력이 있는 노드",
-    "inputs": {
-      "boolean_input": {
-        "name": "boolean_input"
-      }
-    }
-  },
-  "DevToolsNodeWithForceInput": {
-    "description": "강제 입력이 있는 노드",
-    "display_name": "강제 입력이 있는 노드",
-    "inputs": {
-      "float_input": {
-        "name": "실수 입력"
-      },
-      "int_input": {
-        "name": "정수 입력"
-      },
-      "int_input_widget": {
-        "name": "정수 입력 위젯"
-      }
-    }
-  },
-  "DevToolsNodeWithOnlyOptionalInput": {
-    "description": "선택적 입력만 있는 노드",
-    "display_name": "선택적 입력만 있는 노드",
-    "inputs": {
-      "clip": {
-        "name": "clip"
-      },
-      "text": {
-        "name": "텍스트"
-      }
-    }
-  },
-  "DevToolsNodeWithOptionalInput": {
-    "description": "선택적 입력이 있는 노드",
-    "display_name": "선택적 입력이 있는 노드",
-    "inputs": {
-      "optional_input": {
-        "name": "선택적 입력"
-      },
-      "required_input": {
-        "name": "필수 입력"
-      }
-    }
-  },
-  "DevToolsNodeWithOutputList": {
-    "description": "출력 목록이 있는 노드",
-    "display_name": "출력 목록이 있는 노드",
-    "outputs": {
-      "0": {
-        "name": "정수 출력"
-      },
-      "1": {
-        "name": "정수 목록 출력"
-      }
-    }
-  },
-  "DevToolsNodeWithSeedInput": {
-    "description": "시드 입력이 있는 노드",
-    "display_name": "시드 입력이 있는 노드",
-    "inputs": {
-      "control_after_generate": {
-        "name": "생성 후 제어"
-      },
-      "seed": {
-        "name": "시드"
-      }
-    }
-  },
-  "DevToolsNodeWithStringInput": {
-    "description": "문자열 입력이 있는 노드",
-    "display_name": "문자열 입력이 있는 노드",
-    "inputs": {
-      "string_input": {
-        "name": "문자열 입력"
-      }
-    }
-  },
-  "DevToolsNodeWithUnionInput": {
-    "description": "유니온 입력이 있는 노드",
-    "display_name": "유니온 입력이 있는 노드",
-    "inputs": {
-      "int_input": {
-        "name": "정수 입력"
-      },
-      "string_input": {
-        "name": "문자열 입력"
-      },
-      "string_or_int_input": {
-        "name": "문자열 또는 정수 입력"
-      }
-    }
-  },
-  "DevToolsObjectPatchNode": {
-    "description": "객체 패치를 적용하는 노드",
-    "display_name": "객체 패치 노드",
-    "inputs": {
-      "dummy_float": {
-        "name": "더미 실수"
-      },
-      "model": {
-        "name": "모델"
-      },
-      "target_module": {
-        "name": "대상 모듈"
-      }
-    }
-  },
-  "DevToolsRemoteWidgetNode": {
-    "description": "원격 엔드포인트에서 옵션을 게으르게 가져오는 노드",
-    "display_name": "원격 위젯 노드",
-    "inputs": {
-      "remote_widget_value": {
-        "name": "remote_widget_value"
-      }
-    }
-  },
-  "DevToolsRemoteWidgetNodeWithControlAfterRefresh": {
-    "description": "원격 엔드포인트에서 옵션을 게으르게 가져오고 수동으로 옵션을 다시 로드하고 새로 고침시 첫 번째 옵션을 선택하는 새로 고침 버튼이 있는 노드",
-    "display_name": "새로 고침 버튼 및 새로 고침 후 제어가 있는 원격 위젯 노드",
-    "inputs": {
-      "refresh": {
-        "name": "refresh"
-      },
-      "remote_widget_value": {
-        "name": "remote_widget_value"
-      }
-    }
-  },
-  "DevToolsRemoteWidgetNodeWithParams": {
-    "description": "쿼리 매개변수가 있는 원격 엔드포인트에서 옵션을 게으르게 가져오는 노드",
-    "display_name": "정렬 쿼리 매개변수가 있는 원격 위젯 노드",
-    "inputs": {
-      "remote_widget_value": {
-        "name": "remote_widget_value"
-      }
-    }
-  },
-  "DevToolsRemoteWidgetNodeWithRefresh": {
-    "description": "원격 엔드포인트에서 옵션을 게으르게 가져오고 옵션을 매 300ms마다 새로 고치는 노드",
-    "display_name": "300ms 새로 고침이 있는 원격 위젯 노드",
-    "inputs": {
-      "remote_widget_value": {
-        "name": "remote_widget_value"
-      }
-    }
-  },
-  "DevToolsRemoteWidgetNodeWithRefreshButton": {
-    "description": "원격 엔드포인트에서 옵션을 게으르게 가져오고 수동으로 옵션을 다시 로드하는 새로 고침 버튼이 있는 노드",
-    "display_name": "새로 고침 버튼이 있는 원격 위젯 노드",
-    "inputs": {
-      "refresh": {
-        "name": "refresh"
-      },
-      "remote_widget_value": {
-        "name": "remote_widget_value"
-      }
-    }
-  },
-  "DevToolsSimpleSlider": {
-    "display_name": "간단한 슬라이더",
-    "inputs": {
-      "value": {
-        "name": "값"
       }
     }
   },
@@ -2527,7 +2356,6 @@
     "display_name": "3D 로드",
     "inputs": {
       "clear": {
-        "name": "재설정"
       },
       "height": {
         "name": "높이"
@@ -2545,7 +2373,6 @@
         "name": "위 방향"
       },
       "upload 3d model": {
-        "name": "3D 모델 업로드"
       },
       "width": {
         "name": "너비"
@@ -2567,7 +2394,6 @@
     "display_name": "3D 로드 - 애니메이션",
     "inputs": {
       "clear": {
-        "name": "재설정"
       },
       "height": {
         "name": "높이"
@@ -2585,7 +2411,6 @@
         "name": "위 방향"
       },
       "upload 3d model": {
-        "name": "3D 모델 업로드"
       },
       "width": {
         "name": "너비"
@@ -2650,7 +2475,6 @@
         "name": "이미지"
       },
       "refresh": {
-        "name": "새로 고침"
       },
       "upload": {
         "name": "업로드할 파일 선택"
@@ -5929,6 +5753,49 @@
       }
     }
   },
+  "WanImageToVideo": {
+    "display_name": "Wan 이미지를 비디오로",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기"
+      },
+      "clip_vision_output": {
+        "name": "클립 비전 출력"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "length": {
+        "name": "길이"
+      },
+      "negative": {
+        "name": "부정적"
+      },
+      "positive": {
+        "name": "긍정적"
+      },
+      "start_image": {
+        "name": "시작 이미지"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정적"
+      },
+      "1": {
+        "name": "부정적"
+      },
+      "2": {
+        "name": "잠재"
+      }
+    }
+  },
   "WebcamCapture": {
     "display_name": "웹캠 캡처",
     "inputs": {
@@ -5942,7 +5809,6 @@
         "name": "이미지"
       },
       "waiting for camera___": {
-        "name": "카메라 대기 중..."
       },
       "width": {
         "name": "너비"

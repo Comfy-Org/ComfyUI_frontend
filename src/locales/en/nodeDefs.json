@@ -177,7 +177,7 @@
   },
   "CLIPLoader": {
     "display_name": "Load CLIP",
-    "description": "[Recipes]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 / clip-g / clip-l\nstable_audio: t5\nmochi: t5\ncosmos: old t5 xxl\nlumina2: gemma 2 2B",
+    "description": "[Recipes]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 xxl/ clip-g / clip-l\nstable_audio: t5 base\nmochi: t5 xxl\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl",
     "inputs": {
       "clip_name": {
         "name": "clip_name"
@@ -583,6 +583,35 @@
       },
       "y": {
         "name": "y"
+      },
+      "strength": {
+        "name": "strength"
+      }
+    }
+  },
+  "ConditioningSetAreaPercentageVideo": {
+    "display_name": "ConditioningSetAreaPercentageVideo",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "temporal": {
+        "name": "temporal"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      },
+      "z": {
+        "name": "z"
       },
       "strength": {
         "name": "strength"
@@ -1068,206 +1097,6 @@
       },
       "height": {
         "name": "height"
-      }
-    }
-  },
-  "DevToolsDeprecatedNode": {
-    "display_name": "Deprecated Node",
-    "description": "A deprecated node"
-  },
-  "DevToolsErrorRaiseNode": {
-    "display_name": "Raise Error",
-    "description": "Raise an error for development purposes"
-  },
-  "DevToolsErrorRaiseNodeWithMessage": {
-    "display_name": "Raise Error with Message",
-    "description": "Raise an error with message for development purposes",
-    "inputs": {
-      "message": {
-        "name": "message"
-      }
-    }
-  },
-  "DevToolsExperimentalNode": {
-    "display_name": "Experimental Node",
-    "description": "A experimental node"
-  },
-  "DevToolsLongComboDropdown": {
-    "display_name": "Long Combo Dropdown",
-    "description": "A long combo dropdown",
-    "inputs": {
-      "option": {
-        "name": "option"
-      }
-    }
-  },
-  "DevToolsNodeWithBooleanInput": {
-    "display_name": "Node With Boolean Input",
-    "description": "A node with a boolean input",
-    "inputs": {
-      "boolean_input": {
-        "name": "boolean_input"
-      }
-    }
-  },
-  "DevToolsNodeWithForceInput": {
-    "display_name": "Node With Force Input",
-    "description": "A node with a forced input",
-    "inputs": {
-      "int_input": {
-        "name": "int_input"
-      },
-      "int_input_widget": {
-        "name": "int_input_widget"
-      },
-      "float_input": {
-        "name": "float_input"
-      }
-    }
-  },
-  "DevToolsNodeWithOnlyOptionalInput": {
-    "display_name": "Node With Only Optional Input",
-    "description": "A node with only optional input",
-    "inputs": {
-      "text": {
-        "name": "text"
-      },
-      "clip": {
-        "name": "clip"
-      }
-    }
-  },
-  "DevToolsNodeWithOptionalInput": {
-    "display_name": "Node With Optional Input",
-    "description": "A node with an optional input",
-    "inputs": {
-      "required_input": {
-        "name": "required_input"
-      },
-      "optional_input": {
-        "name": "optional_input"
-      }
-    }
-  },
-  "DevToolsNodeWithOutputList": {
-    "display_name": "Node With Output List",
-    "description": "A node with an output list",
-    "outputs": {
-      "0": {
-        "name": "INTEGER OUTPUT"
-      },
-      "1": {
-        "name": "INTEGER LIST OUTPUT"
-      }
-    }
-  },
-  "DevToolsNodeWithSeedInput": {
-    "display_name": "Node With Seed Input",
-    "description": "A node with a seed input",
-    "inputs": {
-      "seed": {
-        "name": "seed"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      }
-    }
-  },
-  "DevToolsNodeWithStringInput": {
-    "display_name": "Node With String Input",
-    "description": "A node with a string input",
-    "inputs": {
-      "string_input": {
-        "name": "string_input"
-      }
-    }
-  },
-  "DevToolsNodeWithUnionInput": {
-    "display_name": "Node With Union Input",
-    "description": "A node with a union input",
-    "inputs": {
-      "string_or_int_input": {
-        "name": "string_or_int_input"
-      },
-      "string_input": {
-        "name": "string_input"
-      },
-      "int_input": {
-        "name": "int_input"
-      }
-    }
-  },
-  "DevToolsObjectPatchNode": {
-    "display_name": "Object Patch Node",
-    "description": "A node that applies an object patch",
-    "inputs": {
-      "model": {
-        "name": "model"
-      },
-      "target_module": {
-        "name": "target_module"
-      },
-      "dummy_float": {
-        "name": "dummy_float"
-      }
-    }
-  },
-  "DevToolsRemoteWidgetNode": {
-    "display_name": "Remote Widget Node",
-    "description": "A node that lazily fetches options from a remote endpoint",
-    "inputs": {
-      "remote_widget_value": {
-        "name": "remote_widget_value"
-      }
-    }
-  },
-  "DevToolsRemoteWidgetNodeWithControlAfterRefresh": {
-    "display_name": "Remote Widget Node With Refresh Button and Control After Refresh",
-    "description": "A node that lazily fetches options from a remote endpoint and has a refresh button to manually reload options and select the first option on refresh",
-    "inputs": {
-      "remote_widget_value": {
-        "name": "remote_widget_value"
-      },
-      "refresh": {
-        "name": "refresh"
-      }
-    }
-  },
-  "DevToolsRemoteWidgetNodeWithParams": {
-    "display_name": "Remote Widget Node With Sort Query Param",
-    "description": "A node that lazily fetches options from a remote endpoint with query params",
-    "inputs": {
-      "remote_widget_value": {
-        "name": "remote_widget_value"
-      }
-    }
-  },
-  "DevToolsRemoteWidgetNodeWithRefresh": {
-    "display_name": "Remote Widget Node With 300ms Refresh",
-    "description": "A node that lazily fetches options from a remote endpoint and refresh the options every 300 ms",
-    "inputs": {
-      "remote_widget_value": {
-        "name": "remote_widget_value"
-      }
-    }
-  },
-  "DevToolsRemoteWidgetNodeWithRefreshButton": {
-    "display_name": "Remote Widget Node With Refresh Button",
-    "description": "A node that lazily fetches options from a remote endpoint and has a refresh button to manually reload options",
-    "inputs": {
-      "remote_widget_value": {
-        "name": "remote_widget_value"
-      },
-      "refresh": {
-        "name": "refresh"
-      }
-    }
-  },
-  "DevToolsSimpleSlider": {
-    "display_name": "Simple Slider",
-    "inputs": {
-      "value": {
-        "name": "value"
       }
     }
   },
@@ -2453,12 +2282,8 @@
       "up_direction": {
         "name": "up_direction"
       },
-      "clear": {
-        "name": "clear"
-      },
-      "upload 3d model": {
-        "name": "upload 3d model"
-      }
+      "clear": {},
+      "upload 3d model": {}
     },
     "outputs": {
       "0": {
@@ -2493,12 +2318,8 @@
       "up_direction": {
         "name": "up_direction"
       },
-      "clear": {
-        "name": "clear"
-      },
-      "upload 3d model": {
-        "name": "upload 3d model"
-      }
+      "clear": {},
+      "upload 3d model": {}
     },
     "outputs": {
       "0": {
@@ -2558,9 +2379,7 @@
       "image": {
         "name": "image"
       },
-      "refresh": {
-        "name": "refresh"
-      },
+      "refresh": {},
       "upload": {
         "name": "choose file to upload"
       }
@@ -5954,6 +5773,49 @@
       }
     }
   },
+  "WanImageToVideo": {
+    "display_name": "WanImageToVideo",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "start_image": {
+        "name": "start_image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive"
+      },
+      "1": {
+        "name": "negative"
+      },
+      "2": {
+        "name": "latent"
+      }
+    }
+  },
   "WebcamCapture": {
     "display_name": "Webcam Capture",
     "inputs": {
@@ -5969,9 +5831,7 @@
       "capture_on_queue": {
         "name": "capture_on_queue"
       },
-      "waiting for camera___": {
-        "name": "waiting for camera..."
-      }
+      "waiting for camera___": {}
     }
   }
 }

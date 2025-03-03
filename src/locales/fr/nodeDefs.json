@@ -589,6 +589,35 @@
       }
     }
   },
+  "ConditioningSetAreaPercentageVideo": {
+    "display_name": "Pourcentage de la zone de conditionnement vidéo",
+    "inputs": {
+      "conditioning": {
+        "name": "conditionnement"
+      },
+      "height": {
+        "name": "hauteur"
+      },
+      "strength": {
+        "name": "force"
+      },
+      "temporal": {
+        "name": "temporel"
+      },
+      "width": {
+        "name": "largeur"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      },
+      "z": {
+        "name": "z"
+      }
+    }
+  },
   "ConditioningSetAreaStrength": {
     "display_name": "ConditionnementDéfinirForceZone",
     "inputs": {
@@ -1068,206 +1097,6 @@
       },
       "y": {
         "name": "y"
-      }
-    }
-  },
-  "DevToolsDeprecatedNode": {
-    "description": "Un nœud obsolète",
-    "display_name": "Nœud obsolète"
-  },
-  "DevToolsErrorRaiseNode": {
-    "description": "Lever une erreur à des fins de développement",
-    "display_name": "Lever une erreur"
-  },
-  "DevToolsErrorRaiseNodeWithMessage": {
-    "description": "Lever une erreur avec un message à des fins de développement",
-    "display_name": "Lever une erreur avec un message",
-    "inputs": {
-      "message": {
-        "name": "message"
-      }
-    }
-  },
-  "DevToolsExperimentalNode": {
-    "description": "Un nœud expérimental",
-    "display_name": "Nœud expérimental"
-  },
-  "DevToolsLongComboDropdown": {
-    "description": "Un long combo déroulant",
-    "display_name": "Long Combo Dropdown",
-    "inputs": {
-      "option": {
-        "name": "option"
-      }
-    }
-  },
-  "DevToolsNodeWithBooleanInput": {
-    "description": "Un nœud avec une entrée booléenne",
-    "display_name": "Nœud avec entrée booléenne",
-    "inputs": {
-      "boolean_input": {
-        "name": "boolean_input"
-      }
-    }
-  },
-  "DevToolsNodeWithForceInput": {
-    "description": "Un nœud avec une entrée forcée",
-    "display_name": "Nœud avec entrée forcée",
-    "inputs": {
-      "float_input": {
-        "name": "float_input"
-      },
-      "int_input": {
-        "name": "int_input"
-      },
-      "int_input_widget": {
-        "name": "int_input_widget"
-      }
-    }
-  },
-  "DevToolsNodeWithOnlyOptionalInput": {
-    "description": "Un nœud avec seulement une entrée optionnelle",
-    "display_name": "Nœud avec seulement une entrée optionnelle",
-    "inputs": {
-      "clip": {
-        "name": "clip"
-      },
-      "text": {
-        "name": "text"
-      }
-    }
-  },
-  "DevToolsNodeWithOptionalInput": {
-    "description": "Un nœud avec une entrée optionnelle",
-    "display_name": "Nœud avec entrée optionnelle",
-    "inputs": {
-      "optional_input": {
-        "name": "optional_input"
-      },
-      "required_input": {
-        "name": "required_input"
-      }
-    }
-  },
-  "DevToolsNodeWithOutputList": {
-    "description": "Un nœud avec une liste de sortie",
-    "display_name": "Nœud avec liste de sortie",
-    "outputs": {
-      "0": {
-        "name": "SORTIE ENTIER"
-      },
-      "1": {
-        "name": "SORTIE LISTE ENTIER"
-      }
-    }
-  },
-  "DevToolsNodeWithSeedInput": {
-    "description": "Un nœud avec une entrée de graine",
-    "display_name": "Nœud Avec Entrée de Graine",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control après génération"
-      },
-      "seed": {
-        "name": "graine"
-      }
-    }
-  },
-  "DevToolsNodeWithStringInput": {
-    "description": "Un nœud avec une entrée de chaîne",
-    "display_name": "Nœud avec entrée de chaîne",
-    "inputs": {
-      "string_input": {
-        "name": "string_input"
-      }
-    }
-  },
-  "DevToolsNodeWithUnionInput": {
-    "description": "Un nœud avec une entrée d'union",
-    "display_name": "Nœud avec entrée d'union",
-    "inputs": {
-      "int_input": {
-        "name": "int_input"
-      },
-      "string_input": {
-        "name": "string_input"
-      },
-      "string_or_int_input": {
-        "name": "string_or_int_input"
-      }
-    }
-  },
-  "DevToolsObjectPatchNode": {
-    "description": "Un nœud qui applique un patch d'objet",
-    "display_name": "Nœud de Patch d'Objet",
-    "inputs": {
-      "dummy_float": {
-        "name": "flottant_factice"
-      },
-      "model": {
-        "name": "modèle"
-      },
-      "target_module": {
-        "name": "module_cible"
-      }
-    }
-  },
-  "DevToolsRemoteWidgetNode": {
-    "description": "Un nœud qui récupère paresseusement des options à partir d'un point d'extrémité distant",
-    "display_name": "Nœud de widget distant",
-    "inputs": {
-      "remote_widget_value": {
-        "name": "valeur du widget distant"
-      }
-    }
-  },
-  "DevToolsRemoteWidgetNodeWithControlAfterRefresh": {
-    "description": "Un nœud qui récupère paresseusement des options à partir d'un point d'extrémité distant et qui a un bouton de rafraîchissement pour recharger manuellement les options et sélectionner la première option lors du rafraîchissement",
-    "display_name": "Nœud de widget distant avec bouton de rafraîchissement et contrôle après rafraîchissement",
-    "inputs": {
-      "refresh": {
-        "name": "rafraîchir"
-      },
-      "remote_widget_value": {
-        "name": "valeur du widget distant"
-      }
-    }
-  },
-  "DevToolsRemoteWidgetNodeWithParams": {
-    "description": "Un nœud qui récupère paresseusement des options à partir d'un point d'extrémité distant avec des paramètres de requête",
-    "display_name": "Nœud de widget distant avec paramètre de tri de requête",
-    "inputs": {
-      "remote_widget_value": {
-        "name": "valeur du widget distant"
-      }
-    }
-  },
-  "DevToolsRemoteWidgetNodeWithRefresh": {
-    "description": "Un nœud qui récupère paresseusement des options à partir d'un point d'extrémité distant et rafraîchit les options toutes les 300 ms",
-    "display_name": "Nœud de widget distant avec rafraîchissement de 300 ms",
-    "inputs": {
-      "remote_widget_value": {
-        "name": "valeur du widget distant"
-      }
-    }
-  },
-  "DevToolsRemoteWidgetNodeWithRefreshButton": {
-    "description": "Un nœud qui récupère paresseusement des options à partir d'un point d'extrémité distant et qui a un bouton de rafraîchissement pour recharger manuellement les options",
-    "display_name": "Nœud de widget distant avec bouton de rafraîchissement",
-    "inputs": {
-      "refresh": {
-        "name": "rafraîchir"
-      },
-      "remote_widget_value": {
-        "name": "valeur du widget distant"
-      }
-    }
-  },
-  "DevToolsSimpleSlider": {
-    "display_name": "Curseur simple",
-    "inputs": {
-      "value": {
-        "name": "valeur"
       }
     }
   },
@@ -2527,7 +2356,6 @@
     "display_name": "Charger 3D",
     "inputs": {
       "clear": {
-        "name": "effacer"
       },
       "height": {
         "name": "hauteur"
@@ -2545,7 +2373,6 @@
         "name": "direction_haut"
       },
       "upload 3d model": {
-        "name": "télécharger le modèle 3d"
       },
       "width": {
         "name": "largeur"
@@ -2567,7 +2394,6 @@
     "display_name": "Charger 3D - Animation",
     "inputs": {
       "clear": {
-        "name": "effacer"
       },
       "height": {
         "name": "hauteur"
@@ -2585,7 +2411,6 @@
         "name": "direction_haut"
       },
       "upload 3d model": {
-        "name": "télécharger le modèle 3d"
       },
       "width": {
         "name": "largeur"
@@ -2650,7 +2475,6 @@
         "name": "image"
       },
       "refresh": {
-        "name": "rafraîchir"
       },
       "upload": {
         "name": "choisissez le fichier à télécharger"
@@ -5929,6 +5753,49 @@
       }
     }
   },
+  "WanImageToVideo": {
+    "display_name": "WanImageVersVidéo",
+    "inputs": {
+      "batch_size": {
+        "name": "taille_du_lot"
+      },
+      "clip_vision_output": {
+        "name": "sortie_vision_clip"
+      },
+      "height": {
+        "name": "hauteur"
+      },
+      "length": {
+        "name": "longueur"
+      },
+      "negative": {
+        "name": "négatif"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "start_image": {
+        "name": "image_de_départ"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive"
+      },
+      "1": {
+        "name": "négatif"
+      },
+      "2": {
+        "name": "latent"
+      }
+    }
+  },
   "WebcamCapture": {
     "display_name": "Capture Webcam",
     "inputs": {
@@ -5942,7 +5809,6 @@
         "name": "image"
       },
       "waiting for camera___": {
-        "name": "en attente de la caméra..."
       },
       "width": {
         "name": "largeur"

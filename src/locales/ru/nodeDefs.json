@@ -589,6 +589,35 @@
       }
     }
   },
+  "ConditioningSetAreaPercentageVideo": {
+    "display_name": "УсловныйНаборПроцентПлощадиВидео",
+    "inputs": {
+      "conditioning": {
+        "name": "условие"
+      },
+      "height": {
+        "name": "высота"
+      },
+      "strength": {
+        "name": "сила"
+      },
+      "temporal": {
+        "name": "временной"
+      },
+      "width": {
+        "name": "ширина"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      },
+      "z": {
+        "name": "z"
+      }
+    }
+  },
   "ConditioningSetAreaStrength": {
     "display_name": "Сила установки области кондиционирования",
     "inputs": {
@@ -1068,206 +1097,6 @@
       },
       "y": {
         "name": "y"
-      }
-    }
-  },
-  "DevToolsDeprecatedNode": {
-    "description": "Устаревшая нода",
-    "display_name": "Устаревшая нода"
-  },
-  "DevToolsErrorRaiseNode": {
-    "description": "Выбросить ошибку для целей разработки",
-    "display_name": "Выбросить ошибку"
-  },
-  "DevToolsErrorRaiseNodeWithMessage": {
-    "description": "Выбросить ошибку с сообщением для целей разработки",
-    "display_name": "Выбросить ошибку с сообщением",
-    "inputs": {
-      "message": {
-        "name": "сообщение"
-      }
-    }
-  },
-  "DevToolsExperimentalNode": {
-    "description": "Экспериментальная нода",
-    "display_name": "Экспериментальная нода"
-  },
-  "DevToolsLongComboDropdown": {
-    "description": "Длинный комбинированный выпадающий список",
-    "display_name": "Длинный комбинированный выпадающий список",
-    "inputs": {
-      "option": {
-        "name": "опция"
-      }
-    }
-  },
-  "DevToolsNodeWithBooleanInput": {
-    "description": "Узел с булевым вводом",
-    "display_name": "Узел с булевым вводом",
-    "inputs": {
-      "boolean_input": {
-        "name": "boolean_input"
-      }
-    }
-  },
-  "DevToolsNodeWithForceInput": {
-    "description": "Нода с принудительным вводом",
-    "display_name": "Нода с принудительным вводом",
-    "inputs": {
-      "float_input": {
-        "name": "ввод_float"
-      },
-      "int_input": {
-        "name": "ввод_int"
-      },
-      "int_input_widget": {
-        "name": "виджет_ввода_int"
-      }
-    }
-  },
-  "DevToolsNodeWithOnlyOptionalInput": {
-    "description": "Нода только с необязательным вводом",
-    "display_name": "Нода только с необязательным вводом",
-    "inputs": {
-      "clip": {
-        "name": "клип"
-      },
-      "text": {
-        "name": "текст"
-      }
-    }
-  },
-  "DevToolsNodeWithOptionalInput": {
-    "description": "Нода с необязательным вводом",
-    "display_name": "Нода с необязательным вводом",
-    "inputs": {
-      "optional_input": {
-        "name": "необязательный_ввод"
-      },
-      "required_input": {
-        "name": "необходимый_ввод"
-      }
-    }
-  },
-  "DevToolsNodeWithOutputList": {
-    "description": "Нода с выходным списком",
-    "display_name": "Нода с выходным списком",
-    "outputs": {
-      "0": {
-        "name": "ЦЕЛОЧИСЛЬНЫЙ_ВЫХОД"
-      },
-      "1": {
-        "name": "СПИСОК_ЦЕЛЫХ_ЧИСЕЛ"
-      }
-    }
-  },
-  "DevToolsNodeWithSeedInput": {
-    "description": "Нода с входным сидом",
-    "display_name": "Нода с входным сидом",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "seed": {
-        "name": "сид"
-      }
-    }
-  },
-  "DevToolsNodeWithStringInput": {
-    "description": "Нода со строковым вводом",
-    "display_name": "Нода со строковым вводом",
-    "inputs": {
-      "string_input": {
-        "name": "ввод_строки"
-      }
-    }
-  },
-  "DevToolsNodeWithUnionInput": {
-    "description": "Нода с объединённым вводом",
-    "display_name": "Нода с объединённым вводом",
-    "inputs": {
-      "int_input": {
-        "name": "ввод_int"
-      },
-      "string_input": {
-        "name": "ввод_строки"
-      },
-      "string_or_int_input": {
-        "name": "ввод_строки_или_int"
-      }
-    }
-  },
-  "DevToolsObjectPatchNode": {
-    "description": "Нода, применяющая объектный патч",
-    "display_name": "Нода объектного патча",
-    "inputs": {
-      "dummy_float": {
-        "name": "фиктивное число с плавающей точкой"
-      },
-      "model": {
-        "name": "модель"
-      },
-      "target_module": {
-        "name": "целевой модуль"
-      }
-    }
-  },
-  "DevToolsRemoteWidgetNode": {
-    "description": "Узел, который лениво получает опции с удаленного конечного пункта",
-    "display_name": "Удаленный виджет узла",
-    "inputs": {
-      "remote_widget_value": {
-        "name": "remote_widget_value"
-      }
-    }
-  },
-  "DevToolsRemoteWidgetNodeWithControlAfterRefresh": {
-    "description": "Узел, который лениво получает опции с удаленного конечного пункта и имеет кнопку обновления для ручной перезагрузки опций и выбора первой опции при обновлении",
-    "display_name": "Удаленный виджет узла с кнопкой обновления и контролем после обновления",
-    "inputs": {
-      "refresh": {
-        "name": "refresh"
-      },
-      "remote_widget_value": {
-        "name": "remote_widget_value"
-      }
-    }
-  },
-  "DevToolsRemoteWidgetNodeWithParams": {
-    "description": "Узел, который лениво получает опции с удаленного конечного пункта с параметрами запроса",
-    "display_name": "Удаленный виджет узла с параметром сортировки запроса",
-    "inputs": {
-      "remote_widget_value": {
-        "name": "remote_widget_value"
-      }
-    }
-  },
-  "DevToolsRemoteWidgetNodeWithRefresh": {
-    "description": "Узел, который лениво получает опции с удаленного конечного пункта и обновляет опции каждые 300 мс",
-    "display_name": "Удаленный виджет узла с обновлением каждые 300 мс",
-    "inputs": {
-      "remote_widget_value": {
-        "name": "remote_widget_value"
-      }
-    }
-  },
-  "DevToolsRemoteWidgetNodeWithRefreshButton": {
-    "description": "Узел, который лениво получает опции с удаленного конечного пункта и имеет кнопку обновления для ручной перезагрузки опций",
-    "display_name": "Удаленный виджет узла с кнопкой обновления",
-    "inputs": {
-      "refresh": {
-        "name": "refresh"
-      },
-      "remote_widget_value": {
-        "name": "remote_widget_value"
-      }
-    }
-  },
-  "DevToolsSimpleSlider": {
-    "display_name": "Простой Слайдер",
-    "inputs": {
-      "value": {
-        "name": "значение"
       }
     }
   },
@@ -2527,7 +2356,6 @@
     "display_name": "Загрузить 3D",
     "inputs": {
       "clear": {
-        "name": "clear"
       },
       "height": {
         "name": "высота"
@@ -2545,7 +2373,6 @@
         "name": "направление_вверх"
       },
       "upload 3d model": {
-        "name": "upload 3d model"
       },
       "width": {
         "name": "ширина"
@@ -2567,7 +2394,6 @@
     "display_name": "Загрузить 3D — Анимация",
     "inputs": {
       "clear": {
-        "name": "clear"
       },
       "height": {
         "name": "высота"
@@ -2585,7 +2411,6 @@
         "name": "направление_вверх"
       },
       "upload 3d model": {
-        "name": "upload 3d model"
       },
       "width": {
         "name": "ширина"
@@ -2650,7 +2475,6 @@
         "name": "изображение"
       },
       "refresh": {
-        "name": "обновить"
       },
       "upload": {
         "name": "выберите файл для загрузки"
@@ -5929,6 +5753,49 @@
       }
     }
   },
+  "WanImageToVideo": {
+    "display_name": "WanИзображениеВВидео",
+    "inputs": {
+      "batch_size": {
+        "name": "размер_пакета"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "height": {
+        "name": "высота"
+      },
+      "length": {
+        "name": "длина"
+      },
+      "negative": {
+        "name": "отрицательный"
+      },
+      "positive": {
+        "name": "положительный"
+      },
+      "start_image": {
+        "name": "начальное_изображение"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "положительный"
+      },
+      "1": {
+        "name": "отрицательный"
+      },
+      "2": {
+        "name": "latent"
+      }
+    }
+  },
   "WebcamCapture": {
     "display_name": "Захват с веб-камеры",
     "inputs": {
@@ -5942,7 +5809,6 @@
         "name": "изображение"
       },
       "waiting for camera___": {
-        "name": "в ожидании камеры..."
       },
       "width": {
         "name": "ширина"
