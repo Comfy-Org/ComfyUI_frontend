@@ -1,6 +1,7 @@
 import * as fs from 'fs'
 
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
+import type { ComfyNodeDef } from '../src/schemas/nodeDefSchema'
 import type { ComfyApi } from '../src/scripts/api'
 import { ComfyNodeDefImpl } from '../src/stores/nodeDefStore'
 import { normalizeI18nKey } from '../src/utils/formatUtil'
@@ -16,12 +17,17 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
     })
   })
 
-  const nodeDefs: ComfyNodeDefImpl[] = Object.values(
-    await comfyPage.page.evaluate(async () => {
-      const api = window['app'].api as ComfyApi
-      return await api.getNodeDefs()
-    })
-  ).map((def) => new ComfyNodeDefImpl(def))
+  const nodeDefs: ComfyNodeDefImpl[] = (
+    Object.values(
+      await comfyPage.page.evaluate(async () => {
+        const api = window['app'].api as ComfyApi
+        return await api.getNodeDefs()
+      })
+    ) as ComfyNodeDef[]
+  )
+    // Ignore DevTools nodes (used for internal testing)
+    .filter((def) => !def.name.startsWith('DevTools'))
+    .map((def) => new ComfyNodeDefImpl(def))
 
   console.log(`Collected ${nodeDefs.length} node definitions`)
 
