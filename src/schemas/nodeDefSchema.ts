@@ -32,7 +32,7 @@ const zNumericInputOptions = zBaseInputOptions.extend({
   step: z.number().optional(),
   // Note: Many node authors are using INT/FLOAT to pass list of INT/FLOAT.
   default: z.union([z.number(), z.array(z.number())]).optional(),
-  display: z.enum(['slider', 'number']).optional()
+  display: z.enum(['slider', 'number', 'knob']).optional()
 })
 
 const zIntInputOptions = zNumericInputOptions.extend({

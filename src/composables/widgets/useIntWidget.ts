@@ -47,11 +47,13 @@ export const useIntWidget = () => {
     const settingStore = useSettingStore()
     const sliderEnabled = !settingStore.get('Comfy.DisableSliders')
     const inputOptions = inputData[1] ?? {}
-    const widgetType = sliderEnabled
-      ? inputOptions?.display === 'slider'
+    const display_type = inputOptions?.display
+    const widgetType =
+      sliderEnabled && display_type == 'slider'
         ? 'slider'
-        : 'number'
-      : 'number'
+        : display_type == 'knob'
+          ? 'knob'
+          : 'number'
 
     const step = inputOptions.step ?? 1
     const defaultValue = inputOptions.default ?? 0
