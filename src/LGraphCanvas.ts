@@ -2246,6 +2246,7 @@ export class LGraphCanvas implements ConnectionColorContext {
                 const otherNode = graph._nodes_by_id[link.target_id]
                 const input = otherNode.inputs[slot]
                 const pos = otherNode.getConnectionPos(true, slot)
+                const afterRerouteId = LLink.getReroutes(graph, link).at(-1)?.id
                 const firstRerouteId = LLink.getReroutes(graph, link).at(0)?.id
 
                 connectingLinks.push({
@@ -2255,7 +2256,8 @@ export class LGraphCanvas implements ConnectionColorContext {
                   output: null,
                   pos,
                   direction: LinkDirection.RIGHT,
-                  afterRerouteId: firstRerouteId,
+                  afterRerouteId,
+                  firstRerouteId,
                   link,
                 })
               }
@@ -4164,9 +4166,10 @@ export class LGraphCanvas implements ConnectionColorContext {
             : LiteGraph.CONNECTING_LINK_COLOR
 
           // If not using reroutes, link.afterRerouteId should be undefined.
-          const pos = link.afterRerouteId == null
+          const rerouteIdToConnectTo = link.firstRerouteId ?? link.afterRerouteId
+          const pos = rerouteIdToConnectTo == null
             ? link.pos
-            : (this.graph.reroutes.get(link.afterRerouteId)?.pos ?? link.pos)
+            : (this.graph.reroutes.get(rerouteIdToConnectTo)?.pos ?? link.pos)
           const highlightPos = this.#getHighlightPosition()
           // the connection being dragged by the mouse
           this.renderLink(

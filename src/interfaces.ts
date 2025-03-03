@@ -290,6 +290,8 @@ export interface ConnectingLink extends IInputOrOutput {
   pos: Point
   direction?: LinkDirection
   afterRerouteId?: RerouteId
+  /** The first reroute on a chain */
+  firstRerouteId?: RerouteId
   /** The link being moved, or `undefined` if creating a new link. */
   link?: LLink
 }
