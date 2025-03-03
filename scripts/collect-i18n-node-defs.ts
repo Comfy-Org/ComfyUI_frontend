@@ -25,6 +25,7 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
       })
     ) as ComfyNodeDef[]
   )
+    // Ignore DevTools nodes (used for internal testing)
     .filter((def) => !def.name.startsWith('DevTools'))
     .map((def) => new ComfyNodeDefImpl(def))
 
