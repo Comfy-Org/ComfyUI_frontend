@@ -22,7 +22,7 @@ export const PYTHON_MIRROR: UVMirror = {
   mirror:
     'https://github.com/astral-sh/python-build-standalone/releases/download',
   fallbackMirror:
-    'https://bgithub.xyz/astral-sh/python-build-standalone/releases/download',
+    'https://python-standalone.org/mirror/astral-sh/python-build-standalone',
   validationPathSuffix:
     '/20250115/cpython-3.10.16+20250115-aarch64-apple-darwin-debug-full.tar.zst.sha256'
 }
