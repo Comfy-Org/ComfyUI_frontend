@@ -7,3 +7,12 @@ export function isPrimitiveNode(
 ): node is PrimitiveNode & LGraphNode {
   return node.type === 'PrimitiveNode'
 }
+
+/**
+ * Check if an error is an AbortError triggered by `AbortController#abort`
+ * when cancelling a request.
+ */
+export const isAbortError = (
+  err: unknown
+): err is DOMException & { name: 'AbortError' } =>
+  err instanceof DOMException && err.name === 'AbortError'

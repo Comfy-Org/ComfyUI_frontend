@@ -297,3 +297,18 @@ export function formatDate(text: string, date: Date) {
     return text
   })
 }
+
+/**
+ * Generate a cache key from parameters
+ * Sorts the parameters to ensure consistent keys regardless of parameter order
+ */
+export const paramsToCacheKey = (params: unknown): string => {
+  if (typeof params === 'string') return params
+  if (typeof params === 'object' && params !== null)
+    return Object.keys(params)
+      .sort((a, b) => a.localeCompare(b))
+      .map((key) => `${key}:${params[key as keyof typeof params]}`)
+      .join('&')
+
+  return String(params)
+}
