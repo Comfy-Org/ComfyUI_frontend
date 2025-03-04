@@ -286,7 +286,7 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
   'INT:seed': seedWidget,
   'INT:noise_seed': seedWidget,
   INT: transformWidgetConstructorV2ToV1(useIntWidget()),
-  FLOAT: useFloatWidget(),
+  FLOAT: transformWidgetConstructorV2ToV1(useFloatWidget()),
   BOOLEAN: useBooleanWidget(),
   STRING: useStringWidget(),
   MARKDOWN: useMarkdownWidget(),

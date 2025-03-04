@@ -77,7 +77,7 @@ export const useIntWidget = () => {
         widget,
         'randomize',
         undefined,
-        inputSpec.name,
+        undefined,
         transformInputSpecV2ToV1(inputSpec)
       )
       widget.linkedWidgets = [seedControl]

@@ -2,8 +2,11 @@ import type { LGraphNode } from '@comfyorg/litegraph'
 import type { INumericWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import _ from 'lodash'
 
-import { type InputSpec, isFloatInputSpec } from '@/schemas/nodeDefSchema'
-import type { ComfyWidgetConstructor } from '@/scripts/widgets'
+import {
+  type InputSpec,
+  isFloatInputSpec
+} from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { type ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import { useSettingStore } from '@/stores/settingStore'
 
 function onFloatValueChange(this: INumericWidget, v: number) {
@@ -22,23 +25,18 @@ export const _for_testing = {
 }
 
 export const useFloatWidget = () => {
-  const widgetConstructor: ComfyWidgetConstructor = (
+  const widgetConstructor: ComfyWidgetConstructorV2 = (
     node: LGraphNode,
-    inputName: string,
-    inputData: InputSpec
+    inputSpec: InputSpec
   ) => {
-    if (!isFloatInputSpec(inputData)) {
-      throw new Error(`Invalid input data: ${inputData}`)
+    if (!isFloatInputSpec(inputSpec)) {
+      throw new Error(`Invalid input data: ${inputSpec}`)
     }
-
-    // TODO: Move to outer scope to avoid re-initializing on every call
-    // Blocked on ComfyWidgets lazy initialization.
 
     const settingStore = useSettingStore()
     const sliderEnabled = !settingStore.get('Comfy.DisableSliders')
-    const inputOptions = inputData[1] ?? {}
 
-    const display_type = inputOptions?.display
+    const display_type = inputSpec.display
     const widgetType =
       sliderEnabled && display_type == 'slider'
         ? 'slider'
@@ -46,33 +44,31 @@ export const useFloatWidget = () => {
           ? 'knob'
           : 'number'
 
-    const step = inputOptions.step ?? 0.5
+    const step = inputSpec.step ?? 0.5
     const precision =
       settingStore.get('Comfy.FloatRoundingPrecision') ||
       Math.max(0, -Math.floor(Math.log10(step)))
     const enableRounding = !settingStore.get('Comfy.DisableFloatRounding')
 
-    const defaultValue = inputOptions.default ?? 0
-    return {
-      widget: node.addWidget(
-        widgetType,
-        inputName,
-        defaultValue,
-        onFloatValueChange,
-        {
-          min: inputOptions.min ?? 0,
-          max: inputOptions.max ?? 2048,
-          round:
-            enableRounding && precision && !inputOptions.round
-              ? (1_000_000 * Math.pow(0.1, precision)) / 1_000_000
-              : (inputOptions.round as number),
-          /** @deprecated Use step2 instead. The 10x value is a legacy implementation. */
-          step: step * 10.0,
-          step2: step,
-          precision
-        }
-      )
-    }
+    const defaultValue = inputSpec.default ?? 0
+    return node.addWidget(
+      widgetType,
+      inputSpec.name,
+      defaultValue,
+      onFloatValueChange,
+      {
+        min: inputSpec.min ?? 0,
+        max: inputSpec.max ?? 2048,
+        round:
+          enableRounding && precision && !inputSpec.round
+            ? (1_000_000 * Math.pow(0.1, precision)) / 1_000_000
+            : (inputSpec.round as number),
+        /** @deprecated Use step2 instead. The 10x value is a legacy implementation. */
+        step: step * 10.0,
+        step2: step,
+        precision
+      }
+    )
   }
 
   return widgetConstructor
