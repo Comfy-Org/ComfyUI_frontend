@@ -40,9 +40,9 @@ export const useLitegraphService = () => {
     nodeDef: ComfyNodeDefV2 & ComfyNodeDefV1
   ) {
     const node = class ComfyNode extends LGraphNode {
-      static comfyClass? = nodeDef.name
-      static title? = nodeDef.display_name || nodeDef.name
-      static nodeData? = nodeDef
+      static comfyClass?: string = nodeDef.name
+      static title?: string = nodeDef.display_name || nodeDef.name
+      static nodeData?: ComfyNodeDefV1 & ComfyNodeDefV2 = nodeDef
       static category?: string
 
       constructor(title?: string) {

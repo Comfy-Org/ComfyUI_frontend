@@ -1,7 +1,8 @@
 import '@comfyorg/litegraph'
 import type { LLink, Size } from '@comfyorg/litegraph'
 
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import type { DOMWidget, DOMWidgetOptions } from '@/scripts/domWidget'
 
 import type { NodeId } from '../schemas/comfyWorkflowSchema'
@@ -63,7 +64,7 @@ declare module '@comfyorg/litegraph' {
     type?: string
     comfyClass: string
     title: string
-    nodeData?: ComfyNodeDef
+    nodeData?: ComfyNodeDefV1 & ComfyNodeDefV2
     category?: string
     new (): T
   }
