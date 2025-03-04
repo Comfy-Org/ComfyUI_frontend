@@ -2444,20 +2444,6 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       link_info,
       input,
     )
-    graph.onNodeConnectionChange?.(
-      NodeSlotType.INPUT,
-      target_node,
-      targetIndex,
-      this,
-      slot,
-    )
-    graph.onNodeConnectionChange?.(
-      NodeSlotType.OUTPUT,
-      this,
-      slot,
-      target_node,
-      targetIndex,
-    )
 
     this.setDirtyCanvas(false, true)
     graph.afterChange()
@@ -2531,8 +2517,6 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
             output,
           )
 
-          graph.onNodeConnectionChange?.(NodeSlotType.OUTPUT, this, slot)
-          graph.onNodeConnectionChange?.(NodeSlotType.INPUT, target, link_info.target_slot)
           break
         }
       }
@@ -2570,8 +2554,6 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
           link_info,
           output,
         )
-        graph.onNodeConnectionChange?.(NodeSlotType.OUTPUT, this, slot)
-        graph.onNodeConnectionChange?.(NodeSlotType.INPUT, target, link_info.target_slot)
       }
       output.links = null
     }
@@ -2646,8 +2628,6 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
           link_info,
           output,
         )
-        this.graph?.onNodeConnectionChange?.(NodeSlotType.OUTPUT, target_node, i)
-        this.graph?.onNodeConnectionChange?.(NodeSlotType.INPUT, this, slot)
       }
     }
 

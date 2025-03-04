@@ -1,7 +1,6 @@
 import type {
   Dictionary,
   IContextMenuValue,
-  ISlotType,
   LinkNetwork,
   LinkSegment,
   MethodNames,
@@ -58,7 +57,6 @@ export interface LGraphConfig {
  * supported callbacks:
  * + onNodeAdded: when a new node is added to the graph
  * + onNodeRemoved: when a node inside this graph is removed
- * + onNodeConnectionChange: some connection has changed in the graph (connected or disconnected)
  */
 export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   static serialisedSchemaVersion = 1 as const
@@ -206,13 +204,6 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   onSerialize?(data: ISerialisedGraph | SerialisableGraph): void
   onConfigure?(data: ISerialisedGraph | SerialisableGraph): void
   onGetNodeMenuOptions?(options: (IContextMenuValue<unknown> | null)[], node: LGraphNode): void
-  onNodeConnectionChange?(
-    nodeSlotType: ISlotType,
-    targetNode: LGraphNode | null | undefined,
-    slotIndex: number,
-    sourceNode?: LGraphNode,
-    sourceSlotIndex?: number,
-  ): void
 
   private _input_nodes?: LGraphNode[]
 
