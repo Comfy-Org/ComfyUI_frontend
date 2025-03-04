@@ -624,7 +624,7 @@ app.registerExtension({
     app.canvas.getWidgetLinkType = function (widget, node) {
       const nodeDefStore = useNodeDefStore()
       const nodeDef = nodeDefStore.nodeDefsByName[node.type]
-      const input = nodeDef.inputs.getInput(widget.name)
+      const input = nodeDef.inputs[widget.name]
       return input?.type
     }
 

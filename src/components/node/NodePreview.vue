@@ -83,16 +83,13 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
 import _ from 'lodash'
 import { computed } from 'vue'
 
-import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
-const props = defineProps({
-  nodeDef: {
-    type: ComfyNodeDefImpl,
-    required: true
-  }
-})
+const props = defineProps<{
+  nodeDef: ComfyNodeDefV2
+}>()
 
 const colorPaletteStore = useColorPaletteStore()
 const litegraphColors = computed(
@@ -102,8 +99,8 @@ const litegraphColors = computed(
 const widgetStore = useWidgetStore()
 
 const nodeDef = props.nodeDef
-const allInputDefs = nodeDef.inputs.all
-const allOutputDefs = nodeDef.outputs.all
+const allInputDefs = Object.values(nodeDef.inputs)
+const allOutputDefs = nodeDef.outputs
 const slotInputDefs = allInputDefs.filter(
   (input) => !widgetStore.inputIsWidget(input)
 )

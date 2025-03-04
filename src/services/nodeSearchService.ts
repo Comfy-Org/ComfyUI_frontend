@@ -210,7 +210,7 @@ export class NodeSearchService {
       /* name */ 'Input Type',
       /* invokeSequence */ 'i',
       /* longInvokeSequence */ 'input',
-      (node) => node.inputs.all.map((input) => input.type),
+      (node) => Object.values(node.inputs).map((input) => input.type),
       data,
       filterSearchOptions
     )
@@ -220,7 +220,7 @@ export class NodeSearchService {
       /* name */ 'Output Type',
       /* invokeSequence */ 'o',
       /* longInvokeSequence */ 'output',
-      (node) => node.outputs.all.map((output) => output.type),
+      (node) => node.outputs.map((output) => output.type),
       data,
       filterSearchOptions
     )
