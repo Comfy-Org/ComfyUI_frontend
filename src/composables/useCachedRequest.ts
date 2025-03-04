@@ -28,7 +28,7 @@ export function useCachedRequest<TParams, TResult>(
 ) {
   const { maxSize = DEFAULT_MAX_SIZE, cacheKeyFn = paramsToCacheKey } = options
 
-  const cache = new QuickLRU<string, TResult>({ maxSize })
+  const cache = new QuickLRU<string, TResult | null>({ maxSize })
   const pendingRequests = new Map<string, Promise<TResult | null>>()
   const abortControllers = new Map<string, AbortController>()
 
@@ -44,10 +44,12 @@ export function useCachedRequest<TParams, TResult>(
       pendingRequests.set(cacheKey, responsePromise)
 
       const result = await responsePromise
-      if (result) cache.set(cacheKey, result)
+      cache.set(cacheKey, result)
 
       return result
     } catch (err) {
+      // Set cache on error to prevent retrying bad requests
+      cache.set(cacheKey, null)
       return null
     } finally {
       pendingRequests.delete(cacheKey)
@@ -88,7 +90,7 @@ export function useCachedRequest<TParams, TResult>(
     const cacheKey = cacheKeyFn(params)
 
     const cachedResult = cache.get(cacheKey)
-    if (cachedResult) return cachedResult
+    if (cachedResult !== undefined) return cachedResult
 
     const pendingRequest = pendingRequests.get(cacheKey)
     if (pendingRequest) return handlePendingRequest(pendingRequest)
