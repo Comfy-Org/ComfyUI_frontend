@@ -920,24 +920,6 @@ export class ComfyApp {
     }
   }
 
-  /**
-   * Remove the impl after groupNode unit tests are removed.
-   * @deprecated Use useWidgetStore().getWidgetType instead
-   */
-  getWidgetType(inputData, inputName: string) {
-    const type = inputData[0]
-
-    if (Array.isArray(type)) {
-      return 'COMBO'
-    } else if (`${type}:${inputName}` in this.widgets) {
-      return `${type}:${inputName}`
-    } else if (type in this.widgets) {
-      return type
-    } else {
-      return null
-    }
-  }
-
   async registerNodeDef(nodeId: string, nodeData: ComfyNodeDef) {
     return await useLitegraphService().registerNodeDef(nodeId, nodeData)
   }

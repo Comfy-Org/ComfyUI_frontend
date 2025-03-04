@@ -13,13 +13,18 @@ import { IBaseWidget, IWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
 import { st } from '@/i18n'
 import type { NodeId } from '@/schemas/comfyWorkflowSchema'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import {
+  type ComfyNodeDef,
+  InputSpec,
+  getInputSpecType
+} from '@/schemas/nodeDefSchema'
 import { ANIM_PREVIEW_WIDGET, ComfyApp, app } from '@/scripts/app'
 import { $el } from '@/scripts/ui'
 import { calculateImageGrid, createImageHost } from '@/scripts/ui/imagePreview'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useToastStore } from '@/stores/toastStore'
+import { useWidgetStore } from '@/stores/widgetStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { is_all_same_aspect_ratio } from '@/utils/imageUtil'
 import { getImageTop, isImageNode, isVideoNode } from '@/utils/litegraphUtil'
@@ -33,6 +38,7 @@ export const useLitegraphService = () => {
   const extensionService = useExtensionService()
   const toastStore = useToastStore()
   const canvasStore = useCanvasStore()
+  const widgetStore = useWidgetStore()
 
   async function registerNodeDef(nodeId: string, nodeData: ComfyNodeDef) {
     const node = class ComfyNode extends LGraphNode {
@@ -61,26 +67,25 @@ export const useLitegraphService = () => {
         } = { minWidth: 1, minHeight: 1 }
         for (const inputName in inputs) {
           const _inputData = inputs[inputName]
-          const type = _inputData[0]
+          const type = getInputSpecType(_inputData)
           const options = _inputData[1] ?? {}
-          const inputData = [type, options]
+          const inputData = [_inputData[0], options] as InputSpec
           const nameKey = `nodeDefs.${normalizeI18nKey(nodeData.name)}.inputs.${normalizeI18nKey(inputName)}.name`
 
           const inputIsRequired = requiredInputs && inputName in requiredInputs
 
           let widgetCreated = true
-          const widgetType = app.getWidgetType(inputData, inputName)
+          const widgetType = widgetStore.getWidgetType(type, inputName)
+
           if (widgetType) {
             if (widgetType === 'COMBO') {
               Object.assign(
                 config,
-                // @ts-expect-error InputSpec is not typed correctly
                 app.widgets.COMBO(this, inputName, inputData, app) || {}
               )
             } else {
               Object.assign(
                 config,
-                // @ts-expect-error InputSpec is not typed correctly
                 app.widgets[widgetType](this, inputName, inputData, app) || {}
               )
             }
@@ -97,7 +102,6 @@ export const useLitegraphService = () => {
               ...shapeOptions,
               localized_name: st(nameKey, inputName)
             }
-            // @ts-expect-error InputSpec is not typed correctly
             this.addInput(inputName, type, inputOptions)
             widgetCreated = false
           }
@@ -107,20 +111,16 @@ export const useLitegraphService = () => {
             if (!inputIsRequired) {
               config.widget.options.inputIsOptional = true
             }
-            // @ts-expect-error InputSpec is not typed correctly
-            if (inputData[1]?.forceInput) {
+            if (options.forceInput) {
               config.widget.options.forceInput = true
             }
-            // @ts-expect-error InputSpec is not typed correctly
-            if (inputData[1]?.defaultInput) {
+            if (options.defaultInput) {
               config.widget.options.defaultInput = true
             }
-            // @ts-expect-error InputSpec is not typed correctly
-            if (inputData[1]?.advanced) {
+            if (options.advanced) {
               config.widget.advanced = true
             }
-            // @ts-expect-error InputSpec is not typed correctly
-            if (inputData[1]?.hidden) {
+            if (options.hidden) {
               config.widget.hidden = true
             }
           }
