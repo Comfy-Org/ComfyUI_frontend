@@ -59,33 +59,20 @@ export const useLitegraphService = () => {
           const inputType = inputSpec.type
           const nameKey = `nodeDefs.${normalizeI18nKey(nodeDef.name)}.inputs.${normalizeI18nKey(inputName)}.name`
 
-          let widgetCreated = true
           const widgetType = app.getWidgetType(
             [inputType, inputSpec],
             inputName
           )
           if (widgetType) {
-            if (widgetType === 'COMBO') {
-              Object.assign(
-                config,
-                app.widgets.COMBO(
-                  this,
-                  inputName,
-                  [inputType, inputSpec],
-                  app
-                ) || {}
-              )
-            } else {
-              Object.assign(
-                config,
-                app.widgets[widgetType](
-                  this,
-                  inputName,
-                  [inputType, inputSpec],
-                  app
-                ) || {}
-              )
-            }
+            Object.assign(
+              config,
+              app.widgets[widgetType](
+                this,
+                inputName,
+                [inputType, inputSpec],
+                app
+              ) ?? {}
+            )
             if (config.widget) {
               const fallback = config.widget.label ?? inputName
               config.widget.label = st(nameKey, fallback)
@@ -100,10 +87,9 @@ export const useLitegraphService = () => {
               ...shapeOptions,
               localized_name: st(nameKey, inputName)
             })
-            widgetCreated = false
           }
 
-          if (widgetCreated && config?.widget) {
+          if (widgetType && config?.widget) {
             config.widget.options ??= {}
             if (inputSpec.isOptional) {
               config.widget.options.inputIsOptional = true
