@@ -76,7 +76,7 @@ const onIdle = () => {
     const inputName = node.inputs[inputSlot].name
     const translatedTooltip = st(
       `nodeDefs.${normalizeI18nKey(node.type)}.inputs.${normalizeI18nKey(inputName)}.tooltip`,
-      nodeDef.inputs.getInput(inputName)?.tooltip
+      nodeDef.inputs[inputName]?.tooltip
     )
     return showTooltip(translatedTooltip)
   }
@@ -90,7 +90,7 @@ const onIdle = () => {
   if (outputSlot !== -1) {
     const translatedTooltip = st(
       `nodeDefs.${normalizeI18nKey(node.type)}.outputs.${outputSlot}.tooltip`,
-      nodeDef.outputs.all?.[outputSlot]?.tooltip
+      nodeDef.outputs[outputSlot]?.tooltip
     )
     return showTooltip(translatedTooltip)
   }
@@ -100,7 +100,7 @@ const onIdle = () => {
   if (widget && !widget.element) {
     const translatedTooltip = st(
       `nodeDefs.${normalizeI18nKey(node.type)}.inputs.${normalizeI18nKey(widget.name)}.tooltip`,
-      nodeDef.inputs.getInput(widget.name)?.tooltip
+      nodeDef.inputs[widget.name]?.tooltip
     )
     // Widget tooltip can be set dynamically, current translation collection does not support this.
     return showTooltip(widget.tooltip ?? translatedTooltip)

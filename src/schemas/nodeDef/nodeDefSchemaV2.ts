@@ -9,11 +9,6 @@ import {
   zStringInputOptions
 } from '@/schemas/nodeDefSchema'
 
-const zBaseInputSpec = zBaseInputOptions.extend({
-  name: z.string(),
-  isOptional: z.boolean().optional()
-})
-
 const zIntInputSpec = zIntInputOptions.extend({
   type: z.literal('INT'),
   name: z.string(),
@@ -44,7 +39,7 @@ const zComboInputSpec = zComboInputOptions.extend({
   isOptional: z.boolean().optional()
 })
 
-const zCustomInputSpec = z.object({
+const zCustomInputSpec = zBaseInputOptions.extend({
   type: z.string(),
   name: z.string(),
   isOptional: z.boolean().optional()
@@ -56,12 +51,11 @@ const zInputSpec = z.union([
   zBooleanInputSpec,
   zStringInputSpec,
   zComboInputSpec,
-  zBaseInputSpec,
   zCustomInputSpec
 ])
 
 // Output specs
-const zComfyOutputSpec = z.object({
+const zOutputSpec = z.object({
   index: z.number(),
   name: z.string(),
   type: z.string(),
@@ -70,12 +64,10 @@ const zComfyOutputSpec = z.object({
   tooltip: z.string().optional()
 })
 
-const zComfyOutputTypesSpec = z.array(z.union([z.string(), z.array(z.any())]))
-
 // Main node definition schema
-const zComfyNodeDef = z.object({
+const zNodeDef = z.object({
   inputs: z.record(zInputSpec),
-  outputs: z.array(zComfyOutputSpec),
+  outputs: z.array(zOutputSpec),
   hidden: z.record(z.any()).optional(),
 
   name: z.string(),
@@ -89,14 +81,13 @@ const zComfyNodeDef = z.object({
 })
 
 // Export types
-export type BaseInputSpec = z.infer<typeof zBaseInputSpec>
 export type IntInputSpec = z.infer<typeof zIntInputSpec>
 export type FloatInputSpec = z.infer<typeof zFloatInputSpec>
 export type BooleanInputSpec = z.infer<typeof zBooleanInputSpec>
 export type StringInputSpec = z.infer<typeof zStringInputSpec>
 export type ComboInputSpec = z.infer<typeof zComboInputSpec>
-export type InputSpec = z.infer<typeof zInputSpec>
+export type CustomInputSpec = z.infer<typeof zCustomInputSpec>
 
-export type ComfyOutputSpec = z.infer<typeof zComfyOutputSpec>
-export type ComfyOutputTypesSpec = z.infer<typeof zComfyOutputTypesSpec>
-export type ComfyNodeDef = z.infer<typeof zComfyNodeDef>
+export type InputSpec = z.infer<typeof zInputSpec>
+export type OutputSpec = z.infer<typeof zOutputSpec>
+export type ComfyNodeDef = z.infer<typeof zNodeDef>

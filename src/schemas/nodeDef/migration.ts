@@ -1,6 +1,6 @@
 import {
   ComfyNodeDef as ComfyNodeDefV2,
-  ComfyOutputSpec,
+  OutputSpec as OutputSpecV2,
   InputSpec as InputSpecV2
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import {
@@ -37,11 +37,11 @@ export function transformNodeDefV1ToV2(
   }
 
   // Transform outputs
-  const outputs: ComfyOutputSpec[] = []
+  const outputs: OutputSpecV2[] = []
 
   if (nodeDefV1.output) {
     nodeDefV1.output.forEach((outputType, index) => {
-      const outputSpec: ComfyOutputSpec = {
+      const outputSpec: OutputSpecV2 = {
         index,
         name: nodeDefV1.output_name?.[index] || `output_${index}`,
         type: Array.isArray(outputType) ? 'COMBO' : outputType,

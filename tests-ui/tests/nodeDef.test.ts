@@ -2,14 +2,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import {
-  BooleanInputSpec,
-  ComfyInputsSpec,
-  ComfyNodeDefImpl,
-  FloatInputSpec,
-  IntInputSpec,
-  StringInputSpec
-} from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 describe('ComfyInputsSpec', () => {
   it('should transform a plain object to ComfyInputsSpec instance', () => {
