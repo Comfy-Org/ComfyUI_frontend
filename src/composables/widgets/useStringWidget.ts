@@ -64,10 +64,6 @@ export const useStringWidget = () => {
     inputData: InputSpec,
     app: ComfyApp
   ) => {
-    if (!isStringInputSpec(inputData)) {
-      throw new Error(`Invalid input data: ${inputData}`)
-    }
-
     const inputOptions = inputData[1] ?? {}
     const defaultVal = inputOptions.default ?? ''
     const multiline = inputOptions.multiline
@@ -86,7 +82,7 @@ export const useStringWidget = () => {
       }
     }
 
-    if (inputOptions.dynamicPrompts != undefined) {
+    if (typeof inputOptions.dynamicPrompts === "boolean") {
       res.widget.dynamicPrompts = inputOptions.dynamicPrompts
     }
 
