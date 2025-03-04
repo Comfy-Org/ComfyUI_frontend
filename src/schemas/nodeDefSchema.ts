@@ -13,7 +13,7 @@ const zRemoteWidgetConfig = z.object({
   max_retries: z.number().gte(0).optional()
 })
 
-const zBaseInputOptions = z
+export const zBaseInputOptions = z
   .object({
     default: z.any().optional(),
     /** @deprecated Group node uses this field. Remove when group node feature is removed. */
@@ -28,7 +28,7 @@ const zBaseInputOptions = z
   })
   .passthrough()
 
-const zNumericInputOptions = zBaseInputOptions.extend({
+export const zNumericInputOptions = zBaseInputOptions.extend({
   min: z.number().optional(),
   max: z.number().optional(),
   step: z.number().optional(),
@@ -37,7 +37,7 @@ const zNumericInputOptions = zBaseInputOptions.extend({
   display: z.enum(['slider', 'number', 'knob']).optional()
 })
 
-const zIntInputOptions = zNumericInputOptions.extend({
+export const zIntInputOptions = zNumericInputOptions.extend({
   /**
    * If true, a linked widget will be added to the node to select the mode
    * of `control_after_generate`.
@@ -45,17 +45,17 @@ const zIntInputOptions = zNumericInputOptions.extend({
   control_after_generate: z.boolean().optional()
 })
 
-const zFloatInputOptions = zNumericInputOptions.extend({
+export const zFloatInputOptions = zNumericInputOptions.extend({
   round: z.union([z.number(), z.literal(false)]).optional()
 })
 
-const zBooleanInputOptions = zBaseInputOptions.extend({
+export const zBooleanInputOptions = zBaseInputOptions.extend({
   label_on: z.string().optional(),
   label_off: z.string().optional(),
   default: z.boolean().optional()
 })
 
-const zStringInputOptions = zBaseInputOptions.extend({
+export const zStringInputOptions = zBaseInputOptions.extend({
   default: z.string().optional(),
   multiline: z.boolean().optional(),
   dynamicPrompts: z.boolean().optional(),
@@ -65,7 +65,7 @@ const zStringInputOptions = zBaseInputOptions.extend({
   placeholder: z.string().optional()
 })
 
-const zComboInputOptions = zBaseInputOptions.extend({
+export const zComboInputOptions = zBaseInputOptions.extend({
   control_after_generate: z.boolean().optional(),
   image_upload: z.boolean().optional(),
   image_folder: z.enum(['input', 'output', 'temp']).optional(),
