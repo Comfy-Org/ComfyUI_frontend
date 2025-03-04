@@ -4,17 +4,17 @@ import { defineStore } from 'pinia'
 import type { TreeNode } from 'primevue/treenode'
 import { computed, ref } from 'vue'
 
+import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
+import type {
+  ComfyNodeDef as ComfyNodeDefV2,
+  InputSpec as InputSpecV2,
+  OutputSpec as OutputSpecV2
+} from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type {
   ComfyInputsSpec as ComfyInputSpecV1,
   ComfyNodeDef as ComfyNodeDefV1,
   ComfyOutputTypesSpec as ComfyOutputSpecV1
 } from '@/schemas/nodeDefSchema'
-import type {
-  InputSpec as InputSpecV2,
-  OutputSpec as OutputSpecV2,
-  ComfyNodeDef as ComfyNodeDefV2
-} from '@/schemas/nodeDef/nodeDefSchemaV2'
-
 import {
   NodeSearchService,
   type SearchAuxScore
@@ -25,7 +25,6 @@ import {
   getNodeSource
 } from '@/types/nodeSource'
 import { buildTree } from '@/utils/treeUtil'
-import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
 
 export class ComfyNodeDefImpl implements ComfyNodeDefV1, ComfyNodeDefV2 {
   // ComfyNodeDef fields (V1)
@@ -91,7 +90,7 @@ export class ComfyNodeDefImpl implements ComfyNodeDefV1, ComfyNodeDefV2 {
     const defV2 = transformNodeDefV1ToV2(obj)
     this.inputs = defV2.inputs
     this.outputs = defV2.outputs
-    this.hidden = defV2.hidden
+    this.hidden = defV2.hidden ?? {}
 
     // Initialize node source
     this.nodeSource = getNodeSource(obj.python_module)
