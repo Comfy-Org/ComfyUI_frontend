@@ -11,9 +11,9 @@ import { useFloatWidget } from '@/composables/widgets/useFloatWidget'
 import { useImageUploadWidget } from '@/composables/widgets/useImageUploadWidget'
 import { useIntWidget } from '@/composables/widgets/useIntWidget'
 import { useMarkdownWidget } from '@/composables/widgets/useMarkdownWidget'
-import { useSeedWidget } from '@/composables/widgets/useSeedWidget'
 import { useStringWidget } from '@/composables/widgets/useStringWidget'
 import { t } from '@/i18n'
+import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { useSettingStore } from '@/stores/settingStore'
@@ -33,6 +33,24 @@ export type ComfyWidgetConstructor = (
   app: ComfyApp,
   widgetName?: string
 ) => { widget: IWidget; minWidth?: number; minHeight?: number }
+
+/**
+ * Transforms a V2 widget constructor to a V1 widget constructor.
+ * @param widgetConstructorV2 The V2 widget constructor to transform.
+ * @returns The transformed V1 widget constructor.
+ */
+const transformWidgetConstructorV2ToV1 = (
+  widgetConstructorV2: ComfyWidgetConstructorV2
+): ComfyWidgetConstructor => {
+  return (node, inputName, inputData) => {
+    const inputSpec = transformInputSpecV1ToV2(inputData, {
+      name: inputName
+    })
+    return {
+      widget: widgetConstructorV2(node, inputSpec)
+    }
+  }
+}
 
 function controlValueRunBefore() {
   return useSettingStore().get('Comfy.WidgetControlMode') === 'before'
@@ -257,12 +275,17 @@ export function addValueControlWidgets(
   return widgets
 }
 
-const SeedWidget = useSeedWidget()
+const seedWidget = transformWidgetConstructorV2ToV1((node, inputSpec) => {
+  return useIntWidget()(node, {
+    ...inputSpec,
+    control_after_generate: true
+  })
+})
 
 export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
-  'INT:seed': SeedWidget,
-  'INT:noise_seed': SeedWidget,
-  INT: useIntWidget(),
+  'INT:seed': seedWidget,
+  'INT:noise_seed': seedWidget,
+  INT: transformWidgetConstructorV2ToV1(useIntWidget()),
   FLOAT: useFloatWidget(),
   BOOLEAN: useBooleanWidget(),
   STRING: useStringWidget(),
