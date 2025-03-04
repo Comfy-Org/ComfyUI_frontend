@@ -17,7 +17,7 @@ export interface CachedRequestOptions {
 }
 
 /**
- * Composable that wraps a function with memoization and request deduplication.
+ * Composable that wraps a function with memoization, request deduplication, and abort handling.
  */
 export function useCachedRequest<TParams, TResult>(
   requestFunction: (
@@ -48,10 +48,6 @@ export function useCachedRequest<TParams, TResult>(
 
       return result
     } catch (err) {
-      const isAborted = err instanceof DOMException && err.name === 'AbortError'
-      if (!isAborted)
-        console.error(`Error in request with params ${cacheKey}:`, err)
-
       return null
     } finally {
       pendingRequests.delete(cacheKey)
