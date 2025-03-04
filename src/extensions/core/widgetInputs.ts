@@ -431,8 +431,7 @@ function getConfig(widgetName: string) {
 function isConvertibleWidget(widget: IWidget, config: InputSpec): boolean {
   return (
     // @ts-expect-error InputSpec is not typed correctly
-    (VALID_TYPES.includes(widget.type) || VALID_TYPES.includes(config[0])) &&
-    !widget.options?.forceInput
+    VALID_TYPES.includes(widget.type) || VALID_TYPES.includes(config[0])
   )
 }
 
@@ -721,9 +720,6 @@ app.registerExtension({
         let toInput = []
         let toWidget = []
         for (const w of this.widgets) {
-          if (w.options?.forceInput) {
-            continue
-          }
           // @ts-expect-error custom widget type
           if (w.type === CONVERTED_TYPE) {
             toWidget.push({
@@ -820,7 +816,7 @@ app.registerExtension({
       // When node is created, convert any force/default inputs
       if (!app.configuringGraph && this.widgets) {
         for (const w of this.widgets) {
-          if (w?.options?.forceInput || w?.options?.defaultInput) {
+          if (w?.options?.defaultInput) {
             const config = getConfig.call(this, w.name) ?? [
               w.type,
               w.options || {}

@@ -70,7 +70,7 @@ export const useLitegraphService = () => {
 
           let widgetCreated = true
           const widgetType = app.getWidgetType(inputData, inputName)
-          if (widgetType) {
+          if (!options.forceInput && widgetType) {
             if (widgetType === 'COMBO') {
               Object.assign(
                 config,
@@ -106,10 +106,6 @@ export const useLitegraphService = () => {
             config.widget.options ??= {}
             if (!inputIsRequired) {
               config.widget.options.inputIsOptional = true
-            }
-            // @ts-expect-error InputSpec is not typed correctly
-            if (inputData[1]?.forceInput) {
-              config.widget.options.forceInput = true
             }
             // @ts-expect-error InputSpec is not typed correctly
             if (inputData[1]?.defaultInput) {
