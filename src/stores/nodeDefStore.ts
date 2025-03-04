@@ -64,7 +64,7 @@ export class ComfyNodeDefImpl implements ComfyNodeDefV1, ComfyNodeDefV2 {
   // V2 fields
   readonly inputs: Record<string, InputSpecV2>
   readonly outputs: OutputSpecV2[]
-  readonly hidden: Record<string, any>
+  readonly hidden?: Record<string, any>
 
   // ComfyNodeDefImpl fields
   readonly nodeSource: NodeSource
@@ -90,7 +90,7 @@ export class ComfyNodeDefImpl implements ComfyNodeDefV1, ComfyNodeDefV2 {
     const defV2 = transformNodeDefV1ToV2(obj)
     this.inputs = defV2.inputs
     this.outputs = defV2.outputs
-    this.hidden = defV2.hidden ?? {}
+    this.hidden = defV2.hidden
 
     // Initialize node source
     this.nodeSource = getNodeSource(obj.python_module)
