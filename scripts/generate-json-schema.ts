@@ -2,7 +2,12 @@ import fs from 'fs'
 import path from 'path'
 import { zodToJsonSchema } from 'zod-to-json-schema'
 
-import { zComfyWorkflow, zComfyWorkflow1 } from '../src/types/comfyWorkflow'
+import {
+  zComfyWorkflow,
+  zComfyWorkflow1
+} from '../src/schemas/comfyWorkflowSchema'
+import { zComfyNodeDef as zComfyNodeDefV2 } from '../src/schemas/nodeDef/nodeDefSchemaV2'
+import { zComfyNodeDef as zComfyNodeDefV1 } from '../src/schemas/nodeDefSchema'
 
 // Convert both workflow schemas to JSON Schema
 const workflow04Schema = zodToJsonSchema(zComfyWorkflow, {
@@ -12,6 +17,16 @@ const workflow04Schema = zodToJsonSchema(zComfyWorkflow, {
 
 const workflow1Schema = zodToJsonSchema(zComfyWorkflow1, {
   name: 'ComfyWorkflow1_0',
+  $refStrategy: 'none'
+})
+
+const nodeDefV1Schema = zodToJsonSchema(zComfyNodeDefV1, {
+  name: 'ComfyNodeDefV1',
+  $refStrategy: 'none'
+})
+
+const nodeDefV2Schema = zodToJsonSchema(zComfyNodeDefV2, {
+  name: 'ComfyNodeDefV2',
   $refStrategy: 'none'
 })
 
@@ -30,6 +45,16 @@ fs.writeFileSync(
 fs.writeFileSync(
   path.join(outputDir, 'workflow-1_0.json'),
   JSON.stringify(workflow1Schema, null, 2)
+)
+
+fs.writeFileSync(
+  path.join(outputDir, 'node-def-v1.json'),
+  JSON.stringify(nodeDefV1Schema, null, 2)
+)
+
+fs.writeFileSync(
+  path.join(outputDir, 'node-def-v2.json'),
+  JSON.stringify(nodeDefV2Schema, null, 2)
 )
 
 console.log('JSON Schemas generated successfully!')
