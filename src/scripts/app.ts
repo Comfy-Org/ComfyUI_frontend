@@ -19,7 +19,11 @@ import {
   type NodeId,
   validateComfyWorkflow
 } from '@/schemas/comfyWorkflowSchema'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import {
+  type ComfyNodeDef as ComfyNodeDefV2,
+  isComboInputSpec
+} from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { getFromWebmFile } from '@/scripts/metadata/ebml'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
@@ -30,7 +34,11 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
 import { useModelStore } from '@/stores/modelStore'
-import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
+import {
+  ComfyNodeDefImpl,
+  SYSTEM_NODE_DEFS,
+  useNodeDefStore
+} from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useWidgetStore } from '@/stores/widgetStore'
@@ -841,10 +849,12 @@ export class ComfyApp {
     this.canvas?.draw(true, true)
   }
 
-  private updateVueAppNodeDefs(defs: Record<string, ComfyNodeDef>) {
+  private updateVueAppNodeDefs(
+    defs: Record<string, ComfyNodeDefV1 & ComfyNodeDefV2>
+  ) {
     // Frontend only nodes registered by custom nodes.
     // Example: https://github.com/rgthree/rgthree-comfy/blob/dd534e5384be8cf0c0fa35865afe2126ba75ac55/src_web/comfyui/fast_groups_bypasser.ts#L10
-    const rawDefs = Object.fromEntries(
+    const rawDefs: Record<string, ComfyNodeDefV1> = Object.fromEntries(
       Object.entries(LiteGraph.registered_node_types).map(([name, node]) => [
         name,
         {
@@ -868,7 +878,7 @@ export class ComfyApp {
     }
 
     const nodeDefStore = useNodeDefStore()
-    const nodeDefArray: ComfyNodeDef[] = Object.values(allNodeDefs)
+    const nodeDefArray: ComfyNodeDefV1[] = Object.values(allNodeDefs)
     useExtensionService().invokeExtensions(
       'beforeRegisterVueAppNodeDefs',
       nodeDefArray,
@@ -877,33 +887,29 @@ export class ComfyApp {
     nodeDefStore.updateNodeDefs(nodeDefArray)
   }
 
-  #translateNodeDefs(defs: Record<string, ComfyNodeDef>) {
-    return Object.fromEntries(
-      Object.entries(defs).map(([name, def]) => [
-        name,
-        {
-          ...def,
-          display_name: st(
-            `nodeDefs.${name}.display_name`,
-            def.display_name ?? def.name
-          ),
-          description: def.description
-            ? st(`nodeDefs.${name}.description`, def.description)
-            : undefined,
-          category: def.category
-            .split('/')
-            .map((category) => st(`nodeCategories.${category}`, category))
-            .join('/')
-        }
-      ])
-    )
-  }
+  async #getNodeDefs(): Promise<
+    Record<string, ComfyNodeDefV1 & ComfyNodeDefV2>
+  > {
+    const translateNodeDef = (def: ComfyNodeDefV1): ComfyNodeDefV1 => ({
+      ...def,
+      display_name: st(
+        `nodeDefs.${def.name}.display_name`,
+        def.display_name ?? def.name
+      ),
+      description: def.description
+        ? st(`nodeDefs.${def.name}.description`, def.description)
+        : undefined,
+      category: def.category
+        .split('/')
+        .map((category: string) => st(`nodeCategories.${category}`, category))
+        .join('/')
+    })
 
-  async #getNodeDefs() {
-    return this.#translateNodeDefs(
+    return _.mapValues(
       await api.getNodeDefs({
         validate: useSettingStore().get('Comfy.Validation.NodeDefs')
-      })
+      }),
+      (def) => new ComfyNodeDefImpl(translateNodeDef(def))
     )
   }
 
@@ -938,11 +944,16 @@ export class ComfyApp {
     }
   }
 
-  async registerNodeDef(nodeId: string, nodeData: ComfyNodeDef) {
-    return await useLitegraphService().registerNodeDef(nodeId, nodeData)
+  async registerNodeDef(
+    nodeId: string,
+    nodeDef: ComfyNodeDefV1 & ComfyNodeDefV2
+  ) {
+    return await useLitegraphService().registerNodeDef(nodeId, nodeDef)
   }
 
-  async registerNodesFromDefs(defs: Record<string, ComfyNodeDef>) {
+  async registerNodesFromDefs(
+    defs: Record<string, ComfyNodeDefV1 & ComfyNodeDefV2>
+  ) {
     await useExtensionService().invokeExtensionsAsync('addCustomNodeDefs', defs)
 
     // Register a node for each definition
@@ -1590,28 +1601,31 @@ export class ComfyApp {
       useToastStore().add(requestToastMessage)
     }
 
-    const defs = await this.#getNodeDefs()
-    for (const nodeId in defs) {
-      this.registerNodeDef(nodeId, defs[nodeId])
+    const defs: Record<string, ComfyNodeDefV1 & ComfyNodeDefV2> =
+      await this.#getNodeDefs()
+
+    for (const [nodeId, nodeDef] of Object.entries(defs)) {
+      this.registerNodeDef(nodeId, nodeDef)
     }
-    for (let nodeNum in this.graph.nodes) {
-      const node = this.graph.nodes[nodeNum]
+
+    for (const node of this.graph.nodes) {
       const def = defs[node.type]
       // Allow primitive nodes to handle refresh
       node.refreshComboInNode?.(defs)
 
-      if (!def?.input) continue
+      if (!def) continue
 
-      for (const widgetNum in node.widgets) {
-        const widget = node.widgets[widgetNum]
-        if (widget.type === 'combo') {
-          if (def['input'].required?.[widget.name] !== undefined) {
-            // @ts-expect-error InputSpec is not typed correctly
-            widget.options.values = def['input'].required[widget.name][0]
-          } else if (def['input'].optional?.[widget.name] !== undefined) {
-            // @ts-expect-error InputSpec is not typed correctly
-            widget.options.values = def['input'].optional[widget.name][0]
-          }
+      // Update combo options in combo widgets
+      for (const widget of node.widgets) {
+        const inputSpec = def.inputs[widget.name]
+        if (
+          inputSpec &&
+          isComboInputSpec(inputSpec) &&
+          widget.type === 'combo'
+        ) {
+          widget.options.values = inputSpec.options.map((o) =>
+            typeof o === 'string' ? o : o.toString()
+          )
         }
       }
     }
