@@ -14,11 +14,17 @@ import { useMarkdownWidget } from '@/composables/widgets/useMarkdownWidget'
 import { useSeedWidget } from '@/composables/widgets/useSeedWidget'
 import { useStringWidget } from '@/composables/widgets/useStringWidget'
 import { t } from '@/i18n'
+import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { useSettingStore } from '@/stores/settingStore'
 
 import type { ComfyApp } from './app'
 import './domWidget'
+
+export type ComfyWidgetConstructorV2 = (
+  node: LGraphNode,
+  inputSpec: InputSpecV2
+) => IWidget
 
 export type ComfyWidgetConstructor = (
   node: LGraphNode,
