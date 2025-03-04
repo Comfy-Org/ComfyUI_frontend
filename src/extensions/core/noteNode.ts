@@ -26,10 +26,9 @@ app.registerExtension({
           this.properties = { text: '' }
         }
         ComfyWidgets.STRING(
-          // Should we extends LGraphNode?  Yesss
           this,
-          '',
-          ['', { default: this.properties.text, multiline: true }],
+          'text',
+          ['STRING', { default: this.properties.text, multiline: true }],
           app
         )
 
@@ -66,8 +65,8 @@ app.registerExtension({
         }
         ComfyWidgets.MARKDOWN(
           this,
-          '',
-          ['', { default: this.properties.text }],
+          'text',
+          ['STRING', { default: this.properties.text }],
           app
         )
 
