@@ -1,6 +1,6 @@
 import type { IWidget, LGraphNode } from '@comfyorg/litegraph'
 
-import { type InputSpec, isStringInputSpec } from '@/schemas/nodeDefSchema'
+import { type InputSpec } from '@/schemas/nodeDefSchema'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { useSettingStore } from '@/stores/settingStore'
 import type { ComfyApp } from '@/types'
@@ -82,7 +82,7 @@ export const useStringWidget = () => {
       }
     }
 
-    if (typeof inputOptions.dynamicPrompts === "boolean") {
+    if (typeof inputOptions.dynamicPrompts === 'boolean') {
       res.widget.dynamicPrompts = inputOptions.dynamicPrompts
     }
 
