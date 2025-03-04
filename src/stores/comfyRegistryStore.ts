@@ -62,10 +62,16 @@ export const useComfyRegistryStore = defineStore('comfyRegistry', () => {
    * Clear all cached data
    */
   const clearCache = () => {
-    listAllPacksHandler?.cancel()
-    getPackByIdHandler?.cancel()
     listAllPacksHandler?.clear()
     getPackByIdHandler?.clear()
+  }
+
+  /**
+   * Cancel all pending requests
+   */
+  const cancelRequests = () => {
+    listAllPacksHandler?.cancel()
+    getPackByIdHandler?.cancel()
   }
 
   return {
@@ -75,6 +81,7 @@ export const useComfyRegistryStore = defineStore('comfyRegistry', () => {
     listAllPacks,
     getPackById,
     clearCache,
+    cancelRequests,
 
     isLoading: registryService.isLoading,
     error: registryService.error

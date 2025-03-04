@@ -53,7 +53,8 @@ export function useRegistrySearch() {
   watch(() => pageNumber.value, search, { immediate: true })
 
   onUnmounted(() => {
-    debouncedSearch.cancel() // Cancel pending searches
+    debouncedSearch.cancel() // Cancel debounced searches
+    registryStore.cancelRequests() // Cancel in-flight requests
     registryStore.clearCache() // Clear cached responses
   })
 
