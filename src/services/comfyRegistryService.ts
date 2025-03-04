@@ -3,6 +3,7 @@ import { ref } from 'vue'
 
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { components, operations } from '@/types/comfyRegistryTypes'
+import { isAbortError } from '@/utils/typeGuardUtil'
 
 const API_BASE_URL = 'https://api.comfy.org'
 
@@ -30,12 +31,6 @@ export const useComfyRegistryService = () => {
     )
   }
 
-  /**
-   * Generic error handler for API requests
-   * @param err - The error object
-   * @param context - Context description for the error
-   * @param routeSpecificErrors - Optional map of status codes to custom error messages for specific routes
-   */
   const handleApiError = (
     err: unknown,
     context: string,
@@ -76,7 +71,7 @@ export const useComfyRegistryService = () => {
   }
 
   /**
-   * Helper function to execute API requests with consistent error and loading state handling
+   * Execute an API request with error and loading state handling
    * @param apiCall - Function that returns a promise with the API call
    * @param errorContext - Context description for error messages
    * @param routeSpecificErrors - Optional map of status codes to custom error messages
@@ -94,13 +89,10 @@ export const useComfyRegistryService = () => {
       const response = await apiCall()
       return response.data
     } catch (err) {
-      const errorMessage = handleApiError(
-        err,
-        errorContext,
-        routeSpecificErrors
-      )
-      error.value = errorMessage
+      // Don't treat cancellations as errors
+      if (isAbortError(err)) return null
 
+      error.value = handleApiError(err, errorContext, routeSpecificErrors)
       return null
     } finally {
       isLoading.value = false
@@ -117,7 +109,8 @@ export const useComfyRegistryService = () => {
   const getNodeDef = async (
     packId: components['schemas']['Node']['id'],
     versionId: components['schemas']['NodeVersion']['id'],
-    comfyNodeName: components['schemas']['ComfyNode']['comfy_node_name']
+    comfyNodeName: components['schemas']['ComfyNode']['comfy_node_name'],
+    signal?: AbortSignal
   ) => {
     if (!comfyNodeName || !packId) return null
     if (isLocalNode(comfyNodeName, packId))
@@ -131,7 +124,10 @@ export const useComfyRegistryService = () => {
     }
 
     return executeApiRequest(
-      () => registryApiClient.get<components['schemas']['ComfyNode']>(endpoint),
+      () =>
+        registryApiClient.get<components['schemas']['ComfyNode']>(endpoint, {
+          signal
+        }),
       errorContext,
       routeSpecificErrors
     )
@@ -142,7 +138,8 @@ export const useComfyRegistryService = () => {
    * Search packs using `search` param. Search individual nodes using `comfy_node_search` param.
    */
   const search = async (
-    params?: operations['searchNodes']['parameters']['query']
+    params?: operations['searchNodes']['parameters']['query'],
+    signal?: AbortSignal
   ) => {
     const endpoint = '/nodes/search'
     const errorContext = 'Failed to perform search'
@@ -151,7 +148,7 @@ export const useComfyRegistryService = () => {
       () =>
         registryApiClient.get<
           operations['searchNodes']['responses'][200]['content']['application/json']
-        >(endpoint, { params }),
+        >(endpoint, { params, signal }),
       errorContext
     )
   }
@@ -160,7 +157,8 @@ export const useComfyRegistryService = () => {
    * Get publisher information
    */
   const getPublisherById = async (
-    publisherId: components['schemas']['Publisher']['id']
+    publisherId: components['schemas']['Publisher']['id'],
+    signal?: AbortSignal
   ) => {
     const endpoint = `/publishers/${publisherId}`
     const errorContext = 'Failed to get publisher'
@@ -169,7 +167,10 @@ export const useComfyRegistryService = () => {
     }
 
     return executeApiRequest(
-      () => registryApiClient.get<components['schemas']['Publisher']>(endpoint),
+      () =>
+        registryApiClient.get<components['schemas']['Publisher']>(endpoint, {
+          signal
+        }),
       errorContext,
       routeSpecificErrors
     )
@@ -180,7 +181,8 @@ export const useComfyRegistryService = () => {
    */
   const listPacksForPublisher = async (
     publisherId: components['schemas']['Publisher']['id'],
-    includeBanned?: boolean
+    includeBanned?: boolean,
+    signal?: AbortSignal
   ) => {
     const params = includeBanned ? { include_banned: true } : undefined
     const endpoint = `/publishers/${publisherId}/nodes`
@@ -193,7 +195,8 @@ export const useComfyRegistryService = () => {
     return executeApiRequest(
       () =>
         registryApiClient.get<components['schemas']['Node'][]>(endpoint, {
-          params
+          params,
+          signal
         }),
       errorContext,
       routeSpecificErrors
@@ -202,12 +205,11 @@ export const useComfyRegistryService = () => {
 
   /**
    * Add a review for a pack
-   * @param packId - The ID of the pack
-   * @param star - The star rating
    */
   const postPackReview = async (
     packId: components['schemas']['Node']['id'],
-    star: number
+    star: number,
+    signal?: AbortSignal
   ) => {
     const endpoint = `/nodes/${packId}/reviews`
     const params = { star }
@@ -220,17 +222,20 @@ export const useComfyRegistryService = () => {
     return executeApiRequest(
       () =>
         registryApiClient.post<components['schemas']['Node']>(endpoint, null, {
-          params
+          params,
+          signal
         }),
       errorContext,
       routeSpecificErrors
     )
   }
+
   /**
    * Get a paginated list of all packs on the registry
    */
   const listAllPacks = async (
-    params?: operations['listAllNodes']['parameters']['query']
+    params?: operations['listAllNodes']['parameters']['query'],
+    signal?: AbortSignal
   ) => {
     const endpoint = '/nodes'
     const errorContext = 'Failed to list packs'
@@ -239,7 +244,7 @@ export const useComfyRegistryService = () => {
       () =>
         registryApiClient.get<
           operations['listAllNodes']['responses'][200]['content']['application/json']
-        >(endpoint, { params }),
+        >(endpoint, { params, signal }),
       errorContext
     )
   }
@@ -249,7 +254,8 @@ export const useComfyRegistryService = () => {
    */
   const getPackVersions = async (
     packId: components['schemas']['Node']['id'],
-    params?: operations['listNodeVersions']['parameters']['query']
+    params?: operations['listNodeVersions']['parameters']['query'],
+    signal?: AbortSignal
   ) => {
     const endpoint = `/nodes/${packId}/versions`
     const errorContext = 'Failed to get pack versions'
@@ -262,7 +268,7 @@ export const useComfyRegistryService = () => {
       () =>
         registryApiClient.get<components['schemas']['NodeVersion'][]>(
           endpoint,
-          { params }
+          { params, signal }
         ),
       errorContext,
       routeSpecificErrors
@@ -274,7 +280,8 @@ export const useComfyRegistryService = () => {
    */
   const getPackByVersion = async (
     packId: components['schemas']['Node']['id'],
-    versionId: components['schemas']['NodeVersion']['id']
+    versionId: components['schemas']['NodeVersion']['id'],
+    signal?: AbortSignal
   ) => {
     const endpoint = `/nodes/${packId}/versions/${versionId}`
     const errorContext = 'Failed to get pack version'
@@ -285,7 +292,9 @@ export const useComfyRegistryService = () => {
 
     return executeApiRequest(
       () =>
-        registryApiClient.get<components['schemas']['NodeVersion']>(endpoint),
+        registryApiClient.get<components['schemas']['NodeVersion']>(endpoint, {
+          signal
+        }),
       errorContext,
       routeSpecificErrors
     )
@@ -295,7 +304,8 @@ export const useComfyRegistryService = () => {
    * Get a specific pack by ID
    */
   const getPackById = async (
-    packId: operations['getNode']['parameters']['path']['nodeId']
+    packId: operations['getNode']['parameters']['path']['nodeId'],
+    signal?: AbortSignal
   ) => {
     const endpoint = `/nodes/${packId}`
     const errorContext = 'Failed to get pack'
@@ -304,7 +314,10 @@ export const useComfyRegistryService = () => {
     }
 
     return executeApiRequest(
-      () => registryApiClient.get<components['schemas']['Node']>(endpoint),
+      () =>
+        registryApiClient.get<components['schemas']['Node']>(endpoint, {
+          signal
+        }),
       errorContext,
       routeSpecificErrors
     )
