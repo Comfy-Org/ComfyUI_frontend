@@ -7,7 +7,7 @@ import {
   zFloatInputOptions,
   zIntInputOptions,
   zStringInputOptions
-} from './nodeDefSchema'
+} from '@/schemas/nodeDefSchema'
 
 const zBaseInputSpec = zBaseInputOptions.extend({
   name: z.string(),
