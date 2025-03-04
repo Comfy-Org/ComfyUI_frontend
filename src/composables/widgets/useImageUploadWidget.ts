@@ -92,13 +92,9 @@ export const useImageUploadWidget = () => {
     )
     uploadWidget.label = t('g.choose_file_to_upload')
 
-    // TODO: Explain this?
-    // @ts-expect-error LGraphNode.callback is not typed
     // Add our own callback to the combo widget to render an image when it changes
-    const cb = node.callback
-    fileComboWidget.callback = function (...args) {
+    fileComboWidget.callback = function () {
       nodeOutputStore.setNodeOutputs(node, fileComboWidget.value)
-      if (cb) return cb.apply(this, args)
     }
 
     // On load if we have a value then render the image
