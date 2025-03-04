@@ -2365,23 +2365,6 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
     if (!output) return null
 
-    // check targetSlot and check connection types
-    if (!LiteGraph.isValidConnection(output.type, input.type)) {
-      this.setDirtyCanvas(false, true)
-      return null
-    }
-
-    // Allow nodes to block connection
-    if (target_node.onConnectInput?.(targetIndex, output.type, output, this, slot) === false)
-      return null
-    if (this.onConnectOutput?.(slot, input.type, input, target_node, targetIndex) === false)
-      return null
-
-    // if there is something already plugged there, disconnect
-    if (target_node.inputs[targetIndex]?.link != null) {
-      graph.beforeChange()
-      target_node.disconnectInput(targetIndex, true)
-    }
     if (output.links?.length) {
       if (output.type === LiteGraph.EVENT && !LiteGraph.allow_multi_output_for_events) {
         graph.beforeChange()
@@ -2390,50 +2373,81 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       }
     }
 
-    // UUID: LinkIds
-    // const nextId = LiteGraph.use_uuids ? LiteGraph.uuidv4() : ++graph.state.lastLinkId
-    const nextId = ++graph.state.lastLinkId
+    const link = this.connectInternal(output, target_node, input, afterRerouteId)
+    return link ?? null
+  }
 
-    // create link class
-    const link_info = new LLink(
-      nextId,
+  connectInternal(
+    output: INodeOutputSlot,
+    inputNode: LGraphNode,
+    input: INodeInputSlot,
+    afterRerouteId?: RerouteId,
+  ) {
+    const { graph } = this
+    if (!graph) throw new NullGraphError()
+
+    const outputIndex = this.outputs.indexOf(output)
+    if (outputIndex === -1) return
+    const inputIndex = inputNode.inputs.indexOf(input)
+    if (inputIndex === -1) return
+
+    // check targetSlot and check connection types
+    if (!LiteGraph.isValidConnection(output.type, input.type)) {
+      this.setDirtyCanvas(false, true)
+      return null
+    }
+
+    // Allow nodes to block connection
+    if (inputNode.onConnectInput?.(inputIndex, output.type, output, this, outputIndex) === false)
+      return null
+    if (this.onConnectOutput?.(outputIndex, input.type, input, inputNode, inputIndex) === false)
+      return null
+
+    // if there is something already plugged there, disconnect
+    if (inputNode.inputs[inputIndex]?.link != null) {
+      graph.beforeChange()
+      inputNode.disconnectInput(inputIndex, true)
+    }
+
+    const link = new LLink(
+      ++graph.state.lastLinkId,
       input.type || output.type,
       this.id,
-      slot,
-      target_node.id,
-      targetIndex,
+      outputIndex,
+      inputNode.id,
+      inputIndex,
       afterRerouteId,
     )
 
     // add to graph links list
-    graph._links.set(link_info.id, link_info)
+    graph._links.set(link.id, link)
 
     // connect in output
     output.links ??= []
-    output.links.push(link_info.id)
+    output.links.push(link.id)
     // connect in input
-    target_node.inputs[targetIndex].link = link_info.id
+    inputNode.inputs[inputIndex].link = link.id
 
     // Reroutes
-    for (const reroute of LLink.getReroutes(graph, link_info)) {
-      reroute?.linkIds.add(nextId)
+    for (const reroute of LLink.getReroutes(graph, link)) {
+      reroute?.linkIds.add(link.id)
     }
     graph._version++
 
-    // link_info has been created now, so its updated
+    // link has been created now, so its updated
     this.onConnectionsChange?.(
       NodeSlotType.OUTPUT,
-      slot,
+      outputIndex,
       true,
-      link_info,
+      link,
       output,
     )
 
-    target_node.onConnectionsChange?.(
+    inputNode.onConnectionsChange?.(
       NodeSlotType.INPUT,
-      targetIndex,
+      inputIndex,
       true,
-      link_info,
+      link,
       input,
     )
 
@@ -2441,7 +2455,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     graph.afterChange()
     graph.connectionChange(this)
 
-    return link_info
+    return link
   }
 
   /**
