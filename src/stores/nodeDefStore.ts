@@ -228,17 +228,17 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   function updateNodeDefs(nodeDefs: ComfyNodeDefV1[]) {
     const newNodeDefsByName: Record<string, ComfyNodeDefImpl> = {}
     const newNodeDefsByDisplayName: Record<string, ComfyNodeDefImpl> = {}
+
     for (const nodeDef of nodeDefs) {
-      try {
-        const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
-        newNodeDefsByName[nodeDef.name] = nodeDefImpl
-        newNodeDefsByDisplayName[nodeDef.display_name] = nodeDefImpl
-      } catch (e) {
-        // Avoid breaking the app for invalid nodeDefs
-        // NodeDef validation is now optional for performance reasons
-        console.error('Error adding nodeDef:', e)
-      }
+      const nodeDefImpl =
+        nodeDef instanceof ComfyNodeDefImpl
+          ? nodeDef
+          : new ComfyNodeDefImpl(nodeDef)
+
+      newNodeDefsByName[nodeDef.name] = nodeDefImpl
+      newNodeDefsByDisplayName[nodeDef.display_name] = nodeDefImpl
     }
+
     nodeDefsByName.value = newNodeDefsByName
     nodeDefsByDisplayName.value = newNodeDefsByDisplayName
   }
