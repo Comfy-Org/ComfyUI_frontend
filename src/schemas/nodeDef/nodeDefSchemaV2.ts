@@ -65,7 +65,7 @@ const zOutputSpec = z.object({
 })
 
 // Main node definition schema
-const zNodeDef = z.object({
+export const zComfyNodeDef = z.object({
   inputs: z.record(zInputSpec),
   outputs: z.array(zOutputSpec),
   hidden: z.record(z.any()).optional(),
@@ -90,7 +90,7 @@ export type CustomInputSpec = z.infer<typeof zCustomInputSpec>
 
 export type InputSpec = z.infer<typeof zInputSpec>
 export type OutputSpec = z.infer<typeof zOutputSpec>
-export type ComfyNodeDef = z.infer<typeof zNodeDef>
+export type ComfyNodeDef = z.infer<typeof zComfyNodeDef>
 
 export const isIntInputSpec = (
   inputSpec: InputSpec

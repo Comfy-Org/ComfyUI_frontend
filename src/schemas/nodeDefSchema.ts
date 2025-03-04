@@ -203,7 +203,7 @@ const zComfyOutputTypesSpec = z.array(
   z.union([zComfyNodeDataType, zComfyComboOutput])
 )
 
-const zComfyNodeDef = z.object({
+export const zComfyNodeDef = z.object({
   input: zComfyInputsSpec.optional(),
   output: zComfyOutputTypesSpec.optional(),
   output_is_list: z.array(z.boolean()).optional(),
