@@ -121,3 +121,19 @@ export const isComboInputSpec = (
 ): inputSpec is ComboInputSpec => {
   return inputSpec.type === 'COMBO'
 }
+
+/**
+ * Check if a node definition is a valid ComfyUI node definition.
+ *
+ * Note: This is just a simple check against the V1 schema.
+ *
+ * @param nodeDef - The node definition to check.
+ * @returns True if the node definition is valid, false otherwise.
+ */
+export const isComfyNodeDef = (nodeDef: unknown): nodeDef is ComfyNodeDef => {
+  return (
+    !!nodeDef &&
+    typeof nodeDef === 'object' &&
+    ['inputs', 'outputs'].every((key) => key in nodeDef)
+  )
+}
