@@ -1,10 +1,13 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
 import type { INumericWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
-import { type InputSpec, isIntInputSpec } from '@/schemas/nodeDefSchema'
-import type { ComfyApp } from '@/scripts/app'
+import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import {
-  type ComfyWidgetConstructor,
+  type InputSpec,
+  isIntInputSpec
+} from '@/schemas/nodeDef/nodeDefSchemaV2'
+import {
+  type ComfyWidgetConstructorV2,
   addValueControlWidget
 } from '@/scripts/widgets'
 import { useSettingStore } from '@/stores/settingStore'
@@ -33,21 +36,17 @@ export const _for_testing = {
 }
 
 export const useIntWidget = () => {
-  const widgetConstructor: ComfyWidgetConstructor = (
+  const widgetConstructor: ComfyWidgetConstructorV2 = (
     node: LGraphNode,
-    inputName: string,
-    inputData: InputSpec,
-    app: ComfyApp,
-    widgetName?: string
+    inputSpec: InputSpec
   ) => {
-    if (!isIntInputSpec(inputData)) {
-      throw new Error(`Invalid input data: ${inputData}`)
+    if (!isIntInputSpec(inputSpec)) {
+      throw new Error(`Invalid input data: ${inputSpec}`)
     }
 
     const settingStore = useSettingStore()
     const sliderEnabled = !settingStore.get('Comfy.DisableSliders')
-    const inputOptions = inputData[1] ?? {}
-    const display_type = inputOptions?.display
+    const display_type = inputSpec.display
     const widgetType =
       sliderEnabled && display_type == 'slider'
         ? 'slider'
@@ -55,38 +54,36 @@ export const useIntWidget = () => {
           ? 'knob'
           : 'number'
 
-    const step = inputOptions.step ?? 1
-    const defaultValue = inputOptions.default ?? 0
-    const result = {
-      widget: node.addWidget(
-        widgetType,
-        inputName,
-        defaultValue,
-        onValueChange,
-        {
-          min: inputOptions.min ?? 0,
-          max: inputOptions.max ?? 2048,
-          /** @deprecated Use step2 instead. The 10x value is a legacy implementation. */
-          step: step * 10,
-          step2: step,
-          precision: 0
-        }
-      )
-    }
+    const step = inputSpec.step ?? 1
+    const defaultValue = inputSpec.default ?? 0
+    const widget = node.addWidget(
+      widgetType,
+      inputSpec.name,
+      defaultValue,
+      onValueChange,
+      {
+        min: inputSpec.min ?? 0,
+        max: inputSpec.max ?? 2048,
+        /** @deprecated Use step2 instead. The 10x value is a legacy implementation. */
+        step: step * 10,
+        step2: step,
+        precision: 0
+      }
+    )
 
-    if (inputOptions.control_after_generate) {
+    if (inputSpec.control_after_generate) {
       const seedControl = addValueControlWidget(
         node,
-        result.widget,
+        widget,
         'randomize',
         undefined,
-        widgetName,
-        inputData
+        undefined,
+        transformInputSpecV2ToV1(inputSpec)
       )
-      result.widget.linkedWidgets = [seedControl]
+      widget.linkedWidgets = [seedControl]
     }
 
-    return result
+    return widget
   }
   return widgetConstructor
 }

@@ -25,14 +25,20 @@ export function transformNodeDefV1ToV2(
   // Process required inputs
   if (nodeDefV1.input?.required) {
     Object.entries(nodeDefV1.input.required).forEach(([name, inputSpecV1]) => {
-      inputs[name] = transformInputSpec(inputSpecV1, name, false)
+      inputs[name] = transformInputSpecV1ToV2(inputSpecV1, {
+        name,
+        isOptional: false
+      })
     })
   }
 
   // Process optional inputs
   if (nodeDefV1.input?.optional) {
     Object.entries(nodeDefV1.input.optional).forEach(([name, inputSpecV1]) => {
-      inputs[name] = transformInputSpec(inputSpecV1, name, true)
+      inputs[name] = transformInputSpecV1ToV2(inputSpecV1, {
+        name,
+        isOptional: true
+      })
     })
   }
 
@@ -81,11 +87,15 @@ export function transformNodeDefV1ToV2(
  * @param isOptional Whether the input is optional
  * @returns The transformed V2 input specification
  */
-function transformInputSpec(
+export function transformInputSpecV1ToV2(
   inputSpecV1: InputSpecV1,
-  name: string,
-  isOptional: boolean
+  kwargs: {
+    name: string
+    isOptional?: boolean
+  }
 ): InputSpecV2 {
+  const { name, isOptional = false } = kwargs
+
   // Extract options from the input spec
   const options = inputSpecV1[1] || {}
 
@@ -118,4 +128,10 @@ function transformInputSpec(
     type: 'UNKNOWN',
     ...baseProps
   }
+}
+
+export function transformInputSpecV2ToV1(
+  inputSpecV2: InputSpecV2
+): InputSpecV1 {
+  return [inputSpecV2.type, inputSpecV2]
 }
