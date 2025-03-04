@@ -225,7 +225,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   )
   const nodeTree = computed(() => buildNodeDefTree(visibleNodeDefs.value))
 
-  function updateNodeDefs(nodeDefs: ComfyNodeDefV1 & ComfyNodeDefV2[]) {
+  function updateNodeDefs(nodeDefs: ComfyNodeDefV1[]) {
     const newNodeDefsByName: Record<string, ComfyNodeDefImpl> = {}
     const newNodeDefsByDisplayName: Record<string, ComfyNodeDefImpl> = {}
 
