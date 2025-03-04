@@ -19,9 +19,11 @@ import {
   type NodeId,
   validateComfyWorkflow
 } from '@/schemas/comfyWorkflowSchema'
+import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
 import {
   type ComfyNodeDef as ComfyNodeDefV2,
-  isComboInputSpec
+  isComboInputSpec,
+  isComfyNodeDef as isComfyNodeDefV2
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { getFromWebmFile } from '@/scripts/metadata/ebml'
@@ -944,16 +946,19 @@ export class ComfyApp {
     }
   }
 
-  async registerNodeDef(
-    nodeId: string,
-    nodeDef: ComfyNodeDefV1 & ComfyNodeDefV2
-  ) {
-    return await useLitegraphService().registerNodeDef(nodeId, nodeDef)
+  async registerNodeDef(nodeId: string, nodeDef: ComfyNodeDefV1) {
+    return await useLitegraphService().registerNodeDef(
+      nodeId,
+      isComfyNodeDefV2(nodeDef)
+        ? nodeDef
+        : {
+            ...(nodeDef as ComfyNodeDefV1),
+            ...transformNodeDefV1ToV2(nodeDef)
+          }
+    )
   }
 
-  async registerNodesFromDefs(
-    defs: Record<string, ComfyNodeDefV1 & ComfyNodeDefV2>
-  ) {
+  async registerNodesFromDefs(defs: Record<string, ComfyNodeDefV1>) {
     await useExtensionService().invokeExtensionsAsync('addCustomNodeDefs', defs)
 
     // Register a node for each definition
