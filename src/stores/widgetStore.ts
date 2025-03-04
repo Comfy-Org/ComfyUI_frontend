@@ -1,14 +1,13 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import {
   type ComboInputSpecV2,
   type InputSpec,
   isComboInputSpecV1
 } from '@/schemas/nodeDefSchema'
 import { ComfyWidgetConstructor, ComfyWidgets } from '@/scripts/widgets'
-
-import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 export const useWidgetStore = defineStore('widget', () => {
   const coreWidgets = ComfyWidgets
