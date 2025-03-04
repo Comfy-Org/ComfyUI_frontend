@@ -29,20 +29,17 @@ export function useCachedRequest<TParams, TResult>(
   const cache = new QuickLRU<string, TResult>({ maxSize })
   const pendingRequests = new Map<string, Promise<TResult | null>>()
 
-  const getFromCache = (params: TParams): TResult | null => {
-    const cacheKey = cacheKeyFn(params)
-    return cache.get(cacheKey) || null
-  }
-
   const executeAndCacheCall = async (
     params: TParams,
     cacheKey: string
   ): Promise<TResult | null> => {
     try {
-      const result = await requestFunction(params)
-      if (result) {
-        cache.set(cacheKey, result)
-      }
+      const responsePromise = requestFunction(params)
+      pendingRequests.set(cacheKey, responsePromise)
+
+      const result = await responsePromise
+      if (result) cache.set(cacheKey, result)
+
       return result
     } catch (err) {
       console.error(`Error in request with params ${cacheKey}:`, err)
@@ -69,15 +66,13 @@ export function useCachedRequest<TParams, TResult>(
   async function cachedCall(params: TParams): Promise<TResult | null> {
     const cacheKey = cacheKeyFn(params)
 
-    const cachedResult = getFromCache(params)
+    const cachedResult = cache.get(cacheKey)
     if (cachedResult) return cachedResult
 
     const pendingRequest = pendingRequests.get(cacheKey)
     if (pendingRequest) return handlePendingRequest(pendingRequest)
 
-    const newRequest = executeAndCacheCall(params, cacheKey)
-    pendingRequests.set(cacheKey, newRequest)
-    return newRequest
+    return executeAndCacheCall(params, cacheKey)
   }
 
   /**
@@ -88,7 +83,7 @@ export function useCachedRequest<TParams, TResult>(
   }
 
   /**
-   * Cancel all pending requests
+   * Cancel any in-flight requests
    */
   function cancel() {
     pendingRequests.clear()

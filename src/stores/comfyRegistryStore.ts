@@ -67,7 +67,7 @@ export const useComfyRegistryStore = defineStore('comfyRegistry', () => {
   }
 
   /**
-   * Cancel all pending requests
+   * Cancel any in-flight requests
    */
   const cancelRequests = () => {
     listAllPacksHandler?.cancel()
