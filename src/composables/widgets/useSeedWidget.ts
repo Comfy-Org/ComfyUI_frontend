@@ -1,6 +1,6 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
 
-import type { InputSpec } from '@/schemas/nodeDefSchema'
+import { type InputSpec, isIntInputSpec } from '@/schemas/nodeDefSchema'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import type { ComfyApp } from '@/types'
 
@@ -16,11 +16,23 @@ export const useSeedWidget = () => {
     app: ComfyApp,
     widgetName?: string
   ) => {
-    inputData[1] = {
-      ...inputData[1],
-      control_after_generate: true
+    if (!isIntInputSpec(inputData)) {
+      throw new Error(`Invalid input data: ${inputData}`)
     }
-    return IntWidget(node, inputName, inputData, app, widgetName)
+
+    return IntWidget(
+      node,
+      inputName,
+      [
+        'INT',
+        {
+          ...inputData[1],
+          control_after_generate: true
+        }
+      ],
+      app,
+      widgetName
+    )
   }
 
   return widgetConstructor

@@ -71,7 +71,7 @@ export const useWidgetStore = defineStore('widget', () => {
           'COMBO',
           {
             options: inputData[0],
-            ...Object(inputData[1] || {})
+            ...inputData[1]
           }
         ]
       : inputData
