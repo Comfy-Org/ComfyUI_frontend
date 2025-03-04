@@ -1,6 +1,6 @@
 import type { IWidget, LGraphNode } from '@comfyorg/litegraph'
 
-import { type InputSpec, isStringInputSpec } from '@/schemas/nodeDefSchema'
+import { type InputSpec } from '@/schemas/nodeDefSchema'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { useSettingStore } from '@/stores/settingStore'
 import type { ComfyApp } from '@/types'
@@ -64,10 +64,6 @@ export const useStringWidget = () => {
     inputData: InputSpec,
     app: ComfyApp
   ) => {
-    if (!isStringInputSpec(inputData)) {
-      throw new Error(`Invalid input data: ${inputData}`)
-    }
-
     const inputOptions = inputData[1] ?? {}
     const defaultVal = inputOptions.default ?? ''
     const multiline = inputOptions.multiline
@@ -86,7 +82,7 @@ export const useStringWidget = () => {
       }
     }
 
-    if (inputOptions.dynamicPrompts != undefined) {
+    if (typeof inputOptions.dynamicPrompts === 'boolean') {
       res.widget.dynamicPrompts = inputOptions.dynamicPrompts
     }
 
