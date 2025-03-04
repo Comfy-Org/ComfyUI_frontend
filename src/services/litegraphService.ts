@@ -13,7 +13,11 @@ import { IBaseWidget, IWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
 import { st } from '@/i18n'
 import type { NodeId } from '@/schemas/comfyWorkflowSchema'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import {
+  type ComfyNodeDef,
+  InputSpec,
+  getInputSpecType
+} from '@/schemas/nodeDefSchema'
 import { ANIM_PREVIEW_WIDGET, ComfyApp, app } from '@/scripts/app'
 import { $el } from '@/scripts/ui'
 import { calculateImageGrid, createImageHost } from '@/scripts/ui/imagePreview'
@@ -37,8 +41,7 @@ export const useLitegraphService = () => {
   async function registerNodeDef(nodeId: string, nodeData: ComfyNodeDef) {
     const node = class ComfyNode extends LGraphNode {
       static comfyClass? = nodeData.name
-      // TODO: change to "title?" once litegraph.d.ts has been updated
-      static title = nodeData.display_name || nodeData.name
+      static title? = nodeData.display_name || nodeData.name
       static nodeData? = nodeData
       static category?: string
 
@@ -60,10 +63,13 @@ export const useLitegraphService = () => {
           widget?: IBaseWidget
         } = { minWidth: 1, minHeight: 1 }
         for (const inputName in inputs) {
-          const _inputData = inputs[inputName]
-          const type = _inputData[0]
-          const options = _inputData[1] ?? {}
-          const inputData = [type, options]
+          const inputData = [
+            inputs[inputName][0],
+            inputs[inputName][1] ?? {}
+          ] as InputSpec
+          const inputType = getInputSpecType(inputData)
+          const inputOptions = inputData[1]
+
           const nameKey = `nodeDefs.${normalizeI18nKey(nodeData.name)}.inputs.${normalizeI18nKey(inputName)}.name`
 
           const inputIsRequired = requiredInputs && inputName in requiredInputs
@@ -74,13 +80,11 @@ export const useLitegraphService = () => {
             if (widgetType === 'COMBO') {
               Object.assign(
                 config,
-                // @ts-expect-error InputSpec is not typed correctly
                 app.widgets.COMBO(this, inputName, inputData, app) || {}
               )
             } else {
               Object.assign(
                 config,
-                // @ts-expect-error InputSpec is not typed correctly
                 app.widgets[widgetType](this, inputName, inputData, app) || {}
               )
             }
@@ -93,12 +97,11 @@ export const useLitegraphService = () => {
             const shapeOptions = inputIsRequired
               ? {}
               : { shape: RenderShape.HollowCircle }
-            const inputOptions = {
+
+            this.addInput(inputName, inputType, {
               ...shapeOptions,
               localized_name: st(nameKey, inputName)
-            }
-            // @ts-expect-error InputSpec is not typed correctly
-            this.addInput(inputName, type, inputOptions)
+            })
             widgetCreated = false
           }
 
@@ -107,20 +110,16 @@ export const useLitegraphService = () => {
             if (!inputIsRequired) {
               config.widget.options.inputIsOptional = true
             }
-            // @ts-expect-error InputSpec is not typed correctly
-            if (inputData[1]?.forceInput) {
+            if (inputOptions.forceInput) {
               config.widget.options.forceInput = true
             }
-            // @ts-expect-error InputSpec is not typed correctly
-            if (inputData[1]?.defaultInput) {
+            if (inputOptions.defaultInput) {
               config.widget.options.defaultInput = true
             }
-            // @ts-expect-error InputSpec is not typed correctly
-            if (inputData[1]?.advanced) {
+            if (inputOptions.advanced) {
               config.widget.advanced = true
             }
-            // @ts-expect-error InputSpec is not typed correctly
-            if (inputData[1]?.hidden) {
+            if (inputOptions.hidden) {
               config.widget.hidden = true
             }
           }
