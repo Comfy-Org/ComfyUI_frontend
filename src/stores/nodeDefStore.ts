@@ -70,6 +70,12 @@ export class ComfyNodeDefImpl implements ComfyNodeDefV1, ComfyNodeDefV2 {
   readonly nodeSource: NodeSource
 
   constructor(obj: ComfyNodeDefV1) {
+    /**
+     * Assign extra fields to `this` for compatibility with group node feature.
+     * TODO: Remove this once group node feature is removed.
+     */
+    Object.assign(this, obj)
+
     // Initialize V1 fields
     this.name = obj.name
     this.display_name = obj.display_name

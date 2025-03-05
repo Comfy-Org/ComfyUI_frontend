@@ -20,6 +20,7 @@ import { $el } from '@/scripts/ui'
 import { calculateImageGrid, createImageHost } from '@/scripts/ui/imagePreview'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useToastStore } from '@/stores/toastStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { is_all_same_aspect_ratio } from '@/utils/imageUtil'
@@ -35,14 +36,11 @@ export const useLitegraphService = () => {
   const toastStore = useToastStore()
   const canvasStore = useCanvasStore()
 
-  async function registerNodeDef(
-    nodeId: string,
-    nodeDef: ComfyNodeDefV2 & ComfyNodeDefV1
-  ) {
+  async function registerNodeDef(nodeId: string, nodeDefV1: ComfyNodeDefV1) {
     const node = class ComfyNode extends LGraphNode {
-      static comfyClass?: string = nodeDef.name
-      static title?: string = nodeDef.display_name || nodeDef.name
-      static nodeData?: ComfyNodeDefV1 & ComfyNodeDefV2 = nodeDef
+      static comfyClass?: string
+      static title?: string
+      static nodeData?: ComfyNodeDefV1 & ComfyNodeDefV2
       static category?: string
 
       constructor(title?: string) {
@@ -170,7 +168,6 @@ export const useLitegraphService = () => {
         super.configure(data)
       }
     }
-    node.prototype.comfyClass = nodeDef.name
 
     addNodeContextMenuHandler(node)
     addDrawBackgroundHandler(node)
@@ -179,12 +176,18 @@ export const useLitegraphService = () => {
     await extensionService.invokeExtensionsAsync(
       'beforeRegisterNodeDef',
       node,
-      nodeDef // Receives V1 NodeDef
+      nodeDefV1 // Receives V1 NodeDef, and potentially make modifications to it
     )
 
+    const nodeDef = new ComfyNodeDefImpl(nodeDefV1)
+    node.comfyClass = nodeDef.name
+    node.prototype.comfyClass = nodeDef.name
+    node.nodeData = nodeDef
     LiteGraph.registerNodeType(nodeId, node)
-    // Note: Do not move this to the class definition, it will be overwritten
+    // Note: Do not following assignments before `LiteGraph.registerNodeType`
+    // because `registerNodeType` will overwrite the assignments.
     node.category = nodeDef.category
+    node.title = nodeDef.display_name || nodeDef.name
   }
 
   /**

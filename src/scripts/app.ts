@@ -19,7 +19,6 @@ import {
   type NodeId,
   validateComfyWorkflow
 } from '@/schemas/comfyWorkflowSchema'
-import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
 import {
   type ComfyNodeDef as ComfyNodeDefV2,
   isComboInputSpec,
@@ -889,9 +888,7 @@ export class ComfyApp {
     nodeDefStore.updateNodeDefs(nodeDefArray)
   }
 
-  async #getNodeDefs(): Promise<
-    Record<string, ComfyNodeDefV1 & ComfyNodeDefV2>
-  > {
+  async #getNodeDefs(): Promise<Record<string, ComfyNodeDefV1>> {
     const translateNodeDef = (def: ComfyNodeDefV1): ComfyNodeDefV1 => ({
       ...def,
       display_name: st(
@@ -911,7 +908,7 @@ export class ComfyApp {
       await api.getNodeDefs({
         validate: useSettingStore().get('Comfy.Validation.NodeDefs')
       }),
-      (def) => new ComfyNodeDefImpl(translateNodeDef(def))
+      (def) => translateNodeDef(def)
     )
   }
 
@@ -947,15 +944,7 @@ export class ComfyApp {
   }
 
   async registerNodeDef(nodeId: string, nodeDef: ComfyNodeDefV1) {
-    return await useLitegraphService().registerNodeDef(
-      nodeId,
-      isComfyNodeDefV2(nodeDef)
-        ? nodeDef
-        : {
-            ...(nodeDef as ComfyNodeDefV1),
-            ...transformNodeDefV1ToV2(nodeDef)
-          }
-    )
+    return await useLitegraphService().registerNodeDef(nodeId, nodeDef)
   }
 
   async registerNodesFromDefs(defs: Record<string, ComfyNodeDefV1>) {
@@ -1606,31 +1595,26 @@ export class ComfyApp {
       useToastStore().add(requestToastMessage)
     }
 
-    const defs: Record<string, ComfyNodeDefV1 & ComfyNodeDefV2> =
-      await this.#getNodeDefs()
-
-    for (const [nodeId, nodeDef] of Object.entries(defs)) {
-      this.registerNodeDef(nodeId, nodeDef)
+    const defs = await this.#getNodeDefs()
+    for (const nodeId in defs) {
+      this.registerNodeDef(nodeId, defs[nodeId])
     }
-
     for (const node of this.graph.nodes) {
       const def = defs[node.type]
       // Allow primitive nodes to handle refresh
       node.refreshComboInNode?.(defs)
 
-      if (!def) continue
+      if (!def?.input) continue
 
-      // Update combo options in combo widgets
       for (const widget of node.widgets) {
-        const inputSpec = def.inputs[widget.name]
-        if (
-          inputSpec &&
-          isComboInputSpec(inputSpec) &&
-          widget.type === 'combo'
-        ) {
-          widget.options.values = inputSpec.options.map((o) =>
-            typeof o === 'string' ? o : o.toString()
-          )
+        if (widget.type === 'combo') {
+          if (def['input'].required?.[widget.name] !== undefined) {
+            // @ts-expect-error InputSpec is not typed correctly
+            widget.options.values = def['input'].required[widget.name][0]
+          } else if (def['input'].optional?.[widget.name] !== undefined) {
+            // @ts-expect-error InputSpec is not typed correctly
+            widget.options.values = def['input'].optional[widget.name][0]
+          }
         }
       }
     }
