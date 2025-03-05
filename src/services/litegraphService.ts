@@ -8,7 +8,7 @@ import {
   RenderShape
 } from '@comfyorg/litegraph'
 import { Vector2 } from '@comfyorg/litegraph'
-import { IBaseWidget, IWidget } from '@comfyorg/litegraph/dist/types/widgets'
+import { IWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
 import { st } from '@/i18n'
@@ -46,12 +46,7 @@ export const useLitegraphService = () => {
       constructor(title?: string) {
         super(title)
 
-        const config: {
-          minWidth: number
-          minHeight: number
-          widget?: IBaseWidget
-        } = { minWidth: 1, minHeight: 1 }
-
+        const nodeMinSize = { width: 1, height: 1 }
         // Process inputs using V2 schema
         for (const [inputName, inputSpec] of Object.entries(nodeDef.inputs)) {
           const inputType = inputSpec.type
@@ -62,19 +57,41 @@ export const useLitegraphService = () => {
             inputName
           )
           if (widgetType) {
-            Object.assign(
-              config,
-              app.widgets[widgetType](
-                this,
-                inputName,
-                [inputType, inputSpec],
-                app
-              ) ?? {}
-            )
-            if (config.widget) {
-              const fallback = config.widget.label ?? inputName
-              config.widget.label = st(nameKey, fallback)
+            const {
+              widget,
+              minWidth = 1,
+              minHeight = 1
+            } = app.widgets[widgetType](
+              this,
+              inputName,
+              [inputType, inputSpec],
+              app
+            ) ?? {}
+
+            if (widget) {
+              const fallback = widget.label ?? inputName
+              widget.label = st(nameKey, fallback)
+
+              widget.options ??= {}
+              if (inputSpec.isOptional) {
+                widget.options.inputIsOptional = true
+              }
+              if (inputSpec.forceInput) {
+                widget.options.forceInput = true
+              }
+              if (inputSpec.defaultInput) {
+                widget.options.defaultInput = true
+              }
+              if (inputSpec.advanced) {
+                widget.advanced = true
+              }
+              if (inputSpec.hidden) {
+                widget.hidden = true
+              }
             }
+
+            nodeMinSize.width = Math.max(nodeMinSize.width, minWidth)
+            nodeMinSize.height = Math.max(nodeMinSize.height, minHeight)
           } else {
             // Node connection inputs
             const shapeOptions = inputSpec.isOptional
@@ -85,25 +102,6 @@ export const useLitegraphService = () => {
               ...shapeOptions,
               localized_name: st(nameKey, inputName)
             })
-          }
-
-          if (widgetType && config?.widget) {
-            config.widget.options ??= {}
-            if (inputSpec.isOptional) {
-              config.widget.options.inputIsOptional = true
-            }
-            if (inputSpec.forceInput) {
-              config.widget.options.forceInput = true
-            }
-            if (inputSpec.defaultInput) {
-              config.widget.options.defaultInput = true
-            }
-            if (inputSpec.advanced) {
-              config.widget.advanced = true
-            }
-            if (inputSpec.hidden) {
-              config.widget.hidden = true
-            }
           }
         }
 
@@ -132,8 +130,8 @@ export const useLitegraphService = () => {
         }
 
         const s = this.computeSize()
-        s[0] = Math.max(config.minWidth, s[0] * 1.5)
-        s[1] = Math.max(config.minHeight, s[1])
+        s[0] = Math.max(nodeMinSize.width, s[0] * 1.5)
+        s[1] = Math.max(nodeMinSize.height, s[1])
         this.setSize(s)
         this.serialize_widgets = true
 
