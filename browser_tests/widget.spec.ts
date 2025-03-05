@@ -127,3 +127,10 @@ test.describe('Dynamic widget manipulation', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('ksampler_widget_added.png')
   })
 })
+
+test.describe('Load image widget', () => {
+  test('Can load image', async ({ comfyPage }) => {
+    await comfyPage.loadWorkflow('widgets/load_image_widget')
+    await expect(comfyPage.canvas).toHaveScreenshot('load_image_widget.png')
+  })
+})
