@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useComboWidget } from '@/composables/widgets/useComboWidget'
@@ -10,7 +9,6 @@ vi.mock('@/scripts/widgets', () => ({
 
 describe('useComboWidget', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     vi.clearAllMocks()
   })
 
@@ -36,8 +34,6 @@ describe('useComboWidget', () => {
         values: []
       })
     )
-    expect(widget).toEqual({
-      widget: { options: {} }
-    })
+    expect(widget).toEqual({ options: {} })
   })
 })
