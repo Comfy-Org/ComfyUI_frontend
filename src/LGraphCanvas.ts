@@ -468,7 +468,7 @@ export class LGraphCanvas implements ConnectionColorContext {
   node_over?: LGraphNode
   node_capturing_input?: LGraphNode | null
   highlighted_links: Dictionary<boolean> = {}
-  link_over_widget?: IWidget | null
+  link_over_widget?: IWidget
   link_over_widget_type?: string
 
   dirty_canvas: boolean = true
@@ -505,8 +505,8 @@ export class LGraphCanvas implements ConnectionColorContext {
   /** @deprecated See {@link pointer}.{@link CanvasPointer.dragStarted dragStarted} */
   last_mouse_dragging?: boolean
   onMouseDown?: (arg0: CanvasMouseEvent) => void
-  _highlight_pos?: Point | null
-  _highlight_input?: INodeInputSlot | null
+  _highlight_pos?: Point
+  _highlight_input?: INodeInputSlot
   // TODO: Check if panels are used
   /** @deprecated Panels */
   node_panel?: any
@@ -1811,9 +1811,9 @@ export class LGraphCanvas implements ConnectionColorContext {
       if (otherNode.mouseOver && node != otherNode) {
         // mouse leave
         otherNode.mouseOver = null
-        this._highlight_input = null
-        this._highlight_pos = null
-        this.link_over_widget = null
+        this._highlight_input = undefined
+        this._highlight_pos = undefined
+        this.link_over_widget = undefined
 
         // Hover transitions
         // TODO: Implement single lerp ease factor for current progress on hover in/out.
@@ -2695,9 +2695,9 @@ export class LGraphCanvas implements ConnectionColorContext {
             const firstLink = this.connecting_links[0]
 
             // Default: nothing highlighted
-            let highlightPos: Point | null = null
-            let highlightInput: INodeInputSlot | null = null
-            let linkOverWidget: IWidget | null = null
+            let highlightPos: Point | undefined
+            let highlightInput: INodeInputSlot | undefined
+            let linkOverWidget: IWidget | undefined
 
             if (firstLink.node === node) {
               // Cannot connect link from a node to itself
@@ -2988,7 +2988,7 @@ export class LGraphCanvas implements ConnectionColorContext {
               node,
               widget: this.link_over_widget,
             })
-            this.link_over_widget = null
+            this.link_over_widget = undefined
           } else {
             // not on top of an input
             // look for a good slot
