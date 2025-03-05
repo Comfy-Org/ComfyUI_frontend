@@ -293,6 +293,6 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
   BOOLEAN: transformWidgetConstructorV2ToV1(useBooleanWidget()),
   STRING: transformWidgetConstructorV2ToV1(useStringWidget()),
   MARKDOWN: transformWidgetConstructorV2ToV1(useMarkdownWidget()),
-  COMBO: useComboWidget(),
+  COMBO: transformWidgetConstructorV2ToV1(useComboWidget()),
   IMAGEUPLOAD: useImageUploadWidget()
 }

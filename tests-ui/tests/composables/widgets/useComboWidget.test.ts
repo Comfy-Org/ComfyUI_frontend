@@ -1,14 +1,7 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useComboWidget } from '@/composables/widgets/useComboWidget'
-import type { InputSpec } from '@/schemas/nodeDefSchema'
-
-vi.mock('@/stores/widgetStore', () => ({
-  useWidgetStore: () => ({
-    getDefaultValue: vi.fn()
-  })
-}))
+import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 vi.mock('@/scripts/widgets', () => ({
   addValueControlWidgets: vi.fn()
@@ -16,7 +9,6 @@ vi.mock('@/scripts/widgets', () => ({
 
 describe('useComboWidget', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     vi.clearAllMocks()
   })
 
@@ -26,14 +18,12 @@ describe('useComboWidget', () => {
       addWidget: vi.fn().mockReturnValue({ options: {} } as any)
     }
 
-    const inputSpec: InputSpec = ['COMBO', undefined]
+    const inputSpec: InputSpec = {
+      type: 'COMBO',
+      name: 'inputName'
+    }
 
-    const widget = constructor(
-      mockNode as any,
-      'inputName',
-      inputSpec,
-      undefined as any
-    )
+    const widget = constructor(mockNode as any, inputSpec)
 
     expect(mockNode.addWidget).toHaveBeenCalledWith(
       'combo',
@@ -44,8 +34,6 @@ describe('useComboWidget', () => {
         values: []
       })
     )
-    expect(widget).toEqual({
-      widget: { options: {} }
-    })
+    expect(widget).toEqual({ options: {} })
   })
 })

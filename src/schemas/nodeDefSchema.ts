@@ -71,8 +71,8 @@ export const zComboInputOptions = zBaseInputOptions.extend({
   image_folder: z.enum(['input', 'output', 'temp']).optional(),
   allow_batch: z.boolean().optional(),
   video_upload: z.boolean().optional(),
-  remote: zRemoteWidgetConfig.optional(),
-  options: z.array(zComboOption).optional()
+  options: z.array(zComboOption).optional(),
+  remote: zRemoteWidgetConfig.optional()
 })
 
 const zIntInputSpec = z.tuple([z.literal('INT'), zIntInputOptions.optional()])
