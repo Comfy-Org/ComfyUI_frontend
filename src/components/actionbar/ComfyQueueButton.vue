@@ -10,8 +10,8 @@
       data-testid="queue-button"
       v-tooltip.bottom="{
         value: workspaceStore.shiftDown
-          ? $t('menu.queueWorkflowFront')
-          : $t('menu.queueWorkflow'),
+          ? $t('menu.runWorkflowFront')
+          : $t('menu.runWorkflow'),
         showDelay: 600
       }"
     >
@@ -98,7 +98,7 @@ const { t } = useI18n()
 const queueModeMenuItemLookup = computed(() => ({
   disabled: {
     key: 'disabled',
-    label: t('menu.queue'),
+    label: t('menu.run'),
     tooltip: t('menu.disabledTooltip'),
     command: () => {
       queueMode.value = 'disabled'
@@ -106,7 +106,7 @@ const queueModeMenuItemLookup = computed(() => ({
   },
   instant: {
     key: 'instant',
-    label: `${t('menu.queue')} (${t('menu.instant')})`,
+    label: `${t('menu.run')} (${t('menu.instant')})`,
     tooltip: t('menu.instantTooltip'),
     command: () => {
       queueMode.value = 'instant'
@@ -114,7 +114,7 @@ const queueModeMenuItemLookup = computed(() => ({
   },
   change: {
     key: 'change',
-    label: `${t('menu.queue')} (${t('menu.onChange')})`,
+    label: `${t('menu.run')} (${t('menu.onChange')})`,
     tooltip: t('menu.onChangeTooltip'),
     command: () => {
       queueMode.value = 'change'
