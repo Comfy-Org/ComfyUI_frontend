@@ -1595,31 +1595,26 @@ export class ComfyApp {
       useToastStore().add(requestToastMessage)
     }
 
-    const defs: Record<string, ComfyNodeDefV1 & ComfyNodeDefV2> =
-      await this.#getNodeDefs()
-
-    for (const [nodeId, nodeDef] of Object.entries(defs)) {
-      this.registerNodeDef(nodeId, nodeDef)
+    const defs = await this.#getNodeDefs()
+    for (const nodeId in defs) {
+      this.registerNodeDef(nodeId, defs[nodeId])
     }
-
     for (const node of this.graph.nodes) {
       const def = defs[node.type]
       // Allow primitive nodes to handle refresh
       node.refreshComboInNode?.(defs)
 
-      if (!def) continue
+      if (!def?.input) continue
 
-      // Update combo options in combo widgets
       for (const widget of node.widgets) {
-        const inputSpec = def.inputs[widget.name]
-        if (
-          inputSpec &&
-          isComboInputSpec(inputSpec) &&
-          widget.type === 'combo'
-        ) {
-          widget.options.values = inputSpec.options.map((o) =>
-            typeof o === 'string' ? o : o.toString()
-          )
+        if (widget.type === 'combo') {
+          if (def['input'].required?.[widget.name] !== undefined) {
+            // @ts-expect-error InputSpec is not typed correctly
+            widget.options.values = def['input'].required[widget.name][0]
+          } else if (def['input'].optional?.[widget.name] !== undefined) {
+            // @ts-expect-error InputSpec is not typed correctly
+            widget.options.values = def['input'].optional[widget.name][0]
+          }
         }
       }
     }
