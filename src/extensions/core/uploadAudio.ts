@@ -1,5 +1,5 @@
 // @ts-strict-ignore
-import type { IWidget } from '@comfyorg/litegraph'
+import type { IWidget, LGraphNode } from '@comfyorg/litegraph'
 import type { IStringWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
 import { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
@@ -97,7 +97,7 @@ app.registerExtension({
   },
   getCustomWidgets() {
     return {
-      AUDIO_UI(node, inputName: string) {
+      AUDIO_UI(node: LGraphNode, inputName: string) {
         const audio = document.createElement('audio')
         audio.controls = true
         audio.classList.add('comfy-audio')

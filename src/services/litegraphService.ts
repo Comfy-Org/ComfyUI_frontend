@@ -13,6 +13,7 @@ import { IWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
 import { st } from '@/i18n'
 import type { NodeId } from '@/schemas/comfyWorkflowSchema'
+import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { ANIM_PREVIEW_WIDGET, ComfyApp, app } from '@/scripts/app'
@@ -22,6 +23,7 @@ import { useCanvasStore } from '@/stores/graphStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useToastStore } from '@/stores/toastStore'
+import { useWidgetStore } from '@/stores/widgetStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { is_all_same_aspect_ratio } from '@/utils/imageUtil'
 import { getImageTop, isImageNode, isVideoNode } from '@/utils/litegraphUtil'
@@ -34,6 +36,7 @@ import { useExtensionService } from './extensionService'
 export const useLitegraphService = () => {
   const extensionService = useExtensionService()
   const toastStore = useToastStore()
+  const widgetStore = useWidgetStore()
   const canvasStore = useCanvasStore()
 
   async function registerNodeDef(nodeId: string, nodeDefV1: ComfyNodeDefV1) {
@@ -52,19 +55,16 @@ export const useLitegraphService = () => {
           const inputType = inputSpec.type
           const nameKey = `nodeDefs.${normalizeI18nKey(nodeDef.name)}.inputs.${normalizeI18nKey(inputName)}.name`
 
-          const widgetType = app.getWidgetType(
-            [inputType, inputSpec],
-            inputName
-          )
-          if (widgetType) {
+          const widgetConstructor = widgetStore.widgets[inputType]
+          if (widgetConstructor) {
             const {
               widget,
               minWidth = 1,
               minHeight = 1
-            } = app.widgets[widgetType](
+            } = widgetConstructor(
               this,
               inputName,
-              [inputType, inputSpec],
+              transformInputSpecV2ToV1(inputSpec),
               app
             ) ?? {}
 

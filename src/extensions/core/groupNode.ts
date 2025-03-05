@@ -12,6 +12,7 @@ import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useDialogService } from '@/services/dialogService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useToastStore } from '@/stores/toastStore'
+import { useWidgetStore } from '@/stores/widgetStore'
 import { ComfyExtension } from '@/types/comfy'
 import { deserialiseAndCreate, serialise } from '@/utils/vintageClipboard'
 
@@ -442,8 +443,7 @@ export class GroupNodeConfig {
     const converted = new Map()
     const widgetMap = (this.oldToNewWidgetMap[node.index] = {})
     for (const inputName of inputNames) {
-      let widgetType = app.getWidgetType(inputs[inputName], inputName)
-      if (widgetType) {
+      if (useWidgetStore().inputIsWidget(inputs[inputName])) {
         const convertedIndex = node.inputs?.findIndex(
           (inp) => inp.name === inputName && inp.widget?.name === inputName
         )
