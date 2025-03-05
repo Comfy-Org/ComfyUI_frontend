@@ -1,5 +1,6 @@
 <template>
   <ButtonGroup
+    v-if="!isMenuPaneActive"
     class="p-buttongroup-vertical absolute bottom-[10px] right-[10px] z-[1000]"
   >
     <Button
@@ -68,12 +69,16 @@ import { useI18n } from 'vue-i18n'
 
 import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
+import { useMenuPaneStore } from '@/stores/menuPaneStore'
 import { useSettingStore } from '@/stores/settingStore'
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
 const settingStore = useSettingStore()
+const menuPaneStore = useMenuPaneStore()
+
+const isMenuPaneActive = computed(() => menuPaneStore.activeMenuPaneId !== null)
 
 const linkHidden = computed(
   () => settingStore.get('Comfy.LinkRenderMode') === LiteGraph.HIDDEN_LINK

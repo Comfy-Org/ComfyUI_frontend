@@ -1,18 +1,23 @@
 <template>
-  <div class="flex p-2 gap-2 workflow-tab" ref="workflowTabRef" v-bind="$attrs">
+  <div
+    class="flex p-2 gap-2 workflow-tab"
+    ref="workflowTabRef"
+    v-bind="$attrs"
+    @contextmenu="onContextMenu"
+    @mousedown="onMouseDown"
+  >
     <span
       class="workflow-label text-sm max-w-[150px] truncate inline-block"
-      v-tooltip.bottom="workflowOption.workflow.key"
+      v-tooltip.bottom="tab.workflow.key"
     >
-      {{ workflowOption.workflow.filename }}
+      {{ tab.workflow.filename }}
     </span>
     <div class="relative">
       <span
         class="status-indicator"
         v-if="
           !workspaceStore.shiftDown &&
-          (workflowOption.workflow.isModified ||
-            !workflowOption.workflow.isPersisted)
+          (tab.workflow.isModified || !tab.workflow.isPersisted)
         "
         >•</span
       >
@@ -22,7 +27,7 @@
         text
         severity="secondary"
         size="small"
-        @click.stop="onCloseWorkflow(workflowOption)"
+        @click.stop="onClose"
       />
     </div>
   </div>
@@ -37,19 +42,19 @@ import {
   usePragmaticDraggable,
   usePragmaticDroppable
 } from '@/composables/usePragmaticDragAndDrop'
-import { useWorkflowService } from '@/services/workflowService'
-import { ComfyWorkflow } from '@/stores/workflowStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-
-interface WorkflowOption {
-  value: string
-  workflow: ComfyWorkflow
-}
+import { WorkflowTabItem } from '@/types/tabTypes'
 
 const props = defineProps<{
-  class?: string
-  workflowOption: WorkflowOption
+  tab: WorkflowTabItem
+}>()
+
+const emit = defineEmits<{
+  (e: 'close', tab: WorkflowTabItem): void
+  (e: 'contextmenu', event: MouseEvent, tab: WorkflowTabItem): void
+  (e: 'middle-click', tab: WorkflowTabItem): void
+  (e: 'reorder', fromTabId: string, toTabId: string): void
 }>()
 
 const { t } = useI18n()
@@ -58,29 +63,25 @@ const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
 const workflowTabRef = ref<HTMLElement | null>(null)
 
-const closeWorkflows = async (options: WorkflowOption[]) => {
-  for (const opt of options) {
-    if (
-      !(await useWorkflowService().closeWorkflow(opt.workflow, {
-        warnIfUnsaved: !workspaceStore.shiftDown,
-        hint: t('sideToolbar.workflowTab.dirtyCloseHint')
-      }))
-    ) {
-      // User clicked cancel
-      break
-    }
-  }
+const onClose = () => {
+  emit('close', props.tab)
 }
 
-const onCloseWorkflow = (option: WorkflowOption) => {
-  closeWorkflows([option])
+const onContextMenu = (event: MouseEvent) => {
+  emit('contextmenu', event, props.tab)
 }
+
+const onMouseDown = (event: MouseEvent) => {
+  const isMiddleClick = event.button === 1
+  if (isMiddleClick) emit('middle-click', props.tab)
+}
+
 const tabGetter = () => workflowTabRef.value as HTMLElement
 
 usePragmaticDraggable(tabGetter, {
   getInitialData: () => {
     return {
-      workflowKey: props.workflowOption.workflow.key
+      workflowKey: props.tab.workflow.key
     }
   }
 })
@@ -88,7 +89,7 @@ usePragmaticDraggable(tabGetter, {
 usePragmaticDroppable(tabGetter, {
   getData: () => {
     return {
-      workflowKey: props.workflowOption.workflow.key
+      workflowKey: props.tab.workflow.key
     }
   },
   onDrop: (e) => {
@@ -100,6 +101,11 @@ usePragmaticDroppable(tabGetter, {
     )
     if (fromIndex !== toIndex) {
       workflowStore.reorderWorkflows(fromIndex, toIndex)
+      emit(
+        'reorder',
+        workflowStore.openWorkflows[fromIndex].path,
+        workflowStore.openWorkflows[toIndex].path
+      )
     }
   }
 })

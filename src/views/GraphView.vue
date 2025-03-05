@@ -9,6 +9,7 @@
     <div class="comfyui-body-left" id="comfyui-body-left" />
     <div class="comfyui-body-right" id="comfyui-body-right" />
     <div class="graph-canvas-container" id="graph-canvas-container">
+      <MenuPane v-if="isMenuPaneActive" class="absolute inset-0 z-20" />
       <GraphCanvas @ready="onGraphReady" />
     </div>
   </div>
@@ -30,6 +31,7 @@ import BrowserTabTitle from '@/components/BrowserTabTitle.vue'
 import MenuHamburger from '@/components/MenuHamburger.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
+import MenuPane from '@/components/menupane/MenuPane.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
 import TopMenubar from '@/components/topbar/TopMenubar.vue'
 import { useCoreCommands } from '@/composables/useCoreCommands'
@@ -44,6 +46,7 @@ import { useKeybindingService } from '@/services/keybindingService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
+import { useMenuPaneStore } from '@/stores/menuPaneStore'
 import { useModelStore } from '@/stores/modelStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import {
@@ -66,6 +69,9 @@ const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
 const colorPaletteStore = useColorPaletteStore()
 const queueStore = useQueueStore()
+const menuPaneStore = useMenuPaneStore()
+
+const isMenuPaneActive = computed(() => menuPaneStore.activeMenuPaneId !== null)
 
 watch(
   () => colorPaletteStore.completedActivePalette,

@@ -1,5 +1,5 @@
 <template>
-  <div class="queue-button-group flex">
+  <div v-if="!isMenuPaneActive" class="queue-button-group flex">
     <SplitButton
       class="comfyui-queue-button"
       :label="activeQueueModeMenuItem.label"
@@ -82,6 +82,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCommandStore } from '@/stores/commandStore'
+import { useMenuPaneStore } from '@/stores/menuPaneStore'
 import {
   useQueuePendingTaskCountStore,
   useQueueSettingsStore
@@ -93,6 +94,9 @@ import BatchCountEdit from './BatchCountEdit.vue'
 const workspaceStore = useWorkspaceStore()
 const queueCountStore = storeToRefs(useQueuePendingTaskCountStore())
 const { mode: queueMode } = storeToRefs(useQueueSettingsStore())
+
+const menuPaneStore = useMenuPaneStore()
+const isMenuPaneActive = computed(() => menuPaneStore.activeMenuPaneId !== null)
 
 const { t } = useI18n()
 const queueModeMenuItemLookup = computed(() => ({
