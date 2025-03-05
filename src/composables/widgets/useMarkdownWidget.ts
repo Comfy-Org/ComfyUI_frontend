@@ -8,15 +8,14 @@ import TiptapTableRow from '@tiptap/extension-table-row'
 import TiptapStarterKit from '@tiptap/starter-kit'
 import { Markdown as TiptapMarkdown } from 'tiptap-markdown'
 
-import type { InputSpec } from '@/schemas/nodeDefSchema'
-import type { ComfyWidgetConstructor } from '@/scripts/widgets'
-import type { ComfyApp } from '@/types'
+import { type InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { app } from '@/scripts/app'
+import { type ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 
 function addMarkdownWidget(
   node: LGraphNode,
   name: string,
-  opts: { defaultVal: string },
-  app: ComfyApp
+  opts: { defaultVal: string }
 ) {
   TiptapMarkdown.configure({
     html: false,
@@ -52,6 +51,7 @@ function addMarkdownWidget(
     }
   })
   widget.inputEl = inputEl
+  widget.options.minNodeSize = [400, 200]
 
   inputEl.addEventListener('pointerdown', (event: PointerEvent) => {
     if (event.button !== 0) {
@@ -98,23 +98,17 @@ function addMarkdownWidget(
     }
   })
 
-  return { minWidth: 400, minHeight: 200, widget }
+  return widget
 }
 
 export const useMarkdownWidget = () => {
-  const widgetConstructor: ComfyWidgetConstructor = (
+  const widgetConstructor: ComfyWidgetConstructorV2 = (
     node: LGraphNode,
-    inputName: string,
-    inputData: InputSpec,
-    app: ComfyApp
+    inputSpec: InputSpec
   ) => {
-    const defaultVal = inputData[1]?.default || ''
-    return addMarkdownWidget(
-      node,
-      inputName,
-      { defaultVal, ...inputData[1] },
-      app
-    )
+    return addMarkdownWidget(node, inputSpec.name, {
+      defaultVal: inputSpec.default ?? ''
+    })
   }
 
   return widgetConstructor
