@@ -19,11 +19,7 @@ import {
   type NodeId,
   validateComfyWorkflow
 } from '@/schemas/comfyWorkflowSchema'
-import {
-  type ComfyNodeDef as ComfyNodeDefV2,
-  isComboInputSpec,
-  isComfyNodeDef as isComfyNodeDefV2
-} from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { type ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { getFromWebmFile } from '@/scripts/metadata/ebml'
 import { useDialogService } from '@/services/dialogService'
@@ -35,11 +31,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
 import { useModelStore } from '@/stores/modelStore'
-import {
-  ComfyNodeDefImpl,
-  SYSTEM_NODE_DEFS,
-  useNodeDefStore
-} from '@/stores/nodeDefStore'
+import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useWidgetStore } from '@/stores/widgetStore'
@@ -64,7 +56,7 @@ import {
 } from './pnginfo'
 import { $el, ComfyUI } from './ui'
 import { ComfyAppMenu } from './ui/menu/index'
-import { clone, getStorageValue } from './utils'
+import { clone } from './utils'
 import { type ComfyWidgetConstructor, ComfyWidgets } from './widgets'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
@@ -92,10 +84,6 @@ type Clipspace = {
   selectedIndex: number
   img_paste_mode: string
 }
-
-/**
- * @typedef {import("types/comfy").ComfyExtension} ComfyExtension
- */
 
 export class ComfyApp {
   /**
@@ -922,22 +910,6 @@ export class ComfyApp {
     await useExtensionService().invokeExtensionsAsync('registerCustomNodes')
     if (this.vueAppReady) {
       this.updateVueAppNodeDefs(defs)
-    }
-  }
-
-  /**
-   * Remove the impl after groupNode unit tests are removed.
-   * @deprecated Use useWidgetStore().getWidgetType instead
-   */
-  getWidgetType(inputData, inputName: string) {
-    const type = inputData[0]
-
-    if (Array.isArray(type)) {
-      return 'COMBO'
-    } else if (type in this.widgets) {
-      return type
-    } else {
-      return null
     }
   }
 
