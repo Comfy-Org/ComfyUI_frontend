@@ -1,5 +1,6 @@
 <template>
   <Panel
+    v-if="!webviewStore.hasActiveWebview"
     class="actionbar w-fit"
     :style="style"
     :class="{ 'is-dragging': isDragging, 'is-docked': isDocked }"
@@ -26,10 +27,12 @@ import Panel from 'primevue/panel'
 import { Ref, computed, inject, nextTick, onMounted, ref, watch } from 'vue'
 
 import { useSettingStore } from '@/stores/settingStore'
+import { useWebviewStore } from '@/stores/webviewStore'
 
 import ComfyQueueButton from './ComfyQueueButton.vue'
 
 const settingsStore = useSettingStore()
+const webviewStore = useWebviewStore()
 
 const visible = computed(
   () => settingsStore.get('Comfy.UseNewMenu') !== 'Disabled'

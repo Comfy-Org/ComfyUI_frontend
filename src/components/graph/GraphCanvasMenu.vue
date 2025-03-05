@@ -1,5 +1,6 @@
 <template>
   <ButtonGroup
+    v-if="!webviewStore.hasActiveWebview"
     class="p-buttongroup-vertical absolute bottom-[10px] right-[10px] z-[1000]"
   >
     <Button
@@ -69,11 +70,13 @@ import { useI18n } from 'vue-i18n'
 import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
+import { useWebviewStore } from '@/stores/webviewStore'
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
 const settingStore = useSettingStore()
+const webviewStore = useWebviewStore()
 
 const linkHidden = computed(
   () => settingStore.get('Comfy.LinkRenderMode') === LiteGraph.HIDDEN_LINK

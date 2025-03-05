@@ -10,6 +10,12 @@
     <div class="comfyui-body-right" id="comfyui-body-right" />
     <div class="graph-canvas-container" id="graph-canvas-container">
       <GraphCanvas @ready="onGraphReady" />
+      <div
+        class="absolute inset-0 isolation z-50 pointer-events-none bg-[var(--p-dialog-background)]"
+        :class="{ hidden: !webviewStore.hasActiveWebview }"
+      >
+        <WebviewContainer />
+      </div>
     </div>
   </div>
 
@@ -52,6 +58,7 @@ import {
 } from '@/stores/queueStore'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
 import { useSettingStore } from '@/stores/settingStore'
+import { useWebviewStore } from '@/stores/webviewStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -66,6 +73,7 @@ const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
 const colorPaletteStore = useColorPaletteStore()
 const queueStore = useQueueStore()
+const webviewStore = useWebviewStore()
 
 watch(
   () => colorPaletteStore.completedActivePalette,
