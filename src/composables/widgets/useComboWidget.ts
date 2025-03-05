@@ -30,7 +30,7 @@ export const useComboWidget = () => {
       throw new Error(`Invalid input data: ${inputSpec}`)
     }
 
-    const comboOptions = inputSpec.options
+    const comboOptions = inputSpec.options ?? []
     const defaultValue = getDefaultValue(inputSpec)
 
     const widget = node.addWidget(
