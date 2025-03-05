@@ -19,7 +19,6 @@ import {
   type NodeId,
   validateComfyWorkflow
 } from '@/schemas/comfyWorkflowSchema'
-import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
 import {
   type ComfyNodeDef as ComfyNodeDefV2,
   isComboInputSpec,
@@ -889,9 +888,7 @@ export class ComfyApp {
     nodeDefStore.updateNodeDefs(nodeDefArray)
   }
 
-  async #getNodeDefs(): Promise<
-    Record<string, ComfyNodeDefV1 & ComfyNodeDefV2>
-  > {
+  async #getNodeDefs(): Promise<Record<string, ComfyNodeDefV1>> {
     const translateNodeDef = (def: ComfyNodeDefV1): ComfyNodeDefV1 => ({
       ...def,
       display_name: st(
@@ -911,7 +908,7 @@ export class ComfyApp {
       await api.getNodeDefs({
         validate: useSettingStore().get('Comfy.Validation.NodeDefs')
       }),
-      (def) => new ComfyNodeDefImpl(translateNodeDef(def))
+      (def) => translateNodeDef(def)
     )
   }
 
@@ -947,15 +944,7 @@ export class ComfyApp {
   }
 
   async registerNodeDef(nodeId: string, nodeDef: ComfyNodeDefV1) {
-    return await useLitegraphService().registerNodeDef(
-      nodeId,
-      isComfyNodeDefV2(nodeDef)
-        ? nodeDef
-        : {
-            ...(nodeDef as ComfyNodeDefV1),
-            ...transformNodeDefV1ToV2(nodeDef)
-          }
-    )
+    return await useLitegraphService().registerNodeDef(nodeId, nodeDef)
   }
 
   async registerNodesFromDefs(defs: Record<string, ComfyNodeDefV1>) {
