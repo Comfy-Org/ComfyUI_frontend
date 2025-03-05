@@ -934,8 +934,6 @@ export class ComfyApp {
 
     if (Array.isArray(type)) {
       return 'COMBO'
-    } else if (`${type}:${inputName}` in this.widgets) {
-      return `${type}:${inputName}`
     } else if (type in this.widgets) {
       return type
     } else {

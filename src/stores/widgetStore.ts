@@ -12,23 +12,8 @@ export const useWidgetStore = defineStore('widget', () => {
     ...coreWidgets
   }))
 
-  function getWidgetType(type: string, inputName: string) {
-    if (type === 'COMBO') {
-      return 'COMBO'
-      /**
-       * @deprecated Group node logic. Remove once group node feature is removed.
-       */
-    } else if (`${type}:${inputName}` in widgets.value) {
-      return `${type}:${inputName}`
-    } else if (type in widgets.value) {
-      return type
-    } else {
-      return null
-    }
-  }
-
   function inputIsWidget(spec: InputSpecV2) {
-    return getWidgetType(spec.type, spec.name) !== null
+    return spec.type in widgets.value
   }
 
   function registerCustomWidgets(
@@ -42,7 +27,6 @@ export const useWidgetStore = defineStore('widget', () => {
 
   return {
     widgets,
-    getWidgetType,
     inputIsWidget,
     registerCustomWidgets
   }
