@@ -278,16 +278,7 @@ export function addValueControlWidgets(
   return widgets
 }
 
-const seedWidget = transformWidgetConstructorV2ToV1((node, inputSpec) => {
-  return useIntWidget()(node, {
-    ...inputSpec,
-    control_after_generate: true
-  })
-})
-
 export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
-  'INT:seed': seedWidget,
-  'INT:noise_seed': seedWidget,
   INT: transformWidgetConstructorV2ToV1(useIntWidget()),
   FLOAT: transformWidgetConstructorV2ToV1(useFloatWidget()),
   BOOLEAN: transformWidgetConstructorV2ToV1(useBooleanWidget()),

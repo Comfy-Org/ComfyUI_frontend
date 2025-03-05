@@ -71,7 +71,15 @@ export const useIntWidget = () => {
       }
     )
 
-    if (inputSpec.control_after_generate) {
+    const controlAfterGenerate =
+      inputSpec.control_after_generate ??
+      /**
+       * Compatibility with legacy node convention. Int input with name
+       * 'seed' or 'noise_seed' get automatically added a control widget.
+       */
+      ['seed', 'noise_seed'].includes(inputSpec.name)
+
+    if (controlAfterGenerate) {
       const seedControl = addValueControlWidget(
         node,
         widget,
