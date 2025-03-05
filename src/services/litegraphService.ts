@@ -57,13 +57,16 @@ export const useLitegraphService = () => {
             inputName
           )
           if (widgetType) {
-            const { widget, minWidth, minHeight } =
-              app.widgets[widgetType](
-                this,
-                inputName,
-                [inputType, inputSpec],
-                app
-              ) ?? {}
+            const {
+              widget,
+              minWidth = 1,
+              minHeight = 1
+            } = app.widgets[widgetType](
+              this,
+              inputName,
+              [inputType, inputSpec],
+              app
+            ) ?? {}
 
             if (widget) {
               const fallback = widget.label ?? inputName
