@@ -2373,11 +2373,19 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       }
     }
 
-    const link = this.connectInternal(output, target_node, input, afterRerouteId)
+    const link = this.connectSlots(output, target_node, input, afterRerouteId)
     return link ?? null
   }
 
-  connectInternal(
+  /**
+   * Connect two slots between two nodes
+   * @param output The output slot to connect
+   * @param inputNode The node that the input slot is on
+   * @param input The input slot to connect
+   * @param afterRerouteId The reroute ID to use for the link
+   * @returns The link that was created, or null if the connection was blocked
+   */
+  connectSlots(
     output: INodeOutputSlot,
     inputNode: LGraphNode,
     input: INodeInputSlot,
