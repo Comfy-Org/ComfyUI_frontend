@@ -19,13 +19,10 @@ interface Rect {
 
 export interface DOMWidget<T extends HTMLElement, V extends object | string>
   extends ICustomWidget<T> {
-  // All unrecognized types will be treated the same way as 'custom' in litegraph internally.
   type: 'custom'
-  name: string
   element: T
   options: DOMWidgetOptions<T, V>
   value: V
-  y?: number
   /**
    * @deprecated Legacy property used by some extensions for customtext
    * (textarea) widgets. Use `element` instead as it provides the same
@@ -33,22 +30,6 @@ export interface DOMWidget<T extends HTMLElement, V extends object | string>
    */
   inputEl?: T
   callback?: (value: V) => void
-  /**
-   * Draw the widget on the canvas.
-   */
-  draw?: (
-    ctx: CanvasRenderingContext2D,
-    node: LGraphNode,
-    widgetWidth: number,
-    y: number,
-    widgetHeight: number
-  ) => void
-  /**
-   * TODO(huchenlei): Investigate when is this callback fired. `onRemove` is
-   * on litegraph's IBaseWidget definition, but not called in litegraph.
-   * Currently only called in widgetInputs.ts.
-   */
-  onRemove?: () => void
 }
 
 export interface DOMWidgetOptions<
