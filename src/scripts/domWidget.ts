@@ -6,11 +6,9 @@ import type {
   IWidgetOptions
 } from '@comfyorg/litegraph/dist/types/widgets'
 
+import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { app } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'
-
-import { app } from './app'
-
-const SIZE = Symbol()
 
 interface Rect {
   height: number
@@ -66,6 +64,11 @@ export interface DOMWidgetOptions<
   getMaxHeight?: () => number
   getHeight?: () => string | number
   onDraw?: (widget: DOMWidget<T, V>) => void
+  /**
+   * @deprecated Use `afterResize` instead. This callback is a legacy API
+   * that fires before resize happens, but it is no longer supported. Now it
+   * fires after resize happens.
+   */
   beforeResize?: (this: DOMWidget<T, V>, node: LGraphNode) => void
   afterResize?: (this: DOMWidget<T, V>, node: LGraphNode) => void
 }
@@ -383,17 +386,10 @@ LGraphNode.prototype.addDOMWidget = function <
     onRemoved?.call(this)
   }
 
-  // @ts-ignore index with symbol
-  if (!this[SIZE]) {
-    // @ts-ignore index with symbol
-    this[SIZE] = true
-    const onResize = this.onResize
-    this.onResize = function (this: LGraphNode, size: Size) {
-      options.beforeResize?.call(widget, this)
-      onResize?.call(this, size)
-      options.afterResize?.call(widget, this)
-    }
-  }
+  this.onResize = useChainCallback(this.onResize, () => {
+    options.beforeResize?.call(widget, this)
+    options.afterResize?.call(widget, this)
+  })
 
   return widget
 }
