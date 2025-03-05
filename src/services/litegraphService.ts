@@ -182,10 +182,12 @@ export const useLitegraphService = () => {
     const nodeDef = new ComfyNodeDefImpl(nodeDefV1)
     node.comfyClass = nodeDef.name
     node.prototype.comfyClass = nodeDef.name
-    node.title = nodeDef.display_name || nodeDef.name
     node.nodeData = nodeDef
     LiteGraph.registerNodeType(nodeId, node)
+    // Note: Do not following assignments before `LiteGraph.registerNodeType`
+    // because `registerNodeType` will overwrite the assignments.
     node.category = nodeDef.category
+    node.title = nodeDef.display_name || nodeDef.name
   }
 
   /**
