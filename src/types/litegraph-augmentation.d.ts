@@ -22,6 +22,10 @@ declare module '@comfyorg/litegraph/dist/types/widgets' {
      * Rounding value for numeric float widgets.
      */
     round?: number
+    /**
+     * The minimum size of the node if the widget is present.
+     */
+    minNodeSize?: Size
   }
 
   interface IBaseWidget {

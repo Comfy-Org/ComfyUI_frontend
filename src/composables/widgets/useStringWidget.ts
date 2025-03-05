@@ -1,25 +1,23 @@
-import type { IWidget, LGraphNode } from '@comfyorg/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph'
 
-import { type InputSpec, isStringInputSpec } from '@/schemas/nodeDefSchema'
-import type { ComfyWidgetConstructor } from '@/scripts/widgets'
+import {
+  type InputSpec,
+  isStringInputSpec
+} from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { app } from '@/scripts/app'
+import { type ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import { useSettingStore } from '@/stores/settingStore'
-import type { ComfyApp } from '@/types'
 
 function addMultilineWidget(
   node: LGraphNode,
   name: string,
-  opts: { defaultVal: string; placeholder?: string },
-  app: ComfyApp
+  opts: { defaultVal: string; placeholder?: string }
 ) {
   const inputEl = document.createElement('textarea')
   inputEl.className = 'comfy-multiline-input'
   inputEl.value = opts.defaultVal
   inputEl.placeholder = opts.placeholder || name
-  if (app.vueAppReady) {
-    inputEl.spellcheck = useSettingStore().get(
-      'Comfy.TextareaWidget.Spellcheck'
-    )
-  }
+  inputEl.spellcheck = useSettingStore().get('Comfy.TextareaWidget.Spellcheck')
 
   const widget = node.addDOMWidget(name, 'customtext', inputEl, {
     getValue(): string {
@@ -31,6 +29,7 @@ function addMultilineWidget(
   })
 
   widget.inputEl = inputEl
+  widget.options.minNodeSize = [400, 200]
 
   inputEl.addEventListener('input', () => {
     widget.callback?.(widget.value)
@@ -54,43 +53,33 @@ function addMultilineWidget(
     }
   })
 
-  return { minWidth: 400, minHeight: 200, widget }
+  return widget
 }
 
 export const useStringWidget = () => {
-  const widgetConstructor: ComfyWidgetConstructor = (
+  const widgetConstructor: ComfyWidgetConstructorV2 = (
     node: LGraphNode,
-    inputName: string,
-    inputData: InputSpec,
-    app: ComfyApp
+    inputSpec: InputSpec
   ) => {
-    if (!isStringInputSpec(inputData)) {
-      throw new Error(`Invalid input data: ${inputData}`)
+    if (!isStringInputSpec(inputSpec)) {
+      throw new Error(`Invalid input data: ${inputSpec}`)
     }
 
-    const inputOptions = inputData[1] ?? {}
-    const defaultVal = inputOptions.default ?? ''
-    const multiline = inputOptions.multiline
+    const defaultVal = inputSpec.default ?? ''
+    const multiline = inputSpec.multiline
 
-    let res: { widget: IWidget }
-    if (multiline) {
-      res = addMultilineWidget(
-        node,
-        inputName,
-        { defaultVal, ...inputOptions },
-        app
-      )
-    } else {
-      res = {
-        widget: node.addWidget('text', inputName, defaultVal, () => {}, {})
-      }
+    const widget = multiline
+      ? addMultilineWidget(node, inputSpec.name, {
+          defaultVal,
+          placeholder: inputSpec.placeholder
+        })
+      : node.addWidget('text', inputSpec.name, defaultVal, () => {}, {})
+
+    if (typeof inputSpec.dynamicPrompts === 'boolean') {
+      widget.dynamicPrompts = inputSpec.dynamicPrompts
     }
 
-    if (typeof inputOptions.dynamicPrompts === 'boolean') {
-      res.widget.dynamicPrompts = inputOptions.dynamicPrompts
-    }
-
-    return res
+    return widget
   }
 
   return widgetConstructor
