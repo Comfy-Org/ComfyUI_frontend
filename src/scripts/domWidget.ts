@@ -68,6 +68,8 @@ export interface DOMWidgetOptions<
    * @deprecated Use `afterResize` instead. This callback is a legacy API
    * that fires before resize happens, but it is no longer supported. Now it
    * fires after resize happens.
+   * The resize logic has been upstreamed to litegraph in
+   * https://github.com/Comfy-Org/ComfyUI_frontend/pull/2557
    */
   beforeResize?: (this: DOMWidget<T, V>, node: LGraphNode) => void
   afterResize?: (this: DOMWidget<T, V>, node: LGraphNode) => void
