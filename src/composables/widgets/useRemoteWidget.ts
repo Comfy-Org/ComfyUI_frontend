@@ -2,7 +2,7 @@ import { LGraphNode } from '@comfyorg/litegraph'
 import { IWidget } from '@comfyorg/litegraph'
 import axios from 'axios'
 
-import type { InputSpec, RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
+import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
 
 const MAX_RETRIES = 5
 const TIMEOUT = 4096
@@ -67,16 +67,15 @@ const fetchData = async (
 export function useRemoteWidget<
   T extends string | number | boolean | object
 >(options: {
-  inputData: InputSpec
+  remoteConfig: RemoteWidgetConfig
   defaultValue: T
   node: LGraphNode
   widget: IWidget
 }) {
-  const { inputData, defaultValue, node, widget } = options
-  const config = (inputData[1]?.remote ?? {}) as RemoteWidgetConfig
-  const { refresh = 0, max_retries = MAX_RETRIES } = config
+  const { remoteConfig, defaultValue, node, widget } = options
+  const { refresh = 0, max_retries = MAX_RETRIES } = remoteConfig
   const isPermanent = refresh <= 0
-  const cacheKey = createCacheKey(config)
+  const cacheKey = createCacheKey(remoteConfig)
   let isLoaded = false
   let refreshQueued = false
 
@@ -131,7 +130,10 @@ export function useRemoteWidget<
 
     try {
       currentEntry.controller = new AbortController()
-      currentEntry.fetchPromise = fetchData(config, currentEntry.controller)
+      currentEntry.fetchPromise = fetchData(
+        remoteConfig,
+        currentEntry.controller
+      )
       const data = await currentEntry.fetchPromise
 
       setSuccess(currentEntry, data)
@@ -146,11 +148,11 @@ export function useRemoteWidget<
   }
 
   const onRefresh = () => {
-    if (config.control_after_refresh) {
+    if (remoteConfig.control_after_refresh) {
       const data = getCachedValue()
       if (!Array.isArray(data)) return // control_after_refresh is only supported for array values
 
-      switch (config.control_after_refresh) {
+      switch (remoteConfig.control_after_refresh) {
         case 'first':
           widget.value = data[0] ?? defaultValue
           break

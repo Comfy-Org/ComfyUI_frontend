@@ -2,11 +2,6 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import {
-  type ComboInputSpecV2,
-  type InputSpec,
-  isComboInputSpecV1
-} from '@/schemas/nodeDefSchema'
 import { ComfyWidgetConstructor, ComfyWidgets } from '@/scripts/widgets'
 
 export const useWidgetStore = defineStore('widget', () => {
@@ -45,42 +40,10 @@ export const useWidgetStore = defineStore('widget', () => {
     }
   }
 
-  function getDefaultValue(inputData: InputSpec) {
-    if (Array.isArray(inputData[0]))
-      return getDefaultValue(transformComboInput(inputData))
-
-    // @ts-expect-error InputSpec is not typed correctly
-    const widgetType = getWidgetType(inputData[0], inputData[1]?.name)
-
-    const [_, props] = inputData
-
-    if (!props) return undefined
-    if (props.default) return props.default
-
-    // @ts-expect-error InputSpec is not typed correctly
-    if (widgetType === 'COMBO' && props.options?.length) return props.options[0]
-    if (props.remote) return 'Loading...'
-    return undefined
-  }
-
-  const transformComboInput = (inputData: InputSpec): ComboInputSpecV2 => {
-    // @ts-expect-error InputSpec is not typed correctly
-    return isComboInputSpecV1(inputData)
-      ? [
-          'COMBO',
-          {
-            options: inputData[0],
-            ...Object(inputData[1] || {})
-          }
-        ]
-      : inputData
-  }
-
   return {
     widgets,
     getWidgetType,
     inputIsWidget,
-    registerCustomWidgets,
-    getDefaultValue
+    registerCustomWidgets
   }
 })

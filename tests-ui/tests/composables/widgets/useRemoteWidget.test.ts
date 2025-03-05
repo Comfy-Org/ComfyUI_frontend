@@ -2,7 +2,7 @@ import axios from 'axios'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useRemoteWidget } from '@/composables/widgets/useRemoteWidget'
-import type { ComboInputSpecV2 } from '@/schemas/nodeDefSchema'
+import { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
 
 vi.mock('axios', () => {
   return {
@@ -29,22 +29,16 @@ vi.mock('@/stores/settingStore', () => ({
 const FIRST_BACKOFF = 1000 // backoff is 1s on first retry
 const DEFAULT_VALUE = 'Loading...'
 
-function createMockInputData(overrides = {}): ComboInputSpecV2 {
-  return [
-    'COMBO',
-    {
-      name: 'test_widget',
-      remote: {
-        route: `/api/test/${Date.now()}${Math.random().toString(36).substring(2, 15)}`,
-        refresh: 0,
-        ...overrides
-      }
-    }
-  ]
+function createMockConfig(overrides = {}): RemoteWidgetConfig {
+  return {
+    route: `/api/test/${Date.now()}${Math.random().toString(36).substring(2, 15)}`,
+    refresh: 0,
+    ...overrides
+  }
 }
 
 const createMockOptions = (inputOverrides = {}) => ({
-  inputData: createMockInputData(inputOverrides),
+  remoteConfig: createMockConfig(inputOverrides),
   defaultValue: DEFAULT_VALUE,
   node: {} as any,
   widget: {} as any
@@ -81,7 +75,7 @@ async function getResolvedValue(hook: ReturnType<typeof useRemoteWidget>) {
 }
 
 describe('useRemoteWidget', () => {
-  let mockInputData: ComboInputSpecV2
+  let mockConfig: RemoteWidgetConfig
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -92,7 +86,7 @@ describe('useRemoteWidget', () => {
     vi.spyOn(Map.prototype, 'set').mockClear()
     vi.spyOn(Map.prototype, 'delete').mockClear()
 
-    mockInputData = createMockInputData()
+    mockConfig = createMockConfig()
   })
 
   afterEach(() => {
