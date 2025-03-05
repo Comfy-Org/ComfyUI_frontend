@@ -35,9 +35,7 @@ export interface DOMWidget<T extends HTMLElement, V extends object | string>
   // DOMWidget properties
   /** The unique ID of the widget. */
   id: string
-  /**
-   * The node that the widget belongs to.
-   */
+  /** The node that the widget belongs to. */
   node: LGraphNode
 }
 
