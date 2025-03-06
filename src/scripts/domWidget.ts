@@ -8,6 +8,7 @@ import type {
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { app } from '@/scripts/app'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { generateRandomSuffix } from '@/utils/formatUtil'
 
@@ -35,8 +36,6 @@ export interface DOMWidget<T extends HTMLElement, V extends object | string>
   // DOMWidget properties
   /** The unique ID of the widget. */
   id: string
-  /** The node that the widget belongs to. */
-  node: LGraphNode
 }
 
 export interface DOMWidgetOptions<
@@ -161,12 +160,10 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
   callback?: (value: V) => void
 
   readonly id: string
-  readonly node: LGraphNode
-  private mouseDownHandler?: (event: MouseEvent) => void
+  mouseDownHandler?: (event: MouseEvent) => void
 
   constructor(obj: {
     id: string
-    node: LGraphNode
     name: string
     type: string
     element: T
@@ -179,7 +176,6 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
     this.options = obj.options
 
     this.id = obj.id
-    this.node = obj.node
 
     if (this.element.blur) {
       this.mouseDownHandler = (event) => {
@@ -319,9 +315,6 @@ LGraphNode.prototype.addDOMWidget = function <
 ): DOMWidget<T, V> {
   options = { hideOnZoom: true, selectOn: ['focus', 'click'], ...options }
 
-  if (!element.parentElement) {
-    app.canvasContainer.append(element)
-  }
   element.hidden = true
   element.style.display = 'none'
 
@@ -334,7 +327,6 @@ LGraphNode.prototype.addDOMWidget = function <
 
   const widget = new DOMWidgetImpl({
     id: `${this.id}:${name}:${generateRandomSuffix()}`,
-    node: this,
     name,
     type,
     element,
@@ -396,6 +388,8 @@ LGraphNode.prototype.addDOMWidget = function <
     options.beforeResize?.call(widget, this)
     options.afterResize?.call(widget, this)
   })
+
+  useDomWidgetStore().registerWidget(widget)
 
   return widget
 }

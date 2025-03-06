@@ -20,11 +20,18 @@ export const useDomWidgetStore = defineStore('domWidget', () => {
 
   // Map to reference actual widget instances
   // Widgets are stored as raw values to avoid reactivity issues
-  const widgetInstances = ref(new Map<string, DOMWidget<HTMLElement, any>>())
+  const widgetInstances = ref(
+    new Map<string, DOMWidget<HTMLElement, object | string>>()
+  )
 
   // Register a widget with the store
-  const registerWidget = (widget: DOMWidget<HTMLElement, any>) => {
-    widgetInstances.value.set(widget.id, markRaw(widget))
+  const registerWidget = <T extends HTMLElement, V extends object | string>(
+    widget: DOMWidget<T, V>
+  ) => {
+    widgetInstances.value.set(
+      widget.id,
+      markRaw(widget as unknown as DOMWidget<HTMLElement, object | string>)
+    )
 
     // Create a reactive state object for the widget
     widgetStates.value.set(widget.id, {
