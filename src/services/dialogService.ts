@@ -84,7 +84,7 @@ export const useDialogService = () => {
       headerComponent: TemplateWorkflowsDialogHeader,
       dialogComponentProps: {
         pt: {
-          content: { class: '!px-0' }
+          content: { class: '!px-0 overflow-y-hidden' }
         }
       },
       props

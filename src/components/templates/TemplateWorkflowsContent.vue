@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex flex-col h-[83vh] w-[90vw] relative"
+    class="flex flex-col h-[83vh] w-[90vw] relative pb-6"
     data-testid="template-workflows-content"
   >
     <Button
