@@ -44,14 +44,16 @@ const emit = defineEmits<{
 
 const validationState = ref<ValidationState>(ValidationState.IDLE)
 
+const cleanInput = (value: string): string => value?.trim() ?? ''
+
 // Add internal value state
-const internalValue = ref(props.modelValue)
+const internalValue = ref(cleanInput(props.modelValue))
 
 // Watch for external modelValue changes
 watch(
   () => props.modelValue,
   async (newValue: string) => {
-    internalValue.value = newValue
+    internalValue.value = cleanInput(newValue)
     await validateUrl(newValue)
   }
 )
@@ -67,7 +69,7 @@ onMounted(async () => {
 
 const handleInput = (value: string) => {
   // Update internal value without emitting
-  internalValue.value = value
+  internalValue.value = cleanInput(value)
   // Reset validation state when user types
   validationState.value = ValidationState.IDLE
 }
@@ -90,7 +92,7 @@ const defaultValidateUrl = async (url: string): Promise<boolean> => {
 const validateUrl = async (value: string) => {
   if (validationState.value === ValidationState.LOADING) return
 
-  const url = value.trim()
+  const url = cleanInput(value)
 
   // Reset state
   validationState.value = ValidationState.IDLE
