@@ -646,9 +646,8 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     this.outputs ??= []
     this.outputs = this.outputs.map(output => toClass(NodeOutputSlot, output))
     for (const [i, output] of this.outputs.entries()) {
-      if (!output.links) {
-        continue
-      }
+      if (!output.links) continue
+
       for (const linkId of output.links) {
         const link = this.graph
           ? this.graph._links.get(linkId)
@@ -2660,53 +2659,43 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   getConnectionPos(is_input: boolean, slot_number: number, out?: Point): Point {
     out ||= new Float32Array(2)
 
-    const num_slots = is_input
-      ? this.inputs?.length ?? 0
-      : this.outputs?.length ?? 0
-
-    const offset = LiteGraph.NODE_SLOT_HEIGHT * 0.5
+    const { pos: [nodeX, nodeY], inputs, outputs } = this
 
     if (this.flags.collapsed) {
       const w = this._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH
-      out[0] = is_input
-        ? this.pos[0]
-        : this.pos[0] + w
-      out[1] = this.pos[1] - LiteGraph.NODE_TITLE_HEIGHT * 0.5
+      out[0] = is_input ? nodeX : nodeX + w
+      out[1] = nodeY - LiteGraph.NODE_TITLE_HEIGHT * 0.5
       return out
     }
 
     // weird feature that never got finished
     if (is_input && slot_number == -1) {
-      out[0] = this.pos[0] + LiteGraph.NODE_TITLE_HEIGHT * 0.5
-      out[1] = this.pos[1] + LiteGraph.NODE_TITLE_HEIGHT * 0.5
+      out[0] = nodeX + LiteGraph.NODE_TITLE_HEIGHT * 0.5
+      out[1] = nodeY + LiteGraph.NODE_TITLE_HEIGHT * 0.5
       return out
     }
 
     // hard-coded pos
-    if (
-      is_input &&
-      num_slots > slot_number &&
-      this.inputs[slot_number].pos
-    ) {
-      out[0] = this.pos[0] + this.inputs[slot_number].pos[0]
-      out[1] = this.pos[1] + this.inputs[slot_number].pos[1]
+    const inputPos = inputs?.[slot_number]?.pos
+    const outputPos = outputs?.[slot_number]?.pos
+
+    if (is_input && inputPos) {
+      out[0] = nodeX + inputPos[0]
+      out[1] = nodeY + inputPos[1]
       return out
-    } else if (
-      !is_input &&
-      num_slots > slot_number &&
-      this.outputs[slot_number].pos
-    ) {
-      out[0] = this.pos[0] + this.outputs[slot_number].pos[0]
-      out[1] = this.pos[1] + this.outputs[slot_number].pos[1]
+    } else if (!is_input && outputPos) {
+      out[0] = nodeX + outputPos[0]
+      out[1] = nodeY + outputPos[1]
       return out
     }
 
     // default vertical slots
+    const offset = LiteGraph.NODE_SLOT_HEIGHT * 0.5
     out[0] = is_input
-      ? this.pos[0] + offset
-      : this.pos[0] + this.size[0] + 1 - offset
+      ? nodeX + offset
+      : nodeX + this.size[0] + 1 - offset
     out[1] =
-      this.pos[1] +
+      nodeY +
       (slot_number + 0.7) * LiteGraph.NODE_SLOT_HEIGHT +
       (this.constructor.slot_start_y || 0)
     return out
