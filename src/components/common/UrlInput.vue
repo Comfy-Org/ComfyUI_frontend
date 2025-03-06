@@ -44,7 +44,8 @@ const emit = defineEmits<{
 
 const validationState = ref<ValidationState>(ValidationState.IDLE)
 
-const cleanInput = (value: string): string => value?.trim() ?? ''
+const cleanInput = (value: string): string =>
+  value ? value.replace(/\s+/g, '') : ''
 
 // Add internal value state
 const internalValue = ref(cleanInput(props.modelValue))
