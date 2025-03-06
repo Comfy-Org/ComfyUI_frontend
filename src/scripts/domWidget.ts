@@ -133,9 +133,8 @@ LGraphCanvas.prototype.computeVisibleNodes = function (
         if (w.element) {
           w.element.dataset.isInVisibleNodes = hidden ? 'false' : 'true'
           const shouldOtherwiseHide = w.element.dataset.shouldHide === 'true'
-          const isCollapsed = w.element.dataset.collapsed === 'true'
           const wasHidden = w.element.hidden
-          const actualHidden = hidden || shouldOtherwiseHide || isCollapsed
+          const actualHidden = hidden || shouldOtherwiseHide || node.collapsed
           w.element.hidden = actualHidden
           w.element.style.display = actualHidden ? 'none' : ''
           if (actualHidden && !wasHidden) {
@@ -252,12 +251,12 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
       // @ts-expect-error custom widget type
       this.type === 'converted-widget' ||
       // @ts-expect-error custom widget type
-      this.type === 'hidden'
+      this.type === 'hidden' ||
+      node.collapsed
 
     this.element.dataset.shouldHide = hidden ? 'true' : 'false'
     const isInVisibleNodes = this.element.dataset.isInVisibleNodes === 'true'
-    const isCollapsed = this.element.dataset.collapsed === 'true'
-    const actualHidden = hidden || !isInVisibleNodes || isCollapsed
+    const actualHidden = hidden || !isInVisibleNodes
     const wasHidden = this.element.hidden
     this.element.hidden = actualHidden
     this.element.style.display = actualHidden ? 'none' : ''
@@ -357,25 +356,6 @@ LGraphNode.prototype.addDOMWidget = function <
 
   this.addCustomWidget(widget)
   elementWidgets.add(this)
-
-  const collapse = this.collapse
-  this.collapse = function (this: LGraphNode, force?: boolean) {
-    collapse.call(this, force)
-    if (this.collapsed) {
-      element.hidden = true
-      element.style.display = 'none'
-    }
-    element.dataset.collapsed = this.collapsed ? 'true' : 'false'
-  }
-
-  const { onConfigure } = this
-  this.onConfigure = function (
-    this: LGraphNode,
-    serializedNode: ISerialisedNode
-  ) {
-    onConfigure?.call(this, serializedNode)
-    element.dataset.collapsed = this.collapsed ? 'true' : 'false'
-  }
 
   const onRemoved = this.onRemoved
   this.onRemoved = function (this: LGraphNode) {
