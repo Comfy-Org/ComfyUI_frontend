@@ -1,8 +1,6 @@
 <template>
   <div>
-    <div v-for="widget in widgets" :key="widget.id">
-      <DomWidget :widget="widget" />
-    </div>
+    <DomWidget v-for="widget in widgets" :key="widget.id" :widget="widget" />
   </div>
 </template>
 
