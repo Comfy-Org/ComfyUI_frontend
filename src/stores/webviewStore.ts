@@ -1,5 +1,6 @@
+import { merge } from 'lodash'
 import { defineStore } from 'pinia'
-import { Component, computed, markRaw, ref } from 'vue'
+import { Component, computed, markRaw, ref, shallowRef } from 'vue'
 
 export interface Webview {
   id: string
@@ -12,7 +13,7 @@ export interface Webview {
  * Store used to manage webview canvases
  */
 export const useWebviewStore = defineStore('webview', () => {
-  const registeredWebviews = ref<Record<string, Webview>>({})
+  const registeredWebviews = shallowRef<Record<string, Webview>>({})
   const activeWebviewId = ref<string | null>(null)
 
   const activeWebview = computed(() =>
@@ -29,8 +30,7 @@ export const useWebviewStore = defineStore('webview', () => {
   const registerWebview = (webview: Webview) => {
     registeredWebviews.value[webview.id] = {
       ...webview,
-      component: markRaw(webview.component),
-      props: webview.props
+      component: markRaw(webview.component)
     }
   }
 
@@ -42,7 +42,6 @@ export const useWebviewStore = defineStore('webview', () => {
     const webview = registeredWebviews.value[id]
     if (!webview) return
 
-    // If this is the active webview, clear the active webview
     if (activeWebviewId.value === id) {
       activeWebviewId.value = null
     }
@@ -60,17 +59,14 @@ export const useWebviewStore = defineStore('webview', () => {
     if (!webview) return
 
     if (props) {
-      webview.props = {
-        ...webview.props,
-        ...props
-      }
+      webview.props = merge(webview.props, props)
     }
 
     activeWebviewId.value = id
   }
 
   /**
-   * Hide a webview
+   * Hide a webview by ID
    * @param id The ID of the webview to hide
    */
   const hideWebview = (id: string) => {
@@ -87,7 +83,6 @@ export const useWebviewStore = defineStore('webview', () => {
   }
 
   return {
-    registeredWebviews,
     activeWebviewId,
     activeWebview,
     hasActiveWebview,

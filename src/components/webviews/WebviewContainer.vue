@@ -3,7 +3,7 @@
     <KeepAlive>
       <component
         v-if="
-          webviewStore.activeWebviewId && webviewStore.activeWebview.keepAlive
+          webviewStore.hasActiveWebview && webviewStore.activeWebview.keepAlive
         "
         :is="webviewStore.activeWebview.component"
         :key="webviewStore.activeWebviewId"
@@ -13,7 +13,7 @@
 
     <component
       v-if="
-        webviewStore.activeWebviewId && !webviewStore.activeWebview.keepAlive
+        webviewStore.hasActiveWebview && !webviewStore.activeWebview.keepAlive
       "
       :is="webviewStore.activeWebview.component"
       :key="webviewStore.activeWebviewId"
