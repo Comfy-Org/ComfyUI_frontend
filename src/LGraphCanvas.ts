@@ -464,7 +464,13 @@ export class LGraphCanvas implements ConnectionColorContext {
   resizingGroup: LGraphGroup | null = null
   /** @deprecated See {@link LGraphCanvas.selectedItems} */
   selected_group: LGraphGroup | null = null
+  /** The nodes that are currently visible on the canvas. */
   visible_nodes: LGraphNode[] = []
+  /**
+   * The IDs of the nodes that are currently visible on the canvas. More
+   * performant than {@link visible_nodes} for visibility checks.
+   */
+  #visible_node_ids: Set<NodeId> = new Set()
   node_over?: LGraphNode
   node_capturing_input?: LGraphNode | null
   highlighted_links: Dictionary<boolean> = {}
@@ -4018,6 +4024,15 @@ export class LGraphCanvas implements ConnectionColorContext {
   }
 
   /**
+   * Checks if a node is visible on the canvas.
+   * @param node The node to check
+   * @returns `true` if the node is visible, otherwise `false`
+   */
+  isNodeVisible(node: LGraphNode): boolean {
+    return this.#visible_node_ids.has(node.id)
+  }
+
+  /**
    * renders the whole canvas content, by rendering in two separated canvas, one containing the background grid and the connections, and one containing the nodes)
    */
   draw(force_canvas?: boolean, force_bgcanvas?: boolean): void {
@@ -4031,8 +4046,11 @@ export class LGraphCanvas implements ConnectionColorContext {
     if (this.graph) this.ds.computeVisibleArea(this.viewport)
 
     // Compute node size before drawing links.
-    if (this.dirty_canvas || force_canvas)
+    if (this.dirty_canvas || force_canvas) {
       this.computeVisibleNodes(undefined, this.visible_nodes)
+      // Update visible node IDs
+      this.#visible_node_ids = new Set(this.visible_nodes.map(node => node.id))
+    }
 
     if (
       this.dirty_bgcanvas ||
