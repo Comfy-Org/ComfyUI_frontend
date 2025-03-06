@@ -1,5 +1,5 @@
 <template>
-  <ScrollPanel class="w-80" style="height: calc(85vh - 48px)">
+  <ScrollPanel class="w-80" style="height: calc(83vh - 48px)">
     <Listbox
       :model-value="selectedTab"
       @update:model-value="handleTabSelection"
