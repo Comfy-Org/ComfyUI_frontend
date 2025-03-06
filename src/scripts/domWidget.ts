@@ -299,6 +299,7 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
       document.removeEventListener('mousedown', this.mouseDownHandler)
     }
     this.element.remove()
+    useDomWidgetStore().unregisterWidget(this.id)
   }
 }
 
