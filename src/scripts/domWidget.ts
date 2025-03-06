@@ -1,5 +1,5 @@
 import { LGraphCanvas, LGraphNode } from '@comfyorg/litegraph'
-import type { Size, Vector4 } from '@comfyorg/litegraph'
+import type { Vector4 } from '@comfyorg/litegraph'
 import type { ISerialisedNode } from '@comfyorg/litegraph/dist/types/serialisation'
 import type {
   ICustomWidget,
@@ -8,7 +8,9 @@ import type {
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { app } from '@/scripts/app'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useSettingStore } from '@/stores/settingStore'
+import { generateRandomSuffix } from '@/utils/formatUtil'
 
 interface Rect {
   height: number
@@ -19,6 +21,7 @@ interface Rect {
 
 export interface DOMWidget<T extends HTMLElement, V extends object | string>
   extends ICustomWidget<T> {
+  // ICustomWidget properties
   type: 'custom'
   element: T
   options: DOMWidgetOptions<T, V>
@@ -30,6 +33,9 @@ export interface DOMWidget<T extends HTMLElement, V extends object | string>
    */
   inputEl?: T
   callback?: (value: V) => void
+  // DOMWidget properties
+  /** The unique ID of the widget. */
+  id: string
 }
 
 export interface DOMWidgetOptions<
@@ -146,30 +152,35 @@ LGraphCanvas.prototype.computeVisibleNodes = function (
 export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
   implements DOMWidget<T, V>
 {
-  type: 'custom'
-  name: string
-  element: T
-  options: DOMWidgetOptions<T, V>
+  readonly type: 'custom'
+  readonly name: string
+  readonly element: T
+  readonly options: DOMWidgetOptions<T, V>
   computedHeight?: number
   callback?: (value: V) => void
-  private mouseDownHandler?: (event: MouseEvent) => void
 
-  constructor(
-    name: string,
-    type: string,
-    element: T,
-    options: DOMWidgetOptions<T, V> = {}
-  ) {
+  readonly id: string
+  mouseDownHandler?: (event: MouseEvent) => void
+
+  constructor(obj: {
+    id: string
+    name: string
+    type: string
+    element: T
+    options: DOMWidgetOptions<T, V>
+  }) {
     // @ts-expect-error custom widget type
-    this.type = type
-    this.name = name
-    this.element = element
-    this.options = options
+    this.type = obj.type
+    this.name = obj.name
+    this.element = obj.element
+    this.options = obj.options
 
-    if (element.blur) {
+    this.id = obj.id
+
+    if (this.element.blur) {
       this.mouseDownHandler = (event) => {
-        if (!element.contains(event.target as HTMLElement)) {
-          element.blur()
+        if (!this.element.contains(event.target as HTMLElement)) {
+          this.element.blur()
         }
       }
       document.addEventListener('mousedown', this.mouseDownHandler)
@@ -304,9 +315,6 @@ LGraphNode.prototype.addDOMWidget = function <
 ): DOMWidget<T, V> {
   options = { hideOnZoom: true, selectOn: ['focus', 'click'], ...options }
 
-  if (!element.parentElement) {
-    app.canvasContainer.append(element)
-  }
   element.hidden = true
   element.style.display = 'none'
 
@@ -317,7 +325,14 @@ LGraphNode.prototype.addDOMWidget = function <
     element.title = tooltip
   }
 
-  const widget = new DOMWidgetImpl(name, type, element, options)
+  const widget = new DOMWidgetImpl({
+    id: `${this.id}:${name}:${generateRandomSuffix()}`,
+    name,
+    type,
+    element,
+    options
+  })
+
   // Workaround for https://github.com/Comfy-Org/ComfyUI_frontend/issues/2493
   // Some custom nodes are explicitly expecting getter and setter of `value`
   // property to be on instance instead of prototype.
@@ -373,6 +388,8 @@ LGraphNode.prototype.addDOMWidget = function <
     options.beforeResize?.call(widget, this)
     options.afterResize?.call(widget, this)
   })
+
+  useDomWidgetStore().registerWidget(widget)
 
   return widget
 }

@@ -424,6 +424,7 @@ export const useLitegraphService = () => {
         } else {
           const host = createImageHost(this)
           this.setSizeForImage(true)
+          // @ts-expect-error host is not a standard DOM widget option.
           const widget = this.addDOMWidget(
             ANIM_PREVIEW_WIDGET,
             'img',

@@ -312,3 +312,9 @@ export const paramsToCacheKey = (params: unknown): string => {
 
   return String(params)
 }
+
+/**
+ * Generates a random 4-character string to use as a unique suffix
+ */
+export const generateRandomSuffix = (): string =>
+  Math.random().toString(36).substring(2, 6)
