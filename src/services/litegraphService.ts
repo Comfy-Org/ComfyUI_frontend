@@ -394,7 +394,12 @@ export const useLitegraphService = () => {
       if (isNewOutput || isNewPreview) {
         this.animatedImages = output?.animated?.find(Boolean)
 
-        if (this.animatedImages || isVideoNode(this)) {
+        const isAnimatedWebp =
+          this.animatedImages &&
+          output.images.some((img) => img.filename?.includes('webp'))
+        const isVideo =
+          (this.animatedImages && !isAnimatedWebp) || isVideoNode(this)
+        if (isVideo) {
           useNodeVideo(this).showPreview()
         } else {
           useNodeImage(this).showPreview()
