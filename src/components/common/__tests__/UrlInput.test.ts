@@ -42,11 +42,11 @@ describe('UrlInput', () => {
     })
 
     const input = wrapper.find('input')
-    await input.setValue('https://test.com')
+    await input.setValue('https://test.com/')
     await input.trigger('blur')
 
     expect(wrapper.emitted('update:modelValue')?.[0]).toEqual([
-      'https://test.com'
+      'https://test.com/'
     ])
   })
 
