@@ -76,8 +76,18 @@ const handleInput = (value: string) => {
 }
 
 const handleBlur = async () => {
+  const input = cleanInput(internalValue.value)
+
+  let normalizedUrl = input
+  try {
+    const url = new URL(input)
+    normalizedUrl = url.toString()
+  } catch {
+    // If URL parsing fails, just use the cleaned input
+  }
+
   // Emit the update only on blur
-  emit('update:modelValue', internalValue.value)
+  emit('update:modelValue', normalizedUrl)
 }
 
 // Default validation implementation

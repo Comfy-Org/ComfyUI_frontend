@@ -182,6 +182,12 @@ describe('UrlInput', () => {
       await input.trigger('input')
       await nextTick()
       expect(wrapper.vm.internalValue).toBe('https://both-spaces.com')
+
+      // Test whitespace in the middle of the URL
+      await input.setValue('https:// middle-space.com')
+      await input.trigger('input')
+      await nextTick()
+      expect(wrapper.vm.internalValue).toBe('https://middle-space.com')
     })
 
     it('trims whitespace when value set externally', async () => {
