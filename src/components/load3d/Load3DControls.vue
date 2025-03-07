@@ -105,7 +105,7 @@
       </div>
 
       <div v-if="activeCategory === 'model'" class="flex flex-col">
-        <div v-if="notMaterialLineart" class="relative show-up-direction">
+        <div class="relative show-up-direction">
           <Button
             class="p-button-rounded p-button-text"
             @click="toggleUpDirection"
