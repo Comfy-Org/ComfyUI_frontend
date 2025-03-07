@@ -360,7 +360,7 @@ LGraphNode.prototype.addDOMWidget = function <
 
   const onRemoved = this.onRemoved
   this.onRemoved = function (this: LGraphNode) {
-    element.remove()
+    widget.onRemove()
     elementWidgets.delete(this)
     onRemoved?.call(this)
   }
