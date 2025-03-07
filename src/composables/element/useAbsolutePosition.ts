@@ -66,8 +66,8 @@ export function useAbsolutePosition() {
       ...style.value,
       transformOrigin: '0 0',
       transform: `scale(${scale})`,
-      left: `${top}px`,
-      top: `${left}px`,
+      left: `${left}px`,
+      top: `${top}px`,
       width: `${width}px`,
       height: `${height}px`,
       ...extraStyle
