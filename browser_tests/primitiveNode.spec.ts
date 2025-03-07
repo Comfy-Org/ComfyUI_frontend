@@ -21,4 +21,14 @@ test.describe('Primitive Node', () => {
       'primitive_node_connected.png'
     )
   })
+
+  test('Can connect to dom widget', async ({ comfyPage }) => {
+    await comfyPage.loadWorkflow('primitive_node_unconnected_dom_widget')
+    const primitiveNode: NodeReference = await comfyPage.getNodeRefById(1)
+    const clipEncoderNode: NodeReference = await comfyPage.getNodeRefById(2)
+    await primitiveNode.connectWidget(0, clipEncoderNode, 0)
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'primitive_node_connected_dom_widget.png'
+    )
+  })
 })
