@@ -217,6 +217,11 @@ export interface IOptionalSlotData<TSlot extends INodeInputSlot | INodeOutputSlo
   className?: string
 }
 
+/**
+ * A string that represents a specific data / slot type, e.g. `STRING`.
+ *
+ * Can be comma-delimited to specify multiple allowed types, e.g. `STRING,INT`.
+ */
 export type ISlotType = number | string
 
 export interface INodeSlot {

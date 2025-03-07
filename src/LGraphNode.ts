@@ -39,6 +39,7 @@ import {
   RenderShape,
   TitleMode,
 } from "./types/globalEnums"
+import { findFreeSlotOfType } from "./utils/collections"
 import { LayoutElement } from "./utils/layout"
 import { distributeSpace } from "./utils/spaceDistribution"
 import { toClass } from "./utils/type"
@@ -1941,7 +1942,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   ): number
   findInputSlotFree<TReturn extends true>(
     optsIn?: FindFreeSlotOptions & { returnObj?: TReturn },
-  ): INodeInputSlot
+  ): INodeInputSlot | -1
   findInputSlotFree(optsIn?: FindFreeSlotOptions) {
     return this.#findFreeSlot(this.inputs, optsIn)
   }
@@ -1956,7 +1957,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   ): number
   findOutputSlotFree<TReturn extends true>(
     optsIn?: FindFreeSlotOptions & { returnObj?: TReturn },
-  ): INodeOutputSlot
+  ): INodeOutputSlot | -1
   findOutputSlotFree(optsIn?: FindFreeSlotOptions) {
     return this.#findFreeSlot(this.outputs, optsIn)
   }
@@ -2067,21 +2068,21 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     returnObj?: TReturn,
     preferFreeSlot?: boolean,
     doNotUseOccupied?: boolean,
-  ): INodeInputSlot
+  ): INodeInputSlot | -1
   findSlotByType<TSlot extends false, TReturn extends true>(
     input: TSlot,
     type: ISlotType,
     returnObj?: TReturn,
     preferFreeSlot?: boolean,
     doNotUseOccupied?: boolean,
-  ): INodeOutputSlot
+  ): INodeOutputSlot | -1
   findSlotByType(
     input: boolean,
     type: ISlotType,
     returnObj?: boolean,
     preferFreeSlot?: boolean,
     doNotUseOccupied?: boolean,
-  ) {
+  ): number | INodeOutputSlot | INodeInputSlot {
     return input
       ? this.#findSlotByType(
         this.inputs,
@@ -2216,6 +2217,34 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
         : node.findOutputSlotFree(opt)
       if (nonEventSlot >= 0) return nonEventSlot
     }
+  }
+
+  /**
+   * Finds the first free output slot with any of the comma-delimited types in {@link type}.
+   *
+   * If no slots are free, falls back in order to:
+   * - The first free wildcard slot
+   * - The first occupied slot
+   * - The first occupied wildcard slot
+   * @param type The {@link ISlotType type} of slot to find
+   * @returns The index and slot if found, otherwise `undefined`.
+   */
+  findOutputByType(type: ISlotType): { index: number, slot: INodeOutputSlot } | undefined {
+    return findFreeSlotOfType(this.outputs, type)
+  }
+
+  /**
+   * Finds the first free input slot with any of the comma-delimited types in {@link type}.
+   *
+   * If no slots are free, falls back in order to:
+   * - The first free wildcard slot
+   * - The first occupied slot
+   * - The first occupied wildcard slot
+   * @param type The {@link ISlotType type} of slot to find
+   * @returns The index and slot if found, otherwise `undefined`.
+   */
+  findInputByType(type: ISlotType): { index: number, slot: INodeInputSlot } | undefined {
+    return findFreeSlotOfType(this.inputs, type)
   }
 
   /**
@@ -2388,8 +2417,8 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     output: INodeOutputSlot,
     inputNode: LGraphNode,
     input: INodeInputSlot,
-    afterRerouteId?: RerouteId,
-  ) {
+    afterRerouteId: RerouteId | undefined,
+  ): LLink | null | undefined {
     const { graph } = this
     if (!graph) throw new NullGraphError()
 
@@ -2650,6 +2679,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   }
 
   /**
+   * @deprecated Use {@link getInputPos} or {@link getOutputPos} instead.
    * returns the center of a connection point in canvas coords
    * @param is_input true if if a input slot, false if it is an output
    * @param slot_number (could be the number of the slot or the string with the name of the slot)
@@ -2699,6 +2729,60 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       (slot_number + 0.7) * LiteGraph.NODE_SLOT_HEIGHT +
       (this.constructor.slot_start_y || 0)
     return out
+  }
+
+  /**
+   * Gets the position of an input slot, in graph co-ordinates.
+   *
+   * This method is preferred over the legacy {@link getConnectionPos} method.
+   * @param slot Input slot index
+   * @returns Position of the input slot
+   */
+  getInputPos(slot: number): Point {
+    const { pos: [nodeX, nodeY], inputs } = this
+
+    if (this.flags.collapsed) {
+      const halfTitle = LiteGraph.NODE_TITLE_HEIGHT * 0.5
+      return [nodeX, nodeY - halfTitle]
+    }
+
+    const inputPos = inputs?.[slot]?.pos
+    if (inputPos) return [nodeX + inputPos[0], nodeY + inputPos[1]]
+
+    // default vertical slots
+    const offsetX = LiteGraph.NODE_SLOT_HEIGHT * 0.5
+    const nodeOffsetY = this.constructor.slot_start_y || 0
+    const slotY = (slot + 0.7) * LiteGraph.NODE_SLOT_HEIGHT
+
+    return [nodeX + offsetX, nodeY + slotY + nodeOffsetY]
+  }
+
+  /**
+   * Gets the position of an output slot, in graph co-ordinates.
+   *
+   * This method is preferred over the legacy {@link getConnectionPos} method.
+   * @param slot Output slot index
+   * @returns Position of the output slot
+   */
+  getOutputPos(slot: number): Point {
+    const { pos: [nodeX, nodeY], outputs, size: [width] } = this
+
+    if (this.flags.collapsed) {
+      const width = this._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH
+      const halfTitle = LiteGraph.NODE_TITLE_HEIGHT * 0.5
+      return [nodeX + width, nodeY - halfTitle]
+    }
+
+    const outputPos = outputs?.[slot]?.pos
+    if (outputPos) return outputPos
+
+    // default vertical slots
+    const offsetX = LiteGraph.NODE_SLOT_HEIGHT * 0.5
+    const nodeOffsetY = this.constructor.slot_start_y || 0
+    const slotY = (slot + 0.7) * LiteGraph.NODE_SLOT_HEIGHT
+
+    // TODO: Why +1?
+    return [nodeX + width + 1 - offsetX, nodeY + slotY + nodeOffsetY]
   }
 
   /** @inheritdoc */

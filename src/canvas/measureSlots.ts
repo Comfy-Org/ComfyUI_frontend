@@ -1,10 +1,56 @@
-import type { Point } from "@/interfaces"
+import type { INodeInputSlot, INodeOutputSlot, Point } from "@/interfaces"
 import type { LGraphNode } from "@/LGraphNode"
 
 import { isInRectangle } from "@/measure"
 
+export function getInputOnPos(node: LGraphNode, x: number, y: number): { index: number, input: INodeInputSlot, pos: Point } | undefined {
+  const { inputs } = node
+  if (!inputs) return
+
+  for (const [index, input] of inputs.entries()) {
+    const pos = node.getInputPos(index)
+
+    // TODO: Find a cheap way to measure text, and do it on node label change instead of here
+    // Input icon width + text approximation
+    const nameLength = input.label?.length ?? input.localized_name?.length ?? input.name?.length
+    const width = 20 + (nameLength || 3) * 7
+
+    if (isInRectangle(
+      x,
+      y,
+      pos[0] - 10,
+      pos[1] - 10,
+      width,
+      20,
+    )) {
+      return { index, input, pos }
+    }
+  }
+}
+
+export function getOutputOnPos(node: LGraphNode, x: number, y: number): { index: number, output: INodeOutputSlot, pos: Point } | undefined {
+  const { outputs } = node
+  if (!outputs) return
+
+  for (const [index, output] of outputs.entries()) {
+    const pos = node.getOutputPos(index)
+
+    if (isInRectangle(
+      x,
+      y,
+      pos[0] - 10,
+      pos[1] - 10,
+      40,
+      20,
+    )) {
+      return { index, output, pos }
+    }
+  }
+}
+
 /**
- * returns the INDEX if a position (in graph space) is on top of a node input slot
+ * Returns the input slot index if the given position (in graph space) is on top of a node input slot.
+ * A helper function - originally on the prototype of LGraphCanvas.
  */
 export function isOverNodeInput(
   node: LGraphNode,
@@ -12,37 +58,19 @@ export function isOverNodeInput(
   canvasy: number,
   slot_pos?: Point,
 ): number {
-  const { inputs } = node
-  if (inputs) {
-    for (const [i, input] of inputs.entries()) {
-      const link_pos = node.getConnectionPos(true, i)
-      let is_inside = false
-      // TODO: Find a cheap way to measure text, and do it on node label change instead of here
-      // Input icon width + text approximation
-      const width =
-        20 + ((input.label?.length ?? input.localized_name?.length ?? input.name?.length) || 3) * 7
-      is_inside = isInRectangle(
-        canvasx,
-        canvasy,
-        link_pos[0] - 10,
-        link_pos[1] - 10,
-        width,
-        20,
-      )
-      if (is_inside) {
-        if (slot_pos) {
-          slot_pos[0] = link_pos[0]
-          slot_pos[1] = link_pos[1]
-        }
-        return i
-      }
-    }
+  const result = getInputOnPos(node, canvasx, canvasy)
+  if (!result) return -1
+
+  if (slot_pos) {
+    slot_pos[0] = result.pos[0]
+    slot_pos[1] = result.pos[1]
   }
-  return -1
+  return result.index
 }
 
 /**
- * returns the INDEX if a position (in graph space) is on top of a node output slot
+ * Returns the output slot index if the given position (in graph space) is on top of a node output slot.
+ * A helper function - originally on the prototype of LGraphCanvas.
  */
 export function isOverNodeOutput(
   node: LGraphNode,
@@ -50,26 +78,12 @@ export function isOverNodeOutput(
   canvasy: number,
   slot_pos?: Point,
 ): number {
-  const { outputs } = node
-  if (outputs) {
-    for (let i = 0; i < outputs.length; ++i) {
-      const link_pos = node.getConnectionPos(false, i)
-      const is_inside = isInRectangle(
-        canvasx,
-        canvasy,
-        link_pos[0] - 10,
-        link_pos[1] - 10,
-        40,
-        20,
-      )
-      if (is_inside) {
-        if (slot_pos) {
-          slot_pos[0] = link_pos[0]
-          slot_pos[1] = link_pos[1]
-        }
-        return i
-      }
-    }
+  const result = getOutputOnPos(node, canvasx, canvasy)
+  if (!result) return -1
+
+  if (slot_pos) {
+    slot_pos[0] = result.pos[0]
+    slot_pos[1] = result.pos[1]
   }
-  return -1
+  return result.index
 }

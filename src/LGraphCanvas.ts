@@ -3109,16 +3109,6 @@ export class LGraphCanvas implements ConnectionColorContext {
     return
   }
 
-  /** @deprecated - use {@link isOverNodeInput} from '@/canvas/measureSlots.ts' */
-  isOverNodeInput(node: LGraphNode, canvasx: number, canvasy: number, slot_pos?: Point): number {
-    return isOverNodeInput(node, canvasx, canvasy, slot_pos)
-  }
-
-  /** @deprecated - use {@link isOverNodeOutput} from '@/canvas/measureSlots.ts' */
-  isOverNodeOutput(node: LGraphNode, canvasx: number, canvasy: number, slot_pos?: Point): number {
-    return isOverNodeOutput(node, canvasx, canvasy, slot_pos)
-  }
-
   /**
    * process a key event
    */

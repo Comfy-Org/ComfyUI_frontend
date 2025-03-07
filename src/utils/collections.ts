@@ -1,7 +1,8 @@
-import type { ConnectingLink, Positionable } from "../interfaces"
+import type { ConnectingLink, INodeInputSlot, INodeOutputSlot, ISlotType, Positionable } from "../interfaces"
 import type { LinkId } from "@/LLink"
 
-import { LGraphNode } from "@/LGraphNode"
+import { type IGenericLinkOrLinks, LGraphNode } from "@/LGraphNode"
+import { parseSlotTypes } from "@/strings"
 
 /**
  * Creates a flat set of all positionable items by recursively iterating through all child items.
@@ -45,4 +46,56 @@ export function isDraggingLink(linkId: LinkId, connectingLinks: ConnectingLink[]
     if (connectingLink.link == null) continue
     if (linkId === connectingLink.link.id) return connectingLink
   }
+}
+
+type InputOrOutput = (INodeInputSlot | INodeOutputSlot) & IGenericLinkOrLinks
+type FreeSlotResult<T extends InputOrOutput> = { index: number, slot: T } | undefined
+
+/**
+ * Finds the first free in/out slot with any of the comma-delimited types in {@link type}.
+ *
+ * If no slots are free, falls back in order to:
+ * - The first free wildcard slot
+ * - The first occupied slot
+ * - The first occupied wildcard slot
+ * @param slots The iterable of node slots slots to search through
+ * @param type The {@link ISlotType type} of slot to find
+ * @returns The index and slot if found, otherwise `undefined`.
+ */
+export function findFreeSlotOfType<T extends InputOrOutput>(
+  slots: T[],
+  type: ISlotType,
+): FreeSlotResult<T> {
+  if (!slots?.length) return
+
+  let occupiedSlot: FreeSlotResult<T>
+  let wildSlot: FreeSlotResult<T>
+  let occupiedWildSlot: FreeSlotResult<T>
+
+  const validTypes = parseSlotTypes(type)
+
+  for (const [index, slot] of slots.entries()) {
+    const slotTypes = parseSlotTypes(slot.type)
+
+    for (const validType of validTypes) {
+      for (const slotType of slotTypes) {
+        if (slotType === validType) {
+          if (slot.link == null && !slot.links?.length) {
+            // Exact match - short circuit
+            return { index, slot }
+          }
+          // In case we can't find a free slot.
+          occupiedSlot ??= { index, slot }
+        } else if (!wildSlot && (validType === "*" || slotType === "*")) {
+          // Save the first free wildcard slot as a fallback
+          if (slot.link == null && !slot.links?.length) {
+            wildSlot = { index, slot }
+          } else {
+            occupiedWildSlot ??= { index, slot }
+          }
+        }
+      }
+    }
+  }
+  return wildSlot ?? occupiedSlot ?? occupiedWildSlot
 }
