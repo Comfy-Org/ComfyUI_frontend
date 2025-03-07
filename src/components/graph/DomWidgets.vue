@@ -53,8 +53,8 @@ watch(
           node.pos[1] + MARGIN + widget.y
         ]
         widgetState.size = [
-          widget.width ?? node.width - MARGIN * 2,
-          widget.computedHeight ?? 50 - MARGIN * 2
+          (widget.width ?? node.width) - MARGIN * 2,
+          (widget.computedHeight ?? 50) - MARGIN * 2
         ]
         // TODO: optimize this logic as it's O(n), where n is the number of nodes
         widgetState.zIndex = lgCanvas.graph.nodes.indexOf(node)
