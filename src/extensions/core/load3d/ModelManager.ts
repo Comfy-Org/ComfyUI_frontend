@@ -40,6 +40,7 @@ export class ModelManager implements ModelManagerInterface {
   private eventManager: EventManagerInterface
   private activeCamera: THREE.Camera
   private setupCamera: (size: THREE.Vector3) => void
+  private lineartModel: THREE.Group
 
   LIGHT_MODEL = 0xffffff
   LIGHT_LINES = 0x455a64
@@ -84,6 +85,10 @@ export class ModelManager implements ModelManagerInterface {
     })
 
     this.standardMaterial = this.createSTLMaterial()
+
+    this.lineartModel = new THREE.Group()
+
+    this.lineartModel.name = 'lineartModel'
   }
 
   init(): void {}
@@ -142,7 +147,7 @@ export class ModelManager implements ModelManagerInterface {
     }
 
     this.edgesModel = this.currentModel.clone()
-    this.scene.add(this.edgesModel)
+    this.lineartModel.add(this.edgesModel)
 
     const meshes: THREE.Mesh[] = []
 
@@ -181,6 +186,18 @@ export class ModelManager implements ModelManagerInterface {
       parent?.add(line)
       parent?.add(thickLines)
     }
+
+    this.edgesModel.traverse((child) => {
+      if (
+        child instanceof THREE.Mesh &&
+        child.material &&
+        child.material.resolution
+      ) {
+        this.renderer.getSize(child.material.resolution)
+        child.material.resolution.multiplyScalar(window.devicePixelRatio)
+        child.material.linewidth = 1
+      }
+    })
   }
 
   disposeBackgroundModel(): void {
@@ -249,6 +266,7 @@ export class ModelManager implements ModelManagerInterface {
     }
 
     this.backgroundModel = this.currentModel.clone()
+    this.backgroundModel.visible = true
     this.backgroundModel.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         child.material = new THREE.MeshBasicMaterial({
@@ -258,12 +276,18 @@ export class ModelManager implements ModelManagerInterface {
         child.material.polygonOffsetFactor = 1
         child.material.polygonOffsetUnits = 1
         child.renderOrder = 2
+        child.material.transparent = false
+        child.material.opacity = 0.25
       }
     })
 
-    this.scene.add(this.backgroundModel)
+    this.lineartModel.add(this.backgroundModel)
 
     this.shadowModel = this.currentModel.clone()
+
+    // TODO this has some error, need to fix later
+    this.shadowModel.visible = false
+
     this.shadowModel.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         child.material = new ColoredShadowMaterial({
@@ -278,10 +302,10 @@ export class ModelManager implements ModelManagerInterface {
       }
     })
 
-    this.scene.add(this.shadowModel)
+    this.lineartModel.add(this.shadowModel)
 
     this.depthModel = this.currentModel.clone()
-
+    this.depthModel.visible = true
     this.depthModel.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         child.material = new THREE.MeshBasicMaterial({
@@ -295,7 +319,7 @@ export class ModelManager implements ModelManagerInterface {
       }
     })
 
-    this.scene.add(this.depthModel)
+    this.lineartModel.add(this.depthModel)
   }
 
   initConditionalModel() {
@@ -306,7 +330,7 @@ export class ModelManager implements ModelManagerInterface {
     }
 
     this.conditionalModel = this.currentModel.clone()
-    this.scene.add(this.conditionalModel)
+    this.lineartModel.add(this.conditionalModel)
     this.conditionalModel.visible = true
 
     const meshes: THREE.Mesh[] = []
@@ -359,6 +383,18 @@ export class ModelManager implements ModelManagerInterface {
       parent?.add(line)
       parent?.add(thickLines)
     }
+
+    this.conditionalModel.traverse((child) => {
+      if (
+        child instanceof THREE.Mesh &&
+        child.material &&
+        child.material.resolution
+      ) {
+        this.renderer.getSize(child.material.resolution)
+        child.material.resolution.multiplyScalar(window.devicePixelRatio)
+        child.material.linewidth = 1
+      }
+    })
   }
 
   setMaterialMode(mode: MaterialMode): void {
@@ -366,13 +402,7 @@ export class ModelManager implements ModelManagerInterface {
       return
     }
 
-    this.disposeLineartModel()
-
     this.materialMode = mode
-
-    if (mode === 'lineart' || this.materialMode === 'lineart') {
-      this.eventManager.emitEvent('materialLoadingStart', null)
-    }
 
     if (mode === 'depth') {
       this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace
@@ -382,6 +412,10 @@ export class ModelManager implements ModelManagerInterface {
 
     if (this.currentModel) {
       this.currentModel.visible = mode !== 'lineart'
+    }
+
+    if (this.lineartModel) {
+      this.lineartModel.visible = mode === 'lineart'
     }
 
     this.currentModel.traverse((child) => {
@@ -465,57 +499,6 @@ export class ModelManager implements ModelManagerInterface {
         }
       }
     })
-
-    if (mode === 'lineart') {
-      setTimeout(() => {
-        this.initEdgesModel()
-        this.initBackgroundModel()
-        this.initConditionalModel()
-
-        if (this.conditionalModel) {
-          this.conditionalModel.traverse((child) => {
-            if (
-              child instanceof THREE.Mesh &&
-              child.material &&
-              child.material.resolution
-            ) {
-              this.renderer.getSize(child.material.resolution)
-              child.material.resolution.multiplyScalar(window.devicePixelRatio)
-              child.material.linewidth = 1
-            }
-          })
-        }
-
-        if (this.edgesModel) {
-          this.edgesModel.traverse((child) => {
-            if (
-              child instanceof THREE.Mesh &&
-              child.material &&
-              child.material.resolution
-            ) {
-              this.renderer.getSize(child.material.resolution)
-              child.material.resolution.multiplyScalar(window.devicePixelRatio)
-              child.material.linewidth = 1
-            }
-          })
-        }
-
-        if (this.backgroundModel) {
-          this.backgroundModel.visible = true
-          this.backgroundModel.traverse((child) => {
-            if (child instanceof THREE.Mesh && child.material) {
-              child.material.transparent = false
-              child.material.opacity = 0.25
-              child.material.color.set(this.LIGHT_MODEL)
-            }
-          })
-        }
-
-        this.eventManager.emitEvent('materialLoadingEnd', null)
-      }, 50)
-    } else if (this.materialMode === 'lineart') {
-      this.eventManager.emitEvent('materialLoadingEnd', null)
-    }
 
     this.eventManager.emitEvent('materialModeChange', mode)
   }
@@ -603,6 +586,18 @@ export class ModelManager implements ModelManagerInterface {
     this.setupModelMaterials(model)
 
     this.setupCamera(size)
+
+    this.setupLineartModel()
+  }
+
+  setupLineartModel(): void {
+    this.scene.add(this.lineartModel)
+
+    this.initEdgesModel()
+    this.initBackgroundModel()
+    this.initConditionalModel()
+
+    this.lineartModel.visible = false
   }
 
   setOriginalModel(model: THREE.Object3D | THREE.BufferGeometry | GLTF): void {
@@ -620,6 +615,7 @@ export class ModelManager implements ModelManagerInterface {
 
     if (this.originalRotation) {
       this.currentModel.rotation.copy(this.originalRotation)
+      this.lineartModel.rotation.copy(this.originalRotation)
     }
 
     switch (direction) {
@@ -643,6 +639,8 @@ export class ModelManager implements ModelManagerInterface {
         this.currentModel.rotation.x = -Math.PI / 2
         break
     }
+
+    this.lineartModel.rotation.copy(this.currentModel.rotation)
 
     this.eventManager.emitEvent('upDirectionChange', direction)
   }
