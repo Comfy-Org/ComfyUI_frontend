@@ -1778,12 +1778,9 @@ export class LGraphCanvas implements ConnectionColorContext {
       let widgetHeight: number | undefined
       if (widget.computeSize) {
         ([widgetWidth, widgetHeight] = widget.computeSize(node.size[0]))
-      } else if (widget.computeLayoutSize) {
-        widgetWidth = widget.width
-        widgetHeight = widget.computedHeight
       } else {
         widgetWidth = widget.width || node.size[0]
-        widgetHeight = LiteGraph.NODE_WIDGET_HEIGHT
+        widgetHeight = widget.computedHeight || LiteGraph.NODE_WIDGET_HEIGHT
       }
 
       if (
