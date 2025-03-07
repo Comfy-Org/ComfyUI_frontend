@@ -16,6 +16,7 @@ import { useDomClipping } from '@/composables/element/useDomClipping'
 import type { DOMWidget } from '@/scripts/domWidget'
 import { DomWidgetState } from '@/stores/domWidgetStore'
 import { useCanvasStore } from '@/stores/graphStore'
+import { useSettingStore } from '@/stores/settingStore'
 
 const { widget, widgetState } = defineProps<{
   widget: DOMWidget<HTMLElement, any>
@@ -29,36 +30,46 @@ const { style: positionStyle, updatePositionWithTransform } =
 const { style: clippingStyle, updateClipPath } = useDomClipping()
 const style = computed<CSSProperties>(() => ({
   ...positionStyle.value,
-  ...clippingStyle.value,
+  ...(enableDomClipping.value ? clippingStyle.value : {}),
   zIndex: widgetState.zIndex,
   pointerEvents: widgetState.readonly ? 'none' : 'auto'
 }))
 
 const canvasStore = useCanvasStore()
+const settingStore = useSettingStore()
+const enableDomClipping = computed(() =>
+  settingStore.get('Comfy.DOMClippingEnabled')
+)
+
+const updateDomClipping = () => {
+  const lgCanvas = canvasStore.canvas
+  const selectedNode = Object.values(
+    lgCanvas.selected_nodes ?? {}
+  )[0] as LGraphNode
+  const node = widget.node
+  const isSelected = selectedNode === node
+
+  const renderArea = node.renderArea
+  const offset = lgCanvas.ds.offset
+  const scale = lgCanvas.ds.scale
+
+  updateClipPath(widgetElement.value, lgCanvas.canvas, isSelected, {
+    x: renderArea[0],
+    y: renderArea[1],
+    width: renderArea[2],
+    height: renderArea[3],
+    scale,
+    offset: [offset[0], offset[1]]
+  })
+}
+
 watch(
   () => widgetState,
   (newState) => {
     updatePositionWithTransform(newState)
-
-    const lgCanvas = canvasStore.canvas
-    const selectedNode = Object.values(
-      lgCanvas.selected_nodes ?? {}
-    )[0] as LGraphNode
-    const node = widget.node
-    const isSelected = selectedNode === node
-
-    const renderArea = node.renderArea
-    const offset = lgCanvas.ds.offset
-    const scale = lgCanvas.ds.scale
-
-    updateClipPath(widgetElement.value, lgCanvas.canvas, isSelected, {
-      x: renderArea[0],
-      y: renderArea[1],
-      width: renderArea[2],
-      height: renderArea[3],
-      scale,
-      offset: [offset[0], offset[1]]
-    })
+    if (enableDomClipping.value) {
+      updateDomClipping()
+    }
   },
   { deep: true }
 )
