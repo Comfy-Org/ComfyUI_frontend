@@ -754,6 +754,23 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/admin/nodes': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Create a new custom node using admin priviledge */
+    post: operations['adminCreateNode']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/admin/nodes/{nodeId}/versions/{versionNumber}': {
     parameters: {
       query?: never
@@ -2423,6 +2440,8 @@ export interface operations {
         timestamp?: string
         /** @description Whether to fetch fresh result from database or use cached one if false */
         latest?: boolean
+        /** @description Database column to use as ordering */
+        sort?: string[]
       }
       header?: never
       path?: never
@@ -2794,6 +2813,55 @@ export interface operations {
       }
     }
   }
+  adminCreateNode: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['Node']
+      }
+    }
+    responses: {
+      /** @description Node created successfully */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Node']
+        }
+      }
+      /** @description Bad request, invalid input data. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
   adminUpdateNodeVersion: {
     parameters: {
       query?: never
@@ -2872,6 +2940,7 @@ export interface operations {
     parameters: {
       query?: {
         minAge?: string
+        minSecurityScanAge?: string
         maxNodes?: number
       }
       header?: never
