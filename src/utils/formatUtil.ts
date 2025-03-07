@@ -135,7 +135,7 @@ export function getPathDetails(path: string) {
  * Replaces dots with underscores.
  */
 export function normalizeI18nKey(key: string) {
-  return key.replace(/\./g, '_')
+  return typeof key === 'string' ? key.replace(/\./g, '_') : ''
 }
 
 /**
@@ -232,7 +232,9 @@ export function createAnnotatedPath(
   const { rootFolder = 'input', subfolder } = options
   if (typeof item === 'string')
     return `${createPath(item, subfolder)}${createAnnotation(item, rootFolder)}`
-  return `${createPath(item.filename ?? '', item.subfolder)}${item.type ? createAnnotation(item.type, rootFolder) : ''}`
+  return `${createPath(item.filename ?? '', item.subfolder)}${
+    item.type ? createAnnotation(item.type, rootFolder) : ''
+  }`
 }
 
 /**
