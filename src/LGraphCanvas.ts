@@ -36,6 +36,7 @@ import type {
 import type { ClipboardItems } from "./types/serialisation"
 import type { IWidget } from "./types/widgets"
 
+import { isOverNodeInput, isOverNodeOutput } from "./canvas/measureSlots"
 import { CanvasPointer } from "./CanvasPointer"
 import { DragAndScale } from "./DragAndScale"
 import { strokeShape } from "./draw"
@@ -2666,8 +2667,8 @@ export class LGraphCanvas implements ConnectionColorContext {
         // For input/output hovering
         // to store the output of isOverNodeInput
         const pos: Point = [0, 0]
-        const inputId = this.isOverNodeInput(node, e.canvasX, e.canvasY, pos)
-        const outputId = this.isOverNodeOutput(node, e.canvasX, e.canvasY, pos)
+        const inputId = isOverNodeInput(node, e.canvasX, e.canvasY, pos)
+        const outputId = isOverNodeOutput(node, e.canvasX, e.canvasY, pos)
         const overWidget = this.getWidgetAtCursor(node)
 
         if (!node.mouseOver) {
@@ -2980,7 +2981,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
         // slot below mouse? connect
         if (link.output) {
-          const slot = this.isOverNodeInput(node, x, y)
+          const slot = isOverNodeInput(node, x, y)
           if (slot != -1) {
             // Trying to move link onto itself
             if (link.link?.target_id === node.id && link.link?.target_slot === slot) return
@@ -3008,7 +3009,7 @@ export class LGraphCanvas implements ConnectionColorContext {
             }
           }
         } else if (link.input) {
-          const slot = this.isOverNodeOutput(node, x, y)
+          const slot = isOverNodeOutput(node, x, y)
 
           const newLink = slot != -1
             // this is inverted has output-input nature like
@@ -3109,75 +3110,14 @@ export class LGraphCanvas implements ConnectionColorContext {
     return
   }
 
-  /**
-   * returns the INDEX if a position (in graph space) is on top of a node input slot
-   */
-  isOverNodeInput(
-    node: LGraphNode,
-    canvasx: number,
-    canvasy: number,
-    slot_pos?: Point,
-  ): number {
-    const { inputs } = node
-    if (inputs) {
-      for (const [i, input] of inputs.entries()) {
-        const link_pos = node.getConnectionPos(true, i)
-        let is_inside = false
-        // TODO: Find a cheap way to measure text, and do it on node label change instead of here
-        // Input icon width + text approximation
-        const width =
-          20 + ((input.label?.length ?? input.localized_name?.length ?? input.name?.length) || 3) * 7
-        is_inside = isInRectangle(
-          canvasx,
-          canvasy,
-          link_pos[0] - 10,
-          link_pos[1] - 10,
-          width,
-          20,
-        )
-        if (is_inside) {
-          if (slot_pos) {
-            slot_pos[0] = link_pos[0]
-            slot_pos[1] = link_pos[1]
-          }
-          return i
-        }
-      }
-    }
-    return -1
+  /** @deprecated - use {@link isOverNodeInput} from '@/canvas/measureSlots.ts' */
+  isOverNodeInput(node: LGraphNode, canvasx: number, canvasy: number, slot_pos?: Point): number {
+    return isOverNodeInput(node, canvasx, canvasy, slot_pos)
   }
 
-  /**
-   * returns the INDEX if a position (in graph space) is on top of a node output slot
-   */
-  isOverNodeOutput(
-    node: LGraphNode,
-    canvasx: number,
-    canvasy: number,
-    slot_pos?: Point,
-  ): number {
-    const { outputs } = node
-    if (outputs) {
-      for (let i = 0; i < outputs.length; ++i) {
-        const link_pos = node.getConnectionPos(false, i)
-        const is_inside = isInRectangle(
-          canvasx,
-          canvasy,
-          link_pos[0] - 10,
-          link_pos[1] - 10,
-          40,
-          20,
-        )
-        if (is_inside) {
-          if (slot_pos) {
-            slot_pos[0] = link_pos[0]
-            slot_pos[1] = link_pos[1]
-          }
-          return i
-        }
-      }
-    }
-    return -1
+  /** @deprecated - use {@link isOverNodeOutput} from '@/canvas/measureSlots.ts' */
+  isOverNodeOutput(node: LGraphNode, canvasx: number, canvasy: number, slot_pos?: Point): number {
+    return isOverNodeOutput(node, canvasx, canvasy, slot_pos)
   }
 
   /**
