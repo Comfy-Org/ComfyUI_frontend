@@ -135,7 +135,7 @@ export function getPathDetails(path: string) {
  * Replaces dots with underscores.
  */
 export function normalizeI18nKey(key: string) {
-  return typeof key === "string" ? key.replace(/\./g, "_") : "";
+  return typeof key === "string" ? key.replace(/\./g, '_') : "";
 }
 
 /**
