@@ -26,12 +26,13 @@ import type { CanvasMouseEvent } from "./types/events"
 import type { ISerialisedNode } from "./types/serialisation"
 import type { IBaseWidget, IWidget, IWidgetOptions, TWidgetType, TWidgetValue } from "./types/widgets"
 
+import { getNodeInputOnPos, getNodeOutputOnPos } from "./canvas/measureSlots"
 import { NullGraphError } from "./infrastructure/NullGraphError"
 import { BadgePosition, LGraphBadge } from "./LGraphBadge"
 import { LGraphCanvas } from "./LGraphCanvas"
 import { type LGraphNodeConstructor, LiteGraph } from "./litegraph"
 import { LLink } from "./LLink"
-import { createBounds, isInRect, isInRectangle, snapPoint } from "./measure"
+import { createBounds, isInRect, isInRectangle, isPointInRect, snapPoint } from "./measure"
 import { ConnectionColorContext, isINodeInputSlot, isWidgetInputSlot, NodeInputSlot, NodeOutputSlot, serializeSlot, toNodeSlotClass } from "./NodeSlot"
 import {
   LGraphEventMode,
@@ -1818,6 +1819,38 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   }
 
   /**
+   * Returns the input slot at the given position. Uses full 20 height, and approximates the label length.
+   * @param pos The graph co-ordinates to check
+   * @returns The input slot at the given position if found, otherwise `undefined`.
+   */
+  getInputOnPos(pos: Point): INodeInputSlot | undefined {
+    return getNodeInputOnPos(this, pos[0], pos[1])?.input
+  }
+
+  /**
+   * Returns the output slot at the given position. Uses full 20x20 box for the slot.
+   * @param pos The graph co-ordinates to check
+   * @returns The output slot at the given position if found, otherwise `undefined`.
+   */
+  getOutputOnPos(pos: Point): INodeOutputSlot | undefined {
+    return getNodeOutputOnPos(this, pos[0], pos[1])?.output
+  }
+
+  /**
+   * Returns the input or output slot at the given position.
+   *
+   * Tries {@link getNodeInputOnPos} first, then {@link getNodeOutputOnPos}.
+   * @param pos The graph co-ordinates to check
+   * @returns The input or output slot at the given position if found, otherwise `undefined`.
+   */
+  getSlotOnPos(pos: Point): INodeInputSlot | INodeOutputSlot | undefined {
+    if (!isPointInRect(pos, this.boundingRect)) return
+
+    return this.getInputOnPos(pos) ?? this.getOutputOnPos(pos)
+  }
+
+  /**
+   * @deprecated Use {@link getSlotOnPos} instead.
    * checks if a point is inside a node slot, and returns info about which slot
    * @param x
    * @param y

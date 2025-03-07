@@ -3,7 +3,7 @@ import type { LGraphNode } from "@/LGraphNode"
 
 import { isInRectangle } from "@/measure"
 
-export function getInputOnPos(node: LGraphNode, x: number, y: number): { index: number, input: INodeInputSlot, pos: Point } | undefined {
+export function getNodeInputOnPos(node: LGraphNode, x: number, y: number): { index: number, input: INodeInputSlot, pos: Point } | undefined {
   const { inputs } = node
   if (!inputs) return
 
@@ -28,7 +28,7 @@ export function getInputOnPos(node: LGraphNode, x: number, y: number): { index: 
   }
 }
 
-export function getOutputOnPos(node: LGraphNode, x: number, y: number): { index: number, output: INodeOutputSlot, pos: Point } | undefined {
+export function getNodeOutputOnPos(node: LGraphNode, x: number, y: number): { index: number, output: INodeOutputSlot, pos: Point } | undefined {
   const { outputs } = node
   if (!outputs) return
 
@@ -58,7 +58,7 @@ export function isOverNodeInput(
   canvasy: number,
   slot_pos?: Point,
 ): number {
-  const result = getInputOnPos(node, canvasx, canvasy)
+  const result = getNodeInputOnPos(node, canvasx, canvasy)
   if (!result) return -1
 
   if (slot_pos) {
@@ -78,7 +78,7 @@ export function isOverNodeOutput(
   canvasy: number,
   slot_pos?: Point,
 ): number {
-  const result = getOutputOnPos(node, canvasx, canvasy)
+  const result = getNodeOutputOnPos(node, canvasx, canvasy)
   if (!result) return -1
 
   if (slot_pos) {
