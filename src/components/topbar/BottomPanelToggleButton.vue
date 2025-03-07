@@ -1,9 +1,6 @@
 <template>
   <Button
-    v-show="
-      bottomPanelStore.bottomPanelTabs.length > 0 &&
-      !webviewStore.hasActiveWebview
-    "
+    v-show="bottomPanelStore.bottomPanelTabs.length > 0"
     severity="secondary"
     text
     :aria-label="$t('menu.toggleBottomPanel')"
@@ -22,9 +19,7 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 
-import { useWebviewStore } from '@/stores/webviewStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 
 const bottomPanelStore = useBottomPanelStore()
-const webviewStore = useWebviewStore()
 </script>

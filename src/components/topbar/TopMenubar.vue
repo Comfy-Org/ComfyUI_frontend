@@ -10,23 +10,25 @@
     <div class="flex-grow min-w-0 app-drag h-full">
       <WorkflowTabs v-if="workflowTabsPosition === 'Topbar'" />
     </div>
-    <div class="comfyui-menu-right flex-shrink-0" ref="menuRight"></div>
-    <Actionbar />
-    <BottomPanelToggleButton class="flex-shrink-0" />
-    <Button
-      class="flex-shrink-0"
-      icon="pi pi-bars"
-      severity="secondary"
-      text
-      v-tooltip="{ value: $t('menu.hideMenu'), showDelay: 300 }"
-      :aria-label="$t('menu.hideMenu')"
-      @click="workspaceState.focusMode = true"
-      @contextmenu="showNativeSystemMenu"
-    />
-    <div
-      v-show="menuSetting !== 'Bottom'"
-      class="window-actions-spacer flex-shrink-0"
-    />
+    <template v-if="!webviewStore.hasActiveWebview">
+      <div class="comfyui-menu-right flex-shrink-0" ref="menuRight"></div>
+      <Actionbar />
+      <BottomPanelToggleButton class="flex-shrink-0" />
+      <Button
+        class="flex-shrink-0"
+        icon="pi pi-bars"
+        severity="secondary"
+        text
+        v-tooltip="{ value: $t('menu.hideMenu'), showDelay: 300 }"
+        :aria-label="$t('menu.hideMenu')"
+        @click="workspaceState.focusMode = true"
+        @contextmenu="showNativeSystemMenu"
+      />
+      <div
+        v-show="menuSetting !== 'Bottom'"
+        class="window-actions-spacer flex-shrink-0"
+      />
+    </template>
   </div>
 
   <!-- Virtual top menu for native window (drag handle) -->
@@ -47,6 +49,7 @@ import CommandMenubar from '@/components/topbar/CommandMenubar.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { app } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'
+import { useWebviewStore } from '@/stores/webviewStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import {
   electronAPI,
@@ -57,6 +60,7 @@ import {
 
 const workspaceState = useWorkspaceStore()
 const settingStore = useSettingStore()
+const webviewStore = useWebviewStore()
 const workflowTabsPosition = computed(() =>
   settingStore.get('Comfy.Workflow.WorkflowTabsPosition')
 )
