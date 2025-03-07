@@ -10,7 +10,7 @@
           {{ $t('manager.packsSelected') }}
         </template>
         <template #install-button>
-          <PackInstallButton :full-width="true" :multi="true" />
+          <PackInstallButton :full-width="true" :items="toInstall" />
         </template>
       </PackCardHeader>
       <div class="mb-6">
@@ -42,9 +42,17 @@ const { nodePacks } = defineProps<{
   nodePacks: components['schemas']['Node'][]
 }>()
 
+const toInstall = computed(() =>
+  nodePacks.map((pack) => ({
+    nodePack: pack,
+    version: pack.latest_version.id
+  }))
+)
+
 const comfyRegistryService = useComfyRegistryService()
 
 const getPackNodes = async (pack: components['schemas']['Node']) => {
+  // If remote node pack, don't make unnecessary request if node defs not extracted
   if (!comfyRegistryService.packNodesAvailable(pack)) return []
   return comfyRegistryService.getNodeDefs({
     packId: pack.id,

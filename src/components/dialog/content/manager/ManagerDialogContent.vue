@@ -119,8 +119,8 @@ import PackCard from '@/components/dialog/content/manager/packCard/PackCard.vue'
 import RegistrySearchBar from '@/components/dialog/content/manager/registrySearchBar/RegistrySearchBar.vue'
 import { useResponsiveCollapse } from '@/composables/element/useResponsiveCollapse'
 import { useRegistrySearch } from '@/composables/useRegistrySearch'
-import type { NodeField, TabItem } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
+import type { NodeField, TabItem } from '@/types/managerTypes'
 
 const DEFAULT_CARD_SIZE = 512
 

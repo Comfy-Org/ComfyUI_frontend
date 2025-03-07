@@ -33,7 +33,7 @@ import Listbox from 'primevue/listbox'
 import ScrollPanel from 'primevue/scrollpanel'
 
 import ContentDivider from '@/components/common/ContentDivider.vue'
-import type { TabItem } from '@/types/comfyManagerTypes'
+import type { TabItem } from '@/types/managerTypes'
 
 defineProps<{
   tabs: TabItem[]
