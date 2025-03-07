@@ -89,7 +89,7 @@ export const useDomClipping = (options: ClippingOptions = {}) => {
    */
   const updateClipPath = (
     element: HTMLElement,
-    canvasElement: HTMLElement,
+    canvasElement: HTMLCanvasElement,
     isSelected: boolean,
     selectedArea?: {
       x: number

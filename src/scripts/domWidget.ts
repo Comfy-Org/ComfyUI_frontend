@@ -36,6 +36,8 @@ export interface DOMWidget<T extends HTMLElement, V extends object | string>
   // DOMWidget properties
   /** The unique ID of the widget. */
   id: string
+  /** The node that the widget belongs to. */
+  node: LGraphNode
 }
 
 export interface DOMWidgetOptions<
@@ -159,10 +161,12 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
   callback?: (value: V) => void
 
   readonly id: string
+  readonly node: LGraphNode
   mouseDownHandler?: (event: MouseEvent) => void
 
   constructor(obj: {
     id: string
+    node: LGraphNode
     name: string
     type: string
     element: T
@@ -175,6 +179,7 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
     this.options = obj.options
 
     this.id = obj.id
+    this.node = obj.node
 
     if (this.element.blur) {
       this.mouseDownHandler = (event) => {
@@ -327,6 +332,7 @@ LGraphNode.prototype.addDOMWidget = function <
 
   const widget = new DOMWidgetImpl({
     id: `${this.id}:${name}:${generateRandomSuffix()}`,
+    node: this,
     name,
     type,
     element,

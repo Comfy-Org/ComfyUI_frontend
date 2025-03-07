@@ -1,6 +1,11 @@
 <template>
   <div>
-    <DomWidget v-for="widget in widgets" :key="widget.id" :widget="widget" />
+    <DomWidget
+      v-for="widget in widgets"
+      :key="widget.id"
+      :widget="widget"
+      :widget-state="domWidgetStore.widgetStates.get(widget.id)"
+    />
   </div>
 </template>
 
