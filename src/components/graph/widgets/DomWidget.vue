@@ -1,10 +1,15 @@
 <template>
-  <div ref="widgetElement" :style="style" />
+  <div
+    class="dom-widget"
+    ref="widgetElement"
+    :style="style"
+    v-show="widgetState.visible"
+  />
 </template>
 
 <script setup lang="ts">
 import type { LGraphNode } from '@comfyorg/litegraph'
-import { computed, onMounted, ref, watch } from 'vue'
+import { CSSProperties, computed, onMounted, ref, watch } from 'vue'
 
 import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
 import { useDomClipping } from '@/composables/element/useDomClipping'
@@ -22,37 +27,58 @@ const widgetElement = ref<HTMLElement>()
 const { style: positionStyle, updatePositionWithTransform } =
   useAbsolutePosition()
 const { style: clippingStyle, updateClipPath } = useDomClipping()
-const style = computed(() => ({
+const style = computed<CSSProperties>(() => ({
   ...positionStyle.value,
-  ...clippingStyle.value
+  ...clippingStyle.value,
+  zIndex: widgetState.zIndex,
+  pointerEvents: widgetState.readonly ? 'none' : 'auto'
 }))
 
 const canvasStore = useCanvasStore()
-watch(widgetState, (newState) => {
-  updatePositionWithTransform(newState)
+watch(
+  () => widgetState,
+  (newState) => {
+    updatePositionWithTransform(newState)
 
-  const lgCanvas = canvasStore.canvas
-  const selectedNode = Object.values(
-    lgCanvas.selected_nodes ?? {}
-  )[0] as LGraphNode
-  const node = widget.node
-  const isSelected = selectedNode === node
+    const lgCanvas = canvasStore.canvas
+    const selectedNode = Object.values(
+      lgCanvas.selected_nodes ?? {}
+    )[0] as LGraphNode
+    const node = widget.node
+    const isSelected = selectedNode === node
 
-  const renderArea = node.renderArea
-  const offset = lgCanvas.ds.offset
-  const scale = lgCanvas.ds.scale
+    const renderArea = node.renderArea
+    const offset = lgCanvas.ds.offset
+    const scale = lgCanvas.ds.scale
 
-  updateClipPath(widgetElement.value, lgCanvas.canvas, isSelected, {
-    x: renderArea[0],
-    y: renderArea[1],
-    width: renderArea[2],
-    height: renderArea[3],
-    scale,
-    offset: [offset[0], offset[1]]
-  })
-})
+    updateClipPath(widgetElement.value, lgCanvas.canvas, isSelected, {
+      x: renderArea[0],
+      y: renderArea[1],
+      width: renderArea[2],
+      height: renderArea[3],
+      scale,
+      offset: [offset[0], offset[1]]
+    })
+  },
+  { deep: true }
+)
+
+watch(
+  () => widgetState.visible,
+  (newVisible, oldVisible) => {
+    if (!newVisible && oldVisible) {
+      widget.options.onHide?.(widget)
+    }
+  }
+)
 
 onMounted(() => {
   widgetElement.value.appendChild(widget.element)
 })
 </script>
+
+<style scoped>
+.dom-widget > * {
+  @apply h-full w-full;
+}
+</style>

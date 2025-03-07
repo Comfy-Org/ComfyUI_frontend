@@ -9,6 +9,7 @@ import type { DOMWidget } from '@/scripts/domWidget'
 
 export interface DomWidgetState extends PositionConfig {
   visible: boolean
+  readonly: boolean
   zIndex: number
 }
 
@@ -31,6 +32,7 @@ export const useDomWidgetStore = defineStore('domWidget', () => {
     )
     widgetStates.value.set(widget.id, {
       visible: true,
+      readonly: false,
       zIndex: 0,
       pos: [0, 0],
       size: [0, 0]
