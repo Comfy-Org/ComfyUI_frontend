@@ -1,4 +1,5 @@
 export const CORE_MENU_COMMANDS = [
+  [['Manager'], ['Comfy.Manager.OpenManager']],
   [['Workflow'], ['Comfy.NewBlankWorkflow']],
   [['Workflow'], ['Comfy.OpenWorkflow', 'Comfy.BrowseTemplates']],
   [
