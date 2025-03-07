@@ -134,8 +134,8 @@ export function getPathDetails(path: string) {
  * Normalizes a string to be used as an i18n key.
  * Replaces dots with underscores.
  */
-export function normalizeI18nKey(key: string) {
-  return key.replace(/\./g, '_')
+export function normalizeI18nKey(key?: string) {
+  return typeof key === "string" ? key.replace(/\./g, "_") : "";
 }
 
 /**
