@@ -111,8 +111,8 @@ export const useDomClipping = (options: ClippingOptions = {}) => {
     )
 
     style.value = {
-      ...style.value,
-      clipPath: clipPath || undefined
+      clipPath: clipPath || 'none',
+      willChange: 'clip-path'
     }
   }
 
