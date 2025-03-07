@@ -12,8 +12,9 @@
     <div class="mt-2 mb-4 w-full max-w-xs flex justify-center">
       <slot name="install-button">
         <PackInstallButton
+          v-if="nodePack"
+          :items="[{ nodePack: nodePack, version: nodePack.latest_version.id }]"
           :full-width="installButtonFullWidth"
-          :multi="multi"
         />
       </slot>
     </div>

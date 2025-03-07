@@ -30,7 +30,11 @@
             <i class="pi pi-download mr-2"></i>
             {{ formatNumber(nodePack.downloads) }}
           </div>
-          <PackInstallButton />
+          <PackInstallButton
+            :items="[
+              { nodePack: nodePack, version: nodePack.latest_version?.version }
+            ]"
+          />
         </div>
       </div>
     </template>
