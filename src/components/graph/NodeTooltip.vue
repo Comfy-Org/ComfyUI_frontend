@@ -10,7 +10,11 @@
 </template>
 
 <script setup lang="ts">
-import { LiteGraph } from '@comfyorg/litegraph'
+import {
+  LiteGraph,
+  isOverNodeInput,
+  isOverNodeOutput
+} from '@comfyorg/litegraph'
 import { useEventListener } from '@vueuse/core'
 import { nextTick, ref } from 'vue'
 
@@ -66,7 +70,7 @@ const onIdle = () => {
 
   if (node.flags?.collapsed) return
 
-  const inputSlot = canvas.isOverNodeInput(
+  const inputSlot = isOverNodeInput(
     node,
     canvas.graph_mouse[0],
     canvas.graph_mouse[1],
@@ -81,7 +85,7 @@ const onIdle = () => {
     return showTooltip(translatedTooltip)
   }
 
-  const outputSlot = canvas.isOverNodeOutput(
+  const outputSlot = isOverNodeOutput(
     node,
     canvas.graph_mouse[0],
     canvas.graph_mouse[1],
