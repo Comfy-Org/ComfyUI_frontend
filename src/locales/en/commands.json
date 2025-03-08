@@ -125,6 +125,9 @@
   "Comfy_LoadDefaultWorkflow": {
     "label": "Load Default Workflow"
   },
+  "Comfy_Manager_CustomNodesManager": {
+    "label": "Custom Nodes Manager"
+  },
   "Comfy_NewBlankWorkflow": {
     "label": "New Blank Workflow"
   },
