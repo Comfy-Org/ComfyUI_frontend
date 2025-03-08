@@ -748,7 +748,8 @@ enum Tools {
   Pen = 'pen',
   Eraser = 'eraser',
   PaintBucket = 'paintBucket',
-  ColorSelect = 'colorSelect'
+  ColorSelect = 'colorSelect',
+  RGBPaint = 'rgbPaint'
 }
 
 enum CompositionOperation {
@@ -1969,6 +1970,8 @@ class BrushTool {
   maskEditor: MaskEditorDialog
   messageBroker: MessageBroker
 
+  private rgbColor: string = '#FF0000' // Default color
+
   constructor(maskEditor: MaskEditorDialog) {
     this.maskEditor = maskEditor
     this.messageBroker = maskEditor.getMessageBroker()
@@ -2016,6 +2019,9 @@ class BrushTool {
       'setBrushSmoothingPrecision',
       (precision: number) => this.setBrushSmoothingPrecision(precision)
     )
+    this.messageBroker.subscribe('setRGBColor', (color: string) => {
+      this.rgbColor = color;
+    })
     //brush adjustment
     this.messageBroker.subscribe(
       'brushAdjustmentStart',
@@ -2323,82 +2329,64 @@ class BrushTool {
 
   private async draw_shape(point: Point, overrideOpacity?: number) {
     const brushSettings: Brush = this.brushSettings
-    const maskCtx = this.maskCtx || (await this.messageBroker.pull('maskCtx'))
-    const brushType = await this.messageBroker.pull('brushType')
-    const maskColor = await this.messageBroker.pull('getMaskColor')
+    const currentTool = await this.messageBroker.pull('currentTool')
     const size = brushSettings.size
     const sliderOpacity = brushSettings.opacity
-    const opacity =
-      overrideOpacity == undefined ? sliderOpacity : overrideOpacity
+    const opacity = overrideOpacity == undefined ? sliderOpacity : overrideOpacity
     const hardness = brushSettings.hardness
-
+  
     const x = point.x
     const y = point.y
-
+  
     // Extend the gradient radius beyond the brush size
     const extendedSize = size * (2 - hardness)
-
-    let gradient = maskCtx.createRadialGradient(x, y, 0, x, y, extendedSize)
-
-    const isErasing = maskCtx.globalCompositeOperation === 'destination-out'
-
-    if (hardness === 1) {
-      console.log(sliderOpacity, opacity)
-      gradient.addColorStop(
-        0,
-        isErasing
-          ? `rgba(255, 255, 255, ${opacity})`
-          : `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
-      )
-      gradient.addColorStop(
-        1,
-        isErasing
-          ? `rgba(255, 255, 255, ${opacity})`
-          : `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
-      )
+  
+    let gradient: CanvasGradient
+    let ctx: CanvasRenderingContext2D
+  
+    if (currentTool === Tools.RGBPaint) {
+      // Use the image context for RGB painting
+      ctx = await this.messageBroker.pull('imageCtx')
+      gradient = ctx.createRadialGradient(x, y, 0, x, y, extendedSize)
+      gradient.addColorStop(0, this.rgbColor)
+      gradient.addColorStop(1, this.rgbColor)
     } else {
-      let softness = 1 - hardness
-      let innerStop = Math.max(0, hardness - softness)
-      let outerStop = size / extendedSize
-
-      if (isErasing) {
-        gradient.addColorStop(0, `rgba(255, 255, 255, ${opacity})`)
-        gradient.addColorStop(innerStop, `rgba(255, 255, 255, ${opacity})`)
-        gradient.addColorStop(outerStop, `rgba(255, 255, 255, ${opacity / 2})`)
-        gradient.addColorStop(1, `rgba(255, 255, 255, 0)`)
+      // Use the mask context for other tools
+      ctx = await this.messageBroker.pull('maskCtx')
+      gradient = ctx.createRadialGradient(x, y, 0, x, y, extendedSize)
+      const maskColor = await this.messageBroker.pull('getMaskColor')
+      const isErasing = ctx.globalCompositeOperation === 'destination-out'
+  
+      if (hardness === 1) {
+        gradient.addColorStop(0, isErasing ? `rgba(255, 255, 255, ${opacity})` : `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`)
+        gradient.addColorStop(1, isErasing ? `rgba(255, 255, 255, ${opacity})` : `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`)
       } else {
-        gradient.addColorStop(
-          0,
-          `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
-        )
-        gradient.addColorStop(
-          innerStop,
-          `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
-        )
-        gradient.addColorStop(
-          outerStop,
-          `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity / 2})`
-        )
-        gradient.addColorStop(
-          1,
-          `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, 0)`
-        )
+        let softness = 1 - hardness
+        let innerStop = Math.max(0, hardness - softness)
+        let outerStop = size / extendedSize
+  
+        if (isErasing) {
+          gradient.addColorStop(0, `rgba(255, 255, 255, ${opacity})`)
+          gradient.addColorStop(innerStop, `rgba(255, 255, 255, ${opacity})`)
+          gradient.addColorStop(outerStop, `rgba(255, 255, 255, ${opacity / 2})`)
+          gradient.addColorStop(1, `rgba(255, 255, 255, 0)`)
+        } else {
+          gradient.addColorStop(0, `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`)
+          gradient.addColorStop(innerStop, `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`)
+          gradient.addColorStop(outerStop, `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity / 2})`)
+          gradient.addColorStop(1, `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, 0)`)
+        }
       }
     }
-
-    maskCtx.fillStyle = gradient
-    maskCtx.beginPath()
-    if (brushType === BrushShape.Rect) {
-      maskCtx.rect(
-        x - extendedSize,
-        y - extendedSize,
-        extendedSize * 2,
-        extendedSize * 2
-      )
+  
+    ctx.fillStyle = gradient
+    ctx.beginPath()
+    if (brushSettings.type === BrushShape.Rect) {
+      ctx.rect(x - extendedSize, y - extendedSize, extendedSize * 2, extendedSize * 2)
     } else {
-      maskCtx.arc(x, y, extendedSize, 0, Math.PI * 2, false)
+      ctx.arc(x, y, extendedSize, 0, Math.PI * 2, false)
     }
-    maskCtx.fill()
+    ctx.fill()
   }
 
   private async init_shape(compositionOperation: CompositionOperation) {
@@ -2635,11 +2623,24 @@ class UIManager {
   private image!: HTMLImageElement
   private imageURL!: URL
   private darkMode: boolean = true
+  private colorPicker!: HTMLInputElement
+
+  private createColorPicker(): HTMLInputElement {
+    const colorPicker = document.createElement('input')
+    colorPicker.type = 'color'
+    colorPicker.id = 'maskEditor_colorPicker'
+    colorPicker.value = '#FF0000' // Default color
+    colorPicker.addEventListener('input', (event) => {
+      const color = (event.target as HTMLInputElement).value
+      this.messageBroker.publish('setRGBColor', color)
+    })
+    return colorPicker
+  }
 
   private maskEditor: MaskEditorDialog
   private messageBroker: MessageBroker
 
-  private mask_opacity: number = 1.0
+  private mask_opacity: number = 0.8
   private maskBlendMode: MaskBlendMode = MaskBlendMode.Black
 
   private zoomTextHTML!: HTMLSpanElement
@@ -2982,6 +2983,23 @@ class UIManager {
     brush_settings_container.appendChild(brush_settings_title)
     brush_settings_container.appendChild(resetBrushSettingsButton)
     brush_settings_container.appendChild(brush_shape_outer_container)
+
+      // Create a new container for the color picker and its title
+    const color_picker_container = this.createContainer(true)
+
+    // Add the color picker title
+    const colorPickerTitle = document.createElement('span')
+    colorPickerTitle.innerText = 'Color Selector'
+    colorPickerTitle.classList.add('maskEditor_sidePanelSubTitle') // Mimic brush shape title style
+    color_picker_container.appendChild(colorPickerTitle)
+
+    // Add the color picker
+    const colorPicker = this.createColorPicker()
+    color_picker_container.appendChild(colorPicker)
+
+    // Add the color picker container to the main settings container
+    brush_settings_container.appendChild(color_picker_container)
+
     brush_settings_container.appendChild(thicknesSliderObj.container)
     brush_settings_container.appendChild(opacitySliderObj.container)
     brush_settings_container.appendChild(hardnessSliderObj.container)
@@ -3160,7 +3178,7 @@ class UIManager {
     mask_layer_container.appendChild(mask_layer_visibility_checkbox)
     mask_layer_container.appendChild(mask_layer_image_container)
     mask_layer_container.appendChild(mask_layer_dropdown)
-
+ 
     const mask_layer_opacity_sliderObj = this.createSlider(
       'Mask Opacity',
       0.0,
@@ -3457,7 +3475,7 @@ class UIManager {
     return top_bar
   }
 
-  private createToolPanel() {
+private createToolPanel() {
     var tool_panel = document.createElement('div')
     tool_panel.id = 'maskEditor_toolPanel'
     this.toolPanel = tool_panel
@@ -3477,8 +3495,7 @@ class UIManager {
     toolPanel_brushToolContainer.classList.add(toolPanelHoverAccent)
     toolPanel_brushToolContainer.innerHTML = `
     <svg viewBox="0 0 44 44">
-      <path class="cls-1" d="M34,13.93c0,.47-.19.94-.55,1.31l-13.02,13.04c-.09.07-.18.15-.27.22-.07-1.39-1.21-2.48-2.61-2.49.07-.12.16-.24.27-.34l13.04-13.04c.72-.72,1.89-.72,2.6,0,.35.35.55.83.55,1.3Z"/>
-      <path class="cls-1" d="M19.64,29.03c0,4.46-6.46,3.18-9.64,0,3.3-.47,4.75-2.58,7.06-2.58,1.43,0,2.58,1.16,2.58,2.58Z"/>
+      <path class="cls-1" d="M10.97,15.98v14.04c0,.825.675,1.5,1.5,1.5h23.07c.825,0,1.5-.675,1.5-1.5V15.98c0-.825-.675-1.5-1.5-1.5H12.47c-.825,0-1.5.675-1.5,1.5ZM25.79,28.16c-4.365,1.41-8.355-2.58-6.945-6.945.51-1.575,1.785-2.85,3.36-3.36,4.365-1.41,8.355,2.58,6.945,6.945-.51,1.575-1.785,2.85-3.36,3.36Z"/>
     </svg>
     `
     toolElements.push(toolPanel_brushToolContainer)
@@ -3648,10 +3665,45 @@ class UIManager {
       this.messageBroker.publish('resetZoom')
     })
 
+    // RGB Paint Tool
+    var toolPanel_rgbPaintToolContainer = document.createElement('div')
+    toolPanel_rgbPaintToolContainer.classList.add('maskEditor_toolPanelContainer')
+    toolPanel_rgbPaintToolContainer.classList.add(toolPanelHoverAccent)
+    toolPanel_rgbPaintToolContainer.innerHTML = `
+      <svg viewBox="0 0 44 44">
+        <path class="cls-1" d="M34,13.93c0,.47-.19.94-.55,1.31l-13.02,13.04c-.09.07-.18.15-.27.22-.07-1.39-1.21-2.48-2.61-2.49.07-.12.16-.24.27-.34l13.04-13.04c.72-.72,1.89-.72,2.6,0,.35.35.55.83.55,1.3Z"/>
+        <path class="cls-1" d="M19.64,29.03c0,4.46-6.46,3.18-9.64,0,3.3-.47,4.75-2.58,7.06-2.58,1.43,0,2.58,1.16,2.58,2.58Z"/>
+      </svg>
+    `
+    toolElements.push(toolPanel_rgbPaintToolContainer)
+
+    toolPanel_rgbPaintToolContainer.addEventListener('click', () => {
+      this.messageBroker.publish('setTool', Tools.RGBPaint)
+      for (let toolElement of toolElements) {
+        if (toolElement != toolPanel_rgbPaintToolContainer) {
+          toolElement.classList.remove('maskEditor_toolPanelContainerSelected')
+        } else {
+          toolElement.classList.add('maskEditor_toolPanelContainerSelected')
+          this.brushSettingsHTML.style.display = 'flex'
+          this.colorSelectSettingsHTML.style.display = 'none'
+          this.paintBucketSettingsHTML.style.display = 'none'
+        }
+      }
+      this.messageBroker.publish('setTool', Tools.RGBPaint)
+      this.pointerZone.style.cursor = 'none'
+    })
+
+    var toolPanel_rgbPaintToolIndicator = document.createElement('div')
+    toolPanel_rgbPaintToolIndicator.classList.add('maskEditor_toolPanelIndicator')
+
+    toolPanel_rgbPaintToolContainer.appendChild(toolPanel_rgbPaintToolIndicator)
+
     tool_panel.appendChild(toolPanel_brushToolContainer)
+    tool_panel.appendChild(toolPanel_rgbPaintToolContainer)
     tool_panel.appendChild(toolPanel_eraserToolContainer)
     tool_panel.appendChild(toolPanel_paintBucketToolContainer)
     tool_panel.appendChild(toolPanel_colorSelectToolContainer)
+    tool_panel.appendChild(toolPanel_zoomIndicator)
     tool_panel.appendChild(toolPanel_zoomIndicator)
 
     return tool_panel
@@ -3762,8 +3814,7 @@ class UIManager {
     maskCtx.clearRect(0, 0, this.maskCanvas.width, this.maskCanvas.height)
 
     const alpha_url = new URL(
-      ComfyApp.clipspace?.imgs?.[ComfyApp.clipspace?.selectedIndex ?? 0]?.src ??
-        ''
+      ComfyApp.clipspace?.imgs?.[ComfyApp.clipspace?.selectedIndex ?? 0]?.src ?? ''
     )
     alpha_url.searchParams.delete('channel')
     alpha_url.searchParams.delete('preview')
@@ -3771,12 +3822,8 @@ class UIManager {
     let mask_image: HTMLImageElement = await this.loadImage(alpha_url)
 
     // original image load
-    if (
-      !ComfyApp.clipspace?.imgs?.[ComfyApp.clipspace?.selectedIndex ?? 0]?.src
-    ) {
-      throw new Error(
-        'Unable to access image source - clipspace or image is null'
-      )
+    if (!ComfyApp.clipspace?.imgs?.[ComfyApp.clipspace?.selectedIndex ?? 0]?.src) {
+      throw new Error('Unable to access image source - clipspace or image is null')
     }
 
     const rgb_url = new URL(
@@ -4134,6 +4181,14 @@ class ToolManager {
       return
     }
 
+    // RGB painting
+    if (this.currentTool === Tools.RGBPaint && event.button === 0) {
+      const offset = { x: event.offsetX, y: event.offsetY }
+      const coords_canvas = await this.messageBroker.pull('screenToCanvas', offset)
+      this.messageBroker.publish('drawStart', event)
+      return
+    }
+
     //paint bucket
     if (this.currentTool === Tools.PaintBucket && event.button === 0) {
       const offset = { x: event.offsetX, y: event.offsetY }
@@ -4179,6 +4234,12 @@ class ToolManager {
 
     var isSpacePressed = await this.messageBroker.pull('isKeyPressed', ' ')
     this.messageBroker.publish('updateBrushPreview')
+
+    // RGB painting
+    if (this.currentTool === Tools.RGBPaint && event.buttons === 1) {
+      this.messageBroker.publish('draw', event)
+      return
+    }
 
     //move the canvas
     if (event.buttons === 4 || (event.buttons === 1 && isSpacePressed)) {
@@ -4753,6 +4814,7 @@ class MessageBroker {
     this.createPushTopic('setZoomText')
     this.createPushTopic('resetZoom')
     this.createPushTopic('invert')
+    this.createPushTopic('setRGBColor')
   }
 
   /**

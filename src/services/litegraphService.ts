@@ -338,7 +338,7 @@ export const useLitegraphService = () => {
 
         if (isImageNode(this)) {
           options.push({
-            content: 'Open in MaskEditor',
+            content: 'Open in Image Canvas',
             callback: (obj) => {
               ComfyApp.copyToClipspace(this)
               ComfyApp.clipspace_return_node = this
