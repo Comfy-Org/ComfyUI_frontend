@@ -1166,7 +1166,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     input.focus()
 
-    let dialogCloseTimer: ReturnType<typeof setTimeout>
+    let dialogCloseTimer: number
     dialog.addEventListener("mouseleave", function () {
       if (LiteGraph.dialog_close_on_mouse_leave) {
         if (!dialog.is_modified && LiteGraph.dialog_close_on_mouse_leave) {
@@ -5872,7 +5872,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     if (this.ds.scale > 1) dialog.style.transform = `scale(${this.ds.scale})`
 
-    let dialogCloseTimer: ReturnType<typeof setTimeout>
+    let dialogCloseTimer: number
     let prevent_timeout = 0
     LiteGraph.pointerListenerAdd(dialog, "leave", function () {
       if (prevent_timeout) return
@@ -6058,7 +6058,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     if (options.hide_on_mouse_leave) {
       // FIXME: Remove "any" kludge
       let prevent_timeout: any = false
-      let timeout_close: ReturnType<typeof setTimeout> | null = null
+      let timeout_close: number | null = null
       LiteGraph.pointerListenerAdd(dialog, "enter", function () {
         if (timeout_close) {
           clearTimeout(timeout_close)
@@ -6103,7 +6103,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     that.search_box = dialog
 
     let first: string | null = null
-    let timeout: ReturnType<typeof setTimeout> | null = null
+    let timeout: number | null = null
     let selected: ChildNode | null = null
 
     const maybeInput = dialog.querySelector("input")
@@ -6713,7 +6713,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       }
     }
 
-    let dialogCloseTimer: ReturnType<typeof setTimeout>
+    let dialogCloseTimer: number
     let prevent_timeout = 0
     dialog.addEventListener("mouseleave", function () {
       if (prevent_timeout) return

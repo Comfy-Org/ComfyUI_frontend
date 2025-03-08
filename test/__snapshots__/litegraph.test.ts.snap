@@ -150,7 +150,6 @@ LiteGraphGlobal {
   "dialog_close_on_mouse_leave_delay": 500,
   "distance": [Function],
   "do_add_triggers_slots": false,
-  "getTime": [Function],
   "highlight_selected_group": true,
   "isInsideRectangle": [Function],
   "middle_click_slot_add_default_node": false,

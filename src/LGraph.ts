@@ -375,7 +375,6 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
       on_frame()
     } else {
       // execute every 'interval' ms
-      // @ts-expect-error
       this.execution_timer_id = setInterval(() => {
         // execute
         this.onBeforeStep?.()

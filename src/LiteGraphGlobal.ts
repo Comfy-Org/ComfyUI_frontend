@@ -284,24 +284,6 @@ export class LiteGraphGlobal {
     }
   }
 
-  constructor() {
-    // timer that works everywhere
-    if (typeof performance != "undefined") {
-      this.getTime = performance.now.bind(performance)
-    } else if (typeof Date != "undefined" && Date.now) {
-      this.getTime = Date.now.bind(Date)
-    } else if (typeof process != "undefined") {
-      this.getTime = function () {
-        const t = process.hrtime()
-        return t[0] * 0.001 + t[1] * 1e-6
-      }
-    } else {
-      this.getTime = function () {
-        return Date.now()
-      }
-    }
-  }
-
   /**
    * Register a node class so it can be listed when the user wants to create a new one
    * @param type name of the node and path
@@ -734,7 +716,9 @@ export class LiteGraphGlobal {
     }
   }
 
-  getTime: () => number
+  getTime(): number {
+    return performance.now()
+  }
 
   distance = distance
 
