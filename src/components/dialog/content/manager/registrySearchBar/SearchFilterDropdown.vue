@@ -25,7 +25,7 @@ import { computed } from 'vue'
 
 import type { SearchOption } from '@/types/comfyManagerTypes'
 
-const props = defineProps<{
+const { modelValue, options, label } = defineProps<{
   modelValue: T
   options: SearchOption<T>[]
   label: string
@@ -36,7 +36,7 @@ const emit = defineEmits<{
 }>()
 
 const selectedValue = computed({
-  get: () => props.modelValue,
+  get: () => modelValue,
   set: (value) => emit('update:modelValue', value)
 })
 
