@@ -41,7 +41,7 @@ import InfoTabs from '@/components/dialog/content/manager/infoPanel/InfoTabs.vue
 import MetadataRow from '@/components/dialog/content/manager/infoPanel/MetadataRow.vue'
 import PackCardHeader from '@/components/dialog/content/manager/packCard/PackCardHeader.vue'
 import { components } from '@/types/comfyRegistryTypes'
-import { formatDate, formatNumber } from '@/utils/formatUtil'
+import { formatNumber } from '@/utils/formatUtil'
 
 interface InfoItem {
   key: string
@@ -70,7 +70,7 @@ const infoItems = computed<InfoItem[]>(() => [
     key: 'lastUpdated',
     label: t('manager.lastUpdated'),
     value: nodePack.latest_version?.createdAt
-      ? formatDate('human', new Date(nodePack.latest_version.createdAt))
+      ? new Date(nodePack.latest_version.createdAt).toLocaleDateString()
       : undefined
   }
 ])
