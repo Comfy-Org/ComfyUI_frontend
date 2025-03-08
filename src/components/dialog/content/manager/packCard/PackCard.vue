@@ -73,12 +73,7 @@
         </div>
         <div v-if="nodePack.latest_version" class="flex items-center gap-2">
           {{ $t('g.updated') }}
-          {{
-            formatDate(
-              'yyyy-MM-dd',
-              new Date(nodePack.latest_version.createdAt)
-            )
-          }}
+          {{ new Date(nodePack.latest_version.createdAt).toLocaleDateString() }}
         </div>
       </div>
     </template>
@@ -94,7 +89,7 @@ import PackInstallButton from '@/components/dialog/content/manager/PackInstallBu
 import PackIcon from '@/components/dialog/content/manager/packIcon/PackIcon.vue'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import type { components } from '@/types/comfyRegistryTypes'
-import { formatDate, formatNumber } from '@/utils/formatUtil'
+import { formatNumber } from '@/utils/formatUtil'
 
 defineProps<{
   nodePack: components['schemas']['Node']
