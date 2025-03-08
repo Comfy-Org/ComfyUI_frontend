@@ -29,7 +29,7 @@
       </div>
       <div class="flex items-center gap-4 ml-6">
         <small v-if="hasResults" class="text-color-secondary">
-          {{ $t('g.found') }} {{ searchResults.length }} {{ $t('g.results') }}
+          {{ $t('g.resultsCount', { count: searchResults.length }) }}
         </small>
       </div>
     </div>
