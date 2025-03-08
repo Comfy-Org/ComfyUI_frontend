@@ -29,8 +29,7 @@ export function useRegistrySearch() {
         ? await registryStore.listAllPacks({
             page: pageNumber.value,
             limit: pageSize.value,
-            // @ts-expect-error: sort field is not supported in listAllPacks
-            sort: sortField.value
+            sort: [sortField.value]
           })
         : await registryService.search({
             search: searchQuery.value,
@@ -49,11 +48,11 @@ export function useRegistrySearch() {
     }
   }
 
-  // Debounce search when query changes
   const debouncedSearch = debounce(search, SEARCH_DEBOUNCE_TIME)
+
+  // Debounce search when query changes
   watch(() => searchQuery.value, debouncedSearch)
 
-  // Normal search
   watch(() => [pageNumber.value, sortField.value], search, { immediate: true })
 
   onUnmounted(() => {
