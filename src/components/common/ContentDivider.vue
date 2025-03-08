@@ -4,11 +4,11 @@
       'm-0': true,
       'border-t': orientation === 'horizontal',
       'border-l': orientation === 'vertical',
-      'border-surface-300': true,
       'h-full': orientation === 'vertical',
       'w-full': orientation === 'horizontal'
     }"
     :style="{
+      borderColor: '#DCDAE1',
       borderWidth: `${width}px !important`
     }"
   />
