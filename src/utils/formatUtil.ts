@@ -320,3 +320,11 @@ export const paramsToCacheKey = (params: unknown): string => {
  */
 export const generateRandomSuffix = (): string =>
   Math.random().toString(36).substring(2, 6)
+
+/**
+ * Formats a number to a locale-specific string
+ * @param num The number to format
+ * @returns The formatted number or 'N/A' if the number is undefined
+ */
+export const formatNumber = (num?: number): string =>
+  num?.toLocaleString() ?? 'N/A'

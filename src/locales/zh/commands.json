@@ -125,6 +125,9 @@
   "Comfy_LoadDefaultWorkflow": {
     "label": "加载默认工作流"
   },
+  "Comfy_Manager_CustomNodesManager": {
+    "label": "自定义节点管理器"
+  },
   "Comfy_NewBlankWorkflow": {
     "label": "新建空白工作流"
   },

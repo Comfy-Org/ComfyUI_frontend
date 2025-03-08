@@ -7,6 +7,7 @@ import type { components } from '@/types/comfyRegistryTypes'
 
 const SEARCH_DEBOUNCE_TIME = 256
 const DEFAULT_PAGE_SIZE = 60
+const DEFAULT_SORT_FIELD: keyof components['schemas']['Node'] = 'downloads'
 
 /**
  * Composable for managing UI state of Comfy Node Registry search.
@@ -18,6 +19,7 @@ export function useRegistrySearch() {
   const searchQuery = ref('')
   const pageNumber = ref(1)
   const pageSize = ref(DEFAULT_PAGE_SIZE)
+  const sortField = ref<keyof components['schemas']['Node']>(DEFAULT_SORT_FIELD)
   const searchResults = ref<components['schemas']['Node'][]>([])
 
   const search = async () => {
@@ -26,7 +28,8 @@ export function useRegistrySearch() {
       const result = isEmptySearch
         ? await registryStore.listAllPacks({
             page: pageNumber.value,
-            limit: pageSize.value
+            limit: pageSize.value,
+            sort: [sortField.value]
           })
         : await registryService.search({
             search: searchQuery.value,
@@ -45,12 +48,12 @@ export function useRegistrySearch() {
     }
   }
 
-  // Debounce search when query changes
   const debouncedSearch = debounce(search, SEARCH_DEBOUNCE_TIME)
+
+  // Debounce search when query changes
   watch(() => searchQuery.value, debouncedSearch)
 
-  // Normal search when page number changes and on load
-  watch(() => pageNumber.value, search, { immediate: true })
+  watch(() => [pageNumber.value, sortField.value], search, { immediate: true })
 
   onUnmounted(() => {
     debouncedSearch.cancel() // Cancel debounced searches
@@ -61,6 +64,7 @@ export function useRegistrySearch() {
   return {
     pageNumber,
     pageSize,
+    sortField,
     searchQuery,
     searchResults,
     isLoading: registryService.isLoading,
