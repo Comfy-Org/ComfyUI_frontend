@@ -13,12 +13,7 @@
       </IconField>
     </div>
     <div class="flex mt-3 text-sm">
-      <div class="flex items-center gap-4">
-        <small v-if="hasResults" class="text-color-secondary">
-          {{ $t('g.found') }} {{ searchResults.length }} {{ $t('g.results') }}
-        </small>
-      </div>
-      <div class="flex gap-6 ml-6">
+      <div class="flex gap-6 ml-1">
         <SearchFilterDropdown
           v-model="currentFilter"
           :options="filterOptions"
@@ -31,6 +26,11 @@
           :label="$t('g.sort')"
           @update:model-value="handleSortChange"
         />
+      </div>
+      <div class="flex items-center gap-4 ml-6">
+        <small v-if="hasResults" class="text-color-secondary">
+          {{ $t('g.found') }} {{ searchResults.length }} {{ $t('g.results') }}
+        </small>
       </div>
     </div>
   </div>
