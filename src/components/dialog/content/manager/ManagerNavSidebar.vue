@@ -2,7 +2,7 @@
   <aside
     class="absolute translate-x-0 top-0 left-0 h-full w-80 shadow-md z-5 transition-transform duration-300 ease-in-out flex"
   >
-    <ScrollPanel class="w-80 mt-6">
+    <ScrollPanel class="w-80 mt-7">
       <Listbox
         :model-value="selectedTab"
         :options="tabs"
