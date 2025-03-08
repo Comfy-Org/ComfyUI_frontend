@@ -37,14 +37,17 @@
           />
           <div class="flex-1 overflow-auto">
             <NoResultsPlaceholder
-              v-if="searchResults.length === 0"
-              :title="$t('manager.noResultsFound')"
-              :message="$t('manager.tryDifferentSearch')"
-            />
-            <NoResultsPlaceholder
-              v-else-if="error"
-              :title="$t('manager.errorConnecting')"
-              :message="$t('manager.tryAgainLater')"
+              v-if="error || searchResults.length === 0"
+              :title="
+                error
+                  ? $t('manager.errorConnecting')
+                  : $t('manager.noResultsFound')
+              "
+              :message="
+                error
+                  ? $t('manager.tryAgainLater')
+                  : $t('manager.tryDifferentSearch')
+              "
             />
             <div
               v-else-if="isLoading"
@@ -57,7 +60,7 @@
                 :items="resultsWithKeys"
                 :defaultItemSize="DEFAULT_CARD_SIZE"
                 class="p-0 m-0 max-w-full"
-                :buffer-rows="3"
+                :buffer-rows="2"
                 :gridStyle="{
                   display: 'grid',
                   gridTemplateColumns: `repeat(auto-fill, minmax(${DEFAULT_CARD_SIZE}px, 1fr))`,
