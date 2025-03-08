@@ -40,35 +40,35 @@ const { statusType } = defineProps<{
 
 const statusPropsMap: Record<Status, StatusProps> = {
   NodeStatusActive: {
-    label: t('manager.status.active'),
+    label: 'active',
     severity: 'success'
   },
   NodeStatusDeleted: {
-    label: t('manager.status.deleted'),
+    label: 'deleted',
     severity: 'warn'
   },
   NodeStatusBanned: {
-    label: t('manager.status.banned'),
+    label: 'banned',
     severity: 'danger'
   },
   NodeVersionStatusActive: {
-    label: t('manager.status.active'),
+    label: 'active',
     severity: 'success'
   },
   NodeVersionStatusPending: {
-    label: t('manager.status.pending'),
+    label: 'pending',
     severity: 'warn'
   },
   NodeVersionStatusDeleted: {
-    label: t('manager.status.deleted'),
+    label: 'deleted',
     severity: 'warn'
   },
   NodeVersionStatusFlagged: {
-    label: t('manager.status.flagged'),
+    label: 'flagged',
     severity: 'danger'
   },
   NodeVersionStatusBanned: {
-    label: t('manager.status.banned'),
+    label: 'banned',
     severity: 'danger'
   }
 }
