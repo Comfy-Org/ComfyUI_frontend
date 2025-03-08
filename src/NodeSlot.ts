@@ -127,8 +127,8 @@ export abstract class NodeSlot implements INodeSlot {
       lowQuality = false,
       renderText = true,
       highlight = false,
-      doStroke: _doStroke = false,
     } = options
+    let { doStroke = false } = options
 
     // Save the current fillStyle and strokeStyle
     const originalFillStyle = ctx.fillStyle
@@ -141,7 +141,6 @@ export abstract class NodeSlot implements INodeSlot {
     ) as SlotShape
 
     ctx.beginPath()
-    let doStroke = _doStroke
     let doFill = true
 
     ctx.fillStyle = this.renderingColor(colorContext)
