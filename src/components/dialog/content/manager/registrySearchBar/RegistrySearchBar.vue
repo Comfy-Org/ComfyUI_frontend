@@ -44,8 +44,8 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SearchFilterDropdown from '@/components/dialog/content/manager/registrySearchBar/SearchFilterDropdown.vue'
+import type { NodeField, SearchOption } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
-import type { NodeField, SearchOption } from '@/types/managerTypes'
 
 const DEFAULT_SORT: NodeField = 'downloads'
 const DEFAULT_FILTER = 'nodePack'

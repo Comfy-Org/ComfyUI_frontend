@@ -24,7 +24,7 @@ export const useComfyRegistryService = () => {
   const nodeDefStore = useNodeDefStore()
 
   const isLocalNodePack = (nodePackId: string) =>
-    nodeDefStore.nodeDefsByName[nodePackId]
+    !!nodeDefStore.nodeDefsByName[nodePackId]
 
   const isLocalNode = (nodeName: string, nodePackId: string) => {
     if (!nodeDefStore.nodeDefsByName[nodeName]) return false

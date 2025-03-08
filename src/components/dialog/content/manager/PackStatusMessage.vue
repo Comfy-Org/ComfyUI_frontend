@@ -18,9 +18,12 @@
 <script setup lang="ts">
 import Message from 'primevue/message'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { components } from '@/types/comfyRegistryTypes'
 import { VueSeverity } from '@/types/primeVueTypes'
+
+const { t } = useI18n()
 
 type PackVersionStatus = components['schemas']['NodeVersionStatus']
 type PackStatus = components['schemas']['NodeStatus']
@@ -37,35 +40,35 @@ const { statusType } = defineProps<{
 
 const statusPropsMap: Record<Status, StatusProps> = {
   NodeStatusActive: {
-    label: 'active',
+    label: t('manager.status.active'),
     severity: 'success'
   },
   NodeStatusDeleted: {
-    label: 'deleted',
+    label: t('manager.status.deleted'),
     severity: 'warn'
   },
   NodeStatusBanned: {
-    label: 'banned',
+    label: t('manager.status.banned'),
     severity: 'danger'
   },
   NodeVersionStatusActive: {
-    label: 'active',
+    label: t('manager.status.active'),
     severity: 'success'
   },
   NodeVersionStatusPending: {
-    label: 'pending',
+    label: t('manager.status.pending'),
     severity: 'warn'
   },
   NodeVersionStatusDeleted: {
-    label: 'deleted',
+    label: t('manager.status.deleted'),
     severity: 'warn'
   },
   NodeVersionStatusFlagged: {
-    label: 'flagged',
+    label: t('manager.status.flagged'),
     severity: 'danger'
   },
   NodeVersionStatusBanned: {
-    label: 'banned',
+    label: t('manager.status.banned'),
     severity: 'danger'
   }
 }

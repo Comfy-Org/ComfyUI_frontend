@@ -23,7 +23,7 @@
 import Dropdown from 'primevue/dropdown'
 import { computed } from 'vue'
 
-import type { SearchOption } from '@/types/managerTypes'
+import type { SearchOption } from '@/types/comfyManagerTypes'
 
 const props = defineProps<{
   modelValue: T
