@@ -655,7 +655,7 @@ app.registerExtension({
     )
 
     // @ts-ignore Required until Litegraph is merged.
-    app.canvas.linkConnector.events.addEventListener(
+    app.canvas.linkConnector?.events?.addEventListener?.(
       'dropped-on-widget',
       (e) => {
         const { node, link, widget } = e.detail
