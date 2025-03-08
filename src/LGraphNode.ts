@@ -417,6 +417,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     value: unknown,
     prev_value?: unknown,
   ): boolean
+  /** Called for each connection that is created, updated, or removed. This includes "restored" connections when deserialising. */
   onConnectionsChange?(
     this: LGraphNode,
     type: ISlotType,
@@ -2456,9 +2457,15 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     if (!graph) throw new NullGraphError()
 
     const outputIndex = this.outputs.indexOf(output)
-    if (outputIndex === -1) return
+    if (outputIndex === -1) {
+      console.warn("connectSlots: output not found")
+      return
+    }
     const inputIndex = inputNode.inputs.indexOf(input)
-    if (inputIndex === -1) return
+    if (inputIndex === -1) {
+      console.warn("connectSlots: input not found")
+      return
+    }
 
     // check targetSlot and check connection types
     if (!LiteGraph.isValidConnection(output.type, input.type)) {
