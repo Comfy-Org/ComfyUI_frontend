@@ -45,7 +45,6 @@ const { nodePacks } = defineProps<{
 const comfyRegistryService = useComfyRegistryService()
 
 const getPackNodes = async (pack: components['schemas']['Node']) => {
-  // If remote node pack, don't make unnecessary request if node defs not extracted
   if (!comfyRegistryService.packNodesAvailable(pack)) return []
   return comfyRegistryService.getNodeDefs({
     packId: pack.id,

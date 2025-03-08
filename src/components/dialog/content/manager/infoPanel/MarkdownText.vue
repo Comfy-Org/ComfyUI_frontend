@@ -28,10 +28,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-/**
- * Support markdown-syntax links without use of `v-html`
- */
-
 const { text } = defineProps<{
   text: string
 }>()
@@ -50,7 +46,6 @@ const hasMarkdown = computed(() => {
   return hasMarkdown
 })
 
-// Parse markdown into segments that can be rendered as components
 const parsedSegments = computed(() => {
   if (!hasMarkdown.value) return [{ type: 'text', text }]
 
