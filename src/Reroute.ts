@@ -84,6 +84,9 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
   /** @inheritdoc */
   _pos: Float32Array = this.#malloc.subarray(6, 8)
 
+  /** @inheritdoc */
+  _dragging?: boolean
+
   /** Colour of the first link that rendered this reroute */
   _colour?: CanvasColour
 

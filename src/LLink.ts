@@ -45,6 +45,9 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   /** @inheritdoc */
   _centreAngle?: number
 
+  /** @inheritdoc */
+  _dragging?: boolean
+
   #color?: CanvasColour | null
   /** Custom colour for this link only */
   public get color(): CanvasColour | null | undefined {
@@ -112,6 +115,13 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     return network.reroutes
       .get(linkSegment.parentId)
       ?.getReroutes() ?? []
+  }
+
+  static getFirstReroute(
+    network: LinkNetwork,
+    linkSegment: LinkSegment,
+  ): Reroute | undefined {
+    return LLink.getReroutes(network, linkSegment).at(0)
   }
 
   /**

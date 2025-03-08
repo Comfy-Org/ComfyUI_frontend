@@ -2,7 +2,6 @@ import type { DragAndScale } from "./DragAndScale"
 import type {
   CanvasColour,
   ColorOption,
-  ConnectingLink,
   Dictionary,
   IColorable,
   IContextMenuValue,
@@ -3256,7 +3255,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   drawWidgets(ctx: CanvasRenderingContext2D, options: {
     colorContext: ConnectionColorContext
     linkOverWidget: IWidget | null | undefined
-    linkOverWidgetType: ISlotType
+    linkOverWidgetType?: ISlotType
     lowQuality?: boolean
     editorAlpha?: number
   }): void {
@@ -3281,6 +3280,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
         // Manually draw a slot next to the widget simulating an input
         new NodeInputSlot({
           name: "",
+          // @ts-expect-error https://github.com/Comfy-Org/litegraph.js/issues/616
           type: linkOverWidgetType,
           link: 0,
           // @ts-expect-error https://github.com/Comfy-Org/litegraph.js/issues/616
@@ -3419,18 +3419,18 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    * Draws the node's input and output slots.
    */
   drawSlots(ctx: CanvasRenderingContext2D, options: {
-    connectingLink: ConnectingLink | undefined
+    fromSlot?: INodeInputSlot | INodeOutputSlot
     colorContext: ConnectionColorContext
     editorAlpha: number
     lowQuality: boolean
   }) {
-    const { connectingLink, colorContext, editorAlpha, lowQuality } = options
+    const { fromSlot, colorContext, editorAlpha, lowQuality } = options
 
     for (const slot of this.slots) {
       // change opacity of incompatible slots when dragging a connection
       const layoutElement = slot._layoutElement
       const slotInstance = toNodeSlotClass(slot)
-      const isValid = slotInstance.isValidTarget(connectingLink)
+      const isValid = !fromSlot || slotInstance.isValidTarget(fromSlot)
       const highlight = isValid && this.#isMouseOverSlot(slot)
       const labelColor = highlight
         ? this.highlightColor

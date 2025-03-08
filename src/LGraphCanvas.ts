@@ -36,6 +36,8 @@ import type {
 import type { ClipboardItems } from "./types/serialisation"
 import type { IWidget } from "./types/widgets"
 
+import { LinkConnector } from "@/canvas/LinkConnector"
+
 import { isOverNodeInput, isOverNodeOutput } from "./canvas/measureSlots"
 import { CanvasPointer } from "./CanvasPointer"
 import { DragAndScale } from "./DragAndScale"
@@ -43,7 +45,7 @@ import { strokeShape } from "./draw"
 import { NullGraphError } from "./infrastructure/NullGraphError"
 import { LGraphGroup } from "./LGraphGroup"
 import { LGraphNode, type NodeId, type NodeProperty } from "./LGraphNode"
-import { LinkReleaseContextExtended, LiteGraph } from "./litegraph"
+import { LiteGraph } from "./litegraph"
 import { type LinkId, LLink } from "./LLink"
 import {
   containsRect,
@@ -70,7 +72,7 @@ import {
   TitleMode,
 } from "./types/globalEnums"
 import { alignNodes, distributeNodes, getBoundaryNodes } from "./utils/arrange"
-import { findFirstNode, getAllNestedItems, isDraggingLink } from "./utils/collections"
+import { findFirstNode, getAllNestedItems } from "./utils/collections"
 import { toClass } from "./utils/type"
 import { WIDGET_TYPE_MAP } from "./widgets/widgetMap"
 
@@ -448,7 +450,9 @@ export class LGraphCanvas implements ConnectionColorContext {
   /** Contains all links and reroutes that were rendered.  Repopulated every render cycle. */
   renderedPaths: Set<LinkSegment> = new Set()
   visible_links: LLink[]
+  /** @deprecated This array is populated and cleared to support legacy extensions. The contents are ignored by Litegraph. */
   connecting_links: ConnectingLink[] | null
+  linkConnector = new LinkConnector(links => this.connecting_links = links)
   /** The viewport of this canvas.  Tightly coupled with {@link ds}. */
   readonly viewport?: Rect
   autoresize: boolean
@@ -475,8 +479,6 @@ export class LGraphCanvas implements ConnectionColorContext {
   node_over?: LGraphNode
   node_capturing_input?: LGraphNode | null
   highlighted_links: Dictionary<boolean> = {}
-  link_over_widget?: IWidget
-  link_over_widget_type?: string
 
   dirty_canvas: boolean = true
   dirty_bgcanvas: boolean = true
@@ -601,6 +603,54 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     this.ds = new DragAndScale()
     this.pointer = new CanvasPointer(canvas)
+
+    // @deprecated Workaround: Keep until connecting_links is removed.
+    this.linkConnector.events.addEventListener("reset", () => {
+      this.connecting_links = null
+    })
+
+    // Dropped a link on the canvas
+    this.linkConnector.events.addEventListener("dropped-on-canvas", (customEvent) => {
+      if (!this.connecting_links) return
+
+      const e = customEvent.detail
+      this.emitEvent({
+        subType: "empty-release",
+        originalEvent: e,
+        linkReleaseContext: { links: this.connecting_links },
+      })
+
+      const firstLink = this.linkConnector.renderLinks[0]
+
+      // No longer in use
+      // add menu when releasing link in empty space
+      if (LiteGraph.release_link_on_empty_shows_menu) {
+        const linkReleaseContext = this.linkConnector.state.connectingTo === "input"
+          ? {
+            node_from: firstLink.node,
+            slot_from: firstLink.fromSlot,
+            type_filter_in: firstLink.fromSlot.type,
+          }
+          : {
+            node_to: firstLink.node,
+            slot_from: firstLink.fromSlot,
+            type_filter_out: firstLink.fromSlot.type,
+          }
+
+        if ("shiftKey" in e && e.shiftKey) {
+          if (this.allow_searchbox) {
+            this.showSearchBox(e as unknown as MouseEvent, linkReleaseContext)
+          }
+        } else {
+          if (this.linkConnector.state.connectingTo === "input") {
+            this.showConnectionMenu({ nodeFrom: firstLink.node, slotFrom: firstLink.fromSlot, e: e as unknown as CanvasMouseEvent })
+          } else {
+            this.showConnectionMenu({ nodeTo: firstLink.node, slotTo: firstLink.fromSlot, e: e as unknown as CanvasMouseEvent })
+          }
+        }
+      }
+    })
+
     // otherwise it generates ugly patterns when scaling down too much
     this.zoom_modify_alpha = true
     // in range (1.01, 2.5). Less than 1 will invert the zoom direction
@@ -1816,7 +1866,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         otherNode.mouseOver = null
         this._highlight_input = undefined
         this._highlight_pos = undefined
-        this.link_over_widget = undefined
+        this.linkConnector.overWidget = undefined
 
         // Hover transitions
         // TODO: Implement single lerp ease factor for current progress on hover in/out.
@@ -1910,7 +1960,7 @@ export class LGraphCanvas implements ConnectionColorContext {
   }
 
   #processPrimaryButton(e: CanvasPointerEvent, node: LGraphNode | undefined) {
-    const { pointer, graph } = this
+    const { pointer, graph, linkConnector } = this
     if (!graph) throw new NullGraphError()
 
     const x = e.canvasX
@@ -1983,33 +2033,16 @@ export class LGraphCanvas implements ConnectionColorContext {
         const reroute = graph.getRerouteOnPos(x, y)
         if (reroute) {
           if (e.shiftKey) {
-            // Connect new link from reroute
-            const linkId = reroute.linkIds.values().next().value
-            if (linkId == null) return
+            linkConnector.dragFromReroute(graph, reroute)
 
-            const link = graph._links.get(linkId)
-            if (!link) return
-
-            const outputNode = graph.getNodeById(link.origin_id)
-            if (!outputNode) return
-
-            const slot = link.origin_slot
-            const connecting: ConnectingLink = {
-              node: outputNode,
-              slot,
-              input: null,
-              pos: outputNode.getConnectionPos(false, slot),
-              afterRerouteId: reroute.id,
-            }
-            this.connecting_links = [connecting]
-            pointer.onDragStart = () => connecting.output = outputNode.outputs[slot]
-            // pointer.finally = () => this.connecting_links = null
+            pointer.onDragEnd = upEvent => linkConnector.dropLinks(graph, upEvent)
+            pointer.finally = () => linkConnector.reset(true)
 
             this.dirty_bgcanvas = true
           }
 
           pointer.onClick = () => this.processSelect(reroute, e)
-          if (!pointer.onDragStart) {
+          if (!pointer.onDragEnd) {
             pointer.onDragStart = pointer => this.#startDraggingItems(reroute, pointer, true)
             pointer.onDragEnd = e => this.#processDraggedItems(e)
           }
@@ -2036,22 +2069,10 @@ export class LGraphCanvas implements ConnectionColorContext {
           this.ctx.lineWidth = lineWidth
 
           if (e.shiftKey && !e.altKey) {
-            const slot = linkSegment.origin_slot
-            if (slot == null) return console.warn("Connecting link from corrupt link segment: `slot` null", linkSegment)
-            if (linkSegment.origin_id == null) return console.warn("Connecting link from corrupt link segment: `origin_id` null", linkSegment)
+            linkConnector.dragFromLinkSegment(graph, linkSegment)
 
-            const originNode = graph._nodes_by_id[linkSegment.origin_id]
-
-            const connecting: ConnectingLink = {
-              node: originNode,
-              slot,
-              pos: originNode.getConnectionPos(false, slot),
-            }
-            this.connecting_links = [connecting]
-            if (linkSegment.parentId) connecting.afterRerouteId = linkSegment.parentId
-
-            pointer.onDragStart = () => connecting.output = originNode.outputs[slot]
-            // pointer.finally = () => this.connecting_links = null
+            pointer.onDragEnd = upEvent => linkConnector.dropLinks(graph, upEvent)
+            pointer.finally = () => linkConnector.reset(true)
 
             return
           } else if (this.reroutesEnabled && e.altKey && !e.shiftKey) {
@@ -2170,7 +2191,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     ctrlOrMeta: boolean,
     node: LGraphNode,
   ): void {
-    const { pointer, graph } = this
+    const { pointer, graph, linkConnector } = this
     if (!graph) throw new NullGraphError()
 
     const x = e.canvasX
@@ -2239,46 +2260,19 @@ export class LGraphCanvas implements ConnectionColorContext {
           if (isInRectangle(x, y, link_pos[0] - 15, link_pos[1] - 10, 30, 20)) {
             // Drag multiple output links
             if (e.shiftKey && output.links?.length) {
-              const connectingLinks: ConnectingLink[] = []
+              linkConnector.moveOutputLink(graph, output)
 
-              for (const linkId of output.links) {
-                const link = graph._links.get(linkId)
-                if (!link) continue
+              pointer.onDragEnd = upEvent => linkConnector.dropLinks(graph, upEvent)
+              pointer.finally = () => linkConnector.reset(true)
 
-                const slot = link.target_slot
-                const otherNode = graph._nodes_by_id[link.target_id]
-                const input = otherNode.inputs[slot]
-                const pos = otherNode.getConnectionPos(true, slot)
-                const afterRerouteId = LLink.getReroutes(graph, link).at(-1)?.id
-                const firstRerouteId = LLink.getReroutes(graph, link).at(0)?.id
-
-                connectingLinks.push({
-                  node: otherNode,
-                  slot,
-                  input,
-                  output: null,
-                  pos,
-                  direction: LinkDirection.RIGHT,
-                  afterRerouteId,
-                  firstRerouteId,
-                  link,
-                })
-              }
-
-              this.connecting_links = connectingLinks
               return
             }
 
-            output.slot_index = i
-            this.connecting_links = [
-              {
-                node: node,
-                slot: i,
-                input: null,
-                output: output,
-                pos: link_pos,
-              },
-            ]
+            // New output link
+            linkConnector.dragNewFromOutput(graph, node, output)
+
+            pointer.onDragEnd = upEvent => linkConnector.dropLinks(graph, upEvent)
+            pointer.finally = () => linkConnector.reset(true)
 
             if (LiteGraph.shift_click_do_break_link_from) {
               if (e.shiftKey) {
@@ -2308,12 +2302,6 @@ export class LGraphCanvas implements ConnectionColorContext {
             pointer.onClick = () => node.onInputClick?.(i, e)
 
             if (input.link !== null) {
-              // before disconnecting
-              const link_info = graph._links.get(input.link)
-              if (!link_info) throw new TypeError("Input link ID was invalid.")
-
-              const slot = link_info.origin_slot
-              const linked_node = graph._nodes_by_id[link_info.origin_id]
               if (
                 LiteGraph.click_do_break_link_to ||
                 (LiteGraph.ctrl_alt_click_do_break_link &&
@@ -2323,50 +2311,18 @@ export class LGraphCanvas implements ConnectionColorContext {
               ) {
                 node.disconnectInput(i)
               } else if (e.shiftKey || this.allow_reconnect_links) {
-                if (!linked_node) throw new TypeError("linked_node was null")
-
-                const connecting: ConnectingLink = {
-                  node: linked_node,
-                  slot,
-                  output: linked_node.outputs[slot],
-                  pos: linked_node.getConnectionPos(false, slot),
-                  afterRerouteId: link_info.parentId,
-                  link: link_info,
-                }
-                const connectingLinks = [connecting]
-                this.connecting_links = connectingLinks
-
-                pointer.onDragStart = () => {
-                  connecting.output = linked_node.outputs[slot]
-                }
-                pointer.onDragEnd = (upEvent) => {
-                  const shouldDisconnect = this.#processConnectingLinks(upEvent, connectingLinks)
-
-                  if (shouldDisconnect && this.allow_reconnect_links && !LiteGraph.click_do_break_link_to) {
-                    node.disconnectInput(i)
-                  }
-                  connecting.output = linked_node.outputs[slot]
-                  this.connecting_links = null
-                }
-
-                this.dirty_bgcanvas = true
+                linkConnector.moveInputLink(graph, input)
               }
             }
-            if (!pointer.onDragStart) {
-              // Connect from input to output
-              const connecting: ConnectingLink = {
-                node,
-                slot: i,
-                output: null,
-                pos: link_pos,
-              }
-              this.connecting_links = [connecting]
-              pointer.onDragStart = () => connecting.input = input
 
-              this.dirty_bgcanvas = true
+            // Dragging a new link from input to output
+            if (!linkConnector.isConnecting) {
+              linkConnector.dragNewFromInput(graph, node, input)
             }
+            pointer.onDragEnd = upEvent => linkConnector.dropLinks(graph, upEvent)
+            pointer.finally = () => linkConnector.reset(true)
+            this.dirty_bgcanvas = true
 
-            // pointer.finally = () => this.connecting_links = null
             return
           }
         }
@@ -2631,7 +2587,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       e.canvasY,
       this.visible_nodes,
     )
-    const { resizingGroup } = this
+    const { resizingGroup, linkConnector } = this
 
     const dragRect = this.dragging_rectangle
     if (dragRect) {
@@ -2649,7 +2605,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       (this.allow_interaction || (node && node.flags.allow_interaction)) &&
       !this.read_only
     ) {
-      if (this.connecting_links) this.dirty_canvas = true
+      if (linkConnector.isConnecting) this.dirty_canvas = true
 
       // remove mouseover flag
       this.updateMouseOverNodes(node, e)
@@ -2694,59 +2650,53 @@ export class LGraphCanvas implements ConnectionColorContext {
           node.mouseOver.overWidget = overWidget
 
           // Check if link is over anything it could connect to - record position of valid target for snap / highlight
-          if (this.connecting_links?.length) {
-            const firstLink = this.connecting_links[0]
+          if (linkConnector.isConnecting) {
+            const firstLink = linkConnector.renderLinks.at(0)
 
             // Default: nothing highlighted
             let highlightPos: Point | undefined
             let highlightInput: INodeInputSlot | undefined
-            let linkOverWidget: IWidget | undefined
 
-            if (firstLink.node === node) {
-              // Cannot connect link from a node to itself
-            } else if (firstLink.output) {
-              // Connecting from an output to an input
+            if (!firstLink || firstLink.node === node) {
+              // No link / node loopback
+            } else if (linkConnector.state.connectingTo === "input") {
               if (inputId === -1 && outputId === -1) {
                 // Allow support for linking to widgets, handled externally to LiteGraph
                 if (this.getWidgetLinkType && overWidget) {
                   const widgetLinkType = this.getWidgetLinkType(overWidget, node)
                   if (
                     widgetLinkType &&
-                    LiteGraph.isValidConnection(firstLink.output.type, widgetLinkType)
+                    LiteGraph.isValidConnection(linkConnector.renderLinks[0]?.fromSlot.type, widgetLinkType) &&
+                    firstLink.node.isValidWidgetLink?.(firstLink.fromSlotIndex, node, overWidget) !== false
                   ) {
-                    if (firstLink.output.slot_index == null) throw new TypeError("Connecting link output.slot_index was null.")
-
-                    if (firstLink.node.isValidWidgetLink?.(firstLink.output.slot_index, node, overWidget) !== false) {
-                      linkOverWidget = overWidget
-                      this.link_over_widget_type = widgetLinkType
-                    }
+                    linkConnector.overWidget = overWidget
+                    linkConnector.overWidgetType = widgetLinkType
                   }
                 }
                 // Node background / title under the pointer
-                if (!linkOverWidget) {
-                  const targetSlotId = firstLink.node.findConnectByTypeSlot(true, node, firstLink.output.type)
-                  if (targetSlotId !== undefined && targetSlotId >= 0) {
-                    node.getConnectionPos(true, targetSlotId, pos)
+                if (!linkConnector.overWidget) {
+                  const result = node.findInputByType(firstLink.fromSlot.type)
+                  if (result) {
+                    highlightInput = result.slot
+                    node.getConnectionPos(true, result.index, pos)
                     highlightPos = pos
-                    highlightInput = node.inputs[targetSlotId]
                   }
                 }
               } else if (
                 inputId != -1 &&
                 node.inputs[inputId] &&
-                LiteGraph.isValidConnection(firstLink.output.type, node.inputs[inputId].type)
+                LiteGraph.isValidConnection(firstLink.fromSlot.type, node.inputs[inputId].type)
               ) {
                 highlightPos = pos
                 // XXX CHECK THIS
                 highlightInput = node.inputs[inputId]
               }
-            } else if (firstLink.input) {
+            } else if (linkConnector.state.connectingTo === "output") {
               // Connecting from an input to an output
               if (inputId === -1 && outputId === -1) {
-                const targetSlotId = firstLink.node.findConnectByTypeSlot(false, node, firstLink.input.type)
-
-                if (targetSlotId !== undefined && targetSlotId >= 0) {
-                  node.getConnectionPos(false, targetSlotId, pos)
+                const result = node.findOutputByType(firstLink.fromSlot.type)
+                if (result) {
+                  node.getConnectionPos(false, result.index, pos)
                   highlightPos = pos
                 }
               } else {
@@ -2754,7 +2704,7 @@ export class LGraphCanvas implements ConnectionColorContext {
                 if (
                   outputId != -1 &&
                   node.outputs[outputId] &&
-                  LiteGraph.isValidConnection(firstLink.input.type, node.outputs[outputId].type)
+                  LiteGraph.isValidConnection(firstLink.fromSlot.type, node.outputs[outputId].type)
                 ) {
                   highlightPos = pos
                 }
@@ -2762,7 +2712,6 @@ export class LGraphCanvas implements ConnectionColorContext {
             }
             this._highlight_pos = highlightPos
             this._highlight_input = highlightInput
-            this.link_over_widget = linkOverWidget
           }
 
           this.dirty_canvas = true
@@ -2916,10 +2865,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       const x = e.canvasX
       const y = e.canvasY
 
-      if (this.connecting_links?.length) {
-        // node below mouse
-        this.#processConnectingLinks(e, this.connecting_links)
-      } else {
+      if (!this.linkConnector.isConnecting) {
         this.dirty_canvas = true
 
         // @ts-expect-error Unused param
@@ -2929,8 +2875,6 @@ export class LGraphCanvas implements ConnectionColorContext {
           y - this.node_capturing_input.pos[1],
         ])
       }
-
-      this.connecting_links = null
     } else if (e.button === 1) {
       // middle button
       this.dirty_canvas = true
@@ -2948,112 +2892,6 @@ export class LGraphCanvas implements ConnectionColorContext {
     e.stopPropagation()
     e.preventDefault()
     return
-  }
-
-  #processConnectingLinks(e: CanvasPointerEvent, connecting_links: ConnectingLink[]): boolean | undefined {
-    const { graph } = this
-    if (!graph) throw new NullGraphError()
-
-    const { canvasX: x, canvasY: y } = e
-    const node = graph.getNodeOnPos(x, y, this.visible_nodes)
-    const firstLink = connecting_links[0]
-
-    if (node) {
-      let madeNewLink: boolean | undefined
-
-      for (const link of connecting_links) {
-        // dragging a connection
-        this.#dirty()
-
-        // One should avoid linking things to oneself
-        if (node === link.node) continue
-
-        // slot below mouse? connect
-        if (link.output) {
-          const slot = isOverNodeInput(node, x, y)
-          if (slot != -1) {
-            // Trying to move link onto itself
-            if (link.link?.target_id === node.id && link.link?.target_slot === slot) return
-
-            const newLink = link.node.connect(link.slot, node, slot, link.afterRerouteId)
-            madeNewLink ||= newLink !== null
-          } else if (this.link_over_widget) {
-            this.emitEvent({
-              subType: "connectingWidgetLink",
-              link,
-              node,
-              widget: this.link_over_widget,
-            })
-            this.link_over_widget = undefined
-          } else {
-            // not on top of an input
-            // look for a good slot
-            const slotIndex = link.node.findConnectByTypeSlot(true, node, link.output.type)
-            if (slotIndex !== undefined) {
-              // Trying to move link onto itself
-              if (link.link?.target_id === node.id && link.link?.target_slot === slotIndex) return
-
-              const newLink = link.node.connect(link.slot, node, slotIndex, link.afterRerouteId)
-              madeNewLink ||= newLink !== null
-            }
-          }
-        } else if (link.input) {
-          const slot = isOverNodeOutput(node, x, y)
-
-          const newLink = slot != -1
-            // this is inverted has output-input nature like
-            ? node.connect(slot, link.node, link.slot, link.afterRerouteId)
-            // not on top of an input
-            // look for a good slot
-            : link.node.connectByTypeOutput(
-              link.slot,
-              node,
-              link.input.type,
-              { afterRerouteId: link.afterRerouteId },
-            )
-          madeNewLink ||= newLink !== null
-        }
-      }
-      return madeNewLink
-    } else if (firstLink.input || firstLink.output) {
-      // For external event only.
-      const linkReleaseContextExtended: LinkReleaseContextExtended = {
-        links: connecting_links,
-      }
-      this.emitEvent({
-        subType: "empty-release",
-        originalEvent: e,
-        linkReleaseContext: linkReleaseContextExtended,
-      })
-      // No longer in use
-      // add menu when releasing link in empty space
-      if (LiteGraph.release_link_on_empty_shows_menu) {
-        const linkReleaseContext = firstLink.output
-          ? {
-            node_from: firstLink.node,
-            slot_from: firstLink.output,
-            type_filter_in: firstLink.output.type,
-          }
-          : {
-            node_to: firstLink.node,
-            slot_from: firstLink.input,
-            type_filter_out: firstLink.input?.type,
-          }
-
-        if (e.shiftKey) {
-          if (this.allow_searchbox) {
-            this.showSearchBox(e, linkReleaseContext)
-          }
-        } else {
-          if (firstLink.output) {
-            this.showConnectionMenu({ nodeFrom: firstLink.node, slotFrom: firstLink.output, e: e })
-          } else if (firstLink.input) {
-            this.showConnectionMenu({ nodeTo: firstLink.node, slotTo: firstLink.input, e: e })
-          }
-        }
-      }
-      return true
-    }
   }
 
   /**
@@ -3993,7 +3831,7 @@ export class LGraphCanvas implements ConnectionColorContext {
   drawFrontCanvas(): void {
     this.dirty_canvas = false
 
-    const { ctx, canvas } = this
+    const { ctx, canvas, linkConnector } = this
 
     // @ts-expect-error
     if (ctx.start2D && !this.viewport) {
@@ -4081,33 +3919,21 @@ export class LGraphCanvas implements ConnectionColorContext {
         this.drawConnections(ctx)
       }
 
-      if (this.connecting_links?.length) {
+      if (linkConnector.isConnecting) {
         // current connection (the one being dragged by the mouse)
+        const { renderLinks } = linkConnector
         const highlightPos = this.#getHighlightPosition()
         ctx.lineWidth = this.connections_width
 
-        for (const link of this.connecting_links) {
-          const connInOrOut = link.output || link.input
+        for (const renderLink of renderLinks) {
+          const { fromSlot, fromPos: pos, fromDirection, dragDirection } = renderLink
+          const connShape = fromSlot.shape
+          const connType = fromSlot.type
 
-          const connType = connInOrOut?.type
-          let connDir = connInOrOut?.dir
-          if (connDir == null) {
-            if (link.output)
-              connDir = LinkDirection.RIGHT
-            else
-              connDir = LinkDirection.LEFT
-          }
-          const connShape = connInOrOut?.shape
-
-          const link_color = connType === LiteGraph.EVENT
+          const colour = connType === LiteGraph.EVENT
             ? LiteGraph.EVENT_LINK_COLOR
             : LiteGraph.CONNECTING_LINK_COLOR
 
-          // If not using reroutes, link.afterRerouteId should be undefined.
-          const rerouteIdToConnectTo = link.firstRerouteId ?? link.afterRerouteId
-          const pos = rerouteIdToConnectTo == null
-            ? link.pos
-            : (this.graph.reroutes.get(rerouteIdToConnectTo)?.pos ?? link.pos)
           // the connection being dragged by the mouse
           this.renderLink(
             ctx,
@@ -4116,9 +3942,9 @@ export class LGraphCanvas implements ConnectionColorContext {
             null,
             false,
             null,
-            link_color,
-            connDir,
-            link.direction ?? LinkDirection.CENTER,
+            colour,
+            fromDirection,
+            dragDirection,
           )
 
           ctx.beginPath()
@@ -4239,7 +4065,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     // Ensure we're mousing over a node and connecting a link
     const node = this.node_over
-    if (!(node && this.connecting_links?.[0])) return
+    if (!(node && this.linkConnector.isConnecting)) return
 
     const { strokeStyle, lineWidth } = ctx
 
@@ -4256,7 +4082,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     ctx.roundRect(x, y, width, height, radius)
 
     // TODO: Currently works on LTR slots only.  Add support for other directions.
-    const start = this.connecting_links[0].output === null ? 0 : 1
+    const start = this.linkConnector.state.connectingTo === "output" ? 0 : 1
     const inverter = start ? -1 : 1
 
     // Radial highlight centred on highlight pos
@@ -4547,7 +4373,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       node.layoutWidgetInputSlots()
 
       node.drawSlots(ctx, {
-        connectingLink: this.connecting_links?.[0],
+        fromSlot: this.linkConnector.renderLinks[0]?.fromSlot,
         colorContext: this,
         editorAlpha: this.editor_alpha,
         lowQuality: this.low_quality,
@@ -4858,8 +4684,6 @@ export class LGraphCanvas implements ConnectionColorContext {
         const link = this.graph._links.get(link_id)
         if (!link) continue
 
-        const draggingLink = isDraggingLink(link.id, this.connecting_links)
-
         // find link info
         const start_node = this.graph.getNodeById(link.origin_id)
         if (start_node == null) continue
@@ -4920,23 +4744,24 @@ export class LGraphCanvas implements ConnectionColorContext {
               reroute.calculateAngle(this.last_draw_time, this.graph, startPos)
 
               // Skip the first segment if it is being dragged
-              if (j === 0 && draggingLink?.input) continue
-              this.renderLink(
-                ctx,
-                startPos,
-                reroute.pos,
-                link,
-                false,
-                0,
-                null,
-                start_dir,
-                end_dir,
-                {
-                  startControl,
-                  endControl: reroute.controlPoint,
-                  reroute,
-                },
-              )
+              if (!reroute._dragging) {
+                this.renderLink(
+                  ctx,
+                  startPos,
+                  reroute.pos,
+                  link,
+                  false,
+                  0,
+                  null,
+                  start_dir,
+                  end_dir,
+                  {
+                    startControl,
+                    endControl: reroute.controlPoint,
+                    reroute,
+                  },
+                )
+              }
             }
 
             // Calculate start control for the next iter control point
@@ -4946,7 +4771,7 @@ export class LGraphCanvas implements ConnectionColorContext {
           }
 
           // Skip the last segment if it is being dragged
-          if (draggingLink?.output) continue
+          if (link._dragging) continue
 
           // Use runtime fallback; TypeScript cannot evaluate this correctly.
           const segmentStartPos = points.at(-2) ?? start_node_slotpos
@@ -4965,7 +4790,7 @@ export class LGraphCanvas implements ConnectionColorContext {
             { startControl },
           )
         // Skip normal render when link is being dragged
-        } else if (!draggingLink) {
+        } else if (!link._dragging) {
           this.renderLink(
             ctx,
             start_node_slotpos,
@@ -5413,11 +5238,12 @@ export class LGraphCanvas implements ConnectionColorContext {
     posY: number,
     ctx: CanvasRenderingContext2D,
   ): void {
+    const { linkConnector } = this
+
     node.drawWidgets(ctx, {
       colorContext: this,
-      linkOverWidget: this.link_over_widget,
-      // @ts-expect-error https://github.com/Comfy-Org/litegraph.js/issues/616
-      linkOverWidgetType: this.link_over_widget_type,
+      linkOverWidget: linkConnector.overWidget,
+      linkOverWidgetType: linkConnector.overWidgetType,
       lowQuality: this.low_quality,
       editorAlpha: this.editor_alpha,
     })

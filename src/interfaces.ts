@@ -113,6 +113,13 @@ export interface LinkNetwork {
   getNodeById(id: NodeId): LGraphNode | null
 }
 
+/**
+ * Locates graph items.
+ */
+export interface ItemLocator {
+  getNodeOnPos(x: number, y: number, nodeList?: LGraphNode[]): LGraphNode | null
+}
+
 /** Contains a cached 2D canvas path and a centre point, with an optional forward angle. */
 export interface LinkSegment {
   /** Link / reroute ID */
@@ -130,6 +137,9 @@ export interface LinkSegment {
    * Calculated during render only - can be inaccurate.
    */
   _centreAngle?: number
+
+  /** Whether the link is currently being moved. @internal */
+  _dragging?: boolean
 
   /** Output node ID */
   readonly origin_id: NodeId | undefined
