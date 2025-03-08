@@ -138,6 +138,25 @@ graph.start()
 
 Please [open an issue](https://github.com/Comfy-Org/litegraph.js/issues/) on the GitHub repo.
 
+# Development
+
+Litegraph has no runtime dependencies. The build tooling has been tested on Node.JS 20.18.x
+
+## Releasing
+
+Use GitHub actions to release normal versions.
+
+1. Run the `Release a New Version` action, selecting the version incrment type
+1. Merge the resultion PR
+1. A GitHub release is automatically published on merge
+
+### Pre-release
+
+The action directly translates `Version increment type` to the npm version command. `Pre-release ID (suffix)` is the option for the `--preid` argument.
+
+e.g. Use `prerelease` increment type to automatically bump the patch version and create a pre-release version. Subsequent runs of prerelease will update the prerelease version only.
+Use `patch` when ready to remove the pre-release suffix.
+
 ## Contributors
 
 You can find the [current list of contributors](https://github.com/Comfy-Org/litegraph.js/graphs/contributors) on GitHub.
