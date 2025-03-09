@@ -8,7 +8,7 @@ import _ from 'lodash'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { app } from '@/scripts/app'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
-import { generateRandomSuffix } from '@/utils/formatUtil'
+import { generateUUID } from '@/utils/formatUtil'
 
 export interface DOMWidget<T extends HTMLElement, V extends object | string>
   extends ICustomWidget<T> {
@@ -189,11 +189,9 @@ LGraphNode.prototype.addDOMWidget = function <
   if (tooltip && !element.title) {
     element.title = tooltip
   }
-
+  // Note: Before `LGraphNode.configure` is called, `this.id` is always `-1`.
   const widget = new DOMWidgetImpl({
-    // Note: Not using `this.id` here as before `LGraphNode.configure` is called,
-    // `this.id` is always `-1`.
-    id: `${name}:${generateRandomSuffix()}`,
+    id: generateUUID(),
     node: this,
     name,
     type,
