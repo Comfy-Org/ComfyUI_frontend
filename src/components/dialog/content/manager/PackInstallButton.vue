@@ -47,19 +47,17 @@ const comfyApiToManager = (nodePack: components['schemas']['Node']) => {
   return {
     id: nodePack.id,
     repository: nodePack.repository,
-    version: nodePack.latest_version?.version,
     channel: ManagerChannel.DEFAULT,
     mode: ManagerSourceMode.CACHE
   }
 }
 
-const installPack = (item: InstallItem) => {
-  return managerStore.installPack.call({
+const installPack = (item: InstallItem) =>
+  managerStore.installPack.call({
     ...comfyApiToManager(item.nodePack),
-    selected_version: item.version,
-    version: item.version
+    selected_version: item.version ?? item.nodePack.latest_version?.version,
+    version: item.version ?? item.nodePack.latest_version?.version
   })
-}
 
 const handleInstall = async () => {
   await Promise.all(items.map(installPack))

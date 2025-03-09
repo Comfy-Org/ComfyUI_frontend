@@ -33,7 +33,10 @@
           </div>
           <PackInstallButton
             :items="[
-              { nodePack: nodePack, version: nodePack.latest_version?.version }
+              {
+                nodePack: nodePack,
+                version: nodePack.latest_version?.version ?? 'latest'
+              }
             ]"
           />
         </div>
