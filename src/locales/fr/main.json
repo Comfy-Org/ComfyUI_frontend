@@ -826,6 +826,20 @@
     "removeFromBookmarks": "Retirer des Favoris"
   },
   "templateWorkflows": {
+    "category": {
+      "3D": "3D",
+      "Area Composition": "Composition de zone",
+      "Audio": "Audio",
+      "Basics": "Basiques",
+      "ComfyUI Examples": "Exemples ComfyUI",
+      "ControlNet": "ControlNet",
+      "Custom Nodes": "Nœuds personnalisés",
+      "Flux": "Flux",
+      "SD3_5": "SD3.5",
+      "SDXL": "SDXL",
+      "Upscaling": "Mise à l'échelle",
+      "Video": "Vidéo"
+    },
     "template": {
       "3D": {
         "stable_zero123_example": "Stable Zero123"

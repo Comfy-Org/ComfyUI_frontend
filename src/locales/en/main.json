@@ -417,6 +417,20 @@
   },
   "templateWorkflows": {
     "title": "Get Started with a Template",
+    "category": {
+      "ComfyUI Examples": "ComfyUI Examples",
+      "Custom Nodes": "Custom Nodes",
+      "Basics": "Basics",
+      "Flux": "Flux",
+      "ControlNet": "ControlNet",
+      "Upscaling": "Upscaling",
+      "Video": "Video",
+      "SD3_5": "SD3.5",
+      "SDXL": "SDXL",
+      "Area Composition": "Area Composition",
+      "3D": "3D",
+      "Audio": "Audio"
+    },
     "template": {
       "Flux": {
         "flux_dev_checkpoint_example": "Flux Dev",

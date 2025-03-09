@@ -826,6 +826,20 @@
     "removeFromBookmarks": "从书签中移除"
   },
   "templateWorkflows": {
+    "category": {
+      "3D": "3D",
+      "Area Composition": "区域组成",
+      "Audio": "音频",
+      "Basics": "基础",
+      "ComfyUI Examples": "ComfyUI示例",
+      "ControlNet": "ControlNet",
+      "Custom Nodes": "自定义节点",
+      "Flux": "Flux",
+      "SD3_5": "SD3.5",
+      "SDXL": "SDXL",
+      "Upscaling": "放大",
+      "Video": "视频"
+    },
     "template": {
       "3D": {
         "stable_zero123_example": "稳定Zero123"
