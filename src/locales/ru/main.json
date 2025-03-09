@@ -335,6 +335,7 @@
   "load3d": {
     "backgroundColor": "Цвет фона",
     "camera": "Камера",
+    "edgeThreshold": "Пороговое значение края",
     "fov": "Угол обзора",
     "light": "Свет",
     "lightIntensity": "Интенсивность света",
