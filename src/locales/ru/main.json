@@ -825,6 +825,20 @@
     "removeFromBookmarks": "Удалить из закладок"
   },
   "templateWorkflows": {
+    "category": {
+      "3D": "3D",
+      "Area Composition": "Композиция области",
+      "Audio": "Аудио",
+      "Basics": "Основы",
+      "ComfyUI Examples": "Примеры ComfyUI",
+      "ControlNet": "ControlNet",
+      "Custom Nodes": "Пользовательские узлы",
+      "Flux": "Flux",
+      "SD3_5": "SD3.5",
+      "SDXL": "SDXL",
+      "Upscaling": "Увеличение разрешения",
+      "Video": "Видео"
+    },
     "template": {
       "3D": {
         "stable_zero123_example": "Stable Zero123"

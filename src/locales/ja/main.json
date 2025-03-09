@@ -825,6 +825,20 @@
     "removeFromBookmarks": "ブックマークから削除"
   },
   "templateWorkflows": {
+    "category": {
+      "3D": "3D",
+      "Area Composition": "エリア構成",
+      "Audio": "オーディオ",
+      "Basics": "基本",
+      "ComfyUI Examples": "ComfyUIの例",
+      "ControlNet": "ControlNet",
+      "Custom Nodes": "カスタムノード",
+      "Flux": "Flux",
+      "SD3_5": "SD3.5",
+      "SDXL": "SDXL",
+      "Upscaling": "アップスケーリング",
+      "Video": "ビデオ"
+    },
     "template": {
       "3D": {
         "stable_zero123_example": "Stable Zero123"
