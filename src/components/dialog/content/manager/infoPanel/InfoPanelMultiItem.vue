@@ -45,7 +45,7 @@ const { nodePacks } = defineProps<{
 const toInstall = computed(() =>
   nodePacks.map((pack) => ({
     nodePack: pack,
-    version: pack.latest_version.id
+    version: pack.latest_version?.version ?? 'latest'
   }))
 )
 
