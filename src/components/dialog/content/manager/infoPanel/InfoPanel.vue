@@ -49,7 +49,7 @@ interface InfoItem {
   value: string | number | undefined
 }
 
-const { t } = useI18n()
+const { t, d } = useI18n()
 
 const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']
@@ -70,7 +70,9 @@ const infoItems = computed<InfoItem[]>(() => [
     key: 'lastUpdated',
     label: t('manager.lastUpdated'),
     value: nodePack.latest_version?.createdAt
-      ? new Date(nodePack.latest_version.createdAt).toLocaleDateString()
+      ? d(nodePack.latest_version.createdAt, {
+          dateStyle: 'medium'
+        })
       : undefined
   }
 ])

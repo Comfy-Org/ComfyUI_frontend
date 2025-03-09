@@ -71,9 +71,16 @@
             {{ nodePack.latest_version.version }}
           </span>
         </div>
-        <div v-if="nodePack.latest_version" class="flex items-center gap-2">
+        <div
+          v-if="nodePack.latest_version"
+          class="flex items-center gap-2 truncate"
+        >
           {{ $t('g.updated') }}
-          {{ new Date(nodePack.latest_version.createdAt).toLocaleDateString() }}
+          {{
+            $d(new Date(nodePack.latest_version.createdAt), {
+              dateStyle: 'medium'
+            })
+          }}
         </div>
       </div>
     </template>
