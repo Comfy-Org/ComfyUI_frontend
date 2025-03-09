@@ -289,7 +289,7 @@ watch(activeCategory, (_, oldValue) => {
   display: flex;
   height: 70vh;
   width: 60vw;
-  max-width: 1024px;
+  max-width: 64rem;
   overflow: hidden;
 }
 
