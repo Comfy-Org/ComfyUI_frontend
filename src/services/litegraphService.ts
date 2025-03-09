@@ -8,17 +8,17 @@ import {
   RenderShape
 } from '@comfyorg/litegraph'
 import { Vector2 } from '@comfyorg/litegraph'
-import { IWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
+import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
 import { st } from '@/i18n'
 import type { NodeId } from '@/schemas/comfyWorkflowSchema'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
-import { ANIM_PREVIEW_WIDGET, ComfyApp, app } from '@/scripts/app'
+import { ComfyApp, app } from '@/scripts/app'
 import { $el } from '@/scripts/ui'
-import { calculateImageGrid, createImageHost } from '@/scripts/ui/imagePreview'
+import { calculateImageGrid } from '@/scripts/ui/imagePreview'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -382,6 +382,8 @@ export const useLitegraphService = () => {
       if (this.flags.collapsed) return
 
       const nodeOutputStore = useNodeOutputStore()
+      const { showAnimatedPreview, removeAnimatedPreview } =
+        useNodeAnimatedImage()
 
       const output = nodeOutputStore.getNodeOutputs(this)
       const preview = nodeOutputStore.getNodePreviews(this)
@@ -410,46 +412,12 @@ export const useLitegraphService = () => {
       // Nothing to do
       if (!this.imgs?.length) return
 
-      const widgetIdx = this.widgets?.findIndex(
-        (w) => w.name === ANIM_PREVIEW_WIDGET
-      )
-
       if (this.animatedImages) {
-        // Instead of using the canvas we'll use a IMG
-        if (widgetIdx > -1) {
-          // Replace content
-          const widget = this.widgets[widgetIdx] as IWidget & {
-            options: { host: ReturnType<typeof createImageHost> }
-          }
-          widget.options.host.updateImages(this.imgs)
-        } else {
-          const host = createImageHost(this)
-          this.setSizeForImage(true)
-          // @ts-expect-error host is not a standard DOM widget option.
-          const widget = this.addDOMWidget(
-            ANIM_PREVIEW_WIDGET,
-            'img',
-            host.el,
-            {
-              host,
-              // @ts-expect-error `getHeight` of image host returns void instead of number.
-              getHeight: host.getHeight,
-              onDraw: host.onDraw,
-              hideOnZoom: false
-            }
-          ) as IWidget & {
-            options: { host: ReturnType<typeof createImageHost> }
-          }
-          widget.serializeValue = () => undefined
-          widget.options.host.updateImages(this.imgs)
-        }
+        showAnimatedPreview(this)
         return
       }
 
-      if (widgetIdx > -1) {
-        this.widgets[widgetIdx].onRemove?.()
-        this.widgets.splice(widgetIdx, 1)
-      }
+      removeAnimatedPreview(this)
 
       const canvas = app.graph.list_of_graphcanvas[0]
       const mouse = canvas.graph_mouse
