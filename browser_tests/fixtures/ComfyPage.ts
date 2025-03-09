@@ -500,7 +500,7 @@ export class ComfyPage {
           writable: false
         })
 
-        document.dispatchEvent(dropEvent)
+        document.getElementById('graph-canvas')?.dispatchEvent(dropEvent)
       },
       { buffer: [...new Uint8Array(buffer)], fileName, fileType }
     )
