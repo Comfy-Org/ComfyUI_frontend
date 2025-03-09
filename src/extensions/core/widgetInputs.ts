@@ -628,34 +628,7 @@ app.registerExtension({
       return input?.type
     }
 
-    document.addEventListener(
-      'litegraph:canvas',
-      async (e: LiteGraphCanvasEvent) => {
-        if (e.detail.subType === 'connectingWidgetLink') {
-          const { node, link, widget } = e.detail
-          if (!node || !link || !widget) return
-
-          const nodeData = node.constructor.nodeData
-          if (!nodeData) return
-          const all = {
-            ...nodeData?.input?.required,
-            ...nodeData?.input?.optional
-          }
-          const inputSpec = all[widget.name]
-          if (!inputSpec) return
-
-          const input = convertToInput(node, widget, inputSpec)
-          if (!input) return
-
-          const originNode = link.node
-
-          originNode.connect(link.slot, node, node.inputs.lastIndexOf(input))
-        }
-      }
-    )
-
-    // @ts-ignore Required until Litegraph is merged.
-    app.canvas.linkConnector?.events?.addEventListener?.(
+    app.canvas.linkConnector.events.addEventListener(
       'dropped-on-widget',
       (e) => {
         const { node, link, widget } = e.detail
