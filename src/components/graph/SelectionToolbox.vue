@@ -5,6 +5,7 @@
       header: 'hidden',
       content: 'p-0 flex flex-row'
     }"
+    v-show="!isDraggingCanvas && (nodeSelected || groupSelected)"
   >
     <ColorPickerButton v-show="nodeSelected || groupSelected" />
     <Button
@@ -86,6 +87,9 @@ const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
 const extensionService = useExtensionService()
 const { isRefreshable, refreshSelected } = useRefreshableSelection()
+
+const isDraggingCanvas = computed(() => canvasStore.canvas?.dragging_canvas)
+
 const nodeSelected = computed(() =>
   canvasStore.selectedItems.some(isLGraphNode)
 )
