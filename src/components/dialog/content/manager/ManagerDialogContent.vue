@@ -36,8 +36,14 @@
             @update:filterBy="handleFilterChange"
           />
           <div class="flex-1 overflow-auto">
+            <div
+              v-if="isLoading || isInitialLoad"
+              class="flex justify-center items-center h-full"
+            >
+              <ProgressSpinner />
+            </div>
             <NoResultsPlaceholder
-              v-if="error || searchResults.length === 0"
+              v-else-if="error || searchResults.length === 0"
               :title="
                 error
                   ? $t('manager.errorConnecting')
@@ -49,12 +55,6 @@
                   : $t('manager.tryDifferentSearch')
               "
             />
-            <div
-              v-else-if="isLoading"
-              class="flex justify-center items-center h-full"
-            >
-              <ProgressSpinner />
-            </div>
             <div v-else class="h-full" @click="handleGridContainerClick">
               <VirtualGrid
                 :items="resultsWithKeys"
@@ -144,6 +144,11 @@ const handleTabSelection = (tab: TabItem) => {
 const { searchQuery, pageNumber, sortField, isLoading, error, searchResults } =
   useRegistrySearch()
 pageNumber.value = 1
+
+const isInitialLoad = computed(
+  () => searchResults.value.length === 0 && searchQuery.value === ''
+)
+
 const resultsWithKeys = computed(() =>
   searchResults.value.map((item) => ({
     ...item,
