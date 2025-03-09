@@ -12,6 +12,7 @@
       :backgroundImage="backgroundImage"
       :upDirection="upDirection"
       :materialMode="materialMode"
+      :edgeThreshold="edgeThreshold"
       @materialModeChange="listenMaterialModeChange"
       @backgroundColorChange="listenBackgroundColorChange"
       @lightIntensityChange="listenLightIntensityChange"
@@ -21,6 +22,7 @@
       @showPreviewChange="listenShowPreviewChange"
       @backgroundImageChange="listenBackgroundImageChange"
       @upDirectionChange="listenUpDirectionChange"
+      @edgeThresholdChange="listenEdgeThresholdChange"
     />
     <Load3DControls
       :backgroundColor="backgroundColor"
@@ -36,6 +38,7 @@
       :upDirection="upDirection"
       :materialMode="materialMode"
       :isAnimation="false"
+      :edgeThreshold="edgeThreshold"
       @updateBackgroundImage="handleBackgroundImageUpdate"
       @switchCamera="switchCamera"
       @toggleGrid="toggleGrid"
@@ -45,6 +48,7 @@
       @updateFOV="handleUpdateFOV"
       @updateUpDirection="handleUpdateUpDirection"
       @updateMaterialMode="handleUpdateMaterialMode"
+      @updateEdgeThreshold="handleUpdateEdgeThreshold"
     />
   </div>
 </template>
@@ -79,6 +83,7 @@ const hasBackgroundImage = ref(false)
 const backgroundImage = ref('')
 const upDirection = ref<UpDirection>('original')
 const materialMode = ref<MaterialMode>('original')
+const edgeThreshold = ref(85)
 
 const showPreviewButton = computed(() => {
   return !props.type.includes('Preview')
@@ -130,6 +135,12 @@ const handleUpdateFOV = (value: number) => {
   node.value.properties['FOV'] = fov.value
 }
 
+const handleUpdateEdgeThreshold = (value: number) => {
+  edgeThreshold.value = value
+
+  node.value.properties['Edge Threshold'] = edgeThreshold.value
+}
+
 const handleBackgroundColorChange = (value: string) => {
   backgroundColor.value = value
 
@@ -156,6 +167,10 @@ const listenMaterialModeChange = (mode: MaterialMode) => {
 
 const listenUpDirectionChange = (value: UpDirection) => {
   upDirection.value = value
+}
+
+const listenEdgeThresholdChange = (value: number) => {
+  edgeThreshold.value = value
 }
 
 const listenBackgroundColorChange = (value: string) => {

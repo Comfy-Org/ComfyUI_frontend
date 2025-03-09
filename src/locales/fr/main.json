@@ -335,6 +335,7 @@
   "load3d": {
     "backgroundColor": "Couleur de fond",
     "camera": "Caméra",
+    "edgeThreshold": "Seuil de Bordure",
     "fov": "FOV",
     "light": "Lumière",
     "lightIntensity": "Intensité de la lumière",

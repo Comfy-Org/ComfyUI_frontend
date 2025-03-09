@@ -335,6 +335,7 @@
   "load3d": {
     "backgroundColor": "背景颜色",
     "camera": "相机",
+    "edgeThreshold": "边缘阈值",
     "fov": "视场",
     "light": "灯光",
     "lightIntensity": "光照强度",

@@ -335,6 +335,7 @@
   "load3d": {
     "backgroundColor": "배경색",
     "camera": "카메라",
+    "edgeThreshold": "엣지 임계값",
     "fov": "FOV",
     "light": "빛",
     "lightIntensity": "조명 강도",

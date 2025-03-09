@@ -31,6 +31,7 @@ const props = defineProps<{
   backgroundImage: string
   upDirection: UpDirection
   materialMode: MaterialMode
+  edgeThreshold?: number
   extraListeners?: Record<string, (value: any) => void>
 }>()
 
@@ -51,6 +52,7 @@ const eventConfig = {
   backgroundImageChange: (value: string) =>
     emit('backgroundImageChange', value),
   upDirectionChange: (value: string) => emit('upDirectionChange', value),
+  edgeThresholdChange: (value: number) => emit('edgeThresholdChange', value),
   modelLoadingStart: () =>
     loadingOverlayRef.value?.startLoading(t('load3d.loadingModel')),
   modelLoadingEnd: () => loadingOverlayRef.value?.endLoading(),
@@ -71,6 +73,7 @@ watchEffect(() => {
     rawLoad3d.togglePreview(props.showPreview)
     rawLoad3d.setBackgroundImage(props.backgroundImage)
     rawLoad3d.setUpDirection(props.upDirection)
+    rawLoad3d.setEdgeThreshold(props.edgeThreshold)
   }
 })
 
@@ -95,6 +98,7 @@ const emit = defineEmits<{
   (e: 'showPreviewChange', showPreview: boolean): void
   (e: 'backgroundImageChange', backgroundImage: string): void
   (e: 'upDirectionChange', upDirection: string): void
+  (e: 'edgeThresholdChange', threshold: number): void
 }>()
 
 const handleEvents = (action: 'add' | 'remove') => {

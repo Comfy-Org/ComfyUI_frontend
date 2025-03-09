@@ -68,11 +68,13 @@ class Load3DConfiguration {
 
     this.load3d.setBackgroundColor(bgColor)
 
-    const lightIntensity = this.load3d.loadNodeProperty('Light Intensity', 5)
+    const lightIntensity: number = Number(
+      this.load3d.loadNodeProperty('Light Intensity', 5)
+    )
 
     this.load3d.setLightIntensity(lightIntensity)
 
-    const fov = this.load3d.loadNodeProperty('FOV', 35)
+    const fov: number = Number(this.load3d.loadNodeProperty('FOV', 35))
 
     this.load3d.setFOV(fov)
 
@@ -112,6 +114,12 @@ class Load3DConfiguration {
       )
 
       this.load3d.setMaterialMode(materialMode)
+
+      const edgeThreshold: number = Number(
+        this.load3d.loadNodeProperty('Edge Threshold', 85)
+      )
+
+      this.load3d.setEdgeThreshold(edgeThreshold)
 
       if (isFirstLoad && cameraState && typeof cameraState === 'object') {
         try {

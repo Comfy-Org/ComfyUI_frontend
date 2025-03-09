@@ -166,7 +166,42 @@
             </div>
           </div>
         </div>
+        <div
+          v-if="activeCategory === 'model' && materialMode === 'lineart'"
+          class="relative show-edge-threshold"
+        >
+          <Button
+            class="p-button-rounded p-button-text"
+            @click="toggleEdgeThreshold"
+          >
+            <i
+              class="pi pi-sliders-h text-white text-lg"
+              v-tooltip.right="{
+                value: t('load3d.edgeThreshold'),
+                showDelay: 300
+              }"
+            ></i>
+          </Button>
+          <div
+            v-show="showEdgeThreshold"
+            class="absolute left-12 top-0 bg-black bg-opacity-50 p-4 rounded-lg shadow-lg"
+            style="width: 150px"
+          >
+            <label class="text-white text-xs mb-1 block"
+              >{{ t('load3d.edgeThreshold') }}: {{ edgeThreshold }}°</label
+            >
+            <Slider
+              v-model="edgeThreshold"
+              class="w-full"
+              @change="updateEdgeThreshold"
+              :min="0"
+              :max="120"
+              :step="1"
+            />
+          </div>
+        </div>
       </div>
+
       <div v-if="activeCategory === 'camera'" class="flex flex-col">
         <Button class="p-button-rounded p-button-text" @click="switchCamera">
           <i
@@ -279,6 +314,7 @@ const props = defineProps<{
   upDirection: UpDirection
   materialMode: MaterialMode
   isAnimation: boolean
+  edgeThreshold?: number
 }>()
 
 const isMenuOpen = ref(false)
@@ -319,6 +355,7 @@ const emit = defineEmits<{
   (e: 'updateBackgroundImage', file: File | null): void
   (e: 'updateUpDirection', direction: UpDirection): void
   (e: 'updateMaterialMode', mode: MaterialMode): void
+  (e: 'updateEdgeThreshold', value: number): void
 }>()
 
 const backgroundColor = ref(props.backgroundColor)
@@ -347,6 +384,12 @@ const upDirections: UpDirection[] = [
   '+z'
 ]
 const showMaterialMode = ref(false)
+const edgeThreshold = ref(props.edgeThreshold)
+const showEdgeThreshold = ref(false)
+
+const toggleEdgeThreshold = () => {
+  showEdgeThreshold.value = !showEdgeThreshold.value
+}
 
 const materialModes = computed(() => {
   const modes: MaterialMode[] = [
@@ -405,6 +448,10 @@ const updateFOV = () => {
   emit('updateFOV', fov.value)
 }
 
+const updateEdgeThreshold = () => {
+  emit('updateEdgeThreshold', edgeThreshold.value)
+}
+
 const toggleUpDirection = () => {
   showUpDirection.value = !showUpDirection.value
 }
@@ -453,6 +500,10 @@ const closeSlider = (e: MouseEvent) => {
 
   if (!target.closest('.show-material-mode')) {
     showMaterialMode.value = false
+  }
+
+  if (!target.closest('.show-edge-threshold')) {
+    showEdgeThreshold.value = false
   }
 }
 
@@ -561,6 +612,13 @@ watch(
     if (newValue) {
       materialMode.value = newValue
     }
+  }
+)
+
+watch(
+  () => props.edgeThreshold,
+  (newValue) => {
+    edgeThreshold.value = newValue
   }
 )
 

@@ -907,6 +907,7 @@
     "model": "Model",
     "camera": "Camera",
     "light": "Light",
-    "switchingMaterialMode": "Switching Material Mode..."
+    "switchingMaterialMode": "Switching Material Mode...",
+    "edgeThreshold": "Edge Threshold"
   }
 }

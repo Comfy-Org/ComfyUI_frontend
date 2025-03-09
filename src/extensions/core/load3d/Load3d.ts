@@ -233,6 +233,10 @@ class Load3d {
     )
   }
 
+  setEdgeThreshold(threshold: number): void {
+    this.modelManager.setEdgeThreshold(threshold)
+  }
+
   setMaterialMode(mode: MaterialMode): void {
     this.modelManager.setMaterialMode(mode)
 
