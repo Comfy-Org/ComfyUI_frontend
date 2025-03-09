@@ -30,38 +30,45 @@ const widgets = computed(() =>
 )
 
 const MARGIN = 10
+const updateWidgets = () => {
+  const lgCanvas = canvasStore.canvas
+  if (!lgCanvas) return
+
+  const lowQuality = lgCanvas.low_quality
+  for (const widget of domWidgetStore.widgetInstances.values()) {
+    const node = widget.node as LGraphNode
+    const widgetState = domWidgetStore.widgetStates.get(widget.id)
+
+    if (!widgetState) continue
+
+    widgetState.visible =
+      lgCanvas.isNodeVisible(node) &&
+      !(widget.options.hideOnZoom && lowQuality) &&
+      widget.isVisible()
+
+    widgetState.pos = [node.pos[0] + MARGIN, node.pos[1] + MARGIN + widget.y]
+    widgetState.size = [
+      (widget.width ?? node.width) - MARGIN * 2,
+      (widget.computedHeight ?? 50) - MARGIN * 2
+    ]
+    // TODO: optimize this logic as it's O(n), where n is the number of nodes
+    widgetState.zIndex = lgCanvas.graph.nodes.indexOf(node)
+    widgetState.readonly = lgCanvas.read_only
+  }
+}
+
 const canvasStore = useCanvasStore()
 watch(
   () => canvasStore.canvas,
   (lgCanvas) => {
     if (!lgCanvas) return
 
-    lgCanvas.onRender = useChainCallback(lgCanvas.onRender, () => {
-      const lowQuality = lgCanvas.low_quality
-      for (const widget of domWidgetStore.widgetInstances.values()) {
-        const node = widget.node as LGraphNode
-        const widgetState = domWidgetStore.widgetStates.get(widget.id)
-
-        if (!widgetState) continue
-
-        widgetState.visible =
-          lgCanvas.isNodeVisible(node) &&
-          !(widget.options.hideOnZoom && lowQuality) &&
-          widget.isVisible()
-
-        widgetState.pos = [
-          node.pos[0] + MARGIN,
-          node.pos[1] + MARGIN + widget.y
-        ]
-        widgetState.size = [
-          (widget.width ?? node.width) - MARGIN * 2,
-          (widget.computedHeight ?? 50) - MARGIN * 2
-        ]
-        // TODO: optimize this logic as it's O(n), where n is the number of nodes
-        widgetState.zIndex = lgCanvas.graph.nodes.indexOf(node)
-        widgetState.readonly = lgCanvas.read_only
+    lgCanvas.onDrawForeground = useChainCallback(
+      lgCanvas.onDrawForeground,
+      () => {
+        updateWidgets()
       }
-    })
+    )
   }
 )
 </script>
