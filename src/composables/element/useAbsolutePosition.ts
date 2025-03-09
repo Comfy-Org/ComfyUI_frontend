@@ -23,6 +23,12 @@ export function useAbsolutePosition() {
     height: '0px'
   })
 
+  /**
+   * Update the position of the element on the litegraph canvas.
+   *
+   * @param config
+   * @param extraStyle
+   */
   const updatePosition = (
     config: PositionConfig,
     extraStyle?: CSSProperties
@@ -41,8 +47,36 @@ export function useAbsolutePosition() {
     }
   }
 
+  /**
+   * Update the position and size of the element on the litegraph canvas,
+   * with CSS transform scaling applied.
+   *
+   * @param config
+   * @param extraStyle
+   */
+  const updatePositionWithTransform = (
+    config: PositionConfig,
+    extraStyle?: CSSProperties
+  ) => {
+    const { pos, size, scale = canvasStore.canvas?.ds?.scale ?? 1 } = config
+    const [left, top] = app.canvasPosToClientPos(pos)
+    const [width, height] = size
+
+    style.value = {
+      ...style.value,
+      transformOrigin: '0 0',
+      transform: `scale(${scale})`,
+      left: `${left}px`,
+      top: `${top}px`,
+      width: `${width}px`,
+      height: `${height}px`,
+      ...extraStyle
+    }
+  }
+
   return {
     style,
-    updatePosition
+    updatePosition,
+    updatePositionWithTransform
   }
 }
