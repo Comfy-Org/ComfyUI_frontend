@@ -60,12 +60,13 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
   )
 
   const statusMessage = computed(() => {
-    if (allJobsDone.value) return 'All jobs done'
     if (nextJobReady.value) return 'Starting next job'
+    if (allJobsDone.value && serverQueueStatus.value.done_count)
+      return 'All jobs done'
     if (serverQueueStatus.value.in_progress_count > 0) {
       return `Processing item ${serverQueueStatus.value.in_progress_count} of ${serverQueueStatus.value.total_count + clientQueueLength.value}`
     }
-    return 'Manager is idle'
+    return 'Cannot connect to ComfyUI-Manager'
   })
 
   const getServerQueueStatus = async () => {
@@ -98,7 +99,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
   }
 
   // Handle polling and sequentially sending jobs to server
-  watch(() => isServerIdle.value, onServerIdleChange)
+  watch(isServerIdle, onServerIdleChange)
 
   // Handle first job
   watch(isClientQueueEmpty, async (isEmpty) => {
@@ -143,7 +144,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
         restartAfter: true
       })
     },
-    { maxSize: 3 }
+    { maxSize: 1 }
   )
 
   /**
