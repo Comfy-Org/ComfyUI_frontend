@@ -73,7 +73,6 @@ watchEffect(() => {
     rawLoad3d.togglePreview(props.showPreview)
     rawLoad3d.setBackgroundImage(props.backgroundImage)
     rawLoad3d.setUpDirection(props.upDirection)
-    rawLoad3d.setEdgeThreshold(props.edgeThreshold)
   }
 })
 
@@ -84,6 +83,17 @@ watch(
       const rawLoad3d = toRaw(load3d.value)
 
       rawLoad3d.setMaterialMode(newValue)
+    }
+  }
+)
+
+watch(
+  () => props.edgeThreshold,
+  (newValue) => {
+    if (load3d.value) {
+      const rawLoad3d = toRaw(load3d.value)
+
+      rawLoad3d.setEdgeThreshold(newValue)
     }
   }
 )

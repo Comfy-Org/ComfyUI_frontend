@@ -30,245 +30,46 @@
     </div>
 
     <div v-show="activeCategory" class="bg-gray-700 bg-opacity-30 rounded-lg">
-      <div v-if="activeCategory === 'scene'" class="flex flex-col">
-        <Button
-          class="p-button-rounded p-button-text"
-          :class="{ 'p-button-outlined': showGrid }"
-          @click="toggleGrid"
-        >
-          <i
-            class="pi pi-table text-white text-lg"
-            v-tooltip.right="{ value: t('load3d.showGrid'), showDelay: 300 }"
-          ></i>
-        </Button>
+      <SceneControls
+        v-if="activeCategory === 'scene'"
+        :backgroundColor="backgroundColor"
+        :showGrid="showGrid"
+        :hasBackgroundImage="hasBackgroundImage"
+        @toggleGrid="handleToggleGrid"
+        @updateBackgroundColor="handleBackgroundColorChange"
+        @updateBackgroundImage="handleBackgroundImageUpdate"
+        ref="sceneControlsRef"
+      />
 
-        <div v-if="!hasBackgroundImage">
-          <Button
-            class="p-button-rounded p-button-text"
-            @click="openColorPicker"
-          >
-            <i
-              class="pi pi-palette text-white text-lg"
-              v-tooltip.right="{
-                value: t('load3d.backgroundColor'),
-                showDelay: 300
-              }"
-            ></i>
-            <input
-              type="color"
-              ref="colorPickerRef"
-              :value="backgroundColor"
-              @input="
-                updateBackgroundColor(($event.target as HTMLInputElement).value)
-              "
-              class="absolute opacity-0 w-0 h-0 p-0 m-0 pointer-events-none"
-            />
-          </Button>
-        </div>
+      <ModelControls
+        v-if="activeCategory === 'model'"
+        :upDirection="upDirection"
+        :materialMode="materialMode"
+        :isAnimation="isAnimation"
+        :edgeThreshold="edgeThreshold"
+        @updateUpDirection="handleUpdateUpDirection"
+        @updateMaterialMode="handleUpdateMaterialMode"
+        @updateEdgeThreshold="handleUpdateEdgeThreshold"
+        ref="modelControlsRef"
+      />
 
-        <div v-if="!hasBackgroundImage">
-          <Button
-            class="p-button-rounded p-button-text"
-            @click="openImagePicker"
-          >
-            <i
-              class="pi pi-image text-white text-lg"
-              v-tooltip.right="{
-                value: t('load3d.uploadBackgroundImage'),
-                showDelay: 300
-              }"
-            ></i>
-            <input
-              type="file"
-              ref="imagePickerRef"
-              accept="image/*"
-              @change="uploadBackgroundImage"
-              class="absolute opacity-0 w-0 h-0 p-0 m-0 pointer-events-none"
-            />
-          </Button>
-        </div>
+      <CameraControls
+        v-if="activeCategory === 'camera'"
+        :cameraType="cameraType"
+        :fov="fov"
+        :showFOVButton="showFOVButton"
+        @switchCamera="switchCamera"
+        @updateFOV="handleUpdateFOV"
+        ref="cameraControlsRef"
+      />
 
-        <div v-if="hasBackgroundImage">
-          <Button
-            class="p-button-rounded p-button-text"
-            @click="removeBackgroundImage"
-          >
-            <i
-              class="pi pi-times text-white text-lg"
-              v-tooltip.right="{
-                value: t('load3d.removeBackgroundImage'),
-                showDelay: 300
-              }"
-            ></i>
-          </Button>
-        </div>
-      </div>
-
-      <div v-if="activeCategory === 'model'" class="flex flex-col">
-        <div class="relative show-up-direction">
-          <Button
-            class="p-button-rounded p-button-text"
-            @click="toggleUpDirection"
-          >
-            <i
-              class="pi pi-arrow-up text-white text-lg"
-              v-tooltip.right="{
-                value: t('load3d.upDirection'),
-                showDelay: 300
-              }"
-            ></i>
-          </Button>
-          <div
-            v-show="showUpDirection"
-            class="absolute left-12 top-0 bg-black bg-opacity-50 rounded-lg shadow-lg"
-          >
-            <div class="flex flex-col">
-              <Button
-                v-for="direction in upDirections"
-                :key="direction"
-                class="p-button-text text-white"
-                :class="{ 'bg-blue-500': upDirection === direction }"
-                @click="selectUpDirection(direction)"
-              >
-                {{ formatOption(direction) }}
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        <div class="relative show-material-mode">
-          <Button
-            class="p-button-rounded p-button-text"
-            @click="toggleMaterialMode"
-          >
-            <i
-              class="pi pi-box text-white text-lg"
-              v-tooltip.right="{
-                value: t('load3d.materialMode'),
-                showDelay: 300
-              }"
-            ></i>
-          </Button>
-          <div
-            v-show="showMaterialMode"
-            class="absolute left-12 top-0 bg-black bg-opacity-50 rounded-lg shadow-lg"
-          >
-            <div class="flex flex-col">
-              <Button
-                v-for="mode in materialModes"
-                :key="mode"
-                class="p-button-text text-white"
-                :class="{ 'bg-blue-500': materialMode === mode }"
-                @click="selectMaterialMode(mode)"
-              >
-                {{ formatMaterialMode(mode) }}
-              </Button>
-            </div>
-          </div>
-        </div>
-        <div
-          v-if="activeCategory === 'model' && materialMode === 'lineart'"
-          class="relative show-edge-threshold"
-        >
-          <Button
-            class="p-button-rounded p-button-text"
-            @click="toggleEdgeThreshold"
-          >
-            <i
-              class="pi pi-sliders-h text-white text-lg"
-              v-tooltip.right="{
-                value: t('load3d.edgeThreshold'),
-                showDelay: 300
-              }"
-            ></i>
-          </Button>
-          <div
-            v-show="showEdgeThreshold"
-            class="absolute left-12 top-0 bg-black bg-opacity-50 p-4 rounded-lg shadow-lg"
-            style="width: 150px"
-          >
-            <label class="text-white text-xs mb-1 block"
-              >{{ t('load3d.edgeThreshold') }}: {{ edgeThreshold }}°</label
-            >
-            <Slider
-              v-model="edgeThreshold"
-              class="w-full"
-              @change="updateEdgeThreshold"
-              :min="0"
-              :max="120"
-              :step="1"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div v-if="activeCategory === 'camera'" class="flex flex-col">
-        <Button class="p-button-rounded p-button-text" @click="switchCamera">
-          <i
-            :class="['pi', getCameraIcon, 'text-white text-lg']"
-            v-tooltip.right="{
-              value: t('load3d.switchCamera'),
-              showDelay: 300
-            }"
-          ></i>
-        </Button>
-        <div class="relative show-fov" v-if="showFOVButton">
-          <Button class="p-button-rounded p-button-text" @click="toggleFOV">
-            <i
-              class="pi pi-expand text-white text-lg"
-              v-tooltip.right="{ value: t('load3d.fov'), showDelay: 300 }"
-            ></i>
-          </Button>
-          <div
-            v-show="showFOV"
-            class="absolute left-12 top-0 bg-black bg-opacity-50 p-4 rounded-lg shadow-lg"
-            style="width: 150px"
-          >
-            <Slider
-              v-model="fov"
-              class="w-full"
-              @change="updateFOV"
-              :min="10"
-              :max="150"
-              :step="1"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div v-if="activeCategory === 'light'" class="flex flex-col">
-        <div
-          class="relative show-light-intensity"
-          v-if="showLightIntensityButton"
-        >
-          <Button
-            class="p-button-rounded p-button-text"
-            @click="toggleLightIntensity"
-          >
-            <i
-              class="pi pi-sun text-white text-lg"
-              v-tooltip.right="{
-                value: t('load3d.lightIntensity'),
-                showDelay: 300
-              }"
-            ></i>
-          </Button>
-          <div
-            v-show="showLightIntensity"
-            class="absolute left-12 top-0 bg-black bg-opacity-50 p-4 rounded-lg shadow-lg"
-            style="width: 150px"
-          >
-            <Slider
-              v-model="lightIntensity"
-              class="w-full"
-              @change="updateLightIntensity"
-              :min="1"
-              :max="20"
-              :step="1"
-            />
-          </div>
-        </div>
-      </div>
+      <LightControls
+        v-if="activeCategory === 'light'"
+        :lightIntensity="lightIntensity"
+        :showLightIntensityButton="showLightIntensityButton"
+        @updateLightIntensity="handleUpdateLightIntensity"
+        ref="lightControlsRef"
+      />
     </div>
     <div v-if="showPreviewButton">
       <Button class="p-button-rounded p-button-text" @click="togglePreview">
@@ -288,9 +89,12 @@
 <script setup lang="ts">
 import { Tooltip } from 'primevue'
 import Button from 'primevue/button'
-import Slider from 'primevue/slider'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 
+import CameraControls from '@/components/load3d/controls/CameraControls.vue'
+import LightControls from '@/components/load3d/controls/LightControls.vue'
+import ModelControls from '@/components/load3d/controls/ModelControls.vue'
+import SceneControls from '@/components/load3d/controls/SceneControls.vue'
 import {
   CameraType,
   MaterialMode,
@@ -372,8 +176,6 @@ const showFOV = ref(false)
 const showFOVButton = ref(props.showFOVButton)
 const showPreviewButton = ref(props.showPreviewButton)
 const hasBackgroundImage = ref(props.hasBackgroundImage)
-const imagePickerRef = ref<HTMLInputElement | null>(null)
-const showUpDirection = ref(false)
 const upDirections: UpDirection[] = [
   'original',
   '-x',
@@ -383,40 +185,10 @@ const upDirections: UpDirection[] = [
   '-z',
   '+z'
 ]
-const showMaterialMode = ref(false)
 const edgeThreshold = ref(props.edgeThreshold)
-const showEdgeThreshold = ref(false)
-
-const toggleEdgeThreshold = () => {
-  showEdgeThreshold.value = !showEdgeThreshold.value
-}
-
-const materialModes = computed(() => {
-  const modes: MaterialMode[] = [
-    'original',
-    'normal',
-    'wireframe'
-    //'depth' disable for now
-  ]
-
-  if (!props.isAnimation) {
-    modes.push('lineart')
-  }
-
-  return modes
-})
-
-const notMaterialLineart = computed(() => {
-  return props.materialMode !== 'lineart'
-})
 
 const switchCamera = () => {
   emit('switchCamera')
-}
-
-const toggleGrid = () => {
-  showGrid.value = !showGrid.value
-  emit('toggleGrid', showGrid.value)
 }
 
 const togglePreview = () => {
@@ -428,20 +200,40 @@ const updateBackgroundColor = (color: string) => {
   emit('updateBackgroundColor', color)
 }
 
-const openColorPicker = () => {
-  colorPickerRef.value?.click()
+const handleToggleGrid = (value: boolean) => {
+  emit('toggleGrid', value)
 }
 
-const toggleLightIntensity = () => {
-  showLightIntensity.value = !showLightIntensity.value
+const handleBackgroundColorChange = (value: string) => {
+  emit('updateBackgroundColor', value)
+}
+
+const handleBackgroundImageUpdate = (file: File | null) => {
+  emit('updateBackgroundImage', file)
+}
+
+const handleUpdateUpDirection = (direction: UpDirection) => {
+  emit('updateUpDirection', direction)
+}
+
+const handleUpdateMaterialMode = (mode: MaterialMode) => {
+  emit('updateMaterialMode', mode)
+}
+
+const handleUpdateEdgeThreshold = (value: number) => {
+  emit('updateEdgeThreshold', value)
+}
+
+const handleUpdateLightIntensity = (value: number) => {
+  emit('updateLightIntensity', value)
 }
 
 const updateLightIntensity = () => {
   emit('updateLightIntensity', lightIntensity.value)
 }
 
-const toggleFOV = () => {
-  showFOV.value = !showFOV.value
+const handleUpdateFOV = (value: number) => {
+  emit('updateFOV', value)
 }
 
 const updateFOV = () => {
@@ -452,63 +244,12 @@ const updateEdgeThreshold = () => {
   emit('updateEdgeThreshold', edgeThreshold.value)
 }
 
-const toggleUpDirection = () => {
-  showUpDirection.value = !showUpDirection.value
-}
-
-const selectUpDirection = (direction: UpDirection) => {
-  upDirection.value = direction
-  emit('updateUpDirection', direction)
-}
-
-const formatOption = (option: string) => {
-  if (option === 'original') return 'Original'
-  return option.toUpperCase()
-}
-
-const toggleMaterialMode = () => {
-  showMaterialMode.value = !showMaterialMode.value
-}
-
-const selectMaterialMode = (mode: MaterialMode) => {
-  materialMode.value = mode
-  emit('updateMaterialMode', mode)
-}
-
-const formatMaterialMode = (mode: MaterialMode) => {
-  return mode.charAt(0).toUpperCase() + mode.slice(1)
-}
-
 const closeSlider = (e: MouseEvent) => {
   const target = e.target as HTMLElement
 
   if (!target.closest('.show-menu')) {
     isMenuOpen.value = false
   }
-
-  if (!target.closest('.show-fov')) {
-    showFOV.value = false
-  }
-
-  if (!target.closest('.show-light-intensity')) {
-    showLightIntensity.value = false
-  }
-
-  if (!target.closest('.show-up-direction')) {
-    showUpDirection.value = false
-  }
-
-  if (!target.closest('.show-material-mode')) {
-    showMaterialMode.value = false
-  }
-
-  if (!target.closest('.show-edge-threshold')) {
-    showEdgeThreshold.value = false
-  }
-}
-
-const openImagePicker = () => {
-  imagePickerRef.value?.click()
 }
 
 watch(
@@ -519,22 +260,6 @@ watch(
     }
   }
 )
-
-const uploadBackgroundImage = (event: Event) => {
-  const input = event.target as HTMLInputElement
-
-  hasBackgroundImage.value = true
-
-  if (input.files && input.files[0]) {
-    emit('updateBackgroundImage', input.files[0])
-  }
-}
-
-const removeBackgroundImage = () => {
-  hasBackgroundImage.value = false
-
-  emit('updateBackgroundImage', null)
-}
 
 watch(
   () => props.backgroundColor,
@@ -628,9 +353,5 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.removeEventListener('click', closeSlider)
-})
-
-const getCameraIcon = computed(() => {
-  return props.cameraType === 'perspective' ? 'pi-camera' : 'pi-camera'
 })
 </script>
