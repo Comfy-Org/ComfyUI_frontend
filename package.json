@@ -88,7 +88,7 @@
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/addon-serialize": "^0.13.0",
     "@xterm/xterm": "^5.5.0",
-    "axios": "^1.7.4",
+    "axios": "^1.8.2",
     "dotenv": "^16.4.5",
     "fuse.js": "^7.0.0",
     "jsondiffpatch": "^0.6.0",
