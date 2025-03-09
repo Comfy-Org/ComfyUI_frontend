@@ -100,7 +100,7 @@
     "three": "^0.170.0",
     "tiptap-markdown": "^0.8.10",
     "vue": "^3.5.13",
-    "vue-i18n": "^9.13.1",
+    "vue-i18n": "^9.14.3",
     "vue-router": "^4.4.3",
     "zod": "^3.23.8",
     "zod-validation-error": "^3.3.0"
