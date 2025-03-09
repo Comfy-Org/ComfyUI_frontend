@@ -316,10 +316,10 @@ export const paramsToCacheKey = (params: unknown): string => {
 }
 
 /**
- * Generates a random 4-character string to use as a unique suffix
+ * Generates a random 8-character string to use as a unique suffix
  */
 export const generateRandomSuffix = (): string =>
-  Math.random().toString(36).substring(2, 6)
+  Math.random().toString(36).substring(2, 10)
 
 /**
  * Formats a number to a locale-specific string

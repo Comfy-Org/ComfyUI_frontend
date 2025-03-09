@@ -191,7 +191,9 @@ LGraphNode.prototype.addDOMWidget = function <
   }
 
   const widget = new DOMWidgetImpl({
-    id: `${this.id}:${name}:${generateRandomSuffix()}`,
+    // Note: Not using `this.id` here as before `LGraphNode.configure` is called,
+    // `this.id` is always `-1`.
+    id: `${name}:${generateRandomSuffix()}`,
     node: this,
     name,
     type,
