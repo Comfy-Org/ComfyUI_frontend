@@ -1,4 +1,4 @@
-import { LGraphCanvas, LGraphNode } from '@comfyorg/litegraph'
+import { LGraphNode } from '@comfyorg/litegraph'
 import type {
   ICustomWidget,
   IWidgetOptions
