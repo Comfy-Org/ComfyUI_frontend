@@ -5,6 +5,8 @@ import LoadWorkflowWarning from '@/components/dialog/content/LoadWorkflowWarning
 import MissingModelsWarning from '@/components/dialog/content/MissingModelsWarning.vue'
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
 import SettingDialogContent from '@/components/dialog/content/SettingDialogContent.vue'
+import ManagerDialogContent from '@/components/dialog/content/manager/ManagerDialogContent.vue'
+import ManagerHeader from '@/components/dialog/content/manager/ManagerHeader.vue'
 import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.vue'
 import TemplateWorkflowsContent from '@/components/templates/TemplateWorkflowsContent.vue'
 import TemplateWorkflowsDialogHeader from '@/components/templates/TemplateWorkflowsDialogHeader.vue'
@@ -101,6 +103,24 @@ export const useDialogService = () => {
     })
   }
 
+  function showManagerDialog(
+    props: InstanceType<typeof ManagerDialogContent>['$props'] = {}
+  ) {
+    dialogStore.showDialog({
+      key: 'global-manager',
+      component: ManagerDialogContent,
+      headerComponent: ManagerHeader,
+      dialogComponentProps: {
+        closable: false,
+        pt: {
+          header: { class: '!p-0 !m-0' },
+          content: { class: '!px-0 h-[83vh] w-[90vw] overflow-y-hidden' }
+        }
+      },
+      props
+    })
+  }
+
   async function prompt({
     title,
     message,
@@ -182,6 +202,7 @@ export const useDialogService = () => {
     showExecutionErrorDialog,
     showTemplateWorkflowsDialog,
     showIssueReportDialog,
+    showManagerDialog,
     prompt,
     confirm
   }

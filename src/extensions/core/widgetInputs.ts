@@ -653,6 +653,31 @@ app.registerExtension({
         }
       }
     )
+
+    // @ts-ignore Required until Litegraph is merged.
+    app.canvas.linkConnector?.events?.addEventListener?.(
+      'dropped-on-widget',
+      (e) => {
+        const { node, link, widget } = e.detail
+        if (!node || !link || !widget) return
+
+        const nodeData = node.constructor.nodeData
+        if (!nodeData) return
+        const all = {
+          ...nodeData?.input?.required,
+          ...nodeData?.input?.optional
+        }
+        const inputSpec = all[widget.name]
+        if (!inputSpec) return
+
+        const input = convertToInput(node, widget, inputSpec)
+        if (!input) return
+
+        const originNode = link.node
+
+        originNode.connectSlots(link.fromSlot, node, input, undefined)
+      }
+    )
   },
   async beforeRegisterNodeDef(nodeType, nodeData, app) {
     // Add menu options to convert to/from widgets

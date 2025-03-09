@@ -12,6 +12,7 @@ type NodePack = components['schemas']['Node']
 type ListPacksParams = operations['listAllNodes']['parameters']['query']
 type ListPacksResult =
   operations['listAllNodes']['responses'][200]['content']['application/json']
+type ComfyNode = components['schemas']['ComfyNode']
 
 /**
  * Store for managing remote custom nodes
@@ -23,6 +24,9 @@ export const useComfyRegistryStore = defineStore('comfyRegistry', () => {
     typeof useCachedRequest<ListPacksParams, ListPacksResult>
   >
   let getPackByIdHandler: ReturnType<typeof useCachedRequest<string, NodePack>>
+  let getNodeDefsHandler: ReturnType<
+    typeof useCachedRequest<{ packId: string; versionId: string }, ComfyNode[]>
+  >
 
   const recentListResult = ref<NodePack[]>([])
   const hasPacks = computed(() => recentListResult.value.length > 0)
@@ -59,6 +63,23 @@ export const useComfyRegistryStore = defineStore('comfyRegistry', () => {
   }
 
   /**
+   * Get the node definitions for a pack
+   */
+  const getNodeDefs = async (
+    packId: NodePack['id'],
+    versionId: NonNullable<NodePack['latest_version']>['id']
+  ) => {
+    if (!packId || !versionId) return null
+
+    getNodeDefsHandler ??= useCachedRequest<
+      { packId: string; versionId: string },
+      ComfyNode[]
+    >(registryService.getNodeDefs, { maxSize: PACK_BY_ID_CACHE_SIZE })
+
+    return getNodeDefsHandler.call({ packId, versionId })
+  }
+
+  /**
    * Clear all cached data
    */
   const clearCache = () => {
@@ -80,6 +101,8 @@ export const useComfyRegistryStore = defineStore('comfyRegistry', () => {
 
     listAllPacks,
     getPackById,
+    getNodeDefs,
+
     clearCache,
     cancelRequests,
 

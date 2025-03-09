@@ -23,12 +23,25 @@ export const useComfyRegistryService = () => {
 
   const nodeDefStore = useNodeDefStore()
 
+  const isLocalNodePack = (nodePackId: string) =>
+    !!nodeDefStore.nodeDefsByName[nodePackId]
+
   const isLocalNode = (nodeName: string, nodePackId: string) => {
     if (!nodeDefStore.nodeDefsByName[nodeName]) return false
     return (
       nodeDefStore.nodeDefsByName[nodeName].python_module.toLowerCase() ===
       nodePackId.toLowerCase()
     )
+  }
+
+  /**
+   * Check if the node definitions for the pack are available
+   */
+  const packNodesAvailable = (node: components['schemas']['Node']) => {
+    if (node.id && isLocalNodePack(node.id)) return true
+    if (node.latest_version?.comfy_node_extract_status !== 'success')
+      return false
+    return true
   }
 
   const handleApiError = (
@@ -100,24 +113,23 @@ export const useComfyRegistryService = () => {
   }
 
   /**
-   * Get Comfy Node definition for a specific node in a specific version of a node pack
+   * Get the Comfy Node definitions in a specific version of a node pack
    * @param packId - The ID of the node pack
    * @param versionId - The version of the node pack
-   * @param comfyNodeName - The name of the comfy node (corresponds to `ComfyNodeDef#name`)
-   * @returns The node definition or null if not found or an error occurred
+   * @returns The node definitions or null if not found or an error occurred
    */
-  const getNodeDef = async (
-    packId: components['schemas']['Node']['id'],
-    versionId: components['schemas']['NodeVersion']['id'],
-    comfyNodeName: components['schemas']['ComfyNode']['comfy_node_name'],
+  const getNodeDefs = async (
+    params: {
+      packId: components['schemas']['Node']['id']
+      versionId: components['schemas']['NodeVersion']['id']
+    },
     signal?: AbortSignal
   ) => {
-    if (!comfyNodeName || !packId) return null
-    if (isLocalNode(comfyNodeName, packId))
-      return nodeDefStore.nodeDefsByName[comfyNodeName]
+    const { packId, versionId } = params
+    if (!packId || !versionId) return null
 
-    const endpoint = `/nodes/${packId}/versions/${versionId}/comfy-nodes/${comfyNodeName}`
-    const errorContext = 'Failed to get node definition'
+    const endpoint = `/nodes/${packId}/versions/${versionId}/comfy-nodes`
+    const errorContext = 'Failed to get node definitions'
     const routeSpecificErrors = {
       403: 'This pack has been banned and its definition is not available',
       404: 'The requested node, version, or comfy node does not exist'
@@ -125,11 +137,38 @@ export const useComfyRegistryService = () => {
 
     return executeApiRequest(
       () =>
-        registryApiClient.get<components['schemas']['ComfyNode']>(endpoint, {
+        registryApiClient.get<components['schemas']['ComfyNode'][]>(endpoint, {
           signal
         }),
       errorContext,
       routeSpecificErrors
+    )
+  }
+
+  /**
+   * Get a Comfy Node definition for a specific node in a specific version of a node pack
+   * @param packId - The ID of the node pack
+   * @param versionId - The version of the node pack
+   * @param comfyNodeName - The name of the comfy node (corresponds to `ComfyNodeDef#name`)
+   * @returns The node definition or null if not found or an error occurred
+   */
+  const getNodeDef = async (
+    params: {
+      packId: components['schemas']['Node']['id']
+      versionId: components['schemas']['NodeVersion']['id']
+      comfyNodeName: components['schemas']['ComfyNode']['comfy_node_name']
+    },
+    signal?: AbortSignal
+  ) => {
+    const { packId, versionId, comfyNodeName } = params
+    if (!comfyNodeName || !packId || !versionId) return null
+    if (isLocalNode(comfyNodeName, packId))
+      return nodeDefStore.nodeDefsByName[comfyNodeName]
+
+    const nodeDefs = await getNodeDefs({ packId, versionId }, signal)
+    return (
+      nodeDefs?.find((nodeDef) => nodeDef.comfy_node_name === comfyNodeName) ||
+      null
     )
   }
 
@@ -335,6 +374,8 @@ export const useComfyRegistryService = () => {
     getPublisherById,
     listPacksForPublisher,
     getNodeDef,
-    postPackReview
+    getNodeDefs,
+    postPackReview,
+    packNodesAvailable
   }
 }

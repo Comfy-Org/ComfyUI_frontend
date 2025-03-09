@@ -125,6 +125,9 @@
   "Comfy_LoadDefaultWorkflow": {
     "label": "デフォルトのワークフローを読み込む"
   },
+  "Comfy_Manager_CustomNodesManager": {
+    "label": "カスタムノードマネージャ"
+  },
   "Comfy_NewBlankWorkflow": {
     "label": "新しい空のワークフロー"
   },

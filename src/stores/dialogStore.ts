@@ -11,6 +11,7 @@ interface CustomDialogComponentProps {
   maximizable?: boolean
   maximized?: boolean
   onClose?: () => void
+  closable?: boolean
   pt?: DialogPassThroughOptions
 }
 

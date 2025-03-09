@@ -185,7 +185,6 @@ export async function importA1111(graph, parameters) {
       const samplerNode = LiteGraph.createNode('KSampler')
       const imageNode = LiteGraph.createNode('EmptyLatentImage')
       const vaeNode = LiteGraph.createNode('VAEDecode')
-      const vaeLoaderNode = LiteGraph.createNode('VAELoader')
       const saveNode = LiteGraph.createNode('SaveImage')
       let hrSamplerNode = null
       let hrSteps = null
@@ -274,7 +273,6 @@ export async function importA1111(graph, parameters) {
       graph.add(samplerNode)
       graph.add(imageNode)
       graph.add(vaeNode)
-      graph.add(vaeLoaderNode)
       graph.add(saveNode)
 
       ckptNode.connect(1, clipSkipNode, 0)
@@ -286,15 +284,13 @@ export async function importA1111(graph, parameters) {
       imageNode.connect(0, samplerNode, 3)
       vaeNode.connect(0, saveNode, 0)
       samplerNode.connect(0, vaeNode, 0)
-      vaeLoaderNode.connect(0, vaeNode, 1)
+      ckptNode.connect(2, vaeNode, 1)
 
       const handlers = {
         model(v) {
           setWidgetValue(ckptNode, 'ckpt_name', v, true)
         },
-        vae(v) {
-          setWidgetValue(vaeLoaderNode, 'vae_name', v, true)
-        },
+        vae(v) {},
         'cfg scale'(v) {
           setWidgetValue(samplerNode, 'cfg', +v)
         },
@@ -358,7 +354,7 @@ export async function importA1111(graph, parameters) {
               const decode = LiteGraph.createNode('VAEDecodeTiled')
               graph.add(decode)
               samplerNode.connect(0, decode, 0)
-              vaeLoaderNode.connect(0, decode, 1)
+              ckptNode.connect(2, decode, 1)
 
               const upscaleLoaderNode =
                 LiteGraph.createNode('UpscaleModelLoader')
@@ -380,7 +376,7 @@ export async function importA1111(graph, parameters) {
                 LiteGraph.createNode('VAEEncodeTiled'))
               graph.add(vaeEncodeNode)
               upscaleNode.connect(0, vaeEncodeNode, 0)
-              vaeLoaderNode.connect(0, vaeEncodeNode, 1)
+              ckptNode.connect(2, vaeEncodeNode, 1)
             }
 
             setWidgetValue(upscaleNode, 'width', ceil64(uw))

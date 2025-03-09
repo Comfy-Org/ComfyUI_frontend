@@ -125,6 +125,9 @@
   "Comfy_LoadDefaultWorkflow": {
     "label": "Загрузить стандартный рабочий процесс"
   },
+  "Comfy_Manager_CustomNodesManager": {
+    "label": "Менеджер Пользовательских Узлов"
+  },
   "Comfy_NewBlankWorkflow": {
     "label": "Новый пустой рабочий процесс"
   },
