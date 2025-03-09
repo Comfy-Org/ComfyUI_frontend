@@ -3,6 +3,9 @@
     ref="cardRef"
     :data-testid="`template-workflow-${template.name}`"
     class="w-64 template-card rounded-2xl overflow-hidden cursor-pointer shadow-[0_10px_15px_-3px_rgba(0,0,0,0.08),0_4px_6px_-4px_rgba(0,0,0,0.05)]"
+    :class="{
+      'bg-[#ffffff06]': !isLightTheme
+    }"
     :pt="{
       body: { class: 'p-0' }
     }"
@@ -82,6 +85,7 @@ import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue
 import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSliderThumbnail.vue'
 import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
 import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDissolveThumbnail.vue'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { TemplateInfo } from '@/types/workflowTemplateTypes'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
@@ -99,6 +103,11 @@ const { t } = useI18n()
 
 const cardRef = ref<HTMLElement | null>(null)
 const isHovered = useElementHover(cardRef)
+
+const colorPaletteStore = useColorPaletteStore()
+const isLightTheme = computed(
+  () => colorPaletteStore.completedActivePalette.light_theme
+)
 
 const getThumbnailUrl = (index = '') => {
   const basePath =
