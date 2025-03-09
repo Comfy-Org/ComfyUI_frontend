@@ -1,5 +1,6 @@
 <template>
-  <div>
+  <!-- Create a new stacking context for widgets to avoid z-index issues -->
+  <div class="isolate">
     <DomWidget
       v-for="widget in widgets"
       :key="widget.id"
