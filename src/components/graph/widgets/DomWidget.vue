@@ -48,19 +48,26 @@ const updateDomClipping = () => {
   )[0] as LGraphNode
   const node = widget.node
   const isSelected = selectedNode === node
-
-  const renderArea = node.renderArea
+  const renderArea = selectedNode?.renderArea
   const offset = lgCanvas.ds.offset
   const scale = lgCanvas.ds.scale
+  const selectedAreaConfig = renderArea
+    ? {
+        x: renderArea[0],
+        y: renderArea[1],
+        width: renderArea[2],
+        height: renderArea[3],
+        scale,
+        offset: [offset[0], offset[1]] as [number, number]
+      }
+    : undefined
 
-  updateClipPath(widgetElement.value, lgCanvas.canvas, isSelected, {
-    x: renderArea[0],
-    y: renderArea[1],
-    width: renderArea[2],
-    height: renderArea[3],
-    scale,
-    offset: [offset[0], offset[1]]
-  })
+  updateClipPath(
+    widgetElement.value,
+    lgCanvas.canvas,
+    isSelected,
+    selectedAreaConfig
+  )
 }
 
 watch(
