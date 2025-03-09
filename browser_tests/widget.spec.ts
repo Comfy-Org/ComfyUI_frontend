@@ -134,3 +134,10 @@ test.describe('Load image widget', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('load_image_widget.png')
   })
 })
+
+test.describe('Load audio widget', () => {
+  test('Can load audio', async ({ comfyPage }) => {
+    await comfyPage.loadWorkflow('widgets/load_audio_widget')
+    await expect(comfyPage.canvas).toHaveScreenshot('load_audio_widget.png')
+  })
+})
