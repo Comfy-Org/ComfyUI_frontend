@@ -161,7 +161,7 @@ export class ModelManager implements ModelManagerInterface {
       const mesh = meshes[key]
       const parent = mesh.parent
 
-      let lineGeom = new THREE.EdgesGeometry(mesh.geometry, 10)
+      let lineGeom = new THREE.EdgesGeometry(mesh.geometry, 85)
 
       const line = new THREE.LineSegments(
         lineGeom,
@@ -198,6 +198,76 @@ export class ModelManager implements ModelManagerInterface {
         child.material.linewidth = 1
       }
     })
+  }
+
+  setEdgeThreshold(threshold: number): void {
+    if (!this.edgesModel || !this.currentModel) {
+      return
+    }
+
+    const linesToRemove: THREE.Object3D[] = []
+    this.edgesModel.traverse((child) => {
+      if (
+        child instanceof THREE.LineSegments ||
+        child instanceof LineSegments2
+      ) {
+        linesToRemove.push(child)
+      }
+    })
+
+    for (const line of linesToRemove) {
+      if (line.parent) {
+        line.parent.remove(line)
+      }
+    }
+
+    const meshes: THREE.Mesh[] = []
+    this.currentModel.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        meshes.push(child)
+      }
+    })
+
+    for (const mesh of meshes) {
+      const meshClone = mesh.clone()
+
+      let lineGeom = new THREE.EdgesGeometry(meshClone.geometry, threshold)
+
+      const line = new THREE.LineSegments(
+        lineGeom,
+        new THREE.LineBasicMaterial({ color: this.LIGHT_LINES })
+      )
+      line.position.copy(mesh.position)
+      line.scale.copy(mesh.scale)
+      line.rotation.copy(mesh.rotation)
+
+      const thickLineGeom = new LineSegmentsGeometry().fromEdgesGeometry(
+        lineGeom
+      )
+      const thickLines = new LineSegments2(
+        thickLineGeom,
+        new LineMaterial({ color: this.LIGHT_LINES, linewidth: 13 })
+      )
+      thickLines.position.copy(mesh.position)
+      thickLines.scale.copy(mesh.scale)
+      thickLines.rotation.copy(mesh.rotation)
+
+      this.edgesModel.add(line)
+      this.edgesModel.add(thickLines)
+    }
+
+    this.edgesModel.traverse((child) => {
+      if (
+        child instanceof THREE.Mesh &&
+        child.material &&
+        child.material.resolution
+      ) {
+        this.renderer.getSize(child.material.resolution)
+        child.material.resolution.multiplyScalar(window.devicePixelRatio)
+        child.material.linewidth = 1
+      }
+    })
+    this.eventManager.emitEvent('edgeThresholdChange', threshold)
   }
 
   disposeBackgroundModel(): void {
