@@ -22,6 +22,13 @@ export type WhenNullish<T, Result> = T & {} | (T extends null ? Result : T exten
 /** A type with each of the {@link Properties} made optional. */
 export type OptionalProps<T, Properties extends keyof T> = Omit<T, Properties> & { [K in Properties]?: T[K] }
 
+/** Bitwise AND intersection of two types; returns a new, non-union type that includes only properties that exist on both types. */
+export type SharedIntersection<T1, T2> = {
+  [P in keyof T1 as P extends keyof T2 ? P : never]: T1[P]
+} & {
+  [P in keyof T2 as P extends keyof T1 ? P : never]: T2[P]
+}
+
 export type CanvasColour = string | CanvasGradient | CanvasPattern
 
 /** An object containing a set of child objects */

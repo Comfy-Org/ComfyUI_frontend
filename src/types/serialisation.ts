@@ -40,10 +40,10 @@ export interface SerialisableGraph {
   extra?: Record<any, any>
 }
 
-export type ISerialisedNodeInputSlot = Omit<INodeInputSlot, "_layoutElement" | "widget"> & {
+export type ISerialisableNodeInput = Omit<INodeInputSlot, "_layoutElement" | "widget"> & {
   widget?: { name: string }
 }
-export type ISerialisedNodeOutputSlot = Omit<INodeOutputSlot, "_layoutElement" | "_data">
+export type ISerialisableNodeOutput = Omit<INodeOutputSlot, "_layoutElement" | "_data">
 
 /** Serialised LGraphNode */
 export interface ISerialisedNode {
@@ -55,8 +55,8 @@ export interface ISerialisedNode {
   flags?: INodeFlags
   order?: number
   mode?: number
-  outputs?: ISerialisedNodeOutputSlot[]
-  inputs?: ISerialisedNodeInputSlot[]
+  outputs?: ISerialisableNodeOutput[]
+  inputs?: ISerialisableNodeInput[]
   properties?: Dictionary<NodeProperty | undefined>
   shape?: RenderShape
   boxcolor?: string

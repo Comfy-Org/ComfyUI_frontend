@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest"
 
 import { INodeInputSlot, INodeOutputSlot } from "@/interfaces"
-import { serializeSlot } from "@/NodeSlot"
+import { inputAsSerialisable, outputAsSerialisable } from "@/NodeSlot"
 
 describe("NodeSlot", () => {
-  describe("serializeSlot", () => {
+  describe("inputAsSerialisable", () => {
     it("removes _data from serialized slot", () => {
       const slot: INodeOutputSlot = {
         _data: "test data",
@@ -12,7 +12,7 @@ describe("NodeSlot", () => {
         type: "STRING",
         links: [],
       }
-      const serialized = serializeSlot(slot)
+      const serialized = outputAsSerialisable(slot)
       expect(serialized).not.toHaveProperty("_data")
     })
 
@@ -32,7 +32,7 @@ describe("NodeSlot", () => {
         },
       }
 
-      const serialized = serializeSlot(widgetInputSlot)
+      const serialized = inputAsSerialisable(widgetInputSlot)
       expect(serialized).not.toHaveProperty("pos")
     })
 
@@ -43,7 +43,7 @@ describe("NodeSlot", () => {
         pos: [10, 20],
         link: null,
       }
-      const serialized = serializeSlot(normalSlot)
+      const serialized = inputAsSerialisable(normalSlot)
       expect(serialized).toHaveProperty("pos")
     })
 
@@ -62,7 +62,7 @@ describe("NodeSlot", () => {
         },
       }
 
-      const serialized = serializeSlot(widgetInputSlot)
+      const serialized = inputAsSerialisable(widgetInputSlot)
       expect(serialized.widget).toEqual({ name: "test-widget" })
       expect(serialized.widget).not.toHaveProperty("type")
       expect(serialized.widget).not.toHaveProperty("value")

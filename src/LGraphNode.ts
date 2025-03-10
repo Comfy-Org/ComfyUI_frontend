@@ -32,7 +32,7 @@ import { LGraphCanvas } from "./LGraphCanvas"
 import { type LGraphNodeConstructor, LiteGraph } from "./litegraph"
 import { LLink } from "./LLink"
 import { createBounds, isInRect, isInRectangle, isPointInRect, snapPoint } from "./measure"
-import { ConnectionColorContext, isINodeInputSlot, isWidgetInputSlot, NodeInputSlot, NodeOutputSlot, serializeSlot, toNodeSlotClass } from "./NodeSlot"
+import { ConnectionColorContext, inputAsSerialisable, isINodeInputSlot, isWidgetInputSlot, NodeInputSlot, NodeOutputSlot, outputAsSerialisable, toNodeSlotClass } from "./NodeSlot"
 import {
   LGraphEventMode,
   NodeSlotType,
@@ -703,8 +703,8 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     if (this.constructor === LGraphNode && this.last_serialization)
       return this.last_serialization
 
-    if (this.inputs) o.inputs = this.inputs.map(input => serializeSlot(input))
-    if (this.outputs) o.outputs = this.outputs.map(output => serializeSlot(output))
+    if (this.inputs) o.inputs = this.inputs.map(input => inputAsSerialisable(input))
+    if (this.outputs) o.outputs = this.outputs.map(output => outputAsSerialisable(output))
 
     if (this.title && this.title != this.constructor.title) o.title = this.title
 
