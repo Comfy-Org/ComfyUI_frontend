@@ -122,13 +122,9 @@ export interface IMultilineStringWidget<TElement extends HTMLElement = HTMLTextA
 }
 
 /** A custom widget - accepts any value and has no built-in special handling */
-export interface ICustomWidget<TElement extends HTMLElement = HTMLElement> extends
-  IBaseWidget<TElement> {
-
+export interface ICustomWidget extends IBaseWidget {
   type?: "custom"
   value: string | object
-
-  element?: TElement
 }
 
 /**
@@ -143,7 +139,7 @@ export type TWidgetValue = IWidget["value"]
  * The base type for all widgets.  Should not be implemented directly.
  * @see IWidget
  */
-export interface IBaseWidget<TElement extends HTMLElement = HTMLElement> {
+export interface IBaseWidget {
   linkedWidgets?: IWidget[]
 
   name: string
@@ -179,9 +175,6 @@ export interface IBaseWidget<TElement extends HTMLElement = HTMLElement> {
   advanced?: boolean
 
   tooltip?: string
-
-  /** HTML widget element  */
-  element?: TElement
 
   // TODO: Confirm this format
   callback?(
