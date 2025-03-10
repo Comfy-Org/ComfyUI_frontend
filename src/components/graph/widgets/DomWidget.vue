@@ -1,6 +1,7 @@
 <template>
   <div
     class="dom-widget"
+    :title="tooltip"
     ref="widgetElement"
     :style="style"
     v-show="widgetState.visible"
@@ -106,6 +107,9 @@ for (const evt of widget.options.selectOn ?? ['focus', 'click']) {
     lgCanvas?.bringToFront(widget.node)
   })
 }
+
+const inputSpec = widget.node.constructor.nodeData
+const tooltip = inputSpec?.inputs?.[widget.name]?.tooltip
 
 onMounted(() => {
   widgetElement.value.appendChild(widget.element)
