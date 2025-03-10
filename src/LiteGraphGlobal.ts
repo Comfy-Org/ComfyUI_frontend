@@ -66,8 +66,6 @@ export class LiteGraphGlobal {
   WIDGET_SECONDARY_TEXT_COLOR = "#999"
 
   LINK_COLOR = "#9A9"
-  // TODO: This is a workaround until LGraphCanvas.link_type_colors is no longer static.
-  static DEFAULT_EVENT_LINK_COLOR = "#A86"
   EVENT_LINK_COLOR = "#A86"
   CONNECTING_LINK_COLOR = "#AFA"
 
@@ -274,15 +272,6 @@ export class LiteGraphGlobal {
 
   onNodeTypeRegistered?(type: string, base_class: typeof LGraphNode): void
   onNodeTypeReplaced?(type: string, base_class: typeof LGraphNode, prev: unknown): void
-
-  // Avoid circular dependency from original single-module
-  static {
-    LGraphCanvas.link_type_colors = {
-      "-1": LiteGraphGlobal.DEFAULT_EVENT_LINK_COLOR,
-      "number": "#AAA",
-      "node": "#DCA",
-    }
-  }
 
   /**
    * Register a node class so it can be listed when the user wants to create a new one

@@ -27,19 +27,6 @@ describe("Import order dependency", () => {
     vi.resetModules()
   })
 
-  // Test can be safely removed if import order requirements are resolved.
-  test("Throws when entry point is not imported first", async ({ expect }) => {
-    async function importSubmoduleFirst() {
-      const directImport = await import("@/LGraph")
-      const entryPointImport = await import("@/litegraph")
-
-      // Unreachable.
-      if (directImport !== entryPointImport) return
-    }
-
-    await expect(importSubmoduleFirst).rejects.toThrow("Cannot set properties of undefined (setting 'link_type_colors')")
-  })
-
   test("Imports without error when entry point is imported first", async ({ expect }) => {
     async function importNormally() {
       const entryPointImport = await import("@/litegraph")
