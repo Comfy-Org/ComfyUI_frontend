@@ -19,6 +19,7 @@
       >
         <template #option="{ option }">
           <WorkflowTab
+            @click="() => webviewStore.hideActiveWebview()"
             @contextmenu="showContextMenu($event, option)"
             @click.middle="onCloseWorkflow(option)"
             :workflow-option="option"
@@ -50,6 +51,7 @@ import { useI18n } from 'vue-i18n'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 import { useWorkflowService } from '@/services/workflowService'
 import { useCommandStore } from '@/stores/commandStore'
+import { useWebviewStore } from '@/stores/webviewStore'
 import { ComfyWorkflow, useWorkflowBookmarkStore } from '@/stores/workflowStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -68,6 +70,7 @@ const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const workflowBookmarkStore = useWorkflowBookmarkStore()
+const webviewStore = useWebviewStore()
 const rightClickedTab = ref<WorkflowOption>(null)
 const menu = ref()
 

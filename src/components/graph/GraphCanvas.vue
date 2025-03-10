@@ -3,7 +3,12 @@
   <!-- If load immediately, the top-level splitter stateKey won't be correctly
   synced with the stateStorage (localStorage). -->
   <LiteGraphCanvasSplitterOverlay
-    v-if="comfyAppReady && betaMenuEnabled && !workspaceStore.focusMode"
+    v-if="
+      comfyAppReady &&
+      betaMenuEnabled &&
+      !workspaceStore.focusMode &&
+      !webviewStore.hasActiveWebview
+    "
   >
     <template #side-bar-panel>
       <SideToolbar />
@@ -71,6 +76,7 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
+import { useWebviewStore } from '@/stores/webviewStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
@@ -80,6 +86,7 @@ const settingStore = useSettingStore()
 const nodeDefStore = useNodeDefStore()
 const workspaceStore = useWorkspaceStore()
 const canvasStore = useCanvasStore()
+const webviewStore = useWebviewStore()
 const betaMenuEnabled = computed(
   () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
 )
