@@ -1,5 +1,7 @@
 import { debounce } from 'lodash'
 
+import { t } from '@/i18n'
+
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
 import { ComfyApp } from '../../scripts/app'
@@ -748,7 +750,8 @@ enum Tools {
   Pen = 'pen',
   Eraser = 'eraser',
   PaintBucket = 'paintBucket',
-  ColorSelect = 'colorSelect'
+  ColorSelect = 'colorSelect',
+  RGBPaint = 'rgbPaint'
 }
 
 enum CompositionOperation {
@@ -800,7 +803,7 @@ function loadBrushFromCache(key: string): Brush | null {
     const brushString = getStorageValue(key)
     if (brushString) {
       const brush = JSON.parse(brushString) as Brush
-      console.log('Loaded brush from cache:', brush)
+      //console.log('Loaded brush from cache:', brush)
       return brush
     } else {
       console.log('No brush found in cache.')
@@ -940,17 +943,23 @@ class MaskEditorDialog extends ComfyDialog {
 
   async save() {
     const backupCanvas = document.createElement('canvas')
+    const combinedCanvas = document.createElement('canvas') // New canvas for combined image
     const imageCanvas = this.uiManager.getImgCanvas()
     const maskCanvas = this.uiManager.getMaskCanvas()
+    const rgbCanvas = this.uiManager.getrgbCanvas()
     const image = this.uiManager.getImage()
     const backupCtx = backupCanvas.getContext('2d', {
       willReadFrequently: true
     })
+    const combinedCtx = combinedCanvas.getContext('2d')
 
+    // Set canvas dimensions
     backupCanvas.width = imageCanvas.width
     backupCanvas.height = imageCanvas.height
+    combinedCanvas.width = imageCanvas.width
+    combinedCanvas.height = imageCanvas.height
 
-    if (!backupCtx) {
+    if (!backupCtx || !combinedCtx) {
       return
     }
 
@@ -958,12 +967,8 @@ class MaskEditorDialog extends ComfyDialog {
     const maskImageLoaded = new Promise<void>((resolve, reject) => {
       const maskImage = new Image()
       maskImage.src = maskCanvas.toDataURL()
-      maskImage.onload = () => {
-        resolve()
-      }
-      maskImage.onerror = (error) => {
-        reject(error)
-      }
+      maskImage.onload = () => resolve()
+      maskImage.onerror = (error) => reject(error)
     })
 
     try {
@@ -973,13 +978,10 @@ class MaskEditorDialog extends ComfyDialog {
       return
     }
 
+    // Prepare the mask
     backupCtx.clearRect(0, 0, backupCanvas.width, backupCanvas.height)
     backupCtx.drawImage(
       maskCanvas,
-      0,
-      0,
-      maskCanvas.width,
-      maskCanvas.height,
       0,
       0,
       backupCanvas.width,
@@ -993,7 +995,6 @@ class MaskEditorDialog extends ComfyDialog {
       backupCanvas.width,
       backupCanvas.height
     )
-
     for (let i = 0; i < maskData.data.length; i += 4) {
       if (maskData.data[i + 3] !== 0) {
         maskHasContent = true
@@ -1001,14 +1002,12 @@ class MaskEditorDialog extends ComfyDialog {
       }
     }
 
-    // paste mask data into alpha channel
     const backupData = backupCtx.getImageData(
       0,
       0,
       backupCanvas.width,
       backupCanvas.height
     )
-
     let backupHasContent = false
     for (let i = 0; i < backupData.data.length; i += 4) {
       if (backupData.data[i + 3] !== 0) {
@@ -1023,7 +1022,7 @@ class MaskEditorDialog extends ComfyDialog {
       return
     }
 
-    // refine mask image
+    // Refine mask image (invert alpha channel)
     for (let i = 0; i < backupData.data.length; i += 4) {
       const alpha = backupData.data[i + 3]
       backupData.data[i] = 0
@@ -1031,35 +1030,99 @@ class MaskEditorDialog extends ComfyDialog {
       backupData.data[i + 2] = 0
       backupData.data[i + 3] = 255 - alpha
     }
-
-    backupCtx.globalCompositeOperation = CompositionOperation.SourceOver
+    backupCtx.globalCompositeOperation = 'source-over'
     backupCtx.putImageData(backupData, 0, 0)
 
-    const formData = new FormData()
-    const filename = 'clipspace-mask-' + performance.now() + '.png'
+    // Step 1: Combine original image with rgbCanvas
+    combinedCtx.drawImage(
+      imageCanvas,
+      0,
+      0,
+      combinedCanvas.width,
+      combinedCanvas.height
+    )
+    combinedCtx.drawImage(
+      rgbCanvas,
+      0,
+      0,
+      combinedCanvas.width,
+      combinedCanvas.height
+    )
+    combinedCtx.globalCompositeOperation = 'destination-out'
+    combinedCtx.drawImage(
+      maskCanvas,
+      0,
+      0,
+      combinedCanvas.width,
+      combinedCanvas.height
+    )
+    combinedCtx.globalCompositeOperation = 'source-over'
 
-    const item = {
-      filename: filename,
+    // Step 2: Save the combined image
+    const combinedFilename = 'clipspace-combined-' + performance.now() + '.png'
+    const combinedItem = {
+      filename: combinedFilename,
       subfolder: 'clipspace',
       type: 'input'
     }
+    const combinedDataURL = combinedCanvas.toDataURL()
+    const combinedBlob = this.dataURLToBlob(combinedDataURL)
 
+    const combinedFormData = new FormData()
+    combinedFormData.append('image', combinedBlob, combinedFilename)
+    combinedFormData.append('type', 'input')
+    combinedFormData.append('subfolder', 'clipspace')
+
+    // Upload the combined image
+    let combinedSuccess = false
+    const maxRetries = 3
+    let attempt = 0
+
+    this.uiManager.setSaveButtonText('Saving')
+    this.uiManager.setSaveButtonEnabled(false)
+    this.keyboardManager.removeListeners()
+
+    while (attempt < maxRetries && !combinedSuccess) {
+      try {
+        await api.fetchApi('/upload/image', {
+          method: 'POST',
+          body: combinedFormData
+        })
+        combinedSuccess = true
+      } catch (error) {
+        console.error(
+          `Combined image upload attempt ${attempt + 1} failed:`,
+          error
+        )
+        attempt++
+        if (attempt < maxRetries) {
+          console.log('Retrying combined image upload...')
+        } else {
+          console.log('Max retries reached for combined image upload.')
+        }
+      }
+    }
+
+    if (!combinedSuccess) {
+      this.uiManager.setSaveButtonText('Save')
+      this.uiManager.setSaveButtonEnabled(true)
+      this.keyboardManager.addListeners()
+      return
+    }
+
+    // Update clipspace with the combined image
     if (ComfyApp?.clipspace?.widgets?.length) {
       const index = ComfyApp.clipspace.widgets.findIndex(
         (obj) => obj?.name === 'image'
       )
-
-      if (index >= 0 && item !== undefined) {
+      if (index >= 0) {
         try {
-          ComfyApp.clipspace.widgets[index].value = item
+          ComfyApp.clipspace.widgets[index].value = combinedItem
         } catch (err) {
           console.warn('Failed to set widget value:', err)
         }
       }
     }
-
-    const dataURL = backupCanvas.toDataURL()
-    const blob = this.dataURLToBlob(dataURL)
 
     let original_url = new URL(image.src)
 
@@ -1081,36 +1144,110 @@ class MaskEditorDialog extends ComfyDialog {
     let original_type = original_url.searchParams.get('type')
     if (original_type) original_ref.type = original_type
 
-    formData.append('image', blob, filename)
-    formData.append('original_ref', JSON.stringify(original_ref))
-    formData.append('type', 'input')
-    formData.append('subfolder', 'clipspace')
+    // Step 2.5: Save the RGB Canvas separately, linking it to the original image
+    const paintFilename = 'clipspace-paint-' + performance.now() + '.png'
+    const paintItem = {
+      filename: paintFilename,
+      subfolder: 'clipspace',
+      type: 'input'
+    }
+    const paintDataURL = rgbCanvas.toDataURL()
+    const paintBlob = this.dataURLToBlob(paintDataURL)
+
+    const paintFormData = new FormData()
+    paintFormData.append('image', paintBlob, paintFilename)
+    paintFormData.append('type', 'input')
+    paintFormData.append('subfolder', 'clipspace')
+
+    // Upload the paint image
+    let paintSuccess = false
+    const paintmaxRetries = 3
+    let paintattempt = 0
 
     this.uiManager.setSaveButtonText('Saving')
     this.uiManager.setSaveButtonEnabled(false)
     this.keyboardManager.removeListeners()
 
-    // Retry mechanism
-    const maxRetries = 3
-    let attempt = 0
-    let success = false
-
-    while (attempt < maxRetries && !success) {
+    while (paintattempt < paintmaxRetries && !paintSuccess) {
       try {
-        await this.uploadMask(item, formData)
-        success = true
+        await api.fetchApi('/upload/image', {
+          method: 'POST',
+          body: paintFormData
+        })
+        paintSuccess = true
       } catch (error) {
-        console.error(`Upload attempt ${attempt + 1} failed:`, error)
-        attempt++
-        if (attempt < maxRetries) {
-          console.log('Retrying upload...')
+        console.error(
+          `paint image upload attempt ${paintattempt + 1} failed:`,
+          error
+        )
+        paintattempt++
+        if (paintattempt < paintmaxRetries) {
+          console.log('Retrying paint image upload...')
         } else {
-          console.log('Max retries reached. Upload failed.')
+          console.log('Max retries reached for paint image upload.')
         }
       }
     }
 
-    if (success) {
+    if (!paintSuccess) {
+      this.uiManager.setSaveButtonText('Save')
+      this.uiManager.setSaveButtonEnabled(true)
+      this.keyboardManager.addListeners()
+      return
+    }
+
+    // Update clipspace with the paint image
+    if (ComfyApp?.clipspace?.widgets?.length) {
+      const index = ComfyApp.clipspace.widgets.findIndex(
+        (obj) => obj?.name === 'image'
+      )
+      if (index >= 0) {
+        try {
+          const paintindex = 1
+          ComfyApp.clipspace.widgets[paintindex].value = paintItem
+          // console.log("RGB Paint Saved to Clipspace at: ", paintindex)
+        } catch (err) {
+          console.warn('Failed to set widget value:', err)
+        }
+      }
+    }
+
+    // Step 3: Prepare and upload the mask, linking it to the combined image
+    const maskFilename = 'clipspace-mask-' + performance.now() + '.png'
+    const maskItem = {
+      filename: maskFilename,
+      subfolder: 'clipspace',
+      type: 'input'
+    }
+    const maskDataURL = backupCanvas.toDataURL()
+    const maskBlob = this.dataURLToBlob(maskDataURL)
+
+    const maskFormData = new FormData()
+    maskFormData.append('image', maskBlob, maskFilename)
+    maskFormData.append('original_ref', JSON.stringify(original_ref)) // Link to combined image
+    maskFormData.append('type', 'input')
+    maskFormData.append('subfolder', 'clipspace')
+
+    // Upload the mask
+    let maskSuccess = false
+    attempt = 0
+
+    while (attempt < maxRetries && !maskSuccess) {
+      try {
+        await this.uploadMask(maskItem, maskFormData)
+        maskSuccess = true
+      } catch (error) {
+        console.error(`Mask upload attempt ${attempt + 1} failed:`, error)
+        attempt++
+        if (attempt < maxRetries) {
+          console.log('Retrying mask upload...')
+        } else {
+          console.log('Max retries reached for mask upload.')
+        }
+      }
+    }
+
+    if (maskSuccess && combinedSuccess) {
       ComfyApp.onClipspaceEditorSave()
       this.close()
       this.isOpen = false
@@ -1136,6 +1273,54 @@ class MaskEditorDialog extends ComfyDialog {
       uint8Array[i] = byteString.charCodeAt(i)
     }
     return new Blob([arrayBuffer], { type: contentType })
+  }
+
+  private async uploadRGBImage(
+    filepath: { filename: string; subfolder: string; type: string },
+    formData: FormData,
+    retries = 3
+  ) {
+    if (retries <= 0) {
+      throw new Error('Max retries reached')
+      return
+    }
+    await api
+      .fetchApi('/upload/image', {
+        method: 'POST',
+        body: formData
+      })
+      .then((response) => {
+        if (!response.ok) {
+          console.log('Failed to upload RGB pixels:', response)
+          this.uploadMask(filepath, formData, retries - 1)
+        }
+      })
+      .catch((error) => {
+        console.error('Error:', error)
+      })
+
+    try {
+      const selectedIndex = ComfyApp.clipspace?.selectedIndex
+      if (ComfyApp.clipspace?.imgs && selectedIndex !== undefined) {
+        // Create and set new image
+        const newImage = new Image()
+        newImage.src = api.apiURL(
+          '/view?' +
+            new URLSearchParams(filepath).toString() +
+            app.getPreviewFormatParam() +
+            app.getRandParam()
+        )
+        ComfyApp.clipspace.imgs[selectedIndex] = newImage
+
+        // Update images array if it exists
+        if (ComfyApp.clipspace.images) {
+          ComfyApp.clipspace.images[selectedIndex] = filepath
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to update clipspace image:', err)
+    }
+    ClipspaceDialog.invalidatePreview()
   }
 
   private async uploadMask(
@@ -1193,7 +1378,9 @@ class CanvasHistory {
 
   private canvas!: HTMLCanvasElement
   private ctx!: CanvasRenderingContext2D
-  private states: ImageData[] = []
+  private rgbCanvas!: HTMLCanvasElement
+  private rgbCtx!: CanvasRenderingContext2D
+  private states: { mask: ImageData; rgb: ImageData }[] = []
   private currentStateIndex: number = -1
   private maxStates: number = 20
   private initialized: boolean = false
@@ -1208,6 +1395,8 @@ class CanvasHistory {
   private async pullCanvas() {
     this.canvas = await this.messageBroker.pull('maskCanvas')
     this.ctx = await this.messageBroker.pull('maskCtx')
+    this.rgbCanvas = await this.messageBroker.pull('rgbCanvas')
+    this.rgbCtx = await this.messageBroker.pull('rgbCtx')
   }
 
   private createListeners() {
@@ -1224,21 +1413,31 @@ class CanvasHistory {
 
   async saveInitialState() {
     await this.pullCanvas()
-    if (!this.canvas.width || !this.canvas.height) {
+    if (
+      !this.canvas.width ||
+      !this.canvas.height ||
+      !this.rgbCanvas.width ||
+      !this.rgbCanvas.height
+    ) {
       // Canvas not ready yet, defer initialization
       requestAnimationFrame(() => this.saveInitialState())
       return
     }
 
     this.clearStates()
-    const state = this.ctx.getImageData(
+    const maskState = this.ctx.getImageData(
       0,
       0,
       this.canvas.width,
       this.canvas.height
     )
-
-    this.states.push(state)
+    const rgbState = this.rgbCtx.getImageData(
+      0,
+      0,
+      this.rgbCanvas.width,
+      this.rgbCanvas.height
+    )
+    this.states.push({ mask: maskState, rgb: rgbState })
     this.currentStateIndex = 0
     this.initialized = true
   }
@@ -1251,13 +1450,19 @@ class CanvasHistory {
     }
 
     this.states = this.states.slice(0, this.currentStateIndex + 1)
-    const state = this.ctx.getImageData(
+    const maskState = this.ctx.getImageData(
       0,
       0,
       this.canvas.width,
       this.canvas.height
     )
-    this.states.push(state)
+    const rgbState = this.rgbCtx.getImageData(
+      0,
+      0,
+      this.rgbCanvas.width,
+      this.rgbCanvas.height
+    )
+    this.states.push({ mask: maskState, rgb: rgbState })
     this.currentStateIndex++
 
     if (this.states.length > this.maxStates) {
@@ -1287,9 +1492,10 @@ class CanvasHistory {
     }
   }
 
-  restoreState(state: ImageData) {
+  restoreState(state: { mask: ImageData; rgb: ImageData }) {
     if (state && this.initialized) {
-      this.ctx.putImageData(state, 0, 0)
+      this.ctx.putImageData(state.mask, 0, 0)
+      this.rgbCtx.putImageData(state.rgb, 0, 0)
     }
   }
 }
@@ -1954,6 +2160,7 @@ class BrushTool {
   smoothingCordsArray: Point[] = []
   smoothingLastDrawTime!: Date
   maskCtx: CanvasRenderingContext2D | null = null
+  rgbCtx: CanvasRenderingContext2D | null = null
   initialDraw: boolean = true
 
   brushStrokeCanvas: HTMLCanvasElement | null = null
@@ -1968,6 +2175,9 @@ class BrushTool {
 
   maskEditor: MaskEditorDialog
   messageBroker: MessageBroker
+
+  private rgbColor: string = '#FF0000' // Default color
+  private activeLayer: 'mask' | 'rgb' = 'mask'
 
   constructor(maskEditor: MaskEditorDialog) {
     this.maskEditor = maskEditor
@@ -2013,9 +2223,16 @@ class BrushTool {
       this.setBrushType(type)
     )
     this.messageBroker.subscribe(
+      'setActiveLayer',
+      (layer: 'mask' | 'rgb') => (this.activeLayer = layer)
+    )
+    this.messageBroker.subscribe(
       'setBrushSmoothingPrecision',
       (precision: number) => this.setBrushSmoothingPrecision(precision)
     )
+    this.messageBroker.subscribe('setRGBColor', (color: string) => {
+      this.rgbColor = color
+    })
     //brush adjustment
     this.messageBroker.subscribe(
       'brushAdjustmentStart',
@@ -2096,8 +2313,8 @@ class BrushTool {
       compositionOp = CompositionOperation.SourceOver //pen
     }
 
-    //check if user wants to draw line or free draw
-    if (event.shiftKey && this.lineStartPoint) {
+    // Only check for line drawing if using the Pen tool
+    if (currentTool === Tools.Pen && event.shiftKey && this.lineStartPoint) {
       this.isDrawingLine = true
       this.drawLine(this.lineStartPoint, coords_canvas, compositionOp)
     } else {
@@ -2323,9 +2540,7 @@ class BrushTool {
 
   private async draw_shape(point: Point, overrideOpacity?: number) {
     const brushSettings: Brush = this.brushSettings
-    const maskCtx = this.maskCtx || (await this.messageBroker.pull('maskCtx'))
-    const brushType = await this.messageBroker.pull('brushType')
-    const maskColor = await this.messageBroker.pull('getMaskColor')
+    const currentTool = await this.messageBroker.pull('currentTool')
     const size = brushSettings.size
     const sliderOpacity = brushSettings.opacity
     const opacity =
@@ -2338,79 +2553,96 @@ class BrushTool {
     // Extend the gradient radius beyond the brush size
     const extendedSize = size * (2 - hardness)
 
-    let gradient = maskCtx.createRadialGradient(x, y, 0, x, y, extendedSize)
+    let gradient: CanvasGradient
+    let maskCtx: CanvasRenderingContext2D
+    let rgbCtx: CanvasRenderingContext2D
+    rgbCtx = await this.messageBroker.pull('rgbCtx')
+    maskCtx = await this.messageBroker.pull('maskCtx')
+    const maskColor = await this.messageBroker.pull('getMaskColor')
 
-    const isErasing = maskCtx.globalCompositeOperation === 'destination-out'
-
-    if (hardness === 1) {
-      console.log(sliderOpacity, opacity)
+    if (
+      this.activeLayer === 'rgb' &&
+      (currentTool === Tools.Eraser || currentTool === Tools.RGBPaint)
+    ) {
+      // Handle RGB painting
+      gradient = rgbCtx.createRadialGradient(x, y, 0, x, y, extendedSize)
+      const rgbaColor = this.hexToRgba(this.rgbColor, opacity)
+      gradient.addColorStop(0, rgbaColor)
+      gradient.addColorStop(hardness, rgbaColor)
+      gradient.addColorStop(1, this.hexToRgba(this.rgbColor, 0))
+      rgbCtx.fillStyle = gradient
+      rgbCtx.beginPath()
+      rgbCtx.arc(x, y, extendedSize, 0, Math.PI * 2, false)
+      rgbCtx.fill()
+    } else if (
+      this.activeLayer === 'mask' &&
+      (currentTool === Tools.Eraser || currentTool === Tools.Pen)
+    ) {
+      // Handle mask drawing/erasing
+      gradient = maskCtx.createRadialGradient(x, y, 0, x, y, extendedSize)
       gradient.addColorStop(
         0,
-        isErasing
-          ? `rgba(255, 255, 255, ${opacity})`
-          : `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
+        `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
+      )
+      gradient.addColorStop(
+        hardness,
+        `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
       )
       gradient.addColorStop(
         1,
-        isErasing
-          ? `rgba(255, 255, 255, ${opacity})`
-          : `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
+        `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, 0)`
       )
-    } else {
-      let softness = 1 - hardness
-      let innerStop = Math.max(0, hardness - softness)
-      let outerStop = size / extendedSize
-
-      if (isErasing) {
-        gradient.addColorStop(0, `rgba(255, 255, 255, ${opacity})`)
-        gradient.addColorStop(innerStop, `rgba(255, 255, 255, ${opacity})`)
-        gradient.addColorStop(outerStop, `rgba(255, 255, 255, ${opacity / 2})`)
-        gradient.addColorStop(1, `rgba(255, 255, 255, 0)`)
-      } else {
-        gradient.addColorStop(
-          0,
-          `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
-        )
-        gradient.addColorStop(
-          innerStop,
-          `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
-        )
-        gradient.addColorStop(
-          outerStop,
-          `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity / 2})`
-        )
-        gradient.addColorStop(
-          1,
-          `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, 0)`
-        )
-      }
-    }
-
-    maskCtx.fillStyle = gradient
-    maskCtx.beginPath()
-    if (brushType === BrushShape.Rect) {
-      maskCtx.rect(
-        x - extendedSize,
-        y - extendedSize,
-        extendedSize * 2,
-        extendedSize * 2
-      )
-    } else {
+      maskCtx.fillStyle = gradient
+      maskCtx.beginPath()
       maskCtx.arc(x, y, extendedSize, 0, Math.PI * 2, false)
+      maskCtx.fill()
     }
-    maskCtx.fill()
+  }
+
+  private hexToRgba(hex: string, alpha: number): string {
+    // Remove # if present
+    hex = hex.replace(/^#/, '')
+
+    // Parse r, g, b values
+    const r = parseInt(hex.substring(0, 2), 16)
+    const g = parseInt(hex.substring(2, 4), 16)
+    const b = parseInt(hex.substring(4, 6), 16)
+
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`
   }
 
   private async init_shape(compositionOperation: CompositionOperation) {
+    const currentTool = await this.messageBroker.pull('currentTool')
     const maskBlendMode = await this.messageBroker.pull('maskBlendMode')
     const maskCtx = this.maskCtx || (await this.messageBroker.pull('maskCtx'))
+    const rgbCtx = this.rgbCtx || (await this.messageBroker.pull('rgbCtx'))
+
     maskCtx.beginPath()
+    rgbCtx.beginPath()
+
+    // For both contexts, set the composite operation based on the passed parameter
+    // This ensures right-click always works for erasing
     if (compositionOperation == CompositionOperation.SourceOver) {
       maskCtx.fillStyle = maskBlendMode
       maskCtx.globalCompositeOperation = CompositionOperation.SourceOver
+      rgbCtx.globalCompositeOperation = CompositionOperation.SourceOver
     } else if (compositionOperation == CompositionOperation.DestinationOut) {
       maskCtx.globalCompositeOperation = CompositionOperation.DestinationOut
+      rgbCtx.globalCompositeOperation = CompositionOperation.DestinationOut
     }
+
+    /*
+      if (currentTool === Tools.Eraser) {
+        maskCtx.globalCompositeOperation = CompositionOperation.DestinationOut
+        rgbCtx.globalCompositeOperation = CompositionOperation.DestinationOut
+      } else if (currentTool === Tools.Pen) {
+        maskCtx.globalCompositeOperation = CompositionOperation.DestinationOut
+      } else if (currentTool === Tools.RGBPaint) {
+        rgbCtx.globalCompositeOperation = CompositionOperation.DestinationOut
+      }
+    }
+
+      */
   }
 
   private calculateCubicSplinePoints(
@@ -2615,8 +2847,10 @@ class UIManager {
   private brush!: HTMLDivElement
   private brushPreviewGradient!: HTMLDivElement
   private maskCtx!: CanvasRenderingContext2D
+  private rgbCtx!: CanvasRenderingContext2D
   private imageCtx!: CanvasRenderingContext2D
   private maskCanvas!: HTMLCanvasElement
+  private rgbCanvas!: HTMLCanvasElement
   private imgCanvas!: HTMLCanvasElement
   private brushSettingsHTML!: HTMLDivElement
   private paintBucketSettingsHTML!: HTMLDivElement
@@ -2633,13 +2867,27 @@ class UIManager {
   private canvasBackground!: HTMLDivElement
   private canvasContainer!: HTMLDivElement
   private image!: HTMLImageElement
+  private paint_image!: HTMLImageElement
   private imageURL!: URL
   private darkMode: boolean = true
+  private colorPicker!: HTMLInputElement
+
+  private createColorPicker(): HTMLInputElement {
+    const colorPicker = document.createElement('input')
+    colorPicker.type = 'color'
+    colorPicker.id = 'maskEditor_colorPicker'
+    colorPicker.value = '#FF0000' // Default color
+    colorPicker.addEventListener('input', (event) => {
+      const color = (event.target as HTMLInputElement).value
+      this.messageBroker.publish('setRGBColor', color)
+    })
+    return colorPicker
+  }
 
   private maskEditor: MaskEditorDialog
   private messageBroker: MessageBroker
 
-  private mask_opacity: number = 1.0
+  private mask_opacity: number = 0.8
   private maskBlendMode: MaskBlendMode = MaskBlendMode.Black
 
   private zoomTextHTML!: HTMLSpanElement
@@ -2691,6 +2939,8 @@ class UIManager {
     this.messageBroker.createPullTopic('maskCtx', async () => this.maskCtx)
     this.messageBroker.createPullTopic('imageCtx', async () => this.imageCtx)
     this.messageBroker.createPullTopic('imgCanvas', async () => this.imgCanvas)
+    this.messageBroker.createPullTopic('rgbCtx', async () => this.rgbCtx)
+    this.messageBroker.createPullTopic('rgbCanvas', async () => this.rgbCanvas)
     this.messageBroker.createPullTopic(
       'screenToCanvas',
       async (coords: Point) => this.screenToCanvas(coords)
@@ -2752,21 +3002,31 @@ class UIManager {
     const maskCanvas = document.createElement('canvas')
     maskCanvas.id = 'maskCanvas'
 
+    const rgbCanvas = document.createElement('canvas')
+    rgbCanvas.id = 'rgbCanvas'
+
     const canvas_background = document.createElement('div')
     canvas_background.id = 'canvasBackground'
 
     canvasContainer.appendChild(imgCanvas)
+    canvasContainer.appendChild(rgbCanvas)
     canvasContainer.appendChild(maskCanvas)
     canvasContainer.appendChild(canvas_background)
 
     // prepare content
     this.imgCanvas = imgCanvas!
+    this.rgbCanvas = rgbCanvas!
     this.maskCanvas = maskCanvas!
     this.canvasContainer = canvasContainer!
     this.canvasBackground = canvas_background!
+
     let maskCtx = maskCanvas!.getContext('2d', { willReadFrequently: true })
     if (maskCtx) {
       this.maskCtx = maskCtx
+    }
+    let rgbCtx = rgbCanvas.getContext('2d', { willReadFrequently: true })
+    if (rgbCtx) {
+      this.rgbCtx = rgbCtx
     }
     let imgCtx = imgCanvas!.getContext('2d', { willReadFrequently: true })
     if (imgCtx) {
@@ -2777,10 +3037,14 @@ class UIManager {
     //remove styling and move to css file
 
     this.imgCanvas.style.position = 'absolute'
+    this.rgbCanvas.style.position = 'absolute'
     this.maskCanvas.style.position = 'absolute'
 
     this.imgCanvas.style.top = '200'
     this.imgCanvas.style.left = '0'
+
+    this.rgbCanvas.style.top = this.imgCanvas.style.top
+    this.rgbCanvas.style.left = this.imgCanvas.style.left
 
     this.maskCanvas.style.top = this.imgCanvas.style.top
     this.maskCanvas.style.left = this.imgCanvas.style.left
@@ -2982,6 +3246,23 @@ class UIManager {
     brush_settings_container.appendChild(brush_settings_title)
     brush_settings_container.appendChild(resetBrushSettingsButton)
     brush_settings_container.appendChild(brush_shape_outer_container)
+
+    // Create a new container for the color picker and its title
+    const color_picker_container = this.createContainer(true)
+
+    // Add the color picker title
+    const colorPickerTitle = document.createElement('span')
+    colorPickerTitle.innerText = 'Color Selector'
+    colorPickerTitle.classList.add('maskEditor_sidePanelSubTitle') // Mimic brush shape title style
+    color_picker_container.appendChild(colorPickerTitle)
+
+    // Add the color picker
+    const colorPicker = this.createColorPicker()
+    color_picker_container.appendChild(colorPicker)
+
+    // Add the color picker container to the main settings container
+    brush_settings_container.appendChild(color_picker_container)
+
     brush_settings_container.appendChild(thicknesSliderObj.container)
     brush_settings_container.appendChild(opacitySliderObj.container)
     brush_settings_container.appendChild(hardnessSliderObj.container)
@@ -3103,6 +3384,45 @@ class UIManager {
 
     const image_layer_settings_title = this.createHeadline('Layers')
 
+    var activeLayer: 'mask' | 'rgb' = 'mask'
+
+    // Add a new container for layer selection
+    const layer_selection_container = this.createContainer(false)
+    layer_selection_container.classList.add(accentColor)
+    layer_selection_container.classList.add('maskEditor_layerRow')
+
+    const mask_layer_button = document.createElement('button')
+    mask_layer_button.innerText = 'Activate Mask Layer'
+    mask_layer_button.addEventListener('click', () => {
+      this.messageBroker.publish('setActiveLayer', 'mask')
+      activeLayer = 'mask'
+      updateButtons()
+    })
+
+    const rgb_layer_button = document.createElement('button')
+    rgb_layer_button.innerText = 'Activate Paint Layer'
+    rgb_layer_button.addEventListener('click', () => {
+      this.messageBroker.publish('setActiveLayer', 'rgb')
+      activeLayer = 'rgb'
+      updateButtons()
+    })
+
+    function updateButtons() {
+      if (activeLayer === 'mask') {
+        mask_layer_button.style.display = 'none'
+        rgb_layer_button.style.display = 'block'
+      } else {
+        mask_layer_button.style.display = 'block'
+        rgb_layer_button.style.display = 'none'
+      }
+    }
+
+    //layer_selection_container.appendChild(mask_layer_button);
+    //layer_selection_container.appendChild(rgb_layer_button);
+
+    // image_layer_settings_container.appendChild(image_layer_settings_title);
+    // image_layer_settings_container.appendChild(layer_selection_container);
+
     const mask_layer_title = this.createContainerTitle('Mask Layer')
 
     const mask_layer_container = this.createContainer(false)
@@ -3216,6 +3536,40 @@ class UIManager {
 
     image_layer_container.appendChild(image_layer_visibility_checkbox)
     image_layer_container.appendChild(image_layer_image_container)
+    image_layer_container.appendChild(mask_layer_button)
+
+    // Add RGB layer controls similar to Image layer
+    const rgbLayerContainer = this.createContainer(false)
+    rgbLayerContainer.classList.add(accentColor)
+    rgbLayerContainer.classList.add('maskEditor_layerRow')
+
+    const rgbLayerContainer_checkbox = document.createElement('input')
+    rgbLayerContainer_checkbox.setAttribute('type', 'checkbox')
+    rgbLayerContainer_checkbox.classList.add(
+      'maskEditor_sidePanelLayerCheckbox'
+    )
+    rgbLayerContainer_checkbox.checked = true
+    rgbLayerContainer_checkbox.addEventListener('change', (event) => {
+      if (!(event.target as HTMLInputElement)!.checked) {
+        this.rgbCanvas.style.opacity = '0'
+      } else {
+        this.rgbCanvas.style.opacity = '1'
+      }
+    })
+
+    const rgb_layer_image_container = document.createElement('div')
+    rgb_layer_image_container.classList.add(
+      'maskEditor_sidePanelLayerPreviewContainer'
+    )
+    rgb_layer_image_container.innerHTML = `
+      <svg viewBox="0 0 20 20">
+        <path class="cls-1" d="M 17 6.965 c 0 0.235 -0.095 0.47 -0.275 0.655 l -6.51 6.52 c -0.045 0.035 -0.09 0.075 -0.135 0.11 c -0.035 -0.695 -0.605 -1.24 -1.305 -1.245 c 0.035 -0.06 0.08 -0.12 0.135 -0.17 l 6.52 -6.52 c 0.36 -0.36 0.945 -0.36 1.3 0 c 0.175 0.175 0.275 0.415 0.275 0.65 Z"/>
+        <path class="cls-1" d="M 9.82 14.515 c 0 2.23 -3.23 1.59 -4.82 0 c 1.65 -0.235 2.375 -1.29 3.53 -1.29 c 0.715 0 1.29 0.58 1.29 1.29 Z"/>
+      </svg>
+    `
+    rgbLayerContainer.appendChild(rgbLayerContainer_checkbox)
+    rgbLayerContainer.appendChild(rgb_layer_image_container)
+    rgbLayerContainer.appendChild(rgb_layer_button)
 
     image_layer_settings_container.appendChild(image_layer_settings_title)
     image_layer_settings_container.appendChild(mask_layer_title)
@@ -3225,6 +3579,8 @@ class UIManager {
     )
     image_layer_settings_container.appendChild(image_layer_title)
     image_layer_settings_container.appendChild(image_layer_container)
+
+    image_layer_settings_container.appendChild(rgbLayerContainer)
 
     return image_layer_settings_container
   }
@@ -3422,6 +3778,7 @@ class UIManager {
         this.maskCanvas.width,
         this.maskCanvas.height
       )
+      this.rgbCtx.clearRect(0, 0, this.rgbCanvas.width, this.rgbCanvas.height)
       this.messageBroker.publish('saveState')
     })
 
@@ -3477,8 +3834,7 @@ class UIManager {
     toolPanel_brushToolContainer.classList.add(toolPanelHoverAccent)
     toolPanel_brushToolContainer.innerHTML = `
     <svg viewBox="0 0 44 44">
-      <path class="cls-1" d="M34,13.93c0,.47-.19.94-.55,1.31l-13.02,13.04c-.09.07-.18.15-.27.22-.07-1.39-1.21-2.48-2.61-2.49.07-.12.16-.24.27-.34l13.04-13.04c.72-.72,1.89-.72,2.6,0,.35.35.55.83.55,1.3Z"/>
-      <path class="cls-1" d="M19.64,29.03c0,4.46-6.46,3.18-9.64,0,3.3-.47,4.75-2.58,7.06-2.58,1.43,0,2.58,1.16,2.58,2.58Z"/>
+      <path class="cls-1" d="M10.97,15.98v14.04c0,.825.675,1.5,1.5,1.5h23.07c.825,0,1.5-.675,1.5-1.5V15.98c0-.825-.675-1.5-1.5-1.5H12.47c-.825,0-1.5.675-1.5,1.5ZM25.79,28.16c-4.365,1.41-8.355-2.58-6.945-6.945.51-1.575,1.785-2.85,3.36-3.36,4.365-1.41,8.355,2.58,6.945,6.945-.51,1.575-1.785,2.85-3.36,3.36Z"/>
     </svg>
     `
     toolElements.push(toolPanel_brushToolContainer)
@@ -3497,6 +3853,7 @@ class UIManager {
         }
       }
       this.messageBroker.publish('setTool', Tools.Pen)
+      this.messageBroker.publish('setActiveLayer', 'mask')
       this.pointerZone.style.cursor = 'none'
     })
 
@@ -3648,10 +4005,50 @@ class UIManager {
       this.messageBroker.publish('resetZoom')
     })
 
+    // RGB Paint Tool
+    var toolPanel_rgbPaintToolContainer = document.createElement('div')
+    toolPanel_rgbPaintToolContainer.classList.add(
+      'maskEditor_toolPanelContainer'
+    )
+    toolPanel_rgbPaintToolContainer.classList.add(toolPanelHoverAccent)
+    toolPanel_rgbPaintToolContainer.innerHTML = `
+      <svg viewBox="0 0 44 44">
+        <path class="cls-1" d="M34,13.93c0,.47-.19.94-.55,1.31l-13.02,13.04c-.09.07-.18.15-.27.22-.07-1.39-1.21-2.48-2.61-2.49.07-.12.16-.24.27-.34l13.04-13.04c.72-.72,1.89-.72,2.6,0,.35.35.55.83.55,1.3Z"/>
+        <path class="cls-1" d="M19.64,29.03c0,4.46-6.46,3.18-9.64,0,3.3-.47,4.75-2.58,7.06-2.58,1.43,0,2.58,1.16,2.58,2.58Z"/>
+      </svg>
+    `
+    toolElements.push(toolPanel_rgbPaintToolContainer)
+
+    toolPanel_rgbPaintToolContainer.addEventListener('click', () => {
+      this.messageBroker.publish('setTool', Tools.RGBPaint)
+      for (let toolElement of toolElements) {
+        if (toolElement != toolPanel_rgbPaintToolContainer) {
+          toolElement.classList.remove('maskEditor_toolPanelContainerSelected')
+        } else {
+          toolElement.classList.add('maskEditor_toolPanelContainerSelected')
+          this.brushSettingsHTML.style.display = 'flex'
+          this.colorSelectSettingsHTML.style.display = 'none'
+          this.paintBucketSettingsHTML.style.display = 'none'
+        }
+      }
+      this.messageBroker.publish('setActiveLayer', 'rgb')
+      this.messageBroker.publish('setTool', Tools.RGBPaint)
+      this.pointerZone.style.cursor = 'none'
+    })
+
+    var toolPanel_rgbPaintToolIndicator = document.createElement('div')
+    toolPanel_rgbPaintToolIndicator.classList.add(
+      'maskEditor_toolPanelIndicator'
+    )
+
+    toolPanel_rgbPaintToolContainer.appendChild(toolPanel_rgbPaintToolIndicator)
+
     tool_panel.appendChild(toolPanel_brushToolContainer)
+    tool_panel.appendChild(toolPanel_rgbPaintToolContainer)
     tool_panel.appendChild(toolPanel_eraserToolContainer)
     tool_panel.appendChild(toolPanel_paintBucketToolContainer)
     tool_panel.appendChild(toolPanel_colorSelectToolContainer)
+    tool_panel.appendChild(toolPanel_zoomIndicator)
     tool_panel.appendChild(toolPanel_zoomIndicator)
 
     return tool_panel
@@ -3707,14 +4104,25 @@ class UIManager {
   }
 
   async screenToCanvas(clientPoint: Point): Promise<Point> {
-    // Get the bounding rectangles for both elements
+    // Get the zoom ratio
     const zoomRatio = await this.messageBroker.pull('zoomRatio')
-    const canvasRect = this.maskCanvas.getBoundingClientRect()
+
+    // Get the bounding rectangles for both canvases
+    const maskCanvasRect = this.maskCanvas.getBoundingClientRect()
+    const rgbCanvasRect = this.rgbCanvas.getBoundingClientRect()
+
+    // Check which canvas is currently being used for drawing
+    const currentTool = await this.messageBroker.pull('currentTool')
+    const isUsingRGBCanvas = currentTool === Tools.RGBPaint
+
+    // Use the appropriate canvas rect based on the current tool
+    const canvasRect = isUsingRGBCanvas ? rgbCanvasRect : maskCanvasRect
 
     // Calculate the offset between pointer zone and canvas
     const offsetX = clientPoint.x - canvasRect.left + this.toolPanel.clientWidth
     const offsetY = clientPoint.y - canvasRect.top + 44 // 44 is the height of the top menu
 
+    // Adjust for zoom ratio
     const x = offsetX / zoomRatio
     const y = offsetY / zoomRatio
 
@@ -3723,6 +4131,10 @@ class UIManager {
 
   private setEventHandler() {
     this.maskCanvas.addEventListener('contextmenu', (event: Event) => {
+      event.preventDefault()
+    })
+
+    this.rgbCanvas.addEventListener('contextmenu', (event: Event) => {
       event.preventDefault()
     })
 
@@ -3758,6 +4170,9 @@ class UIManager {
     const maskCtx = this.maskCtx
     const maskCanvas = this.maskCanvas
 
+    const rgbCtx = this.rgbCtx
+    const rgbCanvas = this.rgbCanvas
+
     imgCtx!.clearRect(0, 0, this.imgCanvas.width, this.imgCanvas.height)
     maskCtx.clearRect(0, 0, this.maskCanvas.width, this.maskCanvas.height)
 
@@ -3783,7 +4198,6 @@ class UIManager {
       ComfyApp.clipspace.imgs[ComfyApp.clipspace.selectedIndex].src
     )
     this.imageURL = rgb_url
-    console.log(rgb_url)
     rgb_url.searchParams.delete('channel')
     rgb_url.searchParams.set('channel', 'rgb')
     this.image = new Image()
@@ -3795,18 +4209,41 @@ class UIManager {
       img.src = rgb_url.toString()
     })
 
+    // RGB painting load
+    const paintindex = 1
+    if (ComfyApp.clipspace?.imgs?.[paintindex]?.src) {
+      console.log('Found Image at Clipspace Index: ', paintindex)
+      const paint_url = new URL(ComfyApp.clipspace.imgs[paintindex].src)
+      this.paint_image = new Image()
+      this.paint_image = await new Promise<HTMLImageElement>(
+        (resolve, reject) => {
+          const img = new Image()
+          img.onload = () => resolve(img)
+          img.onerror = reject
+          img.src = paint_url.toString()
+        }
+      )
+    } else {
+      // console.error("Clipspace with index: ", paintindex, "does not exist")
+    }
+
     maskCanvas.width = this.image.width
     maskCanvas.height = this.image.height
 
+    rgbCanvas.width = this.image.width
+    rgbCanvas.height = this.image.height
+
     this.dimensionsTextHTML.innerText = `${this.image.width}x${this.image.height}`
 
-    await this.invalidateCanvas(this.image, mask_image)
+    await this.invalidateCanvas(this.image, mask_image, this.paint_image)
     this.messageBroker.publish('initZoomPan', [this.image, this.rootElement])
   }
 
   async invalidateCanvas(
     orig_image: HTMLImageElement,
-    mask_image: HTMLImageElement
+    mask_image: HTMLImageElement,
+    paint_image: HTMLImageElement | null
+    //painted_image: HTMLImageElement
   ) {
     this.imgCanvas.width = orig_image.width
     this.imgCanvas.height = orig_image.height
@@ -3814,12 +4251,30 @@ class UIManager {
     this.maskCanvas.width = orig_image.width
     this.maskCanvas.height = orig_image.height
 
+    this.rgbCanvas.width = orig_image.width
+    this.rgbCanvas.height = orig_image.height
+
     let imgCtx = this.imgCanvas.getContext('2d', { willReadFrequently: true })
     let maskCtx = this.maskCanvas.getContext('2d', {
       willReadFrequently: true
     })
+    let rgbCtx = this.maskCanvas.getContext('2d', {
+      willReadFrequently: true
+    })
 
     imgCtx!.drawImage(orig_image, 0, 0, orig_image.width, orig_image.height)
+
+    if (rgbCtx && paint_image) {
+      rgbCtx!.drawImage(
+        paint_image,
+        0,
+        0,
+        paint_image.width,
+        paint_image.height
+      )
+    } else {
+      // console.error("Either rgbCtx or paint_image are being received by invalidateCanvas() as null")
+    }
     await this.prepare_mask(
       mask_image,
       this.maskCanvas,
@@ -3995,6 +4450,10 @@ class UIManager {
     return this.imgCanvas
   }
 
+  getrgbCanvas() {
+    return this.rgbCanvas
+  }
+
   getImage() {
     return this.image
   }
@@ -4121,6 +4580,14 @@ class ToolManager {
     return this.currentTool
   }
 
+  private activeLayer: 'mask' | 'rgb' = 'mask'
+
+  private async handleLayerSelection(layer: 'mask' | 'rgb') {
+    this.activeLayer = layer
+    this.messageBroker.publish('setActiveLayer', layer)
+    this.messageBroker.publish('updateCursor')
+  }
+
   private async handlePointerDown(event: PointerEvent) {
     event.preventDefault()
     if (event.pointerType == 'touch') return
@@ -4131,6 +4598,25 @@ class ToolManager {
     if (event.buttons === 4 || (event.buttons === 1 && isSpacePressed)) {
       this.messageBroker.publish('panStart', event)
       this.messageBroker.publish('setBrushVisibility', false)
+      return
+    }
+
+    // RGB painting
+    if (this.currentTool === Tools.RGBPaint && event.button === 0) {
+      const offset = { x: event.offsetX, y: event.offsetY }
+      const coords_canvas = await this.messageBroker.pull(
+        'screenToCanvas',
+        offset
+      )
+      this.messageBroker.publish('drawStart', event)
+      this.messageBroker.publish('saveState')
+      return
+    }
+
+    // RGB painting
+    if (this.currentTool === Tools.RGBPaint && event.buttons === 1) {
+      this.messageBroker.publish('draw', event)
+      // this.messageBroker.publish('saveState')
       return
     }
 
@@ -4163,7 +4649,9 @@ class ToolManager {
       return
     }
 
-    var isDrawingTool = [Tools.Pen, Tools.Eraser].includes(this.currentTool)
+    var isDrawingTool = [Tools.Pen, Tools.Eraser, Tools.RGBPaint].includes(
+      this.currentTool
+    )
     //drawing
     if ([0, 2].includes(event.button) && isDrawingTool) {
       this.messageBroker.publish('drawStart', event)
@@ -4188,7 +4676,9 @@ class ToolManager {
 
     //prevent drawing with other tools
 
-    var isDrawingTool = [Tools.Pen, Tools.Eraser].includes(this.currentTool)
+    var isDrawingTool = [Tools.Pen, Tools.Eraser, Tools.RGBPaint].includes(
+      this.currentTool
+    )
     if (!isDrawingTool) return
 
     // alt + right mouse button hold brush adjustment
@@ -4246,6 +4736,7 @@ class PanAndZoomManager {
 
   canvasContainer: HTMLElement | null = null
   maskCanvas: HTMLCanvasElement | null = null
+  rgbCanvas: HTMLCanvasElement | null = null
   rootElement: HTMLElement | null = null
 
   image: HTMLImageElement | null = null
@@ -4481,6 +4972,7 @@ class PanAndZoomManager {
     const newZoom = this.zoom_ratio
 
     const maskCanvas = await this.messageBroker.pull('maskCanvas')
+    const rgbCanvas = await this.messageBroker.pull('rgbCanvas')
 
     // Get mouse position relative to the container
     const rect = maskCanvas.getBoundingClientRect()
@@ -4660,6 +5152,22 @@ class PanAndZoomManager {
       left: `${this.pan_offset.x}px`,
       top: `${this.pan_offset.y}px`
     })
+
+    this.rgbCanvas = await this.messageBroker.pull('rgbCanvas')
+    if (this.rgbCanvas) {
+      // Ensure the canvas has the proper dimensions
+      if (
+        this.rgbCanvas.width !== this.image.width ||
+        this.rgbCanvas.height !== this.image.height
+      ) {
+        this.rgbCanvas.width = this.image.width
+        this.rgbCanvas.height = this.image.height
+      }
+
+      // Make sure the style dimensions match the container
+      this.rgbCanvas.style.width = `${raw_width}px`
+      this.rgbCanvas.style.height = `${raw_height}px`
+    }
   }
 
   private handlePanStart(event: PointerEvent) {
@@ -4730,6 +5238,7 @@ class MessageBroker {
     this.createPushTopic('setBrushShape')
     this.createPushTopic('initZoomPan')
     this.createPushTopic('setTool')
+    this.createPushTopic('setActiveLayer')
     this.createPushTopic('pointerDown')
     this.createPushTopic('pointerMove')
     this.createPushTopic('pointerUp')
@@ -4753,6 +5262,8 @@ class MessageBroker {
     this.createPushTopic('setZoomText')
     this.createPushTopic('resetZoom')
     this.createPushTopic('invert')
+    this.createPushTopic('setRGBColor')
+    this.createPushTopic('paintedurl')
   }
 
   /**
