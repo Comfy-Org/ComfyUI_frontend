@@ -4987,7 +4987,7 @@ class KeyboardManager {
   // combinations
 
   private undoCombinationPressed() {
-    const combination = ['ctrl', 'z']
+    const combination = ['alt', 'z']
     const keysDownLower = this.keysDown.map((key) => key.toLowerCase())
     const result = combination.every((key) => keysDownLower.includes(key))
     if (result) this.messageBroker.publish('undo')
@@ -4995,7 +4995,7 @@ class KeyboardManager {
   }
 
   private redoCombinationPressed() {
-    const combination = ['ctrl', 'shift', 'z']
+    const combination = ['alt', 'shift', 'z']
     const keysDownLower = this.keysDown.map((key) => key.toLowerCase())
     const result = combination.every((key) => keysDownLower.includes(key))
     if (result) this.messageBroker.publish('redo')
