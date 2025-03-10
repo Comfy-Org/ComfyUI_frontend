@@ -179,9 +179,44 @@ export default {
       textColor: {
         muted: 'var(--p-text-muted-color)',
         highlight: 'var(--p-primary-color)'
+      },
+
+      /**
+       * Box shadows for different elevation levels
+       * https://m3.material.io/styles/elevation/overview
+       */
+      boxShadow: {
+        'elevation-0': 'none',
+        'elevation-1':
+          '0 1px 3px -1px rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04)',
+        'elevation-2':
+          '0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.05)',
+        'elevation-3':
+          '0 15px 20px -3px rgb(0 0 0 / 0.1), 0 8px 12px -4px rgb(0 0 0 / 0.06)',
+        'elevation-4':
+          '0 20px 25px -5px rgb(0 0 0 / 0.12), 0 10px 15px -5px rgb(0 0 0 / 0.07)',
+        'elevation-5':
+          '0 25px 30px -5px rgb(0 0 0 / 0.14), 0 15px 20px -5px rgb(0 0 0 / 0.08)'
+      },
+
+      /**
+       * Background colors for different elevation levels
+       * https://m3.material.io/styles/elevation/overview
+       */
+      backgroundColor: {
+        'dark-elevation-0': 'rgba(255, 255, 255, 0)',
+        'dark-elevation-1': 'rgba(255, 255, 255, 0.01)',
+        'dark-elevation-2': 'rgba(255, 255, 255, 0.03)',
+        'dark-elevation-3': 'rgba(255, 255, 255, 0.04)',
+        'dark-elevation-4': 'rgba(255, 255, 255, 0.08)',
+        'dark-elevation-5': 'rgba(255, 255, 255, 0.12)'
       }
     }
   },
 
-  plugins: []
+  plugins: [
+    function ({ addVariant }) {
+      addVariant('dark-theme', '.dark-theme &')
+    }
+  ]
 }
