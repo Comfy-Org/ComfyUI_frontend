@@ -20,6 +20,7 @@ import { nextTick, ref } from 'vue'
 
 import { st } from '@/i18n'
 import { app as comfyApp } from '@/scripts/app'
+import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
@@ -101,7 +102,7 @@ const onIdle = () => {
 
   const widget = comfyApp.canvas.getWidgetAtCursor()
   // Dont show for DOM widgets, these use native browser tooltips as we dont get proper mouse events on these
-  if (widget && !widget.element) {
+  if (widget && !isDOMWidget(widget)) {
     const translatedTooltip = st(
       `nodeDefs.${normalizeI18nKey(node.type)}.inputs.${normalizeI18nKey(widget.name)}.tooltip`,
       nodeDef.inputs[widget.name]?.tooltip
