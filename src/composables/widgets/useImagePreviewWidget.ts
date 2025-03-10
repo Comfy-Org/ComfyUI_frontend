@@ -230,14 +230,14 @@ const renderPreview = (
 
 class ImagePreviewWidget implements ICustomWidget {
   readonly type: 'custom'
-  readonly name: 'image-preview'
+  readonly name: string
   readonly options: IWidgetOptions<unknown>
   // Dummy value to satisfy type requirements
   value: string
 
-  constructor(options: IWidgetOptions<unknown>) {
+  constructor(name: string, options: IWidgetOptions<unknown>) {
     this.type = 'custom'
-    this.name = 'image-preview'
+    this.name = name
     this.options = options
     this.value = ''
   }
@@ -266,7 +266,7 @@ export const useImagePreviewWidget = () => {
     inputSpec: InputSpec
   ) => {
     return node.addCustomWidget(
-      new ImagePreviewWidget({
+      new ImagePreviewWidget(inputSpec.name, {
         serialize: false
       })
     )
