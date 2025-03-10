@@ -13,10 +13,10 @@
       <slot name="install-button">
         <PackInstallButton
           v-if="nodePack"
-          :packs="[
+          :nodePacks="[
             {
               nodePack: nodePack,
-              selectedVersion: nodePack.latest_version?.version ?? 'latest'
+              selectedVersion: selectedVersion
             }
           ]"
           :full-width="installButtonFullWidth"
@@ -33,14 +33,31 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
+
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import PackInstallButton from '@/components/dialog/content/manager/PackInstallButton.vue'
 import PackIcon from '@/components/dialog/content/manager/packIcon/PackIcon.vue'
+import { SelectedVersion } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
 
-defineProps<{
+const {
+  nodePack,
+  installButtonFullWidth = false,
+  version = SelectedVersion.LATEST
+} = defineProps<{
   nodePack?: components['schemas']['Node']
-  multi?: boolean
   installButtonFullWidth?: boolean
+  version?: string
 }>()
+
+const selectedVersion = ref<string>(
+  version || nodePack?.latest_version?.version || SelectedVersion.LATEST
+)
+
+defineExpose({
+  updateVersion: (newVersion: string) => {
+    selectedVersion.value = newVersion
+  }
+})
 </script>

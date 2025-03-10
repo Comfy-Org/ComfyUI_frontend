@@ -15,7 +15,7 @@
       </template>
       <template v-else>
         {{
-          packs.length > 1
+          nodePacks.length > 1
             ? $t('manager.installSelected')
             : $t('manager.install')
         }}
@@ -42,8 +42,8 @@ type PackWithSelectedVersion = {
   selectedVersion?: InstallPackParams['selected_version']
 }
 
-const { packs, fullWidth = false } = defineProps<{
-  packs: PackWithSelectedVersion[]
+const { nodePacks, fullWidth = false } = defineProps<{
+  nodePacks: PackWithSelectedVersion[]
   fullWidth?: boolean
 }>()
 
@@ -68,8 +68,8 @@ const installPack = (item: PackWithSelectedVersion) =>
   managerStore.installPack.call(createPayload(item))
 
 const installItems = async () => {
-  if (!packs?.length) return
-  await Promise.all(packs.map(installPack))
+  if (!nodePacks?.length) return
+  await Promise.all(nodePacks.map(installPack))
 }
 
 onUnmounted(() => {

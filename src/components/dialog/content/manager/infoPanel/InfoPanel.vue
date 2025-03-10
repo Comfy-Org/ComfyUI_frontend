@@ -4,6 +4,8 @@
       <PackCardHeader
         :node-pack="nodePack"
         :install-button-full-width="false"
+        :version="selectedVersion"
+        ref="packCardHeaderRef"
       />
       <div class="mb-6">
         <MetadataRow
@@ -21,7 +23,11 @@
           />
         </MetadataRow>
         <MetadataRow :label="t('manager.version')">
-          <PackVersionBadge :version="nodePack.latest_version?.version" />
+          <PackVersionBadge
+            :nodePack="nodePack"
+            :version="selectedVersion"
+            @update:version="updateSelectedVersion"
+          />
         </MetadataRow>
       </div>
       <div class="mb-6 overflow-hidden">
@@ -32,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PackStatusMessage from '@/components/dialog/content/manager/PackStatusMessage.vue'
@@ -40,6 +46,7 @@ import PackVersionBadge from '@/components/dialog/content/manager/PackVersionBad
 import InfoTabs from '@/components/dialog/content/manager/infoPanel/InfoTabs.vue'
 import MetadataRow from '@/components/dialog/content/manager/infoPanel/MetadataRow.vue'
 import PackCardHeader from '@/components/dialog/content/manager/packCard/PackCardHeader.vue'
+import { SelectedVersion } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
 import { formatNumber } from '@/utils/formatUtil'
 
@@ -54,6 +61,18 @@ const { t, d } = useI18n()
 const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']
 }>()
+
+const packCardHeaderRef = ref(null)
+const selectedVersion = ref<string>(
+  nodePack.latest_version?.version || SelectedVersion.LATEST
+)
+
+const updateSelectedVersion = (version: string) => {
+  selectedVersion.value = version
+  if (packCardHeaderRef.value) {
+    packCardHeaderRef.value.updateVersion?.(version)
+  }
+}
 
 const infoItems = computed<InfoItem[]>(() => [
   {
