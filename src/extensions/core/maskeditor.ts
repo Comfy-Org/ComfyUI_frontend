@@ -1305,6 +1305,7 @@ class PaintBucketTool {
   private imageData: ImageData | null = null
   private data: Uint8ClampedArray | null = null
   private tolerance: number = 5
+  private fillOpacity: number = 255 // Add opacity property (default 100%)
 
   constructor(maskEditor: MaskEditorDialog) {
     this.maskEditor = maskEditor
@@ -1333,6 +1334,11 @@ class PaintBucketTool {
     )
 
     this.messageBroker.subscribe('invert', () => this.invertMask())
+
+    // Add new listener for opacity setting
+    this.messageBroker.subscribe('setFillOpacity', (opacity: number) =>
+      this.setFillOpacity(opacity)
+    )
   }
 
   private addPullTopics() {
@@ -1340,6 +1346,17 @@ class PaintBucketTool {
       'getTolerance',
       async () => this.tolerance
     )
+    // Add pull topic for fillOpacity
+    this.messageBroker.createPullTopic(
+      'getFillOpacity',
+      async () => (this.fillOpacity / 255) * 100
+    )
+  }
+
+  // Add method to set opacity
+  setFillOpacity(opacity: number): void {
+    // Convert from percentage (0-100) to alpha value (0-255)
+    this.fillOpacity = Math.floor((opacity / 100) * 255)
   }
 
   private getPixel(x: number, y: number): number {
@@ -1439,8 +1456,8 @@ class PaintBucketTool {
       }
 
       visited[visitedIndex] = 1
-      // Set alpha to 255 for fill mode, 0 for erase mode
-      this.setPixel(x, y, isFillMode ? 255 : 0, maskColor)
+      // Set alpha to fillOpacity for fill mode, 0 for erase mode
+      this.setPixel(x, y, isFillMode ? this.fillOpacity : 0, maskColor)
 
       // Check neighbors
       const checkNeighbor = (nx: number, ny: number) => {
@@ -3029,10 +3046,25 @@ class UIManager {
       }
     )
 
+    // Add new slider for fill opacity
+    const fillOpacity = (await this.messageBroker.pull('getFillOpacity')) || 100
+    const fillOpacitySliderObj = this.createSlider(
+      'Fill Opacity',
+      0,
+      100,
+      1,
+      fillOpacity,
+      (event, value) => {
+        this.messageBroker.publish('setFillOpacity', parseInt(value))
+      }
+    )
+
     paint_bucket_settings_container.appendChild(paint_bucket_settings_title)
     paint_bucket_settings_container.appendChild(
       paintBucketToleranceSliderObj.container
     )
+    // Add the new opacity slider to the UI
+    paint_bucket_settings_container.appendChild(fillOpacitySliderObj.container)
 
     return paint_bucket_settings_container
   }
@@ -4788,6 +4820,7 @@ class MessageBroker {
     this.createPushTopic('resetZoom')
     this.createPushTopic('invert')
     this.createPushTopic('setSelectionOpacity')
+    this.createPushTopic('setFillOpacity')
   }
 
   /**
