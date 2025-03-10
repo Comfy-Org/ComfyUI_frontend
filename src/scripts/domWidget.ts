@@ -168,14 +168,16 @@ LGraphNode.prototype.addDOMWidget = function <
   options: DOMWidgetOptions<T, V> = {}
 ): DOMWidget<T, V> {
   // Note: Before `LGraphNode.configure` is called, `this.id` is always `-1`.
-  const widget = new DOMWidgetImpl({
-    id: generateUUID(),
-    node: this,
-    name,
-    type,
-    element,
-    options
-  })
+  const widget = this.addCustomWidget(
+    new DOMWidgetImpl({
+      id: generateUUID(),
+      node: this,
+      name,
+      type,
+      element,
+      options
+    })
+  )
 
   // Workaround for https://github.com/Comfy-Org/ComfyUI_frontend/issues/2493
   // Some custom nodes are explicitly expecting getter and setter of `value`
@@ -189,8 +191,6 @@ LGraphNode.prototype.addDOMWidget = function <
       this.callback?.(this.value)
     }
   })
-
-  this.addCustomWidget(widget)
 
   this.onRemoved = useChainCallback(this.onRemoved, () => {
     widget.onRemove()
