@@ -103,8 +103,8 @@ const isHovered = useElementHover(cardRef)
 const getThumbnailUrl = (index = '') => {
   const basePath =
     sourceModule === 'default'
-      ? `/templates/${template.name}`
-      : `/api/workflow_templates/${sourceModule}/${template.name}`
+      ? `templates/${template.name}`
+      : `api/workflow_templates/${sourceModule}/${template.name}`
 
   // For templates from custom nodes, multiple images is not yet supported
   const indexSuffix = sourceModule === 'default' && index ? `-${index}` : ''
