@@ -1,8 +1,7 @@
 <template>
   <Card
-    class="absolute inset-0 flex flex-col overflow-hidden rounded-2xl shadow-[0_0_15px_rgba(0,0,0,0.15),0_10px_15px_-3px_rgba(0,0,0,0.12),0_4px_6px_-4px_rgba(0,0,0,0.08)] transition-all duration-200"
+    class="absolute inset-0 flex flex-col overflow-hidden rounded-2xl shadow-elevation-4 dark-theme:bg-dark-elevation-1 transition-all duration-200"
     :class="{
-      'bg-[#ffffff08]': !isLightTheme,
       'outline outline-[6px] outline-[var(--p-primary-color)]': isSelected
     }"
     :pt="{
