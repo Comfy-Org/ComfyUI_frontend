@@ -9,6 +9,7 @@
 
 <script setup lang="ts">
 import type { LGraphNode } from '@comfyorg/litegraph'
+import { useEventListener } from '@vueuse/core'
 import { CSSProperties, computed, onMounted, ref, watch } from 'vue'
 
 import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
@@ -89,6 +90,22 @@ watch(
     }
   }
 )
+
+if (widget.element.blur) {
+  useEventListener(document, 'mousedown', (event) => {
+    if (!widget.element.contains(event.target as HTMLElement)) {
+      widget.element.blur()
+    }
+  })
+}
+
+for (const evt of widget.options.selectOn ?? ['focus', 'click']) {
+  useEventListener(widget.element, evt, () => {
+    const lgCanvas = canvasStore.canvas
+    lgCanvas?.selectNode(widget.node)
+    lgCanvas?.bringToFront(widget.node)
+  })
+}
 
 onMounted(() => {
   widgetElement.value.appendChild(widget.element)
