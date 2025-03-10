@@ -175,7 +175,10 @@ LGraphNode.prototype.addDOMWidget = function <
       name,
       type,
       element,
-      options
+      options: {
+        ...options,
+        hideOnZoom: true
+      }
     })
   )
 
