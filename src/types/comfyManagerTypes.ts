@@ -14,75 +14,6 @@ export interface SearchOption<T> {
   label: string
 }
 
-export enum ManagerNodeStatus {
-  INSTALLED = 'installed',
-  DISABLED = 'disabled',
-  NOT_INSTALLED = 'not_installed',
-  IMPORT_FAILED = 'import_failed',
-  NEEDS_UPDATE = 'needs_update'
-}
-
-export enum ManagerInstallStatus {
-  IDLE = 'idle',
-  INSTALLING = 'installing',
-  INSTALLED = 'installed',
-  FAILED = 'failed',
-  NEEDS_RESTART = 'needs_restart'
-}
-
-export interface ManagerNodeVersion {
-  id: string
-  version: string
-  date?: string
-  sha?: string
-  isLatest?: boolean
-  changelog?: string
-  deprecated?: boolean
-}
-
-export interface ManagerNode {
-  id: string
-  name: string
-  title?: string
-  description?: string
-  author?: string
-  repository?: string
-  installed: boolean
-  enabled: boolean
-  version?: string
-  availableVersions?: ManagerNodeVersion[]
-  dependencies?: string[]
-  tags?: string[]
-  importFailed?: boolean
-  installPath?: string
-  cnr_id?: string // maps to comfyui registry node name (not id)
-}
-
-/**
- * Status of the ComfyUI-Manager task runner queue.
- */
-export interface ManagerQueueStatus {
-  /** `done_count` + `in_progress_count` + number of items queued */
-  total_count: number
-  /** number of items installed */
-  done_count: number
-  /** number of items currently being processed */
-  in_progress_count: number
-  /** task worker thread is alive, a queued operation is running */
-  is_processing: boolean
-}
-
-export interface InstalledNodesResponse {
-  nodes: ManagerNode[]
-  total: number
-}
-
-export interface InstallNodeResponse {
-  success: boolean
-  message: string
-  requiresRestart: boolean
-}
-
 export enum SelectedVersion {
   LATEST = 'latest',
   NIGHTLY = 'nightly'
@@ -100,10 +31,28 @@ export enum ManagerChannel {
 export enum ManagerSourceMode {
   REMOTE = 'remote',
   LOCAL = 'local',
-  CACHE = 'cache'
+  CACHE = 'cache',
+  /** @description Packs that were installed at startup (ComfyUI) time */
+  IMPORTED = 'imported'
 }
 
-export interface ManagerPackOperation {
+export enum ManagerPackState {
+  INSTALLED = 'installed',
+  DISABLED = 'disabled',
+  NOT_INSTALLED = 'not_installed',
+  IMPORT_FAILED = 'import_failed',
+  NEEDS_UPDATE = 'needs_update'
+}
+
+export enum ManagerPackUpdateState {
+  FALSE = 'false'
+}
+
+export enum ManagerPackInstallType {
+  GIT = 'git-clone'
+}
+
+export interface ManagerPackInfo {
   /**
    * Display name of a pack.
    *
@@ -128,11 +77,74 @@ export interface ManagerPackOperation {
   version?: ComfyWorkflowJSON['nodes'][0]['properties']['ver']
 }
 
+/** Returned by /customnode/getlist */
+export interface ManagerPack extends ManagerPackInfo {
+  /** @description The github username of the pack author. */
+  author?: string
+  /** @description The description of the pack. */
+  description?: string
+  /** @todo unknown */
+  files: string[]
+  /** @description The type of installation that was used to install the pack. */
+  install_type: ManagerPackInstallType
+  /** @todo unknown */
+  reference?: string
+  /** @description The display name of the pack. */
+  title?: string
+  /** @description The latest version of the pack. */
+  cnr_latest: SelectedVersion
+  /** @todo unknown */
+  health: string
+  /** @description The github link to the repository of the pack. */
+  repository?: string
+  /** @description The state of the pack. */
+  state: ManagerPackState
+  /** @description The state of the pack update. */
+  'update-state': ManagerPackUpdateState
+  /** @description The number of stars the pack has on GitHub. Distinct from registry stars. */
+  stars: number
+  /**
+   * @description The last time the pack was updated. In ISO 8601 format.
+   * @example '2024-05-22 20:00:00'
+   */
+  last_update: string
+  /** @todo unknown */
+  trust: boolean
+}
+
+export interface ManagerPackInstalled {
+  /** @description The version of the pack that is installed. Git commit hash or semantic version. */
+  ver: ComfyWorkflowJSON['nodes'][0]['properties']['ver']
+  /** @description The name of the pack if the pack is installed from the registry. Corresponds to `Node#name` in comfy-api. */
+  cnr_id: ComfyWorkflowJSON['nodes'][0]['properties']['cnr_id']
+  /**
+   * @description The name of the pack if the pack is installed from github.
+   * In the format author/repo-name. If the pack is installed from the registry, this is `null`.
+   */
+  aux_id: ComfyWorkflowJSON['nodes'][0]['properties']['aux_id'] | null
+  /** @description Whether the pack is enabled. */
+  enabled: boolean
+}
+
+/**
+ * Status of the ComfyUI-Manager task runner queue.
+ */
+export interface ManagerQueueStatus {
+  /** `done_count` + `in_progress_count` + number of items queued */
+  total_count: number
+  /** number of items installed */
+  done_count: number
+  /** number of items currently being processed */
+  in_progress_count: number
+  /** task worker thread is alive, a queued operation is running */
+  is_processing: boolean
+}
+
 /**
  * Payload for installing a pack.
  * Is also used to enable a disabled pack.
  */
-export interface InstallPackParams extends ManagerPackOperation {
+export interface InstallPackParams extends ManagerPackInfo {
   /**
    * @deprecated Use `selected_version` instead.
    */
@@ -140,7 +152,7 @@ export interface InstallPackParams extends ManagerPackOperation {
   /**
    * Semantic version string, Git commit hash, or `latest`/`nightly`.
    */
-  selected_version?: ManagerPackOperation['version'] | SelectedVersion
+  selected_version?: ManagerPackInfo['version'] | SelectedVersion
   /**
    * The github link to the repository of the node to install. Required if `selected_version` is `nightly`.
    */
@@ -163,3 +175,11 @@ export interface InstallPackParams extends ManagerPackOperation {
   mode?: ManagerSourceMode
   skip_post_install?: boolean
 }
+
+/**
+ * Response from /customnode/installed
+ */
+export type InstalledPacksResponse = Record<
+  NonNullable<components['schemas']['Node']['name']>,
+  ManagerPackInstalled
+>

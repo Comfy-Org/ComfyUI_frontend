@@ -9,8 +9,8 @@ import {
 } from '@/services/comfyManagerService'
 import {
   InstallPackParams,
-  ManagerNode,
-  ManagerPackOperation,
+  InstalledPacksResponse,
+  ManagerPackInfo,
   ManagerQueueStatus
 } from '@/types/comfyManagerTypes'
 
@@ -28,17 +28,8 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
   const managerService = useComfyManagerService()
 
   const appNeedsRestart = ref(false)
-  const installedPacks = shallowRef<ManagerNode[]>([])
+  const installedPacks = shallowRef<InstalledPacksResponse>({})
   const installedPacksChanged = ref(false)
-  const installedPacksByName = computed(() =>
-    installedPacks.value.reduce(
-      (acc, node) => {
-        acc[node.name] = node
-        return acc
-      },
-      {} as Record<string, ManagerNode>
-    )
-  )
 
   const clientQueueItems = ref<ClientQueueItem[]>([])
   const clientQueueLength = computed(() => clientQueueItems.value.length)
@@ -115,7 +106,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     async (changed) => {
       if (changed) {
         const packs = await managerService.listInstalledPacks()
-        if (packs) installedPacks.value = packs.nodes
+        if (packs) installedPacks.value = packs
       }
     },
     { immediate: true }
@@ -127,12 +118,6 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
   const setNeedsRestart = (value: boolean) => {
     appNeedsRestart.value = value
   }
-
-  /**
-   * Check if pack is installed
-   */
-  const isPackInstalled = (packName: string): boolean =>
-    !!installedPacksByName.value[packName]?.installed
 
   /**
    * Install pack
@@ -150,8 +135,8 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
   /**
    * Update pack
    */
-  const updatePack = useCachedRequest<ManagerPackOperation, void>(
-    async (params: ManagerPackOperation, signal?: AbortSignal) => {
+  const updatePack = useCachedRequest<ManagerPackInfo, void>(
+    async (params: ManagerPackInfo, signal?: AbortSignal) => {
       clientQueueItems.value.push({
         job: () => managerService.updatePack(params, signal),
         restartAfter: true
@@ -176,10 +161,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
   /**
    * Uninstall pack
    */
-  const uninstallPack = (
-    params: ManagerPackOperation,
-    signal?: AbortSignal
-  ) => {
+  const uninstallPack = (params: ManagerPackInfo, signal?: AbortSignal) => {
     clientQueueItems.value.push({
       job: () => managerService.uninstallPack(params, signal),
       restartAfter: true
@@ -189,17 +171,30 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
   /**
    * Disable pack
    */
-  const disablePack = (params: ManagerPackOperation, signal?: AbortSignal) => {
+  const disablePack = (params: ManagerPackInfo, signal?: AbortSignal) => {
     clientQueueItems.value.push({
       job: () => managerService.disablePack(params, signal),
       restartAfter: true
     })
   }
 
+  /**
+   * Check if pack is installed
+   */
+  const isPackInstalled = (packName: string): boolean =>
+    !!installedPacks.value[packName]
+
+  /**
+   * Check if pack is enabled
+   */
+  const isPackEnabled = (packName: string): boolean =>
+    !!installedPacks.value[packName]?.enabled
+
   return {
     // Installed packs state
     installedPacks,
     isPackInstalled,
+    isPackEnabled,
 
     // Manager state
     appNeedsRestart,

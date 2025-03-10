@@ -4,8 +4,8 @@ import { ref } from 'vue'
 import { api } from '@/scripts/api'
 import type {
   InstallPackParams,
-  InstalledNodesResponse,
-  ManagerPackOperation,
+  InstalledPacksResponse,
+  ManagerPackInfo,
   ManagerQueueStatus
 } from '@/types/comfyManagerTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'
@@ -158,7 +158,7 @@ export const useComfyManagerService = () => {
    * Uninstall a pack
    */
   const uninstallPack = async (
-    params: ManagerPackOperation,
+    params: ManagerPackInfo,
     signal?: AbortSignal
   ) => {
     const errorContext = `Uninstalling pack ${params.id}`
@@ -178,7 +178,7 @@ export const useComfyManagerService = () => {
   const listInstalledPacks = async (signal?: AbortSignal) => {
     const errorContext = 'Fetching installed packs'
 
-    return executeApiRequest<InstalledNodesResponse>(
+    return executeApiRequest<InstalledPacksResponse>(
       () => managerApiClient.get(ManagerRoute.LIST_INSTALLED, { signal }),
       { errorContext }
     )
@@ -188,7 +188,7 @@ export const useComfyManagerService = () => {
    * Disable a pack
    */
   const disablePack = async (
-    params: ManagerPackOperation,
+    params: ManagerPackInfo,
     signal?: AbortSignal
   ): Promise<OperationResult> => {
     const errorContext = `Disabling pack ${params.id}`
@@ -207,7 +207,7 @@ export const useComfyManagerService = () => {
    * Update a pack to latest or specific version if provided
    */
   const updatePack = async (
-    params: ManagerPackOperation,
+    params: ManagerPackInfo,
     signal?: AbortSignal
   ): Promise<OperationResult> => {
     const errorContext = `Updating pack ${params.id}`
