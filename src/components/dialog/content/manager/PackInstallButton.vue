@@ -60,7 +60,8 @@ const createPayload = (installItem: PackWithSelectedVersion) => {
     repository: installItem.nodePack.repository,
     channel: ManagerChannel.DEFAULT,
     mode: ManagerSourceMode.CACHE,
-    selected_version: selectedVersion
+    selected_version: selectedVersion,
+    version: selectedVersion // Unused, but can't be null
   }
 }
 
