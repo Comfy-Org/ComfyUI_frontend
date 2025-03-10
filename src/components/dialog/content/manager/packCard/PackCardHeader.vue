@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col items-center mb-6">
+  <div v-if="nodePack" class="flex flex-col items-center mb-6">
     <slot name="thumbnail">
       <PackIcon :node-pack="nodePack" width="24" height="24" />
     </slot>
@@ -24,9 +24,16 @@
       </slot>
     </div>
   </div>
+  <div v-else class="flex flex-col items-center mb-6">
+    <NoResultsPlaceholder
+      :message="$t('manager.status.unknown')"
+      :title="$t('manager.tryAgainLater')"
+    />
+  </div>
 </template>
 
 <script setup lang="ts">
+import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import PackInstallButton from '@/components/dialog/content/manager/PackInstallButton.vue'
 import PackIcon from '@/components/dialog/content/manager/packIcon/PackIcon.vue'
 import { components } from '@/types/comfyRegistryTypes'
