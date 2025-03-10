@@ -41,19 +41,22 @@ const updateWidgets = () => {
 
     if (!widgetState) continue
 
-    widgetState.visible =
+    const visible =
       lgCanvas.isNodeVisible(node) &&
       !(widget.options.hideOnZoom && lowQuality) &&
       widget.isVisible()
 
-    widgetState.pos = [node.pos[0] + MARGIN, node.pos[1] + MARGIN + widget.y]
-    widgetState.size = [
-      (widget.width ?? node.width) - MARGIN * 2,
-      (widget.computedHeight ?? 50) - MARGIN * 2
-    ]
-    // TODO: optimize this logic as it's O(n), where n is the number of nodes
-    widgetState.zIndex = lgCanvas.graph.nodes.indexOf(node)
-    widgetState.readonly = lgCanvas.read_only
+    widgetState.visible = visible
+    if (visible) {
+      widgetState.pos = [node.pos[0] + MARGIN, node.pos[1] + MARGIN + widget.y]
+      widgetState.size = [
+        (widget.width ?? node.width) - MARGIN * 2,
+        (widget.computedHeight ?? 50) - MARGIN * 2
+      ]
+      // TODO: optimize this logic as it's O(n), where n is the number of nodes
+      widgetState.zIndex = lgCanvas.graph.nodes.indexOf(node)
+      widgetState.readonly = lgCanvas.read_only
+    }
   }
 }
 
