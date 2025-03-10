@@ -11,13 +11,11 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { generateUUID } from '@/utils/formatUtil'
 
-export interface BaseDOMWidget<
-  V extends object | string,
-  W extends BaseDOMWidget<V, W> = any
-> extends ICustomWidget {
+export interface BaseDOMWidget<V extends object | string>
+  extends ICustomWidget {
   // ICustomWidget properties
   type: 'custom'
-  options: DOMWidgetOptions<V, W>
+  options: DOMWidgetOptions<V>
   value: V
   callback?: (value: V) => void
 
@@ -34,7 +32,7 @@ export interface BaseDOMWidget<
  * A DOM widget that wraps a custom HTML element as a litegraph widget.
  */
 export interface DOMWidget<T extends HTMLElement, V extends object | string>
-  extends BaseDOMWidget<V, DOMWidget<T, V>> {
+  extends BaseDOMWidget<V> {
   element: T
   /**
    * @deprecated Legacy property used by some extensions for customtext
@@ -48,23 +46,21 @@ export interface DOMWidget<T extends HTMLElement, V extends object | string>
  * A DOM widget that wraps a Vue component as a litegraph widget.
  */
 export interface ComponentWidget<V extends object | string>
-  extends BaseDOMWidget<V, ComponentWidget<V>> {
+  extends BaseDOMWidget<V> {
   component: Component
 }
 
-export interface DOMWidgetOptions<
-  V extends object | string,
-  W extends BaseDOMWidget<V, W>
-> extends IWidgetOptions {
+export interface DOMWidgetOptions<V extends object | string>
+  extends IWidgetOptions {
   hideOnZoom?: boolean
   selectOn?: string[]
-  onHide?: (widget: W) => void
+  onHide?: (widget: BaseDOMWidget<V>) => void
   getValue?: () => V
   setValue?: (value: V) => void
   getMinHeight?: () => number
   getMaxHeight?: () => number
   getHeight?: () => string | number
-  onDraw?: (widget: W) => void
+  onDraw?: (widget: BaseDOMWidget<V>) => void
   /**
    * @deprecated Use `afterResize` instead. This callback is a legacy API
    * that fires before resize happens, but it is no longer supported. Now it
@@ -72,8 +68,8 @@ export interface DOMWidgetOptions<
    * The resize logic has been upstreamed to litegraph in
    * https://github.com/Comfy-Org/ComfyUI_frontend/pull/2557
    */
-  beforeResize?: (this: W, node: LGraphNode) => void
-  afterResize?: (this: W, node: LGraphNode) => void
+  beforeResize?: (this: BaseDOMWidget<V>, node: LGraphNode) => void
+  afterResize?: (this: BaseDOMWidget<V>, node: LGraphNode) => void
 }
 
 export const isDOMWidget = <T extends HTMLElement, V extends object | string>(
@@ -84,13 +80,12 @@ export const isComponentWidget = <V extends object | string>(
   widget: IWidget
 ): widget is ComponentWidget<V> => 'component' in widget && !!widget.component
 
-export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
-  implements DOMWidget<T, V>
+abstract class BaseDOMWidgetImpl<V extends object | string>
+  implements BaseDOMWidget<V>
 {
   readonly type: 'custom'
   readonly name: string
-  readonly element: T
-  readonly options: DOMWidgetOptions<V, DOMWidget<T, V>>
+  readonly options: DOMWidgetOptions<V>
   computedHeight?: number
   y: number = 0
   callback?: (value: V) => void
@@ -103,13 +98,11 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
     node: LGraphNode
     name: string
     type: string
-    element: T
-    options: DOMWidgetOptions<V, DOMWidget<T, V>>
+    options: DOMWidgetOptions<V>
   }) {
     // @ts-expect-error custom widget type
     this.type = obj.type
     this.name = obj.name
-    this.element = obj.element
     this.options = obj.options
 
     this.id = obj.id
@@ -123,6 +116,42 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
   set value(v: V) {
     this.options.setValue?.(v)
     this.callback?.(this.value)
+  }
+
+  isVisible(): boolean {
+    return (
+      !_.isNil(this.computedHeight) &&
+      this.computedHeight > 0 &&
+      !['converted-widget', 'hidden'].includes(this.type) &&
+      !this.node.collapsed
+    )
+  }
+
+  draw(): void {
+    this.options.onDraw?.(this)
+  }
+
+  onRemove(): void {
+    useDomWidgetStore().unregisterWidget(this.id)
+  }
+}
+
+export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
+  extends BaseDOMWidgetImpl<V>
+  implements DOMWidget<T, V>
+{
+  readonly element: T
+
+  constructor(obj: {
+    id: string
+    node: LGraphNode
+    name: string
+    type: string
+    element: T
+    options: DOMWidgetOptions<V>
+  }) {
+    super(obj)
+    this.element = obj.element
   }
 
   /** Extract DOM widget size info */
@@ -167,22 +196,36 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
       minWidth: 0
     }
   }
+}
 
-  isVisible(): boolean {
-    return (
-      !_.isNil(this.computedHeight) &&
-      this.computedHeight > 0 &&
-      !['converted-widget', 'hidden'].includes(this.type) &&
-      !this.node.collapsed
-    )
+export class ComponentWidgetImpl<V extends object | string>
+  extends BaseDOMWidgetImpl<V>
+  implements ComponentWidget<V>
+{
+  readonly component: Component
+
+  constructor(obj: {
+    id: string
+    node: LGraphNode
+    name: string
+    component: Component
+    options: DOMWidgetOptions<V>
+  }) {
+    super({
+      ...obj,
+      type: 'custom'
+    })
+    this.component = obj.component
   }
 
-  draw(): void {
-    this.options.onDraw?.(this)
-  }
-
-  onRemove(): void {
-    useDomWidgetStore().unregisterWidget(this.id)
+  computeLayoutSize() {
+    const minHeight = this.options.getMinHeight?.() ?? 50
+    const maxHeight = this.options.getMaxHeight?.()
+    return {
+      minHeight,
+      maxHeight,
+      minWidth: 0
+    }
   }
 }
 
@@ -194,7 +237,7 @@ LGraphNode.prototype.addDOMWidget = function <
   name: string,
   type: string,
   element: T,
-  options: DOMWidgetOptions<V, DOMWidget<T, V>> = {}
+  options: DOMWidgetOptions<V> = {}
 ): DOMWidget<T, V> {
   // Note: Before `LGraphNode.configure` is called, `this.id` is always `-1`.
   const widget = this.addCustomWidget(
