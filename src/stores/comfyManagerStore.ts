@@ -92,14 +92,18 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
   /**
    * Check if pack is installed
    */
-  const isPackInstalled = (packName: string): boolean =>
-    !!installedPacks.value[packName]
+  const isPackInstalled = (packName: string): boolean => {
+    if (!packName) return false
+    return !!installedPacks.value[packName]
+  }
 
   /**
    * Check if pack is enabled
    */
-  const isPackEnabled = (packName: string): boolean =>
-    !!installedPacks.value[packName]?.enabled
+  const isPackEnabled = (packName: string): boolean => {
+    if (!packName) return false
+    return !!installedPacks.value[packName]?.enabled
+  }
 
   return {
     // Manager state

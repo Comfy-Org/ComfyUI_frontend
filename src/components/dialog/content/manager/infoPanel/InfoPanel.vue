@@ -2,10 +2,10 @@
   <div class="flex flex-col h-full z-40 hidden-scrollbar w-80">
     <div class="p-6 flex-1 overflow-hidden text-sm">
       <PackCardHeader
+        ref="packCardHeaderRef"
         :node-pack="nodePack"
         :install-button-full-width="false"
         :version="selectedVersion"
-        ref="packCardHeaderRef"
       />
       <div class="mb-6">
         <MetadataRow
@@ -24,7 +24,7 @@
         </MetadataRow>
         <MetadataRow :label="t('manager.version')">
           <PackVersionBadge
-            :nodePack="nodePack"
+            :node-pack="nodePack"
             :version="selectedVersion"
             @update:version="updateSelectedVersion"
           />
@@ -62,10 +62,10 @@ const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']
 }>()
 
-const packCardHeaderRef = ref(null)
 const selectedVersion = ref<string>(
   nodePack.latest_version?.version || SelectedVersion.LATEST
 )
+const packCardHeaderRef = ref(null)
 
 const updateSelectedVersion = (version: string) => {
   selectedVersion.value = version
@@ -78,6 +78,7 @@ const infoItems = computed<InfoItem[]>(() => [
   {
     key: 'publisher',
     label: `${t('manager.createdBy')}`,
+    // TODO: handle the comfy registry publisher data structure properly
     value: nodePack.publisher?.name
   },
   {

@@ -1,4 +1,4 @@
-import { useTimeoutPoll, whenever } from '@vueuse/core'
+import { useTimeoutPoll, watchDebounced, whenever } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 
 import { t } from '@/i18n'
@@ -28,10 +28,20 @@ export const useManagerQueue = () => {
     in_progress_count: 0,
     is_processing: false
   })
-  const isServerIdle = computed(() => !serverQueueStatus.value.is_processing)
+  const isServerIdle = computed(
+    () =>
+      !serverQueueStatus.value.is_processing &&
+      serverQueueStatus.value.in_progress_count === 0
+  )
 
-  const allJobsDone = computed(
-    () => isServerIdle.value && clientQueueLength.value === 0
+  const allJobsDone = ref(false)
+  watchDebounced(
+    [isServerIdle, clientQueueLength],
+    () => {
+      const jobsStatus = isServerIdle.value && clientQueueLength.value === 0
+      if (jobsStatus !== allJobsDone.value) allJobsDone.value = jobsStatus
+    },
+    { debounce: QUEUE_POLL_INTERVAL_MS + 64 }
   )
   const nextJobReady = computed(
     () => isServerIdle.value && clientQueueLength.value > 0
@@ -50,22 +60,32 @@ export const useManagerQueue = () => {
 
   const statusMessage = computed(() => {
     if (nextJobReady.value) return t('manager.queueStatus.nextJob')
-    if (allJobsDone.value && serverQueueStatus.value.done_count)
-      return t('manager.queueStatus.allJobsDone')
-    if (serverQueueStatus.value.in_progress_count > 0)
+    if (allJobsDone.value) return t('manager.queueStatus.allJobsDone')
+    if (
+      serverQueueStatus.value.is_processing &&
+      serverQueueStatus.value.in_progress_count < 1
+    ) {
+      const count = serverQueueStatus.value.in_progress_count
+      const total =
+        Math.min(serverQueueStatus.value.total_count, count) +
+        clientQueueLength.value
       return t('manager.queueStatus.waiting', {
-        count: serverQueueStatus.value.in_progress_count,
-        total: serverQueueStatus.value.total_count + clientQueueLength.value
+        count,
+        total
       })
-    return t('manager.queueStatus.error')
+    }
+    return t('manager.queueStatus.processingJob')
   })
 
   const startNextJob = async () => {
+    serverQueueStatus.value.is_processing = true
     const nextJob = clientQueueItems.value.shift()
     if (nextJob) {
       const { job, restartAfter = false } = nextJob
       await job()
       if (restartAfter) appNeedsRestart.value = true
+    } else {
+      serverQueueStatus.value.is_processing = false
     }
   }
 
@@ -75,7 +95,8 @@ export const useManagerQueue = () => {
   }
 
   const onServerIdleChange = async (serverIdle: boolean) => {
-    const shouldPausePolling = isPollingActive.value && allJobsDone.value
+    const shouldPausePolling =
+      isPollingActive.value && isServerIdle.value && !clientQueueLength.value
     const shouldResumePolling = !isPollingActive.value && !serverIdle
 
     if (shouldPausePolling) pausePolling()

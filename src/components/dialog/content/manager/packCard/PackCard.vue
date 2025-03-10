@@ -30,14 +30,30 @@
             <i class="pi pi-download mr-2"></i>
             {{ formatNumber(nodePack.downloads) }}
           </div>
-          <PackInstallButton
-            :nodePacks="[
-              {
-                nodePack: nodePack,
-                selectedVersion: nodePack.latest_version?.version ?? 'latest'
-              }
-            ]"
-          />
+
+          <!-- Installed pack controls -->
+          <template v-if="isPackInstalled">
+            <PackUpgradeButton
+              :nodePack="nodePack"
+              :selected-version="selectedVersion"
+            />
+            <PackEnableToggle :nodePack="nodePack" />
+          </template>
+
+          <!-- Uninstalled pack controls -->
+          <template v-else>
+            <PackInstallButton
+              :nodePacks="[
+                {
+                  nodePack: nodePack,
+                  selectedVersion:
+                    selectedVersion ||
+                    nodePack.latest_version?.version ||
+                    'latest'
+                }
+              ]"
+            />
+          </template>
         </div>
       </div>
     </template>
@@ -73,7 +89,12 @@
           <span v-if="nodePack.publisher?.name">
             {{ nodePack.publisher.name }}
           </span>
-          <span v-if="nodePack.latest_version">
+          <PackVersionBadge
+            v-if="isPackInstalled"
+            :nodePack="nodePack"
+            v-model:version="selectedVersion"
+          />
+          <span v-else-if="nodePack.latest_version">
             {{ nodePack.latest_version.version }}
           </span>
         </div>
@@ -95,15 +116,27 @@
 
 <script setup lang="ts">
 import Card from 'primevue/card'
+import { computed, ref } from 'vue'
 
 import ContentDivider from '@/components/common/ContentDivider.vue'
+import PackEnableToggle from '@/components/dialog/content/manager/PackEnableToggle.vue'
 import PackInstallButton from '@/components/dialog/content/manager/PackInstallButton.vue'
+import PackUpgradeButton from '@/components/dialog/content/manager/PackUpgradeButton.vue'
+import PackVersionBadge from '@/components/dialog/content/manager/PackVersionBadge.vue'
 import PackIcon from '@/components/dialog/content/manager/packIcon/PackIcon.vue'
+import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import type { components } from '@/types/comfyRegistryTypes'
 import { formatNumber } from '@/utils/formatUtil'
 
-defineProps<{
+const { nodePack, isSelected = false } = defineProps<{
   nodePack: components['schemas']['Node']
   isSelected?: boolean
 }>()
+
+const selectedVersion = ref<string | undefined>(undefined)
+const managerStore = useComfyManagerStore()
+
+const isPackInstalled = computed(() =>
+  managerStore.isPackInstalled(nodePack?.id)
+)
 </script>
