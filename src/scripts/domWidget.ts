@@ -1,6 +1,7 @@
 import { LGraphNode } from '@comfyorg/litegraph'
 import type {
   ICustomWidget,
+  IWidget,
   IWidgetOptions
 } from '@comfyorg/litegraph/dist/types/widgets'
 import _ from 'lodash'
@@ -10,7 +11,7 @@ import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { generateUUID } from '@/utils/formatUtil'
 
 export interface DOMWidget<T extends HTMLElement, V extends object | string>
-  extends ICustomWidget<T> {
+  extends ICustomWidget {
   // ICustomWidget properties
   type: 'custom'
   element: T
@@ -55,6 +56,10 @@ export interface DOMWidgetOptions<
   beforeResize?: (this: DOMWidget<T, V>, node: LGraphNode) => void
   afterResize?: (this: DOMWidget<T, V>, node: LGraphNode) => void
 }
+
+export const isDOMWidget = <T extends HTMLElement, V extends object | string>(
+  widget: IWidget
+): widget is DOMWidget<T, V> => 'element' in widget && !!widget.element
 
 export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
   implements DOMWidget<T, V>
