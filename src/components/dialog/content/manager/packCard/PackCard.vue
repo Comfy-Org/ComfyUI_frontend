@@ -30,8 +30,6 @@
             <i class="pi pi-download mr-2"></i>
             {{ formatNumber(nodePack.downloads) }}
           </div>
-
-          <!-- Installed pack controls -->
           <template v-if="isPackInstalled">
             <PackUpgradeButton
               :nodePack="nodePack"
@@ -39,8 +37,6 @@
             />
             <PackEnableToggle :nodePack="nodePack" />
           </template>
-
-          <!-- Uninstalled pack controls -->
           <template v-else>
             <PackInstallButton
               :nodePacks="[
