@@ -5,6 +5,7 @@ import type {
   IWidgetOptions
 } from '@comfyorg/litegraph/dist/types/widgets'
 import _ from 'lodash'
+import type { Component } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
@@ -12,7 +13,7 @@ import { generateUUID } from '@/utils/formatUtil'
 
 export interface BaseDOMWidget<
   V extends object | string,
-  W extends BaseDOMWidget<V, W>
+  W extends BaseDOMWidget<V, W> = any
 > extends ICustomWidget {
   // ICustomWidget properties
   type: 'custom'
@@ -43,6 +44,14 @@ export interface DOMWidget<T extends HTMLElement, V extends object | string>
   inputEl?: T
 }
 
+/**
+ * A DOM widget that wraps a Vue component as a litegraph widget.
+ */
+export interface ComponentWidget<V extends object | string>
+  extends BaseDOMWidget<V, ComponentWidget<V>> {
+  component: Component
+}
+
 export interface DOMWidgetOptions<
   V extends object | string,
   W extends BaseDOMWidget<V, W>
@@ -70,6 +79,10 @@ export interface DOMWidgetOptions<
 export const isDOMWidget = <T extends HTMLElement, V extends object | string>(
   widget: IWidget
 ): widget is DOMWidget<T, V> => 'element' in widget && !!widget.element
+
+export const isComponentWidget = <V extends object | string>(
+  widget: IWidget
+): widget is ComponentWidget<V> => 'component' in widget && !!widget.component
 
 export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
   implements DOMWidget<T, V>

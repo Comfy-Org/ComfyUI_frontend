@@ -16,7 +16,7 @@ import { computed, watch } from 'vue'
 
 import DomWidget from '@/components/graph/widgets/DomWidget.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import { DOMWidget } from '@/scripts/domWidget'
+import { BaseDOMWidget } from '@/scripts/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useCanvasStore } from '@/stores/graphStore'
 
@@ -24,7 +24,7 @@ const domWidgetStore = useDomWidgetStore()
 const widgets = computed(() =>
   Array.from(
     domWidgetStore.widgetInstances.values() as Iterable<
-      DOMWidget<HTMLElement, object | string>
+      BaseDOMWidget<string | object>
     >
   )
 )
