@@ -21,7 +21,7 @@ import { components } from '@/types/comfyRegistryTypes'
 
 const { t } = useI18n()
 
-const props = defineProps<{
+const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']
 }>()
 
@@ -67,7 +67,7 @@ const parseLicenseObject = (
 
   // If it's a string and a license file, create a URL
   if (typeof licenseFile === 'string' && isLicenseFile(licenseFile)) {
-    const url = createLicenseUrl(licenseFile, props.nodePack.repository)
+    const url = createLicenseUrl(licenseFile, nodePack.repository)
     return {
       text: url,
       isUrl: !!url && isValidUrl(url)
@@ -96,7 +96,7 @@ const formatLicense = (license: string): { text: string; isUrl: boolean } => {
     // Not JSON, handle as plain string
     // If it's a license file, create a URL
     if (isLicenseFile(license)) {
-      const url = createLicenseUrl(license, props.nodePack.repository)
+      const url = createLicenseUrl(license, nodePack.repository)
       return {
         text: url,
         isUrl: !!url && isValidUrl(url)
@@ -115,20 +115,20 @@ const descriptionSections = computed<TextSection[]>(() => {
   const sections: TextSection[] = [
     {
       title: t('g.description'),
-      text: props.nodePack.description || t('manager.noDescription')
+      text: nodePack.description || t('manager.noDescription')
     }
   ]
 
-  if (props.nodePack.repository) {
+  if (nodePack.repository) {
     sections.push({
       title: t('manager.repository'),
-      text: props.nodePack.repository,
-      isUrl: isValidUrl(props.nodePack.repository)
+      text: nodePack.repository,
+      isUrl: isValidUrl(nodePack.repository)
     })
   }
 
-  if (props.nodePack.license) {
-    const { text, isUrl } = formatLicense(props.nodePack.license)
+  if (nodePack.license) {
+    const { text, isUrl } = formatLicense(nodePack.license)
     if (text) {
       sections.push({
         title: t('manager.license'),
