@@ -1,13 +1,10 @@
-import { useTimeoutPoll } from '@vueuse/core'
+import { useTimeoutPoll, whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, watch } from 'vue'
 
 import { useCachedRequest } from '@/composables/useCachedRequest'
 import { t } from '@/i18n'
-import {
-  type OperationResult,
-  useComfyManagerService
-} from '@/services/comfyManagerService'
+import { useComfyManagerService } from '@/services/comfyManagerService'
 import {
   InstallPackParams,
   InstalledPacksResponse,
@@ -15,10 +12,10 @@ import {
   ManagerQueueStatus
 } from '@/types/comfyManagerTypes'
 
-const QUEUE_POLL_INTERVAL_MS = 1000
+const QUEUE_POLL_INTERVAL_MS = 1024
 
-type ClientQueueItem = {
-  job: () => Promise<OperationResult | void>
+type ClientQueueItem<T> = {
+  job: () => Promise<T>
   restartAfter?: boolean
 }
 
@@ -29,12 +26,11 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
   const managerService = useComfyManagerService()
 
   const installedPacks = shallowRef<InstalledPacksResponse>({})
-  const installedPacksChanged = ref(false)
+  const backendPacksChanged = ref(false)
   const appNeedsRestart = ref(false)
 
-  const clientQueueItems = ref<ClientQueueItem[]>([])
+  const clientQueueItems = ref<ClientQueueItem<unknown>[]>([])
   const clientQueueLength = computed(() => clientQueueItems.value.length)
-  const isClientQueueEmpty = computed(() => clientQueueLength.value === 0)
 
   const serverQueueStatus = ref<ManagerQueueStatus>({
     total_count: 0,
@@ -45,11 +41,22 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
   const isServerIdle = computed(() => !serverQueueStatus.value.is_processing)
 
   const allJobsDone = computed(
-    () => isServerIdle.value && isClientQueueEmpty.value
+    () => isServerIdle.value && clientQueueLength.value === 0
   )
   const nextJobReady = computed(
-    () => isServerIdle.value && !isClientQueueEmpty.value
+    () => isServerIdle.value && clientQueueLength.value > 0
   )
+
+  const getServerQueueStatus = async () => {
+    const status = await managerService.getQueueStatus()
+    if (status) serverQueueStatus.value = status
+  }
+
+  const {
+    isActive: isPollingActive,
+    pause: pausePolling,
+    resume: resumePolling
+  } = useTimeoutPoll(getServerQueueStatus, QUEUE_POLL_INTERVAL_MS)
 
   const statusMessage = computed(() => {
     if (nextJobReady.value) return t('manager.queueStatus.nextJob')
@@ -63,9 +70,9 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     return t('manager.queueStatus.error')
   })
 
-  const getServerQueueStatus = async () => {
-    const status = await managerService.getQueueStatus()
-    if (status) serverQueueStatus.value = status
+  const refreshInstalledPacks = async () => {
+    const packs = await managerService.listInstalledPacks()
+    if (packs) installedPacks.value = packs
   }
 
   const startNextJob = async () => {
@@ -77,11 +84,10 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     }
   }
 
-  const {
-    isActive: isPollingActive,
-    pause: pausePolling,
-    resume: resumePolling
-  } = useTimeoutPoll(getServerQueueStatus, QUEUE_POLL_INTERVAL_MS)
+  const startFirstJob = async () => {
+    await startNextJob()
+    if (!isPollingActive.value) resumePolling()
+  }
 
   const onServerIdleChange = async (serverIdle: boolean) => {
     const shouldPausePolling = isPollingActive.value && allJobsDone.value
@@ -92,35 +98,9 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     else if (nextJobReady.value) await startNextJob()
   }
 
-  // Handle polling and sequentially sending jobs to server
   watch(isServerIdle, onServerIdleChange)
-
-  // Handle first job
-  watch(isClientQueueEmpty, async (isEmpty) => {
-    if (!isEmpty) {
-      await startNextJob()
-      if (!isPollingActive.value) resumePolling()
-    }
-  })
-
-  // Handle refreshing installed packs info
-  watch(
-    installedPacksChanged,
-    async (changed) => {
-      if (changed) {
-        const packs = await managerService.listInstalledPacks()
-        if (packs) installedPacks.value = packs
-      }
-    },
-    { immediate: true }
-  )
-
-  /**
-   * Set the needs restart flag
-   */
-  const setNeedsRestart = (value: boolean) => {
-    appNeedsRestart.value = value
-  }
+  whenever(clientQueueLength, startFirstJob)
+  whenever(backendPacksChanged, refreshInstalledPacks, { immediate: true })
 
   /**
    * Install pack
@@ -193,18 +173,25 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
   const isPackEnabled = (packName: string): boolean =>
     !!installedPacks.value[packName]?.enabled
 
+  /**
+   * Set the needs restart flag, marking that the app needs to be restarted
+   */
+  const setNeedsRestart = (value: boolean) => {
+    appNeedsRestart.value = value
+  }
+
   return {
+    // Manager state
+    isLoading: managerService.isLoading,
+    error: managerService.error,
+    appNeedsRestart,
+    statusMessage,
+    allJobsDone,
+
     // Installed packs state
     installedPacks,
     isPackInstalled,
     isPackEnabled,
-
-    // Manager state
-    appNeedsRestart,
-    statusMessage,
-    allJobsDone,
-    isLoading: managerService.isLoading,
-    error: managerService.error,
 
     // Pack actions
     installPack,

@@ -32,11 +32,6 @@ const managerApiClient = axios.create({
   }
 })
 
-export type OperationResult = {
-  success?: boolean
-  requiresRestart?: boolean
-} | null
-
 interface ExecuteApiRequestOptions {
   errorContext: string
   routeSpecificErrors?: Record<number, string>
@@ -50,13 +45,11 @@ export const useComfyManagerService = () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  const handleApiError = (
+  const handleRequestError = (
     err: unknown,
     context: string,
     routeSpecificErrors?: Record<number, string>
   ): string => {
-    isLoading.value = false
-
     if (isAbortError(err)) return 'Request cancelled'
 
     if (!axios.isAxiosError(err)) {
@@ -105,7 +98,7 @@ export const useComfyManagerService = () => {
       }
       return response.data
     } catch (err) {
-      handleApiError(err, errorContext, routeSpecificErrors)
+      handleRequestError(err, errorContext, routeSpecificErrors)
       return null
     } finally {
       isLoading.value = false
@@ -115,7 +108,7 @@ export const useComfyManagerService = () => {
   const startQueue = async (signal?: AbortSignal) => {
     const errorContext = 'Starting ComfyUI-Manager queue'
 
-    return executeApiRequest<OperationResult>(
+    return executeApiRequest<null>(
       () => managerApiClient.get(ManagerRoute.START_QUEUE, { signal }),
       { errorContext }
     )
@@ -133,7 +126,7 @@ export const useComfyManagerService = () => {
   const resetQueue = async (signal?: AbortSignal) => {
     const errorContext = 'Resetting ComfyUI-Manager queue'
 
-    return executeApiRequest<OperationResult>(
+    return executeApiRequest<null>(
       () => managerApiClient.get(ManagerRoute.RESET_QUEUE, { signal }),
       { errorContext }
     )
@@ -148,7 +141,7 @@ export const useComfyManagerService = () => {
   ) => {
     const errorContext = `Installing pack ${params.id}`
 
-    return executeApiRequest<OperationResult>(
+    return executeApiRequest<null>(
       () => managerApiClient.post(ManagerRoute.INSTALL, params, { signal }),
       { errorContext, isQueueOperation: true }
     )
@@ -166,7 +159,7 @@ export const useComfyManagerService = () => {
       404: `Pack ${params.id} not found or not installed`
     }
 
-    return executeApiRequest<OperationResult>(
+    return executeApiRequest<null>(
       () => managerApiClient.post(ManagerRoute.UNINSTALL, params, { signal }),
       { errorContext, routeSpecificErrors, isQueueOperation: true }
     )
@@ -190,14 +183,14 @@ export const useComfyManagerService = () => {
   const disablePack = async (
     params: ManagerPackInfo,
     signal?: AbortSignal
-  ): Promise<OperationResult> => {
+  ): Promise<null> => {
     const errorContext = `Disabling pack ${params.id}`
     const routeSpecificErrors = {
       404: `Pack ${params.id} not found or not installed`,
       409: `Pack ${params.id} is already disabled`
     }
 
-    return executeApiRequest<OperationResult>(
+    return executeApiRequest<null>(
       () => managerApiClient.post(ManagerRoute.DISABLE, params, { signal }),
       { errorContext, routeSpecificErrors, isQueueOperation: true }
     )
@@ -209,14 +202,14 @@ export const useComfyManagerService = () => {
   const updatePack = async (
     params: ManagerPackInfo,
     signal?: AbortSignal
-  ): Promise<OperationResult> => {
+  ): Promise<null> => {
     const errorContext = `Updating pack ${params.id}`
     const routeSpecificErrors = {
       404: `Pack ${params.id} not found or not installed`,
       409: `Pack ${params.id} is already at the latest version`
     }
 
-    return executeApiRequest<OperationResult>(
+    return executeApiRequest<null>(
       () => managerApiClient.post(ManagerRoute.UPDATE, params, { signal }),
       { errorContext, routeSpecificErrors, isQueueOperation: true }
     )
@@ -228,7 +221,7 @@ export const useComfyManagerService = () => {
   const updateAllPacks = async (signal?: AbortSignal) => {
     const errorContext = 'Updating all packs'
 
-    return executeApiRequest<OperationResult>(
+    return executeApiRequest<null>(
       () => managerApiClient.get(ManagerRoute.UPDATE_ALL, { signal }),
       { errorContext, isQueueOperation: true }
     )
