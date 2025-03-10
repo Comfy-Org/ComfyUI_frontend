@@ -7,14 +7,18 @@
       'w-full': fullWidth,
       'w-min-content': !fullWidth
     }"
-    @click="handleInstall"
+    @click="installItems"
   >
     <span class="py-2.5 px-3">
-      <template v-if="!managerStore.isIdle">
-        {{ statusMessage }}
+      <template v-if="!managerStore.allJobsDone">
+        {{ managerStore.statusMessage }}
       </template>
       <template v-else>
-        {{ isMultiItem ? $t('manager.installSelected') : $t('g.install') }}
+        {{
+          packs.length > 1
+            ? $t('manager.installSelected')
+            : $t('manager.install')
+        }}
       </template>
     </span>
   </Button>
@@ -22,45 +26,50 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import { computed, onUnmounted } from 'vue'
+import { onUnmounted } from 'vue'
 
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import { ManagerChannel, ManagerSourceMode } from '@/types/comfyManagerTypes'
+import {
+  InstallPackParams,
+  ManagerChannel,
+  ManagerSourceMode,
+  SelectedVersion
+} from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
 
-type InstallItem = {
+type PackWithSelectedVersion = {
   nodePack: components['schemas']['Node']
-  version?: string
+  selectedVersion?: InstallPackParams['selected_version']
 }
 
-const { items, fullWidth = false } = defineProps<{
-  items: InstallItem[]
+const { packs, fullWidth = false } = defineProps<{
+  packs: PackWithSelectedVersion[]
   fullWidth?: boolean
 }>()
 
 const managerStore = useComfyManagerStore()
 
-const statusMessage = computed(() => managerStore.statusMessage)
-const isMultiItem = computed(() => items?.length > 1)
+const createPayload = (installItem: PackWithSelectedVersion) => {
+  const selectedVersion =
+    installItem.selectedVersion ??
+    installItem.nodePack.latest_version?.version ??
+    SelectedVersion.LATEST
 
-const comfyApiToManager = (nodePack: components['schemas']['Node']) => {
   return {
-    id: nodePack.id,
-    repository: nodePack.repository,
+    id: installItem.nodePack.id,
+    repository: installItem.nodePack.repository,
     channel: ManagerChannel.DEFAULT,
-    mode: ManagerSourceMode.CACHE
+    mode: ManagerSourceMode.CACHE,
+    selected_version: selectedVersion
   }
 }
 
-const installPack = (item: InstallItem) =>
-  managerStore.installPack.call({
-    ...comfyApiToManager(item.nodePack),
-    selected_version: item.version ?? item.nodePack.latest_version?.version,
-    version: item.version ?? item.nodePack.latest_version?.version
-  })
+const installPack = (item: PackWithSelectedVersion) =>
+  managerStore.installPack.call(createPayload(item))
 
-const handleInstall = async () => {
-  await Promise.all(items.map(installPack))
+const installItems = async () => {
+  if (!packs?.length) return
+  await Promise.all(packs.map(installPack))
 }
 
 onUnmounted(() => {
