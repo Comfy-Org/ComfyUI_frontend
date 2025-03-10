@@ -10,21 +10,17 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { generateUUID } from '@/utils/formatUtil'
 
-export interface DOMWidget<T extends HTMLElement, V extends object | string>
-  extends ICustomWidget {
+export interface BaseDOMWidget<
+  V extends object | string,
+  W extends BaseDOMWidget<V, W>
+> extends ICustomWidget {
   // ICustomWidget properties
   type: 'custom'
-  element: T
-  options: DOMWidgetOptions<T, V>
+  options: DOMWidgetOptions<V, W>
   value: V
-  /**
-   * @deprecated Legacy property used by some extensions for customtext
-   * (textarea) widgets. Use `element` instead as it provides the same
-   * functionality and works for all DOMWidget types.
-   */
-  inputEl?: T
   callback?: (value: V) => void
-  // DOMWidget properties
+
+  // BaseDOMWidget properties
   /** The unique ID of the widget. */
   id: string
   /** The node that the widget belongs to. */
@@ -33,19 +29,33 @@ export interface DOMWidget<T extends HTMLElement, V extends object | string>
   isVisible(): boolean
 }
 
+/**
+ * A DOM widget that wraps a custom HTML element as a litegraph widget.
+ */
+export interface DOMWidget<T extends HTMLElement, V extends object | string>
+  extends BaseDOMWidget<V, DOMWidget<T, V>> {
+  element: T
+  /**
+   * @deprecated Legacy property used by some extensions for customtext
+   * (textarea) widgets. Use {@link element} instead as it provides the same
+   * functionality and works for all DOMWidget types.
+   */
+  inputEl?: T
+}
+
 export interface DOMWidgetOptions<
-  T extends HTMLElement,
-  V extends object | string
+  V extends object | string,
+  W extends BaseDOMWidget<V, W>
 > extends IWidgetOptions {
   hideOnZoom?: boolean
   selectOn?: string[]
-  onHide?: (widget: DOMWidget<T, V>) => void
+  onHide?: (widget: W) => void
   getValue?: () => V
   setValue?: (value: V) => void
   getMinHeight?: () => number
   getMaxHeight?: () => number
   getHeight?: () => string | number
-  onDraw?: (widget: DOMWidget<T, V>) => void
+  onDraw?: (widget: W) => void
   /**
    * @deprecated Use `afterResize` instead. This callback is a legacy API
    * that fires before resize happens, but it is no longer supported. Now it
@@ -53,8 +63,8 @@ export interface DOMWidgetOptions<
    * The resize logic has been upstreamed to litegraph in
    * https://github.com/Comfy-Org/ComfyUI_frontend/pull/2557
    */
-  beforeResize?: (this: DOMWidget<T, V>, node: LGraphNode) => void
-  afterResize?: (this: DOMWidget<T, V>, node: LGraphNode) => void
+  beforeResize?: (this: W, node: LGraphNode) => void
+  afterResize?: (this: W, node: LGraphNode) => void
 }
 
 export const isDOMWidget = <T extends HTMLElement, V extends object | string>(
@@ -67,7 +77,7 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
   readonly type: 'custom'
   readonly name: string
   readonly element: T
-  readonly options: DOMWidgetOptions<T, V>
+  readonly options: DOMWidgetOptions<V, DOMWidget<T, V>>
   computedHeight?: number
   y: number = 0
   callback?: (value: V) => void
@@ -81,7 +91,7 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
     name: string
     type: string
     element: T
-    options: DOMWidgetOptions<T, V>
+    options: DOMWidgetOptions<V, DOMWidget<T, V>>
   }) {
     // @ts-expect-error custom widget type
     this.type = obj.type
@@ -171,7 +181,7 @@ LGraphNode.prototype.addDOMWidget = function <
   name: string,
   type: string,
   element: T,
-  options: DOMWidgetOptions<T, V> = {}
+  options: DOMWidgetOptions<V, DOMWidget<T, V>> = {}
 ): DOMWidget<T, V> {
   // Note: Before `LGraphNode.configure` is called, `this.id` is always `-1`.
   const widget = this.addCustomWidget(

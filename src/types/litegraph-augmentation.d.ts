@@ -134,7 +134,7 @@ declare module '@comfyorg/litegraph' {
       name: string,
       type: string,
       element: T,
-      options?: DOMWidgetOptions<T, V>
+      options?: DOMWidgetOptions<V, DOMWidget<T, V>>
     ): DOMWidget<T, V>
 
     animatedImages?: boolean
