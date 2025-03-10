@@ -139,7 +139,7 @@ export class ContextMenu<TValue = unknown> {
     })
 
     // insert before checking position
-    const ownerDocument = (options.event?.target as Node).ownerDocument
+    const ownerDocument = (options.event?.target as Node)?.ownerDocument
     const root_document = ownerDocument || document
 
     if (root_document.fullscreenElement)
