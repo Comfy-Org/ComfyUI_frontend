@@ -31,10 +31,10 @@
             {{ formatNumber(nodePack.downloads) }}
           </div>
           <PackInstallButton
-            :items="[
+            :packs="[
               {
                 nodePack: nodePack,
-                version: nodePack.latest_version?.version ?? 'latest'
+                selectedVersion: nodePack.latest_version?.version ?? 'latest'
               }
             ]"
           />

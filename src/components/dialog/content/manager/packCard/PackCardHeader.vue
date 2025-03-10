@@ -13,10 +13,10 @@
       <slot name="install-button">
         <PackInstallButton
           v-if="nodePack"
-          :items="[
+          :packs="[
             {
               nodePack: nodePack,
-              version: nodePack.latest_version?.version ?? 'latest'
+              selectedVersion: nodePack.latest_version?.version ?? 'latest'
             }
           ]"
           :full-width="installButtonFullWidth"

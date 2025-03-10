@@ -93,6 +93,7 @@
   },
   "manager": {
     "title": "Custom Nodes Manager",
+    "install": "Install",
     "downloads": "Downloads",
     "repository": "Repository",
     "license": "License",

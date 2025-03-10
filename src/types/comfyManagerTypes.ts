@@ -158,7 +158,7 @@ export interface InstallPackParams extends ManagerPackInfo {
   /**
    * @description The github link to the repository of the node to install. Required if `selected_version` is `nightly`.
    */
-  repository: string
+  repository?: string
   /**
    * @description List of PyPi dependencies associated with the node.
    * Used to determine whether the node should be installed based on

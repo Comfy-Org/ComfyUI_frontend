@@ -202,7 +202,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     // Manager state
     appNeedsRestart,
     statusMessage,
-    isIdle: allJobsDone,
+    allJobsDone,
     isLoading: managerService.isLoading,
     error: managerService.error,
 
