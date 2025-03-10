@@ -1,5 +1,5 @@
 <template>
-  <div class="hover:underline">
+  <div>
     <div v-if="!hasMarkdown" v-text="text" class="break-words"></div>
     <div v-else class="break-words">
       <template v-for="(segment, index) in parsedSegments" :key="index">

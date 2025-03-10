@@ -8,7 +8,7 @@
           :href="section.text"
           target="_blank"
           rel="noopener noreferrer"
-          class="flex items-center gap-2 hover:underline"
+          class="flex items-center gap-2"
         >
           <i
             v-if="isGitHubLink(section.text)"
