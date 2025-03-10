@@ -1540,6 +1540,7 @@ class ColorSelectTool {
   private applyWholeImage: boolean = false
   private maskBoundry: boolean = false
   private maskTolerance: number = 0
+  private selectOpacity: number = 255 // Add opacity property (default 100%)
 
   constructor(maskEditor: MaskEditorDialog) {
     this.maskEditor = maskEditor
@@ -1586,6 +1587,11 @@ class ColorSelectTool {
 
     this.messageBroker.subscribe('setMaskTolerance', (maskTolerance: number) =>
       this.setMaskTolerance(maskTolerance)
+    )
+
+    // Add new listener for opacity setting
+    this.messageBroker.subscribe('setSelectionOpacity', (opacity: number) =>
+      this.setSelectOpacity(opacity)
     )
   }
 
@@ -1805,7 +1811,7 @@ class ColorSelectTool {
           const x = pixelIndex % width
           const y = Math.floor(pixelIndex / width)
           if (this.isPixelInRange(this.getPixel(x, y), targetPixel)) {
-            this.setPixel(x, y, 255, maskColor)
+            this.setPixel(x, y, this.selectOpacity, maskColor) // Use selectOpacity instead of 255
           }
         }
         // Allow UI updates between chunks
@@ -1845,7 +1851,7 @@ class ColorSelectTool {
         }
 
         visited[visitedIndex] = 1
-        this.setPixel(x, y, 255, maskColor)
+        this.setPixel(x, y, this.selectOpacity, maskColor) // Use selectOpacity instead of 255
 
         // Inline direction checks for better performance
         if (
@@ -1940,6 +1946,18 @@ class ColorSelectTool {
 
   setMaskTolerance(maskTolerance: number): void {
     this.maskTolerance = maskTolerance
+  }
+
+  // Add method to set opacity
+  setSelectOpacity(opacity: number): void {
+    // Convert from percentage (0-100) to alpha value (0-255)
+    this.selectOpacity = Math.floor((opacity / 100) * 255)
+
+    // Update preview if applicable
+    if (this.lastPoint && this.livePreview) {
+      this.messageBroker.publish('undo')
+      this.fillColorSelection(this.lastPoint)
+    }
   }
 }
 
@@ -3038,6 +3056,18 @@ class UIManager {
       }
     )
 
+    // Add new slider for selection opacity
+    const selectionOpacitySliderObj = this.createSlider(
+      'Selection Opacity',
+      0,
+      100,
+      1,
+      100, // Default to 100%
+      (event, value) => {
+        this.messageBroker.publish('setSelectionOpacity', parseInt(value))
+      }
+    )
+
     const livePreviewToggle = this.createToggle(
       'Live Preview',
       (event, value) => {
@@ -3082,6 +3112,10 @@ class UIManager {
     color_select_settings_container.appendChild(color_select_settings_title)
     color_select_settings_container.appendChild(
       colorSelectToleranceSliderObj.container
+    )
+    // Add the new opacity slider to the UI
+    color_select_settings_container.appendChild(
+      selectionOpacitySliderObj.container
     )
     color_select_settings_container.appendChild(livePreviewToggle)
     color_select_settings_container.appendChild(wholeImageToggle)
@@ -4753,6 +4787,7 @@ class MessageBroker {
     this.createPushTopic('setZoomText')
     this.createPushTopic('resetZoom')
     this.createPushTopic('invert')
+    this.createPushTopic('setSelectionOpacity')
   }
 
   /**
