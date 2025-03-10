@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, watch } from 'vue'
 
 import { useCachedRequest } from '@/composables/useCachedRequest'
+import { t } from '@/i18n'
 import {
   type OperationResult,
   useComfyManagerService
@@ -22,14 +23,14 @@ type ClientQueueItem = {
 }
 
 /**
- * Store for managing custom ComfyUI nodes and packs
+ * Store for managing node pack operations and install state
  */
 export const useComfyManagerStore = defineStore('comfyManager', () => {
   const managerService = useComfyManagerService()
 
-  const appNeedsRestart = ref(false)
   const installedPacks = shallowRef<InstalledPacksResponse>({})
   const installedPacksChanged = ref(false)
+  const appNeedsRestart = ref(false)
 
   const clientQueueItems = ref<ClientQueueItem[]>([])
   const clientQueueLength = computed(() => clientQueueItems.value.length)
@@ -51,13 +52,15 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
   )
 
   const statusMessage = computed(() => {
-    if (nextJobReady.value) return 'Starting next job'
+    if (nextJobReady.value) return t('manager.queueStatus.nextJob')
     if (allJobsDone.value && serverQueueStatus.value.done_count)
-      return 'All jobs done'
-    if (serverQueueStatus.value.in_progress_count > 0) {
-      return `Processing item ${serverQueueStatus.value.in_progress_count} of ${serverQueueStatus.value.total_count + clientQueueLength.value}`
-    }
-    return 'Cannot connect to ComfyUI-Manager'
+      return t('manager.queueStatus.allJobsDone')
+    if (serverQueueStatus.value.in_progress_count > 0)
+      return t('manager.queueStatus.waiting', {
+        count: serverQueueStatus.value.in_progress_count,
+        total: serverQueueStatus.value.total_count + clientQueueLength.value
+      })
+    return t('manager.queueStatus.error')
   })
 
   const getServerQueueStatus = async () => {
