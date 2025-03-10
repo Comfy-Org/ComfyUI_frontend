@@ -7,11 +7,11 @@ import type {
   Point,
   Size,
 } from "../interfaces"
-import type { LGraph, LGraphState } from "../LGraph"
-import type { IGraphGroupFlags, LGraphGroup } from "../LGraphGroup"
-import type { LGraphNode, NodeId, NodeProperty } from "../LGraphNode"
+import type { LGraphConfig, LGraphState } from "../LGraph"
+import type { IGraphGroupFlags } from "../LGraphGroup"
+import type { NodeId, NodeProperty } from "../LGraphNode"
 import type { LiteGraph } from "../litegraph"
-import type { LinkId, LLink } from "../LLink"
+import type { LinkId, SerialisedLLinkArray } from "../LLink"
 import type { RerouteId } from "../Reroute"
 import type { TWidgetValue } from "../types/widgets"
 import type { RenderShape } from "./globalEnums"
@@ -31,7 +31,7 @@ export interface Serialisable<SerialisableObject> {
 export interface SerialisableGraph {
   /** Schema version.  @remarks Version bump should add to const union, which is used to narrow type during deserialise. */
   version: 0 | 1
-  config: LGraph["config"]
+  config: LGraphConfig
   state: LGraphState
   groups?: ISerialisedGroup[]
   nodes?: ISerialisedNode[]
@@ -76,19 +76,15 @@ export interface ISerialisedNode {
  * Original implementation from static litegraph.d.ts
  * Maintained for backwards compat
  */
-export type ISerialisedGraph<
-  TNode = ReturnType<LGraphNode["serialize"]>,
-  TLink = ReturnType<LLink["serialize"]>,
-  TGroup = ReturnType<LGraphGroup["serialize"]>,
-> = {
+export interface ISerialisedGraph {
   last_node_id: NodeId
   last_link_id: number
-  nodes: TNode[]
-  links: TLink[]
-  groups: TGroup[]
-  config: LGraph["config"]
+  nodes: ISerialisedNode[]
+  links: SerialisedLLinkArray[]
+  groups: ISerialisedGroup[]
+  config: LGraphConfig
   version: typeof LiteGraph.VERSION
-  extra?: Record<any, any>
+  extra?: Record<string, unknown>
 }
 
 /** Serialised LGraphGroup */

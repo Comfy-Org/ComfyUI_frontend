@@ -43,9 +43,9 @@ export interface Parent<TChild> {
  * May contain other {@link Positionable} objects.
  */
 export interface Positionable extends Parent<Positionable> {
-  id: NodeId | RerouteId | number
+  readonly id: NodeId | RerouteId | number
   /** Position in graph coordinates.  Default: 0,0 */
-  pos: Point
+  readonly pos: Point
   /** true if this object is part of the selection, otherwise false. */
   selected?: boolean
 
@@ -106,7 +106,7 @@ export interface IColorable {
  * Prevents the object being accidentally moved or resized by mouse interaction.
  */
 export interface IPinnable {
-  pinned: boolean
+  readonly pinned: boolean
   pin(value?: boolean): void
   unpin(): void
 }
@@ -115,8 +115,8 @@ export interface IPinnable {
  * Contains a list of links, reroutes, and nodes.
  */
 export interface LinkNetwork {
-  links: Map<LinkId, LLink>
-  reroutes: Map<RerouteId, Reroute>
+  readonly links: Map<LinkId, LLink>
+  readonly reroutes: Map<RerouteId, Reroute>
   getNodeById(id: NodeId): LGraphNode | null
 }
 
