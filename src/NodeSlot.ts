@@ -38,23 +38,31 @@ export function shallowCloneCommonProps(slot: CommonIoSlotProps): CommonIoSlotPr
 }
 
 export function inputAsSerialisable(slot: INodeInputSlot): ISerialisableNodeInput {
-  const widgetInputProps = slot.widget
+  const { link } = slot
+  const widgetOrPos = slot.widget
     ? { widget: { name: slot.widget.name } }
     : { pos: slot.pos }
 
   return {
     ...shallowCloneCommonProps(slot),
-    ...widgetInputProps,
-    link: slot.link,
+    ...widgetOrPos,
+    link,
   }
 }
 
-export function outputAsSerialisable(slot: INodeOutputSlot): ISerialisableNodeOutput {
+export function outputAsSerialisable(slot: INodeOutputSlot & { widget?: IWidget }): ISerialisableNodeOutput {
+  const { pos, slot_index, links, widget } = slot
+  // Output widgets do not exist in Litegraph; this is a temporary downstream workaround.
+  const outputWidget = widget
+    ? { widget: { name: widget.name } }
+    : null
+
   return {
     ...shallowCloneCommonProps(slot),
-    pos: slot.pos,
-    slot_index: slot.slot_index,
-    links: slot.links,
+    ...outputWidget,
+    pos,
+    slot_index,
+    links,
   }
 }
 
