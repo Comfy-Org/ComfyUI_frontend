@@ -1,46 +1,28 @@
 <template>
-  <Button
-    outlined
-    class="m-0 p-0 rounded-lg border-neutral-700"
+  <PackActionButton
+    :node-packs="nodePacks"
+    :full-width="fullWidth"
+    :label="
+      nodePacks.length > 1
+        ? $t('manager.installSelected')
+        : $t('manager.install')
+    "
     severity="secondary"
-    :class="{
-      'w-full': fullWidth,
-      'w-min-content': !fullWidth
-    }"
-    @click="installItems"
-  >
-    <span class="py-2.5 px-3">
-      <template v-if="!managerStore.allJobsDone">
-        {{ managerStore.statusMessage }}
-      </template>
-      <template v-else>
-        {{
-          nodePacks.length > 1
-            ? $t('manager.installSelected')
-            : $t('manager.install')
-        }}
-      </template>
-    </span>
-  </Button>
+    @action="installItems"
+  />
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import { onUnmounted } from 'vue'
 
+import PackActionButton from '@/components/dialog/content/manager/PackActionButton.vue'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import {
-  InstallPackParams,
   ManagerChannel,
   ManagerSourceMode,
+  PackWithSelectedVersion,
   SelectedVersion
 } from '@/types/comfyManagerTypes'
-import { components } from '@/types/comfyRegistryTypes'
-
-type PackWithSelectedVersion = {
-  nodePack: components['schemas']['Node']
-  selectedVersion?: InstallPackParams['selected_version']
-}
 
 const { nodePacks, fullWidth = false } = defineProps<{
   nodePacks: PackWithSelectedVersion[]
@@ -61,7 +43,7 @@ const createPayload = (installItem: PackWithSelectedVersion) => {
     channel: ManagerChannel.DEFAULT,
     mode: ManagerSourceMode.CACHE,
     selected_version: selectedVersion,
-    version: selectedVersion // Unused, but can't be null
+    version: selectedVersion
   }
 }
 

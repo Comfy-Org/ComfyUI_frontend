@@ -14,6 +14,11 @@ export interface SearchOption<T> {
   label: string
 }
 
+export type PackWithSelectedVersion = {
+  nodePack: components['schemas']['Node']
+  selectedVersion?: InstallPackParams['selected_version']
+}
+
 type PackName = components['schemas']['Node']['name']
 type AuxId = ComfyWorkflowJSON['nodes'][0]['properties']['aux_id']
 type CnrId = ComfyWorkflowJSON['nodes'][0]['properties']['cnr_id']

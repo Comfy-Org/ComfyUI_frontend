@@ -22,7 +22,10 @@ enum ManagerRoute {
   UPDATE_ALL = 'manager/queue/update_all',
   UNINSTALL = 'manager/queue/uninstall',
   DISABLE = 'manager/queue/disable',
-  LIST_INSTALLED = 'customnode/installed'
+  LIST_INSTALLED = 'customnode/installed',
+
+  // ComfyUI app management
+  REBOOT = 'manager/reboot'
 }
 
 const managerApiClient = axios.create({
@@ -227,6 +230,14 @@ export const useComfyManagerService = () => {
     )
   }
 
+  const rebootComfyUI = async (signal?: AbortSignal) => {
+    const errorContext = 'Rebooting ComfyUI'
+
+    return executeApiRequest<null>(
+      () => managerApiClient.get(ManagerRoute.REBOOT, { signal }),
+      { errorContext }
+    )
+  }
   return {
     // State
     isLoading,
@@ -245,6 +256,9 @@ export const useComfyManagerService = () => {
     updateAllPacks,
 
     // Pack info
-    listInstalledPacks
+    listInstalledPacks,
+
+    // ComfyUI app management
+    rebootComfyUI
   }
 }

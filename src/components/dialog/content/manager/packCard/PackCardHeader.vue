@@ -11,12 +11,23 @@
     </h2>
     <div class="mt-2 mb-4 w-full max-w-xs flex justify-center">
       <slot name="install-button">
-        <PackInstallButton
-          v-if="nodePack"
-          :nodePacks="[
+        <PackUninstallButton
+          v-if="isPackInstalled"
+          :node-packs="[
             {
               nodePack: nodePack,
-              selectedVersion: selectedVersion
+              selectedVersion
+            }
+          ]"
+          :full-width="installButtonFullWidth"
+        />
+
+        <PackInstallButton
+          v-else
+          :node-packs="[
+            {
+              nodePack: nodePack,
+              selectedVersion
             }
           ]"
           :full-width="installButtonFullWidth"
@@ -33,11 +44,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import PackInstallButton from '@/components/dialog/content/manager/PackInstallButton.vue'
+import PackUninstallButton from '@/components/dialog/content/manager/PackUninstallButton.vue'
 import PackIcon from '@/components/dialog/content/manager/packIcon/PackIcon.vue'
+import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { SelectedVersion } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
 
@@ -51,8 +64,13 @@ const {
   version?: string
 }>()
 
+const managerStore = useComfyManagerStore()
 const selectedVersion = ref<string>(
   version || nodePack?.latest_version?.version || SelectedVersion.LATEST
+)
+
+const isPackInstalled = computed(() =>
+  nodePack ? managerStore.isPackInstalled(nodePack.id) : false
 )
 
 defineExpose({

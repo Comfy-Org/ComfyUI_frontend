@@ -95,6 +95,9 @@
   "manager": {
     "title": "Custom Nodes Manager",
     "install": "Install",
+    "uninstall": "Uninstall",
+    "installSelected": "Install Selected",
+    "uninstallSelected": "Uninstall Selected",
     "downloads": "Downloads",
     "repository": "Repository",
     "license": "License",
@@ -114,11 +117,12 @@
     "loadingVersions": "Loading versions...",
     "lastUpdated": "Last Updated",
     "noDescription": "No description available",
-    "installSelected": "Install Selected",
     "packsSelected": "Packs Selected",
+    "update": "Update",
     "queueStatus": {
       "nextJob": "Starting next job",
       "allJobsDone": "All jobs done",
+      "processingJob": "Processing job",
       "waiting": "Processing item {count} of {total}",
       "error": "Cannot connect to ComfyUI-Manager"
     },
