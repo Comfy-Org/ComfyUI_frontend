@@ -364,7 +364,11 @@ export const useLitegraphService = () => {
     node.prototype.setSizeForImage = function (
       this: LGraphNode,
       force: boolean
-    ) {}
+    ) {
+      console.warn(
+        'node.setSizeForImage is deprecated. Now it has no effect. Please remove the call to it.'
+      )
+    }
 
     function unsafeDrawBackground(
       this: LGraphNode,
