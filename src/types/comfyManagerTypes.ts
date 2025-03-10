@@ -14,6 +14,11 @@ export interface SearchOption<T> {
   label: string
 }
 
+type PackName = components['schemas']['Node']['name']
+type AuxId = ComfyWorkflowJSON['nodes'][0]['properties']['aux_id']
+type CnrId = ComfyWorkflowJSON['nodes'][0]['properties']['cnr_id']
+type WorkflowPackVersion = ComfyWorkflowJSON['nodes'][0]['properties']['ver']
+
 export enum SelectedVersion {
   LATEST = 'latest',
   NIGHTLY = 'nightly'
@@ -32,7 +37,7 @@ export enum ManagerSourceMode {
   REMOTE = 'remote',
   LOCAL = 'local',
   CACHE = 'cache',
-  /** @description Packs that were installed at startup (ComfyUI) time */
+  /** @description Packs that were present at ComfyUI startup */
   IMPORTED = 'imported'
 }
 
@@ -62,9 +67,7 @@ export interface ManagerPackInfo {
    * - `LGraphNode#properties#cnr_id` (LiteGraph node instances)
    * - `node#properties#cnr_id` (Comfy workflow files)
    */
-  id:
-    | ComfyWorkflowJSON['nodes'][0]['properties']['aux_id']
-    | ComfyWorkflowJSON['nodes'][0]['properties']['cnr_id']
+  id: AuxId | CnrId
 
   /**
    * Display name of a pack version. Semantic version string or Git commit hash.
@@ -74,7 +77,7 @@ export interface ManagerPackInfo {
    * - `LGraphNode#properties#ver` (LiteGraph node instances)
    * - `node#properties#ver` (Comfy workflow files)
    */
-  version?: ComfyWorkflowJSON['nodes'][0]['properties']['ver']
+  version?: WorkflowPackVersion
 }
 
 /** Returned by /customnode/getlist */
@@ -114,14 +117,14 @@ export interface ManagerPack extends ManagerPackInfo {
 
 export interface ManagerPackInstalled {
   /** @description The version of the pack that is installed. Git commit hash or semantic version. */
-  ver: ComfyWorkflowJSON['nodes'][0]['properties']['ver']
+  ver: WorkflowPackVersion
   /** @description The name of the pack if the pack is installed from the registry. Corresponds to `Node#name` in comfy-api. */
-  cnr_id: ComfyWorkflowJSON['nodes'][0]['properties']['cnr_id']
+  cnr_id: CnrId
   /**
    * @description The name of the pack if the pack is installed from github.
    * In the format author/repo-name. If the pack is installed from the registry, this is `null`.
    */
-  aux_id: ComfyWorkflowJSON['nodes'][0]['properties']['aux_id'] | null
+  aux_id: AuxId | null
   /** @description Whether the pack is enabled. */
   enabled: boolean
 }
@@ -152,7 +155,7 @@ export interface InstallPackParams extends ManagerPackInfo {
   /**
    * Semantic version string, Git commit hash, or `latest`/`nightly`.
    */
-  selected_version?: ManagerPackInfo['version'] | SelectedVersion
+  selected_version?: WorkflowPackVersion | SelectedVersion
   /**
    * The github link to the repository of the node to install. Required if `selected_version` is `nightly`.
    */
@@ -180,6 +183,6 @@ export interface InstallPackParams extends ManagerPackInfo {
  * Response from /customnode/installed
  */
 export type InstalledPacksResponse = Record<
-  NonNullable<components['schemas']['Node']['name']>,
+  NonNullable<PackName>,
   ManagerPackInstalled
 >
