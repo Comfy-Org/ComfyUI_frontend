@@ -1305,6 +1305,7 @@ class PaintBucketTool {
   private imageData: ImageData | null = null
   private data: Uint8ClampedArray | null = null
   private tolerance: number = 5
+  private fillOpacity: number = 255 // Add opacity property (default 100%)
 
   constructor(maskEditor: MaskEditorDialog) {
     this.maskEditor = maskEditor
@@ -1333,6 +1334,11 @@ class PaintBucketTool {
     )
 
     this.messageBroker.subscribe('invert', () => this.invertMask())
+
+    // Add new listener for opacity setting
+    this.messageBroker.subscribe('setFillOpacity', (opacity: number) =>
+      this.setFillOpacity(opacity)
+    )
   }
 
   private addPullTopics() {
@@ -1340,6 +1346,17 @@ class PaintBucketTool {
       'getTolerance',
       async () => this.tolerance
     )
+    // Add pull topic for fillOpacity
+    this.messageBroker.createPullTopic(
+      'getFillOpacity',
+      async () => (this.fillOpacity / 255) * 100
+    )
+  }
+
+  // Add method to set opacity
+  setFillOpacity(opacity: number): void {
+    // Convert from percentage (0-100) to alpha value (0-255)
+    this.fillOpacity = Math.floor((opacity / 100) * 255)
   }
 
   private getPixel(x: number, y: number): number {
@@ -1439,8 +1456,8 @@ class PaintBucketTool {
       }
 
       visited[visitedIndex] = 1
-      // Set alpha to 255 for fill mode, 0 for erase mode
-      this.setPixel(x, y, isFillMode ? 255 : 0, maskColor)
+      // Set alpha to fillOpacity for fill mode, 0 for erase mode
+      this.setPixel(x, y, isFillMode ? this.fillOpacity : 0, maskColor)
 
       // Check neighbors
       const checkNeighbor = (nx: number, ny: number) => {
@@ -1540,6 +1557,7 @@ class ColorSelectTool {
   private applyWholeImage: boolean = false
   private maskBoundry: boolean = false
   private maskTolerance: number = 0
+  private selectOpacity: number = 255 // Add opacity property (default 100%)
 
   constructor(maskEditor: MaskEditorDialog) {
     this.maskEditor = maskEditor
@@ -1586,6 +1604,11 @@ class ColorSelectTool {
 
     this.messageBroker.subscribe('setMaskTolerance', (maskTolerance: number) =>
       this.setMaskTolerance(maskTolerance)
+    )
+
+    // Add new listener for opacity setting
+    this.messageBroker.subscribe('setSelectionOpacity', (opacity: number) =>
+      this.setSelectOpacity(opacity)
     )
   }
 
@@ -1805,7 +1828,7 @@ class ColorSelectTool {
           const x = pixelIndex % width
           const y = Math.floor(pixelIndex / width)
           if (this.isPixelInRange(this.getPixel(x, y), targetPixel)) {
-            this.setPixel(x, y, 255, maskColor)
+            this.setPixel(x, y, this.selectOpacity, maskColor) // Use selectOpacity instead of 255
           }
         }
         // Allow UI updates between chunks
@@ -1845,7 +1868,7 @@ class ColorSelectTool {
         }
 
         visited[visitedIndex] = 1
-        this.setPixel(x, y, 255, maskColor)
+        this.setPixel(x, y, this.selectOpacity, maskColor) // Use selectOpacity instead of 255
 
         // Inline direction checks for better performance
         if (
@@ -1940,6 +1963,18 @@ class ColorSelectTool {
 
   setMaskTolerance(maskTolerance: number): void {
     this.maskTolerance = maskTolerance
+  }
+
+  // Add method to set opacity
+  setSelectOpacity(opacity: number): void {
+    // Convert from percentage (0-100) to alpha value (0-255)
+    this.selectOpacity = Math.floor((opacity / 100) * 255)
+
+    // Update preview if applicable
+    if (this.lastPoint && this.livePreview) {
+      this.messageBroker.publish('undo')
+      this.fillColorSelection(this.lastPoint)
+    }
   }
 }
 
@@ -3011,10 +3046,25 @@ class UIManager {
       }
     )
 
+    // Add new slider for fill opacity
+    const fillOpacity = (await this.messageBroker.pull('getFillOpacity')) || 100
+    const fillOpacitySliderObj = this.createSlider(
+      'Fill Opacity',
+      0,
+      100,
+      1,
+      fillOpacity,
+      (event, value) => {
+        this.messageBroker.publish('setFillOpacity', parseInt(value))
+      }
+    )
+
     paint_bucket_settings_container.appendChild(paint_bucket_settings_title)
     paint_bucket_settings_container.appendChild(
       paintBucketToleranceSliderObj.container
     )
+    // Add the new opacity slider to the UI
+    paint_bucket_settings_container.appendChild(fillOpacitySliderObj.container)
 
     return paint_bucket_settings_container
   }
@@ -3035,6 +3085,18 @@ class UIManager {
       tolerance,
       (event, value) => {
         this.messageBroker.publish('setColorSelectTolerance', parseInt(value))
+      }
+    )
+
+    // Add new slider for selection opacity
+    const selectionOpacitySliderObj = this.createSlider(
+      'Selection Opacity',
+      0,
+      100,
+      1,
+      100, // Default to 100%
+      (event, value) => {
+        this.messageBroker.publish('setSelectionOpacity', parseInt(value))
       }
     )
 
@@ -3082,6 +3144,10 @@ class UIManager {
     color_select_settings_container.appendChild(color_select_settings_title)
     color_select_settings_container.appendChild(
       colorSelectToleranceSliderObj.container
+    )
+    // Add the new opacity slider to the UI
+    color_select_settings_container.appendChild(
+      selectionOpacitySliderObj.container
     )
     color_select_settings_container.appendChild(livePreviewToggle)
     color_select_settings_container.appendChild(wholeImageToggle)
@@ -4753,6 +4819,8 @@ class MessageBroker {
     this.createPushTopic('setZoomText')
     this.createPushTopic('resetZoom')
     this.createPushTopic('invert')
+    this.createPushTopic('setSelectionOpacity')
+    this.createPushTopic('setFillOpacity')
   }
 
   /**
