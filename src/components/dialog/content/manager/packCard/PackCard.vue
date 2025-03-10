@@ -81,12 +81,10 @@
 
 <script setup lang="ts">
 import Card from 'primevue/card'
-import { computed } from 'vue'
 
 import ContentDivider from '@/components/common/ContentDivider.vue'
 import PackInstallButton from '@/components/dialog/content/manager/PackInstallButton.vue'
 import PackIcon from '@/components/dialog/content/manager/packIcon/PackIcon.vue'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import type { components } from '@/types/comfyRegistryTypes'
 import { formatNumber } from '@/utils/formatUtil'
 
@@ -94,9 +92,4 @@ defineProps<{
   nodePack: components['schemas']['Node']
   isSelected?: boolean
 }>()
-
-const colorPaletteStore = useColorPaletteStore()
-const isLightTheme = computed(
-  () => colorPaletteStore.completedActivePalette.light_theme
-)
 </script>
