@@ -10,6 +10,7 @@ import {
 import { Vector2 } from '@comfyorg/litegraph'
 
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
+import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
 import { st } from '@/i18n'
 import type { NodeId } from '@/schemas/comfyWorkflowSchema'
@@ -18,15 +19,13 @@ import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSc
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { ComfyApp, app } from '@/scripts/app'
 import { $el } from '@/scripts/ui'
-import { calculateImageGrid } from '@/scripts/ui/imagePreview'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
-import { is_all_same_aspect_ratio } from '@/utils/imageUtil'
-import { getImageTop, isImageNode, isVideoNode } from '@/utils/litegraphUtil'
+import { isImageNode, isVideoNode } from '@/utils/litegraphUtil'
 
 import { useExtensionService } from './extensionService'
 
@@ -359,20 +358,16 @@ export const useLitegraphService = () => {
    * @param {*} node The node to add the draw handler
    */
   function addDrawBackgroundHandler(node: typeof LGraphNode) {
+    /**
+     * @deprecated No longer needed as we use {@link useImagePreviewWidget}
+     */
     node.prototype.setSizeForImage = function (
       this: LGraphNode,
       force: boolean
     ) {
-      if (!force && this.animatedImages) return
-
-      if (this.inputHeight || this.freeWidgetSpace > 210) {
-        this.setSize(this.size)
-        return
-      }
-      const minHeight = getImageTop(this) + 220
-      if (this.size[1] < minHeight) {
-        this.setSize([this.size[0], minHeight])
-      }
+      console.warn(
+        'node.setSizeForImage is deprecated. Now it has no effect. Please remove the call to it.'
+      )
     }
 
     function unsafeDrawBackground(
@@ -384,6 +379,8 @@ export const useLitegraphService = () => {
       const nodeOutputStore = useNodeOutputStore()
       const { showAnimatedPreview, removeAnimatedPreview } =
         useNodeAnimatedImage()
+      const { showCanvasImagePreview, removeCanvasImagePreview } =
+        useNodeCanvasImagePreview()
 
       const output = nodeOutputStore.getNodeOutputs(this)
       const preview = nodeOutputStore.getNodePreviews(this)
@@ -413,224 +410,11 @@ export const useLitegraphService = () => {
       if (!this.imgs?.length) return
 
       if (this.animatedImages) {
+        removeCanvasImagePreview(this)
         showAnimatedPreview(this)
-        return
-      }
-
-      removeAnimatedPreview(this)
-
-      const canvas = app.graph.list_of_graphcanvas[0]
-      const mouse = canvas.graph_mouse
-      if (!canvas.pointer_is_down && this.pointerDown) {
-        if (
-          mouse[0] === this.pointerDown.pos[0] &&
-          mouse[1] === this.pointerDown.pos[1]
-        ) {
-          this.imageIndex = this.pointerDown.index
-        }
-        this.pointerDown = null
-      }
-
-      let { imageIndex } = this
-      const numImages = this.imgs.length
-      if (numImages === 1 && !imageIndex) {
-        // This skips the thumbnail render section below
-        this.imageIndex = imageIndex = 0
-      }
-
-      const shiftY = getImageTop(this)
-
-      const IMAGE_TEXT_SIZE_TEXT_HEIGHT = 15
-      const dw = this.size[0]
-      const dh = this.size[1] - shiftY - IMAGE_TEXT_SIZE_TEXT_HEIGHT
-
-      if (imageIndex == null) {
-        // No image selected; draw thumbnails of all
-        let cellWidth: number
-        let cellHeight: number
-        let shiftX: number
-        let cell_padding: number
-        let cols: number
-
-        const compact_mode = is_all_same_aspect_ratio(this.imgs)
-        if (!compact_mode) {
-          // use rectangle cell style and border line
-          cell_padding = 2
-          // Prevent infinite canvas2d scale-up
-          const largestDimension = this.imgs.reduce(
-            (acc, current) =>
-              Math.max(acc, current.naturalWidth, current.naturalHeight),
-            0
-          )
-          const fakeImgs = []
-          fakeImgs.length = this.imgs.length
-          fakeImgs[0] = {
-            naturalWidth: largestDimension,
-            naturalHeight: largestDimension
-          }
-          ;({ cellWidth, cellHeight, cols, shiftX } = calculateImageGrid(
-            fakeImgs,
-            dw,
-            dh
-          ))
-        } else {
-          cell_padding = 0
-          ;({ cellWidth, cellHeight, cols, shiftX } = calculateImageGrid(
-            this.imgs,
-            dw,
-            dh
-          ))
-        }
-
-        let anyHovered = false
-        this.imageRects = []
-        for (let i = 0; i < numImages; i++) {
-          const img = this.imgs[i]
-          const row = Math.floor(i / cols)
-          const col = i % cols
-          const x = col * cellWidth + shiftX
-          const y = row * cellHeight + shiftY
-          if (!anyHovered) {
-            anyHovered = LiteGraph.isInsideRectangle(
-              mouse[0],
-              mouse[1],
-              x + this.pos[0],
-              y + this.pos[1],
-              cellWidth,
-              cellHeight
-            )
-            if (anyHovered) {
-              this.overIndex = i
-              let value = 110
-              if (canvas.pointer_is_down) {
-                if (!this.pointerDown || this.pointerDown.index !== i) {
-                  this.pointerDown = { index: i, pos: [...mouse] }
-                }
-                value = 125
-              }
-              ctx.filter = `contrast(${value}%) brightness(${value}%)`
-              canvas.canvas.style.cursor = 'pointer'
-            }
-          }
-          this.imageRects.push([x, y, cellWidth, cellHeight])
-
-          const wratio = cellWidth / img.width
-          const hratio = cellHeight / img.height
-          const ratio = Math.min(wratio, hratio)
-
-          const imgHeight = ratio * img.height
-          const imgY = row * cellHeight + shiftY + (cellHeight - imgHeight) / 2
-          const imgWidth = ratio * img.width
-          const imgX = col * cellWidth + shiftX + (cellWidth - imgWidth) / 2
-
-          ctx.drawImage(
-            img,
-            imgX + cell_padding,
-            imgY + cell_padding,
-            imgWidth - cell_padding * 2,
-            imgHeight - cell_padding * 2
-          )
-          if (!compact_mode) {
-            // rectangle cell and border line style
-            ctx.strokeStyle = '#8F8F8F'
-            ctx.lineWidth = 1
-            ctx.strokeRect(
-              x + cell_padding,
-              y + cell_padding,
-              cellWidth - cell_padding * 2,
-              cellHeight - cell_padding * 2
-            )
-          }
-
-          ctx.filter = 'none'
-        }
-
-        if (!anyHovered) {
-          this.pointerDown = null
-          this.overIndex = null
-        }
-
-        return
-      }
-      // Draw individual
-      const img = this.imgs[imageIndex]
-      let w = img.naturalWidth
-      let h = img.naturalHeight
-
-      const scaleX = dw / w
-      const scaleY = dh / h
-      const scale = Math.min(scaleX, scaleY, 1)
-
-      w *= scale
-      h *= scale
-
-      const x = (dw - w) / 2
-      const y = (dh - h) / 2 + shiftY
-      ctx.drawImage(img, x, y, w, h)
-
-      // Draw image size text below the image
-      ctx.fillStyle = LiteGraph.NODE_TEXT_COLOR
-      ctx.textAlign = 'center'
-      const sizeText = `${Math.round(img.naturalWidth)} × ${Math.round(img.naturalHeight)}`
-      const textY = y + h + 10
-      ctx.fillText(sizeText, x + w / 2, textY)
-
-      const drawButton = (
-        x: number,
-        y: number,
-        sz: number,
-        text: string
-      ): boolean => {
-        const hovered = LiteGraph.isInsideRectangle(
-          mouse[0],
-          mouse[1],
-          x + this.pos[0],
-          y + this.pos[1],
-          sz,
-          sz
-        )
-        let fill = '#333'
-        let textFill = '#fff'
-        let isClicking = false
-        if (hovered) {
-          canvas.canvas.style.cursor = 'pointer'
-          if (canvas.pointer_is_down) {
-            fill = '#1e90ff'
-            isClicking = true
-          } else {
-            fill = '#eee'
-            textFill = '#000'
-          }
-        }
-
-        ctx.fillStyle = fill
-        ctx.beginPath()
-        ctx.roundRect(x, y, sz, sz, [4])
-        ctx.fill()
-        ctx.fillStyle = textFill
-        ctx.font = '12px Arial'
-        ctx.textAlign = 'center'
-        ctx.fillText(text, x + 15, y + 20)
-
-        return isClicking
-      }
-
-      if (!(numImages > 1)) return
-
-      const imageNum = this.imageIndex + 1
-      if (
-        drawButton(dw - 40, dh + shiftY - 40, 30, `${imageNum}/${numImages}`)
-      ) {
-        const i = imageNum >= numImages ? 0 : imageNum
-        if (!this.pointerDown || this.pointerDown.index !== i) {
-          this.pointerDown = { index: i, pos: [...mouse] }
-        }
-      }
-
-      if (drawButton(dw - 40, shiftY + 10, 30, `x`)) {
-        if (!this.pointerDown || this.pointerDown.index !== null) {
-          this.pointerDown = { index: null, pos: [...mouse] }
-        }
+      } else {
+        removeAnimatedPreview(this)
+        showCanvasImagePreview(this)
       }
     }
 

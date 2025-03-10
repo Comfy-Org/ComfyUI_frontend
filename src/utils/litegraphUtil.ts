@@ -1,10 +1,5 @@
 import type { ColorOption } from '@comfyorg/litegraph'
-import {
-  LGraphGroup,
-  LGraphNode,
-  LiteGraph,
-  isColorable
-} from '@comfyorg/litegraph'
+import { LGraphGroup, LGraphNode, isColorable } from '@comfyorg/litegraph'
 import type { IComboWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import _ from 'lodash'
 
@@ -74,24 +69,4 @@ export function executeWidgetsCallback(
       widget[callbackName]?.()
     }
   }
-}
-
-export function getImageTop(node: LGraphNode) {
-  let shiftY: number
-  if (node.imageOffset != null) {
-    return node.imageOffset
-  } else if (node.widgets?.length) {
-    const w = node.widgets[node.widgets.length - 1]
-    shiftY = w.last_y ?? 0
-    if (w.computeSize) {
-      shiftY += w.computeSize()[1] + 4
-    } else if (w.computedHeight) {
-      shiftY += w.computedHeight
-    } else {
-      shiftY += LiteGraph.NODE_WIDGET_HEIGHT + 4
-    }
-  } else {
-    return node.computeSize()[1]
-  }
-  return shiftY
 }

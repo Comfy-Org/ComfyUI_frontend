@@ -111,7 +111,6 @@ export const useNodeImage = (node: LGraphNode) => {
   const onLoaded = (elements: HTMLImageElement[]) => {
     node.imageIndex = null
     node.imgs = elements
-    node.setSizeForImage?.()
   }
 
   return useNodePreview(node, {
@@ -159,7 +158,6 @@ export const useNodeVideo = (node: LGraphNode) => {
 
     node.videoContainer.replaceChildren(videoElement)
     node.imageOffset = VIDEO_PIXEL_OFFSET
-    node.setSizeForImage?.(true)
   }
 
   return useNodePreview(node, {

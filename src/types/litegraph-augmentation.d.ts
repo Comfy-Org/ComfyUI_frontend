@@ -153,7 +153,9 @@ declare module '@comfyorg/litegraph' {
     imageRects: Rect[]
     overIndex?: number | null
     pointerDown?: { index: number | null; pos: Point } | null
-
+    /**
+     * @deprecated No longer needed as we use {@link useImagePreviewWidget}
+     */
     setSizeForImage?(force?: boolean): void
     /** @deprecated Unused */
     inputHeight?: unknown
