@@ -1517,7 +1517,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
     const { inputs, outputs } = this
     let rows = Math.max(
-      inputs ? inputs.length : 1,
+      inputs ? inputs.filter(input => !isWidgetInputSlot(input)).length : 1,
       outputs ? outputs.length : 1,
     )
     const size = out || new Float32Array([0, 0])
