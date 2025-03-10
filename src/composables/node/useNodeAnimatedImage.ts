@@ -29,7 +29,6 @@ export function useNodeAnimatedImage() {
     } else {
       // Create new widget
       const host = createImageHost(node)
-      node.setSizeForImage?.(true)
       // @ts-expect-error host is not a standard DOM widget option.
       const widget = node.addDOMWidget(ANIM_PREVIEW_WIDGET, 'img', host.el, {
         host,

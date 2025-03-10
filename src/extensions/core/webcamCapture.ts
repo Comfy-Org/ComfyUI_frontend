@@ -88,9 +88,6 @@ app.registerExtension({
       img.onload = () => {
         node.imgs = [img]
         app.graph.setDirtyCanvas(true)
-        requestAnimationFrame(() => {
-          node.setSizeForImage?.()
-        })
       }
       img.src = data
     }

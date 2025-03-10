@@ -2,7 +2,17 @@
 import { app } from '../app'
 import { $el } from '../ui'
 
-export function calculateImageGrid(imgs, dw, dh) {
+export function calculateImageGrid(
+  imgs,
+  dw,
+  dh
+): {
+  cellWidth: number
+  cellHeight: number
+  cols: number
+  rows: number
+  shiftX: number
+} {
   let best = 0
   let w = imgs[0].naturalWidth
   let h = imgs[0].naturalHeight
