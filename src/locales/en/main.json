@@ -110,6 +110,12 @@
     "noDescription": "No description available",
     "installSelected": "Install Selected",
     "packsSelected": "Packs Selected",
+    "queueStatus": {
+      "nextJob": "Starting next job",
+      "allJobsDone": "All jobs done",
+      "waiting": "Processing item {count} of {total}",
+      "error": "Cannot connect to ComfyUI-Manager"
+    },
     "status": {
       "active": "Active",
       "pending": "Pending",
@@ -438,7 +444,7 @@
         "flux_fill_inpaint_example": "Flux Inpaint",
         "flux_fill_outpaint_example": "Flux Outpaint",
         "flux_canny_model_example": "Flux Canny Model",
-        "flux_redux_model_example": "Flux Redux Model",
+        "flux_retdel_example": "Flux Redux Model",
         "flux_depth_lora_example": "Flux Depth Lora"
       },
       "Basics": {

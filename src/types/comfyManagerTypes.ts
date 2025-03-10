@@ -133,19 +133,18 @@ export interface ManagerPackInstalled {
  * Status of the ComfyUI-Manager task runner queue.
  */
 export interface ManagerQueueStatus {
-  /** `done_count` + `in_progress_count` + number of items queued */
+  /** @description `done_count` + `in_progress_count` + number of items queued */
   total_count: number
-  /** number of items installed */
+  /** @description number of items installed */
   done_count: number
-  /** number of items currently being processed */
+  /** @description number of items currently being processed */
   in_progress_count: number
-  /** task worker thread is alive, a queued operation is running */
+  /** @description task worker thread is alive, a queued operation is running */
   is_processing: boolean
 }
 
 /**
- * Payload for installing a pack.
- * Is also used to enable a disabled pack.
+ * Payload for installing a pack. Is also used to enable a disabled pack.
  */
 export interface InstallPackParams extends ManagerPackInfo {
   /**
@@ -153,26 +152,26 @@ export interface InstallPackParams extends ManagerPackInfo {
    */
   version?: string
   /**
-   * Semantic version string, Git commit hash, or `latest`/`nightly`.
+   * @description Semantic version string, Git commit hash, or `latest`/`nightly`.
    */
   selected_version?: WorkflowPackVersion | SelectedVersion
   /**
-   * The github link to the repository of the node to install. Required if `selected_version` is `nightly`.
+   * @description The github link to the repository of the node to install. Required if `selected_version` is `nightly`.
    */
   repository: string
   /**
-   * List of PyPi dependencies associated with the node. Used to determine whether the node
-   * should be installed based on user's security level configuration.
+   * @description List of PyPi dependencies associated with the node.
+   * Used to determine whether the node should be installed based on
+   * user's security level configuration.
    */
   pip?: string[]
   /**
-   * The channel to install the node from.
-   * Unused by ComfyUI_frontend.
+   * @description The channel to install the node from. Unused by ComfyUI_frontend.
    * @default ManagerChannel.DEFAULT
    */
   channel?: ManagerChannel
   /**
-   * The mode to install the node in.
+   * @description The mode to install the node in.
    * @default InstallMode.NORMAL
    */
   mode?: ManagerSourceMode
