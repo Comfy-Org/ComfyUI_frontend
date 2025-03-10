@@ -89,7 +89,8 @@
     "name": "Name",
     "category": "Category",
     "sort": "Sort",
-    "filter": "Filter"
+    "filter": "Filter",
+    "apply": "Apply"
   },
   "manager": {
     "title": "Custom Nodes Manager",
@@ -107,6 +108,10 @@
     "nodePack": "Node Pack",
     "searchPlaceholder": "Search",
     "version": "Version",
+    "selectVersion": "Select Version",
+    "latestVersion": "Latest (recommended)",
+    "nightlyVersion": "Nightly",
+    "loadingVersions": "Loading versions...",
     "lastUpdated": "Last Updated",
     "noDescription": "No description available",
     "installSelected": "Install Selected",
