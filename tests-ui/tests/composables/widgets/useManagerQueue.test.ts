@@ -13,16 +13,16 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 describe('useManagerQueue', () => {
-  const createMockJob = (result: any = 'result') => ({
-    job: vi.fn().mockResolvedValue(result),
+  const createMockTask = (result: any = 'result') => ({
+    task: vi.fn().mockResolvedValue(result),
     onComplete: vi.fn()
   })
 
-  const createQueueWithMockJob = () => {
+  const createQueueWithMockTask = () => {
     const queue = useManagerQueue()
-    const mockJob = createMockJob()
-    queue.enqueueJob(mockJob)
-    return { queue, mockJob }
+    const mockTask = createMockTask()
+    queue.enqueueTask(mockTask)
+    return { queue, mockTask }
   }
 
   const getEventListenerCallback = () =>
@@ -50,27 +50,27 @@ describe('useManagerQueue', () => {
 
       expect(queue.queueLength.value).toBe(0)
       expect(queue.statusMessage.value).toBe('done')
-      expect(queue.allJobsDone.value).toBe(true)
+      expect(queue.allTasksDone.value).toBe(true)
     })
   })
 
   describe('queue management', () => {
-    it('should add jobs to the queue', () => {
+    it('should add tasks to the queue', () => {
       const queue = useManagerQueue()
-      const mockJob = createMockJob()
+      const mockTask = createMockTask()
 
-      queue.enqueueJob(mockJob)
+      queue.enqueueTask(mockTask)
 
       expect(queue.queueLength.value).toBe(1)
-      expect(queue.allJobsDone.value).toBe(false)
+      expect(queue.allTasksDone.value).toBe(false)
     })
 
     it('should clear the queue when clearQueue is called', () => {
       const queue = useManagerQueue()
 
-      // Add some jobs
-      queue.enqueueJob(createMockJob())
-      queue.enqueueJob(createMockJob())
+      // Add some tasks
+      queue.enqueueTask(createMockTask())
+      queue.enqueueTask(createMockTask())
 
       expect(queue.queueLength.value).toBe(2)
 
@@ -78,7 +78,7 @@ describe('useManagerQueue', () => {
       queue.clearQueue()
 
       expect(queue.queueLength.value).toBe(0)
-      expect(queue.allJobsDone.value).toBe(true)
+      expect(queue.allTasksDone.value).toBe(true)
     })
   })
 
@@ -89,7 +89,7 @@ describe('useManagerQueue', () => {
       await simulateServerStatus('in_progress')
 
       expect(queue.statusMessage.value).toBe('in_progress')
-      expect(queue.allJobsDone.value).toBe(false)
+      expect(queue.allTasksDone.value).toBe(false)
     })
 
     it('should handle invalid status values gracefully', async () => {
@@ -123,108 +123,108 @@ describe('useManagerQueue', () => {
     })
   })
 
-  describe('job execution', () => {
-    it('should start the next job when server is idle and queue has items', async () => {
-      const { queue, mockJob } = createQueueWithMockJob()
+  describe('task execution', () => {
+    it('should start the next task when server is idle and queue has items', async () => {
+      const { queue, mockTask } = createQueueWithMockTask()
 
       await simulateServerStatus('done')
 
-      // Job should have been started
-      expect(mockJob.job).toHaveBeenCalled()
+      // Task should have been started
+      expect(mockTask.task).toHaveBeenCalled()
       expect(queue.queueLength.value).toBe(0)
     })
 
-    it('should execute onComplete callback when job completes and server becomes idle', async () => {
-      const { queue, mockJob } = createQueueWithMockJob()
+    it('should execute onComplete callback when task completes and server becomes idle', async () => {
+      const { mockTask } = createQueueWithMockTask()
 
-      // Start the job
+      // Start the task
       await simulateServerStatus('done')
-      expect(mockJob.job).toHaveBeenCalled()
+      expect(mockTask.task).toHaveBeenCalled()
 
-      // Simulate job completion
-      await mockJob.job.mock.results[0].value
+      // Simulate task completion
+      await mockTask.task.mock.results[0].value
 
       // Simulate server cycle (in_progress -> done)
       await simulateServerStatus('in_progress')
-      expect(mockJob.onComplete).not.toHaveBeenCalled()
+      expect(mockTask.onComplete).not.toHaveBeenCalled()
 
       await simulateServerStatus('done')
-      expect(mockJob.onComplete).toHaveBeenCalled()
+      expect(mockTask.onComplete).toHaveBeenCalled()
     })
 
-    it('should handle jobs without onComplete callback', async () => {
+    it('should handle tasks without onComplete callback', async () => {
       const queue = useManagerQueue()
-      const mockJob = { job: vi.fn().mockResolvedValue('result') }
+      const mockTask = { task: vi.fn().mockResolvedValue('result') }
 
-      queue.enqueueJob(mockJob)
+      queue.enqueueTask(mockTask)
 
-      // Start the job
+      // Start the task
       await simulateServerStatus('done')
-      expect(mockJob.job).toHaveBeenCalled()
+      expect(mockTask.task).toHaveBeenCalled()
 
-      // Simulate job completion
-      await mockJob.job.mock.results[0].value
+      // Simulate task completion
+      await mockTask.task.mock.results[0].value
 
       // Simulate server cycle
       await simulateServerStatus('in_progress')
       await simulateServerStatus('done')
 
       // Should not throw errors even without onComplete
-      expect(queue.allJobsDone.value).toBe(true)
+      expect(queue.allTasksDone.value).toBe(true)
     })
 
-    it('should process multiple jobs in sequence', async () => {
+    it('should process multiple tasks in sequence', async () => {
       const queue = useManagerQueue()
-      const mockJob1 = createMockJob('result1')
-      const mockJob2 = createMockJob('result2')
+      const mockTask1 = createMockTask('result1')
+      const mockTask2 = createMockTask('result2')
 
-      // Add jobs to the queue
-      queue.enqueueJob(mockJob1)
-      queue.enqueueJob(mockJob2)
+      // Add tasks to the queue
+      queue.enqueueTask(mockTask1)
+      queue.enqueueTask(mockTask2)
       expect(queue.queueLength.value).toBe(2)
 
-      // Process first job
+      // Process first task
       await simulateServerStatus('done')
-      expect(mockJob1.job).toHaveBeenCalled()
+      expect(mockTask1.task).toHaveBeenCalled()
       expect(queue.queueLength.value).toBe(1)
 
-      // Complete first job
-      await mockJob1.job.mock.results[0].value
+      // Complete first task
+      await mockTask1.task.mock.results[0].value
       await simulateServerStatus('in_progress')
       await simulateServerStatus('done')
-      expect(mockJob1.onComplete).toHaveBeenCalled()
+      expect(mockTask1.onComplete).toHaveBeenCalled()
 
-      // Process second job
-      expect(mockJob2.job).toHaveBeenCalled()
+      // Process second task
+      expect(mockTask2.task).toHaveBeenCalled()
       expect(queue.queueLength.value).toBe(0)
 
-      // Complete second job
-      await mockJob2.job.mock.results[0].value
+      // Complete second task
+      await mockTask2.task.mock.results[0].value
       await simulateServerStatus('in_progress')
       await simulateServerStatus('done')
-      expect(mockJob2.onComplete).toHaveBeenCalled()
+      expect(mockTask2.onComplete).toHaveBeenCalled()
 
-      // Queue should be empty and all jobs done
+      // Queue should be empty and all tasks done
       expect(queue.queueLength.value).toBe(0)
-      expect(queue.allJobsDone.value).toBe(true)
+      expect(queue.allTasksDone.value).toBe(true)
     })
 
-    it('should handle job that returns rejected promise', async () => {
+    it('should handle task that returns rejected promise', async () => {
       const queue = useManagerQueue()
-      const mockJob = {
-        job: vi.fn().mockRejectedValue(new Error('Job failed')),
+      const mockTask = {
+        task: vi.fn().mockRejectedValue(new Error('Task failed')),
         onComplete: vi.fn()
       }
 
-      queue.enqueueJob(mockJob)
+      queue.enqueueTask(mockTask)
 
-      // Start the job
+      // Start the task
       await simulateServerStatus('done')
-      expect(mockJob.job).toHaveBeenCalled()
+      expect(mockTask.task).toHaveBeenCalled()
 
       // Let the promise rejection happen
       try {
-        await mockJob.job()
+        await mockTask.task()
       } catch (e) {
         // Ignore the error
       }
@@ -233,44 +233,44 @@ describe('useManagerQueue', () => {
       await simulateServerStatus('in_progress')
       await simulateServerStatus('done')
 
-      // onComplete should not be called for failed jobs
-      expect(mockJob.onComplete).not.toHaveBeenCalled()
+      // onComplete should not be called for failed tasks
+      expect(mockTask.onComplete).not.toHaveBeenCalled()
     })
 
-    it('should handle adding jobs while processing is in progress', async () => {
+    it('should handle adding tasks while processing is in progress', async () => {
       const queue = useManagerQueue()
-      const mockJob1 = createMockJob()
-      const mockJob2 = createMockJob()
+      const mockTask1 = createMockTask()
+      const mockTask2 = createMockTask()
 
-      // Add first job and start processing
-      queue.enqueueJob(mockJob1)
+      // Add first task and start processing
+      queue.enqueueTask(mockTask1)
       await simulateServerStatus('done')
-      expect(mockJob1.job).toHaveBeenCalled()
+      expect(mockTask1.task).toHaveBeenCalled()
 
-      // Add second job while first is processing
-      queue.enqueueJob(mockJob2)
+      // Add second task while first is processing
+      queue.enqueueTask(mockTask2)
       expect(queue.queueLength.value).toBe(1)
 
-      // Complete first job
-      await mockJob1.job.mock.results[0].value
+      // Complete first task
+      await mockTask1.task.mock.results[0].value
       await simulateServerStatus('in_progress')
       await simulateServerStatus('done')
 
-      // Second job should now be processed
-      expect(mockJob2.job).toHaveBeenCalled()
+      // Second task should now be processed
+      expect(mockTask2.task).toHaveBeenCalled()
     })
 
-    it('should handle server status changes without jobs in queue', async () => {
+    it('should handle server status changes without tasks in queue', async () => {
       const queue = useManagerQueue()
 
-      // Cycle server status without any jobs
+      // Cycle server status without any tasks
       await simulateServerStatus('in_progress')
       await simulateServerStatus('done')
       await simulateServerStatus('in_progress')
       await simulateServerStatus('done')
 
       // Should not cause any errors
-      expect(queue.allJobsDone.value).toBe(true)
+      expect(queue.allTasksDone.value).toBe(true)
     })
   })
 })

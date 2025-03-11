@@ -3,8 +3,8 @@ import { computed, readonly, ref } from 'vue'
 
 import { api } from '@/scripts/api'
 
-type QueuedJob<T> = {
-  job: () => Promise<T>
+type QueuedTask<T> = {
+  task: () => Promise<T>
   onComplete?: () => void
 }
 
@@ -16,7 +16,7 @@ enum ManagerWsQueueStatus {
 }
 
 export const useManagerQueue = () => {
-  const clientQueueItems = ref<QueuedJob<unknown>[]>([])
+  const clientQueueItems = ref<QueuedTask<unknown>[]>([])
   const clientQueueLength = computed(() => clientQueueItems.value.length)
   const nextOnCompleted = ref<(() => void) | undefined>()
 
@@ -25,14 +25,14 @@ export const useManagerQueue = () => {
     () => serverQueueStatus.value === ManagerWsQueueStatus.DONE
   )
 
-  const allJobsDone = computed(
+  const allTasksDone = computed(
     () => isServerIdle.value && clientQueueLength.value === 0
   )
-  const nextJobReady = computed(
+  const nextTaskReady = computed(
     () => isServerIdle.value && clientQueueLength.value > 0
   )
 
-  useEventListener(
+  const cleanupListener = useEventListener(
     api,
     MANAGER_WS_MSG_TYPE,
     (event: CustomEvent<{ status: ManagerWsQueueStatus }>) => {
@@ -42,32 +42,38 @@ export const useManagerQueue = () => {
     }
   )
 
-  const startNextJob = () => {
-    const nextJob = clientQueueItems.value.shift()
-    if (!nextJob) return
+  const startNextTask = () => {
+    const nextTask = clientQueueItems.value.shift()
+    if (!nextTask) return
 
-    const { job, onComplete } = nextJob
+    const { task, onComplete } = nextTask
 
-    job()
+    task()
       .then(() => {
-        // Queue the job's onComplete callback to be executed after the server is idle
+        // Set the task's onComplete to be executed the next time the server is idle
         nextOnCompleted.value = onComplete
       })
       .catch((e) => {
-        const message = `Error enqueuing job for ComfyUI Manager: ${e}`
+        const message = `Error enqueuing task for ComfyUI Manager: ${e}`
         console.error(message)
       })
   }
 
-  const enqueueJob = <T>(job: QueuedJob<T>): void => {
-    clientQueueItems.value.push(job)
+  const enqueueTask = <T>(task: QueuedTask<T>): void => {
+    clientQueueItems.value.push(task)
   }
 
   const clearQueue = () => {
+    nextOnCompleted.value = undefined
     clientQueueItems.value = []
   }
 
-  whenever(nextJobReady, startNextJob)
+  const cleanup = () => {
+    clearQueue()
+    cleanupListener()
+  }
+
+  whenever(nextTaskReady, startNextTask)
   whenever(isServerIdle, () => {
     if (nextOnCompleted.value) {
       nextOnCompleted.value()
@@ -76,11 +82,12 @@ export const useManagerQueue = () => {
   })
 
   return {
-    allJobsDone,
+    allTasksDone,
     statusMessage: readonly(serverQueueStatus),
     queueLength: clientQueueLength,
 
-    enqueueJob,
-    clearQueue
+    enqueueTask,
+    clearQueue,
+    cleanup
   }
 }
