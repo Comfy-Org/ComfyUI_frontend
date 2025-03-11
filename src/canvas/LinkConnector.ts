@@ -92,7 +92,7 @@ export class LinkConnector {
   }
 
   /** Drag an existing link to a different input. */
-  moveInputLink(network: LinkNetwork, input: INodeInputSlot, fromReroute?: Reroute): void {
+  moveInputLink(network: LinkNetwork, input: INodeInputSlot): void {
     if (this.isConnecting) throw new Error("Already dragging links.")
 
     const { state, inputLinks, renderLinks } = this
@@ -104,12 +104,17 @@ export class LinkConnector {
     if (!link) return
 
     try {
-      const renderLink = new MovingRenderLink(network, link, "input", fromReroute)
+      const reroute = link.parentId != null ? network.reroutes.get(link.parentId) : undefined
+      const renderLink = new MovingRenderLink(network, link, "input", reroute)
 
       const mayContinue = this.events.dispatch("before-move-input", renderLink)
       if (mayContinue === false) return
 
       renderLinks.push(renderLink)
+
+      this.listenUntilReset("input-moved", (e) => {
+        e.detail.link.disconnect(network, true)
+      })
     } catch (error) {
       console.warn(`Could not create render link for link id: [${link.id}].`, link, error)
       return
@@ -443,8 +448,8 @@ export class LinkConnector {
         // Link is already connected here
         if (inputSlot === input) continue
 
-        outputNode.connectSlots(outputSlot, node, input, fromReroute?.id)
-        this.events.dispatch("input-moved", link)
+        const newLink = outputNode.connectSlots(outputSlot, node, input, fromReroute?.id)
+        if (newLink) this.events.dispatch("input-moved", link)
       } else {
         const { node: outputNode, fromSlot, fromReroute } = link
         const newLink = outputNode.connectSlots(fromSlot, node, input, fromReroute?.id)
@@ -475,7 +480,7 @@ export class LinkConnector {
 
   /** Sets connecting_links, used by some extensions still. */
   #setLegacyLinks(fromSlotIsInput: boolean): void {
-    const links = this.renderLinks.map((link) => {
+    const links = this.renderLinks.map<ConnectingLink>((link) => {
       const input = fromSlotIsInput ? link.fromSlot as INodeInputSlot : null
       const output = fromSlotIsInput ? null : link.fromSlot as INodeOutputSlot
 
@@ -485,6 +490,7 @@ export class LinkConnector {
         input,
         output,
         pos: link.fromPos,
+        after: link.fromReroute?.id,
       }
     })
     this.#setConnectingLinks(links)
