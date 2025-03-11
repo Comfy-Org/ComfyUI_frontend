@@ -332,6 +332,9 @@ export const useWorkflowService = () => {
       skip_events: true,
       skip_render: true
     })
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore Temporary fix for Litegraph issue.
+    canvas.reroutesEnabled = true
     canvas.selectItems()
     canvas.copyToClipboard()
     app.canvas.pasteFromClipboard(options)
