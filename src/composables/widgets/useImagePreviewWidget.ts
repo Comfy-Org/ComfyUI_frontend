@@ -235,6 +235,7 @@ class ImagePreviewWidget implements ICustomWidget {
   readonly options: IWidgetOptions<unknown>
   // Dummy value to satisfy type requirements
   value: string
+  y: number = 0
 
   constructor(name: string, options: IWidgetOptions<unknown>) {
     this.type = 'custom'
