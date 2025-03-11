@@ -8,6 +8,7 @@ import _ from 'lodash'
 import type { Component } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { generateUUID } from '@/utils/formatUtil'
 
@@ -21,9 +22,9 @@ export interface BaseDOMWidget<V extends object | string>
 
   // BaseDOMWidget properties
   /** The unique ID of the widget. */
-  id: string
+  readonly id: string
   /** The node that the widget belongs to. */
-  node: LGraphNode
+  readonly node: LGraphNode
   /** Whether the widget is visible. */
   isVisible(): boolean
 }
@@ -47,7 +48,8 @@ export interface DOMWidget<T extends HTMLElement, V extends object | string>
  */
 export interface ComponentWidget<V extends object | string>
   extends BaseDOMWidget<V> {
-  component: Component
+  readonly component: Component
+  readonly inputSpec: InputSpec
 }
 
 export interface DOMWidgetOptions<V extends object | string>
@@ -203,12 +205,14 @@ export class ComponentWidgetImpl<V extends object | string>
   implements ComponentWidget<V>
 {
   readonly component: Component
+  readonly inputSpec: InputSpec
 
   constructor(obj: {
     id: string
     node: LGraphNode
     name: string
     component: Component
+    inputSpec: InputSpec
     options: DOMWidgetOptions<V>
   }) {
     super({
@@ -216,6 +220,7 @@ export class ComponentWidgetImpl<V extends object | string>
       type: 'custom'
     })
     this.component = obj.component
+    this.inputSpec = obj.inputSpec
   }
 
   computeLayoutSize() {
@@ -229,6 +234,23 @@ export class ComponentWidgetImpl<V extends object | string>
   }
 }
 
+export const addWidget = <W extends BaseDOMWidget<object | string>>(
+  node: LGraphNode,
+  widget: W
+) => {
+  node.addCustomWidget(widget)
+  node.onRemoved = useChainCallback(node.onRemoved, () => {
+    widget.onRemove?.()
+  })
+
+  node.onResize = useChainCallback(node.onResize, () => {
+    widget.options.beforeResize?.call(widget, node)
+    widget.options.afterResize?.call(widget, node)
+  })
+
+  useDomWidgetStore().registerWidget(widget)
+}
+
 LGraphNode.prototype.addDOMWidget = function <
   T extends HTMLElement,
   V extends object | string
@@ -239,20 +261,16 @@ LGraphNode.prototype.addDOMWidget = function <
   element: T,
   options: DOMWidgetOptions<V> = {}
 ): DOMWidget<T, V> {
+  const widget = new DOMWidgetImpl({
+    id: generateUUID(),
+    node: this,
+    name,
+    type,
+    element,
+    options: { hideOnZoom: true, ...options }
+  })
   // Note: Before `LGraphNode.configure` is called, `this.id` is always `-1`.
-  const widget = this.addCustomWidget(
-    new DOMWidgetImpl({
-      id: generateUUID(),
-      node: this,
-      name,
-      type,
-      element,
-      options: {
-        hideOnZoom: true,
-        ...options
-      }
-    })
-  )
+  addWidget(this, widget as unknown as BaseDOMWidget<object | string>)
 
   // Workaround for https://github.com/Comfy-Org/ComfyUI_frontend/issues/2493
   // Some custom nodes are explicitly expecting getter and setter of `value`
@@ -266,17 +284,6 @@ LGraphNode.prototype.addDOMWidget = function <
       this.callback?.(this.value)
     }
   })
-
-  this.onRemoved = useChainCallback(this.onRemoved, () => {
-    widget.onRemove()
-  })
-
-  this.onResize = useChainCallback(this.onResize, () => {
-    options.beforeResize?.call(widget, this)
-    options.afterResize?.call(widget, this)
-  })
-
-  useDomWidgetStore().registerWidget(widget)
 
   return widget
 }

@@ -72,7 +72,11 @@ export const zComboInputOptions = zBaseInputOptions.extend({
   allow_batch: z.boolean().optional(),
   video_upload: z.boolean().optional(),
   options: z.array(zComboOption).optional(),
-  remote: zRemoteWidgetConfig.optional()
+  remote: zRemoteWidgetConfig.optional(),
+  /** Whether the widget is a multi-select widget. */
+  multi_select: z.boolean().optional(),
+  /** Placeholder when no item is selected in multi-select widget. */
+  placeholder: z.string().optional()
 })
 
 const zIntInputSpec = z.tuple([z.literal('INT'), zIntInputOptions.optional()])
