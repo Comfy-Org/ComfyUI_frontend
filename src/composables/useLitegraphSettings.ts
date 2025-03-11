@@ -78,15 +78,6 @@ export const useLitegraphSettings = () => {
   })
 
   watchEffect(() => {
-    const reroutesEnabled = settingStore.get('Comfy.RerouteBeta')
-    const { canvas } = canvasStore
-    if (canvas) {
-      canvas.reroutesEnabled = reroutesEnabled
-      canvas.setDirty(false, true)
-    }
-  })
-
-  watchEffect(() => {
     const maximumFps = settingStore.get('LiteGraph.Canvas.MaximumFps')
     const { canvas } = canvasStore
     if (canvas) canvas.maximumFps = maximumFps

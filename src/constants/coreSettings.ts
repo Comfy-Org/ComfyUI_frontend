@@ -528,12 +528,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.RerouteBeta',
     category: ['LiteGraph', 'RerouteBeta'],
     name: 'Opt-in to the reroute beta test',
-    tooltip:
-      'Enables the new native reroutes.\n\nReroutes can be added by holding alt and dragging from a link line, or on the link menu.\n\nDisabling this option is non-destructive - reroutes are hidden.',
-    experimental: true,
+    tooltip: 'No longer has any effect; reroutes are always enabled.',
+    deprecated: true,
     type: 'boolean',
     defaultValue: false,
-    versionAdded: '1.3.42'
+    versionAdded: '1.3.42',
+    versionModified: '1.13.3'
   },
   {
     id: 'Comfy.Graph.LinkMarkers',
