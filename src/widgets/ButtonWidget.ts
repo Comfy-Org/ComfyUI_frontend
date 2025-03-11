@@ -3,7 +3,7 @@ import type { LGraphNode } from "@/LGraphNode"
 import type { CanvasMouseEvent } from "@/types/events"
 import type { IButtonWidget, IWidgetOptions } from "@/types/widgets"
 
-import { BaseWidget } from "./BaseWidget"
+import { BaseWidget, type DrawWidgetOptions } from "./BaseWidget"
 
 export class ButtonWidget extends BaseWidget implements IButtonWidget {
   // IButtonWidget properties
@@ -23,20 +23,18 @@ export class ButtonWidget extends BaseWidget implements IButtonWidget {
    * @param ctx The canvas context
    * @param options The options for drawing the widget
    */
-  override drawWidget(ctx: CanvasRenderingContext2D, options: {
-    y: number
-    width: number
-    show_text?: boolean
-    margin?: number
-  }) {
+  override drawWidget(ctx: CanvasRenderingContext2D, {
+    y,
+    width,
+    show_text = true,
+    margin = 15,
+  }: DrawWidgetOptions) {
     // Store original context attributes
     const originalTextAlign = ctx.textAlign
     const originalStrokeStyle = ctx.strokeStyle
     const originalFillStyle = ctx.fillStyle
 
-    const { y, width, show_text = true, margin = 15 } = options
-    const widget_width = width
-    const H = this.height
+    const { height } = this
 
     // Draw button background
     ctx.fillStyle = this.background_color
@@ -44,12 +42,12 @@ export class ButtonWidget extends BaseWidget implements IButtonWidget {
       ctx.fillStyle = "#AAA"
       this.clicked = false
     }
-    ctx.fillRect(margin, y, widget_width - margin * 2, H)
+    ctx.fillRect(margin, y, width - margin * 2, height)
 
     // Draw button outline if not disabled
     if (show_text && !this.disabled) {
       ctx.strokeStyle = this.outline_color
-      ctx.strokeRect(margin, y, widget_width - margin * 2, H)
+      ctx.strokeRect(margin, y, width - margin * 2, height)
     }
 
     // Draw button text
@@ -58,8 +56,8 @@ export class ButtonWidget extends BaseWidget implements IButtonWidget {
       ctx.fillStyle = this.text_color
       ctx.fillText(
         this.label || this.name || "",
-        widget_width * 0.5,
-        y + H * 0.7,
+        width * 0.5,
+        y + height * 0.7,
       )
     }
 

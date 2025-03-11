@@ -35,7 +35,7 @@ interface IDrawSelectionBoundingOptions {
   shape?: RenderShape
   /** The radius of the rounded corners for {@link RenderShape.ROUND} and {@link RenderShape.CARD} */
   round_radius?: number
-  /** Shape will extend above the Y-axis 0 by this amount */
+  /** Shape will extend above the Y-axis 0 by this amount @deprecated This is node-specific: it should be removed entirely, and behaviour defined by the caller more explicitly */
   title_height?: number
   /** @deprecated This is node-specific: it should be removed entirely, and behaviour defined by the caller more explicitly */
   title_mode?: TitleMode
@@ -58,25 +58,26 @@ interface IDrawSelectionBoundingOptions {
 export function strokeShape(
   ctx: CanvasRenderingContext2D,
   area: Rect,
-  options: IDrawSelectionBoundingOptions = {},
-): void {
-  // Don't deconstruct in function arguments. If deconstructed in the argument list, the defaults will be evaluated
-  // once when the function is defined, and will not be re-evaluated when the function is called.
-  const {
+  {
     shape = RenderShape.BOX,
-    round_radius = LiteGraph.ROUND_RADIUS,
-    title_height = LiteGraph.NODE_TITLE_HEIGHT,
+    round_radius,
+    title_height,
     title_mode = TitleMode.NORMAL_TITLE,
-    colour = LiteGraph.NODE_BOX_OUTLINE_COLOR,
+    colour,
     padding = 6,
     collapsed = false,
     thickness = 1,
-  } = options
+  }: IDrawSelectionBoundingOptions = {},
+): void {
+  // These param defaults are not compile-time static, and must be re-evaluated at runtime
+  round_radius ??= LiteGraph.ROUND_RADIUS
+  colour ??= LiteGraph.NODE_BOX_OUTLINE_COLOR
 
   // Adjust area if title is transparent
   if (title_mode === TitleMode.TRANSPARENT_TITLE) {
-    area[1] -= title_height
-    area[3] += title_height
+    const height = title_height ?? LiteGraph.NODE_TITLE_HEIGHT
+    area[1] -= height
+    area[3] += height
   }
 
   // Set up context

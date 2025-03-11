@@ -5,7 +5,7 @@ import type { IComboWidget, IWidgetOptions } from "@/types/widgets"
 
 import { LiteGraph } from "@/litegraph"
 
-import { BaseWidget } from "./BaseWidget"
+import { BaseWidget, type DrawWidgetOptions } from "./BaseWidget"
 
 export class ComboWidget extends BaseWidget implements IComboWidget {
   // IComboWidget properties
@@ -24,20 +24,18 @@ export class ComboWidget extends BaseWidget implements IComboWidget {
    * @param ctx The canvas context
    * @param options The options for drawing the widget
    */
-  override drawWidget(ctx: CanvasRenderingContext2D, options: {
-    y: number
-    width: number
-    show_text?: boolean
-    margin?: number
-  }) {
+  override drawWidget(ctx: CanvasRenderingContext2D, {
+    y,
+    width,
+    show_text = true,
+    margin = 15,
+  }: DrawWidgetOptions) {
     // Store original context attributes
     const originalTextAlign = ctx.textAlign
     const originalStrokeStyle = ctx.strokeStyle
     const originalFillStyle = ctx.fillStyle
 
-    const { y, width, show_text = true, margin = 15 } = options
-    const widget_width = width
-    const H = this.height
+    const { height } = this
 
     ctx.textAlign = "left"
     ctx.strokeStyle = this.outline_color
@@ -45,9 +43,9 @@ export class ComboWidget extends BaseWidget implements IComboWidget {
     ctx.beginPath()
 
     if (show_text)
-      ctx.roundRect(margin, y, widget_width - margin * 2, H, [H * 0.5])
+      ctx.roundRect(margin, y, width - margin * 2, height, [height * 0.5])
     else
-      ctx.rect(margin, y, widget_width - margin * 2, H)
+      ctx.rect(margin, y, width - margin * 2, height)
     ctx.fill()
 
     if (show_text) {
@@ -57,14 +55,14 @@ export class ComboWidget extends BaseWidget implements IComboWidget {
         ctx.fillStyle = this.text_color
         ctx.beginPath()
         ctx.moveTo(margin + 16, y + 5)
-        ctx.lineTo(margin + 6, y + H * 0.5)
-        ctx.lineTo(margin + 16, y + H - 5)
+        ctx.lineTo(margin + 6, y + height * 0.5)
+        ctx.lineTo(margin + 16, y + height - 5)
         ctx.fill()
         // Draw right arrow
         ctx.beginPath()
-        ctx.moveTo(widget_width - margin - 16, y + 5)
-        ctx.lineTo(widget_width - margin - 6, y + H * 0.5)
-        ctx.lineTo(widget_width - margin - 16, y + H - 5)
+        ctx.moveTo(width - margin - 16, y + 5)
+        ctx.lineTo(width - margin - 6, y + height * 0.5)
+        ctx.lineTo(width - margin - 16, y + height - 5)
         ctx.fill()
       }
 
@@ -72,7 +70,7 @@ export class ComboWidget extends BaseWidget implements IComboWidget {
       ctx.fillStyle = this.secondary_text_color
       const label = this.label || this.name
       if (label != null) {
-        ctx.fillText(label, margin * 2 + 5, y + H * 0.7)
+        ctx.fillText(label, margin * 2 + 5, y + height * 0.7)
       }
 
       // Draw value
@@ -92,7 +90,7 @@ export class ComboWidget extends BaseWidget implements IComboWidget {
       }
 
       const labelWidth = ctx.measureText(label || "").width + margin * 2
-      const inputWidth = widget_width - margin * 4
+      const inputWidth = width - margin * 4
       const availableWidth = inputWidth - labelWidth
       const textWidth = ctx.measureText(displayValue).width
 
@@ -124,8 +122,8 @@ export class ComboWidget extends BaseWidget implements IComboWidget {
 
       ctx.fillText(
         displayValue,
-        widget_width - margin * 2 - 20,
-        y + H * 0.7,
+        width - margin * 2 - 20,
+        y + height * 0.7,
       )
     }
 

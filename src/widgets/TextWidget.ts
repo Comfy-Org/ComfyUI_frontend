@@ -3,7 +3,7 @@ import type { LGraphNode } from "@/LGraphNode"
 import type { CanvasMouseEvent } from "@/types/events"
 import type { IStringWidget, IWidgetOptions } from "@/types/widgets"
 
-import { BaseWidget } from "./BaseWidget"
+import { BaseWidget, type DrawWidgetOptions } from "./BaseWidget"
 
 export class TextWidget extends BaseWidget implements IStringWidget {
   // IStringWidget properties
@@ -22,20 +22,18 @@ export class TextWidget extends BaseWidget implements IStringWidget {
    * @param ctx The canvas context
    * @param options The options for drawing the widget
    */
-  override drawWidget(ctx: CanvasRenderingContext2D, options: {
-    y: number
-    width: number
-    show_text?: boolean
-    margin?: number
-  }) {
+  override drawWidget(ctx: CanvasRenderingContext2D, {
+    y,
+    width,
+    show_text = true,
+    margin = 15,
+  }: DrawWidgetOptions) {
     // Store original context attributes
     const originalTextAlign = ctx.textAlign
     const originalStrokeStyle = ctx.strokeStyle
     const originalFillStyle = ctx.fillStyle
 
-    const { y, width, show_text = true, margin = 15 } = options
-    const widget_width = width
-    const H = this.height
+    const { height } = this
 
     ctx.textAlign = "left"
     ctx.strokeStyle = this.outline_color
@@ -43,23 +41,23 @@ export class TextWidget extends BaseWidget implements IStringWidget {
     ctx.beginPath()
 
     if (show_text)
-      ctx.roundRect(margin, y, widget_width - margin * 2, H, [H * 0.5])
+      ctx.roundRect(margin, y, width - margin * 2, height, [height * 0.5])
     else
-      ctx.rect(margin, y, widget_width - margin * 2, H)
+      ctx.rect(margin, y, width - margin * 2, height)
     ctx.fill()
 
     if (show_text) {
       if (!this.disabled) ctx.stroke()
       ctx.save()
       ctx.beginPath()
-      ctx.rect(margin, y, widget_width - margin * 2, H)
+      ctx.rect(margin, y, width - margin * 2, height)
       ctx.clip()
 
       // Draw label
       ctx.fillStyle = this.secondary_text_color
       const label = this.label || this.name
       if (label != null) {
-        ctx.fillText(label, margin * 2, y + H * 0.7)
+        ctx.fillText(label, margin * 2, y + height * 0.7)
       }
 
       // Draw value
@@ -68,8 +66,8 @@ export class TextWidget extends BaseWidget implements IStringWidget {
       ctx.fillText(
         // 30 chars max
         String(this.value).substr(0, 30),
-        widget_width - margin * 2,
-        y + H * 0.7,
+        width - margin * 2,
+        y + height * 0.7,
       )
       ctx.restore()
     }

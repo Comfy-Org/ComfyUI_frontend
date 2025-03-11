@@ -5,6 +5,13 @@ import type { IBaseWidget, IWidget, IWidgetOptions, TWidgetType, TWidgetValue } 
 import { Point } from "@/interfaces"
 import { LiteGraph } from "@/litegraph"
 
+export interface DrawWidgetOptions {
+  y: number
+  width: number
+  show_text?: boolean
+  margin?: number
+}
+
 export abstract class BaseWidget implements IBaseWidget {
   linkedWidgets?: IWidget[]
   name: string
@@ -72,12 +79,7 @@ export abstract class BaseWidget implements IBaseWidget {
    * @remarks Not naming this `draw` as `draw` conflicts with the `draw` method in
    * custom widgets.
    */
-  abstract drawWidget(ctx: CanvasRenderingContext2D, options: {
-    y: number
-    width: number
-    show_text?: boolean
-    margin?: number
-  }): void
+  abstract drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions): void
 
   /**
    * Handles the click event for the widget
