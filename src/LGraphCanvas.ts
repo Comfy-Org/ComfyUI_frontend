@@ -2610,6 +2610,8 @@ export class LGraphCanvas implements ConnectionColorContext {
                     LiteGraph.isValidConnection(linkConnector.renderLinks[0]?.fromSlot.type, widgetLinkType) &&
                     firstLink.node.isValidWidgetLink?.(firstLink.fromSlotIndex, node, overWidget) !== false
                   ) {
+                    const { pos: [nodeX, nodeY] } = node
+                    highlightPos = [nodeX + 10, nodeY + 10 + overWidget.y]
                     linkConnector.overWidget = overWidget
                     linkConnector.overWidgetType = widgetLinkType
                   }
@@ -3972,6 +3974,39 @@ export class LGraphCanvas implements ConnectionColorContext {
     ctx.lineWidth = 1
     ctx.strokeStyle = linearGradient
     ctx.stroke()
+
+    const { linkConnector } = this
+    const { overWidget } = linkConnector
+    if (overWidget) {
+      const { computedHeight } = overWidget
+
+      ctx.beginPath()
+      const { pos: [nodeX, nodeY] } = node
+      const height = LiteGraph.NODE_WIDGET_HEIGHT
+      if (
+        overWidget.type.startsWith("custom") &&
+        computedHeight != null &&
+        computedHeight > height * 2
+      ) {
+        // Most likely DOM widget text box
+        ctx.rect(
+          nodeX + 9,
+          nodeY + overWidget.y + 9,
+          (overWidget.width ?? area[2]) - 18,
+          computedHeight - 18,
+        )
+      } else {
+        // Regular widget, probably
+        ctx.roundRect(
+          nodeX + 15,
+          nodeY + overWidget.y,
+          overWidget.width ?? area[2],
+          height,
+          height * 0.5,
+        )
+      }
+      ctx.stroke()
+    }
 
     ctx.strokeStyle = gradient
     ctx.stroke()
