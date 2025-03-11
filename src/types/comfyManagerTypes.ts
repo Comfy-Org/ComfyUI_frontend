@@ -3,7 +3,7 @@ import type { components } from '@/types/comfyRegistryTypes'
 
 type RegistryPack = components['schemas']['Node']
 type WorkflowNodeProperties = ComfyWorkflowJSON['nodes'][0]['properties']
-export type NodeField = keyof RegistryPack | null
+export type PackField = keyof RegistryPack | null
 
 export type PackWithSelectedVersion = {
   nodePack: RegistryPack
@@ -39,7 +39,7 @@ enum ManagerPackInstallType {
   GIT = 'git-clone',
   /** Installed via file copy */
   COPY = 'copy',
-  /** Installed from the Comfy Node Registry */
+  /** Installed from the Comfy Registry */
   REGISTRY = 'cnr'
 }
 

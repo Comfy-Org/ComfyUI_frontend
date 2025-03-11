@@ -44,10 +44,10 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SearchFilterDropdown from '@/components/dialog/content/manager/registrySearchBar/SearchFilterDropdown.vue'
-import type { NodeField, SearchOption } from '@/types/comfyManagerTypes'
+import type { PackField, SearchOption } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
 
-const DEFAULT_SORT: NodeField = 'downloads'
+const DEFAULT_SORT: PackField = 'downloads'
 const DEFAULT_FILTER = 'nodePack'
 
 const props = defineProps<{
@@ -57,12 +57,12 @@ const props = defineProps<{
 
 const { t } = useI18n()
 
-const currentSort = ref<NodeField>(DEFAULT_SORT)
+const currentSort = ref<PackField>(DEFAULT_SORT)
 const currentFilter = ref<string>(DEFAULT_FILTER)
 
 const emit = defineEmits<{
   'update:searchQuery': [value: string]
-  'update:sortBy': [value: NodeField]
+  'update:sortBy': [value: PackField]
   'update:filterBy': [value: string]
 }>()
 
@@ -70,7 +70,7 @@ const hasResults = computed(
   () => props.searchQuery.trim() && props.searchResults?.length
 )
 
-const sortOptions: SearchOption<NodeField>[] = [
+const sortOptions: SearchOption<PackField>[] = [
   { id: 'downloads', label: t('manager.sort.downloads') },
   { id: 'name', label: t('g.name') },
   { id: 'rating', label: t('manager.sort.rating') },
