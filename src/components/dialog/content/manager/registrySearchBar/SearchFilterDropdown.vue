@@ -6,10 +6,9 @@
       :options="options"
       optionLabel="label"
       optionValue="id"
-      class="min-w-[6rem]"
+      class="min-w-[6rem] border-none bg-transparent shadow-none"
       @change="handleChange"
       :pt="{
-        root: { class: 'border-none' },
         input: { class: 'py-0 px-1 border-none' },
         trigger: { class: 'hidden' },
         panel: { class: 'shadow-md' },
