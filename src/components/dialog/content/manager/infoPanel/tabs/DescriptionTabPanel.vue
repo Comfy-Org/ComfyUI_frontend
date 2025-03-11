@@ -18,21 +18,13 @@ import InfoTextSection, {
   type TextSection
 } from '@/components/dialog/content/manager/infoPanel/InfoTextSection.vue'
 import { components } from '@/types/comfyRegistryTypes'
+import { isValidUrl } from '@/utils/formatUtil'
 
 const { t } = useI18n()
 
-const props = defineProps<{
+const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']
 }>()
-
-const isValidUrl = (url: string): boolean => {
-  try {
-    new URL(url)
-    return true
-  } catch {
-    return false
-  }
-}
 
 const isLicenseFile = (filename: string): boolean => {
   // Match LICENSE, LICENSE.md, LICENSE.txt (case insensitive)
@@ -41,7 +33,6 @@ const isLicenseFile = (filename: string): boolean => {
 }
 
 const extractBaseRepoUrl = (repoUrl: string): string => {
-  // Match GitHub repository URL and extract the base URL
   const githubRepoPattern = /^(https?:\/\/github\.com\/[^/]+\/[^/]+)/i
   const match = repoUrl.match(githubRepoPattern)
   return match ? match[1] : repoUrl
@@ -50,60 +41,65 @@ const extractBaseRepoUrl = (repoUrl: string): string => {
 const createLicenseUrl = (filename: string, repoUrl: string): string => {
   if (!repoUrl || !filename) return ''
 
-  // Use the filename if it's a license file, otherwise use LICENSE
   const licenseFile = isLicenseFile(filename) ? filename : 'LICENSE'
-
-  // Get the base repository URL
   const baseRepoUrl = extractBaseRepoUrl(repoUrl)
-
   return `${baseRepoUrl}/blob/main/${licenseFile}`
 }
 
 const parseLicenseObject = (
   licenseObj: any
 ): { text: string; isUrl: boolean } => {
-  // Get the license file or text
   const licenseFile = licenseObj.file || licenseObj.text
 
-  // If it's a string and a license file, create a URL
-  if (typeof licenseFile === 'string' && isLicenseFile(licenseFile)) {
-    const url = createLicenseUrl(licenseFile, props.nodePack.repository)
+  if (
+    typeof licenseFile === 'string' &&
+    isLicenseFile(licenseFile) &&
+    nodePack.repository
+  ) {
+    const url = createLicenseUrl(licenseFile, nodePack.repository)
     return {
       text: url,
       isUrl: !!url && isValidUrl(url)
     }
-  }
-  // Otherwise use the text directly
-  else if (licenseObj.text) {
+  } else if (licenseObj.text) {
     return {
       text: licenseObj.text,
       isUrl: false
     }
+  } else if (typeof licenseFile === 'string') {
+    // Return the license file name if repository is missing
+    return {
+      text: licenseFile,
+      isUrl: false
+    }
   }
-
-  // Default fallback
   return {
     text: JSON.stringify(licenseObj),
     isUrl: false
   }
 }
 
-const formatLicense = (license: string): { text: string; isUrl: boolean } => {
+const formatLicense = (
+  license: string
+): { text: string; isUrl: boolean } | null => {
+  // Treat "{}" JSON string as undefined
+  if (license === '{}') return null
+
   try {
     const licenseObj = JSON.parse(license)
+    // Handle empty object case
+    if (Object.keys(licenseObj).length === 0) {
+      return null
+    }
     return parseLicenseObject(licenseObj)
   } catch (e) {
-    // Not JSON, handle as plain string
-    // If it's a license file, create a URL
-    if (isLicenseFile(license)) {
-      const url = createLicenseUrl(license, props.nodePack.repository)
+    if (isLicenseFile(license) && nodePack.repository) {
+      const url = createLicenseUrl(license, nodePack.repository)
       return {
         text: url,
         isUrl: !!url && isValidUrl(url)
       }
     }
-
-    // Otherwise return as is
     return {
       text: license,
       isUrl: false
@@ -115,25 +111,25 @@ const descriptionSections = computed<TextSection[]>(() => {
   const sections: TextSection[] = [
     {
       title: t('g.description'),
-      text: props.nodePack.description || t('manager.noDescription')
+      text: nodePack.description || t('manager.noDescription')
     }
   ]
 
-  if (props.nodePack.repository) {
+  if (nodePack.repository) {
     sections.push({
       title: t('manager.repository'),
-      text: props.nodePack.repository,
-      isUrl: isValidUrl(props.nodePack.repository)
+      text: nodePack.repository,
+      isUrl: isValidUrl(nodePack.repository)
     })
   }
 
-  if (props.nodePack.license) {
-    const { text, isUrl } = formatLicense(props.nodePack.license)
-    if (text) {
+  if (nodePack.license) {
+    const licenseInfo = formatLicense(nodePack.license)
+    if (licenseInfo && licenseInfo.text) {
       sections.push({
         title: t('manager.license'),
-        text,
-        isUrl
+        text: licenseInfo.text,
+        isUrl: licenseInfo.isUrl
       })
     }
   }
