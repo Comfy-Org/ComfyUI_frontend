@@ -381,7 +381,7 @@ export class ComfyApp {
                 // @ts-expect-error
                 prop.value = value
                 // @ts-expect-error
-                prop.callback(value)
+                prop.callback?.(value)
               }
             }
           })
