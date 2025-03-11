@@ -65,15 +65,13 @@ export enum ManagerChannel {
   TUTORIAL = 'tutorial'
 }
 
-export enum ManagerSourceMode {
+export enum ManagerDatabaseSource {
   /** Get pack info from the Comfy Registry */
   REMOTE = 'remote',
-  /** Get pack info from the custom-node-list.json file in the ComfyUI-Manager directory */
+  /** If set to `local`, the channel is ignored */
   LOCAL = 'local',
-  /** Get pack info from the cached response from the Comfy Registry */
-  CACHE = 'cache',
-  /** Get pack info from imported data */
-  IMPORTED = 'imported'
+  /** Get pack info from the cached response from the Comfy Registry (1 day TTL) */
+  CACHE = 'cache'
 }
 
 export interface ManagerQueueStatus {
@@ -163,9 +161,9 @@ export interface InstallPackParams extends ManagerPackInfo {
    */
   selected_version: WorkflowNodeProperties['ver'] | SelectedVersion
   /**
-   * The mode to install the node in.
+   * If set to `imported`, returns only the packs that were imported at app startup.
    */
-  mode: ManagerSourceMode
+  mode: 'imported' | null
   /**
    * The GitHub link to the repository of the node to install.
    * Required if `selected_version` is `nightly`.
