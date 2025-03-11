@@ -66,32 +66,32 @@ export type IWidget =
   | IKnobWidget
 
 export interface IBooleanWidget extends IBaseWidget {
-  type?: "toggle"
+  type: "toggle"
   value: boolean
 }
 
 /** Any widget that uses a numeric backing */
 export interface INumericWidget extends IBaseWidget {
-  type?: "number"
+  type: "number"
   value: number
 }
 
 export interface ISliderWidget extends IBaseWidget {
-  type?: "slider"
+  type: "slider"
   value: number
   options: IWidgetSliderOptions
   marker?: number
 }
 
 export interface IKnobWidget extends IBaseWidget {
-  type?: "knob"
+  type: "knob"
   value: number
   options: IWidgetKnobOptions
 }
 
 /** A combo-box widget (dropdown, select, etc) */
 export interface IComboWidget extends IBaseWidget {
-  type?: "combo"
+  type: "combo"
   value: string | number
   options: IWidgetOptions<string>
 }
@@ -100,12 +100,12 @@ export type IStringWidgetType = IStringWidget["type"] | IMultilineStringWidget["
 
 /** A widget with a string value */
 export interface IStringWidget extends IBaseWidget {
-  type?: "string" | "text"
+  type: "string" | "text"
   value: string
 }
 
 export interface IButtonWidget extends IBaseWidget {
-  type?: "button"
+  type: "button"
   value: undefined
   clicked: boolean
 }
@@ -114,7 +114,7 @@ export interface IButtonWidget extends IBaseWidget {
 export interface IMultilineStringWidget<TElement extends HTMLElement = HTMLTextAreaElement> extends
   IBaseWidget {
 
-  type?: "multiline"
+  type: "multiline"
   value: string
 
   /** HTML textarea element  */
@@ -123,7 +123,7 @@ export interface IMultilineStringWidget<TElement extends HTMLElement = HTMLTextA
 
 /** A custom widget - accepts any value and has no built-in special handling */
 export interface ICustomWidget extends IBaseWidget {
-  type?: "custom"
+  type: "custom"
   value: string | object
 }
 
@@ -147,7 +147,7 @@ export interface IBaseWidget {
 
   label?: string
   /** Widget type (see {@link TWidgetType}) */
-  type?: TWidgetType
+  type: TWidgetType
   value?: TWidgetValue
 
   /**
@@ -159,7 +159,7 @@ export interface IBaseWidget {
   /**
    * The starting y position of the widget after layout.
    */
-  y?: number
+  y: number
 
   /**
    * The y position of the widget after drawing (rendering).

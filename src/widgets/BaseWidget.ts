@@ -10,9 +10,9 @@ export abstract class BaseWidget implements IBaseWidget {
   name: string
   options: IWidgetOptions<unknown>
   label?: string
-  type?: TWidgetType
+  type: TWidgetType
   value?: TWidgetValue
-  y?: number
+  y: number = 0
   last_y?: number
   width?: number
   disabled?: boolean
@@ -42,6 +42,7 @@ export abstract class BaseWidget implements IBaseWidget {
     Object.assign(this, widget)
     this.name = widget.name
     this.options = widget.options
+    this.type = widget.type
   }
 
   get outline_color() {

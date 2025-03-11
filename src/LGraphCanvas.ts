@@ -2357,17 +2357,14 @@ export class LGraphCanvas implements ConnectionColorContext {
     const x = pos[0] - node.pos[0]
     const y = pos[1] - node.pos[1]
 
-    // @ts-expect-error https://github.com/Comfy-Org/litegraph.js/issues/616
     const WidgetClass = WIDGET_TYPE_MAP[widget.type]
     if (WidgetClass) {
       const widgetInstance = toClass(WidgetClass, widget)
-      // @ts-expect-error https://github.com/Comfy-Org/litegraph.js/issues/616
       pointer.onClick = () => widgetInstance.onClick({
         e,
         node,
         canvas: this,
       })
-      // @ts-expect-error https://github.com/Comfy-Org/litegraph.js/issues/616
       pointer.onDrag = eMove => widgetInstance.onDrag?.({
         e: eMove,
         node,
