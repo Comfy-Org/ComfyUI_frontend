@@ -5,7 +5,15 @@
     ref="widgetElement"
     :style="style"
     v-show="widgetState.visible"
-  />
+  >
+    <component
+      v-if="isComponentWidget(widget)"
+      :is="widget.component"
+      :modelValue="widget.value"
+      @update:modelValue="emit('update:widgetValue', $event)"
+      :widget="widget"
+    />
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -15,7 +23,11 @@ import { CSSProperties, computed, onMounted, ref, watch } from 'vue'
 
 import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
 import { useDomClipping } from '@/composables/element/useDomClipping'
-import { type BaseDOMWidget, isDOMWidget } from '@/scripts/domWidget'
+import {
+  type BaseDOMWidget,
+  isComponentWidget,
+  isDOMWidget
+} from '@/scripts/domWidget'
 import { DomWidgetState } from '@/stores/domWidgetStore'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
@@ -23,6 +35,10 @@ import { useSettingStore } from '@/stores/settingStore'
 const { widget, widgetState } = defineProps<{
   widget: BaseDOMWidget<string | object>
   widgetState: DomWidgetState
+}>()
+
+const emit = defineEmits<{
+  (e: 'update:widgetValue', value: string | object): void
 }>()
 
 const widgetElement = ref<HTMLElement>()

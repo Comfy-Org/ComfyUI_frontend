@@ -6,6 +6,7 @@
       :key="widget.id"
       :widget="widget"
       :widget-state="domWidgetStore.widgetStates.get(widget.id)"
+      @update:widget-value="widget.value = $event"
     />
   </div>
 </template>
