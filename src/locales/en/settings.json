@@ -245,7 +245,7 @@
   },
   "Comfy_RerouteBeta": {
     "name": "Opt-in to the reroute beta test",
-    "tooltip": "Enables the new native reroutes.\n\nReroutes can be added by holding alt and dragging from a link line, or on the link menu.\n\nDisabling this option is non-destructive - reroutes are hidden."
+    "tooltip": "No longer has any effect; reroutes are always enabled."
   },
   "Comfy_Sidebar_Location": {
     "name": "Sidebar location",
