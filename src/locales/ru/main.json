@@ -117,6 +117,7 @@
     "about": "О программе",
     "add": "Добавить",
     "all": "Все",
+    "apply": "Применить",
     "back": "Назад",
     "cancel": "Отмена",
     "capture": "захват",
@@ -381,15 +382,27 @@
       "enabled": "Включено",
       "nodePack": "Пакет Узлов"
     },
+    "install": "Установить",
     "installSelected": "Установить выбранное",
     "lastUpdated": "Последнее обновление",
+    "latestVersion": "Последняя (рекомендуется)",
     "license": "Лицензия",
+    "loadingVersions": "Загрузка версий...",
+    "nightlyVersion": "Ночная",
     "noDescription": "Описание отсутствует",
     "noResultsFound": "По вашему запросу ничего не найдено.",
     "nodePack": "Пакет Узлов",
     "packsSelected": "Выбрано пакетов",
+    "queueStatus": {
+      "allJobsDone": "Все задачи выполнены",
+      "error": "Не удается подключиться к ComfyUI-Manager",
+      "nextJob": "Начало следующей задачи",
+      "processingJob": "Обработка задачи",
+      "waiting": "Обработка элемента {count} из {total}"
+    },
     "repository": "Репозиторий",
     "searchPlaceholder": "Поиск",
+    "selectVersion": "Выбрать версию",
     "sort": {
       "downloads": "Самые популярные",
       "rating": "Рейтинг"
@@ -406,6 +419,9 @@
     "totalNodes": "Всего Узлов",
     "tryAgainLater": "Пожалуйста, попробуйте позже.",
     "tryDifferentSearch": "Пожалуйста, попробуйте изменить запрос.",
+    "uninstall": "Удалить",
+    "uninstallSelected": "Удалить выбранное",
+    "update": "Обновить",
     "version": "Версия"
   },
   "menu": {
@@ -875,7 +891,7 @@
         "flux_dev_checkpoint_example": "Flux Dev",
         "flux_fill_inpaint_example": "Flux Inpaint",
         "flux_fill_outpaint_example": "Flux Outpaint",
-        "flux_redux_model_example": "Flux Redux Model",
+        "flux_retdel_example": "Flux Redux Модель",
         "flux_schnell": "Flux Schnell"
       },
       "SD3_5": {

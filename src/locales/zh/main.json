@@ -117,6 +117,7 @@
     "about": "关于",
     "add": "添加",
     "all": "全部",
+    "apply": "应用",
     "back": "返回",
     "cancel": "取消",
     "capture": "捕获",
@@ -381,15 +382,27 @@
       "enabled": "已启用",
       "nodePack": "节点包"
     },
+    "install": "安装",
     "installSelected": "安装选定",
     "lastUpdated": "最后更新",
+    "latestVersion": "最新版（推荐）",
     "license": "许可证",
+    "loadingVersions": "正在加载版本...",
+    "nightlyVersion": "每日版",
     "noDescription": "无可用描述",
     "noResultsFound": "未找到符合您搜索的结果。",
     "nodePack": "节点包",
     "packsSelected": "选定的包",
+    "queueStatus": {
+      "allJobsDone": "所有任务已完成",
+      "error": "无法连接到ComfyUI-Manager",
+      "nextJob": "开始下一个任务",
+      "processingJob": "正在处理任务",
+      "waiting": "正在处理第{count}项，共{total}项"
+    },
     "repository": "仓库",
     "searchPlaceholder": "搜索",
+    "selectVersion": "选择版本",
     "sort": {
       "downloads": "最受欢迎",
       "rating": "评级"
@@ -406,6 +419,9 @@
     "totalNodes": "节点总数",
     "tryAgainLater": "请稍后再试。",
     "tryDifferentSearch": "请尝试不同的搜索查询。",
+    "uninstall": "卸载",
+    "uninstallSelected": "卸载所选",
+    "update": "更新",
     "version": "版本"
   },
   "menu": {
@@ -875,7 +891,7 @@
         "flux_dev_checkpoint_example": "Flux Dev的检查点示例",
         "flux_fill_inpaint_example": "Flux Inpaint",
         "flux_fill_outpaint_example": "Flux Outpaint",
-        "flux_redux_model_example": "Flux Redux Model",
+        "flux_retdel_example": "Flux Redux模型",
         "flux_schnell": "Flux Schnell"
       },
       "SD3_5": {

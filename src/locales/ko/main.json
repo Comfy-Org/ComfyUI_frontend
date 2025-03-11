@@ -117,6 +117,7 @@
     "about": "정보",
     "add": "추가",
     "all": "모두",
+    "apply": "적용",
     "back": "뒤로",
     "cancel": "취소",
     "capture": "캡처",
@@ -381,15 +382,27 @@
       "enabled": "활성화",
       "nodePack": "노드 팩"
     },
+    "install": "설치",
     "installSelected": "선택한 항목 설치",
     "lastUpdated": "마지막 업데이트",
+    "latestVersion": "최신 (추천)",
     "license": "라이선스",
+    "loadingVersions": "버전 로딩 중...",
+    "nightlyVersion": "야간",
     "noDescription": "설명이 없습니다",
     "noResultsFound": "검색과 일치하는 결과가 없습니다.",
     "nodePack": "노드 팩",
     "packsSelected": "선택한 팩",
+    "queueStatus": {
+      "allJobsDone": "모든 작업 완료",
+      "error": "ComfyUI-Manager에 연결할 수 없습니다.",
+      "nextJob": "다음 작업 시작",
+      "processingJob": "작업 처리 중",
+      "waiting": "항목 {count} / {total} 처리 중"
+    },
     "repository": "저장소",
     "searchPlaceholder": "검색",
+    "selectVersion": "버전 선택",
     "sort": {
       "downloads": "가장 인기 있는",
       "rating": "평점"
@@ -406,6 +419,9 @@
     "totalNodes": "총 노드",
     "tryAgainLater": "나중에 다시 시도해 주세요.",
     "tryDifferentSearch": "다른 검색어를 시도해 주세요.",
+    "uninstall": "제거",
+    "uninstallSelected": "선택 항목 제거",
+    "update": "업데이트",
     "version": "버전"
   },
   "menu": {
@@ -875,7 +891,7 @@
         "flux_dev_checkpoint_example": "FLUX Dev 예제",
         "flux_fill_inpaint_example": "FLUX 인페인트 예제",
         "flux_fill_outpaint_example": "FLUX 아웃페인트 예제",
-        "flux_redux_model_example": "FLUX Redux 모델 예제",
+        "flux_retdel_example": "Flux Redux 모델",
         "flux_schnell": "FLUX Schnell"
       },
       "SD3_5": {

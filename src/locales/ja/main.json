@@ -117,6 +117,7 @@
     "about": "情報",
     "add": "追加",
     "all": "すべて",
+    "apply": "適用",
     "back": "戻る",
     "cancel": "キャンセル",
     "capture": "キャプチャ",
@@ -381,15 +382,27 @@
       "enabled": "有効",
       "nodePack": "ノードパック"
     },
+    "install": "インストール",
     "installSelected": "選択したものをインストール",
     "lastUpdated": "最終更新日",
+    "latestVersion": "最新版（推奨）",
     "license": "ライセンス",
+    "loadingVersions": "バージョンを読み込んでいます...",
+    "nightlyVersion": "ナイトリー",
     "noDescription": "説明はありません",
     "noResultsFound": "検索に一致する結果が見つかりませんでした。",
     "nodePack": "ノードパック",
     "packsSelected": "選択したパック",
+    "queueStatus": {
+      "allJobsDone": "すべてのジョブが完了",
+      "error": "ComfyUI-Managerに接続できません",
+      "nextJob": "次のジョブを開始",
+      "processingJob": "ジョブを処理中",
+      "waiting": "アイテム{count}を{total}の中で処理中"
+    },
     "repository": "リポジトリ",
     "searchPlaceholder": "検索",
+    "selectVersion": "バージョンを選択",
     "sort": {
       "downloads": "最も人気",
       "rating": "評価"
@@ -406,6 +419,9 @@
     "totalNodes": "合計ノード数",
     "tryAgainLater": "後ほど再試行してください。",
     "tryDifferentSearch": "別の検索クエリを試してみてください。",
+    "uninstall": "アンインストール",
+    "uninstallSelected": "選択したものをアンインストール",
+    "update": "更新",
     "version": "バージョン"
   },
   "menu": {
@@ -875,7 +891,7 @@
         "flux_dev_checkpoint_example": "Flux Dev",
         "flux_fill_inpaint_example": "Flux Inpaint",
         "flux_fill_outpaint_example": "Flux Outpaint",
-        "flux_redux_model_example": "Flux Reduxモデル",
+        "flux_retdel_example": "Flux Reduxモデル",
         "flux_schnell": "Flux Schnell"
       },
       "SD3_5": {
