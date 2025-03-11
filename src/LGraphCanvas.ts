@@ -40,7 +40,7 @@ import { LinkConnector } from "@/canvas/LinkConnector"
 
 import { isOverNodeInput, isOverNodeOutput } from "./canvas/measureSlots"
 import { CanvasPointer } from "./CanvasPointer"
-import { DragAndScale } from "./DragAndScale"
+import { type AnimationOptions, DragAndScale } from "./DragAndScale"
 import { strokeShape } from "./draw"
 import { NullGraphError } from "./infrastructure/NullGraphError"
 import { LGraphGroup } from "./LGraphGroup"
@@ -63,7 +63,6 @@ import { Reroute, type RerouteId } from "./Reroute"
 import { stringOrEmpty } from "./strings"
 import {
   CanvasItem,
-  EaseFunction,
   LGraphEventMode,
   LinkDirection,
   LinkMarkerShape,
@@ -608,7 +607,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     // throw ("No graph assigned");
     this.background_image = LGraphCanvas.DEFAULT_BACKGROUND_IMAGE
 
-    this.ds = new DragAndScale()
+    this.ds = new DragAndScale(canvas)
     this.pointer = new CanvasPointer(canvas)
 
     // @deprecated Workaround: Keep until connecting_links is removed.
@@ -7240,73 +7239,9 @@ export class LGraphCanvas implements ConnectionColorContext {
    * Starts an animation to fit the view around the specified selection of nodes.
    * @param bounds The bounds to animate the view to, defined by a rectangle.
    */
-  animateToBounds(
-    bounds: ReadOnlyRect,
-    {
-      duration = 350,
-      zoom = 0.75,
-      easing = EaseFunction.EASE_IN_OUT_QUAD,
-    }: AnimationOptions = {},
-  ) {
-    const easeFunctions = {
-      linear: (t: number) => t,
-      easeInQuad: (t: number) => t * t,
-      easeOutQuad: (t: number) => t * (2 - t),
-      easeInOutQuad: (t: number) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t),
-    }
-    const easeFunction = easeFunctions[easing] ?? easeFunctions.linear
-
-    const startTimestamp = performance.now()
-    const startX = this.ds.offset[0]
-    const startY = this.ds.offset[1]
-    const startX2 = startX - (this.canvas.width / this.ds.scale)
-    const startY2 = startY - (this.canvas.height / this.ds.scale)
-    const startScale = this.ds.scale
-    const cw = this.canvas.width / window.devicePixelRatio
-    const ch = this.canvas.height / window.devicePixelRatio
-    let targetScale = startScale
-
-    if (zoom > 0) {
-      const targetScaleX = (zoom * cw) / Math.max(bounds[2], 300)
-      const targetScaleY = (zoom * ch) / Math.max(bounds[3], 300)
-
-      // Choose the smaller scale to ensure the node fits into the viewport
-      // Ensure we don't go over the max scale
-      targetScale = Math.min(targetScaleX, targetScaleY, this.ds.max_scale)
-    }
-    const targetX = -bounds[0] - bounds[2] * 0.5 + (cw * 0.5) / targetScale
-    const targetY = -bounds[1] - bounds[3] * 0.5 + (ch * 0.5) / targetScale
-    const targetX2 = targetX - (Math.max(bounds[2], 300) / zoom)
-    const targetY2 = targetY - (Math.max(bounds[3], 300) / zoom)
-
-    const animate = (timestamp: number) => {
-      const elapsed = timestamp - startTimestamp
-      const progress = Math.min(elapsed / duration, 1)
-      const easedProgress = easeFunction(progress)
-
-      const currentX = startX + (targetX - startX) * easedProgress
-      const currentY = startY + (targetY - startY) * easedProgress
-      this.ds.offset[0] = currentX
-      this.ds.offset[1] = currentY
-
-      if (zoom > 0) {
-        const currentX2 = startX2 + ((targetX2 - startX2) * easedProgress)
-        const currentY2 = startY2 + ((targetY2 - startY2) * easedProgress)
-        const currentWidth = Math.abs(currentX2 - currentX)
-        const currentHeight = Math.abs(currentY2 - currentY)
-
-        this.ds.scale = Math.min(this.canvas.width / currentWidth, this.canvas.height / currentHeight)
-      }
-
-      this.setDirty(true, true)
-
-      if (progress < 1) {
-        animationId = requestAnimationFrame(animate)
-      } else {
-        cancelAnimationFrame(animationId)
-      }
-    }
-    let animationId = requestAnimationFrame(animate)
+  animateToBounds(bounds: ReadOnlyRect, options: AnimationOptions = {}) {
+    const setDirty = () => this.setDirty(true, true)
+    this.ds.animateToBounds(bounds, setDirty, options)
   }
 
   /**
@@ -7320,15 +7255,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     const bounds = createBounds(items)
     if (!bounds) throw new TypeError("Attempted to fit to view but could not calculate bounds.")
 
-    this.animateToBounds(bounds, options)
+    const setDirty = () => this.setDirty(true, true)
+    this.ds.animateToBounds(bounds, setDirty, options)
   }
-}
-
-export type AnimationOptions = {
-  /** Duration of the animation in milliseconds. */
-  duration?: number
-  /** Relative target zoom level. 1 means the view is fit exactly on the bounding box. */
-  zoom?: number
-  /** The animation easing function (curve) */
-  easing?: EaseFunction
 }

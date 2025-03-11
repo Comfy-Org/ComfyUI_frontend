@@ -1,8 +1,19 @@
-import type { Point, Rect, Rect32 } from "./interfaces"
+import type { Point, ReadOnlyRect, Rect, Rect32 } from "./interfaces"
+
+import { EaseFunction } from "./litegraph"
 
 export interface DragAndScaleState {
   offset: Point
   scale: number
+}
+
+export type AnimationOptions = {
+  /** Duration of the animation in milliseconds. */
+  duration?: number
+  /** Relative target zoom level. 1 means the view is fit exactly on the bounding box. */
+  zoom?: number
+  /** The animation easing function (curve) */
+  easing?: EaseFunction
 }
 
 export class DragAndScale {
@@ -19,7 +30,7 @@ export class DragAndScale {
   min_scale: number
   enabled: boolean
   last_mouse: Point
-  element?: HTMLCanvasElement
+  element: HTMLCanvasElement
   visible_area: Rect32
   dragging?: boolean
   viewport?: Rect
@@ -42,7 +53,7 @@ export class DragAndScale {
     this.state.scale = value
   }
 
-  constructor(element?: HTMLCanvasElement) {
+  constructor(element: HTMLCanvasElement) {
     this.state = {
       offset: new Float32Array([0, 0]),
       scale: 1,
@@ -142,6 +153,80 @@ export class DragAndScale {
 
   changeDeltaScale(value: number, zooming_center?: Point): void {
     this.changeScale(this.scale * value, zooming_center)
+  }
+
+  /**
+   * Starts an animation to fit the view around the specified selection of nodes.
+   * @param bounds The bounds to animate the view to, defined by a rectangle.
+   */
+  animateToBounds(
+    bounds: ReadOnlyRect,
+    setDirty: () => void,
+    {
+      duration = 350,
+      zoom = 0.75,
+      easing = EaseFunction.EASE_IN_OUT_QUAD,
+    }: AnimationOptions = {},
+  ) {
+    const easeFunctions = {
+      linear: (t: number) => t,
+      easeInQuad: (t: number) => t * t,
+      easeOutQuad: (t: number) => t * (2 - t),
+      easeInOutQuad: (t: number) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t),
+    }
+    const easeFunction = easeFunctions[easing] ?? easeFunctions.linear
+
+    const startTimestamp = performance.now()
+    const startX = this.offset[0]
+    const startY = this.offset[1]
+    const startX2 = startX - (this.element.width / this.scale)
+    const startY2 = startY - (this.element.height / this.scale)
+    const startScale = this.scale
+    const cw = this.element.width / window.devicePixelRatio
+    const ch = this.element.height / window.devicePixelRatio
+    let targetScale = startScale
+
+    if (zoom > 0) {
+      const targetScaleX = (zoom * cw) / Math.max(bounds[2], 300)
+      const targetScaleY = (zoom * ch) / Math.max(bounds[3], 300)
+
+      // Choose the smaller scale to ensure the node fits into the viewport
+      // Ensure we don't go over the max scale
+      targetScale = Math.min(targetScaleX, targetScaleY, this.max_scale)
+    }
+    const targetX = -bounds[0] - bounds[2] * 0.5 + (cw * 0.5) / targetScale
+    const targetY = -bounds[1] - bounds[3] * 0.5 + (ch * 0.5) / targetScale
+    const targetX2 = targetX - (Math.max(bounds[2], 300) / zoom)
+    const targetY2 = targetY - (Math.max(bounds[3], 300) / zoom)
+
+    const animate = (timestamp: number) => {
+      const elapsed = timestamp - startTimestamp
+      const progress = Math.min(elapsed / duration, 1)
+      const easedProgress = easeFunction(progress)
+
+      const currentX = startX + (targetX - startX) * easedProgress
+      const currentY = startY + (targetY - startY) * easedProgress
+      this.offset[0] = currentX
+      this.offset[1] = currentY
+
+      if (zoom > 0) {
+        const currentX2 = startX2 + ((targetX2 - startX2) * easedProgress)
+        const currentY2 = startY2 + ((targetY2 - startY2) * easedProgress)
+        const currentWidth = Math.abs(currentX2 - currentX)
+        const currentHeight = Math.abs(currentY2 - currentY)
+
+        this.scale = Math.min(this.element.width / currentWidth, this.element.height / currentHeight)
+      }
+
+      setDirty()
+
+      if (progress < 1) {
+        animationId = requestAnimationFrame(animate)
+      } else {
+        cancelAnimationFrame(animationId)
+      }
+    }
+    let animationId = requestAnimationFrame(animate)
   }
 
   reset(): void {
