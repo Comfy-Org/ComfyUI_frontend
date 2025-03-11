@@ -1902,7 +1902,6 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
     for (const widget of widgets) {
       if (
-        !widget ||
         (widget.disabled && !includeDisabled) ||
         widget.hidden ||
         (widget.advanced && !this.showAdvanced)

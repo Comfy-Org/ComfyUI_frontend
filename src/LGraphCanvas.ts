@@ -1789,39 +1789,7 @@ export class LGraphCanvas implements ConnectionColorContext {
    */
   getWidgetAtCursor(node?: LGraphNode): IWidget | null {
     node ??= this.node_over
-
-    if (!node?.widgets) return null
-
-    const graphPos = this.graph_mouse
-    const x = graphPos[0] - node.pos[0]
-    const y = graphPos[1] - node.pos[1]
-
-    for (const widget of node.widgets) {
-      if (widget.hidden || (widget.advanced && !node.showAdvanced)) continue
-
-      let widgetWidth: number | undefined
-      let widgetHeight: number | undefined
-      if (widget.computeSize) {
-        ([widgetWidth, widgetHeight] = widget.computeSize(node.size[0]))
-      } else {
-        widgetWidth = widget.width || node.size[0]
-        widgetHeight = widget.computedHeight || LiteGraph.NODE_WIDGET_HEIGHT
-      }
-
-      if (
-        widgetWidth != null &&
-        widgetHeight != null &&
-        widget.last_y !== undefined &&
-        x >= 6 &&
-        x <= widgetWidth - 12 &&
-        y >= widget.last_y &&
-        y <= widget.last_y + widgetHeight
-      ) {
-        return widget
-      }
-    }
-
-    return null
+    return node?.getWidgetOnPos(this.graph_mouse[0], this.graph_mouse[1], true) ?? null
   }
 
   /**
@@ -2591,7 +2559,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         const pos: Point = [0, 0]
         const inputId = isOverNodeInput(node, e.canvasX, e.canvasY, pos)
         const outputId = isOverNodeOutput(node, e.canvasX, e.canvasY, pos)
-        const overWidget = this.getWidgetAtCursor(node)
+        const overWidget = node.getWidgetOnPos(e.canvasX, e.canvasY, true)
 
         if (!node.mouseOver) {
           // mouse enter
