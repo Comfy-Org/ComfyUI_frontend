@@ -2622,6 +2622,9 @@ export class LGraphCanvas implements ConnectionColorContext {
           node.mouseOver.outputId = outputId
           node.mouseOver.overWidget = overWidget
 
+          // State reset
+          linkConnector.overWidget = undefined
+
           // Check if link is over anything it could connect to - record position of valid target for snap / highlight
           if (linkConnector.isConnecting) {
             const firstLink = linkConnector.renderLinks.at(0)
