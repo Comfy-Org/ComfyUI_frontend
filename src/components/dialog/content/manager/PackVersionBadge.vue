@@ -77,6 +77,7 @@ const onSelect = (newVersion: string) => {
 const applyVersionSelection = (newVersion: string) => {
   selectedVersion.value = newVersion
   emit('update:version', newVersion)
+  // TODO: after manager store added, install the pack here
   closeVersionSelector()
 }
 

@@ -47,7 +47,7 @@
       />
       <Button
         severity="secondary"
-        :label="$t('g.apply')"
+        :label="$t('g.install')"
         @click="emit('apply', currentSelection ?? SelectedVersion.LATEST)"
         class="py-3 px-4 dark-theme:bg-unset bg-black/80 dark-theme:text-unset text-neutral-100 rounded-lg"
       />
