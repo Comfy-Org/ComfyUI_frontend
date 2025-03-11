@@ -153,7 +153,22 @@ export interface ManagerPack extends ManagerPackInfo {
 }
 
 /**
- * Payload for posting to `/manager/queue/install`
+ * Returned by `/customnode/getmappings`.
+ */
+export type ManagerMappings = Record<
+  NonNullable<components['schemas']['Node']['name']>,
+  [
+    /** List of ComfyNode names included in the pack */
+    Array<components['schemas']['ComfyNode']['comfy_node_name']>,
+    {
+      /** The display name of the pack */
+      title_aux: string
+    }
+  ]
+>
+
+/**
+ * Payload for `/manager/queue/install`
  */
 export interface InstallPackParams extends ManagerPackInfo {
   /**
@@ -163,16 +178,15 @@ export interface InstallPackParams extends ManagerPackInfo {
   /**
    * If set to `imported`, returns only the packs that were imported at app startup.
    */
-  mode: 'imported' | null
+  mode?: 'imported' | 'default'
   /**
-   * The GitHub link to the repository of the node to install.
+   * The GitHub link to the repository of the pack to install.
    * Required if `selected_version` is `nightly`.
    */
   repository: string
   /**
-   * List of PyPi dependencies associated with the node.
-   * Used to determine whether the node should be installed based on
-   * user's security level configuration and package whitelist/locks.
+   * List of PyPi dependency names associated with the pack.
+   * Used in coordination with pip package whitelist and version lock features.
    */
   pip?: string[]
   channel: ManagerChannel
