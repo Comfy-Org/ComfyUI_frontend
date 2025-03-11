@@ -89,13 +89,18 @@
     "name": "Name",
     "category": "Category",
     "sort": "Sort",
-    "filter": "Filter"
+    "filter": "Filter",
+    "apply": "Apply"
   },
   "manager": {
     "title": "Custom Nodes Manager",
+    "loadingVersions": "Loading versions...",
+    "selectVersion": "Select Version",
     "downloads": "Downloads",
     "repository": "Repository",
     "license": "License",
+    "nightlyVersion": "Nightly",
+    "latestVersion": "Latest",
     "createdBy": "Created By",
     "totalNodes": "Total Nodes",
     "discoverCommunityContent": "Discover community-made Node Packs, Extensions, and more...",
