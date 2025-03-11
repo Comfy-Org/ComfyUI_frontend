@@ -119,7 +119,7 @@ import PackCard from '@/components/dialog/content/manager/packCard/PackCard.vue'
 import RegistrySearchBar from '@/components/dialog/content/manager/registrySearchBar/RegistrySearchBar.vue'
 import { useResponsiveCollapse } from '@/composables/element/useResponsiveCollapse'
 import { useRegistrySearch } from '@/composables/useRegistrySearch'
-import type { NodeField, TabItem } from '@/types/comfyManagerTypes'
+import type { PackField, TabItem } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
 
 const DEFAULT_CARD_SIZE = 512
@@ -198,10 +198,10 @@ const showInfoPanel = computed(() => selectedNodePacks.value.length > 0)
 const hasMultipleSelections = computed(() => selectedNodePacks.value.length > 1)
 
 const currentFilterBy = ref('all')
-const handleSortChange = (sortBy: NodeField) => {
+const handleSortChange = (sortBy: PackField) => {
   sortField.value = sortBy
 }
-const handleFilterChange = (filterBy: NodeField) => {
+const handleFilterChange = (filterBy: PackField) => {
   currentFilterBy.value = filterBy
 }
 </script>
