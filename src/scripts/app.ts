@@ -7,12 +7,13 @@ import {
   LiteGraph,
   strokeShape
 } from '@comfyorg/litegraph'
-import type { Rect, Vector2 } from '@comfyorg/litegraph'
+import type { IWidget, Rect, Vector2 } from '@comfyorg/litegraph'
 import _ from 'lodash'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { reactive } from 'vue'
 
 import { st } from '@/i18n'
+import type { ResultItem } from '@/schemas/apiSchema'
 import {
   type ComfyWorkflowJSON,
   type ModelFile,
@@ -77,7 +78,7 @@ function sanitizeNodeName(string) {
 }
 
 type Clipspace = {
-  widgets?: { type?: string; name?: string; value?: any }[] | null
+  widgets?: Pick<IWidget, 'type' | 'name' | 'value'>[] | null
   imgs?: HTMLImageElement[] | null
   original_imgs?: HTMLImageElement[] | null
   images?: any[] | null
@@ -301,7 +302,7 @@ export class ComfyApp {
     }
   }
 
-  static pasteFromClipspace(node) {
+  static pasteFromClipspace(node: LGraphNode) {
     if (ComfyApp.clipspace) {
       // image paste
       if (ComfyApp.clipspace.imgs && node.imgs) {
@@ -344,6 +345,7 @@ export class ComfyApp {
           const index = node.widgets.findIndex((obj) => obj.name === 'image')
           if (index >= 0) {
             if (
+              // @ts-expect-error custom widget type
               node.widgets[index].type != 'image' &&
               typeof node.widgets[index].value == 'string' &&
               clip_image.filename
@@ -360,27 +362,23 @@ export class ComfyApp {
         if (ComfyApp.clipspace.widgets) {
           ComfyApp.clipspace.widgets.forEach(({ type, name, value }) => {
             const prop = Object.values(node.widgets).find(
-              // @ts-expect-errorg
               (obj) => obj.type === type && obj.name === name
             )
-            // @ts-expect-error
             if (prop && prop.type != 'button') {
               if (
-                // @ts-expect-error
+                // @ts-expect-error Custom widget type
                 prop.type != 'image' &&
-                // @ts-expect-error
                 typeof prop.value == 'string' &&
+                // @ts-expect-error Custom widget value
                 value.filename
               ) {
-                // @ts-expect-error
+                const resultItem = value as ResultItem
                 prop.value =
-                  (value.subfolder ? value.subfolder + '/' : '') +
-                  value.filename +
-                  (value.type ? ` [${value.type}]` : '')
+                  (resultItem.subfolder ? resultItem.subfolder + '/' : '') +
+                  resultItem.filename +
+                  (resultItem.type ? ` [${resultItem.type}]` : '')
               } else {
-                // @ts-expect-error
                 prop.value = value
-                // @ts-expect-error
                 prop.callback?.(value)
               }
             }
@@ -1166,10 +1164,10 @@ export class ComfyApp {
           ) {
             if (widget.name == 'control_after_generate') {
               if (widget.value === true) {
-                // @ts-expect-error change widget type from boolean to string
+                // @ts-expect-error string is not assignable to boolean
                 widget.value = 'randomize'
               } else if (widget.value === false) {
-                // @ts-expect-error change widget type from boolean to string
+                // @ts-expect-error string is not assignable to boolean
                 widget.value = 'fixed'
               }
             }
