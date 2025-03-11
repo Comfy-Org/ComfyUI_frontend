@@ -66,9 +66,12 @@ export const graphToPrompt = async (
         for (const [i, widget] of widgets.entries()) {
           if (!widget.name || widget.options?.serialize === false) continue
 
-          inputs[widget.name] = widget.serializeValue
+          const widgetValue = widget.serializeValue
             ? await widget.serializeValue(node, i)
             : widget.value
+          inputs[widget.name] = {
+            __value__: widgetValue
+          }
         }
       }
 
