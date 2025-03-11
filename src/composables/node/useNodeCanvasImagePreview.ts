@@ -15,9 +15,8 @@ export function useNodeCanvasImagePreview() {
    */
   function showCanvasImagePreview(node: LGraphNode) {
     if (!node.imgs?.length) return
-    if (!node.widgets) return
 
-    if (!node.widgets.find((w) => w.name === CANVAS_IMAGE_PREVIEW_WIDGET)) {
+    if (!node.widgets?.find((w) => w.name === CANVAS_IMAGE_PREVIEW_WIDGET)) {
       imagePreviewWidget(node, {
         type: 'IMAGE_PREVIEW',
         name: CANVAS_IMAGE_PREVIEW_WIDGET
