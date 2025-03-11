@@ -66,7 +66,12 @@
           <span v-if="nodePack.publisher?.name">
             {{ nodePack.publisher.name }}
           </span>
-          <span v-if="nodePack.latest_version">
+          <PackVersionBadge
+            v-if="isPackInstalled"
+            :node-pack="nodePack"
+            v-model:version="selectedVersion"
+          />
+          <span v-else-if="nodePack.latest_version">
             {{ nodePack.latest_version.version }}
           </span>
         </div>
@@ -88,15 +93,24 @@
 
 <script setup lang="ts">
 import Card from 'primevue/card'
+import { computed, ref } from 'vue'
 
 import ContentDivider from '@/components/common/ContentDivider.vue'
 import PackInstallButton from '@/components/dialog/content/manager/PackInstallButton.vue'
+import PackVersionBadge from '@/components/dialog/content/manager/PackVersionBadge.vue'
 import PackIcon from '@/components/dialog/content/manager/packIcon/PackIcon.vue'
 import type { components } from '@/types/comfyRegistryTypes'
 import { formatNumber } from '@/utils/formatUtil'
 
-defineProps<{
+const { nodePack, isSelected = false } = defineProps<{
   nodePack: components['schemas']['Node']
   isSelected?: boolean
 }>()
+const selectedVersion = ref<string | undefined>(undefined)
+const isPackInstalled = computed(
+  () =>
+    // TODO: after manager store added
+    // managerStore.isPackInstalled(nodePack?.id)
+    true
+)
 </script>
