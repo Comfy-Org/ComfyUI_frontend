@@ -192,3 +192,10 @@ export interface InstallPackParams extends ManagerPackInfo {
   channel: ManagerChannel
   skip_post_install?: boolean
 }
+
+/**
+ * Params for `/manager/queue/update_all`
+ */
+export interface UpdateAllPacksParams {
+  mode?: ManagerDatabaseSource
+}
