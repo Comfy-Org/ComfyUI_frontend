@@ -79,9 +79,18 @@ const parseLicenseObject = (
   }
 }
 
-const formatLicense = (license: string): { text: string; isUrl: boolean } => {
+const formatLicense = (
+  license: string
+): { text: string; isUrl: boolean } | null => {
+  // Treat "{}" JSON string as undefined
+  if (license === '{}') return null
+
   try {
     const licenseObj = JSON.parse(license)
+    // Handle empty object case
+    if (Object.keys(licenseObj).length === 0) {
+      return null
+    }
     return parseLicenseObject(licenseObj)
   } catch (e) {
     if (isLicenseFile(license) && nodePack.repository) {
@@ -115,12 +124,12 @@ const descriptionSections = computed<TextSection[]>(() => {
   }
 
   if (nodePack.license) {
-    const { text, isUrl } = formatLicense(nodePack.license)
-    if (text) {
+    const licenseInfo = formatLicense(nodePack.license)
+    if (licenseInfo && licenseInfo.text) {
       sections.push({
         title: t('manager.license'),
-        text,
-        isUrl
+        text: licenseInfo.text,
+        isUrl: licenseInfo.isUrl
       })
     }
   }
