@@ -123,8 +123,8 @@ export type InstalledPacksResponse = Record<
  * Returned by `/customnode/getlist`
  */
 export interface ManagerPack extends ManagerPackInfo {
-  /** The github username of the pack author */
-  author: string
+  /** Pack author name or 'Unclaimed' if the pack was added automatically via GitHub crawl. */
+  author: components['schemas']['Node']['author']
   /** Files included in the pack */
   files: string[]
   /** The type of installation that was used to install the pack */
