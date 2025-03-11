@@ -125,6 +125,7 @@ export interface LinkNetwork {
  */
 export interface ItemLocator {
   getNodeOnPos(x: number, y: number, nodeList?: LGraphNode[]): LGraphNode | null
+  getRerouteOnPos(x: number, y: number): Reroute | undefined
 }
 
 /** Contains a cached 2D canvas path and a centre point, with an optional forward angle. */

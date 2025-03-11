@@ -3,6 +3,7 @@ import type { RenderLink } from "@/canvas/RenderLink"
 import type { ToInputRenderLink } from "@/canvas/ToInputRenderLink"
 import type { LGraphNode } from "@/LGraphNode"
 import type { LLink } from "@/LLink"
+import type { Reroute } from "@/Reroute"
 import type { CanvasPointerEvent } from "@/types/events"
 import type { IWidget } from "@/types/widgets"
 
@@ -26,6 +27,10 @@ export interface LinkConnectorEventMap {
 
   "link-created": LLink | null | undefined
 
+  "dropped-on-reroute": {
+    reroute: Reroute
+    event: CanvasPointerEvent
+  }
   "dropped-on-node": {
     node: LGraphNode
     event: CanvasPointerEvent

@@ -221,6 +221,25 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
       ?.findNextReroute(withParentId, visited)
   }
 
+  findSourceOutput() {
+    const network = this.#network.deref()
+    const originId = this.linkIds.values().next().value
+    if (!network || !originId) return
+
+    const link = network.links.get(originId)
+    if (!link) return
+
+    const node = network.getNodeById(link.origin_id)
+    if (!node) return
+
+    return {
+      node,
+      output: node.outputs[link.origin_slot],
+      outputIndex: link.origin_slot,
+      link,
+    }
+  }
+
   /** @inheritdoc */
   move(deltaX: number, deltaY: number) {
     this.#pos[0] += deltaX

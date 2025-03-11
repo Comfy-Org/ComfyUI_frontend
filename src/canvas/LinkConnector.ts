@@ -261,15 +261,33 @@ export class LinkConnector {
   dropLinks(locator: ItemLocator, event: CanvasPointerEvent): void {
     if (!this.isConnecting) return this.reset()
 
-    const { renderLinks, state } = this
-    const { connectingTo } = state
-
+    const { renderLinks } = this
     const mayContinue = this.events.dispatch("before-drop-links", { renderLinks, event })
     if (mayContinue === false) return this.reset()
 
     const { canvasX, canvasY } = event
     const node = locator.getNodeOnPos(canvasX, canvasY) ?? undefined
-    if (!node) return this.dropOnNothing(event)
+    if (node) {
+      this.dropOnNode(node, event)
+    } else {
+      // Get reroute if no node is found
+      const reroute = locator.getRerouteOnPos(canvasX, canvasY)
+      // Drop output->input link on reroute is not impl.
+      if (reroute && this.state.connectingTo === "output") {
+        this.dropOnReroute(reroute, event)
+      } else {
+        this.dropOnNothing(event)
+      }
+    }
+
+    this.events.dispatch("after-drop-links", { renderLinks, event })
+    this.reset()
+  }
+
+  dropOnNode(node: LGraphNode, event: CanvasPointerEvent) {
+    const { renderLinks, state } = this
+    const { connectingTo } = state
+    const { canvasX, canvasY } = event
 
     // To output
     if (connectingTo === "output") {
@@ -278,7 +296,7 @@ export class LinkConnector {
       if (output) {
         this.#dropOnOutput(node, output)
       } else {
-        this.dropOnNode(node, event)
+        this.#dropOnNodeBackground(node, event)
       }
     // To input
     } else if (connectingTo === "input") {
@@ -287,21 +305,66 @@ export class LinkConnector {
       // Input slot
       if (input) {
         this.#dropOnInput(node, input)
-      } else if (this.overWidget && this.renderLinks[0] instanceof ToInputRenderLink) {
+      } else if (this.overWidget && renderLinks[0] instanceof ToInputRenderLink) {
         // Widget
         this.events.dispatch("dropped-on-widget", {
-          link: this.renderLinks[0],
+          link: renderLinks[0],
           node,
           widget: this.overWidget,
         })
         this.overWidget = undefined
       } else {
         // Node background / title
-        this.dropOnNode(node, event)
+        this.#dropOnNodeBackground(node, event)
       }
     }
+  }
 
-    this.events.dispatch("after-drop-links", { renderLinks, event })
+  dropOnReroute(reroute: Reroute, event: CanvasPointerEvent): void {
+    const mayContinue = this.events.dispatch("dropped-on-reroute", { reroute, event })
+    if (mayContinue === false) return
+
+    for (const link of this.renderLinks) {
+      if (link.toType !== "output") continue
+
+      const result = reroute.findSourceOutput()
+      if (!result) return
+
+      const { node, output } = result
+
+      if (link instanceof MovingRenderLink) {
+        const { inputNode, inputSlot, outputSlot, fromReroute } = link
+        // Link is already connected here
+        if (outputSlot === output) continue
+
+        // Connect the first reroute of the link being dragged to the reroute being dropped on
+        if (fromReroute) {
+          fromReroute.parentId = reroute.id
+        } else {
+          // If there are no reroutes, directly connect the link
+          link.link.parentId = reroute.id
+        }
+        // Use the last reroute id on the link to retain all reroutes
+        node.connectSlots(output, inputNode, inputSlot, link.link.parentId)
+        this.events.dispatch("output-moved", link)
+      } else {
+        const { node: inputNode, fromSlot } = link
+        const newLink = node.connectSlots(output, inputNode, fromSlot, reroute?.id)
+        this.events.dispatch("link-created", newLink)
+      }
+    }
+  }
+
+  dropOnNothing(event: CanvasPointerEvent): void {
+    // For external event only.
+    if (this.state.connectingTo === "input") {
+      for (const link of this.renderLinks) {
+        if (link instanceof MovingRenderLink) {
+          link.inputNode.disconnectInput(link.inputIndex, true)
+        }
+      }
+    }
+    this.events.dispatch("dropped-on-canvas", event)
     this.reset()
   }
 
@@ -310,7 +373,7 @@ export class LinkConnector {
    * @param node The node that the links are being dropped on
    * @param event Contains the drop location, in canvas space
    */
-  dropOnNode(node: LGraphNode, event: CanvasPointerEvent): void {
+  #dropOnNodeBackground(node: LGraphNode, event: CanvasPointerEvent): void {
     const { state: { connectingTo } } = this
 
     const mayContinue = this.events.dispatch("dropped-on-node", { node, event })
@@ -328,7 +391,7 @@ export class LinkConnector {
         return
       }
       this.#dropOnOutput(node, output)
-      return this.reset()
+      return
     }
 
     // Dragging input links
@@ -339,7 +402,7 @@ export class LinkConnector {
         return
       }
       this.#dropOnInput(node, input)
-      return this.reset()
+      return
     }
 
     // Dropping new output link
@@ -369,21 +432,6 @@ export class LinkConnector {
         }
       }
     }
-
-    this.reset()
-  }
-
-  dropOnNothing(event: CanvasPointerEvent): void {
-    // For external event only.
-    if (this.state.connectingTo === "input") {
-      for (const link of this.renderLinks) {
-        if (link instanceof MovingRenderLink) {
-          link.inputNode.disconnectInput(link.inputIndex, true)
-        }
-      }
-    }
-    this.events.dispatch("dropped-on-canvas", event)
-    this.reset()
   }
 
   #dropOnInput(node: LGraphNode, input: INodeInputSlot): void {
