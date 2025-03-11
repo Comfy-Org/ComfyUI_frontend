@@ -5,7 +5,7 @@ import type {
   IWidgetOptions
 } from '@comfyorg/litegraph/dist/types/widgets'
 import _ from 'lodash'
-import type { Component } from 'vue'
+import { type Component, toRaw } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -231,6 +231,10 @@ export class ComponentWidgetImpl<V extends object | string>
       maxHeight,
       minWidth: 0
     }
+  }
+
+  serializeValue(): V {
+    return toRaw(this.value)
   }
 }
 
