@@ -27,7 +27,6 @@ import type {
 } from "./interfaces"
 import type { LGraph } from "./LGraph"
 import type {
-  CanvasDragEvent,
   CanvasEventDetail,
   CanvasMouseEvent,
   CanvasPointerEvent,
@@ -507,7 +506,6 @@ export class LGraphCanvas implements ConnectionColorContext {
   _mouseout_callback?(e: PointerEvent): void
   _mousecancel_callback?(e: PointerEvent): void
   _key_callback?(e: KeyboardEvent): void
-  _ondrop_callback?(e: DragEvent): unknown
   bgctx?: CanvasRenderingContext2D | null
   is_rendering?: boolean
   /** @deprecated Panels */
@@ -527,7 +525,6 @@ export class LGraphCanvas implements ConnectionColorContext {
   node_panel?: any
   /** @deprecated Panels */
   options_panel?: any
-  onDropItem?: (e: Event) => any
   _bg_img?: HTMLImageElement
   _pattern?: CanvasPattern | null
   _pattern_img?: HTMLImageElement
@@ -758,16 +755,6 @@ export class LGraphCanvas implements ConnectionColorContext {
     }
 
     this.autoresize = options.autoresize
-  }
-
-  static getFileExtension(url: string): string {
-    const question = url.indexOf("?")
-    if (question !== -1) url = url.substring(0, question)
-
-    const point = url.lastIndexOf(".")
-    return point === -1
-      ? ""
-      : url.substring(point + 1).toLowerCase()
   }
 
   static onGroupAdd(info: unknown, entry: unknown, mouse_event: MouseEvent): void {
@@ -1676,12 +1663,8 @@ export class LGraphCanvas implements ConnectionColorContext {
     // keyup event must be bound on the document
     document.addEventListener("keyup", this._key_callback, true)
 
-    // Dropping Stuff over nodes
-    this._ondrop_callback = this.processDrop.bind(this)
-
     canvas.addEventListener("dragover", this._doNothing, false)
     canvas.addEventListener("dragend", this._doNothing, false)
-    canvas.addEventListener("drop", this._ondrop_callback, false)
     canvas.addEventListener("dragenter", this._doReturnTrue, false)
 
     this._events_binded = true
@@ -1710,13 +1693,11 @@ export class LGraphCanvas implements ConnectionColorContext {
     canvas.removeEventListener("keydown", this._key_callback!)
     document.removeEventListener("keyup", this._key_callback!)
     canvas.removeEventListener("contextmenu", this._doNothing)
-    canvas.removeEventListener("drop", this._ondrop_callback!)
     canvas.removeEventListener("dragenter", this._doReturnTrue)
 
     this._mousedown_callback = undefined
     this._mousewheel_callback = undefined
     this._key_callback = undefined
-    this._ondrop_callback = undefined
 
     this._events_binded = false
   }
@@ -3239,87 +3220,6 @@ export class LGraphCanvas implements ConnectionColorContext {
     } finally {
       this.emitAfterChange()
     }
-  }
-
-  /**
-   * process a item drop event on top the canvas
-   */
-  processDrop(e: DragEvent): boolean | undefined {
-    e.preventDefault()
-    this.adjustMouseEvent(e)
-    const x = e.clientX
-    const y = e.clientY
-    const is_inside = !this.viewport || isInRect(x, y, this.viewport)
-    if (!is_inside) return
-
-    const pos = [e.canvasX, e.canvasY]
-    const node = this.graph ? this.graph.getNodeOnPos(pos[0], pos[1]) : null
-
-    if (!node) {
-      const r = this.onDropItem?.(e)
-      if (!r) this.checkDropItem(e)
-      return
-    }
-
-    if (node.onDropFile || node.onDropData) {
-      const files = e.dataTransfer?.files
-      if (files?.length) {
-        for (let i = 0; i < files.length; i++) {
-          const file = files[0]
-          const filename = file.name
-          node.onDropFile?.(file)
-
-          if (node.onDropData) {
-            // prepare reader
-            const reader = new FileReader()
-            reader.addEventListener("load", (event) => {
-              const data = event.target?.result
-              if (!data) return
-              node.onDropData?.(data, filename, file)
-            })
-
-            // read data
-            const type = file.type.split("/")[0]
-            if (type == "text" || type == "") {
-              reader.readAsText(file)
-            } else if (type == "image") {
-              reader.readAsDataURL(file)
-            } else {
-              reader.readAsArrayBuffer(file)
-            }
-          }
-        }
-      }
-    }
-
-    if (node.onDropItem?.(e)) return true
-
-    return this.onDropItem
-      ? this.onDropItem(e)
-      : false
-  }
-
-  /**
-   * called if the graph doesn't have a default drop item behaviour
-   * @deprecated This relies on the already-broken node_type_by_file_extension
-   */
-  checkDropItem(e: CanvasDragEvent): void {
-    if (!e.dataTransfer?.files.length) return
-
-    const file = e.dataTransfer.files[0]
-    const ext = LGraphCanvas.getFileExtension(file.name).toLowerCase()
-    const nodetype = LiteGraph.node_types_by_file_extension[ext]
-    if (!nodetype) return
-    if (!this.graph) throw new NullGraphError()
-
-    this.graph.beforeChange()
-    const node = LiteGraph.createNode(nodetype.type)
-    if (!node) throw new TypeError("Deprecated checkDropItem")
-
-    node.pos = [e.canvasX, e.canvasY]
-    this.graph.add(node)
-    node.onDropFile?.(file)
-    this.graph.afterChange()
   }
 
   processNodeDblClicked(n: LGraphNode): void {
