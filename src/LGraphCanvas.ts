@@ -420,9 +420,6 @@ export class LGraphCanvas implements ConnectionColorContext {
   render_execution_order: boolean
   render_link_tooltip: boolean
 
-  /** Controls whether reroutes are rendered at all. */
-  reroutesEnabled: boolean = false
-
   /** Shape of the markers shown at the midpoint of links.  Default: Circle */
   linkMarkerShape: LinkMarkerShape = LinkMarkerShape.Circle
   links_render_mode: number
@@ -1958,7 +1955,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       pointer.onClick = (eUp) => {
         // Click, not drag
         const clickedItem = node ??
-          (this.reroutesEnabled ? graph.getRerouteOnPos(eUp.canvasX, eUp.canvasY) : null) ??
+          graph.getRerouteOnPos(eUp.canvasX, eUp.canvasY) ??
           graph.getGroupTitlebarOnPos(eUp.canvasX, eUp.canvasY)
         this.processSelect(clickedItem, eUp)
       }
@@ -2007,7 +2004,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       this.#processNodeClick(e, ctrlOrMeta, node)
     } else {
       // Reroutes
-      if (this.reroutesEnabled && this.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
+      if (this.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
         const reroute = graph.getRerouteOnPos(x, y)
         if (reroute) {
           if (e.shiftKey) {
@@ -2053,7 +2050,7 @@ export class LGraphCanvas implements ConnectionColorContext {
             pointer.finally = () => linkConnector.reset(true)
 
             return
-          } else if (this.reroutesEnabled && e.altKey && !e.shiftKey) {
+          } else if (e.altKey && !e.shiftKey) {
             const newReroute = graph.createReroute([x, y], linkSegment)
             pointer.onDragStart = pointer => this.#startDraggingItems(newReroute, pointer)
             pointer.onDragEnd = e => this.#processDraggedItems(e)
@@ -3031,7 +3028,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       } else if (item instanceof LGraphGroup) {
         // Groups
         serialisable.groups.push(item.serialize())
-      } else if (this.reroutesEnabled && item instanceof Reroute) {
+      } else if (item instanceof Reroute) {
         // Reroutes
         serialisable.reroutes.push(item.asSerialisable())
       }
@@ -4590,9 +4587,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         const end_node_slotpos = node.getConnectionPos(true, i, LGraphCanvas.#tempB)
 
         // Get all points this link passes through
-        const reroutes = this.reroutesEnabled
-          ? LLink.getReroutes(this.graph, link)
-          : []
+        const reroutes = LLink.getReroutes(this.graph, link)
         const points = [
           start_node_slotpos,
           ...reroutes.map(x => x.pos),
@@ -5222,7 +5217,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     const fromType = node_left?.outputs?.[origin_slot]?.type
 
     const options = ["Add Node", null, "Delete", null]
-    if (this.reroutesEnabled) options.splice(1, 0, "Add Reroute")
+    options.splice(1, 0, "Add Reroute")
 
     const menu = new LiteGraph.ContextMenu<string>(options, {
       event: e,
@@ -5241,9 +5236,7 @@ export class LGraphCanvas implements ConnectionColorContext {
           if (!node?.inputs?.length || !node?.outputs?.length || origin_slot == null) return
 
           // leave the connection type checking inside connectByType
-          const options = this.reroutesEnabled
-            ? { afterRerouteId: segment.parentId }
-            : undefined
+          const options = { afterRerouteId: segment.parentId }
           if (node_left?.connectByType(origin_slot, node, fromType ?? "*", options)) {
             node.pos[0] -= node.size[0] * 0.5
           }
@@ -7010,7 +7003,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       if (!this.graph) throw new NullGraphError()
 
       // Check for reroutes
-      if (this.reroutesEnabled && this.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
+      if (this.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
         const reroute = this.graph.getRerouteOnPos(event.canvasX, event.canvasY)
         if (reroute) {
           menu_info.unshift({
