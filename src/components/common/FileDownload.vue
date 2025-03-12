@@ -1,9 +1,9 @@
 <!-- A file download button with a label and a size hint -->
 <template>
   <div class="flex flex-row items-center gap-2">
-    <div class="file-info">
-      <div class="file-details">
-        <span class="file-type" :title="hint">{{ label }}</span>
+    <div>
+      <div>
+        <span :title="hint">{{ label }}</span>
       </div>
       <Message
         v-if="props.error"
@@ -20,9 +20,8 @@
         {{ props.error }}
       </Message>
     </div>
-    <div class="file-action">
+    <div>
       <Button
-        class="file-action-button"
         :label="$t('g.download') + ' (' + fileSize + ')'"
         size="small"
         outlined
