@@ -343,3 +343,25 @@ export const generateUUID = (): string => {
  */
 export const formatNumber = (num?: number): string =>
   num?.toLocaleString() ?? 'N/A'
+
+/**
+ * Checks if a URL is a Civitai model URL
+ * @example
+ * isCivitaiModelUrl('https://civitai.com/api/download/models/1234567890') // true
+ * isCivitaiModelUrl('https://civitai.com/api/v1/models/1234567890') // true
+ * isCivitaiModelUrl('https://civitai.com/api/v1/models-versions/15342') // true
+ * isCivitaiModelUrl('https://example.com/model.safetensors') // false
+ */
+export const isCivitaiModelUrl = (url: string): boolean => {
+  if (!isValidUrl(url)) return false
+  if (!url.includes('civitai.com')) return false
+
+  const urlObj = new URL(url)
+  const pathname = urlObj.pathname
+
+  return (
+    /^\/api\/download\/models\/(\d+)$/.test(pathname) ||
+    /^\/api\/v1\/models\/(\d+)$/.test(pathname) ||
+    /^\/api\/v1\/models-versions\/(\d+)$/.test(pathname)
+  )
+}
