@@ -6,6 +6,7 @@
       filter
       :placeholder="placeholder"
       :maxSelectedLabels="3"
+      :display="display"
       class="w-full"
     />
   </div>
@@ -13,7 +14,6 @@
 
 <script setup lang="ts">
 import MultiSelect from 'primevue/multiselect'
-import { computed, defineModel } from 'vue'
 
 import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComponentWidget } from '@/scripts/domWidget'
@@ -22,10 +22,9 @@ const selectedItems = defineModel<string[]>({ required: true })
 const { widget } = defineProps<{
   widget: ComponentWidget<string[]>
 }>()
-const options = computed(
-  () => (widget.inputSpec as ComboInputSpec).options ?? []
-)
-const placeholder = computed(
-  () => (widget.inputSpec as ComboInputSpec).placeholder ?? 'Select items'
-)
+
+const inputSpec = widget.inputSpec as ComboInputSpec
+const options = inputSpec.options ?? []
+const placeholder = inputSpec.multi_select?.placeholder ?? 'Select items'
+const display = inputSpec.multi_select?.chip ? 'chip' : 'comma'
 </script>

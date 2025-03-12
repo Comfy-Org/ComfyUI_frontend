@@ -12,6 +12,10 @@ const zRemoteWidgetConfig = z.object({
   timeout: z.number().gte(0).optional(),
   max_retries: z.number().gte(0).optional()
 })
+const zMultiSelectOption = z.object({
+  placeholder: z.string().optional(),
+  chip: z.boolean().optional()
+})
 
 export const zBaseInputOptions = z
   .object({
@@ -74,9 +78,7 @@ export const zComboInputOptions = zBaseInputOptions.extend({
   options: z.array(zComboOption).optional(),
   remote: zRemoteWidgetConfig.optional(),
   /** Whether the widget is a multi-select widget. */
-  multi_select: z.boolean().optional(),
-  /** Placeholder when no item is selected in multi-select widget. */
-  placeholder: z.string().optional()
+  multi_select: zMultiSelectOption.optional()
 })
 
 const zIntInputSpec = z.tuple([z.literal('INT'), zIntInputOptions.optional()])
