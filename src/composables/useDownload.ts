@@ -1,16 +1,24 @@
+import { whenever } from '@vueuse/core'
 import { onMounted, ref } from 'vue'
+
+import { useCivitaiModel } from '@/composables/useCivitaiModel'
+import { isCivitaiModelUrl } from '@/utils/formatUtil'
 
 export function useDownload(url: string, fileName?: string) {
   const fileSize = ref<number | null>(null)
 
-  const fetchFileSize = async (): Promise<number | null> => {
+  const setFileSize = (size: number) => {
+    fileSize.value = size
+  }
+
+  const fetchFileSize = async () => {
     try {
       const response = await fetch(url, { method: 'HEAD' })
       if (!response.ok) throw new Error('Failed to fetch file size')
 
       const size = response.headers.get('content-length')
       if (size) {
-        return parseInt(size)
+        setFileSize(parseInt(size))
       } else {
         console.error('"content-length" header not found')
         return null
@@ -33,8 +41,15 @@ export function useDownload(url: string, fileName?: string) {
     link.click()
   }
 
-  onMounted(async () => {
-    fileSize.value = await fetchFileSize()
+  onMounted(() => {
+    if (isCivitaiModelUrl(url)) {
+      const { fileSize: civitaiSize, error: civitaiErr } = useCivitaiModel(url)
+      whenever(civitaiSize, setFileSize)
+      // Try falling back to normal fetch if using Civitai API fails
+      whenever(civitaiErr, fetchFileSize, { once: true })
+    } else {
+      fetchFileSize()
+    }
   })
 
   return {
