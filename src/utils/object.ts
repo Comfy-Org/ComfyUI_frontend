@@ -12,11 +12,12 @@ export function omitBy<T extends object>(obj: T, predicate: (value: any) => bool
  * @returns A new object with just the picked properties
  */
 export function pick<T extends object, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> {
-  // eslint-disable-next-line unicorn/no-array-reduce
-  return keys.reduce((result, key) => {
+  // Assertion: Required to avoid verbose runtime guards
+  const picked = {} as Pick<T, K>
+  for (const key of keys) {
     if (key in obj) {
-      result[key] = obj[key]
+      picked[key] = obj[key]
     }
-    return result
-  }, {} as Pick<T, K>)
+  }
+  return picked
 }
