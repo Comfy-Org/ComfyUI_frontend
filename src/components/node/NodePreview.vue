@@ -76,16 +76,33 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
     >
       {{ nodeDef.description }}
     </div>
+    <Select
+      v-model="selectedSpeed"
+      :options="speedOptions"
+      optionLabel="name"
+      optionValue="value"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import _ from 'lodash'
-import { computed } from 'vue'
+import Select from 'primevue/select'
+import { computed, ref } from 'vue'
 
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+
+const selectedSpeed = ref(1)
+
+const speedOptions = [
+  { name: '0.1x', value: 0.1 },
+  { name: '0.5x', value: 0.5 },
+  { name: '1x', value: 1 },
+  { name: '1.5x', value: 1.5 },
+  { name: '2x', value: 2 }
+]
 
 const props = defineProps<{
   nodeDef: ComfyNodeDefV2
