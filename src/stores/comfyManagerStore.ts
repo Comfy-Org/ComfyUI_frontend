@@ -13,7 +13,7 @@ import {
 } from '@/types/comfyManagerTypes'
 
 /**
- * Store for managing node pack operations and install state
+ * Store for state of installed node packs
  */
 export const useComfyManagerStore = defineStore('comfyManager', () => {
   const managerService = useComfyManagerService()
@@ -39,16 +39,13 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
       enqueueTask({
         task: () => managerService.installPack(params, signal),
         onComplete: () => {
-          console.log('installPack onComplete')
           appNeedsRestart.value = true
-          console.log('installedPacks before', installedPacks.value)
           installedPacks.value[id] = {
             ver: params.version,
             cnr_id: params.id,
             aux_id: null,
             enabled: true
           }
-          console.log('installedPacks after', installedPacks.value)
         }
       })
     },
