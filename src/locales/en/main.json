@@ -457,7 +457,7 @@
         "inpain_model_outpainting": "Outpaint"
       },
       "ControlNet": {
-        "controlnet_example": "ControlNet",
+        "controlnet_example": "Scribble ControlNet",
         "2_pass_pose_worship": "Pose ControlNet 2 Pass",
         "depth_controlnet": "Depth ControlNet",
         "depth_t2i_adapter": "Depth T2I Adapter",
