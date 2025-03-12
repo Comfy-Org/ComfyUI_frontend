@@ -46,6 +46,7 @@ const addMultiSelectWidget = (node: LGraphNode, inputSpec: ComboInputSpec) => {
   })
   addWidget(node, widget as BaseDOMWidget<object | string>)
   // TODO: Add remote support to multi-select widget
+  // https://github.com/Comfy-Org/ComfyUI_frontend/issues/3003
   return widget
 }
 
