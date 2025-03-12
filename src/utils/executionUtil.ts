@@ -69,9 +69,16 @@ export const graphToPrompt = async (
           const widgetValue = widget.serializeValue
             ? await widget.serializeValue(node, i)
             : widget.value
-          inputs[widget.name] = {
-            __value__: widgetValue
-          }
+          // By default, Array values are reserved to represent node connections.
+          // We need to wrap the array as an object to avoid the misinterpretation
+          // of the array as a node connection.
+          // The backend automatically unwraps the object to an array during
+          // execution.
+          inputs[widget.name] = Array.isArray(widgetValue)
+            ? {
+                __value__: widgetValue
+              }
+            : widgetValue
         }
       }
 
