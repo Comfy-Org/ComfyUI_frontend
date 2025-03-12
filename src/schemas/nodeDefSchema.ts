@@ -20,7 +20,6 @@ const zMultiSelectOption = z.object({
 export const zBaseInputOptions = z
   .object({
     default: z.any().optional(),
-    /** @deprecated Group node uses this field. Remove when group node feature is removed. */
     defaultInput: z.boolean().optional(),
     forceInput: z.boolean().optional(),
     tooltip: z.string().optional(),

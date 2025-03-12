@@ -26,6 +26,19 @@ declare module '@comfyorg/litegraph/dist/types/widgets' {
      * The minimum size of the node if the widget is present.
      */
     minNodeSize?: Size
+    /**
+     * Whether the widget is optional.
+     */
+    inputIsOptional?: boolean
+    /**
+     * Whether the widget is forced to be an input.
+     */
+    forceInput?: boolean
+    /**
+     * Whether the widget defaults to input state. Can still be converted back
+     * to widget state.
+     */
+    defaultInput?: boolean
   }
 
   interface IBaseWidget {
