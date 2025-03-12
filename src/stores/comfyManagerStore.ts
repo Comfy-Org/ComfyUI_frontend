@@ -46,6 +46,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
             aux_id: null,
             enabled: true
           }
+          isStale.value = true
         }
       })
     },
@@ -64,6 +65,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
       onComplete: () => {
         appNeedsRestart.value = true
         delete installedPacks.value[id]
+        isStale.value = true
       }
     })
   }
@@ -80,6 +82,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
         onComplete: () => {
           appNeedsRestart.value = true
           installedPacks.value[id].ver = params.version
+          isStale.value = true
         }
       })
     },
@@ -108,6 +111,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
       onComplete: () => {
         appNeedsRestart.value = true
         installedPacks.value[id].enabled = false
+        isStale.value = true
       }
     })
   }
