@@ -2,10 +2,11 @@ import { whenever } from '@vueuse/core'
 import { onMounted, ref } from 'vue'
 
 import { useCivitaiModel } from '@/composables/useCivitaiModel'
-import { isCivitaiModelUrl } from '@/utils/formatUtil'
+import { downloadUrlToHfRepoUrl, isCivitaiModelUrl } from '@/utils/formatUtil'
 
 export function useDownload(url: string, fileName?: string) {
   const fileSize = ref<number | null>(null)
+  const error = ref<Error | null>(null)
 
   const setFileSize = (size: number) => {
     fileSize.value = size
@@ -25,6 +26,7 @@ export function useDownload(url: string, fileName?: string) {
       }
     } catch (e) {
       console.error('Error fetching file size:', e)
+      error.value = e instanceof Error ? e : new Error(String(e))
       return null
     }
   }
@@ -34,8 +36,13 @@ export function useDownload(url: string, fileName?: string) {
    */
   const triggerBrowserDownload = () => {
     const link = document.createElement('a')
-    link.href = url
-    link.download = fileName || url.split('/').pop() || 'download'
+    if (url.includes('huggingface.co') && error.value) {
+      // If model is a gated HF model, send user to the repo page so they can sign in first
+      link.href = downloadUrlToHfRepoUrl(url)
+    } else {
+      link.href = url
+      link.download = fileName || url.split('/').pop() || 'download'
+    }
     link.target = '_blank' // Opens in new tab if download attribute is not supported
     link.rel = 'noopener noreferrer' // Security best practice for _blank links
     link.click()
