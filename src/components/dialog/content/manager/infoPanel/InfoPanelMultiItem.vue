@@ -30,7 +30,7 @@
 import { useAsyncState } from '@vueuse/core'
 import { computed } from 'vue'
 
-import PackInstallButton from '@/components/dialog/content/manager/PackInstallButton.vue'
+import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
 import PackStatusMessage from '@/components/dialog/content/manager/PackStatusMessage.vue'
 import MetadataRow from '@/components/dialog/content/manager/infoPanel/MetadataRow.vue'
 import PackCardHeader from '@/components/dialog/content/manager/packCard/PackCardHeader.vue'

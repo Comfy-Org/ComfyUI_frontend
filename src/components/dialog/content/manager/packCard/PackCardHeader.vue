@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col items-center mb-6">
+  <div v-if="nodePack" class="flex flex-col items-center mb-6">
     <slot name="thumbnail">
       <PackIcon :node-pack="nodePack" width="24" height="24" />
     </slot>
@@ -11,23 +11,71 @@
     </h2>
     <div class="mt-2 mb-4 w-full max-w-xs flex justify-center">
       <slot name="install-button">
-        <PackInstallButton
+        <PackUninstallButton
+          v-if="isPackInstalled"
+          :node-packs="[
+            {
+              nodePack: nodePack,
+              selectedVersion
+            }
+          ]"
           :full-width="installButtonFullWidth"
-          :multi="multi"
+        />
+
+        <PackInstallButton
+          v-else
+          :node-packs="[
+            {
+              nodePack: nodePack,
+              selectedVersion
+            }
+          ]"
+          :full-width="installButtonFullWidth"
         />
       </slot>
     </div>
   </div>
+  <div v-else class="flex flex-col items-center mb-6">
+    <NoResultsPlaceholder
+      :message="$t('manager.status.unknown')"
+      :title="$t('manager.tryAgainLater')"
+    />
+  </div>
 </template>
 
 <script setup lang="ts">
-import PackInstallButton from '@/components/dialog/content/manager/PackInstallButton.vue'
+import { computed, ref } from 'vue'
+
+import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
+import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
+import PackUninstallButton from '@/components/dialog/content/manager/button/PackUninstallButton.vue'
 import PackIcon from '@/components/dialog/content/manager/packIcon/PackIcon.vue'
+import { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import { SelectedVersion } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
 
-defineProps<{
+const {
+  nodePack,
+  installButtonFullWidth = false,
+  version = SelectedVersion.NIGHTLY
+} = defineProps<{
   nodePack?: components['schemas']['Node']
-  multi?: boolean
   installButtonFullWidth?: boolean
+  version?: string
 }>()
+
+const managerStore = useComfyManagerStore()
+const selectedVersion = ref<string>(
+  version || nodePack?.latest_version?.version || SelectedVersion.NIGHTLY
+)
+
+const isPackInstalled = computed(() =>
+  nodePack ? managerStore.isPackInstalled(nodePack.id) : false
+)
+
+defineExpose({
+  updateVersion: (newVersion: string) => {
+    selectedVersion.value = newVersion
+  }
+})
 </script>
