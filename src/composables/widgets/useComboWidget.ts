@@ -1,6 +1,8 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
 import type { IComboWidget } from '@comfyorg/litegraph/dist/types/widgets'
+import { ref } from 'vue'
 
+import MultiSelectWidget from '@/components/graph/widgets/MultiSelectWidget.vue'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import {
   ComboInputSpec,
@@ -8,9 +10,15 @@ import {
   isComboInputSpec
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import {
+  type BaseDOMWidget,
+  ComponentWidgetImpl,
+  addWidget
+} from '@/scripts/domWidget'
+import {
   type ComfyWidgetConstructorV2,
   addValueControlWidgets
 } from '@/scripts/widgets'
+import { generateUUID } from '@/utils/formatUtil'
 
 import { useRemoteWidget } from './useRemoteWidget'
 
@@ -21,6 +29,71 @@ const getDefaultValue = (inputSpec: ComboInputSpec) => {
   return undefined
 }
 
+const addMultiSelectWidget = (node: LGraphNode, inputSpec: ComboInputSpec) => {
+  const widgetValue = ref<string[]>([])
+  const widget = new ComponentWidgetImpl({
+    id: generateUUID(),
+    node,
+    name: inputSpec.name,
+    component: MultiSelectWidget,
+    inputSpec,
+    options: {
+      getValue: () => widgetValue.value,
+      setValue: (value: string[]) => {
+        widgetValue.value = value
+      }
+    }
+  })
+  addWidget(node, widget as BaseDOMWidget<object | string>)
+  // TODO: Add remote support to multi-select widget
+  // https://github.com/Comfy-Org/ComfyUI_frontend/issues/3003
+  return widget
+}
+
+const addComboWidget = (node: LGraphNode, inputSpec: ComboInputSpec) => {
+  const defaultValue = getDefaultValue(inputSpec)
+  const comboOptions = inputSpec.options ?? []
+  const widget = node.addWidget(
+    'combo',
+    inputSpec.name,
+    defaultValue,
+    () => {},
+    {
+      values: comboOptions
+    }
+  ) as IComboWidget
+
+  if (inputSpec.remote) {
+    const remoteWidget = useRemoteWidget({
+      remoteConfig: inputSpec.remote,
+      defaultValue,
+      node,
+      widget
+    })
+    if (inputSpec.remote.refresh_button) remoteWidget.addRefreshButton()
+
+    const origOptions = widget.options
+    widget.options = new Proxy(origOptions as Record<string | symbol, any>, {
+      get(target, prop: string | symbol) {
+        if (prop !== 'values') return target[prop]
+        return remoteWidget.getValue()
+      }
+    })
+  }
+
+  if (inputSpec.control_after_generate) {
+    widget.linkedWidgets = addValueControlWidgets(
+      node,
+      widget,
+      undefined,
+      undefined,
+      transformInputSpecV2ToV1(inputSpec)
+    )
+  }
+
+  return widget
+}
+
 export const useComboWidget = () => {
   const widgetConstructor: ComfyWidgetConstructorV2 = (
     node: LGraphNode,
@@ -29,48 +102,9 @@ export const useComboWidget = () => {
     if (!isComboInputSpec(inputSpec)) {
       throw new Error(`Invalid input data: ${inputSpec}`)
     }
-
-    const comboOptions = inputSpec.options ?? []
-    const defaultValue = getDefaultValue(inputSpec)
-
-    const widget = node.addWidget(
-      'combo',
-      inputSpec.name,
-      defaultValue,
-      () => {},
-      {
-        values: comboOptions
-      }
-    ) as IComboWidget
-
-    if (inputSpec.remote) {
-      const remoteWidget = useRemoteWidget({
-        remoteConfig: inputSpec.remote,
-        defaultValue,
-        node,
-        widget
-      })
-      if (inputSpec.remote.refresh_button) remoteWidget.addRefreshButton()
-
-      const origOptions = widget.options
-      widget.options = new Proxy(origOptions as Record<string | symbol, any>, {
-        get(target, prop: string | symbol) {
-          if (prop !== 'values') return target[prop]
-          return remoteWidget.getValue()
-        }
-      })
-    }
-
-    if (inputSpec.control_after_generate) {
-      widget.linkedWidgets = addValueControlWidgets(
-        node,
-        widget,
-        undefined,
-        undefined,
-        transformInputSpecV2ToV1(inputSpec)
-      )
-    }
-    return widget
+    return inputSpec.multi_select
+      ? addMultiSelectWidget(node, inputSpec)
+      : addComboWidget(node, inputSpec)
   }
 
   return widgetConstructor

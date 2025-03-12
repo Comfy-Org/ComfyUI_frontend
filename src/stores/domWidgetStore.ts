@@ -5,7 +5,7 @@ import { defineStore } from 'pinia'
 import { markRaw, ref } from 'vue'
 
 import type { PositionConfig } from '@/composables/element/useAbsolutePosition'
-import type { DOMWidget } from '@/scripts/domWidget'
+import type { BaseDOMWidget } from '@/scripts/domWidget'
 
 export interface DomWidgetState extends PositionConfig {
   visible: boolean
@@ -18,17 +18,15 @@ export const useDomWidgetStore = defineStore('domWidget', () => {
 
   // Map to reference actual widget instances
   // Widgets are stored as raw values to avoid reactivity issues
-  const widgetInstances = ref(
-    new Map<string, DOMWidget<HTMLElement, object | string>>()
-  )
+  const widgetInstances = ref(new Map<string, BaseDOMWidget<object | string>>())
 
   // Register a widget with the store
-  const registerWidget = <T extends HTMLElement, V extends object | string>(
-    widget: DOMWidget<T, V>
+  const registerWidget = <V extends object | string>(
+    widget: BaseDOMWidget<V>
   ) => {
     widgetInstances.value.set(
       widget.id,
-      markRaw(widget as unknown as DOMWidget<HTMLElement, object | string>)
+      markRaw(widget) as unknown as BaseDOMWidget<object | string>
     )
     widgetStates.value.set(widget.id, {
       visible: true,

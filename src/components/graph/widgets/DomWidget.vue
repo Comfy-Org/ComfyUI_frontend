@@ -5,7 +5,15 @@
     ref="widgetElement"
     :style="style"
     v-show="widgetState.visible"
-  />
+  >
+    <component
+      v-if="isComponentWidget(widget)"
+      :is="widget.component"
+      :modelValue="widget.value"
+      @update:modelValue="emit('update:widgetValue', $event)"
+      :widget="widget"
+    />
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -15,14 +23,22 @@ import { CSSProperties, computed, onMounted, ref, watch } from 'vue'
 
 import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
 import { useDomClipping } from '@/composables/element/useDomClipping'
-import type { DOMWidget } from '@/scripts/domWidget'
+import {
+  type BaseDOMWidget,
+  isComponentWidget,
+  isDOMWidget
+} from '@/scripts/domWidget'
 import { DomWidgetState } from '@/stores/domWidgetStore'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
 
 const { widget, widgetState } = defineProps<{
-  widget: DOMWidget<HTMLElement, any>
+  widget: BaseDOMWidget<string | object>
   widgetState: DomWidgetState
+}>()
+
+const emit = defineEmits<{
+  (e: 'update:widgetValue', value: string | object): void
 }>()
 
 const widgetElement = ref<HTMLElement>()
@@ -92,27 +108,31 @@ watch(
   }
 )
 
-if (widget.element.blur) {
-  useEventListener(document, 'mousedown', (event) => {
-    if (!widget.element.contains(event.target as HTMLElement)) {
-      widget.element.blur()
-    }
-  })
-}
+if (isDOMWidget(widget)) {
+  if (widget.element.blur) {
+    useEventListener(document, 'mousedown', (event) => {
+      if (!widget.element.contains(event.target as HTMLElement)) {
+        widget.element.blur()
+      }
+    })
+  }
 
-for (const evt of widget.options.selectOn ?? ['focus', 'click']) {
-  useEventListener(widget.element, evt, () => {
-    const lgCanvas = canvasStore.canvas
-    lgCanvas?.selectNode(widget.node)
-    lgCanvas?.bringToFront(widget.node)
-  })
+  for (const evt of widget.options.selectOn ?? ['focus', 'click']) {
+    useEventListener(widget.element, evt, () => {
+      const lgCanvas = canvasStore.canvas
+      lgCanvas?.selectNode(widget.node)
+      lgCanvas?.bringToFront(widget.node)
+    })
+  }
 }
 
 const inputSpec = widget.node.constructor.nodeData
 const tooltip = inputSpec?.inputs?.[widget.name]?.tooltip
 
 onMounted(() => {
-  widgetElement.value.appendChild(widget.element)
+  if (isDOMWidget(widget)) {
+    widgetElement.value.appendChild(widget.element)
+  }
 })
 </script>
 
