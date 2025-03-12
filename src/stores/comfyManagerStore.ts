@@ -19,7 +19,6 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
   const managerService = useComfyManagerService()
   const installedPacks = ref<InstalledPacksResponse>({})
   const isStale = ref(true)
-  const appNeedsRestart = ref(false)
 
   const { statusMessage, allTasksDone, enqueueTask } = useManagerQueue()
 
@@ -29,61 +28,40 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     isStale.value = false
   }
 
+  const setStale = () => {
+    isStale.value = true
+  }
+
   whenever(isStale, refreshInstalledList, { immediate: true })
 
   const installPack = useCachedRequest<InstallPackParams, void>(
     async (params: InstallPackParams, signal?: AbortSignal) => {
-      const id = params.id
-      if (!id) return
-
       enqueueTask({
         task: () => managerService.installPack(params, signal),
-        onComplete: () => {
-          appNeedsRestart.value = true
-          installedPacks.value[id] = {
-            ver: params.version,
-            cnr_id: params.id,
-            aux_id: null,
-            enabled: true
-          }
-          isStale.value = true
-        }
+        onComplete: setStale
       })
     },
     { maxSize: 1 }
   )
 
   const uninstallPack = (params: ManagerPackInfo, signal?: AbortSignal) => {
-    const id = params.id
-    if (!id) return
-
     installPack.clear()
     installPack.cancel()
 
     enqueueTask({
       task: () => managerService.uninstallPack(params, signal),
-      onComplete: () => {
-        appNeedsRestart.value = true
-        delete installedPacks.value[id]
-        isStale.value = true
-      }
+      onComplete: setStale
     })
   }
 
   const updatePack = useCachedRequest<ManagerPackInfo, void>(
     async (params: ManagerPackInfo, signal?: AbortSignal) => {
-      const id = params.id
-      if (!id) return
-
       updateAllPacks.clear()
+      updateAllPacks.cancel()
 
       enqueueTask({
         task: () => managerService.updatePack(params, signal),
-        onComplete: () => {
-          appNeedsRestart.value = true
-          installedPacks.value[id].ver = params.version
-          isStale.value = true
-        }
+        onComplete: setStale
       })
     },
     { maxSize: 1 }
@@ -93,26 +71,16 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     async (params: UpdateAllPacksParams, signal?: AbortSignal) => {
       enqueueTask({
         task: () => managerService.updateAllPacks(params, signal),
-        onComplete: () => {
-          appNeedsRestart.value = true
-          isStale.value = true
-        }
+        onComplete: setStale
       })
     },
     { maxSize: 1 }
   )
 
   const disablePack = (params: ManagerPackInfo, signal?: AbortSignal) => {
-    const id = params.id
-    if (!id) return
-
     enqueueTask({
       task: () => managerService.disablePack(params, signal),
-      onComplete: () => {
-        appNeedsRestart.value = true
-        installedPacks.value[id].enabled = false
-        isStale.value = true
-      }
+      onComplete: setStale
     })
   }
 
