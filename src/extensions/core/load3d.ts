@@ -27,7 +27,6 @@ app.registerExtension({
       LOAD_3D(node) {
         const inputSpec: CustomInputSpec = {
           name: 'image',
-          node: node,
           type: 'Load3D'
         }
 
@@ -166,7 +165,6 @@ app.registerExtension({
       LOAD_3D_ANIMATION(node) {
         const inputSpec: CustomInputSpec = {
           name: 'image',
-          node: node,
           type: 'Load3DAnimation'
         }
 
@@ -312,7 +310,6 @@ app.registerExtension({
       PREVIEW_3D(node) {
         const inputSpec: CustomInputSpec = {
           name: 'image',
-          node: node,
           type: 'Preview3D'
         }
 
@@ -396,7 +393,6 @@ app.registerExtension({
       PREVIEW_3D_ANIMATION(node) {
         const inputSpec: CustomInputSpec = {
           name: 'image',
-          node: node,
           type: 'Preview3DAnimation'
         }
 

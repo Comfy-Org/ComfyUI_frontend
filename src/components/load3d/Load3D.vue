@@ -54,7 +54,6 @@
 </template>
 
 <script setup lang="ts">
-import { LGraphNode } from '@comfyorg/litegraph'
 import { computed, ref } from 'vue'
 
 import Load3DControls from '@/components/load3d/Load3DControls.vue'
@@ -75,7 +74,7 @@ const { widget } = defineProps<{
 
 const inputSpec = widget.inputSpec as CustomInputSpec
 
-const node = inputSpec.node as LGraphNode
+const node = widget.node
 const type = inputSpec.type as Load3DNodeType
 
 const backgroundColor = ref('#000000')
