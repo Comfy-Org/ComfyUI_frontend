@@ -188,8 +188,6 @@
     "Shapes": "Shapes",
     "Bypass": "Bypass",
     "Copy (Clipspace)": "Copy (Clipspace)",
-    "Convert Widget to Input": "Convert Widget to Input",
-    "Convert Input to Widget": "Convert Input to Widget",
     "Add Node": "Add Node",
     "Add Group": "Add Group",
     "Convert to Group Node": "Convert to Group Node",
@@ -198,9 +196,6 @@
     "Save Selected as Template": "Save Selected as Template",
     "Node Templates": "Node Templates",
     "Manage": "Manage",
-    "Convert ": "Convert ",
-    " to input": " to input",
-    " to widget": " to widget",
     "Search": "Search"
   },
   "icon": {
