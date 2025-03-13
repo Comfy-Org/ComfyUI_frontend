@@ -1,7 +1,7 @@
 import { whenever } from '@vueuse/core'
-import { cloneDeep } from 'lodash'
+import { partition } from 'lodash'
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 import { useCachedRequest } from '@/composables/useCachedRequest'
 import { useManagerQueue } from '@/composables/useManagerQueue'
@@ -10,6 +10,7 @@ import {
   InstallPackParams,
   InstalledPacksResponse,
   ManagerPackInfo,
+  ManagerPackInstalled,
   UpdateAllPacksParams
 } from '@/types/comfyManagerTypes'
 
@@ -19,51 +20,65 @@ import {
 export const useComfyManagerStore = defineStore('comfyManager', () => {
   const managerService = useComfyManagerService()
   const installedPacks = ref<InstalledPacksResponse>({})
+  const enabledPacks = ref<Set<string>>(new Set())
+  const disabledPacks = ref<Set<string>>(new Set())
   const isStale = ref(true)
 
   const { statusMessage, allTasksDone, enqueueTask } = useManagerQueue()
 
-  const refreshInstalledList = async () => {
-    const currentInstalledPacks = cloneDeep(installedPacks.value)
-    const packs = await managerService.listInstalledPacks()
-    if (packs) installedPacks.value = packs
-    isStale.value = false
-
-    // For debugging: find the diff between the last installed packs and the current installed packs
-    for (const [key, value] of Object.entries(currentInstalledPacks)) {
-      // Check if gone
-      if (!packs?.[key]) {
-        console.log('%c gone', 'color: red', key, value)
-      }
-      // Check if enabled status changed
-      else if (currentInstalledPacks[key]?.enabled !== value.enabled) {
-        console.log('%c enabled changed', 'color: yellow', key, value)
-      }
-      // Check if version changed
-      else if (currentInstalledPacks[key]?.ver !== value.ver) {
-        console.log('%c version changed', 'color: blue', key, value)
-      }
-    }
-
-    if (packs) {
-      for (const [key, value] of Object.entries(packs)) {
-        if (!currentInstalledPacks[key]) {
-          console.log('%c new', 'color: green', key, value)
-        }
-      }
-    }
+  const setStale = () => {
+    isStale.value = true
   }
 
-  const setStale = () => {
-    console.log('setStale')
-    isStale.value = true
+  const isPackInstalled = (packName: string | undefined): boolean => {
+    if (!packName) return false
+    return !!installedPacks.value[packName] || disabledPacks.value.has(packName)
+  }
+
+  const isPackEnabled = (packName: string | undefined): boolean =>
+    !!packName && enabledPacks.value.has(packName)
+
+  /**
+   * A pack is disabled if there is a disabled entry and no corresponding enabled entry
+   * @example
+   * installedPacks = {
+   *   "packname@1_0_2": { enabled: false, cnr_id: "packname" },
+   *   "packname": { enabled: true, cnr_id: "packname" }
+   * }
+   * isDisabled("packname") // false
+   *
+   * installedPacks = {
+   *   "packname@1_0_2": { enabled: false, cnr_id: "packname" },
+   * }
+   * isDisabled("packname") // true
+   */
+  const isPackDisabled = (pack: ManagerPackInstalled) =>
+    pack.enabled === false && pack.cnr_id && !installedPacks.value[pack.cnr_id]
+
+  const packsToIdSet = (packs: ManagerPackInstalled[]) =>
+    packs.reduce((acc, pack) => {
+      const id = pack.cnr_id || pack.aux_id
+      if (id) acc.add(id)
+      return acc
+    }, new Set<string>())
+
+  watch(installedPacks, () => {
+    const packs = Object.values(installedPacks.value)
+    const [disabled, enabled] = partition(packs, isPackDisabled)
+    enabledPacks.value = packsToIdSet(enabled)
+    disabledPacks.value = packsToIdSet(disabled)
+  })
+
+  const refreshInstalledList = async () => {
+    isStale.value = false
+    const packs = await managerService.listInstalledPacks()
+    if (packs) installedPacks.value = packs
   }
 
   whenever(isStale, refreshInstalledList, { immediate: true })
 
   const installPack = useCachedRequest<InstallPackParams, void>(
     async (params: InstallPackParams, signal?: AbortSignal) => {
-      console.log('installPack', params)
       enqueueTask({
         task: () => managerService.installPack(params, signal),
         onComplete: setStale
@@ -75,7 +90,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
   const uninstallPack = (params: ManagerPackInfo, signal?: AbortSignal) => {
     installPack.clear()
     installPack.cancel()
-    console.log('uninstallPack', params)
+
     enqueueTask({
       task: () => managerService.uninstallPack(params, signal),
       onComplete: setStale
@@ -84,7 +99,6 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
 
   const updatePack = useCachedRequest<ManagerPackInfo, void>(
     async (params: ManagerPackInfo, signal?: AbortSignal) => {
-      console.log('updatePack', params)
       updateAllPacks.clear()
       updateAllPacks.cancel()
 
@@ -98,7 +112,6 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
 
   const updateAllPacks = useCachedRequest<UpdateAllPacksParams, void>(
     async (params: UpdateAllPacksParams, signal?: AbortSignal) => {
-      console.log('updateAllPacks', params)
       enqueueTask({
         task: () => managerService.updateAllPacks(params, signal),
         onComplete: setStale
@@ -108,21 +121,10 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
   )
 
   const disablePack = (params: ManagerPackInfo, signal?: AbortSignal) => {
-    console.log('disablePack', params)
     enqueueTask({
       task: () => managerService.disablePack(params, signal),
       onComplete: setStale
     })
-  }
-
-  const isPackInstalled = (packName: string | undefined): boolean => {
-    if (!packName) return false
-    return !!installedPacks.value[packName]
-  }
-
-  const isPackEnabled = (packName: string | undefined): boolean => {
-    if (!packName) return false
-    return !!installedPacks.value[packName]?.enabled
   }
 
   return {
