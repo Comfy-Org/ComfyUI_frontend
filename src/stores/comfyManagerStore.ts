@@ -1,7 +1,7 @@
 import { whenever } from '@vueuse/core'
 import { partition } from 'lodash'
 import { defineStore } from 'pinia'
-import { ref, watch } from 'vue'
+import { ref, watchEffect } from 'vue'
 
 import { useCachedRequest } from '@/composables/useCachedRequest'
 import { useManagerQueue } from '@/composables/useManagerQueue'
@@ -62,7 +62,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
       return acc
     }, new Set<string>())
 
-  watch(installedPacks, () => {
+  watchEffect(() => {
     const packs = Object.values(installedPacks.value)
     const [disabled, enabled] = partition(packs, isPackDisabled)
     enabledPacks.value = packsToIdSet(enabled)
