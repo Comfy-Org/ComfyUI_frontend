@@ -34,7 +34,11 @@ jobs:
         git config --global user.name 'github-actions'
         git config --global user.email 'github-actions@github.com'
         git fetch origin ${{ github.head_ref }}
+        # Stash any local changes before checkout
+        git stash -u
         git checkout -B ${{ github.head_ref }} origin/${{ github.head_ref }}
+        # Apply the stashed changes if any
+        git stash pop || true
         git add src/locales/
         git diff --staged --quiet || git commit -m "Update locales [skip ci]"
         git push origin HEAD:${{ github.head_ref }}

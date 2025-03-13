@@ -1,5 +1,7 @@
 import { debounce } from 'lodash'
 
+import { t } from '@/i18n'
+
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
 import { ComfyApp } from '../../scripts/app'
@@ -1086,7 +1088,7 @@ class MaskEditorDialog extends ComfyDialog {
     formData.append('type', 'input')
     formData.append('subfolder', 'clipspace')
 
-    this.uiManager.setSaveButtonText('Saving')
+    this.uiManager.setSaveButtonText(t('g.saving'))
     this.uiManager.setSaveButtonEnabled(false)
     this.keyboardManager.removeListeners()
 
@@ -1115,7 +1117,7 @@ class MaskEditorDialog extends ComfyDialog {
       this.close()
       this.isOpen = false
     } else {
-      this.uiManager.setSaveButtonText('Save')
+      this.uiManager.setSaveButtonText(t('g.save'))
       this.uiManager.setSaveButtonEnabled(true)
       this.keyboardManager.addListeners()
     }
@@ -2846,7 +2848,7 @@ class UIManager {
   }
 
   async initUI() {
-    this.saveButton.innerText = 'Save'
+    this.saveButton.innerText = t('g.save')
     this.saveButton.disabled = false
 
     await this.setImages(this.imgCanvas) //probably change method to initImageCanvas
@@ -2887,11 +2889,15 @@ class UIManager {
       : 'maskEditor_brushShape_light'
     const brush_settings_container = this.createContainer(true)
 
-    const brush_settings_title = this.createHeadline('Brush Settings')
+    const brush_settings_title = this.createHeadline(
+      t('maskEditor.Brush Settings')
+    )
 
     const brush_shape_outer_container = this.createContainer(true)
 
-    const brush_shape_title = this.createContainerTitle('Brush Shape')
+    const brush_shape_title = this.createContainerTitle(
+      t('maskEditor.Brush Shape')
+    )
 
     const brush_shape_container = this.createContainer(false)
 
@@ -2939,7 +2945,7 @@ class UIManager {
     brush_shape_outer_container.appendChild(brush_shape_container)
 
     const thicknesSliderObj = this.createSlider(
-      'Thickness',
+      t('maskEditor.Thickness'),
       1,
       100,
       1,
@@ -2952,7 +2958,7 @@ class UIManager {
     this.brushSizeSlider = thicknesSliderObj.slider
 
     const opacitySliderObj = this.createSlider(
-      'Opacity',
+      t('maskEditor.Opacity'),
       0,
       1,
       0.01,
@@ -2965,7 +2971,7 @@ class UIManager {
     this.brushOpacitySlider = opacitySliderObj.slider
 
     const hardnessSliderObj = this.createSlider(
-      'Hardness',
+      t('maskEditor.Hardness'),
       0,
       1,
       0.01,
@@ -2978,7 +2984,7 @@ class UIManager {
     this.brushHardnessSlider = hardnessSliderObj.slider
 
     const brushSmoothingPrecisionSliderObj = this.createSlider(
-      'Smoothing Precision',
+      t('maskEditor.Smoothing Precision'),
       1,
       100,
       1,
@@ -2993,7 +2999,7 @@ class UIManager {
 
     const resetBrushSettingsButton = document.createElement('button')
     resetBrushSettingsButton.id = 'resetBrushSettingsButton'
-    resetBrushSettingsButton.innerText = 'Reset to Default'
+    resetBrushSettingsButton.innerText = t('maskEditor.Reset to Default')
 
     resetBrushSettingsButton.addEventListener('click', () => {
       this.messageBroker.publish('setBrushShape', BrushShape.Arc)
@@ -3031,12 +3037,12 @@ class UIManager {
     const paint_bucket_settings_container = this.createContainer(true)
 
     const paint_bucket_settings_title = this.createHeadline(
-      'Paint Bucket Settings'
+      t('maskEditor.Paint Bucket Settings')
     )
 
     const tolerance = await this.messageBroker.pull('getTolerance')
     const paintBucketToleranceSliderObj = this.createSlider(
-      'Tolerance',
+      t('maskEditor.Tolerance'),
       0,
       255,
       1,
@@ -3049,7 +3055,7 @@ class UIManager {
     // Add new slider for fill opacity
     const fillOpacity = (await this.messageBroker.pull('getFillOpacity')) || 100
     const fillOpacitySliderObj = this.createSlider(
-      'Fill Opacity',
+      t('maskEditor.Fill Opacity'),
       0,
       100,
       1,
@@ -3073,12 +3079,12 @@ class UIManager {
     const color_select_settings_container = this.createContainer(true)
 
     const color_select_settings_title = this.createHeadline(
-      'Color Select Settings'
+      t('maskEditor.Color Select Settings')
     )
 
     var tolerance = await this.messageBroker.pull('getTolerance')
     const colorSelectToleranceSliderObj = this.createSlider(
-      'Tolerance',
+      t('maskEditor.Tolerance'),
       0,
       255,
       1,
@@ -3090,7 +3096,7 @@ class UIManager {
 
     // Add new slider for selection opacity
     const selectionOpacitySliderObj = this.createSlider(
-      'Selection Opacity',
+      t('maskEditor.Selection Opacity'),
       0,
       100,
       1,
@@ -3101,14 +3107,14 @@ class UIManager {
     )
 
     const livePreviewToggle = this.createToggle(
-      'Live Preview',
+      t('maskEditor.Live Preview'),
       (event, value) => {
         this.messageBroker.publish('setLivePreview', value)
       }
     )
 
     const wholeImageToggle = this.createToggle(
-      'Apply to Whole Image',
+      t('maskEditor.Apply to Whole Image'),
       (event, value) => {
         this.messageBroker.publish('setWholeImage', value)
       }
@@ -3116,7 +3122,7 @@ class UIManager {
 
     const methodOptions = Object.values(ColorComparisonMethod)
     const methodSelect = this.createDropdown(
-      'Method',
+      t('maskEditor.Method'),
       methodOptions,
       (event, value) => {
         this.messageBroker.publish('setColorComparisonMethod', value)
@@ -3124,14 +3130,14 @@ class UIManager {
     )
 
     const maskBoundaryToggle = this.createToggle(
-      'Stop at mask',
+      t('maskEditor.Stop at mask'),
       (event, value) => {
         this.messageBroker.publish('setMaskBoundary', value)
       }
     )
 
     const maskToleranceSliderObj = this.createSlider(
-      'Mask Tolerance',
+      t('maskEditor.Mask Tolerance'),
       0,
       255,
       1,
@@ -3167,9 +3173,13 @@ class UIManager {
 
     const image_layer_settings_container = this.createContainer(true)
 
-    const image_layer_settings_title = this.createHeadline('Layers')
+    const image_layer_settings_title = this.createHeadline(
+      t('maskEditor.Layers')
+    )
 
-    const mask_layer_title = this.createContainerTitle('Mask Layer')
+    const mask_layer_title = this.createContainerTitle(
+      t('maskEditor.Mask Layer')
+    )
 
     const mask_layer_container = this.createContainer(false)
     mask_layer_container.classList.add(accentColor)
@@ -3228,7 +3238,7 @@ class UIManager {
     mask_layer_container.appendChild(mask_layer_dropdown)
 
     const mask_layer_opacity_sliderObj = this.createSlider(
-      'Mask Opacity',
+      t('maskEditor.Mask Opacity'),
       0.0,
       1.0,
       0.01,
@@ -3246,7 +3256,9 @@ class UIManager {
     )
     this.maskOpacitySlider = mask_layer_opacity_sliderObj.slider
 
-    const image_layer_title = this.createContainerTitle('Image Layer')
+    const image_layer_title = this.createContainerTitle(
+      t('maskEditor.Image Layer')
+    )
 
     const image_layer_container = this.createContainer(false)
     image_layer_container.classList.add(accentColor)
@@ -3471,7 +3483,7 @@ class UIManager {
     var top_bar_invert_button = document.createElement('button')
     top_bar_invert_button.id = 'maskEditor_topBarInvertButton'
     top_bar_invert_button.classList.add(buttonAccentColor)
-    top_bar_invert_button.innerText = 'Invert'
+    top_bar_invert_button.innerText = t('maskEditor.Invert')
     top_bar_invert_button.addEventListener('click', () => {
       this.messageBroker.publish('invert')
     })
@@ -3479,7 +3491,7 @@ class UIManager {
     var top_bar_clear_button = document.createElement('button')
     top_bar_clear_button.id = 'maskEditor_topBarClearButton'
     top_bar_clear_button.classList.add(buttonAccentColor)
-    top_bar_clear_button.innerText = 'Clear'
+    top_bar_clear_button.innerText = t('maskEditor.Clear')
 
     top_bar_clear_button.addEventListener('click', () => {
       this.maskCtx.clearRect(
@@ -3494,7 +3506,7 @@ class UIManager {
     var top_bar_save_button = document.createElement('button')
     top_bar_save_button.id = 'maskEditor_topBarSaveButton'
     top_bar_save_button.classList.add(buttonAccentColor)
-    top_bar_save_button.innerText = 'Save'
+    top_bar_save_button.innerText = t('g.save')
     this.saveButton = top_bar_save_button
 
     top_bar_save_button.addEventListener('click', () => {
@@ -3504,7 +3516,7 @@ class UIManager {
     var top_bar_cancel_button = document.createElement('button')
     top_bar_cancel_button.id = 'maskEditor_topBarCancelButton'
     top_bar_cancel_button.classList.add(buttonAccentColor)
-    top_bar_cancel_button.innerText = 'Cancel'
+    top_bar_cancel_button.innerText = t('g.cancel')
 
     top_bar_cancel_button.addEventListener('click', () => {
       this.maskEditor.close()
