@@ -28,7 +28,7 @@
             class="flex items-center text-sm text-muted tracking-tighter"
           >
             <i class="pi pi-download mr-2" />
-            {{ formatNumber(nodePack.downloads) }}
+            {{ $n(nodePack.downloads) }}
           </div>
           <template v-if="isPackInstalled">
             <PackEnableToggle :node-pack="nodePack" />
@@ -103,7 +103,6 @@ import PackInstallButton from '@/components/dialog/content/manager/button/PackIn
 import PackIcon from '@/components/dialog/content/manager/packIcon/PackIcon.vue'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import type { components } from '@/types/comfyRegistryTypes'
-import { formatNumber } from '@/utils/formatUtil'
 
 const { nodePack, isSelected = false } = defineProps<{
   nodePack: components['schemas']['Node']

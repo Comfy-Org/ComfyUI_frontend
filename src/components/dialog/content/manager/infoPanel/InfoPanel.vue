@@ -38,7 +38,6 @@ import InfoTabs from '@/components/dialog/content/manager/infoPanel/InfoTabs.vue
 import MetadataRow from '@/components/dialog/content/manager/infoPanel/MetadataRow.vue'
 import PackCardHeader from '@/components/dialog/content/manager/packCard/PackCardHeader.vue'
 import { components } from '@/types/comfyRegistryTypes'
-import { formatNumber } from '@/utils/formatUtil'
 
 interface InfoItem {
   key: string
@@ -50,19 +49,18 @@ const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']
 }>()
 
-const { t, d } = useI18n()
+const { t, d, n } = useI18n()
 
 const infoItems = computed<InfoItem[]>(() => [
   {
     key: 'publisher',
     label: t('manager.createdBy'),
-    // TODO: handle all Comfy Registry publisher types dynamically (e.g., organizations, multiple authors)
-    value: nodePack.publisher?.name
+    value: nodePack.publisher?.name ?? nodePack.publisher?.id
   },
   {
     key: 'downloads',
     label: t('manager.downloads'),
-    value: nodePack.downloads ? formatNumber(nodePack.downloads) : undefined
+    value: nodePack.downloads ? n(nodePack.downloads) : undefined
   },
   {
     key: 'lastUpdated',
