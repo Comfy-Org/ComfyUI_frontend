@@ -15,8 +15,7 @@
       <ManagerNavSidebar
         v-if="isSideNavOpen"
         :tabs="tabs"
-        :selected-tab="selectedTab"
-        @update:selected-tab="handleTabSelection"
+        v-model:selectedTab="selectedTab"
       />
       <div
         class="flex-1 overflow-auto"
@@ -137,9 +136,6 @@ const tabs = ref<TabItem[]>([
   { id: 'installed', label: 'Installed', icon: 'pi-box' }
 ])
 const selectedTab = ref<TabItem>(tabs.value[0])
-const handleTabSelection = (tab: TabItem) => {
-  selectedTab.value = tab
-}
 
 const { searchQuery, pageNumber, sortField, isLoading, error, searchResults } =
   useRegistrySearch()
