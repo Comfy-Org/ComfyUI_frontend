@@ -233,8 +233,61 @@ describe('useManagerQueue', () => {
       await simulateServerStatus('in_progress')
       await simulateServerStatus('done')
 
-      // onComplete should not be called for failed tasks
-      expect(mockTask.onComplete).not.toHaveBeenCalled()
+      // onComplete should still be called for failed tasks
+      expect(mockTask.onComplete).toHaveBeenCalled()
+    })
+
+    it('should handle multiple multiple tasks enqueued at once while server busy', async () => {
+      const queue = useManagerQueue()
+      const mockTask1 = createMockTask()
+      const mockTask2 = createMockTask()
+      const mockTask3 = createMockTask()
+
+      // Three tasks enqueued at once
+      await simulateServerStatus('in_progress')
+      await Promise.all([
+        queue.enqueueTask(mockTask1),
+        queue.enqueueTask(mockTask2),
+        queue.enqueueTask(mockTask3)
+      ])
+
+      // Task 1
+      await simulateServerStatus('done')
+      expect(mockTask1.task).toHaveBeenCalled()
+
+      // Verify state of onComplete callbacks
+      expect(mockTask1.onComplete).toHaveBeenCalled()
+      expect(mockTask2.onComplete).not.toHaveBeenCalled()
+      expect(mockTask3.onComplete).not.toHaveBeenCalled()
+
+      // Verify state of queue
+      expect(queue.queueLength.value).toBe(2)
+      expect(queue.allTasksDone.value).toBe(false)
+
+      // Task 2
+      await simulateServerStatus('in_progress')
+      await simulateServerStatus('done')
+      expect(mockTask2.task).toHaveBeenCalled()
+
+      // Verify state of onComplete callbacks
+      expect(mockTask2.onComplete).toHaveBeenCalled()
+      expect(mockTask3.onComplete).not.toHaveBeenCalled()
+
+      // Verify state of queue
+      expect(queue.queueLength.value).toBe(1)
+      expect(queue.allTasksDone.value).toBe(false)
+
+      // Task 3
+      await simulateServerStatus('in_progress')
+      await simulateServerStatus('done')
+
+      // Verify state of onComplete callbacks
+      expect(mockTask3.task).toHaveBeenCalled()
+      expect(mockTask3.onComplete).toHaveBeenCalled()
+
+      // Verify state of queue
+      expect(queue.queueLength.value).toBe(0)
+      expect(queue.allTasksDone.value).toBe(true)
     })
 
     it('should handle adding tasks while processing is in progress', async () => {
