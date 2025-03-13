@@ -10,11 +10,7 @@
           {{ $t('manager.packsSelected') }}
         </template>
         <template #install-button>
-          <PackInstallButton
-            :full-width="true"
-            :multi="true"
-            :node-packs="nodePacks"
-          />
+          <PackInstallButton :full-width="true" :node-packs="nodePacks" />
         </template>
       </InfoPanelHeader>
       <div class="mb-6">

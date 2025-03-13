@@ -8,8 +8,7 @@
       style="word-break: break-all"
     >
       <slot name="title">
-        {{ nodePacks.length }}
-        {{ $t('manager.packsSelected') }}
+        {{ nodePacks[0].name }}
       </slot>
     </h2>
     <div class="mt-2 mb-4 w-full max-w-xs flex justify-center">
