@@ -29,13 +29,16 @@ const { nodePacks } = defineProps<{
 const managerStore = useComfyManagerStore()
 
 const createPayload = (installItem: NodePack) => {
-  const versionToInstall =
-    installItem.latest_version?.version ?? SelectedVersion.NIGHTLY // Use nightly if unclaimed pack
+  const isUnclaimedPack = installItem.publisher?.name === 'Unclaimed'
+  const versionToInstall = isUnclaimedPack
+    ? SelectedVersion.NIGHTLY
+    : installItem.latest_version?.version ?? SelectedVersion.LATEST
+
   return {
     id: installItem.id,
     repository: installItem.repository ?? '',
     channel: ManagerChannel.DEV,
-    mode: ManagerDatabaseSource.REMOTE,
+    mode: ManagerDatabaseSource.CACHE,
     selected_version: versionToInstall,
     version: versionToInstall
   }
@@ -46,7 +49,13 @@ const installPack = (item: NodePack) =>
 
 const installAllPacks = async () => {
   if (!nodePacks?.length) return
-  await Promise.all(nodePacks.map(installPack))
+
+  const uninstalledPacks = nodePacks.filter(
+    (pack) => !managerStore.isPackInstalled(pack.id)
+  )
+  if (!uninstalledPacks.length) return
+
+  await Promise.all(uninstalledPacks.map(installPack))
   managerStore.installPack.clear()
 }
 </script>
