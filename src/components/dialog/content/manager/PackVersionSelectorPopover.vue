@@ -154,13 +154,13 @@ const handleSubmit = async () => {
     mode: ManagerDatabaseSource.CACHE,
     version: selectedVersion.value,
     selected_version: selectedVersion.value
-    // skip_post_install: true
   })
+
   isQueueing.value = false
   emit('submit')
 }
 
 onUnmounted(() => {
-  managerStore.installPack.clear() // Clear request cache
+  managerStore.installPack.clear()
 })
 </script>
