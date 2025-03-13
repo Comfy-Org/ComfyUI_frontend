@@ -1863,7 +1863,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     if (inputs) {
       for (const [i, input] of inputs.entries()) {
         const pos = this.getInputPos(i)
-        if (isInRectangle(x, y, pos[0] - 10, pos[1] - 5, 20, 10)) {
+        if (isInRectangle(x, y, pos[0] - 10, pos[1] - 10, 20, 20)) {
           return { input, slot: i, link_pos: pos }
         }
       }
@@ -1872,7 +1872,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     if (outputs) {
       for (const [i, output] of outputs.entries()) {
         const pos = this.getOutputPos(i)
-        if (isInRectangle(x, y, pos[0] - 10, pos[1] - 5, 20, 10)) {
+        if (isInRectangle(x, y, pos[0] - 10, pos[1] - 10, 20, 20)) {
           return { output, slot: i, link_pos: pos }
         }
       }
