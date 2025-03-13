@@ -2,12 +2,12 @@
   <div class="flex items-center gap-1">
     <span class="text-muted">{{ label }}:</span>
     <Dropdown
-      v-model="selectedValue"
+      :modelValue="modelValue"
+      @update:modelValue="$emit('update:modelValue', $event)"
       :options="options"
       optionLabel="label"
       optionValue="id"
       class="min-w-[6rem] border-none bg-transparent shadow-none"
-      @change="handleChange"
       :pt="{
         input: { class: 'py-0 px-1 border-none' },
         trigger: { class: 'hidden' },
@@ -20,26 +20,16 @@
 
 <script setup lang="ts" generic="T">
 import Dropdown from 'primevue/dropdown'
-import { computed } from 'vue'
 
 import type { SearchOption } from '@/types/comfyManagerTypes'
 
-const { modelValue, options, label } = defineProps<{
-  modelValue: T
+defineProps<{
   options: SearchOption<T>[]
   label: string
+  modelValue: T
 }>()
 
-const emit = defineEmits<{
+defineEmits<{
   'update:modelValue': [value: T]
 }>()
-
-const selectedValue = computed({
-  get: () => modelValue,
-  set: (value) => emit('update:modelValue', value)
-})
-
-const handleChange = () => {
-  emit('update:modelValue', selectedValue.value)
-}
 </script>

@@ -5,8 +5,6 @@ import { components } from '@/types/comfyRegistryTypes'
 declare const __ALGOLIA_APP_ID__: string
 declare const __ALGOLIA_API_KEY__: string
 
-const INDEX_NAME = 'nodes_index'
-
 type SafeNestedProperty<
   T,
   K1 extends keyof T,
@@ -72,20 +70,31 @@ export const useAlgoliaSearchService = () => {
 
   const searchPacks = async (
     query: string,
-    { pageSize, pageNumber }: { pageSize: number; pageNumber: number }
+    {
+      pageSize,
+      pageNumber,
+      restrictSearchableAttributes
+    }: {
+      pageSize: number
+      pageNumber: number
+      restrictSearchableAttributes: string[]
+    }
   ) => {
-    const { results } = await searchClient.searchForHits<AlgoliaNodePack>([
+    const { results } = await searchClient.search<AlgoliaNodePack>([
       {
-        indexName: INDEX_NAME,
+        indexName: 'nodes_index',
         params: {
           query,
           hitsPerPage: pageSize,
           page: pageNumber,
-          attributesToRetrieve: RETRIEVE_ATTRIBUTES
+          length: pageSize,
+          attributesToRetrieve: RETRIEVE_ATTRIBUTES,
+          restrictSearchableAttributes
         }
       }
     ])
 
+    // @ts-expect-error module needs
     return results[0].hits
   }
 

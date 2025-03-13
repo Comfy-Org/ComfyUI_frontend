@@ -9,7 +9,7 @@ import {
 import { PackField } from '@/types/comfyManagerTypes'
 
 const SEARCH_DEBOUNCE_TIME = 256
-const DEFAULT_PAGE_SIZE = 16
+const DEFAULT_PAGE_SIZE = 64
 
 /**
  * Composable for managing UI state of Comfy Node Registry search.
@@ -17,19 +17,26 @@ const DEFAULT_PAGE_SIZE = 16
 export function useRegistrySearch() {
   const isLoading = ref(false)
   const sortField = ref<PackField>('downloads')
+  const searchMode = ref<'nodes' | 'packs'>('packs')
   const pageSize = ref(DEFAULT_PAGE_SIZE)
   const pageNumber = ref(0)
   const searchQuery = ref('')
   const results = ref<AlgoliaNodePack[]>([])
 
+  const searchAttributes = computed(() =>
+    searchMode.value === 'nodes' ? ['comfy_nodes'] : ['name', 'description']
+  )
+
   const resultsAsRegistryPacks = computed(() =>
-    results.value.map(algoliaToRegistry)
+    results.value ? results.value.map(algoliaToRegistry) : []
   )
   const resultsAsNodes = computed(() =>
-    results.value.reduce(
-      (acc, hit) => acc.concat(hit.comfy_nodes),
-      [] as string[]
-    )
+    results.value
+      ? results.value.reduce(
+          (acc, hit) => acc.concat(hit.comfy_nodes),
+          [] as string[]
+        )
+      : []
   )
 
   const { searchPacks, toRegistryPack } = useAlgoliaSearchService()
@@ -43,22 +50,26 @@ export function useRegistrySearch() {
     isLoading.value = true
     results.value = await searchPacks(searchQuery.value, {
       pageSize: pageSize.value,
-      pageNumber: pageNumber.value
+      pageNumber: pageNumber.value,
+      restrictSearchableAttributes: searchAttributes.value
     })
     isLoading.value = false
   }
 
-  watch([pageNumber.value, sortField.value], onQueryChange, { immediate: true })
+  watch([pageNumber, sortField, searchMode], onQueryChange, {
+    immediate: true
+  })
   watchDebounced(searchQuery, onQueryChange, {
     debounce: SEARCH_DEBOUNCE_TIME
   })
 
   return {
+    isLoading,
     pageNumber,
     pageSize,
     sortField,
+    searchMode,
     searchQuery,
-    isLoading,
     searchResults: resultsAsRegistryPacks,
     nodeSearchResults: resultsAsNodes
   }
