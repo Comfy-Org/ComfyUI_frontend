@@ -2440,8 +2440,10 @@ export interface operations {
         timestamp?: string
         /** @description Whether to fetch fresh result from database or use cached one if false */
         latest?: boolean
-        /** @description Database column to use as ordering */
+        /** @description Database column to use as ascending ordering. Add `;desc` as suffix on each column for descending sort */
         sort?: string[]
+        /** @description The platform requesting the nodes */
+        form_factor?: string
       }
       header?: never
       path?: never
@@ -2850,6 +2852,15 @@ export interface operations {
           [name: string]: unknown
         }
         content?: never
+      }
+      /** @description Duplicate error. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
       /** @description Internal server error */
       500: {
