@@ -206,8 +206,6 @@ export class LGraphCanvas implements ConnectionColorContext {
   static #tmp_area = new Float32Array(4)
   static #margin_area = new Float32Array(4)
   static #link_bounding = new Float32Array(4)
-  static #tempA = new Float32Array(2)
-  static #tempB = new Float32Array(2)
   static #lTempA: Point = new Float32Array(2)
   static #lTempB: Point = new Float32Array(2)
   static #lTempC: Point = new Float32Array(2)
@@ -451,7 +449,8 @@ export class LGraphCanvas implements ConnectionColorContext {
   visible_area: Rect32
   /** Contains all links and reroutes that were rendered.  Repopulated every render cycle. */
   renderedPaths: Set<LinkSegment> = new Set()
-  visible_links: LLink[]
+  /** @deprecated Replaced by {@link renderedPaths}, but length is set to 0 by some extensions. */
+  visible_links: LLink[] = []
   /** @deprecated This array is populated and cleared to support legacy extensions. The contents are ignored by Litegraph. */
   connecting_links: ConnectingLink[] | null
   linkConnector = new LinkConnector(links => this.connecting_links = links)
@@ -728,7 +727,6 @@ export class LGraphCanvas implements ConnectionColorContext {
     this.node_widget = null
     this.last_mouse_position = [0, 0]
     this.visible_area = this.ds.visible_area
-    this.visible_links = []
     // Explicitly null-checked
     this.connecting_links = null
 
@@ -4080,7 +4078,6 @@ export class LGraphCanvas implements ConnectionColorContext {
       ctx.restore()
       ctx.setTransform(scale, 0, 0, scale, 0, 0)
     }
-    this.visible_links.length = 0
 
     if (this.graph) {
       // apply transformations
@@ -4544,10 +4541,11 @@ export class LGraphCanvas implements ConnectionColorContext {
   }
 
   drawConnections(ctx: CanvasRenderingContext2D): void {
-    const rendered = this.renderedPaths
-    rendered.clear()
+    this.renderedPaths.clear()
     if (this.links_render_mode === LinkRenderType.HIDDEN_LINK) return
-    if (!this.graph) throw new NullGraphError()
+
+    const { graph } = this
+    if (!graph) throw new NullGraphError()
 
     const visibleReroutes: Reroute[] = []
 
@@ -4565,7 +4563,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     ctx.strokeStyle = "#AAA"
     ctx.globalAlpha = this.editor_alpha
     // for every node
-    const nodes = this.graph._nodes
+    const nodes = graph._nodes
     for (const node of nodes) {
       // for every input (we render just inputs because it is easier as every slot can only have one input)
       const { inputs } = node
@@ -4575,146 +4573,24 @@ export class LGraphCanvas implements ConnectionColorContext {
         if (!input || input.link == null) continue
 
         const link_id = input.link
-        const link = this.graph._links.get(link_id)
+        const link = graph._links.get(link_id)
         if (!link) continue
 
+        const endPos = node.getInputPos(i)
+
         // find link info
-        const start_node = this.graph.getNodeById(link.origin_id)
+        const start_node = graph.getNodeById(link.origin_id)
         if (start_node == null) continue
 
         const outputId = link.origin_slot
-        const start_node_slotpos: Point = outputId == -1
+        const startPos: Point = outputId === -1
           ? [start_node.pos[0] + 10, start_node.pos[1] + 10]
-          : start_node.getConnectionPos(false, outputId, LGraphCanvas.#tempA)
+          : start_node.getOutputPos(outputId)
 
-        const end_node_slotpos = node.getConnectionPos(true, i, LGraphCanvas.#tempB)
+        const output = start_node.outputs[outputId]
+        if (!output) continue
 
-        // Get all points this link passes through
-        const reroutes = LLink.getReroutes(this.graph, link)
-        const points = [
-          start_node_slotpos,
-          ...reroutes.map(x => x.pos),
-          end_node_slotpos,
-        ]
-
-        // Bounding box of all points (bezier overshoot on long links will be cut)
-        const pointsX = points.map(x => x[0])
-        const pointsY = points.map(x => x[1])
-        LGraphCanvas.#link_bounding[0] = Math.min(...pointsX)
-        LGraphCanvas.#link_bounding[1] = Math.min(...pointsY)
-        LGraphCanvas.#link_bounding[2] = Math.max(...pointsX) - LGraphCanvas.#link_bounding[0]
-        LGraphCanvas.#link_bounding[3] = Math.max(...pointsY) - LGraphCanvas.#link_bounding[1]
-
-        // skip links outside of the visible area of the canvas
-        if (!overlapBounding(LGraphCanvas.#link_bounding, LGraphCanvas.#margin_area))
-          continue
-
-        const start_slot = start_node.outputs[outputId]
-        if (!start_slot) continue
-
-        const start_dir = start_slot.dir || LinkDirection.RIGHT
-        const end_dir = input.dir || LinkDirection.LEFT
-
-        // Has reroutes
-        if (reroutes.length) {
-          let startControl: Point | undefined
-
-          const l = reroutes.length
-          for (let j = 0; j < l; j++) {
-            const reroute = reroutes[j]
-
-            // Only render once
-            if (!rendered.has(reroute)) {
-              rendered.add(reroute)
-              visibleReroutes.push(reroute)
-              reroute._colour = link.color ||
-                LGraphCanvas.link_type_colors[link.type] ||
-                this.default_link_color
-
-              const prevReroute = reroute.parentId == null ? undefined : this.graph.reroutes.get(reroute.parentId)
-              const startPos = prevReroute?.pos ?? start_node_slotpos
-              reroute.calculateAngle(this.last_draw_time, this.graph, startPos)
-
-              // Skip the first segment if it is being dragged
-              if (!reroute._dragging) {
-                this.renderLink(
-                  ctx,
-                  startPos,
-                  reroute.pos,
-                  link,
-                  false,
-                  0,
-                  null,
-                  start_dir,
-                  end_dir,
-                  {
-                    startControl,
-                    endControl: reroute.controlPoint,
-                    reroute,
-                  },
-                )
-              }
-            }
-
-            // Calculate start control for the next iter control point
-            const nextPos = reroutes[j + 1]?.pos ?? end_node_slotpos
-            const dist = Math.min(80, distance(reroute.pos, nextPos) * 0.25)
-            startControl = [dist * reroute.cos, dist * reroute.sin]
-          }
-
-          // Skip the last segment if it is being dragged
-          if (link._dragging) continue
-
-          // Use runtime fallback; TypeScript cannot evaluate this correctly.
-          const segmentStartPos = points.at(-2) ?? start_node_slotpos
-
-          // Render final link segment
-          this.renderLink(
-            ctx,
-            segmentStartPos,
-            end_node_slotpos,
-            link,
-            false,
-            0,
-            null,
-            start_dir,
-            end_dir,
-            { startControl },
-          )
-        // Skip normal render when link is being dragged
-        } else if (!link._dragging) {
-          this.renderLink(
-            ctx,
-            start_node_slotpos,
-            end_node_slotpos,
-            link,
-            false,
-            0,
-            null,
-            start_dir,
-            end_dir,
-          )
-        }
-        rendered.add(link)
-
-        // event triggered rendered on top
-        if (link?._last_time && now - link._last_time < 1000) {
-          const f = 2.0 - (now - link._last_time) * 0.002
-          const tmp = ctx.globalAlpha
-          ctx.globalAlpha = tmp * f
-          this.renderLink(
-            ctx,
-            start_node_slotpos,
-            end_node_slotpos,
-            link,
-            true,
-            f,
-            "white",
-            start_dir,
-            end_dir,
-          )
-          ctx.globalAlpha = tmp
-        }
+        this.#renderAllLinkSegments(ctx, link, startPos, endPos, visibleReroutes, now, output.dir, input.dir)
       }
     }
 
@@ -4730,6 +4606,144 @@ export class LGraphCanvas implements ConnectionColorContext {
       reroute.draw(ctx)
     }
     ctx.globalAlpha = 1
+  }
+
+  #renderAllLinkSegments(
+    ctx: CanvasRenderingContext2D,
+    link: LLink,
+    startPos: Point,
+    endPos: Point,
+    visibleReroutes: Reroute[],
+    now: number,
+    startDirection?: LinkDirection,
+    endDirection?: LinkDirection,
+  ) {
+    const { graph, renderedPaths } = this
+    if (!graph) return
+
+    // Get all points this link passes through
+    const reroutes = LLink.getReroutes(graph, link)
+    const points: [Point, ...Point[], Point] = [
+      startPos,
+      ...reroutes.map(x => x.pos),
+      endPos,
+    ]
+
+    // Bounding box of all points (bezier overshoot on long links will be cut)
+    const pointsX = points.map(x => x[0])
+    const pointsY = points.map(x => x[1])
+    LGraphCanvas.#link_bounding[0] = Math.min(...pointsX)
+    LGraphCanvas.#link_bounding[1] = Math.min(...pointsY)
+    LGraphCanvas.#link_bounding[2] = Math.max(...pointsX) - LGraphCanvas.#link_bounding[0]
+    LGraphCanvas.#link_bounding[3] = Math.max(...pointsY) - LGraphCanvas.#link_bounding[1]
+
+    // skip links outside of the visible area of the canvas
+    if (!overlapBounding(LGraphCanvas.#link_bounding, LGraphCanvas.#margin_area))
+      return
+
+    const start_dir = startDirection || LinkDirection.RIGHT
+    const end_dir = endDirection || LinkDirection.LEFT
+
+    // Has reroutes
+    if (reroutes.length) {
+      let startControl: Point | undefined
+
+      const l = reroutes.length
+      for (let j = 0; j < l; j++) {
+        const reroute = reroutes[j]
+
+        // Only render once
+        if (!renderedPaths.has(reroute)) {
+          renderedPaths.add(reroute)
+          visibleReroutes.push(reroute)
+          reroute._colour = link.color ||
+            LGraphCanvas.link_type_colors[link.type] ||
+            this.default_link_color
+
+          const prevReroute = reroute.parentId == null ? undefined : graph.reroutes.get(reroute.parentId)
+          const rerouteStartPos = prevReroute?.pos ?? startPos
+          reroute.calculateAngle(this.last_draw_time, graph, rerouteStartPos)
+
+          // Skip the first segment if it is being dragged
+          if (!reroute._dragging) {
+            this.renderLink(
+              ctx,
+              rerouteStartPos,
+              reroute.pos,
+              link,
+              false,
+              0,
+              null,
+              start_dir,
+              end_dir,
+              {
+                startControl,
+                endControl: reroute.controlPoint,
+                reroute,
+              },
+            )
+          }
+        }
+
+        // Calculate start control for the next iter control point
+        const nextPos = reroutes[j + 1]?.pos ?? endPos
+        const dist = Math.min(80, distance(reroute.pos, nextPos) * 0.25)
+        startControl = [dist * reroute.cos, dist * reroute.sin]
+      }
+
+      // Skip the last segment if it is being dragged
+      if (link._dragging) return
+
+      // Use runtime fallback; TypeScript cannot evaluate this correctly.
+      const segmentStartPos = points.at(-2) ?? startPos
+
+      // Render final link segment
+      this.renderLink(
+        ctx,
+        segmentStartPos,
+        endPos,
+        link,
+        false,
+        0,
+        null,
+        start_dir,
+        end_dir,
+        { startControl },
+      )
+      // Skip normal render when link is being dragged
+    } else if (!link._dragging) {
+      this.renderLink(
+        ctx,
+        startPos,
+        endPos,
+        link,
+        false,
+        0,
+        null,
+        start_dir,
+        end_dir,
+      )
+    }
+    renderedPaths.add(link)
+
+    // event triggered rendered on top
+    if (link?._last_time && now - link._last_time < 1000) {
+      const f = 2.0 - (now - link._last_time) * 0.002
+      const tmp = ctx.globalAlpha
+      ctx.globalAlpha = tmp * f
+      this.renderLink(
+        ctx,
+        startPos,
+        endPos,
+        link,
+        true,
+        f,
+        "white",
+        start_dir,
+        end_dir,
+      )
+      ctx.globalAlpha = tmp
+    }
   }
 
   /**
@@ -4770,8 +4784,6 @@ export class LGraphCanvas implements ConnectionColorContext {
       num_sublines?: number
     } = {},
   ): void {
-    if (link) this.visible_links.push(link)
-
     const linkColour =
       link != null && this.highlighted_links[link.id]
         ? "#FFF"
