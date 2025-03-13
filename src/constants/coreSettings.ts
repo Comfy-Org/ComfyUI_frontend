@@ -755,5 +755,21 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     defaultValue: true,
     versionAdded: '1.10.5'
+  },
+  {
+    id: 'Comfy.Workflow.Autosave',
+    name: 'Autosave mode',
+    tooltip: 'Automatically save the workflow after a change is detected',
+    type: 'combo',
+    options: ['Disabled', 'After delay'], // Other modes may include onFocusChange and onWindowChange
+    defaultValue: 'Disabled'
+  },
+  {
+    id: 'Comfy.Workflow.AutosaveDelay',
+    name: 'Autosave delay (ms)',
+    tooltip:
+      'Delay in miliseconds after a change to autosave. Only applies if autosave mode is set to "After delay"',
+    type: 'number',
+    defaultValue: 1000
   }
 ]
