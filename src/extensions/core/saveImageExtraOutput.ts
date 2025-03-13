@@ -11,7 +11,7 @@ app.registerExtension({
     if (
       nodeData.name === 'SaveImage' ||
       nodeData.name === 'SaveAnimatedWEBP' ||
-      nodeData.name === 'SaveAnimatedWEBM'
+      nodeData.name === 'SaveWEBM'
     ) {
       const onNodeCreated = nodeType.prototype.onNodeCreated
       // When the SaveImage node is created we want to override the serialization of the output name widget to run our S&R
