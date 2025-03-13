@@ -106,7 +106,8 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import ProgressSpinner from 'primevue/progressspinner'
-import { computed, ref } from 'vue'
+import { computed, ref, watchEffect } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import ContentDivider from '@/components/common/ContentDivider.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
@@ -117,11 +118,16 @@ import InfoPanelMultiItem from '@/components/dialog/content/manager/infoPanel/In
 import PackCard from '@/components/dialog/content/manager/packCard/PackCard.vue'
 import RegistrySearchBar from '@/components/dialog/content/manager/registrySearchBar/RegistrySearchBar.vue'
 import { useResponsiveCollapse } from '@/composables/element/useResponsiveCollapse'
+import { useInstalledPacks } from '@/composables/useInstalledPacks'
 import { useRegistrySearch } from '@/composables/useRegistrySearch'
+import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import type { PackField, TabItem } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
 
 const DEFAULT_CARD_SIZE = 512
+
+const { t } = useI18n()
+const comfyManagerStore = useComfyManagerStore()
 
 const {
   isSmallScreen,
@@ -131,9 +137,8 @@ const {
 const hideSearchBar = computed(() => isSmallScreen.value && showInfoPanel.value)
 
 const tabs = ref<TabItem[]>([
-  { id: 'all', label: 'All', icon: 'pi-list' },
-  { id: 'community', label: 'Community', icon: 'pi-globe' },
-  { id: 'installed', label: 'Installed', icon: 'pi-box' }
+  { id: 'all', label: t('g.all'), icon: 'pi-list' },
+  { id: 'installed', label: t('g.installed'), icon: 'pi-box' }
 ])
 const selectedTab = ref<TabItem>(tabs.value[0])
 
@@ -145,8 +150,27 @@ const isInitialLoad = computed(
   () => searchResults.value.length === 0 && searchQuery.value === ''
 )
 
+const { getInstalledPacks } = useInstalledPacks()
+const displayPacks = ref<components['schemas']['Node'][]>([])
+const isEmptySearch = computed(() => searchQuery.value === '')
+
+const getInstalledSearchResults = async () => {
+  if (isEmptySearch.value) return getInstalledPacks()
+  return searchResults.value.filter((pack) =>
+    comfyManagerStore.installedPacksIds.has(pack.name)
+  )
+}
+
+watchEffect(async () => {
+  if (selectedTab.value.id === 'installed') {
+    displayPacks.value = await getInstalledSearchResults()
+  } else {
+    displayPacks.value = searchResults.value
+  }
+})
+
 const resultsWithKeys = computed(() =>
-  searchResults.value.map((item) => ({
+  displayPacks.value.map((item) => ({
     ...item,
     key: item.id || item.name
   }))

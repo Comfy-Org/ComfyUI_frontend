@@ -92,7 +92,9 @@
     "category": "Category",
     "sort": "Sort",
     "filter": "Filter",
-    "apply": "Apply"
+    "apply": "Apply",
+    "enabled": "Enabled",
+    "installed": "Installed"
   },
   "manager": {
     "title": "Custom Nodes Manager",
