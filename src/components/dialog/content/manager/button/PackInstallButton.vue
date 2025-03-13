@@ -6,7 +6,8 @@
       nodePacks.length > 1 ? $t('manager.installSelected') : $t('g.install')
     "
     severity="secondary"
-    @action="installItems"
+    :loading-message="$t('g.installing')"
+    @action="installAllPacks"
   />
 </template>
 
@@ -45,7 +46,7 @@ const createPayload = (installItem: NodePack) => {
 const installPack = (item: NodePack) =>
   managerStore.installPack.call(createPayload(item))
 
-const installItems = async () => {
+const installAllPacks = async () => {
   if (!nodePacks?.length) return
   await Promise.all(nodePacks.map(installPack))
   managerStore.installPack.clear()
