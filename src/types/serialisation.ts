@@ -37,7 +37,7 @@ export interface SerialisableGraph {
   nodes?: ISerialisedNode[]
   links?: SerialisableLLink[]
   reroutes?: SerialisableReroute[]
-  extra?: Record<any, any>
+  extra?: Dictionary<unknown>
 }
 
 export type ISerialisableNodeInput = Omit<INodeInputSlot, "_layoutElement" | "widget"> & {
@@ -86,7 +86,9 @@ export interface ISerialisedGraph {
   groups: ISerialisedGroup[]
   config: LGraphConfig
   version: typeof LiteGraph.VERSION
-  extra?: Record<string, unknown>
+  extra?: Dictionary<unknown> & {
+    reroutes?: SerialisableReroute[]
+  }
 }
 
 /** Serialised LGraphGroup */

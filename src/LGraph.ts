@@ -118,7 +118,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   nodes_executing: boolean[] = []
   nodes_actioning: (string | boolean)[] = []
   nodes_executedAction: string[] = []
-  extra: Record<any, any> = {}
+  extra: Record<string, unknown> = {}
   inputs: Dictionary<IGraphInput> = {}
   outputs: Dictionary<IGraphInput> = {}
 
@@ -1471,14 +1471,14 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     const linkArray = [...this._links.values()]
     const links = linkArray.map(x => x.serialize())
 
-    if (reroutes.length) {
+    if (reroutes?.length) {
       // Link parent IDs cannot go in 0.4 schema arrays
       extra.linkExtensions = linkArray
         .filter(x => x.parentId !== undefined)
         .map(x => ({ id: x.id, parentId: x.parentId }))
     }
 
-    extra.reroutes = reroutes.length ? reroutes : undefined
+    extra.reroutes = reroutes?.length ? reroutes : undefined
     return {
       last_node_id: state.lastNodeId,
       last_link_id: state.lastLinkId,
@@ -1499,7 +1499,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
    * Mutating the properties of the return object may result in changes to your graph.
    * It is intended for use with {@link structuredClone} or {@link JSON.stringify}.
    */
-  asSerialisable(options?: { sortNodes: boolean }): Required<SerialisableGraph> {
+  asSerialisable(options?: { sortNodes: boolean }): SerialisableGraph & Required<Pick<SerialisableGraph, "nodes" | "groups" | "extra">> {
     const { config, state, extra } = this
 
     const nodeList = !LiteGraph.use_uuids && options?.sortNodes
@@ -1510,10 +1510,10 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     const nodes = nodeList.map(node => node.serialize())
     const groups = this._groups.map(x => x.serialize())
 
-    const links = [...this._links.values()].map(x => x.asSerialisable())
-    const reroutes = [...this.reroutes.values()].map(x => x.asSerialisable())
+    const links = this._links.size ? [...this._links.values()].map(x => x.asSerialisable()) : undefined
+    const reroutes = this.reroutes.size ? [...this.reroutes.values()].map(x => x.asSerialisable()) : undefined
 
-    const data: Required<SerialisableGraph> = {
+    const data: ReturnType<typeof this.asSerialisable> = {
       version: LGraph.serialisedSchemaVersion,
       config,
       state,
@@ -1542,11 +1542,11 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     if (!data) return
     if (!keep_old) this.clear()
 
-    const { extra } = data
     let reroutes: SerialisableReroute[] | undefined
 
     // TODO: Determine whether this should this fall back to 0.4.
     if (data.version === 0.4) {
+      const { extra } = data
       // Deprecated - old schema version, links are arrays
       if (Array.isArray(data.links)) {
         for (const linkData of data.links) {

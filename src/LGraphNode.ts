@@ -2578,7 +2578,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
           input.link = null
 
           // remove the link from the links pool
-          graph._links.delete(link_id)
+          link_info.disconnect(graph)
           graph._version++
 
           // link_info hasn't been modified so its ok
@@ -2625,7 +2625,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
           )
         }
         // remove the link from the links pool
-        graph._links.delete(link_id)
+        link_info.disconnect(graph)
 
         this.onConnectionsChange?.(
           NodeSlotType.OUTPUT,

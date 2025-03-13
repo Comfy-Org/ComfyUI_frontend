@@ -111,10 +111,16 @@ export interface IPinnable {
   unpin(): void
 }
 
+export interface ReadonlyLinkNetwork {
+  readonly links: ReadonlyMap<LinkId, LLink>
+  readonly reroutes: ReadonlyMap<RerouteId, Reroute>
+  getNodeById(id: NodeId): LGraphNode | null
+}
+
 /**
  * Contains a list of links, reroutes, and nodes.
  */
-export interface LinkNetwork {
+export interface LinkNetwork extends ReadonlyLinkNetwork {
   readonly links: Map<LinkId, LLink>
   readonly reroutes: Map<RerouteId, Reroute>
   getNodeById(id: NodeId): LGraphNode | null
