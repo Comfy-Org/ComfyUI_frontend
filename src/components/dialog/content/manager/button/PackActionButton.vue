@@ -8,7 +8,7 @@
     }"
     :disabled="isExecuted"
     v-bind="$attrs"
-    @click="handleClick"
+    @click="onClick"
   >
     <span class="py-2.5 px-3">
       <template v-if="isExecuted">
@@ -45,7 +45,7 @@ defineOptions({
 
 const isExecuted = ref(false)
 
-const handleClick = (): void => {
+const onClick = (): void => {
   isExecuted.value = true
   emit('action')
 }

@@ -1,7 +1,6 @@
 <template>
   <PackActionButton
-    :node-packs="nodePacks"
-    :full-width="fullWidth"
+    v-bind="$attrs"
     :label="
       nodePacks.length > 1 ? $t('manager.installSelected') : $t('g.install')
     "
@@ -23,16 +22,15 @@ import type { components } from '@/types/comfyRegistryTypes'
 
 type NodePack = components['schemas']['Node']
 
-const { nodePacks, fullWidth = false } = defineProps<{
+const { nodePacks } = defineProps<{
   nodePacks: NodePack[]
-  fullWidth?: boolean
 }>()
 
 const managerStore = useComfyManagerStore()
 
 const createPayload = (installItem: NodePack) => {
   const versionToInstall =
-    installItem.latest_version?.version ?? SelectedVersion.NIGHTLY // Use nightly if unclaimed node
+    installItem.latest_version?.version ?? SelectedVersion.NIGHTLY // Use nightly if unclaimed pack
   return {
     id: installItem.id,
     repository: installItem.repository ?? '',
