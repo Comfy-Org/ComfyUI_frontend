@@ -1,7 +1,6 @@
 <template>
   <PackActionButton
-    :node-packs="nodePacks"
-    :full-width="fullWidth"
+    v-bind="$attrs"
     :label="
       nodePacks.length > 1
         ? $t('manager.uninstallSelected')
@@ -20,9 +19,8 @@ import type { components } from '@/types/comfyRegistryTypes'
 
 type NodePack = components['schemas']['Node']
 
-const { nodePacks, fullWidth = false } = defineProps<{
+const { nodePacks } = defineProps<{
   nodePacks: NodePack[]
-  fullWidth?: boolean
 }>()
 
 const managerStore = useComfyManagerStore()
