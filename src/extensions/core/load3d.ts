@@ -2,63 +2,53 @@
 import { IWidget } from '@comfyorg/litegraph'
 import { IStringWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import PrimeVue from 'primevue/config'
-import { createApp, h, nextTick, render } from 'vue'
+import { createApp, nextTick } from 'vue'
 
 import Load3D from '@/components/load3d/Load3D.vue'
 import Load3DAnimation from '@/components/load3d/Load3DAnimation.vue'
+import { useChainCallback } from '@/composables/functional/useChainCallback'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import Load3dAnimation from '@/extensions/core/load3d/Load3dAnimation'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { ComponentWidgetImpl } from '@/scripts/domWidget'
 import { useLoad3dService } from '@/services/load3dService'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useToastStore } from '@/stores/toastStore'
+import { generateUUID } from '@/utils/formatUtil'
 
 app.registerExtension({
   name: 'Comfy.Load3D',
 
-  getCustomWidgets(app) {
+  getCustomWidgets() {
     return {
-      LOAD_3D(node, inputName) {
-        node.addProperty('Camera Info', '')
-
-        const container = document.createElement('div')
-        container.classList.add('comfy-load-3d')
-
-        /* Hold off for now
-        const mountComponent = () => {
-          const vnode = h(Load3D, {
-            node: node,
-            type: 'Load3D'
-          })
-
-          render(vnode, container)
-        }
-         */
-
-        let controlsApp = createApp(Load3D, {
+      LOAD_3D(node) {
+        const inputSpec: CustomInputSpec = {
+          name: 'image',
           node: node,
           type: 'Load3D'
+        }
+
+        const widget = new ComponentWidgetImpl({
+          id: generateUUID(),
+          node,
+          name: inputSpec.name,
+          component: Load3D,
+          inputSpec,
+          options: {}
         })
 
-        controlsApp.mount(container)
+        node.onRemoved = useChainCallback(node.onRemoved, () => {
+          widget.onRemove?.()
+        })
 
-        const origOnRemoved = node.onRemoved
+        node.onResize = useChainCallback(node.onResize, () => {
+          widget.options.afterResize?.call(widget, node)
+        })
 
-        node.onRemoved = function () {
-          /*
-          render(null, container)
-
-          container.remove()
-           */
-
-          if (controlsApp) {
-            controlsApp.unmount()
-            controlsApp = null
-          }
-
-          origOnRemoved?.apply(this, [])
-        }
+        useDomWidgetStore().registerWidget(widget)
 
         const fileInput = document.createElement('input')
         fileInput.type = 'file'
@@ -112,10 +102,8 @@ app.registerExtension({
           }
         })
 
-        //mountComponent()
-
         return {
-          widget: node.addDOMWidget(inputName, 'LOAD_3D', container)
+          widget: node.addCustomWidget(widget)
         }
       }
     }
@@ -129,8 +117,6 @@ app.registerExtension({
     node.setSize([Math.max(oldWidth, 300), Math.max(oldHeight, 600)])
 
     await nextTick()
-
-    const sceneWidget = node.widgets.find((w: IWidget) => w.name === 'image')
 
     const load3d = useLoad3dService().getLoad3d(node)
 
@@ -146,6 +132,8 @@ app.registerExtension({
     const height = node.widgets.find((w: IWidget) => w.name === 'height')
 
     config.configure('input', modelWidget, cameraState, width, height)
+
+    const sceneWidget = node.widgets.find((w: IWidget) => w.name === 'image')
 
     sceneWidget.serializeValue = async () => {
       node.properties['Camera Info'] = load3d.getCameraState()
@@ -173,51 +161,33 @@ app.registerExtension({
 app.registerExtension({
   name: 'Comfy.Load3DAnimation',
 
-  getCustomWidgets(app) {
+  getCustomWidgets() {
     return {
-      LOAD_3D_ANIMATION(node, inputName) {
-        node.addProperty('Camera Info', '')
-
-        const container = document.createElement('div')
-
-        container.classList.add('comfy-load-3d-animation')
-
-        /*
-          const mountComponent = () => {
-          const vnode = h(Load3DAnimation, {
-            node: node,
-            type: 'Load3DAnimation'
-          })
-
-          render(vnode, container)
-        }
-         */
-
-        let controlsApp = createApp(Load3DAnimation, {
+      LOAD_3D_ANIMATION(node) {
+        const inputSpec: CustomInputSpec = {
+          name: 'image',
           node: node,
           type: 'Load3DAnimation'
+        }
+
+        const widget = new ComponentWidgetImpl({
+          id: generateUUID(),
+          node,
+          name: inputSpec.name,
+          component: Load3DAnimation,
+          inputSpec,
+          options: {}
         })
 
-        controlsApp.use(PrimeVue)
+        node.onRemoved = useChainCallback(node.onRemoved, () => {
+          widget.onRemove?.()
+        })
 
-        controlsApp.mount(container)
+        node.onResize = useChainCallback(node.onResize, () => {
+          widget.options.afterResize?.call(widget, node)
+        })
 
-        const origOnRemoved = node.onRemoved
-
-        node.onRemoved = function () {
-          /*
-          render(null, container)
-
-          container.remove()
-           */
-
-          if (controlsApp) {
-            controlsApp.unmount()
-            controlsApp = null
-          }
-
-          origOnRemoved?.apply(this, [])
-        }
+        useDomWidgetStore().registerWidget(widget)
 
         const fileInput = document.createElement('input')
         fileInput.type = 'file'
@@ -269,10 +239,8 @@ app.registerExtension({
           }
         })
 
-        //mountComponent()
-
         return {
-          widget: node.addDOMWidget(inputName, 'LOAD_3D_ANIMATION', container)
+          widget: node.addCustomWidget(widget)
         }
       }
     }
@@ -333,61 +301,42 @@ app.registerExtension({
   name: 'Comfy.Preview3D',
 
   async beforeRegisterNodeDef(nodeType, nodeData) {
-    if (
-      // @ts-expect-error ComfyNode
-      ['Preview3D'].includes(nodeType.comfyClass)
-    ) {
+    if ('Preview3D' === nodeData.name) {
       // @ts-expect-error InputSpec is not typed correctly
       nodeData.input.required.image = ['PREVIEW_3D']
     }
   },
 
-  getCustomWidgets(app) {
+  getCustomWidgets() {
     return {
-      PREVIEW_3D(node, inputName) {
-        const container = document.createElement('div')
-
-        container.classList.add('comfy-preview-3d')
-
-        /*
-        const mountComponent = () => {
-          const vnode = h(Load3D, {
-            node: node,
-            type: 'Preview3D'
-          })
-
-          render(vnode, container)
-        }
-         */
-
-        let controlsApp = createApp(Load3D, {
+      PREVIEW_3D(node) {
+        const inputSpec: CustomInputSpec = {
+          name: 'image',
           node: node,
           type: 'Preview3D'
-        })
-
-        controlsApp.mount(container)
-
-        const origOnRemoved = node.onRemoved
-
-        node.onRemoved = function () {
-          /*
-          render(null, container)
-
-          container.remove()
-           */
-
-          if (controlsApp) {
-            controlsApp.unmount()
-            controlsApp = null
-          }
-
-          origOnRemoved?.apply(this, [])
         }
 
-        //mountComponent()
+        const widget = new ComponentWidgetImpl({
+          id: generateUUID(),
+          node,
+          name: inputSpec.name,
+          component: Load3D,
+          inputSpec,
+          options: {}
+        })
+
+        node.onRemoved = useChainCallback(node.onRemoved, () => {
+          widget.onRemove?.()
+        })
+
+        node.onResize = useChainCallback(node.onResize, () => {
+          widget.options.afterResize?.call(widget, node)
+        })
+
+        useDomWidgetStore().registerWidget(widget)
 
         return {
-          widget: node.addDOMWidget(inputName, 'PREVIEW_3D', container)
+          widget: node.addCustomWidget(widget)
         }
       }
     }
@@ -436,54 +385,42 @@ app.registerExtension({
   name: 'Comfy.Preview3DAnimation',
 
   async beforeRegisterNodeDef(nodeType, nodeData) {
-    if (
-      // @ts-expect-error ComfyNode
-      ['Preview3DAnimation'].includes(nodeType.comfyClass)
-    ) {
+    if ('Preview3DAnimation' === nodeData.name) {
       // @ts-expect-error InputSpec is not typed correctly
       nodeData.input.required.image = ['PREVIEW_3D_ANIMATION']
     }
   },
 
-  getCustomWidgets(app) {
+  getCustomWidgets() {
     return {
-      PREVIEW_3D_ANIMATION(node, inputName) {
-        const container = document.createElement('div')
-
-        container.classList.add('comfy-preview-3d-animation')
-
-        let controlsApp = createApp(Load3DAnimation, {
+      PREVIEW_3D_ANIMATION(node) {
+        const inputSpec: CustomInputSpec = {
+          name: 'image',
           node: node,
           type: 'Preview3DAnimation'
-        })
-
-        controlsApp.use(PrimeVue)
-
-        controlsApp.mount(container)
-
-        const origOnRemoved = node.onRemoved
-
-        node.onRemoved = function () {
-          /*
-          render(null, container)
-
-          container.remove()
-           */
-
-          if (controlsApp) {
-            controlsApp.unmount()
-            controlsApp = null
-          }
-
-          origOnRemoved?.apply(this, [])
         }
 
+        const widget = new ComponentWidgetImpl({
+          id: generateUUID(),
+          node,
+          name: inputSpec.name,
+          component: Load3DAnimation,
+          inputSpec,
+          options: {}
+        })
+
+        node.onRemoved = useChainCallback(node.onRemoved, () => {
+          widget.onRemove?.()
+        })
+
+        node.onResize = useChainCallback(node.onResize, () => {
+          widget.options.afterResize?.call(widget, node)
+        })
+
+        useDomWidgetStore().registerWidget(widget)
+
         return {
-          widget: node.addDOMWidget(
-            inputName,
-            'PREVIEW_3D_ANIMATION',
-            container
-          )
+          widget: node.addCustomWidget(widget)
         }
       }
     }
