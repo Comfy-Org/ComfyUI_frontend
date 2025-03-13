@@ -7,6 +7,7 @@
         : $t('manager.uninstall')
     "
     severity="danger"
+    :loading-message="$t('manager.uninstalling')"
     @action="uninstallItems"
   />
 </template>
