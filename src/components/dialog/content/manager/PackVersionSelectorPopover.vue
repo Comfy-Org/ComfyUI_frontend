@@ -91,10 +91,12 @@ const managerStore = useComfyManagerStore()
 
 const isQueueing = ref(false)
 
-const selectedVersion = ref<string>(SelectedVersion.NIGHTLY)
+const selectedVersion = ref<string>(SelectedVersion.LATEST)
 onMounted(() => {
   selectedVersion.value =
-    nodePack.latest_version?.version ?? SelectedVersion.NIGHTLY
+    nodePack.publisher?.name === 'Unclaimed'
+      ? SelectedVersion.NIGHTLY
+      : nodePack.latest_version?.version ?? SelectedVersion.NIGHTLY
 })
 
 const fetchVersions = async () => {
