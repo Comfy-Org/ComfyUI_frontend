@@ -419,7 +419,7 @@ export class ComfyApi extends EventTarget {
    * Gets the index of core workflow templates.
    */
   async getCoreWorkflowTemplates(): Promise<WorkflowTemplates[]> {
-    const res = await axios.get('/templates/index.json')
+    const res = await axios.get(this.fileURL('/templates/index.json'))
     const contentType = res.headers['content-type']
     return contentType?.includes('application/json') ? res.data : []
   }

@@ -82,6 +82,7 @@ import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue
 import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSliderThumbnail.vue'
 import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
 import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDissolveThumbnail.vue'
+import { api } from '@/scripts/api'
 import { TemplateInfo } from '@/types/workflowTemplateTypes'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
@@ -103,8 +104,8 @@ const isHovered = useElementHover(cardRef)
 const getThumbnailUrl = (index = '') => {
   const basePath =
     sourceModule === 'default'
-      ? `templates/${template.name}`
-      : `api/workflow_templates/${sourceModule}/${template.name}`
+      ? api.fileURL(`/templates/${template.name}`)
+      : api.apiURL(`/workflow_templates/${sourceModule}/${template.name}`)
 
   // For templates from custom nodes, multiple images is not yet supported
   const indexSuffix = sourceModule === 'default' && index ? `-${index}` : ''
