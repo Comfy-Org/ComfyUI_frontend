@@ -138,6 +138,14 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     return
   }
 
+  /** Internal only.  Not required for serialisation; calculated on deserialise. */
+  #lastFloatingLinkId: number = 0
+
+  #floatingLinks: Map<LinkId, LLink> = new Map()
+  get floatingLinks(): ReadonlyMap<LinkId, LLink> {
+    return this.#floatingLinks
+  }
+
   #reroutes = new Map<RerouteId, Reroute>()
   /** All reroutes in this graph. */
   public get reroutes(): Map<RerouteId, Reroute> {
@@ -250,6 +258,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
     this._links.clear()
     this.reroutes.clear()
+    this.#floatingLinks.clear()
 
     // other scene stuff
     this._groups = []
@@ -1369,12 +1378,12 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
    * Creates the object if it does not exist.
    * @param serialisedReroute See {@link SerialisableReroute}
    */
-  setReroute({ id, parentId, pos, linkIds }: OptionalProps<SerialisableReroute, "id">): Reroute {
+  setReroute({ id, parentId, pos, linkIds, floating }: OptionalProps<SerialisableReroute, "id">): Reroute {
     id ??= ++this.state.lastRerouteId
     if (id > this.state.lastRerouteId) this.state.lastRerouteId = id
 
     const reroute = this.reroutes.get(id) ?? new Reroute(id, this)
-    reroute.update(parentId, pos, linkIds)
+    reroute.update(parentId, pos, linkIds, floating)
     this.reroutes.set(id, reroute)
     return reroute
   }
@@ -1417,7 +1426,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     if (!reroute) return
 
     // Extract reroute from the reroute chain
-    const { parentId, linkIds } = reroute
+    const { parentId, linkIds, floatingLinkIds } = reroute
     for (const reroute of reroutes.values()) {
       if (reroute.parentId === id) reroute.parentId = parentId
     }
@@ -1425,6 +1434,18 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     for (const linkId of linkIds) {
       const link = this._links.get(linkId)
       if (link && link.parentId === id) link.parentId = parentId
+    }
+
+    for (const linkId of floatingLinkIds) {
+      const link = this.floatingLinks.get(linkId)
+      if (!link) {
+        console.warn(`Removed reroute had floating link ID that did not exist [${linkId}]`)
+        continue
+      }
+
+      // Remove floating links with no reroutes
+      if (parentId === undefined) this.#floatingLinks.delete(linkId)
+      else if (link.parentId === id) link.parentId = parentId
     }
 
     reroutes.delete(id)
@@ -1450,7 +1471,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
    * @returns value of the node
    */
   serialize(option?: { sortNodes: boolean }): ISerialisedGraph {
-    const { config, state, groups, nodes, reroutes, extra } = this.asSerialisable(option)
+    const { config, state, groups, nodes, reroutes, extra, floatingLinks } = this.asSerialisable(option)
     const linkArray = [...this._links.values()]
     const links = linkArray.map(x => x.serialize())
 
@@ -1467,6 +1488,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
       last_link_id: state.lastLinkId,
       nodes,
       links,
+      floatingLinks,
       groups,
       config,
       extra,
@@ -1494,6 +1516,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     const groups = this._groups.map(x => x.serialize())
 
     const links = this._links.size ? [...this._links.values()].map(x => x.asSerialisable()) : undefined
+    const floatingLinks = this.floatingLinks.size ? [...this.floatingLinks.values()].map(x => x.asSerialisable()) : undefined
     const reroutes = this.reroutes.size ? [...this.reroutes.values()].map(x => x.asSerialisable()) : undefined
 
     const data: ReturnType<typeof this.asSerialisable> = {
@@ -1503,6 +1526,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
       groups,
       nodes,
       links,
+      floatingLinks,
       reroutes,
       extra,
     }
@@ -1574,14 +1598,36 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
       reroutes = data.reroutes
     }
 
+    // Floating links
+    if (Array.isArray(data.floatingLinks)) {
+      for (const linkData of data.floatingLinks) {
+        const floatingLink = LLink.create(linkData)
+        this.#floatingLinks.set(floatingLink.id, floatingLink)
+
+        if (floatingLink.id > this.#lastFloatingLinkId) this.#lastFloatingLinkId = floatingLink.id
+      }
+    }
+
     // Reroutes
     if (Array.isArray(reroutes)) {
       for (const rerouteData of reroutes) {
-        const reroute = this.setReroute(rerouteData)
+        this.setReroute(rerouteData)
+      }
+    }
 
-        // Drop broken links, and ignore reroutes with no valid links
-        if (!reroute.validateLinks(this._links))
-          this.reroutes.delete(rerouteData.id)
+    // Cache floating link IDs on reroutes
+    for (const floatingLink of this.floatingLinks.values()) {
+      const reroutes = LLink.getReroutes(this, floatingLink)
+      for (const reroute of reroutes) {
+        reroute.floatingLinkIds.add(floatingLink.id)
+      }
+    }
+
+    // Drop broken reroutes
+    for (const reroute of this.reroutes.values()) {
+      // Drop broken links, and ignore reroutes with no valid links
+      if (!reroute.validateLinks(this._links, this.floatingLinks)) {
+        this.reroutes.delete(reroute.id)
       }
     }
 
@@ -1590,13 +1636,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     // copy all stored fields
     for (const i in data) {
       // links must be accepted
-      if (
-        i == "nodes" ||
-        i == "groups" ||
-        i == "links" ||
-        i === "state" ||
-        i === "reroutes"
-      ) {
+      if (["nodes", "groups", "links", "state", "reroutes", "floatingLinks"].includes(i)) {
         continue
       }
       // @ts-expect-error #574 Legacy property assignment

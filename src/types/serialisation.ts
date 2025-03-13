@@ -12,7 +12,7 @@ import type { IGraphGroupFlags } from "../LGraphGroup"
 import type { NodeId, NodeProperty } from "../LGraphNode"
 import type { LiteGraph } from "../litegraph"
 import type { LinkId, SerialisedLLinkArray } from "../LLink"
-import type { RerouteId } from "../Reroute"
+import type { FloatingRerouteSlot, RerouteId } from "../Reroute"
 import type { TWidgetValue } from "../types/widgets"
 import type { RenderShape } from "./globalEnums"
 
@@ -36,6 +36,7 @@ export interface SerialisableGraph {
   groups?: ISerialisedGroup[]
   nodes?: ISerialisedNode[]
   links?: SerialisableLLink[]
+  floatingLinks?: SerialisableLLink[]
   reroutes?: SerialisableReroute[]
   extra?: Dictionary<unknown>
 }
@@ -83,6 +84,7 @@ export interface ISerialisedGraph {
   last_link_id: number
   nodes: ISerialisedNode[]
   links: SerialisedLLinkArray[]
+  floatingLinks?: SerialisableLLink[]
   groups: ISerialisedGroup[]
   config: LGraphConfig
   version: typeof LiteGraph.VERSION
@@ -128,6 +130,7 @@ export interface SerialisableReroute {
   parentId?: RerouteId
   pos: Point
   linkIds: LinkId[]
+  floating?: FloatingRerouteSlot
 }
 
 export interface SerialisableLLink {

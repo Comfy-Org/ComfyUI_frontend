@@ -114,6 +114,7 @@ export interface IPinnable {
 export interface ReadonlyLinkNetwork {
   readonly links: ReadonlyMap<LinkId, LLink>
   readonly reroutes: ReadonlyMap<RerouteId, Reroute>
+  readonly floatingLinks: ReadonlyMap<LinkId, LLink>
   getNodeById(id: NodeId): LGraphNode | null
 }
 

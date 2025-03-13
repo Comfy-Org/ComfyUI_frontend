@@ -15,6 +15,16 @@ import { distance } from "./measure"
 
 export type RerouteId = number
 
+/** The input or output slot that an incomplete reroute link is connected to. */
+export interface FloatingRerouteSlot {
+  /** The ID of the node that the slot belongs to */
+  nodeId: NodeId
+  /** The index of the slot on the node */
+  slot: number
+  /** Floating connection to an input or output */
+  slotType: "input" | "output"
+}
+
 /**
  * Represents an additional point on the graph that a link path will travel through.  Used for visual organisation only.
  *
@@ -42,6 +52,9 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
     this.#parentId = value
   }
 
+  /** Set when the reroute has no complete links but is still on the canvas. */
+  floating?: FloatingRerouteSlot
+
   #pos = this.#malloc.subarray(0, 2)
   /** @inheritdoc */
   get pos(): Point {
@@ -67,6 +80,9 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
 
   /** The ID ({@link LLink.id}) of every link using this reroute */
   linkIds: Set<LinkId>
+
+  /** The ID ({@link LLink.id}) of every floating link using this reroute */
+  floatingLinkIds: Set<LinkId>
 
   /** Cached cos */
   cos: number = 0
@@ -132,10 +148,12 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
     pos?: Point,
     parentId?: RerouteId,
     linkIds?: Iterable<LinkId>,
+    floatingLinkIds?: Iterable<LinkId>,
   ) {
     this.#network = new WeakRef(network)
     this.update(parentId, pos, linkIds)
     this.linkIds ??= new Set()
+    this.floatingLinkIds = new Set(floatingLinkIds)
   }
 
   /**
@@ -150,10 +168,12 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
     parentId: RerouteId | undefined,
     pos?: Point,
     linkIds?: Iterable<LinkId>,
+    floating?: FloatingRerouteSlot,
   ): void {
     this.parentId = parentId
     if (pos) this.pos = pos
     if (linkIds) this.linkIds = new Set(linkIds)
+    this.floating = floating
   }
 
   /**
@@ -161,12 +181,15 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
    * @param links Collection of valid links
    * @returns true if any links remain after validation
    */
-  validateLinks(links: Map<LinkId, LLink>): boolean {
-    const { linkIds } = this
+  validateLinks(links: ReadonlyMap<LinkId, LLink>, floatingLinks: ReadonlyMap<LinkId, LLink>): boolean {
+    const { linkIds, floatingLinkIds } = this
     for (const linkId of linkIds) {
       if (!links.get(linkId)) linkIds.delete(linkId)
     }
-    return linkIds.size > 0
+    for (const linkId of floatingLinkIds) {
+      if (!floatingLinks.get(linkId)) floatingLinkIds.delete(linkId)
+    }
+    return linkIds.size > 0 || floatingLinkIds.size > 0
   }
 
   /**
@@ -333,11 +356,24 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
 
   /** @inheritdoc */
   asSerialisable(): SerialisableReroute {
+    const { id, parentId, pos, linkIds } = this
+    const floating = floatingToSerialisable(this.floating)
     return {
-      id: this.id,
-      parentId: this.parentId,
-      pos: [this.pos[0], this.pos[1]],
-      linkIds: [...this.linkIds],
+      id,
+      parentId,
+      pos: [pos[0], pos[1]],
+      linkIds: [...linkIds],
+      floating,
     }
   }
+}
+
+function floatingToSerialisable(floating: FloatingRerouteSlot | undefined): FloatingRerouteSlot | undefined {
+  return floating
+    ? {
+      nodeId: floating.nodeId,
+      slot: floating.slot,
+      slotType: floating.slotType,
+    }
+    : undefined
 }

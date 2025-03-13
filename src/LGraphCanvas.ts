@@ -3157,10 +3157,12 @@ export class LGraphCanvas implements ConnectionColorContext {
     // Remap linkIds
     for (const reroute of reroutes.values()) {
       const ids = [...reroute.linkIds].map(x => links.get(x)?.id ?? x)
-      reroute.update(reroute.parentId, undefined, ids)
+      reroute.update(reroute.parentId, undefined, ids, reroute.floating)
 
       // Remove any invalid items
-      if (!reroute.validateLinks(graph.links)) graph.removeReroute(reroute.id)
+      if (!reroute.validateLinks(graph.links, graph.floatingLinks)) {
+        graph.removeReroute(reroute.id)
+      }
     }
 
     // Adjust positions
