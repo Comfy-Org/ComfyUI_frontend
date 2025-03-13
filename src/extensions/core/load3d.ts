@@ -1,21 +1,18 @@
 // @ts-strict-ignore
 import { IWidget } from '@comfyorg/litegraph'
 import { IStringWidget } from '@comfyorg/litegraph/dist/types/widgets'
-import PrimeVue from 'primevue/config'
-import { createApp, nextTick } from 'vue'
+import { nextTick } from 'vue'
 
 import Load3D from '@/components/load3d/Load3D.vue'
 import Load3DAnimation from '@/components/load3d/Load3DAnimation.vue'
-import { useChainCallback } from '@/composables/functional/useChainCallback'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import Load3dAnimation from '@/extensions/core/load3d/Load3dAnimation'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { ComponentWidgetImpl } from '@/scripts/domWidget'
+import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import { useLoad3dService } from '@/services/load3dService'
-import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useToastStore } from '@/stores/toastStore'
 import { generateUUID } from '@/utils/formatUtil'
 
@@ -25,30 +22,6 @@ app.registerExtension({
   getCustomWidgets() {
     return {
       LOAD_3D(node) {
-        const inputSpec: CustomInputSpec = {
-          name: 'image',
-          type: 'Load3D'
-        }
-
-        const widget = new ComponentWidgetImpl({
-          id: generateUUID(),
-          node,
-          name: inputSpec.name,
-          component: Load3D,
-          inputSpec,
-          options: {}
-        })
-
-        node.onRemoved = useChainCallback(node.onRemoved, () => {
-          widget.onRemove?.()
-        })
-
-        node.onResize = useChainCallback(node.onResize, () => {
-          widget.options.afterResize?.call(widget, node)
-        })
-
-        useDomWidgetStore().registerWidget(widget)
-
         const fileInput = document.createElement('input')
         fileInput.type = 'file'
         fileInput.accept = '.gltf,.glb,.obj,.mtl,.fbx,.stl'
@@ -101,9 +74,23 @@ app.registerExtension({
           }
         })
 
-        return {
-          widget: node.addCustomWidget(widget)
+        const inputSpec: CustomInputSpec = {
+          name: 'image',
+          type: 'Load3D'
         }
+
+        const widget = new ComponentWidgetImpl({
+          id: generateUUID(),
+          node,
+          name: inputSpec.name,
+          component: Load3D,
+          inputSpec,
+          options: {}
+        })
+
+        addWidget(node, widget)
+
+        return { widget }
       }
     }
   },
@@ -163,30 +150,6 @@ app.registerExtension({
   getCustomWidgets() {
     return {
       LOAD_3D_ANIMATION(node) {
-        const inputSpec: CustomInputSpec = {
-          name: 'image',
-          type: 'Load3DAnimation'
-        }
-
-        const widget = new ComponentWidgetImpl({
-          id: generateUUID(),
-          node,
-          name: inputSpec.name,
-          component: Load3DAnimation,
-          inputSpec,
-          options: {}
-        })
-
-        node.onRemoved = useChainCallback(node.onRemoved, () => {
-          widget.onRemove?.()
-        })
-
-        node.onResize = useChainCallback(node.onResize, () => {
-          widget.options.afterResize?.call(widget, node)
-        })
-
-        useDomWidgetStore().registerWidget(widget)
-
         const fileInput = document.createElement('input')
         fileInput.type = 'file'
         fileInput.accept = '.fbx,glb,gltf'
@@ -237,9 +200,23 @@ app.registerExtension({
           }
         })
 
-        return {
-          widget: node.addCustomWidget(widget)
+        const inputSpec: CustomInputSpec = {
+          name: 'image',
+          type: 'Load3DAnimation'
         }
+
+        const widget = new ComponentWidgetImpl({
+          id: generateUUID(),
+          node,
+          name: inputSpec.name,
+          component: Load3DAnimation,
+          inputSpec,
+          options: {}
+        })
+
+        addWidget(node, widget)
+
+        return { widget }
       }
     }
   },
@@ -322,19 +299,9 @@ app.registerExtension({
           options: {}
         })
 
-        node.onRemoved = useChainCallback(node.onRemoved, () => {
-          widget.onRemove?.()
-        })
+        addWidget(node, widget)
 
-        node.onResize = useChainCallback(node.onResize, () => {
-          widget.options.afterResize?.call(widget, node)
-        })
-
-        useDomWidgetStore().registerWidget(widget)
-
-        return {
-          widget: node.addCustomWidget(widget)
-        }
+        return { widget }
       }
     }
   },
@@ -405,19 +372,9 @@ app.registerExtension({
           options: {}
         })
 
-        node.onRemoved = useChainCallback(node.onRemoved, () => {
-          widget.onRemove?.()
-        })
+        addWidget(node, widget)
 
-        node.onResize = useChainCallback(node.onResize, () => {
-          widget.options.afterResize?.call(widget, node)
-        })
-
-        useDomWidgetStore().registerWidget(widget)
-
-        return {
-          widget: node.addCustomWidget(widget)
-        }
+        return { widget }
       }
     }
   },
