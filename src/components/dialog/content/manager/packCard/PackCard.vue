@@ -66,28 +66,7 @@
     </template>
     <template #footer>
       <ContentDivider :width="0.1" />
-      <div class="flex justify-between p-5 text-xs text-muted">
-        <div class="flex items-center gap-2 cursor-pointer">
-          <span v-if="nodePack.publisher?.name">
-            {{ nodePack.publisher.name }}
-          </span>
-          <PackVersionBadge v-if="isPackInstalled" :node-pack="nodePack" />
-          <span v-else-if="nodePack.latest_version">
-            {{ nodePack.latest_version.version }}
-          </span>
-        </div>
-        <div
-          v-if="nodePack.latest_version?.createdAt"
-          class="flex items-center gap-2 truncate"
-        >
-          {{ $t('g.updated') }}
-          {{
-            $d(new Date(nodePack.latest_version.createdAt), {
-              dateStyle: 'medium'
-            })
-          }}
-        </div>
-      </div>
+      <PackCardFooter :node-pack="nodePack" />
     </template>
   </Card>
 </template>
@@ -97,9 +76,9 @@ import Card from 'primevue/card'
 import { computed } from 'vue'
 
 import ContentDivider from '@/components/common/ContentDivider.vue'
-import PackVersionBadge from '@/components/dialog/content/manager/PackVersionBadge.vue'
 import PackEnableToggle from '@/components/dialog/content/manager/button/PackEnableToggle.vue'
 import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
+import PackCardFooter from '@/components/dialog/content/manager/packCard/PackCardFooter.vue'
 import PackIcon from '@/components/dialog/content/manager/packIcon/PackIcon.vue'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import type { components } from '@/types/comfyRegistryTypes'
