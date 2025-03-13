@@ -113,7 +113,7 @@ export class LinkConnector {
       renderLinks.push(renderLink)
 
       this.listenUntilReset("input-moved", (e) => {
-        e.detail.link.disconnect(network, true)
+        e.detail.link.disconnect(network, "output")
       })
     } catch (error) {
       console.warn(`Could not create render link for link id: [${link.id}].`, link, error)
@@ -215,13 +215,7 @@ export class LinkConnector {
   dragFromReroute(network: LinkNetwork, reroute: Reroute): void {
     if (this.isConnecting) throw new Error("Already dragging links.")
 
-    const { state } = this
-
-    // Connect new link from reroute
-    const linkId = reroute.linkIds.values().next().value
-    if (linkId == null) return
-
-    const link = network.links.get(linkId)
+    const link = reroute.firstLink ?? reroute.firstFloatingLink
     if (!link) return
 
     const outputNode = network.getNodeById(link.origin_id)
@@ -234,7 +228,7 @@ export class LinkConnector {
     renderLink.fromDirection = LinkDirection.NONE
     this.renderLinks.push(renderLink)
 
-    state.connectingTo = "input"
+    this.state.connectingTo = "input"
   }
 
   dragFromLinkSegment(network: LinkNetwork, linkSegment: LinkSegment): void {
@@ -278,7 +272,7 @@ export class LinkConnector {
       // Get reroute if no node is found
       const reroute = locator.getRerouteOnPos(canvasX, canvasY)
       // Drop output->input link on reroute is not impl.
-      if (reroute && this.state.connectingTo === "output") {
+      if (reroute) {
         this.dropOnReroute(reroute, event)
       } else {
         this.dropOnNothing(event)
@@ -328,6 +322,43 @@ export class LinkConnector {
   dropOnReroute(reroute: Reroute, event: CanvasPointerEvent): void {
     const mayContinue = this.events.dispatch("dropped-on-reroute", { reroute, event })
     if (mayContinue === false) return
+
+    if (this.state.connectingTo === "input") {
+      const results = reroute.findTargetInputs()
+      if (!results?.length) return
+
+      for (const { node: inputNode, input, link: resultLink } of results) {
+        for (const renderLink of this.renderLinks) {
+          if (renderLink.toType !== "input") continue
+
+          if (renderLink instanceof MovingRenderLink) {
+            const { outputNode, inputSlot, outputSlot, fromReroute } = renderLink
+            // Link is already connected here
+            if (inputSlot === input) continue
+
+            const newLink = outputNode.connectSlots(outputSlot, inputNode, input, fromReroute?.id)
+            if (newLink) this.events.dispatch("input-moved", renderLink)
+          } else {
+            const reroutes = reroute.getReroutes()
+            if (reroutes === null) throw new Error("Reroute loop detected.")
+
+            if (reroutes) {
+              for (const reroute of reroutes.slice(0, -1)) {
+                reroute.remove()
+              }
+            }
+            const { node: outputNode, fromSlot, fromReroute } = renderLink
+            // Set the parentId of the reroute we dropped on, to the reroute we dragged from
+            reroute.parentId = fromReroute?.id
+
+            const newLink = outputNode.connectSlots(fromSlot, inputNode, input, resultLink.parentId)
+            this.events.dispatch("link-created", newLink)
+          }
+        }
+      }
+
+      return
+    }
 
     for (const link of this.renderLinks) {
       if (link.toType !== "output") continue

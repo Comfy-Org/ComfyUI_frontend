@@ -2250,9 +2250,15 @@ export class LGraphCanvas implements ConnectionColorContext {
                   e.altKey &&
                   !e.shiftKey)
               ) {
-                node.disconnectInput(i)
+                node.disconnectInput(i, true)
               } else if (e.shiftKey || this.allow_reconnect_links) {
                 linkConnector.moveInputLink(graph, input)
+              }
+            } else {
+              for (const link of graph.floatingLinks.values()) {
+                if (link.target_id === node.id && link.target_slot === i) {
+                  graph.removeFloatingLink(link)
+                }
               }
             }
 
@@ -4596,6 +4602,10 @@ export class LGraphCanvas implements ConnectionColorContext {
       }
     }
 
+    if (graph.floatingLinks.size > 0) {
+      this.#renderFloatingLinks(ctx, graph, visibleReroutes, now)
+    }
+
     // Render the reroute circles
     for (const reroute of visibleReroutes) {
       if (
@@ -4608,6 +4618,39 @@ export class LGraphCanvas implements ConnectionColorContext {
       reroute.draw(ctx)
     }
     ctx.globalAlpha = 1
+  }
+
+  #renderFloatingLinks(ctx: CanvasRenderingContext2D, graph: LGraph, visibleReroutes: Reroute[], now: number) {
+    // Floating reroutes
+    for (const link of graph.floatingLinks.values()) {
+      const reroutes = LLink.getReroutes(graph, link)
+      const firstReroute = reroutes[0]
+      const reroute = reroutes.at(-1)
+      if (!firstReroute || !reroute?.floating) continue
+
+      // Input not connected
+      if (reroute.floating.slotType === "input") {
+        const node = graph.getNodeById(link.target_id)
+        if (!node) continue
+
+        const startPos = firstReroute.pos
+        const endPos = node.getInputPos(link.target_slot)
+        const endDirection = node.inputs[link.target_slot]?.dir
+
+        firstReroute._dragging = true
+        this.#renderAllLinkSegments(ctx, link, startPos, endPos, visibleReroutes, now, LinkDirection.CENTER, endDirection)
+      } else {
+        const node = graph.getNodeById(link.origin_id)
+        if (!node) continue
+
+        const startPos = node.getOutputPos(link.origin_slot)
+        const endPos = reroute.pos
+        const startDirection = node.outputs[link.origin_slot]?.dir
+
+        link._dragging = true
+        this.#renderAllLinkSegments(ctx, link, startPos, endPos, visibleReroutes, now, startDirection, LinkDirection.CENTER)
+      }
+    }
   }
 
   #renderAllLinkSegments(
@@ -4687,10 +4730,15 @@ export class LGraphCanvas implements ConnectionColorContext {
           }
         }
 
-        // Calculate start control for the next iter control point
-        const nextPos = reroutes[j + 1]?.pos ?? endPos
-        const dist = Math.min(80, distance(reroute.pos, nextPos) * 0.25)
-        startControl = [dist * reroute.cos, dist * reroute.sin]
+        if (!startControl && reroutes.at(-1)?.floating?.slotType === "input") {
+          // Floating link connected to an input
+          startControl = [0, 0] satisfies Point
+        } else {
+          // Calculate start control for the next iter control point
+          const nextPos = reroutes[j + 1]?.pos ?? endPos
+          const dist = Math.min(80, distance(reroute.pos, nextPos) * 0.25)
+          startControl = [dist * reroute.cos, dist * reroute.sin]
+        }
       }
 
       // Skip the last segment if it is being dragged
@@ -7091,7 +7139,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         if (info.output) {
           node.disconnectOutput(info.slot)
         } else if (info.input) {
-          node.disconnectInput(info.slot)
+          node.disconnectInput(info.slot, true)
         }
         node.graph.afterChange()
         return

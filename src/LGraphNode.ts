@@ -1471,7 +1471,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    * remove an existing input slot
    */
   removeInput(slot: number): void {
-    this.disconnectInput(slot)
+    this.disconnectInput(slot, true)
     const { inputs } = this
     const slot_info = inputs.splice(slot, 1)
 
@@ -2503,8 +2503,22 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     inputNode.inputs[inputIndex].link = link.id
 
     // Reroutes
-    for (const reroute of LLink.getReroutes(graph, link)) {
-      reroute?.linkIds.add(link.id)
+    const reroutes = LLink.getReroutes(graph, link)
+    for (const reroute of reroutes) {
+      reroute.linkIds.add(link.id)
+      if (reroute.floating) delete reroute.floating
+      reroute._dragging = undefined
+    }
+
+    // If this is the terminus of a floating link, remove it
+    const lastReroute = reroutes.at(-1)
+    if (lastReroute) {
+      for (const linkId of lastReroute.floatingLinkIds) {
+        const link = graph.floatingLinks.get(linkId)
+        if (link?.parentId === lastReroute.id) {
+          graph.removeFloatingLink(link)
+        }
+      }
     }
     graph._version++
 
@@ -2551,6 +2565,12 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       return false
     }
 
+    for (const link of this.graph?.floatingLinks.values() ?? []) {
+      if (link.origin_id === this.id && link.origin_slot === slot) {
+        this.graph?.removeFloatingLink(link)
+      }
+    }
+
     // get output slot
     const output = this.outputs[slot]
     if (!output || !output.links || output.links.length == 0) return false
@@ -2578,7 +2598,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
           input.link = null
 
           // remove the link from the links pool
-          link_info.disconnect(graph)
+          link_info.disconnect(graph, "input")
           graph._version++
 
           // link_info hasn't been modified so its ok
@@ -2625,7 +2645,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
           )
         }
         // remove the link from the links pool
-        link_info.disconnect(graph)
+        link_info.disconnect(graph, "input")
 
         this.onConnectionsChange?.(
           NodeSlotType.OUTPUT,
@@ -2691,7 +2711,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
           }
         }
 
-        link_info.disconnect(this.graph, keepReroutes)
+        link_info.disconnect(this.graph, keepReroutes ? "output" : undefined)
         if (this.graph) this.graph._version++
 
         this.onConnectionsChange?.(

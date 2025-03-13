@@ -883,7 +883,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     // disconnect inputs
     if (inputs) {
       for (const [i, slot] of inputs.entries()) {
-        if (slot.link != null) node.disconnectInput(i)
+        if (slot.link != null) node.disconnectInput(i, true)
       }
     }
 
@@ -1373,6 +1373,31 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     this.canvasAction(c => c.setDirty(fg, bg))
   }
 
+  addFloatingLink(link: LLink): LLink {
+    if (link.id === -1) {
+      link.id = ++this.#lastFloatingLinkId
+    }
+    this.#floatingLinks.set(link.id, link)
+
+    const reroutes = LLink.getReroutes(this, link)
+    for (const reroute of reroutes) {
+      reroute.floatingLinkIds.add(link.id)
+    }
+    return link
+  }
+
+  removeFloatingLink(link: LLink): void {
+    this.#floatingLinks.delete(link.id)
+
+    const reroutes = LLink.getReroutes(this, link)
+    for (const reroute of reroutes) {
+      reroute.floatingLinkIds.delete(link.id)
+      if (reroute.floatingLinkIds.size === 0) {
+        delete reroute.floating
+      }
+    }
+  }
+
   /**
    * Configures a reroute on the graph where ID is already known (probably deserialisation).
    * Creates the object if it does not exist.
@@ -1444,8 +1469,12 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
       }
 
       // Remove floating links with no reroutes
-      if (parentId === undefined) this.#floatingLinks.delete(linkId)
-      else if (link.parentId === id) link.parentId = parentId
+      const floatingReroutes = LLink.getReroutes(this, link)
+      if (!(floatingReroutes.length > 0)) {
+        this.#floatingLinks.delete(linkId)
+      } else if (link.parentId === id) {
+        link.parentId = parentId
+      }
     }
 
     reroutes.delete(id)
@@ -1460,7 +1489,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     if (!link) return
 
     const node = this.getNodeById(link.target_id)
-    node?.disconnectInput(link.target_slot)
+    node?.disconnectInput(link.target_slot, false)
 
     link.disconnect(this)
   }
