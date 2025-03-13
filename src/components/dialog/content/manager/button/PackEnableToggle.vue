@@ -22,31 +22,30 @@ import {
 } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
 
-const TOGGLE_DEBOUNCE_MS = 300
+const TOGGLE_DEBOUNCE_MS = 256
 
 const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']
 }>()
 
-const managerStore = useComfyManagerStore()
+const { isPackEnabled, enablePack, disablePack, installedPacks } =
+  useComfyManagerStore()
+
 const isLoading = ref(false)
 
-const isEnabled = computed(() => managerStore.isPackEnabled(nodePack.id))
+const isEnabled = computed(() => isPackEnabled(nodePack.id))
 const version = computed(() => {
   const id = nodePack.id
   if (!id) return SelectedVersion.NIGHTLY
   return (
-    managerStore.installedPacks[id]?.ver ??
+    installedPacks[id]?.ver ??
     nodePack.latest_version?.version ??
     SelectedVersion.NIGHTLY
   )
 })
 
-const handleEnable = async () => {
-  if (!nodePack.id) return
-
-  // Enable is done by using the install endpoint with a disabled pack
-  managerStore.installPack.call({
+const handleEnable = () =>
+  enablePack.call({
     id: nodePack.id,
     version: version.value,
     selected_version: version.value,
@@ -54,14 +53,12 @@ const handleEnable = async () => {
     channel: ManagerChannel.DEFAULT,
     mode: 'default' as InstallPackParams['mode']
   })
-}
 
-const handleDisable = async () => {
-  managerStore.disablePack({
+const handleDisable = () =>
+  disablePack({
     id: nodePack.id,
     version: version.value
   })
-}
 
 const handleToggle = async (enable: boolean) => {
   if (isLoading.value) return
@@ -70,10 +67,10 @@ const handleToggle = async (enable: boolean) => {
   if (enable) {
     await handleEnable()
   } else {
-    await handleDisable()
+    handleDisable()
   }
   isLoading.value = false
 }
 
-const onToggle = debounce(handleToggle, TOGGLE_DEBOUNCE_MS)
+const onToggle = debounce(handleToggle, TOGGLE_DEBOUNCE_MS, { trailing: true })
 </script>
