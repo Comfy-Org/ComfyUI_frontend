@@ -4,7 +4,7 @@
       {{ $t('manager.selectVersion') }}
     </span>
     <div
-      v-if="isLoading"
+      v-if="isLoadingVersions || isQueueing"
       class="text-center text-muted py-4 flex flex-col items-center"
     >
       <ProgressSpinner class="w-8 h-8 mb-2" />
@@ -20,7 +20,7 @@
     </div>
     <Listbox
       v-else
-      v-model="currentSelection"
+      v-model="selectedVersion"
       option-label="label"
       option-value="value"
       :options="allVersionOptions"
@@ -31,9 +31,9 @@
         <div class="flex justify-between items-center w-full p-1">
           <span>{{ slotProps.option.label }}</span>
           <i
-            v-if="currentSelection === slotProps.option.value"
+            v-if="selectedVersion === slotProps.option.value"
             class="pi pi-check text-highlight"
-          ></i>
+          />
         </div>
       </template>
     </Listbox>
@@ -43,46 +43,61 @@
         text
         severity="secondary"
         :label="$t('g.cancel')"
+        :disabled="isQueueing"
         @click="emit('cancel')"
       />
       <Button
         severity="secondary"
         :label="$t('g.install')"
-        @click="emit('apply', currentSelection ?? SelectedVersion.LATEST)"
         class="py-3 px-4 dark-theme:bg-unset bg-black/80 dark-theme:text-unset text-neutral-100 rounded-lg"
+        :disabled="isQueueing"
+        @click="handleSubmit"
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useAsyncState } from '@vueuse/core'
+import { useAsyncState, whenever } from '@vueuse/core'
 import Button from 'primevue/button'
 import Listbox from 'primevue/listbox'
 import ProgressSpinner from 'primevue/progressspinner'
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ContentDivider from '@/components/common/ContentDivider.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
-import { SelectedVersion } from '@/types/comfyManagerTypes'
+import { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import {
+  ManagerChannel,
+  ManagerDatabaseSource,
+  SelectedVersion
+} from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
 
-const { nodePack, selectedVersion = SelectedVersion.NIGHTLY } = defineProps<{
+const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']
-  selectedVersion?: string
 }>()
 
 const emit = defineEmits<{
   cancel: []
-  apply: [version: string]
+  submit: []
 }>()
 
 const { t } = useI18n()
 const registryService = useComfyRegistryService()
+const managerStore = useComfyManagerStore()
 
-const currentSelection = ref<string>(selectedVersion)
+const isQueueing = ref(false)
+
+const selectedVersion = ref<string>(SelectedVersion.LATEST)
+onMounted(() => {
+  selectedVersion.value =
+    nodePack.publisher?.name === 'Unclaimed'
+      ? SelectedVersion.NIGHTLY
+      : nodePack.latest_version?.version ?? SelectedVersion.NIGHTLY
+})
 
 const fetchVersions = async () => {
   if (!nodePack?.id) return []
@@ -90,21 +105,29 @@ const fetchVersions = async () => {
 }
 
 const {
-  isLoading,
+  isLoading: isLoadingVersions,
   state: versions,
   execute: startFetchVersions
 } = useAsyncState(fetchVersions, [])
 
-const specialOptions = computed(() => [
-  {
-    value: SelectedVersion.NIGHTLY,
-    label: t('manager.nightlyVersion')
-  },
-  {
-    value: SelectedVersion.LATEST,
-    label: t('manager.latestVersion')
+const specialOptions = computed(() => {
+  const options = [
+    {
+      value: SelectedVersion.LATEST,
+      label: t('manager.latestVersion')
+    }
+  ]
+
+  // Only include nightly option if there is a repo
+  if (nodePack.repository?.length) {
+    options.push({
+      value: SelectedVersion.NIGHTLY,
+      label: t('manager.nightlyVersion')
+    })
   }
-])
+
+  return options
+})
 
 const versionOptions = computed(() =>
   versions.value.map((version) => ({
@@ -118,9 +141,28 @@ const allVersionOptions = computed(() => [
   ...versionOptions.value
 ])
 
-watch(
-  () => nodePack,
+whenever(
+  () => nodePack.id,
   () => startFetchVersions(),
   { deep: true }
 )
+
+const handleSubmit = async () => {
+  isQueueing.value = true
+  await managerStore.installPack.call({
+    id: nodePack.id,
+    repository: nodePack.repository ?? '',
+    channel: ManagerChannel.DEFAULT,
+    mode: ManagerDatabaseSource.CACHE,
+    version: selectedVersion.value,
+    selected_version: selectedVersion.value
+  })
+
+  isQueueing.value = false
+  emit('submit')
+}
+
+onUnmounted(() => {
+  managerStore.installPack.clear()
+})
 </script>

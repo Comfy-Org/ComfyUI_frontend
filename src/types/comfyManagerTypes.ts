@@ -5,11 +5,6 @@ type RegistryPack = components['schemas']['Node']
 type WorkflowNodeProperties = ComfyWorkflowJSON['nodes'][0]['properties']
 export type PackField = keyof RegistryPack | null
 
-export type PackWithSelectedVersion = {
-  nodePack: RegistryPack
-  selectedVersion?: InstallPackParams['selected_version']
-}
-
 export interface TabItem {
   id: string
   label: string
@@ -176,10 +171,6 @@ export interface InstallPackParams extends ManagerPackInfo {
    */
   selected_version: WorkflowNodeProperties['ver'] | SelectedVersion
   /**
-   * If set to `imported`, returns only the packs that were imported at app startup.
-   */
-  mode?: 'imported' | 'default'
-  /**
    * The GitHub link to the repository of the pack to install.
    * Required if `selected_version` is `nightly`.
    */
@@ -189,6 +180,7 @@ export interface InstallPackParams extends ManagerPackInfo {
    * Used in coordination with pip package whitelist and version lock features.
    */
   pip?: string[]
+  mode: ManagerDatabaseSource
   channel: ManagerChannel
   skip_post_install?: boolean
 }

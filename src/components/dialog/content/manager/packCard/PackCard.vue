@@ -17,7 +17,7 @@
           <i
             class="pi pi-box text-muted text-2xl ml-1 mr-5"
             style="opacity: 0.5"
-          ></i>
+          />
           <span class="text-lg relative top-[.25rem]">{{
             $t('manager.nodePack')
           }}</span>
@@ -27,10 +27,15 @@
             v-if="nodePack.downloads"
             class="flex items-center text-sm text-muted tracking-tighter"
           >
-            <i class="pi pi-download mr-2"></i>
-            {{ formatNumber(nodePack.downloads) }}
+            <i class="pi pi-download mr-2" />
+            {{ $n(nodePack.downloads) }}
           </div>
-          <PackInstallButton />
+          <template v-if="isPackInstalled">
+            <PackEnableToggle :node-pack="nodePack" />
+          </template>
+          <template v-else>
+            <PackInstallButton :node-packs="[nodePack]" />
+          </template>
         </div>
       </div>
     </template>
@@ -66,17 +71,13 @@
           <span v-if="nodePack.publisher?.name">
             {{ nodePack.publisher.name }}
           </span>
-          <PackVersionBadge
-            v-if="isPackInstalled"
-            :node-pack="nodePack"
-            v-model:version="selectedVersion"
-          />
+          <PackVersionBadge v-if="isPackInstalled" :node-pack="nodePack" />
           <span v-else-if="nodePack.latest_version">
             {{ nodePack.latest_version.version }}
           </span>
         </div>
         <div
-          v-if="nodePack.latest_version"
+          v-if="nodePack.latest_version?.createdAt"
           class="flex items-center gap-2 truncate"
         >
           {{ $t('g.updated') }}
@@ -93,24 +94,24 @@
 
 <script setup lang="ts">
 import Card from 'primevue/card'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
 import ContentDivider from '@/components/common/ContentDivider.vue'
-import PackInstallButton from '@/components/dialog/content/manager/PackInstallButton.vue'
 import PackVersionBadge from '@/components/dialog/content/manager/PackVersionBadge.vue'
+import PackEnableToggle from '@/components/dialog/content/manager/button/PackEnableToggle.vue'
+import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
 import PackIcon from '@/components/dialog/content/manager/packIcon/PackIcon.vue'
+import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import type { components } from '@/types/comfyRegistryTypes'
-import { formatNumber } from '@/utils/formatUtil'
 
 const { nodePack, isSelected = false } = defineProps<{
   nodePack: components['schemas']['Node']
   isSelected?: boolean
 }>()
-const selectedVersion = ref<string | undefined>(undefined)
-const isPackInstalled = computed(
-  () =>
-    // TODO: after manager store added
-    // managerStore.isPackInstalled(nodePack?.id)
-    true
+
+const managerStore = useComfyManagerStore()
+
+const isPackInstalled = computed(() =>
+  managerStore.isPackInstalled(nodePack?.id)
 )
 </script>

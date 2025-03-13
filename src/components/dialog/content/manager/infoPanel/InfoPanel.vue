@@ -1,10 +1,7 @@
 <template>
   <div class="flex flex-col h-full z-40 hidden-scrollbar w-80">
     <div class="p-6 flex-1 overflow-hidden text-sm">
-      <PackCardHeader
-        :node-pack="nodePack"
-        :install-button-full-width="false"
-      />
+      <InfoPanelHeader :node-packs="[nodePack]" />
       <div class="mb-6">
         <MetadataRow
           v-for="item in infoItems"
@@ -21,11 +18,7 @@
           />
         </MetadataRow>
         <MetadataRow :label="t('manager.version')">
-          <PackVersionBadge
-            :node-pack="nodePack"
-            :version="selectedVersion"
-            @update:version="updateSelectedVersion"
-          />
+          <PackVersionBadge :node-pack="nodePack" />
         </MetadataRow>
       </div>
       <div class="mb-6 overflow-hidden">
@@ -36,17 +29,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PackStatusMessage from '@/components/dialog/content/manager/PackStatusMessage.vue'
 import PackVersionBadge from '@/components/dialog/content/manager/PackVersionBadge.vue'
+import InfoPanelHeader from '@/components/dialog/content/manager/infoPanel/InfoPanelHeader.vue'
 import InfoTabs from '@/components/dialog/content/manager/infoPanel/InfoTabs.vue'
 import MetadataRow from '@/components/dialog/content/manager/infoPanel/MetadataRow.vue'
-import PackCardHeader from '@/components/dialog/content/manager/packCard/PackCardHeader.vue'
-import { SelectedVersion } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
-import { formatNumber } from '@/utils/formatUtil'
 
 interface InfoItem {
   key: string
@@ -58,31 +49,18 @@ const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']
 }>()
 
-const { t, d } = useI18n()
-
-const packCardHeaderRef = ref(null)
-
-const selectedVersion = ref<string>(
-  nodePack.latest_version?.version || SelectedVersion.NIGHTLY
-)
-const updateSelectedVersion = (version: string) => {
-  selectedVersion.value = version
-  if (packCardHeaderRef.value) {
-    packCardHeaderRef.value.updateVersion?.(version)
-  }
-}
+const { t, d, n } = useI18n()
 
 const infoItems = computed<InfoItem[]>(() => [
   {
     key: 'publisher',
     label: t('manager.createdBy'),
-    // TODO: handle all Comfy Registry publisher types dynamically (e.g., organizations, multiple authors)
-    value: nodePack.publisher?.name
+    value: nodePack.publisher?.name ?? nodePack.publisher?.id
   },
   {
     key: 'downloads',
     label: t('manager.downloads'),
-    value: nodePack.downloads ? formatNumber(nodePack.downloads) : undefined
+    value: nodePack.downloads ? n(nodePack.downloads) : undefined
   },
   {
     key: 'lastUpdated',

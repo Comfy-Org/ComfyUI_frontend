@@ -158,6 +158,7 @@
     "import": "Importer",
     "insert": "Insérer",
     "install": "Installer",
+    "installing": "Installation",
     "keybinding": "Raccourci clavier",
     "loadAllFolders": "Charger tous les dossiers",
     "loadWorkflow": "Charger le flux de travail",
@@ -411,6 +412,10 @@
     "totalNodes": "Total de Nœuds",
     "tryAgainLater": "Veuillez réessayer plus tard.",
     "tryDifferentSearch": "Veuillez essayer une autre requête de recherche.",
+    "uninstall": "Désinstaller",
+    "uninstallSelected": "Désinstaller sélectionné",
+    "uninstalling": "Désinstallation",
+    "update": "Mettre à jour",
     "version": "Version"
   },
   "menu": {

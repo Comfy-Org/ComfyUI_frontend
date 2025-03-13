@@ -12,7 +12,8 @@ import { SelectedVersion } from '@/types/comfyManagerTypes'
 
 import PackVersionSelectorPopover from '../PackVersionSelectorPopover.vue'
 
-const mockVersions = [
+// Default mock versions for reference
+const defaultMockVersions = [
   { version: '1.0.0', createdAt: '2023-01-01' },
   { version: '0.9.0', createdAt: '2022-12-01' },
   { version: '0.8.0', createdAt: '2022-11-01' }
@@ -21,14 +22,28 @@ const mockVersions = [
 const mockNodePack = {
   id: 'test-pack',
   name: 'Test Pack',
-  latest_version: { version: '1.0.0' }
+  latest_version: { version: '1.0.0' },
+  repository: 'https://github.com/user/repo'
 }
 
-const mockGetPackVersions = vi.fn().mockResolvedValue(mockVersions)
+// Create mock functions
+const mockGetPackVersions = vi.fn()
+const mockInstallPack = vi.fn().mockResolvedValue(undefined)
 
+// Mock the registry service
 vi.mock('@/services/comfyRegistryService', () => ({
   useComfyRegistryService: vi.fn(() => ({
     getPackVersions: mockGetPackVersions
+  }))
+}))
+
+// Mock the manager store
+vi.mock('@/stores/comfyManagerStore', () => ({
+  useComfyManagerStore: vi.fn(() => ({
+    installPack: {
+      call: mockInstallPack,
+      clear: vi.fn()
+    }
   }))
 }))
 
@@ -40,8 +55,8 @@ const waitForPromises = async () => {
 describe('PackVersionSelectorPopover', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockGetPackVersions.mockClear()
-    mockGetPackVersions.mockResolvedValue(mockVersions)
+    mockGetPackVersions.mockReset()
+    mockInstallPack.mockReset().mockResolvedValue(undefined)
   })
 
   const mountComponent = ({
@@ -56,7 +71,6 @@ describe('PackVersionSelectorPopover', () => {
     return mount(PackVersionSelectorPopover, {
       props: {
         nodePack: mockNodePack,
-        selectedVersion: SelectedVersion.NIGHTLY,
         ...props
       },
       global: {
@@ -69,6 +83,9 @@ describe('PackVersionSelectorPopover', () => {
   }
 
   it('fetches versions on mount', async () => {
+    // Set up the mock for this specific test
+    mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
+
     mountComponent()
     await waitForPromises()
 
@@ -79,7 +96,9 @@ describe('PackVersionSelectorPopover', () => {
     // Delay the promise resolution
     mockGetPackVersions.mockImplementationOnce(
       () =>
-        new Promise((resolve) => setTimeout(() => resolve(mockVersions), 1000))
+        new Promise((resolve) =>
+          setTimeout(() => resolve(defaultMockVersions), 1000)
+        )
     )
 
     const wrapper = mountComponent()
@@ -88,6 +107,9 @@ describe('PackVersionSelectorPopover', () => {
   })
 
   it('displays special options and version options in the listbox', async () => {
+    // Set up the mock for this specific test
+    mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
+
     const wrapper = mountComponent()
     await waitForPromises()
 
@@ -95,29 +117,23 @@ describe('PackVersionSelectorPopover', () => {
     expect(listbox.exists()).toBe(true)
 
     const options = listbox.props('options')!
-    expect(options.length).toBe(5) // 2 special options + 3 version options
+    // Check that we have both special options and version options
+    expect(options.length).toBe(defaultMockVersions.length + 2) // 2 special options + version options
 
-    // Check special options
-    expect(options[0].value).toBe(SelectedVersion.NIGHTLY)
-    expect(options[1].value).toBe(SelectedVersion.LATEST)
+    // Check that special options exist
+    expect(options.some((o) => o.value === SelectedVersion.NIGHTLY)).toBe(true)
+    expect(options.some((o) => o.value === SelectedVersion.LATEST)).toBe(true)
 
-    // Check version options
-    expect(options[2].value).toBe('1.0.0')
-    expect(options[3].value).toBe('0.9.0')
-    expect(options[4].value).toBe('0.8.0')
-  })
-
-  it('initializes with the provided selectedVersion prop', async () => {
-    const selectedVersion = '0.9.0'
-    const wrapper = mountComponent({ props: { selectedVersion } })
-    await waitForPromises()
-
-    // Check that the listbox has the correct model value
-    const listbox = wrapper.findComponent(Listbox)
-    expect(listbox.props('modelValue')).toBe(selectedVersion)
+    // Check that version options exist
+    expect(options.some((o) => o.value === '1.0.0')).toBe(true)
+    expect(options.some((o) => o.value === '0.9.0')).toBe(true)
+    expect(options.some((o) => o.value === '0.8.0')).toBe(true)
   })
 
   it('emits cancel event when cancel button is clicked', async () => {
+    // Set up the mock for this specific test
+    mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
+
     const wrapper = mountComponent()
     await waitForPromises()
 
@@ -127,35 +143,42 @@ describe('PackVersionSelectorPopover', () => {
     expect(wrapper.emitted('cancel')).toBeTruthy()
   })
 
-  it('emits apply event with current selection when apply button is clicked', async () => {
-    const selectedVersion = '0.9.0'
-    const wrapper = mountComponent({ props: { selectedVersion } })
-    await waitForPromises()
+  it('calls installPack and emits submit when install button is clicked', async () => {
+    // Set up the mock for this specific test
+    mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
 
-    const applyButton = wrapper.findAllComponents(Button)[1]
-    await applyButton.trigger('click')
-
-    expect(wrapper.emitted('apply')).toBeTruthy()
-    expect(wrapper.emitted('apply')![0]).toEqual([selectedVersion])
-  })
-
-  it('emits apply event with LATEST when no selection and apply button is clicked', async () => {
-    const wrapper = mountComponent({ props: { selectedVersion: null } })
-    await waitForPromises()
-
-    const applyButton = wrapper.findAllComponents(Button)[1]
-    await applyButton.trigger('click')
-
-    expect(wrapper.emitted('apply')).toBeTruthy()
-    expect(wrapper.emitted('apply')![0]).toEqual([SelectedVersion.LATEST])
-  })
-
-  it('is reactive to nodePack prop changes', async () => {
     const wrapper = mountComponent()
     await waitForPromises()
 
-    // Clear mock calls to check if getPackVersions is called again
-    mockGetPackVersions.mockClear()
+    // Set the selected version
+    await wrapper.findComponent(Listbox).setValue('0.9.0')
+
+    const installButton = wrapper.findAllComponents(Button)[1]
+    await installButton.trigger('click')
+
+    // Check that installPack was called with the correct parameters
+    expect(mockInstallPack).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: mockNodePack.id,
+        repository: mockNodePack.repository,
+        version: '0.9.0',
+        selected_version: '0.9.0'
+      })
+    )
+
+    // Check that submit was emitted
+    expect(wrapper.emitted('submit')).toBeTruthy()
+  })
+
+  it('is reactive to nodePack prop changes', async () => {
+    // Set up the mock for the initial fetch
+    mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
+
+    const wrapper = mountComponent()
+    await waitForPromises()
+
+    // Set up the mock for the second fetch after prop change
+    mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
 
     // Update the nodePack prop
     const newNodePack = { ...mockNodePack, id: 'new-test-pack' }
@@ -167,23 +190,45 @@ describe('PackVersionSelectorPopover', () => {
   })
 
   describe('Unclaimed GitHub packs handling', () => {
-    it('falls back to nightly when comfy-api returns null when fetching versions', async () => {
-      mockGetPackVersions.mockResolvedValueOnce(null)
+    it('falls back to nightly when no versions exist', async () => {
+      // Set up the mock to return versions
+      mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
 
-      const wrapper = mountComponent()
+      const packWithRepo = {
+        ...mockNodePack,
+        latest_version: undefined
+      }
+
+      const wrapper = mountComponent({
+        props: {
+          nodePack: packWithRepo
+        }
+      })
+
       await waitForPromises()
-
       const listbox = wrapper.findComponent(Listbox)
+      expect(listbox.exists()).toBe(true)
       expect(listbox.props('modelValue')).toBe(SelectedVersion.NIGHTLY)
     })
 
-    it('falls back to nightly when component mounts with no versions (unclaimed pack)', async () => {
-      mockGetPackVersions.mockResolvedValueOnce([])
+    it('defaults to nightly when publisher name is "Unclaimed"', async () => {
+      // Set up the mock to return versions
+      mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
 
-      const wrapper = mountComponent()
+      const unclaimedNodePack = {
+        ...mockNodePack,
+        publisher: { name: 'Unclaimed' }
+      }
+
+      const wrapper = mountComponent({
+        props: {
+          nodePack: unclaimedNodePack
+        }
+      })
+
       await waitForPromises()
-
       const listbox = wrapper.findComponent(Listbox)
+      expect(listbox.exists()).toBe(true)
       expect(listbox.props('modelValue')).toBe(SelectedVersion.NIGHTLY)
     })
   })

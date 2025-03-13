@@ -158,6 +158,7 @@
     "import": "Импорт",
     "insert": "Вставить",
     "install": "Установить",
+    "installing": "Установка",
     "keybinding": "Привязка клавиш",
     "loadAllFolders": "Загрузить все папки",
     "loadWorkflow": "Загрузить рабочий процесс",
@@ -411,6 +412,10 @@
     "totalNodes": "Всего Узлов",
     "tryAgainLater": "Пожалуйста, попробуйте позже.",
     "tryDifferentSearch": "Пожалуйста, попробуйте изменить запрос.",
+    "uninstall": "Удалить",
+    "uninstallSelected": "Удалить выбранное",
+    "uninstalling": "Удаление",
+    "update": "Обновить",
     "version": "Версия"
   },
   "menu": {

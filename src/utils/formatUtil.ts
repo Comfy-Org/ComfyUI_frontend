@@ -337,14 +337,6 @@ export const generateUUID = (): string => {
 }
 
 /**
- * Formats a number to a locale-specific string
- * @param num The number to format
- * @returns The formatted number or 'N/A' if the number is undefined
- */
-export const formatNumber = (num?: number): string =>
-  num?.toLocaleString() ?? 'N/A'
-
-/**
  * Checks if a URL is a Civitai model URL
  * @example
  * isCivitaiModelUrl('https://civitai.com/api/download/models/1234567890') // true

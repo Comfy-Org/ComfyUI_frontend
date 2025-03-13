@@ -2,8 +2,7 @@ import { VueWrapper, mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import Button from 'primevue/button'
 import PrimeVue from 'primevue/config'
-import Popover from 'primevue/popover'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -21,7 +20,36 @@ const mockNodePack = {
   }
 }
 
+const mockInstalledPacks = {
+  'test-pack': { ver: '1.5.0' },
+  'installed-pack': { ver: '2.0.0' }
+}
+
+vi.mock('@/stores/comfyManagerStore', () => ({
+  useComfyManagerStore: vi.fn(() => ({
+    installedPacks: mockInstalledPacks,
+    isPackInstalled: (id: string) =>
+      !!mockInstalledPacks[id as keyof typeof mockInstalledPacks]
+  }))
+}))
+
+const mockToggle = vi.fn()
+const mockHide = vi.fn()
+const PopoverStub = {
+  name: 'Popover',
+  template: '<div><slot></slot></div>',
+  methods: {
+    toggle: mockToggle,
+    hide: mockHide
+  }
+}
+
 describe('PackVersionBadge', () => {
+  beforeEach(() => {
+    mockToggle.mockReset()
+    mockHide.mockReset()
+  })
+
   const mountComponent = ({
     props = {}
   }: Record<string, any> = {}): VueWrapper => {
@@ -38,122 +66,100 @@ describe('PackVersionBadge', () => {
       },
       global: {
         plugins: [PrimeVue, createPinia(), i18n],
-        components: {
-          Popover,
-          PackVersionSelectorPopover
+        stubs: {
+          Popover: PopoverStub,
+          PackVersionSelectorPopover: true
         }
       }
     })
   }
 
-  it('renders with default version (NIGHTLY)', () => {
+  it('renders with installed version from store', () => {
     const wrapper = mountComponent()
+
+    const button = wrapper.findComponent(Button)
+    expect(button.exists()).toBe(true)
+    expect(button.props('label')).toBe('1.5.0') // From mockInstalledPacks
+  })
+
+  it('falls back to latest_version when not installed', () => {
+    // Use a nodePack that's not in the installedPacks
+    const uninstalledPack = {
+      id: 'uninstalled-pack',
+      name: 'Uninstalled Pack',
+      latest_version: {
+        version: '3.0.0'
+      }
+    }
+
+    const wrapper = mountComponent({
+      props: { nodePack: uninstalledPack }
+    })
+
+    const button = wrapper.findComponent(Button)
+    expect(button.exists()).toBe(true)
+    expect(button.props('label')).toBe('3.0.0') // From latest_version
+  })
+
+  it('falls back to NIGHTLY when no latest_version and not installed', () => {
+    // Use a nodePack with no latest_version and not in installedPacks
+    const noVersionPack = {
+      id: 'no-version-pack',
+      name: 'No Version Pack'
+    }
+
+    const wrapper = mountComponent({
+      props: { nodePack: noVersionPack }
+    })
 
     const button = wrapper.findComponent(Button)
     expect(button.exists()).toBe(true)
     expect(button.props('label')).toBe(SelectedVersion.NIGHTLY)
   })
 
-  it('renders with provided version', () => {
-    const version = '2.0.0'
-    const wrapper = mountComponent({ props: { version } })
+  it('falls back to NIGHTLY when nodePack.id is missing', () => {
+    const invalidPack = {
+      name: 'Invalid Pack'
+    }
 
-    const button = wrapper.findComponent(Button)
-    expect(button.exists()).toBe(true)
-    expect(button.props('label')).toBe(version)
-  })
-
-  it('shows actual latest (semantic) version prop when version is set to latest', () => {
     const wrapper = mountComponent({
-      props: { version: SelectedVersion.LATEST }
+      props: { nodePack: invalidPack }
     })
 
     const button = wrapper.findComponent(Button)
     expect(button.exists()).toBe(true)
-    expect(button.props('label')).toBe(mockNodePack.latest_version.version)
+    expect(button.props('label')).toBe(SelectedVersion.NIGHTLY)
   })
 
   it('toggles the popover when button is clicked', async () => {
     const wrapper = mountComponent()
 
-    // Spy on the toggle method
-    const popoverToggleSpy = vi.fn()
-    const popover = wrapper.findComponent(Popover)
-    popover.vm.toggle = popoverToggleSpy
-
-    // Open the popover
+    // Click the button
     await wrapper.findComponent(Button).trigger('click')
 
     // Verify that the toggle method was called
-    expect(popoverToggleSpy).toHaveBeenCalled()
+    expect(mockToggle).toHaveBeenCalled()
   })
 
-  it('emits update:version event when version is selected', async () => {
+  it('closes the popover when cancel is emitted', async () => {
     const wrapper = mountComponent()
-
-    // Open the popover
-    await wrapper.findComponent(Button).trigger('click')
-
-    // Simulate the popover emitting an apply event
-    wrapper.findComponent(PackVersionSelectorPopover).vm.$emit('apply', '3.0.0')
-    await nextTick()
-
-    // Check if the update:version event was emitted with the correct value
-    expect(wrapper.emitted('update:version')).toBeTruthy()
-    expect(wrapper.emitted('update:version')![0]).toEqual(['3.0.0'])
-  })
-
-  it('closes the popover when cancel is clicked', async () => {
-    const wrapper = mountComponent()
-
-    // Open the popover
-    await wrapper.findComponent(Button).trigger('click')
 
     // Simulate the popover emitting a cancel event
     wrapper.findComponent(PackVersionSelectorPopover).vm.$emit('cancel')
     await nextTick()
 
-    // Check if the popover is hidden
-    expect(wrapper.findComponent(Popover).isVisible()).toBe(false)
+    // Verify that the hide method was called
+    expect(mockHide).toHaveBeenCalled()
   })
 
-  it('updates displayed version when version prop changes', async () => {
-    const wrapper = mountComponent({ props: { version: '1.0.0' } })
+  it('closes the popover when submit is emitted', async () => {
+    const wrapper = mountComponent()
 
-    expect(wrapper.findComponent(Button).props('label')).toBe('1.0.0')
+    // Simulate the popover emitting a submit event
+    wrapper.findComponent(PackVersionSelectorPopover).vm.$emit('submit')
+    await nextTick()
 
-    // Update the version prop
-    await wrapper.setProps({ version: '2.0.0' })
-
-    // Check if the displayed version was updated
-    expect(wrapper.findComponent(Button).props('label')).toBe('2.0.0')
-  })
-
-  it('handles null or undefined nodePack', async () => {
-    const wrapper = mountComponent({ props: { nodePack: null } })
-
-    const button = wrapper.findComponent(Button)
-    expect(button.exists()).toBe(true)
-    expect(button.props('label')).toBe(SelectedVersion.NIGHTLY)
-
-    // Should not crash when clicking the button
-    await button.trigger('click')
-    expect(wrapper.findComponent(Popover).isVisible()).toBe(false)
-  })
-
-  it('handles missing latest_version (unclaimed pack) by falling back to NIGHTLY', async () => {
-    const incompleteNodePack = { id: 'test-pack', name: 'Test Pack' }
-    const wrapper = mountComponent({
-      props: {
-        nodePack: incompleteNodePack,
-        version: SelectedVersion.LATEST
-      }
-    })
-
-    const button = wrapper.findComponent(Button)
-    expect(button.exists()).toBe(true)
-
-    // Should fallback to nightly string when latest_version is missing
-    expect(button.props('label')).toBe(SelectedVersion.NIGHTLY)
+    // Verify that the hide method was called
+    expect(mockHide).toHaveBeenCalled()
   })
 })
