@@ -3,6 +3,7 @@ import type {
   ISlotType,
   LinkNetwork,
   LinkSegment,
+  ReadonlyLinkNetwork,
 } from "./interfaces"
 import type { NodeId } from "./LGraphNode"
 import type { Reroute, RerouteId } from "./Reroute"
@@ -108,7 +109,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    * this reroute or the reroute before it.  Otherwise, an empty array.
    */
   static getReroutes(
-    network: LinkNetwork,
+    network: ReadonlyLinkNetwork,
     linkSegment: LinkSegment,
   ): Reroute[] {
     if (!linkSegment.parentId) return []
@@ -133,7 +134,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    * @returns The reroute that was found, `undefined` if no reroute was found, or `null` if an infinite loop was detected.
    */
   static findNextReroute(
-    network: LinkNetwork,
+    network: Pick<ReadonlyLinkNetwork, "reroutes">,
     linkSegment: LinkSegment,
     rerouteId: RerouteId,
   ): Reroute | null | undefined {

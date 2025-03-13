@@ -4,6 +4,7 @@ import type {
   LinkSegment,
   Point,
   Positionable,
+  ReadonlyLinkNetwork,
   ReadOnlyRect,
 } from "./interfaces"
 import type { NodeId } from "./LGraphNode"
@@ -252,7 +253,7 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
     return true
   }
 
-  calculateAngle(lastRenderTime: number, network: LinkNetwork, linkStart: Point): void {
+  calculateAngle(lastRenderTime: number, network: ReadonlyLinkNetwork, linkStart: Point): void {
     // Ensure we run once per render
     if (!(lastRenderTime > this.#lastRenderTime)) return
     this.#lastRenderTime = lastRenderTime
