@@ -62,7 +62,7 @@ export class MovingRenderLink implements RenderLink {
     this.outputNode = outputNode
     this.outputSlot = outputSlot
     this.outputIndex = outputIndex
-    this.outputPos = outputNode.getConnectionPos(false, outputIndex)
+    this.outputPos = outputNode.getOutputPos(outputIndex)
 
     // Store input info
     const inputNode = network.getNodeById(inputNodeId) ?? undefined
@@ -75,7 +75,7 @@ export class MovingRenderLink implements RenderLink {
     this.inputNode = inputNode
     this.inputSlot = inputSlot
     this.inputIndex = inputIndex
-    this.inputPos = inputNode.getConnectionPos(true, inputIndex)
+    this.inputPos = inputNode.getInputPos(inputIndex)
 
     // RenderLink props
     this.node = this.toType === "input" ? outputNode : inputNode

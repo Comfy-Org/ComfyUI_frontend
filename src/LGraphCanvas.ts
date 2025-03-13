@@ -2197,7 +2197,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       // Outputs
       if (outputs) {
         for (const [i, output] of outputs.entries()) {
-          const link_pos = node.getConnectionPos(false, i)
+          const link_pos = node.getOutputPos(i)
           if (isInRectangle(x, y, link_pos[0] - 15, link_pos[1] - 10, 30, 20)) {
             // Drag multiple output links
             if (e.shiftKey && output.links?.length) {
@@ -2237,7 +2237,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       // Inputs
       if (inputs) {
         for (const [i, input] of inputs.entries()) {
-          const link_pos = node.getConnectionPos(true, i)
+          const link_pos = node.getInputPos(i)
           if (isInRectangle(x, y, link_pos[0] - 15, link_pos[1] - 10, 30, 20)) {
             pointer.onDoubleClick = () => node.onInputDblClick?.(i, e)
             pointer.onClick = () => node.onInputClick?.(i, e)
@@ -2393,7 +2393,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       // search for outputs
       if (outputs) {
         for (const [i, output] of outputs.entries()) {
-          const link_pos = node.getConnectionPos(false, i)
+          const link_pos = node.getOutputPos(i)
           if (isInRectangle(e.canvasX, e.canvasY, link_pos[0] - 15, link_pos[1] - 10, 30, 20)) {
             mClikSlot = output
             mClikSlot_index = i
@@ -2406,7 +2406,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       // search for inputs
       if (inputs) {
         for (const [i, input] of inputs.entries()) {
-          const link_pos = node.getConnectionPos(true, i)
+          const link_pos = node.getInputPos(i)
           if (isInRectangle(e.canvasX, e.canvasY, link_pos[0] - 15, link_pos[1] - 10, 30, 20)) {
             mClikSlot = input
             mClikSlot_index = i
@@ -2625,8 +2625,7 @@ export class LGraphCanvas implements ConnectionColorContext {
                   const result = node.findInputByType(firstLink.fromSlot.type)
                   if (result) {
                     highlightInput = result.slot
-                    node.getConnectionPos(true, result.index, pos)
-                    highlightPos = pos
+                    highlightPos = node.getInputPos(result.index)
                   }
                 }
               } else if (
@@ -2643,8 +2642,7 @@ export class LGraphCanvas implements ConnectionColorContext {
               if (inputId === -1 && outputId === -1) {
                 const result = node.findOutputByType(firstLink.fromSlot.type)
                 if (result) {
-                  node.getConnectionPos(false, result.index, pos)
-                  highlightPos = pos
+                  highlightPos = node.getOutputPos(result.index)
                 }
               } else {
                 // check if I have a slot below de mouse

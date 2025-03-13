@@ -27,6 +27,6 @@ export class ToInputRenderLink implements RenderLink {
     this.fromSlotIndex = outputIndex
     this.fromPos = fromReroute
       ? fromReroute.pos
-      : this.node.getConnectionPos(false, outputIndex)
+      : this.node.getOutputPos(outputIndex)
   }
 }

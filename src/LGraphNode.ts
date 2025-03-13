@@ -1858,23 +1858,22 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    */
   getSlotInPosition(x: number, y: number): IFoundSlot | null {
     // search for inputs
-    const link_pos = new Float32Array(2)
     const { inputs, outputs } = this
 
     if (inputs) {
       for (const [i, input] of inputs.entries()) {
-        this.getConnectionPos(true, i, link_pos)
-        if (isInRectangle(x, y, link_pos[0] - 10, link_pos[1] - 5, 20, 10)) {
-          return { input, slot: i, link_pos }
+        const pos = this.getInputPos(i)
+        if (isInRectangle(x, y, pos[0] - 10, pos[1] - 5, 20, 10)) {
+          return { input, slot: i, link_pos: pos }
         }
       }
     }
 
     if (outputs) {
       for (const [i, output] of outputs.entries()) {
-        this.getConnectionPos(false, i, link_pos)
-        if (isInRectangle(x, y, link_pos[0] - 10, link_pos[1] - 5, 20, 10)) {
-          return { output, slot: i, link_pos }
+        const pos = this.getOutputPos(i)
+        if (isInRectangle(x, y, pos[0] - 10, pos[1] - 5, 20, 10)) {
+          return { output, slot: i, link_pos: pos }
         }
       }
     }
@@ -3377,7 +3376,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   }): void {
     const { slotIndex } = options
     const isInput = isINodeInputSlot(slot)
-    const pos = this.getConnectionPos(isInput, slotIndex)
+    const pos = isInput ? this.getInputPos(slotIndex) : this.getOutputPos(slotIndex)
 
     slot._layoutElement = new LayoutElement({
       value: slot,
