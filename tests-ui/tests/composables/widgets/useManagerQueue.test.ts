@@ -237,7 +237,7 @@ describe('useManagerQueue', () => {
       expect(mockTask.onComplete).toHaveBeenCalled()
     })
 
-    it('should handle multiple multiple tasks enqueued at onc while server busy', async () => {
+    it('should handle multiple multiple tasks enqueued at once while server busy', async () => {
       const queue = useManagerQueue()
       const mockTask1 = createMockTask()
       const mockTask2 = createMockTask()
