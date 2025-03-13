@@ -60,16 +60,6 @@ declare module '@comfyorg/litegraph/dist/types/widgets' {
      * See extensions/core/dynamicPrompts.ts
      */
     dynamicPrompts?: boolean
-
-    /**
-     * Widget conversion fields
-     */
-    origType?: string
-    origComputeSize?: (width: number) => Size
-    origSerializeValue?: (
-      node: LGraphNode,
-      index: number
-    ) => Promise<unknown> | unknown
   }
 }
 
@@ -179,6 +169,11 @@ declare module '@comfyorg/litegraph' {
     pasteFile?(file: File): void
     /** Callback for pasting multiple files into the node */
     pasteFiles?(files: File[]): void
+    /**
+     * @deprecated widget to input conversion is no longer necessary, as we
+     * always show the input socket for widgets.
+     */
+    convertWidgetToInput?(widget: IWidget): boolean
   }
   /**
    * Only used by the Primitive node. Primitive node is using the widget property

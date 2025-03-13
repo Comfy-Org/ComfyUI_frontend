@@ -1480,14 +1480,14 @@ export class ComfyApp {
           const fromNode = app.graph.getNodeById(fromId)
           let toSlot = node.inputs?.findIndex((inp) => inp.name === input)
           if (toSlot == null || toSlot === -1) {
-            try {
-              // Target has no matching input, most likely a converted widget
-              const widget = node.widgets?.find((w) => w.name === input)
-              // @ts-expect-error
-              if (widget && node.convertWidgetToInput?.(widget)) {
-                toSlot = node.inputs?.length - 1
-              }
-            } catch (error) {}
+            // try {
+            //   // Target has no matching input, most likely a converted widget
+            //   const widget = node.widgets?.find((w) => w.name === input)
+            //   // @ts-expect-error
+            //   if (widget && node.convertWidgetToInput?.(widget)) {
+            //     toSlot = node.inputs?.length - 1
+            //   }
+            // } catch (error) {}
           }
           if (toSlot != null || toSlot !== -1) {
             fromNode.connect(fromSlot, node, toSlot)
@@ -1513,14 +1513,14 @@ export class ComfyApp {
           const fromNode = app.graph.getNodeById(fromId)
           let toSlot = node.inputs?.findIndex((inp) => inp.name === input)
           if (toSlot == null || toSlot === -1) {
-            try {
-              // Target has no matching input, most likely a converted widget
-              const widget = node.widgets?.find((w) => w.name === input)
-              // @ts-expect-error
-              if (widget && node.convertWidgetToInput?.(widget)) {
-                toSlot = node.inputs?.length - 1
-              }
-            } catch (error) {}
+            // try {
+            //   // Target has no matching input, most likely a converted widget
+            //   const widget = node.widgets?.find((w) => w.name === input)
+            //   // @ts-expect-error
+            //   if (widget && node.convertWidgetToInput?.(widget)) {
+            //     toSlot = node.inputs?.length - 1
+            //   }
+            // } catch (error) {}
           }
           if (toSlot != null || toSlot !== -1) {
             fromNode.connect(fromSlot, node, toSlot)
