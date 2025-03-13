@@ -3336,10 +3336,9 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     }
 
     if (output_slot) {
-      const x = this._collapsed_width
+      const x = this._collapsed_width ?? LiteGraph.NODE_COLLAPSED_WIDTH
       const y = LiteGraph.NODE_TITLE_HEIGHT * -0.5
       toClass(NodeOutputSlot, output_slot).drawCollapsed(ctx, {
-        // @ts-expect-error8 https://github.com/Comfy-Org/litegraph.js/issues/616
         pos: [x, y],
       })
     }
@@ -3383,15 +3382,17 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       this.layoutSlot(slot, {
         slotIndex: i,
       })
-      // @ts-expect-error https://github.com/Comfy-Org/litegraph.js/issues/616
-      slots.push(slot._layoutElement)
+      if (slot._layoutElement) {
+        slots.push(slot._layoutElement)
+      }
     }
     for (const [i, slot] of this.outputs.entries()) {
       this.layoutSlot(slot, {
         slotIndex: i,
       })
-      // @ts-expect-error https://github.com/Comfy-Org/litegraph.js/issues/616
-      slots.push(slot._layoutElement)
+      if (slot._layoutElement) {
+        slots.push(slot._layoutElement)
+      }
     }
 
     return slots.length ? createBounds(slots, /** padding= */ 0) : null
@@ -3433,8 +3434,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       ctx.globalAlpha = isValid ? editorAlpha : 0.4 * editorAlpha
 
       slotInstance.draw(ctx, {
-      // @ts-expect-error https://github.com/Comfy-Org/litegraph.js/issues/616
-        pos: layoutElement.center,
+        pos: layoutElement?.center ?? [0, 0],
         colorContext,
         labelColor,
         lowQuality,
@@ -3464,7 +3464,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     let fixedWidgetHeight = 0
     const growableWidgets: {
       minHeight: number
-      prefHeight: number
+      prefHeight?: number
       w: IBaseWidget
     }[] = []
 
@@ -3477,7 +3477,6 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
         const { minHeight, maxHeight } = w.computeLayoutSize(this)
         growableWidgets.push({
           minHeight,
-          // @ts-expect-error https://github.com/Comfy-Org/litegraph.js/issues/616
           prefHeight: maxHeight,
           w,
         })
@@ -3510,8 +3509,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     let y = widgetStartY
     for (const w of this.widgets) {
       w.y = y
-      // @ts-expect-error https://github.com/Comfy-Org/litegraph.js/issues/616
-      y += w.computedHeight
+      y += w.computedHeight ?? 0
     }
 
     if (!this.graph) throw new NullGraphError()
