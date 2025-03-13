@@ -18,7 +18,8 @@ enum ManagerWsQueueStatus {
 export const useManagerQueue = () => {
   const clientQueueItems = ref<QueuedTask<unknown>[]>([])
   const clientQueueLength = computed(() => clientQueueItems.value.length)
-  const nextOnCompleted = ref<(() => void) | undefined>()
+  const onCompletedQueue = ref<((() => void) | undefined)[]>([])
+  const onCompleteWaitingCount = ref(0)
 
   const serverQueueStatus = ref<ManagerWsQueueStatus>(ManagerWsQueueStatus.DONE)
   const isServerIdle = computed(
@@ -47,16 +48,16 @@ export const useManagerQueue = () => {
     if (!nextTask) return
 
     const { task, onComplete } = nextTask
+    if (onComplete) {
+      // Set the task's onComplete to be executed the next time the server is idle
+      onCompletedQueue.value.push(onComplete)
+      onCompleteWaitingCount.value++
+    }
 
-    task()
-      .then(() => {
-        // Set the task's onComplete to be executed the next time the server is idle
-        nextOnCompleted.value = onComplete
-      })
-      .catch((e) => {
-        const message = `Error enqueuing task for ComfyUI Manager: ${e}`
-        console.error(message)
-      })
+    task().catch((e) => {
+      const message = `Error enqueuing task for ComfyUI Manager: ${e}`
+      console.error(message)
+    })
   }
 
   const enqueueTask = <T>(task: QueuedTask<T>): void => {
@@ -64,8 +65,9 @@ export const useManagerQueue = () => {
   }
 
   const clearQueue = () => {
-    nextOnCompleted.value = undefined
     clientQueueItems.value = []
+    onCompletedQueue.value = []
+    onCompleteWaitingCount.value = 0
   }
 
   const cleanup = () => {
@@ -75,9 +77,15 @@ export const useManagerQueue = () => {
 
   whenever(nextTaskReady, startNextTask)
   whenever(isServerIdle, () => {
-    if (nextOnCompleted.value) {
-      nextOnCompleted.value()
-      nextOnCompleted.value = undefined
+    if (onCompletedQueue.value?.length) {
+      while (
+        onCompleteWaitingCount.value > 0 &&
+        onCompletedQueue.value.length > 0
+      ) {
+        const onComplete = onCompletedQueue.value.shift()
+        onComplete?.()
+        onCompleteWaitingCount.value--
+      }
     }
   })
 
