@@ -5,8 +5,9 @@
       <div class="mb-6">
         <MetadataRow
           v-if="isPackInstalled(nodePack.id)"
-          class="flex gap-2 w-full justify-center"
           :label="t('manager.filter.enabled')"
+          class="flex"
+          style="align-items: center"
         >
           <PackEnableToggle :node-pack="nodePack" />
         </MetadataRow>
