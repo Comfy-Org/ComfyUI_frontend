@@ -158,6 +158,7 @@
     "import": "가져오기",
     "insert": "삽입",
     "install": "설치",
+    "installing": "설치 중",
     "keybinding": "키 바인딩",
     "loadAllFolders": "모든 폴더 로드",
     "loadWorkflow": "워크플로 로드",
@@ -411,6 +412,10 @@
     "totalNodes": "총 노드",
     "tryAgainLater": "나중에 다시 시도해 주세요.",
     "tryDifferentSearch": "다른 검색어를 시도해 주세요.",
+    "uninstall": "제거",
+    "uninstallSelected": "선택 항목 제거",
+    "uninstalling": "제거 중",
+    "update": "업데이트",
     "version": "버전"
   },
   "menu": {

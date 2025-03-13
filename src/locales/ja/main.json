@@ -158,6 +158,7 @@
     "import": "インポート",
     "insert": "挿入",
     "install": "インストール",
+    "installing": "インストール中",
     "keybinding": "キーバインディング",
     "loadAllFolders": "すべてのフォルダーを読み込む",
     "loadWorkflow": "ワークフローを読み込む",
@@ -411,6 +412,10 @@
     "totalNodes": "合計ノード数",
     "tryAgainLater": "後ほど再試行してください。",
     "tryDifferentSearch": "別の検索クエリを試してみてください。",
+    "uninstall": "アンインストール",
+    "uninstallSelected": "選択したものをアンインストール",
+    "uninstalling": "アンインストール中",
+    "update": "更新",
     "version": "バージョン"
   },
   "menu": {

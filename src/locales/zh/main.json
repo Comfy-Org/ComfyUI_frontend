@@ -158,6 +158,7 @@
     "import": "导入",
     "insert": "插入",
     "install": "安装",
+    "installing": "正在安装",
     "keybinding": "按键绑定",
     "loadAllFolders": "加载所有文件夹",
     "loadWorkflow": "加载工作流",
@@ -411,6 +412,10 @@
     "totalNodes": "节点总数",
     "tryAgainLater": "请稍后再试。",
     "tryDifferentSearch": "请尝试不同的搜索查询。",
+    "uninstall": "卸载",
+    "uninstallSelected": "卸载所选",
+    "uninstalling": "正在卸载",
+    "update": "更新",
     "version": "版本"
   },
   "menu": {
