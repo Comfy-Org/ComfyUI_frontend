@@ -30,14 +30,15 @@ const { nodePacks, fullWidth = false } = defineProps<{
 const managerStore = useComfyManagerStore()
 
 const createPayload = (installItem: NodePack) => {
-  console.log('createPayload', installItem)
+  const versionToInstall =
+    installItem.latest_version?.version ?? SelectedVersion.NIGHTLY // Use nightly if unclaimed node
   return {
     id: installItem.id,
     repository: installItem.repository ?? '',
     channel: ManagerChannel.DEV,
     mode: ManagerDatabaseSource.REMOTE,
-    selected_version: SelectedVersion.LATEST,
-    version: SelectedVersion.LATEST
+    selected_version: versionToInstall,
+    version: versionToInstall
   }
 }
 

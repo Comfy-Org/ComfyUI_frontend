@@ -111,7 +111,6 @@ export const useNodeImage = (node: LGraphNode) => {
   const onLoaded = (elements: HTMLImageElement[]) => {
     node.imageIndex = null
     node.imgs = elements
-    console.log('onLoaded', node)
   }
 
   return useNodePreview(node, {
