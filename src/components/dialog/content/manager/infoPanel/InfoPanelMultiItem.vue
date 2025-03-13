@@ -10,7 +10,11 @@
           {{ $t('manager.packsSelected') }}
         </template>
         <template #install-button>
-          <PackInstallButton :full-width="true" :multi="true" />
+          <PackInstallButton
+            :full-width="true"
+            :multi="true"
+            :node-packs="nodePacks"
+          />
         </template>
       </PackCardHeader>
       <div class="mb-6">
@@ -30,8 +34,8 @@
 import { useAsyncState } from '@vueuse/core'
 import { computed } from 'vue'
 
-import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
 import PackStatusMessage from '@/components/dialog/content/manager/PackStatusMessage.vue'
+import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
 import MetadataRow from '@/components/dialog/content/manager/infoPanel/MetadataRow.vue'
 import PackCardHeader from '@/components/dialog/content/manager/packCard/PackCardHeader.vue'
 import PackIconStacked from '@/components/dialog/content/manager/packIcon/PackIconStacked.vue'

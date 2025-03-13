@@ -1,8 +1,7 @@
 <template>
   <div class="relative">
     <Button
-      v-if="displayVersion"
-      :label="displayVersion"
+      :label="installedVersion"
       severity="secondary"
       icon="pi pi-chevron-right"
       icon-pos="right"
@@ -22,44 +21,40 @@
       }"
     >
       <PackVersionSelectorPopover
-        :selected-version="selectedVersion"
+        :installed-version="installedVersion"
         :node-pack="nodePack"
-        @select="onSelect"
         @cancel="closeVersionSelector"
-        @apply="applyVersionSelection"
+        @submit="closeVersionSelector"
       />
     </Popover>
   </div>
 </template>
 
 <script setup lang="ts">
-import { whenever } from '@vueuse/core'
 import Button from 'primevue/button'
 import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
 
 import PackVersionSelectorPopover from '@/components/dialog/content/manager/PackVersionSelectorPopover.vue'
+import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { SelectedVersion } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
 
-const { nodePack, version = SelectedVersion.NIGHTLY } = defineProps<{
+const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']
-  version?: string
-}>()
-
-const emit = defineEmits<{
-  'update:version': [version: string]
 }>()
 
 const popoverRef = ref()
-const selectedVersion = ref<string>(version)
 
-const displayVersion = computed(() => {
-  if (selectedVersion.value === SelectedVersion.LATEST) {
-    // If there is no version, treat as unclaimed GitHub pack and use nightly
-    return nodePack?.latest_version?.version || SelectedVersion.NIGHTLY
-  }
-  return selectedVersion.value
+const managerStore = useComfyManagerStore()
+
+const installedVersion = computed(() => {
+  if (!nodePack.id) return SelectedVersion.NIGHTLY
+  return (
+    managerStore.installedPacks[nodePack.id]?.ver ??
+    nodePack.latest_version?.version ??
+    SelectedVersion.NIGHTLY
+  )
 })
 
 const toggleVersionSelector = (event: Event) => {
@@ -69,17 +64,4 @@ const toggleVersionSelector = (event: Event) => {
 const closeVersionSelector = () => {
   popoverRef.value.hide()
 }
-
-const onSelect = (newVersion: string) => {
-  selectedVersion.value = newVersion
-}
-
-const applyVersionSelection = (newVersion: string) => {
-  selectedVersion.value = newVersion
-  emit('update:version', newVersion)
-  // TODO: after manager store added, install the pack here
-  closeVersionSelector()
-}
-
-whenever(() => version, onSelect)
 </script>

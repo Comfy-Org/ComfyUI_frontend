@@ -11,50 +11,42 @@
 </template>
 
 <script setup lang="ts">
-import { onUnmounted } from 'vue'
-
 import PackActionButton from '@/components/dialog/content/manager/button/PackActionButton.vue'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import {
-  type InstallPackParams,
   ManagerChannel,
   ManagerDatabaseSource,
-  type PackWithSelectedVersion,
   SelectedVersion
 } from '@/types/comfyManagerTypes'
+import type { components } from '@/types/comfyRegistryTypes'
+
+type NodePack = components['schemas']['Node']
 
 const { nodePacks, fullWidth = false } = defineProps<{
-  nodePacks: PackWithSelectedVersion[]
+  nodePacks: NodePack[]
   fullWidth?: boolean
 }>()
 
 const managerStore = useComfyManagerStore()
 
-const createPayload = (installItem: PackWithSelectedVersion) => {
-  const selectedVersion =
-    installItem.selectedVersion ??
-    installItem.nodePack.latest_version?.version ??
-    SelectedVersion.LATEST // Fallback to GitHub install
-
+const createPayload = (installItem: NodePack) => {
+  console.log('createPayload', installItem)
   return {
-    id: installItem.nodePack.id,
-    repository: installItem.nodePack.repository ?? '',
+    id: installItem.id,
+    repository: installItem.repository ?? '',
     channel: ManagerChannel.DEV,
     mode: ManagerDatabaseSource.REMOTE,
-    selected_version: selectedVersion,
-    version: selectedVersion
+    selected_version: SelectedVersion.LATEST,
+    version: SelectedVersion.LATEST
   }
 }
 
-const installPack = (item: PackWithSelectedVersion) =>
+const installPack = (item: NodePack) =>
   managerStore.installPack.call(createPayload(item))
 
 const installItems = async () => {
   if (!nodePacks?.length) return
   await Promise.all(nodePacks.map(installPack))
-}
-
-onUnmounted(() => {
   managerStore.installPack.clear()
-})
+}
 </script>

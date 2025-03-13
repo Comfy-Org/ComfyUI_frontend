@@ -15,30 +15,26 @@
 <script setup lang="ts">
 import PackActionButton from '@/components/dialog/content/manager/button/PackActionButton.vue'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import type {
-  ManagerPackInfo,
-  PackWithSelectedVersion
-} from '@/types/comfyManagerTypes'
+import type { ManagerPackInfo } from '@/types/comfyManagerTypes'
+import type { components } from '@/types/comfyRegistryTypes'
+
+type NodePack = components['schemas']['Node']
 
 const { nodePacks, fullWidth = false } = defineProps<{
-  nodePacks: PackWithSelectedVersion[]
+  nodePacks: NodePack[]
   fullWidth?: boolean
 }>()
 
 const managerStore = useComfyManagerStore()
 
-const createPayload = (
-  uninstallItem: PackWithSelectedVersion
-): ManagerPackInfo => {
+const createPayload = (uninstallItem: NodePack): ManagerPackInfo => {
   return {
-    id: uninstallItem.nodePack.id,
-    version:
-      uninstallItem.selectedVersion ||
-      uninstallItem.nodePack.latest_version?.version
+    id: uninstallItem.id,
+    version: uninstallItem.latest_version?.version
   }
 }
 
-const uninstallPack = (item: PackWithSelectedVersion) =>
+const uninstallPack = (item: NodePack) =>
   managerStore.uninstallPack(createPayload(item))
 
 const uninstallItems = async () => {

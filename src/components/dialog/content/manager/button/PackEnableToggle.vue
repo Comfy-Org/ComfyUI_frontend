@@ -19,7 +19,11 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import { computed, ref } from 'vue'
 
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import { ManagerChannel, ManagerDatabaseSource, SelectedVersion } from '@/types/comfyManagerTypes'
+import {
+  InstallPackParams,
+  ManagerChannel,
+  SelectedVersion
+} from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
 
 const TOGGLE_DEBOUNCE_MS = 300
@@ -51,7 +55,7 @@ const onEnable = async () => {
       SelectedVersion.NIGHTLY,
     repository: nodePack.repository ?? '',
     channel: ManagerChannel.DEFAULT,
-    mode: ManagerDatabaseSource.REMOTE
+    mode: 'default' as InstallPackParams['mode']
   })
 }
 

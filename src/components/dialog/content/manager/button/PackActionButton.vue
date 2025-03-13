@@ -11,7 +11,7 @@
     @click="handleClick"
   >
     <span class="py-2.5 px-3">
-      <template v-if="isExecuted && !managerStore.allTasksDone">
+      <template v-if="isExecuted">
         {{ managerStore.statusMessage }}
       </template>
       <template v-else>
@@ -22,9 +22,7 @@
 </template>
 
 <script setup lang="ts">
-import { whenever } from '@vueuse/core'
 import Button from 'primevue/button'
-import { useToast } from 'primevue/usetoast'
 import { ref } from 'vue'
 
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
@@ -45,22 +43,10 @@ const emit = defineEmits<{
 }>()
 
 const managerStore = useComfyManagerStore()
-const toast = useToast()
 const isExecuted = ref(false)
-
-const onTasksDone = async (): Promise<void> => {
-  toast.add({
-    severity: 'success',
-    summary: 'Success',
-    detail: 'Action completed successfully'
-  })
-}
 
 const handleClick = (): void => {
   isExecuted.value = true
   emit('action')
-  // whenever(() => managerStore.allTasksDone, onTasksDone, {
-  //   flush: 'post'
-  // })
 }
 </script>

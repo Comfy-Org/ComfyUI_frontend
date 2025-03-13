@@ -1,10 +1,7 @@
 <template>
   <div class="flex flex-col h-full z-40 hidden-scrollbar w-80">
     <div class="p-6 flex-1 overflow-hidden text-sm">
-      <PackCardHeader
-        :node-pack="nodePack"
-        :install-button-full-width="false"
-      />
+      <PackCardHeader :node-pack="nodePack" />
       <div class="mb-6">
         <MetadataRow
           v-for="item in infoItems"
@@ -21,11 +18,7 @@
           />
         </MetadataRow>
         <MetadataRow :label="t('manager.version')">
-          <PackVersionBadge
-            :node-pack="nodePack"
-            :version="selectedVersion"
-            @update:version="updateSelectedVersion"
-          />
+          <PackVersionBadge :node-pack="nodePack" />
         </MetadataRow>
       </div>
       <div class="mb-6 overflow-hidden">
@@ -36,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PackStatusMessage from '@/components/dialog/content/manager/PackStatusMessage.vue'
@@ -44,7 +37,6 @@ import PackVersionBadge from '@/components/dialog/content/manager/PackVersionBad
 import InfoTabs from '@/components/dialog/content/manager/infoPanel/InfoTabs.vue'
 import MetadataRow from '@/components/dialog/content/manager/infoPanel/MetadataRow.vue'
 import PackCardHeader from '@/components/dialog/content/manager/packCard/PackCardHeader.vue'
-import { SelectedVersion } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
 import { formatNumber } from '@/utils/formatUtil'
 
@@ -59,18 +51,6 @@ const { nodePack } = defineProps<{
 }>()
 
 const { t, d } = useI18n()
-
-const packCardHeaderRef = ref(null)
-
-const selectedVersion = ref<string>(
-  nodePack.latest_version?.version || SelectedVersion.NIGHTLY
-)
-const updateSelectedVersion = (version: string) => {
-  selectedVersion.value = version
-  if (packCardHeaderRef.value) {
-    packCardHeaderRef.value.updateVersion?.(version)
-  }
-}
 
 const infoItems = computed<InfoItem[]>(() => [
   {

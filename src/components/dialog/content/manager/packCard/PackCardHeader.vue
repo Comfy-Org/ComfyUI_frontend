@@ -7,29 +7,21 @@
       class="text-2xl font-bold text-center mt-4 mb-2"
       style="word-break: break-all"
     >
-      <slot name="title">{{ nodePack?.name }}</slot>
+      <slot name="title">
+        {{ nodePack?.name }}
+      </slot>
     </h2>
     <div class="mt-2 mb-4 w-full max-w-xs flex justify-center">
       <slot name="install-button">
         <PackUninstallButton
           v-if="isPackInstalled"
-          :node-packs="[
-            {
-              nodePack: nodePack,
-              selectedVersion
-            }
-          ]"
+          :node-packs="[nodePack]"
           :full-width="installButtonFullWidth"
         />
 
         <PackInstallButton
           v-else
-          :node-packs="[
-            {
-              nodePack: nodePack,
-              selectedVersion
-            }
-          ]"
+          :node-packs="[nodePack]"
           :full-width="installButtonFullWidth"
         />
       </slot>
@@ -44,38 +36,23 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
 import PackUninstallButton from '@/components/dialog/content/manager/button/PackUninstallButton.vue'
 import PackIcon from '@/components/dialog/content/manager/packIcon/PackIcon.vue'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import { SelectedVersion } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
 
-const {
-  nodePack,
-  installButtonFullWidth = false,
-  version = SelectedVersion.NIGHTLY
-} = defineProps<{
+const { nodePack, installButtonFullWidth = false } = defineProps<{
   nodePack?: components['schemas']['Node']
   installButtonFullWidth?: boolean
-  version?: string
 }>()
 
 const managerStore = useComfyManagerStore()
-const selectedVersion = ref<string>(
-  version || nodePack?.latest_version?.version || SelectedVersion.NIGHTLY
-)
 
 const isPackInstalled = computed(() =>
   nodePack ? managerStore.isPackInstalled(nodePack.id) : false
 )
-
-defineExpose({
-  updateVersion: (newVersion: string) => {
-    selectedVersion.value = newVersion
-  }
-})
 </script>
