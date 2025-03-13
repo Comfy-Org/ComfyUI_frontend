@@ -1472,13 +1472,13 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     const links = linkArray.map(x => x.serialize())
 
     if (reroutes.length) {
-      extra.reroutes = reroutes
-
       // Link parent IDs cannot go in 0.4 schema arrays
       extra.linkExtensions = linkArray
         .filter(x => x.parentId !== undefined)
         .map(x => ({ id: x.id, parentId: x.parentId }))
     }
+
+    extra.reroutes = reroutes.length ? reroutes : undefined
     return {
       last_node_id: state.lastNodeId,
       last_link_id: state.lastLinkId,
