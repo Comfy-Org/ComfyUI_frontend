@@ -4,7 +4,7 @@
       <span v-if="nodePack.publisher?.name">
         {{ nodePack.publisher.name }}
       </span>
-      <PackVersionBadge v-if="isPackInstalled" :node-pack="nodePack" />
+      <PackVersionBadge v-if="isInstalled" :node-pack="nodePack" />
       <span v-else-if="nodePack.latest_version">
         {{ nodePack.latest_version.version }}
       </span>
@@ -34,9 +34,6 @@ const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']
 }>()
 
-const managerStore = useComfyManagerStore()
-
-const isPackInstalled = computed(() =>
-  managerStore.isPackInstalled(nodePack?.id)
-)
+const { isPackInstalled } = useComfyManagerStore()
+const isInstalled = computed(() => isPackInstalled(nodePack?.id))
 </script>
