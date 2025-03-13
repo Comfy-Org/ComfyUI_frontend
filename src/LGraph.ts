@@ -144,23 +144,6 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     return this.#reroutes
   }
 
-  public set reroutes(value: Map<RerouteId, Reroute>) {
-    if (!value) throw new TypeError("Attempted to set LGraph.reroutes to a falsy value.")
-
-    const reroutes = this.#reroutes
-    if (value.size === 0) {
-      reroutes.clear()
-      return
-    }
-
-    for (const rerouteId of reroutes.keys()) {
-      if (!value.has(rerouteId)) reroutes.delete(rerouteId)
-    }
-    for (const [id, reroute] of value) {
-      reroutes.set(id, reroute)
-    }
-  }
-
   /** @deprecated See {@link state}.{@link LGraphState.lastNodeId lastNodeId} */
   get last_node_id() {
     return this.state.lastNodeId
