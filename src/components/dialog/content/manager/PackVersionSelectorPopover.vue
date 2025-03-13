@@ -58,8 +58,7 @@
 </template>
 
 <script setup lang="ts">
-import { whenever } from '@vueuse/core'
-import { useAsyncState } from '@vueuse/core'
+import { useAsyncState, whenever } from '@vueuse/core'
 import Button from 'primevue/button'
 import Listbox from 'primevue/listbox'
 import ProgressSpinner from 'primevue/progressspinner'
@@ -71,8 +70,8 @@ import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import {
-  InstallPackParams,
   ManagerChannel,
+  ManagerDatabaseSource,
   SelectedVersion
 } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
@@ -81,29 +80,27 @@ const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']
 }>()
 
-const selectedVersion = ref<string>(SelectedVersion.NIGHTLY)
-
-onMounted(() => {
-  selectedVersion.value =
-    nodePack.latest_version?.version ?? SelectedVersion.NIGHTLY
-})
-
 const emit = defineEmits<{
   cancel: []
   submit: []
 }>()
 
 const { t } = useI18n()
-
 const registryService = useComfyRegistryService()
 const managerStore = useComfyManagerStore()
+
+const isQueueing = ref(false)
+
+const selectedVersion = ref<string>(SelectedVersion.NIGHTLY)
+onMounted(() => {
+  selectedVersion.value =
+    nodePack.latest_version?.version ?? SelectedVersion.NIGHTLY
+})
 
 const fetchVersions = async () => {
   if (!nodePack?.id) return []
   return (await registryService.getPackVersions(nodePack.id)) || []
 }
-
-const isQueueing = ref(false)
 
 const {
   isLoading: isLoadingVersions,
@@ -111,17 +108,24 @@ const {
   execute: startFetchVersions
 } = useAsyncState(fetchVersions, [])
 
-const specialOptions = computed(() => [
-  // TODO: check if nightly is even possible for this pack
-  {
-    value: SelectedVersion.NIGHTLY,
-    label: t('manager.nightlyVersion')
-  },
-  {
-    value: SelectedVersion.LATEST,
-    label: t('manager.latestVersion')
+const specialOptions = computed(() => {
+  const options = [
+    {
+      value: SelectedVersion.LATEST,
+      label: t('manager.latestVersion')
+    }
+  ]
+
+  // Only include nightly option if there is a repo
+  if (nodePack.repository?.length) {
+    options.push({
+      value: SelectedVersion.NIGHTLY,
+      label: t('manager.nightlyVersion')
+    })
   }
-])
+
+  return options
+})
 
 const versionOptions = computed(() =>
   versions.value.map((version) => ({
@@ -141,38 +145,22 @@ whenever(
   { deep: true }
 )
 
-const isInstalled = computed(() => managerStore.isPackInstalled(nodePack.id))
-const handleInstall = async () => {
+const handleSubmit = async () => {
+  isQueueing.value = true
   await managerStore.installPack.call({
     id: nodePack.id,
     repository: nodePack.repository ?? '',
     channel: ManagerChannel.DEFAULT,
+    mode: ManagerDatabaseSource.CACHE,
     version: selectedVersion.value,
-    mode: 'default' as InstallPackParams['mode'],
     selected_version: selectedVersion.value
+    // skip_post_install: true
   })
-}
-
-const handleChangeVersion = async () => {
-  await managerStore.updatePack.call({
-    id: nodePack.id,
-    version: selectedVersion.value || SelectedVersion.LATEST
-  })
-}
-
-const handleSubmit = async () => {
-  isQueueing.value = true
-  if (isInstalled.value) {
-    await handleInstall()
-  } else {
-    await handleChangeVersion()
-  }
   isQueueing.value = false
   emit('submit')
 }
 
 onUnmounted(() => {
-  managerStore.updatePack.clear()
-  managerStore.installPack.clear()
+  managerStore.installPack.clear() // Clear request cache
 })
 </script>
