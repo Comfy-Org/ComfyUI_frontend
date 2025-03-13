@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col h-full">
     <div class="p-6 flex-1 overflow-auto">
-      <PackCardHeader>
+      <InfoPanelHeader :node-packs="nodePacks">
         <template #thumbnail>
           <PackIconStacked :node-packs="nodePacks" />
         </template>
@@ -16,7 +16,7 @@
             :node-packs="nodePacks"
           />
         </template>
-      </PackCardHeader>
+      </InfoPanelHeader>
       <div class="mb-6">
         <MetadataRow :label="$t('g.status')">
           <PackStatusMessage status-type="NodeVersionStatusActive" />
@@ -36,8 +36,8 @@ import { computed } from 'vue'
 
 import PackStatusMessage from '@/components/dialog/content/manager/PackStatusMessage.vue'
 import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
+import InfoPanelHeader from '@/components/dialog/content/manager/infoPanel/InfoPanelHeader.vue'
 import MetadataRow from '@/components/dialog/content/manager/infoPanel/MetadataRow.vue'
-import PackCardHeader from '@/components/dialog/content/manager/packCard/PackCardHeader.vue'
 import PackIconStacked from '@/components/dialog/content/manager/packIcon/PackIconStacked.vue'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import { components } from '@/types/comfyRegistryTypes'
@@ -63,6 +63,7 @@ const { state: allNodeDefs } = useAsyncState(
     immediate: true
   }
 )
+
 const totalNodesCount = computed(() =>
   allNodeDefs.value.reduce(
     (total, nodeDefs) => total + (nodeDefs?.length || 0),

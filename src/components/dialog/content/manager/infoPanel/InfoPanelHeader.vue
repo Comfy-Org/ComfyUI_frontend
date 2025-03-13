@@ -1,29 +1,25 @@
 <template>
-  <div v-if="nodePack" class="flex flex-col items-center mb-6">
+  <div v-if="nodePacks?.length" class="flex flex-col items-center mb-6">
     <slot name="thumbnail">
-      <PackIcon :node-pack="nodePack" width="24" height="24" />
+      <PackIcon :node-pack="nodePacks[0]" width="24" height="24" />
     </slot>
     <h2
       class="text-2xl font-bold text-center mt-4 mb-2"
       style="word-break: break-all"
     >
       <slot name="title">
-        {{ nodePack?.name }}
+        {{ nodePacks.length }}
+        {{ $t('manager.packsSelected') }}
       </slot>
     </h2>
     <div class="mt-2 mb-4 w-full max-w-xs flex justify-center">
       <slot name="install-button">
         <PackUninstallButton
-          v-if="isPackInstalled"
-          :node-packs="[nodePack]"
-          :full-width="installButtonFullWidth"
+          v-if="isAllInstalled"
+          v-bind="$attrs"
+          :node-packs="nodePacks"
         />
-
-        <PackInstallButton
-          v-else
-          :node-packs="[nodePack]"
-          :full-width="installButtonFullWidth"
-        />
+        <PackInstallButton v-else v-bind="$attrs" :node-packs="nodePacks" />
       </slot>
     </div>
   </div>
@@ -45,14 +41,13 @@ import PackIcon from '@/components/dialog/content/manager/packIcon/PackIcon.vue'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { components } from '@/types/comfyRegistryTypes'
 
-const { nodePack, installButtonFullWidth = false } = defineProps<{
-  nodePack?: components['schemas']['Node']
-  installButtonFullWidth?: boolean
+const { nodePacks } = defineProps<{
+  nodePacks: components['schemas']['Node'][]
 }>()
 
 const managerStore = useComfyManagerStore()
 
-const isPackInstalled = computed(() =>
-  nodePack ? managerStore.isPackInstalled(nodePack.id) : false
+const isAllInstalled = computed(() =>
+  nodePacks.every((nodePack) => managerStore.isPackInstalled(nodePack.id))
 )
 </script>
