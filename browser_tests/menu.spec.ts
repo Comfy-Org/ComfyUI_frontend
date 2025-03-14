@@ -7,25 +7,6 @@ test.describe('Menu', () => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
   })
 
-  // Skip reason: Flaky.
-  test.skip('Toggle theme', async ({ comfyPage }) => {
-    test.setTimeout(30000)
-
-    expect(await comfyPage.menu.getThemeId()).toBe('dark')
-
-    await comfyPage.menu.toggleTheme()
-
-    expect(await comfyPage.menu.getThemeId()).toBe('light')
-
-    // Theme id should persist after reload.
-    await comfyPage.setup()
-    expect(await comfyPage.menu.getThemeId()).toBe('light')
-
-    await comfyPage.menu.toggleTheme()
-
-    expect(await comfyPage.menu.getThemeId()).toBe('dark')
-  })
-
   test('Can register sidebar tab', async ({ comfyPage }) => {
     const initialChildrenCount = await comfyPage.menu.sideToolbar.evaluate(
       (el) => el.children.length
