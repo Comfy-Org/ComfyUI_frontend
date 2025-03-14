@@ -8,15 +8,22 @@
   >
     <ColorPickerButton v-show="nodeSelected || groupSelected" />
     <Button
-      v-show="nodeSelected"
+      v-show="nodeSelected || groupSelected"
       severity="secondary"
       text
       @click="
-        () => commandStore.execute('Comfy.Canvas.ToggleSelectedNodes.Bypass')
+        () =>
+          nodeSelected
+            ? commandStore.execute('Comfy.Canvas.ToggleSelectedNodes.Bypass')
+            : commandStore.execute(
+                'Comfy.Canvas.ToggleSelectedNodes.BypassGroup'
+              )
       "
       data-testid="bypass-button"
       v-tooltip.top="{
-        value: t('commands.Comfy_Canvas_ToggleSelectedNodes_Bypass.label'),
+        value: nodeSelected
+          ? t('commands.Comfy_Canvas_ToggleSelectedNodes_Bypass.label')
+          : t('commands.Comfy_Canvas_ToggleSelectedNodes_BypassGroup.label'),
         showDelay: 1000
       }"
     >

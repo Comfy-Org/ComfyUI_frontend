@@ -55,6 +55,32 @@ export function useCoreCommands(): ComfyCommand[] {
     })
   }
 
+  const getNodesInSelectedGroups = (): LGraphNode[] => {
+    const selectedGroups = Array.from(app.canvas.selectedItems).filter(
+      (item) => item instanceof LGraphGroup
+    ) as LGraphGroup[]
+    const nodes: LGraphNode[] = []
+    for (const group of selectedGroups) {
+      group.recomputeInsideNodes()
+      for (const node of group.nodes) {
+        if (!nodes.includes(node)) {
+          nodes.push(node)
+        }
+      }
+    }
+    return nodes
+  }
+
+  const toggleSelectedGroupsMode = (mode: LGraphEventMode) => {
+    getNodesInSelectedGroups().forEach((node) => {
+      if (node.mode === mode) {
+        node.mode = LGraphEventMode.ALWAYS
+      } else {
+        node.mode = mode
+      }
+    })
+  }
+
   return [
     {
       id: 'Comfy.NewBlankWorkflow',
@@ -376,6 +402,16 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.3.11',
       function: () => {
         toggleSelectedNodesMode(LGraphEventMode.BYPASS)
+        app.canvas.setDirty(true, true)
+      }
+    },
+    {
+      id: 'Comfy.Canvas.ToggleSelectedNodes.BypassGroup',
+      icon: 'pi pi-shield',
+      label: 'Bypass Group Nodes',
+      versionAdded: '1.13.5',
+      function: () => {
+        toggleSelectedGroupsMode(LGraphEventMode.BYPASS)
         app.canvas.setDirty(true, true)
       }
     },

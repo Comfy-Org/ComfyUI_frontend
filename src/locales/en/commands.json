@@ -56,6 +56,9 @@
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "Bypass/Unbypass Selected Nodes"
   },
+  "Comfy_Canvas_ToggleSelectedNodes_BypassGroup": {
+    "label": "Bypass Group Nodes"
+  },
   "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
     "label": "Collapse/Expand Selected Nodes"
   },
