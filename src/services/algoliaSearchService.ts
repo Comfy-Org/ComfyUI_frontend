@@ -1,3 +1,4 @@
+import { Hit } from 'algoliasearch'
 import { liteClient as algoliasearch } from 'algoliasearch/dist/lite/builds/browser'
 
 import { components } from '@/types/comfyRegistryTypes'
@@ -68,36 +69,6 @@ const RETRIEVE_ATTRIBUTES: SearchAttribute[] = [
 export const useAlgoliaSearchService = () => {
   const searchClient = algoliasearch(__ALGOLIA_APP_ID__, __ALGOLIA_API_KEY__)
 
-  const searchPacks = async (
-    query: string,
-    {
-      pageSize,
-      pageNumber,
-      restrictSearchableAttributes
-    }: {
-      pageSize: number
-      pageNumber: number
-      restrictSearchableAttributes: string[]
-    }
-  ) => {
-    const { results } = await searchClient.search<AlgoliaNodePack>([
-      {
-        indexName: 'nodes_index',
-        params: {
-          query,
-          hitsPerPage: pageSize,
-          page: pageNumber,
-          length: pageSize,
-          attributesToRetrieve: RETRIEVE_ATTRIBUTES,
-          restrictSearchableAttributes
-        }
-      }
-    ])
-
-    // @ts-expect-error module needs
-    return results[0].hits
-  }
-
   const toRegistryLatestVersion = (
     algoliaNode: AlgoliaNodePack
   ): RegistryNodePack['latest_version'] => {
@@ -119,6 +90,9 @@ export const useAlgoliaSearchService = () => {
     }
   }
 
+  /**
+   * Convert from node pack in Algolia format to Comfy Registry format
+   */
   function toRegistryPack(algoliaNode: AlgoliaNodePack): RegistryNodePack {
     return {
       id: algoliaNode.id ?? algoliaNode.objectID,
@@ -131,6 +105,39 @@ export const useAlgoliaSearchService = () => {
       latest_version: toRegistryLatestVersion(algoliaNode),
       publisher: toRegistryPublisher(algoliaNode)
     }
+  }
+
+  /**
+   * Search for node packs in Algolia
+   */
+  const searchPacks = async (
+    query: string,
+    {
+      pageSize,
+      pageNumber,
+      restrictSearchableAttributes
+    }: {
+      pageSize: number
+      pageNumber: number
+      restrictSearchableAttributes: string[]
+    }
+  ): Promise<Hit<AlgoliaNodePack>[]> => {
+    const { results } = await searchClient.search<AlgoliaNodePack>([
+      {
+        indexName: 'nodes_index',
+        params: {
+          query,
+          hitsPerPage: pageSize,
+          page: pageNumber,
+          length: pageSize,
+          attributesToRetrieve: RETRIEVE_ATTRIBUTES,
+          restrictSearchableAttributes
+        }
+      }
+    ])
+
+    // Narrow from `SearchResponse<T> | SearchForFacetValuesResponse` to `SearchResponse<T>`
+    return 'hits' in results[0] ? results[0].hits : []
   }
 
   return {
