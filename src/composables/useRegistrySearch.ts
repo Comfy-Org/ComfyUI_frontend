@@ -58,7 +58,6 @@ export function useRegistrySearch() {
   onUnmounted(() => {
     debouncedSearch.cancel() // Cancel debounced searches
     registryStore.cancelRequests() // Cancel in-flight requests
-    registryStore.clearCache() // Clear cached responses
   })
 
   return {
