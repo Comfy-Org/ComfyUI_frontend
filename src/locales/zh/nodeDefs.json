@@ -1472,6 +1472,43 @@
       }
     }
   },
+  "HunyuanImageToVideo": {
+    "display_name": "Hunyuan图像到视频",
+    "inputs": {
+      "batch_size": {
+        "name": "批量大小"
+      },
+      "guidance_type": {
+        "name": "指导类型"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "长度"
+      },
+      "positive": {
+        "name": "正向"
+      },
+      "start_image": {
+        "name": "起始图像"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向"
+      },
+      "1": {
+        "name": "潜在空间"
+      }
+    }
+  },
   "HyperTile": {
     "display_name": "超分块HyperTile",
     "inputs": {
@@ -1981,6 +2018,45 @@
       }
     }
   },
+  "LTXVAddGuide": {
+    "display_name": "LTXV添加指导",
+    "inputs": {
+      "frame_idx": {
+        "name": "帧索引",
+        "tooltip": "开始调节的帧索引。对于单帧图像或1-8帧的视频，任何帧索引值都可以接受。对于9+帧的视频，帧索引必须能被8整除，否则它将被向下取整到最接近的8的倍数。负值从视频的末尾开始计算。"
+      },
+      "image": {
+        "name": "图像",
+        "tooltip": "用于调节潜在视频的图像或视频。必须是8*n + 1帧。如果视频不是8*n + 1帧，它将被裁剪到最接近的8*n + 1帧。"
+      },
+      "latent": {
+        "name": "潜在空间"
+      },
+      "negative": {
+        "name": "负向"
+      },
+      "positive": {
+        "name": "正向"
+      },
+      "strength": {
+        "name": "强度"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向"
+      },
+      "1": {
+        "name": "负向"
+      },
+      "2": {
+        "name": "潜在空间"
+      }
+    }
+  },
   "LTXVConditioning": {
     "display_name": "LTXV条件",
     "inputs": {
@@ -2003,6 +2079,31 @@
       }
     }
   },
+  "LTXVCropGuides": {
+    "display_name": "LTXV裁剪指导",
+    "inputs": {
+      "latent": {
+        "name": "潜在空间"
+      },
+      "negative": {
+        "name": "负向"
+      },
+      "positive": {
+        "name": "正向"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向"
+      },
+      "1": {
+        "name": "负向"
+      },
+      "2": {
+        "name": "潜在空间"
+      }
+    }
+  },
   "LTXVImgToVideo": {
     "display_name": "LTXV图像到视频",
     "inputs": {
@@ -2014,10 +2115,6 @@
       },
       "image": {
         "name": "图像"
-      },
-      "image_noise_scale": {
-        "name": "图像噪波比例",
-        "tooltip": "在条件图像Latent图像上应用的噪波量。"
       },
       "length": {
         "name": "长度"
@@ -2044,6 +2141,23 @@
       },
       "2": {
         "name": "Latent"
+      }
+    }
+  },
+  "LTXVPreprocess": {
+    "display_name": "LTXV预处理",
+    "inputs": {
+      "image": {
+        "name": "图像"
+      },
+      "img_compression": {
+        "name": "图像压缩",
+        "tooltip": "应用于图像的压缩量。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "输出图像"
       }
     }
   },
@@ -2363,14 +2477,8 @@
       "image": {
         "name": "图像"
       },
-      "material": {
-        "name": "材质"
-      },
       "model_file": {
         "name": "模型文件"
-      },
-      "up_direction": {
-        "name": "上方向"
       },
       "upload 3d model": {
       },
@@ -2401,14 +2509,8 @@
       "image": {
         "name": "图像"
       },
-      "material": {
-        "name": "材质"
-      },
       "model_file": {
         "name": "模型文件"
-      },
-      "up_direction": {
-        "name": "上方向"
       },
       "upload 3d model": {
       },
@@ -2433,9 +2535,6 @@
     "inputs": {
       "audio": {
         "name": "音频"
-      },
-      "audioUI": {
-        "name": "音频界面"
       },
       "upload": {
         "name": "选择文件上传"
@@ -4494,14 +4593,8 @@
       "image": {
         "name": "图像"
       },
-      "material": {
-        "name": "材质"
-      },
       "model_file": {
         "name": "模型文件"
-      },
-      "up_direction": {
-        "name": "上方向"
       }
     }
   },
@@ -4511,14 +4604,8 @@
       "image": {
         "name": "图像"
       },
-      "material": {
-        "name": "材质"
-      },
       "model_file": {
         "name": "模型文件"
-      },
-      "up_direction": {
-        "name": "上方向"
       }
     }
   },
@@ -4527,9 +4614,6 @@
     "inputs": {
       "audio": {
         "name": "音频"
-      },
-      "audioUI": {
-        "name": "音频界面"
       }
     }
   },
@@ -5010,9 +5094,6 @@
       "audio": {
         "name": "音频"
       },
-      "audioUI": {
-        "name": "音频UI"
-      },
       "filename_prefix": {
         "name": "文件名前缀"
       }
@@ -5446,6 +5527,24 @@
     "inputs": {
       "style_model_name": {
         "name": "风格模型名称"
+      }
+    }
+  },
+  "TextEncodeHunyuanVideo_ImageToVideo": {
+    "display_name": "文本编码Hunyuan视频_图像到视频",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "clip_vision_output": {
+        "name": "clip视觉输出"
+      },
+      "image_interleave": {
+        "name": "图像交错",
+        "tooltip": "图像与文本提示的影响程度。数字越高，文本提示的影响越大。"
+      },
+      "prompt": {
+        "name": "提示"
       }
     }
   },

@@ -1472,6 +1472,43 @@
       }
     }
   },
+  "HunyuanImageToVideo": {
+    "display_name": "HunyuanImageToVideo",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "guidance_type": {
+        "name": "guidance_type"
+      },
+      "start_image": {
+        "name": "start_image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive"
+      },
+      "1": {
+        "name": "latent"
+      }
+    }
+  },
   "HypernetworkLoader": {
     "display_name": "HypernetworkLoader",
     "inputs": {
@@ -2276,12 +2313,6 @@
       "height": {
         "name": "height"
       },
-      "material": {
-        "name": "material"
-      },
-      "up_direction": {
-        "name": "up_direction"
-      },
       "clear": {},
       "upload 3d model": {}
     },
@@ -2312,12 +2343,6 @@
       "height": {
         "name": "height"
       },
-      "material": {
-        "name": "material"
-      },
-      "up_direction": {
-        "name": "up_direction"
-      },
       "clear": {},
       "upload 3d model": {}
     },
@@ -2338,9 +2363,6 @@
     "inputs": {
       "audio": {
         "name": "audio"
-      },
-      "audioUI": {
-        "name": "audioUI"
       },
       "upload": {
         "name": "choose file to upload"
@@ -2472,6 +2494,45 @@
       }
     }
   },
+  "LTXVAddGuide": {
+    "display_name": "LTXVAddGuide",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "latent": {
+        "name": "latent"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Image or video to condition the latent video on. Must be 8*n + 1 frames.If the video is not 8*n + 1 frames, it will be cropped to the nearest 8*n + 1 frames."
+      },
+      "frame_idx": {
+        "name": "frame_idx",
+        "tooltip": "Frame index to start the conditioning at. For single-frame images or videos with 1-8 frames, any frame_idx value is acceptable. For videos with 9+ frames, frame_idx must be divisible by 8, otherwise it will be rounded down to the nearest multiple of 8. Negative values are counted from the end of the video."
+      },
+      "strength": {
+        "name": "strength"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive"
+      },
+      "1": {
+        "name": "negative"
+      },
+      "2": {
+        "name": "latent"
+      }
+    }
+  },
   "LTXVConditioning": {
     "display_name": "LTXVConditioning",
     "inputs": {
@@ -2491,6 +2552,31 @@
       },
       "1": {
         "name": "negative"
+      }
+    }
+  },
+  "LTXVCropGuides": {
+    "display_name": "LTXVCropGuides",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "latent": {
+        "name": "latent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive"
+      },
+      "1": {
+        "name": "negative"
+      },
+      "2": {
+        "name": "latent"
       }
     }
   },
@@ -2520,10 +2606,6 @@
       },
       "batch_size": {
         "name": "batch_size"
-      },
-      "image_noise_scale": {
-        "name": "image_noise_scale",
-        "tooltip": "Amount of noise to apply on conditioning image latent."
       }
     },
     "outputs": {
@@ -2535,6 +2617,23 @@
       },
       "2": {
         "name": "latent"
+      }
+    }
+  },
+  "LTXVPreprocess": {
+    "display_name": "LTXVPreprocess",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "img_compression": {
+        "name": "img_compression",
+        "tooltip": "Amount of compression to apply on image."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "output_image"
       }
     }
   },
@@ -4489,12 +4588,6 @@
       "model_file": {
         "name": "model_file"
       },
-      "material": {
-        "name": "material"
-      },
-      "up_direction": {
-        "name": "up_direction"
-      },
       "image": {
         "name": "image"
       }
@@ -4506,12 +4599,6 @@
       "model_file": {
         "name": "model_file"
       },
-      "material": {
-        "name": "material"
-      },
-      "up_direction": {
-        "name": "up_direction"
-      },
       "image": {
         "name": "image"
       }
@@ -4522,9 +4609,6 @@
     "inputs": {
       "audio": {
         "name": "audio"
-      },
-      "audioUI": {
-        "name": "audioUI"
       }
     }
   },
@@ -4882,9 +4966,6 @@
       },
       "filename_prefix": {
         "name": "filename_prefix"
-      },
-      "audioUI": {
-        "name": "audioUI"
       }
     }
   },
@@ -5441,6 +5522,24 @@
       },
       "2": {
         "name": "latent"
+      }
+    }
+  },
+  "TextEncodeHunyuanVideo_ImageToVideo": {
+    "display_name": "TextEncodeHunyuanVideo_ImageToVideo",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "image_interleave": {
+        "name": "image_interleave",
+        "tooltip": "How much the image influences things vs the text prompt. Higher number means more influence from the text prompt."
       }
     }
   },

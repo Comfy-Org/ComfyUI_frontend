@@ -1472,6 +1472,43 @@
       }
     }
   },
+  "HunyuanImageToVideo": {
+    "display_name": "HunyuanImageToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기"
+      },
+      "guidance_type": {
+        "name": "지침 유형"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "length": {
+        "name": "길이"
+      },
+      "positive": {
+        "name": "긍정적"
+      },
+      "start_image": {
+        "name": "시작 이미지"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정적"
+      },
+      "1": {
+        "name": "잠재"
+      }
+    }
+  },
   "HyperTile": {
     "display_name": "하이퍼 타일",
     "inputs": {
@@ -1981,6 +2018,45 @@
       }
     }
   },
+  "LTXVAddGuide": {
+    "display_name": "LTXVAddGuide",
+    "inputs": {
+      "frame_idx": {
+        "name": "프레임 인덱스",
+        "tooltip": "조건을 시작할 프레임 인덱스. 단일 프레임 이미지 또는 1-8 프레임의 비디오의 경우 어떤 프레임 인덱스 값도 허용됩니다. 9+ 프레임의 비디오의 경우, 프레임 인덱스는 8로 나누어 떨어져야 하며, 그렇지 않으면 가장 가까운 8의 배수로 내림됩니다. 음수 값은 비디오의 끝에서부터 계산됩니다."
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "잠재 비디오에 조건을 부여하는 이미지 또는 비디오. 8*n + 1 프레임이어야 합니다. 비디오가 8*n + 1 프레임이 아닌 경우 가장 가까운 8*n + 1 프레임으로 자릅니다."
+      },
+      "latent": {
+        "name": "잠재"
+      },
+      "negative": {
+        "name": "부정적"
+      },
+      "positive": {
+        "name": "긍정적"
+      },
+      "strength": {
+        "name": "강도"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정적"
+      },
+      "1": {
+        "name": "부정적"
+      },
+      "2": {
+        "name": "잠재"
+      }
+    }
+  },
   "LTXVConditioning": {
     "display_name": "LTXV 조건 설정",
     "inputs": {
@@ -2003,6 +2079,31 @@
       }
     }
   },
+  "LTXVCropGuides": {
+    "display_name": "LTXVCropGuides",
+    "inputs": {
+      "latent": {
+        "name": "잠재"
+      },
+      "negative": {
+        "name": "부정적"
+      },
+      "positive": {
+        "name": "긍정적"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정적"
+      },
+      "1": {
+        "name": "부정적"
+      },
+      "2": {
+        "name": "잠재"
+      }
+    }
+  },
   "LTXVImgToVideo": {
     "display_name": "이미지를 비디오로 (LTXV)",
     "inputs": {
@@ -2014,10 +2115,6 @@
       },
       "image": {
         "name": "이미지"
-      },
-      "image_noise_scale": {
-        "name": "이미지 노이즈 규모",
-        "tooltip": "조건 이미지 잠재 비디오에 적용할 노이즈의 양입니다."
       },
       "length": {
         "name": "길이"
@@ -2044,6 +2141,23 @@
       },
       "2": {
         "name": "잠재 데이터"
+      }
+    }
+  },
+  "LTXVPreprocess": {
+    "display_name": "LTXVPreprocess",
+    "inputs": {
+      "image": {
+        "name": "이미지"
+      },
+      "img_compression": {
+        "name": "이미지 압축",
+        "tooltip": "이미지에 적용할 압축의 양."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "출력 이미지"
       }
     }
   },
@@ -2363,14 +2477,8 @@
       "image": {
         "name": "이미지"
       },
-      "material": {
-        "name": "재질"
-      },
       "model_file": {
         "name": "모델 파일"
-      },
-      "up_direction": {
-        "name": "위 방향"
       },
       "upload 3d model": {
       },
@@ -2401,14 +2509,8 @@
       "image": {
         "name": "이미지"
       },
-      "material": {
-        "name": "재질"
-      },
       "model_file": {
         "name": "모델 파일"
-      },
-      "up_direction": {
-        "name": "위 방향"
       },
       "upload 3d model": {
       },
@@ -2433,9 +2535,6 @@
     "inputs": {
       "audio": {
         "name": "오디오"
-      },
-      "audioUI": {
-        "name": "오디오UI"
       },
       "upload": {
         "name": "업로드할 파일 선택"
@@ -4494,14 +4593,8 @@
       "image": {
         "name": "이미지"
       },
-      "material": {
-        "name": "재질"
-      },
       "model_file": {
         "name": "모델 파일"
-      },
-      "up_direction": {
-        "name": "위 방향"
       }
     }
   },
@@ -4511,14 +4604,8 @@
       "image": {
         "name": "이미지"
       },
-      "material": {
-        "name": "재질"
-      },
       "model_file": {
         "name": "모델 파일"
-      },
-      "up_direction": {
-        "name": "위 방향"
       }
     }
   },
@@ -4527,9 +4614,6 @@
     "inputs": {
       "audio": {
         "name": "오디오"
-      },
-      "audioUI": {
-        "name": "오디오UI"
       }
     }
   },
@@ -5010,9 +5094,6 @@
       "audio": {
         "name": "오디오"
       },
-      "audioUI": {
-        "name": "오디오UI"
-      },
       "filename_prefix": {
         "name": "파일명 접두사"
       }
@@ -5446,6 +5527,24 @@
     "inputs": {
       "style_model_name": {
         "name": "스타일 모델 이름"
+      }
+    }
+  },
+  "TextEncodeHunyuanVideo_ImageToVideo": {
+    "display_name": "TextEncodeHunyuanVideo_ImageToVideo",
+    "inputs": {
+      "clip": {
+        "name": "클립"
+      },
+      "clip_vision_output": {
+        "name": "클립 비전 출력"
+      },
+      "image_interleave": {
+        "name": "이미지 인터리브",
+        "tooltip": "이미지가 텍스트 프롬프트와 비교하여 얼마나 영향을 미치는지. 높은 숫자는 텍스트 프롬프트로부터 더 많은 영향을 받음을 의미합니다."
+      },
+      "prompt": {
+        "name": "프롬프트"
       }
     }
   },

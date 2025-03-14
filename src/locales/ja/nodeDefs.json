@@ -1472,6 +1472,43 @@
       }
     }
   },
+  "HunyuanImageToVideo": {
+    "display_name": "HunyuanImageToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "guidance_type": {
+        "name": "ガイダンスタイプ"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "length": {
+        "name": "長さ"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      },
+      "start_image": {
+        "name": "開始画像"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ"
+      },
+      "1": {
+        "name": "潜在"
+      }
+    }
+  },
   "HyperTile": {
     "display_name": "ハイパータイル",
     "inputs": {
@@ -1981,6 +2018,45 @@
       }
     }
   },
+  "LTXVAddGuide": {
+    "display_name": "LTXVAddGuide",
+    "inputs": {
+      "frame_idx": {
+        "name": "フレームインデックス",
+        "tooltip": "条件付けを開始するフレームインデックス。単一フレームの画像や1-8フレームのビデオの場合、任意のframe_idx値が許容されます。9フレーム以上のビデオの場合、frame_idxは8で割り切れる数でなければならず、そうでない場合は最も近い8の倍数に切り捨てられます。負の値はビデオの終わりから数えます。"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "潜在ビデオの条件付けに使用する画像またはビデオ。フレーム数は8*n + 1でなければなりません。ビデオが8*n + 1フレームでない場合、最も近い8*n + 1フレームに切り取られます。"
+      },
+      "latent": {
+        "name": "潜在"
+      },
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      },
+      "strength": {
+        "name": "強度"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ"
+      },
+      "1": {
+        "name": "ネガティブ"
+      },
+      "2": {
+        "name": "潜在"
+      }
+    }
+  },
   "LTXVConditioning": {
     "display_name": "LTXV条件付け",
     "inputs": {
@@ -2003,6 +2079,31 @@
       }
     }
   },
+  "LTXVCropGuides": {
+    "display_name": "LTXVCropGuides",
+    "inputs": {
+      "latent": {
+        "name": "潜在"
+      },
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ"
+      },
+      "1": {
+        "name": "ネガティブ"
+      },
+      "2": {
+        "name": "潜在"
+      }
+    }
+  },
   "LTXVImgToVideo": {
     "display_name": "LTXV画像からビデオへ",
     "inputs": {
@@ -2014,10 +2115,6 @@
       },
       "image": {
         "name": "画像"
-      },
-      "image_noise_scale": {
-        "name": "画像ノイズスケール",
-        "tooltip": "条件付け画像の潜在に適用するノイズの量。"
       },
       "length": {
         "name": "長さ"
@@ -2044,6 +2141,23 @@
       },
       "2": {
         "name": "潜在"
+      }
+    }
+  },
+  "LTXVPreprocess": {
+    "display_name": "LTXVPreprocess",
+    "inputs": {
+      "image": {
+        "name": "画像"
+      },
+      "img_compression": {
+        "name": "画像圧縮",
+        "tooltip": "画像に適用する圧縮の量。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "出力画像"
       }
     }
   },
@@ -2363,14 +2477,8 @@
       "image": {
         "name": "画像"
       },
-      "material": {
-        "name": "素材"
-      },
       "model_file": {
         "name": "モデルファイル"
-      },
-      "up_direction": {
-        "name": "上方向"
       },
       "upload 3d model": {
       },
@@ -2401,14 +2509,8 @@
       "image": {
         "name": "画像"
       },
-      "material": {
-        "name": "素材"
-      },
       "model_file": {
         "name": "モデルファイル"
-      },
-      "up_direction": {
-        "name": "上方向"
       },
       "upload 3d model": {
       },
@@ -2433,9 +2535,6 @@
     "inputs": {
       "audio": {
         "name": "オーディオ"
-      },
-      "audioUI": {
-        "name": "audioUI"
       },
       "upload": {
         "name": "アップロードするファイルを選択"
@@ -4494,14 +4593,8 @@
       "image": {
         "name": "画像"
       },
-      "material": {
-        "name": "マテリアル"
-      },
       "model_file": {
         "name": "モデルファイル"
-      },
-      "up_direction": {
-        "name": "上方向"
       }
     }
   },
@@ -4511,14 +4604,8 @@
       "image": {
         "name": "画像"
       },
-      "material": {
-        "name": "素材"
-      },
       "model_file": {
         "name": "モデルファイル"
-      },
-      "up_direction": {
-        "name": "上方向"
       }
     }
   },
@@ -4527,9 +4614,6 @@
     "inputs": {
       "audio": {
         "name": "オーディオ"
-      },
-      "audioUI": {
-        "name": "オーディオUI"
       }
     }
   },
@@ -5010,9 +5094,6 @@
       "audio": {
         "name": "オーディオ"
       },
-      "audioUI": {
-        "name": "audioUI"
-      },
       "filename_prefix": {
         "name": "ファイル名_プレフィックス"
       }
@@ -5446,6 +5527,24 @@
     "inputs": {
       "style_model_name": {
         "name": "スタイルモデル名"
+      }
+    }
+  },
+  "TextEncodeHunyuanVideo_ImageToVideo": {
+    "display_name": "TextEncodeHunyuanVideo_ImageToVideo",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "image_interleave": {
+        "name": "画像インターリーブ",
+        "tooltip": "画像がテキストプロンプトと比べてどれだけ影響を与えるか。数値が大きいほどテキストプロンプトからの影響が大きくなります。"
+      },
+      "prompt": {
+        "name": "プロンプト"
       }
     }
   },
