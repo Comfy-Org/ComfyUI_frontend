@@ -5322,9 +5322,15 @@ export class LGraphCanvas implements ConnectionColorContext {
         break
 
       case "Add Reroute": {
-        this.adjustMouseEvent(e)
-        graph.createReroute([e.canvasX, e.canvasY], segment)
-        this.setDirty(false, true)
+        try {
+          this.emitBeforeChange()
+          this.adjustMouseEvent(e)
+          graph.createReroute(segment._pos, segment)
+          this.setDirty(false, true)
+        } catch (error) {
+          console.error(error)
+          this.emitAfterChange()
+        }
         break
       }
 
