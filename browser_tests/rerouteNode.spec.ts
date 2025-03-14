@@ -36,3 +36,10 @@ test.describe('Reroute Node', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('reroute_inserted.png')
   })
 })
+
+test.describe('LiteGraph Native Reroute Node', () => {
+  test('loads from workflow', async ({ comfyPage }) => {
+    await comfyPage.loadWorkflow('reroute/native_reroute')
+    await expect(comfyPage.canvas).toHaveScreenshot('native_reroute.png')
+  })
+})
