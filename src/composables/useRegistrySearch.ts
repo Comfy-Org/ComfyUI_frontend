@@ -9,7 +9,7 @@ import {
 } from '@/services/algoliaSearchService'
 import { PackField } from '@/types/comfyManagerTypes'
 
-const SEARCH_DEBOUNCE_TIME = 1
+const SEARCH_DEBOUNCE_TIME = 16
 const DEFAULT_PAGE_SIZE = 64
 
 /**
