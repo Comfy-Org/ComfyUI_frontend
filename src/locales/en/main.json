@@ -260,6 +260,8 @@
     "pathExists": "Directory already exists - please ensure you have backed up all data",
     "cannotWrite": "Unable to write to the selected path",
     "insufficientFreeSpace": "Insufficient space - minimum free space",
+    "isOneDrive": "Installing in OneDrive can cause issues. Highly recommend installing in a non-OneDrive location.",
+    "isNonDefaultDrive": "Highly recommend installing in the system's default drive. Models and other files can be placed on other drives.",
     "parentMissing": "Path does not exist - create the containing directory first",
     "unhandledError": "Unknown error",
     "installLocationDescription": "Select the directory for ComfyUI's user data. A python environment will be installed to the selected location. Please make sure the selected disk has enough space (~15GB) left.",

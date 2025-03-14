@@ -111,6 +111,11 @@ const validatePath = async (path: string) => {
         errors.push(`${t('install.insufficientFreeSpace')}: ${requiredGB} GB`)
       }
       if (validation.parentMissing) errors.push(t('install.parentMissing'))
+      // @ts-expect-error types will be added.
+      if (validation.isOneDrive) errors.push(t('install.isOneDrive'))
+      // @ts-expect-error types will be added.
+      if (validation.isNonDefaultDrive)
+        errors.push(t('install.isNonDefaultDrive'))
       if (validation.error)
         errors.push(`${t('install.unhandledError')}: ${validation.error}`)
       pathError.value = errors.join('\n')
