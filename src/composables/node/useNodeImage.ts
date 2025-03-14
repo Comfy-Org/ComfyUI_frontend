@@ -136,7 +136,7 @@ export const useNodeVideo = (node: LGraphNode) => {
 
     // Set min. height s.t. video spans node's x-axis while maintaining aspect ratio
     minWidth = node.size?.[0] || DEFAULT_VIDEO_SIZE
-    minHeight = Math.max(minWidth / intrinsicAspectRatio, DEFAULT_VIDEO_SIZE)
+    minHeight = Math.max(minWidth / intrinsicAspectRatio, 64)
   }
 
   const loadElement = (url: string): Promise<HTMLVideoElement | null> =>
