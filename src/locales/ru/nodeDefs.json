@@ -1472,6 +1472,43 @@
       }
     }
   },
+  "HunyuanImageToVideo": {
+    "display_name": "HunyuanImageToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "размер пакета"
+      },
+      "guidance_type": {
+        "name": "тип руководства"
+      },
+      "height": {
+        "name": "высота"
+      },
+      "length": {
+        "name": "длина"
+      },
+      "positive": {
+        "name": "положительный"
+      },
+      "start_image": {
+        "name": "начальное изображение"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "положительный"
+      },
+      "1": {
+        "name": "скрытое пространство"
+      }
+    }
+  },
   "HyperTile": {
     "display_name": "Гиперплитка",
     "inputs": {
@@ -1981,6 +2018,45 @@
       }
     }
   },
+  "LTXVAddGuide": {
+    "display_name": "LTXVAddGuide",
+    "inputs": {
+      "frame_idx": {
+        "name": "индекс кадра",
+        "tooltip": "Индекс кадра для начала условия. Для однокадровых изображений или видео с 1-8 кадрами любое значение frame_idx приемлемо. Для видео с 9+ кадрами, frame_idx должен быть кратен 8, в противном случае он будет округлен вниз до ближайшего кратного 8. Отрицательные значения считаются с конца видео."
+      },
+      "image": {
+        "name": "изображение",
+        "tooltip": "Изображение или видео для условия скрытого видео. Должно быть 8*n + 1 кадров. Если видео не 8*n + 1 кадров, оно будет обрезано до ближайших 8*n + 1 кадров."
+      },
+      "latent": {
+        "name": "скрытое пространство"
+      },
+      "negative": {
+        "name": "отрицательный"
+      },
+      "positive": {
+        "name": "положительный"
+      },
+      "strength": {
+        "name": "сила"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "положительный"
+      },
+      "1": {
+        "name": "отрицательный"
+      },
+      "2": {
+        "name": "скрытое пространство"
+      }
+    }
+  },
   "LTXVConditioning": {
     "display_name": "Кондиционирование LTXV",
     "inputs": {
@@ -2003,6 +2079,31 @@
       }
     }
   },
+  "LTXVCropGuides": {
+    "display_name": "LTXVCropGuides",
+    "inputs": {
+      "latent": {
+        "name": "скрытое пространство"
+      },
+      "negative": {
+        "name": "отрицательный"
+      },
+      "positive": {
+        "name": "положительный"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "положительный"
+      },
+      "1": {
+        "name": "отрицательный"
+      },
+      "2": {
+        "name": "скрытое пространство"
+      }
+    }
+  },
   "LTXVImgToVideo": {
     "display_name": "LTXVImgToVideo",
     "inputs": {
@@ -2014,10 +2115,6 @@
       },
       "image": {
         "name": "изображение"
-      },
-      "image_noise_scale": {
-        "name": "масштаб_шума_изображения",
-        "tooltip": "Количество шума, применяемого к латентному изображению."
       },
       "length": {
         "name": "длина"
@@ -2044,6 +2141,23 @@
       },
       "2": {
         "name": "латентный"
+      }
+    }
+  },
+  "LTXVPreprocess": {
+    "display_name": "LTXVPreprocess",
+    "inputs": {
+      "image": {
+        "name": "изображение"
+      },
+      "img_compression": {
+        "name": "сжатие изображения",
+        "tooltip": "Степень сжатия, применяемая к изображению."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "выходное изображение"
       }
     }
   },
@@ -2363,14 +2477,8 @@
       "image": {
         "name": "изображение"
       },
-      "material": {
-        "name": "материал"
-      },
       "model_file": {
         "name": "файл_модели"
-      },
-      "up_direction": {
-        "name": "направление_вверх"
       },
       "upload 3d model": {
       },
@@ -2401,14 +2509,8 @@
       "image": {
         "name": "изображение"
       },
-      "material": {
-        "name": "материал"
-      },
       "model_file": {
         "name": "файл_модели"
-      },
-      "up_direction": {
-        "name": "направление_вверх"
       },
       "upload 3d model": {
       },
@@ -2433,9 +2535,6 @@
     "inputs": {
       "audio": {
         "name": "аудио"
-      },
-      "audioUI": {
-        "name": "audioUI"
       },
       "upload": {
         "name": "выберите файл для загрузки"
@@ -4494,14 +4593,8 @@
       "image": {
         "name": "изображение"
       },
-      "material": {
-        "name": "материал"
-      },
       "model_file": {
         "name": "файл_модели"
-      },
-      "up_direction": {
-        "name": "направление_вверх"
       }
     }
   },
@@ -4511,14 +4604,8 @@
       "image": {
         "name": "изображение"
       },
-      "material": {
-        "name": "материал"
-      },
       "model_file": {
         "name": "файл_модели"
-      },
-      "up_direction": {
-        "name": "направление_вверх"
       }
     }
   },
@@ -4527,9 +4614,6 @@
     "inputs": {
       "audio": {
         "name": "аудио"
-      },
-      "audioUI": {
-        "name": "audioUI"
       }
     }
   },
@@ -5010,9 +5094,6 @@
       "audio": {
         "name": "аудио"
       },
-      "audioUI": {
-        "name": "audioUI"
-      },
       "filename_prefix": {
         "name": "префикс_названия_файла"
       }
@@ -5446,6 +5527,24 @@
     "inputs": {
       "style_model_name": {
         "name": "название_модели_стиля"
+      }
+    }
+  },
+  "TextEncodeHunyuanVideo_ImageToVideo": {
+    "display_name": "TextEncodeHunyuanVideo_ImageToVideo",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "clip_vision_output": {
+        "name": "выход clip_vision"
+      },
+      "image_interleave": {
+        "name": "перемежение изображения",
+        "tooltip": "Насколько сильно изображение влияет на текстовую подсказку. Чем выше число, тем больше влияние от текстовой подсказки."
+      },
+      "prompt": {
+        "name": "подсказка"
       }
     }
   },

@@ -1472,6 +1472,43 @@
       }
     }
   },
+  "HunyuanImageToVideo": {
+    "display_name": "HunyuanImageToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "taille_du_lot"
+      },
+      "guidance_type": {
+        "name": "type_de_guidage"
+      },
+      "height": {
+        "name": "hauteur"
+      },
+      "length": {
+        "name": "longueur"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "start_image": {
+        "name": "image_de_départ"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive"
+      },
+      "1": {
+        "name": "latent"
+      }
+    }
+  },
   "HyperTile": {
     "display_name": "HyperTile",
     "inputs": {
@@ -1981,6 +2018,45 @@
       }
     }
   },
+  "LTXVAddGuide": {
+    "display_name": "LTXVAddGuide",
+    "inputs": {
+      "frame_idx": {
+        "name": "indice_de_l'image",
+        "tooltip": "Indice de l'image pour commencer le conditionnement. Pour les images uniques ou les vidéos de 1 à 8 images, toute valeur d'indice de l'image est acceptable. Pour les vidéos de 9 images ou plus, l'indice de l'image doit être divisible par 8, sinon il sera arrondi à la baisse au multiple de 8 le plus proche. Les valeurs négatives sont comptées à partir de la fin de la vidéo."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Image ou vidéo pour conditionner la vidéo latente. Doit être 8*n + 1 images. Si la vidéo n'est pas 8*n + 1 images, elle sera coupée au plus proche 8*n + 1 images."
+      },
+      "latent": {
+        "name": "latent"
+      },
+      "negative": {
+        "name": "négatif"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "force"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive"
+      },
+      "1": {
+        "name": "négatif"
+      },
+      "2": {
+        "name": "latent"
+      }
+    }
+  },
   "LTXVConditioning": {
     "display_name": "LTXVConditioning",
     "inputs": {
@@ -2003,6 +2079,31 @@
       }
     }
   },
+  "LTXVCropGuides": {
+    "display_name": "LTXVCropGuides",
+    "inputs": {
+      "latent": {
+        "name": "latent"
+      },
+      "negative": {
+        "name": "négatif"
+      },
+      "positive": {
+        "name": "positive"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive"
+      },
+      "1": {
+        "name": "négatif"
+      },
+      "2": {
+        "name": "latent"
+      }
+    }
+  },
   "LTXVImgToVideo": {
     "display_name": "LTXVImgToVideo",
     "inputs": {
@@ -2014,10 +2115,6 @@
       },
       "image": {
         "name": "image"
-      },
-      "image_noise_scale": {
-        "name": "image_noise_scale",
-        "tooltip": "Quantité de bruit à appliquer sur le latent de l'image de conditionnement."
       },
       "length": {
         "name": "length"
@@ -2044,6 +2141,23 @@
       },
       "2": {
         "name": "latent"
+      }
+    }
+  },
+  "LTXVPreprocess": {
+    "display_name": "LTXVPreprocess",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "img_compression": {
+        "name": "compression_d'image",
+        "tooltip": "Quantité de compression à appliquer sur l'image."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image_de_sortie"
       }
     }
   },
@@ -2363,14 +2477,8 @@
       "image": {
         "name": "image"
       },
-      "material": {
-        "name": "matériel"
-      },
       "model_file": {
         "name": "fichier_modèle"
-      },
-      "up_direction": {
-        "name": "direction_haut"
       },
       "upload 3d model": {
       },
@@ -2401,14 +2509,8 @@
       "image": {
         "name": "image"
       },
-      "material": {
-        "name": "matériel"
-      },
       "model_file": {
         "name": "fichier_modèle"
-      },
-      "up_direction": {
-        "name": "direction_haut"
       },
       "upload 3d model": {
       },
@@ -2433,9 +2535,6 @@
     "inputs": {
       "audio": {
         "name": "audio"
-      },
-      "audioUI": {
-        "name": "audioUI"
       },
       "upload": {
         "name": "choisissez le fichier à télécharger"
@@ -4494,14 +4593,8 @@
       "image": {
         "name": "image"
       },
-      "material": {
-        "name": "matériel"
-      },
       "model_file": {
         "name": "fichier_modèle"
-      },
-      "up_direction": {
-        "name": "direction_haut"
       }
     }
   },
@@ -4511,14 +4604,8 @@
       "image": {
         "name": "image"
       },
-      "material": {
-        "name": "matériel"
-      },
       "model_file": {
         "name": "fichier_modèle"
-      },
-      "up_direction": {
-        "name": "direction_haut"
       }
     }
   },
@@ -4527,9 +4614,6 @@
     "inputs": {
       "audio": {
         "name": "audio"
-      },
-      "audioUI": {
-        "name": "audioUI"
       }
     }
   },
@@ -5010,9 +5094,6 @@
       "audio": {
         "name": "audio"
       },
-      "audioUI": {
-        "name": "audioUI"
-      },
       "filename_prefix": {
         "name": "préfixe_du_nom_de_fichier"
       }
@@ -5446,6 +5527,24 @@
     "inputs": {
       "style_model_name": {
         "name": "nom_du_modèle_de_style"
+      }
+    }
+  },
+  "TextEncodeHunyuanVideo_ImageToVideo": {
+    "display_name": "TextEncodeHunyuanVideo_ImageToVideo",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "clip_vision_output": {
+        "name": "sortie_vision_clip"
+      },
+      "image_interleave": {
+        "name": "entrelacement_image",
+        "tooltip": "À quel point l'image influence les choses par rapport à l'invite de texte. Un nombre plus élevé signifie plus d'influence de l'invite de texte."
+      },
+      "prompt": {
+        "name": "invite"
       }
     }
   },
