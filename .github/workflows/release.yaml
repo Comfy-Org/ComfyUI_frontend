@@ -27,6 +27,8 @@ jobs:
       - name: Build project
         env:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          ALGOLIA_APP_ID: ${{ secrets.ALGOLIA_APP_ID }}
+          ALGOLIA_API_KEY: ${{ secrets.ALGOLIA_API_KEY }}
         run: |
           npm ci
           npm run fetch-templates

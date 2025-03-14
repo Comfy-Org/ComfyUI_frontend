@@ -182,7 +182,9 @@ export default defineConfig({
     __SENTRY_ENABLED__: JSON.stringify(
       !(process.env.NODE_ENV === 'development' || !process.env.SENTRY_DSN)
     ),
-    __SENTRY_DSN__: JSON.stringify(process.env.SENTRY_DSN || '')
+    __SENTRY_DSN__: JSON.stringify(process.env.SENTRY_DSN || ''),
+    __ALGOLIA_APP_ID__: JSON.stringify(process.env.VITE_ALGOLIA_APP_ID || ''),
+    __ALGOLIA_API_KEY__: JSON.stringify(process.env.VITE_ALGOLIA_API_KEY || '')
   },
 
   resolve: {

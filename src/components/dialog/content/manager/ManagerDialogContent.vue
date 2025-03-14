@@ -30,9 +30,8 @@
           <RegistrySearchBar
             v-if="!hideSearchBar"
             v-model:searchQuery="searchQuery"
+            v-model:searchMode="searchMode"
             :searchResults="searchResults"
-            @update:sortBy="handleSortChange"
-            @update:filterBy="handleFilterChange"
           />
           <div class="flex-1 overflow-auto">
             <div
@@ -42,14 +41,14 @@
               <ProgressSpinner />
             </div>
             <NoResultsPlaceholder
-              v-else-if="error || searchResults.length === 0"
+              v-else-if="searchResults.length === 0"
               :title="
-                error
+                comfyManagerStore.error
                   ? $t('manager.errorConnecting')
                   : $t('manager.noResultsFound')
               "
               :message="
-                error
+                comfyManagerStore.error
                   ? $t('manager.tryAgainLater')
                   : $t('manager.tryDifferentSearch')
               "
@@ -121,7 +120,7 @@ import { useResponsiveCollapse } from '@/composables/element/useResponsiveCollap
 import { useInstalledPacks } from '@/composables/useInstalledPacks'
 import { useRegistrySearch } from '@/composables/useRegistrySearch'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import type { PackField, TabItem } from '@/types/comfyManagerTypes'
+import type { TabItem } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
 
 const DEFAULT_CARD_SIZE = 512
@@ -142,9 +141,9 @@ const tabs = ref<TabItem[]>([
 ])
 const selectedTab = ref<TabItem>(tabs.value[0])
 
-const { searchQuery, pageNumber, sortField, isLoading, error, searchResults } =
+const { searchQuery, pageNumber, isLoading, searchResults, searchMode } =
   useRegistrySearch()
-pageNumber.value = 1
+pageNumber.value = 0
 
 const isInitialLoad = computed(
   () => searchResults.value.length === 0 && searchQuery.value === ''
@@ -216,12 +215,4 @@ const handleGridContainerClick = (event: MouseEvent) => {
 
 const showInfoPanel = computed(() => selectedNodePacks.value.length > 0)
 const hasMultipleSelections = computed(() => selectedNodePacks.value.length > 1)
-
-const currentFilterBy = ref('all')
-const handleSortChange = (sortBy: PackField) => {
-  sortField.value = sortBy
-}
-const handleFilterChange = (filterBy: PackField) => {
-  currentFilterBy.value = filterBy
-}
 </script>

@@ -4,8 +4,7 @@
       <IconField class="w-5/12">
         <InputIcon class="pi pi-search" />
         <InputText
-          :model-value="searchQuery"
-          @update:model-value="$emit('update:searchQuery', $event)"
+          v-model="searchQuery"
           :placeholder="$t('manager.searchPlaceholder')"
           class="w-full rounded-2xl"
           autofocus
@@ -15,21 +14,19 @@
     <div class="flex mt-3 text-sm">
       <div class="flex gap-6 ml-1">
         <SearchFilterDropdown
-          v-model="currentFilter"
+          v-model:modelValue="searchMode"
           :options="filterOptions"
           :label="$t('g.filter')"
-          @update:model-value="handleFilterChange"
         />
         <SearchFilterDropdown
-          v-model="currentSort"
+          v-model:modelValue="sortField"
           :options="sortOptions"
           :label="$t('g.sort')"
-          @update:model-value="handleSortChange"
         />
       </div>
       <div class="flex items-center gap-4 ml-6">
         <small v-if="hasResults" class="text-color-secondary">
-          {{ $t('g.resultsCount', { count: searchResults.length }) }}
+          {{ $t('g.resultsCount', { count: searchResults?.length || 0 }) }}
         </small>
       </div>
     </div>
@@ -40,34 +37,25 @@
 import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
 import InputText from 'primevue/inputtext'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SearchFilterDropdown from '@/components/dialog/content/manager/registrySearchBar/SearchFilterDropdown.vue'
 import type { PackField, SearchOption } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
 
-const DEFAULT_SORT: PackField = 'downloads'
-const DEFAULT_FILTER = 'nodePack'
-
 const props = defineProps<{
-  searchQuery: string
   searchResults?: components['schemas']['Node'][]
 }>()
 
+const searchQuery = defineModel<string>('searchQuery')
+const searchMode = defineModel<string>('searchMode', { default: 'packs' })
+const sortField = defineModel<PackField>('sortField', { default: 'downloads' })
+
 const { t } = useI18n()
 
-const currentSort = ref<PackField>(DEFAULT_SORT)
-const currentFilter = ref<string>(DEFAULT_FILTER)
-
-const emit = defineEmits<{
-  'update:searchQuery': [value: string]
-  'update:sortBy': [value: PackField]
-  'update:filterBy': [value: string]
-}>()
-
 const hasResults = computed(
-  () => props.searchQuery.trim() && props.searchResults?.length
+  () => searchQuery.value?.trim() && props.searchResults?.length
 )
 
 const sortOptions: SearchOption<PackField>[] = [
@@ -77,16 +65,7 @@ const sortOptions: SearchOption<PackField>[] = [
   { id: 'category', label: t('g.category') }
 ]
 const filterOptions: SearchOption<string>[] = [
-  { id: 'nodePack', label: t('manager.filter.nodePack') },
-  { id: 'node', label: t('g.nodes') }
+  { id: 'packs', label: t('manager.filter.nodePack') },
+  { id: 'nodes', label: t('g.nodes') }
 ]
-
-const handleSortChange = () => {
-  // TODO: emit to Algolia service
-  emit('update:sortBy', currentSort.value)
-}
-const handleFilterChange = () => {
-  // TODO: emit to Algolia service
-  emit('update:filterBy', currentFilter.value)
-}
 </script>
