@@ -1,5 +1,9 @@
-import { Hit } from 'algoliasearch'
+import type {
+  BaseSearchParamsWithoutQuery,
+  Hit
+} from 'algoliasearch/dist/lite/browser'
 import { liteClient as algoliasearch } from 'algoliasearch/dist/lite/builds/browser'
+import { omit } from 'lodash'
 
 import { components } from '@/types/comfyRegistryTypes'
 
@@ -48,7 +52,7 @@ export interface AlgoliaNodePack {
   >
 }
 
-type SearchAttribute = keyof AlgoliaNodePack
+export type SearchAttribute = keyof AlgoliaNodePack
 
 const RETRIEVE_ATTRIBUTES: SearchAttribute[] = [
   'comfy_nodes',
@@ -65,6 +69,12 @@ const RETRIEVE_ATTRIBUTES: SearchAttribute[] = [
   'comfy_node_extract_status',
   'id'
 ]
+
+type SearchNodePacksParams = BaseSearchParamsWithoutQuery & {
+  pageSize: number
+  pageNumber: number
+  restrictSearchableAttributes: SearchAttribute[]
+}
 
 export const useAlgoliaSearchService = () => {
   const searchClient = algoliasearch(__ALGOLIA_APP_ID__, __ALGOLIA_API_KEY__)
@@ -112,32 +122,28 @@ export const useAlgoliaSearchService = () => {
    */
   const searchPacks = async (
     query: string,
-    {
-      pageSize,
-      pageNumber,
-      restrictSearchableAttributes
-    }: {
-      pageSize: number
-      pageNumber: number
-      restrictSearchableAttributes: string[]
-    }
+    params: SearchNodePacksParams
   ): Promise<Hit<AlgoliaNodePack>[]> => {
-    const { results } = await searchClient.search<AlgoliaNodePack>([
-      {
-        indexName: 'nodes_index',
-        params: {
+    const { pageSize, pageNumber } = params
+    const rest = omit(params, ['pageSize', 'pageNumber'])
+
+    const { results } = await searchClient.search<AlgoliaNodePack>({
+      requests: [
+        {
           query,
-          hitsPerPage: pageSize,
-          page: pageNumber,
-          length: pageSize,
+          indexName: 'nodes_index',
           attributesToRetrieve: RETRIEVE_ATTRIBUTES,
-          restrictSearchableAttributes
+          ...rest,
+          hitsPerPage: pageSize,
+          length: pageSize,
+          page: pageNumber
         }
-      }
-    ])
+      ],
+      strategy: 'none'
+    })
 
     // Narrow from `SearchResponse<T> | SearchForFacetValuesResponse` to `SearchResponse<T>`
-    return 'hits' in results[0] ? results[0].hits : []
+    return 'hits' in results[0] ? results[0].hits : [] // Only querying a single index for now
   }
 
   return {

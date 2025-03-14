@@ -4,11 +4,12 @@ import { computed, ref, watch } from 'vue'
 
 import {
   AlgoliaNodePack,
+  SearchAttribute,
   useAlgoliaSearchService
 } from '@/services/algoliaSearchService'
 import { PackField } from '@/types/comfyManagerTypes'
 
-const SEARCH_DEBOUNCE_TIME = 256
+const SEARCH_DEBOUNCE_TIME = 1
 const DEFAULT_PAGE_SIZE = 64
 
 /**
@@ -23,7 +24,7 @@ export function useRegistrySearch() {
   const searchQuery = ref('')
   const results = ref<AlgoliaNodePack[]>([])
 
-  const searchAttributes = computed(() =>
+  const searchAttributes = computed<SearchAttribute[]>(() =>
     searchMode.value === 'nodes' ? ['comfy_nodes'] : ['name', 'description']
   )
 
