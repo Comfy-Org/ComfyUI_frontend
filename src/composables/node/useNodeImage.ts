@@ -7,7 +7,7 @@ const VIDEO_DEFAULT_OPTIONS = {
   playsInline: true,
   controls: true,
   loop: true
-}
+} as const
 const MEDIA_LOAD_TIMEOUT = 8192
 const MAX_RETRIES = 1
 const DEFAULT_VIDEO_SIZE = 256
