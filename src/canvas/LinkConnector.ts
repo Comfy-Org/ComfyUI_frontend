@@ -341,15 +341,24 @@ export class LinkConnector {
             const newLink = outputNode.connectSlots(outputSlot, inputNode, input, fromReroute?.id)
             if (newLink) this.events.dispatch("input-moved", renderLink)
           } else {
+            const { node: outputNode, fromSlot, fromReroute } = renderLink
+
             const reroutes = reroute.getReroutes()
             if (reroutes === null) throw new Error("Reroute loop detected.")
 
             if (reroutes) {
-              for (const reroute of reroutes.slice(0, -1)) {
+              for (const r of reroutes) {
+                if (r.id === fromReroute?.id) break
+                if (r.id === reroute.id) {
+                  throw new Error("Cannot connect to reroute that is a parent of the reroute being connected to.")
+                }
+              }
+
+              for (const reroute of reroutes.slice(0, -1).reverse()) {
+                if (reroute.id === fromReroute?.id) break
                 reroute.remove()
               }
             }
-            const { node: outputNode, fromSlot, fromReroute } = renderLink
             // Set the parentId of the reroute we dropped on, to the reroute we dragged from
             reroute.parentId = fromReroute?.id
 
@@ -403,7 +412,6 @@ export class LinkConnector {
       }
     }
     this.events.dispatch("dropped-on-canvas", event)
-    this.reset()
   }
 
   /**
