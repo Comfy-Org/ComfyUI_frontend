@@ -1,6 +1,7 @@
 import type {
   BaseSearchParamsWithoutQuery,
-  Hit
+  Hit,
+  SearchResponse
 } from 'algoliasearch/dist/lite/browser'
 import { liteClient as algoliasearch } from 'algoliasearch/dist/lite/builds/browser'
 import { omit } from 'lodash'
@@ -50,6 +51,8 @@ export interface AlgoliaNodePack {
     'latest_version',
     'comfy_node_extract_status'
   >
+  /** `total_install` index only */
+  icon_url: RegistryNodePack['icon']
 }
 
 export type SearchAttribute = keyof AlgoliaNodePack
@@ -69,6 +72,20 @@ const RETRIEVE_ATTRIBUTES: SearchAttribute[] = [
   'comfy_node_extract_status',
   'id'
 ]
+
+export interface NodesIndexSuggestion {
+  nb_words: number
+  nodes_index: {
+    exact_nb_hits: number
+    facets: {
+      exact_matches: Record<string, number>
+      analytics: Record<string, any>
+    }
+  }
+  objectID: RegistryNodePack['id']
+  popularity: number
+  query: string
+}
 
 type SearchNodePacksParams = BaseSearchParamsWithoutQuery & {
   pageSize: number
@@ -112,6 +129,7 @@ export const useAlgoliaSearchService = () => {
       license: algoliaNode.license,
       downloads: algoliaNode.total_install,
       status: algoliaNode.status,
+      icon: algoliaNode.icon_url,
       latest_version: toRegistryLatestVersion(algoliaNode),
       publisher: toRegistryPublisher(algoliaNode)
     }
@@ -123,11 +141,16 @@ export const useAlgoliaSearchService = () => {
   const searchPacks = async (
     query: string,
     params: SearchNodePacksParams
-  ): Promise<Hit<AlgoliaNodePack>[]> => {
+  ): Promise<{
+    nodePacks: Hit<AlgoliaNodePack>[]
+    querySuggestions: Hit<NodesIndexSuggestion>[]
+  }> => {
     const { pageSize, pageNumber } = params
     const rest = omit(params, ['pageSize', 'pageNumber'])
 
-    const { results } = await searchClient.search<AlgoliaNodePack>({
+    const { results } = await searchClient.search<
+      AlgoliaNodePack | NodesIndexSuggestion
+    >({
       requests: [
         {
           query,
@@ -135,15 +158,25 @@ export const useAlgoliaSearchService = () => {
           attributesToRetrieve: RETRIEVE_ATTRIBUTES,
           ...rest,
           hitsPerPage: pageSize,
-          length: pageSize,
           page: pageNumber
+        },
+        {
+          indexName: 'nodes_index_query_suggestions',
+          query
         }
       ],
       strategy: 'none'
     })
 
-    // Narrow from `SearchResponse<T> | SearchForFacetValuesResponse` to `SearchResponse<T>`
-    return 'hits' in results[0] ? results[0].hits : [] // Only querying a single index for now
+    const [nodePacks, querySuggestions] = results as [
+      SearchResponse<AlgoliaNodePack>,
+      SearchResponse<NodesIndexSuggestion>
+    ]
+
+    return {
+      nodePacks: nodePacks.hits,
+      querySuggestions: querySuggestions.hits
+    }
   }
 
   return {

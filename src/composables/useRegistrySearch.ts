@@ -7,6 +7,7 @@ import {
   SearchAttribute,
   useAlgoliaSearchService
 } from '@/services/algoliaSearchService'
+import type { NodesIndexSuggestion } from '@/services/algoliaSearchService'
 import { PackField } from '@/types/comfyManagerTypes'
 
 const SEARCH_DEBOUNCE_TIME = 16
@@ -23,6 +24,7 @@ export function useRegistrySearch() {
   const pageNumber = ref(0)
   const searchQuery = ref('')
   const results = ref<AlgoliaNodePack[]>([])
+  const suggestions = ref<NodesIndexSuggestion[]>([])
 
   const searchAttributes = computed<SearchAttribute[]>(() =>
     searchMode.value === 'nodes' ? ['comfy_nodes'] : ['name', 'description']
@@ -49,11 +51,16 @@ export function useRegistrySearch() {
 
   const onQueryChange = async () => {
     isLoading.value = true
-    results.value = await searchPacks(searchQuery.value, {
-      pageSize: pageSize.value,
-      pageNumber: pageNumber.value,
-      restrictSearchableAttributes: searchAttributes.value
-    })
+    const { nodePacks, querySuggestions } = await searchPacks(
+      searchQuery.value,
+      {
+        pageSize: pageSize.value,
+        pageNumber: pageNumber.value,
+        restrictSearchableAttributes: searchAttributes.value
+      }
+    )
+    results.value = nodePacks
+    suggestions.value = querySuggestions
     isLoading.value = false
   }
 
@@ -71,6 +78,7 @@ export function useRegistrySearch() {
     sortField,
     searchMode,
     searchQuery,
+    suggestions,
     searchResults: resultsAsRegistryPacks,
     nodeSearchResults: resultsAsNodes
   }

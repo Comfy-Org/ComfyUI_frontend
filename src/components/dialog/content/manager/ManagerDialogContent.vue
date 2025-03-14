@@ -32,6 +32,7 @@
             v-model:searchQuery="searchQuery"
             v-model:searchMode="searchMode"
             :searchResults="searchResults"
+            :suggestions="suggestions"
           />
           <div class="flex-1 overflow-auto">
             <div
@@ -141,8 +142,14 @@ const tabs = ref<TabItem[]>([
 ])
 const selectedTab = ref<TabItem>(tabs.value[0])
 
-const { searchQuery, pageNumber, isLoading, searchResults, searchMode } =
-  useRegistrySearch()
+const {
+  searchQuery,
+  pageNumber,
+  isLoading,
+  searchResults,
+  searchMode,
+  suggestions
+} = useRegistrySearch()
 pageNumber.value = 0
 
 const isInitialLoad = computed(
