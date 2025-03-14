@@ -267,6 +267,8 @@
     "installLocationDescription": "ComfyUI의 사용자 데이터 디렉토리를 선택하십시오. 선택한 위치에 Python 환경이 설치됩니다. 선택한 디스크에 충분한 공간(~15GB)이 남아 있는지 확인하십시오.",
     "installLocationTooltip": "ComfyUI의 사용자 데이터 디렉토리. 저장소:\n- Python 환경\n- 모델\n- 사용자 정의 노드\n",
     "insufficientFreeSpace": "공간이 부족합니다 - 최소한의 여유 공간",
+    "isNonDefaultDrive": "ComfyUI를 시스템 드라이브(C:)에 설치하십시오. 모델 및 기타 파일은 다른 드라이브에 저장할 수 있지만, 최상의 성능과 신뢰성을 위해 주 애플리케이션은 C:에 있어야 합니다.",
+    "isOneDrive": "OneDrive에 설치하면 문제가 발생할 수 있습니다. OneDrive가 아닌 위치에 설치하는 것을 강력히 권장합니다.",
     "manualConfiguration": {
       "createVenv": "다음 디렉토리에 가상 환경을 생성해야 합니다",
       "requirements": "요구 사항",

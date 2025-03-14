@@ -267,6 +267,8 @@
     "installLocationDescription": "Sélectionnez le répertoire pour les données utilisateur de ComfyUI. Un environnement python sera installé à l'emplacement sélectionné. Veuillez vous assurer que le disque sélectionné a suffisamment d'espace (~15GB) restant.",
     "installLocationTooltip": "Répertoire des données utilisateur de ComfyUI. Stocke :\n- Environnement Python\n- Modèles\n- Nœuds personnalisés\n",
     "insufficientFreeSpace": "Espace insuffisant - espace libre minimum",
+    "isNonDefaultDrive": "Veuillez installer ComfyUI sur votre disque système (C:). Bien que les modèles et autres fichiers puissent être stockés sur d'autres disques, l'application principale doit être sur C: pour une meilleure performance et fiabilité.",
+    "isOneDrive": "L'installation dans OneDrive peut causer des problèmes. Nous recommandons fortement d'installer dans un emplacement non-OneDrive.",
     "manualConfiguration": {
       "createVenv": "Vous devrez créer un environnement virtuel dans le répertoire suivant",
       "requirements": "Exigences",
