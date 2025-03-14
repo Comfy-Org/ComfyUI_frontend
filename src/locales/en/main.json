@@ -478,6 +478,8 @@
         "latent_upscale_different_prompt_model": "Latent Upscale Different Prompt Model"
       },
       "Video": {
+        "text_to_video_wan": "Wan 2.1 Text to Video",
+        "image_to_video_wan_example": "Wan 2.1 Image to Video",
         "image_to_video": "SVD Image to Video",
         "txt_to_image_to_video": "SVD Text to Image to Video",
         "ltxv_image_to_video": "LTXV Image to Video",

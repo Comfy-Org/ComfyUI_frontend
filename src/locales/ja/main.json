@@ -938,9 +938,11 @@
       "Video": {
         "hunyuan_video_text_to_video": "Hunyuanビデオテキストからビデオへ",
         "image_to_video": "画像からビデオへ",
+        "image_to_video_wan_example": "Wan 2.1 画像からビデオへ",
         "ltxv_image_to_video": "LTXV画像からビデオへ",
         "ltxv_text_to_video": "LTXVテキストからビデオへ",
         "mochi_text_to_video_example": "Mochiテキストからビデオへ",
+        "text_to_video_wan": "Wan 2.1 テキストからビデオへ",
         "txt_to_image_to_video": "テキストから画像へ、画像からビデオへ"
       }
     },
