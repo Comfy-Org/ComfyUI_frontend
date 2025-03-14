@@ -836,9 +836,11 @@
       "Video": {
         "hunyuan_video_text_to_video": "Texte à Vidéo Hunyuan",
         "image_to_video": "Image à Vidéo",
+        "image_to_video_wan_example": "Wan 2.1 Image à Vidéo",
         "ltxv_image_to_video": "LTXV Image à Vidéo",
         "ltxv_text_to_video": "LTXV Texte à Vidéo",
         "mochi_text_to_video_example": "Exemple de Texte à Vidéo Mochi",
+        "text_to_video_wan": "Wan 2.1 Texte à Vidéo",
         "txt_to_image_to_video": "Texte à Image à Vidéo"
       }
     },
