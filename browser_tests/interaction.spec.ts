@@ -49,7 +49,7 @@ test.describe('Node Interaction', () => {
       })
     })
 
-    test('Can highlight selected', async ({ comfyPage }) => {
+    test('@2x Can highlight selected', async ({ comfyPage }) => {
       await expect(comfyPage.canvas).toHaveScreenshot('default.png')
       await comfyPage.clickTextEncodeNode1()
       await expect(comfyPage.canvas).toHaveScreenshot('selected-node1.png')
