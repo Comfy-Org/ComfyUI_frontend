@@ -80,6 +80,9 @@ export class ComfyWorkflow extends UserFile {
         /* initialState= */ JSON.parse(this.originalContent)
       )
     )
+
+    this.changeTracker.checkState()
+
     return this as LoadedComfyWorkflow
   }
 

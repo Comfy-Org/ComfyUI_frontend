@@ -87,19 +87,19 @@ export class ChangeTracker {
   updateModified() {
     api.dispatchCustomEvent('graphChanged', this.activeState)
 
-    // Get the workflow from the store as ChangeTracker is raw object, i.e.
-    // `this.workflow` is not reactive.
+    // Get the workflow from the store as ChangeTracker is a raw object.
     const workflow = useWorkflowStore().getWorkflowByPath(this.workflow.path)
-    if (workflow) {
+    if (workflow && workflow.originalContent) {
+      // Compare against the original ComfyWorkflowJSON obtained from the workflow's originalContent.
+      const originalState = JSON.parse(
+        workflow.originalContent
+      ) as ComfyWorkflowJSON
       workflow.isModified = !ChangeTracker.graphEqual(
-        this.initialState,
+        originalState,
         this.activeState
       )
       if (logger.getLevel() <= logger.levels.DEBUG && workflow.isModified) {
-        const diff = ChangeTracker.graphDiff(
-          this.initialState,
-          this.activeState
-        )
+        const diff = ChangeTracker.graphDiff(originalState, this.activeState)
         logger.debug('Graph diff:', diff)
       }
     }
