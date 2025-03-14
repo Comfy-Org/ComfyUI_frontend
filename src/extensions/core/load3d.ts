@@ -1,65 +1,27 @@
 // @ts-strict-ignore
 import { IWidget } from '@comfyorg/litegraph'
 import { IStringWidget } from '@comfyorg/litegraph/dist/types/widgets'
-import PrimeVue from 'primevue/config'
-import { createApp, h, nextTick, render } from 'vue'
+import { nextTick } from 'vue'
 
 import Load3D from '@/components/load3d/Load3D.vue'
 import Load3DAnimation from '@/components/load3d/Load3DAnimation.vue'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import Load3dAnimation from '@/extensions/core/load3d/Load3dAnimation'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import { useLoad3dService } from '@/services/load3dService'
 import { useToastStore } from '@/stores/toastStore'
+import { generateUUID } from '@/utils/formatUtil'
 
 app.registerExtension({
   name: 'Comfy.Load3D',
 
-  getCustomWidgets(app) {
+  getCustomWidgets() {
     return {
-      LOAD_3D(node, inputName) {
-        node.addProperty('Camera Info', '')
-
-        const container = document.createElement('div')
-        container.classList.add('comfy-load-3d')
-
-        /* Hold off for now
-        const mountComponent = () => {
-          const vnode = h(Load3D, {
-            node: node,
-            type: 'Load3D'
-          })
-
-          render(vnode, container)
-        }
-         */
-
-        let controlsApp = createApp(Load3D, {
-          node: node,
-          type: 'Load3D'
-        })
-
-        controlsApp.mount(container)
-
-        const origOnRemoved = node.onRemoved
-
-        node.onRemoved = function () {
-          /*
-          render(null, container)
-
-          container.remove()
-           */
-
-          if (controlsApp) {
-            controlsApp.unmount()
-            controlsApp = null
-          }
-
-          origOnRemoved?.apply(this, [])
-        }
-
+      LOAD_3D(node) {
         const fileInput = document.createElement('input')
         fileInput.type = 'file'
         fileInput.accept = '.gltf,.glb,.obj,.mtl,.fbx,.stl'
@@ -112,11 +74,23 @@ app.registerExtension({
           }
         })
 
-        //mountComponent()
-
-        return {
-          widget: node.addDOMWidget(inputName, 'LOAD_3D', container)
+        const inputSpec: CustomInputSpec = {
+          name: 'image',
+          type: 'Load3D'
         }
+
+        const widget = new ComponentWidgetImpl({
+          id: generateUUID(),
+          node,
+          name: inputSpec.name,
+          component: Load3D,
+          inputSpec,
+          options: {}
+        })
+
+        addWidget(node, widget)
+
+        return { widget }
       }
     }
   },
@@ -129,8 +103,6 @@ app.registerExtension({
     node.setSize([Math.max(oldWidth, 300), Math.max(oldHeight, 600)])
 
     await nextTick()
-
-    const sceneWidget = node.widgets.find((w: IWidget) => w.name === 'image')
 
     const load3d = useLoad3dService().getLoad3d(node)
 
@@ -146,6 +118,8 @@ app.registerExtension({
     const height = node.widgets.find((w: IWidget) => w.name === 'height')
 
     config.configure('input', modelWidget, cameraState, width, height)
+
+    const sceneWidget = node.widgets.find((w: IWidget) => w.name === 'image')
 
     sceneWidget.serializeValue = async () => {
       node.properties['Camera Info'] = load3d.getCameraState()
@@ -173,52 +147,9 @@ app.registerExtension({
 app.registerExtension({
   name: 'Comfy.Load3DAnimation',
 
-  getCustomWidgets(app) {
+  getCustomWidgets() {
     return {
-      LOAD_3D_ANIMATION(node, inputName) {
-        node.addProperty('Camera Info', '')
-
-        const container = document.createElement('div')
-
-        container.classList.add('comfy-load-3d-animation')
-
-        /*
-          const mountComponent = () => {
-          const vnode = h(Load3DAnimation, {
-            node: node,
-            type: 'Load3DAnimation'
-          })
-
-          render(vnode, container)
-        }
-         */
-
-        let controlsApp = createApp(Load3DAnimation, {
-          node: node,
-          type: 'Load3DAnimation'
-        })
-
-        controlsApp.use(PrimeVue)
-
-        controlsApp.mount(container)
-
-        const origOnRemoved = node.onRemoved
-
-        node.onRemoved = function () {
-          /*
-          render(null, container)
-
-          container.remove()
-           */
-
-          if (controlsApp) {
-            controlsApp.unmount()
-            controlsApp = null
-          }
-
-          origOnRemoved?.apply(this, [])
-        }
-
+      LOAD_3D_ANIMATION(node) {
         const fileInput = document.createElement('input')
         fileInput.type = 'file'
         fileInput.accept = '.fbx,glb,gltf'
@@ -269,11 +200,23 @@ app.registerExtension({
           }
         })
 
-        //mountComponent()
-
-        return {
-          widget: node.addDOMWidget(inputName, 'LOAD_3D_ANIMATION', container)
+        const inputSpec: CustomInputSpec = {
+          name: 'image',
+          type: 'Load3DAnimation'
         }
+
+        const widget = new ComponentWidgetImpl({
+          id: generateUUID(),
+          node,
+          name: inputSpec.name,
+          component: Load3DAnimation,
+          inputSpec,
+          options: {}
+        })
+
+        addWidget(node, widget)
+
+        return { widget }
       }
     }
   },
@@ -333,62 +276,32 @@ app.registerExtension({
   name: 'Comfy.Preview3D',
 
   async beforeRegisterNodeDef(nodeType, nodeData) {
-    if (
-      // @ts-expect-error ComfyNode
-      ['Preview3D'].includes(nodeType.comfyClass)
-    ) {
+    if ('Preview3D' === nodeData.name) {
       // @ts-expect-error InputSpec is not typed correctly
       nodeData.input.required.image = ['PREVIEW_3D']
     }
   },
 
-  getCustomWidgets(app) {
+  getCustomWidgets() {
     return {
-      PREVIEW_3D(node, inputName) {
-        const container = document.createElement('div')
-
-        container.classList.add('comfy-preview-3d')
-
-        /*
-        const mountComponent = () => {
-          const vnode = h(Load3D, {
-            node: node,
-            type: 'Preview3D'
-          })
-
-          render(vnode, container)
-        }
-         */
-
-        let controlsApp = createApp(Load3D, {
-          node: node,
+      PREVIEW_3D(node) {
+        const inputSpec: CustomInputSpec = {
+          name: 'image',
           type: 'Preview3D'
+        }
+
+        const widget = new ComponentWidgetImpl({
+          id: generateUUID(),
+          node,
+          name: inputSpec.name,
+          component: Load3D,
+          inputSpec,
+          options: {}
         })
 
-        controlsApp.mount(container)
+        addWidget(node, widget)
 
-        const origOnRemoved = node.onRemoved
-
-        node.onRemoved = function () {
-          /*
-          render(null, container)
-
-          container.remove()
-           */
-
-          if (controlsApp) {
-            controlsApp.unmount()
-            controlsApp = null
-          }
-
-          origOnRemoved?.apply(this, [])
-        }
-
-        //mountComponent()
-
-        return {
-          widget: node.addDOMWidget(inputName, 'PREVIEW_3D', container)
-        }
+        return { widget }
       }
     }
   },
@@ -436,55 +349,32 @@ app.registerExtension({
   name: 'Comfy.Preview3DAnimation',
 
   async beforeRegisterNodeDef(nodeType, nodeData) {
-    if (
-      // @ts-expect-error ComfyNode
-      ['Preview3DAnimation'].includes(nodeType.comfyClass)
-    ) {
+    if ('Preview3DAnimation' === nodeData.name) {
       // @ts-expect-error InputSpec is not typed correctly
       nodeData.input.required.image = ['PREVIEW_3D_ANIMATION']
     }
   },
 
-  getCustomWidgets(app) {
+  getCustomWidgets() {
     return {
-      PREVIEW_3D_ANIMATION(node, inputName) {
-        const container = document.createElement('div')
-
-        container.classList.add('comfy-preview-3d-animation')
-
-        let controlsApp = createApp(Load3DAnimation, {
-          node: node,
+      PREVIEW_3D_ANIMATION(node) {
+        const inputSpec: CustomInputSpec = {
+          name: 'image',
           type: 'Preview3DAnimation'
+        }
+
+        const widget = new ComponentWidgetImpl({
+          id: generateUUID(),
+          node,
+          name: inputSpec.name,
+          component: Load3DAnimation,
+          inputSpec,
+          options: {}
         })
 
-        controlsApp.use(PrimeVue)
+        addWidget(node, widget)
 
-        controlsApp.mount(container)
-
-        const origOnRemoved = node.onRemoved
-
-        node.onRemoved = function () {
-          /*
-          render(null, container)
-
-          container.remove()
-           */
-
-          if (controlsApp) {
-            controlsApp.unmount()
-            controlsApp = null
-          }
-
-          origOnRemoved?.apply(this, [])
-        }
-
-        return {
-          widget: node.addDOMWidget(
-            inputName,
-            'PREVIEW_3D_ANIMATION',
-            container
-          )
-        }
+        return { widget }
       }
     }
   },

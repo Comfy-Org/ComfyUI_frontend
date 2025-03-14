@@ -28,13 +28,14 @@ import { ref, watch } from 'vue'
 import Load3DScene from '@/components/load3d/Load3DScene.vue'
 import {
   CameraType,
+  Load3DAnimationNodeType,
   MaterialMode,
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
 
 const props = defineProps<{
   node: any
-  type: 'Load3DAnimation' | 'Preview3DAnimation'
+  type: Load3DAnimationNodeType
   backgroundColor: string
   showGrid: boolean
   lightIntensity: number

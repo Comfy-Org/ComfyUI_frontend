@@ -1,5 +1,5 @@
 <template>
-  <div ref="container" class="w-full h-full relative">
+  <div ref="container" class="w-full h-full relative comfy-load-3d">
     <LoadingOverlay ref="loadingOverlayRef" />
   </div>
 </template>
@@ -13,6 +13,8 @@ import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dAnimation from '@/extensions/core/load3d/Load3dAnimation'
 import {
   CameraType,
+  Load3DAnimationNodeType,
+  Load3DNodeType,
   MaterialMode,
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
@@ -20,8 +22,8 @@ import { t } from '@/i18n'
 import { useLoad3dService } from '@/services/load3dService'
 
 const props = defineProps<{
-  node: any
-  type: 'Load3D' | 'Load3DAnimation' | 'Preview3D' | 'Preview3DAnimation'
+  node: LGraphNode
+  type: Load3DNodeType | Load3DAnimationNodeType
   backgroundColor: string
   showGrid: boolean
   lightIntensity: number
