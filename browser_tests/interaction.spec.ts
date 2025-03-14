@@ -103,9 +103,7 @@ test.describe('Node Interaction', () => {
       })
     })
 
-    // Chromium 2x cannot move link.
-    // See https://github.com/Comfy-Org/ComfyUI_frontend/actions/runs/10876381315/job/30176211513
-    test.skip('Can move link', async ({ comfyPage }) => {
+    test('Can move link', async ({ comfyPage }) => {
       await comfyPage.dragAndDrop(
         comfyPage.clipTextEncodeNode1InputSlot,
         comfyPage.emptySpace
@@ -118,10 +116,7 @@ test.describe('Node Interaction', () => {
       await expect(comfyPage.canvas).toHaveScreenshot('moved-link.png')
     })
 
-    // Copy link is not working on CI at all
-    // Chromium 2x recognize it as dragging canvas.
-    // Chromium triggers search box after link release. The link is indeed copied.
-    // See https://github.com/Comfy-Org/ComfyUI_frontend/actions/runs/10876381315/job/30176211513
+    // Shift drag copy link regressed. See https://github.com/Comfy-Org/ComfyUI_frontend/issues/2941
     test.skip('Can copy link by shift-drag existing link', async ({
       comfyPage
     }) => {
@@ -324,16 +319,12 @@ test.describe('Node Interaction', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('group-fit-to-contents.png')
   })
 
-  // Somehow this test fails on GitHub Actions. It works locally.
-  // https://github.com/Comfy-Org/ComfyUI_frontend/pull/736
-  test.skip('Can pin/unpin nodes with keyboard shortcut', async ({
-    comfyPage
-  }) => {
+  test('Can pin/unpin nodes', async ({ comfyPage }) => {
     await comfyPage.select2Nodes()
-    await comfyPage.canvas.press('KeyP')
+    await comfyPage.executeCommand('Comfy.Canvas.ToggleSelectedNodes.Pin')
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('nodes-pinned.png')
-    await comfyPage.canvas.press('KeyP')
+    await comfyPage.executeCommand('Comfy.Canvas.ToggleSelectedNodes.Pin')
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('nodes-unpinned.png')
   })
