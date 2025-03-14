@@ -58,8 +58,11 @@
           >
             {{ title }}
           </h3>
-          <p class="line-clamp-2 text-sm text-surface-600 dark:text text-muted">
-            {{ template.description.replace(/[-_]/g, ' ') }}
+          <p
+            class="line-clamp-2 text-sm text-surface-600 dark:text text-muted"
+            :title="description"
+          >
+            {{ description }}
           </p>
         </div>
         <div
@@ -130,6 +133,8 @@ const title = computed(() => {
       )
     : template.name ?? `${sourceModule} Template`
 })
+
+const description = computed(() => template.description.replace(/[-_]/g, ' '))
 
 defineEmits<{
   loadWorkflow: [name: string]
