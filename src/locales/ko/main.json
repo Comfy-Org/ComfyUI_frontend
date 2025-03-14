@@ -836,7 +836,7 @@
       "Video": {
         "hunyuan_video_text_to_video": "텍스트 -> 비디오 (Hunyuan Video)",
         "image_to_video": "이미지 -> 동영상",
-        "image_to_video_wan_example": "Wan 2.1 이미지를 비디오로",
+        "image_to_video_wan": "Wan 2.1 이미지에서 비디오로",
         "ltxv_image_to_video": "이미지 -> 동영상 (LTXV)",
         "ltxv_text_to_video": "텍스트 -> 동영상 (LTXV)",
         "mochi_text_to_video_example": "텍스트 -> 동영상 (Mochi)",
