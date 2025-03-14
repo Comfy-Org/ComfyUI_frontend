@@ -243,6 +243,7 @@ export const zComfyWorkflow = z
     last_link_id: z.number(),
     nodes: z.array(zComfyNode),
     links: z.array(zComfyLink),
+    floatingLinks: z.array(zComfyLinkObject).optional(),
     groups: z.array(zGroup).optional(),
     config: zConfig.optional().nullable(),
     extra: zExtra.optional().nullable(),
@@ -260,6 +261,7 @@ export const zComfyWorkflow1 = z
     groups: z.array(zGroup).optional(),
     nodes: z.array(zComfyNode),
     links: z.array(zComfyLinkObject).optional(),
+    floatingLinks: z.array(zComfyLinkObject).optional(),
     reroutes: z.array(zReroute).optional(),
     extra: zExtra.optional().nullable(),
     models: z.array(zModelFile).optional()
