@@ -143,7 +143,7 @@ const selectedTab = ref<TabItem>(tabs.value[0])
 
 const { searchQuery, pageNumber, isLoading, searchResults, searchMode } =
   useRegistrySearch()
-pageNumber.value = 1
+pageNumber.value = 0
 
 const isInitialLoad = computed(
   () => searchResults.value.length === 0 && searchQuery.value === ''
