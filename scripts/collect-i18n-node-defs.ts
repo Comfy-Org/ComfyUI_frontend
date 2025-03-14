@@ -34,10 +34,12 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
   const allDataTypesLocale = Object.fromEntries(
     nodeDefs
       .flatMap((nodeDef) => {
-        const inputDataTypes = Object.values(nodeDef.inputs.all).map(
+        const inputDataTypes = Object.values(nodeDef.inputs).map(
           (inputSpec) => inputSpec.type
         )
-        const outputDataTypes = nodeDef.outputs.all.map((output) => output.type)
+        const outputDataTypes = nodeDef.outputs.map(
+          (outputSpec) => outputSpec.type
+        )
         const allDataTypes = [...inputDataTypes, ...outputDataTypes].flatMap(
           (type: string) => type.split(',')
         )
@@ -53,12 +55,9 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
     const nodeLabels = {}
 
     for (const nodeDef of nodeDefs) {
-      const inputNames = [
-        ...Object.values(nodeDef.inputs?.optional ?? {}),
-        ...Object.values(nodeDef.inputs?.required ?? {})
-      ]
-        .filter((input) => input?.name)
-        .map((input) => input.name)
+      const inputNames = Object.values(nodeDef.inputs).map(
+        (input) => input.name
+      )
 
       if (!inputNames.length) continue
 
@@ -103,7 +102,7 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
 
   function extractInputs(nodeDef: ComfyNodeDefImpl) {
     const inputs = Object.fromEntries(
-      nodeDef.inputs.all.flatMap((input) => {
+      Object.values(nodeDef.inputs).flatMap((input) => {
         const name = input.name
         const tooltip = input.tooltip
 
@@ -127,7 +126,7 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
 
   function extractOutputs(nodeDef: ComfyNodeDefImpl) {
     const outputs = Object.fromEntries(
-      nodeDef.outputs.all.flatMap((output, i) => {
+      nodeDef.outputs.flatMap((output, i) => {
         // Ignore data types if they are already translated in allDataTypesLocale.
         const name = output.name in allDataTypesLocale ? undefined : output.name
         const tooltip = output.tooltip
