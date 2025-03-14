@@ -229,6 +229,8 @@ export class LinkConnector {
     this.renderLinks.push(renderLink)
 
     this.state.connectingTo = "input"
+
+    this.#setLegacyLinks(false)
   }
 
   dragFromLinkSegment(network: LinkNetwork, linkSegment: LinkSegment): void {
