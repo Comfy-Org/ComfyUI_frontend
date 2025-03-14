@@ -2,15 +2,15 @@ import type { LGraphNode } from '@comfyorg/litegraph'
 
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 
-const VIDEO_WIDGET_NAME = 'video-preview' as const
+const VIDEO_WIDGET_NAME = 'video-preview'
 const VIDEO_DEFAULT_OPTIONS = {
   playsInline: true,
   controls: true,
   loop: true
 } as const
-const MEDIA_LOAD_TIMEOUT = 8192 as const
-const MAX_RETRIES = 1 as const
-const VIDEO_PIXEL_OFFSET = 64 as const
+const MEDIA_LOAD_TIMEOUT = 8192
+const MAX_RETRIES = 1
+const DEFAULT_VIDEO_SIZE = 256
 
 type MediaElement = HTMLImageElement | HTMLVideoElement
 
@@ -127,12 +127,26 @@ export const useNodeImage = (node: LGraphNode) => {
  */
 export const useNodeVideo = (node: LGraphNode) => {
   node.previewMediaType = 'video'
+  let minHeight = DEFAULT_VIDEO_SIZE
+  let minWidth = DEFAULT_VIDEO_SIZE
+
+  const setMinDimensions = (video: HTMLVideoElement) => {
+    const intrinsicAspectRatio = video.videoWidth / video.videoHeight
+    if (!intrinsicAspectRatio || isNaN(intrinsicAspectRatio)) return
+
+    // Set min. height s.t. video spans node's x-axis while maintaining aspect ratio
+    minWidth = node.size?.[0] || DEFAULT_VIDEO_SIZE
+    minHeight = Math.max(minWidth / intrinsicAspectRatio, 64)
+  }
 
   const loadElement = (url: string): Promise<HTMLVideoElement | null> =>
     new Promise((resolve) => {
       const video = document.createElement('video')
       Object.assign(video, VIDEO_DEFAULT_OPTIONS)
-      video.onloadeddata = () => resolve(video)
+      video.onloadeddata = () => {
+        setMinDimensions(video)
+        resolve(video)
+      }
       video.onerror = () => resolve(null)
       video.src = url
     })
@@ -140,9 +154,13 @@ export const useNodeVideo = (node: LGraphNode) => {
   const addVideoDomWidget = (container: HTMLElement) => {
     const hasWidget = node.widgets?.some((w) => w.name === VIDEO_WIDGET_NAME)
     if (!hasWidget) {
-      node.addDOMWidget(VIDEO_WIDGET_NAME, 'video', container, {
+      const widget = node.addDOMWidget(VIDEO_WIDGET_NAME, 'video', container, {
         hideOnZoom: false,
         serialize: false
+      })
+      widget.computeLayoutSize = () => ({
+        minHeight,
+        minWidth
       })
     }
   }
@@ -157,7 +175,6 @@ export const useNodeVideo = (node: LGraphNode) => {
     }
 
     node.videoContainer.replaceChildren(videoElement)
-    node.imageOffset = VIDEO_PIXEL_OFFSET
   }
 
   return useNodePreview(node, {
