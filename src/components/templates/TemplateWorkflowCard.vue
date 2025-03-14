@@ -54,6 +54,7 @@
         <div class="flex-1">
           <h3
             class="line-clamp-1 text-lg font-normal text-surface-900 dark:text-surface-100"
+            :title="title"
           >
             {{ title }}
           </h3>
@@ -82,6 +83,7 @@ import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue
 import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSliderThumbnail.vue'
 import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
 import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDissolveThumbnail.vue'
+import { st } from '@/i18n'
 import { api } from '@/scripts/api'
 import { TemplateInfo } from '@/types/workflowTemplateTypes'
 import { normalizeI18nKey } from '@/utils/formatUtil'
@@ -122,8 +124,9 @@ const overlayThumbnailSrc = computed(() =>
 
 const title = computed(() => {
   return sourceModule === 'default'
-    ? t(
-        `templateWorkflows.template.${normalizeI18nKey(categoryTitle)}.${normalizeI18nKey(template.name)}`
+    ? st(
+        `templateWorkflows.template.${normalizeI18nKey(categoryTitle)}.${normalizeI18nKey(template.name)}`,
+        template.name
       )
     : template.name ?? `${sourceModule} Template`
 })
