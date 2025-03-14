@@ -264,7 +264,7 @@
     "isNonDefaultDrive": "Highly recommend installing in the system's default drive. Models and other files can be placed on other drives.",
     "parentMissing": "Path does not exist - create the containing directory first",
     "unhandledError": "Unknown error",
-    "installLocationDescription": "Select the directory for ComfyUI's user data. A python environment will be installed to the selected location. Please make sure the selected disk has enough space (~15GB) left.",
+    "installLocationDescription": "Select the directory for ComfyUI's user data. A python environment will be installed to the selected location.",
     "installLocationTooltip": "ComfyUI's user data directory. Stores:\n- Python Environment\n- Models\n- Custom nodes\n",
     "appDataLocationTooltip": "ComfyUI's app data directory. Stores:\n- Logs\n- Server configs",
     "appPathLocationTooltip": "ComfyUI's app asset directory. Stores the ComfyUI code and assets",
