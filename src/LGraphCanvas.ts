@@ -5329,6 +5329,7 @@ export class LGraphCanvas implements ConnectionColorContext {
           this.setDirty(false, true)
         } catch (error) {
           console.error(error)
+        } finally {
           this.emitAfterChange()
         }
         break
