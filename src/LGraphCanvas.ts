@@ -2485,7 +2485,8 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     if (this.set_canvas_dirty_on_mouse_event) this.dirty_canvas = true
 
-    if (!this.graph) return
+    const { graph, resizingGroup, linkConnector } = this
+    if (!graph) return
 
     LGraphCanvas.active_canvas = this
     this.adjustMouseEvent(e)
@@ -2524,12 +2525,11 @@ export class LGraphCanvas implements ConnectionColorContext {
     /** See {@link state}.{@link LGraphCanvasState.hoveringOver hoveringOver} */
     let underPointer = CanvasItem.Nothing
     // get node over
-    const node = this.graph.getNodeOnPos(
+    const node = graph.getNodeOnPos(
       e.canvasX,
       e.canvasY,
       this.visible_nodes,
     )
-    const { resizingGroup, linkConnector } = this
 
     const dragRect = this.dragging_rectangle
     if (dragRect) {
@@ -2667,6 +2667,21 @@ export class LGraphCanvas implements ConnectionColorContext {
           underPointer |= CanvasItem.ResizeSe
         }
       } else {
+        const reroute = graph.getRerouteOnPos(e.canvasX, e.canvasY)
+        if (reroute) {
+          underPointer |= CanvasItem.Reroute
+          if (linkConnector.isConnecting) {
+            const firstSlot = linkConnector.renderLinks[0]?.fromSlot
+            const rerouteType = reroute.firstLink?.type ?? reroute.firstFloatingLink?.type
+
+            if (firstSlot && rerouteType != null && LiteGraph.isValidConnection(rerouteType, firstSlot.type)) {
+              this._highlight_pos = reroute.pos
+            }
+          }
+        } else {
+          this._highlight_pos &&= undefined
+        }
+
         // Not over a node
         const segment = this.#getLinkCentreOnPos(e)
         if (this.over_link_center !== segment) {
@@ -2676,7 +2691,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         }
 
         if (this.canvas) {
-          const group = this.graph.getGroupOnPos(e.canvasX, e.canvasY)
+          const group = graph.getGroupOnPos(e.canvasX, e.canvasY)
           if (
             group &&
             !e.ctrlKey &&
