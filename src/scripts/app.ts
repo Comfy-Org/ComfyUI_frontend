@@ -1068,7 +1068,6 @@ export class ComfyApp {
       'beforeConfigureGraph',
       graphData,
       missingNodeTypes
-      // TODO: missingModels
     )
 
     const embeddedModels: ModelFile[] = []
@@ -1238,7 +1237,6 @@ export class ComfyApp {
       useExtensionService().invokeExtensions('loadedGraphNode', node)
     }
 
-    // TODO: Properly handle if both nodes and models are missing (sequential dialogs?)
     if (missingNodeTypes.length && showMissingNodesDialog) {
       this.#showMissingNodesError(missingNodeTypes)
     }
