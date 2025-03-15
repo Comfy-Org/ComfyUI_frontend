@@ -172,6 +172,7 @@ export const useLitegraphService = () => {
     // Note: Some extensions expects node.comfyClass to be set in
     // `beforeRegisterNodeDef`.
     node.prototype.comfyClass = nodeDefV1.name
+    node.comfyClass = nodeDefV1.name
     await extensionService.invokeExtensionsAsync(
       'beforeRegisterNodeDef',
       node,
@@ -179,7 +180,6 @@ export const useLitegraphService = () => {
     )
 
     const nodeDef = new ComfyNodeDefImpl(nodeDefV1)
-    node.comfyClass = nodeDef.name
     node.nodeData = nodeDef
     LiteGraph.registerNodeType(nodeId, node)
     // Note: Do not following assignments before `LiteGraph.registerNodeType`
