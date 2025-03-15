@@ -805,7 +805,7 @@ app.registerExtension({
           if (w) {
             hideWidget(this, w)
           } else {
-            convertToWidget(this, w)
+            this.removeInput(this.inputs.findIndex((i) => i === input))
           }
         }
       }
