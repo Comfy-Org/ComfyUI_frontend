@@ -7,12 +7,13 @@ import {
   LiteGraph,
   strokeShape
 } from '@comfyorg/litegraph'
-import type { Rect, Vector2 } from '@comfyorg/litegraph'
+import type { IWidget, Rect, Vector2 } from '@comfyorg/litegraph'
 import _ from 'lodash'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { reactive } from 'vue'
 
 import { st } from '@/i18n'
+import type { ResultItem } from '@/schemas/apiSchema'
 import {
   type ComfyWorkflowJSON,
   type ModelFile,
@@ -77,12 +78,14 @@ function sanitizeNodeName(string) {
 }
 
 type Clipspace = {
-  widgets?: { type?: string; name?: string; value?: any }[] | null
+  widgets?: Pick<IWidget, 'type' | 'name' | 'value'>[] | null
   imgs?: HTMLImageElement[] | null
   original_imgs?: HTMLImageElement[] | null
   images?: any[] | null
   selectedIndex: number
   img_paste_mode: string
+  paintedIndex: number
+  combinedIndex: number
 }
 
 export class ComfyApp {
@@ -285,13 +288,25 @@ export class ComfyApp {
       selectedIndex = node.imageIndex
     }
 
+    var paintedIndex = 1
+    if (selectedIndex != 0) {
+      paintedIndex = selectedIndex + 1
+    }
+
+    var combinedIndex = 2
+    if (selectedIndex != 0) {
+      combinedIndex = selectedIndex + 2
+    }
+    
     ComfyApp.clipspace = {
       widgets: widgets,
       imgs: imgs,
       original_imgs: orig_imgs,
       images: node.images,
       selectedIndex: selectedIndex,
-      img_paste_mode: 'selected' // reset to default im_paste_mode state on copy action
+      img_paste_mode: 'selected', // reset to default im_paste_mode state on copy action
+      paintedIndex: paintedIndex,
+      combinedIndex: combinedIndex
     }
 
     ComfyApp.clipspace_return_node = null
@@ -301,7 +316,7 @@ export class ComfyApp {
     }
   }
 
-  static pasteFromClipspace(node) {
+  static pasteFromClipspace(node: LGraphNode) {
     if (ComfyApp.clipspace) {
       // image paste
       if (ComfyApp.clipspace.imgs && node.imgs) {
@@ -309,41 +324,57 @@ export class ComfyApp {
           if (ComfyApp.clipspace['img_paste_mode'] == 'selected') {
             node.images = [
               ComfyApp.clipspace.images[ComfyApp.clipspace['selectedIndex']]
-            ]
+            ];
           } else {
-            node.images = ComfyApp.clipspace.images
+            node.images = ComfyApp.clipspace.images;
           }
-
+  
           if (app.nodeOutputs[node.id + ''])
-            app.nodeOutputs[node.id + ''].images = node.images
+            app.nodeOutputs[node.id + ''].images = node.images;
         }
-
+  
         if (ComfyApp.clipspace.imgs) {
           // deep-copy to cut link with clipspace
           if (ComfyApp.clipspace['img_paste_mode'] == 'selected') {
-            const img = new Image()
+            const img = new Image();
             img.src =
-              ComfyApp.clipspace.imgs[ComfyApp.clipspace['selectedIndex']].src
-            node.imgs = [img]
-            node.imageIndex = 0
+              ComfyApp.clipspace.imgs[ComfyApp.clipspace['selectedIndex']].src;
+            node.imgs = [img];
+            node.imageIndex = 0;
           } else {
-            const imgs = []
+            const imgs = [];
             for (let i = 0; i < ComfyApp.clipspace.imgs.length; i++) {
-              imgs[i] = new Image()
-              imgs[i].src = ComfyApp.clipspace.imgs[i].src
-              node.imgs = imgs
+              imgs[i] = new Image();
+              imgs[i].src = ComfyApp.clipspace.imgs[i].src;
+              node.imgs = imgs;
             }
           }
         }
       }
+      
+      // Paste the combined canvas if it exists
+      if (ComfyApp.clipspace.imgs[ComfyApp.clipspace.combinedIndex] && node.imgs) {
+        const combinedImg = new Image();
+        combinedImg.src = ComfyApp.clipspace.imgs[ComfyApp.clipspace.combinedIndex].src;
+        node.imgs.push(combinedImg); // Add the combined canvas to the node's images
+      }
 
+      // Paste the RGB canvas if paintedindex exists
+      if (ComfyApp.clipspace.imgs[ComfyApp.clipspace.paintedIndex] && node.imgs) {
+        const paintedImg = new Image();
+        paintedImg.src = ComfyApp.clipspace.imgs[ComfyApp.clipspace.paintedIndex].src;
+        node.imgs.push(paintedImg); // Add the RGB canvas to the node's images
+      }
+      
+  
       if (node.widgets) {
         if (ComfyApp.clipspace.images) {
           const clip_image =
-            ComfyApp.clipspace.images[ComfyApp.clipspace['selectedIndex']]
-          const index = node.widgets.findIndex((obj) => obj.name === 'image')
+            ComfyApp.clipspace.images[ComfyApp.clipspace['selectedIndex']];
+          const index = node.widgets.findIndex((obj) => obj.name === 'image');
           if (index >= 0) {
             if (
+              // @ts-expect-error custom widget type
               node.widgets[index].type != 'image' &&
               typeof node.widgets[index].value == 'string' &&
               clip_image.filename
@@ -351,44 +382,40 @@ export class ComfyApp {
               node.widgets[index].value =
                 (clip_image.subfolder ? clip_image.subfolder + '/' : '') +
                 clip_image.filename +
-                (clip_image.type ? ` [${clip_image.type}]` : '')
+                (clip_image.type ? ` [${clip_image.type}]` : '');
             } else {
-              node.widgets[index].value = clip_image
+              node.widgets[index].value = clip_image;
             }
           }
         }
         if (ComfyApp.clipspace.widgets) {
           ComfyApp.clipspace.widgets.forEach(({ type, name, value }) => {
             const prop = Object.values(node.widgets).find(
-              // @ts-expect-errorg
               (obj) => obj.type === type && obj.name === name
-            )
-            // @ts-expect-error
+            );
             if (prop && prop.type != 'button') {
               if (
-                // @ts-expect-error
+                // @ts-expect-error Custom widget type
                 prop.type != 'image' &&
-                // @ts-expect-error
                 typeof prop.value == 'string' &&
+                // @ts-expect-error Custom widget value
                 value.filename
               ) {
-                // @ts-expect-error
+                const resultItem = value as ResultItem;
                 prop.value =
-                  (value.subfolder ? value.subfolder + '/' : '') +
-                  value.filename +
-                  (value.type ? ` [${value.type}]` : '')
+                  (resultItem.subfolder ? resultItem.subfolder + '/' : '') +
+                  resultItem.filename +
+                  (resultItem.type ? ` [${resultItem.type}]` : '');
               } else {
-                // @ts-expect-error
-                prop.value = value
-                // @ts-expect-error
-                prop.callback(value)
+                prop.value = value;
+                prop.callback?.(value);
               }
             }
-          })
+          });
         }
       }
-
-      app.graph.setDirtyCanvas(true)
+  
+      app.graph.setDirtyCanvas(true);
     }
   }
 
@@ -1166,10 +1193,10 @@ export class ComfyApp {
           ) {
             if (widget.name == 'control_after_generate') {
               if (widget.value === true) {
-                // @ts-expect-error change widget type from boolean to string
+                // @ts-expect-error string is not assignable to boolean
                 widget.value = 'randomize'
               } else if (widget.value === false) {
-                // @ts-expect-error change widget type from boolean to string
+                // @ts-expect-error string is not assignable to boolean
                 widget.value = 'fixed'
               }
             }

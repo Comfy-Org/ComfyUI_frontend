@@ -953,14 +953,22 @@ class MaskEditorDialog extends ComfyDialog {
     const rgbCtx = rgbCanvas.getContext('2d', {
       willReadFrequently: true
     })
-
+  
+    // Create combined canvas
+    const combinedCanvas = document.createElement('canvas')
+    const combinedCtx = combinedCanvas.getContext('2d', {
+      willReadFrequently: true
+    })
+  
     backupCanvas.width = imageCanvas.width
     backupCanvas.height = imageCanvas.height
-
-    if (!backupCtx) {
+    combinedCanvas.width = imageCanvas.width
+    combinedCanvas.height = imageCanvas.height
+  
+    if (!backupCtx || !combinedCtx) {
       return
     }
-
+  
     // Ensure the mask image is fully loaded
     const maskImageLoaded = new Promise<void>((resolve, reject) => {
       const maskImage = new Image()
@@ -972,14 +980,14 @@ class MaskEditorDialog extends ComfyDialog {
         reject(error)
       }
     })
-
+  
     try {
       await maskImageLoaded
     } catch (error) {
       console.error('Error loading mask image:', error)
       return
     }
-
+  
     backupCtx.clearRect(0, 0, backupCanvas.width, backupCanvas.height)
     backupCtx.drawImage(
       maskCanvas,
@@ -992,7 +1000,7 @@ class MaskEditorDialog extends ComfyDialog {
       backupCanvas.width,
       backupCanvas.height
     )
-
+  
     let maskHasContent = false
     const maskData = backupCtx.getImageData(
       0,
@@ -1000,14 +1008,14 @@ class MaskEditorDialog extends ComfyDialog {
       backupCanvas.width,
       backupCanvas.height
     )
-
+  
     for (let i = 0; i < maskData.data.length; i += 4) {
       if (maskData.data[i + 3] !== 0) {
         maskHasContent = true
         break
       }
     }
-
+  
     // paste mask data into alpha channel
     const backupData = backupCtx.getImageData(
       0,
@@ -1015,7 +1023,7 @@ class MaskEditorDialog extends ComfyDialog {
       backupCanvas.width,
       backupCanvas.height
     )
-
+  
     let backupHasContent = false
     for (let i = 0; i < backupData.data.length; i += 4) {
       if (backupData.data[i + 3] !== 0) {
@@ -1023,13 +1031,15 @@ class MaskEditorDialog extends ComfyDialog {
         break
       }
     }
-
+  
     if (maskHasContent && !backupHasContent) {
       console.error('Mask appears to be empty')
       alert('Cannot save empty mask')
       return
     }
 
+    const combinedData = backupData
+  
     // refine mask image
     for (let i = 0; i < backupData.data.length; i += 4) {
       const alpha = backupData.data[i + 3]
@@ -1039,55 +1049,90 @@ class MaskEditorDialog extends ComfyDialog {
       backupData.data[i + 3] = 255 - alpha
     }
 
+    for (let i = 0; i < combinedData.data.length; i += 4) {
+      const combinedalpha = combinedData.data[i + 3]
+      combinedData.data[i + 3] = combinedalpha
+    }
+  
     backupCtx.globalCompositeOperation = CompositionOperation.SourceOver
     backupCtx.putImageData(backupData, 0, 0)
-
+  
+    // Set up the combined canvas
+    // First draw the original image
+    combinedCtx.clearRect(0, 0, combinedCanvas.width, combinedCanvas.height)
+    combinedCtx.drawImage(image, 0, 0, image.width, image.height, 0, 0, combinedCanvas.width, combinedCanvas.height)
+    
+    // Next overlay the RGB canvas (paint layer)
+    combinedCtx.drawImage(rgbCanvas, 0, 0, rgbCanvas.width, rgbCanvas.height, 0, 0, combinedCanvas.width, combinedCanvas.height)
+    
+    // Apply the mask to the alpha channel
+    combinedCtx.globalCompositeOperation = CompositionOperation.SourceOver
+    combinedCtx.putImageData(combinedData, 0, 0)
+    //combinedCtx.drawImage(backupCanvas, 0, 0, backupCanvas.width, backupCanvas.height, 0, 0, combinedCanvas.width, combinedCanvas.height)
+  
     const formData = new FormData()
     const filename = 'clipspace-mask-' + performance.now() + '.png'
-
+  
     const rgbFormData = new FormData()
     const rgbFilename = 'clipspace-paint-' + performance.now() + '.png'
-
+    
+    const combinedFormData = new FormData()
+    const combinedFilename = 'clipspace-combined-' + performance.now() + '.png'
+  
     const item = {
       filename: filename,
       subfolder: 'clipspace',
       type: 'input'
     }
-
+  
     const rgbItem = {
       filename: rgbFilename,
       subfolder: 'clipspace',
       type: 'input'
     }
-
+    
+    const combinedItem = {
+      filename: combinedFilename,
+      subfolder: 'clipspace',
+      type: 'input'
+    }
+  
     if (ComfyApp?.clipspace?.widgets?.length) {
       const index = ComfyApp.clipspace.widgets.findIndex(
         (obj) => obj?.name === 'image'
       )
       const rgbindex = index + 1
-
+      const combinedIndex = index + 2
+  
       if (index >= 0 && item !== undefined) {
         try {
-          ComfyApp.clipspace.widgets[index].value = item
+          ComfyApp.clipspace.widgets[index].value = combinedItem
           ComfyApp.clipspace.widgets[rgbindex].value = rgbItem
+          // Add the combined item if the widget exists
+          if (ComfyApp.clipspace.widgets[combinedIndex]) {
+            ComfyApp.clipspace.widgets[combinedIndex].value = combinedItem
+          }
         } catch (err) {
           console.warn('Failed to set widget value:', err)
         }
       }
     }
-
+  
     const dataURL = backupCanvas.toDataURL()
     const blob = this.dataURLToBlob(dataURL)
-
+  
     const rgbURL = rgbCanvas.toDataURL()
     const rgbBlob = this.dataURLToBlob(rgbURL)
-
+    
+    const combinedURL = combinedCanvas.toDataURL()
+    const combinedBlob = this.dataURLToBlob(combinedURL)
+  
     let original_url = new URL(image.src)
-
+  
     type Ref = { filename: string; subfolder?: string; type?: string }
-
+  
     this.uiManager.setBrushOpacity(0)
-
+  
     const filenameRef = original_url.searchParams.get('filename')
     if (!filenameRef) {
       throw new Error('filename parameter is required')
@@ -1095,32 +1140,37 @@ class MaskEditorDialog extends ComfyDialog {
     const original_ref: Ref = {
       filename: filenameRef
     }
-
+  
     let original_subfolder = original_url.searchParams.get('subfolder')
     if (original_subfolder) original_ref.subfolder = original_subfolder
-
+  
     let original_type = original_url.searchParams.get('type')
     if (original_type) original_ref.type = original_type
-
+  
     formData.append('image', blob, filename)
     formData.append('original_ref', JSON.stringify(original_ref))
     formData.append('type', 'input')
     formData.append('subfolder', 'clipspace')
-
+  
     rgbFormData.append('image', rgbBlob, rgbFilename)
     rgbFormData.append('original_ref', JSON.stringify(original_ref))
     rgbFormData.append('type', 'input')
     rgbFormData.append('subfolder', 'clipspace')
-
+    
+    combinedFormData.append('image', combinedBlob, combinedFilename)
+    combinedFormData.append('original_ref', JSON.stringify(original_ref))
+    combinedFormData.append('type', 'input')
+    combinedFormData.append('subfolder', 'clipspace')
+  
     this.uiManager.setSaveButtonText('Saving')
     this.uiManager.setSaveButtonEnabled(false)
     this.keyboardManager.removeListeners()
-
+  
     // Retry mechanism
     const maxRetries = 3
     let attempt = 0
     let success = false
-
+  
     while (attempt < maxRetries && !success) {
       try {
         await this.uploadMask(item, formData)
@@ -1135,11 +1185,11 @@ class MaskEditorDialog extends ComfyDialog {
         }
       }
     }
-
+  
     const paintmaxRetries = 3
     let paintattempt = 0
     let paintsuccess = false
-
+  
     while (paintattempt < paintmaxRetries && !paintsuccess) {
       try {
         await this.uploadImage(rgbItem, rgbFormData)
@@ -1154,9 +1204,28 @@ class MaskEditorDialog extends ComfyDialog {
         }
       }
     }
-
-
-    if (success && paintsuccess) {
+    
+    // Handle combined canvas upload with retries
+    const combinedMaxRetries = 3
+    let combinedAttempt = 0
+    let combinedSuccess = false
+  
+    while (combinedAttempt < combinedMaxRetries && !combinedSuccess) {
+      try {
+        await this.uploadCombined(combinedItem, combinedFormData)
+        combinedSuccess = true
+      } catch (error) {
+        console.error(`Combined upload attempt ${combinedAttempt + 1} failed:`, error)
+        combinedAttempt++
+        if (combinedAttempt < combinedMaxRetries) {
+          console.log('Retrying combined upload...')
+        } else {
+          console.log('Max retries reached. Combined upload failed.')
+        }
+      }
+    }
+  
+    if (success && paintsuccess && combinedSuccess) {
       ComfyApp.onClipspaceEditorSave()
       this.close()
       this.isOpen = false
@@ -1221,12 +1290,57 @@ class MaskEditorDialog extends ComfyDialog {
         )
         ComfyApp.clipspace.imgs[paintedIndex] = newImage
 
-        console.log("UPLOADIMAGE: ", ComfyApp.clipspace)
-        console.log("UPLOADIMAGE: ", ComfyApp.clipspace.imgs[paintedIndex])
-
         // Update images array if it exists
         if (ComfyApp.clipspace.images) {
           ComfyApp.clipspace.images[paintedIndex] = filepath
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to update clipspace image:', err)
+    }
+    ClipspaceDialog.invalidatePreview()
+  }
+
+  private async uploadCombined(
+    filepath: { filename: string; subfolder: string; type: string },
+    formData: FormData,
+    retries = 3
+  ) {
+    if (retries <= 0) {
+      throw new Error('Max retries reached')
+      return
+    }
+    await api
+      .fetchApi('/upload/image', {
+        method: 'POST',
+        body: formData
+      })
+      .then((response) => {
+        if (!response.ok) {
+          console.log('Failed to upload mask:', response)
+          this.uploadImage(filepath, formData, retries - 1)
+        }
+      })
+      .catch((error) => {
+        console.error('Error:', error)
+      })
+
+    try {
+      const combinedIndex = ComfyApp.clipspace?.combinedIndex
+      if (ComfyApp.clipspace?.imgs && combinedIndex !== undefined) {
+        // Create and set new image
+        const newImage = new Image()
+        newImage.src = api.apiURL(
+          '/view?' +
+            new URLSearchParams(filepath).toString() +
+            app.getPreviewFormatParam() +
+            app.getRandParam()
+        )
+        ComfyApp.clipspace.imgs[combinedIndex] = newImage
+
+        // Update images array if it exists
+        if (ComfyApp.clipspace.images) {
+          ComfyApp.clipspace.images[combinedIndex] = filepath
         }
       }
     } catch (err) {
