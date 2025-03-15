@@ -54,7 +54,7 @@ test.describe('Optional input', () => {
     const node = await comfyPage.getNodeRefById('3')
     const inputs = await node.getProperty('inputs')
     const renamedInput = inputs.find((w) => w.name === 'breadth')
-    expect(renamedInput).toBeNull()
+    expect(renamedInput).toBeUndefined()
   })
   test('slider', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('simple_slider')
