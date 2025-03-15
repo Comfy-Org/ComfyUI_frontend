@@ -88,11 +88,11 @@ app.registerExtension({
   name: 'Comfy.AudioWidget',
   async beforeRegisterNodeDef(nodeType, nodeData) {
     if (
-      // @ts-expect-error ComfyNode
-      ['LoadAudio', 'SaveAudio', 'PreviewAudio'].includes(nodeType.comfyClass)
+      ['LoadAudio', 'SaveAudio', 'PreviewAudio'].includes(
+        nodeType.prototype.comfyClass
+      )
     ) {
-      // @ts-expect-error InputSpec is not typed correctly
-      nodeData.input.required.audioUI = ['AUDIO_UI']
+      nodeData.input.required.audioUI = ['AUDIO_UI', {}]
     }
   },
   getCustomWidgets() {
@@ -150,8 +150,7 @@ app.registerExtension({
   name: 'Comfy.UploadAudio',
   async beforeRegisterNodeDef(nodeType, nodeData: ComfyNodeDef) {
     if (nodeData?.input?.required?.audio?.[1]?.audio_upload === true) {
-      // @ts-expect-error InputSpec is not typed correctly
-      nodeData.input.required.upload = ['AUDIOUPLOAD']
+      nodeData.input.required.upload = ['AUDIOUPLOAD', {}]
     }
   },
   getCustomWidgets() {
