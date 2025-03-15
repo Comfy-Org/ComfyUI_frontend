@@ -2910,7 +2910,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     if (e.type == "keydown") {
       // TODO: Switch
-      if (e.keyCode == 32) {
+      if (e.key === " ") {
         // space
         this.read_only = true
         if (this._previously_dragging_canvas === null) {
@@ -2918,12 +2918,12 @@ export class LGraphCanvas implements ConnectionColorContext {
         }
         this.dragging_canvas = this.pointer.isDown
         block_default = true
-      } else if (e.keyCode == 27) {
+      } else if (e.key === "Escape") {
         // esc
         this.node_panel?.close()
         this.options_panel?.close()
         block_default = true
-      } else if (e.keyCode == 65 && e.ctrlKey) {
+      } else if (e.keyCode === 65 && e.ctrlKey) {
         // select all Control A
         this.selectItems()
         block_default = true
@@ -2936,7 +2936,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       } else if (e.keyCode === 86 && (e.metaKey || e.ctrlKey)) {
         // paste
         this.pasteFromClipboard({ connectInputs: e.shiftKey })
-      } else if (e.keyCode == 46 || e.keyCode == 8) {
+      } else if (e.key === "Delete" || e.key === "Backspace") {
         // delete or backspace
         // @ts-expect-error
         if (e.target.localName != "input" && e.target.localName != "textarea") {
@@ -2954,7 +2954,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         }
       }
     } else if (e.type == "keyup") {
-      if (e.keyCode == 32) {
+      if (e.key === " ") {
         // space
         this.read_only = false
         this.dragging_canvas = (this._previously_dragging_canvas ?? false) && this.pointer.isDown
@@ -3944,9 +3944,12 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     if (!LiteGraph.snap_highlights_node) return
 
+    const { linkConnector } = this
+    const { overWidget } = linkConnector
+
     // Ensure we're mousing over a node and connecting a link
     const node = this.node_over
-    if (!(node && this.linkConnector.isConnecting)) return
+    if (!(node && linkConnector.isConnecting)) return
 
     const { strokeStyle, lineWidth } = ctx
 
@@ -3963,7 +3966,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     ctx.roundRect(x, y, width, height, radius)
 
     // TODO: Currently works on LTR slots only.  Add support for other directions.
-    const start = this.linkConnector.state.connectingTo === "output" ? 0 : 1
+    const start = linkConnector.state.connectingTo === "output" ? 0 : 1
     const inverter = start ? -1 : 1
 
     // Radial highlight centred on highlight pos
@@ -3994,8 +3997,6 @@ export class LGraphCanvas implements ConnectionColorContext {
     ctx.strokeStyle = linearGradient
     ctx.stroke()
 
-    const { linkConnector } = this
-    const { overWidget } = linkConnector
     if (overWidget) {
       const { computedHeight } = overWidget
 
