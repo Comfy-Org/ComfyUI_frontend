@@ -1,7 +1,6 @@
 import { whenever } from '@vueuse/core'
-import { partition } from 'lodash'
 import { defineStore } from 'pinia'
-import { ref, watchEffect } from 'vue'
+import { ref, watch } from 'vue'
 
 import { useCachedRequest } from '@/composables/useCachedRequest'
 import { useManagerQueue } from '@/composables/useManagerQueue'
@@ -31,22 +30,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     isStale.value = true
   }
 
-  /**
-   * A pack is disabled if there is a disabled entry and no corresponding enabled entry
-   * @example
-   * installedPacks = {
-   *   "packname@1_0_2": { enabled: false, cnr_id: "packname" },
-   *   "packname": { enabled: true, cnr_id: "packname" }
-   * }
-   * isDisabled("packname") // false
-   *
-   * installedPacks = {
-   *   "packname@1_0_2": { enabled: false, cnr_id: "packname" },
-   * }
-   * isDisabled("packname") // true
-   */
-  const isDisabledPack = (pack: ManagerPackInstalled) =>
-    pack.enabled === false && pack.cnr_id && !installedPacks.value[pack.cnr_id]
+  const getPackId = (pack: ManagerPackInstalled) => pack.cnr_id || pack.aux_id
 
   const isInstalledPackId = (packName: string | undefined): boolean =>
     !!packName && installedPacksIds.value.has(packName)
@@ -63,13 +47,57 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
       return acc
     }, new Set<string>())
 
-  watchEffect(() => {
-    const packs = Object.values(installedPacks.value)
-    const [disabled, enabled] = partition(packs, isDisabledPack)
-    enabledPacksIds.value = packsToIdSet(enabled)
-    disabledPacksIds.value = packsToIdSet(disabled)
+  /**
+   * A pack is disabled if there is a disabled entry and no corresponding
+   * enabled entry. If `packname@1.0.2` is disabled, but `packname@1.0.3` is
+   * enabled, then `packname` is considered enabled.
+   *
+   * @example
+   * installedPacks = {
+   *   "packname@1_0_2": { enabled: false, cnr_id: "packname" },
+   *   "packname": { enabled: true, cnr_id: "packname" }
+   * }
+   * isDisabled("packname") // false
+   *
+   * installedPacks = {
+   *   "packname@1_0_2": { enabled: false, cnr_id: "packname" },
+   * }
+   * isDisabled("packname") // true
+   */
+  const updateDisabledIds = (packs: ManagerPackInstalled[]) => {
+    // Use temporary variables to avoid triggering reactivity
+    const enabledIds = new Set<string>()
+    const disabledIds = new Set<string>()
+
+    for (const pack of packs) {
+      const id = getPackId(pack)
+      if (!id) continue
+
+      const { enabled } = pack
+
+      if (enabled === true) enabledIds.add(id)
+      else if (enabled === false) disabledIds.add(id)
+
+      // If pack in both (has a disabled and enabled version), remove from disabled
+      const inBothSets = enabledIds.has(id) && disabledIds.has(id)
+      if (inBothSets) disabledIds.delete(id)
+    }
+
+    enabledPacksIds.value = enabledIds
+    disabledPacksIds.value = disabledIds
+  }
+
+  const updateInstalledIds = (packs: ManagerPackInstalled[]) => {
     installedPacksIds.value = packsToIdSet(packs)
-  })
+  }
+
+  const onPacksChanged = () => {
+    const packs = Object.values(installedPacks.value)
+    updateDisabledIds(packs)
+    updateInstalledIds(packs)
+  }
+
+  watch(installedPacks, onPacksChanged, { deep: true })
 
   const refreshInstalledList = async () => {
     const packs = await managerService.listInstalledPacks()
