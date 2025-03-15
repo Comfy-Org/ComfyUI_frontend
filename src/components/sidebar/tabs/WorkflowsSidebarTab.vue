@@ -5,6 +5,13 @@
   >
     <template #tool-buttons>
       <Button
+        icon="pi pi-refresh"
+        @click="workflowStore.syncWorkflows()"
+        severity="secondary"
+        text
+        v-tooltip.bottom="$t('g.refresh')"
+      />
+      <Button
         class="browse-templates-button"
         icon="pi pi-th-large"
         severity="secondary"
