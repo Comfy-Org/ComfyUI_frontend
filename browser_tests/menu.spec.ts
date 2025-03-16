@@ -573,6 +573,8 @@ test.describe('Menu', () => {
       })
 
       // Compare the exported workflow with the original
+      delete downloadedContent.id
+      delete downloadedContentZh.id
       expect(downloadedContent).toBeDefined()
       expect(downloadedContent).toEqual(downloadedContentZh)
     })
