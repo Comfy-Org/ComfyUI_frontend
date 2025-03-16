@@ -396,6 +396,12 @@
     "inbox": "받은 편지함",
     "star": "별"
   },
+  "importModelDialog": {
+    "copy": "복사",
+    "move": "이동",
+    "title": "모델 가져오기",
+    "type": "유형"
+  },
   "install": {
     "appDataLocationTooltip": "ComfyUI의 앱 데이터 디렉토리. 저장소:\n- 로그\n- 서버 구성",
     "appPathLocationTooltip": "ComfyUI의 앱 에셋 디렉토리. ComfyUI 코드 및 에셋을 저장합니다.",

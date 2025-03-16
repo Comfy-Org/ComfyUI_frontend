@@ -396,6 +396,12 @@
     "inbox": "Входящие",
     "star": "Звезда"
   },
+  "importModelDialog": {
+    "copy": "Копировать",
+    "move": "Переместить",
+    "title": "Импорт модели",
+    "type": "Тип"
+  },
   "install": {
     "appDataLocationTooltip": "Директория данных приложения ComfyUI. Хранит:\n- Логи\n- Конфигурации сервера",
     "appPathLocationTooltip": "Директория активов приложения ComfyUI. Хранит код и активы ComfyUI",

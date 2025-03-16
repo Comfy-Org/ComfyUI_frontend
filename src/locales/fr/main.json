@@ -396,6 +396,12 @@
     "inbox": "Boîte de réception",
     "star": "Étoile"
   },
+  "importModelDialog": {
+    "copy": "Copier",
+    "move": "Déplacer",
+    "title": "Importer le modèle",
+    "type": "Type"
+  },
   "install": {
     "appDataLocationTooltip": "Répertoire des données de l'application ComfyUI. Stocke :\n- Logs\n- Configurations du serveur",
     "appPathLocationTooltip": "Répertoire des ressources de l'application ComfyUI. Stocke le code et les ressources de ComfyUI",
