@@ -137,7 +137,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
         const installedPack = installedPacks.value[params.id]
 
         if (installedPack && installedPack.ver !== params.selected_version) {
-          actionDescription = `Updating from ${installedPack.ver} to ${params.selected_version}`
+          actionDescription = `Changing version from ${installedPack.ver} to ${params.selected_version}:`
         } else {
           actionDescription = 'Enabling'
         }
