@@ -240,6 +240,7 @@ LGraph {
   "fixedtime": 0,
   "fixedtime_lapse": 0.01,
   "globaltime": 0,
+  "id": "ca9da7d8-fddd-4707-ad32-67be9be13140",
   "inputs": {},
   "iteration": 0,
   "last_update_time": 0,
@@ -249,6 +250,7 @@ LGraph {
   "nodes_executedAction": [],
   "nodes_executing": [],
   "outputs": {},
+  "revision": 0,
   "runningtime": 0,
   "starttime": 0,
   "state": {
@@ -285,6 +287,7 @@ LGraph {
   "fixedtime": 0,
   "fixedtime_lapse": 0.01,
   "globaltime": 0,
+  "id": "d175890f-716a-4ece-ba33-1d17a513b7be",
   "inputs": {},
   "iteration": 0,
   "last_update_time": 0,
@@ -294,6 +297,7 @@ LGraph {
   "nodes_executedAction": [],
   "nodes_executing": [],
   "outputs": {},
+  "revision": 0,
   "runningtime": 0,
   "starttime": 0,
   "state": {

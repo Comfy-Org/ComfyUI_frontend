@@ -19,6 +19,7 @@ import {
   RenderShape,
   TitleMode,
 } from "./types/globalEnums"
+import { createUuidv4 } from "./utils/uuid"
 
 /**
  * The Global Scope. It contains all the registered node classes.
@@ -549,14 +550,8 @@ export class LiteGraphGlobal {
     return target
   }
 
-  /*
-   * https://gist.github.com/jed/982883?permalink_comment_id=852670#gistcomment-852670
-   */
-  uuidv4(): string {
-    // @ts-expect-error
-    return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replaceAll(/[018]/g, a =>
-      (a ^ ((Math.random() * 16) >> (a / 4))).toString(16))
-  }
+  /** @see {@link createUuidv4} @inheritdoc */
+  uuidv4 = createUuidv4
 
   /**
    * Returns if the types of two slots are compatible (taking into account wildcards, etc)

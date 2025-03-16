@@ -246,6 +246,7 @@ LGraph {
   "fixedtime": 0,
   "fixedtime_lapse": 0.01,
   "globaltime": 0,
+  "id": "b4e984f1-b421-4d24-b8b4-ff895793af13",
   "inputs": {},
   "iteration": 0,
   "last_update_time": 0,
@@ -255,6 +256,7 @@ LGraph {
   "nodes_executedAction": [],
   "nodes_executing": [],
   "outputs": {},
+  "revision": 0,
   "runningtime": 0,
   "starttime": 0,
   "state": {

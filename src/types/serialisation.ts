@@ -15,6 +15,7 @@ import type { LinkId, SerialisedLLinkArray } from "../LLink"
 import type { FloatingRerouteSlot, RerouteId } from "../Reroute"
 import type { TWidgetValue } from "../types/widgets"
 import type { RenderShape } from "./globalEnums"
+import type { UUID } from "@/utils/uuid"
 
 /**
  * An object that implements custom pre-serialization logic via {@link Serialisable.asSerialisable}.
@@ -29,6 +30,9 @@ export interface Serialisable<SerialisableObject> {
 }
 
 export interface SerialisableGraph {
+  /** Unique graph ID.  Automatically generated if not provided. */
+  id: UUID
+  revision: number
   /** Schema version.  @remarks Version bump should add to const union, which is used to narrow type during deserialise. */
   version: 0 | 1
   config: LGraphConfig
@@ -80,6 +84,8 @@ export interface ISerialisedNode {
  * Maintained for backwards compat
  */
 export interface ISerialisedGraph {
+  id: UUID
+  revision: number
   last_node_id: NodeId
   last_link_id: number
   nodes: ISerialisedNode[]

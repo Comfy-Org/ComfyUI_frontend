@@ -1,6 +1,8 @@
 import type { ISerialisedGraph, SerialisableGraph } from "@/litegraph"
 
 export const oldSchemaGraph: ISerialisedGraph = {
+  id: "b4e984f1-b421-4d24-b8b4-ff895793af13",
+  revision: 0,
   version: 0.4,
   config: {},
   last_node_id: 0,
@@ -23,6 +25,8 @@ export const oldSchemaGraph: ISerialisedGraph = {
 }
 
 export const minimalSerialisableGraph: SerialisableGraph = {
+  id: "d175890f-716a-4ece-ba33-1d17a513b7be",
+  revision: 0,
   version: 1,
   config: {},
   state: {
@@ -37,6 +41,8 @@ export const minimalSerialisableGraph: SerialisableGraph = {
 }
 
 export const basicSerialisableGraph: SerialisableGraph = {
+  id: "ca9da7d8-fddd-4707-ad32-67be9be13140",
+  revision: 0,
   version: 1,
   config: {},
   state: {

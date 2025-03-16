@@ -179,5 +179,6 @@ LiteGraphGlobal {
   "throw_errors": true,
   "use_legacy_node_error_indicator": false,
   "use_uuids": false,
+  "uuidv4": [Function],
 }
 `;

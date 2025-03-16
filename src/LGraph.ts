@@ -14,6 +14,9 @@ import type {
   SerialisableGraph,
   SerialisableReroute,
 } from "./types/serialisation"
+import type { UUID } from "@/utils/uuid"
+
+import { createUuidv4, zeroUuid } from "@/utils/uuid"
 
 import { LGraphCanvas } from "./LGraphCanvas"
 import { LGraphGroup } from "./LGraphGroup"
@@ -65,6 +68,9 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   static supported_types = ["number", "string", "boolean"]
   static STATUS_STOPPED = 1
   static STATUS_RUNNING = 2
+
+  id: UUID = zeroUuid
+  revision: number = 0
 
   _version: number = -1
   /** The backing store for links.  Keys are wrapped in String() */
@@ -1513,6 +1519,8 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
     extra.reroutes = reroutes?.length ? reroutes : undefined
     return {
+      id: this.id,
+      revision: this.revision,
       last_node_id: state.lastNodeId,
       last_link_id: state.lastLinkId,
       nodes,
@@ -1534,7 +1542,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
    * It is intended for use with {@link structuredClone} or {@link JSON.stringify}.
    */
   asSerialisable(options?: { sortNodes: boolean }): SerialisableGraph & Required<Pick<SerialisableGraph, "nodes" | "groups" | "extra">> {
-    const { config, state, extra } = this
+    const { id, revision, config, state, extra } = this
 
     const nodeList = !LiteGraph.use_uuids && options?.sortNodes
       // @ts-expect-error If LiteGraph.use_uuids is false, ids are numbers.
@@ -1549,6 +1557,8 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     const reroutes = this.reroutes.size ? [...this.reroutes.values()].map(x => x.asSerialisable()) : undefined
 
     const data: ReturnType<typeof this.asSerialisable> = {
+      id,
+      revision,
       version: LGraph.serialisedSchemaVersion,
       config,
       state,
@@ -1577,6 +1587,10 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     // TODO: Finish typing configure()
     if (!data) return
     if (!keep_old) this.clear()
+
+    // Create a new graph ID if none is provided
+    if (data.id) this.id = data.id
+    else if (this.id === zeroUuid) this.id = createUuidv4()
 
     let reroutes: SerialisableReroute[] | undefined
 
@@ -1665,7 +1679,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     // copy all stored fields
     for (const i in data) {
       // links must be accepted
-      if (["nodes", "groups", "links", "state", "reroutes", "floatingLinks"].includes(i)) {
+      if (["nodes", "groups", "links", "state", "reroutes", "floatingLinks", "id"].includes(i)) {
         continue
       }
       // @ts-expect-error #574 Legacy property assignment
