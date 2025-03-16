@@ -16,6 +16,11 @@ export interface SearchOption<T> {
   label: string
 }
 
+export type TaskLog = {
+  taskName: string
+  logs: string[]
+}
+
 enum ManagerPackState {
   /** Pack is installed and enabled */
   INSTALLED = 'installed',

@@ -20,6 +20,9 @@ export const useManagerQueue = () => {
   const clientQueueLength = computed(() => clientQueueItems.value.length)
   const onCompletedQueue = ref<((() => void) | undefined)[]>([])
   const onCompleteWaitingCount = ref(0)
+  const uncompletedCount = computed(
+    () => clientQueueLength.value + onCompleteWaitingCount.value
+  )
 
   const serverQueueStatus = ref<ManagerWsQueueStatus>(ManagerWsQueueStatus.DONE)
   const isServerIdle = computed(
@@ -93,6 +96,7 @@ export const useManagerQueue = () => {
     allTasksDone,
     statusMessage: readonly(serverQueueStatus),
     queueLength: clientQueueLength,
+    uncompletedCount,
 
     enqueueTask,
     clearQueue,
