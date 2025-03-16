@@ -57,13 +57,13 @@ test.describe('Templates', () => {
   test('Can load template workflows', async ({ comfyPage }) => {
     // Clear the workflow
     await comfyPage.menu.workflowsTab.open()
-    await comfyPage.menu.workflowsTab.newBlankWorkflowButton.click()
+    await comfyPage.executeCommand('Comfy.NewBlankWorkflow')
     await expect(async () => {
       expect(await comfyPage.getGraphNodesCount()).toBe(0)
     }).toPass({ timeout: 250 })
 
     // Load a template
-    await comfyPage.menu.workflowsTab.browseGalleryButton.click()
+    await comfyPage.executeCommand('Comfy.BrowseTemplates')
     await expect(comfyPage.templates.content).toBeVisible()
     await comfyPage.templates.loadTemplate('default')
     await expect(comfyPage.templates.content).toBeHidden()

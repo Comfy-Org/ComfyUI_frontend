@@ -673,7 +673,7 @@ test.describe('Load duplicate workflow', () => {
   }) => {
     await comfyPage.loadWorkflow('single_ksampler')
     await comfyPage.menu.workflowsTab.open()
-    await comfyPage.menu.workflowsTab.newBlankWorkflowButton.click()
+    await comfyPage.executeCommand('Comfy.NewBlankWorkflow')
     await comfyPage.loadWorkflow('single_ksampler')
     expect(await comfyPage.getGraphNodesCount()).toBe(1)
   })
