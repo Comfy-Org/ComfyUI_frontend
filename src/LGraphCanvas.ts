@@ -4079,9 +4079,6 @@ export class LGraphCanvas implements ConnectionColorContext {
     }
     const ctx = this.bgctx
     if (!ctx) throw new TypeError("Background canvas context was null.")
-    // TODO: Remove this
-    // @ts-expect-error
-    if (ctx.start) ctx.start()
 
     const viewport = this.viewport || [0, 0, ctx.canvas.width, ctx.canvas.height]
 
@@ -4195,10 +4192,6 @@ export class LGraphCanvas implements ConnectionColorContext {
       // restore state
       ctx.restore()
     }
-
-    // TODO: Remove this
-    // @ts-expect-error
-    ctx.finish?.()
 
     this.dirty_bgcanvas = false
     // Forces repaint of the front canvas.
