@@ -143,12 +143,17 @@ export function getLatentMetadata(file) {
       const dataView = new DataView(safetensorsData.buffer)
       let header_size = dataView.getUint32(0, true)
       let offset = 8
-      let header = JSON.parse(
-        new TextDecoder().decode(
-          safetensorsData.slice(offset, offset + header_size)
+      try {
+        let header = JSON.parse(
+          new TextDecoder().decode(
+            safetensorsData.slice(offset, offset + header_size)
+          )
         )
-      )
-      r(header.__metadata__)
+        r(header.__metadata__)
+      } catch (e) {
+        // Invalid header
+        r(undefined)
+      }
     }
 
     var slice = file.slice(0, 1024 * 1024 * 4)

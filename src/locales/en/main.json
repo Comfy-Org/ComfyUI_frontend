@@ -1405,5 +1405,11 @@
       "tooltip": "Execute to selected output nodes (Highlighted with orange border)",
       "disabledTooltip": "No output nodes selected"
     }
+  },
+  "importModelDialog": {
+    "title": "Import Model",
+    "type": "Type",
+    "move": "Move",
+    "copy": "Copy"
   }
 }

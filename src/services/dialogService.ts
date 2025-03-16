@@ -2,6 +2,7 @@ import ApiNodesNewsContent from '@/components/dialog/content/ApiNodesNewsContent
 import ApiNodesSignInContent from '@/components/dialog/content/ApiNodesSignInContent.vue'
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
+import ImportModelDialogContent from '@/components/dialog/content/ImportModelDialogContent.vue'
 import IssueReportDialogContent from '@/components/dialog/content/IssueReportDialogContent.vue'
 import LoadWorkflowWarning from '@/components/dialog/content/LoadWorkflowWarning.vue'
 import ManagerProgressDialogContent from '@/components/dialog/content/ManagerProgressDialogContent.vue'
@@ -406,6 +407,16 @@ export const useDialogService = () => {
     })
   }
 
+  function showImportModelDialog(
+    props: InstanceType<typeof ImportModelDialogContent>['$props']
+  ) {
+    dialogStore.showDialog({
+      key: 'global-import-model',
+      component: ImportModelDialogContent,
+      props
+    })
+  }
+
   return {
     showLoadWorkflowWarning,
     showMissingModelsWarning,
@@ -422,6 +433,7 @@ export const useDialogService = () => {
     showTopUpCreditsDialog,
     showUpdatePasswordDialog,
     showApiNodesNewsDialog,
+    showImportModelDialog,
     prompt,
     confirm
   }
