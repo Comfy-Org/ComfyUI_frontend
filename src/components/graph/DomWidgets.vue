@@ -30,7 +30,7 @@ const widgets = computed(() =>
   )
 )
 
-const MARGIN = 10
+const DEFAULT_MARGIN = 10
 const updateWidgets = () => {
   const lgCanvas = canvasStore.canvas
   if (!lgCanvas) return
@@ -49,10 +49,11 @@ const updateWidgets = () => {
 
     widgetState.visible = visible
     if (visible) {
-      widgetState.pos = [node.pos[0] + MARGIN, node.pos[1] + MARGIN + widget.y]
+      const margin = widget.options.margin ?? DEFAULT_MARGIN
+      widgetState.pos = [node.pos[0] + margin, node.pos[1] + margin + widget.y]
       widgetState.size = [
-        (widget.width ?? node.width) - MARGIN * 2,
-        (widget.computedHeight ?? 50) - MARGIN * 2
+        (widget.width ?? node.width) - margin * 2,
+        (widget.computedHeight ?? 50) - margin * 2
       ]
       // TODO: optimize this logic as it's O(n), where n is the number of nodes
       widgetState.zIndex = lgCanvas.graph.nodes.indexOf(node)

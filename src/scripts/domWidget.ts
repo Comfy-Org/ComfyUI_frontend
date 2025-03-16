@@ -63,6 +63,7 @@ export interface DOMWidgetOptions<V extends object | string>
   getMaxHeight?: () => number
   getHeight?: () => string | number
   onDraw?: (widget: BaseDOMWidget<V>) => void
+  margin?: number
   /**
    * @deprecated Use `afterResize` instead. This callback is a legacy API
    * that fires before resize happens, but it is no longer supported. Now it
