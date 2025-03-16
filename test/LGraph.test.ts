@@ -32,6 +32,18 @@ describe("LGraph", () => {
     const fromOldSchema = new LGraph(oldSchemaGraph)
     expect(fromOldSchema).toMatchSnapshot("oldSchemaGraph")
   })
+
+  describe("Reroutes", () => {
+    test("Floating reroute should be removed when node and link are removed", ({ expect, floatingLinkGraph }) => {
+      const graph = new LGraph(floatingLinkGraph)
+      expect(graph.nodes.length).toBe(1)
+      graph.remove(graph.nodes[0])
+      expect(graph.nodes.length).toBe(0)
+      expect(graph.links.size).toBe(0)
+      expect(graph.floatingLinks.size).toBe(0)
+      expect(graph.reroutes.size).toBe(0)
+    })
+  })
 })
 
 describe("Legacy LGraph Compatibility Layer", () => {

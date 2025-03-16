@@ -900,6 +900,13 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
       }
     }
 
+    // Floating links
+    for (const link of this.floatingLinks.values()) {
+      if (link.origin_id === node.id || link.target_id === node.id) {
+        this.removeFloatingLink(link)
+      }
+    }
+
     // callback
     node.onRemoved?.()
 
@@ -1400,6 +1407,10 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
       reroute.floatingLinkIds.delete(link.id)
       if (reroute.floatingLinkIds.size === 0) {
         delete reroute.floating
+      }
+
+      if (reroute.floatingLinkIds.size === 0 && reroute.linkIds.size === 0) {
+        this.removeReroute(reroute.id)
       }
     }
   }
