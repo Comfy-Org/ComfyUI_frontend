@@ -6,6 +6,7 @@ import { LGraph } from "@/LGraph"
 import { LiteGraph } from "@/litegraph"
 
 import floatingLink from "./assets/floatingLink.json"
+import linkedNodes from "./assets/linkedNodes.json"
 import { basicSerialisableGraph, minimalSerialisableGraph, oldSchemaGraph } from "./assets/testGraphs"
 
 interface LitegraphFixtures {
@@ -13,6 +14,7 @@ interface LitegraphFixtures {
   minimalSerialisableGraph: SerialisableGraph
   oldSchemaGraph: ISerialisedGraph
   floatingLinkGraph: ISerialisedGraph
+  linkedNodesGraph: ISerialisedGraph
 }
 
 /** These fixtures alter global state, and are difficult to reset. Relies on a single test per-file to reset state. */
@@ -32,6 +34,7 @@ export const test = baseTest.extend<LitegraphFixtures>({
   minimalSerialisableGraph: structuredClone(minimalSerialisableGraph),
   oldSchemaGraph: structuredClone(oldSchemaGraph),
   floatingLinkGraph: structuredClone(floatingLink as unknown as ISerialisedGraph),
+  linkedNodesGraph: structuredClone(linkedNodes as unknown as ISerialisedGraph),
 })
 
 /** Test that use {@link DirtyFixtures}. One test per file. */

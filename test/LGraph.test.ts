@@ -43,6 +43,39 @@ describe("LGraph", () => {
       expect(graph.floatingLinks.size).toBe(0)
       expect(graph.reroutes.size).toBe(0)
     })
+
+    test("Can add reroute to existing link", ({ expect, linkedNodesGraph }) => {
+      const graph = new LGraph(linkedNodesGraph)
+      expect(graph.nodes.length).toBe(2)
+      expect(graph.links.size).toBe(1)
+      expect(graph.reroutes.size).toBe(0)
+
+      graph.createReroute([0, 0], graph.links.values().next().value!)
+      expect(graph.links.size).toBe(1)
+      expect(graph.reroutes.size).toBe(1)
+    })
+
+    test("Create floating reroute when one side of node is removed", ({ expect, linkedNodesGraph }) => {
+      const graph = new LGraph(linkedNodesGraph)
+      graph.createReroute([0, 0], graph.links.values().next().value!)
+      graph.remove(graph.nodes[0])
+
+      expect(graph.links.size).toBe(0)
+      expect(graph.floatingLinks.size).toBe(1)
+      expect(graph.reroutes.size).toBe(1)
+      expect(graph.reroutes.values().next().value!.floating).not.toBeUndefined()
+    })
+
+    test("Create floating reroute when one side of link is removed", ({ expect, linkedNodesGraph }) => {
+      const graph = new LGraph(linkedNodesGraph)
+      graph.createReroute([0, 0], graph.links.values().next().value!)
+      graph.nodes[0].disconnectOutput(0)
+
+      expect(graph.links.size).toBe(0)
+      expect(graph.floatingLinks.size).toBe(1)
+      expect(graph.reroutes.size).toBe(1)
+      expect(graph.reroutes.values().next().value!.floating).not.toBeUndefined()
+    })
   })
 })
 
