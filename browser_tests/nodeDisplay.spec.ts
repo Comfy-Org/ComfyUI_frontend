@@ -49,6 +49,13 @@ test.describe('Optional input', () => {
     expect(vaeInput.link).toBeNull()
     expect(convertedInput.link).not.toBeNull()
   })
+  test('Renamed converted input', async ({ comfyPage }) => {
+    await comfyPage.loadWorkflow('renamed_converted_widget')
+    const node = await comfyPage.getNodeRefById('3')
+    const inputs = await node.getProperty('inputs')
+    const renamedInput = inputs.find((w) => w.name === 'breadth')
+    expect(renamedInput).toBeUndefined()
+  })
   test('slider', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('simple_slider')
     await expect(comfyPage.canvas).toHaveScreenshot('simple_slider.png')
