@@ -25,6 +25,10 @@
       v-bind="item.contentProps"
       :maximized="item.dialogComponentProps.maximized"
     />
+
+    <template #footer v-if="item.footerComponent">
+      <component :is="item.footerComponent" />
+    </template>
   </Dialog>
 </template>
 
