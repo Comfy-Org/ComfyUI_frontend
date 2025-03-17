@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex justify-between p-5 text-xs text-muted font-medium leading-3"
+    class="flex justify-between px-5 py-4 text-xs text-muted font-medium leading-3"
   >
     <div class="flex items-center gap-2 cursor-pointer">
       <span v-if="publisherName" class="max-w-40 truncate">
