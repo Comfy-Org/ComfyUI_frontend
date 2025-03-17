@@ -124,7 +124,7 @@ import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import type { TabItem } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
 
-const DEFAULT_CARD_SIZE = 512
+const DEFAULT_CARD_SIZE = 349
 
 const { t } = useI18n()
 const comfyManagerStore = useComfyManagerStore()
