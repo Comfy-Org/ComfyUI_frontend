@@ -178,7 +178,6 @@ export class ClipspaceDialog extends ComfyDialog {
   }
 
   show() {
-    const img_preview = document.getElementById('clipspace_preview')
     ClipspaceDialog.invalidate()
 
     this.element.style.display = 'block'

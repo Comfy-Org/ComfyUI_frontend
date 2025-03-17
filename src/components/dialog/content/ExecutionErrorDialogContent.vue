@@ -174,18 +174,6 @@ const { copyToClipboard } = useCopyToClipboard()
 const copyReportToClipboard = async () => {
   await copyToClipboard(reportContent.value)
 }
-
-const openNewGithubIssue = async () => {
-  await copyReportToClipboard()
-  const issueTitle = encodeURIComponent(
-    `[Bug]: ${props.error.exception_type} in ${props.error.node_type}`
-  )
-  const issueBody = encodeURIComponent(
-    'The report has been copied to the clipboard. Please paste it here.'
-  )
-  const url = `https://github.com/${repoOwner}/${repoName}/issues/new?title=${issueTitle}&body=${issueBody}`
-  window.open(url, '_blank')
-}
 </script>
 
 <style scoped>

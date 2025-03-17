@@ -821,8 +821,11 @@ class MaskEditorDialog extends ComfyDialog {
 
   //new
   private uiManager!: UIManager
+  // @ts-expect-error unused variable
   private toolManager!: ToolManager
+  // @ts-expect-error unused variable
   private panAndZoomManager!: PanAndZoomManager
+  // @ts-expect-error unused variable
   private brushTool!: BrushTool
   private paintBucketTool!: PaintBucketTool
   private colorSelectTool!: ColorSelectTool
@@ -1190,6 +1193,7 @@ class MaskEditorDialog extends ComfyDialog {
 }
 
 class CanvasHistory {
+  // @ts-expect-error unused variable
   private maskEditor!: MaskEditorDialog
   private messageBroker!: MessageBroker
 
@@ -1542,6 +1546,7 @@ class PaintBucketTool {
 }
 
 class ColorSelectTool {
+  // @ts-expect-error unused variable
   private maskEditor!: MaskEditorDialog
   private messageBroker!: MessageBroker
   private width: number | null = null
@@ -2329,9 +2334,6 @@ class BrushTool {
     const cappedDeltaY = Math.max(-100, Math.min(100, finalDeltaY))
 
     // Rest of the function remains the same
-    const sizeDelta = cappedDeltaX / 40
-    const hardnessDelta = cappedDeltaY / 800
-
     const newSize = Math.max(
       1,
       Math.min(
@@ -2450,90 +2452,6 @@ class BrushTool {
     }
   }
 
-  private calculateCubicSplinePoints(
-    points: Point[],
-    numSegments: number = 10
-  ): Point[] {
-    const result: Point[] = []
-
-    const xCoords = points.map((p) => p.x)
-    const yCoords = points.map((p) => p.y)
-
-    const xDerivatives = this.calculateSplineCoefficients(xCoords)
-    const yDerivatives = this.calculateSplineCoefficients(yCoords)
-
-    // Generate points along the spline
-    for (let i = 0; i < points.length - 1; i++) {
-      const p0 = points[i]
-      const p1 = points[i + 1]
-      const d0x = xDerivatives[i]
-      const d1x = xDerivatives[i + 1]
-      const d0y = yDerivatives[i]
-      const d1y = yDerivatives[i + 1]
-
-      for (let t = 0; t <= numSegments; t++) {
-        const t_normalized = t / numSegments
-
-        // Hermite basis functions
-        const h00 = 2 * t_normalized ** 3 - 3 * t_normalized ** 2 + 1
-        const h10 = t_normalized ** 3 - 2 * t_normalized ** 2 + t_normalized
-        const h01 = -2 * t_normalized ** 3 + 3 * t_normalized ** 2
-        const h11 = t_normalized ** 3 - t_normalized ** 2
-
-        const x = h00 * p0.x + h10 * d0x + h01 * p1.x + h11 * d1x
-        const y = h00 * p0.y + h10 * d0y + h01 * p1.y + h11 * d1y
-
-        result.push({ x, y })
-      }
-    }
-
-    return result
-  }
-
-  private generateEvenlyDistributedPoints(
-    splinePoints: Point[],
-    numPoints: number
-  ): Point[] {
-    const distances: number[] = [0]
-    for (let i = 1; i < splinePoints.length; i++) {
-      const dx = splinePoints[i].x - splinePoints[i - 1].x
-      const dy = splinePoints[i].y - splinePoints[i - 1].y
-      const dist = Math.hypot(dx, dy)
-      distances.push(distances[i - 1] + dist)
-    }
-
-    const totalLength = distances[distances.length - 1]
-    const interval = totalLength / (numPoints - 1)
-    const result: Point[] = []
-    let currentIndex = 0
-
-    for (let i = 0; i < numPoints; i++) {
-      const targetDistance = i * interval
-
-      while (
-        currentIndex < distances.length - 1 &&
-        distances[currentIndex + 1] < targetDistance
-      ) {
-        currentIndex++
-      }
-
-      const t =
-        (targetDistance - distances[currentIndex]) /
-        (distances[currentIndex + 1] - distances[currentIndex])
-
-      const x =
-        splinePoints[currentIndex].x +
-        t * (splinePoints[currentIndex + 1].x - splinePoints[currentIndex].x)
-      const y =
-        splinePoints[currentIndex].y +
-        t * (splinePoints[currentIndex + 1].y - splinePoints[currentIndex].y)
-
-      result.push({ x, y })
-    }
-
-    return result
-  }
-
   private generateEquidistantPoints(
     points: Point[],
     distance: number
@@ -2582,45 +2500,6 @@ class BrushTool {
     return result
   }
 
-  private calculateSplineCoefficients(values: number[]): number[] {
-    const n = values.length - 1
-    const matrix: number[][] = new Array(n + 1)
-      .fill(0)
-      .map(() => new Array(n + 1).fill(0))
-    const rhs: number[] = new Array(n + 1).fill(0)
-
-    // Set up tridiagonal matrix
-    for (let i = 1; i < n; i++) {
-      matrix[i][i - 1] = 1
-      matrix[i][i] = 4
-      matrix[i][i + 1] = 1
-      rhs[i] = 3 * (values[i + 1] - values[i - 1])
-    }
-
-    // Set boundary conditions (natural spline)
-    matrix[0][0] = 2
-    matrix[0][1] = 1
-    matrix[n][n - 1] = 1
-    matrix[n][n] = 2
-    rhs[0] = 3 * (values[1] - values[0])
-    rhs[n] = 3 * (values[n] - values[n - 1])
-
-    // Solve tridiagonal system using Thomas algorithm
-    for (let i = 1; i <= n; i++) {
-      const m = matrix[i][i - 1] / matrix[i - 1][i - 1]
-      matrix[i][i] -= m * matrix[i - 1][i]
-      rhs[i] -= m * rhs[i - 1]
-    }
-
-    const solution: number[] = new Array(n + 1)
-    solution[n] = rhs[n] / matrix[n][n]
-    for (let i = n - 1; i >= 0; i--) {
-      solution[i] = (rhs[i] - matrix[i][i + 1] * solution[i + 1]) / matrix[i][i]
-    }
-
-    return solution
-  }
-
   private setBrushSize(size: number) {
     this.brushSettings.size = size
     saveBrushToCache('maskeditor_brush_settings', this.brushSettings)
@@ -2658,13 +2537,16 @@ class UIManager {
   private brushSettingsHTML!: HTMLDivElement
   private paintBucketSettingsHTML!: HTMLDivElement
   private colorSelectSettingsHTML!: HTMLDivElement
+  // @ts-expect-error unused variable
   private maskOpacitySlider!: HTMLInputElement
   private brushHardnessSlider!: HTMLInputElement
   private brushSizeSlider!: HTMLInputElement
+  // @ts-expect-error unused variable
   private brushOpacitySlider!: HTMLInputElement
   private sidebarImage!: HTMLImageElement
   private saveButton!: HTMLButtonElement
   private toolPanel!: HTMLDivElement
+  // @ts-expect-error unused variable
   private sidePanel!: HTMLDivElement
   private pointerZone!: HTMLDivElement
   private canvasBackground!: HTMLDivElement
@@ -3817,7 +3699,7 @@ class UIManager {
 
   private async createBrush() {
     var brush = document.createElement('div')
-    const brushSettings = await this.messageBroker.pull('brushSettings')
+    await this.messageBroker.pull('brushSettings')
     brush.id = 'maskEditor_brush'
 
     var brush_preview_gradient = document.createElement('div')
@@ -4741,7 +4623,7 @@ class PanAndZoomManager {
   }
 
   private handlePanStart(event: PointerEvent) {
-    let coords_canvas = this.messageBroker.pull('screenToCanvas', {
+    this.messageBroker.pull('screenToCanvas', {
       x: event.offsetX,
       y: event.offsetY
     })
@@ -4947,6 +4829,7 @@ class MessageBroker {
 
 class KeyboardManager {
   private keysDown: string[] = []
+  // @ts-expect-error unused variable
   private maskEditor: MaskEditorDialog
   private messageBroker: MessageBroker
 
@@ -4994,24 +4877,6 @@ class KeyboardManager {
 
   private isKeyDown(key: string) {
     return this.keysDown.includes(key)
-  }
-
-  // combinations
-
-  private undoCombinationPressed() {
-    const combination = ['ctrl', 'z']
-    const keysDownLower = this.keysDown.map((key) => key.toLowerCase())
-    const result = combination.every((key) => keysDownLower.includes(key))
-    if (result) this.messageBroker.publish('undo')
-    return result
-  }
-
-  private redoCombinationPressed() {
-    const combination = ['ctrl', 'shift', 'z']
-    const keysDownLower = this.keysDown.map((key) => key.toLowerCase())
-    const result = combination.every((key) => keysDownLower.includes(key))
-    if (result) this.messageBroker.publish('redo')
-    return result
   }
 }
 

@@ -1,5 +1,5 @@
 // @ts-strict-ignore
-import { type LGraph, LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
+import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
 import { LGraphNode, type NodeId } from '@comfyorg/litegraph/dist/LGraphNode'
 
 import { t } from '@/i18n'
@@ -1044,7 +1044,7 @@ export class GroupNodeHandler {
     const onDrawForeground = node.onDrawForeground
     const groupData = this.groupData.nodeData
     node.onDrawForeground = function (ctx) {
-      const r = onDrawForeground?.apply?.(this, arguments)
+      onDrawForeground?.apply?.(this, arguments)
       if (
         +app.runningNodeId === this.id &&
         this.runningInternalNodeId !== null

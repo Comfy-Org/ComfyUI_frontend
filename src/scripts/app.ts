@@ -1237,9 +1237,7 @@ export class ComfyApp {
       let message = error.response.error.message
       if (error.response.error.details)
         message += ': ' + error.response.error.details
-      for (const [nodeID, nodeError] of Object.entries(
-        error.response.node_errors
-      )) {
+      for (const [_, nodeError] of Object.entries(error.response.node_errors)) {
         // @ts-expect-error
         message += '\n' + nodeError.class_type + ':'
         // @ts-expect-error

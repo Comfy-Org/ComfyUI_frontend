@@ -17,6 +17,7 @@ export class SceneManager implements SceneManagerInterface {
   private renderer: THREE.WebGLRenderer
 
   private getActiveCamera: () => THREE.Camera
+  // @ts-expect-error unused variable
   private getControls: () => OrbitControls
 
   constructor(

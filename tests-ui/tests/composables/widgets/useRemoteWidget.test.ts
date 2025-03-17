@@ -75,8 +75,6 @@ async function getResolvedValue(hook: ReturnType<typeof useRemoteWidget>) {
 }
 
 describe('useRemoteWidget', () => {
-  let mockConfig: RemoteWidgetConfig
-
   beforeEach(() => {
     vi.clearAllMocks()
     // Reset mocks
@@ -85,8 +83,6 @@ describe('useRemoteWidget', () => {
     vi.spyOn(Map.prototype, 'get').mockClear()
     vi.spyOn(Map.prototype, 'set').mockClear()
     vi.spyOn(Map.prototype, 'delete').mockClear()
-
-    mockConfig = createMockConfig()
   })
 
   afterEach(() => {

@@ -9,7 +9,7 @@ import {
 
 export class ControlsManager implements ControlsManagerInterface {
   controls: OrbitControls
-
+  // @ts-expect-error unused variable
   private eventManager: EventManagerInterface
   private nodeStorage: NodeStorageInterface
   private camera: THREE.Camera

@@ -18,22 +18,6 @@ function dataURLToBlob(dataURL) {
   return new Blob([arrayBuffer], { type: contentType })
 }
 
-function loadedImageToBlob(image) {
-  const canvas = document.createElement('canvas')
-
-  canvas.width = image.width
-  canvas.height = image.height
-
-  const ctx = canvas.getContext('2d')
-
-  ctx.drawImage(image, 0, 0)
-
-  const dataURL = canvas.toDataURL('image/png', 1)
-  const blob = dataURLToBlob(dataURL)
-
-  return blob
-}
-
 function loadImage(imagePath) {
   return new Promise((resolve, reject) => {
     const image = new Image()
@@ -526,8 +510,6 @@ export class MaskEditorDialogOld extends ComfyDialog {
     maskCtx.clearRect(0, 0, this.maskCanvas.width, this.maskCanvas.height)
 
     // image load
-    const filepath = ComfyApp.clipspace.images
-
     const alpha_url = new URL(
       ComfyApp.clipspace.imgs[ComfyApp.clipspace['selectedIndex']].src
     )
