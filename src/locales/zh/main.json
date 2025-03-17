@@ -188,6 +188,7 @@
     "reportSent": "报告已提交",
     "reset": "重置",
     "resetKeybindingsTooltip": "将快捷键重置为默认",
+    "restart": "重新启动",
     "resultsCount": "找到 {count} 个结果",
     "save": "保存",
     "saving": "正在保存",
@@ -397,6 +398,7 @@
     "nodePack": "节点包",
     "packsSelected": "选定的包",
     "repository": "仓库",
+    "restartToApplyChanges": "要应用更改，请重新启动ComfyUI",
     "searchPlaceholder": "搜索",
     "selectVersion": "选择版本",
     "sort": {
@@ -530,6 +532,7 @@
     "Toggle Logs Bottom Panel": "切换日志底部面板",
     "Toggle Model Library Sidebar": "切换模型库侧边栏",
     "Toggle Node Library Sidebar": "切换节点库侧边栏",
+    "Toggle Progress Dialog": "切换进度对话框",
     "Toggle Queue Sidebar": "切换队列侧边栏",
     "Toggle Search Box": "切换搜索框",
     "Toggle Terminal Bottom Panel": "切换终端底部面板",

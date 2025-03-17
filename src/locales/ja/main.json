@@ -188,6 +188,7 @@
     "reportSent": "レポートが送信されました",
     "reset": "リセット",
     "resetKeybindingsTooltip": "キーバインディングをデフォルトにリセット",
+    "restart": "再起動",
     "resultsCount": "{count}件の結果が見つかりました",
     "save": "保存",
     "saving": "保存中",
@@ -397,6 +398,7 @@
     "nodePack": "ノードパック",
     "packsSelected": "選択したパック",
     "repository": "リポジトリ",
+    "restartToApplyChanges": "変更を適用するには、ComfyUIを再起動してください",
     "searchPlaceholder": "検索",
     "selectVersion": "バージョンを選択",
     "sort": {
@@ -530,6 +532,7 @@
     "Toggle Logs Bottom Panel": "ログパネル下部を切り替え",
     "Toggle Model Library Sidebar": "モデルライブラリサイドバーを切り替え",
     "Toggle Node Library Sidebar": "ノードライブラリサイドバーを切り替え",
+    "Toggle Progress Dialog": "進行状況ダイアログの切り替え",
     "Toggle Queue Sidebar": "キューサイドバーを切り替え",
     "Toggle Search Box": "検索ボックスの切り替え",
     "Toggle Terminal Bottom Panel": "ターミナルパネル下部を切り替え",
