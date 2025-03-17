@@ -1,39 +1,46 @@
 <template>
-  <div class="flex flex-col h-full z-40 hidden-scrollbar w-80">
-    <div class="p-6 flex-1 overflow-hidden text-sm">
-      <InfoPanelHeader :node-packs="[nodePack]" />
-      <div class="mb-6">
-        <MetadataRow
-          v-if="isPackInstalled(nodePack.id)"
-          :label="t('manager.filter.enabled')"
-          class="flex"
-          style="align-items: center"
-        >
-          <PackEnableToggle :node-pack="nodePack" />
-        </MetadataRow>
-        <MetadataRow
-          v-for="item in infoItems"
-          v-show="item.value !== undefined && item.value !== null"
-          :key="item.key"
-          :label="item.label"
-          :value="item.value"
-        />
-        <MetadataRow :label="t('g.status')">
-          <PackStatusMessage
-            :status-type="
-              nodePack.status as components['schemas']['NodeVersionStatus']
-            "
+  <template v-if="nodePack">
+    <div class="flex flex-col h-full z-40 hidden-scrollbar w-80">
+      <div class="p-6 flex-1 overflow-hidden text-sm">
+        <InfoPanelHeader :node-packs="[nodePack]" />
+        <div class="mb-6">
+          <MetadataRow
+            v-if="isPackInstalled(nodePack.id)"
+            :label="t('manager.filter.enabled')"
+            class="flex"
+            style="align-items: center"
+          >
+            <PackEnableToggle :node-pack="nodePack" />
+          </MetadataRow>
+          <MetadataRow
+            v-for="item in infoItems"
+            v-show="item.value !== undefined && item.value !== null"
+            :key="item.key"
+            :label="item.label"
+            :value="item.value"
           />
-        </MetadataRow>
-        <MetadataRow :label="t('manager.version')">
-          <PackVersionBadge :node-pack="nodePack" />
-        </MetadataRow>
-      </div>
-      <div class="mb-6 overflow-hidden">
-        <InfoTabs :node-pack="nodePack" />
+          <MetadataRow :label="t('g.status')">
+            <PackStatusMessage
+              :status-type="
+                nodePack.status as components['schemas']['NodeVersionStatus']
+              "
+            />
+          </MetadataRow>
+          <MetadataRow :label="t('manager.version')">
+            <PackVersionBadge :node-pack="nodePack" />
+          </MetadataRow>
+        </div>
+        <div class="mb-6 overflow-hidden">
+          <InfoTabs :node-pack="nodePack" />
+        </div>
       </div>
     </div>
-  </div>
+  </template>
+  <template v-else>
+    <div class="mt-4 mx-8 flex-1 overflow-hidden text-sm">
+      {{ $t('manager.infoPanelEmpty') }}
+    </div>
+  </template>
 </template>
 
 <script setup lang="ts">

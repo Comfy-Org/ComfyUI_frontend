@@ -18,17 +18,15 @@
         v-model:selectedTab="selectedTab"
       />
       <div
-        class="flex-1 overflow-auto"
+        class="flex-1 overflow-auto pr-80"
         :class="{
           'transition-all duration-300': isSmallScreen,
           'pl-80': isSideNavOpen || !isSmallScreen,
-          'pl-8': !isSideNavOpen && isSmallScreen,
-          'pr-80': showInfoPanel
+          'pl-8': !isSideNavOpen && isSmallScreen
         }"
       >
         <div class="px-6 pt-6 flex flex-col h-full">
           <RegistrySearchBar
-            v-if="!hideSearchBar"
             v-model:searchQuery="searchQuery"
             v-model:searchMode="searchMode"
             :searchResults="searchResults"
@@ -80,7 +78,6 @@
         </div>
       </div>
       <div
-        v-if="showInfoPanel"
         class="w-80 border-l-0 border-surface-border absolute right-0 top-0 bottom-0 flex z-20"
       >
         <ContentDivider orientation="vertical" :width="0.2" />
@@ -125,7 +122,6 @@ const {
   isOpen: isSideNavOpen,
   toggle: toggleSideNav
 } = useResponsiveCollapse()
-const hideSearchBar = computed(() => isSmallScreen.value && showInfoPanel.value)
 
 const tabs = ref<TabItem[]>([
   { id: 'all', label: t('g.all'), icon: 'pi-list' },
@@ -211,6 +207,5 @@ const handleGridContainerClick = (event: MouseEvent) => {
   }
 }
 
-const showInfoPanel = computed(() => selectedNodePacks.value.length > 0)
 const hasMultipleSelections = computed(() => selectedNodePacks.value.length > 1)
 </script>
