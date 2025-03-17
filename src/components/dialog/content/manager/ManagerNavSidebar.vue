@@ -8,7 +8,7 @@
         :options="tabs"
         optionLabel="label"
         listStyle="max-height:unset"
-        class="w-full border-0 bg-transparent"
+        class="w-full border-0 bg-transparent shadow-none"
         :pt="{
           list: { class: 'p-5' },
           option: { class: 'px-8 py-3 text-lg rounded-xl' },
