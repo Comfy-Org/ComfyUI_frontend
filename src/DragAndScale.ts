@@ -3,7 +3,12 @@ import type { Point, ReadOnlyRect, Rect, Rect32 } from "./interfaces"
 import { EaseFunction } from "./litegraph"
 
 export interface DragAndScaleState {
+  /**
+   * The offset from the top-left of the current canvas viewport to `[0, 0]` in graph space.
+   * Or said another way, the inverse offset of the viewport.
+   */
   offset: Point
+  /** The scale of the graph. */
   scale: number
 }
 
