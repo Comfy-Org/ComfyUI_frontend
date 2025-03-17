@@ -11,11 +11,12 @@
 </template>
 
 <script setup lang="ts">
-import { type Ref, inject } from 'vue'
+import { inject } from 'vue'
 
 import PackActionButton from '@/components/dialog/content/manager/button/PackActionButton.vue'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import {
+  IsInstallingKey,
   ManagerChannel,
   ManagerDatabaseSource,
   SelectedVersion
@@ -28,7 +29,7 @@ const { nodePacks } = defineProps<{
   nodePacks: NodePack[]
 }>()
 
-const isInstalling = inject<Ref<boolean>>('isInstalling')
+const isInstalling = inject(IsInstallingKey)
 
 const managerStore = useComfyManagerStore()
 

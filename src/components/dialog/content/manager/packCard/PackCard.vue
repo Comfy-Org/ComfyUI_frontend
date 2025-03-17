@@ -100,6 +100,7 @@ import PackVersionBadge from '@/components/dialog/content/manager/PackVersionBad
 import PackCardFooter from '@/components/dialog/content/manager/packCard/PackCardFooter.vue'
 import PackIcon from '@/components/dialog/content/manager/packIcon/PackIcon.vue'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import { IsInstallingKey } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
 import { compareVersions, isSemVer } from '@/utils/formatUtil'
 
@@ -109,7 +110,7 @@ const { nodePack, isSelected = false } = defineProps<{
 }>()
 
 const isInstalling = ref(false)
-provide('isInstalling', isInstalling)
+provide(IsInstallingKey, isInstalling)
 
 const { isPackInstalled, isPackEnabled, getInstalledPackVersion } =
   useComfyManagerStore()
