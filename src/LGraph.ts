@@ -237,6 +237,9 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     this.stop()
     this.status = LGraph.STATUS_STOPPED
 
+    this.id = zeroUuid
+    this.revision = 0
+
     this.state = {
       lastGroupId: 0,
       lastNodeId: 0,
