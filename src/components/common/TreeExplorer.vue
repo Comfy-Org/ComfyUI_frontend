@@ -81,7 +81,7 @@ const getTreeNodeIcon = (node: TreeExplorerNode) => {
   if (node.leaf) {
     return 'pi pi-file'
   }
-  const isExpanded = expandedKeys.value[node.key]
+  const isExpanded = expandedKeys.value?.[node.key] ?? false
   return isExpanded ? 'pi pi-folder-open' : 'pi pi-folder'
 }
 const fillNodeInfo = (node: TreeExplorerNode): RenderedTreeExplorerNode => {
