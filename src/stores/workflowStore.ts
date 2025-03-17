@@ -56,6 +56,13 @@ export class ComfyWorkflow extends UserFile {
   }
 
   /**
+   * Whether the workflow is a folder placeholder.
+   */
+  get isFolderPlaceholder(): boolean {
+    return this.filename === '.index'
+  }
+
+  /**
    * Load the workflow content from remote storage. Directly returns the loaded
    * workflow if the content is already loaded.
    *
@@ -153,6 +160,8 @@ export interface WorkflowStore {
   getWorkflowByPath: (path: string) => ComfyWorkflow | null
   syncWorkflows: (dir?: string) => Promise<void>
   reorderWorkflows: (from: number, to: number) => void
+
+  createFolder: (folderPath: string) => Promise<void>
 }
 
 export const useWorkflowStore = defineStore('workflow', () => {
@@ -418,6 +427,40 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }
   }
 
+  /**
+   * Creates a new folder in the workflows directory
+   * @param folderPath The path of the folder to create (relative to workflows/)
+   * @returns Promise that resolves when the folder is created
+   */
+  const createFolder = async (folderPath: string): Promise<void> => {
+    isBusy.value = true
+    try {
+      // Ensure the path is properly formatted
+      const normalizedPath = folderPath.endsWith('/')
+        ? folderPath.slice(0, -1)
+        : folderPath
+
+      // Create the full path including the reserved index file
+      const indexFilePath = `${ComfyWorkflow.basePath}${normalizedPath}/.index`
+
+      // Create an empty file to represent the folder
+      const resp = await api.storeUserData(indexFilePath, '', {
+        overwrite: false,
+        throwOnError: true,
+        full_info: true
+      })
+
+      if (resp.status !== 200) {
+        throw new Error('Failed to create folder')
+      }
+
+      // Sync workflows to update the file tree
+      await syncWorkflows()
+    } finally {
+      isBusy.value = false
+    }
+  }
+
   return {
     activeWorkflow,
     isActive,
@@ -439,7 +482,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
     persistedWorkflows,
     modifiedWorkflows,
     getWorkflowByPath,
-    syncWorkflows
+    syncWorkflows,
+
+    createFolder
   }
 }) as unknown as () => WorkflowStore
 

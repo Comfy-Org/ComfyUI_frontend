@@ -220,7 +220,9 @@ const renderTreeNode = (
   node: TreeNode,
   type: WorkflowTreeType
 ): TreeExplorerNode<ComfyWorkflow> => {
-  const children = node.children?.map((child) => renderTreeNode(child, type))
+  const children = node.children
+    ?.filter((child) => !child.data?.isFolderPlaceholder)
+    ?.map((child) => renderTreeNode(child, type))
 
   const workflow: ComfyWorkflow = node.data
 
