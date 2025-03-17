@@ -43,14 +43,18 @@ import { computed, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
+import { useTreeFolderOperations } from '@/composables/tree/useTreeFolderOperations'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import {
+  InjectKeyExpandedKeys,
   InjectKeyHandleEditLabelFunction,
   type RenderedTreeExplorerNode,
   type TreeExplorerNode
 } from '@/types/treeExplorerTypes'
+import { combineTrees, findNodeByKey } from '@/utils/treeUtil'
 
 const expandedKeys = defineModel<Record<string, boolean>>('expandedKeys')
+provide(InjectKeyExpandedKeys, expandedKeys)
 const selectionKeys = defineModel<Record<string, boolean>>('selectionKeys')
 // Tracks whether the caller has set the selectionKeys model.
 const storeSelectionKeys = selectionKeys.value !== undefined
@@ -64,8 +68,23 @@ const emit = defineEmits<{
   (e: 'nodeDelete', node: RenderedTreeExplorerNode): void
   (e: 'contextMenu', node: RenderedTreeExplorerNode, event: MouseEvent): void
 }>()
+
+const {
+  newFolderNode,
+  getAddFolderMenuItem,
+  handleFolderCreation,
+  addFolderCommand
+} = useTreeFolderOperations(
+  /* expandNode */ (node: TreeExplorerNode) => {
+    expandedKeys.value[node.key] = true
+  }
+)
+
 const renderedRoot = computed<RenderedTreeExplorerNode>(() => {
-  return fillNodeInfo(props.root)
+  const renderedRoot = fillNodeInfo(props.root)
+  return newFolderNode.value
+    ? combineTrees(renderedRoot, newFolderNode.value)
+    : renderedRoot
 })
 const getTreeNodeIcon = (node: TreeExplorerNode) => {
   if (node.getIcon) {
@@ -127,7 +146,11 @@ const handleNodeLabelEdit = async (
 ) => {
   await errorHandling.wrapWithErrorHandlingAsync(
     async () => {
-      await node.handleRename(newName)
+      if (node.key === newFolderNode.value?.key) {
+        await handleFolderCreation(newName)
+      } else {
+        await node.handleRename(newName)
+      }
     },
     node.handleError,
     () => {
@@ -147,6 +170,7 @@ const deleteCommand = async (node: RenderedTreeExplorerNode) => {
 }
 const menuItems = computed<MenuItem[]>(() =>
   [
+    getAddFolderMenuItem(menuTargetNode.value),
     {
       label: t('g.rename'),
       icon: 'pi pi-file-edit',
@@ -194,7 +218,14 @@ const wrapCommandWithErrorHandler = (
 
 defineExpose({
   renameCommand,
-  deleteCommand
+  deleteCommand,
+  /**
+   * The command to add a folder to a node via the context menu
+   * @param targetNodeKey - The key of the node where the folder will be added under
+   */
+  addFolderCommand: (targetNodeKey: string) => {
+    addFolderCommand(findNodeByKey(renderedRoot.value, targetNodeKey))
+  }
 })
 </script>
 

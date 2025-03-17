@@ -119,7 +119,10 @@ test.describe('Menu', () => {
     test('Can add new bookmark folder', async ({ comfyPage }) => {
       const tab = comfyPage.menu.nodeLibraryTab
       await tab.newFolderButton.click()
-      await comfyPage.page.keyboard.press('Enter')
+      const textInput = comfyPage.page.locator('.editable-text input')
+      await textInput.waitFor({ state: 'visible' })
+      await textInput.fill('New Folder')
+      await textInput.press('Enter')
       expect(await tab.getFolder('New Folder').count()).toBe(1)
       expect(
         await comfyPage.getSetting('Comfy.NodeLibrary.Bookmarks.V2')
@@ -132,8 +135,10 @@ test.describe('Menu', () => {
 
       await tab.getFolder('foo').click({ button: 'right' })
       await comfyPage.page.getByLabel('New Folder').click()
-      await comfyPage.page.keyboard.type('bar')
-      await comfyPage.page.keyboard.press('Enter')
+      const textInput = comfyPage.page.locator('.editable-text input')
+      await textInput.waitFor({ state: 'visible' })
+      await textInput.fill('bar')
+      await textInput.press('Enter')
 
       expect(await tab.getFolder('bar').count()).toBe(1)
       expect(

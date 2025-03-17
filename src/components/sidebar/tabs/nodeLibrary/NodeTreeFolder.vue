@@ -8,21 +8,27 @@
 </template>
 
 <script setup lang="ts">
-import { Ref, computed, inject, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, inject, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import type { BookmarkCustomization } from '@/schemas/apiSchema'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
+import {
+  InjectKeyExpandedKeys,
+  type RenderedTreeExplorerNode
+} from '@/types/treeExplorerTypes'
 
-const props = defineProps<{
+const { node } = defineProps<{
   node: RenderedTreeExplorerNode<ComfyNodeDefImpl>
 }>()
 
 const nodeBookmarkStore = useNodeBookmarkStore()
 const customization = computed<BookmarkCustomization | undefined>(() => {
-  return nodeBookmarkStore.bookmarksCustomization[props.node.data.nodePath]
+  const nodeDef = node.data
+  return nodeDef
+    ? nodeBookmarkStore.bookmarksCustomization[nodeDef.nodePath]
+    : undefined
 })
 
 const treeNodeElement = ref<HTMLElement | null>(null)
@@ -56,7 +62,7 @@ onUnmounted(() => {
   }
 })
 
-const expandedKeys = inject<Ref<Record<string, boolean>>>('expandedKeys')
+const expandedKeys = inject(InjectKeyExpandedKeys)
 const handleItemDrop = (node: RenderedTreeExplorerNode) => {
   expandedKeys.value[node.key] = true
 }
