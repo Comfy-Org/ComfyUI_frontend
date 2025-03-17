@@ -10,7 +10,7 @@ import {
 import type { NodesIndexSuggestion } from '@/services/algoliaSearchService'
 import { PackField } from '@/types/comfyManagerTypes'
 
-const SEARCH_DEBOUNCE_TIME = 16
+const SEARCH_DEBOUNCE_TIME = 256
 const DEFAULT_PAGE_SIZE = 64
 
 /**
