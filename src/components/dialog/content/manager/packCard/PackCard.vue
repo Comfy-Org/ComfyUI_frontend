@@ -41,25 +41,50 @@
     </template>
     <template #content>
       <ContentDivider />
-      <div class="flex flex-1 p-5 mt-3 cursor-pointer">
-        <div class="flex-shrink-0 mr-4">
-          <PackIcon :node-pack="nodePack" />
-        </div>
-        <div class="flex flex-col flex-1 min-w-0">
+      <div
+        class="self-stretch px-4 py-3 inline-flex justify-start items-start cursor-pointer"
+      >
+        <PackIcon :node-pack="nodePack" />
+        <div
+          class="px-4 inline-flex flex-col justify-start items-start overflow-hidden"
+        >
           <span
-            class="text-lg font-bold pb-4 truncate overflow-hidden text-ellipsis"
+            class="text-sm font-bold truncate overflow-hidden text-ellipsis"
             :title="nodePack.name"
           >
             {{ nodePack.name }}
           </span>
-          <div class="flex-1">
+          <div
+            class="self-stretch inline-flex justify-center items-center gap-2.5"
+          >
             <p
               v-if="nodePack.description"
-              class="text-sm text-color-secondary m-0 line-clamp-3 overflow-hidden"
+              class="flex-1 justify-start text-muted text-sm font-medium leading-3 break-words overflow-hidden min-h-12 line-clamp-3"
               :title="nodePack.description"
             >
               {{ nodePack.description }}
             </p>
+          </div>
+          <div
+            class="self-stretch inline-flex justify-start items-center gap-2"
+          >
+            <div
+              v-if="nodesCount"
+              class="px-2 py-1 flex justify-center text-sm items-center gap-1"
+            >
+              <div class="text-center justify-center font-medium leading-3">
+                {{ nodesCount }} {{ $t('g.nodes') }}
+              </div>
+            </div>
+            <div class="px-2 py-1 flex justify-center items-center gap-1">
+              <div
+                v-if="isUpdateAvailable"
+                class="w-4 h-4 relative overflow-hidden"
+              >
+                <i class="pi pi-arrow-circle-up text-blue-600" />
+              </div>
+              <PackVersionBadge :node-pack="nodePack" />
+            </div>
           </div>
         </div>
       </div>
@@ -76,21 +101,37 @@ import Card from 'primevue/card'
 import { computed } from 'vue'
 
 import ContentDivider from '@/components/common/ContentDivider.vue'
+import PackVersionBadge from '@/components/dialog/content/manager/PackVersionBadge.vue'
 import PackEnableToggle from '@/components/dialog/content/manager/button/PackEnableToggle.vue'
 import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
 import PackCardFooter from '@/components/dialog/content/manager/packCard/PackCardFooter.vue'
 import PackIcon from '@/components/dialog/content/manager/packIcon/PackIcon.vue'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import type { components } from '@/types/comfyRegistryTypes'
+import { compareVersions, isSemVer } from '@/utils/formatUtil'
 
 const { nodePack, isSelected = false } = defineProps<{
   nodePack: components['schemas']['Node']
   isSelected?: boolean
 }>()
 
-const managerStore = useComfyManagerStore()
+const { isPackInstalled, getInstalledPackVersion } = useComfyManagerStore()
 
-const isPackInstalled = computed(() =>
-  managerStore.isPackInstalled(nodePack?.id)
-)
+const isInstalled = computed(() => isPackInstalled(nodePack?.id))
+const isUpdateAvailable = computed(() => {
+  if (!isInstalled.value) return false
+
+  const latestVersion = nodePack.latest_version?.version
+  if (!latestVersion) return false
+
+  const installedVersion = getInstalledPackVersion(nodePack.id)
+
+  // Consider nightly GitHub packs as always update-able
+  if (installedVersion && !isSemVer(installedVersion)) return true
+
+  return compareVersions(latestVersion, installedVersion) > 0
+})
+
+// TODO: remove type assertion once comfy_nodes is added to node (pack) info type in backend
+const nodesCount = computed(() => (nodePack as any).comfy_nodes?.length)
 </script>
