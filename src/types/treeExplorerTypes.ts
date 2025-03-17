@@ -1,4 +1,5 @@
 import type { MenuItem } from 'primevue/menuitem'
+import type { InjectionKey } from 'vue'
 
 export interface TreeExplorerNode<T = any> {
   key: string
@@ -58,9 +59,15 @@ export interface RenderedTreeExplorerNode<T = any> extends TreeExplorerNode<T> {
   totalLeaves: number
   /** Text to display on the leaf-count badge. Empty string means no badge. */
   badgeText?: string
+  /** Whether the node label is currently being edited */
+  isEditingLabel?: boolean
 }
 
 export type TreeExplorerDragAndDropData<T = any> = {
   type: 'tree-explorer-node'
   data: RenderedTreeExplorerNode<T>
 }
+
+export const InjectKeyHandleEditLabelFunction: InjectionKey<
+  (node: RenderedTreeExplorerNode, newName: string) => void
+> = Symbol()
