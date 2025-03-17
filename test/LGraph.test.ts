@@ -76,6 +76,40 @@ describe("LGraph", () => {
       expect(graph.reroutes.size).toBe(1)
       expect(graph.reroutes.values().next().value!.floating).not.toBeUndefined()
     })
+
+    test("Reroutes and branches should be retained when the input node is removed", ({ expect, floatingBranchGraph: graph }) => {
+      expect(graph.nodes.length).toBe(3)
+      graph.remove(graph.nodes[2])
+      expect(graph.nodes.length).toBe(2)
+      expect(graph.links.size).toBe(1)
+      expect(graph.floatingLinks.size).toBe(1)
+      expect(graph.reroutes.size).toBe(4)
+      graph.remove(graph.nodes[1])
+      expect(graph.nodes.length).toBe(1)
+      expect(graph.links.size).toBe(0)
+      expect(graph.floatingLinks.size).toBe(2)
+      expect(graph.reroutes.size).toBe(4)
+    })
+
+    test("Floating reroutes should be removed when neither input nor output is connected", ({ expect, floatingBranchGraph: graph }) => {
+      // Remove output node
+      graph.remove(graph.nodes[0])
+      expect(graph.nodes.length).toBe(2)
+      expect(graph.links.size).toBe(0)
+      expect(graph.floatingLinks.size).toBe(2)
+      // The original floating reroute should be removed
+      expect(graph.reroutes.size).toBe(3)
+      graph.remove(graph.nodes[0])
+      expect(graph.nodes.length).toBe(1)
+      expect(graph.links.size).toBe(0)
+      expect(graph.floatingLinks.size).toBe(1)
+      expect(graph.reroutes.size).toBe(3)
+      graph.remove(graph.nodes[0])
+      expect(graph.nodes.length).toBe(0)
+      expect(graph.links.size).toBe(0)
+      expect(graph.floatingLinks.size).toBe(0)
+      expect(graph.reroutes.size).toBe(0)
+    })
   })
 })
 
