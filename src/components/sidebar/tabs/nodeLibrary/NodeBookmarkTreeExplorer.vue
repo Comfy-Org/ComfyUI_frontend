@@ -2,7 +2,7 @@
   <TreeExplorer
     class="node-lib-bookmark-tree-explorer"
     ref="treeExplorerRef"
-    :roots="renderedBookmarkedRoot.children"
+    :root="renderedBookmarkedRoot"
     :expandedKeys="expandedKeys"
   >
     <template #folder="{ node }">

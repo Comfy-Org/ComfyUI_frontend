@@ -32,7 +32,7 @@
 
       <TreeExplorer
         class="model-lib-tree-explorer"
-        :roots="renderedRoot.children"
+        :root="renderedRoot"
         v-model:expandedKeys="expandedKeys"
       >
         <template #node="{ node }">

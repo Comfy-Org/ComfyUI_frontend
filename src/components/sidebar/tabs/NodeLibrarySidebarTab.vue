@@ -49,7 +49,7 @@
       />
       <TreeExplorer
         class="node-lib-tree-explorer"
-        :roots="renderedRoot.children"
+        :root="renderedRoot"
         v-model:expandedKeys="expandedKeys"
       >
         <template #node="{ node }">
