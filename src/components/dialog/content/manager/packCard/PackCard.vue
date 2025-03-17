@@ -1,6 +1,6 @@
 <template>
   <Card
-    class="w-full h-full inline-flex flex-col justify-between items-start overflow-hidden rounded-2xl shadow-elevation-4 dark-theme:bg-dark-elevation-1 transition-all duration-200"
+    class="w-full h-full inline-flex flex-col justify-between items-start overflow-hidden rounded-2xl shadow-elevation-3 dark-theme:bg-dark-elevation-2 transition-all duration-200"
     :class="{
       'outline outline-[6px] outline-[var(--p-primary-color)]': isSelected
     }"
