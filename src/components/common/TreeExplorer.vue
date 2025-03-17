@@ -4,7 +4,7 @@
     :class="props.class"
     v-model:expandedKeys="expandedKeys"
     v-model:selectionKeys="selectionKeys"
-    :value="renderedRoots"
+    :value="renderedRoot.children"
     selectionMode="single"
     :pt="{
       nodeLabel: 'tree-explorer-node-label',
@@ -57,7 +57,7 @@ provide('selectionKeys', selectionKeys)
 const storeSelectionKeys = selectionKeys.value !== undefined
 
 const props = defineProps<{
-  roots: TreeExplorerNode[]
+  root: TreeExplorerNode
   class?: string
 }>()
 const emit = defineEmits<{
@@ -65,8 +65,8 @@ const emit = defineEmits<{
   (e: 'nodeDelete', node: RenderedTreeExplorerNode): void
   (e: 'contextMenu', node: RenderedTreeExplorerNode, event: MouseEvent): void
 }>()
-const renderedRoots = computed<RenderedTreeExplorerNode[]>(() => {
-  return props.roots.map(fillNodeInfo)
+const renderedRoot = computed<RenderedTreeExplorerNode>(() => {
+  return fillNodeInfo(props.root)
 })
 const getTreeNodeIcon = (node: TreeExplorerNode) => {
   if (node.getIcon) {
