@@ -38,18 +38,17 @@
 <script setup lang="ts">
 import { setCustomNativeDragPreview } from '@atlaskit/pragmatic-drag-and-drop/element/set-custom-native-drag-preview'
 import Badge from 'primevue/badge'
-import { Ref, computed, inject, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'
-import { useErrorHandling } from '@/composables/useErrorHandling'
 import {
   usePragmaticDraggable,
   usePragmaticDroppable
 } from '@/composables/usePragmaticDragAndDrop'
-import type {
-  RenderedTreeExplorerNode,
-  TreeExplorerDragAndDropData,
-  TreeExplorerNode
+import {
+  InjectKeyHandleEditLabelFunction,
+  type RenderedTreeExplorerNode,
+  type TreeExplorerDragAndDropData
 } from '@/types/treeExplorerTypes'
 
 const props = defineProps<{
@@ -77,22 +76,12 @@ const nodeBadgeText = computed<string>(() => {
 })
 const showNodeBadgeText = computed<boolean>(() => nodeBadgeText.value !== '')
 
-const labelEditable = computed<boolean>(() => !!props.node.handleRename)
-const renameEditingNode =
-  inject<Ref<TreeExplorerNode | null>>('renameEditingNode')
-const isEditing = computed(
-  () => labelEditable.value && renameEditingNode.value?.key === props.node.key
-)
-const errorHandling = useErrorHandling()
-const handleRename = errorHandling.wrapWithErrorHandlingAsync(
-  async (newName: string) => {
-    await props.node.handleRename(newName)
-  },
-  props.node.handleError,
-  () => {
-    renameEditingNode.value = null
-  }
-)
+const isEditing = computed<boolean>(() => props.node.isEditingLabel)
+const handleEditLabel = inject(InjectKeyHandleEditLabelFunction)
+const handleRename = (newName: string) => {
+  handleEditLabel(props.node, newName)
+}
+
 const container = ref<HTMLElement | null>(null)
 const canDrop = ref(false)
 

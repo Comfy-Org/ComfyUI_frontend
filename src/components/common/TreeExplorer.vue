@@ -44,9 +44,10 @@ import { useI18n } from 'vue-i18n'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import type {
-  RenderedTreeExplorerNode,
-  TreeExplorerNode
+import {
+  InjectKeyHandleEditLabelFunction,
+  type RenderedTreeExplorerNode,
+  type TreeExplorerNode
 } from '@/types/treeExplorerTypes'
 
 const expandedKeys = defineModel<Record<string, boolean>>('expandedKeys')
@@ -95,7 +96,8 @@ const fillNodeInfo = (node: TreeExplorerNode): RenderedTreeExplorerNode => {
     children,
     type: node.leaf ? 'node' : 'folder',
     totalLeaves,
-    badgeText: node.getBadgeText ? node.getBadgeText() : null
+    badgeText: node.getBadgeText ? node.getBadgeText() : null,
+    isEditingLabel: node.key === renameEditingNode.value?.key
   }
 }
 const onNodeContentClick = async (
@@ -121,7 +123,22 @@ const extraMenuItems = computed(() => {
     : []
 })
 const renameEditingNode = ref<RenderedTreeExplorerNode | null>(null)
-provide('renameEditingNode', renameEditingNode)
+const errorHandling = useErrorHandling()
+const handleNodeLabelEdit = async (
+  node: RenderedTreeExplorerNode,
+  newName: string
+) => {
+  await errorHandling.wrapWithErrorHandlingAsync(
+    async () => {
+      await node.handleRename(newName)
+    },
+    node.handleError,
+    () => {
+      renameEditingNode.value = null
+    }
+  )()
+}
+provide(InjectKeyHandleEditLabelFunction, handleNodeLabelEdit)
 
 const { t } = useI18n()
 const renameCommand = (node: RenderedTreeExplorerNode) => {
@@ -163,7 +180,6 @@ const handleContextMenu = (e: MouseEvent, node: RenderedTreeExplorerNode) => {
   }
 }
 
-const errorHandling = useErrorHandling()
 const wrapCommandWithErrorHandler = (
   command: (event: MenuItemCommandEvent) => void,
   { isAsync = false }: { isAsync: boolean }

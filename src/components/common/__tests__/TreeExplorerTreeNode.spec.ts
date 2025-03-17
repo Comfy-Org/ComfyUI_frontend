@@ -10,8 +10,10 @@ import { createI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
-import { useToastStore } from '@/stores/toastStore'
-import { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
+import {
+  InjectKeyHandleEditLabelFunction,
+  RenderedTreeExplorerNode
+} from '@/types/treeExplorerTypes'
 
 // Create a mock i18n instance
 const i18n = createI18n({
@@ -47,7 +49,6 @@ describe('TreeExplorerTreeNode', () => {
       props: { node: mockNode },
       global: {
         components: { EditableText, Badge },
-        provide: { renameEditingNode: { value: null } },
         plugins: [createTestingPinia(), i18n]
       }
     })
@@ -63,10 +64,14 @@ describe('TreeExplorerTreeNode', () => {
 
   it('makes node label editable when renamingEditingNode matches', async () => {
     const wrapper = mount(TreeExplorerTreeNode, {
-      props: { node: mockNode },
+      props: {
+        node: {
+          ...mockNode,
+          isEditingLabel: true
+        }
+      },
       global: {
         components: { EditableText, Badge, InputText },
-        provide: { renameEditingNode: { value: { key: '1' } } },
         plugins: [createTestingPinia(), i18n, PrimeVue]
       }
     })
@@ -75,62 +80,25 @@ describe('TreeExplorerTreeNode', () => {
     expect(editableText.props('isEditing')).toBe(true)
   })
 
-  it('triggers handleRename callback when editing is finished', async () => {
-    const handleRenameMock = vi.fn()
-    const nodeWithMockRename = {
-      ...mockNode,
-      handleRename: handleRenameMock
-    }
+  it('triggers handleEditLabel callback when editing is finished', async () => {
+    const handleEditLabelMock = vi.fn()
 
     const wrapper = mount(TreeExplorerTreeNode, {
-      props: { node: nodeWithMockRename },
+      props: {
+        node: {
+          ...mockNode,
+          isEditingLabel: true
+        }
+      },
       global: {
         components: { EditableText, Badge, InputText },
-        provide: { renameEditingNode: { value: { key: '1' } } },
+        provide: { [InjectKeyHandleEditLabelFunction]: handleEditLabelMock },
         plugins: [createTestingPinia(), i18n, PrimeVue]
       }
     })
 
     const editableText = wrapper.findComponent(EditableText)
     editableText.vm.$emit('edit', 'New Node Name')
-    expect(handleRenameMock).toHaveBeenCalledOnce()
-  })
-
-  it('shows error toast when handleRename promise rejects', async () => {
-    const handleRenameMock = vi
-      .fn()
-      .mockRejectedValue(new Error('Rename failed'))
-    const nodeWithMockRename = {
-      ...mockNode,
-      handleRename: handleRenameMock
-    }
-
-    const wrapper = mount(TreeExplorerTreeNode, {
-      props: { node: nodeWithMockRename },
-      global: {
-        components: { EditableText, Badge, InputText },
-        provide: { renameEditingNode: { value: { key: '1' } } },
-        plugins: [createTestingPinia(), i18n, PrimeVue]
-      }
-    })
-
-    const toastStore = useToastStore()
-    const addToastSpy = vi.spyOn(toastStore, 'add')
-
-    const editableText = wrapper.findComponent(EditableText)
-    editableText.vm.$emit('edit', 'New Node Name')
-
-    // Wait for the promise to reject and the toast to be added
-    vi.runAllTimers()
-
-    // Wait for any pending promises to resolve
-    await new Promise(process.nextTick)
-
-    expect(handleRenameMock).toHaveBeenCalledOnce()
-    expect(addToastSpy).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Rename failed'
-    })
+    expect(handleEditLabelMock).toHaveBeenCalledOnce()
   })
 })
