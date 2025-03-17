@@ -2,7 +2,8 @@
   <Card
     class="absolute inset-0 flex flex-col overflow-hidden rounded-2xl shadow-elevation-4 dark-theme:bg-dark-elevation-1 transition-all duration-200"
     :class="{
-      'outline outline-[6px] outline-[var(--p-primary-color)]': isSelected
+      'outline outline-[6px] outline-[var(--p-primary-color)]': isSelected,
+      'opacity-60': isDisabled
     }"
     :pt="{
       body: { class: 'p-0 flex flex-col h-full rounded-2xl gap-0' },
@@ -19,53 +20,67 @@
     </template>
     <template #content>
       <ContentDivider />
-      <div
-        class="self-stretch px-4 py-3 inline-flex justify-start items-start cursor-pointer"
-      >
-        <PackIcon :node-pack="nodePack" />
+      <template v-if="isInstalling">
         <div
-          class="px-4 inline-flex flex-col justify-start items-start overflow-hidden"
+          class="self-stretch inline-flex flex-col justify-center items-center gap-2 h-full"
         >
-          <span
-            class="text-sm font-bold truncate overflow-hidden text-ellipsis"
-            :title="nodePack.name"
-          >
-            {{ nodePack.name }}
-          </span>
+          <ProgressSpinner />
           <div
-            class="self-stretch inline-flex justify-center items-center gap-2.5"
+            class="self-stretch text-center justify-start text-sm font-medium leading-none"
           >
-            <p
-              v-if="nodePack.description"
-              class="flex-1 justify-start text-muted text-sm font-medium leading-3 break-words overflow-hidden min-h-12 line-clamp-3"
-              :title="nodePack.description"
-            >
-              {{ nodePack.description }}
-            </p>
+            {{ $t('g.installing') }}...
           </div>
+        </div>
+      </template>
+      <template v-else>
+        <div
+          class="self-stretch px-4 py-3 inline-flex justify-start items-start cursor-pointer"
+        >
+          <PackIcon :node-pack="nodePack" />
           <div
-            class="self-stretch inline-flex justify-start items-center gap-2"
+            class="px-4 inline-flex flex-col justify-start items-start overflow-hidden"
           >
-            <div
-              v-if="nodesCount"
-              class="px-2 py-1 flex justify-center text-sm items-center gap-1"
+            <span
+              class="text-sm font-bold truncate overflow-hidden text-ellipsis"
+              :title="nodePack.name"
             >
-              <div class="text-center justify-center font-medium leading-3">
-                {{ nodesCount }} {{ $t('g.nodes') }}
-              </div>
-            </div>
-            <div class="px-2 py-1 flex justify-center items-center gap-1">
-              <div
-                v-if="isUpdateAvailable"
-                class="w-4 h-4 relative overflow-hidden"
+              {{ nodePack.name }}
+            </span>
+            <div
+              class="self-stretch inline-flex justify-center items-center gap-2.5"
+            >
+              <p
+                v-if="nodePack.description"
+                class="flex-1 justify-start text-muted text-sm font-medium leading-3 break-words overflow-hidden min-h-12 line-clamp-3"
+                :title="nodePack.description"
               >
-                <i class="pi pi-arrow-circle-up text-blue-600" />
+                {{ nodePack.description }}
+              </p>
+            </div>
+            <div
+              class="self-stretch inline-flex justify-start items-center gap-2"
+            >
+              <div
+                v-if="nodesCount"
+                class="px-2 py-1 flex justify-center text-sm items-center gap-1"
+              >
+                <div class="text-center justify-center font-medium leading-3">
+                  {{ nodesCount }} {{ $t('g.nodes') }}
+                </div>
               </div>
-              <PackVersionBadge :node-pack="nodePack" />
+              <div class="px-2 py-1 flex justify-center items-center gap-1">
+                <div
+                  v-if="isUpdateAvailable"
+                  class="w-4 h-4 relative overflow-hidden"
+                >
+                  <i class="pi pi-arrow-circle-up text-blue-600" />
+                </div>
+                <PackVersionBadge :node-pack="nodePack" />
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </template>
     </template>
     <template #footer>
       <ContentDivider :width="0.1" />
@@ -76,7 +91,8 @@
 
 <script setup lang="ts">
 import Card from 'primevue/card'
-import { computed } from 'vue'
+import ProgressSpinner from 'primevue/progressspinner'
+import { computed, provide, ref } from 'vue'
 
 import ContentDivider from '@/components/common/ContentDivider.vue'
 import PackVersionBadge from '@/components/dialog/content/manager/PackVersionBadge.vue'
@@ -91,9 +107,16 @@ const { nodePack, isSelected = false } = defineProps<{
   isSelected?: boolean
 }>()
 
-const { isPackInstalled, getInstalledPackVersion } = useComfyManagerStore()
+const isInstalling = ref(false)
+provide('isInstalling', isInstalling)
+
+const { isPackInstalled, isPackEnabled, getInstalledPackVersion } =
+  useComfyManagerStore()
 
 const isInstalled = computed(() => isPackInstalled(nodePack?.id))
+const isDisabled = computed(
+  () => isInstalled.value && !isPackEnabled(nodePack?.id)
+)
 const isUpdateAvailable = computed(() => {
   if (!isInstalled.value) return false
 

@@ -11,6 +11,8 @@
 </template>
 
 <script setup lang="ts">
+import { type Ref, inject } from 'vue'
+
 import PackActionButton from '@/components/dialog/content/manager/button/PackActionButton.vue'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import {
@@ -25,6 +27,8 @@ type NodePack = components['schemas']['Node']
 const { nodePacks } = defineProps<{
   nodePacks: NodePack[]
 }>()
+
+const isInstalling = inject<Ref<boolean>>('isInstalling')
 
 const managerStore = useComfyManagerStore()
 
@@ -49,6 +53,8 @@ const installPack = (item: NodePack) =>
 
 const installAllPacks = async () => {
   if (!nodePacks?.length) return
+
+  isInstalling.value = true
 
   const uninstalledPacks = nodePacks.filter(
     (pack) => !managerStore.isPackInstalled(pack.id)
