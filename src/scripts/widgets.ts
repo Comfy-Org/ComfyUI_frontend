@@ -74,7 +74,7 @@ export function addValueControlWidget(
   node: LGraphNode,
   targetWidget: IWidget,
   defaultValue?: string,
-  values?: unknown,
+  _values?: unknown,
   widgetName?: string,
   inputData?: InputSpec
 ): IWidget {

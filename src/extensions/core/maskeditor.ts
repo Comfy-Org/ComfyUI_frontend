@@ -2832,7 +2832,7 @@ class UIManager {
       100,
       1,
       (await this.messageBroker.pull('brushSettings')).size,
-      (event, value) => {
+      (_, value) => {
         this.messageBroker.publish('setBrushSize', parseInt(value))
         this.updateBrushPreview()
       }
@@ -2845,7 +2845,7 @@ class UIManager {
       1,
       0.01,
       (await this.messageBroker.pull('brushSettings')).opacity,
-      (event, value) => {
+      (_, value) => {
         this.messageBroker.publish('setBrushOpacity', parseFloat(value))
         this.updateBrushPreview()
       }
@@ -2858,7 +2858,7 @@ class UIManager {
       1,
       0.01,
       (await this.messageBroker.pull('brushSettings')).hardness,
-      (event, value) => {
+      (_, value) => {
         this.messageBroker.publish('setBrushHardness', parseFloat(value))
         this.updateBrushPreview()
       }
@@ -2871,7 +2871,7 @@ class UIManager {
       100,
       1,
       (await this.messageBroker.pull('brushSettings')).smoothingPrecision,
-      (event, value) => {
+      (_, value) => {
         this.messageBroker.publish(
           'setBrushSmoothingPrecision',
           parseInt(value)
@@ -2929,7 +2929,7 @@ class UIManager {
       255,
       1,
       tolerance,
-      (event, value) => {
+      (_, value) => {
         this.messageBroker.publish('setPaintBucketTolerance', parseInt(value))
       }
     )
@@ -2942,7 +2942,7 @@ class UIManager {
       100,
       1,
       fillOpacity,
-      (event, value) => {
+      (_, value) => {
         this.messageBroker.publish('setFillOpacity', parseInt(value))
       }
     )
@@ -2971,7 +2971,7 @@ class UIManager {
       255,
       1,
       tolerance,
-      (event, value) => {
+      (_, value) => {
         this.messageBroker.publish('setColorSelectTolerance', parseInt(value))
       }
     )
@@ -2983,21 +2983,21 @@ class UIManager {
       100,
       1,
       100, // Default to 100%
-      (event, value) => {
+      (_, value) => {
         this.messageBroker.publish('setSelectionOpacity', parseInt(value))
       }
     )
 
     const livePreviewToggle = this.createToggle(
       t('maskEditor.Live Preview'),
-      (event, value) => {
+      (_, value) => {
         this.messageBroker.publish('setLivePreview', value)
       }
     )
 
     const wholeImageToggle = this.createToggle(
       t('maskEditor.Apply to Whole Image'),
-      (event, value) => {
+      (_, value) => {
         this.messageBroker.publish('setWholeImage', value)
       }
     )
@@ -3006,14 +3006,14 @@ class UIManager {
     const methodSelect = this.createDropdown(
       t('maskEditor.Method'),
       methodOptions,
-      (event, value) => {
+      (_, value) => {
         this.messageBroker.publish('setColorComparisonMethod', value)
       }
     )
 
     const maskBoundaryToggle = this.createToggle(
       t('maskEditor.Stop at mask'),
-      (event, value) => {
+      (_, value) => {
         this.messageBroker.publish('setMaskBoundary', value)
       }
     )
@@ -3024,7 +3024,7 @@ class UIManager {
       255,
       1,
       0,
-      (event, value) => {
+      (_, value) => {
         this.messageBroker.publish('setMaskTolerance', parseInt(value))
       }
     )
@@ -3125,7 +3125,7 @@ class UIManager {
       1.0,
       0.01,
       this.mask_opacity,
-      (event, value) => {
+      (_, value) => {
         this.mask_opacity = parseFloat(value)
         this.maskCanvas.style.opacity = String(this.mask_opacity)
 
@@ -3635,7 +3635,7 @@ class UIManager {
       this.messageBroker.publish('pointerUp', event)
     })
 
-    pointer_zone.addEventListener('pointerleave', (event: PointerEvent) => {
+    pointer_zone.addEventListener('pointerleave', () => {
       this.brush.style.opacity = '0'
       this.pointerZone.style.cursor = ''
     })
@@ -3656,12 +3656,9 @@ class UIManager {
       this.messageBroker.publish('wheel', event)
     )
 
-    pointer_zone.addEventListener(
-      'pointerenter',
-      async (event: PointerEvent) => {
-        this.updateCursor()
-      }
-    )
+    pointer_zone.addEventListener('pointerenter', async () => {
+      this.updateCursor()
+    })
 
     return pointer_zone
   }

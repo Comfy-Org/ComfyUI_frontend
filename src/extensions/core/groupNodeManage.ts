@@ -394,7 +394,7 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
         $el(
           'button.comfy-btn',
           {
-            onclick: (e) => {
+            onclick: () => {
               const node = app.graph.nodes.find(
                 (n) => n.type === `${PREFIX}${SEPARATOR}` + this.selectedGroup
               )

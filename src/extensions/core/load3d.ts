@@ -275,7 +275,7 @@ app.registerExtension({
 app.registerExtension({
   name: 'Comfy.Preview3D',
 
-  async beforeRegisterNodeDef(nodeType, nodeData) {
+  async beforeRegisterNodeDef(_nodeType, nodeData) {
     if ('Preview3D' === nodeData.name) {
       // @ts-expect-error InputSpec is not typed correctly
       nodeData.input.required.image = ['PREVIEW_3D']
@@ -348,7 +348,7 @@ app.registerExtension({
 app.registerExtension({
   name: 'Comfy.Preview3DAnimation',
 
-  async beforeRegisterNodeDef(nodeType, nodeData) {
+  async beforeRegisterNodeDef(_nodeType, nodeData) {
     if ('Preview3DAnimation' === nodeData.name) {
       // @ts-expect-error InputSpec is not typed correctly
       nodeData.input.required.image = ['PREVIEW_3D_ANIMATION']

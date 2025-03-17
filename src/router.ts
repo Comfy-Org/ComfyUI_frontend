@@ -15,8 +15,8 @@ const isFileProtocol = window.location.protocol === 'file:'
 const basePath = isElectron() ? '/' : window.location.pathname
 
 const guardElectronAccess = (
-  to: RouteLocationNormalized,
-  from: RouteLocationNormalized,
+  _to: RouteLocationNormalized,
+  _from: RouteLocationNormalized,
   next: NavigationGuardNext
 ) => {
   if (isElectron()) {
@@ -42,7 +42,7 @@ const router = createRouter({
           path: '',
           name: 'GraphView',
           component: () => import('@/views/GraphView.vue'),
-          beforeEnter: async (to, from, next) => {
+          beforeEnter: async (_to, _from, next) => {
             const userStore = useUserStore()
             await userStore.initialize()
             if (userStore.needsLogin) {
@@ -121,7 +121,7 @@ const router = createRouter({
     }
   ],
 
-  scrollBehavior(to, from, savedPosition) {
+  scrollBehavior(_to, _from, savedPosition) {
     if (savedPosition) {
       return savedPosition
     } else {

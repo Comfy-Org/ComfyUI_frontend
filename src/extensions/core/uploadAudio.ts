@@ -148,7 +148,7 @@ app.registerExtension({
 
 app.registerExtension({
   name: 'Comfy.UploadAudio',
-  async beforeRegisterNodeDef(nodeType, nodeData: ComfyNodeDef) {
+  async beforeRegisterNodeDef(_nodeType, nodeData: ComfyNodeDef) {
     if (nodeData?.input?.required?.audio?.[1]?.audio_upload === true) {
       nodeData.input.required.upload = ['AUDIOUPLOAD', {}]
     }

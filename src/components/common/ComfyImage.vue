@@ -45,7 +45,7 @@ const props = withDefaults(
 )
 
 const imageBroken = ref(false)
-const handleImageError = (e: Event) => {
+const handleImageError = () => {
   imageBroken.value = true
 }
 

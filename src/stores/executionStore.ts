@@ -6,8 +6,7 @@ import type {
   ExecutingWsMessage,
   ExecutionCachedWsMessage,
   ExecutionStartWsMessage,
-  ProgressWsMessage,
-  StatusWsMessage
+  ProgressWsMessage
 } from '@/schemas/apiSchema'
 import type {
   ComfyNode,
@@ -149,7 +148,7 @@ export const useExecutionStore = defineStore('execution', () => {
     _executingNodeProgress.value = e.detail
   }
 
-  function handleStatus(e: CustomEvent<StatusWsMessage>) {
+  function handleStatus() {
     if (api.clientId) {
       clientId.value = api.clientId
 

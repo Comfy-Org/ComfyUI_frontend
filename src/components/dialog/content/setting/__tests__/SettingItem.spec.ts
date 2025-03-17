@@ -34,7 +34,7 @@ describe('SettingItem', () => {
         name: 'Node Input Conversion Submenus',
         type: 'combo',
         value: 'Top',
-        options: (value: string) => ['Correctly Translated']
+        options: () => ['Correctly Translated']
       }
     })
 

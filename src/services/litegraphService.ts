@@ -306,7 +306,7 @@ export const useLitegraphService = () => {
 
       options.push({
         content: 'Bypass',
-        callback: (obj) => {
+        callback: () => {
           const mode =
             this.mode === LGraphEventMode.BYPASS
               ? LGraphEventMode.ALWAYS
@@ -322,7 +322,7 @@ export const useLitegraphService = () => {
       if (!ComfyApp.clipspace_return_node) {
         options.push({
           content: 'Copy (Clipspace)',
-          callback: (obj) => {
+          callback: () => {
             ComfyApp.copyToClipspace(this)
           }
         })
@@ -339,7 +339,7 @@ export const useLitegraphService = () => {
         if (isImageNode(this)) {
           options.push({
             content: 'Open in MaskEditor',
-            callback: (obj) => {
+            callback: () => {
               ComfyApp.copyToClipspace(this)
               ComfyApp.clipspace_return_node = this
               ComfyApp.open_maskeditor()
@@ -361,19 +361,13 @@ export const useLitegraphService = () => {
     /**
      * @deprecated No longer needed as we use {@link useImagePreviewWidget}
      */
-    node.prototype.setSizeForImage = function (
-      this: LGraphNode,
-      force: boolean
-    ) {
+    node.prototype.setSizeForImage = function (this: LGraphNode) {
       console.warn(
         'node.setSizeForImage is deprecated. Now it has no effect. Please remove the call to it.'
       )
     }
 
-    function unsafeDrawBackground(
-      this: LGraphNode,
-      ctx: CanvasRenderingContext2D
-    ) {
+    function unsafeDrawBackground(this: LGraphNode) {
       if (this.flags.collapsed) return
 
       const nodeOutputStore = useNodeOutputStore()
@@ -418,9 +412,9 @@ export const useLitegraphService = () => {
       }
     }
 
-    node.prototype.onDrawBackground = function (ctx) {
+    node.prototype.onDrawBackground = function () {
       try {
-        unsafeDrawBackground.call(this, ctx)
+        unsafeDrawBackground.call(this)
       } catch (error) {
         console.error('Error drawing node background', error)
       }
