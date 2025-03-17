@@ -260,7 +260,7 @@
     "pathExists": "Directory already exists - please ensure you have backed up all data",
     "cannotWrite": "Unable to write to the selected path",
     "insufficientFreeSpace": "Insufficient space - minimum free space",
-    "isOneDrive": "Installing in OneDrive can cause issues. Highly recommend installing in a non-OneDrive location.",
+    "isOneDrive": "OneDrive is not supported. Please install ComfyUI in another location.",
     "nonDefaultDrive": "Please install ComfyUI on your system drive (eg. C:\\). Drives with different file systems may cause unpredicable issues. Models and other files can be stored on other drives after installation.",
     "parentMissing": "Path does not exist - create the containing directory first",
     "unhandledError": "Unknown error",
