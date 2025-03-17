@@ -547,9 +547,8 @@ export class ComfyApp {
       node,
       ctx,
       size,
-      fgcolor,
-      bgcolor,
-      selected
+      _fgcolor,
+      bgcolor
     ) {
       const res = origDrawNodeShape.apply(this, arguments)
 
@@ -627,7 +626,7 @@ export class ComfyApp {
     }
 
     const origDrawNode = LGraphCanvas.prototype.drawNode
-    LGraphCanvas.prototype.drawNode = function (node, ctx) {
+    LGraphCanvas.prototype.drawNode = function (node) {
       const editor_alpha = this.editor_alpha
       const old_color = node.color
       const old_bgcolor = node.bgcolor
@@ -678,11 +677,11 @@ export class ComfyApp {
       this.ui.setStatus(detail)
     })
 
-    api.addEventListener('progress', ({ detail }) => {
+    api.addEventListener('progress', () => {
       this.graph.setDirtyCanvas(true, false)
     })
 
-    api.addEventListener('executing', ({ detail }) => {
+    api.addEventListener('executing', () => {
       this.graph.setDirtyCanvas(true, false)
       this.revokePreviews(this.runningNodeId)
       delete this.nodePreviewImages[this.runningNodeId]
@@ -708,7 +707,7 @@ export class ComfyApp {
       }
     })
 
-    api.addEventListener('execution_start', ({ detail }) => {
+    api.addEventListener('execution_start', () => {
       this.lastExecutionError = null
       this.graph.nodes.forEach((node) => {
         if (node.onExecutionStart) node.onExecutionStart()

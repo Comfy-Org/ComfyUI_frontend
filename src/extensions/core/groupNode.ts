@@ -1020,7 +1020,7 @@ export class GroupNodeHandler {
 
     // Draw custom collapse icon to identity this as a group
     const onDrawTitleBox = this.node.onDrawTitleBox
-    this.node.onDrawTitleBox = function (ctx, height, size, scale) {
+    this.node.onDrawTitleBox = function (ctx, height) {
       onDrawTitleBox?.apply(this, arguments)
 
       const fill = ctx.fillStyle
@@ -1128,7 +1128,7 @@ export class GroupNodeHandler {
       this,
       'executing',
       (d) => d,
-      (d, id, node) => id
+      (_, id) => id
     )
 
     const executed = handleEvent.call(
@@ -1223,7 +1223,7 @@ export class GroupNodeHandler {
     }
   }
 
-  populatePrimitive(node, nodeId, oldName, i, linkedShift) {
+  populatePrimitive(_node, nodeId, oldName) {
     // Converted widget, populate primitive if linked
     const primitiveId = this.groupData.widgetToPrimitive[nodeId]?.[oldName]
     if (primitiveId == null) return
@@ -1301,7 +1301,7 @@ export class GroupNodeHandler {
         )
         const mainWidget = this.node.widgets[widgetIndex]
         if (
-          this.populatePrimitive(node, nodeId, oldName, i, linkedShift) ||
+          this.populatePrimitive(node, nodeId, oldName) ||
           widgetIndex === -1
         ) {
           // Find the inner widget and shift by the number of linked widgets as they will have been removed too

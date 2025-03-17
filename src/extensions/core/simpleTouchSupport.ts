@@ -134,7 +134,7 @@ app.registerExtension({
 })
 
 const processMouseDown = LGraphCanvas.prototype.processMouseDown
-LGraphCanvas.prototype.processMouseDown = function (e) {
+LGraphCanvas.prototype.processMouseDown = function () {
   if (touchZooming || touchCount) {
     return
   }
@@ -143,7 +143,7 @@ LGraphCanvas.prototype.processMouseDown = function (e) {
 }
 
 const processMouseMove = LGraphCanvas.prototype.processMouseMove
-LGraphCanvas.prototype.processMouseMove = function (e) {
+LGraphCanvas.prototype.processMouseMove = function () {
   if (touchZooming || touchCount > 1) {
     return
   }

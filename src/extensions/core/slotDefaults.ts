@@ -23,14 +23,14 @@ app.registerExtension({
         step: 1
       },
       defaultValue: 5,
-      onChange: (newVal, oldVal) => {
+      onChange: (newVal) => {
         this.setDefaults(newVal)
       }
     })
   },
   slot_types_default_out: {},
   slot_types_default_in: {},
-  async beforeRegisterNodeDef(nodeType, nodeData, app) {
+  async beforeRegisterNodeDef(nodeType, nodeData) {
     var nodeId = nodeData.name
     const inputs = nodeData['input']?.['required'] //only show required inputs to reduce the mess also not logical to create node with optional inputs
     for (const inputKey in inputs) {

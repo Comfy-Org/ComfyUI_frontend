@@ -35,7 +35,7 @@ app.registerExtension({
           })
         }
 
-        this.onConnectionsChange = (type, index, connected, link_info) => {
+        this.onConnectionsChange = (type, _index, connected) => {
           if (app.configuringGraph) return
 
           // Prevent multiple connections to different types when we have no input

@@ -287,7 +287,7 @@ export class DraggableList extends EventTarget {
   }
 
   unsetItemState() {
-    this.getIdleItems().forEach((item, i) => {
+    this.getIdleItems().forEach((item) => {
       delete item.dataset.isAbove
       delete item.dataset.isToggled
       item.style.transform = ''

@@ -240,7 +240,7 @@ export class ChangeTracker {
       true
     )
 
-    window.addEventListener('keyup', (e) => {
+    window.addEventListener('keyup', () => {
       if (keyIgnored) {
         keyIgnored = false
         logger.debug('checkState on keyup')
@@ -352,7 +352,7 @@ export class ChangeTracker {
     })
   }
 
-  static bindInput(app: ComfyApp, activeEl: Element | null): boolean {
+  static bindInput(_app: ComfyApp, activeEl: Element | null): boolean {
     if (
       !activeEl ||
       activeEl.tagName === 'CANVAS' ||

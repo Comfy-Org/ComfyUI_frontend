@@ -247,14 +247,14 @@ class ImagePreviewWidget implements ICustomWidget {
   draw(
     ctx: CanvasRenderingContext2D,
     node: LGraphNode,
-    widget_width: number,
+    _width: number,
     y: number,
-    H: number
+    _height: number
   ): void {
     renderPreview(ctx, node, y)
   }
 
-  computeLayoutSize(this: IBaseWidget, node: LGraphNode) {
+  computeLayoutSize(this: IBaseWidget) {
     return {
       minHeight: 220,
       minWidth: 1

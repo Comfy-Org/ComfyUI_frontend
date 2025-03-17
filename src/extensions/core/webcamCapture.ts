@@ -9,7 +9,7 @@ const WEBCAM_READY = Symbol()
 
 app.registerExtension({
   name: 'Comfy.WebcamCapture',
-  getCustomWidgets(app) {
+  getCustomWidgets() {
     return {
       WEBCAM(node, inputName) {
         let res

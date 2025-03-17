@@ -120,7 +120,7 @@ export class PrimitiveNode extends LGraphNode {
     }
   }
 
-  onConnectionsChange(type: ISlotType, index: number, connected: boolean) {
+  onConnectionsChange(_type: ISlotType, _index: number, connected: boolean) {
     if (app.configuringGraph) {
       // Dont run while the graph is still setting up
       return
@@ -143,7 +143,7 @@ export class PrimitiveNode extends LGraphNode {
 
   onConnectOutput(
     slot: number,
-    type: string,
+    _type: string,
     input: INodeInputSlot,
     target_node: LGraphNode,
     target_slot: number
@@ -651,7 +651,7 @@ app.registerExtension({
       }
     )
   },
-  async beforeRegisterNodeDef(nodeType, nodeData, app) {
+  async beforeRegisterNodeDef(nodeType, _nodeData, app) {
     // Add menu options to convert to/from widgets
     const origGetExtraMenuOptions = nodeType.prototype.getExtraMenuOptions
     // @ts-expect-error adding extra property

@@ -64,7 +64,7 @@ class ManageTemplates extends ComfyDialog {
   createButtons() {
     const btns = super.createButtons()
     btns[0].textContent = 'Close'
-    btns[0].onclick = (e) => {
+    btns[0].onclick = () => {
       clearTimeout(this.saveVisualCue)
       this.close()
     }
@@ -279,7 +279,7 @@ class ManageTemplates extends ComfyDialog {
                       fontSize: '12px',
                       fontWeight: 'normal'
                     },
-                    onclick: (e) => {
+                    onclick: () => {
                       const json = JSON.stringify({ templates: [t] }, null, 2) // convert the data to a JSON string
                       const blob = new Blob([json], {
                         type: 'application/json'

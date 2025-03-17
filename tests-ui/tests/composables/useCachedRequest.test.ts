@@ -22,7 +22,7 @@ describe('useCachedRequest', () => {
     )
 
     // Create a mock request function that returns different results based on params
-    mockRequestFn = vi.fn(async (params: any, signal?: AbortSignal) => {
+    mockRequestFn = vi.fn(async (params: any) => {
       // Simulate a request that takes some time
       await new Promise((resolve) => setTimeout(resolve, 8))
 

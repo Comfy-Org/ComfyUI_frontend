@@ -103,7 +103,7 @@ const fileSize = computed(() =>
 const electronDownloadStore = useElectronDownloadStore()
 const [savePath, filename] = props.label.split('/')
 
-electronDownloadStore.$subscribe((mutation, { downloads }) => {
+electronDownloadStore.$subscribe((_, { downloads }) => {
   const download = downloads.find((download) => props.url === download.url)
 
   if (download) {
