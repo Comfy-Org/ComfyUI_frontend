@@ -1,6 +1,4 @@
 // @ts-strict-ignore
-import { useDialogStore } from '@/stores/dialogStore'
-
 import { $el } from '../ui'
 
 export class ComfyDialog<

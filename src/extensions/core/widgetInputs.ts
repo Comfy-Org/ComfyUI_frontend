@@ -7,7 +7,6 @@ import type {
   ISlotType,
   IWidget,
   LLink,
-  LiteGraphCanvasEvent,
   Vector2
 } from '@comfyorg/litegraph'
 import type { CanvasMouseEvent } from '@comfyorg/litegraph/dist/types/events'

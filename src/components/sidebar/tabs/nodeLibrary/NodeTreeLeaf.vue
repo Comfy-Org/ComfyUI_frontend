@@ -66,10 +66,6 @@ const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
 )
 
-const emit = defineEmits<{
-  (e: 'toggle-bookmark', value: ComfyNodeDefImpl): void
-}>()
-
 const toggleBookmark = () => {
   nodeBookmarkStore.toggleBookmark(nodeDef.value)
 }

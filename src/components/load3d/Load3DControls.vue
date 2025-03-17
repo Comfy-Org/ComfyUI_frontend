@@ -165,26 +165,14 @@ const emit = defineEmits<{
 const backgroundColor = ref(props.backgroundColor)
 const showGrid = ref(props.showGrid)
 const showPreview = ref(props.showPreview)
-const colorPickerRef = ref<HTMLInputElement | null>(null)
 const lightIntensity = ref(props.lightIntensity)
 const upDirection = ref(props.upDirection || 'original')
 const materialMode = ref(props.materialMode || 'original')
-const showLightIntensity = ref(false)
 const showLightIntensityButton = ref(props.showLightIntensityButton)
 const fov = ref(props.fov)
-const showFOV = ref(false)
 const showFOVButton = ref(props.showFOVButton)
 const showPreviewButton = ref(props.showPreviewButton)
 const hasBackgroundImage = ref(props.hasBackgroundImage)
-const upDirections: UpDirection[] = [
-  'original',
-  '-x',
-  '+x',
-  '-y',
-  '+y',
-  '-z',
-  '+z'
-]
 const edgeThreshold = ref(props.edgeThreshold)
 
 const switchCamera = () => {
@@ -194,10 +182,6 @@ const switchCamera = () => {
 const togglePreview = () => {
   showPreview.value = !showPreview.value
   emit('togglePreview', showPreview.value)
-}
-
-const updateBackgroundColor = (color: string) => {
-  emit('updateBackgroundColor', color)
 }
 
 const handleToggleGrid = (value: boolean) => {
@@ -228,20 +212,8 @@ const handleUpdateLightIntensity = (value: number) => {
   emit('updateLightIntensity', value)
 }
 
-const updateLightIntensity = () => {
-  emit('updateLightIntensity', lightIntensity.value)
-}
-
 const handleUpdateFOV = (value: number) => {
   emit('updateFOV', value)
-}
-
-const updateFOV = () => {
-  emit('updateFOV', fov.value)
-}
-
-const updateEdgeThreshold = () => {
-  emit('updateEdgeThreshold', edgeThreshold.value)
 }
 
 const closeSlider = (e: MouseEvent) => {

@@ -17,6 +17,7 @@ export class PreviewManager implements PreviewManagerInterface {
   private getControls: () => OrbitControls
   private eventManager: EventManagerInterface
 
+  // @ts-expect-error unused variable
   private getRenderer: () => THREE.WebGLRenderer
 
   private previewBackgroundScene: THREE.Scene

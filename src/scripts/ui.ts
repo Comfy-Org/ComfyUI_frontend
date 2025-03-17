@@ -108,7 +108,7 @@ function dragElement(dragEl, settings): () => void {
   }
 
   // When the element resizes (e.g. view queue) ensure it is still in the windows bounds
-  const resizeObserver = new ResizeObserver(() => {
+  new ResizeObserver(() => {
     ensureInBounds()
   }).observe(dragEl)
 

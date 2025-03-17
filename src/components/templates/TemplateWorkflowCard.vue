@@ -80,7 +80,6 @@ import { useElementHover } from '@vueuse/core'
 import Card from 'primevue/card'
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue'
 import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSliderThumbnail.vue'
@@ -100,8 +99,6 @@ const { sourceModule, categoryTitle, loading, template } = defineProps<{
   loading: boolean
   template: TemplateInfo
 }>()
-
-const { t } = useI18n()
 
 const cardRef = ref<HTMLElement | null>(null)
 const isHovered = useElementHover(cardRef)

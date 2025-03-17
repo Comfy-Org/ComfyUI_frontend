@@ -68,16 +68,6 @@ function parseExifData(exifData) {
   return ifdData
 }
 
-function splitValues(input) {
-  var output = {}
-  for (var key in input) {
-    var value = input[key]
-    var splitValues = value.split(':', 2)
-    output[splitValues[0]] = splitValues[1]
-  }
-  return output
-}
-
 export function getWebpMetadata(file) {
   return new Promise<Record<string, string>>((r) => {
     const reader = new FileReader()
