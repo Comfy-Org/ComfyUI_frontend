@@ -50,9 +50,7 @@ import type {
 } from '@/types/treeExplorerTypes'
 
 const expandedKeys = defineModel<Record<string, boolean>>('expandedKeys')
-provide('expandedKeys', expandedKeys)
 const selectionKeys = defineModel<Record<string, boolean>>('selectionKeys')
-provide('selectionKeys', selectionKeys)
 // Tracks whether the caller has set the selectionKeys model.
 const storeSelectionKeys = selectionKeys.value !== undefined
 
@@ -112,7 +110,6 @@ const onNodeContentClick = async (
 }
 const menu = ref(null)
 const menuTargetNode = ref<RenderedTreeExplorerNode | null>(null)
-provide('menuTargetNode', menuTargetNode)
 const extraMenuItems = computed(() => {
   return menuTargetNode.value?.contextMenuItems
     ? typeof menuTargetNode.value.contextMenuItems === 'function'
