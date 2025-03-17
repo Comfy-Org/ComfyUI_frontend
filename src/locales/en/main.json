@@ -261,7 +261,7 @@
     "cannotWrite": "Unable to write to the selected path",
     "insufficientFreeSpace": "Insufficient space - minimum free space",
     "isOneDrive": "Installing in OneDrive can cause issues. Highly recommend installing in a non-OneDrive location.",
-    "isNonDefaultDrive": "Please install ComfyUI on your system drive (C:). While models and other files can be stored on other drives, the main application should be on C: for best performance and reliability.",
+    "nonDefaultDrive": "Please install ComfyUI on your system drive (eg. C:\\). Drives with different file systems may cause unpredicable issues. Models and other files can be stored on other drives after installation.",
     "parentMissing": "Path does not exist - create the containing directory first",
     "unhandledError": "Unknown error",
     "installLocationDescription": "Select the directory for ComfyUI's user data. A python environment will be installed to the selected location.",
