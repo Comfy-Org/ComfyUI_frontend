@@ -73,6 +73,7 @@ export interface DOMWidgetOptions<V extends object | string>
    */
   beforeResize?: (this: BaseDOMWidget<V>, node: LGraphNode) => void
   afterResize?: (this: BaseDOMWidget<V>, node: LGraphNode) => void
+  onExecuted?: (message: string) => void
 }
 
 export const isDOMWidget = <T extends HTMLElement, V extends object | string>(
@@ -251,6 +252,10 @@ export const addWidget = <W extends BaseDOMWidget<object | string>>(
   node.onResize = useChainCallback(node.onResize, () => {
     widget.options.beforeResize?.call(widget, node)
     widget.options.afterResize?.call(widget, node)
+  })
+
+  node.onExecuted = useChainCallback(node.onExecuted, (message) => {
+    widget.options.onExecuted?.(message)
   })
 
   useDomWidgetStore().registerWidget(widget)
