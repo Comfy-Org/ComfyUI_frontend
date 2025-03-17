@@ -19,7 +19,7 @@
         <i class="pi pi-download mr-2" />
         {{ $n(nodePack.downloads) }}
       </div>
-      <template v-if="isPackInstalled">
+      <template v-if="isInstalled">
         <PackEnableToggle :node-pack="nodePack" />
       </template>
       <template v-else>
@@ -30,6 +30,8 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import PackEnableToggle from '@/components/dialog/content/manager/button/PackEnableToggle.vue'
 import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
@@ -40,4 +42,5 @@ const { nodePack } = defineProps<{
 }>()
 
 const { isPackInstalled } = useComfyManagerStore()
+const isInstalled = computed(() => isPackInstalled(nodePack?.id))
 </script>
