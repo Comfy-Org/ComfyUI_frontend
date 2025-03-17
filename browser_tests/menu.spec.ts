@@ -397,7 +397,7 @@ test.describe('Menu', () => {
         '*Unsaved Workflow.json'
       ])
 
-      await tab.newBlankWorkflowButton.click()
+      await comfyPage.executeCommand('Comfy.NewBlankWorkflow')
       expect(await tab.getOpenedWorkflowNames()).toEqual([
         '*Unsaved Workflow.json',
         '*Unsaved Workflow (2).json'
@@ -496,7 +496,7 @@ test.describe('Menu', () => {
     })
 
     test('Can save workflow as', async ({ comfyPage }) => {
-      await comfyPage.menu.workflowsTab.newBlankWorkflowButton.click()
+      await comfyPage.executeCommand('Comfy.NewBlankWorkflow')
       await comfyPage.menu.topbar.saveWorkflowAs('workflow3.json')
       expect(
         await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
@@ -620,7 +620,7 @@ test.describe('Menu', () => {
 
       // Load blank workflow
       await comfyPage.menu.workflowsTab.open()
-      await comfyPage.menu.workflowsTab.newBlankWorkflowButton.click()
+      await comfyPage.executeCommand('Comfy.NewBlankWorkflow')
 
       // Switch back to the missing_nodes workflow
       await comfyPage.menu.workflowsTab.switchToWorkflow('missing_nodes')
