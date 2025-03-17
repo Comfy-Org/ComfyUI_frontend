@@ -57,29 +57,22 @@
             <div v-else class="h-full" @click="handleGridContainerClick">
               <VirtualGrid
                 :items="resultsWithKeys"
-                :defaultItemSize="DEFAULT_CARD_SIZE"
-                class="p-0 m-0 max-w-full"
-                :buffer-rows="2"
+                :buffer-rows="5"
                 :gridStyle="{
                   display: 'grid',
-                  gridTemplateColumns: `repeat(auto-fill, minmax(${DEFAULT_CARD_SIZE}px, 1fr))`,
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(22rem, 1fr))',
                   padding: '0.5rem',
-                  gap: '1.125rem 1.25rem',
-                  justifyContent: 'stretch'
+                  gap: '1.5rem'
                 }"
               >
                 <template #item="{ item }">
-                  <div
-                    class="relative w-full aspect-square cursor-pointer"
+                  <PackCard
                     @click.stop="(event) => selectNodePack(item, event)"
-                  >
-                    <PackCard
-                      :node-pack="item"
-                      :is-selected="
-                        selectedNodePacks.some((pack) => pack.id === item.id)
-                      "
-                    />
-                  </div>
+                    :node-pack="item"
+                    :is-selected="
+                      selectedNodePacks.some((pack) => pack.id === item.id)
+                    "
+                  />
                 </template>
               </VirtualGrid>
             </div>
@@ -123,8 +116,6 @@ import { useRegistrySearch } from '@/composables/useRegistrySearch'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import type { TabItem } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
-
-const DEFAULT_CARD_SIZE = 349
 
 const { t } = useI18n()
 const comfyManagerStore = useComfyManagerStore()
