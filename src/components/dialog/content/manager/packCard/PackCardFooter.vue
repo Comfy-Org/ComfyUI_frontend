@@ -6,9 +6,6 @@
       <span v-if="publisherName" class="max-w-40 truncate">
         {{ publisherName }}
       </span>
-      <span v-else-if="nodePack.latest_version">
-        {{ nodePack.latest_version.version }}
-      </span>
     </div>
     <div
       v-if="nodePack.latest_version?.createdAt"
