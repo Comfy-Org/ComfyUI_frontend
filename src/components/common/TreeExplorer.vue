@@ -47,6 +47,7 @@ import { useTreeFolderOperations } from '@/composables/tree/useTreeFolderOperati
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import {
+  InjectKeyExpandedKeys,
   InjectKeyHandleEditLabelFunction,
   type RenderedTreeExplorerNode,
   type TreeExplorerNode
@@ -54,6 +55,7 @@ import {
 import { combineTrees, findNodeByKey } from '@/utils/treeUtil'
 
 const expandedKeys = defineModel<Record<string, boolean>>('expandedKeys')
+provide(InjectKeyExpandedKeys, expandedKeys)
 const selectionKeys = defineModel<Record<string, boolean>>('selectionKeys')
 // Tracks whether the caller has set the selectionKeys model.
 const storeSelectionKeys = selectionKeys.value !== undefined
