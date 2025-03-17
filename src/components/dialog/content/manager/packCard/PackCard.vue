@@ -5,39 +5,17 @@
       'outline outline-[6px] outline-[var(--p-primary-color)]': isSelected
     }"
     :pt="{
-      body: { class: 'p-0 flex flex-col h-full rounded-2xl' },
+      body: { class: 'p-0 flex flex-col h-full rounded-2xl gap-0' },
       content: { class: 'flex-1 flex flex-col rounded-2xl' },
-      title: { class: 'p-0 m-0' },
+      title: {
+        class:
+          'self-stretch px-4 py-3 inline-flex justify-start items-center gap-6'
+      },
       footer: { class: 'p-0 m-0' }
     }"
   >
     <template #title>
-      <div class="flex justify-between p-5 pb-1 align-middle text-sm">
-        <span class="flex items-start mt-2">
-          <i
-            class="pi pi-box text-muted text-2xl ml-1 mr-5"
-            style="opacity: 0.5"
-          />
-          <span class="text-lg relative top-[.25rem]">{{
-            $t('manager.nodePack')
-          }}</span>
-        </span>
-        <div class="flex items-center gap-2.5">
-          <div
-            v-if="nodePack.downloads"
-            class="flex items-center text-sm text-muted tracking-tighter"
-          >
-            <i class="pi pi-download mr-2" />
-            {{ $n(nodePack.downloads) }}
-          </div>
-          <template v-if="isPackInstalled">
-            <PackEnableToggle :node-pack="nodePack" />
-          </template>
-          <template v-else>
-            <PackInstallButton :node-packs="[nodePack]" />
-          </template>
-        </div>
-      </div>
+      <PackCardHeader :node-pack="nodePack" />
     </template>
     <template #content>
       <ContentDivider />
@@ -102,8 +80,6 @@ import { computed } from 'vue'
 
 import ContentDivider from '@/components/common/ContentDivider.vue'
 import PackVersionBadge from '@/components/dialog/content/manager/PackVersionBadge.vue'
-import PackEnableToggle from '@/components/dialog/content/manager/button/PackEnableToggle.vue'
-import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
 import PackCardFooter from '@/components/dialog/content/manager/packCard/PackCardFooter.vue'
 import PackIcon from '@/components/dialog/content/manager/packIcon/PackIcon.vue'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
