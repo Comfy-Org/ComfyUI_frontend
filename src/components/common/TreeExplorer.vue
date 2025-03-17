@@ -45,7 +45,6 @@ import { useI18n } from 'vue-i18n'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import { useTreeFolderOperations } from '@/composables/tree/useTreeFolderOperations'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import {
   InjectKeyExpandedKeys,
   InjectKeyHandleEditLabelFunction,
@@ -70,13 +69,16 @@ const emit = defineEmits<{
   (e: 'contextMenu', node: RenderedTreeExplorerNode, event: MouseEvent): void
 }>()
 
-const { expandNode } = useTreeExpansion(expandedKeys)
 const {
   newFolderNode,
   getAddFolderMenuItem,
   handleFolderCreation,
   addFolderCommand
-} = useTreeFolderOperations(expandNode)
+} = useTreeFolderOperations(
+  /* expandNode */ (node: TreeExplorerNode) => {
+    expandedKeys.value[node.key] = true
+  }
+)
 
 const renderedRoot = computed<RenderedTreeExplorerNode>(() => {
   const renderedRoot = fillNodeInfo(props.root)
