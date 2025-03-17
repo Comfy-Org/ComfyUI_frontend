@@ -25,7 +25,7 @@
       option-value="value"
       :options="allVersionOptions"
       :highlight-on-select="false"
-      class="my-3 w-full max-h-[50vh] border-none"
+      class="my-3 w-full max-h-[50vh] border-none shadow-none"
     >
       <template #option="slotProps">
         <div class="flex justify-between items-center w-full p-1">
