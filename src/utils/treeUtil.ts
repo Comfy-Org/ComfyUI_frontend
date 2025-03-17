@@ -105,7 +105,10 @@ export function sortedTree(
   return newNode
 }
 
-export const findNodeByKey = (root: TreeNode, key: string): TreeNode | null => {
+export const findNodeByKey = <T extends TreeNode>(
+  root: T,
+  key: string
+): T | null => {
   if (root.key === key) {
     return root
   }
@@ -113,10 +116,46 @@ export const findNodeByKey = (root: TreeNode, key: string): TreeNode | null => {
     return null
   }
   for (const child of root.children) {
-    const result = findNodeByKey(child, key)
+    const result = findNodeByKey(child as T, key)
     if (result) {
       return result
     }
   }
   return null
+}
+
+/**
+ * Deep clone a tree node and its children.
+ * @param node - The node to clone.
+ * @returns A deep clone of the node.
+ */
+export function cloneTree<T extends TreeNode>(node: T): T {
+  const clone: T = { ...node } as T
+
+  // Clone children recursively
+  if (node.children && node.children.length > 0) {
+    clone.children = node.children.map((child) => cloneTree(child as T))
+  }
+
+  return clone
+}
+
+/**
+ * Merge a subtree into the tree.
+ * @param root - The root of the tree.
+ * @param subtree - The subtree to merge.
+ * @returns A new tree with the subtree merged.
+ */
+export const combineTrees = <T extends TreeNode>(root: T, subtree: T): T => {
+  const newRoot = cloneTree(root)
+
+  const parentKey = subtree.key.slice(0, subtree.key.lastIndexOf('/'))
+  const parent = findNodeByKey(newRoot, parentKey)
+
+  if (parent) {
+    parent.children ??= []
+    parent.children.push(cloneTree(subtree))
+  }
+
+  return newRoot
 }

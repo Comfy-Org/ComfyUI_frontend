@@ -19,10 +19,10 @@ export interface TreeExplorerNode<T = any> {
   ) => void | Promise<void>
   /** Function to handle deleting the node */
   handleDelete?: (this: TreeExplorerNode<T>) => void | Promise<void>
-  /** Function to handle adding a child node */
-  handleAddChild?: (
+  /** Function to handle adding a folder */
+  handleAddFolder?: (
     this: TreeExplorerNode<T>,
-    child: TreeExplorerNode<T>
+    folderName: string
   ) => void | Promise<void>
   /** Whether the node is draggable */
   draggable?: boolean
