@@ -136,7 +136,6 @@ import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue
 import WorkflowTreeLeaf from '@/components/sidebar/tabs/workflows/WorkflowTreeLeaf.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useWorkflowService } from '@/services/workflowService'
-import { useCommandStore } from '@/stores/commandStore'
 import { useSettingStore } from '@/stores/settingStore'
 import {
   useWorkflowBookmarkStore,
@@ -174,7 +173,6 @@ const handleSearch = (query: string) => {
   })
 }
 
-const commandStore = useCommandStore()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const workspaceStore = useWorkspaceStore()
