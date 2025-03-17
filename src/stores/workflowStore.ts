@@ -13,6 +13,7 @@ import { UserFile } from './userFileStore'
 
 export class ComfyWorkflow extends UserFile {
   static readonly basePath = 'workflows/'
+  static readonly folderPlaceholderFilename = 'folder.index'
 
   /**
    * The change tracker for the workflow. Non-reactive raw object.
@@ -32,7 +33,9 @@ export class ComfyWorkflow extends UserFile {
   }
 
   get key() {
-    return this.path.substring(ComfyWorkflow.basePath.length)
+    const key = this.isFolderPlaceholder ? this.directory + '/' : this.path
+
+    return key.substring(ComfyWorkflow.basePath.length)
   }
 
   get activeState(): ComfyWorkflowJSON | null {
@@ -59,7 +62,7 @@ export class ComfyWorkflow extends UserFile {
    * Whether the workflow is a folder placeholder.
    */
   get isFolderPlaceholder(): boolean {
-    return this.filename === '.index'
+    return this.fullFilename === ComfyWorkflow.folderPlaceholderFilename
   }
 
   /**
@@ -441,7 +444,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
         : folderPath
 
       // Create the full path including the reserved index file
-      const indexFilePath = `${ComfyWorkflow.basePath}${normalizedPath}/.index`
+      const indexFilePath = `${ComfyWorkflow.basePath}${normalizedPath}/${ComfyWorkflow.folderPlaceholderFilename}`
 
       // Create an empty file to represent the folder
       const resp = await api.storeUserData(indexFilePath, '', {

@@ -218,10 +218,7 @@ const renderTreeNode = (
   node: TreeNode,
   type: WorkflowTreeType
 ): TreeExplorerNode<ComfyWorkflow> => {
-  const children = node.children
-    ?.filter((child) => !child.data?.isFolderPlaceholder)
-    ?.map((child) => renderTreeNode(child, type))
-
+  const children = node.children?.map((child) => renderTreeNode(child, type))
   const workflow: ComfyWorkflow = node.data
 
   function handleClick(this: TreeExplorerNode<ComfyWorkflow>, e: MouseEvent) {
@@ -232,7 +229,7 @@ const renderTreeNode = (
     }
   }
 
-  const actions = node.leaf
+  const actions: Partial<TreeExplorerNode<ComfyWorkflow>> = node.leaf
     ? {
         handleClick,
         async handleRename(newName: string) {
@@ -262,7 +259,14 @@ const renderTreeNode = (
         },
         draggable: true
       }
-    : { handleClick }
+    : {
+        handleClick,
+        async handleAddFolder(folderName: string) {
+          const parentPath = this.key.replace(/^root\//, '')
+          const folderPath = parentPath + '/' + folderName
+          await workflowStore.createFolder(folderPath)
+        }
+      }
 
   return {
     key: node.key,
