@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from './fixtures/ComfyPage'
+import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 test.describe('Copy Paste', () => {
   test('Can copy and paste node', async ({ comfyPage }) => {

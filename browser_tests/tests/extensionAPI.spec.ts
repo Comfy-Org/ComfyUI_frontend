@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { SettingParams } from '../src/types/settingTypes'
-import { comfyPageFixture as test } from './fixtures/ComfyPage'
+import { SettingParams } from '../../src/types/settingTypes'
+import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 test.describe('Topbar commands', () => {
   test.beforeEach(async ({ comfyPage }) => {

@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from './fixtures/ComfyPage'
-import type { NodeReference } from './fixtures/utils/litegraphUtils'
+import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import type { NodeReference } from '../fixtures/utils/litegraphUtils'
 
 test.describe('Primitive Node', () => {
   test('Can load with correct size', async ({ comfyPage }) => {

@@ -1,7 +1,7 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from './fixtures/ComfyPage'
+} from '../fixtures/ComfyPage'
 
 test.describe('Node search box', () => {
   test.beforeEach(async ({ comfyPage }) => {

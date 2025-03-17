@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from './fixtures/ComfyPage'
+import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 test.describe('Note Node', () => {
   test('Can load node nodes', async ({ comfyPage }) => {

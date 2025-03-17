@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import type { Palette } from '../src/schemas/colorPaletteSchema'
-import { comfyPageFixture as test } from './fixtures/ComfyPage'
+import type { Palette } from '../../src/schemas/colorPaletteSchema'
+import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 const customColorPalettes: Record<string, Palette> = {
   obsidian: {

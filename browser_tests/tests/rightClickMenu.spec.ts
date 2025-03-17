@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { NodeBadgeMode } from '../src/types/nodeSource'
-import { comfyPageFixture as test } from './fixtures/ComfyPage'
+import { NodeBadgeMode } from '../../src/types/nodeSource'
+import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 test.describe('Canvas Right Click Menu', () => {
   test('Can add node', async ({ comfyPage }) => {

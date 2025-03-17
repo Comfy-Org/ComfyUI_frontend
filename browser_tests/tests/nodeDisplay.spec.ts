@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from './fixtures/ComfyPage'
+import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 // If an input is optional by node definition, it should be shown as
 // a hollow circle no matter what shape it was defined in the workflow JSON.

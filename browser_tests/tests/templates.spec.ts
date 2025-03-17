@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 import fs from 'fs'
 
-import { comfyPageFixture as test } from './fixtures/ComfyPage'
+import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 test.describe('Templates', () => {
   test.beforeEach(async ({ comfyPage }) => {

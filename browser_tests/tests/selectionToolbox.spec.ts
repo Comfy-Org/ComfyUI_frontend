@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture } from './fixtures/ComfyPage'
+import { comfyPageFixture } from '../fixtures/ComfyPage'
 
 const test = comfyPageFixture
 
