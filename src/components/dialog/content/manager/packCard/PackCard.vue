@@ -126,8 +126,8 @@ const isUpdateAvailable = computed(() => {
 
   const installedVersion = getInstalledPackVersion(nodePack.id)
 
-  // Consider nightly GitHub packs as always update-able
-  if (installedVersion && !isSemVer(installedVersion)) return true
+  // Don't attempt to show update available for nightly GitHub packs
+  if (installedVersion && !isSemVer(installedVersion)) return false
 
   return compareVersions(latestVersion, installedVersion) > 0
 })
