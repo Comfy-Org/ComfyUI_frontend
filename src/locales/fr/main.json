@@ -387,6 +387,7 @@
       "enabled": "Activé",
       "nodePack": "Pack de Nœuds"
     },
+    "infoPanelEmpty": "Cliquez sur un élément pour voir les informations",
     "installSelected": "Installer sélectionné",
     "lastUpdated": "Dernière mise à jour",
     "latestVersion": "Dernière",

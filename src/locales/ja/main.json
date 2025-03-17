@@ -387,6 +387,7 @@
       "enabled": "有効",
       "nodePack": "ノードパック"
     },
+    "infoPanelEmpty": "アイテムをクリックして情報を表示します",
     "installSelected": "選択したものをインストール",
     "lastUpdated": "最終更新日",
     "latestVersion": "最新",
