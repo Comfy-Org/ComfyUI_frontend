@@ -1,15 +1,15 @@
 <template>
   <Card
-    class="absolute inset-0 flex flex-col overflow-hidden rounded-2xl shadow-elevation-4 dark-theme:bg-dark-elevation-1 transition-all duration-200"
+    class="w-full h-full inline-flex flex-col justify-between items-start overflow-hidden rounded-2xl shadow-elevation-4 dark-theme:bg-dark-elevation-1 transition-all duration-200"
     :class="{
       'outline outline-[6px] outline-[var(--p-primary-color)]': isSelected
     }"
     :pt="{
-      body: { class: 'p-0 flex flex-col h-full rounded-2xl gap-0' },
+      body: { class: 'p-0 flex flex-col w-full h-full rounded-2xl gap-0' },
       content: { class: 'flex-1 flex flex-col rounded-2xl' },
       title: {
         class:
-          'self-stretch px-4 py-3 inline-flex justify-start items-center gap-6'
+          'self-stretch w-full px-4 py-3 inline-flex justify-start items-center gap-6'
       },
       footer: { class: 'p-0 m-0' }
     }"
