@@ -141,3 +141,4 @@ export type {
 } from "./types/serialisation"
 export type { IWidget } from "./types/widgets"
 export { isColorable } from "./utils/type"
+export { createUuidv4 } from "./utils/uuid"
