@@ -115,8 +115,20 @@ export class NodeWidgetReference {
       }
     )
   }
-}
 
+  async getValue() {
+    return await this.node.comfyPage.page.evaluate(
+      ([id, index]) => {
+        const node = window['app'].graph.getNodeById(id)
+        if (!node) throw new Error(`Node ${id} not found.`)
+        const widget = node.widgets[index]
+        if (!widget) throw new Error(`Widget ${index} not found.`)
+        return widget.value
+      },
+      [this.node.id, this.index] as const
+    )
+  }
+}
 export class NodeReference {
   constructor(
     readonly id: NodeId,
