@@ -387,6 +387,7 @@
       "enabled": "활성화",
       "nodePack": "노드 팩"
     },
+    "infoPanelEmpty": "정보를 보려면 항목을 클릭하세요",
     "installSelected": "선택한 항목 설치",
     "lastUpdated": "마지막 업데이트",
     "latestVersion": "최신",

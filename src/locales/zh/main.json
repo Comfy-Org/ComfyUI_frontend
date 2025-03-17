@@ -387,6 +387,7 @@
       "enabled": "已启用",
       "nodePack": "节点包"
     },
+    "infoPanelEmpty": "点击一个项目查看信息",
     "installSelected": "安装选定",
     "lastUpdated": "最后更新",
     "latestVersion": "最新",
