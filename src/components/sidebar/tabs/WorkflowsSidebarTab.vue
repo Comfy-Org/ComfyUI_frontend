@@ -5,6 +5,13 @@
   >
     <template #tool-buttons>
       <Button
+        icon="pi pi-folder-plus"
+        @click="addNewFolder"
+        severity="secondary"
+        text
+        v-tooltip.bottom="$t('g.newFolder')"
+      />
+      <Button
         icon="pi pi-refresh"
         @click="workflowStore.syncWorkflows()"
         severity="secondary"
@@ -91,6 +98,7 @@
             :root="renderTreeNode(workflowsTree, WorkflowTreeType.Browse)"
             v-model:expandedKeys="expandedKeys"
             :selectionKeys="selectionKeys"
+            ref="persistedWorkflowsTreeExplorerRef"
             v-if="workflowStore.persistedWorkflows.length > 0"
           >
             <template #node="{ node }">
@@ -262,7 +270,9 @@ const renderTreeNode = (
     : {
         handleClick,
         async handleAddFolder(folderName: string) {
-          const parentPath = this.key.replace(/^root\//, '')
+          if (folderName === '') return
+
+          const parentPath = this.key.replace(/^root\/?/, '')
           const folderPath = parentPath + '/' + folderName
           await workflowStore.createFolder(folderPath)
         }
@@ -286,4 +296,11 @@ const workflowBookmarkStore = useWorkflowBookmarkStore()
 onMounted(async () => {
   await workflowBookmarkStore.loadBookmarks()
 })
+
+const persistedWorkflowsTreeExplorerRef = ref<InstanceType<
+  typeof TreeExplorer
+> | null>(null)
+const addNewFolder = () => {
+  persistedWorkflowsTreeExplorerRef.value?.addFolderCommand?.('root')
+}
 </script>
