@@ -131,7 +131,9 @@ export const useAlgoliaSearchService = () => {
       status: algoliaNode.status,
       icon: algoliaNode.icon_url,
       latest_version: toRegistryLatestVersion(algoliaNode),
-      publisher: toRegistryPublisher(algoliaNode)
+      publisher: toRegistryPublisher(algoliaNode),
+      // @ts-expect-error remove when comfy_nodes is added to node (pack) info
+      comfy_nodes: algoliaNode.comfy_nodes
     }
   }
 
