@@ -117,11 +117,14 @@ const validatePath = async (path: string) => {
       }
       if (validation.parentMissing) errors.push(t('install.parentMissing'))
       if (validation.isOneDrive) errors.push(t('install.isOneDrive'))
-      if (validation.isNonDefaultDrive) nonDefaultDrive.value = true
+
       if (validation.error)
         errors.push(`${t('install.unhandledError')}: ${validation.error}`)
       pathError.value = errors.join('\n')
     }
+
+    if (validation.isNonDefaultDrive) nonDefaultDrive.value = true
+    if (validation.exists) pathExists.value = true
   } catch (error) {
     pathError.value = t('install.pathValidationFailed')
   }
