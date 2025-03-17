@@ -51,7 +51,7 @@ import {
   type RenderedTreeExplorerNode,
   type TreeExplorerNode
 } from '@/types/treeExplorerTypes'
-import { combineTrees } from '@/utils/treeUtil'
+import { combineTrees, findNodeByKey } from '@/utils/treeUtil'
 
 const expandedKeys = defineModel<Record<string, boolean>>('expandedKeys')
 const selectionKeys = defineModel<Record<string, boolean>>('selectionKeys')
@@ -69,8 +69,12 @@ const emit = defineEmits<{
 }>()
 
 const { expandNode } = useTreeExpansion(expandedKeys)
-const { newFolderNode, getAddFolderMenuItem, handleFolderCreation } =
-  useTreeFolderOperations(expandNode)
+const {
+  newFolderNode,
+  getAddFolderMenuItem,
+  handleFolderCreation,
+  addFolderCommand
+} = useTreeFolderOperations(expandNode)
 
 const renderedRoot = computed<RenderedTreeExplorerNode>(() => {
   const renderedRoot = fillNodeInfo(props.root)
@@ -210,7 +214,14 @@ const wrapCommandWithErrorHandler = (
 
 defineExpose({
   renameCommand,
-  deleteCommand
+  deleteCommand,
+  /**
+   * The command to add a folder to a node via the context menu
+   * @param targetNodeKey - The key of the node where the folder will be added under
+   */
+  addFolderCommand: (targetNodeKey: string) => {
+    addFolderCommand(findNodeByKey(renderedRoot.value, targetNodeKey))
+  }
 })
 </script>
 

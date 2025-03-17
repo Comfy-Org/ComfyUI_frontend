@@ -16,7 +16,7 @@ export function useTreeFolderOperations(
 
   // Generate a unique temporary key for the new folder
   const generateTempKey = (parentKey: string) => {
-    return `${parentKey}new_folder_${Date.now()}`
+    return `${parentKey}/new_folder_${Date.now()}`
   }
 
   // Handle folder creation after name is confirmed
@@ -57,7 +57,7 @@ export function useTreeFolderOperations(
     targetNode: RenderedTreeExplorerNode | null
   ) => {
     return {
-      label: t('g.addFolder'),
+      label: t('g.newFolder'),
       icon: 'pi pi-folder-plus',
       command: () => {
         if (targetNode) addFolderCommand(targetNode)
