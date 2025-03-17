@@ -6,8 +6,21 @@ name: Test ComfyUI Frontend
 on:
   push:
     branches: [main, master]
+    paths-ignore:
+      - '.cursor/**'
+      - '.husky/**'
+      - '.vscode/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      - 'test/**'
+
   pull_request:
     branches: [main, master]
+    paths-ignore:
+      - '.cursor/**'
+      - '.husky/**'
+      - '.vscode/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      - 'test/**'
 
 jobs:
   test-comfyui-frontend:
