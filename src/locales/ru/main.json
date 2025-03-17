@@ -188,6 +188,7 @@
     "reportSent": "Отчёт отправлен",
     "reset": "Сбросить",
     "resetKeybindingsTooltip": "Сбросить сочетания клавиш по умолчанию",
+    "restart": "Перезапустить",
     "resultsCount": "Найдено {count} результатов",
     "save": "Сохранить",
     "saving": "Сохранение",
@@ -397,6 +398,7 @@
     "nodePack": "Пакет Узлов",
     "packsSelected": "Выбрано пакетов",
     "repository": "Репозиторий",
+    "restartToApplyChanges": "Чтобы применить изменения, пожалуйста, перезапустите ComfyUI",
     "searchPlaceholder": "Поиск",
     "selectVersion": "Выберите версию",
     "sort": {
@@ -530,6 +532,7 @@
     "Toggle Logs Bottom Panel": "Переключение нижней панели журналов",
     "Toggle Model Library Sidebar": "Переключение боковой панели библиотеки моделей",
     "Toggle Node Library Sidebar": "Переключение боковой панели библиотеки нод",
+    "Toggle Progress Dialog": "Переключить диалоговое окно прогресса",
     "Toggle Queue Sidebar": "Переключение боковой панели очереди",
     "Toggle Search Box": "Переключить поисковую панель",
     "Toggle Terminal Bottom Panel": "Переключение нижней панели терминала",

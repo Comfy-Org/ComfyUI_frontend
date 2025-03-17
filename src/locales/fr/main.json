@@ -188,6 +188,7 @@
     "reportSent": "Rapport soumis",
     "reset": "Réinitialiser",
     "resetKeybindingsTooltip": "Réinitialiser les raccourcis clavier par défaut",
+    "restart": "Redémarrer",
     "resultsCount": "{count} Résultats Trouvés",
     "save": "Enregistrer",
     "saving": "Enregistrement",
@@ -397,6 +398,7 @@
     "nodePack": "Pack de Nœuds",
     "packsSelected": "Packs sélectionnés",
     "repository": "Référentiel",
+    "restartToApplyChanges": "Pour appliquer les modifications, veuillez redémarrer ComfyUI",
     "searchPlaceholder": "Recherche",
     "selectVersion": "Sélectionner la version",
     "sort": {
@@ -530,6 +532,7 @@
     "Toggle Logs Bottom Panel": "Basculer le panneau inférieur des journaux",
     "Toggle Model Library Sidebar": "Basculer la barre latérale de la bibliothèque de modèles",
     "Toggle Node Library Sidebar": "Basculer la barre latérale de la bibliothèque de nœuds",
+    "Toggle Progress Dialog": "Basculer la boîte de dialogue de progression",
     "Toggle Queue Sidebar": "Basculer la barre latérale de la file d'attente",
     "Toggle Search Box": "Basculer la boîte de recherche",
     "Toggle Terminal Bottom Panel": "Basculer le panneau inférieur du terminal",

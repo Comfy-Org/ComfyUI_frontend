@@ -590,6 +590,15 @@ export function useCoreCommands(): ComfyCommand[] {
       function: () => {
         dialogService.showManagerDialog()
       }
+    },
+    {
+      id: 'Comfy.Manager.ToggleManagerProgressDialog',
+      icon: 'pi pi-spinner',
+      label: 'Toggle Progress Dialog',
+      versionAdded: '1.13.9',
+      function: () => {
+        dialogService.showManagerProgressDialog()
+      }
     }
   ]
 }

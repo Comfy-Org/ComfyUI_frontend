@@ -128,6 +128,9 @@
   "Comfy_Manager_CustomNodesManager": {
     "label": "사용자 정의 노드 관리자"
   },
+  "Comfy_Manager_ToggleManagerProgressDialog": {
+    "label": "프로그레스 대화 상자 전환"
+  },
   "Comfy_NewBlankWorkflow": {
     "label": "새로운 빈 워크플로"
   },

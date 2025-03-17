@@ -94,10 +94,12 @@
     "filter": "Filter",
     "apply": "Apply",
     "enabled": "Enabled",
-    "installed": "Installed"
+    "installed": "Installed",
+    "restart": "Restart"
   },
   "manager": {
     "title": "Custom Nodes Manager",
+    "restartToApplyChanges": "To apply changes, please restart ComfyUI",
     "loadingVersions": "Loading versions...",
     "selectVersion": "Select Version",
     "downloads": "Downloads",
@@ -615,6 +617,7 @@
     "Interrupt": "Interrupt",
     "Load Default Workflow": "Load Default Workflow",
     "Custom Nodes Manager": "Custom Nodes Manager",
+    "Toggle Progress Dialog": "Toggle Progress Dialog",
     "New": "New",
     "Clipspace": "Clipspace",
     "Open": "Open",
