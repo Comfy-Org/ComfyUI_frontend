@@ -384,3 +384,31 @@ export const downloadUrlToHfRepoUrl = (url: string): string => {
     return url
   }
 }
+
+export const isSemVer = (version: string) => {
+  const regex = /^(\d+)\.(\d+)\.(\d+)$/
+  return regex.test(version)
+}
+
+const normalizeVersion = (version: string) =>
+  version
+    .split(/[+.-]/)
+    .map(Number)
+    .filter((part) => !Number.isNaN(part))
+
+export function compareVersions(versionA: string, versionB: string): number {
+  versionA ??= '0.0.0'
+  versionB ??= '0.0.0'
+
+  const aParts = normalizeVersion(versionA)
+  const bParts = normalizeVersion(versionB)
+
+  for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
+    const aPart = aParts[i] ?? 0
+    const bPart = bParts[i] ?? 0
+    if (aPart < bPart) return -1
+    if (aPart > bPart) return 1
+  }
+
+  return 0
+}

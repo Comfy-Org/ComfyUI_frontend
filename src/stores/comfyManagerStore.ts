@@ -178,6 +178,11 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     enqueueTask(withLogs(task, `Disabling ${params.id}`))
   }
 
+  const getInstalledPackVersion = (packId: string) => {
+    const pack = installedPacks.value[packId]
+    return pack?.ver
+  }
+
   const clearLogs = () => {
     taskLogs.value = []
   }
@@ -197,6 +202,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     installedPacksIds,
     isPackInstalled: isInstalledPackId,
     isPackEnabled: isEnabledPackId,
+    getInstalledPackVersion,
 
     // Pack actions
     installPack,
