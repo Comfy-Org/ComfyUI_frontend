@@ -128,10 +128,24 @@ test.describe('Dynamic widget manipulation', () => {
   })
 })
 
-test.describe('Load image widget', () => {
+test.describe('Image widget', () => {
   test('Can load image', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('widgets/load_image_widget')
     await expect(comfyPage.canvas).toHaveScreenshot('load_image_widget.png')
+  })
+
+  test('Can drag and drop image', async ({ comfyPage }) => {
+    await comfyPage.loadWorkflow('widgets/load_image_widget')
+    const nodes = await comfyPage.getNodeRefsByType('LoadImage')
+    const node = nodes[0]
+    const nodePos = await node.getPosition()
+    await comfyPage.dragAndDropFile('image32x32.webp', {
+      dropPosition: {
+        x: nodePos.x,
+        y: nodePos.y
+      }
+    })
+    await expect(comfyPage.canvas).toHaveScreenshot('drag_and_drop_image.png')
   })
 })
 
