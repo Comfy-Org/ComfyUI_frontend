@@ -93,6 +93,7 @@ export const useImageUploadWidget = () => {
     // Add our own callback to the combo widget to render an image when it changes
     fileComboWidget.callback = function () {
       nodeOutputStore.setNodeOutputs(node, fileComboWidget.value)
+      node.graph?.setDirtyCanvas(true)
     }
 
     // On load if we have a value then render the image
