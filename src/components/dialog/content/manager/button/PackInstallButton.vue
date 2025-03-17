@@ -11,7 +11,7 @@
 </template>
 
 <script setup lang="ts">
-import { inject } from 'vue'
+import { inject, ref } from 'vue'
 
 import PackActionButton from '@/components/dialog/content/manager/button/PackActionButton.vue'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
@@ -29,7 +29,7 @@ const { nodePacks } = defineProps<{
   nodePacks: NodePack[]
 }>()
 
-const isInstalling = inject(IsInstallingKey)
+const isInstalling = inject(IsInstallingKey, ref(false))
 
 const managerStore = useComfyManagerStore()
 
