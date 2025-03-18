@@ -36,6 +36,9 @@ class Load3d {
   protected loaderManager: LoaderManager
   protected modelManager: ModelManager
 
+  STATUS_MOUSE_ON_NODE: boolean
+  STATUS_MOUSE_ON_SCENE: boolean
+
   constructor(
     container: Element | HTMLElement,
     options: Load3DOptions = {
@@ -124,6 +127,9 @@ class Load3d {
       this.previewManager.init()
     }
 
+    this.STATUS_MOUSE_ON_NODE = false
+    this.STATUS_MOUSE_ON_SCENE = false
+
     this.handleResize()
     this.startAnimation()
   }
@@ -165,6 +171,18 @@ class Load3d {
     }
 
     animate()
+  }
+
+  updateStatusMouseOnNode(onNode: boolean): void {
+    this.STATUS_MOUSE_ON_NODE = onNode
+  }
+
+  updateStatusMouseOnScene(onScene: boolean): void {
+    this.STATUS_MOUSE_ON_SCENE = onScene
+  }
+
+  isActive(): boolean {
+    return this.STATUS_MOUSE_ON_NODE || this.STATUS_MOUSE_ON_SCENE
   }
 
   setBackgroundColor(color: string): void {

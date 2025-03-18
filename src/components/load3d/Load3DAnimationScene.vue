@@ -183,4 +183,8 @@ const animationListeners = {
     emit('animationListChange', newValue)
   }
 }
+
+defineExpose({
+  load3DSceneRef
+})
 </script>

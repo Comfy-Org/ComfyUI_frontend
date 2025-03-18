@@ -1,6 +1,11 @@
 <template>
-  <div class="relative w-full h-full">
+  <div
+    class="relative w-full h-full"
+    @mouseenter="handleMouseEnter"
+    @mouseleave="handleMouseLeave"
+  >
     <Load3DAnimationScene
+      ref="load3DAnimationSceneRef"
       :node="node"
       :type="type"
       :backgroundColor="backgroundColor"
@@ -109,6 +114,22 @@ const backgroundImage = ref('')
 const showPreviewButton = computed(() => {
   return !type.includes('Preview')
 })
+
+const load3DAnimationSceneRef = ref(null)
+
+const handleMouseEnter = () => {
+  const sceneRef = load3DAnimationSceneRef.value?.load3DSceneRef
+  if (sceneRef?.load3d) {
+    sceneRef.load3d.updateStatusMouseOnScene(true)
+  }
+}
+
+const handleMouseLeave = () => {
+  const sceneRef = load3DAnimationSceneRef.value?.load3DSceneRef
+  if (sceneRef?.load3d) {
+    sceneRef.load3d.updateStatusMouseOnScene(false)
+  }
+}
 
 const switchCamera = () => {
   cameraType.value =

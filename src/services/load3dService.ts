@@ -41,6 +41,12 @@ export class Load3dService {
 
     rawNode.onMouseEnter = function () {
       instance.refreshViewport()
+
+      instance.updateStatusMouseOnNode(true)
+    }
+
+    rawNode.onMouseLeave = function () {
+      instance.updateStatusMouseOnNode(false)
     }
 
     rawNode.onResize = function () {
