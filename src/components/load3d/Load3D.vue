@@ -95,7 +95,7 @@ const backgroundImage = ref('')
 const upDirection = ref<UpDirection>('original')
 const materialMode = ref<MaterialMode>('original')
 const edgeThreshold = ref(85)
-const load3DSceneRef = ref(null)
+const load3DSceneRef = ref<InstanceType<typeof Load3DScene> | null>(null)
 
 const showPreviewButton = computed(() => {
   return !type.includes('Preview')

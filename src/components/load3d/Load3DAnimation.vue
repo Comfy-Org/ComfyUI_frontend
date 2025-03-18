@@ -115,7 +115,9 @@ const showPreviewButton = computed(() => {
   return !type.includes('Preview')
 })
 
-const load3DAnimationSceneRef = ref(null)
+const load3DAnimationSceneRef = ref<InstanceType<
+  typeof Load3DAnimationScene
+> | null>(null)
 
 const handleMouseEnter = () => {
   const sceneRef = load3DAnimationSceneRef.value?.load3DSceneRef
