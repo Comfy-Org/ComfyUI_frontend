@@ -68,9 +68,9 @@ onMounted(async () => {
   await validateUrl(props.modelValue)
 })
 
-const handleInput = (value: string) => {
+const handleInput = (value: string | undefined) => {
   // Update internal value without emitting
-  internalValue.value = cleanInput(value)
+  internalValue.value = cleanInput(value ?? '')
   // Reset validation state when user types
   validationState.value = ValidationState.IDLE
 }

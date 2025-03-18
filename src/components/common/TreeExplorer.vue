@@ -131,7 +131,7 @@ const onNodeContentClick = async (
   }
   emit('nodeClick', node, e)
 }
-const menu = ref(null)
+const menu = ref<InstanceType<typeof ContextMenu> | null>(null)
 const menuTargetNode = ref<RenderedTreeExplorerNode | null>(null)
 const extraMenuItems = computed(() => {
   return menuTargetNode.value?.contextMenuItems

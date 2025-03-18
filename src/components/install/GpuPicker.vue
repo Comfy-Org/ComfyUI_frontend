@@ -146,7 +146,7 @@ const cpuMode = computed({
     selected.value = value ? 'cpu' : null
   }
 })
-const selected = defineModel<TorchDeviceType>('device', {
+const selected = defineModel<TorchDeviceType | null>('device', {
   required: true
 })
 

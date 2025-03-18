@@ -48,7 +48,7 @@ const positionSelectionOverlay = (canvas: LGraphCanvas) => {
 
 // Register listener on canvas creation.
 watch(
-  () => canvasStore.canvas,
+  () => canvasStore.canvas as LGraphCanvas | null,
   (canvas: LGraphCanvas | null) => {
     if (!canvas) return
 
