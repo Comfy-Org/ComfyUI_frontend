@@ -149,8 +149,8 @@ const isEmptySearch = computed(() => searchQuery.value === '')
 
 const getInstalledSearchResults = async () => {
   if (isEmptySearch.value) return getInstalledPacks()
-  return searchResults.value.filter((pack) =>
-    pack.name && comfyManagerStore.installedPacksIds.has(pack.name)
+  return searchResults.value.filter(
+    (pack) => pack.name && comfyManagerStore.installedPacksIds.has(pack.name)
   )
 }
 
