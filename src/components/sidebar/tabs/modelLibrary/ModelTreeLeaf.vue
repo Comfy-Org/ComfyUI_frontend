@@ -41,10 +41,11 @@ const props = defineProps<{
   node: RenderedTreeExplorerNode<ComfyModelDef>
 }>()
 
-const modelDef = computed(() => props.node.data)
+// Note: The leaf node should always have a model definition on node.data.
+const modelDef = computed<ComfyModelDef>(() => props.node.data!)
 
 const modelPreviewUrl = computed(() => {
-  if (modelDef.value?.image) {
+  if (modelDef.value.image) {
     return modelDef.value.image
   }
   const folder = modelDef.value.directory
@@ -69,6 +70,8 @@ const sidebarLocation = computed<'left' | 'right'>(() =>
 
 const handleModelHover = async () => {
   const hoverTarget = modelContentElement.value
+  if (!hoverTarget) return
+
   const targetRect = hoverTarget.getBoundingClientRect()
 
   const previewHeight = previewRef.value?.$el.offsetHeight || 0
@@ -87,8 +90,8 @@ const handleModelHover = async () => {
   modelDef.value.load()
 }
 
-const container = ref<HTMLElement | null>(null)
-const modelContentElement = ref<HTMLElement | null>(null)
+const container = ref<HTMLElement | undefined>()
+const modelContentElement = ref<HTMLElement | undefined>()
 const isHovered = ref(false)
 
 const showPreview = computed(() => {
@@ -114,7 +117,8 @@ const handleMouseLeave = () => {
   isHovered.value = false
 }
 onMounted(() => {
-  modelContentElement.value = container.value?.closest('.p-tree-node-content')
+  modelContentElement.value =
+    container.value?.closest('.p-tree-node-content') ?? undefined
   modelContentElement.value?.addEventListener('mouseenter', handleMouseEnter)
   modelContentElement.value?.addEventListener('mouseleave', handleMouseLeave)
   modelDef.value.load()

@@ -52,7 +52,7 @@ onMounted(() => {
 
 const updateIconColor = () => {
   if (iconElement.value && customization.value) {
-    iconElement.value.style.color = customization.value.color
+    iconElement.value.style.color = customization.value.color ?? ''
   }
 }
 
@@ -64,6 +64,7 @@ onUnmounted(() => {
 
 const expandedKeys = inject(InjectKeyExpandedKeys)
 const handleItemDrop = (node: RenderedTreeExplorerNode) => {
+  if (!expandedKeys) return
   expandedKeys.value[node.key] = true
 }
 </script>

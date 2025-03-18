@@ -55,7 +55,7 @@
             icon="pi pi-ellipsis-h"
             text
             severity="secondary"
-            @click="menu.show($event)"
+            @click="menu?.show($event)"
           />
           <ContextMenu ref="menu" :model="contextMenuItems" />
         </template>

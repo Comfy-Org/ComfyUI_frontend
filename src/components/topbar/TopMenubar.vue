@@ -89,7 +89,7 @@ eventBus.on((event: string, payload: any) => {
 onMounted(() => {
   if (isElectron()) {
     electronAPI().changeTheme({
-      height: topMenuRef.value.getBoundingClientRect().height
+      height: topMenuRef.value?.getBoundingClientRect().height ?? 0
     })
   }
 })

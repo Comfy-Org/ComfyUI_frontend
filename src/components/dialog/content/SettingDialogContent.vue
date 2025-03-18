@@ -15,7 +15,7 @@
         scrollHeight="100%"
         :optionDisabled="
           (option: SettingTreeNode) =>
-            !queryIsEmpty && !searchResultsCategories.has(option.label)
+            !queryIsEmpty && !searchResultsCategories.has(option.label ?? '')
         "
         class="border-none w-full"
       />
@@ -266,8 +266,8 @@ const handleSearch = (query: string) => {
 
 const queryIsEmpty = computed(() => searchQuery.value.length === 0)
 const inSearch = computed(() => !queryIsEmpty.value && !searchInProgress.value)
-const tabValue = computed(() =>
-  inSearch.value ? 'Search Results' : activeCategory.value?.label
+const tabValue = computed<string>(() =>
+  inSearch.value ? 'Search Results' : activeCategory.value?.label ?? ''
 )
 // Don't allow null category to be set outside of search.
 // In search mode, the active category can be null to show all search results.

@@ -41,7 +41,7 @@ const emit = defineEmits<{
   (e: 'update:widgetValue', value: string | object): void
 }>()
 
-const widgetElement = ref<HTMLElement>()
+const widgetElement = ref<HTMLElement | undefined>()
 
 const { style: positionStyle, updatePositionWithTransform } =
   useAbsolutePosition()
@@ -61,6 +61,8 @@ const enableDomClipping = computed(() =>
 
 const updateDomClipping = () => {
   const lgCanvas = canvasStore.canvas
+  if (!lgCanvas || !widgetElement.value) return
+
   const selectedNode = Object.values(
     lgCanvas.selected_nodes ?? {}
   )[0] as LGraphNode
@@ -130,7 +132,7 @@ const inputSpec = widget.node.constructor.nodeData
 const tooltip = inputSpec?.inputs?.[widget.name]?.tooltip
 
 onMounted(() => {
-  if (isDOMWidget(widget)) {
+  if (isDOMWidget(widget) && widgetElement.value) {
     widgetElement.value.appendChild(widget.element)
   }
 })

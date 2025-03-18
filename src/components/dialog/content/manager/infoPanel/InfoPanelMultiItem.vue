@@ -48,7 +48,7 @@ const getPackNodes = async (pack: components['schemas']['Node']) => {
   if (!comfyRegistryService.packNodesAvailable(pack)) return []
   return comfyRegistryService.getNodeDefs({
     packId: pack.id,
-    versionId: pack.latest_version.id
+    versionId: pack.latest_version?.id
   })
 }
 

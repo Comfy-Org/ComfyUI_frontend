@@ -28,12 +28,12 @@ import { normalizeI18nKey } from '@/utils/formatUtil'
 let idleTimeout: number
 const nodeDefStore = useNodeDefStore()
 const settingStore = useSettingStore()
-const tooltipRef = ref<HTMLDivElement>()
+const tooltipRef = ref<HTMLDivElement | undefined>()
 const tooltipText = ref('')
 const left = ref<string>()
 const top = ref<string>()
 
-const hideTooltip = () => (tooltipText.value = null)
+const hideTooltip = () => (tooltipText.value = '')
 
 const showTooltip = async (tooltip: string | null | undefined) => {
   if (!tooltip) return
@@ -44,7 +44,9 @@ const showTooltip = async (tooltip: string | null | undefined) => {
 
   await nextTick()
 
-  const rect = tooltipRef.value.getBoundingClientRect()
+  const rect = tooltipRef.value?.getBoundingClientRect()
+  if (!rect) return
+
   if (rect.right > window.innerWidth) {
     left.value = comfyApp.canvas.mouse[0] - rect.width + 'px'
   }
@@ -60,7 +62,7 @@ const onIdle = () => {
   if (!node) return
 
   const ctor = node.constructor as { title_mode?: 0 | 1 | 2 | 3 }
-  const nodeDef = nodeDefStore.nodeDefsByName[node.type]
+  const nodeDef = nodeDefStore.nodeDefsByName[node.type ?? '']
 
   if (
     ctor.title_mode !== LiteGraph.NO_TITLE &&
@@ -80,8 +82,8 @@ const onIdle = () => {
   if (inputSlot !== -1) {
     const inputName = node.inputs[inputSlot].name
     const translatedTooltip = st(
-      `nodeDefs.${normalizeI18nKey(node.type)}.inputs.${normalizeI18nKey(inputName)}.tooltip`,
-      nodeDef.inputs[inputName]?.tooltip
+      `nodeDefs.${normalizeI18nKey(node.type ?? '')}.inputs.${normalizeI18nKey(inputName)}.tooltip`,
+      nodeDef.inputs[inputName]?.tooltip ?? ''
     )
     return showTooltip(translatedTooltip)
   }
@@ -94,8 +96,8 @@ const onIdle = () => {
   )
   if (outputSlot !== -1) {
     const translatedTooltip = st(
-      `nodeDefs.${normalizeI18nKey(node.type)}.outputs.${outputSlot}.tooltip`,
-      nodeDef.outputs[outputSlot]?.tooltip
+      `nodeDefs.${normalizeI18nKey(node.type ?? '')}.outputs.${outputSlot}.tooltip`,
+      nodeDef.outputs[outputSlot]?.tooltip ?? ''
     )
     return showTooltip(translatedTooltip)
   }
@@ -104,8 +106,8 @@ const onIdle = () => {
   // Dont show for DOM widgets, these use native browser tooltips as we dont get proper mouse events on these
   if (widget && !isDOMWidget(widget)) {
     const translatedTooltip = st(
-      `nodeDefs.${normalizeI18nKey(node.type)}.inputs.${normalizeI18nKey(widget.name)}.tooltip`,
-      nodeDef.inputs[widget.name]?.tooltip
+      `nodeDefs.${normalizeI18nKey(node.type ?? '')}.inputs.${normalizeI18nKey(widget.name)}.tooltip`,
+      nodeDef.inputs[widget.name]?.tooltip ?? ''
     )
     // Widget tooltip can be set dynamically, current translation collection does not support this.
     return showTooltip(widget.tooltip ?? translatedTooltip)
