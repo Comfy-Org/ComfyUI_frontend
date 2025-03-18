@@ -1,13 +1,13 @@
 <template>
   <div class="mt-4 overflow-hidden">
     <InfoTextSection
-      v-if="descriptionSections.length > 0"
+      v-if="nodePack?.description"
       :sections="descriptionSections"
     />
     <p v-else class="text-muted italic text-sm">
       {{ $t('manager.noDescription') }}
     </p>
-    <div v-if="nodePack.latest_version?.dependencies?.length">
+    <div v-if="nodePack?.latest_version?.dependencies?.length">
       <p class="mb-1">
         {{ $t('manager.dependencies') }}
       </p>
