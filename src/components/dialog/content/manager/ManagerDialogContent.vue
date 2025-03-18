@@ -34,7 +34,7 @@
           />
           <div class="flex-1 overflow-auto">
             <div
-              v-if="(searchResults.length === 0 && isLoading) || isInitialLoad"
+              v-if="isLoading"
               class="flex justify-center items-center h-full"
             >
               <ProgressSpinner />
@@ -95,9 +95,10 @@
 </template>
 
 <script setup lang="ts">
+import { whenever } from '@vueuse/core'
 import Button from 'primevue/button'
 import ProgressSpinner from 'primevue/progressspinner'
-import { computed, ref, watchEffect } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ContentDivider from '@/components/common/ContentDivider.vue'
@@ -109,7 +110,8 @@ import InfoPanelMultiItem from '@/components/dialog/content/manager/infoPanel/In
 import PackCard from '@/components/dialog/content/manager/packCard/PackCard.vue'
 import RegistrySearchBar from '@/components/dialog/content/manager/registrySearchBar/RegistrySearchBar.vue'
 import { useResponsiveCollapse } from '@/composables/element/useResponsiveCollapse'
-import { useInstalledPacks } from '@/composables/useInstalledPacks'
+import { useInstalledPacks } from '@/composables/nodePack/useInstalledPacks'
+import { useWorkflowPacks } from '@/composables/nodePack/useWorkflowPacks'
 import { useRegistrySearch } from '@/composables/useRegistrySearch'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import type { TabItem } from '@/types/comfyManagerTypes'
@@ -126,14 +128,16 @@ const {
 
 const tabs = ref<TabItem[]>([
   { id: 'all', label: t('g.all'), icon: 'pi-list' },
-  { id: 'installed', label: t('g.installed'), icon: 'pi-box' }
+  { id: 'installed', label: t('g.installed'), icon: 'pi-box' },
+  { id: 'workflow', label: t('manager.inWorkflow'), icon: 'pi-folder' },
+  { id: 'missing', label: t('g.missing'), icon: 'pi-exclamation-circle' }
 ])
 const selectedTab = ref<TabItem>(tabs.value[0])
 
 const {
   searchQuery,
   pageNumber,
-  isLoading,
+  isLoading: isSearchLoading,
   searchResults,
   searchMode,
   suggestions
@@ -147,23 +151,74 @@ const isInitialLoad = computed(
   () => searchResults.value.length === 0 && searchQuery.value === ''
 )
 
-const { getInstalledPacks } = useInstalledPacks()
-const displayPacks = ref<components['schemas']['Node'][]>([])
 const isEmptySearch = computed(() => searchQuery.value === '')
+const displayPacks = ref<components['schemas']['Node'][]>([])
 
-const getInstalledSearchResults = async () => {
-  if (isEmptySearch.value) return getInstalledPacks()
-  return searchResults.value.filter(
-    (pack) => pack.name && comfyManagerStore.installedPacksIds.has(pack.name)
-  )
+const {
+  startFetchInstalled,
+  filterInstalledPack,
+  installedPacks,
+  isLoading: isLoadingInstalled
+} = useInstalledPacks()
+
+const {
+  startFetchWorkflowPacks,
+  filterWorkflowPack,
+  workflowPacks,
+  isLoading: isLoadingWorkflow
+} = useWorkflowPacks()
+
+const showInstalledPacks = () => {
+  if (isEmptySearch.value) {
+    startFetchInstalled()
+    return installedPacks.value
+  } else {
+    return filterInstalledPack(searchResults.value)
+  }
 }
 
-watchEffect(async () => {
-  if (selectedTab.value.id === 'installed') {
-    displayPacks.value = await getInstalledSearchResults()
+const showWorkflowPacks = () => {
+  if (isEmptySearch.value) {
+    startFetchWorkflowPacks()
+    return workflowPacks.value
+  } else {
+    return filterWorkflowPack(searchResults.value)
+  }
+}
+
+const onTabChange = () => {
+  if (selectedTab.value?.id === 'installed') {
+    displayPacks.value = showInstalledPacks()
+  } else if (selectedTab.value?.id === 'workflow') {
+    displayPacks.value = showWorkflowPacks()
   } else {
     displayPacks.value = searchResults.value
   }
+}
+
+const onResultsChange = () => {
+  if (selectedTab.value?.id === 'installed') {
+    displayPacks.value = filterInstalledPack(searchResults.value)
+  } else if (selectedTab.value?.id === 'workflow') {
+    displayPacks.value = filterWorkflowPack(searchResults.value)
+  } else {
+    displayPacks.value = searchResults.value
+  }
+}
+
+whenever(selectedTab, onTabChange)
+watch(searchResults, onResultsChange, { flush: 'pre' })
+
+const isLoading = computed(() => {
+  if (isSearchLoading.value)
+    return searchResults.value.length === 0 || isInitialLoad.value
+  if (selectedTab.value?.id === 'installed') {
+    return isLoadingInstalled.value
+  }
+  if (selectedTab.value?.id === 'workflow') {
+    return isLoadingWorkflow.value
+  }
+  return false
 })
 
 const resultsWithKeys = computed(
