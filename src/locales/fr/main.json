@@ -166,6 +166,7 @@
     "loadWorkflow": "Charger le flux de travail",
     "loading": "Chargement",
     "logs": "Journaux",
+    "missing": "Manquant",
     "name": "Nom",
     "newFolder": "Nouveau dossier",
     "next": "Suivant",
@@ -390,6 +391,7 @@
       "enabled": "Activé",
       "nodePack": "Pack de Nœuds"
     },
+    "inWorkflow": "Dans le flux de travail",
     "infoPanelEmpty": "Cliquez sur un élément pour voir les informations",
     "installSelected": "Installer sélectionné",
     "lastUpdated": "Dernière mise à jour",

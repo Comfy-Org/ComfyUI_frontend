@@ -166,6 +166,7 @@
     "loadWorkflow": "加载工作流",
     "loading": "加载中",
     "logs": "日志",
+    "missing": "缺失",
     "name": "名称",
     "newFolder": "新文件夹",
     "next": "下一个",
@@ -390,6 +391,7 @@
       "enabled": "已启用",
       "nodePack": "节点包"
     },
+    "inWorkflow": "在工作流中",
     "infoPanelEmpty": "点击一个项目查看信息",
     "installSelected": "安装选定",
     "lastUpdated": "最后更新",

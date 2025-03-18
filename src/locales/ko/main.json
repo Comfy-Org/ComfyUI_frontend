@@ -166,6 +166,7 @@
     "loadWorkflow": "워크플로 로드",
     "loading": "로딩 중",
     "logs": "로그",
+    "missing": "누락됨",
     "name": "이름",
     "newFolder": "새 폴더",
     "next": "다음",
@@ -390,6 +391,7 @@
       "enabled": "활성화",
       "nodePack": "노드 팩"
     },
+    "inWorkflow": "워크플로우 내",
     "infoPanelEmpty": "정보를 보려면 항목을 클릭하세요",
     "installSelected": "선택한 항목 설치",
     "lastUpdated": "마지막 업데이트",
