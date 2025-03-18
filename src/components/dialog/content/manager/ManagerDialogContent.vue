@@ -34,7 +34,7 @@
           />
           <div class="flex-1 overflow-auto">
             <div
-              v-if="isLoading || isInitialLoad"
+              v-if="(searchResults.length === 0 && isLoading) || isInitialLoad"
               class="flex justify-center items-center h-full"
             >
               <ProgressSpinner />
@@ -55,13 +55,14 @@
             <div v-else class="h-full" @click="handleGridContainerClick">
               <VirtualGrid
                 :items="resultsWithKeys"
-                :buffer-rows="5"
+                :buffer-rows="3"
                 :gridStyle="{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(22rem, 1fr))',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(19rem, 1fr))',
                   padding: '0.5rem',
                   gap: '1.5rem'
                 }"
+                @approach-end="onApproachEnd"
               >
                 <template #item="{ item }">
                   <PackCard
@@ -138,6 +139,9 @@ const {
   suggestions
 } = useRegistrySearch()
 pageNumber.value = 0
+const onApproachEnd = () => {
+  pageNumber.value++
+}
 
 const isInitialLoad = computed(
   () => searchResults.value.length === 0 && searchQuery.value === ''

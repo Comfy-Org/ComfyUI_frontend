@@ -15,9 +15,15 @@
 </template>
 
 <script setup lang="ts" generic="T">
-import { useElementSize, useScroll } from '@vueuse/core'
+import { useElementSize, useScroll, whenever } from '@vueuse/core'
 import { clamp, debounce } from 'lodash'
 import { type CSSProperties, computed, onBeforeUnmount, ref, watch } from 'vue'
+
+type GridState = {
+  start: number
+  end: number
+  isNearEnd: boolean
+}
 
 const {
   items,
@@ -36,6 +42,13 @@ const {
   defaultItemWidth?: number
 }>()
 
+const emit = defineEmits<{
+  /**
+   * Emitted when `bufferRows` (or fewer) rows remaining between scrollY and grid bottom.
+   */
+  'approach-end': []
+}>()
+
 const itemHeight = ref(defaultItemHeight)
 const itemWidth = ref(defaultItemWidth)
 const container = ref<HTMLElement | null>(null)
@@ -50,20 +63,29 @@ const viewRows = computed(() => Math.ceil(height.value / itemHeight.value))
 const offsetRows = computed(() => Math.floor(scrollY.value / itemHeight.value))
 const isValidGrid = computed(() => height.value && width.value && items?.length)
 
-const state = computed<{ start: number; end: number }>(() => {
+const state = computed<GridState>(() => {
   const fromRow = offsetRows.value - bufferRows
   const toRow = offsetRows.value + bufferRows + viewRows.value
 
   const fromCol = fromRow * cols.value
   const toCol = toRow * cols.value
+  const remainingCol = items.length - toCol
 
   return {
     start: clamp(fromCol, 0, items?.length),
-    end: clamp(toCol, fromCol, items?.length)
+    end: clamp(toCol, fromCol, items?.length),
+    isNearEnd: remainingCol <= cols.value * bufferRows
   }
 })
 const renderedItems = computed(() =>
   isValidGrid.value ? items.slice(state.value.start, state.value.end) : []
+)
+
+whenever(
+  () => state.value.isNearEnd,
+  () => {
+    emit('approach-end')
+  }
 )
 
 const updateItemSize = () => {
