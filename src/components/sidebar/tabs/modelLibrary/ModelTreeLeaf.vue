@@ -41,6 +41,7 @@ const props = defineProps<{
   node: RenderedTreeExplorerNode<ComfyModelDef>
 }>()
 
+// Note: The leaf node should always have a model definition on node.data.
 const modelDef = computed<ComfyModelDef>(() => props.node.data!)
 
 const modelPreviewUrl = computed(() => {
