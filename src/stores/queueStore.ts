@@ -105,7 +105,7 @@ export class ResultItemImpl {
   }
 
   get isVideo(): boolean {
-    return !this.isImage && !!this.format?.startsWith('video/')
+    return !this.isImage || !!this.format?.startsWith('video/')
   }
 
   get isGif(): boolean {
@@ -116,8 +116,14 @@ export class ResultItemImpl {
     return this.filename.endsWith('.webp')
   }
 
+  get isWebm(): boolean {
+    return this.filename.endsWith('.webm')
+  }
+
   get isImage(): boolean {
-    return this.mediaType === 'images' || this.isGif || this.isWebp
+    return (
+      !this.isWebm && (this.mediaType === 'images' || this.isGif || this.isWebp)
+    )
   }
 
   get supportsPreview(): boolean {
