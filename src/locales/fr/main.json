@@ -267,6 +267,7 @@
     "installLocationDescription": "Sélectionnez le répertoire pour les données utilisateur de ComfyUI. Un environnement python sera installé à l'emplacement sélectionné. Veuillez vous assurer que le disque sélectionné a suffisamment d'espace (~15GB) restant.",
     "installLocationTooltip": "Répertoire des données utilisateur de ComfyUI. Stocke :\n- Environnement Python\n- Modèles\n- Nœuds personnalisés\n",
     "insufficientFreeSpace": "Espace insuffisant - espace libre minimum",
+    "isOneDrive": "L'installation dans OneDrive peut causer des problèmes. Nous recommandons fortement d'installer dans un emplacement non-OneDrive.",
     "manualConfiguration": {
       "createVenv": "Vous devrez créer un environnement virtuel dans le répertoire suivant",
       "requirements": "Exigences",
@@ -281,6 +282,7 @@
     "migrationOptional": "La migration est facultative. Si vous n'avez pas d'installation existante, vous pouvez sauter cette étape.",
     "migrationSourcePathDescription": "Si vous avez une installation existante de ComfyUI, nous pouvons copier/lier vos fichiers utilisateur et modèles existants à la nouvelle installation. Votre installation existante de ComfyUI ne sera pas affectée.",
     "moreInfo": "Pour plus d'informations, veuillez lire notre",
+    "nonDefaultDrive": "Veuillez installer ComfyUI sur le disque système de votre ordinateur (par exemple C:\\). Les disques avec des systèmes de fichiers différents peuvent causer des problèmes imprévisibles. Les modèles et autres fichiers peuvent être stockés sur d'autres disques après l'installation.",
     "parentMissing": "Le chemin n'existe pas - créez d'abord le répertoire contenant",
     "pathExists": "Le répertoire existe déjà - veuillez vous assurer que vous avez sauvegardé toutes les données",
     "pathValidationFailed": "Échec de la validation du chemin",

@@ -267,6 +267,7 @@
     "installLocationDescription": "选择 ComfyUI 用户数据的存放目录。将安装一个 Python 环境到所选位置。请确保所选磁盘有足够的空间（约 15GB）。",
     "installLocationTooltip": "ComfyUI 的用户数据目录。存储：\n- Python 环境\n- 模型\n- 自定义节点\n",
     "insufficientFreeSpace": "空间不足 - 最小可用空间",
+    "isOneDrive": "在OneDrive中安装可能会导致问题。强烈建议在非OneDrive位置安装。",
     "manualConfiguration": {
       "createVenv": "您需要在以下目录中创建虚拟环境",
       "requirements": "依赖项",
@@ -281,6 +282,7 @@
     "migrationOptional": "迁移是可选的。如果您之前没有安装过 ComfyUI，可以跳过此步骤。",
     "migrationSourcePathDescription": "如果您已有现有的ComfyUI安装，我们可以复制/链接您现有的用户文件和模型到新的安装。您现有的ComfyUI安装将不会受到影响。",
     "moreInfo": "有关更多信息，请阅读我们的",
+    "nonDefaultDrive": "请在您的系统驱动器上安装ComfyUI（例如C:\\）。具有不同文件系统的驱动器可能会导致不可预测的问题。安装后，模型和其他文件可以存储在其他驱动器上。",
     "parentMissing": "路径不存在 - 请先创建包含该路径的目录",
     "pathExists": "目录已存在 - 请确保您已备份全部数据",
     "pathValidationFailed": "路径验证失败",

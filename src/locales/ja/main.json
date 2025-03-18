@@ -267,6 +267,7 @@
     "installLocationDescription": "ComfyUIのユーザーデータを保存するディレクトリを選択してください。Python環境が選択した場所にインストールされます。選択したディスクに約15GBの空き容量が必要です。",
     "installLocationTooltip": "ComfyUIのユーザーデータディレクトリ。保存内容:\n- Python環境\n- モデル\n- カスタムノード\n",
     "insufficientFreeSpace": "空き容量が不足しています - 最低限の空き容量",
+    "isOneDrive": "OneDriveにインストールすると問題が発生する可能性があります。非OneDriveの場所にインストールすることを強くお勧めします。",
     "manualConfiguration": {
       "createVenv": "次のディレクトリに仮想環境を作成する必要があります",
       "requirements": "要件",
@@ -281,6 +282,7 @@
     "migrationOptional": "移行は任意です。既存のインストールがない場合、このステップをスキップできます。",
     "migrationSourcePathDescription": "既存のComfyUIインストールがある場合、既存のユーザーファイルとモデルを新しいインストールにコピー/リンクすることができます。既存のComfyUIインストールは影響を受けません。",
     "moreInfo": "詳しくはこちらをご覧ください",
+    "nonDefaultDrive": "ComfyUIをシステムドライブ（例：C:\\）にインストールしてください。異なるファイルシステムを持つドライブでは、予測不能な問題が発生する可能性があります。インストール後にモデルやその他のファイルを他のドライブに保存することができます。",
     "parentMissing": "パスが存在しません - 最初に含まれるディレクトリを作成してください",
     "pathExists": "ディレクトリはすでに存在します - すべてのデータをバックアップしたことを確認してください",
     "pathValidationFailed": "パスの検証に失敗しました",
