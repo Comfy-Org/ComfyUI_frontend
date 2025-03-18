@@ -186,11 +186,18 @@ const showWorkflowPacks = () => {
   }
 }
 
+const filterMissingPacks = (packs: components['schemas']['Node'][]) =>
+  packs.filter((pack) => !comfyManagerStore.isPackInstalled(pack.id))
+
+const showMissingPacks = () => filterMissingPacks(showWorkflowPacks())
+
 const onTabChange = () => {
   if (selectedTab.value?.id === 'installed') {
     displayPacks.value = showInstalledPacks()
   } else if (selectedTab.value?.id === 'workflow') {
     displayPacks.value = showWorkflowPacks()
+  } else if (selectedTab.value?.id === 'missing') {
+    displayPacks.value = showMissingPacks()
   } else {
     displayPacks.value = searchResults.value
   }
@@ -201,6 +208,8 @@ const onResultsChange = () => {
     displayPacks.value = filterInstalledPack(searchResults.value)
   } else if (selectedTab.value?.id === 'workflow') {
     displayPacks.value = filterWorkflowPack(searchResults.value)
+  } else if (selectedTab.value?.id === 'missing') {
+    displayPacks.value = filterMissingPacks(searchResults.value)
   } else {
     displayPacks.value = searchResults.value
   }
