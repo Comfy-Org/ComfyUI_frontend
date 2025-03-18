@@ -1,12 +1,24 @@
 <template>
   <div class="mt-4 overflow-hidden">
     <InfoTextSection
-      v-if="nodePack.description"
+      v-if="nodePack?.description"
       :sections="descriptionSections"
     />
     <p v-else class="text-muted italic text-sm">
       {{ $t('manager.noDescription') }}
     </p>
+    <div v-if="nodePack?.latest_version?.dependencies?.length">
+      <p class="mb-1">
+        {{ $t('manager.dependencies') }}
+      </p>
+      <div
+        v-for="(dep, index) in nodePack.latest_version.dependencies"
+        :key="index"
+        class="text-muted break-words"
+      >
+        {{ dep }}
+      </div>
+    </div>
   </div>
 </template>
 

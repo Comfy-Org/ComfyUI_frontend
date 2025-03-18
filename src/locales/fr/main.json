@@ -381,6 +381,7 @@
   },
   "manager": {
     "createdBy": "Créé par",
+    "dependencies": "Dépendances",
     "discoverCommunityContent": "Découvrez les packs de nœuds, extensions et plus encore créés par la communauté...",
     "downloads": "Téléchargements",
     "errorConnecting": "Erreur de connexion au registre de nœuds Comfy.",
