@@ -21,6 +21,7 @@ const zOutputs = z
   .object({
     audio: z.array(zResultItem).optional(),
     images: z.array(zResultItem).optional(),
+    video: z.array(zResultItem).optional(),
     animated: z.array(z.boolean()).optional()
   })
   .passthrough()
