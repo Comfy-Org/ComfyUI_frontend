@@ -40,6 +40,8 @@ export interface Load3DOptions {
 export interface CaptureResult {
   scene: string
   mask: string
+  normal: string
+  lineart: string
 }
 
 export interface BaseManager {

@@ -196,7 +196,7 @@ export class SceneManager implements SceneManagerInterface {
   captureScene(
     width: number,
     height: number
-  ): Promise<{ scene: string; mask: string }> {
+  ): Promise<{ scene: string; mask: string; normal: string; lineart: string }> {
     return new Promise(async (resolve, reject) => {
       try {
         const originalWidth = this.renderer.domElement.width
@@ -207,6 +207,7 @@ export class SceneManager implements SceneManagerInterface {
         const originalClearAlpha = this.renderer.getClearAlpha()
         const originalToneMapping = this.renderer.toneMapping
         const originalExposure = this.renderer.toneMappingExposure
+        const originalOutputColorSpace = this.renderer.outputColorSpace
 
         this.renderer.setSize(width, height)
 
@@ -240,6 +241,11 @@ export class SceneManager implements SceneManagerInterface {
           )
         }
 
+        const originalMaterials = new Map<
+          THREE.Mesh,
+          THREE.Material | THREE.Material[]
+        >()
+
         this.renderer.clear()
 
         if (this.backgroundMesh && this.backgroundTexture) {
@@ -262,12 +268,103 @@ export class SceneManager implements SceneManagerInterface {
         this.renderer.render(this.scene, this.getActiveCamera())
         const maskData = this.renderer.domElement.toDataURL('image/png')
 
+        this.scene.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            originalMaterials.set(child, child.material)
+
+            child.material = new THREE.MeshNormalMaterial({
+              flatShading: false,
+              side: THREE.DoubleSide,
+              normalScale: new THREE.Vector2(1, 1)
+            })
+          }
+        })
+
+        const gridVisible = this.gridHelper.visible
+        this.gridHelper.visible = false
+
+        this.renderer.setClearColor(0x000000, 1)
+        this.renderer.clear()
+        this.renderer.render(this.scene, this.getActiveCamera())
+        const normalData = this.renderer.domElement.toDataURL('image/png')
+
+        this.scene.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            const originalMaterial = originalMaterials.get(child)
+            if (originalMaterial) {
+              child.material = originalMaterial
+            }
+          }
+        })
+
+        let lineartModel: THREE.Group | null = null
+
+        const originalSceneVisible: Map<THREE.Object3D, boolean> = new Map()
+
+        this.scene.traverse((child) => {
+          if (child instanceof THREE.Group && child.name === 'lineartModel') {
+            lineartModel = child as THREE.Group
+          }
+
+          if (
+            child instanceof THREE.Mesh &&
+            !(child.parent?.name === 'lineartModel')
+          ) {
+            originalSceneVisible.set(child, child.visible)
+
+            child.visible = false
+          }
+        })
+
+        this.renderer.setClearColor(0xffffff, 1)
+        this.renderer.clear()
+
+        if (lineartModel !== null) {
+          lineartModel = lineartModel as THREE.Group
+
+          const originalLineartVisibleMap: Map<THREE.Object3D, boolean> =
+            new Map()
+
+          lineartModel.traverse((child: THREE.Object3D) => {
+            if (child instanceof THREE.Mesh) {
+              originalLineartVisibleMap.set(child, child.visible)
+
+              child.visible = true
+            }
+          })
+
+          const originalLineartVisible = lineartModel.visible
+          lineartModel.visible = true
+
+          this.renderer.render(this.scene, this.getActiveCamera())
+
+          lineartModel.visible = originalLineartVisible
+
+          originalLineartVisibleMap.forEach((visible, object) => {
+            object.visible = visible
+          })
+        }
+
+        const lineartData = this.renderer.domElement.toDataURL('image/png')
+
+        originalSceneVisible.forEach((visible, object) => {
+          object.visible = visible
+        })
+
+        this.gridHelper.visible = gridVisible
+
         this.renderer.setClearColor(originalClearColor, originalClearAlpha)
         this.renderer.setSize(originalWidth, originalHeight)
+        this.renderer.outputColorSpace = originalOutputColorSpace
 
-        this.handleResize(width, height)
+        this.handleResize(originalWidth, originalHeight)
 
-        resolve({ scene: sceneData, mask: maskData })
+        resolve({
+          scene: sceneData,
+          mask: maskData,
+          normal: normalData,
+          lineart: lineartData
+        })
       } catch (error) {
         reject(error)
       }
