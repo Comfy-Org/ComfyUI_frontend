@@ -97,6 +97,8 @@ const extraMenuItems = (
     label: t('g.customize'),
     icon: 'pi pi-palette',
     command: () => {
+      if (!menuTargetNode.data) return
+
       const customization =
         nodeBookmarkStore.bookmarksCustomization[menuTargetNode.data.nodePath]
       initialIcon.value =

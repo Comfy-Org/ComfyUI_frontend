@@ -71,16 +71,16 @@ const severity = computed<VueSeverity>(() =>
 )
 
 // Use a minimum run time to ensure tasks "feel" like they have run
-const reactiveLoading = computed(() => runner.value.refreshing)
-const reactiveExecuting = computed(() => runner.value.executing)
+const reactiveLoading = computed(() => !!runner.value.refreshing)
+const reactiveExecuting = computed(() => !!runner.value.executing)
 
 const isLoading = useMinLoadingDurationRef(reactiveLoading, 250)
 const isExecuting = useMinLoadingDurationRef(reactiveExecuting, 250)
 
 // Popover
-const infoPopover = ref()
+const infoPopover = ref<InstanceType<typeof Popover> | null>(null)
 
 const toggle = (event: Event) => {
-  infoPopover.value.toggle(event)
+  infoPopover.value?.toggle(event)
 }
 </script>

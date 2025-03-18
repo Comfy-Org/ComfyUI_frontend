@@ -99,7 +99,7 @@ const isValidSource = computed(
   () => sourcePath.value !== '' && pathError.value === ''
 )
 
-const validateSource = async (sourcePath: string) => {
+const validateSource = async (sourcePath: string | undefined) => {
   if (!sourcePath) {
     pathError.value = ''
     return
@@ -109,7 +109,7 @@ const validateSource = async (sourcePath: string) => {
     pathError.value = ''
     const validation = await electron.validateComfyUISource(sourcePath)
 
-    if (!validation.isValid) pathError.value = validation.error
+    if (!validation.isValid) pathError.value = validation.error ?? 'ERROR'
   } catch (error) {
     console.error(error)
     pathError.value = t('install.pathValidationFailed')

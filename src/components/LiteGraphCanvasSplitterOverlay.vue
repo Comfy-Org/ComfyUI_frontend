@@ -2,8 +2,8 @@
   <Splitter
     class="splitter-overlay-root splitter-overlay"
     :pt:gutter="sidebarPanelVisible ? '' : 'hidden'"
-    :key="activeSidebarTabId"
-    :stateKey="activeSidebarTabId"
+    :key="activeSidebarTabId ?? undefined"
+    :stateKey="activeSidebarTabId ?? undefined"
     stateStorage="local"
   >
     <SplitterPanel

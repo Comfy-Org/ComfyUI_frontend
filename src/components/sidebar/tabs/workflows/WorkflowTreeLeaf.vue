@@ -20,12 +20,12 @@ import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import { ComfyWorkflow, useWorkflowBookmarkStore } from '@/stores/workflowStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
-const props = defineProps<{
+const { node } = defineProps<{
   node: RenderedTreeExplorerNode<ComfyWorkflow>
 }>()
 
 const workflowBookmarkStore = useWorkflowBookmarkStore()
-const isBookmarked = computed(() =>
-  workflowBookmarkStore.isBookmarked(props.node.data.path)
+const isBookmarked = computed(
+  () => node.data && workflowBookmarkStore.isBookmarked(node.data.path)
 )
 </script>
