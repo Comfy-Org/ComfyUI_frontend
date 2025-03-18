@@ -48,15 +48,16 @@ const systemInfo = computed(() => ({
   argv: props.stats.system.argv.join(' ')
 }))
 
-const systemColumns = [
-  { field: 'os', header: 'OS' },
-  { field: 'python_version', header: 'Python Version' },
-  { field: 'embedded_python', header: 'Embedded Python' },
-  { field: 'pytorch_version', header: 'Pytorch Version' },
-  { field: 'argv', header: 'Arguments' },
-  { field: 'ram_total', header: 'RAM Total' },
-  { field: 'ram_free', header: 'RAM Free' }
-]
+const systemColumns: { field: keyof SystemStats['system']; header: string }[] =
+  [
+    { field: 'os', header: 'OS' },
+    { field: 'python_version', header: 'Python Version' },
+    { field: 'embedded_python', header: 'Embedded Python' },
+    { field: 'pytorch_version', header: 'Pytorch Version' },
+    { field: 'argv', header: 'Arguments' },
+    { field: 'ram_total', header: 'RAM Total' },
+    { field: 'ram_free', header: 'RAM Free' }
+  ]
 
 const formatValue = (value: any, field: string) => {
   if (['ram_total', 'ram_free'].includes(field)) {

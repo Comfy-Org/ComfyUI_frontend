@@ -28,7 +28,7 @@ const handleKey = (e: KeyboardEvent) => {
 useEventListener(window, 'keydown', handleKey)
 useEventListener(window, 'keyup', handleKey)
 
-const showContextMenu = (event: PointerEvent) => {
+const showContextMenu = (event: MouseEvent) => {
   const { target } = event
   switch (true) {
     case target instanceof HTMLTextAreaElement:

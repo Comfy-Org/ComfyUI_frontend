@@ -2,7 +2,7 @@
   <div class="input-slider flex flex-row items-center gap-2">
     <Slider
       :modelValue="modelValue"
-      @update:modelValue="updateValue"
+      @update:modelValue="(value) => updateValue(value as number)"
       class="slider-part"
       :class="sliderClass"
       :min="min"

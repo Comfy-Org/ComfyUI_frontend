@@ -38,9 +38,10 @@ const props = withDefaults(defineProps<EditableTextProps>(), {
 
 const emit = defineEmits(['update:modelValue', 'edit'])
 const inputValue = ref<string>(props.modelValue)
-const inputRef = ref(null)
+const inputRef = ref<InstanceType<typeof InputText> | undefined>()
 
 const blurInputElement = () => {
+  // @ts-expect-error - $el is an internal property of the InputText component
   inputRef.value?.$el.blur()
 }
 const finishEditing = () => {
@@ -58,6 +59,7 @@ watch(
           : inputValue.value
         const start = 0
         const end = fileName.length
+        // @ts-expect-error - $el is an internal property of the InputText component
         const inputElement = inputRef.value.$el
         inputElement.setSelectionRange?.(start, end)
       })

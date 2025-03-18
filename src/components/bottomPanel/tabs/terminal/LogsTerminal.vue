@@ -27,7 +27,7 @@ const loading = ref(true)
 
 const terminalCreated = (
   { terminal, useAutoSize }: ReturnType<typeof useTerminal>,
-  root: Ref<HTMLElement>
+  root: Ref<HTMLElement | undefined>
 ) => {
   // `autoCols` is false because we don't want the progress bar in the terminal
   // to render incorrectly as the progress bar is rendered based on the

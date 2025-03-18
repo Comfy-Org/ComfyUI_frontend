@@ -13,7 +13,7 @@ import BaseTerminal from './BaseTerminal.vue'
 
 const terminalCreated = (
   { terminal, useAutoSize }: ReturnType<typeof useTerminal>,
-  root: Ref<HTMLElement>
+  root: Ref<HTMLElement | undefined>
 ) => {
   const terminalApi = electronAPI().Terminal
 

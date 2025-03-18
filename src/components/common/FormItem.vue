@@ -72,7 +72,7 @@ function getFormAttrs(item: FormItem) {
             item.options(formValue.value)
           : item.options
 
-      if (typeof item.options[0] !== 'string') {
+      if (typeof item.options?.[0] !== 'string') {
         attrs['optionLabel'] = 'text'
         attrs['optionValue'] = 'value'
       }

@@ -38,7 +38,7 @@
   },
   "include": [
     "src/**/*",
-    "src/**/*.vue",
+    "src/**/*.vue", 
     "src/types/**/*.d.ts",
     "tests-ui/**/*",
     "global.d.ts"
