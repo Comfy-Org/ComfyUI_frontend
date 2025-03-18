@@ -239,6 +239,8 @@ const zExtra = z
 /** Schema version 0.4 */
 export const zComfyWorkflow = z
   .object({
+    id: z.string().uuid().optional(),
+    revision: z.number().optional(),
     last_node_id: zNodeId,
     last_link_id: z.number(),
     nodes: z.array(zComfyNode),
@@ -255,6 +257,8 @@ export const zComfyWorkflow = z
 /** Schema version 1 */
 export const zComfyWorkflow1 = z
   .object({
+    id: z.string().uuid().optional(),
+    revision: z.number().optional(),
     version: z.literal(1),
     config: zConfig.optional().nullable(),
     state: zGraphState,
