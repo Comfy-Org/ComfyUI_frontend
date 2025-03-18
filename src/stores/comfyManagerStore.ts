@@ -200,6 +200,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     uncompletedCount,
     taskLogs,
     clearLogs,
+    setStale,
 
     // Installed packs state
     installedPacks,

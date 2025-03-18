@@ -101,6 +101,8 @@ const handleRestart = async () => {
 
   const onReconnect = () => {
     useCommandStore().execute('Comfy.RefreshNodeDefinitions')
+    comfyManagerStore.clearLogs()
+    comfyManagerStore.setStale()
   }
   useEventListener(api, 'reconnected', onReconnect, { once: true })
 }
