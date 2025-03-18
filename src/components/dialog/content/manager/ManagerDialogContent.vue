@@ -117,6 +117,13 @@ import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import type { TabItem } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
 
+enum ManagerTab {
+  All = 'all',
+  Installed = 'installed',
+  Workflow = 'workflow',
+  Missing = 'missing'
+}
+
 const { t } = useI18n()
 const comfyManagerStore = useComfyManagerStore()
 
@@ -127,10 +134,18 @@ const {
 } = useResponsiveCollapse()
 
 const tabs = ref<TabItem[]>([
-  { id: 'all', label: t('g.all'), icon: 'pi-list' },
-  { id: 'installed', label: t('g.installed'), icon: 'pi-box' },
-  { id: 'workflow', label: t('manager.inWorkflow'), icon: 'pi-folder' },
-  { id: 'missing', label: t('g.missing'), icon: 'pi-exclamation-circle' }
+  { id: ManagerTab.All, label: t('g.all'), icon: 'pi-list' },
+  { id: ManagerTab.Installed, label: t('g.installed'), icon: 'pi-box' },
+  {
+    id: ManagerTab.Workflow,
+    label: t('manager.inWorkflow'),
+    icon: 'pi-folder'
+  },
+  {
+    id: ManagerTab.Missing,
+    label: t('g.missing'),
+    icon: 'pi-exclamation-circle'
+  }
 ])
 const selectedTab = ref<TabItem>(tabs.value[0])
 
@@ -168,7 +183,7 @@ const {
   isLoading: isLoadingWorkflow
 } = useWorkflowPacks()
 
-const showInstalledPacks = () => {
+const getInstalledResults = () => {
   if (isEmptySearch.value) {
     startFetchInstalled()
     return installedPacks.value
@@ -177,7 +192,7 @@ const showInstalledPacks = () => {
   }
 }
 
-const showWorkflowPacks = () => {
+const getInWorkflowResults = () => {
   if (isEmptySearch.value) {
     startFetchWorkflowPacks()
     return workflowPacks.value
@@ -189,29 +204,37 @@ const showWorkflowPacks = () => {
 const filterMissingPacks = (packs: components['schemas']['Node'][]) =>
   packs.filter((pack) => !comfyManagerStore.isPackInstalled(pack.id))
 
-const showMissingPacks = () => filterMissingPacks(showWorkflowPacks())
+const getMissingPacks = () => filterMissingPacks(getInWorkflowResults())
 
 const onTabChange = () => {
-  if (selectedTab.value?.id === 'installed') {
-    displayPacks.value = showInstalledPacks()
-  } else if (selectedTab.value?.id === 'workflow') {
-    displayPacks.value = showWorkflowPacks()
-  } else if (selectedTab.value?.id === 'missing') {
-    displayPacks.value = showMissingPacks()
-  } else {
-    displayPacks.value = searchResults.value
+  switch (selectedTab.value?.id) {
+    case ManagerTab.Installed:
+      displayPacks.value = getInstalledResults()
+      break
+    case ManagerTab.Workflow:
+      displayPacks.value = getInWorkflowResults()
+      break
+    case ManagerTab.Missing:
+      displayPacks.value = getMissingPacks()
+      break
+    default:
+      displayPacks.value = searchResults.value
   }
 }
 
 const onResultsChange = () => {
-  if (selectedTab.value?.id === 'installed') {
-    displayPacks.value = filterInstalledPack(searchResults.value)
-  } else if (selectedTab.value?.id === 'workflow') {
-    displayPacks.value = filterWorkflowPack(searchResults.value)
-  } else if (selectedTab.value?.id === 'missing') {
-    displayPacks.value = filterMissingPacks(searchResults.value)
-  } else {
-    displayPacks.value = searchResults.value
+  switch (selectedTab.value?.id) {
+    case ManagerTab.Installed:
+      displayPacks.value = filterInstalledPack(searchResults.value)
+      break
+    case ManagerTab.Workflow:
+      displayPacks.value = filterWorkflowPack(searchResults.value)
+      break
+    case ManagerTab.Missing:
+      displayPacks.value = filterMissingPacks(searchResults.value)
+      break
+    default:
+      displayPacks.value = searchResults.value
   }
 }
 
@@ -221,10 +244,13 @@ watch(searchResults, onResultsChange, { flush: 'pre' })
 const isLoading = computed(() => {
   if (isSearchLoading.value)
     return searchResults.value.length === 0 || isInitialLoad.value
-  if (selectedTab.value?.id === 'installed') {
+  if (selectedTab.value?.id === ManagerTab.Installed) {
     return isLoadingInstalled.value
   }
-  if (selectedTab.value?.id === 'workflow') {
+  if (
+    selectedTab.value?.id === ManagerTab.Workflow ||
+    selectedTab.value?.id === ManagerTab.Missing
+  ) {
     return isLoadingWorkflow.value
   }
   return false
