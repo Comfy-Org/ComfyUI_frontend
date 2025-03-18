@@ -64,7 +64,7 @@ const { t } = useI18n()
 
 const electron = electronAPI()
 
-const basePath = ref<string>(null)
+const basePath = ref<string | null>(null)
 const sep = ref<'\\' | '/'>('/')
 
 const restartApp = (message?: string) => electron.restartApp(message)

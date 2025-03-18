@@ -131,7 +131,7 @@ import MirrorsConfiguration from '@/components/install/MirrorsConfiguration.vue'
 import { electronAPI } from '@/utils/envUtil'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
-const device = ref<TorchDeviceType>(null)
+const device = ref<TorchDeviceType | null>(null)
 
 const installPath = ref('')
 const pathError = ref('')

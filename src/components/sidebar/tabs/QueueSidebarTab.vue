@@ -194,7 +194,7 @@ const confirmRemoveAll = (event: Event) => {
   })
 }
 
-const menu = ref(null)
+const menu = ref<InstanceType<typeof ContextMenu> | null>(null)
 const menuTargetTask = ref<TaskItemImpl | null>(null)
 const menuTargetNode = ref<ComfyNode | null>(null)
 const menuItems = computed<MenuItem[]>(() => [
@@ -213,7 +213,11 @@ const menuItems = computed<MenuItem[]>(() => [
   {
     label: t('g.goToNode'),
     icon: 'pi pi-arrow-circle-right',
-    command: () => useLitegraphService().goToNode(menuTargetNode.value?.id),
+    command: () => {
+      if (!menuTargetNode.value) return
+
+      useLitegraphService().goToNode(menuTargetNode.value.id)
+    },
     visible: !!menuTargetNode.value
   }
 ])
@@ -225,7 +229,7 @@ const handleContextMenu = ({
 }: {
   task: TaskItemImpl
   event: Event
-  node?: ComfyNode
+  node: ComfyNode | null
 }) => {
   menuTargetTask.value = task
   menuTargetNode.value = node

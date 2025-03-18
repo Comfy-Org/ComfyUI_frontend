@@ -52,7 +52,7 @@ onMounted(async () => {
 
     electronAPI().changeTheme({
       ...(props.dark ? darkTheme : lightTheme),
-      height: topMenuRef.value.getBoundingClientRect().height
+      height: topMenuRef.value?.getBoundingClientRect().height ?? 0
     })
   }
 })

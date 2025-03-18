@@ -74,7 +74,7 @@ const updateProgress = ({ status: newStatus }: { status: ProgressStatus }) => {
 
 const terminalCreated = (
   { terminal, useAutoSize }: ReturnType<typeof useTerminal>,
-  root: Ref<HTMLElement>
+  root: Ref<HTMLElement | undefined>
 ) => {
   xterm = terminal
 

@@ -74,8 +74,8 @@ const description = computed(() =>
 )
 
 // Use a minimum run time to ensure tasks "feel" like they have run
-const reactiveLoading = computed(() => runner.value.refreshing)
-const reactiveExecuting = computed(() => runner.value.executing)
+const reactiveLoading = computed(() => !!runner.value.refreshing)
+const reactiveExecuting = computed(() => !!runner.value.executing)
 
 const isLoading = useMinLoadingDurationRef(reactiveLoading, 250)
 const isExecuting = useMinLoadingDurationRef(reactiveExecuting, 250)

@@ -8,7 +8,7 @@
         "
       >
         <ResultItem
-          v-if="flatOutputs.length"
+          v-if="flatOutputs.length && coverResult"
           :result="coverResult"
           @preview="handlePreview"
         />
@@ -42,7 +42,12 @@
             :label="`${node?.type} (#${node?.id})`"
             link
             size="small"
-            @click="litegraphService.goToNode(node?.id)"
+            @click="
+              () => {
+                if (!node) return
+                litegraphService.goToNode(node.id)
+              }
+            "
           />
         </Tag>
         <Tag :severity="taskTagSeverity(task.displayStatus)">
@@ -95,7 +100,7 @@ const coverResult = flatOutputs.length
 const node: ComfyNode | null =
   flatOutputs.length && props.task.workflow
     ? props.task.workflow.nodes.find(
-        (n: ComfyNode) => n.id == coverResult.nodeId
+        (n: ComfyNode) => n.id == coverResult?.nodeId
       ) ?? null
     : null
 const progressPreviewBlobUrl = ref('')
@@ -103,7 +108,7 @@ const progressPreviewBlobUrl = ref('')
 const emit = defineEmits<{
   (
     e: 'contextmenu',
-    value: { task: TaskItemImpl; event: MouseEvent; node?: ComfyNode }
+    value: { task: TaskItemImpl; event: MouseEvent; node: ComfyNode | null }
   ): void
   (e: 'preview', value: TaskItemImpl): void
   (e: 'task-output-length-clicked', value: TaskItemImpl): void

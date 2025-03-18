@@ -26,7 +26,7 @@
         class="node-lib-search-box p-2 2xl:p-4"
         v-model:modelValue="searchQuery"
         @search="handleSearch"
-        @show-filter="($event) => searchFilter.toggle($event)"
+        @show-filter="($event) => searchFilter?.toggle($event)"
         @remove-filter="onRemoveFilter"
         :placeholder="$t('g.searchNodes') + '...'"
         filter-icon="pi pi-filter"
@@ -97,7 +97,7 @@ const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 const nodeBookmarkTreeExplorerRef = ref<InstanceType<
   typeof NodeBookmarkTreeExplorer
 > | null>(null)
-const searchFilter = ref(null)
+const searchFilter = ref<InstanceType<typeof Popover> | null>(null)
 const alphabeticalSort = ref(false)
 
 const searchQuery = ref<string>('')

@@ -90,7 +90,7 @@ const { isReady } = useAsyncState(
   null
 )
 
-const selectedTab = ref<WorkflowTemplates | null>()
+const selectedTab = ref<WorkflowTemplates | null>(null)
 const selectFirstTab = () => {
   const firstTab = workflowTemplatesStore.groupedTemplates[0].modules[0]
   handleTabSelection(firstTab)
@@ -118,7 +118,7 @@ const loadWorkflow = async (id: string) => {
 
   workflowLoading.value = id
   let json
-  if (selectedTab.value.moduleName === 'default') {
+  if (selectedTab.value?.moduleName === 'default') {
     // Default templates provided by frontend are served on this separate endpoint
     json = await fetch(api.fileURL(`/templates/${id}.json`)).then((r) =>
       r.json()
@@ -126,13 +126,13 @@ const loadWorkflow = async (id: string) => {
   } else {
     json = await fetch(
       api.apiURL(
-        `/workflow_templates/${selectedTab.value.moduleName}/${id}.json`
+        `/workflow_templates/${selectedTab.value?.moduleName}/${id}.json`
       )
     ).then((r) => r.json())
   }
   useDialogStore().closeDialog()
   const workflowName =
-    selectedTab.value.moduleName === 'default'
+    selectedTab.value?.moduleName === 'default'
       ? t(`templateWorkflows.template.${id}`, id)
       : id
   await app.loadGraphData(json, true, true, workflowName)
