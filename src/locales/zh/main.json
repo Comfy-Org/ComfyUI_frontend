@@ -381,6 +381,7 @@
   },
   "manager": {
     "createdBy": "创建者",
+    "dependencies": "依赖关系",
     "discoverCommunityContent": "发现社区制作的节点包，扩展等等...",
     "downloads": "下载",
     "errorConnecting": "连接到Comfy节点注册表时出错。",

@@ -381,6 +381,7 @@
   },
   "manager": {
     "createdBy": "作成者",
+    "dependencies": "依存関係",
     "discoverCommunityContent": "コミュニティが作成したノードパック、拡張機能などを探す...",
     "downloads": "ダウンロード",
     "errorConnecting": "Comfy Node Registryへの接続エラー。",

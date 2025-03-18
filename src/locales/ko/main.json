@@ -381,6 +381,7 @@
   },
   "manager": {
     "createdBy": "작성자",
+    "dependencies": "의존성",
     "discoverCommunityContent": "커뮤니티에서 만든 노드 팩, 확장 프로그램 등을 찾아보세요...",
     "downloads": "다운로드",
     "errorConnecting": "Comfy Node Registry에 연결하는 중 오류가 발생했습니다.",
