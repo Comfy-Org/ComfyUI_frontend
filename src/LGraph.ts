@@ -1131,25 +1131,6 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   }
 
   // ********** GLOBALS *****************
-  onAction(
-    action: string,
-    param: unknown,
-    options: { action_call?: string },
-  ): void {
-    this._input_nodes = this.findNodesByClass(
-      // @ts-expect-error Never impl.
-      LiteGraph.GraphInput,
-      this._input_nodes,
-    )
-    for (const node of this._input_nodes) {
-      if (node.properties.name != action) continue
-
-      // wrap node.onAction(action, param);
-      node.actionDo(action, param, options)
-      break
-    }
-  }
-
   trigger(action: string, param: unknown) {
     this.onTrigger?.(action, param)
   }
