@@ -33,6 +33,9 @@
       <Message v-if="pathExists" severity="warn">
         {{ $t('install.pathExists') }}
       </Message>
+      <Message v-if="nonDefaultDrive" severity="warn">
+        {{ $t('install.nonDefaultDrive') }}
+      </Message>
     </div>
 
     <!-- System Paths Info -->
@@ -80,6 +83,7 @@ const { t } = useI18n()
 const installPath = defineModel<string>('installPath', { required: true })
 const pathError = defineModel<string>('pathError', { required: true })
 const pathExists = ref(false)
+const nonDefaultDrive = ref(false)
 const appData = ref('')
 const appPath = ref('')
 const inputTouched = ref(false)
@@ -100,6 +104,7 @@ const validatePath = async (path: string) => {
   try {
     pathError.value = ''
     pathExists.value = false
+    nonDefaultDrive.value = false
     const validation = await electron.validateInstallPath(path)
 
     // Create a pre-formatted list of errors
@@ -111,12 +116,14 @@ const validatePath = async (path: string) => {
         errors.push(`${t('install.insufficientFreeSpace')}: ${requiredGB} GB`)
       }
       if (validation.parentMissing) errors.push(t('install.parentMissing'))
+      if (validation.isOneDrive) errors.push(t('install.isOneDrive'))
+
       if (validation.error)
         errors.push(`${t('install.unhandledError')}: ${validation.error}`)
       pathError.value = errors.join('\n')
     }
 
-    // Display the path exists warning
+    if (validation.isNonDefaultDrive) nonDefaultDrive.value = true
     if (validation.exists) pathExists.value = true
   } catch (error) {
     pathError.value = t('install.pathValidationFailed')
