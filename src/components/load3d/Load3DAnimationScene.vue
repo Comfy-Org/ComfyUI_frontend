@@ -26,6 +26,7 @@
 import { ref, watch } from 'vue'
 
 import Load3DScene from '@/components/load3d/Load3DScene.vue'
+import Load3dAnimation from '@/extensions/core/load3d/Load3dAnimation'
 import {
   CameraType,
   Load3DAnimationNodeType,
@@ -124,24 +125,24 @@ watch(
 watch(
   () => props.playing,
   (newValue) => {
-    // @ts-expect-error toogleAnimated not defined on type
-    load3DSceneRef.value?.load3d?.toggleAnimation(newValue)
+    const load3d = load3DSceneRef.value?.load3d as Load3dAnimation | null
+    load3d?.toggleAnimation(newValue)
   }
 )
 
 watch(
   () => props.selectedSpeed,
   (newValue) => {
-    // @ts-expect-error setAnimationSpeed not defined on type
-    load3DSceneRef.value?.load3d?.setAnimationSpeed(newValue)
+    const load3d = load3DSceneRef.value?.load3d as Load3dAnimation | null
+    load3d?.setAnimationSpeed(newValue)
   }
 )
 
 watch(
   () => props.selectedAnimation,
   (newValue) => {
-    // @ts-expect-error updateSelectedAnimation not defined on type
-    load3DSceneRef.value?.load3d?.updateSelectedAnimation(newValue)
+    const load3d = load3DSceneRef.value?.load3d as Load3dAnimation | null
+    load3d?.updateSelectedAnimation(newValue)
   }
 )
 
