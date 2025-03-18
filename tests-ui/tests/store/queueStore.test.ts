@@ -54,8 +54,13 @@ describe('TaskItemImpl', () => {
       }
     )
 
-    expect(taskItem.flatOutputs[0].htmlVideoType).toBe('video/webm')
-    expect(taskItem.flatOutputs[0].isVideo).toBe(true)
+    const output = taskItem.flatOutputs[0]
+
+    expect(output.htmlVideoType).toBe('video/webm')
+    expect(output.isVideo).toBe(true)
+    expect(output.isWebm).toBe(true)
+    expect(output.isVhsFormat).toBe(false)
+    expect(output.isImage).toBe(false)
   })
 
   // https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite/blob/0a75c7958fe320efcb052f1d9f8451fd20c730a8/videohelpersuite/nodes.py#L578-L590
@@ -79,7 +84,12 @@ describe('TaskItemImpl', () => {
       }
     )
 
-    expect(taskItem.flatOutputs[0].htmlVideoType).toBe('video/webm')
-    expect(taskItem.flatOutputs[0].isVideo).toBe(true)
+    const output = taskItem.flatOutputs[0]
+
+    expect(output.htmlVideoType).toBe('video/webm')
+    expect(output.isVideo).toBe(true)
+    expect(output.isWebm).toBe(true)
+    expect(output.isVhsFormat).toBe(true)
+    expect(output.isImage).toBe(false)
   })
 })
