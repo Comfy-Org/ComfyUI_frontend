@@ -41,4 +41,45 @@ describe('TaskItemImpl', () => {
     expect(taskItem.outputs['node-1'].images).toBeDefined()
     expect(taskItem.outputs['node-1'].images[0].filename).toBe('test.png')
   })
+
+  it('should recognize webm video from core', () => {
+    const taskItem = new TaskItemImpl(
+      'History',
+      [0, 'prompt-id', {}, {}, []],
+      { status_str: 'success', messages: [] },
+      {
+        'node-1': {
+          video: [{ filename: 'test.webm', type: 'output', subfolder: '' }]
+        }
+      }
+    )
+
+    expect(taskItem.flatOutputs[0].htmlVideoType).toBe('video/webm')
+    expect(taskItem.flatOutputs[0].isVideo).toBe(true)
+  })
+
+  // https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite/blob/0a75c7958fe320efcb052f1d9f8451fd20c730a8/videohelpersuite/nodes.py#L578-L590
+  it('should recognize webm video from VHS', () => {
+    const taskItem = new TaskItemImpl(
+      'History',
+      [0, 'prompt-id', {}, {}, []],
+      { status_str: 'success', messages: [] },
+      {
+        'node-1': {
+          gifs: [
+            {
+              filename: 'test.webm',
+              type: 'output',
+              subfolder: '',
+              format: 'video/webm',
+              frame_rate: 30
+            }
+          ]
+        }
+      }
+    )
+
+    expect(taskItem.flatOutputs[0].htmlVideoType).toBe('video/webm')
+    expect(taskItem.flatOutputs[0].isVideo).toBe(true)
+  })
 })

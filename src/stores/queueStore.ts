@@ -89,23 +89,23 @@ export class ResultItemImpl {
   }
 
   get htmlVideoType(): string | undefined {
-    const defaultType = undefined
-
-    if (!this.isVhsFormat) {
-      return defaultType
-    }
-
-    if (this.format?.endsWith('webm')) {
+    if (this.isWebm) {
       return 'video/webm'
     }
-    if (this.format?.endsWith('mp4')) {
-      return 'video/mp4'
+
+    if (this.isVhsFormat) {
+      if (this.format?.endsWith('webm')) {
+        return 'video/webm'
+      }
+      if (this.format?.endsWith('mp4')) {
+        return 'video/mp4'
+      }
     }
-    return defaultType
+    return
   }
 
   get isVideo(): boolean {
-    return !this.isImage && !!this.format?.startsWith('video/')
+    return this.mediaType === 'video' || !!this.format?.startsWith('video/')
   }
 
   get isGif(): boolean {
@@ -114,6 +114,10 @@ export class ResultItemImpl {
 
   get isWebp(): boolean {
     return this.filename.endsWith('.webp')
+  }
+
+  get isWebm(): boolean {
+    return this.filename.endsWith('.webm')
   }
 
   get isImage(): boolean {
