@@ -38,6 +38,10 @@ class Load3dAnimation extends Load3d {
     const animate = () => {
       this.animationFrameId = requestAnimationFrame(animate)
 
+      if (!this.isActive()) {
+        return
+      }
+
       if (this.previewManager.showPreview) {
         this.previewManager.updatePreviewRender()
       }
