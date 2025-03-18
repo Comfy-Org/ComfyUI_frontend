@@ -49,8 +49,11 @@ export function useRegistrySearch() {
     (algoliaNode: AlgoliaNodePack) => algoliaNode.id
   )
 
-  const onQueryChange = async () => {
+  const updateSearchResults = async (options: { append?: boolean }) => {
     isLoading.value = true
+    if (!options.append) {
+      pageNumber.value = 0
+    }
     const { nodePacks, querySuggestions } = await searchPacks(
       searchQuery.value,
       {
@@ -59,16 +62,23 @@ export function useRegistrySearch() {
         restrictSearchableAttributes: searchAttributes.value
       }
     )
-    results.value = nodePacks
+    if (options.append && results.value?.length) {
+      results.value = results.value.concat(nodePacks)
+    } else {
+      results.value = nodePacks
+    }
     suggestions.value = querySuggestions
     isLoading.value = false
   }
 
-  watch([pageNumber, sortField, searchMode], onQueryChange, {
-    immediate: true
-  })
+  const onQueryChange = () => updateSearchResults({ append: false })
+  const onPageChange = () => updateSearchResults({ append: true })
+
+  watch([sortField, searchMode], onQueryChange)
+  watch(pageNumber, onPageChange)
   watchDebounced(searchQuery, onQueryChange, {
-    debounce: SEARCH_DEBOUNCE_TIME
+    debounce: SEARCH_DEBOUNCE_TIME,
+    immediate: true
   })
 
   return {
