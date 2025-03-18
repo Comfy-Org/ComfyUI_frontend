@@ -1,9 +1,14 @@
+import type { InjectionKey, Ref } from 'vue'
+
 import type { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import type { components } from '@/types/comfyRegistryTypes'
 
 type RegistryPack = components['schemas']['Node']
 type WorkflowNodeProperties = ComfyWorkflowJSON['nodes'][0]['properties']
 export type PackField = keyof RegistryPack | null
+
+export const IsInstallingKey: InjectionKey<Ref<boolean>> =
+  Symbol('isInstalling')
 
 export interface TabItem {
   id: string
