@@ -63,7 +63,7 @@ const upDirection = ref(props.upDirection)
 const materialMode = ref(props.materialMode)
 const showFOVButton = ref(props.showFOVButton)
 const showLightIntensityButton = ref(props.showLightIntensityButton)
-const load3DSceneRef = ref(null)
+const load3DSceneRef = ref<InstanceType<typeof Load3DScene> | null>(null)
 
 watch(
   () => props.cameraType,
@@ -124,21 +124,24 @@ watch(
 watch(
   () => props.playing,
   (newValue) => {
-    load3DSceneRef.value.load3d.toggleAnimation(newValue)
+    // @ts-expect-error toogleAnimated not defined on type
+    load3DSceneRef.value?.load3d?.toggleAnimation(newValue)
   }
 )
 
 watch(
   () => props.selectedSpeed,
   (newValue) => {
-    load3DSceneRef.value.load3d.setAnimationSpeed(newValue)
+    // @ts-expect-error setAnimationSpeed not defined on type
+    load3DSceneRef.value?.load3d?.setAnimationSpeed(newValue)
   }
 )
 
 watch(
   () => props.selectedAnimation,
   (newValue) => {
-    load3DSceneRef.value.load3d.updateSelectedAnimation(newValue)
+    // @ts-expect-error updateSelectedAnimation not defined on type
+    load3DSceneRef.value?.load3d?.updateSelectedAnimation(newValue)
   }
 )
 
