@@ -20,7 +20,7 @@ import BaseThumbnail from '@/components/templates/thumbnails/BaseThumbnail.vue'
 defineProps<{
   src: string
   alt: string
-  hoverZoom?: number
+  hoverZoom: number
   isHovered?: boolean
 }>()
 </script>

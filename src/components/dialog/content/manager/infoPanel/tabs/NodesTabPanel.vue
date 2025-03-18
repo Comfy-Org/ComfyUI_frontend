@@ -16,6 +16,7 @@
 
 <script setup lang="ts">
 import NodePreview from '@/components/node/NodePreview.vue'
+import { ComfyNodeDef } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { components } from '@/types/comfyRegistryTypes'
 
 defineProps<{
@@ -24,7 +25,8 @@ defineProps<{
 }>()
 
 // TODO: when registry returns node defs, use them here
-const placeholderNodeDef = {
+const placeholderNodeDef: ComfyNodeDef = {
+  name: 'Sample Node',
   display_name: 'Sample Node',
   description: 'This is a sample node for preview purposes',
   inputs: {
@@ -32,8 +34,11 @@ const placeholderNodeDef = {
     input2: { name: 'Input 2', type: 'CONDITIONING' }
   },
   outputs: [
-    { name: 'Output 1', type: 'IMAGE', index: 0 },
-    { name: 'Output 2', type: 'MASK', index: 1 }
-  ]
+    { name: 'Output 1', type: 'IMAGE', index: 0, is_list: false },
+    { name: 'Output 2', type: 'MASK', index: 1, is_list: false }
+  ],
+  category: 'Utility',
+  output_node: false,
+  python_module: 'nodes'
 }
 </script>

@@ -396,7 +396,10 @@ const normalizeVersion = (version: string) =>
     .map(Number)
     .filter((part) => !Number.isNaN(part))
 
-export function compareVersions(versionA: string, versionB: string): number {
+export function compareVersions(
+  versionA: string | undefined,
+  versionB: string | undefined
+): number {
   versionA ??= '0.0.0'
   versionB ??= '0.0.0'
 

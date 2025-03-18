@@ -106,7 +106,9 @@ watchEffect(() => {
 
 watchEffect(() => {
   const spellcheckEnabled = settingStore.get('Comfy.TextareaWidget.Spellcheck')
-  const textareas = document.querySelectorAll('textarea.comfy-multiline-input')
+  const textareas = document.querySelectorAll<HTMLTextAreaElement>(
+    'textarea.comfy-multiline-input'
+  )
 
   textareas.forEach((textarea: HTMLTextAreaElement) => {
     textarea.spellcheck = spellcheckEnabled

@@ -68,7 +68,7 @@ const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const workflowBookmarkStore = useWorkflowBookmarkStore()
-const rightClickedTab = ref<WorkflowOption>(null)
+const rightClickedTab = ref<WorkflowOption | undefined>()
 const menu = ref()
 
 const workflowToOption = (workflow: ComfyWorkflow): WorkflowOption => ({
@@ -114,7 +114,7 @@ const onCloseWorkflow = (option: WorkflowOption) => {
   closeWorkflows([option])
 }
 
-const showContextMenu = (event, option) => {
+const showContextMenu = (event: MouseEvent, option: WorkflowOption) => {
   rightClickedTab.value = option
   menu.value.show(event)
 }

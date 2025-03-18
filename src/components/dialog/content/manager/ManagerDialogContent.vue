@@ -83,7 +83,7 @@
         <ContentDivider orientation="vertical" :width="0.2" />
         <div class="flex-1 flex flex-col isolate">
           <InfoPanel
-            v-if="!hasMultipleSelections"
+            v-if="!hasMultipleSelections && selectedNodePack"
             :node-pack="selectedNodePack"
           />
           <InfoPanelMultiItem v-else :node-packs="selectedNodePacks" />
@@ -150,7 +150,7 @@ const isEmptySearch = computed(() => searchQuery.value === '')
 const getInstalledSearchResults = async () => {
   if (isEmptySearch.value) return getInstalledPacks()
   return searchResults.value.filter((pack) =>
-    comfyManagerStore.installedPacksIds.has(pack.name)
+    comfyManagerStore.installedPacksIds.has(pack.name ?? '')
   )
 }
 
@@ -162,15 +162,16 @@ watchEffect(async () => {
   }
 })
 
-const resultsWithKeys = computed(() =>
-  displayPacks.value.map((item) => ({
-    ...item,
-    key: item.id || item.name
-  }))
+const resultsWithKeys = computed(
+  () =>
+    displayPacks.value.map((item) => ({
+      ...item,
+      key: item.id || item.name
+    })) as (components['schemas']['Node'] & { key: string })[]
 )
 
 const selectedNodePacks = ref<components['schemas']['Node'][]>([])
-const selectedNodePack = computed(() =>
+const selectedNodePack = computed<components['schemas']['Node'] | null>(() =>
   selectedNodePacks.value.length === 1 ? selectedNodePacks.value[0] : null
 )
 
