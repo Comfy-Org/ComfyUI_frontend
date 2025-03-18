@@ -99,6 +99,7 @@
   },
   "manager": {
     "title": "Custom Nodes Manager",
+    "dependencies": "Dependencies",
     "infoPanelEmpty": "Click an item to see the info",
     "restartToApplyChanges": "To apply changes, please restart ComfyUI",
     "loadingVersions": "Loading versions...",
