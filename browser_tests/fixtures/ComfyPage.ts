@@ -459,7 +459,14 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
-  async dragAndDropFile(fileName: string) {
+  async dragAndDropFile(
+    fileName: string,
+    options: {
+      dropPosition?: Position
+    } = {}
+  ) {
+    const { dropPosition = { x: 100, y: 100 } } = options
+
     const filePath = this.assetPath(fileName)
 
     // Read the file content
@@ -477,32 +484,56 @@ export class ComfyPage {
     const fileType = getFileType(fileName)
 
     await this.page.evaluate(
-      async ({ buffer, fileName, fileType }) => {
+      async ({ buffer, fileName, fileType, dropPosition }) => {
         const file = new File([new Uint8Array(buffer)], fileName, {
           type: fileType
         })
         const dataTransfer = new DataTransfer()
         dataTransfer.items.add(file)
 
-        const dropEvent = new DragEvent('drop', {
+        const targetElement = document.elementFromPoint(
+          dropPosition.x,
+          dropPosition.y
+        )
+
+        if (!targetElement) {
+          console.error('No element found at drop position:', dropPosition)
+          return { success: false, error: 'No element at position' }
+        }
+
+        const eventOptions = {
           bubbles: true,
           cancelable: true,
-          dataTransfer
-        })
+          dataTransfer,
+          clientX: dropPosition.x,
+          clientY: dropPosition.y
+        }
+
+        const dragOverEvent = new DragEvent('dragover', eventOptions)
+        const dropEvent = new DragEvent('drop', eventOptions)
 
         Object.defineProperty(dropEvent, 'preventDefault', {
           value: () => {},
           writable: false
         })
-
         Object.defineProperty(dropEvent, 'stopPropagation', {
           value: () => {},
           writable: false
         })
 
-        document.dispatchEvent(dropEvent)
+        targetElement.dispatchEvent(dragOverEvent)
+        targetElement.dispatchEvent(dropEvent)
+
+        return {
+          success: true,
+          targetInfo: {
+            tagName: targetElement.tagName,
+            id: targetElement.id,
+            classList: Array.from(targetElement.classList)
+          }
+        }
       },
-      { buffer: [...new Uint8Array(buffer)], fileName, fileType }
+      { buffer: [...new Uint8Array(buffer)], fileName, fileType, dropPosition }
     )
 
     await this.nextFrame()

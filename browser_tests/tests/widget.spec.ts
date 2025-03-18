@@ -128,10 +128,61 @@ test.describe('Dynamic widget manipulation', () => {
   })
 })
 
-test.describe('Load image widget', () => {
+test.describe('Image widget', () => {
   test('Can load image', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('widgets/load_image_widget')
     await expect(comfyPage.canvas).toHaveScreenshot('load_image_widget.png')
+  })
+
+  test('Can drag and drop image', async ({ comfyPage }) => {
+    await comfyPage.loadWorkflow('widgets/load_image_widget')
+
+    // Get position of the load image node
+    const nodes = await comfyPage.getNodeRefsByType('LoadImage')
+    const loadImageNode = nodes[0]
+    const { x, y } = await loadImageNode.getPosition()
+
+    // Drag and drop image file onto the load image node
+    await comfyPage.dragAndDropFile('image32x32.webp', {
+      dropPosition: { x, y }
+    })
+
+    // Expect the image preview to change automatically
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'image_preview_drag_and_dropped.png'
+    )
+
+    // Expect the filename combo value to be updated
+    const fileComboWidget = await loadImageNode.getWidget(0)
+    const filename = await fileComboWidget.getValue()
+    expect(filename).toBe('image32x32.webp')
+  })
+
+  test('Can change image by changing the filename combo value', async ({
+    comfyPage
+  }) => {
+    await comfyPage.loadWorkflow('widgets/load_image_widget')
+    const nodes = await comfyPage.getNodeRefsByType('LoadImage')
+    const loadImageNode = nodes[0]
+
+    // Click the combo widget used to select the image filename
+    const fileComboWidget = await loadImageNode.getWidget(0)
+    await fileComboWidget.click()
+
+    // Select a new image filename value from the combo context menu
+    const comboEntry = comfyPage.page.getByRole('menuitem', {
+      name: 'image32x32.webp'
+    })
+    await comboEntry.click({ noWaitAfter: true })
+
+    // Expect the image preview to change automatically
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'image_preview_changed_by_combo_value.png'
+    )
+
+    // Expect the filename combo value to be updated
+    const filename = await fileComboWidget.getValue()
+    expect(filename).toBe('image32x32.webp')
   })
 })
 
