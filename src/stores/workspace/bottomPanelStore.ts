@@ -21,7 +21,7 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
   }
 
   const bottomPanelTabs = ref<BottomPanelExtension[]>([])
-  const activeBottomPanelTabId = ref<string | null>(null)
+  const activeBottomPanelTabId = ref<string>('')
   const activeBottomPanelTab = computed<BottomPanelExtension | null>(() => {
     return (
       bottomPanelTabs.value.find(

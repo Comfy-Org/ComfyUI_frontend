@@ -76,10 +76,10 @@ const nodeBadgeText = computed<string>(() => {
 })
 const showNodeBadgeText = computed<boolean>(() => nodeBadgeText.value !== '')
 
-const isEditing = computed<boolean>(() => props.node.isEditingLabel)
+const isEditing = computed<boolean>(() => props.node.isEditingLabel ?? false)
 const handleEditLabel = inject(InjectKeyHandleEditLabelFunction)
 const handleRename = (newName: string) => {
-  handleEditLabel(props.node, newName)
+  handleEditLabel?.(props.node, newName)
 }
 
 const container = ref<HTMLElement | null>(null)
@@ -102,7 +102,7 @@ if (props.node.draggable) {
       ? ({ nativeSetDragImage }) => {
           setCustomNativeDragPreview({
             render: ({ container }) => {
-              return props.node.renderDragPreview(container)
+              return props.node.renderDragPreview?.(container)
             },
             nativeSetDragImage
           })

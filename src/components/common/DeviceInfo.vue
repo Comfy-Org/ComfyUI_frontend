@@ -2,7 +2,9 @@
   <div class="grid grid-cols-2 gap-2">
     <template v-for="col in deviceColumns" :key="col.field">
       <div class="font-medium">{{ col.header }}</div>
-      <div>{{ formatValue(props.device[col.field], col.field) }}</div>
+      <div>
+        {{ formatValue(props.device[col.field], col.field) }}
+      </div>
     </template>
   </div>
 </template>
@@ -15,7 +17,7 @@ const props = defineProps<{
   device: DeviceStats
 }>()
 
-const deviceColumns = [
+const deviceColumns: { field: keyof DeviceStats; header: string }[] = [
   { field: 'name', header: 'Name' },
   { field: 'type', header: 'Type' },
   { field: 'vram_total', header: 'VRAM Total' },

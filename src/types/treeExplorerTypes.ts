@@ -1,5 +1,5 @@
 import type { MenuItem } from 'primevue/menuitem'
-import type { InjectionKey, Ref } from 'vue'
+import type { InjectionKey, ModelRef } from 'vue'
 
 export interface TreeExplorerNode<T = any> {
   key: string
@@ -72,5 +72,6 @@ export const InjectKeyHandleEditLabelFunction: InjectionKey<
   (node: RenderedTreeExplorerNode, newName: string) => void
 > = Symbol()
 
-export const InjectKeyExpandedKeys: InjectionKey<Ref<Record<string, boolean>>> =
-  Symbol()
+export const InjectKeyExpandedKeys: InjectionKey<
+  ModelRef<Record<string, boolean>>
+> = Symbol()

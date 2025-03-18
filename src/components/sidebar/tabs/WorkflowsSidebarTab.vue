@@ -34,6 +34,7 @@
           <TreeExplorer
             :root="renderTreeNode(openWorkflowsTree, WorkflowTreeType.Open)"
             :selectionKeys="selectionKeys"
+            v-model:expandedKeys="dummyExpandedKeys"
           >
             <template #node="{ node }">
               <TreeExplorerTreeNode :node="node">
@@ -75,6 +76,7 @@
               )
             "
             :selectionKeys="selectionKeys"
+            v-model:expandedKeys="dummyExpandedKeys"
           >
             <template #node="{ node }">
               <WorkflowTreeLeaf :node="node" />
@@ -179,6 +181,7 @@ const workspaceStore = useWorkspaceStore()
 const { t } = useI18n()
 const expandedKeys = ref<Record<string, boolean>>({})
 const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
+const dummyExpandedKeys = ref<Record<string, boolean>>({})
 
 const handleCloseWorkflow = (workflow?: ComfyWorkflow) => {
   if (workflow) {

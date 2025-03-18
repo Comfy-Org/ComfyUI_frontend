@@ -135,8 +135,11 @@ const hasPendingTasks = computed(
 )
 
 const commandStore = useCommandStore()
-const queuePrompt = (e: MouseEvent) => {
-  const commandId = e.shiftKey ? 'Comfy.QueuePromptFront' : 'Comfy.QueuePrompt'
+const queuePrompt = (e: Event) => {
+  const commandId =
+    'shiftKey' in e && e.shiftKey
+      ? 'Comfy.QueuePromptFront'
+      : 'Comfy.QueuePrompt'
   commandStore.execute(commandId)
 }
 </script>

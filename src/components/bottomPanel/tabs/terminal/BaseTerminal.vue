@@ -12,11 +12,11 @@ import { Ref, onUnmounted, ref } from 'vue'
 import { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
 
 const emit = defineEmits<{
-  created: [ReturnType<typeof useTerminal>, Ref<HTMLElement>]
+  created: [ReturnType<typeof useTerminal>, Ref<HTMLElement | undefined>]
   unmounted: []
 }>()
-const terminalEl = ref<HTMLElement>()
-const rootEl = ref<HTMLElement>()
+const terminalEl = ref<HTMLElement | undefined>()
+const rootEl = ref<HTMLElement | undefined>()
 emit('created', useTerminal(terminalEl), rootEl)
 
 onUnmounted(() => emit('unmounted'))

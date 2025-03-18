@@ -53,7 +53,9 @@ import {
 } from '@/types/treeExplorerTypes'
 import { combineTrees, findNodeByKey } from '@/utils/treeUtil'
 
-const expandedKeys = defineModel<Record<string, boolean>>('expandedKeys')
+const expandedKeys = defineModel<Record<string, boolean>>('expandedKeys', {
+  required: true
+})
 provide(InjectKeyExpandedKeys, expandedKeys)
 const selectionKeys = defineModel<Record<string, boolean>>('selectionKeys')
 // Tracks whether the caller has set the selectionKeys model.
@@ -103,7 +105,7 @@ const getTreeNodeIcon = (node: TreeExplorerNode) => {
   return isExpanded ? 'pi pi-folder-open' : 'pi pi-folder'
 }
 const fillNodeInfo = (node: TreeExplorerNode): RenderedTreeExplorerNode => {
-  const children = node.children?.map(fillNodeInfo)
+  const children = node.children?.map(fillNodeInfo) ?? []
   const totalLeaves = node.leaf
     ? 1
     : children.reduce((acc, child) => acc + child.totalLeaves, 0)
@@ -113,7 +115,7 @@ const fillNodeInfo = (node: TreeExplorerNode): RenderedTreeExplorerNode => {
     children,
     type: node.leaf ? 'node' : 'folder',
     totalLeaves,
-    badgeText: node.getBadgeText ? node.getBadgeText() : null,
+    badgeText: node.getBadgeText ? node.getBadgeText() : undefined,
     isEditingLabel: node.key === renameEditingNode.value?.key
   }
 }
@@ -149,7 +151,7 @@ const handleNodeLabelEdit = async (
       if (node.key === newFolderNode.value?.key) {
         await handleFolderCreation(newName)
       } else {
-        await node.handleRename(newName)
+        await node.handleRename?.(newName)
       }
     },
     node.handleError,
