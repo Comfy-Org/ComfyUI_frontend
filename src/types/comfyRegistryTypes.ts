@@ -703,6 +703,23 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/nodes/{nodeId}/translations': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Create Node Translations */
+    post: operations['CreateNodeTranslations']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/nodes/{nodeId}/versions': {
     parameters: {
       query?: never
@@ -1075,6 +1092,11 @@ export interface components {
       status?: components['schemas']['NodeStatus']
       /** @description The status detail of the node. */
       status_detail?: string
+      translations?: {
+        [key: string]: {
+          [key: string]: unknown
+        }
+      }
     }
     NodeVersion: {
       id?: string
@@ -2497,7 +2519,10 @@ export interface operations {
   }
   getNode: {
     parameters: {
-      query?: never
+      query?: {
+        /** @description Whether to include the translation or not */
+        include_translations?: boolean
+      }
       header?: never
       path: {
         nodeId: string
@@ -2643,6 +2668,62 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  CreateNodeTranslations: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The unique identifier of the node. */
+        nodeId: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': {
+          data?: {
+            [key: string]: {
+              [key: string]: unknown
+            }
+          }
+        }
+      }
+    }
+    responses: {
+      /** @description Detailed information about a specific node */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Node version not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Error']
         }
       }
       /** @description Internal server error */
