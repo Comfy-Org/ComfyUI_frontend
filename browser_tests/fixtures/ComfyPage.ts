@@ -13,6 +13,7 @@ import { ComfyActionbar } from '../helpers/actionbar'
 import { ComfyTemplates } from '../helpers/templates'
 import { ComfyMouse } from './ComfyMouse'
 import { ComfyNodeSearchBox } from './components/ComfyNodeSearchBox'
+import { ImportModelDialog } from './components/ImportModelDialog'
 import { SettingDialog } from './components/SettingDialog'
 import {
   NodeLibrarySidebarTab,
@@ -140,6 +141,7 @@ export class ComfyPage {
   public readonly templates: ComfyTemplates
   public readonly settingDialog: SettingDialog
   public readonly confirmDialog: ConfirmDialog
+  public readonly importModelDialog: ImportModelDialog
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -165,6 +167,7 @@ export class ComfyPage {
     this.templates = new ComfyTemplates(page)
     this.settingDialog = new SettingDialog(page)
     this.confirmDialog = new ConfirmDialog(page)
+    this.importModelDialog = new ImportModelDialog(page)
   }
 
   convertLeafToContent(structure: FolderStructure): FolderStructure {
@@ -469,6 +472,7 @@ export class ComfyPage {
       fileName?: string
       url?: string
       dropPosition?: Position
+      buffer?: Buffer
     } = {}
   ) {
     const { dropPosition = { x: 100, y: 100 }, fileName, url } = options
@@ -487,7 +491,7 @@ export class ComfyPage {
     // Dropping a file from the filesystem
     if (fileName) {
       const filePath = this.assetPath(fileName)
-      const buffer = fs.readFileSync(filePath)
+      const buffer = options.buffer ?? fs.readFileSync(filePath)
 
       const getFileType = (fileName: string) => {
         if (fileName.endsWith('.png')) return 'image/png'
