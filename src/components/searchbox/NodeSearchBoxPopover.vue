@@ -94,6 +94,7 @@ const addNode = (nodeDef: ComfyNodeDefImpl) => {
 
   const eventDetail = triggerEvent.value?.detail
   if (eventDetail && eventDetail.subType === 'empty-release') {
+    // @ts-expect-error fixme ts strict error
     eventDetail.linkReleaseContext.links.forEach((link: ConnectingLink) => {
       ConnectingLinkImpl.createFromPlainObject(link).connectTo(node)
     })
@@ -121,6 +122,7 @@ const showSearchBox = (e: LiteGraphCanvasEvent) => {
       showNewSearchBox(e)
     }
   } else {
+    // @ts-expect-error fixme ts strict error
     canvasStore.canvas.showSearchBox(detail.originalEvent)
   }
 }
@@ -137,7 +139,9 @@ const showNewSearchBox = (e: LiteGraphCanvasEvent) => {
     const filter = nodeDefStore.nodeSearchService.getFilterById(
       firstLink.releaseSlotType
     )
+    // @ts-expect-error fixme ts strict error
     const dataType = firstLink.type.toString()
+    // @ts-expect-error fixme ts strict error
     addFilter([filter, dataType])
   }
 
@@ -180,6 +184,7 @@ const showContextMenu = (e: LiteGraphCanvasEvent) => {
         slotTo: firstLink.input,
         afterRerouteId: firstLink.afterRerouteId
       }
+  // @ts-expect-error fixme ts strict error
   canvasStore.canvas.showConnectionMenu({
     ...connectionOptions,
     ...commonOptions

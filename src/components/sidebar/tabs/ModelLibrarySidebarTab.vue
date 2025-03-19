@@ -116,11 +116,13 @@ const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
 
     return {
       key: node.key,
+      // @ts-expect-error fixme ts strict error
       label: model
         ? nameFormat === 'title'
           ? model.title
           : model.simplified_file_name
         : node.label,
+      // @ts-expect-error fixme ts strict error
       leaf: node.leaf,
       data: node.data,
       getIcon() {
@@ -134,6 +136,7 @@ const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
         }
         return 'pi pi-folder'
       },
+      // @ts-expect-error fixme ts strict error
       getBadgeText() {
         // Return null to apply default badge text
         // Return empty string to hide badge
@@ -146,13 +149,16 @@ const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
       draggable: node.leaf,
       handleClick(e: MouseEvent) {
         if (this.leaf) {
+          // @ts-expect-error fixme ts strict error
           const provider = modelToNodeStore.getNodeProvider(model.directory)
           if (provider) {
             const node = useLitegraphService().addNodeOnGraph(provider.nodeDef)
+            // @ts-expect-error fixme ts strict error
             const widget = node.widgets.find(
               (widget) => widget.name === provider.key
             )
             if (widget) {
+              // @ts-expect-error fixme ts strict error
               widget.value = model.file_name
             }
           }

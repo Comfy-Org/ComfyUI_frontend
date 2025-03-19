@@ -169,6 +169,7 @@ watch(
 watch(
   () => props.edgeThreshold,
   (newValue) => {
+    // @ts-expect-error fixme ts strict error
     edgeThreshold.value = newValue
   }
 )

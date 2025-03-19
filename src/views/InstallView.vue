@@ -176,6 +176,7 @@ const install = () => {
     pythonMirror: pythonMirror.value,
     pypiMirror: pypiMirror.value,
     torchMirror: torchMirror.value,
+    // @ts-expect-error fixme ts strict error
     device: device.value
   }
   electron.installComfyUI(options)

@@ -59,6 +59,7 @@ describe('TreeExplorerTreeNode', () => {
     expect(wrapper.findComponent(EditableText).props('modelValue')).toBe(
       'Test Node'
     )
+    // @ts-expect-error fixme ts strict error
     expect(wrapper.findComponent(Badge).props()['value'].toString()).toBe('3')
   })
 

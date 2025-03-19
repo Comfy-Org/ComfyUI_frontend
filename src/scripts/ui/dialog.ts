@@ -5,6 +5,7 @@ export class ComfyDialog<
   T extends HTMLElement = HTMLElement
 > extends EventTarget {
   element: T
+  // @ts-expect-error fixme ts strict error
   textElement: HTMLElement
   #buttons: HTMLButtonElement[] | null
 
@@ -35,6 +36,7 @@ export class ComfyDialog<
     this.element.style.display = 'none'
   }
 
+  // @ts-expect-error fixme ts strict error
   show(html) {
     if (typeof html === 'string') {
       this.textElement.innerHTML = html

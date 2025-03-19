@@ -6,6 +6,7 @@ export function getFromFlacBuffer(buffer: ArrayBuffer): Record<string, string> {
   const signature = String.fromCharCode(...new Uint8Array(buffer, 0, 4))
   if (signature !== 'fLaC') {
     console.error('Not a valid FLAC file')
+    // @ts-expect-error fixme ts strict error
     return
   }
 
@@ -29,6 +30,7 @@ export function getFromFlacBuffer(buffer: ArrayBuffer): Record<string, string> {
     if (isLastBlock) break
   }
 
+  // @ts-expect-error fixme ts strict error
   return vorbisComment
 }
 
@@ -36,6 +38,7 @@ export function getFromFlacFile(file: File): Promise<Record<string, string>> {
   return new Promise((r) => {
     const reader = new FileReader()
     reader.onload = function (event) {
+      // @ts-expect-error fixme ts strict error
       const arrayBuffer = event.target.result as ArrayBuffer
       r(getFromFlacBuffer(arrayBuffer))
     }
@@ -64,6 +67,7 @@ function parseVorbisComment(dataView: DataView): Record<string, string> {
     const ind = comment.indexOf('=')
     const key = comment.substring(0, ind)
 
+    // @ts-expect-error fixme ts strict error
     comments[key] = comment.substring(ind + 1)
   }
 

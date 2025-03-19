@@ -3,11 +3,13 @@ import { $el } from '../../ui'
 import { ComfyDialog } from '../dialog'
 
 export class ComfyAsyncDialog extends ComfyDialog<HTMLDialogElement> {
+  // @ts-expect-error fixme ts strict error
   #resolve: (value: any) => void
 
   constructor(actions?: Array<string | { value?: any; text: string }>) {
     super(
       'dialog.comfy-dialog.comfyui-dialog',
+      // @ts-expect-error fixme ts strict error
       actions?.map((opt) => {
         if (typeof opt === 'string') {
           opt = { text: opt }

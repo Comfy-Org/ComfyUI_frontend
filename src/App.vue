@@ -40,6 +40,7 @@ const showContextMenu = (event: MouseEvent) => {
 }
 
 onMounted(() => {
+  // @ts-expect-error fixme ts strict error
   window['__COMFYUI_FRONTEND_VERSION__'] = config.app_version
   console.log('ComfyUI Front-end version:', config.app_version)
 

@@ -146,6 +146,7 @@ const getCategoryIcon = (category: string) => {
     camera: 'pi pi-camera',
     light: 'pi pi-sun'
   }
+  // @ts-expect-error fixme ts strict error
   return `${icons[category]} text-white text-lg`
 }
 

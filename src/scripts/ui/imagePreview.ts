@@ -3,8 +3,11 @@ import { app } from '../app'
 import { $el } from '../ui'
 
 export function calculateImageGrid(
+  // @ts-expect-error fixme ts strict error
   imgs,
+  // @ts-expect-error fixme ts strict error
   dw,
+  // @ts-expect-error fixme ts strict error
   dh
 ): {
   cellWidth: number
@@ -42,11 +45,14 @@ export function calculateImageGrid(
     }
   }
 
+  // @ts-expect-error fixme ts strict error
   return { cellWidth, cellHeight, cols, rows, shiftX }
 }
 
+// @ts-expect-error fixme ts strict error
 export function createImageHost(node) {
   const el = $el('div.comfy-img-preview')
+  // @ts-expect-error fixme ts strict error
   let currentImgs
   let first = true
 
@@ -54,6 +60,7 @@ export function createImageHost(node) {
     let w = null
     let h = null
 
+    // @ts-expect-error fixme ts strict error
     if (currentImgs) {
       let elH = el.clientHeight
       if (first) {
@@ -73,17 +80,24 @@ export function createImageHost(node) {
         nw - 20,
         elH
       ))
+      // @ts-expect-error fixme ts strict error
       w += 'px'
+      // @ts-expect-error fixme ts strict error
       h += 'px'
 
+      // @ts-expect-error fixme ts strict error
       el.style.setProperty('--comfy-img-preview-width', w)
+      // @ts-expect-error fixme ts strict error
       el.style.setProperty('--comfy-img-preview-height', h)
     }
   }
   return {
     el,
+    // @ts-expect-error fixme ts strict error
     updateImages(imgs) {
+      // @ts-expect-error fixme ts strict error
       if (imgs !== currentImgs) {
+        // @ts-expect-error fixme ts strict error
         if (currentImgs == null) {
           requestAnimationFrame(() => {
             updateSize()
@@ -109,6 +123,7 @@ export function createImageHost(node) {
 
       if (!over) return
       // Set the overIndex so Open Image etc work
+      // @ts-expect-error fixme ts strict error
       const idx = currentImgs.indexOf(over)
       node.overIndex = idx
     }

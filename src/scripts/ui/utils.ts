@@ -34,11 +34,13 @@ export function toggleElement(
     onShow
   }: {
     onHide?: (el: HTMLElement) => void
+    // @ts-expect-error fixme ts strict error
     onShow?: (el: HTMLElement, value) => void
   } = {}
 ) {
   let placeholder: HTMLElement | Comment
   let hidden: boolean
+  // @ts-expect-error fixme ts strict error
   return (value) => {
     if (value) {
       if (hidden) {

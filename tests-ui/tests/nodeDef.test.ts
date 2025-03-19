@@ -223,6 +223,7 @@ describe('NodeDef Migration', () => {
 
     const result = transformNodeDefV1ToV2(nodeDef)
 
+    // @ts-expect-error fixme ts strict error
     expect(result.hidden).toEqual(plainObject.hidden)
     expect(result.hidden?.someHiddenValue).toBe(42)
     expect(result.hidden?.anotherHiddenValue).toEqual({ nested: 'object' })

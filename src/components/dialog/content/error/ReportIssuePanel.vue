@@ -4,7 +4,7 @@
     @submit="submit"
     :resolver="zodResolver(issueReportSchema)"
   >
-    <Panel :pt="$attrs.pt">
+    <Panel :pt="$attrs.pt as any">
       <template #header>
         <div class="flex items-center gap-2">
           <span class="font-bold">{{ title }}</span>

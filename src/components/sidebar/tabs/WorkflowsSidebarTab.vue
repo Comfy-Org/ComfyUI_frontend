@@ -267,7 +267,9 @@ const renderTreeNode = (
 
   return {
     key: node.key,
+    // @ts-expect-error fixme ts strict error
     label: node.label,
+    // @ts-expect-error fixme ts strict error
     leaf: node.leaf,
     data: node.data,
     children,

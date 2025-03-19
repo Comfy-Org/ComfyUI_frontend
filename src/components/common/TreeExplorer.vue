@@ -170,18 +170,21 @@ const deleteCommand = async (node: RenderedTreeExplorerNode) => {
   await node.handleDelete?.()
   emit('nodeDelete', node)
 }
+// @ts-expect-error fixme ts strict error
 const menuItems = computed<MenuItem[]>(() =>
   [
     getAddFolderMenuItem(menuTargetNode.value),
     {
       label: t('g.rename'),
       icon: 'pi pi-file-edit',
+      // @ts-expect-error fixme ts strict error
       command: () => renameCommand(menuTargetNode.value),
       visible: menuTargetNode.value?.handleRename !== undefined
     },
     {
       label: t('g.delete'),
       icon: 'pi pi-trash',
+      // @ts-expect-error fixme ts strict error
       command: () => deleteCommand(menuTargetNode.value),
       visible: menuTargetNode.value?.handleDelete !== undefined,
       isAsync: true // The delete command can be async
@@ -189,6 +192,7 @@ const menuItems = computed<MenuItem[]>(() =>
     ...extraMenuItems.value
   ].map((menuItem) => ({
     ...menuItem,
+    // @ts-expect-error fixme ts strict error
     command: wrapCommandWithErrorHandler(menuItem.command, {
       isAsync: menuItem.isAsync ?? false
     })
@@ -226,6 +230,7 @@ defineExpose({
    * @param targetNodeKey - The key of the node where the folder will be added under
    */
   addFolderCommand: (targetNodeKey: string) => {
+    // @ts-expect-error fixme ts strict error
     addFolderCommand(findNodeByKey(renderedRoot.value, targetNodeKey))
   }
 })

@@ -126,6 +126,7 @@ watch(
     for (const n of comfyApp.graph.nodes) {
       if (!n.widgets) continue
       for (const w of n.widgets) {
+        // @ts-expect-error fixme ts strict error
         if (w[IS_CONTROL_WIDGET]) {
           updateControlWidgetLabel(w)
           if (w.linkedWidgets) {
@@ -170,6 +171,7 @@ const loadCustomNodesI18n = async () => {
 
 const comfyAppReady = ref(false)
 const workflowPersistence = useWorkflowPersistence()
+// @ts-expect-error fixme ts strict error
 useCanvasDrop(canvasRef)
 useLitegraphSettings()
 
@@ -190,12 +192,15 @@ onMounted(async () => {
   CORE_SETTINGS.forEach((setting) => {
     settingStore.addSetting(setting)
   })
+  // @ts-expect-error fixme ts strict error
   await comfyApp.setup(canvasRef.value)
   canvasStore.canvas = comfyApp.canvas
   canvasStore.canvas.render_canvas_border = false
   workspaceStore.spinner = false
 
+  // @ts-expect-error fixme ts strict error
   window['app'] = comfyApp
+  // @ts-expect-error fixme ts strict error
   window['graph'] = comfyApp.graph
 
   comfyAppReady.value = true

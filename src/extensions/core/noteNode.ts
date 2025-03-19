@@ -21,6 +21,7 @@ app.registerExtension({
       isVirtualNode: boolean
 
       constructor(title?: string) {
+        // @ts-expect-error fixme ts strict error
         super(title)
         if (!this.properties) {
           this.properties = { text: '' }
@@ -59,6 +60,7 @@ app.registerExtension({
       groupcolor = LGraphCanvas.node_colors.yellow.groupcolor
 
       constructor(title?: string) {
+        // @ts-expect-error fixme ts strict error
         super(title)
         if (!this.properties) {
           this.properties = { text: '' }

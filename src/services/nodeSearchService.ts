@@ -23,6 +23,7 @@ export class FuseSearch<T> {
     advancedScoring: boolean = false
   ) {
     this.data = data
+    // @ts-expect-error fixme ts strict error
     this.keys = (options.keys ?? []) as string[]
     this.advancedScoring = advancedScoring
     const index =
@@ -44,6 +45,7 @@ export class FuseSearch<T> {
     const aux = fuseResult
       .map((x) => ({
         item: x.item,
+        // @ts-expect-error fixme ts strict error
         scores: this.calcAuxScores(query.toLocaleLowerCase(), x.item, x.score)
       }))
       .sort((a, b) => this.compareAux(a.scores, b.scores))
@@ -54,6 +56,7 @@ export class FuseSearch<T> {
   public calcAuxScores(query: string, entry: T, score: number): SearchAuxScore {
     let values: string[] = []
     if (!this.keys.length) values = [entry as string]
+    // @ts-expect-error fixme ts strict error
     else values = this.keys.map((x) => entry[x])
     const scores = values.map((x) => this.calcAuxSingle(query, x, score))
     let result = scores.sort(this.compareAux)[0]
@@ -62,7 +65,9 @@ export class FuseSearch<T> {
       x.toLocaleLowerCase().includes('deprecated')
     )
     result[0] += deprecated && result[0] != 0 ? 5 : 0
+    // @ts-expect-error fixme ts strict error
     if (entry['postProcessSearchScores']) {
+      // @ts-expect-error fixme ts strict error
       result = entry['postProcessSearchScores'](result) as SearchAuxScore
     }
     return result
@@ -155,8 +160,10 @@ export class NodeFilter<FilterOptionT = string> {
   }
 
   public getAllNodeOptions(nodeDefs: ComfyNodeDefImpl[]): FilterOptionT[] {
+    // @ts-expect-error fixme ts strict error
     return [
       ...new Set(
+        // @ts-expect-error fixme ts strict error
         nodeDefs.reduce((acc, nodeDef) => {
           return [...acc, ...this.getNodeOptions(nodeDef)]
         }, [])

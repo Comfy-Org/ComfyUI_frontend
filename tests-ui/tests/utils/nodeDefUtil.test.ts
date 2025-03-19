@@ -22,7 +22,9 @@ describe('nodeDefUtil', () => {
 
         expect(result).not.toBeNull()
         expect(result?.[0]).toBe('INT')
+        // @ts-expect-error fixme ts strict error
         expect(result?.[1].min).toBe(5)
+        // @ts-expect-error fixme ts strict error
         expect(result?.[1].max).toBe(10)
       })
 
@@ -43,7 +45,9 @@ describe('nodeDefUtil', () => {
 
         expect(result).not.toBeNull()
         expect(result?.[0]).toBe('FLOAT')
+        // @ts-expect-error fixme ts strict error
         expect(result?.[1].min).toBe(5.5)
+        // @ts-expect-error fixme ts strict error
         expect(result?.[1].max).toBe(10.5)
       })
 
@@ -55,7 +59,9 @@ describe('nodeDefUtil', () => {
 
         expect(result).not.toBeNull()
         expect(result?.[0]).toBe('FLOAT')
+        // @ts-expect-error fixme ts strict error
         expect(result?.[1].min).toBe(0.5)
+        // @ts-expect-error fixme ts strict error
         expect(result?.[1].max).toBe(15.5)
       })
 
@@ -67,6 +73,7 @@ describe('nodeDefUtil', () => {
 
         expect(result).not.toBeNull()
         expect(result?.[0]).toBe('INT')
+        // @ts-expect-error fixme ts strict error
         expect(result?.[1].step).toBe(6) // LCM of 2 and 3 is 6
       })
 
@@ -78,6 +85,7 @@ describe('nodeDefUtil', () => {
 
         expect(result).not.toBeNull()
         expect(result?.[0]).toBe('INT')
+        // @ts-expect-error fixme ts strict error
         expect(result?.[1].step).toBe(4) // LCM of 1 and 4 is 4
       })
 
@@ -89,6 +97,7 @@ describe('nodeDefUtil', () => {
 
         expect(result).not.toBeNull()
         expect(result?.[0]).toBe('FLOAT')
+        // @ts-expect-error fixme ts strict error
         expect(result?.[1].step).toBe(0.5)
       })
     })
@@ -103,6 +112,7 @@ describe('nodeDefUtil', () => {
 
         expect(result).not.toBeNull()
         expect(result?.[0]).toBe('COMBO')
+        // @ts-expect-error fixme ts strict error
         expect(result?.[1].options).toEqual(['B', 'C'])
       })
 
@@ -137,9 +147,13 @@ describe('nodeDefUtil', () => {
 
         expect(result).not.toBeNull()
         expect(result?.[0]).toBe('COMBO')
+        // @ts-expect-error fixme ts strict error
         expect(result?.[1].options).toEqual(['B', 'C'])
+        // @ts-expect-error fixme ts strict error
         expect(result?.[1].default).toBe('B')
+        // @ts-expect-error fixme ts strict error
         expect(result?.[1].tooltip).toBe('Select an option')
+        // @ts-expect-error fixme ts strict error
         expect(result?.[1].multiline).toBe(true)
       })
 
@@ -151,6 +165,7 @@ describe('nodeDefUtil', () => {
 
         expect(result).not.toBeNull()
         expect(result?.[0]).toBe('COMBO')
+        // @ts-expect-error fixme ts strict error
         expect(result?.[1].options).toEqual(['C', 'D'])
       })
     })
@@ -188,8 +203,11 @@ describe('nodeDefUtil', () => {
 
         expect(result).not.toBeNull()
         expect(result?.[0]).toBe('STRING')
+        // @ts-expect-error fixme ts strict error
         expect(result?.[1].default).toBe('value2')
+        // @ts-expect-error fixme ts strict error
         expect(result?.[1].tooltip).toBe('Tooltip 2')
+        // @ts-expect-error fixme ts strict error
         expect(result?.[1].step).toBe(1)
       })
 

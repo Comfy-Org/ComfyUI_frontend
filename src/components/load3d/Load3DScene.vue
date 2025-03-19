@@ -95,6 +95,7 @@ watch(
     if (load3d.value) {
       const rawLoad3d = toRaw(load3d.value)
 
+      // @ts-expect-error fixme ts strict error
       rawLoad3d.setEdgeThreshold(newValue)
     }
   }
@@ -132,6 +133,7 @@ const handleEvents = (action: 'add' | 'remove') => {
 onMounted(() => {
   load3d.value = useLoad3dService().registerLoad3d(
     node.value as LGraphNode,
+    // @ts-expect-error fixme ts strict error
     container.value,
     props.type
   )

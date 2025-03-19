@@ -114,8 +114,10 @@ const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
     return {
       key: node.key,
       label: node.leaf ? node.data.display_name : node.label,
+      // @ts-expect-error fixme ts strict error
       leaf: node.leaf,
       data: node.data,
+      // @ts-expect-error fixme ts strict error
       getIcon() {
         if (this.leaf) {
           return 'pi pi-circle-fill'
@@ -132,6 +134,7 @@ const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
       },
       handleClick(e: MouseEvent) {
         if (this.leaf) {
+          // @ts-expect-error fixme ts strict error
           useLitegraphService().addNodeOnGraph(this.data)
         } else {
           toggleNodeOnEvent(e, this)
@@ -173,6 +176,7 @@ const handleSearch = (query: string) => {
   )
 
   nextTick(() => {
+    // @ts-expect-error fixme ts strict error
     expandNode(filteredRoot.value)
   })
 }
@@ -189,6 +193,7 @@ const onAddFilter = (filterAndValue: FilterAndValue) => {
   handleSearch(searchQuery.value)
 }
 
+// @ts-expect-error fixme ts strict error
 const onRemoveFilter = (filterAndValue) => {
   const index = filters.value.findIndex((f) => f === filterAndValue)
   if (index !== -1) {
