@@ -400,7 +400,7 @@ describe('useRemoteWidget', () => {
 
     it('should prevent duplicate in-flight requests', async () => {
       const promise = Promise.resolve({ data: ['non-duplicate'] })
-      vi.mocked(axios.get).mockImplementationOnce(() => promise)
+      vi.mocked(axios.get).mockImplementationOnce(() => promise as any)
 
       const hook = useRemoteWidget(createMockOptions())
       const [result1, result2] = await Promise.all([
@@ -461,7 +461,7 @@ describe('useRemoteWidget', () => {
         resolvePromise = resolve
       })
 
-      vi.mocked(axios.get).mockImplementationOnce(() => delayedPromise)
+      vi.mocked(axios.get).mockImplementationOnce(() => delayedPromise as any)
 
       const hook = useRemoteWidget(createMockOptions())
       hook.getValue()
@@ -482,7 +482,7 @@ describe('useRemoteWidget', () => {
         resolvePromise = resolve
       })
 
-      vi.mocked(axios.get).mockImplementationOnce(() => delayedPromise)
+      vi.mocked(axios.get).mockImplementationOnce(() => delayedPromise as any)
 
       let hook = useRemoteWidget(createMockOptions())
       const fetchPromise = hook.getValue()
