@@ -1313,12 +1313,24 @@ export class ComfyApp {
     return !this.lastNodeErrors
   }
 
-  showErrorOnFileLoad(file) {
-    this.ui.dialog.show(
-      $el('div', [
-        $el('p', { textContent: `Unable to find workflow in ${file.name}` })
-      ]).outerHTML
+  onUnhandledFile(file: File) {
+    // Fire custom event to allow other parts of the app to handle the file
+    const unhandled = api.dispatchCustomEvent(
+      'unhandledFileDrop',
+      { file },
+      {
+        cancelable: true
+      }
     )
+
+    if (unhandled) {
+      // Nothing handled the event, so show the error dialog
+      this.ui.dialog.show(
+        $el('div.unhandled-file-dialog', [
+          $el('p', { textContent: `Unable to find workflow in ${file.name}` })
+        ]).outerHTML
+      )
+    }
   }
 
   /**
@@ -1352,7 +1364,7 @@ export class ComfyApp {
         // @ts-expect-error zod type issue on ComfyWorkflowJSON. Should be resolved after enabling ts-strict globally.
         useWorkflowService().afterLoadNewGraph(fileName, this.serializeGraph())
       } else {
-        this.showErrorOnFileLoad(file)
+        this.onUnhandledFile(file)
       }
     } else if (file.type === 'image/webp') {
       const pngInfo = await getWebpMetadata(file)
@@ -1365,7 +1377,7 @@ export class ComfyApp {
       } else if (prompt) {
         this.loadApiJson(JSON.parse(prompt), fileName)
       } else {
-        this.showErrorOnFileLoad(file)
+        this.onUnhandledFile(file)
       }
     } else if (file.type === 'audio/flac' || file.type === 'audio/x-flac') {
       const pngInfo = await getFlacMetadata(file)
@@ -1377,7 +1389,7 @@ export class ComfyApp {
       } else if (prompt) {
         this.loadApiJson(JSON.parse(prompt), fileName)
       } else {
-        this.showErrorOnFileLoad(file)
+        this.onUnhandledFile(file)
       }
     } else if (file.type === 'video/webm') {
       const webmInfo = await getFromWebmFile(file)
@@ -1386,7 +1398,7 @@ export class ComfyApp {
       } else if (webmInfo.prompt) {
         this.loadApiJson(webmInfo.prompt, fileName)
       } else {
-        this.showErrorOnFileLoad(file)
+        this.onUnhandledFile(file)
       }
     } else if (
       file.type === 'application/json' ||
@@ -1417,7 +1429,7 @@ export class ComfyApp {
       const info = await getLatentMetadata(file)
       // TODO define schema to LatentMetadata
       // @ts-expect-error
-      if (info.workflow) {
+      if (info?.workflow) {
         await this.loadGraphData(
           // @ts-expect-error
           JSON.parse(info.workflow),
@@ -1426,14 +1438,14 @@ export class ComfyApp {
           fileName
         )
         // @ts-expect-error
-      } else if (info.prompt) {
+      } else if (info?.prompt) {
         // @ts-expect-error
         this.loadApiJson(JSON.parse(info.prompt))
       } else {
-        this.showErrorOnFileLoad(file)
+        this.onUnhandledFile(file)
       }
     } else {
-      this.showErrorOnFileLoad(file)
+      this.onUnhandledFile(file)
     }
   }
 

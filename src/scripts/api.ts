@@ -49,6 +49,7 @@ interface QueuePromptRequestBody {
 interface FrontendApiCalls {
   graphChanged: ComfyWorkflowJSON
   promptQueued: { number: number; batchCount: number }
+  unhandledFileDrop: { file: File }
   graphCleared: never
   reconnecting: never
   reconnected: never
@@ -230,20 +231,23 @@ export class ComfyApi extends EventTarget {
    * Provides type safety for the contravariance issue with EventTarget (last checked TS 5.6).
    * @param type The type of event to emit
    * @param detail The detail property used for a custom event ({@link CustomEventInit.detail})
+   * @param init The event config used for a custom event ({@link CustomEventInit})
    */
   dispatchCustomEvent<T extends SimpleApiEvents>(type: T): boolean
   dispatchCustomEvent<T extends ComplexApiEvents>(
     type: T,
-    detail: ApiEventTypes[T] | null
+    detail: ApiEventTypes[T] | null,
+    init?: EventInit
   ): boolean
   dispatchCustomEvent<T extends keyof ApiEventTypes>(
     type: T,
-    detail?: ApiEventTypes[T]
+    detail?: ApiEventTypes[T],
+    init?: EventInit
   ): boolean {
     const event =
       detail === undefined
-        ? new CustomEvent(type)
-        : new CustomEvent(type, { detail })
+        ? new CustomEvent(type, { ...init })
+        : new CustomEvent(type, { detail, ...init })
     return super.dispatchEvent(event)
   }
 

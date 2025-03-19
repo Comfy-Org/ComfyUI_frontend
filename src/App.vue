@@ -16,8 +16,10 @@ import { computed, onMounted } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
+import { api } from '@/scripts/api'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
+import { useDialogService } from './services/dialogService'
 import { electronAPI, isElectron } from './utils/envUtil'
 
 const workspaceStore = useWorkspaceStore()
@@ -45,6 +47,20 @@ onMounted(() => {
 
   if (isElectron()) {
     document.addEventListener('contextmenu', showContextMenu)
+
+    // Handle file drops to import models via electron
+    api.addEventListener('unhandledFileDrop', async (e) => {
+      e.preventDefault() // Prevent unable to find workflow in file error
+
+      const filePath = await electronAPI()['getFilePath'](e.detail.file)
+
+      if (filePath) {
+        useDialogService().showImportModelDialog({
+          path: filePath,
+          file: e.detail.file
+        })
+      }
+    })
   }
 })
 </script>
