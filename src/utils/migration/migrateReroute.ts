@@ -10,6 +10,16 @@ type RerouteNode = ComfyNode & {
   type: 'Reroute'
 }
 
+type LinkExtension = {
+  id: number
+  parentId: number
+}
+
+type RerouteEntry = {
+  reroute: Reroute
+  rerouteNode: RerouteNode
+}
+
 /**
  * Identifies all legacy Reroute nodes in a workflow
  */
@@ -24,101 +34,25 @@ export function findLegacyRerouteNodes(
 /**
  * Creates native reroute points from legacy Reroute nodes
  */
-export function createReroutePoints(rerouteNodes: RerouteNode[]): {
-  reroutes: Reroute[]
-  rerouteIdMap: Map<NodeId, number>
-} {
-  const reroutes: Reroute[] = []
-  const rerouteIdMap = new Map<NodeId, number>()
+export function createReroutePoints(
+  rerouteNodes: RerouteNode[]
+): Map<NodeId, RerouteEntry> {
+  const rerouteMap = new Map<NodeId, RerouteEntry>()
 
   let rerouteIdCounter = 1
   rerouteNodes.forEach((node) => {
     const rerouteId = rerouteIdCounter++
-    rerouteIdMap.set(node.id, rerouteId)
-
-    // Create a new reroute point
-    const reroute: Reroute = {
-      id: rerouteId,
-      pos: node.pos,
-      linkIds: []
-    }
-
-    reroutes.push(reroute)
+    rerouteMap.set(node.id, {
+      reroute: {
+        id: rerouteId,
+        pos: node.pos,
+        linkIds: []
+      },
+      rerouteNode: node
+    })
   })
 
-  return { reroutes, rerouteIdMap }
-}
-
-/**
- * Establishes parent-child relationships between reroutes
- */
-export function establishRerouteRelationships(
-  workflow: WorkflowJSON04,
-  reroutes: Reroute[],
-  rerouteIdMap: Map<NodeId, number>
-): void {
-  // Find links between reroute nodes
-  for (const [
-    _linkId,
-    sourceNodeId,
-    _sourceSlot,
-    targetNodeId,
-    _targetSlot,
-    _dataType
-  ] of workflow.links) {
-    const sourceIsReroute = rerouteIdMap.has(sourceNodeId)
-    const targetIsReroute = rerouteIdMap.has(targetNodeId)
-
-    if (sourceIsReroute && targetIsReroute) {
-      // This is a link between two reroutes
-      const sourceRerouteId = rerouteIdMap.get(sourceNodeId)!
-      const targetRerouteId = rerouteIdMap.get(targetNodeId)!
-
-      // Update the target reroute to have a parent
-      const targetReroute = reroutes.find((r) => r.id === targetRerouteId)!
-      targetReroute.parentId = sourceRerouteId
-    }
-  }
-}
-
-/**
- * Finds all target nodes that a reroute connects to (directly or through child reroutes)
- */
-export function findRerouteTargets(
-  workflow: WorkflowJSON04,
-  rerouteIdMap: Map<NodeId, number>,
-  rerouteNodeId: NodeId
-): Array<{ nodeId: NodeId; slot: number; dataType: string }> {
-  const targets: Array<{ nodeId: NodeId; slot: number; dataType: string }> = []
-
-  // Helper function to recursively find connections
-  const findConnections = (nodeId: NodeId) => {
-    for (const [
-      _linkId,
-      srcNodeId,
-      _sourceSlot,
-      tgtNodeId,
-      targetSlot,
-      dataType
-    ] of workflow.links) {
-      if (srcNodeId === nodeId) {
-        if (rerouteIdMap.has(tgtNodeId)) {
-          // This is a connection to another reroute, recurse
-          findConnections(tgtNodeId)
-        } else {
-          // This is a connection to a regular node
-          targets.push({
-            nodeId: tgtNodeId,
-            slot: targetSlot as number,
-            dataType: dataType as string
-          })
-        }
-      }
-    }
-  }
-
-  findConnections(rerouteNodeId)
-  return targets
+  return rerouteMap
 }
 
 /**
@@ -126,87 +60,90 @@ export function findRerouteTargets(
  */
 export function createNewLinks(
   workflow: WorkflowJSON04,
-  reroutes: Reroute[],
-  rerouteIdMap: Map<NodeId, number>
+  rerouteMap: Map<NodeId, RerouteEntry>
 ): {
   links: ComfyLink[]
-  linkExtensions: { id: number; parentId: number }[]
-  maxLinkId: number
+  linkExtensions: LinkExtension[]
 } {
-  const newLinks: ComfyLink[] = []
-  const linkExtensions: { id: number; parentId: number }[] = []
-  const processedLinks = new Set<number>()
+  const links: ComfyLink[] = []
+  const linkExtensions: LinkExtension[] = []
+
+  const rerouteMapByRerouteId = new Map<number, RerouteEntry>(
+    Array.from(rerouteMap.values()).map((entry) => [entry.reroute.id, entry])
+  )
+  const linksMap = new Map<number, ComfyLink>(
+    Array.from(workflow.links).map((link) => [link[0], link])
+  )
 
   // Process each link in the workflow
   for (const link of workflow.links) {
     const [
       linkId,
       sourceNodeId,
-      sourceSlot,
+      _sourceSlot,
       targetNodeId,
       _targetSlot,
       _dataType
     ] = link
 
     // Check if this link connects to or from a reroute node
-    const sourceIsReroute = rerouteIdMap.has(sourceNodeId)
-    const targetIsReroute = rerouteIdMap.has(targetNodeId)
+    const sourceEntry = rerouteMap.get(sourceNodeId)
+    const targetEntry = rerouteMap.get(targetNodeId)
+    const sourceIsReroute = !!sourceEntry
+    const targetIsReroute = !!targetEntry
 
     if (!sourceIsReroute && !targetIsReroute) {
       // If neither end is a reroute, keep the link as is
-      newLinks.push(link)
-      continue
+      links.push(link)
+    } else if (sourceIsReroute && !targetIsReroute) {
+      // This is a link from a reroute node to a regular node
+      linkExtensions.push({
+        id: linkId,
+        parentId: sourceEntry.reroute.id
+      })
+    } else if (sourceIsReroute && targetIsReroute) {
+      targetEntry.reroute.parentId = sourceEntry.reroute.id
     }
+  }
 
-    // Mark this link as processed
-    processedLinks.add(linkId)
+  // Populate linkIds on reroute nodes
+  for (const linkExtension of linkExtensions) {
+    let entry = rerouteMapByRerouteId.get(linkExtension.parentId)
 
-    if (!sourceIsReroute && targetIsReroute) {
-      // This is a link from a regular node to a reroute
-      const rerouteId = rerouteIdMap.get(targetNodeId)!
+    while (entry) {
+      const reroute = entry.reroute
+      reroute.linkIds ??= []
+      reroute.linkIds.push(linkExtension.id)
 
-      // Find all nodes that this reroute connects to
-      const targets = findRerouteTargets(workflow, rerouteIdMap, targetNodeId)
+      if (reroute.parentId) {
+        entry = rerouteMapByRerouteId.get(reroute.parentId)
+      } else {
+        const rerouteNode = entry.rerouteNode
+        const rerouteInputLink = linksMap.get(
+          rerouteNode?.inputs?.[0]?.link ?? -1
+        )
+        const rerouteOutputLink = linksMap.get(linkExtension.id)
 
-      // Create new direct links from the source to each target
-      for (const {
-        nodeId: tgtNodeId,
-        slot: tgtSlot,
-        dataType: dt
-      } of targets) {
-        const newLinkId = workflow.last_link_id + newLinks.length + 1
-        newLinks.push([
-          newLinkId,
-          sourceNodeId,
-          sourceSlot,
-          tgtNodeId,
-          tgtSlot,
-          dt
-        ])
+        if (rerouteInputLink && rerouteOutputLink) {
+          const [_, sourceNodeId, sourceSlot] = rerouteInputLink
+          const [linkId, __, ___, targetNodeId, targetSlot, dataType] =
+            rerouteOutputLink
 
-        // Add this link to the reroute's linkIds
-        const reroute = reroutes.find((r) => r.id === rerouteId)!
-        if (!reroute.linkIds) {
-          reroute.linkIds = []
+          links.push([
+            linkId,
+            sourceNodeId,
+            sourceSlot,
+            targetNodeId,
+            targetSlot,
+            dataType
+          ])
         }
-        reroute.linkIds.push(newLinkId)
-
-        // Create a link extension
-        linkExtensions.push({
-          id: newLinkId,
-          parentId: rerouteId
-        })
+        entry = undefined
       }
     }
   }
 
-  // Calculate the maximum link ID
-  const maxLinkId = Math.max(
-    workflow.last_link_id,
-    ...newLinks.map((link) => link[0])
-  )
-
-  return { links: newLinks, linkExtensions, maxLinkId }
+  return { links, linkExtensions }
 }
 
 /**
@@ -232,26 +169,20 @@ export const migrateLegacyRerouteNodes = (
   }
 
   // Create native reroute points
-  const { reroutes, rerouteIdMap } = createReroutePoints(legacyRerouteNodes)
-
-  // Establish parent-child relationships between reroutes
-  establishRerouteRelationships(workflow, reroutes, rerouteIdMap)
+  const rerouteMap = createReroutePoints(legacyRerouteNodes)
 
   // Create new links and link extensions
-  const { links, linkExtensions, maxLinkId } = createNewLinks(
-    workflow,
-    reroutes,
-    rerouteIdMap
-  )
+  const { links, linkExtensions } = createNewLinks(workflow, rerouteMap)
 
   // Update the workflow
   newWorkflow.links = links
   newWorkflow.nodes = newWorkflow.nodes.filter(
     (node) => node.type !== 'Reroute'
   )
-  newWorkflow.extra.reroutes = reroutes
+  newWorkflow.extra.reroutes = Array.from(rerouteMap.values()).map(
+    (entry) => entry.reroute
+  )
   newWorkflow.extra.linkExtensions = linkExtensions
-  newWorkflow.last_link_id = maxLinkId
 
   return newWorkflow
 }
