@@ -281,9 +281,7 @@ export type ComfyNode = z.infer<typeof zComfyNode>
 export type Reroute = z.infer<typeof zReroute>
 export type WorkflowJSON04 = z.infer<typeof zComfyWorkflow>
 export type WorkflowJSON10 = z.infer<typeof zComfyWorkflow1>
-export type ComfyWorkflowJSON = z.infer<
-  typeof zComfyWorkflow | typeof zComfyWorkflow1
->
+export type ComfyWorkflowJSON = z.infer<typeof zComfyWorkflow>
 
 const zWorkflowVersion = z.object({
   version: z.number()
@@ -301,9 +299,6 @@ export async function validateComfyWorkflow(
     const error = fromZodError(versionResult.error)
     onError(`Workflow does not contain a valid version.  Zod error:\n${error}`)
     return null
-  } else if (versionResult.data.version === 1) {
-    // Schema version 1
-    result = await zComfyWorkflow1.safeParseAsync(data)
   } else {
     // Unknown or old version: 0.4
     result = await zComfyWorkflow.safeParseAsync(data)

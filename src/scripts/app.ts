@@ -44,6 +44,7 @@ import { ExtensionManager } from '@/types/extensionTypes'
 import { ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
 import { executeWidgetsCallback, isImageNode } from '@/utils/litegraphUtil'
+import { migrateLegacyRerouteNodes } from '@/utils/migration/migrateReroute'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import { type ComfyApi, api } from './api'
@@ -1060,6 +1061,9 @@ export class ComfyApp {
       // Ideally we should not block users from loading the workflow.
       graphData = validatedGraphData ?? graphData
     }
+
+    // Migrate legacy reroute nodes to the new format
+    graphData = migrateLegacyRerouteNodes(graphData)
 
     useWorkflowService().beforeLoadNewGraph()
 
