@@ -31,8 +31,8 @@
                 <span v-show="expandedPanels[index]" class="text-muted">
                   {{
                     index === taskPanels.length - 1
-                      ? 'In progress'
-                      : 'Completed ✓'
+                      ? $t('g.inProgress')
+                      : $t('g.completed') + ' ✓'
                   }}
                 </span>
               </div>
@@ -51,11 +51,17 @@
             />
           </template>
           <div
+            :ref="
+              index === taskPanels.length - 1
+                ? (el) => (lastPanelRef = el as HTMLElement)
+                : undefined
+            "
             class="overflow-y-auto h-64 rounded-lg bg-black"
             :class="{
               'h-64': index !== taskPanels.length - 1,
               'flex-grow': index === taskPanels.length - 1
             }"
+            @scroll="handleScroll"
           >
             <div class="h-full">
               <div
@@ -89,6 +95,7 @@ const progressDialogContent = useManagerProgressDialogStore()
 
 const taskPanels = computed(() => taskLogs)
 const isExpanded = computed(() => progressDialogContent.isExpanded)
+const isCollapsed = computed(() => !isExpanded.value)
 
 const expandedPanels = ref<Record<number, boolean>>({})
 const togglePanel = (index: number) => {
@@ -96,16 +103,61 @@ const togglePanel = (index: number) => {
 }
 
 const sectionsContainerRef = ref<HTMLElement | null>(null)
-const { y: scrollY } = useScroll(sectionsContainerRef)
+const { y: scrollY } = useScroll(sectionsContainerRef, {
+  eventListenerOptions: {
+    passive: true
+  }
+})
 
-const scrollToBottom = () => {
+const lastPanelRef = ref<HTMLElement | null>(null)
+const isUserScrolling = ref(false)
+const lastPanelLogs = computed(() => taskPanels.value?.at(-1)?.logs)
+
+const isAtBottom = (el: HTMLElement | null) => {
+  if (!el) return false
+  const threshold = 20
+  return Math.abs(el.scrollHeight - el.scrollTop - el.clientHeight) < threshold
+}
+
+const scrollLastPanelToBottom = () => {
+  if (!lastPanelRef.value || isUserScrolling.value) return
+  lastPanelRef.value.scrollTop = lastPanelRef.value.scrollHeight
+}
+const scrollContentToBottom = () => {
   scrollY.value = sectionsContainerRef.value?.scrollHeight ?? 0
 }
 
-whenever(() => isExpanded.value, scrollToBottom)
+const resetUserScrolling = () => {
+  isUserScrolling.value = false
+}
+const handleScroll = (e: Event) => {
+  const target = e.target as HTMLElement
+  if (target !== lastPanelRef.value) return
+
+  isUserScrolling.value = !isAtBottom(target)
+}
+
+const onLogsAdded = () => {
+  // If user is scrolling manually, don't automatically scroll to bottom
+  if (isUserScrolling.value) return
+
+  scrollLastPanelToBottom()
+}
+
+const expandLastPanel = () => {
+  if (taskPanels.value.length > 0) {
+    expandedPanels.value[taskPanels.value.length - 1] = true
+  }
+}
+
+whenever(lastPanelLogs, onLogsAdded, { flush: 'post', deep: true })
+whenever(() => isExpanded.value, scrollContentToBottom)
+whenever(isCollapsed, resetUserScrolling)
+
 onMounted(() => {
   expandedPanels.value = {}
-  scrollToBottom()
+  scrollContentToBottom()
+  expandLastPanel()
 })
 
 onBeforeUnmount(() => {
