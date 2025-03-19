@@ -240,6 +240,7 @@ const onResultsChange = () => {
 
 whenever(selectedTab, onTabChange)
 watch(searchResults, onResultsChange, { flush: 'pre' })
+watch(() => comfyManagerStore.installedPacksIds, onResultsChange)
 
 const isLoading = computed(() => {
   if (isSearchLoading.value)
