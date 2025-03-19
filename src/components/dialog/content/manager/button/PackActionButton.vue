@@ -6,12 +6,12 @@
       'w-full': fullWidth,
       'w-min-content': !fullWidth
     }"
-    :disabled="isExecuted"
+    :disabled="isInstalling"
     v-bind="$attrs"
     @click="onClick"
   >
     <span class="py-2.5 px-3">
-      <template v-if="isExecuted">
+      <template v-if="isInstalling">
         {{ loadingMessage ?? $t('g.loading') }}
       </template>
       <template v-else>
@@ -23,7 +23,9 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import { ref } from 'vue'
+import { inject, ref } from 'vue'
+
+import { IsInstallingKey } from '@/types/comfyManagerTypes'
 
 const {
   label,
@@ -43,10 +45,10 @@ defineOptions({
   inheritAttrs: false
 })
 
-const isExecuted = ref(false)
+const isInstalling = inject(IsInstallingKey, ref(false))
 
 const onClick = (): void => {
-  isExecuted.value = true
+  isInstalling.value = true
   emit('action')
 }
 </script>

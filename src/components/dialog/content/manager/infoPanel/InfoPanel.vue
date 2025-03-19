@@ -44,7 +44,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { whenever } from '@vueuse/core'
+import { computed, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PackStatusMessage from '@/components/dialog/content/manager/PackStatusMessage.vue'
@@ -54,6 +55,7 @@ import InfoPanelHeader from '@/components/dialog/content/manager/infoPanel/InfoP
 import InfoTabs from '@/components/dialog/content/manager/infoPanel/InfoTabs.vue'
 import MetadataRow from '@/components/dialog/content/manager/infoPanel/MetadataRow.vue'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import { IsInstallingKey } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
 
 interface InfoItem {
@@ -65,6 +67,14 @@ interface InfoItem {
 const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']
 }>()
+
+const managerStore = useComfyManagerStore()
+const isInstalled = computed(() => managerStore.isPackInstalled(nodePack.id))
+const isInstalling = ref(false)
+provide(IsInstallingKey, isInstalling)
+whenever(isInstalled, () => {
+  isInstalling.value = false
+})
 
 const { isPackInstalled } = useComfyManagerStore()
 
