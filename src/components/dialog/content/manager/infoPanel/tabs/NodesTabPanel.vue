@@ -42,3 +42,14 @@ const placeholderNodeDef: ComfyNodeDef = {
   python_module: 'nodes'
 }
 </script>
+
+<style scoped>
+:deep(._sb_node_preview) {
+  min-width: unset !important;
+  width: 100%;
+}
+
+:deep(._sb_col) {
+  font-size: 10px !important;
+}
+</style>
