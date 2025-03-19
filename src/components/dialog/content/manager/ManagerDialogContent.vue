@@ -37,10 +37,7 @@
               v-if="isLoading"
               class="w-full h-full overflow-auto scrollbar-hide"
             >
-              <GridSkeleton
-                :grid-style="GRID_STYLE"
-                :skeletonCardCount="skeletonCardCount"
-              />
+              <GridSkeleton :grid-style="GRID_STYLE" :skeleton-card-count />
             </div>
             <NoResultsPlaceholder
               v-else-if="searchResults.length === 0"
