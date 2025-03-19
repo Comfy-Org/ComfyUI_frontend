@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
 import { ComfyApp } from '../../scripts/app'

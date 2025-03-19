@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { describe, expect, it } from 'vitest'
 
 import { ComfyNodeDef } from '@/schemas/nodeDefSchema'

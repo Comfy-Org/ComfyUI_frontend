@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { Settings } from '@/schemas/apiSchema'
 import type { ComfyApp } from '@/scripts/app'
 

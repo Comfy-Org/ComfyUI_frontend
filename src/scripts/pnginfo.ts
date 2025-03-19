@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { LiteGraph } from '@comfyorg/litegraph'
 
 import { api } from './api'

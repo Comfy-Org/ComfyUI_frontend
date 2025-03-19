@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { describe, expect, it } from 'vitest'
 
 import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'

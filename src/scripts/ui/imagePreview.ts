@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { app } from '../app'
 import { $el } from '../ui'
 

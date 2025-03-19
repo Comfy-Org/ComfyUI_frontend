@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import '@comfyorg/litegraph/style.css'
 import { definePreset } from '@primevue/themes'
 import Aura from '@primevue/themes/aura'

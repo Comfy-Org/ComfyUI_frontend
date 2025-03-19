@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import type { IContextMenuValue } from '@comfyorg/litegraph'
 import { LGraphCanvas, LGraphNode, LiteGraph } from '@comfyorg/litegraph'
 

@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import type { LGraph, LGraphCanvas, LGraphNode } from '@comfyorg/litegraph'
 import { LiteGraph } from '@comfyorg/litegraph'
 

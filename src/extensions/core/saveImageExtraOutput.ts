@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 
 import { app } from '../../scripts/app'

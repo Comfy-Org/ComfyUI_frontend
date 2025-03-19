@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { t } from '@/i18n'
 import { useToastStore } from '@/stores/toastStore'
 

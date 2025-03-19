@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'

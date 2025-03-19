@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import Fuse, { FuseSearchOptions, IFuseOptions } from 'fuse.js'
 import _ from 'lodash'
 

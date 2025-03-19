@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { Form } from '@primevue/forms'
 import { mount } from '@vue/test-utils'
 import Checkbox from 'primevue/checkbox'

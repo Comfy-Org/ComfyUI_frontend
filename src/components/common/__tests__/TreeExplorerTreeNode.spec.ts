@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
 import Badge from 'primevue/badge'

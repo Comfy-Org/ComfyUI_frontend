@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import type { IWidget, LGraphNode } from '@comfyorg/litegraph'
 import type { IStringWidget } from '@comfyorg/litegraph/dist/types/widgets'
 

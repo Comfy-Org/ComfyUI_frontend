@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { LGraphNode, LiteGraph } from '@comfyorg/litegraph'
 import type {
   IFoundSlot,

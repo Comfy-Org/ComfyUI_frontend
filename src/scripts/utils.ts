@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { applyTextReplacements as _applyTextReplacements } from '@/utils/searchAndReplace'
 
 import { api } from './api'

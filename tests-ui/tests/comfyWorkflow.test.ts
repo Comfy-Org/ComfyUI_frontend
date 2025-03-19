@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import fs from 'fs'
 import { describe, expect, it } from 'vitest'
 
