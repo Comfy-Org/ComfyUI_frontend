@@ -26,6 +26,11 @@ export type TaskLog = {
   logs: string[]
 }
 
+export interface UseNodePacksOptions {
+  immediate?: boolean
+  maxConcurrent?: number
+}
+
 enum ManagerPackState {
   /** Pack is installed and enabled */
   INSTALLED = 'installed',
