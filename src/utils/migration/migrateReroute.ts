@@ -211,7 +211,7 @@ export function createNewLinks(
     // Mark this link as processed
     processedLinks.add(linkId)
 
-    if (targetIsReroute) {
+    if (!sourceIsReroute && targetIsReroute) {
       // This is a link from a regular node to a reroute
       const rerouteId = rerouteIdMap.get(targetNodeId)!
 
@@ -247,10 +247,6 @@ export function createNewLinks(
           parentId: rerouteId
         })
       }
-    } else if (sourceIsReroute && !targetIsReroute) {
-      // This is a link from a reroute to a regular node
-      // These should be handled by the targetIsReroute case above
-      // when we process the original source -> reroute link
     }
   }
 
