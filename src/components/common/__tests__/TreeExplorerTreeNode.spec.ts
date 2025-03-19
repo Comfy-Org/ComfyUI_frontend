@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
 import Badge from 'primevue/badge'
@@ -59,6 +58,7 @@ describe('TreeExplorerTreeNode', () => {
     expect(wrapper.findComponent(EditableText).props('modelValue')).toBe(
       'Test Node'
     )
+    // @ts-expect-error fixme ts strict error
     expect(wrapper.findComponent(Badge).props()['value'].toString()).toBe('3')
   })
 

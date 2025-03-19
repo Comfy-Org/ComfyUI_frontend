@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { Form } from '@primevue/forms'
 import { mount } from '@vue/test-utils'
 import Checkbox from 'primevue/checkbox'
@@ -95,12 +94,15 @@ vi.mock('@primevue/forms', () => ({
     },
     methods: {
       onSubmit() {
+        // @ts-expect-error fixme ts strict error
         this.$emit('submit', {
           valid: true,
+          // @ts-expect-error fixme ts strict error
           values: this.formValues
         })
       },
       updateFieldValue(name: string, value: any) {
+        // @ts-expect-error fixme ts strict error
         this.formValues[name] = value
       }
     }
@@ -116,13 +118,17 @@ vi.mock('@primevue/forms', () => ({
       }
     },
     methods: {
+      // @ts-expect-error fixme ts strict error
       updateValue(value) {
+        // @ts-expect-error fixme ts strict error
         this.modelValue = value
+        // @ts-expect-error fixme ts strict error
         let parent = this.$parent
         while (parent && parent.$options.name !== 'Form') {
           parent = parent.$parent
         }
         if (parent) {
+          // @ts-expect-error fixme ts strict error
           parent.updateFieldValue(this.name, value)
         }
       }
@@ -163,6 +169,7 @@ describe('ReportIssuePanel', () => {
 
     for (const field of DEFAULT_FIELDS) {
       const checkbox = checkboxes.find(
+        // @ts-expect-error fixme ts strict error
         (checkbox) => checkbox.props('value') === field
       )
       expect(checkbox).toBeDefined()
@@ -218,12 +225,11 @@ describe('ReportIssuePanel', () => {
     })
 
     // Filter out the contact preferences checkboxes
-    const fieldCheckboxes = wrapper
-      .findAllComponents(Checkbox)
-      .filter(
-        (checkbox) =>
-          !['followUp', 'notifyOnResolution'].includes(checkbox.props('value'))
-      )
+    const fieldCheckboxes = wrapper.findAllComponents(Checkbox).filter(
+      // @ts-expect-error fixme ts strict error
+      (checkbox) =>
+        !['followUp', 'notifyOnResolution'].includes(checkbox.props('value'))
+    )
     expect(fieldCheckboxes.length).toBe(1)
     expect(fieldCheckboxes.at(0)?.props('value')).toBe('Settings')
   })
@@ -235,6 +241,7 @@ describe('ReportIssuePanel', () => {
     })
     const customCheckbox = wrapper
       .findAllComponents(Checkbox)
+      // @ts-expect-error fixme ts strict error
       .find((checkbox) => checkbox.props('value') === 'CustomField')
     expect(customCheckbox).toBeDefined()
   })

@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'

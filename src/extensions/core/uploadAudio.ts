@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import type { IWidget, LGraphNode } from '@comfyorg/litegraph'
 import type { IStringWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
@@ -64,7 +63,9 @@ async function uploadFile(
       let path = data.name
       if (data.subfolder) path = data.subfolder + '/' + path
 
+      // @ts-expect-error fixme ts strict error
       if (!audioWidget.options.values.includes(path)) {
+        // @ts-expect-error fixme ts strict error
         audioWidget.options.values.push(path)
       }
 
@@ -78,6 +79,7 @@ async function uploadFile(
       useToastStore().addAlert(resp.status + ' - ' + resp.statusText)
     }
   } catch (error) {
+    // @ts-expect-error fixme ts strict error
     useToastStore().addAlert(error)
   }
 }
@@ -89,9 +91,11 @@ app.registerExtension({
   async beforeRegisterNodeDef(nodeType, nodeData) {
     if (
       ['LoadAudio', 'SaveAudio', 'PreviewAudio'].includes(
+        // @ts-expect-error fixme ts strict error
         nodeType.prototype.comfyClass
       )
     ) {
+      // @ts-expect-error fixme ts strict error
       nodeData.input.required.audioUI = ['AUDIO_UI', {}]
     }
   },
@@ -115,6 +119,7 @@ app.registerExtension({
           // Populate the audio widget UI on node execution.
           const onExecuted = node.onExecuted
           node.onExecuted = function (message: any) {
+            // @ts-expect-error fixme ts strict error
             onExecuted?.apply(this, arguments)
             const audios = message.audio
             if (!audios) return
@@ -133,6 +138,7 @@ app.registerExtension({
     for (const [nodeId, output] of Object.entries(nodeOutputs)) {
       const node = app.graph.getNodeById(nodeId)
       if ('audio' in output) {
+        // @ts-expect-error fixme ts strict error
         const audioUIWidget = node.widgets.find(
           (w) => w.name === 'audioUI'
         ) as unknown as DOMWidget<HTMLAudioElement, string>
@@ -157,9 +163,11 @@ app.registerExtension({
     return {
       AUDIOUPLOAD(node, inputName: string) {
         // The widget that allows user to select file.
+        // @ts-expect-error fixme ts strict error
         const audioWidget = node.widgets.find(
           (w: IWidget) => w.name === 'audio'
         ) as IStringWidget
+        // @ts-expect-error fixme ts strict error
         const audioUIWidget = node.widgets.find(
           (w: IWidget) => w.name === 'audioUI'
         ) as unknown as DOMWidget<HTMLAudioElement, string>
@@ -178,6 +186,7 @@ app.registerExtension({
         // Load saved audio file widget values if restoring from workflow
         const onGraphConfigured = node.onGraphConfigured
         node.onGraphConfigured = function () {
+          // @ts-expect-error fixme ts strict error
           onGraphConfigured?.apply(this, arguments)
           if (audioWidget.value) {
             onAudioWidgetUpdate()

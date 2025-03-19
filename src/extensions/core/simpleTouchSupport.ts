@@ -1,18 +1,23 @@
-// @ts-strict-ignore
 import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
 
 import { app } from '../../scripts/app'
 
+// @ts-expect-error fixme ts strict error
 let touchZooming
 let touchCount = 0
 
 app.registerExtension({
   name: 'Comfy.SimpleTouchSupport',
   setup() {
+    // @ts-expect-error fixme ts strict error
     let touchDist
+    // @ts-expect-error fixme ts strict error
     let touchTime
+    // @ts-expect-error fixme ts strict error
     let lastTouch
+    // @ts-expect-error fixme ts strict error
     let lastScale
+    // @ts-expect-error fixme ts strict error
     function getMultiTouchPos(e) {
       return Math.hypot(
         e.touches[0].clientX - e.touches[1].clientX,
@@ -20,6 +25,7 @@ app.registerExtension({
       )
     }
 
+    // @ts-expect-error fixme ts strict error
     function getMultiTouchCenter(e) {
       return {
         clientX: (e.touches[0].clientX + e.touches[1].clientX) / 2,
@@ -27,6 +33,7 @@ app.registerExtension({
       }
     }
 
+    // @ts-expect-error fixme ts strict error
     app.canvasEl.parentElement.addEventListener(
       'touchstart',
       (e: TouchEvent) => {
@@ -52,10 +59,12 @@ app.registerExtension({
       true
     )
 
+    // @ts-expect-error fixme ts strict error
     app.canvasEl.parentElement.addEventListener('touchend', (e: TouchEvent) => {
       touchCount--
 
       if (e.touches?.length !== 1) touchZooming = false
+      // @ts-expect-error fixme ts strict error
       if (touchTime && !e.touches?.length) {
         if (new Date().getTime() - touchTime > 600) {
           if (e.target === app.canvasEl) {
@@ -73,10 +82,12 @@ app.registerExtension({
       }
     })
 
+    // @ts-expect-error fixme ts strict error
     app.canvasEl.parentElement.addEventListener(
       'touchmove',
       (e) => {
         touchTime = null
+        // @ts-expect-error fixme ts strict error
         if (e.touches?.length === 2 && lastTouch && !e.ctrlKey && !e.shiftKey) {
           e.preventDefault() // Prevent browser from zooming when two textareas are touched
           app.canvas.pointer.isDown = false
@@ -89,6 +100,7 @@ app.registerExtension({
 
           const center = getMultiTouchCenter(e)
 
+          // @ts-expect-error fixme ts strict error
           let scale = (lastScale * newTouchDist) / touchDist
 
           const newX = (center.clientX - lastTouch.clientX) / scale
@@ -112,6 +124,7 @@ app.registerExtension({
 
           const newScale = app.canvas.ds.scale
 
+          // @ts-expect-error fixme ts strict error
           const convertScaleToOffset = (scale) => [
             center.clientX / scale - app.canvas.ds.offset[0],
             center.clientY / scale - app.canvas.ds.offset[1]
@@ -135,17 +148,21 @@ app.registerExtension({
 
 const processMouseDown = LGraphCanvas.prototype.processMouseDown
 LGraphCanvas.prototype.processMouseDown = function () {
+  // @ts-expect-error fixme ts strict error
   if (touchZooming || touchCount) {
     return
   }
   app.canvas.pointer.isDown = false // Prevent context menu from opening on second tap
+  // @ts-expect-error fixme ts strict error
   return processMouseDown.apply(this, arguments)
 }
 
 const processMouseMove = LGraphCanvas.prototype.processMouseMove
 LGraphCanvas.prototype.processMouseMove = function () {
+  // @ts-expect-error fixme ts strict error
   if (touchZooming || touchCount > 1) {
     return
   }
+  // @ts-expect-error fixme ts strict error
   return processMouseMove.apply(this, arguments)
 }

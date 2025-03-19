@@ -55,6 +55,7 @@ const classArray = computed(() => {
   } else if (typeof props.class === 'string') {
     return props.class.split(' ')
   } else if (typeof props.class === 'object') {
+    // @ts-expect-error fixme ts strict error
     return Object.keys(props.class).filter((key) => props.class[key])
   }
   return []

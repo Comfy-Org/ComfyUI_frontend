@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
 import { LGraphNode, type NodeId } from '@comfyorg/litegraph/dist/LGraphNode'
 
@@ -40,9 +39,11 @@ const Workflow = {
     Registered: 1,
     InWorkflow: 2
   },
+  // @ts-expect-error fixme ts strict error
   isInUseGroupNode(name) {
     const id = `${PREFIX}${SEPARATOR}${name}`
     // Check if lready registered/in use in this workflow
+    // @ts-expect-error fixme ts strict error
     if (app.graph.extra?.groupNodes?.[name]) {
       if (app.graph.nodes.find((n) => n.type === id)) {
         return Workflow.InUse.InWorkflow
@@ -57,12 +58,14 @@ const Workflow = {
     if (!extra) app.graph.extra = extra = {}
     let groupNodes = extra.groupNodes
     if (!groupNodes) extra.groupNodes = groupNodes = {}
+    // @ts-expect-error fixme ts strict error
     groupNodes[name] = data
   }
 }
 
 class GroupNodeBuilder {
   nodes: LGraphNode[]
+  // @ts-expect-error fixme ts strict error
   nodeData: GroupNodeWorkflowData
 
   constructor(nodes: LGraphNode[]) {
@@ -121,15 +124,18 @@ class GroupNodeBuilder {
   }
 
   getNodeData() {
+    // @ts-expect-error fixme ts strict error
     const storeLinkTypes = (config) => {
       // Store link types for dynamically typed nodes e.g. reroutes
       for (const link of config.links) {
         const origin = app.graph.getNodeById(link[4])
+        // @ts-expect-error fixme ts strict error
         const type = origin.outputs[link[1]].type
         link.push(type)
       }
     }
 
+    // @ts-expect-error fixme ts strict error
     const storeExternalLinks = (config) => {
       // Store any external links to the group in the config so when rebuilding we add extra slots
       config.external = []
@@ -160,6 +166,7 @@ class GroupNodeBuilder {
 
     // Use the built in copyToClipboard function to generate the node data we need
     try {
+      // @ts-expect-error fixme ts strict error
       const serialised = serialise(this.nodes, app.canvas.graph)
       const config = JSON.parse(serialised)
 
@@ -186,12 +193,18 @@ export class GroupNodeConfig {
   primitiveToWidget: {}
   nodeInputs: {}
   outputVisibility: any[]
+  // @ts-expect-error fixme ts strict error
   nodeDef: ComfyNodeDef
+  // @ts-expect-error fixme ts strict error
   inputs: any[]
+  // @ts-expect-error fixme ts strict error
   linksFrom: {}
+  // @ts-expect-error fixme ts strict error
   linksTo: {}
+  // @ts-expect-error fixme ts strict error
   externalFrom: {}
 
+  // @ts-expect-error fixme ts strict error
   constructor(name, nodeData) {
     this.name = name
     this.nodeData = nodeData
@@ -222,6 +235,7 @@ export class GroupNodeConfig {
       category: 'group nodes' + (SEPARATOR + source),
       input: { required: {} },
       description: `Group node combining ${this.nodeData.nodes
+        // @ts-expect-error fixme ts strict error
         .map((n) => n.type)
         .join(', ')}`,
       python_module: 'custom_nodes.' + this.name,
@@ -239,8 +253,10 @@ export class GroupNodeConfig {
     }
 
     for (const p of this.#convertedToProcess) {
+      // @ts-expect-error fixme ts strict error
       p()
     }
+    // @ts-expect-error fixme ts strict error
     this.#convertedToProcess = null
     await app.registerNodeDef(`${PREFIX}${SEPARATOR}` + this.name, this.nodeDef)
     useNodeDefStore().addNodeDef(this.nodeDef)
@@ -258,31 +274,43 @@ export class GroupNodeConfig {
       // Skip links outside the copy config
       if (sourceNodeId == null) continue
 
+      // @ts-expect-error fixme ts strict error
       if (!this.linksFrom[sourceNodeId]) {
+        // @ts-expect-error fixme ts strict error
         this.linksFrom[sourceNodeId] = {}
       }
+      // @ts-expect-error fixme ts strict error
       if (!this.linksFrom[sourceNodeId][sourceNodeSlot]) {
+        // @ts-expect-error fixme ts strict error
         this.linksFrom[sourceNodeId][sourceNodeSlot] = []
       }
+      // @ts-expect-error fixme ts strict error
       this.linksFrom[sourceNodeId][sourceNodeSlot].push(l)
 
+      // @ts-expect-error fixme ts strict error
       if (!this.linksTo[targetNodeId]) {
+        // @ts-expect-error fixme ts strict error
         this.linksTo[targetNodeId] = {}
       }
+      // @ts-expect-error fixme ts strict error
       this.linksTo[targetNodeId][targetNodeSlot] = l
     }
 
     if (this.nodeData.external) {
       for (const ext of this.nodeData.external) {
+        // @ts-expect-error fixme ts strict error
         if (!this.externalFrom[ext[0]]) {
+          // @ts-expect-error fixme ts strict error
           this.externalFrom[ext[0]] = { [ext[1]]: ext[2] }
         } else {
+          // @ts-expect-error fixme ts strict error
           this.externalFrom[ext[0]][ext[1]] = ext[2]
         }
       }
     }
   }
 
+  // @ts-expect-error fixme ts strict error
   processNode(node, seenInputs, seenOutputs) {
     const def = this.getNodeDef(node)
     if (!def) return
@@ -293,10 +321,13 @@ export class GroupNodeConfig {
     if (def.output?.length) this.processNodeOutputs(node, seenOutputs, def)
   }
 
+  // @ts-expect-error fixme ts strict error
   getNodeDef(node) {
+    // @ts-expect-error fixme ts strict error
     const def = globalDefs[node.type]
     if (def) return def
 
+    // @ts-expect-error fixme ts strict error
     const linksFrom = this.linksFrom[node.index]
     if (node.type === 'PrimitiveNode') {
       // Skip as its not linked
@@ -307,12 +338,14 @@ export class GroupNodeConfig {
         // Use the array items
         const source = node.outputs[0].widget.name
         const fromTypeName = this.nodeData.nodes[linksFrom['0'][0][2]].type
+        // @ts-expect-error fixme ts strict error
         const fromType = globalDefs[fromTypeName]
         const input =
           fromType.input.required[source] ?? fromType.input.optional[source]
         type = input[0]
       }
 
+      // @ts-expect-error fixme ts strict error
       const def = (this.primitiveDefs[node.index] = {
         input: {
           required: {
@@ -325,7 +358,9 @@ export class GroupNodeConfig {
       })
       return def
     } else if (node.type === 'Reroute') {
+      // @ts-expect-error fixme ts strict error
       const linksTo = this.linksTo[node.index]
+      // @ts-expect-error fixme ts strict error
       if (linksTo && linksFrom && !this.externalFrom[node.index]?.[0]) {
         // Being used internally
         return null
@@ -341,6 +376,7 @@ export class GroupNodeConfig {
             rerouteType = input.type
           }
           if (input.widget) {
+            // @ts-expect-error fixme ts strict error
             const targetDef = globalDefs[node.type]
             const targetWidget =
               targetDef.input.required[input.widget.name] ??
@@ -373,6 +409,7 @@ export class GroupNodeConfig {
         }
         if (rerouteType === '*') {
           // Check for an external link
+          // @ts-expect-error fixme ts strict error
           const t = this.externalFrom[node.index]?.[0]
           if (t) {
             rerouteType = t
@@ -402,10 +439,12 @@ export class GroupNodeConfig {
     )
   }
 
+  // @ts-expect-error fixme ts strict error
   getInputConfig(node, inputName, seenInputs, config, extra?) {
     const customConfig = this.nodeData.config?.[node.index]?.input?.[inputName]
     let name =
       customConfig?.name ??
+      // @ts-expect-error fixme ts strict error
       node.inputs?.find((inp) => inp.name === inputName)?.label ??
       inputName
     let key = name
@@ -427,6 +466,7 @@ export class GroupNodeConfig {
     if (config[0] === 'IMAGEUPLOAD') {
       if (!extra) extra = {}
       extra.widget =
+        // @ts-expect-error fixme ts strict error
         this.oldToNewWidgetMap[node.index]?.[config[1]?.widget ?? 'image'] ??
         'image'
     }
@@ -438,19 +478,23 @@ export class GroupNodeConfig {
     return { name, config, customConfig }
   }
 
+  // @ts-expect-error fixme ts strict error
   processWidgetInputs(inputs, node, inputNames, seenInputs) {
     const slots = []
     const converted = new Map()
+    // @ts-expect-error fixme ts strict error
     const widgetMap = (this.oldToNewWidgetMap[node.index] = {})
     for (const inputName of inputNames) {
       if (useWidgetStore().inputIsWidget(inputs[inputName])) {
         const convertedIndex = node.inputs?.findIndex(
+          // @ts-expect-error fixme ts strict error
           (inp) => inp.name === inputName && inp.widget?.name === inputName
         )
         if (convertedIndex > -1) {
           // This widget has been converted to a widget
           // We need to store this in the correct position so link ids line up
           converted.set(convertedIndex, inputName)
+          // @ts-expect-error fixme ts strict error
           widgetMap[inputName] = null
         } else {
           // Normal widget
@@ -460,8 +504,11 @@ export class GroupNodeConfig {
             seenInputs,
             inputs[inputName]
           )
+          // @ts-expect-error fixme ts strict error
           this.nodeDef.input.required[name] = config
+          // @ts-expect-error fixme ts strict error
           widgetMap[inputName] = name
+          // @ts-expect-error fixme ts strict error
           this.newToOldWidgetMap[name] = { node, inputName }
         }
       } else {
@@ -472,11 +519,13 @@ export class GroupNodeConfig {
     return { converted, slots }
   }
 
+  // @ts-expect-error fixme ts strict error
   checkPrimitiveConnection(link, inputName, inputs) {
     const sourceNode = this.nodeData.nodes[link[0]]
     if (sourceNode.type === 'PrimitiveNode') {
       // Merge link configurations
       const [sourceNodeId, _, targetNodeId, __] = link
+      // @ts-expect-error fixme ts strict error
       const primitiveDef = this.primitiveDefs[sourceNodeId]
       const targetWidget = inputs[inputName]
       const primitiveConfig = primitiveDef.input.required.value
@@ -494,13 +543,16 @@ export class GroupNodeConfig {
           ? { ...inputs[inputName][1] }
           : {}
 
+      // @ts-expect-error fixme ts strict error
       let name = this.oldToNewWidgetMap[sourceNodeId]['value']
       name = name.substr(0, name.length - 6)
       primitiveConfig[1].control_after_generate = true
       primitiveConfig[1].control_prefix = name
 
+      // @ts-expect-error fixme ts strict error
       let toPrimitive = this.widgetToPrimitive[targetNodeId]
       if (!toPrimitive) {
+        // @ts-expect-error fixme ts strict error
         toPrimitive = this.widgetToPrimitive[targetNodeId] = {}
       }
       if (toPrimitive[inputName]) {
@@ -508,15 +560,19 @@ export class GroupNodeConfig {
       }
       toPrimitive[inputName] = sourceNodeId
 
+      // @ts-expect-error fixme ts strict error
       let toWidget = this.primitiveToWidget[sourceNodeId]
       if (!toWidget) {
+        // @ts-expect-error fixme ts strict error
         toWidget = this.primitiveToWidget[sourceNodeId] = []
       }
       toWidget.push({ nodeId: targetNodeId, inputName })
     }
   }
 
+  // @ts-expect-error fixme ts strict error
   processInputSlots(inputs, node, slots, linksTo, inputMap, seenInputs) {
+    // @ts-expect-error fixme ts strict error
     this.nodeInputs[node.index] = {}
     for (let i = 0; i < slots.length; i++) {
       const inputName = slots[i]
@@ -533,21 +589,30 @@ export class GroupNodeConfig {
         inputs[inputName]
       )
 
+      // @ts-expect-error fixme ts strict error
       this.nodeInputs[node.index][inputName] = name
       if (customConfig?.visible === false) continue
 
+      // @ts-expect-error fixme ts strict error
       this.nodeDef.input.required[name] = config
       inputMap[i] = this.inputCount++
     }
   }
 
   processConvertedWidgets(
+    // @ts-expect-error fixme ts strict error
     inputs,
+    // @ts-expect-error fixme ts strict error
     node,
+    // @ts-expect-error fixme ts strict error
     slots,
+    // @ts-expect-error fixme ts strict error
     converted,
+    // @ts-expect-error fixme ts strict error
     linksTo,
+    // @ts-expect-error fixme ts strict error
     inputMap,
+    // @ts-expect-error fixme ts strict error
     seenInputs
   ) {
     // Add converted widgets sorted into their index order (ordered as they were converted) so link ids match up
@@ -576,12 +641,17 @@ export class GroupNodeConfig {
         }
       )
 
+      // @ts-expect-error fixme ts strict error
       this.nodeDef.input.required[name] = config
+      // @ts-expect-error fixme ts strict error
       this.newToOldWidgetMap[name] = { node, inputName }
 
+      // @ts-expect-error fixme ts strict error
       if (!this.oldToNewWidgetMap[node.index]) {
+        // @ts-expect-error fixme ts strict error
         this.oldToNewWidgetMap[node.index] = {}
       }
+      // @ts-expect-error fixme ts strict error
       this.oldToNewWidgetMap[node.index][inputName] = name
 
       inputMap[slots.length + i] = this.inputCount++
@@ -589,7 +659,9 @@ export class GroupNodeConfig {
   }
 
   #convertedToProcess = []
+  // @ts-expect-error fixme ts strict error
   processNodeInputs(node, seenInputs, inputs) {
+    // @ts-expect-error fixme ts strict error
     const inputMapping = []
 
     const inputNames = Object.keys(inputs)
@@ -601,11 +673,14 @@ export class GroupNodeConfig {
       inputNames,
       seenInputs
     )
+    // @ts-expect-error fixme ts strict error
     const linksTo = this.linksTo[node.index] ?? {}
+    // @ts-expect-error fixme ts strict error
     const inputMap = (this.oldToNewInputMap[node.index] = {})
     this.processInputSlots(inputs, node, slots, linksTo, inputMap, seenInputs)
 
     // Converted inputs have to be processed after all other nodes as they'll be at the end of the list
+    // @ts-expect-error fixme ts strict error
     this.#convertedToProcess.push(() =>
       this.processConvertedWidgets(
         inputs,
@@ -618,17 +693,22 @@ export class GroupNodeConfig {
       )
     )
 
+    // @ts-expect-error fixme ts strict error
     return inputMapping
   }
 
+  // @ts-expect-error fixme ts strict error
   processNodeOutputs(node, seenOutputs, def) {
+    // @ts-expect-error fixme ts strict error
     const oldToNew = (this.oldToNewOutputMap[node.index] = {})
 
     // Add outputs
     for (let outputId = 0; outputId < def.output.length; outputId++) {
+      // @ts-expect-error fixme ts strict error
       const linksFrom = this.linksFrom[node.index]
       // If this output is linked internally we flag it to hide
       const hasLink =
+        // @ts-expect-error fixme ts strict error
         linksFrom?.[outputId] && !this.externalFrom[node.index]?.[outputId]
       const customConfig =
         this.nodeData.config?.[node.index]?.output?.[outputId]
@@ -638,17 +718,22 @@ export class GroupNodeConfig {
         continue
       }
 
+      // @ts-expect-error fixme ts strict error
       oldToNew[outputId] = this.nodeDef.output.length
+      // @ts-expect-error fixme ts strict error
       this.newToOldOutputMap[this.nodeDef.output.length] = {
         node,
         slot: outputId
       }
+      // @ts-expect-error fixme ts strict error
       this.nodeDef.output.push(def.output[outputId])
+      // @ts-expect-error fixme ts strict error
       this.nodeDef.output_is_list.push(def.output_is_list[outputId])
 
       let label = customConfig?.name
       if (!label) {
         label = def.output_name?.[outputId] ?? def.output[outputId]
+        // @ts-expect-error fixme ts strict error
         const output = node.outputs.find((o) => o.name === label)
         if (output?.label) {
           label = output.label
@@ -665,10 +750,12 @@ export class GroupNodeConfig {
       }
       seenOutputs[name] = 1
 
+      // @ts-expect-error fixme ts strict error
       this.nodeDef.output_name.push(name)
     }
   }
 
+  // @ts-expect-error fixme ts strict error
   static async registerFromWorkflow(groupNodes, missingNodeTypes) {
     for (const g in groupNodes) {
       const groupData = groupNodes[g]
@@ -686,6 +773,7 @@ export class GroupNodeConfig {
             type: `${PREFIX}${SEPARATOR}` + g,
             action: {
               text: 'Remove from workflow',
+              // @ts-expect-error fixme ts strict error
               callback: (e) => {
                 delete groupNodes[g]
                 e.target.textContent = 'Removed'
@@ -733,6 +821,7 @@ export class GroupNodeHandler {
         }
 
         innerNode.index = innerNodeIndex
+        // @ts-expect-error fixme ts strict error
         innerNode.getInputNode = (slot) => {
           // Check if this input is internal or external
           const externalSlot =
@@ -752,17 +841,17 @@ export class GroupNodeHandler {
           return inputNode
         }
 
+        // @ts-expect-error fixme ts strict error
         innerNode.getInputLink = (slot) => {
           const externalSlot =
             this.groupData.oldToNewInputMap[innerNode.index]?.[slot]
           if (externalSlot != null) {
             // The inner node is connected via the group node inputs
             const linkId = this.node.inputs[externalSlot].link
+            // @ts-expect-error fixme ts strict error
             let link = app.graph.links[linkId]
 
             // Use the outer link, but update the target to the inner node
-            // @ts-expect-error
-            // TODO: Fix this
             link = {
               ...link,
               target_id: innerNode.id,
@@ -812,10 +901,14 @@ export class GroupNodeHandler {
 
     this.node.getInnerNodes = () => {
       if (!this.innerNodes) {
+        // @ts-expect-error fixme ts strict error
         this.node.setInnerNodes(
+          // @ts-expect-error fixme ts strict error
           this.groupData.nodeData.nodes.map((n, i) => {
             const innerNode = LiteGraph.createNode(n.type)
+            // @ts-expect-error fixme ts strict error
             innerNode.configure(n)
+            // @ts-expect-error fixme ts strict error
             innerNode.id = `${this.node.id}:${i}`
             return innerNode
           })
@@ -827,36 +920,50 @@ export class GroupNodeHandler {
       return this.innerNodes
     }
 
+    // @ts-expect-error fixme ts strict error
     this.node.recreate = async () => {
       const id = this.node.id
       const sz = this.node.size
+      // @ts-expect-error fixme ts strict error
       const nodes = this.node.convertToNodes()
 
+      // @ts-expect-error fixme ts strict error
       const groupNode = LiteGraph.createNode(this.node.type)
+      // @ts-expect-error fixme ts strict error
       groupNode.id = id
 
       // Reuse the existing nodes for this instance
+      // @ts-expect-error fixme ts strict error
       groupNode.setInnerNodes(nodes)
+      // @ts-expect-error fixme ts strict error
       groupNode[GROUP].populateWidgets()
+      // @ts-expect-error fixme ts strict error
       app.graph.add(groupNode)
+      // @ts-expect-error fixme ts strict error
       groupNode.setSize([
+        // @ts-expect-error fixme ts strict error
         Math.max(groupNode.size[0], sz[0]),
+        // @ts-expect-error fixme ts strict error
         Math.max(groupNode.size[1], sz[1])
       ])
 
       // Remove all converted nodes and relink them
       const builder = new GroupNodeBuilder(nodes)
       const nodeData = builder.getNodeData()
+      // @ts-expect-error fixme ts strict error
       groupNode[GROUP].groupData.nodeData.links = nodeData.links
+      // @ts-expect-error fixme ts strict error
       groupNode[GROUP].replaceNodes(nodes)
       return groupNode
     }
 
+    // @ts-expect-error fixme ts strict error
     this.node.convertToNodes = () => {
       const addInnerNodes = () => {
         // Clone the node data so we dont mutate it for other nodes
         const c = { ...this.groupData.nodeData }
         c.nodes = [...c.nodes]
+        // @ts-expect-error fixme ts strict error
         const innerNodes = this.node.getInnerNodes()
         let ids = []
         for (let i = 0; i < c.nodes.length; i++) {
@@ -864,6 +971,7 @@ export class GroupNodeHandler {
           // Use existing IDs if they are set on the inner nodes
           // @ts-expect-error id can be string or number
           if (id == null || isNaN(id)) {
+            // @ts-expect-error fixme ts strict error
             id = undefined
           } else {
             ids.push(id)
@@ -886,15 +994,21 @@ export class GroupNodeHandler {
           const innerNode = innerNodes[i]
           newNodes.push(newNode)
 
+          // @ts-expect-error fixme ts strict error
           if (left == null || newNode.pos[0] < left) {
+            // @ts-expect-error fixme ts strict error
             left = newNode.pos[0]
           }
+          // @ts-expect-error fixme ts strict error
           if (top == null || newNode.pos[1] < top) {
+            // @ts-expect-error fixme ts strict error
             top = newNode.pos[1]
           }
 
+          // @ts-expect-error fixme ts strict error
           if (!newNode.widgets) continue
 
+          // @ts-expect-error fixme ts strict error
           const map = this.groupData.oldToNewWidgetMap[innerNode.index]
           if (map) {
             const widgets = Object.keys(map)
@@ -903,6 +1017,7 @@ export class GroupNodeHandler {
               const newName = map[oldName]
               if (!newName) continue
 
+              // @ts-expect-error fixme ts strict error
               const widgetIndex = this.node.widgets.findIndex(
                 (w) => w.name === newName
               )
@@ -910,20 +1025,28 @@ export class GroupNodeHandler {
 
               // Populate the main and any linked widgets
               if (innerNode.type === 'PrimitiveNode') {
+                // @ts-expect-error fixme ts strict error
                 for (let i = 0; i < newNode.widgets.length; i++) {
+                  // @ts-expect-error fixme ts strict error
                   newNode.widgets[i].value =
+                    // @ts-expect-error fixme ts strict error
                     this.node.widgets[widgetIndex + i].value
                 }
               } else {
+                // @ts-expect-error fixme ts strict error
                 const outerWidget = this.node.widgets[widgetIndex]
+                // @ts-expect-error fixme ts strict error
                 const newWidget = newNode.widgets.find(
                   (w) => w.name === oldName
                 )
                 if (!newWidget) continue
 
                 newWidget.value = outerWidget.value
+                // @ts-expect-error fixme ts strict error
                 for (let w = 0; w < outerWidget.linkedWidgets?.length; w++) {
+                  // @ts-expect-error fixme ts strict error
                   newWidget.linkedWidgets[w].value =
+                    // @ts-expect-error fixme ts strict error
                     outerWidget.linkedWidgets[w].value
                 }
               }
@@ -933,13 +1056,16 @@ export class GroupNodeHandler {
 
         // Shift each node
         for (const newNode of newNodes) {
+          // @ts-expect-error fixme ts strict error
           newNode.pos[0] -= left - x
+          // @ts-expect-error fixme ts strict error
           newNode.pos[1] -= top - y
         }
 
         return { newNodes, selectedIds }
       }
 
+      // @ts-expect-error fixme ts strict error
       const reconnectInputs = (selectedIds) => {
         for (const innerNodeIndex in this.groupData.oldToNewInputMap) {
           const id = selectedIds[innerNodeIndex]
@@ -954,11 +1080,13 @@ export class GroupNodeHandler {
             if (!link) continue
             //  connect this node output to the input of another node
             const originNode = app.graph.getNodeById(link.origin_id)
+            // @ts-expect-error fixme ts strict error
             originNode.connect(link.origin_slot, newNode, +innerInputId)
           }
         }
       }
 
+      // @ts-expect-error fixme ts strict error
       const reconnectOutputs = (selectedIds) => {
         for (
           let groupOutputId = 0;
@@ -973,6 +1101,7 @@ export class GroupNodeHandler {
             const link = app.graph.links[l]
             const targetNode = app.graph.getNodeById(link.target_id)
             const newNode = app.graph.getNodeById(selectedIds[slot.node.index])
+            // @ts-expect-error fixme ts strict error
             newNode.connect(slot.slot, targetNode, link.target_slot)
           }
         }
@@ -995,8 +1124,10 @@ export class GroupNodeHandler {
     const getExtraMenuOptions = this.node.getExtraMenuOptions
     // @ts-expect-error Should pass patched return value getExtraMenuOptions
     this.node.getExtraMenuOptions = function (_, options) {
+      // @ts-expect-error fixme ts strict error
       getExtraMenuOptions?.apply(this, arguments)
 
+      // @ts-expect-error fixme ts strict error
       let optionIndex = options.findIndex((o) => o.content === 'Outputs')
       if (optionIndex === -1) optionIndex = options.length
       else optionIndex++
@@ -1008,11 +1139,13 @@ export class GroupNodeHandler {
           content: 'Convert to nodes',
           // @ts-expect-error
           callback: () => {
+            // @ts-expect-error fixme ts strict error
             return this.convertToNodes()
           }
         },
         {
           content: 'Manage Group Node',
+          // @ts-expect-error fixme ts strict error
           callback: () => manageGroupNodes(this.type)
         }
       )
@@ -1021,6 +1154,7 @@ export class GroupNodeHandler {
     // Draw custom collapse icon to identity this as a group
     const onDrawTitleBox = this.node.onDrawTitleBox
     this.node.onDrawTitleBox = function (ctx, height) {
+      // @ts-expect-error fixme ts strict error
       onDrawTitleBox?.apply(this, arguments)
 
       const fill = ctx.fillStyle
@@ -1044,11 +1178,14 @@ export class GroupNodeHandler {
     const onDrawForeground = node.onDrawForeground
     const groupData = this.groupData.nodeData
     node.onDrawForeground = function (ctx) {
+      // @ts-expect-error fixme ts strict error
       onDrawForeground?.apply?.(this, arguments)
       if (
+        // @ts-expect-error fixme ts strict error
         +app.runningNodeId === this.id &&
         this.runningInternalNodeId !== null
       ) {
+        // @ts-expect-error fixme ts strict error
         const n = groupData.nodes[this.runningInternalNodeId]
         if (!n) return
         const message = `Running ${n.title || n.type} (${this.runningInternalNodeId}/${groupData.nodes.length})`
@@ -1075,7 +1212,9 @@ export class GroupNodeHandler {
     // Flag this node as needing to be reset
     const onExecutionStart = this.node.onExecutionStart
     this.node.onExecutionStart = function () {
+      // @ts-expect-error fixme ts strict error
       this.resetExecution = true
+      // @ts-expect-error fixme ts strict error
       return onExecutionStart?.apply(this, arguments)
     }
 
@@ -1094,6 +1233,7 @@ export class GroupNodeHandler {
             const widgetName = self.groupData.oldToNewWidgetMap[n][w]
             const widget = this.widgets.find((w) => w.name === widgetName)
             if (widget) {
+              // @ts-expect-error fixme ts strict error
               widget.type = 'hidden'
               widget.computeSize = () => [0, -4]
             }
@@ -1101,21 +1241,27 @@ export class GroupNodeHandler {
         }
       }
 
+      // @ts-expect-error fixme ts strict error
       return onNodeCreated?.apply(this, arguments)
     }
 
+    // @ts-expect-error fixme ts strict error
     function handleEvent(type, getId, getEvent) {
+      // @ts-expect-error fixme ts strict error
       const handler = ({ detail }) => {
         const id = getId(detail)
         if (!id) return
         const node = app.graph.getNodeById(id)
         if (node) return
 
+        // @ts-expect-error fixme ts strict error
         const innerNodeIndex = this.innerNodes?.findIndex((n) => n.id == id)
         if (innerNodeIndex > -1) {
+          // @ts-expect-error fixme ts strict error
           this.node.runningInternalNodeId = innerNodeIndex
           api.dispatchCustomEvent(
             type,
+            // @ts-expect-error fixme ts strict error
             getEvent(detail, `${this.node.id}`, this.node)
           )
         }
@@ -1127,14 +1273,18 @@ export class GroupNodeHandler {
     const executing = handleEvent.call(
       this,
       'executing',
+      // @ts-expect-error fixme ts strict error
       (d) => d,
+      // @ts-expect-error fixme ts strict error
       (_, id) => id
     )
 
     const executed = handleEvent.call(
       this,
       'executed',
+      // @ts-expect-error fixme ts strict error
       (d) => d?.display_node || d?.node,
+      // @ts-expect-error fixme ts strict error
       (d, id, node) => ({
         ...d,
         node: id,
@@ -1145,6 +1295,7 @@ export class GroupNodeHandler {
 
     const onRemoved = node.onRemoved
     this.node.onRemoved = function () {
+      // @ts-expect-error fixme ts strict error
       onRemoved?.apply(this, arguments)
       api.removeEventListener('executing', executing)
       api.removeEventListener('executed', executed)
@@ -1153,6 +1304,7 @@ export class GroupNodeHandler {
     this.node.refreshComboInNode = (defs) => {
       // Update combo widget options
       for (const widgetName in this.groupData.newToOldWidgetMap) {
+        // @ts-expect-error fixme ts strict error
         const widget = this.node.widgets.find((w) => w.name === widgetName)
         if (widget?.type === 'combo') {
           const old = this.groupData.newToOldWidgetMap[widgetName]
@@ -1169,7 +1321,9 @@ export class GroupNodeHandler {
             // @ts-expect-error Widget values
             !widget.options.values.includes(widget.value)
           ) {
+            // @ts-expect-error fixme ts strict error
             widget.value = widget.options.values[0]
+            // @ts-expect-error fixme ts strict error
             widget.callback(widget.value)
           }
         }
@@ -1179,6 +1333,7 @@ export class GroupNodeHandler {
 
   updateInnerWidgets() {
     for (const newWidgetName in this.groupData.newToOldWidgetMap) {
+      // @ts-expect-error fixme ts strict error
       const newWidget = this.node.widgets.find((w) => w.name === newWidgetName)
       if (!newWidget) continue
 
@@ -1191,6 +1346,7 @@ export class GroupNodeHandler {
         const primitiveLinked = this.groupData.primitiveToWidget[old.node.index]
         for (const linked of primitiveLinked ?? []) {
           const node = this.innerNodes[linked.nodeId]
+          // @ts-expect-error fixme ts strict error
           const widget = node.widgets.find((w) => w.name === linked.inputName)
 
           if (widget) {
@@ -1206,6 +1362,7 @@ export class GroupNodeHandler {
             const input = node.inputs[targetSlot]
             if (input.widget) {
               const widget = node.widgets?.find(
+                // @ts-expect-error fixme ts strict error
                 (w) => w.name === input.widget.name
               )
               if (widget) {
@@ -1216,6 +1373,7 @@ export class GroupNodeHandler {
         }
       }
 
+      // @ts-expect-error fixme ts strict error
       const widget = innerNode.widgets?.find((w) => w.name === old.inputName)
       if (widget) {
         widget.value = newValue
@@ -1223,12 +1381,14 @@ export class GroupNodeHandler {
     }
   }
 
+  // @ts-expect-error fixme ts strict error
   populatePrimitive(_node, nodeId, oldName) {
     // Converted widget, populate primitive if linked
     const primitiveId = this.groupData.widgetToPrimitive[nodeId]?.[oldName]
     if (primitiveId == null) return
     const targetWidgetName =
       this.groupData.oldToNewWidgetMap[primitiveId]['value']
+    // @ts-expect-error fixme ts strict error
     const targetWidgetIndex = this.node.widgets.findIndex(
       (w) => w.name === targetWidgetName
     )
@@ -1237,6 +1397,7 @@ export class GroupNodeHandler {
       let len = primitiveNode.widgets.length
       if (
         len - 1 !==
+        // @ts-expect-error fixme ts strict error
         this.node.widgets[targetWidgetIndex].linkedWidgets?.length
       ) {
         // Fallback handling for if some reason the primitive has a different number of widgets
@@ -1244,6 +1405,7 @@ export class GroupNodeHandler {
         len = 1
       }
       for (let i = 0; i < len; i++) {
+        // @ts-expect-error fixme ts strict error
         this.node.widgets[targetWidgetIndex + i].value =
           primitiveNode.widgets[i].value
       }
@@ -1251,6 +1413,7 @@ export class GroupNodeHandler {
     return true
   }
 
+  // @ts-expect-error fixme ts strict error
   populateReroute(node, nodeId, map) {
     if (node.type !== 'Reroute') return
 
@@ -1267,6 +1430,7 @@ export class GroupNodeHandler {
     if (v == null) return
 
     const widgetName = Object.values(map)[0]
+    // @ts-expect-error fixme ts strict error
     const widget = this.node.widgets.find((w) => w.name === widgetName)
     if (widget) {
       widget.value = v
@@ -1306,6 +1470,7 @@ export class GroupNodeHandler {
         ) {
           // Find the inner widget and shift by the number of linked widgets as they will have been removed too
           const innerWidget = this.innerNodes[nodeId].widgets?.find(
+            // @ts-expect-error fixme ts strict error
             (w) => w.name === oldName
           )
           linkedShift += innerWidget?.linkedWidgets?.length ?? 0
@@ -1316,6 +1481,7 @@ export class GroupNodeHandler {
 
         // Populate the main and any linked widget
         mainWidget.value = node.widgets_values[i + linkedShift]
+        // @ts-expect-error fixme ts strict error
         for (let w = 0; w < mainWidget.linkedWidgets?.length; w++) {
           this.node.widgets[widgetIndex + w + 1].value =
             node.widgets_values[i + ++linkedShift]
@@ -1324,6 +1490,7 @@ export class GroupNodeHandler {
     }
   }
 
+  // @ts-expect-error fixme ts strict error
   replaceNodes(nodes) {
     let top
     let left
@@ -1345,6 +1512,7 @@ export class GroupNodeHandler {
     this.node.pos = [left, top]
   }
 
+  // @ts-expect-error fixme ts strict error
   linkOutputs(originalNode, nodeId) {
     if (!originalNode.outputs) return
 
@@ -1360,6 +1528,7 @@ export class GroupNodeHandler {
         const newSlot =
           this.groupData.oldToNewOutputMap[nodeId]?.[link.origin_slot]
         if (newSlot != null) {
+          // @ts-expect-error fixme ts strict error
           this.node.connect(newSlot, targetNode, link.target_slot)
         }
       }
@@ -1380,6 +1549,7 @@ export class GroupNodeHandler {
     }
   }
 
+  // @ts-expect-error fixme ts strict error
   static getGroupData(node) {
     return (node.nodeData ?? node.constructor?.nodeData)?.[GROUP]
   }
@@ -1402,17 +1572,22 @@ export class GroupNodeHandler {
 
     const groupNode = LiteGraph.createNode(`${PREFIX}${SEPARATOR}${name}`)
     // Reuse the existing nodes for this instance
+    // @ts-expect-error fixme ts strict error
     groupNode.setInnerNodes(builder.nodes)
+    // @ts-expect-error fixme ts strict error
     groupNode[GROUP].populateWidgets()
+    // @ts-expect-error fixme ts strict error
     app.graph.add(groupNode)
 
     // Remove all converted nodes and relink them
+    // @ts-expect-error fixme ts strict error
     groupNode[GROUP].replaceNodes(builder.nodes)
     return groupNode
   }
 }
 
 function addConvertToGroupOptions() {
+  // @ts-expect-error fixme ts strict error
   function addConvertOption(options, index) {
     const selected = Object.values(app.canvas.selected_nodes ?? {})
     const disabled =
@@ -1425,6 +1600,7 @@ function addConvertToGroupOptions() {
     })
   }
 
+  // @ts-expect-error fixme ts strict error
   function addManageOption(options, index) {
     const groups = app.graph.extra?.groupNodes
     const disabled = !groups || !Object.keys(groups).length
@@ -1438,6 +1614,7 @@ function addConvertToGroupOptions() {
   // Add to canvas
   const getCanvasMenuOptions = LGraphCanvas.prototype.getCanvasMenuOptions
   LGraphCanvas.prototype.getCanvasMenuOptions = function () {
+    // @ts-expect-error fixme ts strict error
     const options = getCanvasMenuOptions.apply(this, arguments)
     const index =
       options.findIndex((o) => o?.content === 'Add Group') + 1 || options.length
@@ -1449,6 +1626,7 @@ function addConvertToGroupOptions() {
   // Add to nodes
   const getNodeMenuOptions = LGraphCanvas.prototype.getNodeMenuOptions
   LGraphCanvas.prototype.getNodeMenuOptions = function (node) {
+    // @ts-expect-error fixme ts strict error
     const options = getNodeMenuOptions.apply(this, arguments)
     if (!GroupNodeHandler.isGroupNode(node)) {
       const index =
@@ -1505,6 +1683,7 @@ function manageGroupNodes(type?: string) {
 }
 
 const id = 'Comfy.GroupNode'
+// @ts-expect-error fixme ts strict error
 let globalDefs
 const ext: ComfyExtension = {
   name: id,
@@ -1567,16 +1746,21 @@ const ext: ComfyExtension = {
   },
   nodeCreated(node) {
     if (GroupNodeHandler.isGroupNode(node)) {
+      // @ts-expect-error fixme ts strict error
       node[GROUP] = new GroupNodeHandler(node)
 
       // Ensure group nodes pasted from other workflows are stored
+      // @ts-expect-error fixme ts strict error
       if (node.title && node[GROUP]?.groupData?.nodeData) {
+        // @ts-expect-error fixme ts strict error
         Workflow.storeGroupNode(node.title, node[GROUP].groupData.nodeData)
       }
     }
   },
+  // @ts-expect-error fixme ts strict error
   async refreshComboInNodes(defs) {
     // Re-register group nodes so new ones are created with the correct options
+    // @ts-expect-error fixme ts strict error
     Object.assign(globalDefs, defs)
     const nodes = app.graph.extra?.groupNodes
     if (nodes) {

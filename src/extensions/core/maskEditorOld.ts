@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
 import { ComfyApp } from '../../scripts/app'
@@ -6,6 +5,7 @@ import { $el, ComfyDialog } from '../../scripts/ui'
 import { ClipspaceDialog } from './clipspace'
 
 // Helper function to convert a data URL to a Blob object
+// @ts-expect-error fixme ts strict error
 function dataURLToBlob(dataURL) {
   const parts = dataURL.split(';base64,')
   const contentType = parts[0].split(':')[1]
@@ -18,6 +18,7 @@ function dataURLToBlob(dataURL) {
   return new Blob([arrayBuffer], { type: contentType })
 }
 
+// @ts-expect-error fixme ts strict error
 function loadImage(imagePath) {
   return new Promise((resolve) => {
     const image = new Image()
@@ -30,6 +31,7 @@ function loadImage(imagePath) {
   })
 }
 
+// @ts-expect-error fixme ts strict error
 async function uploadMask(filepath, formData) {
   await api
     .fetchApi('/upload/mask', {
@@ -40,7 +42,9 @@ async function uploadMask(filepath, formData) {
       console.error('Error:', error)
     })
 
+  // @ts-expect-error fixme ts strict error
   ComfyApp.clipspace.imgs[ComfyApp.clipspace['selectedIndex']] = new Image()
+  // @ts-expect-error fixme ts strict error
   ComfyApp.clipspace.imgs[ComfyApp.clipspace['selectedIndex']].src = api.apiURL(
     '/view?' +
       new URLSearchParams(filepath).toString() +
@@ -48,12 +52,15 @@ async function uploadMask(filepath, formData) {
       app.getRandParam()
   )
 
+  // @ts-expect-error fixme ts strict error
   if (ComfyApp.clipspace.images)
+    // @ts-expect-error fixme ts strict error
     ComfyApp.clipspace.images[ComfyApp.clipspace['selectedIndex']] = filepath
 
   ClipspaceDialog.invalidatePreview()
 }
 
+// @ts-expect-error fixme ts strict error
 function prepare_mask(image, maskCanvas, maskCtx, maskColor) {
   // paste mask data into alpha channel
   maskCtx.drawImage(image, 0, 0, maskCanvas.width, maskCanvas.height)
@@ -94,32 +101,55 @@ export class MaskEditorDialogOld extends ComfyDialog {
   static mousedown_x: number | null = null
   static mousedown_y: number | null = null
 
+  // @ts-expect-error fixme ts strict error
   brush: HTMLDivElement
   maskCtx: any
+  // @ts-expect-error fixme ts strict error
   maskCanvas: HTMLCanvasElement
+  // @ts-expect-error fixme ts strict error
   brush_size_slider: HTMLDivElement
+  // @ts-expect-error fixme ts strict error
   brush_opacity_slider: HTMLDivElement
+  // @ts-expect-error fixme ts strict error
   colorButton: HTMLButtonElement
+  // @ts-expect-error fixme ts strict error
   saveButton: HTMLButtonElement
+  // @ts-expect-error fixme ts strict error
   zoom_ratio: number
+  // @ts-expect-error fixme ts strict error
   pan_x: number
+  // @ts-expect-error fixme ts strict error
   pan_y: number
+  // @ts-expect-error fixme ts strict error
   imgCanvas: HTMLCanvasElement
+  // @ts-expect-error fixme ts strict error
   last_display_style: string
+  // @ts-expect-error fixme ts strict error
   is_visible: boolean
+  // @ts-expect-error fixme ts strict error
   image: HTMLImageElement
+  // @ts-expect-error fixme ts strict error
   handler_registered: boolean
+  // @ts-expect-error fixme ts strict error
   brush_slider_input: HTMLInputElement
+  // @ts-expect-error fixme ts strict error
   cursorX: number
+  // @ts-expect-error fixme ts strict error
   cursorY: number
+  // @ts-expect-error fixme ts strict error
   mousedown_pan_x: number
+  // @ts-expect-error fixme ts strict error
   mousedown_pan_y: number
+  // @ts-expect-error fixme ts strict error
   last_pressure: number
+  // @ts-expect-error fixme ts strict error
   pointer_type: PointerType
+  // @ts-expect-error fixme ts strict error
   brush_pointer_type_select: HTMLDivElement
 
   static getInstance() {
     if (!MaskEditorDialogOld.instance) {
+      // @ts-expect-error fixme ts strict error
       MaskEditorDialogOld.instance = new MaskEditorDialogOld()
     }
 
@@ -139,6 +169,7 @@ export class MaskEditorDialogOld extends ComfyDialog {
     return []
   }
 
+  // @ts-expect-error fixme ts strict error
   createButton(name, callback): HTMLButtonElement {
     var button = document.createElement('button')
     button.style.pointerEvents = 'auto'
@@ -147,6 +178,7 @@ export class MaskEditorDialogOld extends ComfyDialog {
     return button
   }
 
+  // @ts-expect-error fixme ts strict error
   createLeftButton(name, callback) {
     var button = this.createButton(name, callback)
     button.style.cssFloat = 'left'
@@ -154,6 +186,7 @@ export class MaskEditorDialogOld extends ComfyDialog {
     return button
   }
 
+  // @ts-expect-error fixme ts strict error
   createRightButton(name, callback) {
     var button = this.createButton(name, callback)
     button.style.cssFloat = 'right'
@@ -161,6 +194,7 @@ export class MaskEditorDialogOld extends ComfyDialog {
     return button
   }
 
+  // @ts-expect-error fixme ts strict error
   createLeftSlider(self, name, callback): HTMLDivElement {
     const divElement = document.createElement('div')
     divElement.id = 'maskeditor-slider'
@@ -195,6 +229,7 @@ export class MaskEditorDialogOld extends ComfyDialog {
     return divElement
   }
 
+  // @ts-expect-error fixme ts strict error
   createOpacitySlider(self, name, callback): HTMLDivElement {
     const divElement = document.createElement('div')
     divElement.id = 'maskeditor-opacity-slider'
@@ -339,6 +374,7 @@ export class MaskEditorDialogOld extends ComfyDialog {
     this.brush_size_slider = this.createLeftSlider(
       self,
       'Thickness',
+      // @ts-expect-error fixme ts strict error
       (event) => {
         self.brush_size = event.target.value
         self.updateBrushPreview(self)
@@ -348,6 +384,7 @@ export class MaskEditorDialogOld extends ComfyDialog {
     this.brush_opacity_slider = this.createOpacitySlider(
       self,
       'Opacity',
+      // @ts-expect-error fixme ts strict error
       (event) => {
         self.brush_opacity = event.target.value
         if (self.brush_color_mode !== 'negative') {
@@ -482,6 +519,7 @@ export class MaskEditorDialogOld extends ComfyDialog {
     return this.element.style.display == 'block'
   }
 
+  // @ts-expect-error fixme ts strict error
   invalidateCanvas(orig_image, mask_image) {
     this.imgCanvas.width = orig_image.width
     this.imgCanvas.height = orig_image.height
@@ -494,10 +532,12 @@ export class MaskEditorDialogOld extends ComfyDialog {
       willReadFrequently: true
     })
 
+    // @ts-expect-error fixme ts strict error
     imgCtx.drawImage(orig_image, 0, 0, orig_image.width, orig_image.height)
     prepare_mask(mask_image, this.maskCanvas, maskCtx, this.getMaskColor())
   }
 
+  // @ts-expect-error fixme ts strict error
   async setImages(imgCanvas) {
     let self = this
 
@@ -510,6 +550,7 @@ export class MaskEditorDialogOld extends ComfyDialog {
 
     // image load
     const alpha_url = new URL(
+      // @ts-expect-error fixme ts strict error
       ComfyApp.clipspace.imgs[ComfyApp.clipspace['selectedIndex']].src
     )
     alpha_url.searchParams.delete('channel')
@@ -519,6 +560,7 @@ export class MaskEditorDialogOld extends ComfyDialog {
 
     // original image load
     const rgb_url = new URL(
+      // @ts-expect-error fixme ts strict error
       ComfyApp.clipspace.imgs[ComfyApp.clipspace['selectedIndex']].src
     )
     rgb_url.searchParams.delete('channel')
@@ -591,10 +633,12 @@ export class MaskEditorDialogOld extends ComfyDialog {
     this.imgCanvas.style.top = top
   }
 
+  // @ts-expect-error fixme ts strict error
   setEventHandler(maskCanvas) {
     const self = this
 
     if (!this.handler_registered) {
+      // @ts-expect-error fixme ts strict error
       maskCanvas.addEventListener('contextmenu', (event) => {
         event.preventDefault()
       })
@@ -615,12 +659,15 @@ export class MaskEditorDialogOld extends ComfyDialog {
         }
       })
 
+      // @ts-expect-error fixme ts strict error
       maskCanvas.addEventListener('pointerdown', (event) =>
         this.handlePointerDown(self, event)
       )
+      // @ts-expect-error fixme ts strict error
       maskCanvas.addEventListener('pointermove', (event) =>
         this.draw_move(self, event)
       )
+      // @ts-expect-error fixme ts strict error
       maskCanvas.addEventListener('touchmove', (event) =>
         this.draw_move(self, event)
       )
@@ -726,30 +773,40 @@ export class MaskEditorDialogOld extends ComfyDialog {
   lasty = -1
   lasttime = 0
 
+  // @ts-expect-error fixme ts strict error
   static handleKeyDown(event) {
     const self = MaskEditorDialogOld.instance
     if (event.key === ']') {
+      // @ts-expect-error fixme ts strict error
       self.brush_size = Math.min(self.brush_size + 2, 100)
+      // @ts-expect-error fixme ts strict error
       self.brush_slider_input.value = self.brush_size
     } else if (event.key === '[') {
+      // @ts-expect-error fixme ts strict error
       self.brush_size = Math.max(self.brush_size - 2, 1)
+      // @ts-expect-error fixme ts strict error
       self.brush_slider_input.value = self.brush_size
     } else if (event.key === 'Enter') {
+      // @ts-expect-error fixme ts strict error
       self.save()
     }
 
+    // @ts-expect-error fixme ts strict error
     self.updateBrushPreview(self)
   }
 
+  // @ts-expect-error fixme ts strict error
   static handlePointerUp(event) {
     event.preventDefault()
 
     this.mousedown_x = null
     this.mousedown_y = null
 
+    // @ts-expect-error fixme ts strict error
     MaskEditorDialogOld.instance.drawing_mode = false
   }
 
+  // @ts-expect-error fixme ts strict error
   updateBrushPreview(self) {
     const brush = self.brush
 
@@ -762,6 +819,7 @@ export class MaskEditorDialogOld extends ComfyDialog {
     brush.style.top = centerY - self.brush_size * this.zoom_ratio + 'px'
   }
 
+  // @ts-expect-error fixme ts strict error
   handleWheelEvent(_, event) {
     event.preventDefault()
 
@@ -785,6 +843,7 @@ export class MaskEditorDialogOld extends ComfyDialog {
     }
   }
 
+  // @ts-expect-error fixme ts strict error
   pointMoveEvent(self, event) {
     this.cursorX = event.pageX
     this.cursorY = event.pageY
@@ -814,10 +873,12 @@ export class MaskEditorDialogOld extends ComfyDialog {
     }
   }
 
+  // @ts-expect-error fixme ts strict error
   pan_move(self, event) {
     if (event.buttons == 1) {
       if (MaskEditorDialogOld.mousedown_x) {
         let deltaX = MaskEditorDialogOld.mousedown_x - event.clientX
+        // @ts-expect-error fixme ts strict error
         let deltaY = MaskEditorDialogOld.mousedown_y - event.clientY
 
         self.pan_x = this.mousedown_pan_x - deltaX
@@ -828,6 +889,7 @@ export class MaskEditorDialogOld extends ComfyDialog {
     }
   }
 
+  // @ts-expect-error fixme ts strict error
   draw_move(self, event) {
     if (event.ctrlKey || event.shiftKey) {
       return
@@ -922,6 +984,7 @@ export class MaskEditorDialogOld extends ComfyDialog {
       } else if (
         window.TouchEvent &&
         event instanceof TouchEvent &&
+        // @ts-expect-error fixme ts strict error
         diff < 20
       ) {
         brush_size *= this.last_pressure
@@ -929,6 +992,7 @@ export class MaskEditorDialogOld extends ComfyDialog {
         brush_size = this.brush_size
       }
 
+      // @ts-expect-error fixme ts strict error
       if (diff > 20 && !this.drawing_mode)
         // cannot tracking drawing_mode for touch event
         requestAnimationFrame(() => {
@@ -961,6 +1025,7 @@ export class MaskEditorDialogOld extends ComfyDialog {
     }
   }
 
+  // @ts-expect-error fixme ts strict error
   handlePointerDown(self, event) {
     if (event.ctrlKey) {
       if (event.buttons == 1) {
@@ -1010,6 +1075,7 @@ export class MaskEditorDialogOld extends ComfyDialog {
     }
   }
 
+  // @ts-expect-error fixme ts strict error
   init_shape(self, compositionOperation) {
     self.maskCtx.beginPath()
     if (compositionOperation == CompositionOperation.SourceOver) {
@@ -1021,6 +1087,7 @@ export class MaskEditorDialogOld extends ComfyDialog {
     }
   }
 
+  // @ts-expect-error fixme ts strict error
   draw_shape(self, x, y, brush_size) {
     if (self.pointer_type === PointerType.Rect) {
       self.maskCtx.rect(
@@ -1043,7 +1110,9 @@ export class MaskEditorDialogOld extends ComfyDialog {
     backupCanvas.width = this.image.width
     backupCanvas.height = this.image.height
 
+    // @ts-expect-error fixme ts strict error
     backupCtx.clearRect(0, 0, backupCanvas.width, backupCanvas.height)
+    // @ts-expect-error fixme ts strict error
     backupCtx.drawImage(
       this.maskCanvas,
       0,
@@ -1057,6 +1126,7 @@ export class MaskEditorDialogOld extends ComfyDialog {
     )
 
     // paste mask data into alpha channel
+    // @ts-expect-error fixme ts strict error
     const backupData = backupCtx.getImageData(
       0,
       0,
@@ -1074,7 +1144,9 @@ export class MaskEditorDialogOld extends ComfyDialog {
       backupData.data[i + 2] = 0
     }
 
+    // @ts-expect-error fixme ts strict error
     backupCtx.globalCompositeOperation = CompositionOperation.SourceOver
+    // @ts-expect-error fixme ts strict error
     backupCtx.putImageData(backupData, 0, 0)
 
     const formData = new FormData()
@@ -1086,13 +1158,17 @@ export class MaskEditorDialogOld extends ComfyDialog {
       type: 'input'
     }
 
+    // @ts-expect-error fixme ts strict error
     if (ComfyApp.clipspace.images) ComfyApp.clipspace.images[0] = item
 
+    // @ts-expect-error fixme ts strict error
     if (ComfyApp.clipspace.widgets) {
+      // @ts-expect-error fixme ts strict error
       const index = ComfyApp.clipspace.widgets.findIndex(
         (obj) => obj.name === 'image'
       )
 
+      // @ts-expect-error fixme ts strict error
       if (index >= 0) ComfyApp.clipspace.widgets[index].value = item
     }
 
@@ -1104,6 +1180,7 @@ export class MaskEditorDialogOld extends ComfyDialog {
     type Ref = { filename: string; subfolder?: string; type?: string }
 
     const original_ref: Ref = {
+      // @ts-expect-error fixme ts strict error
       filename: original_url.searchParams.get('filename')
     }
 

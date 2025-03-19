@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import {
   type IContextMenuValue,
   type INodeInputSlot,
@@ -46,6 +45,7 @@ export const useLitegraphService = () => {
       static category?: string
 
       constructor(title?: string) {
+        // @ts-expect-error fixme ts strict error
         super(title)
 
         const nodeMinSize = { width: 1, height: 1 }
@@ -158,7 +158,9 @@ export const useLitegraphService = () => {
         }
         for (const field of ['inputs', 'outputs']) {
           const slots = data[field] ?? []
+          // @ts-expect-error fixme ts strict error
           data[field] = slots.map((slot, i) =>
+            // @ts-expect-error fixme ts strict error
             merge(this[field][i] ?? {}, slot)
           )
         }
@@ -204,6 +206,7 @@ export const useLitegraphService = () => {
             const url = new URL(img.src)
             url.searchParams.delete('preview')
 
+            // @ts-expect-error fixme ts strict error
             const writeImage = async (blob) => {
               await navigator.clipboard.write([
                 new ClipboardItem({
@@ -225,13 +228,17 @@ export const useLitegraphService = () => {
                     height: img.naturalHeight
                   }) as HTMLCanvasElement
                   const ctx = canvas.getContext('2d')
+                  // @ts-expect-error fixme ts strict error
                   let image
                   if (typeof window.createImageBitmap === 'undefined') {
                     image = new Image()
                     const p = new Promise((resolve, reject) => {
+                      // @ts-expect-error fixme ts strict error
                       image.onload = resolve
+                      // @ts-expect-error fixme ts strict error
                       image.onerror = reject
                     }).finally(() => {
+                      // @ts-expect-error fixme ts strict error
                       URL.revokeObjectURL(image.src)
                     })
                     image.src = URL.createObjectURL(blob)
@@ -240,10 +247,13 @@ export const useLitegraphService = () => {
                     image = await createImageBitmap(blob)
                   }
                   try {
+                    // @ts-expect-error fixme ts strict error
                     ctx.drawImage(image, 0, 0)
                     canvas.toBlob(writeImage, 'image/png')
                   } finally {
+                    // @ts-expect-error fixme ts strict error
                     if (typeof image.close === 'function') {
+                      // @ts-expect-error fixme ts strict error
                       image.close()
                     }
                   }
@@ -254,6 +264,7 @@ export const useLitegraphService = () => {
               }
             } catch (error) {
               toastStore.addAlert(
+                // @ts-expect-error fixme ts strict error
                 'Error copying image: ' + (error.message ?? error)
               )
             }
@@ -293,6 +304,7 @@ export const useLitegraphService = () => {
                 a.href = url.toString()
                 a.setAttribute(
                   'download',
+                  // @ts-expect-error fixme ts strict error
                   new URLSearchParams(url.search).get('filename')
                 )
                 document.body.append(a)
@@ -314,6 +326,7 @@ export const useLitegraphService = () => {
           for (const item of app.canvas.selectedItems) {
             if (item instanceof LGraphNode) item.mode = mode
           }
+          // @ts-expect-error fixme ts strict error
           this.graph.change()
         }
       })
@@ -341,7 +354,9 @@ export const useLitegraphService = () => {
             content: 'Open in MaskEditor',
             callback: () => {
               ComfyApp.copyToClipspace(this)
+              // @ts-expect-error fixme ts strict error
               ComfyApp.clipspace_return_node = this
+              // @ts-expect-error fixme ts strict error
               ComfyApp.open_maskeditor()
             }
           })
@@ -390,6 +405,7 @@ export const useLitegraphService = () => {
 
         const isAnimatedWebp =
           this.animatedImages &&
+          // @ts-expect-error fixme ts strict error
           output.images.some((img) => img.filename?.includes('webp'))
         const isVideo =
           (this.animatedImages && !isAnimatedWebp) || isVideoNode(this)
@@ -425,6 +441,7 @@ export const useLitegraphService = () => {
     const origNodeOnKeyDown = node.prototype.onKeyDown
 
     node.prototype.onKeyDown = function (e) {
+      // @ts-expect-error fixme ts strict error
       if (origNodeOnKeyDown && origNodeOnKeyDown.apply(this, e) === false) {
         return false
       }
@@ -437,13 +454,18 @@ export const useLitegraphService = () => {
 
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         if (e.key === 'ArrowLeft') {
+          // @ts-expect-error fixme ts strict error
           this.imageIndex -= 1
         } else if (e.key === 'ArrowRight') {
+          // @ts-expect-error fixme ts strict error
           this.imageIndex += 1
         }
+        // @ts-expect-error fixme ts strict error
         this.imageIndex %= this.imgs.length
 
+        // @ts-expect-error fixme ts strict error
         if (this.imageIndex < 0) {
+          // @ts-expect-error fixme ts strict error
           this.imageIndex = this.imgs.length + this.imageIndex
         }
         handled = true
@@ -472,7 +494,9 @@ export const useLitegraphService = () => {
       options
     )
 
+    // @ts-expect-error fixme ts strict error
     app.graph.add(node)
+    // @ts-expect-error fixme ts strict error
     return node
   }
 

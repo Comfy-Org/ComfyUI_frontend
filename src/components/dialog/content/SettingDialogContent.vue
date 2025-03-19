@@ -157,7 +157,9 @@ const categories = computed<SettingTreeNode[]>(() =>
   ].map((node) => ({
     ...node,
     translatedLabel: t(
+      // @ts-expect-error fixme ts strict error
       `settingsCategories.${normalizeI18nKey(node.label)}`,
+      // @ts-expect-error fixme ts strict error
       node.label
     )
   }))
@@ -175,12 +177,16 @@ onMounted(() => {
 })
 
 const sortedGroups = (category: SettingTreeNode): ISettingGroup[] => {
-  return [...(category.children ?? [])]
-    .sort((a, b) => a.label.localeCompare(b.label))
-    .map((group) => ({
-      label: group.label,
-      settings: flattenTree<SettingParams>(group)
-    }))
+  // @ts-expect-error fixme ts strict error
+  return (
+    [...(category.children ?? [])]
+      // @ts-expect-error fixme ts strict error
+      .sort((a, b) => a.label.localeCompare(b.label))
+      .map((group) => ({
+        label: group.label,
+        settings: flattenTree<SettingParams>(group)
+      }))
+  )
 }
 
 const searchQuery = ref<string>('')

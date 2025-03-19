@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import fs from 'fs'
 import { describe, expect, it } from 'vitest'
 
@@ -68,10 +67,12 @@ describe('parseComfyWorkflow', () => {
     // Should automatically transform the legacy format object to array.
     workflow.nodes[0].pos = { '0': 3, '1': 4 }
     let validatedWorkflow = await validateComfyWorkflow(workflow)
+    // @ts-expect-error fixme ts strict error
     expect(validatedWorkflow.nodes[0].pos).toEqual([3, 4])
 
     workflow.nodes[0].pos = { 0: 3, 1: 4 }
     validatedWorkflow = await validateComfyWorkflow(workflow)
+    // @ts-expect-error fixme ts strict error
     expect(validatedWorkflow.nodes[0].pos).toEqual([3, 4])
 
     // Should accept the legacy bugged format object.
@@ -89,6 +90,7 @@ describe('parseComfyWorkflow', () => {
       '9': 0
     }
     validatedWorkflow = await validateComfyWorkflow(workflow)
+    // @ts-expect-error fixme ts strict error
     expect(validatedWorkflow.nodes[0].pos).toEqual([600, 340])
   })
 
@@ -107,6 +109,7 @@ describe('parseComfyWorkflow', () => {
     // dynamic widgets display.
     workflow.nodes[0].widgets_values = { foo: 'bar' }
     const validatedWorkflow = await validateComfyWorkflow(workflow)
+    // @ts-expect-error fixme ts strict error
     expect(validatedWorkflow.nodes[0].widgets_values).toEqual({ foo: 'bar' })
   })
 

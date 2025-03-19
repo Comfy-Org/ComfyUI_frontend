@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
@@ -14,6 +13,7 @@ describe('EditableText', () => {
     app.use(PrimeVue)
   })
 
+  // @ts-expect-error fixme ts strict error
   const mountComponent = (props, options = {}) => {
     return mount(EditableText, {
       global: {
@@ -65,6 +65,7 @@ describe('EditableText', () => {
     })
     await wrapper.findComponent(InputText).trigger('blur')
     expect(wrapper.emitted('edit')).toBeTruthy()
+    // @ts-expect-error fixme ts strict error
     expect(wrapper.emitted('edit')[0]).toEqual(['Test Text'])
   })
 })

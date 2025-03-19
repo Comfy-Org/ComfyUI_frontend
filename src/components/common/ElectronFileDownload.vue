@@ -101,13 +101,16 @@ const fileSize = computed(() =>
   download.fileSize.value ? formatSize(download.fileSize.value) : '?'
 )
 const electronDownloadStore = useElectronDownloadStore()
+// @ts-expect-error fixme ts strict error
 const [savePath, filename] = props.label.split('/')
 
 electronDownloadStore.$subscribe((_, { downloads }) => {
   const download = downloads.find((download) => props.url === download.url)
 
   if (download) {
+    // @ts-expect-error fixme ts strict error
     downloadProgress.value = Number((download.progress * 100).toFixed(1))
+    // @ts-expect-error fixme ts strict error
     status.value = download.status
   }
 })

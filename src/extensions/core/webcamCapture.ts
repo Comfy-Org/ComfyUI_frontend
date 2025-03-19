@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { t } from '@/i18n'
 import { useToastStore } from '@/stores/toastStore'
 
@@ -12,7 +11,9 @@ app.registerExtension({
   getCustomWidgets() {
     return {
       WEBCAM(node, inputName) {
+        // @ts-expect-error fixme ts strict error
         let res
+        // @ts-expect-error fixme ts strict error
         node[WEBCAM_READY] = new Promise((resolve) => (res = resolve))
 
         const container = document.createElement('div')
@@ -30,7 +31,9 @@ app.registerExtension({
             })
             container.replaceChildren(video)
 
+            // @ts-expect-error fixme ts strict error
             setTimeout(() => res(video), 500) // Fallback as loadedmetadata doesnt fire sometimes?
+            // @ts-expect-error fixme ts strict error
             video.addEventListener('loadedmetadata', () => res(video), false)
             video.srcObject = stream
             video.play()
@@ -44,10 +47,12 @@ app.registerExtension({
             if (window.isSecureContext) {
               label.textContent =
                 'Unable to load webcam, please ensure access is granted:\n' +
+                // @ts-expect-error fixme ts strict error
                 error.message
             } else {
               label.textContent =
                 'Unable to load webcam. A secure context is required, if you are not accessing ComfyUI on localhost (127.0.0.1) you will have to enable TLS (https)\n\n' +
+                // @ts-expect-error fixme ts strict error
                 error.message
             }
 
@@ -64,10 +69,15 @@ app.registerExtension({
   nodeCreated(node) {
     if ((node.type, node.constructor.comfyClass !== 'WebcamCapture')) return
 
+    // @ts-expect-error fixme ts strict error
     let video
+    // @ts-expect-error fixme ts strict error
     const camera = node.widgets.find((w) => w.name === 'image')
+    // @ts-expect-error fixme ts strict error
     const w = node.widgets.find((w) => w.name === 'width')
+    // @ts-expect-error fixme ts strict error
     const h = node.widgets.find((w) => w.name === 'height')
+    // @ts-expect-error fixme ts strict error
     const captureOnQueue = node.widgets.find(
       (w) => w.name === 'capture_on_queue'
     )
@@ -101,7 +111,9 @@ app.registerExtension({
     btn.disabled = true
     btn.serializeValue = () => undefined
 
+    // @ts-expect-error fixme ts strict error
     camera.serializeValue = async () => {
+      // @ts-expect-error fixme ts strict error
       if (captureOnQueue.value) {
         capture()
       } else if (!node.imgs?.length) {
@@ -111,6 +123,7 @@ app.registerExtension({
       }
 
       // Upload image to temp storage
+      // @ts-expect-error fixme ts strict error
       const blob = await new Promise<Blob>((r) => canvas.toBlob(r))
       const name = `${+new Date()}.png`
       const file = new File([blob], name)
@@ -130,11 +143,15 @@ app.registerExtension({
       return `webcam/${name} [temp]`
     }
 
+    // @ts-expect-error fixme ts strict error
     node[WEBCAM_READY].then((v) => {
       video = v
       // If width isnt specified then use video output resolution
+      // @ts-expect-error fixme ts strict error
       if (!w.value) {
+        // @ts-expect-error fixme ts strict error
         w.value = video.videoWidth || 640
+        // @ts-expect-error fixme ts strict error
         h.value = video.videoHeight || 480
       }
       btn.disabled = false

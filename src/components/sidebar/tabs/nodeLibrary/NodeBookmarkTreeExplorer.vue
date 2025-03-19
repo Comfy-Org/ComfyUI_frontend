@@ -131,6 +131,7 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
       return {
         key: node.key,
         label: node.leaf ? node.data.display_name : node.label,
+        // @ts-expect-error fixme ts strict error
         leaf: node.leaf,
         data: node.data,
         getIcon() {
@@ -161,15 +162,19 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
         handleDrop(data: TreeExplorerDragAndDropData<ComfyNodeDefImpl>) {
           const nodeDefToAdd = data.data.data
           // Remove bookmark if the source is the top level bookmarked node.
+          // @ts-expect-error fixme ts strict error
           if (nodeBookmarkStore.isBookmarked(nodeDefToAdd)) {
+            // @ts-expect-error fixme ts strict error
             nodeBookmarkStore.toggleBookmark(nodeDefToAdd)
           }
           const folderNodeDef = node.data as ComfyNodeDefImpl
+          // @ts-expect-error fixme ts strict error
           const nodePath = folderNodeDef.category + '/' + nodeDefToAdd.name
           nodeBookmarkStore.addBookmark(nodePath)
         },
         handleClick(e: MouseEvent) {
           if (this.leaf) {
+            // @ts-expect-error fixme ts strict error
             useLitegraphService().addNodeOnGraph(this.data)
           } else {
             toggleNodeOnEvent(e, node)
@@ -185,6 +190,7 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
                 }
               },
               handleDelete() {
+                // @ts-expect-error fixme ts strict error
                 nodeBookmarkStore.deleteBookmarkFolder(this.data)
               }
             })

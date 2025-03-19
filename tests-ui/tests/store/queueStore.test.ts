@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { describe, expect, it } from 'vitest'
 
 import { TaskItemImpl } from '@/stores/queueStore'
@@ -7,6 +6,7 @@ describe('TaskItemImpl', () => {
   it('should remove animated property from outputs during construction', () => {
     const taskItem = new TaskItemImpl(
       'History',
+      // @ts-expect-error fixme ts strict error
       [0, 'prompt-id', {}, {}, []],
       { status_str: 'success', messages: [] },
       {
@@ -22,12 +22,14 @@ describe('TaskItemImpl', () => {
 
     // Verify other output properties remain intact
     expect(taskItem.outputs['node-1'].images).toBeDefined()
+    // @ts-expect-error fixme ts strict error
     expect(taskItem.outputs['node-1'].images[0].filename).toBe('test.png')
   })
 
   it('should handle outputs without animated property', () => {
     const taskItem = new TaskItemImpl(
       'History',
+      // @ts-expect-error fixme ts strict error
       [0, 'prompt-id', {}, {}, []],
       { status_str: 'success', messages: [] },
       {
@@ -39,12 +41,14 @@ describe('TaskItemImpl', () => {
 
     // Verify outputs are preserved when no animated property exists
     expect(taskItem.outputs['node-1'].images).toBeDefined()
+    // @ts-expect-error fixme ts strict error
     expect(taskItem.outputs['node-1'].images[0].filename).toBe('test.png')
   })
 
   it('should recognize webm video from core', () => {
     const taskItem = new TaskItemImpl(
       'History',
+      // @ts-expect-error fixme ts strict error
       [0, 'prompt-id', {}, {}, []],
       { status_str: 'success', messages: [] },
       {
@@ -67,6 +71,7 @@ describe('TaskItemImpl', () => {
   it('should recognize webm video from VHS', () => {
     const taskItem = new TaskItemImpl(
       'History',
+      // @ts-expect-error fixme ts strict error
       [0, 'prompt-id', {}, {}, []],
       { status_str: 'success', messages: [] },
       {
