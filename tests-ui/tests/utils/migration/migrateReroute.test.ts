@@ -8,9 +8,7 @@ import {
   createReroutePoints,
   establishRerouteRelationships,
   findLegacyRerouteNodes,
-  findOriginalSource,
   findRerouteTargets,
-  findRootReroute,
   migrateLegacyRerouteNodes
 } from '@/utils/migration/migrateReroute'
 
@@ -296,71 +294,6 @@ describe('migrateReroute', () => {
       const reroute25 = reroutes.find((r) => r.id === rerouteIdMap.get(25))
 
       expect(reroute25?.parentId).toBeUndefined()
-    })
-  })
-
-  describe('findRootReroute', () => {
-    it('should find the root reroute in a chain', () => {
-      const rerouteNodes = findLegacyRerouteNodes(sampleWorkflow)
-      const { reroutes, rerouteIdMap } = createReroutePoints(rerouteNodes)
-
-      establishRerouteRelationships(sampleWorkflow, reroutes, rerouteIdMap)
-
-      // Node 25 is the root reroute
-      const rootId = findRootReroute(reroutes, rerouteIdMap.get(13)!)
-
-      expect(rootId).toBe(rerouteIdMap.get(25))
-    })
-
-    it('should return the same ID if the reroute is already a root', () => {
-      const rerouteNodes = findLegacyRerouteNodes(sampleWorkflow)
-      const { reroutes, rerouteIdMap } = createReroutePoints(rerouteNodes)
-
-      establishRerouteRelationships(sampleWorkflow, reroutes, rerouteIdMap)
-
-      const rootId = findRootReroute(reroutes, rerouteIdMap.get(25)!)
-
-      expect(rootId).toBe(rerouteIdMap.get(25))
-    })
-  })
-
-  describe('findOriginalSource', () => {
-    it('should find the original source node and slot for a reroute', () => {
-      const rerouteNodes = findLegacyRerouteNodes(sampleWorkflow)
-      const { reroutes, rerouteIdMap } = createReroutePoints(rerouteNodes)
-
-      establishRerouteRelationships(sampleWorkflow, reroutes, rerouteIdMap)
-
-      const rootRerouteId = rerouteIdMap.get(25)!
-      const source = findOriginalSource(
-        sampleWorkflow,
-        rerouteIdMap,
-        rootRerouteId
-      )
-
-      expect(source).toBeDefined()
-      expect(source?.nodeId).toBe(4) // CheckpointLoaderSimple
-      expect(source?.slot).toBe(2) // VAE output
-    })
-
-    it('should return undefined if no source is found', () => {
-      const rerouteNodes = findLegacyRerouteNodes(sampleWorkflow)
-      const { rerouteIdMap } = createReroutePoints(rerouteNodes)
-
-      // Create a modified workflow with no link to the root reroute
-      const modifiedWorkflow = {
-        ...sampleWorkflow,
-        links: sampleWorkflow.links.filter((link) => link[3] !== 25)
-      }
-
-      const rootRerouteId = rerouteIdMap.get(25)!
-      const source = findOriginalSource(
-        modifiedWorkflow,
-        rerouteIdMap,
-        rootRerouteId
-      )
-
-      expect(source).toBeUndefined()
     })
   })
 

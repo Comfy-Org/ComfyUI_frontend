@@ -82,56 +82,6 @@ export function establishRerouteRelationships(
 }
 
 /**
- * Finds the root reroute in a chain by traversing up the parent chain
- */
-export function findRootReroute(
-  reroutes: Reroute[],
-  rerouteId: number
-): number {
-  let currentRerouteId = rerouteId
-
-  while (true) {
-    const currentReroute = reroutes.find((r) => r.id === currentRerouteId)!
-    if (!currentReroute.parentId) break
-    currentRerouteId = currentReroute.parentId
-  }
-
-  return currentRerouteId
-}
-
-/**
- * Finds the original source node and slot for a reroute
- */
-export function findOriginalSource(
-  workflow: WorkflowJSON04,
-  rerouteIdMap: Map<NodeId, number>,
-  rootRerouteId: number
-): { nodeId: NodeId; slot: number } | undefined {
-  // Find the node ID for the root reroute
-  const rootRerouteNodeId = Array.from(rerouteIdMap.entries()).find(
-    ([_, id]) => id === rootRerouteId
-  )?.[0]
-
-  if (!rootRerouteNodeId) return undefined
-
-  // Find the link that targets the root reroute
-  for (const [
-    _linkId,
-    srcNodeId,
-    sourceSlot,
-    tgtNodeId,
-    _targetSlot,
-    _dataType
-  ] of workflow.links) {
-    if (tgtNodeId === rootRerouteNodeId) {
-      return { nodeId: srcNodeId, slot: sourceSlot as number }
-    }
-  }
-
-  return undefined
-}
-
-/**
  * Finds all target nodes that a reroute connects to (directly or through child reroutes)
  */
 export function findRerouteTargets(
