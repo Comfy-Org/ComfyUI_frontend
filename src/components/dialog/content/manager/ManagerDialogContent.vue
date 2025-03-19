@@ -35,9 +35,12 @@
           <div class="flex-1 overflow-auto">
             <div
               v-if="isLoading"
-              class="flex justify-center items-center h-full"
+              class="w-full h-full overflow-auto scrollbar-hide"
             >
-              <ProgressSpinner />
+              <GridSkeleton
+                :grid-style="GRID_STYLE"
+                :skeletonCardCount="skeletonCardCount"
+              />
             </div>
             <NoResultsPlaceholder
               v-else-if="searchResults.length === 0"
@@ -56,12 +59,7 @@
               <VirtualGrid
                 :items="resultsWithKeys"
                 :buffer-rows="3"
-                :gridStyle="{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(19rem, 1fr))',
-                  padding: '0.5rem',
-                  gap: '1.5rem'
-                }"
+                :gridStyle="GRID_STYLE"
                 @approach-end="onApproachEnd"
               >
                 <template #item="{ item }">
@@ -97,7 +95,6 @@
 <script setup lang="ts">
 import { whenever } from '@vueuse/core'
 import Button from 'primevue/button'
-import ProgressSpinner from 'primevue/progressspinner'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -109,6 +106,7 @@ import InfoPanel from '@/components/dialog/content/manager/infoPanel/InfoPanel.v
 import InfoPanelMultiItem from '@/components/dialog/content/manager/infoPanel/InfoPanelMultiItem.vue'
 import PackCard from '@/components/dialog/content/manager/packCard/PackCard.vue'
 import RegistrySearchBar from '@/components/dialog/content/manager/registrySearchBar/RegistrySearchBar.vue'
+import GridSkeleton from '@/components/dialog/content/manager/skeleton/GridSkeleton.vue'
 import { useResponsiveCollapse } from '@/composables/element/useResponsiveCollapse'
 import { useInstalledPacks } from '@/composables/nodePack/useInstalledPacks'
 import { useWorkflowPacks } from '@/composables/nodePack/useWorkflowPacks'
@@ -126,6 +124,13 @@ enum ManagerTab {
 
 const { t } = useI18n()
 const comfyManagerStore = useComfyManagerStore()
+
+const GRID_STYLE = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(19rem, 1fr))',
+  padding: '0.5rem',
+  gap: '1.5rem'
+} as const
 
 const {
   isSmallScreen,
@@ -168,6 +173,11 @@ const isInitialLoad = computed(
 
 const isEmptySearch = computed(() => searchQuery.value === '')
 const displayPacks = ref<components['schemas']['Node'][]>([])
+const skeletonCardCount = computed(
+  () =>
+    // Render a skeleton for each loading item or fallback to a value adjusted to screen size
+    displayPacks.value?.length ?? (isSmallScreen.value ? 16 : 32)
+)
 
 const {
   startFetchInstalled,
