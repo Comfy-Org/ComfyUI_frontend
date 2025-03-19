@@ -56,7 +56,8 @@ const props = defineProps<{
   node: RenderedTreeExplorerNode<ComfyNodeDefImpl>
 }>()
 
-const nodeDef = computed(() => props.node.data)
+// Note: node.data should be present for leaf nodes.
+const nodeDef = computed(() => props.node.data!)
 const nodeBookmarkStore = useNodeBookmarkStore()
 const isBookmarked = computed(() =>
   nodeBookmarkStore.isBookmarked(nodeDef.value)

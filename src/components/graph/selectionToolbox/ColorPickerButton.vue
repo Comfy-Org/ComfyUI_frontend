@@ -7,7 +7,7 @@
     >
       <template #icon>
         <div class="flex items-center gap-1">
-          <i class="pi pi-circle-fill" :style="{ color: currentColor }" />
+          <i class="pi pi-circle-fill" :style="{ color: currentColor ?? '' }" />
           <i class="pi pi-chevron-down" :style="{ fontSize: '0.5rem' }" />
         </div>
       </template>

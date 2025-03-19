@@ -100,12 +100,12 @@ onMounted(async () => {
   await validatePath(paths.defaultInstallPath)
 })
 
-const validatePath = async (path: string) => {
+const validatePath = async (path: string | undefined) => {
   try {
     pathError.value = ''
     pathExists.value = false
     nonDefaultDrive.value = false
-    const validation = await electron.validateInstallPath(path)
+    const validation = await electron.validateInstallPath(path ?? '')
 
     // Create a pre-formatted list of errors
     if (!validation.isValid) {

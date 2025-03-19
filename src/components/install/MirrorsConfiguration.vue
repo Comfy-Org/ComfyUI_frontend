@@ -50,7 +50,7 @@ import { isInChina } from '@/utils/networkUtil'
 import { ValidationState, mergeValidationStates } from '@/utils/validationUtil'
 
 const showMirrorInputs = ref(false)
-const { device } = defineProps<{ device: TorchDeviceType }>()
+const { device } = defineProps<{ device: TorchDeviceType | null }>()
 const pythonMirror = defineModel<string>('pythonMirror', { required: true })
 const pypiMirror = defineModel<string>('pypiMirror', { required: true })
 const torchMirror = defineModel<string>('torchMirror', { required: true })
@@ -95,7 +95,7 @@ const mirrors = computed<[UVMirror, ModelRef<string>][]>(() =>
     [
       [PYTHON_MIRROR, pythonMirror],
       [PYPI_MIRROR, pypiMirror],
-      [getTorchMirrorItem(device), torchMirror]
+      [getTorchMirrorItem(device ?? 'cpu'), torchMirror]
     ] as [UVMirror, ModelRef<string>][]
   ).map(([item, modelValue]) => [
     userIsInChina.value ? useFallbackMirror(item) : item,

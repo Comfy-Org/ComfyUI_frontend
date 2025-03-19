@@ -5,7 +5,7 @@
       v-for="widget in widgets"
       :key="widget.id"
       :widget="widget"
-      :widget-state="domWidgetStore.widgetStates.get(widget.id)"
+      :widget-state="domWidgetStore.widgetStates.get(widget.id)!"
       @update:widget-value="widget.value = $event"
     />
   </div>
@@ -56,7 +56,7 @@ const updateWidgets = () => {
         (widget.computedHeight ?? 50) - margin * 2
       ]
       // TODO: optimize this logic as it's O(n), where n is the number of nodes
-      widgetState.zIndex = lgCanvas.graph.nodes.indexOf(node)
+      widgetState.zIndex = lgCanvas.graph?.nodes.indexOf(node) ?? -1
       widgetState.readonly = lgCanvas.read_only
     }
   }

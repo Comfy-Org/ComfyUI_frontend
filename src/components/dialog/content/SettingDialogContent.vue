@@ -31,7 +31,7 @@
         <PanelTemplate
           v-for="category in settingCategories"
           :key="category.key"
-          :value="category.label"
+          :value="category.label ?? ''"
         >
           <template #header>
             <CurrentUserMessage v-if="tabValue === 'Comfy'" />
