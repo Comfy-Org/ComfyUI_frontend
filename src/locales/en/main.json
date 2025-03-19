@@ -96,7 +96,9 @@
     "enabled": "Enabled",
     "installed": "Installed",
     "restart": "Restart",
-    "missing": "Missing"
+    "missing": "Missing",
+    "inProgress": "In progress",
+    "completed": "Completed"
   },
   "manager": {
     "title": "Custom Nodes Manager",
