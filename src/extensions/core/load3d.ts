@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { IWidget } from '@comfyorg/litegraph'
 import { IStringWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import { nextTick } from 'vue'
@@ -10,13 +9,13 @@ import Load3dAnimation from '@/extensions/core/load3d/Load3dAnimation'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
+import { useExtensionService } from '@/services/extensionService'
 import { useLoad3dService } from '@/services/load3dService'
 import { useToastStore } from '@/stores/toastStore'
 import { generateUUID } from '@/utils/formatUtil'
 
-app.registerExtension({
+useExtensionService().registerExtension({
   name: 'Comfy.Load3D',
 
   getCustomWidgets() {
@@ -47,7 +46,7 @@ app.registerExtension({
               )
             )
 
-            await useLoad3dService().getLoad3d(node).loadModel(modelUrl)
+            await useLoad3dService().getLoad3d(node)?.loadModel(modelUrl)
 
             if (uploadPath && modelWidget) {
               if (!modelWidget.options?.values?.includes(uploadPath)) {
@@ -64,7 +63,7 @@ app.registerExtension({
         })
 
         node.addWidget('button', 'clear', 'clear', () => {
-          useLoad3dService().getLoad3d(node).clearModel()
+          useLoad3dService().getLoad3d(node)?.clearModel()
 
           const modelWidget = node.widgets?.find(
             (w: IWidget) => w.name === 'model_file'
@@ -106,54 +105,56 @@ app.registerExtension({
 
     const load3d = useLoad3dService().getLoad3d(node)
 
-    const modelWidget = node.widgets.find(
-      (w: IWidget) => w.name === 'model_file'
-    )
+    if (load3d) {
+      let cameraState = node.properties['Camera Info']
 
-    let cameraState = node.properties['Camera Info']
+      const config = new Load3DConfiguration(load3d)
 
-    const config = new Load3DConfiguration(load3d)
-
-    const width = node.widgets.find((w: IWidget) => w.name === 'width')
-    const height = node.widgets.find((w: IWidget) => w.name === 'height')
-
-    config.configure('input', modelWidget, cameraState, width, height)
-
-    const sceneWidget = node.widgets.find((w: IWidget) => w.name === 'image')
-
-    sceneWidget.serializeValue = async () => {
-      node.properties['Camera Info'] = load3d.getCameraState()
-
-      const {
-        scene: imageData,
-        mask: maskData,
-        normal: normalData,
-        lineart: lineartData
-      } = await load3d.captureScene(
-        width.value as number,
-        height.value as number
+      const modelWidget = node.widgets?.find(
+        (w: IWidget) => w.name === 'model_file'
       )
+      const width = node.widgets?.find((w: IWidget) => w.name === 'width')
+      const height = node.widgets?.find((w: IWidget) => w.name === 'height')
+      const sceneWidget = node.widgets?.find((w: IWidget) => w.name === 'image')
 
-      const [data, dataMask, dataNormal, dataLineart] = await Promise.all([
-        Load3dUtils.uploadTempImage(imageData, 'scene'),
-        Load3dUtils.uploadTempImage(maskData, 'scene_mask'),
-        Load3dUtils.uploadTempImage(normalData, 'scene_normal'),
-        Load3dUtils.uploadTempImage(lineartData, 'scene_lineart')
-      ])
+      if (modelWidget && width && height && cameraState && sceneWidget) {
+        config.configure('input', modelWidget, cameraState, width, height)
 
-      load3d.handleResize()
+        sceneWidget.serializeValue = async () => {
+          node.properties['Camera Info'] = load3d.getCameraState()
 
-      return {
-        image: `threed/${data.name} [temp]`,
-        mask: `threed/${dataMask.name} [temp]`,
-        normal: `threed/${dataNormal.name} [temp]`,
-        lineart: `threed/${dataLineart.name} [temp]`
+          const {
+            scene: imageData,
+            mask: maskData,
+            normal: normalData,
+            lineart: lineartData
+          } = await load3d.captureScene(
+            width.value as number,
+            height.value as number
+          )
+
+          const [data, dataMask, dataNormal, dataLineart] = await Promise.all([
+            Load3dUtils.uploadTempImage(imageData, 'scene'),
+            Load3dUtils.uploadTempImage(maskData, 'scene_mask'),
+            Load3dUtils.uploadTempImage(normalData, 'scene_normal'),
+            Load3dUtils.uploadTempImage(lineartData, 'scene_lineart')
+          ])
+
+          load3d.handleResize()
+
+          return {
+            image: `threed/${data.name} [temp]`,
+            mask: `threed/${dataMask.name} [temp]`,
+            normal: `threed/${dataNormal.name} [temp]`,
+            lineart: `threed/${dataLineart.name} [temp]`
+          }
+        }
       }
     }
   }
 })
 
-app.registerExtension({
+useExtensionService().registerExtension({
   name: 'Comfy.Load3DAnimation',
 
   getCustomWidgets() {
@@ -183,7 +184,7 @@ app.registerExtension({
               )
             )
 
-            await useLoad3dService().getLoad3d(node).loadModel(modelUrl)
+            await useLoad3dService().getLoad3d(node)?.loadModel(modelUrl)
 
             if (uploadPath && modelWidget) {
               if (!modelWidget.options?.values?.includes(uploadPath)) {
@@ -200,7 +201,8 @@ app.registerExtension({
         })
 
         node.addWidget('button', 'clear', 'clear', () => {
-          useLoad3dService().getLoad3d(node).clearModel()
+          useLoad3dService().getLoad3d(node)?.clearModel()
+
           const modelWidget = node.widgets?.find(
             (w: IWidget) => w.name === 'model_file'
           )
@@ -239,55 +241,57 @@ app.registerExtension({
 
     await nextTick()
 
-    const sceneWidget = node.widgets.find((w: IWidget) => w.name === 'image')
+    const sceneWidget = node.widgets?.find((w: IWidget) => w.name === 'image')
 
     const load3d = useLoad3dService().getLoad3d(node) as Load3dAnimation
 
-    const modelWidget = node.widgets.find(
+    const modelWidget = node.widgets?.find(
       (w: IWidget) => w.name === 'model_file'
     )
 
     let cameraState = node.properties['Camera Info']
 
-    const config = new Load3DConfiguration(load3d)
+    const width = node.widgets?.find((w: IWidget) => w.name === 'width')
+    const height = node.widgets?.find((w: IWidget) => w.name === 'height')
 
-    const width = node.widgets.find((w: IWidget) => w.name === 'width')
-    const height = node.widgets.find((w: IWidget) => w.name === 'height')
+    if (modelWidget && width && height && cameraState && sceneWidget) {
+      const config = new Load3DConfiguration(load3d)
 
-    config.configure('input', modelWidget, cameraState, width, height)
+      config.configure('input', modelWidget, cameraState, width, height)
 
-    sceneWidget.serializeValue = async () => {
-      node.properties['Camera Info'] = load3d.getCameraState()
+      sceneWidget.serializeValue = async () => {
+        node.properties['Camera Info'] = load3d.getCameraState()
 
-      load3d.toggleAnimation(false)
+        load3d.toggleAnimation(false)
 
-      const {
-        scene: imageData,
-        mask: maskData,
-        normal: normalData
-      } = await load3d.captureScene(
-        width.value as number,
-        height.value as number
-      )
+        const {
+          scene: imageData,
+          mask: maskData,
+          normal: normalData
+        } = await load3d.captureScene(
+          width.value as number,
+          height.value as number
+        )
 
-      const [data, dataMask, dataNormal] = await Promise.all([
-        Load3dUtils.uploadTempImage(imageData, 'scene'),
-        Load3dUtils.uploadTempImage(maskData, 'scene_mask'),
-        Load3dUtils.uploadTempImage(normalData, 'scene_normal')
-      ])
+        const [data, dataMask, dataNormal] = await Promise.all([
+          Load3dUtils.uploadTempImage(imageData, 'scene'),
+          Load3dUtils.uploadTempImage(maskData, 'scene_mask'),
+          Load3dUtils.uploadTempImage(normalData, 'scene_normal')
+        ])
 
-      load3d.handleResize()
+        load3d.handleResize()
 
-      return {
-        image: `threed/${data.name} [temp]`,
-        mask: `threed/${dataMask.name} [temp]`,
-        normal: `threed/${dataNormal.name} [temp]`
+        return {
+          image: `threed/${data.name} [temp]`,
+          mask: `threed/${dataMask.name} [temp]`,
+          normal: `threed/${dataNormal.name} [temp]`
+        }
       }
     }
   }
 })
 
-app.registerExtension({
+useExtensionService().registerExtension({
   name: 'Comfy.Preview3D',
 
   async beforeRegisterNodeDef(_nodeType, nodeData) {
@@ -330,16 +334,10 @@ app.registerExtension({
 
     await nextTick()
 
-    const load3d = useLoad3dService().getLoad3d(node)
-
-    const modelWidget = node.widgets.find(
-      (w: IWidget) => w.name === 'model_file'
-    )
-
     const onExecuted = node.onExecuted
 
     node.onExecuted = function (message: any) {
-      onExecuted?.apply(this, arguments)
+      onExecuted?.apply(this, arguments as any)
 
       let filePath = message.model_file[0]
 
@@ -351,16 +349,24 @@ app.registerExtension({
         useToastStore().addAlert(msg)
       }
 
-      modelWidget.value = filePath.replaceAll('\\', '/')
+      const load3d = useLoad3dService().getLoad3d(node)
 
-      const config = new Load3DConfiguration(load3d)
+      const modelWidget = node.widgets?.find(
+        (w: IWidget) => w.name === 'model_file'
+      )
 
-      config.configure('output', modelWidget)
+      if (load3d && modelWidget) {
+        modelWidget.value = filePath.replaceAll('\\', '/')
+
+        const config = new Load3DConfiguration(load3d)
+
+        config.configure('output', modelWidget)
+      }
     }
   }
 })
 
-app.registerExtension({
+useExtensionService().registerExtension({
   name: 'Comfy.Preview3DAnimation',
 
   async beforeRegisterNodeDef(_nodeType, nodeData) {
@@ -403,16 +409,10 @@ app.registerExtension({
 
     await nextTick()
 
-    const load3d = useLoad3dService().getLoad3d(node)
-
-    const modelWidget = node.widgets.find(
-      (w: IWidget) => w.name === 'model_file'
-    )
-
     const onExecuted = node.onExecuted
 
     node.onExecuted = function (message: any) {
-      onExecuted?.apply(this, arguments)
+      onExecuted?.apply(this, arguments as any)
 
       let filePath = message.model_file[0]
 
@@ -424,11 +424,18 @@ app.registerExtension({
         useToastStore().addAlert(msg)
       }
 
-      modelWidget.value = filePath.replaceAll('\\', '/')
+      const load3d = useLoad3dService().getLoad3d(node)
 
-      const config = new Load3DConfiguration(load3d)
+      const modelWidget = node.widgets?.find(
+        (w: IWidget) => w.name === 'model_file'
+      )
+      if (load3d && modelWidget) {
+        modelWidget.value = filePath.replaceAll('\\', '/')
 
-      config.configure('output', modelWidget)
+        const config = new Load3DConfiguration(load3d)
+
+        config.configure('output', modelWidget)
+      }
     }
   }
 })
