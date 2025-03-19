@@ -42,7 +42,6 @@
           >
             <span
               class="text-sm font-bold truncate overflow-hidden text-ellipsis"
-              :title="nodePack.name"
             >
               {{ nodePack.name }}
             </span>
@@ -52,7 +51,6 @@
               <p
                 v-if="nodePack.description"
                 class="flex-1 justify-start text-muted text-sm font-medium leading-3 break-words overflow-hidden min-h-12 line-clamp-3"
-                :title="nodePack.description"
               >
                 {{ nodePack.description }}
               </p>
