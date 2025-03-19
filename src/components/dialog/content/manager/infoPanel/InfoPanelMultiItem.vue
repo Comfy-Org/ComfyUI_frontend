@@ -1,7 +1,7 @@
 <template>
   <div v-if="nodePacks?.length" class="flex flex-col h-full">
     <div class="p-6 flex-1 overflow-auto">
-      <InfoPanelHeader :node-packs="nodePacks">
+      <InfoPanelHeader :node-packs>
         <template #thumbnail>
           <PackIconStacked :node-packs="nodePacks" />
         </template>
