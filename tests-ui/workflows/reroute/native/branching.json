@@ -1,0 +1,203 @@
+{
+  "last_node_id": 27,
+  "last_link_id": 39,
+  "nodes": [
+    {
+      "id": 12,
+      "type": "VAEDecode",
+      "pos": [
+        620,
+        260
+      ],
+      "size": [
+        210,
+        46
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": null
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 37
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 4,
+      "type": "CheckpointLoaderSimple",
+      "pos": [
+        47.948699951171875,
+        239.2628173828125
+      ],
+      "size": [
+        315,
+        98
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "slot_index": 0,
+          "links": []
+        },
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "slot_index": 1,
+          "links": []
+        },
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "slot_index": 2,
+          "links": [
+            13,
+            37,
+            39
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CheckpointLoaderSimple"
+      },
+      "widgets_values": [
+        "v1-5-pruned-emaonly.safetensors"
+      ]
+    },
+    {
+      "id": 26,
+      "type": "VAEDecode",
+      "pos": [
+        625,
+        373
+      ],
+      "size": [
+        210,
+        46
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": null
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 39
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": []
+    }
+  ],
+  "links": [
+    [
+      37,
+      4,
+      2,
+      12,
+      1,
+      "VAE"
+    ],
+    [
+      39,
+      4,
+      2,
+      26,
+      1,
+      "VAE"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 1.9169877279460752,
+      "offset": [
+        110.4735955390093,
+        32.13688319114618
+      ]
+    },
+    "reroutes": [
+      {
+        "id": 1,
+        "parentId": 3,
+        "pos": [
+          541.8594360351562,
+          296.84393310546875
+        ],
+        "linkIds": [
+          37
+        ]
+      },
+      {
+        "id": 3,
+        "pos": [
+          443.1617736816406,
+          298.1337890625
+        ],
+        "linkIds": [
+          37,
+          39
+        ]
+      },
+      {
+        "id": 4,
+        "parentId": 3,
+        "pos": [
+          551.1860961914062,
+          403.9677429199219
+        ],
+        "linkIds": [
+          39
+        ]
+      }
+    ],
+    "linkExtensions": [
+      {
+        "id": 37,
+        "parentId": 1
+      },
+      {
+        "id": 39,
+        "parentId": 4
+      }
+    ]
+  },
+  "version": 0.4
+}
