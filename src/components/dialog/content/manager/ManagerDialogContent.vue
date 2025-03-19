@@ -173,11 +173,6 @@ const isInitialLoad = computed(
 
 const isEmptySearch = computed(() => searchQuery.value === '')
 const displayPacks = ref<components['schemas']['Node'][]>([])
-const skeletonCardCount = computed(
-  () =>
-    // Render a skeleton for each loading item or fallback to a value adjusted to screen size
-    displayPacks.value?.length ?? (isSmallScreen.value ? 16 : 32)
-)
 
 const {
   startFetchInstalled,
@@ -253,8 +248,7 @@ watch(searchResults, onResultsChange, { flush: 'pre' })
 watch(() => comfyManagerStore.installedPacksIds, onResultsChange)
 
 const isLoading = computed(() => {
-  if (isSearchLoading.value)
-    return searchResults.value.length === 0 || isInitialLoad.value
+  if (isSearchLoading.value) return searchResults.value.length === 0
   if (selectedTab.value?.id === ManagerTab.Installed) {
     return isLoadingInstalled.value
   }
@@ -264,7 +258,7 @@ const isLoading = computed(() => {
   ) {
     return isLoadingWorkflow.value
   }
-  return false
+  return isInitialLoad.value
 })
 
 const resultsWithKeys = computed(
@@ -279,6 +273,27 @@ const selectedNodePacks = ref<components['schemas']['Node'][]>([])
 const selectedNodePack = computed<components['schemas']['Node'] | null>(() =>
   selectedNodePacks.value.length === 1 ? selectedNodePacks.value[0] : null
 )
+
+const getLoadingCount = () => {
+  switch (selectedTab.value?.id) {
+    case ManagerTab.Installed:
+      return comfyManagerStore.installedPacksIds?.size
+    case ManagerTab.Workflow:
+      return workflowPacks.value?.length
+    case ManagerTab.Missing:
+      return workflowPacks.value?.filter?.((pack) =>
+        comfyManagerStore.isPackInstalled(pack.id)
+      )?.length
+    default:
+      return searchResults.value.length
+  }
+}
+
+const skeletonCardCount = computed(() => {
+  const loadingCount = getLoadingCount()
+  if (loadingCount) return loadingCount
+  return isSmallScreen.value ? 12 : 16
+})
 
 const selectNodePack = (
   nodePack: components['schemas']['Node'],
