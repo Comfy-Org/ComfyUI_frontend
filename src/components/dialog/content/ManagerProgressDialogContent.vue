@@ -20,7 +20,7 @@
     >
       <div v-for="(panel, index) in taskPanels" :key="index">
         <Panel
-          :expanded="expandedPanels[index] || false"
+          :expanded="collapsedPanels[index] || false"
           toggleable
           class="shadow-elevation-1 rounded-lg mt-2 dark-theme:bg-black dark-theme:border-black"
         >
@@ -28,9 +28,9 @@
             <div class="flex items-center justify-between w-full py-2">
               <div class="flex flex-col text-sm font-medium leading-normal">
                 <span>{{ panel.taskName }}</span>
-                <span v-show="expandedPanels[index]" class="text-muted">
+                <span class="text-muted">
                   {{
-                    index === taskPanels.length - 1
+                    isInProgress(index)
                       ? $t('g.inProgress')
                       : $t('g.completed') + ' ✓'
                   }}
@@ -41,9 +41,9 @@
           <template #toggleicon>
             <Button
               :icon="
-                expandedPanels[index]
-                  ? 'pi pi-chevron-down'
-                  : 'pi pi-chevron-right'
+                collapsedPanels[index]
+                  ? 'pi pi-chevron-right'
+                  : 'pi pi-chevron-down'
               "
               text
               class="text-neutral-300"
@@ -92,14 +92,18 @@ import {
 
 const { taskLogs } = useComfyManagerStore()
 const progressDialogContent = useManagerProgressDialogStore()
+const managerStore = useComfyManagerStore()
+
+const isInProgress = (index: number) =>
+  index === taskPanels.value.length - 1 && managerStore.uncompletedCount > 0
 
 const taskPanels = computed(() => taskLogs)
 const isExpanded = computed(() => progressDialogContent.isExpanded)
 const isCollapsed = computed(() => !isExpanded.value)
 
-const expandedPanels = ref<Record<number, boolean>>({})
+const collapsedPanels = ref<Record<number, boolean>>({})
 const togglePanel = (index: number) => {
-  expandedPanels.value[index] = !expandedPanels.value[index]
+  collapsedPanels.value[index] = !collapsedPanels.value[index]
 }
 
 const sectionsContainerRef = ref<HTMLElement | null>(null)
@@ -144,20 +148,12 @@ const onLogsAdded = () => {
   scrollLastPanelToBottom()
 }
 
-const expandLastPanel = () => {
-  if (taskPanels.value.length > 0) {
-    expandedPanels.value[taskPanels.value.length - 1] = true
-  }
-}
-
 whenever(lastPanelLogs, onLogsAdded, { flush: 'post', deep: true })
 whenever(() => isExpanded.value, scrollContentToBottom)
 whenever(isCollapsed, resetUserScrolling)
 
 onMounted(() => {
-  expandedPanels.value = {}
   scrollContentToBottom()
-  expandLastPanel()
 })
 
 onBeforeUnmount(() => {

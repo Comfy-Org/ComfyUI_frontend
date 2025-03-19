@@ -17,7 +17,7 @@ type ComponentInstance = InstanceType<typeof ManagerProgressDialogContent> & {
   handleScroll: (e: { target: HTMLElement }) => void
   isUserScrolling: boolean
   resetUserScrolling: () => void
-  expandedPanels: Record<number, boolean>
+  collapsedPanels: Record<number, boolean>
   togglePanel: (index: number) => void
 }
 
@@ -76,7 +76,7 @@ describe('ManagerProgressDialogContent', () => {
   it('expands the last panel by default', async () => {
     const wrapper = mountComponent()
     await nextTick()
-    expect(wrapper.vm.expandedPanels[1]).toBe(true)
+    expect(wrapper.vm.collapsedPanels[1]).toBeFalsy()
   })
 
   it('toggles panel expansion when toggle method is called', async () => {
@@ -84,18 +84,18 @@ describe('ManagerProgressDialogContent', () => {
     await nextTick()
 
     // Initial state - first panel should be collapsed
-    expect(wrapper.vm.expandedPanels[0]).toBeFalsy()
+    expect(wrapper.vm.collapsedPanels[0]).toBeFalsy()
 
     wrapper.vm.togglePanel(0)
     await nextTick()
 
     // After toggle - first panel should be expanded
-    expect(wrapper.vm.expandedPanels[0]).toBe(true)
+    expect(wrapper.vm.collapsedPanels[0]).toBe(true)
 
     wrapper.vm.togglePanel(0)
     await nextTick()
 
-    expect(wrapper.vm.expandedPanels[0]).toBeFalsy()
+    expect(wrapper.vm.collapsedPanels[0]).toBeFalsy()
   })
 
   it('displays the correct status for each panel', async () => {
@@ -105,7 +105,7 @@ describe('ManagerProgressDialogContent', () => {
     // Expand all panels to see status text
     const panels = wrapper.findAllComponents(Panel)
     for (let i = 0; i < panels.length; i++) {
-      if (!wrapper.vm.expandedPanels[i]) {
+      if (!wrapper.vm.collapsedPanels[i]) {
         wrapper.vm.togglePanel(i)
         await nextTick()
       }
@@ -116,7 +116,7 @@ describe('ManagerProgressDialogContent', () => {
       .map((panel) => panel.text())
 
     expect(panelsText[0]).toContain('Completed ✓')
-    expect(panelsText[1]).toContain('In progress')
+    expect(panelsText[1]).toContain('Completed ✓')
   })
 
   it('auto-scrolls to bottom when new logs are added', async () => {
