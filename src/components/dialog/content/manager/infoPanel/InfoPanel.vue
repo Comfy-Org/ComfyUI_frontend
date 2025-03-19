@@ -1,7 +1,7 @@
 <template>
   <template v-if="nodePack">
     <div class="flex flex-col h-full z-40 w-80 overflow-hidden relative">
-      <div class="sticky top-0 z-10 px-6 pt-6 w-full">
+      <div class="top-0 z-10 px-6 pt-6 w-full">
         <InfoPanelHeader :node-packs="[nodePack]" />
       </div>
       <div class="p-6 pt-2 overflow-y-auto flex-1 text-sm hidden-scrollbar">
