@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col h-full">
+  <div v-if="nodePacks?.length" class="flex flex-col h-full">
     <div class="p-6 flex-1 overflow-auto">
       <InfoPanelHeader :node-packs="nodePacks">
         <template #thumbnail>
@@ -23,6 +23,9 @@
         />
       </div>
     </div>
+  </div>
+  <div v-else class="mt-4 mx-8 flex-1 overflow-hidden text-sm">
+    {{ $t('manager.infoPanelEmpty') }}
   </div>
 </template>
 
