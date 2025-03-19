@@ -45,11 +45,11 @@ const placeholderNodeDef: ComfyNodeDef = {
 
 <style scoped>
 :deep(._sb_node_preview) {
-  min-width: unset !important;
+  min-width: unset;
   width: 100%;
 }
 
 :deep(._sb_col) {
-  font-size: 10px !important;
+  font-size: 10px;
 }
 </style>
