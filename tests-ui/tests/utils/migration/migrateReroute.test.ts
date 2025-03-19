@@ -14,19 +14,22 @@ describe('migrateReroute', () => {
       return JSON.parse(fileContent) as WorkflowJSON04
     }
 
-    it('should correctly migrate branching reroute workflow', () => {
-      // Load the legacy workflow
-      const legacyWorkflow = loadWorkflow(
-        'workflows/reroute/legacy/branching.json'
-      )
+    it.each(['branching.json', 'single_connected.json'])(
+      'should correctly migrate %s',
+      (fileName) => {
+        // Load the legacy workflow
+        const legacyWorkflow = loadWorkflow(
+          `workflows/reroute/legacy/${fileName}`
+        )
 
-      // Migrate the workflow
-      const migratedWorkflow = migrateLegacyRerouteNodes(legacyWorkflow)
+        // Migrate the workflow
+        const migratedWorkflow = migrateLegacyRerouteNodes(legacyWorkflow)
 
-      // Compare with snapshot
-      expect(JSON.stringify(migratedWorkflow, null, 2)).toMatchFileSnapshot(
-        'workflows/reroute/native/branching.json'
-      )
-    })
+        // Compare with snapshot
+        expect(JSON.stringify(migratedWorkflow, null, 2)).toMatchFileSnapshot(
+          `workflows/reroute/native/${fileName}`
+        )
+      }
+    )
   })
 })
