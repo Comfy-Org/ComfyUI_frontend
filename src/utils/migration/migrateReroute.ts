@@ -23,12 +23,17 @@ type RerouteEntry = {
 /**
  * Identifies all legacy Reroute nodes in a workflow
  */
-export function findLegacyRerouteNodes(
-  workflow: WorkflowJSON04
-): RerouteNode[] {
+function findLegacyRerouteNodes(workflow: WorkflowJSON04): RerouteNode[] {
   return workflow.nodes.filter(
     (node) => node.type === 'Reroute'
   ) as RerouteNode[]
+}
+
+/**
+ * Gets the center position of a node
+ */
+function getNodeCenter(node: ComfyNode): [number, number] {
+  return [node.pos[0] + node.size[0] / 2, node.pos[1] + node.size[1] / 2]
 }
 
 /**
@@ -45,7 +50,7 @@ export function createReroutePoints(
     rerouteMap.set(node.id, {
       reroute: {
         id: rerouteId,
-        pos: node.pos,
+        pos: getNodeCenter(node),
         linkIds: []
       },
       rerouteNode: node
