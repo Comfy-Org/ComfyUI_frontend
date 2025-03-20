@@ -398,7 +398,7 @@ export class ChangeTracker {
         return false
 
       // Compare other properties normally
-      for (const key of ['links', 'reroutes', 'groups']) {
+      for (const key of ['links', 'floatingLinks', 'reroutes', 'groups']) {
         if (!_.isEqual(a[key], b[key])) {
           return false
         }
