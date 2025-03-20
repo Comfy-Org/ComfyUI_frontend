@@ -136,14 +136,13 @@ const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
         }
         return 'pi pi-folder'
       },
-      // @ts-expect-error fixme ts strict error
       getBadgeText() {
-        // Return null to apply default badge text
+        // Return undefined to apply default badge text
         // Return empty string to hide badge
         if (!folder) {
-          return null
+          return
         }
-        return folder.state === ResourceState.Loaded ? null : ''
+        return folder.state === ResourceState.Loaded ? undefined : ''
       },
       children,
       draggable: node.leaf,

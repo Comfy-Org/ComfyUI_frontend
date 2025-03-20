@@ -117,7 +117,6 @@ const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
       // @ts-expect-error fixme ts strict error
       leaf: node.leaf,
       data: node.data,
-      // @ts-expect-error fixme ts strict error
       getIcon() {
         if (this.leaf) {
           return 'pi pi-circle-fill'
