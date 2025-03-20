@@ -7,7 +7,7 @@
     <Load3DScene
       ref="load3DSceneRef"
       :node="node"
-      :type="type"
+      :inputSpec="inputSpec"
       :backgroundColor="backgroundColor"
       :showGrid="showGrid"
       :lightIntensity="lightIntensity"
@@ -30,6 +30,7 @@
       @edgeThresholdChange="listenEdgeThresholdChange"
     />
     <Load3DControls
+      :inputSpec="inputSpec"
       :backgroundColor="backgroundColor"
       :showGrid="showGrid"
       :showPreview="showPreview"
@@ -42,7 +43,6 @@
       :hasBackgroundImage="hasBackgroundImage"
       :upDirection="upDirection"
       :materialMode="materialMode"
-      :isAnimation="false"
       :edgeThreshold="edgeThreshold"
       @updateBackgroundImage="handleBackgroundImageUpdate"
       @switchCamera="switchCamera"

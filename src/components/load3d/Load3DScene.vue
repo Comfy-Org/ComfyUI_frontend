@@ -13,17 +13,16 @@ import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dAnimation from '@/extensions/core/load3d/Load3dAnimation'
 import {
   CameraType,
-  Load3DAnimationNodeType,
-  Load3DNodeType,
   MaterialMode,
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
 import { t } from '@/i18n'
+import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useLoad3dService } from '@/services/load3dService'
 
 const props = defineProps<{
   node: LGraphNode
-  type: Load3DNodeType | Load3DAnimationNodeType
+  inputSpec: CustomInputSpec
   backgroundColor: string
   showGrid: boolean
   lightIntensity: number
@@ -135,7 +134,7 @@ onMounted(() => {
     node.value as LGraphNode,
     // @ts-expect-error fixme ts strict error
     container.value,
-    props.type
+    props.inputSpec
   )
   handleEvents('add')
 })

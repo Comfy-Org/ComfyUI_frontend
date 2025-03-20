@@ -1,7 +1,7 @@
 <template>
   <Load3DScene
     :node="node"
-    :type="type"
+    :inputSpec="inputSpec"
     :backgroundColor="backgroundColor"
     :showGrid="showGrid"
     :lightIntensity="lightIntensity"
@@ -29,14 +29,14 @@ import Load3DScene from '@/components/load3d/Load3DScene.vue'
 import Load3dAnimation from '@/extensions/core/load3d/Load3dAnimation'
 import {
   CameraType,
-  Load3DAnimationNodeType,
   MaterialMode,
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
+import { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 const props = defineProps<{
   node: any
-  type: Load3DAnimationNodeType
+  inputSpec: CustomInputSpec
   backgroundColor: string
   showGrid: boolean
   lightIntensity: number

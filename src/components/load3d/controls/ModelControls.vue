@@ -100,13 +100,14 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { MaterialMode, UpDirection } from '@/extensions/core/load3d/interfaces'
 import { t } from '@/i18n'
+import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 const vTooltip = Tooltip
 
 const props = defineProps<{
+  inputSpec: CustomInputSpec
   upDirection: UpDirection
   materialMode: MaterialMode
-  isAnimation: boolean
   edgeThreshold?: number
 }>()
 
@@ -141,7 +142,7 @@ const materialModes = computed(() => {
     //'depth' disable for now
   ]
 
-  if (!props.isAnimation) {
+  if (!props.inputSpec.isAnimation && !props.inputSpec.isPreview) {
     modes.push('lineart')
   }
 

@@ -8,6 +8,8 @@ import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader'
 
+import { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+
 export type Load3DNodeType = 'Load3D' | 'Preview3D'
 
 export type Load3DAnimationNodeType = 'Load3DAnimation' | 'Preview3DAnimation'
@@ -33,8 +35,8 @@ export interface EventCallback {
 }
 
 export interface Load3DOptions {
-  createPreview?: boolean
   node?: LGraphNode
+  inputSpec?: CustomInputSpec
 }
 
 export interface CaptureResult {

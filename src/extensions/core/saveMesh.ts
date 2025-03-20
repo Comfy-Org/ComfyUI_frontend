@@ -24,7 +24,9 @@ useExtensionService().registerExtension({
       PREVIEW_3D(node) {
         const inputSpec: CustomInputSpec = {
           name: 'image',
-          type: 'Preview3D'
+          type: 'Preview3D',
+          isAnimation: false,
+          isPreview: true
         }
 
         const widget = new ComponentWidgetImpl({
@@ -65,8 +67,6 @@ useExtensionService().registerExtension({
 
       if (load3d && modelWidget) {
         const filePath = fileInfo['subfolder'] + '/' + fileInfo['filename']
-
-        console.log(filePath)
 
         modelWidget.value = filePath
 

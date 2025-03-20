@@ -7,7 +7,7 @@
     <Load3DAnimationScene
       ref="load3DAnimationSceneRef"
       :node="node"
-      :type="type"
+      :inputSpec="inputSpec"
       :backgroundColor="backgroundColor"
       :showGrid="showGrid"
       :lightIntensity="lightIntensity"
@@ -35,6 +35,7 @@
     />
     <div class="absolute top-0 left-0 w-full h-full pointer-events-none">
       <Load3DControls
+        :inputSpec="inputSpec"
         :backgroundColor="backgroundColor"
         :showGrid="showGrid"
         :showPreview="showPreview"
@@ -47,7 +48,6 @@
         :hasBackgroundImage="hasBackgroundImage"
         :upDirection="upDirection"
         :materialMode="materialMode"
-        :isAnimation="true"
         @updateBackgroundImage="handleBackgroundImageUpdate"
         @switchCamera="switchCamera"
         @toggleGrid="toggleGrid"
