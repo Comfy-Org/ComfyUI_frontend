@@ -243,10 +243,6 @@
     "name": "队列历史大小",
     "tooltip": "队列历史中显示的最大任务数量。"
   },
-  "Comfy_RerouteBeta": {
-    "name": "选择加入转接点Beta",
-    "tooltip": "启用新的转接点。\n\n通过按住alt并划过连线来添加转接点，或在连线中点菜单中添加。\n\n禁用此选项不会造成破坏 - 转接点将被隐藏。"
-  },
   "Comfy_Sidebar_Location": {
     "name": "侧边栏位置",
     "options": {
