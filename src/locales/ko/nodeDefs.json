@@ -590,10 +590,10 @@
     }
   },
   "ConditioningSetAreaPercentageVideo": {
-    "display_name": "조건부 설정 영역 비율 비디오",
+    "display_name": "비디오 조건 (비율로 영역 설정)",
     "inputs": {
       "conditioning": {
-        "name": "조건부"
+        "name": "조건"
       },
       "height": {
         "name": "높이"
@@ -602,7 +602,7 @@
         "name": "강도"
       },
       "temporal": {
-        "name": "시간적"
+        "name": "시간"
       },
       "width": {
         "name": "너비"
@@ -1479,7 +1479,7 @@
         "name": "배치 크기"
       },
       "guidance_type": {
-        "name": "지침 유형"
+        "name": "가이던스 유형"
       },
       "height": {
         "name": "높이"
@@ -1488,7 +1488,7 @@
         "name": "길이"
       },
       "positive": {
-        "name": "긍정적"
+        "name": "긍정 조건"
       },
       "start_image": {
         "name": "시작 이미지"
@@ -1502,10 +1502,10 @@
     },
     "outputs": {
       "0": {
-        "name": "긍정적"
+        "name": "긍정 조건"
       },
       "1": {
-        "name": "잠재"
+        "name": "잠재 비디오"
       }
     }
   },
@@ -2019,24 +2019,24 @@
     }
   },
   "LTXVAddGuide": {
-    "display_name": "LTXVAddGuide",
+    "display_name": "LTXV 가이드 추가",
     "inputs": {
       "frame_idx": {
-        "name": "프레임 인덱스",
-        "tooltip": "조건을 시작할 프레임 인덱스. 단일 프레임 이미지 또는 1-8 프레임의 비디오의 경우 어떤 프레임 인덱스 값도 허용됩니다. 9+ 프레임의 비디오의 경우, 프레임 인덱스는 8로 나누어 떨어져야 하며, 그렇지 않으면 가장 가까운 8의 배수로 내림됩니다. 음수 값은 비디오의 끝에서부터 계산됩니다."
+        "name": "프레임 번호",
+        "tooltip": "조건을 시작할 프레임 번호. 단일 프레임 이미지 또는 1-8 프레임의 비디오의 경우 어떤 프레임 번호 값도 허용됩니다. 9+ 프레임의 비디오의 경우, 프레임 번호는 8의 배수여야 합니다. 그렇지 않으면 가장 가까운 8의 배수로 내림됩니다. 음수 값은 비디오의 끝에서부터 계산됩니다."
       },
       "image": {
         "name": "이미지",
         "tooltip": "잠재 비디오에 조건을 부여하는 이미지 또는 비디오. 8*n + 1 프레임이어야 합니다. 비디오가 8*n + 1 프레임이 아닌 경우 가장 가까운 8*n + 1 프레임으로 자릅니다."
       },
       "latent": {
-        "name": "잠재"
+        "name": "잠재 비디오"
       },
       "negative": {
-        "name": "부정적"
+        "name": "부정 조건"
       },
       "positive": {
-        "name": "긍정적"
+        "name": "긍정 조건"
       },
       "strength": {
         "name": "강도"
@@ -2047,13 +2047,13 @@
     },
     "outputs": {
       "0": {
-        "name": "긍정적"
+        "name": "긍정 조건"
       },
       "1": {
-        "name": "부정적"
+        "name": "부정 조건"
       },
       "2": {
-        "name": "잠재"
+        "name": "잠재 비디오"
       }
     }
   },
@@ -2080,27 +2080,27 @@
     }
   },
   "LTXVCropGuides": {
-    "display_name": "LTXVCropGuides",
+    "display_name": "LTXV 가이드 자르기",
     "inputs": {
       "latent": {
-        "name": "잠재"
+        "name": "잠재 비디오"
       },
       "negative": {
-        "name": "부정적"
+        "name": "부정 조건"
       },
       "positive": {
-        "name": "긍정적"
+        "name": "긍정 조건"
       }
     },
     "outputs": {
       "0": {
-        "name": "긍정적"
+        "name": "긍정 조건"
       },
       "1": {
-        "name": "부정적"
+        "name": "부정 조건"
       },
       "2": {
-        "name": "잠재"
+        "name": "잠재 비디오"
       }
     }
   },
@@ -2145,7 +2145,7 @@
     }
   },
   "LTXVPreprocess": {
-    "display_name": "LTXVPreprocess",
+    "display_name": "LTXV 전처리",
     "inputs": {
       "image": {
         "name": "이미지"
@@ -5531,7 +5531,7 @@
     }
   },
   "TextEncodeHunyuanVideo_ImageToVideo": {
-    "display_name": "TextEncodeHunyuanVideo_ImageToVideo",
+    "display_name": "텍스트 인코딩 (HunyuanVideo 이미지를 비디오로)",
     "inputs": {
       "clip": {
         "name": "클립"
@@ -5868,10 +5868,10 @@
         "name": "길이"
       },
       "negative": {
-        "name": "부정적"
+        "name": "부정 조건"
       },
       "positive": {
-        "name": "긍정적"
+        "name": "긍정 조건"
       },
       "start_image": {
         "name": "시작 이미지"
@@ -5885,13 +5885,13 @@
     },
     "outputs": {
       "0": {
-        "name": "긍정적"
+        "name": "긍정 조건"
       },
       "1": {
-        "name": "부정적"
+        "name": "부정 조건"
       },
       "2": {
-        "name": "잠재"
+        "name": "잠재 비디오"
       }
     }
   },
