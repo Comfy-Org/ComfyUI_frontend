@@ -1129,9 +1129,6 @@ export class ComfyApp {
         useSettingStore().get('Comfy.EnableWorkflowViewRestore') &&
         graphData.extra?.ds
       ) {
-        // @ts-expect-error
-        // Need to set strict: true for zod to match the type [number, number]
-        // https://github.com/colinhacks/zod/issues/3056
         this.canvas.ds.offset = graphData.extra.ds.offset
         this.canvas.ds.scale = graphData.extra.ds.scale
       }
@@ -1616,7 +1613,8 @@ export class ComfyApp {
 
     app.graph.arrange()
 
-    // @ts-expect-error zod type issue on ComfyWorkflowJSON. Should be resolved after enabling ts-strict globally.
+    // @ts-expect-error zod type issue on ComfyWorkflowJSON. ComfyWorkflowJSON
+    // is stricter than LiteGraph's serialisation schema.
     useWorkflowService().afterLoadNewGraph(fileName, this.serializeGraph())
   }
 

@@ -26,7 +26,7 @@ const zVector2 = z.union([
   z
     .object({ 0: z.number(), 1: z.number() })
     .passthrough()
-    .transform((v) => [v[0], v[1]]),
+    .transform((v) => [v[0], v[1]] as [number, number]),
   z.tuple([z.number(), z.number()])
 ])
 
