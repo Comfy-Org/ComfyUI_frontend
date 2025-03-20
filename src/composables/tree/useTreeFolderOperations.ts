@@ -1,3 +1,4 @@
+import type { MenuItem } from 'primevue/menuitem'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -55,14 +56,14 @@ export function useTreeFolderOperations(
   // Generate the "Add Folder" menu item
   const getAddFolderMenuItem = (
     targetNode: RenderedTreeExplorerNode | null
-  ) => {
+  ): MenuItem => {
     return {
       label: t('g.newFolder'),
       icon: 'pi pi-folder-plus',
       command: () => {
         if (targetNode) addFolderCommand(targetNode)
       },
-      visible: targetNode && !targetNode.leaf && !!targetNode.handleAddFolder,
+      visible: !!targetNode && !targetNode.leaf && !!targetNode.handleAddFolder,
       isAsync: false
     }
   }
