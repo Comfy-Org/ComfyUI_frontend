@@ -43,9 +43,9 @@
 
       <ModelControls
         v-if="activeCategory === 'model'"
+        :inputSpec="inputSpec"
         :upDirection="upDirection"
         :materialMode="materialMode"
-        :isAnimation="isAnimation"
         :edgeThreshold="edgeThreshold"
         @updateUpDirection="handleUpdateUpDirection"
         @updateMaterialMode="handleUpdateMaterialMode"
@@ -101,10 +101,12 @@ import {
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
 import { t } from '@/i18n'
+import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 const vTooltip = Tooltip
 
 const props = defineProps<{
+  inputSpec: CustomInputSpec
   backgroundColor: string
   showGrid: boolean
   showPreview: boolean
@@ -117,7 +119,6 @@ const props = defineProps<{
   hasBackgroundImage?: boolean
   upDirection: UpDirection
   materialMode: MaterialMode
-  isAnimation: boolean
   edgeThreshold?: number
 }>()
 

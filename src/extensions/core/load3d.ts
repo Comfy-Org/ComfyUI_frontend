@@ -75,7 +75,9 @@ useExtensionService().registerExtension({
 
         const inputSpec: CustomInputSpec = {
           name: 'image',
-          type: 'Load3D'
+          type: 'Load3D',
+          isAnimation: false,
+          isPreview: false
         }
 
         const widget = new ComponentWidgetImpl({
@@ -117,7 +119,7 @@ useExtensionService().registerExtension({
       const height = node.widgets?.find((w: IWidget) => w.name === 'height')
       const sceneWidget = node.widgets?.find((w: IWidget) => w.name === 'image')
 
-      if (modelWidget && width && height && cameraState && sceneWidget) {
+      if (modelWidget && width && height && sceneWidget) {
         config.configure('input', modelWidget, cameraState, width, height)
 
         sceneWidget.serializeValue = async () => {
@@ -213,7 +215,9 @@ useExtensionService().registerExtension({
 
         const inputSpec: CustomInputSpec = {
           name: 'image',
-          type: 'Load3DAnimation'
+          type: 'Load3DAnimation',
+          isAnimation: true,
+          isPreview: false
         }
 
         const widget = new ComponentWidgetImpl({
@@ -254,7 +258,7 @@ useExtensionService().registerExtension({
     const width = node.widgets?.find((w: IWidget) => w.name === 'width')
     const height = node.widgets?.find((w: IWidget) => w.name === 'height')
 
-    if (modelWidget && width && height && cameraState && sceneWidget) {
+    if (modelWidget && width && height && sceneWidget) {
       const config = new Load3DConfiguration(load3d)
 
       config.configure('input', modelWidget, cameraState, width, height)
@@ -306,7 +310,9 @@ useExtensionService().registerExtension({
       PREVIEW_3D(node) {
         const inputSpec: CustomInputSpec = {
           name: 'image',
-          type: 'Preview3D'
+          type: 'Preview3D',
+          isAnimation: false,
+          isPreview: true
         }
 
         const widget = new ComponentWidgetImpl({
@@ -381,7 +387,9 @@ useExtensionService().registerExtension({
       PREVIEW_3D_ANIMATION(node) {
         const inputSpec: CustomInputSpec = {
           name: 'image',
-          type: 'Preview3DAnimation'
+          type: 'Preview3DAnimation',
+          isAnimation: true,
+          isPreview: true
         }
 
         const widget = new ComponentWidgetImpl({

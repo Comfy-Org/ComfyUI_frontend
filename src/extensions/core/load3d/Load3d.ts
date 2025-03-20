@@ -1,6 +1,8 @@
 import { LGraphNode } from '@comfyorg/litegraph'
 import * as THREE from 'three'
 
+import { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+
 import { CameraManager } from './CameraManager'
 import { ControlsManager } from './ControlsManager'
 import { EventManager } from './EventManager'
@@ -43,7 +45,8 @@ class Load3d {
   constructor(
     container: Element | HTMLElement,
     options: Load3DOptions = {
-      node: {} as LGraphNode
+      node: {} as LGraphNode,
+      inputSpec: {} as CustomInputSpec
     }
   ) {
     this.node = options.node || ({} as LGraphNode)
@@ -108,7 +111,8 @@ class Load3d {
       this.renderer,
       this.eventManager,
       this.getActiveCamera.bind(this),
-      this.setupCamera.bind(this)
+      this.setupCamera.bind(this),
+      options
     )
 
     this.loaderManager = new LoaderManager(this.modelManager, this.eventManager)
@@ -123,7 +127,7 @@ class Load3d {
     this.viewHelperManager.createViewHelper(container)
     this.viewHelperManager.init()
 
-    if (options && options.createPreview) {
+    if (options && !options.inputSpec?.isPreview) {
       this.previewManager.createCapturePreview(container)
       this.previewManager.init()
     }

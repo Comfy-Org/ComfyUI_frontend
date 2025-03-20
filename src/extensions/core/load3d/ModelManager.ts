@@ -12,6 +12,7 @@ import { ConditionalLineMaterial } from './conditional-lines/Lines2/ConditionalL
 import { ConditionalLineSegmentsGeometry } from './conditional-lines/Lines2/ConditionalLineSegmentsGeometry'
 import {
   EventManagerInterface,
+  Load3DOptions,
   MaterialMode,
   ModelManagerInterface,
   UpDirection
@@ -41,6 +42,7 @@ export class ModelManager implements ModelManagerInterface {
   private activeCamera: THREE.Camera
   private setupCamera: (size: THREE.Vector3) => void
   private lineartModel: THREE.Group
+  private createLineartModel: boolean = false
 
   LIGHT_MODEL = 0xffffff
   LIGHT_LINES = 0x455a64
@@ -56,13 +58,22 @@ export class ModelManager implements ModelManagerInterface {
     renderer: THREE.WebGLRenderer,
     eventManager: EventManagerInterface,
     getActiveCamera: () => THREE.Camera,
-    setupCamera: (size: THREE.Vector3) => void
+    setupCamera: (size: THREE.Vector3) => void,
+    options: Load3DOptions
   ) {
     this.scene = scene
     this.renderer = renderer
     this.eventManager = eventManager
     this.activeCamera = getActiveCamera()
     this.setupCamera = setupCamera
+
+    if (
+      options &&
+      !options.inputSpec?.isPreview &&
+      !options.inputSpec?.isAnimation
+    ) {
+      this.createLineartModel = true
+    }
 
     this.normalMaterial = new THREE.MeshNormalMaterial({
       flatShading: false,
@@ -657,7 +668,9 @@ export class ModelManager implements ModelManagerInterface {
 
     this.setupCamera(size)
 
-    this.setupLineartModel()
+    if (this.createLineartModel) {
+      this.setupLineartModel()
+    }
   }
 
   setupLineartModel(): void {
