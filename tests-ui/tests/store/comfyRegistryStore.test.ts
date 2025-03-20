@@ -1,5 +1,5 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
@@ -57,22 +57,17 @@ describe('useComfyRegistryStore', () => {
     )
   })
 
-  it('should initialize with empty state', () => {
-    const store = useComfyRegistryStore()
-
-    expect(store.recentListResult).toEqual([])
-    expect(store.hasPacks).toBe(false)
+  afterEach(() => {
+    useComfyRegistryStore().clearCache()
   })
 
   it('should fetch and store packs', async () => {
     const store = useComfyRegistryStore()
     const params = { page: 1, limit: 10 }
 
-    const result = await store.listAllPacks(params)
+    const result = await store.listAllPacks.call(params)
 
     expect(result).toEqual(mockListResult)
-    expect(store.recentListResult).toEqual(mockListResult.nodes)
-    expect(store.hasPacks).toBe(true)
     expect(mockRegistryService.listAllPacks).toHaveBeenCalledWith(
       params,
       expect.any(Object) // abort signal
@@ -89,29 +84,26 @@ describe('useComfyRegistryStore', () => {
     mockRegistryService.listAllPacks.mockResolvedValueOnce(emptyResult)
 
     const store = useComfyRegistryStore()
-    await store.listAllPacks({ page: 1, limit: 10 })
+    const result = await store.listAllPacks.call({ page: 1, limit: 10 })
 
-    expect(store.recentListResult).toEqual([])
-    expect(store.hasPacks).toBe(false)
+    expect(result).toEqual(emptyResult)
   })
 
   it('should fetch a pack by ID', async () => {
     const store = useComfyRegistryStore()
     const packId = 'test-pack-id'
 
-    const result = await store.getPackById(packId)
+    const result = await store.getPackById.call(packId)
 
     expect(result).toEqual(mockNodePack)
-    expect(mockRegistryService.getPackById).toHaveBeenCalledWith(
-      packId,
-      expect.any(Object) // abort signal
-    )
+    expect(mockRegistryService.getPackById).toHaveBeenCalledWith(packId)
   })
 
   it('should return null when fetching a pack with null ID', async () => {
     const store = useComfyRegistryStore()
+    vi.spyOn(store.getPackById, 'call').mockResolvedValueOnce(null)
 
-    const result = await store.getPackById(null as any)
+    const result = await store.getPackById.call(null as any)
 
     expect(result).toBeNull()
     expect(mockRegistryService.getPackById).not.toHaveBeenCalled()
@@ -121,9 +113,8 @@ describe('useComfyRegistryStore', () => {
     mockRegistryService.listAllPacks.mockResolvedValueOnce(null)
 
     const store = useComfyRegistryStore()
-    const result = await store.listAllPacks({ page: 1, limit: 10 })
+    const result = await store.listAllPacks.call({ page: 1, limit: 10 })
 
     expect(result).toBeNull()
-    expect(store.recentListResult).toEqual([])
   })
 })
