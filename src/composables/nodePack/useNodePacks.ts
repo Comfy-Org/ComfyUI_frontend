@@ -31,8 +31,8 @@ export const useNodePacks = (
     remainingIds.value?.length ? chunk(remainingIds.value, maxConcurrent) : []
   )
 
-  const fetchPack = (ids: Parameters<typeof getPackById.call>[0]) =>
-    ids ? getPackById.call(ids) : null
+  const fetchPack = (id: Parameters<typeof getPackById.call>[0]) =>
+    id ? getPackById.call(id) : null
 
   const toRequestBatch = async (ids: string[]) =>
     Promise.all(ids.map(fetchPack))
