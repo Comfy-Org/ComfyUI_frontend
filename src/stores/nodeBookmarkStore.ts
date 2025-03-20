@@ -1,9 +1,9 @@
 import _ from 'lodash'
 import { defineStore } from 'pinia'
-import type { TreeNode } from 'primevue/treenode'
 import { computed } from 'vue'
 
 import type { BookmarkCustomization } from '@/schemas/apiSchema'
+import type { TreeNode } from '@/types/treeExplorerTypes'
 
 import { useNodeDefStore } from './nodeDefStore'
 import { ComfyNodeDefImpl, createDummyFolderNodeDef } from './nodeDefStore'

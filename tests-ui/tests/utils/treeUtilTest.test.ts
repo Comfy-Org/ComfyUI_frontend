@@ -1,6 +1,6 @@
-import { TreeNode } from 'primevue/treenode'
 import { describe, expect, it } from 'vitest'
 
+import { TreeNode } from '@/types/treeExplorerTypes'
 import { buildTree, sortedTree } from '@/utils/treeUtil'
 
 describe('buildTree', () => {
@@ -84,26 +84,12 @@ describe('sortedTree', () => {
     const node: TreeNode = {
       key: 'root',
       label: 'root',
+      leaf: false,
       children: [createNode('c'), createNode('a'), createNode('b')]
     }
 
     const result = sortedTree(node)
     expect(result.children?.map((c) => c.label)).toEqual(['a', 'b', 'c'])
-  })
-
-  it('should handle undefined labels', () => {
-    const node: TreeNode = {
-      key: 'root',
-      label: 'root',
-      children: [
-        { key: '1', label: 'b' },
-        { key: '2', label: 'a' },
-        { key: '3', label: undefined }
-      ]
-    }
-
-    const result = sortedTree(node)
-    expect(result.children?.map((c) => c.label)).toEqual([undefined, 'a', 'b'])
   })
 
   describe('with groupLeaf=true', () => {

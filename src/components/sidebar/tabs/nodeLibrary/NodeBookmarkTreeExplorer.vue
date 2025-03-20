@@ -22,7 +22,6 @@
 </template>
 
 <script setup lang="ts">
-import type { TreeNode } from 'primevue/treenode'
 import { computed, h, nextTick, ref, render, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -35,6 +34,7 @@ import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { TreeNode } from '@/types/treeExplorerTypes'
 import type {
   RenderedTreeExplorerNode,
   TreeExplorerDragAndDropData,
@@ -131,7 +131,6 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
       return {
         key: node.key,
         label: node.leaf ? node.data.display_name : node.label,
-        // @ts-expect-error fixme ts strict error
         leaf: node.leaf,
         data: node.data,
         getIcon() {

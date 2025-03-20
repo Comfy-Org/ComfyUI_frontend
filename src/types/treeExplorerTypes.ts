@@ -1,10 +1,16 @@
 import type { MenuItem } from 'primevue/menuitem'
+import type { TreeNode as PrimeVueTreeNode } from 'primevue/treenode'
 import type { InjectionKey, ModelRef } from 'vue'
 
-export interface TreeExplorerNode<T = any> {
+export interface TreeNode extends PrimeVueTreeNode {
   key: string
   label: string
-  leaf: boolean
+  children?: TreeNode[]
+}
+
+export interface TreeExplorerNode<T = any> extends TreeNode {
+  key: string
+  label: string
   data?: T
   children?: TreeExplorerNode<T>[]
   icon?: string

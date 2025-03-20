@@ -1,5 +1,6 @@
-import type { TreeNode } from 'primevue/treenode'
 import { Ref } from 'vue'
+
+import type { TreeNode } from '@/types/treeExplorerTypes'
 
 export function useTreeExpansion(expandedKeys: Ref<Record<string, boolean>>) {
   const toggleNode = (node: TreeNode) => {
