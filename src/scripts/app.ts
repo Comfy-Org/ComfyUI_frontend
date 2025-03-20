@@ -1062,7 +1062,9 @@ export class ComfyApp {
     }
 
     // Migrate legacy reroute nodes to the new format
-    graphData = migrateLegacyRerouteNodes(graphData)
+    if (graphData.version === 0.4) {
+      graphData = migrateLegacyRerouteNodes(graphData)
+    }
 
     useWorkflowService().beforeLoadNewGraph()
 
