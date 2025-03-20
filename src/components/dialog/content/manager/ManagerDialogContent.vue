@@ -206,7 +206,22 @@ const getInWorkflowResults = () => {
 const filterMissingPacks = (packs: components['schemas']['Node'][]) =>
   packs.filter((pack) => !comfyManagerStore.isPackInstalled(pack.id))
 
-const getMissingPacks = () => filterMissingPacks(getInWorkflowResults())
+const setMissingPacks = () => {
+  displayPacks.value = filterMissingPacks(workflowPacks.value)
+}
+
+const getMissingPacks = () => {
+  if (isEmptySearch.value) {
+    startFetchWorkflowPacks()
+    whenever(() => workflowPacks.value.length, setMissingPacks, {
+      immediate: true,
+      once: true
+    })
+    return filterMissingPacks(workflowPacks.value)
+  } else {
+    return filterMissingPacks(filterWorkflowPack(searchResults.value))
+  }
+}
 
 const onTabChange = () => {
   switch (selectedTab.value?.id) {
@@ -233,7 +248,9 @@ const onResultsChange = () => {
       displayPacks.value = filterWorkflowPack(searchResults.value)
       break
     case ManagerTab.Missing:
-      displayPacks.value = filterMissingPacks(searchResults.value)
+      displayPacks.value = filterMissingPacks(
+        filterWorkflowPack(searchResults.value)
+      )
       break
     default:
       displayPacks.value = searchResults.value
