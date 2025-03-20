@@ -530,7 +530,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Opt-in to the reroute beta test',
     tooltip: 'No longer has any effect; reroutes are always enabled.',
     deprecated: true,
-    type: 'boolean',
+    type: 'hidden',
     defaultValue: false,
     versionAdded: '1.3.42',
     versionModified: '1.13.3'
