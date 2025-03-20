@@ -8,9 +8,16 @@ export interface TreeExplorerNode<T = any> {
   data?: T
   children?: TreeExplorerNode<T>[]
   icon?: string
-  /** Function to override what icon to use for the node */
+  /**
+   * Function to override what icon to use for the node.
+   * Return undefined to fallback to {@link icon} property.
+   */
   getIcon?: (this: TreeExplorerNode<T>) => string | undefined
-  /** Function to override what text to use for the leaf-count badge on a folder node */
+  /**
+   * Function to override what text to use for the leaf-count badge on a folder node.
+   * Return undefined to fallback to default badge text, which is the subtree's leaf count.
+   * Return empty string to hide the badge.
+   */
   getBadgeText?: (this: TreeExplorerNode<T>) => string | undefined
   /** Function to handle renaming the node */
   handleRename?: (
