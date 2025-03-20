@@ -1,6 +1,6 @@
 <template>
   <div class="editable-text">
-    <span v-if="!props.isEditing">
+    <span v-if="!isEditing">
       {{ modelValue }}
     </span>
     <!-- Avoid double triggering finishEditing event when keyup.enter is triggered -->
@@ -27,17 +27,13 @@
 import InputText from 'primevue/inputtext'
 import { nextTick, ref, watch } from 'vue'
 
-interface EditableTextProps {
+const { modelValue, isEditing = false } = defineProps<{
   modelValue: string
   isEditing?: boolean
-}
-
-const props = withDefaults(defineProps<EditableTextProps>(), {
-  isEditing: false
-})
+}>()
 
 const emit = defineEmits(['update:modelValue', 'edit'])
-const inputValue = ref<string>(props.modelValue)
+const inputValue = ref<string>(modelValue)
 const inputRef = ref<InstanceType<typeof InputText> | undefined>()
 
 const blurInputElement = () => {
@@ -48,10 +44,10 @@ const finishEditing = () => {
   emit('edit', inputValue.value)
 }
 watch(
-  () => props.isEditing,
+  () => isEditing,
   (newVal) => {
     if (newVal) {
-      inputValue.value = props.modelValue
+      inputValue.value = modelValue
       nextTick(() => {
         if (!inputRef.value) return
         const fileName = inputValue.value.includes('.')
