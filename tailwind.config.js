@@ -217,6 +217,22 @@ export default {
   plugins: [
     function ({ addVariant }) {
       addVariant('dark-theme', '.dark-theme &')
+    },
+    function ({ addUtilities }) {
+      const newUtilities = {
+        '.scrollbar-hide': {
+          /* Firefox */
+          'scrollbar-width': 'none',
+          /* Webkit-based browsers */
+          '&::-webkit-scrollbar': {
+            width: '1px'
+          },
+          '&::-webkit-scrollbar-thumb': {
+            'background-color': 'transparent'
+          }
+        }
+      }
+      addUtilities(newUtilities)
     }
   ]
 }

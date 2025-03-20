@@ -35,9 +35,9 @@
           <div class="flex-1 overflow-auto">
             <div
               v-if="isLoading"
-              class="flex justify-center items-center h-full"
+              class="w-full h-full overflow-auto scrollbar-hide"
             >
-              <ProgressSpinner />
+              <GridSkeleton :grid-style="GRID_STYLE" :skeleton-card-count />
             </div>
             <NoResultsPlaceholder
               v-else-if="searchResults.length === 0"
@@ -56,12 +56,7 @@
               <VirtualGrid
                 :items="resultsWithKeys"
                 :buffer-rows="3"
-                :gridStyle="{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(19rem, 1fr))',
-                  padding: '0.5rem',
-                  gap: '1.5rem'
-                }"
+                :gridStyle="GRID_STYLE"
                 @approach-end="onApproachEnd"
               >
                 <template #item="{ item }">
@@ -97,7 +92,6 @@
 <script setup lang="ts">
 import { whenever } from '@vueuse/core'
 import Button from 'primevue/button'
-import ProgressSpinner from 'primevue/progressspinner'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -109,6 +103,7 @@ import InfoPanel from '@/components/dialog/content/manager/infoPanel/InfoPanel.v
 import InfoPanelMultiItem from '@/components/dialog/content/manager/infoPanel/InfoPanelMultiItem.vue'
 import PackCard from '@/components/dialog/content/manager/packCard/PackCard.vue'
 import RegistrySearchBar from '@/components/dialog/content/manager/registrySearchBar/RegistrySearchBar.vue'
+import GridSkeleton from '@/components/dialog/content/manager/skeleton/GridSkeleton.vue'
 import { useResponsiveCollapse } from '@/composables/element/useResponsiveCollapse'
 import { useInstalledPacks } from '@/composables/nodePack/useInstalledPacks'
 import { useWorkflowPacks } from '@/composables/nodePack/useWorkflowPacks'
@@ -126,6 +121,13 @@ enum ManagerTab {
 
 const { t } = useI18n()
 const comfyManagerStore = useComfyManagerStore()
+
+const GRID_STYLE = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(19rem, 1fr))',
+  padding: '0.5rem',
+  gap: '1.5rem'
+} as const
 
 const {
   isSmallScreen,
@@ -243,8 +245,7 @@ watch(searchResults, onResultsChange, { flush: 'pre' })
 watch(() => comfyManagerStore.installedPacksIds, onResultsChange)
 
 const isLoading = computed(() => {
-  if (isSearchLoading.value)
-    return searchResults.value.length === 0 || isInitialLoad.value
+  if (isSearchLoading.value) return searchResults.value.length === 0
   if (selectedTab.value?.id === ManagerTab.Installed) {
     return isLoadingInstalled.value
   }
@@ -254,7 +255,7 @@ const isLoading = computed(() => {
   ) {
     return isLoadingWorkflow.value
   }
-  return false
+  return isInitialLoad.value
 })
 
 const resultsWithKeys = computed(
@@ -269,6 +270,27 @@ const selectedNodePacks = ref<components['schemas']['Node'][]>([])
 const selectedNodePack = computed<components['schemas']['Node'] | null>(() =>
   selectedNodePacks.value.length === 1 ? selectedNodePacks.value[0] : null
 )
+
+const getLoadingCount = () => {
+  switch (selectedTab.value?.id) {
+    case ManagerTab.Installed:
+      return comfyManagerStore.installedPacksIds?.size
+    case ManagerTab.Workflow:
+      return workflowPacks.value?.length
+    case ManagerTab.Missing:
+      return workflowPacks.value?.filter?.(
+        (pack) => !comfyManagerStore.isPackInstalled(pack.id)
+      )?.length
+    default:
+      return searchResults.value.length
+  }
+}
+
+const skeletonCardCount = computed(() => {
+  const loadingCount = getLoadingCount()
+  if (loadingCount) return loadingCount
+  return isSmallScreen.value ? 12 : 16
+})
 
 const selectNodePack = (
   nodePack: components['schemas']['Node'],
