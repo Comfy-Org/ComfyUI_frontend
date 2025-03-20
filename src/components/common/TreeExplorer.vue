@@ -170,32 +170,38 @@ const deleteCommand = async (node: RenderedTreeExplorerNode) => {
   await node.handleDelete?.()
   emit('nodeDelete', node)
 }
-// @ts-expect-error fixme ts strict error
 const menuItems = computed<MenuItem[]>(() =>
   [
     getAddFolderMenuItem(menuTargetNode.value),
     {
       label: t('g.rename'),
       icon: 'pi pi-file-edit',
-      // @ts-expect-error fixme ts strict error
-      command: () => renameCommand(menuTargetNode.value),
+      command: () => {
+        if (menuTargetNode.value) {
+          renameCommand(menuTargetNode.value)
+        }
+      },
       visible: menuTargetNode.value?.handleRename !== undefined
     },
     {
       label: t('g.delete'),
       icon: 'pi pi-trash',
-      // @ts-expect-error fixme ts strict error
-      command: () => deleteCommand(menuTargetNode.value),
+      command: () => {
+        if (menuTargetNode.value) {
+          deleteCommand(menuTargetNode.value)
+        }
+      },
       visible: menuTargetNode.value?.handleDelete !== undefined,
       isAsync: true // The delete command can be async
     },
     ...extraMenuItems.value
-  ].map((menuItem) => ({
+  ].map((menuItem: MenuItem) => ({
     ...menuItem,
-    // @ts-expect-error fixme ts strict error
-    command: wrapCommandWithErrorHandler(menuItem.command, {
-      isAsync: menuItem.isAsync ?? false
-    })
+    command: menuItem.command
+      ? wrapCommandWithErrorHandler(menuItem.command, {
+          isAsync: menuItem.isAsync ?? false
+        })
+      : undefined
   }))
 )
 
@@ -223,15 +229,15 @@ const wrapCommandWithErrorHandler = (
 }
 
 defineExpose({
-  renameCommand,
-  deleteCommand,
   /**
    * The command to add a folder to a node via the context menu
    * @param targetNodeKey - The key of the node where the folder will be added under
    */
   addFolderCommand: (targetNodeKey: string) => {
-    // @ts-expect-error fixme ts strict error
-    addFolderCommand(findNodeByKey(renderedRoot.value, targetNodeKey))
+    const targetNode = findNodeByKey(renderedRoot.value, targetNodeKey)
+    if (targetNode) {
+      addFolderCommand(targetNode)
+    }
   }
 })
 </script>
