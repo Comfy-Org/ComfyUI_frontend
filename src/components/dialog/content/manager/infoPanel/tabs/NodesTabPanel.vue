@@ -9,7 +9,10 @@
       :key="i"
       class="border border-surface-border rounded-lg p-4"
     >
-      <NodePreview :node-def="placeholderNodeDef" />
+      <NodePreview
+        :node-def="placeholderNodeDef"
+        class="!text-[.625rem] !min-w-full"
+      />
     </div>
   </div>
 </template>
@@ -42,14 +45,3 @@ const placeholderNodeDef: ComfyNodeDef = {
   python_module: 'nodes'
 }
 </script>
-
-<style scoped>
-:deep(._sb_node_preview) {
-  min-width: unset;
-  width: 100%;
-}
-
-:deep(._sb_col) {
-  font-size: 10px;
-}
-</style>
