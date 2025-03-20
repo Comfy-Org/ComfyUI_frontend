@@ -18,7 +18,7 @@ export const useNodePacks = (
   options: UseNodePacksOptions = {}
 ) => {
   const { immediate = false, maxConcurrent = DEFAULT_MAX_CONCURRENT } = options
-  const { getPackById, cancelRequests } = useComfyRegistryStore()
+  const { getPackById } = useComfyRegistryStore()
 
   const nodePacks = ref<NodePack[]>([])
   const processedIds = ref<Set<string>>(new Set())
@@ -63,7 +63,7 @@ export const useNodePacks = (
   }
 
   const cleanup = () => {
-    cancelRequests()
+    getPackById.cancel()
     clear()
   }
 
