@@ -35,7 +35,7 @@
     </Dialog>
 
     <AutoCompletePlus
-      :model-value="props.filters"
+      :model-value="filters"
       class="comfy-vue-node-search-box z-10 flex-grow"
       scrollHeight="40vh"
       :placeholder="placeholder"
@@ -99,15 +99,10 @@ const enableNodePreview = computed(() =>
   settingStore.get('Comfy.NodeSearchBoxImpl.NodePreview')
 )
 
-const props = withDefaults(
-  defineProps<{
-    filters: FilterAndValue[]
-    searchLimit?: number
-  }>(),
-  {
-    searchLimit: 64
-  }
-)
+const { filters, searchLimit = 64 } = defineProps<{
+  filters: FilterAndValue[]
+  searchLimit?: number
+}>()
 
 const nodeSearchFilterVisible = ref(false)
 const inputId = `comfy-vue-node-search-box-input-${Math.random()}`
@@ -115,19 +110,19 @@ const suggestions = ref<ComfyNodeDefImpl[]>([])
 const hoveredSuggestion = ref<ComfyNodeDefImpl | null>(null)
 const currentQuery = ref('')
 const placeholder = computed(() => {
-  return props.filters.length === 0 ? t('g.searchNodes') + '...' : ''
+  return filters.length === 0 ? t('g.searchNodes') + '...' : ''
 })
 
 const nodeDefStore = useNodeDefStore()
 const nodeFrequencyStore = useNodeFrequencyStore()
 const search = (query: string) => {
-  const queryIsEmpty = query === '' && props.filters.length === 0
+  const queryIsEmpty = query === '' && filters.length === 0
   currentQuery.value = query
   suggestions.value = queryIsEmpty
     ? nodeFrequencyStore.topNodeDefs
     : [
-        ...nodeDefStore.nodeSearchService.searchNode(query, props.filters, {
-          limit: props.searchLimit
+        ...nodeDefStore.nodeSearchService.searchNode(query, filters, {
+          limit: searchLimit
         })
       ]
 }

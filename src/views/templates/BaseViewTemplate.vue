@@ -2,7 +2,7 @@
   <div
     class="font-sans w-screen h-screen flex flex-col"
     :class="[
-      props.dark
+      dark
         ? 'text-neutral-300 bg-neutral-900 dark-theme'
         : 'text-neutral-900 bg-neutral-300'
     ]"
@@ -26,14 +26,9 @@ import { nextTick, onMounted, ref } from 'vue'
 
 import { electronAPI, isElectron, isNativeWindow } from '@/utils/envUtil'
 
-const props = withDefaults(
-  defineProps<{
-    dark?: boolean
-  }>(),
-  {
-    dark: false
-  }
-)
+const { dark = false } = defineProps<{
+  dark?: boolean
+}>()
 
 const darkTheme = {
   color: 'rgba(0, 0, 0, 0)',
@@ -51,7 +46,7 @@ onMounted(async () => {
     await nextTick()
 
     electronAPI().changeTheme({
-      ...(props.dark ? darkTheme : lightTheme),
+      ...(dark ? darkTheme : lightTheme),
       height: topMenuRef.value?.getBoundingClientRect().height ?? 0
     })
   }
