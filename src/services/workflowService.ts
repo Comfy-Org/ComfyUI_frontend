@@ -1,9 +1,12 @@
-import { LGraphCanvas } from '@comfyorg/litegraph'
-import type { Vector2 } from '@comfyorg/litegraph'
+import { LGraph, LGraphCanvas } from '@comfyorg/litegraph'
+import type { SerialisableGraph, Vector2 } from '@comfyorg/litegraph'
 import { toRaw } from 'vue'
 
 import { t } from '@/i18n'
-import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
+import {
+  ComfyWorkflowJSON,
+  WorkflowJSON04
+} from '@/schemas/comfyWorkflowSchema'
 import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { downloadBlob } from '@/scripts/utils'
@@ -12,6 +15,7 @@ import { useToastStore } from '@/stores/toastStore'
 import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { appendJsonExt } from '@/utils/formatUtil'
+import { migrateLegacyRerouteNodes } from '@/utils/migration/migrateReroute'
 
 import { useDialogService } from './dialogService'
 
@@ -324,17 +328,19 @@ export const useWorkflowService = () => {
   ) => {
     const loadedWorkflow = await workflow.load()
     const data = loadedWorkflow.initialState
+    const workflowJSON =
+      data.version === 0.4
+        ? migrateLegacyRerouteNodes(data as WorkflowJSON04)
+        : data
     const old = localStorage.getItem('litegrapheditor_clipboard')
-    // @ts-expect-error: zod issue. Should be fixed after enable ts-strict globally
-    const graph = new LGraph(data)
+    // unknown conversion: ComfyWorkflowJSON is stricter than LiteGraph's
+    // serialisation schema.
+    const graph = new LGraph(workflowJSON as unknown as SerialisableGraph)
     const canvasElement = document.createElement('canvas')
     const canvas = new LGraphCanvas(canvasElement, graph, {
       skip_events: true,
       skip_render: true
     })
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore Temporary fix for Litegraph issue.
-    canvas.reroutesEnabled = true
     canvas.selectItems()
     canvas.copyToClipboard()
     app.canvas.pasteFromClipboard(options)
