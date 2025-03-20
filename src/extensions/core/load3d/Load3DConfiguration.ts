@@ -7,6 +7,11 @@ import { api } from '@/scripts/api'
 class Load3DConfiguration {
   constructor(private load3d: Load3d) {}
 
+  configureForSaveMesh(loadFolder: 'input' | 'output', filePath: string) {
+    this.setupModelHandlingForSaveMesh(filePath, loadFolder)
+    this.setupDefaultProperties()
+  }
+
   configure(
     loadFolder: 'input' | 'output',
     modelWidget: IWidget,
@@ -30,6 +35,17 @@ class Load3DConfiguration {
       height.callback = (value: number) => {
         this.load3d.setTargetSize(width.value as number, value)
       }
+    }
+  }
+
+  private setupModelHandlingForSaveMesh(
+    filePath: string,
+    loadFolder: 'input' | 'output'
+  ) {
+    const onModelWidgetUpdate = this.createModelUpdateHandler(loadFolder)
+
+    if (filePath) {
+      onModelWidgetUpdate(filePath)
     }
   }
 
