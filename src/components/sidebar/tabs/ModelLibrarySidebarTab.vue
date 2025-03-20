@@ -46,7 +46,6 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import type { TreeNode } from 'primevue/treenode'
 import { computed, nextTick, onMounted, ref, toRef, watch } from 'vue'
 
 import SearchBox from '@/components/common/SearchBox.vue'
@@ -64,6 +63,7 @@ import {
 } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useSettingStore } from '@/stores/settingStore'
+import type { TreeNode } from '@/types/treeExplorerTypes'
 import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { isElectron } from '@/utils/envUtil'
 import { buildTree } from '@/utils/treeUtil'
@@ -116,13 +116,11 @@ const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
 
     return {
       key: node.key,
-      // @ts-expect-error fixme ts strict error
       label: model
         ? nameFormat === 'title'
           ? model.title
           : model.simplified_file_name
         : node.label,
-      // @ts-expect-error fixme ts strict error
       leaf: node.leaf,
       data: node.data,
       getIcon() {

@@ -125,7 +125,6 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import ConfirmDialog from 'primevue/confirmdialog'
-import type { TreeNode } from 'primevue/treenode'
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -145,6 +144,7 @@ import {
 } from '@/stores/workflowStore'
 import { ComfyWorkflow } from '@/stores/workflowStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import type { TreeNode } from '@/types/treeExplorerTypes'
 import { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { appendJsonExt } from '@/utils/formatUtil'
 import { buildTree, sortedTree } from '@/utils/treeUtil'
@@ -267,9 +267,7 @@ const renderTreeNode = (
 
   return {
     key: node.key,
-    // @ts-expect-error fixme ts strict error
     label: node.label,
-    // @ts-expect-error fixme ts strict error
     leaf: node.leaf,
     data: node.data,
     children,

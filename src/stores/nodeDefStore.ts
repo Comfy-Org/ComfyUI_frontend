@@ -1,7 +1,6 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
 import axios from 'axios'
 import { defineStore } from 'pinia'
-import type { TreeNode } from 'primevue/treenode'
 import { computed, ref } from 'vue'
 
 import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
@@ -24,6 +23,7 @@ import {
   NodeSourceType,
   getNodeSource
 } from '@/types/nodeSource'
+import type { TreeNode } from '@/types/treeExplorerTypes'
 import { buildTree } from '@/utils/treeUtil'
 
 export class ComfyNodeDefImpl implements ComfyNodeDefV1, ComfyNodeDefV2 {

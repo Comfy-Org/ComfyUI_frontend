@@ -1,4 +1,4 @@
-import type { TreeNode } from 'primevue/treenode'
+import type { TreeNode } from '@/types/treeExplorerTypes'
 
 export function buildTree<T>(items: T[], key: (item: T) => string[]): TreeNode {
   const root: TreeNode = {
@@ -45,7 +45,7 @@ export function flattenTree<T>(tree: TreeNode): T[] {
   while (stack.length) {
     const node = stack.pop()!
     if (node.leaf && node.data) result.push(node.data)
-    stack.push(...(node.children || []))
+    stack.push(...(node.children ?? []))
   }
   return result
 }

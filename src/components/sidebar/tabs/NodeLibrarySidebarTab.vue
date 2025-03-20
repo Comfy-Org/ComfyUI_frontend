@@ -65,7 +65,6 @@
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import Popover from 'primevue/popover'
-import type { TreeNode } from 'primevue/treenode'
 import { Ref, computed, h, nextTick, ref, render } from 'vue'
 
 import SearchBox from '@/components/common/SearchBox.vue'
@@ -84,6 +83,7 @@ import {
   buildNodeDefTree,
   useNodeDefStore
 } from '@/stores/nodeDefStore'
+import type { TreeNode } from '@/types/treeExplorerTypes'
 import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { sortedTree } from '@/utils/treeUtil'
 
@@ -114,7 +114,6 @@ const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
     return {
       key: node.key,
       label: node.leaf ? node.data.display_name : node.label,
-      // @ts-expect-error fixme ts strict error
       leaf: node.leaf,
       data: node.data,
       getIcon() {
