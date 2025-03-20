@@ -278,8 +278,8 @@ const getLoadingCount = () => {
     case ManagerTab.Workflow:
       return workflowPacks.value?.length
     case ManagerTab.Missing:
-      return workflowPacks.value?.filter?.((pack) =>
-        comfyManagerStore.isPackInstalled(pack.id)
+      return workflowPacks.value?.filter?.(
+        (pack) => !comfyManagerStore.isPackInstalled(pack.id)
       )?.length
     default:
       return searchResults.value.length
