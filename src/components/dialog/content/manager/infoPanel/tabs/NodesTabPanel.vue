@@ -9,7 +9,10 @@
       :key="i"
       class="border border-surface-border rounded-lg p-4"
     >
-      <NodePreview :node-def="placeholderNodeDef" />
+      <NodePreview
+        :node-def="placeholderNodeDef"
+        class="!text-[.625rem] !min-w-full"
+      />
     </div>
   </div>
 </template>
