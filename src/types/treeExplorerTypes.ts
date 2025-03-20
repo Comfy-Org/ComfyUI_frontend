@@ -3,14 +3,11 @@ import type { TreeNode as PrimeVueTreeNode } from 'primevue/treenode'
 import type { InjectionKey, ModelRef } from 'vue'
 
 export interface TreeNode extends PrimeVueTreeNode {
-  key: string
   label: string
   children?: TreeNode[]
 }
 
 export interface TreeExplorerNode<T = any> extends TreeNode {
-  key: string
-  label: string
   data?: T
   children?: TreeExplorerNode<T>[]
   icon?: string
