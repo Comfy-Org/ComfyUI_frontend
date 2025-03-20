@@ -18,7 +18,7 @@ export const useNodePacks = (
   options: UseNodePacksOptions = {}
 ) => {
   const { immediate = false, maxConcurrent = DEFAULT_MAX_CONCURRENT } = options
-  const { getPackById, cancelRequests } = useComfyRegistryStore()
+  const { getPackById } = useComfyRegistryStore()
 
   const nodePacks = ref<NodePack[]>([])
   const processedIds = ref<Set<string>>(new Set())
@@ -31,8 +31,8 @@ export const useNodePacks = (
     remainingIds.value?.length ? chunk(remainingIds.value, maxConcurrent) : []
   )
 
-  const fetchPack = (ids: Parameters<typeof getPackById>[0]) =>
-    ids ? getPackById(ids) : null
+  const fetchPack = (id: Parameters<typeof getPackById.call>[0]) =>
+    id ? getPackById.call(id) : null
 
   const toRequestBatch = async (ids: string[]) =>
     Promise.all(ids.map(fetchPack))
@@ -63,7 +63,7 @@ export const useNodePacks = (
   }
 
   const cleanup = () => {
-    cancelRequests()
+    getPackById.cancel()
     clear()
   }
 
