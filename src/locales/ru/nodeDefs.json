@@ -1251,6 +1251,18 @@
       }
     }
   },
+  "EmptyLatentHunyuan3Dv2": {
+    "display_name": "EmptyLatentHunyuan3Dv2",
+    "inputs": {
+      "batch_size": {
+        "name": "размер_пакета",
+        "tooltip": "Количество скрытых изображений в пакете."
+      },
+      "resolution": {
+        "name": "разрешение"
+      }
+    }
+  },
   "EmptyLatentImage": {
     "description": "Создаёт новую партию пустых латентных изображений для удаления шума через выборку.",
     "display_name": "Пустое латентное изображение",
@@ -1469,6 +1481,47 @@
       },
       "tapered_corners": {
         "name": "заостренные_углы"
+      }
+    }
+  },
+  "Hunyuan3Dv2Conditioning": {
+    "display_name": "Hunyuan3Dv2Conditioning",
+    "inputs": {
+      "clip_vision_output": {
+        "name": "выход_clip_vision"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "положительный"
+      },
+      "1": {
+        "name": "отрицательный"
+      }
+    }
+  },
+  "Hunyuan3Dv2ConditioningMultiView": {
+    "display_name": "Hunyuan3Dv2ConditioningMultiView",
+    "inputs": {
+      "back": {
+        "name": "сзади"
+      },
+      "front": {
+        "name": "фронт"
+      },
+      "left": {
+        "name": "слева"
+      },
+      "right": {
+        "name": "справа"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "положительный"
+      },
+      "1": {
+        "name": "отрицательный"
       }
     }
   },
@@ -2535,6 +2588,9 @@
     "inputs": {
       "audio": {
         "name": "аудио"
+      },
+      "audioUI": {
+        "name": "audioUI"
       },
       "upload": {
         "name": "выберите файл для загрузки"
@@ -4614,6 +4670,9 @@
     "inputs": {
       "audio": {
         "name": "аудио"
+      },
+      "audioUI": {
+        "name": "audioUI"
       }
     }
   },
@@ -5094,8 +5153,25 @@
       "audio": {
         "name": "аудио"
       },
+      "audioUI": {
+        "name": "audioUI"
+      },
       "filename_prefix": {
         "name": "префикс_названия_файла"
+      }
+    }
+  },
+  "SaveGLB": {
+    "display_name": "SaveGLB",
+    "inputs": {
+      "filename_prefix": {
+        "name": "префикс_имени_файла"
+      },
+      "image": {
+        "name": "изображение"
+      },
+      "mesh": {
+        "name": "сетка"
       }
     }
   },
@@ -5705,6 +5781,23 @@
       }
     }
   },
+  "VAEDecodeHunyuan3D": {
+    "display_name": "VAEDecodeHunyuan3D",
+    "inputs": {
+      "num_chunks": {
+        "name": "количество_частей"
+      },
+      "octree_resolution": {
+        "name": "разрешение_октодерева"
+      },
+      "samples": {
+        "name": "образцы"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
+  },
   "VAEDecodeTiled": {
     "display_name": "Декодировать VAE (плитками)",
     "inputs": {
@@ -5849,6 +5942,17 @@
       },
       "model": {
         "name": "модель"
+      }
+    }
+  },
+  "VoxelToMeshBasic": {
+    "display_name": "VoxelToMeshBasic",
+    "inputs": {
+      "threshold": {
+        "name": "порог"
+      },
+      "voxel": {
+        "name": "воксель"
       }
     }
   },
