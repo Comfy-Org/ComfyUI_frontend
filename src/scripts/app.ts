@@ -22,6 +22,7 @@ import {
 import { type ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { getFromWebmFile } from '@/scripts/metadata/ebml'
+import { getGltfBinaryMetadata } from '@/scripts/metadata/gltf'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -1449,6 +1450,15 @@ export class ComfyApp {
         this.loadGraphData(webmInfo.workflow, true, true, fileName)
       } else if (webmInfo.prompt) {
         this.loadApiJson(webmInfo.prompt, fileName)
+      } else {
+        this.showErrorOnFileLoad(file)
+      }
+    } else if (file.type === 'model/gltf-binary') {
+      const gltfInfo = await getGltfBinaryMetadata(file)
+      if (gltfInfo.workflow) {
+        this.loadGraphData(gltfInfo.workflow, true, true, fileName)
+      } else if (gltfInfo.prompt) {
+        this.loadApiJson(gltfInfo.prompt, fileName)
       } else {
         this.showErrorOnFileLoad(file)
       }
