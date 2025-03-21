@@ -91,8 +91,9 @@
 
 <script setup lang="ts">
 import { whenever } from '@vueuse/core'
+import { merge } from 'lodash'
 import Button from 'primevue/button'
-import { computed, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ContentDivider from '@/components/common/ContentDivider.vue'
@@ -109,6 +110,7 @@ import { useInstalledPacks } from '@/composables/nodePack/useInstalledPacks'
 import { useWorkflowPacks } from '@/composables/nodePack/useWorkflowPacks'
 import { useRegistrySearch } from '@/composables/useRegistrySearch'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { TabItem } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
 
@@ -121,6 +123,7 @@ enum ManagerTab {
 
 const { t } = useI18n()
 const comfyManagerStore = useComfyManagerStore()
+const { getPackById } = useComfyRegistryStore()
 
 const GRID_STYLE = {
   display: 'grid',
@@ -343,4 +346,24 @@ const handleGridContainerClick = (event: MouseEvent) => {
 }
 
 const hasMultipleSelections = computed(() => selectedNodePacks.value.length > 1)
+
+whenever(selectedNodePack, async () => {
+  // Cancel any in-flight requests from previously selected node pack
+  getPackById.cancel()
+
+  if (!selectedNodePack.value?.id) return
+
+  // If only a single node pack is selected, fetch full node pack info from registry
+  if (hasMultipleSelections.value) return
+  const data = await getPackById.call(selectedNodePack.value.id)
+
+  if (data?.id === selectedNodePack.value?.id) {
+    // If selected node hasn't changed since request, merge registry & Algolia data
+    selectedNodePacks.value = [merge(selectedNodePack.value, data)]
+  }
+})
+
+onUnmounted(() => {
+  getPackById.cancel()
+})
 </script>
