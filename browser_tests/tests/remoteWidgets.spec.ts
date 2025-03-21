@@ -321,6 +321,7 @@ test.describe('Remote COMBO Widget', () => {
 
       // Click refresh button
       await clickRefreshButton(comfyPage, nodeName)
+      await comfyPage.page.waitForTimeout(200)
 
       // Verify the selected value of the widget is the first option in the refreshed list
       const refreshedValue = await getWidgetValue(comfyPage, nodeName)
