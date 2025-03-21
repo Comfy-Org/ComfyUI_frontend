@@ -74,6 +74,7 @@
     "LOAD_3D": "加载3D",
     "LOAD_3D_ANIMATION": "加载3D动画",
     "MASK": "遮罩",
+    "MESH": "网格",
     "MODEL": "模型",
     "NOISE": "噪波",
     "PHOTOMAKER": "PhotoMaker",
@@ -84,6 +85,7 @@
     "TIMESTEPS_RANGE": "时间间隔范围",
     "UPSCALE_MODEL": "放大模型",
     "VAE": "VAE",
+    "VOXEL": "体素",
     "WEBCAM": "摄像头"
   },
   "desktopMenu": {

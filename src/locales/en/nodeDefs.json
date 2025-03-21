@@ -1234,6 +1234,18 @@
       }
     }
   },
+  "EmptyLatentHunyuan3Dv2": {
+    "display_name": "EmptyLatentHunyuan3Dv2",
+    "inputs": {
+      "resolution": {
+        "name": "resolution"
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "The number of latent images in the batch."
+      }
+    }
+  },
   "EmptyLatentImage": {
     "display_name": "Empty Latent Image",
     "description": "Create a new batch of empty latent images to be denoised via sampling.",
@@ -1469,6 +1481,47 @@
       },
       "tapered_corners": {
         "name": "tapered_corners"
+      }
+    }
+  },
+  "Hunyuan3Dv2Conditioning": {
+    "display_name": "Hunyuan3Dv2Conditioning",
+    "inputs": {
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive"
+      },
+      "1": {
+        "name": "negative"
+      }
+    }
+  },
+  "Hunyuan3Dv2ConditioningMultiView": {
+    "display_name": "Hunyuan3Dv2ConditioningMultiView",
+    "inputs": {
+      "front": {
+        "name": "front"
+      },
+      "left": {
+        "name": "left"
+      },
+      "back": {
+        "name": "back"
+      },
+      "right": {
+        "name": "right"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive"
+      },
+      "1": {
+        "name": "negative"
       }
     }
   },
@@ -2363,6 +2416,9 @@
     "inputs": {
       "audio": {
         "name": "audio"
+      },
+      "audioUI": {
+        "name": "audioUI"
       },
       "upload": {
         "name": "choose file to upload"
@@ -4609,6 +4665,9 @@
     "inputs": {
       "audio": {
         "name": "audio"
+      },
+      "audioUI": {
+        "name": "audioUI"
       }
     }
   },
@@ -4966,6 +5025,23 @@
       },
       "filename_prefix": {
         "name": "filename_prefix"
+      },
+      "audioUI": {
+        "name": "audioUI"
+      }
+    }
+  },
+  "SaveGLB": {
+    "display_name": "SaveGLB",
+    "inputs": {
+      "mesh": {
+        "name": "mesh"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "image": {
+        "name": "image"
       }
     }
   },
@@ -5725,6 +5801,23 @@
       }
     }
   },
+  "VAEDecodeHunyuan3D": {
+    "display_name": "VAEDecodeHunyuan3D",
+    "inputs": {
+      "samples": {
+        "name": "samples"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "num_chunks": {
+        "name": "num_chunks"
+      },
+      "octree_resolution": {
+        "name": "octree_resolution"
+      }
+    }
+  },
   "VAEDecodeTiled": {
     "display_name": "VAE Decode (Tiled)",
     "inputs": {
@@ -5852,6 +5945,17 @@
       },
       "min_cfg": {
         "name": "min_cfg"
+      }
+    }
+  },
+  "VoxelToMeshBasic": {
+    "display_name": "VoxelToMeshBasic",
+    "inputs": {
+      "voxel": {
+        "name": "voxel"
+      },
+      "threshold": {
+        "name": "threshold"
       }
     }
   },

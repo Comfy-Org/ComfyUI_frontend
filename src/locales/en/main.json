@@ -851,6 +851,7 @@
     "latent": "latent",
     "video": "video",
     "audio": "audio",
+    "3d": "3d",
     "ltxv": "ltxv",
     "sd3": "sd3",
     "sigmas": "sigmas",
@@ -866,7 +867,6 @@
     "compositing": "compositing",
     "samplers": "samplers",
     "operations": "operations",
-    "3d": "3d",
     "debug": "debug",
     "model": "model",
     "model_specific": "model_specific",
@@ -903,6 +903,7 @@
     "LOAD_3D": "LOAD_3D",
     "LOAD_3D_ANIMATION": "LOAD_3D_ANIMATION",
     "MASK": "MASK",
+    "MESH": "MESH",
     "MODEL": "MODEL",
     "NOISE": "NOISE",
     "PHOTOMAKER": "PHOTOMAKER",
@@ -913,6 +914,7 @@
     "TIMESTEPS_RANGE": "TIMESTEPS_RANGE",
     "UPSCALE_MODEL": "UPSCALE_MODEL",
     "VAE": "VAE",
+    "VOXEL": "VOXEL",
     "WEBCAM": "WEBCAM"
   },
   "maintenance": {

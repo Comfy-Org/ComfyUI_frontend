@@ -74,6 +74,7 @@
     "LOAD_3D": "3D 로드",
     "LOAD_3D_ANIMATION": "3D 애니메이션 로드",
     "MASK": "마스크",
+    "MESH": "메시",
     "MODEL": "모델",
     "NOISE": "노이즈",
     "PHOTOMAKER": "PHOTOMAKER",
@@ -84,6 +85,7 @@
     "TIMESTEPS_RANGE": "타임스텝 범위",
     "UPSCALE_MODEL": "업스케일 모델",
     "VAE": "VAE",
+    "VOXEL": "복셀",
     "WEBCAM": "웹캠"
   },
   "desktopMenu": {

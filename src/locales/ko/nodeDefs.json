@@ -1251,6 +1251,18 @@
       }
     }
   },
+  "EmptyLatentHunyuan3Dv2": {
+    "display_name": "EmptyLatentHunyuan3Dv2",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기",
+        "tooltip": "배치에 있는 잠재 이미지의 수입니다."
+      },
+      "resolution": {
+        "name": "해상도"
+      }
+    }
+  },
   "EmptyLatentImage": {
     "description": "샘플링을 통해 디노이즈할 빈 잠재 이미지의 새 배치를 생성합니다.",
     "display_name": "빈 잠재 이미지",
@@ -1469,6 +1481,47 @@
       },
       "tapered_corners": {
         "name": "마름모 모서리"
+      }
+    }
+  },
+  "Hunyuan3Dv2Conditioning": {
+    "display_name": "Hunyuan3Dv2Conditioning",
+    "inputs": {
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정적"
+      },
+      "1": {
+        "name": "부정적"
+      }
+    }
+  },
+  "Hunyuan3Dv2ConditioningMultiView": {
+    "display_name": "Hunyuan3Dv2ConditioningMultiView",
+    "inputs": {
+      "back": {
+        "name": "뒤"
+      },
+      "front": {
+        "name": "앞"
+      },
+      "left": {
+        "name": "왼쪽"
+      },
+      "right": {
+        "name": "오른쪽"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정적"
+      },
+      "1": {
+        "name": "부정적"
       }
     }
   },
@@ -2535,6 +2588,9 @@
     "inputs": {
       "audio": {
         "name": "오디오"
+      },
+      "audioUI": {
+        "name": "오디오UI"
       },
       "upload": {
         "name": "업로드할 파일 선택"
@@ -4614,6 +4670,9 @@
     "inputs": {
       "audio": {
         "name": "오디오"
+      },
+      "audioUI": {
+        "name": "오디오UI"
       }
     }
   },
@@ -5094,8 +5153,25 @@
       "audio": {
         "name": "오디오"
       },
+      "audioUI": {
+        "name": "오디오UI"
+      },
       "filename_prefix": {
         "name": "파일명 접두사"
+      }
+    }
+  },
+  "SaveGLB": {
+    "display_name": "SaveGLB",
+    "inputs": {
+      "filename_prefix": {
+        "name": "파일명 접두사"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "mesh": {
+        "name": "메시"
       }
     }
   },
@@ -5705,6 +5781,23 @@
       }
     }
   },
+  "VAEDecodeHunyuan3D": {
+    "display_name": "VAEDecodeHunyuan3D",
+    "inputs": {
+      "num_chunks": {
+        "name": "num_chunks"
+      },
+      "octree_resolution": {
+        "name": "옥트리 해상도"
+      },
+      "samples": {
+        "name": "샘플"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
+  },
   "VAEDecodeTiled": {
     "display_name": "VAE 디코드 (타일)",
     "inputs": {
@@ -5849,6 +5942,17 @@
       },
       "model": {
         "name": "모델"
+      }
+    }
+  },
+  "VoxelToMeshBasic": {
+    "display_name": "VoxelToMeshBasic",
+    "inputs": {
+      "threshold": {
+        "name": "임계값"
+      },
+      "voxel": {
+        "name": "복셀"
       }
     }
   },

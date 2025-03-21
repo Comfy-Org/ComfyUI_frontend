@@ -1251,6 +1251,18 @@
       }
     }
   },
+  "EmptyLatentHunyuan3Dv2": {
+    "display_name": "EmptyLatentHunyuan3Dv2",
+    "inputs": {
+      "batch_size": {
+        "name": "批量大小",
+        "tooltip": "批量中的潜在图像数量。"
+      },
+      "resolution": {
+        "name": "分辨率"
+      }
+    }
+  },
   "EmptyLatentImage": {
     "description": "创建一批新的空Latent图像，以通过采样进行降噪。",
     "display_name": "空Latent图像",
@@ -1469,6 +1481,47 @@
       },
       "tapered_corners": {
         "name": "倒角"
+      }
+    }
+  },
+  "Hunyuan3Dv2Conditioning": {
+    "display_name": "Hunyuan3Dv2Conditioning",
+    "inputs": {
+      "clip_vision_output": {
+        "name": "clip视觉输出"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向"
+      },
+      "1": {
+        "name": "反向"
+      }
+    }
+  },
+  "Hunyuan3Dv2ConditioningMultiView": {
+    "display_name": "Hunyuan3Dv2ConditioningMultiView",
+    "inputs": {
+      "back": {
+        "name": "后"
+      },
+      "front": {
+        "name": "前"
+      },
+      "left": {
+        "name": "左"
+      },
+      "right": {
+        "name": "右"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向"
+      },
+      "1": {
+        "name": "反向"
       }
     }
   },
@@ -2535,6 +2588,9 @@
     "inputs": {
       "audio": {
         "name": "音频"
+      },
+      "audioUI": {
+        "name": "音频UI"
       },
       "upload": {
         "name": "选择文件上传"
@@ -4614,6 +4670,9 @@
     "inputs": {
       "audio": {
         "name": "音频"
+      },
+      "audioUI": {
+        "name": "音频UI"
       }
     }
   },
@@ -5094,8 +5153,25 @@
       "audio": {
         "name": "音频"
       },
+      "audioUI": {
+        "name": "音频UI"
+      },
       "filename_prefix": {
         "name": "文件名前缀"
+      }
+    }
+  },
+  "SaveGLB": {
+    "display_name": "SaveGLB",
+    "inputs": {
+      "filename_prefix": {
+        "name": "文件名前缀"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "mesh": {
+        "name": "网格"
       }
     }
   },
@@ -5705,6 +5781,23 @@
       }
     }
   },
+  "VAEDecodeHunyuan3D": {
+    "display_name": "VAEDecodeHunyuan3D",
+    "inputs": {
+      "num_chunks": {
+        "name": "块数"
+      },
+      "octree_resolution": {
+        "name": "八叉树分辨率"
+      },
+      "samples": {
+        "name": "样本"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
+  },
   "VAEDecodeTiled": {
     "display_name": "VAE解码（分块）",
     "inputs": {
@@ -5849,6 +5942,17 @@
       },
       "model": {
         "name": "模型"
+      }
+    }
+  },
+  "VoxelToMeshBasic": {
+    "display_name": "VoxelToMeshBasic",
+    "inputs": {
+      "threshold": {
+        "name": "阈值"
+      },
+      "voxel": {
+        "name": "体素"
       }
     }
   },

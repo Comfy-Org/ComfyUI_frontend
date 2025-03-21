@@ -74,6 +74,7 @@
     "LOAD_3D": "CHARGER_3D",
     "LOAD_3D_ANIMATION": "CHARGER_ANIMATION_3D",
     "MASK": "MASQUE",
+    "MESH": "MAILLAGE",
     "MODEL": "MODÈLE",
     "NOISE": "BRUIT",
     "PHOTOMAKER": "PHOTOMAKER",
@@ -84,6 +85,7 @@
     "TIMESTEPS_RANGE": "PLAGE_DES_ÉTAPES_TEMPORELLES",
     "UPSCALE_MODEL": "MODÈLE_DE_MISE_À_L'ÉCHELLE",
     "VAE": "VAE",
+    "VOXEL": "VOXEL",
     "WEBCAM": "WEBCAM"
   },
   "desktopMenu": {
