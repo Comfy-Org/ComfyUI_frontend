@@ -62,7 +62,6 @@
     "unplugin-vue-components": "^0.27.4",
     "vite": "^5.4.14",
     "vite-plugin-dts": "^4.3.0",
-    "vite-plugin-static-copy": "^1.0.5",
     "vitest": "^2.0.0",
     "vue-tsc": "^2.1.10",
     "zip-dir": "^2.0.0",
