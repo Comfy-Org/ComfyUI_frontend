@@ -142,6 +142,8 @@ export interface AnimationManagerInterface extends BaseManager {
 }
 
 export interface ModelManagerInterface {
+  originalFileName: string | null
+  originalURL: string | null
   currentModel: THREE.Object3D | null
   originalModel: THREE.Object3D | THREE.BufferGeometry | GLTF | null
   originalRotation: THREE.Euler | null

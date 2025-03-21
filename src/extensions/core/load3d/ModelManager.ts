@@ -35,6 +35,8 @@ export class ModelManager implements ModelManagerInterface {
   standardMaterial: THREE.MeshStandardMaterial
   wireframeMaterial: THREE.MeshBasicMaterial
   depthMaterial: THREE.MeshDepthMaterial
+  originalFileName: string | null = null
+  originalURL: string | null = null
 
   private scene: THREE.Scene
   private renderer: THREE.WebGLRenderer
@@ -633,6 +635,8 @@ export class ModelManager implements ModelManagerInterface {
     this.originalRotation = null
     this.currentUpDirection = 'original'
     this.setMaterialMode('original')
+    this.originalFileName = null
+    this.originalURL = null
 
     this.originalMaterials = new WeakMap()
   }

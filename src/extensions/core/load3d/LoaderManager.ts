@@ -47,12 +47,23 @@ export class LoaderManager implements LoaderManagerInterface {
 
       this.modelManager.clearModel()
 
+      this.modelManager.originalURL = url
+
       let fileExtension: string | undefined
       if (originalFileName) {
         fileExtension = originalFileName.split('.').pop()?.toLowerCase()
+
+        this.modelManager.originalFileName =
+          originalFileName.split('/').pop()?.split('.')[0] || 'model'
       } else {
         const filename = new URLSearchParams(url.split('?')[1]).get('filename')
         fileExtension = filename?.split('.').pop()?.toLowerCase()
+
+        if (filename) {
+          this.modelManager.originalFileName = filename.split('.')[0] || 'model'
+        } else {
+          this.modelManager.originalFileName = 'model'
+        }
       }
 
       if (!fileExtension) {

@@ -59,7 +59,13 @@ const eventConfig = {
   modelLoadingEnd: () => loadingOverlayRef.value?.endLoading(),
   materialLoadingStart: () =>
     loadingOverlayRef.value?.startLoading(t('load3d.switchingMaterialMode')),
-  materialLoadingEnd: () => loadingOverlayRef.value?.endLoading()
+  materialLoadingEnd: () => loadingOverlayRef.value?.endLoading(),
+  exportLoadingStart: (message: string) => {
+    loadingOverlayRef.value?.startLoading(message || t('load3d.exportingModel'))
+  },
+  exportLoadingEnd: () => {
+    loadingOverlayRef.value?.endLoading()
+  }
 } as const
 
 watchEffect(() => {

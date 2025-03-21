@@ -54,6 +54,7 @@
       @updateUpDirection="handleUpdateUpDirection"
       @updateMaterialMode="handleUpdateMaterialMode"
       @updateEdgeThreshold="handleUpdateEdgeThreshold"
+      @exportModel="handleExportModel"
     />
   </div>
 </template>
@@ -72,6 +73,7 @@ import {
 } from '@/extensions/core/load3d/interfaces'
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComponentWidget } from '@/scripts/domWidget'
+import { useToastStore } from '@/stores/toastStore'
 
 const { widget } = defineProps<{
   widget: ComponentWidget<string[]>
@@ -181,6 +183,22 @@ const handleUpdateMaterialMode = (value: MaterialMode) => {
   materialMode.value = value
 
   node.properties['Material Mode'] = value
+}
+
+const handleExportModel = async (format: string) => {
+  if (!load3DSceneRef.value?.load3d) {
+    useToastStore().addAlert('No 3D scene to export')
+    return
+  }
+
+  try {
+    await load3DSceneRef.value.load3d.exportModel(format)
+  } catch (error) {
+    console.error('Error exporting model:', error)
+    useToastStore().addAlert(
+      `Failed to export model as ${format.toUpperCase()}`
+    )
+  }
 }
 
 const listenMaterialModeChange = (mode: MaterialMode) => {
