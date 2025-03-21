@@ -4716,7 +4716,7 @@ export class LGraphCanvas implements ConnectionColorContext {
             LGraphCanvas.link_type_colors[link.type] ||
             this.default_link_color
 
-          const prevReroute = reroute.parentId == null ? undefined : graph.reroutes.get(reroute.parentId)
+          const prevReroute = graph.getReroute(reroute.parentId)
           const rerouteStartPos = prevReroute?.pos ?? startPos
           reroute.calculateAngle(this.last_draw_time, graph, rerouteStartPos)
 

@@ -1,4 +1,5 @@
 import type { RenderLink } from "./RenderLink"
+import type { LinkConnectorEventTarget } from "@/infrastructure/LinkConnectorEventTarget"
 import type { INodeOutputSlot, LinkNetwork } from "@/interfaces"
 import type { INodeInputSlot } from "@/interfaces"
 import type { Point } from "@/interfaces"
@@ -83,5 +84,70 @@ export class MovingRenderLink implements RenderLink {
     this.fromPos = fromReroute?.pos ?? (this.toType === "input" ? this.outputPos : this.inputPos)
     this.fromDirection = this.toType === "input" ? LinkDirection.NONE : LinkDirection.LEFT
     this.fromSlotIndex = this.toType === "input" ? outputIndex : inputIndex
+  }
+
+  connectToInput(inputNode: LGraphNode, input: INodeInputSlot, events: LinkConnectorEventTarget): LLink | null | undefined {
+    if (input === this.inputSlot) return
+
+    const link = this.outputNode.connectSlots(this.outputSlot, inputNode, input, this.fromReroute?.id)
+    if (link) events.dispatch("input-moved", this)
+    return link
+  }
+
+  connectToOutput(outputNode: LGraphNode, output: INodeOutputSlot, events: LinkConnectorEventTarget): LLink | null | undefined {
+    if (output === this.outputSlot) return
+
+    const link = outputNode.connectSlots(output, this.inputNode, this.inputSlot, this.link.parentId)
+    if (link) events.dispatch("output-moved", this)
+    return link
+  }
+
+  connectToRerouteInput(
+    reroute: Reroute,
+    { node: inputNode, input, link: existingLink }: { node: LGraphNode, input: INodeInputSlot, link: LLink },
+    events: LinkConnectorEventTarget,
+    originalReroutes: Reroute[],
+  ): void {
+    const { outputNode, outputSlot, fromReroute } = this
+
+    // Clean up reroutes
+    for (const reroute of originalReroutes) {
+      if (reroute.id === this.link.parentId) break
+
+      if (reroute.totalLinks === 1) reroute.remove()
+    }
+    // Set the parentId of the reroute we dropped on, to the reroute we dragged from
+    reroute.parentId = fromReroute?.id
+
+    const newLink = outputNode.connectSlots(outputSlot, inputNode, input, existingLink.parentId)
+    if (newLink) events.dispatch("input-moved", this)
+  }
+
+  connectToRerouteOutput(
+    reroute: Reroute,
+    outputNode: LGraphNode,
+    output: INodeOutputSlot,
+    events: LinkConnectorEventTarget,
+  ): void {
+    // Moving output side of links
+    const { inputNode, inputSlot, fromReroute } = this
+
+    // Creating a new link removes floating prop - check before connecting
+    const floatingTerminus = reroute?.floating?.slotType === "output"
+
+    // Connect the first reroute of the link being dragged to the reroute being dropped on
+    if (fromReroute) {
+      fromReroute.parentId = reroute.id
+    } else {
+      // If there are no reroutes, directly connect the link
+      this.link.parentId = reroute.id
+    }
+    // Use the last reroute id on the link to retain all reroutes
+    outputNode.connectSlots(output, inputNode, inputSlot, this.link.parentId)
+
+    // Connecting from the final reroute of a floating reroute chain
+    if (floatingTerminus) reroute.removeAllFloatingLinks()
+
+    events.dispatch("output-moved", this)
   }
 }

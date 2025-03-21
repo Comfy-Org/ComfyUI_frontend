@@ -1,6 +1,7 @@
 import type {
   CanvasColour,
   INodeInputSlot,
+  INodeOutputSlot,
   LinkNetwork,
   LinkSegment,
   Point,
@@ -255,14 +256,11 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
       ?.findNextReroute(withParentId, visited)
   }
 
-  findSourceOutput() {
-    const network = this.#network.deref()
-    if (!network) return
-
+  findSourceOutput(): { node: LGraphNode, output: INodeOutputSlot, outputIndex: number, link: LLink } | undefined {
     const link = this.firstLink ?? this.firstFloatingLink
     if (!link) return
 
-    const node = network.getNodeById(link.origin_id)
+    const node = this.#network.deref()?.getNodeById(link.origin_id)
     if (!node) return
 
     return {
@@ -310,6 +308,25 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
     }
   }
 
+  /**
+   * Retrieves all floating links passing through this reroute.
+   * @param from Filters the links by the currently connected link side.
+   * @returns An array of floating links
+   */
+  getFloatingLinks(from: "input" | "output"): LLink[] | undefined {
+    const floatingLinks = this.#network.deref()?.floatingLinks
+    if (!floatingLinks) return
+
+    const idProp = from === "input" ? "origin_id" : "target_id"
+    const out: LLink[] = []
+
+    for (const linkId of this.floatingLinkIds) {
+      const link = floatingLinks.get(linkId)
+      if (link?.[idProp] === -1) out.push(link)
+    }
+    return out
+  }
+
   /** @inheritdoc */
   move(deltaX: number, deltaY: number) {
     this.#pos[0] += deltaX
@@ -324,6 +341,43 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
     pos[0] = snapTo * Math.round(pos[0] / snapTo)
     pos[1] = snapTo * Math.round(pos[1] / snapTo)
     return true
+  }
+
+  removeAllFloatingLinks() {
+    for (const linkId of this.floatingLinkIds) {
+      this.removeFloatingLink(linkId)
+    }
+  }
+
+  removeFloatingLink(linkId: LinkId) {
+    const network = this.#network.deref()
+    if (!network) return
+
+    const floatingLink = network.floatingLinks.get(linkId)
+    if (!floatingLink) {
+      console.warn(`[Reroute.removeFloatingLink] Floating link not found: ${linkId}, ignoring and discarding ID.`)
+      this.floatingLinkIds.delete(linkId)
+      return
+    }
+
+    network.removeFloatingLink(floatingLink)
+  }
+
+  /**
+   * Removes a link or floating link from this reroute, by matching link object instance equality.
+   * @param link The link to remove.
+   * @remarks Does not remove the link from the network.
+   */
+  removeLink(link: LLink) {
+    const network = this.#network.deref()
+    if (!network) return
+
+    const floatingLink = network.floatingLinks.get(link.id)
+    if (link === floatingLink) {
+      this.floatingLinkIds.delete(link.id)
+    } else {
+      this.linkIds.delete(link.id)
+    }
   }
 
   remove() {
