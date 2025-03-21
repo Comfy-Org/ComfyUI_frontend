@@ -356,8 +356,7 @@ export class LinkConnector {
               for (const reroute of reroutes.slice(0, -1).reverse()) {
                 if (reroute.id === fromReroute?.id) break
 
-                const totalLinks = reroute.linkIds.size + reroute.floatingLinkIds.size
-                if (totalLinks === 1) reroute.remove()
+                if (reroute.totalLinks === 1) reroute.remove()
               }
             }
             // Set the parentId of the reroute we dropped on, to the reroute we dragged from

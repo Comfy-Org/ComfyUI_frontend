@@ -221,7 +221,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
 
     for (const reroute of reroutes) {
       reroute.linkIds.delete(this.id)
-      if (!keepReroutes && !reroute.linkIds.size && !reroute.floatingLinkIds.size) {
+      if (!keepReroutes && !reroute.totalLinks) {
         network.reroutes.delete(reroute.id)
       }
     }

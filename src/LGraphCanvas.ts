@@ -2200,7 +2200,7 @@ export class LGraphCanvas implements ConnectionColorContext {
           const link_pos = node.getOutputPos(i)
           if (isInRectangle(x, y, link_pos[0] - 15, link_pos[1] - 10, 30, 20)) {
             // Drag multiple output links
-            if (e.shiftKey && output.links?.length) {
+            if (e.shiftKey && (output.links?.length || output._floatingLinks?.size)) {
               linkConnector.moveOutputLink(graph, output)
 
               pointer.onDragEnd = upEvent => linkConnector.dropLinks(graph, upEvent)
@@ -2242,23 +2242,16 @@ export class LGraphCanvas implements ConnectionColorContext {
             pointer.onDoubleClick = () => node.onInputDblClick?.(i, e)
             pointer.onClick = () => node.onInputClick?.(i, e)
 
-            if (input.link !== null) {
-              if (
-                LiteGraph.click_do_break_link_to ||
-                (LiteGraph.ctrl_alt_click_do_break_link &&
-                  ctrlOrMeta &&
-                  e.altKey &&
-                  !e.shiftKey)
-              ) {
+            const shouldBreakLink = LiteGraph.ctrl_alt_click_do_break_link &&
+              ctrlOrMeta &&
+              e.altKey &&
+              !e.shiftKey
+            if (input.link !== null || input._floatingLinks?.size) {
+              // Existing link
+              if (shouldBreakLink || LiteGraph.click_do_break_link_to) {
                 node.disconnectInput(i, true)
               } else if (e.shiftKey || this.allow_reconnect_links) {
                 linkConnector.moveInputLink(graph, input)
-              }
-            } else {
-              for (const link of graph.floatingLinks.values()) {
-                if (link.target_id === node.id && link.target_slot === i) {
-                  graph.removeFloatingLink(link)
-                }
               }
             }
 

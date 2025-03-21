@@ -78,6 +78,11 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
     return [x - radius, y - radius, 2 * radius, 2 * radius]
   }
 
+  /** The total number of links & floating links using this reroute */
+  get totalLinks(): number {
+    return this.linkIds.size + this.floatingLinkIds.size
+  }
+
   /** @inheritdoc */
   selected?: boolean
 
@@ -287,7 +292,11 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
 
     return results
 
-    function addAllResults(network: ReadonlyLinkNetwork, linkIds: Iterable<LinkId>, links: ReadonlyMap<LinkId, LLink>) {
+    function addAllResults(
+      network: ReadonlyLinkNetwork,
+      linkIds: Iterable<LinkId>,
+      links: ReadonlyMap<LinkId, LLink>,
+    ) {
       for (const linkId of linkIds) {
         const link = links.get(linkId)
         if (!link) continue
@@ -329,15 +338,13 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
     if (!(lastRenderTime > this.#lastRenderTime)) return
     this.#lastRenderTime = lastRenderTime
 
-    const { links, floatingLinks } = network
-    const { id, linkIds, floatingLinkIds, pos: thisPos } = this
-
-    const angles: number[] = []
-    let sum = 0
+    const { id, pos: thisPos } = this
 
     // Add all link angles
-    calculateLinks(linkIds, links)
-    calculateLinks(floatingLinkIds, floatingLinks)
+    const angles: number[] = []
+    let sum = 0
+    calculateAngles(this.linkIds, network.links)
+    calculateAngles(this.floatingLinkIds, network.floatingLinks)
 
     // Invalid - reset
     if (!angles.length) {
@@ -373,7 +380,7 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
      * @param linkIds The IDs of the links to calculate
      * @param links The link container from the link network.
      */
-    function calculateLinks(linkIds: Iterable<LinkId>, links: ReadonlyMap<LinkId, LLink>) {
+    function calculateAngles(linkIds: Iterable<LinkId>, links: ReadonlyMap<LinkId, LLink>) {
       for (const linkId of linkIds) {
         const link = links.get(linkId)
         const pos = getNextPos(network, link, id)

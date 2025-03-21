@@ -269,6 +269,8 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     this.reroutes.clear()
     this.#floatingLinks.clear()
 
+    this.#lastFloatingLinkId = 0
+
     // other scene stuff
     this._groups = []
 
@@ -1376,6 +1378,16 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     }
     this.#floatingLinks.set(link.id, link)
 
+    const slot = link.target_id !== -1
+      ? this.getNodeById(link.target_id)?.inputs?.[link.target_slot]
+      : this.getNodeById(link.origin_id)?.outputs?.[link.origin_slot]
+    if (slot) {
+      slot._floatingLinks ??= new Set()
+      slot._floatingLinks.add(link)
+    } else {
+      console.warn(`Adding invalid floating link: target/slot: [${link.target_id}/${link.target_slot}] origin/slot: [${link.origin_id}/${link.origin_slot}]`)
+    }
+
     const reroutes = LLink.getReroutes(this, link)
     for (const reroute of reroutes) {
       reroute.floatingLinkIds.add(link.id)
@@ -1386,6 +1398,13 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   removeFloatingLink(link: LLink): void {
     this.#floatingLinks.delete(link.id)
 
+    const slot = link.target_id !== -1
+      ? this.getNodeById(link.target_id)?.inputs?.[link.target_slot]
+      : this.getNodeById(link.origin_id)?.outputs?.[link.origin_slot]
+    if (slot) {
+      slot._floatingLinks?.delete(link)
+    }
+
     const reroutes = LLink.getReroutes(this, link)
     for (const reroute of reroutes) {
       reroute.floatingLinkIds.delete(link.id)
@@ -1393,8 +1412,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
         delete reroute.floating
       }
 
-      const totalLinks = reroute.floatingLinkIds.size + reroute.linkIds.size
-      if (totalLinks === 0) this.removeReroute(reroute.id)
+      if (reroute.totalLinks === 0) this.removeReroute(reroute.id)
     }
   }
 
@@ -1479,12 +1497,19 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
         continue
       }
 
-      // Remove floating links with no reroutes
+      // A floating link is a unique branch; if there is no parent reroute, or
+      // the parent reroute has any other links, remove this floating link.
       const floatingReroutes = LLink.getReroutes(this, link)
-      if (!(floatingReroutes.length > 0)) {
-        this.#floatingLinks.delete(linkId)
+      const lastReroute = floatingReroutes.at(-1)
+      const secondLastReroute = floatingReroutes.at(-2)
+
+      if (reroute !== lastReroute) {
+        continue
+      } else if (secondLastReroute?.totalLinks !== 1) {
+        this.removeFloatingLink(link)
       } else if (link.parentId === id) {
         link.parentId = parentId
+        secondLastReroute.floating = reroute.floating
       }
     }
 
@@ -1646,36 +1671,10 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
       reroutes = data.reroutes
     }
 
-    // Floating links
-    if (Array.isArray(data.floatingLinks)) {
-      for (const linkData of data.floatingLinks) {
-        const floatingLink = LLink.create(linkData)
-        this.#floatingLinks.set(floatingLink.id, floatingLink)
-
-        if (floatingLink.id > this.#lastFloatingLinkId) this.#lastFloatingLinkId = floatingLink.id
-      }
-    }
-
     // Reroutes
     if (Array.isArray(reroutes)) {
       for (const rerouteData of reroutes) {
         this.setReroute(rerouteData)
-      }
-    }
-
-    // Cache floating link IDs on reroutes
-    for (const floatingLink of this.floatingLinks.values()) {
-      const reroutes = LLink.getReroutes(this, floatingLink)
-      for (const reroute of reroutes) {
-        reroute.floatingLinkIds.add(floatingLink.id)
-      }
-    }
-
-    // Drop broken reroutes
-    for (const reroute of this.reroutes.values()) {
-      // Drop broken links, and ignore reroutes with no valid links
-      if (!reroute.validateLinks(this._links, this.floatingLinks)) {
-        this.reroutes.delete(reroute.id)
       }
     }
 
@@ -1720,6 +1719,24 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
       for (const n_info of nodesData) {
         const node = this.getNodeById(n_info.id)
         node?.configure(n_info)
+      }
+    }
+
+    // Floating links
+    if (Array.isArray(data.floatingLinks)) {
+      for (const linkData of data.floatingLinks) {
+        const floatingLink = LLink.create(linkData)
+        this.addFloatingLink(floatingLink)
+
+        if (floatingLink.id > this.#lastFloatingLinkId) this.#lastFloatingLinkId = floatingLink.id
+      }
+    }
+
+    // Drop broken reroutes
+    for (const reroute of this.reroutes.values()) {
+      // Drop broken links, and ignore reroutes with no valid links
+      if (!reroute.validateLinks(this._links, this.floatingLinks)) {
+        this.reroutes.delete(reroute.id)
       }
     }
 

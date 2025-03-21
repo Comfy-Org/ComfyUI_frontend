@@ -286,6 +286,11 @@ export interface INodeSlot {
    * Set by {@link LGraphNode.#layoutSlots}.
    */
   _layoutElement?: LayoutElement<INodeSlot>
+  /**
+   * A list of floating link IDs that are connected to this slot.
+   * This is calculated at runtime; it is **not** serialized.
+   */
+  _floatingLinks?: Set<LLink>
 }
 
 export interface INodeFlags {
