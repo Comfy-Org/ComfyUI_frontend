@@ -978,6 +978,9 @@
     "camera": "Camera",
     "light": "Light",
     "switchingMaterialMode": "Switching Material Mode...",
-    "edgeThreshold": "Edge Threshold"
+    "edgeThreshold": "Edge Threshold",
+    "export": "Export",
+    "exportModel": "Export Model",
+    "exportingModel": "Exporting model..."
   }
 }

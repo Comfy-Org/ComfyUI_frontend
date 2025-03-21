@@ -16,14 +16,14 @@
       >
         <div class="flex flex-col">
           <Button
-            v-for="(label, category) in categories"
+            v-for="category in availableCategories"
             :key="category"
             class="p-button-text w-full flex items-center justify-start"
             :class="{ 'bg-gray-600': activeCategory === category }"
             @click="selectCategory(category)"
           >
             <i :class="getCategoryIcon(category)"></i>
-            <span class="text-white">{{ t(label) }}</span>
+            <span class="text-white">{{ t(categoryLabels[category]) }}</span>
           </Button>
         </div>
       </div>
@@ -70,6 +70,12 @@
         @updateLightIntensity="handleUpdateLightIntensity"
         ref="lightControlsRef"
       />
+
+      <ExportControls
+        v-if="activeCategory === 'export'"
+        @exportModel="handleExportModel"
+        ref="exportControlsRef"
+      />
     </div>
     <div v-if="showPreviewButton">
       <Button class="p-button-rounded p-button-text" @click="togglePreview">
@@ -89,9 +95,10 @@
 <script setup lang="ts">
 import { Tooltip } from 'primevue'
 import Button from 'primevue/button'
-import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import CameraControls from '@/components/load3d/controls/CameraControls.vue'
+import ExportControls from '@/components/load3d/controls/ExportControls.vue'
 import LightControls from '@/components/load3d/controls/LightControls.vue'
 import ModelControls from '@/components/load3d/controls/ModelControls.vue'
 import SceneControls from '@/components/load3d/controls/SceneControls.vue'
@@ -123,19 +130,30 @@ const props = defineProps<{
 }>()
 
 const isMenuOpen = ref(false)
-const activeCategory = ref<'scene' | 'model' | 'camera' | 'light'>('scene')
-const categories = {
+const activeCategory = ref<string>('scene')
+const categoryLabels: Record<string, string> = {
   scene: 'load3d.scene',
   model: 'load3d.model',
   camera: 'load3d.camera',
-  light: 'load3d.light'
+  light: 'load3d.light',
+  export: 'load3d.export'
 }
+
+const availableCategories = computed(() => {
+  const baseCategories = ['scene', 'model', 'camera', 'light']
+
+  if (!props.inputSpec.isAnimation) {
+    return [...baseCategories, 'export']
+  }
+
+  return baseCategories
+})
 
 const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value
 }
 
-const selectCategory = (category: 'scene' | 'model' | 'camera' | 'light') => {
+const selectCategory = (category: string) => {
   activeCategory.value = category
   isMenuOpen.value = false
 }
@@ -145,7 +163,8 @@ const getCategoryIcon = (category: string) => {
     scene: 'pi pi-image',
     model: 'pi pi-box',
     camera: 'pi pi-camera',
-    light: 'pi pi-sun'
+    light: 'pi pi-sun',
+    export: 'pi pi-download'
   }
   // @ts-expect-error fixme ts strict error
   return `${icons[category]} text-white text-lg`
@@ -162,6 +181,7 @@ const emit = defineEmits<{
   (e: 'updateUpDirection', direction: UpDirection): void
   (e: 'updateMaterialMode', mode: MaterialMode): void
   (e: 'updateEdgeThreshold', value: number): void
+  (e: 'exportModel', format: string): void
 }>()
 
 const backgroundColor = ref(props.backgroundColor)
@@ -216,6 +236,10 @@ const handleUpdateLightIntensity = (value: number) => {
 
 const handleUpdateFOV = (value: number) => {
   emit('updateFOV', value)
+}
+
+const handleExportModel = (format: string) => {
+  emit('exportModel', format)
 }
 
 const closeSlider = (e: MouseEvent) => {

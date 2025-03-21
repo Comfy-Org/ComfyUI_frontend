@@ -15,19 +15,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 
 import { t } from '@/i18n'
 
 const modelLoading = ref(false)
 const loadingMessage = ref('')
 
-const startLoading = (message?: string) => {
-  modelLoading.value = true
+const startLoading = async (message?: string) => {
   loadingMessage.value = message || t('load3d.loadingModel')
+  modelLoading.value = true
+
+  await nextTick()
 }
 
-const endLoading = () => {
+const endLoading = async () => {
+  await new Promise((resolve) => setTimeout(resolve, 100))
   modelLoading.value = false
 }
 
