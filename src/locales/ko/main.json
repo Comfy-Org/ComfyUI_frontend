@@ -882,6 +882,9 @@
     },
     "template": {
       "3D": {
+        "hunyuan-3d-multiview-elf": "Hunyuan3D 다중뷰",
+        "hunyuan-3d-turbo": "Hunyuan3D 터보",
+        "hunyuan3d-non-multiview-train": "Hunyuan3D",
         "stable_zero123_example": "스테이블 제로123"
       },
       "Area Composition": {
