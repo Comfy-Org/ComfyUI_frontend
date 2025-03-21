@@ -8,6 +8,7 @@ import { LiteGraph } from "@/litegraph"
 import floatingBranch from "./assets/floatingBranch.json"
 import floatingLink from "./assets/floatingLink.json"
 import linkedNodes from "./assets/linkedNodes.json"
+import reroutesComplex from "./assets/reroutesComplex.json"
 import { basicSerialisableGraph, minimalSerialisableGraph, oldSchemaGraph } from "./assets/testGraphs"
 
 interface LitegraphFixtures {
@@ -16,8 +17,8 @@ interface LitegraphFixtures {
   oldSchemaGraph: ISerialisedGraph
   floatingLinkGraph: ISerialisedGraph
   linkedNodesGraph: ISerialisedGraph
-  floatingBranchSerialisedGraph: ISerialisedGraph
   floatingBranchGraph: LGraph
+  reroutesComplexGraph: LGraph
 }
 
 /** These fixtures alter global state, and are difficult to reset. Relies on a single test per-file to reset state. */
@@ -38,9 +39,13 @@ export const test = baseTest.extend<LitegraphFixtures>({
   oldSchemaGraph: structuredClone(oldSchemaGraph),
   floatingLinkGraph: structuredClone(floatingLink as unknown as ISerialisedGraph),
   linkedNodesGraph: structuredClone(linkedNodes as unknown as ISerialisedGraph),
-  floatingBranchSerialisedGraph: structuredClone(floatingBranch as unknown as ISerialisedGraph),
-  floatingBranchGraph: async ({ floatingBranchSerialisedGraph }, use) => {
-    const cloned = structuredClone(floatingBranchSerialisedGraph)
+  floatingBranchGraph: async ({}, use) => {
+    const cloned = structuredClone(floatingBranch as unknown as ISerialisedGraph)
+    const graph = new LGraph(cloned)
+    await use(graph)
+  },
+  reroutesComplexGraph: async ({}, use) => {
+    const cloned = structuredClone(reroutesComplex as unknown as ISerialisedGraph)
     const graph = new LGraph(cloned)
     await use(graph)
   },
