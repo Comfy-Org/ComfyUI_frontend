@@ -2,7 +2,7 @@
   <img
     :src="isImageError ? DEFAULT_ICON : imgSrc"
     :alt="nodePack.name + ' icon'"
-    class="object-contain rounded-lg"
+    class="object-contain rounded-lg max-h-72 max-w-72"
     :style="{ width: cssWidth, height: cssHeight }"
     @error="isImageError = true"
   />
