@@ -49,6 +49,10 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
     this.#parentId = value
   }
 
+  public get parent(): Reroute | undefined {
+    return this.#network.deref()?.getReroute(this.#parentId)
+  }
+
   /** This property is only defined on the last reroute of a floating reroute chain (closest to input end). */
   floating?: FloatingRerouteSlot
 

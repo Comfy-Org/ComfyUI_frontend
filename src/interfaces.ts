@@ -116,6 +116,8 @@ export interface ReadonlyLinkNetwork {
   readonly reroutes: ReadonlyMap<RerouteId, Reroute>
   readonly floatingLinks: ReadonlyMap<LinkId, LLink>
   getNodeById(id: NodeId): LGraphNode | null
+  getReroute(parentId: null | undefined): undefined
+  getReroute(parentId: RerouteId | null | undefined): Reroute | undefined
 }
 
 /**
@@ -126,6 +128,7 @@ export interface LinkNetwork extends ReadonlyLinkNetwork {
   readonly reroutes: Map<RerouteId, Reroute>
   addFloatingLink(link: LLink): LLink
   removeReroute(id: number): unknown
+  removeFloatingLink(link: LLink): void
 }
 
 /**
