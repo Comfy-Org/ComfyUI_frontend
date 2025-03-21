@@ -155,9 +155,10 @@ const zAuxId = z
   )
   .transform(([username, repo]) => `${username}/${repo}`)
 
-const zSemVer = z
-  .string()
-  .regex(semverPattern, 'Invalid semantic version (x.y.z)')
+const zSemVer = z.union([
+  z.string().regex(semverPattern, 'Invalid semantic version (x.y.z)'),
+  z.literal('unknown')
+])
 const zGitHash = z.string().regex(gitHashPattern, 'Invalid Git commit hash')
 const zVersion = z.union([zSemVer, zGitHash])
 
