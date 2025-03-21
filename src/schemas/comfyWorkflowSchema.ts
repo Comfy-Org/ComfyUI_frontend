@@ -278,6 +278,9 @@ export type NodeInput = z.infer<typeof zNodeInput>
 export type NodeOutput = z.infer<typeof zNodeOutput>
 export type ComfyLink = z.infer<typeof zComfyLink>
 export type ComfyNode = z.infer<typeof zComfyNode>
+export type Reroute = z.infer<typeof zReroute>
+export type WorkflowJSON04 = z.infer<typeof zComfyWorkflow>
+export type WorkflowJSON10 = z.infer<typeof zComfyWorkflow1>
 export type ComfyWorkflowJSON = z.infer<
   typeof zComfyWorkflow | typeof zComfyWorkflow1
 >

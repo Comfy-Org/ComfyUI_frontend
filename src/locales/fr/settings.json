@@ -243,10 +243,6 @@
     "name": "Taille de l'historique de la file d'attente",
     "tooltip": "Le nombre maximum de tâches qui s'affichent dans l'historique de la file d'attente."
   },
-  "Comfy_RerouteBeta": {
-    "name": "Participer au test bêta de reroute",
-    "tooltip": "Active les nouveaux reroutes natifs.\n\nLes reroutes peuvent être ajoutés en maintenant alt et en glissant à partir d'une ligne de lien, ou sur le menu de lien.\n\nLa désactivation de cette option est non destructive - les reroutes sont cachés."
-  },
   "Comfy_Sidebar_Location": {
     "name": "Emplacement de la barre latérale",
     "options": {
