@@ -43,3 +43,38 @@ export type TextRange = {
   start: number
   end: number
 }
+
+export enum ASCII {
+  GLTF = 0x46546c67,
+  JSON = 0x4e4f534a
+}
+
+export enum GltfSizeBytes {
+  HEADER = 12,
+  CHUNK_HEADER = 8
+}
+
+export type GltfHeader = {
+  magicNumber: number
+  gltfFormatVersion: number
+  totalLengthBytes: number
+}
+
+export type GltfChunkHeader = {
+  chunkLengthBytes: number
+  chunkTypeIdentifier: number
+}
+
+export type GltfExtras = {
+  workflow?: string | object
+  prompt?: string | object
+  [key: string]: any
+}
+
+export type GltfJsonData = {
+  asset?: {
+    extras?: GltfExtras
+    [key: string]: any
+  }
+  [key: string]: any
+}
