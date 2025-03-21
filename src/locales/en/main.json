@@ -517,9 +517,9 @@
       },
       "3D": {
         "stable_zero123_example": "Stable Zero123",
-        "hunyuan3d-non-multiview-train": "Hunyuan3D",
-        "hunyuan-3d-multiview-elf": "Hunyuan3D Multiview",
-        "hunyuan-3d-turbo": "Hunyuan3D Turbo"
+        "hunyuan3d-non-multiview-train": "Hunyuan3D 2.0",
+        "hunyuan-3d-multiview-elf": "Hunyuan3D 2.0 MV",
+        "hunyuan-3d-turbo": "Hunyuan3D 2.0 MV Turbo"
       },
       "Audio": {
         "stable_audio_example": "Stable Audio"
