@@ -203,7 +203,7 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
    * `null` if an infinite loop is detected.
    * `undefined` if the reroute chain or {@link LinkNetwork} are invalid.
    */
-  getReroutes(visited = new Set<Reroute>()): Reroute[] | null | undefined {
+  getReroutes(visited = new Set<Reroute>()): Reroute[] | null {
     // No parentId - last in the chain
     if (this.#parentId === undefined) return [this]
     // Invalid chain - looped

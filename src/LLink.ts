@@ -164,6 +164,26 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   /**
+   * Checks if the specified node id and output index are this link's origin (output side).
+   * @param nodeId ID of the node to check
+   * @param outputIndex The array index of the node output
+   * @returns `true` if the origin matches, otherwise `false`.
+   */
+  hasOrigin(nodeId: NodeId, outputIndex: number): boolean {
+    return this.origin_id === nodeId && this.origin_slot === outputIndex
+  }
+
+  /**
+   * Checks if the specified node id and input index are this link's target (input side).
+   * @param nodeId ID of the node to check
+   * @param inputIndex The array index of the node input
+   * @returns `true` if the target matches, otherwise `false`.
+   */
+  hasTarget(nodeId: NodeId, inputIndex: number): boolean {
+    return this.target_id === nodeId && this.target_slot === inputIndex
+  }
+
+  /**
    * Disconnects a link and removes it from the graph, cleaning up any reroutes that are no longer used
    * @param network The container (LGraph) where reroutes should be updated
    * @param keepReroutes If `undefined`, reroutes will be automatically removed if no links remain.

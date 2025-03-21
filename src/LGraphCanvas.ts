@@ -2667,16 +2667,13 @@ export class LGraphCanvas implements ConnectionColorContext {
           underPointer |= CanvasItem.ResizeSe
         }
       } else {
+        // Reroute
         const reroute = graph.getRerouteOnPos(e.canvasX, e.canvasY)
         if (reroute) {
           underPointer |= CanvasItem.Reroute
-          if (linkConnector.isConnecting) {
-            const firstSlot = linkConnector.renderLinks[0]?.fromSlot
-            const rerouteType = reroute.firstLink?.type ?? reroute.firstFloatingLink?.type
 
-            if (firstSlot && rerouteType != null && LiteGraph.isValidConnection(rerouteType, firstSlot.type)) {
-              this._highlight_pos = reroute.pos
-            }
+          if (linkConnector.isConnecting && linkConnector.isRerouteValidDrop(reroute)) {
+            this._highlight_pos = reroute.pos
           }
         } else {
           this._highlight_pos &&= undefined

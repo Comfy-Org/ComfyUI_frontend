@@ -1393,9 +1393,8 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
         delete reroute.floating
       }
 
-      if (reroute.floatingLinkIds.size === 0 && reroute.linkIds.size === 0) {
-        this.removeReroute(reroute.id)
-      }
+      const totalLinks = reroute.floatingLinkIds.size + reroute.linkIds.size
+      if (totalLinks === 0) this.removeReroute(reroute.id)
     }
   }
 
