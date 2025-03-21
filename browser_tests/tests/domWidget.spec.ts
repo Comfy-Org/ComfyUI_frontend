@@ -5,7 +5,7 @@ import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 test.describe('DOM Widget', () => {
   test('Collapsed multiline textarea is not visible', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('collapsed_multiline')
-    await comfyPage.page.waitForTimeout(300)
+    await comfyPage.page.waitForTimeout(500)
     expect(comfyPage.page.locator('.comfy-multiline-input')).not.toBeVisible()
   })
 
