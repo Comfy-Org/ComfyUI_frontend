@@ -176,7 +176,9 @@ describe('parseComfyWorkflow', () => {
       '0.1.0-alpha.1',
       '1.3.321',
       // Git hash
-      '080e6d4af809a46852d1c4b7ed85f06e8a3a72be'
+      '080e6d4af809a46852d1c4b7ed85f06e8a3a72be',
+      // Special case
+      'unknown'
     ]
     it.each(validVersionStrings)('valid version: %s', async (ver) => {
       const workflow = JSON.parse(JSON.stringify(defaultGraph))
