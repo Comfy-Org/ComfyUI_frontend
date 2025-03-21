@@ -1251,6 +1251,18 @@
       }
     }
   },
+  "EmptyLatentHunyuan3Dv2": {
+    "display_name": "EmptyLatentHunyuan3Dv2",
+    "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ",
+        "tooltip": "バッチ内の潜在画像の数。"
+      },
+      "resolution": {
+        "name": "解像度"
+      }
+    }
+  },
   "EmptyLatentImage": {
     "description": "サンプリングを通じてノイズを除去するための空の潜在画像の新しいバッチを作成します。",
     "display_name": "空の潜在画像",
@@ -1469,6 +1481,47 @@
       },
       "tapered_corners": {
         "name": "テーパードコーナー"
+      }
+    }
+  },
+  "Hunyuan3Dv2Conditioning": {
+    "display_name": "Hunyuan3Dv2Conditioning",
+    "inputs": {
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ"
+      },
+      "1": {
+        "name": "ネガティブ"
+      }
+    }
+  },
+  "Hunyuan3Dv2ConditioningMultiView": {
+    "display_name": "Hunyuan3Dv2ConditioningMultiView",
+    "inputs": {
+      "back": {
+        "name": "バック"
+      },
+      "front": {
+        "name": "フロント"
+      },
+      "left": {
+        "name": "左"
+      },
+      "right": {
+        "name": "右"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ"
+      },
+      "1": {
+        "name": "ネガティブ"
       }
     }
   },
@@ -2535,6 +2588,9 @@
     "inputs": {
       "audio": {
         "name": "オーディオ"
+      },
+      "audioUI": {
+        "name": "audioUI"
       },
       "upload": {
         "name": "アップロードするファイルを選択"
@@ -4614,6 +4670,9 @@
     "inputs": {
       "audio": {
         "name": "オーディオ"
+      },
+      "audioUI": {
+        "name": "audioUI"
       }
     }
   },
@@ -5094,8 +5153,25 @@
       "audio": {
         "name": "オーディオ"
       },
+      "audioUI": {
+        "name": "audioUI"
+      },
       "filename_prefix": {
         "name": "ファイル名_プレフィックス"
+      }
+    }
+  },
+  "SaveGLB": {
+    "display_name": "SaveGLB",
+    "inputs": {
+      "filename_prefix": {
+        "name": "ファイル名のプレフィックス"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "mesh": {
+        "name": "メッシュ"
       }
     }
   },
@@ -5705,6 +5781,23 @@
       }
     }
   },
+  "VAEDecodeHunyuan3D": {
+    "display_name": "VAEDecodeHunyuan3D",
+    "inputs": {
+      "num_chunks": {
+        "name": "num_chunks"
+      },
+      "octree_resolution": {
+        "name": "octree_resolution"
+      },
+      "samples": {
+        "name": "サンプル"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
+  },
   "VAEDecodeTiled": {
     "display_name": "VAEデコード（タイル）",
     "inputs": {
@@ -5849,6 +5942,17 @@
       },
       "model": {
         "name": "モデル"
+      }
+    }
+  },
+  "VoxelToMeshBasic": {
+    "display_name": "VoxelToMeshBasic",
+    "inputs": {
+      "threshold": {
+        "name": "閾値"
+      },
+      "voxel": {
+        "name": "ボクセル"
       }
     }
   },

@@ -74,6 +74,7 @@
     "LOAD_3D": "ЗАГРУЗИТЬ_3D",
     "LOAD_3D_ANIMATION": "ЗАГРУЗИТЬ_3D_АНИМАЦИЮ",
     "MASK": "МАСКА",
+    "MESH": "СЕТКА",
     "MODEL": "МОДЕЛЬ",
     "NOISE": "ШУМ",
     "PHOTOMAKER": "PHOTOMAKER",
@@ -84,6 +85,7 @@
     "TIMESTEPS_RANGE": "ДИАПАЗОН_ВРЕМЕННЫХ_ШАГОВ",
     "UPSCALE_MODEL": "МОДЕЛЬ_АПСКЕЙЛА",
     "VAE": "VAE",
+    "VOXEL": "ВОКСЕЛ",
     "WEBCAM": "ВЕБ-КАМЕРА"
   },
   "desktopMenu": {

@@ -1251,6 +1251,18 @@
       }
     }
   },
+  "EmptyLatentHunyuan3Dv2": {
+    "display_name": "EmptyLatentHunyuan3Dv2",
+    "inputs": {
+      "batch_size": {
+        "name": "taille_du_lot",
+        "tooltip": "Le nombre d'images latentes dans le lot."
+      },
+      "resolution": {
+        "name": "résolution"
+      }
+    }
+  },
   "EmptyLatentImage": {
     "description": "Créez un nouveau lot d'images latentes vides à débruiter via l'échantillonnage.",
     "display_name": "Image Latente Vide",
@@ -1469,6 +1481,47 @@
       },
       "tapered_corners": {
         "name": "coins_évasés"
+      }
+    }
+  },
+  "Hunyuan3Dv2Conditioning": {
+    "display_name": "Hunyuan3Dv2Conditioning",
+    "inputs": {
+      "clip_vision_output": {
+        "name": "sortie_vision_clip"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positif"
+      },
+      "1": {
+        "name": "négatif"
+      }
+    }
+  },
+  "Hunyuan3Dv2ConditioningMultiView": {
+    "display_name": "Hunyuan3Dv2ConditioningMultiView",
+    "inputs": {
+      "back": {
+        "name": "arrière"
+      },
+      "front": {
+        "name": "avant"
+      },
+      "left": {
+        "name": "gauche"
+      },
+      "right": {
+        "name": "droite"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positif"
+      },
+      "1": {
+        "name": "négatif"
       }
     }
   },
@@ -2535,6 +2588,9 @@
     "inputs": {
       "audio": {
         "name": "audio"
+      },
+      "audioUI": {
+        "name": "audioUI"
       },
       "upload": {
         "name": "choisissez le fichier à télécharger"
@@ -4614,6 +4670,9 @@
     "inputs": {
       "audio": {
         "name": "audio"
+      },
+      "audioUI": {
+        "name": "audioUI"
       }
     }
   },
@@ -5094,8 +5153,25 @@
       "audio": {
         "name": "audio"
       },
+      "audioUI": {
+        "name": "audioUI"
+      },
       "filename_prefix": {
         "name": "préfixe_du_nom_de_fichier"
+      }
+    }
+  },
+  "SaveGLB": {
+    "display_name": "SaveGLB",
+    "inputs": {
+      "filename_prefix": {
+        "name": "préfixe_du_nom_de_fichier"
+      },
+      "image": {
+        "name": "image"
+      },
+      "mesh": {
+        "name": "maillage"
       }
     }
   },
@@ -5705,6 +5781,23 @@
       }
     }
   },
+  "VAEDecodeHunyuan3D": {
+    "display_name": "VAEDecodeHunyuan3D",
+    "inputs": {
+      "num_chunks": {
+        "name": "nombre_de_morceaux"
+      },
+      "octree_resolution": {
+        "name": "résolution_octree"
+      },
+      "samples": {
+        "name": "échantillons"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
+  },
   "VAEDecodeTiled": {
     "display_name": "VAE Decode (Tiled)",
     "inputs": {
@@ -5849,6 +5942,17 @@
       },
       "model": {
         "name": "modèle"
+      }
+    }
+  },
+  "VoxelToMeshBasic": {
+    "display_name": "VoxelToMeshBasic",
+    "inputs": {
+      "threshold": {
+        "name": "seuil"
+      },
+      "voxel": {
+        "name": "voxel"
       }
     }
   },
