@@ -2671,12 +2671,14 @@ export class LGraphCanvas implements ConnectionColorContext {
         const reroute = graph.getRerouteOnPos(e.canvasX, e.canvasY)
         if (reroute) {
           underPointer |= CanvasItem.Reroute
+          linkConnector.overReroute = reroute
 
           if (linkConnector.isConnecting && linkConnector.isRerouteValidDrop(reroute)) {
             this._highlight_pos = reroute.pos
           }
         } else {
           this._highlight_pos &&= undefined
+          linkConnector.overReroute &&= undefined
         }
 
         // Not over a node
@@ -3947,7 +3949,14 @@ export class LGraphCanvas implements ConnectionColorContext {
     if (!LiteGraph.snap_highlights_node) return
 
     const { linkConnector } = this
-    const { overWidget } = linkConnector
+    const { overReroute, overWidget } = linkConnector
+    // Reroute highlight
+    if (overReroute) {
+      const { globalAlpha } = ctx
+      ctx.globalAlpha = 1
+      overReroute.drawHighlight(ctx, "#ffcc00aa")
+      ctx.globalAlpha = globalAlpha
+    }
 
     // Ensure we're mousing over a node and connecting a link
     const node = this.node_over

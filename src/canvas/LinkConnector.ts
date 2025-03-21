@@ -78,6 +78,9 @@ export class LinkConnector {
   /** The type (returned by downstream callback) for {@link overWidget} */
   overWidgetType?: string
 
+  /** The reroute beneath the pointer, if it is a valid connection target. */
+  overReroute?: Reroute
+
   readonly #setConnectingLinks: (value: ConnectingLink[]) => void
 
   constructor(setConnectingLinks: (value: ConnectingLink[]) => void) {
