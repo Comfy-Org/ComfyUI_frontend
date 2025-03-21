@@ -230,6 +230,7 @@ test.describe('Workflows sidebar', () => {
 
     await topbar.saveWorkflowAs('workflow1.json')
     await comfyPage.confirmDialog.click('overwrite')
+    await comfyPage.page.waitForTimeout(200)
     // The old workflow1.json should be deleted and the new one should be saved.
     expect(await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()).toEqual([
       'workflow2.json',
