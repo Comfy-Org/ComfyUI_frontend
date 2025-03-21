@@ -54,6 +54,8 @@
     "deprecated": "DEPR",
     "loadWorkflow": "Load Workflow",
     "goToNode": "Go to Node",
+    "setAsBackground": "Set as Background",
+    "customBackground": "Custom Background",
     "settings": "Settings",
     "searchWorkflows": "Search Workflows",
     "searchSettings": "Search Settings",
