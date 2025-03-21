@@ -891,6 +891,9 @@
     },
     "template": {
       "3D": {
+        "hunyuan-3d-multiview-elf": "Hunyuan3D多视图",
+        "hunyuan-3d-turbo": "Hunyuan3D涡轮",
+        "hunyuan3d-non-multiview-train": "Hunyuan3D",
         "stable_zero123_example": "稳定Zero123"
       },
       "Area Composition": {

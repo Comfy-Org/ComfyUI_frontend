@@ -891,6 +891,9 @@
     },
     "template": {
       "3D": {
+        "hunyuan-3d-multiview-elf": "Hunyuan3D Multivue",
+        "hunyuan-3d-turbo": "Hunyuan3D Turbo",
+        "hunyuan3d-non-multiview-train": "Hunyuan3D",
         "stable_zero123_example": "Stable Zero123"
       },
       "Area Composition": {
