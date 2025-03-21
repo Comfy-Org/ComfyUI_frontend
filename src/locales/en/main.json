@@ -516,7 +516,10 @@
         "area_composition_square_area_for_subject": "Area Composition Square Area for Subject"
       },
       "3D": {
-        "stable_zero123_example": "Stable Zero123"
+        "stable_zero123_example": "Stable Zero123",
+        "hunyuan3d-non-multiview-train": "Hunyuan3D 2.0",
+        "hunyuan-3d-multiview-elf": "Hunyuan3D 2.0 MV",
+        "hunyuan-3d-turbo": "Hunyuan3D 2.0 MV Turbo"
       },
       "Audio": {
         "stable_audio_example": "Stable Audio"
