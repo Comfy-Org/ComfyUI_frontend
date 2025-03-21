@@ -5292,8 +5292,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     const node_left = graph.getNodeById(origin_id)
     const fromType = node_left?.outputs?.[origin_slot]?.type
 
-    const options = ["Add Node", null, "Delete", null]
-    options.splice(1, 0, "Add Reroute")
+    const options = ["Add Node", "Add Reroute", null, "Delete", null]
 
     const menu = new LiteGraph.ContextMenu<string>(options, {
       event: e,
@@ -5511,6 +5510,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       showSearchBox: this.showSearchBox,
     }, optPass || {})
     const that = this
+    const { graph } = this
     const { afterRerouteId } = opts
 
     const isFrom = opts.nodeFrom && opts.slotFrom
@@ -5553,7 +5553,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       return
     }
 
-    const options = ["Add Node", null]
+    const options = ["Add Node", "Add Reroute", null]
 
     if (opts.allow_searchbox) {
       options.push("Search", null)
@@ -5577,6 +5577,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     // build menu
     const menu = new LiteGraph.ContextMenu<string>(options, {
       event: opts.e,
+      extra: slotX,
       title:
         (slotX && slotX.name != ""
           ? slotX.name + (fromSlotType ? " | " : "")
@@ -5584,8 +5585,10 @@ export class LGraphCanvas implements ConnectionColorContext {
       callback: inner_clicked,
     })
 
+    const dirty = () => this.#dirty()
+
     // callback
-    function inner_clicked(v: string, options: unknown, e: MouseEvent) {
+    function inner_clicked(v: string | undefined, options: IContextMenuOptions<string, INodeInputSlot | INodeOutputSlot>, e: MouseEvent) {
       // console.log("Process showConnectionMenu selection");
       switch (v) {
       case "Add Node":
@@ -5599,6 +5602,21 @@ export class LGraphCanvas implements ConnectionColorContext {
           }
         })
         break
+      case "Add Reroute":{
+        const node = isFrom ? opts.nodeFrom : opts.nodeTo
+        const slot = options.extra
+
+        if (!graph) throw new NullGraphError()
+        if (!node) throw new TypeError("Cannot add reroute: node was null")
+        if (!slot) throw new TypeError("Cannot add reroute: slot was null")
+        if (!opts.e) throw new TypeError("Cannot add reroute: CanvasPointerEvent was null")
+
+        const reroute = node.connectFloatingReroute([opts.e.canvasX, opts.e.canvasY], slot)
+        if (!reroute) throw new Error("Failed to create reroute")
+
+        dirty()
+        break
+      }
       case "Search":
         if (isFrom) {
           opts.showSearchBox(e, { node_from: opts.nodeFrom, slot_from: slotX, type_filter_in: fromSlotType })

@@ -20,7 +20,7 @@ import type {
   Size,
 } from "./interfaces"
 import type { LGraph } from "./LGraph"
-import type { RerouteId } from "./Reroute"
+import type { Reroute, RerouteId } from "./Reroute"
 import type { CanvasMouseEvent } from "./types/events"
 import type { ISerialisedNode } from "./types/serialisation"
 import type { IBaseWidget, IWidget, IWidgetOptions, TWidgetType, TWidgetValue } from "./types/widgets"
@@ -2543,6 +2543,31 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     graph.connectionChange(this)
 
     return link
+  }
+
+  connectFloatingReroute(pos: Point, slot: INodeInputSlot | INodeOutputSlot): Reroute {
+    const { graph, id } = this
+    if (!graph) throw new NullGraphError()
+
+    // Assertion: It's either there or it isn't.
+    const inputIndex = this.inputs.indexOf(slot as INodeInputSlot)
+    const outputIndex = this.outputs.indexOf(slot as INodeOutputSlot)
+    if (inputIndex === -1 && outputIndex === -1) throw new Error("Invalid slot")
+
+    const link = new LLink(
+      -1,
+      slot.type,
+      outputIndex === -1 ? -1 : id,
+      outputIndex,
+      inputIndex === -1 ? -1 : id,
+      inputIndex,
+    )
+    const slotType = outputIndex === -1 ? "input" : "output"
+    const reroute = graph.setReroute({ pos, linkIds: [], floating: { slotType } })
+
+    link.parentId = reroute.id
+    graph.addFloatingLink(link)
+    return reroute
   }
 
   /**

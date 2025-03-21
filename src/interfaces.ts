@@ -341,11 +341,11 @@ interface IContextMenuBase {
 }
 
 /** ContextMenu */
-export interface IContextMenuOptions<TValue = unknown> extends IContextMenuBase {
+export interface IContextMenuOptions<TValue = unknown, TExtra = unknown> extends IContextMenuBase {
   ignore_item_callbacks?: boolean
   parentMenu?: ContextMenu<TValue>
   event?: MouseEvent
-  extra?: unknown
+  extra?: TExtra
   /** @deprecated Context menu scrolling is now controlled by the browser */
   scroll_speed?: number
   left?: number
