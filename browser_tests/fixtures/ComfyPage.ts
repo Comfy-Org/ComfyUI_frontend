@@ -214,6 +214,10 @@ export class ComfyPage {
         `Failed to setup workflows directory: ${await resp.text()}`
       )
     }
+
+    await this.page.evaluate(async () => {
+      await window['app'].extensionManager.workflow.syncWorkflows()
+    })
   }
 
   async setupUser(username: string) {
