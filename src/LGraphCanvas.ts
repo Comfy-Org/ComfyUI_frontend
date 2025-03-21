@@ -2917,6 +2917,11 @@ export class LGraphCanvas implements ConnectionColorContext {
         block_default = true
       } else if (e.key === "Escape") {
         // esc
+        if (this.linkConnector.isConnecting) {
+          this.linkConnector.reset()
+          e.preventDefault()
+          return
+        }
         this.node_panel?.close()
         this.options_panel?.close()
         block_default = true
