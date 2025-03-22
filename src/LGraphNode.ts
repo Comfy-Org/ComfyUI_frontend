@@ -173,7 +173,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
   graph: LGraph | null = null
   id: NodeId
-  type: string | null = null
+  type: string = ""
   inputs: INodeInputSlot[] = []
   outputs: INodeOutputSlot[] = []
   // Not used
@@ -190,9 +190,9 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
   locked?: boolean
 
-  // Execution order, automatically computed during run
-  order?: number
-  mode?: LGraphEventMode
+  /** Execution order, automatically computed during run @see {@link LGraph.computeExecutionOrder} */
+  order: number = 0
+  mode: LGraphEventMode = LGraphEventMode.ALWAYS
   last_serialization?: ISerialisedNode
   serialize_widgets?: boolean
   /**
@@ -323,6 +323,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     return this._pos
   }
 
+  /** Node position does not necessarily correlate to the top-left corner. */
   public set pos(value) {
     if (!value || value.length < 2) return
 
@@ -587,9 +588,10 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     overWidget: IWidget,
   ): boolean | undefined
 
-  constructor(title: string) {
+  constructor(title: string, type?: string) {
     this.id = LiteGraph.use_uuids ? LiteGraph.uuidv4() : -1
     this.title = title || "Unnamed"
+    this.type = type ?? ""
     this.size = [LiteGraph.NODE_WIDTH, 60]
     this.pos = [10, 10]
   }
@@ -690,7 +692,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     // create serialization object
     const o: ISerialisedNode = {
       id: this.id,
-      type: this.type ?? undefined,
+      type: this.type,
       pos: [this.pos[0], this.pos[1]],
       size: [this.size[0], this.size[1]],
       flags: LiteGraph.cloneObject(this.flags),

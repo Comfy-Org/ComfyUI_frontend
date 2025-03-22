@@ -659,7 +659,6 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     }
 
     ancestors.sort(function (a, b) {
-      // @ts-expect-error deprecated
       return a.order - b.order
     })
     return ancestors
@@ -1113,12 +1112,10 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   checkNodeTypes() {
     const { _nodes } = this
     for (const [i, node] of _nodes.entries()) {
-      // @ts-expect-error deprecated
       const ctor = LiteGraph.registered_node_types[node.type]
       if (node.constructor == ctor) continue
 
       console.log("node being replaced by newer version:", node.type)
-      // @ts-expect-error deprecated
       const newnode = LiteGraph.createNode(node.type)
       if (!newnode) continue
       _nodes[i] = newnode

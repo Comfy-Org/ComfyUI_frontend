@@ -68,7 +68,7 @@ export interface LiteGraphCanvasEvent extends CustomEvent<CanvasEventDetail> {}
 
 export interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
   title: string
-  type?: string
+  type: string
   size?: Size
   min_height?: number
   slot_start_y?: number

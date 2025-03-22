@@ -67,12 +67,12 @@ export type ISerialisableNodeOutput = Omit<INodeOutputSlot, "_layoutElement" | "
 export interface ISerialisedNode {
   title?: string
   id: NodeId
-  type?: string
-  pos?: Point
-  size?: Size
-  flags?: INodeFlags
-  order?: number
-  mode?: number
+  type: string
+  pos: Point
+  size: Size
+  flags: INodeFlags
+  order: number
+  mode: number
   outputs?: ISerialisableNodeOutput[]
   inputs?: ISerialisableNodeInput[]
   properties?: Dictionary<NodeProperty | undefined>
