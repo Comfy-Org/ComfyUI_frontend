@@ -3878,11 +3878,11 @@ export class LGraphCanvas implements ConnectionColorContext {
       }
 
       // on top of link center
-      if (this.over_link_center && this.render_link_tooltip)
+      if (!this.isDragging && this.over_link_center && this.render_link_tooltip) {
         this.drawLinkTooltip(ctx, this.over_link_center)
-      // to remove
-      else
+      } else {
         this.onDrawLinkTooltip?.(ctx, null)
+      }
 
       // custom info
       this.onDrawForeground?.(ctx, this.visible_area)
@@ -4617,7 +4617,8 @@ export class LGraphCanvas implements ConnectionColorContext {
       this.#renderFloatingLinks(ctx, graph, visibleReroutes, now)
     }
 
-    // Render the reroute circles
+    // Render reroutes, ordered by number of non-floating links
+    visibleReroutes.sort((a, b) => a.linkIds.size - b.linkIds.size)
     for (const reroute of visibleReroutes) {
       if (
         this.#snapToGrid &&
@@ -5026,9 +5027,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     if (
       this.ds.scale >= 0.6 &&
       this.highquality_render &&
-      linkSegment &&
-      // TODO: Re-assess this usage - likely a workaround that linkSegment truthy check resolves
-      endDir != LinkDirection.CENTER
+      linkSegment
     ) {
       // render arrow
       if (this.render_connection_arrows) {
@@ -5079,7 +5078,6 @@ export class LGraphCanvas implements ConnectionColorContext {
         ctx.moveTo(-3.2, -5)
         ctx.lineTo(+7, 0)
         ctx.lineTo(-3.2, +5)
-        ctx.fill()
         ctx.setTransform(transform)
       } else if (
         this.linkMarkerShape == null ||
