@@ -927,7 +927,6 @@ export class GroupNodeHandler {
       // @ts-expect-error fixme ts strict error
       const nodes = this.node.convertToNodes()
 
-      // @ts-expect-error fixme ts strict error
       const groupNode = LiteGraph.createNode(this.node.type)
       // @ts-expect-error fixme ts strict error
       groupNode.id = id
@@ -1145,7 +1144,6 @@ export class GroupNodeHandler {
         },
         {
           content: 'Manage Group Node',
-          // @ts-expect-error fixme ts strict error
           callback: () => manageGroupNodes(this.type)
         }
       )
