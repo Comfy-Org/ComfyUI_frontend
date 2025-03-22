@@ -450,17 +450,26 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
   /**
    * Renders the reroute on the canvas.
    * @param ctx Canvas context to draw on
+   * @param backgroundPattern The canvas background pattern; used to make floating reroutes appear washed out.
    * @remarks Leaves {@link ctx}.fillStyle, strokeStyle, and lineWidth dirty (perf.).
    */
-  draw(ctx: CanvasRenderingContext2D): void {
+  draw(ctx: CanvasRenderingContext2D, backgroundPattern?: CanvasPattern): void {
+    const { globalAlpha } = ctx
     const { pos } = this
-    ctx.fillStyle = this._colour ?? "#18184d"
+
     ctx.beginPath()
     ctx.arc(pos[0], pos[1], Reroute.radius, 0, 2 * Math.PI)
-    ctx.fill()
 
+    if (this.linkIds.size === 0) {
+      ctx.fillStyle = backgroundPattern ?? "#797979"
+      ctx.fill()
+      ctx.globalAlpha = globalAlpha * 0.33
+    }
+
+    ctx.fillStyle = this._colour ?? "#18184d"
     ctx.lineWidth = Reroute.radius * 0.1
     ctx.strokeStyle = "rgb(0,0,0,0.5)"
+    ctx.fill()
     ctx.stroke()
 
     ctx.fillStyle = "#ffffff55"
@@ -483,6 +492,8 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
       const y = pos[1] - idBadge.height - Reroute.radius - 2
       idBadge.draw(ctx, x, y)
     }
+
+    ctx.globalAlpha = globalAlpha
   }
 
   drawHighlight(ctx: CanvasRenderingContext2D, colour: CanvasColour): void {
