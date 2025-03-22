@@ -1655,7 +1655,6 @@ export class ComfyApp {
       this.registerNodeDef(nodeId, defs[nodeId])
     }
     for (const node of this.graph.nodes) {
-      // @ts-expect-error fixme ts strict error
       const def = defs[node.type]
       // Allow primitive nodes to handle refresh
       node.refreshComboInNode?.(defs)
@@ -1666,8 +1665,10 @@ export class ComfyApp {
       for (const widget of node.widgets) {
         if (widget.type === 'combo') {
           if (def['input'].required?.[widget.name] !== undefined) {
+            // @ts-expect-error Requires discriminated union
             widget.options.values = def['input'].required[widget.name][0]
           } else if (def['input'].optional?.[widget.name] !== undefined) {
+            // @ts-expect-error Requires discriminated union
             widget.options.values = def['input'].optional[widget.name][0]
           }
         }
