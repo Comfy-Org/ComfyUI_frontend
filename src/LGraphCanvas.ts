@@ -636,14 +636,16 @@ export class LGraphCanvas implements ConnectionColorContext {
             type_filter_out: firstLink.fromSlot.type,
           }
 
+        const afterRerouteId = firstLink.fromReroute?.id
+
         if ("shiftKey" in e && e.shiftKey) {
           if (this.allow_searchbox) {
             this.showSearchBox(e as unknown as MouseEvent, linkReleaseContext)
           }
         } else if (this.linkConnector.state.connectingTo === "input") {
-          this.showConnectionMenu({ nodeFrom: firstLink.node, slotFrom: firstLink.fromSlot, e })
+          this.showConnectionMenu({ nodeFrom: firstLink.node, slotFrom: firstLink.fromSlot, e, afterRerouteId })
         } else {
-          this.showConnectionMenu({ nodeTo: firstLink.node, slotTo: firstLink.fromSlot, e })
+          this.showConnectionMenu({ nodeTo: firstLink.node, slotTo: firstLink.fromSlot, e, afterRerouteId })
         }
       }
     })
@@ -5627,7 +5629,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         if (!slot) throw new TypeError("Cannot add reroute: slot was null")
         if (!opts.e) throw new TypeError("Cannot add reroute: CanvasPointerEvent was null")
 
-        const reroute = node.connectFloatingReroute([opts.e.canvasX, opts.e.canvasY], slot)
+        const reroute = node.connectFloatingReroute([opts.e.canvasX, opts.e.canvasY], slot, afterRerouteId)
         if (!reroute) throw new Error("Failed to create reroute")
 
         dirty()
