@@ -44,6 +44,7 @@ import { ExtensionManager } from '@/types/extensionTypes'
 import { ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
 import { executeWidgetsCallback, isImageNode } from '@/utils/litegraphUtil'
+import { migrateLegacyRerouteNodes } from '@/utils/migration/migrateReroute'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import { type ComfyApi, api } from './api'
@@ -1061,6 +1062,11 @@ export class ComfyApp {
       graphData = validatedGraphData ?? graphData
     }
 
+    // Migrate legacy reroute nodes to the new format
+    if (graphData.version === 0.4) {
+      graphData = migrateLegacyRerouteNodes(graphData)
+    }
+
     useWorkflowService().beforeLoadNewGraph()
 
     const missingNodeTypes: MissingNodeType[] = []
@@ -1069,7 +1075,6 @@ export class ComfyApp {
       'beforeConfigureGraph',
       graphData,
       missingNodeTypes
-      // TODO: missingModels
     )
 
     const embeddedModels: ModelFile[] = []
@@ -1239,7 +1244,6 @@ export class ComfyApp {
       useExtensionService().invokeExtensions('loadedGraphNode', node)
     }
 
-    // TODO: Properly handle if both nodes and models are missing (sequential dialogs?)
     if (missingNodeTypes.length && showMissingNodesDialog) {
       this.#showMissingNodesError(missingNodeTypes)
     }

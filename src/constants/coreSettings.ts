@@ -525,17 +525,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.3.42'
   },
   {
-    id: 'Comfy.RerouteBeta',
-    category: ['LiteGraph', 'RerouteBeta'],
-    name: 'Opt-in to the reroute beta test',
-    tooltip: 'No longer has any effect; reroutes are always enabled.',
-    deprecated: true,
-    type: 'boolean',
-    defaultValue: false,
-    versionAdded: '1.3.42',
-    versionModified: '1.13.3'
-  },
-  {
     id: 'Comfy.Graph.LinkMarkers',
     category: ['LiteGraph', 'Link', 'LinkMarkers'],
     name: 'Link midpoint markers',

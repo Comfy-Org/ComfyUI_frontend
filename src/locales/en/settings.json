@@ -243,10 +243,6 @@
     "name": "Batch count limit",
     "tooltip": "The maximum number of tasks added to the queue at one button click"
   },
-  "Comfy_RerouteBeta": {
-    "name": "Opt-in to the reroute beta test",
-    "tooltip": "No longer has any effect; reroutes are always enabled."
-  },
   "Comfy_Sidebar_Location": {
     "name": "Sidebar location",
     "options": {
