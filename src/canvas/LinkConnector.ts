@@ -538,6 +538,7 @@ export class LinkConnector {
 
       for (const renderLink of this.renderLinks) {
         if (renderLink.toType !== "output") continue
+        if (!renderLink.canConnectToReroute(reroute)) continue
         if (isValidConnectionToOutput(renderLink, node, output)) return true
       }
     }

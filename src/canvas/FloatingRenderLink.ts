@@ -96,6 +96,15 @@ export class FloatingRenderLink implements RenderLink {
     this.fromPos = fromReroute.pos
   }
 
+  canConnectToReroute(reroute: Reroute): boolean {
+    if (this.toType === "input") {
+      if (reroute.origin_id === this.inputNode?.id) return false
+    } else {
+      if (reroute.origin_id === this.outputNode?.id) return false
+    }
+    return true
+  }
+
   connectToInput(node: LGraphNode, input: INodeInputSlot, _events?: LinkConnectorEventTarget): void {
     const floatingLink = this.link
     floatingLink.target_id = node.id

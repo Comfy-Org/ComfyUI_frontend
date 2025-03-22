@@ -31,6 +31,11 @@ export class ToOutputRenderLink implements RenderLink {
       : this.node.getInputPos(inputIndex)
   }
 
+  canConnectToReroute(reroute: Reroute): boolean {
+    if (reroute.origin_id === this.node.id) return false
+    return true
+  }
+
   connectToOutput(node: LGraphNode, output: INodeOutputSlot, events: LinkConnectorEventTarget) {
     const { node: inputNode, fromSlot, fromReroute } = this
     if (inputNode) return

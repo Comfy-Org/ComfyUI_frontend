@@ -361,6 +361,37 @@ describe("LinkConnector Integration", () => {
 
       validateIntegrityFloatingRemoved()
     })
+
+    test("Should prevent dragging from an output to a child reroute", ({ graph, connector, floatingReroute }) => {
+      const manyOutputsNode = graph.getNodeById(4)!
+
+      const reroute7 = graph.reroutes.get(7)!
+      const reroute10 = graph.reroutes.get(10)!
+      const reroute13 = graph.reroutes.get(13)!
+
+      const canvasX = reroute7.pos[0]
+      const canvasY = reroute7.pos[1]
+      const reroute7Event = { canvasX, canvasY } as any
+
+      const toSortedRerouteChain = (linkIds: number[]) => linkIds
+        .map(x => graph.links.get(x)!)
+        .map(x => LLink.getReroutes(graph, x))
+        .sort((a, b) => a.at(-1)!.id - b.at(-1)!.id)
+
+      const reroutesBefore = toSortedRerouteChain(manyOutputsNode.outputs[0].links!)
+
+      connector.moveOutputLink(graph, manyOutputsNode.outputs[0])
+      expect(connector.isRerouteValidDrop(reroute7)).toBe(false)
+      expect(connector.isRerouteValidDrop(reroute10)).toBe(false)
+      expect(connector.isRerouteValidDrop(reroute13)).toBe(false)
+      connector.dropLinks(graph, reroute7Event)
+
+      const reroutesAfter = toSortedRerouteChain(manyOutputsNode.outputs[0].links!)
+      expect(reroutesAfter).toEqual(reroutesBefore)
+
+      expect(graph.floatingLinks.size).toBe(1)
+      expect(floatingReroute.linkIds.size).toBe(0)
+    })
   })
 
   describe("Floating links", () => {
