@@ -1,12 +1,12 @@
 import type { CanvasColour, Dictionary, INodeInputSlot, INodeOutputSlot, INodeSlot, ISlotType, IWidgetInputSlot, Point, SharedIntersection } from "./interfaces"
 import type { LinkId } from "./LLink"
-import type { ISerialisableNodeInput, ISerialisableNodeOutput } from "./types/serialisation"
 import type { IWidget } from "./types/widgets"
 
 import { LabelPosition, SlotShape, SlotType } from "./draw"
 import { LiteGraph } from "./litegraph"
 import { LinkDirection, RenderShape } from "./types/globalEnums"
-import { pick } from "./utils/object"
+import { ISerialisableNodeOutput } from "./types/serialisation"
+import { ISerialisableNodeInput } from "./types/serialisation"
 
 export interface ConnectionColorContext {
   default_connection_color: {
@@ -33,19 +33,8 @@ interface IDrawOptions {
 type CommonIoSlotProps = SharedIntersection<ISerialisableNodeInput, ISerialisableNodeOutput>
 
 export function shallowCloneCommonProps(slot: CommonIoSlotProps): CommonIoSlotProps {
-  return pick(slot, [
-    "color_off",
-    "color_on",
-    "dir",
-    "label",
-    "localized_name",
-    "locked",
-    "name",
-    "nameLocked",
-    "removable",
-    "shape",
-    "type",
-  ])
+  const { color_off, color_on, dir, label, localized_name, locked, name, nameLocked, removable, shape, type } = slot
+  return { color_off, color_on, dir, label, localized_name, locked, name, nameLocked, removable, shape, type }
 }
 
 export function inputAsSerialisable(slot: INodeInputSlot): ISerialisableNodeInput {
