@@ -856,8 +856,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     if (links) {
       for (const id of links) {
         const link = this.graph._links.get(id)
-        if (!link) continue
-        link.type = type
+        if (link) link.type = type
       }
     }
   }
@@ -1417,9 +1416,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
         if (!this.graph) throw new NullGraphError()
 
         const link = this.graph._links.get(linkId)
-        if (!link) continue
-
-        link.origin_slot--
+        if (link) link.origin_slot--
       }
     }
 
@@ -1483,9 +1480,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
       if (!this.graph) throw new NullGraphError()
       const link = this.graph._links.get(input.link)
-      if (!link) continue
-
-      link.target_slot--
+      if (link) link.target_slot--
     }
     this.onInputRemoved?.(slot, slot_info[0])
     this.setDirtyCanvas(true, true)
@@ -2641,43 +2636,41 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
       for (const [i, link_id] of links.entries()) {
         const link_info = graph._links.get(link_id)
+        if (link_info?.target_id != target.id) continue
 
         // is the link we are searching for...
-        if (link_info?.target_id == target.id) {
-          // remove here
-          links.splice(i, 1)
-          const input = target.inputs[link_info.target_slot]
-          // remove there
-          input.link = null
+        // remove here
+        links.splice(i, 1)
+        const input = target.inputs[link_info.target_slot]
+        // remove there
+        input.link = null
 
-          // remove the link from the links pool
-          link_info.disconnect(graph, "input")
-          graph._version++
+        // remove the link from the links pool
+        link_info.disconnect(graph, "input")
+        graph._version++
 
-          // link_info hasn't been modified so its ok
-          target.onConnectionsChange?.(
-            NodeSlotType.INPUT,
-            link_info.target_slot,
-            false,
-            link_info,
-            input,
-          )
-          this.onConnectionsChange?.(
-            NodeSlotType.OUTPUT,
-            slot,
-            false,
-            link_info,
-            output,
-          )
+        // link_info hasn't been modified so its ok
+        target.onConnectionsChange?.(
+          NodeSlotType.INPUT,
+          link_info.target_slot,
+          false,
+          link_info,
+          input,
+        )
+        this.onConnectionsChange?.(
+          NodeSlotType.OUTPUT,
+          slot,
+          false,
+          link_info,
+          output,
+        )
 
-          break
-        }
+        break
       }
     } else {
       // all the links in this output slot
       for (const link_id of links) {
         const link_info = graph._links.get(link_id)
-        // bug: it happens sometimes
         if (!link_info) continue
 
         const target = graph.getNodeById(link_info.target_id)

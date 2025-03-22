@@ -54,10 +54,10 @@ export class MovingRenderLink implements RenderLink {
 
     // Store output info
     const outputNode = network.getNodeById(outputNodeId) ?? undefined
-    if (!outputNode) throw new Error(`Creating DraggingRenderLink for link [${link.id}] failed: Output node [${outputNodeId}] not found.`)
+    if (!outputNode) throw new Error(`Creating MovingRenderLink for link [${link.id}] failed: Output node [${outputNodeId}] not found.`)
 
     const outputSlot = outputNode.outputs.at(outputIndex)
-    if (!outputSlot) throw new Error(`Creating DraggingRenderLink for link [${link.id}] failed: Output slot [${outputIndex}] not found.`)
+    if (!outputSlot) throw new Error(`Creating MovingRenderLink for link [${link.id}] failed: Output slot [${outputIndex}] not found.`)
 
     this.outputNodeId = outputNodeId
     this.outputNode = outputNode

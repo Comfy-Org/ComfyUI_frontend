@@ -199,10 +199,10 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
   validateLinks(links: ReadonlyMap<LinkId, LLink>, floatingLinks: ReadonlyMap<LinkId, LLink>): boolean {
     const { linkIds, floatingLinkIds } = this
     for (const linkId of linkIds) {
-      if (!links.get(linkId)) linkIds.delete(linkId)
+      if (!links.has(linkId)) linkIds.delete(linkId)
     }
     for (const linkId of floatingLinkIds) {
-      if (!floatingLinks.get(linkId)) floatingLinkIds.delete(linkId)
+      if (!floatingLinks.has(linkId)) floatingLinkIds.delete(linkId)
     }
     return linkIds.size > 0 || floatingLinkIds.size > 0
   }
