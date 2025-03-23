@@ -8,8 +8,8 @@ import type {
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { calculateImageGrid } from '@/scripts/ui/imagePreview'
 import { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
-import { is_all_same_aspect_ratio } from '@/utils/imageUtil'
 import { useSettingStore } from '@/stores/settingStore'
+import { is_all_same_aspect_ratio } from '@/utils/imageUtil'
 
 const renderPreview = (
   ctx: CanvasRenderingContext2D,
@@ -39,7 +39,7 @@ const renderPreview = (
 
   const settingStore = useSettingStore()
   const AllowImageSizeDraw = settingStore.get('Comfy.Node.AllowImageSizeDraw')
-  const IMAGE_TEXT_SIZE_TEXT_HEIGHT = AllowImageSizeDraw? 15 : 0
+  const IMAGE_TEXT_SIZE_TEXT_HEIGHT = AllowImageSizeDraw ? 15 : 0
   const dw = node.size[0]
   const dh = node.size[1] - shiftY - IMAGE_TEXT_SIZE_TEXT_HEIGHT
 
