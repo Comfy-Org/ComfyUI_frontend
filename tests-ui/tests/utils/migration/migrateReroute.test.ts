@@ -14,7 +14,7 @@ describe('migrateReroute', () => {
       return JSON.parse(fileContent) as WorkflowJSON04
     }
 
-    it.each(['branching.json', 'single_connected.json'])(
+    it.each(['branching.json', 'single_connected.json', 'floating.json'])(
       'should correctly migrate %s',
       (fileName) => {
         // Load the legacy workflow
