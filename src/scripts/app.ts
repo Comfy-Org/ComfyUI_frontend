@@ -473,8 +473,8 @@ export class ComfyApp {
           }
         }
       } catch (err: any) {
-        console.error(err)
-        useToastStore().addAlert(err)
+        console.error('Unable to process dropped item:', err)
+        useToastStore().addAlert(`Unable to process dropped item: ${err}`)
       }
     })
 
