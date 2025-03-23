@@ -38,8 +38,8 @@ const renderPreview = (
   }
 
   const settingStore = useSettingStore()
-  const AllowImageSizeDraw = settingStore.get('Comfy.Node.AllowImageSizeDraw')
-  const IMAGE_TEXT_SIZE_TEXT_HEIGHT = AllowImageSizeDraw ? 15 : 0
+  const allowImageSizeDraw = settingStore.get('Comfy.Node.AllowImageSizeDraw')
+  const IMAGE_TEXT_SIZE_TEXT_HEIGHT = allowImageSizeDraw ? 15 : 0
   const dw = node.size[0]
   const dh = node.size[1] - shiftY - IMAGE_TEXT_SIZE_TEXT_HEIGHT
 
@@ -168,7 +168,7 @@ const renderPreview = (
   ctx.drawImage(img, x, y, w, h)
 
   // Draw image size text below the image
-  if (AllowImageSizeDraw) {
+  if (allowImageSizeDraw) {
     ctx.fillStyle = LiteGraph.NODE_TEXT_COLOR
     ctx.textAlign = 'center'
     ctx.font = '10px sans-serif'
