@@ -532,7 +532,7 @@ export function convertToInput(
   node: LGraphNode,
   widget: IWidget,
   config: InputSpec
-) {
+): INodeInputSlot {
   hideWidget(node, widget)
 
   const { type } = getWidgetType(config)
