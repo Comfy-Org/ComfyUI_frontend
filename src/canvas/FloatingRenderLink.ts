@@ -96,6 +96,14 @@ export class FloatingRenderLink implements RenderLink {
     this.fromPos = fromReroute.pos
   }
 
+  canConnectToInput(): true {
+    return true
+  }
+
+  canConnectToOutput(): true {
+    return true
+  }
+
   canConnectToReroute(reroute: Reroute): boolean {
     if (this.toType === "input") {
       if (reroute.origin_id === this.inputNode?.id) return false

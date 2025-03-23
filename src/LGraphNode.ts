@@ -2330,6 +2330,14 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     return null
   }
 
+  canConnectTo(
+    node: LGraphNode,
+    toSlot: INodeInputSlot,
+    fromSlot: INodeOutputSlot,
+  ) {
+    return this.id !== node.id && LiteGraph.isValidConnection(fromSlot.type, toSlot.type)
+  }
+
   /**
    * Connect an output of this node to an input of another node
    * @param slot (could be the number of the slot or the string with the name of the slot)

@@ -86,6 +86,14 @@ export class MovingRenderLink implements RenderLink {
     this.fromSlotIndex = this.toType === "input" ? outputIndex : inputIndex
   }
 
+  canConnectToInput(inputNode: LGraphNode, input: INodeInputSlot): this is this {
+    return this.node.canConnectTo(inputNode, input, this.outputSlot)
+  }
+
+  canConnectToOutput(outputNode: LGraphNode, output: INodeOutputSlot): this is this {
+    return outputNode.canConnectTo(this.node, this.inputSlot, output)
+  }
+
   canConnectToReroute(reroute: Reroute): boolean {
     if (this.toType === "input") {
       if (reroute.origin_id === this.inputNode.id) return false

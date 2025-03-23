@@ -1,3 +1,5 @@
+import type { CanvasPointerEvent } from "@/types/events"
+
 import { afterEach, describe, expect, vi } from "vitest"
 
 import { LinkConnector } from "@/canvas/LinkConnector"
@@ -120,6 +122,29 @@ const test = baseTest.extend<TestContext>({
   },
 })
 
+function mockedNodeTitleDropEvent(node: LGraphNode): CanvasPointerEvent {
+  return {
+    canvasX: node.pos[0] + node.size[0] / 2,
+    canvasY: node.pos[1] + 16,
+  } as any
+}
+
+function mockedInputDropEvent(node: LGraphNode, slot: number): CanvasPointerEvent {
+  const pos = node.getInputPos(slot)
+  return {
+    canvasX: pos[0],
+    canvasY: pos[1],
+  } as any
+}
+
+function mockedOutputDropEvent(node: LGraphNode, slot: number): CanvasPointerEvent {
+  const pos = node.getOutputPos(slot)
+  return {
+    canvasX: pos[0],
+    canvasY: pos[1],
+  } as any
+}
+
 describe("LinkConnector Integration", () => {
   afterEach<TestContext>(({ validateLinkIntegrity }) => {
     validateLinkIntegrity()
@@ -222,6 +247,44 @@ describe("LinkConnector Integration", () => {
         expect(input._floatingLinks?.size).toBeOneOf([0, undefined])
         expect(output._floatingLinks?.size).toBeOneOf([0, undefined])
       }
+    })
+
+    test("Should prevent node loopback when dropping on node", ({ graph, connector }) => {
+      const hasOutputNode = graph.getNodeById(1)!
+      const hasInputNode = graph.getNodeById(2)!
+      const hasInputNode2 = graph.getNodeById(3)!
+
+      const reroutesBefore = LLink.getReroutes(graph, graph.links.get(hasInputNode.inputs[0].link!)!)
+
+      const atOutputNodeEvent = mockedNodeTitleDropEvent(hasOutputNode)
+
+      connector.moveInputLink(graph, hasInputNode.inputs[0])
+      connector.dropLinks(graph, atOutputNodeEvent)
+
+      const outputNodes = hasOutputNode.getOutputNodes(0)
+      expect(outputNodes).toEqual([hasInputNode, hasInputNode2])
+
+      const reroutesAfter = LLink.getReroutes(graph, graph.links.get(hasInputNode.inputs[0].link!)!)
+      expect(reroutesAfter).toEqual(reroutesBefore)
+    })
+
+    test("Should prevent node loopback when dropping on input", ({ graph, connector }) => {
+      const hasOutputNode = graph.getNodeById(1)!
+      const hasInputNode = graph.getNodeById(2)!
+
+      const originalOutputNodes = hasOutputNode.getOutputNodes(0)
+      const reroutesBefore = LLink.getReroutes(graph, graph.links.get(hasInputNode.inputs[0].link!)!)
+
+      const atHasOutputNode = mockedInputDropEvent(hasOutputNode, 0)
+
+      connector.moveInputLink(graph, hasInputNode.inputs[0])
+      connector.dropLinks(graph, atHasOutputNode)
+
+      const outputNodes = hasOutputNode.getOutputNodes(0)
+      expect(outputNodes).toEqual(originalOutputNodes)
+
+      const reroutesAfter = LLink.getReroutes(graph, graph.links.get(hasInputNode.inputs[0].link!)!)
+      expect(reroutesAfter).toEqual(reroutesBefore)
     })
   })
 
@@ -391,6 +454,52 @@ describe("LinkConnector Integration", () => {
 
       expect(graph.floatingLinks.size).toBe(1)
       expect(floatingReroute.linkIds.size).toBe(0)
+    })
+
+    test("Should prevent node loopback when dropping on node", ({ graph, connector }) => {
+      const hasOutputNode = graph.getNodeById(1)!
+      const hasInputNode = graph.getNodeById(2)!
+
+      const reroutesBefore = LLink.getReroutes(graph, graph.links.get(hasOutputNode.outputs[0].links![0])!)
+
+      const atInputNodeEvent = mockedNodeTitleDropEvent(hasInputNode)
+
+      connector.moveOutputLink(graph, hasOutputNode.outputs[0])
+      connector.dropLinks(graph, atInputNodeEvent)
+
+      expect(hasOutputNode.getOutputNodes(0)).toEqual([hasInputNode])
+      expect(hasInputNode.getOutputNodes(0)).toEqual([graph.getNodeById(3)])
+
+      // Moved link should have the same reroutes
+      const reroutesAfter = LLink.getReroutes(graph, graph.links.get(hasInputNode.outputs[0].links![0])!)
+      expect(reroutesAfter).toEqual(reroutesBefore)
+
+      // Link recreated to avoid loopback should have no reroutes
+      const reroutesAfter2 = LLink.getReroutes(graph, graph.links.get(hasOutputNode.outputs[0].links![0])!)
+      expect(reroutesAfter2).toEqual([])
+    })
+
+    test("Should prevent node loopback when dropping on output", ({ graph, connector }) => {
+      const hasOutputNode = graph.getNodeById(1)!
+      const hasInputNode = graph.getNodeById(2)!
+
+      const reroutesBefore = LLink.getReroutes(graph, graph.links.get(hasOutputNode.outputs[0].links![0])!)
+
+      const atInputNodeOutSlot = mockedOutputDropEvent(hasInputNode, 0)
+
+      connector.moveOutputLink(graph, hasOutputNode.outputs[0])
+      connector.dropLinks(graph, atInputNodeOutSlot)
+
+      expect(hasOutputNode.getOutputNodes(0)).toEqual([hasInputNode])
+      expect(hasInputNode.getOutputNodes(0)).toEqual([graph.getNodeById(3)])
+
+      // Moved link should have the same reroutes
+      const reroutesAfter = LLink.getReroutes(graph, graph.links.get(hasInputNode.outputs[0].links![0])!)
+      expect(reroutesAfter).toEqual(reroutesBefore)
+
+      // Link recreated to avoid loopback should have no reroutes
+      const reroutesAfter2 = LLink.getReroutes(graph, graph.links.get(hasOutputNode.outputs[0].links![0])!)
+      expect(reroutesAfter2).toEqual([])
     })
   })
 

@@ -2597,8 +2597,8 @@ export class LGraphCanvas implements ConnectionColorContext {
             let highlightPos: Point | undefined
             let highlightInput: INodeInputSlot | undefined
 
-            if (!firstLink || firstLink.node === node) {
-              // No link / node loopback
+            if (!firstLink || !linkConnector.isNodeValidDrop(node)) {
+              // No link, or none of the dragged links may be dropped here
             } else if (linkConnector.state.connectingTo === "input") {
               if (inputId === -1 && outputId === -1) {
                 // Allow support for linking to widgets, handled externally to LiteGraph

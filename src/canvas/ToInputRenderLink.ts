@@ -1,8 +1,8 @@
 import type { RenderLink } from "./RenderLink"
 import type { LinkConnectorEventTarget } from "@/infrastructure/LinkConnectorEventTarget"
-import type { LinkNetwork, Point } from "@/interfaces"
+import type { INodeInputSlot, INodeOutputSlot, LinkNetwork, Point } from "@/interfaces"
 import type { LGraphNode } from "@/LGraphNode"
-import type { INodeInputSlot, INodeOutputSlot, LLink } from "@/litegraph"
+import type { LLink } from "@/LLink"
 import type { Reroute } from "@/Reroute"
 
 import { LinkDirection } from "@/types/globalEnums"
@@ -29,6 +29,14 @@ export class ToInputRenderLink implements RenderLink {
     this.fromPos = fromReroute
       ? fromReroute.pos
       : this.node.getOutputPos(outputIndex)
+  }
+
+  canConnectToInput(inputNode: LGraphNode, input: INodeInputSlot): this is this {
+    return this.node.canConnectTo(inputNode, input, this.fromSlot)
+  }
+
+  canConnectToOutput(): false {
+    return false
   }
 
   connectToInput(node: LGraphNode, input: INodeInputSlot, events: LinkConnectorEventTarget) {
