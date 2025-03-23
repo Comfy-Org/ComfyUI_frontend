@@ -31,7 +31,7 @@ export class ToInputRenderLink implements RenderLink {
       : this.node.getOutputPos(outputIndex)
   }
 
-  canConnectToInput(inputNode: LGraphNode, input: INodeInputSlot): this is this {
+  canConnectToInput(inputNode: LGraphNode, input: INodeInputSlot): boolean {
     return this.node.canConnectTo(inputNode, input, this.fromSlot)
   }
 

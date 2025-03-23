@@ -11,7 +11,9 @@ import { LLink } from "@/LLink"
 import { LinkDirection } from "@/types/globalEnums"
 
 import { FloatingRenderLink } from "./FloatingRenderLink"
-import { MovingRenderLink } from "./MovingRenderLink"
+import { MovingInputLink } from "./MovingInputLink"
+import { MovingLinkBase } from "./MovingLinkBase"
+import { MovingOutputLink } from "./MovingOutputLink"
 import { ToInputRenderLink } from "./ToInputRenderLink"
 import { ToOutputRenderLink } from "./ToOutputRenderLink"
 
@@ -33,7 +35,7 @@ export interface LinkConnectorState {
 }
 
 /** Discriminated union to simplify type narrowing. */
-type RenderLinkUnion = MovingRenderLink | FloatingRenderLink | ToInputRenderLink | ToOutputRenderLink
+type RenderLinkUnion = MovingInputLink | MovingOutputLink | FloatingRenderLink | ToInputRenderLink | ToOutputRenderLink
 
 export interface LinkConnectorExport {
   renderLinks: RenderLink[]
@@ -130,7 +132,7 @@ export class LinkConnector {
 
       try {
         const reroute = network.getReroute(link.parentId)
-        const renderLink = new MovingRenderLink(network, link, "input", reroute)
+        const renderLink = new MovingInputLink(network, link, reroute)
 
         const mayContinue = this.events.dispatch("before-move-input", renderLink)
         if (mayContinue === false) return
@@ -196,7 +198,7 @@ export class LinkConnector {
         this.outputLinks.push(link)
 
         try {
-          const renderLink = new MovingRenderLink(network, link, "output", firstReroute, LinkDirection.RIGHT)
+          const renderLink = new MovingOutputLink(network, link, firstReroute, LinkDirection.RIGHT)
 
           const mayContinue = this.events.dispatch("before-move-output", renderLink)
           if (mayContinue === false) continue
@@ -449,7 +451,7 @@ export class LinkConnector {
     // For external event only.
     if (this.state.connectingTo === "input") {
       for (const link of this.renderLinks) {
-        if (link instanceof MovingRenderLink) {
+        if (link instanceof MovingInputLink) {
           link.inputNode.disconnectInput(link.inputIndex, true)
         }
       }
@@ -505,7 +507,7 @@ export class LinkConnector {
   #dropOnOutput(node: LGraphNode, output: INodeOutputSlot): void {
     for (const link of this.renderLinks) {
       if (!link.canConnectToOutput(node, output)) {
-        if (link instanceof MovingRenderLink && link.link.parentId !== undefined) {
+        if (link instanceof MovingOutputLink && link.link.parentId !== undefined) {
           // Reconnect link without reroutes
           link.outputNode.connectSlots(link.outputSlot, link.inputNode, link.inputSlot, undefined!)
         }
@@ -560,7 +562,7 @@ export class LinkConnector {
       const input = fromSlotIsInput ? link.fromSlot as INodeInputSlot : null
       const output = fromSlotIsInput ? null : link.fromSlot as INodeOutputSlot
 
-      const afterRerouteId = link instanceof MovingRenderLink ? link.link?.parentId : link.fromReroute?.id
+      const afterRerouteId = link instanceof MovingLinkBase ? link.link?.parentId : link.fromReroute?.id
 
       return {
         node: link.node,
@@ -634,7 +636,7 @@ export class LinkConnector {
 
 /** Validates that a single {@link RenderLink} can be dropped on the specified reroute. */
 function canConnectInputLinkToReroute(
-  link: ToInputRenderLink | MovingRenderLink | FloatingRenderLink,
+  link: ToInputRenderLink | MovingInputLink | FloatingRenderLink,
   inputNode: LGraphNode,
   input: INodeInputSlot,
   reroute: Reroute,

@@ -34,7 +34,7 @@ export class ToOutputRenderLink implements RenderLink {
     return false
   }
 
-  canConnectToOutput(outputNode: LGraphNode, output: INodeOutputSlot): this is this {
+  canConnectToOutput(outputNode: LGraphNode, output: INodeOutputSlot): boolean {
     return this.node.canConnectTo(outputNode, this.fromSlot, output)
   }
 

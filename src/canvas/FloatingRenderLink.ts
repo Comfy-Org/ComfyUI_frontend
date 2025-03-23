@@ -131,8 +131,6 @@ export class FloatingRenderLink implements RenderLink {
     this.fromSlot._floatingLinks?.delete(floatingLink)
     output._floatingLinks ??= new Set()
     output._floatingLinks.add(floatingLink)
-
-    console.debug(`Set origin_id:origin_slot [${floatingLink.origin_id}:${floatingLink.origin_slot}].`)
   }
 
   connectToRerouteInput(
@@ -147,8 +145,6 @@ export class FloatingRenderLink implements RenderLink {
     this.fromSlot._floatingLinks?.delete(floatingLink)
     input._floatingLinks ??= new Set()
     input._floatingLinks.add(floatingLink)
-
-    console.debug(`Set target_id:target_slot [${floatingLink.target_id}:${floatingLink.target_slot}].`)
 
     events.dispatch("input-moved", this)
   }
@@ -166,8 +162,6 @@ export class FloatingRenderLink implements RenderLink {
     this.fromSlot._floatingLinks?.delete(floatingLink)
     output._floatingLinks ??= new Set()
     output._floatingLinks.add(floatingLink)
-
-    console.debug(`Set origin_id:origin_slot [${floatingLink.origin_id}:${floatingLink.origin_slot}].`)
 
     events.dispatch("output-moved", this)
   }
