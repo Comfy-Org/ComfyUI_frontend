@@ -2382,7 +2382,6 @@ class BrushTool {
     const isErasing = maskCtx.globalCompositeOperation === 'destination-out'
 
     if (hardness === 1) {
-      console.log(sliderOpacity, opacity)
       gradient.addColorStop(
         0,
         isErasing
@@ -4295,12 +4294,8 @@ class PanAndZoomManager {
   handleTouchStart(event: TouchEvent) {
     event.preventDefault()
 
-    // for pen tablet device, if drawing with pen, do not move the canvas
+    // for pen device, if drawing with pen, do not move the canvas
     if (this.penPointerIdList.length > 0) return
-
-    // for ios only, stylus touch should not move the canvas
-    const touchType = (event.touches[0] as any)?.touchType
-    if (touchType === 'stylus') return
 
     this.messageBroker.publish('setBrushVisibility', false)
     if (event.touches.length === 2) {
@@ -4331,12 +4326,8 @@ class PanAndZoomManager {
   async handleTouchMove(event: TouchEvent) {
     event.preventDefault()
 
-    // for pen tablet device, if drawing with pen, do not move the canvas
+    // for pen device, if drawing with pen, do not move the canvas
     if (this.penPointerIdList.length > 0) return
-
-    // for ios only, stylus touch should not move the canvas
-    const touchType = (event.touches[0] as any)?.touchType
-    if (touchType === 'stylus') return
 
     this.lastTwoFingerTap = 0
     if (this.isTouchZooming && event.touches.length === 2) {
@@ -4605,6 +4596,8 @@ class PanAndZoomManager {
 
     this.zoom_ratio = Math.min(zoomRatioWidth, zoomRatioHeight)
     this.pan_offset = pan_offset
+
+    this.penPointerIdList = []
 
     await this.invalidatePanZoom()
   }
