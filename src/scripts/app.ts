@@ -1457,7 +1457,10 @@ export class ComfyApp {
       } else {
         this.showErrorOnFileLoad(file)
       }
-    } else if (file.type === 'model/gltf-binary') {
+    } else if (
+      file.type === 'model/gltf-binary' ||
+      file.name?.endsWith('.glb')
+    ) {
       const gltfInfo = await getGltfBinaryMetadata(file)
       if (gltfInfo.workflow) {
         this.loadGraphData(gltfInfo.workflow, true, true, fileName)
