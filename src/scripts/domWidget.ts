@@ -148,6 +148,7 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
     if (this.options.hideOnZoom && lowQuality) {
       // Draw a placeholder rectangle
       const originalFillStyle = ctx.fillStyle
+      ctx.beginPath()
       ctx.fillStyle = LiteGraph.WIDGET_BGCOLOR
       ctx.rect(
         this.margin,
