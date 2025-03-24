@@ -532,7 +532,7 @@ export function convertToInput(
   node: LGraphNode,
   widget: IWidget,
   config: InputSpec
-) {
+): INodeInputSlot {
   hideWidget(node, widget)
 
   const { type } = getWidgetType(config)
@@ -690,11 +690,7 @@ app.registerExtension({
         if (!inputSpec) return
 
         const input = convertToInput(node, widget, inputSpec)
-        if (!input) return
-
-        const originNode = link.node
-
-        originNode.connectSlots(link.fromSlot, node, input, undefined)
+        link.node.connectSlots(link.fromSlot, node, input, link.fromReroute?.id)
       }
     )
   },

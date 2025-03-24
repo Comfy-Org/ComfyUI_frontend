@@ -7,8 +7,8 @@
       option-group-label="label"
       option-label="title"
       option-group-children="modules"
+      class="w-full border-0 bg-transparent shadow-none"
       :pt="{
-        root: { class: 'w-full border-0 bg-transparent' },
         list: { class: 'p-0' },
         option: { class: 'px-12 py-3 text-lg' },
         optionGroup: { class: 'p-0 text-left text-inherit' }

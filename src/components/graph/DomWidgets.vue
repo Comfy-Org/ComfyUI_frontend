@@ -30,7 +30,6 @@ const widgets = computed(() =>
   )
 )
 
-const DEFAULT_MARGIN = 10
 const updateWidgets = () => {
   const lgCanvas = canvasStore.canvas
   if (!lgCanvas) return
@@ -49,7 +48,7 @@ const updateWidgets = () => {
 
     widgetState.visible = visible
     if (visible) {
-      const margin = widget.options.margin ?? DEFAULT_MARGIN
+      const margin = widget.margin
       widgetState.pos = [node.pos[0] + margin, node.pos[1] + margin + widget.y]
       widgetState.size = [
         (widget.width ?? node.width) - margin * 2,
