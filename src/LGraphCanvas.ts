@@ -4757,7 +4757,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         } else {
           // Calculate start control for the next iter control point
           const nextPos = reroutes[j + 1]?.pos ?? endPos
-          const dist = Math.min(80, distance(reroute.pos, nextPos) * 0.25)
+          const dist = Math.min(Reroute.maxSplineOffset, distance(reroute.pos, nextPos) * 0.25)
           startControl = [dist * reroute.cos, dist * reroute.sin]
         }
       }

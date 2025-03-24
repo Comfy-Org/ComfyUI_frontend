@@ -33,6 +33,8 @@ export interface FloatingRerouteSlot {
  */
 export class Reroute implements Positionable, LinkSegment, Serialisable<SerialisableReroute> {
   static radius: number = 10
+  /** Maximum distance from reroutes to their bezier curve control points. */
+  static maxSplineOffset: number = 80
   static drawIdBadge: boolean = false
 
   #malloc = new Float32Array(8)
@@ -417,7 +419,7 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
     )
     let diff = (originToReroute - sum) * 0.5
     if (Math.abs(diff) > Math.PI * 0.5) diff += Math.PI
-    const dist = Math.min(80, distance(linkStart, this.#pos) * 0.25)
+    const dist = Math.min(Reroute.maxSplineOffset, distance(linkStart, this.#pos) * 0.25)
 
     // Store results
     const originDiff = originToReroute - diff
