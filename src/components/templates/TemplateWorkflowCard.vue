@@ -112,7 +112,9 @@ const getThumbnailUrl = (index = '') => {
   // For templates from custom nodes, multiple images is not yet supported
   const indexSuffix = sourceModule === 'default' && index ? `-${index}` : ''
 
-  return `${basePath}${indexSuffix}.${template.mediaSubtype}`
+  const extension = sourceModule === 'default' ? template.mediaSubtype : 'jpg'
+
+  return `${basePath}${indexSuffix}.${extension}`
 }
 
 const baseThumbnailSrc = computed(() =>
