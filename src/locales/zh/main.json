@@ -346,6 +346,7 @@
     }
   },
   "load3d": {
+    "applyingTexture": "应用纹理中...",
     "backgroundColor": "背景颜色",
     "camera": "相机",
     "edgeThreshold": "边缘阈值",
@@ -365,7 +366,8 @@
     "switchCamera": "切换摄像头",
     "switchingMaterialMode": "切换材质模式中...",
     "upDirection": "向上方向",
-    "uploadBackgroundImage": "上传背景图片"
+    "uploadBackgroundImage": "上传背景图片",
+    "uploadTexture": "上传纹理"
   },
   "maintenance": {
     "None": "无",

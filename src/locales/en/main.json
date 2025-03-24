@@ -981,6 +981,8 @@
     "edgeThreshold": "Edge Threshold",
     "export": "Export",
     "exportModel": "Export Model",
-    "exportingModel": "Exporting model..."
+    "exportingModel": "Exporting model...",
+    "uploadTexture": "Upload Texture",
+    "applyingTexture": "Applying Texture..."
   }
 }

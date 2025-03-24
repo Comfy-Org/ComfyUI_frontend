@@ -346,6 +346,7 @@
     }
   },
   "load3d": {
+    "applyingTexture": "Применение текстуры...",
     "backgroundColor": "Цвет фона",
     "camera": "Камера",
     "edgeThreshold": "Пороговое значение края",
@@ -365,7 +366,8 @@
     "switchCamera": "Переключить камеру",
     "switchingMaterialMode": "Переключение режима материала...",
     "upDirection": "Направление Вверх",
-    "uploadBackgroundImage": "Загрузить фоновое изображение"
+    "uploadBackgroundImage": "Загрузить фоновое изображение",
+    "uploadTexture": "Загрузить текстуру"
   },
   "maintenance": {
     "None": "Нет",
