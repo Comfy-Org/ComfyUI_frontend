@@ -135,6 +135,9 @@
       "title": "title"
     }
   },
+  "Comfy_Node_AllowImageSizeDraw": {
+    "name": "Show width × height below the image preview"
+  },
   "Comfy_Node_AutoSnapLinkToSlot": {
     "name": "Auto snap link to node slot",
     "tooltip": "When dragging a link over a node, the link automatically snap to a viable input slot on the node"
