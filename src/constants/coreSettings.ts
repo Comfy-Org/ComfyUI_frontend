@@ -764,5 +764,37 @@ export const CORE_SETTINGS: SettingParams[] = [
       max: 400
     },
     versionAdded: '1.15.7'
+  },
+  {
+    id: 'Comfy.ModelLibrary.AllowedSources',
+    category: ['Comfy', 'Model', 'Download'],
+    name: 'Model Download Allowed Sources',
+    type: 'hidden',
+    defaultValue: [
+      'https://civitai.com/',
+      'https://huggingface.co/',
+      'http://localhost:'
+    ],
+    versionAdded: '1.16.0'
+  },
+  {
+    id: 'Comfy.ModelLibrary.AllowedSuffixes',
+    category: ['Comfy', 'Model', 'Download'],
+    name: 'Model Download Allowed Suffixes',
+    type: 'hidden',
+    defaultValue: ['.safetensors', '.sft'],
+    versionAdded: '1.16.0'
+  },
+  {
+    id: 'Comfy.ModelLibrary.WhitelistedUrls',
+    category: ['Comfy', 'Model', 'Download'],
+    name: 'Model Download Whitelisted Urls',
+    type: 'hidden',
+    defaultValue: [
+      'https://huggingface.co/stabilityai/stable-zero123/resolve/main/stable_zero123.ckpt',
+      'https://huggingface.co/TencentARC/T2I-Adapter/resolve/main/models/t2iadapter_depth_sd14v1.pth?download=true',
+      'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth'
+    ],
+    versionAdded: '1.16.0'
   }
 ]
