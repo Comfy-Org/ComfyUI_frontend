@@ -690,7 +690,7 @@ app.registerExtension({
         if (!inputSpec) return
 
         const input = convertToInput(node, widget, inputSpec)
-        link.node.connectSlots(link.fromSlot, node, input, undefined)
+        link.node.connectSlots(link.fromSlot, node, input, link.fromReroute?.id)
       }
     )
   },
