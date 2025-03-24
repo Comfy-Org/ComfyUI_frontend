@@ -4739,8 +4739,8 @@ export class LGraphCanvas implements ConnectionColorContext {
               false,
               0,
               null,
-              start_dir,
-              end_dir,
+              startControl === undefined ? start_dir : LinkDirection.CENTER,
+              LinkDirection.CENTER,
               {
                 startControl,
                 endControl: reroute.controlPoint,
@@ -4777,7 +4777,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         false,
         0,
         null,
-        start_dir,
+        LinkDirection.CENTER,
         end_dir,
         { startControl, disabled },
       )
@@ -4935,8 +4935,8 @@ export class LGraphCanvas implements ConnectionColorContext {
             justPastCentre[0] - pos[0],
           )
         }
-      } else if (this.links_render_mode == LinkRenderType.LINEAR_LINK) {
-        const l = 15
+      } else {
+        const l = this.links_render_mode == LinkRenderType.LINEAR_LINK ? 15 : 10
         switch (startDir) {
         case LinkDirection.LEFT:
           innerA[0] += -l
@@ -4965,53 +4965,45 @@ export class LGraphCanvas implements ConnectionColorContext {
           innerB[1] += l
           break
         }
-        path.moveTo(a[0], a[1] + offsety)
-        path.lineTo(innerA[0], innerA[1] + offsety)
-        path.lineTo(innerB[0], innerB[1] + offsety)
-        path.lineTo(b[0], b[1] + offsety)
+        if (this.links_render_mode == LinkRenderType.LINEAR_LINK) {
+          path.moveTo(a[0], a[1] + offsety)
+          path.lineTo(innerA[0], innerA[1] + offsety)
+          path.lineTo(innerB[0], innerB[1] + offsety)
+          path.lineTo(b[0], b[1] + offsety)
 
-        // Calculate centre point
-        pos[0] = (innerA[0] + innerB[0]) * 0.5
-        pos[1] = (innerA[1] + innerB[1]) * 0.5
+          // Calculate centre point
+          pos[0] = (innerA[0] + innerB[0]) * 0.5
+          pos[1] = (innerA[1] + innerB[1]) * 0.5
 
-        if (linkSegment && this.linkMarkerShape === LinkMarkerShape.Arrow) {
-          linkSegment._centreAngle = Math.atan2(
-            innerB[1] - innerA[1],
-            innerB[0] - innerA[0],
-          )
-        }
-      } else if (this.links_render_mode == LinkRenderType.STRAIGHT_LINK) {
-        if (startDir == LinkDirection.RIGHT) {
-          innerA[0] += 10
+          if (linkSegment && this.linkMarkerShape === LinkMarkerShape.Arrow) {
+            linkSegment._centreAngle = Math.atan2(
+              innerB[1] - innerA[1],
+              innerB[0] - innerA[0],
+            )
+          }
+        } else if (this.links_render_mode == LinkRenderType.STRAIGHT_LINK) {
+          const midX = (innerA[0] + innerB[0]) * 0.5
+
+          path.moveTo(a[0], a[1])
+          path.lineTo(innerA[0], innerA[1])
+          path.lineTo(midX, innerA[1])
+          path.lineTo(midX, innerB[1])
+          path.lineTo(innerB[0], innerB[1])
+          path.lineTo(b[0], b[1])
+
+          // Calculate centre point
+          pos[0] = midX
+          pos[1] = (innerA[1] + innerB[1]) * 0.5
+
+          if (linkSegment && this.linkMarkerShape === LinkMarkerShape.Arrow) {
+            const diff = innerB[1] - innerA[1]
+            if (Math.abs(diff) < 4) linkSegment._centreAngle = 0
+            else if (diff > 0) linkSegment._centreAngle = Math.PI * 0.5
+            else linkSegment._centreAngle = -(Math.PI * 0.5)
+          }
         } else {
-          innerA[1] += 10
+          return
         }
-        if (endDir == LinkDirection.LEFT) {
-          innerB[0] -= 10
-        } else {
-          innerB[1] -= 10
-        }
-        const midX = (innerA[0] + innerB[0]) * 0.5
-
-        path.moveTo(a[0], a[1])
-        path.lineTo(innerA[0], innerA[1])
-        path.lineTo(midX, innerA[1])
-        path.lineTo(midX, innerB[1])
-        path.lineTo(innerB[0], innerB[1])
-        path.lineTo(b[0], b[1])
-
-        // Calculate centre point
-        pos[0] = midX
-        pos[1] = (innerA[1] + innerB[1]) * 0.5
-
-        if (linkSegment && this.linkMarkerShape === LinkMarkerShape.Arrow) {
-          const diff = innerB[1] - innerA[1]
-          if (Math.abs(diff) < 4) linkSegment._centreAngle = 0
-          else if (diff > 0) linkSegment._centreAngle = Math.PI * 0.5
-          else linkSegment._centreAngle = -(Math.PI * 0.5)
-        }
-      } else {
-        return
       }
     }
 
