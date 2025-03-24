@@ -95,14 +95,18 @@ const missingModels = computed(() => {
     }
     modelDownloads.value[model.name] = downloadInfo
     if (!whiteListedUrls.has(model.url)) {
-      if (!allowedSources.some((source) => model.url.startsWith(source))) {
+      if (
+        !allowedSources.some((source: string) => model.url.startsWith(source))
+      ) {
         return {
           label: `${model.directory} / ${model.name}`,
           url: model.url,
           error: `Download not allowed from source '${model.url}', only allowed from '${allowedSources.join("', '")}'`
         }
       }
-      if (!allowedSuffixes.some((suffix) => model.name.endsWith(suffix))) {
+      if (
+        !allowedSuffixes.some((suffix: string) => model.name.endsWith(suffix))
+      ) {
         return {
           label: `${model.directory} / ${model.name}`,
           url: model.url,
