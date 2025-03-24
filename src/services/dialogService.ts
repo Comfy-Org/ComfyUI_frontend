@@ -1,6 +1,7 @@
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import ExecutionErrorDialogContent from '@/components/dialog/content/ExecutionErrorDialogContent.vue'
 import IssueReportDialogContent from '@/components/dialog/content/IssueReportDialogContent.vue'
+import LoadWorkflowError from '@/components/dialog/content/LoadWorkflowError.vue'
 import LoadWorkflowWarning from '@/components/dialog/content/LoadWorkflowWarning.vue'
 import ManagerProgressDialogContent from '@/components/dialog/content/ManagerProgressDialogContent.vue'
 import MissingModelsWarning from '@/components/dialog/content/MissingModelsWarning.vue'
@@ -147,6 +148,39 @@ export const useDialogService = () => {
     })
   }
 
+  function parseError(error: Error) {
+    const filename =
+      'fileName' in error
+        ? (error.fileName as string)
+        : error.stack?.match(/(\/extensions\/.*\.js)/)?.[1]
+
+    const extensionFile = filename
+      ? filename.substring(filename.indexOf('/extensions/'))
+      : undefined
+
+    return {
+      error: error.toString(),
+      stackTrace: error.stack ?? 'No stacktrace available',
+      extensionFile
+    }
+  }
+
+  function showLoadWorkflowErrorDialog(error: unknown) {
+    const props =
+      error instanceof Error
+        ? parseError(error)
+        : {
+            error: String(error),
+            stackTrace: 'No stacktrace available'
+          }
+
+    dialogStore.showDialog({
+      key: 'global-load-workflow-error',
+      component: LoadWorkflowError,
+      props
+    })
+  }
+
   async function prompt({
     title,
     message,
@@ -230,6 +264,7 @@ export const useDialogService = () => {
     showIssueReportDialog,
     showManagerDialog,
     showManagerProgressDialog,
+    showLoadWorkflowErrorDialog,
     prompt,
     confirm
   }
