@@ -58,6 +58,33 @@
         </div>
       </div>
     </div>
+
+    <div
+      v-if="
+        materialMode === 'original' &&
+        !props.inputSpec.isAnimation &&
+        !props.inputSpec.isPreview
+      "
+      class="relative show-texture-upload"
+    >
+      <Button class="p-button-rounded p-button-text" @click="openTextureUpload">
+        <i
+          class="pi pi-image text-white text-lg"
+          v-tooltip.right="{
+            value: t('load3d.uploadTexture'),
+            showDelay: 300
+          }"
+        ></i>
+        <input
+          type="file"
+          ref="texturePickerRef"
+          accept="image/*"
+          @change="uploadTexture"
+          class="absolute opacity-0 w-0 h-0 p-0 m-0 pointer-events-none"
+        />
+      </Button>
+    </div>
+
     <div v-if="materialMode === 'lineart'" class="relative show-edge-threshold">
       <Button
         class="p-button-rounded p-button-text"
@@ -115,6 +142,7 @@ const emit = defineEmits<{
   (e: 'updateUpDirection', direction: UpDirection): void
   (e: 'updateMaterialMode', mode: MaterialMode): void
   (e: 'updateEdgeThreshold', value: number): void
+  (e: 'uploadTexture', file: File): void
 }>()
 
 const upDirection = ref(props.upDirection || 'original')
@@ -123,6 +151,7 @@ const edgeThreshold = ref(props.edgeThreshold || 85)
 const showUpDirection = ref(false)
 const showMaterialMode = ref(false)
 const showEdgeThreshold = ref(false)
+const texturePickerRef = ref<HTMLInputElement | null>(null)
 
 const upDirections: UpDirection[] = [
   'original',
@@ -216,6 +245,18 @@ const toggleEdgeThreshold = () => {
 
 const updateEdgeThreshold = () => {
   emit('updateEdgeThreshold', edgeThreshold.value)
+}
+
+const openTextureUpload = () => {
+  texturePickerRef.value?.click()
+}
+
+const uploadTexture = (event: Event) => {
+  const input = event.target as HTMLInputElement
+
+  if (input.files && input.files[0]) {
+    emit('uploadTexture', input.files[0])
+  }
 }
 
 const closeSceneSlider = (e: MouseEvent) => {

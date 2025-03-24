@@ -5,6 +5,7 @@ import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeome
 import { GLTF } from 'three/examples/jsm/loaders/GLTFLoader'
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils'
 
+import Load3dUtils from './Load3dUtils'
 import { ColoredShadowMaterial } from './conditional-lines/ColoredShadowMaterial'
 import { ConditionalEdgesGeometry } from './conditional-lines/ConditionalEdgesGeometry'
 import { ConditionalEdgesShader } from './conditional-lines/ConditionalEdgesShader.js'
@@ -37,6 +38,8 @@ export class ModelManager implements ModelManagerInterface {
   depthMaterial: THREE.MeshDepthMaterial
   originalFileName: string | null = null
   originalURL: string | null = null
+  appliedTexture: THREE.Texture | null = null
+  textureLoader: THREE.TextureLoader
 
   private scene: THREE.Scene
   private renderer: THREE.WebGLRenderer
@@ -68,6 +71,7 @@ export class ModelManager implements ModelManagerInterface {
     this.eventManager = eventManager
     this.activeCamera = getActiveCamera()
     this.setupCamera = setupCamera
+    this.textureLoader = new THREE.TextureLoader()
 
     if (
       options &&
@@ -113,6 +117,11 @@ export class ModelManager implements ModelManagerInterface {
     this.wireframeMaterial.dispose()
     this.depthMaterial.dispose()
 
+    if (this.appliedTexture) {
+      this.appliedTexture.dispose()
+      this.appliedTexture = null
+    }
+
     this.disposeLineartModel()
   }
 
@@ -124,6 +133,66 @@ export class ModelManager implements ModelManagerInterface {
       flatShading: false,
       side: THREE.DoubleSide
     })
+  }
+
+  async applyTexture(texturePath: string): Promise<void> {
+    if (!this.currentModel) {
+      throw new Error('No model available to apply texture to')
+    }
+
+    if (this.appliedTexture) {
+      this.appliedTexture.dispose()
+    }
+
+    try {
+      let imageUrl = Load3dUtils.getResourceURL(
+        ...Load3dUtils.splitFilePath(texturePath)
+      )
+
+      if (!imageUrl.startsWith('/api')) {
+        imageUrl = '/api' + imageUrl
+      }
+
+      this.appliedTexture = await new Promise<THREE.Texture>(
+        (resolve, reject) => {
+          this.textureLoader.load(
+            imageUrl,
+            (texture) => {
+              texture.colorSpace = THREE.SRGBColorSpace
+              texture.wrapS = THREE.RepeatWrapping
+              texture.wrapT = THREE.RepeatWrapping
+              resolve(texture)
+            },
+            undefined,
+            (error) => reject(error)
+          )
+        }
+      )
+
+      if (this.materialMode === 'original') {
+        this.currentModel.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            const material = new THREE.MeshStandardMaterial({
+              map: this.appliedTexture,
+              metalness: 0.1,
+              roughness: 0.8,
+              side: THREE.DoubleSide
+            })
+
+            if (!this.originalMaterials.has(child)) {
+              this.originalMaterials.set(child, child.material)
+            }
+
+            child.material = material
+          }
+        })
+      }
+
+      return Promise.resolve()
+    } catch (error) {
+      console.error('Error applying texture:', error)
+      return Promise.reject(error)
+    }
   }
 
   disposeLineartModel(): void {
@@ -576,7 +645,16 @@ export class ModelManager implements ModelManagerInterface {
             if (originalMaterial) {
               child.material = originalMaterial
             } else {
-              child.material = this.standardMaterial
+              if (this.appliedTexture) {
+                child.material = new THREE.MeshStandardMaterial({
+                  map: this.appliedTexture,
+                  metalness: 0.1,
+                  roughness: 0.8,
+                  side: THREE.DoubleSide
+                })
+              } else {
+                child.material = this.standardMaterial
+              }
             }
             break
         }
@@ -637,6 +715,11 @@ export class ModelManager implements ModelManagerInterface {
     this.setMaterialMode('original')
     this.originalFileName = null
     this.originalURL = null
+
+    if (this.appliedTexture) {
+      this.appliedTexture.dispose()
+      this.appliedTexture = null
+    }
 
     this.originalMaterials = new WeakMap()
   }

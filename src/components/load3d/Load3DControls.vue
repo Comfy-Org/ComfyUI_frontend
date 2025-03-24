@@ -50,6 +50,7 @@
         @updateUpDirection="handleUpdateUpDirection"
         @updateMaterialMode="handleUpdateMaterialMode"
         @updateEdgeThreshold="handleUpdateEdgeThreshold"
+        @uploadTexture="handleUploadTexture"
         ref="modelControlsRef"
       />
 
@@ -182,6 +183,7 @@ const emit = defineEmits<{
   (e: 'updateMaterialMode', mode: MaterialMode): void
   (e: 'updateEdgeThreshold', value: number): void
   (e: 'exportModel', format: string): void
+  (e: 'uploadTexture', file: File): void
 }>()
 
 const backgroundColor = ref(props.backgroundColor)
@@ -228,6 +230,10 @@ const handleUpdateMaterialMode = (mode: MaterialMode) => {
 
 const handleUpdateEdgeThreshold = (value: number) => {
   emit('updateEdgeThreshold', value)
+}
+
+const handleUploadTexture = (file: File) => {
+  emit('uploadTexture', file)
 }
 
 const handleUpdateLightIntensity = (value: number) => {

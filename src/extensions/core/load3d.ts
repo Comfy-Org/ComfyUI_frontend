@@ -32,6 +32,8 @@ useExtensionService().registerExtension({
               (w: IWidget) => w.name === 'model_file'
             ) as IStringWidget
 
+            node.properties['Texture'] = undefined
+
             const uploadPath = await Load3dUtils.uploadFile(
               fileInput.files[0]
             ).catch((error) => {
@@ -70,6 +72,8 @@ useExtensionService().registerExtension({
           )
           if (modelWidget) {
             modelWidget.value = ''
+
+            node.properties['Texture'] = undefined
           }
         })
 

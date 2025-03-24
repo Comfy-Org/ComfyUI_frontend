@@ -65,7 +65,10 @@ const eventConfig = {
   },
   exportLoadingEnd: () => {
     loadingOverlayRef.value?.endLoading()
-  }
+  },
+  textureLoadingStart: () =>
+    loadingOverlayRef.value?.startLoading(t('load3d.applyingTexture')),
+  textureLoadingEnd: () => loadingOverlayRef.value?.endLoading()
 } as const
 
 watchEffect(() => {
