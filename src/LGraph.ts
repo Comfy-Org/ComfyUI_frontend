@@ -168,8 +168,6 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     this.state.lastLinkId = value
   }
 
-  onInputsOutputsChange?(): void
-  onInputAdded?(name: string, type: string): void
   onAfterStep?(): void
   onBeforeStep?(): void
   onPlayEvent?(): void
@@ -179,13 +177,6 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   onNodeAdded?(node: LGraphNode): void
   onNodeRemoved?(node: LGraphNode): void
   onTrigger?(action: string, param: unknown): void
-  onInputRenamed?(old_name: string, name: string): void
-  onInputTypeChanged?(name: string, type: string): void
-  onInputRemoved?(name: string): void
-  onOutputAdded?(name: string, type: string): void
-  onOutputRenamed?(old_name: string, name: string): void
-  onOutputTypeChanged?(name: string, type: string): void
-  onOutputRemoved?(name: string): void
   onBeforeChange?(graph: LGraph, info?: LGraphNode): void
   onAfterChange?(graph: LGraph, info?: LGraphNode | null): void
   onConnectionChange?(node: LGraphNode): void
