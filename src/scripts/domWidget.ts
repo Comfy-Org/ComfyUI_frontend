@@ -1,4 +1,4 @@
-import { LGraphNode } from '@comfyorg/litegraph'
+import { LGraphNode, LiteGraph } from '@comfyorg/litegraph'
 import type {
   ICustomWidget,
   IWidget,
@@ -27,6 +27,8 @@ export interface BaseDOMWidget<V extends object | string>
   readonly node: LGraphNode
   /** Whether the widget is visible. */
   isVisible(): boolean
+  /** The margin of the widget. */
+  margin: number
 }
 
 /**
@@ -86,6 +88,7 @@ export const isComponentWidget = <V extends object | string>(
 abstract class BaseDOMWidgetImpl<V extends object | string>
   implements BaseDOMWidget<V>
 {
+  static readonly DEFAULT_MARGIN = 10
   readonly type: 'custom'
   readonly name: string
   readonly options: DOMWidgetOptions<V>
@@ -121,6 +124,10 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
     this.callback?.(this.value)
   }
 
+  get margin(): number {
+    return this.options.margin ?? BaseDOMWidgetImpl.DEFAULT_MARGIN
+  }
+
   isVisible(): boolean {
     return (
       !_.isNil(this.computedHeight) &&
@@ -130,7 +137,25 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
     )
   }
 
-  draw(): void {
+  draw(
+    ctx: CanvasRenderingContext2D,
+    _node: LGraphNode,
+    widget_width: number,
+    y: number,
+    widget_height: number,
+    lowQuality?: boolean
+  ): void {
+    if (this.options.hideOnZoom && lowQuality) {
+      // Draw a placeholder rectangle
+      ctx.fillStyle = LiteGraph.WIDGET_BGCOLOR
+      ctx.rect(
+        this.margin,
+        y,
+        widget_width - this.margin * 2,
+        (this.computedHeight ?? widget_height) - this.margin
+      )
+      ctx.fill()
+    }
     this.options.onDraw?.(this)
   }
 
