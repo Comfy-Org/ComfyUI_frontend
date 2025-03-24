@@ -30,12 +30,6 @@ import { stringOrEmpty } from "./strings"
 import { LGraphEventMode } from "./types/globalEnums"
 import { getAllNestedItems } from "./utils/collections"
 
-interface IGraphInput {
-  name: string
-  type: string
-  value?: unknown
-}
-
 export interface LGraphState {
   lastGroupId: number
   lastNodeId: number
@@ -125,8 +119,6 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   nodes_actioning: (string | boolean)[] = []
   nodes_executedAction: string[] = []
   extra: Record<string, unknown> = {}
-  inputs: Dictionary<IGraphInput> = {}
-  outputs: Dictionary<IGraphInput> = {}
 
   /** @deprecated Deserialising a workflow sets this unused property. */
   version?: number
@@ -297,9 +289,6 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     this.nodes_executing = []
     this.nodes_actioning = []
     this.nodes_executedAction = []
-
-    this.inputs = {}
-    this.outputs = {}
 
     // notify canvas to redraw
     this.change()
@@ -1132,178 +1121,6 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   // ********** GLOBALS *****************
   trigger(action: string, param: unknown) {
     this.onTrigger?.(action, param)
-  }
-
-  /**
-   * Tell this graph it has a global graph input of this type
-   */
-  addInput(name: string, type: string, value?: unknown): void {
-    const input = this.inputs[name]
-    // already exist
-    if (input) return
-
-    this.beforeChange()
-    this.inputs[name] = { name: name, type: type, value: value }
-    this._version++
-    this.afterChange()
-
-    this.onInputAdded?.(name, type)
-    this.onInputsOutputsChange?.()
-  }
-
-  /**
-   * Assign a data to the global graph input
-   */
-  setInputData(name: string, data: unknown): void {
-    const input = this.inputs[name]
-    if (!input) return
-    input.value = data
-  }
-
-  /**
-   * Returns the current value of a global graph input
-   */
-  getInputData(name: string): unknown {
-    const input = this.inputs[name]
-    return input
-      ? input.value
-      : null
-  }
-
-  /**
-   * Changes the name of a global graph input
-   */
-  renameInput(old_name: string, name: string): boolean | undefined {
-    if (name == old_name) return
-
-    if (!this.inputs[old_name]) return false
-
-    if (this.inputs[name]) {
-      console.error("there is already one input with that name")
-      return false
-    }
-
-    this.inputs[name] = this.inputs[old_name]
-    delete this.inputs[old_name]
-    this._version++
-
-    this.onInputRenamed?.(old_name, name)
-    this.onInputsOutputsChange?.()
-  }
-
-  /**
-   * Changes the type of a global graph input
-   */
-  changeInputType(name: string, type: string): boolean | undefined {
-    if (!this.inputs[name]) return false
-
-    if (
-      this.inputs[name].type &&
-      String(this.inputs[name].type).toLowerCase() == String(type).toLowerCase()
-    ) {
-      return
-    }
-
-    this.inputs[name].type = type
-    this._version++
-    this.onInputTypeChanged?.(name, type)
-  }
-
-  /**
-   * Removes a global graph input
-   */
-  removeInput(name: string): boolean {
-    if (!this.inputs[name]) return false
-
-    delete this.inputs[name]
-    this._version++
-
-    this.onInputRemoved?.(name)
-    this.onInputsOutputsChange?.()
-    return true
-  }
-
-  /**
-   * Creates a global graph output
-   */
-  addOutput(name: string, type: string, value: unknown): void {
-    this.outputs[name] = { name: name, type: type, value: value }
-    this._version++
-
-    this.onOutputAdded?.(name, type)
-
-    this.onInputsOutputsChange?.()
-  }
-
-  /**
-   * Assign a data to the global output
-   */
-  setOutputData(name: string, value: unknown): void {
-    const output = this.outputs[name]
-    if (!output) return
-    output.value = value
-  }
-
-  /**
-   * Returns the current value of a global graph output
-   */
-  getOutputData(name: string): unknown {
-    const output = this.outputs[name]
-    if (!output) return null
-    return output.value
-  }
-
-  /**
-   * Renames a global graph output
-   */
-  renameOutput(old_name: string, name: string): boolean | undefined {
-    if (!this.outputs[old_name]) return false
-
-    if (this.outputs[name]) {
-      console.error("there is already one output with that name")
-      return false
-    }
-
-    this.outputs[name] = this.outputs[old_name]
-    delete this.outputs[old_name]
-    this._version++
-
-    this.onOutputRenamed?.(old_name, name)
-
-    this.onInputsOutputsChange?.()
-  }
-
-  /**
-   * Changes the type of a global graph output
-   */
-  changeOutputType(name: string, type: string): boolean | undefined {
-    if (!this.outputs[name]) return false
-
-    if (
-      this.outputs[name].type &&
-      String(this.outputs[name].type).toLowerCase() == String(type).toLowerCase()
-    ) {
-      return
-    }
-
-    this.outputs[name].type = type
-    this._version++
-    this.onOutputTypeChanged?.(name, type)
-  }
-
-  /**
-   * Removes a global graph output
-   */
-  removeOutput(name: string): boolean {
-    if (!this.outputs[name]) return false
-
-    delete this.outputs[name]
-    this._version++
-
-    this.onOutputRemoved?.(name)
-
-    this.onInputsOutputsChange?.()
-    return true
   }
 
   /** @todo Clean up - never implemented. */
