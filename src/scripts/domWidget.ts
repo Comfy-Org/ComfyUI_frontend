@@ -151,9 +151,9 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
       ctx.fillStyle = LiteGraph.WIDGET_BGCOLOR
       ctx.rect(
         this.margin,
-        y,
+        y + this.margin,
         widget_width - this.margin * 2,
-        (this.computedHeight ?? widget_height) - this.margin
+        (this.computedHeight ?? widget_height) - 2 * this.margin
       )
       ctx.fill()
       ctx.fillStyle = originalFillStyle
