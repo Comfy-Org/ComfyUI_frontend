@@ -41,20 +41,7 @@ import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import { useSettingStore } from '@/stores/settingStore'
 import { isElectron } from '@/utils/envUtil'
 
-// TODO: Read this from server internal API rather than hardcoding here
-// as some installations may wish to use custom sources
-const allowedSources = [
-  'https://civitai.com/',
-  'https://huggingface.co/',
-  'http://localhost:' // Included for testing usage only
-]
-const allowedSuffixes = ['.safetensors', '.sft']
-// Models that fail above conditions but are still allowed
-const whiteListedUrls = new Set([
-  'https://huggingface.co/stabilityai/stable-zero123/resolve/main/stable_zero123.ckpt',
-  'https://huggingface.co/TencentARC/T2I-Adapter/resolve/main/models/t2iadapter_depth_sd14v1.pth?download=true',
-  'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth'
-])
+const settingsStore = useSettingStore()
 
 interface ModelInfo {
   name: string
@@ -79,6 +66,14 @@ const doNotAskAgain = ref(false)
 
 const modelDownloads = ref<Record<string, ModelInfo>>({})
 const missingModels = computed(() => {
+  // Custom models sources, extension and whitelist can be customized in user settings.
+  const allowedSources = settingsStore.get('Comfy.ModelLibrary.AllowedSources')
+  const allowedSuffixes = settingsStore.get(
+    'Comfy.ModelLibrary.AllowedSuffixes'
+  )
+  const whiteListedUrls = new Set(
+    settingsStore.get('Comfy.ModelLibrary.WhitelistedUrls')
+  )
   return props.missingModels.map((model) => {
     const paths = props.paths[model.directory]
     if (model.directory_invalid || !paths) {
