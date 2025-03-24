@@ -770,11 +770,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     category: ['Comfy', 'Model', 'Download'],
     name: 'Model Download Allowed Sources',
     type: 'hidden',
-    defaultValue: [
-      'https://civitai.com/',
-      'https://huggingface.co/',
-      'http://localhost:'
-    ],
+    defaultValue: ['https://civitai.com/', 'https://huggingface.co/'],
     versionAdded: '1.16.0'
   },
   {

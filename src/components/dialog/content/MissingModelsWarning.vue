@@ -67,7 +67,10 @@ const doNotAskAgain = ref(false)
 const modelDownloads = ref<Record<string, ModelInfo>>({})
 const missingModels = computed(() => {
   // Custom models sources, extension and whitelist can be customized in user settings.
-  const allowedSources = settingsStore.get('Comfy.ModelLibrary.AllowedSources')
+  let allowedSources = settingsStore.get('Comfy.ModelLibrary.AllowedSources')
+  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+    allowedSources.push('http://localhost:')
+  }
   const allowedSuffixes = settingsStore.get(
     'Comfy.ModelLibrary.AllowedSuffixes'
   )
