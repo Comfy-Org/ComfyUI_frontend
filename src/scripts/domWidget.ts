@@ -147,6 +147,7 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
   ): void {
     if (this.options.hideOnZoom && lowQuality) {
       // Draw a placeholder rectangle
+      const originalFillStyle = ctx.fillStyle
       ctx.fillStyle = LiteGraph.WIDGET_BGCOLOR
       ctx.rect(
         this.margin,
@@ -155,6 +156,7 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
         (this.computedHeight ?? widget_height) - this.margin
       )
       ctx.fill()
+      ctx.fillStyle = originalFillStyle
     }
     this.options.onDraw?.(this)
   }
