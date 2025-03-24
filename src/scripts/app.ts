@@ -438,39 +438,44 @@ export class ComfyApp {
   #addDropHandler() {
     // Get prompt from dropped PNG or json
     document.addEventListener('drop', async (event) => {
-      event.preventDefault()
-      event.stopPropagation()
+      try {
+        event.preventDefault()
+        event.stopPropagation()
 
-      const n = this.dragOverNode
-      this.dragOverNode = null
-      // Node handles file drop, we dont use the built in onDropFile handler as its buggy
-      // If you drag multiple files it will call it multiple times with the same file
-      if (n && n.onDragDrop && (await n.onDragDrop(event))) {
-        return
-      }
-      // Dragging from Chrome->Firefox there is a file but its a bmp, so ignore that
-      if (
-        // @ts-expect-error fixme ts strict error
-        event.dataTransfer.files.length &&
-        // @ts-expect-error fixme ts strict error
-        event.dataTransfer.files[0].type !== 'image/bmp'
-      ) {
-        // @ts-expect-error fixme ts strict error
-        await this.handleFile(event.dataTransfer.files[0])
-      } else {
-        // Try loading the first URI in the transfer list
-        const validTypes = ['text/uri-list', 'text/x-moz-url']
-        // @ts-expect-error fixme ts strict error
-        const match = [...event.dataTransfer.types].find((t) =>
-          validTypes.find((v) => t === v)
-        )
-        if (match) {
+        const n = this.dragOverNode
+        this.dragOverNode = null
+        // Node handles file drop, we dont use the built in onDropFile handler as its buggy
+        // If you drag multiple files it will call it multiple times with the same file
+        if (n && n.onDragDrop && (await n.onDragDrop(event))) {
+          return
+        }
+        // Dragging from Chrome->Firefox there is a file but its a bmp, so ignore that
+        if (
           // @ts-expect-error fixme ts strict error
-          const uri = event.dataTransfer.getData(match)?.split('\n')?.[0]
-          if (uri) {
-            await this.handleFile(await (await fetch(uri)).blob())
+          event.dataTransfer.files.length &&
+          // @ts-expect-error fixme ts strict error
+          event.dataTransfer.files[0].type !== 'image/bmp'
+        ) {
+          // @ts-expect-error fixme ts strict error
+          await this.handleFile(event.dataTransfer.files[0])
+        } else {
+          // Try loading the first URI in the transfer list
+          const validTypes = ['text/uri-list', 'text/x-moz-url']
+          // @ts-expect-error fixme ts strict error
+          const match = [...event.dataTransfer.types].find((t) =>
+            validTypes.find((v) => t === v)
+          )
+          if (match) {
+            // @ts-expect-error fixme ts strict error
+            const uri = event.dataTransfer.getData(match)?.split('\n')?.[0]
+            if (uri) {
+              await this.handleFile(await (await fetch(uri)).blob())
+            }
           }
         }
+      } catch (err: any) {
+        console.error('Unable to process dropped item:', err)
+        useToastStore().addAlert(`Unable to process dropped item: ${err}`)
       }
     })
 
