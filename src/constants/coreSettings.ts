@@ -221,8 +221,8 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.Node.AllowImageSizeDraw',
-    category: ['LiteGraph', 'Node', 'AllowImageSizeDraw'],
-    name: 'Allow Drawing of Image Size',
+    category: ['LiteGraph', 'Node Widget', 'AllowImageSizeDraw'],
+    name: 'Show width × height below the image preview',
     type: 'boolean',
     defaultValue: true
   },
