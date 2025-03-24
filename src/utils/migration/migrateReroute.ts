@@ -67,6 +67,7 @@ export function createNewLinks(
   workflow: WorkflowJSON04,
   rerouteMap: Map<NodeId, RerouteEntry>
 ): {
+  reroutes: Reroute[]
   links: ComfyLink[]
   linkExtensions: LinkExtension[]
 } {
@@ -112,17 +113,24 @@ export function createNewLinks(
   }
 
   // Populate linkIds on reroute nodes
+  // Remove all partially connected reroutes
+  const validLinkExtensions: LinkExtension[] = []
+  const validReroutes: Set<Reroute> = new Set()
+
   for (const linkExtension of linkExtensions) {
     let entry = rerouteMapByRerouteId.get(linkExtension.parentId)
+    const chainedReroutes: Reroute[] = []
 
     while (entry) {
       const reroute = entry.reroute
       reroute.linkIds ??= []
       reroute.linkIds.push(linkExtension.id)
+      chainedReroutes.push(reroute)
 
       if (reroute.parentId) {
         entry = rerouteMapByRerouteId.get(reroute.parentId)
       } else {
+        // Last reroute in the chain
         const rerouteNode = entry.rerouteNode
         const rerouteInputLink = linksMap.get(
           rerouteNode?.inputs?.[0]?.link ?? -1
@@ -142,13 +150,20 @@ export function createNewLinks(
             targetSlot,
             dataType
           ])
+
+          validLinkExtensions.push(linkExtension)
+          chainedReroutes.forEach((reroute) => validReroutes.add(reroute))
         }
         entry = undefined
       }
     }
   }
 
-  return { links, linkExtensions }
+  return {
+    links,
+    linkExtensions: validLinkExtensions,
+    reroutes: Array.from(validReroutes)
+  }
 }
 
 /**
@@ -177,16 +192,17 @@ export const migrateLegacyRerouteNodes = (
   const rerouteMap = createReroutePoints(legacyRerouteNodes)
 
   // Create new links and link extensions
-  const { links, linkExtensions } = createNewLinks(workflow, rerouteMap)
+  const { links, linkExtensions, reroutes } = createNewLinks(
+    workflow,
+    rerouteMap
+  )
 
   // Update the workflow
   newWorkflow.links = links
   newWorkflow.nodes = newWorkflow.nodes.filter(
     (node) => node.type !== 'Reroute'
   )
-  newWorkflow.extra.reroutes = Array.from(rerouteMap.values()).map(
-    (entry) => entry.reroute
-  )
+  newWorkflow.extra.reroutes = reroutes
   newWorkflow.extra.linkExtensions = linkExtensions
 
   return newWorkflow
