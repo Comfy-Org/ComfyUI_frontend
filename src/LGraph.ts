@@ -58,8 +58,6 @@ export interface LGraphConfig {
 export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   static serialisedSchemaVersion = 1 as const
 
-  // default supported types
-  static supported_types = ["number", "string", "boolean"]
   static STATUS_STOPPED = 1
   static STATUS_RUNNING = 2
 
@@ -204,13 +202,6 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     this.clear()
 
     if (o) this.configure(o)
-  }
-
-  // TODO: Remove
-  // used to know which types of connections support this graph (some graphs do not allow certain types)
-  getSupportedTypes(): string[] {
-    // @ts-expect-error
-    return this.supported_types || LGraph.supported_types
   }
 
   /**
