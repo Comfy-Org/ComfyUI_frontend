@@ -113,6 +113,7 @@ export abstract class BaseWidget implements IBaseWidget {
   }) {
     const { node, canvas, e } = options
     const oldValue = this.value
+    if (value === this.value) return
 
     const v = this.type === "number" ? Number(value) : value
     this.value = v

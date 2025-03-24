@@ -19,6 +19,21 @@ export class NumberWidget extends BaseWidget implements INumericWidget {
     this.value = widget.value
   }
 
+  override setValue(value: number, options: {
+    e: CanvasMouseEvent
+    node: LGraphNode
+    canvas: LGraphCanvas
+  }) {
+    let newValue = value
+    if (this.options.min != null && newValue < this.options.min) {
+      newValue = this.options.min
+    }
+    if (this.options.max != null && newValue > this.options.max) {
+      newValue = this.options.max
+    }
+    super.setValue(newValue, options)
+  }
+
   /**
    * Draws the widget
    * @param ctx The canvas context
@@ -111,16 +126,7 @@ export class NumberWidget extends BaseWidget implements INumericWidget {
 
     if (delta) {
       // Handle left/right arrow clicks
-      let newValue = this.value + delta * getWidgetStep(this.options)
-      if (this.options.min != null && newValue < this.options.min) {
-        newValue = this.options.min
-      }
-      if (this.options.max != null && newValue > this.options.max) {
-        newValue = this.options.max
-      }
-      if (newValue !== this.value) {
-        this.setValue(newValue, { e, node, canvas })
-      }
+      this.setValue(this.value + delta * getWidgetStep(this.options), { e, node, canvas })
       return
     }
 
@@ -159,18 +165,6 @@ export class NumberWidget extends BaseWidget implements INumericWidget {
         : 0)
 
     if (delta && (x > -3 && x < width + 3)) return
-
-    let newValue = this.value
-    if (e.deltaX) newValue += e.deltaX * getWidgetStep(this.options)
-
-    if (this.options.min != null && newValue < this.options.min) {
-      newValue = this.options.min
-    }
-    if (this.options.max != null && newValue > this.options.max) {
-      newValue = this.options.max
-    }
-    if (newValue !== this.value) {
-      this.setValue(newValue, { e, node, canvas })
-    }
+    this.setValue(this.value + (e.deltaX ?? 0) * getWidgetStep(this.options), { e, node, canvas })
   }
 }
