@@ -622,6 +622,7 @@ export class LinkConnector {
 
     for (const link of outputLinks) delete link._dragging
     for (const link of inputLinks) delete link._dragging
+    for (const link of floatingLinks) delete link._dragging
     for (const reroute of hiddenReroutes) delete reroute._dragging
 
     renderLinks.length = 0

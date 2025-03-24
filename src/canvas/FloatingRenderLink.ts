@@ -96,12 +96,12 @@ export class FloatingRenderLink implements RenderLink {
     this.fromPos = fromReroute.pos
   }
 
-  canConnectToInput(): true {
-    return true
+  canConnectToInput(): boolean {
+    return this.toType === "input"
   }
 
-  canConnectToOutput(): true {
-    return true
+  canConnectToOutput(): boolean {
+    return this.toType === "output"
   }
 
   canConnectToReroute(reroute: Reroute): boolean {
@@ -117,6 +117,8 @@ export class FloatingRenderLink implements RenderLink {
     const floatingLink = this.link
     floatingLink.target_id = node.id
     floatingLink.target_slot = node.inputs.indexOf(input)
+
+    node.disconnectInput(node.inputs.indexOf(input))
 
     this.fromSlot._floatingLinks?.delete(floatingLink)
     input._floatingLinks ??= new Set()

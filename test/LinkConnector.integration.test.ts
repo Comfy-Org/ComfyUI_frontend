@@ -530,6 +530,27 @@ describe("LinkConnector Integration", () => {
 
       validateIntegrityFloatingRemoved()
     })
+
+    test("Dropping a floating input link onto input slot disconnects the existing link", ({ graph, connector }) => {
+      const manyOutputsNode = graph.getNodeById(4)!
+      manyOutputsNode.disconnectOutput(0)
+
+      const floatingInputNode = graph.getNodeById(6)!
+      const fromFloatingInput = floatingInputNode.inputs[0]
+
+      const hasInputNode = graph.getNodeById(2)!
+      const toInput = hasInputNode.inputs[0]
+
+      connector.moveInputLink(graph, fromFloatingInput)
+      const dropEvent = mockedInputDropEvent(hasInputNode, 0)
+      connector.dropLinks(graph, dropEvent)
+
+      expect(fromFloatingInput.link).toBeNull()
+      expect(fromFloatingInput._floatingLinks?.size).toBe(0)
+
+      expect(toInput.link).toBeNull()
+      expect(toInput._floatingLinks?.size).toBe(1)
+    })
   })
 
   test("Should drop floating links when both sides are disconnected", ({ graph, connector, reroutesBeforeTest, validateIntegrityNoChanges }) => {
