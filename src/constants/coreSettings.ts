@@ -220,6 +220,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: true
   },
   {
+    id: 'Comfy.Node.AllowImageSizeDraw',
+    category: ['LiteGraph', 'Node Widget', 'AllowImageSizeDraw'],
+    name: 'Show width × height below the image preview',
+    type: 'boolean',
+    defaultValue: true
+  },
+  {
     id: 'Comfy.Group.DoubleClickTitleToEdit',
     category: ['LiteGraph', 'Group', 'DoubleClickTitleToEdit'],
     name: 'Double click group title to edit',

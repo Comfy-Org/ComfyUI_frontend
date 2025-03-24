@@ -8,6 +8,7 @@ import type {
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { calculateImageGrid } from '@/scripts/ui/imagePreview'
 import { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import { useSettingStore } from '@/stores/settingStore'
 import { is_all_same_aspect_ratio } from '@/utils/imageUtil'
 
 const renderPreview = (
@@ -36,7 +37,9 @@ const renderPreview = (
     node.imageIndex = imageIndex = 0
   }
 
-  const IMAGE_TEXT_SIZE_TEXT_HEIGHT = 15
+  const settingStore = useSettingStore()
+  const allowImageSizeDraw = settingStore.get('Comfy.Node.AllowImageSizeDraw')
+  const IMAGE_TEXT_SIZE_TEXT_HEIGHT = allowImageSizeDraw ? 15 : 0
   const dw = node.size[0]
   const dh = node.size[1] - shiftY - IMAGE_TEXT_SIZE_TEXT_HEIGHT
 
@@ -165,12 +168,14 @@ const renderPreview = (
   ctx.drawImage(img, x, y, w, h)
 
   // Draw image size text below the image
-  ctx.fillStyle = LiteGraph.NODE_TEXT_COLOR
-  ctx.textAlign = 'center'
-  ctx.font = '10px sans-serif'
-  const sizeText = `${Math.round(img.naturalWidth)} × ${Math.round(img.naturalHeight)}`
-  const textY = y + h + 10
-  ctx.fillText(sizeText, x + w / 2, textY)
+  if (allowImageSizeDraw) {
+    ctx.fillStyle = LiteGraph.NODE_TEXT_COLOR
+    ctx.textAlign = 'center'
+    ctx.font = '10px sans-serif'
+    const sizeText = `${Math.round(img.naturalWidth)} × ${Math.round(img.naturalHeight)}`
+    const textY = y + h + 10
+    ctx.fillText(sizeText, x + w / 2, textY)
+  }
 
   const drawButton = (
     x: number,
