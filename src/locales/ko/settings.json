@@ -187,6 +187,9 @@
     "name": "노드 제안 수",
     "tooltip": "라이트그래프 검색 상자/컨텍스트 메뉴 전용"
   },
+  "Comfy_Node_AllowImageSizeDraw": {
+    "name": "이미지 미리보기 아래에 너비 × 높이 표시"
+  },
   "Comfy_Node_AutoSnapLinkToSlot": {
     "name": "링크를 노드 슬롯에 자동 스냅",
     "tooltip": "링크를 노드 위로 드래그할 때 링크가 노드의 유효한 입력 슬롯에 자동으로 스냅됩니다."

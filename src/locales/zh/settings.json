@@ -187,6 +187,9 @@
     "name": "节点建议数量",
     "tooltip": "仅适用于 litegraph"
   },
+  "Comfy_Node_AllowImageSizeDraw": {
+    "name": "在图像预览下方显示宽度×高度"
+  },
   "Comfy_Node_AutoSnapLinkToSlot": {
     "name": "连线自动吸附到节点接口",
     "tooltip": "在节点上拖动连线时，连线会自动吸附到节点的可用输入接口。"
