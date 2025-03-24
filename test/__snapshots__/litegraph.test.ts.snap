@@ -29,6 +29,7 @@ LiteGraphGlobal {
   "Globals": {},
   "HIDDEN_LINK": -1,
   "INPUT": 1,
+  "InputIndicators": [Function],
   "LEFT": 3,
   "LGraph": [Function],
   "LGraphCanvas": [Function],

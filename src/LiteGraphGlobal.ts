@@ -1,5 +1,6 @@
 import type { Dictionary, ISlotType, Rect, WhenNullish } from "./interfaces"
 
+import { InputIndicators } from "./canvas/InputIndicators"
 import { ContextMenu } from "./ContextMenu"
 import { CurveEditor } from "./CurveEditor"
 import { DragAndScale } from "./DragAndScale"
@@ -270,6 +271,7 @@ export class LiteGraphGlobal {
   ContextMenu = ContextMenu
   CurveEditor = CurveEditor
   Reroute = Reroute
+  InputIndicators = InputIndicators
 
   onNodeTypeRegistered?(type: string, base_class: typeof LGraphNode): void
   onNodeTypeReplaced?(type: string, base_class: typeof LGraphNode, prev: unknown): void
