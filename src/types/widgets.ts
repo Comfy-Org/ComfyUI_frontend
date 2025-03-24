@@ -193,12 +193,22 @@ export interface IBaseWidget {
    * @todo Expose CanvasPointer API to custom widgets
    */
   mouse?(event: CanvasPointerEvent, pointerOffset: Point, node: LGraphNode): boolean
+  /**
+   * Draw the widget.
+   * @param ctx The canvas context to draw on.
+   * @param node The node this widget belongs to.
+   * @param widget_width The width of the widget.
+   * @param y The y position of the widget.
+   * @param H The height of the widget.
+   * @param lowQuality Whether to draw the widget in low quality.
+   */
   draw?(
     ctx: CanvasRenderingContext2D,
     node: LGraphNode,
     widget_width: number,
     y: number,
     H: number,
+    lowQuality?: boolean,
   ): void
 
   /**

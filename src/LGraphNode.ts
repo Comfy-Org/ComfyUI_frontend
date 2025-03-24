@@ -3376,7 +3376,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       if (WidgetClass) {
         toClass(WidgetClass, w).drawWidget(ctx, { y, width: widget_width, show_text, margin })
       } else {
-        w.draw?.(ctx, this, widget_width, y, H)
+        w.draw?.(ctx, this, widget_width, y, H, lowQuality)
       }
       ctx.globalAlpha = editorAlpha
     }
