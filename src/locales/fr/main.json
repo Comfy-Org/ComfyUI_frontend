@@ -346,6 +346,7 @@
     }
   },
   "load3d": {
+    "applyingTexture": "Application de la texture...",
     "backgroundColor": "Couleur de fond",
     "camera": "Caméra",
     "edgeThreshold": "Seuil de Bordure",
@@ -365,7 +366,8 @@
     "switchCamera": "Changer de caméra",
     "switchingMaterialMode": "Changement de mode de matériau...",
     "upDirection": "Direction Haut",
-    "uploadBackgroundImage": "Télécharger l'image de fond"
+    "uploadBackgroundImage": "Télécharger l'image de fond",
+    "uploadTexture": "Télécharger Texture"
   },
   "maintenance": {
     "None": "Aucun",

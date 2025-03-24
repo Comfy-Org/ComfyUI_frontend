@@ -346,6 +346,7 @@
     }
   },
   "load3d": {
+    "applyingTexture": "テクスチャを適用中...",
     "backgroundColor": "背景色",
     "camera": "カメラ",
     "edgeThreshold": "エッジ閾値",
@@ -365,7 +366,8 @@
     "switchCamera": "カメラを切り替える",
     "switchingMaterialMode": "マテリアルモードの切り替え中...",
     "upDirection": "上方向",
-    "uploadBackgroundImage": "背景画像をアップロード"
+    "uploadBackgroundImage": "背景画像をアップロード",
+    "uploadTexture": "テクスチャをアップロード"
   },
   "maintenance": {
     "None": "なし",
