@@ -3436,6 +3436,8 @@ export class LGraphCanvas implements ConnectionColorContext {
     if (!this.graph) return
 
     const selected = this.selectedItems
+    if (!selected.size) return
+
     let wasSelected: Positionable | undefined
     for (const sel of selected) {
       if (sel === keepSelected) {
