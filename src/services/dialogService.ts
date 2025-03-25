@@ -165,6 +165,10 @@ export const useDialogService = () => {
     }
   }
 
+  /**
+   * Show a dialog to the user with the error details
+   * @param error The error to show
+   */
   function showLoadWorkflowErrorDialog(error: unknown) {
     const props =
       error instanceof Error

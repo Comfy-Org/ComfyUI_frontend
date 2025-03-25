@@ -1,9 +1,11 @@
 <template>
   <div class="load-workflow-error flex flex-col gap-4">
-    <p>Loading aborted due to error reloading workflow data</p>
-
-    <pre class="error-message p-5 bg-red-500/20">{{ error }}</pre>
-
+    <NoResultsPlaceholder
+      class="pb-0"
+      icon="pi pi-exclamation-circle"
+      :title="t('loadWorkflowErrorDialog.title')"
+      :message="error"
+    />
     <pre
       class="stack-trace p-5 text-neutral-400 text-xs max-h-[50vh] overflow-auto bg-black/20"
     >
@@ -11,7 +13,7 @@
     </pre>
 
     <template v-if="extensionFile">
-      <span>This may be due to the following script:</span>
+      <span>{{ t('loadWorkflowErrorDialog.extensionFileHint') }}</span>
       <br />
       <span class="font-bold">{{ extensionFile }}</span>
     </template>
@@ -19,8 +21,13 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
-  error: Error
+import { useI18n } from 'vue-i18n'
+
+import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
+
+const { t } = useI18n()
+const { error, stackTrace, extensionFile } = defineProps<{
+  error: string
   stackTrace: string
   extensionFile?: string
 }>()
