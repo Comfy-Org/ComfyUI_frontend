@@ -1271,8 +1271,7 @@ export class ComfyApp {
 
     // Only have one action process the items so each one gets a unique seed correctly
     if (this.#processingQueue) {
-      // @ts-expect-error fixme ts strict error
-      return
+      return false
     }
 
     this.#processingQueue = true
