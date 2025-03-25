@@ -7,6 +7,7 @@ import Load3DAnimation from '@/components/load3d/Load3DAnimation.vue'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import Load3dAnimation from '@/extensions/core/load3d/Load3dAnimation'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import { t } from '@/i18n'
 import { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { api } from '@/scripts/api'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
@@ -38,7 +39,7 @@ useExtensionService().registerExtension({
               fileInput.files[0]
             ).catch((error) => {
               console.error('File upload failed:', error)
-              useToastStore().addAlert('File upload failed')
+              useToastStore().addAlert(t('toastMessages.fileUploadFailed'))
             })
 
             const modelUrl = api.apiURL(
@@ -180,7 +181,7 @@ useExtensionService().registerExtension({
               fileInput.files[0]
             ).catch((error) => {
               console.error('File upload failed:', error)
-              useToastStore().addAlert('File upload failed')
+              useToastStore().addAlert(t('toastMessages.fileUploadFailed'))
             })
 
             const modelUrl = api.apiURL(
@@ -352,10 +353,8 @@ useExtensionService().registerExtension({
       let filePath = message.model_file[0]
 
       if (!filePath) {
-        const msg = 'unable to get model file path.'
-
+        const msg = t('toastMessages.unableToGetModelFilePath')
         console.error(msg)
-
         useToastStore().addAlert(msg)
       }
 
@@ -429,10 +428,8 @@ useExtensionService().registerExtension({
       let filePath = message.model_file[0]
 
       if (!filePath) {
-        const msg = 'unable to get model file path.'
-
+        const msg = t('toastMessages.unableToGetModelFilePath')
         console.error(msg)
-
         useToastStore().addAlert(msg)
       }
 

@@ -20,6 +20,7 @@
     "about": "About",
     "add": "Add",
     "confirm": "Confirm",
+    "confirmed": "Confirmed",
     "reset": "Reset",
     "resetKeybindingsTooltip": "Reset keybindings to default",
     "customizeFolder": "Customize Folder",
@@ -84,6 +85,7 @@
     "nodes": "Nodes",
     "community": "Community",
     "all": "All",
+    "update": "Update",
     "updated": "Updated",
     "resultsCount": "Found {count} Results",
     "status": "Status",
@@ -98,7 +100,8 @@
     "restart": "Restart",
     "missing": "Missing",
     "inProgress": "In progress",
-    "completed": "Completed"
+    "completed": "Completed",
+    "interrupted": "Interrupted"
   },
   "manager": {
     "title": "Custom Nodes Manager",
@@ -992,7 +995,26 @@
     "applyingTexture": "Applying Texture..."
   },
   "toastMessages": {
+    "no3dScene": "No 3D scene to apply texture",
+    "failedToApplyTexture": "Failed to apply texture",
+    "no3dSceneToExport": "No 3D scene to export",
+    "failedToExportModel": "Failed to export model as {format}",
     "fileLoadError": "Unable to find workflow in {fileName}",
-    "dropFileError": "Unable to process dropped item: {error}"
+    "dropFileError": "Unable to process dropped item: {error}",
+    "interrupted": "Execution has been interrupted",
+    "pendingTasksDeleted": "Pending tasks deleted",
+    "nothingToGroup": "Nothing to group",
+    "pleaseSelectNodesToGroup": "Please select the nodes (or other groups) to create a group for",
+    "emptyCanvas": "Empty canvas",
+    "fileUploadFailed": "File upload failed",
+    "unableToGetModelFilePath": "Unable to get model file path",
+    "couldNotDetermineFileType": "Could not determine file type",
+    "errorLoadingModel": "Error loading model",
+    "failedToDownloadFile": "Failed to download file",
+    "updateRequested": "Update requested",
+    "nodeDefinitionsUpdated": "Node definitions updated",
+    "errorSaveSetting": "Error saving setting {id}: {err}",
+    "errorCopyImage": "Error copying image: {error}",
+    "noTemplatesToExport": "No templates to export"
   }
 }

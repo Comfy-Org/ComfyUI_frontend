@@ -184,8 +184,8 @@ export function useCoreCommands(): ComfyCommand[] {
         await api.interrupt()
         useToastStore().add({
           severity: 'info',
-          summary: 'Interrupted',
-          detail: 'Execution has been interrupted',
+          summary: t('g.interrupted'),
+          detail: t('toastMessages.interrupted'),
           life: 1000
         })
       }
@@ -198,8 +198,8 @@ export function useCoreCommands(): ComfyCommand[] {
         await useQueueStore().clear(['queue'])
         useToastStore().add({
           severity: 'info',
-          summary: 'Confirmed',
-          detail: 'Pending tasks deleted',
+          summary: t('g.confirmed'),
+          detail: t('toastMessages.pendingTasksDeleted'),
           life: 3000
         })
       }
@@ -246,7 +246,7 @@ export function useCoreCommands(): ComfyCommand[] {
         if (app.canvas.empty) {
           useToastStore().add({
             severity: 'error',
-            summary: 'Empty canvas',
+            summary: t('toastMessages.emptyCanvas'),
             life: 3000
           })
           return
@@ -325,9 +325,8 @@ export function useCoreCommands(): ComfyCommand[] {
         if (!canvas.selectedItems?.size) {
           useToastStore().add({
             severity: 'error',
-            summary: 'Nothing to group',
-            detail:
-              'Please select the nodes (or other groups) to create a group for',
+            summary: t('toastMessages.nothingToGroup'),
+            detail: t('toastMessages.pleaseSelectNodesToGroup'),
             life: 3000
           })
           return

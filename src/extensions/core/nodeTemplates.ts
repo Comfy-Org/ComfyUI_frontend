@@ -140,7 +140,7 @@ class ManageTemplates extends ComfyDialog {
 
   exportAll() {
     if (this.templates.length == 0) {
-      useToastStore().addAlert('No templates to export.')
+      useToastStore().addAlert(t('toastMessages.noTemplatesToExport'))
       return
     }
 
