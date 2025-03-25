@@ -992,7 +992,7 @@
     "applyingTexture": "Applying Texture..."
   },
   "toastMessages": {
-    "fileLoadError": "Unable to find workflow in {{fileName}}",
-    "dropFileError": "Unable to process dropped item: {{error}}"
+    "fileLoadError": "Unable to find workflow in {fileName}",
+    "dropFileError": "Unable to process dropped item: {error}"
   }
 }
