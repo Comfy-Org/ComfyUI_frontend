@@ -115,6 +115,12 @@
     "paused": "已暂停",
     "resume": "恢复下载"
   },
+  "errorDialog": {
+    "defaultTitle": "发生错误",
+    "extensionFileHint": "这可能是由于以下脚本",
+    "loadWorkflowTitle": "由于重新加载工作流数据出错，加载被中止",
+    "noStackTrace": "无可用堆栈跟踪"
+  },
   "g": {
     "about": "关于",
     "add": "添加",
