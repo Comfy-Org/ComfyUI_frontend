@@ -1,4 +1,5 @@
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
+import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
 import ExecutionErrorDialogContent from '@/components/dialog/content/ExecutionErrorDialogContent.vue'
 import IssueReportDialogContent from '@/components/dialog/content/IssueReportDialogContent.vue'
 import LoadWorkflowWarning from '@/components/dialog/content/LoadWorkflowWarning.vue'
@@ -147,6 +148,52 @@ export const useDialogService = () => {
     })
   }
 
+  function parseError(error: Error) {
+    const filename =
+      'fileName' in error
+        ? (error.fileName as string)
+        : error.stack?.match(/(\/extensions\/.*\.js)/)?.[1]
+
+    const extensionFile = filename
+      ? filename.substring(filename.indexOf('/extensions/'))
+      : undefined
+
+    return {
+      errorMessage: error.toString(),
+      stackTrace: error.stack,
+      extensionFile
+    }
+  }
+
+  /**
+   * Show a error dialog to the user when an error occurs.
+   * @param error The error to show
+   * @param options The options for the dialog
+   */
+  function showErrorDialog(
+    error: unknown,
+    options: {
+      title?: string
+      errorType?: string
+    } = {}
+  ) {
+    const props =
+      error instanceof Error
+        ? parseError(error)
+        : {
+            errorMessage: String(error)
+          }
+
+    dialogStore.showDialog({
+      key: 'global-error',
+      component: ErrorDialogContent,
+      props: {
+        ...props,
+        ...options
+      }
+    })
+  }
+
   async function prompt({
     title,
     message,
@@ -230,6 +277,7 @@ export const useDialogService = () => {
     showIssueReportDialog,
     showManagerDialog,
     showManagerProgressDialog,
+    showErrorDialog,
     prompt,
     confirm
   }

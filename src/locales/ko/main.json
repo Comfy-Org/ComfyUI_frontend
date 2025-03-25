@@ -115,6 +115,12 @@
     "paused": "일시 중지됨",
     "resume": "다운로드 재개"
   },
+  "errorDialog": {
+    "defaultTitle": "오류가 발생했습니다",
+    "extensionFileHint": "다음 스크립트 때문일 수 있습니다",
+    "loadWorkflowTitle": "워크플로우 데이터를 다시 로드하는 중 오류로 인해 로드가 중단되었습니다",
+    "noStackTrace": "스택 추적이 사용할 수 없습니다"
+  },
   "g": {
     "about": "정보",
     "add": "추가",

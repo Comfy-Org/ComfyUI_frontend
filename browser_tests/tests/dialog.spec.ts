@@ -309,3 +309,21 @@ test.describe('Feedback dialog', () => {
     await expect(feedbackHeader).not.toBeVisible()
   })
 })
+
+test.describe('Error dialog', () => {
+  test('Should display an error dialog when graph configure fails', async ({
+    comfyPage
+  }) => {
+    await comfyPage.page.evaluate(() => {
+      const graph = window['graph']
+      graph.configure = () => {
+        throw new Error('Error on configure!')
+      }
+    })
+
+    await comfyPage.loadWorkflow('default')
+
+    const errorDialog = comfyPage.page.locator('.error-dialog-content')
+    await expect(errorDialog).toBeVisible()
+  })
+})

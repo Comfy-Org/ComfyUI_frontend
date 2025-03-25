@@ -951,6 +951,12 @@
     "missingModels": "Missing Models",
     "missingModelsMessage": "When loading the graph, the following models were not found"
   },
+  "errorDialog": {
+    "defaultTitle": "An error occurred",
+    "loadWorkflowTitle": "Loading aborted due to error reloading workflow data",
+    "noStackTrace": "No stacktrace available",
+    "extensionFileHint": "This may be due to the following script"
+  },
   "desktopUpdate": {
     "title": "Updating ComfyUI Desktop",
     "description": "ComfyUI Desktop is installing new dependencies.  This may take a few minutes.",

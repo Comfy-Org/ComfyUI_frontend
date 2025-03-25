@@ -115,6 +115,12 @@
     "paused": "一時停止",
     "resume": "ダウンロードを再開"
   },
+  "errorDialog": {
+    "defaultTitle": "エラーが発生しました",
+    "extensionFileHint": "これは次のスクリプトが原因かもしれません",
+    "loadWorkflowTitle": "ワークフローデータの再読み込みエラーにより、読み込みが中止されました",
+    "noStackTrace": "スタックトレースは利用できません"
+  },
   "g": {
     "about": "情報",
     "add": "追加",
