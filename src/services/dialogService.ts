@@ -166,10 +166,10 @@ export const useDialogService = () => {
   }
 
   /**
-   * Show a dialog to the user with the error details
+   * Show a error dialog to the user when loading a workflow fails.
    * @param error The error to show
    */
-  function showLoadWorkflowErrorDialog(error: unknown) {
+  function showLoadWorkflowError(error: unknown) {
     const props =
       error instanceof Error
         ? parseError(error)
@@ -268,7 +268,7 @@ export const useDialogService = () => {
     showIssueReportDialog,
     showManagerDialog,
     showManagerProgressDialog,
-    showLoadWorkflowErrorDialog,
+    showLoadWorkflowError,
     prompt,
     confirm
   }

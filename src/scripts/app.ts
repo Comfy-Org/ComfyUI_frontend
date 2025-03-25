@@ -1144,7 +1144,7 @@ export class ComfyApp {
         this.canvas.ds.scale = graphData.extra.ds.scale
       }
     } catch (error) {
-      useDialogService().showLoadWorkflowErrorDialog(error)
+      useDialogService().showLoadWorkflowError(error)
       return
     }
     for (const node of this.graph.nodes) {
