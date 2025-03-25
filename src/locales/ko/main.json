@@ -975,6 +975,10 @@
     },
     "title": "템플릿으로 시작하기"
   },
+  "toastMessages": {
+    "dropFileError": "드롭된 항목을 처리할 수 없습니다: {error}",
+    "fileLoadError": "{fileName}에서 워크플로우를 찾을 수 없습니다"
+  },
   "userSelect": {
     "enterUsername": "사용자 이름 입력",
     "existingUser": "기존 사용자",

@@ -975,6 +975,10 @@
     },
     "title": "Commencez avec un modèle"
   },
+  "toastMessages": {
+    "dropFileError": "Impossible de traiter l'élément déposé : {error}",
+    "fileLoadError": "Impossible de trouver le flux de travail dans {fileName}"
+  },
   "userSelect": {
     "enterUsername": "Entrez un nom d'utilisateur",
     "existingUser": "Utilisateur existant",

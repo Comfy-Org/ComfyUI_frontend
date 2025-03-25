@@ -975,6 +975,10 @@
     },
     "title": "从模板开始"
   },
+  "toastMessages": {
+    "dropFileError": "无法处理掉落的项目：{error}",
+    "fileLoadError": "无法在 {fileName} 中找到工作流"
+  },
   "userSelect": {
     "enterUsername": "输入用户名",
     "existingUser": "用户已存在",
