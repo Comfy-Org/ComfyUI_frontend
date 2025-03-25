@@ -1,0 +1,1020 @@
+{
+  "clipboard": {
+    "errorMessage": "Error al copiar al portapapeles",
+    "errorNotSupported": "API del portapapeles no soportada en su navegador",
+    "successMessage": "Copiado al portapapeles"
+  },
+  "color": {
+    "black": "Negro",
+    "blue": "Azul",
+    "brown": "Marrón",
+    "custom": "Personalizado",
+    "cyan": "Cian",
+    "default": "Predeterminado",
+    "green": "Verde",
+    "noColor": "Sin Color",
+    "pale_blue": "Azul Pálido",
+    "pink": "Rosa",
+    "purple": "Morado",
+    "red": "Rojo",
+    "yellow": "Amarillo"
+  },
+  "contextMenu": {
+    " to input": " a entrada",
+    " to widget": " a widget",
+    "Add Group": "Agregar Grupo",
+    "Add Group For Selected Nodes": "Agregar Grupo para Nodos Seleccionados",
+    "Add Node": "Agregar Nodo",
+    "Bypass": "Omitir",
+    "Clone": "Clonar",
+    "Collapse": "Colapsar",
+    "Colors": "Colores",
+    "Convert ": "Convertir ",
+    "Convert Input to Widget": "Convertir Entrada a Widget",
+    "Convert Widget to Input": "Convertir Widget a Entrada",
+    "Convert to Group Node": "Convertir en Nodo de Grupo",
+    "Copy (Clipspace)": "Copiar (Espacio de Clip)",
+    "Expand": "Expandir",
+    "Inputs": "Entradas",
+    "Manage": "Administrar",
+    "Manage Group Nodes": "Administrar Nodos de Grupo",
+    "Mode": "Modo",
+    "Node Templates": "Plantillas de Nodos",
+    "Outputs": "Salidas",
+    "Pin": "Anclar",
+    "Properties": "Propiedades",
+    "Properties Panel": "Panel de Propiedades",
+    "Remove": "Eliminar",
+    "Resize": "Redimensionar",
+    "Save Selected as Template": "Guardar Seleccionado como Plantilla",
+    "Search": "Buscar",
+    "Shapes": "Formas",
+    "Title": "Título",
+    "Unpin": "Desanclar"
+  },
+  "dataTypes": {
+    "AUDIO": "AUDIO",
+    "BOOLEAN": "BOOLEANO",
+    "CLIP": "CLIP",
+    "CLIP_VISION": "CLIP_VISION",
+    "CLIP_VISION_OUTPUT": "SALIDA_CLIP_VISION",
+    "COMBO": "COMBO",
+    "CONDITIONING": "ACONDICIONAMIENTO",
+    "CONTROL_NET": "RED_DE_CONTROL",
+    "FLOAT": "FLOTANTE",
+    "FLOATS": "FLOTANTES",
+    "GLIGEN": "GLIGEN",
+    "GUIDER": "GUÍA",
+    "HOOKS": "GANCHOS",
+    "HOOK_KEYFRAMES": "GANCHO_FOTOGRAMAS_CLAVE",
+    "IMAGE": "IMAGEN",
+    "INT": "ENTERO",
+    "LATENT": "LATENTE",
+    "LATENT_OPERATION": "OPERACIÓN_LATENTE",
+    "LOAD_3D": "CARGAR_3D",
+    "LOAD_3D_ANIMATION": "CARGAR_ANIMACIÓN_3D",
+    "MASK": "MASK",
+    "MESH": "MALLA",
+    "MODEL": "MODELO",
+    "NOISE": "RUIDO",
+    "PHOTOMAKER": "PHOTOMAKER",
+    "SAMPLER": "MUESTREADOR",
+    "SIGMAS": "SIGMAS",
+    "STRING": "CADENA",
+    "STYLE_MODEL": "MODELO_DE_ESTILO",
+    "TIMESTEPS_RANGE": "RANGO_DE_PASOS_DE_TIEMPO",
+    "UPSCALE_MODEL": "MODELO_DE_ESCALADO",
+    "VAE": "VAE",
+    "VOXEL": "VOXEL",
+    "WEBCAM": "WEBCAM"
+  },
+  "desktopMenu": {
+    "confirmQuit": "Hay flujos de trabajo abiertos sin guardar; se perderán los cambios no guardados. ¿Ignorar esto y salir?",
+    "confirmReinstall": "Esto borrará su archivo extra_models_config.yaml,\ny comenzará la instalación nuevamente.\n\n¿Estás seguro?",
+    "quit": "Salir",
+    "reinstall": "Reinstalar"
+  },
+  "desktopUpdate": {
+    "description": "ComfyUI Desktop está instalando nuevas dependencias. Esto puede tardar unos minutos.",
+    "terminalDefaultMessage": "Cualquier salida de consola de la actualización se mostrará aquí.",
+    "title": "Actualizando ComfyUI Desktop"
+  },
+  "downloadGit": {
+    "gitWebsite": "Descargar git",
+    "instructions": "Por favor, descarga e instala la última versión para tu sistema operativo. El botón Descargar git de abajo abre la página de descargas de git-scm.com.",
+    "message": "No se puede localizar git. Se requiere una copia funcional de git para el funcionamiento normal.",
+    "skip": "Saltar",
+    "title": "Descargar git",
+    "warning": "Si estás seguro de que no necesitas instalar git, o ha habido un error, puedes hacer clic en Saltar para eludir esta comprobación. Intentar ejecutar ComfyUI sin una copia funcional de git no está actualmente soportado."
+  },
+  "electronFileDownload": {
+    "cancel": "Cancelar descarga",
+    "cancelled": "Cancelado",
+    "inProgress": "En progreso",
+    "pause": "Pausar descarga",
+    "paused": "Pausado",
+    "resume": "Reanudar descarga"
+  },
+  "errorDialog": {
+    "defaultTitle": "Ocurrió un error",
+    "extensionFileHint": "Esto puede deberse al siguiente script",
+    "loadWorkflowTitle": "La carga se interrumpió debido a un error al recargar los datos del flujo de trabajo",
+    "noStackTrace": "No hay seguimiento de pila disponible"
+  },
+  "g": {
+    "about": "Acerca de",
+    "add": "Añadir",
+    "all": "Todo",
+    "apply": "Aplicar",
+    "back": "Atrás",
+    "cancel": "Cancelar",
+    "capture": "captura",
+    "category": "Categoría",
+    "choose_file_to_upload": "elige archivo para subir",
+    "close": "Cerrar",
+    "color": "Color",
+    "comingSoon": "Próximamente",
+    "command": "Comando",
+    "community": "Comunidad",
+    "completed": "Completado",
+    "confirm": "Confirmar",
+    "confirmed": "Confirmado",
+    "continue": "Continuar",
+    "control_after_generate": "control después de generar",
+    "control_before_generate": "control antes de generar",
+    "copyToClipboard": "Copiar al portapapeles",
+    "currentUser": "Usuario actual",
+    "customize": "Personalizar",
+    "customizeFolder": "Personalizar carpeta",
+    "delete": "Eliminar",
+    "deprecated": "DEPR",
+    "description": "Descripción",
+    "devices": "Dispositivos",
+    "disableAll": "Deshabilitar todo",
+    "download": "Descargar",
+    "empty": "Vacío",
+    "enableAll": "Habilitar todo",
+    "enabled": "Habilitado",
+    "error": "Error",
+    "experimental": "BETA",
+    "export": "Exportar",
+    "extensionName": "Nombre de la extensión",
+    "feedback": "Retroalimentación",
+    "filter": "Filtrar",
+    "findIssues": "Encontrar problemas",
+    "firstTimeUIMessage": "Esta es la primera vez que usas la nueva interfaz. Elige \"Menú > Usar nuevo menú > Desactivado\" para restaurar la antigua interfaz.",
+    "goToNode": "Ir al nodo",
+    "icon": "Icono",
+    "imageFailedToLoad": "Falló la carga de la imagen",
+    "import": "Importar",
+    "inProgress": "En progreso",
+    "insert": "Insertar",
+    "install": "Instalar",
+    "installed": "Instalado",
+    "installing": "Instalando",
+    "interrupted": "Interrumpido",
+    "keybinding": "Combinación de teclas",
+    "loadAllFolders": "Cargar todas las carpetas",
+    "loadWorkflow": "Cargar flujo de trabajo",
+    "loading": "Cargando",
+    "logs": "Registros",
+    "missing": "Faltante",
+    "name": "Nombre",
+    "newFolder": "Nueva carpeta",
+    "next": "Siguiente",
+    "no": "No",
+    "noResultsFound": "No se encontraron resultados",
+    "noTasksFound": "No se encontraron tareas",
+    "noTasksFoundMessage": "No hay tareas en la cola.",
+    "noWorkflowsFound": "No se encontraron flujos de trabajo.",
+    "nodes": "Nodos",
+    "ok": "OK",
+    "openNewIssue": "Abrir nuevo problema",
+    "overwrite": "Sobrescribir",
+    "reconnected": "Reconectado",
+    "reconnecting": "Reconectando",
+    "refresh": "Actualizar",
+    "reloadToApplyChanges": "Recargar para aplicar cambios",
+    "rename": "Renombrar",
+    "reportIssue": "Enviar informe",
+    "reportIssueTooltip": "Enviar el informe de error a Comfy Org",
+    "reportSent": "Informe enviado",
+    "reset": "Restablecer",
+    "resetKeybindingsTooltip": "Restablecer combinaciones de teclas a la configuración predeterminada",
+    "restart": "Reiniciar",
+    "resultsCount": "Encontrados {count} resultados",
+    "save": "Guardar",
+    "saving": "Guardando",
+    "searchExtensions": "Buscar extensiones",
+    "searchFailedMessage": "No pudimos encontrar ninguna configuración que coincida con tu búsqueda. Intenta ajustar tus términos de búsqueda.",
+    "searchKeybindings": "Buscar combinaciones de teclas",
+    "searchModels": "Buscar modelos",
+    "searchNodes": "Buscar nodos",
+    "searchSettings": "Buscar configuraciones",
+    "searchWorkflows": "Buscar flujos de trabajo",
+    "settings": "Configuraciones",
+    "showReport": "Mostrar informe",
+    "sort": "Ordenar",
+    "status": "Estado",
+    "success": "Éxito",
+    "systemInfo": "Información del sistema",
+    "terminal": "Terminal",
+    "update": "Actualizar",
+    "updated": "Actualizado",
+    "upload": "Subir",
+    "videoFailedToLoad": "Falló la carga del video",
+    "workflow": "Flujo de trabajo"
+  },
+  "graphCanvasMenu": {
+    "fitView": "Ajustar vista",
+    "panMode": "Modo de desplazamiento",
+    "resetView": "Restablecer vista",
+    "selectMode": "Modo de selección",
+    "toggleLinkVisibility": "Alternar visibilidad de enlace",
+    "zoomIn": "Acercar",
+    "zoomOut": "Alejar"
+  },
+  "groupNode": {
+    "create": "Crear nodo de grupo",
+    "enterName": "Introduzca el nombre"
+  },
+  "icon": {
+    "bookmark": "Marcador",
+    "box": "Caja",
+    "briefcase": "Maletín",
+    "exclamation-triangle": "Advertencia",
+    "file": "Archivo",
+    "folder": "Carpeta",
+    "heart": "Corazón",
+    "inbox": "Bandeja de entrada",
+    "star": "Estrella"
+  },
+  "install": {
+    "appDataLocationTooltip": "Directorio de datos de la aplicación ComfyUI. Almacena:\n- Registros\n- Configuraciones del servidor",
+    "appPathLocationTooltip": "Directorio de activos de la aplicación ComfyUI. Almacena el código y los activos de ComfyUI",
+    "cannotWrite": "No se puede escribir en la ruta seleccionada",
+    "chooseInstallationLocation": "Elegir Ubicación de Instalación",
+    "customNodes": "Nodos Personalizados",
+    "customNodesDescription": "Reinstala los nodos personalizados de las instalaciones existentes de ComfyUI.",
+    "desktopAppSettings": "Configuraciones de la Aplicación de Escritorio",
+    "desktopAppSettingsDescription": "Configura cómo se comporta ComfyUI en tu escritorio. Puedes cambiar estas configuraciones más tarde.",
+    "desktopSettings": "Configuraciones de Escritorio",
+    "failedToSelectDirectory": "Falló al seleccionar el directorio",
+    "gpu": "GPU",
+    "gpuSelection": {
+      "cpuMode": "Modo CPU",
+      "cpuModeDescription": "El modo CPU está destinado para desarrolladores y casos extremos raros solamente.",
+      "cpuModeDescription2": "Si no estás absolutamente seguro de que necesitas esto, por favor ignora esta casilla y selecciona tu GPU arriba.",
+      "customComfyNeedsPython": "ComfyUI no funcionará hasta que python esté configurado",
+      "customInstallRequirements": "Instalar todos los requisitos y dependencias (ej. torch personalizado)",
+      "customManualVenv": "Configurar manualmente el entorno virtual de python",
+      "customMayNotWork": "Esto no está soportado en absoluto, y simplemente puede que no funcione",
+      "customSkipsPython": "Esta opción omite la configuración normal de python.",
+      "enableCpuMode": "Habilitar Modo CPU",
+      "mpsDescription": "Los Shaders de Rendimiento de Metal de Apple son soportados usando pytorch nightly.",
+      "nvidiaDescription": "Los dispositivos NVIDIA son directamente soportados usando compilaciones de pytorch CUDA.",
+      "selectGpu": "Seleccionar GPU",
+      "selectGpuDescription": "Selecciona el tipo de GPU que tienes"
+    },
+    "helpImprove": "Por favor ayuda a mejorar ComfyUI",
+    "installLocation": "Ubicación de Instalación",
+    "installLocationDescription": "Selecciona el directorio para los datos de usuario de ComfyUI. Un entorno de python será instalado en la ubicación seleccionada.",
+    "installLocationTooltip": "Directorio de datos de usuario de ComfyUI. Almacena:\n- Entorno Python\n- Modelos\n- Nodos personalizados\n",
+    "insufficientFreeSpace": "Espacio insuficiente - espacio libre mínimo",
+    "isOneDrive": "OneDrive no es compatible. Por favor instala ComfyUI en otra ubicación.",
+    "manualConfiguration": {
+      "createVenv": "Necesitarás crear un entorno virtual en el siguiente directorio",
+      "requirements": "Requisitos",
+      "restartWhenFinished": "Cuando hayas terminado de configurar el entorno virtual, por favor reinicia ComfyUI.",
+      "title": "Configuración Manual",
+      "virtualEnvironmentPath": "Ruta del entorno virtual"
+    },
+    "metricsDisabled": "Métricas Deshabilitadas",
+    "metricsEnabled": "Métricas Habilitadas",
+    "migrateFromExistingInstallation": "Migrar desde una Instalación Existente",
+    "migration": "Migración",
+    "migrationOptional": "La migración es opcional. Si no tienes una instalación existente, puedes saltarte este paso.",
+    "migrationSourcePathDescription": "Si tienes una instalación existente de ComfyUI, podemos copiar/enlazar tus archivos de usuario existentes y modelos a la nueva instalación. Tu instalación existente de ComfyUI no será afectada.",
+    "moreInfo": "Para más información, por favor lee nuestra",
+    "nonDefaultDrive": "Por favor instala ComfyUI en tu unidad de sistema (ej. C:\\). Las unidades con diferentes sistemas de archivos pueden causar problemas impredecibles. Los modelos y otros archivos pueden ser almacenados en otras unidades después de la instalación.",
+    "parentMissing": "La ruta no existe - crea el directorio contenedor primero",
+    "pathExists": "El directorio ya existe - por favor asegúrate de haber respaldado todos los datos",
+    "pathValidationFailed": "Falló la validación de la ruta",
+    "privacyPolicy": "política de privacidad",
+    "selectItemsToMigrate": "Selecciona los Elementos a Migrar",
+    "settings": {
+      "allowMetrics": "Métricas de Uso",
+      "allowMetricsDescription": "Ayuda a mejorar ComfyUI enviando métricas de uso anónimas. No se recogerá ninguna información personal o contenido de flujo de trabajo.",
+      "autoUpdate": "Actualizaciones Automáticas",
+      "autoUpdateDescription": "Descarga automáticamente las actualizaciones cuando estén disponibles. Se te notificará antes de que las actualizaciones sean instaladas.",
+      "checkingMirrors": "Comprobando el acceso a la red a los espejos de python...",
+      "dataCollectionDialog": {
+        "collect": {
+          "errorReports": "Mensaje de error y rastreo de pila",
+          "systemInfo": "Hardware, tipo de SO y versión de la aplicación",
+          "userJourneyEvents": "Eventos de trayectoria del usuario"
+        },
+        "doNotCollect": {
+          "customNodeConfigurations": "Configuraciones de nodo personalizadas",
+          "fileSystemInformation": "Información del sistema de archivos",
+          "personalInformation": "Información personal",
+          "workflowContents": "Contenidos de flujo de trabajo"
+        },
+        "title": "Acerca de la Recolección de Datos",
+        "viewFullPolicy": "Ver política completa",
+        "whatWeCollect": "Lo que recogemos:",
+        "whatWeDoNotCollect": "Lo que no recogemos:"
+      },
+      "errorUpdatingConsent": "Error Actualizando Consentimiento",
+      "errorUpdatingConsentDetail": "Falló al actualizar la configuración de consentimiento de métricas",
+      "learnMoreAboutData": "Aprende más sobre la recolección de datos",
+      "mirrorSettings": "Configuraciones de Espejo",
+      "mirrorsReachable": "El acceso a la red a los espejos de python es bueno",
+      "mirrorsUnreachable": "El acceso a la red a algunos espejos de python es malo",
+      "pypiMirrorPlaceholder": "Ingresa la URL del espejo de PyPI",
+      "pythonMirrorPlaceholder": "Ingresa la URL del espejo de Python"
+    },
+    "systemLocations": "Ubicaciones del Sistema",
+    "unhandledError": "Error desconocido",
+    "updateConsent": "Anteriormente optaste por reportar fallos. Ahora estamos rastreando métricas basadas en eventos para ayudar a identificar errores y mejorar la aplicación. No se recoge ninguna información personal identificable."
+  },
+  "issueReport": {
+    "contactFollowUp": "Contáctame para seguimiento",
+    "feedbackTitle": "Ayúdanos a mejorar ComfyUI proporcionando comentarios",
+    "helpFix": "Ayuda a Solucionar Esto",
+    "notifyResolve": "Notifícame cuando se resuelva",
+    "provideAdditionalDetails": "Proporciona detalles adicionales (opcional)",
+    "provideEmail": "Danos tu correo electrónico (opcional)",
+    "rating": "Calificación",
+    "stackTrace": "Rastreo de Pila",
+    "submitErrorReport": "Enviar Reporte de Error (Opcional)",
+    "systemStats": "Estadísticas del Sistema",
+    "validation": {
+      "invalidEmail": "Por favor ingresa una dirección de correo electrónico válida",
+      "maxLength": "Mensaje demasiado largo"
+    }
+  },
+  "load3d": {
+    "applyingTexture": "Aplicando textura...",
+    "backgroundColor": "Color de fondo",
+    "camera": "Cámara",
+    "edgeThreshold": "Umbral de borde",
+    "export": "Exportar",
+    "exportModel": "Exportar modelo",
+    "exportingModel": "Exportando modelo...",
+    "fov": "FOV",
+    "light": "Luz",
+    "lightIntensity": "Intensidad de luz",
+    "loadingModel": "Cargando modelo 3D...",
+    "materialMode": "Modo de material",
+    "model": "Modelo",
+    "previewOutput": "Vista previa de salida",
+    "removeBackgroundImage": "Eliminar imagen de fondo",
+    "scene": "Escena",
+    "showGrid": "Mostrar cuadrícula",
+    "switchCamera": "Cambiar cámara",
+    "switchingMaterialMode": "Cambiando modo de material...",
+    "upDirection": "Dirección hacia arriba",
+    "uploadBackgroundImage": "Subir imagen de fondo",
+    "uploadTexture": "Subir textura"
+  },
+  "maintenance": {
+    "None": "Ninguno",
+    "OK": "OK",
+    "Skipped": "Omitido",
+    "allOk": "No se detectaron problemas.",
+    "confirmTitle": "¿Estás seguro?",
+    "consoleLogs": "Registros de la consola",
+    "detected": "Detectado",
+    "error": {
+      "cannotContinue": "No se puede continuar - quedan errores",
+      "defaultDescription": "Ocurrió un error mientras se ejecutaba una tarea de mantenimiento.",
+      "taskFailed": "La tarea falló al ejecutarse.",
+      "toastTitle": "Error de tarea"
+    },
+    "refreshing": "Actualizando",
+    "showManual": "Mostrar tareas de mantenimiento",
+    "status": "Estado",
+    "terminalDefaultMessage": "Cuando ejecutes un comando de solución de problemas, cualquier salida se mostrará aquí.",
+    "title": "Mantenimiento"
+  },
+  "manager": {
+    "createdBy": "Creado Por",
+    "dependencies": "Dependencias",
+    "discoverCommunityContent": "Descubre paquetes de nodos, extensiones y más creados por la comunidad...",
+    "downloads": "Descargas",
+    "errorConnecting": "Error al conectar con el Registro de Nodos Comfy.",
+    "filter": {
+      "disabled": "Deshabilitado",
+      "enabled": "Habilitado",
+      "nodePack": "Paquete de Nodos"
+    },
+    "inWorkflow": "En Flujo de Trabajo",
+    "infoPanelEmpty": "Haz clic en un elemento para ver la información",
+    "installSelected": "Instalar Seleccionado",
+    "lastUpdated": "Última Actualización",
+    "latestVersion": "Última",
+    "license": "Licencia",
+    "loadingVersions": "Cargando versiones...",
+    "nightlyVersion": "Nocturna",
+    "noDescription": "No hay descripción disponible",
+    "noResultsFound": "No se encontraron resultados que coincidan con tu búsqueda.",
+    "nodePack": "Paquete de Nodos",
+    "packsSelected": "Paquetes Seleccionados",
+    "repository": "Repositorio",
+    "restartToApplyChanges": "Para aplicar los cambios, por favor reinicia ComfyUI",
+    "searchPlaceholder": "Buscar",
+    "selectVersion": "Seleccionar Versión",
+    "sort": {
+      "downloads": "Más Popular",
+      "rating": "Calificación"
+    },
+    "status": {
+      "active": "Activo",
+      "banned": "Prohibido",
+      "deleted": "Eliminado",
+      "flagged": "Marcado",
+      "pending": "Pendiente",
+      "unknown": "Desconocido"
+    },
+    "title": "Administrador de Nodos Personalizados",
+    "totalNodes": "Total de Nodos",
+    "tryAgainLater": "Por favor intenta de nuevo más tarde.",
+    "tryDifferentSearch": "Por favor intenta con una consulta de búsqueda diferente.",
+    "uninstall": "Desinstalar",
+    "uninstallSelected": "Desinstalar Seleccionado",
+    "uninstalling": "Desinstalando",
+    "update": "Actualizar",
+    "version": "Versión"
+  },
+  "maskEditor": {
+    "Apply to Whole Image": "Aplicar a toda la imagen",
+    "Brush Settings": "Configuración de pincel",
+    "Brush Shape": "Forma de pincel",
+    "Clear": "Borrar",
+    "Color Select Settings": "Configuración de selección de color",
+    "Fill Opacity": "Opacidad de relleno",
+    "Hardness": "Dureza",
+    "Image Layer": "Capa de imagen",
+    "Invert": "Invertir",
+    "Layers": "Capas",
+    "Live Preview": "Vista previa en vivo",
+    "Mask Layer": "Capa de máscara",
+    "Mask Opacity": "Opacidad de máscara",
+    "Mask Tolerance": "Tolerancia de máscara",
+    "Method": "Método",
+    "Opacity": "Opacidad",
+    "Paint Bucket Settings": "Configuración de cubo de pintura",
+    "Reset to Default": "Restablecer a predeterminado",
+    "Selection Opacity": "Opacidad de selección",
+    "Smoothing Precision": "Precisión de suavizado",
+    "Stop at mask": "Detener en máscara",
+    "Thickness": "Grosor",
+    "Tolerance": "Tolerancia"
+  },
+  "menu": {
+    "autoQueue": "Cola automática",
+    "batchCount": "Conteo de lotes",
+    "batchCountTooltip": "El número de veces que la generación del flujo de trabajo debe ser encolada",
+    "clear": "Limpiar flujo de trabajo",
+    "clipspace": "Abrir Clipspace",
+    "disabled": "Deshabilitado",
+    "disabledTooltip": "El flujo de trabajo no se encolará automáticamente",
+    "execute": "Ejecutar",
+    "hideMenu": "Ocultar menú",
+    "instant": "Instantáneo",
+    "instantTooltip": "El flujo de trabajo se encolará instantáneamente después de que finalice una generación",
+    "interrupt": "Cancelar ejecución actual",
+    "onChange": "Al cambiar",
+    "onChangeTooltip": "El flujo de trabajo se encolará una vez que se haga un cambio",
+    "refresh": "Actualizar definiciones de nodos",
+    "resetView": "Restablecer vista del lienzo",
+    "run": "Ejecutar",
+    "runWorkflow": "Ejecutar flujo de trabajo (Shift para encolar al frente)",
+    "runWorkflowFront": "Ejecutar flujo de trabajo (Encolar al frente)",
+    "showMenu": "Mostrar menú",
+    "toggleBottomPanel": "Alternar panel inferior"
+  },
+  "menuLabels": {
+    "About ComfyUI": "Acerca de ComfyUI",
+    "Browse Templates": "Explorar plantillas",
+    "Bypass/Unbypass Selected Nodes": "Evitar/No evitar nodos seleccionados",
+    "Canvas Toggle Link Visibility": "Alternar visibilidad de enlace en lienzo",
+    "Canvas Toggle Lock": "Alternar bloqueo en lienzo",
+    "Clear Pending Tasks": "Borrar tareas pendientes",
+    "Clear Workflow": "Borrar flujo de trabajo",
+    "Clipspace": "Espacio de clip",
+    "Close Current Workflow": "Cerrar flujo de trabajo actual",
+    "Collapse/Expand Selected Nodes": "Contraer/Expandir nodos seleccionados",
+    "Comfy-Org Discord": "Discord de Comfy-Org",
+    "ComfyUI Docs": "Documentos de ComfyUI",
+    "ComfyUI Forum": "Foro de ComfyUI",
+    "ComfyUI Issues": "Problemas de ComfyUI",
+    "Convert selected nodes to group node": "Convertir nodos seleccionados en nodo de grupo",
+    "Custom Nodes Manager": "Gestor de nodos personalizados",
+    "Delete Selected Items": "Eliminar elementos seleccionados",
+    "Desktop User Guide": "Guía de usuario de escritorio",
+    "Duplicate Current Workflow": "Duplicar flujo de trabajo actual",
+    "Edit": "Editar",
+    "Export": "Exportar",
+    "Export (API)": "Exportar (API)",
+    "Fit Group To Contents": "Ajustar grupo a contenidos",
+    "Fit view to selected nodes": "Ajustar vista a los nodos seleccionados",
+    "Give Feedback": "Dar retroalimentación",
+    "Group Selected Nodes": "Agrupar nodos seleccionados",
+    "Help": "Ayuda",
+    "Interrupt": "Interrumpir",
+    "Load Default Workflow": "Cargar flujo de trabajo predeterminado",
+    "Manage group nodes": "Gestionar nodos de grupo",
+    "Mute/Unmute Selected Nodes": "Silenciar/Activar sonido de nodos seleccionados",
+    "New": "Nuevo",
+    "Next Opened Workflow": "Siguiente flujo de trabajo abierto",
+    "Open": "Abrir",
+    "Open Custom Nodes Folder": "Abrir carpeta de nodos personalizados",
+    "Open DevTools": "Abrir DevTools",
+    "Open Inputs Folder": "Abrir carpeta de entradas",
+    "Open Logs Folder": "Abrir carpeta de registros",
+    "Open Models Folder": "Abrir carpeta de modelos",
+    "Open Outputs Folder": "Abrir carpeta de salidas",
+    "Open extra_model_paths_yaml": "Abrir extra_model_paths.yaml",
+    "Pin/Unpin Selected Items": "Anclar/Desanclar elementos seleccionados",
+    "Pin/Unpin Selected Nodes": "Anclar/Desanclar nodos seleccionados",
+    "Previous Opened Workflow": "Flujo de trabajo abierto anterior",
+    "Queue Prompt": "Indicador de cola",
+    "Queue Prompt (Front)": "Indicador de cola (Frente)",
+    "Quit": "Salir",
+    "Redo": "Rehacer",
+    "Refresh Node Definitions": "Actualizar definiciones de nodo",
+    "Reinstall": "Reinstalar",
+    "Reset View": "Restablecer vista",
+    "Restart": "Reiniciar",
+    "Save": "Guardar",
+    "Save As": "Guardar como",
+    "Show Settings Dialog": "Mostrar diálogo de configuración",
+    "Toggle Bottom Panel": "Alternar panel inferior",
+    "Toggle Focus Mode": "Alternar modo de enfoque",
+    "Toggle Logs Bottom Panel": "Alternar panel inferior de registros",
+    "Toggle Model Library Sidebar": "Alternar barra lateral de biblioteca de modelos",
+    "Toggle Node Library Sidebar": "Alternar barra lateral de biblioteca de nodos",
+    "Toggle Progress Dialog": "Alternar diálogo de progreso",
+    "Toggle Queue Sidebar": "Alternar barra lateral de cola",
+    "Toggle Search Box": "Alternar caja de búsqueda",
+    "Toggle Terminal Bottom Panel": "Alternar panel inferior de terminal",
+    "Toggle Theme (Dark/Light)": "Alternar tema (Oscuro/Claro)",
+    "Toggle Workflows Sidebar": "Alternar barra lateral de flujos de trabajo",
+    "Undo": "Deshacer",
+    "Ungroup selected group nodes": "Desagrupar nodos de grupo seleccionados",
+    "Workflow": "Flujo de trabajo",
+    "Zoom In": "Acercar",
+    "Zoom Out": "Alejar"
+  },
+  "missingModelsDialog": {
+    "doNotAskAgain": "No mostrar esto de nuevo",
+    "missingModels": "Modelos faltantes",
+    "missingModelsMessage": "Al cargar el gráfico, no se encontraron los siguientes modelos"
+  },
+  "nodeCategories": {
+    "3d": "3d",
+    "3d_models": "modelos_3d",
+    "_for_testing": "_para_pruebas",
+    "advanced": "avanzado",
+    "animation": "animación",
+    "api": "api",
+    "attention_experiments": "experimentos_de_atención",
+    "audio": "audio",
+    "batch": "lote",
+    "clip": "clip",
+    "combine": "combinar",
+    "compositing": "composición",
+    "cond pair": "par_cond",
+    "cond single": "cond único",
+    "conditioning": "acondicionamiento",
+    "controlnet": "controlnet",
+    "create": "crear",
+    "custom_sampling": "muestreo_personalizado",
+    "debug": "depurar",
+    "deprecated": "obsoleto",
+    "flux": "flux",
+    "gligen": "gligen",
+    "guidance": "orientación",
+    "guiders": "guías",
+    "hooks": "ganchos",
+    "image": "imagen",
+    "inpaint": "pintar",
+    "instructpix2pix": "instruirpix2pix",
+    "latent": "latent",
+    "loaders": "cargadores",
+    "ltxv": "ltxv",
+    "mask": "mask",
+    "model": "modelo",
+    "model_merging": "fusión_de_modelos",
+    "model_patches": "parches_de_modelo",
+    "model_specific": "modelo_específico",
+    "noise": "ruido",
+    "operations": "operaciones",
+    "photomaker": "photomaker",
+    "postprocessing": "postprocesamiento",
+    "preprocessors": "preprocesadores",
+    "samplers": "muestreadores",
+    "sampling": "muestreo",
+    "schedulers": "programadores",
+    "scheduling": "programación",
+    "sd3": "sd3",
+    "sigmas": "sigmas",
+    "stable_cascade": "stable_cascade",
+    "style_model": "modelo_de_estilo",
+    "transform": "transformar",
+    "unet": "unet",
+    "upscale_diffusion": "difusión_de_escalado",
+    "upscaling": "escalado",
+    "video": "video",
+    "video_models": "modelos_de_video"
+  },
+  "nodeTemplates": {
+    "enterName": "Introduzca el nombre",
+    "saveAsTemplate": "Guardar como plantilla"
+  },
+  "notSupported": {
+    "continue": "Continuar",
+    "continueTooltip": "Estoy seguro de que mi dispositivo es compatible",
+    "learnMore": "Aprender más",
+    "message": "Solo los siguientes dispositivos son compatibles:",
+    "reportIssue": "Reportar problema",
+    "supportedDevices": {
+      "macos": "MacOS (M1 o posterior)",
+      "windows": "Windows (GPU Nvidia con soporte CUDA)"
+    },
+    "title": "Tu dispositivo no es compatible"
+  },
+  "serverConfig": {
+    "modifiedConfigs": "Has modificado las siguientes configuraciones del servidor. Reinicia para aplicar los cambios.",
+    "restart": "Reiniciar",
+    "revertChanges": "Revertir cambios"
+  },
+  "serverConfigCategories": {
+    "Attention": "Atención",
+    "CUDA": "CUDA",
+    "Cache": "Caché",
+    "Directories": "Directorios",
+    "General": "General",
+    "Inference": "Inferencia",
+    "Memory": "Memoria",
+    "Network": "Red",
+    "Preview": "Vista previa"
+  },
+  "serverConfigItems": {
+    "cache-classic": {
+      "name": "Usar el sistema de caché clásico"
+    },
+    "cache-lru": {
+      "name": "Usar la caché LRU con un máximo de N resultados de nodo en caché.",
+      "tooltip": "Puede usar más RAM/VRAM."
+    },
+    "cpu-vae": {
+      "name": "Ejecutar VAE en CPU"
+    },
+    "cross-attention-method": {
+      "name": "Método de atención cruzada"
+    },
+    "cuda-device": {
+      "name": "Índice de dispositivo CUDA para usar"
+    },
+    "cuda-malloc": {
+      "name": "Usar CUDA malloc para la asignación de memoria"
+    },
+    "default-hashing-function": {
+      "name": "Función de hashing predeterminada para archivos de modelo"
+    },
+    "deterministic": {
+      "name": "Hacer que pytorch use algoritmos deterministas más lentos cuando puede.",
+      "tooltip": "Tenga en cuenta que esto puede no hacer que las imágenes sean deterministas en todos los casos."
+    },
+    "directml": {
+      "name": "Índice de dispositivo DirectML"
+    },
+    "disable-all-custom-nodes": {
+      "name": "Desactivar la carga de todos los nodos personalizados."
+    },
+    "disable-ipex-optimize": {
+      "name": "Desactivar la optimización de IPEX"
+    },
+    "disable-metadata": {
+      "name": "Desactivar el guardado de metadatos de solicitud en archivos."
+    },
+    "disable-smart-memory": {
+      "name": "Desactivar la gestión inteligente de memoria",
+      "tooltip": "Forzar a ComfyUI a descargar agresivamente a la ram regular en lugar de mantener los modelos en vram cuando puede."
+    },
+    "disable-xformers": {
+      "name": "Desactivar la optimización de xFormers"
+    },
+    "dont-print-server": {
+      "name": "No imprimir la salida del servidor en la consola."
+    },
+    "dont-upcast-attention": {
+      "name": "Prevenir la atención de upcast"
+    },
+    "enable-cors-header": {
+      "name": "Habilitar encabezado CORS: Use \"*\" para todos los orígenes o especifique el dominio"
+    },
+    "fast": {
+      "name": "Habilitar algunas optimizaciones no probadas y potencialmente deteriorantes de la calidad."
+    },
+    "force-channels-last": {
+      "name": "Forzar el formato de memoria de los canales al final"
+    },
+    "force-upcast-attention": {
+      "name": "Forzar la atención de upcast"
+    },
+    "global-precision": {
+      "name": "Precisión global de punto flotante",
+      "tooltip": "Precisión global de punto flotante"
+    },
+    "input-directory": {
+      "name": "Directorio de entrada"
+    },
+    "listen": {
+      "name": "Host: La dirección IP para escuchar"
+    },
+    "log-level": {
+      "name": "Nivel de verbosidad de registro"
+    },
+    "max-upload-size": {
+      "name": "Tamaño máximo de carga (MB)"
+    },
+    "output-directory": {
+      "name": "Directorio de salida"
+    },
+    "port": {
+      "name": "Puerto: El puerto para escuchar"
+    },
+    "preview-method": {
+      "name": "Método utilizado para las vistas previas latentes"
+    },
+    "preview-size": {
+      "name": "Tamaño de las imágenes de vista previa"
+    },
+    "reserve-vram": {
+      "name": "VRAM reservada (GB)",
+      "tooltip": "Establezca la cantidad de vram en GB que desea reservar para su uso por su sistema operativo/otro software. Por defecto, se reserva cierta cantidad dependiendo de su sistema operativo."
+    },
+    "text-encoder-precision": {
+      "name": "Precisión del codificador de texto",
+      "tooltip": "Precisión del codificador de texto"
+    },
+    "tls-certfile": {
+      "name": "Archivo de certificado TLS: Ruta al archivo de certificado TLS para HTTPS"
+    },
+    "tls-keyfile": {
+      "name": "Archivo de clave TLS: Ruta al archivo de clave TLS para HTTPS"
+    },
+    "unet-precision": {
+      "name": "Precisión de UNET",
+      "tooltip": "Precisión de UNET"
+    },
+    "vae-precision": {
+      "name": "Precisión de VAE",
+      "tooltip": "Precisión de VAE"
+    },
+    "vram-management": {
+      "name": "Modo de gestión de VRAM"
+    }
+  },
+  "serverStart": {
+    "openLogs": "Abrir registros",
+    "process": {
+      "error": "No se puede iniciar ComfyUI Desktop",
+      "initial-state": "Cargando...",
+      "python-setup": "Configurando el entorno de Python...",
+      "ready": "Finalizando...",
+      "starting-server": "Iniciando el servidor ComfyUI..."
+    },
+    "reportIssue": "Reportar problema",
+    "showTerminal": "Mostrar terminal",
+    "troubleshoot": "Solucionar problemas"
+  },
+  "settingsCategories": {
+    "About": "Acerca de",
+    "Appearance": "Apariencia",
+    "BrushAdjustment": "Ajuste de Pincel",
+    "Canvas": "Lienzo",
+    "ColorPalette": "Paleta de Colores",
+    "Comfy": "Comfy",
+    "Comfy-Desktop": "Comfy-Desktop",
+    "ContextMenu": "Menú Contextual",
+    "CustomColorPalettes": "Paletas de Colores Personalizadas",
+    "DevMode": "Modo de Desarrollo",
+    "EditTokenWeight": "Editar Peso del Token",
+    "Extension": "Extensión",
+    "General": "General",
+    "Graph": "Gráfico",
+    "Group": "Grupo",
+    "Keybinding": "Asignación de Teclas",
+    "Link": "Enlace",
+    "LinkRelease": "Liberación de Enlace",
+    "LiteGraph": "Lite Graph",
+    "Locale": "Localización",
+    "Mask Editor": "Editor de Máscara",
+    "Menu": "Menú",
+    "ModelLibrary": "Biblioteca de Modelos",
+    "NewEditor": "Nuevo Editor",
+    "Node": "Nodo",
+    "Node Search Box": "Caja de Búsqueda de Nodo",
+    "Node Widget": "Widget de Nodo",
+    "NodeInputConversionSubmenus": "Submenús de Conversión de Entrada de Nodo",
+    "NodeLibrary": "Biblioteca de Nodos",
+    "Pointer": "Puntero",
+    "Queue": "Cola",
+    "QueueButton": "Botón de Cola",
+    "RerouteBeta": "Reroute Beta",
+    "Server": "Servidor",
+    "Server-Config": "Configuración del Servidor",
+    "Settings": "Configuraciones",
+    "Sidebar": "Barra Lateral",
+    "Tree Explorer": "Explorador de Árbol",
+    "UV": "UV",
+    "Validation": "Validación",
+    "Window": "Ventana",
+    "Workflow": "Flujo de Trabajo"
+  },
+  "sideToolbar": {
+    "browseTemplates": "Explorar plantillas de ejemplo",
+    "downloads": "Descargas",
+    "logout": "Cerrar sesión",
+    "modelLibrary": "Biblioteca de modelos",
+    "newBlankWorkflow": "Crear un nuevo flujo de trabajo en blanco",
+    "nodeLibrary": "Biblioteca de nodos",
+    "nodeLibraryTab": {
+      "sortOrder": "Orden de clasificación"
+    },
+    "openWorkflow": "Abrir flujo de trabajo en el sistema de archivos local",
+    "queue": "Cola",
+    "queueTab": {
+      "backToAllTasks": "Volver a todas las tareas",
+      "clearPendingTasks": "Borrar tareas pendientes",
+      "containImagePreview": "Llenar vista previa de la imagen",
+      "coverImagePreview": "Ajustar vista previa de la imagen",
+      "filter": "Filtrar salidas",
+      "filters": {
+        "hideCached": "Ocultar en caché",
+        "hideCanceled": "Ocultar cancelados"
+      },
+      "showFlatList": "Mostrar lista plana"
+    },
+    "themeToggle": "Cambiar tema",
+    "workflowTab": {
+      "confirmDelete": "¿Estás seguro de que quieres eliminar este flujo de trabajo?",
+      "confirmDeleteTitle": "¿Eliminar flujo de trabajo?",
+      "confirmOverwrite": "El archivo a continuación ya existe. ¿Te gustaría sobrescribirlo?",
+      "confirmOverwriteTitle": "¿Sobrescribir archivo existente?",
+      "deleteFailed": "El intento de eliminar el flujo de trabajo ha fallado.",
+      "deleteFailedTitle": "Eliminación fallida",
+      "deleted": "Flujo de trabajo eliminado",
+      "dirtyClose": "Los archivos a continuación han sido modificados. ¿Te gustaría guardarlos antes de cerrar?",
+      "dirtyCloseHint": "Mantén presionada la tecla Shift para cerrar sin preguntar",
+      "dirtyCloseTitle": "¿Guardar cambios?",
+      "workflowTreeType": {
+        "bookmarks": "Marcadores",
+        "browse": "Explorar",
+        "open": "Abrir"
+      }
+    },
+    "workflows": "Flujos de trabajo"
+  },
+  "tabMenu": {
+    "addToBookmarks": "Agregar a marcadores",
+    "closeOtherTabs": "Cerrar otras pestañas",
+    "closeTab": "Cerrar pestaña",
+    "closeTabsToLeft": "Cerrar pestañas a la izquierda",
+    "closeTabsToRight": "Cerrar pestañas a la derecha",
+    "duplicateTab": "Duplicar pestaña",
+    "removeFromBookmarks": "Eliminar de marcadores"
+  },
+  "templateWorkflows": {
+    "category": {
+      "3D": "3D",
+      "Area Composition": "Composición de Área",
+      "Audio": "Audio",
+      "Basics": "Básicos",
+      "ComfyUI Examples": "Ejemplos de ComfyUI",
+      "ControlNet": "ControlNet",
+      "Custom Nodes": "Nodos Personalizados",
+      "Flux": "Flux",
+      "SD3_5": "SD3.5",
+      "SDXL": "SDXL",
+      "Upscaling": "Ampliación",
+      "Video": "Video"
+    },
+    "template": {
+      "3D": {
+        "hunyuan-3d-multiview-elf": "Hunyuan3D 2.0 MV",
+        "hunyuan-3d-turbo": "Hunyuan3D 2.0 MV Turbo",
+        "hunyuan3d-non-multiview-train": "Hunyuan3D 2.0",
+        "stable_zero123_example": "Estable Zero123"
+      },
+      "Area Composition": {
+        "area_composition": "Composición de Área",
+        "area_composition_reversed": "Composición de Área Invertida",
+        "area_composition_square_area_for_subject": "Composición de Área Cuadrada para el Sujeto"
+      },
+      "Audio": {
+        "stable_audio_example": "Audio Estable"
+      },
+      "Basics": {
+        "default": "Generación de Imagen",
+        "embedding_example": "Incrustación",
+        "gligen_textbox_example": "Caja de Texto Gligen",
+        "image2image": "Imagen a Imagen",
+        "inpain_model_outpainting": "Outpaint",
+        "inpaint_example": "Inpaint",
+        "lora": "Lora",
+        "lora_multiple": "Lora Múltiple"
+      },
+      "ControlNet": {
+        "2_pass_pose_worship": "ControlNet de Pose 2 Pasadas",
+        "controlnet_example": "ControlNet de Garabato",
+        "depth_controlnet": "ControlNet de Profundidad",
+        "depth_t2i_adapter": "Adaptador de Profundidad T2I",
+        "mixing_controlnets": "Mezcla de ControlNets"
+      },
+      "Flux": {
+        "flux_canny_model_example": "Flux Canny Model",
+        "flux_depth_lora_example": "Flux Depth Lora",
+        "flux_dev_checkpoint_example": "Flux Dev",
+        "flux_fill_inpaint_example": "Flux Inpaint",
+        "flux_fill_outpaint_example": "Flux Outpaint",
+        "flux_redux_model_example": "Flux Redux Model",
+        "flux_schnell": "Flux Schnell"
+      },
+      "SD3_5": {
+        "sd3_5_large_blur": "SD3.5 Grande Desenfoque",
+        "sd3_5_large_canny_controlnet_example": "SD3.5 Grande Canny ControlNet",
+        "sd3_5_large_depth": "SD3.5 Grande Profundidad",
+        "sd3_5_simple_example": "SD3.5 Simple"
+      },
+      "SDXL": {
+        "sdxl_refiner_prompt_example": "SDXL Refinador de Solicitud",
+        "sdxl_revision_text_prompts": "SDXL Revisión de Solicitud de Texto",
+        "sdxl_revision_zero_positive": "SDXL Revisión Cero Positivo",
+        "sdxl_simple_example": "SDXL Simple",
+        "sdxlturbo_example": "SDXL Turbo"
+      },
+      "Upscaling": {
+        "esrgan_example": "ESRGAN",
+        "hiresfix_esrgan_workflow": "Flujo de Trabajo HiresFix ESRGAN",
+        "hiresfix_latent_workflow": "Ampliación",
+        "latent_upscale_different_prompt_model": "Ampliación Latente Modelo de Solicitud Diferente"
+      },
+      "Video": {
+        "hunyuan_video_text_to_video": "Hunyuan Video Texto a Video",
+        "image_to_video": "SVD Imagen a Video",
+        "image_to_video_wan": "Wan 2.1 Imagen a Video",
+        "ltxv_image_to_video": "LTXV Imagen a Video",
+        "ltxv_text_to_video": "LTXV Texto a Video",
+        "mochi_text_to_video_example": "Mochi Texto a Video",
+        "text_to_video_wan": "Wan 2.1 Texto a Video",
+        "txt_to_image_to_video": "SVD Texto a Imagen a Video"
+      }
+    },
+    "title": "Comienza con una Plantilla"
+  },
+  "toastMessages": {
+    "couldNotDetermineFileType": "No se pudo determinar el tipo de archivo",
+    "dropFileError": "No se puede procesar el elemento soltado: {error}",
+    "emptyCanvas": "Lienzo vacío",
+    "errorCopyImage": "Error al copiar la imagen: {error}",
+    "errorLoadingModel": "Error al cargar el modelo",
+    "errorSaveSetting": "Error al guardar la configuración {id}: {err}",
+    "failedToApplyTexture": "Error al aplicar textura",
+    "failedToDownloadFile": "Error al descargar el archivo",
+    "failedToExportModel": "Error al exportar modelo como {format}",
+    "fileLoadError": "No se puede encontrar el flujo de trabajo en {fileName}",
+    "fileUploadFailed": "Error al subir el archivo",
+    "interrupted": "La ejecución ha sido interrumpida",
+    "no3dScene": "No hay escena 3D para aplicar textura",
+    "no3dSceneToExport": "No hay escena 3D para exportar",
+    "noTemplatesToExport": "No hay plantillas para exportar",
+    "nodeDefinitionsUpdated": "Definiciones de nodos actualizadas",
+    "nothingToGroup": "Nada para agrupar",
+    "pendingTasksDeleted": "Tareas pendientes eliminadas",
+    "pleaseSelectNodesToGroup": "Por favor, seleccione los nodos (u otros grupos) para crear un grupo para",
+    "unableToGetModelFilePath": "No se puede obtener la ruta del archivo del modelo",
+    "updateRequested": "Actualización solicitada"
+  },
+  "userSelect": {
+    "enterUsername": "Introduce un nombre de usuario",
+    "existingUser": "Usuario existente",
+    "newUser": "Nuevo usuario",
+    "next": "Siguiente",
+    "selectUser": "Selecciona un usuario"
+  },
+  "welcome": {
+    "getStarted": "Empezar",
+    "title": "Bienvenido a ComfyUI"
+  },
+  "workflowService": {
+    "enterFilename": "Introduzca el nombre del archivo",
+    "exportWorkflow": "Exportar flujo de trabajo",
+    "saveWorkflow": "Guardar flujo de trabajo"
+  }
+}
