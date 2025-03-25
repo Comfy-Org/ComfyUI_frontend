@@ -52,8 +52,11 @@ watch(
   (canvas: LGraphCanvas | null) => {
     if (!canvas) return
 
-    canvas.onSelectionChange = useChainCallback(canvas.onSelectionChange, () =>
-      positionSelectionOverlay(canvas)
+    canvas.onSelectionChange = useChainCallback(
+      canvas.onSelectionChange,
+      // Wait for next frame as sometimes the selected items haven't been
+      // rendered yet, so the boundingRect is not available on them.
+      () => requestAnimationFrame(() => positionSelectionOverlay(canvas))
     )
   },
   { immediate: true }
