@@ -11,7 +11,7 @@ import { Vector2 } from '@comfyorg/litegraph'
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
-import { st } from '@/i18n'
+import { st, t } from '@/i18n'
 import type { NodeId } from '@/schemas/comfyWorkflowSchema'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -264,8 +264,10 @@ export const useLitegraphService = () => {
               }
             } catch (error) {
               toastStore.addAlert(
-                // @ts-expect-error fixme ts strict error
-                'Error copying image: ' + (error.message ?? error)
+                t('toastMessages.errorCopyImage', {
+                  // @ts-expect-error fixme ts strict error
+                  error: error.message ?? error
+                })
               )
             }
           }

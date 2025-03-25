@@ -5,6 +5,7 @@ import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader'
 
+import { t } from '@/i18n'
 import { useToastStore } from '@/stores/toastStore'
 
 import {
@@ -67,7 +68,7 @@ export class LoaderManager implements LoaderManagerInterface {
       }
 
       if (!fileExtension) {
-        useToastStore().addAlert('Could not determine file type')
+        useToastStore().addAlert(t('toastMessages.couldNotDetermineFileType'))
         return
       }
 
@@ -81,7 +82,7 @@ export class LoaderManager implements LoaderManagerInterface {
     } catch (error) {
       this.eventManager.emitEvent('modelLoadingEnd', null)
       console.error('Error loading model:', error)
-      useToastStore().addAlert('Error loading model')
+      useToastStore().addAlert(t('toastMessages.errorLoadingModel'))
     }
   }
 

@@ -62,6 +62,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Load3DControls from '@/components/load3d/Load3DControls.vue'
 import Load3DScene from '@/components/load3d/Load3DScene.vue'
@@ -76,6 +77,7 @@ import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComponentWidget } from '@/scripts/domWidget'
 import { useToastStore } from '@/stores/toastStore'
 
+const { t } = useI18n()
 const { widget } = defineProps<{
   widget: ComponentWidget<string[]>
 }>()
@@ -158,7 +160,7 @@ const handleBackgroundImageUpdate = async (file: File | null) => {
 
 const handleUploadTexture = async (file: File) => {
   if (!load3DSceneRef.value?.load3d) {
-    useToastStore().addAlert('No 3D scene to apply texture')
+    useToastStore().addAlert(t('toastMessages.no3dScene'))
     return
   }
 
@@ -169,7 +171,7 @@ const handleUploadTexture = async (file: File) => {
     node.properties['Texture'] = texturePath
   } catch (error) {
     console.error('Error applying texture:', error)
-    useToastStore().addAlert('Failed to apply texture')
+    useToastStore().addAlert(t('toastMessages.failedToApplyTexture'))
   }
 }
 
@@ -205,7 +207,7 @@ const handleUpdateMaterialMode = (value: MaterialMode) => {
 
 const handleExportModel = async (format: string) => {
   if (!load3DSceneRef.value?.load3d) {
-    useToastStore().addAlert('No 3D scene to export')
+    useToastStore().addAlert(t('toastMessages.no3dSceneToExport'))
     return
   }
 
@@ -214,7 +216,9 @@ const handleExportModel = async (format: string) => {
   } catch (error) {
     console.error('Error exporting model:', error)
     useToastStore().addAlert(
-      `Failed to export model as ${format.toUpperCase()}`
+      t('toastMessages.failedToExportModel', {
+        format: format.toUpperCase()
+      })
     )
   }
 }

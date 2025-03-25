@@ -1602,8 +1602,8 @@ export class ComfyApp {
   async refreshComboInNodes() {
     const requestToastMessage: ToastMessageOptions = {
       severity: 'info',
-      summary: 'Update',
-      detail: 'Update requested'
+      summary: t('g.update'),
+      detail: t('toastMessages.updateRequested')
     }
     if (this.vueAppReady) {
       useToastStore().add(requestToastMessage)
@@ -1645,8 +1645,8 @@ export class ComfyApp {
       useToastStore().remove(requestToastMessage)
       useToastStore().add({
         severity: 'success',
-        summary: 'Updated',
-        detail: 'Node definitions updated',
+        summary: t('g.updated'),
+        detail: t('toastMessages.nodeDefinitionsUpdated'),
         life: 1000
       })
     }

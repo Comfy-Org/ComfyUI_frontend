@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useToastStore } from '@/stores/toastStore'
@@ -55,7 +56,9 @@ class Load3dUtils {
     } catch (error) {
       console.error('Upload error:', error)
       useToastStore().addAlert(
-        error instanceof Error ? error.message : 'Upload failed'
+        error instanceof Error
+          ? error.message
+          : t('toastMessages.fileUploadFailed')
       )
     }
 

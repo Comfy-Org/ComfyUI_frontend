@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import type { Settings } from '@/schemas/apiSchema'
 import type { ComfyApp } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'
@@ -85,7 +86,9 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
     useSettingStore()
       .set(id, value)
       .catch((err) => {
-        useToastStore().addAlert(`Error saving setting '${id}': ${err}`)
+        useToastStore().addAlert(
+          t('toastMessages.errorSaveSetting', { id, err })
+        )
       })
   }
 

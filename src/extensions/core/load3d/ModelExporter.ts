@@ -3,6 +3,7 @@ import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter'
 import { OBJExporter } from 'three/examples/jsm/exporters/OBJExporter'
 import { STLExporter } from 'three/examples/jsm/exporters/STLExporter'
 
+import { t } from '@/i18n'
 import { useToastStore } from '@/stores/toastStore'
 
 export class ModelExporter {
@@ -46,7 +47,7 @@ export class ModelExporter {
       URL.revokeObjectURL(link.href)
     } catch (error) {
       console.error('Error downloading from URL:', error)
-      useToastStore().addAlert('Failed to download file from URL')
+      useToastStore().addAlert(t('toastMessages.failedToDownloadFile'))
       throw error
     }
   }
@@ -84,7 +85,9 @@ export class ModelExporter {
       ModelExporter.saveArrayBuffer(result, filename)
     } catch (error) {
       console.error('Error exporting GLB:', error)
-      useToastStore().addAlert('Failed to export model as GLB')
+      useToastStore().addAlert(
+        t('toastMessages.failedToExportModel', { format: 'GLB' })
+      )
       throw error
     }
   }
@@ -111,7 +114,9 @@ export class ModelExporter {
       ModelExporter.saveString(result, filename)
     } catch (error) {
       console.error('Error exporting OBJ:', error)
-      useToastStore().addAlert('Failed to export model as OBJ')
+      useToastStore().addAlert(
+        t('toastMessages.failedToExportModel', { format: 'OBJ' })
+      )
       throw error
     }
   }
@@ -138,7 +143,9 @@ export class ModelExporter {
       ModelExporter.saveString(result, filename)
     } catch (error) {
       console.error('Error exporting STL:', error)
-      useToastStore().addAlert('Failed to export model as STL')
+      useToastStore().addAlert(
+        t('toastMessages.failedToExportModel', { format: 'STL' })
+      )
       throw error
     }
   }
