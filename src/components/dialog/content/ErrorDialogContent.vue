@@ -1,5 +1,5 @@
 <template>
-  <div class="load-workflow-error flex flex-col gap-4">
+  <div class="error-dialog-content flex flex-col gap-4">
     <NoResultsPlaceholder
       class="pb-0"
       icon="pi pi-exclamation-circle"
@@ -38,6 +38,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
@@ -46,9 +47,9 @@ import ReportIssuePanel from './error/ReportIssuePanel.vue'
 
 const { t } = useI18n()
 const {
-  title = t('errorDialog.defaultTitle'),
+  title: _title,
   errorMessage,
-  stackTrace = t('errorDialog.noStackTrace'),
+  stackTrace: _stackTrace,
   extensionFile,
   errorType = 'frontendError'
 } = defineProps<{
@@ -58,4 +59,7 @@ const {
   extensionFile?: string
   errorType?: string
 }>()
+
+const title = computed(() => _title ?? t('errorDialog.defaultTitle'))
+const stackTrace = computed(() => _stackTrace ?? t('errorDialog.noStackTrace'))
 </script>
