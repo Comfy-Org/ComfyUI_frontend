@@ -428,6 +428,16 @@ const zSettings = z.record(z.any()).and(
     .optional()
 )
 
+const zModelsDownloadSettings = z.record(z.any()).and(
+  z
+    .object({
+      allowedSources: z.array(z.string()),
+      allowedSuffixes: z.array(z.string()),
+      whiteListedUrls: z.array(z.string())
+    })
+    .optional()
+)
+
 export type EmbeddingsResponse = z.infer<typeof zEmbeddingsResponse>
 export type ExtensionsResponse = z.infer<typeof zExtensionsResponse>
 export type PromptResponse = z.infer<typeof zPromptResponse>
@@ -441,3 +451,4 @@ export type UserDataFullInfo = z.infer<typeof zUserDataFullInfo>
 export type TerminalSize = z.infer<typeof zTerminalSize>
 export type LogEntry = z.infer<typeof zLogEntry>
 export type LogsRawResponse = z.infer<typeof zLogRawResponse>
+export type ModelsDownloadSettings = z.infer<typeof zModelsDownloadSettings>

@@ -31,17 +31,19 @@
 </template>
 
 <script setup lang="ts">
+import { computedAsync } from '@vueuse/core'
 import Checkbox from 'primevue/checkbox'
 import ListBox from 'primevue/listbox'
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { onBeforeUnmount, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import FileDownload from '@/components/common/FileDownload.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
+import { api } from '@/scripts/api'
 import { useSettingStore } from '@/stores/settingStore'
 import { isElectron } from '@/utils/envUtil'
 
-const settingsStore = useSettingStore()
+let modelsDownloadConfig: any
 
 interface ModelInfo {
   name: string
@@ -65,18 +67,15 @@ const { t } = useI18n()
 const doNotAskAgain = ref(false)
 
 const modelDownloads = ref<Record<string, ModelInfo>>({})
-const missingModels = computed(() => {
-  // Custom models sources, extension and whitelist can be customized in user settings.
-  let allowedSources = settingsStore.get('Comfy.ModelLibrary.AllowedSources')
-  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
-    allowedSources.push('http://localhost:')
+const missingModels = computedAsync(async () => {
+  if (!modelsDownloadConfig) {
+    modelsDownloadConfig = await api.getModelsDownloadSettings()
   }
-  const allowedSuffixes = settingsStore.get(
-    'Comfy.ModelLibrary.AllowedSuffixes'
-  )
-  const whiteListedUrls = new Set(
-    settingsStore.get('Comfy.ModelLibrary.WhitelistedUrls')
-  )
+  // Custom models sources, extension and whitelist can be customized in user settings.
+  const allowedSources = modelsDownloadConfig.allowedSources || []
+  const allowedSuffixes = modelsDownloadConfig.allowedSuffixes || []
+  const whiteListedUrls = new Set(modelsDownloadConfig.whitelistedUrls || [])
+
   return props.missingModels.map((model) => {
     const paths = props.paths[model.directory]
     if (model.directory_invalid || !paths) {
