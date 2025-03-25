@@ -279,7 +279,8 @@ export const CORE_SETTINGS: SettingParams[] = [
       { value: 'ru', text: 'Русский' },
       { value: 'ja', text: '日本語' },
       { value: 'ko', text: '한국어' },
-      { value: 'fr', text: 'Français' }
+      { value: 'fr', text: 'Français' },
+      { value: 'es', text: 'Español' }
     ],
     defaultValue: () => navigator.language.split('-')[0] || 'en'
   },
