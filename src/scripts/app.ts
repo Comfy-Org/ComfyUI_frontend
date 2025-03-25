@@ -14,12 +14,12 @@ import { reactive } from 'vue'
 import { st, t } from '@/i18n'
 import type { ResultItem } from '@/schemas/apiSchema'
 import {
+  ComfyApiWorkflow,
   type ComfyWorkflowJSON,
   type ModelFile,
   type NodeId,
   validateComfyWorkflow
 } from '@/schemas/comfyWorkflowSchema'
-import { type ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { getFromWebmFile } from '@/scripts/metadata/ebml'
 import { getGltfBinaryMetadata } from '@/scripts/metadata/gltf'
@@ -63,8 +63,7 @@ import { type ComfyWidgetConstructor, ComfyWidgets } from './widgets'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
-// @ts-expect-error fixme ts strict error
-function sanitizeNodeName(string) {
+function sanitizeNodeName(string: string) {
   let entityMap = {
     '&': '',
     '<': '',
@@ -75,8 +74,7 @@ function sanitizeNodeName(string) {
     '=': ''
   }
   return String(string).replace(/[&<>"'`=]/g, function fromEntityMap(s) {
-    // @ts-expect-error fixme ts strict error
-    return entityMap[s]
+    return entityMap[s as keyof typeof entityMap]
   })
 }
 
@@ -92,14 +90,12 @@ type Clipspace = {
 export class ComfyApp {
   /**
    * List of entries to queue
-   * @type {{number: number, batchCount: number}[]}
    */
-  #queueItems = []
+  #queueItems: { number: number; batchCount: number }[] = []
   /**
    * If the queue is currently being processed
-   * @type {boolean}
    */
-  #processingQueue = false
+  #processingQueue: boolean = false
 
   /**
    * Content Clipboard
@@ -122,17 +118,13 @@ export class ComfyApp {
   graph: LGraph
   // @ts-expect-error fixme ts strict error
   canvas: LGraphCanvas
-  // @ts-expect-error fixme ts strict error
-  dragOverNode: LGraphNode | null
+  dragOverNode: LGraphNode | null = null
   // @ts-expect-error fixme ts strict error
   canvasEl: HTMLCanvasElement
-  // @ts-expect-error fixme ts strict error
-  lastNodeErrors: any[] | null
+  lastNodeErrors: any[] | null = null
   /** @type {ExecutionErrorWsMessage} */
-  // @ts-expect-error fixme ts strict error
-  lastExecutionError: { node_id?: NodeId } | null
-  // @ts-expect-error fixme ts strict error
-  configuringGraph: boolean
+  lastExecutionError: { node_id?: NodeId } | null = null
+  configuringGraph: boolean = false
   // @ts-expect-error fixme ts strict error
   ctx: CanvasRenderingContext2D
   bodyTop: HTMLElement
@@ -271,11 +263,9 @@ export class ComfyApp {
     ComfyApp.clipspace_return_node = null
   }
 
-  // @ts-expect-error fixme ts strict error
-  static copyToClipspace(node) {
+  static copyToClipspace(node: LGraphNode) {
     var widgets = null
     if (node.widgets) {
-      // @ts-expect-error fixme ts strict error
       widgets = node.widgets.map(({ type, name, value }) => ({
         type,
         name,
@@ -410,9 +400,8 @@ export class ComfyApp {
   #addRestoreWorkflowView() {
     const serialize = LGraph.prototype.serialize
     const self = this
-    LGraph.prototype.serialize = function () {
-      // @ts-expect-error fixme ts strict error
-      const workflow = serialize.apply(this, arguments)
+    LGraph.prototype.serialize = function (...args) {
+      const workflow = serialize.apply(this, args)
 
       // Store the drag & scale info in the serialized workflow if the setting is enabled
       if (useSettingStore().get('Comfy.EnableWorkflowViewRestore')) {
@@ -788,14 +777,13 @@ export class ComfyApp {
   #addAfterConfigureHandler() {
     const app = this
     const onConfigure = app.graph.onConfigure
-    app.graph.onConfigure = function () {
+    app.graph.onConfigure = function (...args) {
       // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
       for (const node of app.graph.nodes) {
         node.onGraphConfigured?.()
       }
 
-      // @ts-expect-error fixme ts strict error
-      const r = onConfigure?.apply(this, arguments)
+      const r = onConfigure?.apply(this, args)
 
       // Fire after onConfigure, used by primitives to generate widget using input nodes config
       for (const node of app.graph.nodes) {
@@ -880,12 +868,9 @@ export class ComfyApp {
     this.canvas?.draw(true, true)
   }
 
-  private updateVueAppNodeDefs(
-    defs: Record<string, ComfyNodeDefV1 & ComfyNodeDefV2>
-  ) {
+  private updateVueAppNodeDefs(defs: Record<string, ComfyNodeDefV1>) {
     // Frontend only nodes registered by custom nodes.
     // Example: https://github.com/rgthree/rgthree-comfy/blob/dd534e5384be8cf0c0fa35865afe2126ba75ac55/src_web/comfyui/fast_groups_bypasser.ts#L10
-    // @ts-expect-error fixme ts strict error
     const rawDefs: Record<string, ComfyNodeDefV1> = Object.fromEntries(
       Object.entries(LiteGraph.registered_node_types).map(([name, node]) => [
         name,
@@ -897,9 +882,10 @@ export class ComfyApp {
           output: [],
           output_name: [],
           output_is_list: [],
+          output_node: false,
           python_module: 'custom_nodes.frontend_only',
           description: `Frontend only node for ${name}`
-        }
+        } as ComfyNodeDefV1
       ])
     )
 
@@ -926,10 +912,9 @@ export class ComfyApp {
         `nodeDefs.${def.name}.display_name`,
         def.display_name ?? def.name
       ),
-      // @ts-expect-error fixme ts strict error
       description: def.description
         ? st(`nodeDefs.${def.name}.description`, def.description)
-        : undefined,
+        : '',
       category: def.category
         .split('/')
         .map((category: string) => st(`nodeCategories.${category}`, category))
@@ -953,7 +938,6 @@ export class ComfyApp {
     await this.registerNodesFromDefs(defs)
     await useExtensionService().invokeExtensionsAsync('registerCustomNodes')
     if (this.vueAppReady) {
-      // @ts-expect-error fixme ts strict error
       this.updateVueAppNodeDefs(defs)
     }
   }
@@ -1266,7 +1250,6 @@ export class ComfyApp {
   }
 
   async queuePrompt(number: number, batchCount: number = 1): Promise<boolean> {
-    // @ts-expect-error fixme ts strict error
     this.#queueItems.push({ number, batchCount })
 
     // Only have one action process the items so each one gets a unique seed correctly
@@ -1279,8 +1262,7 @@ export class ComfyApp {
 
     try {
       while (this.#queueItems.length) {
-        // @ts-expect-error fixme ts strict error
-        ;({ number, batchCount } = this.#queueItems.pop())
+        const { number, batchCount } = this.#queueItems.pop()!
 
         for (let i = 0; i < batchCount; i++) {
           // Allow widgets to run callbacks before a prompt has been queued
@@ -1290,20 +1272,19 @@ export class ComfyApp {
           const p = await this.graphToPrompt()
           try {
             const res = await api.queuePrompt(number, p)
-            // @ts-expect-error fixme ts strict error
-            this.lastNodeErrors = res.node_errors
-            // @ts-expect-error fixme ts strict error
-            if (this.lastNodeErrors.length > 0) {
+            this.lastNodeErrors = res.node_errors ?? null
+            if (this.lastNodeErrors?.length) {
               this.canvas.draw(true, true)
             } else {
               try {
-                useExecutionStore().storePrompt({
-                  // @ts-expect-error fixme ts strict error
-                  id: res.prompt_id,
-                  nodes: Object.keys(p.output),
-                  workflow: useWorkspaceStore().workflow
-                    .activeWorkflow as ComfyWorkflow
-                })
+                if (res.prompt_id) {
+                  useExecutionStore().storePrompt({
+                    id: res.prompt_id,
+                    nodes: Object.keys(p.output),
+                    workflow: useWorkspaceStore().workflow
+                      .activeWorkflow as ComfyWorkflow
+                  })
+                }
               } catch (error) {}
             }
           } catch (error) {
@@ -1321,8 +1302,9 @@ export class ComfyApp {
           // Allow widgets to run callbacks after a prompt has been queued
           // e.g. random seed after every gen
           executeWidgetsCallback(
-            // @ts-expect-error fixme ts strict error
-            p.workflow.nodes.map((n) => this.graph.getNodeById(n.id)),
+            p.workflow.nodes
+              .map((n) => this.graph.getNodeById(n.id))
+              .filter((n) => !!n) as LGraphNode[],
             'afterQueued'
           )
           this.canvas.draw(true, true)
@@ -1470,25 +1452,18 @@ export class ComfyApp {
     }
   }
 
-  // @ts-expect-error fixme ts strict error
-  isApiJson(data) {
-    // @ts-expect-error
-    return Object.values(data).every((v) => v.class_type)
+  isApiJson(data: unknown) {
+    return _.isObject(data) && Object.values(data).every((v) => v.class_type)
   }
 
-  // @ts-expect-error fixme ts strict error
-  loadApiJson(apiData, fileName: string) {
+  loadApiJson(apiData: ComfyApiWorkflow, fileName: string) {
     useWorkflowService().beforeLoadNewGraph()
 
     const missingNodeTypes = Object.values(apiData).filter(
-      // @ts-expect-error
       (n) => !LiteGraph.registered_node_types[n.class_type]
     )
     if (missingNodeTypes.length) {
-      this.#showMissingNodesError(
-        // @ts-expect-error
-        missingNodeTypes.map((t) => t.class_type)
-      )
+      this.#showMissingNodesError(missingNodeTypes.map((t) => t.class_type))
       return
     }
 
@@ -1497,11 +1472,9 @@ export class ComfyApp {
     for (const id of ids) {
       const data = apiData[id]
       const node = LiteGraph.createNode(data.class_type)
-      // @ts-expect-error fixme ts strict error
+      if (!node) continue
       node.id = isNaN(+id) ? id : +id
-      // @ts-expect-error fixme ts strict error
       node.title = data._meta?.title ?? node.title
-      // @ts-expect-error fixme ts strict error
       app.graph.add(node)
     }
 
@@ -1640,7 +1613,6 @@ export class ComfyApp {
     )
 
     if (this.vueAppReady) {
-      // @ts-expect-error fixme ts strict error
       this.updateVueAppNodeDefs(defs)
       useToastStore().remove(requestToastMessage)
       useToastStore().add({
