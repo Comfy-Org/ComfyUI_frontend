@@ -1338,8 +1338,7 @@ export class ComfyApp {
     return !this.lastNodeErrors
   }
 
-  // @ts-expect-error fixme ts strict error
-  showErrorOnFileLoad(file) {
+  showErrorOnFileLoad(file: File) {
     this.ui.dialog.show(
       $el('div', [
         $el('p', { textContent: `Unable to find workflow in ${file.name}` })
