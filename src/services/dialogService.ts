@@ -1,5 +1,5 @@
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
-import ErrorContent from '@/components/dialog/content/ErrorContent.vue'
+import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
 import ExecutionErrorDialogContent from '@/components/dialog/content/ExecutionErrorDialogContent.vue'
 import IssueReportDialogContent from '@/components/dialog/content/IssueReportDialogContent.vue'
 import LoadWorkflowWarning from '@/components/dialog/content/LoadWorkflowWarning.vue'
@@ -181,7 +181,7 @@ export const useDialogService = () => {
 
     dialogStore.showDialog({
       key: 'global-error',
-      component: ErrorContent,
+      component: ErrorDialogContent,
       props: {
         ...props,
         title: title ?? t('errorDialog.defaultTitle')
