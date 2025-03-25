@@ -18,7 +18,16 @@
       <span class="font-bold">{{ extensionFile }}</span>
     </template>
 
+    <Button
+      v-show="!sendReportOpen"
+      text
+      fluid
+      :label="$t('issueReport.helpFix')"
+      @click="showSendReport"
+    />
+
     <ReportIssuePanel
+      v-if="sendReportOpen"
       :error-type="errorType"
       :extra-fields="[
         {
@@ -38,7 +47,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import Button from 'primevue/button'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
@@ -62,4 +72,9 @@ const {
 
 const title = computed(() => _title ?? t('errorDialog.defaultTitle'))
 const stackTrace = computed(() => _stackTrace ?? t('errorDialog.noStackTrace'))
+
+const sendReportOpen = ref(false)
+function showSendReport() {
+  sendReportOpen.value = true
+}
 </script>
