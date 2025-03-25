@@ -53,6 +53,23 @@ test.describe('Selection Toolbox', () => {
     expect(Math.round(boundingBox!.y)).toBeCloseTo(60, -1)
   })
 
+  test('hide when select and drag happen at the same time', async ({
+    comfyPage
+  }) => {
+    await comfyPage.loadWorkflow('single_ksampler')
+    const node = (await comfyPage.getNodeRefsByTitle('KSampler'))[0]
+    const nodePos = await node.getPosition()
+
+    // Drag on the title of the node
+    await comfyPage.page.mouse.move(nodePos.x + 100, nodePos.y - 15)
+    await comfyPage.page.mouse.down()
+    await comfyPage.page.mouse.move(nodePos.x + 200, nodePos.y + 200)
+    await comfyPage.nextFrame()
+    await expect(
+      comfyPage.page.locator('.selection-overlay-container')
+    ).not.toBeVisible()
+  })
+
   test('shows border only with multiple selections', async ({ comfyPage }) => {
     // Select single node
     await comfyPage.selectNodes(['KSampler'])

@@ -3064,6 +3064,9 @@
       "extra_pos_embedder_": {
         "name": "extra_pos_embedder."
       },
+      "final_layer_": {
+        "name": "capa_final."
+      },
       "model1": {
         "name": "model1"
       },
