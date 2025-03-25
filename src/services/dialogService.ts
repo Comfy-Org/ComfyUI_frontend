@@ -1,7 +1,7 @@
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
+import ErrorContent from '@/components/dialog/content/ErrorContent.vue'
 import ExecutionErrorDialogContent from '@/components/dialog/content/ExecutionErrorDialogContent.vue'
 import IssueReportDialogContent from '@/components/dialog/content/IssueReportDialogContent.vue'
-import LoadWorkflowError from '@/components/dialog/content/LoadWorkflowError.vue'
 import LoadWorkflowWarning from '@/components/dialog/content/LoadWorkflowWarning.vue'
 import ManagerProgressDialogContent from '@/components/dialog/content/ManagerProgressDialogContent.vue'
 import MissingModelsWarning from '@/components/dialog/content/MissingModelsWarning.vue'
@@ -166,22 +166,26 @@ export const useDialogService = () => {
   }
 
   /**
-   * Show a error dialog to the user when loading a workflow fails.
+   * Show a error dialog to the user when an error occurs.
    * @param error The error to show
+   * @param title The title of the dialog
    */
-  function showLoadWorkflowError(error: unknown) {
+  function showErrorDialog(error: unknown, title?: string) {
     const props =
       error instanceof Error
         ? parseError(error)
         : {
             error: String(error),
-            stackTrace: 'No stacktrace available'
+            stackTrace: t('errorDialog.noStackTrace')
           }
 
     dialogStore.showDialog({
-      key: 'global-load-workflow-error',
-      component: LoadWorkflowError,
-      props
+      key: 'global-error',
+      component: ErrorContent,
+      props: {
+        ...props,
+        title: title ?? t('errorDialog.defaultTitle')
+      }
     })
   }
 
@@ -268,7 +272,7 @@ export const useDialogService = () => {
     showIssueReportDialog,
     showManagerDialog,
     showManagerProgressDialog,
-    showLoadWorkflowError,
+    showErrorDialog,
     prompt,
     confirm
   }

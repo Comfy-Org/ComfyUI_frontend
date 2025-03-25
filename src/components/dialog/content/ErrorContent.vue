@@ -3,7 +3,7 @@
     <NoResultsPlaceholder
       class="pb-0"
       icon="pi pi-exclamation-circle"
-      :title="t('loadWorkflowErrorDialog.title')"
+      :title="title"
       :message="error"
     />
     <pre
@@ -13,7 +13,7 @@
     </pre>
 
     <template v-if="extensionFile">
-      <span>{{ t('loadWorkflowErrorDialog.extensionFileHint') }}</span>
+      <span>{{ t('errorDialog.extensionFileHint') }}:</span>
       <br />
       <span class="font-bold">{{ extensionFile }}</span>
     </template>
@@ -26,7 +26,8 @@ import { useI18n } from 'vue-i18n'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 
 const { t } = useI18n()
-const { error, stackTrace, extensionFile } = defineProps<{
+const { title, error, stackTrace, extensionFile } = defineProps<{
+  title: string
   error: string
   stackTrace: string
   extensionFile?: string

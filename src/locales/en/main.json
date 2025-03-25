@@ -951,8 +951,10 @@
     "missingModels": "Missing Models",
     "missingModelsMessage": "When loading the graph, the following models were not found"
   },
-  "loadWorkflowErrorDialog": {
-    "title": "Loading aborted due to error reloading workflow data",
+  "errorDialog": {
+    "defaultTitle": "An error occurred",
+    "loadWorkflowTitle": "Loading aborted due to error reloading workflow data",
+    "noStackTrace": "No stacktrace available",
     "extensionFileHint": "This may be due to the following script"
   },
   "desktopUpdate": {

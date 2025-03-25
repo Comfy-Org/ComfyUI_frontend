@@ -11,7 +11,7 @@ import _ from 'lodash'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { reactive } from 'vue'
 
-import { st } from '@/i18n'
+import { st, t } from '@/i18n'
 import type { ResultItem } from '@/schemas/apiSchema'
 import {
   type ComfyWorkflowJSON,
@@ -1144,7 +1144,10 @@ export class ComfyApp {
         this.canvas.ds.scale = graphData.extra.ds.scale
       }
     } catch (error) {
-      useDialogService().showLoadWorkflowError(error)
+      useDialogService().showErrorDialog(
+        error,
+        t('errorDialog.loadWorkflowTitle')
+      )
       return
     }
     for (const node of this.graph.nodes) {
