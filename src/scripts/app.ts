@@ -63,8 +63,7 @@ import { type ComfyWidgetConstructor, ComfyWidgets } from './widgets'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
-// @ts-expect-error fixme ts strict error
-function sanitizeNodeName(string) {
+function sanitizeNodeName(string: string) {
   let entityMap = {
     '&': '',
     '<': '',
@@ -75,8 +74,7 @@ function sanitizeNodeName(string) {
     '=': ''
   }
   return String(string).replace(/[&<>"'`=]/g, function fromEntityMap(s) {
-    // @ts-expect-error fixme ts strict error
-    return entityMap[s]
+    return entityMap[s as keyof typeof entityMap]
   })
 }
 
@@ -92,14 +90,12 @@ type Clipspace = {
 export class ComfyApp {
   /**
    * List of entries to queue
-   * @type {{number: number, batchCount: number}[]}
    */
-  #queueItems = []
+  #queueItems: { number: number; batchCount: number }[] = []
   /**
    * If the queue is currently being processed
-   * @type {boolean}
    */
-  #processingQueue = false
+  #processingQueue: boolean = false
 
   /**
    * Content Clipboard
@@ -1266,7 +1262,6 @@ export class ComfyApp {
   }
 
   async queuePrompt(number: number, batchCount: number = 1): Promise<boolean> {
-    // @ts-expect-error fixme ts strict error
     this.#queueItems.push({ number, batchCount })
 
     // Only have one action process the items so each one gets a unique seed correctly
@@ -1279,8 +1274,7 @@ export class ComfyApp {
 
     try {
       while (this.#queueItems.length) {
-        // @ts-expect-error fixme ts strict error
-        ;({ number, batchCount } = this.#queueItems.pop())
+        const { number, batchCount } = this.#queueItems.pop()!
 
         for (let i = 0; i < batchCount; i++) {
           // Allow widgets to run callbacks before a prompt has been queued
