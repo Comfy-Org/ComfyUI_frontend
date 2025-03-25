@@ -91,7 +91,12 @@ watch(
         positionSelectionOverlay(canvasStore.canvas as LGraphCanvas)
       }, 100)
     } else {
-      visible.value = false
+      // Selection change update to visible state is delayed by a frame. Here
+      // we also delay a frame so that the order of events is correct when
+      // the initial selection and dragging happens at the same time.
+      requestAnimationFrame(() => {
+        visible.value = false
+      })
     }
   }
 )
