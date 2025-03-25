@@ -975,6 +975,10 @@
     },
     "title": "Начните с шаблона"
   },
+  "toastMessages": {
+    "dropFileError": "Не удалось обработать перетаскиваемый элемент: {error}",
+    "fileLoadError": "Не удалось найти рабочий процесс в {fileName}"
+  },
   "userSelect": {
     "enterUsername": "Введите имя пользователя",
     "existingUser": "Существующий пользователь",

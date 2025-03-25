@@ -975,6 +975,10 @@
     },
     "title": "テンプレートを利用して開始"
   },
+  "toastMessages": {
+    "dropFileError": "ドロップされたアイテムを処理できません: {error}",
+    "fileLoadError": "{fileName}でワークフローが見つかりません"
+  },
   "userSelect": {
     "enterUsername": "ユーザー名を入力してください",
     "existingUser": "既存のユーザー",

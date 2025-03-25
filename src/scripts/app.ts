@@ -450,32 +450,31 @@ export class ComfyApp {
           return
         }
         // Dragging from Chrome->Firefox there is a file but its a bmp, so ignore that
+        if (!event.dataTransfer) return
         if (
-          // @ts-expect-error fixme ts strict error
           event.dataTransfer.files.length &&
-          // @ts-expect-error fixme ts strict error
           event.dataTransfer.files[0].type !== 'image/bmp'
         ) {
-          // @ts-expect-error fixme ts strict error
           await this.handleFile(event.dataTransfer.files[0])
         } else {
           // Try loading the first URI in the transfer list
           const validTypes = ['text/uri-list', 'text/x-moz-url']
-          // @ts-expect-error fixme ts strict error
           const match = [...event.dataTransfer.types].find((t) =>
             validTypes.find((v) => t === v)
           )
           if (match) {
-            // @ts-expect-error fixme ts strict error
             const uri = event.dataTransfer.getData(match)?.split('\n')?.[0]
             if (uri) {
-              await this.handleFile(await (await fetch(uri)).blob())
+              await this.handleFile(
+                new File([await (await fetch(uri)).blob()], uri)
+              )
             }
           }
         }
       } catch (err: any) {
-        console.error('Unable to process dropped item:', err)
-        useToastStore().addAlert(`Unable to process dropped item: ${err}`)
+        useToastStore().addAlert(
+          t('toastMessages.dropFileError', { error: err })
+        )
       }
     })
 
@@ -1272,8 +1271,7 @@ export class ComfyApp {
 
     // Only have one action process the items so each one gets a unique seed correctly
     if (this.#processingQueue) {
-      // @ts-expect-error fixme ts strict error
-      return
+      return false
     }
 
     this.#processingQueue = true
@@ -1339,10 +1337,8 @@ export class ComfyApp {
   }
 
   showErrorOnFileLoad(file: File) {
-    this.ui.dialog.show(
-      $el('div', [
-        $el('p', { textContent: `Unable to find workflow in ${file.name}` })
-      ]).outerHTML
+    useToastStore().addAlert(
+      t('toastMessages.fileLoadError', { fileName: file.name })
     )
   }
 
@@ -1350,10 +1346,8 @@ export class ComfyApp {
    * Loads workflow data from the specified file
    * @param {File} file
    */
-  // @ts-expect-error fixme ts strict error
-  async handleFile(file) {
-    // @ts-expect-error fixme ts strict error
-    const removeExt = (f) => {
+  async handleFile(file: File) {
+    const removeExt = (f: string) => {
       if (!f) return f
       const p = f.lastIndexOf('.')
       if (p === -1) return f
