@@ -159,8 +159,8 @@ export const useDialogService = () => {
       : undefined
 
     return {
-      error: error.toString(),
-      stackTrace: error.stack ?? 'No stacktrace available',
+      errorMessage: error.toString(),
+      stackTrace: error.stack,
       extensionFile
     }
   }
@@ -168,15 +168,20 @@ export const useDialogService = () => {
   /**
    * Show a error dialog to the user when an error occurs.
    * @param error The error to show
-   * @param title The title of the dialog
+   * @param options The options for the dialog
    */
-  function showErrorDialog(error: unknown, title?: string) {
+  function showErrorDialog(
+    error: unknown,
+    options: {
+      title?: string
+      errorType?: string
+    } = {}
+  ) {
     const props =
       error instanceof Error
         ? parseError(error)
         : {
-            error: String(error),
-            stackTrace: t('errorDialog.noStackTrace')
+            errorMessage: String(error)
           }
 
     dialogStore.showDialog({
@@ -184,7 +189,7 @@ export const useDialogService = () => {
       component: ErrorDialogContent,
       props: {
         ...props,
-        title: title ?? t('errorDialog.defaultTitle')
+        ...options
       }
     })
   }

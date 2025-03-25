@@ -1144,10 +1144,10 @@ export class ComfyApp {
         this.canvas.ds.scale = graphData.extra.ds.scale
       }
     } catch (error) {
-      useDialogService().showErrorDialog(
-        error,
-        t('errorDialog.loadWorkflowTitle')
-      )
+      useDialogService().showErrorDialog(error, {
+        title: t('errorDialog.loadWorkflowTitle'),
+        errorType: 'loadWorkflowError'
+      })
       return
     }
     for (const node of this.graph.nodes) {

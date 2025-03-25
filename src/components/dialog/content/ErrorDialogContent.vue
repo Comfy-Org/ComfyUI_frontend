@@ -4,7 +4,7 @@
       class="pb-0"
       icon="pi pi-exclamation-circle"
       :title="title"
-      :message="error"
+      :message="errorMessage"
     />
     <pre
       class="stack-trace p-5 text-neutral-400 text-xs max-h-[50vh] overflow-auto bg-black/20"
@@ -17,6 +17,23 @@
       <br />
       <span class="font-bold">{{ extensionFile }}</span>
     </template>
+
+    <ReportIssuePanel
+      :error-type="errorType"
+      :extra-fields="[
+        {
+          label: t('issueReport.stackTrace'),
+          value: 'StackTrace',
+          optIn: true,
+          getData: () => stackTrace
+        }
+      ]"
+      :tags="{
+        exceptionMessage: errorMessage,
+        extensionFile: extensionFile ?? 'UNKNOWN'
+      }"
+      :title="t('issueReport.submitErrorReport')"
+    />
   </div>
 </template>
 
@@ -25,11 +42,20 @@ import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 
+import ReportIssuePanel from './error/ReportIssuePanel.vue'
+
 const { t } = useI18n()
-const { title, error, stackTrace, extensionFile } = defineProps<{
-  title: string
-  error: string
-  stackTrace: string
+const {
+  title = t('errorDialog.defaultTitle'),
+  errorMessage,
+  stackTrace = t('errorDialog.noStackTrace'),
+  extensionFile,
+  errorType = 'frontendError'
+} = defineProps<{
+  title?: string
+  errorMessage: string
+  stackTrace?: string
   extensionFile?: string
+  errorType?: string
 }>()
 </script>
