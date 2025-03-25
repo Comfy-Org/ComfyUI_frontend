@@ -30,6 +30,29 @@ test.describe('Selection Toolbox', () => {
     ).toBeVisible()
   })
 
+  test('shows at correct position when node is pasted', async ({
+    comfyPage
+  }) => {
+    await comfyPage.loadWorkflow('single_ksampler')
+    await comfyPage.selectNodes(['KSampler'])
+    await comfyPage.ctrlC()
+    await comfyPage.page.mouse.move(100, 100)
+    await comfyPage.ctrlV()
+
+    const overlayContainer = comfyPage.page.locator(
+      '.selection-overlay-container'
+    )
+    await expect(overlayContainer).toBeVisible()
+
+    // Verify the absolute position
+    const boundingBox = await overlayContainer.boundingBox()
+    expect(boundingBox).not.toBeNull()
+    // 10px offset for the pasted node
+    expect(Math.round(boundingBox!.x)).toBeCloseTo(90, -1) // Allow ~10px tolerance
+    // 30px offset of node title height
+    expect(Math.round(boundingBox!.y)).toBeCloseTo(60, -1)
+  })
+
   test('shows border only with multiple selections', async ({ comfyPage }) => {
     // Select single node
     await comfyPage.selectNodes(['KSampler'])
