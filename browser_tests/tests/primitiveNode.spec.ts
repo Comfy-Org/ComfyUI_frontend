@@ -5,14 +5,14 @@ import type { NodeReference } from '../fixtures/utils/litegraphUtils'
 
 test.describe('Primitive Node', () => {
   test('Can load with correct size', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('primitive_node')
+    await comfyPage.loadWorkflow('primitive/primitive_node')
     await expect(comfyPage.canvas).toHaveScreenshot('primitive_node.png')
   })
 
   // When link is dropped on widget, it should automatically convert the widget
   // to input.
   test('Can connect to widget', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('primitive_node_unconnected')
+    await comfyPage.loadWorkflow('primitive/primitive_node_unconnected')
     const primitiveNode: NodeReference = await comfyPage.getNodeRefById(1)
     const ksamplerNode: NodeReference = await comfyPage.getNodeRefById(2)
     // Connect the output of the primitive node to the input of first widget of the ksampler node
@@ -23,12 +23,24 @@ test.describe('Primitive Node', () => {
   })
 
   test('Can connect to dom widget', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('primitive_node_unconnected_dom_widget')
+    await comfyPage.loadWorkflow(
+      'primitive/primitive_node_unconnected_dom_widget'
+    )
     const primitiveNode: NodeReference = await comfyPage.getNodeRefById(1)
     const clipEncoderNode: NodeReference = await comfyPage.getNodeRefById(2)
     await primitiveNode.connectWidget(0, clipEncoderNode, 0)
     await expect(comfyPage.canvas).toHaveScreenshot(
       'primitive_node_connected_dom_widget.png'
+    )
+  })
+
+  test('Can connect to static primitive node', async ({ comfyPage }) => {
+    await comfyPage.loadWorkflow('primitive/static_primitive_unconnected')
+    const primitiveNode: NodeReference = await comfyPage.getNodeRefById(1)
+    const ksamplerNode: NodeReference = await comfyPage.getNodeRefById(2)
+    await primitiveNode.connectWidget(0, ksamplerNode, 0)
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'static_primitive_connected.png'
     )
   })
 })
