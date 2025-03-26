@@ -8,9 +8,6 @@ import { omit } from 'lodash'
 
 import { components } from '@/types/comfyRegistryTypes'
 
-declare const __ALGOLIA_APP_ID__: string
-declare const __ALGOLIA_API_KEY__: string
-
 type SafeNestedProperty<
   T,
   K1 extends keyof T,
