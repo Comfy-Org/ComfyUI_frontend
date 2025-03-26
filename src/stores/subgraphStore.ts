@@ -5,9 +5,8 @@ import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
 import { app } from '@/scripts/app'
+import { useWorkflowStore } from '@/stores/workflowStore'
 import { isSubgraph } from '@/utils/typeGuardUtil'
-
-import { useWorkflowStore } from './workflowStore'
 
 export const useSubgraphStore = defineStore('subgraph', () => {
   const workflowStore = useWorkflowStore()
@@ -77,6 +76,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     graphIdPath,
     graphNamePath,
     isSubgraphActive,
+
     updateActiveGraph
   }
 })
