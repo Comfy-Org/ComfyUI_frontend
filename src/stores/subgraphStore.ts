@@ -8,6 +8,8 @@ import { app } from '@/scripts/app'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 
+const UNSAVED_WORKFLOW_NAME = 'Unsaved Workflow'
+
 export const useSubgraphStore = defineStore('subgraph', () => {
   const workflowStore = useWorkflowStore()
 
@@ -30,7 +32,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     if (!isNewRoot) return
 
     const activeWorkflowName = workflowStore.activeWorkflow?.filename
-    activeRootGraphName.value = activeWorkflowName ?? 'Unsaved Workflow'
+    activeRootGraphName.value = activeWorkflowName ?? UNSAVED_WORKFLOW_NAME
   }
 
   const updateGraphPaths = () => {
@@ -50,7 +52,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     while (cur) {
       const name = isSubgraph(cur)
         ? cur.name
-        : activeWorkflow?.filename ?? 'Unsaved Workflow'
+        : activeWorkflow?.filename ?? UNSAVED_WORKFLOW_NAME
 
       namePath.unshift(name)
       idPath.unshift(cur.id)
