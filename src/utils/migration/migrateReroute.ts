@@ -1,3 +1,5 @@
+import _ from 'lodash'
+
 import type {
   ComfyLink,
   ComfyNode,
@@ -67,10 +69,15 @@ export function createNewLinks(
   workflow: WorkflowJSON04,
   rerouteMap: Map<NodeId, RerouteEntry>
 ): {
+  nodes: ComfyNode[]
   reroutes: Reroute[]
   links: ComfyLink[]
   linkExtensions: LinkExtension[]
 } {
+  const nodeById = _.keyBy(
+    workflow.nodes.filter((node) => node.type !== 'Reroute').map(_.cloneDeep),
+    'id'
+  )
   const links: ComfyLink[] = []
   const linkExtensions: LinkExtension[] = []
 
@@ -153,6 +160,23 @@ export function createNewLinks(
 
           validLinkExtensions.push(linkExtension)
           chainedReroutes.forEach((reroute) => validReroutes.add(reroute))
+
+          // Update source node's output slot's link ids to point to the new link.
+          const sourceNode = nodeById[sourceNodeId]
+          if (!sourceNode) {
+            throw new Error(
+              `Corrupted workflow: Source node ${sourceNodeId} not found`
+            )
+          }
+          const outputSlot = sourceNode.outputs?.[sourceSlot]
+          if (!outputSlot) {
+            throw new Error(
+              `Corrupted workflow: Output slot ${sourceSlot} not found`
+            )
+          }
+          outputSlot.links = outputSlot.links?.map((l) =>
+            l === rerouteInputLink[0] ? linkId : l
+          )
         }
         entry = undefined
       }
@@ -160,6 +184,7 @@ export function createNewLinks(
   }
 
   return {
+    nodes: Object.values(nodeById),
     links,
     linkExtensions: validLinkExtensions,
     reroutes: Array.from(validReroutes)
@@ -192,16 +217,14 @@ export const migrateLegacyRerouteNodes = (
   const rerouteMap = createReroutePoints(legacyRerouteNodes)
 
   // Create new links and link extensions
-  const { links, linkExtensions, reroutes } = createNewLinks(
+  const { nodes, links, linkExtensions, reroutes } = createNewLinks(
     workflow,
     rerouteMap
   )
 
   // Update the workflow
   newWorkflow.links = links
-  newWorkflow.nodes = newWorkflow.nodes.filter(
-    (node) => node.type !== 'Reroute'
-  )
+  newWorkflow.nodes = nodes
   newWorkflow.extra.reroutes = reroutes
   newWorkflow.extra.linkExtensions = linkExtensions
 
