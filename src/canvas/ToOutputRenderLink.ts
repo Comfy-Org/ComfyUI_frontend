@@ -45,7 +45,7 @@ export class ToOutputRenderLink implements RenderLink {
 
   connectToOutput(node: LGraphNode, output: INodeOutputSlot, events: LinkConnectorEventTarget) {
     const { node: inputNode, fromSlot, fromReroute } = this
-    if (inputNode) return
+    if (!inputNode) return
 
     const newLink = node.connectSlots(output, inputNode, fromSlot, fromReroute?.id)
     events.dispatch("link-created", newLink)
