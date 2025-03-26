@@ -91,15 +91,20 @@ test.describe('Node Interaction', () => {
       await comfyPage.setSetting('Comfy.LinkRelease.ActionShift', 'no action')
     })
 
-    test('Can disconnect/connect edge', async ({ comfyPage }) => {
-      await comfyPage.disconnectEdge()
-      await expect(comfyPage.canvas).toHaveScreenshot('disconnected-edge.png')
-      await comfyPage.connectEdge()
-      // Move mouse to empty area to avoid slot highlight.
-      await comfyPage.moveMouseToEmptyArea()
-      // Litegraph renders edge with a slight offset.
-      await expect(comfyPage.canvas).toHaveScreenshot('default.png', {
-        maxDiffPixels: 50
+    // Test both directions of edge connection.
+    ;[{ reverse: false }, { reverse: true }].forEach(({ reverse }) => {
+      test(`Can disconnect/connect edge ${reverse ? 'reverse' : 'normal'}`, async ({
+        comfyPage
+      }) => {
+        await comfyPage.disconnectEdge()
+        await expect(comfyPage.canvas).toHaveScreenshot('disconnected-edge.png')
+        await comfyPage.connectEdge({ reverse })
+        // Move mouse to empty area to avoid slot highlight.
+        await comfyPage.moveMouseToEmptyArea()
+        // Litegraph renders edge with a slight offset.
+        await expect(comfyPage.canvas).toHaveScreenshot('default.png', {
+          maxDiffPixels: 50
+        })
       })
     })
 

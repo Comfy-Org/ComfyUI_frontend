@@ -589,11 +589,20 @@ export class ComfyPage {
     await this.dragAndDrop(this.clipTextEncodeNode1InputSlot, this.emptySpace)
   }
 
-  async connectEdge() {
-    await this.dragAndDrop(
-      this.loadCheckpointNodeClipOutputSlot,
-      this.clipTextEncodeNode1InputSlot
-    )
+  async connectEdge(
+    options: {
+      reverse?: boolean
+    } = {}
+  ) {
+    const { reverse = false } = options
+    const start = reverse
+      ? this.clipTextEncodeNode1InputSlot
+      : this.loadCheckpointNodeClipOutputSlot
+    const end = reverse
+      ? this.loadCheckpointNodeClipOutputSlot
+      : this.clipTextEncodeNode1InputSlot
+
+    await this.dragAndDrop(start, end)
   }
 
   async adjustWidgetValue() {
