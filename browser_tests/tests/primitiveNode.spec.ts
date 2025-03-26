@@ -31,4 +31,14 @@ test.describe('Primitive Node', () => {
       'primitive_node_connected_dom_widget.png'
     )
   })
+
+  test('Can connect to static primitive node', async ({ comfyPage }) => {
+    await comfyPage.loadWorkflow('primitive/static_primitive_unconnected')
+    const primitiveNode: NodeReference = await comfyPage.getNodeRefById(1)
+    const ksamplerNode: NodeReference = await comfyPage.getNodeRefById(2)
+    await primitiveNode.connectWidget(0, ksamplerNode, 0)
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'static_primitive_connected.png'
+    )
+  })
 })
