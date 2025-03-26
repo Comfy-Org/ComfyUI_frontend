@@ -832,10 +832,14 @@ export interface paths {
     parameters: {
       query?: never
       header?: never
-      path?: never
+      path: {
+        nodeId: string
+        version: string
+      }
       cookie?: never
     }
-    get?: never
+    /** list comfy-nodes for certain node */
+    get: operations['ListComfyNodes']
     put?: never
     /** create comfy-nodes for certain node */
     post: operations['CreateComfyNodes']
@@ -2464,6 +2468,8 @@ export interface operations {
         latest?: boolean
         /** @description Database column to use as ascending ordering. Add `;desc` as suffix on each column for descending sort */
         sort?: string[]
+        /** @description node_id to use as filter */
+        node_id?: string[]
         /** @description The platform requesting the nodes */
         form_factor?: string
       }
@@ -3066,6 +3072,71 @@ export interface operations {
       }
       /** @description Forbidden */
       403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  ListComfyNodes: {
+    parameters: {
+      query?: {
+        /** @description The page number to retrieve. */
+        page?: number
+        /** @description The number of items to include per page. */
+        limit?: number
+      }
+      header?: never
+      path: {
+        nodeId: string
+        version: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Comy Nodes obtained successfully */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            comfy_nodes?: components['schemas']['ComfyNode'][]
+            totalNumberOfPages?: number
+          }
+        }
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Version not found */
+      404: {
         headers: {
           [name: string]: unknown
         }
