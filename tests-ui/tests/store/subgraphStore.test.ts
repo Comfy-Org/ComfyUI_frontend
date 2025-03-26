@@ -13,7 +13,8 @@ vi.mock('@/scripts/app', () => ({
 
 const mockWorkflowStore = {
   activeWorkflow: {
-    filename: 'test.workflow'
+    filename: 'test.workflow',
+    path: 'test.workflow'
   }
 }
 
@@ -46,6 +47,7 @@ describe('useSubgraphStore', () => {
       }
 
       mockWorkflowStore.activeWorkflow.filename = mockName
+      mockWorkflowStore.activeWorkflow.path = mockId
       vi.spyOn(app, 'graph', 'get').mockReturnValue(mockRootGraph as any)
 
       store.updateActiveGraph()
@@ -65,15 +67,13 @@ describe('useSubgraphStore', () => {
           id: 'subgraph-1',
           name: 'Subgraph 1',
           parent: {
-            id: 'root-graph',
-            name: 'Root Graph',
-            parent: null
+            id: 'root-graph'
           }
         }
       }
 
       // Update the active workflow name
-      mockWorkflowStore.activeWorkflow.filename = 'test.workflow'
+      mockWorkflowStore.activeWorkflow.filename = 'Root Graph'
 
       // Mock the app.graph getter
       vi.spyOn(app, 'graph', 'get').mockReturnValue(mockSubgraph as any)

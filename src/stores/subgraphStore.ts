@@ -5,14 +5,9 @@ import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
 import { app } from '@/scripts/app'
+import { isSubgraph } from '@/utils/typeGuardUtil'
 
 import { useWorkflowStore } from './workflowStore'
-
-const isSubgraph = (item: unknown): item is Subgraph =>
-  !!item && typeof item === 'object' && 'parent' in item
-
-const replaceUndefined = (arr: (string | null | undefined)[]) =>
-  arr.map((item) => item ?? 'Unknown')
 
 export const useSubgraphStore = defineStore('subgraph', () => {
   const workflowStore = useWorkflowStore()
@@ -32,7 +27,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
   }
 
   const updateRootGraphName = () => {
-    const isNewRoot = !isSubgraph(activeGraph)
+    const isNewRoot = !isSubgraph(activeGraph.value)
     if (!isNewRoot) return
 
     const activeWorkflowName = workflowStore.activeWorkflow?.filename
@@ -41,27 +36,31 @@ export const useSubgraphStore = defineStore('subgraph', () => {
 
   const updateGraphPaths = () => {
     const currentGraph = app?.graph
-    if (!currentGraph) return
-
-    const namePath = []
-    const idPath = []
-
-    // If it's a subgraph, traverse up the parent chain
-    if (isSubgraph(currentGraph)) {
-      let current: LGraph | Subgraph = currentGraph
-      while (current && isSubgraph(current)) {
-        idPath.unshift(current.id)
-        namePath.unshift(current.name)
-        current = current.parent
-      }
-    } else {
-      // For non-subgraphs, just add the current graph's info
-      idPath.push(currentGraph.id)
-      namePath.push(activeRootGraphName.value)
+    if (!currentGraph) {
+      graphIdPath.value = []
+      graphNamePath.value = []
+      return
     }
 
-    graphIdPath.value = replaceUndefined(idPath)
-    graphNamePath.value = replaceUndefined(namePath)
+    const { activeWorkflow } = workflowStore
+
+    const namePath: string[] = []
+    const idPath: LGraph['id'][] = []
+
+    let cur: LGraph | Subgraph | null = currentGraph
+    while (cur) {
+      const name = isSubgraph(cur)
+        ? cur.name
+        : activeWorkflow?.filename ?? 'Unsaved Workflow'
+
+      namePath.unshift(name)
+      idPath.unshift(cur.id)
+
+      cur = isSubgraph(cur) ? cur.parent : null
+    }
+
+    graphIdPath.value = idPath
+    graphNamePath.value = namePath
   }
 
   whenever(() => app?.graph, updateActiveGraph, {
