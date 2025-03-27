@@ -151,10 +151,12 @@
     "description": "Описание",
     "devices": "Устройства",
     "disableAll": "Отключить все",
+    "disabling": "Отключение",
     "download": "Скачать",
     "empty": "Пусто",
     "enableAll": "Включить все",
     "enabled": "Включено",
+    "enabling": "Включение",
     "error": "Ошибка",
     "experimental": "БЕТА",
     "export": "Экспорт",
@@ -221,6 +223,7 @@
     "terminal": "Терминал",
     "update": "Обновить",
     "updated": "Обновлено",
+    "updating": "Обновление",
     "upload": "Загрузить",
     "videoFailedToLoad": "Не удалось загрузить видео",
     "workflow": "Рабочий процесс"
@@ -399,6 +402,7 @@
     "title": "Обслуживание"
   },
   "manager": {
+    "changingVersion": "Изменение версии с {from} на {to}",
     "createdBy": "Создано",
     "dependencies": "Зависимости",
     "discoverCommunityContent": "Откройте для себя пакеты узлов, расширения и многое другое, созданные сообществом...",
@@ -445,6 +449,7 @@
     "uninstallSelected": "Удалить выбранное",
     "uninstalling": "Удаление",
     "update": "Обновить",
+    "updatingAllPacks": "Обновление всех пакетов",
     "version": "Версия"
   },
   "maskEditor": {

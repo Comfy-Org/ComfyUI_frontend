@@ -151,10 +151,12 @@
     "description": "Descripción",
     "devices": "Dispositivos",
     "disableAll": "Deshabilitar todo",
+    "disabling": "Deshabilitando",
     "download": "Descargar",
     "empty": "Vacío",
     "enableAll": "Habilitar todo",
     "enabled": "Habilitado",
+    "enabling": "Habilitando",
     "error": "Error",
     "experimental": "BETA",
     "export": "Exportar",
@@ -221,6 +223,7 @@
     "terminal": "Terminal",
     "update": "Actualizar",
     "updated": "Actualizado",
+    "updating": "Actualizando",
     "upload": "Subir",
     "videoFailedToLoad": "Falló la carga del video",
     "workflow": "Flujo de trabajo"
@@ -399,6 +402,7 @@
     "title": "Mantenimiento"
   },
   "manager": {
+    "changingVersion": "Cambiando versión de {from} a {to}",
     "createdBy": "Creado Por",
     "dependencies": "Dependencias",
     "discoverCommunityContent": "Descubre paquetes de nodos, extensiones y más creados por la comunidad...",
@@ -445,6 +449,7 @@
     "uninstallSelected": "Desinstalar Seleccionado",
     "uninstalling": "Desinstalando",
     "update": "Actualizar",
+    "updatingAllPacks": "Actualizando todos los paquetes",
     "version": "Versión"
   },
   "maskEditor": {
