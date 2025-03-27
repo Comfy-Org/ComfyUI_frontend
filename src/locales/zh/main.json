@@ -151,10 +151,12 @@
     "description": "描述",
     "devices": "设备",
     "disableAll": "禁用全部",
+    "disabling": "禁用中",
     "download": "下载",
     "empty": "空",
     "enableAll": "启用全部",
     "enabled": "已启用",
+    "enabling": "启用中",
     "error": "错误",
     "experimental": "测试版",
     "export": "导出",
@@ -221,6 +223,7 @@
     "terminal": "终端",
     "update": "更新",
     "updated": "已更新",
+    "updating": "更新中",
     "upload": "上传",
     "videoFailedToLoad": "视频加载失败",
     "workflow": "工作流"
@@ -399,11 +402,13 @@
     "title": "维护"
   },
   "manager": {
+    "changingVersion": "将版本从 {from} 更改为 {to}",
     "createdBy": "创建者",
     "dependencies": "依赖关系",
     "discoverCommunityContent": "发现社区制作的节点包，扩展等等...",
     "downloads": "下载",
     "errorConnecting": "连接到Comfy节点注册表时出错。",
+    "failed": "失败 ({count})",
     "filter": {
       "disabled": "已禁用",
       "enabled": "已启用",
@@ -412,6 +417,7 @@
     "inWorkflow": "在工作流中",
     "infoPanelEmpty": "点击一个项目查看信息",
     "installSelected": "安装选定",
+    "installationQueue": "安装队列",
     "lastUpdated": "最后更新",
     "latestVersion": "最新",
     "license": "许可证",
@@ -445,6 +451,7 @@
     "uninstallSelected": "卸载所选",
     "uninstalling": "正在卸载",
     "update": "更新",
+    "updatingAllPacks": "更新所有包",
     "version": "版本"
   },
   "maskEditor": {

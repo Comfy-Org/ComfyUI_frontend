@@ -151,10 +151,12 @@
     "description": "설명",
     "devices": "장치",
     "disableAll": "모두 비활성화",
+    "disabling": "비활성화 중",
     "download": "다운로드",
     "empty": "비어 있음",
     "enableAll": "모두 활성화",
     "enabled": "활성화됨",
+    "enabling": "활성화 중",
     "error": "오류",
     "experimental": "베타",
     "export": "내보내기",
@@ -221,6 +223,7 @@
     "terminal": "터미널",
     "update": "업데이트",
     "updated": "업데이트 됨",
+    "updating": "업데이트 중",
     "upload": "업로드",
     "videoFailedToLoad": "비디오를 로드하지 못했습니다.",
     "workflow": "워크플로"
@@ -399,11 +402,13 @@
     "title": "유지 보수"
   },
   "manager": {
+    "changingVersion": "{from}에서 {to}로 버전 변경 중",
     "createdBy": "작성자",
     "dependencies": "의존성",
     "discoverCommunityContent": "커뮤니티에서 만든 노드 팩 및 확장 프로그램을 찾아보세요...",
     "downloads": "다운로드",
     "errorConnecting": "Comfy Node Registry에 연결하는 중 오류가 발생했습니다.",
+    "failed": "실패 ({count})",
     "filter": {
       "disabled": "비활성화",
       "enabled": "활성화",
@@ -412,6 +417,7 @@
     "inWorkflow": "워크플로우 내",
     "infoPanelEmpty": "정보를 보려면 항목을 클릭하세요",
     "installSelected": "선택한 항목 설치",
+    "installationQueue": "설치 대기열",
     "lastUpdated": "마지막 업데이트",
     "latestVersion": "최신",
     "license": "라이선스",
@@ -445,6 +451,7 @@
     "uninstallSelected": "선택 항목 제거",
     "uninstalling": "제거 중",
     "update": "업데이트",
+    "updatingAllPacks": "모든 패키지 업데이트 중",
     "version": "버전"
   },
   "maskEditor": {

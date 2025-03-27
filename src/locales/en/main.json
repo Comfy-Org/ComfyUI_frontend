@@ -101,10 +101,16 @@
     "missing": "Missing",
     "inProgress": "In progress",
     "completed": "Completed",
-    "interrupted": "Interrupted"
+    "interrupted": "Interrupted",
+    "enabling": "Enabling",
+    "disabling": "Disabling",
+    "updating": "Updating"
   },
   "manager": {
     "title": "Custom Nodes Manager",
+    "failed": "Failed ({count})",
+    "installationQueue": "Installation Queue",
+    "changingVersion": "Changing version from {from} to {to}",
     "dependencies": "Dependencies",
     "inWorkflow": "In Workflow",
     "infoPanelEmpty": "Click an item to see the info",
@@ -117,6 +123,7 @@
     "uninstalling": "Uninstalling",
     "update": "Update",
     "uninstallSelected": "Uninstall Selected",
+    "updatingAllPacks": "Updating all packages",
     "license": "License",
     "nightlyVersion": "Nightly",
     "latestVersion": "Latest",

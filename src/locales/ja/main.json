@@ -151,10 +151,12 @@
     "description": "説明",
     "devices": "デバイス",
     "disableAll": "すべて無効にする",
+    "disabling": "無効化",
     "download": "ダウンロード",
     "empty": "空",
     "enableAll": "すべて有効にする",
     "enabled": "有効",
+    "enabling": "有効化",
     "error": "エラー",
     "experimental": "ベータ",
     "export": "エクスポート",
@@ -221,6 +223,7 @@
     "terminal": "ターミナル",
     "update": "更新",
     "updated": "更新済み",
+    "updating": "更新中",
     "upload": "アップロード",
     "videoFailedToLoad": "ビデオの読み込みに失敗しました",
     "workflow": "ワークフロー"
@@ -399,11 +402,13 @@
     "title": "メンテナンス"
   },
   "manager": {
+    "changingVersion": "バージョンを {from} から {to} に変更",
     "createdBy": "作成者",
     "dependencies": "依存関係",
     "discoverCommunityContent": "コミュニティが作成したノードパック、拡張機能などを探す...",
     "downloads": "ダウンロード",
     "errorConnecting": "Comfy Node Registryへの接続エラー。",
+    "failed": "失敗しました ({count})",
     "filter": {
       "disabled": "無効",
       "enabled": "有効",
@@ -412,6 +417,7 @@
     "inWorkflow": "ワークフロー内",
     "infoPanelEmpty": "アイテムをクリックして情報を表示します",
     "installSelected": "選択したものをインストール",
+    "installationQueue": "インストールキュー",
     "lastUpdated": "最終更新日",
     "latestVersion": "最新",
     "license": "ライセンス",
@@ -445,6 +451,7 @@
     "uninstallSelected": "選択したものをアンインストール",
     "uninstalling": "アンインストール中",
     "update": "更新",
+    "updatingAllPacks": "すべてのパッケージを更新中",
     "version": "バージョン"
   },
   "maskEditor": {

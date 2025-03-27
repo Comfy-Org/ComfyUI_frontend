@@ -151,10 +151,12 @@
     "description": "Description",
     "devices": "Appareils",
     "disableAll": "Désactiver tout",
+    "disabling": "Désactivation",
     "download": "Télécharger",
     "empty": "Vide",
     "enableAll": "Activer tout",
     "enabled": "Activé",
+    "enabling": "Activation",
     "error": "Erreur",
     "experimental": "BETA",
     "export": "Exportation",
@@ -221,6 +223,7 @@
     "terminal": "Terminal",
     "update": "Mettre à jour",
     "updated": "Mis à jour",
+    "updating": "Mise à jour",
     "upload": "Téléverser",
     "videoFailedToLoad": "Échec du chargement de la vidéo",
     "workflow": "Flux de travail"
@@ -399,11 +402,13 @@
     "title": "Maintenance"
   },
   "manager": {
+    "changingVersion": "Changement de version de {from} à {to}",
     "createdBy": "Créé par",
     "dependencies": "Dépendances",
     "discoverCommunityContent": "Découvrez les packs de nœuds, extensions et plus encore créés par la communauté...",
     "downloads": "Téléchargements",
     "errorConnecting": "Erreur de connexion au registre de nœuds Comfy.",
+    "failed": "Échoué ({count})",
     "filter": {
       "disabled": "Désactivé",
       "enabled": "Activé",
@@ -412,6 +417,7 @@
     "inWorkflow": "Dans le flux de travail",
     "infoPanelEmpty": "Cliquez sur un élément pour voir les informations",
     "installSelected": "Installer sélectionné",
+    "installationQueue": "File d'attente d'installation",
     "lastUpdated": "Dernière mise à jour",
     "latestVersion": "Dernière",
     "license": "Licence",
@@ -445,6 +451,7 @@
     "uninstallSelected": "Désinstaller sélectionné",
     "uninstalling": "Désinstallation",
     "update": "Mettre à jour",
+    "updatingAllPacks": "Mise à jour de tous les paquets",
     "version": "Version"
   },
   "maskEditor": {
