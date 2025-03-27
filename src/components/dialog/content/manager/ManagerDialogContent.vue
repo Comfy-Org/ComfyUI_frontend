@@ -107,6 +107,7 @@ import RegistrySearchBar from '@/components/dialog/content/manager/registrySearc
 import GridSkeleton from '@/components/dialog/content/manager/skeleton/GridSkeleton.vue'
 import { useResponsiveCollapse } from '@/composables/element/useResponsiveCollapse'
 import { useInstalledPacks } from '@/composables/nodePack/useInstalledPacks'
+import { usePackUpdateStatus } from '@/composables/nodePack/usePackUpdateStatus'
 import { useWorkflowPacks } from '@/composables/nodePack/useWorkflowPacks'
 import { useRegistrySearch } from '@/composables/useRegistrySearch'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
@@ -118,7 +119,8 @@ enum ManagerTab {
   All = 'all',
   Installed = 'installed',
   Workflow = 'workflow',
-  Missing = 'missing'
+  Missing = 'missing',
+  Outdated = 'outdated'
 }
 
 const { t } = useI18n()
@@ -150,6 +152,11 @@ const tabs = ref<TabItem[]>([
     id: ManagerTab.Missing,
     label: t('g.missing'),
     icon: 'pi-exclamation-circle'
+  },
+  {
+    id: ManagerTab.Outdated,
+    label: t('g.outdated'),
+    icon: 'pi-sync'
   }
 ])
 const selectedTab = ref<TabItem>(tabs.value[0])
@@ -191,6 +198,9 @@ const {
 const filterMissingPacks = (packs: components['schemas']['Node'][]) =>
   packs.filter((pack) => !comfyManagerStore.isPackInstalled(pack.id))
 
+const isOutdatedTab = computed(
+  () => selectedTab.value?.id === ManagerTab.Outdated
+)
 const isInstalledTab = computed(
   () => selectedTab.value?.id === ManagerTab.Installed
 )
@@ -201,6 +211,25 @@ const isWorkflowTab = computed(
   () => selectedTab.value?.id === ManagerTab.Workflow
 )
 const isAllTab = computed(() => selectedTab.value?.id === ManagerTab.All)
+
+const isOutdatedPack = (pack: components['schemas']['Node']) => {
+  const { isUpdateAvailable } = usePackUpdateStatus(pack)
+  return isUpdateAvailable.value === true
+}
+const filterOutdatedPacks = (packs: components['schemas']['Node'][]) =>
+  packs.filter(isOutdatedPack)
+
+watch([isOutdatedTab, installedPacks], () => {
+  if (!isOutdatedTab.value) return
+
+  if (!isEmptySearch.value) {
+    displayPacks.value = filterOutdatedPacks(installedPacks.value)
+  } else if (!installedPacks.value.length) {
+    startFetchInstalled()
+  } else {
+    displayPacks.value = filterOutdatedPacks(installedPacks.value)
+  }
+})
 
 watch([isInstalledTab, installedPacks], () => {
   if (!isInstalledTab.value) return
@@ -247,6 +276,9 @@ const onResultsChange = () => {
       displayPacks.value = filterMissingPacks(
         filterWorkflowPack(searchResults.value)
       )
+      break
+    case ManagerTab.Outdated:
+      displayPacks.value = filterOutdatedPacks(searchResults.value)
       break
     default:
       displayPacks.value = searchResults.value
