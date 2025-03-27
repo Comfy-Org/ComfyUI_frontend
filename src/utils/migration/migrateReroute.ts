@@ -128,15 +128,6 @@ class ConversionContext {
       reroute.linkIds.push(endingLink.id)
     }
 
-    // Update source node's output slot's link ids to point to the new link.
-    const sourceNode = this.nodeById[startingLink.origin_id]
-    const outputSlot = sourceNode.outputs?.[startingLink.origin_slot]
-    if (outputSlot) {
-      outputSlot.links = outputSlot.links?.map((linkId) =>
-        linkId === startingLink.id ? endingLink.id : linkId
-      )
-    }
-
     return {
       id: endingLink.id,
       origin_id: startingLink.origin_id,
@@ -164,6 +155,29 @@ class ConversionContext {
       target_id: endingLink.target_id,
       target_slot: endingLink.target_slot,
       type: endingLink.type
+    }
+  }
+
+  #reconnectLinks(nodes: ComfyNode[], links: ComfyLinkObject[]): void {
+    // Remove all existing links on sockets
+    for (const node of nodes) {
+      for (const input of node.inputs ?? []) {
+        input.link = null
+      }
+      for (const output of node.outputs ?? []) {
+        output.links = []
+      }
+    }
+
+    const nodesById = _.keyBy(nodes, 'id')
+
+    // Reconnect the links
+    for (const link of links) {
+      const sourceNode = nodesById[link.origin_id]
+      sourceNode.outputs![link.origin_slot]!.links!.push(link.id)
+
+      const targetNode = nodesById[link.target_id]
+      targetNode.inputs![link.target_slot]!.link = link.id
     }
   }
 
@@ -205,11 +219,14 @@ class ConversionContext {
       }
     }
 
+    const nodes = Object.values(this.nodeById).filter(
+      (node) => node.type !== 'Reroute'
+    )
+    this.#reconnectLinks(nodes, links)
+
     return {
       ...this.workflow,
-      nodes: Object.values(this.nodeById).filter(
-        (node) => node.type !== 'Reroute'
-      ),
+      nodes,
       links: links.map((link) => [
         link.id,
         link.origin_id,
@@ -221,8 +238,8 @@ class ConversionContext {
       floatLinks: floatingLinks.length > 0 ? floatingLinks : undefined,
       extra: {
         ...this.workflow.extra,
-        reroutes: Array.from(this.validReroutes).map((reroute) =>
-          _.omit(reroute, 'nodeId') as Reroute
+        reroutes: Array.from(this.validReroutes).map(
+          (reroute) => _.omit(reroute, 'nodeId') as Reroute
         ),
         linkExtensions: this.linkExtensions
       }

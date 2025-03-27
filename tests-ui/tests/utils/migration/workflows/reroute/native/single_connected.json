@@ -76,7 +76,7 @@
         {
           "name": "IMAGE",
           "type": "IMAGE",
-          "links": null
+          "links": []
         }
       ],
       "properties": {

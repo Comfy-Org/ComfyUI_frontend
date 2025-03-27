@@ -34,10 +34,7 @@
           "name": "VAE",
           "type": "VAE",
           "slot_index": 2,
-          "links": [
-            13,
-            31
-          ]
+          "links": []
         }
       ],
       "properties": {
@@ -72,14 +69,14 @@
         {
           "name": "vae",
           "type": "VAE",
-          "link": 21
+          "link": null
         }
       ],
       "outputs": [
         {
           "name": "IMAGE",
           "type": "IMAGE",
-          "links": null
+          "links": []
         }
       ],
       "properties": {
@@ -101,8 +98,30 @@
         200.06933385457722
       ]
     },
-    "reroutes": [],
+    "reroutes": [
+      {
+        "id": 1,
+        "pos": [
+          547.5,
+          293
+        ],
+        "linkIds": [],
+        "floating": {
+          "slotType": "input"
+        }
+      }
+    ],
     "linkExtensions": []
   },
-  "version": 0.4
+  "version": 0.4,
+  "floatLinks": [
+    {
+      "id": 21,
+      "origin_id": -1,
+      "origin_slot": -1,
+      "target_id": 12,
+      "target_slot": 1,
+      "type": "VAE"
+    }
+  ]
 }
