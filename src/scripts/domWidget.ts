@@ -56,6 +56,9 @@ export interface ComponentWidget<V extends object | string>
 
 export interface DOMWidgetOptions<V extends object | string>
   extends IWidgetOptions {
+  /**
+   * Whether to render a placeholder rectangle when zoomed out.
+   */
   hideOnZoom?: boolean
   selectOn?: string[]
   onHide?: (widget: BaseDOMWidget<V>) => void
@@ -145,7 +148,7 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
     widget_height: number,
     lowQuality?: boolean
   ): void {
-    if (this.options.hideOnZoom && lowQuality) {
+    if (this.options.hideOnZoom && lowQuality && this.isVisible()) {
       // Draw a placeholder rectangle
       const originalFillStyle = ctx.fillStyle
       ctx.beginPath()
