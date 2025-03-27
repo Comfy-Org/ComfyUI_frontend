@@ -28,6 +28,6 @@ const activeTabIndex = ref(0)
 const { t } = useI18n()
 const tabs = [
   { label: t('manager.installationQueue') },
-  { label: t('g.failed', { count: 0 }) }
+  { label: t('manager.failed', { count: 0 }) }
 ]
 </script>
