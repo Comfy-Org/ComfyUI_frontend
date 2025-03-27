@@ -32,7 +32,13 @@ enum ManagerRoute {
   GET_NODES = 'customnode/getmappings',
   GET_PACKS = 'customnode/getlist',
   IMPORT_FAIL_INFO = 'customnode/import_fail_info',
-  REBOOT = 'manager/reboot'
+  REBOOT = 'manager/reboot',
+
+  // v2 endpoints
+  BATCH = 'v2/manager/queue/batch',
+  HISTORY_LIST = 'v2/manager/queue/history_list',
+  HISTORY_ITEM = 'v2/manager/queue/history',
+  ABORT_CURRENT = 'v2/manager/queue/abort_current'
 }
 
 const managerApiClient = axios.create({
