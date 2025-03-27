@@ -108,6 +108,8 @@
   },
   "manager": {
     "title": "Custom Nodes Manager",
+    "failed": "Failed ({count})",
+    "installationQueue": "Installation Queue",
     "changingVersion": "Changing version from {from} to {to}",
     "dependencies": "Dependencies",
     "inWorkflow": "In Workflow",
