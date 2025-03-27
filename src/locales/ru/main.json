@@ -408,6 +408,7 @@
     "discoverCommunityContent": "Откройте для себя пакеты узлов, расширения и многое другое, созданные сообществом...",
     "downloads": "Загрузки",
     "errorConnecting": "Ошибка подключения к реестру Comfy Node.",
+    "failed": "Не удалось ({count})",
     "filter": {
       "disabled": "Отключено",
       "enabled": "Включено",
@@ -416,6 +417,7 @@
     "inWorkflow": "В рабочем процессе",
     "infoPanelEmpty": "Нажмите на элемент, чтобы увидеть информацию",
     "installSelected": "Установить выбранное",
+    "installationQueue": "Очередь установки",
     "lastUpdated": "Последнее обновление",
     "latestVersion": "Последняя",
     "license": "Лицензия",

@@ -408,6 +408,7 @@
     "discoverCommunityContent": "Découvrez les packs de nœuds, extensions et plus encore créés par la communauté...",
     "downloads": "Téléchargements",
     "errorConnecting": "Erreur de connexion au registre de nœuds Comfy.",
+    "failed": "Échoué ({count})",
     "filter": {
       "disabled": "Désactivé",
       "enabled": "Activé",
@@ -416,6 +417,7 @@
     "inWorkflow": "Dans le flux de travail",
     "infoPanelEmpty": "Cliquez sur un élément pour voir les informations",
     "installSelected": "Installer sélectionné",
+    "installationQueue": "File d'attente d'installation",
     "lastUpdated": "Dernière mise à jour",
     "latestVersion": "Dernière",
     "license": "Licence",

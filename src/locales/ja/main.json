@@ -408,6 +408,7 @@
     "discoverCommunityContent": "コミュニティが作成したノードパック、拡張機能などを探す...",
     "downloads": "ダウンロード",
     "errorConnecting": "Comfy Node Registryへの接続エラー。",
+    "failed": "失敗しました ({count})",
     "filter": {
       "disabled": "無効",
       "enabled": "有効",
@@ -416,6 +417,7 @@
     "inWorkflow": "ワークフロー内",
     "infoPanelEmpty": "アイテムをクリックして情報を表示します",
     "installSelected": "選択したものをインストール",
+    "installationQueue": "インストールキュー",
     "lastUpdated": "最終更新日",
     "latestVersion": "最新",
     "license": "ライセンス",
