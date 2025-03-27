@@ -12,10 +12,6 @@ type RerouteNode = ComfyNode & {
   type: 'Reroute'
 }
 
-type ExtendedReroute = Reroute & {
-  nodeId: NodeId
-}
-
 type LinkExtension = {
   id: number
   parentId: number
@@ -40,15 +36,15 @@ function getNodeCenter(node: ComfyNode): [number, number] {
 class ConversionContext {
   nodeById: Record<NodeId, ComfyNode>
   linkById: Record<number, ComfyLinkObject>
-  rerouteById: Record<number, ExtendedReroute>
-  rerouteByNodeId: Record<NodeId, ExtendedReroute>
+  rerouteById: Record<number, Reroute>
+  rerouteByNodeId: Record<NodeId, Reroute>
   linkExtensions: LinkExtension[]
 
+  /** Reroutes that has at least a valid link pass through it */
+  validReroutes: Set<Reroute>
+
   constructor(public workflow: WorkflowJSON04) {
-    this.nodeById = _.keyBy(
-      workflow.nodes.filter((node) => node.type !== 'Reroute').map(_.cloneDeep),
-      'id'
-    )
+    this.nodeById = _.keyBy(workflow.nodes.map(_.cloneDeep), 'id')
     this.linkById = _.keyBy(
       workflow.links.map((l) => ({
         id: l[0],
@@ -72,6 +68,7 @@ class ConversionContext {
     this.rerouteById = _.keyBy(reroutes, 'id')
 
     this.linkExtensions = []
+    this.validReroutes = new Set()
   }
 
   /**
@@ -95,8 +92,11 @@ class ConversionContext {
     return nodes
   }
 
-  #connectRerouteChain(rerouteNodes: RerouteNode[]): ExtendedReroute[] {
+  #connectRerouteChain(rerouteNodes: RerouteNode[]): Reroute[] {
     const reroutes = rerouteNodes.map((node) => this.rerouteByNodeId[node.id])
+    for (const reroute of reroutes) {
+      this.validReroutes.add(reroute)
+    }
 
     for (let i = 0; i < rerouteNodes.length - 1; i++) {
       const to = reroutes[i]
@@ -207,7 +207,9 @@ class ConversionContext {
 
     return {
       ...this.workflow,
-      nodes: Object.values(this.nodeById),
+      nodes: Object.values(this.nodeById).filter(
+        (node) => node.type !== 'Reroute'
+      ),
       links: links.map((link) => [
         link.id,
         link.origin_id,
@@ -216,10 +218,12 @@ class ConversionContext {
         link.target_slot,
         link.type
       ]),
-      floatingLinks,
+      floatLinks: floatingLinks.length > 0 ? floatingLinks : undefined,
       extra: {
         ...this.workflow.extra,
-        reroutes: Object.values(this.rerouteById),
+        reroutes: Array.from(this.validReroutes).map((reroute) =>
+          _.omit(reroute, 'nodeId') as Reroute
+        ),
         linkExtensions: this.linkExtensions
       }
     }
