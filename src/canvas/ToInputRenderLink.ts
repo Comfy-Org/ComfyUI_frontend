@@ -65,6 +65,8 @@ export class ToInputRenderLink implements RenderLink {
     // Set the parentId of the reroute we dropped on, to the reroute we dragged from
     reroute.parentId = fromReroute?.id
 
+    // Keep reroutes when disconnecting the original link
+    existingLink.disconnect(this.network, "output")
     const newLink = outputNode.connectSlots(fromSlot, inputNode, input, existingLink.parentId)
 
     // Connecting from the final reroute of a floating reroute chain

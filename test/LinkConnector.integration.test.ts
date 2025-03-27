@@ -551,6 +551,38 @@ describe("LinkConnector Integration", () => {
       expect(toInput.link).toBeNull()
       expect(toInput._floatingLinks?.size).toBe(1)
     })
+
+    test("Allow reroutes to be used as manual switches", ({ graph, connector, floatingReroute, validateIntegrityNoChanges }) => {
+      const rerouteWithTwoLinks = graph.reroutes.get(3)!
+      const targetNode = graph.getNodeById(2)!
+
+      const targetDropEvent = mockedInputDropEvent(targetNode, 0)
+
+      connector.dragFromReroute(graph, floatingReroute)
+      connector.dropLinks(graph, targetDropEvent)
+
+      // Link should have been moved to the floating reroute, and no floating links should remain
+      expect(rerouteWithTwoLinks.floating).toBeUndefined()
+      expect(floatingReroute.floating).toBeUndefined()
+      expect(rerouteWithTwoLinks.floatingLinkIds.size).toBe(0)
+      expect(floatingReroute.floatingLinkIds.size).toBe(0)
+      expect(rerouteWithTwoLinks.linkIds.size).toBe(1)
+      expect(floatingReroute.linkIds.size).toBe(1)
+
+      // Move the link again
+      connector.dragFromReroute(graph, rerouteWithTwoLinks)
+      connector.dropLinks(graph, targetDropEvent)
+
+      // Everything should be back the way it was when we started
+      expect(rerouteWithTwoLinks.floating).toBeUndefined()
+      expect(floatingReroute.floating).toEqual({ slotType: "output" })
+      expect(rerouteWithTwoLinks.floatingLinkIds.size).toBe(0)
+      expect(floatingReroute.floatingLinkIds.size).toBe(1)
+      expect(rerouteWithTwoLinks.linkIds.size).toBe(2)
+      expect(floatingReroute.linkIds.size).toBe(0)
+
+      validateIntegrityNoChanges()
+    })
   })
 
   test("Should drop floating links when both sides are disconnected", ({ graph, connector, reroutesBeforeTest, validateIntegrityNoChanges }) => {
