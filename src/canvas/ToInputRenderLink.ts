@@ -65,8 +65,6 @@ export class ToInputRenderLink implements RenderLink {
     // Set the parentId of the reroute we dropped on, to the reroute we dragged from
     reroute.parentId = fromReroute?.id
 
-    // Keep reroutes when disconnecting the original link
-    existingLink.disconnect(this.network, "output")
     const newLink = outputNode.connectSlots(fromSlot, inputNode, input, existingLink.parentId)
 
     // Connecting from the final reroute of a floating reroute chain
@@ -77,7 +75,17 @@ export class ToInputRenderLink implements RenderLink {
       if (reroute.id === fromReroute?.id) break
 
       reroute.removeLink(existingLink)
-      if (reroute.totalLinks === 0) reroute.remove()
+      if (reroute.totalLinks === 0) {
+        if (existingLink.isFloating) {
+          // Cannot float from both sides - remove
+          reroute.remove()
+        } else {
+          // Convert to floating
+          const cl = existingLink.toFloating("output", reroute.id)
+          this.network.addFloatingLink(cl)
+          reroute.floating = { slotType: "output" }
+        }
+      }
     }
     events.dispatch("link-created", newLink)
   }

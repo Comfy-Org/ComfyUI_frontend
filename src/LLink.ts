@@ -59,6 +59,18 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     this.#color = value === "" ? null : value
   }
 
+  public get isFloatingOutput(): boolean {
+    return this.origin_id === -1 && this.origin_slot === -1
+  }
+
+  public get isFloatingInput(): boolean {
+    return this.target_id === -1 && this.target_slot === -1
+  }
+
+  public get isFloating(): boolean {
+    return this.isFloatingOutput || this.isFloatingInput
+  }
+
   constructor(
     id: LinkId,
     type: ISlotType,
@@ -181,6 +193,28 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    */
   hasTarget(nodeId: NodeId, inputIndex: number): boolean {
     return this.target_id === nodeId && this.target_slot === inputIndex
+  }
+
+  /**
+   * Creates a floating link from this link.
+   * @param slotType The side of the link that is still connected
+   * @param parentId The parent reroute ID of the link
+   * @returns A new LLink that is floating
+   */
+  toFloating(slotType: "input" | "output", parentId: RerouteId): LLink {
+    const exported = this.asSerialisable()
+    exported.id = -1
+    exported.parentId = parentId
+
+    if (slotType === "input") {
+      exported.origin_id = -1
+      exported.origin_slot = -1
+    } else {
+      exported.target_id = -1
+      exported.target_slot = -1
+    }
+
+    return LLink.create(exported)
   }
 
   /**

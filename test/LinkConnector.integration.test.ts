@@ -734,7 +734,7 @@ describe("LinkConnector Integration", () => {
     for (const [index, parentId] of parentIds.entries()) {
       const reroute = graph.reroutes.get(parentId)!
       if (linksAfter[index] === undefined) {
-        expect(reroute).toBeUndefined()
+        expect(reroute).not.toBeUndefined()
       } else {
         expect(reroute.linkIds.size).toBe(linksAfter[index])
       }
@@ -852,10 +852,15 @@ describe("LinkConnector Integration", () => {
 
     expect([...toReroute.linkIds.values()]).toEqual(nextLinkIds)
 
-    // Parent reroutes should have lost the links or been removed
     for (const rerouteId of shouldBeRemoved) {
       const reroute = graph.reroutes.get(rerouteId)!
-      expect(reroute).toBeUndefined()
+      if (testFloatingInputs) {
+        // Already-floating reroutes should be removed
+        expect(reroute).toBeUndefined()
+      } else {
+        // Non-floating reroutes should still exist
+        expect(reroute).not.toBeUndefined()
+      }
     }
 
     for (const rerouteId of shouldHaveLinkIdsRemoved) {
