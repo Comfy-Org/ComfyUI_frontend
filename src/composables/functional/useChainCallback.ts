@@ -9,8 +9,8 @@ export const useChainCallback = <T extends (...args: any[]) => void>(
   originalCallback: T | undefined,
   ...callbacks: ((...args: Parameters<T>) => void)[]
 ) => {
-  return (...args: Parameters<T>) => {
-    originalCallback?.(...args)
-    callbacks.forEach((callback) => callback(...args))
+  return function (this: unknown, ...args: Parameters<T>) {
+    originalCallback?.call(this, ...args)
+    callbacks.forEach((callback) => callback.call(this, ...args))
   }
 }
