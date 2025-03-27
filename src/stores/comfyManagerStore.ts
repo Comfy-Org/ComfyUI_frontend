@@ -1,6 +1,7 @@
 import { whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useCachedRequest } from '@/composables/useCachedRequest'
 import { useManagerQueue } from '@/composables/useManagerQueue'
@@ -20,6 +21,7 @@ import {
  * Store for state of installed node packs
  */
 export const useComfyManagerStore = defineStore('comfyManager', () => {
+  const { t } = useI18n()
   const managerService = useComfyManagerService()
   const { showManagerProgressDialog } = useDialogService()
 
@@ -136,14 +138,17 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     async (params: InstallPackParams, signal?: AbortSignal) => {
       if (!params.id) return
 
-      let actionDescription = 'Installing'
+      let actionDescription = t('g.installing')
       if (installedPacksIds.value.has(params.id)) {
         const installedPack = installedPacks.value[params.id]
 
         if (installedPack && installedPack.ver !== params.selected_version) {
-          actionDescription = `Changing version from ${installedPack.ver} to ${params.selected_version}:`
+          actionDescription = t('manager.changingVersion', {
+            from: installedPack.ver,
+            to: params.selected_version
+          })
         } else {
-          actionDescription = 'Enabling'
+          actionDescription = t('g.enabling')
         }
       }
 
@@ -157,14 +162,14 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     installPack.clear()
     installPack.cancel()
     const task = () => managerService.uninstallPack(params, signal)
-    enqueueTask(withLogs(task, `Uninstalling ${params.id}`))
+    enqueueTask(withLogs(task, t('manager.uninstalling', { id: params.id })))
   }
 
   const updatePack = useCachedRequest<ManagerPackInfo, void>(
     async (params: ManagerPackInfo, signal?: AbortSignal) => {
       updateAllPacks.cancel()
       const task = () => managerService.updatePack(params, signal)
-      enqueueTask(withLogs(task, `Updating ${params.id}`))
+      enqueueTask(withLogs(task, t('g.updating', { id: params.id })))
     },
     { maxSize: 1 }
   )
@@ -172,14 +177,14 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
   const updateAllPacks = useCachedRequest<UpdateAllPacksParams, void>(
     async (params: UpdateAllPacksParams, signal?: AbortSignal) => {
       const task = () => managerService.updateAllPacks(params, signal)
-      enqueueTask(withLogs(task, 'Updating all packs'))
+      enqueueTask(withLogs(task, t('manager.updatingAllPacks')))
     },
     { maxSize: 1 }
   )
 
   const disablePack = (params: ManagerPackInfo, signal?: AbortSignal) => {
     const task = () => managerService.disablePack(params, signal)
-    enqueueTask(withLogs(task, `Disabling ${params.id}`))
+    enqueueTask(withLogs(task, t('g.disabling', { id: params.id })))
   }
 
   const getInstalledPackVersion = (packId: string) => {
