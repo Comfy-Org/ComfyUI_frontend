@@ -1,5 +1,5 @@
-import { useAsyncState } from '@vueuse/core'
-import { Ref, unref } from 'vue'
+import { get, useAsyncState } from '@vueuse/core'
+import { Ref } from 'vue'
 
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { UseNodePacksOptions } from '@/types/comfyManagerTypes'
@@ -14,7 +14,7 @@ export const useNodePacks = (
   const { immediate = false } = options
   const { getPacksByIds } = useComfyRegistryStore()
 
-  const fetchPacks = () => getPacksByIds.call(unref(packsIds).filter(Boolean))
+  const fetchPacks = () => getPacksByIds.call(get(packsIds).filter(Boolean))
 
   const {
     isReady,
