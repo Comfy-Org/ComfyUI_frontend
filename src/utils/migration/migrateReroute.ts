@@ -1,7 +1,7 @@
 import _ from 'lodash'
 
 import type {
-  ComfyLink,
+  ComfyLinkObject,
   ComfyNode,
   NodeId,
   Reroute,
@@ -12,14 +12,13 @@ type RerouteNode = ComfyNode & {
   type: 'Reroute'
 }
 
+type ExtendedReroute = Reroute & {
+  nodeId: NodeId
+}
+
 type LinkExtension = {
   id: number
   parentId: number
-}
-
-type RerouteEntry = {
-  reroute: Reroute
-  rerouteNode: RerouteNode
 }
 
 /**
@@ -38,156 +37,192 @@ function getNodeCenter(node: ComfyNode): [number, number] {
   return [node.pos[0] + node.size[0] / 2, node.pos[1] + node.size[1] / 2]
 }
 
-/**
- * Creates native reroute points from legacy Reroute nodes
- */
-export function createReroutePoints(
-  rerouteNodes: RerouteNode[]
-): Map<NodeId, RerouteEntry> {
-  const rerouteMap = new Map<NodeId, RerouteEntry>()
-
-  let rerouteIdCounter = 1
-  rerouteNodes.forEach((node) => {
-    const rerouteId = rerouteIdCounter++
-    rerouteMap.set(node.id, {
-      reroute: {
-        id: rerouteId,
-        pos: getNodeCenter(node),
-        linkIds: []
-      },
-      rerouteNode: node
-    })
-  })
-
-  return rerouteMap
-}
-
-/**
- * Creates new links and link extensions for the migrated workflow
- */
-export function createNewLinks(
-  workflow: WorkflowJSON04,
-  rerouteMap: Map<NodeId, RerouteEntry>
-): {
-  nodes: ComfyNode[]
-  reroutes: Reroute[]
-  links: ComfyLink[]
+class ConversionContext {
+  nodeById: Record<NodeId, ComfyNode>
+  linkById: Record<number, ComfyLinkObject>
+  rerouteById: Record<number, ExtendedReroute>
+  rerouteByNodeId: Record<NodeId, ExtendedReroute>
   linkExtensions: LinkExtension[]
-} {
-  const nodeById = _.keyBy(
-    workflow.nodes.filter((node) => node.type !== 'Reroute').map(_.cloneDeep),
-    'id'
-  )
-  const links: ComfyLink[] = []
-  const linkExtensions: LinkExtension[] = []
 
-  const rerouteMapByRerouteId = new Map<number, RerouteEntry>(
-    Array.from(rerouteMap.values()).map((entry) => [entry.reroute.id, entry])
-  )
-  const linksMap = new Map<number, ComfyLink>(
-    Array.from(workflow.links).map((link) => [link[0], link])
-  )
+  constructor(public workflow: WorkflowJSON04) {
+    this.nodeById = _.keyBy(
+      workflow.nodes.filter((node) => node.type !== 'Reroute').map(_.cloneDeep),
+      'id'
+    )
+    this.linkById = _.keyBy(
+      workflow.links.map((l) => ({
+        id: l[0],
+        origin_id: l[1],
+        origin_slot: l[2],
+        target_id: l[3],
+        target_slot: l[4],
+        type: l[5]
+      })),
+      'id'
+    )
 
-  // Process each link in the workflow
-  for (const link of workflow.links) {
-    const [
-      linkId,
-      sourceNodeId,
-      _sourceSlot,
-      targetNodeId,
-      _targetSlot,
-      _dataType
-    ] = link
+    const reroutes = findLegacyRerouteNodes(workflow).map((node, index) => ({
+      nodeId: node.id,
+      id: index + 1,
+      pos: getNodeCenter(node),
+      linkIds: []
+    }))
 
-    // Check if this link connects to or from a reroute node
-    const sourceEntry = rerouteMap.get(sourceNodeId)
-    const targetEntry = rerouteMap.get(targetNodeId)
-    const sourceIsReroute = !!sourceEntry
-    const targetIsReroute = !!targetEntry
+    this.rerouteByNodeId = _.keyBy(reroutes, 'nodeId')
+    this.rerouteById = _.keyBy(reroutes, 'id')
 
-    if (!sourceIsReroute && !targetIsReroute) {
-      // If neither end is a reroute, keep the link as is
-      links.push(link)
-    } else if (sourceIsReroute && !targetIsReroute) {
-      // This is a link from a reroute node to a regular node
-      linkExtensions.push({
-        id: linkId,
-        parentId: sourceEntry.reroute.id
-      })
-    } else if (sourceIsReroute && targetIsReroute) {
-      targetEntry.reroute.parentId = sourceEntry.reroute.id
+    this.linkExtensions = []
+  }
+
+  /**
+   * Gets the chain of reroute nodes leading to the given node
+   */
+  #getRerouteChain(node: RerouteNode): RerouteNode[] {
+    const nodes: RerouteNode[] = []
+    let currentNode: RerouteNode = node
+    while (currentNode?.type === 'Reroute') {
+      nodes.push(currentNode)
+      const inputLink: ComfyLinkObject | undefined =
+        this.linkById[currentNode.inputs?.[0]?.link ?? 0]
+
+      if (!inputLink) {
+        break
+      }
+
+      currentNode = this.nodeById[inputLink.origin_id] as RerouteNode
+    }
+
+    return nodes
+  }
+
+  #connectRerouteChain(rerouteNodes: RerouteNode[]): ExtendedReroute[] {
+    const reroutes = rerouteNodes.map((node) => this.rerouteByNodeId[node.id])
+
+    for (let i = 0; i < rerouteNodes.length - 1; i++) {
+      const to = reroutes[i]
+      const from = reroutes[i + 1]
+      to.parentId = from.id
+    }
+
+    return reroutes
+  }
+
+  #createNewLink(
+    startingLink: ComfyLinkObject,
+    endingLink: ComfyLinkObject,
+    rerouteNodes: RerouteNode[]
+  ): ComfyLinkObject {
+    if (rerouteNodes.length === 0) {
+      throw new Error('No reroute nodes found')
+    }
+
+    const reroute = this.rerouteByNodeId[rerouteNodes[0].id]
+    this.linkExtensions.push({
+      id: endingLink.id,
+      parentId: reroute.id
+    })
+
+    const reroutes = this.#connectRerouteChain(rerouteNodes)
+    for (const reroute of reroutes) {
+      reroute.linkIds ??= []
+      reroute.linkIds.push(endingLink.id)
+    }
+
+    // Update source node's output slot's link ids to point to the new link.
+    const sourceNode = this.nodeById[startingLink.origin_id]
+    const outputSlot = sourceNode.outputs?.[startingLink.origin_slot]
+    if (outputSlot) {
+      outputSlot.links = outputSlot.links?.map((linkId) =>
+        linkId === startingLink.id ? endingLink.id : linkId
+      )
+    }
+
+    return {
+      id: endingLink.id,
+      origin_id: startingLink.origin_id,
+      origin_slot: startingLink.origin_slot,
+      target_id: endingLink.target_id,
+      target_slot: endingLink.target_slot,
+      type: endingLink.type
     }
   }
 
-  // Populate linkIds on reroute nodes
-  // Remove all partially connected reroutes
-  const validLinkExtensions: LinkExtension[] = []
-  const validReroutes: Set<Reroute> = new Set()
-
-  for (const linkExtension of linkExtensions) {
-    let entry = rerouteMapByRerouteId.get(linkExtension.parentId)
-    const chainedReroutes: Reroute[] = []
-
-    while (entry) {
-      const reroute = entry.reroute
-      reroute.linkIds ??= []
-      reroute.linkIds.push(linkExtension.id)
-      chainedReroutes.push(reroute)
-
-      if (reroute.parentId) {
-        entry = rerouteMapByRerouteId.get(reroute.parentId)
-      } else {
-        // Last reroute in the chain
-        const rerouteNode = entry.rerouteNode
-        const rerouteInputLink = linksMap.get(
-          rerouteNode?.inputs?.[0]?.link ?? -1
-        )
-        const rerouteOutputLink = linksMap.get(linkExtension.id)
-
-        if (rerouteInputLink && rerouteOutputLink) {
-          const [_, sourceNodeId, sourceSlot] = rerouteInputLink
-          const [linkId, __, ___, targetNodeId, targetSlot, dataType] =
-            rerouteOutputLink
-
-          links.push([
-            linkId,
-            sourceNodeId,
-            sourceSlot,
-            targetNodeId,
-            targetSlot,
-            dataType
-          ])
-
-          validLinkExtensions.push(linkExtension)
-          chainedReroutes.forEach((reroute) => validReroutes.add(reroute))
-
-          // Update source node's output slot's link ids to point to the new link.
-          const sourceNode = nodeById[sourceNodeId]
-          if (!sourceNode) {
-            throw new Error(
-              `Corrupted workflow: Source node ${sourceNodeId} not found`
-            )
-          }
-          const outputSlot = sourceNode.outputs?.[sourceSlot]
-          if (!outputSlot) {
-            throw new Error(
-              `Corrupted workflow: Output slot ${sourceSlot} not found`
-            )
-          }
-          outputSlot.links = outputSlot.links?.map((l) =>
-            l === rerouteInputLink[0] ? linkId : l
-          )
-        }
-        entry = undefined
+  #createNewInputFloatingLink(
+    endingLink: ComfyLinkObject,
+    rerouteNodes: RerouteNode[]
+  ): ComfyLinkObject {
+    const reroutes = this.#connectRerouteChain(rerouteNodes)
+    for (const reroute of reroutes) {
+      reroute.floating = {
+        slotType: 'input'
       }
     }
+    return {
+      id: endingLink.id,
+      origin_id: -1,
+      origin_slot: -1,
+      target_id: endingLink.target_id,
+      target_slot: endingLink.target_slot,
+      type: endingLink.type
+    }
   }
 
-  return {
-    nodes: Object.values(nodeById),
-    links,
-    linkExtensions: validLinkExtensions,
-    reroutes: Array.from(validReroutes)
+  migrateReroutes(): WorkflowJSON04 {
+    const links: ComfyLinkObject[] = []
+    const floatingLinks: ComfyLinkObject[] = []
+
+    const endingLinks: ComfyLinkObject[] = []
+
+    for (const link of Object.values(this.linkById)) {
+      const sourceIsReroute = !!this.rerouteByNodeId[link.origin_id]
+      const targetIsReroute = !!this.rerouteByNodeId[link.target_id]
+
+      // Process links that are not connected to reroute nodes
+      if (!sourceIsReroute && !targetIsReroute) {
+        links.push(link)
+      } else if (sourceIsReroute && !targetIsReroute) {
+        endingLinks.push(link)
+      }
+    }
+
+    for (const endingLink of endingLinks) {
+      const endingRerouteNode = this.nodeById[
+        endingLink.origin_id
+      ] as RerouteNode
+      const rerouteNodes = this.#getRerouteChain(endingRerouteNode)
+      const startingLink =
+        this.linkById[
+          rerouteNodes[rerouteNodes.length - 1]?.inputs?.[0]?.link ?? -1
+        ]
+      if (startingLink) {
+        // Valid link found, create a new link
+        links.push(this.#createNewLink(startingLink, endingLink, rerouteNodes))
+      } else {
+        // Floating link found, create a new floating link
+        floatingLinks.push(
+          this.#createNewInputFloatingLink(endingLink, rerouteNodes)
+        )
+      }
+    }
+
+    return {
+      ...this.workflow,
+      nodes: Object.values(this.nodeById),
+      links: links.map((link) => [
+        link.id,
+        link.origin_id,
+        link.origin_slot,
+        link.target_id,
+        link.target_slot,
+        link.type
+      ]),
+      floatingLinks,
+      extra: {
+        ...this.workflow.extra,
+        reroutes: Object.values(this.rerouteById),
+        linkExtensions: this.linkExtensions
+      }
+    }
   }
 }
 
@@ -213,20 +248,6 @@ export const migrateLegacyRerouteNodes = (
     newWorkflow.extra = {}
   }
 
-  // Create native reroute points
-  const rerouteMap = createReroutePoints(legacyRerouteNodes)
-
-  // Create new links and link extensions
-  const { nodes, links, linkExtensions, reroutes } = createNewLinks(
-    workflow,
-    rerouteMap
-  )
-
-  // Update the workflow
-  newWorkflow.links = links
-  newWorkflow.nodes = nodes
-  newWorkflow.extra.reroutes = reroutes
-  newWorkflow.extra.linkExtensions = linkExtensions
-
-  return newWorkflow
+  const context = new ConversionContext(newWorkflow)
+  return context.migrateReroutes()
 }
