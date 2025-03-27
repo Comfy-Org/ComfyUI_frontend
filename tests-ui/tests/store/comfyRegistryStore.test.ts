@@ -26,6 +26,38 @@ const mockNodePack: components['schemas']['Node'] = {
   }
 }
 
+const mockNodePack2: components['schemas']['Node'] = {
+  id: 'test-pack-id-2',
+  name: 'Test Pack 2',
+  description: 'A second test node pack',
+  downloads: 1000,
+  publisher: {
+    id: 'test-publisher',
+    name: 'Test Publisher'
+  },
+  latest_version: {
+    id: 'test-version',
+    version: '1.0.0',
+    createdAt: '2023-01-01T00:00:00Z'
+  }
+}
+
+const mockNodePack3: components['schemas']['Node'] = {
+  id: 'test-pack-id-3',
+  name: 'Test Pack 3',
+  description: 'A third test node pack',
+  downloads: 1000,
+  publisher: {
+    id: 'test-publisher',
+    name: 'Test Publisher'
+  },
+  latest_version: {
+    id: 'test-version',
+    version: '1.0.0',
+    createdAt: '2023-01-01T00:00:00Z'
+  }
+}
+
 const mockListResult: operations['listAllNodes']['responses'][200]['content']['application/json'] =
   {
     nodes: [mockNodePack],
@@ -48,7 +80,32 @@ describe('useComfyRegistryStore', () => {
     mockRegistryService = {
       isLoading: ref(false),
       error: ref(null),
-      listAllPacks: vi.fn().mockResolvedValue(mockListResult),
+      listAllPacks: vi.fn().mockImplementation((params) => {
+        // If node_id is provided, return specific nodes
+        if (params.node_id) {
+          return Promise.resolve({
+            nodes: params.node_id
+              .map((id: string) => {
+                switch (id) {
+                  case 'test-pack-id':
+                    return mockNodePack
+                  case 'test-pack-id-2':
+                    return mockNodePack2
+                  case 'test-pack-id-3':
+                    return mockNodePack3
+                  default:
+                    return null
+                }
+              })
+              .filter(Boolean),
+            total: params.node_id.length,
+            page: 1,
+            limit: 10
+          })
+        }
+        // Otherwise return paginated results
+        return Promise.resolve(mockListResult)
+      }),
       getPackById: vi.fn().mockResolvedValue(mockNodePack)
     }
 
@@ -116,5 +173,17 @@ describe('useComfyRegistryStore', () => {
     const result = await store.listAllPacks.call({ page: 1, limit: 10 })
 
     expect(result).toBeNull()
+  })
+
+  it('should fetch packs by IDs', async () => {
+    const store = useComfyRegistryStore()
+    const packIds = ['test-pack-id', 'test-pack-id-2', 'test-pack-id-3']
+    const result = await store.getPacksByIds.call(packIds)
+
+    expect(result).toEqual([mockNodePack, mockNodePack2, mockNodePack3])
+    expect(mockRegistryService.listAllPacks).toHaveBeenCalledWith(
+      { node_id: packIds },
+      expect.any(Object) // abort signal
+    )
   })
 })

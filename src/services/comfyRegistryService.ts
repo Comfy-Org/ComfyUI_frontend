@@ -11,6 +11,10 @@ const registryApiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json'
+  },
+  paramsSerializer: {
+    // Disables PHP-style notation (e.g. param[]=value) in favor of repeated params (e.g. param=value1&param=value2)
+    indexes: null
   }
 })
 

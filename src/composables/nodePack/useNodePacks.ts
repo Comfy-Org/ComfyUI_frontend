@@ -1,14 +1,8 @@
-import { useAsyncState } from '@vueuse/core'
-import { chunk } from 'lodash'
-import { Ref, computed, isRef, ref } from 'vue'
+import { get, useAsyncState } from '@vueuse/core'
+import { Ref } from 'vue'
 
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { UseNodePacksOptions } from '@/types/comfyManagerTypes'
-import { components } from '@/types/comfyRegistryTypes'
-
-const DEFAULT_MAX_CONCURRENT = 6
-
-type NodePack = components['schemas']['Node']
 
 /**
  * Handles fetching node packs from the registry given a list of node pack IDs
@@ -17,54 +11,25 @@ export const useNodePacks = (
   packsIds: string[] | Ref<string[]>,
   options: UseNodePacksOptions = {}
 ) => {
-  const { immediate = false, maxConcurrent = DEFAULT_MAX_CONCURRENT } = options
-  const { getPackById } = useComfyRegistryStore()
+  const { immediate = false } = options
+  const { getPacksByIds } = useComfyRegistryStore()
 
-  const nodePacks = ref<NodePack[]>([])
-  const processedIds = ref<Set<string>>(new Set())
+  const fetchPacks = () => getPacksByIds.call(get(packsIds).filter(Boolean))
 
-  const queuedPackIds = isRef(packsIds) ? packsIds : ref<string[]>(packsIds)
-  const remainingIds = computed(() =>
-    queuedPackIds.value?.filter((id) => !processedIds.value.has(id))
-  )
-  const chunks = computed(() =>
-    remainingIds.value?.length ? chunk(remainingIds.value, maxConcurrent) : []
-  )
-
-  const fetchPack = (id: Parameters<typeof getPackById.call>[0]) =>
-    id ? getPackById.call(id) : null
-
-  const toRequestBatch = async (ids: string[]) =>
-    Promise.all(ids.map(fetchPack))
-
-  const isValidResponse = (response: NodePack | null) => response !== null
-
-  const fetchPacks = async () => {
-    for (const chunk of chunks.value) {
-      const resolvedChunk = await toRequestBatch(chunk)
-      chunk.forEach((id) => processedIds.value.add(id))
-      if (!resolvedChunk) continue
-      nodePacks.value.push(...resolvedChunk.filter(isValidResponse))
-    }
-  }
-
-  const { isReady, isLoading, error, execute } = useAsyncState(
-    fetchPacks,
-    null,
-    {
-      immediate
-    }
-  )
-
-  const clear = () => {
-    queuedPackIds.value = []
-    isReady.value = false
-    isLoading.value = false
-  }
+  const {
+    isReady,
+    isLoading,
+    error,
+    execute,
+    state: nodePacks
+  } = useAsyncState(fetchPacks, [], {
+    immediate
+  })
 
   const cleanup = () => {
-    getPackById.cancel()
-    clear()
+    getPacksByIds.cancel()
+    isReady.value = false
+    isLoading.value = false
   }
 
   return {

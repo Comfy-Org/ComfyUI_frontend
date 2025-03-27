@@ -188,59 +188,52 @@ const {
   isLoading: isLoadingWorkflow
 } = useWorkflowPacks()
 
-const getInstalledResults = () => {
-  if (isEmptySearch.value) {
-    startFetchInstalled()
-    return installedPacks.value
-  } else {
-    return filterInstalledPack(searchResults.value)
-  }
-}
-
-const getInWorkflowResults = () => {
-  if (isEmptySearch.value) {
-    startFetchWorkflowPacks()
-    return workflowPacks.value
-  } else {
-    return filterWorkflowPack(searchResults.value)
-  }
-}
-
 const filterMissingPacks = (packs: components['schemas']['Node'][]) =>
   packs.filter((pack) => !comfyManagerStore.isPackInstalled(pack.id))
 
-const setMissingPacks = () => {
-  displayPacks.value = filterMissingPacks(workflowPacks.value)
-}
+const isInstalledTab = computed(
+  () => selectedTab.value?.id === ManagerTab.Installed
+)
+const isMissingTab = computed(
+  () => selectedTab.value?.id === ManagerTab.Missing
+)
+const isWorkflowTab = computed(
+  () => selectedTab.value?.id === ManagerTab.Workflow
+)
+const isAllTab = computed(() => selectedTab.value?.id === ManagerTab.All)
 
-const getMissingPacks = () => {
-  if (isEmptySearch.value) {
-    startFetchWorkflowPacks()
-    whenever(() => workflowPacks.value.length, setMissingPacks, {
-      immediate: true,
-      once: true
-    })
-    return filterMissingPacks(workflowPacks.value)
+watch([isInstalledTab, installedPacks], () => {
+  if (!isInstalledTab.value) return
+
+  if (!isEmptySearch.value) {
+    displayPacks.value = filterInstalledPack(searchResults.value)
+  } else if (!installedPacks.value.length) {
+    startFetchInstalled()
   } else {
-    return filterMissingPacks(filterWorkflowPack(searchResults.value))
+    displayPacks.value = installedPacks.value
   }
-}
+})
 
-const onTabChange = () => {
-  switch (selectedTab.value?.id) {
-    case ManagerTab.Installed:
-      displayPacks.value = getInstalledResults()
-      break
-    case ManagerTab.Workflow:
-      displayPacks.value = getInWorkflowResults()
-      break
-    case ManagerTab.Missing:
-      displayPacks.value = getMissingPacks()
-      break
-    default:
-      displayPacks.value = searchResults.value
+watch([isMissingTab, isWorkflowTab, workflowPacks], () => {
+  if (!isWorkflowTab.value && !isMissingTab.value) return
+
+  if (!isEmptySearch.value) {
+    displayPacks.value = isMissingTab.value
+      ? filterMissingPacks(filterWorkflowPack(searchResults.value))
+      : filterWorkflowPack(searchResults.value)
+  } else if (!workflowPacks.value.length) {
+    startFetchWorkflowPacks()
+  } else {
+    displayPacks.value = isMissingTab.value
+      ? filterMissingPacks(workflowPacks.value)
+      : workflowPacks.value
   }
-}
+})
+
+watch([isAllTab, searchResults], () => {
+  if (!isAllTab.value) return
+  displayPacks.value = searchResults.value
+})
 
 const onResultsChange = () => {
   switch (selectedTab.value?.id) {
@@ -260,7 +253,6 @@ const onResultsChange = () => {
   }
 }
 
-whenever(selectedTab, onTabChange)
 watch(searchResults, onResultsChange, { flush: 'pre' })
 watch(() => comfyManagerStore.installedPacksIds, onResultsChange)
 
