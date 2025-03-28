@@ -326,4 +326,18 @@ test.describe('Error dialog', () => {
     const errorDialog = comfyPage.page.locator('.comfy-error-report')
     await expect(errorDialog).toBeVisible()
   })
+
+  test('Should display an error dialog when prompt execution fails', async ({
+    comfyPage
+  }) => {
+    await comfyPage.page.evaluate(async () => {
+      const app = window['app']
+      app.api.queuePrompt = () => {
+        throw new Error('Error on queuePrompt!')
+      }
+      await app.queuePrompt(0)
+    })
+    const errorDialog = comfyPage.page.locator('.comfy-error-report')
+    await expect(errorDialog).toBeVisible()
+  })
 })

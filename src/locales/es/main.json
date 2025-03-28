@@ -119,7 +119,8 @@
     "defaultTitle": "Ocurrió un error",
     "extensionFileHint": "Esto puede deberse al siguiente script",
     "loadWorkflowTitle": "La carga se interrumpió debido a un error al recargar los datos del flujo de trabajo",
-    "noStackTrace": "No hay seguimiento de pila disponible"
+    "noStackTrace": "No hay seguimiento de pila disponible",
+    "promptExecutionError": "La ejecución del prompt falló"
   },
   "g": {
     "about": "Acerca de",
