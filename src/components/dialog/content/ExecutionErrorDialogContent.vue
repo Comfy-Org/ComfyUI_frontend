@@ -3,7 +3,7 @@
     <NoResultsPlaceholder
       class="pb-0"
       icon="pi pi-exclamation-circle"
-      :title="error.nodeType ?? 'UNKNOWN'"
+      :title="title"
       :message="error.exceptionMessage"
     />
     <template v-if="error.extensionFile">
@@ -109,12 +109,16 @@ const showSendReport = () => {
 const toast = useToast()
 const { t } = useI18n()
 
+const title = computed<string>(
+  () => error.nodeType ?? error.exceptionType ?? t('errorDialog.defaultTitle')
+)
+
 const stackTraceField = computed<ReportField>(() => {
   return {
     label: t('issueReport.stackTrace'),
     value: 'StackTrace',
     optIn: true,
-    getData: () => error.traceback?.join('\n')
+    getData: () => error.traceback
   }
 })
 

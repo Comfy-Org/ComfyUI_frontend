@@ -78,7 +78,7 @@ export const useDialogService = () => {
         exceptionMessage: executionError.exception_message,
         nodeId: executionError.node_id,
         nodeType: executionError.node_type,
-        traceback: executionError.traceback,
+        traceback: executionError.traceback.join('\n'),
         reportType: 'graphExecutionError'
       }
     }

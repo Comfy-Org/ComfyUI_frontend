@@ -10,7 +10,7 @@ export interface ErrorReportData {
   serverLogs: string
   workflow: ISerialisedGraph
 
-  traceback?: string[]
+  traceback?: string
   nodeId?: NodeId
   nodeType?: string
 }
@@ -41,7 +41,7 @@ ${
 - **Exception Message:** ${error.exceptionMessage || 'N/A'}
 ## Stack Trace
 \`\`\`
-${error.traceback ? error.traceback.join('\n') : 'No stack trace available'}
+${error.traceback || 'No stack trace available'}
 \`\`\``
     : ''
 }
