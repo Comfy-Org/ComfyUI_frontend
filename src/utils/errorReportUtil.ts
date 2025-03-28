@@ -4,15 +4,15 @@ import type { SystemStats } from '@/schemas/apiSchema'
 import type { NodeId } from '@/schemas/comfyWorkflowSchema'
 
 export interface ErrorReportData {
-  exception_type: string
-  exception_message: string
+  exceptionType: string
+  exceptionMessage: string
   systemStats: SystemStats
   serverLogs: string
   workflow: ISerialisedGraph
 
   traceback?: string[]
-  node_id?: NodeId
-  node_type?: string
+  nodeId?: NodeId
+  nodeType?: string
 }
 
 /**
@@ -35,10 +35,10 @@ export function generateErrorReport(error: ErrorReportData): string {
 ${
   error
     ? `## Error Details
-- **Node ID:** ${error.node_id || 'N/A'}
-- **Node Type:** ${error.node_type || 'N/A'}
-- **Exception Type:** ${error.exception_type || 'N/A'}
-- **Exception Message:** ${error.exception_message || 'N/A'}
+- **Node ID:** ${error.nodeId || 'N/A'}
+- **Node Type:** ${error.nodeType || 'N/A'}
+- **Exception Type:** ${error.exceptionType || 'N/A'}
+- **Exception Message:** ${error.exceptionMessage || 'N/A'}
 ## Stack Trace
 \`\`\`
 ${error.traceback ? error.traceback.join('\n') : 'No stack trace available'}

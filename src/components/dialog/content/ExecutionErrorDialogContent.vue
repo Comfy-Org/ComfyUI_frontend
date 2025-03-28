@@ -121,11 +121,11 @@ const generateReport = (systemStats: SystemStats, logs: string) => {
     systemStats,
     serverLogs: logs,
     workflow: app.graph.serialize(),
-    exception_type: error.exception_type,
-    exception_message: error.exception_message,
+    exceptionType: error.exception_type,
+    exceptionMessage: error.exception_message,
     traceback: error.traceback,
-    node_id: error.node_id,
-    node_type: error.node_type
+    nodeId: error.node_id,
+    nodeType: error.node_type
   })
 }
 
