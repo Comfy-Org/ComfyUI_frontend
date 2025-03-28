@@ -109,6 +109,17 @@
         "floating": {
           "slotType": "input"
         }
+      },
+      {
+        "id": 2,
+        "pos": [
+          438.99267578125,
+          291.96600341796875
+        ],
+        "linkIds": [],
+        "floating": {
+          "slotType": "output"
+        }
       }
     ],
     "linkExtensions": []
@@ -116,12 +127,22 @@
   "version": 0.4,
   "floatLinks": [
     {
-      "id": 21,
+      "id": 7,
       "origin_id": -1,
       "origin_slot": -1,
       "target_id": 12,
       "target_slot": 1,
-      "type": "VAE"
+      "type": "VAE",
+      "parentId": 1
+    },
+    {
+      "id": 8,
+      "origin_id": 4,
+      "origin_slot": 2,
+      "target_id": -1,
+      "target_slot": -1,
+      "type": "*",
+      "parentId": 2
     }
   ]
 }

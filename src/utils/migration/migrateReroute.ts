@@ -43,6 +43,8 @@ class ConversionContext {
   /** Reroutes that has at least a valid link pass through it */
   validReroutes: Set<Reroute>
 
+  #rerouteIdCounter = 0
+
   constructor(public workflow: WorkflowJSON04) {
     this.nodeById = _.keyBy(workflow.nodes.map(_.cloneDeep), 'id')
     this.linkById = _.keyBy(
@@ -63,6 +65,7 @@ class ConversionContext {
       pos: getNodeCenter(node),
       linkIds: []
     }))
+    this.#rerouteIdCounter = reroutes.length + 1
 
     this.rerouteByNodeId = _.keyBy(reroutes, 'nodeId')
     this.rerouteById = _.keyBy(reroutes, 'id')
@@ -126,6 +129,7 @@ class ConversionContext {
     for (const reroute of reroutes) {
       reroute.linkIds ??= []
       reroute.linkIds.push(endingLink.id)
+      delete reroute.floating
     }
 
     return {
@@ -144,17 +148,44 @@ class ConversionContext {
   ): ComfyLinkObject {
     const reroutes = this.#connectRerouteChain(rerouteNodes)
     for (const reroute of reroutes) {
-      reroute.floating = {
-        slotType: 'input'
+      if (!reroute.linkIds?.length) {
+        reroute.floating = {
+          slotType: 'input'
+        }
       }
     }
     return {
-      id: endingLink.id,
+      id: this.#rerouteIdCounter++,
       origin_id: -1,
       origin_slot: -1,
       target_id: endingLink.target_id,
       target_slot: endingLink.target_slot,
-      type: endingLink.type
+      type: endingLink.type,
+      parentId: reroutes[0].id
+    }
+  }
+
+  #createNewOutputFloatingLink(
+    startingLink: ComfyLinkObject,
+    rerouteNodes: RerouteNode[]
+  ): ComfyLinkObject {
+    const reroutes = this.#connectRerouteChain(rerouteNodes)
+    for (const reroute of reroutes) {
+      if (!reroute.linkIds?.length) {
+        reroute.floating = {
+          slotType: 'output'
+        }
+      }
+    }
+
+    return {
+      id: this.#rerouteIdCounter++,
+      origin_id: startingLink.origin_id,
+      origin_slot: startingLink.origin_slot,
+      target_id: -1,
+      target_slot: -1,
+      type: startingLink.type,
+      parentId: reroutes[0].id
     }
   }
 
@@ -215,6 +246,27 @@ class ConversionContext {
         // Floating link found, create a new floating link
         floatingLinks.push(
           this.#createNewInputFloatingLink(endingLink, rerouteNodes)
+        )
+      }
+    }
+
+    const floatingEndingRerouteNodes = Object.keys(this.rerouteByNodeId)
+      .map((nodeId) => this.nodeById[nodeId] as RerouteNode)
+      .filter((rerouteNode) => {
+        const output = rerouteNode.outputs?.[0]
+        if (!output) return false
+        return !output.links?.length
+      })
+
+    for (const rerouteNode of floatingEndingRerouteNodes) {
+      const rerouteNodes = this.#getRerouteChain(rerouteNode)
+      const startingLink =
+        this.linkById[
+          rerouteNodes[rerouteNodes.length - 1]?.inputs?.[0]?.link ?? -1
+        ]
+      if (startingLink) {
+        floatingLinks.push(
+          this.#createNewOutputFloatingLink(startingLink, rerouteNodes)
         )
       }
     }
