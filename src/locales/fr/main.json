@@ -119,7 +119,8 @@
     "defaultTitle": "Une erreur est survenue",
     "extensionFileHint": "Cela peut être dû au script suivant",
     "loadWorkflowTitle": "Chargement interrompu en raison d'une erreur de rechargement des données de workflow",
-    "noStackTrace": "Aucune trace de pile disponible"
+    "noStackTrace": "Aucune trace de pile disponible",
+    "promptExecutionError": "L'exécution de l'invite a échoué"
   },
   "g": {
     "about": "À propos",

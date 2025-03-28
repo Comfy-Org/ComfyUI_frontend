@@ -119,7 +119,8 @@
     "defaultTitle": "发生错误",
     "extensionFileHint": "这可能是由于以下脚本",
     "loadWorkflowTitle": "由于重新加载工作流数据出错，加载被中止",
-    "noStackTrace": "无可用堆栈跟踪"
+    "noStackTrace": "无可用堆栈跟踪",
+    "promptExecutionError": "提示执行失败"
   },
   "g": {
     "about": "关于",

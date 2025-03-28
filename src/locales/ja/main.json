@@ -119,7 +119,8 @@
     "defaultTitle": "エラーが発生しました",
     "extensionFileHint": "これは次のスクリプトが原因かもしれません",
     "loadWorkflowTitle": "ワークフローデータの再読み込みエラーにより、読み込みが中止されました",
-    "noStackTrace": "スタックトレースは利用できません"
+    "noStackTrace": "スタックトレースは利用できません",
+    "promptExecutionError": "プロンプトの実行に失敗しました"
   },
   "g": {
     "about": "情報",
