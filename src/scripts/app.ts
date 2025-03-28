@@ -12,7 +12,7 @@ import type { ToastMessageOptions } from 'primevue/toast'
 import { reactive } from 'vue'
 
 import { st, t } from '@/i18n'
-import type { ResultItem } from '@/schemas/apiSchema'
+import type { NodeError, ResultItem } from '@/schemas/apiSchema'
 import {
   ComfyApiWorkflow,
   type ComfyWorkflowJSON,
@@ -47,7 +47,7 @@ import { executeWidgetsCallback, isImageNode } from '@/utils/litegraphUtil'
 import { migrateLegacyRerouteNodes } from '@/utils/migration/migrateReroute'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
-import { type ComfyApi, api } from './api'
+import { type ComfyApi, PromptExecutionError, api } from './api'
 import { defaultGraph } from './defaultGraph'
 import {
   getFlacMetadata,
@@ -121,7 +121,7 @@ export class ComfyApp {
   dragOverNode: LGraphNode | null = null
   // @ts-expect-error fixme ts strict error
   canvasEl: HTMLCanvasElement
-  lastNodeErrors: any[] | null = null
+  lastNodeErrors: Record<NodeId, NodeError> | null = null
   /** @type {ExecutionErrorWsMessage} */
   lastExecutionError: { node_id?: NodeId } | null = null
   configuringGraph: boolean = false
@@ -570,7 +570,6 @@ export class ComfyApp {
       // @ts-expect-error fixme ts strict error
       const res = origDrawNodeShape.apply(this, arguments)
 
-      // @ts-expect-error fixme ts strict error
       const nodeErrors = self.lastNodeErrors?.[node.id]
 
       let color = null
@@ -1223,32 +1222,6 @@ export class ComfyApp {
     })
   }
 
-  // @ts-expect-error fixme ts strict error
-  #formatPromptError(error) {
-    if (error == null) {
-      return '(unknown error)'
-    } else if (typeof error === 'string') {
-      return error
-    } else if (error.stack && error.message) {
-      return error.toString()
-    } else if (error.response) {
-      let message = error.response.error.message
-      if (error.response.error.details)
-        message += ': ' + error.response.error.details
-      for (const [_, nodeError] of Object.entries(error.response.node_errors)) {
-        // @ts-expect-error
-        message += '\n' + nodeError.class_type + ':'
-        // @ts-expect-error
-        for (const errorReason of nodeError.errors) {
-          message +=
-            '\n    - ' + errorReason.message + ': ' + errorReason.details
-        }
-      }
-      return message
-    }
-    return '(unknown error)'
-  }
-
   async queuePrompt(number: number, batchCount: number = 1): Promise<boolean> {
     this.#queueItems.push({ number, batchCount })
 
@@ -1287,13 +1260,14 @@ export class ComfyApp {
                 }
               } catch (error) {}
             }
-          } catch (error) {
-            const formattedError = this.#formatPromptError(error)
-            this.ui.dialog.show(formattedError)
-            // @ts-expect-error fixme ts strict error
-            if (error.response) {
-              // @ts-expect-error fixme ts strict error
-              this.lastNodeErrors = error.response.node_errors
+          } catch (error: unknown) {
+            useDialogService().showErrorDialog(error, {
+              title: t('errorDialog.promptExecutionError'),
+              reportType: 'promptExecutionError'
+            })
+
+            if (error instanceof PromptExecutionError) {
+              this.lastNodeErrors = error.response.node_errors ?? null
               this.canvas.draw(true, true)
             }
             break

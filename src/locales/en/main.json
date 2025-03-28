@@ -965,7 +965,8 @@
     "defaultTitle": "An error occurred",
     "loadWorkflowTitle": "Loading aborted due to error reloading workflow data",
     "noStackTrace": "No stacktrace available",
-    "extensionFileHint": "This may be due to the following script"
+    "extensionFileHint": "This may be due to the following script",
+    "promptExecutionError": "Prompt execution failed"
   },
   "desktopUpdate": {
     "title": "Updating ComfyUI Desktop",

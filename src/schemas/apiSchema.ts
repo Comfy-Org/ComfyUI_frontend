@@ -255,14 +255,26 @@ export function validateTaskItem(taskItem: unknown) {
 
 const zEmbeddingsResponse = z.array(z.string())
 const zExtensionsResponse = z.array(z.string())
+const zError = z.object({
+  type: z.string(),
+  message: z.string(),
+  details: z.string(),
+  extra_info: z.record(z.string(), z.any())
+})
+const zNodeError = z.object({
+  errors: z.array(zError),
+  class_type: z.string(),
+  dependent_outputs: z.array(z.any())
+})
 const zPromptResponse = z.object({
-  node_errors: z.array(z.string()).optional(),
+  node_errors: z.record(zNodeId, zNodeError).optional(),
   prompt_id: z.string().optional(),
   exec_info: z
     .object({
       queue_remaining: z.number().optional()
     })
-    .optional()
+    .optional(),
+  error: z.union([z.string(), zError])
 })
 
 const zDeviceStats = z.object({
@@ -414,6 +426,7 @@ const zSettings = z.record(z.any()).and(
 export type EmbeddingsResponse = z.infer<typeof zEmbeddingsResponse>
 export type ExtensionsResponse = z.infer<typeof zExtensionsResponse>
 export type PromptResponse = z.infer<typeof zPromptResponse>
+export type NodeError = z.infer<typeof zNodeError>
 export type Settings = z.infer<typeof zSettings>
 export type DeviceStats = z.infer<typeof zDeviceStats>
 export type SystemStats = z.infer<typeof zSystemStats>

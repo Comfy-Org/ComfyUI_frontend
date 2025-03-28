@@ -145,6 +145,35 @@ export interface ComfyApi extends EventTarget {
   ): void
 }
 
+export class PromptExecutionError extends Error {
+  response: PromptResponse
+
+  constructor(response: PromptResponse) {
+    super('Prompt execution failed')
+    this.response = response
+  }
+
+  override toString() {
+    let message = super.message
+    if (typeof this.response.error === 'string') {
+      message += ': ' + this.response.error
+    } else if (this.response.error.details) {
+      message += ': ' + this.response.error.details
+    }
+
+    for (const [_, nodeError] of Object.entries(
+      this.response.node_errors ?? []
+    )) {
+      message += '\n' + nodeError.class_type + ':'
+      for (const errorReason of nodeError.errors) {
+        message += '\n    - ' + errorReason.message + ': ' + errorReason.details
+      }
+    }
+
+    return message
+  }
+}
+
 export class ComfyApi extends EventTarget {
   #registered = new Set()
   api_host: string
@@ -464,9 +493,10 @@ export class ComfyApi extends EventTarget {
   }
 
   /**
-   *
+   * Queues a prompt to be executed
    * @param {number} number The index at which to queue the prompt, passing -1 will insert the prompt at the front of the queue
    * @param {object} prompt The prompt data to queue
+   * @throws {PromptExecutionError} If the prompt fails to execute
    */
   async queuePrompt(
     number: number,
@@ -496,9 +526,7 @@ export class ComfyApi extends EventTarget {
     })
 
     if (res.status !== 200) {
-      throw {
-        response: await res.json()
-      }
+      throw new PromptExecutionError(await res.json())
     }
 
     return await res.json()
