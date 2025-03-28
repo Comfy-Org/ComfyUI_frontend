@@ -1,10 +1,10 @@
 <template>
-  <NoResultsPlaceholder
-    icon="pi pi-exclamation-circle"
-    :title="error.nodeType ?? 'UNKNOWN'"
-    :message="error.exceptionMessage"
-  />
-  <div class="comfy-error-report">
+  <div class="comfy-error-report flex flex-col gap-4">
+    <NoResultsPlaceholder
+      icon="pi pi-exclamation-circle"
+      :title="error.nodeType ?? 'UNKNOWN'"
+      :message="error.exceptionMessage"
+    />
     <template v-if="error.extensionFile">
       <span>{{ t('errorDialog.extensionFileHint') }}:</span>
       <br />
@@ -27,8 +27,8 @@
     </div>
     <template v-if="reportOpen">
       <Divider />
-      <ScrollPanel style="width: 100%; height: 400px; max-width: 80vw">
-        <pre class="wrapper-pre">{{ reportContent }}</pre>
+      <ScrollPanel class="w-full h-[400px] max-w-[80vw]">
+        <pre class="whitespace-pre-wrap break-words">{{ reportContent }}</pre>
       </ScrollPanel>
       <Divider />
     </template>
@@ -42,7 +42,7 @@
         nodeType: error.nodeType ?? 'UNKNOWN'
       }"
     />
-    <div class="action-container">
+    <div class="flex gap-4 justify-end">
       <FindIssueButton
         :errorMessage="error.exceptionMessage"
         :repoOwner="repoOwner"
@@ -153,22 +153,3 @@ const copyReportToClipboard = async () => {
   await copyToClipboard(reportContent.value)
 }
 </script>
-
-<style scoped>
-.comfy-error-report {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.action-container {
-  display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
-}
-
-.wrapper-pre {
-  white-space: pre-wrap;
-  word-wrap: break-word;
-}
-</style>
