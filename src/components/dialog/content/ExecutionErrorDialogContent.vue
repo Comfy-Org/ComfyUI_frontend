@@ -5,6 +5,12 @@
     :message="error.exceptionMessage"
   />
   <div class="comfy-error-report">
+    <template v-if="error.extensionFile">
+      <span>{{ t('errorDialog.extensionFileHint') }}:</span>
+      <br />
+      <span class="font-bold">{{ error.extensionFile }}</span>
+    </template>
+
     <div class="flex gap-2 justify-center">
       <Button
         v-show="!reportOpen"
@@ -76,7 +82,15 @@ import ReportIssuePanel from './error/ReportIssuePanel.vue'
 
 const { error } = defineProps<{
   error: Omit<ErrorReportData, 'workflow' | 'systemStats' | 'serverLogs'> & {
+    /**
+     * The type of error report to submit.
+     * @default 'unknownError'
+     */
     reportType?: string
+    /**
+     * The file name of the extension that caused the error.
+     */
+    extensionFile?: string
   }
 }>()
 
