@@ -244,7 +244,7 @@ export class ComfyApp {
   }
 
   getPreviewFormatParam() {
-    let preview_format = this.ui.settings.getSettingValue('Comfy.PreviewFormat')
+    let preview_format = useSettingStore().get('Comfy.PreviewFormat')
     if (preview_format) return `&preview=${preview_format}`
     else return ''
   }
