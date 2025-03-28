@@ -29,7 +29,7 @@
     <ReportIssuePanel
       v-if="sendReportOpen"
       :title="$t('issueReport.submitErrorReport')"
-      error-type="graphExecutionError"
+      :error-type="error.reportType ?? 'unknownError'"
       :extra-fields="[stackTraceField]"
       :tags="{
         exceptionMessage: error.exceptionMessage,
@@ -75,7 +75,9 @@ import {
 import ReportIssuePanel from './error/ReportIssuePanel.vue'
 
 const { error } = defineProps<{
-  error: Omit<ErrorReportData, 'workflow' | 'systemStats' | 'serverLogs'>
+  error: Omit<ErrorReportData, 'workflow' | 'systemStats' | 'serverLogs'> & {
+    reportType?: string
+  }
 }>()
 
 const repoOwner = 'comfyanonymous'
