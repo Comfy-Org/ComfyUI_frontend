@@ -995,6 +995,7 @@
     "failedToApplyTexture": "Échec de l'application de la texture",
     "failedToDownloadFile": "Échec du téléchargement du fichier",
     "failedToExportModel": "Échec de l'exportation du modèle en {format}",
+    "failedToFetchLogs": "Échec de la récupération des journaux du serveur",
     "fileLoadError": "Impossible de trouver le flux de travail dans {fileName}",
     "fileUploadFailed": "Échec du téléchargement du fichier",
     "interrupted": "L'exécution a été interrompue",

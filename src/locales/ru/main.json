@@ -995,6 +995,7 @@
     "failedToApplyTexture": "Не удалось применить текстуру",
     "failedToDownloadFile": "Не удалось скачать файл",
     "failedToExportModel": "Не удалось экспортировать модель как {format}",
+    "failedToFetchLogs": "Не удалось получить серверные логи",
     "fileLoadError": "Не удалось найти рабочий процесс в {fileName}",
     "fileUploadFailed": "Не удалось загрузить файл",
     "interrupted": "Выполнение было прервано",
