@@ -2382,7 +2382,6 @@ class BrushTool {
     const isErasing = maskCtx.globalCompositeOperation === 'destination-out'
 
     if (hardness === 1) {
-      console.log(sliderOpacity, opacity)
       gradient.addColorStop(
         0,
         isErasing
@@ -4210,6 +4209,7 @@ class PanAndZoomManager {
   imageRootHeight: number = 0
 
   cursorPoint: Point = { x: 0, y: 0 }
+  penPointerIdList: number[] = []
 
   constructor(maskEditor: MaskEditorDialog) {
     this.maskEditor = maskEditor
@@ -4241,6 +4241,18 @@ class PanAndZoomManager {
 
     this.messageBroker.subscribe('cursorPoint', async (point: Point) => {
       this.updateCursorPosition(point)
+    })
+
+    this.messageBroker.subscribe('pointerDown', async (event: PointerEvent) => {
+      if (event.pointerType === 'pen')
+        this.penPointerIdList.push(event.pointerId)
+    })
+
+    this.messageBroker.subscribe('pointerUp', async (event: PointerEvent) => {
+      if (event.pointerType === 'pen') {
+        const index = this.penPointerIdList.indexOf(event.pointerId)
+        if (index > -1) this.penPointerIdList.splice(index, 1)
+      }
     })
 
     this.messageBroker.subscribe(
@@ -4281,7 +4293,10 @@ class PanAndZoomManager {
 
   handleTouchStart(event: TouchEvent) {
     event.preventDefault()
-    if ((event.touches[0] as any).touchType === 'stylus') return
+
+    // for pen device, if drawing with pen, do not move the canvas
+    if (this.penPointerIdList.length > 0) return
+
     this.messageBroker.publish('setBrushVisibility', false)
     if (event.touches.length === 2) {
       const currentTime = new Date().getTime()
@@ -4310,7 +4325,9 @@ class PanAndZoomManager {
 
   async handleTouchMove(event: TouchEvent) {
     event.preventDefault()
-    if ((event.touches[0] as any).touchType === 'stylus') return
+
+    // for pen device, if drawing with pen, do not move the canvas
+    if (this.penPointerIdList.length > 0) return
 
     this.lastTwoFingerTap = 0
     if (this.isTouchZooming && event.touches.length === 2) {
@@ -4361,23 +4378,17 @@ class PanAndZoomManager {
 
   handleTouchEnd(event: TouchEvent) {
     event.preventDefault()
-    if (
-      event.touches.length === 0 &&
-      (event.touches[0] as any).touchType === 'stylus'
-    ) {
-      return
-    }
 
-    this.isTouchZooming = false
-    this.lastTouchMidPoint = { x: 0, y: 0 }
-
-    if (event.touches.length === 0) {
-      this.lastTouchPoint = { x: 0, y: 0 }
-    } else if (event.touches.length === 1) {
+    const lastTouch = event.touches[0]
+    // if all touches are removed, lastTouch will be null
+    if (lastTouch) {
       this.lastTouchPoint = {
-        x: event.touches[0].clientX,
-        y: event.touches[0].clientY
+        x: lastTouch.clientX,
+        y: lastTouch.clientY
       }
+    } else {
+      this.isTouchZooming = false
+      this.lastTouchMidPoint = { x: 0, y: 0 }
     }
   }
 
@@ -4585,6 +4596,8 @@ class PanAndZoomManager {
 
     this.zoom_ratio = Math.min(zoomRatioWidth, zoomRatioHeight)
     this.pan_offset = pan_offset
+
+    this.penPointerIdList = []
 
     await this.invalidatePanZoom()
   }
