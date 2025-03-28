@@ -83,9 +83,11 @@ const zReroute = z
     parentId: z.number().optional(),
     pos: zVector2,
     linkIds: z.array(z.number()).nullish(),
-    floating: z.object({
-      slotType: z.enum(['input', 'output'])
-    }).optional()
+    floating: z
+      .object({
+        slotType: z.enum(['input', 'output'])
+      })
+      .optional()
   })
   .passthrough()
 
