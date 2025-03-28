@@ -1,6 +1,7 @@
 <template>
   <div class="comfy-error-report flex flex-col gap-4">
     <NoResultsPlaceholder
+      class="pb-0"
       icon="pi pi-exclamation-circle"
       :title="error.nodeType ?? 'UNKNOWN'"
       :message="error.exceptionMessage"
