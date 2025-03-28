@@ -287,7 +287,7 @@ class ConversionContext {
         link.target_slot,
         link.type
       ]),
-      floatLinks: floatingLinks.length > 0 ? floatingLinks : undefined,
+      floatingLinks: floatingLinks.length > 0 ? floatingLinks : undefined,
       extra: {
         ...this.workflow.extra,
         reroutes: Array.from(this.validReroutes).map(

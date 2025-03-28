@@ -125,7 +125,7 @@
     "linkExtensions": []
   },
   "version": 0.4,
-  "floatLinks": [
+  "floatingLinks": [
     {
       "id": 7,
       "origin_id": -1,
