@@ -15,6 +15,7 @@ import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.
 import TemplateWorkflowsContent from '@/components/templates/TemplateWorkflowsContent.vue'
 import TemplateWorkflowsDialogHeader from '@/components/templates/TemplateWorkflowsDialogHeader.vue'
 import { t } from '@/i18n'
+import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
 import { type ShowDialogOptions, useDialogStore } from '@/stores/dialogStore'
 
 export type ConfirmationDialogType =
@@ -70,9 +71,17 @@ export const useDialogService = () => {
     })
   }
 
-  function showExecutionErrorDialog(
-    props: InstanceType<typeof ExecutionErrorDialogContent>['$props']
-  ) {
+  function showExecutionErrorDialog(executionError: ExecutionErrorWsMessage) {
+    const props: InstanceType<typeof ExecutionErrorDialogContent>['$props'] = {
+      error: {
+        exceptionType: executionError.exception_type,
+        exceptionMessage: executionError.exception_message,
+        nodeId: executionError.node_id,
+        nodeType: executionError.node_type,
+        traceback: executionError.traceback
+      }
+    }
+
     dialogStore.showDialog({
       key: 'global-execution-error',
       component: ExecutionErrorDialogContent,

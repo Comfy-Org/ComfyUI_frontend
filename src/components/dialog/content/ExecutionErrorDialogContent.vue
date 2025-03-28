@@ -1,8 +1,8 @@
 <template>
   <NoResultsPlaceholder
     icon="pi pi-exclamation-circle"
-    :title="error.node_type"
-    :message="error.exception_message"
+    :title="error.nodeType ?? 'UNKNOWN'"
+    :message="error.exceptionMessage"
   />
   <div class="comfy-error-report">
     <div class="flex gap-2 justify-center">
@@ -32,13 +32,13 @@
       error-type="graphExecutionError"
       :extra-fields="[stackTraceField]"
       :tags="{
-        exceptionMessage: error.exception_message,
-        nodeType: error.node_type
+        exceptionMessage: error.exceptionMessage,
+        nodeType: error.nodeType ?? 'UNKNOWN'
       }"
     />
     <div class="action-container">
       <FindIssueButton
-        :errorMessage="error.exception_message"
+        :errorMessage="error.exceptionMessage"
         :repoOwner="repoOwner"
         :repoName="repoName"
       />
@@ -63,16 +63,19 @@ import { useI18n } from 'vue-i18n'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import FindIssueButton from '@/components/dialog/content/error/FindIssueButton.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
-import type { ExecutionErrorWsMessage, SystemStats } from '@/schemas/apiSchema'
+import type { SystemStats } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { ReportField } from '@/types/issueReportTypes'
-import { generateErrorReport } from '@/utils/errorReportUtil'
+import {
+  type ErrorReportData,
+  generateErrorReport
+} from '@/utils/errorReportUtil'
 
 import ReportIssuePanel from './error/ReportIssuePanel.vue'
 
 const { error } = defineProps<{
-  error: ExecutionErrorWsMessage
+  error: Omit<ErrorReportData, 'workflow' | 'systemStats' | 'serverLogs'>
 }>()
 
 const repoOwner = 'comfyanonymous'
@@ -121,11 +124,11 @@ const generateReport = (systemStats: SystemStats, logs: string) => {
     systemStats,
     serverLogs: logs,
     workflow: app.graph.serialize(),
-    exceptionType: error.exception_type,
-    exceptionMessage: error.exception_message,
+    exceptionType: error.exceptionType,
+    exceptionMessage: error.exceptionMessage,
     traceback: error.traceback,
-    nodeId: error.node_id,
-    nodeType: error.node_type
+    nodeId: error.nodeId,
+    nodeType: error.nodeType
   })
 }
 
