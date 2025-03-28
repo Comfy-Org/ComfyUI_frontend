@@ -1,13 +1,13 @@
 {
-  "last_node_id": 24,
-  "last_link_id": 30,
+  "last_node_id": 36,
+  "last_link_id": 44,
   "nodes": [
     {
       "id": 4,
       "type": "CheckpointLoaderSimple",
       "pos": [
-        160,
-        240
+        -0.6348835229873657,
+        238.0631866455078
       ],
       "size": [
         315,
@@ -35,11 +35,13 @@
           "type": "VAE",
           "slot_index": 2,
           "links": [
-            21
+            40
           ]
         }
       ],
       "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.26",
         "Node name for S&R": "CheckpointLoaderSimple"
       },
       "widgets_values": [
@@ -50,15 +52,15 @@
       "id": 12,
       "type": "VAEDecode",
       "pos": [
-        620,
-        260
+        611.6028442382812,
+        254.6018524169922
       ],
       "size": [
         210,
         46
       ],
       "flags": {},
-      "order": 2,
+      "order": 4,
       "mode": 0,
       "inputs": [
         {
@@ -69,7 +71,7 @@
         {
           "name": "vae",
           "type": "VAE",
-          "link": 21
+          "link": 40
         }
       ],
       "outputs": [
@@ -80,6 +82,8 @@
         }
       ],
       "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.26",
         "Node name for S&R": "VAEDecode"
       },
       "widgets_values": []
@@ -87,7 +91,7 @@
   ],
   "links": [
     [
-      21,
+      40,
       4,
       2,
       12,
@@ -95,32 +99,66 @@
       "VAE"
     ]
   ],
+  "floatingLinks": [
+    {
+      "id": 4,
+      "origin_id": 4,
+      "origin_slot": 2,
+      "target_id": -1,
+      "target_slot": -1,
+      "type": "*",
+      "parentId": 3
+    }
+  ],
   "groups": [],
   "config": {},
   "extra": {
     "ds": {
-      "scale": 2.7130434782608694,
+      "scale": 1.6672297511789418,
       "offset": [
-        -35,
-        -40.86698717948718
+        262.0504372113823,
+        124.35120995663942
       ]
     },
+    "linkExtensions": [
+      {
+        "id": 40,
+        "parentId": 1
+      }
+    ],
     "reroutes": [
       {
         "id": 1,
         "pos": [
-          547.5,
-          293
+          530.268310546875,
+          287.761962890625
         ],
         "linkIds": [
-          21
-        ]
-      }
-    ],
-    "linkExtensions": [
+          40
+        ],
+        "parentId": 2
+      },
       {
-        "id": 21,
-        "parentId": 1
+        "id": 2,
+        "pos": [
+          400.3304138183594,
+          288.12872314453125
+        ],
+        "linkIds": [
+          40
+        ]
+      },
+      {
+        "id": 3,
+        "pos": [
+          528.3152770996094,
+          377.4836730957031
+        ],
+        "linkIds": [],
+        "parentId": 2,
+        "floating": {
+          "slotType": "output"
+        }
       }
     ]
   },

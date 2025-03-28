@@ -35,8 +35,8 @@
           "type": "VAE",
           "slot_index": 2,
           "links": [
-            13,
-            21
+            21,
+            34
           ]
         }
       ],
@@ -77,7 +77,7 @@
         {
           "name": "IMAGE",
           "type": "IMAGE",
-          "links": null
+          "links": []
         }
       ],
       "properties": {
@@ -115,7 +115,7 @@
         {
           "name": "IMAGE",
           "type": "IMAGE",
-          "links": null
+          "links": []
         }
       ],
       "properties": {

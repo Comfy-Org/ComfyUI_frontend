@@ -82,7 +82,12 @@ const zReroute = z
     id: z.number(),
     parentId: z.number().optional(),
     pos: zVector2,
-    linkIds: z.array(z.number()).nullish()
+    linkIds: z.array(z.number()).nullish(),
+    floating: z
+      .object({
+        slotType: z.enum(['input', 'output'])
+      })
+      .optional()
   })
   .passthrough()
 
@@ -277,6 +282,7 @@ export type ModelFile = z.infer<typeof zModelFile>
 export type NodeInput = z.infer<typeof zNodeInput>
 export type NodeOutput = z.infer<typeof zNodeOutput>
 export type ComfyLink = z.infer<typeof zComfyLink>
+export type ComfyLinkObject = z.infer<typeof zComfyLinkObject>
 export type ComfyNode = z.infer<typeof zComfyNode>
 export type Reroute = z.infer<typeof zReroute>
 export type WorkflowJSON04 = z.infer<typeof zComfyWorkflow>
