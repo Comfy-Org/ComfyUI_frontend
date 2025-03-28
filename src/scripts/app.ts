@@ -1129,7 +1129,7 @@ export class ComfyApp {
     } catch (error) {
       useDialogService().showErrorDialog(error, {
         title: t('errorDialog.loadWorkflowTitle'),
-        errorType: 'loadWorkflowError'
+        reportType: 'loadWorkflowError'
       })
       return
     }

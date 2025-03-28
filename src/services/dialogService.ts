@@ -183,23 +183,33 @@ export const useDialogService = () => {
     error: unknown,
     options: {
       title?: string
-      errorType?: string
+      reportType?: string
     } = {}
   ) {
-    const props =
+    const errorProps: {
+      errorMessage: string
+      stackTrace?: string
+      extensionFile?: string
+    } =
       error instanceof Error
         ? parseError(error)
         : {
             errorMessage: String(error)
           }
 
+    const props: InstanceType<typeof ErrorDialogContent>['$props'] = {
+      error: {
+        exceptionType: options.title ?? 'Unknown Error',
+        exceptionMessage: errorProps.errorMessage,
+        traceback: errorProps.stackTrace ?? t('errorDialog.noStackTrace'),
+        reportType: options.reportType
+      }
+    }
+
     dialogStore.showDialog({
       key: 'global-error',
       component: ErrorDialogContent,
-      props: {
-        ...props,
-        ...options
-      }
+      props
     })
   }
 
