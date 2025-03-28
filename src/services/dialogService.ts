@@ -1,6 +1,5 @@
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
-import ExecutionErrorDialogContent from '@/components/dialog/content/ExecutionErrorDialogContent.vue'
 import IssueReportDialogContent from '@/components/dialog/content/IssueReportDialogContent.vue'
 import LoadWorkflowWarning from '@/components/dialog/content/LoadWorkflowWarning.vue'
 import ManagerProgressDialogContent from '@/components/dialog/content/ManagerProgressDialogContent.vue'
@@ -72,7 +71,7 @@ export const useDialogService = () => {
   }
 
   function showExecutionErrorDialog(executionError: ExecutionErrorWsMessage) {
-    const props: InstanceType<typeof ExecutionErrorDialogContent>['$props'] = {
+    const props: InstanceType<typeof ErrorDialogContent>['$props'] = {
       error: {
         exceptionType: executionError.exception_type,
         exceptionMessage: executionError.exception_message,
@@ -85,7 +84,7 @@ export const useDialogService = () => {
 
     dialogStore.showDialog({
       key: 'global-execution-error',
-      component: ExecutionErrorDialogContent,
+      component: ErrorDialogContent,
       props
     })
   }
