@@ -995,6 +995,7 @@
     "failedToApplyTexture": "テクスチャの適用に失敗しました",
     "failedToDownloadFile": "ファイルのダウンロードに失敗しました",
     "failedToExportModel": "{format}としてモデルのエクスポートに失敗しました",
+    "failedToFetchLogs": "サーバーログの取得に失敗しました",
     "fileLoadError": "{fileName}でワークフローが見つかりません",
     "fileUploadFailed": "ファイルのアップロードに失敗しました",
     "interrupted": "実行が中断されました",

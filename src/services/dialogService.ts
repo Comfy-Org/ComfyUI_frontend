@@ -1,6 +1,5 @@
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
-import ExecutionErrorDialogContent from '@/components/dialog/content/ExecutionErrorDialogContent.vue'
 import IssueReportDialogContent from '@/components/dialog/content/IssueReportDialogContent.vue'
 import LoadWorkflowWarning from '@/components/dialog/content/LoadWorkflowWarning.vue'
 import ManagerProgressDialogContent from '@/components/dialog/content/ManagerProgressDialogContent.vue'
@@ -15,6 +14,7 @@ import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.
 import TemplateWorkflowsContent from '@/components/templates/TemplateWorkflowsContent.vue'
 import TemplateWorkflowsDialogHeader from '@/components/templates/TemplateWorkflowsDialogHeader.vue'
 import { t } from '@/i18n'
+import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
 import { type ShowDialogOptions, useDialogStore } from '@/stores/dialogStore'
 
 export type ConfirmationDialogType =
@@ -70,12 +70,21 @@ export const useDialogService = () => {
     })
   }
 
-  function showExecutionErrorDialog(
-    props: InstanceType<typeof ExecutionErrorDialogContent>['$props']
-  ) {
+  function showExecutionErrorDialog(executionError: ExecutionErrorWsMessage) {
+    const props: InstanceType<typeof ErrorDialogContent>['$props'] = {
+      error: {
+        exceptionType: executionError.exception_type,
+        exceptionMessage: executionError.exception_message,
+        nodeId: executionError.node_id,
+        nodeType: executionError.node_type,
+        traceback: executionError.traceback.join('\n'),
+        reportType: 'graphExecutionError'
+      }
+    }
+
     dialogStore.showDialog({
       key: 'global-execution-error',
-      component: ExecutionErrorDialogContent,
+      component: ErrorDialogContent,
       props
     })
   }
@@ -174,23 +183,33 @@ export const useDialogService = () => {
     error: unknown,
     options: {
       title?: string
-      errorType?: string
+      reportType?: string
     } = {}
   ) {
-    const props =
+    const errorProps: {
+      errorMessage: string
+      stackTrace?: string
+      extensionFile?: string
+    } =
       error instanceof Error
         ? parseError(error)
         : {
             errorMessage: String(error)
           }
 
+    const props: InstanceType<typeof ErrorDialogContent>['$props'] = {
+      error: {
+        exceptionType: options.title ?? 'Unknown Error',
+        exceptionMessage: errorProps.errorMessage,
+        traceback: errorProps.stackTrace ?? t('errorDialog.noStackTrace'),
+        reportType: options.reportType
+      }
+    }
+
     dialogStore.showDialog({
       key: 'global-error',
       component: ErrorDialogContent,
-      props: {
-        ...props,
-        ...options
-      }
+      props
     })
   }
 

@@ -995,6 +995,7 @@
     "failedToApplyTexture": "Error al aplicar textura",
     "failedToDownloadFile": "Error al descargar el archivo",
     "failedToExportModel": "Error al exportar modelo como {format}",
+    "failedToFetchLogs": "Error al obtener los registros del servidor",
     "fileLoadError": "No se puede encontrar el flujo de trabajo en {fileName}",
     "fileUploadFailed": "Error al subir el archivo",
     "interrupted": "La ejecución ha sido interrumpida",

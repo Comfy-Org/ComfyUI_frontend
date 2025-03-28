@@ -995,6 +995,7 @@
     "failedToApplyTexture": "텍스처 적용에 실패했습니다",
     "failedToDownloadFile": "파일 다운로드에 실패했습니다",
     "failedToExportModel": "{format} 형식으로 모델 내보내기에 실패했습니다",
+    "failedToFetchLogs": "서버 로그를 가져오는 데 실패했습니다",
     "fileLoadError": "{fileName}에서 워크플로우를 찾을 수 없습니다",
     "fileUploadFailed": "파일 업로드에 실패했습니다",
     "interrupted": "실행이 중단되었습니다",

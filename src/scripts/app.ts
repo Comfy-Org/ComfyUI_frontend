@@ -741,7 +741,7 @@ export class ComfyApp {
 
     api.addEventListener('execution_error', ({ detail }) => {
       this.lastExecutionError = detail
-      useDialogService().showExecutionErrorDialog({ error: detail })
+      useDialogService().showExecutionErrorDialog(detail)
       this.canvas.draw(true, true)
     })
 
@@ -1129,7 +1129,7 @@ export class ComfyApp {
     } catch (error) {
       useDialogService().showErrorDialog(error, {
         title: t('errorDialog.loadWorkflowTitle'),
-        errorType: 'loadWorkflowError'
+        reportType: 'loadWorkflowError'
       })
       return
     }
