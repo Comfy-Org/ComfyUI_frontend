@@ -70,9 +70,9 @@ import { useI18n } from 'vue-i18n'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import FindIssueButton from '@/components/dialog/content/error/FindIssueButton.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
-import type { SystemStats } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { ReportField } from '@/types/issueReportTypes'
 import {
   type ErrorReportData,
@@ -108,6 +108,7 @@ const showSendReport = () => {
 }
 const toast = useToast()
 const { t } = useI18n()
+const systemStatsStore = useSystemStatsStore()
 
 const title = computed<string>(
   () => error.nodeType ?? error.exceptionType ?? t('errorDialog.defaultTitle')
@@ -123,35 +124,33 @@ const stackTraceField = computed<ReportField>(() => {
 })
 
 onMounted(async () => {
+  if (!systemStatsStore.systemStats) {
+    await systemStatsStore.fetchSystemStats()
+  }
+
   try {
-    const [systemStats, logs] = await Promise.all([
-      api.getSystemStats(),
-      api.getLogs()
-    ])
-    generateReport(systemStats, logs)
+    const [logs] = await Promise.all([api.getLogs()])
+
+    reportContent.value = generateErrorReport({
+      systemStats: systemStatsStore.systemStats!,
+      serverLogs: logs,
+      workflow: app.graph.serialize(),
+      exceptionType: error.exceptionType,
+      exceptionMessage: error.exceptionMessage,
+      traceback: error.traceback,
+      nodeId: error.nodeId,
+      nodeType: error.nodeType
+    })
   } catch (error) {
-    console.error('Error fetching system stats or logs:', error)
+    console.error('Error fetching logs:', error)
     toast.add({
       severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to fetch system information',
+      summary: t('g.error'),
+      detail: t('toastMessages.failedToFetchLogs'),
       life: 5000
     })
   }
 })
-
-const generateReport = (systemStats: SystemStats, logs: string) => {
-  reportContent.value = generateErrorReport({
-    systemStats,
-    serverLogs: logs,
-    workflow: app.graph.serialize(),
-    exceptionType: error.exceptionType,
-    exceptionMessage: error.exceptionMessage,
-    traceback: error.traceback,
-    nodeId: error.nodeId,
-    nodeType: error.nodeType
-  })
-}
 
 const { copyToClipboard } = useCopyToClipboard()
 const copyReportToClipboard = async () => {
