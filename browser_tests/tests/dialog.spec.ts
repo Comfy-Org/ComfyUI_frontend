@@ -323,7 +323,7 @@ test.describe('Error dialog', () => {
 
     await comfyPage.loadWorkflow('default')
 
-    const errorDialog = comfyPage.page.locator('.error-dialog-content')
+    const errorDialog = comfyPage.page.locator('.comfy-error-report')
     await expect(errorDialog).toBeVisible()
   })
 })
