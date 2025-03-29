@@ -130,16 +130,20 @@ export class FuseSearch<T> {
 
   public calcAuxScores(query: string, entry: T, score: number): SearchAuxScore {
     let values: string[] = []
-    if (!this.keys.length) values = [entry as string]
-    // @ts-expect-error fixme ts strict error
-    else values = this.keys.map((x) => entry[x])
+    if (typeof entry === 'string') {
+      values = [entry]
+    } else if (typeof entry === 'object' && entry !== null) {
+      values = this.keys
+        .map((x) => entry[x as keyof T])
+        .filter((x) => typeof x === 'string') as string[]
+    }
     const scores = values.map((x) => this.calcAuxSingle(query, x, score))
     let result = scores.sort(this.compareAux)[0]
 
     const deprecated = values.some((x) =>
       x.toLocaleLowerCase().includes('deprecated')
     )
-    result[0] += deprecated && result[0] != 0 ? 5 : 0
+    result[0] += deprecated && result[0] !== 0 ? 5 : 0
     if (isFuseSearchable(entry)) {
       result = entry.postProcessSearchScores(result)
     }
