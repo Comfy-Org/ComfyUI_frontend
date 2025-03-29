@@ -1,4 +1,10 @@
 {
+  "Comfy_SoundNotification_AfterAllPrompts": {
+    "name": "全てのプロンプト実行後"
+  },
+  "Comfy_SoundNotification_AfterOnePrompt": {
+    "name": "プロンプト実行後"
+  },
   "Comfy-Desktop_AutoUpdate": {
     "name": "自動的に更新を確認する"
   },

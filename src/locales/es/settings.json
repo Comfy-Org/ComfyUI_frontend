@@ -1,4 +1,10 @@
 {
+  "Comfy_SoundNotification_AfterAllPrompts": {
+    "name": "Después de ejecutar todas las indicaciones"
+  },
+  "Comfy_SoundNotification_AfterOnePrompt": {
+    "name": "Después de ejecutar una indicación"
+  },
   "Comfy-Desktop_AutoUpdate": {
     "name": "Verificar actualizaciones automáticamente"
   },
