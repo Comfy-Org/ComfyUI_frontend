@@ -35,7 +35,8 @@
 <script setup lang="ts">
 import { LiteGraph } from '@comfyorg/litegraph'
 import type {
-  ConnectingLink,
+  INodeInputSlot,
+  INodeOutputSlot,
   LiteGraphCanvasEvent,
   Vector2
 } from '@comfyorg/litegraph'
@@ -88,16 +89,33 @@ const closeDialog = () => {
 }
 
 const addNode = (nodeDef: ComfyNodeDefImpl) => {
-  const node = litegraphService.addNodeOnGraph(nodeDef, {
-    pos: getNewNodeLocation()
-  })
-
+  type InputOrOutputSlot = INodeInputSlot | INodeOutputSlot | undefined
   const eventDetail = triggerEvent.value?.detail
-  if (eventDetail && eventDetail.subType === 'empty-release') {
-    // @ts-expect-error fixme ts strict error
-    eventDetail.linkReleaseContext.links.forEach((link: ConnectingLink) => {
-      ConnectingLinkImpl.createFromPlainObject(link).connectTo(node)
+
+  if (nodeDef.name === 'Reroute') {
+    if (eventDetail && eventDetail.subType === 'empty-release') {
+      for (const link of eventDetail.linkReleaseContext.links) {
+        const slot = (link.output ?? link.input) as InputOrOutputSlot
+        if (!slot) continue
+
+        link.node.connectFloatingReroute(getNewNodeLocation(), slot)
+        link.node.setDirtyCanvas(false, true)
+      }
+    } else {
+      // TODO: Should hide the reroute from the search menu, if it's not an "empty release" (dragging new link)
+    }
+  } else {
+    const node = litegraphService.addNodeOnGraph(nodeDef, {
+      pos: getNewNodeLocation()
     })
+
+    const eventDetail = triggerEvent.value?.detail
+    if (eventDetail && eventDetail.subType === 'empty-release') {
+      eventDetail.linkReleaseContext.links.forEach((link) => {
+        // @ts-expect-error Type overwritten by computed public interface
+        ConnectingLinkImpl.createFromPlainObject(link).connectTo(node)
+      })
+    }
   }
 
   // TODO: This is not robust timing-wise.
