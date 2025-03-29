@@ -1,5 +1,4 @@
 import { FuseSearchOptions } from 'fuse.js'
-import _ from 'lodash'
 
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { FuseFilter, FuseFilterWithValue, FuseSearch } from '@/utils/fuseUtil'
@@ -77,7 +76,7 @@ export class NodeSearchService {
     const matchedNodes = this.nodeFuseSearch.search(query)
 
     const results = matchedNodes.filter((node) => {
-      return _.every(filters, (filterAndValue) => {
+      return filters.every((filterAndValue) => {
         const { filterDef, value } = filterAndValue
         return filterDef.matches(node, value, { wildcard })
       })
