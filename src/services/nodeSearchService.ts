@@ -68,11 +68,12 @@ export class NodeSearchService {
     query: string,
     filters: FuseFilterWithValue<ComfyNodeDefImpl, string>[] = [],
     options?: FuseSearchOptions,
-    extraOptions?: {
+    extraOptions: {
       matchWildcards?: boolean
-    }
+    } = {}
   ): ComfyNodeDefImpl[] {
-    const wildcard = extraOptions?.matchWildcards ? '*' : undefined
+    const { matchWildcards = true } = extraOptions
+    const wildcard = matchWildcards ? '*' : undefined
     const matchedNodes = this.nodeFuseSearch.search(query)
 
     const results = matchedNodes.filter((node) => {
