@@ -246,5 +246,24 @@ test.describe('Selection Toolbox', () => {
       )
       await expect(colorPickerButton).toHaveCSS('color', BLUE_COLOR)
     })
+
+    test('colorization via color picker can be undone', async ({
+      comfyPage
+    }) => {
+      // Select a node and color it
+      await comfyPage.selectNodes(['KSampler'])
+      await comfyPage.page.locator('.selection-toolbox .pi-circle-fill').click()
+      await comfyPage.page
+        .locator('.color-picker-container i[data-testid="blue"]')
+        .click()
+
+      // Undo the colorization
+      await comfyPage.page.keyboard.press('Control+Z')
+      await comfyPage.nextFrame()
+
+      // Node should be uncolored again
+      const selectedNode = (await comfyPage.getNodeRefsByTitle('KSampler'))[0]
+      expect(await selectedNode.getProperty('color')).toBeUndefined()
+    })
   })
 })
