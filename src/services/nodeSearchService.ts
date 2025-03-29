@@ -64,10 +64,6 @@ export class NodeSearchService {
     })
   }
 
-  public endsWithFilterStartSequence(query: string): boolean {
-    return query.endsWith(':')
-  }
-
   public searchNode(
     query: string,
     filters: FuseFilterWithValue<ComfyNodeDefImpl, string>[] = [],
