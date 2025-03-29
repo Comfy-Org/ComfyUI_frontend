@@ -68,6 +68,14 @@ export class FuseFilter<T, O = string> {
   }
 }
 
+export interface FuseSearchable {
+  postProcessSearchScores: (scores: SearchAuxScore) => SearchAuxScore
+}
+
+function isFuseSearchable(item: any): item is FuseSearchable {
+  return 'postProcessSearchScores' in item
+}
+
 /**
  * A wrapper around Fuse.js that provides a more type-safe API.
  */
@@ -132,10 +140,8 @@ export class FuseSearch<T> {
       x.toLocaleLowerCase().includes('deprecated')
     )
     result[0] += deprecated && result[0] != 0 ? 5 : 0
-    // @ts-expect-error fixme ts strict error
-    if (entry['postProcessSearchScores']) {
-      // @ts-expect-error fixme ts strict error
-      result = entry['postProcessSearchScores'](result) as SearchAuxScore
+    if (isFuseSearchable(entry)) {
+      result = entry.postProcessSearchScores(result)
     }
     return result
   }

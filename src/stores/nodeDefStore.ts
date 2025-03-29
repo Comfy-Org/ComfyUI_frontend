@@ -21,10 +21,12 @@ import {
   getNodeSource
 } from '@/types/nodeSource'
 import type { TreeNode } from '@/types/treeExplorerTypes'
-import type { SearchAuxScore } from '@/utils/fuseUtil'
+import type { FuseSearchable, SearchAuxScore } from '@/utils/fuseUtil'
 import { buildTree } from '@/utils/treeUtil'
 
-export class ComfyNodeDefImpl implements ComfyNodeDefV1, ComfyNodeDefV2 {
+export class ComfyNodeDefImpl
+  implements ComfyNodeDefV1, ComfyNodeDefV2, FuseSearchable
+{
   // ComfyNodeDef fields (V1)
   readonly name: string
   readonly display_name: string
