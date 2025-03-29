@@ -28,14 +28,14 @@ export class FuseFilter<T, O = string> {
       fuseOptions?: IFuseOptions<O>
     }
   ) {
-    this.fuseSearch = new FuseSearch(this.getAllNodeOptions(data), {
-      fuseOptions: options.fuseOptions
-    })
-
     this.id = options.id
     this.name = options.name
     this.invokeSequence = options.invokeSequence
     this.getItemOptions = options.getItemOptions
+
+    this.fuseSearch = new FuseSearch(this.getAllNodeOptions(data), {
+      fuseOptions: options.fuseOptions
+    })
   }
 
   public getAllNodeOptions(data: T[]): O[] {
