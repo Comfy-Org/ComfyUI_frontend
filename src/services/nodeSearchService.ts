@@ -5,56 +5,44 @@ import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { FuseSearch } from '@/utils/fuseUtil'
 
 export type SearchAuxScore = number[]
-
-interface ExtraSearchOptions {
-  matchWildcards?: boolean
-}
-
 export type FilterAndValue<T = string> = [NodeFilter<T>, T]
 
-export class NodeFilter<FilterOptionT = string> {
-  public readonly fuseSearch: FuseSearch<FilterOptionT>
+export class NodeFilter<T = string> {
+  public readonly fuseSearch: FuseSearch<T>
 
   constructor(
     public readonly id: string,
     public readonly name: string,
     public readonly invokeSequence: string,
     public readonly longInvokeSequence: string,
-    public readonly nodeOptions:
-      | FilterOptionT[]
-      | ((node: ComfyNodeDefImpl) => FilterOptionT[]),
+    public readonly getNodeOptions: (node: ComfyNodeDefImpl) => T[],
     nodeDefs: ComfyNodeDefImpl[],
-    options?: IFuseOptions<FilterOptionT>
+    options?: IFuseOptions<T>
   ) {
     this.fuseSearch = new FuseSearch(this.getAllNodeOptions(nodeDefs), {
       fuseOptions: options
     })
   }
 
-  public getNodeOptions(node: ComfyNodeDefImpl): FilterOptionT[] {
-    return this.nodeOptions instanceof Function
-      ? this.nodeOptions(node)
-      : this.nodeOptions
-  }
-
-  public getAllNodeOptions(nodeDefs: ComfyNodeDefImpl[]): FilterOptionT[] {
-    // @ts-expect-error fixme ts strict error
-    return [
-      ...new Set(
-        // @ts-expect-error fixme ts strict error
-        nodeDefs.reduce((acc, nodeDef) => {
-          return [...acc, ...this.getNodeOptions(nodeDef)]
-        }, [])
-      )
-    ]
+  public getAllNodeOptions(nodeDefs: ComfyNodeDefImpl[]): T[] {
+    const options = new Set<T>()
+    for (const nodeDef of nodeDefs) {
+      for (const option of this.getNodeOptions(nodeDef)) {
+        options.add(option)
+      }
+    }
+    return Array.from(options)
   }
 
   public matches(
     node: ComfyNodeDefImpl,
-    value: FilterOptionT,
-    extraOptions?: ExtraSearchOptions
+    value: T,
+    extraOptions: {
+      matchWildcards?: boolean
+    } = {}
   ): boolean {
-    const matchWildcards = extraOptions?.matchWildcards !== false
+    const { matchWildcards = true } = extraOptions
+
     if (matchWildcards && value === '*') {
       return true
     }
@@ -68,7 +56,10 @@ export class NodeFilter<FilterOptionT = string> {
 
 export class NodeSearchService {
   public readonly nodeFuseSearch: FuseSearch<ComfyNodeDefImpl>
-  public readonly nodeFilters: NodeFilter<string>[]
+  public readonly inputTypeFilter: NodeFilter<string>
+  public readonly outputTypeFilter: NodeFilter<string>
+  public readonly nodeCategoryFilter: NodeFilter<string>
+  public readonly nodeSourceFilter: NodeFilter<string>
 
   constructor(data: ComfyNodeDefImpl[]) {
     this.nodeFuseSearch = new FuseSearch(data, {
@@ -89,7 +80,7 @@ export class NodeSearchService {
       shouldSort: true
     }
 
-    const inputTypeFilter = new NodeFilter<string>(
+    this.inputTypeFilter = new NodeFilter<string>(
       /* id */ 'input',
       /* name */ 'Input Type',
       /* invokeSequence */ 'i',
@@ -99,7 +90,7 @@ export class NodeSearchService {
       filterSearchOptions
     )
 
-    const outputTypeFilter = new NodeFilter<string>(
+    this.outputTypeFilter = new NodeFilter<string>(
       /* id */ 'output',
       /* name */ 'Output Type',
       /* invokeSequence */ 'o',
@@ -109,7 +100,7 @@ export class NodeSearchService {
       filterSearchOptions
     )
 
-    const nodeCategoryFilter = new NodeFilter<string>(
+    this.nodeCategoryFilter = new NodeFilter<string>(
       /* id */ 'category',
       /* name */ 'Category',
       /* invokeSequence */ 'c',
@@ -119,7 +110,7 @@ export class NodeSearchService {
       filterSearchOptions
     )
 
-    const nodeSourceFilter = new NodeFilter<string>(
+    this.nodeSourceFilter = new NodeFilter<string>(
       /* id */ 'source',
       /* name */ 'Source',
       /* invokeSequence */ 's',
@@ -128,13 +119,6 @@ export class NodeSearchService {
       data,
       filterSearchOptions
     )
-
-    this.nodeFilters = [
-      inputTypeFilter,
-      outputTypeFilter,
-      nodeCategoryFilter,
-      nodeSourceFilter
-    ]
   }
 
   public endsWithFilterStartSequence(query: string): boolean {
@@ -145,7 +129,9 @@ export class NodeSearchService {
     query: string,
     filters: FilterAndValue<string>[] = [],
     options?: FuseSearchOptions,
-    extraOptions?: ExtraSearchOptions
+    extraOptions?: {
+      matchWildcards?: boolean
+    }
   ): ComfyNodeDefImpl[] {
     const matchedNodes = this.nodeFuseSearch.search(query)
 
@@ -159,7 +145,12 @@ export class NodeSearchService {
     return options?.limit ? results.slice(0, options.limit) : results
   }
 
-  public getFilterById(id: string): NodeFilter<string> | undefined {
-    return this.nodeFilters.find((filter) => filter.id === id)
+  get nodeFilters(): NodeFilter<string>[] {
+    return [
+      this.inputTypeFilter,
+      this.outputTypeFilter,
+      this.nodeCategoryFilter,
+      this.nodeSourceFilter
+    ]
   }
 }

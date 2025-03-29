@@ -136,12 +136,12 @@ const showNewSearchBox = (e: LiteGraphCanvasEvent) => {
       return
     }
     const firstLink = ConnectingLinkImpl.createFromPlainObject(links[0])
-    const filter = nodeDefStore.nodeSearchService.getFilterById(
-      firstLink.releaseSlotType
-    )
-    // @ts-expect-error fixme ts strict error
-    const dataType = firstLink.type.toString()
-    // @ts-expect-error fixme ts strict error
+    const filter =
+      firstLink.releaseSlotType === 'input'
+        ? nodeDefStore.nodeSearchService.inputTypeFilter
+        : nodeDefStore.nodeSearchService.outputTypeFilter
+
+    const dataType = firstLink.type?.toString() ?? ''
     addFilter([filter, dataType])
   }
 
