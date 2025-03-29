@@ -65,9 +65,13 @@ describe('nodeSearchService', () => {
   it('searches with input filter', () => {
     const service = new NodeSearchService(EXAMPLE_NODE_DEFS)
     const inputFilter = service.inputTypeFilter
-    expect(service.searchNode('L', [[inputFilter, 'LATENT']])).toHaveLength(1)
+    expect(
+      service.searchNode('L', [{ filterDef: inputFilter, value: 'LATENT' }])
+    ).toHaveLength(1)
     // Wildcard should match all.
-    expect(service.searchNode('L', [[inputFilter, '*']])).toHaveLength(2)
+    expect(
+      service.searchNode('L', [{ filterDef: inputFilter, value: '*' }])
+    ).toHaveLength(2)
     expect(service.searchNode('L')).toHaveLength(2)
   })
 })

@@ -27,11 +27,11 @@ import Select from 'primevue/select'
 import SelectButton from 'primevue/selectbutton'
 import { computed, onMounted, ref } from 'vue'
 
-import { type FilterAndValue, NodeFilter } from '@/services/nodeSearchService'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import { FuseFilter, FuseFilterWithValue } from '@/utils/fuseUtil'
 
 const filters = computed(() => nodeDefStore.nodeSearchService.nodeFilters)
-const selectedFilter = ref<NodeFilter>()
+const selectedFilter = ref<FuseFilter<ComfyNodeDefImpl, string>>()
 const filterValues = computed(() => selectedFilter.value?.fuseSearch.data ?? [])
 const selectedFilterValue = ref<string>('')
 
@@ -43,7 +43,10 @@ onMounted(() => {
 })
 
 const emit = defineEmits<{
-  (event: 'addFilter', filterAndValue: FilterAndValue): void
+  (
+    event: 'addFilter',
+    filterAndValue: FuseFilterWithValue<ComfyNodeDefImpl, string>
+  ): void
 }>()
 
 const updateSelectedFilterValue = () => {
@@ -54,10 +57,13 @@ const updateSelectedFilterValue = () => {
 }
 
 const submit = () => {
-  emit('addFilter', [
-    selectedFilter.value,
-    selectedFilterValue.value
-  ] as FilterAndValue)
+  if (!selectedFilter.value) {
+    return
+  }
+  emit('addFilter', {
+    filterDef: selectedFilter.value,
+    value: selectedFilterValue.value
+  })
 }
 </script>
 

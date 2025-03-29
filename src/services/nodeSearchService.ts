@@ -1,79 +1,15 @@
-import { FuseSearchOptions, IFuseOptions } from 'fuse.js'
+import { FuseSearchOptions } from 'fuse.js'
 import _ from 'lodash'
 
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { FuseSearch } from '@/utils/fuseUtil'
-
-export type SearchAuxScore = number[]
-export type FilterAndValue<T = string> = [NodeFilter<T>, T]
-
-export class NodeFilter<T = string> {
-  public readonly fuseSearch: FuseSearch<T>
-  /** The unique identifier for the filter. */
-  public readonly id: string
-  /** The name of the filter for display purposes. */
-  public readonly name: string
-  /** The sequence of characters to invoke the filter. */
-  public readonly invokeSequence: string
-  /** A function that returns the options for the filter. */
-  public readonly getNodeOptions: (node: ComfyNodeDefImpl) => T[]
-
-  constructor(
-    nodeDefs: ComfyNodeDefImpl[],
-    options: {
-      id: string
-      name: string
-      invokeSequence: string
-      getNodeOptions: (node: ComfyNodeDefImpl) => T[]
-      fuseOptions?: IFuseOptions<T>
-    }
-  ) {
-    this.fuseSearch = new FuseSearch(this.getAllNodeOptions(nodeDefs), {
-      fuseOptions: options.fuseOptions
-    })
-
-    this.id = options.id
-    this.name = options.name
-    this.invokeSequence = options.invokeSequence
-    this.getNodeOptions = options.getNodeOptions
-  }
-
-  public getAllNodeOptions(nodeDefs: ComfyNodeDefImpl[]): T[] {
-    const options = new Set<T>()
-    for (const nodeDef of nodeDefs) {
-      for (const option of this.getNodeOptions(nodeDef)) {
-        options.add(option)
-      }
-    }
-    return Array.from(options)
-  }
-
-  public matches(
-    node: ComfyNodeDefImpl,
-    value: T,
-    extraOptions: {
-      matchWildcards?: boolean
-    } = {}
-  ): boolean {
-    const { matchWildcards = true } = extraOptions
-
-    if (matchWildcards && value === '*') {
-      return true
-    }
-    const options = this.getNodeOptions(node)
-    return (
-      options.includes(value) ||
-      (matchWildcards && _.some(options, (option) => option === '*'))
-    )
-  }
-}
+import { FuseFilter, FuseFilterWithValue, FuseSearch } from '@/utils/fuseUtil'
 
 export class NodeSearchService {
   public readonly nodeFuseSearch: FuseSearch<ComfyNodeDefImpl>
-  public readonly inputTypeFilter: NodeFilter<string>
-  public readonly outputTypeFilter: NodeFilter<string>
-  public readonly nodeCategoryFilter: NodeFilter<string>
-  public readonly nodeSourceFilter: NodeFilter<string>
+  public readonly inputTypeFilter: FuseFilter<ComfyNodeDefImpl, string>
+  public readonly outputTypeFilter: FuseFilter<ComfyNodeDefImpl, string>
+  public readonly nodeCategoryFilter: FuseFilter<ComfyNodeDefImpl, string>
+  public readonly nodeSourceFilter: FuseFilter<ComfyNodeDefImpl, string>
 
   constructor(data: ComfyNodeDefImpl[]) {
     this.nodeFuseSearch = new FuseSearch(data, {
@@ -94,36 +30,36 @@ export class NodeSearchService {
       shouldSort: true
     }
 
-    this.inputTypeFilter = new NodeFilter<string>(data, {
+    this.inputTypeFilter = new FuseFilter<ComfyNodeDefImpl, string>(data, {
       id: 'input',
       name: 'Input Type',
       invokeSequence: 'i',
-      getNodeOptions: (node) =>
+      getItemOptions: (node) =>
         Object.values(node.inputs).map((input) => input.type),
       fuseOptions
     })
 
-    this.outputTypeFilter = new NodeFilter<string>(data, {
+    this.outputTypeFilter = new FuseFilter<ComfyNodeDefImpl, string>(data, {
       id: 'output',
       name: 'Output Type',
       invokeSequence: 'o',
-      getNodeOptions: (node) => node.outputs.map((output) => output.type),
+      getItemOptions: (node) => node.outputs.map((output) => output.type),
       fuseOptions
     })
 
-    this.nodeCategoryFilter = new NodeFilter<string>(data, {
+    this.nodeCategoryFilter = new FuseFilter<ComfyNodeDefImpl, string>(data, {
       id: 'category',
       name: 'Category',
       invokeSequence: 'c',
-      getNodeOptions: (node) => [node.category],
+      getItemOptions: (node) => [node.category],
       fuseOptions
     })
 
-    this.nodeSourceFilter = new NodeFilter<string>(data, {
+    this.nodeSourceFilter = new FuseFilter<ComfyNodeDefImpl, string>(data, {
       id: 'source',
       name: 'Source',
       invokeSequence: 's',
-      getNodeOptions: (node) => [node.nodeSource.displayText],
+      getItemOptions: (node) => [node.nodeSource.displayText],
       fuseOptions
     })
   }
@@ -134,25 +70,26 @@ export class NodeSearchService {
 
   public searchNode(
     query: string,
-    filters: FilterAndValue<string>[] = [],
+    filters: FuseFilterWithValue<ComfyNodeDefImpl, string>[] = [],
     options?: FuseSearchOptions,
     extraOptions?: {
       matchWildcards?: boolean
     }
   ): ComfyNodeDefImpl[] {
+    const wildcard = extraOptions?.matchWildcards ? '*' : undefined
     const matchedNodes = this.nodeFuseSearch.search(query)
 
     const results = matchedNodes.filter((node) => {
       return _.every(filters, (filterAndValue) => {
-        const [filter, value] = filterAndValue
-        return filter.matches(node, value, extraOptions)
+        const { filterDef, value } = filterAndValue
+        return filterDef.matches(node, value, { wildcard })
       })
     })
 
     return options?.limit ? results.slice(0, options.limit) : results
   }
 
-  get nodeFilters(): NodeFilter<string>[] {
+  get nodeFilters(): FuseFilter<ComfyNodeDefImpl, string>[] {
     return [
       this.inputTypeFilter,
       this.outputTypeFilter,

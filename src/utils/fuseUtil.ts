@@ -1,6 +1,72 @@
 import Fuse, { FuseOptionKey, FuseSearchOptions, IFuseOptions } from 'fuse.js'
 
-type SearchAuxScore = number[]
+export type SearchAuxScore = number[]
+
+export interface FuseFilterWithValue<T, O = string> {
+  filterDef: FuseFilter<T, O>
+  value: O
+}
+
+export class FuseFilter<T, O = string> {
+  public readonly fuseSearch: FuseSearch<O>
+  /** The unique identifier for the filter. */
+  public readonly id: string
+  /** The name of the filter for display purposes. */
+  public readonly name: string
+  /** The sequence of characters to invoke the filter. */
+  public readonly invokeSequence: string
+  /** A function that returns the options for the filter. */
+  public readonly getItemOptions: (item: T) => O[]
+
+  constructor(
+    data: T[],
+    options: {
+      id: string
+      name: string
+      invokeSequence: string
+      getItemOptions: (item: T) => O[]
+      fuseOptions?: IFuseOptions<O>
+    }
+  ) {
+    this.fuseSearch = new FuseSearch(this.getAllNodeOptions(data), {
+      fuseOptions: options.fuseOptions
+    })
+
+    this.id = options.id
+    this.name = options.name
+    this.invokeSequence = options.invokeSequence
+    this.getItemOptions = options.getItemOptions
+  }
+
+  public getAllNodeOptions(data: T[]): O[] {
+    const options = new Set<O>()
+    for (const item of data) {
+      for (const option of this.getItemOptions(item)) {
+        options.add(option)
+      }
+    }
+    return Array.from(options)
+  }
+
+  public matches(
+    item: T,
+    value: O,
+    extraOptions: {
+      wildcard?: O
+    } = {}
+  ): boolean {
+    const { wildcard } = extraOptions
+
+    if (wildcard && value === wildcard) {
+      return true
+    }
+    const options = this.getItemOptions(item)
+    return (
+      options.includes(value) ||
+      (!!wildcard && options.some((option) => option === wildcard))
+    )
+  }
+}
 
 /**
  * A wrapper around Fuse.js that provides a more type-safe API.

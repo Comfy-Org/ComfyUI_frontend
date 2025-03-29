@@ -14,16 +14,14 @@ import type {
   ComfyNodeDef as ComfyNodeDefV1,
   ComfyOutputTypesSpec as ComfyOutputSpecV1
 } from '@/schemas/nodeDefSchema'
-import {
-  NodeSearchService,
-  type SearchAuxScore
-} from '@/services/nodeSearchService'
+import { NodeSearchService } from '@/services/nodeSearchService'
 import {
   type NodeSource,
   NodeSourceType,
   getNodeSource
 } from '@/types/nodeSource'
 import type { TreeNode } from '@/types/treeExplorerTypes'
+import type { SearchAuxScore } from '@/utils/fuseUtil'
 import { buildTree } from '@/utils/treeUtil'
 
 export class ComfyNodeDefImpl implements ComfyNodeDefV1, ComfyNodeDefV2 {
