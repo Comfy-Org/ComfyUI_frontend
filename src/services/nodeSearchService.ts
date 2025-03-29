@@ -9,19 +9,29 @@ export type FilterAndValue<T = string> = [NodeFilter<T>, T]
 
 export class NodeFilter<T = string> {
   public readonly fuseSearch: FuseSearch<T>
+  public readonly id: string
+  public readonly name: string
+  public readonly invokeSequence: string
+  public readonly getNodeOptions: (node: ComfyNodeDefImpl) => T[]
 
   constructor(
-    public readonly id: string,
-    public readonly name: string,
-    public readonly invokeSequence: string,
-    public readonly longInvokeSequence: string,
-    public readonly getNodeOptions: (node: ComfyNodeDefImpl) => T[],
     nodeDefs: ComfyNodeDefImpl[],
-    options?: IFuseOptions<T>
+    options: {
+      id: string
+      name: string
+      invokeSequence: string
+      getNodeOptions: (node: ComfyNodeDefImpl) => T[]
+      fuseOptions?: IFuseOptions<T>
+    }
   ) {
     this.fuseSearch = new FuseSearch(this.getAllNodeOptions(nodeDefs), {
-      fuseOptions: options
+      fuseOptions: options.fuseOptions
     })
+
+    this.id = options.id
+    this.name = options.name
+    this.invokeSequence = options.invokeSequence
+    this.getNodeOptions = options.getNodeOptions
   }
 
   public getAllNodeOptions(nodeDefs: ComfyNodeDefImpl[]): T[] {
@@ -74,51 +84,44 @@ export class NodeSearchService {
       advancedScoring: true
     })
 
-    const filterSearchOptions = {
+    const fuseOptions = {
       includeScore: true,
       threshold: 0.3,
       shouldSort: true
     }
 
-    this.inputTypeFilter = new NodeFilter<string>(
-      /* id */ 'input',
-      /* name */ 'Input Type',
-      /* invokeSequence */ 'i',
-      /* longInvokeSequence */ 'input',
-      (node) => Object.values(node.inputs).map((input) => input.type),
-      data,
-      filterSearchOptions
-    )
+    this.inputTypeFilter = new NodeFilter<string>(data, {
+      id: 'input',
+      name: 'Input Type',
+      invokeSequence: 'i',
+      getNodeOptions: (node) =>
+        Object.values(node.inputs).map((input) => input.type),
+      fuseOptions
+    })
 
-    this.outputTypeFilter = new NodeFilter<string>(
-      /* id */ 'output',
-      /* name */ 'Output Type',
-      /* invokeSequence */ 'o',
-      /* longInvokeSequence */ 'output',
-      (node) => node.outputs.map((output) => output.type),
-      data,
-      filterSearchOptions
-    )
+    this.outputTypeFilter = new NodeFilter<string>(data, {
+      id: 'output',
+      name: 'Output Type',
+      invokeSequence: 'o',
+      getNodeOptions: (node) => node.outputs.map((output) => output.type),
+      fuseOptions
+    })
 
-    this.nodeCategoryFilter = new NodeFilter<string>(
-      /* id */ 'category',
-      /* name */ 'Category',
-      /* invokeSequence */ 'c',
-      /* longInvokeSequence */ 'category',
-      (node) => [node.category],
-      data,
-      filterSearchOptions
-    )
+    this.nodeCategoryFilter = new NodeFilter<string>(data, {
+      id: 'category',
+      name: 'Category',
+      invokeSequence: 'c',
+      getNodeOptions: (node) => [node.category],
+      fuseOptions
+    })
 
-    this.nodeSourceFilter = new NodeFilter<string>(
-      /* id */ 'source',
-      /* name */ 'Source',
-      /* invokeSequence */ 's',
-      /* longInvokeSequence */ 'source',
-      (node) => [node.nodeSource.displayText],
-      data,
-      filterSearchOptions
-    )
+    this.nodeSourceFilter = new NodeFilter<string>(data, {
+      id: 'source',
+      name: 'Source',
+      invokeSequence: 's',
+      getNodeOptions: (node) => [node.nodeSource.displayText],
+      fuseOptions
+    })
   }
 
   public endsWithFilterStartSequence(query: string): boolean {
