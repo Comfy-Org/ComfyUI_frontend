@@ -9,9 +9,13 @@ export type FilterAndValue<T = string> = [NodeFilter<T>, T]
 
 export class NodeFilter<T = string> {
   public readonly fuseSearch: FuseSearch<T>
+  /** The unique identifier for the filter. */
   public readonly id: string
+  /** The name of the filter for display purposes. */
   public readonly name: string
+  /** The sequence of characters to invoke the filter. */
   public readonly invokeSequence: string
+  /** A function that returns the options for the filter. */
   public readonly getNodeOptions: (node: ComfyNodeDefImpl) => T[]
 
   constructor(
