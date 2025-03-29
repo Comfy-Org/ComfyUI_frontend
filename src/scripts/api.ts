@@ -13,6 +13,7 @@ import type {
   HistoryTaskItem,
   LogsRawResponse,
   LogsWsMessage,
+  ModelsDownloadSettings,
   PendingTaskItem,
   ProgressWsMessage,
   PromptResponse,
@@ -925,6 +926,22 @@ export class ComfyApi extends EventTarget {
    */
   async getCustomNodesI18n(): Promise<Record<string, any>> {
     return (await axios.get(this.apiURL('/i18n'))).data
+  }
+
+  async getModelsDownloadSettings(): Promise<ModelsDownloadSettings> {
+    const config = (
+      await axios.get(this.internalURL('/models_download/config'))
+    ).data
+    if (
+      location.hostname === 'localhost' ||
+      location.hostname === '127.0.0.1'
+    ) {
+      if (!config.allowedSources) {
+        config.allowedSources = []
+      }
+      config.allowedSources.push('http://localhost:')
+    }
+    return config
   }
 }
 
