@@ -19,11 +19,15 @@ app.registerExtension({
     })
 
     let lastQueueRemaining: number = 0
+    let audio: HTMLAudioElement | null = null
 
     function playAudio(settingId: string) {
-      const soundData = app.ui.settings.getSettingValue(settingId)
-      if (soundData) {
-        new Audio(soundData).play()
+      if (!audio || audio.paused) {
+        const soundData = app.ui.settings.getSettingValue(settingId)
+        if (soundData) {
+          audio = new Audio(soundData)
+          audio.play()
+        }
       }
     }
 
