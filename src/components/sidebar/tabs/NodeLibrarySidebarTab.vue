@@ -76,7 +76,6 @@ import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue
 import NodeTreeLeaf from '@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useLitegraphService } from '@/services/litegraphService'
-import { FilterAndValue } from '@/services/nodeSearchService'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import {
   ComfyNodeDefImpl,
@@ -85,6 +84,7 @@ import {
 } from '@/stores/nodeDefStore'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
+import { FuseFilterWithValue } from '@/utils/fuseUtil'
 import { sortedTree } from '@/utils/treeUtil'
 
 import NodeBookmarkTreeExplorer from './nodeLibrary/NodeBookmarkTreeExplorer.vue'
@@ -150,8 +150,9 @@ const filteredRoot = computed<TreeNode | null>(() => {
   }
   return buildNodeDefTree(filteredNodeDefs.value)
 })
-const filters: Ref<Array<SearchFilter & { filter: FilterAndValue<string> }>> =
-  ref([])
+const filters: Ref<
+  (SearchFilter & { filter: FuseFilterWithValue<ComfyNodeDefImpl, string> })[]
+> = ref([])
 const handleSearch = (query: string) => {
   // Don't apply a min length filter because it does not make sense in
   // multi-byte languages like Chinese, Japanese, Korean, etc.
@@ -161,7 +162,7 @@ const handleSearch = (query: string) => {
     return
   }
 
-  const f = filters.value.map((f) => f.filter as FilterAndValue<string>)
+  const f = filters.value.map((f) => f.filter)
   filteredNodeDefs.value = nodeDefStore.nodeSearchService.searchNode(
     query,
     f,
@@ -179,12 +180,14 @@ const handleSearch = (query: string) => {
   })
 }
 
-const onAddFilter = (filterAndValue: FilterAndValue) => {
+const onAddFilter = (
+  filterAndValue: FuseFilterWithValue<ComfyNodeDefImpl, string>
+) => {
   filters.value.push({
     filter: filterAndValue,
-    badge: filterAndValue[0].invokeSequence.toUpperCase(),
-    badgeClass: filterAndValue[0].invokeSequence + '-badge',
-    text: filterAndValue[1],
+    badge: filterAndValue.filterDef.invokeSequence.toUpperCase(),
+    badgeClass: filterAndValue.filterDef.invokeSequence + '-badge',
+    text: filterAndValue.value,
     id: +new Date()
   })
 

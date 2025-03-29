@@ -60,12 +60,17 @@
       <!-- FilterAndValue -->
       <template v-slot:chip="{ value }">
         <SearchFilterChip
-          v-if="Array.isArray(value) && value.length === 2"
-          :key="`${value[0].id}-${value[1]}`"
-          @remove="onRemoveFilter($event, value as FilterAndValue)"
-          :text="value[1]"
-          :badge="value[0].invokeSequence.toUpperCase()"
-          :badge-class="value[0].invokeSequence + '-badge'"
+          v-if="value.filterDef && value.value"
+          :key="`${value.filterDef.id}-${value.value}`"
+          @remove="
+            onRemoveFilter(
+              $event,
+              value as FuseFilterWithValue<ComfyNodeDefImpl, string>
+            )
+          "
+          :text="value.value"
+          :badge="value.filterDef.invokeSequence.toUpperCase()"
+          :badge-class="value.filterDef.invokeSequence + '-badge'"
         />
       </template>
     </AutoCompletePlus>
@@ -82,13 +87,13 @@ import NodePreview from '@/components/node/NodePreview.vue'
 import AutoCompletePlus from '@/components/primevueOverride/AutoCompletePlus.vue'
 import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
 import NodeSearchItem from '@/components/searchbox/NodeSearchItem.vue'
-import { type FilterAndValue } from '@/services/nodeSearchService'
 import {
   ComfyNodeDefImpl,
   useNodeDefStore,
   useNodeFrequencyStore
 } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
+import type { FuseFilterWithValue } from '@/utils/fuseUtil'
 
 import SearchFilterChip from '../common/SearchFilterChip.vue'
 
@@ -100,7 +105,7 @@ const enableNodePreview = computed(() =>
 )
 
 const { filters, searchLimit = 64 } = defineProps<{
-  filters: FilterAndValue[]
+  filters: FuseFilterWithValue<ComfyNodeDefImpl, string>[]
   searchLimit?: number
 }>()
 
@@ -139,11 +144,16 @@ const reFocusInput = () => {
 }
 
 onMounted(reFocusInput)
-const onAddFilter = (filterAndValue: FilterAndValue) => {
+const onAddFilter = (
+  filterAndValue: FuseFilterWithValue<ComfyNodeDefImpl, string>
+) => {
   nodeSearchFilterVisible.value = false
   emit('addFilter', filterAndValue)
 }
-const onRemoveFilter = (event: Event, filterAndValue: FilterAndValue) => {
+const onRemoveFilter = (
+  event: Event,
+  filterAndValue: FuseFilterWithValue<ComfyNodeDefImpl, string>
+) => {
   event.stopPropagation()
   event.preventDefault()
   emit('removeFilter', filterAndValue)

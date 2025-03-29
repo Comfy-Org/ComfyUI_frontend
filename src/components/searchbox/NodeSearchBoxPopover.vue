@@ -46,13 +46,13 @@ import Dialog from 'primevue/dialog'
 import { computed, ref, toRaw, watchEffect } from 'vue'
 
 import { useLitegraphService } from '@/services/litegraphService'
-import { FilterAndValue } from '@/services/nodeSearchService'
 import { useCanvasStore } from '@/stores/graphStore'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { ConnectingLinkImpl } from '@/types/litegraphTypes'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
+import { FuseFilterWithValue } from '@/utils/fuseUtil'
 
 import NodeSearchBox from './NodeSearchBox.vue'
 
@@ -71,11 +71,13 @@ const getNewNodeLocation = (): Vector2 => {
     .originalEvent
   return [originalEvent.canvasX, originalEvent.canvasY]
 }
-const nodeFilters = ref<FilterAndValue[]>([])
-const addFilter = (filter: FilterAndValue) => {
+const nodeFilters = ref<FuseFilterWithValue<ComfyNodeDefImpl, string>[]>([])
+const addFilter = (filter: FuseFilterWithValue<ComfyNodeDefImpl, string>) => {
   nodeFilters.value.push(filter)
 }
-const removeFilter = (filter: FilterAndValue) => {
+const removeFilter = (
+  filter: FuseFilterWithValue<ComfyNodeDefImpl, string>
+) => {
   nodeFilters.value = nodeFilters.value.filter(
     (f) => toRaw(f) !== toRaw(filter)
   )
@@ -136,13 +138,16 @@ const showNewSearchBox = (e: LiteGraphCanvasEvent) => {
       return
     }
     const firstLink = ConnectingLinkImpl.createFromPlainObject(links[0])
-    const filter = nodeDefStore.nodeSearchService.getFilterById(
-      firstLink.releaseSlotType
-    )
-    // @ts-expect-error fixme ts strict error
-    const dataType = firstLink.type.toString()
-    // @ts-expect-error fixme ts strict error
-    addFilter([filter, dataType])
+    const filter =
+      firstLink.releaseSlotType === 'input'
+        ? nodeDefStore.nodeSearchService.inputTypeFilter
+        : nodeDefStore.nodeSearchService.outputTypeFilter
+
+    const dataType = firstLink.type?.toString() ?? ''
+    addFilter({
+      filterDef: filter,
+      value: dataType
+    })
   }
 
   visible.value = true

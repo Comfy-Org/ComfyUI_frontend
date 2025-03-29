@@ -232,7 +232,7 @@ const onGraphReady = () => {
       // Node defs now available after comfyApp.setup.
       // Explicitly initialize nodeSearchService to avoid indexing delay when
       // node search is triggered
-      useNodeDefStore().nodeSearchService.endsWithFilterStartSequence('')
+      useNodeDefStore().nodeSearchService.searchNode('')
     },
     { timeout: 1000 }
   )
