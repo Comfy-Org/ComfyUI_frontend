@@ -39,8 +39,7 @@ export class PrimitiveNode extends LGraphNode {
   // @ts-expect-error fixme ts strict error
   lastType: string
   static category: string
-  constructor(title?: string) {
-    // @ts-expect-error fixme ts strict error
+  constructor(title: string) {
     super(title)
     this.addOutput('connect to widget input', '*')
     this.serialize_widgets = true

@@ -44,8 +44,7 @@ export const useLitegraphService = () => {
       static nodeData?: ComfyNodeDefV1 & ComfyNodeDefV2
       static category?: string
 
-      constructor(title?: string) {
-        // @ts-expect-error fixme ts strict error
+      constructor(title: string) {
         super(title)
 
         const nodeMinSize = { width: 1, height: 1 }
