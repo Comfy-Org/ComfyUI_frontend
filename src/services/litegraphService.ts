@@ -46,6 +46,26 @@ export const useLitegraphService = () => {
 
       constructor(title: string) {
         super(title)
+        this.strokeStyles['running'] = function (this: LGraphNode) {
+          if (this.id == app.runningNodeId) {
+            return { color: '#0f0' }
+          }
+        }
+        this.strokeStyles['nodeError'] = function (this: LGraphNode) {
+          if (app.lastNodeErrors?.[this.id]?.errors) {
+            return { color: 'red' }
+          }
+        }
+        this.strokeStyles['dragOver'] = function (this: LGraphNode) {
+          if (app.dragOverNode?.id == this.id) {
+            return { color: 'dodgerblue' }
+          }
+        }
+        this.strokeStyles['executionError'] = function (this: LGraphNode) {
+          if (app.lastExecutionError?.node_id == this.id) {
+            return { color: '#f0f', lineWidth: 2 }
+          }
+        }
 
         const nodeMinSize = { width: 1, height: 1 }
         // Process inputs using V2 schema
