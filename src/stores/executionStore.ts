@@ -181,14 +181,41 @@ export const useExecutionStore = defineStore('execution', () => {
   return {
     isIdle,
     clientId,
+    /**
+     * The id of the prompt that is currently being executed
+     */
     activePromptId,
+    /**
+     * The queued prompts
+     */
     queuedPrompts,
+    /**
+     * The id of the node that is currently being executed
+     */
     executingNodeId,
+    /**
+     * The prompt that is currently being executed
+     */
     activePrompt,
+    /**
+     * The total number of nodes to execute
+     */
     totalNodesToExecute,
+    /**
+     * The number of nodes that have been executed
+     */
     nodesExecuted,
+    /**
+     * The progress of the execution
+     */
     executionProgress,
+    /**
+     * The node that is currently being executed
+     */
     executingNode,
+    /**
+     * The progress of the executing node (if the node reports progress)
+     */
     executingNodeProgress,
     bindExecutionEvents,
     unbindExecutionEvents,
