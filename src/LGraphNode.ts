@@ -262,6 +262,11 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    */
   strokeStyles: Record<string, (this: LGraphNode) => IDrawBoundingOptions | undefined>
 
+  /**
+   * The progress of node execution. Used to render a progress bar. Value between 0 and 1.
+   */
+  progress?: number
+
   exec_version?: number
   action_call?: string
   execute_triggered?: number
@@ -3656,5 +3661,23 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       actualSlot.pos = [offset, widget.y + offset]
       this.layoutSlot(actualSlot, { slotIndex: slot.index })
     }
+  }
+
+  /**
+   * Draws a progress bar on the node.
+   * @param ctx The canvas context to draw on
+   */
+  drawProgressBar(ctx: CanvasRenderingContext2D): void {
+    if (!this.progress) return
+
+    const originalFillStyle = ctx.fillStyle
+    ctx.fillStyle = "green"
+    ctx.fillRect(
+      0,
+      0,
+      this.width * this.progress,
+      6,
+    )
+    ctx.fillStyle = originalFillStyle
   }
 }

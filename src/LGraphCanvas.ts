@@ -4493,6 +4493,8 @@ export class LGraphCanvas implements ConnectionColorContext {
       }
     }
 
+    node.drawProgressBar(ctx)
+
     // these counter helps in conditioning drawing based on if the node has been executed or an action occurred
     if (node.execute_triggered != null && node.execute_triggered > 0) node.execute_triggered--
     if (node.action_triggered != null && node.action_triggered > 0) node.action_triggered--
