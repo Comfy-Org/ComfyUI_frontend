@@ -231,6 +231,13 @@ const cancelledWithoutResults = computed(() => {
   align-items: center;
   width: 100%;
   z-index: 1;
+  pointer-events: none; /* Allow clicks to pass through this div */
+}
+
+/* Make individual controls clickable again by restoring pointer events */
+.task-item-details .tag-wrapper,
+.task-item-details button {
+  pointer-events: auto;
 }
 
 .task-node-link {
