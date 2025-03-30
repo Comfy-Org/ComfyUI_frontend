@@ -4402,7 +4402,7 @@ export class LGraphCanvas implements ConnectionColorContext {
   ): void {
     // Rendering options
     ctx.strokeStyle = fgcolor
-    ctx.fillStyle = LiteGraph.use_legacy_node_error_indicator ? "#F00" : bgcolor
+    ctx.fillStyle = bgcolor
 
     const title_height = LiteGraph.NODE_TITLE_HEIGHT
     const { low_quality } = this
@@ -4442,7 +4442,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     }
     ctx.fill()
 
-    if (node.has_errors && !LiteGraph.use_legacy_node_error_indicator) {
+    if (node.has_errors) {
       strokeShape(ctx, area, {
         shape,
         title_mode,
@@ -4495,7 +4495,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     if (selected) {
       node.onBounding?.(area)
 
-      const padding = node.has_errors && !LiteGraph.use_legacy_node_error_indicator ? 20 : undefined
+      const padding = node.has_errors ? 20 : undefined
 
       strokeShape(ctx, area, {
         shape,
