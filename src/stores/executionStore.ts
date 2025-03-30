@@ -10,21 +10,29 @@ import type {
 } from '@/schemas/apiSchema'
 import type {
   ComfyNode,
-  ComfyWorkflowJSON
+  ComfyWorkflowJSON,
+  NodeId
 } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
 
 import { ComfyWorkflow } from './workflowStore'
 
 export interface QueuedPrompt {
-  nodes: Record<string, boolean>
+  /**
+   * The nodes that are queued to be executed. The key is the node id and the
+   * value is a boolean indicating if the node has been executed.
+   */
+  nodes: Record<NodeId, boolean>
+  /**
+   * The workflow that is queued to be executed
+   */
   workflow?: ComfyWorkflow
 }
 
 export const useExecutionStore = defineStore('execution', () => {
   const clientId = ref<string | null>(null)
   const activePromptId = ref<string | null>(null)
-  const queuedPrompts = ref<Record<string, QueuedPrompt>>({})
+  const queuedPrompts = ref<Record<NodeId, QueuedPrompt>>({})
   const executingNodeId = ref<string | null>(null)
   const executingNode = computed<ComfyNode | null>(() => {
     if (!executingNodeId.value) return null
