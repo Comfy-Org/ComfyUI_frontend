@@ -3,10 +3,9 @@ import {
   LGraphCanvas,
   LGraphEventMode,
   LGraphNode,
-  LiteGraph,
-  strokeShape
+  LiteGraph
 } from '@comfyorg/litegraph'
-import type { IWidget, Rect, Vector2 } from '@comfyorg/litegraph'
+import type { IWidget, Vector2 } from '@comfyorg/litegraph'
 import _ from 'lodash'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { reactive } from 'vue'
@@ -571,41 +570,6 @@ export class ComfyApp {
       const res = origDrawNodeShape.apply(this, arguments)
 
       const nodeErrors = self.lastNodeErrors?.[node.id]
-
-      let color = null
-      let lineWidth = 1
-      // @ts-expect-error fixme ts strict error
-      if (node.id === +self.runningNodeId) {
-        color = '#0f0'
-      } else if (self.dragOverNode && node.id === self.dragOverNode.id) {
-        color = 'dodgerblue'
-      } else if (nodeErrors?.errors) {
-        color = 'red'
-        lineWidth = 2
-      } else if (
-        self.lastExecutionError &&
-        // @ts-expect-error fixme ts strict error
-        +self.lastExecutionError.node_id === node.id
-      ) {
-        color = '#f0f'
-        lineWidth = 2
-      }
-
-      if (color) {
-        const area: Rect = [
-          0,
-          -LiteGraph.NODE_TITLE_HEIGHT,
-          size[0],
-          size[1] + LiteGraph.NODE_TITLE_HEIGHT
-        ]
-        strokeShape(ctx, area, {
-          shape: node._shape || node.constructor.shape || LiteGraph.ROUND_SHAPE,
-          thickness: lineWidth,
-          colour: color,
-          title_height: LiteGraph.NODE_TITLE_HEIGHT,
-          collapsed: node.collapsed
-        })
-      }
 
       // @ts-expect-error fixme ts strict error
       if (self.progress && node.id === +self.runningNodeId) {
