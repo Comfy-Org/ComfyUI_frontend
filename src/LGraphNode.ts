@@ -1,4 +1,5 @@
 import type { DragAndScale } from "./DragAndScale"
+import type { IDrawBoundingOptions } from "./draw"
 import type {
   CanvasColour,
   ColorOption,
@@ -255,6 +256,11 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
         colorOption.color === this.color && colorOption.bgcolor === this.bgcolor,
     ) ?? null
   }
+
+  /**
+   * The stroke styles that should be applied to the node.
+   */
+  strokeStyles: Record<string, (this: LGraphNode) => IDrawBoundingOptions | undefined>
 
   exec_version?: number
   action_call?: string
@@ -586,12 +592,34 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     overWidget: IWidget,
   ): boolean | undefined
 
+  #getErrorStrokeStyle(this: LGraphNode): IDrawBoundingOptions | undefined {
+    if (this.has_errors) {
+      return {
+        padding: 12,
+        thickness: 10,
+        colour: LiteGraph.NODE_ERROR_COLOUR,
+      }
+    }
+  }
+
+  #getSelectedStrokeStyle(this: LGraphNode): IDrawBoundingOptions | undefined {
+    if (this.selected) {
+      return {
+        padding: this.has_errors ? 20 : undefined,
+      }
+    }
+  }
+
   constructor(title: string, type?: string) {
     this.id = LiteGraph.use_uuids ? LiteGraph.uuidv4() : -1
     this.title = title || "Unnamed"
     this.type = type ?? ""
     this.size = [LiteGraph.NODE_WIDTH, 60]
     this.pos = [10, 10]
+    this.strokeStyles = {
+      error: this.#getErrorStrokeStyle,
+      selected: this.#getSelectedStrokeStyle,
+    }
   }
 
   /**

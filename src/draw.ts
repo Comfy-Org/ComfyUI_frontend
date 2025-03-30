@@ -30,7 +30,7 @@ export enum LabelPosition {
   Right = "right",
 }
 
-interface IDrawSelectionBoundingOptions {
+export interface IDrawBoundingOptions {
   /** The shape to render */
   shape?: RenderShape
   /** The radius of the rounded corners for {@link RenderShape.ROUND} and {@link RenderShape.CARD} */
@@ -67,7 +67,7 @@ export function strokeShape(
     padding = 6,
     collapsed = false,
     thickness = 1,
-  }: IDrawSelectionBoundingOptions = {},
+  }: IDrawBoundingOptions = {},
 ): void {
   // These param defaults are not compile-time static, and must be re-evaluated at runtime
   round_radius ??= LiteGraph.ROUND_RADIUS

@@ -92,6 +92,10 @@ LGraph {
       "selected": undefined,
       "serialize_widgets": undefined,
       "showAdvanced": undefined,
+      "strokeStyles": {
+        "error": [Function],
+        "selected": [Function],
+      },
       "title": "LGraphNode",
       "type": "mustBeSet",
       "widgets": undefined,
@@ -156,6 +160,10 @@ LGraph {
       "selected": undefined,
       "serialize_widgets": undefined,
       "showAdvanced": undefined,
+      "strokeStyles": {
+        "error": [Function],
+        "selected": [Function],
+      },
       "title": "LGraphNode",
       "type": "mustBeSet",
       "widgets": undefined,
@@ -221,6 +229,10 @@ LGraph {
       "selected": undefined,
       "serialize_widgets": undefined,
       "showAdvanced": undefined,
+      "strokeStyles": {
+        "error": [Function],
+        "selected": [Function],
+      },
       "title": "LGraphNode",
       "type": "mustBeSet",
       "widgets": undefined,

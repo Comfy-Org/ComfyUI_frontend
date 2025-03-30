@@ -4390,7 +4390,7 @@ export class LGraphCanvas implements ConnectionColorContext {
    * @param size Size of the background to draw, in graph units.  Differs from node size if collapsed, etc.
    * @param fgcolor Foreground colour - used for text
    * @param bgcolor Background colour of the node
-   * @param selected Whether to render the node as selected.  Likely to be removed in future, as current usage is simply the selected property of the node.
+   * @param _selected Whether to render the node as selected.  Likely to be removed in future, as current usage is simply the selected property of the node.
    */
   drawNodeShape(
     node: LGraphNode,
@@ -4398,7 +4398,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     size: Size,
     fgcolor: CanvasColour,
     bgcolor: CanvasColour,
-    selected: boolean,
+    _selected: boolean,
   ): void {
     // Rendering options
     ctx.strokeStyle = fgcolor
@@ -4442,18 +4442,6 @@ export class LGraphCanvas implements ConnectionColorContext {
     }
     ctx.fill()
 
-    if (node.has_errors) {
-      strokeShape(ctx, area, {
-        shape,
-        title_mode,
-        title_height,
-        padding: 12,
-        colour: LiteGraph.NODE_ERROR_COLOUR,
-        collapsed,
-        thickness: 10,
-      })
-    }
-
     // Separator - title bar <-> body
     if (!collapsed && render_title) {
       ctx.shadowColor = "transparent"
@@ -4491,19 +4479,18 @@ export class LGraphCanvas implements ConnectionColorContext {
       node.onDrawTitle?.(ctx)
     }
 
-    // render selection marker
-    if (selected) {
-      node.onBounding?.(area)
-
-      const padding = node.has_errors ? 20 : undefined
-
-      strokeShape(ctx, area, {
-        shape,
-        title_height,
-        title_mode,
-        padding,
-        collapsed: node.flags?.collapsed,
-      })
+    // Draw stroke styles
+    for (const getStyle of Object.values(node.strokeStyles)) {
+      const strokeStyle = getStyle.call(node)
+      if (strokeStyle) {
+        strokeShape(ctx, area, {
+          shape,
+          title_height,
+          title_mode,
+          collapsed,
+          ...strokeStyle,
+        })
+      }
     }
 
     // these counter helps in conditioning drawing based on if the node has been executed or an action occurred
