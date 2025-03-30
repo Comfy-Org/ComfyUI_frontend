@@ -104,7 +104,8 @@
     "interrupted": "Interrupted",
     "enabling": "Enabling",
     "disabling": "Disabling",
-    "updating": "Updating"
+    "updating": "Updating",
+    "outdated": "Outdated"
   },
   "manager": {
     "title": "Custom Nodes Manager",
