@@ -570,9 +570,6 @@ export class ComfyApp {
     }
   }
 
-  /**
-   * Draws node highlights (executing, drag drop) and progress bar
-   */
   #addDrawNodeHandler() {
     const origDrawNode = LGraphCanvas.prototype.drawNode
     LGraphCanvas.prototype.drawNode = function (node) {
