@@ -17,7 +17,9 @@ const TITLE_SUFFIX = ' - ComfyUI'
 
 const executionStore = useExecutionStore()
 const executionText = computed(() =>
-  executionStore.isIdle ? '' : `[${executionStore.executionProgress}%]`
+  executionStore.isIdle
+    ? ''
+    : `[${Math.round(executionStore.executionProgress * 100)}%]`
 )
 
 const settingStore = useSettingStore()
@@ -41,7 +43,7 @@ const workflowNameText = computed(() => {
 
 const nodeExecutionTitle = computed(() =>
   executionStore.executingNode && executionStore.executingNodeProgress
-    ? `${executionText.value}[${executionStore.executingNodeProgress}%] ${executionStore.executingNode.type}`
+    ? `${executionText.value}[${Math.round(executionStore.executingNodeProgress * 100)}%] ${executionStore.executingNode.type}`
     : ''
 )
 

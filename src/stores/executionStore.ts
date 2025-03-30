@@ -10,21 +10,29 @@ import type {
 } from '@/schemas/apiSchema'
 import type {
   ComfyNode,
-  ComfyWorkflowJSON
+  ComfyWorkflowJSON,
+  NodeId
 } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
 
 import { ComfyWorkflow } from './workflowStore'
 
 export interface QueuedPrompt {
-  nodes: Record<string, boolean>
+  /**
+   * The nodes that are queued to be executed. The key is the node id and the
+   * value is a boolean indicating if the node has been executed.
+   */
+  nodes: Record<NodeId, boolean>
+  /**
+   * The workflow that is queued to be executed
+   */
   workflow?: ComfyWorkflow
 }
 
 export const useExecutionStore = defineStore('execution', () => {
   const clientId = ref<string | null>(null)
   const activePromptId = ref<string | null>(null)
-  const queuedPrompts = ref<Record<string, QueuedPrompt>>({})
+  const queuedPrompts = ref<Record<NodeId, QueuedPrompt>>({})
   const executingNodeId = ref<string | null>(null)
   const executingNode = computed<ComfyNode | null>(() => {
     if (!executingNodeId.value) return null
@@ -47,11 +55,7 @@ export const useExecutionStore = defineStore('execution', () => {
   const _executingNodeProgress = ref<ProgressWsMessage | null>(null)
   const executingNodeProgress = computed(() =>
     _executingNodeProgress.value
-      ? Math.round(
-          (_executingNodeProgress.value.value /
-            _executingNodeProgress.value.max) *
-            100
-        )
+      ? _executingNodeProgress.value.value / _executingNodeProgress.value.max
       : null
   )
 
@@ -75,7 +79,7 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!activePrompt.value) return 0
     const total = totalNodesToExecute.value
     const done = nodesExecuted.value
-    return Math.round((done / total) * 100)
+    return done / total
   })
 
   function bindExecutionEvents() {
@@ -185,14 +189,41 @@ export const useExecutionStore = defineStore('execution', () => {
   return {
     isIdle,
     clientId,
+    /**
+     * The id of the prompt that is currently being executed
+     */
     activePromptId,
+    /**
+     * The queued prompts
+     */
     queuedPrompts,
+    /**
+     * The id of the node that is currently being executed
+     */
     executingNodeId,
+    /**
+     * The prompt that is currently being executed
+     */
     activePrompt,
+    /**
+     * The total number of nodes to execute
+     */
     totalNodesToExecute,
+    /**
+     * The number of nodes that have been executed
+     */
     nodesExecuted,
+    /**
+     * The progress of the execution
+     */
     executionProgress,
+    /**
+     * The node that is currently being executed
+     */
     executingNode,
+    /**
+     * The progress of the executing node (if the node reports progress)
+     */
     executingNodeProgress,
     bindExecutionEvents,
     unbindExecutionEvents,
