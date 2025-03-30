@@ -97,6 +97,7 @@ export abstract class NodeSlot implements INodeSlot {
   nameLocked?: boolean
   pos?: Point
   widget?: IWidget
+  hasErrors?: boolean
 
   constructor(slot: INodeSlot) {
     Object.assign(this, slot)
@@ -235,6 +236,15 @@ export abstract class NodeSlot implements INodeSlot {
           }
         }
       }
+    }
+
+    // Draw a red circle if the slot has errors.
+    if (this.hasErrors) {
+      ctx.lineWidth = 2
+      ctx.strokeStyle = "red"
+      ctx.beginPath()
+      ctx.arc(pos[0], pos[1], 12, 0, Math.PI * 2)
+      ctx.stroke()
     }
 
     // Restore the original fillStyle and strokeStyle

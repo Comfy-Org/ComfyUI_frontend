@@ -291,6 +291,10 @@ export interface INodeSlot {
    * This is calculated at runtime; it is **not** serialized.
    */
   _floatingLinks?: Set<LLink>
+  /**
+   * Whether the slot has errors. It is **not** serialized.
+   */
+  hasErrors?: boolean
 }
 
 export interface INodeFlags {
