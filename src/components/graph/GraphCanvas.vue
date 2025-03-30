@@ -68,6 +68,7 @@ import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useWorkflowService } from '@/services/workflowService'
 import { useCommandStore } from '@/stores/commandStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
@@ -80,6 +81,7 @@ const settingStore = useSettingStore()
 const nodeDefStore = useNodeDefStore()
 const workspaceStore = useWorkspaceStore()
 const canvasStore = useCanvasStore()
+const executionStore = useExecutionStore()
 const betaMenuEnabled = computed(
   () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
 )
@@ -155,6 +157,25 @@ watch(
   () => colorPaletteStore.activePaletteId,
   (newValue) => {
     settingStore.set('Comfy.ColorPalette', newValue)
+  }
+)
+
+// Update the progress of the executing node
+watch(
+  () =>
+    [executionStore.executingNodeId, executionStore.executingNodeProgress] as [
+      string | null,
+      number | null
+    ],
+  ([executingNodeId, executingNodeProgress]) => {
+    if (!executingNodeId) return
+    for (const node of comfyApp.graph.nodes) {
+      if (node.id == executingNodeId) {
+        node.progress = executingNodeProgress ?? undefined
+      } else {
+        node.progress = undefined
+      }
+    }
   }
 )
 

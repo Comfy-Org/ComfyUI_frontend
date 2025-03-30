@@ -562,26 +562,14 @@ export class ComfyApp {
     LGraphCanvas.prototype.drawNodeShape = function (
       node,
       ctx,
-      size,
+      _size,
       _fgcolor,
-      bgcolor
+      _bgcolor
     ) {
       // @ts-expect-error fixme ts strict error
       const res = origDrawNodeShape.apply(this, arguments)
 
       const nodeErrors = self.lastNodeErrors?.[node.id]
-
-      // @ts-expect-error fixme ts strict error
-      if (self.progress && node.id === +self.runningNodeId) {
-        ctx.fillStyle = 'green'
-        ctx.fillRect(
-          0,
-          0,
-          size[0] * (self.progress.value / self.progress.max),
-          6
-        )
-        ctx.fillStyle = bgcolor
-      }
 
       // Highlight inputs that failed validation
       if (nodeErrors) {

@@ -47,11 +47,7 @@ export const useExecutionStore = defineStore('execution', () => {
   const _executingNodeProgress = ref<ProgressWsMessage | null>(null)
   const executingNodeProgress = computed(() =>
     _executingNodeProgress.value
-      ? Math.round(
-          (_executingNodeProgress.value.value /
-            _executingNodeProgress.value.max) *
-            100
-        )
+      ? _executingNodeProgress.value.value / _executingNodeProgress.value.max
       : null
   )
 
@@ -75,7 +71,7 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!activePrompt.value) return 0
     const total = totalNodesToExecute.value
     const done = nodesExecuted.value
-    return Math.round((done / total) * 100)
+    return done / total
   })
 
   function bindExecutionEvents() {
