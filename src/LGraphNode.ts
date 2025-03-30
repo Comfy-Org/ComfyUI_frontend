@@ -596,8 +596,8 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     if (this.has_errors) {
       return {
         padding: 12,
-        thickness: 10,
-        colour: LiteGraph.NODE_ERROR_COLOUR,
+        lineWidth: 10,
+        color: LiteGraph.NODE_ERROR_COLOUR,
       }
     }
   }

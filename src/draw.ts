@@ -39,14 +39,14 @@ export interface IDrawBoundingOptions {
   title_height?: number
   /** @deprecated This is node-specific: it should be removed entirely, and behaviour defined by the caller more explicitly */
   title_mode?: TitleMode
-  /** The colour that should be drawn */
-  colour?: CanvasColour
+  /** The color that should be drawn */
+  color?: CanvasColour
   /** The distance between the edge of the {@link area} and the middle of the line */
   padding?: number
   /** @deprecated This is node-specific: it should be removed entirely, and behaviour defined by the caller more explicitly */
   collapsed?: boolean
   /** Thickness of the line drawn (`lineWidth`) */
-  thickness?: number
+  lineWidth?: number
 }
 
 /**
@@ -63,15 +63,15 @@ export function strokeShape(
     round_radius,
     title_height,
     title_mode = TitleMode.NORMAL_TITLE,
-    colour,
+    color,
     padding = 6,
     collapsed = false,
-    thickness = 1,
+    lineWidth: thickness = 1,
   }: IDrawBoundingOptions = {},
 ): void {
   // These param defaults are not compile-time static, and must be re-evaluated at runtime
   round_radius ??= LiteGraph.ROUND_RADIUS
-  colour ??= LiteGraph.NODE_BOX_OUTLINE_COLOR
+  color ??= LiteGraph.NODE_BOX_OUTLINE_COLOR
 
   // Adjust area if title is transparent
   if (title_mode === TitleMode.TRANSPARENT_TITLE) {
@@ -84,7 +84,7 @@ export function strokeShape(
   const { lineWidth, strokeStyle } = ctx
   ctx.lineWidth = thickness
   ctx.globalAlpha = 0.8
-  ctx.strokeStyle = colour
+  ctx.strokeStyle = color
   ctx.beginPath()
 
   // Draw shape based on type
