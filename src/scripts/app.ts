@@ -2399,6 +2399,16 @@ export class ComfyApp {
               inputs[widget.name] = widget.serializeValue
                 ? await widget.serializeValue(node, i)
                 : widget.value
+
+              // Fix selected tokens via dynamicPrompts in workflow
+              if (widget.dynamicPrompts) {
+                const serializedNode = workflow.nodes.find(
+                  (item) => item.id === node.id
+                )
+                if (serializedNode && serializedNode.widgets_values[i]) {
+                  serializedNode.widgets_values[i] = inputs[widget.name]
+                }
+              }
             }
           }
         }
