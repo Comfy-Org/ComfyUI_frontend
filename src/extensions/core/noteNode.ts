@@ -19,8 +19,7 @@ app.registerExtension({
       groupcolor = LGraphCanvas.node_colors.yellow.groupcolor
       isVirtualNode: boolean
 
-      constructor(title?: string) {
-        // @ts-expect-error fixme ts strict error
+      constructor(title: string) {
         super(title)
         if (!this.properties) {
           this.properties = { text: '' }
@@ -58,8 +57,7 @@ app.registerExtension({
       bgcolor = LGraphCanvas.node_colors.yellow.bgcolor
       groupcolor = LGraphCanvas.node_colors.yellow.groupcolor
 
-      constructor(title?: string) {
-        // @ts-expect-error fixme ts strict error
+      constructor(title: string) {
         super(title)
         if (!this.properties) {
           this.properties = { text: '' }
