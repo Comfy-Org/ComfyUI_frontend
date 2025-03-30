@@ -574,47 +574,6 @@ export class ComfyApp {
    * Draws node highlights (executing, drag drop) and progress bar
    */
   #addDrawNodeHandler() {
-    const origDrawNodeShape = LGraphCanvas.prototype.drawNodeShape
-    const self = this
-    LGraphCanvas.prototype.drawNodeShape = function (
-      node,
-      ctx,
-      _size,
-      _fgcolor,
-      _bgcolor
-    ) {
-      // @ts-expect-error fixme ts strict error
-      const res = origDrawNodeShape.apply(this, arguments)
-
-      const nodeErrors = self.lastNodeErrors?.[node.id]
-
-      // Highlight inputs that failed validation
-      if (nodeErrors) {
-        ctx.lineWidth = 2
-        ctx.strokeStyle = 'red'
-        for (const error of nodeErrors.errors) {
-          if (error.extra_info && error.extra_info.input_name) {
-            const inputIndex = node.findInputSlot(error.extra_info.input_name)
-            if (inputIndex !== -1) {
-              let pos = node.getConnectionPos(true, inputIndex)
-              ctx.beginPath()
-              ctx.arc(
-                pos[0] - node.pos[0],
-                pos[1] - node.pos[1],
-                12,
-                0,
-                2 * Math.PI,
-                false
-              )
-              ctx.stroke()
-            }
-          }
-        }
-      }
-
-      return res
-    }
-
     const origDrawNode = LGraphCanvas.prototype.drawNode
     LGraphCanvas.prototype.drawNode = function (node) {
       const editor_alpha = this.editor_alpha
