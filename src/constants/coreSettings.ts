@@ -758,7 +758,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Reroute spline offset',
     tooltip: 'The bezier control point offset from the reroute centre point',
     type: 'slider',
-    defaultValue: 0,
+    defaultValue: 20,
     attrs: {
       min: 0,
       max: 400

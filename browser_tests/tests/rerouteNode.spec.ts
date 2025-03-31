@@ -39,6 +39,10 @@ test.describe('Reroute Node', () => {
 })
 
 test.describe('LiteGraph Native Reroute Node', () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.setSetting('LiteGraph.Reroute.SplineOffset', 80)
+  })
+
   test('loads from workflow', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('reroute/native_reroute')
     await expect(comfyPage.canvas).toHaveScreenshot('native_reroute.png')
