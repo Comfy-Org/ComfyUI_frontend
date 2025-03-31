@@ -5,11 +5,14 @@
  * @param callbacks - The callbacks to chain.
  * @returns A new callback that chains the original callback with the callbacks.
  */
-export const useChainCallback = <T extends (...args: any[]) => void>(
+export const useChainCallback = <
+  O,
+  T extends (this: O, ...args: any[]) => void
+>(
   originalCallback: T | undefined,
-  ...callbacks: ((...args: Parameters<T>) => void)[]
+  ...callbacks: ((this: O, ...args: Parameters<T>) => void)[]
 ) => {
-  return function (this: unknown, ...args: Parameters<T>) {
+  return function (this: O, ...args: Parameters<T>) {
     originalCallback?.call(this, ...args)
     callbacks.forEach((callback) => callback.call(this, ...args))
   }
