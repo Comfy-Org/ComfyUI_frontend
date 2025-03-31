@@ -357,6 +357,78 @@ export class GroupNodeConfig {
         output_is_list: []
       })
       return def
+    } else if (node.type === 'Reroute') {
+      // @ts-expect-error fixme ts strict error
+      const linksTo = this.linksTo[node.index]
+      // @ts-expect-error fixme ts strict error
+      if (linksTo && linksFrom && !this.externalFrom[node.index]?.[0]) {
+        // Being used internally
+        return null
+      }
+
+      let config = {}
+      let rerouteType = '*'
+      if (linksFrom) {
+        for (const [, , id, slot] of linksFrom['0']) {
+          const node = this.nodeData.nodes[id]
+          const input = node.inputs[slot]
+          if (rerouteType === '*') {
+            rerouteType = input.type
+          }
+          if (input.widget) {
+            // @ts-expect-error fixme ts strict error
+            const targetDef = globalDefs[node.type]
+            const targetWidget =
+              targetDef.input.required[input.widget.name] ??
+              targetDef.input.optional[input.widget.name]
+
+            const widget = [targetWidget[0], config]
+            const res = mergeIfValid(
+              // @ts-expect-error invalid slot type
+              {
+                widget
+              },
+              targetWidget,
+              false,
+              null,
+              widget
+            )
+            config = res?.customConfig ?? config
+          }
+        }
+      } else if (linksTo) {
+        const [id, slot] = linksTo['0']
+        rerouteType = this.nodeData.nodes[id].outputs[slot].type
+      } else {
+        // Reroute used as a pipe
+        for (const l of this.nodeData.links) {
+          if (l[2] === node.index) {
+            rerouteType = l[5]
+            break
+          }
+        }
+        if (rerouteType === '*') {
+          // Check for an external link
+          // @ts-expect-error fixme ts strict error
+          const t = this.externalFrom[node.index]?.[0]
+          if (t) {
+            rerouteType = t
+          }
+        }
+      }
+
+      // @ts-expect-error
+      config.forceInput = true
+      return {
+        input: {
+          required: {
+            [rerouteType]: [rerouteType, config]
+          }
+        },
+        output: [rerouteType],
+        output_name: [],
+        output_is_list: []
+      }
     }
 
     console.warn(
@@ -808,13 +880,22 @@ export class GroupNodeHandler {
       link = { ...link }
       const output = this.groupData.newToOldOutputMap[link.origin_slot]
       let innerNode = this.innerNodes[output.node.index]
+      let l
+      while (innerNode?.type === 'Reroute') {
+        l = innerNode.getInputLink(0)
+        innerNode = innerNode.getInputNode(0)
+      }
 
       if (!innerNode) {
         return null
       }
 
+      if (l && GroupNodeHandler.isGroupNode(innerNode)) {
+        return innerNode.updateLink(l)
+      }
+
       link.origin_id = innerNode.id
-      link.origin_slot = output.slot
+      link.origin_slot = l?.origin_slot ?? output.slot
       return link
     }
 
@@ -1271,6 +1352,23 @@ export class GroupNodeHandler {
           }
         }
         continue
+      } else if (innerNode.type === 'Reroute') {
+        const rerouteLinks = this.groupData.linksFrom[old.node.index]
+        if (rerouteLinks) {
+          for (const [_, , targetNodeId, targetSlot] of rerouteLinks['0']) {
+            const node = this.innerNodes[targetNodeId]
+            const input = node.inputs[targetSlot]
+            if (input.widget) {
+              const widget = node.widgets?.find(
+                // @ts-expect-error fixme ts strict error
+                (w) => w.name === input.widget.name
+              )
+              if (widget) {
+                widget.value = newValue
+              }
+            }
+          }
+        }
       }
 
       // @ts-expect-error fixme ts strict error
@@ -1313,6 +1411,30 @@ export class GroupNodeHandler {
     return true
   }
 
+  // @ts-expect-error fixme ts strict error
+  populateReroute(node, nodeId, map) {
+    if (node.type !== 'Reroute') return
+
+    const link = this.groupData.linksFrom[nodeId]?.[0]?.[0]
+    if (!link) return
+    const [, , targetNodeId, targetNodeSlot] = link
+    const targetNode = this.groupData.nodeData.nodes[targetNodeId]
+    const inputs = targetNode.inputs
+    const targetWidget = inputs?.[targetNodeSlot]?.widget
+    if (!targetWidget) return
+
+    const offset = inputs.length - (targetNode.widgets_values?.length ?? 0)
+    const v = targetNode.widgets_values?.[targetNodeSlot - offset]
+    if (v == null) return
+
+    const widgetName = Object.values(map)[0]
+    // @ts-expect-error fixme ts strict error
+    const widget = this.node.widgets.find((w) => w.name === widgetName)
+    if (widget) {
+      widget.value = v
+    }
+  }
+
   populateWidgets() {
     if (!this.node.widgets) return
 
@@ -1326,6 +1448,9 @@ export class GroupNodeHandler {
       const widgets = Object.keys(map)
 
       if (!node.widgets_values?.length) {
+        // special handling for populating values into reroutes
+        // this allows primitives connect to them to pick up the correct value
+        this.populateReroute(node, nodeId, map)
         continue
       }
 
