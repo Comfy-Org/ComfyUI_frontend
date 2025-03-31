@@ -47,7 +47,7 @@ import { ExtensionManager } from '@/types/extensionTypes'
 import { ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
 import { executeWidgetsCallback, isImageNode } from '@/utils/litegraphUtil'
-import { migrateLegacyRerouteNodes } from '@/utils/migration/migrateReroute'
+import { findLegacyRerouteNodes } from '@/utils/migration/migrateReroute'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import { type ComfyApi, PromptExecutionError, api } from './api'
@@ -945,7 +945,11 @@ export class ComfyApp {
     clean: boolean = true,
     restore_view: boolean = true,
     workflow: string | null | ComfyWorkflow = null,
-    { showMissingNodesDialog = true, showMissingModelsDialog = true } = {}
+    {
+      showMissingNodesDialog = true,
+      showMissingModelsDialog = true,
+      checkForRerouteMigration = true
+    } = {}
   ) {
     if (clean !== false) {
       this.clean()
@@ -972,11 +976,16 @@ export class ComfyApp {
       graphData = validatedGraphData ?? graphData
     }
 
-    // Migrate legacy reroute nodes to the new format
-    if (graphData.version === 0.4) {
-      graphData = migrateLegacyRerouteNodes(graphData)
+    if (
+      checkForRerouteMigration &&
+      graphData.version === 0.4 &&
+      findLegacyRerouteNodes(graphData).length
+    ) {
+      useToastStore().add({
+        group: 'reroute-migration',
+        severity: 'warn'
+      })
     }
-
     useWorkflowService().beforeLoadNewGraph()
 
     const missingNodeTypes: MissingNodeType[] = []

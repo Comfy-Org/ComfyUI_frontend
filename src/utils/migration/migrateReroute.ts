@@ -20,7 +20,9 @@ type LinkExtension = {
 /**
  * Identifies all legacy Reroute nodes in a workflow
  */
-function findLegacyRerouteNodes(workflow: WorkflowJSON04): RerouteNode[] {
+export function findLegacyRerouteNodes(
+  workflow: WorkflowJSON04
+): RerouteNode[] {
   return workflow.nodes.filter(
     (node) => node.type === 'Reroute'
   ) as RerouteNode[]

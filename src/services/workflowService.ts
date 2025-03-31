@@ -167,7 +167,8 @@ export const useWorkflowService = () => {
       workflow,
       {
         showMissingModelsDialog: loadFromRemote,
-        showMissingNodesDialog: loadFromRemote
+        showMissingNodesDialog: loadFromRemote,
+        checkForRerouteMigration: loadFromRemote
       }
     )
   }

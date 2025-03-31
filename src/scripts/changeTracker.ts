@@ -135,7 +135,8 @@ export class ChangeTracker {
       try {
         await this.app.loadGraphData(prevState, false, false, this.workflow, {
           showMissingModelsDialog: false,
-          showMissingNodesDialog: false
+          showMissingNodesDialog: false,
+          checkForRerouteMigration: false
         })
         this.activeState = prevState
         this.updateModified()

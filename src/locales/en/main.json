@@ -104,7 +104,8 @@
     "interrupted": "Interrupted",
     "enabling": "Enabling",
     "disabling": "Disabling",
-    "updating": "Updating"
+    "updating": "Updating",
+    "migrate": "Migrate"
   },
   "manager": {
     "title": "Custom Nodes Manager",
@@ -1024,6 +1025,7 @@
     "errorSaveSetting": "Error saving setting {id}: {err}",
     "errorCopyImage": "Error copying image: {error}",
     "noTemplatesToExport": "No templates to export",
-    "failedToFetchLogs": "Failed to fetch server logs"
+    "failedToFetchLogs": "Failed to fetch server logs",
+    "migrateToLitegraphReroute": "Reroute nodes will be removed in future versions. Click to migrate to litegraph-native reroute."
   }
 }
