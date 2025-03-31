@@ -259,7 +259,12 @@ const zError = z.object({
   type: z.string(),
   message: z.string(),
   details: z.string(),
-  extra_info: z.record(z.string(), z.any())
+  extra_info: z
+    .object({
+      input_name: z.string().optional()
+    })
+    .passthrough()
+    .optional()
 })
 const zNodeError = z.object({
   errors: z.array(zError),

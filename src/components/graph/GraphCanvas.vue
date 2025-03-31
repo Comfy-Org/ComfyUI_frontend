@@ -37,6 +37,7 @@
 </template>
 
 <script setup lang="ts">
+import type { LGraphNode } from '@comfyorg/litegraph'
 import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
@@ -176,6 +177,37 @@ watch(
         node.progress = undefined
       }
     }
+  }
+)
+
+// Update node slot errors
+watch(
+  () => executionStore.lastNodeErrors,
+  (lastNodeErrors) => {
+    const removeSlotError = (node: LGraphNode) => {
+      for (const slot of node.inputs) {
+        delete slot.hasErrors
+      }
+      for (const slot of node.outputs) {
+        delete slot.hasErrors
+      }
+    }
+
+    for (const node of comfyApp.graph.nodes) {
+      removeSlotError(node)
+      const nodeErrors = lastNodeErrors?.[node.id]
+      if (!nodeErrors) continue
+      for (const error of nodeErrors.errors) {
+        if (error.extra_info && error.extra_info.input_name) {
+          const inputIndex = node.findInputSlot(error.extra_info.input_name)
+          if (inputIndex !== -1) {
+            node.inputs[inputIndex].hasErrors = true
+          }
+        }
+      }
+    }
+
+    comfyApp.canvas.draw(true, true)
   }
 )
 

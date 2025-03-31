@@ -5,7 +5,9 @@ import type {
   ExecutedWsMessage,
   ExecutingWsMessage,
   ExecutionCachedWsMessage,
+  ExecutionErrorWsMessage,
   ExecutionStartWsMessage,
+  NodeError,
   ProgressWsMessage
 } from '@/schemas/apiSchema'
 import type {
@@ -33,6 +35,8 @@ export const useExecutionStore = defineStore('execution', () => {
   const clientId = ref<string | null>(null)
   const activePromptId = ref<string | null>(null)
   const queuedPrompts = ref<Record<NodeId, QueuedPrompt>>({})
+  const lastNodeErrors = ref<Record<NodeId, NodeError> | null>(null)
+  const lastExecutionError = ref<ExecutionErrorWsMessage | null>(null)
   const executingNodeId = ref<string | null>(null)
   const executingNode = computed<ComfyNode | null>(() => {
     if (!executingNodeId.value) return null
@@ -95,6 +99,10 @@ export const useExecutionStore = defineStore('execution', () => {
     api.addEventListener('executing', handleExecuting as EventListener)
     api.addEventListener('progress', handleProgress as EventListener)
     api.addEventListener('status', handleStatus as EventListener)
+    api.addEventListener(
+      'execution_error',
+      handleExecutionError as EventListener
+    )
   }
 
   function unbindExecutionEvents() {
@@ -110,9 +118,14 @@ export const useExecutionStore = defineStore('execution', () => {
     api.removeEventListener('executing', handleExecuting as EventListener)
     api.removeEventListener('progress', handleProgress as EventListener)
     api.removeEventListener('status', handleStatus as EventListener)
+    api.removeEventListener(
+      'execution_error',
+      handleExecutionError as EventListener
+    )
   }
 
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
+    lastExecutionError.value = null
     activePromptId.value = e.detail.prompt_id
     queuedPrompts.value[activePromptId.value] ??= { nodes: {} }
   }
@@ -161,6 +174,10 @@ export const useExecutionStore = defineStore('execution', () => {
     }
   }
 
+  function handleExecutionError(e: CustomEvent<ExecutionErrorWsMessage>) {
+    lastExecutionError.value = e.detail
+  }
+
   function storePrompt({
     nodes,
     id,
@@ -197,6 +214,14 @@ export const useExecutionStore = defineStore('execution', () => {
      * The queued prompts
      */
     queuedPrompts,
+    /**
+     * The node errors from the previous execution.
+     */
+    lastNodeErrors,
+    /**
+     * The error from the previous execution.
+     */
+    lastExecutionError,
     /**
      * The id of the node that is currently being executed
      */
