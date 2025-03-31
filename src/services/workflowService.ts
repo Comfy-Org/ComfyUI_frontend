@@ -3,10 +3,7 @@ import type { SerialisableGraph, Vector2 } from '@comfyorg/litegraph'
 import { toRaw } from 'vue'
 
 import { t } from '@/i18n'
-import {
-  ComfyWorkflowJSON,
-  WorkflowJSON04
-} from '@/schemas/comfyWorkflowSchema'
+import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { downloadBlob } from '@/scripts/utils'
@@ -15,7 +12,6 @@ import { useToastStore } from '@/stores/toastStore'
 import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { appendJsonExt } from '@/utils/formatUtil'
-import { migrateLegacyRerouteNodes } from '@/utils/migration/migrateReroute'
 
 import { useDialogService } from './dialogService'
 
@@ -167,7 +163,8 @@ export const useWorkflowService = () => {
       workflow,
       {
         showMissingModelsDialog: loadFromRemote,
-        showMissingNodesDialog: loadFromRemote
+        showMissingNodesDialog: loadFromRemote,
+        checkForRerouteMigration: loadFromRemote
       }
     )
   }
@@ -328,10 +325,7 @@ export const useWorkflowService = () => {
   ) => {
     const loadedWorkflow = await workflow.load()
     const data = loadedWorkflow.initialState
-    const workflowJSON =
-      data.version === 0.4
-        ? migrateLegacyRerouteNodes(data as WorkflowJSON04)
-        : data
+    const workflowJSON = data
     const old = localStorage.getItem('litegrapheditor_clipboard')
     // unknown conversion: ComfyWorkflowJSON is stricter than LiteGraph's
     // serialisation schema.

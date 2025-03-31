@@ -32,7 +32,7 @@ test.describe('Keybindings', () => {
     })
 
     await comfyPage.executeCommand('TestCommand')
-    await expect(comfyPage.page.locator('.p-toast')).toBeVisible()
+    expect(await comfyPage.getToastErrorCount()).toBe(1)
   })
 
   test('Should handle async command errors', async ({ comfyPage }) => {
@@ -45,6 +45,6 @@ test.describe('Keybindings', () => {
     })
 
     await comfyPage.executeCommand('TestCommand')
-    await expect(comfyPage.page.locator('.p-toast')).toBeVisible()
+    expect(await comfyPage.getToastErrorCount()).toBe(1)
   })
 })

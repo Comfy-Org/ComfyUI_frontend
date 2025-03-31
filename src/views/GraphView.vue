@@ -14,6 +14,7 @@
   </div>
 
   <GlobalToast />
+  <RerouteMigrationToast />
   <UnloadWindowConfirmDialog v-if="!isElectron()" />
   <BrowserTabTitle />
   <MenuHamburger />
@@ -31,6 +32,7 @@ import MenuHamburger from '@/components/MenuHamburger.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
+import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
 import TopMenubar from '@/components/topbar/TopMenubar.vue'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useErrorHandling } from '@/composables/useErrorHandling'
