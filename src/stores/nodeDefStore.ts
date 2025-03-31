@@ -140,6 +140,18 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDefV1> = {
     python_module: 'nodes',
     description: 'Primitive values like numbers, strings, and booleans.'
   },
+  Reroute: {
+    name: 'Reroute',
+    display_name: 'Reroute',
+    category: 'utils',
+    input: { required: { '': ['*', {}] }, optional: {} },
+    output: ['*'],
+    output_name: [''],
+    output_is_list: [false],
+    output_node: false,
+    python_module: 'nodes',
+    description: 'Reroute the connection to another node.'
+  },
   Note: {
     name: 'Note',
     display_name: 'Note',
