@@ -713,7 +713,8 @@
     "EditTokenWeight": "Edit Token Weight",
     "CustomColorPalettes": "Custom Color Palettes",
     "UV": "UV",
-    "ContextMenu": "Context Menu"
+    "ContextMenu": "Context Menu",
+    "Reroute": "Reroute"
   },
   "serverConfigItems": {
     "listen": {
