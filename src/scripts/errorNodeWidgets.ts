@@ -44,6 +44,12 @@ LGraphNode.prototype.onConfigure = useChainCallback(
   function (this: LGraphNode, info) {
     if (!this.has_errors || !info.widgets_values) return
 
+    /**
+     * Note: Some custom nodes overrides the `widgets_values` property to an
+     * object that has `length` property and index access. It is not safe to call
+     * any array methods on it.
+     * See example in https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite/blob/8629188458dc6cb832f871ece3bd273507e8a766/web/js/VHS.core.js#L59-L84
+     */
     for (let i = 0; i < info.widgets_values.length; i++) {
       const widgetValue = info.widgets_values[i]
       addWidgetFromValue(this, widgetValue)
