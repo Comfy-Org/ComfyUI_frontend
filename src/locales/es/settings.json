@@ -333,6 +333,10 @@
   "LiteGraph_Node_TooltipDelay": {
     "name": "Retraso de la información sobre herramientas"
   },
+  "LiteGraph_Reroute_SplineOffset": {
+    "name": "Desvío de la compensación de la spline",
+    "tooltip": "El punto de control bezier desplazado desde el punto central de reenrutamiento"
+  },
   "pysssss_SnapToGrid": {
     "name": "Siempre ajustar a la cuadrícula"
   }

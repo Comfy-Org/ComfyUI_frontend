@@ -752,5 +752,17 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     defaultValue: true,
     versionAdded: '1.10.5'
+  },
+  {
+    id: 'LiteGraph.Reroute.SplineOffset',
+    name: 'Reroute spline offset',
+    tooltip: 'The bezier control point offset from the reroute centre point',
+    type: 'slider',
+    defaultValue: 20,
+    attrs: {
+      min: 0,
+      max: 400
+    },
+    versionAdded: '1.15.7'
   }
 ]

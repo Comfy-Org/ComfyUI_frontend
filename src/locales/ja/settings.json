@@ -333,6 +333,10 @@
   "LiteGraph_Node_TooltipDelay": {
     "name": "ツールチップ遅延"
   },
+  "LiteGraph_Reroute_SplineOffset": {
+    "name": "リルートスプラインオフセット",
+    "tooltip": "リルート中心点からのベジエ制御点のオフセット"
+  },
   "pysssss_SnapToGrid": {
     "name": "常にグリッドにスナップ"
   }

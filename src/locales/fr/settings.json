@@ -333,6 +333,10 @@
   "LiteGraph_Node_TooltipDelay": {
     "name": "Délai d'infobulle"
   },
+  "LiteGraph_Reroute_SplineOffset": {
+    "name": "Réacheminement décalage de spline",
+    "tooltip": "Le point de contrôle de Bézier est décalé par rapport au point central de réacheminement"
+  },
   "pysssss_SnapToGrid": {
     "name": "Toujours aligner sur la grille"
   }

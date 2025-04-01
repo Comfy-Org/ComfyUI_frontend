@@ -116,4 +116,10 @@ export const useLitegraphSettings = () => {
       'LiteGraph.ContextMenu.Scaling'
     )
   })
+
+  watchEffect(() => {
+    LiteGraph.Reroute.maxSplineOffset = settingStore.get(
+      'LiteGraph.Reroute.SplineOffset'
+    )
+  })
 }
