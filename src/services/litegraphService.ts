@@ -87,25 +87,15 @@ export const useLitegraphService = () => {
             ) ?? {}
 
             if (widget) {
-              const fallback = widget.label ?? inputName
-              widget.label = st(nameKey, fallback)
-
+              widget.label = st(nameKey, widget.label ?? inputName)
               widget.options ??= {}
-              if (inputSpec.isOptional) {
-                widget.options.inputIsOptional = true
-              }
-              if (inputSpec.forceInput) {
-                widget.options.forceInput = true
-              }
-              if (inputSpec.defaultInput) {
-                widget.options.defaultInput = true
-              }
-              if (inputSpec.advanced) {
-                widget.advanced = true
-              }
-              if (inputSpec.hidden) {
-                widget.hidden = true
-              }
+              Object.assign(widget.options, {
+                inputIsOptional: inputSpec.isOptional,
+                forceInput: inputSpec.forceInput,
+                defaultInput: inputSpec.defaultInput,
+                advanced: inputSpec.advanced,
+                hidden: inputSpec.hidden
+              })
             }
 
             nodeMinSize.width = Math.max(nodeMinSize.width, minWidth)
