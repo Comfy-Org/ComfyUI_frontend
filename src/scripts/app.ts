@@ -10,6 +10,7 @@ import _ from 'lodash'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { reactive } from 'vue'
 
+import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { st, t } from '@/i18n'
 import type {
   ExecutionErrorWsMessage,
@@ -136,6 +137,11 @@ export class ComfyApp {
   bypassBgColor: string
   // Set by Comfy.Clipspace extension
   openClipspace: () => void = () => {}
+
+  #positionConversion?: {
+    clientPosToCanvasPos: (pos: Vector2) => Vector2
+    canvasPosToClientPos: (pos: Vector2) => Vector2
+  }
 
   /**
    * The node errors from the previous execution.
@@ -774,6 +780,11 @@ export class ComfyApp {
     this.#addDropHandler()
 
     await useExtensionService().invokeExtensionsAsync('setup')
+
+    this.#positionConversion = useCanvasPositionConversion(
+      this.canvasContainer,
+      this.canvas
+    )
   }
 
   resizeCanvas() {
@@ -1556,21 +1567,17 @@ export class ComfyApp {
   }
 
   clientPosToCanvasPos(pos: Vector2): Vector2 {
-    const rect = this.canvasContainer.getBoundingClientRect()
-    const containerOffsets = [rect.left, rect.top]
-    return _.zip(pos, this.canvas.ds.offset, containerOffsets).map(
-      // @ts-expect-error fixme ts strict error
-      ([p, o1, o2]) => (p - o2) / this.canvas.ds.scale - o1
-    ) as Vector2
+    if (!this.#positionConversion) {
+      throw new Error('clientPosToCanvasPos called before setup')
+    }
+    return this.#positionConversion.clientPosToCanvasPos(pos)
   }
 
   canvasPosToClientPos(pos: Vector2): Vector2 {
-    const rect = this.canvasContainer.getBoundingClientRect()
-    const containerOffsets = [rect.left, rect.top]
-    return _.zip(pos, this.canvas.ds.offset, containerOffsets).map(
-      // @ts-expect-error fixme ts strict error
-      ([p, o1, o2]) => (p + o1) * this.canvas.ds.scale + o2
-    ) as Vector2
+    if (!this.#positionConversion) {
+      throw new Error('canvasPosToClientPos called before setup')
+    }
+    return this.#positionConversion.canvasPosToClientPos(pos)
   }
 }
 
