@@ -106,10 +106,17 @@ export class ChangeTracker {
   }
 
   checkState() {
-    if (!this.app.graph || this.changeCount) return
+    if (
+      !this.app.graph ||
+      this.changeCount ||
+      this.app.canvas.read_only ||
+      this.app.canvas.isDragging
+    )
+      return
     // @ts-expect-error zod type issue on ComfyWorkflowJSON. ComfyWorkflowJSON
     // is stricter than LiteGraph's serialisation schema.
     const currentState = clone(this.app.graph.serialize()) as ComfyWorkflowJSON
+    logger.debug('checkState')
     if (!this.activeState) {
       this.activeState = currentState
       return
