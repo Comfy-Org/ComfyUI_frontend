@@ -181,6 +181,7 @@ export const useColorPaletteService = () => {
   }
 
   return {
+    getActiveColorPalette: () => colorPaletteStore.completedActivePalette,
     addCustomColorPalette: wrapWithErrorHandling(addCustomColorPalette),
     deleteCustomColorPalette: wrapWithErrorHandling(deleteCustomColorPalette),
     loadColorPalette: wrapWithErrorHandlingAsync(loadColorPalette),
