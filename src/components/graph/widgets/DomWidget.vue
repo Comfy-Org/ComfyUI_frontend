@@ -17,7 +17,6 @@
 </template>
 
 <script setup lang="ts">
-import type { LGraphNode } from '@comfyorg/litegraph'
 import { useEventListener } from '@vueuse/core'
 import { CSSProperties, computed, onMounted, ref, watch } from 'vue'
 
@@ -63,9 +62,9 @@ const updateDomClipping = () => {
   const lgCanvas = canvasStore.canvas
   if (!lgCanvas || !widgetElement.value) return
 
-  const selectedNode = Object.values(
-    lgCanvas.selected_nodes ?? {}
-  )[0] as LGraphNode
+  const selectedNode = Object.values(lgCanvas.selected_nodes ?? {})[0]
+  if (!selectedNode) return
+
   const node = widget.node
   const isSelected = selectedNode === node
   const renderArea = selectedNode?.renderArea
