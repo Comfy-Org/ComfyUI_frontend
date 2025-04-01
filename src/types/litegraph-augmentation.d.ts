@@ -186,7 +186,7 @@ declare module '@comfyorg/litegraph' {
    * We should remove this hacky solution once we have a proper solution.
    */
   interface INodeOutputSlot {
-    widget?: IWidget
+    widget?: { name: string; [key: symbol]: unknown }
   }
 }
 

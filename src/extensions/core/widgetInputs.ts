@@ -1,4 +1,4 @@
-import { LGraphNode, LiteGraph } from '@comfyorg/litegraph'
+import { LGraphNode, LiteGraph, RenderShape } from '@comfyorg/litegraph'
 import type {
   IFoundSlot,
   INodeInputSlot,
@@ -94,6 +94,7 @@ export class PrimitiveNode extends LGraphNode {
   refreshComboInNode() {
     const widget = this.widgets?.[0]
     if (widget?.type === 'combo') {
+      // @ts-expect-error fixme ts strict error
       widget.options.values = this.outputs[0].widget[GET_CONFIG]()[0]
 
       // @ts-expect-error fixme ts strict error
@@ -210,7 +211,6 @@ export class PrimitiveNode extends LGraphNode {
     this.outputs[0].widget = widget
 
     this.#createWidget(
-      // @ts-expect-error fixme ts strict error
       widget[CONFIG] ?? config,
       theirNode,
       widget.name,
@@ -341,9 +341,9 @@ export class PrimitiveNode extends LGraphNode {
     const output = this.outputs[0]
     const links = output.links
 
-    const hasConfig = !!output.widget[CONFIG]
+    const hasConfig = !!output.widget?.[CONFIG]
     if (hasConfig) {
-      delete output.widget[CONFIG]
+      delete output.widget?.[CONFIG]
     }
 
     // @ts-expect-error fixme ts strict error
@@ -356,8 +356,8 @@ export class PrimitiveNode extends LGraphNode {
 
       return
     }
-
-    const config1 = output.widget[GET_CONFIG]()
+    // @ts-expect-error fixme ts strict error
+    const config1 = output.widget?.[GET_CONFIG]?.()
     const isNumber = config1[0] === 'INT' || config1[0] === 'FLOAT'
     if (!isNumber) return
 
@@ -387,6 +387,7 @@ export class PrimitiveNode extends LGraphNode {
     if (!isConvertibleWidget(targetWidget, config2)) return false
 
     const output = this.outputs[originSlot]
+    // @ts-expect-error fixme ts strict error
     if (!(output.widget?.[CONFIG] ?? output.widget?.[GET_CONFIG]())) {
       // No widget defined for this primitive yet so allow it
       return true
@@ -447,6 +448,7 @@ export class PrimitiveNode extends LGraphNode {
 }
 
 export function getWidgetConfig(slot: INodeInputSlot | INodeOutputSlot) {
+  // @ts-expect-error fixme ts strict error
   return slot.widget[CONFIG] ?? slot.widget[GET_CONFIG]?.() ?? ['*', {}]
 }
 
@@ -540,9 +542,8 @@ export function convertToInput(
   const [oldWidth, oldHeight] = node.size
   const inputIsOptional = !!widget.options?.inputIsOptional
   const input = node.addInput(widget.name, type, {
-    // @ts-expect-error [GET_CONFIG] is not a valid property of IWidget
     widget: { name: widget.name, [GET_CONFIG]: () => config },
-    ...(inputIsOptional ? { shape: LiteGraph.SlotShape.HollowCircle } : {})
+    ...(inputIsOptional ? { shape: RenderShape.HollowCircle } : {})
   })
 
   // @ts-expect-error fixme ts strict error
@@ -631,6 +632,7 @@ export function mergeIfValid(
 
   if (customSpec || forceUpdate) {
     if (customSpec) {
+      // @ts-expect-error fixme ts strict error
       output.widget[CONFIG] = customSpec
     }
 
@@ -826,16 +828,13 @@ app.registerExtension({
 
       for (const input of this.inputs) {
         if (input.widget) {
-          // @ts-expect-error fixme ts strict error
           if (!input.widget[GET_CONFIG]) {
-            // @ts-expect-error fixme ts strict error
             input.widget[GET_CONFIG] = () =>
               // @ts-expect-error fixme ts strict error
               getConfig.call(this, input.widget.name)
           }
 
           // Cleanup old widget config
-          // @ts-expect-error WidgetRef
           if (input.widget.config) {
             // @ts-expect-error WidgetRef
             if (input.widget.config[0] instanceof Array) {
@@ -848,7 +847,6 @@ app.registerExtension({
                 link.type = input.type
               }
             }
-            // @ts-expect-error WidgetRef
             delete input.widget.config
           }
 
@@ -892,9 +890,7 @@ app.registerExtension({
       if (!app.configuringGraph && this.inputs) {
         // On copy + paste of nodes, ensure that widget configs are set up
         for (const input of this.inputs) {
-          // @ts-expect-error fixme ts strict error
           if (input.widget && !input.widget[GET_CONFIG]) {
-            // @ts-expect-error fixme ts strict error
             input.widget[GET_CONFIG] = () =>
               // @ts-expect-error fixme ts strict error
               getConfig.call(this, input.widget.name)
