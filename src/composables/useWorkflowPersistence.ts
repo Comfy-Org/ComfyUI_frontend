@@ -1,4 +1,5 @@
 import { computed, watch, watchEffect } from 'vue'
+import { debounce } from 'lodash'
 
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
@@ -19,6 +20,23 @@ export function useWorkflowPersistence() {
       sessionStorage.setItem(`workflow:${api.clientId}`, workflow)
     }
   }
+
+  // Create a debounced version of persistCurrentWorkflow to avoid excessive serialization
+  const debouncedPersistCurrentWorkflow = debounce(persistCurrentWorkflow, 1000)
+
+  // Setup watchers with debounced persistence
+  watchEffect(() => {
+    if (workflowStore.activeWorkflow) {
+      const workflow = workflowStore.activeWorkflow
+      setStorageValue('Comfy.PreviousWorkflow', workflow.key)
+      // When the activeWorkflow changes, use debounced persistence here as well
+      // to avoid constant serialization on pointer move events
+      debouncedPersistCurrentWorkflow()
+    }
+  })
+  
+  // Use the same debounced version for the event listener
+  api.addEventListener('graphChanged', debouncedPersistCurrentWorkflow)
 
   const loadWorkflowFromStorage = async (
     json: string | null,
@@ -68,18 +86,6 @@ export function useWorkflowPersistence() {
       await loadDefaultWorkflow()
     }
   }
-
-  // Setup watchers
-  watchEffect(() => {
-    if (workflowStore.activeWorkflow) {
-      const workflow = workflowStore.activeWorkflow
-      setStorageValue('Comfy.PreviousWorkflow', workflow.key)
-      // When the activeWorkflow changes, the graph has already been loaded.
-      // Saving the current state of the graph to the localStorage.
-      persistCurrentWorkflow()
-    }
-  })
-  api.addEventListener('graphChanged', persistCurrentWorkflow)
 
   // Restore workflow tabs states
   const openWorkflows = computed(() => workflowStore.openWorkflows)
