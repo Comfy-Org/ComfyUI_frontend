@@ -1,5 +1,5 @@
-import { computed, watch, watchEffect } from 'vue'
 import { debounce } from 'lodash'
+import { computed, watch, watchEffect } from 'vue'
 
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
@@ -34,7 +34,7 @@ export function useWorkflowPersistence() {
       debouncedPersistCurrentWorkflow()
     }
   })
-  
+
   // Use the same debounced version for the event listener
   api.addEventListener('graphChanged', debouncedPersistCurrentWorkflow)
 
