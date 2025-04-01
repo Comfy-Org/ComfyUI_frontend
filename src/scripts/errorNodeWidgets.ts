@@ -29,7 +29,12 @@ function addWidgetFromValue(node: LGraphNode, value: unknown) {
       name: 'UNKNOWN'
     })
   } else {
-    console.warn(`Unknown value type: ${typeof value}`)
+    widget = StringWidget(node, {
+      type: 'STRING',
+      name: 'UNKNOWN',
+      multiline: true
+    })
+    widget.value = JSON.stringify(value)
     return
   }
 
