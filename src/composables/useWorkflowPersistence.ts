@@ -71,10 +71,10 @@ export function useWorkflowPersistence() {
 
   // Setup watchers
   watch(
-    () => workflowStore.activeWorkflow,
-    (activeWorkflow) => {
-      if (!activeWorkflow) return
-      setStorageValue('Comfy.PreviousWorkflow', activeWorkflow.key)
+    () => workflowStore.activeWorkflow?.key,
+    (activeWorkflowKey) => {
+      if (!activeWorkflowKey) return
+      setStorageValue('Comfy.PreviousWorkflow', activeWorkflowKey)
       // When the activeWorkflow changes, the graph has already been loaded.
       // Saving the current state of the graph to the localStorage.
       persistCurrentWorkflow()
