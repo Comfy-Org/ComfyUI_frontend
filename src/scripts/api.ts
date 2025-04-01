@@ -729,28 +729,19 @@ export class ComfyApi extends EventTarget {
 
   /**
    * Gets all setting values for the current user
+   * @returns { Promise<string, unknown> } A dictionary of id -> value
    */
   async getSettings(): Promise<Settings> {
-    const res = await this.fetchApi('/settings')
-    if (res.status !== 200) {
-      throw new Error(`Error getting settings: ${res.status} ${res.statusText}`)
-    }
-    return await res.json()
+    return (await this.fetchApi('/settings')).json()
   }
 
   /**
    * Gets a setting for the current user
    * @param { string } id The id of the setting to fetch
-   * @returns { Promise<Settings[keyof Settings]> } The setting value
+   * @returns { Promise<unknown> } The setting value
    */
   async getSetting(id: keyof Settings): Promise<Settings[keyof Settings]> {
-    const res = await this.fetchApi(`/settings/${encodeURIComponent(id)}`)
-    if (res.status !== 200) {
-      throw new Error(
-        `Error getting setting (${id}): ${res.status} ${res.statusText}`
-      )
-    }
-    return await res.json()
+    return (await this.fetchApi(`/settings/${encodeURIComponent(id)}`)).json()
   }
 
   /**
