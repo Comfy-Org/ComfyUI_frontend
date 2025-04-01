@@ -1,4 +1,4 @@
-import type { CanvasColour, Dictionary, INodeInputSlot, INodeOutputSlot, INodeSlot, ISlotType, IWidgetInputSlot, Point, SharedIntersection } from "./interfaces"
+import type { CanvasColour, Dictionary, INodeInputSlot, INodeOutputSlot, INodeSlot, ISlotType, IWidgetInputSlot, IWidgetLocator, Point, SharedIntersection } from "./interfaces"
 import type { LinkId } from "./LLink"
 import type { IWidget } from "./types/widgets"
 
@@ -96,7 +96,7 @@ export abstract class NodeSlot implements INodeSlot {
   locked?: boolean
   nameLocked?: boolean
   pos?: Point
-  widget?: IWidget
+  widget?: IWidgetLocator
   hasErrors?: boolean
 
   constructor(slot: INodeSlot) {
