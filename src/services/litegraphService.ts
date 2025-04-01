@@ -115,9 +115,11 @@ export const useLitegraphService = () => {
 
         // Process outputs using V2 schema
         for (const output of nodeDef.outputs) {
-          const outputName = output.name
-          const outputType = output.type
-          const outputIsList = output.is_list
+          const {
+            name: outputName,
+            type: outputType,
+            is_list: outputIsList
+          } = output
           const shapeOptions = outputIsList
             ? { shape: LiteGraph.GRID_SHAPE }
             : {}
