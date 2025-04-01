@@ -1,4 +1,4 @@
-import { computed, watch, watchEffect } from 'vue'
+import { computed, watch } from 'vue'
 
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
@@ -70,15 +70,16 @@ export function useWorkflowPersistence() {
   }
 
   // Setup watchers
-  watchEffect(() => {
-    if (workflowStore.activeWorkflow) {
-      const workflow = workflowStore.activeWorkflow
-      setStorageValue('Comfy.PreviousWorkflow', workflow.key)
+  watch(
+    () => workflowStore.activeWorkflow,
+    (activeWorkflow) => {
+      if (!activeWorkflow) return
+      setStorageValue('Comfy.PreviousWorkflow', activeWorkflow.key)
       // When the activeWorkflow changes, the graph has already been loaded.
       // Saving the current state of the graph to the localStorage.
       persistCurrentWorkflow()
     }
-  })
+  )
   api.addEventListener('graphChanged', persistCurrentWorkflow)
 
   // Restore workflow tabs states
