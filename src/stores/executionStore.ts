@@ -151,7 +151,7 @@ export const useExecutionStore = defineStore('execution', () => {
       // Seems sometimes nodes that are cached fire executing but not executed
       activePrompt.value.nodes[executingNodeId.value] = true
     }
-    executingNodeId.value = e.detail ? e.detail : null
+    executingNodeId.value = e.detail || null
     if (!executingNodeId.value) {
       if (activePromptId.value) {
         delete queuedPrompts.value[activePromptId.value]
