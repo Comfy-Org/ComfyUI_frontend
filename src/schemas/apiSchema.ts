@@ -364,7 +364,6 @@ const zSettings = z.record(z.any()).and(
         z.string(),
         zBookmarkCustomization
       ),
-      'Comfy.NodeInputConversionSubmenus': z.boolean(),
       'Comfy.LinkRelease.Action': zLinkReleaseTriggerAction,
       'Comfy.LinkRelease.ActionShift': zLinkReleaseTriggerAction,
       'Comfy.ModelLibrary.AutoLoadAll': z.boolean(),
