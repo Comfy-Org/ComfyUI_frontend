@@ -156,11 +156,12 @@ export class PromptExecutionError extends Error {
   }
 
   override toString() {
-    let message = super.message
+    let message = ''
     if (typeof this.response.error === 'string') {
-      message += ': ' + this.response.error
-    } else if (this.response.error.details) {
-      message += ': ' + this.response.error.details
+      message += this.response.error
+    } else if (this.response.error) {
+      message +=
+        this.response.error.message + ': ' + this.response.error.details
     }
 
     for (const [_, nodeError] of Object.entries(
