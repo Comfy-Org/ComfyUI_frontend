@@ -169,7 +169,6 @@ watch(
       number | null
     ],
   ([executingNodeId, executingNodeProgress]) => {
-    if (!executingNodeId) return
     for (const node of comfyApp.graph.nodes) {
       if (node.id == executingNodeId) {
         node.progress = executingNodeProgress ?? undefined
