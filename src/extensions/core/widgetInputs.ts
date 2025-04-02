@@ -158,8 +158,8 @@ export class PrimitiveNode extends LGraphNode {
   ) {
     // Fires before the link is made allowing us to reject it if it isn't valid
     // No widget, we cant connect
-    if (!input.widget) {
-      if (!(input.type in ComfyWidgets)) return false
+    if (!input.widget && !(input.type in ComfyWidgets)) {
+      return false
     }
 
     if (this.outputs[slot].links?.length) {
