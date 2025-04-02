@@ -171,7 +171,7 @@ export class PrimitiveNode extends LGraphNode {
       return valid
     }
 
-    return false
+    return true
   }
 
   #onFirstConnection(recreating?: boolean) {
