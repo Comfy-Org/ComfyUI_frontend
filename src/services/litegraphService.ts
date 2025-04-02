@@ -14,7 +14,11 @@ import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
 import { st, t } from '@/i18n'
 import type { NodeId } from '@/schemas/comfyWorkflowSchema'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
-import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type {
+  ComfyNodeDef as ComfyNodeDefV2,
+  InputSpec,
+  OutputSpec
+} from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { ComfyApp, app } from '@/scripts/app'
 import { $el } from '@/scripts/ui'
@@ -39,13 +43,36 @@ export const useLitegraphService = () => {
 
   async function registerNodeDef(nodeId: string, nodeDefV1: ComfyNodeDefV1) {
     const node = class ComfyNode extends LGraphNode {
-      static comfyClass?: string
-      static title?: string
-      static nodeData?: ComfyNodeDefV1 & ComfyNodeDefV2
-      static category?: string
+      static comfyClass: string
+      static title: string
+      static category: string
+      static nodeData: ComfyNodeDefV1 & ComfyNodeDefV2
+
+      /**
+       * @internal The initial minimum size of the node.
+       */
+      #initialMinSize = { width: 1, height: 1 }
+      /**
+       * @internal The key for the node definition in the i18n file.
+       */
+      get #nodeKey(): string {
+        return `nodeDefs.${normalizeI18nKey(ComfyNode.nodeData.name)}`
+      }
 
       constructor(title: string) {
         super(title)
+        this.#setupStrokeStyles()
+        this.#addInputs(ComfyNode.nodeData.inputs)
+        this.#addOutputs(ComfyNode.nodeData.outputs)
+        this.#setInitialSize()
+        this.serialize_widgets = true
+        extensionService.invokeExtensionsAsync('nodeCreated', this)
+      }
+
+      /**
+       * @internal Setup stroke styles for the node under various conditions.
+       */
+      #setupStrokeStyles() {
         this.strokeStyles['running'] = function (this: LGraphNode) {
           if (this.id == app.runningNodeId) {
             return { color: '#0f0' }
@@ -66,12 +93,15 @@ export const useLitegraphService = () => {
             return { color: '#f0f', lineWidth: 2 }
           }
         }
+      }
 
-        const nodeMinSize = { width: 1, height: 1 }
-        // Process inputs using V2 schema
-        for (const [inputName, inputSpec] of Object.entries(nodeDef.inputs)) {
+      /**
+       * @internal Add inputs to the node.
+       */
+      #addInputs(inputs: Record<string, InputSpec>) {
+        for (const [inputName, inputSpec] of Object.entries(inputs)) {
           const inputType = inputSpec.type
-          const nameKey = `nodeDefs.${normalizeI18nKey(nodeDef.name)}.inputs.${normalizeI18nKey(inputName)}.name`
+          const nameKey = `${this.#nodeKey}.inputs.${normalizeI18nKey(inputName)}.name`
 
           const widgetConstructor = widgetStore.widgets[inputType]
           if (widgetConstructor) {
@@ -87,29 +117,25 @@ export const useLitegraphService = () => {
             ) ?? {}
 
             if (widget) {
-              const fallback = widget.label ?? inputName
-              widget.label = st(nameKey, fallback)
-
+              widget.label = st(nameKey, widget.label ?? inputName)
               widget.options ??= {}
-              if (inputSpec.isOptional) {
-                widget.options.inputIsOptional = true
-              }
-              if (inputSpec.forceInput) {
-                widget.options.forceInput = true
-              }
-              if (inputSpec.defaultInput) {
-                widget.options.defaultInput = true
-              }
-              if (inputSpec.advanced) {
-                widget.advanced = true
-              }
-              if (inputSpec.hidden) {
-                widget.hidden = true
-              }
+              Object.assign(widget.options, {
+                inputIsOptional: inputSpec.isOptional,
+                forceInput: inputSpec.forceInput,
+                defaultInput: inputSpec.defaultInput,
+                advanced: inputSpec.advanced,
+                hidden: inputSpec.hidden
+              })
             }
 
-            nodeMinSize.width = Math.max(nodeMinSize.width, minWidth)
-            nodeMinSize.height = Math.max(nodeMinSize.height, minHeight)
+            this.#initialMinSize.width = Math.max(
+              this.#initialMinSize.width,
+              minWidth
+            )
+            this.#initialMinSize.height = Math.max(
+              this.#initialMinSize.height,
+              minHeight
+            )
           } else {
             // Node connection inputs
             const shapeOptions = inputSpec.isOptional
@@ -122,17 +148,17 @@ export const useLitegraphService = () => {
             })
           }
         }
+      }
 
-        // Process outputs using V2 schema
-        for (const output of nodeDef.outputs) {
-          const outputName = output.name
-          const outputType = output.type
-          const outputIsList = output.is_list
-          const shapeOptions = outputIsList
-            ? { shape: LiteGraph.GRID_SHAPE }
-            : {}
-          const nameKey = `nodeDefs.${normalizeI18nKey(nodeDef.name)}.outputs.${output.index}.name`
-          const typeKey = `dataTypes.${normalizeI18nKey(outputType)}`
+      /**
+       * @internal Add outputs to the node.
+       */
+      #addOutputs(outputs: OutputSpec[]) {
+        for (const output of outputs) {
+          const { name, type, is_list } = output
+          const shapeOptions = is_list ? { shape: LiteGraph.GRID_SHAPE } : {}
+          const nameKey = `${this.#nodeKey}.outputs.${output.index}.name`
+          const typeKey = `dataTypes.${normalizeI18nKey(type)}`
           const outputOptions = {
             ...shapeOptions,
             // If the output name is different from the output type, use the output name.
@@ -140,20 +166,20 @@ export const useLitegraphService = () => {
             // - type ("INT"); name ("Positive") => translate name
             // - type ("FLOAT"); name ("FLOAT") => translate type
             localized_name:
-              outputType !== outputName
-                ? st(nameKey, outputName)
-                : st(typeKey, outputName)
+              type !== name ? st(nameKey, name) : st(typeKey, name)
           }
-          this.addOutput(outputName, outputType, outputOptions)
+          this.addOutput(name, type, outputOptions)
         }
+      }
 
+      /**
+       * @internal Set the initial size of the node.
+       */
+      #setInitialSize() {
         const s = this.computeSize()
-        s[0] = Math.max(nodeMinSize.width, s[0] * 1.5)
-        s[1] = Math.max(nodeMinSize.height, s[1])
+        s[0] = Math.max(this.#initialMinSize.width, s[0] * 1.5)
+        s[1] = Math.max(this.#initialMinSize.height, s[1])
         this.setSize(s)
-        this.serialize_widgets = true
-
-        extensionService.invokeExtensionsAsync('nodeCreated', this)
       }
 
       configure(data: any) {
