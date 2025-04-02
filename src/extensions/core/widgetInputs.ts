@@ -834,22 +834,6 @@ app.registerExtension({
               getConfig.call(this, input.widget.name)
           }
 
-          // Cleanup old widget config
-          if (input.widget.config) {
-            // @ts-expect-error WidgetRef
-            if (input.widget.config[0] instanceof Array) {
-              // If we are an old converted combo then replace the input type and the stored link data
-              input.type = 'COMBO'
-
-              // @ts-expect-error fixme ts strict error
-              const link = app.graph.links[input.link]
-              if (link) {
-                link.type = input.type
-              }
-            }
-            delete input.widget.config
-          }
-
           // @ts-expect-error fixme ts strict error
           const w = this.widgets.find((w) => w.name === input.widget.name)
           if (w) {
