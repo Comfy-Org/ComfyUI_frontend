@@ -79,6 +79,8 @@ interface ApiMessage<T extends keyof ApiCalls> {
   data: ApiCalls[T]
 }
 
+export class UnauthorizedError extends Error {}
+
 /** Ensures workers get a fair shake. */
 type Unionize<T> = T[keyof T]
 
@@ -732,7 +734,12 @@ export class ComfyApi extends EventTarget {
    * @returns { Promise<string, unknown> } A dictionary of id -> value
    */
   async getSettings(): Promise<Settings> {
-    return (await this.fetchApi('/settings')).json()
+    const resp = await this.fetchApi('/settings')
+
+    if (resp.status == 401) {
+      throw new UnauthorizedError(resp.statusText)
+    }
+    return await resp.json()
   }
 
   /**

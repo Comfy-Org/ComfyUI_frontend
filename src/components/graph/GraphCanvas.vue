@@ -62,7 +62,7 @@ import { usePaste } from '@/composables/usePaste'
 import { useWorkflowPersistence } from '@/composables/useWorkflowPersistence'
 import { CORE_SETTINGS } from '@/constants/coreSettings'
 import { i18n } from '@/i18n'
-import { api } from '@/scripts/api'
+import { UnauthorizedError, api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
@@ -241,7 +241,20 @@ onMounted(async () => {
   // some listeners of litegraph canvas.
   ChangeTracker.init(comfyApp)
   await loadCustomNodesI18n()
-  await settingStore.loadSettingValues()
+  try {
+    await settingStore.loadSettingValues()
+  } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      console.log(
+        'Failed loading user settings, user unauthorized, cleaning local Comfy.userId'
+      )
+      localStorage.removeItem('Comfy.userId')
+      localStorage.removeItem('Comfy.userName')
+      window.location.reload()
+    } else {
+      throw error
+    }
+  }
   CORE_SETTINGS.forEach((setting) => {
     settingStore.addSetting(setting)
   })
