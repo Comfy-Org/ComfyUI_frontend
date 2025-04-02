@@ -162,7 +162,7 @@ export class ComfyApp {
   /**
    * @deprecated Use useExecutionStore().executingNodeId instead
    */
-  get runningNodeId(): string | null {
+  get runningNodeId(): NodeId | null {
     return useExecutionStore().executingNodeId
   }
 
