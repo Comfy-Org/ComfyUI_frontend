@@ -10,23 +10,21 @@ import { ComfyWidgetConstructor, ComfyWidgets } from '@/scripts/widgets'
 
 export const useWidgetStore = defineStore('widget', () => {
   const coreWidgets = ComfyWidgets
-  const customWidgets = ref<Record<string, ComfyWidgetConstructor>>({})
-  const widgets = computed(() => ({
-    ...customWidgets.value,
-    ...coreWidgets
-  }))
+  const customWidgets = ref<Map<string, ComfyWidgetConstructor>>(new Map())
+  const widgets = computed<Map<string, ComfyWidgetConstructor>>(
+    () => new Map([...customWidgets.value, ...Object.entries(coreWidgets)])
+  )
 
   function inputIsWidget(spec: InputSpecV2 | InputSpecV1) {
     const type = Array.isArray(spec) ? getInputSpecType(spec) : spec.type
-    return type in widgets.value
+    return widgets.value.has(type)
   }
 
   function registerCustomWidgets(
     newWidgets: Record<string, ComfyWidgetConstructor>
   ) {
-    customWidgets.value = {
-      ...customWidgets.value,
-      ...newWidgets
+    for (const [type, widget] of Object.entries(newWidgets)) {
+      customWidgets.value.set(type, widget)
     }
   }
 

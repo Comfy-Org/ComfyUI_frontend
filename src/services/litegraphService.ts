@@ -32,6 +32,10 @@ import { isImageNode, isVideoNode } from '@/utils/litegraphUtil'
 
 import { useExtensionService } from './extensionService'
 
+const PRIMITIVE_TYPES = new Set(['INT', 'FLOAT', 'BOOLEAN', 'STRING', 'COMBO'])
+export const CONFIG = Symbol()
+export const GET_CONFIG = Symbol()
+
 /**
  * Service that augments litegraph with ComfyUI specific functionality.
  */
@@ -96,57 +100,78 @@ export const useLitegraphService = () => {
       }
 
       /**
+       * @internal Add input sockets to the node. (No widget)
+       */
+      #addInputSocket(inputSpec: InputSpec) {
+        const inputName = inputSpec.name
+        const nameKey = `${this.#nodeKey}.inputs.${normalizeI18nKey(inputName)}.name`
+        const widgetConstructor = widgetStore.widgets.get(inputSpec.type)
+        if (widgetConstructor) return
+
+        this.addInput(inputName, inputSpec.type, {
+          shape: inputSpec.isOptional ? RenderShape.HollowCircle : undefined,
+          localized_name: st(nameKey, inputName)
+        })
+      }
+
+      /**
+       * @internal Add a widget to the node. For primitive types, an input socket is also added.
+       */
+      #addInputWidget(inputSpec: InputSpec) {
+        const inputName = inputSpec.name
+        const nameKey = `${this.#nodeKey}.inputs.${normalizeI18nKey(inputName)}.name`
+        const widgetConstructor = widgetStore.widgets.get(inputSpec.type)
+        if (!widgetConstructor) return
+
+        const {
+          widget,
+          minWidth = 1,
+          minHeight = 1
+        } = widgetConstructor(
+          this,
+          inputName,
+          transformInputSpecV2ToV1(inputSpec),
+          app
+        ) ?? {}
+
+        if (widget) {
+          widget.label = st(nameKey, widget.label ?? inputName)
+          widget.options ??= {}
+          Object.assign(widget.options, {
+            inputIsOptional: inputSpec.isOptional,
+            forceInput: inputSpec.forceInput,
+            advanced: inputSpec.advanced,
+            hidden: inputSpec.hidden
+          })
+        }
+
+        if (PRIMITIVE_TYPES.has(inputSpec.type)) {
+          const inputSpecV1 = transformInputSpecV2ToV1(inputSpec)
+          this.addInput(inputName, inputSpec.type, {
+            shape: inputSpec.isOptional ? RenderShape.HollowCircle : undefined,
+            localized_name: st(nameKey, inputName),
+            widget: { name: inputName, [GET_CONFIG]: () => inputSpecV1 }
+          })
+        }
+
+        this.#initialMinSize.width = Math.max(
+          this.#initialMinSize.width,
+          minWidth
+        )
+        this.#initialMinSize.height = Math.max(
+          this.#initialMinSize.height,
+          minHeight
+        )
+      }
+
+      /**
        * @internal Add inputs to the node.
        */
       #addInputs(inputs: Record<string, InputSpec>) {
-        for (const [inputName, inputSpec] of Object.entries(inputs)) {
-          const inputType = inputSpec.type
-          const nameKey = `${this.#nodeKey}.inputs.${normalizeI18nKey(inputName)}.name`
-
-          const widgetConstructor = widgetStore.widgets[inputType]
-          if (widgetConstructor) {
-            const {
-              widget,
-              minWidth = 1,
-              minHeight = 1
-            } = widgetConstructor(
-              this,
-              inputName,
-              transformInputSpecV2ToV1(inputSpec),
-              app
-            ) ?? {}
-
-            if (widget) {
-              widget.label = st(nameKey, widget.label ?? inputName)
-              widget.options ??= {}
-              Object.assign(widget.options, {
-                inputIsOptional: inputSpec.isOptional,
-                forceInput: inputSpec.forceInput,
-                advanced: inputSpec.advanced,
-                hidden: inputSpec.hidden
-              })
-            }
-
-            this.#initialMinSize.width = Math.max(
-              this.#initialMinSize.width,
-              minWidth
-            )
-            this.#initialMinSize.height = Math.max(
-              this.#initialMinSize.height,
-              minHeight
-            )
-          } else {
-            // Node connection inputs
-            const shapeOptions = inputSpec.isOptional
-              ? { shape: RenderShape.HollowCircle }
-              : {}
-
-            this.addInput(inputName, inputType, {
-              ...shapeOptions,
-              localized_name: st(nameKey, inputName)
-            })
-          }
-        }
+        for (const inputSpec of Object.values(inputs))
+          this.#addInputSocket(inputSpec)
+        for (const inputSpec of Object.values(inputs))
+          this.#addInputWidget(inputSpec)
       }
 
       /**

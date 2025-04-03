@@ -13,6 +13,7 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import { ComfyWidgets, addValueControlWidgets } from '@/scripts/widgets'
+import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
 import { mergeInputSpec } from '@/utils/nodeDefUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 import { isPrimitiveNode } from '@/utils/typeGuardUtil'
@@ -27,8 +28,6 @@ const VALID_TYPES = [
   'text',
   'string'
 ]
-const CONFIG = Symbol()
-const GET_CONFIG = Symbol()
 
 const replacePropertyName = 'Run widget replace on values'
 export class PrimitiveNode extends LGraphNode {
