@@ -17,6 +17,7 @@
       :pt="{
         header: 'px-0'
       }"
+      @rowDblclick="editKeybinding($event.data)"
     >
       <Column field="actions" header="">
         <template #body="slotProps">
