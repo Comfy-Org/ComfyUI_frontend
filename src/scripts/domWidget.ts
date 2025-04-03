@@ -135,7 +135,7 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
     return (
       !_.isNil(this.computedHeight) &&
       this.computedHeight > 0 &&
-      !['converted-widget', 'hidden'].includes(this.type) &&
+      !['hidden'].includes(this.type) &&
       !this.node.collapsed
     )
   }
