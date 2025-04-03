@@ -1250,10 +1250,24 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     const linkIds = before instanceof Reroute
       ? before.linkIds
       : [before.id]
-    const reroute = new Reroute(rerouteId, this, pos, before.parentId, linkIds)
+    const floatingLinkIds = before instanceof Reroute
+      ? before.floatingLinkIds
+      : [before.id]
+    const reroute = new Reroute(rerouteId, this, pos, before.parentId, linkIds, floatingLinkIds)
     this.reroutes.set(rerouteId, reroute)
     for (const linkId of linkIds) {
       const link = this._links.get(linkId)
+      if (!link) continue
+      if (link.parentId === before.parentId) link.parentId = rerouteId
+
+      const reroutes = LLink.getReroutes(this, link)
+      for (const x of reroutes.filter(x => x.parentId === before.parentId)) {
+        x.parentId = rerouteId
+      }
+    }
+
+    for (const linkId of floatingLinkIds) {
+      const link = this.floatingLinks.get(linkId)
       if (!link) continue
       if (link.parentId === before.parentId) link.parentId = rerouteId
 
