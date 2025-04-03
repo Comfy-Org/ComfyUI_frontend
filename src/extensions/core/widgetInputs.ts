@@ -647,7 +647,7 @@ app.registerExtension({
         // When node is created, convert any force/default inputs
         if (!app.configuringGraph && this.widgets) {
           for (const w of this.widgets) {
-            if (w?.options?.forceInput || w?.options?.defaultInput) {
+            if (w?.options?.forceInput) {
               // const config = getConfig.call(this, w.name) ?? [
               //   w.type,
               //   w.options || {}

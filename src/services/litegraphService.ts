@@ -122,7 +122,6 @@ export const useLitegraphService = () => {
               Object.assign(widget.options, {
                 inputIsOptional: inputSpec.isOptional,
                 forceInput: inputSpec.forceInput,
-                defaultInput: inputSpec.defaultInput,
                 advanced: inputSpec.advanced,
                 hidden: inputSpec.hidden
               })

@@ -37,6 +37,8 @@ declare module '@comfyorg/litegraph/dist/types/widgets' {
     /**
      * Whether the widget defaults to input state. Can still be converted back
      * to widget state.
+     * @deprecated Widget to input conversion is no longer necessary, as they co-exist now.
+     * This option no longer has any effect.
      */
     defaultInput?: boolean
   }
