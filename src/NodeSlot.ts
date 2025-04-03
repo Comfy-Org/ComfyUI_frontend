@@ -25,7 +25,6 @@ interface IDrawOptions {
   labelColor?: CanvasColour
   labelPosition?: LabelPosition
   lowQuality?: boolean
-  renderText?: boolean
   doStroke?: boolean
   highlight?: boolean
 }
@@ -149,7 +148,6 @@ export abstract class NodeSlot implements INodeSlot {
       labelColor = "#AAA",
       labelPosition = LabelPosition.Right,
       lowQuality = false,
-      renderText = true,
       highlight = false,
     } = options
     let { doStroke = false } = options
@@ -216,7 +214,7 @@ export abstract class NodeSlot implements INodeSlot {
     if (!lowQuality && doStroke) ctx.stroke()
 
     // render slot label
-    if (renderText) {
+    if (!lowQuality) {
       const text = this.renderingLabel
       if (text) {
         // TODO: Finish impl.  Highlight text on mouseover unless we're connecting links.

@@ -3551,7 +3551,6 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
         colorContext,
         labelColor,
         lowQuality,
-        renderText: !lowQuality,
         highlight,
       })
     }
