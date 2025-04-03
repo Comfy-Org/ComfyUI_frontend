@@ -18,7 +18,6 @@ import { mergeInputSpec } from '@/utils/nodeDefUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 import { isPrimitiveNode } from '@/utils/typeGuardUtil'
 
-const CONVERTED_TYPE = 'converted-widget'
 const VALID_TYPES = [
   'STRING',
   'combo',
@@ -443,66 +442,6 @@ function isConvertibleWidget(widget: IWidget, config: InputSpec): boolean {
   )
 }
 
-function hideWidget(
-  node: LGraphNode,
-  widget: IWidget,
-  options: { suffix?: string; holdSpace?: boolean } = {}
-) {
-  const { suffix = '', holdSpace = true } = options
-
-  if (widget.type?.startsWith(CONVERTED_TYPE)) return
-  widget.origType = widget.type
-  widget.origComputeSize = widget.computeSize
-  widget.origSerializeValue = widget.serializeValue
-  // @ts-expect-error custom widget type
-  widget.type = CONVERTED_TYPE + suffix
-  if (holdSpace) {
-    widget.computeSize = () => [0, LiteGraph.NODE_WIDGET_HEIGHT]
-  } else {
-    // -4 is due to the gap litegraph adds between widgets automatically
-    widget.computeSize = () => [0, -4]
-  }
-  widget.serializeValue = (node: LGraphNode, index: number) => {
-    // Prevent serializing the widget if we have no input linked
-    if (!node.inputs) {
-      return undefined
-    }
-    let node_input = node.inputs.find((i) => i.widget?.name === widget.name)
-
-    if (!node_input || !node_input.link) {
-      return undefined
-    }
-    return widget.origSerializeValue
-      ? widget.origSerializeValue(node, index)
-      : widget.value
-  }
-
-  // Hide any linked widgets, e.g. seed+seedControl
-  if (widget.linkedWidgets) {
-    for (const w of widget.linkedWidgets) {
-      hideWidget(node, w, { suffix: ':' + widget.name, holdSpace: false })
-    }
-  }
-}
-
-// function showWidget(widget: IWidget) {
-//   // @ts-expect-error custom widget type
-//   widget.type = widget.origType
-//   widget.computeSize = widget.origComputeSize
-//   widget.serializeValue = widget.origSerializeValue
-
-//   delete widget.origType
-//   delete widget.origComputeSize
-//   delete widget.origSerializeValue
-
-//   // Hide any linked widgets, e.g. seed+seedControl
-//   if (widget.linkedWidgets) {
-//     for (const w of widget.linkedWidgets) {
-//       showWidget(w)
-//     }
-//   }
-// }
-
 /**
  * Convert a widget to an input slot.
  * @deprecated Widget to socket conversion is no longer necessary, as they co-exist now.
@@ -622,9 +561,7 @@ app.registerExtension({
             }
 
             const w = this.widgets?.find((w) => w.name === name)
-            if (w) {
-              hideWidget(this, w)
-            } else {
+            if (!w) {
               this.removeInput(this.inputs.findIndex((i) => i === input))
             }
           }
@@ -658,10 +595,6 @@ app.registerExtension({
             if (input.widget && !input.widget[GET_CONFIG]) {
               const name = input.widget.name
               input.widget[GET_CONFIG] = () => getConfig.call(this, name)
-              const w = this.widgets?.find((w) => w.name === name)
-              if (w) {
-                hideWidget(this, w)
-              }
             }
           }
         }

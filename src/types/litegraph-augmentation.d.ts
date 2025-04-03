@@ -62,16 +62,6 @@ declare module '@comfyorg/litegraph/dist/types/widgets' {
      * See extensions/core/dynamicPrompts.ts
      */
     dynamicPrompts?: boolean
-
-    /**
-     * Widget conversion fields
-     */
-    origType?: string
-    origComputeSize?: (width: number) => Size
-    origSerializeValue?: (
-      node: LGraphNode,
-      index: number
-    ) => Promise<unknown> | unknown
   }
 }
 
