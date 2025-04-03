@@ -600,14 +600,6 @@ export function mergeIfValid(
 
 app.registerExtension({
   name: 'Comfy.WidgetInputs',
-  settings: [
-    {
-      id: 'Comfy.NodeInputConversionSubmenus',
-      name: 'In the node context menu, place the entries that convert between input/widget in sub-menus.',
-      type: 'boolean',
-      defaultValue: true
-    }
-  ],
   async beforeRegisterNodeDef(nodeType, _nodeData, app) {
     // @ts-expect-error adding extra property
     nodeType.prototype.convertWidgetToInput = function (this: LGraphNode) {
