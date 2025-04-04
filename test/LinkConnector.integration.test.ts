@@ -111,11 +111,13 @@ const test = baseTest.extend<TestContext>({
         for (const input of node.inputs) {
           if (input.link) {
             expect(graph.links.keys()).toContain(input.link)
+            expect(graph.links.get(input.link)?.target_id).toBe(node.id)
           }
         }
         for (const output of node.outputs) {
           for (const linkId of output.links ?? []) {
             expect(graph.links.keys()).toContain(linkId)
+            expect(graph.links.get(linkId)?.origin_id).toBe(node.id)
           }
         }
       }
@@ -330,6 +332,7 @@ describe("LinkConnector Integration", () => {
       expect(connector.outputLinks.length).toBe(0)
 
       expect(disconnectedNode.outputs[0].links).toEqual(nextLinkIds)
+      expect(hasOutputNode.outputs[0].links).toEqual([])
 
       const reroutesAfter = disconnectedNode.outputs[0].links
         ?.map(linkId => graph.links.get(linkId)!)
