@@ -48,7 +48,10 @@ import { ExtensionManager } from '@/types/extensionTypes'
 import { ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
 import { executeWidgetsCallback, isImageNode } from '@/utils/litegraphUtil'
-import { findLegacyRerouteNodes } from '@/utils/migration/migrateReroute'
+import {
+  findLegacyRerouteNodes,
+  noNativeReroutes
+} from '@/utils/migration/migrateReroute'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import { type ComfyApi, PromptExecutionError, api } from './api'
@@ -986,11 +989,15 @@ export class ComfyApp {
       // Ideally we should not block users from loading the workflow.
       graphData = validatedGraphData ?? graphData
     }
-
+    // Only show the reroute migration warning if the workflow does not have native
+    // reroutes. Merging reroute network has great complexity, and it is not supported
+    // for now.
+    // See: https://github.com/Comfy-Org/ComfyUI_frontend/issues/3317
     if (
       checkForRerouteMigration &&
       graphData.version === 0.4 &&
-      findLegacyRerouteNodes(graphData).length
+      findLegacyRerouteNodes(graphData).length &&
+      noNativeReroutes(graphData)
     ) {
       useToastStore().add({
         group: 'reroute-migration',
