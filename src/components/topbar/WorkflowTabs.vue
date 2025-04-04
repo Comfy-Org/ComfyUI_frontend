@@ -1,6 +1,7 @@
 <template>
   <div class="workflow-tabs-container flex flex-row max-w-full h-full">
     <ScrollPanel
+      ref="scrollPanelRef"
       class="overflow-hidden no-drag"
       :pt:content="{
         class: 'p-0 w-full',
@@ -44,7 +45,7 @@ import Button from 'primevue/button'
 import ContextMenu from 'primevue/contextmenu'
 import ScrollPanel from 'primevue/scrollpanel'
 import SelectButton from 'primevue/selectbutton'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
@@ -70,6 +71,7 @@ const workflowService = useWorkflowService()
 const workflowBookmarkStore = useWorkflowBookmarkStore()
 const rightClickedTab = ref<WorkflowOption | undefined>()
 const menu = ref()
+const scrollPanelRef = ref()
 
 const workflowToOption = (workflow: ComfyWorkflow): WorkflowOption => ({
   value: workflow.path,
@@ -175,6 +177,37 @@ const handleWheel = (event: WheelEvent) => {
     left: scrollElement.scrollLeft + scrollAmount
   })
 }
+
+// Scroll to active offscreen tab when opened
+watch(
+  () => workflowStore.activeWorkflow,
+  () => {
+    if (!selectedWorkflow.value) return
+
+    nextTick(() => {
+      const activeTabElement = document.querySelector('.p-togglebutton-checked')
+      if (!activeTabElement || !scrollPanelRef.value) return
+
+      const container = scrollPanelRef.value.$el.querySelector(
+        '.p-scrollpanel-content'
+      )
+      if (!container) return
+
+      const tabRect = activeTabElement.getBoundingClientRect()
+      const containerRect = container.getBoundingClientRect()
+
+      const offsetLeft = tabRect.left - containerRect.left
+      const offsetRight = tabRect.right - containerRect.right
+
+      if (offsetRight > 0) {
+        container.scrollBy({ left: offsetRight })
+      } else if (offsetLeft < 0) {
+        container.scrollBy({ left: offsetLeft })
+      }
+    })
+  },
+  { immediate: true }
+)
 </script>
 
 <style scoped>
