@@ -5,6 +5,13 @@
   >
     <template #tool-buttons>
       <Button
+        icon="pi pi-folder-plus"
+        @click="addNewFolder"
+        severity="secondary"
+        text
+        v-tooltip.bottom="$t('g.newFolder')"
+      />
+      <Button
         icon="pi pi-refresh"
         @click="workflowStore.syncWorkflows()"
         severity="secondary"
@@ -93,6 +100,7 @@
             :root="renderTreeNode(workflowsTree, WorkflowTreeType.Browse)"
             v-model:expandedKeys="expandedKeys"
             :selectionKeys="selectionKeys"
+            ref="persistedWorkflowsTreeExplorerRef"
             v-if="workflowStore.persistedWorkflows.length > 0"
           >
             <template #node="{ node }">
@@ -222,7 +230,6 @@ const renderTreeNode = (
   type: WorkflowTreeType
 ): TreeExplorerNode<ComfyWorkflow> => {
   const children = node.children?.map((child) => renderTreeNode(child, type))
-
   const workflow: ComfyWorkflow = node.data
 
   function handleClick(this: TreeExplorerNode<ComfyWorkflow>, e: MouseEvent) {
@@ -233,7 +240,7 @@ const renderTreeNode = (
     }
   }
 
-  const actions = node.leaf
+  const actions: Partial<TreeExplorerNode<ComfyWorkflow>> = node.leaf
     ? {
         handleClick,
         async handleRename(newName: string) {
@@ -263,7 +270,16 @@ const renderTreeNode = (
         },
         draggable: true
       }
-    : { handleClick }
+    : {
+        handleClick,
+        async handleAddFolder(folderName: string) {
+          if (folderName === '') return
+
+          const parentPath = this.key.replace(/^root\/?/, '')
+          const folderPath = parentPath + '/' + folderName
+          await workflowStore.createFolder(folderPath)
+        }
+      }
 
   return {
     key: node.key,
@@ -283,4 +299,11 @@ const workflowBookmarkStore = useWorkflowBookmarkStore()
 onMounted(async () => {
   await workflowBookmarkStore.loadBookmarks()
 })
+
+const persistedWorkflowsTreeExplorerRef = ref<InstanceType<
+  typeof TreeExplorer
+> | null>(null)
+const addNewFolder = () => {
+  persistedWorkflowsTreeExplorerRef.value?.addFolderCommand?.('root')
+}
 </script>
