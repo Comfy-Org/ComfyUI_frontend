@@ -48,7 +48,10 @@ import { ExtensionManager } from '@/types/extensionTypes'
 import { ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
 import { executeWidgetsCallback, isImageNode } from '@/utils/litegraphUtil'
-import { findLegacyRerouteNodes } from '@/utils/migration/migrateReroute'
+import {
+  findLegacyRerouteNodes,
+  noNativeReroutes
+} from '@/utils/migration/migrateReroute'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import { type ComfyApi, PromptExecutionError, api } from './api'
@@ -990,7 +993,8 @@ export class ComfyApp {
     if (
       checkForRerouteMigration &&
       graphData.version === 0.4 &&
-      findLegacyRerouteNodes(graphData).length
+      findLegacyRerouteNodes(graphData).length &&
+      noNativeReroutes(graphData)
     ) {
       useToastStore().add({
         group: 'reroute-migration',
