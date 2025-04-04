@@ -989,7 +989,10 @@ export class ComfyApp {
       // Ideally we should not block users from loading the workflow.
       graphData = validatedGraphData ?? graphData
     }
-
+    // Only show the reroute migration warning if the workflow does not have native
+    // reroutes. Merging reroute network has great complexity, and it is not supported
+    // for now.
+    // See: https://github.com/Comfy-Org/ComfyUI_frontend/issues/3317
     if (
       checkForRerouteMigration &&
       graphData.version === 0.4 &&
