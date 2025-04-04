@@ -42,6 +42,7 @@ export class MovingInputLink extends MovingLinkBase {
   connectToInput(inputNode: LGraphNode, input: INodeInputSlot, events: LinkConnectorEventTarget): LLink | null | undefined {
     if (input === this.inputSlot) return
 
+    this.inputNode.disconnectInput(this.inputIndex, true)
     const link = this.outputNode.connectSlots(this.outputSlot, inputNode, input, this.fromReroute?.id)
     if (link) events.dispatch("input-moved", this)
     return link

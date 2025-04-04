@@ -165,9 +165,7 @@ describe("LinkConnector Integration", () => {
   })
 
   describe("Moving input links", () => {
-    // Fails link integrity check. Original link is not properly removed.
-    // https://github.com/Comfy-Org/litegraph.js/issues/881
-    test.skip("Should move input links", ({ graph, connector }) => {
+    test("Should move input links", ({ graph, connector }) => {
       const nextLinkId = graph.last_link_id + 1
 
       const hasInputNode = graph.getNodeById(2)!
@@ -190,6 +188,7 @@ describe("LinkConnector Integration", () => {
       expect(connector.inputLinks.length).toBe(0)
 
       expect(disconnectedNode.inputs[0].link).toBe(nextLinkId)
+      expect(hasInputNode.inputs[0].link).toBeNull()
 
       const reroutesAfter = LLink.getReroutes(graph, graph.links.get(disconnectedNode.inputs[0].link!)!)
       expect(reroutesAfter).toEqual(reroutesBefore)
