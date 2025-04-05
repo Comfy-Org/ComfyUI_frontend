@@ -1,4 +1,4 @@
-import { computed, watch } from 'vue'
+import { computed, onUnmounted, watch } from 'vue'
 
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
@@ -11,6 +11,7 @@ import { useWorkflowStore } from '@/stores/workflowStore'
 export function useWorkflowPersistence() {
   const workflowStore = useWorkflowStore()
   const settingStore = useSettingStore()
+  const workflowService = useWorkflowService()
 
   const persistCurrentWorkflow = () => {
     const workflow = JSON.stringify(comfyApp.serializeGraph())
@@ -68,6 +69,39 @@ export function useWorkflowPersistence() {
       await loadDefaultWorkflow()
     }
   }
+
+  const setupAutoSave = () => {
+    let autoSaveInterval: NodeJS.Timeout | null = null
+
+    watch(
+      () => settingStore.get('Comfy.Workflow.AutoSave'),
+      (autoSaveSetting) => {
+        if (autoSaveInterval) {
+          clearInterval(autoSaveInterval)
+          autoSaveInterval = null
+        }
+
+        if (autoSaveSetting === 'after delay') {
+          const delay = settingStore.get('Comfy.Workflow.AutoSaveDelay')
+          autoSaveInterval = setInterval(async () => {
+            const activeWorkflow = workflowStore.activeWorkflow
+            if (activeWorkflow?.isModified) {
+              await workflowService.saveWorkflow(activeWorkflow)
+            }
+          }, delay)
+        }
+      },
+      { immediate: true }
+    )
+
+    onUnmounted(() => {
+      if (autoSaveInterval) {
+        clearInterval(autoSaveInterval)
+      }
+    })
+  }
+
+  setupAutoSave()
 
   // Setup watchers
   watch(
