@@ -7,7 +7,10 @@ import {
   RenderShape,
   type Vector2
 } from '@comfyorg/litegraph'
-import type { ISerialisedNode } from '@comfyorg/litegraph/dist/types/serialisation'
+import type {
+  ISerialisableNodeOutput,
+  ISerialisedNode
+} from '@comfyorg/litegraph/dist/types/serialisation'
 import _ from 'lodash'
 
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
@@ -231,15 +234,21 @@ export const useLitegraphService = () => {
 
         // Note: output name is not unique, so we cannot lookup output by name.
         // Use index instead.
-        data.outputs = this.outputs.map((output, i) => {
-          const outputData = data.outputs?.[i]
-          return outputData
-            ? {
-                ...outputData,
-                ..._.pick(output, ['name', 'type', 'shape', 'localized_name'])
-              }
-            : output
-        })
+        data.outputs = _.zip(this.outputs, data.outputs).map(
+          ([output, outputData]) => {
+            // If there are extra outputs in the serialised node, use them directly.
+            // There are currently custom nodes that dynamically add outputs via
+            // js logic.
+            if (!output) return outputData as ISerialisableNodeOutput
+
+            return outputData
+              ? {
+                  ...outputData,
+                  ..._.pick(output, ['name', 'type', 'shape', 'localized_name'])
+                }
+              : output
+          }
+        )
 
         super.configure(data)
       }
