@@ -71,33 +71,59 @@ export function useWorkflowPersistence() {
   }
 
   const setupAutoSave = () => {
-    let autoSaveInterval: NodeJS.Timeout | null = null
+    let autoSaveTimeout: NodeJS.Timeout | null = null
 
+    const scheduleAutoSave = () => {
+      // Clear any existing timeout
+      if (autoSaveTimeout) {
+        clearTimeout(autoSaveTimeout)
+        autoSaveTimeout = null
+      }
+
+      // If autosave is enabled and set to "after delay"
+      if (settingStore.get('Comfy.Workflow.AutoSave') === 'after delay') {
+        const delay = settingStore.get('Comfy.Workflow.AutoSaveDelay')
+        autoSaveTimeout = setTimeout(async () => {
+          const activeWorkflow = workflowStore.activeWorkflow
+          if (activeWorkflow?.isModified) {
+            await workflowService.saveWorkflow(activeWorkflow)
+          }
+        }, delay)
+      }
+    }
+
+    // Watch for autosave setting changes
     watch(
       () => settingStore.get('Comfy.Workflow.AutoSave'),
       (autoSaveSetting) => {
-        if (autoSaveInterval) {
-          clearInterval(autoSaveInterval)
-          autoSaveInterval = null
+        // Clear any existing timeout when settings change
+        if (autoSaveTimeout) {
+          clearTimeout(autoSaveTimeout)
+          autoSaveTimeout = null
         }
 
-        if (autoSaveSetting === 'after delay') {
-          const delay = settingStore.get('Comfy.Workflow.AutoSaveDelay')
-          autoSaveInterval = setInterval(async () => {
-            const activeWorkflow = workflowStore.activeWorkflow
-            if (activeWorkflow?.isModified) {
-              await workflowService.saveWorkflow(activeWorkflow)
-            }
-          }, delay)
+        // If there's an active modified workflow and autosave is enabled, schedule a save
+        if (
+          autoSaveSetting === 'after delay' &&
+          workflowStore.activeWorkflow?.isModified
+        ) {
+          scheduleAutoSave()
         }
       },
       { immediate: true }
     )
 
+    // Listen for graph changes and schedule autosave when they occur
+    api.addEventListener('graphChanged', () => {
+      scheduleAutoSave()
+    })
+
     onUnmounted(() => {
-      if (autoSaveInterval) {
-        clearInterval(autoSaveInterval)
+      if (autoSaveTimeout) {
+        clearTimeout(autoSaveTimeout)
+        autoSaveTimeout = null
       }
+      api.removeEventListener('graphChanged', scheduleAutoSave)
     })
   }
 
