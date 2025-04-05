@@ -1585,7 +1585,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     let widgets_height = 0
     if (this.widgets?.length) {
       for (const widget of this.widgets) {
-        if (widget.hidden || (widget.advanced && !this.showAdvanced)) continue
+        if (!this.isWidgetVisible(widget)) continue
 
         let widget_height = 0
         if (widget.computeSize) {
@@ -1929,9 +1929,8 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
     for (const widget of widgets) {
       if (
-        (widget.disabled && !includeDisabled) ||
-        widget.hidden ||
-        (widget.advanced && !this.showAdvanced)
+        (widget.computedDisabled && !includeDisabled) ||
+        !this.isWidgetVisible(widget)
       ) {
         continue
       }
@@ -3364,16 +3363,25 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     }
   }
 
+  /**
+   * Returns `true` if the widget is visible, otherwise `false`.
+   */
+  isWidgetVisible(widget: IWidget): boolean {
+    const isHidden = (
+      this.collapsed ||
+      widget.hidden ||
+      (widget.advanced && !this.showAdvanced)
+    )
+    return !isHidden
+  }
+
   drawWidgets(ctx: CanvasRenderingContext2D, options: {
-    colorContext: ConnectionColorContext
-    linkOverWidget: IWidget | null | undefined
-    linkOverWidgetType?: ISlotType
     lowQuality?: boolean
     editorAlpha?: number
   }): void {
     if (!this.widgets) return
 
-    const { colorContext, linkOverWidget, linkOverWidgetType, lowQuality = false, editorAlpha = 1 } = options
+    const { lowQuality = false, editorAlpha = 1 } = options
 
     const width = this.size[0]
     const widgets = this.widgets
@@ -3384,25 +3392,19 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     const margin = 15
 
     for (const w of widgets) {
-      if (w.hidden || (w.advanced && !this.showAdvanced)) continue
+      if (!this.isWidgetVisible(w)) continue
+
       const y = w.y
       const outline_color = w.advanced ? LiteGraph.WIDGET_ADVANCED_OUTLINE_COLOR : LiteGraph.WIDGET_OUTLINE_COLOR
 
-      if (w === linkOverWidget) {
-        // Manually draw a slot next to the widget simulating an input
-        new NodeInputSlot({
-          name: "",
-          // @ts-expect-error https://github.com/Comfy-Org/litegraph.js/issues/616
-          type: linkOverWidgetType,
-          link: 0,
-        }).draw(ctx, { pos: [10, y + 10], colorContext })
-      }
-
       w.last_y = y
+      // Disable widget if it is disabled or if the value is passed from socket connection.
+      w.computedDisabled = w.disabled || this.getSlotFromWidget(w)?.link != null
+
       ctx.strokeStyle = outline_color
       ctx.fillStyle = "#222"
       ctx.textAlign = "left"
-      if (w.disabled) ctx.globalAlpha *= 0.5
+      if (w.computedDisabled) ctx.globalAlpha *= 0.5
       const widget_width = w.width || width
 
       const WidgetClass: typeof WIDGET_TYPE_MAP[string] = WIDGET_TYPE_MAP[w.type]
@@ -3524,6 +3526,25 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     return this.#getMouseOverSlot(slot) === slot
   }
 
+  #isMouseOverWidget(widget: IWidget): boolean {
+    return this.mouseOver?.overWidget === widget
+  }
+
+  /**
+   * Returns the input slot that is associated with the given widget.
+   */
+  getSlotFromWidget(widget: IWidget): INodeInputSlot | undefined {
+    return this.inputs.find(slot => isWidgetInputSlot(slot) && slot.widget.name === widget.name)
+  }
+
+  /**
+   * Returns the widget that is associated with the given input slot.
+   */
+  getWidgetFromSlot(slot: INodeInputSlot): IWidget | undefined {
+    if (!isWidgetInputSlot(slot)) return
+    return this.widgets?.find(w => w.name === slot.widget.name)
+  }
+
   /**
    * Draws the node's input and output slots.
    */
@@ -3544,7 +3565,18 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       const labelColor = highlight
         ? this.highlightColor
         : LiteGraph.NODE_TEXT_COLOR
-      ctx.globalAlpha = isValid ? editorAlpha : 0.4 * editorAlpha
+
+      // Show slot if it's not a widget input slot
+      // or if it's a widget input slot and satisfies one of the following:
+      // - the mouse is over the widget
+      // - the slot is valid during link drop
+      // - the slot is connected
+      const showSlot = !isWidgetInputSlot(slot) ||
+        this.#isMouseOverWidget(this.getWidgetFromSlot(slot)!) ||
+        (fromSlot && slotInstance.isValidTarget(fromSlot)) ||
+        slotInstance.isConnected()
+
+      ctx.globalAlpha = showSlot ? (isValid ? editorAlpha : 0.4 * editorAlpha) : 0
 
       slotInstance.draw(ctx, {
         pos: layoutElement?.center ?? [0, 0],

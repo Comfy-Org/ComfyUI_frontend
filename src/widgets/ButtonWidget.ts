@@ -45,7 +45,7 @@ export class ButtonWidget extends BaseWidget implements IButtonWidget {
     ctx.fillRect(margin, y, width - margin * 2, height)
 
     // Draw button outline if not disabled
-    if (show_text && !this.disabled) {
+    if (show_text && !this.computedDisabled) {
       ctx.strokeStyle = this.outline_color
       ctx.strokeRect(margin, y, width - margin * 2, height)
     }

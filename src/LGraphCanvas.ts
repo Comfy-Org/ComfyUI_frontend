@@ -576,11 +576,6 @@ export class LGraphCanvas implements ConnectionColorContext {
   onNodeSelected?: (node: LGraphNode) => void
   onNodeDeselected?: (node: LGraphNode) => void
   onRender?: (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) => void
-  /** Implement this function to allow conversion of widget types to input types, e.g. number -> INT or FLOAT for widget link validation checks */
-  getWidgetLinkType?: (
-    widget: IWidget,
-    node: LGraphNode,
-  ) => string | null | undefined
 
   /**
    * Creates a new instance of LGraphCanvas.
@@ -2601,20 +2596,6 @@ export class LGraphCanvas implements ConnectionColorContext {
               // No link, or none of the dragged links may be dropped here
             } else if (linkConnector.state.connectingTo === "input") {
               if (inputId === -1 && outputId === -1) {
-                // Allow support for linking to widgets, handled externally to LiteGraph
-                if (this.getWidgetLinkType && overWidget) {
-                  const widgetLinkType = this.getWidgetLinkType(overWidget, node)
-                  if (
-                    widgetLinkType &&
-                    LiteGraph.isValidConnection(linkConnector.renderLinks[0]?.fromSlot.type, widgetLinkType) &&
-                    firstLink.node.isValidWidgetLink?.(firstLink.fromSlotIndex, node, overWidget) !== false
-                  ) {
-                    const { pos: [nodeX, nodeY] } = node
-                    highlightPos = [nodeX + 10, nodeY + 10 + overWidget.y]
-                    linkConnector.overWidget = overWidget
-                    linkConnector.overWidgetType = widgetLinkType
-                  }
-                }
                 // Node background / title under the pointer
                 if (!linkConnector.overWidget) {
                   const result = node.findInputByType(firstLink.fromSlot.type)
@@ -5204,12 +5185,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     posY: number,
     ctx: CanvasRenderingContext2D,
   ): void {
-    const { linkConnector } = this
-
     node.drawWidgets(ctx, {
-      colorContext: this,
-      linkOverWidget: linkConnector.overWidget,
-      linkOverWidgetType: linkConnector.overWidgetType,
       lowQuality: this.low_quality,
       editorAlpha: this.editor_alpha,
     })

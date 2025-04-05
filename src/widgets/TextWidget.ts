@@ -47,7 +47,7 @@ export class TextWidget extends BaseWidget implements IStringWidget {
     ctx.fill()
 
     if (show_text) {
-      if (!this.disabled) ctx.stroke()
+      if (!this.computedDisabled) ctx.stroke()
       ctx.save()
       ctx.beginPath()
       ctx.rect(margin, y, width - margin * 2, height)
