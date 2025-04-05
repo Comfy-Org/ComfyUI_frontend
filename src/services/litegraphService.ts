@@ -216,6 +216,8 @@ export const useLitegraphService = () => {
        * and 'localized_name' information from the original node definition.
        */
       override configure(data: ISerialisedNode): void {
+        const RESERVED_KEYS = ['name', 'type', 'shape', 'localized_name']
+
         // Note: input name is unique in a node definition, so we can lookup
         // input by name.
         const inputByName = new Map<string, INodeInputSlot>(
@@ -230,7 +232,7 @@ export const useLitegraphService = () => {
           return inputData
             ? {
                 ...inputData,
-                ..._.pick(input, ['name', 'type', 'shape', 'localized_name'])
+                ..._.pick(input, RESERVED_KEYS)
               }
             : input
         })
@@ -252,7 +254,7 @@ export const useLitegraphService = () => {
             return outputData
               ? {
                   ...outputData,
-                  ..._.pick(output, ['name', 'type', 'shape', 'localized_name'])
+                  ..._.pick(output, RESERVED_KEYS)
                 }
               : output
           }
