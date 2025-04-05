@@ -569,23 +569,6 @@ app.registerExtension({
       }
     )
 
-    nodeType.prototype.onNodeCreated = useChainCallback(
-      nodeType.prototype.onNodeCreated,
-      function (this: LGraphNode) {
-        // When node is created, convert any force/default inputs
-        if (!app.configuringGraph && this.widgets) {
-          for (const w of this.widgets) {
-            if (w?.options?.forceInput) {
-              // const config = getConfig.call(this, w.name) ?? [
-              //   w.type,
-              //   w.options || {}
-              // ]
-            }
-          }
-        }
-      }
-    )
-
     nodeType.prototype.onConfigure = useChainCallback(
       nodeType.prototype.onConfigure,
       function (this: LGraphNode) {

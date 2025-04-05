@@ -106,7 +106,7 @@ export const useLitegraphService = () => {
         const inputName = inputSpec.name
         const nameKey = `${this.#nodeKey}.inputs.${normalizeI18nKey(inputName)}.name`
         const widgetConstructor = widgetStore.widgets.get(inputSpec.type)
-        if (widgetConstructor) return
+        if (widgetConstructor && !inputSpec.forceInput) return
 
         this.addInput(inputName, inputSpec.type, {
           shape: inputSpec.isOptional ? RenderShape.HollowCircle : undefined,
@@ -121,7 +121,7 @@ export const useLitegraphService = () => {
         const inputName = inputSpec.name
         const nameKey = `${this.#nodeKey}.inputs.${normalizeI18nKey(inputName)}.name`
         const widgetConstructor = widgetStore.widgets.get(inputSpec.type)
-        if (!widgetConstructor) return
+        if (!widgetConstructor || inputSpec.forceInput) return
 
         const {
           widget,
