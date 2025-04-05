@@ -206,3 +206,31 @@ export interface InstallPackParams extends ManagerPackInfo {
 export interface UpdateAllPacksParams {
   mode?: ManagerDatabaseSource
 }
+
+/**
+ * Params for `/v2/manager/queue/batch` and returned by `/v2/manager/queue/history?id={batch_id}`
+ */
+export interface ManagerBatchParams {
+  batch_id: string[]
+  update?: ManagerPackInfo[]
+  install?: InstallPackParams[]
+  uninstall?: ManagerPackInfo[]
+  disable?: ManagerPackInfo[]
+  enable?: ManagerPackInfo[]
+}
+
+/**
+ * Returned by `/v2/manager/queue/history_list`
+ */
+export interface ManagerHistoryItem {
+  batch: ManagerBatchParams
+  /** Maps pack id to result. If not `skip` or `success`, the value is the error message. */
+  nodepack_result: {
+    [key: string]: 'skip' | 'success' | string
+  }
+  model_result: {
+    [key: string]: string
+  }
+  /** `ui_ids` of the lists that failed during the pre-screening stage before entering the task queue */
+  failed: string[]
+}
