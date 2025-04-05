@@ -176,17 +176,21 @@ const reconnectingMessage: ToastMessageOptions = {
 }
 
 const onReconnecting = () => {
-  toast.remove(reconnectingMessage)
-  toast.add(reconnectingMessage)
+  if (!settingStore.get('Comfy.Toast.DisableReconnectingToast')) {
+    toast.remove(reconnectingMessage)
+    toast.add(reconnectingMessage)
+  }
 }
 
 const onReconnected = () => {
-  toast.remove(reconnectingMessage)
-  toast.add({
-    severity: 'success',
-    summary: t('g.reconnected'),
-    life: 2000
-  })
+  if (!settingStore.get('Comfy.Toast.DisableReconnectingToast')) {
+    toast.remove(reconnectingMessage)
+    toast.add({
+      severity: 'success',
+      summary: t('g.reconnected'),
+      life: 2000
+    })
+  }
 }
 
 onMounted(() => {
