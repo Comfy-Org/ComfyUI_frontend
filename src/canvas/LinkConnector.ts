@@ -394,28 +394,16 @@ export class LinkConnector {
       // From reroute to reroute
       if (renderLink instanceof ToInputRenderLink) {
         const { node, fromSlot, fromSlotIndex, fromReroute } = renderLink
-        const floatingOutLinks = reroute.getFloatingLinks("output")
-        const floatingInLinks = reroute.getFloatingLinks("input")
 
         reroute.setFloatingLinkOrigin(node, fromSlot, fromSlotIndex)
 
         // Clean floating link IDs from reroutes about to be removed from the chain
-        if (floatingOutLinks && floatingInLinks) {
-          for (const link of floatingOutLinks) {
-            link.origin_id = node.id
-            link.origin_slot = fromSlotIndex
+        if (fromReroute != null) {
+          for (const originalReroute of originalReroutes) {
+            if (originalReroute.id === fromReroute.id) break
 
-            for (const originalReroute of originalReroutes) {
-              if (fromReroute != null && originalReroute.id === fromReroute.id) break
-
-              originalReroute.floatingLinkIds.delete(link.id)
-            }
-          }
-
-          for (const link of floatingInLinks) {
-            for (const originalReroute of originalReroutes) {
-              if (fromReroute != null && originalReroute.id === fromReroute.id) break
-              originalReroute.floatingLinkIds.delete(link.id)
+            for (const linkId of reroute.floatingLinkIds) {
+              originalReroute.floatingLinkIds.delete(linkId)
             }
           }
         }
