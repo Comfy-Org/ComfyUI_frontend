@@ -38,6 +38,13 @@ export const graphToPrompt = async (
     }
   }
 
+  // Remove all unconnected widget input slots
+  for (const node of workflow.nodes) {
+    node.inputs = node.inputs?.filter(
+      (input) => !(input.widget && input.link === null)
+    )
+  }
+
   const output: ComfyApiWorkflow = {}
   // Process nodes in order of execution
   for (const outerNode of graph.computeExecutionOrder(false)) {
