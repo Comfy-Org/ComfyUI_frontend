@@ -192,3 +192,19 @@ test.describe('Load audio widget', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('load_audio_widget.png')
   })
 })
+
+test.describe('Unserialized widgets', () => {
+  test('Unserialized widgets values do not mark graph as modified', async ({
+    comfyPage
+  }) => {
+    // Add workflow w/ LoadImage node, which contains file upload and image preview widgets (not serialized)
+    await comfyPage.loadWorkflow('widgets/load_image_widget')
+
+    // Move mouse and click to trigger the `graphEqual` check in `changeTracker.ts`
+    await comfyPage.page.mouse.move(10, 10)
+    await comfyPage.page.mouse.click(10, 10)
+
+    // Expect the graph to not be modified
+    expect(await comfyPage.isCurrentWorkflowModified()).toBe(false)
+  })
+})
