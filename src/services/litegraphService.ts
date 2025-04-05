@@ -221,8 +221,11 @@ export const useLitegraphService = () => {
         const inputByName = new Map<string, INodeInputSlot>(
           data.inputs?.map((input) => [input.name, input]) ?? []
         )
-
-        data.inputs = this.inputs.map((input) => {
+        // Inputs defined by the node definition.
+        const definedInputNames = new Set(
+          this.inputs.map((input) => input.name)
+        )
+        const definedInputs = this.inputs.map((input) => {
           const inputData = inputByName.get(input.name)
           return inputData
             ? {
@@ -231,6 +234,11 @@ export const useLitegraphService = () => {
               }
             : input
         })
+        // Extra inputs that potentially dynamically added by custom js logic.
+        const extraInputs = data.inputs?.filter(
+          (input) => !definedInputNames.has(input.name)
+        )
+        data.inputs = [...definedInputs, ...(extraInputs ?? [])]
 
         // Note: output name is not unique, so we cannot lookup output by name.
         // Use index instead.
