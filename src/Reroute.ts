@@ -329,6 +329,35 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
     return out
   }
 
+  /**
+   * Changes the origin node/output of all floating links that pass through this reroute.
+   * @param node The new origin node
+   * @param output The new origin output slot
+   * @param index The slot index of {@link output}
+   */
+  setFloatingLinkOrigin(node: LGraphNode, output: INodeOutputSlot, index: number) {
+    const network = this.#network.deref()
+    const floatingOutLinks = this.getFloatingLinks("output")
+    if (!floatingOutLinks) throw new Error("[setFloatingLinkOrigin]: Invalid network.")
+    if (!floatingOutLinks.length) return
+
+    output._floatingLinks ??= new Set()
+
+    for (const link of floatingOutLinks) {
+      // Update cached floating links
+      output._floatingLinks.add(link)
+
+      network?.getNodeById(link.origin_id)
+        ?.outputs[link.origin_slot]
+        ?._floatingLinks
+        ?.delete(link)
+
+      // Update the floating link
+      link.origin_id = node.id
+      link.origin_slot = index
+    }
+  }
+
   /** @inheritdoc */
   move(deltaX: number, deltaY: number) {
     this.#pos[0] += deltaX

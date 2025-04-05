@@ -121,6 +121,29 @@ const test = baseTest.extend<TestContext>({
           }
         }
       }
+
+      for (const link of graph._links.values()) {
+        expect(graph.getNodeById(link!.origin_id)?.outputs[link!.origin_slot].links).toContain(link.id)
+        expect(graph.getNodeById(link!.target_id)?.inputs[link!.target_slot].link).toBe(link.id)
+      }
+
+      for (const link of graph.floatingLinks.values()) {
+        if (link.target_id === -1) {
+          expect(link.origin_id).not.toBe(-1)
+          expect(link.origin_slot).not.toBe(-1)
+          expect(link.target_slot).toBe(-1)
+          const outputFloatingLinks = graph.getNodeById(link.origin_id)?.outputs[link.origin_slot]._floatingLinks
+          expect(outputFloatingLinks).toBeDefined()
+          expect(outputFloatingLinks).toContain(link)
+        } else {
+          expect(link.origin_id).toBe(-1)
+          expect(link.origin_slot).toBe(-1)
+          expect(link.target_slot).not.toBe(-1)
+          const inputFloatingLinks = graph.getNodeById(link.target_id)?.inputs[link.target_slot]._floatingLinks
+          expect(inputFloatingLinks).toBeDefined()
+          expect(inputFloatingLinks).toContain(link)
+        }
+      }
     })
   },
 
