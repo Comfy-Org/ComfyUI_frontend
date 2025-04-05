@@ -764,5 +764,19 @@ export const CORE_SETTINGS: SettingParams[] = [
       max: 400
     },
     versionAdded: '1.15.7'
+  },
+  {
+    id: 'Comfy.Workflow.AutoSaveDelay',
+    name: 'Auto Save Delay (ms)',
+    defaultValue: 1000,
+    type: 'number',
+    tooltip: 'Only applies if Auto Save is set to "after delay".'
+  },
+  {
+    id: 'Comfy.Workflow.AutoSave',
+    name: 'Auto Save',
+    type: 'combo',
+    options: ['off', 'after delay'], // Room for other options like on focus change, tab change, window change
+    defaultValue: 'off'
   }
 ]
