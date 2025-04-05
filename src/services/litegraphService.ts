@@ -236,8 +236,6 @@ export const useLitegraphService = () => {
           return outputData
             ? {
                 ...outputData,
-                // Keep 'name', 'type', 'shape', and 'localized_name' information
-                // from the original node definition.
                 ..._.pick(output, ['name', 'type', 'shape', 'localized_name'])
               }
             : output
