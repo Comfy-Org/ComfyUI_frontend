@@ -32,7 +32,7 @@
 import Button from 'primevue/button'
 import ProgressSpinner from 'primevue/progressspinner'
 
-import { VueSeverity } from '@/types/primeVueTypes'
+import { PrimeVueSeverity } from '@/types/primeVueTypes'
 
 const {
   disabled,
@@ -41,7 +41,7 @@ const {
 } = defineProps<{
   disabled?: boolean
   outlined?: boolean
-  severity?: VueSeverity
+  severity?: PrimeVueSeverity
 }>()
 
 // Model

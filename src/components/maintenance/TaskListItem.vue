@@ -45,7 +45,7 @@ import { computed, ref } from 'vue'
 
 import { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
 import type { MaintenanceTask } from '@/types/desktop/maintenanceTypes'
-import { VueSeverity } from '@/types/primeVueTypes'
+import { PrimeVueSeverity } from '@/types/primeVueTypes'
 import { useMinLoadingDurationRef } from '@/utils/refUtil'
 
 import TaskListStatusIcon from './TaskListStatusIcon.vue'
@@ -64,7 +64,7 @@ defineEmits<{
 }>()
 
 // Binding
-const severity = computed<VueSeverity>(() =>
+const severity = computed<PrimeVueSeverity>(() =>
   runner.value.state === 'error' || runner.value.state === 'warning'
     ? 'primary'
     : 'secondary'

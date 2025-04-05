@@ -20,15 +20,16 @@ import Message from 'primevue/message'
 import { computed } from 'vue'
 
 import { components } from '@/types/comfyRegistryTypes'
-import { VueSeverity } from '@/types/primeVueTypes'
 
 type PackVersionStatus = components['schemas']['NodeVersionStatus']
 type PackStatus = components['schemas']['NodeStatus']
 type Status = PackVersionStatus | PackStatus
 
+type MessageProps = InstanceType<typeof Message>['$props']
+type MessageSeverity = MessageProps['severity']
 type StatusProps = {
   label: string
-  severity: VueSeverity
+  severity: MessageSeverity
 }
 
 const { statusType } = defineProps<{
@@ -46,7 +47,7 @@ const statusPropsMap: Record<Status, StatusProps> = {
   },
   NodeStatusBanned: {
     label: 'banned',
-    severity: 'danger'
+    severity: 'error'
   },
   NodeVersionStatusActive: {
     label: 'active',
@@ -62,11 +63,11 @@ const statusPropsMap: Record<Status, StatusProps> = {
   },
   NodeVersionStatusFlagged: {
     label: 'flagged',
-    severity: 'danger'
+    severity: 'error'
   },
   NodeVersionStatusBanned: {
     label: 'banned',
-    severity: 'danger'
+    severity: 'error'
   }
 }
 
