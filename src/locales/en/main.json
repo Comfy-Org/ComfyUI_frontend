@@ -1002,7 +1002,13 @@
     "exportModel": "Export Model",
     "exportingModel": "Exporting model...",
     "uploadTexture": "Upload Texture",
-    "applyingTexture": "Applying Texture..."
+    "applyingTexture": "Applying Texture...",
+    "materialModes": {
+      "normal": "Normal",
+      "wireframe": "Wireframe",
+      "original": "Original",
+      "depth": "Depth"
+    }
   },
   "toastMessages": {
     "no3dScene": "No 3D scene to apply texture",
