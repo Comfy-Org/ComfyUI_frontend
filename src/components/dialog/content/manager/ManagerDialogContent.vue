@@ -120,7 +120,7 @@ enum ManagerTab {
   Installed = 'installed',
   Workflow = 'workflow',
   Missing = 'missing',
-  Outdated = 'outdated'
+  UpdateAvailable = 'updateAvailable'
 }
 
 const { t } = useI18n()
@@ -154,8 +154,8 @@ const tabs = ref<TabItem[]>([
     icon: 'pi-exclamation-circle'
   },
   {
-    id: ManagerTab.Outdated,
-    label: t('g.outdated'),
+    id: ManagerTab.UpdateAvailable,
+    label: t('g.updateAvailable'),
     icon: 'pi-sync'
   }
 ])
@@ -198,8 +198,8 @@ const {
 const filterMissingPacks = (packs: components['schemas']['Node'][]) =>
   packs.filter((pack) => !comfyManagerStore.isPackInstalled(pack.id))
 
-const isOutdatedTab = computed(
-  () => selectedTab.value?.id === ManagerTab.Outdated
+const isUpdateAvailableTab = computed(
+  () => selectedTab.value?.id === ManagerTab.UpdateAvailable
 )
 const isInstalledTab = computed(
   () => selectedTab.value?.id === ManagerTab.Installed
@@ -219,8 +219,8 @@ const isOutdatedPack = (pack: components['schemas']['Node']) => {
 const filterOutdatedPacks = (packs: components['schemas']['Node'][]) =>
   packs.filter(isOutdatedPack)
 
-watch([isOutdatedTab, installedPacks], () => {
-  if (!isOutdatedTab.value) return
+watch([isUpdateAvailableTab, installedPacks], () => {
+  if (!isUpdateAvailableTab.value) return
 
   if (!isEmptySearch.value) {
     displayPacks.value = filterOutdatedPacks(installedPacks.value)
@@ -277,7 +277,7 @@ const onResultsChange = () => {
         filterWorkflowPack(searchResults.value)
       )
       break
-    case ManagerTab.Outdated:
+    case ManagerTab.UpdateAvailable:
       displayPacks.value = filterOutdatedPacks(searchResults.value)
       break
     default:

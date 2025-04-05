@@ -106,7 +106,7 @@
     "disabling": "Disabling",
     "updating": "Updating",
     "migrate": "Migrate",
-    "outdated": "Outdated"
+    "updateAvailable": "Update Available"
   },
   "manager": {
     "title": "Custom Nodes Manager",
