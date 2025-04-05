@@ -777,6 +777,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Auto Save',
     type: 'combo',
     options: ['off', 'after delay'], // Room for other options like on focus change, tab change, window change
-    defaultValue: 'off'
+    defaultValue: 'off' // Popular requst by users (https://github.com/Comfy-Org/ComfyUI_frontend/issues/1584#issuecomment-2536610154)
   }
 ]
