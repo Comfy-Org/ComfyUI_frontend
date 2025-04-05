@@ -372,6 +372,12 @@
     "lightIntensity": "光の強度",
     "loadingModel": "3Dモデルを読み込んでいます...",
     "materialMode": "マテリアルモード",
+    "materialModes": {
+      "depth": "深度",
+      "normal": "ノーマル",
+      "original": "オリジナル",
+      "wireframe": "ワイヤーフレーム"
+    },
     "model": "モデル",
     "previewOutput": "出力のプレビュー",
     "removeBackgroundImage": "背景画像を削除",

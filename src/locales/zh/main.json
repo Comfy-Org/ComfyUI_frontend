@@ -372,6 +372,12 @@
     "lightIntensity": "光照强度",
     "loadingModel": "正在加载3D模型...",
     "materialMode": "材料模式",
+    "materialModes": {
+      "depth": "深度",
+      "normal": "正常",
+      "original": "原始",
+      "wireframe": "线框"
+    },
     "model": "模型",
     "previewOutput": "预览输出",
     "removeBackgroundImage": "移除背景图片",

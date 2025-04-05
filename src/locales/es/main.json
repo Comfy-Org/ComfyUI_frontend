@@ -372,6 +372,12 @@
     "lightIntensity": "Intensidad de luz",
     "loadingModel": "Cargando modelo 3D...",
     "materialMode": "Modo de material",
+    "materialModes": {
+      "depth": "Profundidad",
+      "normal": "Normal",
+      "original": "Original",
+      "wireframe": "Malla"
+    },
     "model": "Modelo",
     "previewOutput": "Vista previa de salida",
     "removeBackgroundImage": "Eliminar imagen de fondo",

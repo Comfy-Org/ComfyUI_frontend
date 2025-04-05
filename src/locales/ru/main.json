@@ -372,6 +372,12 @@
     "lightIntensity": "Интенсивность света",
     "loadingModel": "Загрузка 3D модели...",
     "materialMode": "Режим Материала",
+    "materialModes": {
+      "depth": "Глубина",
+      "normal": "Нормальный",
+      "original": "Оригинал",
+      "wireframe": "Каркас"
+    },
     "model": "Модель",
     "previewOutput": "Предварительный просмотр",
     "removeBackgroundImage": "Удалить фоновое изображение",

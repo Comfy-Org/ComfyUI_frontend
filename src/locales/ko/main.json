@@ -372,6 +372,12 @@
     "lightIntensity": "조명 강도",
     "loadingModel": "3D 모델 로딩 중...",
     "materialMode": "재질 모드",
+    "materialModes": {
+      "depth": "깊이",
+      "normal": "정상",
+      "original": "원본",
+      "wireframe": "와이어프레임"
+    },
     "model": "모델",
     "previewOutput": "출력 미리보기",
     "removeBackgroundImage": "배경 이미지 제거",
