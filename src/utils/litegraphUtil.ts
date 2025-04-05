@@ -1,7 +1,9 @@
-import type { ColorOption } from '@comfyorg/litegraph'
+import type { ColorOption, LGraph } from '@comfyorg/litegraph'
 import { LGraphGroup, LGraphNode, isColorable } from '@comfyorg/litegraph'
 import type { IComboWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import _ from 'lodash'
+
+import type { ComfyNode } from '@/schemas/comfyWorkflowSchema'
 
 type ImageNode = LGraphNode & { imgs: HTMLImageElement[] | undefined }
 type VideoNode = LGraphNode & {
@@ -69,4 +71,41 @@ export function executeWidgetsCallback(
       widget[callbackName]?.()
     }
   }
+}
+
+/**
+ * Creates a copy of the nodes with non-serialized widget values removed
+ */
+export function filterSerializedWidgetValues(
+  nodes: ComfyNode[],
+  graph: LGraph
+): ComfyNode[] {
+  if (!graph) return nodes
+
+  return nodes.map((node) => {
+    if (!node.widgets_values) return node
+
+    const graphNode = graph.getNodeById(node.id)
+    if (!graphNode?.widgets) return node
+
+    const filteredNode = { ...node }
+    const serializedValues = []
+
+    for (let i = 0; i < graphNode.widgets.length; i++) {
+      const widget = graphNode.widgets[i]
+
+      // Skip if widget is not serialized
+      if (!widget.options || widget.options.serialize !== false) {
+        const value = Array.isArray(node.widgets_values)
+          ? node.widgets_values[i]
+          : node.widgets_values[widget.name || i.toString()]
+        serializedValues.push(
+          typeof value === 'object' && value !== null ? value.value : value
+        )
+      }
+    }
+
+    filteredNode.widgets_values = serializedValues
+    return filteredNode
+  })
 }

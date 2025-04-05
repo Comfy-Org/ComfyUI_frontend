@@ -8,6 +8,7 @@ import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import type { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import { useExecutionStore } from '@/stores/executionStore'
 import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
+import { filterSerializedWidgetValues } from '@/utils/litegraphUtil'
 
 import { api } from './api'
 import type { ComfyApp } from './app'
@@ -385,7 +386,10 @@ export class ChangeTracker {
       if (
         !_.isEqualWith(a.nodes, b.nodes, (arrA, arrB) => {
           if (Array.isArray(arrA) && Array.isArray(arrB)) {
-            return _.isEqual(new Set(arrA), new Set(arrB))
+            // Filter non-serializable widget values before comparison
+            const filteredArrA = filterSerializedWidgetValues(arrA, app.graph)
+            const filteredArrB = filterSerializedWidgetValues(arrB, app.graph)
+            return _.isEqual(new Set(filteredArrA), new Set(filteredArrB))
           }
         })
       ) {
