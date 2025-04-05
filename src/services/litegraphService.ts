@@ -4,9 +4,11 @@ import {
   LGraphEventMode,
   LGraphNode,
   LiteGraph,
-  RenderShape
+  RenderShape,
+  type Vector2
 } from '@comfyorg/litegraph'
-import { Vector2 } from '@comfyorg/litegraph'
+import type { ISerialisedNode } from '@comfyorg/litegraph/dist/types/serialisation'
+import _ from 'lodash'
 
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
@@ -206,33 +208,41 @@ export const useLitegraphService = () => {
         this.setSize(s)
       }
 
-      configure(data: any) {
-        // Keep 'name', 'type', 'shape', and 'localized_name' information from the original node definition.
-        const merge = (
-          current: Record<string, any>,
-          incoming: Record<string, any>
-        ) => {
-          const result = { ...incoming }
-          if (current.widget === undefined && incoming.widget !== undefined) {
-            // Field must be input as only inputs can be converted
-            this.inputs.push(current as INodeInputSlot)
-            return incoming
-          }
-          for (const key of ['name', 'type', 'shape', 'localized_name']) {
-            if (current[key] !== undefined) {
-              result[key] = current[key]
-            }
-          }
-          return result
-        }
-        for (const field of ['inputs', 'outputs']) {
-          const slots = data[field] ?? []
-          // @ts-expect-error fixme ts strict error
-          data[field] = slots.map((slot, i) =>
-            // @ts-expect-error fixme ts strict error
-            merge(this[field][i] ?? {}, slot)
-          )
-        }
+      /**
+       * Configure the node from a serialised node. Keep 'name', 'type', 'shape',
+       * and 'localized_name' information from the original node definition.
+       */
+      override configure(data: ISerialisedNode): void {
+        // Note: input name is unique in a node definition, so we can lookup
+        // input by name.
+        const inputByName = new Map<string, INodeInputSlot>(
+          data.inputs?.map((input) => [input.name, input]) ?? []
+        )
+
+        data.inputs = this.inputs.map((input) => {
+          const inputData = inputByName.get(input.name)
+          return inputData
+            ? {
+                ...inputData,
+                ..._.pick(input, ['name', 'type', 'shape', 'localized_name'])
+              }
+            : input
+        })
+
+        // Note: output name is not unique, so we cannot lookup output by name.
+        // Use index instead.
+        data.outputs = this.outputs.map((output, i) => {
+          const outputData = data.outputs?.[i]
+          return outputData
+            ? {
+                ...outputData,
+                // Keep 'name', 'type', 'shape', and 'localized_name' information
+                // from the original node definition.
+                ..._.pick(output, ['name', 'type', 'shape', 'localized_name'])
+              }
+            : output
+        })
+
         super.configure(data)
       }
     }
