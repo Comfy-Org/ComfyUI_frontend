@@ -84,17 +84,12 @@ export class ChangeTracker {
     }
   }
 
-  updateModified() {
-    api.dispatchCustomEvent('graphChanged', this.activeState)
-
+  updateModified(isModified: boolean) {
     // Get the workflow from the store as ChangeTracker is raw object, i.e.
     // `this.workflow` is not reactive.
     const workflow = useWorkflowStore().getWorkflowByPath(this.workflow.path)
     if (workflow) {
-      workflow.isModified = !ChangeTracker.graphEqual(
-        this.initialState,
-        this.activeState
-      )
+      workflow.isModified = isModified
       if (logger.getLevel() <= logger.levels.DEBUG && workflow.isModified) {
         const diff = ChangeTracker.graphDiff(
           this.initialState,
@@ -114,7 +109,9 @@ export class ChangeTracker {
       this.activeState = currentState
       return
     }
-    if (!ChangeTracker.graphEqual(this.activeState, currentState)) {
+    const isModified = !ChangeTracker.graphEqual(this.activeState, currentState)
+
+    if (isModified) {
       this.undoQueue.push(this.activeState)
       if (this.undoQueue.length > ChangeTracker.MAX_HISTORY) {
         this.undoQueue.shift()
@@ -123,8 +120,10 @@ export class ChangeTracker {
 
       this.activeState = currentState
       this.redoQueue.length = 0
-      this.updateModified()
+      api.dispatchCustomEvent('graphChanged', this.activeState)
     }
+
+    this.updateModified(isModified)
   }
 
   async updateState(source: ComfyWorkflowJSON[], target: ComfyWorkflowJSON[]) {
@@ -139,7 +138,10 @@ export class ChangeTracker {
           checkForRerouteMigration: false
         })
         this.activeState = prevState
-        this.updateModified()
+        api.dispatchCustomEvent('graphChanged', this.activeState)
+        this.updateModified(
+          ChangeTracker.graphEqual(this.initialState, prevState)
+        )
       } finally {
         this.restoringState = false
       }
