@@ -170,26 +170,28 @@ describe('useWorkflowAutoSave', () => {
       .spyOn(console, 'error')
       .mockImplementation(() => {})
 
-    mount({
-      template: `<div></div>`,
-      setup() {
-        useWorkflowAutoSave()
-        return {}
-      }
-    })
+    try {
+      mount({
+        template: `<div></div>`,
+        setup() {
+          useWorkflowAutoSave()
+          return {}
+        }
+      })
 
-    const serviceInstance = (useWorkflowService as any).mock.results[0].value
-    serviceInstance.saveWorkflow.mockRejectedValue(new Error('Test Error'))
+      const serviceInstance = (useWorkflowService as any).mock.results[0].value
+      serviceInstance.saveWorkflow.mockRejectedValue(new Error('Test Error'))
 
-    vi.advanceTimersByTime(1000)
+      vi.advanceTimersByTime(1000)
+      await Promise.resolve()
 
-    await Promise.resolve()
-
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      'Auto save failed:',
-      expect.any(Error)
-    )
-    consoleErrorSpy.mockRestore()
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Auto save failed:',
+        expect.any(Error)
+      )
+    } finally {
+      consoleErrorSpy.mockRestore()
+    }
   })
 
   it('should queue autosave requests during saving and reschedule after save completes', async () => {
@@ -223,5 +225,50 @@ describe('useWorkflowAutoSave', () => {
 
     vi.advanceTimersByTime(1000)
     expect(serviceInstance.saveWorkflow).toHaveBeenCalledTimes(2)
+  })
+
+  it('should clean up event listeners on component unmount', async () => {
+    mockAutoSaveSetting = 'after delay'
+
+    const wrapper = mount({
+      template: `<div></div>`,
+      setup() {
+        useWorkflowAutoSave()
+        return {}
+      }
+    })
+
+    wrapper.unmount()
+
+    expect(api.removeEventListener).toHaveBeenCalled()
+  })
+
+  it('should handle edge case delay values properly', async () => {
+    mockAutoSaveSetting = 'after delay'
+    mockAutoSaveDelay = 0
+    mockActiveWorkflow = { isModified: true }
+
+    mount({
+      template: `<div></div>`,
+      setup() {
+        useWorkflowAutoSave()
+        return {}
+      }
+    })
+
+    await vi.runAllTimersAsync()
+
+    const serviceInstance = (useWorkflowService as any).mock.results[0].value
+    expect(serviceInstance.saveWorkflow).toHaveBeenCalledTimes(1)
+    serviceInstance.saveWorkflow.mockClear()
+
+    mockAutoSaveDelay = -500
+
+    const graphChangedCallback = (api.addEventListener as any).mock.calls[0][1]
+    graphChangedCallback()
+
+    await vi.runAllTimersAsync()
+
+    expect(serviceInstance.saveWorkflow).toHaveBeenCalledTimes(1)
   })
 })
