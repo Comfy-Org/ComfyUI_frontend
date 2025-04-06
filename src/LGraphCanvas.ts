@@ -3365,16 +3365,28 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     this.onNodeDeselected?.(item)
 
+    // Should be moved to top of function, and throw if null
+    const { graph } = this
+    if (!graph) return
+
     // Clear link highlight
     if (item.inputs) {
       for (const input of item.inputs) {
         if (input.link == null) continue
+
+        const node = LLink.getOriginNode(graph, input.link)
+        if (node && this.selectedItems.has(node)) continue
+
         delete this.highlighted_links[input.link]
       }
     }
     if (item.outputs) {
       for (const id of item.outputs.flatMap(x => x.links)) {
         if (id == null) continue
+
+        const node = LLink.getTargetNode(graph, id)
+        if (node && this.selectedItems.has(node)) continue
+
         delete this.highlighted_links[id]
       }
     }

@@ -919,7 +919,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   /**
    * Returns a node by its id.
    */
-  getNodeById(id: NodeId): LGraphNode | null {
+  getNodeById(id: NodeId | null | undefined): LGraphNode | null {
     return id != null
       ? this._nodes_by_id[id]
       : null
