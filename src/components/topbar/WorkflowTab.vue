@@ -52,6 +52,14 @@ const workflowStore = useWorkflowStore()
 const settingStore = useSettingStore()
 const workflowTabRef = ref<HTMLElement | null>(null)
 
+// Use computed refs to cache autosave settings
+const autoSaveSetting = computed(() =>
+  settingStore.get('Comfy.Workflow.AutoSave')
+)
+const autoSaveDelay = computed(() =>
+  settingStore.get('Comfy.Workflow.AutoSaveDelay')
+)
+
 const shouldShowStatusIndicator = computed(() => {
   // Return true if:
   // 1. The shift key is not pressed (hence no override).
@@ -62,9 +70,8 @@ const shouldShowStatusIndicator = computed(() => {
     !workspaceStore.shiftDown &&
     (props.workflowOption.workflow.isModified ||
       !props.workflowOption.workflow.isPersisted) &&
-    (settingStore.get('Comfy.Workflow.AutoSave') === 'off' ||
-      (settingStore.get('Comfy.Workflow.AutoSave') === 'after delay' &&
-        settingStore.get('Comfy.Workflow.AutoSaveDelay') > 3000))
+    (autoSaveSetting.value === 'off' ||
+      (autoSaveSetting.value === 'after delay' && autoSaveDelay.value > 3000))
   )
 })
 

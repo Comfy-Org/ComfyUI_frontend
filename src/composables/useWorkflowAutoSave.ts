@@ -1,4 +1,4 @@
-import { onUnmounted, watch } from 'vue'
+import { computed, onUnmounted, watch } from 'vue'
 
 import { api } from '@/scripts/api'
 import { useWorkflowService } from '@/services/workflowService'
@@ -9,6 +9,14 @@ export function useWorkflowAutoSave() {
   const workflowStore = useWorkflowStore()
   const settingStore = useSettingStore()
   const workflowService = useWorkflowService()
+
+  // Use computed refs to cache autosave settings
+  const autoSaveSetting = computed(() =>
+    settingStore.get('Comfy.Workflow.AutoSave')
+  )
+  const autoSaveDelay = computed(() =>
+    settingStore.get('Comfy.Workflow.AutoSaveDelay')
+  )
 
   let autoSaveTimeout: NodeJS.Timeout | null = null
   let isSaving = false
@@ -21,11 +29,8 @@ export function useWorkflowAutoSave() {
     }
 
     // If autosave is enabled and set to "after delay" and not currently saving
-    if (
-      settingStore.get('Comfy.Workflow.AutoSave') === 'after delay' &&
-      !isSaving
-    ) {
-      const delay = settingStore.get('Comfy.Workflow.AutoSaveDelay')
+    if (autoSaveSetting.value === 'after delay' && !isSaving) {
+      const delay = autoSaveDelay.value
       autoSaveTimeout = setTimeout(async () => {
         const activeWorkflow = workflowStore.activeWorkflow
         if (activeWorkflow?.isModified) {
@@ -44,8 +49,8 @@ export function useWorkflowAutoSave() {
 
   // Watch for autosave setting changes
   watch(
-    () => settingStore.get('Comfy.Workflow.AutoSave'),
-    (autoSaveSetting) => {
+    autoSaveSetting,
+    (newSetting) => {
       // Clear any existing timeout when settings change
       if (autoSaveTimeout) {
         clearTimeout(autoSaveTimeout)
@@ -54,7 +59,7 @@ export function useWorkflowAutoSave() {
 
       // If there's an active modified workflow and autosave is enabled, schedule a save
       if (
-        autoSaveSetting === 'after delay' &&
+        newSetting === 'after delay' &&
         workflowStore.activeWorkflow?.isModified
       ) {
         scheduleAutoSave()
