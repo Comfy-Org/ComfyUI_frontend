@@ -72,6 +72,7 @@ export function useWorkflowPersistence() {
 
   const setupAutoSave = () => {
     let autoSaveTimeout: NodeJS.Timeout | null = null
+    let isSaving = false
 
     const scheduleAutoSave = () => {
       // Clear any existing timeout
@@ -80,13 +81,23 @@ export function useWorkflowPersistence() {
         autoSaveTimeout = null
       }
 
-      // If autosave is enabled and set to "after delay"
-      if (settingStore.get('Comfy.Workflow.AutoSave') === 'after delay') {
+      // If autosave is enabled and set to "after delay" and not currently saving
+      if (
+        settingStore.get('Comfy.Workflow.AutoSave') === 'after delay' &&
+        !isSaving
+      ) {
         const delay = settingStore.get('Comfy.Workflow.AutoSaveDelay')
         autoSaveTimeout = setTimeout(async () => {
           const activeWorkflow = workflowStore.activeWorkflow
           if (activeWorkflow?.isModified) {
-            await workflowService.saveWorkflow(activeWorkflow)
+            try {
+              isSaving = true
+              await workflowService.saveWorkflow(activeWorkflow)
+            } catch (err) {
+              console.error('Auto save failed:', err)
+            } finally {
+              isSaving = false
+            }
           }
         }, delay)
       }
