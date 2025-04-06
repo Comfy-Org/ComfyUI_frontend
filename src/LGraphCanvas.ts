@@ -7102,8 +7102,9 @@ export class LGraphCanvas implements ConnectionColorContext {
         if (node.getSlotMenuOptions) {
           menu_info = node.getSlotMenuOptions(slot)
         } else {
-          if (slot?.output?.links?.length)
+          if (slot.output?.links?.length || slot.input?.link != null) {
             menu_info.push({ content: "Disconnect Links", slot })
+          }
 
           const _slot = slot.input || slot.output
           if (!_slot) throw new TypeError("Both in put and output slots were null when processing context menu.")
