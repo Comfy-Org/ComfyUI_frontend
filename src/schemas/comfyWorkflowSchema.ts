@@ -207,18 +207,6 @@ const zGroup = z
   })
   .passthrough()
 
-const zInfo = z
-  .object({
-    name: z.string(),
-    author: z.string(),
-    description: z.string(),
-    version: z.string(),
-    created: z.string(),
-    modified: z.string(),
-    software: z.string()
-  })
-  .passthrough()
-
 const zDS = z
   .object({
     scale: z.number(),
@@ -236,7 +224,6 @@ const zConfig = z
 const zExtra = z
   .object({
     ds: zDS.optional(),
-    info: zInfo.optional(),
     linkExtensions: z.array(zComfyLinkExtension).optional(),
     reroutes: z.array(zReroute).optional()
   })
