@@ -33,7 +33,7 @@ export class BooleanWidget extends BaseWidget implements IBooleanWidget {
       ctx.roundRect(margin, y, width - margin * 2, height, [height * 0.5])
     else ctx.rect(margin, y, width - margin * 2, height)
     ctx.fill()
-    if (show_text && !this.disabled) ctx.stroke()
+    if (show_text && !this.computedDisabled) ctx.stroke()
     ctx.fillStyle = this.value ? "#89A" : "#333"
     ctx.beginPath()
     ctx.arc(

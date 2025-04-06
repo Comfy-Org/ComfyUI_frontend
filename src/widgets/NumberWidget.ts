@@ -64,7 +64,7 @@ export class NumberWidget extends BaseWidget implements INumericWidget {
     ctx.fill()
 
     if (show_text) {
-      if (!this.disabled) {
+      if (!this.computedDisabled) {
         ctx.stroke()
         // Draw left arrow
         ctx.fillStyle = this.text_color

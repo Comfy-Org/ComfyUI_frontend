@@ -54,7 +54,7 @@ export class SliderWidget extends BaseWidget implements ISliderWidget {
     ctx.fillRect(margin, y, nvalue * (width - margin * 2), height)
 
     // Draw outline if not disabled
-    if (show_text && !this.disabled) {
+    if (show_text && !this.computedDisabled) {
       ctx.strokeStyle = this.outline_color
       ctx.strokeRect(margin, y, width - margin * 2, height)
     }
