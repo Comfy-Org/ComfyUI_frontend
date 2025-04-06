@@ -158,7 +158,7 @@ export class KnobWidget extends BaseWidget implements IKnobWidget {
     ctx.closePath()
 
     // Draw outline if not disabled
-    if (show_text && !this.computedDisabled) {
+    if (show_text && !this.disabled) {
       ctx.strokeStyle = this.outline_color
       // Draw value
       ctx.beginPath()

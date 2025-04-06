@@ -214,8 +214,7 @@ export abstract class NodeSlot implements INodeSlot {
     if (!lowQuality && doStroke) ctx.stroke()
 
     // render slot label
-    const hideLabel = lowQuality || isWidgetInputSlot(this)
-    if (!hideLabel) {
+    if (!lowQuality) {
       const text = this.renderingLabel
       if (text) {
         // TODO: Finish impl.  Highlight text on mouseover unless we're connecting links.

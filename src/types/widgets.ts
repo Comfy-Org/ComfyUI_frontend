@@ -153,37 +153,23 @@ export interface IBaseWidget {
   /**
    * The computed height of the widget. Used by customized node resize logic.
    * See scripts/domWidget.ts for more details.
-   * @readonly [Computed] This property is computed by the node.
    */
   computedHeight?: number
 
   /**
    * The starting y position of the widget after layout.
-   * @readonly [Computed] This property is computed by the node.
    */
   y: number
 
   /**
    * The y position of the widget after drawing (rendering).
-   * @readonly [Computed] This property is computed by the node.
    * @deprecated There is no longer dynamic y adjustment on rendering anymore.
    * Use {@link IBaseWidget.y} instead.
    */
   last_y?: number
 
   width?: number
-  /**
-   * Whether the widget is disabled. Disabled widgets are rendered at half opacity.
-   * See also {@link IBaseWidget.computedDisabled}.
-   */
   disabled?: boolean
-
-  /**
-   * The disabled state used for rendering based on various conditions including
-   * {@link IBaseWidget.disabled}.
-   * @readonly [Computed] This property is computed by the node.
-   */
-  computedDisabled?: boolean
 
   hidden?: boolean
   advanced?: boolean

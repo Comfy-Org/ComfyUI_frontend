@@ -49,7 +49,7 @@ export class ComboWidget extends BaseWidget implements IComboWidget {
     ctx.fill()
 
     if (show_text) {
-      if (!this.computedDisabled) {
+      if (!this.disabled) {
         ctx.stroke()
         // Draw left arrow
         ctx.fillStyle = this.text_color

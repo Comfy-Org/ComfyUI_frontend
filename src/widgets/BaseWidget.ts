@@ -23,7 +23,6 @@ export abstract class BaseWidget implements IBaseWidget {
   last_y?: number
   width?: number
   disabled?: boolean
-  computedDisabled?: boolean
   hidden?: boolean
   advanced?: boolean
   tooltip?: string
