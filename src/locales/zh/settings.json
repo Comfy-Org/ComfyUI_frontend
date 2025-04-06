@@ -157,9 +157,6 @@
       "Show all": "显示全部"
     }
   },
-  "Comfy_NodeInputConversionSubmenus": {
-    "name": "在节点上下文菜单中，将输入/组件之间转换的条目放置在子菜单中。"
-  },
   "Comfy_NodeSearchBoxImpl": {
     "name": "节点搜索框",
     "options": {

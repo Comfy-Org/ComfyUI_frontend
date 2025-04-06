@@ -20,8 +20,6 @@
     "yellow": "Jaune"
   },
   "contextMenu": {
-    " to input": " en entrée",
-    " to widget": " en widget",
     "Add Group": "Ajouter un Groupe",
     "Add Group For Selected Nodes": "Ajouter un Groupe pour les Nœuds Sélectionnés",
     "Add Node": "Ajouter un Nœud",
@@ -29,9 +27,6 @@
     "Clone": "Cloner",
     "Collapse": "Réduire",
     "Colors": "Couleurs",
-    "Convert ": "Convertir ",
-    "Convert Input to Widget": "Convertir l'Entrée en Widget",
-    "Convert Widget to Input": "Convertir le Widget en Entrée",
     "Convert to Group Node": "Convertir en Nœud de Groupe",
     "Copy (Clipspace)": "Copier (Clipspace)",
     "Expand": "Développer",
@@ -836,7 +831,6 @@
     "Node": "Nœud",
     "Node Search Box": "Boîte de Recherche de Nœud",
     "Node Widget": "Widget de Nœud",
-    "NodeInputConversionSubmenus": "Sous-menus de Conversion d'Entrée de Nœud",
     "NodeLibrary": "Bibliothèque de Nœuds",
     "Pointer": "Pointeur",
     "Queue": "File d'Attente",

@@ -20,8 +20,6 @@
     "yellow": "Жёлтый"
   },
   "contextMenu": {
-    " to input": " во вход",
-    " to widget": " в виджет",
     "Add Group": "Добавить группу",
     "Add Group For Selected Nodes": "Добавить группу для выбранных узлов",
     "Add Node": "Добавить узел",
@@ -29,9 +27,6 @@
     "Clone": "Клонировать",
     "Collapse": "Свернуть",
     "Colors": "Цвета",
-    "Convert ": "Преобразовать ",
-    "Convert Input to Widget": "Преобразовать вход в виджет",
-    "Convert Widget to Input": "Преобразовать виджет во вход",
     "Convert to Group Node": "Преобразовать в групповой узел",
     "Copy (Clipspace)": "Копировать (Clipspace)",
     "Expand": "Развернуть",
@@ -836,7 +831,6 @@
     "Node": "Нода",
     "Node Search Box": "Поисковая строка нод",
     "Node Widget": "Виджет ноды",
-    "NodeInputConversionSubmenus": "Подменю преобразования ввода ноды",
     "NodeLibrary": "Библиотека нод",
     "Pointer": "Указатель",
     "Queue": "Очередь",

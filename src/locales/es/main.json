@@ -20,8 +20,6 @@
     "yellow": "Amarillo"
   },
   "contextMenu": {
-    " to input": " a entrada",
-    " to widget": " a widget",
     "Add Group": "Agregar Grupo",
     "Add Group For Selected Nodes": "Agregar Grupo para Nodos Seleccionados",
     "Add Node": "Agregar Nodo",
@@ -29,9 +27,6 @@
     "Clone": "Clonar",
     "Collapse": "Colapsar",
     "Colors": "Colores",
-    "Convert ": "Convertir ",
-    "Convert Input to Widget": "Convertir Entrada a Widget",
-    "Convert Widget to Input": "Convertir Widget a Entrada",
     "Convert to Group Node": "Convertir en Nodo de Grupo",
     "Copy (Clipspace)": "Copiar (Espacio de Clip)",
     "Expand": "Expandir",
@@ -836,7 +831,6 @@
     "Node": "Nodo",
     "Node Search Box": "Caja de Búsqueda de Nodo",
     "Node Widget": "Widget de Nodo",
-    "NodeInputConversionSubmenus": "Submenús de Conversión de Entrada de Nodo",
     "NodeLibrary": "Biblioteca de Nodos",
     "Pointer": "Puntero",
     "Queue": "Cola",

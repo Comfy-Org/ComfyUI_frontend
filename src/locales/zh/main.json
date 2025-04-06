@@ -20,8 +20,6 @@
     "yellow": "黄色"
   },
   "contextMenu": {
-    " to input": " 为输入",
-    " to widget": " 为控件",
     "Add Group": "添加组",
     "Add Group For Selected Nodes": "为选定节点添加组",
     "Add Node": "添加节点",
@@ -29,9 +27,6 @@
     "Clone": "克隆",
     "Collapse": "折叠",
     "Colors": "颜色",
-    "Convert ": "转换 ",
-    "Convert Input to Widget": "将输入转换为控件",
-    "Convert Widget to Input": "将控件转换为输入",
     "Convert to Group Node": "转换为组节点",
     "Copy (Clipspace)": "复制 (Clipspace)",
     "Expand": "展开",
@@ -836,7 +831,6 @@
     "Node": "节点",
     "Node Search Box": "节点搜索框",
     "Node Widget": "节点组件",
-    "NodeInputConversionSubmenus": "节点输入转换子菜单",
     "NodeLibrary": "节点库",
     "Pointer": "指针",
     "Queue": "队列",

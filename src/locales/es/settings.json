@@ -157,9 +157,6 @@
       "Show all": "Mostrar todo"
     }
   },
-  "Comfy_NodeInputConversionSubmenus": {
-    "name": "En el menú contextual del nodo, coloque las entradas que convierten entre entrada/widget en submenús."
-  },
   "Comfy_NodeSearchBoxImpl": {
     "name": "Implementación de la caja de búsqueda de nodos",
     "options": {
