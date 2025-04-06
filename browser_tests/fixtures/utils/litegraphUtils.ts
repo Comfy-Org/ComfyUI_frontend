@@ -81,9 +81,39 @@ export class NodeWidgetReference {
         if (!widget) throw new Error(`Widget ${index} not found.`)
 
         const [x, y, w, h] = node.getBounding()
-        return window['app'].canvas.ds.convertOffsetToCanvas([
+        return window['app'].canvasPosToClientPos([
           x + w / 2,
           y + window['LiteGraph']['NODE_TITLE_HEIGHT'] + widget.last_y + 1
+        ])
+      },
+      [this.node.id, this.index] as const
+    )
+    return {
+      x: pos[0],
+      y: pos[1]
+    }
+  }
+
+  /**
+   * @returns The position of the widget's associated socket
+   */
+  async getSocketPosition(): Promise<Position> {
+    const pos: [number, number] = await this.node.comfyPage.page.evaluate(
+      ([id, index]) => {
+        const node = window['app'].graph.getNodeById(id)
+        if (!node) throw new Error(`Node ${id} not found.`)
+        const widget = node.widgets[index]
+        if (!widget) throw new Error(`Widget ${index} not found.`)
+
+        const slot = node.inputs.find(
+          (slot) => slot.widget?.name === widget.name
+        )
+        if (!slot) throw new Error(`Socket ${widget.name} not found.`)
+
+        const [x, y] = node.getBounding()
+        return window['app'].canvasPosToClientPos([
+          x + slot.pos[0],
+          y + slot.pos[1] + window['LiteGraph']['NODE_TITLE_HEIGHT']
         ])
       },
       [this.node.id, this.index] as const
@@ -250,7 +280,7 @@ export class NodeReference {
     const targetWidget = await targetNode.getWidget(targetWidgetIndex)
     await this.comfyPage.dragAndDrop(
       await originSlot.getPosition(),
-      await targetWidget.getPosition()
+      await targetWidget.getSocketPosition()
     )
     return originSlot
   }
