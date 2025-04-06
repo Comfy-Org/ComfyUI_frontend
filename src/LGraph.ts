@@ -1567,6 +1567,8 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     this.updateExecutionOrder()
 
     this.extra = data.extra || {}
+    // Ensure auto-generated serialisation data is removed from extra
+    delete this.extra.linkExtensions
 
     this.onConfigure?.(data)
     this._version++
