@@ -766,19 +766,26 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.15.7'
   },
   {
+    id: 'Comfy.Toast.DisableReconnectingToast',
+    name: 'Disable toasts when reconnecting or reconnected',
+    type: 'hidden',
+    defaultValue: false,
+    versionAdded: '1.15.12'
+  },
+  {
     id: 'Comfy.Workflow.AutoSaveDelay',
     name: 'Auto Save Delay (ms)',
     defaultValue: 1000,
     type: 'number',
-    tooltip: 'Only applies if Auto Save is set to "after delay".'
-    // versionAdded: '1.15.12'
+    tooltip: 'Only applies if Auto Save is set to "after delay".',
+    versionAdded: '1.15.12'
   },
   {
     id: 'Comfy.Workflow.AutoSave',
     name: 'Auto Save',
     type: 'combo',
     options: ['off', 'after delay'], // Room for other options like on focus change, tab change, window change
-    defaultValue: 'off' // Popular requst by users (https://github.com/Comfy-Org/ComfyUI_frontend/issues/1584#issuecomment-2536610154)
-    // versionAdded: '1.15.12'
+    defaultValue: 'off', // Popular requst by users (https://github.com/Comfy-Org/ComfyUI_frontend/issues/1584#issuecomment-2536610154)
+    versionAdded: '1.15.12'
   }
 ]
