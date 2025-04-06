@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useWorkflowAutoSave } from '@/composables/useWorkflowAutoSave'
+import { api } from '@/scripts/api'
 import { useWorkflowService } from '@/services/workflowService'
 
 vi.mock('@/scripts/api', () => ({
@@ -39,9 +40,6 @@ let mockActiveWorkflow: { isModified: boolean } | null = null
 
 describe('useWorkflowAutoSave', () => {
   beforeEach(() => {
-    mockAutoSaveSetting = 'off'
-    mockAutoSaveDelay = 1000
-    mockActiveWorkflow = null
     vi.clearAllMocks()
     vi.useFakeTimers()
   })
@@ -67,6 +65,27 @@ describe('useWorkflowAutoSave', () => {
 
     const serviceInstance = (useWorkflowService as any).mock.results[0].value
     expect(serviceInstance.saveWorkflow).toHaveBeenCalledWith(
+      mockActiveWorkflow
+    )
+  })
+
+  it('should not uto-save workflow after delay when not modified and autosave enabled', async () => {
+    mockAutoSaveSetting = 'after delay'
+    mockAutoSaveDelay = 1000
+    mockActiveWorkflow = { isModified: false }
+
+    mount({
+      template: `<div></div>`,
+      setup() {
+        useWorkflowAutoSave()
+        return {}
+      }
+    })
+
+    vi.advanceTimersByTime(1000)
+
+    const serviceInstance = (useWorkflowService as any).mock.results[0].value
+    expect(serviceInstance.saveWorkflow).not.toHaveBeenCalledWith(
       mockActiveWorkflow
     )
   })
@@ -111,5 +130,98 @@ describe('useWorkflowAutoSave', () => {
     vi.advanceTimersByTime(1000)
 
     expect(serviceInstance.saveWorkflow).toHaveBeenCalled()
+  })
+
+  it('should debounce save requests', async () => {
+    mockAutoSaveSetting = 'after delay'
+    mockAutoSaveDelay = 2000
+    mockActiveWorkflow = { isModified: true }
+
+    mount({
+      template: `<div></div>`,
+      setup() {
+        useWorkflowAutoSave()
+        return {}
+      }
+    })
+
+    const serviceInstance = (useWorkflowService as any).mock.results[0].value
+    const graphChangedCallback = (api.addEventListener as any).mock.calls[0][1]
+
+    graphChangedCallback()
+
+    vi.advanceTimersByTime(500)
+
+    graphChangedCallback()
+
+    vi.advanceTimersByTime(1999)
+    expect(serviceInstance.saveWorkflow).not.toHaveBeenCalled()
+
+    vi.advanceTimersByTime(1)
+    expect(serviceInstance.saveWorkflow).toHaveBeenCalledTimes(1)
+  })
+
+  it('should handle save error gracefully', async () => {
+    mockAutoSaveSetting = 'after delay'
+    mockAutoSaveDelay = 1000
+    mockActiveWorkflow = { isModified: true }
+
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {})
+
+    mount({
+      template: `<div></div>`,
+      setup() {
+        useWorkflowAutoSave()
+        return {}
+      }
+    })
+
+    const serviceInstance = (useWorkflowService as any).mock.results[0].value
+    serviceInstance.saveWorkflow.mockRejectedValue(new Error('Test Error'))
+
+    vi.advanceTimersByTime(1000)
+
+    await Promise.resolve()
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      'Auto save failed:',
+      expect.any(Error)
+    )
+    consoleErrorSpy.mockRestore()
+  })
+
+  it('should queue autosave requests during saving and reschedule after save completes', async () => {
+    mockAutoSaveSetting = 'after delay'
+    mockAutoSaveDelay = 1000
+    mockActiveWorkflow = { isModified: true }
+
+    mount({
+      template: `<div></div>`,
+      setup() {
+        useWorkflowAutoSave()
+        return {}
+      }
+    })
+
+    const serviceInstance = (useWorkflowService as any).mock.results[0].value
+    let resolveSave: () => void
+    const firstSavePromise = new Promise<void>((resolve) => {
+      resolveSave = resolve
+    })
+
+    serviceInstance.saveWorkflow.mockImplementationOnce(() => firstSavePromise)
+
+    vi.advanceTimersByTime(1000)
+
+    const graphChangedCallback = (api.addEventListener as any).mock.calls[0][1]
+    graphChangedCallback()
+
+    resolveSave!()
+    await Promise.resolve()
+
+    vi.advanceTimersByTime(1000)
+    expect(serviceInstance.saveWorkflow).toHaveBeenCalledTimes(2)
   })
 })
