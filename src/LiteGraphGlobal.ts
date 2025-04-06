@@ -788,22 +788,15 @@ export class LiteGraphGlobal {
     return hex
   }
 
-  closeAllContextMenus(ref_window: Window): void {
-    ref_window = ref_window || window
-
-    const elements = ref_window.document.querySelectorAll(".litecontextmenu")
+  closeAllContextMenus(ref_window: Window = window): void {
+    const elements = [...ref_window.document.querySelectorAll(".litecontextmenu")]
     if (!elements.length) return
 
-    const results = []
     for (const element of elements) {
-      results.push(element)
-    }
-
-    for (const result of results) {
-      if ("close" in result && typeof result.close === "function") {
-        result.close()
-      } else if (result.parentNode) {
-        result.remove()
+      if ("close" in element && typeof element.close === "function") {
+        element.close()
+      } else {
+        element.remove()
       }
     }
   }
