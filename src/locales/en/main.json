@@ -105,7 +105,8 @@
     "enabling": "Enabling",
     "disabling": "Disabling",
     "updating": "Updating",
-    "migrate": "Migrate"
+    "migrate": "Migrate",
+    "updateAvailable": "Update Available"
   },
   "manager": {
     "title": "Custom Nodes Manager",
