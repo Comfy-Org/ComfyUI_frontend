@@ -83,5 +83,3 @@ export function useWorkflowAutoSave() {
     api.removeEventListener('graphChanged', onGraphChanged)
   })
 }
-
-useWorkflowAutoSave()

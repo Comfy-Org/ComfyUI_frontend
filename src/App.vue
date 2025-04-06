@@ -18,6 +18,7 @@ import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
+import { useWorkflowAutoSave } from './composables/useWorkflowAutoSave'
 import { electronAPI, isElectron } from './utils/envUtil'
 
 const workspaceStore = useWorkspaceStore()
@@ -27,6 +28,8 @@ const handleKey = (e: KeyboardEvent) => {
 }
 useEventListener(window, 'keydown', handleKey)
 useEventListener(window, 'keyup', handleKey)
+
+useWorkflowAutoSave()
 
 const showContextMenu = (event: MouseEvent) => {
   const { target } = event
