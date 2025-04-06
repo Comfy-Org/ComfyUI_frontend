@@ -556,7 +556,7 @@ function getWidgetType(config: InputSpec) {
   // Special handling for COMBO so we restrict links based on the entries
   let type = config[0]
   if (type instanceof Array) {
-    type = 'COMBO'
+    type = 'COMBO,STRING'
   }
   return { type }
 }
@@ -640,11 +640,13 @@ app.registerExtension({
     }
   ],
   setup() {
-    app.canvas.getWidgetLinkType = function (widget, node) {
+    app.canvas.getWidgetLinkType = function (widget, node): string | undefined {
       const nodeDefStore = useNodeDefStore()
       const nodeDef = nodeDefStore.nodeDefsByName[node.type]
-      const input = nodeDef.inputs[widget.name]
-      return input?.type
+      const inputSpec = nodeDef.inputs[widget.name]
+      if (!inputSpec) return
+
+      return inputSpec.type === 'COMBO' ? 'COMBO,STRING' : inputSpec.type
     }
 
     app.canvas.linkConnector.events.addEventListener(
