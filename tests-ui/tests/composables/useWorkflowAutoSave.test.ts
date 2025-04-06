@@ -69,7 +69,7 @@ describe('useWorkflowAutoSave', () => {
     )
   })
 
-  it('should not uto-save workflow after delay when not modified and autosave enabled', async () => {
+  it('should not auto-save workflow after delay when not modified and autosave enabled', async () => {
     mockAutoSaveSetting = 'after delay'
     mockAutoSaveDelay = 1000
     mockActiveWorkflow = { isModified: false }
