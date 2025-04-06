@@ -234,7 +234,7 @@ const selectMaterialMode = (mode: MaterialMode) => {
 }
 
 const formatMaterialMode = (mode: MaterialMode) => {
-  return mode.charAt(0).toUpperCase() + mode.slice(1)
+  return t(`load3d.materialModes.${mode}`)
 }
 
 const toggleEdgeThreshold = () => {

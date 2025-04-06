@@ -362,7 +362,7 @@
   "load3d": {
     "applyingTexture": "应用纹理中...",
     "backgroundColor": "背景颜色",
-    "camera": "相机",
+    "camera": "摄影机",
     "edgeThreshold": "边缘阈值",
     "export": "导出",
     "exportModel": "导出模型",
@@ -371,15 +371,21 @@
     "light": "灯光",
     "lightIntensity": "光照强度",
     "loadingModel": "正在加载3D模型...",
-    "materialMode": "材料模式",
+    "materialMode": "材质模式",
+    "materialModes": {
+      "depth": "深度",
+      "normal": "法线",
+      "original": "原始",
+      "wireframe": "线框"
+    },
     "model": "模型",
     "previewOutput": "预览输出",
     "removeBackgroundImage": "移除背景图片",
     "scene": "场景",
     "showGrid": "显示网格",
-    "switchCamera": "切换摄像头",
+    "switchCamera": "切换摄影机类型",
     "switchingMaterialMode": "切换材质模式中...",
-    "upDirection": "向上方向",
+    "upDirection": "上方向",
     "uploadBackgroundImage": "上传背景图片",
     "uploadTexture": "上传纹理"
   },
@@ -917,10 +923,10 @@
     },
     "template": {
       "3D": {
-        "hunyuan-3d-multiview-elf": "Hunyuan3D多视图",
-        "hunyuan-3d-turbo": "Hunyuan3D Turbo",
-        "hunyuan3d-non-multiview-train": "Hunyuan3D",
-        "stable_zero123_example": "稳定Zero123"
+        "hunyuan-3d-multiview-elf": "混元3D多视图",
+        "hunyuan-3d-turbo": "混元3D Turbo",
+        "hunyuan3d-non-multiview-train": "混元3D",
+        "stable_zero123_example": "Stable Zero123"
       },
       "Area Composition": {
         "area_composition": "区域构成",
@@ -928,7 +934,7 @@
         "area_composition_square_area_for_subject": "主题的方形区域构成"
       },
       "Audio": {
-        "stable_audio_example": "稳定音频"
+        "stable_audio_example": "Stable Audio"
       },
       "Basics": {
         "default": "图像生成",
@@ -976,7 +982,7 @@
         "latent_upscale_different_prompt_model": "潜在升级不同提示模型"
       },
       "Video": {
-        "hunyuan_video_text_to_video": "Hunyuan视频文本到视频",
+        "hunyuan_video_text_to_video": "混元视频文本到视频",
         "image_to_video": "图像到视频",
         "image_to_video_wan": "Wan 2.1 图像到视频",
         "ltxv_image_to_video": "LTXV图像到视频",
