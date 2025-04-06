@@ -105,13 +105,11 @@ export class PrimitiveNode extends LGraphNode {
       this.#onFirstConnection()
 
       // Populate widget values from config data
-      if (this.widgets) {
-        // @ts-expect-error fixme ts strict error
+      if (this.widgets && this.widgets_values) {
         for (let i = 0; i < this.widgets_values.length; i++) {
           const w = this.widgets[i]
           if (w) {
-            // @ts-expect-error change widget type from string to unknown
-            w.value = this.widgets_values[i]
+            w.value = this.widgets_values[i] as any
           }
         }
       }
