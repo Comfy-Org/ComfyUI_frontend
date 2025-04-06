@@ -12,7 +12,9 @@
         v-if="
           !workspaceStore.shiftDown &&
           (workflowOption.workflow.isModified ||
-            !workflowOption.workflow.isPersisted)
+            !workflowOption.workflow.isPersisted) &&
+          settingStore.get('Comfy.Workflow.AutoSave') === 'after delay' &&
+          settingStore.get('Comfy.Workflow.AutoSaveDelay') > 3000
         "
         >•</span
       >
@@ -38,6 +40,7 @@ import {
   usePragmaticDroppable
 } from '@/composables/usePragmaticDragAndDrop'
 import { useWorkflowService } from '@/services/workflowService'
+import { useSettingStore } from '@/stores/settingStore'
 import { ComfyWorkflow } from '@/stores/workflowStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -56,6 +59,7 @@ const { t } = useI18n()
 
 const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
+const settingStore = useSettingStore()
 const workflowTabRef = ref<HTMLElement | null>(null)
 
 const closeWorkflows = async (options: WorkflowOption[]) => {
