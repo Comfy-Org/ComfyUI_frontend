@@ -7,18 +7,7 @@
       {{ workflowOption.workflow.filename }}
     </span>
     <div class="relative">
-      <span
-        class="status-indicator"
-        v-if="
-          !workspaceStore.shiftDown &&
-          (workflowOption.workflow.isModified ||
-            !workflowOption.workflow.isPersisted) &&
-          (settingStore.get('Comfy.Workflow.AutoSave') === 'off' ||
-            (settingStore.get('Comfy.Workflow.AutoSave') === 'after delay' &&
-              settingStore.get('Comfy.Workflow.AutoSaveDelay') > 3000))
-        "
-        >•</span
-      >
+      <span class="status-indicator" v-if="shouldShowStatusIndicator">•</span>
       <Button
         class="close-button p-0 w-auto"
         icon="pi pi-times"
@@ -33,7 +22,7 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import {
@@ -62,6 +51,22 @@ const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
 const settingStore = useSettingStore()
 const workflowTabRef = ref<HTMLElement | null>(null)
+
+const shouldShowStatusIndicator = computed(() => {
+  // Return true if:
+  // 1. The shift key is not pressed (hence no override).
+  // 2. The workflow is either modified or not yet persisted.
+  // 3. AutoSave is either turned off, or set to 'after delay'
+  //    with a delay longer than 3000ms.
+  return (
+    !workspaceStore.shiftDown &&
+    (props.workflowOption.workflow.isModified ||
+      !props.workflowOption.workflow.isPersisted) &&
+    (settingStore.get('Comfy.Workflow.AutoSave') === 'off' ||
+      (settingStore.get('Comfy.Workflow.AutoSave') === 'after delay' &&
+        settingStore.get('Comfy.Workflow.AutoSaveDelay') > 3000))
+  )
+})
 
 const closeWorkflows = async (options: WorkflowOption[]) => {
   for (const opt of options) {
