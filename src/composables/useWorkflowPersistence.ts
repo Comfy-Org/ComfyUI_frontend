@@ -114,16 +114,18 @@ export function useWorkflowPersistence() {
     )
 
     // Listen for graph changes and schedule autosave when they occur
-    api.addEventListener('graphChanged', () => {
+    const onGraphChanged = () => {
       scheduleAutoSave()
-    })
+    }
+
+    api.addEventListener('graphChanged', onGraphChanged)
 
     onUnmounted(() => {
       if (autoSaveTimeout) {
         clearTimeout(autoSaveTimeout)
         autoSaveTimeout = null
       }
-      api.removeEventListener('graphChanged', scheduleAutoSave)
+      api.removeEventListener('graphChanged', onGraphChanged)
     })
   }
 
