@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useWorkflowAutoSave } from '@/composables/useWorkflowAutoSave'
 import { useWorkflowService } from '@/services/workflowService'
@@ -43,11 +43,14 @@ describe('useWorkflowAutoSave', () => {
     mockAutoSaveDelay = 1000
     mockActiveWorkflow = null
     vi.clearAllMocks()
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('should auto-save workflow after delay when modified and autosave enabled', async () => {
-    vi.useFakeTimers()
-
     mockAutoSaveSetting = 'after delay'
     mockAutoSaveDelay = 1000
     mockActiveWorkflow = { isModified: true }
@@ -66,13 +69,9 @@ describe('useWorkflowAutoSave', () => {
     expect(serviceInstance.saveWorkflow).toHaveBeenCalledWith(
       mockActiveWorkflow
     )
-
-    vi.useRealTimers()
   })
 
   it('should not auto save workflow when autosave is off', async () => {
-    vi.useFakeTimers()
-
     mockAutoSaveSetting = 'off'
     mockAutoSaveDelay = 1000
     mockActiveWorkflow = { isModified: true }
@@ -89,13 +88,9 @@ describe('useWorkflowAutoSave', () => {
 
     const serviceInstance = (useWorkflowService as any).mock.results[0].value
     expect(serviceInstance.saveWorkflow).not.toHaveBeenCalled()
-
-    vi.useRealTimers()
   })
 
   it('should respect the user specified auto save delay', async () => {
-    vi.useFakeTimers()
-
     mockAutoSaveSetting = 'after delay'
     mockAutoSaveDelay = 2000
     mockActiveWorkflow = { isModified: true }
