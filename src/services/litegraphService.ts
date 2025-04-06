@@ -232,7 +232,9 @@ export const useLitegraphService = () => {
           return inputData
             ? {
                 ...inputData,
-                ..._.pick(input, RESERVED_KEYS)
+                // Whether the input has associated widget follows the
+                // original node definition.
+                ..._.pick(input, RESERVED_KEYS.concat('widget'))
               }
             : input
         })
