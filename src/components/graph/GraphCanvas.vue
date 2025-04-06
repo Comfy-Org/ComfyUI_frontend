@@ -59,6 +59,7 @@ import { useCopy } from '@/composables/useCopy'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
 import { useLitegraphSettings } from '@/composables/useLitegraphSettings'
 import { usePaste } from '@/composables/usePaste'
+import { useWorkflowAutoSave } from '@/composables/useWorkflowAutoSave'
 import { useWorkflowPersistence } from '@/composables/useWorkflowPersistence'
 import { CORE_SETTINGS } from '@/constants/coreSettings'
 import { i18n } from '@/i18n'
@@ -233,6 +234,7 @@ onMounted(async () => {
   useContextMenuTranslation()
   useCopy()
   usePaste()
+  useWorkflowAutoSave()
 
   comfyApp.vueAppReady = true
 
