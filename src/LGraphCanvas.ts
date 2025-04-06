@@ -555,7 +555,7 @@ export class LGraphCanvas implements ConnectionColorContext {
   onClear?: () => void
   /** called after moving a node @deprecated Does not handle multi-node move, and can return the wrong node. */
   onNodeMoved?: (node_dragged: LGraphNode | undefined) => void
-  /** called if the selection changes */
+  /** @deprecated Called with the deprecated {@link selected_nodes} when the selection changes. Replacement not yet impl. */
   onSelectionChange?: (selected: Dictionary<Positionable>) => void
   /** called when rendering a tooltip */
   onDrawLinkTooltip?: (
@@ -1882,11 +1882,26 @@ export class LGraphCanvas implements ConnectionColorContext {
       } else if (this.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
         // Reroutes
         const reroute = graph.getRerouteOnPos(e.canvasX, e.canvasY)
-        if (reroute) this.processSelect(reroute, e, true)
+        if (reroute) {
+          if (e.altKey) {
+            pointer.onClick = (upEvent) => {
+              if (upEvent.altKey) {
+                // Ensure deselected
+                if (reroute.selected) {
+                  this.deselect(reroute)
+                  this.onSelectionChange?.(this.selected_nodes)
+                }
+                reroute.remove()
+              }
+            }
+          } else {
+            this.processSelect(reroute, e, true)
+          }
+        }
       }
 
       // Show context menu for the node or group under the pointer
-      pointer.onClick = () => this.processContextMenu(node, e)
+      pointer.onClick ??= () => this.processContextMenu(node, e)
     }
 
     this.last_mouse = [x, y]
