@@ -421,6 +421,8 @@ const zSettings = z.record(z.any()).and(
       'Comfy.Server.LaunchArgs': z.record(z.string(), z.string()),
       'LiteGraph.Canvas.MaximumFps': z.number(),
       'Comfy.Workflow.ConfirmDelete': z.boolean(),
+      'Comfy.Workflow.AutoSaveDelay': z.number(),
+      'Comfy.Workflow.AutoSave': z.enum(['off', 'after delay']),
       'Comfy.RerouteBeta': z.boolean(),
       'LiteGraph.Canvas.LowQualityRenderingZoomThreshold': z.number(),
       'Comfy.Canvas.SelectionToolbox': z.boolean()
