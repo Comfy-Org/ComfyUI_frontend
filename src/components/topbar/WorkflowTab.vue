@@ -13,8 +13,9 @@
           !workspaceStore.shiftDown &&
           (workflowOption.workflow.isModified ||
             !workflowOption.workflow.isPersisted) &&
-          settingStore.get('Comfy.Workflow.AutoSave') === 'after delay' &&
-          settingStore.get('Comfy.Workflow.AutoSaveDelay') > 3000
+          (settingStore.get('Comfy.Workflow.AutoSave') === 'off' ||
+            (settingStore.get('Comfy.Workflow.AutoSave') === 'after delay' &&
+              settingStore.get('Comfy.Workflow.AutoSaveDelay') > 3000))
         "
         >•</span
       >
