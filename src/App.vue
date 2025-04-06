@@ -18,7 +18,6 @@ import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
-import { useWorkflowAutoSave } from './composables/useWorkflowAutoSave'
 import { electronAPI, isElectron } from './utils/envUtil'
 
 const workspaceStore = useWorkspaceStore()
@@ -44,8 +43,6 @@ onMounted(() => {
   // @ts-expect-error fixme ts strict error
   window['__COMFYUI_FRONTEND_VERSION__'] = config.app_version
   console.log('ComfyUI Front-end version:', config.app_version)
-
-  useWorkflowAutoSave()
 
   if (isElectron()) {
     document.addEventListener('contextmenu', showContextMenu)
