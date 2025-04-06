@@ -20,6 +20,7 @@ export function useWorkflowAutoSave() {
 
   let autoSaveTimeout: NodeJS.Timeout | null = null
   let isSaving = false
+  let needsAutoSave = false
 
   const scheduleAutoSave = () => {
     // Clear any existing timeout
@@ -28,8 +29,13 @@ export function useWorkflowAutoSave() {
       autoSaveTimeout = null
     }
 
-    // If autosave is enabled and set to "after delay" and not currently saving
-    if (autoSaveSetting.value === 'after delay' && !isSaving) {
+    // If autosave is enabled
+    if (autoSaveSetting.value === 'after delay') {
+      // If a save is in progress, mark that we need an autosave after saving
+      if (isSaving) {
+        needsAutoSave = true
+        return
+      }
       const delay = autoSaveDelay.value
       autoSaveTimeout = setTimeout(async () => {
         const activeWorkflow = workflowStore.activeWorkflow
@@ -41,6 +47,10 @@ export function useWorkflowAutoSave() {
             console.error('Auto save failed:', err)
           } finally {
             isSaving = false
+            if (needsAutoSave) {
+              needsAutoSave = false
+              scheduleAutoSave()
+            }
           }
         }
       }, delay)
