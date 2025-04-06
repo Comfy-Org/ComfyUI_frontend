@@ -37,6 +37,8 @@ declare module '@comfyorg/litegraph/dist/types/widgets' {
     /**
      * Whether the widget defaults to input state. Can still be converted back
      * to widget state.
+     * @deprecated Widget to input conversion is no longer necessary, as they co-exist now.
+     * This option no longer has any effect.
      */
     defaultInput?: boolean
   }
@@ -60,16 +62,6 @@ declare module '@comfyorg/litegraph/dist/types/widgets' {
      * See extensions/core/dynamicPrompts.ts
      */
     dynamicPrompts?: boolean
-
-    /**
-     * Widget conversion fields
-     */
-    origType?: string
-    origComputeSize?: (width: number) => Size
-    origSerializeValue?: (
-      node: LGraphNode,
-      index: number
-    ) => Promise<unknown> | unknown
   }
 }
 

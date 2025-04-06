@@ -132,12 +132,7 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
   }
 
   isVisible(): boolean {
-    return (
-      !_.isNil(this.computedHeight) &&
-      this.computedHeight > 0 &&
-      !['converted-widget', 'hidden'].includes(this.type) &&
-      !this.node.collapsed
-    )
+    return !['hidden'].includes(this.type) && this.node.isWidgetVisible(this)
   }
 
   draw(

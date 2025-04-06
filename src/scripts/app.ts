@@ -66,7 +66,7 @@ import {
 import { $el, ComfyUI } from './ui'
 import { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
-import { type ComfyWidgetConstructor, ComfyWidgets } from './widgets'
+import { type ComfyWidgetConstructor } from './widgets'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -180,10 +180,7 @@ export class ComfyApp {
    * @deprecated Use useWidgetStore().widgets instead
    */
   get widgets(): Record<string, ComfyWidgetConstructor> {
-    if (this.vueAppReady) {
-      return useWidgetStore().widgets
-    }
-    return ComfyWidgets
+    return Object.fromEntries(useWidgetStore().widgets.entries())
   }
 
   /**

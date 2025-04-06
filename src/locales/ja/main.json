@@ -20,8 +20,6 @@
     "yellow": "黄色"
   },
   "contextMenu": {
-    " to input": " 入力へ",
-    " to widget": " ウィジェットへ",
     "Add Group": "グループを追加",
     "Add Group For Selected Nodes": "選択したノードのグループを追加",
     "Add Node": "ノードを追加",
@@ -29,9 +27,6 @@
     "Clone": "クローン",
     "Collapse": "折りたたむ",
     "Colors": "色",
-    "Convert ": "変換 ",
-    "Convert Input to Widget": "入力をウィジェットに変換",
-    "Convert Widget to Input": "ウィジェットを入力に変換",
     "Convert to Group Node": "グループノードに変換",
     "Copy (Clipspace)": "コピー (Clipspace)",
     "Expand": "展開",
@@ -836,7 +831,6 @@
     "Node": "ノード",
     "Node Search Box": "ノード検索ボックス",
     "Node Widget": "ノードウィジェット",
-    "NodeInputConversionSubmenus": "ノード入力変換サブメニュー",
     "NodeLibrary": "ノードライブラリ",
     "Pointer": "ポインタ",
     "Queue": "キュー",

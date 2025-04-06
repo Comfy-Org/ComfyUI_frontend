@@ -157,9 +157,6 @@
       "Show all": "모두 표시"
     }
   },
-  "Comfy_NodeInputConversionSubmenus": {
-    "name": "노드 컨텍스트 메뉴에서 입력/위젯 간 변환 항목을 하위 메뉴에 배치합니다."
-  },
   "Comfy_NodeSearchBoxImpl": {
     "name": "노드 검색 상자 구현",
     "options": {

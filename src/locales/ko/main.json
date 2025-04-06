@@ -20,8 +20,6 @@
     "yellow": "노란색"
   },
   "contextMenu": {
-    " to input": " 위젯을 입력으로",
-    " to widget": " 입력을 위젯으로",
     "Add Group": "그룹 추가",
     "Add Group For Selected Nodes": "선택한 노드 그룹 추가",
     "Add Node": "노드 추가",
@@ -29,9 +27,6 @@
     "Clone": "복제",
     "Collapse": "접기",
     "Colors": "색상",
-    "Convert ": "[변환] ",
-    "Convert Input to Widget": "입력을 위젯으로 변환",
-    "Convert Widget to Input": "위젯을 입력으로 변환",
     "Convert to Group Node": "그룹 노드로 변환",
     "Copy (Clipspace)": "복사 (Clipspace)",
     "Expand": "확장",
@@ -836,7 +831,6 @@
     "Node": "노드",
     "Node Search Box": "노드 검색 상자",
     "Node Widget": "노드 위젯",
-    "NodeInputConversionSubmenus": "노드 입력 변환 하위 메뉴",
     "NodeLibrary": "노드 라이브러리",
     "Pointer": "포인터",
     "Queue": "실행 큐",

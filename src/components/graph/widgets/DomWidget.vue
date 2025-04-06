@@ -49,7 +49,9 @@ const style = computed<CSSProperties>(() => ({
   ...positionStyle.value,
   ...(enableDomClipping.value ? clippingStyle.value : {}),
   zIndex: widgetState.zIndex,
-  pointerEvents: widgetState.readonly ? 'none' : 'auto'
+  pointerEvents:
+    widgetState.readonly || widget.computedDisabled ? 'none' : 'auto',
+  opacity: widget.computedDisabled ? 0.5 : 1
 }))
 
 const canvasStore = useCanvasStore()

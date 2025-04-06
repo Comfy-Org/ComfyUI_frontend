@@ -1,6 +1,5 @@
-import { LGraphNode, LiteGraph, RenderShape } from '@comfyorg/litegraph'
+import { LGraphNode, LiteGraph } from '@comfyorg/litegraph'
 import type {
-  IFoundSlot,
   INodeInputSlot,
   INodeOutputSlot,
   ISlotType,
@@ -14,13 +13,11 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import { ComfyWidgets, addValueControlWidgets } from '@/scripts/widgets'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useSettingStore } from '@/stores/settingStore'
+import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
 import { mergeInputSpec } from '@/utils/nodeDefUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 import { isPrimitiveNode } from '@/utils/typeGuardUtil'
 
-const CONVERTED_TYPE = 'converted-widget'
 const VALID_TYPES = [
   'STRING',
   'combo',
@@ -30,8 +27,6 @@ const VALID_TYPES = [
   'text',
   'string'
 ]
-const CONFIG = Symbol()
-const GET_CONFIG = Symbol()
 
 const replacePropertyName = 'Run widget replace on values'
 export class PrimitiveNode extends LGraphNode {
@@ -107,18 +102,14 @@ export class PrimitiveNode extends LGraphNode {
 
   onAfterGraphConfigured() {
     if (this.outputs[0].links?.length && !this.widgets?.length) {
-      // TODO: Review this check
-      // @ts-expect-error
-      if (!this.#onFirstConnection()) return
+      this.#onFirstConnection()
 
       // Populate widget values from config data
-      if (this.widgets) {
-        // @ts-expect-error fixme ts strict error
+      if (this.widgets && this.widgets_values) {
         for (let i = 0; i < this.widgets_values.length; i++) {
           const w = this.widgets[i]
           if (w) {
-            // @ts-expect-error change widget type from string to unknown
-            w.value = this.widgets_values[i]
+            w.value = this.widgets_values[i] as any
           }
         }
       }
@@ -447,109 +438,21 @@ function isConvertibleWidget(widget: IWidget, config: InputSpec): boolean {
   )
 }
 
-function hideWidget(
-  node: LGraphNode,
-  widget: IWidget,
-  options: { suffix?: string; holdSpace?: boolean } = {}
-) {
-  const { suffix = '', holdSpace = true } = options
-
-  if (widget.type?.startsWith(CONVERTED_TYPE)) return
-  widget.origType = widget.type
-  widget.origComputeSize = widget.computeSize
-  widget.origSerializeValue = widget.serializeValue
-  // @ts-expect-error custom widget type
-  widget.type = CONVERTED_TYPE + suffix
-  if (holdSpace) {
-    widget.computeSize = () => [0, LiteGraph.NODE_WIDGET_HEIGHT]
-  } else {
-    // -4 is due to the gap litegraph adds between widgets automatically
-    widget.computeSize = () => [0, -4]
-  }
-  widget.serializeValue = (node: LGraphNode, index: number) => {
-    // Prevent serializing the widget if we have no input linked
-    if (!node.inputs) {
-      return undefined
-    }
-    let node_input = node.inputs.find((i) => i.widget?.name === widget.name)
-
-    if (!node_input || !node_input.link) {
-      return undefined
-    }
-    return widget.origSerializeValue
-      ? widget.origSerializeValue(node, index)
-      : widget.value
-  }
-
-  // Hide any linked widgets, e.g. seed+seedControl
-  if (widget.linkedWidgets) {
-    for (const w of widget.linkedWidgets) {
-      hideWidget(node, w, { suffix: ':' + widget.name, holdSpace: false })
-    }
-  }
-}
-
-function showWidget(widget: IWidget) {
-  // @ts-expect-error custom widget type
-  widget.type = widget.origType
-  widget.computeSize = widget.origComputeSize
-  widget.serializeValue = widget.origSerializeValue
-
-  delete widget.origType
-  delete widget.origComputeSize
-  delete widget.origSerializeValue
-
-  // Hide any linked widgets, e.g. seed+seedControl
-  if (widget.linkedWidgets) {
-    for (const w of widget.linkedWidgets) {
-      showWidget(w)
-    }
-  }
-}
-
+/**
+ * Convert a widget to an input slot.
+ * @deprecated Widget to socket conversion is no longer necessary, as they co-exist now.
+ * @param node The node to convert the widget to an input slot for.
+ * @param widget The widget to convert to an input slot.
+ * @returns The input slot that was converted from the widget or undefined if the widget is not found.
+ */
 export function convertToInput(
   node: LGraphNode,
-  widget: IWidget,
-  config: InputSpec
-): INodeInputSlot {
-  hideWidget(node, widget)
-
-  const { type } = getWidgetType(config)
-
-  // Add input and store widget config for creating on primitive node
-  const [oldWidth, oldHeight] = node.size
-  const inputIsOptional = !!widget.options?.inputIsOptional
-  const input = node.addInput(widget.name, type, {
-    widget: { name: widget.name, [GET_CONFIG]: () => config },
-    ...(inputIsOptional ? { shape: RenderShape.HollowCircle } : {})
-  })
-
-  for (const widget of node.widgets ?? []) {
-    widget.last_y = (widget.last_y ?? 0) + LiteGraph.NODE_SLOT_HEIGHT
-  }
-
-  // Restore original size but grow if needed
-  node.setSize([
-    Math.max(oldWidth, node.size[0]),
-    Math.max(oldHeight, node.size[1])
-  ])
-  return input
-}
-
-function convertToWidget(node: LGraphNode, widget: IWidget) {
-  showWidget(widget)
-  const [oldWidth, oldHeight] = node.size
-  node.removeInput(node.inputs.findIndex((i) => i.widget?.name === widget.name))
-
-  for (const widget of node.widgets ?? []) {
-    widget.last_y = (widget.last_y ?? 0) - LiteGraph.NODE_SLOT_HEIGHT
-  }
-
-  // Restore original size but grow if needed
-  node.setSize([
-    Math.max(oldWidth, node.size[0]),
-    Math.max(oldHeight, node.size[1])
-  ])
+  widget: IWidget
+): INodeInputSlot | undefined {
+  console.warn(
+    'Please remove call to convertToInput. Widget to socket conversion is no longer necessary, as they co-exist now.'
+  )
+  return node.inputs.find((slot) => slot.widget?.name === widget.name)
 }
 
 function getWidgetType(config: InputSpec) {
@@ -631,167 +534,13 @@ export function mergeIfValid(
 
 app.registerExtension({
   name: 'Comfy.WidgetInputs',
-  settings: [
-    {
-      id: 'Comfy.NodeInputConversionSubmenus',
-      name: 'In the node context menu, place the entries that convert between input/widget in sub-menus.',
-      type: 'boolean',
-      defaultValue: true
-    }
-  ],
-  setup() {
-    app.canvas.getWidgetLinkType = function (widget, node) {
-      const nodeDefStore = useNodeDefStore()
-      const nodeDef = nodeDefStore.nodeDefsByName[node.type]
-      const input = nodeDef.inputs[widget.name]
-      return input?.type
-    }
-
-    app.canvas.linkConnector.events.addEventListener(
-      'dropped-on-widget',
-      (e) => {
-        const { node, link, widget } = e.detail
-        if (!node || !link || !widget) return
-
-        const nodeData = node.constructor.nodeData
-        if (!nodeData) return
-        const all = {
-          ...nodeData?.input?.required,
-          ...nodeData?.input?.optional
-        }
-        const inputSpec = all[widget.name]
-        if (!inputSpec) return
-
-        const input = convertToInput(node, widget, inputSpec)
-        link.node.connectSlots(link.fromSlot, node, input, link.fromReroute?.id)
-      }
-    )
-  },
   async beforeRegisterNodeDef(nodeType, _nodeData, app) {
-    // Add menu options to convert to/from widgets
-    const origGetExtraMenuOptions = nodeType.prototype.getExtraMenuOptions
     // @ts-expect-error adding extra property
-    nodeType.prototype.convertWidgetToInput = function (
-      this: LGraphNode,
-      widget: IWidget
-    ) {
-      const config = getConfig.call(this, widget.name) ?? [
-        widget.type,
-        widget.options || {}
-      ]
-      if (!isConvertibleWidget(widget, config)) return false
-      if (widget.type?.startsWith(CONVERTED_TYPE)) return false
-      convertToInput(this, widget, config)
-      return true
-    }
-
-    nodeType.prototype.getExtraSlotMenuOptions = function (
-      this: LGraphNode,
-      slot: IFoundSlot
-    ) {
-      if (!slot.input || !slot.input.widget) return []
-
-      const widget = this.widgets?.find(
-        (w) => w.name === slot.input?.widget?.name
+    nodeType.prototype.convertWidgetToInput = function (this: LGraphNode) {
+      console.warn(
+        'Please remove call to convertWidgetToInput. Widget to socket conversion is no longer necessary, as they co-exist now.'
       )
-      if (!widget) return []
-      return [
-        {
-          content: `Convert to widget`,
-          callback: () => convertToWidget(this, widget)
-        }
-      ]
-    }
-
-    // @ts-expect-error fixme ts strict error
-    nodeType.prototype.getExtraMenuOptions = function (
-      this: LGraphNode,
-      _,
-      options
-    ) {
-      const r = origGetExtraMenuOptions
-        ? // @ts-expect-error fixme ts strict error
-          origGetExtraMenuOptions.apply(this, arguments)
-        : undefined
-
-      const getPointerCanvasPos = () => {
-        const pos = this.graph?.list_of_graphcanvas?.at(0)?.graph_mouse
-        return pos ? { canvasX: pos[0], canvasY: pos[1] } : undefined
-      }
-
-      if (this.widgets) {
-        const { canvasX = 0, canvasY = 0 } = getPointerCanvasPos() ?? {}
-        const widget = this.getWidgetOnPos(canvasX, canvasY)
-        // @ts-expect-error custom widget type
-        if (widget && widget.type !== CONVERTED_TYPE) {
-          const config = getConfig.call(this, widget.name) ?? [
-            widget.type,
-            widget.options || {}
-          ]
-          if (isConvertibleWidget(widget, config)) {
-            options.push({
-              content: `Convert ${widget.name} to input`,
-              callback: () => convertToInput(this, widget, config) && false
-            })
-          }
-        }
-        let toInput = []
-        let toWidget = []
-        for (const w of this.widgets) {
-          if (w.options?.forceInput) {
-            continue
-          }
-          // @ts-expect-error custom widget type
-          if (w.type === CONVERTED_TYPE) {
-            toWidget.push({
-              // @ts-expect-error never
-              content: `Convert ${w.name} to widget`,
-              callback: () => convertToWidget(this, w)
-            })
-          } else {
-            const config = getConfig.call(this, w.name) ?? [
-              w.type,
-              w.options || {}
-            ]
-            if (isConvertibleWidget(w, config)) {
-              toInput.push({
-                content: `Convert ${w.name} to input`,
-                callback: () => convertToInput(this, w, config)
-              })
-            }
-          }
-        }
-
-        //Convert.. main menu
-        if (toInput.length) {
-          if (useSettingStore().get('Comfy.NodeInputConversionSubmenus')) {
-            options.push({
-              content: 'Convert Widget to Input',
-              submenu: {
-                // @ts-expect-error fixme ts strict error
-                options: toInput
-              }
-            })
-          } else {
-            // @ts-expect-error fixme ts strict error
-            options.push(...toInput, null)
-          }
-        }
-        if (toWidget.length) {
-          if (useSettingStore().get('Comfy.NodeInputConversionSubmenus')) {
-            options.push({
-              content: 'Convert Input to Widget',
-              submenu: {
-                options: toWidget
-              }
-            })
-          } else {
-            options.push(...toWidget, null)
-          }
-        }
-      }
-
-      return r
+      return false
     }
 
     nodeType.prototype.onGraphConfigured = useChainCallback(
@@ -808,28 +557,8 @@ app.registerExtension({
             }
 
             const w = this.widgets?.find((w) => w.name === name)
-            if (w) {
-              hideWidget(this, w)
-            } else {
+            if (!w) {
               this.removeInput(this.inputs.findIndex((i) => i === input))
-            }
-          }
-        }
-      }
-    )
-
-    nodeType.prototype.onNodeCreated = useChainCallback(
-      nodeType.prototype.onNodeCreated,
-      function (this: LGraphNode) {
-        // When node is created, convert any force/default inputs
-        if (!app.configuringGraph && this.widgets) {
-          for (const w of this.widgets) {
-            if (w?.options?.forceInput || w?.options?.defaultInput) {
-              const config = getConfig.call(this, w.name) ?? [
-                w.type,
-                w.options || {}
-              ]
-              convertToInput(this, w, config)
             }
           }
         }
@@ -845,10 +574,6 @@ app.registerExtension({
             if (input.widget && !input.widget[GET_CONFIG]) {
               const name = input.widget.name
               input.widget[GET_CONFIG] = () => getConfig.call(this, name)
-              const w = this.widgets?.find((w) => w.name === name)
-              if (w) {
-                hideWidget(this, w)
-              }
             }
           }
         }

@@ -189,9 +189,6 @@
       "Hide built-in": "Hide built-in"
     }
   },
-  "Comfy_NodeInputConversionSubmenus": {
-    "name": "In the node context menu, place the entries that convert between input/widget in sub-menus."
-  },
   "Comfy_NodeSearchBoxImpl": {
     "name": "Node search box implementation",
     "options": {

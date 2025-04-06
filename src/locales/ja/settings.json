@@ -157,9 +157,6 @@
       "Show all": "すべて表示"
     }
   },
-  "Comfy_NodeInputConversionSubmenus": {
-    "name": "ノードのコンテキストメニューに、入力/ウィジェット間の変換を行うエントリをサブメニューに配置します。"
-  },
   "Comfy_NodeSearchBoxImpl": {
     "name": "ノード検索ボックスの実装",
     "options": {

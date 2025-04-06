@@ -157,9 +157,6 @@
       "Show all": "Afficher tout"
     }
   },
-  "Comfy_NodeInputConversionSubmenus": {
-    "name": "Dans le menu contextuel du nœud, placez les entrées qui convertissent entre l'entrée/widget dans des sous-menus."
-  },
   "Comfy_NodeSearchBoxImpl": {
     "name": "Implémentation de la boîte de recherche de nœud",
     "options": {
