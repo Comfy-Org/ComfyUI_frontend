@@ -363,15 +363,6 @@
         127.07026983402625,
         138.77779138162384
       ]
-    },
-    "info": {
-      "name": "workflow",
-      "author": "",
-      "description": "",
-      "version": "1",
-      "created": "2024-06-11T23:37:08.326Z",
-      "modified": "2024-06-12T13:25:28.857Z",
-      "software": "ComfyUI"
     }
   },
   "version": 0.4
