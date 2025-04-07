@@ -787,5 +787,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     options: ['off', 'after delay'], // Room for other options like on focus change, tab change, window change
     defaultValue: 'off', // Popular requst by users (https://github.com/Comfy-Org/ComfyUI_frontend/issues/1584#issuecomment-2536610154)
     versionAdded: '1.16.0'
+  },
+  {
+    id: 'Comfy.Workflow.Persist',
+    name: 'Persist workflow state and restore on page (re)load',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.16.1'
   }
 ]

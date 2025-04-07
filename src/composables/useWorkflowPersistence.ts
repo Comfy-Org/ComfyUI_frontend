@@ -12,7 +12,12 @@ export function useWorkflowPersistence() {
   const workflowStore = useWorkflowStore()
   const settingStore = useSettingStore()
 
+  const workflowPersistenceEnabled = computed(() =>
+    settingStore.get('Comfy.Workflow.Persist')
+  )
+
   const persistCurrentWorkflow = () => {
+    if (!workflowPersistenceEnabled.value) return
     const workflow = JSON.stringify(comfyApp.serializeGraph())
     localStorage.setItem('workflow', workflow)
     if (api.clientId) {
@@ -58,6 +63,7 @@ export function useWorkflowPersistence() {
   }
 
   const restorePreviousWorkflow = async () => {
+    if (!workflowPersistenceEnabled.value) return
     try {
       const restored = await loadPreviousWorkflowFromStorage()
       if (!restored) {
@@ -109,12 +115,16 @@ export function useWorkflowPersistence() {
   const storedActiveIndex = JSON.parse(
     getStorageValue('Comfy.ActiveWorkflowIndex') || '-1'
   )
+
   watch(restoreState, ({ paths, activeIndex }) => {
-    setStorageValue('Comfy.OpenWorkflowsPaths', JSON.stringify(paths))
-    setStorageValue('Comfy.ActiveWorkflowIndex', JSON.stringify(activeIndex))
+    if (workflowPersistenceEnabled.value) {
+      setStorageValue('Comfy.OpenWorkflowsPaths', JSON.stringify(paths))
+      setStorageValue('Comfy.ActiveWorkflowIndex', JSON.stringify(activeIndex))
+    }
   })
 
   const restoreWorkflowTabsState = () => {
+    if (!workflowPersistenceEnabled.value) return
     const isRestorable = storedWorkflows?.length > 0 && storedActiveIndex >= 0
     if (isRestorable) {
       workflowStore.openWorkflowsInBackground({
