@@ -296,6 +296,17 @@
   "Comfy_Window_UnloadConfirmation": {
     "name": "Show confirmation when closing window"
   },
+  "Comfy_Workflow_AutoSave": {
+    "name": "Auto Save",
+    "options": {
+      "off": "off",
+      "after delay": "after delay"
+    }
+  },
+  "Comfy_Workflow_AutoSaveDelay": {
+    "name": "Auto Save Delay (ms)",
+    "tooltip": "Only applies if Auto Save is set to \"after delay\"."
+  },
   "Comfy_Workflow_ConfirmDelete": {
     "name": "Show confirmation when deleting workflows"
   },
