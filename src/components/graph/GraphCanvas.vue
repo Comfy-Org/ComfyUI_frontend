@@ -284,10 +284,8 @@ onMounted(async () => {
   )
 
   // Restore workflow and workflow tabs state from storage
-  if (settingStore.get('Comfy.Workflow.Persist')) {
-    await workflowPersistence.restorePreviousWorkflow()
-    workflowPersistence.restoreWorkflowTabsState()
-  }
+  await workflowPersistence.restorePreviousWorkflow()
+  workflowPersistence.restoreWorkflowTabsState()
 
   // Start watching for locale change after the initial value is loaded.
   watch(
