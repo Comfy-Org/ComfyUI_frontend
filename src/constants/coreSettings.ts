@@ -793,6 +793,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Persist workflow state and restore on page (re)load',
     type: 'boolean',
     defaultValue: true,
-    versionAdded: '1.17.0'
+    versionAdded: '1.16.1'
   }
 ]
