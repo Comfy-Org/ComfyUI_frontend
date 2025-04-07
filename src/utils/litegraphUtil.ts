@@ -6,7 +6,7 @@ import type {
 } from '@comfyorg/litegraph/dist/types/widgets'
 import _ from 'lodash'
 
-import type { ComfyNodeDef } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 type ImageNode = LGraphNode & { imgs: HTMLImageElement[] | undefined }
 type VideoNode = LGraphNode & {
@@ -88,12 +88,12 @@ export function executeWidgetsCallback(
  * @returns the widgets values without the dummy widget values
  */
 export function migrateWidgetsValues<TWidgetValue>(
-  nodeDef: ComfyNodeDef,
+  inputDefs: Record<string, InputSpec>,
   widgets: IWidget[],
   widgetsValues: TWidgetValue[]
 ): TWidgetValue[] {
   const widgetNames = new Set(widgets.map((w) => w.name))
-  const originalWidgetsInputs = Object.values(nodeDef.inputs).filter(
+  const originalWidgetsInputs = Object.values(inputDefs).filter(
     (input) => widgetNames.has(input.name) || input.forceInput
   )
 

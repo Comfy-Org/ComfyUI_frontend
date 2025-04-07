@@ -267,7 +267,7 @@ export const useLitegraphService = () => {
         )
 
         data.widgets_values = migrateWidgetsValues(
-          ComfyNode.nodeData,
+          ComfyNode.nodeData.inputs,
           this.widgets ?? [],
           data.widgets_values ?? []
         )
