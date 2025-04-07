@@ -3467,7 +3467,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     return [...this.inputs, ...this.outputs]
   }
 
-  layoutSlot(slot: INodeSlot, options: {
+  #layoutSlot(slot: INodeSlot, options: {
     slotIndex: number
   }): void {
     const { slotIndex } = options
@@ -3485,7 +3485,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     })
   }
 
-  layoutSlots(): ReadOnlyRect | null {
+  #layoutSlots(): ReadOnlyRect | null {
     const slots: LayoutElement<INodeSlot>[] = []
 
     for (const [i, slot] of this.inputs.entries()) {
@@ -3494,7 +3494,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       /** Widget input slots are handled in {@link layoutWidgetInputSlots} */
       if (this.widgets?.length && isWidgetInputSlot(slot)) continue
 
-      this.layoutSlot(slot, {
+      this.#layoutSlot(slot, {
         slotIndex: i,
       })
       if (slot._layoutElement) {
@@ -3502,7 +3502,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       }
     }
     for (const [i, slot] of this.outputs.entries()) {
-      this.layoutSlot(slot, {
+      this.#layoutSlot(slot, {
         slotIndex: i,
       })
       if (slot._layoutElement) {
@@ -3594,7 +3594,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    * -  {@link IBaseWidget.computedHeight}
    * -  {@link IBaseWidget.y}
    */
-  layoutWidgets(options: { widgetStartY: number }): void {
+  #layoutWidgets(options: { widgetStartY: number }): void {
     if (!this.widgets || !this.widgets.length) return
 
     const bodyHeight = this.bodyHeight
@@ -3671,7 +3671,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   /**
    * Lays out the node's widget input slots.
    */
-  layoutWidgetInputSlots(): void {
+  #layoutWidgetInputSlots(): void {
     if (!this.widgets) return
 
     const slotByWidgetName = new Map<string, INodeInputSlot & { index: number }>()
@@ -3690,8 +3690,15 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       const actualSlot = this.inputs[slot.index]
       const offset = LiteGraph.NODE_SLOT_HEIGHT * 0.5
       actualSlot.pos = [offset, widget.y + offset]
-      this.layoutSlot(actualSlot, { slotIndex: slot.index })
+      this.#layoutSlot(actualSlot, { slotIndex: slot.index })
     }
+  }
+
+  layout(): void {
+    const slotsBounds = this.#layoutSlots()
+    const widgetStartY = slotsBounds ? slotsBounds[1] + slotsBounds[3] : 0
+    this.#layoutWidgets({ widgetStartY })
+    this.#layoutWidgetInputSlots()
   }
 
   /**

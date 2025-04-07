@@ -4295,11 +4295,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     // render inputs and outputs
     if (!node.collapsed) {
-      const slotsBounds = node.layoutSlots()
-      const widgetStartY = slotsBounds ? slotsBounds[1] + slotsBounds[3] : 0
-      node.layoutWidgets({ widgetStartY })
-      node.layoutWidgetInputSlots()
-
+      node.layout()
       node.drawSlots(ctx, {
         fromSlot: this.linkConnector.renderLinks[0]?.fromSlot,
         colorContext: this,
@@ -4310,7 +4306,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       ctx.textAlign = "left"
       ctx.globalAlpha = 1
 
-      this.drawNodeWidgets(node, widgetStartY, ctx)
+      this.drawNodeWidgets(node, null, ctx)
     } else if (this.render_collapsed_slots) {
       node.drawCollapsedSlots(ctx)
     }
@@ -5215,7 +5211,7 @@ export class LGraphCanvas implements ConnectionColorContext {
    */
   drawNodeWidgets(
     node: LGraphNode,
-    posY: number,
+    _posY: null,
     ctx: CanvasRenderingContext2D,
   ): void {
     node.drawWidgets(ctx, {
