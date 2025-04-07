@@ -1,6 +1,6 @@
 import { describe, expect } from "vitest"
 
-import { LGraphNode } from "@/litegraph"
+import { LGraphNode, LiteGraph } from "@/litegraph"
 import { LGraph } from "@/litegraph"
 import { NodeInputSlot, NodeOutputSlot } from "@/NodeSlot"
 
@@ -312,6 +312,91 @@ describe("LGraphNode", () => {
       const slot = node.getSlotOnPos(inputPos)
       expect(slot).toBeDefined()
       expect(slot?.name).toBe("Input1")
+    })
+  })
+
+  describe("LGraphNode slot positioning", () => {
+    test("should correctly position slots with absolute coordinates", () => {
+      // Setup
+      const node = new LGraphNode("test")
+      node.pos = [100, 100]
+
+      // Add input/output with absolute positions
+      node.addInput("abs-input", "number")
+      node.inputs[0].pos = [10, 20]
+
+      node.addOutput("abs-output", "number")
+      node.outputs[0].pos = [50, 30]
+
+      // Test
+      const inputPos = node.getInputPos(0)
+      const outputPos = node.getOutputPos(0)
+
+      // Absolute positions should be relative to node position
+      expect(inputPos).toEqual([110, 120]) // node.pos + slot.pos
+      expect(outputPos).toEqual([150, 130]) // node.pos + slot.pos
+    })
+
+    test("should correctly position default vertical slots", () => {
+      // Setup
+      const node = new LGraphNode("test")
+      node.pos = [100, 100]
+
+      // Add multiple inputs/outputs without absolute positions
+      node.addInput("input1", "number")
+      node.addInput("input2", "number")
+      node.addOutput("output1", "number")
+      node.addOutput("output2", "number")
+
+      // Calculate expected positions
+      const slotOffset = LiteGraph.NODE_SLOT_HEIGHT * 0.5
+      const slotSpacing = LiteGraph.NODE_SLOT_HEIGHT
+      const nodeWidth = node.size[0]
+
+      // Test input positions
+      expect(node.getInputPos(0)).toEqual([
+        100 + slotOffset,
+        100 + (0 + 0.7) * slotSpacing,
+      ])
+      expect(node.getInputPos(1)).toEqual([
+        100 + slotOffset,
+        100 + (1 + 0.7) * slotSpacing,
+      ])
+
+      // Test output positions
+      expect(node.getOutputPos(0)).toEqual([
+        100 + nodeWidth + 1 - slotOffset,
+        100 + (0 + 0.7) * slotSpacing,
+      ])
+      expect(node.getOutputPos(1)).toEqual([
+        100 + nodeWidth + 1 - slotOffset,
+        100 + (1 + 0.7) * slotSpacing,
+      ])
+    })
+
+    test("should skip absolute positioned slots when calculating vertical positions", () => {
+      // Setup
+      const node = new LGraphNode("test")
+      node.pos = [100, 100]
+
+      // Add mix of absolute and default positioned slots
+      node.addInput("abs-input", "number")
+      node.inputs[0].pos = [10, 20]
+      node.addInput("default-input1", "number")
+      node.addInput("default-input2", "number")
+
+      const slotOffset = LiteGraph.NODE_SLOT_HEIGHT * 0.5
+      const slotSpacing = LiteGraph.NODE_SLOT_HEIGHT
+
+      // Test: default positioned slots should be consecutive, ignoring absolute positioned ones
+      expect(node.getInputPos(1)).toEqual([
+        100 + slotOffset,
+        100 + (0 + 0.7) * slotSpacing, // First default slot starts at index 0
+      ])
+      expect(node.getInputPos(2)).toEqual([
+        100 + slotOffset,
+        100 + (1 + 0.7) * slotSpacing, // Second default slot at index 1
+      ])
     })
   })
 })

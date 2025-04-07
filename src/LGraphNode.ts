@@ -2871,14 +2871,35 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
     // default vertical slots
     const offset = LiteGraph.NODE_SLOT_HEIGHT * 0.5
+    const slotIndex = is_input
+      ? this.#defaultVerticalInputs.indexOf(this.inputs[slot_number])
+      : this.#defaultVerticalOutputs.indexOf(this.outputs[slot_number])
+
     out[0] = is_input
       ? nodeX + offset
       : nodeX + this.size[0] + 1 - offset
     out[1] =
       nodeY +
-      (slot_number + 0.7) * LiteGraph.NODE_SLOT_HEIGHT +
+      (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT +
       (this.constructor.slot_start_y || 0)
     return out
+  }
+
+  /**
+   * @internal The inputs that are not positioned with absolute coordinates.
+   */
+  get #defaultVerticalInputs() {
+    return this.inputs.filter((slot: INodeInputSlot) => !(
+      slot.pos ||
+      (this.widgets?.length && isWidgetInputSlot(slot))
+    ))
+  }
+
+  /**
+   * @internal The outputs that are not positioned with absolute coordinates.
+   */
+  get #defaultVerticalOutputs() {
+    return this.outputs.filter((slot: INodeOutputSlot) => !slot.pos)
   }
 
   /**
@@ -2902,7 +2923,8 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     // default vertical slots
     const offsetX = LiteGraph.NODE_SLOT_HEIGHT * 0.5
     const nodeOffsetY = this.constructor.slot_start_y || 0
-    const slotY = (slot + 0.7) * LiteGraph.NODE_SLOT_HEIGHT
+    const slotIndex = this.#defaultVerticalInputs.indexOf(this.inputs[slot])
+    const slotY = (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT
 
     return [nodeX + offsetX, nodeY + slotY + nodeOffsetY]
   }
@@ -2924,12 +2946,13 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     }
 
     const outputPos = outputs?.[slot]?.pos
-    if (outputPos) return outputPos
+    if (outputPos) return [nodeX + outputPos[0], nodeY + outputPos[1]]
 
     // default vertical slots
     const offsetX = LiteGraph.NODE_SLOT_HEIGHT * 0.5
     const nodeOffsetY = this.constructor.slot_start_y || 0
-    const slotY = (slot + 0.7) * LiteGraph.NODE_SLOT_HEIGHT
+    const slotIndex = this.#defaultVerticalOutputs.indexOf(this.outputs[slot])
+    const slotY = (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT
 
     // TODO: Why +1?
     return [nodeX + width + 1 - offsetX, nodeY + slotY + nodeOffsetY]
