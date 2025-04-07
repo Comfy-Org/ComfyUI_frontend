@@ -115,12 +115,13 @@ export function useWorkflowPersistence() {
   const storedActiveIndex = JSON.parse(
     getStorageValue('Comfy.ActiveWorkflowIndex') || '-1'
   )
-  if (workflowPersistenceEnabled.value) {
-    watch(restoreState, ({ paths, activeIndex }) => {
+
+  watch(restoreState, ({ paths, activeIndex }) => {
+    if (workflowPersistenceEnabled.value) {
       setStorageValue('Comfy.OpenWorkflowsPaths', JSON.stringify(paths))
       setStorageValue('Comfy.ActiveWorkflowIndex', JSON.stringify(activeIndex))
-    })
-  }
+    }
+  })
 
   const restoreWorkflowTabsState = () => {
     if (!workflowPersistenceEnabled.value) return
