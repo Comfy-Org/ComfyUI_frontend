@@ -310,6 +310,9 @@
   "Comfy_Workflow_ConfirmDelete": {
     "name": "워크플로 삭제 시 확인 표시"
   },
+  "Comfy_Workflow_Persist": {
+    "name": "페이지 (재)로드시 워크플로우 상태를 유지하고 복원"
+  },
   "Comfy_Workflow_ShowMissingModelsWarning": {
     "name": "누락된 모델 경고 표시"
   },

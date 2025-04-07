@@ -310,6 +310,9 @@
   "Comfy_Workflow_ConfirmDelete": {
     "name": "删除工作流时显示确认"
   },
+  "Comfy_Workflow_Persist": {
+    "name": "持久化工作流状态并在页面（重新）加载时恢复"
+  },
   "Comfy_Workflow_ShowMissingModelsWarning": {
     "name": "显示缺失模型警告"
   },

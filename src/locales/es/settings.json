@@ -310,6 +310,9 @@
   "Comfy_Workflow_ConfirmDelete": {
     "name": "Mostrar confirmación al eliminar flujos de trabajo"
   },
+  "Comfy_Workflow_Persist": {
+    "name": "Persistir el estado del flujo de trabajo y restaurar en la (re)carga de la página"
+  },
   "Comfy_Workflow_ShowMissingModelsWarning": {
     "name": "Mostrar advertencia de modelos faltantes"
   },
