@@ -296,6 +296,17 @@
   "Comfy_Window_UnloadConfirmation": {
     "name": "Afficher une confirmation lors de la fermeture de la fenêtre"
   },
+  "Comfy_Workflow_AutoSave": {
+    "name": "Auto Sauvegarde",
+    "options": {
+      "after delay": "après délai",
+      "off": "désactivé"
+    }
+  },
+  "Comfy_Workflow_AutoSaveDelay": {
+    "name": "Délai de l'Auto Sauvegarde (ms)",
+    "tooltip": "S'applique uniquement si l'Auto Sauvegarde est réglée sur \"après délai\"."
+  },
   "Comfy_Workflow_ConfirmDelete": {
     "name": "Afficher une confirmation lors de la suppression des flux de travail"
   },

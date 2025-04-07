@@ -296,6 +296,17 @@
   "Comfy_Window_UnloadConfirmation": {
     "name": "Mostrar confirmación al cerrar la ventana"
   },
+  "Comfy_Workflow_AutoSave": {
+    "name": "Auto Guardar",
+    "options": {
+      "after delay": "después de retraso",
+      "off": "desactivado"
+    }
+  },
+  "Comfy_Workflow_AutoSaveDelay": {
+    "name": "Retraso de Auto Guardar (ms)",
+    "tooltip": "Solo se aplica si Auto Guardar está configurado en \"después de retraso\"."
+  },
   "Comfy_Workflow_ConfirmDelete": {
     "name": "Mostrar confirmación al eliminar flujos de trabajo"
   },

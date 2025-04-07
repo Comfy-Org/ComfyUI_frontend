@@ -296,6 +296,17 @@
   "Comfy_Window_UnloadConfirmation": {
     "name": "ウィンドウを閉じるときに確認を表示"
   },
+  "Comfy_Workflow_AutoSave": {
+    "name": "自動保存",
+    "options": {
+      "after delay": "遅延後",
+      "off": "オフ"
+    }
+  },
+  "Comfy_Workflow_AutoSaveDelay": {
+    "name": "自動保存遅延（ms）",
+    "tooltip": "自動保存が「遅延後」に設定されている場合のみ適用されます。"
+  },
   "Comfy_Workflow_ConfirmDelete": {
     "name": "ワークフローを削除する際に確認を表示"
   },

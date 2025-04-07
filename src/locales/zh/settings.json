@@ -296,6 +296,17 @@
   "Comfy_Window_UnloadConfirmation": {
     "name": "关闭窗口时显示确认"
   },
+  "Comfy_Workflow_AutoSave": {
+    "name": "自动保存",
+    "options": {
+      "after delay": "延迟后",
+      "off": "关闭"
+    }
+  },
+  "Comfy_Workflow_AutoSaveDelay": {
+    "name": "自动保存延迟（毫秒）",
+    "tooltip": "仅在自动保存设置为“延迟后”时适用。"
+  },
   "Comfy_Workflow_ConfirmDelete": {
     "name": "删除工作流时显示确认"
   },

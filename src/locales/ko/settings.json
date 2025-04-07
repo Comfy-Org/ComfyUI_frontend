@@ -296,6 +296,17 @@
   "Comfy_Window_UnloadConfirmation": {
     "name": "창 닫을 때 확인 표시"
   },
+  "Comfy_Workflow_AutoSave": {
+    "name": "자동 저장",
+    "options": {
+      "after delay": "지연 후",
+      "off": "끄기"
+    }
+  },
+  "Comfy_Workflow_AutoSaveDelay": {
+    "name": "자동 저장 지연 시간 (ms)",
+    "tooltip": "자동 저장이 \"지연 후\"로 설정된 경우에만 적용됩니다."
+  },
   "Comfy_Workflow_ConfirmDelete": {
     "name": "워크플로 삭제 시 확인 표시"
   },

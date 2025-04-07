@@ -33,7 +33,11 @@ import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
-import { isImageNode, isVideoNode } from '@/utils/litegraphUtil'
+import {
+  isImageNode,
+  isVideoNode,
+  migrateWidgetsValues
+} from '@/utils/litegraphUtil'
 
 import { useExtensionService } from './extensionService'
 
@@ -260,6 +264,12 @@ export const useLitegraphService = () => {
                 }
               : output
           }
+        )
+
+        data.widgets_values = migrateWidgetsValues(
+          ComfyNode.nodeData.inputs,
+          this.widgets ?? [],
+          data.widgets_values ?? []
         )
 
         super.configure(data)

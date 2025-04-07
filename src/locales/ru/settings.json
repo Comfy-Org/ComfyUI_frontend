@@ -296,6 +296,17 @@
   "Comfy_Window_UnloadConfirmation": {
     "name": "Показать подтверждение при закрытии окна"
   },
+  "Comfy_Workflow_AutoSave": {
+    "name": "Автосохранение",
+    "options": {
+      "after delay": "после задержки",
+      "off": "выключено"
+    }
+  },
+  "Comfy_Workflow_AutoSaveDelay": {
+    "name": "Задержка автосохранения (мс)",
+    "tooltip": "Применяется только если автосохранение установлено на \"после задержки\"."
+  },
   "Comfy_Workflow_ConfirmDelete": {
     "name": "Показать подтверждение при удалении рабочих процессов"
   },
