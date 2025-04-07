@@ -12,7 +12,12 @@ export function useWorkflowPersistence() {
   const workflowStore = useWorkflowStore()
   const settingStore = useSettingStore()
 
+  const workflowPersistenceEnabled = computed(() =>
+    settingStore.get('Comfy.Workflow.Persist')
+  )
+
   const persistCurrentWorkflow = () => {
+    if (!workflowPersistenceEnabled.value) return
     const workflow = JSON.stringify(comfyApp.serializeGraph())
     localStorage.setItem('workflow', workflow)
     if (api.clientId) {

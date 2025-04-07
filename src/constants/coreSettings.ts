@@ -790,7 +790,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.Workflow.Persist',
-    name: 'Persist workflow state on page (re)load',
+    name: 'Persist workflow state and restore on page (re)load',
     type: 'boolean',
     defaultValue: true,
     versionAdded: '1.17.0'
