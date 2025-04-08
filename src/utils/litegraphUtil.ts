@@ -137,7 +137,7 @@ export function fixLinkInputSlots(graph: LGraph) {
       const linkId = input.link
       if (!linkId) continue
 
-      const link = graph.links[linkId]
+      const link = graph.links.get(linkId)
       if (!link) continue
 
       link.target_slot = inputIndex
