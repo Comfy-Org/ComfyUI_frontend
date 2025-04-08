@@ -11,6 +11,7 @@ import type { ToastMessageOptions } from 'primevue/toast'
 import { reactive } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
+import { useWorkflowValidation } from '@/composables/useWorkflowValidation'
 import { st, t } from '@/i18n'
 import type {
   ExecutionErrorWsMessage,
@@ -21,8 +22,7 @@ import {
   ComfyApiWorkflow,
   type ComfyWorkflowJSON,
   type ModelFile,
-  type NodeId,
-  validateComfyWorkflow
+  type NodeId
 } from '@/schemas/comfyWorkflowSchema'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { getFromWebmFile } from '@/scripts/metadata/ebml'
@@ -981,13 +981,9 @@ export class ComfyApp {
     graphData = clone(graphData)
 
     if (useSettingStore().get('Comfy.Validation.Workflows')) {
-      // TODO: Show validation error in a dialog.
-      const validatedGraphData = await validateComfyWorkflow(
-        graphData,
-        /* onError=*/ (err) => {
-          useToastStore().addAlert(err)
-        }
-      )
+      const { graphData: validatedGraphData } =
+        await useWorkflowValidation().validateWorkflow(graphData)
+
       // If the validation failed, use the original graph data.
       // Ideally we should not block users from loading the workflow.
       graphData = validatedGraphData ?? graphData
