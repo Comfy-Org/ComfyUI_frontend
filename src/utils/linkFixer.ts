@@ -50,7 +50,7 @@ function getNodeById(graph: ISerialisedGraph | LGraph, id: NodeId) {
     return (graph as LGraph).getNodeById(id)
   }
   graph = graph as ISerialisedGraph
-  return graph.nodes.find((node: ISerialisedNode) => Number(node.id) === id)!
+  return graph.nodes.find((node: ISerialisedNode) => node.id == id)!
 }
 
 function extendLink(link: SerialisedLLinkArray) {
