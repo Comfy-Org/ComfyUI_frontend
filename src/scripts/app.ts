@@ -47,7 +47,11 @@ import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import { ExtensionManager } from '@/types/extensionTypes'
 import { ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
-import { executeWidgetsCallback, isImageNode } from '@/utils/litegraphUtil'
+import {
+  executeWidgetsCallback,
+  fixLinkInputSlots,
+  isImageNode
+} from '@/utils/litegraphUtil'
 import {
   findLegacyRerouteNodes,
   noNativeReroutes
@@ -705,7 +709,9 @@ export class ComfyApp {
   #addAfterConfigureHandler() {
     const app = this
     const onConfigure = app.graph.onConfigure
-    app.graph.onConfigure = function (...args) {
+    app.graph.onConfigure = function (this: LGraph, ...args) {
+      fixLinkInputSlots(this)
+
       // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
       for (const node of app.graph.nodes) {
         node.onGraphConfigured?.()
