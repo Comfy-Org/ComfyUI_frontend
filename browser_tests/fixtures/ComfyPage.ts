@@ -412,7 +412,7 @@ export class ComfyPage {
   }
 
   async getVisibleToastCount() {
-    return await this.page.locator('.p-toast:visible').count()
+    return await this.page.locator('.p-toast-message:visible').count()
   }
 
   async clickTextEncodeNode1() {
