@@ -67,4 +67,10 @@ test.describe('Optional input', () => {
       'missing_nodes_converted_widget.png'
     )
   })
+  test('dynamically added input', async ({ comfyPage }) => {
+    await comfyPage.loadWorkflow('dynamically_added_input')
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'dynamically_added_input.png'
+    )
+  })
 })
