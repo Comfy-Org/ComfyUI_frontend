@@ -39,6 +39,9 @@ import PackVersionSelectorPopover from '@/components/dialog/content/manager/Pack
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { SelectedVersion } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
+import { isSemVer } from '@/utils/formatUtil'
+
+const TRUNCATED_HASH_LENGTH = 7
 
 const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']
@@ -50,11 +53,13 @@ const managerStore = useComfyManagerStore()
 
 const installedVersion = computed(() => {
   if (!nodePack.id) return SelectedVersion.NIGHTLY
-  return (
+  const version =
     managerStore.installedPacks[nodePack.id]?.ver ??
     nodePack.latest_version?.version ??
     SelectedVersion.NIGHTLY
-  )
+
+  // If Git hash, truncate to 7 characters
+  return isSemVer(version) ? version : version.slice(0, TRUNCATED_HASH_LENGTH)
 })
 
 const toggleVersionSelector = (event: Event) => {

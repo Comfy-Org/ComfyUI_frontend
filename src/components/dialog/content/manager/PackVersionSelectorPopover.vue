@@ -75,6 +75,7 @@ import {
   SelectedVersion
 } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
+import { isSemVer } from '@/utils/formatUtil'
 
 const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']
@@ -93,11 +94,25 @@ const isQueueing = ref(false)
 
 const selectedVersion = ref<string>(SelectedVersion.LATEST)
 onMounted(() => {
+  const initialVersion = getInitialSelectedVersion() ?? SelectedVersion.LATEST
   selectedVersion.value =
-    nodePack.publisher?.name === 'Unclaimed'
-      ? SelectedVersion.NIGHTLY
-      : nodePack.latest_version?.version ?? SelectedVersion.NIGHTLY
+    // Use NIGHTLY when version is a Git hash
+    isSemVer(initialVersion) ? initialVersion : SelectedVersion.NIGHTLY
 })
+
+const getInitialSelectedVersion = () => {
+  if (!nodePack.id) return
+
+  // If unclaimed, set selected version to nightly
+  if (nodePack.publisher?.name === 'Unclaimed') return SelectedVersion.NIGHTLY
+
+  // If node pack is installed, set selected version to the installed version
+  if (managerStore.isPackInstalled(nodePack.id))
+    return managerStore.getInstalledPackVersion(nodePack.id)
+
+  // If node pack is not installed, set selected version to latest
+  return nodePack.latest_version?.version
+}
 
 const fetchVersions = async () => {
   if (!nodePack?.id) return []
