@@ -209,7 +209,7 @@ export const useLitegraphService = () => {
        */
       #setInitialSize() {
         const s = this.computeSize()
-        s[0] = Math.max(this.#initialMinSize.width, s[0])
+        s[0] = Math.max(this.#initialMinSize.width, s[0] * 1.5)
         s[1] = Math.max(this.#initialMinSize.height, s[1])
         this.setSize(s)
       }
