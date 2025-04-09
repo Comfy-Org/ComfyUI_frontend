@@ -75,23 +75,17 @@ const shouldShowStatusIndicator = computed(() => {
   )
 })
 
-const closeWorkflows = async (options: WorkflowOption[]) => {
-  for (const opt of options) {
-    if (
-      !(await useWorkflowService().closeWorkflow(opt.workflow, {
-        warnIfUnsaved: !workspaceStore.shiftDown,
-        hint: t('sideToolbar.workflowTab.dirtyCloseHint')
-      }))
-    ) {
-      // User clicked cancel
-      break
-    }
-  }
+const closeWorkflow = async (option: WorkflowOption) => {
+  await useWorkflowService().closeWorkflow(option.workflow, {
+    warnIfUnsaved: !workspaceStore.shiftDown,
+    hint: t('sideToolbar.workflowTab.dirtyCloseHint')
+  })
 }
 
 const onCloseWorkflow = (option: WorkflowOption) => {
-  closeWorkflows([option])
+  closeWorkflow(option)
 }
+
 const tabGetter = () => workflowTabRef.value as HTMLElement
 
 usePragmaticDraggable(tabGetter, {
