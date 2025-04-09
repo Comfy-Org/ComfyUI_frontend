@@ -5,7 +5,6 @@ import { toRaw } from 'vue'
 import { t } from '@/i18n'
 import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import { app } from '@/scripts/app'
-import { ChangeTracker } from '@/scripts/changeTracker'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { downloadBlob } from '@/scripts/utils'
 import { DialogResult, useDialogService } from '@/services/dialogService'
@@ -212,95 +211,82 @@ export const useWorkflowService = () => {
   /**
    * Close a workflow with confirmation if there are unsaved changes. Able to batch close workflows.
    * @param workflows Array of ComfyWorkflow to close
-   * @param closeOptions Options for closing workflows
+   * @param options Options for closing workflows
    * @returns true if all workflows were closed, false if the user cancelled
    */
   const batchCloseWorkflows = async (
     workflows: ComfyWorkflow[],
-    options: { warnIfUnsaved: boolean; hint?: string } = {
-      warnIfUnsaved: true
-    }
+    options: { warnIfUnsaved: boolean; hint?: string } = { warnIfUnsaved: true }
   ): Promise<boolean> => {
-    const dirtyWorkflows = workflows.filter((workflow) => workflow.isModified)
+    // Flags to bypass future dialog prompts once Yes/No-To-All is selected.
+    let yesToAll = false
+    let noToAll = false
 
-    if (dirtyWorkflows.length === 0) {
-      // If no workflows need saving, close all workflows
-      for (const workflow of workflows) {
-        await workflowStore.closeWorkflow(workflow)
-      }
-      return true
-    }
-
-    if (options.warnIfUnsaved) {
-      const res = await dialogService.confirm({
-        title: t('sideToolbar.workflowTab.dirtyCloseTitle'),
-        type: 'batchDirtyClose',
-        message: t('sideToolbar.workflowTab.dirtyClose'),
-        itemList: dirtyWorkflows.map((workflow) => workflow.path)
-      })
-
-      switch (res) {
-        case DialogResult.YES:
-          if (dirtyWorkflows.length > 0) {
-            await saveWorkflow(dirtyWorkflows[0])
-
-            const remainingWorkflows = workflows.filter(
-              (workflow) => workflow.path !== dirtyWorkflows[0].path
-            )
-
-            if (remainingWorkflows.length > 0) {
-              await batchCloseWorkflows(remainingWorkflows, options)
-            }
-          }
-          break
-
-        case DialogResult.YES_TO_ALL:
-          for (const workflow of dirtyWorkflows) {
-            await saveWorkflow(workflow)
-          }
-          break
-
-        case DialogResult.NO:
-          if (dirtyWorkflows.length > 0) {
-            const remainingWorkflows = dirtyWorkflows.filter(
-              (workflow) => workflow.path !== dirtyWorkflows[0].path
-            )
-            if (remainingWorkflows.length > 0) {
-              await batchCloseWorkflows(remainingWorkflows, options)
-            }
-          }
-          break
-
-        case DialogResult.NO_TO_ALL:
-          // Continue to close all workflows.
-          break
-
-        case DialogResult.CANCEL:
-          return false
-
-        default:
-          // This probably shouldn't be reachable
-          return false
-      }
-    }
-
-    // Handle batch closing workflows
     for (const workflow of workflows) {
-      // Ensure state is properly synchronized before closing
-      if (workflow.changeTracker) {
-        // Force sync the modified state with actual comparison
-        workflow.isModified = !ChangeTracker.graphEqual(
-          workflow.changeTracker.initialState,
-          workflow.changeTracker.activeState
-        )
-      }
+      // if (workflow.changeTracker) {
+      //   // Force sync the modified state with actual comparison.
+      //   workflow.isModified = !ChangeTracker.graphEqual(
+      //     workflow.changeTracker.initialState,
+      //     workflow.changeTracker.activeState
+      //   );
+      // }
 
+      // If warning is enabled, workflow is modified, and no global decision bypass is active...
+      if (
+        options.warnIfUnsaved &&
+        workflow.isModified &&
+        !yesToAll &&
+        !noToAll
+      ) {
+        const res = await dialogService.confirm({
+          title: t('sideToolbar.workflowTab.dirtyCloseTitle'),
+          type: 'batchDirtyClose',
+          message: t('sideToolbar.workflowTab.dirtyClose'),
+          // Show the current workflow only.
+          itemList: [workflow.path]
+        })
+
+        switch (res) {
+          case DialogResult.YES:
+            await saveWorkflow(workflow)
+            break
+
+          case DialogResult.YES_TO_ALL:
+            yesToAll = true
+            await saveWorkflow(workflow)
+            break
+
+          case DialogResult.NO:
+            // Do nothing: skip saving for this workflow.
+            break
+
+          case DialogResult.NO_TO_ALL:
+            noToAll = true
+            break
+
+          case DialogResult.CANCEL:
+            // User cancelled the close procedure altogether.
+            return false
+
+          default:
+            return false
+        }
+      } else if (options.warnIfUnsaved && workflow.isModified && yesToAll) {
+        // If the user chose Yes-To-All previously, save without prompting.
+        await saveWorkflow(workflow)
+      }
+      // If workflow is dirty and "noToAll" is active, then we leave it unsaved
+      // and simply close it.
+
+      // If closing the active workflow leaves an empty state, load the default workflow.
       if (
         workflowStore.isActive(workflow) &&
         workflowStore.openWorkflows.length === 1
       ) {
         await loadDefaultWorkflow()
       }
+
+      // Close the workflow.
       await workflowStore.closeWorkflow(workflow)
     }
 
