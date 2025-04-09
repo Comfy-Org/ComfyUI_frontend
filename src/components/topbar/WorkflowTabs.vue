@@ -99,17 +99,10 @@ const onWorkflowChange = (option: WorkflowOption) => {
   workflowService.openWorkflow(option.workflow)
 }
 
-const closeWorkflow = async (options: WorkflowOption[]) => {
-  for (const opt of options) {
-    if (
-      !(await workflowService.closeWorkflow(opt.workflow, {
-        warnIfUnsaved: !workspaceStore.shiftDown
-      }))
-    ) {
-      // User clicked cancel
-      break
-    }
-  }
+const closeWorkflow = async (option: WorkflowOption) => {
+  await workflowService.closeWorkflow(option.workflow, {
+    warnIfUnsaved: !workspaceStore.shiftDown
+  })
 }
 
 const closeWorkflows = async (options: WorkflowOption[]) => {
@@ -117,7 +110,7 @@ const closeWorkflows = async (options: WorkflowOption[]) => {
 }
 
 const onCloseWorkflow = (option: WorkflowOption) => {
-  closeWorkflow([option])
+  closeWorkflow(option)
 }
 
 const showContextMenu = (event: MouseEvent, option: WorkflowOption) => {
