@@ -108,7 +108,10 @@ const props = defineProps<{
   hint?: string
 }>()
 
-const onCancel = () => useDialogStore().closeDialog()
+const onCancel = () => {
+  props.onConfirm(DialogResult.CANCEL)
+  useDialogStore().closeDialog()
+}
 
 const onDeny = () => {
   props.onConfirm(DialogResult.NO)
