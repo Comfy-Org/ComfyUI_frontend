@@ -20,8 +20,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowService } from '@/services/workflowService'
 import { type ComfyCommand, useCommandStore } from '@/stores/commandStore'
-import { useExecutionStore } from '@/stores/executionStore'
-import { useCanvasStore, useTitleEditorStore } from '@/stores/graphStore'
+import { useTitleEditorStore } from '@/stores/graphStore'
 import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
@@ -767,49 +766,13 @@ export function useCoreCommands(): ComfyCommand[] {
       function: () => moveSelectedNodes(([x, y], gridSize) => [x + gridSize, y])
     },
     {
-      id: 'Comfy.Canvas.AddEditModelStep',
-      icon: 'pi pi-pen-to-square',
-      label: 'Add Edit Model Step',
-      versionAdded: '1.23.3',
-      function: async () => {
-        const node = app.canvas.selectedItems.values().next().value
-        if (!(node instanceof LGraphNode)) return
-        await addFluxKontextGroupNode(node)
-      }
-    },
-    {
-      id: 'Comfy.Graph.ConvertToSubgraph',
-      icon: 'pi pi-sitemap',
-      label: 'Convert Selection to Subgraph',
-      versionAdded: '1.20.1',
-      function: () => {
-        const canvas = canvasStore.getCanvas()
-        const graph = canvas.subgraph ?? canvas.graph
-        if (!graph) throw new TypeError('Canvas has no graph or subgraph set.')
-
-        const res = graph.convertToSubgraph(canvas.selectedItems)
-        if (!res) {
-          toastStore.add({
-            severity: 'error',
-            summary: t('toastMessages.cannotCreateSubgraph'),
-            detail: t('toastMessages.failedToConvertToSubgraph'),
-            life: 3000
-          })
-          return
-        }
-
-        const { node } = res
-        canvas.select(node)
-      }
-    },
-    {
       id: 'Comfy.Manager.CustomNodesManager.ShowLegacyCustomNodesMenu',
       icon: 'pi pi-bars',
       label: 'Custom Nodes (Legacy)',
       versionAdded: '1.16.4',
-      function: async () => {
+      function: () => {
         try {
-          await useCommandStore().execute(
+          void useCommandStore().execute(
             'Comfy.Manager.CustomNodesManager.ToggleVisibility'
           )
         } catch (error) {
@@ -827,9 +790,9 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'mdi mdi-puzzle',
       label: 'Manager Menu (Legacy)',
       versionAdded: '1.16.4',
-      function: async () => {
+      function: () => {
         try {
-          await useCommandStore().execute('Comfy.Manager.Menu.ToggleVisibility')
+          void useCommandStore().execute('Comfy.Manager.Menu.ToggleVisibility')
         } catch (error) {
           useToastStore().add({
             severity: 'error',
