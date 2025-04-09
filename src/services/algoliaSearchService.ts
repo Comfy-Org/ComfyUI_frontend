@@ -48,7 +48,6 @@ export interface AlgoliaNodePack {
     'latest_version',
     'comfy_node_extract_status'
   >
-  /** `total_install` index only */
   icon_url: RegistryNodePack['icon']
 }
 
