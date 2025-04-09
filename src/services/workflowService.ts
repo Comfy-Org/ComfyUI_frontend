@@ -211,96 +211,97 @@ export const useWorkflowService = () => {
 
   /**
    * Close a workflow with confirmation if there are unsaved changes. Able to batch close workflows.
-   * @param options Array of workflow options to close
+   * @param workflows Array of ComfyWorkflow to close
    * @param closeOptions Options for closing workflows
    * @returns true if all workflows were closed, false if the user cancelled
    */
   const batchCloseWorkflow = async (
-    options: { workflow: ComfyWorkflow }[]
+    workflows: ComfyWorkflow[],
+    options: { warnIfUnsaved: boolean; hint?: string } = {
+      warnIfUnsaved: true
+    }
   ): Promise<boolean> => {
-    // Filter out workflows that need saving
-    const dirtyWorkflows = options.filter(
-      (option) => option.workflow.isModified
-    )
+    const dirtyWorkflows = workflows.filter((workflow) => workflow.isModified)
 
     if (dirtyWorkflows.length === 0) {
       // If no workflows need saving, close all workflows
-      for (const option of options) {
-        await workflowStore.closeWorkflow(option.workflow)
+      for (const workflow of workflows) {
+        await workflowStore.closeWorkflow(workflow)
       }
       return true
     }
 
-    const res = await dialogService.confirm({
-      title: t('sideToolbar.workflowTab.dirtyCloseTitle'),
-      type: 'batchDirtyClose',
-      message: t('sideToolbar.workflowTab.dirtyClose'),
-      itemList: dirtyWorkflows.map((option) => option.workflow.path)
-    })
+    if (options.warnIfUnsaved) {
+      const res = await dialogService.confirm({
+        title: t('sideToolbar.workflowTab.dirtyCloseTitle'),
+        type: 'batchDirtyClose',
+        message: t('sideToolbar.workflowTab.dirtyClose'),
+        itemList: dirtyWorkflows.map((workflow) => workflow.path)
+      })
 
-    switch (res) {
-      case DialogResult.YES:
-        if (dirtyWorkflows.length > 0) {
-          await saveWorkflow(dirtyWorkflows[0].workflow)
+      switch (res) {
+        case DialogResult.YES:
+          if (dirtyWorkflows.length > 0) {
+            await saveWorkflow(dirtyWorkflows[0])
 
-          const remainingOptions = options.filter(
-            (option) => option.workflow.path !== dirtyWorkflows[0].workflow.path
-          )
+            const remainingWorkflows = workflows.filter(
+              (workflow) => workflow.path !== dirtyWorkflows[0].path
+            )
 
-          if (remainingOptions.length > 0) {
-            await batchCloseWorkflow(remainingOptions)
+            if (remainingWorkflows.length > 0) {
+              await batchCloseWorkflow(remainingWorkflows, options)
+            }
           }
-        }
-        break
+          break
 
-      case DialogResult.YES_TO_ALL:
-        for (const option of dirtyWorkflows) {
-          await saveWorkflow(option.workflow)
-        }
-        break
-
-      case DialogResult.NO:
-        if (dirtyWorkflows.length > 0) {
-          const remainingOptions = dirtyWorkflows.filter(
-            (option) => option.workflow.path !== dirtyWorkflows[0].workflow.path
-          )
-
-          if (remainingOptions.length > 0) {
-            await batchCloseWorkflow(remainingOptions)
+        case DialogResult.YES_TO_ALL:
+          for (const workflow of dirtyWorkflows) {
+            await saveWorkflow(workflow)
           }
-        }
-        break
+          break
 
-      case DialogResult.NO_TO_ALL:
-        // Continue to close all workflows.
-        break
+        case DialogResult.NO:
+          if (dirtyWorkflows.length > 0) {
+            const remainingWorkflows = dirtyWorkflows.filter(
+              (workflow) => workflow.path !== dirtyWorkflows[0].path
+            )
+            if (remainingWorkflows.length > 0) {
+              await batchCloseWorkflow(remainingWorkflows, options)
+            }
+          }
+          break
 
-      case DialogResult.CANCEL:
-        return false
+        case DialogResult.NO_TO_ALL:
+          // Continue to close all workflows.
+          break
 
-      default:
-        // This probably shouldn't be reachable
-        return false
+        case DialogResult.CANCEL:
+          return false
+
+        default:
+          // This probably shouldn't be reachable
+          return false
+      }
     }
 
     // Handle batch closing workflows
-    for (const option of options) {
+    for (const workflow of workflows) {
       // Ensure state is properly synchronized before closing
-      if (option.workflow.changeTracker) {
+      if (workflow.changeTracker) {
         // Force sync the modified state with actual comparison
-        option.workflow.isModified = !ChangeTracker.graphEqual(
-          option.workflow.changeTracker.initialState,
-          option.workflow.changeTracker.activeState
+        workflow.isModified = !ChangeTracker.graphEqual(
+          workflow.changeTracker.initialState,
+          workflow.changeTracker.activeState
         )
       }
 
       if (
-        workflowStore.isActive(option.workflow) &&
+        workflowStore.isActive(workflow) &&
         workflowStore.openWorkflows.length === 1
       ) {
         await loadDefaultWorkflow()
       }
-      await workflowStore.closeWorkflow(option.workflow)
+      await workflowStore.closeWorkflow(workflow)
     }
 
     return true

@@ -105,8 +105,11 @@ const closeWorkflow = async (option: WorkflowOption) => {
   })
 }
 
-const closeWorkflows = async (options: WorkflowOption[]) => {
-  await workflowService.batchCloseWorkflow(options)
+const closeWorkflows = async (workflowOptions: WorkflowOption[]) => {
+  await workflowService.batchCloseWorkflow(
+    workflowOptions.map((option) => option.workflow),
+    { warnIfUnsaved: !workspaceStore.shiftDown }
+  )
 }
 
 const onCloseWorkflow = (option: WorkflowOption) => {
