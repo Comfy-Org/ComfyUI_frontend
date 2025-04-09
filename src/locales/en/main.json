@@ -149,10 +149,12 @@
     "micPermissionDenied": "Microphone permission denied",
     "noAudioRecorded": "No audio recorded",
     "nodesRunning": "nodes running",
-    "duplicate": "Duplicate"
+    "duplicate": "Duplicate",
+    "commandProhibited": "Command {command} is prohibited. Contact an administrator for more information."
   },
   "manager": {
     "title": "Custom Nodes Manager",
+    "legacyMenuNotAvailable": "Legacy manager menu is not available in this version of ComfyUI. Please use the new manager menu instead.",
     "failed": "Failed ({count})",
     "noNodesFound": "No nodes found",
     "noNodesFoundDescription": "The pack's nodes either could not be parsed, or the pack is a frontend extension only and doesn't have any nodes.",

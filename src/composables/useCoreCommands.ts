@@ -20,6 +20,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowService } from '@/services/workflowService'
 import type { ComfyCommand } from '@/stores/commandStore'
+import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useCanvasStore, useTitleEditorStore } from '@/stores/graphStore'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
@@ -711,9 +712,9 @@ export function useCoreCommands(): ComfyCommand[] {
       }
     },
     {
-      id: 'Comfy.Manager.CustomNodesManager',
-      icon: 'pi pi-puzzle',
-      label: 'Toggle the Custom Nodes Manager',
+      id: 'Comfy.Manager.CustomNodesManager.ShowCustomNodesMenu',
+      icon: 'pi pi-objects-column',
+      label: 'Custom Nodes (Beta)',
       versionAdded: '1.12.10',
       function: () => {
         dialogService.toggleManagerDialog()
@@ -879,6 +880,44 @@ export function useCoreCommands(): ComfyCommand[] {
       function: () => {
         const modelSelectorDialog = useModelSelectorDialog()
         modelSelectorDialog.show()
+      }
+    },
+    {
+      id: 'Comfy.Manager.CustomNodesManager.ShowLegacyCustomNodesMenu',
+      icon: 'pi pi-bars',
+      label: 'Custom Nodes (Legacy)',
+      versionAdded: '1.16.4',
+      function: () => {
+        try {
+          useCommandStore().execute(
+            'Comfy.Manager.CustomNodesManager.ToggleVisibility'
+          )
+        } catch (error) {
+          useToastStore().add({
+            severity: 'error',
+            summary: t('g.error'),
+            detail: t('manager.legacyMenuNotAvailable'),
+            life: 3000
+          })
+        }
+      }
+    },
+    {
+      id: 'Comfy.Manager.ShowLegacyManagerMenu',
+      icon: 'mdi mdi-puzzle',
+      label: 'Manager Menu (Legacy)',
+      versionAdded: '1.16.4',
+      function: () => {
+        try {
+          useCommandStore().execute('Comfy.Manager.Menu.ToggleVisibility')
+        } catch (error) {
+          useToastStore().add({
+            severity: 'error',
+            summary: t('g.error'),
+            detail: t('manager.legacyMenuNotAvailable'),
+            life: 3000
+          })
+        }
       }
     }
   ]
