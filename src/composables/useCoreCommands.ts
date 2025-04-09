@@ -17,7 +17,7 @@ import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowService } from '@/services/workflowService'
-import type { ComfyCommand } from '@/stores/commandStore'
+import { type ComfyCommand, useCommandStore } from '@/stores/commandStore'
 import { useTitleEditorStore } from '@/stores/graphStore'
 import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
 import { useSettingStore } from '@/stores/settingStore'
@@ -718,6 +718,84 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Move Selected Nodes Right',
       versionAdded: moveSelectedNodesVersionAdded,
       function: () => moveSelectedNodes(([x, y], gridSize) => [x + gridSize, y])
+    },
+    {
+      id: 'Comfy.Manager.CustomNodesManager.ShowLegacyCustomNodesMenu',
+      icon: 'pi pi-bars',
+      label: 'Custom Nodes (Legacy)',
+      versionAdded: '1.16.4',
+      function: () => {
+        try {
+          void useCommandStore().execute(
+            'Comfy.Manager.CustomNodesManager.ToggleVisibility'
+          )
+        } catch (error) {
+          useToastStore().add({
+            severity: 'error',
+            summary: t('g.error'),
+            detail: t('manager.legacyMenuNotAvailable'),
+            life: 3000
+          })
+        }
+      }
+    },
+    {
+      id: 'Comfy.Manager.ShowLegacyManagerMenu',
+      icon: 'mdi mdi-puzzle',
+      label: 'Manager Menu (Legacy)',
+      versionAdded: '1.16.4',
+      function: () => {
+        try {
+          void useCommandStore().execute('Comfy.Manager.Menu.ToggleVisibility')
+        } catch (error) {
+          useToastStore().add({
+            severity: 'error',
+            summary: t('g.error'),
+            detail: t('manager.legacyMenuNotAvailable'),
+            life: 3000
+          })
+        }
+      }
+    },
+    {
+      id: 'Comfy.Memory.UnloadModels',
+      icon: 'mdi mdi-vacuum-outline',
+      label: 'Unload Models',
+      versionAdded: '1.16.4',
+      function: async () => {
+        if (!useSettingStore().get('Comfy.Memory.AllowManualUnload')) {
+          useToastStore().add({
+            severity: 'error',
+            summary: t('g.error'),
+            detail: t('g.commandProhibited', {
+              command: 'Comfy.Memory.UnloadModels'
+            }),
+            life: 3000
+          })
+          return
+        }
+        await api.freeMemory({ freeExecutionCache: false })
+      }
+    },
+    {
+      id: 'Comfy.Memory.UnloadModelsAndExecutionCache',
+      icon: 'mdi mdi-vacuum-outline',
+      label: 'Unload Models and Execution Cache',
+      versionAdded: '1.16.4',
+      function: async () => {
+        if (!useSettingStore().get('Comfy.Memory.AllowManualUnload')) {
+          useToastStore().add({
+            severity: 'error',
+            summary: t('g.error'),
+            detail: t('g.commandProhibited', {
+              command: 'Comfy.Memory.UnloadModelsAndExecutionCache'
+            }),
+            life: 3000
+          })
+          return
+        }
+        await api.freeMemory({ freeExecutionCache: true })
+      }
     }
   ]
 
