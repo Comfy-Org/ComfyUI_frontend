@@ -44,6 +44,9 @@
   "Comfy_Canvas_ResetView": {
     "label": "重置视图"
   },
+  "Comfy_Canvas_Resize": {
+    "label": "调整选定节点的大小"
+  },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "切换链接可见性"
   },

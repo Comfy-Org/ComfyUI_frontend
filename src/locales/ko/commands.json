@@ -44,6 +44,9 @@
   "Comfy_Canvas_ResetView": {
     "label": "뷰 재설정"
   },
+  "Comfy_Canvas_Resize": {
+    "label": "선택된 노드 크기 조정"
+  },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "캔버스 링크 가시성 토글"
   },
