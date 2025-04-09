@@ -433,8 +433,7 @@ function getConfig(this: LGraphNode, widgetName: string) {
 function isConvertibleWidget(widget: IWidget, config: InputSpec): boolean {
   return (
     // @ts-expect-error InputSpec is not typed correctly
-    (VALID_TYPES.includes(widget.type) || VALID_TYPES.includes(config[0])) &&
-    !widget.options?.forceInput
+    VALID_TYPES.includes(widget.type) || VALID_TYPES.includes(config[0])
   )
 }
 

@@ -27,10 +27,6 @@ declare module '@comfyorg/litegraph/dist/types/widgets' {
      */
     minNodeSize?: Size
     /**
-     * Whether the widget is forced to be an input.
-     */
-    forceInput?: boolean
-    /**
      * Whether the widget defaults to input state. Can still be converted back
      * to widget state.
      * @deprecated Widget to input conversion is no longer necessary, as they co-exist now.
