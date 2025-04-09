@@ -189,7 +189,7 @@ export const useWorkflowService = () => {
         hint: options.hint
       })
 
-      if (res === null || res === DialogResult.CANCEL) return false
+      if (res === DialogResult.CANCEL) return false
 
       if (res === DialogResult.YES) {
         await saveWorkflow(workflow)
