@@ -67,7 +67,8 @@ const RETRIEVE_ATTRIBUTES: SearchAttribute[] = [
   'repository_url',
   'latest_version_status',
   'comfy_node_extract_status',
-  'id'
+  'id',
+  'icon_url'
 ]
 
 export interface NodesIndexSuggestion {
