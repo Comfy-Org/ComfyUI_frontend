@@ -19,8 +19,7 @@ import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowService } from '@/services/workflowService'
-import type { ComfyCommand } from '@/stores/commandStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { type ComfyCommand, useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useCanvasStore, useTitleEditorStore } from '@/stores/graphStore'
 import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
@@ -799,6 +798,7 @@ export function useCoreCommands(): ComfyCommand[] {
           })
           return
         }
+
         const { node } = res
         canvas.select(node)
       }
@@ -808,9 +808,9 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-bars',
       label: 'Custom Nodes (Legacy)',
       versionAdded: '1.16.4',
-      function: async () => {
+      function: () => {
         try {
-          await useCommandStore().execute(
+          void useCommandStore().execute(
             'Comfy.Manager.CustomNodesManager.ToggleVisibility'
           )
         } catch (error) {
@@ -828,9 +828,9 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'mdi mdi-puzzle',
       label: 'Manager Menu (Legacy)',
       versionAdded: '1.16.4',
-      function: async () => {
+      function: () => {
         try {
-          await useCommandStore().execute('Comfy.Manager.Menu.ToggleVisibility')
+          void useCommandStore().execute('Comfy.Manager.Menu.ToggleVisibility')
         } catch (error) {
           useToastStore().add({
             severity: 'error',
