@@ -39,6 +39,7 @@ export function useNodeAnimatedImage() {
       }) as IWidget & {
         options: { host: ReturnType<typeof createImageHost> }
       }
+      widget.serialize = false
       widget.serializeValue = () => undefined
       widget.options.host.updateImages(node.imgs)
     }
