@@ -274,7 +274,7 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
   }
 
   /**
-   * Finds the first input slot for links or floating links passing through this reroute.
+   * Finds the inputs and nodes for links or floating links passing through this reroute.
    */
   findTargetInputs(): { node: LGraphNode, input: INodeInputSlot, inputIndex: number, link: LLink }[] | undefined {
     const network = this.#network.deref()

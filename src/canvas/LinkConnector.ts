@@ -409,14 +409,10 @@ export class LinkConnector {
         }
       }
 
-      // Flat map and filter before any connections are re-created
-      const better = this.renderLinks
-        .flatMap(renderLink => results.map(result => ({ renderLink, result })))
-        .filter(({ renderLink, result }) => renderLink.toType === "input" && canConnectInputLinkToReroute(renderLink, result.node, result.input, reroute))
+      // Filter before any connections are re-created
+      const filtered = results.filter(result => renderLink.toType === "input" && canConnectInputLinkToReroute(renderLink, result.node, result.input, reroute))
 
-      for (const { renderLink, result } of better) {
-        if (renderLink.toType !== "input") continue
-
+      for (const result of filtered) {
         renderLink.connectToRerouteInput(reroute, result, this.events, originalReroutes)
       }
 

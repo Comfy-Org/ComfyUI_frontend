@@ -52,7 +52,7 @@ export class ToInputRenderLink implements RenderLink {
     {
       node: inputNode,
       input,
-      link: existingLink,
+      link,
     }: { node: LGraphNode, input: INodeInputSlot, link: LLink },
     events: LinkConnectorEventTarget,
     originalReroutes: Reroute[],
@@ -65,7 +65,7 @@ export class ToInputRenderLink implements RenderLink {
     // Set the parentId of the reroute we dropped on, to the reroute we dragged from
     reroute.parentId = fromReroute?.id
 
-    const newLink = outputNode.connectSlots(fromSlot, inputNode, input, existingLink.parentId)
+    const newLink = outputNode.connectSlots(fromSlot, inputNode, input, link.parentId)
 
     // Connecting from the final reroute of a floating reroute chain
     if (floatingTerminus) fromReroute.removeAllFloatingLinks()
@@ -74,14 +74,14 @@ export class ToInputRenderLink implements RenderLink {
     for (const reroute of originalReroutes) {
       if (reroute.id === fromReroute?.id) break
 
-      reroute.removeLink(existingLink)
+      reroute.removeLink(link)
       if (reroute.totalLinks === 0) {
-        if (existingLink.isFloating) {
+        if (link.isFloating) {
           // Cannot float from both sides - remove
           reroute.remove()
         } else {
           // Convert to floating
-          const cl = existingLink.toFloating("output", reroute.id)
+          const cl = link.toFloating("output", reroute.id)
           this.network.addFloatingLink(cl)
           reroute.floating = { slotType: "output" }
         }
