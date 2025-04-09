@@ -777,6 +777,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     if (widgets && this.serialize_widgets) {
       o.widgets_values = []
       for (const [i, widget] of widgets.entries()) {
+        if (widget.serialize === false) continue
         // @ts-expect-error #595 No-null
         o.widgets_values[i] = widget ? widget.value : null
       }

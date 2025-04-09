@@ -151,6 +151,12 @@ export interface IBaseWidget {
   value?: TWidgetValue
 
   /**
+   * Whether the widget value should be serialized on node serialization.
+   * @default true
+   */
+  serialize?: boolean
+
+  /**
    * The computed height of the widget. Used by customized node resize logic.
    * See scripts/domWidget.ts for more details.
    * @readonly [Computed] This property is computed by the node.
