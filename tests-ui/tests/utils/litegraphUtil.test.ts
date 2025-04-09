@@ -117,8 +117,7 @@ describe('compressWidgetInputSlots', () => {
     compressWidgetInputSlots(graph)
 
     expect(graph.nodes[0].inputs).toEqual([
-      { widget: true, link: 2 },
-      { widget: false, link: null }
+      { widget: { name: 'bar' }, link: 2, type: 'INT', name: 'bar' }
     ])
   })
 
