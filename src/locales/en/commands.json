@@ -44,6 +44,9 @@
   "Comfy_Canvas_ResetView": {
     "label": "Reset View"
   },
+  "Comfy_Canvas_Resize": {
+    "label": "Resize Selected Nodes"
+  },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "Canvas Toggle Link Visibility"
   },

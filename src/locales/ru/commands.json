@@ -44,6 +44,9 @@
   "Comfy_Canvas_ResetView": {
     "label": "Сбросить вид"
   },
+  "Comfy_Canvas_Resize": {
+    "label": "Изменить размер выбранных узлов"
+  },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "Переключить видимость ссылки"
   },

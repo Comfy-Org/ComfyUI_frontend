@@ -44,6 +44,9 @@
   "Comfy_Canvas_ResetView": {
     "label": "Réinitialiser la vue"
   },
+  "Comfy_Canvas_Resize": {
+    "label": "Redimensionner les nœuds sélectionnés"
+  },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "Basculer la visibilité du lien sur le canevas"
   },

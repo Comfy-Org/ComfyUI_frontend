@@ -44,6 +44,9 @@
   "Comfy_Canvas_ResetView": {
     "label": "ビューをリセット"
   },
+  "Comfy_Canvas_Resize": {
+    "label": "選択したノードのサイズ変更"
+  },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "キャンバスのリンク表示を切り替える"
   },
