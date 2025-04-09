@@ -212,6 +212,7 @@ app.registerExtension({
               node.inputs[0].widget = { name: 'value' }
               // @ts-expect-error fixme ts strict error
               setWidgetConfig(node.inputs[0], [
+                // @ts-expect-error fixme ts strict error
                 widgetType ?? displayType,
                 widgetConfig
               ])

@@ -329,8 +329,8 @@ export class PrimitiveNode extends LGraphNode {
 
       return
     }
-    // @ts-expect-error fixme ts strict error
-    const config1 = output.widget?.[GET_CONFIG]?.()
+    const config1 = (output.widget?.[GET_CONFIG] as () => InputSpec)?.()
+    if (!config1) return
     const isNumber = config1[0] === 'INT' || config1[0] === 'FLOAT'
     if (!isNumber) return
 
@@ -359,8 +359,12 @@ export class PrimitiveNode extends LGraphNode {
     if (!isConvertibleWidget(targetWidget, config2)) return false
 
     const output = this.outputs[originSlot]
-    // @ts-expect-error fixme ts strict error
-    if (!(output.widget?.[CONFIG] ?? output.widget?.[GET_CONFIG]())) {
+    if (
+      !(
+        output.widget?.[CONFIG] ??
+        (output.widget?.[GET_CONFIG] as () => InputSpec)?.()
+      )
+    ) {
       // No widget defined for this primitive yet so allow it
       return true
     }
@@ -370,9 +374,10 @@ export class PrimitiveNode extends LGraphNode {
 
   #isValidConnection(input: INodeInputSlot, forceUpdate?: boolean) {
     // Only allow connections where the configs match
-    const output = this.outputs[0]
-    // @ts-expect-error fixme ts strict error
-    const config2 = input.widget[GET_CONFIG]()
+    const output = this.outputs?.[0]
+    const config2 = (input.widget?.[GET_CONFIG] as () => InputSpec)?.()
+    if (!config2) return false
+
     return !!mergeIfValid.call(
       this,
       output,
@@ -417,9 +422,14 @@ export class PrimitiveNode extends LGraphNode {
   }
 }
 
-export function getWidgetConfig(slot: INodeInputSlot | INodeOutputSlot) {
-  // @ts-expect-error fixme ts strict error
-  return slot.widget[CONFIG] ?? slot.widget[GET_CONFIG]?.() ?? ['*', {}]
+export function getWidgetConfig(
+  slot: INodeInputSlot | INodeOutputSlot
+): InputSpec {
+  return (slot.widget?.[CONFIG] ??
+    (slot.widget?.[GET_CONFIG] as () => InputSpec)?.() ?? [
+      '*',
+      {}
+    ]) as InputSpec
 }
 
 function getConfig(this: LGraphNode, widgetName: string) {
@@ -501,7 +511,6 @@ export function mergeIfValid(
     config1 = getWidgetConfig(output)
   }
 
-  // @ts-expect-error fixme ts strict error
   const customSpec = mergeInputSpec(config1, config2)
 
   if (customSpec || forceUpdate) {
@@ -604,8 +613,11 @@ app.registerExtension({
         // Not a widget input or already handled input
         if (
           !(input.type in ComfyWidgets) &&
-          // @ts-expect-error fixme ts strict error
-          !(input.widget?.[GET_CONFIG]?.()?.[0] instanceof Array)
+          !(
+            (
+              input.widget?.[GET_CONFIG] as (() => InputSpec) | undefined
+            )?.()?.[0] instanceof Array
+          )
         ) {
           return r //also Not a ComfyWidgets input or combo (do nothing)
         }
