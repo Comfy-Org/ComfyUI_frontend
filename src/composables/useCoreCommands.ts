@@ -405,6 +405,19 @@ export function useCoreCommands(): ComfyCommand[] {
       }
     },
     {
+      id: 'Comfy.Canvas.Resize',
+      icon: 'pi pi-minus',
+      label: 'Resize Selected Nodes',
+      versionAdded: '',
+      function: () => {
+        getSelectedNodes().forEach((node) => {
+          const optimalSize = node.computeSize()
+          node.setSize([optimalSize[0], optimalSize[1]])
+        })
+        app.canvas.setDirty(true, true)
+      }
+    },
+    {
       id: 'Comfy.Canvas.ToggleSelectedNodes.Collapse',
       icon: 'pi pi-minus',
       label: 'Collapse/Expand Selected Nodes',
