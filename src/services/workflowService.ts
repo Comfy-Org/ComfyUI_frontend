@@ -215,7 +215,7 @@ export const useWorkflowService = () => {
    * @param closeOptions Options for closing workflows
    * @returns true if all workflows were closed, false if the user cancelled
    */
-  const batchCloseWorkflow = async (
+  const batchCloseWorkflows = async (
     workflows: ComfyWorkflow[],
     options: { warnIfUnsaved: boolean; hint?: string } = {
       warnIfUnsaved: true
@@ -249,7 +249,7 @@ export const useWorkflowService = () => {
             )
 
             if (remainingWorkflows.length > 0) {
-              await batchCloseWorkflow(remainingWorkflows, options)
+              await batchCloseWorkflows(remainingWorkflows, options)
             }
           }
           break
@@ -266,7 +266,7 @@ export const useWorkflowService = () => {
               (workflow) => workflow.path !== dirtyWorkflows[0].path
             )
             if (remainingWorkflows.length > 0) {
-              await batchCloseWorkflow(remainingWorkflows, options)
+              await batchCloseWorkflows(remainingWorkflows, options)
             }
           }
           break
@@ -478,7 +478,7 @@ export const useWorkflowService = () => {
     reloadCurrentWorkflow,
     openWorkflow,
     closeWorkflow,
-    batchCloseWorkflow,
+    batchCloseWorkflows,
     renameWorkflow,
     deleteWorkflow,
     insertWorkflow,
