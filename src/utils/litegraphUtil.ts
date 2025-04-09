@@ -1,5 +1,6 @@
 import type { ColorOption, LGraph } from '@comfyorg/litegraph'
 import { LGraphGroup, LGraphNode, isColorable } from '@comfyorg/litegraph'
+import type { ISerialisedGraph } from '@comfyorg/litegraph/dist/types/serialisation'
 import type {
   IComboWidget,
   IWidget
@@ -141,6 +142,29 @@ export function fixLinkInputSlots(graph: LGraph) {
       if (!link) continue
 
       link.target_slot = inputIndex
+    }
+  }
+}
+
+/**
+ * Compress widget input slots by removing all unconnected widget input slots.
+ * This should match the serialization format of legacy widget conversion.
+ *
+ * @param graph - The graph to compress widget input slots for.
+ */
+export function compressWidgetInputSlots(graph: ISerialisedGraph) {
+  for (const node of graph.nodes) {
+    node.inputs = node.inputs?.filter(
+      (input) => !(input.widget && input.link === null)
+    )
+
+    for (const [inputIndex, input] of node.inputs?.entries() ?? []) {
+      if (input.link) {
+        const link = graph.links.find((link) => link[0] === input.link)
+        if (link) {
+          link[4] = inputIndex
+        }
+      }
     }
   }
 }

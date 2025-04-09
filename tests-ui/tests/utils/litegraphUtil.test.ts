@@ -1,8 +1,12 @@
+import { ISerialisedGraph } from '@comfyorg/litegraph/dist/types/serialisation'
 import type { IWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import { describe, expect, it } from 'vitest'
 
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { migrateWidgetsValues } from '@/utils/litegraphUtil'
+import {
+  compressWidgetInputSlots,
+  migrateWidgetsValues
+} from '@/utils/litegraphUtil'
 
 describe('migrateWidgetsValues', () => {
   it('should remove widget values for forceInput inputs', () => {
@@ -84,5 +88,86 @@ describe('migrateWidgetsValues', () => {
 
     const result = migrateWidgetsValues(inputDefs, widgets, widgetValues)
     expect(result).toEqual(['first value', 'last value'])
+  })
+})
+
+describe('compressWidgetInputSlots', () => {
+  it('should remove unconnected widget input slots', () => {
+    const graph: ISerialisedGraph = {
+      nodes: [
+        {
+          id: 1,
+          type: 'foo',
+          pos: [0, 0],
+          size: [100, 100],
+          flags: {},
+          order: 0,
+          mode: 0,
+          inputs: [
+            { widget: { name: 'foo' }, link: null, type: 'INT', name: 'foo' },
+            { widget: { name: 'bar' }, link: 2, type: 'INT', name: 'bar' },
+            { widget: { name: 'baz' }, link: null, type: 'INT', name: 'baz' }
+          ],
+          outputs: []
+        }
+      ],
+      links: [[2, 1, 0, 1, 0, 'INT']]
+    } as unknown as ISerialisedGraph
+
+    compressWidgetInputSlots(graph)
+
+    expect(graph.nodes[0].inputs).toEqual([
+      { widget: { name: 'bar' }, link: 2, type: 'INT', name: 'bar' }
+    ])
+  })
+
+  it('should update link target slots correctly', () => {
+    const graph: ISerialisedGraph = {
+      nodes: [
+        {
+          id: 1,
+          type: 'foo',
+          pos: [0, 0],
+          size: [100, 100],
+          flags: {},
+          order: 0,
+          mode: 0,
+          inputs: [
+            { widget: { name: 'foo' }, link: null, type: 'INT', name: 'foo' },
+            { widget: { name: 'bar' }, link: 2, type: 'INT', name: 'bar' },
+            { widget: { name: 'baz' }, link: 3, type: 'INT', name: 'baz' }
+          ],
+          outputs: []
+        }
+      ],
+      links: [
+        [2, 1, 0, 1, 1, 'INT'],
+        [3, 1, 0, 1, 2, 'INT']
+      ]
+    } as unknown as ISerialisedGraph
+
+    compressWidgetInputSlots(graph)
+
+    expect(graph.nodes[0].inputs).toEqual([
+      { widget: { name: 'bar' }, link: 2, type: 'INT', name: 'bar' },
+      { widget: { name: 'baz' }, link: 3, type: 'INT', name: 'baz' }
+    ])
+
+    expect(graph.links).toEqual([
+      [2, 1, 0, 1, 0, 'INT'],
+      [3, 1, 0, 1, 1, 'INT']
+    ])
+  })
+
+  it('should handle graphs with no nodes gracefully', () => {
+    const graph: ISerialisedGraph = {
+      nodes: [],
+      links: []
+    } as unknown as ISerialisedGraph
+
+    compressWidgetInputSlots(graph)
+
+    expect(graph.nodes).toEqual([])
+    expect(graph.links).toEqual([])
   })
 })
