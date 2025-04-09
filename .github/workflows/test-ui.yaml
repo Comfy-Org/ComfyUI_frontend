@@ -30,7 +30,7 @@ jobs:
         with:
           repository: 'Comfy-Org/ComfyUI_devtools'
           path: 'ComfyUI/custom_nodes/ComfyUI_devtools'
-          ref: '080e6d4af809a46852d1c4b7ed85f06e8a3a72be'
+          ref: '49c8220be49120dbaff85f32813d854d6dff2d05'
 
       - uses: actions/setup-node@v4
         with:
