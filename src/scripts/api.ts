@@ -1,6 +1,5 @@
 import axios from 'axios'
 
-import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json'
 import type {
   DisplayComponentWsMessage,
   EmbeddingsResponse,
@@ -12,7 +11,6 @@ import type {
   ExecutionStartWsMessage,
   ExecutionSuccessWsMessage,
   ExtensionsResponse,
-  FeatureFlagsWsMessage,
   HistoryTaskItem,
   LogsRawResponse,
   LogsWsMessage,
@@ -116,7 +114,6 @@ interface BackendApiCalls {
   progress_text: ProgressTextWsMessage
   progress_state: ProgressStateWsMessage
   display_component: DisplayComponentWsMessage
-  feature_flags: FeatureFlagsWsMessage
 }
 
 /** Dictionary of all api calls */
@@ -245,19 +242,6 @@ export class ComfyApi extends EventTarget {
   socket: WebSocket | null = null
 
   reportedUnknownMessageTypes = new Set<string>()
-
-  /**
-   * Get feature flags supported by this frontend client.
-   * Returns a copy to prevent external modification.
-   */
-  getClientFeatureFlags(): Record<string, unknown> {
-    return { ...defaultClientFeatureFlags }
-  }
-
-  /**
-   * Feature flags received from the backend server.
-   */
-  serverFeatureFlags: Record<string, unknown> = {}
 
   /**
    * The auth token for the comfy org account if the user is logged in.
@@ -400,15 +384,6 @@ export class ComfyApi extends EventTarget {
 
     this.socket.addEventListener('open', () => {
       opened = true
-
-      // Send feature flags as the first message
-      this.socket!.send(
-        JSON.stringify({
-          type: 'feature_flags',
-          data: this.getClientFeatureFlags()
-        })
-      )
-
       if (isReconnect) {
         this.dispatchCustomEvent('reconnected')
       }
@@ -529,14 +504,6 @@ export class ComfyApi extends EventTarget {
             case 'logs':
             case 'b_preview':
               this.dispatchCustomEvent(msg.type, msg.data)
-              break
-            case 'feature_flags':
-              // Store server feature flags
-              this.serverFeatureFlags = msg.data
-              console.log(
-                'Server feature flags received:',
-                this.serverFeatureFlags
-              )
               break
             default:
               if (this.#registered.has(msg.type)) {
@@ -1002,7 +969,17 @@ export class ComfyApi extends EventTarget {
     return (await axios.get(this.internalURL('/folder_paths'))).data
   }
 
-  /* Frees memory by unloading models and optionally freeing execution cache
+  /**
+   * Gets the custom nodes i18n data from the server.
+   *
+   * @returns The custom nodes i18n data
+   */
+  async getCustomNodesI18n(): Promise<Record<string, any>> {
+    return (await axios.get(this.apiURL('/i18n'))).data
+  }
+
+  /**
+   * Frees memory by unloading models and optionally freeing execution cache
    * @param {Object} options - The options object
    * @param {boolean} options.freeExecutionCache - If true, also frees execution cache
    */
@@ -1050,42 +1027,6 @@ export class ComfyApi extends EventTarget {
         life: 5000
       })
     }
-  }
-
-  /**
-   * Gets the custom nodes i18n data from the server.
-   *
-   * @returns The custom nodes i18n data
-   */
-  async getCustomNodesI18n(): Promise<Record<string, any>> {
-    return (await axios.get(this.apiURL('/i18n'))).data
-  }
-
-  /**
-   * Checks if the server supports a specific feature.
-   * @param featureName The name of the feature to check
-   * @returns true if the feature is supported, false otherwise
-   */
-  serverSupportsFeature(featureName: string): boolean {
-    return this.serverFeatureFlags[featureName] === true
-  }
-
-  /**
-   * Gets a server feature flag value.
-   * @param featureName The name of the feature to get
-   * @param defaultValue The default value if the feature is not found
-   * @returns The feature value or default
-   */
-  getServerFeature<T = unknown>(featureName: string, defaultValue?: T): T {
-    return (this.serverFeatureFlags[featureName] ?? defaultValue) as T
-  }
-
-  /**
-   * Gets all server feature flags.
-   * @returns Copy of all server feature flags
-   */
-  getServerFeatures(): Record<string, unknown> {
-    return { ...this.serverFeatureFlags }
   }
 }
 
