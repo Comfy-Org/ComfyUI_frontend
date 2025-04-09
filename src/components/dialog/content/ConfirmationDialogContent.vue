@@ -64,12 +64,12 @@
           @click="onDenyAll"
           icon="pi pi-times"
         />
+        <Button :label="$t('g.save')" @click="onConfirm" icon="pi pi-save" />
         <Button
           :label="$t('g.saveAll')"
           @click="onConfirmAll"
           icon="pi pi-save"
         />
-        <Button :label="$t('g.save')" @click="onConfirm" icon="pi pi-save" />
       </template>
       <Button
         v-else-if="type === 'reinstall'"
