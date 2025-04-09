@@ -19,20 +19,20 @@ const GENERIC_SECURITY_ERR_MSG =
  * API routes for ComfyUI Manager
  */
 enum ManagerRoute {
-  START_QUEUE = 'manager/queue/start',
-  RESET_QUEUE = 'manager/queue/reset',
-  QUEUE_STATUS = 'manager/queue/status',
-  INSTALL = 'manager/queue/install',
-  UPDATE = 'manager/queue/update',
-  UPDATE_ALL = 'manager/queue/update_all',
-  UNINSTALL = 'manager/queue/uninstall',
-  DISABLE = 'manager/queue/disable',
-  FIX_NODE = 'manager/queue/fix',
-  LIST_INSTALLED = 'customnode/installed',
-  GET_NODES = 'customnode/getmappings',
-  GET_PACKS = 'customnode/getlist',
-  IMPORT_FAIL_INFO = 'customnode/import_fail_info',
-  REBOOT = 'manager/reboot'
+  START_QUEUE = 'v2/manager/queue/start',
+  RESET_QUEUE = 'v2/manager/queue/reset',
+  QUEUE_STATUS = 'v2/manager/queue/status',
+  INSTALL = 'v2/manager/queue/install',
+  UPDATE = 'v2/manager/queue/update',
+  UPDATE_ALL = 'v2/manager/queue/update_all',
+  UNINSTALL = 'v2/manager/queue/uninstall',
+  DISABLE = 'v2/manager/queue/disable',
+  FIX_NODE = 'v2/manager/queue/fix',
+  LIST_INSTALLED = 'v2/customnode/installed',
+  GET_NODES = 'v2/customnode/getmappings',
+  GET_PACKS = 'v2/customnode/getlist',
+  IMPORT_FAIL_INFO = 'v2/customnode/import_fail_info',
+  REBOOT = 'v2/manager/reboot'
 }
 
 const managerApiClient = axios.create({
