@@ -147,7 +147,6 @@ export const useLitegraphService = () => {
           widget.label = st(nameKey, widget.label ?? inputName)
           widget.options ??= {}
           Object.assign(widget.options, {
-            inputIsOptional: inputSpec.isOptional,
             forceInput: inputSpec.forceInput,
             advanced: inputSpec.advanced,
             hidden: inputSpec.hidden
@@ -210,7 +209,7 @@ export const useLitegraphService = () => {
        */
       #setInitialSize() {
         const s = this.computeSize()
-        s[0] = Math.max(this.#initialMinSize.width, s[0] * 1.5)
+        s[0] = Math.max(this.#initialMinSize.width, s[0])
         s[1] = Math.max(this.#initialMinSize.height, s[1])
         this.setSize(s)
       }

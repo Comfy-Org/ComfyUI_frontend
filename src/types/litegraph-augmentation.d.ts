@@ -27,10 +27,6 @@ declare module '@comfyorg/litegraph/dist/types/widgets' {
      */
     minNodeSize?: Size
     /**
-     * Whether the widget is optional.
-     */
-    inputIsOptional?: boolean
-    /**
      * Whether the widget is forced to be an input.
      */
     forceInput?: boolean
