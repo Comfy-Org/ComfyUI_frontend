@@ -152,14 +152,26 @@
   "Comfy_LoadDefaultWorkflow": {
     "label": "기본 워크플로 로드"
   },
-  "Comfy_Manager_CustomNodesManager": {
-    "label": "사용자 정의 노드 관리자"
+  "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
+    "label": "사용자 정의 노드 (베타)"
+  },
+  "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
+    "label": "사용자 정의 노드 (레거시)"
+  },
+  "Comfy_Manager_ShowLegacyManagerMenu": {
+    "label": "매니저 메뉴 (레거시)"
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "진행 상황 대화 상자 전환"
   },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "선택한 노드 마스크 편집기 열기"
+  },
+  "Comfy_Memory_UnloadModels": {
+    "label": "모델 언로드"
+  },
+  "Comfy_Memory_UnloadModelsAndExecutionCache": {
+    "label": "모델 및 실행 캐시 언로드"
   },
   "Comfy_NewBlankWorkflow": {
     "label": "새로운 빈 워크플로"
