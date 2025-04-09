@@ -796,6 +796,8 @@
     "Move Selected Nodes Left": "左移所选节点",
     "Move Selected Nodes Right": "右移所选节点",
     "Move Selected Nodes Up": "上移所选节点",
+    "Manager": "管理器",
+    "Manager Menu (Legacy)": "管理器菜单（旧版）",
     "Mute/Unmute Selected Nodes": "静音/取消静音选定节点",
     "New": "新建",
     "Next Opened Workflow": "下一个打开的工作流",
