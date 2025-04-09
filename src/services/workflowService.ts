@@ -5,15 +5,15 @@ import { toRaw } from 'vue'
 import { t } from '@/i18n'
 import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import { app } from '@/scripts/app'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { downloadBlob } from '@/scripts/utils'
+import { DialogResult, useDialogService } from '@/services/dialogService'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { appendJsonExt } from '@/utils/formatUtil'
-
-import { useDialogService } from './dialogService'
 
 export const useWorkflowService = () => {
   const settingStore = useSettingStore()
@@ -80,7 +80,7 @@ export const useWorkflowService = () => {
         itemList: [newPath]
       })
 
-      if (res !== true) return
+      if (res !== DialogResult.YES) return
 
       if (existingWorkflow.path === workflow.path) {
         await saveWorkflow(workflow)
@@ -181,17 +181,17 @@ export const useWorkflowService = () => {
     }
   ): Promise<boolean> => {
     if (workflow.isModified && options.warnIfUnsaved) {
-      const confirmed = await dialogService.confirm({
+      const res = await dialogService.confirm({
         title: t('sideToolbar.workflowTab.dirtyCloseTitle'),
         type: 'dirtyClose',
         message: t('sideToolbar.workflowTab.dirtyClose'),
         itemList: [workflow.path],
         hint: options.hint
       })
-      // Cancel
-      if (confirmed === null) return false
 
-      if (confirmed === true) {
+      if (res === null || res === DialogResult.CANCEL) return false
+
+      if (res === DialogResult.YES) {
         await saveWorkflow(workflow)
       }
     }
@@ -209,6 +209,103 @@ export const useWorkflowService = () => {
     return true
   }
 
+  /**
+   * Close a workflow with confirmation if there are unsaved changes. Able to batch close workflows.
+   * @param options Array of workflow options to close
+   * @param closeOptions Options for closing workflows
+   * @returns true if all workflows were closed, false if the user cancelled
+   */
+  const batchCloseWorkflow = async (
+    options: { workflow: ComfyWorkflow }[]
+  ): Promise<boolean> => {
+    // Filter out workflows that need saving
+    const dirtyWorkflows = options.filter(
+      (option) => option.workflow.isModified
+    )
+
+    if (dirtyWorkflows.length === 0) {
+      // If no workflows need saving, close all workflows
+      for (const option of options) {
+        await workflowStore.closeWorkflow(option.workflow)
+      }
+      return true
+    }
+
+    const res = await dialogService.confirm({
+      title: t('sideToolbar.workflowTab.dirtyCloseTitle'),
+      type: 'batchDirtyClose',
+      message: t('sideToolbar.workflowTab.dirtyClose'),
+      itemList: dirtyWorkflows.map((option) => option.workflow.path)
+    })
+
+    switch (res) {
+      case DialogResult.YES:
+        if (dirtyWorkflows.length > 0) {
+          await saveWorkflow(dirtyWorkflows[0].workflow)
+
+          const remainingOptions = options.filter(
+            (option) => option.workflow.path !== dirtyWorkflows[0].workflow.path
+          )
+
+          if (remainingOptions.length > 0) {
+            await batchCloseWorkflow(remainingOptions)
+          }
+        }
+        break
+
+      case DialogResult.YES_TO_ALL:
+        for (const option of dirtyWorkflows) {
+          await saveWorkflow(option.workflow)
+        }
+        break
+
+      case DialogResult.NO:
+        if (dirtyWorkflows.length > 0) {
+          const remainingOptions = dirtyWorkflows.filter(
+            (option) => option.workflow.path !== dirtyWorkflows[0].workflow.path
+          )
+
+          if (remainingOptions.length > 0) {
+            await batchCloseWorkflow(remainingOptions)
+          }
+        }
+        break
+
+      case DialogResult.NO_TO_ALL:
+        // Continue to close all workflows.
+        break
+
+      case DialogResult.CANCEL:
+        return false
+
+      default:
+        // This probably shouldn't be reachable
+        return false
+    }
+
+    // Handle batch closing workflows
+    for (const option of options) {
+      // Ensure state is properly synchronized before closing
+      if (option.workflow.changeTracker) {
+        // Force sync the modified state with actual comparison
+        option.workflow.isModified = !ChangeTracker.graphEqual(
+          option.workflow.changeTracker.initialState,
+          option.workflow.changeTracker.activeState
+        )
+      }
+
+      if (
+        workflowStore.isActive(option.workflow) &&
+        workflowStore.openWorkflows.length === 1
+      ) {
+        await loadDefaultWorkflow()
+      }
+      await workflowStore.closeWorkflow(option.workflow)
+    }
+
+    return true
+  }
+
   const renameWorkflow = async (workflow: ComfyWorkflow, newPath: string) => {
     await workflowStore.renameWorkflow(workflow, newPath)
   }
@@ -223,21 +320,23 @@ export const useWorkflowService = () => {
     silent = false
   ): Promise<boolean> => {
     const bypassConfirm = !settingStore.get('Comfy.Workflow.ConfirmDelete')
-    let confirmed: boolean | null = bypassConfirm || silent
+    let shouldDelete = bypassConfirm || silent
 
-    if (!confirmed) {
-      confirmed = await dialogService.confirm({
+    if (!shouldDelete) {
+      const res = await dialogService.confirm({
         title: t('sideToolbar.workflowTab.confirmDeleteTitle'),
         type: 'delete',
         message: t('sideToolbar.workflowTab.confirmDelete'),
         itemList: [workflow.path]
       })
-      if (!confirmed) return false
+
+      if (res !== DialogResult.YES) return false
+      shouldDelete = true
     }
 
     if (workflowStore.isOpen(workflow)) {
       const closed = await closeWorkflow(workflow, {
-        warnIfUnsaved: !confirmed
+        warnIfUnsaved: !shouldDelete
       })
       if (!closed) return false
     }
@@ -378,6 +477,7 @@ export const useWorkflowService = () => {
     reloadCurrentWorkflow,
     openWorkflow,
     closeWorkflow,
+    batchCloseWorkflow,
     renameWorkflow,
     deleteWorkflow,
     insertWorkflow,

@@ -51,6 +51,26 @@
         />
         <Button :label="$t('g.save')" @click="onConfirm" icon="pi pi-save" />
       </template>
+      <template v-else-if="type === 'batchDirtyClose'">
+        <Button
+          :label="$t('g.no')"
+          severity="secondary"
+          @click="onDeny"
+          icon="pi pi-times"
+        />
+        <Button
+          :label="$t('g.noToAll')"
+          severity="secondary"
+          @click="onDenyAll"
+          icon="pi pi-times"
+        />
+        <Button
+          :label="$t('g.saveAll')"
+          @click="onConfirmAll"
+          icon="pi pi-save"
+        />
+        <Button :label="$t('g.save')" @click="onConfirm" icon="pi pi-save" />
+      </template>
       <Button
         v-else-if="type === 'reinstall'"
         :label="$t('desktopMenu.reinstall')"
@@ -74,13 +94,16 @@
 import Button from 'primevue/button'
 import Message from 'primevue/message'
 
-import type { ConfirmationDialogType } from '@/services/dialogService'
+import {
+  type ConfirmationDialogType,
+  DialogResult
+} from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const props = defineProps<{
   message: string
   type: ConfirmationDialogType
-  onConfirm: (value?: boolean) => void
+  onConfirm: (value?: DialogResult) => void
   itemList?: string[]
   hint?: string
 }>()
@@ -88,12 +111,22 @@ const props = defineProps<{
 const onCancel = () => useDialogStore().closeDialog()
 
 const onDeny = () => {
-  props.onConfirm(false)
+  props.onConfirm(DialogResult.NO)
   useDialogStore().closeDialog()
 }
 
 const onConfirm = () => {
-  props.onConfirm(true)
+  props.onConfirm(DialogResult.YES)
+  useDialogStore().closeDialog()
+}
+
+const onDenyAll = () => {
+  props.onConfirm(DialogResult.NO_TO_ALL)
+  useDialogStore().closeDialog()
+}
+
+const onConfirmAll = () => {
+  props.onConfirm(DialogResult.YES_TO_ALL)
   useDialogStore().closeDialog()
 }
 </script>

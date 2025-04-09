@@ -99,7 +99,7 @@ const onWorkflowChange = (option: WorkflowOption) => {
   workflowService.openWorkflow(option.workflow)
 }
 
-const closeWorkflows = async (options: WorkflowOption[]) => {
+const closeWorkflow = async (options: WorkflowOption[]) => {
   for (const opt of options) {
     if (
       !(await workflowService.closeWorkflow(opt.workflow, {
@@ -112,8 +112,12 @@ const closeWorkflows = async (options: WorkflowOption[]) => {
   }
 }
 
+const closeWorkflows = async (options: WorkflowOption[]) => {
+  await workflowService.batchCloseWorkflow(options)
+}
+
 const onCloseWorkflow = (option: WorkflowOption) => {
-  closeWorkflows([option])
+  closeWorkflow([option])
 }
 
 const showContextMenu = (event: MouseEvent, option: WorkflowOption) => {

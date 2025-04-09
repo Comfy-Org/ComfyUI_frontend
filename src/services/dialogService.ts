@@ -22,7 +22,16 @@ export type ConfirmationDialogType =
   | 'overwrite'
   | 'delete'
   | 'dirtyClose'
+  | 'batchDirtyClose'
   | 'reinstall'
+
+export enum DialogResult {
+  CANCEL = 'cancel',
+  NO = 'no',
+  YES = 'yes',
+  NO_TO_ALL = 'noToAll',
+  YES_TO_ALL = 'yesToAll'
+}
 
 export const useDialogService = () => {
   const dialogStore = useDialogStore()
@@ -244,9 +253,13 @@ export const useDialogService = () => {
   }
 
   /**
-   * @returns `true` if the user confirms the dialog,
-   * `false` if denied (e.g. no in yes/no/cancel), or
-   * `null` if the dialog is cancelled or closed
+   * Shows a confirmation dialog to the user with customizable options
+   * @returns A DialogResult enum value:
+   * - DialogResult.YES if user confirms
+   * - DialogResult.NO if user declines
+   * - DialogResult.YES_TO_ALL if user selects "Yes to all" or equivalent
+   * - DialogResult.NO_TO_ALL if user selects "No to all" or equivalent
+   * - DialogResult.CANCEL if the dialog is cancelled or closed
    */
   async function confirm({
     title,
@@ -264,7 +277,7 @@ export const useDialogService = () => {
     /** Displayed as an unordered list immediately below the message body */
     itemList?: string[]
     hint?: string
-  }): Promise<boolean | null> {
+  }): Promise<DialogResult> {
     return new Promise((resolve) => {
       const options: ShowDialogOptions = {
         key: 'global-prompt',
@@ -274,11 +287,13 @@ export const useDialogService = () => {
           message,
           type,
           itemList,
-          onConfirm: resolve,
+          onConfirm: (result?: DialogResult) => {
+            resolve(result ?? DialogResult.CANCEL)
+          },
           hint
         },
         dialogComponentProps: {
-          onClose: () => resolve(null)
+          onClose: () => resolve(DialogResult.CANCEL)
         }
       }
 
