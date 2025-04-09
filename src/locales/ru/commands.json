@@ -156,16 +156,10 @@
     "label": "Пользовательские узлы (Бета)"
   },
   "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
-    "label": "Пользовательские узлы (устаревшие)"
+    "label": "Пользовательские узлы (Устаревшие)"
   },
   "Comfy_Manager_ShowLegacyManagerMenu": {
-    "label": "Меню менеджера (устаревшее)"
-  },
-  "Comfy_Manager_ShowMissingPacks": {
-    "label": "Установить отсутствующие"
-  },
-  "Comfy_Manager_ShowUpdateAvailablePacks": {
-    "label": "Проверить наличие обновлений"
+    "label": "Меню менеджера (Устаревшее)"
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "Переключить диалоговое окно прогресса"
