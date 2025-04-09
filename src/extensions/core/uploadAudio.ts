@@ -108,9 +108,8 @@ app.registerExtension({
         audio.setAttribute('name', 'media')
 
         const audioUIWidget: DOMWidget<HTMLAudioElement, string> =
-          node.addDOMWidget(inputName, /* name=*/ 'audioUI', audio, {
-            serialize: false
-          })
+          node.addDOMWidget(inputName, /* name=*/ 'audioUI', audio)
+        audioUIWidget.serialize = false
 
         const isOutputNode = node.constructor.nodeData.output_node
         if (isOutputNode) {
