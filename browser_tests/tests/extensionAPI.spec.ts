@@ -278,7 +278,7 @@ test.describe('Topbar commands', () => {
       })
 
       await comfyPage.confirmDialog.click('confirm')
-      expect(await comfyPage.page.evaluate(() => window['value'])).toBe(true)
+      expect(await comfyPage.page.evaluate(() => window['value'])).toBe('yes') // "yes" is hardcoded DialogResult.YES
     })
 
     test('Should allow dismissing a dialog', async ({ comfyPage }) => {
@@ -295,7 +295,9 @@ test.describe('Topbar commands', () => {
       })
 
       await comfyPage.confirmDialog.click('reject')
-      expect(await comfyPage.page.evaluate(() => window['value'])).toBeNull()
+      expect(await comfyPage.page.evaluate(() => window['value'])).toBe(
+        'cancel'
+      ) // "cancel" is hardcoded DialogResult.CANCEL
     })
   })
 
