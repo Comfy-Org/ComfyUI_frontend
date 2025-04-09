@@ -43,4 +43,15 @@ test.describe('Primitive Node', () => {
       'static_primitive_connected.png'
     )
   })
+
+  test('Report missing nodes when connect to missing node', async ({
+    comfyPage
+  }) => {
+    await comfyPage.loadWorkflow(
+      'primitive/primitive_node_connect_missing_node'
+    )
+    // Wait for the element with the .comfy-missing-nodes selector to be visible
+    const missingNodesWarning = comfyPage.page.locator('.comfy-missing-nodes')
+    await expect(missingNodesWarning).toBeVisible()
+  })
 })
