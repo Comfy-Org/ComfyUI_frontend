@@ -13,7 +13,7 @@ import type { LGraphCanvas } from "@/LGraphCanvas"
  * inputIndicators.dispose()
  * ```
  */
-export class InputIndicators {
+export class InputIndicators implements Disposable {
   // #region config
   radius = 8
   startAngle = 0
@@ -163,5 +163,9 @@ export class InputIndicators {
   dispose() {
     this.controller?.abort()
     this.controller = undefined
+  }
+
+  [Symbol.dispose](): void {
+    this.dispose()
   }
 }

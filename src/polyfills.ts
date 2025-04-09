@@ -1,3 +1,8 @@
+// @ts-expect-error Polyfill
+Symbol.dispose ??= Symbol("Symbol.dispose")
+// @ts-expect-error Polyfill
+Symbol.asyncDispose ??= Symbol("Symbol.asyncDispose")
+
 // API *************************************************
 // like rect but rounded corners
 export function loadPolyfills() {
