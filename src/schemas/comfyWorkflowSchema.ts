@@ -224,6 +224,7 @@ const zConfig = z
 const zExtra = z
   .object({
     ds: zDS.optional(),
+    frontendVersion: z.string().optional(),
     linkExtensions: z.array(zComfyLinkExtension).optional(),
     reroutes: z.array(zReroute).optional()
   })
