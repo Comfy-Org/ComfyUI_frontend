@@ -44,7 +44,7 @@ app.registerExtension({
       }
 
       if (!(type in this.slot_types_default_out)) {
-        this.slot_types_default_out[type] = []
+        this.slot_types_default_out[type] = ['Reroute']
       }
       if (this.slot_types_default_out[type].includes(nodeId)) continue
       this.slot_types_default_out[type].push(nodeId)
@@ -65,7 +65,7 @@ app.registerExtension({
     for (const el of outputs) {
       const type = el as string
       if (!(type in this.slot_types_default_in)) {
-        this.slot_types_default_in[type] = []
+        this.slot_types_default_in[type] = ['Reroute']
       }
 
       if (this.slot_types_default_in[type].includes(nodeId)) continue

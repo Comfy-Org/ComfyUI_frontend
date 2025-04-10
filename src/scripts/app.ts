@@ -962,7 +962,7 @@ export class ComfyApp {
     {
       showMissingNodesDialog = true,
       showMissingModelsDialog = true,
-      checkForRerouteMigration = true
+      checkForRerouteMigration = false
     } = {}
   ) {
     if (clean !== false) {
