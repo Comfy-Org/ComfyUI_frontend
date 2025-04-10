@@ -69,17 +69,17 @@ export function useWorkflowValidation() {
       if (linkValidation.fixed) {
         if (!silent) {
           toastStore.add({
-            severity: 'info',
+            severity: 'success',
             summary: 'Workflow Links Fixed',
             detail: `Fixed ${linkValidation.patched} node connections and removed ${linkValidation.deleted} invalid links.`
           })
         }
+      }
 
-        validatedData = linkValidation.graph as unknown as ComfyWorkflowJSON
-        linksFixes = {
-          patched: linkValidation.patched,
-          deleted: linkValidation.deleted
-        }
+      validatedData = linkValidation.graph as unknown as ComfyWorkflowJSON
+      linksFixes = {
+        patched: linkValidation.patched,
+        deleted: linkValidation.deleted
       }
     }
 
