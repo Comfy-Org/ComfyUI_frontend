@@ -6,6 +6,7 @@
     @update:formValue="updateSettingValue"
   >
     <template #name-prefix>
+      <Tag v-if="setting.id === 'Comfy.Locale'" class="pi pi-language" />
       <Tag v-if="setting.experimental" :value="$t('g.experimental')" />
       <Tag
         v-if="setting.deprecated"
