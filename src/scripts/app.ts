@@ -1147,22 +1147,11 @@ export class ComfyApp {
     )
     await useWorkflowService().afterLoadNewGraph(
       workflow,
-      // @ts-expect-error zod types issue. Will be fixed after we enable ts-strict
-      this.graph.serialize()
+      this.graph.serialize() as unknown as ComfyWorkflowJSON
     )
     requestAnimationFrame(() => {
       this.graph.setDirtyCanvas(true, true)
     })
-  }
-
-  /**
-   * Serializes a graph using preferred user settings.
-   * @param graph The litegraph to serialize.
-   * @returns A serialized graph (aka workflow) with preferred user settings.
-   */
-  serializeGraph(graph: LGraph = this.graph) {
-    const sortNodes = useSettingStore().get('Comfy.Workflow.SortNodeIdOnSave')
-    return graph.serialize({ sortNodes })
   }
 
   async graphToPrompt(graph = this.graph) {
@@ -1276,8 +1265,10 @@ export class ComfyApp {
         // by external callers, and `importA1111` has no access to `app`.
         useWorkflowService().beforeLoadNewGraph()
         importA1111(this.graph, pngInfo.parameters)
-        // @ts-expect-error zod type issue on ComfyWorkflowJSON. Should be resolved after enabling ts-strict globally.
-        useWorkflowService().afterLoadNewGraph(fileName, this.serializeGraph())
+        useWorkflowService().afterLoadNewGraph(
+          fileName,
+          this.graph.serialize() as unknown as ComfyWorkflowJSON
+        )
       } else {
         this.showErrorOnFileLoad(file)
       }
@@ -1479,9 +1470,10 @@ export class ComfyApp {
 
     app.graph.arrange()
 
-    // @ts-expect-error zod type issue on ComfyWorkflowJSON. ComfyWorkflowJSON
-    // is stricter than LiteGraph's serialisation schema.
-    useWorkflowService().afterLoadNewGraph(fileName, this.serializeGraph())
+    useWorkflowService().afterLoadNewGraph(
+      fileName,
+      this.graph.serialize() as unknown as ComfyWorkflowJSON
+    )
   }
 
   /**
