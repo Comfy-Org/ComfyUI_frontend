@@ -9,6 +9,7 @@ import {
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/stores/workflowStore'
+import { processWorkflowForExport } from '@/utils/executionUtil'
 
 // Add mock for api at the top of the file
 vi.mock('@/scripts/api', () => ({
@@ -17,6 +18,11 @@ vi.mock('@/scripts/api', () => ({
     storeUserData: vi.fn(),
     listUserDataFullInfo: vi.fn()
   }
+}))
+
+// Add mock for processWorkflowForExport
+vi.mock('@/utils/executionUtil', () => ({
+  processWorkflowForExport: vi.fn((workflow) => workflow)
 }))
 
 describe('useWorkflowStore', () => {
@@ -439,6 +445,9 @@ describe('useWorkflowStore', () => {
       // Save the workflow with new path
       const newWorkflow = await workflow.saveAs('workflows/new-test.json')
 
+      // Verify processWorkflowForExport was called with correct state
+      expect(processWorkflowForExport).toHaveBeenCalledWith(mockState)
+
       // Verify the content was updated
       expect(workflow.path).toBe('workflows/test.json')
       expect(workflow.isModified).toBe(true)
@@ -446,6 +455,35 @@ describe('useWorkflowStore', () => {
       expect(newWorkflow.path).toBe('workflows/new-test.json')
       expect(newWorkflow.content).toBe(JSON.stringify(mockState))
       expect(newWorkflow.isModified).toBe(false)
+    })
+
+    it('should handle empty activeState', async () => {
+      await syncRemoteWorkflows(['test.json'])
+      const workflow = store.getWorkflowByPath('workflows/test.json')!
+      workflow.isModified = true
+      workflow.changeTracker = {
+        activeState: null,
+        reset: vi.fn()
+      } as any
+
+      vi.mocked(api.storeUserData).mockResolvedValue({
+        status: 200,
+        json: () =>
+          Promise.resolve({
+            path: 'workflows/new-test.json',
+            modified: Date.now(),
+            size: 2
+          })
+      } as Response)
+
+      // Save the workflow with new path
+      const newWorkflow = await workflow.saveAs('workflows/new-test.json')
+
+      // Verify processWorkflowForExport was not called
+      expect(processWorkflowForExport).not.toHaveBeenCalled()
+
+      // Verify empty content
+      expect(newWorkflow.content).toBe('')
     })
   })
 })
