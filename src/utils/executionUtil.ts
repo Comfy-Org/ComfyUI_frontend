@@ -41,6 +41,8 @@ export const graphToPrompt = async (
   }
 
   compressWidgetInputSlots(workflow)
+  workflow.extra ??= {}
+  workflow.extra.frontendVersion = __COMFYUI_FRONTEND_VERSION__
 
   const output: ComfyApiWorkflow = {}
   // Process nodes in order of execution
