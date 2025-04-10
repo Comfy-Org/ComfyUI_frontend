@@ -1,4 +1,4 @@
-import type { LGraph } from '@comfyorg/litegraph'
+import type { ISerialisedGraph, LGraph } from '@comfyorg/litegraph'
 import { LGraphEventMode } from '@comfyorg/litegraph'
 
 import type {
@@ -9,16 +9,12 @@ import type {
 import { compressWidgetInputSlots } from './litegraphUtil'
 
 /**
- * Serializes the current graph workflow for export.
- * @returns The serialized graph
+ * Post-processes the workflow for export.
+ * @returns The post-processed workflow
  */
-export const serializeGraphForExport = (
-  graph: LGraph,
-  options: { sortNodes?: boolean } = {}
+export const processWorkflowForExport = (
+  workflow: ComfyWorkflowJSON
 ): ComfyWorkflowJSON => {
-  const { sortNodes = false } = options
-  const workflow = graph.serialize({ sortNodes })
-
   // Remove localized_name from the workflow
   for (const node of workflow.nodes) {
     for (const slot of node.inputs ?? []) {
@@ -29,9 +25,9 @@ export const serializeGraphForExport = (
     }
   }
 
-  compressWidgetInputSlots(workflow)
+  compressWidgetInputSlots(workflow as unknown as ISerialisedGraph)
 
-  return workflow as unknown as ComfyWorkflowJSON
+  return workflow
 }
 
 /**
@@ -54,7 +50,12 @@ export const graphToPrompt = async (
     }
   }
 
-  const workflow = serializeGraphForExport(graph, { sortNodes })
+  const workflow = processWorkflowForExport(
+    graph.serialize({
+      sortNodes
+    }) as unknown as ComfyWorkflowJSON
+  )
+
   const output: ComfyApiWorkflow = {}
   // Process nodes in order of execution
   for (const outerNode of graph.computeExecutionOrder(false)) {

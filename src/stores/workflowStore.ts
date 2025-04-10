@@ -6,6 +6,7 @@ import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { defaultGraphJSON } from '@/scripts/defaultGraph'
+import { processWorkflowForExport } from '@/utils/executionUtil'
 import { getPathDetails } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
 
@@ -90,7 +91,9 @@ export class ComfyWorkflow extends UserFile {
   }
 
   async save() {
-    this.content = JSON.stringify(this.activeState)
+    this.content = this.activeState
+      ? JSON.stringify(processWorkflowForExport(this.activeState))
+      : ''
     // Force save to ensure the content is updated in remote storage incase
     // the isModified state is screwed by changeTracker.
     const ret = await super.save({ force: true })
@@ -105,7 +108,9 @@ export class ComfyWorkflow extends UserFile {
    * @returns this
    */
   async saveAs(path: string) {
-    this.content = JSON.stringify(this.activeState)
+    this.content = this.activeState
+      ? JSON.stringify(processWorkflowForExport(this.activeState))
+      : ''
     return await super.saveAs(path)
   }
 }
@@ -288,7 +293,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     })
 
     workflow.originalContent = workflow.content = workflowData
-      ? JSON.stringify(workflowData)
+      ? JSON.stringify(processWorkflowForExport(workflowData))
       : defaultGraphJSON
 
     workflowLookup.value[workflow.path] = workflow
