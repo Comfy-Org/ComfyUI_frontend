@@ -12,10 +12,8 @@ export const useInstalledPacks = (options: UseNodePacksOptions = {}) => {
     Array.from(comfyManagerStore.installedPacksIds)
   )
 
-  const { startFetch, cleanup, error, isLoading, nodePacks } = useNodePacks(
-    installedPackIds,
-    options
-  )
+  const { startFetch, cleanup, error, isLoading, nodePacks, isReady } =
+    useNodePacks(installedPackIds, options)
 
   const filterInstalledPack = (packs: components['schemas']['Node'][]) =>
     packs.filter((pack) => comfyManagerStore.isPackInstalled(pack.id))
@@ -27,6 +25,7 @@ export const useInstalledPacks = (options: UseNodePacksOptions = {}) => {
   return {
     error,
     isLoading,
+    isReady,
     installedPacks: nodePacks,
     startFetchInstalled: startFetch,
     filterInstalledPack

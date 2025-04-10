@@ -62,10 +62,8 @@ export const useWorkflowPacks = (options: UseNodePacksOptions = {}) => {
     Array.from(packsToUniqueIds(workflowPacks.value))
   )
 
-  const { startFetch, cleanup, error, isLoading, nodePacks } = useNodePacks(
-    workflowPacksIds,
-    options
-  )
+  const { startFetch, cleanup, error, isLoading, nodePacks, isReady } =
+    useNodePacks(workflowPacksIds, options)
 
   const isIdInWorkflow = (packId: string) =>
     workflowPacksIds.value.includes(packId)
@@ -80,6 +78,7 @@ export const useWorkflowPacks = (options: UseNodePacksOptions = {}) => {
   return {
     error,
     isLoading,
+    isReady,
     workflowPacks: nodePacks,
     startFetchWorkflowPacks: startFetch,
     filterWorkflowPack
