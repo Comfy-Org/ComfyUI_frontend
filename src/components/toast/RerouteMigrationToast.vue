@@ -33,7 +33,7 @@ const toast = useToast()
 
 const workflowStore = useWorkflowStore()
 const migrateToLitegraphReroute = () => {
-  const workflowJSON = app.serializeGraph() as unknown as WorkflowJSON04
+  const workflowJSON = app.graph.serialize() as unknown as WorkflowJSON04
   const migratedWorkflowJSON = migrateLegacyRerouteNodes(workflowJSON)
   app.loadGraphData(
     migratedWorkflowJSON,
