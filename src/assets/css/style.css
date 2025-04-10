@@ -398,6 +398,7 @@ button.comfy-queue-btn {
 .graphdialog {
   min-height: 1em;
   background-color: var(--comfy-menu-bg);
+  z-index: 41;
 }
 
 .graphdialog .name {
