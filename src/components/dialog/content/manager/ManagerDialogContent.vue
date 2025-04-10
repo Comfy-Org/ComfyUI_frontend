@@ -185,14 +185,16 @@ const {
   startFetchInstalled,
   filterInstalledPack,
   installedPacks,
-  isLoading: isLoadingInstalled
+  isLoading: isLoadingInstalled,
+  isReady: installedPacksReady
 } = useInstalledPacks()
 
 const {
   startFetchWorkflowPacks,
   filterWorkflowPack,
   workflowPacks,
-  isLoading: isLoadingWorkflow
+  isLoading: isLoadingWorkflow,
+  isReady: workflowPacksReady
 } = useWorkflowPacks()
 
 const filterMissingPacks = (packs: components['schemas']['Node'][]) =>
@@ -236,7 +238,11 @@ watch([isInstalledTab, installedPacks], () => {
 
   if (!isEmptySearch.value) {
     displayPacks.value = filterInstalledPack(searchResults.value)
-  } else if (!installedPacks.value.length) {
+  } else if (
+    !installedPacks.value.length &&
+    !installedPacksReady.value &&
+    !isLoadingInstalled.value
+  ) {
     startFetchInstalled()
   } else {
     displayPacks.value = installedPacks.value
@@ -250,7 +256,11 @@ watch([isMissingTab, isWorkflowTab, workflowPacks], () => {
     displayPacks.value = isMissingTab.value
       ? filterMissingPacks(filterWorkflowPack(searchResults.value))
       : filterWorkflowPack(searchResults.value)
-  } else if (!workflowPacks.value.length) {
+  } else if (
+    !workflowPacks.value.length &&
+    !isLoadingWorkflow.value &&
+    !workflowPacksReady.value
+  ) {
     startFetchWorkflowPacks()
   } else {
     displayPacks.value = isMissingTab.value
