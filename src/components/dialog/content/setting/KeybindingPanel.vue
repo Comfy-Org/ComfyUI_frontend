@@ -80,6 +80,7 @@
           placeholder="Press keys for new binding"
           autocomplete="off"
           fluid
+          @keydown.stop.prevent="captureKeybinding"
         />
         <Message v-if="existingKeybindingOnCombo" severity="warn">
           Keybinding already exists on
@@ -93,9 +94,9 @@
         <Button
           :label="existingKeybindingOnCombo ? 'Overwrite' : 'Save'"
           :icon="existingKeybindingOnCombo ? 'pi pi-pencil' : 'pi pi-check'"
-          @click="saveKeybinding"
           :severity="existingKeybindingOnCombo ? 'warn' : undefined"
           autofocus
+          @click="saveKeybinding"
         />
       </template>
     </Dialog>
