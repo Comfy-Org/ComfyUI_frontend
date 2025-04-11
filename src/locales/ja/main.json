@@ -428,6 +428,8 @@
     "loadingVersions": "バージョンを読み込んでいます...",
     "nightlyVersion": "ナイトリー",
     "noDescription": "説明はありません",
+    "noNodesFound": "ノードが見つかりません",
+    "noNodesFoundDescription": "パックのノードは解析できなかったか、パックがフロントエンドの拡張機能のみでノードがない可能性があります。",
     "noResultsFound": "検索に一致する結果が見つかりませんでした。",
     "nodePack": "ノードパック",
     "packsSelected": "選択したパック",

@@ -428,6 +428,8 @@
     "loadingVersions": "Chargement des versions...",
     "nightlyVersion": "Nocturne",
     "noDescription": "Aucune description disponible",
+    "noNodesFound": "Aucun nœud trouvé",
+    "noNodesFoundDescription": "Les nœuds du pack n'ont pas pu être analysés, ou le pack est une extension frontend uniquement et n'a pas de nœuds.",
     "noResultsFound": "Aucun résultat trouvé correspondant à votre recherche.",
     "nodePack": "Pack de Nœuds",
     "packsSelected": "Packs sélectionnés",

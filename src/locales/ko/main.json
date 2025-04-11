@@ -428,6 +428,8 @@
     "loadingVersions": "버전 로딩 중...",
     "nightlyVersion": "최신 테스트 버전(nightly)",
     "noDescription": "설명이 없습니다",
+    "noNodesFound": "노드를 찾을 수 없습니다",
+    "noNodesFoundDescription": "팩의 노드를 파싱할 수 없거나, 팩이 프론트엔드 확장만을 가지고 있어서 노드가 없습니다.",
     "noResultsFound": "검색과 일치하는 결과가 없습니다.",
     "nodePack": "노드 팩",
     "packsSelected": "선택한 노드 팩",

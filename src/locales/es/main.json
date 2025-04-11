@@ -428,6 +428,8 @@
     "loadingVersions": "Cargando versiones...",
     "nightlyVersion": "Nocturna",
     "noDescription": "No hay descripción disponible",
+    "noNodesFound": "No se encontraron nodos",
+    "noNodesFoundDescription": "Los nodos del paquete no se pudieron analizar, o el paquete es solo una extensión de frontend y no tiene ningún nodo.",
     "noResultsFound": "No se encontraron resultados que coincidan con tu búsqueda.",
     "nodePack": "Paquete de Nodos",
     "packsSelected": "Paquetes Seleccionados",
