@@ -1,3 +1,5 @@
+import log from 'loglevel'
+
 import { CORE_KEYBINDINGS } from '@/constants/coreKeybindings'
 import { useCommandStore } from '@/stores/commandStore'
 import {
@@ -75,7 +77,13 @@ export const useKeybindingService = () => {
     }
     const newBindings = settingStore.get('Comfy.Keybinding.NewBindings')
     for (const keybinding of newBindings) {
-      keybindingStore.addUserKeybinding(new KeybindingImpl(keybinding))
+      if (commandStore.isRegistered(keybinding.commandId)) {
+        keybindingStore.addUserKeybinding(new KeybindingImpl(keybinding))
+      } else {
+        log.warn(
+          `Skipped binding user defined keybind with invalid commandId: ${keybinding.commandId}, combo: ${new KeyComboImpl(keybinding.combo).toString()}`
+        )
+      }
     }
   }
 
