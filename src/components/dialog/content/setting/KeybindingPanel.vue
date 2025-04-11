@@ -80,10 +80,9 @@
           placeholder="Press keys for new binding"
           autocomplete="off"
           fluid
-          :invalid="!!existingKeybindingOnCombo"
           @keydown.stop.prevent="captureKeybinding"
         />
-        <Message v-if="existingKeybindingOnCombo" severity="error">
+        <Message v-if="existingKeybindingOnCombo" severity="warn">
           Keybinding already exists on
           <Tag
             severity="secondary"
@@ -93,9 +92,9 @@
       </div>
       <template #footer>
         <Button
-          label="Save"
-          icon="pi pi-check"
-          :disabled="!!existingKeybindingOnCombo"
+          :label="existingKeybindingOnCombo ? 'Overwrite' : 'Save'"
+          :icon="existingKeybindingOnCombo ? 'pi pi-pencil' : 'pi pi-check'"
+          :severity="existingKeybindingOnCombo ? 'warn' : undefined"
           autofocus
           @click="saveKeybinding"
         />

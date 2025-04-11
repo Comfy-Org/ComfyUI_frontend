@@ -264,4 +264,26 @@ describe('useKeybindingStore', () => {
       userNewKeybindings[0]
     )
   })
+
+  it('should replace the previous keybinding with a new one for the same combo and unset the old command', () => {
+    const store = useKeybindingStore()
+
+    const oldKeybinding = new KeybindingImpl({
+      commandId: 'command1',
+      combo: { key: 'A', ctrl: true }
+    })
+
+    store.addUserKeybinding(oldKeybinding)
+
+    const newKeybinding = new KeybindingImpl({
+      commandId: 'command2',
+      combo: { key: 'A', ctrl: true }
+    })
+
+    store.updateKeybindingOnCommand(newKeybinding)
+
+    expect(store.keybindings).toHaveLength(1)
+    expect(store.getKeybinding(newKeybinding.combo)?.commandId).toBe('command2')
+    expect(store.getKeybindingsByCommandId('command1')).toHaveLength(0)
+  })
 })
