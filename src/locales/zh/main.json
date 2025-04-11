@@ -428,6 +428,8 @@
     "loadingVersions": "正在加载版本...",
     "nightlyVersion": "每夜",
     "noDescription": "无可用描述",
+    "noNodesFound": "未找到节点",
+    "noNodesFoundDescription": "无法解析包的节点，或者该包仅为前端扩展，没有任何节点。",
     "noResultsFound": "未找到符合您搜索的结果。",
     "nodePack": "节点包",
     "packsSelected": "选定的包",

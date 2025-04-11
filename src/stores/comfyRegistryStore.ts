@@ -13,7 +13,10 @@ type NodePack = components['schemas']['Node']
 type ListPacksParams = operations['listAllNodes']['parameters']['query']
 type ListPacksResult =
   operations['listAllNodes']['responses'][200]['content']['application/json']
-type ComfyNode = components['schemas']['ComfyNode']
+type GetNodeDefsParams = operations['ListComfyNodes']['parameters']['query'] & {
+  packId: components['schemas']['Node']['id']
+  version: components['schemas']['NodeVersion']['version']
+}
 type GetPackByIdPath = operations['getNode']['parameters']['path']['nodeId']
 
 const isNodePack = (pack: NodePack | undefined): pack is NodePack => {
@@ -89,8 +92,8 @@ export const useComfyRegistryStore = defineStore('comfyRegistry', () => {
    * Get the node definitions for a pack
    */
   const getNodeDefs = useCachedRequest<
-    { packId: string; versionId: string },
-    ComfyNode[]
+    GetNodeDefsParams,
+    operations['ListComfyNodes']['responses'][200]['content']['application/json']
   >(registryService.getNodeDefs, { maxSize: PACK_BY_ID_CACHE_SIZE })
 
   /**

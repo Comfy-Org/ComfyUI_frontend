@@ -14,7 +14,7 @@
           <DescriptionTabPanel :node-pack="nodePack" />
         </TabPanel>
         <TabPanel value="nodes">
-          <NodesTabPanel :node-pack="nodePack" />
+          <NodesTabPanel :node-pack="nodePack" :node-names="nodeNames" />
         </TabPanel>
       </TabPanels>
     </Tabs>
@@ -27,15 +27,21 @@ import TabList from 'primevue/tablist'
 import TabPanel from 'primevue/tabpanel'
 import TabPanels from 'primevue/tabpanels'
 import Tabs from 'primevue/tabs'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import DescriptionTabPanel from '@/components/dialog/content/manager/infoPanel/tabs/DescriptionTabPanel.vue'
 import NodesTabPanel from '@/components/dialog/content/manager/infoPanel/tabs/NodesTabPanel.vue'
 import { components } from '@/types/comfyRegistryTypes'
 
-defineProps<{
+const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']
 }>()
+
+const nodeNames = computed(() => {
+  // @ts-expect-error comfy_nodes is an Algolia-specific field
+  const { comfy_nodes } = nodePack
+  return comfy_nodes ?? []
+})
 
 const activeTab = ref('description')
 </script>

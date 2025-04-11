@@ -111,6 +111,8 @@
   "manager": {
     "title": "Custom Nodes Manager",
     "failed": "Failed ({count})",
+    "noNodesFound": "No nodes found",
+    "noNodesFoundDescription": "The pack's nodes either could not be parsed, or the pack is a frontend extension only and doesn't have any nodes.",
     "installationQueue": "Installation Queue",
     "changingVersion": "Changing version from {from} to {to}",
     "dependencies": "Dependencies",

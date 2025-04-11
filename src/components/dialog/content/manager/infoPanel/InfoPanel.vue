@@ -4,7 +4,10 @@
       <div class="top-0 z-10 px-6 pt-6 w-full">
         <InfoPanelHeader :node-packs="[nodePack]" />
       </div>
-      <div class="p-6 pt-2 overflow-y-auto flex-1 text-sm hidden-scrollbar">
+      <div
+        ref="scrollContainer"
+        class="p-6 pt-2 overflow-y-auto flex-1 text-sm hidden-scrollbar"
+      >
         <div class="mb-6">
           <MetadataRow
             v-if="isPackInstalled(nodePack.id)"
@@ -46,7 +49,7 @@
 </template>
 
 <script setup lang="ts">
-import { whenever } from '@vueuse/core'
+import { useScroll, whenever } from '@vueuse/core'
 import { computed, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -69,6 +72,8 @@ interface InfoItem {
 const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']
 }>()
+
+const scrollContainer = ref<HTMLElement | null>(null)
 
 const managerStore = useComfyManagerStore()
 const isInstalled = computed(() => managerStore.isPackInstalled(nodePack.id))
@@ -103,6 +108,17 @@ const infoItems = computed<InfoItem[]>(() => [
       : undefined
   }
 ])
+
+const { y } = useScroll(scrollContainer, {
+  eventListenerOptions: {
+    passive: true
+  }
+})
+const onNodePackChange = () => {
+  y.value = 0
+}
+
+whenever(() => nodePack, onNodePackChange, { immediate: true, deep: true })
 </script>
 <style scoped>
 .hidden-scrollbar {
