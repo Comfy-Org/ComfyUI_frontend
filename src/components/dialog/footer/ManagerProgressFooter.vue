@@ -70,12 +70,14 @@ import { useI18n } from 'vue-i18n'
 
 import { api } from '@/scripts/api'
 import { useComfyManagerService } from '@/services/comfyManagerService'
+import { useWorkflowService } from '@/services/workflowService'
 import {
   useComfyManagerStore,
   useManagerProgressDialogStore
 } from '@/stores/comfyManagerStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 const { t } = useI18n()
 const dialogStore = useDialogStore()
@@ -96,14 +98,22 @@ const currentTaskName = computed(() => {
 })
 
 const handleRestart = async () => {
-  await useComfyManagerService().rebootComfyUI()
-  closeDialog()
-
-  const onReconnect = () => {
-    useCommandStore().execute('Comfy.RefreshNodeDefinitions')
+  const onReconnect = async () => {
+    // Refresh manager state
     comfyManagerStore.clearLogs()
     comfyManagerStore.setStale()
+
+    // Refresh node definitions
+    useCommandStore().execute('Comfy.RefreshNodeDefinitions')
+    const newNodeDefs = await api.getNodeDefs()
+    useNodeDefStore().updateNodeDefs(Object.values(newNodeDefs))
+
+    // Reload workflow
+    await useWorkflowService().reloadCurrentWorkflow()
   }
   useEventListener(api, 'reconnected', onReconnect, { once: true })
+
+  await useComfyManagerService().rebootComfyUI()
+  closeDialog()
 }
 </script>
