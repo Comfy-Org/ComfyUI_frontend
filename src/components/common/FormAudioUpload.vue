@@ -2,19 +2,20 @@
   <FormFileUpload
     :modelValue="modelValue"
     @update:modelValue="emit('update:modelValue', $event)"
-    inputAccept="image/*"
+    inputAccept="audio/*"
   >
     <template #preview>
       <div
         class="preview-box border rounded p-2 w-16 h-16 flex items-center justify-center"
         :class="{ 'bg-gray-100 dark:bg-gray-800': !modelValue }"
       >
-        <img
+        <audio
           v-if="modelValue"
           :src="modelValue"
           class="max-w-full max-h-full object-contain"
+          controls
         />
-        <i v-else class="pi pi-image text-gray-400 text-xl"></i>
+        <i v-else class="pi pi-volume-up text-gray-400 text-xl"></i>
       </div>
     </template>
   </FormFileUpload>
