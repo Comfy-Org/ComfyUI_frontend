@@ -34,7 +34,7 @@
       text
       severity="secondary"
       :aria-label="$t('sideToolbar.newBlankWorkflow')"
-      @click="() => commandStore.execute('Comfy.NewBlankWorkflow')"
+      @click="async () => await commandStore.execute('Comfy.NewBlankWorkflow')"
     />
     <ContextMenu ref="menu" :model="contextMenuItems" />
   </div>

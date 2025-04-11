@@ -23,7 +23,7 @@
       icon="pi pi-expand"
       v-tooltip.left="t('graphCanvasMenu.fitView')"
       :aria-label="$t('graphCanvasMenu.fitView')"
-      @click="() => commandStore.execute('Comfy.Canvas.FitView')"
+      @click="async () => await commandStore.execute('Comfy.Canvas.FitView')"
     />
     <Button
       severity="secondary"
@@ -39,7 +39,7 @@
             (canvasStore.canvas?.read_only ? 'panMode' : 'selectMode')
         )
       "
-      @click="() => commandStore.execute('Comfy.Canvas.ToggleLock')"
+      @click="async () => await commandStore.execute('Comfy.Canvas.ToggleLock')"
     >
       <template #icon>
         <i-material-symbols:pan-tool-outline
@@ -53,7 +53,10 @@
       :icon="linkHidden ? 'pi pi-eye-slash' : 'pi pi-eye'"
       v-tooltip.left="t('graphCanvasMenu.toggleLinkVisibility')"
       :aria-label="$t('graphCanvasMenu.toggleLinkVisibility')"
-      @click="() => commandStore.execute('Comfy.Canvas.ToggleLinkVisibility')"
+      @click="
+        async () =>
+          await commandStore.execute('Comfy.Canvas.ToggleLinkVisibility')
+      "
       data-testid="toggle-link-visibility-button"
     />
   </ButtonGroup>

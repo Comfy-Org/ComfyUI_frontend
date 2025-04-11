@@ -12,7 +12,8 @@
       severity="secondary"
       text
       @click="
-        () => commandStore.execute('Comfy.Canvas.ToggleSelectedNodes.Bypass')
+        async () =>
+          await commandStore.execute('Comfy.Canvas.ToggleSelectedNodes.Bypass')
       "
       data-testid="bypass-button"
       v-tooltip.top="{
@@ -29,7 +30,10 @@
       severity="secondary"
       text
       icon="pi pi-thumbtack"
-      @click="() => commandStore.execute('Comfy.Canvas.ToggleSelected.Pin')"
+      @click="
+        async () =>
+          await commandStore.execute('Comfy.Canvas.ToggleSelected.Pin')
+      "
       v-tooltip.top="{
         value: t('commands.Comfy_Canvas_ToggleSelectedNodes_Pin.label'),
         showDelay: 1000
@@ -39,7 +43,10 @@
       severity="danger"
       text
       icon="pi pi-trash"
-      @click="() => commandStore.execute('Comfy.Canvas.DeleteSelectedItems')"
+      @click="
+        async () =>
+          await commandStore.execute('Comfy.Canvas.DeleteSelectedItems')
+      "
       v-tooltip.top="{
         value: t('commands.Comfy_Canvas_DeleteSelectedItems.label'),
         showDelay: 1000
