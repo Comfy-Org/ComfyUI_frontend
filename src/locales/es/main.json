@@ -198,6 +198,7 @@
     "reportIssue": "Enviar informe",
     "reportIssueTooltip": "Enviar el informe de error a Comfy Org",
     "reportSent": "Informe enviado",
+    "reset": "Reiniciar",
     "resetAll": "Restablecer todo",
     "resetAllKeybindingsTooltip": "Restablecer todas las teclas de acceso rápido a la configuración predeterminada",
     "restart": "Reiniciar",

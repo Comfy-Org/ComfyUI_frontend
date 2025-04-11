@@ -198,6 +198,7 @@
     "reportIssue": "发送报告",
     "reportIssueTooltip": "向 Comfy Org 提交错误报告",
     "reportSent": "报告已提交",
+    "reset": "重置",
     "resetAll": "重置所有",
     "resetAllKeybindingsTooltip": "将所有键绑定重置为默认",
     "restart": "重新启动",

@@ -198,6 +198,7 @@
     "reportIssue": "보고서 보내기",
     "reportIssueTooltip": "Comfy Org에 오류 보고서를 제출합니다.",
     "reportSent": "보고서 제출됨",
+    "reset": "재설정",
     "resetAll": "모두 초기화",
     "resetAllKeybindingsTooltip": "모든 키 바인딩을 기본값으로 초기화",
     "restart": "재시작",
