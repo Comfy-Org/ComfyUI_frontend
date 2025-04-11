@@ -602,40 +602,6 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   }
 
   /**
-   * @deprecated Will be removed in 0.9
-   * Returns all the nodes that could affect this one (ancestors) by crawling all the inputs recursively.
-   * It doesn't include the node itself
-   * @returns an array with all the LGraphNodes that affect this node, in order of execution
-   */
-  getAncestors(node: LGraphNode): LGraphNode[] {
-    const ancestors: LGraphNode[] = []
-    const pending = [node]
-    const visited: Dictionary<boolean> = {}
-
-    while (pending.length) {
-      const current = pending.shift()
-      if (!current?.inputs) continue
-
-      if (!visited[current.id] && current != node) {
-        visited[current.id] = true
-        ancestors.push(current)
-      }
-
-      for (let i = 0; i < current.inputs.length; ++i) {
-        const input = current.getInputNode(i)
-        if (input && !ancestors.includes(input)) {
-          pending.push(input)
-        }
-      }
-    }
-
-    ancestors.sort(function (a, b) {
-      return a.order - b.order
-    })
-    return ancestors
-  }
-
-  /**
    * Positions every node in a more readable manner
    */
   arrange(margin?: number, layout?: string): void {
