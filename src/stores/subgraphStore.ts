@@ -19,9 +19,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
   const graphIdPath = ref<LGraph['id'][]>([])
   const graphNamePath = ref<string[]>([])
 
-  const isSubgraphActive = computed(
-    () => activeGraph.value !== null && isSubgraph(activeGraph.value)
-  )
+  const isSubgraphActive = computed(() => isSubgraph(activeGraph.value))
 
   const updateActiveGraph = () => {
     activeGraph.value = app?.graph
