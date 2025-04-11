@@ -24,11 +24,11 @@ export const CORE_MENU_COMMANDS = [
   [
     ['Manager'],
     [
-      'Comfy.Manager.ShowLegacyManagerMenu',
-      'Comfy.Manager.CustomNodesManager.ShowLegacyCustomNodesMenu',
       'Comfy.Manager.CustomNodesManager.ShowCustomNodesMenu',
       'Comfy.Manager.ShowMissingPacks',
       'Comfy.Manager.ShowUpdateAvailablePacks',
+      'Comfy.Manager.ShowLegacyManagerMenu',
+      'Comfy.Manager.CustomNodesManager.ShowLegacyCustomNodesMenu',
       'Comfy.Memory.UnloadModels',
       'Comfy.Memory.UnloadModelsAndExecutionCache'
     ]
