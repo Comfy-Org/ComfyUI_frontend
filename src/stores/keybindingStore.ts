@@ -184,6 +184,19 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     return getKeybindingsByCommandId(commandId)[0]
   }
 
+  /**
+   * Adds a keybinding to the specified target reference.
+   *
+   * @param target - A ref that holds a record of keybindings. The keys represent
+   * serialized key combos, and the values are `KeybindingImpl` objects.
+   * @param keybinding - The keybinding to add, represented as a `KeybindingImpl` object.
+   * @param options - An options object.
+   * @param options.existOk - If true, allows overwriting an existing keybinding with the
+   * same combo. Defaults to false.
+   *
+   * @throws {Error} Throws an error if a keybinding with the same combo already exists in
+   * the target and `existOk` is false.
+   */
   function addKeybinding(
     target: Ref<Record<string, KeybindingImpl>>,
     keybinding: KeybindingImpl,
