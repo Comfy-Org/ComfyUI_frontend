@@ -87,7 +87,7 @@ const handleModelHover = async () => {
     modelPreviewStyle.value.left = `${targetRect.left - 400}px`
   }
 
-  modelDef.value.load()
+  await modelDef.value.load()
 }
 
 const container = ref<HTMLElement | undefined>()
@@ -111,17 +111,17 @@ const showPreview = computed(() => {
 const handleMouseEnter = async () => {
   isHovered.value = true
   await nextTick()
-  handleModelHover()
+  await handleModelHover()
 }
 const handleMouseLeave = () => {
   isHovered.value = false
 }
-onMounted(() => {
+onMounted(async () => {
   modelContentElement.value =
     container.value?.closest('.p-tree-node-content') ?? undefined
   modelContentElement.value?.addEventListener('mouseenter', handleMouseEnter)
   modelContentElement.value?.addEventListener('mouseleave', handleMouseLeave)
-  modelDef.value.load()
+  await modelDef.value.load()
 })
 
 onUnmounted(() => {

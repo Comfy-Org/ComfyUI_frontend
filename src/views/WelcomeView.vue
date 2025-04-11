@@ -27,8 +27,8 @@ import { useRouter } from 'vue-router'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
 const router = useRouter()
-const navigateTo = (path: string) => {
-  router.push(path)
+const navigateTo = async (path: string) => {
+  await router.push(path)
 }
 </script>
 

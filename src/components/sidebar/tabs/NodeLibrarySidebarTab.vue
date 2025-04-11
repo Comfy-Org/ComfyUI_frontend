@@ -153,7 +153,7 @@ const filteredRoot = computed<TreeNode | null>(() => {
 const filters: Ref<
   (SearchFilter & { filter: FuseFilterWithValue<ComfyNodeDefImpl, string> })[]
 > = ref([])
-const handleSearch = (query: string) => {
+const handleSearch = async (query: string) => {
   // Don't apply a min length filter because it does not make sense in
   // multi-byte languages like Chinese, Japanese, Korean, etc.
   if (query.length === 0 && !filters.value.length) {
@@ -174,13 +174,12 @@ const handleSearch = (query: string) => {
     }
   )
 
-  nextTick(() => {
-    // @ts-expect-error fixme ts strict error
-    expandNode(filteredRoot.value)
-  })
+  await nextTick()
+  // @ts-expect-error fixme ts strict error
+  expandNode(filteredRoot.value)
 }
 
-const onAddFilter = (
+const onAddFilter = async (
   filterAndValue: FuseFilterWithValue<ComfyNodeDefImpl, string>
 ) => {
   filters.value.push({
@@ -191,15 +190,15 @@ const onAddFilter = (
     id: +new Date()
   })
 
-  handleSearch(searchQuery.value)
+  await handleSearch(searchQuery.value)
 }
 
 // @ts-expect-error fixme ts strict error
-const onRemoveFilter = (filterAndValue) => {
+const onRemoveFilter = async (filterAndValue) => {
   const index = filters.value.findIndex((f) => f === filterAndValue)
   if (index !== -1) {
     filters.value.splice(index, 1)
   }
-  handleSearch(searchQuery.value)
+  await handleSearch(searchQuery.value)
 }
 </script>

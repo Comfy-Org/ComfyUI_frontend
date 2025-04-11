@@ -78,6 +78,6 @@ const updateConsent = async () => {
   } finally {
     isUpdating.value = false
   }
-  router.push('/')
+  await router.push('/')
 }
 </script>

@@ -122,12 +122,12 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
 
     const loggedTask = async () => {
       taskLogs.value.push({ taskName, logs: logs.value })
-      startListening()
+      await startListening()
       return task()
     }
 
-    const onComplete = () => {
-      stopListening()
+    const onComplete = async () => {
+      await stopListening()
       setStale()
     }
 

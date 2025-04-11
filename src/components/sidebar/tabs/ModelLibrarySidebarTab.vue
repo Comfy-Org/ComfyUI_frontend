@@ -89,9 +89,8 @@ const handleSearch = async (query: string) => {
     return model.searchable.includes(search)
   })
 
-  nextTick(() => {
-    expandNode(root.value)
-  })
+  await nextTick()
+  expandNode(root.value)
 }
 
 type ModelOrFolder = ComfyModelDef | ModelFolder
@@ -177,7 +176,7 @@ watch(
         const folderPath = key.split('/').slice(1).join('/')
         if (folderPath && !folderPath.includes('/')) {
           // Trigger (async) load of model data for this folder
-          modelStore.getLoadedModelFolder(folderPath)
+          void modelStore.getLoadedModelFolder(folderPath)
         }
       }
     })

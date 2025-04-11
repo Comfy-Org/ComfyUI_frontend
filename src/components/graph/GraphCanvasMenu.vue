@@ -80,10 +80,10 @@ const linkHidden = computed(
 )
 
 let interval: number | null = null
-const repeat = (command: string) => {
+const repeat = async (command: string) => {
   if (interval) return
   const cmd = () => commandStore.execute(command)
-  cmd()
+  await cmd()
   interval = window.setInterval(cmd, 100)
 }
 const stopRepeat = () => {

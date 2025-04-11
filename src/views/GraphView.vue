@@ -230,10 +230,12 @@ const onGraphReady = () => {
       )
 
       // Load model folders
-      wrapWithErrorHandlingAsync(useModelStore().loadModelFolders)()
+      void wrapWithErrorHandlingAsync(useModelStore().loadModelFolders)()
 
       // Non-blocking load of node frequencies
-      wrapWithErrorHandlingAsync(useNodeFrequencyStore().loadNodeFrequencies)()
+      void wrapWithErrorHandlingAsync(
+        useNodeFrequencyStore().loadNodeFrequencies
+      )()
 
       // Node defs now available after comfyApp.setup.
       // Explicitly initialize nodeSearchService to avoid indexing delay when

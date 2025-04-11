@@ -51,9 +51,9 @@ const openGitDownloads = () => {
   window.open('https://git-scm.com/downloads/', '_blank')
 }
 
-const skipGit = () => {
+const skipGit = async () => {
   console.warn('pushing')
   const router = useRouter()
-  router.push('install')
+  await router.push('install')
 }
 </script>

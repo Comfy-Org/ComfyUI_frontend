@@ -211,14 +211,14 @@ watchEffect(() => {
   }
 })
 
-function removeKeybinding(commandData: ICommandData) {
+async function removeKeybinding(commandData: ICommandData) {
   if (commandData.keybinding) {
     keybindingStore.unsetKeybinding(commandData.keybinding)
-    keybindingService.persistUserKeybindings()
+    await keybindingService.persistUserKeybindings()
   }
 }
 
-function captureKeybinding(event: KeyboardEvent) {
+async function captureKeybinding(event: KeyboardEvent) {
   // Allow the use of keyboard shortcuts when adding keyboard shortcuts
   if (!event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey) {
     switch (event.key) {
@@ -226,7 +226,7 @@ function captureKeybinding(event: KeyboardEvent) {
         cancelEdit()
         return
       case 'Enter':
-        saveKeybinding()
+        await saveKeybinding()
         return
     }
   }
@@ -240,7 +240,7 @@ function cancelEdit() {
   newBindingKeyCombo.value = null
 }
 
-function saveKeybinding() {
+async function saveKeybinding() {
   if (currentEditingCommand.value && newBindingKeyCombo.value) {
     const updated = keybindingStore.updateKeybindingOnCommand(
       new KeybindingImpl({
@@ -249,7 +249,7 @@ function saveKeybinding() {
       })
     )
     if (updated) {
-      keybindingService.persistUserKeybindings()
+      await keybindingService.persistUserKeybindings()
     }
   }
   cancelEdit()

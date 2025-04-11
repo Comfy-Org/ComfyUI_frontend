@@ -222,13 +222,13 @@ const filterOutdatedPacks = (packs: components['schemas']['Node'][]) =>
 
 watch(
   [isUpdateAvailableTab, installedPacks],
-  () => {
+  async () => {
     if (!isUpdateAvailableTab.value) return
 
     if (!isEmptySearch.value) {
       displayPacks.value = filterOutdatedPacks(installedPacks.value)
     } else if (!installedPacks.value.length) {
-      startFetchInstalled()
+      await startFetchInstalled()
     } else {
       displayPacks.value = filterOutdatedPacks(installedPacks.value)
     }
@@ -238,7 +238,7 @@ watch(
 
 watch(
   [isInstalledTab, installedPacks],
-  () => {
+  async () => {
     if (!isInstalledTab.value) return
 
     if (!isEmptySearch.value) {
@@ -248,7 +248,7 @@ watch(
       !installedPacksReady.value &&
       !isLoadingInstalled.value
     ) {
-      startFetchInstalled()
+      await startFetchInstalled()
     } else {
       displayPacks.value = installedPacks.value
     }
@@ -258,7 +258,7 @@ watch(
 
 watch(
   [isMissingTab, isWorkflowTab, workflowPacks, installedPacks],
-  () => {
+  async () => {
     if (!isWorkflowTab.value && !isMissingTab.value) return
 
     if (!isEmptySearch.value) {
@@ -270,9 +270,9 @@ watch(
       !isLoadingWorkflow.value &&
       !workflowPacksReady.value
     ) {
-      startFetchWorkflowPacks()
+      await startFetchWorkflowPacks()
       if (isMissingTab.value) {
-        startFetchInstalled()
+        await startFetchInstalled()
       }
     } else {
       displayPacks.value = isMissingTab.value

@@ -21,7 +21,7 @@ export const useCanvasDrop = (canvasRef: Ref<HTMLCanvasElement>) => {
   usePragmaticDroppable(() => canvasRef.value, {
     getDropEffect: (args): Exclude<DataTransfer['dropEffect'], 'none'> =>
       args.source.data.type === 'tree-explorer-node' ? 'copy' : 'move',
-    onDrop: (event) => {
+    onDrop: async (event) => {
       const loc = event.location.current.input
       const dndData = event.source.data
 
@@ -79,7 +79,7 @@ export const useCanvasDrop = (canvasRef: Ref<HTMLCanvasElement>) => {
             loc.clientX,
             loc.clientY
           ])
-          workflowService.insertWorkflow(workflow, { position })
+          await workflowService.insertWorkflow(workflow, { position })
         }
       }
     }

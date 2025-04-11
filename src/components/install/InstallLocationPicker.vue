@@ -142,12 +142,12 @@ const browsePath = async () => {
   }
 }
 
-const onFocus = () => {
+const onFocus = async () => {
   if (!inputTouched.value) {
     inputTouched.value = true
     return
   }
   // Refresh validation on re-focus
-  validatePath(installPath.value)
+  await validatePath(installPath.value)
 }
 </script>

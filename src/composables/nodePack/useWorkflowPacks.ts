@@ -117,7 +117,7 @@ export const useWorkflowPacks = (options: UseNodePacksOptions = {}) => {
     workflowPacks: nodePacks,
     startFetchWorkflowPacks: async () => {
       await getWorkflowPacks() // Parse the packs from the workflow nodes
-      startFetch() // Fetch the packs infos from the registry
+      await startFetch() // Fetch the packs infos from the registry
     },
     filterWorkflowPack
   }

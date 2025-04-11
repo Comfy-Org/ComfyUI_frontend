@@ -71,7 +71,7 @@ const eventConfig = {
   textureLoadingEnd: () => loadingOverlayRef.value?.endLoading()
 } as const
 
-watchEffect(() => {
+watchEffect(async () => {
   if (load3d.value) {
     const rawLoad3d = toRaw(load3d.value)
 
@@ -81,7 +81,7 @@ watchEffect(() => {
     rawLoad3d.setFOV(props.fov)
     rawLoad3d.toggleCamera(props.cameraType)
     rawLoad3d.togglePreview(props.showPreview)
-    rawLoad3d.setBackgroundImage(props.backgroundImage)
+    await rawLoad3d.setBackgroundImage(props.backgroundImage)
     rawLoad3d.setUpDirection(props.upDirection)
   }
 })

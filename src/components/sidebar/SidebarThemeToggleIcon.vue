@@ -23,7 +23,7 @@ const icon = computed(() =>
 )
 
 const commandStore = useCommandStore()
-const toggleTheme = () => {
-  commandStore.execute('Comfy.ToggleTheme')
+const toggleTheme = async () => {
+  await commandStore.execute('Comfy.ToggleTheme')
 }
 </script>

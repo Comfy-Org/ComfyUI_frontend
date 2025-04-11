@@ -157,11 +157,11 @@ const toggleExpanded = () => {
   isExpanded.value = !isExpanded.value
 }
 
-const removeTask = (task: TaskItemImpl) => {
+const removeTask = async (task: TaskItemImpl) => {
   if (task.isRunning) {
-    api.interrupt()
+    await api.interrupt()
   }
-  queueStore.delete(task)
+  await queueStore.delete(task)
 }
 
 const removeAllTasks = async () => {
@@ -251,8 +251,11 @@ const exitFolderView = () => {
   folderTask.value = null
 }
 
-const toggleImageFit = () => {
-  settingStore.set(IMAGE_FIT, imageFit.value === 'cover' ? 'contain' : 'cover')
+const toggleImageFit = async () => {
+  await settingStore.set(
+    IMAGE_FIT,
+    imageFit.value === 'cover' ? 'contain' : 'cover'
+  )
 }
 
 watch(allTasks, () => {

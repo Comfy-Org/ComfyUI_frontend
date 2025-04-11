@@ -24,17 +24,17 @@ const terminalCreated = (
     root,
     autoRows: true,
     autoCols: true,
-    onResize: () => {
+    onResize: async () => {
       // If we aren't visible, don't resize
       if (!terminal.element?.offsetParent) return
 
-      terminalApi.resize(terminal.cols, terminal.rows)
+      await terminalApi.resize(terminal.cols, terminal.rows)
     }
   })
 
   onMounted(async () => {
     offData = terminal.onData(async (message: string) => {
-      terminalApi.write(message)
+      await terminalApi.write(message)
     })
 
     offOutput = terminalApi.onOutput((message) => {

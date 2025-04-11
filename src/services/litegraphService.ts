@@ -79,7 +79,7 @@ export const useLitegraphService = () => {
         this.#addOutputs(ComfyNode.nodeData.outputs)
         this.#setInitialSize()
         this.serialize_widgets = true
-        extensionService.invokeExtensionsAsync('nodeCreated', this)
+        void extensionService.invokeExtensionsAsync('nodeCreated', this)
       }
 
       /**

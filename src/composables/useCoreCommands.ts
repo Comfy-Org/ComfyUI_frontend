@@ -107,8 +107,8 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-download',
       label: 'Export Workflow',
       menubarLabel: 'Export',
-      function: () => {
-        workflowService.exportWorkflow('workflow', 'workflow')
+      function: async () => {
+        await workflowService.exportWorkflow('workflow', 'workflow')
       }
     },
     {
@@ -116,8 +116,8 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-download',
       label: 'Export Workflow (API Format)',
       menubarLabel: 'Export (API)',
-      function: () => {
-        workflowService.exportWorkflow('workflow_api', 'output')
+      function: async () => {
+        await workflowService.exportWorkflow('workflow_api', 'output')
       }
     },
     {
@@ -272,16 +272,19 @@ export function useCoreCommands(): ComfyCommand[] {
         const settingStore = useSettingStore()
         let lastLinksRenderMode = LiteGraph.SPLINE_LINK
 
-        return () => {
+        return async () => {
           const currentMode = settingStore.get('Comfy.LinkRenderMode')
 
           if (currentMode === LiteGraph.HIDDEN_LINK) {
             // If links are hidden, restore the last positive value or default to spline mode
-            settingStore.set('Comfy.LinkRenderMode', lastLinksRenderMode)
+            await settingStore.set('Comfy.LinkRenderMode', lastLinksRenderMode)
           } else {
             // If links are visible, store the current mode and hide links
             lastLinksRenderMode = currentMode
-            settingStore.set('Comfy.LinkRenderMode', LiteGraph.HIDDEN_LINK)
+            await settingStore.set(
+              'Comfy.LinkRenderMode',
+              LiteGraph.HIDDEN_LINK
+            )
           }
         }
       })()
@@ -291,9 +294,9 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-play',
       label: 'Queue Prompt',
       versionAdded: '1.3.7',
-      function: () => {
+      function: async () => {
         const batchCount = useQueueSettingsStore().batchCount
-        app.queuePrompt(0, batchCount)
+        await app.queuePrompt(0, batchCount)
       }
     },
     {
@@ -301,9 +304,9 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-play',
       label: 'Queue Prompt (Front)',
       versionAdded: '1.3.7',
-      function: () => {
+      function: async () => {
         const batchCount = useQueueSettingsStore().batchCount
-        app.queuePrompt(-1, batchCount)
+        await app.queuePrompt(-1, batchCount)
       }
     },
     {
@@ -345,8 +348,8 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-step-forward',
       label: 'Next Opened Workflow',
       versionAdded: '1.3.9',
-      function: () => {
-        workflowService.loadNextOpenedWorkflow()
+      function: async () => {
+        await workflowService.loadNextOpenedWorkflow()
       }
     },
     {
@@ -354,8 +357,8 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-step-backward',
       label: 'Previous Opened Workflow',
       versionAdded: '1.3.9',
-      function: () => {
-        workflowService.loadPreviousOpenedWorkflow()
+      function: async () => {
+        await workflowService.loadPreviousOpenedWorkflow()
       }
     },
     {
@@ -438,15 +441,15 @@ export function useCoreCommands(): ComfyCommand[] {
         let previousDarkTheme: string = DEFAULT_DARK_COLOR_PALETTE.id
         let previousLightTheme: string = DEFAULT_LIGHT_COLOR_PALETTE.id
 
-        return () => {
+        return async () => {
           const settingStore = useSettingStore()
           const theme = colorPaletteStore.completedActivePalette
           if (theme.light_theme) {
             previousLightTheme = theme.id
-            settingStore.set('Comfy.ColorPalette', previousDarkTheme)
+            await settingStore.set('Comfy.ColorPalette', previousDarkTheme)
           } else {
             previousDarkTheme = theme.id
-            settingStore.set('Comfy.ColorPalette', previousLightTheme)
+            await settingStore.set('Comfy.ColorPalette', previousLightTheme)
           }
         }
       })()
@@ -544,8 +547,8 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-clone',
       label: 'Duplicate Current Workflow',
       versionAdded: '1.6.15',
-      function: () => {
-        workflowService.duplicateWorkflow(workflowStore.activeWorkflow!)
+      function: async () => {
+        await workflowService.duplicateWorkflow(workflowStore.activeWorkflow!)
       }
     },
     {
@@ -553,9 +556,9 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-times',
       label: 'Close Current Workflow',
       versionAdded: '1.7.3',
-      function: () => {
+      function: async () => {
         if (workflowStore.activeWorkflow)
-          workflowService.closeWorkflow(workflowStore.activeWorkflow)
+          await workflowService.closeWorkflow(workflowStore.activeWorkflow)
       }
     },
     {
