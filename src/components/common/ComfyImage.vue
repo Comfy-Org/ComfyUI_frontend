@@ -8,22 +8,22 @@
     <img
       v-if="contain"
       :src="src"
-      @error="handleImageError"
       :data-test="src"
       class="comfy-image-blur"
       :style="{ 'background-image': `url(${src})` }"
       :alt="alt"
+      @error="handleImageError"
     />
     <img
       :src="src"
-      @error="handleImageError"
       class="comfy-image-main"
       :class="classProp"
       :alt="alt"
+      @error="handleImageError"
     />
   </span>
   <div v-if="imageBroken" class="broken-image-placeholder">
-    <i class="pi pi-image"></i>
+    <i class="pi pi-image" />
     <span>{{ $t('g.imageFailedToLoad') }}</span>
   </div>
 </template>

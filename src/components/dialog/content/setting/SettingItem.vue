@@ -1,9 +1,9 @@
 <template>
   <FormItem
-    :item="formItem"
     :id="setting.id"
-    :formValue="settingValue"
-    @update:formValue="updateSettingValue"
+    :item="formItem"
+    :form-value="settingValue"
+    @update:form-value="updateSettingValue"
   >
     <template #name-prefix>
       <Tag v-if="setting.id === 'Comfy.Locale'" class="pi pi-language" />

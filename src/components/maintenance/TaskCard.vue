@@ -20,8 +20,12 @@
           class="object-contain w-full h-full opacity-25 pt-4 px-4"
         />
       </template>
-      <template #title>{{ task.name }}</template>
-      <template #content>{{ description }}</template>
+      <template #title>
+        {{ task.name }}
+      </template>
+      <template #content>
+        {{ description }}
+      </template>
       <template #footer>
         <div class="flex gap-4 mt-1">
           <Button
@@ -30,8 +34,8 @@
             class="w-full"
             raised
             icon-pos="right"
-            @click="(event) => $emit('execute', event)"
             :loading="isExecuting"
+            @click="(event) => $emit('execute', event)"
           />
         </div>
       </template>

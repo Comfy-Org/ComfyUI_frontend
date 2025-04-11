@@ -5,11 +5,11 @@
     :style="positionCSS"
   >
     <Button
+      v-tooltip="{ value: $t('menu.showMenu'), showDelay: 300 }"
       icon="pi pi-bars"
       severity="secondary"
       text
       size="large"
-      v-tooltip="{ value: $t('menu.showMenu'), showDelay: 300 }"
       :aria-label="$t('menu.showMenu')"
       aria-live="assertive"
       @click="exitFocusMode"

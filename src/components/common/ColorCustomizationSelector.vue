@@ -5,8 +5,8 @@
     <SelectButton
       v-model="selectedColorOption"
       :options="colorOptionsWithCustom"
-      optionLabel="name"
-      dataKey="value"
+      option-label="name"
+      data-key="value"
       :allow-empty="false"
     >
       <template #option="slotProps">
@@ -18,8 +18,8 @@
             backgroundColor: slotProps.option.value,
             borderRadius: '50%'
           }"
-        ></div>
-        <i v-else class="pi pi-palette text-lg"></i>
+        />
+        <i v-else class="pi pi-palette text-lg" />
       </template>
     </SelectButton>
     <ColorPicker

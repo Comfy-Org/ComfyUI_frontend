@@ -8,7 +8,9 @@
     >
       <template #header>
         <header class="flex flex-col items-center w-full">
-          <h2 id="issue-report-title" class="text-4xl">{{ title }}</h2>
+          <h2 id="issue-report-title" class="text-4xl">
+            {{ title }}
+          </h2>
           <span v-if="subtitle" class="text-muted mt-0">{{ subtitle }}</span>
         </header>
       </template>

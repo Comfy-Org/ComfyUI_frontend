@@ -16,7 +16,7 @@
     <div
       class="flex-grow w-full flex items-center justify-center overflow-auto"
     >
-      <slot></slot>
+      <slot />
     </div>
   </div>
 </template>

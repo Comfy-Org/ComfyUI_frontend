@@ -10,7 +10,7 @@
     <i
       class="pi pi-circle-fill mr-1.5 text-[0.6rem] p-0"
       :style="{ opacity: 0.8 }"
-    ></i>
+    />
     {{ $t(`manager.status.${statusLabel}`) }}
   </Message>
 </template>

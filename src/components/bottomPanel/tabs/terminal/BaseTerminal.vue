@@ -1,7 +1,7 @@
 <template>
-  <div class="relative overflow-hidden h-full w-full bg-black" ref="rootEl">
+  <div ref="rootEl" class="relative overflow-hidden h-full w-full bg-black">
     <div class="p-terminal rounded-none h-full w-full p-2">
-      <div class="h-full terminal-host" ref="terminalEl"></div>
+      <div ref="terminalEl" class="h-full terminal-host" />
     </div>
   </div>
 </template>

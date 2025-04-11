@@ -38,7 +38,7 @@
             :label="$t('g.ok')"
             icon="pi pi-check"
             :loading="isUpdating"
-            iconPos="right"
+            icon-pos="right"
             @click="updateConsent"
           />
         </div>

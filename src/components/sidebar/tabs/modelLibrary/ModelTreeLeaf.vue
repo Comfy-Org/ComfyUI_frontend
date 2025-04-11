@@ -6,15 +6,14 @@
           <span
             class="model-lib-model-icon"
             :style="{ backgroundImage: `url(${modelPreviewUrl})` }"
-          >
-          </span>
+          />
         </span>
       </template>
     </TreeExplorerTreeNode>
 
     <teleport v-if="showPreview" to="#model-library-model-preview-container">
       <div class="model-lib-model-preview" :style="modelPreviewStyle">
-        <ModelPreview ref="previewRef" :modelDef="modelDef"></ModelPreview>
+        <ModelPreview ref="previewRef" :model-def="modelDef" />
       </div>
     </teleport>
   </div>

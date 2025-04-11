@@ -22,16 +22,16 @@
         <div class="flex justify-end">
           <Button
             :label="$t('g.reloadToApplyChanges')"
-            @click="applyChanges"
             outlined
             severity="danger"
+            @click="applyChanges"
           />
         </div>
       </Message>
     </template>
     <DataTable
       :value="extensionStore.extensions"
-      stripedRows
+      striped-rows
       size="small"
       :filters="filters"
     >
@@ -61,8 +61,8 @@
         </template>
         <template #body="slotProps">
           <ToggleSwitch
-            :disabled="extensionStore.isExtensionReadOnly(slotProps.data.name)"
             v-model="editingEnabledExtensions[slotProps.data.name]"
+            :disabled="extensionStore.isExtensionReadOnly(slotProps.data.name)"
             @change="updateExtensionStatus"
           />
         </template>

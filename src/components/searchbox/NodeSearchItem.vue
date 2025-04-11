@@ -5,14 +5,12 @@
     <div class="option-display-name font-semibold flex flex-col">
       <div>
         <span v-if="isBookmarked">
-          <i class="pi pi-bookmark-fill text-sm mr-1"></i>
+          <i class="pi pi-bookmark-fill text-sm mr-1" />
         </span>
-        <span
-          v-html="highlightQuery(nodeDef.display_name, currentQuery)"
-        ></span>
+        <span v-html="highlightQuery(nodeDef.display_name, currentQuery)" />
         <span>&nbsp;</span>
         <Tag v-if="showIdName" severity="secondary">
-          <span v-html="highlightQuery(nodeDef.name, currentQuery)"></span>
+          <span v-html="highlightQuery(nodeDef.name, currentQuery)" />
         </Tag>
       </div>
       <div

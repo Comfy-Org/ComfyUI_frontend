@@ -1,14 +1,14 @@
 <!-- This component is used to bound the selected items on the canvas. -->
 <template>
   <div
+    v-show="visible"
     class="selection-overlay-container pointer-events-none z-40"
     :class="{
       'show-border': showBorder
     }"
     :style="style"
-    v-show="visible"
   >
-    <slot></slot>
+    <slot />
   </div>
 </template>
 

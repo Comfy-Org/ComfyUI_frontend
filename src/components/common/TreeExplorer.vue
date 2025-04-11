@@ -1,11 +1,11 @@
 <template>
   <Tree
-    class="tree-explorer py-0 px-2 2xl:px-4"
-    :class="props.class"
     v-model:expandedKeys="expandedKeys"
     v-model:selectionKeys="selectionKeys"
+    class="tree-explorer py-0 px-2 2xl:px-4"
+    :class="props.class"
     :value="renderedRoot.children"
-    selectionMode="single"
+    selection-mode="single"
     :pt="{
       nodeLabel: 'tree-explorer-node-label',
       nodeContent: ({ context }) => ({

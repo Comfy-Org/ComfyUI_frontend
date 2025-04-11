@@ -13,7 +13,7 @@
           icon="pi pi-exclamation-triangle"
           severity="warn"
           :value="t('icon.exclamation-triangle')"
-        ></Tag>
+        />
         <strong class="ml-2">{{
           $t('install.gpuSelection.customComfyNeedsPython')
         }}</strong>

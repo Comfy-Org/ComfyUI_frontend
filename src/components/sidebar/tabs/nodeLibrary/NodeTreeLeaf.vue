@@ -27,7 +27,7 @@
 
     <teleport v-if="isHovered" to="#node-library-node-preview-container">
       <div class="node-lib-node-preview" :style="nodePreviewStyle">
-        <NodePreview ref="previewRef" :nodeDef="nodeDef"></NodePreview>
+        <NodePreview ref="previewRef" :node-def="nodeDef" />
       </div>
     </teleport>
   </div>

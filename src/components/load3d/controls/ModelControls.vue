@@ -3,12 +3,12 @@
     <div class="relative show-up-direction">
       <Button class="p-button-rounded p-button-text" @click="toggleUpDirection">
         <i
-          class="pi pi-arrow-up text-white text-lg"
           v-tooltip.right="{
             value: t('load3d.upDirection'),
             showDelay: 300
           }"
-        ></i>
+          class="pi pi-arrow-up text-white text-lg"
+        />
       </Button>
       <div
         v-show="showUpDirection"
@@ -34,12 +34,12 @@
         @click="toggleMaterialMode"
       >
         <i
-          class="pi pi-box text-white text-lg"
           v-tooltip.right="{
             value: t('load3d.materialMode'),
             showDelay: 300
           }"
-        ></i>
+          class="pi pi-box text-white text-lg"
+        />
       </Button>
       <div
         v-show="showMaterialMode"
@@ -69,18 +69,18 @@
     >
       <Button class="p-button-rounded p-button-text" @click="openTextureUpload">
         <i
-          class="pi pi-image text-white text-lg"
           v-tooltip.right="{
             value: t('load3d.uploadTexture'),
             showDelay: 300
           }"
-        ></i>
+          class="pi pi-image text-white text-lg"
+        />
         <input
-          type="file"
           ref="texturePickerRef"
+          type="file"
           accept="image/*"
-          @change="uploadTexture"
           class="absolute opacity-0 w-0 h-0 p-0 m-0 pointer-events-none"
+          @change="uploadTexture"
         />
       </Button>
     </div>
@@ -91,12 +91,12 @@
         @click="toggleEdgeThreshold"
       >
         <i
-          class="pi pi-sliders-h text-white text-lg"
           v-tooltip.right="{
             value: t('load3d.edgeThreshold'),
             showDelay: 300
           }"
-        ></i>
+          class="pi pi-sliders-h text-white text-lg"
+        />
       </Button>
       <div
         v-show="showEdgeThreshold"
@@ -109,10 +109,10 @@
         <Slider
           v-model="edgeThreshold"
           class="w-full"
-          @change="updateEdgeThreshold"
           :min="0"
           :max="120"
           :step="1"
+          @change="updateEdgeThreshold"
         />
       </div>
     </div>

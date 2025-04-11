@@ -2,11 +2,10 @@
   <div class="flex items-center gap-1">
     <span class="text-muted">{{ label }}:</span>
     <Dropdown
-      :modelValue="modelValue"
-      @update:modelValue="$emit('update:modelValue', $event)"
+      :model-value="modelValue"
       :options="options"
-      optionLabel="label"
-      optionValue="id"
+      option-label="label"
+      option-value="id"
       class="min-w-[6rem] border-none bg-transparent shadow-none"
       :pt="{
         input: { class: 'py-0 px-1 border-none' },
@@ -14,6 +13,7 @@
         panel: { class: 'shadow-md' },
         item: { class: 'py-2 px-3 text-sm' }
       }"
+      @update:model-value="$emit('update:modelValue', $event)"
     />
   </div>
 </template>

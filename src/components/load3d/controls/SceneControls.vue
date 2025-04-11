@@ -6,28 +6,28 @@
       @click="toggleGrid"
     >
       <i
-        class="pi pi-table text-white text-lg"
         v-tooltip.right="{ value: t('load3d.showGrid'), showDelay: 300 }"
-      ></i>
+        class="pi pi-table text-white text-lg"
+      />
     </Button>
 
     <div v-if="!hasBackgroundImage">
       <Button class="p-button-rounded p-button-text" @click="openColorPicker">
         <i
-          class="pi pi-palette text-white text-lg"
           v-tooltip.right="{
             value: t('load3d.backgroundColor'),
             showDelay: 300
           }"
-        ></i>
+          class="pi pi-palette text-white text-lg"
+        />
         <input
-          type="color"
           ref="colorPickerRef"
+          type="color"
           :value="backgroundColor"
+          class="absolute opacity-0 w-0 h-0 p-0 m-0 pointer-events-none"
           @input="
             updateBackgroundColor(($event.target as HTMLInputElement).value)
           "
-          class="absolute opacity-0 w-0 h-0 p-0 m-0 pointer-events-none"
         />
       </Button>
     </div>
@@ -35,18 +35,18 @@
     <div v-if="!hasBackgroundImage">
       <Button class="p-button-rounded p-button-text" @click="openImagePicker">
         <i
-          class="pi pi-image text-white text-lg"
           v-tooltip.right="{
             value: t('load3d.uploadBackgroundImage'),
             showDelay: 300
           }"
-        ></i>
+          class="pi pi-image text-white text-lg"
+        />
         <input
-          type="file"
           ref="imagePickerRef"
+          type="file"
           accept="image/*"
-          @change="uploadBackgroundImage"
           class="absolute opacity-0 w-0 h-0 p-0 m-0 pointer-events-none"
+          @change="uploadBackgroundImage"
         />
       </Button>
     </div>
@@ -57,12 +57,12 @@
         @click="removeBackgroundImage"
       >
         <i
-          class="pi pi-times text-white text-lg"
           v-tooltip.right="{
             value: t('load3d.removeBackgroundImage'),
             showDelay: 300
           }"
-        ></i>
+          class="pi pi-times text-white text-lg"
+        />
       </Button>
     </div>
   </div>

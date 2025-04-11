@@ -7,27 +7,27 @@
       <div class="model_preview_filename">
         {{ modelDef.file_name }}
       </div>
-      <div class="model_preview_architecture" v-if="modelDef.architecture_id">
+      <div v-if="modelDef.architecture_id" class="model_preview_architecture">
         <span class="model_preview_prefix">Architecture: </span>
         {{ modelDef.architecture_id }}
       </div>
-      <div class="model_preview_author" v-if="modelDef.author">
+      <div v-if="modelDef.author" class="model_preview_author">
         <span class="model_preview_prefix">Author: </span>
         {{ modelDef.author }}
       </div>
     </div>
-    <div class="model_preview_image" v-if="modelDef.image">
+    <div v-if="modelDef.image" class="model_preview_image">
       <img :src="modelDef.image" />
     </div>
-    <div class="model_preview_usage_hint" v-if="modelDef.usage_hint">
+    <div v-if="modelDef.usage_hint" class="model_preview_usage_hint">
       <span class="model_preview_prefix">Usage hint: </span>
       {{ modelDef.usage_hint }}
     </div>
-    <div class="model_preview_trigger_phrase" v-if="modelDef.trigger_phrase">
+    <div v-if="modelDef.trigger_phrase" class="model_preview_trigger_phrase">
       <span class="model_preview_prefix">Trigger phrase: </span>
       {{ modelDef.trigger_phrase }}
     </div>
-    <div class="model_preview_description" v-if="modelDef.description">
+    <div v-if="modelDef.description" class="model_preview_description">
       <span class="model_preview_prefix">Description: </span>
       {{ modelDef.description }}
     </div>

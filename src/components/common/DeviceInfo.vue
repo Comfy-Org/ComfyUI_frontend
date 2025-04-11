@@ -1,7 +1,9 @@
 <template>
   <div class="grid grid-cols-2 gap-2">
     <template v-for="col in deviceColumns" :key="col.field">
-      <div class="font-medium">{{ col.header }}</div>
+      <div class="font-medium">
+        {{ col.header }}
+      </div>
       <div>
         {{ formatValue(props.device[col.field], col.field) }}
       </div>

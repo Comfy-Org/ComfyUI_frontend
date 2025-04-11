@@ -1,9 +1,9 @@
 <template>
   <TreeExplorer
-    class="node-lib-bookmark-tree-explorer"
     ref="treeExplorerRef"
+    class="node-lib-bookmark-tree-explorer"
     :root="renderedBookmarkedRoot"
-    :expandedKeys="expandedKeys"
+    :expanded-keys="expandedKeys"
   >
     <template #folder="{ node }">
       <NodeTreeFolder :node="node" />
@@ -15,9 +15,9 @@
 
   <FolderCustomizationDialog
     v-model="showCustomizationDialog"
+    :initial-icon="initialIcon"
+    :initial-color="initialColor"
     @confirm="updateCustomization"
-    :initialIcon="initialIcon"
-    :initialColor="initialColor"
   />
 </template>
 

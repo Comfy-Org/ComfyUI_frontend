@@ -4,13 +4,15 @@
       <InputText
         ref="inputRef"
         v-model="inputValue"
+        autofocus
         @keyup.enter="onConfirm"
         @focus="selectAllText"
-        autofocus
       />
       <label>{{ message }}</label>
     </FloatLabel>
-    <Button @click="onConfirm">{{ $t('g.confirm') }}</Button>
+    <Button @click="onConfirm">
+      {{ $t('g.confirm') }}
+    </Button>
   </div>
 </template>
 

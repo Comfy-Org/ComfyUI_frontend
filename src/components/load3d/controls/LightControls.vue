@@ -1,17 +1,17 @@
 <template>
   <div class="flex flex-col">
-    <div class="relative show-light-intensity" v-if="showLightIntensityButton">
+    <div v-if="showLightIntensityButton" class="relative show-light-intensity">
       <Button
         class="p-button-rounded p-button-text"
         @click="toggleLightIntensity"
       >
         <i
-          class="pi pi-sun text-white text-lg"
           v-tooltip.right="{
             value: t('load3d.lightIntensity'),
             showDelay: 300
           }"
-        ></i>
+          class="pi pi-sun text-white text-lg"
+        />
       </Button>
       <div
         v-show="showLightIntensity"
@@ -21,10 +21,10 @@
         <Slider
           v-model="lightIntensity"
           class="w-full"
-          @change="updateLightIntensity"
           :min="1"
           :max="20"
           :step="1"
+          @change="updateLightIntensity"
         />
       </div>
     </div>

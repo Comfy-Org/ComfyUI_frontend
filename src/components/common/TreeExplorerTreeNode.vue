@@ -1,5 +1,6 @@
 <template>
   <div
+    ref="container"
     :class="[
       'tree-node',
       {
@@ -8,17 +9,16 @@
         'tree-leaf': props.node.leaf
       }
     ]"
-    ref="container"
   >
     <div class="node-content">
       <span class="node-label">
-        <slot name="before-label" :node="props.node"></slot>
+        <slot name="before-label" :node="props.node" />
         <EditableText
-          :modelValue="node.label"
-          :isEditing="isEditing"
+          :model-value="node.label"
+          :is-editing="isEditing"
           @edit="handleRename"
         />
-        <slot name="after-label" :node="props.node"></slot>
+        <slot name="after-label" :node="props.node" />
       </span>
       <Badge
         v-if="showNodeBadgeText"
@@ -30,7 +30,7 @@
     <div
       class="node-actions motion-safe:opacity-0 motion-safe:group-hover/tree-node:opacity-100"
     >
-      <slot name="actions" :node="props.node"></slot>
+      <slot name="actions" :node="props.node" />
     </div>
   </div>
 </template>

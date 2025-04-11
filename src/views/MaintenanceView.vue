@@ -21,19 +21,21 @@
               :options="[PrimeIcons.LIST, PrimeIcons.TH_LARGE]"
               :allow-empty="false"
             >
-              <template #option="opts"><i :class="opts.option" /></template>
+              <template #option="opts">
+                <i :class="opts.option" />
+              </template>
             </SelectButton>
             <SelectButton
               v-model="filter"
               :options="filterOptions"
               :allow-empty="false"
-              optionLabel="value"
-              dataKey="value"
+              option-label="value"
+              data-key="value"
               area-labelledby="custom"
               @change="clearResolved"
             >
               <template #option="opts">
-                <i :class="opts.option.icon"></i>
+                <i :class="opts.option.icon" />
                 <span class="max-sm:hidden">{{ opts.option.value }}</span>
               </template>
             </SelectButton>
@@ -49,8 +51,8 @@
         <TaskListPanel
           class="border-neutral-700 border-solid border-x-0 border-y"
           :filter
-          :displayAsList
-          :isRefreshing
+          :display-as-list
+          :is-refreshing
         />
 
         <!-- Actions -->
@@ -67,8 +69,8 @@
             icon="pi pi-arrow-right"
             icon-pos="left"
             :severity="anyErrors ? 'secondary' : 'primary'"
-            @click="() => completeValidation()"
             :loading="isRefreshing"
+            @click="() => completeValidation()"
           />
         </div>
       </div>

@@ -2,8 +2,8 @@
   <SidebarIcon
     icon="pi pi-cog"
     class="comfy-settings-btn"
-    @click="showSetting"
     :tooltip="$t('g.settings')"
+    @click="showSetting"
   />
 </template>
 

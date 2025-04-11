@@ -10,7 +10,7 @@
       <div>
         {{ $t('g.currentUser') }}: {{ userStore.currentUser?.username }}
       </div>
-      <Button icon="pi pi-sign-out" @click="logout" text />
+      <Button icon="pi pi-sign-out" text @click="logout" />
     </div>
   </Message>
 </template>
