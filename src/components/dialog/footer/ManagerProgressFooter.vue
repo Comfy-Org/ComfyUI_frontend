@@ -77,7 +77,6 @@ import {
 } from '@/stores/comfyManagerStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 const { t } = useI18n()
 const dialogStore = useDialogStore()
@@ -104,9 +103,7 @@ const handleRestart = async () => {
     comfyManagerStore.setStale()
 
     // Refresh node definitions
-    useCommandStore().execute('Comfy.RefreshNodeDefinitions')
-    const newNodeDefs = await api.getNodeDefs()
-    useNodeDefStore().updateNodeDefs(Object.values(newNodeDefs))
+    await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
 
     // Reload workflow
     await useWorkflowService().reloadCurrentWorkflow()
