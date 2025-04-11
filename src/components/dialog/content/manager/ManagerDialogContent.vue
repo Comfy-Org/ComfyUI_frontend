@@ -29,6 +29,7 @@
           <RegistrySearchBar
             v-model:searchQuery="searchQuery"
             v-model:searchMode="searchMode"
+            v-model:sortField="sortField"
             :search-results="searchResults"
             :suggestions="suggestions"
           />
@@ -166,6 +167,7 @@ const {
   isLoading: isSearchLoading,
   searchResults,
   searchMode,
+  sortField,
   suggestions
 } = useRegistrySearch()
 pageNumber.value = 0

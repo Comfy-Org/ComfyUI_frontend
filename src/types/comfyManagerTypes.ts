@@ -18,6 +18,14 @@ export enum ManagerTab {
   UpdateAvailable = 'updateAvailable'
 }
 
+export enum SortableAlgoliaField {
+  Downloads = 'total_install',
+  Created = 'create_time',
+  Updated = 'update_time',
+  Publisher = 'publisher_id',
+  Name = 'name'
+}
+
 export interface TabItem {
   id: string
   label: string

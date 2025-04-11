@@ -438,8 +438,10 @@
     "searchPlaceholder": "검색",
     "selectVersion": "버전 선택",
     "sort": {
+      "created": "최신",
       "downloads": "가장 인기 있는",
-      "rating": "평점"
+      "publisher": "출판사",
+      "updated": "최근 업데이트"
     },
     "status": {
       "active": "활성",

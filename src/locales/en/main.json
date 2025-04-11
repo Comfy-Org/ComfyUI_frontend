@@ -154,8 +154,10 @@
       "unknown": "Unknown"
     },
     "sort": {
-      "rating": "Rating",
-      "downloads": "Most Popular"
+      "downloads": "Most Popular",
+      "publisher": "Publisher",
+      "created": "Newest",
+      "updated": "Updated Recently"
     },
     "filter": {
       "nodePack": "Node Pack",
