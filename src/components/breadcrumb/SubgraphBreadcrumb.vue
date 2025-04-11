@@ -1,5 +1,6 @@
 <template>
   <div
+    v-if="subgraphStore.isSubgraphActive"
     class="fixed top-[var(--comfy-topbar-height)] left-[var(--sidebar-width)] right-0 p-2 bg-[var(--comfy-menu-bg)] border-b border-[var(--border-color)] z-[900]"
   >
     <Breadcrumb
