@@ -18,7 +18,10 @@
       </div>
     </template>
     <template v-else>
-      <div class="text-muted">No node defs found</div>
+      <NoResultsPlaceholder
+        :title="$t('manager.noNodesFound')"
+        :message="$t('manager.noNodesFoundDescription')"
+      />
     </template>
   </div>
 </template>
@@ -28,6 +31,7 @@ import { whenever } from '@vueuse/core'
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed, ref, shallowRef, useId } from 'vue'
 
+import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { components, operations } from '@/types/comfyRegistryTypes'
