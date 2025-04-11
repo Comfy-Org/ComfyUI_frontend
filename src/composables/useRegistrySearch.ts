@@ -22,6 +22,10 @@ const SORT_DIRECTIONS: Record<SortableAlgoliaField, 'asc' | 'desc'> = {
   [SortableAlgoliaField.Name]: 'asc'
 }
 
+const isDateField = (field: SortableAlgoliaField): boolean =>
+  field === SortableAlgoliaField.Created ||
+  field === SortableAlgoliaField.Updated
+
 /**
  * Composable for managing UI state of Comfy Node Registry search.
  */
@@ -57,6 +61,15 @@ export function useRegistrySearch() {
     toRegistryPack,
     (algoliaNode: AlgoliaNodePack) => algoliaNode.id
   )
+  const getSortValue = (pack: Hit<AlgoliaNodePack>) => {
+    if (isDateField(sortField.value)) {
+      const value = pack[sortField.value]
+      return value ? new Date(value).getTime() : 0
+    } else {
+      const value = pack[sortField.value]
+      return value ?? 0
+    }
+  }
 
   const updateSearchResults = async (options: { append?: boolean }) => {
     isLoading.value = true
@@ -74,20 +87,6 @@ export function useRegistrySearch() {
 
     let sortedPacks = nodePacks
     if (sortField.value) {
-      const isDateField = (field: SortableAlgoliaField): boolean =>
-        field === SortableAlgoliaField.Created ||
-        field === SortableAlgoliaField.Updated
-
-      const getSortValue = (pack: Hit<AlgoliaNodePack>) => {
-        if (isDateField(sortField.value)) {
-          const value = pack[sortField.value]
-          return value ? new Date(value).getTime() : 0
-        } else {
-          const value = pack[sortField.value]
-          return value ?? 0
-        }
-      }
-
       sortedPacks = orderBy(
         nodePacks,
         [getSortValue],
