@@ -299,7 +299,7 @@ export class LiteGraphGlobal {
     }
 
     const prev = this.registered_node_types[type]
-    if (prev) {
+    if (prev && this.debug) {
       console.log("replacing node type:", type)
     }
 
