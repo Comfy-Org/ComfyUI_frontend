@@ -446,6 +446,23 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/publishers/{publisherId}/nodes/v2': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Retrieve all nodes */
+    get: operations['listNodesForPublisherV2']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/publishers/{publisherId}/nodes': {
     parameters: {
       query?: never
@@ -1685,6 +1702,63 @@ export interface operations {
       }
       /** @description Publisher not found */
       404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  listNodesForPublisherV2: {
+    parameters: {
+      query?: {
+        /** @description Number of nodes to return per page */
+        include_banned?: boolean
+        /** @description Page number of the nodes list */
+        page?: number
+        /** @description Number of nodes to return per page */
+        limit?: number
+      }
+      header?: never
+      path: {
+        publisherId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description List of all nodes */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /** @description Total number of nodes available */
+            total?: number
+            nodes?: components['schemas']['Node'][]
+            /** @description Current page number */
+            page?: number
+            /** @description Maximum number of nodes per page */
+            limit?: number
+            /** @description Total number of pages available */
+            totalPages?: number
+          }
+        }
+      }
+      /** @description Bad request, invalid input data. */
+      400: {
         headers: {
           [name: string]: unknown
         }
