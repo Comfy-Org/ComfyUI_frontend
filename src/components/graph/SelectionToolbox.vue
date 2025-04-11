@@ -65,7 +65,7 @@
       severity="secondary"
       text
       :icon="typeof command.icon === 'function' ? command.icon() : command.icon"
-      @click="() => commandStore.execute(command.id)"
+      @click="async () => await commandStore.execute(command.id)"
       v-tooltip.top="{
         value:
           st(`commands.${normalizeI18nKey(command.id)}.label`, '') || undefined,
