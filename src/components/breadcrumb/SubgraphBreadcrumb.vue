@@ -35,9 +35,9 @@ const items = computed<MenuItem[]>(() => {
       index === subgraphStore.graphNamePath.length - 1
         ? 'pi pi-home'
         : undefined,
-    command: () => {
+    command: async () => {
       const workflow = workflowStore.getWorkflowByPath(name)
-      if (workflow) workflowService.openWorkflow(workflow)
+      if (workflow) await workflowService.openWorkflow(workflow)
     }
   }))
 })
