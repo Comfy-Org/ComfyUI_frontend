@@ -13,6 +13,7 @@ import { SortableAlgoliaField } from '@/types/comfyManagerTypes'
 
 const SEARCH_DEBOUNCE_TIME = 256
 const DEFAULT_PAGE_SIZE = 64
+const DEFAULT_SORT_FIELD = SortableAlgoliaField.Downloads // Set in the index configuration
 
 const SORT_DIRECTIONS: Record<SortableAlgoliaField, 'asc' | 'desc'> = {
   [SortableAlgoliaField.Downloads]: 'desc',
@@ -86,7 +87,9 @@ export function useRegistrySearch() {
     )
 
     let sortedPacks = nodePacks
-    if (sortField.value) {
+
+    // Results are sorted by the default field to begin with -- so don't manually sort again
+    if (sortField.value && sortField.value !== DEFAULT_SORT_FIELD) {
       sortedPacks = orderBy(
         nodePacks,
         [getSortValue],
