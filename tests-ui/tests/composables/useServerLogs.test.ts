@@ -38,27 +38,27 @@ describe('useServerLogs', () => {
     expect(api.subscribeLogs).toHaveBeenCalledWith(true)
   })
 
-  it('should start listening when startListening is called', () => {
+  it('should start listening when startListening is called', async () => {
     const { startListening } = useServerLogs()
 
-    startListening()
+    await startListening()
 
     expect(api.subscribeLogs).toHaveBeenCalledWith(true)
   })
 
-  it('should stop listening when stopListening is called', () => {
+  it('should stop listening when stopListening is called', async () => {
     const { startListening, stopListening } = useServerLogs()
 
-    startListening()
-    stopListening()
+    await startListening()
+    await stopListening()
 
     expect(api.subscribeLogs).toHaveBeenCalledWith(false)
   })
 
-  it('should register event listener when starting', () => {
+  it('should register event listener when starting', async () => {
     const { startListening } = useServerLogs()
 
-    startListening()
+    await startListening()
 
     expect(vi.mocked(useEventListener)).toHaveBeenCalledWith(
       api,
@@ -69,7 +69,8 @@ describe('useServerLogs', () => {
 
   it('should handle log messages correctly', async () => {
     const { logs, startListening } = useServerLogs()
-    startListening()
+
+    await startListening()
 
     // Get the callback that was registered with useEventListener
     const eventCallback = vi.mocked(useEventListener).mock.calls[0][2] as (
@@ -94,7 +95,8 @@ describe('useServerLogs', () => {
     const { logs, startListening } = useServerLogs({
       messageFilter: (msg) => msg !== 'remove me'
     })
-    startListening()
+
+    await startListening()
 
     const eventCallback = vi.mocked(useEventListener).mock.calls[0][2] as (
       event: CustomEvent<LogsWsMessage>
