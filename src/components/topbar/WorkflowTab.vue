@@ -61,17 +61,21 @@ const autoSaveDelay = computed(() =>
 )
 
 const shouldShowStatusIndicator = computed(() => {
-  // Return true if:
-  // 1. The shift key is not pressed (hence no override).
-  // 2. The workflow is either modified or not yet persisted.
-  // 3. AutoSave is either turned off, or set to 'after delay'
-  //    with a delay longer than 3000ms.
+  // Explanation:
+  // 1. Check if the shift key is not pressed (!workspaceStore.shiftDown). If the shift key is pressed,
+  //    we may want to override the status display.
+  // 2. If the workflow is not persisted (!props.workflowOption.workflow.isPersisted),
+  //    always show the indicator.
+  // 3. Otherwise, if the workflow is modified, only show the indicator when:
+  //    - Autosave is turned off, OR
+  //    - Autosave is enabled ('after delay') and the delay is longer than 3000ms.
   return (
     !workspaceStore.shiftDown &&
-    (props.workflowOption.workflow.isModified ||
-      !props.workflowOption.workflow.isPersisted) &&
-    (autoSaveSetting.value === 'off' ||
-      (autoSaveSetting.value === 'after delay' && autoSaveDelay.value > 3000))
+    (!props.workflowOption.workflow.isPersisted ||
+      (props.workflowOption.workflow.isModified &&
+        (autoSaveSetting.value === 'off' ||
+          (autoSaveSetting.value === 'after delay' &&
+            autoSaveDelay.value > 3000))))
   )
 })
 
