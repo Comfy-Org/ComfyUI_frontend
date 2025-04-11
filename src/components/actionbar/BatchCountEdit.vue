@@ -1,19 +1,19 @@
 <template>
   <div
-    class="batch-count"
     v-tooltip.bottom="{
       value: $t('menu.batchCount'),
       showDelay: 600
     }"
+    class="batch-count"
     :aria-label="$t('menu.batchCount')"
   >
     <InputNumber
-      class="w-14"
       v-model="batchCount"
+      class="w-14"
       :min="minQueueCount"
       :max="maxQueueCount"
       fluid
-      showButtons
+      show-buttons
       :pt="{
         incrementButton: {
           class: 'w-6',

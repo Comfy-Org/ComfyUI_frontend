@@ -1,6 +1,8 @@
 <template>
   <div class="bg-black h-full w-full">
-    <p v-if="errorMessage" class="p-4 text-center">{{ errorMessage }}</p>
+    <p v-if="errorMessage" class="p-4 text-center">
+      {{ errorMessage }}
+    </p>
     <ProgressSpinner
       v-else-if="loading"
       class="relative inset-0 flex justify-center items-center h-full z-10"

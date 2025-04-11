@@ -9,16 +9,16 @@
     <ColorPickerButton v-show="nodeSelected || groupSelected" />
     <Button
       v-show="nodeSelected"
-      severity="secondary"
-      text
-      @click="
-        () => commandStore.execute('Comfy.Canvas.ToggleSelectedNodes.Bypass')
-      "
-      data-testid="bypass-button"
       v-tooltip.top="{
         value: t('commands.Comfy_Canvas_ToggleSelectedNodes_Bypass.label'),
         showDelay: 1000
       }"
+      severity="secondary"
+      text
+      data-testid="bypass-button"
+      @click="
+        () => commandStore.execute('Comfy.Canvas.ToggleSelectedNodes.Bypass')
+      "
     >
       <template #icon>
         <i-game-icons:detour />
@@ -26,24 +26,24 @@
     </Button>
     <Button
       v-show="nodeSelected || groupSelected"
-      severity="secondary"
-      text
-      icon="pi pi-thumbtack"
-      @click="() => commandStore.execute('Comfy.Canvas.ToggleSelected.Pin')"
       v-tooltip.top="{
         value: t('commands.Comfy_Canvas_ToggleSelectedNodes_Pin.label'),
         showDelay: 1000
       }"
+      severity="secondary"
+      text
+      icon="pi pi-thumbtack"
+      @click="() => commandStore.execute('Comfy.Canvas.ToggleSelected.Pin')"
     />
     <Button
-      severity="danger"
-      text
-      icon="pi pi-trash"
-      @click="() => commandStore.execute('Comfy.Canvas.DeleteSelectedItems')"
       v-tooltip.top="{
         value: t('commands.Comfy_Canvas_DeleteSelectedItems.label'),
         showDelay: 1000
       }"
+      severity="danger"
+      text
+      icon="pi pi-trash"
+      @click="() => commandStore.execute('Comfy.Canvas.DeleteSelectedItems')"
     />
     <Button
       v-show="isRefreshable"
@@ -55,15 +55,15 @@
     <Button
       v-for="command in extensionToolboxCommands"
       :key="command.id"
-      severity="secondary"
-      text
-      :icon="typeof command.icon === 'function' ? command.icon() : command.icon"
-      @click="() => commandStore.execute(command.id)"
       v-tooltip.top="{
         value:
           st(`commands.${normalizeI18nKey(command.id)}.label`, '') || undefined,
         showDelay: 1000
       }"
+      severity="secondary"
+      text
+      :icon="typeof command.icon === 'function' ? command.icon() : command.icon"
+      @click="() => commandStore.execute(command.id)"
     />
   </Panel>
 </template>

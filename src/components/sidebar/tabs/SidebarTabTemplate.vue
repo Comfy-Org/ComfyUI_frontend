@@ -14,15 +14,15 @@
           <div
             class="flex flex-row motion-safe:w-0 motion-safe:opacity-0 motion-safe:group-hover/sidebar-tab:w-auto motion-safe:group-hover/sidebar-tab:opacity-100 motion-safe:group-focus-within/sidebar-tab:w-auto motion-safe:group-focus-within/sidebar-tab:opacity-100 touch:w-auto touch:opacity-100 transition-all duration-200"
           >
-            <slot name="tool-buttons"></slot>
+            <slot name="tool-buttons" />
           </div>
         </template>
       </Toolbar>
-      <slot name="header"></slot>
+      <slot name="header" />
     </div>
     <!-- h-0 to force scrollpanel to flex-grow -->
     <ScrollPanel class="comfy-vue-side-bar-body flex-grow h-0">
-      <slot name="body"></slot>
+      <slot name="body" />
     </ScrollPanel>
   </div>
 </template>

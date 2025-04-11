@@ -1,7 +1,9 @@
 <template>
   <div class="flex flex-col gap-4 text-sm">
     <div v-for="(section, index) in sections" :key="index" class="mb-4">
-      <div class="mb-1">{{ section.title }}</div>
+      <div class="mb-1">
+        {{ section.title }}
+      </div>
       <div class="text-muted break-words">
         <a
           v-if="section.isUrl"
@@ -10,10 +12,7 @@
           rel="noopener noreferrer"
           class="flex items-center gap-2"
         >
-          <i
-            v-if="isGitHubLink(section.text)"
-            class="pi pi-github text-base"
-          ></i>
+          <i v-if="isGitHubLink(section.text)" class="pi pi-github text-base" />
           <span class="break-all">{{ section.text }}</span>
         </a>
         <MarkdownText v-else :text="section.text" class="text-muted" />

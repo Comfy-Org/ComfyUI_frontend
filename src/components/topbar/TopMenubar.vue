@@ -1,8 +1,8 @@
 <template>
   <div
+    v-show="showTopMenu"
     ref="topMenuRef"
     class="comfyui-menu flex items-center"
-    v-show="showTopMenu"
     :class="{ dropzone: isDropZone, 'dropzone-active': isDroppable }"
   >
     <h1 class="comfyui-logo mx-2 app-drag">ComfyUI</h1>
@@ -10,15 +10,15 @@
     <div class="flex-grow min-w-0 app-drag h-full">
       <WorkflowTabs v-if="workflowTabsPosition === 'Topbar'" />
     </div>
-    <div class="comfyui-menu-right flex-shrink-0" ref="menuRight"></div>
+    <div ref="menuRight" class="comfyui-menu-right flex-shrink-0" />
     <Actionbar />
     <BottomPanelToggleButton class="flex-shrink-0" />
     <Button
+      v-tooltip="{ value: $t('menu.hideMenu'), showDelay: 300 }"
       class="flex-shrink-0"
       icon="pi pi-bars"
       severity="secondary"
       text
-      v-tooltip="{ value: $t('menu.hideMenu'), showDelay: 300 }"
       :aria-label="$t('menu.hideMenu')"
       @click="workspaceState.focusMode = true"
       @contextmenu="showNativeSystemMenu"

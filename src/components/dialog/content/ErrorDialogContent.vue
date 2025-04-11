@@ -45,9 +45,9 @@
     />
     <div class="flex gap-4 justify-end">
       <FindIssueButton
-        :errorMessage="error.exceptionMessage"
-        :repoOwner="repoOwner"
-        :repoName="repoName"
+        :error-message="error.exceptionMessage"
+        :repo-owner="repoOwner"
+        :repo-name="repoName"
       />
       <Button
         v-if="reportOpen"

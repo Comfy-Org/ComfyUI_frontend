@@ -1,7 +1,7 @@
 <template>
   <ProgressSpinner v-if="!state || loading" class="h-8 w-8" />
   <template v-else>
-    <i :class="cssClasses" v-tooltip.top="{ value: tooltip, showDelay: 250 }" />
+    <i v-tooltip.top="{ value: tooltip, showDelay: 250 }" :class="cssClasses" />
   </template>
 </template>
 

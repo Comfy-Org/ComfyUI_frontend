@@ -13,10 +13,10 @@
       </Chip>
     </div>
     <div
-      class="mt-2 flex flex-row items-center gap-2"
       v-if="
         ['in_progress', 'paused', 'completed'].includes(download.status ?? '')
       "
+      class="mt-2 flex flex-row items-center gap-2"
     >
       <!-- Temporary fix for issue when % only comes into view only if the progress bar is large enough
            https://comfy-organization.slack.com/archives/C07H3GLKDPF/p1731551013385499
@@ -28,34 +28,34 @@
       />
 
       <Button
-        class="file-action-button w-[22px] h-[22px]"
-        size="small"
-        rounded
-        @click="triggerPauseDownload"
         v-if="download.status === 'in_progress'"
-        icon="pi pi-pause"
         v-tooltip.top="t('electronFileDownload.pause')"
-      />
-
-      <Button
         class="file-action-button w-[22px] h-[22px]"
         size="small"
         rounded
-        @click="triggerResumeDownload"
-        v-if="download.status === 'paused'"
-        icon="pi pi-play"
-        v-tooltip.top="t('electronFileDownload.resume')"
+        icon="pi pi-pause"
+        @click="triggerPauseDownload"
       />
 
       <Button
+        v-if="download.status === 'paused'"
+        v-tooltip.top="t('electronFileDownload.resume')"
+        class="file-action-button w-[22px] h-[22px]"
+        size="small"
+        rounded
+        icon="pi pi-play"
+        @click="triggerResumeDownload"
+      />
+
+      <Button
+        v-if="['in_progress', 'paused'].includes(download.status ?? '')"
+        v-tooltip.top="t('electronFileDownload.cancel')"
         class="file-action-button w-[22px] h-[22px] p-red"
         size="small"
         rounded
         severity="danger"
-        @click="triggerCancelDownload"
-        v-if="['in_progress', 'paused'].includes(download.status ?? '')"
         icon="pi pi-times-circle"
-        v-tooltip.top="t('electronFileDownload.cancel')"
+        @click="triggerCancelDownload"
       />
     </div>
   </div>

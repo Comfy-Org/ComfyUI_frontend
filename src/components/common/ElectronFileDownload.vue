@@ -2,7 +2,7 @@
 <template>
   <div class="flex flex-col">
     <div class="flex flex-row items-center gap-2">
-      <i class="pi pi-check text-green-500" v-if="status === 'completed'" />
+      <i v-if="status === 'completed'" class="pi pi-check text-green-500" />
       <div class="file-info">
         <div class="file-details">
           <span class="file-type" :title="hint">{{ label }}</span>
@@ -14,20 +14,20 @@
 
       <div class="file-action">
         <Button
+          v-if="status === null || status === 'error'"
           class="file-action-button"
           :label="$t('g.download') + ' (' + fileSize + ')'"
           size="small"
           outlined
           :disabled="!!props.error"
-          @click="triggerDownload"
-          v-if="status === null || status === 'error'"
           icon="pi pi-download"
+          @click="triggerDownload"
         />
       </div>
     </div>
     <div
-      class="flex flex-row items-center gap-2"
       v-if="status === 'in_progress' || status === 'paused'"
+      class="flex flex-row items-center gap-2"
     >
       <!-- Temporary fix for issue when % only comes into view only if the progress bar is large enough
            https://comfy-organization.slack.com/archives/C07H3GLKDPF/p1731551013385499
@@ -39,36 +39,36 @@
       />
 
       <Button
-        class="file-action-button"
-        size="small"
-        outlined
-        :disabled="!!props.error"
-        @click="triggerPauseDownload"
         v-if="status === 'in_progress'"
-        icon="pi pi-pause-circle"
         v-tooltip.top="t('electronFileDownload.pause')"
-      />
-
-      <Button
         class="file-action-button"
         size="small"
         outlined
         :disabled="!!props.error"
-        @click="triggerResumeDownload"
+        icon="pi pi-pause-circle"
+        @click="triggerPauseDownload"
+      />
+
+      <Button
         v-if="status === 'paused'"
-        icon="pi pi-play-circle"
         v-tooltip.top="t('electronFileDownload.resume')"
-      />
-
-      <Button
         class="file-action-button"
         size="small"
         outlined
         :disabled="!!props.error"
-        @click="triggerCancelDownload"
+        icon="pi pi-play-circle"
+        @click="triggerResumeDownload"
+      />
+
+      <Button
+        v-tooltip.top="t('electronFileDownload.cancel')"
+        class="file-action-button"
+        size="small"
+        outlined
+        :disabled="!!props.error"
         icon="pi pi-times-circle"
         severity="danger"
-        v-tooltip.top="t('electronFileDownload.cancel')"
+        @click="triggerCancelDownload"
       />
     </div>
   </div>

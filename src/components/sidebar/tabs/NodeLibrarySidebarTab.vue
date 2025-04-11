@@ -5,36 +5,36 @@
   >
     <template #tool-buttons>
       <Button
+        v-tooltip.bottom="$t('g.newFolder')"
         class="new-folder-button"
         icon="pi pi-folder-plus"
         text
         severity="secondary"
         @click="nodeBookmarkTreeExplorerRef?.addNewBookmarkFolder()"
-        v-tooltip.bottom="$t('g.newFolder')"
       />
       <Button
+        v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.sortOrder')"
         class="sort-button"
         :icon="alphabeticalSort ? 'pi pi-sort-alpha-down' : 'pi pi-sort-alt'"
         text
         severity="secondary"
         @click="alphabeticalSort = !alphabeticalSort"
-        v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.sortOrder')"
       />
     </template>
     <template #header>
       <SearchBox
-        class="node-lib-search-box p-2 2xl:p-4"
         v-model:modelValue="searchQuery"
-        @search="handleSearch"
-        @show-filter="($event) => searchFilter?.toggle($event)"
-        @remove-filter="onRemoveFilter"
+        class="node-lib-search-box p-2 2xl:p-4"
         :placeholder="$t('g.searchNodes') + '...'"
         filter-icon="pi pi-filter"
         :filters
+        @search="handleSearch"
+        @show-filter="($event) => searchFilter?.toggle($event)"
+        @remove-filter="onRemoveFilter"
       />
 
       <Popover ref="searchFilter" class="ml-[-13px]">
-        <NodeSearchFilter @addFilter="onAddFilter" />
+        <NodeSearchFilter @add-filter="onAddFilter" />
       </Popover>
     </template>
     <template #body>
@@ -48,9 +48,9 @@
         class="m-2"
       />
       <TreeExplorer
+        v-model:expandedKeys="expandedKeys"
         class="node-lib-tree-explorer"
         :root="renderedRoot"
-        v-model:expandedKeys="expandedKeys"
       >
         <template #node="{ node }">
           <NodeTreeLeaf :node="node" />

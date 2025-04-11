@@ -23,19 +23,19 @@
         </Step>
       </StepList>
       <StepPanels>
-        <StepPanel value="0" v-slot="{ activateCallback }">
+        <StepPanel v-slot="{ activateCallback }" value="0">
           <GpuPicker v-model:device="device" />
           <div class="flex pt-6 justify-end">
             <Button
               :label="$t('g.next')"
               icon="pi pi-arrow-right"
-              iconPos="right"
-              @click="activateCallback('1')"
+              icon-pos="right"
               :disabled="typeof device !== 'string'"
+              @click="activateCallback('1')"
             />
           </div>
         </StepPanel>
-        <StepPanel value="1" v-slot="{ activateCallback }">
+        <StepPanel v-slot="{ activateCallback }" value="1">
           <InstallLocationPicker
             v-model:installPath="installPath"
             v-model:pathError="pathError"
@@ -50,13 +50,13 @@
             <Button
               :label="$t('g.next')"
               icon="pi pi-arrow-right"
-              iconPos="right"
-              @click="activateCallback('2')"
+              icon-pos="right"
               :disabled="pathError !== ''"
+              @click="activateCallback('2')"
             />
           </div>
         </StepPanel>
-        <StepPanel value="2" v-slot="{ activateCallback }">
+        <StepPanel v-slot="{ activateCallback }" value="2">
           <MigrationPicker
             v-model:sourcePath="migrationSourcePath"
             v-model:migrationItemIds="migrationItemIds"
@@ -71,21 +71,21 @@
             <Button
               :label="$t('g.next')"
               icon="pi pi-arrow-right"
-              iconPos="right"
+              icon-pos="right"
               @click="activateCallback('3')"
             />
           </div>
         </StepPanel>
-        <StepPanel value="3" v-slot="{ activateCallback }">
+        <StepPanel v-slot="{ activateCallback }" value="3">
           <DesktopSettingsConfiguration
             v-model:autoUpdate="autoUpdate"
             v-model:allowMetrics="allowMetrics"
           />
           <MirrorsConfiguration
-            :device="device"
             v-model:pythonMirror="pythonMirror"
             v-model:pypiMirror="pypiMirror"
             v-model:torchMirror="torchMirror"
+            :device="device"
             class="mt-6"
           />
           <div class="flex mt-6 justify-between">
@@ -98,7 +98,7 @@
             <Button
               :label="$t('g.install')"
               icon="pi pi-check"
-              iconPos="right"
+              icon-pos="right"
               :disabled="hasError"
               @click="install()"
             />

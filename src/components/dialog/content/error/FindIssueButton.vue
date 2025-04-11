@@ -1,11 +1,10 @@
 <template>
   <Button
-    @click="openGitHubIssues"
     :label="$t('g.findIssues')"
     severity="secondary"
     icon="pi pi-github"
-  >
-  </Button>
+    @click="openGitHubIssues"
+  />
 </template>
 
 <script setup lang="ts">

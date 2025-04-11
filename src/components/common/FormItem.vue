@@ -3,26 +3,26 @@
   <div class="flex flex-row items-center gap-2">
     <div class="form-label flex flex-grow items-center">
       <span
+        :id="`${props.id}-label`"
         class="text-muted"
         :class="props.labelClass"
-        :id="`${props.id}-label`"
       >
-        <slot name="name-prefix"></slot>
+        <slot name="name-prefix" />
         {{ props.item.name }}
         <i
           v-if="props.item.tooltip"
-          class="pi pi-info-circle bg-transparent"
           v-tooltip="props.item.tooltip"
+          class="pi pi-info-circle bg-transparent"
         />
-        <slot name="name-suffix"></slot>
+        <slot name="name-suffix" />
       </span>
     </div>
     <div class="form-input flex justify-end">
       <component
         :is="markRaw(getFormComponent(props.item))"
         :id="props.id"
-        :aria-labelledby="`${props.id}-label`"
         v-model:modelValue="formValue"
+        :aria-labelledby="`${props.id}-label`"
         v-bind="getFormAttrs(props.item)"
       />
     </div>

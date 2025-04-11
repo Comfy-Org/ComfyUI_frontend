@@ -14,8 +14,8 @@
     <div class="flex flex-1 relative overflow-hidden">
       <ManagerNavSidebar
         v-if="isSideNavOpen"
-        :tabs="tabs"
         v-model:selectedTab="selectedTab"
+        :tabs="tabs"
       />
       <div
         class="flex-1 overflow-auto pr-80"
@@ -29,7 +29,7 @@
           <RegistrySearchBar
             v-model:searchQuery="searchQuery"
             v-model:searchMode="searchMode"
-            :searchResults="searchResults"
+            :search-results="searchResults"
             :suggestions="suggestions"
           />
           <div class="flex-1 overflow-auto">
@@ -56,16 +56,16 @@
               <VirtualGrid
                 :items="resultsWithKeys"
                 :buffer-rows="3"
-                :gridStyle="GRID_STYLE"
+                :grid-style="GRID_STYLE"
                 @approach-end="onApproachEnd"
               >
                 <template #item="{ item }">
                   <PackCard
-                    @click.stop="(event) => selectNodePack(item, event)"
                     :node-pack="item"
                     :is-selected="
                       selectedNodePacks.some((pack) => pack.id === item.id)
                     "
+                    @click.stop="(event) => selectNodePack(item, event)"
                   />
                 </template>
               </VirtualGrid>

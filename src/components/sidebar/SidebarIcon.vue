@@ -1,5 +1,6 @@
 <template>
   <Button
+    v-tooltip="{ value: props.tooltip, showDelay: 300, hideDelay: 300 }"
     :class="props.class"
     text
     :pt="{
@@ -13,7 +14,6 @@
       }
     }"
     @click="emit('click', $event)"
-    v-tooltip="{ value: props.tooltip, showDelay: 300, hideDelay: 300 }"
   >
     <template #icon>
       <OverlayBadge v-if="shouldShowBadge" :value="overlayValue">

@@ -1,6 +1,8 @@
 <template>
   <PanelTemplate value="About" class="about-container">
-    <h2 class="text-2xl font-bold mb-2">{{ $t('g.about') }}</h2>
+    <h2 class="text-2xl font-bold mb-2">
+      {{ $t('g.about') }}
+    </h2>
     <div class="space-y-2">
       <a
         v-for="badge in aboutPanelStore.badges"
@@ -13,7 +15,7 @@
       >
         <Tag class="mr-2">
           <template #icon>
-            <i :class="[badge.icon, 'mr-2 text-xl']"></i>
+            <i :class="[badge.icon, 'mr-2 text-xl']" />
           </template>
           {{ badge.label }}
         </Tag>

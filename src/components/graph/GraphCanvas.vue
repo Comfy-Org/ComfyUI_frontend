@@ -22,8 +22,8 @@
   <TitleEditor />
   <GraphCanvasMenu v-if="!betaMenuEnabled && canvasMenuEnabled" />
   <canvas
-    ref="canvasRef"
     id="graph-canvas"
+    ref="canvasRef"
     tabindex="1"
     class="w-full h-full touch-none"
   />

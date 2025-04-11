@@ -1,13 +1,13 @@
 <template>
-  <div class="flex p-2 gap-2 workflow-tab" ref="workflowTabRef" v-bind="$attrs">
+  <div ref="workflowTabRef" class="flex p-2 gap-2 workflow-tab" v-bind="$attrs">
     <span
-      class="workflow-label text-sm max-w-[150px] truncate inline-block"
       v-tooltip.bottom="workflowOption.workflow.key"
+      class="workflow-label text-sm max-w-[150px] truncate inline-block"
     >
       {{ workflowOption.workflow.filename }}
     </span>
     <div class="relative">
-      <span class="status-indicator" v-if="shouldShowStatusIndicator">•</span>
+      <span v-if="shouldShowStatusIndicator" class="status-indicator">•</span>
       <Button
         class="close-button p-0 w-auto"
         icon="pi pi-times"

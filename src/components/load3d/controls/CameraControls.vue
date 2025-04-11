@@ -2,19 +2,19 @@
   <div class="flex flex-col">
     <Button class="p-button-rounded p-button-text" @click="switchCamera">
       <i
-        :class="['pi', getCameraIcon, 'text-white text-lg']"
         v-tooltip.right="{
           value: t('load3d.switchCamera'),
           showDelay: 300
         }"
-      ></i>
+        :class="['pi', getCameraIcon, 'text-white text-lg']"
+      />
     </Button>
-    <div class="relative show-fov" v-if="showFOVButton">
+    <div v-if="showFOVButton" class="relative show-fov">
       <Button class="p-button-rounded p-button-text" @click="toggleFOV">
         <i
-          class="pi pi-expand text-white text-lg"
           v-tooltip.right="{ value: t('load3d.fov'), showDelay: 300 }"
-        ></i>
+          class="pi pi-expand text-white text-lg"
+        />
       </Button>
       <div
         v-show="showFOV"
@@ -24,10 +24,10 @@
         <Slider
           v-model="fov"
           class="w-full"
-          @change="updateFOV"
           :min="10"
           :max="150"
           :step="1"
+          @change="updateFOV"
         />
       </div>
     </div>

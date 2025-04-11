@@ -1,8 +1,8 @@
 <template>
   <Form
     v-slot="$form"
-    @submit="submit"
     :resolver="zodResolver(issueReportSchema)"
+    @submit="submit"
   >
     <Panel :pt="$attrs.pt as any">
       <template #header>
@@ -33,15 +33,15 @@
             >
               <Checkbox
                 v-bind="$field"
-                :inputId="field.value"
-                :value="field.value"
                 v-model="selection"
+                :input-id="field.value"
+                :value="field.value"
               />
               <label :for="field.value">{{ field.label }}</label>
             </FormField>
           </div>
         </div>
-        <FormField class="mb-4" v-slot="$field" name="details">
+        <FormField v-slot="$field" class="mb-4" name="details">
           <Textarea
             v-bind="$field"
             class="w-full"
@@ -83,9 +83,9 @@
             >
               <Checkbox
                 v-bind="$field"
-                :inputId="checkbox.value"
-                :value="checkbox.value"
                 v-model="contactPrefs"
+                :input-id="checkbox.value"
+                :value="checkbox.value"
                 :disabled="
                   $form.contactInfo?.error || !$form.contactInfo?.value
                 "

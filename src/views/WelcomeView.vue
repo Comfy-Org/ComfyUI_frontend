@@ -10,11 +10,11 @@
       <Button
         :label="$t('welcome.getStarted')"
         icon="pi pi-arrow-right"
-        iconPos="right"
+        icon-pos="right"
         size="large"
         rounded
-        @click="navigateTo('/install')"
         class="p-4 text-lg fade-in-up"
+        @click="navigateTo('/install')"
       />
     </div>
   </BaseViewTemplate>

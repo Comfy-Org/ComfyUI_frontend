@@ -17,19 +17,19 @@
       class="color-picker-container absolute -top-10 left-1/2"
     >
       <SelectButton
-        :modelValue="selectedColorOption"
-        @update:modelValue="applyColor"
+        :model-value="selectedColorOption"
         :options="colorOptions"
-        optionLabel="name"
-        dataKey="value"
+        option-label="name"
+        data-key="value"
+        @update:model-value="applyColor"
       >
         <template #option="{ option }">
           <i
+            v-tooltip.top="option.localizedName"
             class="pi pi-circle-fill"
             :style="{
               color: isLightTheme ? option.value.light : option.value.dark
             }"
-            v-tooltip.top="option.localizedName"
             :data-testid="option.name"
           />
         </template>

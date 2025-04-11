@@ -12,17 +12,17 @@
       <SelectButton
         class="workflow-tabs bg-transparent"
         :class="props.class"
-        :modelValue="selectedWorkflow"
-        @update:modelValue="onWorkflowChange"
+        :model-value="selectedWorkflow"
         :options="options"
-        optionLabel="label"
-        dataKey="value"
+        option-label="label"
+        data-key="value"
+        @update:model-value="onWorkflowChange"
       >
         <template #option="{ option }">
           <WorkflowTab
+            :workflow-option="option"
             @contextmenu="showContextMenu($event, option)"
             @click.middle="onCloseWorkflow(option)"
-            :workflow-option="option"
           />
         </template>
       </SelectButton>

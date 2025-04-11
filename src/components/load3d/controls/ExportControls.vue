@@ -6,12 +6,12 @@
         @click="toggleExportFormats"
       >
         <i
-          class="pi pi-download text-white text-lg"
           v-tooltip.right="{
             value: t('load3d.exportModel'),
             showDelay: 300
           }"
-        ></i>
+          class="pi pi-download text-white text-lg"
+        />
       </Button>
       <div
         v-show="showExportFormats"
