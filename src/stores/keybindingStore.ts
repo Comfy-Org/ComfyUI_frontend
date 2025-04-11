@@ -253,16 +253,16 @@ export const useKeybindingStore = defineStore('keybinding', () => {
    *
    * @returns true if the keybinding is updated, false otherwise.
    */
-  function updateKeybindingOnCommand(newKeybinding: KeybindingImpl): boolean {
-    const currentKeybinding = getKeybindingByCommandId(newKeybinding.commandId)
+  function updateKeybindingOnCommand(keybinding: KeybindingImpl): boolean {
+    const currentKeybinding = getKeybindingByCommandId(keybinding.commandId)
     // If matches exact same KeybindingImpl, still allows for overwriting with same combo
-    if (currentKeybinding?.equals(newKeybinding)) {
+    if (currentKeybinding?.equals(keybinding)) {
       return false
     }
     if (currentKeybinding) {
       unsetKeybinding(currentKeybinding)
     }
-    addUserKeybinding(newKeybinding)
+    addUserKeybinding(keybinding)
     return true
   }
 
