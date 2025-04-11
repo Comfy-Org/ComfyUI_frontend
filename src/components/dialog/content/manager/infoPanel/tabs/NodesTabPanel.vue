@@ -63,7 +63,7 @@ const fetchNodeDefs = async () => {
       packId,
       version,
       page: 1,
-      limit: 32
+      limit: 256
     })
     registryNodeDefs.value = response?.comfy_nodes ?? null
   }
