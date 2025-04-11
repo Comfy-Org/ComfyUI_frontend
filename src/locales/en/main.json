@@ -106,10 +106,12 @@
     "disabling": "Disabling",
     "updating": "Updating",
     "migrate": "Migrate",
-    "updateAvailable": "Update Available"
+    "updateAvailable": "Update Available",
+    "commandProhibited": "Command {command} is prohibited. Contact an administrator for more information."
   },
   "manager": {
     "title": "Custom Nodes Manager",
+    "legacyMenuNotAvailable": "Legacy manager menu is not available in this version of ComfyUI. Please use the new manager menu instead.",
     "failed": "Failed ({count})",
     "installationQueue": "Installation Queue",
     "changingVersion": "Changing version from {from} to {to}",
@@ -591,6 +593,7 @@
   "menuLabels": {
     "Workflow": "Workflow",
     "Edit": "Edit",
+    "Manager": "Manager",
     "Help": "Help",
     "Open Custom Nodes Folder": "Open Custom Nodes Folder",
     "Open Inputs Folder": "Open Inputs Folder",
@@ -635,8 +638,12 @@
     "ComfyUI Issues": "ComfyUI Issues",
     "Interrupt": "Interrupt",
     "Load Default Workflow": "Load Default Workflow",
-    "Custom Nodes Manager": "Custom Nodes Manager",
+    "Custom Nodes (Beta)": "Custom Nodes (Beta)",
+    "Custom Nodes (Legacy)": "Custom Nodes (Legacy)",
+    "Manager Menu (Legacy)": "Manager Menu (Legacy)",
     "Toggle Progress Dialog": "Toggle Progress Dialog",
+    "Unload Models": "Unload Models",
+    "Unload Models and Execution Cache": "Unload Models and Execution Cache",
     "New": "New",
     "Clipspace": "Clipspace",
     "Open": "Open",

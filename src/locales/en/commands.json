@@ -128,11 +128,23 @@
   "Comfy_LoadDefaultWorkflow": {
     "label": "Load Default Workflow"
   },
-  "Comfy_Manager_CustomNodesManager": {
-    "label": "Custom Nodes Manager"
+  "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
+    "label": "Custom Nodes (Beta)"
+  },
+  "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
+    "label": "Custom Nodes (Legacy)"
+  },
+  "Comfy_Manager_ShowLegacyManagerMenu": {
+    "label": "Manager Menu (Legacy)"
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "Toggle Progress Dialog"
+  },
+  "Comfy_Memory_UnloadModels": {
+    "label": "Unload Models"
+  },
+  "Comfy_Memory_UnloadModelsAndExecutionCache": {
+    "label": "Unload Models and Execution Cache"
   },
   "Comfy_NewBlankWorkflow": {
     "label": "New Blank Workflow"
