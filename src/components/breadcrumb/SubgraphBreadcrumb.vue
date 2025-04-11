@@ -15,6 +15,7 @@
 
 <script setup lang="ts">
 import Breadcrumb from 'primevue/breadcrumb'
+import { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
 import { computed } from 'vue'
 
 import { useWorkflowService } from '@/services/workflowService'
@@ -24,12 +25,6 @@ import { useWorkflowStore } from '@/stores/workflowStore'
 const workflowService = useWorkflowService()
 const workflowStore = useWorkflowStore()
 const subgraphStore = useSubgraphStore()
-
-type MenuItem = {
-  label: string
-  command?: () => void
-  icon?: string
-}
 
 const items = computed<MenuItem[]>(() => {
   if (!subgraphStore.graphNamePath.length) return []
@@ -49,8 +44,8 @@ const items = computed<MenuItem[]>(() => {
 
 const home = computed(() => items.value[0])
 
-const handleItemClick = (event: { item: MenuItem }) => {
-  event.item.command?.()
+const handleItemClick = (event: MenuItemCommandEvent) => {
+  event.item.command?.(event)
 }
 </script>
 
