@@ -198,8 +198,6 @@
     "reportIssue": "Enviar informe",
     "reportIssueTooltip": "Enviar el informe de error a Comfy Org",
     "reportSent": "Informe enviado",
-    "reset": "Restablecer",
-    "resetKeybindingsTooltip": "Restablecer combinaciones de teclas a la configuración predeterminada",
     "restart": "Reiniciar",
     "resultsCount": "Encontrados {count} resultados",
     "save": "Guardar",

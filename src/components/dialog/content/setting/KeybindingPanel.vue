@@ -101,14 +101,14 @@
       </template>
     </Dialog>
     <Button
-      v-tooltip="$t('g.resetKeybindingsTooltip')"
+      v-tooltip="$t('g.resetAllKeybindingsTooltip')"
       class="mt-4"
-      :label="$t('g.reset')"
-      icon="pi pi-trash"
+      :label="$t('g.resetAll')"
+      icon="pi pi-replay"
       severity="danger"
       fluid
       text
-      @click="resetKeybindings"
+      @click="resetAllKeybindings"
     />
   </PanelTemplate>
 </template>
@@ -255,13 +255,13 @@ async function saveKeybinding() {
 }
 
 const toast = useToast()
-async function resetKeybindings() {
-  keybindingStore.resetKeybindings()
+async function resetAllKeybindings() {
+  keybindingStore.resetAllKeybindings()
   await keybindingService.persistUserKeybindings()
   toast.add({
     severity: 'info',
     summary: 'Info',
-    detail: 'Keybindings reset',
+    detail: 'All keybindings reset',
     life: 3000
   })
 }

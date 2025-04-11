@@ -278,7 +278,7 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     return true
   }
 
-  function resetKeybindings() {
+  function resetAllKeybindings() {
     userKeybindings.value = {}
     userUnsetKeybindings.value = {}
   }
@@ -306,7 +306,7 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     addUserKeybinding,
     unsetKeybinding,
     updateKeybindingOnCommand,
-    resetKeybindings,
+    resetAllKeybindings,
     isCommandKeybindingModified
   }
 })

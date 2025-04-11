@@ -198,8 +198,6 @@
     "reportIssue": "보고서 보내기",
     "reportIssueTooltip": "Comfy Org에 오류 보고서를 제출합니다.",
     "reportSent": "보고서 제출됨",
-    "reset": "재설정",
-    "resetKeybindingsTooltip": "키 바인딩을 기본값으로 재설정",
     "restart": "재시작",
     "resultsCount": "{count} 개의 결과를 찾았습니다",
     "save": "저장",

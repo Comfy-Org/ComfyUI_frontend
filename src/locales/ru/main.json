@@ -198,8 +198,6 @@
     "reportIssue": "Отправить отчёт",
     "reportIssueTooltip": "Отправить отчёт об ошибке в Comfy Org",
     "reportSent": "Отчёт отправлен",
-    "reset": "Сбросить",
-    "resetKeybindingsTooltip": "Сбросить сочетания клавиш по умолчанию",
     "restart": "Перезапустить",
     "resultsCount": "Найдено {count} результатов",
     "save": "Сохранить",

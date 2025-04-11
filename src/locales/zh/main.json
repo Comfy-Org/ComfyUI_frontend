@@ -198,8 +198,6 @@
     "reportIssue": "发送报告",
     "reportIssueTooltip": "向 Comfy Org 提交错误报告",
     "reportSent": "报告已提交",
-    "reset": "重置",
-    "resetKeybindingsTooltip": "将快捷键重置为默认",
     "restart": "重新启动",
     "resultsCount": "找到 {count} 个结果",
     "save": "保存",
