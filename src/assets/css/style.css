@@ -398,6 +398,7 @@ button.comfy-queue-btn {
 .graphdialog {
   min-height: 1em;
   background-color: var(--comfy-menu-bg);
+  z-index: 41; /* z-index is set to 41 here in order to appear over selection-overlay-container which should have a z-index of 40 */
 }
 
 .graphdialog .name {
