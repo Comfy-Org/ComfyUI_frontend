@@ -7,10 +7,8 @@
         :placeholder="$t('manager.searchPlaceholder')"
         :complete-on-focus="false"
         :delay="8"
-        optionLabel="query"
+        option-label="query"
         class="w-full"
-        @complete="stubTrue"
-        @option-select="onOptionSelect"
         :pt="{
           pcInputText: {
             root: {
@@ -22,8 +20,9 @@
             style: 'display: none'
           }
         }"
-      >
-      </AutoComplete>
+        @complete="stubTrue"
+        @option-select="onOptionSelect"
+      />
     </div>
     <div class="flex mt-3 text-sm">
       <div class="flex gap-6 ml-1">

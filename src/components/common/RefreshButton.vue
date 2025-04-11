@@ -22,7 +22,7 @@
       class="p-button-icon pi pi-refresh transition-all"
       :class="{ 'opacity-0': active }"
       data-pc-section="icon"
-    ></span>
+    />
     <span class="p-button-label" data-pc-section="label">&nbsp;</span>
     <ProgressSpinner v-show="active" class="absolute w-1/2 h-1/2" />
   </Button>

@@ -38,18 +38,20 @@
       >
         <div v-if="isReady && selectedTab" class="flex flex-col px-12 pb-4">
           <div class="py-3 text-left">
-            <h2 class="text-lg">{{ selectedTab.title }}</h2>
+            <h2 class="text-lg">
+              {{ selectedTab.title }}
+            </h2>
           </div>
           <div
             class="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-8 justify-items-center"
           >
             <div v-for="template in selectedTab.templates" :key="template.name">
               <TemplateWorkflowCard
-                :sourceModule="selectedTab.moduleName"
+                :source-module="selectedTab.moduleName"
                 :template="template"
                 :loading="template.name === workflowLoading"
-                :categoryTitle="selectedTab.title"
-                @loadWorkflow="loadWorkflow"
+                :category-title="selectedTab.title"
+                @load-workflow="loadWorkflow"
               />
             </div>
           </div>

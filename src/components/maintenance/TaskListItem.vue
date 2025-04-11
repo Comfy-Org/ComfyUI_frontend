@@ -10,7 +10,9 @@
       <TaskListStatusIcon :state="runner.state" :loading="isLoading" />
     </td>
     <td>
-      <p class="inline-block">{{ task.name }}</p>
+      <p class="inline-block">
+        {{ task.name }}
+      </p>
       <Button
         class="inline-block mx-2"
         type="button"
@@ -30,8 +32,8 @@
         :label="task.button?.text"
         :severity
         icon-pos="right"
-        @click="(event) => $emit('execute', event)"
         :loading="isExecuting"
+        @click="(event) => $emit('execute', event)"
       />
     </td>
   </tr>

@@ -11,9 +11,9 @@
       />
       <InputText
         class="search-box-input w-full"
-        @input="handleInput"
-        :modelValue="modelValue"
+        :model-value="modelValue"
         :placeholder="placeholder"
+        @input="handleInput"
       />
       <InputIcon v-if="!modelValue" :class="icon" />
       <Button
@@ -26,8 +26,8 @@
       />
     </IconField>
     <div
-      class="search-filters pt-2 flex flex-wrap gap-2"
       v-if="filters?.length"
+      class="search-filters pt-2 flex flex-wrap gap-2"
     >
       <SearchFilterChip
         v-for="filter in filters"

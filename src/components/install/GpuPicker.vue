@@ -102,7 +102,7 @@
             icon="pi pi-exclamation-triangle"
             severity="warn"
             :value="t('icon.exclamation-triangle')"
-          ></Tag>
+          />
           {{ $t('install.gpuSelection.cpuModeDescription') }}
         </p>
         <p class="m-1">
@@ -119,7 +119,7 @@
     >
       <ToggleSwitch
         v-model="cpuMode"
-        inputId="cpu-mode"
+        input-id="cpu-mode"
         class="-translate-y-40"
       />
       <label for="cpu-mode" class="select-none">

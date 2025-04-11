@@ -68,7 +68,7 @@
         <div
           class="flex md:hidden xl:flex items-center justify-center ml-4 w-10 h-10 rounded-full bg-surface-100"
         >
-          <i class="pi pi-angle-right text-2xl"></i>
+          <i class="pi pi-angle-right text-2xl" />
         </div>
       </div>
     </template>

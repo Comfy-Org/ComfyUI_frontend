@@ -6,15 +6,14 @@
           <span
             class="model-lib-model-icon"
             :style="{ backgroundImage: `url(${modelPreviewUrl})` }"
-          >
-          </span>
+          />
         </span>
       </template>
     </TreeExplorerTreeNode>
 
     <teleport v-if="showPreview" to="#model-library-model-preview-container">
       <div class="model-lib-model-preview" :style="modelPreviewStyle">
-        <ModelPreview ref="previewRef" :modelDef="modelDef"></ModelPreview>
+        <ModelPreview ref="previewRef" :model-def="modelDef" />
       </div>
     </teleport>
   </div>
@@ -87,7 +86,7 @@ const handleModelHover = async () => {
     modelPreviewStyle.value.left = `${targetRect.left - 400}px`
   }
 
-  modelDef.value.load()
+  await modelDef.value.load()
 }
 
 const container = ref<HTMLElement | undefined>()
@@ -111,17 +110,17 @@ const showPreview = computed(() => {
 const handleMouseEnter = async () => {
   isHovered.value = true
   await nextTick()
-  handleModelHover()
+  await handleModelHover()
 }
 const handleMouseLeave = () => {
   isHovered.value = false
 }
-onMounted(() => {
+onMounted(async () => {
   modelContentElement.value =
     container.value?.closest('.p-tree-node-content') ?? undefined
   modelContentElement.value?.addEventListener('mouseenter', handleMouseEnter)
   modelContentElement.value?.addEventListener('mouseleave', handleMouseLeave)
-  modelDef.value.load()
+  await modelDef.value.load()
 })
 
 onUnmounted(() => {

@@ -12,13 +12,14 @@
       <Divider v-if="index > 0" />
 
       <MirrorItem
-        :item="item"
         v-model="modelValue.value"
+        :item="item"
         @state-change="validationStates[index] = $event"
       />
     </template>
     <template #icons>
       <i
+        v-tooltip="validationStateTooltip"
         :class="{
           'pi pi-spin pi-spinner text-neutral-400':
             validationState === ValidationState.LOADING,
@@ -27,7 +28,6 @@
           'pi pi-times text-red-500':
             validationState === ValidationState.INVALID
         }"
-        v-tooltip="validationStateTooltip"
       />
     </template>
   </Panel>

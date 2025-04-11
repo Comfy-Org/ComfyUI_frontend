@@ -2,6 +2,7 @@
   <SidebarTabTemplate :title="$t('sideToolbar.queue')">
     <template #tool-buttons>
       <Button
+        v-tooltip.bottom="$t(`sideToolbar.queueTab.${imageFit}ImagePreview`)"
         :icon="
           imageFit === 'cover'
             ? 'pi pi-arrow-down-left-and-arrow-up-right-to-center'
@@ -9,42 +10,41 @@
         "
         text
         severity="secondary"
-        @click="toggleImageFit"
         class="toggle-expanded-button"
-        v-tooltip.bottom="$t(`sideToolbar.queueTab.${imageFit}ImagePreview`)"
+        @click="toggleImageFit"
       />
       <Button
         v-if="isInFolderView"
+        v-tooltip.bottom="$t('sideToolbar.queueTab.backToAllTasks')"
         icon="pi pi-arrow-left"
         text
         severity="secondary"
-        @click="exitFolderView"
         class="back-button"
-        v-tooltip.bottom="$t('sideToolbar.queueTab.backToAllTasks')"
+        @click="exitFolderView"
       />
       <template v-else>
         <Button
+          v-tooltip="$t('sideToolbar.queueTab.showFlatList')"
           :icon="isExpanded ? 'pi pi-images' : 'pi pi-image'"
           text
           severity="secondary"
-          @click="toggleExpanded"
           class="toggle-expanded-button"
-          v-tooltip="$t('sideToolbar.queueTab.showFlatList')"
+          @click="toggleExpanded"
         />
         <Button
           v-if="queueStore.hasPendingTasks"
+          v-tooltip.bottom="$t('sideToolbar.queueTab.clearPendingTasks')"
           icon="pi pi-stop"
           severity="danger"
           text
           @click="() => commandStore.execute('Comfy.ClearPendingTasks')"
-          v-tooltip.bottom="$t('sideToolbar.queueTab.clearPendingTasks')"
         />
         <Button
           icon="pi pi-trash"
           text
           severity="primary"
-          @click="confirmRemoveAll($event)"
           class="clear-all-button"
+          @click="confirmRemoveAll($event)"
         />
       </template>
     </template>
@@ -52,7 +52,7 @@
       <VirtualGrid
         v-if="allTasks?.length"
         :items="allTasks"
-        :gridStyle="{
+        :grid-style="{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
           padding: '0.5rem',
@@ -62,10 +62,10 @@
         <template #item="{ item }">
           <TaskItem
             :task="item"
-            :isFlatTask="isExpanded || isInFolderView"
+            :is-flat-task="isExpanded || isInFolderView"
             @contextmenu="handleContextMenu"
             @preview="handlePreview"
-            @taskOutputLengthClicked="enterFolderView($event)"
+            @task-output-length-clicked="enterFolderView($event)"
           />
         </template>
       </VirtualGrid>
@@ -87,7 +87,7 @@
   <ContextMenu ref="menu" :model="menuItems" />
   <ResultGallery
     v-model:activeIndex="galleryActiveIndex"
-    :allGalleryItems="allGalleryItems"
+    :all-gallery-items="allGalleryItems"
   />
 </template>
 
@@ -157,11 +157,11 @@ const toggleExpanded = () => {
   isExpanded.value = !isExpanded.value
 }
 
-const removeTask = (task: TaskItemImpl) => {
+const removeTask = async (task: TaskItemImpl) => {
   if (task.isRunning) {
-    api.interrupt()
+    await api.interrupt()
   }
-  queueStore.delete(task)
+  await queueStore.delete(task)
 }
 
 const removeAllTasks = async () => {
@@ -251,8 +251,11 @@ const exitFolderView = () => {
   folderTask.value = null
 }
 
-const toggleImageFit = () => {
-  settingStore.set(IMAGE_FIT, imageFit.value === 'cover' ? 'contain' : 'cover')
+const toggleImageFit = async () => {
+  await settingStore.set(
+    IMAGE_FIT,
+    imageFit.value === 'cover' ? 'contain' : 'cover'
+  )
 }
 
 watch(allTasks, () => {

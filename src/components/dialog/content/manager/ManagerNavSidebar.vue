@@ -6,8 +6,8 @@
       <Listbox
         v-model="selectedTab"
         :options="tabs"
-        optionLabel="label"
-        listStyle="max-height:unset"
+        option-label="label"
+        list-style="max-height:unset"
         class="w-full border-0 bg-transparent shadow-none"
         :pt="{
           list: { class: 'p-5' },
@@ -17,7 +17,7 @@
       >
         <template #option="slotProps">
           <div class="text-left flex items-center">
-            <i :class="['pi', slotProps.option.icon, 'mr-3']"></i>
+            <i :class="['pi', slotProps.option.icon, 'mr-3']" />
             <span class="text-lg">{{ slotProps.option.label }}</span>
           </div>
         </template>

@@ -1,23 +1,23 @@
 <template>
   <div class="_content">
     <SelectButton
-      class="filter-type-select"
       v-model="selectedFilter"
+      class="filter-type-select"
       :options="filters"
-      :allowEmpty="false"
-      optionLabel="name"
+      :allow-empty="false"
+      option-label="name"
       @change="updateSelectedFilterValue"
     />
     <Select
-      class="filter-value-select"
       v-model="selectedFilterValue"
+      class="filter-value-select"
       :options="filterValues"
       filter
-      autoFilterFocus
+      auto-filter-focus
     />
   </div>
   <div class="_footer">
-    <Button type="button" :label="$t('g.add')" @click="submit"></Button>
+    <Button type="button" :label="$t('g.add')" @click="submit" />
   </div>
 </template>
 

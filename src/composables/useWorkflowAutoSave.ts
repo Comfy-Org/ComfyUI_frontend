@@ -39,7 +39,7 @@ export function useWorkflowAutoSave() {
       const delay = autoSaveDelay.value
       autoSaveTimeout = setTimeout(async () => {
         const activeWorkflow = workflowStore.activeWorkflow
-        if (activeWorkflow?.isModified) {
+        if (activeWorkflow?.isModified && activeWorkflow.isPersisted) {
           try {
             isSaving = true
             await workflowService.saveWorkflow(activeWorkflow)

@@ -3,7 +3,7 @@
     <div :style="{ height: `${(state.start / cols) * itemHeight}px` }" />
     <div :style="gridStyle">
       <div v-for="item in renderedItems" :key="item.key" data-virtual-grid-item>
-        <slot name="item" :item="item"> </slot>
+        <slot name="item" :item="item" />
       </div>
     </div>
     <div

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div v-if="!hasMarkdown" v-text="text" class="break-words"></div>
+    <div v-if="!hasMarkdown" class="break-words" v-text="text" />
     <div v-else class="break-words">
       <template v-for="(segment, index) in parsedSegments" :key="index">
         <a

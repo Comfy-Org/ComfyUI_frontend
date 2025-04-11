@@ -1,17 +1,17 @@
 <template>
   <div
+    v-show="widgetState.visible"
+    ref="widgetElement"
     class="dom-widget"
     :title="tooltip"
-    ref="widgetElement"
     :style="style"
-    v-show="widgetState.visible"
   >
     <component
-      v-if="isComponentWidget(widget)"
       :is="widget.component"
-      :modelValue="widget.value"
-      @update:modelValue="emit('update:widgetValue', $event)"
+      v-if="isComponentWidget(widget)"
+      :model-value="widget.value"
       :widget="widget"
+      @update:model-value="emit('update:widgetValue', $event)"
     />
   </div>
 </template>

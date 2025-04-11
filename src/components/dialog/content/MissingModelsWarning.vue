@@ -129,9 +129,12 @@ const missingModels = computed(() => {
   })
 })
 
-onBeforeUnmount(() => {
+onBeforeUnmount(async () => {
   if (doNotAskAgain.value) {
-    useSettingStore().set('Comfy.Workflow.ShowMissingModelsWarning', false)
+    await useSettingStore().set(
+      'Comfy.Workflow.ShowMissingModelsWarning',
+      false
+    )
   }
 })
 </script>

@@ -1,25 +1,25 @@
 <template>
   <div class="input-slider flex flex-row items-center gap-2">
     <Slider
-      :modelValue="modelValue"
-      @update:modelValue="(value) => updateValue(value as number)"
+      :model-value="modelValue"
       class="slider-part"
       :class="sliderClass"
       :min="min"
       :max="max"
       :step="step"
       v-bind="$attrs"
+      @update:model-value="(value) => updateValue(value as number)"
     />
     <InputNumber
-      :modelValue="modelValue"
-      @update:modelValue="updateValue"
+      :model-value="modelValue"
       class="input-part"
       :max-fraction-digits="3"
       :class="inputClass"
       :min="min"
       :max="max"
       :step="step"
-      :allowEmpty="false"
+      :allow-empty="false"
+      @update:model-value="updateValue"
     />
   </div>
 </template>

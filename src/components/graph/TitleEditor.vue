@@ -5,8 +5,8 @@
     :style="inputStyle"
   >
     <EditableText
-      :isEditing="showInput"
-      :modelValue="editedTitle"
+      :is-editing="showInput"
+      :model-value="editedTitle"
       @edit="onEdit"
     />
   </div>

@@ -14,8 +14,8 @@
     <div class="flex flex-1 relative overflow-hidden">
       <ManagerNavSidebar
         v-if="isSideNavOpen"
-        :tabs="tabs"
         v-model:selectedTab="selectedTab"
+        :tabs="tabs"
       />
       <div
         class="flex-1 overflow-auto pr-80"
@@ -29,7 +29,7 @@
           <RegistrySearchBar
             v-model:searchQuery="searchQuery"
             v-model:searchMode="searchMode"
-            :searchResults="searchResults"
+            :search-results="searchResults"
             :suggestions="suggestions"
           />
           <div class="flex-1 overflow-auto">
@@ -56,16 +56,16 @@
               <VirtualGrid
                 :items="resultsWithKeys"
                 :buffer-rows="3"
-                :gridStyle="GRID_STYLE"
+                :grid-style="GRID_STYLE"
                 @approach-end="onApproachEnd"
               >
                 <template #item="{ item }">
                   <PackCard
-                    @click.stop="(event) => selectNodePack(item, event)"
                     :node-pack="item"
                     :is-selected="
                       selectedNodePacks.some((pack) => pack.id === item.id)
                     "
+                    @click.stop="(event) => selectNodePack(item, event)"
                   />
                 </template>
               </VirtualGrid>
@@ -222,13 +222,13 @@ const filterOutdatedPacks = (packs: components['schemas']['Node'][]) =>
 
 watch(
   [isUpdateAvailableTab, installedPacks],
-  () => {
+  async () => {
     if (!isUpdateAvailableTab.value) return
 
     if (!isEmptySearch.value) {
       displayPacks.value = filterOutdatedPacks(installedPacks.value)
     } else if (!installedPacks.value.length) {
-      startFetchInstalled()
+      await startFetchInstalled()
     } else {
       displayPacks.value = filterOutdatedPacks(installedPacks.value)
     }
@@ -238,7 +238,7 @@ watch(
 
 watch(
   [isInstalledTab, installedPacks],
-  () => {
+  async () => {
     if (!isInstalledTab.value) return
 
     if (!isEmptySearch.value) {
@@ -248,7 +248,7 @@ watch(
       !installedPacksReady.value &&
       !isLoadingInstalled.value
     ) {
-      startFetchInstalled()
+      await startFetchInstalled()
     } else {
       displayPacks.value = installedPacks.value
     }
@@ -258,7 +258,7 @@ watch(
 
 watch(
   [isMissingTab, isWorkflowTab, workflowPacks, installedPacks],
-  () => {
+  async () => {
     if (!isWorkflowTab.value && !isMissingTab.value) return
 
     if (!isEmptySearch.value) {
@@ -270,9 +270,9 @@ watch(
       !isLoadingWorkflow.value &&
       !workflowPacksReady.value
     ) {
-      startFetchWorkflowPacks()
+      await startFetchWorkflowPacks()
       if (isMissingTab.value) {
-        startFetchInstalled()
+        await startFetchInstalled()
       }
     } else {
       displayPacks.value = isMissingTab.value

@@ -2,8 +2,12 @@
   <div class="overflow-hidden">
     <Tabs :value="activeTab">
       <TabList>
-        <Tab value="description">{{ $t('g.description') }}</Tab>
-        <Tab value="nodes">{{ $t('g.nodes') }}</Tab>
+        <Tab value="description">
+          {{ $t('g.description') }}
+        </Tab>
+        <Tab value="nodes">
+          {{ $t('g.nodes') }}
+        </Tab>
       </TabList>
       <TabPanels class="overflow-auto">
         <TabPanel value="description">

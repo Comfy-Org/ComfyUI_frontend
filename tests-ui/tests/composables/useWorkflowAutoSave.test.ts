@@ -36,7 +36,8 @@ vi.mock('@/stores/workflowStore', () => ({
 
 let mockAutoSaveSetting: string = 'off'
 let mockAutoSaveDelay: number = 1000
-let mockActiveWorkflow: { isModified: boolean } | null = null
+let mockActiveWorkflow: { isModified: boolean; isPersisted?: boolean } | null =
+  null
 
 describe('useWorkflowAutoSave', () => {
   beforeEach(() => {
@@ -51,7 +52,7 @@ describe('useWorkflowAutoSave', () => {
   it('should auto-save workflow after delay when modified and autosave enabled', async () => {
     mockAutoSaveSetting = 'after delay'
     mockAutoSaveDelay = 1000
-    mockActiveWorkflow = { isModified: true }
+    mockActiveWorkflow = { isModified: true, isPersisted: true }
 
     mount({
       template: `<div></div>`,
@@ -72,7 +73,7 @@ describe('useWorkflowAutoSave', () => {
   it('should not auto-save workflow after delay when not modified and autosave enabled', async () => {
     mockAutoSaveSetting = 'after delay'
     mockAutoSaveDelay = 1000
-    mockActiveWorkflow = { isModified: false }
+    mockActiveWorkflow = { isModified: false, isPersisted: true }
 
     mount({
       template: `<div></div>`,
@@ -93,7 +94,7 @@ describe('useWorkflowAutoSave', () => {
   it('should not auto save workflow when autosave is off', async () => {
     mockAutoSaveSetting = 'off'
     mockAutoSaveDelay = 1000
-    mockActiveWorkflow = { isModified: true }
+    mockActiveWorkflow = { isModified: true, isPersisted: true }
 
     mount({
       template: `<div></div>`,
@@ -112,7 +113,7 @@ describe('useWorkflowAutoSave', () => {
   it('should respect the user specified auto save delay', async () => {
     mockAutoSaveSetting = 'after delay'
     mockAutoSaveDelay = 2000
-    mockActiveWorkflow = { isModified: true }
+    mockActiveWorkflow = { isModified: true, isPersisted: true }
 
     mount({
       template: `<div></div>`,
@@ -135,7 +136,7 @@ describe('useWorkflowAutoSave', () => {
   it('should debounce save requests', async () => {
     mockAutoSaveSetting = 'after delay'
     mockAutoSaveDelay = 2000
-    mockActiveWorkflow = { isModified: true }
+    mockActiveWorkflow = { isModified: true, isPersisted: true }
 
     mount({
       template: `<div></div>`,
@@ -164,7 +165,7 @@ describe('useWorkflowAutoSave', () => {
   it('should handle save error gracefully', async () => {
     mockAutoSaveSetting = 'after delay'
     mockAutoSaveDelay = 1000
-    mockActiveWorkflow = { isModified: true }
+    mockActiveWorkflow = { isModified: true, isPersisted: true }
 
     const consoleErrorSpy = vi
       .spyOn(console, 'error')
@@ -197,7 +198,7 @@ describe('useWorkflowAutoSave', () => {
   it('should queue autosave requests during saving and reschedule after save completes', async () => {
     mockAutoSaveSetting = 'after delay'
     mockAutoSaveDelay = 1000
-    mockActiveWorkflow = { isModified: true }
+    mockActiveWorkflow = { isModified: true, isPersisted: true }
 
     mount({
       template: `<div></div>`,
@@ -246,7 +247,7 @@ describe('useWorkflowAutoSave', () => {
   it('should handle edge case delay values properly', async () => {
     mockAutoSaveSetting = 'after delay'
     mockAutoSaveDelay = 0
-    mockActiveWorkflow = { isModified: true }
+    mockActiveWorkflow = { isModified: true, isPersisted: true }
 
     mount({
       template: `<div></div>`,
@@ -270,5 +271,26 @@ describe('useWorkflowAutoSave', () => {
     await vi.runAllTimersAsync()
 
     expect(serviceInstance.saveWorkflow).toHaveBeenCalledTimes(1)
+  })
+
+  it('should not autosave if workflow is not persisted', async () => {
+    mockAutoSaveSetting = 'after delay'
+    mockAutoSaveDelay = 1000
+    mockActiveWorkflow = { isModified: true, isPersisted: false }
+
+    mount({
+      template: `<div></div>`,
+      setup() {
+        useWorkflowAutoSave()
+        return {}
+      }
+    })
+
+    vi.advanceTimersByTime(1000)
+
+    const serviceInstance = (useWorkflowService as any).mock.results[0].value
+    expect(serviceInstance.saveWorkflow).not.toHaveBeenCalledWith(
+      mockActiveWorkflow
+    )
   })
 })

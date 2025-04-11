@@ -7,8 +7,8 @@
   />
   <ListBox
     :options="uniqueNodes"
-    optionLabel="label"
-    scrollHeight="100%"
+    option-label="label"
+    scroll-height="100%"
     class="comfy-missing-nodes"
     :pt="{
       list: { class: 'border-none' }
@@ -22,16 +22,16 @@
         }}</span>
         <Button
           v-if="slotProps.option.action"
-          @click="slotProps.option.action.callback"
           :label="slotProps.option.action.text"
           size="small"
           outlined
+          @click="slotProps.option.action.callback"
         />
       </div>
     </template>
   </ListBox>
   <div class="flex justify-end py-3">
-    <Button label="Open Manager" @click="openManager" size="small" outlined />
+    <Button label="Open Manager" size="small" outlined @click="openManager" />
   </div>
 </template>
 

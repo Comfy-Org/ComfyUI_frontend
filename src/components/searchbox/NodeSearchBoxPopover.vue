@@ -4,7 +4,6 @@
       v-model:visible="visible"
       modal
       :dismissable-mask="dismissable"
-      @hide="clearFilters"
       :pt="{
         root: {
           class: 'invisible-dialog-root',
@@ -19,6 +18,7 @@
           leaveToClass: 'opacity-0 scale-75'
         }
       }"
+      @hide="clearFilters"
     >
       <template #container>
         <NodeSearchBox

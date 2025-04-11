@@ -7,7 +7,7 @@
         class="p-button-rounded p-button-text bg-opacity-30"
         @click="toggleMenu"
       >
-        <i class="pi pi-bars text-white text-lg"></i>
+        <i class="pi pi-bars text-white text-lg" />
       </Button>
 
       <div
@@ -22,7 +22,7 @@
             :class="{ 'bg-gray-600': activeCategory === category }"
             @click="selectCategory(category)"
           >
-            <i :class="getCategoryIcon(category)"></i>
+            <i :class="getCategoryIcon(category)" />
             <span class="text-white">{{ t(categoryLabels[category]) }}</span>
           </Button>
         </div>
@@ -32,62 +32,62 @@
     <div v-show="activeCategory" class="bg-gray-700 bg-opacity-30 rounded-lg">
       <SceneControls
         v-if="activeCategory === 'scene'"
-        :backgroundColor="backgroundColor"
-        :showGrid="showGrid"
-        :hasBackgroundImage="hasBackgroundImage"
-        @toggleGrid="handleToggleGrid"
-        @updateBackgroundColor="handleBackgroundColorChange"
-        @updateBackgroundImage="handleBackgroundImageUpdate"
         ref="sceneControlsRef"
+        :background-color="backgroundColor"
+        :show-grid="showGrid"
+        :has-background-image="hasBackgroundImage"
+        @toggle-grid="handleToggleGrid"
+        @update-background-color="handleBackgroundColorChange"
+        @update-background-image="handleBackgroundImageUpdate"
       />
 
       <ModelControls
         v-if="activeCategory === 'model'"
-        :inputSpec="inputSpec"
-        :upDirection="upDirection"
-        :materialMode="materialMode"
-        :edgeThreshold="edgeThreshold"
-        @updateUpDirection="handleUpdateUpDirection"
-        @updateMaterialMode="handleUpdateMaterialMode"
-        @updateEdgeThreshold="handleUpdateEdgeThreshold"
-        @uploadTexture="handleUploadTexture"
         ref="modelControlsRef"
+        :input-spec="inputSpec"
+        :up-direction="upDirection"
+        :material-mode="materialMode"
+        :edge-threshold="edgeThreshold"
+        @update-up-direction="handleUpdateUpDirection"
+        @update-material-mode="handleUpdateMaterialMode"
+        @update-edge-threshold="handleUpdateEdgeThreshold"
+        @upload-texture="handleUploadTexture"
       />
 
       <CameraControls
         v-if="activeCategory === 'camera'"
-        :cameraType="cameraType"
-        :fov="fov"
-        :showFOVButton="showFOVButton"
-        @switchCamera="switchCamera"
-        @updateFOV="handleUpdateFOV"
         ref="cameraControlsRef"
+        :camera-type="cameraType"
+        :fov="fov"
+        :show-f-o-v-button="showFOVButton"
+        @switch-camera="switchCamera"
+        @update-f-o-v="handleUpdateFOV"
       />
 
       <LightControls
         v-if="activeCategory === 'light'"
-        :lightIntensity="lightIntensity"
-        :showLightIntensityButton="showLightIntensityButton"
-        @updateLightIntensity="handleUpdateLightIntensity"
         ref="lightControlsRef"
+        :light-intensity="lightIntensity"
+        :show-light-intensity-button="showLightIntensityButton"
+        @update-light-intensity="handleUpdateLightIntensity"
       />
 
       <ExportControls
         v-if="activeCategory === 'export'"
-        @exportModel="handleExportModel"
         ref="exportControlsRef"
+        @export-model="handleExportModel"
       />
     </div>
     <div v-if="showPreviewButton">
       <Button class="p-button-rounded p-button-text" @click="togglePreview">
         <i
+          v-tooltip.right="{ value: t('load3d.previewOutput'), showDelay: 300 }"
           :class="[
             'pi',
             showPreview ? 'pi-eye' : 'pi-eye-slash',
             'text-white text-lg'
           ]"
-          v-tooltip.right="{ value: t('load3d.previewOutput'), showDelay: 300 }"
-        ></i>
+        />
       </Button>
     </div>
   </div>

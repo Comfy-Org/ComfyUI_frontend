@@ -1,9 +1,9 @@
 <template>
   <TreeExplorer
-    class="node-lib-bookmark-tree-explorer"
     ref="treeExplorerRef"
+    class="node-lib-bookmark-tree-explorer"
     :root="renderedBookmarkedRoot"
-    :expandedKeys="expandedKeys"
+    :expanded-keys="expandedKeys"
   >
     <template #folder="{ node }">
       <NodeTreeFolder :node="node" />
@@ -15,9 +15,9 @@
 
   <FolderCustomizationDialog
     v-model="showCustomizationDialog"
+    :initial-icon="initialIcon"
+    :initial-color="initialColor"
     @confirm="updateCustomization"
-    :initialIcon="initialIcon"
-    :initialColor="initialColor"
   />
 </template>
 
@@ -82,9 +82,10 @@ const bookmarkedRoot = computed<TreeNode>(() => {
 })
 watch(
   () => props.filteredNodeDefs,
-  (newValue) => {
+  async (newValue) => {
     if (newValue.length) {
-      nextTick(() => expandNode(bookmarkedRoot.value))
+      await nextTick()
+      expandNode(bookmarkedRoot.value)
     }
   }
 )
@@ -145,9 +146,9 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
         },
         children: sortedChildren,
         draggable: node.leaf,
-        handleAddFolder(newName: string) {
+        async handleAddFolder(newName: string) {
           if (newName !== '') {
-            nodeBookmarkStore.addNewBookmarkFolder(this.data, newName)
+            await nodeBookmarkStore.addNewBookmarkFolder(this.data, newName)
           }
         },
         renderDragPreview(container) {
@@ -158,18 +159,18 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
           }
         },
         droppable: !node.leaf,
-        handleDrop(data: TreeExplorerDragAndDropData<ComfyNodeDefImpl>) {
+        async handleDrop(data: TreeExplorerDragAndDropData<ComfyNodeDefImpl>) {
           const nodeDefToAdd = data.data.data
           // Remove bookmark if the source is the top level bookmarked node.
           // @ts-expect-error fixme ts strict error
           if (nodeBookmarkStore.isBookmarked(nodeDefToAdd)) {
             // @ts-expect-error fixme ts strict error
-            nodeBookmarkStore.toggleBookmark(nodeDefToAdd)
+            await nodeBookmarkStore.toggleBookmark(nodeDefToAdd)
           }
           const folderNodeDef = node.data as ComfyNodeDefImpl
           // @ts-expect-error fixme ts strict error
           const nodePath = folderNodeDef.category + '/' + nodeDefToAdd.name
-          nodeBookmarkStore.addBookmark(nodePath)
+          await nodeBookmarkStore.addBookmark(nodePath)
         },
         handleClick(e: MouseEvent) {
           if (this.leaf) {
@@ -183,14 +184,17 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
         ...(node.leaf
           ? {}
           : {
-              handleRename(newName: string) {
+              async handleRename(newName: string) {
                 if (this.data && this.data.isDummyFolder) {
-                  nodeBookmarkStore.renameBookmarkFolder(this.data, newName)
+                  await nodeBookmarkStore.renameBookmarkFolder(
+                    this.data,
+                    newName
+                  )
                 }
               },
-              handleDelete() {
+              async handleDelete() {
                 // @ts-expect-error fixme ts strict error
-                nodeBookmarkStore.deleteBookmarkFolder(this.data)
+                await nodeBookmarkStore.deleteBookmarkFolder(this.data)
               }
             })
       }
@@ -208,9 +212,9 @@ const showCustomizationDialog = ref(false)
 const initialIcon = ref(nodeBookmarkStore.defaultBookmarkIcon)
 const initialColor = ref(nodeBookmarkStore.defaultBookmarkColor)
 const customizationTargetNodePath = ref('')
-const updateCustomization = (icon: string, color: string) => {
+const updateCustomization = async (icon: string, color: string) => {
   if (customizationTargetNodePath.value) {
-    nodeBookmarkStore.updateBookmarkCustomization(
+    await nodeBookmarkStore.updateBookmarkCustomization(
       customizationTargetNodePath.value,
       { icon, color }
     )

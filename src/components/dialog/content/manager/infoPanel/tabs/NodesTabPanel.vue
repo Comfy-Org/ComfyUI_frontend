@@ -4,8 +4,8 @@
       <!-- TODO: when registry returns node defs, use them here -->
     </div>
     <div
-      v-else
       v-for="i in 3"
+      v-else
       :key="i"
       class="border border-surface-border rounded-lg p-4"
     >

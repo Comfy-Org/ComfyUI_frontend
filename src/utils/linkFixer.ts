@@ -114,7 +114,7 @@ export function fixBadLinks(
   /**
    * Internal patch node. We keep track of changes in patchedNodeSlots in case we're in a dry run.
    */
-  async function patchNodeSlot(
+  function patchNodeSlot(
     node: ISerialisedNode | LGraphNode,
     ioDir: IoDirection,
     slot: number,

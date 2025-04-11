@@ -8,16 +8,16 @@
     </template>
 
     <DataTable
-      :value="commandsData"
       v-model:selection="selectedCommandData"
+      :value="commandsData"
       :global-filter-fields="['id', 'label']"
       :filters="filters"
-      selectionMode="single"
-      stripedRows
+      selection-mode="single"
+      striped-rows
       :pt="{
         header: 'px-0'
       }"
-      @rowDblclick="editKeybinding($event.data)"
+      @row-dblclick="editKeybinding($event.data)"
     >
       <Column field="actions" header="">
         <template #body="slotProps">
@@ -30,8 +30,8 @@
             <Button
               icon="pi pi-trash"
               class="p-button-text p-button-danger"
-              @click="removeKeybinding(slotProps.data)"
               :disabled="!slotProps.data.keybinding"
+              @click="removeKeybinding(slotProps.data)"
             />
           </div>
         </template>
@@ -55,8 +55,8 @@
         <template #body="slotProps">
           <KeyComboDisplay
             v-if="slotProps.data.keybinding"
-            :keyCombo="slotProps.data.keybinding.combo"
-            :isModified="
+            :key-combo="slotProps.data.keybinding.combo"
+            :is-modified="
               keybindingStore.isCommandKeybindingModified(slotProps.data.id)
             "
           />
@@ -66,19 +66,18 @@
     </DataTable>
 
     <Dialog
-      class="min-w-96"
       v-model:visible="editDialogVisible"
+      class="min-w-96"
       modal
       :header="currentEditingCommand?.label"
       @hide="cancelEdit"
     >
       <div>
         <InputText
-          class="mb-2 text-center"
           ref="keybindingInput"
-          :modelValue="newBindingKeyCombo?.toString() ?? ''"
+          class="mb-2 text-center"
+          :model-value="newBindingKeyCombo?.toString() ?? ''"
           placeholder="Press keys for new binding"
-          @keydown.stop.prevent="captureKeybinding"
           autocomplete="off"
           fluid
         />
@@ -101,9 +100,9 @@
       </template>
     </Dialog>
     <Button
+      v-tooltip="$t('g.resetKeybindingsTooltip')"
       class="mt-4"
       :label="$t('g.reset')"
-      v-tooltip="$t('g.resetKeybindingsTooltip')"
       icon="pi pi-trash"
       severity="danger"
       fluid
@@ -210,14 +209,14 @@ watchEffect(() => {
   }
 })
 
-function removeKeybinding(commandData: ICommandData) {
+async function removeKeybinding(commandData: ICommandData) {
   if (commandData.keybinding) {
     keybindingStore.unsetKeybinding(commandData.keybinding)
-    keybindingService.persistUserKeybindings()
+    await keybindingService.persistUserKeybindings()
   }
 }
 
-function captureKeybinding(event: KeyboardEvent) {
+async function captureKeybinding(event: KeyboardEvent) {
   // Allow the use of keyboard shortcuts when adding keyboard shortcuts
   if (!event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey) {
     switch (event.key) {
@@ -225,7 +224,7 @@ function captureKeybinding(event: KeyboardEvent) {
         cancelEdit()
         return
       case 'Enter':
-        saveKeybinding()
+        await saveKeybinding()
         return
     }
   }
@@ -239,7 +238,7 @@ function cancelEdit() {
   newBindingKeyCombo.value = null
 }
 
-function saveKeybinding() {
+async function saveKeybinding() {
   if (currentEditingCommand.value && newBindingKeyCombo.value) {
     const updated = keybindingStore.updateKeybindingOnCommand(
       new KeybindingImpl({
@@ -248,7 +247,7 @@ function saveKeybinding() {
       })
     )
     if (updated) {
-      keybindingService.persistUserKeybindings()
+      await keybindingService.persistUserKeybindings()
     }
   }
   cancelEdit()

@@ -12,17 +12,17 @@
       <SelectButton
         class="workflow-tabs bg-transparent"
         :class="props.class"
-        :modelValue="selectedWorkflow"
-        @update:modelValue="onWorkflowChange"
+        :model-value="selectedWorkflow"
         :options="options"
-        optionLabel="label"
-        dataKey="value"
+        option-label="label"
+        data-key="value"
+        @update:model-value="onWorkflowChange"
       >
         <template #option="{ option }">
           <WorkflowTab
+            :workflow-option="option"
             @contextmenu="showContextMenu($event, option)"
             @click.middle="onCloseWorkflow(option)"
-            :workflow-option="option"
           />
         </template>
       </SelectButton>
@@ -86,7 +86,7 @@ const selectedWorkflow = computed<WorkflowOption | null>(() =>
     ? workflowToOption(workflowStore.activeWorkflow as ComfyWorkflow)
     : null
 )
-const onWorkflowChange = (option: WorkflowOption) => {
+const onWorkflowChange = async (option: WorkflowOption) => {
   // Prevent unselecting the current workflow
   if (!option) {
     return
@@ -96,7 +96,7 @@ const onWorkflowChange = (option: WorkflowOption) => {
     return
   }
 
-  workflowService.openWorkflow(option.workflow)
+  await workflowService.openWorkflow(option.workflow)
 }
 
 const closeWorkflows = async (options: WorkflowOption[]) => {
@@ -112,8 +112,8 @@ const closeWorkflows = async (options: WorkflowOption[]) => {
   }
 }
 
-const onCloseWorkflow = (option: WorkflowOption) => {
-  closeWorkflows([option])
+const onCloseWorkflow = async (option: WorkflowOption) => {
+  await closeWorkflows([option])
 }
 
 const showContextMenu = (event: MouseEvent, option: WorkflowOption) => {
@@ -128,8 +128,8 @@ const contextMenuItems = computed(() => {
   return [
     {
       label: t('tabMenu.duplicateTab'),
-      command: () => {
-        workflowService.duplicateWorkflow(tab.workflow)
+      command: async () => {
+        await workflowService.duplicateWorkflow(tab.workflow)
       }
     },
     {
@@ -181,30 +181,30 @@ const handleWheel = (event: WheelEvent) => {
 // Scroll to active offscreen tab when opened
 watch(
   () => workflowStore.activeWorkflow,
-  () => {
+  async () => {
     if (!selectedWorkflow.value) return
 
-    nextTick(() => {
-      const activeTabElement = document.querySelector('.p-togglebutton-checked')
-      if (!activeTabElement || !scrollPanelRef.value) return
+    await nextTick()
 
-      const container = scrollPanelRef.value.$el.querySelector(
-        '.p-scrollpanel-content'
-      )
-      if (!container) return
+    const activeTabElement = document.querySelector('.p-togglebutton-checked')
+    if (!activeTabElement || !scrollPanelRef.value) return
 
-      const tabRect = activeTabElement.getBoundingClientRect()
-      const containerRect = container.getBoundingClientRect()
+    const container = scrollPanelRef.value.$el.querySelector(
+      '.p-scrollpanel-content'
+    )
+    if (!container) return
 
-      const offsetLeft = tabRect.left - containerRect.left
-      const offsetRight = tabRect.right - containerRect.right
+    const tabRect = activeTabElement.getBoundingClientRect()
+    const containerRect = container.getBoundingClientRect()
 
-      if (offsetRight > 0) {
-        container.scrollBy({ left: offsetRight })
-      } else if (offsetLeft < 0) {
-        container.scrollBy({ left: offsetLeft })
-      }
-    })
+    const offsetLeft = tabRect.left - containerRect.left
+    const offsetRight = tabRect.right - containerRect.right
+
+    if (offsetRight > 0) {
+      container.scrollBy({ left: offsetRight })
+    } else if (offsetLeft < 0) {
+      container.scrollBy({ left: offsetLeft })
+    }
   },
   { immediate: true }
 )
