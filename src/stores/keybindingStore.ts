@@ -255,6 +255,7 @@ export const useKeybindingStore = defineStore('keybinding', () => {
    */
   function updateKeybindingOnCommand(keybinding: KeybindingImpl): boolean {
     const currentKeybinding = getKeybindingByCommandId(keybinding.commandId)
+    // If matches exact same KeybindingImpl, still allows for overwriting with same combo
     if (currentKeybinding?.equals(keybinding)) {
       return false
     }
