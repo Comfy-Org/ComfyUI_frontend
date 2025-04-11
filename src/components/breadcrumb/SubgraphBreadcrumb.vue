@@ -3,6 +3,7 @@
     class="fixed top-[var(--comfy-topbar-height)] left-[var(--sidebar-width)] right-0 p-2 bg-[var(--comfy-menu-bg)] border-b border-[var(--border-color)] z-[900]"
   >
     <Breadcrumb
+      class="bg-transparent"
       :home="home"
       :model="items"
       aria-label="Graph navigation"
@@ -12,6 +13,7 @@
 </template>
 
 <script setup lang="ts">
+import Breadcrumb from 'primevue/breadcrumb'
 import { computed } from 'vue'
 
 import { useWorkflowService } from '@/services/workflowService'
