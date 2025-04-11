@@ -62,23 +62,28 @@ const autoSaveDelay = computed(() =>
 
 const shouldShowStatusIndicator = computed(() => {
   if (workspaceStore.shiftDown) {
-    return false
-  } else if (!props.workflowOption.workflow.isPersisted) {
-    return true
-  } else if (props.workflowOption.workflow.isModified) {
-    if (autoSaveSetting.value === 'off') {
-      return true
-    } else if (
-      autoSaveSetting.value === 'after delay' &&
-      autoSaveDelay.value > 3000
-    ) {
-      return true
-    } else {
-      return false
-    }
-  } else {
+    // Branch 1: Shift key is held down, do not show the status indicator.
     return false
   }
+  if (!props.workflowOption.workflow.isPersisted) {
+    // Branch 2: Workflow is not persisted, show the status indicator.
+    return true
+  }
+  if (props.workflowOption.workflow.isModified) {
+    // Branch 3: Workflow is modified.
+    if (autoSaveSetting.value === 'off') {
+      // Sub-branch 3a: Autosave is off, so show the status indicator.
+      return true
+    }
+    if (autoSaveSetting.value === 'after delay' && autoSaveDelay.value > 3000) {
+      // Sub-branch 3b: Autosave delay is too high, so show the status indicator.
+      return true
+    }
+    // Sub-branch 3c: Workflow is modified but no condition applies, do not show the status indicator.
+    return false
+  }
+  // Default: do not show the status indicator. This should not be reachable.
+  return false
 })
 
 const closeWorkflows = async (options: WorkflowOption[]) => {
