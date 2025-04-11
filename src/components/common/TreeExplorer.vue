@@ -186,9 +186,9 @@ const menuItems = computed<MenuItem[]>(() =>
     {
       label: t('g.delete'),
       icon: 'pi pi-trash',
-      command: () => {
+      command: async () => {
         if (menuTargetNode.value) {
-          deleteCommand(menuTargetNode.value)
+          await deleteCommand(menuTargetNode.value)
         }
       },
       visible: menuTargetNode.value?.handleDelete !== undefined,

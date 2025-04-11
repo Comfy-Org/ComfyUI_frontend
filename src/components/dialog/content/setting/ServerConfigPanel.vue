@@ -97,16 +97,16 @@ const revertChanges = () => {
   serverConfigStore.revertChanges()
 }
 
-const restartApp = () => {
-  electronAPI().restartApp()
+const restartApp = async () => {
+  await electronAPI().restartApp()
 }
 
-watch(launchArgs, (newVal) => {
-  settingStore.set('Comfy.Server.LaunchArgs', newVal)
+watch(launchArgs, async (newVal) => {
+  await settingStore.set('Comfy.Server.LaunchArgs', newVal)
 })
 
-watch(serverConfigValues, (newVal) => {
-  settingStore.set('Comfy.Server.ServerConfigValues', newVal)
+watch(serverConfigValues, async (newVal) => {
+  await settingStore.set('Comfy.Server.ServerConfigValues', newVal)
 })
 
 const { copyToClipboard } = useCopyToClipboard()

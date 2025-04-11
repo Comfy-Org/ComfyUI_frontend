@@ -20,6 +20,13 @@ export default [
       globals: {
         ...globals.browser,
         __COMFYUI_FRONTEND_VERSION__: 'readonly'
+      },
+      parser: tseslint.parser,
+      parserOptions: {
+        project: './tsconfig.json',
+        ecmaVersion: 2020,
+        sourceType: 'module',
+        extraFileExtensions: ['.vue']
       }
     }
   },
@@ -28,13 +35,10 @@ export default [
   ...pluginVue.configs['flat/essential'],
   {
     files: ['src/**/*.vue'],
-    languageOptions: { parserOptions: { parser: tseslint.parser } }
-  },
-  {
-    rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-unused-vars': 'off',
-      '@typescript-eslint/prefer-as-const': 'off'
+    languageOptions: {
+      parserOptions: {
+        parser: tseslint.parser
+      }
     }
   },
   {
@@ -42,6 +46,7 @@ export default [
       'unused-imports': unusedImports
     },
     rules: {
+      '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unused-vars': 'off',
       '@typescript-eslint/prefer-as-const': 'off',

@@ -65,7 +65,7 @@ export const useExtensionService = () => {
     if (extension.getCustomWidgets) {
       // TODO(huchenlei): We should deprecate the async return value of
       // getCustomWidgets.
-      ;(async () => {
+      void (async () => {
         if (extension.getCustomWidgets) {
           const widgets = await extension.getCustomWidgets(app)
           useWidgetStore().registerCustomWidgets(widgets)

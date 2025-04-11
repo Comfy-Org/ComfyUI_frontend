@@ -45,10 +45,10 @@ const finishEditing = () => {
 }
 watch(
   () => isEditing,
-  (newVal) => {
+  async (newVal) => {
     if (newVal) {
       inputValue.value = modelValue
-      nextTick(() => {
+      await nextTick(() => {
         if (!inputRef.value) return
         const fileName = inputValue.value.includes('.')
           ? inputValue.value.split('.').slice(0, -1).join('.')

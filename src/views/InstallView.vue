@@ -166,7 +166,7 @@ const noGpu = computed(() => typeof device.value !== 'string')
 
 const electron = electronAPI()
 const router = useRouter()
-const install = () => {
+const install = async () => {
   const options: InstallOptions = {
     installPath: installPath.value,
     autoUpdate: autoUpdate.value,
@@ -183,7 +183,7 @@ const install = () => {
 
   const nextPage =
     options.device === 'unsupported' ? '/manual-configuration' : '/server-start'
-  router.push(nextPage)
+  await router.push(nextPage)
 }
 
 onMounted(async () => {

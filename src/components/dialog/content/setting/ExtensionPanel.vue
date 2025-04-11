@@ -116,44 +116,44 @@ const hasChanges = computed(() => {
   return changedExtensions.value.length > 0
 })
 
-const updateExtensionStatus = () => {
+const updateExtensionStatus = async () => {
   const editingDisabledExtensionNames = Object.entries(
     editingEnabledExtensions.value
   )
     .filter(([_, enabled]) => !enabled)
     .map(([name]) => name)
 
-  settingStore.set('Comfy.Extension.Disabled', [
+  await settingStore.set('Comfy.Extension.Disabled', [
     ...extensionStore.inactiveDisabledExtensionNames,
     ...editingDisabledExtensionNames
   ])
 }
 
-const enableAllExtensions = () => {
+const enableAllExtensions = async () => {
   extensionStore.extensions.forEach((ext) => {
     if (extensionStore.isExtensionReadOnly(ext.name)) return
 
     editingEnabledExtensions.value[ext.name] = true
   })
-  updateExtensionStatus()
+  await updateExtensionStatus()
 }
 
-const disableAllExtensions = () => {
+const disableAllExtensions = async () => {
   extensionStore.extensions.forEach((ext) => {
     if (extensionStore.isExtensionReadOnly(ext.name)) return
 
     editingEnabledExtensions.value[ext.name] = false
   })
-  updateExtensionStatus()
+  await updateExtensionStatus()
 }
 
-const disableThirdPartyExtensions = () => {
+const disableThirdPartyExtensions = async () => {
   extensionStore.extensions.forEach((ext) => {
     if (extensionStore.isCoreExtension(ext.name)) return
 
     editingEnabledExtensions.value[ext.name] = false
   })
-  updateExtensionStatus()
+  await updateExtensionStatus()
 }
 
 const applyChanges = () => {

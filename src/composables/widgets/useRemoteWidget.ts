@@ -189,14 +189,18 @@ export function useRemoteWidget<
    * @returns the most recent value of the widget.
    */
   function getValue(onFulfilled?: () => void) {
-    fetchValue().then((data) => {
-      if (isFirstLoad()) onFirstLoad(data)
-      if (refreshQueued && data !== defaultValue) {
-        onRefresh()
-        refreshQueued = false
-      }
-      onFulfilled?.()
-    })
+    void fetchValue()
+      .then((data) => {
+        if (isFirstLoad()) onFirstLoad(data)
+        if (refreshQueued && data !== defaultValue) {
+          onRefresh()
+          refreshQueued = false
+        }
+        onFulfilled?.()
+      })
+      .catch((err) => {
+        console.error(err)
+      })
     return getCachedValue() ?? defaultValue
   }
 

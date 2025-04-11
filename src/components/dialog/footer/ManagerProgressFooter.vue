@@ -99,8 +99,8 @@ const handleRestart = async () => {
   await useComfyManagerService().rebootComfyUI()
   closeDialog()
 
-  const onReconnect = () => {
-    useCommandStore().execute('Comfy.RefreshNodeDefinitions')
+  const onReconnect = async () => {
+    await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
     comfyManagerStore.clearLogs()
     comfyManagerStore.setStale()
   }

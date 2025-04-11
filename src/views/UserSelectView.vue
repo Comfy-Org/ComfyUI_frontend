@@ -76,8 +76,8 @@ const login = async () => {
       throw new Error('No user selected')
     }
 
-    userStore.login(user)
-    router.push('/')
+    await userStore.login(user)
+    await router.push('/')
   } catch (err) {
     loginError.value = err instanceof Error ? err.message : JSON.stringify(err)
   }

@@ -57,7 +57,7 @@ const terminalCreated = (
     if (!clientId.value) {
       await until(clientId).not.toBeNull()
     }
-    api.subscribeLogs(true)
+    await api.subscribeLogs(true)
     api.addEventListener('logs', logReceived)
   }
 
@@ -76,9 +76,9 @@ const terminalCreated = (
     loading.value = false
   })
 
-  onUnmounted(() => {
+  onUnmounted(async () => {
     if (api.clientId) {
-      api.subscribeLogs(false)
+      await api.subscribeLogs(false)
     }
     api.removeEventListener('logs', logReceived)
   })

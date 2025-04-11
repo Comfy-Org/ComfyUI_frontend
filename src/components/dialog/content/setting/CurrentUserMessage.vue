@@ -22,8 +22,8 @@ import Message from 'primevue/message'
 import { useUserStore } from '@/stores/userStore'
 
 const userStore = useUserStore()
-const logout = () => {
-  userStore.logout()
+const logout = async () => {
+  await userStore.logout()
   window.location.reload()
 }
 </script>

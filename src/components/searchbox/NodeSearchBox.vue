@@ -135,11 +135,11 @@ const search = (query: string) => {
 const emit = defineEmits(['addFilter', 'removeFilter', 'addNode'])
 
 let inputElement: HTMLInputElement | null = null
-const reFocusInput = () => {
+const reFocusInput = async () => {
   inputElement ??= document.getElementById(inputId) as HTMLInputElement
   if (inputElement) {
     inputElement.blur()
-    nextTick(() => inputElement?.focus())
+    await nextTick(() => inputElement?.focus())
   }
 }
 
@@ -150,14 +150,14 @@ const onAddFilter = (
   nodeSearchFilterVisible.value = false
   emit('addFilter', filterAndValue)
 }
-const onRemoveFilter = (
+const onRemoveFilter = async (
   event: Event,
   filterAndValue: FuseFilterWithValue<ComfyNodeDefImpl, string>
 ) => {
   event.stopPropagation()
   event.preventDefault()
   emit('removeFilter', filterAndValue)
-  reFocusInput()
+  await reFocusInput()
 }
 const setHoverSuggestion = (index: number) => {
   if (index === -1) {

@@ -89,9 +89,9 @@ const setInitialPosition = () => {
   }
 }
 onMounted(setInitialPosition)
-watch(visible, (newVisible) => {
+watch(visible, async (newVisible) => {
   if (newVisible) {
-    nextTick(setInitialPosition)
+    await nextTick(setInitialPosition)
   }
 })
 

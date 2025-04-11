@@ -89,8 +89,8 @@ const closeWorkflows = async (options: WorkflowOption[]) => {
   }
 }
 
-const onCloseWorkflow = (option: WorkflowOption) => {
-  closeWorkflows([option])
+const onCloseWorkflow = async (option: WorkflowOption) => {
+  await closeWorkflows([option])
 }
 const tabGetter = () => workflowTabRef.value as HTMLElement
 

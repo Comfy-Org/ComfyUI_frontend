@@ -160,7 +160,7 @@ const filteredWorkflows = ref<ComfyWorkflow[]>([])
 const filteredRoot = computed<TreeNode>(() => {
   return buildWorkflowTree(filteredWorkflows.value as ComfyWorkflow[])
 })
-const handleSearch = (query: string) => {
+const handleSearch = async (query: string) => {
   if (query.length === 0) {
     filteredWorkflows.value = []
     expandedKeys.value = {}
@@ -170,9 +170,8 @@ const handleSearch = (query: string) => {
   filteredWorkflows.value = workflowStore.workflows.filter((workflow) => {
     return workflow.path.toLocaleLowerCase().includes(lowerQuery)
   })
-  nextTick(() => {
-    expandNode(filteredRoot.value)
-  })
+  await nextTick()
+  expandNode(filteredRoot.value)
 }
 
 const workflowStore = useWorkflowStore()
@@ -183,9 +182,9 @@ const expandedKeys = ref<Record<string, boolean>>({})
 const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 const dummyExpandedKeys = ref<Record<string, boolean>>({})
 
-const handleCloseWorkflow = (workflow?: ComfyWorkflow) => {
+const handleCloseWorkflow = async (workflow?: ComfyWorkflow) => {
   if (workflow) {
-    workflowService.closeWorkflow(workflow, {
+    await workflowService.closeWorkflow(workflow, {
       warnIfUnsaved: !workspaceStore.shiftDown
     })
   }
@@ -225,9 +224,12 @@ const renderTreeNode = (
 
   const workflow: ComfyWorkflow = node.data
 
-  function handleClick(this: TreeExplorerNode<ComfyWorkflow>, e: MouseEvent) {
+  async function handleClick(
+    this: TreeExplorerNode<ComfyWorkflow>,
+    e: MouseEvent
+  ) {
     if (this.leaf) {
-      workflowService.openWorkflow(workflow)
+      await workflowService.openWorkflow(workflow)
     } else {
       toggleNodeOnEvent(e, this)
     }
@@ -254,9 +256,9 @@ const renderTreeNode = (
             {
               label: t('g.insert'),
               icon: 'pi pi-file-export',
-              command: () => {
+              command: async () => {
                 const workflow = node.data
-                workflowService.insertWorkflow(workflow)
+                await workflowService.insertWorkflow(workflow)
               }
             }
           ]

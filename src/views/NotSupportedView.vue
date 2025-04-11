@@ -73,8 +73,8 @@ const reportIssue = () => {
 }
 
 const router = useRouter()
-const continueToInstall = () => {
-  router.push('/install')
+const continueToInstall = async () => {
+  await router.push('/install')
 }
 </script>
 
