@@ -10,7 +10,7 @@
       <div>
         {{ $t('g.currentUser') }}: {{ userStore.currentUser?.username }}
       </div>
-      <Button icon="pi pi-sign-out" @click="logout" text />
+      <Button icon="pi pi-sign-out" text @click="logout" />
     </div>
   </Message>
 </template>
@@ -22,8 +22,8 @@ import Message from 'primevue/message'
 import { useUserStore } from '@/stores/userStore'
 
 const userStore = useUserStore()
-const logout = () => {
-  userStore.logout()
+const logout = async () => {
+  await userStore.logout()
   window.location.reload()
 }
 </script>

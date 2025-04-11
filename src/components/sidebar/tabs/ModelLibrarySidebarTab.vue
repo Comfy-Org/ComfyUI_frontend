@@ -5,24 +5,24 @@
   >
     <template #tool-buttons>
       <Button
+        v-tooltip.bottom="$t('g.refresh')"
         icon="pi pi-refresh"
-        @click="modelStore.loadModelFolders"
         severity="secondary"
         text
-        v-tooltip.bottom="$t('g.refresh')"
+        @click="modelStore.loadModelFolders"
       />
       <Button
+        v-tooltip.bottom="$t('g.loadAllFolders')"
         icon="pi pi-cloud-download"
-        @click="modelStore.loadModels"
         severity="secondary"
         text
-        v-tooltip.bottom="$t('g.loadAllFolders')"
+        @click="modelStore.loadModels"
       />
     </template>
     <template #header>
       <SearchBox
-        class="model-lib-search-box p-2 2xl:p-4"
         v-model:modelValue="searchQuery"
+        class="model-lib-search-box p-2 2xl:p-4"
         :placeholder="$t('g.searchModels') + '...'"
         @search="handleSearch"
       />
@@ -31,9 +31,9 @@
       <ElectronDownloadItems v-if="isElectron()" />
 
       <TreeExplorer
+        v-model:expandedKeys="expandedKeys"
         class="model-lib-tree-explorer"
         :root="renderedRoot"
-        v-model:expandedKeys="expandedKeys"
       >
         <template #node="{ node }">
           <ModelTreeLeaf :node="node" />
@@ -89,9 +89,8 @@ const handleSearch = async (query: string) => {
     return model.searchable.includes(search)
   })
 
-  nextTick(() => {
-    expandNode(root.value)
-  })
+  await nextTick()
+  expandNode(root.value)
 }
 
 type ModelOrFolder = ComfyModelDef | ModelFolder
@@ -177,7 +176,7 @@ watch(
         const folderPath = key.split('/').slice(1).join('/')
         if (folderPath && !folderPath.includes('/')) {
           // Trigger (async) load of model data for this folder
-          modelStore.getLoadedModelFolder(folderPath)
+          void modelStore.getLoadedModelFolder(folderPath)
         }
       }
     })

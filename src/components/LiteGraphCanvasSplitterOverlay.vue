@@ -1,19 +1,19 @@
 <template>
   <Splitter
+    :key="activeSidebarTabId ?? undefined"
     class="splitter-overlay-root splitter-overlay"
     :pt:gutter="sidebarPanelVisible ? '' : 'hidden'"
-    :key="activeSidebarTabId ?? undefined"
-    :stateKey="activeSidebarTabId ?? undefined"
-    stateStorage="local"
+    :state-key="activeSidebarTabId ?? undefined"
+    state-storage="local"
   >
     <SplitterPanel
-      class="side-bar-panel"
-      :minSize="10"
-      :size="20"
       v-show="sidebarPanelVisible"
       v-if="sidebarLocation === 'left'"
+      class="side-bar-panel"
+      :min-size="10"
+      :size="20"
     >
-      <slot name="side-bar-panel"></slot>
+      <slot name="side-bar-panel" />
     </SplitterPanel>
 
     <SplitterPanel :size="100">
@@ -21,26 +21,26 @@
         class="splitter-overlay max-w-full"
         layout="vertical"
         :pt:gutter="bottomPanelVisible ? '' : 'hidden'"
-        stateKey="bottom-panel-splitter"
-        stateStorage="local"
+        state-key="bottom-panel-splitter"
+        state-storage="local"
       >
         <SplitterPanel class="graph-canvas-panel relative">
-          <slot name="graph-canvas-panel"></slot>
+          <slot name="graph-canvas-panel" />
         </SplitterPanel>
-        <SplitterPanel class="bottom-panel" v-show="bottomPanelVisible">
-          <slot name="bottom-panel"></slot>
+        <SplitterPanel v-show="bottomPanelVisible" class="bottom-panel">
+          <slot name="bottom-panel" />
         </SplitterPanel>
       </Splitter>
     </SplitterPanel>
 
     <SplitterPanel
-      class="side-bar-panel"
-      :minSize="10"
-      :size="20"
       v-show="sidebarPanelVisible"
       v-if="sidebarLocation === 'right'"
+      class="side-bar-panel"
+      :min-size="10"
+      :size="20"
     >
-      <slot name="side-bar-panel"></slot>
+      <slot name="side-bar-panel" />
     </SplitterPanel>
   </Splitter>
 </template>

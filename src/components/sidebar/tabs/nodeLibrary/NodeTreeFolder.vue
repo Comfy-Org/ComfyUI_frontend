@@ -1,9 +1,6 @@
 <template>
   <div ref="container" class="node-lib-node-container">
-    <TreeExplorerTreeNode
-      :node="node"
-      @item-dropped="handleItemDrop"
-    ></TreeExplorerTreeNode>
+    <TreeExplorerTreeNode :node="node" @item-dropped="handleItemDrop" />
   </div>
 </template>
 

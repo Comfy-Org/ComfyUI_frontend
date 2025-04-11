@@ -2,18 +2,18 @@
   <div class="settings-container">
     <ScrollPanel class="settings-sidebar flex-shrink-0 p-2 w-48 2xl:w-64">
       <SearchBox
-        class="settings-search-box w-full mb-2"
         v-model:modelValue="searchQuery"
-        @search="handleSearch"
+        class="settings-search-box w-full mb-2"
         :placeholder="$t('g.searchSettings') + '...'"
         :debounce-time="128"
+        @search="handleSearch"
       />
       <Listbox
         v-model="activeCategory"
         :options="categories"
-        optionLabel="translatedLabel"
-        scrollHeight="100%"
-        :optionDisabled="
+        option-label="translatedLabel"
+        scroll-height="100%"
+        :option-disabled="
           (option: SettingTreeNode) =>
             !queryIsEmpty && !searchResultsCategories.has(option.label ?? '')
         "
@@ -25,7 +25,7 @@
     <Tabs :value="tabValue" :lazy="true" class="settings-content h-full w-full">
       <TabPanels class="settings-tab-panels h-full w-full pr-0">
         <PanelTemplate value="Search Results">
-          <SettingsPanel :settingGroups="searchResults" />
+          <SettingsPanel :setting-groups="searchResults" />
         </PanelTemplate>
 
         <PanelTemplate
@@ -38,7 +38,7 @@
             <FirstTimeUIMessage v-if="tabValue === 'Comfy'" />
             <ColorPaletteMessage v-if="tabValue === 'Appearance'" />
           </template>
-          <SettingsPanel :settingGroups="sortedGroups(category)" />
+          <SettingsPanel :setting-groups="sortedGroups(category)" />
         </PanelTemplate>
 
         <AboutPanel />

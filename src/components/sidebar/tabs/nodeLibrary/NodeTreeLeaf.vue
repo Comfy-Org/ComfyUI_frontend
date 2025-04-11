@@ -27,7 +27,7 @@
 
     <teleport v-if="isHovered" to="#node-library-node-preview-container">
       <div class="node-lib-node-preview" :style="nodePreviewStyle">
-        <NodePreview ref="previewRef" :nodeDef="nodeDef"></NodePreview>
+        <NodePreview ref="previewRef" :node-def="nodeDef" />
       </div>
     </teleport>
   </div>
@@ -67,8 +67,8 @@ const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
 )
 
-const toggleBookmark = () => {
-  nodeBookmarkStore.toggleBookmark(nodeDef.value)
+const toggleBookmark = async () => {
+  await nodeBookmarkStore.toggleBookmark(nodeDef.value)
 }
 
 const previewRef = ref<InstanceType<typeof NodePreview> | null>(null)
@@ -104,7 +104,7 @@ const isHovered = ref(false)
 const handleMouseEnter = async () => {
   isHovered.value = true
   await nextTick()
-  handleNodeHover()
+  await handleNodeHover()
 }
 const handleMouseLeave = () => {
   isHovered.value = false

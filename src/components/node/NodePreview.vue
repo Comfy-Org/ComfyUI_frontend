@@ -12,7 +12,7 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
           color: litegraphColors.NODE_TITLE_COLOR
         }"
       >
-        <div class="_sb_dot headdot"></div>
+        <div class="_sb_dot headdot" />
         {{ nodeDef.display_name }}
       </div>
       <div class="_sb_preview_badge">PREVIEW</div>
@@ -20,14 +20,16 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
       <!-- Node slot I/O -->
       <div
         v-for="[slotInput, slotOutput] in _.zip(slotInputDefs, allOutputDefs)"
-        class="_sb_row slot_row"
         :key="(slotInput?.name || '') + (slotOutput?.index.toString() || '')"
+        class="_sb_row slot_row"
       >
         <div class="_sb_col">
-          <div v-if="slotInput" :class="['_sb_dot', slotInput.type]"></div>
+          <div v-if="slotInput" :class="['_sb_dot', slotInput.type]" />
         </div>
-        <div class="_sb_col">{{ slotInput ? slotInput.name : '' }}</div>
-        <div class="_sb_col middle-column"></div>
+        <div class="_sb_col">
+          {{ slotInput ? slotInput.name : '' }}
+        </div>
+        <div class="_sb_col middle-column" />
         <div
           class="_sb_col _sb_inherit"
           :style="{
@@ -37,15 +39,15 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
           {{ slotOutput ? slotOutput.name : '' }}
         </div>
         <div class="_sb_col">
-          <div v-if="slotOutput" :class="['_sb_dot', slotOutput.type]"></div>
+          <div v-if="slotOutput" :class="['_sb_dot', slotOutput.type]" />
         </div>
       </div>
 
       <!-- Node widget inputs -->
       <div
         v-for="widgetInput in widgetInputDefs"
-        class="_sb_row _long_field"
         :key="widgetInput.name"
+        class="_sb_row _long_field"
       >
         <div class="_sb_col _sb_arrow">&#x25C0;</div>
         <div
@@ -56,7 +58,7 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
         >
           {{ widgetInput.name }}
         </div>
-        <div class="_sb_col middle-column"></div>
+        <div class="_sb_col middle-column" />
         <div
           class="_sb_col _sb_inherit"
           :style="{ color: litegraphColors.WIDGET_TEXT_COLOR }"
@@ -67,8 +69,8 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
       </div>
     </div>
     <div
-      class="_sb_description"
       v-if="nodeDef.description"
+      class="_sb_description"
       :style="{
         color: litegraphColors.WIDGET_SECONDARY_TEXT_COLOR,
         backgroundColor: litegraphColors.WIDGET_BGCOLOR

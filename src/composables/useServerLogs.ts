@@ -32,23 +32,23 @@ export const useServerLogs = (options: UseServerLogsOptions = {}) => {
     }
   }
 
-  const start = () => {
-    api.subscribeLogs(true)
+  const start = async () => {
+    await api.subscribeLogs(true)
     stop = useEventListener(api, LOGS_MESSAGE_TYPE, handleLogMessage)
   }
 
-  const stopListening = () => {
+  const stopListening = async () => {
     stop?.()
     stop = null
-    api.subscribeLogs(false)
+    await api.subscribeLogs(false)
   }
 
   if (immediate) {
-    start()
+    void start()
   }
 
-  onUnmounted(() => {
-    stopListening()
+  onUnmounted(async () => {
+    await stopListening()
     logs.value = []
   })
 

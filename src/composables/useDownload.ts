@@ -55,7 +55,8 @@ export function useDownload(url: string, fileName?: string) {
       // Try falling back to normal fetch if using Civitai API fails
       whenever(civitaiErr, fetchFileSize, { once: true })
     } else {
-      fetchFileSize()
+      // Fetch file size in the background
+      void fetchFileSize()
     }
   })
 

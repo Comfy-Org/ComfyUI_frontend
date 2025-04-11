@@ -1,11 +1,11 @@
 <template>
   <Tree
-    class="tree-explorer py-0 px-2 2xl:px-4"
-    :class="props.class"
     v-model:expandedKeys="expandedKeys"
     v-model:selectionKeys="selectionKeys"
+    class="tree-explorer py-0 px-2 2xl:px-4"
+    :class="props.class"
     :value="renderedRoot.children"
-    selectionMode="single"
+    selection-mode="single"
     :pt="{
       nodeLabel: 'tree-explorer-node-label',
       nodeContent: ({ context }) => ({
@@ -186,9 +186,9 @@ const menuItems = computed<MenuItem[]>(() =>
     {
       label: t('g.delete'),
       icon: 'pi pi-trash',
-      command: () => {
+      command: async () => {
         if (menuTargetNode.value) {
-          deleteCommand(menuTargetNode.value)
+          await deleteCommand(menuTargetNode.value)
         }
       },
       visible: menuTargetNode.value?.handleDelete !== undefined,

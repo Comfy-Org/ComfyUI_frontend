@@ -94,6 +94,14 @@ export const useComfyRegistryStore = defineStore('comfyRegistry', () => {
   >(registryService.getNodeDefs, { maxSize: PACK_BY_ID_CACHE_SIZE })
 
   /**
+   * Search for packs by pack name or node names
+   */
+  const search = useCachedRequest<
+    operations['searchNodes']['parameters']['query'],
+    ListPacksResult
+  >(registryService.search, { maxSize: PACK_LIST_CACHE_SIZE })
+
+  /**
    * Clear all cached data
    */
   const clearCache = () => {
@@ -120,6 +128,7 @@ export const useComfyRegistryStore = defineStore('comfyRegistry', () => {
       cancel: () => getPacksByIdController?.abort()
     },
     getNodeDefs,
+    search,
 
     clearCache,
     cancelRequests,

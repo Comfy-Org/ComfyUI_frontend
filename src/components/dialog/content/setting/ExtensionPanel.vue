@@ -22,16 +22,16 @@
         <div class="flex justify-end">
           <Button
             :label="$t('g.reloadToApplyChanges')"
-            @click="applyChanges"
             outlined
             severity="danger"
+            @click="applyChanges"
           />
         </div>
       </Message>
     </template>
     <DataTable
       :value="extensionStore.extensions"
-      stripedRows
+      striped-rows
       size="small"
       :filters="filters"
     >
@@ -61,8 +61,8 @@
         </template>
         <template #body="slotProps">
           <ToggleSwitch
-            :disabled="extensionStore.isExtensionReadOnly(slotProps.data.name)"
             v-model="editingEnabledExtensions[slotProps.data.name]"
+            :disabled="extensionStore.isExtensionReadOnly(slotProps.data.name)"
             @change="updateExtensionStatus"
           />
         </template>
@@ -116,44 +116,44 @@ const hasChanges = computed(() => {
   return changedExtensions.value.length > 0
 })
 
-const updateExtensionStatus = () => {
+const updateExtensionStatus = async () => {
   const editingDisabledExtensionNames = Object.entries(
     editingEnabledExtensions.value
   )
     .filter(([_, enabled]) => !enabled)
     .map(([name]) => name)
 
-  settingStore.set('Comfy.Extension.Disabled', [
+  await settingStore.set('Comfy.Extension.Disabled', [
     ...extensionStore.inactiveDisabledExtensionNames,
     ...editingDisabledExtensionNames
   ])
 }
 
-const enableAllExtensions = () => {
+const enableAllExtensions = async () => {
   extensionStore.extensions.forEach((ext) => {
     if (extensionStore.isExtensionReadOnly(ext.name)) return
 
     editingEnabledExtensions.value[ext.name] = true
   })
-  updateExtensionStatus()
+  await updateExtensionStatus()
 }
 
-const disableAllExtensions = () => {
+const disableAllExtensions = async () => {
   extensionStore.extensions.forEach((ext) => {
     if (extensionStore.isExtensionReadOnly(ext.name)) return
 
     editingEnabledExtensions.value[ext.name] = false
   })
-  updateExtensionStatus()
+  await updateExtensionStatus()
 }
 
-const disableThirdPartyExtensions = () => {
+const disableThirdPartyExtensions = async () => {
   extensionStore.extensions.forEach((ext) => {
     if (extensionStore.isCoreExtension(ext.name)) return
 
     editingEnabledExtensions.value[ext.name] = false
   })
-  updateExtensionStatus()
+  await updateExtensionStatus()
 }
 
 const applyChanges = () => {

@@ -2,7 +2,9 @@
   <section class="prompt-dialog-content flex flex-col gap-6 m-2 mt-4">
     <span>{{ message }}</span>
     <ul v-if="itemList?.length" class="pl-4 m-0 flex flex-col gap-2">
-      <li v-for="item of itemList" :key="item">{{ item }}</li>
+      <li v-for="item of itemList" :key="item">
+        {{ item }}
+      </li>
     </ul>
     <Message
       v-if="hint"
@@ -18,53 +20,53 @@
         :label="$t('g.cancel')"
         icon="pi pi-undo"
         severity="secondary"
-        @click="onCancel"
         autofocus
+        @click="onCancel"
       />
       <Button
         v-if="type === 'default'"
         :label="$t('g.confirm')"
         severity="primary"
-        @click="onConfirm"
         icon="pi pi-check"
+        @click="onConfirm"
       />
       <Button
         v-else-if="type === 'delete'"
         :label="$t('g.delete')"
         severity="danger"
-        @click="onConfirm"
         icon="pi pi-trash"
+        @click="onConfirm"
       />
       <Button
         v-else-if="type === 'overwrite'"
         :label="$t('g.overwrite')"
         severity="warn"
-        @click="onConfirm"
         icon="pi pi-save"
+        @click="onConfirm"
       />
       <template v-else-if="type === 'dirtyClose'">
         <Button
           :label="$t('g.no')"
           severity="secondary"
-          @click="onDeny"
           icon="pi pi-times"
+          @click="onDeny"
         />
-        <Button :label="$t('g.save')" @click="onConfirm" icon="pi pi-save" />
+        <Button :label="$t('g.save')" icon="pi pi-save" @click="onConfirm" />
       </template>
       <Button
         v-else-if="type === 'reinstall'"
         :label="$t('desktopMenu.reinstall')"
         severity="warn"
-        @click="onConfirm"
         icon="pi pi-eraser"
+        @click="onConfirm"
       />
       <!-- Invalid - just show a close button. -->
       <Button
         v-else
         :label="$t('g.close')"
         severity="primary"
-        @click="onCancel"
         icon="pi pi-times"
+        @click="onCancel"
       />
     </div>
   </section>

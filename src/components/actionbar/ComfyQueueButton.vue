@@ -1,19 +1,19 @@
 <template>
   <div class="queue-button-group flex">
     <SplitButton
-      class="comfyui-queue-button"
-      :label="activeQueueModeMenuItem.label"
-      severity="primary"
-      size="small"
-      @click="queuePrompt"
-      :model="queueModeMenuItems"
-      data-testid="queue-button"
       v-tooltip.bottom="{
         value: workspaceStore.shiftDown
           ? $t('menu.runWorkflowFront')
           : $t('menu.runWorkflow'),
         showDelay: 600
       }"
+      class="comfyui-queue-button"
+      :label="activeQueueModeMenuItem.label"
+      severity="primary"
+      size="small"
+      :model="queueModeMenuItems"
+      data-testid="queue-button"
+      @click="queuePrompt"
     >
       <template #icon>
         <i-lucide:list-start v-if="workspaceStore.shiftDown" />
@@ -23,15 +23,15 @@
       </template>
       <template #item="{ item }">
         <Button
+          v-tooltip="{
+            value: item.tooltip,
+            showDelay: 600
+          }"
           :label="String(item.label)"
           :icon="item.icon"
           :severity="item.key === queueMode ? 'primary' : 'secondary'"
           size="small"
           text
-          v-tooltip="{
-            value: item.tooltip,
-            showDelay: 600
-          }"
         />
       </template>
     </SplitButton>
@@ -48,8 +48,7 @@
         text
         :aria-label="$t('menu.interrupt')"
         @click="() => commandStore.execute('Comfy.Interrupt')"
-      >
-      </Button>
+      />
       <Button
         v-tooltip.bottom="{
           value: $t('sideToolbar.queueTab.clearPendingTasks'),
@@ -135,12 +134,12 @@ const hasPendingTasks = computed(
 )
 
 const commandStore = useCommandStore()
-const queuePrompt = (e: Event) => {
+const queuePrompt = async (e: Event) => {
   const commandId =
     'shiftKey' in e && e.shiftKey
       ? 'Comfy.QueuePromptFront'
       : 'Comfy.QueuePrompt'
-  commandStore.execute(commandId)
+  await commandStore.execute(commandId)
 }
 </script>
 

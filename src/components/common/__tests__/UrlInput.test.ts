@@ -60,7 +60,7 @@ describe('UrlInput', () => {
         })
     })
 
-    wrapper.setProps({ modelValue: 'https://test.com' })
+    await wrapper.setProps({ modelValue: 'https://test.com' })
     await nextTick()
     await nextTick()
 
@@ -74,7 +74,7 @@ describe('UrlInput', () => {
       validateUrlFn: () => Promise.resolve(true)
     })
 
-    wrapper.setProps({ modelValue: 'https://test.com' })
+    await wrapper.setProps({ modelValue: 'https://test.com' })
     await nextTick()
     await nextTick()
 
@@ -88,7 +88,7 @@ describe('UrlInput', () => {
       validateUrlFn: () => Promise.resolve(false)
     })
 
-    wrapper.setProps({ modelValue: 'https://test.com' })
+    await wrapper.setProps({ modelValue: 'https://test.com' })
     await nextTick()
     await nextTick()
 
@@ -141,14 +141,14 @@ describe('UrlInput', () => {
       }
     })
 
-    wrapper.setProps({ modelValue: 'https://test.com' })
+    await wrapper.setProps({ modelValue: 'https://test.com' })
     await nextTick()
     await nextTick()
 
     // Trigger multiple validations in quick succession
-    wrapper.find('.pi-spinner').trigger('click')
-    wrapper.find('.pi-spinner').trigger('click')
-    wrapper.find('.pi-spinner').trigger('click')
+    await wrapper.find('.pi-spinner').trigger('click')
+    await wrapper.find('.pi-spinner').trigger('click')
+    await wrapper.find('.pi-spinner').trigger('click')
 
     await nextTick()
     await nextTick()

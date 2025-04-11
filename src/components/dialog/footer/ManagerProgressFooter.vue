@@ -99,6 +99,7 @@ const currentTaskName = computed(() => {
 const handleRestart = async () => {
   const onReconnect = async () => {
     // Refresh manager state
+
     comfyManagerStore.clearLogs()
     comfyManagerStore.setStale()
 

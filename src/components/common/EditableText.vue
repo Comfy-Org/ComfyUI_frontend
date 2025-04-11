@@ -6,19 +6,19 @@
     <!-- Avoid double triggering finishEditing event when keyup.enter is triggered -->
     <InputText
       v-else
+      ref="inputRef"
+      v-model:modelValue="inputValue"
+      v-focus
       type="text"
       size="small"
       fluid
-      v-model:modelValue="inputValue"
-      ref="inputRef"
-      @keyup.enter="blurInputElement"
-      @click.stop
       :pt="{
         root: {
           onBlur: finishEditing
         }
       }"
-      v-focus
+      @keyup.enter="blurInputElement"
+      @click.stop
     />
   </div>
 </template>
@@ -45,10 +45,10 @@ const finishEditing = () => {
 }
 watch(
   () => isEditing,
-  (newVal) => {
+  async (newVal) => {
     if (newVal) {
       inputValue.value = modelValue
-      nextTick(() => {
+      await nextTick(() => {
         if (!inputRef.value) return
         const fileName = inputValue.value.includes('.')
           ? inputValue.value.split('.').slice(0, -1).join('.')

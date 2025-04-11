@@ -22,8 +22,8 @@
   <TitleEditor />
   <GraphCanvasMenu v-if="!betaMenuEnabled && canvasMenuEnabled" />
   <canvas
-    ref="canvasRef"
     id="graph-canvas"
+    ref="canvasRef"
     tabindex="1"
     class="w-full h-full touch-none"
   />
@@ -150,16 +150,16 @@ const colorPaletteService = useColorPaletteService()
 const colorPaletteStore = useColorPaletteStore()
 watch(
   [() => canvasStore.canvas, () => settingStore.get('Comfy.ColorPalette')],
-  ([canvas, currentPaletteId]) => {
+  async ([canvas, currentPaletteId]) => {
     if (!canvas) return
 
-    colorPaletteService.loadColorPalette(currentPaletteId)
+    await colorPaletteService.loadColorPalette(currentPaletteId)
   }
 )
 watch(
   () => colorPaletteStore.activePaletteId,
-  (newValue) => {
-    settingStore.set('Comfy.ColorPalette', newValue)
+  async (newValue) => {
+    await settingStore.set('Comfy.ColorPalette', newValue)
   }
 )
 
@@ -292,7 +292,7 @@ onMounted(async () => {
     () => settingStore.get('Comfy.Locale'),
     async () => {
       await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
-      useWorkflowService().reloadCurrentWorkflow()
+      await useWorkflowService().reloadCurrentWorkflow()
     }
   )
 

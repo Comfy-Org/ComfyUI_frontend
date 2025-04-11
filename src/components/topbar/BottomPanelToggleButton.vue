@@ -1,11 +1,11 @@
 <template>
   <Button
     v-show="bottomPanelStore.bottomPanelTabs.length > 0"
+    v-tooltip="{ value: $t('menu.toggleBottomPanel'), showDelay: 300 }"
     severity="secondary"
     text
     :aria-label="$t('menu.toggleBottomPanel')"
     @click="bottomPanelStore.toggleBottomPanel"
-    v-tooltip="{ value: $t('menu.toggleBottomPanel'), showDelay: 300 }"
   >
     <template #icon>
       <i-material-symbols:dock-to-bottom

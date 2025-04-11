@@ -1,7 +1,7 @@
 <template>
   <div
-    class="result-container"
     ref="resultContainer"
+    class="result-container"
     @click="handlePreviewClick"
   >
     <ComfyImage
@@ -13,7 +13,7 @@
     />
     <ResultVideo v-else-if="result.isVideo" :result="result" />
     <div v-else class="task-result-preview">
-      <i class="pi pi-file"></i>
+      <i class="pi pi-file" />
       <span>{{ result.mediaType }}</span>
     </div>
   </div>

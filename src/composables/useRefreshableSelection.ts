@@ -44,7 +44,7 @@ export const useRefreshableSelection = () => {
     if (!isRefreshable.value) return
 
     if (isAllNodesSelected.value) {
-      commandStore.execute('Comfy.RefreshNodeDefinitions')
+      await commandStore.execute('Comfy.RefreshNodeDefinitions')
     } else {
       await Promise.all(refreshableWidgets.value.map((item) => item.refresh()))
     }

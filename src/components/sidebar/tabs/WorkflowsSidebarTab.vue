@@ -5,26 +5,26 @@
   >
     <template #tool-buttons>
       <Button
+        v-tooltip.bottom="$t('g.refresh')"
         icon="pi pi-refresh"
-        @click="workflowStore.syncWorkflows()"
         severity="secondary"
         text
-        v-tooltip.bottom="$t('g.refresh')"
+        @click="workflowStore.syncWorkflows()"
       />
     </template>
     <template #header>
       <SearchBox
-        class="workflows-search-box p-2 2xl:p-4"
         v-model:modelValue="searchQuery"
-        @search="handleSearch"
+        class="workflows-search-box p-2 2xl:p-4"
         :placeholder="$t('g.searchWorkflows') + '...'"
+        @search="handleSearch"
       />
     </template>
     <template #body>
-      <div class="comfyui-workflows-panel" v-if="!isSearching">
+      <div v-if="!isSearching" class="comfyui-workflows-panel">
         <div
-          class="comfyui-workflows-open"
           v-if="workflowTabsPosition === 'Sidebar'"
+          class="comfyui-workflows-open"
         >
           <TextDivider
             :text="t('sideToolbar.workflowTab.workflowTreeType.open')"
@@ -32,9 +32,9 @@
             class="ml-2"
           />
           <TreeExplorer
-            :root="renderTreeNode(openWorkflowsTree, WorkflowTreeType.Open)"
-            :selectionKeys="selectionKeys"
             v-model:expandedKeys="dummyExpandedKeys"
+            :root="renderTreeNode(openWorkflowsTree, WorkflowTreeType.Open)"
+            :selection-keys="selectionKeys"
           >
             <template #node="{ node }">
               <TreeExplorerTreeNode :node="node">
@@ -60,8 +60,8 @@
           </TreeExplorer>
         </div>
         <div
-          class="comfyui-workflows-bookmarks"
           v-show="workflowStore.bookmarkedWorkflows.length > 0"
+          class="comfyui-workflows-bookmarks"
         >
           <TextDivider
             :text="t('sideToolbar.workflowTab.workflowTreeType.bookmarks')"
@@ -69,14 +69,14 @@
             class="ml-2"
           />
           <TreeExplorer
+            v-model:expandedKeys="dummyExpandedKeys"
             :root="
               renderTreeNode(
                 bookmarkedWorkflowsTree,
                 WorkflowTreeType.Bookmarks
               )
             "
-            :selectionKeys="selectionKeys"
-            v-model:expandedKeys="dummyExpandedKeys"
+            :selection-keys="selectionKeys"
           >
             <template #node="{ node }">
               <WorkflowTreeLeaf :node="node" />
@@ -90,10 +90,10 @@
             class="ml-2"
           />
           <TreeExplorer
-            :root="renderTreeNode(workflowsTree, WorkflowTreeType.Browse)"
-            v-model:expandedKeys="expandedKeys"
-            :selectionKeys="selectionKeys"
             v-if="workflowStore.persistedWorkflows.length > 0"
+            v-model:expandedKeys="expandedKeys"
+            :root="renderTreeNode(workflowsTree, WorkflowTreeType.Browse)"
+            :selection-keys="selectionKeys"
           >
             <template #node="{ node }">
               <WorkflowTreeLeaf :node="node" />
@@ -107,10 +107,10 @@
           />
         </div>
       </div>
-      <div class="comfyui-workflows-search-panel" v-else>
+      <div v-else class="comfyui-workflows-search-panel">
         <TreeExplorer
-          :root="renderTreeNode(filteredRoot, WorkflowTreeType.Browse)"
           v-model:expandedKeys="expandedKeys"
+          :root="renderTreeNode(filteredRoot, WorkflowTreeType.Browse)"
         >
           <template #node="{ node }">
             <WorkflowTreeLeaf :node="node" />
@@ -160,7 +160,7 @@ const filteredWorkflows = ref<ComfyWorkflow[]>([])
 const filteredRoot = computed<TreeNode>(() => {
   return buildWorkflowTree(filteredWorkflows.value as ComfyWorkflow[])
 })
-const handleSearch = (query: string) => {
+const handleSearch = async (query: string) => {
   if (query.length === 0) {
     filteredWorkflows.value = []
     expandedKeys.value = {}
@@ -170,9 +170,8 @@ const handleSearch = (query: string) => {
   filteredWorkflows.value = workflowStore.workflows.filter((workflow) => {
     return workflow.path.toLocaleLowerCase().includes(lowerQuery)
   })
-  nextTick(() => {
-    expandNode(filteredRoot.value)
-  })
+  await nextTick()
+  expandNode(filteredRoot.value)
 }
 
 const workflowStore = useWorkflowStore()
@@ -183,9 +182,9 @@ const expandedKeys = ref<Record<string, boolean>>({})
 const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 const dummyExpandedKeys = ref<Record<string, boolean>>({})
 
-const handleCloseWorkflow = (workflow?: ComfyWorkflow) => {
+const handleCloseWorkflow = async (workflow?: ComfyWorkflow) => {
   if (workflow) {
-    workflowService.closeWorkflow(workflow, {
+    await workflowService.closeWorkflow(workflow, {
       warnIfUnsaved: !workspaceStore.shiftDown
     })
   }
@@ -225,9 +224,12 @@ const renderTreeNode = (
 
   const workflow: ComfyWorkflow = node.data
 
-  function handleClick(this: TreeExplorerNode<ComfyWorkflow>, e: MouseEvent) {
+  async function handleClick(
+    this: TreeExplorerNode<ComfyWorkflow>,
+    e: MouseEvent
+  ) {
     if (this.leaf) {
-      workflowService.openWorkflow(workflow)
+      await workflowService.openWorkflow(workflow)
     } else {
       toggleNodeOnEvent(e, this)
     }
@@ -254,9 +256,9 @@ const renderTreeNode = (
             {
               label: t('g.insert'),
               icon: 'pi pi-file-export',
-              command: () => {
+              command: async () => {
                 const workflow = node.data
-                workflowService.insertWorkflow(workflow)
+                await workflowService.insertWorkflow(workflow)
               }
             }
           ]

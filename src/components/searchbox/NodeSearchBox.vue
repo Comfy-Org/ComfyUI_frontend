@@ -3,13 +3,13 @@
     class="comfy-vue-node-search-container flex justify-center items-center w-full min-w-96"
   >
     <div
-      class="comfy-vue-node-preview-container absolute left-[-350px] top-[50px]"
       v-if="enableNodePreview"
+      class="comfy-vue-node-preview-container absolute left-[-350px] top-[50px]"
     >
       <NodePreview
-        :nodeDef="hoveredSuggestion"
-        :key="hoveredSuggestion?.name || ''"
         v-if="hoveredSuggestion"
+        :key="hoveredSuggestion?.name || ''"
+        :node-def="hoveredSuggestion"
       />
     </div>
 
@@ -30,14 +30,14 @@
         <h3>Add node filter condition</h3>
       </template>
       <div class="_dialog-body">
-        <NodeSearchFilter @addFilter="onAddFilter"></NodeSearchFilter>
+        <NodeSearchFilter @add-filter="onAddFilter" />
       </div>
     </Dialog>
 
     <AutoCompletePlus
       :model-value="filters"
       class="comfy-vue-node-search-box z-10 flex-grow"
-      scrollHeight="40vh"
+      scroll-height="40vh"
       :placeholder="placeholder"
       :input-id="inputId"
       append-to="self"
@@ -45,32 +45,32 @@
       :min-length="0"
       :delay="100"
       :loading="!nodeFrequencyStore.isLoaded"
-      @complete="search($event.query)"
-      @option-select="emit('addNode', $event.value)"
-      @focused-option-changed="setHoverSuggestion($event)"
       complete-on-focus
       auto-option-focus
       force-selection
       multiple
-      :optionLabel="'display_name'"
+      :option-label="'display_name'"
+      @complete="search($event.query)"
+      @option-select="emit('addNode', $event.value)"
+      @focused-option-changed="setHoverSuggestion($event)"
     >
-      <template v-slot:option="{ option }">
-        <NodeSearchItem :nodeDef="option" :currentQuery="currentQuery" />
+      <template #option="{ option }">
+        <NodeSearchItem :node-def="option" :current-query="currentQuery" />
       </template>
       <!-- FilterAndValue -->
-      <template v-slot:chip="{ value }">
+      <template #chip="{ value }">
         <SearchFilterChip
           v-if="value.filterDef && value.value"
           :key="`${value.filterDef.id}-${value.value}`"
+          :text="value.value"
+          :badge="value.filterDef.invokeSequence.toUpperCase()"
+          :badge-class="value.filterDef.invokeSequence + '-badge'"
           @remove="
             onRemoveFilter(
               $event,
               value as FuseFilterWithValue<ComfyNodeDefImpl, string>
             )
           "
-          :text="value.value"
-          :badge="value.filterDef.invokeSequence.toUpperCase()"
-          :badge-class="value.filterDef.invokeSequence + '-badge'"
         />
       </template>
     </AutoCompletePlus>
@@ -135,11 +135,11 @@ const search = (query: string) => {
 const emit = defineEmits(['addFilter', 'removeFilter', 'addNode'])
 
 let inputElement: HTMLInputElement | null = null
-const reFocusInput = () => {
+const reFocusInput = async () => {
   inputElement ??= document.getElementById(inputId) as HTMLInputElement
   if (inputElement) {
     inputElement.blur()
-    nextTick(() => inputElement?.focus())
+    await nextTick(() => inputElement?.focus())
   }
 }
 
@@ -150,14 +150,14 @@ const onAddFilter = (
   nodeSearchFilterVisible.value = false
   emit('addFilter', filterAndValue)
 }
-const onRemoveFilter = (
+const onRemoveFilter = async (
   event: Event,
   filterAndValue: FuseFilterWithValue<ComfyNodeDefImpl, string>
 ) => {
   event.stopPropagation()
   event.preventDefault()
   emit('removeFilter', filterAndValue)
-  reFocusInput()
+  await reFocusInput()
 }
 const setHoverSuggestion = (index: number) => {
   if (index === -1) {

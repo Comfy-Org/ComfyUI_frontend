@@ -6,25 +6,25 @@
     <Button class="p-button-rounded p-button-text" @click="togglePlay">
       <i
         :class="['pi', playing ? 'pi-pause' : 'pi-play', 'text-white text-lg']"
-      ></i>
+      />
     </Button>
 
     <Select
       v-model="selectedSpeed"
       :options="speedOptions"
-      optionLabel="name"
-      optionValue="value"
-      @change="speedChange"
+      option-label="name"
+      option-value="value"
       class="w-24"
+      @change="speedChange"
     />
 
     <Select
       v-model="selectedAnimation"
       :options="animations"
-      optionLabel="name"
-      optionValue="index"
-      @change="animationChange"
+      option-label="name"
+      option-value="index"
       class="w-32"
+      @change="animationChange"
     />
   </div>
 </template>

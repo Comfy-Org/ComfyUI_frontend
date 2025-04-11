@@ -36,8 +36,8 @@ export const useColorPaletteService = () => {
     throw new Error(`Invalid color palette against zod schema:\n${error}`)
   }
 
-  const persistCustomColorPalettes = () => {
-    settingStore.set(
+  const persistCustomColorPalettes = async () => {
+    await settingStore.set(
       'Comfy.CustomColorPalettes',
       colorPaletteStore.customPalettes
     )
@@ -48,9 +48,9 @@ export const useColorPaletteService = () => {
    *
    * @param colorPaletteId - The ID of the color palette to delete.
    */
-  const deleteCustomColorPalette = (colorPaletteId: string) => {
+  const deleteCustomColorPalette = async (colorPaletteId: string) => {
     colorPaletteStore.deleteCustomPalette(colorPaletteId)
-    persistCustomColorPalettes()
+    await persistCustomColorPalettes()
   }
 
   /**
@@ -58,10 +58,10 @@ export const useColorPaletteService = () => {
    *
    * @param colorPalette - The palette to add.
    */
-  const addCustomColorPalette = (colorPalette: Palette) => {
+  const addCustomColorPalette = async (colorPalette: Palette) => {
     validateColorPalette(colorPalette)
     colorPaletteStore.addCustomPalette(colorPalette)
-    persistCustomColorPalettes()
+    await persistCustomColorPalettes()
   }
 
   /**
@@ -176,14 +176,16 @@ export const useColorPaletteService = () => {
     const file = await uploadFile('application/json')
     const text = await file.text()
     const palette = JSON.parse(text)
-    addCustomColorPalette(palette)
+    await addCustomColorPalette(palette)
     return palette
   }
 
   return {
     getActiveColorPalette: () => colorPaletteStore.completedActivePalette,
-    addCustomColorPalette: wrapWithErrorHandling(addCustomColorPalette),
-    deleteCustomColorPalette: wrapWithErrorHandling(deleteCustomColorPalette),
+    addCustomColorPalette: wrapWithErrorHandlingAsync(addCustomColorPalette),
+    deleteCustomColorPalette: wrapWithErrorHandlingAsync(
+      deleteCustomColorPalette
+    ),
     loadColorPalette: wrapWithErrorHandlingAsync(loadColorPalette),
     exportColorPalette: wrapWithErrorHandling(exportColorPalette),
     importColorPalette: wrapWithErrorHandlingAsync(importColorPalette)
