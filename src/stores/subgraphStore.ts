@@ -2,7 +2,7 @@ import { LGraph } from '@comfyorg/litegraph'
 import { Subgraph } from '@comfyorg/litegraph/dist/subgraphInterfaces'
 import { whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef } from 'vue'
+import { ref, shallowRef } from 'vue'
 
 import { app } from '@/scripts/app'
 import { useWorkflowStore } from '@/stores/workflowStore'
@@ -19,10 +19,11 @@ export const useSubgraphStore = defineStore('subgraph', () => {
   const graphIdPath = ref<LGraph['id'][]>([])
   const graphNamePath = ref<string[]>([])
 
-  const isSubgraphActive = computed(() => isSubgraph(activeGraph.value))
+  const isSubgraphActive = ref(false)
 
   const updateActiveGraph = () => {
     activeGraph.value = app?.graph
+    isSubgraphActive.value = isSubgraph(activeGraph.value)
   }
 
   const updateRootGraphName = () => {
