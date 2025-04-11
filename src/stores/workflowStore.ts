@@ -441,7 +441,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     getWorkflowByPath,
     syncWorkflows
   }
-}) as unknown as () => WorkflowStore
+}) as () => WorkflowStore
 
 export const useWorkflowBookmarkStore = defineStore('workflowBookmark', () => {
   const bookmarks = ref<Set<string>>(new Set())
