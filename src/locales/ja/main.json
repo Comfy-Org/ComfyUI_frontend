@@ -198,6 +198,8 @@
     "reportIssue": "報告する",
     "reportIssueTooltip": "エラーレポートをComfy Orgに送信",
     "reportSent": "レポートが送信されました",
+    "resetAll": "すべてリセット",
+    "resetAllKeybindingsTooltip": "すべてのキーバインディングをデフォルトにリセット",
     "restart": "再起動",
     "resultsCount": "{count}件の結果が見つかりました",
     "save": "保存",
