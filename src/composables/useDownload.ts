@@ -48,14 +48,15 @@ export function useDownload(url: string, fileName?: string) {
     link.click()
   }
 
-  onMounted(async () => {
+  onMounted(() => {
     if (isCivitaiModelUrl(url)) {
       const { fileSize: civitaiSize, error: civitaiErr } = useCivitaiModel(url)
       whenever(civitaiSize, setFileSize)
       // Try falling back to normal fetch if using Civitai API fails
       whenever(civitaiErr, fetchFileSize, { once: true })
     } else {
-      await fetchFileSize()
+      // Fetch file size in the background
+      void fetchFileSize()
     }
   })
 
