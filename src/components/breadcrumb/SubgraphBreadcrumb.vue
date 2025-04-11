@@ -26,10 +26,10 @@ const workflowService = useWorkflowService()
 const workflowStore = useWorkflowStore()
 const subgraphStore = useSubgraphStore()
 
-const items = computed<MenuItem[]>(() => {
+const items = computed(() => {
   if (!subgraphStore.graphNamePath.length) return []
 
-  return subgraphStore.graphNamePath.map((name, index) => ({
+  return subgraphStore.graphNamePath.map<MenuItem>((name, index) => ({
     label: name,
     icon:
       index === subgraphStore.graphNamePath.length - 1
