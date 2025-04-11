@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="subgraphStore.isSubgraphActive"
-    class="fixed top-[var(--comfy-topbar-height)] left-[var(--sidebar-width)] right-0 p-2 bg-[var(--comfy-menu-bg)] border-b border-[var(--border-color)] z-[900]"
+    class="fixed top-[var(--comfy-topbar-height)] left-[var(--sidebar-width)] p-2 subgraph-breadcrumb"
   >
     <Breadcrumb
       class="bg-transparent"
@@ -53,3 +53,12 @@ const handleItemClick = (event: { item: MenuItem }) => {
   event.item.command?.()
 }
 </script>
+
+<style>
+.subgraph-breadcrumb {
+  .p-breadcrumb-item-link,
+  .p-breadcrumb-item-icon {
+    color: #d26565;
+  }
+}
+</style>
