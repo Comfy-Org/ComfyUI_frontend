@@ -29,12 +29,8 @@ const subgraphStore = useSubgraphStore()
 const items = computed(() => {
   if (!subgraphStore.graphNamePath.length) return []
 
-  return subgraphStore.graphNamePath.map<MenuItem>((name, index) => ({
+  return subgraphStore.graphNamePath.slice(1).map<MenuItem>((name) => ({
     label: name,
-    icon:
-      index === subgraphStore.graphNamePath.length - 1
-        ? 'pi pi-home'
-        : undefined,
     command: async () => {
       const workflow = workflowStore.getWorkflowByPath(name)
       if (workflow) await workflowService.openWorkflow(workflow)
@@ -42,7 +38,16 @@ const items = computed(() => {
   }))
 })
 
-const home = computed(() => items.value[0])
+const home = computed(() => ({
+  label: subgraphStore.graphNamePath[0],
+  icon: 'pi pi-home',
+  command: async () => {
+    const workflow = workflowStore.getWorkflowByPath(
+      subgraphStore.graphNamePath[0]
+    )
+    if (workflow) await workflowService.openWorkflow(workflow)
+  }
+}))
 
 const handleItemClick = (event: MenuItemCommandEvent) => {
   event.item.command?.(event)
