@@ -438,8 +438,10 @@
     "searchPlaceholder": "検索",
     "selectVersion": "バージョンを選択",
     "sort": {
+      "created": "最新",
       "downloads": "最も人気",
-      "rating": "評価"
+      "publisher": "出版社",
+      "updated": "最近更新"
     },
     "status": {
       "active": "アクティブ",

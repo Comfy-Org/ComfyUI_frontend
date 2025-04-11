@@ -438,8 +438,10 @@
     "searchPlaceholder": "Поиск",
     "selectVersion": "Выберите версию",
     "sort": {
+      "created": "Новейшие",
       "downloads": "Самые популярные",
-      "rating": "Рейтинг"
+      "publisher": "Издатель",
+      "updated": "Недавно обновленные"
     },
     "status": {
       "active": "Активный",

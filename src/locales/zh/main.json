@@ -438,8 +438,10 @@
     "searchPlaceholder": "搜索",
     "selectVersion": "选择版本",
     "sort": {
+      "created": "最新",
       "downloads": "最受欢迎",
-      "rating": "评级"
+      "publisher": "出版商",
+      "updated": "最近更新"
     },
     "status": {
       "active": "活跃",

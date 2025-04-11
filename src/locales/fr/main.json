@@ -438,8 +438,10 @@
     "searchPlaceholder": "Recherche",
     "selectVersion": "Sélectionner la version",
     "sort": {
+      "created": "Le plus récent",
       "downloads": "Le plus populaire",
-      "rating": "Évaluation"
+      "publisher": "Éditeur",
+      "updated": "Mis à jour récemment"
     },
     "status": {
       "active": "Actif",
