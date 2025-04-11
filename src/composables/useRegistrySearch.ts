@@ -1,5 +1,6 @@
 import { watchDebounced } from '@vueuse/core'
-import { memoize } from 'lodash'
+import type { Hit } from 'algoliasearch/dist/lite/browser'
+import { memoize, orderBy } from 'lodash'
 import { computed, ref, watch } from 'vue'
 
 import {
@@ -8,17 +9,25 @@ import {
   useAlgoliaSearchService
 } from '@/services/algoliaSearchService'
 import type { NodesIndexSuggestion } from '@/services/algoliaSearchService'
-import { PackField } from '@/types/comfyManagerTypes'
+import { SortableAlgoliaField } from '@/types/comfyManagerTypes'
 
 const SEARCH_DEBOUNCE_TIME = 256
 const DEFAULT_PAGE_SIZE = 64
+
+const SORT_DIRECTIONS: Record<SortableAlgoliaField, 'asc' | 'desc'> = {
+  [SortableAlgoliaField.Downloads]: 'desc',
+  [SortableAlgoliaField.Created]: 'desc',
+  [SortableAlgoliaField.Updated]: 'desc',
+  [SortableAlgoliaField.Publisher]: 'asc',
+  [SortableAlgoliaField.Name]: 'asc'
+}
 
 /**
  * Composable for managing UI state of Comfy Node Registry search.
  */
 export function useRegistrySearch() {
   const isLoading = ref(false)
-  const sortField = ref<PackField>('downloads')
+  const sortField = ref<SortableAlgoliaField>(SortableAlgoliaField.Downloads)
   const searchMode = ref<'nodes' | 'packs'>('packs')
   const pageSize = ref(DEFAULT_PAGE_SIZE)
   const pageNumber = ref(0)
@@ -62,10 +71,34 @@ export function useRegistrySearch() {
         restrictSearchableAttributes: searchAttributes.value
       }
     )
+
+    let sortedPacks = nodePacks
+    if (sortField.value) {
+      const isDateField = (field: SortableAlgoliaField): boolean =>
+        field === SortableAlgoliaField.Created ||
+        field === SortableAlgoliaField.Updated
+
+      const getSortValue = (pack: Hit<AlgoliaNodePack>) => {
+        if (isDateField(sortField.value)) {
+          const value = pack[sortField.value]
+          return value ? new Date(value).getTime() : 0
+        } else {
+          const value = pack[sortField.value]
+          return value ?? 0
+        }
+      }
+
+      sortedPacks = orderBy(
+        nodePacks,
+        [getSortValue],
+        [SORT_DIRECTIONS[sortField.value]]
+      )
+    }
+
     if (options.append && results.value?.length) {
-      results.value = results.value.concat(nodePacks)
+      results.value = results.value.concat(sortedPacks)
     } else {
-      results.value = nodePacks
+      results.value = sortedPacks
     }
     suggestions.value = querySuggestions
     isLoading.value = false

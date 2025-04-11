@@ -61,6 +61,7 @@ const RETRIEVE_ATTRIBUTES: SearchAttribute[] = [
   'status',
   'publisher_id',
   'total_install',
+  'create_time',
   'update_time',
   'license',
   'repository_url',

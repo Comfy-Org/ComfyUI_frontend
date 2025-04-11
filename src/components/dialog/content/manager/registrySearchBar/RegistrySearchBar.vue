@@ -56,7 +56,10 @@ import { useI18n } from 'vue-i18n'
 
 import SearchFilterDropdown from '@/components/dialog/content/manager/registrySearchBar/SearchFilterDropdown.vue'
 import type { NodesIndexSuggestion } from '@/services/algoliaSearchService'
-import type { PackField, SearchOption } from '@/types/comfyManagerTypes'
+import {
+  type SearchOption,
+  SortableAlgoliaField
+} from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
 
 const { searchResults } = defineProps<{
@@ -66,7 +69,9 @@ const { searchResults } = defineProps<{
 
 const searchQuery = defineModel<string>('searchQuery')
 const searchMode = defineModel<string>('searchMode', { default: 'packs' })
-const sortField = defineModel<PackField>('sortField', { default: 'downloads' })
+const sortField = defineModel<SortableAlgoliaField>('sortField', {
+  default: SortableAlgoliaField.Downloads
+})
 
 const { t } = useI18n()
 
@@ -74,11 +79,12 @@ const hasResults = computed(
   () => searchQuery.value?.trim() && searchResults?.length
 )
 
-const sortOptions: SearchOption<PackField>[] = [
-  { id: 'downloads', label: t('manager.sort.downloads') },
-  { id: 'name', label: t('g.name') },
-  { id: 'rating', label: t('manager.sort.rating') },
-  { id: 'category', label: t('g.category') }
+const sortOptions: SearchOption<SortableAlgoliaField>[] = [
+  { id: SortableAlgoliaField.Downloads, label: t('manager.sort.downloads') },
+  { id: SortableAlgoliaField.Created, label: t('manager.sort.created') },
+  { id: SortableAlgoliaField.Updated, label: t('manager.sort.updated') },
+  { id: SortableAlgoliaField.Publisher, label: t('manager.sort.publisher') },
+  { id: SortableAlgoliaField.Name, label: t('g.name') }
 ]
 const filterOptions: SearchOption<string>[] = [
   { id: 'packs', label: t('manager.filter.nodePack') },
