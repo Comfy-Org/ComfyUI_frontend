@@ -81,9 +81,8 @@
           @keydown.stop.prevent="captureKeybinding"
           autocomplete="off"
           fluid
-          :invalid="!!existingKeybindingOnCombo"
         />
-        <Message v-if="existingKeybindingOnCombo" severity="error">
+        <Message v-if="existingKeybindingOnCombo" severity="warn">
           Keybinding already exists on
           <Tag
             severity="secondary"
