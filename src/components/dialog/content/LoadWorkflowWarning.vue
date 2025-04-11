@@ -30,6 +30,9 @@
       </div>
     </template>
   </ListBox>
+  <div class="flex justify-end py-3">
+    <Button label="Open Manager" @click="openManager" size="small" outlined />
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -38,7 +41,9 @@ import ListBox from 'primevue/listbox'
 import { computed } from 'vue'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
+import { useDialogService } from '@/services/dialogService'
 import type { MissingNodeType } from '@/types/comfy'
+import { ManagerTab } from '@/types/comfyManagerTypes'
 
 const props = defineProps<{
   missingNodeTypes: MissingNodeType[]
@@ -64,6 +69,12 @@ const uniqueNodes = computed(() => {
       return { label: node }
     })
 })
+
+const openManager = () => {
+  useDialogService().showManagerDialog({
+    initialTab: ManagerTab.Missing
+  })
+}
 </script>
 
 <style scoped>

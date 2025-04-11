@@ -10,6 +10,14 @@ export type PackField = keyof RegistryPack | null
 export const IsInstallingKey: InjectionKey<Ref<boolean>> =
   Symbol('isInstalling')
 
+export enum ManagerTab {
+  All = 'all',
+  Installed = 'installed',
+  Workflow = 'workflow',
+  Missing = 'missing',
+  UpdateAvailable = 'updateAvailable'
+}
+
 export interface TabItem {
   id: string
   label: string
