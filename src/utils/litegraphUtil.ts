@@ -97,8 +97,18 @@ export function migrateWidgetsValues<TWidgetValue>(
   const originalWidgetsInputs = Object.values(inputDefs).filter(
     (input) => widgetNames.has(input.name) || input.forceInput
   )
+  // Count the number of original widgets inputs.
+  const numOriginalWidgets = _.sum(
+    originalWidgetsInputs.map((input) =>
+      // If the input has control, it will have 2 widgets.
+      input.control_after_generate ||
+      ['seed', 'noise_seed'].includes(input.name)
+        ? 2
+        : 1
+    )
+  )
 
-  if (originalWidgetsInputs.length === widgetsValues?.length) {
+  if (numOriginalWidgets === widgetsValues?.length) {
     return _.zip(originalWidgetsInputs, widgetsValues)
       .filter(([input]) => !input?.forceInput)
       .map(([_, value]) => value as TWidgetValue)
