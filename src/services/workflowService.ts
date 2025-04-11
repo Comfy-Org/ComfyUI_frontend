@@ -94,10 +94,14 @@ export const useWorkflowService = () => {
       await renameWorkflow(workflow, newPath)
       await workflowStore.saveWorkflow(workflow)
     } else {
-      const tempWorkflow = workflowStore.createTemporary(
-        newKey,
-        workflow.activeState as ComfyWorkflowJSON
-      )
+      // Generate new id when saving existing workflow as a new file
+      const id = crypto.randomUUID()
+      const state = JSON.parse(
+        JSON.stringify(workflow.activeState)
+      ) as ComfyWorkflowJSON
+      state.id = id
+
+      const tempWorkflow = workflowStore.createTemporary(newKey, state)
       await openWorkflow(tempWorkflow)
       await workflowStore.saveWorkflow(tempWorkflow)
     }
