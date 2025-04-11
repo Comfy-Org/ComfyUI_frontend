@@ -47,7 +47,7 @@
         :disabled="!executingPrompt"
         text
         :aria-label="$t('menu.interrupt')"
-        @click="() => commandStore.execute('Comfy.Interrupt')"
+        @click="async () => await commandStore.execute('Comfy.Interrupt')"
       >
       </Button>
       <Button
@@ -61,9 +61,9 @@
         text
         :aria-label="$t('sideToolbar.queueTab.clearPendingTasks')"
         @click="
-          () => {
+          async () => {
             if (queueCountStore.count.value > 1) {
-              commandStore.execute('Comfy.ClearPendingTasks')
+              await commandStore.execute('Comfy.ClearPendingTasks')
             }
             queueMode = 'disabled'
           }
