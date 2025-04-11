@@ -11,13 +11,14 @@ export function setupAutoQueueHandler() {
 
   let graphHasChanged = false
   let internalCount = 0 // Use an internal counter here so it is instantly updated when re-queuing
-  api.addEventListener('graphChanged', async () => {
+  api.addEventListener('graphChanged', () => {
     if (queueSettingsStore.mode === 'change') {
       if (internalCount) {
         graphHasChanged = true
       } else {
         graphHasChanged = false
-        await app.queuePrompt(0, queueSettingsStore.batchCount)
+        // Queue the prompt in the background
+        void app.queuePrompt(0, queueSettingsStore.batchCount)
         internalCount++
       }
     }
