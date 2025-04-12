@@ -285,33 +285,42 @@ export const useKeybindingStore = defineStore('keybinding', () => {
 
   /**
    * Reset keybinding for a specific command to its default value.
-   * Removes any user-defined or user-unset keybindings for this command.
    *
-   * @param commandId - The ID of the command to reset
    * @returns true if any changes were made, false otherwise
    */
   function resetKeybindingForCommand(commandId: string): boolean {
-    let changed = false
+    const currentKeybinding = getKeybindingByCommandId(commandId)
+    const defaultKeybinding =
+      defaultKeybindingsByCommandId.value[commandId]?.[0]
 
-    // Check and remove from user-defined bindings
-    const userBindingToRemove = Object.values(userKeybindings.value).find(
-      (kb) => kb.commandId === commandId
-    )
-    if (userBindingToRemove) {
-      delete userKeybindings.value[userBindingToRemove.combo.serialize()]
-      changed = true
+    // No default keybinding exists, need to remove any user binding
+    if (!defaultKeybinding) {
+      if (currentKeybinding) {
+        unsetKeybinding(currentKeybinding)
+        return true
+      }
+      return false
     }
 
-    // Check and remove from user-unset bindings
-    const unsetBindingToRemove = Object.values(userUnsetKeybindings.value).find(
-      (kb) => kb.commandId === commandId
-    )
-    if (unsetBindingToRemove) {
-      delete userUnsetKeybindings.value[unsetBindingToRemove.combo.serialize()]
-      changed = true
+    // Current binding equals default binding, no changes needed
+    if (currentKeybinding?.equals(defaultKeybinding)) {
+      return false
     }
 
-    return changed
+    // Unset current keybinding if exists
+    if (currentKeybinding) {
+      unsetKeybinding(currentKeybinding)
+    }
+
+    // Remove the unset record if it exists
+    const serializedCombo = defaultKeybinding.combo.serialize()
+    if (
+      userUnsetKeybindings.value[serializedCombo]?.equals(defaultKeybinding)
+    ) {
+      delete userUnsetKeybindings.value[serializedCombo]
+    }
+
+    return true
   }
 
   function isCommandKeybindingModified(commandId: string): boolean {
