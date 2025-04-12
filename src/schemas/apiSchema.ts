@@ -424,7 +424,24 @@ const zSettings = z.record(z.any()).and(
       'Comfy.Workflow.AutoSave': z.enum(['off', 'after delay']),
       'Comfy.RerouteBeta': z.boolean(),
       'LiteGraph.Canvas.LowQualityRenderingZoomThreshold': z.number(),
-      'Comfy.Canvas.SelectionToolbox': z.boolean()
+      'Comfy.Canvas.SelectionToolbox': z.boolean(),
+      'LiteGraph.Node.TooltipDelay': z.number(),
+      'Comfy.ComfirmClear': z.boolean(),
+      'LiteGraph.ContextMenu.Scaling': z.boolean(),
+      'LiteGraph.Reroute.SplineOffset': z.number(),
+      'Comfy.Toast.DisableReconnectingToast': z.boolean(),
+      'Comfy.Workflow.Persist': z.boolean(),
+      'Comfy.TutorialCompleted': z.boolean(),
+      'Comfy.Node.AllowImageSizeDraw': z.boolean(),
+      'Comfy-Desktop.AutoUpdate': z.boolean(),
+      'Comfy-Desktop.SendStatistics': z.boolean(),
+      'Comfy-Desktop.WindowStyle': z.string(),
+      'Comfy-Desktop.UV.PythonInstallMirror': z.string(),
+      'Comfy-Desktop.UV.PypiInstallMirror': z.string(),
+      'Comfy-Desktop.UV.TorchInstallMirror': z.string(),
+      'Comfy.MaskEditor.UseNewEditor': z.boolean(),
+      'Comfy.MaskEditor.BrushAdjustmentSpeed': z.number(),
+      'Comfy.MaskEditor.UseDominantAxis': z.boolean()
     })
     .optional()
 )
