@@ -64,7 +64,7 @@ function addMultilineWidget(
     if (!Object.is(event.deltaX, -0)) return
 
     // If the textarea has focus, require more effort to activate pass-through
-    const multiplier = document.activeElement === inputEl ? 3 : 1
+    const multiplier = document.activeElement === inputEl ? 2 : 1
     const maxScrollHeight = inputEl.scrollHeight - inputEl.clientHeight
 
     if (
@@ -72,7 +72,7 @@ function addMultilineWidget(
       (event.deltaY > 0 && inputEl.scrollTop === maxScrollHeight)
     ) {
       // Attempting to scroll past the end of the textarea
-      if (!ignoreEventsTimer || ignoredEvents > 15 * multiplier) {
+      if (!ignoreEventsTimer || ignoredEvents > 25 * multiplier) {
         app.canvas.processMouseWheel(event)
       } else {
         ignoredEvents++
@@ -84,7 +84,7 @@ function addMultilineWidget(
 
       ignoreEventsTimer = setTimeout(() => {
         ignoreEventsTimer = null
-      }, 500 * multiplier)
+      }, 800 * multiplier)
     }
   })
 
