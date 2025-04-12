@@ -341,6 +341,10 @@
   "LiteGraph_ContextMenu_Scaling": {
     "name": "放大时缩放节点组合部件菜单（列表）"
   },
+  "LiteGraph_NodeWidget_ScrollToEndPause": {
+    "name": "滚动到多行字符串结束后暂停",
+    "tooltip": "防止在滚动多行字符串小部件时意外缩放。\n\n在滚动到文本区域的任一端后，忽略滚动的时间（以毫秒为单位）。当文本区域被聚焦时，这个时间会被乘以。"
+  },
   "LiteGraph_Node_TooltipDelay": {
     "name": "工具提示延迟"
   },

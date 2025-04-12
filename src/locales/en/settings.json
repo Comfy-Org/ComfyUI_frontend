@@ -344,6 +344,10 @@
   "LiteGraph_Node_TooltipDelay": {
     "name": "Tooltip Delay"
   },
+  "LiteGraph_NodeWidget_ScrollToEndPause": {
+    "name": "Pause after scrolling to end of multi-line strings",
+    "tooltip": "Prevents unintended zooming when scrolling multi-line string widgets.\n\nThe time (in milliseconds) that scrolling is ignored after scrolling to either end of a text area. Multiplied when the text area is focused."
+  },
   "LiteGraph_Reroute_SplineOffset": {
     "name": "Reroute spline offset",
     "tooltip": "The bezier control point offset from the reroute centre point"

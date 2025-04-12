@@ -341,6 +341,10 @@
   "LiteGraph_ContextMenu_Scaling": {
     "name": "ズームイン時にノードコンボウィジェットメニュー（リスト）をスケーリングする"
   },
+  "LiteGraph_NodeWidget_ScrollToEndPause": {
+    "name": "マルチライン文字列の末尾までスクロールした後の一時停止",
+    "tooltip": "マルチライン文字列ウィジェットをスクロールするときに意図しないズームを防ぎます。\n\nテキストエリアの両端までスクロールした後にスクロールが無視される時間（ミリ秒）。テキストエリアがフォーカスされているときには倍増します。"
+  },
   "LiteGraph_Node_TooltipDelay": {
     "name": "ツールチップ遅延"
   },

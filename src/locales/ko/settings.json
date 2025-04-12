@@ -341,6 +341,10 @@
   "LiteGraph_ContextMenu_Scaling": {
     "name": "확대시 노드 콤보 위젯 메뉴 (목록) 스케일링"
   },
+  "LiteGraph_NodeWidget_ScrollToEndPause": {
+    "name": "다중 줄 문자열의 끝으로 스크롤한 후 일시 중지",
+    "tooltip": "다중 줄 문자열 위젯을 스크롤할 때 의도하지 않은 확대를 방지합니다.\n\n텍스트 영역의 양쪽 끝으로 스크롤한 후 스크롤이 무시되는 시간(밀리초). 텍스트 영역이 포커스되면 곱해집니다."
+  },
   "LiteGraph_Node_TooltipDelay": {
     "name": "툴팁 지연"
   },
