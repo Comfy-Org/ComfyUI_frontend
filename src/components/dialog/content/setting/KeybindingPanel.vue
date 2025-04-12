@@ -28,6 +28,14 @@
               @click="editKeybinding(slotProps.data)"
             />
             <Button
+              icon="pi pi-replay"
+              class="p-button-text p-button-warn"
+              :disabled="
+                !keybindingStore.isCommandKeybindingModified(slotProps.data.id)
+              "
+              @click="resetKeybinding(slotProps.data)"
+            />
+            <Button
               icon="pi pi-trash"
               class="p-button-text p-button-danger"
               :disabled="!slotProps.data.keybinding"
@@ -252,6 +260,38 @@ async function saveKeybinding() {
     }
   }
   cancelEdit()
+}
+
+async function resetKeybinding(commandData: ICommandData) {
+  if (keybindingStore.isCommandKeybindingModified(commandData.id)) {
+    const commandId = commandData.id
+    let changed = false
+
+    // Check and remove from user-defined bindings
+    const userBindings = keybindingStore.getUserKeybindings()
+    const userBindingToRemove = Object.values(userBindings).find(
+      (kb) => kb.commandId === commandId
+    )
+    if (userBindingToRemove) {
+      delete userBindings[userBindingToRemove.combo.serialize()]
+      changed = true
+    }
+
+    // Check and remove from user-unset bindings
+    const unsetBindings = keybindingStore.getUserUnsetKeybindings()
+    const unsetBindingToRemove = Object.values(unsetBindings).find(
+      (kb) => kb.commandId === commandId
+    )
+    if (unsetBindingToRemove) {
+      delete unsetBindings[unsetBindingToRemove.combo.serialize()]
+      changed = true
+    }
+
+    if (changed) {
+      // Persist the changes if any were made
+      await keybindingService.persistUserKeybindings()
+    }
+  }
 }
 
 const toast = useToast()
