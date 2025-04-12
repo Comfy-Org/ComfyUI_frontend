@@ -263,11 +263,12 @@ async function saveKeybinding() {
 }
 
 async function resetKeybinding(commandData: ICommandData) {
-  if (keybindingStore.isCommandKeybindingModified(commandData.id)) {
-    const changed = keybindingStore.resetKeybindingForCommand(commandData.id)
-    if (changed) {
-      await keybindingService.persistUserKeybindings()
-    }
+  if (keybindingStore.resetKeybindingForCommand(commandData.id)) {
+    await keybindingService.persistUserKeybindings()
+  } else {
+    console.warn(
+      `No changes made when resetting keybinding for command: ${commandData.id}`
+    )
   }
 }
 
