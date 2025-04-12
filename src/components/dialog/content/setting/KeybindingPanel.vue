@@ -264,31 +264,8 @@ async function saveKeybinding() {
 
 async function resetKeybinding(commandData: ICommandData) {
   if (keybindingStore.isCommandKeybindingModified(commandData.id)) {
-    const commandId = commandData.id
-    let changed = false
-
-    // Check and remove from user-defined bindings
-    const userBindings = keybindingStore.getUserKeybindings()
-    const userBindingToRemove = Object.values(userBindings).find(
-      (kb) => kb.commandId === commandId
-    )
-    if (userBindingToRemove) {
-      delete userBindings[userBindingToRemove.combo.serialize()]
-      changed = true
-    }
-
-    // Check and remove from user-unset bindings
-    const unsetBindings = keybindingStore.getUserUnsetKeybindings()
-    const unsetBindingToRemove = Object.values(unsetBindings).find(
-      (kb) => kb.commandId === commandId
-    )
-    if (unsetBindingToRemove) {
-      delete unsetBindings[unsetBindingToRemove.combo.serialize()]
-      changed = true
-    }
-
+    const changed = keybindingStore.resetKeybindingForCommand(commandData.id)
     if (changed) {
-      // Persist the changes if any were made
       await keybindingService.persistUserKeybindings()
     }
   }
