@@ -2,6 +2,7 @@ import { useEventListener, whenever } from '@vueuse/core'
 import { computed, readonly, ref } from 'vue'
 
 import { api } from '@/scripts/api'
+import { ManagerWsQueueStatus } from '@/types/comfyManagerTypes'
 
 type QueuedTask<T> = {
   task: () => Promise<T>
@@ -9,11 +10,6 @@ type QueuedTask<T> = {
 }
 
 const MANAGER_WS_MSG_TYPE = 'cm-queue-status'
-
-enum ManagerWsQueueStatus {
-  DONE = 'done',
-  IN_PROGRESS = 'in_progress'
-}
 
 export const useManagerQueue = () => {
   const clientQueueItems = ref<QueuedTask<unknown>[]>([])
