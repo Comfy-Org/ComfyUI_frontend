@@ -369,6 +369,13 @@ describe('useKeybindingStore', () => {
     store.unsetKeybinding(defaultKeybinding)
     expect(store.keybindings).toHaveLength(0)
 
+    const serializedCombo = defaultKeybinding.combo.serialize()
+    const userUnsetKeybindings = store.getUserUnsetKeybindings()
+    expect(userUnsetKeybindings[serializedCombo]).toBeTruthy()
+    expect(
+      userUnsetKeybindings[serializedCombo].equals(defaultKeybinding)
+    ).toBe(true)
+
     const result = store.resetKeybindingForCommand('test.command')
 
     expect(result).toBe(true)
@@ -376,6 +383,8 @@ describe('useKeybindingStore', () => {
     expect(store.getKeybindingByCommandId('test.command')).toEqual(
       defaultKeybinding
     )
+
+    expect(store.getUserUnsetKeybindings()[serializedCombo]).toBeUndefined()
   })
 
   it('should handle complex scenario with both unset and user keybindings', () => {
