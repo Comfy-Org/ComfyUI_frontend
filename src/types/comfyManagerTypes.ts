@@ -10,6 +10,11 @@ export type PackField = keyof RegistryPack | null
 export const IsInstallingKey: InjectionKey<Ref<boolean>> =
   Symbol('isInstalling')
 
+export enum ManagerWsQueueStatus {
+  DONE = 'done',
+  IN_PROGRESS = 'in_progress'
+}
+
 export enum ManagerTab {
   All = 'all',
   Installed = 'installed',
