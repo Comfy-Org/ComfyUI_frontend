@@ -287,7 +287,7 @@ export const useKeybindingStore = defineStore('keybinding', () => {
    * Resets the keybinding for a given command to its default value.
    *
    * @param commandId - The commandId of the keybind to be reset
-   * @returns `true` if changes were made, and vice versa
+   * @returns `true` if changes were made, `false` if not
    */
   function resetKeybindingForCommand(commandId: string): boolean {
     const currentKeybinding = getKeybindingByCommandId(commandId)
