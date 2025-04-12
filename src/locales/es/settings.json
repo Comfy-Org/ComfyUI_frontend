@@ -341,10 +341,6 @@
   "LiteGraph_ContextMenu_Scaling": {
     "name": "Escala los menús de widgets combinados de nodos (listas) al acercar"
   },
-  "LiteGraph_NodeWidget_ScrollToEndPause": {
-    "name": "Pausa después de desplazarse hasta el final de cadenas de texto multilínea",
-    "tooltip": "Evita el zoom no deseado al desplazarse por widgets de cadenas de texto multilínea.\n\nEl tiempo (en milisegundos) que se ignora el desplazamiento después de desplazarse hasta uno de los extremos de un área de texto. Se multiplica cuando el área de texto está enfocada."
-  },
   "LiteGraph_Node_TooltipDelay": {
     "name": "Retraso de la información sobre herramientas"
   },
