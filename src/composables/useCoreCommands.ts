@@ -55,7 +55,9 @@ export function useCoreCommands(): ComfyCommand[] {
     })
   }
 
-  return [
+  const commonProps = { source: 'System' }
+
+  const commands = [
     {
       id: 'Comfy.NewBlankWorkflow',
       icon: 'pi pi-plus',
@@ -616,4 +618,6 @@ export function useCoreCommands(): ComfyCommand[] {
       }
     }
   ]
+
+  return commands.map((command) => ({ ...command, ...commonProps }))
 }
