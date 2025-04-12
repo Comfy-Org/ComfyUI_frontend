@@ -293,6 +293,10 @@ watch(activeCategory, (_, oldValue) => {
   overflow: hidden;
 }
 
+.settings-content {
+  overflow-x: auto;
+}
+
 @media (max-width: 768px) {
   .settings-container {
     flex-direction: column;
