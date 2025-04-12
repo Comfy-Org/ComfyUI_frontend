@@ -283,6 +283,47 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     userUnsetKeybindings.value = {}
   }
 
+  /**
+   * Resets the keybinding for a given command to its default value.
+   *
+   * @param commandId - The commandId of the keybind to be reset
+   * @returns `true` if changes were made, `false` if not
+   */
+  function resetKeybindingForCommand(commandId: string): boolean {
+    const currentKeybinding = getKeybindingByCommandId(commandId)
+    const defaultKeybinding =
+      defaultKeybindingsByCommandId.value[commandId]?.[0]
+
+    // No default keybinding exists, need to remove any user binding
+    if (!defaultKeybinding) {
+      if (currentKeybinding) {
+        unsetKeybinding(currentKeybinding)
+        return true
+      }
+      return false
+    }
+
+    // Current binding equals default binding, no changes needed
+    if (currentKeybinding?.equals(defaultKeybinding)) {
+      return false
+    }
+
+    // Unset current keybinding if exists
+    if (currentKeybinding) {
+      unsetKeybinding(currentKeybinding)
+    }
+
+    // Remove the unset record if it exists
+    const serializedCombo = defaultKeybinding.combo.serialize()
+    if (
+      userUnsetKeybindings.value[serializedCombo]?.equals(defaultKeybinding)
+    ) {
+      delete userUnsetKeybindings.value[serializedCombo]
+    }
+
+    return true
+  }
+
   function isCommandKeybindingModified(commandId: string): boolean {
     const currentKeybinding: KeybindingImpl | undefined =
       getKeybindingByCommandId(commandId)
@@ -307,6 +348,7 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     unsetKeybinding,
     updateKeybindingOnCommand,
     resetAllKeybindings,
+    resetKeybindingForCommand,
     isCommandKeybindingModified
   }
 })

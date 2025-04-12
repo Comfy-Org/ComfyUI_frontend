@@ -28,6 +28,14 @@
               @click="editKeybinding(slotProps.data)"
             />
             <Button
+              icon="pi pi-replay"
+              class="p-button-text p-button-warn"
+              :disabled="
+                !keybindingStore.isCommandKeybindingModified(slotProps.data.id)
+              "
+              @click="resetKeybinding(slotProps.data)"
+            />
+            <Button
               icon="pi pi-trash"
               class="p-button-text p-button-danger"
               :disabled="!slotProps.data.keybinding"
@@ -252,6 +260,16 @@ async function saveKeybinding() {
     }
   }
   cancelEdit()
+}
+
+async function resetKeybinding(commandData: ICommandData) {
+  if (keybindingStore.resetKeybindingForCommand(commandData.id)) {
+    await keybindingService.persistUserKeybindings()
+  } else {
+    console.warn(
+      `No changes made when resetting keybinding for command: ${commandData.id}`
+    )
+  }
 }
 
 const toast = useToast()
