@@ -794,20 +794,5 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     defaultValue: true,
     versionAdded: '1.16.1'
-  },
-  {
-    id: 'LiteGraph.NodeWidget.ScrollToEndPause',
-    category: ['LiteGraph', 'Node Widget', 'ScrollToEndPause'],
-    name: 'Pause after scrolling to end of multi-line strings',
-    tooltip:
-      'Prevents unintended zooming when scrolling multi-line string widgets.\n\nThe time (in milliseconds) that scrolling is ignored after scrolling to either end of a text area. Multiplied when the text area is focused.',
-    type: 'slider',
-    attrs: {
-      min: 0,
-      max: 1000,
-      step: 50
-    },
-    defaultValue: 200,
-    versionAdded: '1.16.7'
   }
 ]

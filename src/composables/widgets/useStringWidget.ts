@@ -82,12 +82,9 @@ function addMultilineWidget(
       ignoredEvents = 0
       if (ignoreEventsTimer) clearTimeout(ignoreEventsTimer)
 
-      const timeout = useSettingStore().get(
-        'LiteGraph.NodeWidget.ScrollToEndPause'
-      )
       ignoreEventsTimer = setTimeout(() => {
         ignoreEventsTimer = null
-      }, timeout * multiplier)
+      }, 500 * multiplier)
     }
   })
 
