@@ -38,12 +38,15 @@
           >
             <template #node="{ node }">
               <TreeExplorerTreeNode :node="node">
-                <template #before-label="{ node }">
-                  <span v-if="node.data.isModified || !node.data.isPersisted"
+                <template #before-label="{ node: treeNode }">
+                  <span
+                    v-if="
+                      treeNode.data?.isModified || !treeNode.data?.isPersisted
+                    "
                     >*</span
                   >
                 </template>
-                <template #actions="{ node }">
+                <template #actions="{ node: treeNode }">
                   <Button
                     class="close-workflow-button"
                     icon="pi pi-times"
@@ -52,7 +55,9 @@
                       workspaceStore.shiftDown ? 'danger' : 'secondary'
                     "
                     size="small"
-                    @click.stop="handleCloseWorkflow(node.data)"
+                    @click.stop="
+                      handleCloseWorkflow(treeNode.data as ComfyWorkflow)
+                    "
                   />
                 </template>
               </TreeExplorerTreeNode>
