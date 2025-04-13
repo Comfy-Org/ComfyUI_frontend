@@ -71,6 +71,11 @@
           <span v-else>-</span>
         </template>
       </Column>
+      <Column field="source" :header="$t('g.source')">
+        <template #body="slotProps">
+          <span>{{ slotProps.data.source || '-' }}</span>
+        </template>
+      </Column>
     </DataTable>
 
     <Dialog
@@ -160,6 +165,7 @@ interface ICommandData {
   id: string
   keybinding: KeybindingImpl | null
   label: string
+  source?: string
 }
 
 const commandsData = computed<ICommandData[]>(() => {
@@ -169,7 +175,8 @@ const commandsData = computed<ICommandData[]>(() => {
       `commands.${normalizeI18nKey(command.id)}.label`,
       command.label ?? ''
     ),
-    keybinding: keybindingStore.getKeybindingByCommandId(command.id)
+    keybinding: keybindingStore.getKeybindingByCommandId(command.id),
+    source: command.source
   }))
 })
 
