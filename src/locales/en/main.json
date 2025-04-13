@@ -94,6 +94,7 @@
     "name": "Name",
     "category": "Category",
     "sort": "Sort",
+    "source": "source",
     "filter": "Filter",
     "apply": "Apply",
     "enabled": "Enabled",
