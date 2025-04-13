@@ -9,6 +9,7 @@ import ConfirmationService from 'primevue/confirmationservice'
 import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
+import * as Vue from 'vue'
 
 import '@/assets/css/style.css'
 import router from '@/router'
@@ -59,3 +60,5 @@ app
   .use(pinia)
   .use(i18n)
   .mount('#vue-app')
+
+window.Vue = Vue

@@ -15,3 +15,7 @@ interface Navigator {
     visible: boolean
   }
 }
+
+interface Window {
+  Vue: typeof import('vue')
+}
