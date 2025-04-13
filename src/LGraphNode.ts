@@ -731,8 +731,9 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       }
 
       if (info.widgets_values) {
+        const widgetsWithValue = this.widgets.filter(w => w.serialize !== false)
         for (let i = 0; i < info.widgets_values.length; ++i) {
-          const widget = this.widgets[i]
+          const widget = widgetsWithValue[i]
           if (widget) {
             widget.value = info.widgets_values[i]
           }
