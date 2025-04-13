@@ -73,7 +73,9 @@
       </Column>
       <Column field="source" :header="$t('g.source')">
         <template #body="slotProps">
-          <span>{{ slotProps.data.source || '-' }}</span>
+          <span class="overflow-hidden text-ellipsis whitespace-nowrap">{{
+            slotProps.data.source || '-'
+          }}</span>
         </template>
       </Column>
     </DataTable>
