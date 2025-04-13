@@ -113,7 +113,8 @@
     "options": {
       "orthographic": "orthographique",
       "perspective": "perspective"
-    }
+    },
+    "tooltip": "Contrôle si la caméra est en perspective ou orthographique par défaut lorsqu'un nouveau widget 3D est créé. Ce défaut peut toujours être basculé individuellement pour chaque widget après sa création."
   },
   "Comfy_Load3D_ShowGrid": {
     "name": "Afficher la Grille",

@@ -719,7 +719,8 @@
     "Reroute": "Reroute",
     "Load 3D": "Load 3D",
     "Camera": "Camera",
-    "Scene": "Scene"
+    "Scene": "Scene",
+    "3D": "3D"
   },
   "serverConfigItems": {
     "listen": {

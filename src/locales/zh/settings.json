@@ -113,7 +113,8 @@
     "options": {
       "orthographic": "正交",
       "perspective": "透视"
-    }
+    },
+    "tooltip": "控制创建新的3D小部件时，默认的相机是透视还是正交。这个默认设置仍然可以在创建后为每个小部件单独切换。"
   },
   "Comfy_Load3D_ShowGrid": {
     "name": "显示网格",

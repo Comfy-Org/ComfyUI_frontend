@@ -113,7 +113,8 @@
     "options": {
       "orthographic": "ortográfica",
       "perspective": "perspectiva"
-    }
+    },
+    "tooltip": "Controla si la cámara es perspectiva u ortográfica por defecto cuando se crea un nuevo widget 3D. Este valor predeterminado aún puede ser alternado individualmente para cada widget después de su creación."
   },
   "Comfy_Load3D_ShowGrid": {
     "name": "Mostrar Cuadrícula",

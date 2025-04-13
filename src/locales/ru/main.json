@@ -812,6 +812,7 @@
     "troubleshoot": "Устранение неполадок"
   },
   "settingsCategories": {
+    "3D": "3D",
     "About": "О программе",
     "Appearance": "Внешний вид",
     "BrushAdjustment": "Настройка кисти",
