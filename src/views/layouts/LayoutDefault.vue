@@ -1,5 +1,5 @@
 <template>
-  <main class="w-full min-h-svh overflow-hidden relative">
+  <main class="w-full min-h-dvh overflow-hidden relative">
     <router-view />
   </main>
 </template>
