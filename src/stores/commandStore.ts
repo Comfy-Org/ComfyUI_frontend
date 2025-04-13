@@ -106,7 +106,10 @@ export const useCommandStore = defineStore('command', () => {
   const loadExtensionCommands = (extension: ComfyExtension) => {
     if (extension.commands) {
       for (const command of extension.commands) {
-        registerCommand(command)
+        registerCommand({
+          ...command,
+          source: extension.name
+        })
       }
     }
   }
