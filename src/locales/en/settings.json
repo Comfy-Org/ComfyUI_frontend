@@ -108,6 +108,22 @@
       "Hidden": "Hidden"
     }
   },
+  "Comfy_Load3D_CameraType": {
+    "name": "Initial Camera Type",
+    "tooltip": "Controls whether the camera is perspective or orthographic by default when a new 3D widget is created. This default can still be toggled individually for each widget after creation.",
+    "options": {
+      "perspective": "perspective",
+      "orthographic": "orthographic"
+    }
+  },
+  "Comfy_Load3D_ShowGrid": {
+    "name": "Initial Grid Visibility",
+    "tooltip": "Controls whether the grid is visible by default when a new 3D widget is created. This default can still be toggled individually for each widget after creation."
+  },
+  "Comfy_Load3D_ShowPreview": {
+    "name": "Initial Preview Visibility",
+    "tooltip": "Controls whether the preview screen is visible by default when a new 3D widget is created. This default can still be toggled individually for each widget after creation."
+  },
   "Comfy_Locale": {
     "name": "Language"
   },

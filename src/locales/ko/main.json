@@ -812,9 +812,11 @@
     "troubleshoot": "문제 해결"
   },
   "settingsCategories": {
+    "3D": "3D",
     "About": "정보",
     "Appearance": "모양",
     "BrushAdjustment": "브러시 조정",
+    "Camera": "카메라",
     "Canvas": "캔버스",
     "ColorPalette": "색상 팔레트",
     "Comfy": "Comfy",
@@ -831,6 +833,7 @@
     "Link": "링크",
     "LinkRelease": "링크 해제",
     "LiteGraph": "LiteGraph",
+    "Load 3D": "3D 불러오기",
     "Locale": "언어 설정",
     "Mask Editor": "마스크 편집기",
     "Menu": "메뉴",
@@ -845,6 +848,7 @@
     "QueueButton": "실행 큐 버튼",
     "Reroute": "경유점",
     "RerouteBeta": "경유점 (베타)",
+    "Scene": "장면",
     "Server": "서버",
     "Server-Config": "서버 구성",
     "Settings": "설정",

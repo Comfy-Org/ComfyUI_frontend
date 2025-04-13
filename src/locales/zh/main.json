@@ -812,9 +812,11 @@
     "troubleshoot": "故障排除"
   },
   "settingsCategories": {
+    "3D": "3D",
     "About": "关于",
     "Appearance": "外观",
     "BrushAdjustment": "画笔调整",
+    "Camera": "相机",
     "Canvas": "画布",
     "ColorPalette": "色彩主题",
     "Comfy": "Comfy",
@@ -831,6 +833,7 @@
     "Link": "连线",
     "LinkRelease": "释放链接",
     "LiteGraph": "画面",
+    "Load 3D": "加载3D",
     "Locale": "区域设置",
     "Mask Editor": "遮罩编辑器",
     "Menu": "菜单",
@@ -845,6 +848,7 @@
     "QueueButton": "执行按钮",
     "Reroute": "重新路由",
     "RerouteBeta": "转接点 Beta",
+    "Scene": "场景",
     "Server": "服务器",
     "Server-Config": "服务器配置",
     "Settings": "设置",

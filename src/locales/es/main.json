@@ -812,9 +812,11 @@
     "troubleshoot": "Solucionar problemas"
   },
   "settingsCategories": {
+    "3D": "3D",
     "About": "Acerca de",
     "Appearance": "Apariencia",
     "BrushAdjustment": "Ajuste de Pincel",
+    "Camera": "Cámara",
     "Canvas": "Lienzo",
     "ColorPalette": "Paleta de Colores",
     "Comfy": "Comfy",
@@ -831,6 +833,7 @@
     "Link": "Enlace",
     "LinkRelease": "Liberación de Enlace",
     "LiteGraph": "Lite Graph",
+    "Load 3D": "Cargar 3D",
     "Locale": "Localización",
     "Mask Editor": "Editor de Máscara",
     "Menu": "Menú",
@@ -845,6 +848,7 @@
     "QueueButton": "Botón de Cola",
     "Reroute": "Reenrutar",
     "RerouteBeta": "Reroute Beta",
+    "Scene": "Escena",
     "Server": "Servidor",
     "Server-Config": "Configuración del Servidor",
     "Settings": "Configuraciones",

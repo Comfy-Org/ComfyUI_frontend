@@ -716,7 +716,11 @@
     "CustomColorPalettes": "Custom Color Palettes",
     "UV": "UV",
     "ContextMenu": "Context Menu",
-    "Reroute": "Reroute"
+    "Reroute": "Reroute",
+    "Load 3D": "Load 3D",
+    "Camera": "Camera",
+    "Scene": "Scene",
+    "3D": "3D"
   },
   "serverConfigItems": {
     "listen": {

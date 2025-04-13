@@ -812,9 +812,11 @@
     "troubleshoot": "Устранение неполадок"
   },
   "settingsCategories": {
+    "3D": "3D",
     "About": "О программе",
     "Appearance": "Внешний вид",
     "BrushAdjustment": "Настройка кисти",
+    "Camera": "Камера",
     "Canvas": "Холст",
     "ColorPalette": "Цветовая палитра",
     "Comfy": "Comfy",
@@ -831,6 +833,7 @@
     "Link": "Ссылка",
     "LinkRelease": "Освобождение ссылки",
     "LiteGraph": "Lite Graph",
+    "Load 3D": "Загрузить 3D",
     "Locale": "Локализация",
     "Mask Editor": "Редактор масок",
     "Menu": "Меню",
@@ -845,6 +848,7 @@
     "QueueButton": "Кнопка очереди",
     "Reroute": "Перенаправление",
     "RerouteBeta": "Бета-версия перенаправления",
+    "Scene": "Сцена",
     "Server": "Сервер",
     "Server-Config": "Настройки сервера",
     "Settings": "Настройки",

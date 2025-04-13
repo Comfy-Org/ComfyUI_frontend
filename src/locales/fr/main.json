@@ -812,9 +812,11 @@
     "troubleshoot": "Dépannage"
   },
   "settingsCategories": {
+    "3D": "3D",
     "About": "À Propos",
     "Appearance": "Apparence",
     "BrushAdjustment": "Ajustement de Brosse",
+    "Camera": "Caméra",
     "Canvas": "Toile",
     "ColorPalette": "Palette de Couleurs",
     "Comfy": "Confort",
@@ -831,6 +833,7 @@
     "Link": "Lien",
     "LinkRelease": "Libération de Lien",
     "LiteGraph": "Lite Graph",
+    "Load 3D": "Charger 3D",
     "Locale": "Locale",
     "Mask Editor": "Éditeur de Masque",
     "Menu": "Menu",
@@ -845,6 +848,7 @@
     "QueueButton": "Bouton de File d'Attente",
     "Reroute": "Réacheminement",
     "RerouteBeta": "Reroute Beta",
+    "Scene": "Scène",
     "Server": "Serveur",
     "Server-Config": "Config-Serveur",
     "Settings": "Paramètres",

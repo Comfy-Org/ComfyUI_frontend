@@ -812,9 +812,11 @@
     "troubleshoot": "トラブルシューティング"
   },
   "settingsCategories": {
+    "3D": "3D",
     "About": "情報",
     "Appearance": "外観",
     "BrushAdjustment": "ブラシ調整",
+    "Camera": "カメラ",
     "Canvas": "キャンバス",
     "ColorPalette": "カラーパレット",
     "Comfy": "Comfy",
@@ -831,6 +833,7 @@
     "Link": "リンク",
     "LinkRelease": "リンク解除",
     "LiteGraph": "Lite Graph",
+    "Load 3D": "3Dを読み込む",
     "Locale": "ロケール",
     "Mask Editor": "マスクエディタ",
     "Menu": "メニュー",
@@ -845,6 +848,7 @@
     "QueueButton": "キューボタン",
     "Reroute": "リルート",
     "RerouteBeta": "ルート変更ベータ",
+    "Scene": "シーン",
     "Server": "サーバー",
     "Server-Config": "サーバー設定",
     "Settings": "設定",

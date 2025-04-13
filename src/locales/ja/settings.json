@@ -108,6 +108,22 @@
       "Straight": "ストレート"
     }
   },
+  "Comfy_Load3D_CameraType": {
+    "name": "カメラタイプ",
+    "options": {
+      "orthographic": "オルソグラフィック",
+      "perspective": "パースペクティブ"
+    },
+    "tooltip": "新しい3Dウィジェットが作成されたときに、デフォルトでカメラが透視投影か平行投影かを制御します。このデフォルトは、作成後に各ウィジェットごとに個別に切り替えることができます。"
+  },
+  "Comfy_Load3D_ShowGrid": {
+    "name": "グリッドを表示",
+    "tooltip": "デフォルトでグリッドを表示するには切り替えます"
+  },
+  "Comfy_Load3D_ShowPreview": {
+    "name": "プレビューを表示",
+    "tooltip": "デフォルトでプレビューを表示するには切り替えます"
+  },
   "Comfy_Locale": {
     "name": "言語"
   },

@@ -108,6 +108,22 @@
       "Straight": "Recto"
     }
   },
+  "Comfy_Load3D_CameraType": {
+    "name": "Tipo de Cámara",
+    "options": {
+      "orthographic": "ortográfica",
+      "perspective": "perspectiva"
+    },
+    "tooltip": "Controla si la cámara es perspectiva u ortográfica por defecto cuando se crea un nuevo widget 3D. Este valor predeterminado aún puede ser alternado individualmente para cada widget después de su creación."
+  },
+  "Comfy_Load3D_ShowGrid": {
+    "name": "Mostrar Cuadrícula",
+    "tooltip": "Cambiar para mostrar cuadrícula por defecto"
+  },
+  "Comfy_Load3D_ShowPreview": {
+    "name": "Mostrar Previsualización",
+    "tooltip": "Cambiar para mostrar previsualización por defecto"
+  },
   "Comfy_Locale": {
     "name": "Idioma"
   },

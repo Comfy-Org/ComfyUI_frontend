@@ -440,6 +440,9 @@ const zSettings = z.object({
   'Comfy.MaskEditor.UseNewEditor': z.boolean(),
   'Comfy.MaskEditor.BrushAdjustmentSpeed': z.number(),
   'Comfy.MaskEditor.UseDominantAxis': z.boolean(),
+  'Comfy.Load3D.ShowGrid': z.boolean(),
+  'Comfy.Load3D.ShowPreview': z.boolean(),
+  'Comfy.Load3D.CameraType': z.enum(['perspective', 'orthographic']),
   'pysssss.SnapToGrid': z.boolean(),
   /** VHS setting is used for queue video preview support. */
   'VHS.AdvancedPreviews': z.boolean(),
