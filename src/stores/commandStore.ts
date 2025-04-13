@@ -13,11 +13,10 @@ export interface ComfyCommand {
   label?: string | (() => string)
   icon?: string | (() => string)
   tooltip?: string | (() => string)
-  /** Menubar item label, if different from command label */
-  menubarLabel?: string | (() => string)
+  menubarLabel?: string | (() => string) // Menubar item label, if different from command label
   versionAdded?: string
-  /** If non-nullish, this command will prompt for confirmation. */
-  confirmation?: string
+  confirmation?: string // If non-nullish, this command will prompt for confirmation
+  source?: string
 }
 
 export class ComfyCommandImpl implements ComfyCommand {
@@ -29,6 +28,7 @@ export class ComfyCommandImpl implements ComfyCommand {
   _menubarLabel?: string | (() => string)
   versionAdded?: string
   confirmation?: string
+  source?: string
 
   constructor(command: ComfyCommand) {
     this.id = command.id
@@ -39,6 +39,7 @@ export class ComfyCommandImpl implements ComfyCommand {
     this._menubarLabel = command.menubarLabel ?? command.label
     this.versionAdded = command.versionAdded
     this.confirmation = command.confirmation
+    this.source = command.source
   }
 
   get label() {
@@ -105,7 +106,10 @@ export const useCommandStore = defineStore('command', () => {
   const loadExtensionCommands = (extension: ComfyExtension) => {
     if (extension.commands) {
       for (const command of extension.commands) {
-        registerCommand(command)
+        registerCommand({
+          ...command,
+          source: extension.name
+        })
       }
     }
   }
