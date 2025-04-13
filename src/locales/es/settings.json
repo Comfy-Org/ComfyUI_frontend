@@ -350,5 +350,25 @@
   },
   "pysssss_SnapToGrid": {
     "name": "Siempre ajustar a la cuadrícula"
+  },
+  "Comfy_Align_Spacing_horizontalMin": {
+    "name": "Espaciado horizontal mínimo",
+    "tooltip": "Espaciado horizontal mínimo (en píxeles) al alinear nodos"
+  },
+  "Comfy_Align_Spacing_verticalMin": {
+    "name": "Espaciado vertical mínimo",
+    "tooltip": "Espaciado vertical mínimo (en píxeles) al alinear nodos"
+  },
+  "Comfy_Align_Shortcut": {
+    "name": "Tecla de acceso rápido",
+    "tooltip": "Tecla de acceso rápido para abrir el panel de alineación (ej: 'alt+a', 'shift+s', etc.)"
+  },
+  "Comfy_Align_Color_applyToPanel": {
+    "name": "Aplicar color al panel del nodo (fondo)",
+    "tooltip": "Cuando está marcado, el color se aplicará al panel del nodo (área de fondo)"
+  },
+  "Comfy_Align_Color_applyToHeader": {
+    "name": "Aplicar color al encabezado del nodo",
+    "tooltip": "Cuando está marcado, el color se aplicará al encabezado del nodo"
   }
 }

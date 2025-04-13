@@ -350,5 +350,25 @@
   },
   "pysssss_SnapToGrid": {
     "name": "始终吸附到网格"
+  },
+  "Comfy_Align_Spacing_horizontalMin": {
+    "name": "水平最小间距",
+    "tooltip": "对齐节点时的最小水平间距（像素）"
+  },
+  "Comfy_Align_Spacing_verticalMin": {
+    "name": "垂直最小间距",
+    "tooltip": "对齐节点时的最小垂直间距（像素）"
+  },
+  "Comfy_Align_Shortcut": {
+    "name": "快捷键",
+    "tooltip": "打开对齐面板的快捷键（例如：'alt+a'、'shift+s'等）"
+  },
+  "Comfy_Align_Color_applyToPanel": {
+    "name": "将颜色应用到节点面板（背景）",
+    "tooltip": "选中时，颜色将应用到节点面板（背景区域）"
+  },
+  "Comfy_Align_Color_applyToHeader": {
+    "name": "将颜色应用到节点标题",
+    "tooltip": "选中时，颜色将应用到节点标题"
   }
 }

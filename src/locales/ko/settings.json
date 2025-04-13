@@ -350,5 +350,25 @@
   },
   "pysssss_SnapToGrid": {
     "name": "항상 그리드에 스냅"
+  },
+  "Comfy_Align_Spacing_horizontalMin": {
+    "name": "수평 최소 간격",
+    "tooltip": "노드 정렬 시 최소 수평 간격(픽셀 단위)"
+  },
+  "Comfy_Align_Spacing_verticalMin": {
+    "name": "수직 최소 간격",
+    "tooltip": "노드 정렬 시 최소 수직 간격(픽셀 단위)"
+  },
+  "Comfy_Align_Shortcut": {
+    "name": "단축키",
+    "tooltip": "정렬 패널을 열기 위한 단축키(예: 'alt+a', 'shift+s' 등)"
+  },
+  "Comfy_Align_Color_applyToPanel": {
+    "name": "노드 패널(배경)에 색상 적용",
+    "tooltip": "체크 시 노드 패널(배경 영역)에 색상이 적용됩니다"
+  },
+  "Comfy_Align_Color_applyToHeader": {
+    "name": "노드 헤더에 색상 적용",
+    "tooltip": "체크 시 노드 헤더에 색상이 적용됩니다"
   }
 }

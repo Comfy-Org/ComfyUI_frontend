@@ -350,5 +350,25 @@
   },
   "pysssss_SnapToGrid": {
     "name": "常にグリッドにスナップ"
+  },
+  "Comfy_Align_Spacing_horizontalMin": {
+    "name": "水平最小間隔",
+    "tooltip": "ノードを整列する際の最小水平間隔（ピクセル単位）"
+  },
+  "Comfy_Align_Spacing_verticalMin": {
+    "name": "垂直最小間隔",
+    "tooltip": "ノードを整列する際の最小垂直間隔（ピクセル単位）"
+  },
+  "Comfy_Align_Shortcut": {
+    "name": "ショートカットキー",
+    "tooltip": "整列パネルを開くためのショートカットキー（例：'alt+a'、'shift+s'など）"
+  },
+  "Comfy_Align_Color_applyToPanel": {
+    "name": "ノードパネル（背景）に色を適用",
+    "tooltip": "チェックすると、ノードパネル（背景領域）に色が適用されます"
+  },
+  "Comfy_Align_Color_applyToHeader": {
+    "name": "ノードヘッダーに色を適用",
+    "tooltip": "チェックすると、ノードヘッダーに色が適用されます"
   }
 }
