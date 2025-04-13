@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col h-full">
     <Tabs v-model:value="bottomPanelStore.activeBottomPanelTabId">
-      <TabList pt:tabList="border-none">
+      <TabList pt:tab-list="border-none">
         <div class="w-full flex justify-between">
           <div class="tabs-container">
             <Tab
