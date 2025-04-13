@@ -42,7 +42,7 @@
 
 body {
   width: 100vw;
-  height: 100vh;
+  height: 100svh;
   margin: 0;
   overflow: hidden;
   background: var(--bg-color) var(--bg-img);
