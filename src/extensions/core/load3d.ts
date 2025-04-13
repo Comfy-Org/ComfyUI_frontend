@@ -18,7 +18,35 @@ import { generateUUID } from '@/utils/formatUtil'
 
 useExtensionService().registerExtension({
   name: 'Comfy.Load3D',
-
+  settings: [
+    {
+      id: 'Comfy.Load3D.ShowGrid',
+      category: ['Load 3D', 'Scene', 'Show Grid'],
+      name: 'Show Grid',
+      tooltip: 'Switch to show grid by default',
+      type: 'boolean',
+      defaultValue: true,
+      experimental: true
+    },
+    {
+      id: 'Comfy.Load3D.ShowPreview',
+      category: ['Load 3D', 'Scene', 'Show Preview'],
+      name: 'Show Preview',
+      tooltip: 'Switch to show preview by default',
+      type: 'boolean',
+      defaultValue: true,
+      experimental: true
+    },
+    {
+      id: 'Comfy.Load3D.CameraType',
+      category: ['Load 3D', 'Camera', 'Camera Type'],
+      name: 'Camera Type',
+      type: 'combo',
+      options: ['perspective', 'orthographic'],
+      defaultValue: 'perspective',
+      experimental: true
+    }
+  ],
   getCustomWidgets() {
     return {
       LOAD_3D(node) {
