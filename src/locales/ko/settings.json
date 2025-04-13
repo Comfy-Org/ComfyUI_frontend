@@ -199,7 +199,7 @@
     "name": "노드 제목을 두 번 클릭하여 편집"
   },
   "Comfy_Node_MiddleClickRerouteNode": {
-    "name": "중간 클릭으로 새 경로재설정 노드 생성"
+    "name": "중간 클릭으로 새 경유점 생성"
   },
   "Comfy_Node_Opacity": {
     "name": "노드 불투명도"
@@ -345,8 +345,8 @@
     "name": "툴팁 지연"
   },
   "LiteGraph_Reroute_SplineOffset": {
-    "name": "Reroute 스플라인 오프셋",
-    "tooltip": "재경로 중심점에서 베지어 제어점까지의 오프셋"
+    "name": "경유점 스플라인 오프셋",
+    "tooltip": "경유점 중심에서 베지어 제어점까지의 오프셋"
   },
   "pysssss_SnapToGrid": {
     "name": "항상 그리드에 스냅"
