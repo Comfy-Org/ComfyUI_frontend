@@ -21,26 +21,30 @@ useExtensionService().registerExtension({
   settings: [
     {
       id: 'Comfy.Load3D.ShowGrid',
-      category: ['Load 3D', 'Scene', 'Show Grid'],
+      category: ['3D', 'Scene', 'Show Grid'],
       name: 'Show Grid',
-      tooltip: 'Switch to show grid by default',
+      tooltip:
+        'Controls whether the grid is visible by default when a new 3D widget is created. This default can still be toggled individually for each widget after creation.',
       type: 'boolean',
       defaultValue: true,
       experimental: true
     },
     {
       id: 'Comfy.Load3D.ShowPreview',
-      category: ['Load 3D', 'Scene', 'Show Preview'],
+      category: ['3D', 'Scene', 'Show Preview'],
       name: 'Show Preview',
-      tooltip: 'Switch to show preview by default',
+      tooltip:
+        'Controls whether the preview screen is visible by default when a new 3D widget is created. This default can still be toggled individually for each widget after creation.',
       type: 'boolean',
       defaultValue: true,
       experimental: true
     },
     {
       id: 'Comfy.Load3D.CameraType',
-      category: ['Load 3D', 'Camera', 'Camera Type'],
+      category: ['3D', 'Camera', 'Camera Type'],
       name: 'Camera Type',
+      tooltip:
+        'Controls whether the camera is perspective or orthographic by default when a new 3D widget is created. This default can still be toggled individually for each widget after creation.',
       type: 'combo',
       options: ['perspective', 'orthographic'],
       defaultValue: 'perspective',
