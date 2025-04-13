@@ -73,7 +73,7 @@
       </Column>
       <Column field="source" :header="$t('g.source')">
         <template #body="slotProps">
-          <span class="overflow-hidden text-ellipsis whitespace-nowrap">{{
+          <span class="overflow-hidden text-ellipsis">{{
             slotProps.data.source || '-'
           }}</span>
         </template>
