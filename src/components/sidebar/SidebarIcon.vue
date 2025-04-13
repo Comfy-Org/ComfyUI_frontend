@@ -31,7 +31,7 @@ import { computed } from 'vue'
 const {
   icon = '',
   selected = false,
-  tooltip,
+  tooltip = '',
   iconBadge = ''
 } = defineProps<{
   icon?: string
