@@ -108,6 +108,21 @@
       "Straight": "직선"
     }
   },
+  "Comfy_Load3D_CameraType": {
+    "name": "카메라 유형",
+    "options": {
+      "orthographic": "직교법",
+      "perspective": "원근법"
+    }
+  },
+  "Comfy_Load3D_ShowGrid": {
+    "name": "그리드 표시",
+    "tooltip": "기본적으로 그리드를 표시하도록 전환"
+  },
+  "Comfy_Load3D_ShowPreview": {
+    "name": "미리보기 표시",
+    "tooltip": "기본적으로 미리보기를 표시하도록 전환"
+  },
   "Comfy_Locale": {
     "name": "언어"
   },

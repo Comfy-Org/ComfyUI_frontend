@@ -108,6 +108,21 @@
       "Straight": "ストレート"
     }
   },
+  "Comfy_Load3D_CameraType": {
+    "name": "カメラタイプ",
+    "options": {
+      "orthographic": "オルソグラフィック",
+      "perspective": "パースペクティブ"
+    }
+  },
+  "Comfy_Load3D_ShowGrid": {
+    "name": "グリッドを表示",
+    "tooltip": "デフォルトでグリッドを表示するには切り替えます"
+  },
+  "Comfy_Load3D_ShowPreview": {
+    "name": "プレビューを表示",
+    "tooltip": "デフォルトでプレビューを表示するには切り替えます"
+  },
   "Comfy_Locale": {
     "name": "言語"
   },

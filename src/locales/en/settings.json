@@ -108,6 +108,21 @@
       "Hidden": "Hidden"
     }
   },
+  "Comfy_Load3D_CameraType": {
+    "name": "Camera Type",
+    "options": {
+      "perspective": "perspective",
+      "orthographic": "orthographic"
+    }
+  },
+  "Comfy_Load3D_ShowGrid": {
+    "name": "Show Grid",
+    "tooltip": "Switch to show grid by default"
+  },
+  "Comfy_Load3D_ShowPreview": {
+    "name": "Show Preview",
+    "tooltip": "Switch to show preview by default"
+  },
   "Comfy_Locale": {
     "name": "Language"
   },

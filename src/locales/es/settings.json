@@ -108,6 +108,21 @@
       "Straight": "Recto"
     }
   },
+  "Comfy_Load3D_CameraType": {
+    "name": "Tipo de Cámara",
+    "options": {
+      "orthographic": "ortográfica",
+      "perspective": "perspectiva"
+    }
+  },
+  "Comfy_Load3D_ShowGrid": {
+    "name": "Mostrar Cuadrícula",
+    "tooltip": "Cambiar para mostrar cuadrícula por defecto"
+  },
+  "Comfy_Load3D_ShowPreview": {
+    "name": "Mostrar Previsualización",
+    "tooltip": "Cambiar para mostrar previsualización por defecto"
+  },
   "Comfy_Locale": {
     "name": "Idioma"
   },
