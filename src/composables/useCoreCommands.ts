@@ -712,6 +712,28 @@ export function useCoreCommands(): ComfyCommand[] {
       }
     },
     {
+      id: 'Comfy.Manager.ShowUpdateAvailablePacks',
+      icon: 'pi pi-sync',
+      label: 'Check for Updates',
+      versionAdded: '1.17.0',
+      function: () => {
+        dialogService.showManagerDialog({
+          initialTab: ManagerTab.UpdateAvailable
+        })
+      }
+    },
+    {
+      id: 'Comfy.Manager.ShowMissingPacks',
+      icon: 'pi pi-exclamation-circle',
+      label: 'Install Missing',
+      versionAdded: '1.17.0',
+      function: () => {
+        dialogService.showManagerDialog({
+          initialTab: ManagerTab.Missing
+        })
+      }
+    },
+    {
       id: 'Comfy.Manager.ToggleManagerProgressDialog',
       icon: 'pi pi-spinner',
       label: 'Toggle the Custom Nodes Manager Progress Bar',
