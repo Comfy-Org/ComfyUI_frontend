@@ -10,6 +10,7 @@ import SettingDialogContent from '@/components/dialog/content/SettingDialogConte
 import ManagerDialogContent from '@/components/dialog/content/manager/ManagerDialogContent.vue'
 import ManagerHeader from '@/components/dialog/content/manager/ManagerHeader.vue'
 import ManagerProgressFooter from '@/components/dialog/footer/ManagerProgressFooter.vue'
+import ComfyOrgHeader from '@/components/dialog/header/ComfyOrgHeader.vue'
 import ManagerProgressHeader from '@/components/dialog/header/ManagerProgressHeader.vue'
 import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.vue'
 import TemplateWorkflowsContent from '@/components/templates/TemplateWorkflowsContent.vue'
@@ -234,6 +235,7 @@ export const useDialogService = () => {
           onLogin: () => resolve(true),
           onCancel: () => resolve(false)
         },
+        headerComponent: ComfyOrgHeader,
         dialogComponentProps: {
           closable: false,
           onClose: () => resolve(false)
