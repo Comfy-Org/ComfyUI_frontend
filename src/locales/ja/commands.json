@@ -155,12 +155,6 @@
   "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
     "label": "カスタムノード（ベータ版）"
   },
-  "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
-    "label": "カスタムノード（レガシー）"
-  },
-  "Comfy_Manager_ShowLegacyManagerMenu": {
-    "label": "マネージャーメニュー（レガシー）"
-  },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "プログレスダイアログの切り替え"
   },
