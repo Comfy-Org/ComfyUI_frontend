@@ -1,6 +1,6 @@
 <!-- Prompt user that the workflow contains API nodes that needs login to run -->
 <template>
-  <div class="flex flex-col gap-4 max-w-96 min-h-110 p-2">
+  <div class="flex flex-col gap-4 max-w-96 h-110 p-2">
     <div class="text-2xl font-medium mb-2">
       {{ t('apiNodesSignInDialog.title') }}
     </div>
@@ -11,7 +11,7 @@
 
     <ApiNodesCostBreakdown :nodes="apiNodes" :show-total="true" />
 
-    <div class="flex justify-between items-center mt-auto">
+    <div class="flex justify-between items-center">
       <Button :label="t('g.learnMore')" link />
       <div class="flex gap-2">
         <Button

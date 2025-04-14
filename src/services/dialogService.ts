@@ -235,7 +235,8 @@ export const useDialogService = () => {
           onCancel: () => resolve(false)
         },
         dialogComponentProps: {
-          closable: false
+          closable: false,
+          onClose: () => resolve(false)
         }
       })
     })

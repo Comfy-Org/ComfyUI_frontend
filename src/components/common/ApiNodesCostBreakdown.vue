@@ -1,25 +1,26 @@
 <template>
-  <div class="flex flex-col gap-2">
+  <div class="flex flex-col gap-2 h-full">
     <div class="flex justify-between text-sm text-muted mb-2">
       <div>{{ t('apiNodesCostBreakdown.title') }}</div>
       <div>{{ t('apiNodesCostBreakdown.costPerRun') }}</div>
     </div>
-
-    <div class="flex flex-col gap-2">
-      <div
-        v-for="node in nodes"
-        :key="node.name"
-        class="flex items-center justify-between p-3 rounded bg-[var(--p-content-border-color)]"
-      >
-        <div class="flex items-center gap-3">
-          <span>{{ node.name }}</span>
-        </div>
-        <div class="flex items-center gap-1">
-          <i class="pi pi-dollar text-yellow-500" />
-          <span>{{ node.cost.toFixed(costPrecision) }}</span>
+    <ScrollPanel class="flex-grow h-0">
+      <div class="flex flex-col gap-2">
+        <div
+          v-for="node in nodes"
+          :key="node.name"
+          class="flex items-center justify-between p-3 rounded bg-[var(--p-content-border-color)]"
+        >
+          <div class="flex items-center gap-3">
+            <span>{{ node.name }}</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <i class="pi pi-dollar text-yellow-500" />
+            <span>{{ node.cost.toFixed(costPrecision) }}</span>
+          </div>
         </div>
       </div>
-    </div>
+    </ScrollPanel>
     <template v-if="showTotal && nodes.length > 1">
       <Divider />
       <div class="flex justify-between items-center pt-2 border-t px-3">
@@ -35,6 +36,7 @@
 
 <script setup lang="ts">
 import Divider from 'primevue/divider'
+import ScrollPanel from 'primevue/scrollpanel'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
