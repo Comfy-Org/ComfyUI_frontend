@@ -11,19 +11,17 @@ export const CORE_MENU_COMMANDS = [
     ]
   ],
   [['Edit'], ['Comfy.Undo', 'Comfy.Redo']],
-  [['Edit'], ['Comfy.RefreshNodeDefinitions']],
-  [['Edit'], ['Comfy.ClearWorkflow']],
-  [['Edit'], ['Comfy.OpenClipspace']],
   [
-    ['Manager'],
+    ['Edit'],
     [
-      'Comfy.Manager.ShowLegacyManagerMenu',
-      'Comfy.Manager.CustomNodesManager.ShowLegacyCustomNodesMenu',
-      'Comfy.Manager.CustomNodesManager.ShowCustomNodesMenu',
+      'Comfy.RefreshNodeDefinitions',
       'Comfy.Memory.UnloadModels',
       'Comfy.Memory.UnloadModelsAndExecutionCache'
     ]
   ],
+  [['Edit'], ['Comfy.ClearWorkflow']],
+  [['Edit'], ['Comfy.OpenClipspace']],
+  [['Manager'], ['Comfy.Manager.CustomNodesManager.ShowCustomNodesMenu']],
   [
     ['Help'],
     [
