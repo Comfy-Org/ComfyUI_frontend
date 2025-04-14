@@ -167,6 +167,12 @@
   "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
     "label": "カスタムノード（ベータ版）"
   },
+  "Comfy_Manager_ShowMissingPacks": {
+    "label": "不足しているパックをインストール"
+  },
+  "Comfy_Manager_ShowUpdateAvailablePacks": {
+    "label": "更新を確認"
+  },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "プログレスダイアログの切り替え"
   },
