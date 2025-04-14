@@ -1,4 +1,13 @@
 {
+  "apiNodesCostBreakdown": {
+    "costPerRun": "每次运行的成本",
+    "title": "API节点",
+    "totalCost": "总成本"
+  },
+  "apiNodesSignInDialog": {
+    "message": "此工作流包含API节点，需要您登录账户才能运行。",
+    "title": "使用API节点需要登录"
+  },
   "clipboard": {
     "errorMessage": "复制到剪贴板失败",
     "errorNotSupported": "您的浏览器不支持剪贴板API",
@@ -172,9 +181,11 @@
     "installing": "正在安装",
     "interrupted": "已中断",
     "keybinding": "按键绑定",
+    "learnMore": "了解更多",
     "loadAllFolders": "加载所有文件夹",
     "loadWorkflow": "加载工作流",
     "loading": "加载中",
+    "login": "登录",
     "logs": "日志",
     "migrate": "迁移",
     "missing": "缺失",

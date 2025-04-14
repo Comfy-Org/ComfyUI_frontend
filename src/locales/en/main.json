@@ -108,7 +108,9 @@
     "disabling": "Disabling",
     "updating": "Updating",
     "migrate": "Migrate",
-    "updateAvailable": "Update Available"
+    "updateAvailable": "Update Available",
+    "login": "Login",
+    "learnMore": "Learn more"
   },
   "manager": {
     "title": "Custom Nodes Manager",
@@ -975,6 +977,15 @@
     "noStackTrace": "No stacktrace available",
     "extensionFileHint": "This may be due to the following script",
     "promptExecutionError": "Prompt execution failed"
+  },
+  "apiNodesSignInDialog": {
+    "title": "Sign In Required to Use API Nodes",
+    "message": "This workflow contains API Nodes, which require you to be signed in to your account in order to run."
+  },
+  "apiNodesCostBreakdown": {
+    "title": "API Node(s)",
+    "costPerRun": "Cost per run",
+    "totalCost": "Total Cost"
   },
   "desktopUpdate": {
     "title": "Updating ComfyUI Desktop",

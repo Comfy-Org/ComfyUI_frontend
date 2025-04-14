@@ -8,6 +8,15 @@ const vue3CompositionApiBestPractices = [
   "Use watch and watchEffect for side effects",
   "Implement lifecycle hooks with onMounted, onUpdated, etc.",
   "Utilize provide/inject for dependency injection",
+  "Use vue 3.5 style of default prop declaration. Example:
+
+const { nodes, showTotal = true } = defineProps<{
+  nodes: ApiNodeCost[]
+  showTotal?: boolean
+}>()
+
+",
+  "Organize vue component in <template> <script> <style> order",
 ]
 
 // Folder structure

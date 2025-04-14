@@ -1,4 +1,13 @@
 {
+  "apiNodesCostBreakdown": {
+    "costPerRun": "Costo por ejecución",
+    "title": "Nodo(s) de API",
+    "totalCost": "Costo total"
+  },
+  "apiNodesSignInDialog": {
+    "message": "Este flujo de trabajo contiene nodos de API, que requieren que inicies sesión en tu cuenta para poder ejecutar.",
+    "title": "Se requiere iniciar sesión para usar los nodos de API"
+  },
   "clipboard": {
     "errorMessage": "Error al copiar al portapapeles",
     "errorNotSupported": "API del portapapeles no soportada en su navegador",
@@ -172,9 +181,11 @@
     "installing": "Instalando",
     "interrupted": "Interrumpido",
     "keybinding": "Combinación de teclas",
+    "learnMore": "Aprende más",
     "loadAllFolders": "Cargar todas las carpetas",
     "loadWorkflow": "Cargar flujo de trabajo",
     "loading": "Cargando",
+    "login": "Iniciar sesión",
     "logs": "Registros",
     "migrate": "Migrar",
     "missing": "Faltante",
