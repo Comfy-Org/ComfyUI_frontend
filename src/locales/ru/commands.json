@@ -149,6 +149,12 @@
   "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
     "label": "Пользовательские узлы (Бета)"
   },
+  "Comfy_Manager_ShowMissingPacks": {
+    "label": "Установить отсутствующие"
+  },
+  "Comfy_Manager_ShowUpdateAvailablePacks": {
+    "label": "Проверить наличие обновлений"
+  },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "Переключить диалоговое окно прогресса"
   },
