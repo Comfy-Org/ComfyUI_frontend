@@ -155,11 +155,11 @@
   "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
     "label": "自定义节点（测试版）"
   },
-  "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
-    "label": "自定义节点（旧版）"
+  "Comfy_Manager_ShowMissingPacks": {
+    "label": "安装缺失的包"
   },
-  "Comfy_Manager_ShowLegacyManagerMenu": {
-    "label": "管理菜单（旧版）"
+  "Comfy_Manager_ShowUpdateAvailablePacks": {
+    "label": "检查更新"
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "切换进度对话框"
