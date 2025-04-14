@@ -672,6 +672,7 @@ export function useCoreCommands(): ComfyCommand[] {
               'Comfy.Manager.Menu.ToggleVisibility' // This command is registered by legacy manager FE extension
             )
           } catch (error) {
+            console.error('error', error)
             useToastStore().add({
               severity: 'error',
               summary: t('g.error'),
@@ -688,7 +689,7 @@ export function useCoreCommands(): ComfyCommand[] {
     {
       id: 'Comfy.Manager.ShowUpdateAvailablePacks',
       icon: 'pi pi-sync',
-      label: 'Check for Updates',
+      label: 'Check for Custom Node Updates',
       versionAdded: '1.17.0',
       function: () => {
         dialogService.showManagerDialog({
@@ -699,7 +700,7 @@ export function useCoreCommands(): ComfyCommand[] {
     {
       id: 'Comfy.Manager.ShowMissingPacks',
       icon: 'pi pi-exclamation-circle',
-      label: 'Install Missing',
+      label: 'Install Missing Custom Nodes',
       versionAdded: '1.17.0',
       function: () => {
         dialogService.showManagerDialog({
