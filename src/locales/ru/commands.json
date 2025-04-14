@@ -155,12 +155,6 @@
   "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
     "label": "Пользовательские узлы (Бета)"
   },
-  "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
-    "label": "Пользовательские узлы (Устаревшие)"
-  },
-  "Comfy_Manager_ShowLegacyManagerMenu": {
-    "label": "Меню менеджера (Устаревшее)"
-  },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "Переключить диалоговое окно прогресса"
   },
