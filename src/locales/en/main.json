@@ -976,6 +976,8 @@
     "Custom Nodes (Beta)": "Custom Nodes (Beta)",
     "Custom Nodes (Legacy)": "Custom Nodes (Legacy)",
     "Manager Menu (Legacy)": "Manager Menu (Legacy)",
+    "Custom Nodes Manager": "Custom Nodes Manager",
+    "Install Missing": "Install Missing",
     "Toggle Progress Dialog": "Toggle Progress Dialog",
     "Unload Models": "Unload Models",
     "Unload Models and Execution Cache": "Unload Models and Execution Cache",
