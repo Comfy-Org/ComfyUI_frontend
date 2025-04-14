@@ -1,4 +1,13 @@
 {
+  "apiNodesCostBreakdown": {
+    "costPerRun": "실행 당 비용",
+    "title": "API 노드(들)",
+    "totalCost": "총 비용"
+  },
+  "apiNodesSignInDialog": {
+    "message": "이 워크플로우에는 API 노드가 포함되어 있으며, 실행하려면 계정에 로그인해야 합니다.",
+    "title": "API 노드 사용에 필요한 로그인"
+  },
   "clipboard": {
     "errorMessage": "클립보드에 복사하지 못했습니다",
     "errorNotSupported": "브라우저가 클립보드 API를 지원하지 않습니다.",
@@ -172,9 +181,11 @@
     "installing": "설치 중",
     "interrupted": "중단됨",
     "keybinding": "키 바인딩",
+    "learnMore": "더 알아보기",
     "loadAllFolders": "모든 폴더 로드",
     "loadWorkflow": "워크플로 로드",
     "loading": "로딩 중",
+    "login": "로그인",
     "logs": "로그",
     "migrate": "이전(migrate)",
     "missing": "누락됨",

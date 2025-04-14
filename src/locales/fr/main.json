@@ -1,4 +1,13 @@
 {
+  "apiNodesCostBreakdown": {
+    "costPerRun": "Coût par exécution",
+    "title": "Nœud(s) API",
+    "totalCost": "Coût total"
+  },
+  "apiNodesSignInDialog": {
+    "message": "Ce flux de travail contient des nœuds API, qui nécessitent que vous soyez connecté à votre compte pour pouvoir fonctionner.",
+    "title": "Connexion requise pour utiliser les nœuds API"
+  },
   "clipboard": {
     "errorMessage": "Échec de la copie dans le presse-papiers",
     "errorNotSupported": "L'API du presse-papiers n'est pas prise en charge par votre navigateur",
@@ -172,9 +181,11 @@
     "installing": "Installation",
     "interrupted": "Interrompu",
     "keybinding": "Raccourci clavier",
+    "learnMore": "En savoir plus",
     "loadAllFolders": "Charger tous les dossiers",
     "loadWorkflow": "Charger le flux de travail",
     "loading": "Chargement",
+    "login": "Connexion",
     "logs": "Journaux",
     "migrate": "Migrer",
     "missing": "Manquant",

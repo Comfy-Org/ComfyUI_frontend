@@ -1,4 +1,13 @@
 {
+  "apiNodesCostBreakdown": {
+    "costPerRun": "Стоимость за запуск",
+    "title": "API Node(s)",
+    "totalCost": "Общая стоимость"
+  },
+  "apiNodesSignInDialog": {
+    "message": "Этот рабочий процесс содержит API Nodes, которые требуют входа в вашу учетную запись для выполнения.",
+    "title": "Требуется вход для использования API Nodes"
+  },
   "clipboard": {
     "errorMessage": "Не удалось скопировать в буфер обмена",
     "errorNotSupported": "API буфера обмена не поддерживается в вашем браузере",
@@ -172,9 +181,11 @@
     "installing": "Установка",
     "interrupted": "Прервано",
     "keybinding": "Привязка клавиш",
+    "learnMore": "Узнать больше",
     "loadAllFolders": "Загрузить все папки",
     "loadWorkflow": "Загрузить рабочий процесс",
     "loading": "Загрузка",
+    "login": "Вход",
     "logs": "Логи",
     "migrate": "Мигрировать",
     "missing": "Отсутствует",
