@@ -716,8 +716,26 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-objects-column',
       label: 'Custom Nodes (Beta)',
       versionAdded: '1.12.10',
-      function: () => {
-        dialogService.toggleManagerDialog()
+      function: async () => {
+        const isLegacyManagerUI =
+          await useComfyManagerService().isLegacyManagerUI()
+        if (isLegacyManagerUI) {
+          try {
+            await useCommandStore().execute(
+              'Comfy.Manager.Menu.ToggleVisibility' // This command is registered by legacy manager FE extension
+            )
+          } catch (error) {
+            useToastStore().add({
+              severity: 'error',
+              summary: t('g.error'),
+              detail: t('manager.legacyMenuNotAvailable'),
+              life: 3000
+            })
+            dialogService.showManagerDialog()
+          }
+        } else {
+          dialogService.showManagerDialog()
+        }
       }
     },
     {
