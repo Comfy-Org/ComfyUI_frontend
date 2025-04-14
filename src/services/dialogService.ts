@@ -226,7 +226,7 @@ export const useDialogService = () => {
   async function showApiNodesSignInDialog(
     apiNodes: ApiNodeCost[]
   ): Promise<boolean> {
-    return new Promise((resolve) => {
+    return new Promise<boolean>((resolve) => {
       dialogStore.showDialog({
         key: 'api-nodes-signin',
         component: ApiNodesSignInContent,
@@ -241,6 +241,9 @@ export const useDialogService = () => {
           onClose: () => resolve(false)
         }
       })
+    }).then((result) => {
+      dialogStore.closeDialog({ key: 'api-nodes-signin' })
+      return result
     })
   }
 

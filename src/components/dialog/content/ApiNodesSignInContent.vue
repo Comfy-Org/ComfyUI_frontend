@@ -18,9 +18,9 @@
           :label="t('g.cancel')"
           outlined
           severity="secondary"
-          @click="emit('cancel')"
+          @click="onCancel?.()"
         />
-        <Button :label="t('g.login')" @click="emit('login')" />
+        <Button :label="t('g.login')" @click="onLogin?.()" />
       </div>
     </div>
   </div>
@@ -35,12 +35,9 @@ import type { ApiNodeCost } from '@/types/apiNodeTypes'
 
 const { t } = useI18n()
 
-const { apiNodes } = defineProps<{
+const { apiNodes, onLogin, onCancel } = defineProps<{
   apiNodes: ApiNodeCost[]
-}>()
-
-const emit = defineEmits<{
-  (e: 'cancel'): void
-  (e: 'login'): void
+  onLogin?: () => void
+  onCancel?: () => void
 }>()
 </script>
