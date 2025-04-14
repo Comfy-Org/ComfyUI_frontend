@@ -158,11 +158,11 @@
   "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
     "label": "Nodos personalizados (Beta)"
   },
-  "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
-    "label": "Nodos personalizados (Legacy)"
+  "Comfy_Manager_ShowMissingPacks": {
+    "label": "Instalar faltantes"
   },
-  "Comfy_Manager_ShowLegacyManagerMenu": {
-    "label": "Menú del administrador (Legacy)"
+  "Comfy_Manager_ShowUpdateAvailablePacks": {
+    "label": "Buscar actualizaciones"
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "Alternar diálogo de progreso del administrador"

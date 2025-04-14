@@ -171,7 +171,13 @@
     "label": "Check for Custom Node Updates"
   },
   "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
-    "label": "Custom Nodes (Beta)"
+    "label": "Custom Nodes Manager"
+  },
+  "Comfy_Manager_ShowMissingPacks": {
+    "label": "Install Missing"
+  },
+  "Comfy_Manager_ShowUpdateAvailablePacks": {
+    "label": "Check for Updates"
   },
   "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
     "label": "Custom Nodes (Legacy)"
