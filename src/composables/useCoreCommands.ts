@@ -691,7 +691,7 @@ export function useCoreCommands(): ComfyCommand[] {
     {
       id: 'Comfy.Manager.ShowUpdateAvailablePacks',
       icon: 'pi pi-sync',
-      label: 'Check for Custom Node Updates',
+      label: 'Check for Updates',
       versionAdded: '1.17.0',
       function: () => {
         dialogService.showManagerDialog({
@@ -702,7 +702,7 @@ export function useCoreCommands(): ComfyCommand[] {
     {
       id: 'Comfy.Manager.ShowMissingPacks',
       icon: 'pi pi-exclamation-circle',
-      label: 'Install Missing Custom Nodes',
+      label: 'Install Missing',
       versionAdded: '1.17.0',
       function: () => {
         dialogService.showManagerDialog({
