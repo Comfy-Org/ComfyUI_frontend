@@ -173,12 +173,6 @@
   "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
     "label": "Custom Nodes (Beta)"
   },
-  "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
-    "label": "Custom Nodes (Legacy)"
-  },
-  "Comfy_Manager_ShowLegacyManagerMenu": {
-    "label": "Manager Menu (Legacy)"
-  },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "Toggle the Custom Nodes Manager Progress Bar"
   },
