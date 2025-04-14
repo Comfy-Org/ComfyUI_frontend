@@ -667,16 +667,14 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Custom Nodes Manager',
       versionAdded: '1.12.10',
       function: async () => {
-        const { is_legacy_manager_ui } =
-          (await useComfyManagerService().isLegacyManagerUI()) ?? {}
-
-        if (is_legacy_manager_ui === true) {
+        const isLegacyManagerUI =
+          await useComfyManagerService().isLegacyManagerUI()
+        if (isLegacyManagerUI) {
           try {
             await useCommandStore().execute(
               'Comfy.Manager.Menu.ToggleVisibility' // This command is registered by legacy manager FE extension
             )
           } catch (error) {
-            console.error('error', error)
             useToastStore().add({
               severity: 'error',
               summary: t('g.error'),
