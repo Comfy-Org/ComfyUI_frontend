@@ -30,6 +30,7 @@ import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { ManagerTab } from '@/types/comfyManagerTypes'
 
 const moveSelectedNodesVersionAdded = '1.22.2'
 
@@ -685,6 +686,28 @@ export function useCoreCommands(): ComfyCommand[] {
         } else {
           dialogService.toggleManagerDialog()
         }
+      }
+    },
+    {
+      id: 'Comfy.Manager.ShowUpdateAvailablePacks',
+      icon: 'pi pi-sync',
+      label: 'Check for Updates',
+      versionAdded: '1.17.0',
+      function: () => {
+        dialogService.showManagerDialog({
+          initialTab: ManagerTab.UpdateAvailable
+        })
+      }
+    },
+    {
+      id: 'Comfy.Manager.ShowMissingPacks',
+      icon: 'pi pi-exclamation-circle',
+      label: 'Install Missing',
+      versionAdded: '1.17.0',
+      function: () => {
+        dialogService.showManagerDialog({
+          initialTab: ManagerTab.Missing
+        })
       }
     },
     {
