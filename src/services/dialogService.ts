@@ -1,3 +1,4 @@
+import ApiNodesSignInContent from '@/components/dialog/content/ApiNodesSignInContent.vue'
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
 import IssueReportDialogContent from '@/components/dialog/content/IssueReportDialogContent.vue'
@@ -16,6 +17,7 @@ import TemplateWorkflowsDialogHeader from '@/components/templates/TemplateWorkfl
 import { t } from '@/i18n'
 import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
 import { type ShowDialogOptions, useDialogStore } from '@/stores/dialogStore'
+import { ApiNodeCost } from '@/types/apiNodeTypes'
 import { ManagerTab } from '@/types/comfyManagerTypes'
 
 export type ConfirmationDialogType =
@@ -216,6 +218,29 @@ export const useDialogService = () => {
     })
   }
 
+  /**
+   * Shows a dialog requiring sign in for API nodes
+   * @returns Promise that resolves to true if user clicks login, false if cancelled
+   */
+  async function showApiNodesSignInDialog(
+    apiNodes: ApiNodeCost[]
+  ): Promise<boolean> {
+    return new Promise((resolve) => {
+      dialogStore.showDialog({
+        key: 'api-nodes-signin',
+        component: ApiNodesSignInContent,
+        props: {
+          apiNodes,
+          onLogin: () => resolve(true),
+          onCancel: () => resolve(false)
+        },
+        dialogComponentProps: {
+          closable: false
+        }
+      })
+    })
+  }
+
   async function prompt({
     title,
     message,
@@ -300,6 +325,7 @@ export const useDialogService = () => {
     showManagerDialog,
     showManagerProgressDialog,
     showErrorDialog,
+    showApiNodesSignInDialog,
     prompt,
     confirm
   }
