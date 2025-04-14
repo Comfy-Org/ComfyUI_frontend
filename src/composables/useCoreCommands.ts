@@ -15,10 +15,11 @@ import { t } from '@/i18n'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { addFluxKontextGroupNode } from '@/scripts/fluxKontextEditNode'
+import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowService } from '@/services/workflowService'
-import { useCommandStore } from '@/stores/commandStore'
+import { type ComfyCommand, useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useCanvasStore, useTitleEditorStore } from '@/stores/graphStore'
 import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
@@ -664,8 +665,26 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-puzzle',
       label: 'Toggle the Custom Nodes Manager',
       versionAdded: '1.12.10',
-      function: () => {
-        dialogService.toggleManagerDialog()
+      function: async () => {
+        const isLegacyManagerUI =
+          await useComfyManagerService().isLegacyManagerUI()
+        if (isLegacyManagerUI) {
+          try {
+            await useCommandStore().execute(
+              'Comfy.Manager.Menu.ToggleVisibility' // This command is registered by legacy manager FE extension
+            )
+          } catch (error) {
+            useToastStore().add({
+              severity: 'error',
+              summary: t('g.error'),
+              detail: t('manager.legacyMenuNotAvailable'),
+              life: 3000
+            })
+            dialogService.toggleManagerDialog()
+          }
+        } else {
+          dialogService.toggleManagerDialog()
+        }
       }
     },
     {

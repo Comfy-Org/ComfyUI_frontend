@@ -21,14 +21,7 @@ export const CORE_MENU_COMMANDS = [
   ],
   [['Edit'], ['Comfy.ClearWorkflow']],
   [['Edit'], ['Comfy.OpenClipspace']],
-  [
-    ['Manager'],
-    [
-      'Comfy.Manager.CustomNodesManager.ShowCustomNodesMenu',
-      'Comfy.Manager.ShowLegacyManagerMenu',
-      'Comfy.Manager.CustomNodesManager.ShowLegacyCustomNodesMenu'
-    ]
-  ],
+  [['Manager'], ['Comfy.Manager.CustomNodesManager.ShowCustomNodesMenu']],
   [
     ['Help'],
     [
