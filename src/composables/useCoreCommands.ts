@@ -12,6 +12,7 @@ import {
 import { t } from '@/i18n'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowService } from '@/services/workflowService'
@@ -604,8 +605,26 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-objects-column',
       label: 'Custom Nodes (Beta)',
       versionAdded: '1.12.10',
-      function: () => {
-        dialogService.showManagerDialog()
+      function: async () => {
+        const isLegacyManagerUI =
+          await useComfyManagerService().isLegacyManagerUI()
+        if (isLegacyManagerUI) {
+          try {
+            await useCommandStore().execute(
+              'Comfy.Manager.Menu.ToggleVisibility' // This command is registered by legacy manager FE extension
+            )
+          } catch (error) {
+            useToastStore().add({
+              severity: 'error',
+              summary: t('g.error'),
+              detail: t('manager.legacyMenuNotAvailable'),
+              life: 3000
+            })
+            dialogService.showManagerDialog()
+          }
+        } else {
+          dialogService.showManagerDialog()
+        }
       }
     },
     {
@@ -615,44 +634,6 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.13.9',
       function: () => {
         dialogService.showManagerProgressDialog()
-      }
-    },
-    {
-      id: 'Comfy.Manager.CustomNodesManager.ShowLegacyCustomNodesMenu',
-      icon: 'pi pi-bars',
-      label: 'Custom Nodes (Legacy)',
-      versionAdded: '1.16.4',
-      function: async () => {
-        try {
-          await useCommandStore().execute(
-            'Comfy.Manager.CustomNodesManager.ToggleVisibility'
-          )
-        } catch (error) {
-          useToastStore().add({
-            severity: 'error',
-            summary: t('g.error'),
-            detail: t('manager.legacyMenuNotAvailable'),
-            life: 3000
-          })
-        }
-      }
-    },
-    {
-      id: 'Comfy.Manager.ShowLegacyManagerMenu',
-      icon: 'mdi mdi-puzzle',
-      label: 'Manager Menu (Legacy)',
-      versionAdded: '1.16.4',
-      function: async () => {
-        try {
-          await useCommandStore().execute('Comfy.Manager.Menu.ToggleVisibility')
-        } catch (error) {
-          useToastStore().add({
-            severity: 'error',
-            summary: t('g.error'),
-            detail: t('manager.legacyMenuNotAvailable'),
-            life: 3000
-          })
-        }
       }
     },
     {

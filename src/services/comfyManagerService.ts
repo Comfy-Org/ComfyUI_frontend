@@ -32,7 +32,8 @@ enum ManagerRoute {
   GET_NODES = 'v2/customnode/getmappings',
   GET_PACKS = 'v2/customnode/getlist',
   IMPORT_FAIL_INFO = 'v2/customnode/import_fail_info',
-  REBOOT = 'v2/manager/reboot'
+  REBOOT = 'v2/manager/reboot',
+  IS_LEGACY_MANAGER_UI = 'v2/manager/is_legacy_manager_ui'
 }
 
 const managerApiClient = axios.create({
@@ -247,6 +248,15 @@ export const useComfyManagerService = () => {
     )
   }
 
+  const isLegacyManagerUI = async (signal?: AbortSignal) => {
+    const errorContext = 'Checking if user set Manager to use the legacy UI'
+
+    return executeRequest<boolean>(
+      () => managerApiClient.get(ManagerRoute.IS_LEGACY_MANAGER_UI, { signal }),
+      { errorContext }
+    )
+  }
+
   return {
     // State
     isLoading,
@@ -268,6 +278,7 @@ export const useComfyManagerService = () => {
     updateAllPacks,
 
     // System operations
-    rebootComfyUI
+    rebootComfyUI,
+    isLegacyManagerUI
   }
 }
