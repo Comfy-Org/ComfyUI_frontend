@@ -15,7 +15,12 @@
             <span>{{ node.name }}</span>
           </div>
           <div class="flex items-center gap-1">
-            <i class="pi pi-dollar text-yellow-500" />
+            <Tag
+              severity="secondary"
+              icon="pi pi-dollar"
+              rounded
+              class="text-yellow-500 p-1"
+            />
             <span>{{ node.cost.toFixed(costPrecision) }}</span>
           </div>
         </div>
@@ -26,7 +31,12 @@
       <div class="flex justify-between items-center pt-2 border-t px-3">
         <span class="text-sm">{{ t('apiNodesCostBreakdown.totalCost') }}</span>
         <div class="flex items-center gap-1">
-          <i class="pi pi-dollar text-yellow-500" />
+          <Tag
+            severity="secondary"
+            icon="pi pi-dollar"
+            rounded
+            class="text-yellow-500 p-1"
+          />
           <span>{{ totalCost.toFixed(costPrecision) }}</span>
         </div>
       </div>
@@ -37,6 +47,7 @@
 <script setup lang="ts">
 import Divider from 'primevue/divider'
 import ScrollPanel from 'primevue/scrollpanel'
+import Tag from 'primevue/tag'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
