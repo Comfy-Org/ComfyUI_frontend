@@ -251,7 +251,7 @@ export const useComfyManagerService = () => {
   const isLegacyManagerUI = async (signal?: AbortSignal) => {
     const errorContext = 'Checking if user set Manager to use the legacy UI'
 
-    return executeRequest<boolean>(
+    return executeRequest<{ is_legacy_manager_ui: boolean }>(
       () => managerApiClient.get(ManagerRoute.IS_LEGACY_MANAGER_UI, { signal }),
       { errorContext }
     )
