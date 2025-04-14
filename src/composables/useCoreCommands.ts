@@ -788,9 +788,9 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-bars',
       label: 'Custom Nodes (Legacy)',
       versionAdded: '1.16.4',
-      function: () => {
+      function: async () => {
         try {
-          void useCommandStore().execute(
+          await useCommandStore().execute(
             'Comfy.Manager.CustomNodesManager.ToggleVisibility'
           )
         } catch (error) {
@@ -808,9 +808,9 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'mdi mdi-puzzle',
       label: 'Manager Menu (Legacy)',
       versionAdded: '1.16.4',
-      function: () => {
+      function: async () => {
         try {
-          void useCommandStore().execute('Comfy.Manager.Menu.ToggleVisibility')
+          await useCommandStore().execute('Comfy.Manager.Menu.ToggleVisibility')
         } catch (error) {
           useToastStore().add({
             severity: 'error',
