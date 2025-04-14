@@ -35,6 +35,7 @@ import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { ManagerTab } from '@/types/comfyManagerTypes'
 import {
   getAllNonIoNodesInSubgraph,
   getExecutionIdsForSelectedNodes
@@ -715,7 +716,7 @@ export function useCoreCommands(): ComfyCommand[] {
     {
       id: 'Comfy.Manager.CustomNodesManager.ShowCustomNodesMenu',
       icon: 'pi pi-objects-column',
-      label: 'Custom Nodes (Beta)',
+      label: 'Custom Nodes Manager',
       versionAdded: '1.12.10',
       function: async () => {
         const isLegacyManagerUI =
@@ -737,6 +738,28 @@ export function useCoreCommands(): ComfyCommand[] {
         } else {
           dialogService.showManagerDialog()
         }
+      }
+    },
+    {
+      id: 'Comfy.Manager.ShowUpdateAvailablePacks',
+      icon: 'pi pi-sync',
+      label: 'Check for Updates',
+      versionAdded: '1.17.0',
+      function: () => {
+        dialogService.showManagerDialog({
+          initialTab: ManagerTab.UpdateAvailable
+        })
+      }
+    },
+    {
+      id: 'Comfy.Manager.ShowMissingPacks',
+      icon: 'pi pi-exclamation-circle',
+      label: 'Install Missing',
+      versionAdded: '1.17.0',
+      function: () => {
+        dialogService.showManagerDialog({
+          initialTab: ManagerTab.Missing
+        })
       }
     },
     {
