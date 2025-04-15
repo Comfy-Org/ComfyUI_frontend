@@ -7,10 +7,14 @@
   >
     <!-- Email Field -->
     <div class="flex flex-col gap-2">
-      <label class="opacity-80 text-base font-medium mb-2" for="email">
+      <label
+        class="opacity-80 text-base font-medium mb-2"
+        for="comfy-org-sign-up-email"
+      >
         {{ t('auth.signup.emailLabel') }}
       </label>
       <InputText
+        pt:root:id="comfy-org-sign-up-email"
         class="h-10"
         name="email"
         type="text"
@@ -25,12 +29,16 @@
     <!-- Password Field -->
     <div class="flex flex-col gap-2">
       <div class="flex justify-between items-center mb-2">
-        <label class="opacity-80 text-base font-medium" for="password">
+        <label
+          class="opacity-80 text-base font-medium"
+          for="comfy-org-sign-up-password"
+        >
           {{ t('auth.signup.passwordLabel') }}
         </label>
       </div>
       <Password
         v-model="password"
+        input-id="comfy-org-sign-up-password"
         name="password"
         :feedback="false"
         toggle-mask
@@ -90,12 +98,13 @@
     <div class="flex flex-col gap-2">
       <label
         class="opacity-80 text-base font-medium mb-2"
-        for="confirmPassword"
+        for="comfy-org-sign-up-confirm-password"
       >
         {{ t('auth.login.confirmPasswordLabel') }}
       </label>
       <Password
         name="confirmPassword"
+        input-id="comfy-org-sign-up-confirm-password"
         :feedback="false"
         toggle-mask
         :placeholder="t('auth.login.confirmPasswordPlaceholder')"
