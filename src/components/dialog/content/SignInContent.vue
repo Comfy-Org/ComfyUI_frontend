@@ -2,7 +2,7 @@
   <div class="w-96 p-2">
     <!-- Header -->
     <div class="flex flex-col gap-4 mb-8">
-      <h1 class="text-white text-2xl font-medium leading-normal my-0">
+      <h1 class="text-2xl font-medium leading-normal my-0">
         {{ isSignIn ? t('auth.login.title') : t('auth.signup.title') }}
       </h1>
       <p class="text-base my-0">
@@ -30,7 +30,7 @@
     <div class="flex flex-col gap-6">
       <Button
         type="button"
-        class="h-10 text-white"
+        class="h-10"
         severity="secondary"
         outlined
         @click="signInWithGoogle"
@@ -45,7 +45,7 @@
 
       <Button
         type="button"
-        class="h-10 text-white"
+        class="h-10"
         severity="secondary"
         outlined
         @click="signInWithGithub"
