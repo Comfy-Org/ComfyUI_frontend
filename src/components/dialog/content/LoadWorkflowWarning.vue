@@ -31,7 +31,10 @@
       </div>
     </template>
   </ListBox>
-  <div v-if="!isLegacyManager" class="flex justify-end py-3">
+  <div
+    v-if="isManagerInstalled && !isLegacyManager"
+    class="flex justify-end py-3"
+  >
     <PackInstallButton
       :disabled="isLoading || !!error || missingNodePacks.length === 0"
       :node-packs="missingNodePacks"
@@ -62,6 +65,19 @@ const props = defineProps<{
 const { missingNodePacks, isLoading, error, missingCoreNodes } =
   useMissingNodes()
 
+<<<<<<< HEAD
+=======
+// Determines if ComfyUI-Manager is installed by checking for its badge in the about panel
+// This allows us to conditionally show the Manager button only when the extension is available
+// TODO: Remove this check when Manager functionality is fully migrated into core
+const isManagerInstalled = computed(() => {
+  return aboutPanelStore.badges.some(
+    (badge) =>
+      badge.label.includes('ComfyUI-Manager') ||
+      badge.url.includes('ComfyUI-Manager')
+  )
+})
+>>>>>>> 4a67a8325 (dont show missing nodes button in legacy manager mode)
 const isLegacyManager = ref(false)
 
 const uniqueNodes = computed(() => {
