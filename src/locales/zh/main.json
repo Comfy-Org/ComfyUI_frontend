@@ -825,10 +825,12 @@
   "settingsCategories": {
     "3D": "3D",
     "About": "关于",
+    "Align": "对齐",
     "Appearance": "外观",
     "BrushAdjustment": "画笔调整",
     "Camera": "相机",
     "Canvas": "画布",
+    "Color Application": "颜色应用",
     "ColorPalette": "色彩主题",
     "Comfy": "Comfy",
     "Comfy-Desktop": "Comfy桌面版",
@@ -840,6 +842,7 @@
     "General": "常规",
     "Graph": "画面",
     "Group": "组节点",
+    "Keyboard": "快捷键",
     "Keybinding": "快捷键",
     "Link": "连线",
     "LinkRelease": "释放链接",
@@ -864,6 +867,7 @@
     "Server-Config": "服务器配置",
     "Settings": "设置",
     "Sidebar": "侧边栏",
+    "Spacing": "间距",
     "Tree Explorer": "树形浏览器",
     "UV": "UV",
     "Validation": "验证",
@@ -1051,5 +1055,36 @@
     "enterFilename": "输入文件名",
     "exportWorkflow": "导出工作流",
     "saveWorkflow": "保存工作流"
+  },
+  "alignNodes": {
+    "actions": {
+      "alignToLeft": "左对齐",
+      "alignToRight": "右对齐",
+      "alignToTop": "顶部对齐",
+      "alignToBottom": "底部对齐",
+      "alignToHorizontalCenter": "水平居中对齐",
+      "alignToVerticalCenter": "垂直居中对齐",
+      "stretchHorizontally": "水平拉伸",
+      "stretchVertically": "垂直拉伸",
+      "distributeHorizontally": "水平分布",
+      "distributeVertically": "垂直分布",
+      "setNodesColor": "设置节点颜色",
+      "clearNodesColor": "清除节点颜色",
+      "toggleNodesBypass": "切换节点绕过",
+      "toggleNodesMute": "切换节点静音",
+      "toggleNodesPin": "切换节点固定"
+    },
+    "notifications": {
+      "appInstanceFailed": "获取应用实例失败"
+    },
+    "errors": {
+      "appInstance": "获取ComfyUI应用实例失败",
+      "selectTwoNodes": "请至少选择两个节点",
+      "selectOneNode": "请至少选择一个节点或组",
+      "noNodesSelected": "未选择节点",
+      "operationFailed": "操作失败：{error}",
+      "allNodesPinned": "所有选定节点都已固定",
+      "someNodesPinned": "部分选定节点已固定"
+    }
   }
 }

@@ -366,5 +366,25 @@
   },
   "pysssss_SnapToGrid": {
     "name": "Always snap to grid"
+  },
+  "Comfy_Align_Spacing_horizontalMin": {
+    "name": "Horizontal minimum spacing",
+    "tooltip": "Minimum horizontal spacing (in pixels) when aligning nodes"
+  },
+  "Comfy_Align_Spacing_verticalMin": {
+    "name": "Vertical minimum spacing",
+    "tooltip": "Minimum vertical spacing (in pixels) when aligning nodes"
+  },
+  "Comfy_Align_Shortcut": {
+    "name": "Shortcut key",
+    "tooltip": "Shortcut key to open the alignment panel (e.g., 'alt+a', 'shift+s', etc.)"
+  },
+  "Comfy_Align_Color_applyToPanel": {
+    "name": "Apply color to node panel (background)",
+    "tooltip": "When checked, color will be applied to the node panel (background area)"
+  },
+  "Comfy_Align_Color_applyToHeader": {
+    "name": "Apply color to node header",
+    "tooltip": "When checked, color will be applied to the node header"
   }
 }

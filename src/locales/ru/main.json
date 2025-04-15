@@ -825,10 +825,12 @@
   "settingsCategories": {
     "3D": "3D",
     "About": "О программе",
+    "Align": "Выравнивание",
     "Appearance": "Внешний вид",
     "BrushAdjustment": "Настройка кисти",
     "Camera": "Камера",
     "Canvas": "Холст",
+    "Color Application": "Применение цвета",
     "ColorPalette": "Цветовая палитра",
     "Comfy": "Comfy",
     "Comfy-Desktop": "Десктопный Comfy",
@@ -840,6 +842,7 @@
     "General": "Общие",
     "Graph": "Граф",
     "Group": "Группа",
+    "Keyboard": "Клавиатура",
     "Keybinding": "Сочетание клавиш",
     "Link": "Ссылка",
     "LinkRelease": "Освобождение ссылки",
@@ -864,6 +867,7 @@
     "Server-Config": "Настройки сервера",
     "Settings": "Настройки",
     "Sidebar": "Боковая панель",
+    "Spacing": "Интервал",
     "Tree Explorer": "Дерево проводника",
     "UV": "UV",
     "Validation": "Валидация",
@@ -1051,5 +1055,36 @@
     "enterFilename": "Введите название файла",
     "exportWorkflow": "Экспорт рабочего процесса",
     "saveWorkflow": "Сохранить рабочий процесс"
+  },
+  "alignNodes": {
+    "actions": {
+      "alignToLeft": "Выровнять по левому краю",
+      "alignToRight": "Выровнять по правому краю",
+      "alignToTop": "Выровнять по верхнему краю",
+      "alignToBottom": "Выровнять по нижнему краю",
+      "alignToHorizontalCenter": "Выровнять по горизонтальному центру",
+      "alignToVerticalCenter": "Выровнять по вертикальному центру",
+      "stretchHorizontally": "Растянуть по горизонтали",
+      "stretchVertically": "Растянуть по вертикали",
+      "distributeHorizontally": "Распределить по горизонтали",
+      "distributeVertically": "Распределить по вертикали",
+      "setNodesColor": "Установить цвет узлов",
+      "clearNodesColor": "Очистить цвет узлов",
+      "toggleNodesBypass": "Переключить обход узлов",
+      "toggleNodesMute": "Переключить отключение узлов",
+      "toggleNodesPin": "Переключить закрепление узлов"
+    },
+    "notifications": {
+      "appInstanceFailed": "Не удалось получить экземпляр приложения"
+    },
+    "errors": {
+      "appInstance": "Не удалось получить экземпляр приложения ComfyUI",
+      "selectTwoNodes": "Пожалуйста, выберите как минимум два узла",
+      "selectOneNode": "Пожалуйста, выберите хотя бы один узел или группу",
+      "noNodesSelected": "Узлы не выбраны",
+      "operationFailed": "Операция не удалась: {error}",
+      "allNodesPinned": "Все выбранные узлы закреплены",
+      "someNodesPinned": "Некоторые выбранные узлы закреплены"
+    }
   }
 }

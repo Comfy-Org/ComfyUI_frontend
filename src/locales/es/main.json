@@ -825,10 +825,12 @@
   "settingsCategories": {
     "3D": "3D",
     "About": "Acerca de",
+    "Align": "Alinear",
     "Appearance": "Apariencia",
     "BrushAdjustment": "Ajuste de Pincel",
     "Camera": "Cámara",
     "Canvas": "Lienzo",
+    "Color Application": "Aplicación de Color",
     "ColorPalette": "Paleta de Colores",
     "Comfy": "Comfy",
     "Comfy-Desktop": "Comfy-Desktop",
@@ -840,6 +842,7 @@
     "General": "General",
     "Graph": "Gráfico",
     "Group": "Grupo",
+    "Keyboard": "Teclado",
     "Keybinding": "Asignación de Teclas",
     "Link": "Enlace",
     "LinkRelease": "Liberación de Enlace",
@@ -864,6 +867,7 @@
     "Server-Config": "Configuración del Servidor",
     "Settings": "Configuraciones",
     "Sidebar": "Barra Lateral",
+    "Spacing": "Espaciado",
     "Tree Explorer": "Explorador de Árbol",
     "UV": "UV",
     "Validation": "Validación",
@@ -1051,5 +1055,36 @@
     "enterFilename": "Introduzca el nombre del archivo",
     "exportWorkflow": "Exportar flujo de trabajo",
     "saveWorkflow": "Guardar flujo de trabajo"
+  },
+  "alignNodes": {
+    "actions": {
+      "alignToLeft": "Alinear a la Izquierda",
+      "alignToRight": "Alinear a la Derecha",
+      "alignToTop": "Alinear Arriba",
+      "alignToBottom": "Alinear Abajo",
+      "alignToHorizontalCenter": "Alinear al Centro Horizontal",
+      "alignToVerticalCenter": "Alinear al Centro Vertical",
+      "stretchHorizontally": "Estirar Horizontalmente",
+      "stretchVertically": "Estirar Verticalmente",
+      "distributeHorizontally": "Distribuir Horizontalmente",
+      "distributeVertically": "Distribuir Verticalmente",
+      "setNodesColor": "Establecer Color de Nodos",
+      "clearNodesColor": "Limpiar Color de Nodos",
+      "toggleNodesBypass": "Alternar Bypass de Nodos",
+      "toggleNodesMute": "Alternar Silencio de Nodos",
+      "toggleNodesPin": "Alternar Fijación de Nodos"
+    },
+    "notifications": {
+      "appInstanceFailed": "No se pudo obtener la instancia de la aplicación"
+    },
+    "errors": {
+      "appInstance": "No se pudo obtener la instancia de la aplicación ComfyUI",
+      "selectTwoNodes": "Por favor seleccione al menos dos nodos",
+      "selectOneNode": "Por favor seleccione al menos un nodo o grupo",
+      "noNodesSelected": "No hay nodos seleccionados",
+      "operationFailed": "La operación falló: {error}",
+      "allNodesPinned": "Todos los nodos seleccionados están fijados",
+      "someNodesPinned": "Algunos nodos seleccionados están fijados"
+    }
   }
 }

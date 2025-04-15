@@ -825,10 +825,12 @@
   "settingsCategories": {
     "3D": "3D",
     "About": "정보",
+    "Align": "정렬",
     "Appearance": "모양",
     "BrushAdjustment": "브러시 조정",
     "Camera": "카메라",
     "Canvas": "캔버스",
+    "Color Application": "색상 적용",
     "ColorPalette": "색상 팔레트",
     "Comfy": "Comfy",
     "Comfy-Desktop": "Comfy-Desktop",
@@ -840,6 +842,7 @@
     "General": "일반",
     "Graph": "그래프",
     "Group": "그룹",
+    "Keyboard": "키보드",
     "Keybinding": "키 바인딩",
     "Link": "링크",
     "LinkRelease": "링크 해제",
@@ -864,6 +867,7 @@
     "Server-Config": "서버 구성",
     "Settings": "설정",
     "Sidebar": "사이드바",
+    "Spacing": "간격",
     "Tree Explorer": "트리 탐색기",
     "UV": "UV",
     "Validation": "검증",
@@ -1051,5 +1055,36 @@
     "enterFilename": "파일 이름 입력",
     "exportWorkflow": "워크플로 내보내기",
     "saveWorkflow": "워크플로 저장"
+  },
+  "alignNodes": {
+    "actions": {
+      "alignToLeft": "왼쪽 정렬",
+      "alignToRight": "오른쪽 정렬",
+      "alignToTop": "위쪽 정렬",
+      "alignToBottom": "아래쪽 정렬",
+      "alignToHorizontalCenter": "수평 가운데 정렬",
+      "alignToVerticalCenter": "수직 가운데 정렬",
+      "stretchHorizontally": "수평 늘이기",
+      "stretchVertically": "수직 늘이기",
+      "distributeHorizontally": "수평 배분",
+      "distributeVertically": "수직 배분",
+      "setNodesColor": "노드 색상 설정",
+      "clearNodesColor": "노드 색상 지우기",
+      "toggleNodesBypass": "노드 우회 전환",
+      "toggleNodesMute": "노드 음소거 전환",
+      "toggleNodesPin": "노드 고정 전환"
+    },
+    "notifications": {
+      "appInstanceFailed": "앱 인스턴스를 가져오지 못했습니다"
+    },
+    "errors": {
+      "appInstance": "ComfyUI 앱 인스턴스를 가져오지 못했습니다",
+      "selectTwoNodes": "최소 두 개의 노드를 선택하세요",
+      "selectOneNode": "최소 하나의 노드나 그룹을 선택하세요",
+      "noNodesSelected": "선택된 노드가 없습니다",
+      "operationFailed": "작업 실패: {error}",
+      "allNodesPinned": "선택된 모든 노드가 고정되어 있습니다",
+      "someNodesPinned": "선택된 일부 노드가 고정되어 있습니다"
+    }
   }
 }

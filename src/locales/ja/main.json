@@ -825,10 +825,12 @@
   "settingsCategories": {
     "3D": "3D",
     "About": "情報",
+    "Align": "整列",
     "Appearance": "外観",
     "BrushAdjustment": "ブラシ調整",
     "Camera": "カメラ",
     "Canvas": "キャンバス",
+    "Color Application": "色の適用",
     "ColorPalette": "カラーパレット",
     "Comfy": "Comfy",
     "Comfy-Desktop": "Comfyデスクトップ",
@@ -840,6 +842,7 @@
     "General": "一般",
     "Graph": "グラフ",
     "Group": "グループ",
+    "Keyboard": "キーボード",
     "Keybinding": "キー割り当て",
     "Link": "リンク",
     "LinkRelease": "リンク解除",
@@ -864,6 +867,7 @@
     "Server-Config": "サーバー設定",
     "Settings": "設定",
     "Sidebar": "サイドバー",
+    "Spacing": "間隔",
     "Tree Explorer": "ツリーエクスプローラー",
     "UV": "UV",
     "Validation": "検証",
@@ -1051,5 +1055,36 @@
     "enterFilename": "ファイル名を入力",
     "exportWorkflow": "ワークフローをエクスポート",
     "saveWorkflow": "ワークフローを保存"
+  },
+  "alignNodes": {
+    "actions": {
+      "alignToLeft": "左揃え",
+      "alignToRight": "右揃え",
+      "alignToTop": "上揃え",
+      "alignToBottom": "下揃え",
+      "alignToHorizontalCenter": "水平中央揃え",
+      "alignToVerticalCenter": "垂直中央揃え",
+      "stretchHorizontally": "水平方向に伸縮",
+      "stretchVertically": "垂直方向に伸縮",
+      "distributeHorizontally": "水平方向に分散",
+      "distributeVertically": "垂直方向に分散",
+      "setNodesColor": "ノードの色を設定",
+      "clearNodesColor": "ノードの色をクリア",
+      "toggleNodesBypass": "ノードのバイパスを切替",
+      "toggleNodesMute": "ノードのミュートを切替",
+      "toggleNodesPin": "ノードの固定を切替"
+    },
+    "notifications": {
+      "appInstanceFailed": "アプリインスタンスの取得に失敗しました"
+    },
+    "errors": {
+      "appInstance": "ComfyUIアプリインスタンスの取得に失敗しました",
+      "selectTwoNodes": "少なくとも2つのノードを選択してください",
+      "selectOneNode": "少なくとも1つのノードまたはグループを選択してください",
+      "noNodesSelected": "ノードが選択されていません",
+      "operationFailed": "操作が失敗しました: {error}",
+      "allNodesPinned": "選択されたすべてのノードが固定されています",
+      "someNodesPinned": "選択されたノードの一部が固定されています"
+    }
   }
 }

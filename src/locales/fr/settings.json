@@ -366,5 +366,25 @@
   },
   "pysssss_SnapToGrid": {
     "name": "Toujours aligner sur la grille"
+  },
+  "Comfy_Align_Spacing_horizontalMin": {
+    "name": "Espacement horizontal minimum",
+    "tooltip": "Espacement horizontal minimum (en pixels) lors de l'alignement des nœuds"
+  },
+  "Comfy_Align_Spacing_verticalMin": {
+    "name": "Espacement vertical minimum",
+    "tooltip": "Espacement vertical minimum (en pixels) lors de l'alignement des nœuds"
+  },
+  "Comfy_Align_Shortcut": {
+    "name": "Touche de raccourci",
+    "tooltip": "Touche de raccourci pour ouvrir le panneau d'alignement (ex : 'alt+a', 'shift+s', etc.)"
+  },
+  "Comfy_Align_Color_applyToPanel": {
+    "name": "Appliquer la couleur au panneau du nœud (arrière-plan)",
+    "tooltip": "Lorsque coché, la couleur sera appliquée au panneau du nœud (zone d'arrière-plan)"
+  },
+  "Comfy_Align_Color_applyToHeader": {
+    "name": "Appliquer la couleur à l'en-tête du nœud",
+    "tooltip": "Lorsque coché, la couleur sera appliquée à l'en-tête du nœud"
   }
 }

@@ -825,10 +825,12 @@
   "settingsCategories": {
     "3D": "3D",
     "About": "À Propos",
+    "Align": "Alignement",
     "Appearance": "Apparence",
     "BrushAdjustment": "Ajustement de Brosse",
     "Camera": "Caméra",
     "Canvas": "Toile",
+    "Color Application": "Application de Couleur",
     "ColorPalette": "Palette de Couleurs",
     "Comfy": "Confort",
     "Comfy-Desktop": "Comfy-Desktop",
@@ -840,6 +842,7 @@
     "General": "Général",
     "Graph": "Graphique",
     "Group": "Groupe",
+    "Keyboard": "Clavier",
     "Keybinding": "Raccourci Clavier",
     "Link": "Lien",
     "LinkRelease": "Libération de Lien",
@@ -864,6 +867,7 @@
     "Server-Config": "Config-Serveur",
     "Settings": "Paramètres",
     "Sidebar": "Barre Latérale",
+    "Spacing": "Espacement",
     "Tree Explorer": "Explorateur d'Arbre",
     "UV": "UV",
     "Validation": "Validation",
@@ -1051,5 +1055,36 @@
     "enterFilename": "Entrez le nom du fichier",
     "exportWorkflow": "Exporter le flux de travail",
     "saveWorkflow": "Enregistrer le flux de travail"
+  },
+  "alignNodes": {
+    "actions": {
+      "alignToLeft": "Aligner à Gauche",
+      "alignToRight": "Aligner à Droite",
+      "alignToTop": "Aligner en Haut",
+      "alignToBottom": "Aligner en Bas",
+      "alignToHorizontalCenter": "Aligner au Centre Horizontal",
+      "alignToVerticalCenter": "Aligner au Centre Vertical",
+      "stretchHorizontally": "Étirer Horizontalement",
+      "stretchVertically": "Étirer Verticalement",
+      "distributeHorizontally": "Distribuer Horizontalement",
+      "distributeVertically": "Distribuer Verticalement",
+      "setNodesColor": "Définir la Couleur des Nœuds",
+      "clearNodesColor": "Effacer la Couleur des Nœuds",
+      "toggleNodesBypass": "Basculer le Contournement des Nœuds",
+      "toggleNodesMute": "Basculer le Silence des Nœuds",
+      "toggleNodesPin": "Basculer l'Épinglage des Nœuds"
+    },
+    "notifications": {
+      "appInstanceFailed": "Échec d'obtention de l'instance d'application"
+    },
+    "errors": {
+      "appInstance": "Échec d'obtention de l'instance d'application ComfyUI",
+      "selectTwoNodes": "Veuillez sélectionner au moins deux nœuds",
+      "selectOneNode": "Veuillez sélectionner au moins un nœud ou groupe",
+      "noNodesSelected": "Aucun nœud sélectionné",
+      "operationFailed": "Opération échouée : {error}",
+      "allNodesPinned": "Tous les nœuds sélectionnés sont épinglés",
+      "someNodesPinned": "Certains nœuds sélectionnés sont épinglés"
+    }
   }
 }

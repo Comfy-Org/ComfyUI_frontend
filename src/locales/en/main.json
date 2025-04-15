@@ -679,7 +679,9 @@
   "settingsCategories": {
     "Comfy-Desktop": "Comfy-Desktop",
     "General": "General",
+    "Align": "Align",
     "Appearance": "Appearance",
+    "Color Application": "Color Application",
     "ColorPalette": "Color Palette",
     "Comfy": "Comfy",
     "Workflow": "Workflow",
@@ -693,6 +695,7 @@
     "Group": "Group",
     "Menu": "Menu",
     "Keybinding": "Keybinding",
+    "Keyboard": "Keyboard",
     "LinkRelease": "Link Release",
     "Graph": "Graph",
     "Locale": "Locale",
@@ -713,6 +716,7 @@
     "Validation": "Validation",
     "Window": "Window",
     "Server-Config": "Server-Config",
+    "Spacing": "Spacing",
     "About": "About",
     "EditTokenWeight": "Edit Token Weight",
     "CustomColorPalettes": "Custom Color Palettes",
@@ -1051,5 +1055,36 @@
     "noTemplatesToExport": "No templates to export",
     "failedToFetchLogs": "Failed to fetch server logs",
     "migrateToLitegraphReroute": "Reroute nodes will be removed in future versions. Click to migrate to litegraph-native reroute."
+  },
+  "alignNodes": {
+    "actions": {
+      "alignToLeft": "Align Left",
+      "alignToRight": "Align Right",
+      "alignToTop": "Align Top",
+      "alignToBottom": "Align Bottom",
+      "alignToHorizontalCenter": "Align Horizontal Center",
+      "alignToVerticalCenter": "Align Vertical Center",
+      "stretchHorizontally": "Stretch Horizontally",
+      "stretchVertically": "Stretch Vertically",
+      "distributeHorizontally": "Distribute Horizontally",
+      "distributeVertically": "Distribute Vertically",
+      "setNodesColor": "Set Nodes Color",
+      "clearNodesColor": "Clear Nodes Color",
+      "toggleNodesBypass": "Toggle Nodes Bypass",
+      "toggleNodesMute": "Toggle Nodes Mute",
+      "toggleNodesPin": "Toggle Nodes Pin"
+    },
+    "notifications": {
+      "appInstanceFailed": "Failed to get app instance"
+    },
+    "errors": {
+      "appInstance": "Failed to get ComfyUI app instance",
+      "selectTwoNodes": "Please select at least two nodes",
+      "selectOneNode": "Please select at least one node or group",
+      "noNodesSelected": "No nodes selected",
+      "operationFailed": "Operation failed: {error}",
+      "allNodesPinned": "All selected nodes are pinned",
+      "someNodesPinned": "Some selected nodes are pinned"
+    }
   }
 }
