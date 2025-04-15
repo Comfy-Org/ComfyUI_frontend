@@ -1072,6 +1072,18 @@
       "privacyLink": "Privacy Policy",
       "success": "Login successful",
       "failed": "Login failed"
+    },
+    "signup": {
+      "title": "Create an account",
+      "alreadyHaveAccount": "Already have an account?",
+      "emailLabel": "Email",
+      "emailPlaceholder": "Enter your email",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Enter new password",
+      "signUpButton": "Sign up",
+      "signIn": "Sign in",
+      "signUpWithGoogle": "Sign up with Google",
+      "signUpWithGithub": "Sign up with Github"
     }
   },
   "validation": {
