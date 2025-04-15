@@ -288,6 +288,7 @@ export const useLitegraphService = () => {
     )
 
     const nodeDef = new ComfyNodeDefImpl(nodeDefV1)
+    await nodeDef.initApiNodeFields()
     node.nodeData = nodeDef
     LiteGraph.registerNodeType(nodeId, node)
     // Note: Do not following assignments before `LiteGraph.registerNodeType`

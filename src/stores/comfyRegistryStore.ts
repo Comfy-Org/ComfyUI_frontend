@@ -88,6 +88,11 @@ export const useComfyRegistryStore = defineStore('comfyRegistry', () => {
     return resolvedPacks
   }
 
+  const getAPINodePrice = async () => {
+    // TODO: when the endpoint is created in comfy-api
+    return 20
+  }
+
   /**
    * Get the node definitions for a pack
    */
@@ -132,6 +137,7 @@ export const useComfyRegistryStore = defineStore('comfyRegistry', () => {
     },
     getNodeDefs,
     search,
+    getAPINodePrice,
 
     clearCache,
     cancelRequests,
