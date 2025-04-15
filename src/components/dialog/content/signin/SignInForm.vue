@@ -15,6 +15,7 @@
       </label>
       <InputText
         pt:root:id="comfy-org-sign-in-email"
+        pt:root:autocomplete="email"
         class="h-10"
         name="email"
         type="text"
@@ -41,6 +42,7 @@
       </div>
       <Password
         input-id="comfy-org-sign-in-password"
+        pt:pc-input-text:root:autocomplete="current-password"
         name="password"
         :feedback="false"
         toggle-mask

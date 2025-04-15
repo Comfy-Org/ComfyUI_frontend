@@ -15,6 +15,7 @@
       </label>
       <InputText
         pt:root:id="comfy-org-sign-up-email"
+        pt:root:autocomplete="email"
         class="h-10"
         name="email"
         type="text"
@@ -39,6 +40,7 @@
       <Password
         v-model="password"
         input-id="comfy-org-sign-up-password"
+        pt:pc-input-text:root:autocomplete="new-password"
         name="password"
         :feedback="false"
         toggle-mask
@@ -105,6 +107,7 @@
       <Password
         name="confirmPassword"
         input-id="comfy-org-sign-up-confirm-password"
+        pt:pc-input-text:root:autocomplete="new-password"
         :feedback="false"
         toggle-mask
         :placeholder="t('auth.login.confirmPasswordPlaceholder')"
