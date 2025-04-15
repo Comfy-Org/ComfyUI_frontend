@@ -13,6 +13,13 @@
     "lokalise.i18n-ally",
     "ms-playwright.playwright",
     "vitest.explorer",
-    "vue.volar"
+    "vue.volar",
+    "sonarsource.sonarlint-vscode",
+    "deque-systems.vscode-axe-linter",
+    "kisstkondoros.vscode-codemetrics",
+    "donjayamanne.githistory",
+    "wix.vscode-import-cost",
+    "prograhammer.tslint-vue",
+    "antfu.vite"
   ]
 }
