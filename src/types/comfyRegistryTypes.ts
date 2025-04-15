@@ -21,6 +21,43 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/customer': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Create a new customer
+     * @description Creates a new customer using the provided token. No request body is needed as user information is extracted from the token.
+     */
+    post: operations['createCustomer']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/customer/credit': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Initiates a Credit Purchase. */
+    post: operations['InitiateCreditPurchase']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/upload-artifact': {
     parameters: {
       query?: never
@@ -900,6 +937,98 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/proxy/ideogram/generate': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Proxy request to Ideogram for image generation
+     * @description Forwards image generation requests to Ideogram's API and returns the results.
+     */
+    post: operations['ideogramGenerate']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/webhook/metronome/zero-balance': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** receive alert on remaining balance is 0 */
+    post: {
+      parameters: {
+        query?: never
+        header?: never
+        path?: never
+        cookie?: never
+      }
+      requestBody: {
+        content: {
+          'application/json': {
+            properties?: {
+              /** @description the metronome customer id */
+              customer_id?: string
+              /** @description the customer remaining balance */
+              remaining_balance?: number
+            }
+          }
+        }
+      }
+      responses: {
+        /** @description Webhook processed succesfully */
+        200: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['IdeogramGenerateResponse']
+          }
+        }
+        /** @description Bad Request */
+        400: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['ErrorResponse']
+          }
+        }
+        /** @description Unauthorized */
+        401: {
+          headers: {
+            [name: string]: unknown
+          }
+          content?: never
+        }
+        /** @description Internal Server Error (proxy or upstream issue) */
+        500: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['ErrorResponse']
+          }
+        }
+      }
+    }
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
 }
 export type webhooks = Record<string, never>
 export interface components {
@@ -1225,6 +1354,81 @@ export interface components {
       /** @description The pip freeze output */
       pip_freeze?: string
     }
+    Customer: {
+      /** @description The firebase UID of the user */
+      id: string
+      /** @description The email address for this user */
+      email?: string
+      /** @description The name for this user */
+      name?: string
+      /**
+       * Format: date-time
+       * @description The date and time the user was created
+       */
+      createdAt?: string
+      /**
+       * Format: date-time
+       * @description The date and time the user was last updated
+       */
+      updatedAt?: string
+    }
+    /** @description Parameters for the Ideogram generation proxy request. Based on Ideogram's API. */
+    IdeogramGenerateRequest: {
+      /** @description The image generation request parameters. */
+      image_request: {
+        /** @description Required. The prompt to use to generate the image. */
+        prompt: string
+        /** @description Optional. The aspect ratio (e.g., 'ASPECT_16_9', 'ASPECT_1_1'). Cannot be used with resolution. Defaults to 'ASPECT_1_1' if unspecified. */
+        aspect_ratio?: string
+        /** @description Optional. The model used (e.g., 'V_2', 'V_2A_TURBO'). Defaults to 'V_2' if unspecified. */
+        model?: string
+        /** @description Optional. MagicPrompt usage ('AUTO', 'ON', 'OFF'). */
+        magic_prompt_option?: string
+        /**
+         * Format: int64
+         * @description Optional. A number between 0 and 2147483647.
+         */
+        seed?: number
+        /** @description Optional. Style type ('AUTO', 'GENERAL', 'REALISTIC', 'DESIGN', 'RENDER_3D', 'ANIME'). Only for models V_2 and above. */
+        style_type?: string
+        /** @description Optional. Description of what to exclude. Only for V_1, V_1_TURBO, V_2, V_2_TURBO. */
+        negative_prompt?: string
+        /**
+         * @description Optional. Number of images to generate (1-8). Defaults to 1.
+         * @default 1
+         */
+        num_images: number
+        /** @description Optional. Resolution (e.g., 'RESOLUTION_1024_1024'). Only for model V_2. Cannot be used with aspect_ratio. */
+        resolution?: string
+        /** @description Optional. Color palette object. Only for V_2, V_2_TURBO. */
+        color_palette?: {
+          [key: string]: unknown
+        }
+      }
+    }
+    /** @description Response from the Ideogram image generation API. */
+    IdeogramGenerateResponse: {
+      /**
+       * Format: date-time
+       * @description Timestamp when the generation was created.
+       */
+      created?: string
+      /** @description Array of generated image information. */
+      data?: {
+        /** @description The prompt used to generate this image. */
+        prompt?: string
+        /** @description The resolution of the generated image (e.g., '1024x1024'). */
+        resolution?: string
+        /** @description Indicates whether the image is considered safe. */
+        is_image_safe?: boolean
+        /** @description The seed value used for this generation. */
+        seed?: number
+        /** @description URL to the generated image. */
+        url?: string
+        /** @description The style type used for generation (e.g., 'REALISTIC', 'ANIME'). */
+        style_type?: string
+      }[]
+    }
   }
   responses: never
   parameters: never
@@ -1265,6 +1469,111 @@ export interface operations {
           [name: string]: unknown
         }
         content?: never
+      }
+    }
+  }
+  createCustomer: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Customer created successfully */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Customer']
+        }
+      }
+      /** @description Bad request, invalid token or user already exists */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Unauthorized or invalid token */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  InitiateCreditPurchase: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': {
+          /**
+           * Format: int64
+           * @description the amount of the checkout transaction in micro value
+           */
+          amount_micros?: number
+          /** @description the currency used in the checkout transaction */
+          currency?: string
+        }
+      }
+    }
+    responses: {
+      /** @description Customer Checkout created successfully */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /** @description the url to redirect the customer */
+            checkout_url?: string
+          }
+        }
+      }
+      /** @description Bad request, invalid token or user already exists */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Unauthorized or invalid token */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
     }
   }
@@ -3408,6 +3717,82 @@ export interface operations {
       }
       /** @description Internal server error */
       500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  ideogramGenerate: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['IdeogramGenerateRequest']
+      }
+    }
+    responses: {
+      /** @description Successful response from Ideogram proxy */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['IdeogramGenerateResponse']
+        }
+      }
+      /** @description Bad Request (invalid input to proxy) */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Rate limit exceeded (either from proxy or Ideogram) */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Internal Server Error (proxy or upstream issue) */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Bad Gateway (error communicating with Ideogram) */
+      502: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Gateway Timeout (Ideogram took too long to respond) */
+      504: {
         headers: {
           [name: string]: unknown
         }
