@@ -13,7 +13,8 @@
       "import": "./dist/litegraph.es.js",
       "require": "./dist/litegraph.umd.js"
     },
-    "./style.css": "./dist/css/litegraph.css"
+    "./style.css": "./dist/css/litegraph.css",
+    "./dist/*": "./dist/*.d.ts"
   },
   "directories": {
     "doc": "doc"
