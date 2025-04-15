@@ -255,8 +255,7 @@ export const useDialogService = () => {
         component: SignInContent,
         headerComponent: ComfyOrgHeader,
         props: {
-          onSuccess: () => resolve(true),
-          onCancel: () => resolve(false)
+          onSuccess: () => resolve(true)
         },
         dialogComponentProps: {
           closable: false,

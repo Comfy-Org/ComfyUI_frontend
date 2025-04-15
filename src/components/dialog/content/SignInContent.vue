@@ -86,6 +86,10 @@ import SignUpForm from './signin/SignUpForm.vue'
 
 const { t } = useI18n()
 
+const { onSuccess } = defineProps<{
+  onSuccess: () => void
+}>()
+
 const isSignIn = ref(true)
 const toggleState = () => {
   isSignIn.value = !isSignIn.value
@@ -95,17 +99,20 @@ const signInWithGoogle = () => {
   // Implement Google login
   console.log(isSignIn.value)
   console.log('Google login clicked')
+  onSuccess()
 }
 
 const signInWithGithub = () => {
   // Implement Github login
   console.log(isSignIn.value)
   console.log('Github login clicked')
+  onSuccess()
 }
 
 const signInWithEmail = (values: SignInData | SignUpData) => {
   // Implement email login
   console.log(isSignIn.value)
   console.log(values)
+  onSuccess()
 }
 </script>
