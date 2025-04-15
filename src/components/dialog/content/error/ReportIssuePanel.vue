@@ -101,7 +101,6 @@
 
 <script setup lang="ts">
 import { Form, FormField, type FormSubmitEvent } from '@primevue/forms'
-// @ts-expect-error https://github.com/primefaces/primevue/issues/6722
 import { zodResolver } from '@primevue/forms/resolvers/zod'
 import type { CaptureContext, User } from '@sentry/core'
 import { captureMessage } from '@sentry/core'
