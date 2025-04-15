@@ -3593,6 +3593,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       // - the slot is valid during link drop
       // - the slot is connected
       const showSlot = !isWidgetInputSlot(slot) ||
+        this.#isMouseOverSlot(slot) ||
         this.#isMouseOverWidget(this.getWidgetFromSlot(slot)!) ||
         (fromSlot && slotInstance.isValidTarget(fromSlot)) ||
         slotInstance.isConnected()
