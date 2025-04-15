@@ -33,7 +33,6 @@
         </span>
       </div>
       <Password
-        v-model="password"
         name="password"
         :feedback="false"
         toggle-mask
@@ -62,13 +61,11 @@ import { zodResolver } from '@primevue/forms/resolvers/zod'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
-import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { type SignInData, signInSchema } from '@/schemas/signInSchema'
 
 const { t } = useI18n()
-const password = ref('')
 
 const emit = defineEmits<{
   submit: [values: SignInData]

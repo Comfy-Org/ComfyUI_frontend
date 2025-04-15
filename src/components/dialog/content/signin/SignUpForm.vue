@@ -86,6 +86,28 @@
       </div>
     </div>
 
+    <!-- Confirm Password Field -->
+    <div class="flex flex-col gap-2">
+      <label
+        class="opacity-80 text-base font-medium mb-2"
+        for="confirmPassword"
+      >
+        {{ t('auth.login.confirmPasswordLabel') }}
+      </label>
+      <Password
+        name="confirmPassword"
+        :feedback="false"
+        toggle-mask
+        :placeholder="t('auth.login.confirmPasswordPlaceholder')"
+        :class="{ 'p-invalid': $form.confirmPassword?.invalid }"
+        fluid
+        class="h-10"
+      />
+      <small v-if="$form.confirmPassword?.error" class="text-red-500">{{
+        $form.confirmPassword.error.message
+      }}</small>
+    </div>
+
     <!-- Submit Button -->
     <Button
       type="submit"
