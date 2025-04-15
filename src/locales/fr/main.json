@@ -8,6 +8,42 @@
     "message": "Ce flux de travail contient des nœuds API, qui nécessitent que vous soyez connecté à votre compte pour pouvoir fonctionner.",
     "title": "Connexion requise pour utiliser les nœuds API"
   },
+  "auth": {
+    "login": {
+      "andText": "et",
+      "confirmPasswordLabel": "Confirmer le mot de passe",
+      "confirmPasswordPlaceholder": "Entrez à nouveau le même mot de passe",
+      "emailLabel": "Email",
+      "emailPlaceholder": "Entrez votre email",
+      "failed": "Échec de la connexion",
+      "forgotPassword": "Mot de passe oublié?",
+      "loginButton": "Se connecter",
+      "loginWithGithub": "Se connecter avec Github",
+      "loginWithGoogle": "Se connecter avec Google",
+      "newUser": "Nouveau ici?",
+      "orContinueWith": "Ou continuer avec",
+      "passwordLabel": "Mot de passe",
+      "passwordPlaceholder": "Entrez votre mot de passe",
+      "privacyLink": "Politique de confidentialité",
+      "signUp": "S'inscrire",
+      "success": "Connexion réussie",
+      "termsLink": "Conditions d'utilisation",
+      "termsText": "En cliquant sur \"Suivant\" ou \"S'inscrire\", vous acceptez nos",
+      "title": "Connectez-vous à votre compte"
+    },
+    "signup": {
+      "alreadyHaveAccount": "Vous avez déjà un compte?",
+      "emailLabel": "Email",
+      "emailPlaceholder": "Entrez votre email",
+      "passwordLabel": "Mot de passe",
+      "passwordPlaceholder": "Entrez un nouveau mot de passe",
+      "signIn": "Se connecter",
+      "signUpButton": "S'inscrire",
+      "signUpWithGithub": "S'inscrire avec Github",
+      "signUpWithGoogle": "S'inscrire avec Google",
+      "title": "Créer un compte"
+    }
+  },
   "clipboard": {
     "errorMessage": "Échec de la copie dans le presse-papiers",
     "errorNotSupported": "L'API du presse-papiers n'est pas prise en charge par votre navigateur",
@@ -1042,6 +1078,21 @@
     "newUser": "Nouvel utilisateur",
     "next": "Suivant",
     "selectUser": "Sélectionnez un utilisateur"
+  },
+  "validation": {
+    "invalidEmail": "Adresse e-mail invalide",
+    "maxLength": "Ne doit pas dépasser {length} caractères",
+    "minLength": "Doit contenir au moins {length} caractères",
+    "password": {
+      "lowercase": "Doit contenir au moins une lettre minuscule",
+      "match": "Les mots de passe doivent correspondre",
+      "minLength": "Doit contenir entre 8 et 32 caractères",
+      "number": "Doit contenir au moins un chiffre",
+      "requirements": "Exigences du mot de passe",
+      "special": "Doit contenir au moins un caractère spécial",
+      "uppercase": "Doit contenir au moins une lettre majuscule"
+    },
+    "required": "Requis"
   },
   "welcome": {
     "getStarted": "Commencer",

@@ -8,6 +8,42 @@
     "message": "이 워크플로우에는 API 노드가 포함되어 있으며, 실행하려면 계정에 로그인해야 합니다.",
     "title": "API 노드 사용에 필요한 로그인"
   },
+  "auth": {
+    "login": {
+      "andText": "및",
+      "confirmPasswordLabel": "비밀번호 확인",
+      "confirmPasswordPlaceholder": "동일한 비밀번호를 다시 입력하세요",
+      "emailLabel": "이메일",
+      "emailPlaceholder": "이메일을 입력하세요",
+      "failed": "로그인 실패",
+      "forgotPassword": "비밀번호를 잊으셨나요?",
+      "loginButton": "로그인",
+      "loginWithGithub": "Github로 로그인",
+      "loginWithGoogle": "구글로 로그인",
+      "newUser": "처음이신가요?",
+      "orContinueWith": "또는 다음으로 계속",
+      "passwordLabel": "비밀번호",
+      "passwordPlaceholder": "비밀번호를 입력하세요",
+      "privacyLink": "개인정보 보호정책",
+      "signUp": "가입하기",
+      "success": "로그인 성공",
+      "termsLink": "이용 약관",
+      "termsText": "\"다음\" 또는 \"가입하기\"를 클릭하면 우리의",
+      "title": "계정에 로그인"
+    },
+    "signup": {
+      "alreadyHaveAccount": "이미 계정이 있으신가요?",
+      "emailLabel": "이메일",
+      "emailPlaceholder": "이메일을 입력하세요",
+      "passwordLabel": "비밀번호",
+      "passwordPlaceholder": "새 비밀번호를 입력하세요",
+      "signIn": "로그인",
+      "signUpButton": "가입하기",
+      "signUpWithGithub": "Github로 가입하기",
+      "signUpWithGoogle": "구글로 가입하기",
+      "title": "계정 생성"
+    }
+  },
   "clipboard": {
     "errorMessage": "클립보드에 복사하지 못했습니다",
     "errorNotSupported": "브라우저가 클립보드 API를 지원하지 않습니다.",
@@ -1042,6 +1078,21 @@
     "newUser": "새 사용자",
     "next": "다음",
     "selectUser": "사용자 선택"
+  },
+  "validation": {
+    "invalidEmail": "유효하지 않은 이메일 주소",
+    "maxLength": "{length}자를 초과할 수 없습니다",
+    "minLength": "{length}자 이상이어야 합니다",
+    "password": {
+      "lowercase": "적어도 하나의 소문자를 포함해야 합니다",
+      "match": "비밀번호가 일치해야 합니다",
+      "minLength": "8자에서 32자 사이여야 합니다",
+      "number": "적어도 하나의 숫자를 포함해야 합니다",
+      "requirements": "비밀번호 요구사항",
+      "special": "적어도 하나의 특수 문자를 포함해야 합니다",
+      "uppercase": "적어도 하나의 대문자를 포함해야 합니다"
+    },
+    "required": "필수"
   },
   "welcome": {
     "getStarted": "시작하기",

@@ -8,6 +8,42 @@
     "message": "Este flujo de trabajo contiene nodos de API, que requieren que inicies sesión en tu cuenta para poder ejecutar.",
     "title": "Se requiere iniciar sesión para usar los nodos de API"
   },
+  "auth": {
+    "login": {
+      "andText": "y",
+      "confirmPasswordLabel": "Confirmar contraseña",
+      "confirmPasswordPlaceholder": "Ingresa la misma contraseña nuevamente",
+      "emailLabel": "Correo electrónico",
+      "emailPlaceholder": "Ingresa tu correo electrónico",
+      "failed": "Inicio de sesión fallido",
+      "forgotPassword": "¿Olvidaste tu contraseña?",
+      "loginButton": "Iniciar sesión",
+      "loginWithGithub": "Iniciar sesión con Github",
+      "loginWithGoogle": "Iniciar sesión con Google",
+      "newUser": "¿Eres nuevo aquí?",
+      "orContinueWith": "O continuar con",
+      "passwordLabel": "Contraseña",
+      "passwordPlaceholder": "Ingresa tu contraseña",
+      "privacyLink": "Política de privacidad",
+      "signUp": "Regístrate",
+      "success": "Inicio de sesión exitoso",
+      "termsLink": "Términos de uso",
+      "termsText": "Al hacer clic en \"Siguiente\" o \"Registrarse\", aceptas nuestros",
+      "title": "Inicia sesión en tu cuenta"
+    },
+    "signup": {
+      "alreadyHaveAccount": "¿Ya tienes una cuenta?",
+      "emailLabel": "Correo electrónico",
+      "emailPlaceholder": "Ingresa tu correo electrónico",
+      "passwordLabel": "Contraseña",
+      "passwordPlaceholder": "Ingresa una nueva contraseña",
+      "signIn": "Iniciar sesión",
+      "signUpButton": "Registrarse",
+      "signUpWithGithub": "Registrarse con Github",
+      "signUpWithGoogle": "Registrarse con Google",
+      "title": "Crea una cuenta"
+    }
+  },
   "clipboard": {
     "errorMessage": "Error al copiar al portapapeles",
     "errorNotSupported": "API del portapapeles no soportada en su navegador",
@@ -1042,6 +1078,21 @@
     "newUser": "Nuevo usuario",
     "next": "Siguiente",
     "selectUser": "Selecciona un usuario"
+  },
+  "validation": {
+    "invalidEmail": "Dirección de correo electrónico inválida",
+    "maxLength": "No debe tener más de {length} caracteres",
+    "minLength": "Debe tener al menos {length} caracteres",
+    "password": {
+      "lowercase": "Debe contener al menos una letra minúscula",
+      "match": "Las contraseñas deben coincidir",
+      "minLength": "Debe tener entre 8 y 32 caracteres",
+      "number": "Debe contener al menos un número",
+      "requirements": "Requisitos de la contraseña",
+      "special": "Debe contener al menos un carácter especial",
+      "uppercase": "Debe contener al menos una letra mayúscula"
+    },
+    "required": "Requerido"
   },
   "welcome": {
     "getStarted": "Empezar",
