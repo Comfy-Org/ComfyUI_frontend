@@ -7,6 +7,7 @@ import ManagerProgressDialogContent from '@/components/dialog/content/ManagerPro
 import MissingModelsWarning from '@/components/dialog/content/MissingModelsWarning.vue'
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
 import SettingDialogContent from '@/components/dialog/content/SettingDialogContent.vue'
+import SignInContent from '@/components/dialog/content/SignInContent.vue'
 import ManagerDialogContent from '@/components/dialog/content/manager/ManagerDialogContent.vue'
 import ManagerHeader from '@/components/dialog/content/manager/ManagerHeader.vue'
 import ManagerProgressFooter from '@/components/dialog/footer/ManagerProgressFooter.vue'
@@ -232,7 +233,7 @@ export const useDialogService = () => {
         component: ApiNodesSignInContent,
         props: {
           apiNodes,
-          onLogin: () => resolve(true),
+          onLogin: () => showSignInDialog().then((result) => resolve(result)),
           onCancel: () => resolve(false)
         },
         headerComponent: ComfyOrgHeader,
@@ -244,6 +245,24 @@ export const useDialogService = () => {
     }).then((result) => {
       dialogStore.closeDialog({ key: 'api-nodes-signin' })
       return result
+    })
+  }
+
+  async function showSignInDialog(): Promise<boolean> {
+    return new Promise((resolve) => {
+      dialogStore.showDialog({
+        key: 'global-signin',
+        component: SignInContent,
+        headerComponent: ComfyOrgHeader,
+        props: {
+          onSuccess: () => resolve(true),
+          onCancel: () => resolve(false)
+        },
+        dialogComponentProps: {
+          closable: false,
+          onClose: () => resolve(false)
+        }
+      })
     })
   }
 
@@ -332,6 +351,7 @@ export const useDialogService = () => {
     showManagerProgressDialog,
     showErrorDialog,
     showApiNodesSignInDialog,
+    showSignInDialog,
     prompt,
     confirm
   }
