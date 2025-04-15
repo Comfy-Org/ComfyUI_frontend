@@ -80,6 +80,7 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { SignInData, SignUpData } from '@/schemas/signInSchema'
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
 import SignInForm from './signin/SignInForm.vue'
 import SignUpForm from './signin/SignUpForm.vue'
@@ -89,6 +90,8 @@ const { t } = useI18n()
 const { onSuccess } = defineProps<{
   onSuccess: () => void
 }>()
+
+const firebaseAuthStore = useFirebaseAuthStore()
 
 const isSignIn = ref(true)
 const toggleState = () => {
@@ -109,10 +112,13 @@ const signInWithGithub = () => {
   onSuccess()
 }
 
-const signInWithEmail = (values: SignInData | SignUpData) => {
-  // Implement email login
-  console.log(isSignIn.value)
-  console.log(values)
+const signInWithEmail = async (values: SignInData | SignUpData) => {
+  const { email, password } = values
+  if (isSignIn.value) {
+    await firebaseAuthStore.login(email, password)
+  } else {
+    await firebaseAuthStore.register(email, password)
+  }
   onSuccess()
 }
 </script>
