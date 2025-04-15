@@ -249,7 +249,7 @@ export const useDialogService = () => {
   }
 
   async function showSignInDialog(): Promise<boolean> {
-    return new Promise((resolve) => {
+    return new Promise<boolean>((resolve) => {
       dialogStore.showDialog({
         key: 'global-signin',
         component: SignInContent,
@@ -262,6 +262,9 @@ export const useDialogService = () => {
           onClose: () => resolve(false)
         }
       })
+    }).then((result) => {
+      dialogStore.closeDialog({ key: 'global-signin' })
+      return result
     })
   }
 
