@@ -8,6 +8,42 @@
     "message": "此工作流包含API节点，需要您登录账户才能运行。",
     "title": "使用API节点需要登录"
   },
+  "auth": {
+    "login": {
+      "andText": "和",
+      "confirmPasswordLabel": "确认密码",
+      "confirmPasswordPlaceholder": "再次输入相同的密码",
+      "emailLabel": "电子邮件",
+      "emailPlaceholder": "输入您的电子邮件",
+      "failed": "登录失败",
+      "forgotPassword": "忘记密码？",
+      "loginButton": "登录",
+      "loginWithGithub": "使用Github登录",
+      "loginWithGoogle": "使用Google登录",
+      "newUser": "新来的？",
+      "orContinueWith": "或者继续使用",
+      "passwordLabel": "密码",
+      "passwordPlaceholder": "输入您的密码",
+      "privacyLink": "隐私政策",
+      "signUp": "注册",
+      "success": "登录成功",
+      "termsLink": "使用条款",
+      "termsText": "点击“下一步”或“注册”即表示您同意我们的",
+      "title": "登录您的账户"
+    },
+    "signup": {
+      "alreadyHaveAccount": "已经有账户了？",
+      "emailLabel": "电子邮件",
+      "emailPlaceholder": "输入您的电子邮件",
+      "passwordLabel": "密码",
+      "passwordPlaceholder": "输入新密码",
+      "signIn": "登录",
+      "signUpButton": "注册",
+      "signUpWithGithub": "使用Github注册",
+      "signUpWithGoogle": "使用Google注册",
+      "title": "创建一个账户"
+    }
+  },
   "clipboard": {
     "errorMessage": "复制到剪贴板失败",
     "errorNotSupported": "您的浏览器不支持剪贴板API",
@@ -1042,6 +1078,21 @@
     "newUser": "新用户",
     "next": "下一步",
     "selectUser": "选择用户"
+  },
+  "validation": {
+    "invalidEmail": "无效的电子邮件地址",
+    "maxLength": "不能超过{length}个字符",
+    "minLength": "必须至少有{length}个字符",
+    "password": {
+      "lowercase": "必须包含至少一个小写字母",
+      "match": "密码必须匹配",
+      "minLength": "必须在8到32个字符之间",
+      "number": "必须包含至少一个数字",
+      "requirements": "密码要求",
+      "special": "必须包含至少一个特殊字符",
+      "uppercase": "必须包含至少一个大写字母"
+    },
+    "required": "必填"
   },
   "welcome": {
     "getStarted": "开始使用",

@@ -8,6 +8,42 @@
     "message": "このワークフローにはAPIノードが含まれており、実行するためにはアカウントにサインインする必要があります。",
     "title": "APIノードを使用するためにはサインインが必要です"
   },
+  "auth": {
+    "login": {
+      "andText": "および",
+      "confirmPasswordLabel": "パスワードの確認",
+      "confirmPasswordPlaceholder": "もう一度同じパスワードを入力してください",
+      "emailLabel": "メール",
+      "emailPlaceholder": "メールアドレスを入力してください",
+      "failed": "ログイン失敗",
+      "forgotPassword": "パスワードを忘れましたか？",
+      "loginButton": "ログイン",
+      "loginWithGithub": "Githubでログイン",
+      "loginWithGoogle": "Googleでログイン",
+      "newUser": "新規ユーザーですか？",
+      "orContinueWith": "または以下で続ける",
+      "passwordLabel": "パスワード",
+      "passwordPlaceholder": "パスワードを入力してください",
+      "privacyLink": "プライバシーポリシー",
+      "signUp": "サインアップ",
+      "success": "ログイン成功",
+      "termsLink": "利用規約",
+      "termsText": "「次へ」または「サインアップ」をクリックすると、私たちの",
+      "title": "アカウントにログインする"
+    },
+    "signup": {
+      "alreadyHaveAccount": "すでにアカウントをお持ちですか？",
+      "emailLabel": "メール",
+      "emailPlaceholder": "メールアドレスを入力してください",
+      "passwordLabel": "パスワード",
+      "passwordPlaceholder": "新しいパスワードを入力してください",
+      "signIn": "サインイン",
+      "signUpButton": "サインアップ",
+      "signUpWithGithub": "Githubでサインアップ",
+      "signUpWithGoogle": "Googleでサインアップ",
+      "title": "アカウントを作成する"
+    }
+  },
   "clipboard": {
     "errorMessage": "クリップボードへのコピーに失敗しました",
     "errorNotSupported": "お使いのブラウザではクリップボードAPIがサポートされていません",
@@ -1042,6 +1078,21 @@
     "newUser": "新しいユーザー",
     "next": "次へ",
     "selectUser": "ユーザーを選択"
+  },
+  "validation": {
+    "invalidEmail": "無効なメールアドレス",
+    "maxLength": "{length}文字以下でなければなりません",
+    "minLength": "{length}文字以上でなければなりません",
+    "password": {
+      "lowercase": "少なくとも1つの小文字を含む必要があります",
+      "match": "パスワードが一致する必要があります",
+      "minLength": "8文字から32文字の間でなければなりません",
+      "number": "少なくとも1つの数字を含む必要があります",
+      "requirements": "パスワードの要件",
+      "special": "少なくとも1つの特殊文字を含む必要があります",
+      "uppercase": "少なくとも1つの大文字を含む必要があります"
+    },
+    "required": "必須"
   },
   "welcome": {
     "getStarted": "はじめる",
