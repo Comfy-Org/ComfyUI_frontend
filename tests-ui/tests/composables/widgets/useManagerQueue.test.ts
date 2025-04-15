@@ -28,7 +28,7 @@ describe('useManagerQueue', () => {
   const getEventListenerCallback = () =>
     vi.mocked(api.addEventListener).mock.calls[0][1]
 
-  const simulateServerStatus = async (status: 'done' | 'in_progress') => {
+  const simulateServerStatus = async (status: 'all-done' | 'in_progress') => {
     const event = new CustomEvent('cm-queue-status', {
       detail: { status }
     })
@@ -49,7 +49,7 @@ describe('useManagerQueue', () => {
       const queue = useManagerQueue()
 
       expect(queue.queueLength.value).toBe(0)
-      expect(queue.statusMessage.value).toBe('done')
+      expect(queue.statusMessage.value).toBe('all-done')
       expect(queue.allTasksDone.value).toBe(true)
     })
   })
@@ -104,7 +104,7 @@ describe('useManagerQueue', () => {
       await nextTick()
 
       // Should maintain the default status
-      expect(queue.statusMessage.value).toBe('done')
+      expect(queue.statusMessage.value).toBe('all-done')
     })
 
     it('should handle missing status property gracefully', async () => {
@@ -119,7 +119,7 @@ describe('useManagerQueue', () => {
       await nextTick()
 
       // Should maintain the default status
-      expect(queue.statusMessage.value).toBe('done')
+      expect(queue.statusMessage.value).toBe('all-done')
     })
   })
 
@@ -127,7 +127,7 @@ describe('useManagerQueue', () => {
     it('should start the next task when server is idle and queue has items', async () => {
       const { queue, mockTask } = createQueueWithMockTask()
 
-      await simulateServerStatus('done')
+      await simulateServerStatus('all-done')
 
       // Task should have been started
       expect(mockTask.task).toHaveBeenCalled()
@@ -138,7 +138,7 @@ describe('useManagerQueue', () => {
       const { mockTask } = createQueueWithMockTask()
 
       // Start the task
-      await simulateServerStatus('done')
+      await simulateServerStatus('all-done')
       expect(mockTask.task).toHaveBeenCalled()
 
       // Simulate task completion
@@ -148,7 +148,7 @@ describe('useManagerQueue', () => {
       await simulateServerStatus('in_progress')
       expect(mockTask.onComplete).not.toHaveBeenCalled()
 
-      await simulateServerStatus('done')
+      await simulateServerStatus('all-done')
       expect(mockTask.onComplete).toHaveBeenCalled()
     })
 
@@ -159,7 +159,7 @@ describe('useManagerQueue', () => {
       queue.enqueueTask(mockTask)
 
       // Start the task
-      await simulateServerStatus('done')
+      await simulateServerStatus('all-done')
       expect(mockTask.task).toHaveBeenCalled()
 
       // Simulate task completion
@@ -167,7 +167,7 @@ describe('useManagerQueue', () => {
 
       // Simulate server cycle
       await simulateServerStatus('in_progress')
-      await simulateServerStatus('done')
+      await simulateServerStatus('all-done')
 
       // Should not throw errors even without onComplete
       expect(queue.allTasksDone.value).toBe(true)
@@ -184,14 +184,14 @@ describe('useManagerQueue', () => {
       expect(queue.queueLength.value).toBe(2)
 
       // Process first task
-      await simulateServerStatus('done')
+      await simulateServerStatus('all-done')
       expect(mockTask1.task).toHaveBeenCalled()
       expect(queue.queueLength.value).toBe(1)
 
       // Complete first task
       await mockTask1.task.mock.results[0].value
       await simulateServerStatus('in_progress')
-      await simulateServerStatus('done')
+      await simulateServerStatus('all-done')
       expect(mockTask1.onComplete).toHaveBeenCalled()
 
       // Process second task
@@ -201,7 +201,7 @@ describe('useManagerQueue', () => {
       // Complete second task
       await mockTask2.task.mock.results[0].value
       await simulateServerStatus('in_progress')
-      await simulateServerStatus('done')
+      await simulateServerStatus('all-done')
       expect(mockTask2.onComplete).toHaveBeenCalled()
 
       // Queue should be empty and all tasks done
@@ -219,7 +219,7 @@ describe('useManagerQueue', () => {
       queue.enqueueTask(mockTask)
 
       // Start the task
-      await simulateServerStatus('done')
+      await simulateServerStatus('all-done')
       expect(mockTask.task).toHaveBeenCalled()
 
       // Let the promise rejection happen
@@ -231,7 +231,7 @@ describe('useManagerQueue', () => {
 
       // Simulate server cycle
       await simulateServerStatus('in_progress')
-      await simulateServerStatus('done')
+      await simulateServerStatus('all-done')
 
       // onComplete should still be called for failed tasks
       expect(mockTask.onComplete).toHaveBeenCalled()
@@ -252,7 +252,7 @@ describe('useManagerQueue', () => {
       ])
 
       // Task 1
-      await simulateServerStatus('done')
+      await simulateServerStatus('all-done')
       expect(mockTask1.task).toHaveBeenCalled()
 
       // Verify state of onComplete callbacks
@@ -266,7 +266,7 @@ describe('useManagerQueue', () => {
 
       // Task 2
       await simulateServerStatus('in_progress')
-      await simulateServerStatus('done')
+      await simulateServerStatus('all-done')
       expect(mockTask2.task).toHaveBeenCalled()
 
       // Verify state of onComplete callbacks
@@ -279,7 +279,7 @@ describe('useManagerQueue', () => {
 
       // Task 3
       await simulateServerStatus('in_progress')
-      await simulateServerStatus('done')
+      await simulateServerStatus('all-done')
 
       // Verify state of onComplete callbacks
       expect(mockTask3.task).toHaveBeenCalled()
@@ -297,7 +297,7 @@ describe('useManagerQueue', () => {
 
       // Add first task and start processing
       queue.enqueueTask(mockTask1)
-      await simulateServerStatus('done')
+      await simulateServerStatus('all-done')
       expect(mockTask1.task).toHaveBeenCalled()
 
       // Add second task while first is processing
@@ -307,7 +307,7 @@ describe('useManagerQueue', () => {
       // Complete first task
       await mockTask1.task.mock.results[0].value
       await simulateServerStatus('in_progress')
-      await simulateServerStatus('done')
+      await simulateServerStatus('all-done')
 
       // Second task should now be processed
       expect(mockTask2.task).toHaveBeenCalled()
@@ -318,9 +318,9 @@ describe('useManagerQueue', () => {
 
       // Cycle server status without any tasks
       await simulateServerStatus('in_progress')
-      await simulateServerStatus('done')
+      await simulateServerStatus('all-done')
       await simulateServerStatus('in_progress')
-      await simulateServerStatus('done')
+      await simulateServerStatus('all-done')
 
       // Should not cause any errors
       expect(queue.allTasksDone.value).toBe(true)
