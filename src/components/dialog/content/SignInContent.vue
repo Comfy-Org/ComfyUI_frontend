@@ -19,7 +19,7 @@
 
     <!-- Form -->
     <SignInForm v-if="isSignIn" @submit="signInWithEmail" />
-    <SignUpForm v-else @submit="signUpWithEmail" />
+    <SignUpForm v-else @submit="signInWithEmail" />
 
     <!-- Divider -->
     <Divider align="center" layout="horizontal" class="my-8">
@@ -33,7 +33,7 @@
         class="h-10 text-white"
         severity="secondary"
         outlined
-        @click="loginWithGoogle"
+        @click="signInWithGoogle"
       >
         <i class="pi pi-google mr-2"></i>
         {{
@@ -48,7 +48,7 @@
         class="h-10 text-white"
         severity="secondary"
         outlined
-        @click="loginWithGithub"
+        @click="signInWithGithub"
       >
         <i class="pi pi-github mr-2"></i>
         {{
@@ -91,21 +91,21 @@ const toggleState = () => {
   isSignIn.value = !isSignIn.value
 }
 
-const loginWithGoogle = () => {
+const signInWithGoogle = () => {
   // Implement Google login
+  console.log(isSignIn.value)
   console.log('Google login clicked')
 }
 
-const loginWithGithub = () => {
+const signInWithGithub = () => {
   // Implement Github login
+  console.log(isSignIn.value)
   console.log('Github login clicked')
 }
 
-const signInWithEmail = (values: SignInData) => {
-  console.log(values)
-}
-
-const signUpWithEmail = (values: SignUpData) => {
+const signInWithEmail = (values: SignInData | SignUpData) => {
+  // Implement email login
+  console.log(isSignIn.value)
   console.log(values)
 }
 </script>
