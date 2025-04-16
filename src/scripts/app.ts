@@ -1179,7 +1179,7 @@ export class ComfyApp {
     if (comfyOrgAuthToken && !window.isSecureContext) {
       comfyOrgAuthToken = undefined
       console.warn(
-        'Auth token not used: Not in a secure context (HTTPS). Authentication requires a secure connection.'
+        'Auth token not used: Not in a secure context. Authentication requires a secure connection.'
       )
     }
 
