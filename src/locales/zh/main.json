@@ -1000,7 +1000,7 @@
         "lora_multiple": "Lora多个"
       },
       "ControlNet": {
-        "2_pass_pose_worship": "2通道姿势崇拜",
+        "2_pass_pose_worship": "双通道姿势处理",
         "controlnet_example": "ControlNet",
         "depth_controlnet": "深度ControlNet",
         "depth_t2i_adapter": "深度T2I适配器",
