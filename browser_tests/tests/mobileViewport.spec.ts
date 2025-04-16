@@ -16,7 +16,7 @@ test.describe('Mobile viewport', () => {
     const topMenu = comfyPage.page.locator('.comfyui-menu')
     await expect(topMenu).toBeVisible()
 
-    // Top menu is not cut off from the tpo
+    // Top menu is not cut off from the top
     const topMenuBox = await topMenu.boundingBox()
     expect(topMenuBox?.y).toBeGreaterThanOrEqual(0)
 
