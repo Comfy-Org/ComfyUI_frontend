@@ -59,5 +59,7 @@ export class MapProxyHandler<V> implements ProxyHandler<Map<number | string, V>>
     map.entries = map.entries.bind(map)
     map.keys = map.keys.bind(map)
     map.values = map.values.bind(map)
+
+    map[Symbol.iterator] = map[Symbol.iterator].bind(map)
   }
 }
