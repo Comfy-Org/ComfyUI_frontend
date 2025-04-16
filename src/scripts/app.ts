@@ -34,6 +34,7 @@ import { useWorkflowService } from '@/services/workflowService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExtensionStore } from '@/stores/extensionStore'
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
 import { useModelStore } from '@/stores/modelStore'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
@@ -1172,6 +1173,8 @@ export class ComfyApp {
     const executionStore = useExecutionStore()
     executionStore.lastNodeErrors = null
 
+    const comfyOrgAuthToken =
+      (await useFirebaseAuthStore().getIdToken()) ?? undefined
     try {
       while (this.#queueItems.length) {
         const { number, batchCount } = this.#queueItems.pop()!
@@ -1183,7 +1186,7 @@ export class ComfyApp {
 
           const p = await this.graphToPrompt()
           try {
-            const res = await api.queuePrompt(number, p)
+            const res = await api.queuePrompt(number, p, comfyOrgAuthToken)
             executionStore.lastNodeErrors = res.node_errors ?? null
             if (executionStore.lastNodeErrors?.length) {
               this.canvas.draw(true, true)
