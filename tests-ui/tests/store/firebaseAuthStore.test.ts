@@ -13,7 +13,10 @@ vi.mock('firebase/auth', () => ({
   signInWithEmailAndPassword: vi.fn(),
   createUserWithEmailAndPassword: vi.fn(),
   signOut: vi.fn(),
-  onAuthStateChanged: vi.fn()
+  onAuthStateChanged: vi.fn(),
+  signInWithPopup: vi.fn(),
+  GoogleAuthProvider: vi.fn(),
+  GithubAuthProvider: vi.fn()
 }))
 
 describe('useFirebaseAuthStore', () => {
@@ -270,6 +273,92 @@ describe('useFirebaseAuthStore', () => {
       // Verify token is null after logout
       const tokenAfterLogout = await store.getIdToken()
       expect(tokenAfterLogout).toBeNull()
+    })
+  })
+
+  describe('social authentication', () => {
+    describe('loginWithGoogle', () => {
+      it('should sign in with Google', async () => {
+        const mockUserCredential = { user: mockUser }
+        vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue(
+          mockUserCredential as any
+        )
+
+        const result = await store.loginWithGoogle()
+
+        expect(firebaseAuth.signInWithPopup).toHaveBeenCalledWith(
+          mockAuth,
+          expect.any(firebaseAuth.GoogleAuthProvider)
+        )
+        expect(result).toEqual(mockUserCredential)
+        expect(store.loading).toBe(false)
+        expect(store.error).toBe(null)
+      })
+
+      it('should handle Google sign in errors', async () => {
+        const mockError = new Error('Google authentication failed')
+        vi.mocked(firebaseAuth.signInWithPopup).mockRejectedValue(mockError)
+
+        await expect(store.loginWithGoogle()).rejects.toThrow(
+          'Google authentication failed'
+        )
+
+        expect(firebaseAuth.signInWithPopup).toHaveBeenCalledWith(
+          mockAuth,
+          expect.any(firebaseAuth.GoogleAuthProvider)
+        )
+        expect(store.loading).toBe(false)
+        expect(store.error).toBe('Google authentication failed')
+      })
+    })
+
+    describe('loginWithGithub', () => {
+      it('should sign in with Github', async () => {
+        const mockUserCredential = { user: mockUser }
+        vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue(
+          mockUserCredential as any
+        )
+
+        const result = await store.loginWithGithub()
+
+        expect(firebaseAuth.signInWithPopup).toHaveBeenCalledWith(
+          mockAuth,
+          expect.any(firebaseAuth.GithubAuthProvider)
+        )
+        expect(result).toEqual(mockUserCredential)
+        expect(store.loading).toBe(false)
+        expect(store.error).toBe(null)
+      })
+
+      it('should handle Github sign in errors', async () => {
+        const mockError = new Error('Github authentication failed')
+        vi.mocked(firebaseAuth.signInWithPopup).mockRejectedValue(mockError)
+
+        await expect(store.loginWithGithub()).rejects.toThrow(
+          'Github authentication failed'
+        )
+
+        expect(firebaseAuth.signInWithPopup).toHaveBeenCalledWith(
+          mockAuth,
+          expect.any(firebaseAuth.GithubAuthProvider)
+        )
+        expect(store.loading).toBe(false)
+        expect(store.error).toBe('Github authentication failed')
+      })
+    })
+
+    it('should handle concurrent social login attempts correctly', async () => {
+      const mockUserCredential = { user: mockUser }
+      vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue(
+        mockUserCredential as any
+      )
+
+      const googleLoginPromise = store.loginWithGoogle()
+      const githubLoginPromise = store.loginWithGithub()
+
+      await Promise.all([googleLoginPromise, githubLoginPromise])
+
+      expect(store.loading).toBe(false)
     })
   })
 })
