@@ -43,7 +43,7 @@ export class ComfyNodeDefImpl
   readonly deprecated: boolean
   readonly experimental: boolean
   readonly output_node: boolean
-  readonly comfy_api_node_name?: string
+  readonly api_node?: boolean
   credits_cost?: number
   /**
    * @deprecated Use `inputs` instead
@@ -125,7 +125,6 @@ export class ComfyNodeDefImpl
     this.experimental =
       obj.experimental ?? obj.category.startsWith('_for_testing')
     this.output_node = obj.output_node
-    this.comfy_api_node_name = obj.comfy_api_node_name
     this.input = obj.input ?? {}
     this.output = obj.output ?? []
     this.output_is_list = obj.output_is_list
@@ -140,14 +139,10 @@ export class ComfyNodeDefImpl
 
     // Initialize node source
     this.nodeSource = getNodeSource(obj.python_module)
-  }
 
-  /**
-   * Initializes API node fields
-   */
-  async initApiNodeFields() {
-    if (this.comfy_api_node_name) {
-      this.credits_cost = await useComfyRegistryStore().getAPINodePrice()
+    // Initialize API node fields
+    if (obj.api_node) {
+      this.credits_cost = useComfyRegistryStore().getAPINodePrice(this.name)
     }
   }
 
@@ -299,7 +294,6 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   }
   async function addNodeDef(nodeDef: ComfyNodeDefV1) {
     const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
-    await nodeDefImpl.initApiNodeFields()
     nodeDefsByName.value[nodeDef.name] = nodeDefImpl
     nodeDefsByDisplayName.value[nodeDef.display_name] = nodeDefImpl
   }

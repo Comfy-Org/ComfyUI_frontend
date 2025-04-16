@@ -222,7 +222,7 @@ export const zComfyNodeDef = z.object({
   python_module: z.string(),
   deprecated: z.boolean().optional(),
   experimental: z.boolean().optional(),
-  comfy_api_node_name: z.string().optional()
+  api_node: z.boolean().optional()
 })
 
 // `/object_info`

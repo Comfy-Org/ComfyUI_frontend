@@ -83,6 +83,31 @@ onMounted(() => {
       })
 
       node.badges.push(() => badge.value)
+
+      // Add credits badge if node has credits_cost
+      if (node.constructor.nodeData?.credits_cost) {
+        node.badges.push(
+          () =>
+            new LGraphBadge({
+              text: String(node.constructor.nodeData.credits_cost),
+              fgColor: '#fff',
+              bgColor: '#4E4E4E',
+              fontSize: 12,
+              padding: 5,
+              height: 21,
+              cornerRadius: 6,
+              xOffset: -4,
+              yOffset: 28,
+              iconOptions: {
+                unicode: '\ue96b',
+                fontFamily: 'PrimeIcons',
+                color: '#FABC25',
+                bgColor: '#353535',
+                fontSize: 8
+              }
+            })
+        )
+      }
     }
   })
 })
