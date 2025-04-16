@@ -24,7 +24,11 @@ import type {
   User,
   UserDataFullInfo
 } from '@/schemas/apiSchema'
-import type { ComfyWorkflowJSON, NodeId } from '@/schemas/comfyWorkflowSchema'
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON,
+  NodeId
+} from '@/schemas/comfyWorkflowSchema'
 import {
   type ComfyNodeDef,
   validateComfyNodeDef
@@ -33,13 +37,27 @@ import { WorkflowTemplates } from '@/types/workflowTemplateTypes'
 
 interface QueuePromptRequestBody {
   client_id: string
-  // Mapping from node id to node info + input values
-  // TODO: Type this.
-  prompt: Record<number, any>
+  prompt: ComfyApiWorkflow
   extra_data: {
     extra_pnginfo: {
       workflow: ComfyWorkflowJSON
     }
+    /**
+     * The auth token for the comfy org account if the user is logged in.
+     *
+     * Backend node can access this token by specifying following input:
+     * ```python
+      @classmethod
+      def INPUT_TYPES(s):
+        return {
+          "hidden": { "auth_token": "AUTH_TOKEN_COMFY_ORG"}
+        }
+
+      def execute(self, auth_token: str):
+        print(f"Auth token: {auth_token}")
+     * ```
+     */
+    auth_token_comfy_org?: string
   }
   front?: boolean
   number?: number
@@ -499,19 +517,23 @@ export class ComfyApi extends EventTarget {
    * Queues a prompt to be executed
    * @param {number} number The index at which to queue the prompt, passing -1 will insert the prompt at the front of the queue
    * @param {object} prompt The prompt data to queue
+   * @param {string} authToken The auth token for the comfy org account if the user is logged in
    * @throws {PromptExecutionError} If the prompt fails to execute
    */
   async queuePrompt(
     number: number,
-    {
-      output,
-      workflow
-    }: { output: Record<number, any>; workflow: ComfyWorkflowJSON }
+    data: { output: ComfyApiWorkflow; workflow: ComfyWorkflowJSON },
+    authToken?: string
   ): Promise<PromptResponse> {
+    const { output: prompt, workflow } = data
+
     const body: QueuePromptRequestBody = {
       client_id: this.clientId ?? '', // TODO: Unify clientId access
-      prompt: output,
-      extra_data: { extra_pnginfo: { workflow } }
+      prompt,
+      extra_data: {
+        auth_token_comfy_org: authToken,
+        extra_pnginfo: { workflow }
+      }
     }
 
     if (number === -1) {
