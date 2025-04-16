@@ -1,6 +1,7 @@
 import QuickLRU from '@alloc/quick-lru'
 import { partition } from 'lodash'
 import { defineStore } from 'pinia'
+import { ref } from 'vue'
 
 import { useCachedRequest } from '@/composables/useCachedRequest'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
@@ -33,6 +34,9 @@ export const useComfyRegistryStore = defineStore('comfyRegistry', () => {
   const getPacksByIdCache = new QuickLRU<NodePack['id'], NodePack>({
     maxSize: PACK_BY_ID_CACHE_SIZE
   })
+
+  // TODO: type when the endpoint is defined in comfy-api OpenAPI spec
+  const apiNodeCosts = ref<Record<string, number>>({})
 
   /**
    * Get a list of all node packs from the registry
@@ -88,10 +92,14 @@ export const useComfyRegistryStore = defineStore('comfyRegistry', () => {
     return resolvedPacks
   }
 
-  const getAPINodePrice = async () => {
-    // TODO: when the endpoint is created in comfy-api
-    return 20
+  const initializeApiNodeCosts = async () => {
+    const costs = await registryService.getApiNodeCosts()
+    if (costs) {
+      apiNodeCosts.value = costs
+    }
   }
+
+  const getAPINodePrice = (nodeId: string) => apiNodeCosts.value[nodeId]
 
   /**
    * Get the node definitions for a pack
@@ -138,7 +146,7 @@ export const useComfyRegistryStore = defineStore('comfyRegistry', () => {
     getNodeDefs,
     search,
     getAPINodePrice,
-
+    initializeApiNodeCosts,
     clearCache,
     cancelRequests,
 

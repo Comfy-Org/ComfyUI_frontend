@@ -31,6 +31,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowService } from '@/services/workflowService'
+import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExtensionStore } from '@/stores/extensionStore'
@@ -872,6 +873,7 @@ export class ComfyApp {
    * Registers nodes with the graph
    */
   async registerNodes() {
+    await useComfyRegistryStore().initializeApiNodeCosts()
     // Load node definitions from the backend
     const defs = await this.#getNodeDefs()
     await this.registerNodesFromDefs(defs)
