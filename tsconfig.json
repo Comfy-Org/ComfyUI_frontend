@@ -35,7 +35,6 @@
     "src/**/*.vue",
     "src/types/**/*.d.ts",
     "tests-ui/**/*",
-    "global.d.ts",
-    "eslint.config.js"
+    "global.d.ts"
   ]
 }
