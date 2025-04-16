@@ -92,7 +92,7 @@ test.describe('Node badge color', () => {
       'node-badge-unknown-color-palette.png'
     )
   })
-  
+
   test('Can show node badge with light color palette', async ({
     comfyPage
   }) => {
