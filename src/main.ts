@@ -2,6 +2,7 @@ import '@comfyorg/litegraph/style.css'
 import { definePreset } from '@primevue/themes'
 import Aura from '@primevue/themes/aura'
 import * as Sentry from '@sentry/vue'
+import { initializeApp } from 'firebase/app'
 import { createPinia } from 'pinia'
 import 'primeicons/primeicons.css'
 import PrimeVue from 'primevue/config'
@@ -9,8 +10,10 @@ import ConfirmationService from 'primevue/confirmationservice'
 import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
+import { VueFire, VueFireAuth } from 'vuefire'
 
 import '@/assets/css/style.css'
+import { FIREBASE_CONFIG } from '@/config/firebase'
 import router from '@/router'
 
 import App from './App.vue'
@@ -22,6 +25,8 @@ const ComfyUIPreset = definePreset(Aura, {
     primary: Aura['primitive'].blue
   }
 })
+
+const firebaseApp = initializeApp(FIREBASE_CONFIG)
 
 const app = createApp(App)
 const pinia = createPinia()
@@ -58,4 +63,8 @@ app
   .use(ToastService)
   .use(pinia)
   .use(i18n)
+  .use(VueFire, {
+    firebaseApp,
+    modules: [VueFireAuth()]
+  })
   .mount('#vue-app')

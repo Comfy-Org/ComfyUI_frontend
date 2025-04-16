@@ -1,4 +1,49 @@
 {
+  "apiNodesCostBreakdown": {
+    "costPerRun": "実行あたりのコスト",
+    "title": "APIノード",
+    "totalCost": "合計コスト"
+  },
+  "apiNodesSignInDialog": {
+    "message": "このワークフローにはAPIノードが含まれており、実行するためにはアカウントにサインインする必要があります。",
+    "title": "APIノードを使用するためにはサインインが必要です"
+  },
+  "auth": {
+    "login": {
+      "andText": "および",
+      "confirmPasswordLabel": "パスワードの確認",
+      "confirmPasswordPlaceholder": "もう一度同じパスワードを入力してください",
+      "emailLabel": "メール",
+      "emailPlaceholder": "メールアドレスを入力してください",
+      "failed": "ログイン失敗",
+      "forgotPassword": "パスワードを忘れましたか？",
+      "loginButton": "ログイン",
+      "loginWithGithub": "Githubでログイン",
+      "loginWithGoogle": "Googleでログイン",
+      "newUser": "新規ユーザーですか？",
+      "orContinueWith": "または以下で続ける",
+      "passwordLabel": "パスワード",
+      "passwordPlaceholder": "パスワードを入力してください",
+      "privacyLink": "プライバシーポリシー",
+      "signUp": "サインアップ",
+      "success": "ログイン成功",
+      "termsLink": "利用規約",
+      "termsText": "「次へ」または「サインアップ」をクリックすると、私たちの",
+      "title": "アカウントにログインする"
+    },
+    "signup": {
+      "alreadyHaveAccount": "すでにアカウントをお持ちですか？",
+      "emailLabel": "メール",
+      "emailPlaceholder": "メールアドレスを入力してください",
+      "passwordLabel": "パスワード",
+      "passwordPlaceholder": "新しいパスワードを入力してください",
+      "signIn": "サインイン",
+      "signUpButton": "サインアップ",
+      "signUpWithGithub": "Githubでサインアップ",
+      "signUpWithGoogle": "Googleでサインアップ",
+      "title": "アカウントを作成する"
+    }
+  },
   "clipboard": {
     "errorMessage": "クリップボードへのコピーに失敗しました",
     "errorNotSupported": "お使いのブラウザではクリップボードAPIがサポートされていません",
@@ -172,9 +217,11 @@
     "installing": "インストール中",
     "interrupted": "中断されました",
     "keybinding": "キーバインディング",
+    "learnMore": "詳細を学ぶ",
     "loadAllFolders": "すべてのフォルダーを読み込む",
     "loadWorkflow": "ワークフローを読み込む",
     "loading": "読み込み中",
+    "login": "ログイン",
     "logs": "ログ",
     "migrate": "移行する",
     "missing": "不足している",
@@ -812,9 +859,11 @@
     "troubleshoot": "トラブルシューティング"
   },
   "settingsCategories": {
+    "3D": "3D",
     "About": "情報",
     "Appearance": "外観",
     "BrushAdjustment": "ブラシ調整",
+    "Camera": "カメラ",
     "Canvas": "キャンバス",
     "ColorPalette": "カラーパレット",
     "Comfy": "Comfy",
@@ -831,6 +880,7 @@
     "Link": "リンク",
     "LinkRelease": "リンク解除",
     "LiteGraph": "Lite Graph",
+    "Load 3D": "3Dを読み込む",
     "Locale": "ロケール",
     "Mask Editor": "マスクエディタ",
     "Menu": "メニュー",
@@ -845,6 +895,7 @@
     "QueueButton": "キューボタン",
     "Reroute": "リルート",
     "RerouteBeta": "ルート変更ベータ",
+    "Scene": "シーン",
     "Server": "サーバー",
     "Server-Config": "サーバー設定",
     "Settings": "設定",
@@ -1027,6 +1078,21 @@
     "newUser": "新しいユーザー",
     "next": "次へ",
     "selectUser": "ユーザーを選択"
+  },
+  "validation": {
+    "invalidEmail": "無効なメールアドレス",
+    "maxLength": "{length}文字以下でなければなりません",
+    "minLength": "{length}文字以上でなければなりません",
+    "password": {
+      "lowercase": "少なくとも1つの小文字を含む必要があります",
+      "match": "パスワードが一致する必要があります",
+      "minLength": "8文字から32文字の間でなければなりません",
+      "number": "少なくとも1つの数字を含む必要があります",
+      "requirements": "パスワードの要件",
+      "special": "少なくとも1つの特殊文字を含む必要があります",
+      "uppercase": "少なくとも1つの大文字を含む必要があります"
+    },
+    "required": "必須"
   },
   "welcome": {
     "getStarted": "はじめる",

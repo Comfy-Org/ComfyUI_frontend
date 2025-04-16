@@ -8,6 +8,15 @@ const vue3CompositionApiBestPractices = [
   "Use watch and watchEffect for side effects",
   "Implement lifecycle hooks with onMounted, onUpdated, etc.",
   "Utilize provide/inject for dependency injection",
+  "Use vue 3.5 style of default prop declaration. Example:
+
+const { nodes, showTotal = true } = defineProps<{
+  nodes: ApiNodeCost[]
+  showTotal?: boolean
+}>()
+
+",
+  "Organize vue component in <template> <script> <style> order",
 ]
 
 // Folder structure
@@ -40,4 +49,6 @@ const additionalInstructions = `
 7. Implement proper error handling
 8. Follow Vue 3 style guide and naming conventions
 9. Use Vite for fast development and building
+10. Use vue-i18n in composition API for any string literals. Place new translation
+entries in src/locales/en/main.json.
 `;

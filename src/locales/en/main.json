@@ -108,7 +108,9 @@
     "disabling": "Disabling",
     "updating": "Updating",
     "migrate": "Migrate",
-    "updateAvailable": "Update Available"
+    "updateAvailable": "Update Available",
+    "login": "Login",
+    "learnMore": "Learn more"
   },
   "manager": {
     "title": "Custom Nodes Manager",
@@ -716,7 +718,11 @@
     "CustomColorPalettes": "Custom Color Palettes",
     "UV": "UV",
     "ContextMenu": "Context Menu",
-    "Reroute": "Reroute"
+    "Reroute": "Reroute",
+    "Load 3D": "Load 3D",
+    "Camera": "Camera",
+    "Scene": "Scene",
+    "3D": "3D"
   },
   "serverConfigItems": {
     "listen": {
@@ -972,6 +978,15 @@
     "extensionFileHint": "This may be due to the following script",
     "promptExecutionError": "Prompt execution failed"
   },
+  "apiNodesSignInDialog": {
+    "title": "Sign In Required to Use API Nodes",
+    "message": "This workflow contains API Nodes, which require you to be signed in to your account in order to run."
+  },
+  "apiNodesCostBreakdown": {
+    "title": "API Node(s)",
+    "costPerRun": "Cost per run",
+    "totalCost": "Total Cost"
+  },
   "desktopUpdate": {
     "title": "Updating ComfyUI Desktop",
     "description": "ComfyUI Desktop is installing new dependencies.  This may take a few minutes.",
@@ -1036,5 +1051,56 @@
     "noTemplatesToExport": "No templates to export",
     "failedToFetchLogs": "Failed to fetch server logs",
     "migrateToLitegraphReroute": "Reroute nodes will be removed in future versions. Click to migrate to litegraph-native reroute."
+  },
+  "auth": {
+    "login": {
+      "title": "Log in to your account",
+      "newUser": "New here?",
+      "signUp": "Sign up",
+      "emailLabel": "Email",
+      "emailPlaceholder": "Enter your email",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Enter your password",
+      "confirmPasswordLabel": "Confirm Password",
+      "confirmPasswordPlaceholder": "Enter the same password again",
+      "forgotPassword": "Forgot password?",
+      "loginButton": "Log in",
+      "orContinueWith": "Or continue with",
+      "loginWithGoogle": "Log in with Google",
+      "loginWithGithub": "Log in with Github",
+      "termsText": "By clicking \"Next\" or \"Sign Up\", you agree to our",
+      "termsLink": "Terms of Use",
+      "andText": "and",
+      "privacyLink": "Privacy Policy",
+      "success": "Login successful",
+      "failed": "Login failed"
+    },
+    "signup": {
+      "title": "Create an account",
+      "alreadyHaveAccount": "Already have an account?",
+      "emailLabel": "Email",
+      "emailPlaceholder": "Enter your email",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Enter new password",
+      "signUpButton": "Sign up",
+      "signIn": "Sign in",
+      "signUpWithGoogle": "Sign up with Google",
+      "signUpWithGithub": "Sign up with Github"
+    }
+  },
+  "validation": {
+    "invalidEmail": "Invalid email address",
+    "required": "Required",
+    "minLength": "Must be at least {length} characters",
+    "maxLength": "Must be no more than {length} characters",
+    "password": {
+      "requirements": "Password requirements",
+      "minLength": "Must be between 8 and 32 characters",
+      "uppercase": "Must contain at least one uppercase letter",
+      "lowercase": "Must contain at least one lowercase letter",
+      "number": "Must contain at least one number",
+      "special": "Must contain at least one special character",
+      "match": "Passwords must match"
+    }
   }
 }

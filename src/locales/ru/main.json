@@ -1,4 +1,49 @@
 {
+  "apiNodesCostBreakdown": {
+    "costPerRun": "Стоимость за запуск",
+    "title": "API Node(s)",
+    "totalCost": "Общая стоимость"
+  },
+  "apiNodesSignInDialog": {
+    "message": "Этот рабочий процесс содержит API Nodes, которые требуют входа в вашу учетную запись для выполнения.",
+    "title": "Требуется вход для использования API Nodes"
+  },
+  "auth": {
+    "login": {
+      "andText": "и",
+      "confirmPasswordLabel": "Подтвердите пароль",
+      "confirmPasswordPlaceholder": "Введите тот же пароль еще раз",
+      "emailLabel": "Электронная почта",
+      "emailPlaceholder": "Введите вашу электронную почту",
+      "failed": "Вход не удался",
+      "forgotPassword": "Забыли пароль?",
+      "loginButton": "Войти",
+      "loginWithGithub": "Войти через Github",
+      "loginWithGoogle": "Войти через Google",
+      "newUser": "Вы здесь впервые?",
+      "orContinueWith": "Или продолжить с",
+      "passwordLabel": "Пароль",
+      "passwordPlaceholder": "Введите ваш пароль",
+      "privacyLink": "Политикой конфиденциальности",
+      "signUp": "Зарегистрироваться",
+      "success": "Вход выполнен успешно",
+      "termsLink": "Условиями использования",
+      "termsText": "Нажимая \"Далее\" или \"Зарегистрироваться\", вы соглашаетесь с нашими",
+      "title": "Войдите в свой аккаунт"
+    },
+    "signup": {
+      "alreadyHaveAccount": "Уже есть аккаунт?",
+      "emailLabel": "Электронная почта",
+      "emailPlaceholder": "Введите вашу электронную почту",
+      "passwordLabel": "Пароль",
+      "passwordPlaceholder": "Введите новый пароль",
+      "signIn": "Войти",
+      "signUpButton": "Зарегистрироваться",
+      "signUpWithGithub": "Зарегистрироваться через Github",
+      "signUpWithGoogle": "Зарегистрироваться через Google",
+      "title": "Создать аккаунт"
+    }
+  },
   "clipboard": {
     "errorMessage": "Не удалось скопировать в буфер обмена",
     "errorNotSupported": "API буфера обмена не поддерживается в вашем браузере",
@@ -172,9 +217,11 @@
     "installing": "Установка",
     "interrupted": "Прервано",
     "keybinding": "Привязка клавиш",
+    "learnMore": "Узнать больше",
     "loadAllFolders": "Загрузить все папки",
     "loadWorkflow": "Загрузить рабочий процесс",
     "loading": "Загрузка",
+    "login": "Вход",
     "logs": "Логи",
     "migrate": "Мигрировать",
     "missing": "Отсутствует",
@@ -812,9 +859,11 @@
     "troubleshoot": "Устранение неполадок"
   },
   "settingsCategories": {
+    "3D": "3D",
     "About": "О программе",
     "Appearance": "Внешний вид",
     "BrushAdjustment": "Настройка кисти",
+    "Camera": "Камера",
     "Canvas": "Холст",
     "ColorPalette": "Цветовая палитра",
     "Comfy": "Comfy",
@@ -831,6 +880,7 @@
     "Link": "Ссылка",
     "LinkRelease": "Освобождение ссылки",
     "LiteGraph": "Lite Graph",
+    "Load 3D": "Загрузить 3D",
     "Locale": "Локализация",
     "Mask Editor": "Редактор масок",
     "Menu": "Меню",
@@ -845,6 +895,7 @@
     "QueueButton": "Кнопка очереди",
     "Reroute": "Перенаправление",
     "RerouteBeta": "Бета-версия перенаправления",
+    "Scene": "Сцена",
     "Server": "Сервер",
     "Server-Config": "Настройки сервера",
     "Settings": "Настройки",
@@ -1027,6 +1078,21 @@
     "newUser": "Новый пользователь",
     "next": "Далее",
     "selectUser": "Выберите пользователя"
+  },
+  "validation": {
+    "invalidEmail": "Недействительный адрес электронной почты",
+    "maxLength": "Должно быть не более {length} символов",
+    "minLength": "Должно быть не менее {length} символов",
+    "password": {
+      "lowercase": "Должен содержать хотя бы одну строчную букву",
+      "match": "Пароли должны совпадать",
+      "minLength": "Должно быть от 8 до 32 символов",
+      "number": "Должен содержать хотя бы одну цифру",
+      "requirements": "Требования к паролю",
+      "special": "Должен содержать хотя бы один специальный символ",
+      "uppercase": "Должен содержать хотя бы одну заглавную букву"
+    },
+    "required": "Обязательно"
   },
   "welcome": {
     "getStarted": "Начать",
