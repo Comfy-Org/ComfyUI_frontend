@@ -79,6 +79,7 @@ import Divider from 'primevue/divider'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { SignInData, SignUpData } from '@/schemas/signInSchema'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
@@ -92,33 +93,32 @@ const { onSuccess } = defineProps<{
 }>()
 
 const firebaseAuthStore = useFirebaseAuthStore()
+const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
 const isSignIn = ref(true)
 const toggleState = () => {
   isSignIn.value = !isSignIn.value
 }
 
-const signInWithGoogle = () => {
-  // Implement Google login
-  console.log(isSignIn.value)
-  console.log('Google login clicked')
+const signInWithGoogle = wrapWithErrorHandlingAsync(async () => {
+  await firebaseAuthStore.loginWithGoogle()
   onSuccess()
-}
+})
 
-const signInWithGithub = () => {
-  // Implement Github login
-  console.log(isSignIn.value)
-  console.log('Github login clicked')
+const signInWithGithub = wrapWithErrorHandlingAsync(async () => {
+  await firebaseAuthStore.loginWithGithub()
   onSuccess()
-}
+})
 
-const signInWithEmail = async (values: SignInData | SignUpData) => {
-  const { email, password } = values
-  if (isSignIn.value) {
-    await firebaseAuthStore.login(email, password)
-  } else {
-    await firebaseAuthStore.register(email, password)
+const signInWithEmail = wrapWithErrorHandlingAsync(
+  async (values: SignInData | SignUpData) => {
+    const { email, password } = values
+    if (isSignIn.value) {
+      await firebaseAuthStore.login(email, password)
+    } else {
+      await firebaseAuthStore.register(email, password)
+    }
+    onSuccess()
   }
-  onSuccess()
-}
+)
 </script>

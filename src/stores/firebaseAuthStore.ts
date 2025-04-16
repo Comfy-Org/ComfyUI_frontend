@@ -1,10 +1,13 @@
 import {
   type Auth,
+  GithubAuthProvider,
+  GoogleAuthProvider,
   type User,
   type UserCredential,
   createUserWithEmailAndPassword,
   onAuthStateChanged,
   signInWithEmailAndPassword,
+  signInWithPopup,
   signOut
 } from 'firebase/auth'
 import { defineStore } from 'pinia'
@@ -17,6 +20,10 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   const error = ref<string | null>(null)
   const currentUser = ref<User | null>(null)
   const isInitialized = ref(false)
+
+  // Providers
+  const googleProvider = new GoogleAuthProvider()
+  const githubProvider = new GithubAuthProvider()
 
   // Getters
   const isAuthenticated = computed(() => !!currentUser.value)
@@ -68,6 +75,16 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       createUserWithEmailAndPassword(authInstance, email, password)
     )
 
+  const loginWithGoogle = async (): Promise<UserCredential> =>
+    executeAuthAction((authInstance) =>
+      signInWithPopup(authInstance, googleProvider)
+    )
+
+  const loginWithGithub = async (): Promise<UserCredential> =>
+    executeAuthAction((authInstance) =>
+      signInWithPopup(authInstance, githubProvider)
+    )
+
   const logout = async (): Promise<void> =>
     executeAuthAction((authInstance) => signOut(authInstance))
 
@@ -94,6 +111,8 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     login,
     register,
     logout,
-    getIdToken
+    getIdToken,
+    loginWithGoogle,
+    loginWithGithub
   }
 })
