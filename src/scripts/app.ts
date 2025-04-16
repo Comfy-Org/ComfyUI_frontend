@@ -1173,8 +1173,16 @@ export class ComfyApp {
     const executionStore = useExecutionStore()
     executionStore.lastNodeErrors = null
 
-    const comfyOrgAuthToken =
+    let comfyOrgAuthToken =
       (await useFirebaseAuthStore().getIdToken()) ?? undefined
+    // Check if we're in a secure context before using the auth token
+    if (comfyOrgAuthToken && !window.isSecureContext) {
+      comfyOrgAuthToken = undefined
+      console.warn(
+        'Auth token not used: Not in a secure context (HTTPS). Authentication requires a secure connection.'
+      )
+    }
+
     try {
       while (this.#queueItems.length) {
         const { number, batchCount } = this.#queueItems.pop()!
