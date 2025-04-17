@@ -46,6 +46,7 @@ import { ModelRef, computed, onMounted, ref } from 'vue'
 import MirrorItem from '@/components/install/mirror/MirrorItem.vue'
 import { PYPI_MIRROR, PYTHON_MIRROR, UVMirror } from '@/constants/uvMirrors'
 import { t } from '@/i18n'
+import { electronAPI } from '@/utils/envUtil'
 import { isInChina } from '@/utils/networkUtil'
 import { ValidationState, mergeValidationStates } from '@/utils/validationUtil'
 
@@ -59,11 +60,9 @@ const isBlackwellArchitecture = ref(false)
 
 const checkBlackwellArchitecture = async (): Promise<boolean> => {
   try {
-    const { execSync } = await import('node:child_process')
-    const smiOutput = execSync('nvidia-smi -q').toString()
-    return /Product Architecture\s*:\s*Blackwell/.test(smiOutput)
+    return await electronAPI().isBlackwell()
   } catch (error) {
-    console.error('Failed to check for Blackwell architecture:', error)
+    console.error('Failed to detect Blackwell architecture:', error)
     return false
   }
 }
