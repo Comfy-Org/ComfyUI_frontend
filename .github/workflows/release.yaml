@@ -31,7 +31,6 @@ jobs:
           ALGOLIA_API_KEY: ${{ secrets.ALGOLIA_API_KEY }}
         run: |
           npm ci
-          npm run fetch-templates
           npm run build
           npm run zipdist
       - name: Upload dist artifact
