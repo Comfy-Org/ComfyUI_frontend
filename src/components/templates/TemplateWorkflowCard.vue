@@ -123,12 +123,13 @@ const overlayThumbnailSrc = computed(() =>
 )
 
 const title = computed(() => {
+  const fallback = template.title ?? template.name
   return sourceModule === 'default'
     ? st(
         `templateWorkflows.template.${normalizeI18nKey(categoryTitle)}.${normalizeI18nKey(template.name)}`,
-        template.name
+        fallback
       )
-    : template.name ?? `${sourceModule} Template`
+    : fallback
 })
 
 const description = computed(() => template.description.replace(/[-_]/g, ' '))
