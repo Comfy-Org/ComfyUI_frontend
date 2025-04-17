@@ -461,8 +461,7 @@
       "ControlNet": "ControlNet",
       "Upscaling": "Upscaling",
       "Video": "Video",
-      "SD3_5": "SD3.5",
-      "SDXL": "SDXL",
+      "Image": "Image",
       "Area Composition": "Area Composition",
       "3D": "3D",
       "Audio": "Audio"
@@ -510,18 +509,19 @@
         "mochi_text_to_video_example": "Mochi Text to Video",
         "hunyuan_video_text_to_video": "Hunyuan Video Text to Video"
       },
-      "SD3_5": {
+      "Image": {
         "sd3_5_simple_example": "SD3.5 Simple",
         "sd3_5_large_canny_controlnet_example": "SD3.5 Large Canny ControlNet",
         "sd3_5_large_depth": "SD3.5 Large Depth",
-        "sd3_5_large_blur": "SD3.5 Large Blur"
-      },
-      "SDXL": {
+        "sd3_5_large_blur": "SD3.5 Large Blur",
         "sdxl_simple_example": "SDXL Simple",
         "sdxl_refiner_prompt_example": "SDXL Refiner Prompt",
         "sdxl_revision_text_prompts": "SDXL Revision Text Prompts",
         "sdxl_revision_zero_positive": "SDXL Revision Zero Positive",
-        "sdxlturbo_example": "SDXL Turbo"
+        "sdxlturbo_example": "SDXL Turbo",
+        "hidream_i1_dev": "HiDream I1 Dev",
+        "hidream_i1_fast": "HiDream I1 Fast",
+        "hidream_i1_full": "HiDream I1 Full"
       },
       "Area Composition": {
         "area_composition": "Area Composition",
