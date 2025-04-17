@@ -26,6 +26,55 @@ function isLegacyFile(id: string): boolean {
   )
 }
 
+function addElementVnodeExportPlugin(): Plugin {
+  return {
+    name: 'add-element-vnode-export-plugin',
+
+    renderChunk(code, chunk, _options) {
+      if (chunk.name.startsWith('vendor-vue')) {
+        const exportRegex = /(export\s*\{)([^}]*)(\}\s*;?\s*)$/
+        const match = code.match(exportRegex)
+
+        if (match) {
+          const existingExports = match[2].trim()
+          const exportsArray = existingExports
+            .split(',')
+            .map((e) => e.trim())
+            .filter(Boolean)
+
+          const hasCreateBaseVNode = exportsArray.some((e) =>
+            e.startsWith('createBaseVNode')
+          )
+          const hasCreateElementVNode = exportsArray.some((e) =>
+            e.includes('createElementVNode')
+          )
+
+          if (hasCreateBaseVNode && !hasCreateElementVNode) {
+            const newExportStatement = `${match[1]} ${existingExports ? existingExports + ',' : ''} createBaseVNode as createElementVNode ${match[3]}`
+            const newCode = code.replace(exportRegex, newExportStatement)
+
+            console.log(
+              `[add-element-vnode-export-plugin] Added 'createBaseVNode as createElementVNode' export to vendor-vue chunk.`
+            )
+
+            return { code: newCode, map: null }
+          } else if (!hasCreateBaseVNode) {
+            console.warn(
+              `[add-element-vnode-export-plugin] Warning: 'createBaseVNode' not found in exports of vendor-vue chunk. Cannot add alias.`
+            )
+          }
+        } else {
+          console.warn(
+            `[add-element-vnode-export-plugin] Warning: Could not find expected export block format in vendor-vue chunk.`
+          )
+        }
+      }
+
+      return null
+    }
+  }
+}
+
 function generateImportMapPlugin(): Plugin {
   const importMapEntries: Record<string, string> = {}
 
@@ -35,7 +84,7 @@ function generateImportMapPlugin(): Plugin {
     generateBundle(_options, bundle) {
       for (const fileName in bundle) {
         const chunk = bundle[fileName]
-        if (chunk.type === 'chunk' && chunk.isEntry === false) {
+        if (chunk.type === 'chunk' && !chunk.isEntry) {
           let importKey = null
           if (chunk.name === 'vendor-vue') {
             importKey = 'vue'
@@ -194,6 +243,7 @@ export default defineConfig({
     vue(),
     comfyAPIPlugin(),
     generateImportMapPlugin(),
+    addElementVnodeExportPlugin(),
 
     Icons({
       compiler: 'vue3'
