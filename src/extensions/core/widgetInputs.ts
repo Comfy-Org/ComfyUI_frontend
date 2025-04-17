@@ -60,13 +60,24 @@ export class PrimitiveNode extends LGraphNode {
     for (const linkInfo of links) {
       const node = this.graph?.getNodeById(linkInfo.target_id)
       const input = node?.inputs[linkInfo.target_slot]
-      if (!input) continue
+      if (!input) {
+        console.warn('Unable to resolve node or input for link', linkInfo)
+        continue
+      }
 
       const widgetName = input.widget?.name
-      if (!widgetName) continue
+      if (!widgetName) {
+        console.warn('Invalid widget or widget name', input.widget)
+        continue
+      }
 
       const widget = node.widgets?.find((w) => w.name === widgetName)
-      if (!widget) continue
+      if (!widget) {
+        console.warn(
+          `Unable to find widget "${widgetName}" on node [${node.id}]`
+        )
+        continue
+      }
 
       widget.value = v
       widget.callback?.(
