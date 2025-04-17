@@ -109,12 +109,8 @@ const settingCategories = computed<SettingTreeNode[]>(
   () => settingRoot.value.children ?? []
 )
 
-const {
-  activeCategory,
-  getDefaultCategory,
-  initializeActiveCategory,
-  createTranslatedCategories
-} = useSettingUI(defaultPanel)
+const { activeCategory, getDefaultCategory, createTranslatedCategories } =
+  useSettingUI(defaultPanel)
 
 const {
   searchQuery,
@@ -132,7 +128,7 @@ const categories = computed<SettingTreeNode[]>(() =>
 
 // Initialize active category on mount
 onMounted(() => {
-  initializeActiveCategory(categories.value)
+  activeCategory.value = getDefaultCategory(categories.value)
 })
 
 // Sort groups for a category
@@ -147,12 +143,8 @@ const sortedGroups = (category: SettingTreeNode): ISettingGroup[] => {
 
 const handleSearch = (query: string) => {
   handleSearchBase(query, settingRoot.value)
+  activeCategory.value = query ? null : getDefaultCategory(categories.value)
 }
-
-// Reset active category quitting from search
-watch(searchQuery, (query) => {
-  if (!query) activeCategory.value = getDefaultCategory(categories.value)
-})
 
 // Get search results
 const searchResults = computed<ISettingGroup[]>(() =>

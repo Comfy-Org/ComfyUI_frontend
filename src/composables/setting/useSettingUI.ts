@@ -53,13 +53,6 @@ export function useSettingUI(
   }
 
   /**
-   * Initialize the active category
-   */
-  const initializeActiveCategory = (categories: SettingTreeNode[]) => {
-    activeCategory.value = getDefaultCategory(categories)
-  }
-
-  /**
    * Create translated categories with labels
    */
   const createTranslatedCategories = (settingCategories: SettingTreeNode[]) => {
@@ -80,13 +73,7 @@ export function useSettingUI(
 
   return {
     activeCategory,
-    aboutPanelNode,
-    keybindingPanelNode,
-    extensionPanelNode,
-    serverConfigPanelNode,
-    serverConfigPanelNodeList,
     getDefaultCategory,
-    initializeActiveCategory,
     createTranslatedCategories
   }
 }
