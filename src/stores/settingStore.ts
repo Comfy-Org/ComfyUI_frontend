@@ -1,13 +1,12 @@
 import _ from 'lodash'
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 
 import type { Settings } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { SettingParams } from '@/types/settingTypes'
 import type { TreeNode } from '@/types/treeExplorerTypes'
-import { buildTree } from '@/utils/treeUtil'
 
 export const getSettingInfo = (setting: SettingParams) => {
   const parts = setting.category || setting.id.split('.')
@@ -37,28 +36,6 @@ function onChange(setting: SettingParams, newValue: any, oldValue: any) {
 export const useSettingStore = defineStore('setting', () => {
   const settingValues = ref<Record<string, any>>({})
   const settingsById = ref<Record<string, SettingParams>>({})
-
-  const settingTree = computed<SettingTreeNode>(() => {
-    const root = buildTree(
-      Object.values(settingsById.value).filter(
-        (setting: SettingParams) => setting.type !== 'hidden'
-      ),
-      (setting: SettingParams) => setting.category || setting.id.split('.')
-    )
-
-    const floatingSettings = (root.children ?? []).filter((node) => node.leaf)
-    if (floatingSettings.length) {
-      root.children = (root.children ?? []).filter((node) => !node.leaf)
-      root.children.push({
-        key: 'Other',
-        label: 'Other',
-        leaf: false,
-        children: floatingSettings
-      })
-    }
-
-    return root
-  })
 
   /**
    * Check if a setting's value exists, i.e. if the user has set it manually.
@@ -150,7 +127,6 @@ export const useSettingStore = defineStore('setting', () => {
   return {
     settingValues,
     settingsById,
-    settingTree,
     addSetting,
     loadSettingValues,
     set,

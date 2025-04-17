@@ -8,7 +8,6 @@ import {
 } from '@/stores/settingStore'
 import { ISettingGroup, SettingParams } from '@/types/settingTypes'
 import { normalizeI18nKey } from '@/utils/formatUtil'
-import { flattenTree } from '@/utils/treeUtil'
 
 export function useSettingSearch() {
   const settingStore = useSettingStore()
@@ -45,14 +44,14 @@ export function useSettingSearch() {
   /**
    * Handle search functionality
    */
-  const handleSearch = (query: string, settingRoot: SettingTreeNode) => {
+  const handleSearch = (query: string) => {
     if (!query) {
       filteredSettingIds.value = []
       return
     }
 
     const queryLower = query.toLocaleLowerCase()
-    const allSettings = flattenTree<SettingParams>(settingRoot)
+    const allSettings = Object.values(settingStore.settingsById)
     const filteredSettings = allSettings.filter((setting) => {
       const idLower = setting.id.toLowerCase()
       const nameLower = setting.name.toLowerCase()
