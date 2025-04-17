@@ -10,7 +10,7 @@
       />
       <Listbox
         v-model="activeCategory"
-        :options="categories"
+        :options="allCategories"
         option-label="translatedLabel"
         scroll-height="100%"
         :option-disabled="
@@ -73,12 +73,12 @@ import Listbox from 'primevue/listbox'
 import ScrollPanel from 'primevue/scrollpanel'
 import TabPanels from 'primevue/tabpanels'
 import Tabs from 'primevue/tabs'
-import { computed, defineAsyncComponent, onMounted, watch } from 'vue'
+import { computed, defineAsyncComponent, watch } from 'vue'
 
 import SearchBox from '@/components/common/SearchBox.vue'
 import { useSettingSearch } from '@/composables/setting/useSettingSearch'
 import { useSettingUI } from '@/composables/setting/useSettingUI'
-import { SettingTreeNode, useSettingStore } from '@/stores/settingStore'
+import { SettingTreeNode } from '@/stores/settingStore'
 import { ISettingGroup, SettingParams } from '@/types/settingTypes'
 import { flattenTree } from '@/utils/treeUtil'
 
@@ -103,13 +103,7 @@ const ServerConfigPanel = defineAsyncComponent(
   () => import('./setting/ServerConfigPanel.vue')
 )
 
-const settingStore = useSettingStore()
-const settingRoot = computed<SettingTreeNode>(() => settingStore.settingTree)
-const settingCategories = computed<SettingTreeNode[]>(
-  () => settingRoot.value.children ?? []
-)
-
-const { activeCategory, getDefaultCategory, createTranslatedCategories } =
+const { activeCategory, defaultCategory, allCategories, settingCategories } =
   useSettingUI(defaultPanel)
 
 const {
@@ -120,16 +114,6 @@ const {
   handleSearch: handleSearchBase,
   getSearchResults
 } = useSettingSearch()
-
-// Create categories with translated labels
-const categories = computed<SettingTreeNode[]>(() =>
-  createTranslatedCategories(settingCategories.value)
-)
-
-// Initialize active category on mount
-onMounted(() => {
-  activeCategory.value = getDefaultCategory(categories.value)
-})
 
 // Sort groups for a category
 const sortedGroups = (category: SettingTreeNode): ISettingGroup[] => {
@@ -142,8 +126,8 @@ const sortedGroups = (category: SettingTreeNode): ISettingGroup[] => {
 }
 
 const handleSearch = (query: string) => {
-  handleSearchBase(query, settingRoot.value)
-  activeCategory.value = query ? null : getDefaultCategory(categories.value)
+  handleSearchBase(query)
+  activeCategory.value = query ? null : defaultCategory.value
 }
 
 // Get search results

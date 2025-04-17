@@ -37,7 +37,6 @@ describe('useSettingStore', () => {
   it('should initialize with empty settings', () => {
     expect(store.settingValues).toEqual({})
     expect(store.settingsById).toEqual({})
-    expect(store.settingTree.children).toEqual([])
   })
 
   describe('loadSettingValues', () => {
