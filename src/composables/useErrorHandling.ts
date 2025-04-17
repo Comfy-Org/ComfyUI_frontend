@@ -5,6 +5,7 @@ export function useErrorHandling() {
   const toast = useToastStore()
 
   const toastErrorHandler = (error: any) => {
+    console.error(error)
     toast.add({
       severity: 'error',
       summary: t('g.error'),
