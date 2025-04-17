@@ -1042,7 +1042,9 @@
         "ltxv_text_to_video": "LTXV Texte à Vidéo",
         "mochi_text_to_video_example": "Exemple de Texte à Vidéo Mochi",
         "text_to_video_wan": "Wan 2.1 Texte à Vidéo",
-        "txt_to_image_to_video": "Texte à Image à Vidéo"
+        "txt_to_image_to_video": "Texte à Image à Vidéo",
+        "wan2_1_fun_control": "Wan 2.1 ControlNet",
+        "wan2_1_fun_inp": "Wan 2.1 Inpainting"
       }
     },
     "title": "Commencez avec un modèle"

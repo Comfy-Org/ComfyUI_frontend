@@ -1042,7 +1042,9 @@
         "ltxv_text_to_video": "LTXV Text to Video",
         "mochi_text_to_video_example": "Mochi Text to Video",
         "text_to_video_wan": "Wan 2.1 Текст в Видео",
-        "txt_to_image_to_video": "Текст в изображение в видео"
+        "txt_to_image_to_video": "Текст в изображение в видео",
+        "wan2_1_fun_control": "Wan 2.1 ControlNet",
+        "wan2_1_fun_inp": "Wan 2.1 Inpainting"
       }
     },
     "title": "Начните с шаблона"

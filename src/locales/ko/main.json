@@ -1042,7 +1042,9 @@
         "ltxv_text_to_video": "텍스트 -> 동영상 (LTXV)",
         "mochi_text_to_video_example": "텍스트 -> 동영상 (Mochi)",
         "text_to_video_wan": "Wan 2.1 텍스트를 비디오로",
-        "txt_to_image_to_video": "텍스트 -> 이미지 -> 동영상"
+        "txt_to_image_to_video": "텍스트 -> 이미지 -> 동영상",
+        "wan2_1_fun_control": "Wan 2.1 ControlNet",
+        "wan2_1_fun_inp": "Wan 2.1 Inpainting"
       }
     },
     "title": "템플릿으로 시작하기"

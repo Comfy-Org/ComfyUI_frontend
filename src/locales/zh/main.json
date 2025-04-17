@@ -1042,7 +1042,9 @@
         "ltxv_text_to_video": "LTXV文本到视频",
         "mochi_text_to_video_example": "Mochi文本到视频",
         "text_to_video_wan": "Wan 2.1 文字到视频",
-        "txt_to_image_to_video": "文本到图像到视频"
+        "txt_to_image_to_video": "文本到图像到视频",
+        "wan2_1_fun_control": "Wan 2.1 ControlNet",
+        "wan2_1_fun_inp": "Wan 2.1 图像修复"
       }
     },
     "title": "从模板开始"
