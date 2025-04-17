@@ -123,7 +123,7 @@ const overlayThumbnailSrc = computed(() =>
 )
 
 const title = computed(() => {
-  const fallback = template.title ?? template.name
+  const fallback = template.title ?? template.name ?? `${sourceModule} Template`
   return sourceModule === 'default'
     ? st(
         `templateWorkflows.template.${normalizeI18nKey(categoryTitle)}.${normalizeI18nKey(template.name)}`,
