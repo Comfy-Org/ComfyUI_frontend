@@ -58,7 +58,7 @@ const torchMirror = defineModel<string>('torchMirror', { required: true })
 
 const isBlackwellArchitecture = ref(false)
 
-const checkBlackwellArchitecture = async (): Promise<boolean> => {
+const requiresNightlyPytorch = async (): Promise<boolean> => {
   try {
     return await electronAPI().isBlackwell()
   } catch (error) {
@@ -103,7 +103,7 @@ const getTorchMirrorItem = (device: TorchDeviceType): UVMirror => {
 const userIsInChina = ref(false)
 onMounted(async () => {
   userIsInChina.value = await isInChina()
-  isBlackwellArchitecture.value = await checkBlackwellArchitecture()
+  isBlackwellArchitecture.value = await requiresNightlyPytorch()
 })
 
 const useFallbackMirror = (mirror: UVMirror) => ({
