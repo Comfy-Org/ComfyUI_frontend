@@ -969,8 +969,7 @@
       "ControlNet": "ControlNet",
       "Custom Nodes": "Пользовательские узлы",
       "Flux": "Flux",
-      "SD3_5": "SD3.5",
-      "SDXL": "SDXL",
+      "Image": "Изображение",
       "Upscaling": "Увеличение разрешения",
       "Video": "Видео"
     },
@@ -1015,17 +1014,18 @@
         "flux_redux_model_example": "Flux Redux Model",
         "flux_schnell": "Flux Schnell"
       },
-      "SD3_5": {
+      "Image": {
+        "hidream_i1_dev": "HiDream I1 Dev",
+        "hidream_i1_fast": "HiDream I1 Fast",
+        "hidream_i1_full": "HiDream I1 Full",
         "sd3_5_large_blur": "SD3.5 Большое размытие",
         "sd3_5_large_canny_controlnet_example": "SD3.5 Большой Canny ControlNet",
         "sd3_5_large_depth": "SD3.5 Большая глубина",
-        "sd3_5_simple_example": "SD3.5 Простой"
-      },
-      "SDXL": {
-        "sdxl_refiner_prompt_example": "SDXL Refiner Prompt",
-        "sdxl_revision_text_prompts": "SDXL Revision Text Prompts",
-        "sdxl_revision_zero_positive": "SDXL Revision Zero Positive",
-        "sdxl_simple_example": "SDXL Simple",
+        "sd3_5_simple_example": "SD3.5 Простой",
+        "sdxl_refiner_prompt_example": "SDXL Уточняющий запрос",
+        "sdxl_revision_text_prompts": "SDXL Редактирование текстовых запросов",
+        "sdxl_revision_zero_positive": "SDXL Редактирование нулевого положительного",
+        "sdxl_simple_example": "SDXL Простой",
         "sdxlturbo_example": "SDXL Turbo"
       },
       "Upscaling": {

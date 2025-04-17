@@ -969,8 +969,7 @@
       "ControlNet": "ControlNet",
       "Custom Nodes": "Nodos Personalizados",
       "Flux": "Flux",
-      "SD3_5": "SD3.5",
-      "SDXL": "SDXL",
+      "Image": "Imagen",
       "Upscaling": "Ampliación",
       "Video": "Video"
     },
@@ -1015,13 +1014,14 @@
         "flux_redux_model_example": "Flux Redux Model",
         "flux_schnell": "Flux Schnell"
       },
-      "SD3_5": {
+      "Image": {
+        "hidream_i1_dev": "HiDream I1 Dev",
+        "hidream_i1_fast": "HiDream I1 Rápido",
+        "hidream_i1_full": "HiDream I1 Completo",
         "sd3_5_large_blur": "SD3.5 Grande Desenfoque",
         "sd3_5_large_canny_controlnet_example": "SD3.5 Grande Canny ControlNet",
         "sd3_5_large_depth": "SD3.5 Grande Profundidad",
-        "sd3_5_simple_example": "SD3.5 Simple"
-      },
-      "SDXL": {
+        "sd3_5_simple_example": "SD3.5 Simple",
         "sdxl_refiner_prompt_example": "SDXL Refinador de Solicitud",
         "sdxl_revision_text_prompts": "SDXL Revisión de Solicitud de Texto",
         "sdxl_revision_zero_positive": "SDXL Revisión Cero Positivo",
