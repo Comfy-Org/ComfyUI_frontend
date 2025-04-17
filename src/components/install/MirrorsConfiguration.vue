@@ -79,7 +79,7 @@ const getTorchMirrorItem = (device: TorchDeviceType): UVMirror => {
       }
     case 'nvidia':
       if (isBlackwellArchitecture.value) {
-        const NightlyPytorch = 'https://download.pytorch.org/whl/nightly/cu128'
+        const NightlyPytorch = 'https://download.pytorch.org/whl/nightly/cu128' // To be replaced by TorchMirrorUrl.NightlyCuda
         return {
           settingId,
           mirror: NightlyPytorch,
