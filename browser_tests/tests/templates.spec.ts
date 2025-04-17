@@ -96,12 +96,12 @@ test.describe('Templates', () => {
       const response = [
         {
           moduleName: 'default',
-          title: 'Basics',
+          title: 'FALLBACK CATEGORY',
           type: 'image',
           templates: [
             {
               name: 'unknown_key_has_no_translation_available',
-              title: 'EXPECTED FALLBACK',
+              title: 'FALLBACK TEMPLATE NAME',
               mediaType: 'image',
               mediaSubtype: 'webp',
               description: 'No translations found'
@@ -122,9 +122,12 @@ test.describe('Templates', () => {
     // Load the templates dialog
     await comfyPage.executeCommand('Comfy.BrowseTemplates')
 
-    // Expect the title to be used as fallback when no key is found in locale
+    // Expect the title to be used as fallback for template cards
     await expect(
-      comfyPage.templates.content.getByText('EXPECTED FALLBACK')
+      comfyPage.templates.content.getByText('FALLBACK TEMPLATE NAME')
     ).toBeVisible()
+
+    // Expect the title to be used as fallback for the template categories
+    await expect(comfyPage.page.getByLabel('FALLBACK CATEGORY')).toBeVisible()
   })
 })
