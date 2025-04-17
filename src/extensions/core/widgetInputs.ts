@@ -58,15 +58,14 @@ export class PrimitiveNode extends LGraphNode {
 
     // For each output link copy our value over the original widget value
     for (const linkInfo of links) {
-      // @ts-expect-error fixme ts strict error
-      const node = this.graph.getNodeById(linkInfo.target_id)
-      // @ts-expect-error fixme ts strict error
-      const input = node.inputs[linkInfo.target_slot]
+      const node = this.graph?.getNodeById(linkInfo.target_id)
+      const input = node?.inputs[linkInfo.target_slot]
+      if (!input) continue
+
       let widget: IWidget | undefined
-      const widgetName = (input.widget as { name: string }).name
+      const widgetName = input.widget?.name
       if (widgetName) {
-        // @ts-expect-error fixme ts strict error
-        widget = node.widgets.find((w) => w.name === widgetName)
+        widget = node.widgets?.find((w) => w.name === widgetName)
       }
 
       if (widget) {
@@ -75,7 +74,6 @@ export class PrimitiveNode extends LGraphNode {
           widget.callback(
             widget.value,
             app.canvas,
-            // @ts-expect-error fixme ts strict error
             node,
             app.canvas.graph_mouse,
             {} as CanvasMouseEvent
