@@ -4,7 +4,7 @@
       <div
         v-for="nodeDef in mappedNodeDefs"
         :key="createNodeDefKey(nodeDef)"
-        class="border border-surface-border rounded-lg p-4"
+        class="border rounded-lg p-4"
       >
         <NodePreview :node-def="nodeDef" class="!text-[.625rem] !min-w-full" />
       </div>

@@ -10,9 +10,7 @@
         zIndex: maxVisible - index
       }"
     >
-      <div
-        class="border border-surface-border bg-surface-card rounded-lg p-0.5"
-      >
+      <div class="border rounded-lg p-0.5">
         <PackIcon :node-pack="pack" width="4.5rem" height="4.5rem" />
       </div>
     </div>

@@ -10,11 +10,8 @@
     >
       <slot />
     </div>
-    <div
-      v-else
-      class="w-full h-full flex items-center justify-center bg-surface-card"
-    >
-      <i class="pi pi-file text-4xl text-surface-600" />
+    <div v-else class="w-full h-full flex items-center justify-center">
+      <i class="pi pi-file text-4xl" />
     </div>
   </div>
 </template>

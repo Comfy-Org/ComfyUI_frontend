@@ -52,21 +52,15 @@
     <template #content>
       <div class="flex items-center px-4 py-3">
         <div class="flex-1">
-          <h3
-            class="line-clamp-1 text-lg font-normal text-surface-900 dark:text-surface-100"
-            :title="title"
-          >
+          <h3 class="line-clamp-1 text-lg font-normal" :title="title">
             {{ title }}
           </h3>
-          <p
-            class="line-clamp-2 text-sm text-surface-600 dark:text text-muted"
-            :title="description"
-          >
+          <p class="line-clamp-2 text-sm text-muted" :title="description">
             {{ description }}
           </p>
         </div>
         <div
-          class="flex md:hidden xl:flex items-center justify-center ml-4 w-10 h-10 rounded-full bg-surface-100"
+          class="flex md:hidden xl:flex items-center justify-center ml-4 w-10 h-10 rounded-full"
         >
           <i class="pi pi-angle-right text-2xl" />
         </div>
