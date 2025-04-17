@@ -109,6 +109,6 @@ export function useSettingUI(
     activeCategory,
     defaultCategory,
     allCategories: translatedCategories,
-    settingCategories: settingCategories
+    settingCategories
   }
 }
