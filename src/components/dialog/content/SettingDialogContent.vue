@@ -73,19 +73,13 @@ import Listbox from 'primevue/listbox'
 import ScrollPanel from 'primevue/scrollpanel'
 import TabPanels from 'primevue/tabpanels'
 import Tabs from 'primevue/tabs'
-import { computed, defineAsyncComponent, onMounted, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { computed, defineAsyncComponent, onMounted, watch } from 'vue'
 
 import SearchBox from '@/components/common/SearchBox.vue'
-import { st } from '@/i18n'
-import {
-  SettingTreeNode,
-  getSettingInfo,
-  useSettingStore
-} from '@/stores/settingStore'
+import { useSettingSearch } from '@/composables/setting/useSettingSearch'
+import { useSettingUI } from '@/composables/setting/useSettingUI'
+import { SettingTreeNode, useSettingStore } from '@/stores/settingStore'
 import { ISettingGroup, SettingParams } from '@/types/settingTypes'
-import { isElectron } from '@/utils/envUtil'
-import { normalizeI18nKey } from '@/utils/formatUtil'
 import { flattenTree } from '@/utils/treeUtil'
 
 import AboutPanel from './setting/AboutPanel.vue'
@@ -95,7 +89,7 @@ import FirstTimeUIMessage from './setting/FirstTimeUIMessage.vue'
 import PanelTemplate from './setting/PanelTemplate.vue'
 import SettingsPanel from './setting/SettingsPanel.vue'
 
-const props = defineProps<{
+const { defaultPanel } = defineProps<{
   defaultPanel?: 'about' | 'keybinding' | 'extension' | 'server-config'
 }>()
 
@@ -109,71 +103,35 @@ const ServerConfigPanel = defineAsyncComponent(
   () => import('./setting/ServerConfigPanel.vue')
 )
 
-const aboutPanelNode: SettingTreeNode = {
-  key: 'about',
-  label: 'About',
-  children: []
-}
-
-const keybindingPanelNode: SettingTreeNode = {
-  key: 'keybinding',
-  label: 'Keybinding',
-  children: []
-}
-
-const extensionPanelNode: SettingTreeNode = {
-  key: 'extension',
-  label: 'Extension',
-  children: []
-}
-
-const serverConfigPanelNode: SettingTreeNode = {
-  key: 'server-config',
-  label: 'Server-Config',
-  children: []
-}
-
-/**
- * Server config panel is only available in Electron. We might want to support
- * it in the web version in the future.
- */
-const serverConfigPanelNodeList = computed<SettingTreeNode[]>(() => {
-  return isElectron() ? [serverConfigPanelNode] : []
-})
-
 const settingStore = useSettingStore()
 const settingRoot = computed<SettingTreeNode>(() => settingStore.settingTree)
 const settingCategories = computed<SettingTreeNode[]>(
   () => settingRoot.value.children ?? []
 )
-const { t } = useI18n()
+
+const { activeCategory, getDefaultCategory, createTranslatedCategories } =
+  useSettingUI(defaultPanel)
+
+const {
+  searchQuery,
+  searchResultsCategories,
+  queryIsEmpty,
+  inSearch,
+  handleSearch: handleSearchBase,
+  getSearchResults
+} = useSettingSearch()
+
+// Create categories with translated labels
 const categories = computed<SettingTreeNode[]>(() =>
-  [
-    ...settingCategories.value,
-    keybindingPanelNode,
-    extensionPanelNode,
-    ...serverConfigPanelNodeList.value,
-    aboutPanelNode
-  ].map((node) => ({
-    ...node,
-    translatedLabel: t(
-      `settingsCategories.${normalizeI18nKey(node.label)}`,
-      node.label
-    )
-  }))
+  createTranslatedCategories(settingCategories.value)
 )
 
-const activeCategory = ref<SettingTreeNode | null>(null)
-const getDefaultCategory = () => {
-  return props.defaultPanel
-    ? categories.value.find((x) => x.key === props.defaultPanel) ??
-        categories.value[0]
-    : categories.value[0]
-}
+// Initialize active category on mount
 onMounted(() => {
-  activeCategory.value = getDefaultCategory()
+  activeCategory.value = getDefaultCategory(categories.value)
 })
 
+// Sort groups for a category
 const sortedGroups = (category: SettingTreeNode): ISettingGroup[] => {
   return [...(category.children ?? [])]
     .sort((a, b) => a.label.localeCompare(b.label))
@@ -183,92 +141,20 @@ const sortedGroups = (category: SettingTreeNode): ISettingGroup[] => {
     }))
 }
 
-const searchQuery = ref<string>('')
-const filteredSettingIds = ref<string[]>([])
-const searchInProgress = ref<boolean>(false)
-watch(searchQuery, () => (searchInProgress.value = true))
-
-const searchResults = computed<ISettingGroup[]>(() => {
-  const groupedSettings: { [key: string]: SettingParams[] } = {}
-
-  filteredSettingIds.value.forEach((id) => {
-    const setting = settingStore.settingsById[id]
-    const info = getSettingInfo(setting)
-    const groupLabel = info.subCategory
-
-    if (
-      activeCategory.value === null ||
-      activeCategory.value.label === info.category
-    ) {
-      if (!groupedSettings[groupLabel]) {
-        groupedSettings[groupLabel] = []
-      }
-      groupedSettings[groupLabel].push(setting)
-    }
-  })
-
-  return Object.entries(groupedSettings).map(([label, settings]) => ({
-    label,
-    settings
-  }))
-})
-
-/**
- * Settings categories that contains at least one setting in search results.
- */
-const searchResultsCategories = computed<Set<string>>(() => {
-  return new Set(
-    filteredSettingIds.value.map(
-      (id) => getSettingInfo(settingStore.settingsById[id]).category
-    )
-  )
-})
-
 const handleSearch = (query: string) => {
-  if (!query) {
-    filteredSettingIds.value = []
-    activeCategory.value ??= getDefaultCategory()
-    return
-  }
-
-  const queryLower = query.toLocaleLowerCase()
-  const allSettings = flattenTree<SettingParams>(settingRoot.value)
-  const filteredSettings = allSettings.filter((setting) => {
-    const idLower = setting.id.toLowerCase()
-    const nameLower = setting.name.toLowerCase()
-    const translatedName = st(
-      `settings.${normalizeI18nKey(setting.id)}.name`,
-      setting.name
-    ).toLocaleLowerCase()
-    const info = getSettingInfo(setting)
-    const translatedCategory = st(
-      `settingsCategories.${normalizeI18nKey(info.category)}`,
-      info.category
-    ).toLocaleLowerCase()
-    const translatedSubCategory = st(
-      `settingsCategories.${normalizeI18nKey(info.subCategory)}`,
-      info.subCategory
-    ).toLocaleLowerCase()
-
-    return (
-      idLower.includes(queryLower) ||
-      nameLower.includes(queryLower) ||
-      translatedName.includes(queryLower) ||
-      translatedCategory.includes(queryLower) ||
-      translatedSubCategory.includes(queryLower)
-    )
-  })
-
-  filteredSettingIds.value = filteredSettings.map((x) => x.id)
-  searchInProgress.value = false
-  activeCategory.value = null
+  handleSearchBase(query, settingRoot.value)
+  activeCategory.value = query ? null : getDefaultCategory(categories.value)
 }
 
-const queryIsEmpty = computed(() => searchQuery.value.length === 0)
-const inSearch = computed(() => !queryIsEmpty.value && !searchInProgress.value)
+// Get search results
+const searchResults = computed<ISettingGroup[]>(() =>
+  getSearchResults(activeCategory.value)
+)
+
 const tabValue = computed<string>(() =>
   inSearch.value ? 'Search Results' : activeCategory.value?.label ?? ''
 )
+
 // Don't allow null category to be set outside of search.
 // In search mode, the active category can be null to show all search results.
 watch(activeCategory, (_, oldValue) => {
