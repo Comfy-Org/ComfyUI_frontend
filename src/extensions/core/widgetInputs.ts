@@ -47,7 +47,7 @@ export class PrimitiveNode extends LGraphNode {
   applyToGraph(extraLinks: LLink[] = []) {
     if (!this.outputs[0].links?.length) return
 
-    let links = [
+    const links = [
       ...this.outputs[0].links.map((l) => app.graph.links[l]),
       ...extraLinks
     ]
@@ -58,30 +58,35 @@ export class PrimitiveNode extends LGraphNode {
 
     // For each output link copy our value over the original widget value
     for (const linkInfo of links) {
-      // @ts-expect-error fixme ts strict error
-      const node = this.graph.getNodeById(linkInfo.target_id)
-      // @ts-expect-error fixme ts strict error
-      const input = node.inputs[linkInfo.target_slot]
-      let widget: IWidget | undefined
-      const widgetName = (input.widget as { name: string }).name
-      if (widgetName) {
-        // @ts-expect-error fixme ts strict error
-        widget = node.widgets.find((w) => w.name === widgetName)
+      const node = this.graph?.getNodeById(linkInfo.target_id)
+      const input = node?.inputs[linkInfo.target_slot]
+      if (!input) {
+        console.warn('Unable to resolve node or input for link', linkInfo)
+        continue
       }
 
-      if (widget) {
-        widget.value = v
-        if (widget.callback) {
-          widget.callback(
-            widget.value,
-            app.canvas,
-            // @ts-expect-error fixme ts strict error
-            node,
-            app.canvas.graph_mouse,
-            {} as CanvasMouseEvent
-          )
-        }
+      const widgetName = input.widget?.name
+      if (!widgetName) {
+        console.warn('Invalid widget or widget name', input.widget)
+        continue
       }
+
+      const widget = node.widgets?.find((w) => w.name === widgetName)
+      if (!widget) {
+        console.warn(
+          `Unable to find widget "${widgetName}" on node [${node.id}]`
+        )
+        continue
+      }
+
+      widget.value = v
+      widget.callback?.(
+        widget.value,
+        app.canvas,
+        node,
+        app.canvas.graph_mouse,
+        {} as CanvasMouseEvent
+      )
     }
   }
 
