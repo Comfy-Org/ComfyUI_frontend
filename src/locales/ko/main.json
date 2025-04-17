@@ -969,8 +969,7 @@
       "ControlNet": "컨트롤넷",
       "Custom Nodes": "사용자 정의 노드",
       "Flux": "FLUX",
-      "SD3_5": "SD3.5",
-      "SDXL": "SDXL",
+      "Image": "이미지",
       "Upscaling": "업스케일링",
       "Video": "비디오"
     },
@@ -1015,18 +1014,19 @@
         "flux_redux_model_example": "FLUX Redux 모델 예제",
         "flux_schnell": "FLUX Schnell"
       },
-      "SD3_5": {
-        "sd3_5_large_blur": "SD3.5 Large 블러 컨트롤넷",
-        "sd3_5_large_canny_controlnet_example": "SD3.5 Large 캐니 컨트롤넷",
-        "sd3_5_large_depth": "SD3.5 Large 깊이 컨트롤넷",
-        "sd3_5_simple_example": "간단한 SD3.5 예제"
-      },
-      "SDXL": {
-        "sdxl_refiner_prompt_example": "SDXL 리파이너 프롬프트",
-        "sdxl_revision_text_prompts": "SDXL Revision 텍스트 프롬프트",
-        "sdxl_revision_zero_positive": "SDXL Revision Zero Positive",
-        "sdxl_simple_example": "간단한 SDXL 예제",
-        "sdxlturbo_example": "SDXL 터보"
+      "Image": {
+        "hidream_i1_dev": "HiDream I1 개발",
+        "hidream_i1_fast": "HiDream I1 빠른",
+        "hidream_i1_full": "HiDream I1 전체",
+        "sd3_5_large_blur": "SD3.5 큰 흐림",
+        "sd3_5_large_canny_controlnet_example": "SD3.5 큰 크기의 캐니 ControlNet 예시",
+        "sd3_5_large_depth": "SD3.5 큰 깊이",
+        "sd3_5_simple_example": "SD3.5 간단한 예시",
+        "sdxl_refiner_prompt_example": "SDXL Refiner 프롬프트 예시",
+        "sdxl_revision_text_prompts": "SDXL 텍스트 프롬프트 수정",
+        "sdxl_revision_zero_positive": "SDXL 제로 포지티브 수정",
+        "sdxl_simple_example": "SDXL 간단한 예시",
+        "sdxlturbo_example": "SDXL 터보 예시"
       },
       "Upscaling": {
         "esrgan_example": "ESRGAN",

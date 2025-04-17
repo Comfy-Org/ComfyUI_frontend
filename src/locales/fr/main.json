@@ -969,8 +969,7 @@
       "ControlNet": "ControlNet",
       "Custom Nodes": "Nœuds personnalisés",
       "Flux": "Flux",
-      "SD3_5": "SD3.5",
-      "SDXL": "SDXL",
+      "Image": "Image",
       "Upscaling": "Mise à l'échelle",
       "Video": "Vidéo"
     },
@@ -1015,16 +1014,17 @@
         "flux_redux_model_example": "Flux Redux Model",
         "flux_schnell": "Flux Schnell"
       },
-      "SD3_5": {
+      "Image": {
+        "hidream_i1_dev": "HiDream I1 Dev",
+        "hidream_i1_fast": "HiDream I1 Rapide",
+        "hidream_i1_full": "HiDream I1 Complet",
         "sd3_5_large_blur": "SD3.5 Grand Flou",
-        "sd3_5_large_canny_controlnet_example": "SD3.5 Grand Canny ControlNet",
+        "sd3_5_large_canny_controlnet_example": "SD3.5 Large Canny ControlNet",
         "sd3_5_large_depth": "SD3.5 Grande Profondeur",
-        "sd3_5_simple_example": "SD3.5 Simple"
-      },
-      "SDXL": {
-        "sdxl_refiner_prompt_example": "SDXL Refiner Prompt",
-        "sdxl_revision_text_prompts": "Révisions de Texte SDXL",
-        "sdxl_revision_zero_positive": "Révision Zéro Positive SDXL",
+        "sd3_5_simple_example": "SD3.5 Simple",
+        "sdxl_refiner_prompt_example": "SDXL Raffineur Prompt",
+        "sdxl_revision_text_prompts": "SDXL Révision Texte Prompts",
+        "sdxl_revision_zero_positive": "SDXL Révision Zéro Positive",
         "sdxl_simple_example": "SDXL Simple",
         "sdxlturbo_example": "SDXL Turbo"
       },

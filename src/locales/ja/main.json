@@ -969,8 +969,7 @@
       "ControlNet": "ControlNet",
       "Custom Nodes": "カスタムノード",
       "Flux": "Flux",
-      "SD3_5": "SD3.5",
-      "SDXL": "SDXL",
+      "Image": "画像",
       "Upscaling": "アップスケーリング",
       "Video": "ビデオ"
     },
@@ -1015,18 +1014,19 @@
         "flux_redux_model_example": "Flux Reduxモデル",
         "flux_schnell": "Flux Schnell"
       },
-      "SD3_5": {
+      "Image": {
+        "hidream_i1_dev": "HiDream I1 Dev",
+        "hidream_i1_fast": "HiDream I1 Fast",
+        "hidream_i1_full": "HiDream I1 Full",
         "sd3_5_large_blur": "SD3.5 ラージブラー",
         "sd3_5_large_canny_controlnet_example": "SD3.5 ラージキャニーコントロールネット",
         "sd3_5_large_depth": "SD3.5 ラージデプス",
-        "sd3_5_simple_example": "SD3.5 シンプル"
-      },
-      "SDXL": {
-        "sdxl_refiner_prompt_example": "SDXL Refinerプロンプト",
-        "sdxl_revision_text_prompts": "SDXL Revisionテキストプロンプト",
-        "sdxl_revision_zero_positive": "SDXL Revisionゼロポジティブ",
-        "sdxl_simple_example": "SDXLシンプル",
-        "sdxlturbo_example": "SDXLターボ"
+        "sd3_5_simple_example": "SD3.5 シンプル",
+        "sdxl_refiner_prompt_example": "SDXL リファイナープロンプト",
+        "sdxl_revision_text_prompts": "SDXL リビジョンテキストプロンプト",
+        "sdxl_revision_zero_positive": "SDXL リビジョンゼロポジティブ",
+        "sdxl_simple_example": "SDXL シンプル",
+        "sdxlturbo_example": "SDXL ターボ"
       },
       "Upscaling": {
         "esrgan_example": "ESRGAN",

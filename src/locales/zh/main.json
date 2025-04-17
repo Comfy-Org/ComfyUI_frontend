@@ -969,8 +969,7 @@
       "ControlNet": "ControlNet",
       "Custom Nodes": "自定义节点",
       "Flux": "Flux",
-      "SD3_5": "SD3.5",
-      "SDXL": "SDXL",
+      "Image": "图片",
       "Upscaling": "放大",
       "Video": "视频"
     },
@@ -1015,17 +1014,18 @@
         "flux_redux_model_example": "Flux Redux Model",
         "flux_schnell": "Flux Schnell"
       },
-      "SD3_5": {
-        "sd3_5_large_blur": "SD3.5 Large 模糊",
-        "sd3_5_large_canny_controlnet_example": "SD3.5 Large Canny 控制网",
-        "sd3_5_large_depth": "SD3.5 Large 深度",
-        "sd3_5_simple_example": "SD3.5 简易示例"
-      },
-      "SDXL": {
-        "sdxl_refiner_prompt_example": "SDXL Refiner提示",
-        "sdxl_revision_text_prompts": "SDXL修订文本提示",
-        "sdxl_revision_zero_positive": "SDXL修订零正",
-        "sdxl_simple_example": "SDXL简单",
+      "Image": {
+        "hidream_i1_dev": "HiDream I1 Dev",
+        "hidream_i1_fast": "HiDream I1 Fast",
+        "hidream_i1_full": "HiDream I1 Full",
+        "sd3_5_large_blur": "SD3.5 大型模糊",
+        "sd3_5_large_canny_controlnet_example": "SD3.5 大型 Canny ControlNet",
+        "sd3_5_large_depth": "SD3.5 大型深度",
+        "sd3_5_simple_example": "SD3.5 简单",
+        "sdxl_refiner_prompt_example": "SDXL 精炼提示",
+        "sdxl_revision_text_prompts": "SDXL 修订文本提示",
+        "sdxl_revision_zero_positive": "SDXL 修订零正",
+        "sdxl_simple_example": "SDXL 简单",
         "sdxlturbo_example": "SDXL Turbo"
       },
       "Upscaling": {
