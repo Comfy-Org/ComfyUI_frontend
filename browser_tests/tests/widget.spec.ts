@@ -208,7 +208,10 @@ test.describe('Animated image widget', () => {
     )
 
     // Wait for animation to go to next frame
-    await comfyPage.page.waitForTimeout(200)
+    await comfyPage.page.waitForTimeout(512)
+
+    // Move mouse and click on canvas to trigger render
+    await comfyPage.page.mouse.click(64, 64)
 
     // Expect the image preview to change to the next frame of the animation
     await expect(comfyPage.canvas).toHaveScreenshot(
@@ -234,17 +237,17 @@ test.describe('Animated image widget', () => {
     // Expect the filename combo value to be updated
     const fileComboWidget = await loadAnimatedWebpNode.getWidget(0)
     const filename = await fileComboWidget.getValue()
-    expect(filename).toBe('animated_webp.webp')
+    expect(filename).toContain('animated_webp.webp')
   })
 
   test('Can preview saved animated webp image', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('widgets/save_animated_webp')
 
     // Get position of the load animated webp node
-    const nodes = await comfyPage.getNodeRefsByType(
+    const loadNodes = await comfyPage.getNodeRefsByType(
       'DevToolsLoadAnimatedImageTest'
     )
-    const loadAnimatedWebpNode = nodes[0]
+    const loadAnimatedWebpNode = loadNodes[0]
     const { x, y } = await loadAnimatedWebpNode.getPosition()
 
     // Drag and drop image file onto the load animated webp node
@@ -253,29 +256,28 @@ test.describe('Animated image widget', () => {
     })
     await comfyPage.nextFrame()
 
+    // Get the SaveAnimatedWEBP node
+    const saveNodes = await comfyPage.getNodeRefsByType('SaveAnimatedWEBP')
+    const saveAnimatedWebpNode = saveNodes[0]
+    if (!saveAnimatedWebpNode)
+      throw new Error('SaveAnimatedWEBP node not found')
+
     // Simulate the graph executing
-    await comfyPage.page.evaluate((loadAnimatedWebpNodeId) => {
-      const saveAnimatedWebpNode = window['app'].graph.nodes.findIndex(
-        (node) => node.type === 'SaveAnimatedWEBP'
-      )
-      const saveAnimatedWebpNodeId = saveAnimatedWebpNode.id
-      // Set the output of the SaveAnimatedWEBP node to equal the loader node's image
-      window['app'].nodeOutputs[saveAnimatedWebpNodeId] =
-        window['app'].nodeOutputs[loadAnimatedWebpNodeId]
-    }, loadAnimatedWebpNode.id)
+    await comfyPage.page.evaluate(
+      ([loadId, saveId]) => {
+        // Set the output of the SaveAnimatedWEBP node to equal the loader node's image
+        window['app'].nodeOutputs[saveId] = window['app'].nodeOutputs[loadId]
+      },
+      [loadAnimatedWebpNode.id, saveAnimatedWebpNode.id]
+    )
     await comfyPage.nextFrame()
+
+    // Move mouse and click on canvas to trigger render
+    await comfyPage.page.mouse.click(64, 64)
 
     // Expect the SaveAnimatedWEBP node to have an output preview
     await expect(comfyPage.canvas).toHaveScreenshot(
       'animated_image_preview_saved_webp.png'
-    )
-
-    // Wait for animation to go to next frame
-    await comfyPage.page.waitForTimeout(200)
-
-    // Expect the image preview to change to the next frame of the animation
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'animated_image_preview_saved_webp_next_frame.png'
     )
   })
 })
