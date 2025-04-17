@@ -1042,7 +1042,9 @@
         "ltxv_text_to_video": "LTXVテキストからビデオへ",
         "mochi_text_to_video_example": "Mochiテキストからビデオへ",
         "text_to_video_wan": "Wan 2.1 テキストからビデオへ",
-        "txt_to_image_to_video": "テキストから画像へ、画像からビデオへ"
+        "txt_to_image_to_video": "テキストから画像へ、画像からビデオへ",
+        "wan2_1_fun_control": "Wan 2.1 ControlNet",
+        "wan2_1_fun_inp": "Wan 2.1 インペインティング"
       }
     },
     "title": "テンプレートを利用して開始"
