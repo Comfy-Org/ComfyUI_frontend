@@ -47,7 +47,7 @@ export class PrimitiveNode extends LGraphNode {
   applyToGraph(extraLinks: LLink[] = []) {
     if (!this.outputs[0].links?.length) return
 
-    let links = [
+    const links = [
       ...this.outputs[0].links.map((l) => app.graph.links[l]),
       ...extraLinks
     ]
@@ -62,24 +62,20 @@ export class PrimitiveNode extends LGraphNode {
       const input = node?.inputs[linkInfo.target_slot]
       if (!input) continue
 
-      let widget: IWidget | undefined
       const widgetName = input.widget?.name
-      if (widgetName) {
-        widget = node.widgets?.find((w) => w.name === widgetName)
-      }
+      if (!widgetName) continue
 
-      if (widget) {
-        widget.value = v
-        if (widget.callback) {
-          widget.callback(
-            widget.value,
-            app.canvas,
-            node,
-            app.canvas.graph_mouse,
-            {} as CanvasMouseEvent
-          )
-        }
-      }
+      const widget = node.widgets?.find((w) => w.name === widgetName)
+      if (!widget) continue
+
+      widget.value = v
+      widget.callback?.(
+        widget.value,
+        app.canvas,
+        node,
+        app.canvas.graph_mouse,
+        {} as CanvasMouseEvent
+      )
     }
   }
 
