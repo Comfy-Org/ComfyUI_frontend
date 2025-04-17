@@ -55,6 +55,19 @@ const pythonMirror = defineModel<string>('pythonMirror', { required: true })
 const pypiMirror = defineModel<string>('pypiMirror', { required: true })
 const torchMirror = defineModel<string>('torchMirror', { required: true })
 
+const isBlackwellArchitecture = ref(false)
+
+const checkBlackwellArchitecture = async (): Promise<boolean> => {
+  try {
+    const { execSync } = await import('node:child_process')
+    const smiOutput = execSync('nvidia-smi -q').toString()
+    return /Product Architecture\s*:\s*Blackwell/.test(smiOutput)
+  } catch (error) {
+    console.error('Failed to check for Blackwell architecture:', error)
+    return false
+  }
+}
+
 const getTorchMirrorItem = (device: TorchDeviceType): UVMirror => {
   const settingId = 'Comfy-Desktop.UV.TorchInstallMirror'
   switch (device) {
@@ -65,6 +78,14 @@ const getTorchMirrorItem = (device: TorchDeviceType): UVMirror => {
         fallbackMirror: NIGHTLY_CPU_TORCH_URL
       }
     case 'nvidia':
+      if (isBlackwellArchitecture.value) {
+        const NightlyPytorch = 'https://download.pytorch.org/whl/nightly/cu128'
+        return {
+          settingId,
+          mirror: NightlyPytorch,
+          fallbackMirror: NightlyPytorch
+        }
+      }
       return {
         settingId,
         mirror: CUDA_TORCH_URL,
@@ -83,6 +104,7 @@ const getTorchMirrorItem = (device: TorchDeviceType): UVMirror => {
 const userIsInChina = ref(false)
 onMounted(async () => {
   userIsInChina.value = await isInChina()
+  isBlackwellArchitecture.value = await checkBlackwellArchitecture()
 })
 
 const useFallbackMirror = (mirror: UVMirror) => ({
