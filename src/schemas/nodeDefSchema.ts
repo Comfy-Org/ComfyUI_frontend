@@ -74,6 +74,7 @@ export const zComboInputOptions = zBaseInputOptions.extend({
   image_folder: z.enum(['input', 'output', 'temp']).optional(),
   allow_batch: z.boolean().optional(),
   video_upload: z.boolean().optional(),
+  animated_image_upload: z.boolean().optional(),
   options: z.array(zComboOption).optional(),
   remote: zRemoteWidgetConfig.optional(),
   /** Whether the widget is a multi-select widget. */

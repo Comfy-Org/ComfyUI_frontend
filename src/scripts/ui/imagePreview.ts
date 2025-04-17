@@ -92,6 +92,10 @@ export function createImageHost(node) {
   }
   return {
     el,
+    getCurrentImage() {
+      // @ts-expect-error fixme ts strict error
+      return currentImgs?.[0]
+    },
     // @ts-expect-error fixme ts strict error
     updateImages(imgs) {
       // @ts-expect-error fixme ts strict error

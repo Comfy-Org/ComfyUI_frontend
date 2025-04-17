@@ -8,10 +8,12 @@ import { isVideoNode } from '@/utils/litegraphUtil'
 
 const createOutputs = (
   filenames: string[],
-  type: string
+  type: string,
+  isAnimated: boolean
 ): ExecutedWsMessage['output'] => {
   return {
-    images: filenames.map((image) => ({ type, ...parseFilePath(image) }))
+    images: filenames.map((image) => ({ type, ...parseFilePath(image) })),
+    animated: filenames.map((image) => isAnimated && image.endsWith('.webp'))
   }
 }
 
@@ -52,18 +54,21 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   function setNodeOutputs(
     node: LGraphNode,
     filenames: string | string[] | ResultItem,
-    { folder = 'input' }: { folder?: string } = {}
+    {
+      folder = 'input',
+      isAnimated = false
+    }: { folder?: string; isAnimated?: boolean } = {}
   ) {
     if (!filenames || !node) return
 
     const nodeId = getNodeId(node)
 
     if (typeof filenames === 'string') {
-      app.nodeOutputs[nodeId] = createOutputs([filenames], folder)
+      app.nodeOutputs[nodeId] = createOutputs([filenames], folder, isAnimated)
     } else if (!Array.isArray(filenames)) {
       app.nodeOutputs[nodeId] = filenames
     } else {
-      const resultItems = createOutputs(filenames, folder)
+      const resultItems = createOutputs(filenames, folder, isAnimated)
       if (!resultItems?.images?.length) return
       app.nodeOutputs[nodeId] = resultItems
     }

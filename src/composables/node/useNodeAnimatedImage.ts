@@ -3,6 +3,7 @@ import type { IWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
 import { ANIM_PREVIEW_WIDGET } from '@/scripts/app'
 import { createImageHost } from '@/scripts/ui/imagePreview'
+import { fitDimensionsToNodeWidth } from '@/utils/imageUtil'
 
 /**
  * Composable for handling animated image previews in nodes
@@ -42,6 +43,16 @@ export function useNodeAnimatedImage() {
       widget.serialize = false
       widget.serializeValue = () => undefined
       widget.options.host.updateImages(node.imgs)
+      widget.computeLayoutSize = () => {
+        const img = widget.options.host.getCurrentImage()
+        if (!img) return { minHeight: 0, minWidth: 0 }
+
+        return fitDimensionsToNodeWidth(
+          img.naturalWidth,
+          img.naturalHeight,
+          node.size?.[0] || 0
+        )
+      }
     }
   }
 

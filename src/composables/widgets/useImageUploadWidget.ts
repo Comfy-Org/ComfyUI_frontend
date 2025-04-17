@@ -37,6 +37,7 @@ export const useImageUploadWidget = () => {
     const { imageInputName, allow_batch, image_folder = 'input' } = inputOptions
     const nodeOutputStore = useNodeOutputStore()
 
+    const isAnimated = !!inputOptions.animated_image_upload
     const isVideo = !!inputOptions.video_upload
     const accept = isVideo ? ACCEPTED_VIDEO_TYPES : ACCEPTED_IMAGE_TYPES
     const { showPreview } = isVideo ? useNodeVideo(node) : useNodeImage(node)
@@ -92,7 +93,9 @@ export const useImageUploadWidget = () => {
 
     // Add our own callback to the combo widget to render an image when it changes
     fileComboWidget.callback = function () {
-      nodeOutputStore.setNodeOutputs(node, fileComboWidget.value)
+      nodeOutputStore.setNodeOutputs(node, fileComboWidget.value, {
+        isAnimated
+      })
       node.graph?.setDirtyCanvas(true)
     }
 
@@ -100,7 +103,9 @@ export const useImageUploadWidget = () => {
     // The value isnt set immediately so we need to wait a moment
     // No change callbacks seem to be fired on initial setting of the value
     requestAnimationFrame(() => {
-      nodeOutputStore.setNodeOutputs(node, fileComboWidget.value)
+      nodeOutputStore.setNodeOutputs(node, fileComboWidget.value, {
+        isAnimated
+      })
       showPreview({ block: false })
     })
 
