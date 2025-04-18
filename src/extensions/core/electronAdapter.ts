@@ -164,12 +164,11 @@ import { checkMirrorReachable } from '@/utils/networkUtil'
         icon: 'pi pi-sync',
         async function() {
           const updateAvailable = await electronAPI.checkForUpdates()
-          // TODO: Add update version to the dialog
-          if (updateAvailable) {
+          if (updateAvailable.isUpdateAvailable) {
+            const version = updateAvailable.version
             const proceed = await useDialogService().confirm({
-              message:
-                'An update is available. Do you want to restart and update now?',
               title: 'Update Found',
+              message: `An update (v${version}) is available. Do you want to restart and update now?`,
               type: 'default'
             })
             if (proceed) {
