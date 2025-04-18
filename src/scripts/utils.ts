@@ -1,3 +1,4 @@
+import * as formatUtil from '@/utils/formatUtil'
 import { applyTextReplacements as _applyTextReplacements } from '@/utils/searchAndReplace'
 
 import { api } from './api'
@@ -120,4 +121,8 @@ export function setStorageValue(id: string, value: string) {
     sessionStorage.setItem(`${id}:${clientId}`, value)
   }
   localStorage.setItem(id, value)
+}
+
+export function generateUUID() {
+  return formatUtil.generateUUID()
 }
