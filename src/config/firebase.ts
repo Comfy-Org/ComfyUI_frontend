@@ -22,6 +22,7 @@ const PROD_CONFIG: FirebaseOptions = {
   measurementId: __FIREBASE_MEASUREMENT_ID__
 }
 
+// Default to dev config, only use prod when explicitly set in release workflow
 export const FIREBASE_CONFIG: FirebaseOptions = __USE_PROD_CONFIG__
   ? PROD_CONFIG
   : DEV_CONFIG
