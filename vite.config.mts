@@ -185,27 +185,25 @@ export default defineConfig({
     __SENTRY_DSN__: JSON.stringify(process.env.SENTRY_DSN || ''),
     __ALGOLIA_APP_ID__: JSON.stringify(process.env.ALGOLIA_APP_ID || ''),
     __ALGOLIA_API_KEY__: JSON.stringify(process.env.ALGOLIA_API_KEY || ''),
-    __FIREBASE_API_KEY__: JSON.stringify(
-      process.env.VITE_FIREBASE_API_KEY || ''
-    ),
+    __FIREBASE_API_KEY__: JSON.stringify(process.env.FIREBASE_API_KEY || ''),
     __FIREBASE_AUTH_DOMAIN__: JSON.stringify(
-      process.env.VITE_FIREBASE_AUTH_DOMAIN || ''
+      process.env.FIREBASE_AUTH_DOMAIN || ''
     ),
     __FIREBASE_DATABASE_URL__: JSON.stringify(
-      process.env.VITE_FIREBASE_DATABASE_URL || ''
+      process.env.FIREBASE_DATABASE_URL || ''
     ),
     __FIREBASE_PROJECT_ID__: JSON.stringify(
-      process.env.VITE_FIREBASE_PROJECT_ID || ''
+      process.env.FIREBASE_PROJECT_ID || ''
     ),
     __FIREBASE_STORAGE_BUCKET__: JSON.stringify(
-      process.env.VITE_FIREBASE_STORAGE_BUCKET || ''
+      process.env.FIREBASE_STORAGE_BUCKET || ''
     ),
     __FIREBASE_MESSAGING_SENDER_ID__: JSON.stringify(
-      process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || ''
+      process.env.FIREBASE_MESSAGING_SENDER_ID || ''
     ),
-    __FIREBASE_APP_ID__: JSON.stringify(process.env.VITE_FIREBASE_APP_ID || ''),
+    __FIREBASE_APP_ID__: JSON.stringify(process.env.FIREBASE_APP_ID || ''),
     __FIREBASE_MEASUREMENT_ID__: JSON.stringify(
-      process.env.VITE_FIREBASE_MEASUREMENT_ID || ''
+      process.env.FIREBASE_MEASUREMENT_ID || ''
     )
   },
 
