@@ -318,6 +318,16 @@ export const useComfyRegistryService = () => {
     )
   }
 
+  /**
+   * Get the costs of all API nodes
+   */
+  const getApiNodeCosts = async () => {
+    // TODO: when the endpoint is defined, implement it here
+    return {
+      ImageGenerator: 20
+    }
+  }
+
   return {
     isLoading,
     error,
@@ -330,6 +340,7 @@ export const useComfyRegistryService = () => {
     getPublisherById,
     listPacksForPublisher,
     getNodeDefs,
-    postPackReview
+    postPackReview,
+    getApiNodeCosts
   }
 }

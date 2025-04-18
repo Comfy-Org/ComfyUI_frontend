@@ -25,6 +25,8 @@ import type { TreeNode } from '@/types/treeExplorerTypes'
 import type { FuseSearchable, SearchAuxScore } from '@/utils/fuseUtil'
 import { buildTree } from '@/utils/treeUtil'
 
+import { useComfyRegistryStore } from './comfyRegistryStore'
+
 export class ComfyNodeDefImpl
   implements ComfyNodeDefV1, ComfyNodeDefV2, FuseSearchable
 {
@@ -41,6 +43,8 @@ export class ComfyNodeDefImpl
   readonly deprecated: boolean
   readonly experimental: boolean
   readonly output_node: boolean
+  readonly api_node?: boolean
+  credits_cost?: number
   /**
    * @deprecated Use `inputs` instead
    */
@@ -135,6 +139,11 @@ export class ComfyNodeDefImpl
 
     // Initialize node source
     this.nodeSource = getNodeSource(obj.python_module)
+
+    // Initialize API node fields
+    if (obj.api_node) {
+      this.credits_cost = useComfyRegistryStore().getAPINodePrice(this.name)
+    }
   }
 
   get nodePath(): string {
@@ -283,7 +292,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     nodeDefsByName.value = newNodeDefsByName
     nodeDefsByDisplayName.value = newNodeDefsByDisplayName
   }
-  function addNodeDef(nodeDef: ComfyNodeDefV1) {
+  async function addNodeDef(nodeDef: ComfyNodeDefV1) {
     const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
     nodeDefsByName.value[nodeDef.name] = nodeDefImpl
     nodeDefsByDisplayName.value[nodeDef.display_name] = nodeDefImpl
