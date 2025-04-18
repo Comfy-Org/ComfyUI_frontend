@@ -499,6 +499,9 @@ describe("LinkConnector Integration", () => {
       expect(connector.isRerouteValidDrop(reroute7)).toBe(false)
       expect(connector.isRerouteValidDrop(reroute10)).toBe(false)
       expect(connector.isRerouteValidDrop(reroute13)).toBe(false)
+
+      // Prevent link disconnect when dropped on canvas (just for this test)
+      connector.events.addEventListener("dropped-on-canvas", e => e.preventDefault(), { once: true })
       connector.dropLinks(graph, reroute7Event)
       connector.reset()
 

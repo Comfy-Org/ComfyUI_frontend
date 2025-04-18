@@ -446,6 +446,12 @@ export class LinkConnector {
           link.inputNode.disconnectInput(link.inputIndex, true)
         }
       }
+    } else if (this.state.connectingTo === "output") {
+      for (const link of this.renderLinks) {
+        if (link instanceof MovingOutputLink) {
+          link.outputNode.disconnectOutput(link.outputIndex, link.inputNode)
+        }
+      }
     }
   }
 
