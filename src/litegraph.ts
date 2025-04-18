@@ -113,20 +113,28 @@ export type {
   IOptionalSlotData,
   ISlotType,
   KeysOfType,
+  LinkNetwork,
+  LinkSegment,
   MethodNames,
   PickByType,
+  Point,
+  Positionable,
+  ReadonlyLinkNetwork,
+  ReadOnlyPoint,
+  ReadOnlyRect,
   Rect,
   Rect32,
   Size,
 } from "./interfaces"
 export { LGraph } from "./LGraph"
-export { BadgePosition, LGraphBadge } from "./LGraphBadge"
+export { BadgePosition, LGraphBadge, type LGraphBadgeOptions } from "./LGraphBadge"
 export { LGraphCanvas, type LGraphCanvasState } from "./LGraphCanvas"
 export { LGraphGroup } from "./LGraphGroup"
-export { LGraphNode } from "./LGraphNode"
-export { LLink } from "./LLink"
+export { LGraphNode, type NodeId } from "./LGraphNode"
+export { type LinkId, LLink } from "./LLink"
 export { createBounds } from "./measure"
-export { Reroute } from "./Reroute"
+export { Reroute, type RerouteId } from "./Reroute"
+export type { CanvasPointerEvent } from "./types/events"
 export {
   CanvasItem,
   EaseFunction,
