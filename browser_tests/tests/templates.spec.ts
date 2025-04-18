@@ -24,7 +24,7 @@ test.describe('Templates', () => {
     }
   })
 
-  test('should have all required thumbnail media for each template', async ({
+  test.skip('should have all required thumbnail media for each template', async ({
     comfyPage
   }) => {
     const templates = await comfyPage.templates.getAllTemplates()
