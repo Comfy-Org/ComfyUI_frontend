@@ -1,7 +1,16 @@
 import { expect } from '@playwright/test'
-import fs from 'fs'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+
+async function checkTemplateFileExists(
+  page: any,
+  filename: string
+): Promise<boolean> {
+  const response = await page.request.get(
+    new URL(`/templates/${filename}`, page.url()).toString()
+  )
+  return response.ok()
+}
 
 test.describe('Templates', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -14,13 +23,11 @@ test.describe('Templates', () => {
   }) => {
     const templates = await comfyPage.templates.getAllTemplates()
     for (const template of templates) {
-      const workflowPath = comfyPage.templates.getTemplatePath(
+      const exists = await checkTemplateFileExists(
+        comfyPage.page,
         `${template.name}.json`
       )
-      expect(
-        fs.existsSync(workflowPath),
-        `Missing workflow: ${template.name}`
-      ).toBe(true)
+      expect(exists, `Missing workflow: ${template.name}`).toBe(true)
     }
   })
 
@@ -31,13 +38,13 @@ test.describe('Templates', () => {
     for (const template of templates) {
       const { name, mediaSubtype, thumbnailVariant } = template
       const baseMedia = `${name}-1.${mediaSubtype}`
-      const basePath = comfyPage.templates.getTemplatePath(baseMedia)
 
       // Check base thumbnail
-      expect(
-        fs.existsSync(basePath),
-        `Missing base thumbnail: ${baseMedia}`
-      ).toBe(true)
+      const baseExists = await checkTemplateFileExists(
+        comfyPage.page,
+        baseMedia
+      )
+      expect(baseExists, `Missing base thumbnail: ${baseMedia}`).toBe(true)
 
       // Check second thumbnail for variants that need it
       if (
@@ -45,9 +52,12 @@ test.describe('Templates', () => {
         thumbnailVariant === 'hoverDissolve'
       ) {
         const secondMedia = `${name}-2.${mediaSubtype}`
-        const secondPath = comfyPage.templates.getTemplatePath(secondMedia)
+        const secondExists = await checkTemplateFileExists(
+          comfyPage.page,
+          secondMedia
+        )
         expect(
-          fs.existsSync(secondPath),
+          secondExists,
           `Missing second thumbnail: ${secondMedia} required for ${thumbnailVariant}`
         ).toBe(true)
       }
