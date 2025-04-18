@@ -102,12 +102,7 @@ const addNode = (nodeDef: ComfyNodeDefImpl) => {
     })
   }
 
-  // TODO: This is not robust timing-wise.
-  // PrimeVue complains about the dialog being closed before the event selecting
-  // item is fully processed.
-  window.setTimeout(() => {
-    closeDialog()
-  }, 100)
+  window.requestAnimationFrame(closeDialog)
 }
 
 const newSearchBoxEnabled = computed(
