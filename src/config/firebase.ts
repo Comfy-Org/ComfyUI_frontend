@@ -1,14 +1,14 @@
 import { FirebaseOptions } from 'firebase/app'
 
 const DEV_CONFIG: FirebaseOptions = {
-  apiKey: 'AIzaSyAIOcnOl01Roycc4kCiVoxyOZzlvM27O1o',
-  authDomain: 'dreamboothy.firebaseapp.com',
-  databaseURL: 'https://dreamboothy-default-rtdb.firebaseio.com',
-  projectId: 'dreamboothy',
-  storageBucket: 'dreamboothy.appspot.com',
-  messagingSenderId: '357148958219',
-  appId: '1:357148958219:web:062460a94961edd31531de',
-  measurementId: 'G-3RDG85K1MH'
+  apiKey: 'AIzaSyDa_YMeyzV0SkVe92vBZ1tVikWBmOU5KVE',
+  authDomain: 'dreamboothy-dev.firebaseapp.com',
+  databaseURL: 'https://dreamboothy-dev-default-rtdb.firebaseio.com',
+  projectId: 'dreamboothy-dev',
+  storageBucket: 'dreamboothy-dev.appspot.com',
+  messagingSenderId: '313257147182',
+  appId: '1:313257147182:web:be38f6ebf74345fc7618bf',
+  measurementId: 'G-YEVSMYXSPY'
 }
 
 const PROD_CONFIG: FirebaseOptions = {
@@ -23,7 +23,7 @@ const PROD_CONFIG: FirebaseOptions = {
 }
 
 // To test with prod config while using dev server, set USE_PROD_FIREBASE_CONFIG=true in .env
-// Otherwise, build with `npm run build` and set `--front-end-root` to `ComfyUI_frontend/dist`
+// Otherwise, build with `npm run build` the and set `--front-end-root` to `ComfyUI_frontend/dist`
 export const FIREBASE_CONFIG: FirebaseOptions = __USE_PROD_FIREBASE_CONFIG__
   ? PROD_CONFIG
   : DEV_CONFIG
