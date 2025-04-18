@@ -435,6 +435,9 @@ export class LinkConnector {
 
   dropOnNothing(event: CanvasPointerEvent): void {
     // For external event only.
+    const mayContinue = this.events.dispatch("dropped-on-canvas", event)
+    if (mayContinue === false) return
+
     if (this.state.connectingTo === "input") {
       for (const link of this.renderLinks) {
         if (link instanceof MovingInputLink) {
@@ -442,7 +445,6 @@ export class LinkConnector {
         }
       }
     }
-    this.events.dispatch("dropped-on-canvas", event)
   }
 
   /**
@@ -608,7 +610,8 @@ export class LinkConnector {
    * Effectively cancels moving or connecting links.
    */
   reset(force = false): void {
-    this.events.dispatch("reset", force)
+    const mayContinue = this.events.dispatch("reset", force)
+    if (mayContinue === false) return
 
     const { state, outputLinks, inputLinks, hiddenReroutes, renderLinks, floatingLinks } = this
 

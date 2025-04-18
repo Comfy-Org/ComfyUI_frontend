@@ -77,7 +77,7 @@ export class LinkConnectorEventTarget extends EventTarget {
   dispatch<T extends ComplexEvents>(type: T, detail: LinkConnectorEventMap[T]): boolean
   dispatch<T extends SimpleEvents>(type: T): boolean
   dispatch<T extends keyof LinkConnectorEventMap>(type: T, detail?: LinkConnectorEventMap[T]) {
-    const event = new CustomEvent(type, { detail })
+    const event = new CustomEvent(type, { detail, cancelable: true })
     return super.dispatchEvent(event)
   }
 

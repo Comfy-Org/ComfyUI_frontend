@@ -1712,6 +1712,17 @@ export class LGraphCanvas implements ConnectionColorContext {
     this.dirty_bgcanvas = true
   }
 
+  #linkConnectorDrop(): void {
+    const { graph, linkConnector, pointer } = this
+    if (!graph) throw new NullGraphError()
+
+    pointer.onDragEnd = upEvent => linkConnector.dropLinks(graph, upEvent)
+    pointer.finally = () => {
+      this.linkConnector.reset(true)
+      this.#dirty()
+    }
+  }
+
   /**
    * Used to attach the canvas in a popup
    * @returns returns the window where the canvas is attached (the DOM root node)
@@ -1993,9 +2004,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         if (reroute) {
           if (e.shiftKey) {
             linkConnector.dragFromReroute(graph, reroute)
-
-            pointer.onDragEnd = upEvent => linkConnector.dropLinks(graph, upEvent)
-            pointer.finally = () => linkConnector.reset(true)
+            this.#linkConnectorDrop()
 
             this.dirty_bgcanvas = true
           }
@@ -2029,9 +2038,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
           if (e.shiftKey && !e.altKey) {
             linkConnector.dragFromLinkSegment(graph, linkSegment)
-
-            pointer.onDragEnd = upEvent => linkConnector.dropLinks(graph, upEvent)
-            pointer.finally = () => linkConnector.reset(true)
+            this.#linkConnectorDrop()
 
             return
           } else if (e.altKey && !e.shiftKey) {
@@ -2220,18 +2227,13 @@ export class LGraphCanvas implements ConnectionColorContext {
             // Drag multiple output links
             if (e.shiftKey && (output.links?.length || output._floatingLinks?.size)) {
               linkConnector.moveOutputLink(graph, output)
-
-              pointer.onDragEnd = upEvent => linkConnector.dropLinks(graph, upEvent)
-              pointer.finally = () => linkConnector.reset(true)
-
+              this.#linkConnectorDrop()
               return
             }
 
             // New output link
             linkConnector.dragNewFromOutput(graph, node, output)
-
-            pointer.onDragEnd = upEvent => linkConnector.dropLinks(graph, upEvent)
-            pointer.finally = () => linkConnector.reset(true)
+            this.#linkConnectorDrop()
 
             if (LiteGraph.shift_click_do_break_link_from) {
               if (e.shiftKey) {
@@ -2277,8 +2279,8 @@ export class LGraphCanvas implements ConnectionColorContext {
             if (!linkConnector.isConnecting) {
               linkConnector.dragNewFromInput(graph, node, input)
             }
-            pointer.onDragEnd = upEvent => linkConnector.dropLinks(graph, upEvent)
-            pointer.finally = () => linkConnector.reset(true)
+
+            this.#linkConnectorDrop()
             this.dirty_bgcanvas = true
 
             return
@@ -2918,6 +2920,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         // esc
         if (this.linkConnector.isConnecting) {
           this.linkConnector.reset()
+          this.#dirty()
           e.preventDefault()
           return
         }
