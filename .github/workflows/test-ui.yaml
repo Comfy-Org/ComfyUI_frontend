@@ -32,6 +32,13 @@ jobs:
           path: 'ComfyUI/custom_nodes/ComfyUI_devtools'
           ref: '9d2421fd3208a310e4d0f71fca2ea0c985759c33'
 
+      - name: Checkout workflow templates
+        uses: actions/checkout@v4
+        with:
+          repository: 'Comfy-Org/workflow_templates'
+          path: 'ComfyUI_frontend/templates_repo'
+          ref: '555775e6e739c9addf8f5efd4c0463154886f064'
+
       - uses: actions/setup-node@v4
         with:
           node-version: lts/*
@@ -39,6 +46,8 @@ jobs:
       - name: Build ComfyUI_frontend
         run: |
           npm ci
+          mkdir -p public/templates
+          cp -r templates_repo/templates/* public/templates/
           npm run build
         working-directory: ComfyUI_frontend
 
