@@ -11,7 +11,7 @@ import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { appendJsonExt } from '@/utils/formatUtil'
+import { appendJsonExt, generateUUID } from '@/utils/formatUtil'
 
 import { useDialogService } from './dialogService'
 
@@ -95,7 +95,7 @@ export const useWorkflowService = () => {
       await workflowStore.saveWorkflow(workflow)
     } else {
       // Generate new id when saving existing workflow as a new file
-      const id = crypto.randomUUID()
+      const id = generateUUID()
       const state = JSON.parse(
         JSON.stringify(workflow.activeState)
       ) as ComfyWorkflowJSON
