@@ -7,7 +7,6 @@ import { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import { useExtensionService } from '@/services/extensionService'
 import { useLoad3dService } from '@/services/load3dService'
-import { generateUUID } from '@/utils/formatUtil'
 
 useExtensionService().registerExtension({
   name: 'Comfy.SaveGLB',
@@ -30,7 +29,6 @@ useExtensionService().registerExtension({
         }
 
         const widget = new ComponentWidgetImpl({
-          id: generateUUID(),
           node,
           name: inputSpec.name,
           component: Load3D,
