@@ -25,8 +25,7 @@
     "lint:fix": "eslint src --fix",
     "locale": "lobe-i18n locale",
     "collect-i18n": "playwright test --config=playwright.i18n.config.ts",
-    "json-schema": "tsx scripts/generate-json-schema.ts",
-    "fetch-templates": "tsx scripts/fetch-templates.ts"
+    "json-schema": "tsx scripts/generate-json-schema.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.8.0",
