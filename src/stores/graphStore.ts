@@ -27,9 +27,15 @@ export const useCanvasStore = defineStore('canvas', () => {
     selectedItems.value = items.map((item) => markRaw(item))
   }
 
+  const getCanvas = () => {
+    if (!canvas.value) throw new Error('getCanvas: canvas is null')
+    return canvas.value
+  }
+
   return {
     canvas,
     selectedItems,
-    updateSelectedItems
+    updateSelectedItems,
+    getCanvas
   }
 })
