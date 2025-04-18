@@ -4,7 +4,7 @@ import path from 'path'
 import IconsResolver from 'unplugin-icons/resolver'
 import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
-import { Plugin, defineConfig } from 'vite'
+import { HtmlTagDescriptor, Plugin, defineConfig } from 'vite'
 import type { UserConfigExport } from 'vitest/config'
 
 dotenv.config()
@@ -24,6 +24,111 @@ function isLegacyFile(id: string): boolean {
     id.endsWith('.ts') &&
     (id.includes('src/extensions/core') || id.includes('src/scripts'))
   )
+}
+
+function addElementVnodeExportPlugin(): Plugin {
+  return {
+    name: 'add-element-vnode-export-plugin',
+
+    renderChunk(code, chunk, _options) {
+      if (chunk.name.startsWith('vendor-vue')) {
+        const exportRegex = /(export\s*\{)([^}]*)(\}\s*;?\s*)$/
+        const match = code.match(exportRegex)
+
+        if (match) {
+          const existingExports = match[2].trim()
+          const exportsArray = existingExports
+            .split(',')
+            .map((e) => e.trim())
+            .filter(Boolean)
+
+          const hasCreateBaseVNode = exportsArray.some((e) =>
+            e.startsWith('createBaseVNode')
+          )
+          const hasCreateElementVNode = exportsArray.some((e) =>
+            e.includes('createElementVNode')
+          )
+
+          if (hasCreateBaseVNode && !hasCreateElementVNode) {
+            const newExportStatement = `${match[1]} ${existingExports ? existingExports + ',' : ''} createBaseVNode as createElementVNode ${match[3]}`
+            const newCode = code.replace(exportRegex, newExportStatement)
+
+            console.log(
+              `[add-element-vnode-export-plugin] Added 'createBaseVNode as createElementVNode' export to vendor-vue chunk.`
+            )
+
+            return { code: newCode, map: null }
+          } else if (!hasCreateBaseVNode) {
+            console.warn(
+              `[add-element-vnode-export-plugin] Warning: 'createBaseVNode' not found in exports of vendor-vue chunk. Cannot add alias.`
+            )
+          }
+        } else {
+          console.warn(
+            `[add-element-vnode-export-plugin] Warning: Could not find expected export block format in vendor-vue chunk.`
+          )
+        }
+      }
+
+      return null
+    }
+  }
+}
+
+function generateImportMapPlugin(): Plugin {
+  const importMapEntries: Record<string, string> = {}
+
+  return {
+    name: 'generate-import-map-plugin',
+
+    generateBundle(_options, bundle) {
+      for (const fileName in bundle) {
+        const chunk = bundle[fileName]
+        if (chunk.type === 'chunk' && !chunk.isEntry) {
+          let importKey = null
+          if (chunk.name === 'vendor-vue') {
+            importKey = 'vue'
+          } else if (chunk.name === 'vendor-primevue') {
+            importKey = 'primevue'
+          }
+
+          if (importKey) {
+            const relativePath = `./${chunk.fileName.replace(/\\/g, '/')}`
+
+            importMapEntries[importKey] = relativePath
+            console.log(
+              `[ImportMap Plugin] Found chunk: ${chunk.name} -> Mapped '${importKey}' to '${relativePath}'`
+            )
+          }
+        }
+      }
+    },
+
+    transformIndexHtml(html) {
+      if (Object.keys(importMapEntries).length === 0) {
+        console.warn(
+          '[ImportMap Plugin] No vendor chunks found to create import map.'
+        )
+        return html
+      }
+
+      const importMap = {
+        imports: importMapEntries
+      }
+
+      const importMapTag: HtmlTagDescriptor = {
+        tag: 'script',
+        attrs: { type: 'importmap' },
+        children: JSON.stringify(importMap, null, 2),
+        injectTo: 'head'
+      }
+
+      return {
+        html,
+        tags: [importMapTag]
+      }
+    }
+  }
 }
 
 function comfyAPIPlugin(): Plugin {
@@ -110,7 +215,7 @@ export default defineConfig({
         target: DEV_SERVER_COMFYUI_URL,
         // Return empty array for extensions API as these modules
         // are not on vite's dev server.
-        bypass: (req, res, options) => {
+        bypass: (req, res, _options) => {
           if (req.url === '/api/extensions') {
             res.end(JSON.stringify([]))
           }
@@ -137,6 +242,8 @@ export default defineConfig({
   plugins: [
     vue(),
     comfyAPIPlugin(),
+    generateImportMapPlugin(),
+    addElementVnodeExportPlugin(),
 
     Icons({
       compiler: 'vue3'
@@ -158,7 +265,18 @@ export default defineConfig({
     rollupOptions: {
       // Disabling tree-shaking
       // Prevent vite remove unused exports
-      treeshake: false
+      treeshake: false,
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/vue/')) {
+            return 'vendor-vue'
+          }
+          if (id.includes('node_modules/primevue/')) {
+            return 'vendor-primevue'
+          }
+        },
+        minifyInternalExports: false
+      }
     }
   },
 
