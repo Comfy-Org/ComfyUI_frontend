@@ -159,6 +159,14 @@ import { checkMirrorReachable } from '@/utils/networkUtil'
         }
       },
       {
+        id: 'Comfy-Desktop.CheckForUpdates',
+        label: 'Check for Updates',
+        icon: 'pi pi-sync',
+        function() {
+          electronAPI.checkForUpdates()
+        }
+      },
+      {
         id: 'Comfy-Desktop.Reinstall',
         label: 'Reinstall',
         icon: 'pi pi-refresh',
@@ -223,7 +231,11 @@ import { checkMirrorReachable } from '@/utils/networkUtil'
       },
       {
         path: ['Help'],
-        commands: ['Comfy-Desktop.Reinstall']
+        commands: ['Comfy-Desktop.CheckForUpdates']
+      },
+      {
+        path: ['Help'],
+        commands: ['Comfy-Desktop.CheckForUpdates', 'Comfy-Desktop.Reinstall']
       }
     ],
 
