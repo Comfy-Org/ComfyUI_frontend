@@ -162,8 +162,20 @@ import { checkMirrorReachable } from '@/utils/networkUtil'
         id: 'Comfy-Desktop.CheckForUpdates',
         label: 'Check for Updates',
         icon: 'pi pi-sync',
-        function() {
-          electronAPI.checkForUpdates()
+        async function() {
+          const updateAvailable = await electronAPI.checkForUpdates()
+          // TODO: Add update version to the dialog
+          if (updateAvailable) {
+            const proceed = await useDialogService().confirm({
+              message:
+                'An update is available. Do you want to restart and update now?',
+              title: 'Update Found',
+              type: 'default'
+            })
+            if (proceed) {
+              electronAPI.restartAndInstall()
+            }
+          }
         }
       },
       {
