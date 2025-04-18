@@ -12,17 +12,18 @@ const DEV_CONFIG: FirebaseOptions = {
 }
 
 const PROD_CONFIG: FirebaseOptions = {
-  apiKey: __FIREBASE_API_KEY__,
-  authDomain: __FIREBASE_AUTH_DOMAIN__,
-  databaseURL: __FIREBASE_DATABASE_URL__,
-  projectId: __FIREBASE_PROJECT_ID__,
-  storageBucket: __FIREBASE_STORAGE_BUCKET__,
-  messagingSenderId: __FIREBASE_MESSAGING_SENDER_ID__,
-  appId: __FIREBASE_APP_ID__,
-  measurementId: __FIREBASE_MEASUREMENT_ID__
+  apiKey: 'AIzaSyC2-fomLqgCjb7ELwta1I9cEarPK8ziTGs',
+  authDomain: 'dreamboothy.firebaseapp.com',
+  databaseURL: 'https://dreamboothy-default-rtdb.firebaseio.com',
+  projectId: 'dreamboothy',
+  storageBucket: 'dreamboothy.appspot.com',
+  messagingSenderId: '357148958219',
+  appId: '1:357148958219:web:f5917f72e5f36a2015310e',
+  measurementId: 'G-3ZBD3MBTG4'
 }
 
-// Default to dev config, only use prod when explicitly set in release workflow
-export const FIREBASE_CONFIG: FirebaseOptions = __USE_PROD_CONFIG__
+// To test with prod config while using dev server, set USE_PROD_FIREBASE_CONFIG=true in .env
+// Otherwise, build with `npm run build` and set `--front-end-root` to `ComfyUI_frontend/dist`
+export const FIREBASE_CONFIG: FirebaseOptions = __USE_PROD_FIREBASE_CONFIG__
   ? PROD_CONFIG
   : DEV_CONFIG
