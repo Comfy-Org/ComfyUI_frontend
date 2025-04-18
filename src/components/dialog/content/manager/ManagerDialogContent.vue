@@ -74,9 +74,7 @@
           </div>
         </div>
       </div>
-      <div
-        class="w-80 border-l-0 border-surface-border absolute right-0 top-0 bottom-0 flex z-20"
-      >
+      <div class="w-80 border-l-0 absolute right-0 top-0 bottom-0 flex z-20">
         <ContentDivider orientation="vertical" :width="0.2" />
         <div class="flex-1 flex flex-col isolate">
           <InfoPanel
