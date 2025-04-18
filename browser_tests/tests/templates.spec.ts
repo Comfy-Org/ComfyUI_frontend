@@ -86,4 +86,48 @@ test.describe('Templates', () => {
     // Expect the templates dialog to be shown
     expect(await comfyPage.templates.content.isVisible()).toBe(true)
   })
+
+  test('Uses title field as fallback when the key is not found in locales', async ({
+    comfyPage
+  }) => {
+    // Capture request for the index.json
+    await comfyPage.page.route('**/templates/index.json', async (route, _) => {
+      // Add a new template that won't have a translation pre-generated
+      const response = [
+        {
+          moduleName: 'default',
+          title: 'FALLBACK CATEGORY',
+          type: 'image',
+          templates: [
+            {
+              name: 'unknown_key_has_no_translation_available',
+              title: 'FALLBACK TEMPLATE NAME',
+              mediaType: 'image',
+              mediaSubtype: 'webp',
+              description: 'No translations found'
+            }
+          ]
+        }
+      ]
+      await route.fulfill({
+        status: 200,
+        body: JSON.stringify(response),
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store'
+        }
+      })
+    })
+
+    // Load the templates dialog
+    await comfyPage.executeCommand('Comfy.BrowseTemplates')
+
+    // Expect the title to be used as fallback for template cards
+    await expect(
+      comfyPage.templates.content.getByText('FALLBACK TEMPLATE NAME')
+    ).toBeVisible()
+
+    // Expect the title to be used as fallback for the template categories
+    await expect(comfyPage.page.getByLabel('FALLBACK CATEGORY')).toBeVisible()
+  })
 })
