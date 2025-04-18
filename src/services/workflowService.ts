@@ -61,14 +61,20 @@ export const useWorkflowService = () => {
    * @param workflow The workflow to save
    */
   const saveWorkflowAs = async (workflow: ComfyWorkflow) => {
-    const newFilename = await dialogService.prompt({
+    // Remove the basePath prefix from the path, since it never show to the user
+    const oldFileFullPath = (
+      workflow.directory +
+      '/' +
+      workflow.filename
+    ).substring(ComfyWorkflow.basePath.length)
+    const newFileFullPath = await dialogService.prompt({
       title: t('workflowService.saveWorkflow'),
       message: t('workflowService.enterFilename') + ':',
-      defaultValue: workflow.filename
+      defaultValue: oldFileFullPath
     })
-    if (!newFilename) return
+    if (!newFileFullPath) return
 
-    const newPath = workflow.directory + '/' + appendJsonExt(newFilename)
+    const newPath = ComfyWorkflow.basePath + appendJsonExt(newFileFullPath)
     const newKey = newPath.substring(ComfyWorkflow.basePath.length)
     const existingWorkflow = workflowStore.getWorkflowByPath(newPath)
 
