@@ -242,10 +242,6 @@ import { checkMirrorReachable } from '@/utils/networkUtil'
       },
       {
         path: ['Help'],
-        commands: ['Comfy-Desktop.CheckForUpdates']
-      },
-      {
-        path: ['Help'],
         commands: ['Comfy-Desktop.CheckForUpdates', 'Comfy-Desktop.Reinstall']
       }
     ],
