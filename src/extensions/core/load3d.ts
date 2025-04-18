@@ -14,7 +14,6 @@ import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import { useExtensionService } from '@/services/extensionService'
 import { useLoad3dService } from '@/services/load3dService'
 import { useToastStore } from '@/stores/toastStore'
-import { generateUUID } from '@/utils/formatUtil'
 
 useExtensionService().registerExtension({
   name: 'Comfy.Load3D',
@@ -118,7 +117,6 @@ useExtensionService().registerExtension({
         }
 
         const widget = new ComponentWidgetImpl({
-          id: generateUUID(),
           node,
           name: inputSpec.name,
           component: Load3D,
@@ -259,7 +257,6 @@ useExtensionService().registerExtension({
         }
 
         const widget = new ComponentWidgetImpl({
-          id: generateUUID(),
           node,
           name: inputSpec.name,
           component: Load3DAnimation,
@@ -355,7 +352,6 @@ useExtensionService().registerExtension({
         }
 
         const widget = new ComponentWidgetImpl({
-          id: generateUUID(),
           node,
           name: inputSpec.name,
           component: Load3D,
@@ -432,7 +428,6 @@ useExtensionService().registerExtension({
         }
 
         const widget = new ComponentWidgetImpl({
-          id: generateUUID(),
           node,
           name: inputSpec.name,
           component: Load3DAnimation,

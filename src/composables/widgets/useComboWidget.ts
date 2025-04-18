@@ -18,7 +18,6 @@ import {
   type ComfyWidgetConstructorV2,
   addValueControlWidgets
 } from '@/scripts/widgets'
-import { generateUUID } from '@/utils/formatUtil'
 
 import { useRemoteWidget } from './useRemoteWidget'
 
@@ -32,7 +31,6 @@ const getDefaultValue = (inputSpec: ComboInputSpec) => {
 const addMultiSelectWidget = (node: LGraphNode, inputSpec: ComboInputSpec) => {
   const widgetValue = ref<string[]>([])
   const widget = new ComponentWidgetImpl({
-    id: generateUUID(),
     node,
     name: inputSpec.name,
     component: MultiSelectWidget,
