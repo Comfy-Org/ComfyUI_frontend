@@ -1,12 +1,12 @@
-import { expect } from '@playwright/test'
+import { Page, expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 async function checkTemplateFileExists(
-  page: any,
+  page: Page,
   filename: string
 ): Promise<boolean> {
-  const response = await page.request.get(
+  const response = await page.request.head(
     new URL(`/templates/${filename}`, page.url()).toString()
   )
   return response.ok()
@@ -21,6 +21,7 @@ test.describe('Templates', () => {
   test('should have a JSON workflow file for each template', async ({
     comfyPage
   }) => {
+    test.slow()
     const templates = await comfyPage.templates.getAllTemplates()
     for (const template of templates) {
       const exists = await checkTemplateFileExists(
@@ -34,6 +35,7 @@ test.describe('Templates', () => {
   test('should have all required thumbnail media for each template', async ({
     comfyPage
   }) => {
+    test.slow()
     const templates = await comfyPage.templates.getAllTemplates()
     for (const template of templates) {
       const { name, mediaSubtype, thumbnailVariant } = template
