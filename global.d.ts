@@ -11,7 +11,7 @@ declare const __FIREBASE_STORAGE_BUCKET__: string
 declare const __FIREBASE_MESSAGING_SENDER_ID__: string
 declare const __FIREBASE_APP_ID__: string
 declare const __FIREBASE_MEASUREMENT_ID__: string
-
+declare const __USE_PROD_CONFIG__: boolean
 interface Navigator {
   /**
    * Used by the electron API.  This is a WICG non-standard API, but is guaranteed to exist in Electron.

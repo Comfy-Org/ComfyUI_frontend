@@ -22,6 +22,6 @@ const PROD_CONFIG: FirebaseOptions = {
   measurementId: __FIREBASE_MEASUREMENT_ID__
 }
 
-export const FIREBASE_CONFIG: FirebaseOptions = import.meta.env.PROD
+export const FIREBASE_CONFIG: FirebaseOptions = __USE_PROD_CONFIG__
   ? PROD_CONFIG
   : DEV_CONFIG

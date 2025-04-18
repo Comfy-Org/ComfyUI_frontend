@@ -204,7 +204,8 @@ export default defineConfig({
     __FIREBASE_APP_ID__: JSON.stringify(process.env.FIREBASE_APP_ID || ''),
     __FIREBASE_MEASUREMENT_ID__: JSON.stringify(
       process.env.FIREBASE_MEASUREMENT_ID || ''
-    )
+    ),
+    __USE_PROD_CONFIG__: JSON.stringify(process.env.USE_PROD_CONFIG === 'true')
   },
 
   resolve: {

@@ -42,6 +42,8 @@ jobs:
           npm run fetch-templates
           npm run build
         working-directory: ComfyUI_frontend
+        env:
+          USE_PROD_CONFIG: 'false'
 
       - name: Generate cache key
         id: cache-key
