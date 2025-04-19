@@ -1520,15 +1520,16 @@ export class ComfyApp {
 
       if (!def?.input) continue
 
-      // @ts-expect-error fixme ts strict error
-      for (const widget of node.widgets) {
-        if (widget.type === 'combo') {
-          if (def['input'].required?.[widget.name] !== undefined) {
-            // @ts-expect-error Requires discriminated union
-            widget.options.values = def['input'].required[widget.name][0]
-          } else if (def['input'].optional?.[widget.name] !== undefined) {
-            // @ts-expect-error Requires discriminated union
-            widget.options.values = def['input'].optional[widget.name][0]
+      if (node.widgets) {
+        for (const widget of node.widgets) {
+          if (widget.type === 'combo') {
+            if (def['input'].required?.[widget.name] !== undefined) {
+              // @ts-expect-error Requires discriminated union
+              widget.options.values = def['input'].required[widget.name][0]
+            } else if (def['input'].optional?.[widget.name] !== undefined) {
+              // @ts-expect-error Requires discriminated union
+              widget.options.values = def['input'].optional[widget.name][0]
+            }
           }
         }
       }
