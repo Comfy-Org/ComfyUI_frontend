@@ -37,6 +37,13 @@ export const useWorkflowPacks = (options: UseNodePacksOptions = {}) => {
   }
 
   /**
+   * Clean the version string to be used in the registry search.
+   * Removes the leading 'v' and trims whitespace and line terminators.
+   */
+  const cleanVersionString = (version: string) =>
+    version.replace(/^v/, '').trim()
+
+  /**
    * Infer the pack for a node by searching the registry for packs that have nodes
    * with the same name.
    */
@@ -70,7 +77,9 @@ export const useWorkflowPacks = (options: UseNodePacksOptions = {}) => {
     if (packId === CORE_NODES_PACK_NAME) return undefined
 
     const version =
-      typeof node.properties.ver === 'string' ? node.properties.ver : undefined
+      typeof node.properties.ver === 'string'
+        ? cleanVersionString(node.properties.ver)
+        : undefined
 
     return {
       id: packId,

@@ -160,12 +160,17 @@ const zAuxId = z
   )
   .transform(([username, repo]) => `${username}/${repo}`)
 
-const zSemVer = z.union([
-  z.string().regex(semverPattern, 'Invalid semantic version (x.y.z)'),
+const zSemVer = z
+  .string()
+  .regex(semverPattern, 'Invalid semantic version (x.y.z)')
+const zGitHash = z.string().regex(gitHashPattern, 'Invalid Git commit hash')
+const zVersion = z.union([
+  z
+    .string()
+    .transform((ver) => ver.replace(/^v/, '')) // Strip leading 'v'
+    .pipe(z.union([zSemVer, zGitHash])),
   z.literal('unknown')
 ])
-const zGitHash = z.string().regex(gitHashPattern, 'Invalid Git commit hash')
-const zVersion = z.union([zSemVer, zGitHash])
 
 const zProperties = z
   .object({
