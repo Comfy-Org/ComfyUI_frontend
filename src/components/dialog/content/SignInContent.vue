@@ -61,14 +61,22 @@
     <!-- Terms -->
     <p class="text-xs text-muted mt-8">
       {{ t('auth.login.termsText') }}
-      <span class="text-blue-500 cursor-pointer">{{
-        t('auth.login.termsLink')
-      }}</span>
+      <a
+        href="https://www.comfy.org/terms-of-service"
+        target="_blank"
+        class="text-blue-500 cursor-pointer"
+      >
+        {{ t('auth.login.termsLink') }}
+      </a>
       {{ t('auth.login.andText') }}
-      <span class="text-blue-500 cursor-pointer">{{
-        t('auth.login.privacyLink')
-      }}</span
-      >.
+      <a
+        href="https://www.comfy.org/privacy-policy"
+        target="_blank"
+        class="text-blue-500 cursor-pointer"
+      >
+        {{ t('auth.login.privacyLink') }}
+      </a>
+      .
     </p>
   </div>
 </template>
