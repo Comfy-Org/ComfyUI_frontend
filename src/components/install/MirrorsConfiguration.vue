@@ -37,7 +37,8 @@
 import {
   CUDA_TORCH_URL,
   NIGHTLY_CPU_TORCH_URL,
-  TorchDeviceType
+  TorchDeviceType,
+  TorchMirrorUrl
 } from '@comfyorg/comfyui-electron-types'
 import Divider from 'primevue/divider'
 import Panel from 'primevue/panel'
@@ -78,11 +79,10 @@ const getTorchMirrorItem = (device: TorchDeviceType): UVMirror => {
       }
     case 'nvidia':
       if (isBlackwellArchitecture.value) {
-        const NightlyPytorch = 'https://download.pytorch.org/whl/nightly/cu128' // To be replaced by TorchMirrorUrl.NightlyCuda
         return {
           settingId,
-          mirror: NightlyPytorch,
-          fallbackMirror: NightlyPytorch
+          mirror: TorchMirrorUrl.NightlyCuda,
+          fallbackMirror: TorchMirrorUrl.NightlyCuda
         }
       }
       return {
