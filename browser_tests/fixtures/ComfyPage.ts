@@ -463,85 +463,126 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
-  async dragAndDropFile(
-    fileName: string,
+  async dragAndDropExternalResource(
     options: {
+      fileName?: string
+      url?: string
       dropPosition?: Position
     } = {}
   ) {
-    const { dropPosition = { x: 100, y: 100 } } = options
+    const { dropPosition = { x: 100, y: 100 }, fileName, url } = options
 
-    const filePath = this.assetPath(fileName)
+    if (!fileName && !url)
+      throw new Error('Must provide either fileName or url')
 
-    // Read the file content
-    const buffer = fs.readFileSync(filePath)
+    const evaluateParams: {
+      dropPosition: Position
+      fileName?: string
+      fileType?: string
+      buffer?: Uint8Array | number[]
+      url?: string
+    } = { dropPosition }
 
-    // Get file type
-    const getFileType = (fileName: string) => {
-      if (fileName.endsWith('.png')) return 'image/png'
-      if (fileName.endsWith('.webp')) return 'image/webp'
-      if (fileName.endsWith('.webm')) return 'video/webm'
-      if (fileName.endsWith('.json')) return 'application/json'
-      if (fileName.endsWith('.glb')) return 'model/gltf-binary'
-      return 'application/octet-stream'
+    // Dropping a file from the filesystem
+    if (fileName) {
+      const filePath = this.assetPath(fileName)
+      const buffer = fs.readFileSync(filePath)
+
+      const getFileType = (fileName: string) => {
+        if (fileName.endsWith('.png')) return 'image/png'
+        if (fileName.endsWith('.webp')) return 'image/webp'
+        if (fileName.endsWith('.webm')) return 'video/webm'
+        if (fileName.endsWith('.json')) return 'application/json'
+        if (fileName.endsWith('.glb')) return 'model/gltf-binary'
+        return 'application/octet-stream'
+      }
+
+      evaluateParams.fileName = fileName
+      evaluateParams.fileType = getFileType(fileName)
+      evaluateParams.buffer = [...new Uint8Array(buffer)]
     }
 
-    const fileType = getFileType(fileName)
+    // Dropping a URL (e.g., dropping image across browser tabs in Firefox)
+    if (url) evaluateParams.url = url
 
-    await this.page.evaluate(
-      async ({ buffer, fileName, fileType, dropPosition }) => {
-        const file = new File([new Uint8Array(buffer)], fileName, {
-          type: fileType
-        })
-        const dataTransfer = new DataTransfer()
-        dataTransfer.items.add(file)
+    // Execute the drag and drop in the browser
+    await this.page.evaluate(async (params) => {
+      const dataTransfer = new DataTransfer()
 
-        const targetElement = document.elementFromPoint(
-          dropPosition.x,
-          dropPosition.y
-        )
-
-        if (!targetElement) {
-          console.error('No element found at drop position:', dropPosition)
-          return { success: false, error: 'No element at position' }
-        }
-
-        const eventOptions = {
-          bubbles: true,
-          cancelable: true,
-          dataTransfer,
-          clientX: dropPosition.x,
-          clientY: dropPosition.y
-        }
-
-        const dragOverEvent = new DragEvent('dragover', eventOptions)
-        const dropEvent = new DragEvent('drop', eventOptions)
-
-        Object.defineProperty(dropEvent, 'preventDefault', {
-          value: () => {},
-          writable: false
-        })
-        Object.defineProperty(dropEvent, 'stopPropagation', {
-          value: () => {},
-          writable: false
-        })
-
-        targetElement.dispatchEvent(dragOverEvent)
-        targetElement.dispatchEvent(dropEvent)
-
-        return {
-          success: true,
-          targetInfo: {
-            tagName: targetElement.tagName,
-            id: targetElement.id,
-            classList: Array.from(targetElement.classList)
+      // Add file if provided
+      if (params.buffer && params.fileName && params.fileType) {
+        const file = new File(
+          [new Uint8Array(params.buffer)],
+          params.fileName,
+          {
+            type: params.fileType
           }
+        )
+        dataTransfer.items.add(file)
+      }
+
+      // Add URL data if provided
+      if (params.url) {
+        dataTransfer.setData('text/uri-list', params.url)
+        dataTransfer.setData('text/x-moz-url', params.url)
+      }
+
+      const targetElement = document.elementFromPoint(
+        params.dropPosition.x,
+        params.dropPosition.y
+      )
+
+      if (!targetElement) {
+        console.error('No element found at drop position:', params.dropPosition)
+        return { success: false, error: 'No element at position' }
+      }
+
+      const eventOptions = {
+        bubbles: true,
+        cancelable: true,
+        dataTransfer,
+        clientX: params.dropPosition.x,
+        clientY: params.dropPosition.y
+      }
+
+      const dragOverEvent = new DragEvent('dragover', eventOptions)
+      const dropEvent = new DragEvent('drop', eventOptions)
+
+      Object.defineProperty(dropEvent, 'preventDefault', {
+        value: () => {},
+        writable: false
+      })
+
+      Object.defineProperty(dropEvent, 'stopPropagation', {
+        value: () => {},
+        writable: false
+      })
+
+      targetElement.dispatchEvent(dragOverEvent)
+      targetElement.dispatchEvent(dropEvent)
+
+      return {
+        success: true,
+        targetInfo: {
+          tagName: targetElement.tagName,
+          id: targetElement.id,
+          classList: Array.from(targetElement.classList)
         }
-      },
-      { buffer: [...new Uint8Array(buffer)], fileName, fileType, dropPosition }
-    )
+      }
+    }, evaluateParams)
 
     await this.nextFrame()
+  }
+
+  async dragAndDropFile(
+    fileName: string,
+    options: { dropPosition?: Position } = {}
+  ) {
+    return this.dragAndDropExternalResource({ fileName, ...options })
+  }
+
+  async dragAndDropURL(url: string, options: { dropPosition?: Position } = {}) {
+    return this.dragAndDropExternalResource({ url, ...options })
   }
 
   async dragNode2() {
