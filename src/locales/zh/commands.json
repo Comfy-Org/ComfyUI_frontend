@@ -128,11 +128,23 @@
   "Comfy_LoadDefaultWorkflow": {
     "label": "加载默认工作流"
   },
-  "Comfy_Manager_CustomNodesManager": {
-    "label": "自定义节点管理器"
+  "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
+    "label": "自定义节点（测试版）"
+  },
+  "Comfy_Manager_ShowMissingPacks": {
+    "label": "安装缺失的包"
+  },
+  "Comfy_Manager_ShowUpdateAvailablePacks": {
+    "label": "检查更新"
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "切换进度对话框"
+  },
+  "Comfy_Memory_UnloadModels": {
+    "label": "卸载模型"
+  },
+  "Comfy_Memory_UnloadModelsAndExecutionCache": {
+    "label": "卸载模型和执行缓存"
   },
   "Comfy_NewBlankWorkflow": {
     "label": "新建空白工作流"

@@ -110,10 +110,14 @@
     "migrate": "Migrate",
     "updateAvailable": "Update Available",
     "login": "Login",
-    "learnMore": "Learn more"
+    "learnMore": "Learn more",
+    "commandProhibited": "Command {command} is prohibited. Contact an administrator for more information."
   },
   "manager": {
     "title": "Custom Nodes Manager",
+    "legacyMenuNotAvailable": "Legacy manager menu is not available, defaulting to the new manager menu.",
+    "legacyManagerUI": "Use Legacy UI",
+    "legacyManagerUIDescription": "To use the legacy Manager UI, start ComfyUI with --enable-manager-legacy-ui",
     "failed": "Failed ({count})",
     "noNodesFound": "No nodes found",
     "noNodesFoundDescription": "The pack's nodes either could not be parsed, or the pack is a frontend extension only and doesn't have any nodes.",
@@ -601,6 +605,7 @@
   "menuLabels": {
     "Workflow": "Workflow",
     "Edit": "Edit",
+    "Manager": "Manager",
     "Help": "Help",
     "Open Custom Nodes Folder": "Open Custom Nodes Folder",
     "Open Inputs Folder": "Open Inputs Folder",
@@ -646,7 +651,11 @@
     "Interrupt": "Interrupt",
     "Load Default Workflow": "Load Default Workflow",
     "Custom Nodes Manager": "Custom Nodes Manager",
+    "Install Missing Custom Nodes": "Install Missing Custom Nodes",
+    "Check for Custom Node Updates": "Check for Custom Node Updates",
     "Toggle Progress Dialog": "Toggle Progress Dialog",
+    "Unload Models": "Unload Models",
+    "Unload Models and Execution Cache": "Unload Models and Execution Cache",
     "New": "New",
     "Clipspace": "Clipspace",
     "Open": "Open",
