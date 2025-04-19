@@ -76,7 +76,6 @@ jobs:
         run: |
           npm ci
           npm install ../litegraph
-          npm run fetch-templates
           npm run build
         working-directory: ComfyUI_frontend
 
