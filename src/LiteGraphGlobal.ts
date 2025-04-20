@@ -364,20 +364,22 @@ export class LiteGraphGlobal {
     for (let slotType of allTypes) {
       if (slotType === "") slotType = "*"
 
-      const registerTo = out
-        ? "registered_slot_out_types"
-        : "registered_slot_in_types"
-      if (this[registerTo][slotType] === undefined)
-        this[registerTo][slotType] = { nodes: [] }
-      if (!this[registerTo][slotType].nodes.includes(class_type))
-        this[registerTo][slotType].nodes.push(class_type)
+      const register = out
+        ? this.registered_slot_out_types
+        : this.registered_slot_in_types
+      register[slotType] ??= { nodes: [] }
+
+      const { nodes } = register[slotType]
+      if (!nodes.includes(class_type)) nodes.push(class_type)
 
       // check if is a new type
       const types = out
         ? this.slot_types_out
         : this.slot_types_in
-      if (!types.includes(slotType.toLowerCase())) {
-        types.push(slotType.toLowerCase())
+      const type = slotType.toLowerCase()
+
+      if (!types.includes(type)) {
+        types.push(type)
         types.sort()
       }
     }

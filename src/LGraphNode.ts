@@ -1472,7 +1472,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    */
   addInput(name: string, type: ISlotType, extra_info?: Partial<INodeInputSlot>): INodeInputSlot {
     type = type || 0
-    const input: INodeInputSlot = new NodeInputSlot({ name: name, type: type, link: null })
+    const input = new NodeInputSlot({ name: name, type: type, link: null })
     if (extra_info) Object.assign(input, extra_info)
 
     this.inputs ||= []
@@ -2878,10 +2878,9 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    * @internal The inputs that are not positioned with absolute coordinates.
    */
   get #defaultVerticalInputs() {
-    return this.inputs.filter((slot: INodeInputSlot) => !(
-      slot.pos ||
-      (this.widgets?.length && isWidgetInputSlot(slot))
-    ))
+    return this.inputs.filter(
+      slot => !slot.pos && !(this.widgets?.length && isWidgetInputSlot(slot)),
+    )
   }
 
   /**
@@ -3489,7 +3488,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       slots.push(layoutElement)
     }
 
-    return slots.length ? createBounds(slots, /** padding= */ 0) : null
+    return slots.length ? createBounds(slots, 0) : null
   }
 
   #getMouseOverSlot(slot: INodeSlot): INodeSlot | null {
@@ -3658,7 +3657,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     for (const [i, slot] of this.inputs.entries()) {
       if (!isWidgetInputSlot(slot)) continue
 
-      slotByWidgetName.set(slot.widget?.name, { ...slot, index: i })
+      slotByWidgetName.set(slot.widget.name, { ...slot, index: i })
     }
     if (!slotByWidgetName.size) return
 

@@ -139,18 +139,16 @@ export abstract class NodeSlot implements INodeSlot {
 
   draw(
     ctx: CanvasRenderingContext2D,
-    options: IDrawOptions,
-  ) {
-    const {
+    {
       pos,
       colorContext,
       labelColor = "#AAA",
       labelPosition = LabelPosition.Right,
       lowQuality = false,
       highlight = false,
-    } = options
-    let { doStroke = false } = options
-
+      doStroke = false,
+    }: IDrawOptions,
+  ) {
     // Save the current fillStyle and strokeStyle
     const originalFillStyle = ctx.fillStyle
     const originalStrokeStyle = ctx.strokeStyle

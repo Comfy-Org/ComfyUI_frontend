@@ -69,7 +69,11 @@ export interface Positionable extends Parent<Positionable> {
   snapToGrid(snapTo: number): boolean
 
   /**
-   * Cached position & size as `x, y, width, height`.
+   * A rectangle that represents the outer edges of the item.
+   *
+   * Used for various calculations, such as overlap, selective rendering, and click checks.
+   * For most items, this is cached position & size as `x, y, width, height`.
+   * Some items (such as nodes) may extend above and/or to the left of their {@link pos}.
    * @readonly
    * @see {@link move}
    */
