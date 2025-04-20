@@ -69,12 +69,6 @@ export class ContextMenu<TValue = unknown> {
     root.className = classes
     root.style.minWidth = "100"
     root.style.minHeight = "100"
-    // TODO: Fix use of timer in place of events
-    root.style.pointerEvents = "none"
-    setTimeout(function () {
-      root.style.pointerEvents = "auto"
-    // delay so the mouse up event is not caught by this element
-    }, 100)
 
     // Close the context menu when a click occurs outside this context menu or its submenus
     const { signal } = this.controller
@@ -89,7 +83,7 @@ export class ContextMenu<TValue = unknown> {
     }
 
     // this prevents the default context browser menu to open in case this menu was created when pressing right button
-    root.addEventListener("pointerup", e => e.preventDefault(), true)
+    root.addEventListener("pointerup", e => e.preventDefault(), eventOptions)
 
     // Right button
     root.addEventListener(
@@ -97,7 +91,7 @@ export class ContextMenu<TValue = unknown> {
       (e) => {
         if (e.button === 2) e.preventDefault()
       },
-      true,
+      eventOptions,
     )
 
     root.addEventListener(
@@ -108,7 +102,7 @@ export class ContextMenu<TValue = unknown> {
           e.preventDefault()
         }
       },
-      true,
+      eventOptions,
     )
 
     this.root = root
@@ -134,12 +128,6 @@ export class ContextMenu<TValue = unknown> {
 
       this.addItem(name, value, options)
     }
-
-    root.addEventListener("pointerenter", function () {
-      if (root.closing_timer) {
-        clearTimeout(root.closing_timer)
-      }
-    })
 
     // insert before checking position
     const ownerDocument = (options.event?.target as Node | null | undefined)?.ownerDocument
@@ -347,10 +335,9 @@ export class ContextMenu<TValue = unknown> {
       }
     }
     this.current_submenu?.close(e, true)
-
-    if (this.root.closing_timer) clearTimeout(this.root.closing_timer)
   }
 
+  /** @deprecated Likely unused, however code search was inconclusive (too many results to check by hand). */
   // this code is used to trigger events easily (used in the context menu mouseleave
   static trigger(
     element: HTMLDivElement,
@@ -377,6 +364,7 @@ export class ContextMenu<TValue = unknown> {
       : this.options.event
   }
 
+  /** @deprecated Unused. */
   static isCursorOverElement(
     event: MouseEvent,
     element: HTMLDivElement,

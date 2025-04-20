@@ -400,7 +400,6 @@ export interface IContextMenuSubmenu<TValue = unknown> extends IContextMenuOptio
 export interface ContextMenuDivElement<TValue = unknown> extends HTMLDivElement {
   value?: string | IContextMenuValue<TValue>
   onclick_callback?: never
-  closing_timer?: number
 }
 
 export type INodeSlotContextItem = [string, ISlotType, Partial<INodeInputSlot & INodeOutputSlot>]
