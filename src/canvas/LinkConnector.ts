@@ -351,7 +351,7 @@ export class LinkConnector {
       if (output) {
         this.#dropOnOutput(node, output)
       } else {
-        this.#dropOnNodeBackground(node, event)
+        this.connectToNode(node, event)
       }
     // To input
     } else if (connectingTo === "input") {
@@ -370,7 +370,7 @@ export class LinkConnector {
         this.overWidget = undefined
       } else {
         // Node background / title
-        this.#dropOnNodeBackground(node, event)
+        this.connectToNode(node, event)
       }
     }
   }
@@ -456,11 +456,11 @@ export class LinkConnector {
   }
 
   /**
-   * Connects the links being dropped onto a node.
+   * Connects the links being dropped onto a node to the first matching slot.
    * @param node The node that the links are being dropped on
    * @param event Contains the drop location, in canvas space
    */
-  #dropOnNodeBackground(node: LGraphNode, event: CanvasPointerEvent): void {
+  connectToNode(node: LGraphNode, event: CanvasPointerEvent): void {
     const { state: { connectingTo } } = this
 
     const mayContinue = this.events.dispatch("dropped-on-node", { node, event })
