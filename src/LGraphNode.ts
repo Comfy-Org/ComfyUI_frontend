@@ -3500,12 +3500,11 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     return [...this.inputs, ...this.outputs]
   }
 
-  #measureSlot(slot: INodeSlot, slotIndex: number): LayoutElement<INodeSlot> {
+  #measureSlot(slot: INodeSlot, slotIndex: number): LayoutElement {
     const isInput = isINodeInputSlot(slot)
     const pos = isInput ? this.getInputPos(slotIndex) : this.getOutputPos(slotIndex)
 
     slot._layoutElement = new LayoutElement({
-      value: slot,
       boundingRect: [
         pos[0] - this.pos[0] - LiteGraph.NODE_SLOT_HEIGHT * 0.5,
         pos[1] - this.pos[1] - LiteGraph.NODE_SLOT_HEIGHT * 0.5,
@@ -3517,7 +3516,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   }
 
   #measureSlots(): ReadOnlyRect | null {
-    const slots: LayoutElement<INodeSlot>[] = []
+    const slots: LayoutElement[] = []
 
     for (const [slotIndex, slot] of this.inputs.entries()) {
       // Unrecognized nodes (Nodes with error) has inputs but no widgets. Treat

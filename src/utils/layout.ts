@@ -1,14 +1,11 @@
 import { Point, ReadOnlyRect } from "@/interfaces"
 
-export class LayoutElement<T> {
-  public readonly value: T
+export class LayoutElement {
   public readonly boundingRect: ReadOnlyRect
 
   constructor(o: {
-    value: T
     boundingRect: ReadOnlyRect
   }) {
-    this.value = o.value
     this.boundingRect = o.boundingRect
   }
 

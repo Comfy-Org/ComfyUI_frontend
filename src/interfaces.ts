@@ -284,7 +284,7 @@ export interface INodeSlot {
    * A layout element that is used internally to position the slot.
    * Set by {@link LGraphNode.#layoutSlots}.
    */
-  _layoutElement?: LayoutElement<INodeSlot>
+  _layoutElement?: LayoutElement
   /**
    * A list of floating link IDs that are connected to this slot.
    * This is calculated at runtime; it is **not** serialized.
@@ -318,7 +318,7 @@ export interface IWidgetLocator {
 
 export interface INodeInputSlot extends INodeSlot {
   link: LinkId | null
-  _layoutElement?: LayoutElement<INodeInputSlot>
+  _layoutElement?: LayoutElement
   widget?: IWidgetLocator
 }
 
@@ -330,7 +330,7 @@ export interface INodeOutputSlot extends INodeSlot {
   links: LinkId[] | null
   _data?: unknown
   slot_index?: number
-  _layoutElement?: LayoutElement<INodeOutputSlot>
+  _layoutElement?: LayoutElement
 }
 
 /** Links */

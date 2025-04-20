@@ -5,8 +5,7 @@ import type { IWidget } from "./types/widgets"
 import { LabelPosition, SlotShape, SlotType } from "./draw"
 import { LiteGraph } from "./litegraph"
 import { LinkDirection, RenderShape } from "./types/globalEnums"
-import { ISerialisableNodeOutput } from "./types/serialisation"
-import { ISerialisableNodeInput } from "./types/serialisation"
+import { ISerialisableNodeInput, ISerialisableNodeOutput } from "./types/serialisation"
 
 export interface ConnectionColorContext {
   default_connection_color: {
