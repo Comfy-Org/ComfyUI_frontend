@@ -1442,28 +1442,6 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   }
 
   /**
-   * add a new output slot to use in this node
-   * @param array of triplets like [[name,type,extra_info],[...]]
-   */
-  addOutputs(array: [string, ISlotType, Partial<INodeOutputSlot>][]): void {
-    for (const info of array) {
-      const o = new NodeOutputSlot({ name: info[0], type: info[1], links: null })
-      // TODO: Checking the wrong variable here - confirm no downstream consumers, then remove.
-      if (array[2]) Object.assign(o, info[2])
-
-      this.outputs ||= []
-      this.outputs.push(o)
-      this.onOutputAdded?.(o)
-
-      if (LiteGraph.auto_load_slot_types)
-        LiteGraph.registerNodeAndSlotType(this, info[1], true)
-    }
-
-    this.expandToFitContent()
-    this.setDirtyCanvas(true, true)
-  }
-
-  /**
    * remove an existing output slot
    */
   removeOutput(slot: number): void {
@@ -1506,27 +1484,6 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
     this.setDirtyCanvas(true, true)
     return input
-  }
-
-  /**
-   * add several new input slots in this node
-   * @param array of triplets like [[name,type,extra_info],[...]]
-   */
-  addInputs(array: [string, ISlotType, Partial<INodeInputSlot>][]): void {
-    for (const info of array) {
-      const o: INodeInputSlot = new NodeInputSlot({ name: info[0], type: info[1], link: null })
-      // TODO: Checking the wrong variable here - confirm no downstream consumers, then remove.
-      if (array[2]) Object.assign(o, info[2])
-
-      this.inputs ||= []
-      this.inputs.push(o)
-      this.onInputAdded?.(o)
-
-      LiteGraph.registerNodeAndSlotType(this, info[1])
-    }
-
-    this.expandToFitContent()
-    this.setDirtyCanvas(true, true)
   }
 
   /**
