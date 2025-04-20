@@ -9,7 +9,7 @@
       {{ t('apiNodesSignInDialog.message') }}
     </div>
 
-    <ApiNodesCostBreakdown :nodes="apiNodes" :show-total="true" />
+    <ApiNodesList :node-names="apiNodeNames" />
 
     <div class="flex justify-between items-center">
       <Button :label="t('g.learnMore')" link />
@@ -30,13 +30,10 @@
 import Button from 'primevue/button'
 import { useI18n } from 'vue-i18n'
 
-import ApiNodesCostBreakdown from '@/components/common/ApiNodesCostBreakdown.vue'
-import type { ApiNodeCost } from '@/types/apiNodeTypes'
-
 const { t } = useI18n()
 
-const { apiNodes, onLogin, onCancel } = defineProps<{
-  apiNodes: ApiNodeCost[]
+const { apiNodeNames, onLogin, onCancel } = defineProps<{
+  apiNodeNames: string[]
   onLogin?: () => void
   onCancel?: () => void
 }>()

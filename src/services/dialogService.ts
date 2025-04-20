@@ -19,7 +19,6 @@ import TemplateWorkflowsDialogHeader from '@/components/templates/TemplateWorkfl
 import { t } from '@/i18n'
 import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
 import { type ShowDialogOptions, useDialogStore } from '@/stores/dialogStore'
-import { ApiNodeCost } from '@/types/apiNodeTypes'
 import { ManagerTab } from '@/types/comfyManagerTypes'
 
 export type ConfirmationDialogType =
@@ -225,14 +224,14 @@ export const useDialogService = () => {
    * @returns Promise that resolves to true if user clicks login, false if cancelled
    */
   async function showApiNodesSignInDialog(
-    apiNodes: ApiNodeCost[]
+    apiNodeNames: string[]
   ): Promise<boolean> {
     return new Promise<boolean>((resolve) => {
       dialogStore.showDialog({
         key: 'api-nodes-signin',
         component: ApiNodesSignInContent,
         props: {
-          apiNodes,
+          apiNodeNames,
           onLogin: () => showSignInDialog().then((result) => resolve(result)),
           onCancel: () => resolve(false)
         },
