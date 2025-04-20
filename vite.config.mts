@@ -98,16 +98,13 @@ function addElementVnodeExportPlugin(): Plugin {
  * 3. Injects an import map script tag into the HTML head
  * 4. Configures manual chunk splitting for vendor libraries
  *
+ * @param vendorLibraries - An array of vendor libraries to split into separate chunks
  * @returns {Plugin} A Vite plugin that generates and injects an import map
  */
-function generateImportMapPlugin(): Plugin {
+function generateImportMapPlugin(
+  vendorLibraries: { name: string; pattern: string }[]
+): Plugin {
   const importMapEntries: Record<string, string> = {}
-
-  // Define the libraries that should be split into separate chunks
-  const vendorLibraries = [
-    { name: 'vue', pattern: 'node_modules/vue/' },
-    { name: 'primevue', pattern: 'node_modules/primevue/' }
-  ]
 
   return {
     name: 'generate-import-map-plugin',
@@ -295,7 +292,10 @@ export default defineConfig({
   plugins: [
     vue(),
     comfyAPIPlugin(),
-    generateImportMapPlugin(),
+    generateImportMapPlugin([
+      { name: 'vue', pattern: 'node_modules/vue/' },
+      { name: 'primevue', pattern: 'node_modules/primevue/' }
+    ]),
     addElementVnodeExportPlugin(),
 
     Icons({
