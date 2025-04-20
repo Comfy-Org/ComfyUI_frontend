@@ -137,7 +137,9 @@
   "desktopUpdate": {
     "description": "ComfyUI Desktop installe de nouvelles dépendances. Cela peut prendre quelques minutes.",
     "terminalDefaultMessage": "Toute sortie de console de la mise à jour sera affichée ici.",
-    "title": "Mise à jour de ComfyUI Desktop"
+    "title": "Mise à jour de ComfyUI Desktop",
+    "updateAvailableMessage": "Une mise à jour est disponible. Voulez-vous redémarrer et mettre à jour maintenant?",
+    "updateFoundTitle": "Mise à jour trouvée (v{version})"
   },
   "downloadGit": {
     "gitWebsite": "Télécharger git",

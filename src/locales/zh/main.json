@@ -137,7 +137,9 @@
   "desktopUpdate": {
     "description": "ComfyUI桌面正在安装新的依赖项。这可能需要几分钟的时间。",
     "terminalDefaultMessage": "更新过程中的任何控制台输出都将在这里显示。",
-    "title": "正在更新ComfyUI桌面"
+    "title": "正在更新ComfyUI桌面",
+    "updateAvailableMessage": "有可用的更新。您现在要重启并更新吗？",
+    "updateFoundTitle": "找到更新 (v{version})"
   },
   "downloadGit": {
     "gitWebsite": "下载 git",
