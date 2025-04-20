@@ -481,9 +481,8 @@ export class ComfyApp {
           if (match) {
             const uri = event.dataTransfer.getData(match)?.split('\n')?.[0]
             if (uri) {
-              await this.handleFile(
-                new File([await (await fetch(uri)).blob()], uri)
-              )
+              const blob = await (await fetch(uri)).blob()
+              await this.handleFile(new File([blob], uri, { type: blob.type }))
             }
           }
         }
