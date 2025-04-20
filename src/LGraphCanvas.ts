@@ -5484,6 +5484,12 @@ export class LGraphCanvas implements ConnectionColorContext {
             opts.position[1] + opts.posAdd[1] + (opts.posSizeFix[1] ? opts.posSizeFix[1] * newNode.size[1] : 0),
           ]
 
+          // Interim API - allow the link connection to be canceled.
+          // TODO: https://github.com/Comfy-Org/litegraph.js/issues/946
+          const detail = { node: newNode, opts }
+          const mayConnectLinks = this.canvas.dispatchEvent(new CustomEvent("connect-new-default-node", { detail, cancelable: true }))
+          if (!mayConnectLinks) return true
+
           // connect the two!
           if (isFrom) {
             if (!opts.nodeFrom) throw new TypeError("createDefaultNodeForSlot - nodeFrom was null")
