@@ -137,7 +137,9 @@
   "desktopUpdate": {
     "description": "ComfyUI Desktop устанавливает новые зависимости. Это может занять несколько минут.",
     "terminalDefaultMessage": "Любой вывод консоли из обновления будет отображаться здесь.",
-    "title": "Обновление ComfyUI Desktop"
+    "title": "Обновление ComfyUI Desktop",
+    "updateAvailableMessage": "Доступно обновление. Вы хотите перезагрузить и обновить сейчас?",
+    "updateFoundTitle": "Найдено обновление (v{version})"
   },
   "downloadGit": {
     "gitWebsite": "Скачать git",
@@ -565,6 +567,7 @@
     "Bypass/Unbypass Selected Nodes": "Обойти/восстановить выбранные ноды",
     "Canvas Toggle Link Visibility": "Переключение видимости ссылки на холст",
     "Canvas Toggle Lock": "Переключение блокировки холста",
+    "Check for Updates": "Проверить наличие обновлений",
     "Clear Pending Tasks": "Очистить ожидающие задачи",
     "Clear Workflow": "Очистить рабочий процесс",
     "Clipspace": "Клиппространство",

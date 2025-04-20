@@ -1,4 +1,7 @@
 {
+  "Comfy-Desktop_CheckForUpdates": {
+    "label": "Проверить наличие обновлений"
+  },
   "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
     "label": "Открыть папку пользовательских нод"
   },

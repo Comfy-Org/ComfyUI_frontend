@@ -137,7 +137,9 @@
   "desktopUpdate": {
     "description": "ComfyUI 데스크톱이 새로운 종속성을 설치하고 있습니다. 이 작업은 몇 분 정도 걸릴 수 있습니다.",
     "terminalDefaultMessage": "업데이트 콘솔 출력은 여기에 표시됩니다.",
-    "title": "ComfyUI 데스크톱 업데이트 중"
+    "title": "ComfyUI 데스크톱 업데이트 중",
+    "updateAvailableMessage": "업데이트가 가능합니다. 지금 재시작하고 업데이트하시겠습니까?",
+    "updateFoundTitle": "업데이트 발견 (v{version})"
   },
   "downloadGit": {
     "gitWebsite": "git 프로그램 다운로드",
@@ -565,6 +567,7 @@
     "Bypass/Unbypass Selected Nodes": "선택한 노드 우회/우회 해제",
     "Canvas Toggle Link Visibility": "캔버스 토글 링크 가시성",
     "Canvas Toggle Lock": "캔버스 토글 잠금",
+    "Check for Updates": "업데이트 확인",
     "Clear Pending Tasks": "보류 중인 작업 제거하기",
     "Clear Workflow": "워크플로 지우기",
     "Clipspace": "클립스페이스",

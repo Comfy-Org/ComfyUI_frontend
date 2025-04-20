@@ -137,7 +137,9 @@
   "desktopUpdate": {
     "description": "ComfyUIデスクトップは新しい依存関係をインストールしています。これには数分かかる場合があります。",
     "terminalDefaultMessage": "更新からの任意のコンソール出力はここに表示されます。",
-    "title": "ComfyUIデスクトップの更新"
+    "title": "ComfyUIデスクトップの更新",
+    "updateAvailableMessage": "アップデートが利用可能です。今すぐ再起動してアップデートしますか？",
+    "updateFoundTitle": "アップデートが見つかりました (v{version})"
   },
   "downloadGit": {
     "gitWebsite": "Gitをダウンロード",
@@ -565,6 +567,7 @@
     "Bypass/Unbypass Selected Nodes": "選択したノードのバイパス/バイパス解除",
     "Canvas Toggle Link Visibility": "キャンバスのリンク表示を切り替え",
     "Canvas Toggle Lock": "キャンバスのロックを切り替え",
+    "Check for Updates": "更新を確認する",
     "Clear Pending Tasks": "保留中のタスクをクリア",
     "Clear Workflow": "ワークフローをクリア",
     "Clipspace": "クリップスペース",

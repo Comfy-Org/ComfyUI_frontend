@@ -602,6 +602,7 @@
     "Workflow": "Workflow",
     "Edit": "Edit",
     "Help": "Help",
+    "Check for Updates": "Check for Updates",
     "Open Custom Nodes Folder": "Open Custom Nodes Folder",
     "Open Inputs Folder": "Open Inputs Folder",
     "Open Logs Folder": "Open Logs Folder",
@@ -992,7 +993,9 @@
   "desktopUpdate": {
     "title": "Updating ComfyUI Desktop",
     "description": "ComfyUI Desktop is installing new dependencies.  This may take a few minutes.",
-    "terminalDefaultMessage": "Any console output from the update will be shown here."
+    "terminalDefaultMessage": "Any console output from the update will be shown here.",
+    "updateFoundTitle": "Update Found (v{version})",
+    "updateAvailableMessage": "An update is available. Do you want to restart and update now?"
   },
   "clipboard": {
     "successMessage": "Copied to clipboard",

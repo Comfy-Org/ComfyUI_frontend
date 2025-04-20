@@ -137,7 +137,9 @@
   "desktopUpdate": {
     "description": "ComfyUI桌面正在安装新的依赖项。这可能需要几分钟的时间。",
     "terminalDefaultMessage": "更新过程中的任何控制台输出都将在这里显示。",
-    "title": "正在更新ComfyUI桌面"
+    "title": "正在更新ComfyUI桌面",
+    "updateAvailableMessage": "有可用的更新。您现在要重启并更新吗？",
+    "updateFoundTitle": "找到更新 (v{version})"
   },
   "downloadGit": {
     "gitWebsite": "下载 git",
@@ -565,6 +567,7 @@
     "Bypass/Unbypass Selected Nodes": "忽略/取消忽略选定节点",
     "Canvas Toggle Link Visibility": "切换连线可见性",
     "Canvas Toggle Lock": "切换视图锁定",
+    "Check for Updates": "检查更新",
     "Clear Pending Tasks": "清除待处理任务",
     "Clear Workflow": "清除工作流",
     "Clipspace": "剪贴空间",

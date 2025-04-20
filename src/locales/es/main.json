@@ -137,7 +137,9 @@
   "desktopUpdate": {
     "description": "ComfyUI Desktop está instalando nuevas dependencias. Esto puede tardar unos minutos.",
     "terminalDefaultMessage": "Cualquier salida de consola de la actualización se mostrará aquí.",
-    "title": "Actualizando ComfyUI Desktop"
+    "title": "Actualizando ComfyUI Desktop",
+    "updateAvailableMessage": "Hay una actualización disponible. ¿Quieres reiniciar y actualizar ahora?",
+    "updateFoundTitle": "Actualización encontrada (v{version})"
   },
   "downloadGit": {
     "gitWebsite": "Descargar git",
@@ -565,6 +567,7 @@
     "Bypass/Unbypass Selected Nodes": "Evitar/No evitar nodos seleccionados",
     "Canvas Toggle Link Visibility": "Alternar visibilidad de enlace en lienzo",
     "Canvas Toggle Lock": "Alternar bloqueo en lienzo",
+    "Check for Updates": "Buscar actualizaciones",
     "Clear Pending Tasks": "Borrar tareas pendientes",
     "Clear Workflow": "Borrar flujo de trabajo",
     "Clipspace": "Espacio de clip",
