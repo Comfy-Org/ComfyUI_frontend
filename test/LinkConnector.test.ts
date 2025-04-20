@@ -1,4 +1,4 @@
-import type { MovingRenderLink } from "@/canvas/MovingRenderLink"
+import type { MovingInputLink } from "@/canvas/MovingInputLink"
 import type { LinkNetwork } from "@/interfaces"
 import type { ISlotType } from "@/interfaces"
 
@@ -248,7 +248,7 @@ describe("LinkConnector", () => {
         fromDirection: LinkDirection.RIGHT,
         toType: "input",
         link: new LLink(1, "number", 1, 0, 2, 0),
-      } as MovingRenderLink
+      } as MovingInputLink
 
       connector.events.dispatch("input-moved", mockRenderLink)
       expect(listener).toHaveBeenCalled()

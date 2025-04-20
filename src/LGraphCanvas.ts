@@ -936,9 +936,11 @@ export class LGraphCanvas implements ConnectionColorContext {
             canvas.graph.beforeChange()
             const node = LiteGraph.createNode(value.value)
             if (node) {
-              if (!first_event) throw new TypeError("Context menu event was null. This should not occure in normal usage.")
+              if (!first_event) throw new TypeError("Context menu event was null. This should not occur in normal usage.")
               node.pos = canvas.convertEventToCanvasOffset(first_event)
               canvas.graph.add(node)
+            } else {
+              console.warn("Failed to create node of type:", value.value)
             }
 
             callback?.(node)
@@ -5518,6 +5520,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       allow_searchbox: this.allow_searchbox,
       showSearchBox: this.showSearchBox,
     }, optPass || {})
+    const dirty = () => this.#dirty()
     const that = this
     const { graph } = this
     const { afterRerouteId } = opts
@@ -5594,11 +5597,8 @@ export class LGraphCanvas implements ConnectionColorContext {
       callback: inner_clicked,
     })
 
-    const dirty = () => this.#dirty()
-
     // callback
     function inner_clicked(v: string | undefined, options: IContextMenuOptions<string, INodeInputSlot | INodeOutputSlot>, e: MouseEvent) {
-      // console.log("Process showConnectionMenu selection");
       switch (v) {
       case "Add Node":
         LGraphCanvas.onMenuAdd(null, null, e, menu, function (node) {

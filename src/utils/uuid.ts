@@ -18,13 +18,12 @@ const randomStorage = new Uint32Array(31)
  */
 export function createUuidv4(): UUID {
   if (typeof crypto?.randomUUID === "function") return crypto.randomUUID()
-  // Assertion: `replaceAll` returns `string`; UUID format must be asserted below
   if (typeof crypto?.getRandomValues === "function") {
     const random = crypto.getRandomValues(randomStorage)
     let i = 0
     return "10000000-1000-4000-8000-100000000000".replaceAll(/[018]/g, a =>
-      (Number(a) ^ ((random[i++] * 3.725_290_298_461_914e-9) >> (Number(a) * 0.25))).toString(16)) as UUID
+      (Number(a) ^ ((random[i++] * 3.725_290_298_461_914e-9) >> (Number(a) * 0.25))).toString(16))
   }
   return "10000000-1000-4000-8000-100000000000".replaceAll(/[018]/g, a =>
-    (Number(a) ^ ((Math.random() * 16) >> (Number(a) * 0.25))).toString(16)) as UUID
+    (Number(a) ^ ((Math.random() * 16) >> (Number(a) * 0.25))).toString(16))
 }
