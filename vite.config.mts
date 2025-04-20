@@ -1,6 +1,7 @@
 import vue from '@vitejs/plugin-vue'
 import dotenv from 'dotenv'
 import path from 'path'
+import type { OutputOptions } from 'rollup'
 import IconsResolver from 'unplugin-icons/resolver'
 import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
@@ -26,6 +27,15 @@ function isLegacyFile(id: string): boolean {
   )
 }
 
+/**
+ * Vite plugin that adds an alias export for Vue's createBaseVNode as createElementVNode.
+ *
+ * This plugin addresses compatibility issues where some components or libraries
+ * might be using the older createElementVNode function name instead of createBaseVNode.
+ * It modifies the Vue vendor chunk during build to add the alias export.
+ *
+ * @returns {Plugin} A Vite plugin that modifies the Vue vendor chunk exports
+ */
 function addElementVnodeExportPlugin(): Plugin {
   return {
     name: 'add-element-vnode-export-plugin',
@@ -75,29 +85,72 @@ function addElementVnodeExportPlugin(): Plugin {
   }
 }
 
+/**
+ * Vite plugin that generates an import map for vendor chunks.
+ *
+ * This plugin creates a browser-compatible import map that maps module specifiers
+ * (like 'vue' or 'primevue') to their actual file locations in the build output.
+ * This improves module loading in modern browsers and enables better caching.
+ *
+ * The plugin:
+ * 1. Tracks vendor chunks during bundle generation
+ * 2. Creates mappings between module names and their file paths
+ * 3. Injects an import map script tag into the HTML head
+ * 4. Configures manual chunk splitting for vendor libraries
+ *
+ * @returns {Plugin} A Vite plugin that generates and injects an import map
+ */
 function generateImportMapPlugin(): Plugin {
   const importMapEntries: Record<string, string> = {}
 
+  // Define the libraries that should be split into separate chunks
+  const vendorLibraries = [
+    { name: 'vue', pattern: 'node_modules/vue/' },
+    { name: 'primevue', pattern: 'node_modules/primevue/' }
+  ]
+
   return {
     name: 'generate-import-map-plugin',
+
+    // Configure manual chunks during the build process
+    configResolved(config) {
+      if (config.build) {
+        // Ensure rollupOptions exists
+        if (!config.build.rollupOptions) {
+          config.build.rollupOptions = {}
+        }
+
+        const outputOptions: OutputOptions = {
+          manualChunks: (id: string) => {
+            for (const lib of vendorLibraries) {
+              if (id.includes(lib.pattern)) {
+                return `vendor-${lib.name}`
+              }
+            }
+            return null
+          },
+          // Disable minification of internal exports to preserve function names
+          minifyInternalExports: false
+        }
+        config.build.rollupOptions.output = outputOptions
+      }
+    },
 
     generateBundle(_options, bundle) {
       for (const fileName in bundle) {
         const chunk = bundle[fileName]
         if (chunk.type === 'chunk' && !chunk.isEntry) {
-          let importKey = null
-          if (chunk.name === 'vendor-vue') {
-            importKey = 'vue'
-          } else if (chunk.name === 'vendor-primevue') {
-            importKey = 'primevue'
-          }
+          // Find matching vendor library by chunk name
+          const vendorLib = vendorLibraries.find(
+            (lib) => chunk.name === `vendor-${lib.name}`
+          )
 
-          if (importKey) {
+          if (vendorLib) {
             const relativePath = `./${chunk.fileName.replace(/\\/g, '/')}`
+            importMapEntries[vendorLib.name] = relativePath
 
-            importMapEntries[importKey] = relativePath
             console.log(
-              `[ImportMap Plugin] Found chunk: ${chunk.name} -> Mapped '${importKey}' to '${relativePath}'`
+              `[ImportMap Plugin] Found chunk: ${chunk.name} -> Mapped '${vendorLib.name}' to '${relativePath}'`
             )
           }
         }
@@ -265,18 +318,7 @@ export default defineConfig({
     rollupOptions: {
       // Disabling tree-shaking
       // Prevent vite remove unused exports
-      treeshake: false,
-      output: {
-        manualChunks(id) {
-          if (id.includes('node_modules/vue/')) {
-            return 'vendor-vue'
-          }
-          if (id.includes('node_modules/primevue/')) {
-            return 'vendor-primevue'
-          }
-        },
-        minifyInternalExports: false
-      }
+      treeshake: false
     }
   },
 
