@@ -1,3 +1,5 @@
+import { LGraphIcon, LGraphIconOptions } from "./LGraphIcon"
+
 export enum BadgePosition {
   TopLeft = "top-left",
   TopRight = "top-right",
@@ -11,6 +13,9 @@ export interface LGraphBadgeOptions {
   padding?: number
   height?: number
   cornerRadius?: number
+  iconOptions?: LGraphIconOptions
+  xOffset?: number
+  yOffset?: number
 }
 
 export class LGraphBadge {
@@ -21,6 +26,9 @@ export class LGraphBadge {
   padding: number
   height: number
   cornerRadius: number
+  icon?: LGraphIcon
+  xOffset: number
+  yOffset: number
 
   constructor({
     text,
@@ -30,6 +38,9 @@ export class LGraphBadge {
     padding = 6,
     height = 20,
     cornerRadius = 5,
+    iconOptions,
+    xOffset = 0,
+    yOffset = 0,
   }: LGraphBadgeOptions) {
     this.text = text
     this.fgColor = fgColor
@@ -38,20 +49,29 @@ export class LGraphBadge {
     this.padding = padding
     this.height = height
     this.cornerRadius = cornerRadius
+    if (iconOptions) {
+      this.icon = new LGraphIcon(iconOptions)
+    }
+    this.xOffset = xOffset
+    this.yOffset = yOffset
   }
 
   get visible() {
-    return this.text.length > 0
+    return this.text.length > 0 || !!this.icon
   }
 
   getWidth(ctx: CanvasRenderingContext2D) {
     if (!this.visible) return 0
-
     const { font } = ctx
+    let iconWidth = 0
+    if (this.icon) {
+      ctx.font = `${this.icon.fontSize}px '${this.icon.fontFamily}'`
+      iconWidth = ctx.measureText(this.icon.unicode).width + this.padding
+    }
     ctx.font = `${this.fontSize}px sans-serif`
-    const textWidth = ctx.measureText(this.text).width
+    const textWidth = this.text ? ctx.measureText(this.text).width : 0
     ctx.font = font
-    return textWidth + this.padding * 2
+    return iconWidth + textWidth + this.padding * 2
   }
 
   draw(
@@ -61,7 +81,11 @@ export class LGraphBadge {
   ): void {
     if (!this.visible) return
 
-    const { fillStyle } = ctx
+    x += this.xOffset
+    y += this.yOffset
+
+    const { font, fillStyle, textBaseline, textAlign } = ctx
+
     ctx.font = `${this.fontSize}px sans-serif`
     const badgeWidth = this.getWidth(ctx)
     const badgeX = 0
@@ -77,14 +101,26 @@ export class LGraphBadge {
     }
     ctx.fill()
 
-    // Draw badge text
-    ctx.fillStyle = this.fgColor
-    ctx.fillText(
-      this.text,
-      x + badgeX + this.padding,
-      y + this.height - this.padding,
-    )
+    let drawX = x + badgeX + this.padding
+    const centerY = y + this.height / 2
 
+    // Draw icon if present
+    if (this.icon) {
+      this.icon.draw(ctx, drawX, centerY)
+      drawX += this.icon.fontSize + this.padding / 2 + 4
+    }
+
+    // Draw badge text
+    if (this.text) {
+      ctx.fillStyle = this.fgColor
+      ctx.textBaseline = "middle"
+      ctx.textAlign = "left"
+      ctx.fillText(this.text, drawX, centerY + 1)
+    }
+
+    ctx.font = font
     ctx.fillStyle = fillStyle
+    ctx.textBaseline = textBaseline
+    ctx.textAlign = textAlign
   }
 }
