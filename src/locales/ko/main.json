@@ -1015,9 +1015,9 @@
         "flux_schnell": "FLUX Schnell"
       },
       "Image": {
-        "hidream_i1_dev": "HiDream I1 개발",
-        "hidream_i1_fast": "HiDream I1 빠른",
-        "hidream_i1_full": "HiDream I1 전체",
+        "hidream_i1_dev": "HiDream I1 Dev",
+        "hidream_i1_fast": "HiDream I1 Fast",
+        "hidream_i1_full": "HiDream I1 Full",
         "sd3_5_large_blur": "SD3.5 Large 블러 컨트롤넷",
         "sd3_5_large_canny_controlnet_example": "SD3.5 Large 캐니 컨트롤넷",
         "sd3_5_large_depth": "SD3.5 Large 깊이 컨트롤넷",
