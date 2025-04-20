@@ -169,8 +169,8 @@ import { checkMirrorReachable } from '@/utils/networkUtil'
           if (updateAvailable.isUpdateAvailable) {
             const version = updateAvailable.version
             const proceed = await useDialogService().confirm({
-              title: `Update Found (v${version})`,
-              message: `An update is available. Do you want to restart and update now?`,
+              title: t('desktopUpdate.updateFoundTitle', { version }),
+              message: t('desktopUpdate.updateAvailableMessage'),
               type: 'default'
             })
             if (proceed) {
