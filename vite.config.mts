@@ -1,10 +1,11 @@
 import vue from '@vitejs/plugin-vue'
 import dotenv from 'dotenv'
 import path from 'path'
+import type { OutputOptions } from 'rollup'
 import IconsResolver from 'unplugin-icons/resolver'
 import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
-import { Plugin, defineConfig } from 'vite'
+import { HtmlTagDescriptor, Plugin, defineConfig } from 'vite'
 import type { UserConfigExport } from 'vitest/config'
 
 dotenv.config()
@@ -24,6 +25,160 @@ function isLegacyFile(id: string): boolean {
     id.endsWith('.ts') &&
     (id.includes('src/extensions/core') || id.includes('src/scripts'))
   )
+}
+
+/**
+ * Vite plugin that adds an alias export for Vue's createBaseVNode as createElementVNode.
+ *
+ * This plugin addresses compatibility issues where some components or libraries
+ * might be using the older createElementVNode function name instead of createBaseVNode.
+ * It modifies the Vue vendor chunk during build to add the alias export.
+ *
+ * @returns {Plugin} A Vite plugin that modifies the Vue vendor chunk exports
+ */
+function addElementVnodeExportPlugin(): Plugin {
+  return {
+    name: 'add-element-vnode-export-plugin',
+
+    renderChunk(code, chunk, _options) {
+      if (chunk.name.startsWith('vendor-vue')) {
+        const exportRegex = /(export\s*\{)([^}]*)(\}\s*;?\s*)$/
+        const match = code.match(exportRegex)
+
+        if (match) {
+          const existingExports = match[2].trim()
+          const exportsArray = existingExports
+            .split(',')
+            .map((e) => e.trim())
+            .filter(Boolean)
+
+          const hasCreateBaseVNode = exportsArray.some((e) =>
+            e.startsWith('createBaseVNode')
+          )
+          const hasCreateElementVNode = exportsArray.some((e) =>
+            e.includes('createElementVNode')
+          )
+
+          if (hasCreateBaseVNode && !hasCreateElementVNode) {
+            const newExportStatement = `${match[1]} ${existingExports ? existingExports + ',' : ''} createBaseVNode as createElementVNode ${match[3]}`
+            const newCode = code.replace(exportRegex, newExportStatement)
+
+            console.log(
+              `[add-element-vnode-export-plugin] Added 'createBaseVNode as createElementVNode' export to vendor-vue chunk.`
+            )
+
+            return { code: newCode, map: null }
+          } else if (!hasCreateBaseVNode) {
+            console.warn(
+              `[add-element-vnode-export-plugin] Warning: 'createBaseVNode' not found in exports of vendor-vue chunk. Cannot add alias.`
+            )
+          }
+        } else {
+          console.warn(
+            `[add-element-vnode-export-plugin] Warning: Could not find expected export block format in vendor-vue chunk.`
+          )
+        }
+      }
+
+      return null
+    }
+  }
+}
+
+/**
+ * Vite plugin that generates an import map for vendor chunks.
+ *
+ * This plugin creates a browser-compatible import map that maps module specifiers
+ * (like 'vue' or 'primevue') to their actual file locations in the build output.
+ * This improves module loading in modern browsers and enables better caching.
+ *
+ * The plugin:
+ * 1. Tracks vendor chunks during bundle generation
+ * 2. Creates mappings between module names and their file paths
+ * 3. Injects an import map script tag into the HTML head
+ * 4. Configures manual chunk splitting for vendor libraries
+ *
+ * @param vendorLibraries - An array of vendor libraries to split into separate chunks
+ * @returns {Plugin} A Vite plugin that generates and injects an import map
+ */
+function generateImportMapPlugin(
+  vendorLibraries: { name: string; pattern: string }[]
+): Plugin {
+  const importMapEntries: Record<string, string> = {}
+
+  return {
+    name: 'generate-import-map-plugin',
+
+    // Configure manual chunks during the build process
+    configResolved(config) {
+      if (config.build) {
+        // Ensure rollupOptions exists
+        if (!config.build.rollupOptions) {
+          config.build.rollupOptions = {}
+        }
+
+        const outputOptions: OutputOptions = {
+          manualChunks: (id: string) => {
+            for (const lib of vendorLibraries) {
+              if (id.includes(lib.pattern)) {
+                return `vendor-${lib.name}`
+              }
+            }
+            return null
+          },
+          // Disable minification of internal exports to preserve function names
+          minifyInternalExports: false
+        }
+        config.build.rollupOptions.output = outputOptions
+      }
+    },
+
+    generateBundle(_options, bundle) {
+      for (const fileName in bundle) {
+        const chunk = bundle[fileName]
+        if (chunk.type === 'chunk' && !chunk.isEntry) {
+          // Find matching vendor library by chunk name
+          const vendorLib = vendorLibraries.find(
+            (lib) => chunk.name === `vendor-${lib.name}`
+          )
+
+          if (vendorLib) {
+            const relativePath = `./${chunk.fileName.replace(/\\/g, '/')}`
+            importMapEntries[vendorLib.name] = relativePath
+
+            console.log(
+              `[ImportMap Plugin] Found chunk: ${chunk.name} -> Mapped '${vendorLib.name}' to '${relativePath}'`
+            )
+          }
+        }
+      }
+    },
+
+    transformIndexHtml(html) {
+      if (Object.keys(importMapEntries).length === 0) {
+        console.warn(
+          '[ImportMap Plugin] No vendor chunks found to create import map.'
+        )
+        return html
+      }
+
+      const importMap = {
+        imports: importMapEntries
+      }
+
+      const importMapTag: HtmlTagDescriptor = {
+        tag: 'script',
+        attrs: { type: 'importmap' },
+        children: JSON.stringify(importMap, null, 2),
+        injectTo: 'head'
+      }
+
+      return {
+        html,
+        tags: [importMapTag]
+      }
+    }
+  }
 }
 
 function comfyAPIPlugin(): Plugin {
@@ -110,7 +265,7 @@ export default defineConfig({
         target: DEV_SERVER_COMFYUI_URL,
         // Return empty array for extensions API as these modules
         // are not on vite's dev server.
-        bypass: (req, res, options) => {
+        bypass: (req, res, _options) => {
           if (req.url === '/api/extensions') {
             res.end(JSON.stringify([]))
           }
@@ -137,6 +292,11 @@ export default defineConfig({
   plugins: [
     vue(),
     comfyAPIPlugin(),
+    generateImportMapPlugin([
+      { name: 'vue', pattern: 'node_modules/vue/' },
+      { name: 'primevue', pattern: 'node_modules/primevue/' }
+    ]),
+    addElementVnodeExportPlugin(),
 
     Icons({
       compiler: 'vue3'
