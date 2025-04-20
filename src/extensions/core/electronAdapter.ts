@@ -163,8 +163,10 @@ import { checkMirrorReachable } from '@/utils/networkUtil'
         label: 'Check for Updates',
         icon: 'pi pi-sync',
         async function() {
-          const updateAvailable = await electronAPI.checkForUpdates({ disableUpdateReadyAction: true })
-          if (true) {
+          const updateAvailable = await electronAPI.checkForUpdates({
+            disableUpdateReadyAction: true
+          })
+          if (updateAvailable.isUpdateAvailable) {
             const version = updateAvailable.version
             const proceed = await useDialogService().confirm({
               title: `Update Found (v${version})`,
