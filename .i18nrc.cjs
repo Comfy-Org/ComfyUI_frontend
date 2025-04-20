@@ -4,7 +4,7 @@
 const { defineConfig } = require('@lobehub/i18n-cli');
 
 module.exports = defineConfig({
-  modelName: 'gpt-4',
+  modelName: 'gpt-o4-mini',
   splitToken: 1024,
   entry: 'src/locales/en',
   entryLocale: 'en',
