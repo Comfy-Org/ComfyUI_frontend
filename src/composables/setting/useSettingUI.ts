@@ -82,24 +82,33 @@ export function useSettingUI(
       : settingCategories.value[0]
   })
 
-  /**
-   * Translated all categories with labels
-   */
-  const translatedCategories = computed<SettingTreeNode[]>(() => {
-    return [
-      ...settingCategories.value,
-      keybindingPanelNode,
-      extensionPanelNode,
-      ...serverConfigPanelNodeList.value,
-      aboutPanelNode
-    ].map((node) => ({
-      ...node,
-      translatedLabel: t(
-        `settingsCategories.${normalizeI18nKey(node.label)}`,
-        node.label
-      )
-    }))
+  const translateCategory = (node: SettingTreeNode) => ({
+    ...node,
+    translatedLabel: t(
+      `settingsCategories.${normalizeI18nKey(node.label)}`,
+      node.label
+    )
   })
+
+  const groupedMenuTreeNodes = computed<SettingTreeNode[]>(() => [
+    // Normal settings stored in the settingStore
+    {
+      key: 'settings',
+      label: 'Application Settings',
+      children: settingCategories.value.map(translateCategory)
+    },
+    // Special settings such as about, keybinding, extension, server-config
+    {
+      key: 'specialSettings',
+      label: 'Special Settings',
+      children: [
+        keybindingPanelNode,
+        extensionPanelNode,
+        aboutPanelNode,
+        ...serverConfigPanelNodeList.value
+      ].map(translateCategory)
+    }
+  ])
 
   onMounted(() => {
     activeCategory.value = defaultCategory.value
@@ -108,7 +117,7 @@ export function useSettingUI(
   return {
     activeCategory,
     defaultCategory,
-    allCategories: translatedCategories,
+    groupedMenuTreeNodes,
     settingCategories
   }
 }

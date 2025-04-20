@@ -4,8 +4,10 @@ import {
   GoogleAuthProvider,
   type User,
   type UserCredential,
+  browserLocalPersistence,
   createUserWithEmailAndPassword,
   onAuthStateChanged,
+  setPersistence,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut
@@ -33,6 +35,9 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   // Get auth from VueFire and listen for auth state changes
   const auth = useFirebaseAuth()
   if (auth) {
+    // Set persistence to localStorage (works in both browser and Electron)
+    void setPersistence(auth, browserLocalPersistence)
+
     onAuthStateChanged(auth, (user) => {
       currentUser.value = user
       isInitialized.value = true

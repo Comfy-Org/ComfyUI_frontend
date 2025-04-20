@@ -481,9 +481,8 @@ export class ComfyApp {
           if (match) {
             const uri = event.dataTransfer.getData(match)?.split('\n')?.[0]
             if (uri) {
-              await this.handleFile(
-                new File([await (await fetch(uri)).blob()], uri)
-              )
+              const blob = await (await fetch(uri)).blob()
+              await this.handleFile(new File([blob], uri, { type: blob.type }))
             }
           }
         }
@@ -1520,15 +1519,16 @@ export class ComfyApp {
 
       if (!def?.input) continue
 
-      // @ts-expect-error fixme ts strict error
-      for (const widget of node.widgets) {
-        if (widget.type === 'combo') {
-          if (def['input'].required?.[widget.name] !== undefined) {
-            // @ts-expect-error Requires discriminated union
-            widget.options.values = def['input'].required[widget.name][0]
-          } else if (def['input'].optional?.[widget.name] !== undefined) {
-            // @ts-expect-error Requires discriminated union
-            widget.options.values = def['input'].optional[widget.name][0]
+      if (node.widgets) {
+        for (const widget of node.widgets) {
+          if (widget.type === 'combo') {
+            if (def['input'].required?.[widget.name] !== undefined) {
+              // @ts-expect-error Requires discriminated union
+              widget.options.values = def['input'].required[widget.name][0]
+            } else if (def['input'].optional?.[widget.name] !== undefined) {
+              // @ts-expect-error Requires discriminated union
+              widget.options.values = def['input'].optional[widget.name][0]
+            }
           }
         }
       }

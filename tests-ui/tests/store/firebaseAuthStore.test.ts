@@ -16,7 +16,9 @@ vi.mock('firebase/auth', () => ({
   onAuthStateChanged: vi.fn(),
   signInWithPopup: vi.fn(),
   GoogleAuthProvider: vi.fn(),
-  GithubAuthProvider: vi.fn()
+  GithubAuthProvider: vi.fn(),
+  browserLocalPersistence: 'browserLocalPersistence',
+  setPersistence: vi.fn().mockResolvedValue(undefined)
 }))
 
 describe('useFirebaseAuthStore', () => {
@@ -62,6 +64,13 @@ describe('useFirebaseAuthStore', () => {
     expect(store.userId).toBe('test-user-id')
     expect(store.loading).toBe(false)
     expect(store.error).toBe(null)
+  })
+
+  it('should set persistence to local storage on initialization', () => {
+    expect(firebaseAuth.setPersistence).toHaveBeenCalledWith(
+      mockAuth,
+      firebaseAuth.browserLocalPersistence
+    )
   })
 
   it('should properly clean up error state between operations', async () => {
