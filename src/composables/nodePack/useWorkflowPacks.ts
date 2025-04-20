@@ -5,6 +5,8 @@ import { useNodePacks } from '@/composables/nodePack/useNodePacks'
 import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import { app } from '@/scripts/app'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { SelectedVersion, UseNodePacksOptions } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
 
@@ -22,6 +24,8 @@ const CORE_NODES_PACK_NAME = 'comfy-core'
  * associated node packs from the registry
  */
 export const useWorkflowPacks = (options: UseNodePacksOptions = {}) => {
+  const nodeDefStore = useNodeDefStore()
+  const systemStatsStore = useSystemStatsStore()
   const { search } = useComfyRegistryStore()
 
   const workflowPacks = ref<WorkflowPack[]>([])
@@ -51,6 +55,22 @@ export const useWorkflowPacks = (options: UseNodePacksOptions = {}) => {
     node: LGraphNode
   ): Promise<WorkflowPack | undefined> => {
     const nodeName = node.type
+
+    // Check if node is a core node
+    const nodeDef = nodeDefStore.nodeDefsByName[nodeName]
+    if (nodeDef?.nodeSource.type === 'core') {
+      if (!systemStatsStore.systemStats) {
+        await systemStatsStore.fetchSystemStats()
+      }
+      return {
+        id: CORE_NODES_PACK_NAME,
+        version:
+          systemStatsStore.systemStats?.system?.comfyui_version ??
+          SelectedVersion.NIGHTLY
+      }
+    }
+
+    // Search the registry for non-core nodes
     const searchResult = await search.call({
       comfy_node_search: nodeName,
       limit: 1
