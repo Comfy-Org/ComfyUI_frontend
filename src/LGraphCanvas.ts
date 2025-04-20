@@ -5510,7 +5510,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     return false
   }
 
-  showConnectionMenu(optPass: Partial<ICreateNodeOptions & { e: MouseEvent }>): void {
+  showConnectionMenu(optPass: Partial<ICreateNodeOptions & { e: MouseEvent }>): ContextMenu<string> | undefined {
     const opts = Object.assign<ICreateNodeOptions & HasShowSearchCallback, ICreateNodeOptions>({
       nodeFrom: null,
       slotFrom: null,
@@ -5596,6 +5596,8 @@ export class LGraphCanvas implements ConnectionColorContext {
           : "") + (slotX && fromSlotType ? fromSlotType : ""),
       callback: inner_clicked,
     })
+
+    return menu
 
     // callback
     function inner_clicked(v: string | undefined, options: IContextMenuOptions<string, INodeInputSlot | INodeOutputSlot>, e: MouseEvent) {
