@@ -1,6 +1,5 @@
 import {
   type IContextMenuValue,
-  type INodeInputSlot,
   LGraphEventMode,
   LGraphNode,
   LiteGraph,
@@ -8,6 +7,7 @@ import {
   type Vector2
 } from '@comfyorg/litegraph'
 import type {
+  ISerialisableNodeInput,
   ISerialisableNodeOutput,
   ISerialisedNode
 } from '@comfyorg/litegraph/dist/types/serialisation'
@@ -222,7 +222,7 @@ export const useLitegraphService = () => {
 
         // Note: input name is unique in a node definition, so we can lookup
         // input by name.
-        const inputByName = new Map<string, INodeInputSlot>(
+        const inputByName = new Map<string, ISerialisableNodeInput>(
           data.inputs?.map((input) => [input.name, input]) ?? []
         )
         // Inputs defined by the node definition.
