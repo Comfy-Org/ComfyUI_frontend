@@ -229,13 +229,13 @@ const canvasEventHandler = (e: LiteGraphCanvasEvent) => {
   }
 }
 
-const linkReleaseAction = computed(() => {
-  return settingStore.get('Comfy.LinkRelease.Action')
-})
+const linkReleaseAction = computed(() =>
+  settingStore.get('Comfy.LinkRelease.Action')
+)
 
-const linkReleaseActionShift = computed(() => {
-  return settingStore.get('Comfy.LinkRelease.ActionShift')
-})
+const linkReleaseActionShift = computed(() =>
+  settingStore.get('Comfy.LinkRelease.ActionShift')
+)
 
 // Prevent normal LinkConnector reset (called by CanvasPointer.finally)
 const preventDefault = (e: Event) => e.preventDefault()
