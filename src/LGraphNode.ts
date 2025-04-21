@@ -619,11 +619,6 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   ): void
   onPropertyChange?(this: LGraphNode): void
   updateOutputData?(this: LGraphNode, origin_slot: number): void
-  isValidWidgetLink?(
-    slot_index: number,
-    node: LGraphNode,
-    overWidget: IWidget,
-  ): boolean | undefined
 
   #getErrorStrokeStyle(this: LGraphNode): IDrawBoundingOptions | undefined {
     if (this.has_errors) {
