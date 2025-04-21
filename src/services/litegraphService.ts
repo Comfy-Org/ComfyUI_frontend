@@ -41,7 +41,6 @@ import {
 
 import { useExtensionService } from './extensionService'
 
-const PRIMITIVE_TYPES = new Set(['INT', 'FLOAT', 'BOOLEAN', 'STRING', 'COMBO'])
 export const CONFIG = Symbol()
 export const GET_CONFIG = Symbol()
 
@@ -124,7 +123,8 @@ export const useLitegraphService = () => {
       }
 
       /**
-       * @internal Add a widget to the node. For primitive types, an input socket is also added.
+       * @internal Add a widget to the node. For both primitive types and custom widgets
+       * (unless `socketless`), an input socket is also added.
        */
       #addInputWidget(inputSpec: InputSpec) {
         const inputName = inputSpec.name
@@ -152,7 +152,7 @@ export const useLitegraphService = () => {
           })
         }
 
-        if (PRIMITIVE_TYPES.has(inputSpec.type)) {
+        if (!widget?.options?.socketless) {
           const inputSpecV1 = transformInputSpecV2ToV1(inputSpec)
           this.addInput(inputName, inputSpec.type, {
             shape: inputSpec.isOptional ? RenderShape.HollowCircle : undefined,
