@@ -92,6 +92,15 @@
     "Title": "Заголовок",
     "Unpin": "Открепить"
   },
+  "credits": {
+    "credits": "Кредиты",
+    "creditsHistory": "История кредитов",
+    "faqs": "Часто задаваемые вопросы",
+    "messageSupport": "Связаться с поддержкой",
+    "paymentDetails": "Детали оплаты",
+    "purchaseCredits": "Купить кредиты",
+    "yourCreditBalance": "Ваш баланс кредитов"
+  },
   "dataTypes": {
     "AUDIO": "АУДИО",
     "BOOLEAN": "БУЛЕВО",
@@ -168,6 +177,7 @@
     "about": "О программе",
     "add": "Добавить",
     "all": "Все",
+    "amount": "Количество",
     "apply": "Применить",
     "back": "Назад",
     "cancel": "Отмена",

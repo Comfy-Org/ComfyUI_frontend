@@ -92,6 +92,15 @@
     "Title": "Titre",
     "Unpin": "Désépingler"
   },
+  "credits": {
+    "credits": "Crédits",
+    "creditsHistory": "Historique des crédits",
+    "faqs": "FAQ",
+    "messageSupport": "Contacter le support",
+    "paymentDetails": "Détails de paiement",
+    "purchaseCredits": "Acheter des crédits",
+    "yourCreditBalance": "Votre solde de crédits"
+  },
   "dataTypes": {
     "AUDIO": "AUDIO",
     "BOOLEAN": "BOOLEAN",
@@ -168,6 +177,7 @@
     "about": "À propos",
     "add": "Ajouter",
     "all": "Tout",
+    "amount": "Quantité",
     "apply": "Appliquer",
     "back": "Retour",
     "cancel": "Annuler",

@@ -92,6 +92,15 @@
     "Title": "标题",
     "Unpin": "取消固定"
   },
+  "credits": {
+    "credits": "积分",
+    "creditsHistory": "积分历史",
+    "faqs": "常见问题",
+    "messageSupport": "联系客服",
+    "paymentDetails": "支付详情",
+    "purchaseCredits": "购买积分",
+    "yourCreditBalance": "您的积分余额"
+  },
   "dataTypes": {
     "AUDIO": "音频",
     "BOOLEAN": "布尔",
@@ -168,6 +177,7 @@
     "about": "关于",
     "add": "添加",
     "all": "全部",
+    "amount": "数量",
     "apply": "应用",
     "back": "返回",
     "cancel": "取消",
