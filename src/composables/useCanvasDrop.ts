@@ -29,12 +29,10 @@ export const useCanvasDrop = (canvasRef: Ref<HTMLCanvasElement>) => {
         const node = dndData.data as RenderedTreeExplorerNode
         if (node.data instanceof ComfyNodeDefImpl) {
           const nodeDef = node.data
-          // Add an offset on x to make sure after adding the node, the cursor
+          const pos = comfyApp.clientPosToCanvasPos([loc.clientX, loc.clientY])
+          // Add an offset on y to make sure after adding the node, the cursor
           // is on the node (top left corner)
-          const pos = comfyApp.clientPosToCanvasPos([
-            loc.clientX,
-            loc.clientY + LiteGraph.NODE_TITLE_HEIGHT
-          ])
+          pos[1] += LiteGraph.NODE_TITLE_HEIGHT
           litegraphService.addNodeOnGraph(nodeDef, { pos })
         } else if (node.data instanceof ComfyModelDef) {
           const model = node.data

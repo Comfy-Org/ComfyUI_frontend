@@ -16,8 +16,8 @@ export const useCanvasPositionConversion = (
   const clientPosToCanvasPos = (pos: Vector2): Vector2 => {
     const { offset, scale } = lgCanvas.ds
     return [
-      (pos[0] - left.value) / scale + offset[0],
-      (pos[1] - top.value) / scale + offset[1]
+      (pos[0] - left.value) / scale - offset[0],
+      (pos[1] - top.value) / scale - offset[1]
     ]
   }
 
