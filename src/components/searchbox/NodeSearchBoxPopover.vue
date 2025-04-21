@@ -152,22 +152,52 @@ const showContextMenu = (e: CanvasPointerEvent) => {
   const firstLink = getFirstLink()
   if (!firstLink) return
 
-  const { node, fromSlot, toType, fromReroute } = firstLink
+  const { node, fromSlot, toType } = firstLink
   const commonOptions = {
     e,
     allow_searchbox: true,
-    showSearchBox: () => showSearchBox(e),
-    afterRerouteId: fromReroute?.id
+    showSearchBox: () => showSearchBox(e)
   }
   const connectionOptions =
     toType === 'input'
       ? { nodeFrom: node, slotFrom: fromSlot }
       : { nodeTo: node, slotTo: fromSlot }
 
-  canvasStore.getCanvas().showConnectionMenu({
+  const canvas = canvasStore.getCanvas()
+  const menu = canvas.showConnectionMenu({
     ...connectionOptions,
     ...commonOptions
   })
+
+  if (!menu) {
+    console.warn('No menu was returned from showConnectionMenu')
+    return
+  }
+
+  triggerEvent = e
+  listenerController = new AbortController()
+  const { signal } = listenerController
+  const options = { once: true, signal }
+
+  // Connect the node after it is created via context menu
+  useEventListener(
+    canvas.canvas,
+    'connect-new-default-node',
+    (createEvent) => {
+      if (!(createEvent instanceof CustomEvent))
+        throw new Error('Invalid event')
+
+      const node: unknown = createEvent.detail?.node
+      if (!(node instanceof LGraphNode)) throw new Error('Invalid node')
+
+      createEvent.preventDefault()
+      canvas.linkConnector.connectToNode(node, e)
+    },
+    options
+  )
+
+  // Reset when the context menu is closed
+  useEventListener(menu.controller.signal, 'abort', reset, options)
 }
 
 // Disable litegraph's default behavior of release link and search box.
