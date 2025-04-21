@@ -1,6 +1,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { SettingTreeNode, useSettingStore } from '@/stores/settingStore'
 import type { SettingParams } from '@/types/settingTypes'
 import { isElectron } from '@/utils/envUtil'
@@ -11,6 +12,7 @@ export function useSettingUI(
   defaultPanel?: 'about' | 'keybinding' | 'extension' | 'server-config'
 ) {
   const { t } = useI18n()
+  const firebaseAuthStore = useFirebaseAuthStore()
   const settingStore = useSettingStore()
   const activeCategory = ref<SettingTreeNode | null>(null)
 
@@ -44,6 +46,12 @@ export function useSettingUI(
   const aboutPanelNode: SettingTreeNode = {
     key: 'about',
     label: 'About',
+    children: []
+  }
+
+  const creditsPanelNode: SettingTreeNode = {
+    key: 'credits',
+    label: 'Credits',
     children: []
   }
 
@@ -91,6 +99,16 @@ export function useSettingUI(
   })
 
   const groupedMenuTreeNodes = computed<SettingTreeNode[]>(() => [
+    // Account settings - only show when user is authenticated
+    ...(firebaseAuthStore.isAuthenticated
+      ? [
+          {
+            key: 'account',
+            label: 'Account',
+            children: [creditsPanelNode].map(translateCategory)
+          }
+        ]
+      : []),
     // Normal settings stored in the settingStore
     {
       key: 'settings',

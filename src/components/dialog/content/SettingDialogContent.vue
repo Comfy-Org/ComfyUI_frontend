@@ -48,6 +48,7 @@
         </PanelTemplate>
 
         <AboutPanel />
+        <CreditsPanel />
         <Suspense>
           <KeybindingPanel />
           <template #fallback>
@@ -90,6 +91,7 @@ import { flattenTree } from '@/utils/treeUtil'
 
 import AboutPanel from './setting/AboutPanel.vue'
 import ColorPaletteMessage from './setting/ColorPaletteMessage.vue'
+import CreditsPanel from './setting/CreditsPanel.vue'
 import CurrentUserMessage from './setting/CurrentUserMessage.vue'
 import FirstTimeUIMessage from './setting/FirstTimeUIMessage.vue'
 import PanelTemplate from './setting/PanelTemplate.vue'
