@@ -57,6 +57,7 @@ import NodeSearchBox from './NodeSearchBox.vue'
 
 let triggerEvent: CanvasPointerEvent | null = null
 let listenerController: AbortController | null = null
+let disconnectOnReset = false
 
 const settingStore = useSettingStore()
 const litegraphService = useLitegraphService()
@@ -93,6 +94,7 @@ const addNode = (nodeDef: ComfyNodeDefImpl) => {
     return
   }
 
+  disconnectOnReset = false
   const node = litegraphService.addNodeOnGraph(nodeDef, {
     pos: getNewNodeLocation()
   })
@@ -190,6 +192,7 @@ const showContextMenu = (e: CanvasPointerEvent) => {
       const node: unknown = createEvent.detail?.node
       if (!(node instanceof LGraphNode)) throw new Error('Invalid node')
 
+      disconnectOnReset = false
       createEvent.preventDefault()
       canvas.linkConnector.connectToNode(node, e)
     },
@@ -250,6 +253,7 @@ const cancelNextReset = (e: CustomEvent<CanvasPointerEvent>) => {
 }
 
 const handleDroppedOnCanvas = (e: CustomEvent<CanvasPointerEvent>) => {
+  disconnectOnReset = true
   const action = e.detail.shiftKey
     ? linkReleaseActionShift.value
     : linkReleaseAction.value
@@ -276,6 +280,8 @@ const reset = () => {
 
   const canvas = canvasStore.getCanvas()
   canvas.linkConnector.events.removeEventListener('reset', preventDefault)
+  if (disconnectOnReset) canvas.linkConnector.disconnectLinks()
+
   canvas.linkConnector.reset()
   canvas._highlight_pos = undefined
   canvas.setDirty(true, true)
