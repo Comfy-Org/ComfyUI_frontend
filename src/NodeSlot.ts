@@ -72,11 +72,11 @@ export function toNodeSlotClass(slot: INodeInputSlot | INodeOutputSlot): NodeInp
 }
 
 /**
- * Whether this slot is an input slot and attached to a widget.
+ * Type guard: Whether this input slot is attached to a widget.
  * @param slot The slot to check.
  */
 export function isWidgetInputSlot(slot: INodeInputSlot): slot is IWidgetInputSlot {
-  return isINodeInputSlot(slot) && !!slot.widget
+  return !!slot.widget
 }
 
 export abstract class NodeSlot implements INodeSlot {
