@@ -1,4 +1,5 @@
 import type {
+  HasBoundingRect,
   Point,
   ReadOnlyPoint,
   ReadOnlyRect,
@@ -144,6 +145,18 @@ export function overlapBounding(a: ReadOnlyRect, b: ReadOnlyRect): boolean {
     aBottom < b[1]
     ? false
     : true
+}
+
+/**
+ * Returns the centre of a rectangle.
+ * @param rect The rectangle, as `x, y, width, height`
+ * @returns The centre of the rectangle, as `x, y`
+ */
+export function getCentre(rect: ReadOnlyRect): Point {
+  return [
+    rect[0] + (rect[2] * 0.5),
+    rect[1] + (rect[3] * 0.5),
+  ]
 }
 
 /**
@@ -331,7 +344,7 @@ export function findPointOnCurve(
 }
 
 export function createBounds(
-  objects: Iterable<{ boundingRect: ReadOnlyRect }>,
+  objects: Iterable<HasBoundingRect>,
   padding: number = 10,
 ): ReadOnlyRect | null {
   const bounds = new Float32Array([Infinity, Infinity, -Infinity, -Infinity])

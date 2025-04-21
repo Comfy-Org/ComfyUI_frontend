@@ -1,9 +1,10 @@
-import type { CanvasColour, Dictionary, INodeInputSlot, INodeOutputSlot, INodeSlot, ISlotType, IWidgetInputSlot, IWidgetLocator, Point, SharedIntersection } from "./interfaces"
+import type { CanvasColour, Dictionary, INodeInputSlot, INodeOutputSlot, INodeSlot, ISlotType, IWidgetInputSlot, IWidgetLocator, OptionalProps, Point, Rect, SharedIntersection } from "./interfaces"
 import type { LinkId } from "./LLink"
 import type { IWidget } from "./types/widgets"
 
 import { LabelPosition, SlotShape, SlotType } from "./draw"
 import { LiteGraph } from "./litegraph"
+import { getCentre } from "./measure"
 import { LinkDirection, RenderShape } from "./types/globalEnums"
 import { ISerialisableNodeInput, ISerialisableNodeOutput } from "./types/serialisation"
 
@@ -19,9 +20,7 @@ export interface ConnectionColorContext {
 }
 
 interface IDrawOptions {
-  pos: Point
   colorContext: ConnectionColorContext
-  labelColor?: CanvasColour
   labelPosition?: LabelPosition
   lowQuality?: boolean
   doStroke?: boolean
@@ -64,20 +63,19 @@ export function outputAsSerialisable(slot: INodeOutputSlot & { widget?: IWidget 
   }
 }
 
-export function toNodeSlotClass(slot: INodeSlot): NodeSlot {
-  if (isINodeInputSlot(slot)) {
-    return new NodeInputSlot(slot)
-  } else if (isINodeOutputSlot(slot)) {
-    return new NodeOutputSlot(slot)
-  }
-  throw new Error("Invalid slot type")
+export function toNodeSlotClass(slot: INodeInputSlot | INodeOutputSlot): NodeInputSlot | NodeOutputSlot {
+  if (slot instanceof NodeInputSlot || slot instanceof NodeOutputSlot) return slot
+
+  return "link" in slot
+    ? new NodeInputSlot(slot)
+    : new NodeOutputSlot(slot)
 }
 
 /**
  * Whether this slot is an input slot and attached to a widget.
  * @param slot The slot to check.
  */
-export function isWidgetInputSlot(slot: INodeSlot): slot is IWidgetInputSlot {
+export function isWidgetInputSlot(slot: INodeInputSlot): slot is IWidgetInputSlot {
   return isINodeInputSlot(slot) && !!slot.widget
 }
 
@@ -96,11 +94,19 @@ export abstract class NodeSlot implements INodeSlot {
   pos?: Point
   widget?: IWidgetLocator
   hasErrors?: boolean
+  boundingRect: Rect
 
-  constructor(slot: INodeSlot) {
+  get highlightColor(): CanvasColour {
+    return LiteGraph.NODE_TEXT_HIGHLIGHT_COLOR ?? LiteGraph.NODE_SELECTED_TITLE_COLOR ?? LiteGraph.NODE_TEXT_COLOR
+  }
+
+  abstract get isWidgetInputSlot(): boolean
+
+  constructor(slot: OptionalProps<INodeSlot, "boundingRect">) {
     Object.assign(this, slot)
     this.name = slot.name
     this.type = slot.type
+    this.boundingRect = slot.boundingRect ?? [0, 0, 0, 0]
   }
 
   /**
@@ -140,9 +146,7 @@ export abstract class NodeSlot implements INodeSlot {
   draw(
     ctx: CanvasRenderingContext2D,
     {
-      pos,
       colorContext,
-      labelColor = "#AAA",
       labelPosition = LabelPosition.Right,
       lowQuality = false,
       highlight = false,
@@ -154,6 +158,11 @@ export abstract class NodeSlot implements INodeSlot {
     const originalStrokeStyle = ctx.strokeStyle
     const originalLineWidth = ctx.lineWidth
 
+    const labelColor = highlight
+      ? this.highlightColor
+      : LiteGraph.NODE_TEXT_COLOR
+
+    const pos = getCentre(this.boundingRect)
     const slot_type = this.type
     const slot_shape = (
       slot_type === SlotType.Array ? SlotShape.Grid : this.shape
@@ -211,7 +220,7 @@ export abstract class NodeSlot implements INodeSlot {
     if (!lowQuality && doStroke) ctx.stroke()
 
     // render slot label
-    const hideLabel = lowQuality || isWidgetInputSlot(this)
+    const hideLabel = lowQuality || this.isWidgetInputSlot
     if (!hideLabel) {
       const text = this.renderingLabel
       if (text) {
@@ -290,7 +299,11 @@ export function isINodeInputSlot(slot: INodeSlot): slot is INodeInputSlot {
 export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
   link: LinkId | null
 
-  constructor(slot: INodeInputSlot) {
+  get isWidgetInputSlot(): boolean {
+    return !!this.widget
+  }
+
+  constructor(slot: OptionalProps<INodeInputSlot, "boundingRect">) {
     super(slot)
     this.link = slot.link
   }
@@ -326,7 +339,11 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
   _data?: unknown
   slot_index?: number
 
-  constructor(slot: INodeOutputSlot) {
+  get isWidgetInputSlot(): false {
+    return false
+  }
+
+  constructor(slot: OptionalProps<INodeOutputSlot, "boundingRect">) {
     super(slot)
     this.links = slot.links
     this._data = slot._data

@@ -1,7 +1,6 @@
 import type { DragAndScale } from "./DragAndScale"
 import type { IDrawBoundingOptions } from "./draw"
 import type {
-  CanvasColour,
   ColorOption,
   Dictionary,
   IColorable,
@@ -41,7 +40,6 @@ import {
   TitleMode,
 } from "./types/globalEnums"
 import { findFreeSlotOfType } from "./utils/collections"
-import { LayoutElement } from "./utils/layout"
 import { distributeSpace } from "./utils/spaceDistribution"
 import { toClass } from "./utils/type"
 import { WIDGET_TYPE_MAP } from "./widgets/widgetMap"
@@ -3448,31 +3446,22 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     }
   }
 
-  get highlightColor(): CanvasColour {
-    return LiteGraph.NODE_TEXT_HIGHLIGHT_COLOR ?? LiteGraph.NODE_SELECTED_TITLE_COLOR ?? LiteGraph.NODE_TEXT_COLOR
-  }
-
-  get slots(): INodeSlot[] {
+  get slots(): (INodeInputSlot | INodeOutputSlot)[] {
     return [...this.inputs, ...this.outputs]
   }
 
-  #measureSlot(slot: INodeSlot, slotIndex: number): LayoutElement {
+  #measureSlot(slot: INodeSlot, slotIndex: number): void {
     const isInput = isINodeInputSlot(slot)
     const pos = isInput ? this.getInputPos(slotIndex) : this.getOutputPos(slotIndex)
 
-    slot._layoutElement = new LayoutElement({
-      boundingRect: [
-        pos[0] - this.pos[0] - LiteGraph.NODE_SLOT_HEIGHT * 0.5,
-        pos[1] - this.pos[1] - LiteGraph.NODE_SLOT_HEIGHT * 0.5,
-        LiteGraph.NODE_SLOT_HEIGHT,
-        LiteGraph.NODE_SLOT_HEIGHT,
-      ],
-    })
-    return slot._layoutElement
+    slot.boundingRect[0] = pos[0] - this.pos[0] - LiteGraph.NODE_SLOT_HEIGHT * 0.5
+    slot.boundingRect[1] = pos[1] - this.pos[1] - LiteGraph.NODE_SLOT_HEIGHT * 0.5
+    slot.boundingRect[2] = LiteGraph.NODE_SLOT_HEIGHT
+    slot.boundingRect[3] = LiteGraph.NODE_SLOT_HEIGHT
   }
 
   #measureSlots(): ReadOnlyRect | null {
-    const slots: LayoutElement[] = []
+    const slots: INodeSlot[] = []
 
     for (const [slotIndex, slot] of this.inputs.entries()) {
       // Unrecognized nodes (Nodes with error) has inputs but no widgets. Treat
@@ -3480,12 +3469,12 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       /** Widget input slots are handled in {@link layoutWidgetInputSlots} */
       if (this.widgets?.length && isWidgetInputSlot(slot)) continue
 
-      const layoutElement = this.#measureSlot(slot, slotIndex)
-      slots.push(layoutElement)
+      this.#measureSlot(slot, slotIndex)
+      slots.push(slot)
     }
     for (const [slotIndex, slot] of this.outputs.entries()) {
-      const layoutElement = this.#measureSlot(slot, slotIndex)
-      slots.push(layoutElement)
+      this.#measureSlot(slot, slotIndex)
+      slots.push(slot)
     }
 
     return slots.length ? createBounds(slots, 0) : null
@@ -3533,32 +3522,29 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     lowQuality,
   }: DrawSlotsOptions) {
     for (const slot of this.slots) {
-      // change opacity of incompatible slots when dragging a connection
-      const layoutElement = slot._layoutElement
       const slotInstance = toNodeSlotClass(slot)
-      const isValid = !fromSlot || slotInstance.isValidTarget(fromSlot)
-      const highlight = isValid && this.#isMouseOverSlot(slot)
-      const labelColor = highlight
-        ? this.highlightColor
-        : LiteGraph.NODE_TEXT_COLOR
+      const isValidTarget = fromSlot && slotInstance.isValidTarget(fromSlot)
+      const isMouseOverSlot = this.#isMouseOverSlot(slot)
+
+      // change opacity of incompatible slots when dragging a connection
+      const isValid = !fromSlot || isValidTarget
+      const highlight = isValid && isMouseOverSlot
 
       // Show slot if it's not a widget input slot
       // or if it's a widget input slot and satisfies one of the following:
       // - the mouse is over the widget
       // - the slot is valid during link drop
       // - the slot is connected
-      const showSlot = !isWidgetInputSlot(slot) ||
-        this.#isMouseOverSlot(slot) ||
-        this.#isMouseOverWidget(this.getWidgetFromSlot(slot)!) ||
-        (fromSlot && slotInstance.isValidTarget(fromSlot)) ||
+      const showSlot = isMouseOverSlot ||
+        isValidTarget ||
+        !slotInstance.isWidgetInputSlot ||
+        this.#isMouseOverWidget(this.getWidgetFromSlot(slotInstance)!) ||
         slotInstance.isConnected()
 
       ctx.globalAlpha = showSlot ? (isValid ? editorAlpha : 0.4 * editorAlpha) : 0
 
       slotInstance.draw(ctx, {
-        pos: layoutElement?.center ?? [0, 0],
         colorContext,
-        labelColor,
         lowQuality,
         highlight,
       })

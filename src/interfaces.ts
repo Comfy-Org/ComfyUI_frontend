@@ -3,7 +3,6 @@ import type { LGraphNode, NodeId } from "./LGraphNode"
 import type { LinkId, LLink } from "./LLink"
 import type { Reroute, RerouteId } from "./Reroute"
 import type { LinkDirection, RenderShape } from "./types/globalEnums"
-import type { LayoutElement } from "./utils/layout"
 
 export type Dictionary<T> = { [key: string]: T }
 
@@ -30,6 +29,22 @@ export type SharedIntersection<T1, T2> = {
 
 export type CanvasColour = string | CanvasGradient | CanvasPattern
 
+/**
+ * Any object that has a {@link boundingRect}.
+ */
+export interface HasBoundingRect {
+  /**
+   * A rectangle that represents the outer edges of the item.
+   *
+   * Used for various calculations, such as overlap, selective rendering, and click checks.
+   * For most items, this is cached position & size as `x, y, width, height`.
+   * Some items (such as nodes) may extend above and/or to the left of their {@link pos}.
+   * @readonly
+   * @see {@link move}
+   */
+  readonly boundingRect: ReadOnlyRect
+}
+
 /** An object containing a set of child objects */
 export interface Parent<TChild> {
   /** All objects owned by the parent object. */
@@ -41,7 +56,7 @@ export interface Parent<TChild> {
  *
  * May contain other {@link Positionable} objects.
  */
-export interface Positionable extends Parent<Positionable> {
+export interface Positionable extends Parent<Positionable>, HasBoundingRect {
   readonly id: NodeId | RerouteId | number
   /** Position in graph coordinates.  Default: 0,0 */
   readonly pos: Point
@@ -67,17 +82,6 @@ export interface Positionable extends Parent<Positionable> {
    * @returns `true` if it moved, or `false` if the snap was rejected (e.g. `pinned`)
    */
   snapToGrid(snapTo: number): boolean
-
-  /**
-   * A rectangle that represents the outer edges of the item.
-   *
-   * Used for various calculations, such as overlap, selective rendering, and click checks.
-   * For most items, this is cached position & size as `x, y, width, height`.
-   * Some items (such as nodes) may extend above and/or to the left of their {@link pos}.
-   * @readonly
-   * @see {@link move}
-   */
-  readonly boundingRect: ReadOnlyRect
 
   /** Called whenever the item is selected */
   onSelected?(): void
@@ -256,7 +260,7 @@ export interface IOptionalSlotData<TSlot extends INodeInputSlot | INodeOutputSlo
  */
 export type ISlotType = number | string
 
-export interface INodeSlot {
+export interface INodeSlot extends HasBoundingRect {
   /**
    * The name of the slot in English.
    * Will be included in the serialized data.
@@ -284,11 +288,8 @@ export interface INodeSlot {
   locked?: boolean
   nameLocked?: boolean
   pos?: Point
-  /**
-   * A layout element that is used internally to position the slot.
-   * Set by {@link LGraphNode.#layoutSlots}.
-   */
-  _layoutElement?: LayoutElement
+  /** @remarks Automatically calculated; not included in serialisation. */
+  boundingRect: Rect
   /**
    * A list of floating link IDs that are connected to this slot.
    * This is calculated at runtime; it is **not** serialized.
@@ -322,7 +323,6 @@ export interface IWidgetLocator {
 
 export interface INodeInputSlot extends INodeSlot {
   link: LinkId | null
-  _layoutElement?: LayoutElement
   widget?: IWidgetLocator
 }
 
@@ -334,7 +334,6 @@ export interface INodeOutputSlot extends INodeSlot {
   links: LinkId[] | null
   _data?: unknown
   slot_index?: number
-  _layoutElement?: LayoutElement
 }
 
 /** Links */
