@@ -108,6 +108,10 @@
       "Straight": "Droit"
     }
   },
+  "Comfy_Load3D_BackgroundColor": {
+    "name": "Couleur de fond initiale",
+    "tooltip": "Contrôle la couleur de fond par défaut de la scène 3D. Ce paramètre détermine l'apparence du fond lors de la création d'un nouveau widget 3D, mais peut être ajusté individuellement pour chaque widget après la création."
+  },
   "Comfy_Load3D_CameraType": {
     "name": "Type de Caméra",
     "options": {
@@ -115,6 +119,22 @@
       "perspective": "perspective"
     },
     "tooltip": "Contrôle si la caméra est en perspective ou orthographique par défaut lorsqu'un nouveau widget 3D est créé. Ce défaut peut toujours être basculé individuellement pour chaque widget après sa création."
+  },
+  "Comfy_Load3D_LightAdjustmentIncrement": {
+    "name": "Incrément d'ajustement de la lumière",
+    "tooltip": "Contrôle la taille de l'incrément lors de l'ajustement de l'intensité lumineuse dans les scènes 3D. Une valeur de pas plus petite permet un contrôle plus précis des ajustements de lumière, tandis qu'une valeur plus grande entraîne des changements plus visibles à chaque ajustement."
+  },
+  "Comfy_Load3D_LightIntensity": {
+    "name": "Intensité lumineuse initiale",
+    "tooltip": "Définit le niveau de luminosité par défaut de l’éclairage dans la scène 3D. Cette valeur détermine l’intensité avec laquelle les lumières illuminent les objets lors de la création d’un nouveau widget 3D, mais peut être ajustée individuellement pour chaque widget après la création."
+  },
+  "Comfy_Load3D_LightIntensityMaximum": {
+    "name": "Intensité lumineuse maximale",
+    "tooltip": "Définit la valeur maximale autorisée pour l’intensité lumineuse dans les scènes 3D. Cela fixe la limite supérieure de luminosité pouvant être réglée lors de l’ajustement de l’éclairage dans tout widget 3D."
+  },
+  "Comfy_Load3D_LightIntensityMinimum": {
+    "name": "Intensité lumineuse minimale",
+    "tooltip": "Définit la valeur minimale autorisée de l’intensité lumineuse pour les scènes 3D. Cela définit la limite inférieure de luminosité pouvant être réglée lors de l’ajustement de l’éclairage dans tout widget 3D."
   },
   "Comfy_Load3D_ShowGrid": {
     "name": "Afficher la Grille",

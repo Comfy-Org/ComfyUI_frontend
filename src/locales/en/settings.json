@@ -108,6 +108,10 @@
       "Hidden": "Hidden"
     }
   },
+  "Comfy_Load3D_BackgroundColor": {
+    "name": "Initial Background Color",
+    "tooltip": "Controls the default background color of the 3D scene. This setting determines the background appearance when a new 3D widget is created, but can be adjusted individually for each widget after creation."
+  },
   "Comfy_Load3D_CameraType": {
     "name": "Initial Camera Type",
     "tooltip": "Controls whether the camera is perspective or orthographic by default when a new 3D widget is created. This default can still be toggled individually for each widget after creation.",
@@ -115,6 +119,22 @@
       "perspective": "perspective",
       "orthographic": "orthographic"
     }
+  },
+  "Comfy_Load3D_LightAdjustmentIncrement": {
+    "name": "Light Adjustment Increment",
+    "tooltip": "Controls the increment size when adjusting light intensity in 3D scenes. A smaller step value allows for finer control over lighting adjustments, while a larger value results in more noticeable changes per adjustment."
+  },
+  "Comfy_Load3D_LightIntensity": {
+    "name": "Initial Light Intensity",
+    "tooltip": "Sets the default brightness level of lighting in the 3D scene. This value determines how intensely lights illuminate objects when a new 3D widget is created, but can be adjusted individually for each widget after creation."
+  },
+  "Comfy_Load3D_LightIntensityMaximum": {
+    "name": "Light Intensity Maximum",
+    "tooltip": "Sets the maximum allowable light intensity value for 3D scenes. This defines the upper brightness limit that can be set when adjusting lighting in any 3D widget."
+  },
+  "Comfy_Load3D_LightIntensityMinimum": {
+    "name": "Light Intensity Minimum",
+    "tooltip": "Sets the minimum allowable light intensity value for 3D scenes. This defines the lower brightness limit that can be set when adjusting lighting in any 3D widget."
   },
   "Comfy_Load3D_ShowGrid": {
     "name": "Initial Grid Visibility",

@@ -108,6 +108,10 @@
       "Straight": "直角线"
     }
   },
+  "Comfy_Load3D_BackgroundColor": {
+    "name": "初始背景颜色",
+    "tooltip": "控制3D场景的默认背景颜色。此设置决定新建3D组件时的背景外观，但每个组件在创建后都可以单独调整。"
+  },
   "Comfy_Load3D_CameraType": {
     "name": "摄像机类型",
     "options": {
@@ -115,6 +119,22 @@
       "perspective": "透视"
     },
     "tooltip": "控制创建新的3D小部件时，默认的相机是透视还是正交。这个默认设置仍然可以在创建后为每个小部件单独切换。"
+  },
+  "Comfy_Load3D_LightAdjustmentIncrement": {
+    "name": "光照调整步长",
+    "tooltip": "控制在3D场景中调整光照强度时的步长。较小的步长值可以实现更精细的光照调整，较大的值则会使每次调整的变化更加明显。"
+  },
+  "Comfy_Load3D_LightIntensity": {
+    "name": "初始光照强度",
+    "tooltip": "设置3D场景中灯光的默认亮度级别。该数值决定新建3D控件时灯光照亮物体的强度，但每个控件在创建后都可以单独调整。"
+  },
+  "Comfy_Load3D_LightIntensityMaximum": {
+    "name": "最大光照强度",
+    "tooltip": "设置3D场景允许的最大光照强度值。此项定义了在调整任何3D控件照明时可设定的最高亮度上限。"
+  },
+  "Comfy_Load3D_LightIntensityMinimum": {
+    "name": "光照强度下限",
+    "tooltip": "设置3D场景允许的最小光照强度值。此项定义在调整任何3D控件照明时可设定的最低亮度。"
   },
   "Comfy_Load3D_ShowGrid": {
     "name": "显示网格",
