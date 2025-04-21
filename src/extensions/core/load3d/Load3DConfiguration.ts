@@ -91,12 +91,18 @@ class Load3DConfiguration {
 
     this.load3d.togglePreview(showPreview)
 
-    const bgColor = this.load3d.loadNodeProperty('Background Color', '#282828')
+    const bgColor = this.load3d.loadNodeProperty(
+      'Background Color',
+      '#' + useSettingStore().get('Comfy.Load3D.BackgroundColor')
+    )
 
     this.load3d.setBackgroundColor(bgColor)
 
     const lightIntensity: number = Number(
-      this.load3d.loadNodeProperty('Light Intensity', 5)
+      this.load3d.loadNodeProperty(
+        'Light Intensity',
+        useSettingStore().get('Comfy.Load3D.LightIntensity')
+      )
     )
 
     this.load3d.setLightIntensity(lightIntensity)
