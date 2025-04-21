@@ -110,7 +110,8 @@
     "migrate": "Migrate",
     "updateAvailable": "Update Available",
     "login": "Login",
-    "learnMore": "Learn more"
+    "learnMore": "Learn more",
+    "amount": "Amount"
   },
   "manager": {
     "title": "Custom Nodes Manager",
@@ -1107,5 +1108,14 @@
       "special": "Must contain at least one special character",
       "match": "Passwords must match"
     }
+  },
+  "credits": {
+    "credits": "Credits",
+    "yourCreditBalance": "Your credit balance",
+    "purchaseCredits": "Purchase Credits",
+    "creditsHistory": "Credits History",
+    "paymentDetails": "Payment Details",
+    "faqs": "FAQs",
+    "messageSupport": "Message Support"
   }
 }
