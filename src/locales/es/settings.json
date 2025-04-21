@@ -108,6 +108,10 @@
       "Straight": "Recto"
     }
   },
+  "Comfy_Load3D_BackgroundColor": {
+    "name": "Color de fondo inicial",
+    "tooltip": "Controla el color de fondo predeterminado de la escena 3D. Esta configuración determina la apariencia del fondo cuando se crea un nuevo widget 3D, pero puede ajustarse individualmente para cada widget después de su creación."
+  },
   "Comfy_Load3D_CameraType": {
     "name": "Tipo de Cámara",
     "options": {
@@ -115,6 +119,22 @@
       "perspective": "perspectiva"
     },
     "tooltip": "Controla si la cámara es perspectiva u ortográfica por defecto cuando se crea un nuevo widget 3D. Este valor predeterminado aún puede ser alternado individualmente para cada widget después de su creación."
+  },
+  "Comfy_Load3D_LightAdjustmentIncrement": {
+    "name": "Incremento de ajuste de luz",
+    "tooltip": "Controla el tamaño del incremento al ajustar la intensidad de la luz en escenas 3D. Un valor de paso más pequeño permite un control más preciso sobre los ajustes de iluminación, mientras que un valor más grande resulta en cambios más notorios por cada ajuste."
+  },
+  "Comfy_Load3D_LightIntensity": {
+    "name": "Intensidad Inicial de la Luz",
+    "tooltip": "Establece el nivel de brillo predeterminado de la iluminación en la escena 3D. Este valor determina cuán intensamente las luces iluminan los objetos cuando se crea un nuevo widget 3D, pero puede ajustarse individualmente para cada widget después de la creación."
+  },
+  "Comfy_Load3D_LightIntensityMaximum": {
+    "name": "Intensidad Máxima de Luz",
+    "tooltip": "Establece el valor máximo permitido de intensidad de luz para escenas 3D. Esto define el límite superior de brillo que se puede ajustar al modificar la iluminación en cualquier widget 3D."
+  },
+  "Comfy_Load3D_LightIntensityMinimum": {
+    "name": "Intensidad de luz mínima",
+    "tooltip": "Establece el valor mínimo permitido de intensidad de luz para escenas 3D. Esto define el límite inferior de brillo que se puede ajustar al modificar la iluminación en cualquier widget 3D."
   },
   "Comfy_Load3D_ShowGrid": {
     "name": "Mostrar Cuadrícula",
