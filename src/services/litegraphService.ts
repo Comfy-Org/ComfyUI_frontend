@@ -41,7 +41,6 @@ import {
 
 import { useExtensionService } from './extensionService'
 
-const PRIMITIVE_TYPES = new Set(['INT', 'FLOAT', 'BOOLEAN', 'STRING', 'COMBO'])
 export const CONFIG = Symbol()
 export const GET_CONFIG = Symbol()
 
