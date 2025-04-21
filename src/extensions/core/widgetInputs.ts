@@ -18,16 +18,6 @@ import { mergeInputSpec } from '@/utils/nodeDefUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 import { isPrimitiveNode } from '@/utils/typeGuardUtil'
 
-const VALID_TYPES = [
-  'STRING',
-  'combo',
-  'number',
-  'toggle',
-  'BOOLEAN',
-  'text',
-  'string'
-]
-
 const replacePropertyName = 'Run widget replace on values'
 export class PrimitiveNode extends LGraphNode {
   controlValues?: any[]
@@ -352,31 +342,6 @@ export class PrimitiveNode extends LGraphNode {
     }
   }
 
-  isValidWidgetLink(
-    originSlot: number,
-    targetNode: LGraphNode,
-    targetWidget: IWidget
-  ) {
-    const config2 = getConfig.call(targetNode, targetWidget.name) ?? [
-      targetWidget.type,
-      targetWidget.options || {}
-    ]
-    if (!isConvertibleWidget(targetWidget, config2)) return false
-
-    const output = this.outputs[originSlot]
-    if (
-      !(
-        output.widget?.[CONFIG] ??
-        (output.widget?.[GET_CONFIG] as () => InputSpec)?.()
-      )
-    ) {
-      // No widget defined for this primitive yet so allow it
-      return true
-    }
-
-    return !!mergeIfValid.call(this, output, config2)
-  }
-
   #isValidConnection(input: INodeInputSlot, forceUpdate?: boolean) {
     // Only allow connections where the configs match
     const output = this.outputs?.[0]
@@ -442,13 +407,6 @@ function getConfig(this: LGraphNode, widgetName: string) {
   return (
     nodeData?.input?.required?.[widgetName] ??
     nodeData?.input?.optional?.[widgetName]
-  )
-}
-
-function isConvertibleWidget(widget: IWidget, config: InputSpec): boolean {
-  return (
-    // @ts-expect-error InputSpec is not typed correctly
-    VALID_TYPES.includes(widget.type) || VALID_TYPES.includes(config[0])
   )
 }
 
