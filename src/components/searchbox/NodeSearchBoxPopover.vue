@@ -88,6 +88,7 @@ const clearFilters = () => {
 const closeDialog = () => {
   visible.value = false
 }
+const canvasStore = useCanvasStore()
 
 const addNode = (nodeDef: ComfyNodeDefImpl) => {
   const node = litegraphService.addNodeOnGraph(nodeDef, {
@@ -192,7 +193,6 @@ const showContextMenu = (e: LiteGraphCanvasEvent) => {
 }
 
 // Disable litegraph's default behavior of release link and search box.
-const canvasStore = useCanvasStore()
 watchEffect(() => {
   if (canvasStore.canvas) {
     LiteGraph.release_link_on_empty_shows_menu = false
