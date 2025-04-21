@@ -27,6 +27,7 @@ import {
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { getFromWebmFile } from '@/scripts/metadata/ebml'
 import { getGltfBinaryMetadata } from '@/scripts/metadata/gltf'
+import { getFromIsobmffFile } from '@/scripts/metadata/isobmff'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -1315,6 +1316,13 @@ export class ComfyApp {
         this.loadApiJson(webmInfo.prompt, fileName)
       } else {
         this.showErrorOnFileLoad(file)
+      }
+    } else if (file.type === 'video/mp4') {
+      const mp4Info = await getFromIsobmffFile(file)
+      if (mp4Info.workflow) {
+        this.loadGraphData(mp4Info.workflow, true, true, fileName)
+      } else if (mp4Info.prompt) {
+        this.loadApiJson(mp4Info.prompt, fileName)
       }
     } else if (
       file.type === 'model/gltf-binary' ||
