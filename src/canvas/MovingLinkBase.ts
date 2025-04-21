@@ -83,4 +83,6 @@ export abstract class MovingLinkBase implements RenderLink {
   abstract connectToOutput(node: LGraphNode, output: INodeOutputSlot, events?: LinkConnectorEventTarget): void
   abstract connectToRerouteInput(reroute: Reroute, { node, input, link }: { node: LGraphNode, input: INodeInputSlot, link: LLink }, events: LinkConnectorEventTarget, originalReroutes: Reroute[]): void
   abstract connectToRerouteOutput(reroute: Reroute, outputNode: LGraphNode, output: INodeOutputSlot, events: LinkConnectorEventTarget): void
+
+  abstract disconnect(): boolean
 }

@@ -76,4 +76,8 @@ export class MovingInputLink extends MovingLinkBase {
   connectToRerouteOutput(): never {
     throw new Error("MovingInputLink cannot connect to an output.")
   }
+
+  disconnect(): boolean {
+    return this.inputNode.disconnectInput(this.inputIndex, true)
+  }
 }

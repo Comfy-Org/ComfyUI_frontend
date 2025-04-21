@@ -82,4 +82,8 @@ export class MovingOutputLink extends MovingLinkBase {
 
     events.dispatch("output-moved", this)
   }
+
+  disconnect(): boolean {
+    return this.outputNode.disconnectOutput(this.outputIndex, this.inputNode)
+  }
 }

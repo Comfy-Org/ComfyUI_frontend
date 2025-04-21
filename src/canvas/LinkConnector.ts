@@ -440,17 +440,18 @@ export class LinkConnector {
     const mayContinue = this.events.dispatch("dropped-on-canvas", event)
     if (mayContinue === false) return
 
-    if (this.state.connectingTo === "input") {
-      for (const link of this.renderLinks) {
-        if (link instanceof MovingInputLink) {
-          link.inputNode.disconnectInput(link.inputIndex, true)
-        }
-      }
-    } else if (this.state.connectingTo === "output") {
-      for (const link of this.renderLinks) {
-        if (link instanceof MovingOutputLink) {
-          link.outputNode.disconnectOutput(link.outputIndex, link.inputNode)
-        }
+    this.disconnectLinks()
+  }
+
+  /**
+   * Disconnects all moving links.
+   * @remarks This is called when the links are dropped on the canvas.
+   * May be called by consumers to e.g. drag links into a bin / void.
+   */
+  disconnectLinks(): void {
+    for (const link of this.renderLinks) {
+      if (link instanceof MovingLinkBase) {
+        link.disconnect()
       }
     }
   }
