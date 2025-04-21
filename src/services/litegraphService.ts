@@ -153,10 +153,7 @@ export const useLitegraphService = () => {
           })
         }
 
-        if (
-          PRIMITIVE_TYPES.has(inputSpec.type) ||
-          !widget?.options?.socketless
-        ) {
+        if (!widget?.options?.socketless) {
           const inputSpecV1 = transformInputSpecV2ToV1(inputSpec)
           this.addInput(inputName, inputSpec.type, {
             shape: inputSpec.isOptional ? RenderShape.HollowCircle : undefined,
