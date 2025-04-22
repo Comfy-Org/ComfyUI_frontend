@@ -21,7 +21,11 @@
             />
             <div class="text-3xl font-bold">{{ creditBalance }}</div>
           </div>
-          <Button :label="$t('credits.purchaseCredits')" />
+          <Button
+            :label="$t('credits.purchaseCredits')"
+            :loading
+            @click="handlePurchaseCreditsClick"
+          />
         </div>
       </div>
 
@@ -91,14 +95,38 @@ import TabPanel from 'primevue/tabpanel'
 import Tag from 'primevue/tag'
 import { ref } from 'vue'
 
-// Mock data - in a real implementation, this would come from a store or API
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { usdToMicros } from '@/utils/formatUtil'
+
+// TODO: Mock data - in a real implementation, this would come from a store or API
 const creditBalance = ref(0.05)
+
+// TODO: Either: (1) Get checkout URL that allows setting price on Stripe side, (2) Add number selection on credits panel
+const selectedCurrencyAmount = usdToMicros(10)
+
+const selectedCurrency = 'usd' // For now, only USD is supported on comfy-api backend
 
 interface CreditHistoryItemData {
   title: string
   timestamp: string
   amount: number
   isPositive: boolean
+}
+
+const { initiateCreditPurchase, loading } = useFirebaseAuthStore()
+
+const handlePurchaseCreditsClick = async () => {
+  const response = await initiateCreditPurchase({
+    amount_micros: selectedCurrencyAmount,
+    currency: selectedCurrency
+  })
+  if (!response) return
+
+  const { checkout_url } = response
+  if (checkout_url !== undefined) {
+    // Go to Stripe checkout page
+    window.open(checkout_url, '_blank')
+  }
 }
 
 const creditHistory = ref<CreditHistoryItemData[]>([
