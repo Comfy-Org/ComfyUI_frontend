@@ -1094,6 +1094,11 @@
       "signIn": "Sign in",
       "signUpWithGoogle": "Sign up with Google",
       "signUpWithGithub": "Sign up with Github"
+    },
+    "signOut": {
+      "signOut": "Log Out",
+      "success": "Signed out successfully",
+      "successDetail": "You have been signed out of your account."
     }
   },
   "validation": {
@@ -1119,5 +1124,16 @@
     "paymentDetails": "Payment Details",
     "faqs": "FAQs",
     "messageSupport": "Message Support"
+  },
+  "userSettings": {
+    "title": "User Settings",
+    "name": "Name",
+    "email": "Email",
+    "notSet": "Not set",
+    "provider": "Sign in method",
+    "providers": {
+      "google": "Google",
+      "github": "GitHub"
+    }
   }
 }

@@ -55,6 +55,12 @@ export function useSettingUI(
     children: []
   }
 
+  const userPanelNode: SettingTreeNode = {
+    key: 'user',
+    label: 'User',
+    children: []
+  }
+
   const keybindingPanelNode: SettingTreeNode = {
     key: 'keybinding',
     label: 'Keybinding',
@@ -105,7 +111,7 @@ export function useSettingUI(
           {
             key: 'account',
             label: 'Account',
-            children: [creditsPanelNode].map(translateCategory)
+            children: [userPanelNode, creditsPanelNode].map(translateCategory)
           }
         ]
       : []),

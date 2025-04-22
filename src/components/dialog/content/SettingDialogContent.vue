@@ -48,6 +48,7 @@
         </PanelTemplate>
 
         <AboutPanel />
+        <UserPanel />
         <CreditsPanel />
         <Suspense>
           <KeybindingPanel />
@@ -96,6 +97,7 @@ import CurrentUserMessage from './setting/CurrentUserMessage.vue'
 import FirstTimeUIMessage from './setting/FirstTimeUIMessage.vue'
 import PanelTemplate from './setting/PanelTemplate.vue'
 import SettingsPanel from './setting/SettingsPanel.vue'
+import UserPanel from './setting/UserPanel.vue'
 
 const { defaultPanel } = defineProps<{
   defaultPanel?: 'about' | 'keybinding' | 'extension' | 'server-config'
