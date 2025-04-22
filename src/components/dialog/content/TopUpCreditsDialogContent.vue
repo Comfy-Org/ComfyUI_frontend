@@ -142,8 +142,6 @@ const handleBuyNow = async () => {
 
   if (!response?.checkout_url) return
 
-  // Start polling for balance changes
-  authStore.creditsDidChange = true
   // Go to Stripe checkout page
   window.open(response.checkout_url, '_blank')
   // Close dialog
