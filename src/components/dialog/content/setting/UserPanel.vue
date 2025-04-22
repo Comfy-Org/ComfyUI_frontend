@@ -1,7 +1,7 @@
 <template>
   <TabPanel value="User" class="user-settings-container h-full">
     <div class="flex flex-col h-full">
-      <h2 class="text-xl font-bold mb-2">{{ $t('userSettings.title') }}</h2>
+      <h2 class="text-2xl font-bold mb-2">{{ $t('userSettings.title') }}</h2>
       <Divider class="mb-3" />
 
       <div v-if="user" class="flex flex-col gap-2">
