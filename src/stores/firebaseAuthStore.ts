@@ -109,15 +109,15 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       }
     })
 
-    // if (!response.ok) {
-    //   if (response.status === 404) {
-    //     // Customer not found is expected for new users
-    //     return null
-    //   }
-    //   const errorData = await response.json()
-    //   error.value = `Failed to fetch balance: ${errorData.message}`
-    //   return null
-    // }
+    if (!response.ok) {
+      if (response.status === 404) {
+        // Customer not found is expected for new users
+        return null
+      }
+      const errorData = await response.json()
+      error.value = `Failed to fetch balance: ${errorData.message}`
+      return null
+    }
 
     const balanceData = await response.json()
     // Update the last balance update time
