@@ -12,7 +12,7 @@
     </div>
     <div ref="menuRight" class="comfyui-menu-right flex-shrink-0" />
     <Actionbar />
-    <CurrentUserButton />
+    <CurrentUserButton class="flex-shrink-0" />
     <BottomPanelToggleButton class="flex-shrink-0" />
     <Button
       v-tooltip="{ value: $t('menu.hideMenu'), showDelay: 300 }"
