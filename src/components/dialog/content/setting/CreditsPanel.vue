@@ -92,6 +92,7 @@
           text
           severity="secondary"
           icon="pi pi-comments"
+          @click="handleMessageSupport"
         />
       </div>
     </div>
@@ -107,7 +108,9 @@ import ProgressSpinner from 'primevue/progressspinner'
 import TabPanel from 'primevue/tabpanel'
 import Tag from 'primevue/tag'
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { microsToUsd, usdToMicros } from '@/utils/formatUtil'
 
@@ -118,6 +121,8 @@ interface CreditHistoryItemData {
   isPositive: boolean
 }
 
+const { t } = useI18n()
+const dialogService = useDialogService()
 const authStore = useFirebaseAuthStore()
 const loading = computed(() => authStore.loading)
 
@@ -155,6 +160,17 @@ const handlePaymentDetailsClick = async () => {
   if (billing_portal_url) {
     window.open(billing_portal_url, '_blank')
   }
+}
+
+const handleMessageSupport = () => {
+  dialogService.showIssueReportDialog({
+    title: t('credits.messageSupport'),
+    subtitle: t('issueReport.feedbackTitle'),
+    panelProps: {
+      errorType: 'BillingSupport',
+      defaultFields: ['SystemStats', 'Settings']
+    }
+  })
 }
 
 // Fetch initial balance when panel is mounted
