@@ -21,7 +21,12 @@
   </LiteGraphCanvasSplitterOverlay>
   <TitleEditor />
   <GraphCanvasMenu v-if="!betaMenuEnabled && canvasMenuEnabled" />
-  <canvas id="graph-canvas" ref="canvasRef" class="w-full h-full touch-none" />
+  <canvas
+    id="graph-canvas"
+    ref="canvasRef"
+    tabindex="1"
+    class="w-full h-full touch-none"
+  />
   <NodeSearchboxPopover />
   <SelectionOverlay v-if="selectionToolboxEnabled">
     <SelectionToolbox />
