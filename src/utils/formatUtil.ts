@@ -458,3 +458,17 @@ export function formatMetronomeCurrency(
   }
   return amount.toString()
 }
+
+/**
+ * Converts a USD amount to microdollars (1/1,000,000 of a dollar).
+ * This conversion is commonly used in financial systems to avoid floating-point precision issues
+ * by representing monetary values as integers.
+ *
+ * @param usd - The amount in US dollars to convert
+ * @returns The amount in microdollars (multiplied by 1,000,000)
+ * @example
+ * usdToMicros(1.23) // returns 1230000
+ */
+export function usdToMicros(usd: number): number {
+  return Math.round(usd * 1_000_000)
+}

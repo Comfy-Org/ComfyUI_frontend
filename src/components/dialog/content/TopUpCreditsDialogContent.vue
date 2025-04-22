@@ -101,10 +101,7 @@ import Tag from 'primevue/tag'
 import { computed, onBeforeUnmount, ref } from 'vue'
 
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
-import {
-  formatMetronomeCurrency,
-  toMetronomeCurrency
-} from '@/utils/formatUtil'
+import { formatMetronomeCurrency, usdToMicros } from '@/utils/formatUtil'
 
 defineProps<{
   isInsufficientCredits?: boolean
@@ -140,7 +137,7 @@ const handleBuyNow = async () => {
   if (!amount.value) return
 
   const response = await authStore.initiateCreditPurchase({
-    amount_micros: toMetronomeCurrency(amount.value, 'usd'),
+    amount_micros: usdToMicros(amount.value),
     currency: 'usd'
   })
 
