@@ -1099,6 +1099,20 @@
       "signOut": "Log Out",
       "success": "Signed out successfully",
       "successDetail": "You have been signed out of your account."
+    },
+    "required": {
+      "signIn": {
+        "title": "Sign-In Required to Execute Workflow",
+        "message": "This workflow includes nodes that require an active account. Please log in or create one to continue.",
+        "hint": "To login go to: Settings > User > Login",
+        "action": "Open Settings to Login"
+      },
+      "credits": {
+        "title": "Credits Required to Execute Workflow",
+        "message": "This workflow includes nodes that require credits. Please add credits to your account to continue.",
+        "hint": "To add credits go to: Settings > User > Credits",
+        "action": "Open Settings to Add Credits"
+      }
     }
   },
   "validation": {

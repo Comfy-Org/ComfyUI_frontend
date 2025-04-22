@@ -16,6 +16,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { useFirebaseAuth } from 'vuefire'
 
+import { useDialogService } from '@/services/dialogService'
 import { operations } from '@/types/comfyRegistryTypes'
 
 type CreditPurchaseResponse =
@@ -167,6 +168,14 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   ): Promise<CreditPurchaseResponse | null> =>
     executeAuthAction((_) => addCredits(requestBodyContent))
 
+  const openSignInPanel = () => {
+    useDialogService().showSettingsDialog('user')
+  }
+
+  const openCreditsPanel = () => {
+    useDialogService().showSettingsDialog('credits')
+  }
+
   return {
     // State
     loading,
@@ -186,6 +195,8 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     getIdToken,
     loginWithGoogle,
     loginWithGithub,
-    initiateCreditPurchase
+    initiateCreditPurchase,
+    openSignInPanel,
+    openCreditsPanel
   }
 })
