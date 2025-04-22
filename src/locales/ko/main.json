@@ -613,6 +613,7 @@
     "Open Logs Folder": "로그 폴더 열기",
     "Open Models Folder": "모델 폴더 열기",
     "Open Outputs Folder": "출력 폴더 열기",
+    "Open Sign In Dialog": "로그인 대화 상자 열기",
     "Open extra_model_paths_yaml": "extra_model_paths.yaml 열기",
     "Pin/Unpin Selected Items": "선택한 항목 고정/고정 해제",
     "Pin/Unpin Selected Nodes": "선택한 노드 고정/고정 해제",

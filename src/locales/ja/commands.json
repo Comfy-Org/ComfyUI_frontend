@@ -173,6 +173,9 @@
   "Comfy_Undo": {
     "label": "元に戻す"
   },
+  "Comfy_User_OpenSignInDialog": {
+    "label": "サインインダイアログを開く"
+  },
   "Workspace_CloseWorkflow": {
     "label": "現在のワークフローを閉じる"
   },

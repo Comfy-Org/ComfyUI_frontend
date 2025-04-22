@@ -173,6 +173,9 @@
   "Comfy_Undo": {
     "label": "Annuler"
   },
+  "Comfy_User_OpenSignInDialog": {
+    "label": "Ouvrir la boîte de dialogue de connexion"
+  },
   "Workspace_CloseWorkflow": {
     "label": "Fermer le flux de travail actuel"
   },

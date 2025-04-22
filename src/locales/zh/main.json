@@ -613,6 +613,7 @@
     "Open Logs Folder": "打开日志文件夹",
     "Open Models Folder": "打开模型文件夹",
     "Open Outputs Folder": "打开输出文件夹",
+    "Open Sign In Dialog": "打开登录对话框",
     "Open extra_model_paths_yaml": "打开 extra_model_paths.yaml",
     "Pin/Unpin Selected Items": "固定/取消固定选定项目",
     "Pin/Unpin Selected Nodes": "固定/取消固定选定节点",

@@ -173,6 +173,9 @@
   "Comfy_Undo": {
     "label": "撤销"
   },
+  "Comfy_User_OpenSignInDialog": {
+    "label": "打开登录对话框"
+  },
   "Workspace_CloseWorkflow": {
     "label": "关闭当前工作流"
   },
