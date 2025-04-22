@@ -34,17 +34,10 @@
     >
       <template #icon>
         <div
-          v-if="!authStore.currentUser?.photoURL"
-          class="w-6 h-6 rounded-full bg-neutral-100 dark-theme:bg-neutral-700 flex items-center justify-center"
+          class="w-6 h-6 rounded-full bg-neutral-100 dark:bg-neutral-700 flex items-center justify-center"
         >
           <i class="pi pi-user text-sm" />
         </div>
-        <img
-          v-else
-          :src="authStore.currentUser.photoURL"
-          :alt="authStore.currentUser.displayName || ''"
-          class="w-6 h-6 rounded-full"
-        />
       </template>
     </Button>
     <div
