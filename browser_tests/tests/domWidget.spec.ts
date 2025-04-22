@@ -24,4 +24,11 @@ test.describe('DOM Widget', () => {
     await expect(firstMultiline).not.toBeVisible()
     await expect(lastMultiline).not.toBeVisible()
   })
+
+  test('Position update when entering focus mode', async ({ comfyPage }) => {
+    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.executeCommand('Workspace.ToggleFocusMode')
+    await comfyPage.nextFrame()
+    await expect(comfyPage.canvas).toHaveScreenshot('focus-mode-on.png')
+  })
 })
