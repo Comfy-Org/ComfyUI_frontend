@@ -78,10 +78,6 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
 
       // Reset balance when auth state changes
       balance.value = null
-      if (user) {
-        // Fetch initial balance when user logs in
-        void fetchBalance()
-      }
     })
   } else {
     error.value = 'Firebase Auth not available from VueFire'
