@@ -19,7 +19,7 @@
               rounded
               class="text-amber-400 p-1"
             />
-            <div class="text-3xl font-bold">${{ formattedBalance }}</div>
+            <div class="text-3xl font-bold">{{ formattedBalance }}</div>
           </div>
           <ProgressSpinner
             v-if="loading"
