@@ -4,9 +4,9 @@
       <h2 class="text-xl font-bold mb-2">{{ $t('userSettings.title') }}</h2>
       <Divider class="mb-3" />
 
-      <div class="flex flex-col gap-2">
+      <div v-if="user" class="flex flex-col gap-2">
         <!-- User Avatar if available -->
-        <div v-if="user?.photoURL" class="flex items-center gap-2">
+        <div v-if="user.photoURL" class="flex items-center gap-2">
           <img
             :src="user.photoURL"
             :alt="user.displayName || ''"
@@ -19,7 +19,7 @@
             {{ $t('userSettings.name') }}
           </h3>
           <div class="text-muted">
-            {{ user?.displayName || $t('userSettings.notSet') }}
+            {{ user.displayName || $t('userSettings.notSet') }}
           </div>
         </div>
 
@@ -27,8 +27,8 @@
           <h3 class="font-medium">
             {{ $t('userSettings.email') }}
           </h3>
-          <a :href="'mailto:' + user?.email" class="hover:underline">
-            {{ user?.email }}
+          <a :href="'mailto:' + user.email" class="hover:underline">
+            {{ user.email }}
           </a>
         </div>
 
@@ -56,6 +56,22 @@
           @click="handleSignOut"
         />
       </div>
+
+      <!-- Login Section -->
+      <div v-else class="flex flex-col gap-4">
+        <p class="text-gray-600">
+          {{ $t('auth.login.title') }}
+        </p>
+
+        <Button
+          class="w-52"
+          severity="primary"
+          :loading="loading"
+          :label="$t('auth.login.signInOrSignUp')"
+          icon="pi pi-user"
+          @click="handleSignIn"
+        />
+      </div>
     </div>
   </TabPanel>
 </template>
@@ -68,12 +84,14 @@ import TabPanel from 'primevue/tabpanel'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { useToastStore } from '@/stores/toastStore'
 
 const toast = useToastStore()
 const { t } = useI18n()
 const authStore = useFirebaseAuthStore()
+const dialogService = useDialogService()
 const user = computed(() => authStore.currentUser)
 const loading = computed(() => authStore.loading)
 
@@ -117,5 +135,9 @@ const handleSignOut = async () => {
       life: 5000
     })
   }
+}
+
+const handleSignIn = async () => {
+  await dialogService.showSignInDialog()
 }
 </script>
