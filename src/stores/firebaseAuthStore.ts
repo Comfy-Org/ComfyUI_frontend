@@ -1,4 +1,3 @@
-import { whenever } from '@vueuse/core'
 import {
   type Auth,
   GithubAuthProvider,
@@ -39,12 +38,6 @@ type AccessBillingPortalReqBody =
 // TODO: Switch to prod api based on environment (requires prod api to be ready)
 const API_BASE_URL = 'https://stagingapi.comfy.org'
 
-// Polling configuration
-const MAX_RETRIES = 30
-const INITIAL_DELAY_MS = 2_000
-const MAX_DELAY_MS = 60_000
-const BACKOFF_FACTOR = 1.5
-
 export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   const { t } = useI18n()
 
@@ -58,11 +51,6 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   // Balance state
   const balance = ref<GetCustomerBalanceResponse | null>(null)
   const lastBalanceUpdateTime = ref<Date | null>(null)
-  const creditsDidChange = ref(false)
-  const isPollingBalance = ref(false)
-  let pollingTimeout: NodeJS.Timeout | null = null
-  let currentRetry = 0
-  let lastKnownBalance: GetCustomerBalanceResponse | null = null
 
   // Providers
   const googleProvider = new GoogleAuthProvider()
@@ -136,59 +124,6 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     lastBalanceUpdateTime.value = new Date()
     return balanceData
   }
-
-  const pollBalance = async () => {
-    if (!isPollingBalance.value) return
-
-    try {
-      const newBalance = await fetchBalance()
-
-      // If balance changed or we hit max retries, stop polling
-      if (
-        (newBalance &&
-          (!lastKnownBalance ||
-            newBalance.amount_micros !== lastKnownBalance.amount_micros)) ||
-        currentRetry >= MAX_RETRIES
-      ) {
-        balance.value = newBalance
-        creditsDidChange.value = false
-        isPollingBalance.value = false
-        return
-      }
-
-      // Calculate next delay with flatter exponential backoff
-      const delay = Math.min(
-        INITIAL_DELAY_MS * Math.pow(BACKOFF_FACTOR, currentRetry),
-        MAX_DELAY_MS
-      )
-      currentRetry++
-
-      // Schedule next poll
-      pollingTimeout = setTimeout(pollBalance, delay)
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Failed to fetch balance'
-      creditsDidChange.value = false
-      isPollingBalance.value = false
-    }
-  }
-
-  // Watch for credits change and start polling
-  whenever(creditsDidChange, () => {
-    // Store current balance before starting new polling
-    lastKnownBalance = balance.value
-
-    // Reset polling state
-    currentRetry = 0
-    isPollingBalance.value = true
-
-    // Clear any existing polling timeout
-    if (pollingTimeout) {
-      clearTimeout(pollingTimeout)
-    }
-
-    // Start polling
-    void pollBalance()
-  })
 
   const createCustomer = async (
     token: string
@@ -312,7 +247,6 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       return null
     }
 
-    // TODO: start polling /listBalance until balance is updated or n retries fail or report no change
     return response.json()
   }
 
@@ -366,7 +300,6 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     isInitialized,
     balance,
     lastBalanceUpdateTime,
-    creditsDidChange,
 
     // Getters
     isAuthenticated,
