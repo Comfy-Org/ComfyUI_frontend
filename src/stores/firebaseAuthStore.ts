@@ -22,6 +22,8 @@ type CreditPurchaseResponse =
   operations['InitiateCreditPurchase']['responses']['201']['content']['application/json']
 type CreditPurchasePayload =
   operations['InitiateCreditPurchase']['requestBody']['content']['application/json']
+type CreateCustomerResponse =
+  operations['createCustomer']['responses']['201']['content']['application/json']
 
 // TODO: Switch to prod api based on environment (requires prod api to be ready)
 const API_BASE_URL = 'https://stagingapi.comfy.org'
@@ -116,6 +118,26 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     const token = await getIdToken()
     if (!token) {
       error.value = 'Cannot add credits: User not authenticated'
+      return null
+    }
+
+    // Create customer first (okay to call more than once since is is idempotent on BE)
+    const createCustomerRes = await fetch(`${API_BASE_URL}/customers`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      }
+    })
+    if (!createCustomerRes.ok) {
+      error.value = `Failed to create customer: ${createCustomerRes.statusText}`
+      return null
+    }
+
+    const createCustomerResJson: CreateCustomerResponse =
+      await createCustomerRes.json()
+    if (!createCustomerResJson?.id) {
+      error.value = 'Failed to create customer: No customer ID returned'
       return null
     }
 
