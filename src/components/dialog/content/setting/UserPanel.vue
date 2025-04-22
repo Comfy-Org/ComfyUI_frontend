@@ -103,9 +103,6 @@ const providerName = computed(() => {
   if (providerId?.includes('github')) {
     return 'GitHub'
   }
-  if (providerId?.includes('apple')) {
-    return 'Apple'
-  }
   return providerId
 })
 
@@ -116,9 +113,6 @@ const providerIcon = computed(() => {
   }
   if (providerId?.includes('github')) {
     return 'pi pi-github'
-  }
-  if (providerId?.includes('apple')) {
-    return 'pi pi-apple'
   }
   return 'pi pi-user'
 })
