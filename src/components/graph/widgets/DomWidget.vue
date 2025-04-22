@@ -37,7 +37,7 @@ const { widget, widgetState } = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:widgetValue', value: string | object): void
+  'update:widgetValue': [value: string | object]
 }>()
 
 const widgetElement = ref<HTMLElement | undefined>()
