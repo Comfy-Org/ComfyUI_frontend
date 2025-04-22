@@ -17,6 +17,7 @@
       "emailPlaceholder": "输入您的电子邮件",
       "failed": "登录失败",
       "forgotPassword": "忘记密码？",
+      "genericErrorMessage": "抱歉，我们遇到了一些错误。请联系 {supportEmail}。",
       "loginButton": "登录",
       "loginWithGithub": "使用Github登录",
       "loginWithGoogle": "使用Google登录",

@@ -17,6 +17,7 @@
       "emailPlaceholder": "Ingresa tu correo electrónico",
       "failed": "Inicio de sesión fallido",
       "forgotPassword": "¿Olvidaste tu contraseña?",
+      "genericErrorMessage": "Lo sentimos, hemos encontrado un error. Por favor, contacta con {supportEmail}.",
       "loginButton": "Iniciar sesión",
       "loginWithGithub": "Iniciar sesión con Github",
       "loginWithGoogle": "Iniciar sesión con Google",

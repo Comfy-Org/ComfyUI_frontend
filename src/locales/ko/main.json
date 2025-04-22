@@ -17,6 +17,7 @@
       "emailPlaceholder": "이메일을 입력하세요",
       "failed": "로그인 실패",
       "forgotPassword": "비밀번호를 잊으셨나요?",
+      "genericErrorMessage": "죄송합니다. 오류가 발생했습니다. {supportEmail}로 문의해 주세요.",
       "loginButton": "로그인",
       "loginWithGithub": "Github로 로그인",
       "loginWithGoogle": "구글로 로그인",

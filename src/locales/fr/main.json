@@ -17,6 +17,7 @@
       "emailPlaceholder": "Entrez votre email",
       "failed": "Échec de la connexion",
       "forgotPassword": "Mot de passe oublié?",
+      "genericErrorMessage": "Désolé, une erreur s'est produite. Veuillez contacter {supportEmail}.",
       "loginButton": "Se connecter",
       "loginWithGithub": "Se connecter avec Github",
       "loginWithGoogle": "Se connecter avec Google",

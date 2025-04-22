@@ -17,6 +17,7 @@
       "emailPlaceholder": "Введите вашу электронную почту",
       "failed": "Вход не удался",
       "forgotPassword": "Забыли пароль?",
+      "genericErrorMessage": "Извините, произошла ошибка. Пожалуйста, свяжитесь с {supportEmail}.",
       "loginButton": "Войти",
       "loginWithGithub": "Войти через Github",
       "loginWithGoogle": "Войти через Google",

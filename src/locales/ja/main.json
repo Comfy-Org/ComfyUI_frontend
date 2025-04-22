@@ -17,6 +17,7 @@
       "emailPlaceholder": "メールアドレスを入力してください",
       "failed": "ログイン失敗",
       "forgotPassword": "パスワードを忘れましたか？",
+      "genericErrorMessage": "申し訳ありませんが、エラーが発生しました。{supportEmail} までご連絡ください。",
       "loginButton": "ログイン",
       "loginWithGithub": "Githubでログイン",
       "loginWithGoogle": "Googleでログイン",
