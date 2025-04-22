@@ -95,7 +95,7 @@
 import Button from 'primevue/button'
 import InputNumber from 'primevue/inputnumber'
 import Tag from 'primevue/tag'
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
 
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { microsToUsd, usdToMicros } from '@/utils/formatUtil'
@@ -110,6 +110,7 @@ const emit = defineEmits<{
 
 const authStore = useFirebaseAuthStore()
 const amount = ref<number>(9.99)
+const didClickBuyNow = ref(false)
 
 const handleBlur = (e: any) => {
   if (e.target.value) {
@@ -135,6 +136,7 @@ const handleSeeDetails = async () => {
 const handleBuyNow = async () => {
   if (!amount.value) return
 
+  didClickBuyNow.value = true
   const response = await authStore.initiateCreditPurchase({
     amount_micros: usdToMicros(amount.value),
     currency: 'usd'
@@ -147,4 +149,11 @@ const handleBuyNow = async () => {
   // Close dialog
   emit('close')
 }
+
+onBeforeUnmount(() => {
+  if (didClickBuyNow.value) {
+    // If clicked buy now, then returned back to the dialog and closed, fetch the balance
+    void authStore.fetchBalance()
+  }
+})
 </script>
