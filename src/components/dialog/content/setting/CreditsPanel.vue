@@ -10,6 +10,13 @@
       <div class="flex flex-col gap-2">
         <h3 class="text-sm font-medium text-muted">
           {{ $t('credits.yourCreditBalance') }}
+          <Button
+            icon="pi pi-refresh"
+            text
+            size="small"
+            severity="secondary"
+            @click="() => authStore.fetchBalance()"
+          />
         </h3>
         <div class="flex justify-between items-center">
           <div class="flex items-center gap-1">
