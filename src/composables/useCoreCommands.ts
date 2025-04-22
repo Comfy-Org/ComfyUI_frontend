@@ -580,6 +580,22 @@ export function useCoreCommands(): ComfyCommand[] {
       }
     },
     {
+      id: 'Comfy.ContactSupport',
+      icon: 'pi pi-question',
+      label: 'Contact Support',
+      versionAdded: '1.17.8',
+      function: () => {
+        dialogService.showIssueReportDialog({
+          title: t('issueReport.contactSupportTitle'),
+          subtitle: t('issueReport.contactSupportDescription'),
+          panelProps: {
+            errorType: 'ContactSupport',
+            defaultFields: ['Workflow', 'Logs', 'SystemStats', 'Settings']
+          }
+        })
+      }
+    },
+    {
       id: 'Comfy.Help.OpenComfyUIForum',
       icon: 'pi pi-comments',
       label: 'Open ComfyUI Forum',
