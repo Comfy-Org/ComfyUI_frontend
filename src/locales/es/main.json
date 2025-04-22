@@ -25,11 +25,31 @@
       "passwordLabel": "Contraseña",
       "passwordPlaceholder": "Ingresa tu contraseña",
       "privacyLink": "Política de privacidad",
+      "signInOrSignUp": "Iniciar sesión / Registrarse",
       "signUp": "Regístrate",
       "success": "Inicio de sesión exitoso",
       "termsLink": "Términos de uso",
       "termsText": "Al hacer clic en \"Siguiente\" o \"Registrarse\", aceptas nuestros",
       "title": "Inicia sesión en tu cuenta"
+    },
+    "required": {
+      "credits": {
+        "action": "Abrir configuración para añadir créditos",
+        "hint": "Para añadir créditos ve a: Configuración > Usuario > Créditos",
+        "message": "Este flujo de trabajo incluye nodos que requieren créditos. Por favor, añade créditos a tu cuenta para continuar.",
+        "title": "Créditos requeridos para ejecutar el flujo de trabajo"
+      },
+      "signIn": {
+        "action": "Abrir configuración para iniciar sesión",
+        "hint": "Para iniciar sesión ve a: Configuración > Usuario > Iniciar sesión",
+        "message": "Este flujo de trabajo incluye nodos que requieren una cuenta activa. Por favor, inicia sesión o crea una para continuar.",
+        "title": "Inicio de sesión requerido para ejecutar el flujo de trabajo"
+      }
+    },
+    "signOut": {
+      "signOut": "Cerrar sesión",
+      "success": "Sesión cerrada correctamente",
+      "successDetail": "Has cerrado sesión en tu cuenta."
     },
     "signup": {
       "alreadyHaveAccount": "¿Ya tienes una cuenta?",
@@ -97,8 +117,15 @@
     "creditsHistory": "Historial de créditos",
     "faqs": "Preguntas frecuentes",
     "messageSupport": "Contactar soporte",
-    "paymentDetails": "Detalles de pago",
     "purchaseCredits": "Comprar créditos",
+    "topUp": {
+      "addCredits": "Agregar créditos a tu saldo",
+      "buyNow": "Comprar ahora",
+      "insufficientMessage": "No tienes suficientes créditos para ejecutar este flujo de trabajo.",
+      "insufficientTitle": "Créditos insuficientes",
+      "maxAmount": "(Máx. $1,000 USD)",
+      "title": "Agregar al saldo de créditos"
+    },
     "yourCreditBalance": "Tu saldo de créditos"
   },
   "dataTypes": {
@@ -1095,6 +1122,17 @@
     "newUser": "Nuevo usuario",
     "next": "Siguiente",
     "selectUser": "Selecciona un usuario"
+  },
+  "userSettings": {
+    "email": "Correo electrónico",
+    "name": "Nombre",
+    "notSet": "No establecido",
+    "provider": "Método de inicio de sesión",
+    "providers": {
+      "github": "GitHub",
+      "google": "Google"
+    },
+    "title": "Configuración de usuario"
   },
   "validation": {
     "invalidEmail": "Dirección de correo electrónico inválida",

@@ -25,11 +25,31 @@
       "passwordLabel": "비밀번호",
       "passwordPlaceholder": "비밀번호를 입력하세요",
       "privacyLink": "개인정보 보호정책",
+      "signInOrSignUp": "로그인 / 회원가입",
       "signUp": "가입하기",
       "success": "로그인 성공",
       "termsLink": "이용 약관",
       "termsText": "\"다음\" 또는 \"가입하기\"를 클릭하면 우리의",
       "title": "계정에 로그인"
+    },
+    "required": {
+      "credits": {
+        "action": "설정에서 크레딧 추가 열기",
+        "hint": "크레딧을 추가하려면: 설정 > 사용자 > 크레딧 으로 이동하세요.",
+        "message": "이 워크플로에는 크레딧이 필요한 노드가 포함되어 있습니다. 계속하려면 계정에 크레딧을 추가하세요.",
+        "title": "워크플로 실행을 위한 크레딧 필요"
+      },
+      "signIn": {
+        "action": "설정에서 로그인 열기",
+        "hint": "로그인하려면: 설정 > 사용자 > 로그인 으로 이동하세요.",
+        "message": "이 워크플로에는 활성 계정이 필요한 노드가 포함되어 있습니다. 계속하려면 로그인하거나 계정을 생성하세요.",
+        "title": "워크플로 실행을 위한 로그인 필요"
+      }
+    },
+    "signOut": {
+      "signOut": "로그아웃",
+      "success": "성공적으로 로그아웃되었습니다",
+      "successDetail": "계정에서 로그아웃되었습니다."
     },
     "signup": {
       "alreadyHaveAccount": "이미 계정이 있으신가요?",
@@ -97,8 +117,15 @@
     "creditsHistory": "크레딧 내역",
     "faqs": "자주 묻는 질문",
     "messageSupport": "지원 문의",
-    "paymentDetails": "결제 정보",
     "purchaseCredits": "크레딧 구매",
+    "topUp": {
+      "addCredits": "잔액에 크레딧 추가",
+      "buyNow": "지금 구매",
+      "insufficientMessage": "이 워크플로우를 실행하기에 크레딧이 부족합니다.",
+      "insufficientTitle": "크레딧 부족",
+      "maxAmount": "(최대 $1,000 USD)",
+      "title": "크레딧 잔액 충전"
+    },
     "yourCreditBalance": "보유 크레딧 잔액"
   },
   "dataTypes": {
@@ -1095,6 +1122,17 @@
     "newUser": "새 사용자",
     "next": "다음",
     "selectUser": "사용자 선택"
+  },
+  "userSettings": {
+    "email": "이메일",
+    "name": "이름",
+    "notSet": "설정되지 않음",
+    "provider": "로그인 방법",
+    "providers": {
+      "github": "GitHub",
+      "google": "Google"
+    },
+    "title": "사용자 설정"
   },
   "validation": {
     "invalidEmail": "유효하지 않은 이메일 주소",

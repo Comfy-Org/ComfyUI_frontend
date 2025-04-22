@@ -25,11 +25,31 @@
       "passwordLabel": "パスワード",
       "passwordPlaceholder": "パスワードを入力してください",
       "privacyLink": "プライバシーポリシー",
+      "signInOrSignUp": "サインイン / サインアップ",
       "signUp": "サインアップ",
       "success": "ログイン成功",
       "termsLink": "利用規約",
       "termsText": "「次へ」または「サインアップ」をクリックすると、私たちの",
       "title": "アカウントにログインする"
+    },
+    "required": {
+      "credits": {
+        "action": "設定を開いてクレジットを追加",
+        "hint": "クレジットを追加するには: 設定 > ユーザー > クレジット",
+        "message": "このワークフローにはクレジットが必要なノードが含まれています。続行するにはアカウントにクレジットを追加してください。",
+        "title": "ワークフロー実行にはクレジットが必要です"
+      },
+      "signIn": {
+        "action": "設定を開いてログイン",
+        "hint": "ログインするには: 設定 > ユーザー > ログイン",
+        "message": "このワークフローにはアクティブなアカウントが必要なノードが含まれています。続行するにはログインまたはアカウントを作成してください。",
+        "title": "ワークフロー実行にはサインインが必要です"
+      }
+    },
+    "signOut": {
+      "signOut": "ログアウト",
+      "success": "正常にサインアウトしました",
+      "successDetail": "アカウントからサインアウトしました。"
     },
     "signup": {
       "alreadyHaveAccount": "すでにアカウントをお持ちですか？",
@@ -97,8 +117,15 @@
     "creditsHistory": "クレジット履歴",
     "faqs": "よくある質問",
     "messageSupport": "サポートにメッセージ",
-    "paymentDetails": "支払い詳細",
     "purchaseCredits": "クレジットを購入",
+    "topUp": {
+      "addCredits": "残高にクレジットを追加",
+      "buyNow": "今すぐ購入",
+      "insufficientMessage": "このワークフローを実行するのに十分なクレジットがありません。",
+      "insufficientTitle": "クレジット不足",
+      "maxAmount": "（最大 $1,000 USD）",
+      "title": "クレジット残高を追加"
+    },
     "yourCreditBalance": "あなたのクレジット残高"
   },
   "dataTypes": {
@@ -1095,6 +1122,17 @@
     "newUser": "新しいユーザー",
     "next": "次へ",
     "selectUser": "ユーザーを選択"
+  },
+  "userSettings": {
+    "email": "メールアドレス",
+    "name": "名前",
+    "notSet": "未設定",
+    "provider": "サインイン方法",
+    "providers": {
+      "github": "GitHub",
+      "google": "Google"
+    },
+    "title": "ユーザー設定"
   },
   "validation": {
     "invalidEmail": "無効なメールアドレス",

@@ -25,11 +25,31 @@
       "passwordLabel": "密码",
       "passwordPlaceholder": "输入您的密码",
       "privacyLink": "隐私政策",
+      "signInOrSignUp": "登录 / 注册",
       "signUp": "注册",
       "success": "登录成功",
       "termsLink": "使用条款",
       "termsText": "点击“下一步”或“注册”即表示您同意我们的",
       "title": "登录您的账户"
+    },
+    "required": {
+      "credits": {
+        "action": "打开设置进行充值",
+        "hint": "要充值，请前往：设置 > 用户 > 积分",
+        "message": "此工作流包含需要积分的节点。请为您的账户充值以继续。",
+        "title": "需要积分以执行工作流"
+      },
+      "signIn": {
+        "action": "打开设置进行登录",
+        "hint": "要登录，请前往：设置 > 用户 > 登录",
+        "message": "此工作流包含需要活跃账户的节点。请登录或创建账户以继续。",
+        "title": "需要登录以执行工作流"
+      }
+    },
+    "signOut": {
+      "signOut": "退出登录",
+      "success": "成功退出登录",
+      "successDetail": "您已成功退出账户。"
     },
     "signup": {
       "alreadyHaveAccount": "已经有账户了？",
@@ -97,8 +117,15 @@
     "creditsHistory": "积分历史",
     "faqs": "常见问题",
     "messageSupport": "联系客服",
-    "paymentDetails": "支付详情",
     "purchaseCredits": "购买积分",
+    "topUp": {
+      "addCredits": "为您的余额充值",
+      "buyNow": "立即购买",
+      "insufficientMessage": "您的积分不足，无法运行此工作流。",
+      "insufficientTitle": "积分不足",
+      "maxAmount": "（最高 $1,000 美元）",
+      "title": "充值余额"
+    },
     "yourCreditBalance": "您的积分余额"
   },
   "dataTypes": {
@@ -1095,6 +1122,17 @@
     "newUser": "新用户",
     "next": "下一步",
     "selectUser": "选择用户"
+  },
+  "userSettings": {
+    "email": "电子邮件",
+    "name": "名称",
+    "notSet": "未设置",
+    "provider": "登录方式",
+    "providers": {
+      "github": "GitHub",
+      "google": "Google"
+    },
+    "title": "用户设置"
   },
   "validation": {
     "invalidEmail": "无效的电子邮件地址",
