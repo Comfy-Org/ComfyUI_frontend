@@ -3,14 +3,14 @@
   <Button
     v-if="isAuthenticated"
     v-tooltip="{ value: $t('userSettings.title'), showDelay: 300 }"
-    class="user-profile-button px-1"
+    class="user-profile-button p-1"
     severity="secondary"
     text
     :aria-label="$t('userSettings.title')"
     @click="openUserSettings"
   >
     <div
-      class="flex items-center gap-2 px-1 rounded-full bg-[var(--p-content-background)]"
+      class="flex items-center gap-2 pr-2 rounded-full bg-[var(--p-content-background)]"
     >
       <!-- User Avatar if available -->
       <div v-if="user?.photoURL" class="flex items-center gap-1">
