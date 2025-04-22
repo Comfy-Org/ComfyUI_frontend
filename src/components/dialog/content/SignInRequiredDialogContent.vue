@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col items-center gap-4 p-4">
     <div class="flex flex-col items-center text-center">
-      <i class="pi pi-exclamation-circle text-4xl mb-4" />
+      <i class="pi pi-exclamation-circle mb-4" style="font-size: 2rem" />
       <h2 class="text-2xl font-semibold mb-2">
         {{ $t(`auth.required.${type}.title`) }}
       </h2>

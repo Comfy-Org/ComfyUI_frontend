@@ -1063,7 +1063,7 @@
   "auth": {
     "login": {
       "title": "Log in to your account",
-      "signInOrSignUp": "Sign In or Create Account",
+      "signInOrSignUp": "Sign In / Sign Up",
       "newUser": "New here?",
       "signUp": "Sign up",
       "emailLabel": "Email",

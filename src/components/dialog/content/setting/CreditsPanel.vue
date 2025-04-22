@@ -49,28 +49,30 @@
         />
       </div>
 
-      <div class="flex-grow">
-        <DataTable :value="creditHistory" :show-headers="false">
-          <Column field="title" :header="$t('g.name')">
-            <template #body="{ data }">
-              <div class="text-sm font-medium">{{ data.title }}</div>
-              <div class="text-xs text-muted">{{ data.timestamp }}</div>
-            </template>
-          </Column>
-          <Column field="amount" :header="$t('g.amount')">
-            <template #body="{ data }">
-              <div
-                :class="[
-                  'text-base font-medium text-center',
-                  data.isPositive ? 'text-sky-500' : 'text-red-400'
-                ]"
-              >
-                {{ data.isPositive ? '+' : '-' }}{{ data.amount }}
-              </div>
-            </template>
-          </Column>
-        </DataTable>
-      </div>
+      <template v-if="creditHistory.length > 0">
+        <div class="flex-grow">
+          <DataTable :value="creditHistory" :show-headers="false">
+            <Column field="title" :header="$t('g.name')">
+              <template #body="{ data }">
+                <div class="text-sm font-medium">{{ data.title }}</div>
+                <div class="text-xs text-muted">{{ data.timestamp }}</div>
+              </template>
+            </Column>
+            <Column field="amount" :header="$t('g.amount')">
+              <template #body="{ data }">
+                <div
+                  :class="[
+                    'text-base font-medium text-center',
+                    data.isPositive ? 'text-sky-500' : 'text-red-400'
+                  ]"
+                >
+                  {{ data.isPositive ? '+' : '-' }}{{ data.amount }}
+                </div>
+              </template>
+            </Column>
+          </DataTable>
+        </div>
+      </template>
 
       <Divider />
 
@@ -138,29 +140,29 @@ const handlePurchaseCreditsClick = async () => {
 }
 
 const creditHistory = ref<CreditHistoryItemData[]>([
-  {
-    title: 'Kling Text-to-Video v1-6',
-    timestamp: '2025-04-09, 12:50:08 p.m.',
-    amount: 4,
-    isPositive: false
-  },
-  {
-    title: 'Kling Text-to-Video v1-6',
-    timestamp: '2025-04-09, 12:50:08 p.m.',
-    amount: 23,
-    isPositive: false
-  },
-  {
-    title: 'Kling Text-to-Video v1-6',
-    timestamp: '2025-04-09, 12:50:08 p.m.',
-    amount: 22,
-    isPositive: false
-  },
-  {
-    title: 'Free monthly credits',
-    timestamp: '2025-04-09, 12:46:08 p.m.',
-    amount: 166,
-    isPositive: true
-  }
+  // {
+  //   title: 'Kling Text-to-Video v1-6',
+  //   timestamp: '2025-04-09, 12:50:08 p.m.',
+  //   amount: 4,
+  //   isPositive: false
+  // },
+  // {
+  //   title: 'Kling Text-to-Video v1-6',
+  //   timestamp: '2025-04-09, 12:50:08 p.m.',
+  //   amount: 23,
+  //   isPositive: false
+  // },
+  // {
+  //   title: 'Kling Text-to-Video v1-6',
+  //   timestamp: '2025-04-09, 12:50:08 p.m.',
+  //   amount: 22,
+  //   isPositive: false
+  // },
+  // {
+  //   title: 'Free monthly credits',
+  //   timestamp: '2025-04-09, 12:46:08 p.m.',
+  //   amount: 166,
+  //   isPositive: true
+  // }
 ])
 </script>
