@@ -234,17 +234,15 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       }
     })
     if (!createCustomerRes.ok) {
-      // error.value = `Failed to create customer: ${createCustomerRes.statusText}`
-      // return null
-      console.error('Failed to create customer: ', createCustomerRes.statusText) // Don't enforce validation for now as BE is not stable
+      error.value = `Failed to create customer: ${createCustomerRes.statusText}`
+      return null
     }
 
     const createCustomerResJson: CreateCustomerResponse =
       await createCustomerRes.json()
     if (!createCustomerResJson?.id) {
-      // error.value = 'Failed to create customer: No customer ID returned'
-      // return null
-      console.error(`Failed to create customer: No customer ID returned`) // Don't enforce validation for now as BE is not stable
+      error.value = 'Failed to create customer: No customer ID returned'
+      return null
     }
 
     const response = await fetch(`${API_BASE_URL}/customers/credit`, {
