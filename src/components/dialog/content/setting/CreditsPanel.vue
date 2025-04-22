@@ -21,7 +21,13 @@
             />
             <div class="text-3xl font-bold">{{ creditBalance }}</div>
           </div>
+          <ProgressSpinner
+            v-if="loading"
+            class="w-12 h-12"
+            style="--pc-spinner-color: #000"
+          />
           <Button
+            v-else
             :label="$t('credits.purchaseCredits')"
             :loading
             @click="handlePurchaseCreditsClick"
@@ -91,9 +97,10 @@ import Button from 'primevue/button'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import Divider from 'primevue/divider'
+import ProgressSpinner from 'primevue/progressspinner'
 import TabPanel from 'primevue/tabpanel'
 import Tag from 'primevue/tag'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { usdToMicros } from '@/utils/formatUtil'
@@ -113,10 +120,11 @@ interface CreditHistoryItemData {
   isPositive: boolean
 }
 
-const { initiateCreditPurchase, loading } = useFirebaseAuthStore()
+const authStore = useFirebaseAuthStore()
+const loading = computed(() => authStore.loading)
 
 const handlePurchaseCreditsClick = async () => {
-  const response = await initiateCreditPurchase({
+  const response = await authStore.initiateCreditPurchase({
     amount_micros: selectedCurrencyAmount,
     currency: selectedCurrency
   })
