@@ -3,15 +3,17 @@
   <Button
     v-if="isAuthenticated"
     v-tooltip="{ value: $t('userSettings.title'), showDelay: 300 }"
-    class="flex-shrink-0 user-profile-button"
+    class="user-profile-button px-1"
     severity="secondary"
     text
     :aria-label="$t('userSettings.title')"
     @click="openUserSettings"
   >
-    <template #icon>
+    <div
+      class="flex items-center gap-2 px-1 rounded-full bg-[var(--p-content-background)]"
+    >
       <!-- User Avatar if available -->
-      <div v-if="user?.photoURL" class="flex items-center gap-2">
+      <div v-if="user?.photoURL" class="flex items-center gap-1">
         <img
           :src="user.photoURL"
           :alt="user.displayName || ''"
@@ -20,13 +22,12 @@
       </div>
 
       <!-- User Icon if no avatar -->
-      <div
-        v-else
-        class="w-6 h-6 rounded-full bg-neutral-100 dark:bg-neutral-700 flex items-center justify-center"
-      >
+      <div v-else class="w-8 h-8 rounded-full flex items-center justify-center">
         <i class="pi pi-user text-sm" />
       </div>
-    </template>
+
+      <i class="pi pi-chevron-down" :style="{ fontSize: '0.5rem' }" />
+    </div>
   </Button>
 </template>
 
