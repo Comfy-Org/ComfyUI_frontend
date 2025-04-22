@@ -9,6 +9,7 @@ import PromptDialogContent from '@/components/dialog/content/PromptDialogContent
 import SettingDialogContent from '@/components/dialog/content/SettingDialogContent.vue'
 import SignInContent from '@/components/dialog/content/SignInContent.vue'
 import SignInRequiredDialogContent from '@/components/dialog/content/SignInRequiredDialogContent.vue'
+import TopUpCreditsDialogContent from '@/components/dialog/content/TopUpCreditsDialogContent.vue'
 import ManagerDialogContent from '@/components/dialog/content/manager/ManagerDialogContent.vue'
 import ManagerHeader from '@/components/dialog/content/manager/ManagerHeader.vue'
 import ManagerProgressFooter from '@/components/dialog/footer/ManagerProgressFooter.vue'
@@ -355,6 +356,21 @@ export const useDialogService = () => {
     })
   }
 
+  function showTopUpCreditsDialog(options?: {
+    isInsufficientCredits?: boolean
+  }) {
+    return dialogStore.showDialog({
+      key: 'top-up-credits',
+      component: TopUpCreditsDialogContent,
+      props: options,
+      dialogComponentProps: {
+        pt: {
+          header: { class: '!p-3' }
+        }
+      }
+    })
+  }
+
   return {
     showLoadWorkflowWarning,
     showMissingModelsWarning,
@@ -369,6 +385,7 @@ export const useDialogService = () => {
     showApiNodesSignInDialog,
     showSignInDialog,
     showSignInRequiredDialog,
+    showTopUpCreditsDialog,
     prompt,
     confirm
   }

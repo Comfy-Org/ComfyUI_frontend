@@ -35,19 +35,14 @@
         </div>
       </div>
 
-      <Divider class="mt-12" />
-
-      <div class="flex justify-between items-center">
-        <h3 class="text-base font-medium">
-          {{ $t('credits.creditsHistory') }}
-        </h3>
+      <div class="flex justify-between items-center mt-8">
         <Button
-          :label="$t('credits.paymentDetails')"
+          :label="$t('credits.creditsHistory')"
           text
           severity="secondary"
           icon="pi pi-arrow-up-right"
           :loading="loading"
-          @click="handlePaymentDetailsClick"
+          @click="handleCreditsHistoryClick"
         />
       </div>
 
@@ -113,7 +108,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
-import { microsToUsd, usdToMicros } from '@/utils/formatUtil'
+import { microsToUsd } from '@/utils/formatUtil'
 
 interface CreditHistoryItemData {
   title: string
@@ -133,27 +128,11 @@ const formattedBalance = computed(() => {
   return microsToUsd(authStore.balance.amount_micros)
 })
 
-// TODO: Either: (1) Get checkout URL that allows setting price on Stripe side, (2) Add number selection on credits panel
-const selectedCurrencyAmount = usdToMicros(10)
-const selectedCurrency = 'usd' // For now, only USD is supported on comfy-api backend
-
-const handlePurchaseCreditsClick = async () => {
-  const response = await authStore.initiateCreditPurchase({
-    amount_micros: selectedCurrencyAmount,
-    currency: selectedCurrency
-  })
-  if (!response) return
-
-  const { checkout_url } = response
-  if (checkout_url !== undefined) {
-    // Start polling for balance changes
-    authStore.creditsDidChange = true
-    // Go to Stripe checkout page
-    window.open(checkout_url, '_blank')
-  }
+const handlePurchaseCreditsClick = () => {
+  dialogService.showTopUpCreditsDialog()
 }
 
-const handlePaymentDetailsClick = async () => {
+const handleCreditsHistoryClick = async () => {
   const response = await authStore.accessBillingPortal()
   if (!response) return
 

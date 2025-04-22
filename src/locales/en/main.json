@@ -1136,9 +1136,16 @@
     "yourCreditBalance": "Your credit balance",
     "purchaseCredits": "Purchase Credits",
     "creditsHistory": "Credits History",
-    "paymentDetails": "Payment Details",
     "faqs": "FAQs",
-    "messageSupport": "Message Support"
+    "messageSupport": "Message Support",
+    "topUp": {
+      "title": "Add to Credit Balance",
+      "insufficientTitle": "Insufficient Credits",
+      "insufficientMessage": "You don't have enough credits to run this workflow.",
+      "addCredits": "Add credits to your balance",
+      "maxAmount": "(Max. $1,000 USD)",
+      "buyNow": "Buy now"
+    }
   },
   "userSettings": {
     "title": "User Settings",
