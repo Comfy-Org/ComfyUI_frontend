@@ -122,6 +122,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     const balanceData = await response.json()
     // Update the last balance update time
     lastBalanceUpdateTime.value = new Date()
+    balance.value = balanceData
     return balanceData
   }
 
