@@ -100,7 +100,13 @@ import SettingsPanel from './setting/SettingsPanel.vue'
 import UserPanel from './setting/UserPanel.vue'
 
 const { defaultPanel } = defineProps<{
-  defaultPanel?: 'about' | 'keybinding' | 'extension' | 'server-config'
+  defaultPanel?:
+    | 'about'
+    | 'keybinding'
+    | 'extension'
+    | 'server-config'
+    | 'user'
+    | 'credits'
 }>()
 
 const KeybindingPanel = defineAsyncComponent(

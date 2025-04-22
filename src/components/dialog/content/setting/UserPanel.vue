@@ -15,41 +15,41 @@
         </div>
 
         <div class="flex flex-col gap-0.5">
-          <h3 class="text-sm font-medium">
+          <h3 class="font-medium">
             {{ $t('userSettings.name') }}
           </h3>
-          <div class="text-sm text-muted">
+          <div class="text-muted">
             {{ user?.displayName || $t('userSettings.notSet') }}
           </div>
         </div>
 
         <div class="flex flex-col gap-0.5">
-          <h3 class="text-sm font-medium">
+          <h3 class="font-medium">
             {{ $t('userSettings.email') }}
           </h3>
-          <a :href="'mailto:' + user?.email" class="text-sm hover:underline">
+          <a :href="'mailto:' + user?.email" class="hover:underline">
             {{ user?.email }}
           </a>
         </div>
 
         <div class="flex flex-col gap-0.5">
-          <h3 class="text-sm font-medium">
+          <h3 class="font-medium">
             {{ $t('userSettings.provider') }}
           </h3>
-          <div class="text-sm text-muted flex items-center gap-1">
-            <i :class="providerIcon" class="text-xs" />
+          <div class="text-muted flex items-center gap-1">
+            <i :class="providerIcon" />
             {{ providerName }}
           </div>
         </div>
 
         <ProgressSpinner
           v-if="loading"
-          class="w-8 h-8 mt-2"
+          class="w-8 h-8 mt-4"
           style="--pc-spinner-color: #000"
         />
         <Button
           v-else
-          class="mt-3 w-32"
+          class="mt-4 w-32"
           severity="secondary"
           :label="$t('auth.signOut.signOut')"
           icon="pi pi-sign-out"

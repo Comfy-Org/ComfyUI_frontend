@@ -51,7 +51,13 @@ export const useDialogService = () => {
   }
 
   function showSettingsDialog(
-    panel?: 'about' | 'keybinding' | 'extension' | 'server-config'
+    panel?:
+      | 'about'
+      | 'keybinding'
+      | 'extension'
+      | 'server-config'
+      | 'user'
+      | 'credits'
   ) {
     const props = panel ? { props: { defaultPanel: panel } } : undefined
 

@@ -23,6 +23,23 @@
       @click="workspaceState.focusMode = true"
       @contextmenu="showNativeSystemMenu"
     />
+    <Button
+      v-if="isAuthenticated"
+      v-tooltip="{ value: $t('userSettings.title'), showDelay: 300 }"
+      class="flex-shrink-0 user-profile-button"
+      severity="secondary"
+      text
+      :aria-label="$t('userSettings.title')"
+      @click="openUserSettings"
+    >
+      <template #icon>
+        <div
+          class="w-6 h-6 rounded-full bg-neutral-100 dark:bg-neutral-700 flex items-center justify-center"
+        >
+          <i class="pi pi-user text-sm" />
+        </div>
+      </template>
+    </Button>
     <div
       v-show="menuSetting !== 'Bottom'"
       class="window-actions-spacer flex-shrink-0"
@@ -46,6 +63,8 @@ import BottomPanelToggleButton from '@/components/topbar/BottomPanelToggleButton
 import CommandMenubar from '@/components/topbar/CommandMenubar.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { app } from '@/scripts/app'
+import { useDialogService } from '@/services/dialogService'
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import {
@@ -57,6 +76,10 @@ import {
 
 const workspaceState = useWorkspaceStore()
 const settingStore = useSettingStore()
+const authStore = useFirebaseAuthStore()
+const dialogService = useDialogService()
+
+const isAuthenticated = computed(() => authStore.isAuthenticated)
 const workflowTabsPosition = computed(() =>
   settingStore.get('Comfy.Workflow.WorkflowTabsPosition')
 )
@@ -65,6 +88,10 @@ const betaMenuEnabled = computed(() => menuSetting.value !== 'Disabled')
 const showTopMenu = computed(
   () => betaMenuEnabled.value && !workspaceState.focusMode
 )
+
+const openUserSettings = () => {
+  dialogService.showSettingsDialog('user')
+}
 
 const menuRight = ref<HTMLDivElement | null>(null)
 // Menu-right holds legacy topbar elements attached by custom scripts

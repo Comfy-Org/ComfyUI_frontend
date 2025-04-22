@@ -9,7 +9,13 @@ import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildTree } from '@/utils/treeUtil'
 
 export function useSettingUI(
-  defaultPanel?: 'about' | 'keybinding' | 'extension' | 'server-config'
+  defaultPanel?:
+    | 'about'
+    | 'keybinding'
+    | 'extension'
+    | 'server-config'
+    | 'user'
+    | 'credits'
 ) {
   const { t } = useI18n()
   const firebaseAuthStore = useFirebaseAuthStore()
@@ -90,10 +96,13 @@ export function useSettingUI(
    * The default category to show when the dialog is opened.
    */
   const defaultCategory = computed<SettingTreeNode>(() => {
-    return defaultPanel
-      ? settingCategories.value.find((x) => x.key === defaultPanel) ??
-          settingCategories.value[0]
-      : settingCategories.value[0]
+    if (!defaultPanel) return settingCategories.value[0]
+    // Search through all groups in groupedMenuTreeNodes
+    for (const group of groupedMenuTreeNodes.value) {
+      const found = group.children?.find((node) => node.key === defaultPanel)
+      if (found) return found
+    }
+    return settingCategories.value[0]
   })
 
   const translateCategory = (node: SettingTreeNode) => ({
