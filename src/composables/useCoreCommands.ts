@@ -616,6 +616,15 @@ export function useCoreCommands(): ComfyCommand[] {
       function: () => {
         dialogService.showManagerProgressDialog()
       }
+    },
+    {
+      id: 'Comfy.User.OpenSignInDialog',
+      icon: 'pi pi-user',
+      label: 'Open Sign In Dialog',
+      versionAdded: '1.17.6',
+      function: async () => {
+        await dialogService.showSignInDialog()
+      }
     }
   ]
 
