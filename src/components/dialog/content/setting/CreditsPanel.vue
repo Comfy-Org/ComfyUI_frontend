@@ -86,6 +86,7 @@
           text
           severity="secondary"
           icon="pi pi-question-circle"
+          @click="handleFaqClick"
         />
         <Button
           :label="$t('credits.messageSupport')"
@@ -171,6 +172,10 @@ const handleMessageSupport = () => {
       defaultFields: ['SystemStats', 'Settings']
     }
   })
+}
+
+const handleFaqClick = () => {
+  window.open('https://drip-art.notion.site/api-nodes-faqs', '_blank')
 }
 
 // Fetch initial balance when panel is mounted
