@@ -19,7 +19,7 @@
               rounded
               class="text-amber-400 p-1"
             />
-            <div class="text-3xl font-bold">{{ creditBalance }}</div>
+            <div class="text-3xl font-bold">${{ formattedBalance }}</div>
           </div>
           <ProgressSpinner
             v-if="loading"
@@ -29,7 +29,7 @@
           <Button
             v-else
             :label="$t('credits.purchaseCredits')"
-            :loading
+            :loading="loading"
             @click="handlePurchaseCreditsClick"
           />
         </div>
@@ -66,7 +66,9 @@
                     data.isPositive ? 'text-sky-500' : 'text-red-400'
                   ]"
                 >
-                  {{ data.isPositive ? '+' : '-' }}{{ data.amount }}
+                  {{ data.isPositive ? '+' : '-' }}${{
+                    microsToUsd(data.amount)
+                  }}
                 </div>
               </template>
             </Column>
@@ -102,18 +104,10 @@ import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'
 import TabPanel from 'primevue/tabpanel'
 import Tag from 'primevue/tag'
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
-import { usdToMicros } from '@/utils/formatUtil'
-
-// TODO: Mock data - in a real implementation, this would come from a store or API
-const creditBalance = ref(0.05)
-
-// TODO: Either: (1) Get checkout URL that allows setting price on Stripe side, (2) Add number selection on credits panel
-const selectedCurrencyAmount = usdToMicros(10)
-
-const selectedCurrency = 'usd' // For now, only USD is supported on comfy-api backend
+import { microsToUsd, usdToMicros } from '@/utils/formatUtil'
 
 interface CreditHistoryItemData {
   title: string
@@ -125,6 +119,16 @@ interface CreditHistoryItemData {
 const authStore = useFirebaseAuthStore()
 const loading = computed(() => authStore.loading)
 
+// Format balance from micros to dollars
+const formattedBalance = computed(() => {
+  if (!authStore.balance) return '0.00'
+  return microsToUsd(authStore.balance.amount_micros)
+})
+
+// TODO: Either: (1) Get checkout URL that allows setting price on Stripe side, (2) Add number selection on credits panel
+const selectedCurrencyAmount = usdToMicros(10)
+const selectedCurrency = 'usd' // For now, only USD is supported on comfy-api backend
+
 const handlePurchaseCreditsClick = async () => {
   const response = await authStore.initiateCreditPurchase({
     amount_micros: selectedCurrencyAmount,
@@ -134,35 +138,17 @@ const handlePurchaseCreditsClick = async () => {
 
   const { checkout_url } = response
   if (checkout_url !== undefined) {
+    // Start polling for balance changes
+    authStore.creditsDidChange = true
     // Go to Stripe checkout page
     window.open(checkout_url, '_blank')
   }
 }
 
-const creditHistory = ref<CreditHistoryItemData[]>([
-  // {
-  //   title: 'Kling Text-to-Video v1-6',
-  //   timestamp: '2025-04-09, 12:50:08 p.m.',
-  //   amount: 4,
-  //   isPositive: false
-  // },
-  // {
-  //   title: 'Kling Text-to-Video v1-6',
-  //   timestamp: '2025-04-09, 12:50:08 p.m.',
-  //   amount: 23,
-  //   isPositive: false
-  // },
-  // {
-  //   title: 'Kling Text-to-Video v1-6',
-  //   timestamp: '2025-04-09, 12:50:08 p.m.',
-  //   amount: 22,
-  //   isPositive: false
-  // },
-  // {
-  //   title: 'Free monthly credits',
-  //   timestamp: '2025-04-09, 12:46:08 p.m.',
-  //   amount: 166,
-  //   isPositive: true
-  // }
-])
+// Fetch initial balance when panel is mounted
+onMounted(() => {
+  void authStore.fetchBalance()
+})
+
+const creditHistory = ref<CreditHistoryItemData[]>([])
 </script>

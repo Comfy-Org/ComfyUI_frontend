@@ -1,3 +1,4 @@
+import { whenever } from '@vueuse/core'
 import {
   type Auth,
   GithubAuthProvider,
@@ -25,9 +26,17 @@ type CreditPurchasePayload =
   operations['InitiateCreditPurchase']['requestBody']['content']['application/json']
 type CreateCustomerResponse =
   operations['createCustomer']['responses']['201']['content']['application/json']
+type GetCustomerBalanceResponse =
+  operations['GetCustomerBalance']['responses']['200']['content']['application/json']
 
 // TODO: Switch to prod api based on environment (requires prod api to be ready)
 const API_BASE_URL = 'https://stagingapi.comfy.org'
+
+// Polling configuration
+const MAX_RETRIES = 30
+const INITIAL_DELAY_MS = 2_000
+const MAX_DELAY_MS = 60_000
+const BACKOFF_FACTOR = 1.5
 
 export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   // State
@@ -35,6 +44,14 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   const error = ref<string | null>(null)
   const currentUser = ref<User | null>(null)
   const isInitialized = ref(false)
+
+  // Balance state
+  const balance = ref<GetCustomerBalanceResponse | null>(null)
+  const creditsDidChange = ref(false)
+  const isPollingBalance = ref(false)
+  let pollingTimeout: NodeJS.Timeout | null = null
+  let currentRetry = 0
+  let lastKnownBalance: GetCustomerBalanceResponse | null = null
 
   // Providers
   const googleProvider = new GoogleAuthProvider()
@@ -54,10 +71,96 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     onAuthStateChanged(auth, (user) => {
       currentUser.value = user
       isInitialized.value = true
+
+      // Reset balance when auth state changes
+      balance.value = null
+      if (user) {
+        // Fetch initial balance when user logs in
+        void fetchBalance()
+      }
     })
   } else {
     error.value = 'Firebase Auth not available from VueFire'
   }
+
+  const fetchBalance = async (): Promise<GetCustomerBalanceResponse | null> => {
+    const token = await getIdToken()
+    if (!token) {
+      error.value = 'Cannot fetch balance: User not authenticated'
+      return null
+    }
+
+    const response = await fetch(`${API_BASE_URL}/customers/balance`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        // Customer not found is expected for new users
+        return null
+      }
+      const errorData = await response.json()
+      error.value = `Failed to fetch balance: ${errorData.message}`
+      return null
+    }
+
+    return response.json()
+  }
+
+  const pollBalance = async () => {
+    if (!isPollingBalance.value) return
+
+    try {
+      const newBalance = await fetchBalance()
+
+      // If balance changed or we hit max retries, stop polling
+      if (
+        (newBalance &&
+          (!lastKnownBalance ||
+            newBalance.amount_micros !== lastKnownBalance.amount_micros)) ||
+        currentRetry >= MAX_RETRIES
+      ) {
+        balance.value = newBalance
+        creditsDidChange.value = false
+        isPollingBalance.value = false
+        return
+      }
+
+      // Calculate next delay with flatter exponential backoff
+      const delay = Math.min(
+        INITIAL_DELAY_MS * Math.pow(BACKOFF_FACTOR, currentRetry),
+        MAX_DELAY_MS
+      )
+      currentRetry++
+
+      // Schedule next poll
+      pollingTimeout = setTimeout(pollBalance, delay)
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Failed to fetch balance'
+      creditsDidChange.value = false
+      isPollingBalance.value = false
+    }
+  }
+
+  // Watch for credits change and start polling
+  whenever(creditsDidChange, () => {
+    // Store current balance before starting new polling
+    lastKnownBalance = balance.value
+
+    // Reset polling state
+    currentRetry = 0
+    isPollingBalance.value = true
+
+    // Clear any existing polling timeout
+    if (pollingTimeout) {
+      clearTimeout(pollingTimeout)
+    }
+
+    // Start polling
+    void pollBalance()
+  })
 
   const executeAuthAction = async <T>(
     action: (auth: Auth) => Promise<T>
@@ -182,6 +285,8 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     error,
     currentUser,
     isInitialized,
+    balance,
+    creditsDidChange,
 
     // Getters
     isAuthenticated,
@@ -197,6 +302,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     loginWithGithub,
     initiateCreditPurchase,
     openSignInPanel,
-    openCreditsPanel
+    openCreditsPanel,
+    fetchBalance
   }
 })

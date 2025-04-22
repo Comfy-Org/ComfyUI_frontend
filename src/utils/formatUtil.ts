@@ -429,3 +429,18 @@ export function compareVersions(
 export function usdToMicros(usd: number): number {
   return Math.round(usd * 1_000_000)
 }
+
+/**
+ * Converts microdollars (1/1,000,000 of a dollar) to a formatted USD string.
+ * This function handles the reverse conversion of usdToMicros and formats the result
+ * as a string with exactly 2 decimal places.
+ *
+ * @param micros - The amount in microdollars to convert
+ * @returns The formatted amount in US dollars with 2 decimal places
+ * @example
+ * formatMicrosToUsd(1230000) // returns "1.23"
+ * formatMicrosToUsd(50000) // returns "0.05"
+ */
+export function microsToUsd(micros: number): string {
+  return (micros / 1_000_000).toFixed(2)
+}
