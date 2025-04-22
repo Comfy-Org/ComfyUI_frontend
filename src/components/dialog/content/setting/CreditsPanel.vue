@@ -19,52 +19,71 @@
               rounded
               class="text-amber-400 p-1"
             />
-            <div class="text-3xl font-bold">{{ creditBalance }}</div>
+            <div class="text-3xl font-bold">{{ formattedBalance }}</div>
+          </div>
+          <ProgressSpinner
+            v-if="loading"
+            class="w-12 h-12"
+            style="--pc-spinner-color: #000"
+          />
+          <Button
+            v-else
+            :label="$t('credits.purchaseCredits')"
+            :loading="loading"
+            @click="handlePurchaseCreditsClick"
+          />
+        </div>
+        <div class="flex flex-row items-center">
+          <div v-if="formattedLastUpdateTime" class="text-xs text-muted">
+            {{ $t('credits.lastUpdated') }}: {{ formattedLastUpdateTime }}
           </div>
           <Button
-            :label="$t('credits.purchaseCredits')"
-            :loading
-            @click="handlePurchaseCreditsClick"
+            icon="pi pi-refresh"
+            text
+            size="small"
+            severity="secondary"
+            @click="() => authStore.fetchBalance()"
           />
         </div>
       </div>
 
-      <Divider class="mt-12" />
-
-      <div class="flex justify-between items-center">
-        <h3 class="text-base font-medium">
-          {{ $t('credits.creditsHistory') }}
-        </h3>
+      <div class="flex justify-between items-center mt-8">
         <Button
-          :label="$t('credits.paymentDetails')"
+          :label="$t('credits.creditsHistory')"
           text
           severity="secondary"
           icon="pi pi-arrow-up-right"
+          :loading="loading"
+          @click="handleCreditsHistoryClick"
         />
       </div>
 
-      <div class="flex-grow">
-        <DataTable :value="creditHistory" :show-headers="false">
-          <Column field="title" :header="$t('g.name')">
-            <template #body="{ data }">
-              <div class="text-sm font-medium">{{ data.title }}</div>
-              <div class="text-xs text-muted">{{ data.timestamp }}</div>
-            </template>
-          </Column>
-          <Column field="amount" :header="$t('g.amount')">
-            <template #body="{ data }">
-              <div
-                :class="[
-                  'text-base font-medium text-center',
-                  data.isPositive ? 'text-sky-500' : 'text-red-400'
-                ]"
-              >
-                {{ data.isPositive ? '+' : '-' }}{{ data.amount }}
-              </div>
-            </template>
-          </Column>
-        </DataTable>
-      </div>
+      <template v-if="creditHistory.length > 0">
+        <div class="flex-grow">
+          <DataTable :value="creditHistory" :show-headers="false">
+            <Column field="title" :header="$t('g.name')">
+              <template #body="{ data }">
+                <div class="text-sm font-medium">{{ data.title }}</div>
+                <div class="text-xs text-muted">{{ data.timestamp }}</div>
+              </template>
+            </Column>
+            <Column field="amount" :header="$t('g.amount')">
+              <template #body="{ data }">
+                <div
+                  :class="[
+                    'text-base font-medium text-center',
+                    data.isPositive ? 'text-sky-500' : 'text-red-400'
+                  ]"
+                >
+                  {{ data.isPositive ? '+' : '-' }}${{
+                    formatMetronomeCurrency(data.amount, 'usd')
+                  }}
+                </div>
+              </template>
+            </Column>
+          </DataTable>
+        </div>
+      </template>
 
       <Divider />
 
@@ -74,12 +93,14 @@
           text
           severity="secondary"
           icon="pi pi-question-circle"
+          @click="handleFaqClick"
         />
         <Button
           :label="$t('credits.messageSupport')"
           text
           severity="secondary"
           icon="pi pi-comments"
+          @click="handleMessageSupport"
         />
       </div>
     </div>
@@ -91,20 +112,15 @@ import Button from 'primevue/button'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import Divider from 'primevue/divider'
+import ProgressSpinner from 'primevue/progressspinner'
 import TabPanel from 'primevue/tabpanel'
 import Tag from 'primevue/tag'
-import { ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
-import { usdToMicros } from '@/utils/formatUtil'
-
-// TODO: Mock data - in a real implementation, this would come from a store or API
-const creditBalance = ref(0.05)
-
-// TODO: Either: (1) Get checkout URL that allows setting price on Stripe side, (2) Add number selection on credits panel
-const selectedCurrencyAmount = usdToMicros(10)
-
-const selectedCurrency = 'usd' // For now, only USD is supported on comfy-api backend
+import { formatMetronomeCurrency } from '@/utils/formatUtil'
 
 interface CreditHistoryItemData {
   title: string
@@ -113,46 +129,56 @@ interface CreditHistoryItemData {
   isPositive: boolean
 }
 
-const { initiateCreditPurchase, loading } = useFirebaseAuthStore()
+const { t } = useI18n()
+const dialogService = useDialogService()
+const authStore = useFirebaseAuthStore()
+const loading = computed(() => authStore.loading)
 
-const handlePurchaseCreditsClick = async () => {
-  const response = await initiateCreditPurchase({
-    amount_micros: selectedCurrencyAmount,
-    currency: selectedCurrency
-  })
+// Format balance from micros to dollars
+const formattedBalance = computed(() => {
+  if (!authStore.balance) return '0.00'
+  return formatMetronomeCurrency(authStore.balance.amount_micros, 'usd')
+})
+
+const formattedLastUpdateTime = computed(() =>
+  authStore.lastBalanceUpdateTime
+    ? authStore.lastBalanceUpdateTime.toLocaleString()
+    : ''
+)
+
+const handlePurchaseCreditsClick = () => {
+  dialogService.showTopUpCreditsDialog()
+}
+
+const handleCreditsHistoryClick = async () => {
+  const response = await authStore.accessBillingPortal()
   if (!response) return
 
-  const { checkout_url } = response
-  if (checkout_url !== undefined) {
-    // Go to Stripe checkout page
-    window.open(checkout_url, '_blank')
+  const { billing_portal_url } = response
+  if (billing_portal_url) {
+    window.open(billing_portal_url, '_blank')
   }
 }
 
-const creditHistory = ref<CreditHistoryItemData[]>([
-  {
-    title: 'Kling Text-to-Video v1-6',
-    timestamp: '2025-04-09, 12:50:08 p.m.',
-    amount: 4,
-    isPositive: false
-  },
-  {
-    title: 'Kling Text-to-Video v1-6',
-    timestamp: '2025-04-09, 12:50:08 p.m.',
-    amount: 23,
-    isPositive: false
-  },
-  {
-    title: 'Kling Text-to-Video v1-6',
-    timestamp: '2025-04-09, 12:50:08 p.m.',
-    amount: 22,
-    isPositive: false
-  },
-  {
-    title: 'Free monthly credits',
-    timestamp: '2025-04-09, 12:46:08 p.m.',
-    amount: 166,
-    isPositive: true
-  }
-])
+const handleMessageSupport = () => {
+  dialogService.showIssueReportDialog({
+    title: t('credits.messageSupport'),
+    subtitle: t('issueReport.feedbackTitle'),
+    panelProps: {
+      errorType: 'BillingSupport',
+      defaultFields: ['SystemStats', 'Settings']
+    }
+  })
+}
+
+const handleFaqClick = () => {
+  window.open('https://drip-art.notion.site/api-nodes-faqs', '_blank')
+}
+
+// Fetch initial balance when panel is mounted
+onMounted(() => {
+  void authStore.fetchBalance()
+})
+
+const creditHistory = ref<CreditHistoryItemData[]>([])
 </script>

@@ -17,6 +17,7 @@
       "emailPlaceholder": "Entrez votre email",
       "failed": "Échec de la connexion",
       "forgotPassword": "Mot de passe oublié?",
+      "genericErrorMessage": "Désolé, une erreur s'est produite. Veuillez contacter {supportEmail}.",
       "loginButton": "Se connecter",
       "loginWithGithub": "Se connecter avec Github",
       "loginWithGoogle": "Se connecter avec Google",
@@ -25,11 +26,31 @@
       "passwordLabel": "Mot de passe",
       "passwordPlaceholder": "Entrez votre mot de passe",
       "privacyLink": "Politique de confidentialité",
+      "signInOrSignUp": "Se connecter / S’inscrire",
       "signUp": "S'inscrire",
       "success": "Connexion réussie",
       "termsLink": "Conditions d'utilisation",
       "termsText": "En cliquant sur \"Suivant\" ou \"S'inscrire\", vous acceptez nos",
       "title": "Connectez-vous à votre compte"
+    },
+    "required": {
+      "credits": {
+        "action": "Ouvrir les paramètres pour ajouter des crédits",
+        "hint": "Pour ajouter des crédits, allez dans : Paramètres > Utilisateur > Crédits",
+        "message": "Ce workflow inclut des nœuds nécessitant des crédits. Veuillez ajouter des crédits à votre compte pour continuer.",
+        "title": "Crédits requis pour exécuter le workflow"
+      },
+      "signIn": {
+        "action": "Ouvrir les paramètres pour se connecter",
+        "hint": "Pour vous connecter, allez dans : Paramètres > Utilisateur > Connexion",
+        "message": "Ce workflow inclut des nœuds nécessitant un compte actif. Veuillez vous connecter ou en créer un pour continuer.",
+        "title": "Connexion requise pour exécuter le workflow"
+      }
+    },
+    "signOut": {
+      "signOut": "Se déconnecter",
+      "success": "Déconnexion réussie",
+      "successDetail": "Vous avez été déconnecté de votre compte."
     },
     "signup": {
       "alreadyHaveAccount": "Vous avez déjà un compte?",
@@ -96,9 +117,17 @@
     "credits": "Crédits",
     "creditsHistory": "Historique des crédits",
     "faqs": "FAQ",
+    "lastUpdated": "Dernière mise à jour",
     "messageSupport": "Contacter le support",
-    "paymentDetails": "Détails de paiement",
     "purchaseCredits": "Acheter des crédits",
+    "topUp": {
+      "addCredits": "Ajouter des crédits à votre solde",
+      "buyNow": "Acheter maintenant",
+      "insufficientMessage": "Vous n'avez pas assez de crédits pour exécuter ce workflow.",
+      "insufficientTitle": "Crédits insuffisants",
+      "maxAmount": "(Max. 1 000 $ US)",
+      "title": "Ajouter au solde de crédits"
+    },
     "yourCreditBalance": "Votre solde de crédits"
   },
   "dataTypes": {
@@ -1095,6 +1124,17 @@
     "newUser": "Nouvel utilisateur",
     "next": "Suivant",
     "selectUser": "Sélectionnez un utilisateur"
+  },
+  "userSettings": {
+    "email": "E-mail",
+    "name": "Nom",
+    "notSet": "Non défini",
+    "provider": "Méthode de connexion",
+    "providers": {
+      "github": "GitHub",
+      "google": "Google"
+    },
+    "title": "Paramètres utilisateur"
   },
   "validation": {
     "invalidEmail": "Adresse e-mail invalide",

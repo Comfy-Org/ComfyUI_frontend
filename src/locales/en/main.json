@@ -1063,6 +1063,7 @@
   "auth": {
     "login": {
       "title": "Log in to your account",
+      "signInOrSignUp": "Sign In / Sign Up",
       "newUser": "New here?",
       "signUp": "Sign up",
       "emailLabel": "Email",
@@ -1081,7 +1082,8 @@
       "andText": "and",
       "privacyLink": "Privacy Policy",
       "success": "Login successful",
-      "failed": "Login failed"
+      "failed": "Login failed",
+      "genericErrorMessage": "Sorry, we've encountered an error. Please contact {supportEmail}."
     },
     "signup": {
       "title": "Create an account",
@@ -1094,6 +1096,25 @@
       "signIn": "Sign in",
       "signUpWithGoogle": "Sign up with Google",
       "signUpWithGithub": "Sign up with Github"
+    },
+    "signOut": {
+      "signOut": "Log Out",
+      "success": "Signed out successfully",
+      "successDetail": "You have been signed out of your account."
+    },
+    "required": {
+      "signIn": {
+        "title": "Sign-In Required to Execute Workflow",
+        "message": "This workflow includes nodes that require an active account. Please log in or create one to continue.",
+        "hint": "To login go to: Settings > User > Login",
+        "action": "Open Settings to Login"
+      },
+      "credits": {
+        "title": "Credits Required to Execute Workflow",
+        "message": "This workflow includes nodes that require credits. Please add credits to your account to continue.",
+        "hint": "To add credits go to: Settings > User > Credits",
+        "action": "Open Settings to Add Credits"
+      }
     }
   },
   "validation": {
@@ -1116,8 +1137,27 @@
     "yourCreditBalance": "Your credit balance",
     "purchaseCredits": "Purchase Credits",
     "creditsHistory": "Credits History",
-    "paymentDetails": "Payment Details",
     "faqs": "FAQs",
-    "messageSupport": "Message Support"
+    "messageSupport": "Message Support",
+    "lastUpdated": "Last updated",
+    "topUp": {
+      "title": "Add to Credit Balance",
+      "insufficientTitle": "Insufficient Credits",
+      "insufficientMessage": "You don't have enough credits to run this workflow.",
+      "addCredits": "Add credits to your balance",
+      "maxAmount": "(Max. $1,000 USD)",
+      "buyNow": "Buy now"
+    }
+  },
+  "userSettings": {
+    "title": "User Settings",
+    "name": "Name",
+    "email": "Email",
+    "notSet": "Not set",
+    "provider": "Sign in method",
+    "providers": {
+      "google": "Google",
+      "github": "GitHub"
+    }
   }
 }

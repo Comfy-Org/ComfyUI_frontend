@@ -70,7 +70,7 @@
       </a>
       {{ t('auth.login.andText') }}
       <a
-        href="https://www.comfy.org/privacy-policy"
+        href="https://www.comfy.org/privacy"
         target="_blank"
         class="text-blue-500 cursor-pointer"
       >

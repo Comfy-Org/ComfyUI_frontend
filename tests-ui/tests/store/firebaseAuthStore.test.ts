@@ -5,8 +5,45 @@ import * as vuefire from 'vuefire'
 
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
+// Mock fetch
+const mockFetch = vi.fn()
+vi.stubGlobal('fetch', mockFetch)
+
+// Mock successful API responses
+const mockCreateCustomerResponse = {
+  ok: true,
+  statusText: 'OK',
+  json: () => Promise.resolve({ id: 'test-customer-id' })
+}
+
+const mockFetchBalanceResponse = {
+  ok: true,
+  json: () => Promise.resolve({ balance: 0 })
+}
+
+const mockAddCreditsResponse = {
+  ok: true,
+  statusText: 'OK'
+}
+
+const mockAccessBillingPortalResponse = {
+  ok: true,
+  statusText: 'OK'
+}
+
 vi.mock('vuefire', () => ({
   useFirebaseAuth: vi.fn()
+}))
+
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({
+    t: (key: string) => key
+  }),
+  createI18n: () => ({
+    global: {
+      t: (key: string) => key
+    }
+  })
 }))
 
 vi.mock('firebase/auth', () => ({
@@ -19,6 +56,20 @@ vi.mock('firebase/auth', () => ({
   GithubAuthProvider: vi.fn(),
   browserLocalPersistence: 'browserLocalPersistence',
   setPersistence: vi.fn().mockResolvedValue(undefined)
+}))
+
+// Mock useToastStore
+vi.mock('@/stores/toastStore', () => ({
+  useToastStore: () => ({
+    add: vi.fn()
+  })
+}))
+
+// Mock useDialogService
+vi.mock('@/services/dialogService', () => ({
+  useDialogService: () => ({
+    showSettingsDialog: vi.fn()
+  })
 }))
 
 describe('useFirebaseAuthStore', () => {
@@ -52,9 +103,30 @@ describe('useFirebaseAuthStore', () => {
       }
     )
 
+    // Mock fetch responses
+    mockFetch.mockImplementation((url: string) => {
+      if (url.endsWith('/customers')) {
+        return Promise.resolve(mockCreateCustomerResponse)
+      }
+      if (url.endsWith('/customers/balance')) {
+        return Promise.resolve(mockFetchBalanceResponse)
+      }
+      if (url.endsWith('/customers/credit')) {
+        return Promise.resolve(mockAddCreditsResponse)
+      }
+      if (url.endsWith('/customers/billing-portal')) {
+        return Promise.resolve(mockAccessBillingPortalResponse)
+      }
+      return Promise.reject(new Error('Unexpected API call'))
+    })
+
     // Initialize Pinia
     setActivePinia(createPinia())
     store = useFirebaseAuthStore()
+
+    // Reset and set up getIdToken mock
+    mockUser.getIdToken.mockReset()
+    mockUser.getIdToken.mockResolvedValue('mock-id-token')
   })
 
   it('should initialize with the current user', () => {
@@ -153,6 +225,23 @@ describe('useFirebaseAuthStore', () => {
       expect(store.loading).toBe(false)
       expect(store.error).toBe('Invalid password')
     })
+
+    it('should handle concurrent login attempts correctly', async () => {
+      // Set up multiple login promises
+      const mockUserCredential = { user: mockUser }
+      vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue(
+        mockUserCredential as any
+      )
+
+      const loginPromise1 = store.login('user1@example.com', 'password1')
+      const loginPromise2 = store.login('user2@example.com', 'password2')
+
+      // Resolve both promises
+      await Promise.all([loginPromise1, loginPromise2])
+
+      // Verify the loading state is reset
+      expect(store.loading).toBe(false)
+    })
   })
 
   describe('register', () => {
@@ -191,23 +280,6 @@ describe('useFirebaseAuthStore', () => {
       )
       expect(store.loading).toBe(false)
       expect(store.error).toBe('Email already in use')
-    })
-
-    it('should handle concurrent login attempts correctly', async () => {
-      // Set up multiple login promises
-      const mockUserCredential = { user: mockUser }
-      vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue(
-        mockUserCredential as any
-      )
-
-      const loginPromise1 = store.login('user1@example.com', 'password1')
-      const loginPromise2 = store.login('user2@example.com', 'password2')
-
-      // Resolve both promises
-      await Promise.all([loginPromise1, loginPromise2])
-
-      // Verify the loading state is reset
-      expect(store.loading).toBe(false)
     })
   })
 
