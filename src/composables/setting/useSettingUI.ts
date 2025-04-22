@@ -114,16 +114,15 @@ export function useSettingUI(
   })
 
   const groupedMenuTreeNodes = computed<SettingTreeNode[]>(() => [
-    // Account settings - only show when user is authenticated
-    ...(firebaseAuthStore.isAuthenticated
-      ? [
-          {
-            key: 'account',
-            label: 'Account',
-            children: [userPanelNode, creditsPanelNode].map(translateCategory)
-          }
-        ]
-      : []),
+    // Account settings - only show credits when user is authenticated
+    {
+      key: 'account',
+      label: 'Account',
+      children: [
+        userPanelNode,
+        ...(firebaseAuthStore.isAuthenticated ? [creditsPanelNode] : [])
+      ].map(translateCategory)
+    },
     // Normal settings stored in the settingStore
     {
       key: 'settings',
