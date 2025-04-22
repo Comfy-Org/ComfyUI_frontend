@@ -33,43 +33,41 @@
 </template>
 
 <script setup lang="ts">
-import { LiteGraph } from '@comfyorg/litegraph'
-import type {
-  ConnectingLink,
-  LiteGraphCanvasEvent,
-  Vector2
+import {
+  LGraphNode,
+  LiteGraph,
+  LiteGraphCanvasEvent
 } from '@comfyorg/litegraph'
-import type { OriginalEvent } from '@comfyorg/litegraph/dist/types/events'
+import { Point } from '@comfyorg/litegraph/dist/interfaces'
+import type { CanvasPointerEvent } from '@comfyorg/litegraph/dist/types/events'
 import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import Dialog from 'primevue/dialog'
-import { computed, ref, toRaw, watchEffect } from 'vue'
+import { computed, ref, toRaw, watch, watchEffect } from 'vue'
 
 import { useLitegraphService } from '@/services/litegraphService'
 import { useCanvasStore } from '@/stores/graphStore'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
-import { ConnectingLinkImpl } from '@/types/litegraphTypes'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 import { FuseFilterWithValue } from '@/utils/fuseUtil'
 
 import NodeSearchBox from './NodeSearchBox.vue'
+
+let triggerEvent: CanvasPointerEvent | null = null
+let listenerController: AbortController | null = null
+let disconnectOnReset = false
 
 const settingStore = useSettingStore()
 const litegraphService = useLitegraphService()
 
 const { visible } = storeToRefs(useSearchBoxStore())
 const dismissable = ref(true)
-const triggerEvent = ref<LiteGraphCanvasEvent | null>(null)
-const getNewNodeLocation = (): Vector2 => {
-  if (!triggerEvent.value) {
-    return litegraphService.getCanvasCenter()
-  }
-
-  const originalEvent = (triggerEvent.value.detail as OriginalEvent)
-    .originalEvent
-  return [originalEvent.canvasX, originalEvent.canvasY]
+const getNewNodeLocation = (): Point => {
+  return triggerEvent
+    ? [triggerEvent.canvasX, triggerEvent.canvasY]
+    : litegraphService.getCanvasCenter()
 }
 const nodeFilters = ref<FuseFilterWithValue<ComfyNodeDefImpl, string>[]>([])
 const addFilter = (filter: FuseFilterWithValue<ComfyNodeDefImpl, string>) => {
@@ -88,35 +86,30 @@ const clearFilters = () => {
 const closeDialog = () => {
   visible.value = false
 }
+const canvasStore = useCanvasStore()
 
 const addNode = (nodeDef: ComfyNodeDefImpl) => {
+  if (!triggerEvent) {
+    console.warn('The trigger event was undefined when addNode was called.')
+    return
+  }
+
+  disconnectOnReset = false
   const node = litegraphService.addNodeOnGraph(nodeDef, {
     pos: getNewNodeLocation()
   })
 
-  const eventDetail = triggerEvent.value?.detail
-  if (eventDetail && eventDetail.subType === 'empty-release') {
-    // @ts-expect-error fixme ts strict error
-    eventDetail.linkReleaseContext.links.forEach((link: ConnectingLink) => {
-      ConnectingLinkImpl.createFromPlainObject(link).connectTo(node)
-    })
-  }
+  canvasStore.getCanvas().linkConnector.connectToNode(node, triggerEvent)
 
-  // TODO: This is not robust timing-wise.
-  // PrimeVue complains about the dialog being closed before the event selecting
-  // item is fully processed.
-  window.setTimeout(() => {
-    closeDialog()
-  }, 100)
+  window.requestAnimationFrame(closeDialog)
 }
 
 const newSearchBoxEnabled = computed(
   () => settingStore.get('Comfy.NodeSearchBoxImpl') === 'default'
 )
-const showSearchBox = (e: LiteGraphCanvasEvent) => {
-  const detail = e.detail as OriginalEvent
+const showSearchBox = (e: CanvasPointerEvent) => {
   if (newSearchBoxEnabled.value) {
-    if (detail.originalEvent?.pointerType === 'touch') {
+    if (e.pointerType === 'touch') {
       setTimeout(() => {
         showNewSearchBox(e)
       }, 128)
@@ -124,26 +117,23 @@ const showSearchBox = (e: LiteGraphCanvasEvent) => {
       showNewSearchBox(e)
     }
   } else {
-    // @ts-expect-error fixme ts strict error
-    canvasStore.canvas.showSearchBox(detail.originalEvent)
+    canvasStore.getCanvas().showSearchBox(e)
   }
 }
 
+const getFirstLink = () =>
+  canvasStore.getCanvas().linkConnector.renderLinks.at(0)
+
 const nodeDefStore = useNodeDefStore()
-const showNewSearchBox = (e: LiteGraphCanvasEvent) => {
-  if (e.detail.subType === 'empty-release') {
-    const links = e.detail.linkReleaseContext.links
-    if (links.length === 0) {
-      console.warn('Empty release with no links! This should never happen')
-      return
-    }
-    const firstLink = ConnectingLinkImpl.createFromPlainObject(links[0])
+const showNewSearchBox = (e: CanvasPointerEvent) => {
+  const firstLink = getFirstLink()
+  if (firstLink) {
     const filter =
-      firstLink.releaseSlotType === 'input'
+      firstLink.toType === 'input'
         ? nodeDefStore.nodeSearchService.inputTypeFilter
         : nodeDefStore.nodeSearchService.outputTypeFilter
 
-    const dataType = firstLink.type?.toString() ?? ''
+    const dataType = firstLink.fromSlot.type?.toString() ?? ''
     addFilter({
       filterDef: filter,
       value: dataType
@@ -151,7 +141,7 @@ const showNewSearchBox = (e: LiteGraphCanvasEvent) => {
   }
 
   visible.value = true
-  triggerEvent.value = e
+  triggerEvent = e
 
   // Prevent the dialog from being dismissed immediately
   dismissable.value = false
@@ -160,94 +150,147 @@ const showNewSearchBox = (e: LiteGraphCanvasEvent) => {
   }, 300)
 }
 
-const showContextMenu = (e: LiteGraphCanvasEvent) => {
-  if (e.detail.subType !== 'empty-release') {
-    return
-  }
+const showContextMenu = (e: CanvasPointerEvent) => {
+  const firstLink = getFirstLink()
+  if (!firstLink) return
 
-  const links = e.detail.linkReleaseContext.links
-  if (links.length === 0) {
-    console.warn('Empty release with no links! This should never happen')
-    return
-  }
-
-  const firstLink = ConnectingLinkImpl.createFromPlainObject(links[0])
-  const mouseEvent = e.detail.originalEvent
+  const { node, fromSlot, toType } = firstLink
   const commonOptions = {
-    e: mouseEvent,
+    e,
     allow_searchbox: true,
     showSearchBox: () => showSearchBox(e)
   }
-  const connectionOptions = firstLink.output
-    ? {
-        nodeFrom: firstLink.node,
-        slotFrom: firstLink.output,
-        afterRerouteId: firstLink.afterRerouteId
-      }
-    : {
-        nodeTo: firstLink.node,
-        slotTo: firstLink.input,
-        afterRerouteId: firstLink.afterRerouteId
-      }
-  // @ts-expect-error fixme ts strict error
-  canvasStore.canvas.showConnectionMenu({
+  const connectionOptions =
+    toType === 'input'
+      ? { nodeFrom: node, slotFrom: fromSlot }
+      : { nodeTo: node, slotTo: fromSlot }
+
+  const canvas = canvasStore.getCanvas()
+  const menu = canvas.showConnectionMenu({
     ...connectionOptions,
     ...commonOptions
   })
+
+  if (!menu) {
+    console.warn('No menu was returned from showConnectionMenu')
+    return
+  }
+
+  triggerEvent = e
+  listenerController = new AbortController()
+  const { signal } = listenerController
+  const options = { once: true, signal }
+
+  // Connect the node after it is created via context menu
+  useEventListener(
+    canvas.canvas,
+    'connect-new-default-node',
+    (createEvent) => {
+      if (!(createEvent instanceof CustomEvent))
+        throw new Error('Invalid event')
+
+      const node: unknown = createEvent.detail?.node
+      if (!(node instanceof LGraphNode)) throw new Error('Invalid node')
+
+      disconnectOnReset = false
+      createEvent.preventDefault()
+      canvas.linkConnector.connectToNode(node, e)
+    },
+    options
+  )
+
+  // Reset when the context menu is closed
+  useEventListener(menu.controller.signal, 'abort', reset, options)
 }
 
 // Disable litegraph's default behavior of release link and search box.
-const canvasStore = useCanvasStore()
 watchEffect(() => {
-  if (canvasStore.canvas) {
-    LiteGraph.release_link_on_empty_shows_menu = false
-    canvasStore.canvas.allow_searchbox = false
-  }
+  const { canvas } = canvasStore
+  if (!canvas) return
+
+  LiteGraph.release_link_on_empty_shows_menu = false
+  canvas.allow_searchbox = false
+
+  useEventListener(
+    canvas.linkConnector.events,
+    'dropped-on-canvas',
+    handleDroppedOnCanvas
+  )
 })
 
 const canvasEventHandler = (e: LiteGraphCanvasEvent) => {
   if (e.detail.subType === 'empty-double-click') {
-    showSearchBox(e)
-  } else if (e.detail.subType === 'empty-release') {
-    handleCanvasEmptyRelease(e)
+    showSearchBox(e.detail.originalEvent)
   } else if (e.detail.subType === 'group-double-click') {
     const group = e.detail.group
     const [_, y] = group.pos
     const relativeY = e.detail.originalEvent.canvasY - y
     // Show search box if the click is NOT on the title bar
     if (relativeY > group.titleHeight) {
-      showSearchBox(e)
+      showSearchBox(e.detail.originalEvent)
     }
   }
 }
 
-const linkReleaseAction = computed(() => {
-  return settingStore.get('Comfy.LinkRelease.Action')
-})
+const linkReleaseAction = computed(() =>
+  settingStore.get('Comfy.LinkRelease.Action')
+)
 
-const linkReleaseActionShift = computed(() => {
-  return settingStore.get('Comfy.LinkRelease.ActionShift')
-})
+const linkReleaseActionShift = computed(() =>
+  settingStore.get('Comfy.LinkRelease.ActionShift')
+)
 
-const handleCanvasEmptyRelease = (e: LiteGraphCanvasEvent) => {
-  const detail = e.detail as OriginalEvent
-  const shiftPressed = detail.originalEvent.shiftKey
+// Prevent normal LinkConnector reset (called by CanvasPointer.finally)
+const preventDefault = (e: Event) => e.preventDefault()
+const cancelNextReset = (e: CustomEvent<CanvasPointerEvent>) => {
+  e.preventDefault()
 
-  const action = shiftPressed
+  const canvas = canvasStore.getCanvas()
+  canvas._highlight_pos = [e.detail.canvasX, e.detail.canvasY]
+  useEventListener(canvas.linkConnector.events, 'reset', preventDefault, {
+    once: true
+  })
+}
+
+const handleDroppedOnCanvas = (e: CustomEvent<CanvasPointerEvent>) => {
+  disconnectOnReset = true
+  const action = e.detail.shiftKey
     ? linkReleaseActionShift.value
     : linkReleaseAction.value
   switch (action) {
     case LinkReleaseTriggerAction.SEARCH_BOX:
-      showSearchBox(e)
+      cancelNextReset(e)
+      showSearchBox(e.detail)
       break
     case LinkReleaseTriggerAction.CONTEXT_MENU:
-      showContextMenu(e)
+      cancelNextReset(e)
+      showContextMenu(e.detail)
       break
     case LinkReleaseTriggerAction.NO_ACTION:
     default:
       break
   }
 }
+
+// Resets litegraph state
+const reset = () => {
+  listenerController?.abort()
+  listenerController = null
+  triggerEvent = null
+
+  const canvas = canvasStore.getCanvas()
+  canvas.linkConnector.events.removeEventListener('reset', preventDefault)
+  if (disconnectOnReset) canvas.linkConnector.disconnectLinks()
+
+  canvas.linkConnector.reset()
+  canvas._highlight_pos = undefined
+  canvas.setDirty(true, true)
+}
+
+// Reset connecting links when the search box is closed
+watch(visible, () => {
+  if (!visible.value) reset()
+})
 
 useEventListener(document, 'litegraph:canvas', canvasEventHandler)
 </script>
