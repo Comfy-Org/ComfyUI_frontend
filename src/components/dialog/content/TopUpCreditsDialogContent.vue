@@ -78,7 +78,9 @@
       </div>
     </div>
     <div class="flex justify-end mt-8">
+      <ProgressSpinner v-if="loading" class="w-8 h-8" />
       <Button
+        v-else
         severity="primary"
         :label="$t('credits.topUp.buyNow')"
         :disabled="!amount || amount > 1000"
@@ -94,6 +96,7 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import InputNumber from 'primevue/inputnumber'
+import ProgressSpinner from 'primevue/progressspinner'
 import Tag from 'primevue/tag'
 import { computed, onBeforeUnmount, ref } from 'vue'
 
@@ -104,13 +107,10 @@ defineProps<{
   isInsufficientCredits?: boolean
 }>()
 
-const emit = defineEmits<{
-  (e: 'close'): void
-}>()
-
 const authStore = useFirebaseAuthStore()
 const amount = ref<number>(9.99)
 const didClickBuyNow = ref(false)
+const loading = computed(() => authStore.loading)
 
 const handleBlur = (e: any) => {
   if (e.target.value) {
@@ -136,7 +136,6 @@ const handleSeeDetails = async () => {
 const handleBuyNow = async () => {
   if (!amount.value) return
 
-  didClickBuyNow.value = true
   const response = await authStore.initiateCreditPurchase({
     amount_micros: usdToMicros(amount.value),
     currency: 'usd'
@@ -144,10 +143,10 @@ const handleBuyNow = async () => {
 
   if (!response?.checkout_url) return
 
+  didClickBuyNow.value = true
+
   // Go to Stripe checkout page
   window.open(response.checkout_url, '_blank')
-  // Close dialog
-  emit('close')
 }
 
 onBeforeUnmount(() => {
