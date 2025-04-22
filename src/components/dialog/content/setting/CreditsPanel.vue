@@ -10,13 +10,6 @@
       <div class="flex flex-col gap-2">
         <h3 class="text-sm font-medium text-muted">
           {{ $t('credits.yourCreditBalance') }}
-          <Button
-            icon="pi pi-refresh"
-            text
-            size="small"
-            severity="secondary"
-            @click="() => authStore.fetchBalance()"
-          />
         </h3>
         <div class="flex justify-between items-center">
           <div class="flex items-center gap-1">
@@ -38,6 +31,18 @@
             :label="$t('credits.purchaseCredits')"
             :loading="loading"
             @click="handlePurchaseCreditsClick"
+          />
+        </div>
+        <div class="flex flex-row items-center">
+          <div v-if="formattedLastUpdateTime" class="text-xs text-muted">
+            {{ $t('credits.lastUpdated') }}: {{ formattedLastUpdateTime }}
+          </div>
+          <Button
+            icon="pi pi-refresh"
+            text
+            size="small"
+            severity="secondary"
+            @click="() => authStore.fetchBalance()"
           />
         </div>
       </div>
@@ -134,6 +139,12 @@ const formattedBalance = computed(() => {
   if (!authStore.balance) return '0.00'
   return microsToUsd(authStore.balance.amount_micros)
 })
+
+const formattedLastUpdateTime = computed(() =>
+  authStore.lastBalanceUpdateTime
+    ? authStore.lastBalanceUpdateTime.toLocaleString()
+    : ''
+)
 
 const handlePurchaseCreditsClick = () => {
   dialogService.showTopUpCreditsDialog()

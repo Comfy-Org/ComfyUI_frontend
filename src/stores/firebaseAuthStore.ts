@@ -51,6 +51,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
 
   // Balance state
   const balance = ref<GetCustomerBalanceResponse | null>(null)
+  const lastBalanceUpdateTime = ref<Date | null>(null)
   const creditsDidChange = ref(false)
   const isPollingBalance = ref(false)
   let pollingTimeout: NodeJS.Timeout | null = null
@@ -78,6 +79,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
 
       // Reset balance when auth state changes
       balance.value = null
+      lastBalanceUpdateTime.value = null
     })
   } else {
     error.value = 'Firebase Auth not available from VueFire'
@@ -96,17 +98,20 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       }
     })
 
-    if (!response.ok) {
-      if (response.status === 404) {
-        // Customer not found is expected for new users
-        return null
-      }
-      const errorData = await response.json()
-      error.value = `Failed to fetch balance: ${errorData.message}`
-      return null
-    }
+    // if (!response.ok) {
+    //   if (response.status === 404) {
+    //     // Customer not found is expected for new users
+    //     return null
+    //   }
+    //   const errorData = await response.json()
+    //   error.value = `Failed to fetch balance: ${errorData.message}`
+    //   return null
+    // }
 
-    return response.json()
+    const balanceData = await response.json()
+    // Update the last balance update time
+    lastBalanceUpdateTime.value = new Date()
+    return balanceData
   }
 
   const pollBalance = async () => {
@@ -313,6 +318,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     currentUser,
     isInitialized,
     balance,
+    lastBalanceUpdateTime,
     creditsDidChange,
 
     // Getters
