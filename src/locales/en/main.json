@@ -1082,7 +1082,8 @@
       "andText": "and",
       "privacyLink": "Privacy Policy",
       "success": "Login successful",
-      "failed": "Login failed"
+      "failed": "Login failed",
+      "genericErrorMessage": "Sorry, we've encountered an error. Please contact {supportEmail}."
     },
     "signup": {
       "title": "Create an account",

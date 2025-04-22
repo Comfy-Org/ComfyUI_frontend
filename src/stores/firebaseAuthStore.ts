@@ -15,10 +15,13 @@ import {
 } from 'firebase/auth'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useFirebaseAuth } from 'vuefire'
 
 import { useDialogService } from '@/services/dialogService'
 import { operations } from '@/types/comfyRegistryTypes'
+
+import { useToastStore } from './toastStore'
 
 type CreditPurchaseResponse =
   operations['InitiateCreditPurchase']['responses']['201']['content']['application/json']
@@ -43,11 +46,14 @@ const MAX_DELAY_MS = 60_000
 const BACKOFF_FACTOR = 1.5
 
 export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
+  const { t } = useI18n()
+
   // State
   const loading = ref(false)
   const error = ref<string | null>(null)
   const currentUser = ref<User | null>(null)
   const isInitialized = ref(false)
+  const customerCreated = ref(false)
 
   // Balance state
   const balance = ref<GetCustomerBalanceResponse | null>(null)
@@ -83,6 +89,23 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     })
   } else {
     error.value = 'Firebase Auth not available from VueFire'
+  }
+
+  const showAuthErrorToast = () => {
+    useToastStore().add({
+      summary: t('g.error'),
+      detail: t('auth.login.genericErrorMessage', {
+        supportEmail: 'support@comfy.org'
+      }),
+      severity: 'error'
+    })
+  }
+
+  const getIdToken = async (): Promise<string | null> => {
+    if (currentUser.value) {
+      return currentUser.value.getIdToken()
+    }
+    return null
   }
 
   const fetchBalance = async (): Promise<GetCustomerBalanceResponse | null> => {
@@ -167,8 +190,36 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     void pollBalance()
   })
 
+  const createCustomer = async (
+    token: string
+  ): Promise<CreateCustomerResponse> => {
+    const createCustomerRes = await fetch(`${API_BASE_URL}/customers`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      }
+    })
+    if (!createCustomerRes.ok) {
+      throw new Error(
+        `Failed to create customer: ${createCustomerRes.statusText}`
+      )
+    }
+
+    const createCustomerResJson: CreateCustomerResponse =
+      await createCustomerRes.json()
+    if (!createCustomerResJson?.id) {
+      throw new Error('Failed to create customer: No customer ID returned')
+    }
+
+    return createCustomerResJson
+  }
+
   const executeAuthAction = async <T>(
-    action: (auth: Auth) => Promise<T>
+    action: (auth: Auth) => Promise<T>,
+    options: {
+      createCustomer?: boolean
+    } = {}
   ): Promise<T> => {
     if (!auth) throw new Error('Firebase Auth not initialized')
 
@@ -176,9 +227,19 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     error.value = null
 
     try {
+      // Create customer if needed
+      if (options?.createCustomer) {
+        const token = await getIdToken()
+        if (!token) {
+          throw new Error('Cannot create customer: User not authenticated')
+        }
+        await createCustomer(token)
+      }
+
       return await action(auth)
     } catch (e: unknown) {
       error.value = e instanceof Error ? e.message : 'Unknown error'
+      showAuthErrorToast()
       throw e
     } finally {
       loading.value = false
@@ -189,37 +250,37 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     email: string,
     password: string
   ): Promise<UserCredential> =>
-    executeAuthAction((authInstance) =>
-      signInWithEmailAndPassword(authInstance, email, password)
+    executeAuthAction(
+      (authInstance) =>
+        signInWithEmailAndPassword(authInstance, email, password),
+      { createCustomer: true }
     )
 
   const register = async (
     email: string,
     password: string
-  ): Promise<UserCredential> =>
-    executeAuthAction((authInstance) =>
-      createUserWithEmailAndPassword(authInstance, email, password)
+  ): Promise<UserCredential> => {
+    return executeAuthAction(
+      (authInstance) =>
+        createUserWithEmailAndPassword(authInstance, email, password),
+      { createCustomer: true }
     )
+  }
 
   const loginWithGoogle = async (): Promise<UserCredential> =>
-    executeAuthAction((authInstance) =>
-      signInWithPopup(authInstance, googleProvider)
+    executeAuthAction(
+      (authInstance) => signInWithPopup(authInstance, googleProvider),
+      { createCustomer: true }
     )
 
   const loginWithGithub = async (): Promise<UserCredential> =>
-    executeAuthAction((authInstance) =>
-      signInWithPopup(authInstance, githubProvider)
+    executeAuthAction(
+      (authInstance) => signInWithPopup(authInstance, githubProvider),
+      { createCustomer: true }
     )
 
   const logout = async (): Promise<void> =>
     executeAuthAction((authInstance) => signOut(authInstance))
-
-  const getIdToken = async (): Promise<string | null> => {
-    if (currentUser.value) {
-      return currentUser.value.getIdToken()
-    }
-    return null
-  }
 
   const addCredits = async (
     requestBodyContent: CreditPurchasePayload
@@ -230,24 +291,10 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       return null
     }
 
-    // Create customer first (okay to call more than once since is is idempotent on BE)
-    const createCustomerRes = await fetch(`${API_BASE_URL}/customers`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      }
-    })
-    if (!createCustomerRes.ok) {
-      error.value = `Failed to create customer: ${createCustomerRes.statusText}`
-      return null
-    }
-
-    const createCustomerResJson: CreateCustomerResponse =
-      await createCustomerRes.json()
-    if (!createCustomerResJson?.id) {
-      error.value = 'Failed to create customer: No customer ID returned'
-      return null
+    // Ensure customer was created during login/registration
+    if (!customerCreated.value) {
+      await createCustomer(token)
+      customerCreated.value = true
     }
 
     const response = await fetch(`${API_BASE_URL}/customers/credit`, {
