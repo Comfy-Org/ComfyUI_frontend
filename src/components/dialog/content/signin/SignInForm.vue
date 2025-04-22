@@ -57,7 +57,9 @@
     </div>
 
     <!-- Submit Button -->
+    <ProgressSpinner v-if="loading" class="w-8 h-8" />
     <Button
+      v-else
       type="submit"
       :label="t('auth.login.loginButton')"
       class="h-10 font-medium mt-4"
@@ -71,9 +73,15 @@ import { zodResolver } from '@primevue/forms/resolvers/zod'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
+import ProgressSpinner from 'primevue/progressspinner'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { type SignInData, signInSchema } from '@/schemas/signInSchema'
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+
+const authStore = useFirebaseAuthStore()
+const loading = computed(() => authStore.loading)
 
 const { t } = useI18n()
 
