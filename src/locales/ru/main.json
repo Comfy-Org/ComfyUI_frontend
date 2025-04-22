@@ -431,19 +431,34 @@
   },
   "issueReport": {
     "contactFollowUp": "Свяжитесь со мной для уточнения",
+    "contactSupportDescription": "Пожалуйста, заполните форму ниже для отправки вашего отчёта",
+    "contactSupportTitle": "Связаться с поддержкой",
+    "describeTheProblem": "Опишите проблему",
+    "email": "Электронная почта",
     "feedbackTitle": "Помогите нам улучшить ComfyUI, оставив отзыв",
     "helpFix": "Помочь исправить это",
+    "helpTypes": {
+      "billingPayments": "Оплата / Платежи",
+      "bugReport": "Сообщить об ошибке",
+      "giveFeedback": "Оставить отзыв",
+      "loginAccessIssues": "Проблемы со входом / доступом",
+      "somethingElse": "Другое"
+    },
     "notifyResolve": "Уведомить меня, когда проблема будет решена",
     "provideAdditionalDetails": "Предоставьте дополнительные сведения (необязательно)",
     "provideEmail": "Укажите вашу электронную почту (необязательно)",
     "rating": "Рейтинг",
+    "selectIssue": "Выберите проблему",
     "stackTrace": "Трассировка стека",
     "submitErrorReport": "Отправить отчёт об ошибке (необязательно)",
     "systemStats": "Статистика системы",
     "validation": {
       "invalidEmail": "Пожалуйста, введите действительный адрес электронной почты",
-      "maxLength": "Сообщение слишком длинное"
-    }
+      "maxLength": "Сообщение слишком длинное",
+      "selectIssueType": "Пожалуйста, выберите тип проблемы"
+    },
+    "whatCanWeInclude": "Уточните, что включить в отчёт",
+    "whatDoYouNeedHelpWith": "С чем вам нужна помощь?"
   },
   "load3d": {
     "applyingTexture": "Применение текстуры...",
@@ -616,6 +631,7 @@
     "ComfyUI Docs": "Документация ComfyUI",
     "ComfyUI Forum": "Форум ComfyUI",
     "ComfyUI Issues": "Проблемы ComfyUI",
+    "Contact Support": "Связаться с поддержкой",
     "Convert selected nodes to group node": "Преобразовать выбранные ноды в групповую ноду",
     "Custom Nodes Manager": "Менеджер Пользовательских Узлов",
     "Delete Selected Items": "Удалить выбранные элементы",

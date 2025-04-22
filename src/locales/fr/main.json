@@ -431,19 +431,34 @@
   },
   "issueReport": {
     "contactFollowUp": "Contactez-moi pour un suivi",
+    "contactSupportDescription": "Veuillez remplir le formulaire ci-dessous avec votre signalement",
+    "contactSupportTitle": "Contacter le support",
+    "describeTheProblem": "Décrivez le problème",
+    "email": "E-mail",
     "feedbackTitle": "Aidez-nous à améliorer ComfyUI en fournissant des commentaires",
     "helpFix": "Aidez à résoudre cela",
+    "helpTypes": {
+      "billingPayments": "Facturation / Paiements",
+      "bugReport": "Signaler un bug",
+      "giveFeedback": "Donner un avis",
+      "loginAccessIssues": "Problèmes de connexion / d'accès",
+      "somethingElse": "Autre chose"
+    },
     "notifyResolve": "Prévenez-moi lorsque résolu",
     "provideAdditionalDetails": "Fournir des détails supplémentaires (facultatif)",
     "provideEmail": "Donnez-nous votre email (Facultatif)",
     "rating": "Évaluation",
+    "selectIssue": "Sélectionnez le problème",
     "stackTrace": "Trace de la pile",
     "submitErrorReport": "Soumettre un rapport d'erreur (Facultatif)",
     "systemStats": "Statistiques du système",
     "validation": {
       "invalidEmail": "Veuillez entrer une adresse e-mail valide",
-      "maxLength": "Message trop long"
-    }
+      "maxLength": "Message trop long",
+      "selectIssueType": "Veuillez sélectionner un type de problème"
+    },
+    "whatCanWeInclude": "Précisez ce qu'il faut inclure dans le rapport",
+    "whatDoYouNeedHelpWith": "Avec quoi avez-vous besoin d'aide ?"
   },
   "load3d": {
     "applyingTexture": "Application de la texture...",
@@ -616,6 +631,7 @@
     "ComfyUI Docs": "Docs de ComfyUI",
     "ComfyUI Forum": "Forum ComfyUI",
     "ComfyUI Issues": "Problèmes de ComfyUI",
+    "Contact Support": "Contacter le support",
     "Convert selected nodes to group node": "Convertir les nœuds sélectionnés en nœud de groupe",
     "Custom Nodes Manager": "Gestionnaire de Nœuds Personnalisés",
     "Delete Selected Items": "Supprimer les éléments sélectionnés",

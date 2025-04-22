@@ -83,6 +83,9 @@
   "Comfy_ClearWorkflow": {
     "label": "워크플로 지우기"
   },
+  "Comfy_ContactSupport": {
+    "label": "지원팀에 문의하기"
+  },
   "Comfy_DuplicateWorkflow": {
     "label": "현재 워크플로우 복제"
   },

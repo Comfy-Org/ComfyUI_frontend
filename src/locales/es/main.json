@@ -431,19 +431,34 @@
   },
   "issueReport": {
     "contactFollowUp": "Contáctame para seguimiento",
+    "contactSupportDescription": "Por favor, complete el siguiente formulario con su reporte",
+    "contactSupportTitle": "Contactar Soporte",
+    "describeTheProblem": "Describa el problema",
+    "email": "Correo electrónico",
     "feedbackTitle": "Ayúdanos a mejorar ComfyUI proporcionando comentarios",
     "helpFix": "Ayuda a Solucionar Esto",
+    "helpTypes": {
+      "billingPayments": "Facturación / Pagos",
+      "bugReport": "Reporte de error",
+      "giveFeedback": "Enviar comentarios",
+      "loginAccessIssues": "Problemas de inicio de sesión / acceso",
+      "somethingElse": "Otro"
+    },
     "notifyResolve": "Notifícame cuando se resuelva",
     "provideAdditionalDetails": "Proporciona detalles adicionales (opcional)",
     "provideEmail": "Danos tu correo electrónico (opcional)",
     "rating": "Calificación",
+    "selectIssue": "Seleccione el problema",
     "stackTrace": "Rastreo de Pila",
     "submitErrorReport": "Enviar Reporte de Error (Opcional)",
     "systemStats": "Estadísticas del Sistema",
     "validation": {
       "invalidEmail": "Por favor ingresa una dirección de correo electrónico válida",
-      "maxLength": "Mensaje demasiado largo"
-    }
+      "maxLength": "Mensaje demasiado largo",
+      "selectIssueType": "Por favor, seleccione un tipo de problema"
+    },
+    "whatCanWeInclude": "Especifique qué incluir en el reporte",
+    "whatDoYouNeedHelpWith": "¿Con qué necesita ayuda?"
   },
   "load3d": {
     "applyingTexture": "Aplicando textura...",
@@ -616,6 +631,7 @@
     "ComfyUI Docs": "Documentos de ComfyUI",
     "ComfyUI Forum": "Foro de ComfyUI",
     "ComfyUI Issues": "Problemas de ComfyUI",
+    "Contact Support": "Contactar soporte",
     "Convert selected nodes to group node": "Convertir nodos seleccionados en nodo de grupo",
     "Custom Nodes Manager": "Gestor de nodos personalizados",
     "Delete Selected Items": "Eliminar elementos seleccionados",

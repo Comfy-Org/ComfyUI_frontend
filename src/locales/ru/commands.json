@@ -83,6 +83,9 @@
   "Comfy_ClearWorkflow": {
     "label": "Очистить рабочий процесс"
   },
+  "Comfy_ContactSupport": {
+    "label": "Связаться с поддержкой"
+  },
   "Comfy_DuplicateWorkflow": {
     "label": "Дублировать текущий рабочий процесс"
   },

@@ -431,19 +431,34 @@
   },
   "issueReport": {
     "contactFollowUp": "フォローアップのために私に連絡する",
+    "contactSupportDescription": "下記のフォームにご報告内容をご記入ください",
+    "contactSupportTitle": "サポートに連絡",
+    "describeTheProblem": "問題の内容を記述してください",
+    "email": "メールアドレス",
     "feedbackTitle": "フィードバックを提供してComfyUIの改善にご協力ください",
     "helpFix": "これを修正するのを助ける",
+    "helpTypes": {
+      "billingPayments": "請求／支払い",
+      "bugReport": "バグ報告",
+      "giveFeedback": "フィードバックを送る",
+      "loginAccessIssues": "ログイン／アクセスの問題",
+      "somethingElse": "その他"
+    },
     "notifyResolve": "解決したときに通知する",
     "provideAdditionalDetails": "追加の詳細を提供する（オプション）",
     "provideEmail": "あなたのメールアドレスを教えてください（オプション）",
     "rating": "評価",
+    "selectIssue": "問題を選択してください",
     "stackTrace": "スタックトレース",
     "submitErrorReport": "エラーレポートを提出する（オプション）",
     "systemStats": "システム統計",
     "validation": {
       "invalidEmail": "有効なメールアドレスを入力してください",
-      "maxLength": "メッセージが長すぎます"
-    }
+      "maxLength": "メッセージが長すぎます",
+      "selectIssueType": "問題の種類を選択してください"
+    },
+    "whatCanWeInclude": "レポートに含める内容を指定してください",
+    "whatDoYouNeedHelpWith": "どのようなサポートが必要ですか？"
   },
   "load3d": {
     "applyingTexture": "テクスチャを適用中...",
@@ -616,6 +631,7 @@
     "ComfyUI Docs": "ComfyUIのドキュメント",
     "ComfyUI Forum": "ComfyUI フォーラム",
     "ComfyUI Issues": "ComfyUIの問題",
+    "Contact Support": "サポートに連絡",
     "Convert selected nodes to group node": "選択したノードをグループノードに変換",
     "Custom Nodes Manager": "カスタムノードマネージャ",
     "Delete Selected Items": "選択したアイテムを削除",
