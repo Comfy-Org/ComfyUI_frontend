@@ -46,6 +46,8 @@
           text
           severity="secondary"
           icon="pi pi-arrow-up-right"
+          :loading="loading"
+          @click="handlePaymentDetailsClick"
         />
       </div>
 
@@ -142,6 +144,16 @@ const handlePurchaseCreditsClick = async () => {
     authStore.creditsDidChange = true
     // Go to Stripe checkout page
     window.open(checkout_url, '_blank')
+  }
+}
+
+const handlePaymentDetailsClick = async () => {
+  const response = await authStore.accessBillingPortal()
+  if (!response) return
+
+  const { billing_portal_url } = response
+  if (billing_portal_url) {
+    window.open(billing_portal_url, '_blank')
   }
 }
 

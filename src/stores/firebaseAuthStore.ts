@@ -28,6 +28,10 @@ type CreateCustomerResponse =
   operations['createCustomer']['responses']['201']['content']['application/json']
 type GetCustomerBalanceResponse =
   operations['GetCustomerBalance']['responses']['200']['content']['application/json']
+type AccessBillingPortalResponse =
+  operations['AccessBillingPortal']['responses']['200']['content']['application/json']
+type AccessBillingPortalReqBody =
+  operations['AccessBillingPortal']['requestBody']
 
 // TODO: Switch to prod api based on environment (requires prod api to be ready)
 const API_BASE_URL = 'https://stagingapi.comfy.org'
@@ -277,6 +281,35 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     useDialogService().showSettingsDialog('credits')
   }
 
+  const accessBillingPortal = async (
+    requestBody?: AccessBillingPortalReqBody
+  ): Promise<AccessBillingPortalResponse | null> => {
+    const token = await getIdToken()
+    if (!token) {
+      error.value = 'Cannot access billing portal: User not authenticated'
+      return null
+    }
+
+    const response = await fetch(`${API_BASE_URL}/customers/billing`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      ...(requestBody && {
+        body: JSON.stringify(requestBody)
+      })
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      error.value = `Failed to access billing portal: ${errorData.message}`
+      return null
+    }
+
+    return response.json()
+  }
+
   return {
     // State
     loading,
@@ -301,6 +334,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     initiateCreditPurchase,
     openSignInPanel,
     openCreditsPanel,
-    fetchBalance
+    fetchBalance,
+    accessBillingPortal
   }
 })
