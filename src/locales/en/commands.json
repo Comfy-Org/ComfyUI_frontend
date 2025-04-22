@@ -173,6 +173,9 @@
   "Comfy_Undo": {
     "label": "Undo"
   },
+  "Comfy_User_OpenSignInDialog": {
+    "label": "Open Sign In Dialog"
+  },
   "Workspace_CloseWorkflow": {
     "label": "Close Current Workflow"
   },

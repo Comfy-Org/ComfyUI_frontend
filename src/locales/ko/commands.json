@@ -173,6 +173,9 @@
   "Comfy_Undo": {
     "label": "실행 취소"
   },
+  "Comfy_User_OpenSignInDialog": {
+    "label": "로그인 대화상자 열기"
+  },
   "Workspace_CloseWorkflow": {
     "label": "현재 워크플로우 닫기"
   },

@@ -173,6 +173,9 @@
   "Comfy_Undo": {
     "label": "Отменить"
   },
+  "Comfy_User_OpenSignInDialog": {
+    "label": "Открыть окно входа"
+  },
   "Workspace_CloseWorkflow": {
     "label": "Закрыть текущий рабочий процесс"
   },
