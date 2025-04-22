@@ -162,6 +162,8 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     error.value = null
 
     try {
+      const result = await action(auth)
+
       // Create customer if needed
       if (options?.createCustomer) {
         const token = await getIdToken()
@@ -171,7 +173,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
         await createCustomer(token)
       }
 
-      return await action(auth)
+      return result
     } catch (e: unknown) {
       error.value = e instanceof Error ? e.message : 'Unknown error'
       showAuthErrorToast()
