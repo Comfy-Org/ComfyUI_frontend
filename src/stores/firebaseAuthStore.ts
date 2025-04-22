@@ -14,9 +14,9 @@ import {
 } from 'firebase/auth'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useFirebaseAuth } from 'vuefire'
 
+import { t } from '@/i18n'
 import { useDialogService } from '@/services/dialogService'
 import { operations } from '@/types/comfyRegistryTypes'
 
@@ -39,8 +39,6 @@ type AccessBillingPortalReqBody =
 const API_BASE_URL = 'https://stagingapi.comfy.org'
 
 export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
-  const { t } = useI18n()
-
   // State
   const loading = ref(false)
   const error = ref<string | null>(null)
