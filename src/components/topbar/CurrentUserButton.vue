@@ -10,7 +10,18 @@
     @click="openUserSettings"
   >
     <template #icon>
+      <!-- User Avatar if available -->
+      <div v-if="user?.photoURL" class="flex items-center gap-2">
+        <img
+          :src="user.photoURL"
+          :alt="user.displayName || ''"
+          class="w-8 h-8 rounded-full"
+        />
+      </div>
+
+      <!-- User Icon if no avatar -->
       <div
+        v-else
         class="w-6 h-6 rounded-full bg-neutral-100 dark:bg-neutral-700 flex items-center justify-center"
       >
         <i class="pi pi-user text-sm" />
@@ -29,6 +40,7 @@ import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 const authStore = useFirebaseAuthStore()
 const dialogService = useDialogService()
 const isAuthenticated = computed(() => authStore.isAuthenticated)
+const user = computed(() => authStore.currentUser)
 
 const openUserSettings = () => {
   dialogService.showSettingsDialog('user')
