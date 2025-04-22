@@ -83,6 +83,9 @@
   "Comfy_ClearWorkflow": {
     "label": "清除工作流"
   },
+  "Comfy_ContactSupport": {
+    "label": "联系支持"
+  },
   "Comfy_DuplicateWorkflow": {
     "label": "复制当前工作流"
   },

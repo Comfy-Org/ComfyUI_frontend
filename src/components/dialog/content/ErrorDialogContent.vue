@@ -25,6 +25,13 @@
         :label="$t('issueReport.helpFix')"
         @click="showSendReport"
       />
+      <Button
+        v-if="authStore.currentUser"
+        v-show="!reportOpen"
+        text
+        :label="$t('issueReport.contactSupportTitle')"
+        @click="showContactSupport"
+      />
     </div>
     <template v-if="reportOpen">
       <Divider />
@@ -72,6 +79,8 @@ import FindIssueButton from '@/components/dialog/content/error/FindIssueButton.v
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { useCommandStore } from '@/stores/commandStore'
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { ReportField } from '@/types/issueReportTypes'
 import {
@@ -80,6 +89,8 @@ import {
 } from '@/utils/errorReportUtil'
 
 import ReportIssuePanel from './error/ReportIssuePanel.vue'
+
+const authStore = useFirebaseAuthStore()
 
 const { error } = defineProps<{
   error: Omit<ErrorReportData, 'workflow' | 'systemStats' | 'serverLogs'> & {
@@ -122,6 +133,10 @@ const stackTraceField = computed<ReportField>(() => {
     getData: () => error.traceback
   }
 })
+
+const showContactSupport = async () => {
+  await useCommandStore().execute('Comfy.ContactSupport')
+}
 
 onMounted(async () => {
   if (!systemStatsStore.systemStats) {

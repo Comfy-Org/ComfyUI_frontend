@@ -83,6 +83,9 @@
   "Comfy_ClearWorkflow": {
     "label": "Clear Workflow"
   },
+  "Comfy_ContactSupport": {
+    "label": "Contact Support"
+  },
   "Comfy_DuplicateWorkflow": {
     "label": "Duplicate Current Workflow"
   },

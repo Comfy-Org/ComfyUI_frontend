@@ -83,6 +83,9 @@
   "Comfy_ClearWorkflow": {
     "label": "ワークフローをクリア"
   },
+  "Comfy_ContactSupport": {
+    "label": "サポートに連絡"
+  },
   "Comfy_DuplicateWorkflow": {
     "label": "現在のワークフローを複製"
   },

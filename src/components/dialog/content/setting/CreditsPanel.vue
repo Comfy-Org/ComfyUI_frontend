@@ -134,7 +134,6 @@ const dialogService = useDialogService()
 const authStore = useFirebaseAuthStore()
 const loading = computed(() => authStore.loading)
 
-// Format balance from micros to dollars
 const formattedBalance = computed(() => {
   if (!authStore.balance) return '0.00'
   return formatMetronomeCurrency(authStore.balance.amount_micros, 'usd')
@@ -162,11 +161,11 @@ const handleCreditsHistoryClick = async () => {
 
 const handleMessageSupport = () => {
   dialogService.showIssueReportDialog({
-    title: t('credits.messageSupport'),
-    subtitle: t('issueReport.feedbackTitle'),
+    title: t('issueReport.contactSupportTitle'),
+    subtitle: t('issueReport.contactSupportDescription'),
     panelProps: {
       errorType: 'BillingSupport',
-      defaultFields: ['SystemStats', 'Settings']
+      defaultFields: ['Workflow', 'Logs', 'SystemStats', 'Settings']
     }
   })
 }

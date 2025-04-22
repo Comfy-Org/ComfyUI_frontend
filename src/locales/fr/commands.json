@@ -83,6 +83,9 @@
   "Comfy_ClearWorkflow": {
     "label": "Effacer le flux de travail"
   },
+  "Comfy_ContactSupport": {
+    "label": "Contacter le support"
+  },
   "Comfy_DuplicateWorkflow": {
     "label": "Dupliquer le flux de travail actuel"
   },

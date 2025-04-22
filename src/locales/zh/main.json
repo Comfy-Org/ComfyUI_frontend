@@ -431,19 +431,34 @@
   },
   "issueReport": {
     "contactFollowUp": "跟进联系我",
+    "contactSupportDescription": "请填写下方表格提交您的报告",
+    "contactSupportTitle": "联系支持",
+    "describeTheProblem": "描述问题",
+    "email": "电子邮箱",
     "feedbackTitle": "通过提供反馈帮助我们改进ComfyUI",
     "helpFix": "帮助修复这个",
+    "helpTypes": {
+      "billingPayments": "账单 / 支付",
+      "bugReport": "错误报告",
+      "giveFeedback": "提交反馈",
+      "loginAccessIssues": "登录 / 访问问题",
+      "somethingElse": "其他"
+    },
     "notifyResolve": "解决时通知我",
     "provideAdditionalDetails": "提供额外的详细信息（可选）",
     "provideEmail": "提供您的电子邮件（可选）",
     "rating": "评分",
+    "selectIssue": "选择问题",
     "stackTrace": "堆栈跟踪",
     "submitErrorReport": "提交错误报告（可选）",
     "systemStats": "系统状态",
     "validation": {
       "invalidEmail": "请输入有效的电子邮件地址",
-      "maxLength": "消息过长"
-    }
+      "maxLength": "消息过长",
+      "selectIssueType": "请选择一个问题类型"
+    },
+    "whatCanWeInclude": "请说明报告中需要包含的内容",
+    "whatDoYouNeedHelpWith": "您需要什么帮助？"
   },
   "load3d": {
     "applyingTexture": "应用纹理中...",
@@ -616,6 +631,7 @@
     "ComfyUI Docs": "ComfyUI 文档",
     "ComfyUI Forum": "ComfyUI 论坛",
     "ComfyUI Issues": "ComfyUI 问题",
+    "Contact Support": "联系支持",
     "Convert selected nodes to group node": "将选中节点转换为组节点",
     "Custom Nodes Manager": "自定义节点管理器",
     "Delete Selected Items": "删除选定的项目",
