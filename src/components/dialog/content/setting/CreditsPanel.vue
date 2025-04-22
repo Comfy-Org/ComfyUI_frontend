@@ -76,7 +76,7 @@
                   ]"
                 >
                   {{ data.isPositive ? '+' : '-' }}${{
-                    microsToUsd(data.amount)
+                    formatMetronomeCurrency(data.amount, 'usd')
                   }}
                 </div>
               </template>
@@ -120,7 +120,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
-import { microsToUsd } from '@/utils/formatUtil'
+import { formatMetronomeCurrency } from '@/utils/formatUtil'
 
 interface CreditHistoryItemData {
   title: string
@@ -137,7 +137,7 @@ const loading = computed(() => authStore.loading)
 // Format balance from micros to dollars
 const formattedBalance = computed(() => {
   if (!authStore.balance) return '0.00'
-  return microsToUsd(authStore.balance.amount_micros)
+  return formatMetronomeCurrency(authStore.balance.amount_micros, 'usd')
 })
 
 const formattedLastUpdateTime = computed(() =>

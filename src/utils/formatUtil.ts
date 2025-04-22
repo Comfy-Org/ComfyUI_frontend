@@ -417,30 +417,44 @@ export function compareVersions(
 }
 
 /**
- * Converts a USD amount to microdollars (1/1,000,000 of a dollar).
- * This conversion is commonly used in financial systems to avoid floating-point precision issues
- * by representing monetary values as integers.
+ * Converts a currency amount to Metronome's integer representation.
+ * For USD, converts to cents (multiplied by 100).
+ * For all other currencies (including custom pricing units), returns the amount as is.
+ * This is specific to Metronome's API requirements.
  *
- * @param usd - The amount in US dollars to convert
- * @returns The amount in microdollars (multiplied by 1,000,000)
+ * @param amount - The amount in currency to convert
+ * @param currency - The currency to convert
+ * @returns The amount in Metronome's integer format (cents for USD, base units for others)
  * @example
- * usdToMicros(1.23) // returns 1230000
+ * toMetronomeCurrency(1.23, 'usd') // returns 123 (cents)
+ * toMetronomeCurrency(1000, 'jpy') // returns 1000 (yen)
  */
-export function usdToMicros(usd: number): number {
-  return Math.round(usd * 1_000_000)
+export function toMetronomeCurrency(amount: number, currency: string): number {
+  if (currency === 'usd') {
+    return Math.round(amount * 100)
+  }
+  return amount
 }
 
 /**
- * Converts microdollars (1/1,000,000 of a dollar) to a formatted USD string.
- * This function handles the reverse conversion of usdToMicros and formats the result
- * as a string with exactly 2 decimal places.
+ * Converts Metronome's integer amount back to a formatted currency string.
+ * For USD, converts from cents to dollars.
+ * For all other currencies (including custom pricing units), returns the amount as is.
+ * This is specific to Metronome's API requirements.
  *
- * @param micros - The amount in microdollars to convert
- * @returns The formatted amount in US dollars with 2 decimal places
+ * @param amount - The amount in Metronome's integer format (cents for USD, base units for others)
+ * @param currency - The currency to convert
+ * @returns The formatted amount in currency with 2 decimal places for USD
  * @example
- * formatMicrosToUsd(1230000) // returns "1.23"
- * formatMicrosToUsd(50000) // returns "0.05"
+ * formatMetronomeCurrency(123, 'usd') // returns "1.23" (cents to USD)
+ * formatMetronomeCurrency(1000, 'jpy') // returns "1000" (yen)
  */
-export function microsToUsd(micros: number): string {
-  return (micros / 1_000_000).toFixed(2)
+export function formatMetronomeCurrency(
+  amount: number,
+  currency: string
+): string {
+  if (currency === 'usd') {
+    return (amount / 100).toFixed(2)
+  }
+  return amount.toString()
 }
