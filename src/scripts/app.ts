@@ -1210,6 +1210,7 @@ export class ComfyApp {
           try {
             api.authToken = comfyOrgAuthToken
             const res = await api.queuePrompt(number, p)
+            delete api.authToken
             executionStore.lastNodeErrors = res.node_errors ?? null
             if (executionStore.lastNodeErrors?.length) {
               this.canvas.draw(true, true)
