@@ -1208,7 +1208,8 @@ export class ComfyApp {
 
           const p = await this.graphToPrompt()
           try {
-            const res = await api.queuePrompt(number, p, comfyOrgAuthToken)
+            api.authToken = comfyOrgAuthToken
+            const res = await api.queuePrompt(number, p)
             executionStore.lastNodeErrors = res.node_errors ?? null
             if (executionStore.lastNodeErrors?.length) {
               this.canvas.draw(true, true)
