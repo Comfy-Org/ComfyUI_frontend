@@ -36,7 +36,10 @@
         >
           {{ t('auth.login.passwordLabel') }}
         </label>
-        <span class="text-muted text-base font-medium cursor-pointer">
+        <span
+          class="text-muted text-base font-medium cursor-pointer"
+          @click="handleForgotPassword($form.email?.value)"
+        >
           {{ t('auth.login.forgotPassword') }}
         </span>
       </div>
@@ -79,11 +82,13 @@ import { useI18n } from 'vue-i18n'
 
 import { type SignInData, signInSchema } from '@/schemas/signInSchema'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useToastStore } from '@/stores/toastStore'
 
 const authStore = useFirebaseAuthStore()
 const loading = computed(() => authStore.loading)
 
 const { t } = useI18n()
+const toast = useToastStore()
 
 const emit = defineEmits<{
   submit: [values: SignInData]
@@ -92,6 +97,24 @@ const emit = defineEmits<{
 const onSubmit = (event: FormSubmitEvent) => {
   if (event.valid) {
     emit('submit', event.values as SignInData)
+  }
+}
+
+const handleForgotPassword = async (email: string) => {
+  if (!email) return
+  await authStore.sendPasswordReset(email)
+  if (authStore.error) {
+    toast.add({
+      severity: 'error',
+      summary: t('auth.login.forgotPasswordError'),
+      detail: authStore.error
+    })
+  } else {
+    toast.add({
+      severity: 'success',
+      summary: t('auth.login.passwordResetSent'),
+      detail: t('auth.login.passwordResetSentDetail')
+    })
   }
 }
 </script>

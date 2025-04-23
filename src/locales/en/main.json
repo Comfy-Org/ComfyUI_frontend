@@ -1080,6 +1080,9 @@
     "login": {
       "title": "Log in to your account",
       "signInOrSignUp": "Sign In / Sign Up",
+      "forgotPasswordError": "Failed to send password reset email",
+      "passwordResetSent": "Password reset email sent",
+      "passwordResetSentDetail": "Please check your email for a link to reset your password.",
       "newUser": "New here?",
       "signUp": "Sign up",
       "emailLabel": "Email",
