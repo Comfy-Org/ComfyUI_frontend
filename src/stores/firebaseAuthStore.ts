@@ -43,6 +43,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   const currentUser = ref<User | null>(null)
   const isInitialized = ref(false)
   const customerCreated = ref(false)
+  const isFetchingBalance = ref(false)
 
   // Balance state
   const balance = ref<GetCustomerBalanceResponse | null>(null)
@@ -93,33 +94,42 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   }
 
   const fetchBalance = async (): Promise<GetCustomerBalanceResponse | null> => {
-    const token = await getIdToken()
-    if (!token) {
-      error.value = 'Cannot fetch balance: User not authenticated'
-      return null
-    }
-
-    const response = await fetch(`${COMFY_API_BASE_URL}/customers/balance`, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    })
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        // Customer not found is expected for new users
+    isFetchingBalance.value = true
+    try {
+      const token = await getIdToken()
+      if (!token) {
+        error.value = 'Cannot fetch balance: User not authenticated'
+        isFetchingBalance.value = false
         return null
       }
-      const errorData = await response.json()
-      error.value = `Failed to fetch balance: ${errorData.message}`
-      return null
-    }
 
-    const balanceData = await response.json()
-    // Update the last balance update time
-    lastBalanceUpdateTime.value = new Date()
-    balance.value = balanceData
-    return balanceData
+      const response = await fetch(`${COMFY_API_BASE_URL}/customers/balance`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          // Customer not found is expected for new users
+          return null
+        }
+        const errorData = await response.json()
+        error.value = `Failed to fetch balance: ${errorData.message}`
+        return null
+      }
+
+      const balanceData = await response.json()
+      // Update the last balance update time
+      lastBalanceUpdateTime.value = new Date()
+      balance.value = balanceData
+      return balanceData
+    } catch (e) {
+      error.value = `Failed to fetch balance: ${e}`
+      return null
+    } finally {
+      isFetchingBalance.value = false
+    }
   }
 
   const createCustomer = async (
@@ -243,6 +253,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     if (!response.ok) {
       const errorData = await response.json()
       error.value = `Failed to initiate credit purchase: ${errorData.message}`
+      showAuthErrorToast()
       return null
     }
 
@@ -285,6 +296,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     if (!response.ok) {
       const errorData = await response.json()
       error.value = `Failed to access billing portal: ${errorData.message}`
+      showAuthErrorToast()
       return null
     }
 
@@ -299,6 +311,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     isInitialized,
     balance,
     lastBalanceUpdateTime,
+    isFetchingBalance,
 
     // Getters
     isAuthenticated,

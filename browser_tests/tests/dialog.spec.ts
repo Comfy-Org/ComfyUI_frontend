@@ -360,10 +360,10 @@ test.describe('Signin dialog', () => {
       window['app'].extensionManager.dialog.showSignInDialog()
     })
 
-    const emailInput = comfyPage.page.locator('#comfy-org-sign-in-password')
-    await emailInput.waitFor({ state: 'visible' })
-    await emailInput.press('Control+v')
-    await expect(emailInput).toHaveValue('test_password')
+    const input = comfyPage.page.locator('#comfy-org-sign-in-password')
+    await input.waitFor({ state: 'visible' })
+    await input.press('Control+v')
+    await expect(input).toHaveValue('test_password')
 
     expect(await comfyPage.getNodes()).toHaveLength(nodeNum)
   })

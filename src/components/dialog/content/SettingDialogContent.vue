@@ -86,6 +86,7 @@ import { computed, defineAsyncComponent, watch } from 'vue'
 import SearchBox from '@/components/common/SearchBox.vue'
 import { useSettingSearch } from '@/composables/setting/useSettingSearch'
 import { useSettingUI } from '@/composables/setting/useSettingUI'
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { SettingTreeNode } from '@/stores/settingStore'
 import { ISettingGroup, SettingParams } from '@/types/settingTypes'
 import { flattenTree } from '@/utils/treeUtil'
@@ -135,6 +136,8 @@ const {
   getSearchResults
 } = useSettingSearch()
 
+const authStore = useFirebaseAuthStore()
+
 // Sort groups for a category
 const sortedGroups = (category: SettingTreeNode): ISettingGroup[] => {
   return [...(category.children ?? [])]
@@ -164,6 +167,9 @@ const tabValue = computed<string>(() =>
 watch(activeCategory, (_, oldValue) => {
   if (!tabValue.value) {
     activeCategory.value = oldValue
+  }
+  if (activeCategory.value?.key === 'credits') {
+    void authStore.fetchBalance()
   }
 })
 </script>
