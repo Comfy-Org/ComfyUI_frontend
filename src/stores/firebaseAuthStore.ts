@@ -245,6 +245,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     if (!response.ok) {
       const errorData = await response.json()
       error.value = `Failed to initiate credit purchase: ${errorData.message}`
+      showAuthErrorToast()
       return null
     }
 
@@ -287,6 +288,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     if (!response.ok) {
       const errorData = await response.json()
       error.value = `Failed to access billing portal: ${errorData.message}`
+      showAuthErrorToast()
       return null
     }
 
