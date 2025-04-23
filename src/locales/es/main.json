@@ -36,20 +36,6 @@
       "termsText": "Al hacer clic en \"Siguiente\" o \"Registrarse\", aceptas nuestros",
       "title": "Inicia sesión en tu cuenta"
     },
-    "required": {
-      "credits": {
-        "action": "Abrir configuración para añadir créditos",
-        "hint": "Para añadir créditos ve a: Configuración > Usuario > Créditos",
-        "message": "Este flujo de trabajo incluye nodos que requieren créditos. Por favor, añade créditos a tu cuenta para continuar.",
-        "title": "Créditos requeridos para ejecutar el flujo de trabajo"
-      },
-      "signIn": {
-        "action": "Abrir configuración para iniciar sesión",
-        "hint": "Para iniciar sesión ve a: Configuración > Usuario > Iniciar sesión",
-        "message": "Este flujo de trabajo incluye nodos que requieren una cuenta activa. Por favor, inicia sesión o crea una para continuar.",
-        "title": "Inicio de sesión requerido para ejecutar el flujo de trabajo"
-      }
-    },
     "signOut": {
       "signOut": "Cerrar sesión",
       "success": "Sesión cerrada correctamente",
