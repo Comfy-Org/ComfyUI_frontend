@@ -19,7 +19,6 @@ import { useFirebaseAuth } from 'vuefire'
 
 import { COMFY_API_BASE_URL } from '@/config/comfyApi'
 import { t } from '@/i18n'
-import { useDialogService } from '@/services/dialogService'
 import { operations } from '@/types/comfyRegistryTypes'
 
 import { useToastStore } from './toastStore'
@@ -271,14 +270,6 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   ): Promise<CreditPurchaseResponse | null> =>
     executeAuthAction((_) => addCredits(requestBodyContent))
 
-  const openSignInPanel = () => {
-    useDialogService().showSettingsDialog('user')
-  }
-
-  const openCreditsPanel = () => {
-    useDialogService().showSettingsDialog('credits')
-  }
-
   const accessBillingPortal = async (
     requestBody?: AccessBillingPortalReqBody
   ): Promise<AccessBillingPortalResponse | null> => {
@@ -332,8 +323,6 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     loginWithGoogle,
     loginWithGithub,
     initiateCreditPurchase,
-    openSignInPanel,
-    openCreditsPanel,
     fetchBalance,
     accessBillingPortal,
     sendPasswordReset
