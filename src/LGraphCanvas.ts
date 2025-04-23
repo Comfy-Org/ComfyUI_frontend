@@ -26,6 +26,7 @@ import type {
   Size,
 } from "./interfaces"
 import type { LGraph } from "./LGraph"
+import type { ConnectionColorContext } from "./node/NodeSlot"
 import type {
   CanvasEventDetail,
   CanvasMouseEvent,
@@ -57,7 +58,6 @@ import {
   overlapBounding,
   snapPoint,
 } from "./measure"
-import { type ConnectionColorContext } from "./NodeSlot"
 import { Reroute, type RerouteId } from "./Reroute"
 import { stringOrEmpty } from "./strings"
 import {

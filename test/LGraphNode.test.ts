@@ -2,7 +2,8 @@ import { describe, expect } from "vitest"
 
 import { LGraphNode, LiteGraph } from "@/litegraph"
 import { LGraph } from "@/litegraph"
-import { NodeInputSlot, NodeOutputSlot } from "@/NodeSlot"
+import { NodeInputSlot } from "@/node/NodeInputSlot"
+import { NodeOutputSlot } from "@/node/NodeOutputSlot"
 
 import { test } from "./testExtensions"
 

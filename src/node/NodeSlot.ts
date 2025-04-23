@@ -1,12 +1,11 @@
-import type { CanvasColour, Dictionary, INodeInputSlot, INodeOutputSlot, INodeSlot, ISlotType, IWidgetInputSlot, IWidgetLocator, OptionalProps, Point, Rect, SharedIntersection } from "./interfaces"
-import type { LinkId } from "./LLink"
-import type { IWidget } from "./types/widgets"
+import type { CanvasColour, Dictionary, INodeInputSlot, INodeOutputSlot, INodeSlot, ISlotType, IWidgetLocator, OptionalProps, Point, Rect } from "@/interfaces"
 
-import { LabelPosition, SlotShape, SlotType } from "./draw"
-import { LiteGraph } from "./litegraph"
-import { getCentre } from "./measure"
-import { LinkDirection, RenderShape } from "./types/globalEnums"
-import { ISerialisableNodeInput, ISerialisableNodeOutput } from "./types/serialisation"
+import { LabelPosition, SlotShape, SlotType } from "@/draw"
+import { LiteGraph } from "@/litegraph"
+import { getCentre } from "@/measure"
+import { LinkDirection, RenderShape } from "@/types/globalEnums"
+
+import { NodeInputSlot } from "./NodeInputSlot"
 
 export interface ConnectionColorContext {
   default_connection_color: {
@@ -19,64 +18,12 @@ export interface ConnectionColorContext {
   default_connection_color_byTypeOff: Dictionary<CanvasColour>
 }
 
-interface IDrawOptions {
+export interface IDrawOptions {
   colorContext: ConnectionColorContext
   labelPosition?: LabelPosition
   lowQuality?: boolean
   doStroke?: boolean
   highlight?: boolean
-}
-
-type CommonIoSlotProps = SharedIntersection<ISerialisableNodeInput, ISerialisableNodeOutput>
-
-export function shallowCloneCommonProps(slot: CommonIoSlotProps): CommonIoSlotProps {
-  const { color_off, color_on, dir, label, localized_name, locked, name, nameLocked, removable, shape, type } = slot
-  return { color_off, color_on, dir, label, localized_name, locked, name, nameLocked, removable, shape, type }
-}
-
-export function inputAsSerialisable(slot: INodeInputSlot): ISerialisableNodeInput {
-  const { link } = slot
-  const widgetOrPos = slot.widget
-    ? { widget: { name: slot.widget.name } }
-    : { pos: slot.pos }
-
-  return {
-    ...shallowCloneCommonProps(slot),
-    ...widgetOrPos,
-    link,
-  }
-}
-
-export function outputAsSerialisable(slot: INodeOutputSlot & { widget?: IWidget }): ISerialisableNodeOutput {
-  const { pos, slot_index, links, widget } = slot
-  // Output widgets do not exist in Litegraph; this is a temporary downstream workaround.
-  const outputWidget = widget
-    ? { widget: { name: widget.name } }
-    : null
-
-  return {
-    ...shallowCloneCommonProps(slot),
-    ...outputWidget,
-    pos,
-    slot_index,
-    links,
-  }
-}
-
-export function toNodeSlotClass(slot: INodeInputSlot | INodeOutputSlot): NodeInputSlot | NodeOutputSlot {
-  if (slot instanceof NodeInputSlot || slot instanceof NodeOutputSlot) return slot
-
-  return "link" in slot
-    ? new NodeInputSlot(slot)
-    : new NodeOutputSlot(slot)
-}
-
-/**
- * Type guard: Whether this input slot is attached to a widget.
- * @param slot The slot to check.
- */
-export function isWidgetInputSlot(slot: INodeInputSlot): slot is IWidgetInputSlot {
-  return !!slot.widget
 }
 
 export abstract class NodeSlot implements INodeSlot {
@@ -289,88 +236,5 @@ export abstract class NodeSlot implements INodeSlot {
 
     // Restore original styles
     ctx.fillStyle = originalFillStyle
-  }
-}
-
-export function isINodeInputSlot(slot: INodeSlot): slot is INodeInputSlot {
-  return "link" in slot
-}
-
-export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
-  link: LinkId | null
-
-  get isWidgetInputSlot(): boolean {
-    return !!this.widget
-  }
-
-  constructor(slot: OptionalProps<INodeInputSlot, "boundingRect">) {
-    super(slot)
-    this.link = slot.link
-  }
-
-  override isConnected(): boolean {
-    return this.link != null
-  }
-
-  override isValidTarget(fromSlot: INodeInputSlot | INodeOutputSlot): boolean {
-    return "links" in fromSlot && LiteGraph.isValidConnection(this.type, fromSlot.type)
-  }
-
-  override draw(ctx: CanvasRenderingContext2D, options: Omit<IDrawOptions, "doStroke" | "labelPosition">) {
-    const originalTextAlign = ctx.textAlign
-    ctx.textAlign = "left"
-
-    super.draw(ctx, {
-      ...options,
-      labelPosition: LabelPosition.Right,
-      doStroke: false,
-    })
-
-    ctx.textAlign = originalTextAlign
-  }
-}
-
-export function isINodeOutputSlot(slot: INodeSlot): slot is INodeOutputSlot {
-  return "links" in slot
-}
-
-export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
-  links: LinkId[] | null
-  _data?: unknown
-  slot_index?: number
-
-  get isWidgetInputSlot(): false {
-    return false
-  }
-
-  constructor(slot: OptionalProps<INodeOutputSlot, "boundingRect">) {
-    super(slot)
-    this.links = slot.links
-    this._data = slot._data
-    this.slot_index = slot.slot_index
-  }
-
-  override isValidTarget(fromSlot: INodeInputSlot | INodeOutputSlot): boolean {
-    return "link" in fromSlot && LiteGraph.isValidConnection(this.type, fromSlot.type)
-  }
-
-  override isConnected(): boolean {
-    return this.links != null && this.links.length > 0
-  }
-
-  override draw(ctx: CanvasRenderingContext2D, options: Omit<IDrawOptions, "doStroke" | "labelPosition">) {
-    const originalTextAlign = ctx.textAlign
-    const originalStrokeStyle = ctx.strokeStyle
-    ctx.textAlign = "right"
-    ctx.strokeStyle = "black"
-
-    super.draw(ctx, {
-      ...options,
-      labelPosition: LabelPosition.Left,
-      doStroke: true,
-    })
-
-    ctx.textAlign = originalTextAlign
-    ctx.strokeStyle = originalStrokeStyle
   }
 }

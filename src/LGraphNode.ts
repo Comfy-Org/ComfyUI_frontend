@@ -20,6 +20,7 @@ import type {
   Size,
 } from "./interfaces"
 import type { LGraph } from "./LGraph"
+import type { ConnectionColorContext } from "./node/NodeSlot"
 import type { Reroute, RerouteId } from "./Reroute"
 import type { CanvasMouseEvent } from "./types/events"
 import type { ISerialisedNode } from "./types/serialisation"
@@ -32,7 +33,9 @@ import { LGraphCanvas } from "./LGraphCanvas"
 import { type LGraphNodeConstructor, LiteGraph } from "./litegraph"
 import { LLink } from "./LLink"
 import { createBounds, isInRect, isInRectangle, isPointInRect, snapPoint } from "./measure"
-import { ConnectionColorContext, inputAsSerialisable, isINodeInputSlot, isWidgetInputSlot, NodeInputSlot, NodeOutputSlot, outputAsSerialisable, toNodeSlotClass } from "./NodeSlot"
+import { NodeInputSlot } from "./node/NodeInputSlot"
+import { NodeOutputSlot } from "./node/NodeOutputSlot"
+import { inputAsSerialisable, isINodeInputSlot, isWidgetInputSlot, outputAsSerialisable, toNodeSlotClass } from "./node/slotUtils"
 import {
   LGraphEventMode,
   NodeSlotType,

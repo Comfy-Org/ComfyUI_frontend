@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { INodeInputSlot, INodeOutputSlot } from "@/interfaces"
-import { inputAsSerialisable, outputAsSerialisable } from "@/NodeSlot"
+import { inputAsSerialisable, outputAsSerialisable } from "@/node/slotUtils"
 
 describe("NodeSlot", () => {
   describe("inputAsSerialisable", () => {
