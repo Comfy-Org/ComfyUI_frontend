@@ -215,6 +215,20 @@ export class ComfyApi extends EventTarget {
 
   reportedUnknownMessageTypes = new Set<string>()
 
+  /**
+   * The auth token for the comfy org account if the user is logged in.
+   * This is only used for {@link queuePrompt} now. It is not directly
+   * passed as parameter to the function because some custom nodes are hijacking
+   * {@link queuePrompt} improperly, which causes extra parameters to be lost
+   * in the function call chain.
+   *
+   * Ref: https://cs.comfy.org/search?q=context:global+%22api.queuePrompt+%3D%22&patternType=keyword&sm=0
+   *
+   * TODO: Move this field to parameter of {@link queuePrompt} once all
+   * custom nodes are patched.
+   */
+  authToken?: string
+
   constructor() {
     super()
     this.user = ''
@@ -517,13 +531,11 @@ export class ComfyApi extends EventTarget {
    * Queues a prompt to be executed
    * @param {number} number The index at which to queue the prompt, passing -1 will insert the prompt at the front of the queue
    * @param {object} prompt The prompt data to queue
-   * @param {string} authToken The auth token for the comfy org account if the user is logged in
    * @throws {PromptExecutionError} If the prompt fails to execute
    */
   async queuePrompt(
     number: number,
-    data: { output: ComfyApiWorkflow; workflow: ComfyWorkflowJSON },
-    authToken?: string
+    data: { output: ComfyApiWorkflow; workflow: ComfyWorkflowJSON }
   ): Promise<PromptResponse> {
     const { output: prompt, workflow } = data
 
@@ -531,7 +543,7 @@ export class ComfyApi extends EventTarget {
       client_id: this.clientId ?? '', // TODO: Unify clientId access
       prompt,
       extra_data: {
-        auth_token_comfy_org: authToken,
+        auth_token_comfy_org: this.authToken,
         extra_pnginfo: { workflow }
       }
     }
