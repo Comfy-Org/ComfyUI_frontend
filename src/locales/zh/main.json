@@ -928,6 +928,7 @@
     "Comfy": "Comfy",
     "Comfy-Desktop": "Comfy桌面版",
     "ContextMenu": "上下文菜单",
+    "Credits": "积分",
     "CustomColorPalettes": "自定义色彩主题",
     "DevMode": "开发模式",
     "EditTokenWeight": "编辑令牌权重",
@@ -962,11 +963,10 @@
     "Sidebar": "侧边栏",
     "Tree Explorer": "树形浏览器",
     "UV": "UV",
+    "User": "用户",
     "Validation": "验证",
     "Window": "窗口",
-    "Workflow": "工作流",
-    "User": "用户",
-    "Credits": "积分"
+    "Workflow": "工作流"
   },
   "sideToolbar": {
     "browseTemplates": "浏览示例模板",
