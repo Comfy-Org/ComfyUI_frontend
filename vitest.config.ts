@@ -16,5 +16,8 @@ export default defineConfig({
     alias: {
       '@': '/src'
     }
+  },
+  define: {
+    __USE_PROD_CONFIG__: process.env.USE_PROD_CONFIG === 'true'
   }
 })
