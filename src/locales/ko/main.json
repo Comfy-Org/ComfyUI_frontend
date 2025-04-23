@@ -928,6 +928,7 @@
     "Comfy": "Comfy",
     "Comfy-Desktop": "Comfy-Desktop",
     "ContextMenu": "컨텍스트 메뉴",
+    "Credits": "크레딧",
     "CustomColorPalettes": "사용자 정의 색상 팔레트",
     "DevMode": "개발자 모드",
     "EditTokenWeight": "토큰 가중치 편집",
@@ -962,6 +963,7 @@
     "Sidebar": "사이드바",
     "Tree Explorer": "트리 탐색기",
     "UV": "UV",
+    "User": "사용자",
     "Validation": "검증",
     "Window": "창",
     "Workflow": "워크플로"

@@ -928,6 +928,7 @@
     "Comfy": "Comfy",
     "Comfy-Desktop": "Comfyデスクトップ",
     "ContextMenu": "コンテキストメニュー",
+    "Credits": "クレジット",
     "CustomColorPalettes": "カスタムカラーパレット",
     "DevMode": "開発モード",
     "EditTokenWeight": "トークンの重みを編集",
@@ -962,6 +963,7 @@
     "Sidebar": "サイドバー",
     "Tree Explorer": "ツリーエクスプローラー",
     "UV": "UV",
+    "User": "ユーザー",
     "Validation": "検証",
     "Window": "ウィンドウ",
     "Workflow": "ワークフロー"
