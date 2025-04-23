@@ -251,4 +251,18 @@ test.describe('Release context menu', () => {
       'link-release-context-menu.png'
     )
   })
+
+  test('Can search and add node from context menu', async ({
+    comfyPage,
+    comfyMouse
+  }) => {
+    await comfyPage.disconnectEdge()
+    await comfyMouse.move({ x: 10, y: 10 })
+    await comfyMouse.click(10, 10)
+    await comfyPage.page.getByRole('menuitem', { name: 'Search' }).click()
+    await comfyPage.searchBox.fillAndSelectFirstNode('CLIP Prompt')
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'link-context-menu-search.png'
+    )
+  })
 })
