@@ -7,6 +7,7 @@ import {
   browserLocalPersistence,
   createUserWithEmailAndPassword,
   onAuthStateChanged,
+  sendPasswordResetEmail,
   setPersistence,
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -226,6 +227,11 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   const logout = async (): Promise<void> =>
     executeAuthAction((authInstance) => signOut(authInstance))
 
+  const sendPasswordReset = async (email: string): Promise<void> =>
+    executeAuthAction((authInstance) =>
+      sendPasswordResetEmail(authInstance, email)
+    )
+
   const addCredits = async (
     requestBodyContent: CreditPurchasePayload
   ): Promise<CreditPurchaseResponse | null> => {
@@ -329,6 +335,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     openSignInPanel,
     openCreditsPanel,
     fetchBalance,
-    accessBillingPortal
+    accessBillingPortal,
+    sendPasswordReset
   }
 })
