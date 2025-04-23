@@ -353,6 +353,7 @@ export const useDialogService = () => {
     return dialogStore.showDialog({
       key: 'top-up-credits',
       component: TopUpCreditsDialogContent,
+      headerComponent: ComfyOrgHeader,
       props: options,
       dialogComponentProps: {
         pt: {

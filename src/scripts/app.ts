@@ -674,7 +674,10 @@ export class ComfyApp {
 
     api.addEventListener('execution_error', ({ detail }) => {
       // Check if this is an auth-related error or credits-related error
-      if (detail.exception_message === 'Please login first to use this node.') {
+      if (
+        detail.exception_message ===
+        'Unauthorized: Please login first to use this node.'
+      ) {
         useDialogService().showApiNodesSignInDialog([detail.node_type])
       } else if (
         detail.exception_message ===
