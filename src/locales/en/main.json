@@ -744,7 +744,9 @@
     "Camera": "Camera",
     "Scene": "Scene",
     "3D": "3D",
-    "Light": "Light"
+    "Light": "Light",
+    "User": "User",
+    "Credits": "Credits"
   },
   "serverConfigItems": {
     "listen": {

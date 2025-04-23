@@ -964,7 +964,9 @@
     "UV": "UV",
     "Validation": "验证",
     "Window": "窗口",
-    "Workflow": "工作流"
+    "Workflow": "工作流",
+    "User": "用户",
+    "Credits": "积分"
   },
   "sideToolbar": {
     "browseTemplates": "浏览示例模板",
