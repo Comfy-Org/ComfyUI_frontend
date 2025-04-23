@@ -12,7 +12,14 @@
           {{ $t('credits.yourCreditBalance') }}
         </h3>
         <div class="flex justify-between items-center">
-          <div class="flex items-center gap-1">
+          <div v-if="balanceLoading" class="flex items-center gap-1">
+            <div class="flex items-center gap-2">
+              <Skeleton shape="circle" width="1.5rem" height="1.5rem" />
+            </div>
+            <div class="flex-1"></div>
+            <Skeleton width="8rem" height="2rem" />
+          </div>
+          <div v-else class="flex items-center gap-1">
             <Tag
               severity="secondary"
               icon="pi pi-dollar"
@@ -21,11 +28,7 @@
             />
             <div class="text-3xl font-bold">{{ formattedBalance }}</div>
           </div>
-          <ProgressSpinner
-            v-if="loading"
-            class="w-12 h-12"
-            style="--pc-spinner-color: #000"
-          />
+          <Skeleton v-if="loading" width="2rem" height="2rem" />
           <Button
             v-else
             :label="$t('credits.purchaseCredits')"
@@ -34,7 +37,13 @@
           />
         </div>
         <div class="flex flex-row items-center">
-          <div v-if="formattedLastUpdateTime" class="text-xs text-muted">
+          <Skeleton
+            v-if="balanceLoading"
+            width="12rem"
+            height="1rem"
+            class="text-xs"
+          />
+          <div v-else-if="formattedLastUpdateTime" class="text-xs text-muted">
             {{ $t('credits.lastUpdated') }}: {{ formattedLastUpdateTime }}
           </div>
           <Button
@@ -112,10 +121,10 @@ import Button from 'primevue/button'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import Divider from 'primevue/divider'
-import ProgressSpinner from 'primevue/progressspinner'
+import Skeleton from 'primevue/skeleton'
 import TabPanel from 'primevue/tabpanel'
 import Tag from 'primevue/tag'
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useDialogService } from '@/services/dialogService'
@@ -133,7 +142,7 @@ const { t } = useI18n()
 const dialogService = useDialogService()
 const authStore = useFirebaseAuthStore()
 const loading = computed(() => authStore.loading)
-
+const balanceLoading = computed(() => authStore.isFetchingBalance)
 const formattedBalance = computed(() => {
   if (!authStore.balance) return '0.00'
   return formatMetronomeCurrency(authStore.balance.amount_micros, 'usd')
@@ -173,11 +182,6 @@ const handleMessageSupport = () => {
 const handleFaqClick = () => {
   window.open('https://drip-art.notion.site/api-nodes-faqs', '_blank')
 }
-
-// Fetch initial balance when panel is mounted
-onMounted(() => {
-  void authStore.fetchBalance()
-})
 
 const creditHistory = ref<CreditHistoryItemData[]>([])
 </script>
