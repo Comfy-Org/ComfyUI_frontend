@@ -158,7 +158,10 @@ const showContextMenu = (e: CanvasPointerEvent) => {
   const commonOptions = {
     e,
     allow_searchbox: true,
-    showSearchBox: () => showSearchBox(e)
+    showSearchBox: () => {
+      cancelResetOnContextClose()
+      showSearchBox(e)
+    }
   }
   const connectionOptions =
     toType === 'input'
@@ -200,7 +203,12 @@ const showContextMenu = (e: CanvasPointerEvent) => {
   )
 
   // Reset when the context menu is closed
-  useEventListener(menu.controller.signal, 'abort', reset, options)
+  const cancelResetOnContextClose = useEventListener(
+    menu.controller.signal,
+    'abort',
+    reset,
+    options
+  )
 }
 
 // Disable litegraph's default behavior of release link and search box.
