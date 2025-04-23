@@ -180,7 +180,7 @@ const handleMessageSupport = () => {
 }
 
 const handleFaqClick = () => {
-  window.open('https://drip-art.notion.site/api-nodes-faqs', '_blank')
+  window.open('https://www.comfy.org/faq', '_blank')
 }
 
 const creditHistory = ref<CreditHistoryItemData[]>([])
