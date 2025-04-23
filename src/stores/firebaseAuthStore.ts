@@ -16,6 +16,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { useFirebaseAuth } from 'vuefire'
 
+import { COMFY_API_BASE_URL } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { useDialogService } from '@/services/dialogService'
 import { operations } from '@/types/comfyRegistryTypes'
@@ -34,9 +35,6 @@ type AccessBillingPortalResponse =
   operations['AccessBillingPortal']['responses']['200']['content']['application/json']
 type AccessBillingPortalReqBody =
   operations['AccessBillingPortal']['requestBody']
-
-// TODO: Switch to prod api based on environment (requires prod api to be ready)
-const API_BASE_URL = 'https://stagingapi.comfy.org'
 
 export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   // State
@@ -105,7 +103,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
         return null
       }
 
-      const response = await fetch(`${API_BASE_URL}/customers/balance`, {
+      const response = await fetch(`${COMFY_API_BASE_URL}/customers/balance`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -137,7 +135,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   const createCustomer = async (
     token: string
   ): Promise<CreateCustomerResponse> => {
-    const createCustomerRes = await fetch(`${API_BASE_URL}/customers`, {
+    const createCustomerRes = await fetch(`${COMFY_API_BASE_URL}/customers`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -243,7 +241,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       customerCreated.value = true
     }
 
-    const response = await fetch(`${API_BASE_URL}/customers/credit`, {
+    const response = await fetch(`${COMFY_API_BASE_URL}/customers/credit`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -284,7 +282,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       return null
     }
 
-    const response = await fetch(`${API_BASE_URL}/customers/billing`, {
+    const response = await fetch(`${COMFY_API_BASE_URL}/customers/billing`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
