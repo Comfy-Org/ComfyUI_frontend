@@ -222,7 +222,13 @@ export const zComfyNodeDef = z.object({
   output_node: z.boolean(),
   python_module: z.string(),
   deprecated: z.boolean().optional(),
-  experimental: z.boolean().optional()
+  experimental: z.boolean().optional(),
+  /**
+   * Whether the node is an API node. Running API nodes requires login to
+   * Comfy Org account.
+   * https://www.comfy.org/faq
+   */
+  api_node: z.boolean().optional()
 })
 
 // `/object_info`
