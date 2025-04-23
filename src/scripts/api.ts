@@ -223,6 +223,9 @@ export class ComfyApi extends EventTarget {
    * in the function call chain.
    *
    * Ref: https://cs.comfy.org/search?q=context:global+%22api.queuePrompt+%3D%22&patternType=keyword&sm=0
+   *
+   * TODO: Move this field to parameter of {@link queuePrompt} once all
+   * custom nodes are patched.
    */
   authToken?: string
 
