@@ -518,4 +518,23 @@ describe('ComfyNodeDefImpl', () => {
     expect(result.inputs['booleanInput']).toBeDefined()
     expect(result.inputs['floatInput']).toBeDefined()
   })
+
+  it.each([
+    { api_node: true, expected: true },
+    { api_node: false, expected: false },
+    { api_node: undefined, expected: false }
+  ] as { api_node: boolean | undefined; expected: boolean }[])(
+    'should handle api_node field: $api_node',
+    ({ api_node, expected }) => {
+      const result = new ComfyNodeDefImpl({
+        name: 'ApiNode',
+        display_name: 'API Node',
+        category: 'Test',
+        python_module: 'test_module',
+        description: 'A node with API',
+        api_node
+      } as ComfyNodeDefV1)
+      expect(result.api_node).toBe(expected)
+    }
+  )
 })
