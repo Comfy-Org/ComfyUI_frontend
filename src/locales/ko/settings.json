@@ -377,6 +377,10 @@
   "LiteGraph_ContextMenu_Scaling": {
     "name": "확대시 노드 콤보 위젯 메뉴 (목록) 스케일링"
   },
+  "LiteGraph_Node_DefaultPadding": {
+    "name": "새 노드를 항상 축소",
+    "tooltip": "노드를 생성할 때 가능한 가장 작은 크기로 크기를 조정합니다. 비활성화하면 새로 추가된 노드가 위젯 값을 표시하기 위해 약간 넓어집니다."
+  },
   "LiteGraph_Node_TooltipDelay": {
     "name": "툴팁 지연"
   },
