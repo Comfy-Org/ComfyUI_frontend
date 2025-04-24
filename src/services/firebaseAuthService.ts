@@ -2,6 +2,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { useToastStore } from '@/stores/toastStore'
+import { usdToMicros } from '@/utils/formatUtil'
 
 export const useFirebaseAuthService = () => {
   const authStore = useFirebaseAuthStore()
@@ -40,8 +41,45 @@ export const useFirebaseAuthService = () => {
     reportError
   )
 
+  const purchaseCredits = wrapWithErrorHandlingAsync(async (amount: number) => {
+    const response = await authStore.initiateCreditPurchase({
+      amount_micros: usdToMicros(amount),
+      currency: 'usd'
+    })
+
+    if (!response.checkout_url) {
+      throw new Error(
+        t('toastMessages.failedToPurchaseCredits', {
+          error: 'No checkout URL returned'
+        })
+      )
+    }
+
+    // Go to Stripe checkout page
+    window.open(response.checkout_url, '_blank')
+  }, reportError)
+
+  const accessBillingPortal = wrapWithErrorHandlingAsync(async () => {
+    const response = await authStore.accessBillingPortal()
+    if (!response.billing_portal_url) {
+      throw new Error(
+        t('toastMessages.failedToAccessBillingPortal', {
+          error: 'No billing portal URL returned'
+        })
+      )
+    }
+    window.open(response.billing_portal_url, '_blank')
+  }, reportError)
+
+  const fetchBalance = wrapWithErrorHandlingAsync(async () => {
+    await authStore.fetchBalance()
+  }, reportError)
+
   return {
     logout,
-    sendPasswordReset
+    sendPasswordReset,
+    purchaseCredits,
+    accessBillingPortal,
+    fetchBalance
   }
 }

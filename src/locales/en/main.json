@@ -1084,7 +1084,8 @@
     "failedToFetchBalance": "Failed to fetch balance: {error}",
     "failedToCreateCustomer": "Failed to create customer: {error}",
     "failedToInitiateCreditPurchase": "Failed to initiate credit purchase: {error}",
-    "failedToAccessBillingPortal": "Failed to access billing portal: {error}"
+    "failedToAccessBillingPortal": "Failed to access billing portal: {error}",
+    "failedToPurchaseCredits": "Failed to purchase credits: {error}"
   },
   "auth": {
     "login": {
