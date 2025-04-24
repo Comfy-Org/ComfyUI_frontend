@@ -110,12 +110,12 @@
     "messageSupport": "지원 문의",
     "purchaseCredits": "크레딧 구매",
     "topUp": {
-      "addCredits": "잔액에 크레딧 추가",
       "buyNow": "지금 구매",
       "insufficientMessage": "이 워크플로우를 실행하기에 크레딧이 부족합니다.",
       "insufficientTitle": "크레딧 부족",
       "maxAmount": "(최대 $1,000 USD)",
-      "title": "크레딧 잔액 충전"
+      "quickPurchase": "빠른 구매",
+      "seeDetails": "자세히 보기"
     },
     "yourCreditBalance": "보유 크레딧 잔액"
   },

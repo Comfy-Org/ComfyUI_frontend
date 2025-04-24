@@ -1148,12 +1148,12 @@
     "messageSupport": "Message Support",
     "lastUpdated": "Last updated",
     "topUp": {
-      "title": "Add to Credit Balance",
       "insufficientTitle": "Insufficient Credits",
       "insufficientMessage": "You don't have enough credits to run this workflow.",
-      "addCredits": "Add credits to your balance",
+      "quickPurchase": "Quick Purchase",
       "maxAmount": "(Max. $1,000 USD)",
-      "buyNow": "Buy now"
+      "buyNow": "Buy now",
+      "seeDetails": "See details"
     }
   },
   "userSettings": {
