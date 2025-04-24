@@ -34,7 +34,7 @@ const filters = computed(() => nodeDefStore.nodeSearchService.nodeFilters)
 const selectedFilter = ref<FuseFilter<ComfyNodeDefImpl, string>>()
 const filterValues = computed(() => selectedFilter.value?.fuseSearch.data ?? [])
 const selectedFilterValue = ref<string>('')
-const existingFilters = ref(new Set<string>())
+const existingFilters = new Set<string>()
 
 const nodeDefStore = useNodeDefStore()
 
@@ -61,10 +61,10 @@ const submit = () => {
   if (!selectedFilter.value) {
     return
   }
-  if (existingFilters.value.has(selectedFilterValue.value)) {
+  if (existingFilters.has(selectedFilterValue.value)) {
     return
   }
-  existingFilters.value.add(selectedFilterValue.value)
+  existingFilters.add(selectedFilterValue.value)
   emit('addFilter', {
     filterDef: selectedFilter.value,
     value: selectedFilterValue.value
