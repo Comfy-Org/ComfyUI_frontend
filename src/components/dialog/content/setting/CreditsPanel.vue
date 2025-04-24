@@ -58,7 +58,7 @@
 
       <div class="flex justify-between items-center mt-8">
         <Button
-          :label="$t('credits.creditsHistory')"
+          :label="$t('credits.invoiceHistory')"
           text
           severity="secondary"
           icon="pi pi-arrow-up-right"
