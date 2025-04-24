@@ -4,6 +4,11 @@ import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { useToastStore } from '@/stores/toastStore'
 import { usdToMicros } from '@/utils/formatUtil'
 
+/**
+ * Service for Firebase Auth actions.
+ * All actions are wrapped with error handling.
+ * @returns {Object} - Object containing all Firebase Auth actions
+ */
 export const useFirebaseAuthService = () => {
   const authStore = useFirebaseAuthStore()
   const toastStore = useToastStore()
