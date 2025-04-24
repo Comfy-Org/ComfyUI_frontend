@@ -89,6 +89,14 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: () => (window.innerWidth < 1536 ? 'small' : 'normal')
   },
   {
+    id: 'Comfy.Sidebar.UnifiedWidth',
+    category: ['Appearance', 'Sidebar', 'UnifiedWidth'],
+    name: 'Unified sidebar width',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.18.1'
+  },
+  {
     id: 'Comfy.TextareaWidget.FontSize',
     category: ['Appearance', 'Node Widget', 'TextareaWidget', 'FontSize'],
     name: 'Textarea widget font size',

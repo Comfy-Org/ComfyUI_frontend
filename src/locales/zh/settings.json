@@ -293,6 +293,9 @@
       "small": "小"
     }
   },
+  "Comfy_Sidebar_UnifiedWidth": {
+    "name": "统一侧边栏宽度"
+  },
   "Comfy_SnapToGrid_GridSize": {
     "name": "吸附网格大小",
     "tooltip": "在按住shift拖动和调整节点大小时，节点将对齐到网格，该选项控制网格。"
