@@ -801,7 +801,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'Resize nodes to the smallest possible size when created. When disabled, a newly added node will be widened slightly to show widget values.',
     type: 'boolean',
-    defaultValue: true,
+    defaultValue: false,
     versionAdded: '1.18.0'
   }
 ]
