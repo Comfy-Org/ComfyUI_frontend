@@ -797,16 +797,11 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'LiteGraph.Node.DefaultPadding',
-    name: 'Add padding to newly created nodes',
+    name: 'Always shrink new nodes',
     tooltip:
-      'Newly created nodes will be resized horizontally by this amount. This can reduce text clipping and wrapping.',
-    type: 'slider',
-    defaultValue: 0.5,
-    attrs: {
-      min: 0,
-      max: 1,
-      step: 0.05
-    },
+      'Resize nodes to the smallest possible size when created. When disabled, a newly added node will be widened slightly to show widget values.',
+    type: 'boolean',
+    defaultValue: true,
     versionAdded: '1.18.0'
   }
 ]
