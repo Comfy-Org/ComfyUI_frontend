@@ -293,6 +293,9 @@
       "small": "petit"
     }
   },
+  "Comfy_Sidebar_UnifiedWidth": {
+    "name": "Largeur unifiée de la barre latérale"
+  },
   "Comfy_SnapToGrid_GridSize": {
     "name": "Taille de la grille d'alignement",
     "tooltip": "Lors du déplacement et du redimensionnement des nœuds tout en maintenant shift, ils seront alignés sur la grille, cela contrôle la taille de cette grille."

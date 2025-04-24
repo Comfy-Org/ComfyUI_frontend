@@ -293,6 +293,9 @@
       "small": "small"
     }
   },
+  "Comfy_Sidebar_UnifiedWidth": {
+    "name": "Unified sidebar width"
+  },
   "Comfy_SnapToGrid_GridSize": {
     "name": "Snap to grid size",
     "tooltip": "When dragging and resizing nodes while holding shift they will be aligned to the grid, this controls the size of that grid."

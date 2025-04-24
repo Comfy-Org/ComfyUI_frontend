@@ -293,6 +293,9 @@
       "small": "작음"
     }
   },
+  "Comfy_Sidebar_UnifiedWidth": {
+    "name": "통합 사이드바 너비"
+  },
   "Comfy_SnapToGrid_GridSize": {
     "name": "그리드 크기에 스냅",
     "tooltip": "Shift 키를 누른 상태에서 노드를 드래그하거나 크기를 조절하면 그리드에 맞춰 정렬됩니다. 이 설정은 그리드의 크기를 제어합니다."
