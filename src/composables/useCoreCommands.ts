@@ -16,6 +16,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowService } from '@/services/workflowService'
 import type { ComfyCommand } from '@/stores/commandStore'
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { useTitleEditorStore } from '@/stores/graphStore'
 import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
 import { useSettingStore } from '@/stores/settingStore'
@@ -31,6 +32,8 @@ export function useCoreCommands(): ComfyCommand[] {
   const workflowStore = useWorkflowStore()
   const dialogService = useDialogService()
   const colorPaletteStore = useColorPaletteStore()
+  const authStore = useFirebaseAuthStore()
+  const toastStore = useToastStore()
   const getTracker = () => workflowStore.activeWorkflow?.changeTracker
 
   const getSelectedNodes = (): LGraphNode[] => {
@@ -54,8 +57,6 @@ export function useCoreCommands(): ComfyCommand[] {
       }
     })
   }
-
-  const commonProps = { source: 'System' }
 
   const commands = [
     {
@@ -184,7 +185,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Interrupt',
       function: async () => {
         await api.interrupt()
-        useToastStore().add({
+        toastStore.add({
           severity: 'info',
           summary: t('g.interrupted'),
           detail: t('toastMessages.interrupted'),
@@ -198,7 +199,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Clear Pending Tasks',
       function: async () => {
         await useQueueStore().clear(['queue'])
-        useToastStore().add({
+        toastStore.add({
           severity: 'info',
           summary: t('g.confirmed'),
           detail: t('toastMessages.pendingTasksDeleted'),
@@ -246,7 +247,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Fit view to selected nodes',
       function: () => {
         if (app.canvas.empty) {
-          useToastStore().add({
+          toastStore.add({
             severity: 'error',
             summary: t('toastMessages.emptyCanvas'),
             life: 3000
@@ -328,7 +329,7 @@ export function useCoreCommands(): ComfyCommand[] {
       function: () => {
         const { canvas } = app
         if (!canvas.selectedItems?.size) {
-          useToastStore().add({
+          toastStore.add({
             severity: 'error',
             summary: t('toastMessages.nothingToGroup'),
             detail: t('toastMessages.pleaseSelectNodesToGroup'),
@@ -641,8 +642,27 @@ export function useCoreCommands(): ComfyCommand[] {
       function: async () => {
         await dialogService.showSignInDialog()
       }
+    },
+    {
+      id: 'Comfy.User.SignOut',
+      icon: 'pi pi-sign-out',
+      label: 'Sign Out',
+      versionAdded: '1.18.1',
+      function: async () => {
+        await authStore.logout()
+        if (authStore.error) {
+          toastStore.addAlert(authStore.error)
+        } else {
+          toastStore.add({
+            severity: 'success',
+            summary: t('auth.signOut.success'),
+            detail: t('auth.signOut.successDetail'),
+            life: 5000
+          })
+        }
+      }
     }
   ]
 
-  return commands.map((command) => ({ ...command, ...commonProps }))
+  return commands.map((command) => ({ ...command, source: 'System' }))
 }
