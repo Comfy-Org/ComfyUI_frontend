@@ -377,10 +377,6 @@
   "LiteGraph_ContextMenu_Scaling": {
     "name": "확대시 노드 콤보 위젯 메뉴 (목록) 스케일링"
   },
-  "LiteGraph_Node_DefaultPadding": {
-    "name": "새로 생성된 노드에 패딩 추가",
-    "tooltip": "새로 생성된 노드는 이 값만큼 가로로 크기가 조정됩니다. 이는 텍스트 잘림 및 줄바꿈을 줄일 수 있습니다."
-  },
   "LiteGraph_Node_TooltipDelay": {
     "name": "툴팁 지연"
   },

@@ -377,10 +377,6 @@
   "LiteGraph_ContextMenu_Scaling": {
     "name": "放大时缩放节点组合部件菜单（列表）"
   },
-  "LiteGraph_Node_DefaultPadding": {
-    "name": "为新建节点添加填充",
-    "tooltip": "新建节点将按此数值水平调整大小，可减少文字裁剪和换行。"
-  },
   "LiteGraph_Node_TooltipDelay": {
     "name": "工具提示延迟"
   },
