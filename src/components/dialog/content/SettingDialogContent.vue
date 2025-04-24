@@ -47,27 +47,10 @@
           <SettingsPanel :setting-groups="sortedGroups(category)" />
         </PanelTemplate>
 
-        <AboutPanel />
-        <UserPanel />
-        <CreditsPanel />
-        <Suspense>
-          <KeybindingPanel />
+        <Suspense v-for="panel in panels" :key="panel.node.key">
+          <component :is="panel.component" />
           <template #fallback>
-            <div>Loading keybinding panel...</div>
-          </template>
-        </Suspense>
-
-        <Suspense>
-          <ExtensionPanel />
-          <template #fallback>
-            <div>Loading extension panel...</div>
-          </template>
-        </Suspense>
-
-        <Suspense>
-          <ServerConfigPanel />
-          <template #fallback>
-            <div>Loading server config panel...</div>
+            <div>Loading {{ panel.node.label }} panel...</div>
           </template>
         </Suspense>
       </TabPanels>
@@ -81,7 +64,7 @@ import Listbox from 'primevue/listbox'
 import ScrollPanel from 'primevue/scrollpanel'
 import TabPanels from 'primevue/tabpanels'
 import Tabs from 'primevue/tabs'
-import { computed, defineAsyncComponent, watch } from 'vue'
+import { computed, watch } from 'vue'
 
 import SearchBox from '@/components/common/SearchBox.vue'
 import { useSettingSearch } from '@/composables/setting/useSettingSearch'
@@ -91,14 +74,11 @@ import { SettingTreeNode } from '@/stores/settingStore'
 import { ISettingGroup, SettingParams } from '@/types/settingTypes'
 import { flattenTree } from '@/utils/treeUtil'
 
-import AboutPanel from './setting/AboutPanel.vue'
 import ColorPaletteMessage from './setting/ColorPaletteMessage.vue'
-import CreditsPanel from './setting/CreditsPanel.vue'
 import CurrentUserMessage from './setting/CurrentUserMessage.vue'
 import FirstTimeUIMessage from './setting/FirstTimeUIMessage.vue'
 import PanelTemplate from './setting/PanelTemplate.vue'
 import SettingsPanel from './setting/SettingsPanel.vue'
-import UserPanel from './setting/UserPanel.vue'
 
 const { defaultPanel } = defineProps<{
   defaultPanel?:
@@ -110,21 +90,12 @@ const { defaultPanel } = defineProps<{
     | 'credits'
 }>()
 
-const KeybindingPanel = defineAsyncComponent(
-  () => import('./setting/KeybindingPanel.vue')
-)
-const ExtensionPanel = defineAsyncComponent(
-  () => import('./setting/ExtensionPanel.vue')
-)
-const ServerConfigPanel = defineAsyncComponent(
-  () => import('./setting/ServerConfigPanel.vue')
-)
-
 const {
   activeCategory,
   defaultCategory,
   settingCategories,
-  groupedMenuTreeNodes
+  groupedMenuTreeNodes,
+  panels
 } = useSettingUI(defaultPanel)
 
 const {
