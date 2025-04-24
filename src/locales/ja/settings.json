@@ -293,9 +293,6 @@
       "small": "小"
     }
   },
-  "Comfy_Sidebar_UnifiedWidth": {
-    "name": "サイドバーの幅を統一"
-  },
   "Comfy_SnapToGrid_GridSize": {
     "name": "グリッドサイズにスナップ",
     "tooltip": "シフトを押しながらノードをドラッグおよびサイズ変更すると、グリッドに整列されます。これにより、そのグリッドのサイズが制御されます。"
