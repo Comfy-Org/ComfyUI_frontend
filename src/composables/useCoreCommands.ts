@@ -12,7 +12,7 @@ import {
 } from '@/constants/coreColorPalettes'
 import { t } from '@/i18n'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { ComfyApp, app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowService } from '@/services/workflowService'
@@ -26,6 +26,7 @@ import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { isImageNode } from '@/utils/litegraphUtil'
 
 export function useCoreCommands(): ComfyCommand[] {
   const workflowService = useWorkflowService()
@@ -430,6 +431,23 @@ export function useCoreCommands(): ComfyCommand[] {
           }
         }
         app.canvas.setDirty(true, true)
+      }
+    },
+    {
+      id: 'Comfy.Canvas.SelectedNode.OpenMaskEditor',
+      icon: 'pi pi-pencil',
+      label: 'Open Mask Editor for Selected Node',
+      versionAdded: '',
+      function: () => {
+        const nodes = getSelectedNodes()
+        const firstImageNode = nodes.find((node) => isImageNode(node))
+        if (firstImageNode) {
+          ComfyApp.copyToClipspace(firstImageNode)
+          // @ts-expect-error fixme ts strict error
+          ComfyApp.clipspace_return_node = firstImageNode
+          // @ts-expect-error fixme ts strict error
+          ComfyApp.open_maskeditor()
+        }
       }
     },
     {
