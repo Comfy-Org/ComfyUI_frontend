@@ -25,6 +25,7 @@ export const zBaseInputOptions = z
     tooltip: z.string().optional(),
     hidden: z.boolean().optional(),
     advanced: z.boolean().optional(),
+    widgetType: z.string().optional(),
     /** Backend-only properties. */
     rawLink: z.boolean().optional(),
     lazy: z.boolean().optional()
