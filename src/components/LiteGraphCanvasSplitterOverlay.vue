@@ -74,7 +74,7 @@ const activeSidebarTabId = computed(
 )
 
 const sidebarStateKey = computed(() => {
-  return unifiedWidth.value ? 'unified-sidebar' : activeSidebarTabId.value || ''
+  return unifiedWidth.value ? 'unified-sidebar' : activeSidebarTabId.value ?? ''
 })
 </script>
 
