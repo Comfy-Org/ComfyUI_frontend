@@ -59,22 +59,21 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   const userId = computed(() => currentUser.value?.uid)
 
   // Get auth from VueFire and listen for auth state changes
-  const auth = useFirebaseAuth()
-  if (auth) {
-    // Set persistence to localStorage (works in both browser and Electron)
-    void setPersistence(auth, browserLocalPersistence)
+  // From useFirebaseAuth docs:
+  // Retrieves the Firebase Auth instance. Returns `null` on the server.
+  // When using this function on the client in TypeScript, you can force the type with `useFirebaseAuth()!`.
+  const auth = useFirebaseAuth()!
+  // Set persistence to localStorage (works in both browser and Electron)
+  void setPersistence(auth, browserLocalPersistence)
 
-    onAuthStateChanged(auth, (user) => {
-      currentUser.value = user
-      isInitialized.value = true
+  onAuthStateChanged(auth, (user) => {
+    currentUser.value = user
+    isInitialized.value = true
 
-      // Reset balance when auth state changes
-      balance.value = null
-      lastBalanceUpdateTime.value = null
-    })
-  } else {
-    error.value = 'Firebase Auth not available from VueFire'
-  }
+    // Reset balance when auth state changes
+    balance.value = null
+    lastBalanceUpdateTime.value = null
+  })
 
   const showAuthErrorToast = () => {
     useToastStore().add({
