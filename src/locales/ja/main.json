@@ -104,8 +104,8 @@
   },
   "credits": {
     "credits": "クレジット",
-    "creditsHistory": "クレジット履歴",
     "faqs": "よくある質問",
+    "invoiceHistory": "請求履歴",
     "lastUpdated": "最終更新",
     "messageSupport": "サポートにメッセージ",
     "purchaseCredits": "クレジットを購入",

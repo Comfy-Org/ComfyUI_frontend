@@ -104,8 +104,8 @@
   },
   "credits": {
     "credits": "크레딧",
-    "creditsHistory": "크레딧 내역",
     "faqs": "자주 묻는 질문",
+    "invoiceHistory": "청구서 내역",
     "lastUpdated": "마지막 업데이트",
     "messageSupport": "지원 문의",
     "purchaseCredits": "크레딧 구매",

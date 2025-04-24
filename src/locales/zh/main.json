@@ -104,8 +104,8 @@
   },
   "credits": {
     "credits": "积分",
-    "creditsHistory": "积分历史",
     "faqs": "常见问题",
+    "invoiceHistory": "发票历史",
     "lastUpdated": "最近更新",
     "messageSupport": "联系客服",
     "purchaseCredits": "购买积分",
