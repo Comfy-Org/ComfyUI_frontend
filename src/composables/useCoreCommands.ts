@@ -13,10 +13,10 @@ import { t } from '@/i18n'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
+import { useFirebaseAuthService } from '@/services/firebaseAuthService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowService } from '@/services/workflowService'
 import type { ComfyCommand } from '@/stores/commandStore'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { useTitleEditorStore } from '@/stores/graphStore'
 import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
 import { useSettingStore } from '@/stores/settingStore'
@@ -32,7 +32,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const workflowStore = useWorkflowStore()
   const dialogService = useDialogService()
   const colorPaletteStore = useColorPaletteStore()
-  const authStore = useFirebaseAuthStore()
+  const firebaseAuthService = useFirebaseAuthService()
   const toastStore = useToastStore()
   const getTracker = () => workflowStore.activeWorkflow?.changeTracker
 
@@ -649,17 +649,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Sign Out',
       versionAdded: '1.18.1',
       function: async () => {
-        await authStore.logout()
-        if (authStore.error) {
-          toastStore.addAlert(authStore.error)
-        } else {
-          toastStore.add({
-            severity: 'success',
-            summary: t('auth.signOut.success'),
-            detail: t('auth.signOut.successDetail'),
-            life: 5000
-          })
-        }
+        await firebaseAuthService.logout()
       }
     }
   ]
