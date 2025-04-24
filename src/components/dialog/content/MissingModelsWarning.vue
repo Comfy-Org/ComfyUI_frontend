@@ -36,25 +36,12 @@ import ListBox from 'primevue/listbox'
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { MODELS_DOWNLOAD_SETTINGS } from '@/constants/modelsDownloadSettings'
 import FileDownload from '@/components/common/FileDownload.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import { useSettingStore } from '@/stores/settingStore'
 import { isElectron } from '@/utils/envUtil'
 
-// TODO: Read this from server internal API rather than hardcoding here
-// as some installations may wish to use custom sources
-const allowedSources = [
-  'https://civitai.com/',
-  'https://huggingface.co/',
-  'http://localhost:' // Included for testing usage only
-]
-const allowedSuffixes = ['.safetensors', '.sft']
-// Models that fail above conditions but are still allowed
-const whiteListedUrls = new Set([
-  'https://huggingface.co/stabilityai/stable-zero123/resolve/main/stable_zero123.ckpt',
-  'https://huggingface.co/TencentARC/T2I-Adapter/resolve/main/models/t2iadapter_depth_sd14v1.pth?download=true',
-  'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth'
-])
 
 interface ModelInfo {
   name: string
@@ -99,19 +86,19 @@ const missingModels = computed(() => {
       folder_path: paths[0]
     }
     modelDownloads.value[model.name] = downloadInfo
-    if (!whiteListedUrls.has(model.url)) {
-      if (!allowedSources.some((source) => model.url.startsWith(source))) {
+    if (!MODELS_DOWNLOAD_SETTINGS.whiteListedUrls.has(model.url)) {
+      if (!MODELS_DOWNLOAD_SETTINGS.allowedSources.some((source) => model.url.startsWith(source))) {
         return {
           label: `${model.directory} / ${model.name}`,
           url: model.url,
-          error: `Download not allowed from source '${model.url}', only allowed from '${allowedSources.join("', '")}'`
+          error: `Download not allowed from source '${model.url}', only allowed from '${MODELS_DOWNLOAD_SETTINGS.allowedSources.join("', '")}'`
         }
       }
-      if (!allowedSuffixes.some((suffix) => model.name.endsWith(suffix))) {
+      if (!MODELS_DOWNLOAD_SETTINGS.allowedSuffixes.some((suffix) => model.name.endsWith(suffix))) {
         return {
           label: `${model.directory} / ${model.name}`,
           url: model.url,
-          error: `Only allowed suffixes are: '${allowedSuffixes.join("', '")}'`
+          error: `Only allowed suffixes are: '${MODELS_DOWNLOAD_SETTINGS.allowedSuffixes.join("', '")}'`
         }
       }
     }

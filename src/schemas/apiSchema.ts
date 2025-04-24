@@ -432,6 +432,7 @@ const zSettings = z.object({
   'Comfy.TutorialCompleted': z.boolean(),
   'Comfy.Node.AllowImageSizeDraw': z.boolean(),
   'Comfy-Desktop.AutoUpdate': z.boolean(),
+  'Comfy-Desktop.ModelsDownload.ExtraAllowedSource': z.string(),
   'Comfy-Desktop.SendStatistics': z.boolean(),
   'Comfy-Desktop.WindowStyle': z.string(),
   'Comfy-Desktop.UV.PythonInstallMirror': z.string(),
