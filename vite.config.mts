@@ -64,7 +64,8 @@ export default defineConfig({
     comfyAPIPlugin(IS_DEV),
     generateImportMapPlugin([
       { name: 'vue', pattern: /[\\/]node_modules[\\/]vue[\\/]/ },
-      { name: 'primevue', pattern: /[\\/]node_modules[\\/]primevue[\\/]/ }
+      { name: 'primevue', pattern: /[\\/]node_modules[\\/]primevue[\\/]/ },
+      { name: 'vue-i18n', pattern: /[\\/]node_modules[\\/]vue-i18n[\\/]/ }
     ]),
     addElementVnodeExportPlugin(),
 
