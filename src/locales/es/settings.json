@@ -377,6 +377,10 @@
   "LiteGraph_ContextMenu_Scaling": {
     "name": "Escala los menús de widgets combinados de nodos (listas) al acercar"
   },
+  "LiteGraph_Node_DefaultPadding": {
+    "name": "Reducir siempre los nuevos nodos",
+    "tooltip": "Redimensiona los nodos al tamaño más pequeño posible al crearlos. Si está desactivado, un nodo recién añadido se ampliará ligeramente para mostrar los valores de los widgets."
+  },
   "LiteGraph_Node_TooltipDelay": {
     "name": "Retraso de la información sobre herramientas"
   },

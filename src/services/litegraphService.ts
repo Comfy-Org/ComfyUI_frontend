@@ -30,6 +30,7 @@ import { $el } from '@/scripts/ui'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
@@ -214,7 +215,11 @@ export const useLitegraphService = () => {
        */
       #setInitialSize() {
         const s = this.computeSize()
-        s[0] = Math.max(this.#initialMinSize.width, s[0] * 1.5)
+        // Expand the width a little to fit widget values on screen.
+        const pad =
+          this.widgets?.length &&
+          !useSettingStore().get('LiteGraph.Node.DefaultPadding')
+        s[0] = Math.max(this.#initialMinSize.width, s[0] + (pad ? 60 : 0))
         s[1] = Math.max(this.#initialMinSize.height, s[1])
         this.setSize(s)
       }

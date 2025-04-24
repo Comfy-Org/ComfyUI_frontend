@@ -377,6 +377,10 @@
   "LiteGraph_ContextMenu_Scaling": {
     "name": "Scale node combo widget menus (lists) when zoomed in"
   },
+  "LiteGraph_Node_DefaultPadding": {
+    "name": "Always shrink new nodes",
+    "tooltip": "Resize nodes to the smallest possible size when created. When disabled, a newly added node will be widened slightly to show widget values."
+  },
   "LiteGraph_Node_TooltipDelay": {
     "name": "Tooltip Delay"
   },
