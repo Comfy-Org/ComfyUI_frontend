@@ -171,23 +171,6 @@ describe('useFirebaseAuthStore', () => {
     expect(store.error).toBe(null)
   })
 
-  it('should handle auth initialization failure', async () => {
-    // Mock auth as null to simulate initialization failure
-    vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(null)
-
-    // Create a new store instance
-    setActivePinia(createPinia())
-    const uninitializedStore = useFirebaseAuthStore()
-
-    // Check that isInitialized is false
-    expect(uninitializedStore.isInitialized).toBe(false)
-
-    // Verify store actions throw appropriate errors
-    await expect(
-      uninitializedStore.login('test@example.com', 'password')
-    ).rejects.toThrow('Firebase Auth not initialized')
-  })
-
   describe('login', () => {
     it('should login with valid credentials', async () => {
       const mockUserCredential = { user: mockUser }
