@@ -110,12 +110,12 @@
     "messageSupport": "联系客服",
     "purchaseCredits": "购买积分",
     "topUp": {
-      "addCredits": "为您的余额充值",
       "buyNow": "立即购买",
       "insufficientMessage": "您的积分不足，无法运行此工作流。",
       "insufficientTitle": "积分不足",
       "maxAmount": "（最高 $1,000 美元）",
-      "title": "充值余额"
+      "quickPurchase": "快速购买",
+      "seeDetails": "查看详情"
     },
     "yourCreditBalance": "您的积分余额"
   },

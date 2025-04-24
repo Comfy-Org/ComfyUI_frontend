@@ -1,35 +1,67 @@
 <template>
-  <div class="flex flex-col p-6">
-    <div
-      class="flex items-center gap-2"
-      :class="{ 'text-red-500': isInsufficientCredits }"
-    >
-      <i
-        :class="[
-          'text-2xl',
-          isInsufficientCredits ? 'pi pi-exclamation-triangle' : ''
-        ]"
-      />
-      <h2 class="text-2xl font-semibold">
-        {{
-          $t(
-            isInsufficientCredits
-              ? 'credits.topUp.insufficientTitle'
-              : 'credits.topUp.title'
-          )
-        }}
-      </h2>
+  <div class="flex flex-col w-96 p-2 gap-10">
+    <div v-if="isInsufficientCredits" class="flex flex-col gap-4">
+      <h1 class="text-2xl font-medium leading-normal my-0">
+        {{ $t('credits.topUp.insufficientTitle') }}
+      </h1>
+      <p class="text-base my-0">
+        {{ $t('credits.topUp.insufficientMessage') }}
+      </p>
     </div>
 
-    <!-- Error Message -->
-    <p v-if="isInsufficientCredits" class="text-lg text-muted mt-6">
-      {{ $t('credits.topUp.insufficientMessage') }}
-    </p>
-
     <!-- Balance Section -->
-    <div class="flex justify-between items-center mt-8">
-      <div class="flex flex-col gap-2">
-        <div class="text-muted">{{ $t('credits.yourCreditBalance') }}</div>
+    <div class="flex justify-between items-center">
+      <div class="flex flex-col gap-2 w-full">
+        <div class="text-muted text-base">
+          {{ $t('credits.yourCreditBalance') }}
+        </div>
+        <div class="flex items-center justify-between w-full">
+          <div class="flex items-center gap-2">
+            <Tag
+              severity="secondary"
+              icon="pi pi-dollar"
+              rounded
+              class="text-amber-400 p-1"
+            />
+            <span class="text-2xl">{{ formattedBalance }}</span>
+          </div>
+          <Button
+            outlined
+            severity="secondary"
+            :label="$t('credits.topUp.seeDetails')"
+            icon="pi pi-arrow-up-right"
+            @click="handleSeeDetails"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Amount Input Section -->
+    <div class="flex flex-col gap-2">
+      <span class="text-muted text-sm"
+        >{{ $t('credits.topUp.quickPurchase') }}:</span
+      >
+      <div class="grid grid-cols-[2fr_1fr] gap-2">
+        <template v-for="amount in amountOptions" :key="amount">
+          <div class="flex items-center gap-2">
+            <Tag
+              severity="secondary"
+              icon="pi pi-dollar"
+              rounded
+              class="text-amber-400 p-1"
+            />
+            <span class="text-xl">{{ amount }}</span>
+          </div>
+          <Button
+            :severity="
+              preselectedAmountOption === amount ? 'primary' : 'secondary'
+            "
+            :outlined="preselectedAmountOption !== amount"
+            :label="$t('credits.topUp.buyNow')"
+            @click="handleBuyNow(amount)"
+          />
+        </template>
+
         <div class="flex items-center gap-2">
           <Tag
             severity="secondary"
@@ -37,65 +69,42 @@
             rounded
             class="text-amber-400 p-1"
           />
-          <span class="text-2xl">{{ formattedBalance }}</span>
+          <InputNumber
+            v-model="customAmount"
+            :min="1"
+            :max="1000"
+            :step="1"
+            show-buttons
+            :allow-empty="false"
+            :highlight-on-focus="true"
+            pt:pc-input-text:root="w-24"
+            @blur="
+              (e: InputNumberBlurEvent) => (customAmount = Number(e.value))
+            "
+            @input="
+              (e: InputNumberInputEvent) => (customAmount = Number(e.value))
+            "
+          />
         </div>
-      </div>
-      <Button
-        text
-        severity="secondary"
-        :label="$t('credits.creditsHistory')"
-        icon="pi pi-arrow-up-right"
-        @click="handleSeeDetails"
-      />
-    </div>
-
-    <!-- Amount Input Section -->
-    <div class="flex flex-col gap-2 mt-8">
-      <div>
-        <span class="text-muted">{{ $t('credits.topUp.addCredits') }}</span>
-        <span class="text-muted text-sm ml-1">{{
-          $t('credits.topUp.maxAmount')
-        }}</span>
-      </div>
-      <div class="flex items-center gap-2">
-        <Tag
+        <ProgressSpinner v-if="loading" class="w-8 h-8" />
+        <Button
+          v-else
+          :label="$t('credits.topUp.buyNow')"
           severity="secondary"
-          icon="pi pi-dollar"
-          rounded
-          class="text-amber-400 p-1"
-        />
-        <InputNumber
-          v-model="amount"
-          :min="1"
-          :max="1000"
-          :step="1"
-          mode="currency"
-          currency="USD"
-          show-buttons
-          @blur="handleBlur"
-          @input="handleInput"
+          outlined
+          @click="handleBuyNow(customAmount)"
         />
       </div>
-    </div>
-    <div class="flex justify-end mt-8">
-      <ProgressSpinner v-if="loading" class="w-8 h-8" />
-      <Button
-        v-else
-        severity="primary"
-        :label="$t('credits.topUp.buyNow')"
-        :disabled="!amount || amount > 1000"
-        :pt="{
-          root: { class: 'px-8' }
-        }"
-        @click="handleBuyNow"
-      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import InputNumber from 'primevue/inputnumber'
+import InputNumber, {
+  type InputNumberBlurEvent,
+  type InputNumberInputEvent
+} from 'primevue/inputnumber'
 import ProgressSpinner from 'primevue/progressspinner'
 import Tag from 'primevue/tag'
 import { computed, onBeforeUnmount, ref } from 'vue'
@@ -103,24 +112,20 @@ import { computed, onBeforeUnmount, ref } from 'vue'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { formatMetronomeCurrency, usdToMicros } from '@/utils/formatUtil'
 
-defineProps<{
+const {
+  isInsufficientCredits = false,
+  amountOptions = [5, 10, 20, 50],
+  preselectedAmountOption = 10
+} = defineProps<{
   isInsufficientCredits?: boolean
+  amountOptions?: number[]
+  preselectedAmountOption?: number
 }>()
 
 const authStore = useFirebaseAuthStore()
-const amount = ref<number>(9.99)
+const customAmount = ref<number>(100)
 const didClickBuyNow = ref(false)
 const loading = computed(() => authStore.loading)
-
-const handleBlur = (e: any) => {
-  if (e.target.value) {
-    amount.value = parseFloat(e.target.value)
-  }
-}
-
-const handleInput = (e: any) => {
-  amount.value = e.value
-}
 
 const formattedBalance = computed(() => {
   if (!authStore.balance) return '0.000'
@@ -133,11 +138,9 @@ const handleSeeDetails = async () => {
   window.open(response.billing_portal_url, '_blank')
 }
 
-const handleBuyNow = async () => {
-  if (!amount.value) return
-
+const handleBuyNow = async (amount: number) => {
   const response = await authStore.initiateCreditPurchase({
-    amount_micros: usdToMicros(amount.value),
+    amount_micros: usdToMicros(amount),
     currency: 'usd'
   })
 

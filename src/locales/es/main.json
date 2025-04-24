@@ -110,12 +110,12 @@
     "messageSupport": "Contactar soporte",
     "purchaseCredits": "Comprar créditos",
     "topUp": {
-      "addCredits": "Agregar créditos a tu saldo",
       "buyNow": "Comprar ahora",
       "insufficientMessage": "No tienes suficientes créditos para ejecutar este flujo de trabajo.",
       "insufficientTitle": "Créditos insuficientes",
       "maxAmount": "(Máx. $1,000 USD)",
-      "title": "Agregar al saldo de créditos"
+      "quickPurchase": "Compra rápida",
+      "seeDetails": "Ver detalles"
     },
     "yourCreditBalance": "Tu saldo de créditos"
   },

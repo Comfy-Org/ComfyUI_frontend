@@ -110,12 +110,12 @@
     "messageSupport": "Связаться с поддержкой",
     "purchaseCredits": "Купить кредиты",
     "topUp": {
-      "addCredits": "Добавить кредиты на баланс",
       "buyNow": "Купить сейчас",
       "insufficientMessage": "У вас недостаточно кредитов для запуска этого рабочего процесса.",
       "insufficientTitle": "Недостаточно кредитов",
       "maxAmount": "(Макс. $1,000 USD)",
-      "title": "Пополнить баланс кредитов"
+      "quickPurchase": "Быстрая покупка",
+      "seeDetails": "Смотреть детали"
     },
     "yourCreditBalance": "Ваш баланс кредитов"
   },
