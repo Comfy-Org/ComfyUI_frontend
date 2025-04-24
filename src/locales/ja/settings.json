@@ -377,6 +377,10 @@
   "LiteGraph_ContextMenu_Scaling": {
     "name": "ズームイン時にノードコンボウィジェットメニュー（リスト）をスケーリングする"
   },
+  "LiteGraph_Node_DefaultPadding": {
+    "name": "新しく作成されたノードにパディングを追加",
+    "tooltip": "新しく作成されたノードは、この値分だけ横方向にリサイズされます。これにより、テキストの切り取りや折り返しを減らすことができます。"
+  },
   "LiteGraph_Node_TooltipDelay": {
     "name": "ツールチップ遅延"
   },
