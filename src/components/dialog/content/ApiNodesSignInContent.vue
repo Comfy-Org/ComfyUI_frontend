@@ -12,7 +12,7 @@
     <ApiNodesList :node-names="apiNodeNames" />
 
     <div class="flex justify-between items-center">
-      <Button :label="t('g.learnMore')" link />
+      <Button :label="t('g.learnMore')" link @click="handleLearnMoreClick" />
       <div class="flex gap-2">
         <Button
           :label="t('g.cancel')"
@@ -37,4 +37,8 @@ const { apiNodeNames, onLogin, onCancel } = defineProps<{
   onLogin?: () => void
   onCancel?: () => void
 }>()
+
+const handleLearnMoreClick = () => {
+  window.open('https://www.comfy.org/faq', '_blank')
+}
 </script>

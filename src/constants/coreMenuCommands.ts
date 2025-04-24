@@ -23,5 +23,8 @@ export const CORE_MENU_COMMANDS = [
       'Comfy.Help.OpenComfyUIForum'
     ]
   ],
-  [['Help'], ['Comfy.Help.AboutComfyUI', 'Comfy.Feedback']]
+  [
+    ['Help'],
+    ['Comfy.Help.AboutComfyUI', 'Comfy.Feedback', 'Comfy.ContactSupport']
+  ]
 ]

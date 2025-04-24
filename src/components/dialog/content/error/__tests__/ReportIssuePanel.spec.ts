@@ -1,5 +1,6 @@
 import { Form } from '@primevue/forms'
 import { mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 import Checkbox from 'primevue/checkbox'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
@@ -65,7 +66,12 @@ vi.mock('@/scripts/api', () => ({
   api: {
     getLogs: vi.fn().mockResolvedValue('mock logs'),
     getSystemStats: vi.fn().mockResolvedValue('mock stats'),
-    getSettings: vi.fn().mockResolvedValue('mock settings')
+    getSettings: vi.fn().mockResolvedValue('mock settings'),
+    fetchApi: vi.fn().mockResolvedValue({
+      json: vi.fn().mockResolvedValue({}),
+      text: vi.fn().mockResolvedValue('')
+    }),
+    apiURL: vi.fn().mockReturnValue('https://test.com')
   }
 }))
 
@@ -139,12 +145,14 @@ vi.mock('@primevue/forms', () => ({
 describe('ReportIssuePanel', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    const pinia = createPinia()
+    setActivePinia(pinia)
   })
 
   const mountComponent = (props: IssueReportPanelProps, options = {}): any => {
     return mount(ReportIssuePanel, {
       global: {
-        plugins: [PrimeVue, i18n],
+        plugins: [PrimeVue, i18n, createPinia()],
         directives: { tooltip: Tooltip }
       },
       props,

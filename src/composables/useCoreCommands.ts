@@ -580,6 +580,22 @@ export function useCoreCommands(): ComfyCommand[] {
       }
     },
     {
+      id: 'Comfy.ContactSupport',
+      icon: 'pi pi-question',
+      label: 'Contact Support',
+      versionAdded: '1.17.8',
+      function: () => {
+        dialogService.showIssueReportDialog({
+          title: t('issueReport.contactSupportTitle'),
+          subtitle: t('issueReport.contactSupportDescription'),
+          panelProps: {
+            errorType: 'ContactSupport',
+            defaultFields: ['Workflow', 'Logs', 'SystemStats', 'Settings']
+          }
+        })
+      }
+    },
+    {
       id: 'Comfy.Help.OpenComfyUIForum',
       icon: 'pi pi-comments',
       label: 'Open ComfyUI Forum',
@@ -615,6 +631,15 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.13.9',
       function: () => {
         dialogService.showManagerProgressDialog()
+      }
+    },
+    {
+      id: 'Comfy.User.OpenSignInDialog',
+      icon: 'pi pi-user',
+      label: 'Open Sign In Dialog',
+      versionAdded: '1.17.6',
+      function: async () => {
+        await dialogService.showSignInDialog()
       }
     }
   ]

@@ -83,6 +83,9 @@
   "Comfy_ClearWorkflow": {
     "label": "清除工作流"
   },
+  "Comfy_ContactSupport": {
+    "label": "联系支持"
+  },
   "Comfy_DuplicateWorkflow": {
     "label": "复制当前工作流"
   },
@@ -172,6 +175,9 @@
   },
   "Comfy_Undo": {
     "label": "撤销"
+  },
+  "Comfy_User_OpenSignInDialog": {
+    "label": "打开登录对话框"
   },
   "Workspace_CloseWorkflow": {
     "label": "关闭当前工作流"

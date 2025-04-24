@@ -22,8 +22,7 @@ const PROD_CONFIG: FirebaseOptions = {
   measurementId: 'G-3ZBD3MBTG4'
 }
 
-// To test with prod config while using dev server, set USE_PROD_FIREBASE_CONFIG=true in .env
-// Otherwise, build with `npm run build` the and set `--front-end-root` to `ComfyUI_frontend/dist`
-export const FIREBASE_CONFIG: FirebaseOptions = __USE_PROD_FIREBASE_CONFIG__
+// To test with prod config while using dev server, set USE_PROD_CONFIG=true in .env
+export const FIREBASE_CONFIG: FirebaseOptions = __USE_PROD_CONFIG__
   ? PROD_CONFIG
   : DEV_CONFIG

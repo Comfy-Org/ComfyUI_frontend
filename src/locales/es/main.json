@@ -17,6 +17,8 @@
       "emailPlaceholder": "Ingresa tu correo electrónico",
       "failed": "Inicio de sesión fallido",
       "forgotPassword": "¿Olvidaste tu contraseña?",
+      "forgotPasswordError": "No se pudo enviar el correo electrónico para restablecer la contraseña",
+      "genericErrorMessage": "Lo sentimos, hemos encontrado un error. Por favor, contacta con {supportEmail}.",
       "loginButton": "Iniciar sesión",
       "loginWithGithub": "Iniciar sesión con Github",
       "loginWithGoogle": "Iniciar sesión con Google",
@@ -24,12 +26,20 @@
       "orContinueWith": "O continuar con",
       "passwordLabel": "Contraseña",
       "passwordPlaceholder": "Ingresa tu contraseña",
+      "passwordResetSent": "Correo electrónico de restablecimiento de contraseña enviado",
+      "passwordResetSentDetail": "Por favor, revisa tu correo electrónico para encontrar un enlace para restablecer tu contraseña.",
       "privacyLink": "Política de privacidad",
+      "signInOrSignUp": "Iniciar sesión / Registrarse",
       "signUp": "Regístrate",
       "success": "Inicio de sesión exitoso",
       "termsLink": "Términos de uso",
       "termsText": "Al hacer clic en \"Siguiente\" o \"Registrarse\", aceptas nuestros",
       "title": "Inicia sesión en tu cuenta"
+    },
+    "signOut": {
+      "signOut": "Cerrar sesión",
+      "success": "Sesión cerrada correctamente",
+      "successDetail": "Has cerrado sesión en tu cuenta."
     },
     "signup": {
       "alreadyHaveAccount": "¿Ya tienes una cuenta?",
@@ -94,11 +104,19 @@
   },
   "credits": {
     "credits": "Créditos",
-    "creditsHistory": "Historial de créditos",
     "faqs": "Preguntas frecuentes",
+    "invoiceHistory": "Historial de facturas",
+    "lastUpdated": "Última actualización",
     "messageSupport": "Contactar soporte",
-    "paymentDetails": "Detalles de pago",
     "purchaseCredits": "Comprar créditos",
+    "topUp": {
+      "buyNow": "Comprar ahora",
+      "insufficientMessage": "No tienes suficientes créditos para ejecutar este flujo de trabajo.",
+      "insufficientTitle": "Créditos insuficientes",
+      "maxAmount": "(Máx. $1,000 USD)",
+      "quickPurchase": "Compra rápida",
+      "seeDetails": "Ver detalles"
+    },
     "yourCreditBalance": "Tu saldo de créditos"
   },
   "dataTypes": {
@@ -402,19 +420,34 @@
   },
   "issueReport": {
     "contactFollowUp": "Contáctame para seguimiento",
+    "contactSupportDescription": "Por favor, complete el siguiente formulario con su reporte",
+    "contactSupportTitle": "Contactar Soporte",
+    "describeTheProblem": "Describa el problema",
+    "email": "Correo electrónico",
     "feedbackTitle": "Ayúdanos a mejorar ComfyUI proporcionando comentarios",
     "helpFix": "Ayuda a Solucionar Esto",
+    "helpTypes": {
+      "billingPayments": "Facturación / Pagos",
+      "bugReport": "Reporte de error",
+      "giveFeedback": "Enviar comentarios",
+      "loginAccessIssues": "Problemas de inicio de sesión / acceso",
+      "somethingElse": "Otro"
+    },
     "notifyResolve": "Notifícame cuando se resuelva",
     "provideAdditionalDetails": "Proporciona detalles adicionales (opcional)",
     "provideEmail": "Danos tu correo electrónico (opcional)",
     "rating": "Calificación",
+    "selectIssue": "Seleccione el problema",
     "stackTrace": "Rastreo de Pila",
     "submitErrorReport": "Enviar Reporte de Error (Opcional)",
     "systemStats": "Estadísticas del Sistema",
     "validation": {
       "invalidEmail": "Por favor ingresa una dirección de correo electrónico válida",
-      "maxLength": "Mensaje demasiado largo"
-    }
+      "maxLength": "Mensaje demasiado largo",
+      "selectIssueType": "Por favor, seleccione un tipo de problema"
+    },
+    "whatCanWeInclude": "Especifique qué incluir en el reporte",
+    "whatDoYouNeedHelpWith": "¿Con qué necesita ayuda?"
   },
   "load3d": {
     "applyingTexture": "Aplicando textura...",
@@ -587,6 +620,7 @@
     "ComfyUI Docs": "Documentos de ComfyUI",
     "ComfyUI Forum": "Foro de ComfyUI",
     "ComfyUI Issues": "Problemas de ComfyUI",
+    "Contact Support": "Contactar soporte",
     "Convert selected nodes to group node": "Convertir nodos seleccionados en nodo de grupo",
     "Custom Nodes Manager": "Gestor de nodos personalizados",
     "Delete Selected Items": "Eliminar elementos seleccionados",
@@ -613,6 +647,7 @@
     "Open Logs Folder": "Abrir carpeta de registros",
     "Open Models Folder": "Abrir carpeta de modelos",
     "Open Outputs Folder": "Abrir carpeta de salidas",
+    "Open Sign In Dialog": "Abrir diálogo de inicio de sesión",
     "Open extra_model_paths_yaml": "Abrir extra_model_paths.yaml",
     "Pin/Unpin Selected Items": "Anclar/Desanclar elementos seleccionados",
     "Pin/Unpin Selected Nodes": "Anclar/Desanclar nodos seleccionados",
@@ -882,6 +917,7 @@
     "Comfy": "Comfy",
     "Comfy-Desktop": "Comfy-Desktop",
     "ContextMenu": "Menú Contextual",
+    "Credits": "Créditos",
     "CustomColorPalettes": "Paletas de Colores Personalizadas",
     "DevMode": "Modo de Desarrollo",
     "EditTokenWeight": "Editar Peso del Token",
@@ -916,6 +952,7 @@
     "Sidebar": "Barra Lateral",
     "Tree Explorer": "Explorador de Árbol",
     "UV": "UV",
+    "User": "Usuario",
     "Validation": "Validación",
     "Window": "Ventana",
     "Workflow": "Flujo de Trabajo"
@@ -1094,6 +1131,17 @@
     "newUser": "Nuevo usuario",
     "next": "Siguiente",
     "selectUser": "Selecciona un usuario"
+  },
+  "userSettings": {
+    "email": "Correo electrónico",
+    "name": "Nombre",
+    "notSet": "No establecido",
+    "provider": "Método de inicio de sesión",
+    "providers": {
+      "github": "GitHub",
+      "google": "Google"
+    },
+    "title": "Configuración de usuario"
   },
   "validation": {
     "invalidEmail": "Dirección de correo electrónico inválida",

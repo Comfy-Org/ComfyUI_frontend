@@ -83,6 +83,9 @@
   "Comfy_ClearWorkflow": {
     "label": "Borrar flujo de trabajo"
   },
+  "Comfy_ContactSupport": {
+    "label": "Contactar soporte"
+  },
   "Comfy_DuplicateWorkflow": {
     "label": "Duplicar flujo de trabajo actual"
   },
@@ -172,6 +175,9 @@
   },
   "Comfy_Undo": {
     "label": "Deshacer"
+  },
+  "Comfy_User_OpenSignInDialog": {
+    "label": "Abrir diálogo de inicio de sesión"
   },
   "Workspace_CloseWorkflow": {
     "label": "Cerrar Flujo de Trabajo Actual"

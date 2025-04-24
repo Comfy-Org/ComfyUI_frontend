@@ -181,9 +181,24 @@
     "helpFix": "Help Fix This",
     "rating": "Rating",
     "feedbackTitle": "Help us improve ComfyUI by providing feedback",
+    "contactSupportTitle": "Contact Support",
+    "contactSupportDescription": "Please fill in the form below with your report",
+    "selectIssue": "Select the issue",
+    "whatDoYouNeedHelpWith": "What do you need help with?",
+    "whatCanWeInclude": "Specify what to include in the report",
+    "describeTheProblem": "Describe the problem",
+    "email": "Email",
+    "helpTypes": {
+      "billingPayments": "Billing / Payments",
+      "loginAccessIssues": "Login / Access Issues",
+      "giveFeedback": "Give Feedback",
+      "bugReport": "Bug Report",
+      "somethingElse": "Something Else"
+    },
     "validation": {
       "maxLength": "Message too long",
-      "invalidEmail": "Please enter a valid email address"
+      "invalidEmail": "Please enter a valid email address",
+      "selectIssueType": "Please select an issue type"
     }
   },
   "color": {
@@ -631,6 +646,7 @@
     "Zoom Out": "Zoom Out",
     "Clear Pending Tasks": "Clear Pending Tasks",
     "Clear Workflow": "Clear Workflow",
+    "Contact Support": "Contact Support",
     "Duplicate Current Workflow": "Duplicate Current Workflow",
     "Export": "Export",
     "Export (API)": "Export (API)",
@@ -661,6 +677,7 @@
     "Show Settings Dialog": "Show Settings Dialog",
     "Toggle Theme (Dark/Light)": "Toggle Theme (Dark/Light)",
     "Undo": "Undo",
+    "Open Sign In Dialog": "Open Sign In Dialog",
     "Close Current Workflow": "Close Current Workflow",
     "Next Opened Workflow": "Next Opened Workflow",
     "Previous Opened Workflow": "Previous Opened Workflow",
@@ -727,7 +744,9 @@
     "Camera": "Camera",
     "Scene": "Scene",
     "3D": "3D",
-    "Light": "Light"
+    "Light": "Light",
+    "User": "User",
+    "Credits": "Credits"
   },
   "serverConfigItems": {
     "listen": {
@@ -1062,6 +1081,10 @@
   "auth": {
     "login": {
       "title": "Log in to your account",
+      "signInOrSignUp": "Sign In / Sign Up",
+      "forgotPasswordError": "Failed to send password reset email",
+      "passwordResetSent": "Password reset email sent",
+      "passwordResetSentDetail": "Please check your email for a link to reset your password.",
       "newUser": "New here?",
       "signUp": "Sign up",
       "emailLabel": "Email",
@@ -1080,7 +1103,8 @@
       "andText": "and",
       "privacyLink": "Privacy Policy",
       "success": "Login successful",
-      "failed": "Login failed"
+      "failed": "Login failed",
+      "genericErrorMessage": "Sorry, we've encountered an error. Please contact {supportEmail}."
     },
     "signup": {
       "title": "Create an account",
@@ -1093,6 +1117,11 @@
       "signIn": "Sign in",
       "signUpWithGoogle": "Sign up with Google",
       "signUpWithGithub": "Sign up with Github"
+    },
+    "signOut": {
+      "signOut": "Log Out",
+      "success": "Signed out successfully",
+      "successDetail": "You have been signed out of your account."
     }
   },
   "validation": {
@@ -1114,9 +1143,28 @@
     "credits": "Credits",
     "yourCreditBalance": "Your credit balance",
     "purchaseCredits": "Purchase Credits",
-    "creditsHistory": "Credits History",
-    "paymentDetails": "Payment Details",
+    "invoiceHistory": "Invoice History",
     "faqs": "FAQs",
-    "messageSupport": "Message Support"
+    "messageSupport": "Message Support",
+    "lastUpdated": "Last updated",
+    "topUp": {
+      "insufficientTitle": "Insufficient Credits",
+      "insufficientMessage": "You don't have enough credits to run this workflow.",
+      "quickPurchase": "Quick Purchase",
+      "maxAmount": "(Max. $1,000 USD)",
+      "buyNow": "Buy now",
+      "seeDetails": "See details"
+    }
+  },
+  "userSettings": {
+    "title": "User Settings",
+    "name": "Name",
+    "email": "Email",
+    "notSet": "Not set",
+    "provider": "Sign in method",
+    "providers": {
+      "google": "Google",
+      "github": "GitHub"
+    }
   }
 }

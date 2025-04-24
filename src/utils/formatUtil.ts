@@ -415,3 +415,60 @@ export function compareVersions(
 
   return 0
 }
+
+/**
+ * Converts a currency amount to Metronome's integer representation.
+ * For USD, converts to cents (multiplied by 100).
+ * For all other currencies (including custom pricing units), returns the amount as is.
+ * This is specific to Metronome's API requirements.
+ *
+ * @param amount - The amount in currency to convert
+ * @param currency - The currency to convert
+ * @returns The amount in Metronome's integer format (cents for USD, base units for others)
+ * @example
+ * toMetronomeCurrency(1.23, 'usd') // returns 123 (cents)
+ * toMetronomeCurrency(1000, 'jpy') // returns 1000 (yen)
+ */
+export function toMetronomeCurrency(amount: number, currency: string): number {
+  if (currency === 'usd') {
+    return Math.round(amount * 100)
+  }
+  return amount
+}
+
+/**
+ * Converts Metronome's integer amount back to a formatted currency string.
+ * For USD, converts from cents to dollars.
+ * For all other currencies (including custom pricing units), returns the amount as is.
+ * This is specific to Metronome's API requirements.
+ *
+ * @param amount - The amount in Metronome's integer format (cents for USD, base units for others)
+ * @param currency - The currency to convert
+ * @returns The formatted amount in currency with 2 decimal places for USD
+ * @example
+ * formatMetronomeCurrency(123, 'usd') // returns "1.23" (cents to USD)
+ * formatMetronomeCurrency(1000, 'jpy') // returns "1000" (yen)
+ */
+export function formatMetronomeCurrency(
+  amount: number,
+  currency: string
+): string {
+  if (currency === 'usd') {
+    return (amount / 100).toFixed(2)
+  }
+  return amount.toString()
+}
+
+/**
+ * Converts a USD amount to microdollars (1/1,000,000 of a dollar).
+ * This conversion is commonly used in financial systems to avoid floating-point precision issues
+ * by representing monetary values as integers.
+ *
+ * @param usd - The amount in US dollars to convert
+ * @returns The amount in microdollars (multiplied by 1,000,000)
+ * @example
+ * usdToMicros(1.23) // returns 1230000
+ */
+export function usdToMicros(usd: number): number {
+  return Math.round(usd * 1_000_000)
+}

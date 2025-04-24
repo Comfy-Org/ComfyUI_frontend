@@ -17,6 +17,8 @@
       "emailPlaceholder": "メールアドレスを入力してください",
       "failed": "ログイン失敗",
       "forgotPassword": "パスワードを忘れましたか？",
+      "forgotPasswordError": "パスワードリセット用メールの送信に失敗しました",
+      "genericErrorMessage": "申し訳ありませんが、エラーが発生しました。{supportEmail} までご連絡ください。",
       "loginButton": "ログイン",
       "loginWithGithub": "Githubでログイン",
       "loginWithGoogle": "Googleでログイン",
@@ -24,12 +26,20 @@
       "orContinueWith": "または以下で続ける",
       "passwordLabel": "パスワード",
       "passwordPlaceholder": "パスワードを入力してください",
+      "passwordResetSent": "パスワードリセット用メールを送信しました",
+      "passwordResetSentDetail": "パスワードをリセットするためのリンクが記載されたメールをご確認ください。",
       "privacyLink": "プライバシーポリシー",
+      "signInOrSignUp": "サインイン / サインアップ",
       "signUp": "サインアップ",
       "success": "ログイン成功",
       "termsLink": "利用規約",
       "termsText": "「次へ」または「サインアップ」をクリックすると、私たちの",
       "title": "アカウントにログインする"
+    },
+    "signOut": {
+      "signOut": "ログアウト",
+      "success": "正常にサインアウトしました",
+      "successDetail": "アカウントからサインアウトしました。"
     },
     "signup": {
       "alreadyHaveAccount": "すでにアカウントをお持ちですか？",
@@ -94,11 +104,19 @@
   },
   "credits": {
     "credits": "クレジット",
-    "creditsHistory": "クレジット履歴",
     "faqs": "よくある質問",
+    "invoiceHistory": "請求履歴",
+    "lastUpdated": "最終更新",
     "messageSupport": "サポートにメッセージ",
-    "paymentDetails": "支払い詳細",
     "purchaseCredits": "クレジットを購入",
+    "topUp": {
+      "buyNow": "今すぐ購入",
+      "insufficientMessage": "このワークフローを実行するのに十分なクレジットがありません。",
+      "insufficientTitle": "クレジット不足",
+      "maxAmount": "（最大 $1,000 USD）",
+      "quickPurchase": "クイック購入",
+      "seeDetails": "詳細を見る"
+    },
     "yourCreditBalance": "あなたのクレジット残高"
   },
   "dataTypes": {
@@ -402,19 +420,34 @@
   },
   "issueReport": {
     "contactFollowUp": "フォローアップのために私に連絡する",
+    "contactSupportDescription": "下記のフォームにご報告内容をご記入ください",
+    "contactSupportTitle": "サポートに連絡",
+    "describeTheProblem": "問題の内容を記述してください",
+    "email": "メールアドレス",
     "feedbackTitle": "フィードバックを提供してComfyUIの改善にご協力ください",
     "helpFix": "これを修正するのを助ける",
+    "helpTypes": {
+      "billingPayments": "請求／支払い",
+      "bugReport": "バグ報告",
+      "giveFeedback": "フィードバックを送る",
+      "loginAccessIssues": "ログイン／アクセスの問題",
+      "somethingElse": "その他"
+    },
     "notifyResolve": "解決したときに通知する",
     "provideAdditionalDetails": "追加の詳細を提供する（オプション）",
     "provideEmail": "あなたのメールアドレスを教えてください（オプション）",
     "rating": "評価",
+    "selectIssue": "問題を選択してください",
     "stackTrace": "スタックトレース",
     "submitErrorReport": "エラーレポートを提出する（オプション）",
     "systemStats": "システム統計",
     "validation": {
       "invalidEmail": "有効なメールアドレスを入力してください",
-      "maxLength": "メッセージが長すぎます"
-    }
+      "maxLength": "メッセージが長すぎます",
+      "selectIssueType": "問題の種類を選択してください"
+    },
+    "whatCanWeInclude": "レポートに含める内容を指定してください",
+    "whatDoYouNeedHelpWith": "どのようなサポートが必要ですか？"
   },
   "load3d": {
     "applyingTexture": "テクスチャを適用中...",
@@ -587,6 +620,7 @@
     "ComfyUI Docs": "ComfyUIのドキュメント",
     "ComfyUI Forum": "ComfyUI フォーラム",
     "ComfyUI Issues": "ComfyUIの問題",
+    "Contact Support": "サポートに連絡",
     "Convert selected nodes to group node": "選択したノードをグループノードに変換",
     "Custom Nodes Manager": "カスタムノードマネージャ",
     "Delete Selected Items": "選択したアイテムを削除",
@@ -613,6 +647,7 @@
     "Open Logs Folder": "ログフォルダを開く",
     "Open Models Folder": "モデルフォルダを開く",
     "Open Outputs Folder": "出力フォルダを開く",
+    "Open Sign In Dialog": "サインインダイアログを開く",
     "Open extra_model_paths_yaml": "extra_model_paths.yamlを開く",
     "Pin/Unpin Selected Items": "選択したアイテムのピン留め/ピン留め解除",
     "Pin/Unpin Selected Nodes": "選択したノードのピン留め/ピン留め解除",
@@ -882,6 +917,7 @@
     "Comfy": "Comfy",
     "Comfy-Desktop": "Comfyデスクトップ",
     "ContextMenu": "コンテキストメニュー",
+    "Credits": "クレジット",
     "CustomColorPalettes": "カスタムカラーパレット",
     "DevMode": "開発モード",
     "EditTokenWeight": "トークンの重みを編集",
@@ -916,6 +952,7 @@
     "Sidebar": "サイドバー",
     "Tree Explorer": "ツリーエクスプローラー",
     "UV": "UV",
+    "User": "ユーザー",
     "Validation": "検証",
     "Window": "ウィンドウ",
     "Workflow": "ワークフロー"
@@ -1094,6 +1131,17 @@
     "newUser": "新しいユーザー",
     "next": "次へ",
     "selectUser": "ユーザーを選択"
+  },
+  "userSettings": {
+    "email": "メールアドレス",
+    "name": "名前",
+    "notSet": "未設定",
+    "provider": "サインイン方法",
+    "providers": {
+      "github": "GitHub",
+      "google": "Google"
+    },
+    "title": "ユーザー設定"
   },
   "validation": {
     "invalidEmail": "無効なメールアドレス",

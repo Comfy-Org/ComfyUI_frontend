@@ -1,7 +1,7 @@
 import type { Size, Vector2 } from '@comfyorg/litegraph'
-import { CSSProperties, ref } from 'vue'
+import { CSSProperties, computed, ref } from 'vue'
 
-import { app } from '@/scripts/app'
+import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { useCanvasStore } from '@/stores/graphStore'
 
 export interface PositionConfig {
@@ -13,70 +13,56 @@ export interface PositionConfig {
   scale?: number
 }
 
-export function useAbsolutePosition() {
+export function useAbsolutePosition(options: { useTransform?: boolean } = {}) {
+  const { useTransform = false } = options
+
   const canvasStore = useCanvasStore()
-  const style = ref<CSSProperties>({
-    position: 'fixed',
-    left: '0px',
-    top: '0px',
-    width: '0px',
-    height: '0px'
+  const lgCanvas = canvasStore.getCanvas()
+  const { canvasPosToClientPos } = useCanvasPositionConversion(
+    lgCanvas.canvas,
+    lgCanvas
+  )
+
+  const position = ref<PositionConfig>({
+    pos: [0, 0],
+    size: [0, 0]
+  })
+
+  const style = computed<CSSProperties>(() => {
+    const { pos, size, scale = lgCanvas.ds.scale } = position.value
+    const [left, top] = canvasPosToClientPos(pos)
+    const [width, height] = size
+
+    return useTransform
+      ? {
+          position: 'fixed',
+          transformOrigin: '0 0',
+          transform: `scale(${scale})`,
+          left: `${left}px`,
+          top: `${top}px`,
+          width: `${width}px`,
+          height: `${height}px`
+        }
+      : {
+          position: 'fixed',
+          left: `${left}px`,
+          top: `${top}px`,
+          width: `${width * scale}px`,
+          height: `${height * scale}px`
+        }
   })
 
   /**
    * Update the position of the element on the litegraph canvas.
    *
    * @param config
-   * @param extraStyle
    */
-  const updatePosition = (
-    config: PositionConfig,
-    extraStyle?: CSSProperties
-  ) => {
-    const { pos, size, scale = canvasStore.canvas?.ds?.scale ?? 1 } = config
-    const [left, top] = app.canvasPosToClientPos(pos)
-    const [width, height] = size
-
-    style.value = {
-      ...style.value,
-      left: `${left}px`,
-      top: `${top}px`,
-      width: `${width * scale}px`,
-      height: `${height * scale}px`,
-      ...extraStyle
-    }
-  }
-
-  /**
-   * Update the position and size of the element on the litegraph canvas,
-   * with CSS transform scaling applied.
-   *
-   * @param config
-   * @param extraStyle
-   */
-  const updatePositionWithTransform = (
-    config: PositionConfig,
-    extraStyle?: CSSProperties
-  ) => {
-    const { pos, size, scale = canvasStore.canvas?.ds?.scale ?? 1 } = config
-    const [left, top] = app.canvasPosToClientPos(pos)
-    const [width, height] = size
-
-    style.value = {
-      ...style.value,
-      transformOrigin: '0 0',
-      transform: `scale(${scale})`,
-      left: `${left}px`,
-      top: `${top}px`,
-      width: `${width}px`,
-      height: `${height}px`,
-      ...extraStyle
-    }
+  const updatePosition = (config: PositionConfig) => {
+    position.value = config
   }
 
   return {
     style,
-    updatePosition,
-    updatePositionWithTransform
+    updatePosition
   }
 }

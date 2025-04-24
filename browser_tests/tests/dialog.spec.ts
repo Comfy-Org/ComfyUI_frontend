@@ -341,3 +341,30 @@ test.describe('Error dialog', () => {
     await expect(errorDialog).toBeVisible()
   })
 })
+
+test.describe('Signin dialog', () => {
+  test('Paste content to signin dialog should not paste node on canvas', async ({
+    comfyPage
+  }) => {
+    const nodeNum = (await comfyPage.getNodes()).length
+    await comfyPage.clickEmptyLatentNode()
+    await comfyPage.ctrlC()
+
+    const textBox = comfyPage.widgetTextBox
+    await textBox.click()
+    await textBox.fill('test_password')
+    await textBox.press('Control+a')
+    await textBox.press('Control+c')
+
+    await comfyPage.page.evaluate(() => {
+      window['app'].extensionManager.dialog.showSignInDialog()
+    })
+
+    const input = comfyPage.page.locator('#comfy-org-sign-in-password')
+    await input.waitFor({ state: 'visible' })
+    await input.press('Control+v')
+    await expect(input).toHaveValue('test_password')
+
+    expect(await comfyPage.getNodes()).toHaveLength(nodeNum)
+  })
+})

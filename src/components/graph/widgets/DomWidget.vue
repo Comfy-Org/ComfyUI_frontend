@@ -37,13 +37,14 @@ const { widget, widgetState } = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:widgetValue', value: string | object): void
+  'update:widgetValue': [value: string | object]
 }>()
 
 const widgetElement = ref<HTMLElement | undefined>()
 
-const { style: positionStyle, updatePositionWithTransform } =
-  useAbsolutePosition()
+const { style: positionStyle, updatePosition } = useAbsolutePosition({
+  useTransform: true
+})
 const { style: clippingStyle, updateClipPath } = useDomClipping()
 const style = computed<CSSProperties>(() => ({
   ...positionStyle.value,
@@ -94,7 +95,7 @@ const updateDomClipping = () => {
 watch(
   () => widgetState,
   (newState) => {
-    updatePositionWithTransform(newState)
+    updatePosition(newState)
     if (enableDomClipping.value) {
       updateDomClipping()
     }

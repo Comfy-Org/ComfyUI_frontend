@@ -48,6 +48,7 @@
         </PanelTemplate>
 
         <AboutPanel />
+        <UserPanel />
         <CreditsPanel />
         <Suspense>
           <KeybindingPanel />
@@ -85,6 +86,7 @@ import { computed, defineAsyncComponent, watch } from 'vue'
 import SearchBox from '@/components/common/SearchBox.vue'
 import { useSettingSearch } from '@/composables/setting/useSettingSearch'
 import { useSettingUI } from '@/composables/setting/useSettingUI'
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { SettingTreeNode } from '@/stores/settingStore'
 import { ISettingGroup, SettingParams } from '@/types/settingTypes'
 import { flattenTree } from '@/utils/treeUtil'
@@ -96,9 +98,16 @@ import CurrentUserMessage from './setting/CurrentUserMessage.vue'
 import FirstTimeUIMessage from './setting/FirstTimeUIMessage.vue'
 import PanelTemplate from './setting/PanelTemplate.vue'
 import SettingsPanel from './setting/SettingsPanel.vue'
+import UserPanel from './setting/UserPanel.vue'
 
 const { defaultPanel } = defineProps<{
-  defaultPanel?: 'about' | 'keybinding' | 'extension' | 'server-config'
+  defaultPanel?:
+    | 'about'
+    | 'keybinding'
+    | 'extension'
+    | 'server-config'
+    | 'user'
+    | 'credits'
 }>()
 
 const KeybindingPanel = defineAsyncComponent(
@@ -126,6 +135,8 @@ const {
   handleSearch: handleSearchBase,
   getSearchResults
 } = useSettingSearch()
+
+const authStore = useFirebaseAuthStore()
 
 // Sort groups for a category
 const sortedGroups = (category: SettingTreeNode): ISettingGroup[] => {
@@ -156,6 +167,9 @@ const tabValue = computed<string>(() =>
 watch(activeCategory, (_, oldValue) => {
   if (!tabValue.value) {
     activeCategory.value = oldValue
+  }
+  if (activeCategory.value?.key === 'credits') {
+    void authStore.fetchBalance()
   }
 })
 </script>

@@ -926,7 +926,7 @@ export class ComfyPage {
   async getNodeRefById(id: NodeId) {
     return new NodeReference(id, this)
   }
-  async getNodes() {
+  async getNodes(): Promise<LGraphNode[]> {
     return await this.page.evaluate(() => {
       return window['app'].graph.nodes
     })

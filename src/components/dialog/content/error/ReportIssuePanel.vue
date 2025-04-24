@@ -23,75 +23,136 @@
         </div>
       </template>
       <div class="p-4 mt-2 border border-round surface-border shadow-1">
-        <div class="flex flex-row gap-3 mb-2">
-          <div v-for="field in fields" :key="field.value">
-            <FormField
-              v-if="field.optIn"
-              v-slot="$field"
-              :name="field.value"
-              class="flex space-x-1"
+        <div class="flex flex-col gap-6">
+          <FormField
+            v-slot="$field"
+            name="contactInfo"
+            :initial-value="authStore.currentUser?.email"
+          >
+            <div class="self-stretch inline-flex justify-start items-center">
+              <label for="contactInfo" class="pb-2 pt-0 opacity-80">{{
+                $t('issueReport.email')
+              }}</label>
+            </div>
+            <InputText
+              id="contactInfo"
+              v-bind="$field"
+              class="w-full"
+              :placeholder="$t('issueReport.provideEmail')"
+            />
+            <Message
+              v-if="$field?.error && $field.touched && $field.value !== ''"
+              severity="error"
+              size="small"
+              variant="simple"
             >
-              <Checkbox
+              {{ t('issueReport.validation.invalidEmail') }}
+            </Message>
+          </FormField>
+
+          <FormField v-slot="$field" name="helpType">
+            <div class="flex flex-col gap-2">
+              <div
+                class="self-stretch inline-flex justify-start items-center gap-2.5"
+              >
+                <label for="helpType" class="pb-2 pt-0 opacity-80">{{
+                  $t('issueReport.whatDoYouNeedHelpWith')
+                }}</label>
+              </div>
+              <Dropdown
                 v-bind="$field"
-                v-model="selection"
-                :input-id="field.value"
-                :value="field.value"
+                v-model="$field.value"
+                :options="helpTypes"
+                option-label="label"
+                option-value="value"
+                :placeholder="$t('issueReport.selectIssue')"
+                class="w-full"
               />
-              <label :for="field.value">{{ field.label }}</label>
+              <Message
+                v-if="$field?.error"
+                severity="error"
+                size="small"
+                variant="simple"
+              >
+                {{ t('issueReport.validation.selectIssueType') }}
+              </Message>
+            </div>
+          </FormField>
+
+          <div class="flex flex-col gap-2">
+            <div
+              class="self-stretch inline-flex justify-start items-center gap-2.5"
+            >
+              <span class="pb-2 pt-0 opacity-80">{{
+                $t('issueReport.whatCanWeInclude')
+              }}</span>
+            </div>
+            <div class="flex flex-row gap-3">
+              <div v-for="field in fields" :key="field.value">
+                <FormField
+                  v-if="field.optIn"
+                  v-slot="$field"
+                  :name="field.value"
+                  class="flex space-x-1"
+                >
+                  <Checkbox
+                    v-bind="$field"
+                    v-model="selection"
+                    :input-id="field.value"
+                    :value="field.value"
+                  />
+                  <label :for="field.value">{{ field.label }}</label>
+                </FormField>
+              </div>
+            </div>
+          </div>
+          <div class="flex flex-col gap-2">
+            <FormField v-slot="$field" name="details">
+              <div
+                class="self-stretch inline-flex justify-start items-center gap-2.5"
+              >
+                <label for="details" class="pb-2 pt-0 opacity-80">{{
+                  $t('issueReport.describeTheProblem')
+                }}</label>
+              </div>
+              <Textarea
+                v-bind="$field"
+                id="details"
+                class="w-full"
+                rows="5"
+                :placeholder="$t('issueReport.provideAdditionalDetails')"
+                :aria-label="$t('issueReport.provideAdditionalDetails')"
+              />
+              <Message
+                v-if="$field?.error && $field.touched && $field.value"
+                severity="error"
+                size="small"
+                variant="simple"
+              >
+                {{ t('issueReport.validation.maxLength') }}
+              </Message>
             </FormField>
           </div>
-        </div>
-        <FormField v-slot="$field" class="mb-4" name="details">
-          <Textarea
-            v-bind="$field"
-            class="w-full"
-            rows="5"
-            :placeholder="$t('issueReport.provideAdditionalDetails')"
-            :aria-label="$t('issueReport.provideAdditionalDetails')"
-          />
-          <Message
-            v-if="$field?.error && $field.touched && $field.value"
-            severity="error"
-            size="small"
-            variant="simple"
-          >
-            {{ t('issueReport.validation.maxLength') }}
-          </Message>
-        </FormField>
-        <FormField v-slot="$field" name="contactInfo">
-          <InputText
-            v-bind="$field"
-            class="w-full"
-            :placeholder="$t('issueReport.provideEmail')"
-          />
-          <Message
-            v-if="$field?.error && $field.touched && $field.value !== ''"
-            severity="error"
-            size="small"
-            variant="simple"
-          >
-            {{ t('issueReport.validation.invalidEmail') }}
-          </Message>
-        </FormField>
 
-        <div class="flex flex-row gap-3 mt-2">
-          <div v-for="checkbox in contactCheckboxes" :key="checkbox.value">
-            <FormField
-              v-slot="$field"
-              :name="checkbox.value"
-              class="flex space-x-1"
-            >
-              <Checkbox
-                v-bind="$field"
-                v-model="contactPrefs"
-                :input-id="checkbox.value"
-                :value="checkbox.value"
-                :disabled="
-                  $form.contactInfo?.error || !$form.contactInfo?.value
-                "
-              />
-              <label :for="checkbox.value">{{ checkbox.label }}</label>
-            </FormField>
+          <div class="flex flex-col gap-3 mt-2">
+            <div v-for="checkbox in contactCheckboxes" :key="checkbox.value">
+              <FormField
+                v-slot="$field"
+                :name="checkbox.value"
+                class="flex space-x-1"
+              >
+                <Checkbox
+                  v-bind="$field"
+                  v-model="contactPrefs"
+                  :input-id="checkbox.value"
+                  :value="checkbox.value"
+                  :disabled="
+                    $form.contactInfo?.error || !$form.contactInfo?.value
+                  "
+                />
+                <label :for="checkbox.value">{{ checkbox.label }}</label>
+              </FormField>
+            </div>
           </div>
         </div>
       </div>
@@ -108,6 +169,7 @@ import _ from 'lodash'
 import cloneDeep from 'lodash/cloneDeep'
 import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
+import Dropdown from 'primevue/dropdown'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import Panel from 'primevue/panel'
@@ -122,14 +184,16 @@ import {
 } from '@/schemas/issueReportSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import type {
   DefaultField,
   IssueReportPanelProps,
   ReportField
 } from '@/types/issueReportTypes'
 import { isElectron } from '@/utils/envUtil'
+import { generateUUID } from '@/utils/formatUtil'
 
-const ISSUE_NAME = 'User reported issue'
+const DEFAULT_ISSUE_NAME = 'User reported issue'
 
 const props = defineProps<IssueReportPanelProps>()
 const { defaultFields = ['Workflow', 'Logs', 'SystemStats', 'Settings'] } =
@@ -137,6 +201,7 @@ const { defaultFields = ['Workflow', 'Logs', 'SystemStats', 'Settings'] } =
 
 const { t } = useI18n()
 const toast = useToast()
+const authStore = useFirebaseAuthStore()
 
 const selection = ref<string[]>([])
 const contactPrefs = ref<string[]>([])
@@ -145,6 +210,20 @@ const submitted = ref(false)
 const contactCheckboxes = [
   { label: t('issueReport.contactFollowUp'), value: 'followUp' },
   { label: t('issueReport.notifyResolve'), value: 'notifyOnResolution' }
+]
+
+const helpTypes = [
+  {
+    label: t('issueReport.helpTypes.billingPayments'),
+    value: 'billingPayments'
+  },
+  {
+    label: t('issueReport.helpTypes.loginAccessIssues'),
+    value: 'loginAccessIssues'
+  },
+  { label: t('issueReport.helpTypes.giveFeedback'), value: 'giveFeedback' },
+  { label: t('issueReport.helpTypes.bugReport'), value: 'bugReport' },
+  { label: t('issueReport.helpTypes.somethingElse'), value: 'somethingElse' }
 ]
 
 const defaultFieldsConfig: ReportField[] = [
@@ -213,6 +292,7 @@ const createCaptureContext = async (
     level: 'error',
     tags: {
       errorType: props.errorType,
+      helpType: formData.helpType,
       followUp: formData.contactInfo ? formData.followUp : false,
       notifyOnResolution: formData.contactInfo
         ? formData.notifyOnResolution
@@ -227,11 +307,24 @@ const createCaptureContext = async (
   }
 }
 
+const generateUniqueTicketId = (type: string) => `${type}-${generateUUID()}`
+
 const submit = async (event: FormSubmitEvent) => {
   if (event.valid) {
     try {
       const captureContext = await createCaptureContext(event.values)
-      captureMessage(ISSUE_NAME, captureContext)
+
+      // If it's billing or access issue, generate unique id to be used by customer service ticketing
+      const isValidContactInfo = event.values.contactInfo?.length
+      const isCustomerServiceIssue =
+        isValidContactInfo &&
+        ['billingPayments', 'loginAccessIssues'].includes(
+          event.values.helpType || ''
+        )
+      const issueName = isCustomerServiceIssue
+        ? `ticket-${generateUniqueTicketId(event.values.helpType || '')}`
+        : DEFAULT_ISSUE_NAME
+      captureMessage(issueName, captureContext)
       submitted.value = true
       toast.add({
         severity: 'success',

@@ -83,6 +83,9 @@
   "Comfy_ClearWorkflow": {
     "label": "워크플로 지우기"
   },
+  "Comfy_ContactSupport": {
+    "label": "지원팀에 문의하기"
+  },
   "Comfy_DuplicateWorkflow": {
     "label": "현재 워크플로우 복제"
   },
@@ -172,6 +175,9 @@
   },
   "Comfy_Undo": {
     "label": "실행 취소"
+  },
+  "Comfy_User_OpenSignInDialog": {
+    "label": "로그인 대화상자 열기"
   },
   "Workspace_CloseWorkflow": {
     "label": "현재 워크플로우 닫기"

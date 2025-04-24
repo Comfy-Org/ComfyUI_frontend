@@ -41,6 +41,7 @@ export class ComfyNodeDefImpl
   readonly deprecated: boolean
   readonly experimental: boolean
   readonly output_node: boolean
+  readonly api_node: boolean
   /**
    * @deprecated Use `inputs` instead
    */
@@ -121,6 +122,7 @@ export class ComfyNodeDefImpl
     this.experimental =
       obj.experimental ?? obj.category.startsWith('_for_testing')
     this.output_node = obj.output_node
+    this.api_node = !!obj.api_node
     this.input = obj.input ?? {}
     this.output = obj.output ?? []
     this.output_is_list = obj.output_is_list
