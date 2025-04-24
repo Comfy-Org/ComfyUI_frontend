@@ -21,8 +21,6 @@ import { COMFY_API_BASE_URL } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { operations } from '@/types/comfyRegistryTypes'
 
-import { useToastStore } from './toastStore'
-
 type CreditPurchaseResponse =
   operations['InitiateCreditPurchase']['responses']['201']['content']['application/json']
 type CreditPurchasePayload =
@@ -36,10 +34,16 @@ type AccessBillingPortalResponse =
 type AccessBillingPortalReqBody =
   operations['AccessBillingPortal']['requestBody']
 
+export class FirebaseAuthStoreError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'FirebaseAuthStoreError'
+  }
+}
+
 export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   // State
   const loading = ref(false)
-  const error = ref<string | null>(null)
   const currentUser = ref<User | null>(null)
   const isInitialized = ref(false)
   const customerCreated = ref(false)
@@ -75,16 +79,6 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     lastBalanceUpdateTime.value = null
   })
 
-  const showAuthErrorToast = () => {
-    useToastStore().add({
-      summary: t('g.error'),
-      detail: t('auth.login.genericErrorMessage', {
-        supportEmail: 'support@comfy.org'
-      }),
-      severity: 'error'
-    })
-  }
-
   const getIdToken = async (): Promise<string | null> => {
     if (currentUser.value) {
       return currentUser.value.getIdToken()
@@ -97,9 +91,10 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     try {
       const token = await getIdToken()
       if (!token) {
-        error.value = 'Cannot fetch balance: User not authenticated'
         isFetchingBalance.value = false
-        return null
+        throw new FirebaseAuthStoreError(
+          t('toastMessages.userNotAuthenticated')
+        )
       }
 
       const response = await fetch(`${COMFY_API_BASE_URL}/customers/balance`, {
@@ -114,8 +109,11 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
           return null
         }
         const errorData = await response.json()
-        error.value = `Failed to fetch balance: ${errorData.message}`
-        return null
+        throw new FirebaseAuthStoreError(
+          t('toastMessages.failedToFetchBalance', {
+            error: errorData.message
+          })
+        )
       }
 
       const balanceData = await response.json()
@@ -123,9 +121,6 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       lastBalanceUpdateTime.value = new Date()
       balance.value = balanceData
       return balanceData
-    } catch (e) {
-      error.value = `Failed to fetch balance: ${e}`
-      return null
     } finally {
       isFetchingBalance.value = false
     }
@@ -142,15 +137,21 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       }
     })
     if (!createCustomerRes.ok) {
-      throw new Error(
-        `Failed to create customer: ${createCustomerRes.statusText}`
+      throw new FirebaseAuthStoreError(
+        t('toastMessages.failedToCreateCustomer', {
+          error: createCustomerRes.statusText
+        })
       )
     }
 
     const createCustomerResJson: CreateCustomerResponse =
       await createCustomerRes.json()
     if (!createCustomerResJson?.id) {
-      throw new Error('Failed to create customer: No customer ID returned')
+      throw new FirebaseAuthStoreError(
+        t('toastMessages.failedToCreateCustomer', {
+          error: 'No customer ID returned'
+        })
+      )
     }
 
     return createCustomerResJson
@@ -162,10 +163,12 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       createCustomer?: boolean
     } = {}
   ): Promise<T> => {
-    if (!auth) throw new Error('Firebase Auth not initialized')
+    if (!auth)
+      throw new FirebaseAuthStoreError(
+        t('toastMessages.firebaseAuthNotInitialized')
+      )
 
     loading.value = true
-    error.value = null
 
     try {
       const result = await action(auth)
@@ -180,10 +183,6 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       }
 
       return result
-    } catch (e: unknown) {
-      error.value = e instanceof Error ? e.message : 'Unknown error'
-      showAuthErrorToast()
-      throw e
     } finally {
       loading.value = false
     }
@@ -232,11 +231,10 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
 
   const addCredits = async (
     requestBodyContent: CreditPurchasePayload
-  ): Promise<CreditPurchaseResponse | null> => {
+  ): Promise<CreditPurchaseResponse> => {
     const token = await getIdToken()
     if (!token) {
-      error.value = 'Cannot add credits: User not authenticated'
-      return null
+      throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
 
     // Ensure customer was created during login/registration
@@ -256,9 +254,11 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
 
     if (!response.ok) {
       const errorData = await response.json()
-      error.value = `Failed to initiate credit purchase: ${errorData.message}`
-      showAuthErrorToast()
-      return null
+      throw new FirebaseAuthStoreError(
+        t('toastMessages.failedToInitiateCreditPurchase', {
+          error: errorData.message
+        })
+      )
     }
 
     return response.json()
@@ -266,16 +266,15 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
 
   const initiateCreditPurchase = async (
     requestBodyContent: CreditPurchasePayload
-  ): Promise<CreditPurchaseResponse | null> =>
+  ): Promise<CreditPurchaseResponse> =>
     executeAuthAction((_) => addCredits(requestBodyContent))
 
   const accessBillingPortal = async (
     requestBody?: AccessBillingPortalReqBody
-  ): Promise<AccessBillingPortalResponse | null> => {
+  ): Promise<AccessBillingPortalResponse> => {
     const token = await getIdToken()
     if (!token) {
-      error.value = 'Cannot access billing portal: User not authenticated'
-      return null
+      throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
 
     const response = await fetch(`${COMFY_API_BASE_URL}/customers/billing`, {
@@ -291,9 +290,11 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
 
     if (!response.ok) {
       const errorData = await response.json()
-      error.value = `Failed to access billing portal: ${errorData.message}`
-      showAuthErrorToast()
-      return null
+      throw new FirebaseAuthStoreError(
+        t('toastMessages.failedToAccessBillingPortal', {
+          error: errorData.message
+        })
+      )
     }
 
     return response.json()
@@ -302,7 +303,6 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   return {
     // State
     loading,
-    error,
     currentUser,
     isInitialized,
     balance,
