@@ -20,7 +20,7 @@ export class BooleanWidget extends BaseWidget implements IBooleanWidget {
     y,
     width,
     show_text = true,
-    margin = 15,
+    margin = BaseWidget.margin,
   }: DrawWidgetOptions) {
     const { height } = this
 

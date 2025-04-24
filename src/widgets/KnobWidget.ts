@@ -49,7 +49,7 @@ export class KnobWidget extends BaseWidget implements IKnobWidget {
       y,
       width,
       show_text = true,
-      margin = 15,
+      margin = BaseWidget.margin,
     }: DrawWidgetOptions,
   ): void {
     // Store original context attributes

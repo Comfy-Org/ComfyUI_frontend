@@ -72,6 +72,7 @@ import {
 import { alignNodes, distributeNodes, getBoundaryNodes } from "./utils/arrange"
 import { findFirstNode, getAllNestedItems } from "./utils/collections"
 import { toClass } from "./utils/type"
+import { BaseWidget } from "./widgets/BaseWidget"
 import { WIDGET_TYPE_MAP } from "./widgets/widgetMap"
 
 interface IShowSearchOptions {
@@ -239,6 +240,11 @@ export class LGraphCanvas implements ConnectionColorContext {
     yellow: { color: "#432", bgcolor: "#653", groupcolor: "#b58b2a" },
     black: { color: "#222", bgcolor: "#000", groupcolor: "#444" },
   }
+
+  /**
+   * @internal Exclusively a workaround for design limitation in {@link LGraphNode.computeSize}.
+   */
+  static _measureText?: (text: string, fontStyle?: string) => number
 
   /**
    * The state of this canvas, e.g. whether it is being dragged, or read-only.
@@ -741,6 +747,17 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     this.setCanvas(canvas, options.skip_events)
     this.clear()
+
+    LGraphCanvas._measureText = (text: string, fontStyle = this.inner_text_font) => {
+      const { ctx } = this
+      const { font } = ctx
+      try {
+        ctx.font = fontStyle
+        return ctx.measureText(text).width
+      } finally {
+        ctx.font = font
+      }
+    }
 
     if (!options.skip_render) {
       this.startRendering()
@@ -4041,7 +4058,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       } else {
         // Regular widget, probably
         ctx.roundRect(
-          nodeX + 15,
+          nodeX + BaseWidget.margin,
           nodeY + overWidget.y,
           overWidget.width ?? area[2],
           height,

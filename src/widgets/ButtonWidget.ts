@@ -27,7 +27,7 @@ export class ButtonWidget extends BaseWidget implements IButtonWidget {
     y,
     width,
     show_text = true,
-    margin = 15,
+    margin = BaseWidget.margin,
   }: DrawWidgetOptions) {
     // Store original context attributes
     const originalTextAlign = ctx.textAlign

@@ -43,7 +43,7 @@ export class NumberWidget extends BaseWidget implements INumericWidget {
     y,
     width,
     show_text = true,
-    margin = 15,
+    margin = BaseWidget.margin,
   }: DrawWidgetOptions) {
     // Store original context attributes
     const originalTextAlign = ctx.textAlign
@@ -66,19 +66,7 @@ export class NumberWidget extends BaseWidget implements INumericWidget {
     if (show_text) {
       if (!this.computedDisabled) {
         ctx.stroke()
-        // Draw left arrow
-        ctx.fillStyle = this.text_color
-        ctx.beginPath()
-        ctx.moveTo(margin + 16, y + 5)
-        ctx.lineTo(margin + 6, y + height * 0.5)
-        ctx.lineTo(margin + 16, y + height - 5)
-        ctx.fill()
-        // Draw right arrow
-        ctx.beginPath()
-        ctx.moveTo(width - margin - 16, y + 5)
-        ctx.lineTo(width - margin - 6, y + height * 0.5)
-        ctx.lineTo(width - margin - 16, y + height - 5)
-        ctx.fill()
+        this.drawArrowButtons(ctx, margin, y, width)
       }
 
       // Draw label

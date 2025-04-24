@@ -31,7 +31,7 @@ export class SliderWidget extends BaseWidget implements ISliderWidget {
     y,
     width,
     show_text = true,
-    margin = 15,
+    margin = BaseWidget.margin,
   }: DrawWidgetOptions) {
     // Store original context attributes
     const originalTextAlign = ctx.textAlign
