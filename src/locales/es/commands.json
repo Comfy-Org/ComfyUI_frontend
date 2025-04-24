@@ -179,6 +179,9 @@
   "Comfy_User_OpenSignInDialog": {
     "label": "Abrir diálogo de inicio de sesión"
   },
+  "Comfy_User_SignOut": {
+    "label": "Cerrar sesión"
+  },
   "Workspace_CloseWorkflow": {
     "label": "Cerrar Flujo de Trabajo Actual"
   },
