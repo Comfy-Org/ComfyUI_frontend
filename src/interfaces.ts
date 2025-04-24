@@ -58,7 +58,11 @@ export interface Parent<TChild> {
  */
 export interface Positionable extends Parent<Positionable>, HasBoundingRect {
   readonly id: NodeId | RerouteId | number
-  /** Position in graph coordinates.  Default: 0,0 */
+  /**
+   * Position in graph coordinates. This may be the top-left corner,
+   * the centre, or another point depending on concrete type.
+   * @default 0,0
+   */
   readonly pos: Point
   /** true if this object is part of the selection, otherwise false. */
   selected?: boolean

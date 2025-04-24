@@ -174,8 +174,9 @@ export interface LGraphNode {
 // #endregion Types
 
 /**
- * Base Class for all the node type classes
- * @param {string} name a name for the node
+ * Base class for all nodes
+ * @param title a name for the node
+ * @param type a type for the node
  */
 // eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export class LGraphNode implements Positionable, IPinnable, IColorable {

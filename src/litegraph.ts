@@ -64,9 +64,9 @@ export interface LinkReleaseContextExtended {
 
 export interface LiteGraphCanvasEvent extends CustomEvent<CanvasEventDetail> {}
 
-/** https://github.com/jagenjo/litegraph.js/blob/master/guides/README.md#lgraphnode */
-
 export interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
+  new (title: string, type?: string): T
+
   title: string
   type: string
   size?: Size
@@ -82,7 +82,6 @@ export interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
   title_text_color?: string
   keepAllLinksOnBypass: boolean
   nodeData: any
-  new (): T
 }
 
 // End backwards compat
