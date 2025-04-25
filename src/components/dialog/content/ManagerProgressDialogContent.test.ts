@@ -9,7 +9,7 @@ import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
 
-import ManagerProgressDialogContent from '../ManagerProgressDialogContent.vue'
+import ManagerProgressDialogContent from './ManagerProgressDialogContent.vue'
 
 type ComponentInstance = InstanceType<typeof ManagerProgressDialogContent> & {
   lastPanelRef: HTMLElement | null

@@ -5,7 +5,7 @@ import SelectButton from 'primevue/selectbutton'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createApp, nextTick } from 'vue'
 
-import ColorCustomizationSelector from '../ColorCustomizationSelector.vue'
+import ColorCustomizationSelector from './ColorCustomizationSelector.vue'
 
 describe('ColorCustomizationSelector', () => {
   const colorOptions = [

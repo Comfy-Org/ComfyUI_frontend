@@ -5,7 +5,7 @@ import { createI18n } from 'vue-i18n'
 import enMessages from '@/locales/en/main.json'
 import { components } from '@/types/comfyRegistryTypes'
 
-import DescriptionTabPanel from '../DescriptionTabPanel.vue'
+import DescriptionTabPanel from './DescriptionTabPanel.vue'
 
 const i18n = createI18n({
   legacy: false,

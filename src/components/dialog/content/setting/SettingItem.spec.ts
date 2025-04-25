@@ -4,7 +4,7 @@ import PrimeVue from 'primevue/config'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import SettingItem from '../SettingItem.vue'
+import SettingItem from './SettingItem.vue'
 
 const i18n = createI18n({
   legacy: false,

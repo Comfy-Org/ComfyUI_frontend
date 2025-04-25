@@ -7,8 +7,8 @@ import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
 
-import GridSkeleton from '../GridSkeleton.vue'
-import PackCardSkeleton from '../PackCardSkeleton.vue'
+import GridSkeleton from './GridSkeleton.vue'
+import PackCardSkeleton from './PackCardSkeleton.vue'
 
 describe('GridSkeleton', () => {
   const mountComponent = ({
