@@ -9,8 +9,8 @@ import { createI18n } from 'vue-i18n'
 import enMessages from '@/locales/en/main.json'
 import { SelectedVersion } from '@/types/comfyManagerTypes'
 
-import PackVersionBadge from '../PackVersionBadge.vue'
-import PackVersionSelectorPopover from '../PackVersionSelectorPopover.vue'
+import PackVersionBadge from './PackVersionBadge.vue'
+import PackVersionSelectorPopover from './PackVersionSelectorPopover.vue'
 
 const mockNodePack = {
   id: 'test-pack',

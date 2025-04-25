@@ -9,7 +9,7 @@ import { createI18n } from 'vue-i18n'
 import enMessages from '@/locales/en/main.json'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 
-import PackEnableToggle from '../PackEnableToggle.vue'
+import PackEnableToggle from './PackEnableToggle.vue'
 
 // Mock debounce to execute immediately
 vi.mock('lodash', () => ({

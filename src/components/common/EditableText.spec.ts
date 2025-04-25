@@ -4,7 +4,7 @@ import InputText from 'primevue/inputtext'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createApp } from 'vue'
 
-import EditableText from '../EditableText.vue'
+import EditableText from './EditableText.vue'
 
 describe('EditableText', () => {
   beforeAll(() => {

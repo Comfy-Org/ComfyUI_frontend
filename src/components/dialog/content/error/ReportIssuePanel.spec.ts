@@ -12,7 +12,7 @@ import { createI18n } from 'vue-i18n'
 import enMesages from '@/locales/en/main.json'
 import { IssueReportPanelProps } from '@/types/issueReportTypes'
 
-import ReportIssuePanel from '../ReportIssuePanel.vue'
+import ReportIssuePanel from './ReportIssuePanel.vue'
 
 const DEFAULT_FIELDS = ['Workflow', 'Logs', 'Settings', 'SystemStats']
 const CUSTOM_FIELDS = [
