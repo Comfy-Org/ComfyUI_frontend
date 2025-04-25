@@ -16,15 +16,7 @@
           {{ $t('credits.yourCreditBalance') }}
         </div>
         <div class="flex items-center justify-between w-full">
-          <div class="flex items-center gap-2">
-            <Tag
-              severity="secondary"
-              icon="pi pi-dollar"
-              rounded
-              class="text-amber-400 p-1"
-            />
-            <span class="text-2xl">{{ formattedBalance }}</span>
-          </div>
+          <UserCredit text-class="text-2xl" />
           <Button
             outlined
             severity="secondary"
@@ -109,9 +101,9 @@ import ProgressSpinner from 'primevue/progressspinner'
 import Tag from 'primevue/tag'
 import { computed, onBeforeUnmount, ref } from 'vue'
 
+import UserCredit from '@/components/common/UserCredit.vue'
 import { useFirebaseAuthService } from '@/services/firebaseAuthService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
-import { formatMetronomeCurrency } from '@/utils/formatUtil'
 
 const {
   isInsufficientCredits = false,
@@ -128,11 +120,6 @@ const authService = useFirebaseAuthService()
 const customAmount = ref<number>(100)
 const didClickBuyNow = ref(false)
 const loading = computed(() => authStore.loading)
-
-const formattedBalance = computed(() => {
-  if (!authStore.balance) return '0.000'
-  return formatMetronomeCurrency(authStore.balance.amount_micros, 'usd')
-})
 
 const handleSeeDetails = async () => {
   await authService.accessBillingPortal()
