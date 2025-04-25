@@ -882,52 +882,6 @@ export class ComfyApi extends EventTarget {
     return resp
   }
 
-  /**
-   * @overload
-   * Lists user data files for the current user
-   * @param { string } dir The directory in which to list files
-   * @param { boolean } [recurse] If the listing should be recursive
-   * @param { true } [split] If the paths should be split based on the os path separator
-   * @returns { Promise<string[][]> } The list of split file paths in the format [fullPath, ...splitPath]
-   */
-  /**
-   * @overload
-   * Lists user data files for the current user
-   * @param { string } dir The directory in which to list files
-   * @param { boolean } [recurse] If the listing should be recursive
-   * @param { false | undefined } [split] If the paths should be split based on the os path separator
-   * @returns { Promise<string[]> } The list of files
-   */
-  async listUserData(
-    dir: string,
-    recurse: boolean,
-    split?: true
-  ): Promise<string[][]>
-  async listUserData(
-    dir: string,
-    recurse: boolean,
-    split?: false
-  ): Promise<string[]>
-  /**
-   * @deprecated Use `listUserDataFullInfo` instead.
-   */
-  async listUserData(dir: string, recurse: boolean, split?: boolean) {
-    const resp = await this.fetchApi(
-      `/userdata?${new URLSearchParams({
-        recurse: recurse ? 'true' : 'false',
-        dir,
-        split: split ? 'true' : 'false'
-      })}`
-    )
-    if (resp.status === 404) return []
-    if (resp.status !== 200) {
-      throw new Error(
-        `Error getting user data list '${dir}': ${resp.status} ${resp.statusText}`
-      )
-    }
-    return resp.json()
-  }
-
   async listUserDataFullInfo(dir: string): Promise<UserDataFullInfo[]> {
     const resp = await this.fetchApi(
       `/userdata?dir=${encodeURIComponent(dir)}&recurse=true&split=false&full_info=true`
