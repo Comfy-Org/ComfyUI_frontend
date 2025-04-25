@@ -140,6 +140,7 @@ const handleSeeDetails = async () => {
 
 const handleBuyNow = async (amount: number) => {
   await authService.purchaseCredits(amount)
+  didClickBuyNow.value = true
 }
 
 onBeforeUnmount(() => {
