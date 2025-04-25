@@ -16,7 +16,7 @@ export interface ModelsDownloadSettings {
 
   export const MODELS_DOWNLOAD_SETTINGS: ModelsDownloadSettings = {
     settingId: 'Comfy-Desktop.ModelsDownload.ExtraAllowedSource',
-    allowedSources: ['https://civitai.com/', 'https://huggingface.co/', 'http://localhost:'],
+    allowedSources: ['https://civitai.com/', 'https://huggingface.co/'],
     allowedSuffixes:['.safetensors', '.sft'],
     whiteListedUrls: new Set([
         'https://huggingface.co/stabilityai/stable-zero123/resolve/main/stable_zero123.ckpt',

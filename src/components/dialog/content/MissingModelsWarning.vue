@@ -67,6 +67,13 @@ const doNotAskAgain = ref(false)
 const modelDownloads = ref<Record<string, ModelInfo>>({})
 const missingModels = computed(() => {
   return props.missingModels.map((model) => {
+    
+    // Custom models sources, extension and whitelist can be customized during eletron install.
+    const allowedSources = MODELS_DOWNLOAD_SETTINGS.allowedSources || []
+    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+      allowedSources.push('http://localhost:')
+    }
+    
     const paths = props.paths[model.directory]
     if (model.directory_invalid || !paths) {
       return {
@@ -87,11 +94,11 @@ const missingModels = computed(() => {
     }
     modelDownloads.value[model.name] = downloadInfo
     if (!MODELS_DOWNLOAD_SETTINGS.whiteListedUrls.has(model.url)) {
-      if (!MODELS_DOWNLOAD_SETTINGS.allowedSources.some((source) => model.url.startsWith(source))) {
+      if (!allowedSources.some((source) => model.url.startsWith(source))) {
         return {
           label: `${model.directory} / ${model.name}`,
           url: model.url,
-          error: `Download not allowed from source '${model.url}', only allowed from '${MODELS_DOWNLOAD_SETTINGS.allowedSources.join("', '")}'`
+          error: `Download not allowed from source '${model.url}', only allowed from '${allowedSources.join("', '")}'`
         }
       }
       if (!MODELS_DOWNLOAD_SETTINGS.allowedSuffixes.some((suffix) => model.name.endsWith(suffix))) {
