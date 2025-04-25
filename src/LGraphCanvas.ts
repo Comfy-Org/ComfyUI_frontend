@@ -58,6 +58,7 @@ import {
   overlapBounding,
   snapPoint,
 } from "./measure"
+import { NodeInputSlot } from "./node/NodeInputSlot"
 import { Reroute, type RerouteId } from "./Reroute"
 import { stringOrEmpty } from "./strings"
 import {
@@ -2277,7 +2278,11 @@ export class LGraphCanvas implements ConnectionColorContext {
       if (inputs) {
         for (const [i, input] of inputs.entries()) {
           const link_pos = node.getInputPos(i)
-          if (isInRectangle(x, y, link_pos[0] - 15, link_pos[1] - 10, 30, 20)) {
+          const isInSlot = input instanceof NodeInputSlot
+            ? isInRect(x, y, input.boundingRect)
+            : isInRectangle(x, y, link_pos[0] - 15, link_pos[1] - 10, 30, 20)
+
+          if (isInSlot) {
             pointer.onDoubleClick = () => node.onInputDblClick?.(i, e)
             pointer.onClick = () => node.onInputClick?.(i, e)
 
@@ -4312,6 +4317,7 @@ export class LGraphCanvas implements ConnectionColorContext {
     ctx.font = this.inner_text_font
 
     // render inputs and outputs
+    node._setConcreteSlots()
     if (!node.collapsed) {
       node.arrange()
       node.drawSlots(ctx, {

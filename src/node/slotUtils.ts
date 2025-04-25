@@ -2,9 +2,6 @@ import type { IWidgetInputSlot, SharedIntersection } from "@/interfaces"
 import type { INodeInputSlot, INodeOutputSlot, INodeSlot, IWidget } from "@/litegraph"
 import type { ISerialisableNodeInput, ISerialisableNodeOutput } from "@/types/serialisation"
 
-import { NodeInputSlot } from "./NodeInputSlot"
-import { NodeOutputSlot } from "./NodeOutputSlot"
-
 type CommonIoSlotProps = SharedIntersection<ISerialisableNodeInput, ISerialisableNodeOutput>
 
 export function shallowCloneCommonProps(slot: CommonIoSlotProps): CommonIoSlotProps {
@@ -56,12 +53,4 @@ export function isINodeOutputSlot(slot: INodeSlot): slot is INodeOutputSlot {
 
 export function isWidgetInputSlot(slot: INodeInputSlot): slot is IWidgetInputSlot {
   return !!slot.widget
-}
-
-export function toNodeSlotClass(slot: INodeInputSlot | INodeOutputSlot): NodeInputSlot | NodeOutputSlot {
-  if (slot instanceof NodeInputSlot || slot instanceof NodeOutputSlot) return slot
-
-  return "link" in slot
-    ? new NodeInputSlot(slot)
-    : new NodeOutputSlot(slot)
 }

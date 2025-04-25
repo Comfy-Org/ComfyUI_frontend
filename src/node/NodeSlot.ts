@@ -1,4 +1,5 @@
-import type { CanvasColour, Dictionary, INodeInputSlot, INodeOutputSlot, INodeSlot, ISlotType, IWidgetLocator, OptionalProps, Point, Rect } from "@/interfaces"
+import type { CanvasColour, Dictionary, INodeInputSlot, INodeOutputSlot, INodeSlot, ISlotType, IWidgetLocator, OptionalProps, Point, ReadOnlyPoint, Rect } from "@/interfaces"
+import type { LGraphNode } from "@/LGraphNode"
 
 import { LabelPosition, SlotShape, SlotType } from "@/draw"
 import { LiteGraph } from "@/litegraph"
@@ -41,7 +42,28 @@ export abstract class NodeSlot implements INodeSlot {
   pos?: Point
   widget?: IWidgetLocator
   hasErrors?: boolean
-  boundingRect: Rect
+  readonly boundingRect: Rect
+
+  /** The offset from the parent node to the centre point of this slot. */
+  get #centreOffset(): ReadOnlyPoint {
+    const nodePos = this.node.pos
+    const { boundingRect } = this
+
+    // Use height; widget input slots may be thinner.
+    const diameter = boundingRect[3]
+
+    return getCentre([
+      boundingRect[0] - nodePos[0],
+      boundingRect[1] - nodePos[1],
+      diameter,
+      diameter,
+    ])
+  }
+
+  #node: LGraphNode
+  get node(): LGraphNode {
+    return this.#node
+  }
 
   get highlightColor(): CanvasColour {
     return LiteGraph.NODE_TEXT_HIGHLIGHT_COLOR ?? LiteGraph.NODE_SELECTED_TITLE_COLOR ?? LiteGraph.NODE_TEXT_COLOR
@@ -49,11 +71,12 @@ export abstract class NodeSlot implements INodeSlot {
 
   abstract get isWidgetInputSlot(): boolean
 
-  constructor(slot: OptionalProps<INodeSlot, "boundingRect">) {
+  constructor(slot: OptionalProps<INodeSlot, "boundingRect">, node: LGraphNode) {
     Object.assign(this, slot)
     this.name = slot.name
     this.type = slot.type
     this.boundingRect = slot.boundingRect ?? [0, 0, 0, 0]
+    this.#node = node
   }
 
   /**
@@ -109,7 +132,7 @@ export abstract class NodeSlot implements INodeSlot {
       ? this.highlightColor
       : LiteGraph.NODE_TEXT_COLOR
 
-    const pos = getCentre(this.boundingRect)
+    const pos = this.#centreOffset
     const slot_type = this.type
     const slot_shape = (
       slot_type === SlotType.Array ? SlotShape.Grid : this.shape

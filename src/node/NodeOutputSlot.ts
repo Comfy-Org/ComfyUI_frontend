@@ -1,4 +1,5 @@
 import type { INodeInputSlot, INodeOutputSlot, OptionalProps } from "@/interfaces"
+import type { LGraphNode } from "@/LGraphNode"
 import type { LinkId } from "@/LLink"
 
 import { LabelPosition } from "@/draw"
@@ -14,8 +15,8 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
     return false
   }
 
-  constructor(slot: OptionalProps<INodeOutputSlot, "boundingRect">) {
-    super(slot)
+  constructor(slot: OptionalProps<INodeOutputSlot, "boundingRect">, node: LGraphNode) {
+    super(slot, node)
     this.links = slot.links
     this._data = slot._data
     this.slot_index = slot.slot_index

@@ -2,12 +2,17 @@ import type { IColorable } from "@/interfaces"
 
 /**
  * Converts a plain object to a class instance if it is not already an instance of the class.
+ *
+ * Requires specific constructor signature; first parameter must be the object to convert.
  * @param cls The class to convert to
- * @param obj The object to convert
+ * @param args The object to convert, followed by any other constructor arguments
  * @returns The class instance
  */
-export function toClass<P, C>(cls: new (plain: P) => C, obj: P | C): C {
-  return obj instanceof cls ? obj : new cls(obj as P)
+export function toClass<P, C extends P, Args extends unknown[]>(
+  cls: new (instance: P, ...args: Args) => C,
+  ...args: [P, ...Args]
+): C {
+  return args[0] instanceof cls ? args[0] : new cls(...args)
 }
 
 /**
