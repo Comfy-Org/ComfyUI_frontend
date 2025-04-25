@@ -293,6 +293,9 @@
       "small": "petit"
     }
   },
+  "Comfy_Sidebar_UnifiedWidth": {
+    "name": "Largeur unifiée de la barre latérale"
+  },
   "Comfy_SnapToGrid_GridSize": {
     "name": "Taille de la grille d'alignement",
     "tooltip": "Lors du déplacement et du redimensionnement des nœuds tout en maintenant shift, ils seront alignés sur la grille, cela contrôle la taille de cette grille."
@@ -376,6 +379,10 @@
   },
   "LiteGraph_ContextMenu_Scaling": {
     "name": "Mise à l'échelle des menus de widgets combinés de nœuds (listes) lors du zoom"
+  },
+  "LiteGraph_Node_DefaultPadding": {
+    "name": "Toujours réduire les nouveaux nœuds",
+    "tooltip": "Redimensionner les nœuds à la taille minimale possible lors de leur création. Lorsque cette option est désactivée, un nœud nouvellement ajouté sera légèrement élargi pour afficher les valeurs des widgets."
   },
   "LiteGraph_Node_TooltipDelay": {
     "name": "Délai d'infobulle"

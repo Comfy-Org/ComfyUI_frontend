@@ -89,6 +89,14 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: () => (window.innerWidth < 1536 ? 'small' : 'normal')
   },
   {
+    id: 'Comfy.Sidebar.UnifiedWidth',
+    category: ['Appearance', 'Sidebar', 'UnifiedWidth'],
+    name: 'Unified sidebar width',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.18.1'
+  },
+  {
     id: 'Comfy.TextareaWidget.FontSize',
     category: ['Appearance', 'Node Widget', 'TextareaWidget', 'FontSize'],
     name: 'Textarea widget font size',
@@ -794,5 +802,14 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     defaultValue: true,
     versionAdded: '1.16.1'
+  },
+  {
+    id: 'LiteGraph.Node.DefaultPadding',
+    name: 'Always shrink new nodes',
+    tooltip:
+      'Resize nodes to the smallest possible size when created. When disabled, a newly added node will be widened slightly to show widget values.',
+    type: 'boolean',
+    defaultValue: false,
+    versionAdded: '1.18.0'
   }
 ]
