@@ -142,6 +142,14 @@ vi.mock('@primevue/forms', () => ({
   }
 }))
 
+vi.mock('@/stores/firebaseAuthStore', () => ({
+  useFirebaseAuthStore: () => ({
+    currentUser: {
+      email: 'test@example.com'
+    }
+  })
+}))
+
 describe('ReportIssuePanel', () => {
   beforeEach(() => {
     vi.clearAllMocks()

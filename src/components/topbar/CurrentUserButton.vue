@@ -10,28 +10,22 @@
     @click="openUserSettings"
   >
     <div
-      class="flex items-center gap-2 pr-2 rounded-full bg-[var(--p-content-background)]"
+      class="flex items-center rounded-full bg-[var(--p-content-background)]"
     >
-      <!-- User Avatar if available -->
-      <div v-if="user?.photoURL" class="flex items-center gap-1">
-        <img
-          :src="user.photoURL"
-          :alt="user.displayName || ''"
-          class="w-8 h-8 rounded-full"
-        />
-      </div>
+      <Avatar
+        :image="photoURL"
+        :icon="photoURL ? undefined : 'pi pi-user'"
+        shape="circle"
+        aria-label="User Avatar"
+      />
 
-      <!-- User Icon if no avatar -->
-      <div v-else class="w-8 h-8 rounded-full flex items-center justify-center">
-        <i class="pi pi-user text-sm" />
-      </div>
-
-      <i class="pi pi-chevron-down" :style="{ fontSize: '0.5rem' }" />
+      <i class="pi pi-chevron-down px-1" :style="{ fontSize: '0.5rem' }" />
     </div>
   </Button>
 </template>
 
 <script setup lang="ts">
+import Avatar from 'primevue/avatar'
 import Button from 'primevue/button'
 import { computed } from 'vue'
 
@@ -41,7 +35,9 @@ import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 const authStore = useFirebaseAuthStore()
 const dialogService = useDialogService()
 const isAuthenticated = computed(() => authStore.isAuthenticated)
-const user = computed(() => authStore.currentUser)
+const photoURL = computed<string | undefined>(
+  () => authStore.currentUser?.photoURL ?? undefined
+)
 
 const openUserSettings = () => {
   dialogService.showSettingsDialog('user')

@@ -293,6 +293,9 @@
       "small": "小"
     }
   },
+  "Comfy_Sidebar_UnifiedWidth": {
+    "name": "统一侧边栏宽度"
+  },
   "Comfy_SnapToGrid_GridSize": {
     "name": "吸附网格大小",
     "tooltip": "在按住shift拖动和调整节点大小时，节点将对齐到网格，该选项控制网格。"
@@ -376,6 +379,10 @@
   },
   "LiteGraph_ContextMenu_Scaling": {
     "name": "放大时缩放节点组合部件菜单（列表）"
+  },
+  "LiteGraph_Node_DefaultPadding": {
+    "name": "始终收缩新节点",
+    "tooltip": "创建节点时将其缩小到最小可能尺寸。禁用后，新添加的节点会略微加宽以显示控件数值。"
   },
   "LiteGraph_Node_TooltipDelay": {
     "name": "工具提示延迟"

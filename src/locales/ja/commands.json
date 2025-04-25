@@ -182,6 +182,9 @@
   "Comfy_User_OpenSignInDialog": {
     "label": "サインインダイアログを開く"
   },
+  "Comfy_User_SignOut": {
+    "label": "サインアウト"
+  },
   "Workspace_CloseWorkflow": {
     "label": "現在のワークフローを閉じる"
   },

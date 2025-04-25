@@ -81,14 +81,14 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { type SignInData, signInSchema } from '@/schemas/signInSchema'
+import { useFirebaseAuthService } from '@/services/firebaseAuthService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
-import { useToastStore } from '@/stores/toastStore'
 
 const authStore = useFirebaseAuthStore()
+const firebaseAuthService = useFirebaseAuthService()
 const loading = computed(() => authStore.loading)
 
 const { t } = useI18n()
-const toast = useToastStore()
 
 const emit = defineEmits<{
   submit: [values: SignInData]
@@ -102,19 +102,6 @@ const onSubmit = (event: FormSubmitEvent) => {
 
 const handleForgotPassword = async (email: string) => {
   if (!email) return
-  await authStore.sendPasswordReset(email)
-  if (authStore.error) {
-    toast.add({
-      severity: 'error',
-      summary: t('auth.login.forgotPasswordError'),
-      detail: authStore.error
-    })
-  } else {
-    toast.add({
-      severity: 'success',
-      summary: t('auth.login.passwordResetSent'),
-      detail: t('auth.login.passwordResetSentDetail')
-    })
-  }
+  await firebaseAuthService.sendPasswordReset(email)
 }
 </script>

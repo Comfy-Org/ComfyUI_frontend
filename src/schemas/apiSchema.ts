@@ -384,6 +384,7 @@ const zSettings = z.object({
   'Comfy.PromptFilename': z.boolean(),
   'Comfy.Sidebar.Location': z.enum(['left', 'right']),
   'Comfy.Sidebar.Size': z.enum(['small', 'normal']),
+  'Comfy.Sidebar.UnifiedWidth': z.boolean(),
   'Comfy.SwitchUser': z.any(),
   'Comfy.SnapToGrid.GridSize': z.number(),
   'Comfy.TextareaWidget.FontSize': z.number(),
@@ -454,7 +455,8 @@ const zSettings = z.object({
   /** Settings used for testing */
   'test.setting': z.any(),
   'main.sub.setting.name': z.any(),
-  'single.setting': z.any()
+  'single.setting': z.any(),
+  'LiteGraph.Node.DefaultPadding': z.boolean()
 })
 
 export type EmbeddingsResponse = z.infer<typeof zEmbeddingsResponse>

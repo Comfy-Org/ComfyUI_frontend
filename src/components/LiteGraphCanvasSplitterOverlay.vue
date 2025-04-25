@@ -1,9 +1,9 @@
 <template>
   <Splitter
-    :key="activeSidebarTabId ?? undefined"
+    :key="sidebarStateKey"
     class="splitter-overlay-root splitter-overlay"
     :pt:gutter="sidebarPanelVisible ? '' : 'hidden'"
-    :state-key="activeSidebarTabId ?? undefined"
+    :state-key="sidebarStateKey"
     state-storage="local"
   >
     <SplitterPanel
@@ -59,6 +59,10 @@ const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
 )
 
+const unifiedWidth = computed(() =>
+  settingStore.get('Comfy.Sidebar.UnifiedWidth')
+)
+
 const sidebarPanelVisible = computed(
   () => useSidebarTabStore().activeSidebarTab !== null
 )
@@ -68,6 +72,10 @@ const bottomPanelVisible = computed(
 const activeSidebarTabId = computed(
   () => useSidebarTabStore().activeSidebarTabId
 )
+
+const sidebarStateKey = computed(() => {
+  return unifiedWidth.value ? 'unified-sidebar' : activeSidebarTabId.value ?? ''
+})
 </script>
 
 <style scoped>

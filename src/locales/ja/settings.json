@@ -293,6 +293,9 @@
       "small": "小"
     }
   },
+  "Comfy_Sidebar_UnifiedWidth": {
+    "name": "サイドバーの幅を統一"
+  },
   "Comfy_SnapToGrid_GridSize": {
     "name": "グリッドサイズにスナップ",
     "tooltip": "シフトを押しながらノードをドラッグおよびサイズ変更すると、グリッドに整列されます。これにより、そのグリッドのサイズが制御されます。"
@@ -376,6 +379,10 @@
   },
   "LiteGraph_ContextMenu_Scaling": {
     "name": "ズームイン時にノードコンボウィジェットメニュー（リスト）をスケーリングする"
+  },
+  "LiteGraph_Node_DefaultPadding": {
+    "name": "新しいノードを常に縮小",
+    "tooltip": "ノード作成時に可能な限り小さいサイズにリサイズします。無効にすると、新しく追加されたノードはウィジェットの値が表示されるように少し幅広くなります。"
   },
   "LiteGraph_Node_TooltipDelay": {
     "name": "ツールチップ遅延"

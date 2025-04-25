@@ -55,3 +55,6 @@ dist.zip
 
 # Temporary repository directory
 templates_repo/
+
+# Vite’s timestamped config modules
+vite.config.mts.timestamp-*.mjs

@@ -1,4 +1,10 @@
-import { computed, onMounted, ref } from 'vue'
+import {
+  type Component,
+  computed,
+  defineAsyncComponent,
+  onMounted,
+  ref
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
@@ -7,6 +13,11 @@ import type { SettingParams } from '@/types/settingTypes'
 import { isElectron } from '@/utils/envUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildTree } from '@/utils/treeUtil'
+
+interface SettingPanelItem {
+  node: SettingTreeNode
+  component: Component
+}
 
 export function useSettingUI(
   defaultPanel?:
@@ -48,49 +59,82 @@ export function useSettingUI(
     () => settingRoot.value.children ?? []
   )
 
-  // Define panel nodes
-  const aboutPanelNode: SettingTreeNode = {
-    key: 'about',
-    label: 'About',
-    children: []
+  // Define panel items
+  const aboutPanel: SettingPanelItem = {
+    node: {
+      key: 'about',
+      label: 'About',
+      children: []
+    },
+    component: defineAsyncComponent(
+      () => import('@/components/dialog/content/setting/AboutPanel.vue')
+    )
   }
 
-  const creditsPanelNode: SettingTreeNode = {
-    key: 'credits',
-    label: 'Credits',
-    children: []
+  const creditsPanel: SettingPanelItem = {
+    node: {
+      key: 'credits',
+      label: 'Credits',
+      children: []
+    },
+    component: defineAsyncComponent(
+      () => import('@/components/dialog/content/setting/CreditsPanel.vue')
+    )
   }
 
-  const userPanelNode: SettingTreeNode = {
-    key: 'user',
-    label: 'User',
-    children: []
+  const userPanel: SettingPanelItem = {
+    node: {
+      key: 'user',
+      label: 'User',
+      children: []
+    },
+    component: defineAsyncComponent(
+      () => import('@/components/dialog/content/setting/UserPanel.vue')
+    )
   }
 
-  const keybindingPanelNode: SettingTreeNode = {
-    key: 'keybinding',
-    label: 'Keybinding',
-    children: []
+  const keybindingPanel: SettingPanelItem = {
+    node: {
+      key: 'keybinding',
+      label: 'Keybinding',
+      children: []
+    },
+    component: defineAsyncComponent(
+      () => import('@/components/dialog/content/setting/KeybindingPanel.vue')
+    )
   }
 
-  const extensionPanelNode: SettingTreeNode = {
-    key: 'extension',
-    label: 'Extension',
-    children: []
+  const extensionPanel: SettingPanelItem = {
+    node: {
+      key: 'extension',
+      label: 'Extension',
+      children: []
+    },
+    component: defineAsyncComponent(
+      () => import('@/components/dialog/content/setting/ExtensionPanel.vue')
+    )
   }
 
-  const serverConfigPanelNode: SettingTreeNode = {
-    key: 'server-config',
-    label: 'Server-Config',
-    children: []
+  const serverConfigPanel: SettingPanelItem = {
+    node: {
+      key: 'server-config',
+      label: 'Server-Config',
+      children: []
+    },
+    component: defineAsyncComponent(
+      () => import('@/components/dialog/content/setting/ServerConfigPanel.vue')
+    )
   }
 
-  /**
-   * Server config panel is only available in Electron
-   */
-  const serverConfigPanelNodeList = computed<SettingTreeNode[]>(() => {
-    return isElectron() ? [serverConfigPanelNode] : []
-  })
+  const panels = computed<SettingPanelItem[]>(() =>
+    [
+      aboutPanel,
+      creditsPanel,
+      userPanel,
+      keybindingPanel,
+      extensionPanel
+    ].filter((panel) => panel.component)
+  )
 
   /**
    * The default category to show when the dialog is opened.
@@ -119,8 +163,8 @@ export function useSettingUI(
       key: 'account',
       label: 'Account',
       children: [
-        userPanelNode,
-        ...(firebaseAuthStore.isAuthenticated ? [creditsPanelNode] : [])
+        userPanel.node,
+        ...(firebaseAuthStore.isAuthenticated ? [creditsPanel.node] : [])
       ].map(translateCategory)
     },
     // Normal settings stored in the settingStore
@@ -134,10 +178,10 @@ export function useSettingUI(
       key: 'specialSettings',
       label: 'Special Settings',
       children: [
-        keybindingPanelNode,
-        extensionPanelNode,
-        aboutPanelNode,
-        ...serverConfigPanelNodeList.value
+        keybindingPanel.node,
+        extensionPanel.node,
+        aboutPanel.node,
+        ...(isElectron() ? [serverConfigPanel.node] : [])
       ].map(translateCategory)
     }
   ])
@@ -147,6 +191,7 @@ export function useSettingUI(
   })
 
   return {
+    panels,
     activeCategory,
     defaultCategory,
     groupedMenuTreeNodes,

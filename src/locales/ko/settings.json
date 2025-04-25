@@ -293,6 +293,9 @@
       "small": "작음"
     }
   },
+  "Comfy_Sidebar_UnifiedWidth": {
+    "name": "통합 사이드바 너비"
+  },
   "Comfy_SnapToGrid_GridSize": {
     "name": "그리드 크기에 스냅",
     "tooltip": "Shift 키를 누른 상태에서 노드를 드래그하거나 크기를 조절하면 그리드에 맞춰 정렬됩니다. 이 설정은 그리드의 크기를 제어합니다."
@@ -376,6 +379,10 @@
   },
   "LiteGraph_ContextMenu_Scaling": {
     "name": "확대시 노드 콤보 위젯 메뉴 (목록) 스케일링"
+  },
+  "LiteGraph_Node_DefaultPadding": {
+    "name": "새 노드를 항상 축소",
+    "tooltip": "노드를 생성할 때 가능한 가장 작은 크기로 크기를 조정합니다. 비활성화하면 새로 추가된 노드가 위젯 값을 표시하기 위해 약간 넓어집니다."
   },
   "LiteGraph_Node_TooltipDelay": {
     "name": "툴팁 지연"
