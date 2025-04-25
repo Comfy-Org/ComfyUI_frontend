@@ -32,6 +32,8 @@ export interface LinkConnectorState {
   multi: boolean
   /** When `true`, existing links are being repositioned. Otherwise, new links are being created. */
   draggingExistingLinks: boolean
+  /** When set, connecting links will all snap to this position. */
+  snapLinksPos?: [number, number]
 }
 
 /** Discriminated union to simplify type narrowing. */
@@ -61,6 +63,7 @@ export class LinkConnector {
     connectingTo: undefined,
     multi: false,
     draggingExistingLinks: false,
+    snapLinksPos: undefined,
   }
 
   readonly events = new LinkConnectorEventTarget()
@@ -639,6 +642,7 @@ export class LinkConnector {
     hiddenReroutes.clear()
     state.multi = false
     state.draggingExistingLinks = false
+    state.snapLinksPos = undefined
   }
 }
 
