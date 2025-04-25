@@ -258,6 +258,18 @@ export class LiteGraphGlobal {
   /** Whether to scale context with the graph when zooming in.  Zooming out never makes context menus smaller. */
   context_menu_scaling = false
 
+  /**
+   * Debugging flag. Repeats deprecation warnings every time they are reported.
+   * May impact performance.
+   */
+  alwaysRepeatWarnings: boolean = false
+
+  /**
+   * Array of callbacks to execute when Litegraph first reports a deprecated API being used.
+   * @see alwaysRepeatWarnings By default, will not repeat identical messages.
+   */
+  onDeprecationWarning: ((message: string, source?: object) => void)[] = [console.warn]
+
   // TODO: Remove legacy accessors
   LGraph = LGraph
   LLink = LLink

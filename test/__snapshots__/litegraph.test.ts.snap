@@ -139,6 +139,7 @@ LiteGraphGlobal {
   "allow_multi_output_for_events": true,
   "allow_scripts": false,
   "alt_drag_do_clone_nodes": false,
+  "alwaysRepeatWarnings": false,
   "alwaysSnapToGrid": undefined,
   "auto_load_slot_types": false,
   "catch_exceptions": true,
@@ -158,6 +159,9 @@ LiteGraphGlobal {
   "node_box_coloured_when_on": false,
   "node_images_path": "",
   "node_types_by_file_extension": {},
+  "onDeprecationWarning": [
+    [Function],
+  ],
   "overlapBounding": [Function],
   "pointerevents_method": "pointer",
   "proxy": null,
