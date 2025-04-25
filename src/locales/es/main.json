@@ -114,7 +114,8 @@
       "insufficientTitle": "Créditos insuficientes",
       "maxAmount": "(Máx. $1,000 USD)",
       "quickPurchase": "Compra rápida",
-      "seeDetails": "Ver detalles"
+      "seeDetails": "Ver detalles",
+      "topUp": "Recargar"
     },
     "yourCreditBalance": "Tu saldo de créditos"
   },
@@ -302,6 +303,7 @@
     "updated": "Actualizado",
     "updating": "Actualizando",
     "upload": "Subir",
+    "user": "Usuario",
     "videoFailedToLoad": "Falló la carga del video",
     "workflow": "Flujo de trabajo"
   },

@@ -114,7 +114,8 @@
       "insufficientTitle": "积分不足",
       "maxAmount": "（最高 $1,000 美元）",
       "quickPurchase": "快速购买",
-      "seeDetails": "查看详情"
+      "seeDetails": "查看详情",
+      "topUp": "充值"
     },
     "yourCreditBalance": "您的积分余额"
   },
@@ -302,6 +303,7 @@
     "updated": "已更新",
     "updating": "更新中",
     "upload": "上传",
+    "user": "用户",
     "videoFailedToLoad": "视频加载失败",
     "workflow": "工作流"
   },

@@ -114,7 +114,8 @@
       "insufficientTitle": "크레딧 부족",
       "maxAmount": "(최대 $1,000 USD)",
       "quickPurchase": "빠른 구매",
-      "seeDetails": "자세히 보기"
+      "seeDetails": "자세히 보기",
+      "topUp": "충전하기"
     },
     "yourCreditBalance": "보유 크레딧 잔액"
   },
@@ -302,6 +303,7 @@
     "updated": "업데이트 됨",
     "updating": "업데이트 중",
     "upload": "업로드",
+    "user": "사용자",
     "videoFailedToLoad": "비디오를 로드하지 못했습니다.",
     "workflow": "워크플로"
   },
