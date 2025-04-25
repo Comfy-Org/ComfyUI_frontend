@@ -3,7 +3,6 @@
   <div>
     <Button
       v-if="isAuthenticated"
-      v-tooltip="{ value: $t('userSettings.title'), showDelay: 300 }"
       class="user-profile-button p-1"
       severity="secondary"
       text
