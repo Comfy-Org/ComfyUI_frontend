@@ -45,7 +45,6 @@ import { ModelRef, computed, onMounted, ref } from 'vue'
 import MirrorItem from '@/components/install/mirror/MirrorItem.vue'
 import { PYPI_MIRROR, PYTHON_MIRROR, UVMirror } from '@/constants/uvMirrors'
 import { t } from '@/i18n'
-import { electronAPI } from '@/utils/envUtil'
 import { isInChina } from '@/utils/networkUtil'
 import { ValidationState, mergeValidationStates } from '@/utils/validationUtil'
 
@@ -54,17 +53,6 @@ const { device } = defineProps<{ device: TorchDeviceType | null }>()
 const pythonMirror = defineModel<string>('pythonMirror', { required: true })
 const pypiMirror = defineModel<string>('pypiMirror', { required: true })
 const torchMirror = defineModel<string>('torchMirror', { required: true })
-
-const isBlackwellArchitecture = ref(false)
-
-const requiresNightlyPytorch = async (): Promise<boolean> => {
-  try {
-    return await electronAPI().isBlackwell()
-  } catch (error) {
-    console.error('Failed to detect Blackwell architecture:', error)
-    return false
-  }
-}
 
 const getTorchMirrorItem = (device: TorchDeviceType): UVMirror => {
   const settingId = 'Comfy-Desktop.UV.TorchInstallMirror'
@@ -76,13 +64,6 @@ const getTorchMirrorItem = (device: TorchDeviceType): UVMirror => {
         fallbackMirror: TorchMirrorUrl.NightlyCpu
       }
     case 'nvidia':
-      if (isBlackwellArchitecture.value) {
-        return {
-          settingId,
-          mirror: TorchMirrorUrl.NightlyCuda,
-          fallbackMirror: TorchMirrorUrl.NightlyCuda
-        }
-      }
       return {
         settingId,
         mirror: TorchMirrorUrl.Cuda,
@@ -101,7 +82,6 @@ const getTorchMirrorItem = (device: TorchDeviceType): UVMirror => {
 const userIsInChina = ref(false)
 onMounted(async () => {
   userIsInChina.value = await isInChina()
-  isBlackwellArchitecture.value = await requiresNightlyPytorch()
 })
 
 const useFallbackMirror = (mirror: UVMirror) => ({
