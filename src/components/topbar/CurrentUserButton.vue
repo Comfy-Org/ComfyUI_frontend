@@ -6,7 +6,7 @@
       class="user-profile-button p-1"
       severity="secondary"
       text
-      :aria-label="$t('userSettings.title')"
+      aria-label="user profile"
       @click="popover?.toggle($event)"
     >
       <div
