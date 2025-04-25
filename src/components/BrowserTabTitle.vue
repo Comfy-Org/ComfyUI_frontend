@@ -23,7 +23,7 @@ const executionText = computed(() =>
 )
 
 const settingStore = useSettingStore()
-const betaMenuEnabled = computed(
+const newMenuEnabled = computed(
   () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
 )
 
@@ -50,7 +50,7 @@ const nodeExecutionTitle = computed(() =>
 const workflowTitle = computed(
   () =>
     executionText.value +
-    (betaMenuEnabled.value ? workflowNameText.value : DEFAULT_TITLE)
+    (newMenuEnabled.value ? workflowNameText.value : DEFAULT_TITLE)
 )
 
 const title = computed(() => nodeExecutionTitle.value || workflowTitle.value)
