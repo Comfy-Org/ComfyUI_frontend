@@ -1162,7 +1162,8 @@
       "quickPurchase": "Quick Purchase",
       "maxAmount": "(Max. $1,000 USD)",
       "buyNow": "Buy now",
-      "seeDetails": "See details"
+      "seeDetails": "See details",
+      "topUp": "Top Up"
     }
   },
   "userSettings": {

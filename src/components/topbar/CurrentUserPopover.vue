@@ -26,17 +26,26 @@
     <Divider class="my-2" />
 
     <Button
-      :label="$t('auth.signOut.signOut')"
-      icon="pi pi-sign-out"
+      class="justify-start"
+      :label="$t('userSettings.title')"
+      icon="pi pi-cog"
       text
       fluid
       severity="secondary"
-      @click="handleSignOut"
+      @click="handleOpenUserSettings"
     />
 
     <Divider class="my-2" />
 
-    <div class="w-full flex justify-between"></div>
+    <div class="w-full flex flex-col gap-2 p-2">
+      <div class="text-muted text-sm">
+        {{ $t('credits.yourCreditBalance') }}
+      </div>
+      <div class="flex justify-between items-center">
+        <UserCredit text-class="text-2xl" />
+        <Button :label="$t('credits.topUp.topUp')" @click="handleTopUp" />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -44,17 +53,28 @@
 import Avatar from 'primevue/avatar'
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 
+import UserCredit from '@/components/common/UserCredit.vue'
+import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthService } from '@/services/firebaseAuthService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
 const authStore = useFirebaseAuthStore()
 const authService = useFirebaseAuthService()
+const dialogService = useDialogService()
 
 const user = computed(() => authStore.currentUser)
 
-const handleSignOut = async () => {
-  await authService.logout()
+const handleOpenUserSettings = () => {
+  dialogService.showSettingsDialog('user')
 }
+
+const handleTopUp = () => {
+  dialogService.showTopUpCreditsDialog()
+}
+
+onMounted(() => {
+  void authService.fetchBalance()
+})
 </script>
