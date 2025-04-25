@@ -12,22 +12,7 @@
           {{ $t('credits.yourCreditBalance') }}
         </h3>
         <div class="flex justify-between items-center">
-          <div v-if="balanceLoading" class="flex items-center gap-1">
-            <div class="flex items-center gap-2">
-              <Skeleton shape="circle" width="1.5rem" height="1.5rem" />
-            </div>
-            <div class="flex-1"></div>
-            <Skeleton width="8rem" height="2rem" />
-          </div>
-          <div v-else class="flex items-center gap-1">
-            <Tag
-              severity="secondary"
-              icon="pi pi-dollar"
-              rounded
-              class="text-amber-400 p-1"
-            />
-            <div class="text-3xl font-bold">{{ formattedBalance }}</div>
-          </div>
+          <UserCredit text-class="text-3xl font-bold" />
           <Skeleton v-if="loading" width="2rem" height="2rem" />
           <Button
             v-else
@@ -51,7 +36,7 @@
             text
             size="small"
             severity="secondary"
-            @click="() => authStore.fetchBalance()"
+            @click="() => authService.fetchBalance()"
           />
         </div>
       </div>
@@ -123,11 +108,12 @@ import DataTable from 'primevue/datatable'
 import Divider from 'primevue/divider'
 import Skeleton from 'primevue/skeleton'
 import TabPanel from 'primevue/tabpanel'
-import Tag from 'primevue/tag'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import UserCredit from '@/components/common/UserCredit.vue'
 import { useDialogService } from '@/services/dialogService'
+import { useFirebaseAuthService } from '@/services/firebaseAuthService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { formatMetronomeCurrency } from '@/utils/formatUtil'
 
@@ -141,12 +127,9 @@ interface CreditHistoryItemData {
 const { t } = useI18n()
 const dialogService = useDialogService()
 const authStore = useFirebaseAuthStore()
+const authService = useFirebaseAuthService()
 const loading = computed(() => authStore.loading)
 const balanceLoading = computed(() => authStore.isFetchingBalance)
-const formattedBalance = computed(() => {
-  if (!authStore.balance) return '0.00'
-  return formatMetronomeCurrency(authStore.balance.amount_micros, 'usd')
-})
 
 const formattedLastUpdateTime = computed(() =>
   authStore.lastBalanceUpdateTime
@@ -159,13 +142,7 @@ const handlePurchaseCreditsClick = () => {
 }
 
 const handleCreditsHistoryClick = async () => {
-  const response = await authStore.accessBillingPortal()
-  if (!response) return
-
-  const { billing_portal_url } = response
-  if (billing_portal_url) {
-    window.open(billing_portal_url, '_blank')
-  }
+  await authService.accessBillingPortal()
 }
 
 const handleMessageSupport = () => {

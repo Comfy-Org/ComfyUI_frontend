@@ -2,7 +2,7 @@
   <router-view />
   <ProgressSpinner
     v-if="isLoading"
-    class="absolute inset-0 flex justify-center items-center h-screen"
+    class="absolute inset-0 flex justify-center items-center h-[unset]"
   />
   <GlobalDialog />
   <BlockUI full-screen :blocked="isLoading" />

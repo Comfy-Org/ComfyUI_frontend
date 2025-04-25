@@ -254,7 +254,7 @@ const cancelNextReset = (e: CustomEvent<CanvasPointerEvent>) => {
   e.preventDefault()
 
   const canvas = canvasStore.getCanvas()
-  canvas._highlight_pos = [e.detail.canvasX, e.detail.canvasY]
+  canvas.linkConnector.state.snapLinksPos = [e.detail.canvasX, e.detail.canvasY]
   useEventListener(canvas.linkConnector.events, 'reset', preventDefault, {
     once: true
   })
@@ -291,7 +291,6 @@ const reset = () => {
   if (disconnectOnReset) canvas.linkConnector.disconnectLinks()
 
   canvas.linkConnector.reset()
-  canvas._highlight_pos = undefined
   canvas.setDirty(true, true)
 }
 

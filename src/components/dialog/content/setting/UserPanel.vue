@@ -5,14 +5,13 @@
       <Divider class="mb-3" />
 
       <div v-if="user" class="flex flex-col gap-2">
-        <!-- User Avatar if available -->
-        <div v-if="user.photoURL" class="flex items-center gap-2">
-          <img
-            :src="user.photoURL"
-            :alt="user.displayName || ''"
-            class="w-8 h-8 rounded-full"
-          />
-        </div>
+        <Avatar
+          v-if="user.photoURL"
+          :image="user.photoURL"
+          shape="circle"
+          size="large"
+          aria-label="User Avatar"
+        />
 
         <div class="flex flex-col gap-0.5">
           <h3 class="font-medium">
@@ -77,6 +76,7 @@
 </template>
 
 <script setup lang="ts">
+import Avatar from 'primevue/avatar'
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'

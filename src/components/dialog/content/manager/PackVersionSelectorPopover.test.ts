@@ -10,7 +10,7 @@ import { createI18n } from 'vue-i18n'
 import enMessages from '@/locales/en/main.json'
 import { SelectedVersion } from '@/types/comfyManagerTypes'
 
-import PackVersionSelectorPopover from '../PackVersionSelectorPopover.vue'
+import PackVersionSelectorPopover from './PackVersionSelectorPopover.vue'
 
 // Default mock versions for reference
 const defaultMockVersions = [

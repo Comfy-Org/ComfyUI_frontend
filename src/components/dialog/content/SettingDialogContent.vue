@@ -69,7 +69,7 @@ import { computed, watch } from 'vue'
 import SearchBox from '@/components/common/SearchBox.vue'
 import { useSettingSearch } from '@/composables/setting/useSettingSearch'
 import { useSettingUI } from '@/composables/setting/useSettingUI'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useFirebaseAuthService } from '@/services/firebaseAuthService'
 import { SettingTreeNode } from '@/stores/settingStore'
 import { ISettingGroup, SettingParams } from '@/types/settingTypes'
 import { flattenTree } from '@/utils/treeUtil'
@@ -107,7 +107,7 @@ const {
   getSearchResults
 } = useSettingSearch()
 
-const authStore = useFirebaseAuthStore()
+const authService = useFirebaseAuthService()
 
 // Sort groups for a category
 const sortedGroups = (category: SettingTreeNode): ISettingGroup[] => {
@@ -140,7 +140,7 @@ watch(activeCategory, (_, oldValue) => {
     activeCategory.value = oldValue
   }
   if (activeCategory.value?.key === 'credits') {
-    void authStore.fetchBalance()
+    void authService.fetchBalance()
   }
 })
 </script>
