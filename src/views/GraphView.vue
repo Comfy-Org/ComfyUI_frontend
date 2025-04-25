@@ -1,5 +1,5 @@
 <template>
-  <div class="comfyui-body grid h-screen w-screen overflow-hidden">
+  <div class="comfyui-body grid h-full w-full overflow-hidden">
     <div id="comfyui-body-top" class="comfyui-body-top">
       <TopMenubar v-if="useNewMenu === 'Top'" />
     </div>
