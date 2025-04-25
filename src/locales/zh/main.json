@@ -409,6 +409,7 @@
       "errorUpdatingConsentDetail": "无法更新度量同意设置",
       "learnMoreAboutData": "了解更多关于数据收集的信息",
       "mirrorSettings": "镜像设置",
+      "modelsDownloadSettings": "模型下载设置",
       "mirrorsReachable": "到Python镜像的网络访问良好",
       "mirrorsUnreachable": "对某些python镜像的网络访问不佳",
       "pypiMirrorPlaceholder": "输入PyPI镜像URL",

@@ -90,7 +90,17 @@ import { checkMirrorReachable } from '@/utils/networkUtil'
         attrs: {
           validateUrlFn: checkMirrorReachable
         }
-      }
+      },
+      {
+        id: 'Comfy-Desktop.ModelsDownload.ModelsDownloadSettings',
+        name: 'Models Download Allowed Sources',
+        tooltip: `Allow to whitelist an additional models download server where Comfy can download models automatically on workflow load. The provided URL will be added to https://civitai.com/ and https://huggingface.co. ie https://myserver.io/models`,
+        type: 'url',
+        defaultValue: '',
+        attrs: {
+          validateUrlFn: checkMirrorReachable
+        }
+      },
     ],
 
     commands: [

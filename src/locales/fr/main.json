@@ -411,6 +411,7 @@
       "mirrorSettings": "Paramètres du Miroir",
       "mirrorsReachable": "L'accès réseau aux miroirs python est bon",
       "mirrorsUnreachable": "L'accès au réseau à certains miroirs python est mauvais",
+      "modelsDownloadSettings": "Paramètres de telechargement de models",
       "pypiMirrorPlaceholder": "Entrez l'URL du miroir PyPI",
       "pythonMirrorPlaceholder": "Entrez l'URL du miroir Python"
     },
