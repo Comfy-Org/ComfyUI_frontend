@@ -135,7 +135,6 @@ describe('useFirebaseAuthStore', () => {
     expect(store.userEmail).toBe('test@example.com')
     expect(store.userId).toBe('test-user-id')
     expect(store.loading).toBe(false)
-    expect(store.error).toBe(null)
   })
 
   it('should set persistence to local storage on initialization', () => {
@@ -158,17 +157,12 @@ describe('useFirebaseAuthStore', () => {
       // Error expected
     }
 
-    expect(store.error).toBe('Invalid password')
-
     // Now, succeed on next attempt
     vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValueOnce({
       user: mockUser
     } as any)
 
     await store.login('test@example.com', 'correct-password')
-
-    // Error should be cleared
-    expect(store.error).toBe(null)
   })
 
   describe('login', () => {
@@ -187,7 +181,6 @@ describe('useFirebaseAuthStore', () => {
       )
       expect(result).toEqual(mockUserCredential)
       expect(store.loading).toBe(false)
-      expect(store.error).toBe(null)
     })
 
     it('should handle login errors', async () => {
@@ -206,7 +199,6 @@ describe('useFirebaseAuthStore', () => {
         'wrong-password'
       )
       expect(store.loading).toBe(false)
-      expect(store.error).toBe('Invalid password')
     })
 
     it('should handle concurrent login attempts correctly', async () => {
@@ -243,7 +235,6 @@ describe('useFirebaseAuthStore', () => {
       )
       expect(result).toEqual(mockUserCredential)
       expect(store.loading).toBe(false)
-      expect(store.error).toBe(null)
     })
 
     it('should handle registration errors', async () => {
@@ -262,7 +253,6 @@ describe('useFirebaseAuthStore', () => {
         'password'
       )
       expect(store.loading).toBe(false)
-      expect(store.error).toBe('Email already in use')
     })
   })
 
@@ -282,7 +272,6 @@ describe('useFirebaseAuthStore', () => {
       await expect(store.logout()).rejects.toThrow('Network error')
 
       expect(firebaseAuth.signOut).toHaveBeenCalledWith(mockAuth)
-      expect(store.error).toBe('Network error')
     })
   })
 
@@ -356,7 +345,6 @@ describe('useFirebaseAuthStore', () => {
         )
         expect(result).toEqual(mockUserCredential)
         expect(store.loading).toBe(false)
-        expect(store.error).toBe(null)
       })
 
       it('should handle Google sign in errors', async () => {
@@ -372,7 +360,6 @@ describe('useFirebaseAuthStore', () => {
           expect.any(firebaseAuth.GoogleAuthProvider)
         )
         expect(store.loading).toBe(false)
-        expect(store.error).toBe('Google authentication failed')
       })
     })
 
@@ -391,7 +378,6 @@ describe('useFirebaseAuthStore', () => {
         )
         expect(result).toEqual(mockUserCredential)
         expect(store.loading).toBe(false)
-        expect(store.error).toBe(null)
       })
 
       it('should handle Github sign in errors', async () => {
@@ -407,7 +393,6 @@ describe('useFirebaseAuthStore', () => {
           expect.any(firebaseAuth.GithubAuthProvider)
         )
         expect(store.loading).toBe(false)
-        expect(store.error).toBe('Github authentication failed')
       })
     })
 

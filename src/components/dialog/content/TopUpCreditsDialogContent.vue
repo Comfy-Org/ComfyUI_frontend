@@ -109,8 +109,9 @@ import ProgressSpinner from 'primevue/progressspinner'
 import Tag from 'primevue/tag'
 import { computed, onBeforeUnmount, ref } from 'vue'
 
+import { useFirebaseAuthService } from '@/services/firebaseAuthService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
-import { formatMetronomeCurrency, usdToMicros } from '@/utils/formatUtil'
+import { formatMetronomeCurrency } from '@/utils/formatUtil'
 
 const {
   isInsufficientCredits = false,
@@ -123,6 +124,7 @@ const {
 }>()
 
 const authStore = useFirebaseAuthStore()
+const authService = useFirebaseAuthService()
 const customAmount = ref<number>(100)
 const didClickBuyNow = ref(false)
 const loading = computed(() => authStore.loading)
@@ -133,29 +135,18 @@ const formattedBalance = computed(() => {
 })
 
 const handleSeeDetails = async () => {
-  const response = await authStore.accessBillingPortal()
-  if (!response?.billing_portal_url) return
-  window.open(response.billing_portal_url, '_blank')
+  await authService.accessBillingPortal()
 }
 
 const handleBuyNow = async (amount: number) => {
-  const response = await authStore.initiateCreditPurchase({
-    amount_micros: usdToMicros(amount),
-    currency: 'usd'
-  })
-
-  if (!response?.checkout_url) return
-
+  await authService.purchaseCredits(amount)
   didClickBuyNow.value = true
-
-  // Go to Stripe checkout page
-  window.open(response.checkout_url, '_blank')
 }
 
 onBeforeUnmount(() => {
   if (didClickBuyNow.value) {
     // If clicked buy now, then returned back to the dialog and closed, fetch the balance
-    void authStore.fetchBalance()
+    void authService.fetchBalance()
   }
 })
 </script>

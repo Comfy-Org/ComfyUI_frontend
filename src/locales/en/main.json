@@ -111,7 +111,8 @@
     "updateAvailable": "Update Available",
     "login": "Login",
     "learnMore": "Learn more",
-    "amount": "Amount"
+    "amount": "Amount",
+    "unknownError": "Unknown error"
   },
   "manager": {
     "title": "Custom Nodes Manager",
@@ -1077,7 +1078,14 @@
     "errorCopyImage": "Error copying image: {error}",
     "noTemplatesToExport": "No templates to export",
     "failedToFetchLogs": "Failed to fetch server logs",
-    "migrateToLitegraphReroute": "Reroute nodes will be removed in future versions. Click to migrate to litegraph-native reroute."
+    "migrateToLitegraphReroute": "Reroute nodes will be removed in future versions. Click to migrate to litegraph-native reroute.",
+    "userNotAuthenticated": "User not authenticated",
+    "firebaseAuthNotInitialized": "Firebase Auth not initialized",
+    "failedToFetchBalance": "Failed to fetch balance: {error}",
+    "failedToCreateCustomer": "Failed to create customer: {error}",
+    "failedToInitiateCreditPurchase": "Failed to initiate credit purchase: {error}",
+    "failedToAccessBillingPortal": "Failed to access billing portal: {error}",
+    "failedToPurchaseCredits": "Failed to purchase credits: {error}"
   },
   "auth": {
     "login": {
@@ -1104,8 +1112,7 @@
       "andText": "and",
       "privacyLink": "Privacy Policy",
       "success": "Login successful",
-      "failed": "Login failed",
-      "genericErrorMessage": "Sorry, we've encountered an error. Please contact {supportEmail}."
+      "failed": "Login failed"
     },
     "signup": {
       "title": "Create an account",
