@@ -61,13 +61,19 @@ app.registerExtension({
         if (touchTime && !e.touches?.length) {
           if (new Date().getTime() - touchTime.getTime() > 600) {
             if (e.target === app.canvasEl) {
-              app.canvasEl.dispatchEvent(
-                new PointerEvent('pointerdown', {
-                  button: 2,
-                  clientX: e.changedTouches[0].clientX,
-                  clientY: e.changedTouches[0].clientY
-                })
-              )
+              const touch = {
+                button: 2, // Right click
+                clientX: e.changedTouches[0].clientX,
+                clientY: e.changedTouches[0].clientY,
+                pointerId: 1, // changedTouches' id is 0, set it to any number
+                isPrimary: true // changedTouches' isPrimary is false, so set it to true
+              }
+              // context menu info set in 'pointerdown' event
+              app.canvasEl.dispatchEvent(new PointerEvent('pointerdown', touch))
+              // then, context menu open after 'pointerup' event
+              setTimeout(() => {
+                app.canvasEl.dispatchEvent(new PointerEvent('pointerup', touch))
+              })
               e.preventDefault()
             }
           }
@@ -79,7 +85,15 @@ app.registerExtension({
     app.canvasEl.parentElement?.addEventListener(
       'touchmove',
       (e) => {
-        touchTime = null
+        // make a threshold for touchmove to prevent clear touchTime for long press
+        if (touchTime && lastTouch && e.touches?.length === 1) {
+          const onlyTouch = e.touches[0]
+          const deltaX = onlyTouch.clientX - lastTouch.clientX
+          const deltaY = onlyTouch.clientY - lastTouch.clientY
+          if (deltaX * deltaX + deltaY * deltaY > 30) {
+            touchTime = null
+          }
+        }
         if (e.touches?.length === 2 && lastTouch && !e.ctrlKey && !e.shiftKey) {
           e.preventDefault() // Prevent browser from zooming when two textareas are touched
           app.canvas.pointer.isDown = false
