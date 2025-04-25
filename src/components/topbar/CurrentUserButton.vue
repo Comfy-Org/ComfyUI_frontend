@@ -16,6 +16,7 @@
         :image="photoURL"
         :icon="photoURL ? undefined : 'pi pi-user'"
         shape="circle"
+        aria-label="User Avatar"
       />
 
       <i class="pi pi-chevron-down px-1" :style="{ fontSize: '0.5rem' }" />
