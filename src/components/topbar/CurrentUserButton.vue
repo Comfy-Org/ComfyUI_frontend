@@ -8,6 +8,7 @@
       severity="secondary"
       text
       :aria-label="$t('userSettings.title')"
+      @click="popover?.toggle($event)"
     >
       <div
         class="flex items-center rounded-full bg-[var(--p-content-background)]"
