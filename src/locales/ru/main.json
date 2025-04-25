@@ -114,7 +114,8 @@
       "insufficientTitle": "Недостаточно кредитов",
       "maxAmount": "(Макс. $1,000 USD)",
       "quickPurchase": "Быстрая покупка",
-      "seeDetails": "Смотреть детали"
+      "seeDetails": "Смотреть детали",
+      "topUp": "Пополнить"
     },
     "yourCreditBalance": "Ваш баланс кредитов"
   },
@@ -302,6 +303,7 @@
     "updated": "Обновлено",
     "updating": "Обновление",
     "upload": "Загрузить",
+    "user": "Пользователь",
     "videoFailedToLoad": "Не удалось загрузить видео",
     "workflow": "Рабочий процесс"
   },

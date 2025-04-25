@@ -114,7 +114,8 @@
       "insufficientTitle": "クレジット不足",
       "maxAmount": "（最大 $1,000 USD）",
       "quickPurchase": "クイック購入",
-      "seeDetails": "詳細を見る"
+      "seeDetails": "詳細を見る",
+      "topUp": "チャージ"
     },
     "yourCreditBalance": "あなたのクレジット残高"
   },
@@ -302,6 +303,7 @@
     "updated": "更新済み",
     "updating": "更新中",
     "upload": "アップロード",
+    "user": "ユーザー",
     "videoFailedToLoad": "ビデオの読み込みに失敗しました",
     "workflow": "ワークフロー"
   },
