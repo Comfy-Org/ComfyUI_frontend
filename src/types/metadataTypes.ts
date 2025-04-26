@@ -79,3 +79,9 @@ export type GltfJsonData = {
   }
   [key: string]: any
 }
+
+/**
+ * Represents the content range [start, end) of an ISOBMFF box, excluding its header.
+ * Null if the box was not found.
+ */
+export type IsobmffBoxContentRange = { start: number; end: number } | null
