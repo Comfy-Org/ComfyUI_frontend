@@ -162,7 +162,7 @@ const parseIlstItem = (
       keyName
     )
     if (value !== null) {
-      metadata[keyName.toLowerCase()] = value
+      metadata[keyName.toLowerCase() as keyof ComfyMetadata] = value
     }
   }
 }
