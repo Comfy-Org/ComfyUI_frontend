@@ -158,6 +158,12 @@
   "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
     "label": "Пользовательские узлы (Бета)"
   },
+  "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
+    "label": "Пользовательские узлы (устаревшие)"
+  },
+  "Comfy_Manager_ShowLegacyManagerMenu": {
+    "label": "Меню менеджера (устаревшее)"
+  },
   "Comfy_Manager_ShowMissingPacks": {
     "label": "Установить отсутствующие"
   },
