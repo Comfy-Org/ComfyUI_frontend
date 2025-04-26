@@ -1,4 +1,4 @@
-import type { CanvasColour, Dictionary, INodeInputSlot, INodeOutputSlot, INodeSlot, ISlotType, IWidgetLocator, OptionalProps, Point, ReadOnlyPoint, Rect } from "@/interfaces"
+import type { CanvasColour, DefaultConnectionColors, INodeInputSlot, INodeOutputSlot, INodeSlot, ISlotType, IWidgetLocator, OptionalProps, Point, ReadOnlyPoint, Rect } from "@/interfaces"
 import type { LGraphNode } from "@/LGraphNode"
 
 import { LabelPosition, SlotShape, SlotType } from "@/draw"
@@ -8,19 +8,8 @@ import { LinkDirection, RenderShape } from "@/types/globalEnums"
 
 import { NodeInputSlot } from "./NodeInputSlot"
 
-export interface ConnectionColorContext {
-  default_connection_color: {
-    input_off: string
-    input_on: string
-    output_off: string
-    output_on: string
-  }
-  default_connection_color_byType: Dictionary<CanvasColour>
-  default_connection_color_byTypeOff: Dictionary<CanvasColour>
-}
-
 export interface IDrawOptions {
-  colorContext: ConnectionColorContext
+  colorContext: DefaultConnectionColors
   labelPosition?: LabelPosition
   lowQuality?: boolean
   doStroke?: boolean
@@ -94,23 +83,10 @@ export abstract class NodeSlot implements INodeSlot {
 
   abstract isConnected(): boolean
 
-  connectedColor(context: ConnectionColorContext): CanvasColour {
-    return this.color_on ||
-      context.default_connection_color_byType[this.type] ||
-      context.default_connection_color.output_on
-  }
-
-  disconnectedColor(context: ConnectionColorContext): CanvasColour {
-    return this.color_off ||
-      context.default_connection_color_byTypeOff[this.type] ||
-      context.default_connection_color_byType[this.type] ||
-      context.default_connection_color.output_off
-  }
-
-  renderingColor(context: ConnectionColorContext): CanvasColour {
+  renderingColor(colorContext: DefaultConnectionColors): CanvasColour {
     return this.isConnected()
-      ? this.connectedColor(context)
-      : this.disconnectedColor(context)
+      ? this.color_on || colorContext.getConnectedColor(this.type)
+      : this.color_off || colorContext.getDisconnectedColor(this.type)
   }
 
   draw(

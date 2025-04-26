@@ -2,6 +2,7 @@ import type { DragAndScale } from "./DragAndScale"
 import type { IDrawBoundingOptions } from "./draw"
 import type {
   ColorOption,
+  DefaultConnectionColors,
   Dictionary,
   IColorable,
   IContextMenuValue,
@@ -20,7 +21,6 @@ import type {
   Size,
 } from "./interfaces"
 import type { LGraph } from "./LGraph"
-import type { ConnectionColorContext } from "./node/NodeSlot"
 import type { Reroute, RerouteId } from "./Reroute"
 import type { CanvasMouseEvent } from "./types/events"
 import type { ISerialisedNode } from "./types/serialisation"
@@ -92,7 +92,7 @@ export interface FindFreeSlotOptions {
 
 interface DrawSlotsOptions {
   fromSlot?: INodeInputSlot | INodeOutputSlot
-  colorContext: ConnectionColorContext
+  colorContext: DefaultConnectionColors
   editorAlpha: number
   lowQuality: boolean
 }

@@ -410,3 +410,8 @@ export interface ContextMenuDivElement<TValue = unknown> extends HTMLDivElement 
 }
 
 export type INodeSlotContextItem = [string, ISlotType, Partial<INodeInputSlot & INodeOutputSlot>]
+
+export interface DefaultConnectionColors {
+  getConnectedColor(type: ISlotType): CanvasColour
+  getDisconnectedColor(type: ISlotType): CanvasColour
+}
