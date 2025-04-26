@@ -1317,8 +1317,7 @@ export class ComfyApp {
       } else {
         this.showErrorOnFileLoad(file)
       }
-    } else if (file.type === 'video/mp4' || file.name?.endsWith('.mp4')) {
-      console.log('mp4 file')
+    } else if (file.type === 'video/mp4' || file.name?.endsWith('.mp4') || file.name?.endsWith('.mov') || file.name?.endsWith('.m4v') || file.type === 'video/quicktime' || file.type === 'video/x-m4v') {
       const mp4Info = await getFromIsobmffFile(file)
       if (mp4Info.workflow) {
         this.loadGraphData(mp4Info.workflow, true, true, fileName)
