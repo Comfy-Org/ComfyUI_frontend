@@ -19,10 +19,19 @@
 
     <!-- Form -->
     <SignInForm v-if="isSignIn" @submit="signInWithEmail" />
-    <SignUpForm v-else @submit="signUpWithEmail" />
+    <SignUpForm
+      v-else-if="!userIsInChina"
+      :disabled="userIsInChina"
+      @submit="signUpWithEmail"
+    />
 
     <!-- Divider -->
-    <Divider align="center" layout="horizontal" class="my-8">
+    <Divider
+      v-if="!userIsInChina || isSignIn"
+      align="center"
+      layout="horizontal"
+      class="my-8"
+    >
       <span class="text-muted">{{ t('auth.login.orContinueWith') }}</span>
     </Divider>
 
@@ -84,11 +93,12 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { SignInData, SignUpData } from '@/schemas/signInSchema'
 import { useFirebaseAuthService } from '@/services/firebaseAuthService'
+import { isInChina } from '@/utils/networkUtil'
 
 import SignInForm from './signin/SignInForm.vue'
 import SignUpForm from './signin/SignUpForm.vue'
@@ -127,4 +137,9 @@ const signUpWithEmail = async (values: SignUpData) => {
     onSuccess()
   }
 }
+
+const userIsInChina = ref(false)
+onMounted(async () => {
+  userIsInChina.value = await isInChina()
+})
 </script>
