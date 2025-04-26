@@ -155,6 +155,12 @@
   "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
     "label": "自定义节点（测试版）"
   },
+  "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
+    "label": "自定义节点（旧版）"
+  },
+  "Comfy_Manager_ShowLegacyManagerMenu": {
+    "label": "管理器菜单（旧版）"
+  },
   "Comfy_Manager_ShowMissingPacks": {
     "label": "安装缺失的包"
   },
