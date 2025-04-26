@@ -1,5 +1,7 @@
 import type {
   CanvasColour,
+  INodeInputSlot,
+  INodeOutputSlot,
   ISlotType,
   LinkNetwork,
   LinkSegment,
@@ -20,7 +22,15 @@ export type SerialisedLLinkArray = [
   type: ISlotType,
 ]
 
-type BasicReadonlyNetwork = Pick<ReadonlyLinkNetwork, "getNodeById" | "links" | "floatingLinks">
+interface ResolvedConnection {
+  inputNode: LGraphNode | undefined
+  outputNode: LGraphNode | undefined
+  input: INodeInputSlot | undefined
+  output: INodeOutputSlot | undefined
+  link: LLink
+}
+
+type BasicReadonlyNetwork = Pick<ReadonlyLinkNetwork, "getNodeById" | "links" | "getLink">
 
 // this is the class in charge of storing link information
 export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
@@ -178,6 +188,52 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   static getTargetNode(network: BasicReadonlyNetwork, linkId: LinkId): LGraphNode | undefined {
     const id = network.links.get(linkId)?.target_id
     return network.getNodeById(id) ?? undefined
+  }
+
+  /**
+   * Resolves a link ID to the link, node, and slot objects.
+   * @param linkId The {@link id} of the link to resolve
+   * @param network The link network to search
+   * @returns An object containing the input and output nodes, as well as the input and output slots.
+   * @remarks This method is heavier than others; it will always resolve all objects.
+   * Whilst the performance difference should in most cases be negligible,
+   * it is recommended to use simpler methods where appropriate.
+   */
+  static resolve(linkId: LinkId | null | undefined, network: BasicReadonlyNetwork): ResolvedConnection | undefined {
+    return network.getLink(linkId)?.resolve(network)
+  }
+
+  /**
+   * Resolves a list of link IDs to the link, node, and slot objects.
+   * Discards invalid link IDs.
+   * @param linkIds An iterable of link {@link id}s to resolve
+   * @param network The link network to search
+   * @returns An array of resolved connections.  If a link is not found, it is not included in the array.
+   * @see {@link LLink.resolve}
+   */
+  static resolveMany(linkIds: Iterable<LinkId>, network: BasicReadonlyNetwork): ResolvedConnection[] {
+    const resolved: ResolvedConnection[] = []
+    for (const id of linkIds) {
+      const r = network.getLink(id)?.resolve(network)
+      if (r) resolved.push(r)
+    }
+    return resolved
+  }
+
+  /**
+   * Resolves the primitive ID values stored in the link to the referenced objects.
+   * @param network The link network to search
+   * @returns An object containing the input and output nodes, as well as the input and output slots.
+   * @remarks This method is heavier than others; it will always resolve all objects.
+   * Whilst the performance difference should in most cases be negligible,
+   * it is recommended to use simpler methods where appropriate.
+   */
+  resolve(network: BasicReadonlyNetwork): ResolvedConnection {
+    const inputNode = this.target_id === -1 ? undefined : network.getNodeById(this.target_id) ?? undefined
+    const outputNode = this.origin_id === -1 ? undefined : network.getNodeById(this.origin_id) ?? undefined
+    const input = inputNode?.inputs[this.target_slot]
+    const output = outputNode?.outputs[this.origin_slot]
+    return { inputNode, outputNode, input, output, link: this }
   }
 
   configure(o: LLink | SerialisedLLinkArray) {
