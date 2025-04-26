@@ -20,6 +20,8 @@ export type SerialisedLLinkArray = [
   type: ISlotType,
 ]
 
+type BasicReadonlyNetwork = Pick<ReadonlyLinkNetwork, "getNodeById" | "links" | "floatingLinks">
+
 // this is the class in charge of storing link information
 export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   /** Link ID */
@@ -162,7 +164,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    * @param linkId The ID of the link to get the origin node of
    * @returns The origin node of the link, or `undefined` if the link is not found or the origin node is not found
    */
-  static getOriginNode(network: Pick<ReadonlyLinkNetwork, "getNodeById" | "links">, linkId: LinkId): LGraphNode | undefined {
+  static getOriginNode(network: BasicReadonlyNetwork, linkId: LinkId): LGraphNode | undefined {
     const id = network.links.get(linkId)?.origin_id
     return network.getNodeById(id) ?? undefined
   }
@@ -173,7 +175,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    * @param linkId The ID of the link to get the target node of
    * @returns The target node of the link, or `undefined` if the link is not found or the target node is not found
    */
-  static getTargetNode(network: Pick<ReadonlyLinkNetwork, "getNodeById" | "links">, linkId: LinkId): LGraphNode | undefined {
+  static getTargetNode(network: BasicReadonlyNetwork, linkId: LinkId): LGraphNode | undefined {
     const id = network.links.get(linkId)?.target_id
     return network.getNodeById(id) ?? undefined
   }

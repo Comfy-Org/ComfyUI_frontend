@@ -40,7 +40,7 @@ export interface BaseExportedGraph {
   /** Definitions of re-usable objects that are referenced elsewhere in this exported graph. */
   definitions?: {
     /** The base definition of subgraphs used in this workflow. That is, what you see when you open / edit a subgraph. */
-    subgraphs?: Record<UUID, ExportedSubgraph>[]
+    subgraphs?: Record<UUID, ExportedSubgraph>
   }
 }
 
@@ -99,7 +99,7 @@ export interface ExportedSubgraphInstance extends NodeSubgraphSharedProps {
    * The ID of the actual subgraph definition.
    * @see {@link ExportedSubgraph.subgraphs}
    */
-  subgraphId: UUID
+  type: UUID
 }
 
 /**
@@ -123,7 +123,7 @@ export interface ISerialisedGraph extends BaseExportedGraph {
  * Defines a subgraph and its contents.
  * Can be referenced multiple times in a schema.
  */
-export interface ExportedSubgraph extends ISerialisedGraph {
+export interface ExportedSubgraph extends SerialisableGraph {
   /** The display name of the subgraph. */
   name: string
   /** Ordered list of inputs to the subgraph itself. Similar to a reroute, with the input side in the graph, and the output side in the subgraph. */
