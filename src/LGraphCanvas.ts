@@ -272,6 +272,10 @@ export class LGraphCanvas implements ConnectionColorContext {
       cursor = "se-resize"
     } else if (this.state.hoveringOver & CanvasItem.Node) {
       cursor = "crosshair"
+    } else if (this.state.hoveringOver & CanvasItem.Reroute) {
+      cursor = "grab"
+    } else if (this.state.hoveringOver & CanvasItem.RerouteSlot) {
+      cursor = "crosshair"
     }
 
     this.canvas.style.cursor = cursor
@@ -487,6 +491,8 @@ export class LGraphCanvas implements ConnectionColorContext {
   node_over?: LGraphNode
   node_capturing_input?: LGraphNode | null
   highlighted_links: Dictionary<boolean> = {}
+
+  #visibleReroutes: Set<Reroute> = new Set()
 
   dirty_canvas: boolean = true
   dirty_bgcanvas: boolean = true
@@ -1907,7 +1913,7 @@ export class LGraphCanvas implements ConnectionColorContext {
         this.processSelect(node, e, true)
       } else if (this.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
         // Reroutes
-        const reroute = graph.getRerouteOnPos(e.canvasX, e.canvasY)
+        const reroute = graph.getRerouteOnPos(e.canvasX, e.canvasY, this.#visibleReroutes)
         if (reroute) {
           if (e.altKey) {
             pointer.onClick = (upEvent) => {
@@ -1970,7 +1976,7 @@ export class LGraphCanvas implements ConnectionColorContext {
       pointer.onClick = (eUp) => {
         // Click, not drag
         const clickedItem = node ??
-          graph.getRerouteOnPos(eUp.canvasX, eUp.canvasY) ??
+          graph.getRerouteOnPos(eUp.canvasX, eUp.canvasY, this.#visibleReroutes) ??
           graph.getGroupTitlebarOnPos(eUp.canvasX, eUp.canvasY)
         this.processSelect(clickedItem, eUp)
       }
@@ -2020,20 +2026,30 @@ export class LGraphCanvas implements ConnectionColorContext {
     } else {
       // Reroutes
       if (this.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
-        const reroute = graph.getRerouteOnPos(x, y)
-        if (reroute) {
-          if (e.shiftKey) {
+        for (const reroute of this.#visibleReroutes) {
+          const overReroute = reroute.containsPoint([x, y])
+          if (!reroute.isSlotHovered && !overReroute) continue
+
+          if (overReroute) {
+            pointer.onClick = () => this.processSelect(reroute, e)
+            if (!e.shiftKey) {
+              pointer.onDragStart = pointer => this.#startDraggingItems(reroute, pointer, true)
+              pointer.onDragEnd = e => this.#processDraggedItems(e)
+            }
+          }
+
+          if (reroute.isOutputHovered || (overReroute && e.shiftKey)) {
             linkConnector.dragFromReroute(graph, reroute)
             this.#linkConnectorDrop()
-
-            this.dirty_bgcanvas = true
           }
 
-          pointer.onClick = () => this.processSelect(reroute, e)
-          if (!pointer.onDragEnd) {
-            pointer.onDragStart = pointer => this.#startDraggingItems(reroute, pointer, true)
-            pointer.onDragEnd = e => this.#processDraggedItems(e)
+          if (reroute.isInputHovered) {
+            linkConnector.dragFromRerouteToOutput(graph, reroute)
+            this.#linkConnectorDrop()
           }
+
+          reroute.hideSlots()
+          this.dirty_bgcanvas = true
           return
         }
       }
@@ -2612,6 +2628,10 @@ export class LGraphCanvas implements ConnectionColorContext {
           this.node_over = node
           this.dirty_canvas = true
 
+          for (const reroute of this.#visibleReroutes) {
+            reroute.hideSlots()
+            this.dirty_bgcanvas = true
+          }
           node.onMouseEnter?.(e)
         }
 
@@ -2690,19 +2710,8 @@ export class LGraphCanvas implements ConnectionColorContext {
           underPointer |= CanvasItem.ResizeSe
         }
       } else {
-        // Reroute
-        const reroute = graph.getRerouteOnPos(e.canvasX, e.canvasY)
-        if (reroute) {
-          underPointer |= CanvasItem.Reroute
-          linkConnector.overReroute = reroute
-
-          if (linkConnector.isConnecting && linkConnector.isRerouteValidDrop(reroute)) {
-            this._highlight_pos = reroute.pos
-          }
-        } else {
-          this._highlight_pos &&= undefined
-          linkConnector.overReroute &&= undefined
-        }
+        // Reroutes
+        underPointer = this.#updateReroutes(underPointer)
 
         // Not over a node
         const segment = this.#getLinkCentreOnPos(e)
@@ -2758,6 +2767,42 @@ export class LGraphCanvas implements ConnectionColorContext {
 
     e.preventDefault()
     return
+  }
+
+  /**
+   * Updates the hover / snap state of all visible reroutes.
+   * @returns The original value of {@link underPointer}, with any found reroute items added.
+   */
+  #updateReroutes(underPointer: CanvasItem): CanvasItem {
+    const { graph, pointer, linkConnector } = this
+    if (!graph) throw new NullGraphError()
+
+    // Update reroute hover state
+    if (!pointer.isDown) {
+      let anyChanges = false
+      for (const reroute of this.#visibleReroutes) {
+        anyChanges ||= reroute.updateVisibility(this.graph_mouse)
+
+        if (reroute.isSlotHovered) underPointer |= CanvasItem.RerouteSlot
+      }
+      if (anyChanges) this.dirty_bgcanvas = true
+    } else if (linkConnector.isConnecting) {
+      // Highlight the reroute that the mouse is over
+      for (const reroute of this.#visibleReroutes) {
+        if (reroute.containsPoint(this.graph_mouse)) {
+          if (linkConnector.isRerouteValidDrop(reroute)) {
+            linkConnector.overReroute = reroute
+            this._highlight_pos = reroute.pos
+          }
+
+          return underPointer |= CanvasItem.RerouteSlot
+        }
+      }
+    }
+
+    this._highlight_pos &&= undefined
+    linkConnector.overReroute &&= undefined
+    return underPointer
   }
 
   /**
@@ -4645,9 +4690,14 @@ export class LGraphCanvas implements ConnectionColorContext {
       this.#renderFloatingLinks(ctx, graph, visibleReroutes, now)
     }
 
+    const rerouteSet = this.#visibleReroutes
+    rerouteSet.clear()
+
     // Render reroutes, ordered by number of non-floating links
     visibleReroutes.sort((a, b) => a.linkIds.size - b.linkIds.size)
     for (const reroute of visibleReroutes) {
+      rerouteSet.add(reroute)
+
       if (
         this.#snapToGrid &&
         this.isDragging &&
@@ -4656,6 +4706,9 @@ export class LGraphCanvas implements ConnectionColorContext {
         this.drawSnapGuide(ctx, reroute, RenderShape.CIRCLE)
       }
       reroute.draw(ctx, this._pattern)
+
+      // Never draw slots when the pointer is down
+      if (!this.pointer.isDown) reroute.drawSlots(ctx)
     }
     ctx.globalAlpha = 1
   }
@@ -7143,7 +7196,7 @@ export class LGraphCanvas implements ConnectionColorContext {
 
       // Check for reroutes
       if (this.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
-        const reroute = this.graph.getRerouteOnPos(event.canvasX, event.canvasY)
+        const reroute = this.graph.getRerouteOnPos(event.canvasX, event.canvasY, this.#visibleReroutes)
         if (reroute) {
           menu_info.unshift({
             content: "Delete Reroute",

@@ -15,6 +15,7 @@ import { MovingInputLink } from "./MovingInputLink"
 import { MovingLinkBase } from "./MovingLinkBase"
 import { MovingOutputLink } from "./MovingOutputLink"
 import { ToInputRenderLink } from "./ToInputRenderLink"
+import { ToOutputFromRerouteLink } from "./ToOutputFromRerouteLink"
 import { ToOutputRenderLink } from "./ToOutputRenderLink"
 
 /**
@@ -268,13 +269,22 @@ export class LinkConnector {
     if (this.isConnecting) throw new Error("Already dragging links.")
 
     const link = reroute.firstLink ?? reroute.firstFloatingLink
-    if (!link) return
+    if (!link) {
+      console.warn("No link found for reroute.")
+      return
+    }
 
     const outputNode = network.getNodeById(link.origin_id)
-    if (!outputNode) return
+    if (!outputNode) {
+      console.warn("No output node found for link.", link)
+      return
+    }
 
     const outputSlot = outputNode.outputs.at(link.origin_slot)
-    if (!outputSlot) return
+    if (!outputSlot) {
+      console.warn("No output slot found for link.", link)
+      return
+    }
 
     const renderLink = new ToInputRenderLink(network, outputNode, outputSlot, reroute)
     renderLink.fromDirection = LinkDirection.NONE
@@ -283,6 +293,41 @@ export class LinkConnector {
     this.state.connectingTo = "input"
 
     this.#setLegacyLinks(false)
+  }
+
+  /**
+   * Drags a new link from a reroute to an output slot.
+   * @param network The network that the link being connected belongs to
+   * @param reroute The reroute that the link is being dragged from
+   */
+  dragFromRerouteToOutput(network: LinkNetwork, reroute: Reroute): void {
+    if (this.isConnecting) throw new Error("Already dragging links.")
+
+    const link = reroute.firstLink ?? reroute.firstFloatingLink
+    if (!link) {
+      console.warn("No link found for reroute.")
+      return
+    }
+
+    const inputNode = network.getNodeById(link.target_id)
+    if (!inputNode) {
+      console.warn("No input node found for link.", link)
+      return
+    }
+
+    const inputSlot = inputNode.inputs.at(link.target_slot)
+    if (!inputSlot) {
+      console.warn("No input slot found for link.", link)
+      return
+    }
+
+    const renderLink = new ToOutputFromRerouteLink(network, inputNode, inputSlot, reroute, this)
+    renderLink.fromDirection = LinkDirection.LEFT
+    this.renderLinks.push(renderLink)
+
+    this.state.connectingTo = "output"
+
+    this.#setLegacyLinks(true)
   }
 
   dragFromLinkSegment(network: LinkNetwork, linkSegment: LinkSegment): void {
@@ -387,39 +432,7 @@ export class LinkConnector {
       if (this.renderLinks.length !== 1) throw new Error(`Attempted to connect ${this.renderLinks.length} input links to a reroute.`)
 
       const renderLink = this.renderLinks[0]
-
-      const results = reroute.findTargetInputs()
-      if (!results?.length) return
-
-      const maybeReroutes = reroute.getReroutes()
-      if (maybeReroutes === null) throw new Error("Reroute loop detected.")
-
-      const originalReroutes = maybeReroutes.slice(0, -1).reverse()
-
-      // From reroute to reroute
-      if (renderLink instanceof ToInputRenderLink) {
-        const { node, fromSlot, fromSlotIndex, fromReroute } = renderLink
-
-        reroute.setFloatingLinkOrigin(node, fromSlot, fromSlotIndex)
-
-        // Clean floating link IDs from reroutes about to be removed from the chain
-        if (fromReroute != null) {
-          for (const originalReroute of originalReroutes) {
-            if (originalReroute.id === fromReroute.id) break
-
-            for (const linkId of reroute.floatingLinkIds) {
-              originalReroute.floatingLinkIds.delete(linkId)
-            }
-          }
-        }
-      }
-
-      // Filter before any connections are re-created
-      const filtered = results.filter(result => renderLink.toType === "input" && canConnectInputLinkToReroute(renderLink, result.node, result.input, reroute))
-
-      for (const result of filtered) {
-        renderLink.connectToRerouteInput(reroute, result, this.events, originalReroutes)
-      }
+      this._connectOutputToReroute(reroute, renderLink)
 
       return
     }
@@ -436,6 +449,44 @@ export class LinkConnector {
 
       link.connectToRerouteOutput(reroute, node, output, this.events)
     }
+  }
+
+  /** @internal Temporary workaround - requires refactor. */
+  _connectOutputToReroute(reroute: Reroute, renderLink: RenderLinkUnion): void {
+    const results = reroute.findTargetInputs()
+    if (!results?.length) return
+
+    const maybeReroutes = reroute.getReroutes()
+    if (maybeReroutes === null) throw new Error("Reroute loop detected.")
+
+    const originalReroutes = maybeReroutes.slice(0, -1).reverse()
+
+    // From reroute to reroute
+    if (renderLink instanceof ToInputRenderLink) {
+      const { node, fromSlot, fromSlotIndex, fromReroute } = renderLink
+
+      reroute.setFloatingLinkOrigin(node, fromSlot, fromSlotIndex)
+
+      // Clean floating link IDs from reroutes about to be removed from the chain
+      if (fromReroute != null) {
+        for (const originalReroute of originalReroutes) {
+          if (originalReroute.id === fromReroute.id) break
+
+          for (const linkId of reroute.floatingLinkIds) {
+            originalReroute.floatingLinkIds.delete(linkId)
+          }
+        }
+      }
+    }
+
+    // Filter before any connections are re-created
+    const filtered = results.filter(result => renderLink.toType === "input" && canConnectInputLinkToReroute(renderLink, result.node, result.input, reroute))
+
+    for (const result of filtered) {
+      renderLink.connectToRerouteInput(reroute, result, this.events, originalReroutes)
+    }
+
+    return
   }
 
   dropOnNothing(event: CanvasPointerEvent): void {

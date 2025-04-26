@@ -24,7 +24,6 @@ import { LGraphNode, type NodeId } from "./LGraphNode"
 import { LiteGraph } from "./litegraph"
 import { type LinkId, LLink } from "./LLink"
 import { MapProxyHandler } from "./MapProxyHandler"
-import { isSortaInsideOctagon } from "./measure"
 import { Reroute, RerouteId } from "./Reroute"
 import { stringOrEmpty } from "./strings"
 import { LGraphEventMode } from "./types/globalEnums"
@@ -1001,12 +1000,9 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
    * @param y Y co-ordinate in graph space
    * @returns The first reroute under the given co-ordinates, or undefined
    */
-  getRerouteOnPos(x: number, y: number): Reroute | undefined {
-    for (const reroute of this.reroutes.values()) {
-      const { pos } = reroute
-
-      if (isSortaInsideOctagon(x - pos[0], y - pos[1], 2 * Reroute.radius))
-        return reroute
+  getRerouteOnPos(x: number, y: number, reroutes?: Iterable<Reroute>): Reroute | undefined {
+    for (const reroute of reroutes ?? this.reroutes.values()) {
+      if (reroute.containsPoint([x, y])) return reroute
     }
   }
 

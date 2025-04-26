@@ -36,6 +36,8 @@ export enum CanvasItem {
   Link = 1 << 3,
   /** A resize in the bottom-right corner */
   ResizeSe = 1 << 4,
+  /** A reroute slot */
+  RerouteSlot = 1 << 5,
 }
 
 /** The direction that a link point will flow towards - e.g. horizontal outputs are right by default */
