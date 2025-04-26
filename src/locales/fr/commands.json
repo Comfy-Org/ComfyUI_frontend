@@ -149,6 +149,12 @@
   "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
     "label": "Nœuds personnalisés (Beta)"
   },
+  "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
+    "label": "Nœuds personnalisés (héritage)"
+  },
+  "Comfy_Manager_ShowLegacyManagerMenu": {
+    "label": "Menu du gestionnaire (hérité)"
+  },
   "Comfy_Manager_ShowMissingPacks": {
     "label": "Installer manquants"
   },
