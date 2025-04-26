@@ -67,6 +67,20 @@ The development of successive minor versions overlaps. For example, while versio
 | 3 | Mar 15-21 | Released | Feature Freeze | Development | 1.1.7 through 1.1.13 (daily)<br>1.2.0 through 1.2.6 (daily) |
 | 4 | Mar 22-28 | - | Released | Feature Freeze | 1.2.7 through 1.2.13 (daily)<br>1.3.0 through 1.3.6 (daily) |
 
+## Contributing
+
+We're building this frontend together and would love your help — no matter how you'd like to pitch in! You don't need to write code to make a difference.
+
+Here are some ways to get involved:
+
+- **Pull Requests:** Add features, fix bugs, or improve code health. Browse [issues](https://github.com/Comfy-Org/ComfyUI_frontend/issues) for inspiration.
+- **Vote on Features:** Give a 👍 to the feature requests you care about to help us prioritize.
+- **Verify Bugs:** Try reproducing reported issues and share your results (even if the bug doesn't occur!).
+- **Community Support:** Hop into our [Discord](https://www.comfy.org/discord) to answer questions or get help.
+- **Share & Advocate:** Tell your friends, tweet about us, or share tips to support the project.
+
+Have another idea? Drop into Discord or open an issue, and let's chat!
+
 ## Development
 
 ### Tech Stack
