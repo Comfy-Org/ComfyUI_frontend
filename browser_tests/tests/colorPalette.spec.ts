@@ -48,6 +48,7 @@ const customColorPalettes: Record<string, Palette> = {
         WIDGET_OUTLINE_COLOR: '#333',
         WIDGET_TEXT_COLOR: '#a3a3a8',
         WIDGET_SECONDARY_TEXT_COLOR: '#97979c',
+        WIDGET_DISABLED_TEXT_COLOR: '#646464',
         LINK_COLOR: '#9A9',
         EVENT_LINK_COLOR: '#A86',
         CONNECTING_LINK_COLOR: '#AFA'
@@ -111,6 +112,7 @@ const customColorPalettes: Record<string, Palette> = {
         WIDGET_OUTLINE_COLOR: '#333',
         WIDGET_TEXT_COLOR: '#a3a3a8',
         WIDGET_SECONDARY_TEXT_COLOR: '#97979c',
+        WIDGET_DISABLED_TEXT_COLOR: '#646464',
         LINK_COLOR: '#9A9',
         EVENT_LINK_COLOR: '#A86',
         CONNECTING_LINK_COLOR: '#AFA'
