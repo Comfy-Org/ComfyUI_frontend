@@ -19,11 +19,7 @@
 
     <!-- Form -->
     <SignInForm v-if="isSignIn" @submit="signInWithEmail" />
-    <SignUpForm
-      v-else-if="!userIsInChina"
-      :disabled="userIsInChina"
-      @submit="signUpWithEmail"
-    />
+    <SignUpForm v-else-if="!userIsInChina" @submit="signUpWithEmail" />
 
     <!-- Divider -->
     <Divider
