@@ -101,8 +101,10 @@ const extensionService = useExtensionService()
 const { isRefreshable, refreshSelected } = useRefreshableSelection()
 
 const isTheOnlyImageNode = computed(() => {
-  const nodes = canvasStore.selectedItems.filter(isLGraphNode)
-  return nodes.length === 1 && nodes.some(isImageNode)
+  const isTheOnlyItem = canvasStore.selectedItems.length === 1
+  if (!isTheOnlyItem) return false
+  const selectedItem = canvasStore.selectedItems[0]
+  return isLGraphNode(selectedItem) && isImageNode(selectedItem)
 })
 const nodeSelected = computed(() =>
   canvasStore.selectedItems.some(isLGraphNode)
