@@ -1,8 +1,5 @@
 <template>
-  <SidebarTabTemplate
-    :title="$t('sideToolbar.modelLibrary')"
-    class="bg-[var(--p-tree-background)]"
-  >
+  <SidebarTabTemplate :title="$t('sideToolbar.modelLibrary')">
     <template #tool-buttons>
       <Button
         v-tooltip.bottom="$t('g.refresh')"

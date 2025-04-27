@@ -1,8 +1,5 @@
 <template>
-  <SidebarTabTemplate
-    :title="$t('sideToolbar.nodeLibrary')"
-    class="bg-[var(--p-tree-background)]"
-  >
+  <SidebarTabTemplate :title="$t('sideToolbar.nodeLibrary')">
     <template #tool-buttons>
       <Button
         v-tooltip.bottom="$t('g.newFolder')"

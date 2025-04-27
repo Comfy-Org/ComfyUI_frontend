@@ -1,6 +1,6 @@
 <template>
   <div
-    class="comfy-vue-side-bar-container flex flex-col h-full group/sidebar-tab"
+    class="comfy-vue-side-bar-container flex flex-col h-full group/sidebar-tab bg-[var(--p-tree-background)]"
     :class="props.class"
   >
     <div class="comfy-vue-side-bar-header">
