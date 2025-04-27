@@ -440,14 +440,15 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '',
       function: () => {
         const nodes = getSelectedNodes()
-        const firstImageNode = nodes.find((node) => isImageNode(node))
-        if (firstImageNode) {
-          ComfyApp.copyToClipspace(firstImageNode)
-          // @ts-expect-error fixme ts strict error
-          ComfyApp.clipspace_return_node = firstImageNode
-          // @ts-expect-error fixme ts strict error
-          ComfyApp.open_maskeditor()
-        }
+        const isTheOnlyNode = nodes.length === 1
+        if (!isTheOnlyNode) return
+        const selectedNode = nodes[0]
+        if (!isImageNode(selectedNode)) return
+        ComfyApp.copyToClipspace(selectedNode)
+        // @ts-expect-error fixme ts strict error
+        ComfyApp.clipspace_return_node = selectedNode
+        // @ts-expect-error fixme ts strict error
+        ComfyApp.open_maskeditor()
       }
     },
     {
