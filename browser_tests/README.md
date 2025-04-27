@@ -9,14 +9,25 @@ If `TEST_COMFYUI_DIR` in `.env` isn't set to your `(Comfy Path)/ComfyUI` directo
 
 ## Setup
 
-Clone <https://github.com/Comfy-Org/ComfyUI_devtools> to your `custom_nodes` directory.
-ComfyUI_devtools adds additional API endpoints and nodes to ComfyUI for browser testing.
+### ComfyUI devtools
+Clone <https://github.com/Comfy-Org/ComfyUI_devtools> to your `custom_nodes` directory.  
+_ComfyUI_devtools adds additional API endpoints and nodes to ComfyUI for browser testing._
 
+### Node.js & Playwright Prerequisites
 Ensure you have Node.js v20 or later installed. Then, set up the Chromium test driver:
-
 ```bash
 npx playwright install chromium --with-deps
 ```
+
+### Environment Variables
+Ensure the environment variables in `.env` are set correctly according to your setup. 
+
+The `.env` file will not exist until you create it yourself.
+
+A template with helpful information can be found in `.env_example`.
+
+### Multiple Tests
+If you are running Playwright tests in parallel or running the same test multiple times, the flag `--multi-user` must be added to the main ComfyUI process.
 
 ## Running Tests
 
@@ -33,8 +44,6 @@ There are two ways to run the tests:
    npx playwright test --ui
    ```
    This opens a user interface where you can select specific tests to run and inspect the test execution timeline.
-
-   To run the same test multiple times in Playwright's UI mode, you must launch the main ComfyUI process with the `--multi-user` flag.
 
    ![Playwright UI Mode](https://github.com/user-attachments/assets/6a1ebef0-90eb-4157-8694-f5ee94d03755)
 

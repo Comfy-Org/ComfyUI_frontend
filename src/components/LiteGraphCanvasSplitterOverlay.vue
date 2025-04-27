@@ -1,19 +1,19 @@
 <template>
   <Splitter
+    :key="sidebarStateKey"
     class="splitter-overlay-root splitter-overlay"
     :pt:gutter="sidebarPanelVisible ? '' : 'hidden'"
-    :key="activeSidebarTabId ?? undefined"
-    :stateKey="activeSidebarTabId ?? undefined"
-    stateStorage="local"
+    :state-key="sidebarStateKey"
+    state-storage="local"
   >
     <SplitterPanel
-      class="side-bar-panel"
-      :minSize="10"
-      :size="20"
       v-show="sidebarPanelVisible"
       v-if="sidebarLocation === 'left'"
+      class="side-bar-panel"
+      :min-size="10"
+      :size="20"
     >
-      <slot name="side-bar-panel"></slot>
+      <slot name="side-bar-panel" />
     </SplitterPanel>
 
     <SplitterPanel :size="100">
@@ -21,26 +21,26 @@
         class="splitter-overlay max-w-full"
         layout="vertical"
         :pt:gutter="bottomPanelVisible ? '' : 'hidden'"
-        stateKey="bottom-panel-splitter"
-        stateStorage="local"
+        state-key="bottom-panel-splitter"
+        state-storage="local"
       >
         <SplitterPanel class="graph-canvas-panel relative">
-          <slot name="graph-canvas-panel"></slot>
+          <slot name="graph-canvas-panel" />
         </SplitterPanel>
-        <SplitterPanel class="bottom-panel" v-show="bottomPanelVisible">
-          <slot name="bottom-panel"></slot>
+        <SplitterPanel v-show="bottomPanelVisible" class="bottom-panel">
+          <slot name="bottom-panel" />
         </SplitterPanel>
       </Splitter>
     </SplitterPanel>
 
     <SplitterPanel
-      class="side-bar-panel"
-      :minSize="10"
-      :size="20"
       v-show="sidebarPanelVisible"
       v-if="sidebarLocation === 'right'"
+      class="side-bar-panel"
+      :min-size="10"
+      :size="20"
     >
-      <slot name="side-bar-panel"></slot>
+      <slot name="side-bar-panel" />
     </SplitterPanel>
   </Splitter>
 </template>
@@ -59,6 +59,10 @@ const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
 )
 
+const unifiedWidth = computed(() =>
+  settingStore.get('Comfy.Sidebar.UnifiedWidth')
+)
+
 const sidebarPanelVisible = computed(
   () => useSidebarTabStore().activeSidebarTab !== null
 )
@@ -68,6 +72,10 @@ const bottomPanelVisible = computed(
 const activeSidebarTabId = computed(
   () => useSidebarTabStore().activeSidebarTabId
 )
+
+const sidebarStateKey = computed(() => {
+  return unifiedWidth.value ? 'unified-sidebar' : activeSidebarTabId.value ?? ''
+})
 </script>
 
 <style scoped>

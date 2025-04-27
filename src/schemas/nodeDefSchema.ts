@@ -25,6 +25,7 @@ export const zBaseInputOptions = z
     tooltip: z.string().optional(),
     hidden: z.boolean().optional(),
     advanced: z.boolean().optional(),
+    widgetType: z.string().optional(),
     /** Backend-only properties. */
     rawLink: z.boolean().optional(),
     lazy: z.boolean().optional()
@@ -74,6 +75,7 @@ export const zComboInputOptions = zBaseInputOptions.extend({
   image_folder: z.enum(['input', 'output', 'temp']).optional(),
   allow_batch: z.boolean().optional(),
   video_upload: z.boolean().optional(),
+  animated_image_upload: z.boolean().optional(),
   options: z.array(zComboOption).optional(),
   remote: zRemoteWidgetConfig.optional(),
   /** Whether the widget is a multi-select widget. */
@@ -221,7 +223,13 @@ export const zComfyNodeDef = z.object({
   output_node: z.boolean(),
   python_module: z.string(),
   deprecated: z.boolean().optional(),
-  experimental: z.boolean().optional()
+  experimental: z.boolean().optional(),
+  /**
+   * Whether the node is an API node. Running API nodes requires login to
+   * Comfy Org account.
+   * https://www.comfy.org/faq
+   */
+  api_node: z.boolean().optional()
 })
 
 // `/object_info`

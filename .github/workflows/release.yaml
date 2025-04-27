@@ -29,9 +29,9 @@ jobs:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           ALGOLIA_APP_ID: ${{ secrets.ALGOLIA_APP_ID }}
           ALGOLIA_API_KEY: ${{ secrets.ALGOLIA_API_KEY }}
+          USE_PROD_CONFIG: 'true'
         run: |
           npm ci
-          npm run fetch-templates
           npm run build
           npm run zipdist
       - name: Upload dist artifact

@@ -1,4 +1,7 @@
 {
+  "Comfy-Desktop_CheckForUpdates": {
+    "label": "Buscar actualizaciones"
+  },
   "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
     "label": "Abrir carpeta de nodos personalizados"
   },
@@ -44,6 +47,9 @@
   "Comfy_Canvas_ResetView": {
     "label": "Restablecer vista"
   },
+  "Comfy_Canvas_Resize": {
+    "label": "Redimensionar Nodos Seleccionados"
+  },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "Alternar visibilidad de enlace en lienzo"
   },
@@ -76,6 +82,9 @@
   },
   "Comfy_ClearWorkflow": {
     "label": "Borrar flujo de trabajo"
+  },
+  "Comfy_ContactSupport": {
+    "label": "Contactar soporte"
   },
   "Comfy_DuplicateWorkflow": {
     "label": "Duplicar flujo de trabajo actual"
@@ -166,6 +175,12 @@
   },
   "Comfy_Undo": {
     "label": "Deshacer"
+  },
+  "Comfy_User_OpenSignInDialog": {
+    "label": "Abrir diálogo de inicio de sesión"
+  },
+  "Comfy_User_SignOut": {
+    "label": "Cerrar sesión"
   },
   "Workspace_CloseWorkflow": {
     "label": "Cerrar Flujo de Trabajo Actual"

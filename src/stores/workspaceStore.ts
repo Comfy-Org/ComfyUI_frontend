@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import type { Settings } from '@/schemas/apiSchema'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useDialogService } from '@/services/dialogService'
 import type { SidebarTabExtension, ToastManager } from '@/types/extensionTypes'
@@ -31,8 +32,11 @@ export const useWorkspaceStore = defineStore('workspace', () => {
   const sidebarTab = computed(() => useSidebarTabStore())
   const setting = computed(() => ({
     settings: useSettingStore().settingsById,
-    get: useSettingStore().get,
-    set: useSettingStore().set
+    // Allow generic key access to settings as custom nodes may add their
+    // own settings which is not tracked by the `Setting` schema.
+    get: (key: string) => useSettingStore().get(key as keyof Settings),
+    set: (key: string, value: unknown) =>
+      useSettingStore().set(key as keyof Settings, value)
   }))
   const workflow = computed(() => useWorkflowStore())
   const colorPalette = useColorPaletteService()

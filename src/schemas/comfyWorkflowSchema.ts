@@ -160,12 +160,29 @@ const zAuxId = z
   )
   .transform(([username, repo]) => `${username}/${repo}`)
 
-const zSemVer = z.union([
-  z.string().regex(semverPattern, 'Invalid semantic version (x.y.z)'),
+const zGitHash = z.string().superRefine((val: string, ctx) => {
+  if (!gitHashPattern.test(val)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `Node pack version has invalid Git commit hash: "${val}"`
+    })
+  }
+})
+const zSemVer = z.string().superRefine((val: string, ctx) => {
+  if (!semverPattern.test(val)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `Node pack version has invalid semantic version: "${val}"`
+    })
+  }
+})
+const zVersion = z.union([
+  z
+    .string()
+    .transform((ver) => ver.replace(/^v/, '')) // Strip leading 'v'
+    .pipe(z.union([zSemVer, zGitHash])),
   z.literal('unknown')
 ])
-const zGitHash = z.string().regex(gitHashPattern, 'Invalid Git commit hash')
-const zVersion = z.union([zSemVer, zGitHash])
 
 const zProperties = z
   .object({
@@ -207,18 +224,6 @@ const zGroup = z
   })
   .passthrough()
 
-const zInfo = z
-  .object({
-    name: z.string(),
-    author: z.string(),
-    description: z.string(),
-    version: z.string(),
-    created: z.string(),
-    modified: z.string(),
-    software: z.string()
-  })
-  .passthrough()
-
 const zDS = z
   .object({
     scale: z.number(),
@@ -236,7 +241,7 @@ const zConfig = z
 const zExtra = z
   .object({
     ds: zDS.optional(),
-    info: zInfo.optional(),
+    frontendVersion: z.string().optional(),
     linkExtensions: z.array(zComfyLinkExtension).optional(),
     reroutes: z.array(zReroute).optional()
   })

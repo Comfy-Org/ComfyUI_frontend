@@ -18,7 +18,7 @@ export const DESKTOP_MAINTENANCE_TASKS: Readonly<MaintenanceTask>[] = [
     shortDescription: 'Change the application base path.',
     errorDescription: 'Unable to open the base path.  Please select a new one.',
     description:
-      'The base path is the default location where ComfyUI stores data. It is the location fo the python environment, and may also contain models, custom nodes, and other extensions.',
+      'The base path is the default location where ComfyUI stores data. It is the location for the python environment, and may also contain models, custom nodes, and other extensions.',
     isInstallationFix: true,
     button: {
       icon: PrimeIcons.QUESTION,

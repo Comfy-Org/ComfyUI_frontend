@@ -378,8 +378,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
       // Update bookmarks
       if (wasBookmarked) {
-        bookmarkStore.setBookmarked(oldPath, false)
-        bookmarkStore.setBookmarked(newPath, true)
+        await bookmarkStore.setBookmarked(oldPath, false)
+        await bookmarkStore.setBookmarked(newPath, true)
       }
     } finally {
       isBusy.value = false
@@ -391,7 +391,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     try {
       await workflow.delete()
       if (bookmarkStore.isBookmarked(workflow.path)) {
-        bookmarkStore.setBookmarked(workflow.path, false)
+        await bookmarkStore.setBookmarked(workflow.path, false)
       }
       delete workflowLookup.value[workflow.path]
     } finally {
@@ -441,7 +441,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     getWorkflowByPath,
     syncWorkflows
   }
-}) as unknown as () => WorkflowStore
+}) as () => WorkflowStore
 
 export const useWorkflowBookmarkStore = defineStore('workflowBookmark', () => {
   const bookmarks = ref<Set<string>>(new Set())
@@ -462,18 +462,18 @@ export const useWorkflowBookmarkStore = defineStore('workflowBookmark', () => {
     })
   }
 
-  const setBookmarked = (path: string, value: boolean) => {
+  const setBookmarked = async (path: string, value: boolean) => {
     if (bookmarks.value.has(path) === value) return
     if (value) {
       bookmarks.value.add(path)
     } else {
       bookmarks.value.delete(path)
     }
-    saveBookmarks()
+    await saveBookmarks()
   }
 
-  const toggleBookmarked = (path: string) => {
-    setBookmarked(path, !bookmarks.value.has(path))
+  const toggleBookmarked = async (path: string) => {
+    await setBookmarked(path, !bookmarks.value.has(path))
   }
 
   return {

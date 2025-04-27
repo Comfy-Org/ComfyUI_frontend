@@ -1,12 +1,12 @@
 <template>
   <TreeExplorerTreeNode :node="node">
-    <template #actions="{ node }">
+    <template #actions>
       <Button
         :icon="isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'"
         text
         severity="secondary"
         size="small"
-        @click.stop="workflowBookmarkStore.toggleBookmarked(node.data.path)"
+        @click.stop="handleBookmarkClick"
       />
     </template>
   </TreeExplorerTreeNode>
@@ -28,4 +28,10 @@ const workflowBookmarkStore = useWorkflowBookmarkStore()
 const isBookmarked = computed(
   () => node.data && workflowBookmarkStore.isBookmarked(node.data.path)
 )
+
+const handleBookmarkClick = async () => {
+  if (node.data) {
+    await workflowBookmarkStore.toggleBookmarked(node.data.path)
+  }
+}
 </script>

@@ -29,6 +29,15 @@ export function findLegacyRerouteNodes(
 }
 
 /**
+ * Checks if the workflow has no native reroutes
+ */
+export function noNativeReroutes(workflow: WorkflowJSON04): boolean {
+  return (
+    !workflow.extra?.reroutes?.length && !workflow.extra?.linkExtensions?.length
+  )
+}
+
+/**
  * Gets the center position of a node
  */
 function getNodeCenter(node: ComfyNode): [number, number] {

@@ -16,6 +16,9 @@ declare module '@comfyorg/litegraph/dist/types/widgets' {
      * Controls whether the widget's value is included in the API workflow/prompt.
      * - If false, the value will be excluded from the API workflow but still serialized as part of the graph state
      * - If true or undefined, the value will be included in both the API workflow and graph state
+     * @default true
+     * @use {@link IBaseWidget.serialize} if you don't want the widget value to be included in both
+     * the API workflow and graph state.
      */
     serialize?: boolean
     /**
@@ -26,19 +29,6 @@ declare module '@comfyorg/litegraph/dist/types/widgets' {
      * The minimum size of the node if the widget is present.
      */
     minNodeSize?: Size
-    /**
-     * Whether the widget is optional.
-     */
-    inputIsOptional?: boolean
-    /**
-     * Whether the widget is forced to be an input.
-     */
-    forceInput?: boolean
-    /**
-     * Whether the widget defaults to input state. Can still be converted back
-     * to widget state.
-     */
-    defaultInput?: boolean
   }
 
   interface IBaseWidget {
@@ -60,16 +50,6 @@ declare module '@comfyorg/litegraph/dist/types/widgets' {
      * See extensions/core/dynamicPrompts.ts
      */
     dynamicPrompts?: boolean
-
-    /**
-     * Widget conversion fields
-     */
-    origType?: string
-    origComputeSize?: (width: number) => Size
-    origSerializeValue?: (
-      node: LGraphNode,
-      index: number
-    ) => Promise<unknown> | unknown
   }
 }
 

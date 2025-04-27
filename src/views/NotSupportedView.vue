@@ -31,22 +31,22 @@
             <Button
               :label="$t('notSupported.learnMore')"
               icon="pi pi-github"
-              @click="openDocs"
               severity="secondary"
+              @click="openDocs"
             />
             <Button
               :label="$t('notSupported.reportIssue')"
               icon="pi pi-flag"
-              @click="reportIssue"
               severity="secondary"
+              @click="reportIssue"
             />
             <Button
+              v-tooltip="$t('notSupported.continueTooltip')"
               :label="$t('notSupported.continue')"
               icon="pi pi-arrow-right"
-              iconPos="right"
-              @click="continueToInstall"
+              icon-pos="right"
               severity="danger"
-              v-tooltip="$t('notSupported.continueTooltip')"
+              @click="continueToInstall"
             />
           </div>
         </div>
@@ -73,8 +73,8 @@ const reportIssue = () => {
 }
 
 const router = useRouter()
-const continueToInstall = () => {
-  router.push('/install')
+const continueToInstall = async () => {
+  await router.push('/install')
 }
 </script>
 

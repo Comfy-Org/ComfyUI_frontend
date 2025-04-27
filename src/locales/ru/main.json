@@ -1,4 +1,58 @@
 {
+  "apiNodesCostBreakdown": {
+    "costPerRun": "Стоимость за запуск",
+    "title": "API Node(s)",
+    "totalCost": "Общая стоимость"
+  },
+  "apiNodesSignInDialog": {
+    "message": "Этот рабочий процесс содержит API Nodes, которые требуют входа в вашу учетную запись для выполнения.",
+    "title": "Требуется вход для использования API Nodes"
+  },
+  "auth": {
+    "login": {
+      "andText": "и",
+      "confirmPasswordLabel": "Подтвердите пароль",
+      "confirmPasswordPlaceholder": "Введите тот же пароль еще раз",
+      "emailLabel": "Электронная почта",
+      "emailPlaceholder": "Введите вашу электронную почту",
+      "failed": "Вход не удался",
+      "forgotPassword": "Забыли пароль?",
+      "forgotPasswordError": "Не удалось отправить письмо для сброса пароля",
+      "loginButton": "Войти",
+      "loginWithGithub": "Войти через Github",
+      "loginWithGoogle": "Войти через Google",
+      "newUser": "Вы здесь впервые?",
+      "orContinueWith": "Или продолжить с",
+      "passwordLabel": "Пароль",
+      "passwordPlaceholder": "Введите ваш пароль",
+      "passwordResetSent": "Письмо для сброса пароля отправлено",
+      "passwordResetSentDetail": "Пожалуйста, проверьте свою электронную почту для получения ссылки на сброс пароля.",
+      "privacyLink": "Политикой конфиденциальности",
+      "signInOrSignUp": "Войти / Зарегистрироваться",
+      "signUp": "Зарегистрироваться",
+      "success": "Вход выполнен успешно",
+      "termsLink": "Условиями использования",
+      "termsText": "Нажимая \"Далее\" или \"Зарегистрироваться\", вы соглашаетесь с нашими",
+      "title": "Войдите в свой аккаунт"
+    },
+    "signOut": {
+      "signOut": "Выйти",
+      "success": "Вы успешно вышли из системы",
+      "successDetail": "Вы вышли из своей учетной записи."
+    },
+    "signup": {
+      "alreadyHaveAccount": "Уже есть аккаунт?",
+      "emailLabel": "Электронная почта",
+      "emailPlaceholder": "Введите вашу электронную почту",
+      "passwordLabel": "Пароль",
+      "passwordPlaceholder": "Введите новый пароль",
+      "signIn": "Войти",
+      "signUpButton": "Зарегистрироваться",
+      "signUpWithGithub": "Зарегистрироваться через Github",
+      "signUpWithGoogle": "Зарегистрироваться через Google",
+      "title": "Создать аккаунт"
+    }
+  },
   "clipboard": {
     "errorMessage": "Не удалось скопировать в буфер обмена",
     "errorNotSupported": "API буфера обмена не поддерживается в вашем браузере",
@@ -20,8 +74,6 @@
     "yellow": "Жёлтый"
   },
   "contextMenu": {
-    " to input": " во вход",
-    " to widget": " в виджет",
     "Add Group": "Добавить группу",
     "Add Group For Selected Nodes": "Добавить группу для выбранных узлов",
     "Add Node": "Добавить узел",
@@ -29,9 +81,6 @@
     "Clone": "Клонировать",
     "Collapse": "Свернуть",
     "Colors": "Цвета",
-    "Convert ": "Преобразовать ",
-    "Convert Input to Widget": "Преобразовать вход в виджет",
-    "Convert Widget to Input": "Преобразовать виджет во вход",
     "Convert to Group Node": "Преобразовать в групповой узел",
     "Copy (Clipspace)": "Копировать (Clipspace)",
     "Expand": "Развернуть",
@@ -51,6 +100,24 @@
     "Shapes": "Формы",
     "Title": "Заголовок",
     "Unpin": "Открепить"
+  },
+  "credits": {
+    "credits": "Кредиты",
+    "faqs": "Часто задаваемые вопросы",
+    "invoiceHistory": "История счетов",
+    "lastUpdated": "Последнее обновление",
+    "messageSupport": "Связаться с поддержкой",
+    "purchaseCredits": "Купить кредиты",
+    "topUp": {
+      "buyNow": "Купить сейчас",
+      "insufficientMessage": "У вас недостаточно кредитов для запуска этого рабочего процесса.",
+      "insufficientTitle": "Недостаточно кредитов",
+      "maxAmount": "(Макс. $1,000 USD)",
+      "quickPurchase": "Быстрая покупка",
+      "seeDetails": "Смотреть детали",
+      "topUp": "Пополнить"
+    },
+    "yourCreditBalance": "Ваш баланс кредитов"
   },
   "dataTypes": {
     "AUDIO": "АУДИО",
@@ -97,7 +164,9 @@
   "desktopUpdate": {
     "description": "ComfyUI Desktop устанавливает новые зависимости. Это может занять несколько минут.",
     "terminalDefaultMessage": "Любой вывод консоли из обновления будет отображаться здесь.",
-    "title": "Обновление ComfyUI Desktop"
+    "title": "Обновление ComfyUI Desktop",
+    "updateAvailableMessage": "Доступно обновление. Вы хотите перезагрузить и обновить сейчас?",
+    "updateFoundTitle": "Найдено обновление (v{version})"
   },
   "downloadGit": {
     "gitWebsite": "Скачать git",
@@ -126,6 +195,7 @@
     "about": "О программе",
     "add": "Добавить",
     "all": "Все",
+    "amount": "Количество",
     "apply": "Применить",
     "back": "Назад",
     "cancel": "Отмена",
@@ -177,9 +247,11 @@
     "installing": "Установка",
     "interrupted": "Прервано",
     "keybinding": "Привязка клавиш",
+    "learnMore": "Узнать больше",
     "loadAllFolders": "Загрузить все папки",
     "loadWorkflow": "Загрузить рабочий процесс",
     "loading": "Загрузка",
+    "login": "Вход",
     "logs": "Логи",
     "migrate": "Мигрировать",
     "missing": "Отсутствует",
@@ -203,8 +275,9 @@
     "reportIssue": "Отправить отчёт",
     "reportIssueTooltip": "Отправить отчёт об ошибке в Comfy Org",
     "reportSent": "Отчёт отправлен",
-    "reset": "Сбросить",
-    "resetKeybindingsTooltip": "Сбросить сочетания клавиш по умолчанию",
+    "reset": "Сброс",
+    "resetAll": "Сбросить все",
+    "resetAllKeybindingsTooltip": "Сбросить все сочетания клавиш по умолчанию",
     "restart": "Перезапустить",
     "resultsCount": "Найдено {count} результатов",
     "save": "Сохранить",
@@ -219,14 +292,18 @@
     "settings": "Настройки",
     "showReport": "Показать отчёт",
     "sort": "Сортировать",
+    "source": "Источник",
     "status": "Статус",
     "success": "Успех",
     "systemInfo": "Информация о системе",
     "terminal": "Терминал",
+    "unknownError": "Неизвестная ошибка",
     "update": "Обновить",
+    "updateAvailable": "Доступно обновление",
     "updated": "Обновлено",
     "updating": "Обновление",
     "upload": "Загрузить",
+    "user": "Пользователь",
     "videoFailedToLoad": "Не удалось загрузить видео",
     "workflow": "Рабочий процесс"
   },
@@ -345,19 +422,34 @@
   },
   "issueReport": {
     "contactFollowUp": "Свяжитесь со мной для уточнения",
+    "contactSupportDescription": "Пожалуйста, заполните форму ниже для отправки вашего отчёта",
+    "contactSupportTitle": "Связаться с поддержкой",
+    "describeTheProblem": "Опишите проблему",
+    "email": "Электронная почта",
     "feedbackTitle": "Помогите нам улучшить ComfyUI, оставив отзыв",
     "helpFix": "Помочь исправить это",
+    "helpTypes": {
+      "billingPayments": "Оплата / Платежи",
+      "bugReport": "Сообщить об ошибке",
+      "giveFeedback": "Оставить отзыв",
+      "loginAccessIssues": "Проблемы со входом / доступом",
+      "somethingElse": "Другое"
+    },
     "notifyResolve": "Уведомить меня, когда проблема будет решена",
     "provideAdditionalDetails": "Предоставьте дополнительные сведения (необязательно)",
     "provideEmail": "Укажите вашу электронную почту (необязательно)",
     "rating": "Рейтинг",
+    "selectIssue": "Выберите проблему",
     "stackTrace": "Трассировка стека",
     "submitErrorReport": "Отправить отчёт об ошибке (необязательно)",
     "systemStats": "Статистика системы",
     "validation": {
       "invalidEmail": "Пожалуйста, введите действительный адрес электронной почты",
-      "maxLength": "Сообщение слишком длинное"
-    }
+      "maxLength": "Сообщение слишком длинное",
+      "selectIssueType": "Пожалуйста, выберите тип проблемы"
+    },
+    "whatCanWeInclude": "Уточните, что включить в отчёт",
+    "whatDoYouNeedHelpWith": "С чем вам нужна помощь?"
   },
   "load3d": {
     "applyingTexture": "Применение текстуры...",
@@ -372,6 +464,12 @@
     "lightIntensity": "Интенсивность света",
     "loadingModel": "Загрузка 3D модели...",
     "materialMode": "Режим Материала",
+    "materialModes": {
+      "depth": "Глубина",
+      "normal": "Нормальный",
+      "original": "Оригинал",
+      "wireframe": "Каркас"
+    },
     "model": "Модель",
     "previewOutput": "Предварительный просмотр",
     "removeBackgroundImage": "Удалить фоновое изображение",
@@ -426,6 +524,8 @@
     "loadingVersions": "Загрузка версий...",
     "nightlyVersion": "Ночная",
     "noDescription": "Описание отсутствует",
+    "noNodesFound": "Узлы не найдены",
+    "noNodesFoundDescription": "Узлы пакета не могут быть проанализированы, или пакет является только расширением интерфейса и не имеет узлов.",
     "noResultsFound": "По вашему запросу ничего не найдено.",
     "nodePack": "Пакет Узлов",
     "packsSelected": "Выбрано пакетов",
@@ -434,8 +534,10 @@
     "searchPlaceholder": "Поиск",
     "selectVersion": "Выберите версию",
     "sort": {
+      "created": "Новейшие",
       "downloads": "Самые популярные",
-      "rating": "Рейтинг"
+      "publisher": "Издатель",
+      "updated": "Недавно обновленные"
     },
     "status": {
       "active": "Активный",
@@ -510,6 +612,7 @@
     "Bypass/Unbypass Selected Nodes": "Обойти/восстановить выбранные ноды",
     "Canvas Toggle Link Visibility": "Переключение видимости ссылки на холст",
     "Canvas Toggle Lock": "Переключение блокировки холста",
+    "Check for Updates": "Проверить наличие обновлений",
     "Clear Pending Tasks": "Очистить ожидающие задачи",
     "Clear Workflow": "Очистить рабочий процесс",
     "Clipspace": "Клиппространство",
@@ -519,6 +622,7 @@
     "ComfyUI Docs": "Документация ComfyUI",
     "ComfyUI Forum": "Форум ComfyUI",
     "ComfyUI Issues": "Проблемы ComfyUI",
+    "Contact Support": "Связаться с поддержкой",
     "Convert selected nodes to group node": "Преобразовать выбранные ноды в групповую ноду",
     "Custom Nodes Manager": "Менеджер Пользовательских Узлов",
     "Delete Selected Items": "Удалить выбранные элементы",
@@ -545,6 +649,7 @@
     "Open Logs Folder": "Открыть папку журналов",
     "Open Models Folder": "Открыть папку моделей",
     "Open Outputs Folder": "Открыть папку выходных данных",
+    "Open Sign In Dialog": "Открыть окно входа",
     "Open extra_model_paths_yaml": "Открыть extra_model_paths.yaml",
     "Pin/Unpin Selected Items": "Закрепить/открепить выбранные элементы",
     "Pin/Unpin Selected Nodes": "Закрепить/открепить выбранные ноды",
@@ -556,10 +661,12 @@
     "Refresh Node Definitions": "Обновить определения нод",
     "Reinstall": "Переустановить",
     "Reset View": "Сбросить вид",
+    "Resize Selected Nodes": "Изменить размер выбранных узлов",
     "Restart": "Перезапустить",
     "Save": "Сохранить",
     "Save As": "Сохранить как",
     "Show Settings Dialog": "Показать диалог настроек",
+    "Sign Out": "Выйти",
     "Toggle Bottom Panel": "Переключить нижнюю панель",
     "Toggle Focus Mode": "Переключить режим фокуса",
     "Toggle Logs Bottom Panel": "Переключение нижней панели журналов",
@@ -803,14 +910,17 @@
     "troubleshoot": "Устранение неполадок"
   },
   "settingsCategories": {
+    "3D": "3D",
     "About": "О программе",
     "Appearance": "Внешний вид",
     "BrushAdjustment": "Настройка кисти",
+    "Camera": "Камера",
     "Canvas": "Холст",
     "ColorPalette": "Цветовая палитра",
     "Comfy": "Comfy",
     "Comfy-Desktop": "Десктопный Comfy",
     "ContextMenu": "Контекстное меню",
+    "Credits": "Кредиты",
     "CustomColorPalettes": "Пользовательские цветовые палитры",
     "DevMode": "Режим разработчика",
     "EditTokenWeight": "Редактировать вес токена",
@@ -819,9 +929,11 @@
     "Graph": "Граф",
     "Group": "Группа",
     "Keybinding": "Сочетание клавиш",
+    "Light": "Светлый",
     "Link": "Ссылка",
     "LinkRelease": "Освобождение ссылки",
     "LiteGraph": "Lite Graph",
+    "Load 3D": "Загрузить 3D",
     "Locale": "Локализация",
     "Mask Editor": "Редактор масок",
     "Menu": "Меню",
@@ -830,19 +942,20 @@
     "Node": "Нода",
     "Node Search Box": "Поисковая строка нод",
     "Node Widget": "Виджет ноды",
-    "NodeInputConversionSubmenus": "Подменю преобразования ввода ноды",
     "NodeLibrary": "Библиотека нод",
     "Pointer": "Указатель",
     "Queue": "Очередь",
     "QueueButton": "Кнопка очереди",
     "Reroute": "Перенаправление",
     "RerouteBeta": "Бета-версия перенаправления",
+    "Scene": "Сцена",
     "Server": "Сервер",
     "Server-Config": "Настройки сервера",
     "Settings": "Настройки",
     "Sidebar": "Боковая панель",
     "Tree Explorer": "Дерево проводника",
     "UV": "UV",
+    "User": "Пользователь",
     "Validation": "Валидация",
     "Window": "Окно",
     "Workflow": "Рабочий процесс"
@@ -910,8 +1023,7 @@
       "ControlNet": "ControlNet",
       "Custom Nodes": "Пользовательские узлы",
       "Flux": "Flux",
-      "SD3_5": "SD3.5",
-      "SDXL": "SDXL",
+      "Image": "Изображение",
       "Upscaling": "Увеличение разрешения",
       "Video": "Видео"
     },
@@ -956,17 +1068,18 @@
         "flux_redux_model_example": "Flux Redux Model",
         "flux_schnell": "Flux Schnell"
       },
-      "SD3_5": {
+      "Image": {
+        "hidream_i1_dev": "HiDream I1 Dev",
+        "hidream_i1_fast": "HiDream I1 Fast",
+        "hidream_i1_full": "HiDream I1 Full",
         "sd3_5_large_blur": "SD3.5 Большое размытие",
         "sd3_5_large_canny_controlnet_example": "SD3.5 Большой Canny ControlNet",
         "sd3_5_large_depth": "SD3.5 Большая глубина",
-        "sd3_5_simple_example": "SD3.5 Простой"
-      },
-      "SDXL": {
-        "sdxl_refiner_prompt_example": "SDXL Refiner Prompt",
-        "sdxl_revision_text_prompts": "SDXL Revision Text Prompts",
-        "sdxl_revision_zero_positive": "SDXL Revision Zero Positive",
-        "sdxl_simple_example": "SDXL Simple",
+        "sd3_5_simple_example": "SD3.5 Простой",
+        "sdxl_refiner_prompt_example": "SDXL Уточняющий запрос",
+        "sdxl_revision_text_prompts": "SDXL Редактирование текстовых запросов",
+        "sdxl_revision_zero_positive": "SDXL Редактирование нулевого положительного",
+        "sdxl_simple_example": "SDXL Простой",
         "sdxlturbo_example": "SDXL Turbo"
       },
       "Upscaling": {
@@ -983,7 +1096,9 @@
         "ltxv_text_to_video": "LTXV Text to Video",
         "mochi_text_to_video_example": "Mochi Text to Video",
         "text_to_video_wan": "Wan 2.1 Текст в Видео",
-        "txt_to_image_to_video": "Текст в изображение в видео"
+        "txt_to_image_to_video": "Текст в изображение в видео",
+        "wan2_1_fun_control": "Wan 2.1 ControlNet",
+        "wan2_1_fun_inp": "Wan 2.1 Inpainting"
       }
     },
     "title": "Начните с шаблона"
@@ -995,12 +1110,18 @@
     "errorCopyImage": "Ошибка копирования изображения: {error}",
     "errorLoadingModel": "Ошибка загрузки модели",
     "errorSaveSetting": "Ошибка сохранения настройки {id}: {err}",
+    "failedToAccessBillingPortal": "Не удалось получить доступ к биллинговому порталу: {error}",
     "failedToApplyTexture": "Не удалось применить текстуру",
+    "failedToCreateCustomer": "Не удалось создать клиента: {error}",
     "failedToDownloadFile": "Не удалось скачать файл",
     "failedToExportModel": "Не удалось экспортировать модель как {format}",
+    "failedToFetchBalance": "Не удалось получить баланс: {error}",
     "failedToFetchLogs": "Не удалось получить серверные логи",
+    "failedToInitiateCreditPurchase": "Не удалось начать покупку кредитов: {error}",
+    "failedToPurchaseCredits": "Не удалось купить кредиты: {error}",
     "fileLoadError": "Не удалось найти рабочий процесс в {fileName}",
     "fileUploadFailed": "Не удалось загрузить файл",
+    "firebaseAuthNotInitialized": "Firebase Auth не инициализирован",
     "interrupted": "Выполнение было прервано",
     "migrateToLitegraphReroute": "Узлы перенаправления будут удалены в будущих версиях. Нажмите, чтобы перейти на litegraph-native reroute.",
     "no3dScene": "Нет 3D сцены для применения текстуры",
@@ -1011,7 +1132,8 @@
     "pendingTasksDeleted": "Ожидающие задачи удалены",
     "pleaseSelectNodesToGroup": "Пожалуйста, выберите узлы (или другие группы) для создания группы",
     "unableToGetModelFilePath": "Не удалось получить путь к файлу модели",
-    "updateRequested": "Запрошено обновление"
+    "updateRequested": "Запрошено обновление",
+    "userNotAuthenticated": "Пользователь не аутентифицирован"
   },
   "userSelect": {
     "enterUsername": "Введите имя пользователя",
@@ -1019,6 +1141,32 @@
     "newUser": "Новый пользователь",
     "next": "Далее",
     "selectUser": "Выберите пользователя"
+  },
+  "userSettings": {
+    "email": "Электронная почта",
+    "name": "Имя",
+    "notSet": "Не задано",
+    "provider": "Способ входа",
+    "providers": {
+      "github": "GitHub",
+      "google": "Google"
+    },
+    "title": "Настройки пользователя"
+  },
+  "validation": {
+    "invalidEmail": "Недействительный адрес электронной почты",
+    "maxLength": "Должно быть не более {length} символов",
+    "minLength": "Должно быть не менее {length} символов",
+    "password": {
+      "lowercase": "Должен содержать хотя бы одну строчную букву",
+      "match": "Пароли должны совпадать",
+      "minLength": "Должно быть от 8 до 32 символов",
+      "number": "Должен содержать хотя бы одну цифру",
+      "requirements": "Требования к паролю",
+      "special": "Должен содержать хотя бы один специальный символ",
+      "uppercase": "Должен содержать хотя бы одну заглавную букву"
+    },
+    "required": "Обязательно"
   },
   "welcome": {
     "getStarted": "Начать",

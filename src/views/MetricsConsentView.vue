@@ -38,7 +38,7 @@
             :label="$t('g.ok')"
             icon="pi pi-check"
             :loading="isUpdating"
-            iconPos="right"
+            icon-pos="right"
             @click="updateConsent"
           />
         </div>
@@ -78,6 +78,6 @@ const updateConsent = async () => {
   } finally {
     isUpdating.value = false
   }
-  router.push('/')
+  await router.push('/')
 }
 </script>

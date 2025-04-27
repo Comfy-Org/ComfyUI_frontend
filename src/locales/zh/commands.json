@@ -1,4 +1,7 @@
 {
+  "Comfy-Desktop_CheckForUpdates": {
+    "label": "检查更新"
+  },
   "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
     "label": "打开自定义节点文件夹"
   },
@@ -44,6 +47,9 @@
   "Comfy_Canvas_ResetView": {
     "label": "重置视图"
   },
+  "Comfy_Canvas_Resize": {
+    "label": "调整选定节点的大小"
+  },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "切换链接可见性"
   },
@@ -76,6 +82,9 @@
   },
   "Comfy_ClearWorkflow": {
     "label": "清除工作流"
+  },
+  "Comfy_ContactSupport": {
+    "label": "联系支持"
   },
   "Comfy_DuplicateWorkflow": {
     "label": "复制当前工作流"
@@ -166,6 +175,12 @@
   },
   "Comfy_Undo": {
     "label": "撤销"
+  },
+  "Comfy_User_OpenSignInDialog": {
+    "label": "打开登录对话框"
+  },
+  "Comfy_User_SignOut": {
+    "label": "退出登录"
   },
   "Workspace_CloseWorkflow": {
     "label": "关闭当前工作流"

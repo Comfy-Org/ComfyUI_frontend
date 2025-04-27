@@ -17,14 +17,15 @@ export function setupAutoQueueHandler() {
         graphHasChanged = true
       } else {
         graphHasChanged = false
-        app.queuePrompt(0, queueSettingsStore.batchCount)
+        // Queue the prompt in the background
+        void app.queuePrompt(0, queueSettingsStore.batchCount)
         internalCount++
       }
     }
   })
 
   queueCountStore.$subscribe(
-    () => {
+    async () => {
       internalCount = queueCountStore.count
       if (!internalCount && !app.lastExecutionError) {
         if (
@@ -32,7 +33,7 @@ export function setupAutoQueueHandler() {
           (queueSettingsStore.mode === 'change' && graphHasChanged)
         ) {
           graphHasChanged = false
-          app.queuePrompt(0, queueSettingsStore.batchCount)
+          await app.queuePrompt(0, queueSettingsStore.batchCount)
         }
       }
     },

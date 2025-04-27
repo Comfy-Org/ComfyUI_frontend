@@ -33,7 +33,8 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
       versionAdded: '1.3.9',
       function: () => {
         toggleSidebarTab(tab.id)
-      }
+      },
+      source: 'System'
     })
   }
 

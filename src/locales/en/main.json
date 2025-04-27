@@ -1,5 +1,6 @@
 {
   "g": {
+    "user": "User",
     "currentUser": "Current user",
     "empty": "Empty",
     "noWorkflowsFound": "No workflows found.",
@@ -22,7 +23,8 @@
     "confirm": "Confirm",
     "confirmed": "Confirmed",
     "reset": "Reset",
-    "resetKeybindingsTooltip": "Reset keybindings to default",
+    "resetAll": "Reset All",
+    "resetAllKeybindingsTooltip": "Reset all keybindings to default",
     "customizeFolder": "Customize Folder",
     "icon": "Icon",
     "color": "Color",
@@ -93,6 +95,7 @@
     "name": "Name",
     "category": "Category",
     "sort": "Sort",
+    "source": "Source",
     "filter": "Filter",
     "apply": "Apply",
     "enabled": "Enabled",
@@ -105,11 +108,18 @@
     "enabling": "Enabling",
     "disabling": "Disabling",
     "updating": "Updating",
-    "migrate": "Migrate"
+    "migrate": "Migrate",
+    "updateAvailable": "Update Available",
+    "login": "Login",
+    "learnMore": "Learn more",
+    "amount": "Amount",
+    "unknownError": "Unknown error"
   },
   "manager": {
     "title": "Custom Nodes Manager",
     "failed": "Failed ({count})",
+    "noNodesFound": "No nodes found",
+    "noNodesFoundDescription": "The pack's nodes either could not be parsed, or the pack is a frontend extension only and doesn't have any nodes.",
     "installationQueue": "Installation Queue",
     "changingVersion": "Changing version from {from} to {to}",
     "dependencies": "Dependencies",
@@ -151,8 +161,10 @@
       "unknown": "Unknown"
     },
     "sort": {
-      "rating": "Rating",
-      "downloads": "Most Popular"
+      "downloads": "Most Popular",
+      "publisher": "Publisher",
+      "created": "Newest",
+      "updated": "Updated Recently"
     },
     "filter": {
       "nodePack": "Node Pack",
@@ -171,9 +183,24 @@
     "helpFix": "Help Fix This",
     "rating": "Rating",
     "feedbackTitle": "Help us improve ComfyUI by providing feedback",
+    "contactSupportTitle": "Contact Support",
+    "contactSupportDescription": "Please fill in the form below with your report",
+    "selectIssue": "Select the issue",
+    "whatDoYouNeedHelpWith": "What do you need help with?",
+    "whatCanWeInclude": "Specify what to include in the report",
+    "describeTheProblem": "Describe the problem",
+    "email": "Email",
+    "helpTypes": {
+      "billingPayments": "Billing / Payments",
+      "loginAccessIssues": "Login / Access Issues",
+      "giveFeedback": "Give Feedback",
+      "bugReport": "Bug Report",
+      "somethingElse": "Something Else"
+    },
     "validation": {
       "maxLength": "Message too long",
-      "invalidEmail": "Please enter a valid email address"
+      "invalidEmail": "Please enter a valid email address",
+      "selectIssueType": "Please select an issue type"
     }
   },
   "color": {
@@ -209,8 +236,6 @@
     "Shapes": "Shapes",
     "Bypass": "Bypass",
     "Copy (Clipspace)": "Copy (Clipspace)",
-    "Convert Widget to Input": "Convert Widget to Input",
-    "Convert Input to Widget": "Convert Input to Widget",
     "Add Node": "Add Node",
     "Add Group": "Add Group",
     "Convert to Group Node": "Convert to Group Node",
@@ -219,9 +244,6 @@
     "Save Selected as Template": "Save Selected as Template",
     "Node Templates": "Node Templates",
     "Manage": "Manage",
-    "Convert ": "Convert ",
-    " to input": " to input",
-    " to widget": " to widget",
     "Search": "Search"
   },
   "icon": {
@@ -459,8 +481,7 @@
       "ControlNet": "ControlNet",
       "Upscaling": "Upscaling",
       "Video": "Video",
-      "SD3_5": "SD3.5",
-      "SDXL": "SDXL",
+      "Image": "Image",
       "Area Composition": "Area Composition",
       "3D": "3D",
       "Audio": "Audio"
@@ -506,20 +527,23 @@
         "ltxv_image_to_video": "LTXV Image to Video",
         "ltxv_text_to_video": "LTXV Text to Video",
         "mochi_text_to_video_example": "Mochi Text to Video",
-        "hunyuan_video_text_to_video": "Hunyuan Video Text to Video"
+        "hunyuan_video_text_to_video": "Hunyuan Video Text to Video",
+        "wan2_1_fun_inp": "Wan 2.1 Inpainting",
+        "wan2_1_fun_control": "Wan 2.1 ControlNet"
       },
-      "SD3_5": {
+      "Image": {
         "sd3_5_simple_example": "SD3.5 Simple",
         "sd3_5_large_canny_controlnet_example": "SD3.5 Large Canny ControlNet",
         "sd3_5_large_depth": "SD3.5 Large Depth",
-        "sd3_5_large_blur": "SD3.5 Large Blur"
-      },
-      "SDXL": {
+        "sd3_5_large_blur": "SD3.5 Large Blur",
         "sdxl_simple_example": "SDXL Simple",
         "sdxl_refiner_prompt_example": "SDXL Refiner Prompt",
         "sdxl_revision_text_prompts": "SDXL Revision Text Prompts",
         "sdxl_revision_zero_positive": "SDXL Revision Zero Positive",
-        "sdxlturbo_example": "SDXL Turbo"
+        "sdxlturbo_example": "SDXL Turbo",
+        "hidream_i1_dev": "HiDream I1 Dev",
+        "hidream_i1_fast": "HiDream I1 Fast",
+        "hidream_i1_full": "HiDream I1 Full"
       },
       "Area Composition": {
         "area_composition": "Area Composition",
@@ -596,6 +620,7 @@
     "Workflow": "Workflow",
     "Edit": "Edit",
     "Help": "Help",
+    "Check for Updates": "Check for Updates",
     "Open Custom Nodes Folder": "Open Custom Nodes Folder",
     "Open Inputs Folder": "Open Inputs Folder",
     "Open Logs Folder": "Open Logs Folder",
@@ -611,6 +636,7 @@
     "Delete Selected Items": "Delete Selected Items",
     "Fit view to selected nodes": "Fit view to selected nodes",
     "Reset View": "Reset View",
+    "Resize Selected Nodes": "Resize Selected Nodes",
     "Canvas Toggle Link Visibility": "Canvas Toggle Link Visibility",
     "Canvas Toggle Lock": "Canvas Toggle Lock",
     "Pin/Unpin Selected Items": "Pin/Unpin Selected Items",
@@ -622,6 +648,7 @@
     "Zoom Out": "Zoom Out",
     "Clear Pending Tasks": "Clear Pending Tasks",
     "Clear Workflow": "Clear Workflow",
+    "Contact Support": "Contact Support",
     "Duplicate Current Workflow": "Duplicate Current Workflow",
     "Export": "Export",
     "Export (API)": "Export (API)",
@@ -652,6 +679,8 @@
     "Show Settings Dialog": "Show Settings Dialog",
     "Toggle Theme (Dark/Light)": "Toggle Theme (Dark/Light)",
     "Undo": "Undo",
+    "Open Sign In Dialog": "Open Sign In Dialog",
+    "Sign Out": "Sign Out",
     "Close Current Workflow": "Close Current Workflow",
     "Next Opened Workflow": "Next Opened Workflow",
     "Previous Opened Workflow": "Previous Opened Workflow",
@@ -695,7 +724,6 @@
     "BrushAdjustment": "Brush Adjustment",
     "NewEditor": "New Editor",
     "ModelLibrary": "Model Library",
-    "NodeInputConversionSubmenus": "Node Input Conversion Submenus",
     "NodeLibrary": "Node Library",
     "Node Search Box": "Node Search Box",
     "Pointer": "Pointer",
@@ -714,7 +742,14 @@
     "CustomColorPalettes": "Custom Color Palettes",
     "UV": "UV",
     "ContextMenu": "Context Menu",
-    "Reroute": "Reroute"
+    "Reroute": "Reroute",
+    "Load 3D": "Load 3D",
+    "Camera": "Camera",
+    "Scene": "Scene",
+    "3D": "3D",
+    "Light": "Light",
+    "User": "User",
+    "Credits": "Credits"
   },
   "serverConfigItems": {
     "listen": {
@@ -970,10 +1005,21 @@
     "extensionFileHint": "This may be due to the following script",
     "promptExecutionError": "Prompt execution failed"
   },
+  "apiNodesSignInDialog": {
+    "title": "Sign In Required to Use API Nodes",
+    "message": "This workflow contains API Nodes, which require you to be signed in to your account in order to run."
+  },
+  "apiNodesCostBreakdown": {
+    "title": "API Node(s)",
+    "costPerRun": "Cost per run",
+    "totalCost": "Total Cost"
+  },
   "desktopUpdate": {
     "title": "Updating ComfyUI Desktop",
     "description": "ComfyUI Desktop is installing new dependencies.  This may take a few minutes.",
-    "terminalDefaultMessage": "Any console output from the update will be shown here."
+    "terminalDefaultMessage": "Any console output from the update will be shown here.",
+    "updateFoundTitle": "Update Found (v{version})",
+    "updateAvailableMessage": "An update is available. Do you want to restart and update now?"
   },
   "clipboard": {
     "successMessage": "Copied to clipboard",
@@ -1002,7 +1048,13 @@
     "exportModel": "Export Model",
     "exportingModel": "Exporting model...",
     "uploadTexture": "Upload Texture",
-    "applyingTexture": "Applying Texture..."
+    "applyingTexture": "Applying Texture...",
+    "materialModes": {
+      "normal": "Normal",
+      "wireframe": "Wireframe",
+      "original": "Original",
+      "depth": "Depth"
+    }
   },
   "toastMessages": {
     "no3dScene": "No 3D scene to apply texture",
@@ -1027,6 +1079,102 @@
     "errorCopyImage": "Error copying image: {error}",
     "noTemplatesToExport": "No templates to export",
     "failedToFetchLogs": "Failed to fetch server logs",
-    "migrateToLitegraphReroute": "Reroute nodes will be removed in future versions. Click to migrate to litegraph-native reroute."
+    "migrateToLitegraphReroute": "Reroute nodes will be removed in future versions. Click to migrate to litegraph-native reroute.",
+    "userNotAuthenticated": "User not authenticated",
+    "firebaseAuthNotInitialized": "Firebase Auth not initialized",
+    "failedToFetchBalance": "Failed to fetch balance: {error}",
+    "failedToCreateCustomer": "Failed to create customer: {error}",
+    "failedToInitiateCreditPurchase": "Failed to initiate credit purchase: {error}",
+    "failedToAccessBillingPortal": "Failed to access billing portal: {error}",
+    "failedToPurchaseCredits": "Failed to purchase credits: {error}"
+  },
+  "auth": {
+    "login": {
+      "title": "Log in to your account",
+      "signInOrSignUp": "Sign In / Sign Up",
+      "forgotPasswordError": "Failed to send password reset email",
+      "passwordResetSent": "Password reset email sent",
+      "passwordResetSentDetail": "Please check your email for a link to reset your password.",
+      "newUser": "New here?",
+      "signUp": "Sign up",
+      "emailLabel": "Email",
+      "emailPlaceholder": "Enter your email",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Enter your password",
+      "confirmPasswordLabel": "Confirm Password",
+      "confirmPasswordPlaceholder": "Enter the same password again",
+      "forgotPassword": "Forgot password?",
+      "loginButton": "Log in",
+      "orContinueWith": "Or continue with",
+      "loginWithGoogle": "Log in with Google",
+      "loginWithGithub": "Log in with Github",
+      "termsText": "By clicking \"Next\" or \"Sign Up\", you agree to our",
+      "termsLink": "Terms of Use",
+      "andText": "and",
+      "privacyLink": "Privacy Policy",
+      "success": "Login successful",
+      "failed": "Login failed"
+    },
+    "signup": {
+      "title": "Create an account",
+      "alreadyHaveAccount": "Already have an account?",
+      "emailLabel": "Email",
+      "emailPlaceholder": "Enter your email",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Enter new password",
+      "signUpButton": "Sign up",
+      "signIn": "Sign in",
+      "signUpWithGoogle": "Sign up with Google",
+      "signUpWithGithub": "Sign up with Github"
+    },
+    "signOut": {
+      "signOut": "Log Out",
+      "success": "Signed out successfully",
+      "successDetail": "You have been signed out of your account."
+    }
+  },
+  "validation": {
+    "invalidEmail": "Invalid email address",
+    "required": "Required",
+    "minLength": "Must be at least {length} characters",
+    "maxLength": "Must be no more than {length} characters",
+    "password": {
+      "requirements": "Password requirements",
+      "minLength": "Must be between 8 and 32 characters",
+      "uppercase": "Must contain at least one uppercase letter",
+      "lowercase": "Must contain at least one lowercase letter",
+      "number": "Must contain at least one number",
+      "special": "Must contain at least one special character",
+      "match": "Passwords must match"
+    }
+  },
+  "credits": {
+    "credits": "Credits",
+    "yourCreditBalance": "Your credit balance",
+    "purchaseCredits": "Purchase Credits",
+    "invoiceHistory": "Invoice History",
+    "faqs": "FAQs",
+    "messageSupport": "Message Support",
+    "lastUpdated": "Last updated",
+    "topUp": {
+      "insufficientTitle": "Insufficient Credits",
+      "insufficientMessage": "You don't have enough credits to run this workflow.",
+      "quickPurchase": "Quick Purchase",
+      "maxAmount": "(Max. $1,000 USD)",
+      "buyNow": "Buy now",
+      "seeDetails": "See details",
+      "topUp": "Top Up"
+    }
+  },
+  "userSettings": {
+    "title": "User Settings",
+    "name": "Name",
+    "email": "Email",
+    "notSet": "Not set",
+    "provider": "Sign in method",
+    "providers": {
+      "google": "Google",
+      "github": "GitHub"
+    }
   }
 }

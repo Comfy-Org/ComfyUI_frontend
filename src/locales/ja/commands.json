@@ -1,4 +1,7 @@
 {
+  "Comfy-Desktop_CheckForUpdates": {
+    "label": "更新を確認する"
+  },
   "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
     "label": "カスタムノードフォルダを開く"
   },
@@ -44,6 +47,9 @@
   "Comfy_Canvas_ResetView": {
     "label": "ビューをリセット"
   },
+  "Comfy_Canvas_Resize": {
+    "label": "選択したノードのサイズ変更"
+  },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "キャンバスのリンク表示を切り替える"
   },
@@ -76,6 +82,9 @@
   },
   "Comfy_ClearWorkflow": {
     "label": "ワークフローをクリア"
+  },
+  "Comfy_ContactSupport": {
+    "label": "サポートに連絡"
   },
   "Comfy_DuplicateWorkflow": {
     "label": "現在のワークフローを複製"
@@ -166,6 +175,12 @@
   },
   "Comfy_Undo": {
     "label": "元に戻す"
+  },
+  "Comfy_User_OpenSignInDialog": {
+    "label": "サインインダイアログを開く"
+  },
+  "Comfy_User_SignOut": {
+    "label": "サインアウト"
   },
   "Workspace_CloseWorkflow": {
     "label": "現在のワークフローを閉じる"

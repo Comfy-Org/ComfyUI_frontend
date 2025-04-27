@@ -25,6 +25,11 @@ test.describe('Optional input', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('force_input.png')
   })
 
+  test('Default input', async ({ comfyPage }) => {
+    await comfyPage.loadWorkflow('default_input')
+    await expect(comfyPage.canvas).toHaveScreenshot('default_input.png')
+  })
+
   test('Only optional inputs', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('only_optional_inputs')
     expect(await comfyPage.getGraphNodesCount()).toBe(1)
@@ -65,6 +70,12 @@ test.describe('Optional input', () => {
     await comfyPage.loadWorkflow('missing_nodes_converted_widget')
     await expect(comfyPage.canvas).toHaveScreenshot(
       'missing_nodes_converted_widget.png'
+    )
+  })
+  test('dynamically added input', async ({ comfyPage }) => {
+    await comfyPage.loadWorkflow('dynamically_added_input')
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'dynamically_added_input.png'
     )
   })
 })

@@ -1,4 +1,7 @@
 {
+  "Comfy-Desktop_CheckForUpdates": {
+    "label": "Check for Updates"
+  },
   "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
     "label": "Open Custom Nodes Folder"
   },
@@ -44,6 +47,9 @@
   "Comfy_Canvas_ResetView": {
     "label": "Reset View"
   },
+  "Comfy_Canvas_Resize": {
+    "label": "Resize Selected Nodes"
+  },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "Canvas Toggle Link Visibility"
   },
@@ -76,6 +82,9 @@
   },
   "Comfy_ClearWorkflow": {
     "label": "Clear Workflow"
+  },
+  "Comfy_ContactSupport": {
+    "label": "Contact Support"
   },
   "Comfy_DuplicateWorkflow": {
     "label": "Duplicate Current Workflow"
@@ -166,6 +175,12 @@
   },
   "Comfy_Undo": {
     "label": "Undo"
+  },
+  "Comfy_User_OpenSignInDialog": {
+    "label": "Open Sign In Dialog"
+  },
+  "Comfy_User_SignOut": {
+    "label": "Sign Out"
   },
   "Workspace_CloseWorkflow": {
     "label": "Close Current Workflow"

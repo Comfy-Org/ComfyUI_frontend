@@ -1,12 +1,17 @@
 import {
   type IContextMenuValue,
-  type INodeInputSlot,
   LGraphEventMode,
   LGraphNode,
   LiteGraph,
-  RenderShape
+  RenderShape,
+  type Vector2
 } from '@comfyorg/litegraph'
-import { Vector2 } from '@comfyorg/litegraph'
+import type {
+  ISerialisableNodeInput,
+  ISerialisableNodeOutput,
+  ISerialisedNode
+} from '@comfyorg/litegraph/dist/types/serialisation'
+import _ from 'lodash'
 
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
@@ -25,12 +30,20 @@ import { $el } from '@/scripts/ui'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
-import { isImageNode, isVideoNode } from '@/utils/litegraphUtil'
+import {
+  isImageNode,
+  isVideoNode,
+  migrateWidgetsValues
+} from '@/utils/litegraphUtil'
 
 import { useExtensionService } from './extensionService'
+
+export const CONFIG = Symbol()
+export const GET_CONFIG = Symbol()
 
 /**
  * Service that augments litegraph with ComfyUI specific functionality.
@@ -66,7 +79,7 @@ export const useLitegraphService = () => {
         this.#addOutputs(ComfyNode.nodeData.outputs)
         this.#setInitialSize()
         this.serialize_widgets = true
-        extensionService.invokeExtensionsAsync('nodeCreated', this)
+        void extensionService.invokeExtensionsAsync('nodeCreated', this)
       }
 
       /**
@@ -96,58 +109,83 @@ export const useLitegraphService = () => {
       }
 
       /**
+       * @internal Add input sockets to the node. (No widget)
+       */
+      #addInputSocket(inputSpec: InputSpec) {
+        const inputName = inputSpec.name
+        const nameKey = `${this.#nodeKey}.inputs.${normalizeI18nKey(inputName)}.name`
+        const widgetConstructor = widgetStore.widgets.get(
+          inputSpec.widgetType ?? inputSpec.type
+        )
+        if (widgetConstructor && !inputSpec.forceInput) return
+
+        this.addInput(inputName, inputSpec.type, {
+          shape: inputSpec.isOptional ? RenderShape.HollowCircle : undefined,
+          localized_name: st(nameKey, inputName)
+        })
+      }
+
+      /**
+       * @internal Add a widget to the node. For both primitive types and custom widgets
+       * (unless `socketless`), an input socket is also added.
+       */
+      #addInputWidget(inputSpec: InputSpec) {
+        const widgetInputSpec = { ...inputSpec }
+        if (inputSpec.widgetType) {
+          widgetInputSpec.type = inputSpec.widgetType
+        }
+        const inputName = inputSpec.name
+        const nameKey = `${this.#nodeKey}.inputs.${normalizeI18nKey(inputName)}.name`
+        const widgetConstructor = widgetStore.widgets.get(widgetInputSpec.type)
+        if (!widgetConstructor || inputSpec.forceInput) return
+
+        const {
+          widget,
+          minWidth = 1,
+          minHeight = 1
+        } = widgetConstructor(
+          this,
+          inputName,
+          transformInputSpecV2ToV1(widgetInputSpec),
+          app
+        ) ?? {}
+
+        if (widget) {
+          widget.label = st(nameKey, widget.label ?? inputName)
+          widget.options ??= {}
+          Object.assign(widget.options, {
+            advanced: inputSpec.advanced,
+            hidden: inputSpec.hidden
+          })
+        }
+
+        if (!widget?.options?.socketless) {
+          const inputSpecV1 = transformInputSpecV2ToV1(widgetInputSpec)
+          this.addInput(inputName, inputSpec.type, {
+            shape: inputSpec.isOptional ? RenderShape.HollowCircle : undefined,
+            localized_name: st(nameKey, inputName),
+            widget: { name: inputName, [GET_CONFIG]: () => inputSpecV1 }
+          })
+        }
+
+        this.#initialMinSize.width = Math.max(
+          this.#initialMinSize.width,
+          minWidth
+        )
+        this.#initialMinSize.height = Math.max(
+          this.#initialMinSize.height,
+          minHeight
+        )
+      }
+
+      /**
        * @internal Add inputs to the node.
        */
       #addInputs(inputs: Record<string, InputSpec>) {
-        for (const [inputName, inputSpec] of Object.entries(inputs)) {
-          const inputType = inputSpec.type
-          const nameKey = `${this.#nodeKey}.inputs.${normalizeI18nKey(inputName)}.name`
-
-          const widgetConstructor = widgetStore.widgets[inputType]
-          if (widgetConstructor) {
-            const {
-              widget,
-              minWidth = 1,
-              minHeight = 1
-            } = widgetConstructor(
-              this,
-              inputName,
-              transformInputSpecV2ToV1(inputSpec),
-              app
-            ) ?? {}
-
-            if (widget) {
-              widget.label = st(nameKey, widget.label ?? inputName)
-              widget.options ??= {}
-              Object.assign(widget.options, {
-                inputIsOptional: inputSpec.isOptional,
-                forceInput: inputSpec.forceInput,
-                defaultInput: inputSpec.defaultInput,
-                advanced: inputSpec.advanced,
-                hidden: inputSpec.hidden
-              })
-            }
-
-            this.#initialMinSize.width = Math.max(
-              this.#initialMinSize.width,
-              minWidth
-            )
-            this.#initialMinSize.height = Math.max(
-              this.#initialMinSize.height,
-              minHeight
-            )
-          } else {
-            // Node connection inputs
-            const shapeOptions = inputSpec.isOptional
-              ? { shape: RenderShape.HollowCircle }
-              : {}
-
-            this.addInput(inputName, inputType, {
-              ...shapeOptions,
-              localized_name: st(nameKey, inputName)
-            })
-          }
-        }
+        for (const inputSpec of Object.values(inputs))
+          this.#addInputSocket(inputSpec)
+        for (const inputSpec of Object.values(inputs))
+          this.#addInputWidget(inputSpec)
       }
 
       /**
@@ -177,38 +215,72 @@ export const useLitegraphService = () => {
        */
       #setInitialSize() {
         const s = this.computeSize()
-        s[0] = Math.max(this.#initialMinSize.width, s[0] * 1.5)
+        // Expand the width a little to fit widget values on screen.
+        const pad =
+          this.widgets?.length &&
+          !useSettingStore().get('LiteGraph.Node.DefaultPadding')
+        s[0] = Math.max(this.#initialMinSize.width, s[0] + (pad ? 60 : 0))
         s[1] = Math.max(this.#initialMinSize.height, s[1])
         this.setSize(s)
       }
 
-      configure(data: any) {
-        // Keep 'name', 'type', 'shape', and 'localized_name' information from the original node definition.
-        const merge = (
-          current: Record<string, any>,
-          incoming: Record<string, any>
-        ) => {
-          const result = { ...incoming }
-          if (current.widget === undefined && incoming.widget !== undefined) {
-            // Field must be input as only inputs can be converted
-            this.inputs.push(current as INodeInputSlot)
-            return incoming
+      /**
+       * Configure the node from a serialised node. Keep 'name', 'type', 'shape',
+       * and 'localized_name' information from the original node definition.
+       */
+      override configure(data: ISerialisedNode): void {
+        const RESERVED_KEYS = ['name', 'type', 'shape', 'localized_name']
+
+        // Note: input name is unique in a node definition, so we can lookup
+        // input by name.
+        const inputByName = new Map<string, ISerialisableNodeInput>(
+          data.inputs?.map((input) => [input.name, input]) ?? []
+        )
+        // Inputs defined by the node definition.
+        const definedInputNames = new Set(
+          this.inputs.map((input) => input.name)
+        )
+        const definedInputs = this.inputs.map((input) => {
+          const inputData = inputByName.get(input.name)
+          return inputData
+            ? {
+                ...inputData,
+                // Whether the input has associated widget follows the
+                // original node definition.
+                ..._.pick(input, RESERVED_KEYS.concat('widget'))
+              }
+            : input
+        })
+        // Extra inputs that potentially dynamically added by custom js logic.
+        const extraInputs = data.inputs?.filter(
+          (input) => !definedInputNames.has(input.name)
+        )
+        data.inputs = [...definedInputs, ...(extraInputs ?? [])]
+
+        // Note: output name is not unique, so we cannot lookup output by name.
+        // Use index instead.
+        data.outputs = _.zip(this.outputs, data.outputs).map(
+          ([output, outputData]) => {
+            // If there are extra outputs in the serialised node, use them directly.
+            // There are currently custom nodes that dynamically add outputs via
+            // js logic.
+            if (!output) return outputData as ISerialisableNodeOutput
+
+            return outputData
+              ? {
+                  ...outputData,
+                  ..._.pick(output, RESERVED_KEYS)
+                }
+              : output
           }
-          for (const key of ['name', 'type', 'shape', 'localized_name']) {
-            if (current[key] !== undefined) {
-              result[key] = current[key]
-            }
-          }
-          return result
-        }
-        for (const field of ['inputs', 'outputs']) {
-          const slots = data[field] ?? []
-          // @ts-expect-error fixme ts strict error
-          data[field] = slots.map((slot, i) =>
-            // @ts-expect-error fixme ts strict error
-            merge(this[field][i] ?? {}, slot)
-          )
-        }
+        )
+
+        data.widgets_values = migrateWidgetsValues(
+          ComfyNode.nodeData.inputs,
+          this.widgets ?? [],
+          data.widgets_values ?? []
+        )
+
         super.configure(data)
       }
     }

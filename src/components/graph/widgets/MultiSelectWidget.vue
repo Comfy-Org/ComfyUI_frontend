@@ -5,7 +5,7 @@
       :options="options"
       filter
       :placeholder="placeholder"
-      :maxSelectedLabels="3"
+      :max-selected-labels="3"
       :display="display"
       class="w-full"
     />

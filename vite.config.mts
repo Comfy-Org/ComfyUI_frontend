@@ -1,11 +1,16 @@
 import vue from '@vitejs/plugin-vue'
 import dotenv from 'dotenv'
-import path from 'path'
 import IconsResolver from 'unplugin-icons/resolver'
 import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
-import { Plugin, defineConfig } from 'vite'
+import { defineConfig } from 'vite'
 import type { UserConfigExport } from 'vitest/config'
+
+import {
+  addElementVnodeExportPlugin,
+  comfyAPIPlugin,
+  generateImportMapPlugin
+} from './build/plugins'
 
 dotenv.config()
 
@@ -13,86 +18,6 @@ const IS_DEV = process.env.NODE_ENV === 'development'
 const SHOULD_MINIFY = process.env.ENABLE_MINIFY === 'true'
 // vite dev server will listen on all addresses, including LAN and public addresses
 const VITE_REMOTE_DEV = process.env.VITE_REMOTE_DEV === 'true'
-
-interface ShimResult {
-  code: string
-  exports: string[]
-}
-
-function isLegacyFile(id: string): boolean {
-  return (
-    id.endsWith('.ts') &&
-    (id.includes('src/extensions/core') || id.includes('src/scripts'))
-  )
-}
-
-function comfyAPIPlugin(): Plugin {
-  return {
-    name: 'comfy-api-plugin',
-    transform(code: string, id: string) {
-      if (IS_DEV) return null
-
-      if (isLegacyFile(id)) {
-        const result = transformExports(code, id)
-
-        if (result.exports.length > 0) {
-          const projectRoot = process.cwd()
-          const relativePath = path.relative(path.join(projectRoot, 'src'), id)
-          const shimFileName = relativePath.replace(/\.ts$/, '.js')
-
-          const shimComment = `// Shim for ${relativePath}\n`
-
-          this.emitFile({
-            type: 'asset',
-            fileName: shimFileName,
-            source: shimComment + result.exports.join('')
-          })
-        }
-
-        return {
-          code: result.code,
-          map: null // If you're not modifying the source map, return null
-        }
-      }
-    }
-  }
-}
-
-function transformExports(code: string, id: string): ShimResult {
-  const moduleName = getModuleName(id)
-  const exports: string[] = []
-  let newCode = code
-
-  // Regex to match different types of exports
-  const regex =
-    /export\s+(const|let|var|function|class|async function)\s+([a-zA-Z$_][a-zA-Z\d$_]*)(\s|\()/g
-  let match
-
-  while ((match = regex.exec(code)) !== null) {
-    const name = match[2]
-    // All exports should be bind to the window object as new API endpoint.
-    if (exports.length == 0) {
-      newCode += `\nwindow.comfyAPI = window.comfyAPI || {};`
-      newCode += `\nwindow.comfyAPI.${moduleName} = window.comfyAPI.${moduleName} || {};`
-    }
-    newCode += `\nwindow.comfyAPI.${moduleName}.${name} = ${name};`
-    exports.push(
-      `export const ${name} = window.comfyAPI.${moduleName}.${name};\n`
-    )
-  }
-
-  return {
-    code: newCode,
-    exports
-  }
-}
-
-function getModuleName(id: string): string {
-  // Simple example to derive a module name from the file path
-  const parts = id.split('/')
-  const fileName = parts[parts.length - 1]
-  return fileName.replace(/\.\w+$/, '') // Remove file extension
-}
 
 const DEV_SERVER_COMFYUI_URL =
   process.env.DEV_SERVER_COMFYUI_URL || 'http://127.0.0.1:8188'
@@ -110,7 +35,7 @@ export default defineConfig({
         target: DEV_SERVER_COMFYUI_URL,
         // Return empty array for extensions API as these modules
         // are not on vite's dev server.
-        bypass: (req, res, options) => {
+        bypass: (req, res, _options) => {
           if (req.url === '/api/extensions') {
             res.end(JSON.stringify([]))
           }
@@ -136,7 +61,13 @@ export default defineConfig({
 
   plugins: [
     vue(),
-    comfyAPIPlugin(),
+    comfyAPIPlugin(IS_DEV),
+    generateImportMapPlugin([
+      { name: 'vue', pattern: /[\\/]node_modules[\\/]vue[\\/]/ },
+      { name: 'primevue', pattern: /[\\/]node_modules[\\/]primevue[\\/]/ },
+      { name: 'vue-i18n', pattern: /[\\/]node_modules[\\/]vue-i18n[\\/]/ }
+    ]),
+    addElementVnodeExportPlugin(),
 
     Icons({
       compiler: 'vue3'
@@ -184,7 +115,8 @@ export default defineConfig({
     ),
     __SENTRY_DSN__: JSON.stringify(process.env.SENTRY_DSN || ''),
     __ALGOLIA_APP_ID__: JSON.stringify(process.env.ALGOLIA_APP_ID || ''),
-    __ALGOLIA_API_KEY__: JSON.stringify(process.env.ALGOLIA_API_KEY || '')
+    __ALGOLIA_API_KEY__: JSON.stringify(process.env.ALGOLIA_API_KEY || ''),
+    __USE_PROD_CONFIG__: process.env.USE_PROD_CONFIG === 'true'
   },
 
   resolve: {

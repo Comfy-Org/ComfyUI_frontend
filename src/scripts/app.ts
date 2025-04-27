@@ -11,6 +11,7 @@ import type { ToastMessageOptions } from 'primevue/toast'
 import { reactive } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
+import { useWorkflowValidation } from '@/composables/useWorkflowValidation'
 import { st, t } from '@/i18n'
 import type {
   ExecutionErrorWsMessage,
@@ -21,12 +22,12 @@ import {
   ComfyApiWorkflow,
   type ComfyWorkflowJSON,
   type ModelFile,
-  type NodeId,
-  validateComfyWorkflow
+  type NodeId
 } from '@/schemas/comfyWorkflowSchema'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { getFromWebmFile } from '@/scripts/metadata/ebml'
 import { getGltfBinaryMetadata } from '@/scripts/metadata/gltf'
+import { getFromIsobmffFile } from '@/scripts/metadata/isobmff'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -34,6 +35,7 @@ import { useWorkflowService } from '@/services/workflowService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExtensionStore } from '@/stores/extensionStore'
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
 import { useModelStore } from '@/stores/modelStore'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
@@ -47,8 +49,15 @@ import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import { ExtensionManager } from '@/types/extensionTypes'
 import { ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
-import { executeWidgetsCallback, isImageNode } from '@/utils/litegraphUtil'
-import { findLegacyRerouteNodes } from '@/utils/migration/migrateReroute'
+import {
+  executeWidgetsCallback,
+  fixLinkInputSlots,
+  isImageNode
+} from '@/utils/litegraphUtil'
+import {
+  findLegacyRerouteNodes,
+  noNativeReroutes
+} from '@/utils/migration/migrateReroute'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import { type ComfyApi, PromptExecutionError, api } from './api'
@@ -63,7 +72,7 @@ import {
 import { $el, ComfyUI } from './ui'
 import { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
-import { type ComfyWidgetConstructor, ComfyWidgets } from './widgets'
+import { type ComfyWidgetConstructor } from './widgets'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -162,7 +171,7 @@ export class ComfyApp {
   /**
    * @deprecated Use useExecutionStore().executingNodeId instead
    */
-  get runningNodeId(): string | null {
+  get runningNodeId(): NodeId | null {
     return useExecutionStore().executingNodeId
   }
 
@@ -177,10 +186,7 @@ export class ComfyApp {
    * @deprecated Use useWidgetStore().widgets instead
    */
   get widgets(): Record<string, ComfyWidgetConstructor> {
-    if (this.vueAppReady) {
-      return useWidgetStore().widgets
-    }
-    return ComfyWidgets
+    return Object.fromEntries(useWidgetStore().widgets.entries())
   }
 
   /**
@@ -476,9 +482,8 @@ export class ComfyApp {
           if (match) {
             const uri = event.dataTransfer.getData(match)?.split('\n')?.[0]
             if (uri) {
-              await this.handleFile(
-                new File([await (await fetch(uri)).blob()], uri)
-              )
+              const blob = await (await fetch(uri)).blob()
+              await this.handleFile(new File([blob], uri, { type: blob.type }))
             }
           }
         }
@@ -669,7 +674,22 @@ export class ComfyApp {
     })
 
     api.addEventListener('execution_error', ({ detail }) => {
-      useDialogService().showExecutionErrorDialog(detail)
+      // Check if this is an auth-related error or credits-related error
+      if (
+        detail.exception_message ===
+        'Unauthorized: Please login first to use this node.'
+      ) {
+        useDialogService().showApiNodesSignInDialog([detail.node_type])
+      } else if (
+        detail.exception_message ===
+        'Payment Required: Please add credits to your account to use this node.'
+      ) {
+        useDialogService().showTopUpCreditsDialog({
+          isInsufficientCredits: true
+        })
+      } else {
+        useDialogService().showExecutionErrorDialog(detail)
+      }
       this.canvas.draw(true, true)
     })
 
@@ -705,7 +725,9 @@ export class ComfyApp {
   #addAfterConfigureHandler() {
     const app = this
     const onConfigure = app.graph.onConfigure
-    app.graph.onConfigure = function (...args) {
+    app.graph.onConfigure = function (this: LGraph, ...args) {
+      fixLinkInputSlots(this)
+
       // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
       for (const node of app.graph.nodes) {
         node.onGraphConfigured?.()
@@ -959,7 +981,7 @@ export class ComfyApp {
     {
       showMissingNodesDialog = true,
       showMissingModelsDialog = true,
-      checkForRerouteMigration = true
+      checkForRerouteMigration = false
     } = {}
   ) {
     if (clean !== false) {
@@ -975,22 +997,22 @@ export class ComfyApp {
     graphData = clone(graphData)
 
     if (useSettingStore().get('Comfy.Validation.Workflows')) {
-      // TODO: Show validation error in a dialog.
-      const validatedGraphData = await validateComfyWorkflow(
-        graphData,
-        /* onError=*/ (err) => {
-          useToastStore().addAlert(err)
-        }
-      )
+      const { graphData: validatedGraphData } =
+        await useWorkflowValidation().validateWorkflow(graphData)
+
       // If the validation failed, use the original graph data.
       // Ideally we should not block users from loading the workflow.
       graphData = validatedGraphData ?? graphData
     }
-
+    // Only show the reroute migration warning if the workflow does not have native
+    // reroutes. Merging reroute network has great complexity, and it is not supported
+    // for now.
+    // See: https://github.com/Comfy-Org/ComfyUI_frontend/issues/3317
     if (
       checkForRerouteMigration &&
       graphData.version === 0.4 &&
-      findLegacyRerouteNodes(graphData).length
+      findLegacyRerouteNodes(graphData).length &&
+      noNativeReroutes(graphData)
     ) {
       useToastStore().add({
         group: 'reroute-migration',
@@ -1141,22 +1163,11 @@ export class ComfyApp {
     )
     await useWorkflowService().afterLoadNewGraph(
       workflow,
-      // @ts-expect-error zod types issue. Will be fixed after we enable ts-strict
-      this.graph.serialize()
+      this.graph.serialize() as unknown as ComfyWorkflowJSON
     )
     requestAnimationFrame(() => {
       this.graph.setDirtyCanvas(true, true)
     })
-  }
-
-  /**
-   * Serializes a graph using preferred user settings.
-   * @param graph The litegraph to serialize.
-   * @returns A serialized graph (aka workflow) with preferred user settings.
-   */
-  serializeGraph(graph: LGraph = this.graph) {
-    const sortNodes = useSettingStore().get('Comfy.Workflow.SortNodeIdOnSave')
-    return graph.serialize({ sortNodes })
   }
 
   async graphToPrompt(graph = this.graph) {
@@ -1177,6 +1188,16 @@ export class ComfyApp {
     const executionStore = useExecutionStore()
     executionStore.lastNodeErrors = null
 
+    let comfyOrgAuthToken =
+      (await useFirebaseAuthStore().getIdToken()) ?? undefined
+    // Check if we're in a secure context before using the auth token
+    if (comfyOrgAuthToken && !window.isSecureContext) {
+      comfyOrgAuthToken = undefined
+      console.warn(
+        'Auth token not used: Not in a secure context. Authentication requires a secure connection.'
+      )
+    }
+
     try {
       while (this.#queueItems.length) {
         const { number, batchCount } = this.#queueItems.pop()!
@@ -1188,7 +1209,9 @@ export class ComfyApp {
 
           const p = await this.graphToPrompt()
           try {
+            api.authToken = comfyOrgAuthToken
             const res = await api.queuePrompt(number, p)
+            delete api.authToken
             executionStore.lastNodeErrors = res.node_errors ?? null
             if (executionStore.lastNodeErrors?.length) {
               this.canvas.draw(true, true)
@@ -1270,8 +1293,10 @@ export class ComfyApp {
         // by external callers, and `importA1111` has no access to `app`.
         useWorkflowService().beforeLoadNewGraph()
         importA1111(this.graph, pngInfo.parameters)
-        // @ts-expect-error zod type issue on ComfyWorkflowJSON. Should be resolved after enabling ts-strict globally.
-        useWorkflowService().afterLoadNewGraph(fileName, this.serializeGraph())
+        useWorkflowService().afterLoadNewGraph(
+          fileName,
+          this.graph.serialize() as unknown as ComfyWorkflowJSON
+        )
       } else {
         this.showErrorOnFileLoad(file)
       }
@@ -1308,6 +1333,20 @@ export class ComfyApp {
         this.loadApiJson(webmInfo.prompt, fileName)
       } else {
         this.showErrorOnFileLoad(file)
+      }
+    } else if (
+      file.type === 'video/mp4' ||
+      file.name?.endsWith('.mp4') ||
+      file.name?.endsWith('.mov') ||
+      file.name?.endsWith('.m4v') ||
+      file.type === 'video/quicktime' ||
+      file.type === 'video/x-m4v'
+    ) {
+      const mp4Info = await getFromIsobmffFile(file)
+      if (mp4Info.workflow) {
+        this.loadGraphData(mp4Info.workflow, true, true, fileName)
+      } else if (mp4Info.prompt) {
+        this.loadApiJson(mp4Info.prompt, fileName)
       }
     } else if (
       file.type === 'model/gltf-binary' ||
@@ -1473,9 +1512,10 @@ export class ComfyApp {
 
     app.graph.arrange()
 
-    // @ts-expect-error zod type issue on ComfyWorkflowJSON. ComfyWorkflowJSON
-    // is stricter than LiteGraph's serialisation schema.
-    useWorkflowService().afterLoadNewGraph(fileName, this.serializeGraph())
+    useWorkflowService().afterLoadNewGraph(
+      fileName,
+      this.graph.serialize() as unknown as ComfyWorkflowJSON
+    )
   }
 
   /**
@@ -1511,15 +1551,16 @@ export class ComfyApp {
 
       if (!def?.input) continue
 
-      // @ts-expect-error fixme ts strict error
-      for (const widget of node.widgets) {
-        if (widget.type === 'combo') {
-          if (def['input'].required?.[widget.name] !== undefined) {
-            // @ts-expect-error Requires discriminated union
-            widget.options.values = def['input'].required[widget.name][0]
-          } else if (def['input'].optional?.[widget.name] !== undefined) {
-            // @ts-expect-error Requires discriminated union
-            widget.options.values = def['input'].optional[widget.name][0]
+      if (node.widgets) {
+        for (const widget of node.widgets) {
+          if (widget.type === 'combo') {
+            if (def['input'].required?.[widget.name] !== undefined) {
+              // @ts-expect-error Requires discriminated union
+              widget.options.values = def['input'].required[widget.name][0]
+            } else if (def['input'].optional?.[widget.name] !== undefined) {
+              // @ts-expect-error Requires discriminated union
+              widget.options.values = def['input'].optional[widget.name][0]
+            }
           }
         }
       }

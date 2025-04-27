@@ -16,9 +16,9 @@
           placeholder="Select existing ComfyUI installation (optional)"
           class="flex-1"
           :class="{ 'p-invalid': pathError }"
-          @update:modelValue="validateSource"
+          @update:model-value="validateSource"
         />
-        <Button icon="pi pi-folder" @click="browsePath" class="w-12" />
+        <Button icon="pi pi-folder" class="w-12" @click="browsePath" />
       </div>
 
       <Message v-if="pathError" severity="error">
@@ -44,7 +44,7 @@
         >
           <Checkbox
             v-model="item.selected"
-            :inputId="item.id"
+            :input-id="item.id"
             :binary="true"
             @click.stop
           />

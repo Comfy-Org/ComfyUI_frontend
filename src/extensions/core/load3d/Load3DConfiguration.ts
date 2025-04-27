@@ -3,6 +3,7 @@ import type { IWidget } from '@comfyorg/litegraph'
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { api } from '@/scripts/api'
+import { useSettingStore } from '@/stores/settingStore'
 
 class Load3DConfiguration {
   constructor(private load3d: Load3d) {}
@@ -72,24 +73,36 @@ class Load3DConfiguration {
   private setupDefaultProperties() {
     const cameraType = this.load3d.loadNodeProperty(
       'Camera Type',
-      'perspective'
+      useSettingStore().get('Comfy.Load3D.CameraType')
     )
     this.load3d.toggleCamera(cameraType)
 
-    const showGrid = this.load3d.loadNodeProperty('Show Grid', true)
+    const showGrid = this.load3d.loadNodeProperty(
+      'Show Grid',
+      useSettingStore().get('Comfy.Load3D.ShowGrid')
+    )
 
     this.load3d.toggleGrid(showGrid)
 
-    const showPreview = this.load3d.loadNodeProperty('Show Preview', true)
+    const showPreview = this.load3d.loadNodeProperty(
+      'Show Preview',
+      useSettingStore().get('Comfy.Load3D.ShowPreview')
+    )
 
     this.load3d.togglePreview(showPreview)
 
-    const bgColor = this.load3d.loadNodeProperty('Background Color', '#282828')
+    const bgColor = this.load3d.loadNodeProperty(
+      'Background Color',
+      '#' + useSettingStore().get('Comfy.Load3D.BackgroundColor')
+    )
 
     this.load3d.setBackgroundColor(bgColor)
 
     const lightIntensity: number = Number(
-      this.load3d.loadNodeProperty('Light Intensity', 5)
+      this.load3d.loadNodeProperty(
+        'Light Intensity',
+        useSettingStore().get('Comfy.Load3D.LightIntensity')
+      )
     )
 
     this.load3d.setLightIntensity(lightIntensity)

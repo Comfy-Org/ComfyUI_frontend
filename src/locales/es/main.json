@@ -1,4 +1,58 @@
 {
+  "apiNodesCostBreakdown": {
+    "costPerRun": "Costo por ejecución",
+    "title": "Nodo(s) de API",
+    "totalCost": "Costo total"
+  },
+  "apiNodesSignInDialog": {
+    "message": "Este flujo de trabajo contiene nodos de API, que requieren que inicies sesión en tu cuenta para poder ejecutar.",
+    "title": "Se requiere iniciar sesión para usar los nodos de API"
+  },
+  "auth": {
+    "login": {
+      "andText": "y",
+      "confirmPasswordLabel": "Confirmar contraseña",
+      "confirmPasswordPlaceholder": "Ingresa la misma contraseña nuevamente",
+      "emailLabel": "Correo electrónico",
+      "emailPlaceholder": "Ingresa tu correo electrónico",
+      "failed": "Inicio de sesión fallido",
+      "forgotPassword": "¿Olvidaste tu contraseña?",
+      "forgotPasswordError": "No se pudo enviar el correo electrónico para restablecer la contraseña",
+      "loginButton": "Iniciar sesión",
+      "loginWithGithub": "Iniciar sesión con Github",
+      "loginWithGoogle": "Iniciar sesión con Google",
+      "newUser": "¿Eres nuevo aquí?",
+      "orContinueWith": "O continuar con",
+      "passwordLabel": "Contraseña",
+      "passwordPlaceholder": "Ingresa tu contraseña",
+      "passwordResetSent": "Correo electrónico de restablecimiento de contraseña enviado",
+      "passwordResetSentDetail": "Por favor, revisa tu correo electrónico para encontrar un enlace para restablecer tu contraseña.",
+      "privacyLink": "Política de privacidad",
+      "signInOrSignUp": "Iniciar sesión / Registrarse",
+      "signUp": "Regístrate",
+      "success": "Inicio de sesión exitoso",
+      "termsLink": "Términos de uso",
+      "termsText": "Al hacer clic en \"Siguiente\" o \"Registrarse\", aceptas nuestros",
+      "title": "Inicia sesión en tu cuenta"
+    },
+    "signOut": {
+      "signOut": "Cerrar sesión",
+      "success": "Sesión cerrada correctamente",
+      "successDetail": "Has cerrado sesión en tu cuenta."
+    },
+    "signup": {
+      "alreadyHaveAccount": "¿Ya tienes una cuenta?",
+      "emailLabel": "Correo electrónico",
+      "emailPlaceholder": "Ingresa tu correo electrónico",
+      "passwordLabel": "Contraseña",
+      "passwordPlaceholder": "Ingresa una nueva contraseña",
+      "signIn": "Iniciar sesión",
+      "signUpButton": "Registrarse",
+      "signUpWithGithub": "Registrarse con Github",
+      "signUpWithGoogle": "Registrarse con Google",
+      "title": "Crea una cuenta"
+    }
+  },
   "clipboard": {
     "errorMessage": "Error al copiar al portapapeles",
     "errorNotSupported": "API del portapapeles no soportada en su navegador",
@@ -20,8 +74,6 @@
     "yellow": "Amarillo"
   },
   "contextMenu": {
-    " to input": " a entrada",
-    " to widget": " a widget",
     "Add Group": "Agregar Grupo",
     "Add Group For Selected Nodes": "Agregar Grupo para Nodos Seleccionados",
     "Add Node": "Agregar Nodo",
@@ -29,9 +81,6 @@
     "Clone": "Clonar",
     "Collapse": "Colapsar",
     "Colors": "Colores",
-    "Convert ": "Convertir ",
-    "Convert Input to Widget": "Convertir Entrada a Widget",
-    "Convert Widget to Input": "Convertir Widget a Entrada",
     "Convert to Group Node": "Convertir en Nodo de Grupo",
     "Copy (Clipspace)": "Copiar (Espacio de Clip)",
     "Expand": "Expandir",
@@ -51,6 +100,24 @@
     "Shapes": "Formas",
     "Title": "Título",
     "Unpin": "Desanclar"
+  },
+  "credits": {
+    "credits": "Créditos",
+    "faqs": "Preguntas frecuentes",
+    "invoiceHistory": "Historial de facturas",
+    "lastUpdated": "Última actualización",
+    "messageSupport": "Contactar soporte",
+    "purchaseCredits": "Comprar créditos",
+    "topUp": {
+      "buyNow": "Comprar ahora",
+      "insufficientMessage": "No tienes suficientes créditos para ejecutar este flujo de trabajo.",
+      "insufficientTitle": "Créditos insuficientes",
+      "maxAmount": "(Máx. $1,000 USD)",
+      "quickPurchase": "Compra rápida",
+      "seeDetails": "Ver detalles",
+      "topUp": "Recargar"
+    },
+    "yourCreditBalance": "Tu saldo de créditos"
   },
   "dataTypes": {
     "AUDIO": "AUDIO",
@@ -97,7 +164,9 @@
   "desktopUpdate": {
     "description": "ComfyUI Desktop está instalando nuevas dependencias. Esto puede tardar unos minutos.",
     "terminalDefaultMessage": "Cualquier salida de consola de la actualización se mostrará aquí.",
-    "title": "Actualizando ComfyUI Desktop"
+    "title": "Actualizando ComfyUI Desktop",
+    "updateAvailableMessage": "Hay una actualización disponible. ¿Quieres reiniciar y actualizar ahora?",
+    "updateFoundTitle": "Actualización encontrada (v{version})"
   },
   "downloadGit": {
     "gitWebsite": "Descargar git",
@@ -126,6 +195,7 @@
     "about": "Acerca de",
     "add": "Añadir",
     "all": "Todo",
+    "amount": "Cantidad",
     "apply": "Aplicar",
     "back": "Atrás",
     "cancel": "Cancelar",
@@ -177,9 +247,11 @@
     "installing": "Instalando",
     "interrupted": "Interrumpido",
     "keybinding": "Combinación de teclas",
+    "learnMore": "Aprende más",
     "loadAllFolders": "Cargar todas las carpetas",
     "loadWorkflow": "Cargar flujo de trabajo",
     "loading": "Cargando",
+    "login": "Iniciar sesión",
     "logs": "Registros",
     "migrate": "Migrar",
     "missing": "Faltante",
@@ -203,8 +275,9 @@
     "reportIssue": "Enviar informe",
     "reportIssueTooltip": "Enviar el informe de error a Comfy Org",
     "reportSent": "Informe enviado",
-    "reset": "Restablecer",
-    "resetKeybindingsTooltip": "Restablecer combinaciones de teclas a la configuración predeterminada",
+    "reset": "Reiniciar",
+    "resetAll": "Restablecer todo",
+    "resetAllKeybindingsTooltip": "Restablecer todas las teclas de acceso rápido a la configuración predeterminada",
     "restart": "Reiniciar",
     "resultsCount": "Encontrados {count} resultados",
     "save": "Guardar",
@@ -219,14 +292,18 @@
     "settings": "Configuraciones",
     "showReport": "Mostrar informe",
     "sort": "Ordenar",
+    "source": "Fuente",
     "status": "Estado",
     "success": "Éxito",
     "systemInfo": "Información del sistema",
     "terminal": "Terminal",
+    "unknownError": "Error desconocido",
     "update": "Actualizar",
+    "updateAvailable": "Actualización Disponible",
     "updated": "Actualizado",
     "updating": "Actualizando",
     "upload": "Subir",
+    "user": "Usuario",
     "videoFailedToLoad": "Falló la carga del video",
     "workflow": "Flujo de trabajo"
   },
@@ -345,19 +422,34 @@
   },
   "issueReport": {
     "contactFollowUp": "Contáctame para seguimiento",
+    "contactSupportDescription": "Por favor, complete el siguiente formulario con su reporte",
+    "contactSupportTitle": "Contactar Soporte",
+    "describeTheProblem": "Describa el problema",
+    "email": "Correo electrónico",
     "feedbackTitle": "Ayúdanos a mejorar ComfyUI proporcionando comentarios",
     "helpFix": "Ayuda a Solucionar Esto",
+    "helpTypes": {
+      "billingPayments": "Facturación / Pagos",
+      "bugReport": "Reporte de error",
+      "giveFeedback": "Enviar comentarios",
+      "loginAccessIssues": "Problemas de inicio de sesión / acceso",
+      "somethingElse": "Otro"
+    },
     "notifyResolve": "Notifícame cuando se resuelva",
     "provideAdditionalDetails": "Proporciona detalles adicionales (opcional)",
     "provideEmail": "Danos tu correo electrónico (opcional)",
     "rating": "Calificación",
+    "selectIssue": "Seleccione el problema",
     "stackTrace": "Rastreo de Pila",
     "submitErrorReport": "Enviar Reporte de Error (Opcional)",
     "systemStats": "Estadísticas del Sistema",
     "validation": {
       "invalidEmail": "Por favor ingresa una dirección de correo electrónico válida",
-      "maxLength": "Mensaje demasiado largo"
-    }
+      "maxLength": "Mensaje demasiado largo",
+      "selectIssueType": "Por favor, seleccione un tipo de problema"
+    },
+    "whatCanWeInclude": "Especifique qué incluir en el reporte",
+    "whatDoYouNeedHelpWith": "¿Con qué necesita ayuda?"
   },
   "load3d": {
     "applyingTexture": "Aplicando textura...",
@@ -372,6 +464,12 @@
     "lightIntensity": "Intensidad de luz",
     "loadingModel": "Cargando modelo 3D...",
     "materialMode": "Modo de material",
+    "materialModes": {
+      "depth": "Profundidad",
+      "normal": "Normal",
+      "original": "Original",
+      "wireframe": "Malla"
+    },
     "model": "Modelo",
     "previewOutput": "Vista previa de salida",
     "removeBackgroundImage": "Eliminar imagen de fondo",
@@ -426,6 +524,8 @@
     "loadingVersions": "Cargando versiones...",
     "nightlyVersion": "Nocturna",
     "noDescription": "No hay descripción disponible",
+    "noNodesFound": "No se encontraron nodos",
+    "noNodesFoundDescription": "Los nodos del paquete no se pudieron analizar, o el paquete es solo una extensión de frontend y no tiene ningún nodo.",
     "noResultsFound": "No se encontraron resultados que coincidan con tu búsqueda.",
     "nodePack": "Paquete de Nodos",
     "packsSelected": "Paquetes Seleccionados",
@@ -434,8 +534,10 @@
     "searchPlaceholder": "Buscar",
     "selectVersion": "Seleccionar Versión",
     "sort": {
+      "created": "Más reciente",
       "downloads": "Más Popular",
-      "rating": "Calificación"
+      "publisher": "Editor",
+      "updated": "Actualizado recientemente"
     },
     "status": {
       "active": "Activo",
@@ -510,6 +612,7 @@
     "Bypass/Unbypass Selected Nodes": "Evitar/No evitar nodos seleccionados",
     "Canvas Toggle Link Visibility": "Alternar visibilidad de enlace en lienzo",
     "Canvas Toggle Lock": "Alternar bloqueo en lienzo",
+    "Check for Updates": "Buscar actualizaciones",
     "Clear Pending Tasks": "Borrar tareas pendientes",
     "Clear Workflow": "Borrar flujo de trabajo",
     "Clipspace": "Espacio de clip",
@@ -519,6 +622,7 @@
     "ComfyUI Docs": "Documentos de ComfyUI",
     "ComfyUI Forum": "Foro de ComfyUI",
     "ComfyUI Issues": "Problemas de ComfyUI",
+    "Contact Support": "Contactar soporte",
     "Convert selected nodes to group node": "Convertir nodos seleccionados en nodo de grupo",
     "Custom Nodes Manager": "Gestor de nodos personalizados",
     "Delete Selected Items": "Eliminar elementos seleccionados",
@@ -545,6 +649,7 @@
     "Open Logs Folder": "Abrir carpeta de registros",
     "Open Models Folder": "Abrir carpeta de modelos",
     "Open Outputs Folder": "Abrir carpeta de salidas",
+    "Open Sign In Dialog": "Abrir diálogo de inicio de sesión",
     "Open extra_model_paths_yaml": "Abrir extra_model_paths.yaml",
     "Pin/Unpin Selected Items": "Anclar/Desanclar elementos seleccionados",
     "Pin/Unpin Selected Nodes": "Anclar/Desanclar nodos seleccionados",
@@ -556,10 +661,12 @@
     "Refresh Node Definitions": "Actualizar definiciones de nodo",
     "Reinstall": "Reinstalar",
     "Reset View": "Restablecer vista",
+    "Resize Selected Nodes": "Redimensionar Nodos Seleccionados",
     "Restart": "Reiniciar",
     "Save": "Guardar",
     "Save As": "Guardar como",
     "Show Settings Dialog": "Mostrar diálogo de configuración",
+    "Sign Out": "Cerrar sesión",
     "Toggle Bottom Panel": "Alternar panel inferior",
     "Toggle Focus Mode": "Alternar modo de enfoque",
     "Toggle Logs Bottom Panel": "Alternar panel inferior de registros",
@@ -803,14 +910,17 @@
     "troubleshoot": "Solucionar problemas"
   },
   "settingsCategories": {
+    "3D": "3D",
     "About": "Acerca de",
     "Appearance": "Apariencia",
     "BrushAdjustment": "Ajuste de Pincel",
+    "Camera": "Cámara",
     "Canvas": "Lienzo",
     "ColorPalette": "Paleta de Colores",
     "Comfy": "Comfy",
     "Comfy-Desktop": "Comfy-Desktop",
     "ContextMenu": "Menú Contextual",
+    "Credits": "Créditos",
     "CustomColorPalettes": "Paletas de Colores Personalizadas",
     "DevMode": "Modo de Desarrollo",
     "EditTokenWeight": "Editar Peso del Token",
@@ -819,9 +929,11 @@
     "Graph": "Gráfico",
     "Group": "Grupo",
     "Keybinding": "Asignación de Teclas",
+    "Light": "Claro",
     "Link": "Enlace",
     "LinkRelease": "Liberación de Enlace",
     "LiteGraph": "Lite Graph",
+    "Load 3D": "Cargar 3D",
     "Locale": "Localización",
     "Mask Editor": "Editor de Máscara",
     "Menu": "Menú",
@@ -830,19 +942,20 @@
     "Node": "Nodo",
     "Node Search Box": "Caja de Búsqueda de Nodo",
     "Node Widget": "Widget de Nodo",
-    "NodeInputConversionSubmenus": "Submenús de Conversión de Entrada de Nodo",
     "NodeLibrary": "Biblioteca de Nodos",
     "Pointer": "Puntero",
     "Queue": "Cola",
     "QueueButton": "Botón de Cola",
     "Reroute": "Reenrutar",
     "RerouteBeta": "Reroute Beta",
+    "Scene": "Escena",
     "Server": "Servidor",
     "Server-Config": "Configuración del Servidor",
     "Settings": "Configuraciones",
     "Sidebar": "Barra Lateral",
     "Tree Explorer": "Explorador de Árbol",
     "UV": "UV",
+    "User": "Usuario",
     "Validation": "Validación",
     "Window": "Ventana",
     "Workflow": "Flujo de Trabajo"
@@ -910,8 +1023,7 @@
       "ControlNet": "ControlNet",
       "Custom Nodes": "Nodos Personalizados",
       "Flux": "Flux",
-      "SD3_5": "SD3.5",
-      "SDXL": "SDXL",
+      "Image": "Imagen",
       "Upscaling": "Ampliación",
       "Video": "Video"
     },
@@ -956,13 +1068,14 @@
         "flux_redux_model_example": "Flux Redux Model",
         "flux_schnell": "Flux Schnell"
       },
-      "SD3_5": {
+      "Image": {
+        "hidream_i1_dev": "HiDream I1 Dev",
+        "hidream_i1_fast": "HiDream I1 Rápido",
+        "hidream_i1_full": "HiDream I1 Completo",
         "sd3_5_large_blur": "SD3.5 Grande Desenfoque",
         "sd3_5_large_canny_controlnet_example": "SD3.5 Grande Canny ControlNet",
         "sd3_5_large_depth": "SD3.5 Grande Profundidad",
-        "sd3_5_simple_example": "SD3.5 Simple"
-      },
-      "SDXL": {
+        "sd3_5_simple_example": "SD3.5 Simple",
         "sdxl_refiner_prompt_example": "SDXL Refinador de Solicitud",
         "sdxl_revision_text_prompts": "SDXL Revisión de Solicitud de Texto",
         "sdxl_revision_zero_positive": "SDXL Revisión Cero Positivo",
@@ -983,7 +1096,9 @@
         "ltxv_text_to_video": "LTXV Texto a Video",
         "mochi_text_to_video_example": "Mochi Texto a Video",
         "text_to_video_wan": "Wan 2.1 Texto a Video",
-        "txt_to_image_to_video": "SVD Texto a Imagen a Video"
+        "txt_to_image_to_video": "SVD Texto a Imagen a Video",
+        "wan2_1_fun_control": "Wan 2.1 ControlNet",
+        "wan2_1_fun_inp": "Wan 2.1 Relleno"
       }
     },
     "title": "Comienza con una Plantilla"
@@ -995,12 +1110,18 @@
     "errorCopyImage": "Error al copiar la imagen: {error}",
     "errorLoadingModel": "Error al cargar el modelo",
     "errorSaveSetting": "Error al guardar la configuración {id}: {err}",
+    "failedToAccessBillingPortal": "No se pudo acceder al portal de facturación: {error}",
     "failedToApplyTexture": "Error al aplicar textura",
+    "failedToCreateCustomer": "No se pudo crear el cliente: {error}",
     "failedToDownloadFile": "Error al descargar el archivo",
     "failedToExportModel": "Error al exportar modelo como {format}",
+    "failedToFetchBalance": "No se pudo obtener el saldo: {error}",
     "failedToFetchLogs": "Error al obtener los registros del servidor",
+    "failedToInitiateCreditPurchase": "No se pudo iniciar la compra de créditos: {error}",
+    "failedToPurchaseCredits": "No se pudo comprar créditos: {error}",
     "fileLoadError": "No se puede encontrar el flujo de trabajo en {fileName}",
     "fileUploadFailed": "Error al subir el archivo",
+    "firebaseAuthNotInitialized": "Firebase Auth no está inicializado",
     "interrupted": "La ejecución ha sido interrumpida",
     "migrateToLitegraphReroute": "Los nodos de reroute se eliminarán en futuras versiones. Haz clic para migrar a reroute nativo de litegraph.",
     "no3dScene": "No hay escena 3D para aplicar textura",
@@ -1011,7 +1132,8 @@
     "pendingTasksDeleted": "Tareas pendientes eliminadas",
     "pleaseSelectNodesToGroup": "Por favor, seleccione los nodos (u otros grupos) para crear un grupo para",
     "unableToGetModelFilePath": "No se puede obtener la ruta del archivo del modelo",
-    "updateRequested": "Actualización solicitada"
+    "updateRequested": "Actualización solicitada",
+    "userNotAuthenticated": "Usuario no autenticado"
   },
   "userSelect": {
     "enterUsername": "Introduce un nombre de usuario",
@@ -1019,6 +1141,32 @@
     "newUser": "Nuevo usuario",
     "next": "Siguiente",
     "selectUser": "Selecciona un usuario"
+  },
+  "userSettings": {
+    "email": "Correo electrónico",
+    "name": "Nombre",
+    "notSet": "No establecido",
+    "provider": "Método de inicio de sesión",
+    "providers": {
+      "github": "GitHub",
+      "google": "Google"
+    },
+    "title": "Configuración de usuario"
+  },
+  "validation": {
+    "invalidEmail": "Dirección de correo electrónico inválida",
+    "maxLength": "No debe tener más de {length} caracteres",
+    "minLength": "Debe tener al menos {length} caracteres",
+    "password": {
+      "lowercase": "Debe contener al menos una letra minúscula",
+      "match": "Las contraseñas deben coincidir",
+      "minLength": "Debe tener entre 8 y 32 caracteres",
+      "number": "Debe contener al menos un número",
+      "requirements": "Requisitos de la contraseña",
+      "special": "Debe contener al menos un carácter especial",
+      "uppercase": "Debe contener al menos una letra mayúscula"
+    },
+    "required": "Requerido"
   },
   "welcome": {
     "getStarted": "Empezar",

@@ -238,9 +238,11 @@ class ImagePreviewWidget implements ICustomWidget {
   readonly type: 'custom'
   readonly name: string
   readonly options: IWidgetOptions<unknown>
-  // Dummy value to satisfy type requirements
+  /** Dummy value to satisfy type requirements. */
   value: string
   y: number = 0
+  /** Don't serialize the widget value. */
+  serialize: boolean = false
 
   constructor(name: string, options: IWidgetOptions<unknown>) {
     this.type = 'custom'

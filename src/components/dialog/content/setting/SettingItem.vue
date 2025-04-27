@@ -1,11 +1,12 @@
 <template>
   <FormItem
-    :item="formItem"
     :id="setting.id"
-    :formValue="settingValue"
-    @update:formValue="updateSettingValue"
+    :item="formItem"
+    :form-value="settingValue"
+    @update:form-value="updateSettingValue"
   >
     <template #name-prefix>
+      <Tag v-if="setting.id === 'Comfy.Locale'" class="pi pi-language" />
       <Tag v-if="setting.experimental" :value="$t('g.experimental')" />
       <Tag
         v-if="setting.deprecated"
@@ -68,7 +69,7 @@ const formItem = computed(() => {
 
 const settingStore = useSettingStore()
 const settingValue = computed(() => settingStore.get(props.setting.id))
-const updateSettingValue = (value: any) => {
-  settingStore.set(props.setting.id, value)
+const updateSettingValue = async (value: any) => {
+  await settingStore.set(props.setting.id, value)
 }
 </script>

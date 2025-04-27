@@ -14,7 +14,7 @@
         />
       </template>
       <template v-if="task.displayStatus === TaskItemDisplayStatus.Running">
-        <i v-if="!progressPreviewBlobUrl" class="pi pi-spin pi-spinner"></i>
+        <i v-if="!progressPreviewBlobUrl" class="pi pi-spin pi-spinner" />
         <img
           v-else
           :src="progressPreviewBlobUrl"
@@ -27,11 +27,11 @@
       <i
         v-else-if="cancelledWithoutResults"
         class="pi pi-exclamation-triangle"
-      ></i>
+      />
       <i
         v-else-if="task.displayStatus === TaskItemDisplayStatus.Failed"
         class="pi pi-exclamation-circle"
-      ></i>
+      />
     </div>
 
     <div class="task-item-details">
@@ -51,7 +51,7 @@
           />
         </Tag>
         <Tag :severity="taskTagSeverity(task.displayStatus)">
-          <span v-html="taskStatusText(task.displayStatus)"></span>
+          <span v-html="taskStatusText(task.displayStatus)" />
           <span v-if="task.isHistory" class="task-time">
             {{ formatTime(task.executionTimeInSeconds) }}
           </span>

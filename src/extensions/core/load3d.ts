@@ -14,11 +14,97 @@ import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import { useExtensionService } from '@/services/extensionService'
 import { useLoad3dService } from '@/services/load3dService'
 import { useToastStore } from '@/stores/toastStore'
-import { generateUUID } from '@/utils/formatUtil'
 
 useExtensionService().registerExtension({
   name: 'Comfy.Load3D',
-
+  settings: [
+    {
+      id: 'Comfy.Load3D.ShowGrid',
+      category: ['3D', 'Scene', 'Initial Grid Visibility'],
+      name: 'Initial Grid Visibility',
+      tooltip:
+        'Controls whether the grid is visible by default when a new 3D widget is created. This default can still be toggled individually for each widget after creation.',
+      type: 'boolean',
+      defaultValue: true,
+      experimental: true
+    },
+    {
+      id: 'Comfy.Load3D.ShowPreview',
+      category: ['3D', 'Scene', 'Initial Preview Visibility'],
+      name: 'Initial Preview Visibility',
+      tooltip:
+        'Controls whether the preview screen is visible by default when a new 3D widget is created. This default can still be toggled individually for each widget after creation.',
+      type: 'boolean',
+      defaultValue: true,
+      experimental: true
+    },
+    {
+      id: 'Comfy.Load3D.BackgroundColor',
+      category: ['3D', 'Scene', 'Initial Background Color'],
+      name: 'Initial Background Color',
+      tooltip:
+        'Controls the default background color of the 3D scene. This setting determines the background appearance when a new 3D widget is created, but can be adjusted individually for each widget after creation.',
+      type: 'color',
+      defaultValue: '282828',
+      experimental: true
+    },
+    {
+      id: 'Comfy.Load3D.CameraType',
+      category: ['3D', 'Camera', 'Initial Camera Type'],
+      name: 'Initial Camera Type',
+      tooltip:
+        'Controls whether the camera is perspective or orthographic by default when a new 3D widget is created. This default can still be toggled individually for each widget after creation.',
+      type: 'combo',
+      options: ['perspective', 'orthographic'],
+      defaultValue: 'perspective',
+      experimental: true
+    },
+    {
+      id: 'Comfy.Load3D.LightIntensity',
+      category: ['3D', 'Light', 'Initial Light Intensity'],
+      name: 'Initial Light Intensity',
+      tooltip:
+        'Sets the default brightness level of lighting in the 3D scene. This value determines how intensely lights illuminate objects when a new 3D widget is created, but can be adjusted individually for each widget after creation.',
+      type: 'number',
+      defaultValue: 3,
+      experimental: true
+    },
+    {
+      id: 'Comfy.Load3D.LightIntensityMaximum',
+      category: ['3D', 'Light', 'Light Intensity Maximum'],
+      name: 'Light Intensity Maximum',
+      tooltip:
+        'Sets the maximum allowable light intensity value for 3D scenes. This defines the upper brightness limit that can be set when adjusting lighting in any 3D widget.',
+      type: 'number',
+      defaultValue: 10,
+      experimental: true
+    },
+    {
+      id: 'Comfy.Load3D.LightIntensityMinimum',
+      category: ['3D', 'Light', 'Light Intensity Minimum'],
+      name: 'Light Intensity Minimum',
+      tooltip:
+        'Sets the minimum allowable light intensity value for 3D scenes. This defines the lower brightness limit that can be set when adjusting lighting in any 3D widget.',
+      type: 'number',
+      defaultValue: 1,
+      experimental: true
+    },
+    {
+      id: 'Comfy.Load3D.LightAdjustmentIncrement',
+      category: ['3D', 'Light', 'Light Adjustment Increment'],
+      name: 'Light Adjustment Increment',
+      tooltip:
+        'Controls the increment size when adjusting light intensity in 3D scenes. A smaller step value allows for finer control over lighting adjustments, while a larger value results in more noticeable changes per adjustment.',
+      type: 'slider',
+      attrs: {
+        min: 0.1,
+        max: 1,
+        step: 0.1
+      },
+      defaultValue: 0.5,
+      experimental: true
+    }
+  ],
   getCustomWidgets() {
     return {
       LOAD_3D(node) {
@@ -86,7 +172,6 @@ useExtensionService().registerExtension({
         }
 
         const widget = new ComponentWidgetImpl({
-          id: generateUUID(),
           node,
           name: inputSpec.name,
           component: Load3D,
@@ -153,7 +238,8 @@ useExtensionService().registerExtension({
             image: `threed/${data.name} [temp]`,
             mask: `threed/${dataMask.name} [temp]`,
             normal: `threed/${dataNormal.name} [temp]`,
-            lineart: `threed/${dataLineart.name} [temp]`
+            lineart: `threed/${dataLineart.name} [temp]`,
+            camera_info: node.properties['Camera Info']
           }
         }
       }
@@ -226,7 +312,6 @@ useExtensionService().registerExtension({
         }
 
         const widget = new ComponentWidgetImpl({
-          id: generateUUID(),
           node,
           name: inputSpec.name,
           component: Load3DAnimation,
@@ -293,7 +378,8 @@ useExtensionService().registerExtension({
         return {
           image: `threed/${data.name} [temp]`,
           mask: `threed/${dataMask.name} [temp]`,
-          normal: `threed/${dataNormal.name} [temp]`
+          normal: `threed/${dataNormal.name} [temp]`,
+          camera_info: node.properties['Camera Info']
         }
       }
     }
@@ -321,7 +407,6 @@ useExtensionService().registerExtension({
         }
 
         const widget = new ComponentWidgetImpl({
-          id: generateUUID(),
           node,
           name: inputSpec.name,
           component: Load3D,
@@ -350,7 +435,7 @@ useExtensionService().registerExtension({
     node.onExecuted = function (message: any) {
       onExecuted?.apply(this, arguments as any)
 
-      let filePath = message.model_file[0]
+      let filePath = message.result[0]
 
       if (!filePath) {
         const msg = t('toastMessages.unableToGetModelFilePath')
@@ -359,6 +444,8 @@ useExtensionService().registerExtension({
       }
 
       const load3d = useLoad3dService().getLoad3d(node)
+
+      let cameraState = message.result[1]
 
       const modelWidget = node.widgets?.find(
         (w: IWidget) => w.name === 'model_file'
@@ -369,7 +456,7 @@ useExtensionService().registerExtension({
 
         const config = new Load3DConfiguration(load3d)
 
-        config.configure('output', modelWidget)
+        config.configure('output', modelWidget, cameraState)
       }
     }
   }
@@ -396,7 +483,6 @@ useExtensionService().registerExtension({
         }
 
         const widget = new ComponentWidgetImpl({
-          id: generateUUID(),
           node,
           name: inputSpec.name,
           component: Load3DAnimation,
@@ -425,13 +511,15 @@ useExtensionService().registerExtension({
     node.onExecuted = function (message: any) {
       onExecuted?.apply(this, arguments as any)
 
-      let filePath = message.model_file[0]
+      let filePath = message.result[0]
 
       if (!filePath) {
         const msg = t('toastMessages.unableToGetModelFilePath')
         console.error(msg)
         useToastStore().addAlert(msg)
       }
+
+      let cameraState = message.result[1]
 
       const load3d = useLoad3dService().getLoad3d(node)
 
@@ -443,7 +531,7 @@ useExtensionService().registerExtension({
 
         const config = new Load3DConfiguration(load3d)
 
-        config.configure('output', modelWidget)
+        config.configure('output', modelWidget, cameraState)
       }
     }
   }

@@ -4,9 +4,8 @@
     :style="style"
     :class="{ 'is-dragging': isDragging, 'is-docked': isDocked }"
   >
-    <div class="actionbar-content flex items-center select-none" ref="panelRef">
-      <span class="drag-handle cursor-move mr-2 p-0!" ref="dragHandleRef">
-      </span>
+    <div ref="panelRef" class="actionbar-content flex items-center select-none">
+      <span ref="dragHandleRef" class="drag-handle cursor-move mr-2 p-0!" />
       <ComfyQueueButton />
     </div>
   </Panel>
@@ -89,9 +88,9 @@ const setInitialPosition = () => {
   }
 }
 onMounted(setInitialPosition)
-watch(visible, (newVisible) => {
+watch(visible, async (newVisible) => {
   if (newVisible) {
-    nextTick(setInitialPosition)
+    await nextTick(setInitialPosition)
   }
 })
 

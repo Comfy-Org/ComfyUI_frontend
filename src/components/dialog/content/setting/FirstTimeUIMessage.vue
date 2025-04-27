@@ -18,9 +18,9 @@ import { useSettingStore } from '@/stores/settingStore'
 
 const settingStore = useSettingStore()
 const show = computed(() => !settingStore.exists('Comfy.UseNewMenu'))
-const handleClose = () => {
+const handleClose = async () => {
   // Explicitly write the current value to the store.
   const currentValue = settingStore.get('Comfy.UseNewMenu')
-  settingStore.set('Comfy.UseNewMenu', currentValue)
+  await settingStore.set('Comfy.UseNewMenu', currentValue)
 }
 </script>

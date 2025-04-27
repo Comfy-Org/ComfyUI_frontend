@@ -1,47 +1,92 @@
 <template>
-  <div class="flex flex-col gap-4 mt-4 overflow-auto text-sm">
-    <div v-if="nodeDefs?.length">
-      <!-- TODO: when registry returns node defs, use them here -->
-    </div>
-    <div
-      v-else
-      v-for="i in 3"
-      :key="i"
-      class="border border-surface-border rounded-lg p-4"
-    >
-      <NodePreview
-        :node-def="placeholderNodeDef"
-        class="!text-[.625rem] !min-w-full"
+  <div class="flex flex-col gap-4 mt-4 text-sm">
+    <template v-if="mappedNodeDefs?.length">
+      <div
+        v-for="nodeDef in mappedNodeDefs"
+        :key="createNodeDefKey(nodeDef)"
+        class="border rounded-lg p-4"
+      >
+        <NodePreview :node-def="nodeDef" class="!text-[.625rem] !min-w-full" />
+      </div>
+    </template>
+    <template v-else-if="isLoading">
+      <ProgressSpinner />
+    </template>
+    <template v-else-if="nodeNames.length">
+      <div v-for="node in nodeNames" :key="node" class="text-muted truncate">
+        {{ node }}
+      </div>
+    </template>
+    <template v-else>
+      <NoResultsPlaceholder
+        :title="$t('manager.noNodesFound')"
+        :message="$t('manager.noNodesFoundDescription')"
       />
-    </div>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import NodePreview from '@/components/node/NodePreview.vue'
-import { ComfyNodeDef } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { components } from '@/types/comfyRegistryTypes'
+import { whenever } from '@vueuse/core'
+import ProgressSpinner from 'primevue/progressspinner'
+import { computed, ref, shallowRef, useId } from 'vue'
 
-defineProps<{
+import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
+import NodePreview from '@/components/node/NodePreview.vue'
+import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
+import { components, operations } from '@/types/comfyRegistryTypes'
+import { registryToFrontendV2NodeDef } from '@/utils/mapperUtil'
+
+type ListComfyNodesResponse =
+  operations['ListComfyNodes']['responses'][200]['content']['application/json']['comfy_nodes']
+
+const { nodePack, nodeNames } = defineProps<{
   nodePack: components['schemas']['Node']
-  nodeDefs?: components['schemas']['ComfyNode'][]
+  nodeNames: string[]
 }>()
 
-// TODO: when registry returns node defs, use them here
-const placeholderNodeDef: ComfyNodeDef = {
-  name: 'Sample Node',
-  display_name: 'Sample Node',
-  description: 'This is a sample node for preview purposes',
-  inputs: {
-    input1: { name: 'Input 1', type: 'IMAGE' },
-    input2: { name: 'Input 2', type: 'CONDITIONING' }
-  },
-  outputs: [
-    { name: 'Output 1', type: 'IMAGE', index: 0, is_list: false },
-    { name: 'Output 2', type: 'MASK', index: 1, is_list: false }
-  ],
-  category: 'Utility',
-  output_node: false,
-  python_module: 'nodes'
+const { getNodeDefs } = useComfyRegistryStore()
+
+const isLoading = ref(false)
+const registryNodeDefs = shallowRef<ListComfyNodesResponse | null>(null)
+
+const fetchNodeDefs = async () => {
+  isLoading.value = true
+
+  const { id: packId } = nodePack
+  const version = nodePack.latest_version?.version
+
+  if (!packId || !version) {
+    registryNodeDefs.value = null
+  } else {
+    const response = await getNodeDefs.call({
+      packId,
+      version,
+      page: 1,
+      limit: 256
+    })
+    registryNodeDefs.value = response?.comfy_nodes ?? null
+  }
+
+  isLoading.value = false
 }
+
+whenever(() => nodePack, fetchNodeDefs, { immediate: true, deep: true })
+
+const toFrontendNodeDef = (nodeDef: components['schemas']['ComfyNode']) => {
+  try {
+    return registryToFrontendV2NodeDef(nodeDef, nodePack)
+  } catch (error) {
+    return null
+  }
+}
+const mappedNodeDefs = computed(() => {
+  if (!registryNodeDefs.value) return null
+  return registryNodeDefs.value
+    .map(toFrontendNodeDef)
+    .filter((nodeDef) => nodeDef !== null)
+})
+
+const createNodeDefKey = (nodeDef: components['schemas']['ComfyNode']) =>
+  `${nodeDef.category}${nodeDef.comfy_node_name ?? useId()}`
 </script>

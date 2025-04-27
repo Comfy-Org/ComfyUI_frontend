@@ -13,11 +13,13 @@
   >
     <template #header>
       <component
-        v-if="item.headerComponent"
         :is="item.headerComponent"
+        v-if="item.headerComponent"
         :id="item.key"
       />
-      <h3 v-else :id="item.key">{{ item.title || ' ' }}</h3>
+      <h3 v-else :id="item.key">
+        {{ item.title || ' ' }}
+      </h3>
     </template>
 
     <component
@@ -26,7 +28,7 @@
       :maximized="item.dialogComponentProps.maximized"
     />
 
-    <template #footer v-if="item.footerComponent">
+    <template v-if="item.footerComponent" #footer>
       <component :is="item.footerComponent" />
     </template>
   </Dialog>

@@ -1,4 +1,7 @@
 {
+  "Comfy-Desktop_CheckForUpdates": {
+    "label": "Проверить наличие обновлений"
+  },
   "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
     "label": "Открыть папку пользовательских нод"
   },
@@ -44,6 +47,9 @@
   "Comfy_Canvas_ResetView": {
     "label": "Сбросить вид"
   },
+  "Comfy_Canvas_Resize": {
+    "label": "Изменить размер выбранных узлов"
+  },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "Переключить видимость ссылки"
   },
@@ -76,6 +82,9 @@
   },
   "Comfy_ClearWorkflow": {
     "label": "Очистить рабочий процесс"
+  },
+  "Comfy_ContactSupport": {
+    "label": "Связаться с поддержкой"
   },
   "Comfy_DuplicateWorkflow": {
     "label": "Дублировать текущий рабочий процесс"
@@ -166,6 +175,12 @@
   },
   "Comfy_Undo": {
     "label": "Отменить"
+  },
+  "Comfy_User_OpenSignInDialog": {
+    "label": "Открыть окно входа"
+  },
+  "Comfy_User_SignOut": {
+    "label": "Выйти"
   },
   "Workspace_CloseWorkflow": {
     "label": "Закрыть текущий рабочий процесс"

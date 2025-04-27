@@ -8,15 +8,16 @@
     </template>
 
     <DataTable
-      :value="commandsData"
       v-model:selection="selectedCommandData"
+      :value="commandsData"
       :global-filter-fields="['id', 'label']"
       :filters="filters"
-      selectionMode="single"
-      stripedRows
+      selection-mode="single"
+      striped-rows
       :pt="{
         header: 'px-0'
       }"
+      @row-dblclick="editKeybinding($event.data)"
     >
       <Column field="actions" header="">
         <template #body="slotProps">
@@ -27,10 +28,18 @@
               @click="editKeybinding(slotProps.data)"
             />
             <Button
+              icon="pi pi-replay"
+              class="p-button-text p-button-warn"
+              :disabled="
+                !keybindingStore.isCommandKeybindingModified(slotProps.data.id)
+              "
+              @click="resetKeybinding(slotProps.data)"
+            />
+            <Button
               icon="pi pi-trash"
               class="p-button-text p-button-danger"
-              @click="removeKeybinding(slotProps.data)"
               :disabled="!slotProps.data.keybinding"
+              @click="removeKeybinding(slotProps.data)"
             />
           </div>
         </template>
@@ -54,35 +63,41 @@
         <template #body="slotProps">
           <KeyComboDisplay
             v-if="slotProps.data.keybinding"
-            :keyCombo="slotProps.data.keybinding.combo"
-            :isModified="
+            :key-combo="slotProps.data.keybinding.combo"
+            :is-modified="
               keybindingStore.isCommandKeybindingModified(slotProps.data.id)
             "
           />
           <span v-else>-</span>
         </template>
       </Column>
+      <Column field="source" :header="$t('g.source')">
+        <template #body="slotProps">
+          <span class="overflow-hidden text-ellipsis">{{
+            slotProps.data.source || '-'
+          }}</span>
+        </template>
+      </Column>
     </DataTable>
 
     <Dialog
-      class="min-w-96"
       v-model:visible="editDialogVisible"
+      class="min-w-96"
       modal
       :header="currentEditingCommand?.label"
       @hide="cancelEdit"
     >
       <div>
         <InputText
-          class="mb-2 text-center"
           ref="keybindingInput"
-          :modelValue="newBindingKeyCombo?.toString() ?? ''"
+          class="mb-2 text-center"
+          :model-value="newBindingKeyCombo?.toString() ?? ''"
           placeholder="Press keys for new binding"
-          @keydown.stop.prevent="captureKeybinding"
           autocomplete="off"
           fluid
-          :invalid="!!existingKeybindingOnCombo"
+          @keydown.stop.prevent="captureKeybinding"
         />
-        <Message v-if="existingKeybindingOnCombo" severity="error">
+        <Message v-if="existingKeybindingOnCombo" severity="warn">
           Keybinding already exists on
           <Tag
             severity="secondary"
@@ -92,23 +107,23 @@
       </div>
       <template #footer>
         <Button
-          label="Save"
-          icon="pi pi-check"
-          @click="saveKeybinding"
-          :disabled="!!existingKeybindingOnCombo"
+          :label="existingKeybindingOnCombo ? 'Overwrite' : 'Save'"
+          :icon="existingKeybindingOnCombo ? 'pi pi-pencil' : 'pi pi-check'"
+          :severity="existingKeybindingOnCombo ? 'warn' : undefined"
           autofocus
+          @click="saveKeybinding"
         />
       </template>
     </Dialog>
     <Button
+      v-tooltip="$t('g.resetAllKeybindingsTooltip')"
       class="mt-4"
-      :label="$t('g.reset')"
-      v-tooltip="$t('g.resetKeybindingsTooltip')"
-      icon="pi pi-trash"
+      :label="$t('g.resetAll')"
+      icon="pi pi-replay"
       severity="danger"
       fluid
       text
-      @click="resetKeybindings"
+      @click="resetAllKeybindings"
     />
   </PanelTemplate>
 </template>
@@ -152,6 +167,7 @@ interface ICommandData {
   id: string
   keybinding: KeybindingImpl | null
   label: string
+  source?: string
 }
 
 const commandsData = computed<ICommandData[]>(() => {
@@ -161,7 +177,8 @@ const commandsData = computed<ICommandData[]>(() => {
       `commands.${normalizeI18nKey(command.id)}.label`,
       command.label ?? ''
     ),
-    keybinding: keybindingStore.getKeybindingByCommandId(command.id)
+    keybinding: keybindingStore.getKeybindingByCommandId(command.id),
+    source: command.source
   }))
 })
 
@@ -210,14 +227,14 @@ watchEffect(() => {
   }
 })
 
-function removeKeybinding(commandData: ICommandData) {
+async function removeKeybinding(commandData: ICommandData) {
   if (commandData.keybinding) {
     keybindingStore.unsetKeybinding(commandData.keybinding)
-    keybindingService.persistUserKeybindings()
+    await keybindingService.persistUserKeybindings()
   }
 }
 
-function captureKeybinding(event: KeyboardEvent) {
+async function captureKeybinding(event: KeyboardEvent) {
   // Allow the use of keyboard shortcuts when adding keyboard shortcuts
   if (!event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey) {
     switch (event.key) {
@@ -225,7 +242,7 @@ function captureKeybinding(event: KeyboardEvent) {
         cancelEdit()
         return
       case 'Enter':
-        saveKeybinding()
+        await saveKeybinding()
         return
     }
   }
@@ -239,7 +256,7 @@ function cancelEdit() {
   newBindingKeyCombo.value = null
 }
 
-function saveKeybinding() {
+async function saveKeybinding() {
   if (currentEditingCommand.value && newBindingKeyCombo.value) {
     const updated = keybindingStore.updateKeybindingOnCommand(
       new KeybindingImpl({
@@ -248,20 +265,30 @@ function saveKeybinding() {
       })
     )
     if (updated) {
-      keybindingService.persistUserKeybindings()
+      await keybindingService.persistUserKeybindings()
     }
   }
   cancelEdit()
 }
 
+async function resetKeybinding(commandData: ICommandData) {
+  if (keybindingStore.resetKeybindingForCommand(commandData.id)) {
+    await keybindingService.persistUserKeybindings()
+  } else {
+    console.warn(
+      `No changes made when resetting keybinding for command: ${commandData.id}`
+    )
+  }
+}
+
 const toast = useToast()
-async function resetKeybindings() {
-  keybindingStore.resetKeybindings()
+async function resetAllKeybindings() {
+  keybindingStore.resetAllKeybindings()
   await keybindingService.persistUserKeybindings()
   toast.add({
     severity: 'info',
     summary: 'Info',
-    detail: 'Keybindings reset',
+    detail: 'All keybindings reset',
     life: 3000
   })
 }

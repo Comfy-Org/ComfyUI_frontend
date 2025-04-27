@@ -30,7 +30,7 @@ jobs:
         with:
           repository: 'Comfy-Org/ComfyUI_devtools'
           path: 'ComfyUI/custom_nodes/ComfyUI_devtools'
-          ref: '080e6d4af809a46852d1c4b7ed85f06e8a3a72be'
+          ref: '9d2421fd3208a310e4d0f71fca2ea0c985759c33'
 
       - uses: actions/setup-node@v4
         with:
@@ -39,7 +39,6 @@ jobs:
       - name: Build ComfyUI_frontend
         run: |
           npm ci
-          npm run fetch-templates
           npm run build
         working-directory: ComfyUI_frontend
 

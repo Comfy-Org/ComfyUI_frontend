@@ -8,7 +8,7 @@
     "incremental": true,
     "sourceMap": true,
     "esModuleInterop": true,
-    "moduleResolution": "Node",
+    "moduleResolution": "bundler",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "resolveJsonModule": true,
@@ -35,6 +35,7 @@
     "src/**/*.vue",
     "src/types/**/*.d.ts",
     "tests-ui/**/*",
-    "global.d.ts"
+    "global.d.ts",
+    "vite.config.mts"
   ]
 }

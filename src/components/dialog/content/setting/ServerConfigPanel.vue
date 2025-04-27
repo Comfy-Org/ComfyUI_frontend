@@ -18,14 +18,14 @@
           <div class="flex justify-end gap-2">
             <Button
               :label="$t('serverConfig.revertChanges')"
-              @click="revertChanges"
               outlined
+              @click="revertChanges"
             />
             <Button
               :label="$t('serverConfig.restart')"
-              @click="restartApp"
               outlined
               severity="danger"
+              @click="restartApp"
             />
           </div>
         </Message>
@@ -37,9 +37,9 @@
             <p>{{ commandLineArgs }}</p>
             <Button
               icon="pi pi-clipboard"
-              @click="copyCommandLineArgs"
               severity="secondary"
               text
+              @click="copyCommandLineArgs"
             />
           </div>
         </Message>
@@ -53,10 +53,10 @@
       <h3>{{ $t(`serverConfigCategories.${label}`, label) }}</h3>
       <div v-for="item in items" :key="item.name" class="mb-4">
         <FormItem
-          :item="translateItem(item)"
-          v-model:formValue="item.value"
           :id="item.id"
-          :labelClass="{
+          v-model:formValue="item.value"
+          :item="translateItem(item)"
+          :label-class="{
             'text-highlight': item.initialValue !== item.value
           }"
         />
@@ -97,16 +97,16 @@ const revertChanges = () => {
   serverConfigStore.revertChanges()
 }
 
-const restartApp = () => {
-  electronAPI().restartApp()
+const restartApp = async () => {
+  await electronAPI().restartApp()
 }
 
-watch(launchArgs, (newVal) => {
-  settingStore.set('Comfy.Server.LaunchArgs', newVal)
+watch(launchArgs, async (newVal) => {
+  await settingStore.set('Comfy.Server.LaunchArgs', newVal)
 })
 
-watch(serverConfigValues, (newVal) => {
-  settingStore.set('Comfy.Server.ServerConfigValues', newVal)
+watch(serverConfigValues, async (newVal) => {
+  await settingStore.set('Comfy.Server.ServerConfigValues', newVal)
 })
 
 const { copyToClipboard } = useCopyToClipboard()

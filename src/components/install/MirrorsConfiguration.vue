@@ -12,13 +12,14 @@
       <Divider v-if="index > 0" />
 
       <MirrorItem
-        :item="item"
         v-model="modelValue.value"
+        :item="item"
         @state-change="validationStates[index] = $event"
       />
     </template>
     <template #icons>
       <i
+        v-tooltip="validationStateTooltip"
         :class="{
           'pi pi-spin pi-spinner text-neutral-400':
             validationState === ValidationState.LOADING,
@@ -27,7 +28,6 @@
           'pi pi-times text-red-500':
             validationState === ValidationState.INVALID
         }"
-        v-tooltip="validationStateTooltip"
       />
     </template>
   </Panel>
@@ -35,9 +35,8 @@
 
 <script setup lang="ts">
 import {
-  CUDA_TORCH_URL,
-  NIGHTLY_CPU_TORCH_URL,
-  TorchDeviceType
+  TorchDeviceType,
+  TorchMirrorUrl
 } from '@comfyorg/comfyui-electron-types'
 import Divider from 'primevue/divider'
 import Panel from 'primevue/panel'
@@ -61,14 +60,14 @@ const getTorchMirrorItem = (device: TorchDeviceType): UVMirror => {
     case 'mps':
       return {
         settingId,
-        mirror: NIGHTLY_CPU_TORCH_URL,
-        fallbackMirror: NIGHTLY_CPU_TORCH_URL
+        mirror: TorchMirrorUrl.NightlyCpu,
+        fallbackMirror: TorchMirrorUrl.NightlyCpu
       }
     case 'nvidia':
       return {
         settingId,
-        mirror: CUDA_TORCH_URL,
-        fallbackMirror: CUDA_TORCH_URL
+        mirror: TorchMirrorUrl.Cuda,
+        fallbackMirror: TorchMirrorUrl.Cuda
       }
     case 'cpu':
     default:

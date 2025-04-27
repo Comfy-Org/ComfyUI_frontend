@@ -21,6 +21,83 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/customers': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Create a new customer
+     * @description Creates a new customer using the provided token. No request body is needed as user information is extracted from the token.
+     */
+    post: operations['createCustomer']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/customers/credit': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Initiates a Credit Purchase. */
+    post: operations['InitiateCreditPurchase']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/customers/billing': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Access customer billing portal
+     * @description Creates a session for the customer to access their billing portal where they can manage subscriptions, payment methods, and view invoices.
+     */
+    post: operations['AccessBillingPortal']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/customers/balance': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get customer's remaining balance
+     * @description Returns the customer's current remaining balance in microamount and its currency.
+     */
+    get: operations['GetCustomerBalance']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/upload-artifact': {
     parameters: {
       query?: never
@@ -440,6 +517,23 @@ export interface paths {
     put?: never
     /** Ban a publisher */
     post: operations['BanPublisher']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/publishers/{publisherId}/nodes/v2': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Retrieve all nodes */
+    get: operations['listNodesForPublisherV2']
+    put?: never
+    post?: never
     delete?: never
     options?: never
     head?: never
@@ -883,6 +977,422 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/proxy/minimax/video_generation': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Proxy request to Minimax for video generation
+     * @description Forwards video generation requests to Minimax's API and returns the task ID for asynchronous processing.
+     */
+    post: operations['minimaxVideoGeneration']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/minimax/query/video_generation': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Query status of a Minimax video generation task
+     * @description Proxies a request to Minimax to check the status of a video generation task
+     */
+    get: operations['getMinimaxVideoGeneration']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/minimax/files/retrieve': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Retrieve download URL for a Minimax file
+     * @description Proxies a request to Minimax to get the download URL for a file
+     */
+    post: operations['retrieveMinimaxFile']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/ideogram/generate': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Proxy request to Ideogram for image generation
+     * @description Forwards image generation requests to Ideogram's API and returns the results.
+     */
+    post: operations['ideogramGenerate']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/kling/v1/videos/text2video': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** KlingAI Query Task List */
+    get: operations['klingText2VideoQueryTaskList']
+    put?: never
+    /** KlingAI Create Video from Text */
+    post: operations['klingCreateVideoFromText']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/kling/v1/videos/text2video/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** KlingAI Query Single Task */
+    get: operations['klingText2VideoQuerySingleTask']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/kling/v1/videos/image2video': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** KlingAI Query Image2Video Task List */
+    get: operations['klingImage2VideoQueryTaskList']
+    put?: never
+    /** KlingAI Create Video from Image */
+    post: operations['klingCreateVideoFromImage']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/kling/v1/videos/image2video/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** KlingAI Query Single Image2Video Task */
+    get: operations['klingImage2VideoQuerySingleTask']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/kling/v1/videos/video-extend': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** KlingAI Query Video-Extend Task List */
+    get: operations['klingVideoExtendQueryTaskList']
+    put?: never
+    /** KlingAI Extend Video Duration */
+    post: operations['klingExtendVideo']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/kling/v1/videos/video-extend/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** KlingAI Query Single Video-Extend Task */
+    get: operations['klingVideoExtendQuerySingleTask']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/kling/v1/videos/lip-sync': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** KlingAI Query Lip-Sync Task List */
+    get: operations['klingLipSyncQueryTaskList']
+    put?: never
+    /** KlingAI Create Lip-Sync Video */
+    post: operations['klingCreateLipSyncVideo']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/kling/v1/videos/lip-sync/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** KlingAI Query Single Lip-Sync Task */
+    get: operations['klingLipSyncQuerySingleTask']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/kling/v1/videos/effects': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** KlingAI Query Video Effects Task List */
+    get: operations['klingVideoEffectsQueryTaskList']
+    put?: never
+    /** KlingAI Create Video Effects Task */
+    post: operations['klingCreateVideoEffects']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/kling/v1/videos/effects/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** KlingAI Query Single Video Effects Task */
+    get: operations['klingVideoEffectsQuerySingleTask']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/kling/v1/images/generations': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** KlingAI Query Image Generation Task List */
+    get: operations['klingImageGenerationsQueryTaskList']
+    put?: never
+    /** KlingAI Create Image Generation Task */
+    post: operations['klingCreateImageGeneration']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/kling/v1/images/generations/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** KlingAI Query Single Image Generation Task */
+    get: operations['klingImageGenerationsQuerySingleTask']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/kling/v1/images/kolors-virtual-try-on': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** KlingAI Query Virtual Try-On Task List */
+    get: operations['klingVirtualTryOnQueryTaskList']
+    put?: never
+    /** KlingAI Create Virtual Try-On Task */
+    post: operations['klingCreateVirtualTryOn']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/kling/v1/images/kolors-virtual-try-on/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** KlingAI Query Single Virtual Try-On Task */
+    get: operations['klingVirtualTryOnQuerySingleTask']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/kling/v1/account/costs': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** KlingAI Query Resource Package Information */
+    get: operations['klingQueryResourcePackages']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/bfl/flux-pro-1.1-ultra/generate': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Proxy request to BFL Flux Pro 1.1 Ultra for image generation
+     * @description Forwards image generation requests to BFL's Flux Pro 1.1 Ultra API and returns the results.
+     */
+    post: operations['bflFluxProGenerate']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/webhook/metronome/zero-balance': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** receive alert on remaining balance is 0 */
+    post: operations['metronomeZeroBalance']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/webhook/stripe/invoice-status': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Handle Stripe checkout.session.completed webhook event */
+    post: operations['StripeInvoiceStatus']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/recraft/image_generation': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Proxy request to Recraft for image generation
+     * @description Forwards image generation requests to Recraft's API and returns the generated images.
+     */
+    post: operations['recraftImageGeneration']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
 }
 export type webhooks = Record<string, never>
 export interface components {
@@ -1208,6 +1718,1185 @@ export interface components {
       /** @description The pip freeze output */
       pip_freeze?: string
     }
+    Customer: {
+      /** @description The firebase UID of the user */
+      id: string
+      /** @description The email address for this user */
+      email?: string
+      /** @description The name for this user */
+      name?: string
+      /**
+       * Format: date-time
+       * @description The date and time the user was created
+       */
+      createdAt?: string
+      /**
+       * Format: date-time
+       * @description The date and time the user was last updated
+       */
+      updatedAt?: string
+    }
+    /** @description Parameters for the Ideogram generation proxy request. Based on Ideogram's API. */
+    IdeogramGenerateRequest: {
+      /** @description The image generation request parameters. */
+      image_request: {
+        /** @description Required. The prompt to use to generate the image. */
+        prompt: string
+        /** @description Optional. The aspect ratio (e.g., 'ASPECT_16_9', 'ASPECT_1_1'). Cannot be used with resolution. Defaults to 'ASPECT_1_1' if unspecified. */
+        aspect_ratio?: string
+        /** @description Optional. The model used (e.g., 'V_2', 'V_2A_TURBO'). Defaults to 'V_2' if unspecified. */
+        model?: string
+        /** @description Optional. MagicPrompt usage ('AUTO', 'ON', 'OFF'). */
+        magic_prompt_option?: string
+        /**
+         * Format: int64
+         * @description Optional. A number between 0 and 2147483647.
+         */
+        seed?: number
+        /** @description Optional. Style type ('AUTO', 'GENERAL', 'REALISTIC', 'DESIGN', 'RENDER_3D', 'ANIME'). Only for models V_2 and above. */
+        style_type?: string
+        /** @description Optional. Description of what to exclude. Only for V_1, V_1_TURBO, V_2, V_2_TURBO. */
+        negative_prompt?: string
+        /**
+         * @description Optional. Number of images to generate (1-8). Defaults to 1.
+         * @default 1
+         */
+        num_images: number
+        /** @description Optional. Resolution (e.g., 'RESOLUTION_1024_1024'). Only for model V_2. Cannot be used with aspect_ratio. */
+        resolution?: string
+        /** @description Optional. Color palette object. Only for V_2, V_2_TURBO. */
+        color_palette?: {
+          [key: string]: unknown
+        }
+      }
+    }
+    /** @description Response from the Ideogram image generation API. */
+    IdeogramGenerateResponse: {
+      /**
+       * Format: date-time
+       * @description Timestamp when the generation was created.
+       */
+      created?: string
+      /** @description Array of generated image information. */
+      data?: {
+        /** @description The prompt used to generate this image. */
+        prompt?: string
+        /** @description The resolution of the generated image (e.g., '1024x1024'). */
+        resolution?: string
+        /** @description Indicates whether the image is considered safe. */
+        is_image_safe?: boolean
+        /** @description The seed value used for this generation. */
+        seed?: number
+        /** @description URL to the generated image. */
+        url?: string
+        /** @description The style type used for generation (e.g., 'REALISTIC', 'ANIME'). */
+        style_type?: string
+      }[]
+    }
+    KlingText2VideoRequest: {
+      /**
+       * @description Model Name
+       * @default kling-v1
+       * @enum {string}
+       */
+      model_name: 'kling-v1' | 'kling-v1-6'
+      /** @description Positive text prompt */
+      prompt?: string
+      /** @description Negative text prompt */
+      negative_prompt?: string
+      /**
+       * @description Flexibility in video generation
+       * @default 0.5
+       */
+      cfg_scale: number
+      /**
+       * @description Video generation mode
+       * @default std
+       * @enum {string}
+       */
+      mode: 'std' | 'pro'
+      camera_control?: {
+        /**
+         * @description Predefined camera movements type
+         * @enum {string}
+         */
+        type?:
+          | 'simple'
+          | 'down_back'
+          | 'forward_up'
+          | 'right_turn_forward'
+          | 'left_turn_forward'
+        config?: {
+          horizontal?: number
+          vertical?: number
+          pan?: number
+          tilt?: number
+          roll?: number
+          zoom?: number
+        }
+      }
+      /**
+       * @default 16:9
+       * @enum {string}
+       */
+      aspect_ratio: '16:9' | '9:16' | '1:1'
+      /**
+       * @default 5
+       * @enum {string}
+       */
+      duration: 5 | 10
+      /**
+       * Format: uri
+       * @description The callback notification address
+       */
+      callback_url?: string
+      /** @description Customized Task ID */
+      external_task_id?: string
+    }
+    KlingText2VideoResponse: {
+      /** @description Error code */
+      code?: number
+      /** @description Error message */
+      message?: string
+      /** @description Request ID */
+      request_id?: string
+      data?: {
+        /** @description Task ID */
+        task_id?: string
+        /** @enum {string} */
+        task_status?: 'submitted' | 'processing' | 'succeed' | 'failed'
+        task_info?: {
+          external_task_id?: string
+        }
+        /** @description Task creation time */
+        created_at?: number
+        /** @description Task update time */
+        updated_at?: number
+        task_result?: {
+          videos?: {
+            /** @description Generated video ID */
+            id?: string
+            /**
+             * Format: uri
+             * @description URL for generated video
+             */
+            url?: string
+            /** @description Total video duration */
+            duration?: string
+          }[]
+        }
+      }
+    }
+    KlingImage2VideoRequest: {
+      /**
+       * @description Model Name
+       * @default kling-v1
+       * @enum {string}
+       */
+      model_name: 'kling-v1' | 'kling-v1-6'
+      /**
+       * Format: uri
+       * @description URL of the image to be used for video generation
+       */
+      image_url?: string
+      /** @description Positive text prompt */
+      prompt?: string
+      /** @description Negative text prompt */
+      negative_prompt?: string
+      /**
+       * @description Flexibility in video generation
+       * @default 0.5
+       */
+      cfg_scale: number
+      /**
+       * @description Video generation mode
+       * @default std
+       * @enum {string}
+       */
+      mode: 'std' | 'pro'
+      camera_control?: {
+        /**
+         * @description Predefined camera movements type
+         * @enum {string}
+         */
+        type?:
+          | 'simple'
+          | 'down_back'
+          | 'forward_up'
+          | 'right_turn_forward'
+          | 'left_turn_forward'
+        config?: {
+          horizontal?: number
+          vertical?: number
+          pan?: number
+          tilt?: number
+          roll?: number
+          zoom?: number
+        }
+      }
+      /**
+       * @default 16:9
+       * @enum {string}
+       */
+      aspect_ratio: '16:9' | '9:16' | '1:1'
+      /**
+       * @default 5
+       * @enum {string}
+       */
+      duration: 5 | 10
+      /**
+       * Format: uri
+       * @description The callback notification address
+       */
+      callback_url?: string
+      /** @description Customized Task ID */
+      external_task_id?: string
+    }
+    KlingImage2VideoResponse: {
+      /** @description Error code */
+      code?: number
+      /** @description Error message */
+      message?: string
+      /** @description Request ID */
+      request_id?: string
+      data?: {
+        /** @description Task ID */
+        task_id?: string
+        /** @enum {string} */
+        task_status?: 'submitted' | 'processing' | 'succeed' | 'failed'
+        task_info?: {
+          external_task_id?: string
+        }
+        /** @description Task creation time */
+        created_at?: number
+        /** @description Task update time */
+        updated_at?: number
+        task_result?: {
+          videos?: {
+            /** @description Generated video ID */
+            id?: string
+            /**
+             * Format: uri
+             * @description URL for generated video
+             */
+            url?: string
+            /** @description Total video duration */
+            duration?: string
+          }[]
+        }
+      }
+    }
+    KlingVideoExtendRequest: {
+      /**
+       * @description Model Name
+       * @default kling-v1
+       * @enum {string}
+       */
+      model_name: 'kling-v1' | 'kling-v1-6'
+      /**
+       * Format: uri
+       * @description URL of the video to be extended
+       */
+      video_url?: string
+      /** @description Positive text prompt */
+      prompt?: string
+      /** @description Negative text prompt */
+      negative_prompt?: string
+      /**
+       * @description Flexibility in video generation
+       * @default 0.5
+       */
+      cfg_scale: number
+      /**
+       * @description Video generation mode
+       * @default std
+       * @enum {string}
+       */
+      mode: 'std' | 'pro'
+      camera_control?: {
+        /**
+         * @description Predefined camera movements type
+         * @enum {string}
+         */
+        type?:
+          | 'simple'
+          | 'down_back'
+          | 'forward_up'
+          | 'right_turn_forward'
+          | 'left_turn_forward'
+        config?: {
+          horizontal?: number
+          vertical?: number
+          pan?: number
+          tilt?: number
+          roll?: number
+          zoom?: number
+        }
+      }
+      /**
+       * @default 16:9
+       * @enum {string}
+       */
+      aspect_ratio: '16:9' | '9:16' | '1:1'
+      /**
+       * @default 5
+       * @enum {string}
+       */
+      duration: 5 | 10
+      /**
+       * Format: uri
+       * @description The callback notification address
+       */
+      callback_url?: string
+      /** @description Customized Task ID */
+      external_task_id?: string
+    }
+    KlingVideoExtendResponse: {
+      /** @description Error code */
+      code?: number
+      /** @description Error message */
+      message?: string
+      /** @description Request ID */
+      request_id?: string
+      data?: {
+        /** @description Task ID */
+        task_id?: string
+        /** @enum {string} */
+        task_status?: 'submitted' | 'processing' | 'succeed' | 'failed'
+        task_info?: {
+          external_task_id?: string
+        }
+        /** @description Task creation time */
+        created_at?: number
+        /** @description Task update time */
+        updated_at?: number
+        task_result?: {
+          videos?: {
+            /** @description Generated video ID */
+            id?: string
+            /**
+             * Format: uri
+             * @description URL for generated video
+             */
+            url?: string
+            /** @description Total video duration */
+            duration?: string
+          }[]
+        }
+      }
+    }
+    KlingLipSyncRequest: {
+      /**
+       * @description Model Name
+       * @default kling-v1
+       * @enum {string}
+       */
+      model_name: 'kling-v1' | 'kling-v1-6'
+      /**
+       * Format: uri
+       * @description URL of the video to be lip-synced
+       */
+      video_url?: string
+      /**
+       * Format: uri
+       * @description URL of the audio to be used for lip-syncing
+       */
+      audio_url?: string
+      /** @description Positive text prompt */
+      prompt?: string
+      /** @description Negative text prompt */
+      negative_prompt?: string
+      /**
+       * @description Flexibility in video generation
+       * @default 0.5
+       */
+      cfg_scale: number
+      /**
+       * @description Video generation mode
+       * @default std
+       * @enum {string}
+       */
+      mode: 'std' | 'pro'
+      camera_control?: {
+        /**
+         * @description Predefined camera movements type
+         * @enum {string}
+         */
+        type?:
+          | 'simple'
+          | 'down_back'
+          | 'forward_up'
+          | 'right_turn_forward'
+          | 'left_turn_forward'
+        config?: {
+          horizontal?: number
+          vertical?: number
+          pan?: number
+          tilt?: number
+          roll?: number
+          zoom?: number
+        }
+      }
+      /**
+       * @default 16:9
+       * @enum {string}
+       */
+      aspect_ratio: '16:9' | '9:16' | '1:1'
+      /**
+       * @default 5
+       * @enum {string}
+       */
+      duration: 5 | 10
+      /**
+       * Format: uri
+       * @description The callback notification address
+       */
+      callback_url?: string
+      /** @description Customized Task ID */
+      external_task_id?: string
+    }
+    KlingLipSyncResponse: {
+      /** @description Error code */
+      code?: number
+      /** @description Error message */
+      message?: string
+      /** @description Request ID */
+      request_id?: string
+      data?: {
+        /** @description Task ID */
+        task_id?: string
+        /** @enum {string} */
+        task_status?: 'submitted' | 'processing' | 'succeed' | 'failed'
+        task_info?: {
+          external_task_id?: string
+        }
+        /** @description Task creation time */
+        created_at?: number
+        /** @description Task update time */
+        updated_at?: number
+        task_result?: {
+          videos?: {
+            /** @description Generated video ID */
+            id?: string
+            /**
+             * Format: uri
+             * @description URL for generated video
+             */
+            url?: string
+            /** @description Total video duration */
+            duration?: string
+          }[]
+        }
+      }
+    }
+    KlingVideoEffectsRequest: {
+      /**
+       * @description Model Name
+       * @default kling-v1
+       * @enum {string}
+       */
+      model_name: 'kling-v1' | 'kling-v1-6'
+      /**
+       * Format: uri
+       * @description URL of the video to be used for effects generation
+       */
+      video_url?: string
+      /** @description Positive text prompt */
+      prompt?: string
+      /** @description Negative text prompt */
+      negative_prompt?: string
+      /**
+       * @description Flexibility in video generation
+       * @default 0.5
+       */
+      cfg_scale: number
+      /**
+       * @description Video generation mode
+       * @default std
+       * @enum {string}
+       */
+      mode: 'std' | 'pro'
+      camera_control?: {
+        /**
+         * @description Predefined camera movements type
+         * @enum {string}
+         */
+        type?:
+          | 'simple'
+          | 'down_back'
+          | 'forward_up'
+          | 'right_turn_forward'
+          | 'left_turn_forward'
+        config?: {
+          horizontal?: number
+          vertical?: number
+          pan?: number
+          tilt?: number
+          roll?: number
+          zoom?: number
+        }
+      }
+      /**
+       * @default 16:9
+       * @enum {string}
+       */
+      aspect_ratio: '16:9' | '9:16' | '1:1'
+      /**
+       * @default 5
+       * @enum {string}
+       */
+      duration: 5 | 10
+      /**
+       * Format: uri
+       * @description The callback notification address
+       */
+      callback_url?: string
+      /** @description Customized Task ID */
+      external_task_id?: string
+    }
+    KlingVideoEffectsResponse: {
+      /** @description Error code */
+      code?: number
+      /** @description Error message */
+      message?: string
+      /** @description Request ID */
+      request_id?: string
+      data?: {
+        /** @description Task ID */
+        task_id?: string
+        /** @enum {string} */
+        task_status?: 'submitted' | 'processing' | 'succeed' | 'failed'
+        task_info?: {
+          external_task_id?: string
+        }
+        /** @description Task creation time */
+        created_at?: number
+        /** @description Task update time */
+        updated_at?: number
+        task_result?: {
+          videos?: {
+            /** @description Generated video ID */
+            id?: string
+            /**
+             * Format: uri
+             * @description URL for generated video
+             */
+            url?: string
+            /** @description Total video duration */
+            duration?: string
+          }[]
+        }
+      }
+    }
+    KlingImageGenerationsRequest: {
+      /**
+       * @description Model Name
+       * @default kling-v1
+       * @enum {string}
+       */
+      model_name: 'kling-v1' | 'kling-v1-5'
+      /** @description Positive text prompt */
+      prompt: string
+      /** @description Negative text prompt */
+      negative_prompt?: string
+      /** @description Reference Image - Base64 encoded string or image URL */
+      image?: string
+      /**
+       * @description Image reference type
+       * @enum {string}
+       */
+      image_reference?: 'subject' | 'face'
+      /**
+       * @description Reference intensity for user-uploaded images
+       * @default 0.5
+       */
+      image_fidelity: number
+      /**
+       * @description Subject reference similarity
+       * @default 0.45
+       */
+      human_fidelity: number
+      /**
+       * @description Number of generated images
+       * @default 1
+       */
+      n: number
+      /**
+       * @description Aspect ratio of the generated images
+       * @default 16:9
+       * @enum {string}
+       */
+      aspect_ratio:
+        | '16:9'
+        | '9:16'
+        | '1:1'
+        | '4:3'
+        | '3:4'
+        | '3:2'
+        | '2:3'
+        | '21:9'
+      /**
+       * Format: uri
+       * @description The callback notification address
+       */
+      callback_url?: string
+    }
+    KlingImageGenerationsResponse: {
+      /** @description Error code */
+      code?: number
+      /** @description Error message */
+      message?: string
+      /** @description Request ID */
+      request_id?: string
+      data?: {
+        /** @description Task ID */
+        task_id?: string
+        /** @enum {string} */
+        task_status?: 'submitted' | 'processing' | 'succeed' | 'failed'
+        /** @description Task status information */
+        task_status_msg?: string
+        /** @description Task creation time */
+        created_at?: number
+        /** @description Task update time */
+        updated_at?: number
+        task_result?: {
+          images?: {
+            /** @description Image Number (0-9) */
+            index?: number
+            /**
+             * Format: uri
+             * @description URL for generated image
+             */
+            url?: string
+          }[]
+        }
+      }
+    }
+    KlingVirtualTryOnRequest: {
+      /**
+       * @description Model Name
+       * @default kolors-virtual-try-on-v1
+       * @enum {string}
+       */
+      model_name: 'kolors-virtual-try-on-v1' | 'kolors-virtual-try-on-v1-5'
+      /** @description Reference human image - Base64 encoded string or image URL */
+      human_image: string
+      /** @description Reference clothing image - Base64 encoded string or image URL */
+      cloth_image?: string
+      /**
+       * Format: uri
+       * @description The callback notification address
+       */
+      callback_url?: string
+    }
+    KlingVirtualTryOnResponse: {
+      /** @description Error code */
+      code?: number
+      /** @description Error message */
+      message?: string
+      /** @description Request ID */
+      request_id?: string
+      data?: {
+        /** @description Task ID */
+        task_id?: string
+        /** @enum {string} */
+        task_status?: 'submitted' | 'processing' | 'succeed' | 'failed'
+        /** @description Task status information */
+        task_status_msg?: string
+        /** @description Task creation time */
+        created_at?: number
+        /** @description Task update time */
+        updated_at?: number
+        task_result?: {
+          images?: {
+            /** @description Image Number */
+            index?: number
+            /**
+             * Format: uri
+             * @description URL for generated image
+             */
+            url?: string
+          }[]
+        }
+      }
+    }
+    KlingResourcePackageResponse: {
+      /** @description Error code; 0 indicates success */
+      code?: number
+      /** @description Error information */
+      message?: string
+      /** @description Request ID, generated by the system, used to track requests and troubleshoot problems */
+      request_id?: string
+      data?: {
+        /** @description Error code; 0 indicates success */
+        code?: number
+        /** @description Error information */
+        msg?: string
+        /** @description Resource package list */
+        resource_pack_subscribe_infos?: {
+          /** @description Resource package name */
+          resource_pack_name?: string
+          /** @description Resource package ID */
+          resource_pack_id?: string
+          /**
+           * @description Resource package type (decreasing_total=decreasing total, constant_period=constant periodicity)
+           * @enum {string}
+           */
+          resource_pack_type?: 'decreasing_total' | 'constant_period'
+          /**
+           * Format: float
+           * @description Total quantity
+           */
+          total_quantity?: number
+          /**
+           * Format: float
+           * @description Remaining quantity (updated with a 12-hour delay)
+           */
+          remaining_quantity?: number
+          /**
+           * Format: int64
+           * @description Purchase time, Unix timestamp in ms
+           */
+          purchase_time?: number
+          /**
+           * Format: int64
+           * @description Effective time, Unix timestamp in ms
+           */
+          effective_time?: number
+          /**
+           * Format: int64
+           * @description Expiration time, Unix timestamp in ms
+           */
+          invalid_time?: number
+          /**
+           * @description Resource Package Status
+           * @enum {string}
+           */
+          status?: 'toBeOnline' | 'online' | 'expired' | 'runOut'
+        }[]
+      }
+    }
+    StripeEvent: {
+      id: string
+      /** @enum {string} */
+      object: 'event'
+      api_version?: string
+      created?: number
+      data: {
+        object?: components['schemas']['StripePaymentIntent']
+      }
+      livemode?: boolean
+      pending_webhooks?: number
+      request?: components['schemas']['StripeRequestInfo']
+      /** @enum {string} */
+      type: 'payment_intent.succeeded'
+    }
+    StripeRequestInfo: {
+      id?: string | null
+      idempotency_key?: string | null
+    }
+    StripePaymentIntent: {
+      id?: string
+      /** @enum {string} */
+      object?: 'payment_intent'
+      amount?: number
+      amount_capturable?: number
+      amount_details?: components['schemas']['StripeAmountDetails']
+      amount_received?: number
+      application?: string | null
+      application_fee_amount?: number | null
+      automatic_payment_methods?: unknown
+      canceled_at?: number | null
+      cancellation_reason?: string | null
+      capture_method?: string
+      charges?: components['schemas']['StripeChargeList']
+      client_secret?: string
+      confirmation_method?: string
+      created?: number
+      currency?: string
+      customer?: string | null
+      description?: string | null
+      invoice?: string | null
+      last_payment_error?: unknown
+      latest_charge?: string
+      livemode?: boolean
+      metadata?: Record<string, never>
+      next_action?: unknown
+      on_behalf_of?: unknown
+      payment_method?: string
+      payment_method_configuration_details?: unknown
+      payment_method_options?: components['schemas']['StripePaymentMethodOptions']
+      payment_method_types?: string[]
+      processing?: unknown
+      receipt_email?: string | null
+      review?: unknown
+      setup_future_usage?: unknown
+      shipping?: components['schemas']['StripeShipping']
+      source?: unknown
+      statement_descriptor?: unknown
+      statement_descriptor_suffix?: unknown
+      status?: string
+      transfer_data?: unknown
+      transfer_group?: unknown
+    }
+    StripeAmountDetails: {
+      tip?: Record<string, never>
+    }
+    StripeChargeList: {
+      object?: string
+      data?: components['schemas']['StripeCharge'][]
+      has_more?: boolean
+      total_count?: number
+      url?: string
+    }
+    StripeCharge: {
+      id?: string
+      /** @enum {string} */
+      object?: 'charge'
+      amount?: number
+      amount_captured?: number
+      amount_refunded?: number
+      application?: string | null
+      application_fee?: string | null
+      application_fee_amount?: number | null
+      balance_transaction?: string | null
+      billing_details?: components['schemas']['StripeBillingDetails']
+      calculated_statement_descriptor?: string
+      captured?: boolean
+      created?: number
+      currency?: string
+      customer?: string | null
+      description?: string | null
+      destination?: unknown
+      dispute?: unknown
+      disputed?: boolean
+      failure_balance_transaction?: unknown
+      failure_code?: unknown
+      failure_message?: unknown
+      fraud_details?: Record<string, never>
+      invoice?: unknown
+      livemode?: boolean
+      metadata?: Record<string, never>
+      on_behalf_of?: unknown
+      order?: unknown
+      outcome?: components['schemas']['StripeOutcome']
+      paid?: boolean
+      payment_intent?: string
+      payment_method?: string
+      payment_method_details?: components['schemas']['StripePaymentMethodDetails']
+      radar_options?: Record<string, never>
+      receipt_email?: string | null
+      receipt_number?: string | null
+      receipt_url?: string
+      refunded?: boolean
+      refunds?: components['schemas']['StripeRefundList']
+      review?: unknown
+      shipping?: components['schemas']['StripeShipping']
+      source?: unknown
+      source_transfer?: unknown
+      statement_descriptor?: unknown
+      statement_descriptor_suffix?: unknown
+      status?: string
+      transfer_data?: unknown
+      transfer_group?: unknown
+    }
+    StripeBillingDetails: {
+      address?: components['schemas']['StripeAddress']
+      email?: string | null
+      name?: string | null
+      phone?: string | null
+      tax_id?: unknown
+    }
+    StripeAddress: {
+      city?: string | null
+      country?: string | null
+      line1?: string | null
+      line2?: string | null
+      postal_code?: string | null
+      state?: string | null
+    }
+    StripeOutcome: {
+      advice_code?: unknown
+      network_advice_code?: unknown
+      network_decline_code?: unknown
+      network_status?: string
+      reason?: unknown
+      risk_level?: string
+      risk_score?: number
+      seller_message?: string
+      type?: string
+    }
+    StripePaymentMethodDetails: {
+      card?: components['schemas']['StripeCardDetails']
+      type?: string
+    }
+    StripeCardDetails: {
+      amount_authorized?: number
+      authorization_code?: unknown
+      brand?: string
+      checks?: {
+        address_line1_check?: unknown
+        address_postal_code_check?: unknown
+        cvc_check?: string
+      }
+      country?: string
+      exp_month?: number
+      exp_year?: number
+      extended_authorization?: {
+        status?: string
+      }
+      fingerprint?: string
+      funding?: string
+      incremental_authorization?: {
+        status?: string
+      }
+      installments?: unknown
+      last4?: string
+      mandate?: unknown
+      multicapture?: {
+        status?: string
+      }
+      network?: string
+      network_token?: {
+        used?: boolean
+      }
+      network_transaction_id?: string
+      overcapture?: {
+        maximum_amount_capturable?: number
+        status?: string
+      }
+      regulated_status?: string
+      three_d_secure?: unknown
+      wallet?: unknown
+    }
+    StripeRefundList: {
+      object?: string
+      data?: Record<string, never>[]
+      has_more?: boolean
+      total_count?: number
+      url?: string
+    }
+    StripePaymentMethodOptions: {
+      card?: {
+        installments?: unknown
+        mandate_options?: unknown
+        network?: unknown
+        request_three_d_secure?: string
+      }
+    }
+    StripeShipping: {
+      address?: components['schemas']['StripeAddress']
+      carrier?: string | null
+      name?: string
+      phone?: string | null
+      tracking_number?: string | null
+    }
+    /** @description Parameters for the Minimax video generation proxy request. */
+    MinimaxVideoGenerationRequest: {
+      /**
+       * @description Required. ID of model. Options: T2V-01-Director, I2V-01-Director, S2V-01, I2V-01, I2V-01-live, T2V-01
+       * @enum {string}
+       */
+      model:
+        | 'T2V-01-Director'
+        | 'I2V-01-Director'
+        | 'S2V-01'
+        | 'I2V-01'
+        | 'I2V-01-live'
+        | 'T2V-01'
+      /** @description Description of the video. Should be less than 2000 characters. Supports camera movement instructions in [brackets]. */
+      prompt?: string
+      /**
+       * @description If true (default), the model will automatically optimize the prompt. Set to false for more precise control.
+       * @default true
+       */
+      prompt_optimizer: boolean
+      /** @description URL or base64 encoding of the first frame image. Required when model is I2V-01, I2V-01-Director, or I2V-01-live. */
+      first_frame_image?: string
+      /** @description Only available when model is S2V-01. The model will generate a video based on the subject uploaded through this parameter. */
+      subject_reference?: {
+        /** @description URL or base64 encoding of the subject reference image. */
+        image?: string
+        /** @description URL or base64 encoding of the mask for the subject reference image. */
+        mask?: string
+      }[]
+      /** @description Optional. URL to receive real-time status updates about the video generation task. */
+      callback_url?: string
+    }
+    /** @description Common response structure used by Minimax APIs */
+    MinimaxBaseResponse: {
+      /** @description Status code. 0 indicates success, other values indicate errors. */
+      status_code: number
+      /** @description Specific error details or success message. */
+      status_msg: string
+    }
+    /** @description Response from the Minimax video generation API. */
+    MinimaxVideoGenerationResponse: {
+      /** @description The task ID for the asynchronous video generation task. */
+      task_id: string
+      base_resp: components['schemas']['MinimaxBaseResponse']
+    }
+    /** @description Response from retrieving a Minimax file download URL. */
+    MinimaxFileRetrieveResponse: {
+      file: {
+        /** @description Unique identifier for the file */
+        file_id?: number
+        /** @description File size in bytes */
+        bytes?: number
+        /** @description Unix timestamp when the file was created, in seconds */
+        created_at?: number
+        /** @description The name of the file */
+        filename?: string
+        /** @description The purpose of using the file */
+        purpose?: string
+        /** @description The URL to download the video */
+        download_url?: string
+      }
+      base_resp: components['schemas']['MinimaxBaseResponse']
+    }
+    /** @description Response from querying a Minimax video generation task status. */
+    MinimaxTaskResultResponse: {
+      /** @description The task ID being queried. */
+      task_id: string
+      /**
+       * @description Task status: 'Queueing' (in queue), 'Preparing' (task is preparing), 'Processing' (generating), 'Success' (task completed successfully), or 'Fail' (task failed).
+       * @enum {string}
+       */
+      status: 'Queueing' | 'Preparing' | 'Processing' | 'Success' | 'Fail'
+      /** @description After the task status changes to Success, this field returns the file ID corresponding to the generated video. */
+      file_id?: string
+      base_resp: components['schemas']['MinimaxBaseResponse']
+    }
+    /** @description Request body for the BFL Flux Pro 1.1 Ultra image generation API. */
+    BFLFluxProGenerateRequest: {
+      /** @description The text prompt for image generation. */
+      prompt: string
+      /** @description The negative prompt for image generation. */
+      negative_prompt?: string
+      /** @description The width of the image to generate. */
+      width: number
+      /** @description The height of the image to generate. */
+      height: number
+      /** @description The number of inference steps. */
+      num_inference_steps?: number
+      /** @description The guidance scale for generation. */
+      guidance_scale?: number
+      /** @description The seed value for reproducibility. */
+      seed?: number
+      /** @description The number of images to generate. */
+      num_images?: number
+    }
+    /** @description Response from the BFL Flux Pro 1.1 Ultra image generation API. */
+    BFLFluxProGenerateResponse: {
+      /** @description The unique identifier for the generation task. */
+      id: string
+      /** @description URL to poll for the generation result. */
+      polling_url: string
+    }
+    /** @description Response from the BFL Flux Pro 1.1 Ultra status check API. */
+    BFLFluxProStatusResponse: {
+      /** @description The unique identifier for the generation task. */
+      id: string
+      /** @description The status of the task (e.g., "Pending", "Completed", "Failed"). */
+      status: string
+      /** @description The result of the task (null if not completed). */
+      result?: Record<string, never> | null
+      /** @description The progress of the task (0.0 to 1.0). */
+      progress: number
+      /** @description Additional details about the task (null if not available). */
+      details?: Record<string, never> | null
+    }
+    /** @description Parameters for the Recraft image generation proxy request. */
+    RecraftImageGenerationRequest: {
+      /** @description The text prompt describing the image to generate */
+      prompt: string
+      /** @description The model to use for generation (e.g., "recraftv3") */
+      model: string
+      /** @description The style to apply to the generated image (e.g., "digital_illustration") */
+      style?: string
+      /** @description The size of the generated image (e.g., "1024x1024") */
+      size: string
+      /** @description The number of images to generate */
+      n: number
+    }
+    /** @description Response from the Recraft image generation API. */
+    RecraftImageGenerationResponse: {
+      /** @description Unix timestamp when the generation was created */
+      created: number
+      /** @description Number of credits used for the generation */
+      credits: number
+      /** @description Array of generated image information */
+      data: {
+        /** @description Unique identifier for the generated image */
+        image_id?: string
+        /** @description URL to access the generated image */
+        url?: string
+      }[]
+    }
+    KlingErrorResponse: {
+      /** @description Error code value as defined in the API documentation */
+      code: number
+      /** @description Human-readable error message */
+      message: string
+      /** @description Request ID for tracking and troubleshooting */
+      request_id: string
+    }
+    KlingAuthenticationError: components['schemas']['KlingErrorResponse'] & {
+      /**
+       * @description - 1000: Authentication failed
+       *     - 1001: Authorization is empty
+       *     - 1002: Authorization is invalid
+       *     - 1003: Authorization is not yet valid
+       *     - 1004: Authorization has expired
+       *
+       * @enum {unknown}
+       */
+      code?: 1000 | 1001 | 1002 | 1003 | 1004
+    }
+    KlingAccountError: components['schemas']['KlingErrorResponse'] & {
+      /**
+       * @description - 1100: Account exception
+       *     - 1101: Account in arrears (postpaid scenario)
+       *     - 1102: Resource pack depleted or expired (prepaid scenario)
+       *     - 1103: Unauthorized access to requested resource
+       *
+       * @enum {unknown}
+       */
+      code?: 1100 | 1101 | 1102 | 1103
+    }
+    KlingRequestError: components['schemas']['KlingErrorResponse'] & {
+      /**
+       * @description - 1200: Invalid request parameters
+       *     - 1201: Invalid parameters
+       *     - 1202: Invalid request method
+       *     - 1203: Requested resource does not exist
+       *
+       * @enum {unknown}
+       */
+      code?: 1200 | 1201 | 1202 | 1203
+    }
+    KlingStrategyError: components['schemas']['KlingErrorResponse'] & {
+      /**
+       * @description - 1300: Trigger platform strategy
+       *     - 1301: Trigger content security policy
+       *     - 1302: API request too frequent
+       *     - 1303: Concurrency/QPS exceeds limit
+       *     - 1304: Trigger IP whitelist policy
+       *
+       * @enum {unknown}
+       */
+      code?: 1300 | 1301 | 1302 | 1303 | 1304
+    }
+    KlingServerError: components['schemas']['KlingErrorResponse'] & {
+      /**
+       * @description - 5000: Internal server error
+       *     - 5001: Service temporarily unavailable
+       *     - 5002: Server internal timeout
+       *
+       * @enum {unknown}
+       */
+      code?: 5000 | 5001 | 5002
+    }
   }
   responses: never
   parameters: never
@@ -1248,6 +2937,219 @@ export interface operations {
           [name: string]: unknown
         }
         content?: never
+      }
+    }
+  }
+  createCustomer: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Customer created successfully */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Customer']
+        }
+      }
+      /** @description Bad request, invalid token or user already exists */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Unauthorized or invalid token */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  InitiateCreditPurchase: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': {
+          /**
+           * Format: int64
+           * @description the amount of the checkout transaction in micro value
+           */
+          amount_micros: number
+          /** @description the currency used in the checkout transaction */
+          currency: string
+        }
+      }
+    }
+    responses: {
+      /** @description Customer Checkout created successfully */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /** @description the url to redirect the customer */
+            checkout_url?: string
+          }
+        }
+      }
+      /** @description Bad request, invalid token or user already exists */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Unauthorized or invalid token */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  AccessBillingPortal: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: {
+      content: {
+        'application/json': {
+          /** @description Optional URL to redirect the customer after they're done with the billing portal */
+          return_url?: string
+        }
+      }
+    }
+    responses: {
+      /** @description Billing portal session created successfully */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /** @description The URL to redirect the customer to the billing portal */
+            billing_portal_url?: string
+          }
+        }
+      }
+      /** @description Bad request, invalid input */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Unauthorized or invalid token */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  GetCustomerBalance: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Customer balance retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /**
+             * Format: int64
+             * @description The remaining balance in microamount (1/1,000,000 of the currency unit)
+             */
+            amount_micros: number
+            /** @description The currency code (e.g., "usd") */
+            currency: string
+          }
+        }
+      }
+      /** @description Unauthorized or invalid token */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Customer not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
     }
   }
@@ -1685,6 +3587,63 @@ export interface operations {
       }
       /** @description Publisher not found */
       404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  listNodesForPublisherV2: {
+    parameters: {
+      query?: {
+        /** @description Number of nodes to return per page */
+        include_banned?: boolean
+        /** @description Page number of the nodes list */
+        page?: number
+        /** @description Number of nodes to return per page */
+        limit?: number
+      }
+      header?: never
+      path: {
+        publisherId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description List of all nodes */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /** @description Total number of nodes available */
+            total?: number
+            nodes?: components['schemas']['Node'][]
+            /** @description Current page number */
+            page?: number
+            /** @description Maximum number of nodes per page */
+            limit?: number
+            /** @description Total number of pages available */
+            totalPages?: number
+          }
+        }
+      }
+      /** @description Bad request, invalid input data. */
+      400: {
         headers: {
           [name: string]: unknown
         }
@@ -3334,6 +5293,2814 @@ export interface operations {
       }
       /** @description Internal server error */
       500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  minimaxVideoGeneration: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MinimaxVideoGenerationRequest']
+      }
+    }
+    responses: {
+      /** @description Successful response from Minimax proxy */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MinimaxVideoGenerationResponse']
+        }
+      }
+      /** @description Bad Request (invalid input to proxy) */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Payment Required */
+      402: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Rate limit exceeded (either from proxy or Minimax) */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Internal Server Error (proxy or upstream issue) */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Bad Gateway (error communicating with Minimax) */
+      502: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Gateway Timeout (Minimax took too long to respond) */
+      504: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  getMinimaxVideoGeneration: {
+    parameters: {
+      query: {
+        /** @description The task ID to be queried */
+        task_id: string
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful response with task status */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MinimaxTaskResultResponse']
+        }
+      }
+      /** @description Bad Request (invalid input to proxy) */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Payment Required */
+      402: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Rate limit exceeded (either from proxy or Minimax) */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Internal Server Error (proxy or upstream issue) */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Bad Gateway (error communicating with Minimax) */
+      502: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Gateway Timeout (Minimax took too long to respond) */
+      504: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  retrieveMinimaxFile: {
+    parameters: {
+      query: {
+        /** @description Unique identifier for the file, obtained from the generation response */
+        file_id: number
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful response with file download URL */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MinimaxFileRetrieveResponse']
+        }
+      }
+      /** @description Bad Request (invalid input to proxy) */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Payment Required */
+      402: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Rate limit exceeded (either from proxy or Minimax) */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Internal Server Error (proxy or upstream issue) */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Bad Gateway (error communicating with Minimax) */
+      502: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Gateway Timeout (Minimax took too long to respond) */
+      504: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  ideogramGenerate: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['IdeogramGenerateRequest']
+      }
+    }
+    responses: {
+      /** @description Successful response from Ideogram proxy */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['IdeogramGenerateResponse']
+        }
+      }
+      /** @description Bad Request (invalid input to proxy) */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Payment Required */
+      402: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Rate limit exceeded (either from proxy or Ideogram) */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Internal Server Error (proxy or upstream issue) */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Bad Gateway (error communicating with Ideogram) */
+      502: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Gateway Timeout (Ideogram took too long to respond) */
+      504: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  klingText2VideoQueryTaskList: {
+    parameters: {
+      query?: {
+        /** @description Page number */
+        pageNum?: number
+        /** @description Data volume per page */
+        pageSize?: number
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful response (Request successful) */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingText2VideoResponse']
+        }
+      }
+      /** @description Invalid request parameters */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingRequestError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAuthenticationError']
+        }
+      }
+      /** @description Unauthorized access to requested resource */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAccountError']
+        }
+      }
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingRequestError']
+        }
+      }
+      /** @description Account exception or Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingAccountError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Service temporarily unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Server timeout */
+      504: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+    }
+  }
+  klingCreateVideoFromText: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** @description Create task for generating video from text */
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['KlingText2VideoRequest']
+      }
+    }
+    responses: {
+      /** @description Successful response (Request successful) */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingText2VideoResponse']
+        }
+      }
+      /** @description Invalid request parameters */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingRequestError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAuthenticationError']
+        }
+      }
+      /** @description Unauthorized access to requested resource */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAccountError']
+        }
+      }
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingRequestError']
+        }
+      }
+      /** @description Account exception or Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingAccountError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Service temporarily unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Server timeout */
+      504: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+    }
+  }
+  klingText2VideoQuerySingleTask: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description Task ID or external_task_id */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful response (Request successful) */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingText2VideoResponse']
+        }
+      }
+      /** @description Invalid request parameters */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingRequestError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAuthenticationError']
+        }
+      }
+      /** @description Unauthorized access to requested resource */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAccountError']
+        }
+      }
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingRequestError']
+        }
+      }
+      /** @description Account exception or Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingAccountError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Service temporarily unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Server timeout */
+      504: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+    }
+  }
+  klingImage2VideoQueryTaskList: {
+    parameters: {
+      query?: {
+        /** @description Page number */
+        pageNum?: number
+        /** @description Data volume per page */
+        pageSize?: number
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful response (Request successful) */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingImage2VideoResponse']
+        }
+      }
+      /** @description Invalid request parameters */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingRequestError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAuthenticationError']
+        }
+      }
+      /** @description Unauthorized access to requested resource */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAccountError']
+        }
+      }
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingRequestError']
+        }
+      }
+      /** @description Account exception or Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingAccountError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Service temporarily unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Server timeout */
+      504: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+    }
+  }
+  klingCreateVideoFromImage: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** @description Create task for generating video from image */
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['KlingImage2VideoRequest']
+      }
+    }
+    responses: {
+      /** @description Successful response (Request successful) */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingImage2VideoResponse']
+        }
+      }
+      /** @description Invalid request parameters */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingRequestError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAuthenticationError']
+        }
+      }
+      /** @description Unauthorized access to requested resource */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAccountError']
+        }
+      }
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingRequestError']
+        }
+      }
+      /** @description Account exception or Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingAccountError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Service temporarily unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Server timeout */
+      504: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+    }
+  }
+  klingImage2VideoQuerySingleTask: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description Task ID or external_task_id */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful response (Request successful) */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingImage2VideoResponse']
+        }
+      }
+      /** @description Invalid request parameters */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingRequestError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAuthenticationError']
+        }
+      }
+      /** @description Unauthorized access to requested resource */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAccountError']
+        }
+      }
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingRequestError']
+        }
+      }
+      /** @description Account exception or Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingAccountError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Service temporarily unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Server timeout */
+      504: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+    }
+  }
+  klingVideoExtendQueryTaskList: {
+    parameters: {
+      query?: {
+        /** @description Page number */
+        pageNum?: number
+        /** @description Data volume per page */
+        pageSize?: number
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful response (Request successful) */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingVideoExtendResponse']
+        }
+      }
+      /** @description Invalid request parameters */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingRequestError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAuthenticationError']
+        }
+      }
+      /** @description Unauthorized access to requested resource */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAccountError']
+        }
+      }
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingRequestError']
+        }
+      }
+      /** @description Account exception or Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingAccountError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Service temporarily unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Server timeout */
+      504: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+    }
+  }
+  klingExtendVideo: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** @description Create task for extending video duration */
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['KlingVideoExtendRequest']
+      }
+    }
+    responses: {
+      /** @description Successful response (Request successful) */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingVideoExtendResponse']
+        }
+      }
+      /** @description Invalid request parameters */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingRequestError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAuthenticationError']
+        }
+      }
+      /** @description Unauthorized access to requested resource */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAccountError']
+        }
+      }
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingRequestError']
+        }
+      }
+      /** @description Account exception or Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingAccountError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Service temporarily unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Server timeout */
+      504: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+    }
+  }
+  klingVideoExtendQuerySingleTask: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description Task ID */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful response (Request successful) */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingVideoExtendResponse']
+        }
+      }
+      /** @description Invalid request parameters */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingRequestError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAuthenticationError']
+        }
+      }
+      /** @description Unauthorized access to requested resource */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAccountError']
+        }
+      }
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingRequestError']
+        }
+      }
+      /** @description Account exception or Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingAccountError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Service temporarily unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Server timeout */
+      504: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+    }
+  }
+  klingLipSyncQueryTaskList: {
+    parameters: {
+      query?: {
+        /** @description Page number */
+        pageNum?: number
+        /** @description Data volume per page */
+        pageSize?: number
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful response (Request successful) */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingLipSyncResponse']
+        }
+      }
+      /** @description Invalid request parameters */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingRequestError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAuthenticationError']
+        }
+      }
+      /** @description Unauthorized access to requested resource */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAccountError']
+        }
+      }
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingRequestError']
+        }
+      }
+      /** @description Account exception or Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingAccountError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Service temporarily unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Server timeout */
+      504: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+    }
+  }
+  klingCreateLipSyncVideo: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** @description Create task for generating lip-sync video */
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['KlingLipSyncRequest']
+      }
+    }
+    responses: {
+      /** @description Successful response (Request successful) */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingLipSyncResponse']
+        }
+      }
+      /** @description Invalid request parameters */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingRequestError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAuthenticationError']
+        }
+      }
+      /** @description Unauthorized access to requested resource */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAccountError']
+        }
+      }
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingRequestError']
+        }
+      }
+      /** @description Account exception or Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingAccountError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Service temporarily unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Server timeout */
+      504: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+    }
+  }
+  klingLipSyncQuerySingleTask: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description Task ID or external_task_id */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful response (Request successful) */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingLipSyncResponse']
+        }
+      }
+      /** @description Invalid request parameters */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingRequestError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAuthenticationError']
+        }
+      }
+      /** @description Unauthorized access to requested resource */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAccountError']
+        }
+      }
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingRequestError']
+        }
+      }
+      /** @description Account exception or Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingAccountError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Service temporarily unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Server timeout */
+      504: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+    }
+  }
+  klingVideoEffectsQueryTaskList: {
+    parameters: {
+      query?: {
+        /** @description Page number */
+        pageNum?: number
+        /** @description Data volume per page */
+        pageSize?: number
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful response (Request successful) */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingVideoEffectsResponse']
+        }
+      }
+      /** @description Invalid request parameters */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingRequestError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAuthenticationError']
+        }
+      }
+      /** @description Unauthorized access to requested resource */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAccountError']
+        }
+      }
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingRequestError']
+        }
+      }
+      /** @description Account exception or Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingAccountError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Service temporarily unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Server timeout */
+      504: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+    }
+  }
+  klingCreateVideoEffects: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** @description Create task for generating video with effects */
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['KlingVideoEffectsRequest']
+      }
+    }
+    responses: {
+      /** @description Successful response (Request successful) */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingVideoEffectsResponse']
+        }
+      }
+      /** @description Invalid request parameters */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingRequestError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAuthenticationError']
+        }
+      }
+      /** @description Unauthorized access to requested resource */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAccountError']
+        }
+      }
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingRequestError']
+        }
+      }
+      /** @description Account exception or Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingAccountError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Service temporarily unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Server timeout */
+      504: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+    }
+  }
+  klingVideoEffectsQuerySingleTask: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description Task ID or external_task_id */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful response (Request successful) */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingVideoEffectsResponse']
+        }
+      }
+      /** @description Invalid request parameters */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingRequestError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAuthenticationError']
+        }
+      }
+      /** @description Unauthorized access to requested resource */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAccountError']
+        }
+      }
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingRequestError']
+        }
+      }
+      /** @description Account exception or Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingAccountError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Service temporarily unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Server timeout */
+      504: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+    }
+  }
+  klingImageGenerationsQueryTaskList: {
+    parameters: {
+      query?: {
+        /** @description Page number */
+        pageNum?: number
+        /** @description Data volume per page */
+        pageSize?: number
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful response (Request successful) */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingImageGenerationsResponse']
+        }
+      }
+      /** @description Invalid request parameters */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingRequestError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAuthenticationError']
+        }
+      }
+      /** @description Unauthorized access to requested resource */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAccountError']
+        }
+      }
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingRequestError']
+        }
+      }
+      /** @description Account exception or Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingAccountError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Service temporarily unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Server timeout */
+      504: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+    }
+  }
+  klingCreateImageGeneration: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** @description Create task for generating images */
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['KlingImageGenerationsRequest']
+      }
+    }
+    responses: {
+      /** @description Successful response (Request successful) */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingImageGenerationsResponse']
+        }
+      }
+      /** @description Invalid request parameters */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingRequestError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAuthenticationError']
+        }
+      }
+      /** @description Unauthorized access to requested resource */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAccountError']
+        }
+      }
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingRequestError']
+        }
+      }
+      /** @description Account exception or Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingAccountError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Service temporarily unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Server timeout */
+      504: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+    }
+  }
+  klingImageGenerationsQuerySingleTask: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description Task ID */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful response (Request successful) */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingImageGenerationsResponse']
+        }
+      }
+      /** @description Invalid request parameters */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingRequestError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAuthenticationError']
+        }
+      }
+      /** @description Unauthorized access to requested resource */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAccountError']
+        }
+      }
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingRequestError']
+        }
+      }
+      /** @description Account exception or Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingAccountError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Service temporarily unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Server timeout */
+      504: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+    }
+  }
+  klingVirtualTryOnQueryTaskList: {
+    parameters: {
+      query?: {
+        /** @description Page number */
+        pageNum?: number
+        /** @description Data volume per page */
+        pageSize?: number
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful response (Request successful) */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingVirtualTryOnResponse']
+        }
+      }
+      /** @description Invalid request parameters */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingRequestError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAuthenticationError']
+        }
+      }
+      /** @description Unauthorized access to requested resource */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAccountError']
+        }
+      }
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingRequestError']
+        }
+      }
+      /** @description Account exception or Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingAccountError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Service temporarily unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Server timeout */
+      504: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+    }
+  }
+  klingCreateVirtualTryOn: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** @description Create task for virtual try-on of clothing on human images */
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['KlingVirtualTryOnRequest']
+      }
+    }
+    responses: {
+      /** @description Successful response (Request successful) */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingVirtualTryOnResponse']
+        }
+      }
+      /** @description Invalid request parameters */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingRequestError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAuthenticationError']
+        }
+      }
+      /** @description Unauthorized access to requested resource */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAccountError']
+        }
+      }
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingRequestError']
+        }
+      }
+      /** @description Account exception or Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingAccountError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Service temporarily unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Server timeout */
+      504: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+    }
+  }
+  klingVirtualTryOnQuerySingleTask: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description Task ID */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful response (Request successful) */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingVirtualTryOnResponse']
+        }
+      }
+      /** @description Invalid request parameters */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingRequestError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAuthenticationError']
+        }
+      }
+      /** @description Unauthorized access to requested resource */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAccountError']
+        }
+      }
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingRequestError']
+        }
+      }
+      /** @description Account exception or Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingAccountError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Service temporarily unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Server timeout */
+      504: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+    }
+  }
+  klingQueryResourcePackages: {
+    parameters: {
+      query: {
+        start_time: number
+        end_time: number
+        resource_pack_name?: string
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful response (Request successful) */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingResourcePackageResponse']
+        }
+      }
+      /** @description Invalid request parameters */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingRequestError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAuthenticationError']
+        }
+      }
+      /** @description Unauthorized access to requested resource */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingAccountError']
+        }
+      }
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingRequestError']
+        }
+      }
+      /** @description Account exception or Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['KlingAccountError']
+            | components['schemas']['KlingStrategyError']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Service temporarily unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+      /** @description Server timeout */
+      504: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingServerError']
+        }
+      }
+    }
+  }
+  bflFluxProGenerate: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['BFLFluxProGenerateRequest']
+      }
+    }
+    responses: {
+      /** @description Successful response from BFL Flux Pro proxy */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['BFLFluxProGenerateResponse']
+        }
+      }
+      /** @description Bad Request (invalid input to proxy) */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Payment Required */
+      402: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Rate limit exceeded (either from proxy or BFL) */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Internal Server Error (proxy or upstream issue) */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Bad Gateway (error communicating with BFL) */
+      502: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Gateway Timeout (BFL took too long to respond) */
+      504: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  metronomeZeroBalance: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': {
+          properties?: {
+            /** @description the metronome customer id */
+            customer_id?: string
+            /** @description the customer remaining balance */
+            remaining_balance?: number
+          }
+        }
+      }
+    }
+    responses: {
+      /** @description Webhook processed succesfully */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['IdeogramGenerateResponse']
+        }
+      }
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Internal Server Error (proxy or upstream issue) */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  StripeInvoiceStatus: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['StripeEvent']
+      }
+    }
+    responses: {
+      /** @description Webhook processed successfully */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['IdeogramGenerateResponse']
+        }
+      }
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Internal Server Error (proxy or upstream issue) */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  recraftImageGeneration: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RecraftImageGenerationRequest']
+      }
+    }
+    responses: {
+      /** @description Successful response from Recraft proxy */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RecraftImageGenerationResponse']
+        }
+      }
+      /** @description Bad Request (invalid input to proxy) */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Payment Required */
+      402: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Internal Server Error (proxy or upstream issue) */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Bad Gateway (error communicating with Recraft) */
+      502: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Gateway Timeout (Recraft took too long to respond) */
+      504: {
         headers: {
           [name: string]: unknown
         }

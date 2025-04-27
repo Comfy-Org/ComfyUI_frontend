@@ -1,17 +1,17 @@
 <template>
   <div
+    v-show="widgetState.visible"
+    ref="widgetElement"
     class="dom-widget"
     :title="tooltip"
-    ref="widgetElement"
     :style="style"
-    v-show="widgetState.visible"
   >
     <component
-      v-if="isComponentWidget(widget)"
       :is="widget.component"
-      :modelValue="widget.value"
-      @update:modelValue="emit('update:widgetValue', $event)"
+      v-if="isComponentWidget(widget)"
+      :model-value="widget.value"
       :widget="widget"
+      @update:model-value="emit('update:widgetValue', $event)"
     />
   </div>
 </template>
@@ -37,19 +37,22 @@ const { widget, widgetState } = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:widgetValue', value: string | object): void
+  'update:widgetValue': [value: string | object]
 }>()
 
 const widgetElement = ref<HTMLElement | undefined>()
 
-const { style: positionStyle, updatePositionWithTransform } =
-  useAbsolutePosition()
+const { style: positionStyle, updatePosition } = useAbsolutePosition({
+  useTransform: true
+})
 const { style: clippingStyle, updateClipPath } = useDomClipping()
 const style = computed<CSSProperties>(() => ({
   ...positionStyle.value,
   ...(enableDomClipping.value ? clippingStyle.value : {}),
   zIndex: widgetState.zIndex,
-  pointerEvents: widgetState.readonly ? 'none' : 'auto'
+  pointerEvents:
+    widgetState.readonly || widget.computedDisabled ? 'none' : 'auto',
+  opacity: widget.computedDisabled ? 0.5 : 1
 }))
 
 const canvasStore = useCanvasStore()
@@ -92,7 +95,7 @@ const updateDomClipping = () => {
 watch(
   () => widgetState,
   (newState) => {
-    updatePositionWithTransform(newState)
+    updatePosition(newState)
     if (enableDomClipping.value) {
       updateDomClipping()
     }

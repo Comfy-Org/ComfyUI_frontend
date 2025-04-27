@@ -25,7 +25,11 @@ import type {
   User,
   UserDataFullInfo
 } from '@/schemas/apiSchema'
-import type { ComfyWorkflowJSON, NodeId } from '@/schemas/comfyWorkflowSchema'
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON,
+  NodeId
+} from '@/schemas/comfyWorkflowSchema'
 import {
   type ComfyNodeDef,
   validateComfyNodeDef
@@ -34,13 +38,27 @@ import { WorkflowTemplates } from '@/types/workflowTemplateTypes'
 
 interface QueuePromptRequestBody {
   client_id: string
-  // Mapping from node id to node info + input values
-  // TODO: Type this.
-  prompt: Record<number, any>
+  prompt: ComfyApiWorkflow
   extra_data: {
     extra_pnginfo: {
       workflow: ComfyWorkflowJSON
     }
+    /**
+     * The auth token for the comfy org account if the user is logged in.
+     *
+     * Backend node can access this token by specifying following input:
+     * ```python
+      @classmethod
+      def INPUT_TYPES(s):
+        return {
+          "hidden": { "auth_token": "AUTH_TOKEN_COMFY_ORG"}
+        }
+
+      def execute(self, auth_token: str):
+        print(f"Auth token: {auth_token}")
+     * ```
+     */
+    auth_token_comfy_org?: string
   }
   front?: boolean
   number?: number
@@ -79,6 +97,8 @@ interface ApiMessage<T extends keyof ApiCalls> {
   type: T
   data: ApiCalls[T]
 }
+
+export class UnauthorizedError extends Error {}
 
 /** Ensures workers get a fair shake. */
 type Unionize<T> = T[keyof T]
@@ -155,11 +175,12 @@ export class PromptExecutionError extends Error {
   }
 
   override toString() {
-    let message = super.message
+    let message = ''
     if (typeof this.response.error === 'string') {
-      message += ': ' + this.response.error
-    } else if (this.response.error.details) {
-      message += ': ' + this.response.error.details
+      message += this.response.error
+    } else if (this.response.error) {
+      message +=
+        this.response.error.message + ': ' + this.response.error.details
     }
 
     for (const [_, nodeError] of Object.entries(
@@ -194,6 +215,20 @@ export class ComfyApi extends EventTarget {
   socket: WebSocket | null = null
 
   reportedUnknownMessageTypes = new Set<string>()
+
+  /**
+   * The auth token for the comfy org account if the user is logged in.
+   * This is only used for {@link queuePrompt} now. It is not directly
+   * passed as parameter to the function because some custom nodes are hijacking
+   * {@link queuePrompt} improperly, which causes extra parameters to be lost
+   * in the function call chain.
+   *
+   * Ref: https://cs.comfy.org/search?q=context:global+%22api.queuePrompt+%3D%22&patternType=keyword&sm=0
+   *
+   * TODO: Move this field to parameter of {@link queuePrompt} once all
+   * custom nodes are patched.
+   */
+  authToken?: string
 
   constructor() {
     super()
@@ -501,15 +536,17 @@ export class ComfyApi extends EventTarget {
    */
   async queuePrompt(
     number: number,
-    {
-      output,
-      workflow
-    }: { output: Record<number, any>; workflow: ComfyWorkflowJSON }
+    data: { output: ComfyApiWorkflow; workflow: ComfyWorkflowJSON }
   ): Promise<PromptResponse> {
+    const { output: prompt, workflow } = data
+
     const body: QueuePromptRequestBody = {
       client_id: this.clientId ?? '', // TODO: Unify clientId access
-      prompt: output,
-      extra_data: { extra_pnginfo: { workflow } }
+      prompt,
+      extra_data: {
+        auth_token_comfy_org: this.authToken,
+        extra_pnginfo: { workflow }
+      }
     }
 
     if (number === -1) {
@@ -733,7 +770,12 @@ export class ComfyApi extends EventTarget {
    * @returns { Promise<string, unknown> } A dictionary of id -> value
    */
   async getSettings(): Promise<Settings> {
-    return (await this.fetchApi('/settings')).json()
+    const resp = await this.fetchApi('/settings')
+
+    if (resp.status == 401) {
+      throw new UnauthorizedError(resp.statusText)
+    }
+    return await resp.json()
   }
 
   /**
@@ -839,52 +881,6 @@ export class ComfyApi extends EventTarget {
       }
     )
     return resp
-  }
-
-  /**
-   * @overload
-   * Lists user data files for the current user
-   * @param { string } dir The directory in which to list files
-   * @param { boolean } [recurse] If the listing should be recursive
-   * @param { true } [split] If the paths should be split based on the os path separator
-   * @returns { Promise<string[][]> } The list of split file paths in the format [fullPath, ...splitPath]
-   */
-  /**
-   * @overload
-   * Lists user data files for the current user
-   * @param { string } dir The directory in which to list files
-   * @param { boolean } [recurse] If the listing should be recursive
-   * @param { false | undefined } [split] If the paths should be split based on the os path separator
-   * @returns { Promise<string[]> } The list of files
-   */
-  async listUserData(
-    dir: string,
-    recurse: boolean,
-    split?: true
-  ): Promise<string[][]>
-  async listUserData(
-    dir: string,
-    recurse: boolean,
-    split?: false
-  ): Promise<string[]>
-  /**
-   * @deprecated Use `listUserDataFullInfo` instead.
-   */
-  async listUserData(dir: string, recurse: boolean, split?: boolean) {
-    const resp = await this.fetchApi(
-      `/userdata?${new URLSearchParams({
-        recurse: recurse ? 'true' : 'false',
-        dir,
-        split: split ? 'true' : 'false'
-      })}`
-    )
-    if (resp.status === 404) return []
-    if (resp.status !== 200) {
-      throw new Error(
-        `Error getting user data list '${dir}': ${resp.status} ${resp.statusText}`
-      )
-    }
-    return resp.json()
   }
 
   async listUserDataFullInfo(dir: string): Promise<UserDataFullInfo[]> {

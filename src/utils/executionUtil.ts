@@ -6,6 +6,8 @@ import type {
   ComfyWorkflowJSON
 } from '@/schemas/comfyWorkflowSchema'
 
+import { compressWidgetInputSlots } from './litegraphUtil'
+
 /**
  * Converts the current graph workflow for sending to the API.
  * Note: Node widgets are updated before serialization to prepare queueing.
@@ -37,6 +39,10 @@ export const graphToPrompt = async (
       delete slot.localized_name
     }
   }
+
+  compressWidgetInputSlots(workflow)
+  workflow.extra ??= {}
+  workflow.extra.frontendVersion = __COMFYUI_FRONTEND_VERSION__
 
   const output: ComfyApiWorkflow = {}
   // Process nodes in order of execution

@@ -1,5 +1,6 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
 import axios from 'axios'
+import _ from 'lodash'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
@@ -40,6 +41,7 @@ export class ComfyNodeDefImpl
   readonly deprecated: boolean
   readonly experimental: boolean
   readonly output_node: boolean
+  readonly api_node: boolean
   /**
    * @deprecated Use `inputs` instead
    */
@@ -69,7 +71,41 @@ export class ComfyNodeDefImpl
   // ComfyNodeDefImpl fields
   readonly nodeSource: NodeSource
 
-  constructor(obj: ComfyNodeDefV1) {
+  /**
+   * @internal
+   * Migrate default input options to forceInput.
+   */
+  static #migrateDefaultInput(nodeDef: ComfyNodeDefV1): ComfyNodeDefV1 {
+    const def = _.cloneDeep(nodeDef)
+    def.input ??= {}
+    // For required inputs, now we have the input socket always present. Specifying
+    // it now has no effect.
+    for (const [name, spec] of Object.entries(def.input.required ?? {})) {
+      const inputOptions = spec[1]
+      if (inputOptions && inputOptions.defaultInput) {
+        console.warn(
+          `Use of defaultInput on required input ${nodeDef.python_module}:${nodeDef.name}:${name} is deprecated. Please drop the defaultInput option.`
+        )
+      }
+    }
+    // For optional inputs, defaultInput is used to distinguish the null state.
+    // We migrate it to forceInput. One example is the "seed_override" input usage.
+    // User can connect the socket to override the seed.
+    for (const [name, spec] of Object.entries(def.input.optional ?? {})) {
+      const inputOptions = spec[1]
+      if (inputOptions && inputOptions.defaultInput) {
+        console.warn(
+          `Use of defaultInput on optional input ${nodeDef.python_module}:${nodeDef.name}:${name} is deprecated. Please use forceInput instead.`
+        )
+        inputOptions.forceInput = true
+      }
+    }
+    return def
+  }
+
+  constructor(def: ComfyNodeDefV1) {
+    const obj = ComfyNodeDefImpl.#migrateDefaultInput(def)
+
     /**
      * Assign extra fields to `this` for compatibility with group node feature.
      * TODO: Remove this once group node feature is removed.
@@ -86,6 +122,7 @@ export class ComfyNodeDefImpl
     this.experimental =
       obj.experimental ?? obj.category.startsWith('_for_testing')
     this.output_node = obj.output_node
+    this.api_node = !!obj.api_node
     this.input = obj.input ?? {}
     this.output = obj.output ?? []
     this.output_is_list = obj.output_is_list

@@ -10,7 +10,9 @@
       <TaskListStatusIcon :state="runner.state" :loading="isLoading" />
     </td>
     <td>
-      <p class="inline-block">{{ task.name }}</p>
+      <p class="inline-block">
+        {{ task.name }}
+      </p>
       <Button
         class="inline-block mx-2"
         type="button"
@@ -30,8 +32,8 @@
         :label="task.button?.text"
         :severity
         icon-pos="right"
-        @click="(event) => $emit('execute', event)"
         :loading="isExecuting"
+        @click="(event) => $emit('execute', event)"
       />
     </td>
   </tr>
@@ -45,7 +47,7 @@ import { computed, ref } from 'vue'
 
 import { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
 import type { MaintenanceTask } from '@/types/desktop/maintenanceTypes'
-import { VueSeverity } from '@/types/primeVueTypes'
+import { PrimeVueSeverity } from '@/types/primeVueTypes'
 import { useMinLoadingDurationRef } from '@/utils/refUtil'
 
 import TaskListStatusIcon from './TaskListStatusIcon.vue'
@@ -64,7 +66,7 @@ defineEmits<{
 }>()
 
 // Binding
-const severity = computed<VueSeverity>(() =>
+const severity = computed<PrimeVueSeverity>(() =>
   runner.value.state === 'error' || runner.value.state === 'warning'
     ? 'primary'
     : 'secondary'

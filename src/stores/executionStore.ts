@@ -3,7 +3,6 @@ import { computed, ref } from 'vue'
 
 import type {
   ExecutedWsMessage,
-  ExecutingWsMessage,
   ExecutionCachedWsMessage,
   ExecutionErrorWsMessage,
   ExecutionStartWsMessage,
@@ -37,7 +36,7 @@ export const useExecutionStore = defineStore('execution', () => {
   const queuedPrompts = ref<Record<NodeId, QueuedPrompt>>({})
   const lastNodeErrors = ref<Record<NodeId, NodeError> | null>(null)
   const lastExecutionError = ref<ExecutionErrorWsMessage | null>(null)
-  const executingNodeId = ref<string | null>(null)
+  const executingNodeId = ref<NodeId | null>(null)
   const executingNode = computed<ComfyNode | null>(() => {
     if (!executingNodeId.value) return null
 
@@ -142,7 +141,7 @@ export const useExecutionStore = defineStore('execution', () => {
     activePrompt.value.nodes[e.detail.node] = true
   }
 
-  function handleExecuting(e: CustomEvent<ExecutingWsMessage>) {
+  function handleExecuting(e: CustomEvent<NodeId | null>) {
     // Clear the current node progress when a new node starts executing
     _executingNodeProgress.value = null
 
@@ -152,8 +151,8 @@ export const useExecutionStore = defineStore('execution', () => {
       // Seems sometimes nodes that are cached fire executing but not executed
       activePrompt.value.nodes[executingNodeId.value] = true
     }
-    executingNodeId.value = e.detail ? String(e.detail) : null
-    if (!executingNodeId.value) {
+    executingNodeId.value = e.detail
+    if (executingNodeId.value === null) {
       if (activePromptId.value) {
         delete queuedPrompts.value[activePromptId.value]
       }

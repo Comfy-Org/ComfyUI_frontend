@@ -184,6 +184,19 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     return getKeybindingsByCommandId(commandId)[0]
   }
 
+  /**
+   * Adds a keybinding to the specified target reference.
+   *
+   * @param target - A ref that holds a record of keybindings. The keys represent
+   * serialized key combos, and the values are `KeybindingImpl` objects.
+   * @param keybinding - The keybinding to add, represented as a `KeybindingImpl` object.
+   * @param options - An options object.
+   * @param options.existOk - If true, allows overwriting an existing keybinding with the
+   * same combo. Defaults to false.
+   *
+   * @throws {Error} Throws an error if a keybinding with the same combo already exists in
+   * the target and `existOk` is false.
+   */
   function addKeybinding(
     target: Ref<Record<string, KeybindingImpl>>,
     keybinding: KeybindingImpl,
@@ -265,9 +278,50 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     return true
   }
 
-  function resetKeybindings() {
+  function resetAllKeybindings() {
     userKeybindings.value = {}
     userUnsetKeybindings.value = {}
+  }
+
+  /**
+   * Resets the keybinding for a given command to its default value.
+   *
+   * @param commandId - The commandId of the keybind to be reset
+   * @returns `true` if changes were made, `false` if not
+   */
+  function resetKeybindingForCommand(commandId: string): boolean {
+    const currentKeybinding = getKeybindingByCommandId(commandId)
+    const defaultKeybinding =
+      defaultKeybindingsByCommandId.value[commandId]?.[0]
+
+    // No default keybinding exists, need to remove any user binding
+    if (!defaultKeybinding) {
+      if (currentKeybinding) {
+        unsetKeybinding(currentKeybinding)
+        return true
+      }
+      return false
+    }
+
+    // Current binding equals default binding, no changes needed
+    if (currentKeybinding?.equals(defaultKeybinding)) {
+      return false
+    }
+
+    // Unset current keybinding if exists
+    if (currentKeybinding) {
+      unsetKeybinding(currentKeybinding)
+    }
+
+    // Remove the unset record if it exists
+    const serializedCombo = defaultKeybinding.combo.serialize()
+    if (
+      userUnsetKeybindings.value[serializedCombo]?.equals(defaultKeybinding)
+    ) {
+      delete userUnsetKeybindings.value[serializedCombo]
+    }
+
+    return true
   }
 
   function isCommandKeybindingModified(commandId: string): boolean {
@@ -293,7 +347,8 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     addUserKeybinding,
     unsetKeybinding,
     updateKeybindingOnCommand,
-    resetKeybindings,
+    resetAllKeybindings,
+    resetKeybindingForCommand,
     isCommandKeybindingModified
   }
 })

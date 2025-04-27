@@ -1,4 +1,58 @@
 {
+  "apiNodesCostBreakdown": {
+    "costPerRun": "実行あたりのコスト",
+    "title": "APIノード",
+    "totalCost": "合計コスト"
+  },
+  "apiNodesSignInDialog": {
+    "message": "このワークフローにはAPIノードが含まれており、実行するためにはアカウントにサインインする必要があります。",
+    "title": "APIノードを使用するためにはサインインが必要です"
+  },
+  "auth": {
+    "login": {
+      "andText": "および",
+      "confirmPasswordLabel": "パスワードの確認",
+      "confirmPasswordPlaceholder": "もう一度同じパスワードを入力してください",
+      "emailLabel": "メール",
+      "emailPlaceholder": "メールアドレスを入力してください",
+      "failed": "ログイン失敗",
+      "forgotPassword": "パスワードを忘れましたか？",
+      "forgotPasswordError": "パスワードリセット用メールの送信に失敗しました",
+      "loginButton": "ログイン",
+      "loginWithGithub": "Githubでログイン",
+      "loginWithGoogle": "Googleでログイン",
+      "newUser": "新規ユーザーですか？",
+      "orContinueWith": "または以下で続ける",
+      "passwordLabel": "パスワード",
+      "passwordPlaceholder": "パスワードを入力してください",
+      "passwordResetSent": "パスワードリセット用メールを送信しました",
+      "passwordResetSentDetail": "パスワードをリセットするためのリンクが記載されたメールをご確認ください。",
+      "privacyLink": "プライバシーポリシー",
+      "signInOrSignUp": "サインイン / サインアップ",
+      "signUp": "サインアップ",
+      "success": "ログイン成功",
+      "termsLink": "利用規約",
+      "termsText": "「次へ」または「サインアップ」をクリックすると、私たちの",
+      "title": "アカウントにログインする"
+    },
+    "signOut": {
+      "signOut": "ログアウト",
+      "success": "正常にサインアウトしました",
+      "successDetail": "アカウントからサインアウトしました。"
+    },
+    "signup": {
+      "alreadyHaveAccount": "すでにアカウントをお持ちですか？",
+      "emailLabel": "メール",
+      "emailPlaceholder": "メールアドレスを入力してください",
+      "passwordLabel": "パスワード",
+      "passwordPlaceholder": "新しいパスワードを入力してください",
+      "signIn": "サインイン",
+      "signUpButton": "サインアップ",
+      "signUpWithGithub": "Githubでサインアップ",
+      "signUpWithGoogle": "Googleでサインアップ",
+      "title": "アカウントを作成する"
+    }
+  },
   "clipboard": {
     "errorMessage": "クリップボードへのコピーに失敗しました",
     "errorNotSupported": "お使いのブラウザではクリップボードAPIがサポートされていません",
@@ -20,8 +74,6 @@
     "yellow": "黄色"
   },
   "contextMenu": {
-    " to input": " 入力へ",
-    " to widget": " ウィジェットへ",
     "Add Group": "グループを追加",
     "Add Group For Selected Nodes": "選択したノードのグループを追加",
     "Add Node": "ノードを追加",
@@ -29,9 +81,6 @@
     "Clone": "クローン",
     "Collapse": "折りたたむ",
     "Colors": "色",
-    "Convert ": "変換 ",
-    "Convert Input to Widget": "入力をウィジェットに変換",
-    "Convert Widget to Input": "ウィジェットを入力に変換",
     "Convert to Group Node": "グループノードに変換",
     "Copy (Clipspace)": "コピー (Clipspace)",
     "Expand": "展開",
@@ -51,6 +100,24 @@
     "Shapes": "形",
     "Title": "タイトル",
     "Unpin": "ピンを解除"
+  },
+  "credits": {
+    "credits": "クレジット",
+    "faqs": "よくある質問",
+    "invoiceHistory": "請求履歴",
+    "lastUpdated": "最終更新",
+    "messageSupport": "サポートにメッセージ",
+    "purchaseCredits": "クレジットを購入",
+    "topUp": {
+      "buyNow": "今すぐ購入",
+      "insufficientMessage": "このワークフローを実行するのに十分なクレジットがありません。",
+      "insufficientTitle": "クレジット不足",
+      "maxAmount": "（最大 $1,000 USD）",
+      "quickPurchase": "クイック購入",
+      "seeDetails": "詳細を見る",
+      "topUp": "チャージ"
+    },
+    "yourCreditBalance": "あなたのクレジット残高"
   },
   "dataTypes": {
     "AUDIO": "オーディオ",
@@ -97,7 +164,9 @@
   "desktopUpdate": {
     "description": "ComfyUIデスクトップは新しい依存関係をインストールしています。これには数分かかる場合があります。",
     "terminalDefaultMessage": "更新からの任意のコンソール出力はここに表示されます。",
-    "title": "ComfyUIデスクトップの更新"
+    "title": "ComfyUIデスクトップの更新",
+    "updateAvailableMessage": "アップデートが利用可能です。今すぐ再起動してアップデートしますか？",
+    "updateFoundTitle": "アップデートが見つかりました (v{version})"
   },
   "downloadGit": {
     "gitWebsite": "Gitをダウンロード",
@@ -126,6 +195,7 @@
     "about": "情報",
     "add": "追加",
     "all": "すべて",
+    "amount": "量",
     "apply": "適用する",
     "back": "戻る",
     "cancel": "キャンセル",
@@ -177,9 +247,11 @@
     "installing": "インストール中",
     "interrupted": "中断されました",
     "keybinding": "キーバインディング",
+    "learnMore": "詳細を学ぶ",
     "loadAllFolders": "すべてのフォルダーを読み込む",
     "loadWorkflow": "ワークフローを読み込む",
     "loading": "読み込み中",
+    "login": "ログイン",
     "logs": "ログ",
     "migrate": "移行する",
     "missing": "不足している",
@@ -204,7 +276,8 @@
     "reportIssueTooltip": "エラーレポートをComfy Orgに送信",
     "reportSent": "レポートが送信されました",
     "reset": "リセット",
-    "resetKeybindingsTooltip": "キーバインディングをデフォルトにリセット",
+    "resetAll": "すべてリセット",
+    "resetAllKeybindingsTooltip": "すべてのキーバインディングをデフォルトにリセット",
     "restart": "再起動",
     "resultsCount": "{count}件の結果が見つかりました",
     "save": "保存",
@@ -219,14 +292,18 @@
     "settings": "設定",
     "showReport": "レポートを表示",
     "sort": "並び替え",
+    "source": "ソース",
     "status": "ステータス",
     "success": "成功",
     "systemInfo": "システム情報",
     "terminal": "ターミナル",
+    "unknownError": "不明なエラー",
     "update": "更新",
+    "updateAvailable": "更新が利用可能",
     "updated": "更新済み",
     "updating": "更新中",
     "upload": "アップロード",
+    "user": "ユーザー",
     "videoFailedToLoad": "ビデオの読み込みに失敗しました",
     "workflow": "ワークフロー"
   },
@@ -345,19 +422,34 @@
   },
   "issueReport": {
     "contactFollowUp": "フォローアップのために私に連絡する",
+    "contactSupportDescription": "下記のフォームにご報告内容をご記入ください",
+    "contactSupportTitle": "サポートに連絡",
+    "describeTheProblem": "問題の内容を記述してください",
+    "email": "メールアドレス",
     "feedbackTitle": "フィードバックを提供してComfyUIの改善にご協力ください",
     "helpFix": "これを修正するのを助ける",
+    "helpTypes": {
+      "billingPayments": "請求／支払い",
+      "bugReport": "バグ報告",
+      "giveFeedback": "フィードバックを送る",
+      "loginAccessIssues": "ログイン／アクセスの問題",
+      "somethingElse": "その他"
+    },
     "notifyResolve": "解決したときに通知する",
     "provideAdditionalDetails": "追加の詳細を提供する（オプション）",
     "provideEmail": "あなたのメールアドレスを教えてください（オプション）",
     "rating": "評価",
+    "selectIssue": "問題を選択してください",
     "stackTrace": "スタックトレース",
     "submitErrorReport": "エラーレポートを提出する（オプション）",
     "systemStats": "システム統計",
     "validation": {
       "invalidEmail": "有効なメールアドレスを入力してください",
-      "maxLength": "メッセージが長すぎます"
-    }
+      "maxLength": "メッセージが長すぎます",
+      "selectIssueType": "問題の種類を選択してください"
+    },
+    "whatCanWeInclude": "レポートに含める内容を指定してください",
+    "whatDoYouNeedHelpWith": "どのようなサポートが必要ですか？"
   },
   "load3d": {
     "applyingTexture": "テクスチャを適用中...",
@@ -372,6 +464,12 @@
     "lightIntensity": "光の強度",
     "loadingModel": "3Dモデルを読み込んでいます...",
     "materialMode": "マテリアルモード",
+    "materialModes": {
+      "depth": "深度",
+      "normal": "ノーマル",
+      "original": "オリジナル",
+      "wireframe": "ワイヤーフレーム"
+    },
     "model": "モデル",
     "previewOutput": "出力のプレビュー",
     "removeBackgroundImage": "背景画像を削除",
@@ -426,6 +524,8 @@
     "loadingVersions": "バージョンを読み込んでいます...",
     "nightlyVersion": "ナイトリー",
     "noDescription": "説明はありません",
+    "noNodesFound": "ノードが見つかりません",
+    "noNodesFoundDescription": "パックのノードは解析できなかったか、パックがフロントエンドの拡張機能のみでノードがない可能性があります。",
     "noResultsFound": "検索に一致する結果が見つかりませんでした。",
     "nodePack": "ノードパック",
     "packsSelected": "選択したパック",
@@ -434,8 +534,10 @@
     "searchPlaceholder": "検索",
     "selectVersion": "バージョンを選択",
     "sort": {
+      "created": "最新",
       "downloads": "最も人気",
-      "rating": "評価"
+      "publisher": "出版社",
+      "updated": "最近更新"
     },
     "status": {
       "active": "アクティブ",
@@ -510,6 +612,7 @@
     "Bypass/Unbypass Selected Nodes": "選択したノードのバイパス/バイパス解除",
     "Canvas Toggle Link Visibility": "キャンバスのリンク表示を切り替え",
     "Canvas Toggle Lock": "キャンバスのロックを切り替え",
+    "Check for Updates": "更新を確認する",
     "Clear Pending Tasks": "保留中のタスクをクリア",
     "Clear Workflow": "ワークフローをクリア",
     "Clipspace": "クリップスペース",
@@ -519,6 +622,7 @@
     "ComfyUI Docs": "ComfyUIのドキュメント",
     "ComfyUI Forum": "ComfyUI フォーラム",
     "ComfyUI Issues": "ComfyUIの問題",
+    "Contact Support": "サポートに連絡",
     "Convert selected nodes to group node": "選択したノードをグループノードに変換",
     "Custom Nodes Manager": "カスタムノードマネージャ",
     "Delete Selected Items": "選択したアイテムを削除",
@@ -545,6 +649,7 @@
     "Open Logs Folder": "ログフォルダを開く",
     "Open Models Folder": "モデルフォルダを開く",
     "Open Outputs Folder": "出力フォルダを開く",
+    "Open Sign In Dialog": "サインインダイアログを開く",
     "Open extra_model_paths_yaml": "extra_model_paths.yamlを開く",
     "Pin/Unpin Selected Items": "選択したアイテムのピン留め/ピン留め解除",
     "Pin/Unpin Selected Nodes": "選択したノードのピン留め/ピン留め解除",
@@ -556,10 +661,12 @@
     "Refresh Node Definitions": "ノード定義を更新",
     "Reinstall": "再インストール",
     "Reset View": "ビューをリセット",
+    "Resize Selected Nodes": "選択したノードのサイズ変更",
     "Restart": "再起動",
     "Save": "保存",
     "Save As": "名前を付けて保存",
     "Show Settings Dialog": "設定ダイアログを表示",
+    "Sign Out": "サインアウト",
     "Toggle Bottom Panel": "下部パネルの切り替え",
     "Toggle Focus Mode": "フォーカスモードの切り替え",
     "Toggle Logs Bottom Panel": "ログパネル下部を切り替え",
@@ -803,14 +910,17 @@
     "troubleshoot": "トラブルシューティング"
   },
   "settingsCategories": {
+    "3D": "3D",
     "About": "情報",
     "Appearance": "外観",
     "BrushAdjustment": "ブラシ調整",
+    "Camera": "カメラ",
     "Canvas": "キャンバス",
     "ColorPalette": "カラーパレット",
     "Comfy": "Comfy",
     "Comfy-Desktop": "Comfyデスクトップ",
     "ContextMenu": "コンテキストメニュー",
+    "Credits": "クレジット",
     "CustomColorPalettes": "カスタムカラーパレット",
     "DevMode": "開発モード",
     "EditTokenWeight": "トークンの重みを編集",
@@ -819,9 +929,11 @@
     "Graph": "グラフ",
     "Group": "グループ",
     "Keybinding": "キー割り当て",
+    "Light": "ライト",
     "Link": "リンク",
     "LinkRelease": "リンク解除",
     "LiteGraph": "Lite Graph",
+    "Load 3D": "3Dを読み込む",
     "Locale": "ロケール",
     "Mask Editor": "マスクエディタ",
     "Menu": "メニュー",
@@ -830,19 +942,20 @@
     "Node": "ノード",
     "Node Search Box": "ノード検索ボックス",
     "Node Widget": "ノードウィジェット",
-    "NodeInputConversionSubmenus": "ノード入力変換サブメニュー",
     "NodeLibrary": "ノードライブラリ",
     "Pointer": "ポインタ",
     "Queue": "キュー",
     "QueueButton": "キューボタン",
     "Reroute": "リルート",
     "RerouteBeta": "ルート変更ベータ",
+    "Scene": "シーン",
     "Server": "サーバー",
     "Server-Config": "サーバー設定",
     "Settings": "設定",
     "Sidebar": "サイドバー",
     "Tree Explorer": "ツリーエクスプローラー",
     "UV": "UV",
+    "User": "ユーザー",
     "Validation": "検証",
     "Window": "ウィンドウ",
     "Workflow": "ワークフロー"
@@ -910,8 +1023,7 @@
       "ControlNet": "ControlNet",
       "Custom Nodes": "カスタムノード",
       "Flux": "Flux",
-      "SD3_5": "SD3.5",
-      "SDXL": "SDXL",
+      "Image": "画像",
       "Upscaling": "アップスケーリング",
       "Video": "ビデオ"
     },
@@ -956,13 +1068,14 @@
         "flux_redux_model_example": "Flux Reduxモデル",
         "flux_schnell": "Flux Schnell"
       },
-      "SD3_5": {
+      "Image": {
+        "hidream_i1_dev": "HiDream I1 Dev",
+        "hidream_i1_fast": "HiDream I1 Fast",
+        "hidream_i1_full": "HiDream I1 Full",
         "sd3_5_large_blur": "SD3.5 ラージブラー",
         "sd3_5_large_canny_controlnet_example": "SD3.5 ラージキャニーコントロールネット",
         "sd3_5_large_depth": "SD3.5 ラージデプス",
-        "sd3_5_simple_example": "SD3.5 シンプル"
-      },
-      "SDXL": {
+        "sd3_5_simple_example": "SD3.5 シンプル",
         "sdxl_refiner_prompt_example": "SDXL Refinerプロンプト",
         "sdxl_revision_text_prompts": "SDXL Revisionテキストプロンプト",
         "sdxl_revision_zero_positive": "SDXL Revisionゼロポジティブ",
@@ -983,7 +1096,9 @@
         "ltxv_text_to_video": "LTXVテキストからビデオへ",
         "mochi_text_to_video_example": "Mochiテキストからビデオへ",
         "text_to_video_wan": "Wan 2.1 テキストからビデオへ",
-        "txt_to_image_to_video": "テキストから画像へ、画像からビデオへ"
+        "txt_to_image_to_video": "テキストから画像へ、画像からビデオへ",
+        "wan2_1_fun_control": "Wan 2.1 ControlNet",
+        "wan2_1_fun_inp": "Wan 2.1 インペインティング"
       }
     },
     "title": "テンプレートを利用して開始"
@@ -995,12 +1110,18 @@
     "errorCopyImage": "画像のコピーにエラーが発生しました: {error}",
     "errorLoadingModel": "モデルの読み込みエラー",
     "errorSaveSetting": "設定{id}の保存エラー: {err}",
+    "failedToAccessBillingPortal": "請求ポータルへのアクセスに失敗しました: {error}",
     "failedToApplyTexture": "テクスチャの適用に失敗しました",
+    "failedToCreateCustomer": "顧客の作成に失敗しました: {error}",
     "failedToDownloadFile": "ファイルのダウンロードに失敗しました",
     "failedToExportModel": "{format}としてモデルのエクスポートに失敗しました",
+    "failedToFetchBalance": "残高の取得に失敗しました: {error}",
     "failedToFetchLogs": "サーバーログの取得に失敗しました",
+    "failedToInitiateCreditPurchase": "クレジット購入の開始に失敗しました: {error}",
+    "failedToPurchaseCredits": "クレジットの購入に失敗しました: {error}",
     "fileLoadError": "{fileName}でワークフローが見つかりません",
     "fileUploadFailed": "ファイルのアップロードに失敗しました",
+    "firebaseAuthNotInitialized": "Firebase認証が初期化されていません",
     "interrupted": "実行が中断されました",
     "migrateToLitegraphReroute": "将来のバージョンではRerouteノードが削除されます。litegraph-native rerouteに移行するにはクリックしてください。",
     "no3dScene": "テクスチャを適用する3Dシーンがありません",
@@ -1011,7 +1132,8 @@
     "pendingTasksDeleted": "保留中のタスクが削除されました",
     "pleaseSelectNodesToGroup": "グループを作成するためのノード（または他のグループ）を選択してください",
     "unableToGetModelFilePath": "モデルファイルのパスを取得できません",
-    "updateRequested": "更新が要求されました"
+    "updateRequested": "更新が要求されました",
+    "userNotAuthenticated": "ユーザーが認証されていません"
   },
   "userSelect": {
     "enterUsername": "ユーザー名を入力してください",
@@ -1019,6 +1141,32 @@
     "newUser": "新しいユーザー",
     "next": "次へ",
     "selectUser": "ユーザーを選択"
+  },
+  "userSettings": {
+    "email": "メールアドレス",
+    "name": "名前",
+    "notSet": "未設定",
+    "provider": "サインイン方法",
+    "providers": {
+      "github": "GitHub",
+      "google": "Google"
+    },
+    "title": "ユーザー設定"
+  },
+  "validation": {
+    "invalidEmail": "無効なメールアドレス",
+    "maxLength": "{length}文字以下でなければなりません",
+    "minLength": "{length}文字以上でなければなりません",
+    "password": {
+      "lowercase": "少なくとも1つの小文字を含む必要があります",
+      "match": "パスワードが一致する必要があります",
+      "minLength": "8文字から32文字の間でなければなりません",
+      "number": "少なくとも1つの数字を含む必要があります",
+      "requirements": "パスワードの要件",
+      "special": "少なくとも1つの特殊文字を含む必要があります",
+      "uppercase": "少なくとも1つの大文字を含む必要があります"
+    },
+    "required": "必須"
   },
   "welcome": {
     "getStarted": "はじめる",

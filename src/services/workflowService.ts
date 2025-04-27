@@ -11,7 +11,7 @@ import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { appendJsonExt } from '@/utils/formatUtil'
+import { appendJsonExt, generateUUID } from '@/utils/formatUtil'
 
 import { useDialogService } from './dialogService'
 
@@ -94,10 +94,14 @@ export const useWorkflowService = () => {
       await renameWorkflow(workflow, newPath)
       await workflowStore.saveWorkflow(workflow)
     } else {
-      const tempWorkflow = workflowStore.createTemporary(
-        newKey,
-        workflow.activeState as ComfyWorkflowJSON
-      )
+      // Generate new id when saving existing workflow as a new file
+      const id = generateUUID()
+      const state = JSON.parse(
+        JSON.stringify(workflow.activeState)
+      ) as ComfyWorkflowJSON
+      state.id = id
+
+      const tempWorkflow = workflowStore.createTemporary(newKey, state)
       await openWorkflow(tempWorkflow)
       await workflowStore.saveWorkflow(tempWorkflow)
     }
@@ -164,7 +168,7 @@ export const useWorkflowService = () => {
       {
         showMissingModelsDialog: loadFromRemote,
         showMissingNodesDialog: loadFromRemote,
-        checkForRerouteMigration: loadFromRemote
+        checkForRerouteMigration: false
       }
     )
   }

@@ -1,6 +1,8 @@
 <template>
   <div class="bg-black h-full w-full">
-    <p v-if="errorMessage" class="p-4 text-center">{{ errorMessage }}</p>
+    <p v-if="errorMessage" class="p-4 text-center">
+      {{ errorMessage }}
+    </p>
     <ProgressSpinner
       v-else-if="loading"
       class="relative inset-0 flex justify-center items-center h-full z-10"
@@ -57,7 +59,7 @@ const terminalCreated = (
     if (!clientId.value) {
       await until(clientId).not.toBeNull()
     }
-    api.subscribeLogs(true)
+    await api.subscribeLogs(true)
     api.addEventListener('logs', logReceived)
   }
 
@@ -76,9 +78,9 @@ const terminalCreated = (
     loading.value = false
   })
 
-  onUnmounted(() => {
+  onUnmounted(async () => {
     if (api.clientId) {
-      api.subscribeLogs(false)
+      await api.subscribeLogs(false)
     }
     api.removeEventListener('logs', logReceived)
   })

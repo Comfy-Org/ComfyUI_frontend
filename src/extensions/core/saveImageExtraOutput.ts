@@ -2,16 +2,26 @@ import { applyTextReplacements } from '@/utils/searchAndReplace'
 
 import { app } from '../../scripts/app'
 
+const saveNodeTypes = new Set([
+  'SaveImage',
+  'SaveAnimatedWEBP',
+  'SaveWEBM',
+  'SaveAudio',
+  'SaveGLB',
+  'SaveAnimatedPNG',
+  'CLIPSave',
+  'VAESave',
+  'ModelSave',
+  'LoraSave',
+  'SaveLatent'
+])
+
 // Use widget values and dates in output filenames
 
 app.registerExtension({
   name: 'Comfy.SaveImageExtraOutput',
   async beforeRegisterNodeDef(nodeType, nodeData, app) {
-    if (
-      nodeData.name === 'SaveImage' ||
-      nodeData.name === 'SaveAnimatedWEBP' ||
-      nodeData.name === 'SaveWEBM'
-    ) {
+    if (saveNodeTypes.has(nodeData.name)) {
       const onNodeCreated = nodeType.prototype.onNodeCreated
       // When the SaveImage node is created we want to override the serialization of the output name widget to run our S&R
       nodeType.prototype.onNodeCreated = function () {

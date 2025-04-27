@@ -1,4 +1,58 @@
 {
+  "apiNodesCostBreakdown": {
+    "costPerRun": "每次运行的成本",
+    "title": "API节点",
+    "totalCost": "总成本"
+  },
+  "apiNodesSignInDialog": {
+    "message": "此工作流包含API节点，需要您登录账户才能运行。",
+    "title": "使用API节点需要登录"
+  },
+  "auth": {
+    "login": {
+      "andText": "和",
+      "confirmPasswordLabel": "确认密码",
+      "confirmPasswordPlaceholder": "再次输入相同的密码",
+      "emailLabel": "电子邮件",
+      "emailPlaceholder": "输入您的电子邮件",
+      "failed": "登录失败",
+      "forgotPassword": "忘记密码？",
+      "forgotPasswordError": "发送重置密码邮件失败",
+      "loginButton": "登录",
+      "loginWithGithub": "使用Github登录",
+      "loginWithGoogle": "使用Google登录",
+      "newUser": "新来的？",
+      "orContinueWith": "或者继续使用",
+      "passwordLabel": "密码",
+      "passwordPlaceholder": "输入您的密码",
+      "passwordResetSent": "重置密码邮件已发送",
+      "passwordResetSentDetail": "请查收您的电子邮件，点击链接重置密码。",
+      "privacyLink": "隐私政策",
+      "signInOrSignUp": "登录 / 注册",
+      "signUp": "注册",
+      "success": "登录成功",
+      "termsLink": "使用条款",
+      "termsText": "点击“下一步”或“注册”即表示您同意我们的",
+      "title": "登录您的账户"
+    },
+    "signOut": {
+      "signOut": "退出登录",
+      "success": "成功退出登录",
+      "successDetail": "您已成功退出账户。"
+    },
+    "signup": {
+      "alreadyHaveAccount": "已经有账户了？",
+      "emailLabel": "电子邮件",
+      "emailPlaceholder": "输入您的电子邮件",
+      "passwordLabel": "密码",
+      "passwordPlaceholder": "输入新密码",
+      "signIn": "登录",
+      "signUpButton": "注册",
+      "signUpWithGithub": "使用Github注册",
+      "signUpWithGoogle": "使用Google注册",
+      "title": "创建一个账户"
+    }
+  },
   "clipboard": {
     "errorMessage": "复制到剪贴板失败",
     "errorNotSupported": "您的浏览器不支持剪贴板API",
@@ -20,8 +74,6 @@
     "yellow": "黄色"
   },
   "contextMenu": {
-    " to input": " 为输入",
-    " to widget": " 为控件",
     "Add Group": "添加组",
     "Add Group For Selected Nodes": "为选定节点添加组",
     "Add Node": "添加节点",
@@ -29,9 +81,6 @@
     "Clone": "克隆",
     "Collapse": "折叠",
     "Colors": "颜色",
-    "Convert ": "转换 ",
-    "Convert Input to Widget": "将输入转换为控件",
-    "Convert Widget to Input": "将控件转换为输入",
     "Convert to Group Node": "转换为组节点",
     "Copy (Clipspace)": "复制 (Clipspace)",
     "Expand": "展开",
@@ -51,6 +100,24 @@
     "Shapes": "形状",
     "Title": "标题",
     "Unpin": "取消固定"
+  },
+  "credits": {
+    "credits": "积分",
+    "faqs": "常见问题",
+    "invoiceHistory": "发票历史",
+    "lastUpdated": "最近更新",
+    "messageSupport": "联系客服",
+    "purchaseCredits": "购买积分",
+    "topUp": {
+      "buyNow": "立即购买",
+      "insufficientMessage": "您的积分不足，无法运行此工作流。",
+      "insufficientTitle": "积分不足",
+      "maxAmount": "（最高 $1,000 美元）",
+      "quickPurchase": "快速购买",
+      "seeDetails": "查看详情",
+      "topUp": "充值"
+    },
+    "yourCreditBalance": "您的积分余额"
   },
   "dataTypes": {
     "AUDIO": "音频",
@@ -97,7 +164,9 @@
   "desktopUpdate": {
     "description": "ComfyUI桌面正在安装新的依赖项。这可能需要几分钟的时间。",
     "terminalDefaultMessage": "更新过程中的任何控制台输出都将在这里显示。",
-    "title": "正在更新ComfyUI桌面"
+    "title": "正在更新ComfyUI桌面",
+    "updateAvailableMessage": "有可用的更新。您现在要重启并更新吗？",
+    "updateFoundTitle": "找到更新 (v{version})"
   },
   "downloadGit": {
     "gitWebsite": "下载 git",
@@ -126,6 +195,7 @@
     "about": "关于",
     "add": "添加",
     "all": "全部",
+    "amount": "数量",
     "apply": "应用",
     "back": "返回",
     "cancel": "取消",
@@ -177,9 +247,11 @@
     "installing": "正在安装",
     "interrupted": "已中断",
     "keybinding": "按键绑定",
+    "learnMore": "了解更多",
     "loadAllFolders": "加载所有文件夹",
     "loadWorkflow": "加载工作流",
     "loading": "加载中",
+    "login": "登录",
     "logs": "日志",
     "migrate": "迁移",
     "missing": "缺失",
@@ -204,7 +276,8 @@
     "reportIssueTooltip": "向 Comfy Org 提交错误报告",
     "reportSent": "报告已提交",
     "reset": "重置",
-    "resetKeybindingsTooltip": "将快捷键重置为默认",
+    "resetAll": "重置所有",
+    "resetAllKeybindingsTooltip": "将所有键绑定重置为默认",
     "restart": "重新启动",
     "resultsCount": "找到 {count} 个结果",
     "save": "保存",
@@ -219,14 +292,18 @@
     "settings": "设置",
     "showReport": "显示报告",
     "sort": "排序",
+    "source": "来源",
     "status": "状态",
     "success": "成功",
     "systemInfo": "系统信息",
     "terminal": "终端",
+    "unknownError": "未知错误",
     "update": "更新",
+    "updateAvailable": "有更新可用",
     "updated": "已更新",
     "updating": "更新中",
     "upload": "上传",
+    "user": "用户",
     "videoFailedToLoad": "视频加载失败",
     "workflow": "工作流"
   },
@@ -345,24 +422,39 @@
   },
   "issueReport": {
     "contactFollowUp": "跟进联系我",
+    "contactSupportDescription": "请填写下方表格提交您的报告",
+    "contactSupportTitle": "联系支持",
+    "describeTheProblem": "描述问题",
+    "email": "电子邮箱",
     "feedbackTitle": "通过提供反馈帮助我们改进ComfyUI",
     "helpFix": "帮助修复这个",
+    "helpTypes": {
+      "billingPayments": "账单 / 支付",
+      "bugReport": "错误报告",
+      "giveFeedback": "提交反馈",
+      "loginAccessIssues": "登录 / 访问问题",
+      "somethingElse": "其他"
+    },
     "notifyResolve": "解决时通知我",
     "provideAdditionalDetails": "提供额外的详细信息（可选）",
     "provideEmail": "提供您的电子邮件（可选）",
     "rating": "评分",
+    "selectIssue": "选择问题",
     "stackTrace": "堆栈跟踪",
     "submitErrorReport": "提交错误报告（可选）",
     "systemStats": "系统状态",
     "validation": {
       "invalidEmail": "请输入有效的电子邮件地址",
-      "maxLength": "消息过长"
-    }
+      "maxLength": "消息过长",
+      "selectIssueType": "请选择一个问题类型"
+    },
+    "whatCanWeInclude": "请说明报告中需要包含的内容",
+    "whatDoYouNeedHelpWith": "您需要什么帮助？"
   },
   "load3d": {
     "applyingTexture": "应用纹理中...",
     "backgroundColor": "背景颜色",
-    "camera": "相机",
+    "camera": "摄影机",
     "edgeThreshold": "边缘阈值",
     "export": "导出",
     "exportModel": "导出模型",
@@ -371,15 +463,21 @@
     "light": "灯光",
     "lightIntensity": "光照强度",
     "loadingModel": "正在加载3D模型...",
-    "materialMode": "材料模式",
+    "materialMode": "材质模式",
+    "materialModes": {
+      "depth": "深度",
+      "normal": "法线",
+      "original": "原始",
+      "wireframe": "线框"
+    },
     "model": "模型",
     "previewOutput": "预览输出",
     "removeBackgroundImage": "移除背景图片",
     "scene": "场景",
     "showGrid": "显示网格",
-    "switchCamera": "切换摄像头",
+    "switchCamera": "切换摄影机类型",
     "switchingMaterialMode": "切换材质模式中...",
-    "upDirection": "向上方向",
+    "upDirection": "上方向",
     "uploadBackgroundImage": "上传背景图片",
     "uploadTexture": "上传纹理"
   },
@@ -426,6 +524,8 @@
     "loadingVersions": "正在加载版本...",
     "nightlyVersion": "每夜",
     "noDescription": "无可用描述",
+    "noNodesFound": "未找到节点",
+    "noNodesFoundDescription": "无法解析包的节点，或者该包仅为前端扩展，没有任何节点。",
     "noResultsFound": "未找到符合您搜索的结果。",
     "nodePack": "节点包",
     "packsSelected": "选定的包",
@@ -434,8 +534,10 @@
     "searchPlaceholder": "搜索",
     "selectVersion": "选择版本",
     "sort": {
+      "created": "最新",
       "downloads": "最受欢迎",
-      "rating": "评级"
+      "publisher": "出版商",
+      "updated": "最近更新"
     },
     "status": {
       "active": "活跃",
@@ -510,6 +612,7 @@
     "Bypass/Unbypass Selected Nodes": "忽略/取消忽略选定节点",
     "Canvas Toggle Link Visibility": "切换连线可见性",
     "Canvas Toggle Lock": "切换视图锁定",
+    "Check for Updates": "检查更新",
     "Clear Pending Tasks": "清除待处理任务",
     "Clear Workflow": "清除工作流",
     "Clipspace": "剪贴空间",
@@ -519,6 +622,7 @@
     "ComfyUI Docs": "ComfyUI 文档",
     "ComfyUI Forum": "ComfyUI 论坛",
     "ComfyUI Issues": "ComfyUI 问题",
+    "Contact Support": "联系支持",
     "Convert selected nodes to group node": "将选中节点转换为组节点",
     "Custom Nodes Manager": "自定义节点管理器",
     "Delete Selected Items": "删除选定的项目",
@@ -545,6 +649,7 @@
     "Open Logs Folder": "打开日志文件夹",
     "Open Models Folder": "打开模型文件夹",
     "Open Outputs Folder": "打开输出文件夹",
+    "Open Sign In Dialog": "打开登录对话框",
     "Open extra_model_paths_yaml": "打开 extra_model_paths.yaml",
     "Pin/Unpin Selected Items": "固定/取消固定选定项目",
     "Pin/Unpin Selected Nodes": "固定/取消固定选定节点",
@@ -556,10 +661,12 @@
     "Refresh Node Definitions": "刷新节点定义",
     "Reinstall": "重新安装",
     "Reset View": "重置视图",
+    "Resize Selected Nodes": "调整选定节点的大小",
     "Restart": "重启",
     "Save": "保存",
     "Save As": "另存为",
     "Show Settings Dialog": "显示设置对话框",
+    "Sign Out": "退出登录",
     "Toggle Bottom Panel": "切换底部面板",
     "Toggle Focus Mode": "切换专注模式",
     "Toggle Logs Bottom Panel": "切换日志底部面板",
@@ -803,14 +910,17 @@
     "troubleshoot": "故障排除"
   },
   "settingsCategories": {
+    "3D": "3D",
     "About": "关于",
     "Appearance": "外观",
     "BrushAdjustment": "画笔调整",
+    "Camera": "相机",
     "Canvas": "画布",
     "ColorPalette": "色彩主题",
     "Comfy": "Comfy",
     "Comfy-Desktop": "Comfy桌面版",
     "ContextMenu": "上下文菜单",
+    "Credits": "积分",
     "CustomColorPalettes": "自定义色彩主题",
     "DevMode": "开发模式",
     "EditTokenWeight": "编辑令牌权重",
@@ -819,9 +929,11 @@
     "Graph": "画面",
     "Group": "组节点",
     "Keybinding": "快捷键",
+    "Light": "浅色",
     "Link": "连线",
     "LinkRelease": "释放链接",
     "LiteGraph": "画面",
+    "Load 3D": "加载3D",
     "Locale": "区域设置",
     "Mask Editor": "遮罩编辑器",
     "Menu": "菜单",
@@ -830,19 +942,20 @@
     "Node": "节点",
     "Node Search Box": "节点搜索框",
     "Node Widget": "节点组件",
-    "NodeInputConversionSubmenus": "节点输入转换子菜单",
     "NodeLibrary": "节点库",
     "Pointer": "指针",
     "Queue": "队列",
     "QueueButton": "执行按钮",
     "Reroute": "重新路由",
     "RerouteBeta": "转接点 Beta",
+    "Scene": "场景",
     "Server": "服务器",
     "Server-Config": "服务器配置",
     "Settings": "设置",
     "Sidebar": "侧边栏",
     "Tree Explorer": "树形浏览器",
     "UV": "UV",
+    "User": "用户",
     "Validation": "验证",
     "Window": "窗口",
     "Workflow": "工作流"
@@ -910,17 +1023,16 @@
       "ControlNet": "ControlNet",
       "Custom Nodes": "自定义节点",
       "Flux": "Flux",
-      "SD3_5": "SD3.5",
-      "SDXL": "SDXL",
+      "Image": "图片",
       "Upscaling": "放大",
       "Video": "视频"
     },
     "template": {
       "3D": {
-        "hunyuan-3d-multiview-elf": "Hunyuan3D多视图",
-        "hunyuan-3d-turbo": "Hunyuan3D Turbo",
-        "hunyuan3d-non-multiview-train": "Hunyuan3D",
-        "stable_zero123_example": "稳定Zero123"
+        "hunyuan-3d-multiview-elf": "混元3D多视图",
+        "hunyuan-3d-turbo": "混元3D Turbo",
+        "hunyuan3d-non-multiview-train": "混元3D",
+        "stable_zero123_example": "Stable Zero123"
       },
       "Area Composition": {
         "area_composition": "区域构成",
@@ -928,7 +1040,7 @@
         "area_composition_square_area_for_subject": "主题的方形区域构成"
       },
       "Audio": {
-        "stable_audio_example": "稳定音频"
+        "stable_audio_example": "Stable Audio"
       },
       "Basics": {
         "default": "图像生成",
@@ -941,7 +1053,7 @@
         "lora_multiple": "Lora多个"
       },
       "ControlNet": {
-        "2_pass_pose_worship": "2通道姿势崇拜",
+        "2_pass_pose_worship": "双通道姿势处理",
         "controlnet_example": "ControlNet",
         "depth_controlnet": "深度ControlNet",
         "depth_t2i_adapter": "深度T2I适配器",
@@ -956,13 +1068,14 @@
         "flux_redux_model_example": "Flux Redux Model",
         "flux_schnell": "Flux Schnell"
       },
-      "SD3_5": {
+      "Image": {
+        "hidream_i1_dev": "HiDream I1 Dev",
+        "hidream_i1_fast": "HiDream I1 Fast",
+        "hidream_i1_full": "HiDream I1 Full",
         "sd3_5_large_blur": "SD3.5 Large 模糊",
         "sd3_5_large_canny_controlnet_example": "SD3.5 Large Canny 控制网",
         "sd3_5_large_depth": "SD3.5 Large 深度",
-        "sd3_5_simple_example": "SD3.5 简易示例"
-      },
-      "SDXL": {
+        "sd3_5_simple_example": "SD3.5 简易示例",
         "sdxl_refiner_prompt_example": "SDXL Refiner提示",
         "sdxl_revision_text_prompts": "SDXL修订文本提示",
         "sdxl_revision_zero_positive": "SDXL修订零正",
@@ -976,14 +1089,16 @@
         "latent_upscale_different_prompt_model": "潜在升级不同提示模型"
       },
       "Video": {
-        "hunyuan_video_text_to_video": "Hunyuan视频文本到视频",
+        "hunyuan_video_text_to_video": "混元视频文本到视频",
         "image_to_video": "图像到视频",
         "image_to_video_wan": "Wan 2.1 图像到视频",
         "ltxv_image_to_video": "LTXV图像到视频",
         "ltxv_text_to_video": "LTXV文本到视频",
         "mochi_text_to_video_example": "Mochi文本到视频",
         "text_to_video_wan": "Wan 2.1 文字到视频",
-        "txt_to_image_to_video": "文本到图像到视频"
+        "txt_to_image_to_video": "文本到图像到视频",
+        "wan2_1_fun_control": "Wan 2.1 ControlNet",
+        "wan2_1_fun_inp": "Wan 2.1 图像修复"
       }
     },
     "title": "从模板开始"
@@ -995,12 +1110,18 @@
     "errorCopyImage": "复制图片出错：{error}",
     "errorLoadingModel": "加载模型出错",
     "errorSaveSetting": "保存设置 {id} 出错：{err}",
+    "failedToAccessBillingPortal": "访问账单门户失败：{error}",
     "failedToApplyTexture": "应用纹理失败",
+    "failedToCreateCustomer": "创建客户失败：{error}",
     "failedToDownloadFile": "文件下载失败",
     "failedToExportModel": "无法将模型导出为 {format}",
+    "failedToFetchBalance": "获取余额失败：{error}",
     "failedToFetchLogs": "无法获取服务器日志",
+    "failedToInitiateCreditPurchase": "发起积分购买失败：{error}",
+    "failedToPurchaseCredits": "购买积分失败：{error}",
     "fileLoadError": "无法在 {fileName} 中找到工作流",
     "fileUploadFailed": "文件上传失败",
+    "firebaseAuthNotInitialized": "Firebase 认证未初始化",
     "interrupted": "执行已被中断",
     "migrateToLitegraphReroute": "将来的版本中将删除重定向节点。点击以迁移到litegraph-native重定向。",
     "no3dScene": "没有3D场景可以应用纹理",
@@ -1011,7 +1132,8 @@
     "pendingTasksDeleted": "待处理任务已删除",
     "pleaseSelectNodesToGroup": "请选取节点（或其他组）以创建分组",
     "unableToGetModelFilePath": "无法获取模型文件路径",
-    "updateRequested": "已请求更新"
+    "updateRequested": "已请求更新",
+    "userNotAuthenticated": "用户未认证"
   },
   "userSelect": {
     "enterUsername": "输入用户名",
@@ -1019,6 +1141,32 @@
     "newUser": "新用户",
     "next": "下一步",
     "selectUser": "选择用户"
+  },
+  "userSettings": {
+    "email": "电子邮件",
+    "name": "名称",
+    "notSet": "未设置",
+    "provider": "登录方式",
+    "providers": {
+      "github": "GitHub",
+      "google": "Google"
+    },
+    "title": "用户设置"
+  },
+  "validation": {
+    "invalidEmail": "无效的电子邮件地址",
+    "maxLength": "不能超过{length}个字符",
+    "minLength": "必须至少有{length}个字符",
+    "password": {
+      "lowercase": "必须包含至少一个小写字母",
+      "match": "密码必须匹配",
+      "minLength": "必须在8到32个字符之间",
+      "number": "必须包含至少一个数字",
+      "requirements": "密码要求",
+      "special": "必须包含至少一个特殊字符",
+      "uppercase": "必须包含至少一个大写字母"
+    },
+    "required": "必填"
   },
   "welcome": {
     "getStarted": "开始使用",

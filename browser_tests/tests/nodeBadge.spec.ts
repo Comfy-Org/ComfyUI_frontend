@@ -92,4 +92,20 @@ test.describe('Node badge color', () => {
       'node-badge-unknown-color-palette.png'
     )
   })
+
+  test('Can show node badge with light color palette', async ({
+    comfyPage
+  }) => {
+    await comfyPage.setSetting(
+      'Comfy.NodeBadge.NodeIdBadgeMode',
+      NodeBadgeMode.ShowAll
+    )
+    await comfyPage.setSetting('Comfy.ColorPalette', 'light')
+    await comfyPage.nextFrame()
+    // Click empty space to trigger canvas re-render.
+    await comfyPage.clickEmptySpace()
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'node-badge-light-color-palette.png'
+    )
+  })
 })

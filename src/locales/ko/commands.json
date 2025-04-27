@@ -1,4 +1,7 @@
 {
+  "Comfy-Desktop_CheckForUpdates": {
+    "label": "업데이트 확인"
+  },
   "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
     "label": "사용자 정의 노드 폴더 열기"
   },
@@ -44,6 +47,9 @@
   "Comfy_Canvas_ResetView": {
     "label": "뷰 재설정"
   },
+  "Comfy_Canvas_Resize": {
+    "label": "선택된 노드 크기 조정"
+  },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "캔버스 링크 가시성 토글"
   },
@@ -76,6 +82,9 @@
   },
   "Comfy_ClearWorkflow": {
     "label": "워크플로 지우기"
+  },
+  "Comfy_ContactSupport": {
+    "label": "지원팀에 문의하기"
   },
   "Comfy_DuplicateWorkflow": {
     "label": "현재 워크플로우 복제"
@@ -166,6 +175,12 @@
   },
   "Comfy_Undo": {
     "label": "실행 취소"
+  },
+  "Comfy_User_OpenSignInDialog": {
+    "label": "로그인 대화상자 열기"
+  },
+  "Comfy_User_SignOut": {
+    "label": "로그아웃"
   },
   "Workspace_CloseWorkflow": {
     "label": "현재 워크플로우 닫기"

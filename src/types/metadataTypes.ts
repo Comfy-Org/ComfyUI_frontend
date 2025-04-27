@@ -46,7 +46,8 @@ export type TextRange = {
 
 export enum ASCII {
   GLTF = 0x46546c67,
-  JSON = 0x4e4f534a
+  JSON = 0x4e4f534a,
+  OPEN_BRACE = 0x7b
 }
 
 export enum GltfSizeBytes {
@@ -78,3 +79,9 @@ export type GltfJsonData = {
   }
   [key: string]: any
 }
+
+/**
+ * Represents the content range [start, end) of an ISOBMFF box, excluding its header.
+ * Null if the box was not found.
+ */
+export type IsobmffBoxContentRange = { start: number; end: number } | null

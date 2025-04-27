@@ -73,6 +73,7 @@ watch(
         updateWidgets()
       }
     )
-  }
+  },
+  { immediate: true }
 )
 </script>

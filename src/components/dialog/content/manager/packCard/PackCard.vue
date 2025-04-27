@@ -97,10 +97,10 @@ import ContentDivider from '@/components/common/ContentDivider.vue'
 import PackVersionBadge from '@/components/dialog/content/manager/PackVersionBadge.vue'
 import PackCardFooter from '@/components/dialog/content/manager/packCard/PackCardFooter.vue'
 import PackIcon from '@/components/dialog/content/manager/packIcon/PackIcon.vue'
+import { usePackUpdateStatus } from '@/composables/nodePack/usePackUpdateStatus'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { IsInstallingKey } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
-import { compareVersions, isSemVer } from '@/utils/formatUtil'
 
 const { nodePack, isSelected = false } = defineProps<{
   nodePack: components['schemas']['Node']
@@ -110,8 +110,8 @@ const { nodePack, isSelected = false } = defineProps<{
 const isInstalling = ref(false)
 provide(IsInstallingKey, isInstalling)
 
-const { isPackInstalled, isPackEnabled, getInstalledPackVersion } =
-  useComfyManagerStore()
+const { isPackInstalled, isPackEnabled } = useComfyManagerStore()
+const { isUpdateAvailable } = usePackUpdateStatus(nodePack)
 
 const isInstalled = computed(() => isPackInstalled(nodePack?.id))
 const isDisabled = computed(
@@ -119,20 +119,6 @@ const isDisabled = computed(
 )
 
 whenever(isInstalled, () => (isInstalling.value = false))
-
-const isUpdateAvailable = computed(() => {
-  if (!isInstalled.value) return false
-
-  const latestVersion = nodePack.latest_version?.version
-  if (!latestVersion) return false
-
-  const installedVersion = getInstalledPackVersion(nodePack.id ?? '')
-
-  // Don't attempt to show update available for nightly GitHub packs
-  if (installedVersion && !isSemVer(installedVersion)) return false
-
-  return compareVersions(latestVersion, installedVersion) > 0
-})
 
 // TODO: remove type assertion once comfy_nodes is added to node (pack) info type in backend
 const nodesCount = computed(() => (nodePack as any).comfy_nodes?.length)

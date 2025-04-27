@@ -23,13 +23,15 @@
           <Select
             v-model="selectedUser"
             class="w-full"
-            inputId="existing-user-select"
+            input-id="existing-user-select"
             :options="userStore.users"
             option-label="username"
             :placeholder="$t('userSelect.selectUser')"
             :disabled="createNewUser"
           />
-          <Message v-if="error" severity="error">{{ error }}</Message>
+          <Message v-if="error" severity="error">
+            {{ error }}
+          </Message>
         </div>
         <footer class="mt-5">
           <Button :label="$t('userSelect.next')" @click="login" />
@@ -76,8 +78,8 @@ const login = async () => {
       throw new Error('No user selected')
     }
 
-    userStore.login(user)
-    router.push('/')
+    await userStore.login(user)
+    await router.push('/')
   } catch (err) {
     loginError.value = err instanceof Error ? err.message : JSON.stringify(err)
   }

@@ -108,6 +108,42 @@
       "Straight": "ストレート"
     }
   },
+  "Comfy_Load3D_BackgroundColor": {
+    "name": "初期背景色",
+    "tooltip": "3Dシーンのデフォルト背景色を設定します。この設定は新しい3Dウィジェット作成時の背景の見た目を決定しますが、作成後に各ウィジェットごとに個別に調整できます。"
+  },
+  "Comfy_Load3D_CameraType": {
+    "name": "カメラタイプ",
+    "options": {
+      "orthographic": "オルソグラフィック",
+      "perspective": "パースペクティブ"
+    },
+    "tooltip": "新しい3Dウィジェットが作成されたときに、デフォルトでカメラが透視投影か平行投影かを制御します。このデフォルトは、作成後に各ウィジェットごとに個別に切り替えることができます。"
+  },
+  "Comfy_Load3D_LightAdjustmentIncrement": {
+    "name": "ライト調整増分",
+    "tooltip": "3Dシーンでライトの強度を調整する際の増分サイズを制御します。ステップ値が小さいほど、照明調整をより細かく制御でき、大きい値では1回の調整ごとにより顕著な変化が得られます。"
+  },
+  "Comfy_Load3D_LightIntensity": {
+    "name": "初期ライト強度",
+    "tooltip": "3Dシーン内の照明のデフォルトの明るさレベルを設定します。この値は新しい3Dウィジェット作成時にライトがオブジェクトをどれだけ強く照らすかを決定しますが、作成後に各ウィジェットごとに個別に調整できます。"
+  },
+  "Comfy_Load3D_LightIntensityMaximum": {
+    "name": "最大光度",
+    "tooltip": "3Dシーンで許可される最大光度値を設定します。これは、3Dウィジェットで照明を調整する際に設定できる明るさの上限を定義します。"
+  },
+  "Comfy_Load3D_LightIntensityMinimum": {
+    "name": "光の強度の最小値",
+    "tooltip": "3Dシーンで許可される光の強度の最小値を設定します。これは、3Dウィジェットで照明を調整する際に設定できる明るさの下限を定義します。"
+  },
+  "Comfy_Load3D_ShowGrid": {
+    "name": "グリッドを表示",
+    "tooltip": "デフォルトでグリッドを表示するには切り替えます"
+  },
+  "Comfy_Load3D_ShowPreview": {
+    "name": "プレビューを表示",
+    "tooltip": "デフォルトでプレビューを表示するには切り替えます"
+  },
   "Comfy_Locale": {
     "name": "言語"
   },
@@ -156,9 +192,6 @@
       "None": "なし",
       "Show all": "すべて表示"
     }
-  },
-  "Comfy_NodeInputConversionSubmenus": {
-    "name": "ノードのコンテキストメニューに、入力/ウィジェット間の変換を行うエントリをサブメニューに配置します。"
   },
   "Comfy_NodeSearchBoxImpl": {
     "name": "ノード検索ボックスの実装",
@@ -260,6 +293,9 @@
       "small": "小"
     }
   },
+  "Comfy_Sidebar_UnifiedWidth": {
+    "name": "サイドバーの幅を統一"
+  },
   "Comfy_SnapToGrid_GridSize": {
     "name": "グリッドサイズにスナップ",
     "tooltip": "シフトを押しながらノードをドラッグおよびサイズ変更すると、グリッドに整列されます。これにより、そのグリッドのサイズが制御されます。"
@@ -299,8 +335,22 @@
   "Comfy_Window_UnloadConfirmation": {
     "name": "ウィンドウを閉じるときに確認を表示"
   },
+  "Comfy_Workflow_AutoSave": {
+    "name": "自動保存",
+    "options": {
+      "after delay": "遅延後",
+      "off": "オフ"
+    }
+  },
+  "Comfy_Workflow_AutoSaveDelay": {
+    "name": "自動保存遅延（ms）",
+    "tooltip": "自動保存が「遅延後」に設定されている場合のみ適用されます。"
+  },
   "Comfy_Workflow_ConfirmDelete": {
     "name": "ワークフローを削除する際に確認を表示"
+  },
+  "Comfy_Workflow_Persist": {
+    "name": "ページ（再）ロード時にワークフローの状態を保持し、復元します"
   },
   "Comfy_Workflow_ShowMissingModelsWarning": {
     "name": "欠落しているモデルの警告を表示"
@@ -329,6 +379,10 @@
   },
   "LiteGraph_ContextMenu_Scaling": {
     "name": "ズームイン時にノードコンボウィジェットメニュー（リスト）をスケーリングする"
+  },
+  "LiteGraph_Node_DefaultPadding": {
+    "name": "新しいノードを常に縮小",
+    "tooltip": "ノード作成時に可能な限り小さいサイズにリサイズします。無効にすると、新しく追加されたノードはウィジェットの値が表示されるように少し幅広くなります。"
   },
   "LiteGraph_Node_TooltipDelay": {
     "name": "ツールチップ遅延"

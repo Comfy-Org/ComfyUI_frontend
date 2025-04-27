@@ -103,7 +103,6 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
   readonly node: LGraphNode
 
   constructor(obj: {
-    id: string
     node: LGraphNode
     name: string
     type: string
@@ -114,7 +113,7 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
     this.name = obj.name
     this.options = obj.options
 
-    this.id = obj.id
+    this.id = generateUUID()
     this.node = obj.node
   }
 
@@ -132,12 +131,7 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
   }
 
   isVisible(): boolean {
-    return (
-      !_.isNil(this.computedHeight) &&
-      this.computedHeight > 0 &&
-      !['converted-widget', 'hidden'].includes(this.type) &&
-      !this.node.collapsed
-    )
+    return !['hidden'].includes(this.type) && this.node.isWidgetVisible(this)
   }
 
   draw(
@@ -177,7 +171,6 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
   readonly element: T
 
   constructor(obj: {
-    id: string
     node: LGraphNode
     name: string
     type: string
@@ -240,7 +233,6 @@ export class ComponentWidgetImpl<V extends object | string>
   readonly inputSpec: InputSpec
 
   constructor(obj: {
-    id: string
     node: LGraphNode
     name: string
     component: Component
@@ -298,7 +290,6 @@ LGraphNode.prototype.addDOMWidget = function <
   options: DOMWidgetOptions<V> = {}
 ): DOMWidget<T, V> {
   const widget = new DOMWidgetImpl({
-    id: generateUUID(),
     node: this,
     name,
     type,

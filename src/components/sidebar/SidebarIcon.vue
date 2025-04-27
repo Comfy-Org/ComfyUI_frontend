@@ -1,25 +1,24 @@
 <template>
   <Button
-    :class="props.class"
+    v-tooltip="{ value: tooltip, showDelay: 300, hideDelay: 300 }"
     text
     :pt="{
       root: {
         class: `side-bar-button ${
-          props.selected
+          selected
             ? 'p-button-primary side-bar-button-selected'
             : 'p-button-secondary'
         }`,
-        'aria-label': props.tooltip
+        'aria-label': tooltip
       }
     }"
     @click="emit('click', $event)"
-    v-tooltip="{ value: props.tooltip, showDelay: 300, hideDelay: 300 }"
   >
     <template #icon>
       <OverlayBadge v-if="shouldShowBadge" :value="overlayValue">
-        <i :class="props.icon + ' side-bar-button-icon'" />
+        <i :class="icon + ' side-bar-button-icon'" />
       </OverlayBadge>
-      <i v-else :class="props.icon + ' side-bar-button-icon'" />
+      <i v-else :class="icon + ' side-bar-button-icon'" />
     </template>
   </Button>
 </template>
@@ -27,32 +26,25 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import OverlayBadge from 'primevue/overlaybadge'
-import { PropType, computed } from 'vue'
+import { computed } from 'vue'
 
-// Add this line to import PropsType
+const {
+  icon = '',
+  selected = false,
+  tooltip = '',
+  iconBadge = ''
+} = defineProps<{
+  icon?: string
+  selected?: boolean
+  tooltip?: string
+  iconBadge?: string | (() => string | null)
+}>()
 
-const props = defineProps({
-  icon: String,
-  selected: Boolean,
-  tooltip: {
-    type: String,
-    default: ''
-  },
-  class: {
-    type: String,
-    default: ''
-  },
-  iconBadge: {
-    type: [String, Function] as PropType<string | (() => string | null)>,
-    default: ''
-  }
-})
-
-const emit = defineEmits(['click'])
+const emit = defineEmits<{
+  (e: 'click', event: MouseEvent): void
+}>()
 const overlayValue = computed(() =>
-  typeof props.iconBadge === 'function'
-    ? props.iconBadge() || ''
-    : props.iconBadge
+  typeof iconBadge === 'function' ? iconBadge() ?? '' : iconBadge
 )
 const shouldShowBadge = computed(() => !!overlayValue.value)
 </script>
