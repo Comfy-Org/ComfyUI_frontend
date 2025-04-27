@@ -7184,8 +7184,9 @@ export class LGraphCanvas {
                 : { content: "Remove Slot", slot },
             )
           }
-          if (!_slot.nameLocked)
+          if (!_slot.nameLocked && !(("link" in _slot) && _slot.widget)) {
             menu_info.push({ content: "Rename Slot", slot })
+          }
 
           if (node.getExtraSlotMenuOptions) {
             menu_info.push(...node.getExtraSlotMenuOptions(slot))
