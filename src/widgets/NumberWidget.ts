@@ -2,9 +2,10 @@ import type { INumericWidget, IWidgetOptions } from "@/types/widgets"
 
 import { getWidgetStep } from "@/utils/widget"
 
+import { BaseSteppedWidget } from "./BaseSteppedWidget"
 import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./BaseWidget"
 
-export class NumberWidget extends BaseWidget implements INumericWidget {
+export class NumberWidget extends BaseSteppedWidget implements INumericWidget {
   // INumberWidget properties
   declare type: "number"
   declare value: number
@@ -14,6 +15,24 @@ export class NumberWidget extends BaseWidget implements INumericWidget {
     super(widget)
     this.type = "number"
     this.value = widget.value
+  }
+
+  override canIncrement(): boolean {
+    const { max } = this.options
+    return max == null || this.value < max
+  }
+
+  override canDecrement(): boolean {
+    const { min } = this.options
+    return min == null || this.value > min
+  }
+
+  override incrementValue(options: WidgetEventOptions): void {
+    this.setValue(this.value + getWidgetStep(this.options), options)
+  }
+
+  override decrementValue(options: WidgetEventOptions): void {
+    this.setValue(this.value - getWidgetStep(this.options), options)
   }
 
   override setValue(value: number, options: WidgetEventOptions) {
@@ -126,8 +145,7 @@ export class NumberWidget extends BaseWidget implements INumericWidget {
    * Handles drag events for the number widget
    * @param options The options for handling the drag event
    */
-  override onDrag(options: WidgetEventOptions) {
-    const { e, node, canvas } = options
+  override onDrag({ e, node, canvas }: WidgetEventOptions) {
     const width = this.width || node.width
     const x = e.canvasX - node.pos[0]
     const delta = x < 40

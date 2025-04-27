@@ -1,19 +1,87 @@
 import type { IComboWidget, IWidgetOptions } from "@/types/widgets"
 
-import { LiteGraph } from "@/litegraph"
+import { clamp, LiteGraph } from "@/litegraph"
 
+import { BaseSteppedWidget } from "./BaseSteppedWidget"
 import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./BaseWidget"
 
-export class ComboWidget extends BaseWidget implements IComboWidget {
+type Values = string[] | Record<string, string>
+
+function toArray(values: Values): string[] {
+  return Array.isArray(values) ? values : Object.keys(values)
+}
+
+export class ComboWidget extends BaseSteppedWidget implements IComboWidget {
   // IComboWidget properties
   declare type: "combo"
   declare value: string | number
-  declare options: IWidgetOptions<string>
+  // @ts-expect-error Workaround for Record<string, string> not being typed in IWidgetOptions
+  declare options: Omit<IWidgetOptions<string>, "values"> & { values: Values }
 
   constructor(widget: IComboWidget) {
     super(widget)
     this.type = "combo"
     this.value = widget.value
+  }
+
+  #getValues(): Values {
+    const { values } = this.options
+    if (values == null) throw new Error("[ComboWidget]: values is required")
+
+    return typeof values === "function"
+      // @ts-expect-error handle () => string[] type that is not typed in IWidgetOptions
+      ? values(this, node)
+      : values
+  }
+
+  /**
+   * Checks if the value is {@link Array.at at} the given index in the combo list.
+   * @param index The index to check against
+   * @returns `true` if the value is at the given index, otherwise `false`.
+   */
+  #valueIsAt(index: number): boolean {
+    const { values } = this.options
+    // If using legacy duck-typed method, just return true
+    if (typeof values === "function") return true
+
+    const valuesArray = toArray(values)
+    return this.value === valuesArray.at(index)
+  }
+
+  override canIncrement(): boolean {
+    return !this.#valueIsAt(-1)
+  }
+
+  override canDecrement(): boolean {
+    return !this.#valueIsAt(0)
+  }
+
+  override incrementValue(options: WidgetEventOptions): void {
+    this.#tryChangeValue(1, options)
+  }
+
+  override decrementValue(options: WidgetEventOptions): void {
+    this.#tryChangeValue(-1, options)
+  }
+
+  #tryChangeValue(delta: number, options: WidgetEventOptions): void {
+    const values = this.#getValues()
+    const indexedValues = toArray(values)
+
+    // avoids double click event
+    options.canvas.last_mouseclick = 0
+
+    const foundIndex = typeof values === "object"
+      ? indexedValues.indexOf(String(this.value)) + delta
+      // @ts-expect-error handle non-string values
+      : indexedValues.indexOf(this.value) + delta
+
+    const index = clamp(foundIndex, 0, indexedValues.length - 1)
+
+    const value = Array.isArray(values)
+      ? values[index]
+      : index
+    this.setValue(value, options)
   }
 
   /**
@@ -123,45 +191,14 @@ export class ComboWidget extends BaseWidget implements IComboWidget {
     const width = this.width || node.size[0]
 
     // Determine if clicked on left/right arrows
-    const delta = x < 40
-      ? -1
-      : (x > width - 40
-        ? 1
-        : 0)
+    if (x < 40) return this.decrementValue({ e, node, canvas })
+    if (x > width - 40) return this.incrementValue({ e, node, canvas })
 
-    // Get values
-    let values = this.options.values
-    if (typeof values === "function") {
-      // @ts-expect-error handle () => string[] type that is not typed in IWidgetOptions
-      values = values(this, node)
-    }
-    // @ts-expect-error Record<string, string> is not typed in IWidgetOptions
-    const values_list = Array.isArray(values) ? values : Object.keys(values)
-
-    // Handle left/right arrow clicks
-    if (delta) {
-      let index = -1
-      // avoids double click event
-      canvas.last_mouseclick = 0
-      index = typeof values === "object"
-        ? values_list.indexOf(String(this.value)) + delta
-        // @ts-expect-error handle non-string values
-        : values_list.indexOf(this.value) + delta
-
-      if (index >= values_list.length) index = values_list.length - 1
-      if (index < 0) index = 0
-
-      this.setValue(
-        Array.isArray(values)
-          ? values[index]
-          : index,
-        { e, node, canvas },
-      )
-      return
-    }
+    // Otherwise, show dropdown menu
+    const values = this.#getValues()
+    const values_list = toArray(values)
 
     // Handle center click - show dropdown menu
-    // @ts-expect-error Record<string, string> is not typed in IWidgetOptions
     const text_values = values != values_list ? Object.values(values) : values
     new LiteGraph.ContextMenu(text_values, {
       scale: Math.max(1, canvas.ds.scale),

@@ -88,6 +88,10 @@ export abstract class BaseWidget implements IBaseWidget {
     return LiteGraph.WIDGET_SECONDARY_TEXT_COLOR
   }
 
+  get disabledTextColor() {
+    return LiteGraph.WIDGET_DISABLED_TEXT_COLOR
+  }
+
   /**
    * Draws the widget
    * @param ctx The canvas context
@@ -96,28 +100,6 @@ export abstract class BaseWidget implements IBaseWidget {
    * custom widgets.
    */
   abstract drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions): void
-
-  drawArrowButtons(ctx: CanvasRenderingContext2D, margin: number, y: number, width: number) {
-    const { height } = this
-    const { arrowMargin, arrowWidth } = BaseWidget
-    const arrowTipX = margin + arrowMargin
-    const arrowInnerX = arrowTipX + arrowWidth
-
-    // Draw left arrow
-    ctx.fillStyle = this.text_color
-    ctx.beginPath()
-    ctx.moveTo(arrowInnerX, y + 5)
-    ctx.lineTo(arrowTipX, y + height * 0.5)
-    ctx.lineTo(arrowInnerX, y + height - 5)
-    ctx.fill()
-
-    // Draw right arrow
-    ctx.beginPath()
-    ctx.moveTo(width - arrowInnerX, y + 5)
-    ctx.lineTo(width - arrowTipX, y + height * 0.5)
-    ctx.lineTo(width - arrowInnerX, y + height - 5)
-    ctx.fill()
-  }
 
   /**
    * Handles the click event for the widget
