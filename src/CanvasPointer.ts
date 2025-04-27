@@ -76,9 +76,14 @@ export class CanvasPointer {
 
   /**
    * If set, as soon as the mouse moves outside the click drift threshold, this action is run once.
-   * @param pointer This pointer instance.  Permits actions such as late binding of the finally() callback.
+   * @param pointer [DEPRECATED] This parameter will be removed in a future release.
+   * @param eMove The pointermove event of this ongoing drag action.
+   *
+   * It is possible for no `pointermove` events to occur, but still be far from
+   * the original `pointerdown` event. In this case, {@link eMove} will be null, and
+   * {@link onDragEnd} will be called immediately after {@link onDragStart}.
    */
-  onDragStart?(pointer: this): unknown
+  onDragStart?(pointer: this, eMove?: CanvasPointerEvent): unknown
 
   /**
    * Called on pointermove whilst dragging.
@@ -167,7 +172,7 @@ export class CanvasPointer {
 
     const longerThanBufferTime = e.timeStamp - eDown.timeStamp > CanvasPointer.bufferTime
     if (longerThanBufferTime || !this.#hasSamePosition(e, eDown)) {
-      this.#setDragStarted()
+      this.#setDragStarted(e)
     }
   }
 
@@ -240,9 +245,9 @@ export class CanvasPointer {
       this.#hasSamePosition(eDown, eLastDown, tolerance2)
   }
 
-  #setDragStarted(): void {
+  #setDragStarted(eMove?: CanvasPointerEvent): void {
     this.dragStarted = true
-    this.onDragStart?.(this)
+    this.onDragStart?.(this, eMove)
     delete this.onDragStart
   }
 
