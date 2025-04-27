@@ -1,9 +1,6 @@
-import type { LGraphCanvas } from "@/LGraphCanvas"
-import type { LGraphNode } from "@/LGraphNode"
-import type { CanvasMouseEvent } from "@/types/events"
 import type { IBooleanWidget } from "@/types/widgets"
 
-import { BaseWidget, type DrawWidgetOptions } from "./BaseWidget"
+import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./BaseWidget"
 
 export class BooleanWidget extends BaseWidget implements IBooleanWidget {
   // IBooleanWidget properties
@@ -60,11 +57,7 @@ export class BooleanWidget extends BaseWidget implements IBooleanWidget {
     }
   }
 
-  override onClick(options: {
-    e: CanvasMouseEvent
-    node: LGraphNode
-    canvas: LGraphCanvas
-  }) {
+  override onClick(options: WidgetEventOptions) {
     this.setValue(!this.value, options)
   }
 }

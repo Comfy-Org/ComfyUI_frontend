@@ -1,9 +1,6 @@
-import type { LGraphCanvas } from "@/LGraphCanvas"
-import type { LGraphNode } from "@/LGraphNode"
-import type { CanvasMouseEvent } from "@/types/events"
 import type { IButtonWidget, IWidgetOptions } from "@/types/widgets"
 
-import { BaseWidget, type DrawWidgetOptions } from "./BaseWidget"
+import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./BaseWidget"
 
 export class ButtonWidget extends BaseWidget implements IButtonWidget {
   // IButtonWidget properties
@@ -67,12 +64,7 @@ export class ButtonWidget extends BaseWidget implements IButtonWidget {
     ctx.fillStyle = originalFillStyle
   }
 
-  override onClick(options: {
-    e: CanvasMouseEvent
-    node: LGraphNode
-    canvas: LGraphCanvas
-  }) {
-    const { e, node, canvas } = options
+  override onClick({ e, node, canvas }: WidgetEventOptions) {
     const pos = canvas.graph_mouse
 
     // Set clicked state and mark canvas as dirty

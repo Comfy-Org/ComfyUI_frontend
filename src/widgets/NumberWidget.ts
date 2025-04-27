@@ -1,11 +1,8 @@
-import type { LGraphCanvas } from "@/LGraphCanvas"
-import type { LGraphNode } from "@/LGraphNode"
-import type { CanvasMouseEvent } from "@/types/events"
 import type { INumericWidget, IWidgetOptions } from "@/types/widgets"
 
 import { getWidgetStep } from "@/utils/widget"
 
-import { BaseWidget, type DrawWidgetOptions } from "./BaseWidget"
+import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./BaseWidget"
 
 export class NumberWidget extends BaseWidget implements INumericWidget {
   // INumberWidget properties
@@ -19,11 +16,7 @@ export class NumberWidget extends BaseWidget implements INumericWidget {
     this.value = widget.value
   }
 
-  override setValue(value: number, options: {
-    e: CanvasMouseEvent
-    node: LGraphNode
-    canvas: LGraphCanvas
-  }) {
+  override setValue(value: number, options: WidgetEventOptions) {
     let newValue = value
     if (this.options.min != null && newValue < this.options.min) {
       newValue = this.options.min
@@ -96,12 +89,7 @@ export class NumberWidget extends BaseWidget implements INumericWidget {
     ctx.fillStyle = originalFillStyle
   }
 
-  override onClick(options: {
-    e: CanvasMouseEvent
-    node: LGraphNode
-    canvas: LGraphCanvas
-  }) {
-    const { e, node, canvas } = options
+  override onClick({ e, node, canvas }: WidgetEventOptions) {
     const x = e.canvasX - node.pos[0]
     const width = this.width || node.size[0]
 
@@ -138,11 +126,7 @@ export class NumberWidget extends BaseWidget implements INumericWidget {
    * Handles drag events for the number widget
    * @param options The options for handling the drag event
    */
-  override onDrag(options: {
-    e: CanvasMouseEvent
-    node: LGraphNode
-    canvas: LGraphCanvas
-  }) {
+  override onDrag(options: WidgetEventOptions) {
     const { e, node, canvas } = options
     const width = this.width || node.width
     const x = e.canvasX - node.pos[0]

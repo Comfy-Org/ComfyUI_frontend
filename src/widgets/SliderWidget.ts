@@ -1,11 +1,8 @@
-import type { LGraphCanvas } from "@/LGraphCanvas"
-import type { LGraphNode } from "@/LGraphNode"
-import type { CanvasMouseEvent } from "@/types/events"
 import type { ISliderWidget, IWidgetSliderOptions } from "@/types/widgets"
 
 import { clamp } from "@/litegraph"
 
-import { BaseWidget, type DrawWidgetOptions } from "./BaseWidget"
+import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./BaseWidget"
 
 export class SliderWidget extends BaseWidget implements ISliderWidget {
   // ISliderWidget properties
@@ -93,11 +90,7 @@ export class SliderWidget extends BaseWidget implements ISliderWidget {
   /**
    * Handles click events for the slider widget
    */
-  override onClick(options: {
-    e: CanvasMouseEvent
-    node: LGraphNode
-    canvas: LGraphCanvas
-  }) {
+  override onClick(options: WidgetEventOptions) {
     if (this.options.read_only) return
 
     const { e, node } = options
@@ -116,11 +109,7 @@ export class SliderWidget extends BaseWidget implements ISliderWidget {
   /**
    * Handles drag events for the slider widget
    */
-  override onDrag(options: {
-    e: CanvasMouseEvent
-    node: LGraphNode
-    canvas: LGraphCanvas
-  }) {
+  override onDrag(options: WidgetEventOptions) {
     if (this.options.read_only) return false
 
     const { e, node } = options

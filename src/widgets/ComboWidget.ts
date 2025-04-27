@@ -1,11 +1,8 @@
-import type { LGraphCanvas } from "@/LGraphCanvas"
-import type { LGraphNode } from "@/LGraphNode"
-import type { CanvasMouseEvent } from "@/types/events"
 import type { IComboWidget, IWidgetOptions } from "@/types/widgets"
 
 import { LiteGraph } from "@/litegraph"
 
-import { BaseWidget, type DrawWidgetOptions } from "./BaseWidget"
+import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./BaseWidget"
 
 export class ComboWidget extends BaseWidget implements IComboWidget {
   // IComboWidget properties
@@ -121,12 +118,7 @@ export class ComboWidget extends BaseWidget implements IComboWidget {
     ctx.fillStyle = originalFillStyle
   }
 
-  override onClick(options: {
-    e: CanvasMouseEvent
-    node: LGraphNode
-    canvas: LGraphCanvas
-  }) {
-    const { e, node, canvas } = options
+  override onClick({ e, node, canvas }: WidgetEventOptions) {
     const x = e.canvasX - node.pos[0]
     const width = this.width || node.size[0]
 
@@ -163,11 +155,7 @@ export class ComboWidget extends BaseWidget implements IComboWidget {
         Array.isArray(values)
           ? values[index]
           : index,
-        {
-          e,
-          node,
-          canvas,
-        },
+        { e, node, canvas },
       )
       return
     }
@@ -184,11 +172,7 @@ export class ComboWidget extends BaseWidget implements IComboWidget {
           values != values_list
             ? text_values.indexOf(value)
             : value,
-          {
-            e,
-            node,
-            canvas,
-          },
+          { e, node, canvas },
         )
       },
     })

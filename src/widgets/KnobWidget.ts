@@ -1,12 +1,9 @@
-import type { LGraphNode } from "@/LGraphNode"
 import type { IKnobWidget, IWidgetKnobOptions } from "@/types/widgets"
 
-import { LGraphCanvas } from "@/LGraphCanvas"
 import { clamp } from "@/litegraph"
-import { CanvasMouseEvent } from "@/types/events"
 import { getWidgetStep } from "@/utils/widget"
 
-import { BaseWidget, type DrawWidgetOptions } from "./BaseWidget"
+import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./BaseWidget"
 
 export class KnobWidget extends BaseWidget implements IKnobWidget {
   declare type: "knob"
@@ -202,11 +199,7 @@ export class KnobWidget extends BaseWidget implements IKnobWidget {
   }
 
   current_drag_offset = 0
-  override onDrag(options: {
-    e: CanvasMouseEvent
-    node: LGraphNode
-    canvas: LGraphCanvas
-  }): void {
+  override onDrag(options: WidgetEventOptions): void {
     if (this.options.read_only) return
     const { e } = options
     const step = getWidgetStep(this.options)

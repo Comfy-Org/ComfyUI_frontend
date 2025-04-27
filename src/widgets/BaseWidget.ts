@@ -12,6 +12,12 @@ export interface DrawWidgetOptions {
   margin?: number
 }
 
+export interface WidgetEventOptions {
+  e: CanvasMouseEvent
+  node: LGraphNode
+  canvas: LGraphCanvas
+}
+
 export abstract class BaseWidget implements IBaseWidget {
   /** From node edge to widget edge */
   static margin = 15
@@ -117,33 +123,20 @@ export abstract class BaseWidget implements IBaseWidget {
    * Handles the click event for the widget
    * @param options The options for handling the click event
    */
-  abstract onClick(options: {
-    e: CanvasMouseEvent
-    node: LGraphNode
-    canvas: LGraphCanvas
-  }): void
+  abstract onClick(options: WidgetEventOptions): void
 
   /**
    * Handles the drag event for the widget
    * @param options The options for handling the drag event
    */
-  onDrag?(options: {
-    e: CanvasMouseEvent
-    node: LGraphNode
-    canvas: LGraphCanvas
-  }): void
+  onDrag?(options: WidgetEventOptions): void
 
   /**
    * Sets the value of the widget
    * @param value The value to set
    * @param options The options for setting the value
    */
-  setValue(value: TWidgetValue, options: {
-    e: CanvasMouseEvent
-    node: LGraphNode
-    canvas: LGraphCanvas
-  }) {
-    const { node, canvas, e } = options
+  setValue(value: TWidgetValue, { e, node, canvas }: WidgetEventOptions) {
     const oldValue = this.value
     if (value === this.value) return
 

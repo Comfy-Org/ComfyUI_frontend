@@ -1,9 +1,6 @@
-import type { LGraphCanvas } from "@/LGraphCanvas"
-import type { LGraphNode } from "@/LGraphNode"
-import type { CanvasMouseEvent } from "@/types/events"
 import type { IStringWidget, IWidgetOptions } from "@/types/widgets"
 
-import { BaseWidget, type DrawWidgetOptions } from "./BaseWidget"
+import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./BaseWidget"
 
 export class TextWidget extends BaseWidget implements IStringWidget {
   // IStringWidget properties
@@ -78,13 +75,7 @@ export class TextWidget extends BaseWidget implements IStringWidget {
     ctx.fillStyle = originalFillStyle
   }
 
-  override onClick(options: {
-    e: CanvasMouseEvent
-    node: LGraphNode
-    canvas: LGraphCanvas
-  }) {
-    const { e, node, canvas } = options
-
+  override onClick({ e, node, canvas }: WidgetEventOptions) {
     // Show prompt dialog for text input
     canvas.prompt(
       "Value",
