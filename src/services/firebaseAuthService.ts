@@ -1,3 +1,5 @@
+import { FirebaseError } from 'firebase/app'
+
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
@@ -12,15 +14,29 @@ import { usdToMicros } from '@/utils/formatUtil'
 export const useFirebaseAuthService = () => {
   const authStore = useFirebaseAuthStore()
   const toastStore = useToastStore()
-  const { wrapWithErrorHandlingAsync } = useErrorHandling()
+  const { wrapWithErrorHandlingAsync, toastErrorHandler } = useErrorHandling()
 
   const reportError = (error: unknown) => {
-    toastStore.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: error instanceof Error ? error.message : t('g.unknownError'),
-      life: 5000
-    })
+    // Ref: https://firebase.google.com/docs/auth/admin/errors
+    if (
+      error instanceof FirebaseError &&
+      [
+        'auth/unauthorized-domain',
+        'auth/invalid-dynamic-link-domain',
+        'auth/unauthorized-continue-uri'
+      ].includes(error.code)
+    ) {
+      toastStore.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('toastMessages.unauthorizedDomain', {
+          domain: window.location.hostname,
+          email: 'support@comfy.org'
+        })
+      })
+    } else {
+      toastErrorHandler(error)
+    }
   }
 
   const logout = wrapWithErrorHandlingAsync(async () => {
@@ -77,14 +93,40 @@ export const useFirebaseAuthService = () => {
   }, reportError)
 
   const fetchBalance = wrapWithErrorHandlingAsync(async () => {
-    await authStore.fetchBalance()
+    return await authStore.fetchBalance()
   }, reportError)
+
+  const signInWithGoogle = wrapWithErrorHandlingAsync(async () => {
+    return await authStore.loginWithGoogle()
+  }, reportError)
+
+  const signInWithGithub = wrapWithErrorHandlingAsync(async () => {
+    return await authStore.loginWithGithub()
+  }, reportError)
+
+  const signInWithEmail = wrapWithErrorHandlingAsync(
+    async (email: string, password: string) => {
+      return await authStore.login(email, password)
+    },
+    reportError
+  )
+
+  const signUpWithEmail = wrapWithErrorHandlingAsync(
+    async (email: string, password: string) => {
+      return await authStore.register(email, password)
+    },
+    reportError
+  )
 
   return {
     logout,
     sendPasswordReset,
     purchaseCredits,
     accessBillingPortal,
-    fetchBalance
+    fetchBalance,
+    signInWithGoogle,
+    signInWithGithub,
+    signInWithEmail,
+    signUpWithEmail
   }
 }

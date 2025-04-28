@@ -3,13 +3,11 @@ import { useToastStore } from '@/stores/toastStore'
 
 export function useErrorHandling() {
   const toast = useToastStore()
-
-  const toastErrorHandler = (error: any) => {
-    console.error(error)
+  const toastErrorHandler = (error: unknown) => {
     toast.add({
       severity: 'error',
       summary: t('g.error'),
-      detail: error.message
+      detail: error instanceof Error ? error.message : t('g.unknownError')
     })
   }
 
@@ -45,5 +43,9 @@ export function useErrorHandling() {
       }
     }
 
-  return { wrapWithErrorHandling, wrapWithErrorHandlingAsync }
+  return {
+    wrapWithErrorHandling,
+    wrapWithErrorHandlingAsync,
+    toastErrorHandler
+  }
 }
