@@ -1,4 +1,20 @@
 /**
+ * Shorthand for {@link Parameters} of optional callbacks.
+ *
+ * @example
+ * ```ts
+ * const { onClick } = CustomClass.prototype
+ * CustomClass.prototype.onClick = function (...args: CallbackParams<typeof onClick>) {
+ *   const r = onClick?.apply(this, args)
+ *   // ...
+ *   return r
+ * }
+ * ```
+ */
+export type CallbackParams<T extends ((...args: any) => any) | undefined> =
+  Parameters<Exclude<T, undefined>>
+
+/**
  * Chain multiple callbacks together.
  *
  * @param originalCallback - The original callback to chain.

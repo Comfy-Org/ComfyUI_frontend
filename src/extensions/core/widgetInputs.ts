@@ -9,7 +9,10 @@ import type {
 } from '@comfyorg/litegraph'
 import type { CanvasMouseEvent } from '@comfyorg/litegraph/dist/types/events'
 
-import { useChainCallback } from '@/composables/functional/useChainCallback'
+import {
+  type CallbackParams,
+  useChainCallback
+} from '@/composables/functional/useChainCallback'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import { ComfyWidgets, addValueControlWidgets } from '@/scripts/widgets'
@@ -564,11 +567,10 @@ app.registerExtension({
     const origOnInputDblClick = nodeType.prototype.onInputDblClick
     nodeType.prototype.onInputDblClick = function (
       this: LGraphNode,
-      slot: number
+      ...[slot, ...args]: CallbackParams<typeof origOnInputDblClick>
     ) {
       const r = origOnInputDblClick
-        ? // @ts-expect-error fixme ts strict error
-          origOnInputDblClick.apply(this, arguments)
+        ? origOnInputDblClick.apply(this, [slot, ...args])
         : undefined
 
       const input = this.inputs[slot]
