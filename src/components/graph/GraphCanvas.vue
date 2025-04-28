@@ -43,7 +43,7 @@
 </template>
 
 <script setup lang="ts">
-import { type LGraphNode, LiteGraph } from '@comfyorg/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph'
 import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
