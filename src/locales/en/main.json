@@ -1085,7 +1085,8 @@
     "failedToCreateCustomer": "Failed to create customer: {error}",
     "failedToInitiateCreditPurchase": "Failed to initiate credit purchase: {error}",
     "failedToAccessBillingPortal": "Failed to access billing portal: {error}",
-    "failedToPurchaseCredits": "Failed to purchase credits: {error}"
+    "failedToPurchaseCredits": "Failed to purchase credits: {error}",
+    "unauthorizedDomain": "Your domain {domain} is not authorized to use this service. Please contact {email} to add your domain to the whitelist."
   },
   "auth": {
     "login": {
