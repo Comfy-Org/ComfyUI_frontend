@@ -308,17 +308,6 @@ export class ChangeTracker {
       return v
     }
 
-    // Detects nodes being added via the node search dialog
-    const onNodeAdded = LiteGraph.LGraph.prototype.onNodeAdded
-    LiteGraph.LGraph.prototype.onNodeAdded = function (node: LGraphNode) {
-      const v = onNodeAdded?.apply(this, [node])
-      if (!app?.configuringGraph) {
-        logger.debug('checkState on onNodeAdded')
-        checkState()
-      }
-      return v
-    }
-
     // Handle multiple commands as a single transaction
     document.addEventListener('litegraph:canvas', (e: Event) => {
       const detail = (e as CustomEvent).detail

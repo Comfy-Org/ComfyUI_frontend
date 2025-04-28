@@ -49,6 +49,7 @@ import { useLitegraphService } from '@/services/litegraphService'
 import { useCanvasStore } from '@/stores/graphStore'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
+import { useWorkflowStore } from '@/stores/workflowStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 import { FuseFilterWithValue } from '@/utils/fuseUtil'
@@ -101,6 +102,8 @@ const addNode = (nodeDef: ComfyNodeDefImpl) => {
 
   canvasStore.getCanvas().linkConnector.connectToNode(node, triggerEvent)
 
+  // Notify changeTracker - new step should be added
+  useWorkflowStore().activeWorkflow?.changeTracker?.checkState()
   window.requestAnimationFrame(closeDialog)
 }
 
