@@ -18,6 +18,7 @@
       "failed": "Inicio de sesión fallido",
       "forgotPassword": "¿Olvidaste tu contraseña?",
       "forgotPasswordError": "No se pudo enviar el correo electrónico para restablecer la contraseña",
+      "insecureContextWarning": "Esta conexión no es segura (HTTP): tus credenciales pueden ser interceptadas por atacantes si continúas con el inicio de sesión.",
       "loginButton": "Iniciar sesión",
       "loginWithGithub": "Iniciar sesión con Github",
       "loginWithGoogle": "Iniciar sesión con Google",

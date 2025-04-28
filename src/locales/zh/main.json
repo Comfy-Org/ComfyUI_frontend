@@ -18,6 +18,7 @@
       "failed": "登录失败",
       "forgotPassword": "忘记密码？",
       "forgotPasswordError": "发送重置密码邮件失败",
+      "insecureContextWarning": "此连接不安全（HTTP）—如果继续登录，您的凭据可能会被攻击者拦截。",
       "loginButton": "登录",
       "loginWithGithub": "使用Github登录",
       "loginWithGoogle": "使用Google登录",

@@ -18,6 +18,7 @@
       "failed": "Вход не удался",
       "forgotPassword": "Забыли пароль?",
       "forgotPasswordError": "Не удалось отправить письмо для сброса пароля",
+      "insecureContextWarning": "Это соединение небезопасно (HTTP) — ваши учетные данные могут быть перехвачены злоумышленниками, если вы продолжите вход.",
       "loginButton": "Войти",
       "loginWithGithub": "Войти через Github",
       "loginWithGoogle": "Войти через Google",
