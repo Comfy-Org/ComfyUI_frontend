@@ -569,9 +569,7 @@ app.registerExtension({
       this: LGraphNode,
       ...[slot, ...args]: CallbackParams<typeof origOnInputDblClick>
     ) {
-      const r = origOnInputDblClick
-        ? origOnInputDblClick.apply(this, [slot, ...args])
-        : undefined
+      const r = origOnInputDblClick?.apply(this, [slot, ...args])
 
       const input = this.inputs[slot]
       if (!input.widget) {
