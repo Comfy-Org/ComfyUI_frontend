@@ -1,5 +1,4 @@
 import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
-import { LGraphNode } from '@comfyorg/litegraph'
 import * as jsondiffpatch from 'jsondiffpatch'
 import _ from 'lodash'
 import log from 'loglevel'
