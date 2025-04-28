@@ -214,8 +214,6 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   #concreteInputs: NodeInputSlot[] = []
   #concreteOutputs: NodeOutputSlot[] = []
 
-  // Not used
-  connections: unknown[] = []
   properties: Dictionary<NodeProperty | undefined> = {}
   properties_info: INodePropertyInfo[] = []
   flags: INodeFlags = {}
@@ -1506,24 +1504,6 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     }
     this.onInputRemoved?.(slot, slot_info[0])
     this.setDirtyCanvas(true, true)
-  }
-
-  /**
-   * add an special connection to this node (used for special kinds of graphs)
-   * @param type string defining the input type ("vec3","number",...)
-   * @param pos position of the connection inside the node
-   * @param direction if is input or output
-   */
-  addConnection(name: string, type: string, pos: Point, direction: string) {
-    const o = {
-      name: name,
-      type: type,
-      pos: pos,
-      direction: direction,
-      links: null,
-    }
-    this.connections.push(o)
-    return o
   }
 
   /**
