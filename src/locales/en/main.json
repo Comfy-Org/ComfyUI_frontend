@@ -1113,7 +1113,8 @@
       "andText": "and",
       "privacyLink": "Privacy Policy",
       "success": "Login successful",
-      "failed": "Login failed"
+      "failed": "Login failed",
+      "insecureContextWarning": "You are using an insecure (HTTP) connection, which allows attackers to intercept your credentials and sensitive data through man-in-the-middle attacks."
     },
     "signup": {
       "title": "Create an account",
