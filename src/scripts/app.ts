@@ -761,6 +761,14 @@ export class ComfyApp {
     this.canvas.state = reactive(this.canvas.state)
     this.canvas.ds.state = reactive(this.canvas.ds.state)
 
+    canvasEl.addEventListener('no-items-selected', () => {
+      useToastStore().add({
+        severity: 'warn',
+        summary: 'No items selected',
+        life: 2000
+      })
+    })
+
     // @ts-expect-error fixme ts strict error
     this.ctx = canvasEl.getContext('2d')
 
