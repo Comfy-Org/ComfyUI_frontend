@@ -20,6 +20,9 @@
     <!-- Form -->
     <SignInForm v-if="isSignIn" @submit="signInWithEmail" />
     <SignUpForm v-else-if="!userIsInChina" @submit="signUpWithEmail" />
+    <Message v-if="!isSignIn && userIsInChina" severity="warn" class="mb-4">
+      {{ t('auth.signup.regionRestrictionChina') }}
+    </Message>
 
     <!-- Divider -->
     <Divider
@@ -89,6 +92,7 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
+import Message from 'primevue/message'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
