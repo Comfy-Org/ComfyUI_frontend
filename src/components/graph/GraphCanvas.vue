@@ -220,6 +220,32 @@ watch(
   }
 )
 
+// Save the drag & scale info in the serialized workflow if the setting is enabled
+watch(
+  [
+    () => canvasStore.canvas,
+    () => settingStore.get('Comfy.EnableWorkflowViewRestore')
+  ],
+  ([canvas, enableWorkflowViewRestore]) => {
+    const extra = canvas?.graph?.extra
+    if (!extra) return
+
+    if (enableWorkflowViewRestore) {
+      extra.ds = {
+        get scale() {
+          return canvas.ds.scale
+        },
+        get offset() {
+          const [x, y] = canvas.ds.offset
+          return [x, y]
+        }
+      }
+    } else {
+      delete extra.ds
+    }
+  }
+)
+
 const loadCustomNodesI18n = async () => {
   try {
     const i18nData = await api.getCustomNodesI18n()
