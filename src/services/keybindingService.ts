@@ -1,5 +1,6 @@
 import { CORE_KEYBINDINGS } from '@/constants/coreKeybindings'
 import { useCommandStore } from '@/stores/commandStore'
+import { useContextKeyStore } from '@/stores/contextKeyStore'
 import {
   KeyComboImpl,
   KeybindingImpl,
@@ -11,6 +12,7 @@ export const useKeybindingService = () => {
   const keybindingStore = useKeybindingStore()
   const commandStore = useCommandStore()
   const settingStore = useSettingStore()
+  const contextKeyStore = useContextKeyStore()
 
   const keybindHandler = async function (event: KeyboardEvent) {
     const keyCombo = KeyComboImpl.fromEvent(event)
@@ -32,6 +34,14 @@ export const useKeybindingService = () => {
 
     const keybinding = keybindingStore.getKeybinding(keyCombo)
     if (keybinding && keybinding.targetElementId !== 'graph-canvas') {
+      // If condition exists and evaluates to false
+      // TODO: Complex context key evaluation
+      if (
+        keybinding.condition &&
+        contextKeyStore.evaluateCondition(keybinding.condition) !== true
+      ) {
+        return
+      }
       // Prevent default browser behavior first, then execute the command
       event.preventDefault()
       await commandStore.execute(keybinding.commandId)
