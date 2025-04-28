@@ -14,6 +14,6 @@ export const useChainCallback = <
 ) => {
   return function (this: O, ...args: Parameters<T>) {
     originalCallback?.call(this, ...args)
-    callbacks.forEach((callback) => callback.call(this, ...args))
+    for (const callback of callbacks) callback.call(this, ...args)
   }
 }
