@@ -43,7 +43,7 @@
 </template>
 
 <script setup lang="ts">
-import type { LGraphNode } from '@comfyorg/litegraph'
+import { type LGraphNode, LiteGraph } from '@comfyorg/litegraph'
 import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
@@ -217,6 +217,32 @@ watch(
     }
 
     comfyApp.canvas.draw(true, true)
+  }
+)
+
+// Save the drag & scale info in the serialized workflow if the setting is enabled
+watch(
+  [
+    () => canvasStore.canvas,
+    () => settingStore.get('Comfy.EnableWorkflowViewRestore')
+  ],
+  ([canvas, enableWorkflowViewRestore]) => {
+    const extra = canvas?.graph?.extra
+    if (!extra) return
+
+    if (enableWorkflowViewRestore) {
+      extra.ds = {
+        get scale() {
+          return canvas.ds.scale
+        },
+        get offset() {
+          const [x, y] = canvas.ds.offset
+          return [x, y]
+        }
+      }
+    } else {
+      delete extra.ds
+    }
   }
 )
 

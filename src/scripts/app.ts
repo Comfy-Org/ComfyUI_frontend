@@ -425,30 +425,6 @@ export class ComfyApp {
     }
   }
 
-  #addRestoreWorkflowView() {
-    const serialize = LGraph.prototype.serialize
-    const self = this
-    LGraph.prototype.serialize = function (...args) {
-      const workflow = serialize.apply(this, args)
-
-      // Store the drag & scale info in the serialized workflow if the setting is enabled
-      if (useSettingStore().get('Comfy.EnableWorkflowViewRestore')) {
-        if (!workflow.extra) {
-          workflow.extra = {}
-        }
-        workflow.extra.ds = {
-          scale: self.canvas.ds.scale,
-          offset: [...self.canvas.ds.offset]
-        }
-      } else if (workflow.extra?.ds) {
-        // Clear any old view data
-        delete workflow.extra.ds
-      }
-
-      return workflow
-    }
-  }
-
   /**
    * Adds a handler allowing drag+drop of files onto the window to load workflows
    */
@@ -768,7 +744,6 @@ export class ComfyApp {
     this.#addProcessKeyHandler()
     this.#addConfigureHandler()
     this.#addApiUpdateHandlers()
-    this.#addRestoreWorkflowView()
 
     this.graph = new LGraph()
 
