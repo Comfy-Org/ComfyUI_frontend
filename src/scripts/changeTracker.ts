@@ -275,13 +275,6 @@ export class ChangeTracker {
       checkState()
       return v
     }
-    const processMouseDown = LGraphCanvas.prototype.processMouseDown
-    LGraphCanvas.prototype.processMouseDown = function (e) {
-      const v = processMouseDown.apply(this, [e])
-      logger.debug('checkState on processMouseDown')
-      checkState()
-      return v
-    }
 
     // Handle litegraph dialog popup for number/string widgets
     const prompt = LGraphCanvas.prototype.prompt
