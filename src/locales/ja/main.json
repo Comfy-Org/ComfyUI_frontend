@@ -1121,7 +1121,6 @@
     "failedToPurchaseCredits": "クレジットの購入に失敗しました: {error}",
     "fileLoadError": "{fileName}でワークフローが見つかりません",
     "fileUploadFailed": "ファイルのアップロードに失敗しました",
-    "firebaseAuthNotInitialized": "Firebase認証が初期化されていません",
     "interrupted": "実行が中断されました",
     "migrateToLitegraphReroute": "将来のバージョンではRerouteノードが削除されます。litegraph-native rerouteに移行するにはクリックしてください。",
     "no3dScene": "テクスチャを適用する3Dシーンがありません",

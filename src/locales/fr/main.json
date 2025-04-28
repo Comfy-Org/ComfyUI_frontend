@@ -1121,7 +1121,6 @@
     "failedToPurchaseCredits": "Échec de l'achat de crédits : {error}",
     "fileLoadError": "Impossible de trouver le flux de travail dans {fileName}",
     "fileUploadFailed": "Échec du téléchargement du fichier",
-    "firebaseAuthNotInitialized": "Authentification Firebase non initialisée",
     "interrupted": "L'exécution a été interrompue",
     "migrateToLitegraphReroute": "Les nœuds de reroute seront supprimés dans les futures versions. Cliquez pour migrer vers le reroute natif de litegraph.",
     "no3dScene": "Aucune scène 3D pour appliquer la texture",

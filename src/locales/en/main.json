@@ -1081,7 +1081,6 @@
     "failedToFetchLogs": "Failed to fetch server logs",
     "migrateToLitegraphReroute": "Reroute nodes will be removed in future versions. Click to migrate to litegraph-native reroute.",
     "userNotAuthenticated": "User not authenticated",
-    "firebaseAuthNotInitialized": "Firebase Auth not initialized",
     "failedToFetchBalance": "Failed to fetch balance: {error}",
     "failedToCreateCustomer": "Failed to create customer: {error}",
     "failedToInitiateCreditPurchase": "Failed to initiate credit purchase: {error}",
