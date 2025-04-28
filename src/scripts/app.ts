@@ -1190,13 +1190,6 @@ export class ComfyApp {
 
     let comfyOrgAuthToken =
       (await useFirebaseAuthStore().getIdToken()) ?? undefined
-    // Check if we're in a secure context before using the auth token
-    if (comfyOrgAuthToken && !window.isSecureContext) {
-      comfyOrgAuthToken = undefined
-      console.warn(
-        'Auth token not used: Not in a secure context. Authentication requires a secure connection.'
-      )
-    }
 
     try {
       while (this.#queueItems.length) {

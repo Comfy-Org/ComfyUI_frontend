@@ -17,6 +17,10 @@
       </p>
     </div>
 
+    <Message v-if="!isSecureContext" severity="warn" class="mb-4">
+      {{ t('auth.login.insecureContextWarning') }}
+    </Message>
+
     <!-- Form -->
     <SignInForm v-if="isSignIn" @submit="signInWithEmail" />
     <template v-else>
@@ -106,6 +110,7 @@ const { onSuccess } = defineProps<{
 
 const { t } = useI18n()
 const authService = useFirebaseAuthService()
+const isSecureContext = window.isSecureContext
 const isSignIn = ref(true)
 const toggleState = () => {
   isSignIn.value = !isSignIn.value

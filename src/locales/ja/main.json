@@ -18,6 +18,7 @@
       "failed": "ログイン失敗",
       "forgotPassword": "パスワードを忘れましたか？",
       "forgotPasswordError": "パスワードリセット用メールの送信に失敗しました",
+      "insecureContextWarning": "この接続は安全ではありません（HTTP）- このままログインを続けると、認証情報が攻撃者に傍受される可能性があります。",
       "loginButton": "ログイン",
       "loginWithGithub": "Githubでログイン",
       "loginWithGoogle": "Googleでログイン",
