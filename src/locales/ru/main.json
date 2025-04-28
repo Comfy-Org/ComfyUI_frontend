@@ -1121,7 +1121,6 @@
     "failedToPurchaseCredits": "Не удалось купить кредиты: {error}",
     "fileLoadError": "Не удалось найти рабочий процесс в {fileName}",
     "fileUploadFailed": "Не удалось загрузить файл",
-    "firebaseAuthNotInitialized": "Firebase Auth не инициализирован",
     "interrupted": "Выполнение было прервано",
     "migrateToLitegraphReroute": "Узлы перенаправления будут удалены в будущих версиях. Нажмите, чтобы перейти на litegraph-native reroute.",
     "no3dScene": "Нет 3D сцены для применения текстуры",
