@@ -1,7 +1,6 @@
 import _ from 'lodash'
 import { defineStore } from 'pinia'
-import { toRaw } from 'vue'
-import { computed, ref } from 'vue'
+import { computed, ref, toRaw } from 'vue'
 
 import type {
   ResultItem,
