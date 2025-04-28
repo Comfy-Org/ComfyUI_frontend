@@ -6,7 +6,8 @@ import type { Reroute } from "@/Reroute"
 import type { CanvasPointerEvent } from "@/types/events"
 import type { IWidget } from "@/types/widgets"
 
-import { LinkConnectorEventMap, LinkConnectorEventTarget } from "@/infrastructure/LinkConnectorEventTarget"
+import { CustomEventTarget } from "@/infrastructure/CustomEventTarget"
+import { LinkConnectorEventMap } from "@/infrastructure/LinkConnectorEventMap"
 import { LLink } from "@/LLink"
 import { LinkDirection } from "@/types/globalEnums"
 
@@ -67,7 +68,7 @@ export class LinkConnector {
     snapLinksPos: undefined,
   }
 
-  readonly events = new LinkConnectorEventTarget()
+  readonly events = new CustomEventTarget<LinkConnectorEventMap>()
 
   /** Contains information for rendering purposes only. */
   readonly renderLinks: RenderLinkUnion[] = []

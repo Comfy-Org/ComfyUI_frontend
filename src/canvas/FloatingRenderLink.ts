@@ -1,5 +1,6 @@
 import type { RenderLink } from "./RenderLink"
-import type { LinkConnectorEventTarget } from "@/infrastructure/LinkConnectorEventTarget"
+import type { CustomEventTarget } from "@/infrastructure/CustomEventTarget"
+import type { LinkConnectorEventMap } from "@/infrastructure/LinkConnectorEventMap"
 import type { INodeOutputSlot, LinkNetwork } from "@/interfaces"
 import type { INodeInputSlot } from "@/interfaces"
 import type { Point } from "@/interfaces"
@@ -113,7 +114,7 @@ export class FloatingRenderLink implements RenderLink {
     return true
   }
 
-  connectToInput(node: LGraphNode, input: INodeInputSlot, _events?: LinkConnectorEventTarget): void {
+  connectToInput(node: LGraphNode, input: INodeInputSlot, _events?: CustomEventTarget<LinkConnectorEventMap>): void {
     const floatingLink = this.link
     floatingLink.target_id = node.id
     floatingLink.target_slot = node.inputs.indexOf(input)
@@ -125,7 +126,7 @@ export class FloatingRenderLink implements RenderLink {
     input._floatingLinks.add(floatingLink)
   }
 
-  connectToOutput(node: LGraphNode, output: INodeOutputSlot, _events?: LinkConnectorEventTarget): void {
+  connectToOutput(node: LGraphNode, output: INodeOutputSlot, _events?: CustomEventTarget<LinkConnectorEventMap>): void {
     const floatingLink = this.link
     floatingLink.origin_id = node.id
     floatingLink.origin_slot = node.outputs.indexOf(output)
@@ -138,7 +139,7 @@ export class FloatingRenderLink implements RenderLink {
   connectToRerouteInput(
     reroute: Reroute,
     { node: inputNode, input }: { node: LGraphNode, input: INodeInputSlot },
-    events: LinkConnectorEventTarget,
+    events: CustomEventTarget<LinkConnectorEventMap>,
   ) {
     const floatingLink = this.link
     floatingLink.target_id = inputNode.id
@@ -155,7 +156,7 @@ export class FloatingRenderLink implements RenderLink {
     reroute: Reroute,
     outputNode: LGraphNode,
     output: INodeOutputSlot,
-    events: LinkConnectorEventTarget,
+    events: CustomEventTarget<LinkConnectorEventMap>,
   ) {
     const floatingLink = this.link
     floatingLink.origin_id = outputNode.id

@@ -1,4 +1,5 @@
-import type { LinkConnectorEventTarget } from "@/infrastructure/LinkConnectorEventTarget"
+import type { CustomEventTarget } from "@/infrastructure/CustomEventTarget"
+import type { LinkConnectorEventMap } from "@/infrastructure/LinkConnectorEventMap"
 import type { INodeInputSlot, INodeOutputSlot, LinkNetwork, Point } from "@/interfaces"
 import type { LGraphNode } from "@/LGraphNode"
 import type { LLink } from "@/LLink"
@@ -43,7 +44,7 @@ export class MovingOutputLink extends MovingLinkBase {
     throw new Error("MovingOutputLink cannot connect to an input.")
   }
 
-  connectToOutput(outputNode: LGraphNode, output: INodeOutputSlot, events: LinkConnectorEventTarget): LLink | null | undefined {
+  connectToOutput(outputNode: LGraphNode, output: INodeOutputSlot, events: CustomEventTarget<LinkConnectorEventMap>): LLink | null | undefined {
     if (output === this.outputSlot) return
 
     const link = outputNode.connectSlots(output, this.inputNode, this.inputSlot, this.link.parentId)
@@ -59,7 +60,7 @@ export class MovingOutputLink extends MovingLinkBase {
     reroute: Reroute,
     outputNode: LGraphNode,
     output: INodeOutputSlot,
-    events: LinkConnectorEventTarget,
+    events: CustomEventTarget<LinkConnectorEventMap>,
   ): void {
     // Moving output side of links
     const { inputNode, inputSlot, fromReroute } = this

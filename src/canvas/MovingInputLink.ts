@@ -1,4 +1,5 @@
-import type { LinkConnectorEventTarget } from "@/infrastructure/LinkConnectorEventTarget"
+import type { CustomEventTarget } from "@/infrastructure/CustomEventTarget"
+import type { LinkConnectorEventMap } from "@/infrastructure/LinkConnectorEventMap"
 import type { INodeInputSlot, INodeOutputSlot, LinkNetwork, Point } from "@/interfaces"
 import type { LGraphNode } from "@/LGraphNode"
 import type { LLink } from "@/LLink"
@@ -39,7 +40,7 @@ export class MovingInputLink extends MovingLinkBase {
     return reroute.origin_id !== this.inputNode.id
   }
 
-  connectToInput(inputNode: LGraphNode, input: INodeInputSlot, events: LinkConnectorEventTarget): LLink | null | undefined {
+  connectToInput(inputNode: LGraphNode, input: INodeInputSlot, events: CustomEventTarget<LinkConnectorEventMap>): LLink | null | undefined {
     if (input === this.inputSlot) return
 
     this.inputNode.disconnectInput(this.inputIndex, true)
@@ -55,7 +56,7 @@ export class MovingInputLink extends MovingLinkBase {
   connectToRerouteInput(
     reroute: Reroute,
     { node: inputNode, input, link: existingLink }: { node: LGraphNode, input: INodeInputSlot, link: LLink },
-    events: LinkConnectorEventTarget,
+    events: CustomEventTarget<LinkConnectorEventMap>,
     originalReroutes: Reroute[],
   ): void {
     const { outputNode, outputSlot, fromReroute } = this

@@ -1,4 +1,5 @@
-import type { LinkConnectorEventTarget } from "@/infrastructure/LinkConnectorEventTarget"
+import type { CustomEventTarget } from "@/infrastructure/CustomEventTarget"
+import type { LinkConnectorEventMap } from "@/infrastructure/LinkConnectorEventMap"
 import type { LinkNetwork, Point } from "@/interfaces"
 import type { LGraphNode } from "@/LGraphNode"
 import type { INodeInputSlot, INodeOutputSlot, LLink, Reroute } from "@/litegraph"
@@ -25,13 +26,13 @@ export interface RenderLink {
   /** The reroute that the link is being connected from. */
   readonly fromReroute?: Reroute
 
-  connectToInput(node: LGraphNode, input: INodeInputSlot, events?: LinkConnectorEventTarget): void
-  connectToOutput(node: LGraphNode, output: INodeOutputSlot, events?: LinkConnectorEventTarget): void
+  connectToInput(node: LGraphNode, input: INodeInputSlot, events?: CustomEventTarget<LinkConnectorEventMap>): void
+  connectToOutput(node: LGraphNode, output: INodeOutputSlot, events?: CustomEventTarget<LinkConnectorEventMap>): void
 
   connectToRerouteInput(
     reroute: Reroute,
     { node, input, link }: { node: LGraphNode, input: INodeInputSlot, link: LLink },
-    events: LinkConnectorEventTarget,
+    events: CustomEventTarget<LinkConnectorEventMap>,
     originalReroutes: Reroute[],
   ): void
 
@@ -39,6 +40,6 @@ export interface RenderLink {
     reroute: Reroute,
     outputNode: LGraphNode,
     output: INodeOutputSlot,
-    events: LinkConnectorEventTarget,
+    events: CustomEventTarget<LinkConnectorEventMap>,
   ): void
 }

@@ -1,5 +1,6 @@
 import type { RenderLink } from "./RenderLink"
-import type { LinkConnectorEventTarget } from "@/infrastructure/LinkConnectorEventTarget"
+import type { CustomEventTarget } from "@/infrastructure/CustomEventTarget"
+import type { LinkConnectorEventMap } from "@/infrastructure/LinkConnectorEventMap"
 import type { INodeInputSlot, INodeOutputSlot, LinkNetwork, Point } from "@/interfaces"
 import type { LGraphNode } from "@/LGraphNode"
 import type { Reroute } from "@/Reroute"
@@ -43,7 +44,7 @@ export class ToOutputRenderLink implements RenderLink {
     return true
   }
 
-  connectToOutput(node: LGraphNode, output: INodeOutputSlot, events: LinkConnectorEventTarget) {
+  connectToOutput(node: LGraphNode, output: INodeOutputSlot, events: CustomEventTarget<LinkConnectorEventMap>) {
     const { node: inputNode, fromSlot, fromReroute } = this
     if (!inputNode) return
 
@@ -55,7 +56,7 @@ export class ToOutputRenderLink implements RenderLink {
     reroute: Reroute,
     outputNode: LGraphNode,
     output: INodeOutputSlot,
-    events: LinkConnectorEventTarget,
+    events: CustomEventTarget<LinkConnectorEventMap>,
   ): void {
     const { node: inputNode, fromSlot } = this
     const newLink = outputNode.connectSlots(output, inputNode, fromSlot, reroute?.id)

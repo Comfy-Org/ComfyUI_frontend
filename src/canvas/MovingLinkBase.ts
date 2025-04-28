@@ -1,5 +1,6 @@
 import type { RenderLink } from "./RenderLink"
-import type { LinkConnectorEventTarget } from "@/infrastructure/LinkConnectorEventTarget"
+import type { CustomEventTarget } from "@/infrastructure/CustomEventTarget"
+import type { LinkConnectorEventMap } from "@/infrastructure/LinkConnectorEventMap"
 import type { INodeInputSlot, INodeOutputSlot, LinkNetwork, Point } from "@/interfaces"
 import type { LGraphNode, NodeId } from "@/LGraphNode"
 import type { LLink } from "@/LLink"
@@ -79,10 +80,10 @@ export abstract class MovingLinkBase implements RenderLink {
     this.inputPos = inputNode.getInputPos(inputIndex)
   }
 
-  abstract connectToInput(node: LGraphNode, input: INodeInputSlot, events?: LinkConnectorEventTarget): void
-  abstract connectToOutput(node: LGraphNode, output: INodeOutputSlot, events?: LinkConnectorEventTarget): void
-  abstract connectToRerouteInput(reroute: Reroute, { node, input, link }: { node: LGraphNode, input: INodeInputSlot, link: LLink }, events: LinkConnectorEventTarget, originalReroutes: Reroute[]): void
-  abstract connectToRerouteOutput(reroute: Reroute, outputNode: LGraphNode, output: INodeOutputSlot, events: LinkConnectorEventTarget): void
+  abstract connectToInput(node: LGraphNode, input: INodeInputSlot, events?: CustomEventTarget<LinkConnectorEventMap>): void
+  abstract connectToOutput(node: LGraphNode, output: INodeOutputSlot, events?: CustomEventTarget<LinkConnectorEventMap>): void
+  abstract connectToRerouteInput(reroute: Reroute, { node, input, link }: { node: LGraphNode, input: INodeInputSlot, link: LLink }, events: CustomEventTarget<LinkConnectorEventMap>, originalReroutes: Reroute[]): void
+  abstract connectToRerouteOutput(reroute: Reroute, outputNode: LGraphNode, output: INodeOutputSlot, events: CustomEventTarget<LinkConnectorEventMap>): void
 
   abstract disconnect(): boolean
 }
