@@ -1,4 +1,4 @@
-import type { INodeInputSlot, INodeOutputSlot, OptionalProps } from "@/interfaces"
+import type { INodeInputSlot, INodeOutputSlot, OptionalProps, ReadOnlyPoint } from "@/interfaces"
 import type { LGraphNode } from "@/LGraphNode"
 import type { LinkId } from "@/LLink"
 
@@ -11,6 +11,10 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
 
   get isWidgetInputSlot(): boolean {
     return !!this.widget
+  }
+
+  get collapsedPos(): ReadOnlyPoint {
+    return [0, LiteGraph.NODE_TITLE_HEIGHT * -0.5]
   }
 
   constructor(slot: OptionalProps<INodeInputSlot, "boundingRect">, node: LGraphNode) {

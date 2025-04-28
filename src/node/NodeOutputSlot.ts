@@ -1,4 +1,4 @@
-import type { INodeInputSlot, INodeOutputSlot, OptionalProps } from "@/interfaces"
+import type { INodeInputSlot, INodeOutputSlot, OptionalProps, ReadOnlyPoint } from "@/interfaces"
 import type { LGraphNode } from "@/LGraphNode"
 import type { LinkId } from "@/LLink"
 
@@ -7,6 +7,8 @@ import { LiteGraph } from "@/litegraph"
 import { type IDrawOptions, NodeSlot } from "@/node/NodeSlot"
 
 export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
+  #node: LGraphNode
+
   links: LinkId[] | null
   _data?: unknown
   slot_index?: number
@@ -15,11 +17,19 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
     return false
   }
 
+  get collapsedPos(): ReadOnlyPoint {
+    return [
+      this.#node._collapsed_width ?? LiteGraph.NODE_COLLAPSED_WIDTH,
+      LiteGraph.NODE_TITLE_HEIGHT * -0.5,
+    ]
+  }
+
   constructor(slot: OptionalProps<INodeOutputSlot, "boundingRect">, node: LGraphNode) {
     super(slot, node)
     this.links = slot.links
     this._data = slot._data
     this.slot_index = slot.slot_index
+    this.#node = node
   }
 
   override isValidTarget(fromSlot: INodeInputSlot | INodeOutputSlot): boolean {

@@ -3413,40 +3413,18 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    * When {@link LGraphNode.collapsed} is `true`, this method draws the node's collapsed slots.
    */
   drawCollapsedSlots(ctx: CanvasRenderingContext2D): void {
-    // if collapsed
-    let input_slot: NodeInputSlot | undefined
-    let output_slot: NodeOutputSlot | undefined
-
-    // get first connected slot to render
+    // Render the first connected slot only.
     for (const slot of this.#concreteInputs) {
-      if (slot.link == null) {
-        continue
+      if (slot.link != null) {
+        slot.drawCollapsed(ctx)
+        break
       }
-      input_slot = slot
-      break
     }
     for (const slot of this.#concreteOutputs) {
-      if (!slot.links || !slot.links.length) {
-        continue
+      if (slot.links?.length) {
+        slot.drawCollapsed(ctx)
+        break
       }
-      output_slot = slot
-      break
-    }
-
-    if (input_slot) {
-      const x = 0
-      const y = LiteGraph.NODE_TITLE_HEIGHT * -0.5
-      input_slot.drawCollapsed(ctx, {
-        pos: [x, y],
-      })
-    }
-
-    if (output_slot) {
-      const x = this._collapsed_width ?? LiteGraph.NODE_COLLAPSED_WIDTH
-      const y = LiteGraph.NODE_TITLE_HEIGHT * -0.5
-      output_slot.drawCollapsed(ctx, {
-        pos: [x, y],
-      })
     }
   }
 
