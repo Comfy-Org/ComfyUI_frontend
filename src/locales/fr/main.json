@@ -46,6 +46,7 @@
       "emailPlaceholder": "Entrez votre email",
       "passwordLabel": "Mot de passe",
       "passwordPlaceholder": "Entrez un nouveau mot de passe",
+      "regionRestrictionChina": "Conformément aux exigences réglementaires locales, nos services ne sont actuellement pas disponibles pour les utilisateurs situés en Chine continentale.",
       "signIn": "Se connecter",
       "signUpButton": "S'inscrire",
       "signUpWithGithub": "S'inscrire avec Github",
