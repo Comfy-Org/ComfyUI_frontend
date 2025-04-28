@@ -19,18 +19,15 @@
 
     <!-- Form -->
     <SignInForm v-if="isSignIn" @submit="signInWithEmail" />
-    <SignUpForm v-else-if="!userIsInChina" @submit="signUpWithEmail" />
-    <Message v-if="!isSignIn && userIsInChina" severity="warn" class="mb-4">
-      {{ t('auth.signup.regionRestrictionChina') }}
-    </Message>
+    <template v-else>
+      <Message v-if="userIsInChina" severity="warn" class="mb-4">
+        {{ t('auth.signup.regionRestrictionChina') }}
+      </Message>
+      <SignUpForm v-else @submit="signUpWithEmail" />
+    </template>
 
     <!-- Divider -->
-    <Divider
-      v-if="!userIsInChina || isSignIn"
-      align="center"
-      layout="horizontal"
-      class="my-8"
-    >
+    <Divider align="center" layout="horizontal" class="my-8">
       <span class="text-muted">{{ t('auth.login.orContinueWith') }}</span>
     </Divider>
 
