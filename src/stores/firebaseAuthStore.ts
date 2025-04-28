@@ -163,11 +163,6 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       createCustomer?: boolean
     } = {}
   ): Promise<T> => {
-    if (!auth)
-      throw new FirebaseAuthStoreError(
-        t('toastMessages.firebaseAuthNotInitialized')
-      )
-
     loading.value = true
 
     try {
