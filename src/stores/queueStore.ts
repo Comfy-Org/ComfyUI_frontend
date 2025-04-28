@@ -92,6 +92,9 @@ export class ResultItemImpl {
     if (this.isWebm) {
       return 'video/webm'
     }
+    if (this.isMp4) {
+      return 'video/mp4'
+    }
 
     if (this.isVhsFormat) {
       if (this.format?.endsWith('webm')) {
@@ -101,11 +104,7 @@ export class ResultItemImpl {
         return 'video/mp4'
       }
     }
-    return
-  }
-
-  get isVideo(): boolean {
-    return this.mediaType === 'video' || !!this.format?.startsWith('video/')
+    return undefined
   }
 
   get isGif(): boolean {
@@ -120,8 +119,29 @@ export class ResultItemImpl {
     return this.filename.endsWith('.webm')
   }
 
+  get isMp4(): boolean {
+    return this.filename.endsWith('.mp4')
+  }
+
+  get isVideoBySuffix(): boolean {
+    return this.isWebm || this.isMp4
+  }
+
+  get isImageBySuffix(): boolean {
+    return this.isGif || this.isWebp
+  }
+
+  get isVideo(): boolean {
+    const isVideoByType =
+      this.mediaType === 'video' || !!this.format?.startsWith('video/')
+    return this.isVideoBySuffix || (isVideoByType && !this.isImageBySuffix)
+  }
+
   get isImage(): boolean {
-    return this.mediaType === 'images' || this.isGif || this.isWebp
+    return (
+      this.isImageBySuffix ||
+      (this.mediaType === 'images' && !this.isVideoBySuffix)
+    )
   }
 
   get supportsPreview(): boolean {

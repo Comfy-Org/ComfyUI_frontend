@@ -6,9 +6,8 @@ describe('TaskItemImpl', () => {
   it('should remove animated property from outputs during construction', () => {
     const taskItem = new TaskItemImpl(
       'History',
-      // @ts-expect-error fixme ts strict error
-      [0, 'prompt-id', {}, {}, []],
-      { status_str: 'success', messages: [] },
+      [0, 'prompt-id', {}, { client_id: 'client-id' }, []],
+      { status_str: 'success', messages: [], completed: true },
       {
         'node-1': {
           images: [{ filename: 'test.png', type: 'output', subfolder: '' }],
@@ -20,18 +19,15 @@ describe('TaskItemImpl', () => {
     // Check that animated property was removed
     expect('animated' in taskItem.outputs['node-1']).toBe(false)
 
-    // Verify other output properties remain intact
     expect(taskItem.outputs['node-1'].images).toBeDefined()
-    // @ts-expect-error fixme ts strict error
-    expect(taskItem.outputs['node-1'].images[0].filename).toBe('test.png')
+    expect(taskItem.outputs['node-1'].images?.[0]?.filename).toBe('test.png')
   })
 
   it('should handle outputs without animated property', () => {
     const taskItem = new TaskItemImpl(
       'History',
-      // @ts-expect-error fixme ts strict error
-      [0, 'prompt-id', {}, {}, []],
-      { status_str: 'success', messages: [] },
+      [0, 'prompt-id', {}, { client_id: 'client-id' }, []],
+      { status_str: 'success', messages: [], completed: true },
       {
         'node-1': {
           images: [{ filename: 'test.png', type: 'output', subfolder: '' }]
@@ -39,18 +35,15 @@ describe('TaskItemImpl', () => {
       }
     )
 
-    // Verify outputs are preserved when no animated property exists
     expect(taskItem.outputs['node-1'].images).toBeDefined()
-    // @ts-expect-error fixme ts strict error
-    expect(taskItem.outputs['node-1'].images[0].filename).toBe('test.png')
+    expect(taskItem.outputs['node-1'].images?.[0]?.filename).toBe('test.png')
   })
 
   it('should recognize webm video from core', () => {
     const taskItem = new TaskItemImpl(
       'History',
-      // @ts-expect-error fixme ts strict error
-      [0, 'prompt-id', {}, {}, []],
-      { status_str: 'success', messages: [] },
+      [0, 'prompt-id', {}, { client_id: 'client-id' }, []],
+      { status_str: 'success', messages: [], completed: true },
       {
         'node-1': {
           video: [{ filename: 'test.webm', type: 'output', subfolder: '' }]
@@ -71,9 +64,8 @@ describe('TaskItemImpl', () => {
   it('should recognize webm video from VHS', () => {
     const taskItem = new TaskItemImpl(
       'History',
-      // @ts-expect-error fixme ts strict error
-      [0, 'prompt-id', {}, {}, []],
-      { status_str: 'success', messages: [] },
+      [0, 'prompt-id', {}, { client_id: 'client-id' }, []],
+      { status_str: 'success', messages: [], completed: true },
       {
         'node-1': {
           gifs: [
@@ -95,6 +87,32 @@ describe('TaskItemImpl', () => {
     expect(output.isVideo).toBe(true)
     expect(output.isWebm).toBe(true)
     expect(output.isVhsFormat).toBe(true)
+    expect(output.isImage).toBe(false)
+  })
+
+  it('should recognize mp4 video from core', () => {
+    const taskItem = new TaskItemImpl(
+      'History',
+      [0, 'prompt-id', {}, { client_id: 'client-id' }, []],
+      { status_str: 'success', messages: [], completed: true },
+      {
+        'node-1': {
+          images: [
+            {
+              filename: 'test.mp4',
+              type: 'output',
+              subfolder: ''
+            }
+          ],
+          animated: [true]
+        }
+      }
+    )
+
+    const output = taskItem.flatOutputs[0]
+
+    expect(output.htmlVideoType).toBe('video/mp4')
+    expect(output.isVideo).toBe(true)
     expect(output.isImage).toBe(false)
   })
 })
