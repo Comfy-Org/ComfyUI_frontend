@@ -14,7 +14,7 @@
           <template v-if="template.mediaType === 'audio'">
             <AudioThumbnail :src="baseThumbnailSrc" />
           </template>
-          <template v-else-if="template.thumbnailVariant === 'compareSlider'">
+          <template v-else-if="thumbnailVariant === 'compareSlider'">
             <CompareSliderThumbnail
               :base-image-src="baseThumbnailSrc"
               :overlay-image-src="overlayThumbnailSrc"
@@ -22,7 +22,7 @@
               :is-hovered="isHovered"
             />
           </template>
-          <template v-else-if="template.thumbnailVariant === 'hoverDissolve'">
+          <template v-else-if="thumbnailVariant === 'hoverDissolve'">
             <HoverDissolveThumbnail
               :base-image-src="baseThumbnailSrc"
               :overlay-image-src="overlayThumbnailSrc"
@@ -36,7 +36,7 @@
               :alt="title"
               :is-hovered="isHovered"
               :hover-zoom="
-                template.thumbnailVariant === 'zoomHover'
+                thumbnailVariant === 'zoomHover'
                   ? UPSCALE_ZOOM_SCALE
                   : DEFAULT_ZOOM_SCALE
               "
@@ -104,17 +104,40 @@ const getThumbnailUrl = (index = '') => {
       : api.apiURL(`/workflow_templates/${sourceModule}/${template.name}`)
 
   // For templates from custom nodes, multiple images is not yet supported
-  const indexSuffix = sourceModule === 'default' && index ? `-${index}` : ''
+  const indexSuffix = !!template.thumbnailVariant && index ? `-${index}` : ''
 
   return `${basePath}${indexSuffix}.${template.mediaSubtype}`
 }
 
 const baseThumbnailSrc = computed(() =>
-  getThumbnailUrl(sourceModule === 'default' ? '1' : '')
+  getThumbnailUrl(template.thumbnailVariant ? '1' : '')
 )
 const overlayThumbnailSrc = computed(() =>
-  getThumbnailUrl(sourceModule === 'default' ? '2' : '')
+  getThumbnailUrl(template.thumbnailVariant ? '2' : '')
 )
+
+const thumbnailVariant = computed(() => {
+  if (template.thumbnailVariant !== undefined) {
+    return template.thumbnailVariant
+  }
+  console.log(template.name)
+  const thumbnailVariantRe = /.*\.(?<variant>[^\.]+)/
+  const thumbnailVariantList = ['compareSlider', 'hoverDissolve']
+  const variant = template.name.match(thumbnailVariantRe)
+
+  if (variant === null) {
+    return undefined
+  }
+
+  if (
+    variant.groups.variant &&
+    thumbnailVariantList.indexOf(variant.groups.variant) > -1
+  ) {
+    console.log(`${variant.groups.variant} detected`)
+    template.thumbnailVariant = variant.groups.variant
+  }
+  return undefined
+})
 
 const title = computed(() => {
   const fallback = template.title ?? template.name ?? `${sourceModule} Template`
