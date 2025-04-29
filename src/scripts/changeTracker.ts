@@ -1,5 +1,4 @@
 import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
-import { LGraphNode } from '@comfyorg/litegraph'
 import * as jsondiffpatch from 'jsondiffpatch'
 import _ from 'lodash'
 import log from 'loglevel'
@@ -298,17 +297,6 @@ export class ChangeTracker {
       const v = close.apply(this, [e])
       logger.debug('checkState on contextMenuClose')
       checkState()
-      return v
-    }
-
-    // Detects nodes being added via the node search dialog
-    const onNodeAdded = LiteGraph.LGraph.prototype.onNodeAdded
-    LiteGraph.LGraph.prototype.onNodeAdded = function (node: LGraphNode) {
-      const v = onNodeAdded?.apply(this, [node])
-      if (!app?.configuringGraph) {
-        logger.debug('checkState on onNodeAdded')
-        checkState()
-      }
       return v
     }
 
