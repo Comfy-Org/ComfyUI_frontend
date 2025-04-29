@@ -7,11 +7,11 @@ import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 import type { SettingParams } from '@/types/settingTypes'
 
 /**
- * Core settings are settings that are required for the core functionality of ComfyUI.
- * These settings are not optional and must be present in the settings store.
+ * Core settings are essential configuration parameters required for ComfyUI's basic functionality.
+ * These settings must be present in the settings store and cannot be omitted.
  *
- * Note: When a setting is no longer needed, it should be marked as deprecated
- * to avoid future setting id conflicts.
+ * IMPORTANT: To prevent ID conflicts, settings should be marked as deprecated rather than removed
+ * when they are no longer needed.
  */
 export const CORE_SETTINGS: SettingParams[] = [
   {
