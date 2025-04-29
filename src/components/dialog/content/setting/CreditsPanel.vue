@@ -157,7 +157,7 @@ const handleMessageSupport = () => {
 }
 
 const handleFaqClick = () => {
-  window.open('https://www.comfy.org/faq', '_blank')
+  window.open('https://docs.comfy.org/tutorials/api-nodes/faq', '_blank')
 }
 
 const creditHistory = ref<CreditHistoryItemData[]>([])

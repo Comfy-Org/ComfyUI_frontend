@@ -39,6 +39,6 @@ const { apiNodeNames, onLogin, onCancel } = defineProps<{
 }>()
 
 const handleLearnMoreClick = () => {
-  window.open('https://www.comfy.org/faq', '_blank')
+  window.open('https://docs.comfy.org/tutorials/api-nodes/faq', '_blank')
 }
 </script>
