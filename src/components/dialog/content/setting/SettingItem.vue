@@ -18,11 +18,6 @@
           <i-material-symbols:experiment-outline />
         </template>
       </Tag>
-      <Tag
-        v-if="setting.deprecated"
-        :value="$t('g.deprecated')"
-        severity="danger"
-      />
     </template>
   </FormItem>
 </template>

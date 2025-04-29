@@ -1,5 +1,4 @@
-import { LinkMarkerShape } from '@comfyorg/litegraph'
-import { LiteGraph } from '@comfyorg/litegraph'
+import { LinkMarkerShape, LiteGraph } from '@comfyorg/litegraph'
 
 import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
 import type { Keybinding } from '@/schemas/keyBindingSchema'
@@ -7,6 +6,13 @@ import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 import type { SettingParams } from '@/types/settingTypes'
 
+/**
+ * Core settings are essential configuration parameters required for ComfyUI's basic functionality.
+ * These settings must be present in the settings store and cannot be omitted.
+ *
+ * IMPORTANT: To prevent ID conflicts, settings should be marked as deprecated rather than removed
+ * when they are no longer needed.
+ */
 export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'Comfy.Validation.Workflows',
