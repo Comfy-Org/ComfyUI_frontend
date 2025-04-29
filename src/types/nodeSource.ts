@@ -29,7 +29,7 @@ export const getNodeSource = (python_module?: string): NodeSource => {
     return UNKNOWN_NODE_SOURCE
   }
   const modules = python_module.split('.')
-  if (['nodes', 'comfy_extras'].includes(modules[0])) {
+  if (['nodes', 'comfy_extras', 'comfy_api_nodes'].includes(modules[0])) {
     return {
       type: NodeSourceType.Core,
       className: 'comfy-core',
