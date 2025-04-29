@@ -1127,7 +1127,7 @@
       "signIn": "Sign in",
       "signUpWithGoogle": "Sign up with Google",
       "signUpWithGithub": "Sign up with Github",
-      "regionRestrictionChina": "In accordance with local regulatory requirements, our services are currently unavailable to users located in mainland China."
+      "regionRestrictionChina": "In accordance with local regulatory requirements, our services are temporarily unavailable to users located in China."
     },
     "signOut": {
       "signOut": "Log Out",
