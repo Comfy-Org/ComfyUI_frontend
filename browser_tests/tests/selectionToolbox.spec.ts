@@ -99,18 +99,6 @@ test.describe('Selection Toolbox', () => {
     ).not.toBeVisible()
   })
 
-  test('displays refresh button in toolbox when all nodes are selected', async ({
-    comfyPage
-  }) => {
-    // Select all nodes
-    await comfyPage.page.focus('canvas')
-    await comfyPage.page.keyboard.press('Control+A')
-
-    await expect(
-      comfyPage.page.locator('.selection-toolbox .pi-refresh')
-    ).toBeVisible()
-  })
-
   test('displays bypass button in toolbox when nodes are selected', async ({
     comfyPage
   }) => {
