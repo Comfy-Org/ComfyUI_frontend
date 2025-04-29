@@ -7,7 +7,17 @@
   >
     <template #name-prefix>
       <Tag v-if="setting.id === 'Comfy.Locale'" class="pi pi-language" />
-      <Tag v-if="setting.experimental" :value="$t('g.experimental')" />
+      <Tag
+        v-if="setting.experimental"
+        v-tooltip="{
+          value: $t('g.experimental'),
+          showDelay: 600
+        }"
+      >
+        <template #icon>
+          <i-material-symbols:experiment-outline />
+        </template>
+      </Tag>
       <Tag
         v-if="setting.deprecated"
         :value="$t('g.deprecated')"
