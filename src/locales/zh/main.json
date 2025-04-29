@@ -47,7 +47,7 @@
       "emailPlaceholder": "输入您的电子邮件",
       "passwordLabel": "密码",
       "passwordPlaceholder": "输入新密码",
-      "regionRestrictionChina": "根据当地法规要求，我们目前无法为中国大陆地区的用户提供服务。",
+      "regionRestrictionChina": "根据当地法规要求，我们暂时无法为中国地区的用户提供服务。",
       "signIn": "登录",
       "signUpButton": "注册",
       "signUpWithGithub": "使用Github注册",
