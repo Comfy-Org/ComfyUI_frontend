@@ -26,6 +26,8 @@ useExtensionService().registerExtension({
         ).widget as DOMWidget<any, any>
 
         showValueWidget.element.readOnly = true
+
+        showValueWidget.serialize = false
       }
 
       const onExecuted = nodeType.prototype.onExecuted
