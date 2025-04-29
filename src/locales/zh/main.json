@@ -29,6 +29,7 @@
       "passwordResetSent": "重置密码邮件已发送",
       "passwordResetSentDetail": "请查收您的电子邮件，点击链接重置密码。",
       "privacyLink": "隐私政策",
+      "questionsContactPrefix": "有疑问？请联系我们：",
       "signInOrSignUp": "登录 / 注册",
       "signUp": "注册",
       "success": "登录成功",
