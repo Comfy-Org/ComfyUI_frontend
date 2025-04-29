@@ -1114,7 +1114,8 @@
       "privacyLink": "Privacy Policy",
       "success": "Login successful",
       "failed": "Login failed",
-      "insecureContextWarning": "This connection is insecure (HTTP) - your credentials may be intercepted by attackers if you proceed to login."
+      "insecureContextWarning": "This connection is insecure (HTTP) - your credentials may be intercepted by attackers if you proceed to login.",
+      "questionsContactPrefix": "Questions? Contact us at"
     },
     "signup": {
       "title": "Create an account",

@@ -67,7 +67,7 @@
         }}
       </Button>
     </div>
-    <!-- Terms -->
+    <!-- Terms & Contact -->
     <p class="text-xs text-muted mt-8">
       {{ t('auth.login.termsText') }}
       <a
@@ -83,9 +83,12 @@
         target="_blank"
         class="text-blue-500 cursor-pointer"
       >
-        {{ t('auth.login.privacyLink') }}
-      </a>
-      .
+        {{ t('auth.login.privacyLink') }} </a
+      >.
+      {{ t('auth.login.questionsContactPrefix') }}
+      <a href="mailto:hello@comfy.org" class="text-blue-500 cursor-pointer">
+        hello@comfy.org</a
+      >.
     </p>
   </div>
 </template>
