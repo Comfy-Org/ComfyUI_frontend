@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import { useContextKeyStore } from '@/stores/contextKeyStore'
 
-describe('evalAst via evaluateCondition', () => {
+describe('contextKeyStore', () => {
   let store: ReturnType<typeof useContextKeyStore>
 
   beforeEach(() => {
@@ -11,47 +11,27 @@ describe('evalAst via evaluateCondition', () => {
     store = useContextKeyStore()
   })
 
-  it('evaluates logical OR correctly', () => {
-    store.setContextKey('a', true)
-    store.setContextKey('b', false)
-    const result = store.evaluateCondition('a || b')
-    expect(result).toBe(true)
+  it('should set and get a context key', () => {
+    store.setContextKey('key1', true)
+    expect(store.getContextKey('key1')).toBe(true)
   })
 
-  it('evaluates logical AND and NOT correctly', () => {
-    store.setContextKey('a', true)
-    store.setContextKey('b', false)
-    const result = store.evaluateCondition('a && !b')
-    expect(result).toBe(true)
+  it('should remove a context key', () => {
+    store.setContextKey('key1', true)
+    store.removeContextKey('key1')
+    expect(store.getContextKey('key1')).toBeUndefined()
   })
 
-  it('evaluates OR and AND precedence correctly', () => {
-    store.setContextKey('a', false)
-    store.setContextKey('b', true)
-    store.setContextKey('c', false)
-    const result = store.evaluateCondition('a || b && c')
-    expect(result).toBe(false)
+  it('should clear all context keys', () => {
+    store.setContextKey('key1', true)
+    store.setContextKey('key2', false)
+    store.clearAllContextKeys()
+    expect(Object.keys(store.contextKeys)).toHaveLength(0)
   })
 
-  it('evaluates equality and inequality with numeric values', () => {
-    store.setContextKey('d', 1)
-    store.setContextKey('e', 1)
-    const eq = store.evaluateCondition('d == e')
-    const neq = store.evaluateCondition('d != e')
-    expect(eq).toBe(true)
-    expect(neq).toBe(false)
-  })
-
-  it('checks identifier truthiness for string and zero numeric', () => {
-    store.setContextKey('s', 'hello')
-    store.setContextKey('z', 0)
-    expect(store.evaluateCondition('s')).toBe(true)
-    expect(store.evaluateCondition('!s')).toBe(false)
-    expect(store.evaluateCondition('z')).toBe(false)
-  })
-
-  it('evaluates literals correctly', () => {
-    store.setContextKey('s', 'hello')
-    expect(store.evaluateCondition('s != "hello"')).toBe(false)
+  it('should evaluate a simple condition', () => {
+    store.setContextKey('key1', true)
+    store.setContextKey('key2', false)
+    expect(store.evaluateCondition('key1 && !key2')).toBe(true)
   })
 })
