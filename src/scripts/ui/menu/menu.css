@@ -36,6 +36,11 @@
   color: var(--primary-hover-fg) !important;
 }
 
+@font-face {
+  font-family: 'ABCRom';
+  src: url('../../assets/fonts/ABCRom.woff2') format('woff2');
+}
+
 /* Popup */
 .comfyui-popup {
   position: absolute;
@@ -169,7 +174,7 @@
 
 .comfy-widget-selection-dialog div {
   color: var(--fg-color);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'ABCRom', sans-serif;
 }
 
 .comfy-widget-selection-dialog h2 {

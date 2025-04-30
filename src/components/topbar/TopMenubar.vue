@@ -105,7 +105,7 @@ onMounted(() => {
   background: var(--comfy-menu-bg);
   color: var(--fg-color);
   box-shadow: var(--bar-shadow);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-family);
   font-size: 0.8em;
   box-sizing: border-box;
   z-index: 1000;
