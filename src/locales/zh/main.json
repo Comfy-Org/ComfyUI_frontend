@@ -37,6 +37,10 @@
       "termsText": "点击“下一步”或“注册”即表示您同意我们的",
       "title": "登录您的账户"
     },
+    "passwordUpdate": {
+      "success": "密码已更新",
+      "successDetail": "您的密码已成功更新"
+    },
     "signOut": {
       "signOut": "退出登录",
       "success": "成功退出登录",
@@ -1151,11 +1155,8 @@
     "name": "名称",
     "notSet": "未设置",
     "provider": "登录方式",
-    "providers": {
-      "github": "GitHub",
-      "google": "Google"
-    },
-    "title": "用户设置"
+    "title": "用户设置",
+    "updatePassword": "更新密码"
   },
   "validation": {
     "invalidEmail": "无效的电子邮件地址",

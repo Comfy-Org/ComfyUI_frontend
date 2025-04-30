@@ -37,6 +37,10 @@
       "termsText": "En cliquant sur \"Suivant\" ou \"S'inscrire\", vous acceptez nos",
       "title": "Connectez-vous à votre compte"
     },
+    "passwordUpdate": {
+      "success": "Mot de passe mis à jour",
+      "successDetail": "Votre mot de passe a été mis à jour avec succès"
+    },
     "signOut": {
       "signOut": "Se déconnecter",
       "success": "Déconnexion réussie",
@@ -1151,11 +1155,8 @@
     "name": "Nom",
     "notSet": "Non défini",
     "provider": "Méthode de connexion",
-    "providers": {
-      "github": "GitHub",
-      "google": "Google"
-    },
-    "title": "Paramètres utilisateur"
+    "title": "Paramètres utilisateur",
+    "updatePassword": "Mettre à jour le mot de passe"
   },
   "validation": {
     "invalidEmail": "Adresse e-mail invalide",
