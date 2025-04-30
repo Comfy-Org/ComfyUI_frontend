@@ -29,6 +29,7 @@
       "passwordResetSent": "E-mail de réinitialisation du mot de passe envoyé",
       "passwordResetSentDetail": "Veuillez vérifier votre e-mail pour un lien de réinitialisation de votre mot de passe.",
       "privacyLink": "Politique de confidentialité",
+      "questionsContactPrefix": "Des questions ? Contactez-nous à",
       "signInOrSignUp": "Se connecter / S’inscrire",
       "signUp": "S'inscrire",
       "success": "Connexion réussie",

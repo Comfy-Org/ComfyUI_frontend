@@ -29,6 +29,7 @@
       "passwordResetSent": "パスワードリセット用メールを送信しました",
       "passwordResetSentDetail": "パスワードをリセットするためのリンクが記載されたメールをご確認ください。",
       "privacyLink": "プライバシーポリシー",
+      "questionsContactPrefix": "ご不明な点がございますか？お問い合わせはこちら：",
       "signInOrSignUp": "サインイン / サインアップ",
       "signUp": "サインアップ",
       "success": "ログイン成功",

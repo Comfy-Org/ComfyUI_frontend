@@ -29,6 +29,7 @@
       "passwordResetSent": "비밀번호 재설정 이메일이 전송되었습니다",
       "passwordResetSentDetail": "비밀번호를 재설정할 수 있는 링크가 포함된 이메일을 확인해 주세요.",
       "privacyLink": "개인정보 보호정책",
+      "questionsContactPrefix": "질문이 있으신가요? 문의: ",
       "signInOrSignUp": "로그인 / 회원가입",
       "signUp": "가입하기",
       "success": "로그인 성공",

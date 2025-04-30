@@ -29,6 +29,7 @@
       "passwordResetSent": "Correo electrónico de restablecimiento de contraseña enviado",
       "passwordResetSentDetail": "Por favor, revisa tu correo electrónico para encontrar un enlace para restablecer tu contraseña.",
       "privacyLink": "Política de privacidad",
+      "questionsContactPrefix": "¿Preguntas? Contáctanos en",
       "signInOrSignUp": "Iniciar sesión / Registrarse",
       "signUp": "Regístrate",
       "success": "Inicio de sesión exitoso",
