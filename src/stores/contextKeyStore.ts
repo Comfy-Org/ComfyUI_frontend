@@ -10,7 +10,8 @@ import { reactive } from 'vue'
  */
 function tokenize(expr: string): { t: string }[] {
   const tokens: { t: string }[] = []
-  const re = /\s*([A-Za-z0-9_.]+|==|!=|&&|\|\||!|\(|\))\s*/g
+  const re =
+    /\s*("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|==|!=|&&|\|\||[A-Za-z0-9_.]+|!|\(|\))\s*/g
   let m: RegExpExecArray | null
   while ((m = re.exec(expr))) {
     tokens.push({ t: m[1] })
@@ -46,7 +47,11 @@ interface BinaryNode {
   left: ASTNode
   right: ASTNode
 }
-type ASTNode = IdentifierNode | UnaryNode | BinaryNode
+interface LiteralNode {
+  type: 'Literal'
+  value: ContextValue
+}
+type ASTNode = IdentifierNode | UnaryNode | BinaryNode | LiteralNode
 
 /**
  * Parses a sequence of tokens into an Abstract Syntax Tree (AST).
@@ -74,7 +79,7 @@ function parseAST(tokens: Token[]): ASTNode {
     return tok
   }
 
-  function parsePrimary(): any {
+  function parsePrimary(): ASTNode {
     if (peek() === '!') {
       consume('!')
       return { type: 'Unary', op: '!', arg: parsePrimary() }
@@ -85,22 +90,36 @@ function parseAST(tokens: Token[]): ASTNode {
       consume(')')
       return expr
     }
-    const id = consume()
-    if (!/^[A-Za-z0-9_.]+$/.test(id)) {
-      throw new Error(`Invalid identifier: ${id}`)
+    const tok = consume()
+    // string literal?
+    if (
+      (tok[0] === '"' && tok[tok.length - 1] === '"') ||
+      (tok[0] === "'" && tok[tok.length - 1] === "'")
+    ) {
+      const raw = tok.slice(1, -1).replace(/\\(.)/g, '$1')
+      return { type: 'Literal', value: raw }
     }
-    return { type: 'Identifier', name: id }
+    // numeric literal?
+    if (/^\d+(\.\d+)?$/.test(tok)) {
+      return { type: 'Literal', value: Number(tok) }
+    }
+    // identifier
+    if (!/^[A-Za-z0-9_.]+$/.test(tok)) {
+      throw new Error(`Invalid identifier: ${tok}`)
+    }
+    return { type: 'Identifier', name: tok }
   }
 
-  function parseExpression(minPrec: number): any {
+  function parseExpression(minPrec: number): ASTNode {
     let left = parsePrimary()
     while (true) {
-      const op = peek()
-      const prec = op ? OP_PRECEDENCE[op] : undefined
+      const tok = peek()
+      const prec = tok ? OP_PRECEDENCE[tok] : undefined
       if (prec === undefined || prec < minPrec) break
-      consume(op)
+      consume(tok)
       const right = parseExpression(prec + 1)
-      left = { type: 'Binary', op, left, right }
+      // cast tok to the exact operator union
+      left = { type: 'Binary', op: tok as BinaryNode['op'], left, right }
     }
     return left
   }
@@ -118,6 +137,9 @@ function getNodeRawValue(
   node: ASTNode,
   getContextKey: (key: string) => ContextValue | undefined
 ): ContextValue | boolean {
+  if (node.type === 'Literal') {
+    return node.value
+  }
   if (node.type === 'Identifier') {
     const raw = getContextKey(node.name)
     return raw === undefined ? false : raw
@@ -137,6 +159,13 @@ function evalAst(
   getContextKey: (key: string) => ContextValue | undefined
 ): boolean {
   switch (node.type) {
+    case 'Literal': {
+      const v = node.value
+      if (typeof v === 'boolean') return v
+      if (typeof v === 'string') return v.length > 0
+      if (typeof v === 'number') return v !== 0
+      return false
+    }
     case 'Identifier': {
       const raw = getContextKey(node.name)
       if (raw === undefined) return false
