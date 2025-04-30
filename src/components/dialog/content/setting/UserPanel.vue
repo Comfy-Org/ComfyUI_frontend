@@ -38,6 +38,17 @@
           <div class="text-muted flex items-center gap-1">
             <i :class="providerIcon" />
             {{ providerName }}
+            <Button
+              v-if="isEmailProvider"
+              v-tooltip="{
+                value: $t('userSettings.updatePassword'),
+                showDelay: 300
+              }"
+              icon="pi pi-pen-to-square"
+              severity="secondary"
+              text
+              @click="dialogService.showUpdatePasswordDialog()"
+            />
           </div>
         </div>
 
@@ -83,9 +94,11 @@ import ProgressSpinner from 'primevue/progressspinner'
 import TabPanel from 'primevue/tabpanel'
 import { computed } from 'vue'
 
+import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
+const dialogService = useDialogService()
 const authStore = useFirebaseAuthStore()
 const commandStore = useCommandStore()
 const user = computed(() => authStore.currentUser)
@@ -111,6 +124,11 @@ const providerIcon = computed(() => {
     return 'pi pi-github'
   }
   return 'pi pi-user'
+})
+
+const isEmailProvider = computed(() => {
+  const providerId = user.value?.providerData[0]?.providerId
+  return providerId === 'password'
 })
 
 const handleSignOut = async () => {

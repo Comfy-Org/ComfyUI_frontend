@@ -37,6 +37,10 @@
       "termsText": "Al hacer clic en \"Siguiente\" o \"Registrarse\", aceptas nuestros",
       "title": "Inicia sesión en tu cuenta"
     },
+    "passwordUpdate": {
+      "success": "Contraseña actualizada",
+      "successDetail": "Tu contraseña se ha actualizado correctamente"
+    },
     "signOut": {
       "signOut": "Cerrar sesión",
       "success": "Sesión cerrada correctamente",
@@ -1151,11 +1155,8 @@
     "name": "Nombre",
     "notSet": "No establecido",
     "provider": "Método de inicio de sesión",
-    "providers": {
-      "github": "GitHub",
-      "google": "Google"
-    },
-    "title": "Configuración de usuario"
+    "title": "Configuración de usuario",
+    "updatePassword": "Actualizar contraseña"
   },
   "validation": {
     "invalidEmail": "Dirección de correo electrónico inválida",

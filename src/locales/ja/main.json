@@ -37,6 +37,10 @@
       "termsText": "「次へ」または「サインアップ」をクリックすると、私たちの",
       "title": "アカウントにログインする"
     },
+    "passwordUpdate": {
+      "success": "パスワードが更新されました",
+      "successDetail": "パスワードが正常に更新されました"
+    },
     "signOut": {
       "signOut": "ログアウト",
       "success": "正常にサインアウトしました",
@@ -1151,11 +1155,8 @@
     "name": "名前",
     "notSet": "未設定",
     "provider": "サインイン方法",
-    "providers": {
-      "github": "GitHub",
-      "google": "Google"
-    },
-    "title": "ユーザー設定"
+    "title": "ユーザー設定",
+    "updatePassword": "パスワードを更新"
   },
   "validation": {
     "invalidEmail": "無効なメールアドレス",

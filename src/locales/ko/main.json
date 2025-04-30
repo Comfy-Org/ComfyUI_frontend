@@ -37,6 +37,10 @@
       "termsText": "\"다음\" 또는 \"가입하기\"를 클릭하면 우리의",
       "title": "계정에 로그인"
     },
+    "passwordUpdate": {
+      "success": "비밀번호가 업데이트되었습니다",
+      "successDetail": "비밀번호가 성공적으로 업데이트되었습니다"
+    },
     "signOut": {
       "signOut": "로그아웃",
       "success": "성공적으로 로그아웃되었습니다",
@@ -1151,11 +1155,8 @@
     "name": "이름",
     "notSet": "설정되지 않음",
     "provider": "로그인 방법",
-    "providers": {
-      "github": "GitHub",
-      "google": "Google"
-    },
-    "title": "사용자 설정"
+    "title": "사용자 설정",
+    "updatePassword": "비밀번호 업데이트"
   },
   "validation": {
     "invalidEmail": "유효하지 않은 이메일 주소",

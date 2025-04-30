@@ -118,6 +118,19 @@ export const useFirebaseAuthService = () => {
     reportError
   )
 
+  const updatePassword = wrapWithErrorHandlingAsync(
+    async (newPassword: string) => {
+      await authStore.updatePassword(newPassword)
+      toastStore.add({
+        severity: 'success',
+        summary: t('auth.passwordUpdate.success'),
+        detail: t('auth.passwordUpdate.successDetail'),
+        life: 5000
+      })
+    },
+    reportError
+  )
+
   return {
     logout,
     sendPasswordReset,
@@ -127,6 +140,7 @@ export const useFirebaseAuthService = () => {
     signInWithGoogle,
     signInWithGithub,
     signInWithEmail,
-    signUpWithEmail
+    signUpWithEmail,
+    updatePassword
   }
 }
