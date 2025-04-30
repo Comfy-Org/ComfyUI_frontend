@@ -8,6 +8,8 @@ import type { PositionConfig } from '@/composables/element/useAbsolutePosition'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
 
 export interface DomWidgetState extends PositionConfig {
+  // Raw widget instance
+  widget: BaseDOMWidget<object | string>
   visible: boolean
   readonly: boolean
   zIndex: number
@@ -16,19 +18,12 @@ export interface DomWidgetState extends PositionConfig {
 export const useDomWidgetStore = defineStore('domWidget', () => {
   const widgetStates = ref<Map<string, DomWidgetState>>(new Map())
 
-  // Map to reference actual widget instances
-  // Widgets are stored as raw values to avoid reactivity issues
-  const widgetInstances = ref(new Map<string, BaseDOMWidget<object | string>>())
-
   // Register a widget with the store
   const registerWidget = <V extends object | string>(
     widget: BaseDOMWidget<V>
   ) => {
-    widgetInstances.value.set(
-      widget.id,
-      markRaw(widget) as unknown as BaseDOMWidget<object | string>
-    )
     widgetStates.value.set(widget.id, {
+      widget: markRaw(widget) as unknown as BaseDOMWidget<object | string>,
       visible: true,
       readonly: false,
       zIndex: 0,
@@ -39,13 +34,11 @@ export const useDomWidgetStore = defineStore('domWidget', () => {
 
   // Unregister a widget from the store
   const unregisterWidget = (widgetId: string) => {
-    widgetInstances.value.delete(widgetId)
     widgetStates.value.delete(widgetId)
   }
 
   return {
     widgetStates,
-    widgetInstances,
     registerWidget,
     unregisterWidget
   }
