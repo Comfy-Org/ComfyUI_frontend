@@ -20,4 +20,4 @@ export const isAbortError = (
 
 export const isSubgraph = (
   item: LGraph | Subgraph | undefined | null
-): item is Subgraph => !!item && typeof item === 'object' && 'parents' in item
+): item is Subgraph => item?.isRootGraph === false
