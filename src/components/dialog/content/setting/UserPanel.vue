@@ -49,7 +49,7 @@
           <Button
             :label="$t('userSettings.updatePassword')"
             icon="pi pi-key"
-            @click="updatePasswordDialog.visible = true"
+            @click="dialogService.showUpdatePasswordDialog()"
           />
         </div>
 
@@ -84,7 +84,6 @@
         />
       </div>
     </div>
-    <UpdatePasswordDialog ref="updatePasswordDialog" />
   </TabPanel>
 </template>
 
@@ -94,18 +93,17 @@ import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'
 import TabPanel from 'primevue/tabpanel'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
+import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
-import UpdatePasswordDialog from './UpdatePasswordDialog.vue'
-
+const dialogService = useDialogService()
 const authStore = useFirebaseAuthStore()
 const commandStore = useCommandStore()
 const user = computed(() => authStore.currentUser)
 const loading = computed(() => authStore.loading)
-const updatePasswordDialog = ref()
 
 const providerName = computed(() => {
   const providerId = user.value?.providerData[0]?.providerId
