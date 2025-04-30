@@ -2979,9 +2979,11 @@ export class LGraphCanvas {
   /**
    * process a key event
    */
-  processKey(e: KeyboardEvent): boolean | null | undefined {
+  processKey(e: KeyboardEvent): void {
     this.#shiftDown = e.shiftKey
-    if (!this.graph) return
+
+    const { graph } = this
+    if (!graph) return
 
     let block_default = false
     // @ts-expect-error
@@ -3030,13 +3032,9 @@ export class LGraphCanvas {
         }
       }
 
-      // collapse
-      // ...
       // TODO
-      if (this.selected_nodes) {
-        for (const i in this.selected_nodes) {
-          this.selected_nodes[i].onKeyDown?.(e)
-        }
+      for (const node of Object.values(this.selected_nodes)) {
+        node.onKeyDown?.(e)
       }
     } else if (e.type == "keyup") {
       if (e.key === " ") {
@@ -3046,20 +3044,17 @@ export class LGraphCanvas {
         this._previously_dragging_canvas = null
       }
 
-      if (this.selected_nodes) {
-        for (const i in this.selected_nodes) {
-          this.selected_nodes[i].onKeyUp?.(e)
-        }
+      for (const node of Object.values(this.selected_nodes)) {
+        node.onKeyUp?.(e)
       }
     }
 
     // TODO: Do we need to remeasure and recalculate everything on every key down/up?
-    this.graph.change()
+    graph.change()
 
     if (block_default) {
       e.preventDefault()
       e.stopImmediatePropagation()
-      return false
     }
   }
 
