@@ -47,7 +47,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     const namePath: string[] = []
     const idPath: LGraph['id'][] = []
 
-    let cur: LGraph | Subgraph | null = currentGraph
+    let cur: LGraph | Subgraph | undefined = currentGraph
     while (cur) {
       const name = isSubgraph(cur)
         ? cur.name
@@ -56,7 +56,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       namePath.unshift(name)
       idPath.unshift(cur.id)
 
-      cur = isSubgraph(cur) ? cur.parent : null
+      cur = isSubgraph(cur) ? cur.parents.at(-1) : undefined
     }
 
     graphIdPath.value = idPath
