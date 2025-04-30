@@ -507,11 +507,7 @@ export class ComfyApp {
   #addProcessKeyHandler() {
     const origProcessKey = LGraphCanvas.prototype.processKey
     LGraphCanvas.prototype.processKey = function (e: KeyboardEvent) {
-      if (!this.graph) {
-        return
-      }
-
-      var block_default = false
+      if (!this.graph) return
 
       if (e.target instanceof Element && e.target.localName == 'input') {
         return
@@ -521,15 +517,19 @@ export class ComfyApp {
         const keyCombo = KeyComboImpl.fromEvent(e)
         const keybindingStore = useKeybindingStore()
         const keybinding = keybindingStore.getKeybinding(keyCombo)
+
         if (keybinding && keybinding.targetElementId === 'graph-canvas') {
           useCommandStore().execute(keybinding.commandId)
-          block_default = true
+
+          this.graph.change()
+          e.preventDefault()
+          e.stopImmediatePropagation()
+          return
         }
 
         // Ctrl+C Copy
         if (e.key === 'c' && (e.metaKey || e.ctrlKey)) {
-          // Trigger onCopy
-          return true
+          return
         }
 
         // Ctrl+V Paste
@@ -538,17 +538,8 @@ export class ComfyApp {
           (e.metaKey || e.ctrlKey) &&
           !e.shiftKey
         ) {
-          // Trigger onPaste
-          return true
+          return
         }
-      }
-
-      this.graph.change()
-
-      if (block_default) {
-        e.preventDefault()
-        e.stopImmediatePropagation()
-        return false
       }
 
       // Fall through to Litegraph defaults
