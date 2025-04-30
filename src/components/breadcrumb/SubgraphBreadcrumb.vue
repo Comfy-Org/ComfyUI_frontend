@@ -14,17 +14,21 @@
 </template>
 
 <script setup lang="ts">
+import { useEventListener, whenever } from '@vueuse/core'
 import Breadcrumb from 'primevue/breadcrumb'
 import type { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
 import { computed } from 'vue'
 
 import { useWorkflowService } from '@/services/workflowService'
+import { useCanvasStore } from '@/stores/graphStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 
 const workflowService = useWorkflowService()
 const workflowStore = useWorkflowStore()
 const subgraphStore = useSubgraphStore()
+
+const workflowName = computed(() => workflowStore.activeWorkflow?.filename)
 
 const items = computed(() => {
   if (!subgraphStore.graphNamePath.length) return []
@@ -39,19 +43,28 @@ const items = computed(() => {
 })
 
 const home = computed(() => ({
-  label: subgraphStore.graphNamePath[0],
+  label: workflowName.value,
   icon: 'pi pi-home',
   command: async () => {
-    const workflow = workflowStore.getWorkflowByPath(
-      subgraphStore.graphNamePath[0]
-    )
-    if (workflow) await workflowService.openWorkflow(workflow)
+    const canvas = useCanvasStore().getCanvas()
+    if (!canvas.graph) throw new TypeError('Canvas has no graph')
+
+    canvas.setGraph(canvas.graph.rootGraph)
   }
 }))
 
 const handleItemClick = (event: MenuItemCommandEvent) => {
   event.item.command?.(event)
 }
+
+whenever(
+  () => useCanvasStore().canvas,
+  (canvas) => {
+    useEventListener(canvas.canvas, 'set-graph', () => {
+      useSubgraphStore().updateActiveGraph()
+    })
+  }
+)
 </script>
 
 <style>
