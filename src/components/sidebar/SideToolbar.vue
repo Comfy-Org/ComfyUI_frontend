@@ -11,10 +11,7 @@
         :class="tab.id + '-tab-button'"
         @click="onTabClick(tab)"
       />
-      <div
-        class="side-tool-bar-end mt-auto self-end w-full flex flex-col items-center"
-      >
-        <Tag v-if="isStaging" value="staging" severity="warn" class="text-xs" />
+      <div class="side-tool-bar-end">
         <SidebarLogoutIcon v-if="userStore.isMultiUserServer" />
         <SidebarThemeToggleIcon />
         <SidebarSettingsToggleIcon />
@@ -30,7 +27,6 @@
 </template>
 
 <script setup lang="ts">
-import Tag from 'primevue/tag'
 import { computed } from 'vue'
 
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
@@ -48,9 +44,6 @@ import SidebarThemeToggleIcon from './SidebarThemeToggleIcon.vue'
 const workspaceStore = useWorkspaceStore()
 const settingStore = useSettingStore()
 const userStore = useUserStore()
-
-// @ts-expect-error: Global variable from vite build defined in global.d.ts
-const isStaging = !window.__USE_PROD_CONFIG__
 
 const teleportTarget = computed(() =>
   settingStore.get('Comfy.Sidebar.Location') === 'left'
@@ -96,5 +89,10 @@ const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
 .side-tool-bar-container.small-sidebar {
   --sidebar-width: 2.5rem;
   --sidebar-icon-size: 1rem;
+}
+
+.side-tool-bar-end {
+  align-self: flex-end;
+  margin-top: auto;
 }
 </style>
