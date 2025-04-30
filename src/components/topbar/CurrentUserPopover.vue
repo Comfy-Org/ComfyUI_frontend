@@ -7,7 +7,7 @@
         <Avatar
           class="mb-3"
           :image="user?.photoURL ?? undefined"
-          :icon="user?.photoURL ? undefined : 'pi pi-user'"
+          :icon="user?.photoURL ? undefined : 'pi pi-user !text-2xl'"
           shape="circle"
           size="large"
           aria-label="User Avatar"
