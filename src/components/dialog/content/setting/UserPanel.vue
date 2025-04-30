@@ -41,6 +41,18 @@
           </div>
         </div>
 
+        <!-- Password Edit Section -->
+        <div v-if="isEmailProvider" class="flex flex-col gap-2">
+          <h3 class="font-medium">
+            {{ $t('userSettings.password') }}
+          </h3>
+          <Button
+            :label="$t('userSettings.updatePassword')"
+            icon="pi pi-key"
+            @click="updatePasswordDialog.visible = true"
+          />
+        </div>
+
         <ProgressSpinner
           v-if="loading"
           class="w-8 h-8 mt-4"
@@ -72,6 +84,7 @@
         />
       </div>
     </div>
+    <UpdatePasswordDialog ref="updatePasswordDialog" />
   </TabPanel>
 </template>
 
@@ -81,15 +94,18 @@ import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'
 import TabPanel from 'primevue/tabpanel'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import { useCommandStore } from '@/stores/commandStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+
+import UpdatePasswordDialog from './UpdatePasswordDialog.vue'
 
 const authStore = useFirebaseAuthStore()
 const commandStore = useCommandStore()
 const user = computed(() => authStore.currentUser)
 const loading = computed(() => authStore.loading)
+const updatePasswordDialog = ref()
 
 const providerName = computed(() => {
   const providerId = user.value?.providerData[0]?.providerId
@@ -111,6 +127,11 @@ const providerIcon = computed(() => {
     return 'pi pi-github'
   }
   return 'pi pi-user'
+})
+
+const isEmailProvider = computed(() => {
+  const providerId = user.value?.providerData[0]?.providerId
+  return providerId === 'password'
 })
 
 const handleSignOut = async () => {

@@ -11,7 +11,8 @@ import {
   setPersistence,
   signInWithEmailAndPassword,
   signInWithPopup,
-  signOut
+  signOut,
+  updatePassword
 } from 'firebase/auth'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
@@ -224,6 +225,14 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       sendPasswordResetEmail(authInstance, email)
     )
 
+  /** Update password for current user */
+  const _updatePassword = async (newPassword: string): Promise<void> => {
+    if (!currentUser.value) {
+      throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
+    }
+    await updatePassword(currentUser.value, newPassword)
+  }
+
   const addCredits = async (
     requestBodyContent: CreditPurchasePayload
   ): Promise<CreditPurchaseResponse> => {
@@ -319,6 +328,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     initiateCreditPurchase,
     fetchBalance,
     accessBillingPortal,
-    sendPasswordReset
+    sendPasswordReset,
+    updatePassword: _updatePassword
   }
 })

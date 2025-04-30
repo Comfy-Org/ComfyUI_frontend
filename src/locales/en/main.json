@@ -1135,6 +1135,10 @@
       "signOut": "Log Out",
       "success": "Signed out successfully",
       "successDetail": "You have been signed out of your account."
+    },
+    "passwordUpdate": {
+      "success": "Password Updated",
+      "successDetail": "Your password has been updated successfully"
     }
   },
   "validation": {
@@ -1175,11 +1179,10 @@
     "title": "User Settings",
     "name": "Name",
     "email": "Email",
+    "provider": "Sign-in Provider",
     "notSet": "Not set",
-    "provider": "Sign in method",
-    "providers": {
-      "google": "Google",
-      "github": "GitHub"
-    }
+    "password": "Password",
+    "newPassword": "Enter new password",
+    "updatePassword": "Update Password"
   }
 }
