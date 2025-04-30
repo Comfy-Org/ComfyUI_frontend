@@ -18,5 +18,6 @@ export const isAbortError = (
 ): err is DOMException & { name: 'AbortError' } =>
   err instanceof DOMException && err.name === 'AbortError'
 
-export const isSubgraph = (item: LGraph | Subgraph | null): item is Subgraph =>
-  !!item && typeof item === 'object' && 'parent' in item
+export const isSubgraph = (
+  item: LGraph | Subgraph | undefined | null
+): item is Subgraph => !!item && typeof item === 'object' && 'parents' in item
