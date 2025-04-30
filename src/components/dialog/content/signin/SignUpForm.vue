@@ -120,6 +120,25 @@
       }}</small>
     </div>
 
+    <!-- Personal Data Consent Checkbox -->
+    <div class="flex items-center gap-2">
+      <Checkbox
+        input-id="comfy-org-sign-up-personal-data-consent"
+        name="personalDataConsent"
+        :binary="true"
+        :invalid="$form.personalDataConsent?.invalid"
+      />
+      <label
+        for="comfy-org-sign-up-personal-data-consent"
+        class="opacity-80 text-base font-medium"
+      >
+        {{ t('auth.signup.personalDataConsentLabel') }}
+      </label>
+    </div>
+    <small v-if="$form.personalDataConsent?.error" class="text-red-500 -mt-4">{{
+      $form.personalDataConsent.error.message
+    }}</small>
+
     <!-- Submit Button -->
     <Button
       type="submit"
@@ -133,6 +152,7 @@
 import { Form, FormSubmitEvent } from '@primevue/forms'
 import { zodResolver } from '@primevue/forms/resolvers/zod'
 import Button from 'primevue/button'
+import Checkbox from 'primevue/checkbox'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import { computed, ref } from 'vue'
