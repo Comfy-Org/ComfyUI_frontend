@@ -133,16 +133,28 @@ export function parseAST(tokens: Token[]): ASTNode {
   return ast
 }
 
-function getNodeRawValue(
+/**
+ * Converts a ContextValue or undefined to boolean.
+ */
+function toBoolean(val: ContextValue | undefined): boolean {
+  if (val === undefined) return false
+  if (typeof val === 'boolean') return val
+  if (typeof val === 'number') return val !== 0
+  if (typeof val === 'string') return val.length > 0
+  return false
+}
+
+/**
+ * Retrieves raw value of an AST node for equality checks.
+ */
+function getRawValue(
   node: ASTNode,
   getContextKey: (key: string) => ContextValue | undefined
 ): ContextValue | boolean {
-  if (node.type === 'Literal') {
-    return node.value
-  }
+  if (node.type === 'Literal') return node.value
   if (node.type === 'Identifier') {
-    const raw = getContextKey(node.name)
-    return raw === undefined ? false : raw
+    const val = getContextKey(node.name)
+    return val === undefined ? false : val
   }
   return evalAst(node, getContextKey)
 }
@@ -159,21 +171,10 @@ export function evalAst(
   getContextKey: (key: string) => ContextValue | undefined
 ): boolean {
   switch (node.type) {
-    case 'Literal': {
-      const v = node.value
-      if (typeof v === 'boolean') return v
-      if (typeof v === 'string') return v.length > 0
-      if (typeof v === 'number') return v !== 0
-      return false
-    }
-    case 'Identifier': {
-      const raw = getContextKey(node.name)
-      if (raw === undefined) return false
-      if (typeof raw === 'boolean') return raw
-      if (typeof raw === 'string') return raw.length > 0
-      if (typeof raw === 'number') return raw !== 0
-      return false
-    }
+    case 'Literal':
+      return toBoolean(node.value)
+    case 'Identifier':
+      return toBoolean(getContextKey(node.name))
     case 'Unary':
       return !evalAst(node.arg, getContextKey)
     case 'Binary': {
@@ -183,8 +184,8 @@ export function evalAst(
         const r = evalAst(right, getContextKey)
         return op === '&&' ? l && r : l || r
       }
-      const lRaw = getNodeRawValue(left, getContextKey)
-      const rRaw = getNodeRawValue(right, getContextKey)
+      const lRaw = getRawValue(left, getContextKey)
+      const rRaw = getRawValue(right, getContextKey)
       return op === '==' ? lRaw === rRaw : lRaw !== rRaw
     }
     default:
