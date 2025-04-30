@@ -12,6 +12,7 @@
         @click="onTabClick(tab)"
       />
       <div class="side-tool-bar-end">
+        <Tag v-if="isStaging" value="staging" severity="warn" />
         <SidebarLogoutIcon v-if="userStore.isMultiUserServer" />
         <SidebarThemeToggleIcon />
         <SidebarSettingsToggleIcon />
@@ -27,6 +28,7 @@
 </template>
 
 <script setup lang="ts">
+import Tag from 'primevue/tag'
 import { computed } from 'vue'
 
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
@@ -44,6 +46,9 @@ import SidebarThemeToggleIcon from './SidebarThemeToggleIcon.vue'
 const workspaceStore = useWorkspaceStore()
 const settingStore = useSettingStore()
 const userStore = useUserStore()
+
+// @ts-expect-error: Global variable from vite build defined in global.d.ts
+const isStaging = !window.__USE_PROD_CONFIG__
 
 const teleportTarget = computed(() =>
   settingStore.get('Comfy.Sidebar.Location') === 'left'
