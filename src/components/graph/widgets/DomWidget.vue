@@ -22,19 +22,15 @@ import { CSSProperties, computed, onMounted, ref, watch } from 'vue'
 
 import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
 import { useDomClipping } from '@/composables/element/useDomClipping'
-import {
-  type BaseDOMWidget,
-  isComponentWidget,
-  isDOMWidget
-} from '@/scripts/domWidget'
+import { isComponentWidget, isDOMWidget } from '@/scripts/domWidget'
 import { DomWidgetState } from '@/stores/domWidgetStore'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
 
-const { widget, widgetState } = defineProps<{
-  widget: BaseDOMWidget<string | object>
+const { widgetState } = defineProps<{
   widgetState: DomWidgetState
 }>()
+const widget = widgetState.widget
 
 const emit = defineEmits<{
   'update:widgetValue': [value: string | object]
