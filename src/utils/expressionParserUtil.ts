@@ -30,6 +30,12 @@ const OP_PRECEDENCE: Record<string, number> = {
   '!=': 3
 }
 
+// hoist and reuse the regex, avoid re‑allocating literal each call
+const TOKEN_REGEX =
+  /\s*("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|==|!=|&&|\|\||[A-Za-z0-9_.]+|!|\(|\))\s*/g
+// cache parsed ASTs per expression
+const astCache = new Map<string, ASTNode>()
+
 /**
  * Tokenizes a context key expression string.
  * @param expr The expression string (e.g., "key1 && !key2 || (key3 && key4)").
@@ -39,8 +45,8 @@ const OP_PRECEDENCE: Record<string, number> = {
 export function tokenize(expr: string): Token[] {
   const tokens: Token[] = []
   let pos = 0
-  const re =
-    /\s*("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|==|!=|&&|\|\||[A-Za-z0-9_.]+|!|\(|\))\s*/g
+  // clone/reset regex state
+  const re = new RegExp(TOKEN_REGEX)
   let m: RegExpExecArray | null
   while ((m = re.exec(expr))) {
     if (m.index !== pos) {
@@ -208,8 +214,14 @@ export function evaluateExpression(
   if (!expr) return true
 
   try {
-    const tokens = tokenize(expr)
-    const ast = parseAST(tokens)
+    let ast: ASTNode
+    if (astCache.has(expr)) {
+      ast = astCache.get(expr)!
+    } else {
+      const tokens = tokenize(expr)
+      ast = parseAST(tokens)
+      astCache.set(expr, ast)
+    }
     return evalAst(ast, getContextKey)
   } catch (error) {
     console.error(`Error evaluating expression "${expr}":`, error)
