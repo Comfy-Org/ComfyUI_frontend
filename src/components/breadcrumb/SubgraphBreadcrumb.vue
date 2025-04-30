@@ -72,6 +72,7 @@ whenever(
   .p-breadcrumb-item-link,
   .p-breadcrumb-item-icon {
     color: #d26565;
+    user-select: none;
   }
 }
 </style>
