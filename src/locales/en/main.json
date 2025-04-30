@@ -1181,8 +1181,6 @@
     "email": "Email",
     "provider": "Sign-in Provider",
     "notSet": "Not set",
-    "password": "Password",
-    "newPassword": "Enter new password",
     "updatePassword": "Update Password"
   }
 }

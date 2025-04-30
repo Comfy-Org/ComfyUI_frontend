@@ -38,19 +38,18 @@
           <div class="text-muted flex items-center gap-1">
             <i :class="providerIcon" />
             {{ providerName }}
+            <Button
+              v-if="isEmailProvider"
+              v-tooltip="{
+                value: $t('userSettings.updatePassword'),
+                showDelay: 300
+              }"
+              icon="pi pi-pen-to-square"
+              severity="secondary"
+              text
+              @click="dialogService.showUpdatePasswordDialog()"
+            />
           </div>
-        </div>
-
-        <!-- Password Edit Section -->
-        <div v-if="isEmailProvider" class="flex flex-col gap-2">
-          <h3 class="font-medium">
-            {{ $t('userSettings.password') }}
-          </h3>
-          <Button
-            :label="$t('userSettings.updatePassword')"
-            icon="pi pi-key"
-            @click="dialogService.showUpdatePasswordDialog()"
-          />
         </div>
 
         <ProgressSpinner
