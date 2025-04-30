@@ -12,6 +12,7 @@ import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
 import { VueFire, VueFireAuth } from 'vuefire'
 
+import '@/assets/css/fonts.css'
 import '@/assets/css/style.css'
 import { FIREBASE_CONFIG } from '@/config/firebase'
 import router from '@/router'

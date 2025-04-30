@@ -149,6 +149,10 @@ body {
   font-size: 15px;
 }
 
+textarea {
+  font-family: 'ABCRom', monospace;
+}
+
 .comfy-modal-content {
   display: flex;
   flex-direction: column;

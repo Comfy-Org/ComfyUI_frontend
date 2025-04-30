@@ -36,11 +36,6 @@
   color: var(--primary-hover-fg) !important;
 }
 
-@font-face {
-  font-family: 'ABCRom';
-  src: url('../../assets/fonts/ABCRom.woff2') format('woff2');
-}
-
 /* Popup */
 .comfyui-popup {
   position: absolute;
