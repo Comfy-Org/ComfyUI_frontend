@@ -10,14 +10,19 @@ import { reactive } from 'vue'
  */
 function tokenize(expr: string): { t: string }[] {
   const tokens: { t: string }[] = []
+  let pos = 0
   const re =
     /\s*("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|==|!=|&&|\|\||[A-Za-z0-9_.]+|!|\(|\))\s*/g
   let m: RegExpExecArray | null
   while ((m = re.exec(expr))) {
+    if (m.index !== pos) {
+      throw new Error(`Invalid character in expression at pos ${pos}`)
+    }
     tokens.push({ t: m[1] })
+    pos = re.lastIndex
   }
-  if (re.lastIndex !== expr.length) {
-    throw new Error(`Invalid character in expression at pos ${re.lastIndex}`)
+  if (pos !== expr.length) {
+    throw new Error(`Invalid character in expression at pos ${pos}`)
   }
   return tokens
 }

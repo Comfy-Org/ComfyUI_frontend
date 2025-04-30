@@ -11,6 +11,13 @@ describe('evalAst via evaluateCondition', () => {
     store = useContextKeyStore()
   })
 
+  it('evaluates logical OR correctly', () => {
+    store.setContextKey('a', true)
+    store.setContextKey('b', false)
+    const result = store.evaluateCondition('a || b')
+    expect(result).toBe(true)
+  })
+
   it('evaluates logical AND and NOT correctly', () => {
     store.setContextKey('a', true)
     store.setContextKey('b', false)
