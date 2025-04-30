@@ -12,7 +12,7 @@ interface UnaryNode {
 }
 interface BinaryNode {
   type: 'Binary'
-  op: '&&' | '||' | '==' | '!='
+  op: '&&' | '||' | '==' | '!=' | '<' | '>' | '<=' | '>='
   left: ASTNode
   right: ASTNode
 }
@@ -27,12 +27,16 @@ const OP_PRECEDENCE: Record<string, number> = {
   '||': 1,
   '&&': 2,
   '==': 3,
-  '!=': 3
+  '!=': 3,
+  '<': 3,
+  '>': 3,
+  '<=': 3,
+  '>=': 3
 }
 
 // hoist and reuse the regex, avoid re‑allocating literal each call
 const TOKEN_REGEX =
-  /\s*("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|==|!=|&&|\|\||[A-Za-z0-9_.]+|!|\(|\))\s*/g
+  /\s*("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|==|!=|<=|>=|&&|\|\||<|>|[A-Za-z0-9_.]+|!|\(|\))\s*/g
 // cache parsed ASTs per expression
 const astCache = new Map<string, ASTNode>()
 
@@ -192,7 +196,22 @@ export function evalAst(
       }
       const lRaw = getRawValue(left, getContextKey)
       const rRaw = getRawValue(right, getContextKey)
-      return op === '==' ? lRaw === rRaw : lRaw !== rRaw
+      switch (op) {
+        case '==':
+          return lRaw === rRaw
+        case '!=':
+          return lRaw !== rRaw
+        case '<':
+          return (lRaw as any) < (rRaw as any)
+        case '>':
+          return (lRaw as any) > (rRaw as any)
+        case '<=':
+          return (lRaw as any) <= (rRaw as any)
+        case '>=':
+          return (lRaw as any) >= (rRaw as any)
+        default:
+          throw new Error(`Unsupported operator: ${op}`)
+      }
     }
     default:
       throw new Error(`Unknown AST node type: ${(node as ASTNode).type}`)
