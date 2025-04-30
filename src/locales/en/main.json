@@ -1128,7 +1128,8 @@
       "signIn": "Sign in",
       "signUpWithGoogle": "Sign up with Google",
       "signUpWithGithub": "Sign up with Github",
-      "regionRestrictionChina": "In accordance with local regulatory requirements, our services are temporarily unavailable to users located in China."
+      "regionRestrictionChina": "In accordance with local regulatory requirements, our services are temporarily unavailable to users located in China.",
+      "personalDataConsentLabel": "I agree to the processing of my personal data."
     },
     "signOut": {
       "signOut": "Log Out",
@@ -1149,7 +1150,8 @@
       "number": "Must contain at least one number",
       "special": "Must contain at least one special character",
       "match": "Passwords must match"
-    }
+    },
+    "personalDataConsentRequired": "You must agree to the processing of your personal data."
   },
   "credits": {
     "credits": "Credits",

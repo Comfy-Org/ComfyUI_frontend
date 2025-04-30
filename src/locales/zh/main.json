@@ -48,6 +48,7 @@
       "emailPlaceholder": "输入您的电子邮件",
       "passwordLabel": "密码",
       "passwordPlaceholder": "输入新密码",
+      "personalDataConsentLabel": "我同意处理我的个人数据。",
       "regionRestrictionChina": "根据当地法规要求，我们暂时无法为中国地区的用户提供服务。",
       "signIn": "登录",
       "signUpButton": "注册",
@@ -1169,6 +1170,7 @@
       "special": "必须包含至少一个特殊字符",
       "uppercase": "必须包含至少一个大写字母"
     },
+    "personalDataConsentRequired": "您必须同意处理您的个人数据。",
     "required": "必填"
   },
   "welcome": {
