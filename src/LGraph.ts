@@ -288,29 +288,32 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   /**
    * Attach Canvas to this graph
    */
-  attachCanvas(graphcanvas: LGraphCanvas): void {
-    if (graphcanvas.constructor != LGraphCanvas)
-      throw "attachCanvas expects a LGraphCanvas instance"
-    if (graphcanvas.graph != this)
-      graphcanvas.graph?.detachCanvas(graphcanvas)
+  attachCanvas(canvas: LGraphCanvas): void {
+    if (!(canvas instanceof LGraphCanvas)) {
+      throw new TypeError("attachCanvas expects an LGraphCanvas instance")
+    }
 
-    graphcanvas.graph = this
+    this.list_of_graphcanvas ??= []
+    if (!this.list_of_graphcanvas.includes(canvas)) {
+      this.list_of_graphcanvas.push(canvas)
+    }
 
-    this.list_of_graphcanvas ||= []
-    this.list_of_graphcanvas.push(graphcanvas)
+    if (canvas.graph === this) return
+
+    canvas.graph?.detachCanvas(canvas)
+    canvas.graph = this
   }
 
   /**
    * Detach Canvas from this graph
    */
-  detachCanvas(graphcanvas: LGraphCanvas): void {
-    if (!this.list_of_graphcanvas) return
-
-    const pos = this.list_of_graphcanvas.indexOf(graphcanvas)
-    if (pos == -1) return
-
-    graphcanvas.graph = null
-    this.list_of_graphcanvas.splice(pos, 1)
+  detachCanvas(canvas: LGraphCanvas): void {
+    canvas.graph = null
+    const canvases = this.list_of_graphcanvas
+    if (canvases) {
+      const pos = canvases.indexOf(canvas)
+      if (pos !== -1) canvases.splice(pos, 1)
+    }
   }
 
   /**
