@@ -33,8 +33,6 @@ const updateWidgets = () => {
     const widget = widgetState.widget
     const node = widget.node as LGraphNode
 
-    if (!widgetState) continue
-
     const visible =
       lgCanvas.isNodeVisible(node) &&
       !(widget.options.hideOnZoom && lowQuality) &&
