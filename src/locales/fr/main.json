@@ -48,6 +48,7 @@
       "emailPlaceholder": "Entrez votre email",
       "passwordLabel": "Mot de passe",
       "passwordPlaceholder": "Entrez un nouveau mot de passe",
+      "personalDataConsentLabel": "J'accepte le traitement de mes données personnelles.",
       "regionRestrictionChina": "Conformément aux exigences réglementaires locales, nos services ne sont actuellement pas disponibles pour les utilisateurs situés en Chine continentale.",
       "signIn": "Se connecter",
       "signUpButton": "S'inscrire",
@@ -1169,6 +1170,7 @@
       "special": "Doit contenir au moins un caractère spécial",
       "uppercase": "Doit contenir au moins une lettre majuscule"
     },
+    "personalDataConsentRequired": "Vous devez accepter le traitement de vos données personnelles.",
     "required": "Requis"
   },
   "welcome": {
