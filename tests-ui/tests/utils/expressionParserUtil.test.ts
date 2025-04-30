@@ -83,7 +83,7 @@ describe('evaluateExpression()', () => {
     c: true,
     d: '',
     num1: 1,
-    num0: 0
+    num2: 2
   }
   const getContextKey = (key: string) => context[key]
 
@@ -105,6 +105,13 @@ describe('evaluateExpression()', () => {
     expect(evaluateExpression('a && b', getContextKey)).toBe(false)
     expect(evaluateExpression('a || b', getContextKey)).toBe(true)
     expect(evaluateExpression('!b', getContextKey)).toBe(true)
+  })
+
+  it('evaluates comparison operators correctly', () => {
+    expect(evaluateExpression('num1 < num2', getContextKey)).toBe(true)
+    expect(evaluateExpression('num3 > num2', getContextKey)).toBe(true)
+    expect(evaluateExpression('num1 <= num2', getContextKey)).toBe(true)
+    expect(evaluateExpression('num3 >= num2', getContextKey)).toBe(true)
   })
 
   it('respects operator precedence and parentheses', () => {
