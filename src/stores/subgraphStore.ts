@@ -1,5 +1,5 @@
 import { LGraph } from '@comfyorg/litegraph'
-import { Subgraph } from '@comfyorg/litegraph/dist/subgraphInterfaces'
+import { Subgraph } from '@comfyorg/litegraph'
 import { whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { ref, shallowRef } from 'vue'

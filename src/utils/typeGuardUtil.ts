@@ -1,5 +1,5 @@
 import { LGraph, LGraphNode } from '@comfyorg/litegraph'
-import { Subgraph } from '@comfyorg/litegraph/dist/subgraphInterfaces'
+import { Subgraph } from '@comfyorg/litegraph'
 
 import type { PrimitiveNode } from '@/extensions/core/widgetInputs'
 
