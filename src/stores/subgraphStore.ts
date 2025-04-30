@@ -4,7 +4,7 @@ import { whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { ref, shallowRef } from 'vue'
 
-import { app } from '@/scripts/app'
+import { app as comfyApp } from '@/scripts/app'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 
@@ -13,8 +13,8 @@ const UNSAVED_WORKFLOW_NAME = 'Unsaved Workflow'
 export const useSubgraphStore = defineStore('subgraph', () => {
   const workflowStore = useWorkflowStore()
 
-  const activeGraph = shallowRef<Subgraph | LGraph | null>(null)
-  const activeRootGraphName = ref<string | null>(null)
+  const activeGraph = shallowRef<Subgraph | LGraph>()
+  const activeRootGraphName = ref<string>()
 
   const graphIdPath = ref<LGraph['id'][]>([])
   const graphNamePath = ref<string[]>([])
@@ -22,7 +22,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
   const isSubgraphActive = ref(false)
 
   const updateActiveGraph = () => {
-    activeGraph.value = app?.graph
+    activeGraph.value = comfyApp.canvas.subgraph
     isSubgraphActive.value = isSubgraph(activeGraph.value)
   }
 
@@ -35,7 +35,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
   }
 
   const updateGraphPaths = () => {
-    const currentGraph = app?.graph
+    const currentGraph = comfyApp.canvas.graph
     if (!currentGraph) {
       graphIdPath.value = []
       graphNamePath.value = []
@@ -63,9 +63,8 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     graphNamePath.value = namePath
   }
 
-  whenever(() => app?.graph, updateActiveGraph, {
-    immediate: true,
-    once: true
+  whenever(() => comfyApp?.graph, updateActiveGraph, {
+    immediate: true
   })
   whenever(() => workflowStore.activeWorkflow, updateActiveGraph)
   whenever(activeGraph, () => {
