@@ -15,7 +15,7 @@
 
 <script setup lang="ts">
 import Breadcrumb from 'primevue/breadcrumb'
-import { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
+import type { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
 import { computed } from 'vue'
 
 import { useWorkflowService } from '@/services/workflowService'
