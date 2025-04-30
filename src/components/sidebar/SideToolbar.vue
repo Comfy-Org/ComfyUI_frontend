@@ -11,8 +11,10 @@
         :class="tab.id + '-tab-button'"
         @click="onTabClick(tab)"
       />
-      <div class="side-tool-bar-end">
-        <Tag v-if="isStaging" value="staging" severity="warn" />
+      <div
+        class="side-tool-bar-end mt-auto self-end w-full flex flex-col items-center"
+      >
+        <Tag v-if="isStaging" value="staging" severity="warn" class="text-xs" />
         <SidebarLogoutIcon v-if="userStore.isMultiUserServer" />
         <SidebarThemeToggleIcon />
         <SidebarSettingsToggleIcon />
@@ -94,10 +96,5 @@ const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
 .side-tool-bar-container.small-sidebar {
   --sidebar-width: 2.5rem;
   --sidebar-icon-size: 1rem;
-}
-
-.side-tool-bar-end {
-  align-self: flex-end;
-  margin-top: auto;
 }
 </style>
