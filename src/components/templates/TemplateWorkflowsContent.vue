@@ -73,7 +73,7 @@ import ProgressSpinner from 'primevue/progressspinner'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import TemplateWorkflowCard from '@/components/templates/TemplateWorkflowCard.vue'
+import TemplateWorkflowView from '@/components/templates/TemplateWorkflowView.vue'
 import TemplateWorkflowsSideNav from '@/components/templates/TemplateWorkflowsSideNav.vue'
 import { useResponsiveCollapse } from '@/composables/element/useResponsiveCollapse'
 import { api } from '@/scripts/api'
