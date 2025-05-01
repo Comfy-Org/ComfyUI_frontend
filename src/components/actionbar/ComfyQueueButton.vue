@@ -17,7 +17,6 @@
     >
       <template #icon>
         <i-lucide:list-start v-if="workspaceStore.shiftDown" />
-        <i-lucide:play v-else-if="queueMode === 'disabled'" />
         <i-lucide:fast-forward v-else-if="queueMode === 'instant'" />
         <i-lucide:step-forward v-else-if="queueMode === 'change'" />
       </template>
@@ -147,5 +146,21 @@ const queuePrompt = async (e: Event) => {
 .comfyui-queue-button :deep(.p-splitbutton-dropdown) {
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
+}
+:deep(.p-splitbutton-dropdown),
+:deep(.p-splitbutton-button) {
+  font-family: 'ABCRom' !important;
+  font-weight: 1000 !important;
+  font-style: italic !important;
+  font-size: 1.5rem !important;
+  padding: 0 0.25rem !important;
+  margin: 0 !important;
+  color: #f0ff41 !important;
+  background-color: #172dd7 !important;
+  border: 0 !important;
+
+  > .p-button-label {
+    font-weight: 1000 !important;
+  }
 }
 </style>

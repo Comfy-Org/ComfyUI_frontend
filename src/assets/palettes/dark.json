@@ -54,6 +54,7 @@
       "bg-color": "#202020",
       "comfy-menu-bg": "#353535",
       "comfy-menu-secondary-bg": "#303030",
+      "font-family": "Arial, Helvetica, sans-serif",
       "comfy-input-bg": "#222",
       "input-text": "#ddd",
       "descrip-text": "#999",

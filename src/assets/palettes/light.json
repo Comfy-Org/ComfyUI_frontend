@@ -68,7 +68,8 @@
       "content-fg": "#222",
       "content-hover-bg": "#adadad",
       "content-hover-fg": "#222",
-      "bar-shadow": "rgba(16, 16, 16, 0.25) 0 0 0.5rem"
+      "bar-shadow": "rgba(16, 16, 16, 0.25) 0 0 0.5rem",
+      "font-family": "ABCRom"
     }
   }
 }
