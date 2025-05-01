@@ -171,6 +171,9 @@
   },
   "desktopUpdate": {
     "description": "ComfyUIデスクトップは新しい依存関係をインストールしています。これには数分かかる場合があります。",
+    "errorCheckingUpdate": "アップデートの確認中にエラーが発生しました",
+    "errorInstallingUpdate": "アップデートのインストール中にエラーが発生しました",
+    "noUpdateFound": "アップデートは見つかりませんでした",
     "terminalDefaultMessage": "更新からの任意のコンソール出力はここに表示されます。",
     "title": "ComfyUIデスクトップの更新",
     "updateAvailableMessage": "アップデートが利用可能です。今すぐ再起動してアップデートしますか？",

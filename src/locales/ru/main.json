@@ -171,6 +171,9 @@
   },
   "desktopUpdate": {
     "description": "ComfyUI Desktop устанавливает новые зависимости. Это может занять несколько минут.",
+    "errorCheckingUpdate": "Ошибка при проверке обновлений",
+    "errorInstallingUpdate": "Ошибка при установке обновления",
+    "noUpdateFound": "Обновлений не найдено",
     "terminalDefaultMessage": "Любой вывод консоли из обновления будет отображаться здесь.",
     "title": "Обновление ComfyUI Desktop",
     "updateAvailableMessage": "Доступно обновление. Вы хотите перезагрузить и обновить сейчас?",
