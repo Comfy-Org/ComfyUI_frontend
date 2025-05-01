@@ -3309,24 +3309,21 @@ export class LGraphCanvas {
     dragRect[3] = h
 
     // Select nodes - any part of the node is in the select area
-    const isSelected: Positionable[] = []
+    const isSelected = new Set<Positionable>()
     const notSelected: Positionable[] = []
-    for (const nodeX of graph._nodes) {
-      if (!overlapBounding(dragRect, nodeX.boundingRect)) continue
 
-      if (!nodeX.selected || !selectedItems.has(nodeX))
-        notSelected.push(nodeX)
-      else isSelected.push(nodeX)
+    for (const nodeX of graph._nodes) {
+      if (overlapBounding(dragRect, nodeX.boundingRect)) {
+        addPositionable(nodeX)
+      }
     }
 
     // Select groups - the group is wholly inside the select area
     for (const group of graph.groups) {
       if (!containsRect(dragRect, group._bounding)) continue
-      group.recomputeInsideNodes()
 
-      if (!group.selected || !selectedItems.has(group))
-        notSelected.push(group)
-      else isSelected.push(group)
+      group.recomputeInsideNodes()
+      addPositionable(group)
     }
 
     // Select reroutes - the centre point is inside the select area
@@ -3335,10 +3332,7 @@ export class LGraphCanvas {
 
       selectedItems.add(reroute)
       reroute.selected = true
-
-      if (!reroute.selected || !selectedItems.has(reroute))
-        notSelected.push(reroute)
-      else isSelected.push(reroute)
+      addPositionable(reroute)
     }
 
     if (e.shiftKey) {
@@ -3350,11 +3344,16 @@ export class LGraphCanvas {
     } else {
       // Replace selection
       for (const item of selectedItems.values()) {
-        if (!isSelected.includes(item)) this.deselect(item)
+        if (!isSelected.has(item)) this.deselect(item)
       }
       for (const item of notSelected) this.select(item)
     }
     this.onSelectionChange?.(this.selected_nodes)
+
+    function addPositionable(item: Positionable): void {
+      if (!item.selected || !selectedItems.has(item)) notSelected.push(item)
+      else isSelected.add(item)
+    }
   }
 
   /**
