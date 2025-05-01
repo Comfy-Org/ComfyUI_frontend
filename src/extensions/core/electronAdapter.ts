@@ -2,6 +2,7 @@ import { PYTHON_MIRROR } from '@/constants/uvMirrors'
 import { t } from '@/i18n'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
+import { useUpdateService } from '@/services/updateService'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
 import { checkMirrorReachable } from '@/utils/networkUtil'
@@ -12,6 +13,7 @@ import { checkMirrorReachable } from '@/utils/networkUtil'
   const electronAPI = getElectronAPI()
   const desktopAppVersion = await electronAPI.getElectronVersion()
   const workflowStore = useWorkflowStore()
+  const updateService = useUpdateService()
 
   const onChangeRestartApp = (newValue: string, oldValue: string) => {
     // Add a delay to allow changes to take effect before restarting.
@@ -163,20 +165,7 @@ import { checkMirrorReachable } from '@/utils/networkUtil'
         label: 'Check for Updates',
         icon: 'pi pi-sync',
         async function() {
-          const updateAvailable = await electronAPI.checkForUpdates({
-            disableUpdateReadyAction: true
-          })
-          if (updateAvailable.isUpdateAvailable) {
-            const version = updateAvailable.version
-            const proceed = await useDialogService().confirm({
-              title: t('desktopUpdate.updateFoundTitle', { version }),
-              message: t('desktopUpdate.updateAvailableMessage'),
-              type: 'default'
-            })
-            if (proceed) {
-              electronAPI.restartAndInstall()
-            }
-          }
+          await updateService.checkForUpdates()
         }
       },
       {
