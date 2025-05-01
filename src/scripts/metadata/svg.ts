@@ -7,8 +7,7 @@ export async function getSvgMetadata(file: File): Promise<ComfyMetadata> {
 
   if (metadataMatch && metadataMatch[1]) {
     try {
-      const metadataJson = JSON.parse(metadataMatch[1].trim())
-      return metadataJson
+      return JSON.parse(metadataMatch[1].trim())
     } catch (error) {
       console.error('Error parsing SVG metadata:', error)
       return {}
