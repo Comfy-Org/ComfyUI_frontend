@@ -1,5 +1,5 @@
 import type { Size, Vector2 } from '@comfyorg/litegraph'
-import { CSSProperties, computed, ref } from 'vue'
+import { CSSProperties, ref } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { useCanvasStore } from '@/stores/graphStore'
@@ -23,13 +23,20 @@ export function useAbsolutePosition(options: { useTransform?: boolean } = {}) {
     lgCanvas
   )
 
-  const position = ref<PositionConfig>({
-    pos: [0, 0],
-    size: [0, 0]
-  })
+  /**
+   * @note Do NOT convert style to a computed value, as it will cause lag when
+   * updating the style on different animation frames. Vue's computed value is
+   * evaluated asynchronously.
+   */
+  const style = ref<CSSProperties>({})
 
-  const style = computed<CSSProperties>(() => {
-    const { pos, size, scale = lgCanvas.ds.scale } = position.value
+  /**
+   * Compute the style of the element based on the position and size.
+   *
+   * @param position
+   */
+  const computeStyle = (position: PositionConfig): CSSProperties => {
+    const { pos, size, scale = lgCanvas.ds.scale } = position
     const [left, top] = canvasPosToClientPos(pos)
     const [width, height] = size
 
@@ -50,7 +57,7 @@ export function useAbsolutePosition(options: { useTransform?: boolean } = {}) {
           width: `${width * scale}px`,
           height: `${height * scale}px`
         }
-  })
+  }
 
   /**
    * Update the position of the element on the litegraph canvas.
@@ -58,7 +65,7 @@ export function useAbsolutePosition(options: { useTransform?: boolean } = {}) {
    * @param config
    */
   const updatePosition = (config: PositionConfig) => {
-    position.value = config
+    style.value = computeStyle(config)
   }
 
   return {
