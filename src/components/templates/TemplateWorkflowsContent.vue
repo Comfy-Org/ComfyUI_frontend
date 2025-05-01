@@ -43,9 +43,13 @@
             </h2>
           </div>
           <div
-            class="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-8 justify-items-center"
+            class="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] auto-rows-fr gap-8 justify-items-center"
           >
-            <div v-for="template in selectedTab.templates" :key="template.name">
+            <div
+              v-for="template in selectedTab.templates"
+              :key="template.name"
+              class="h-full"
+            >
               <TemplateWorkflowCard
                 :source-module="selectedTab.moduleName"
                 :template="template"
