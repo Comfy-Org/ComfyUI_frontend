@@ -4984,7 +4984,7 @@ app.registerExtension({
 
     // Assign the created function
     ComfyApp.open_maskeditor = openMaskEditor
-    ComfyApp.maskeditor_is_opended = () => isOpened()
+    ComfyApp.maskeditor_is_opended = isOpened
 
     // Ensure boolean return type
     const context_predicate = (): boolean => {
