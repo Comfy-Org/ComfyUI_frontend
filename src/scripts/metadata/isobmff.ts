@@ -9,7 +9,10 @@ import {
   IsobmffBoxContentRange
 } from '@/types/metadataTypes'
 
-const MAX_READ_BYTES = 2 * 1024 * 1024
+// Set max read high, as atoms are stored near end of file
+// while search is made to be efficient.
+const MAX_READ_BYTES = 64 * 1024 * 1024
+
 const BOX_TYPES = {
   USER_DATA: [0x75, 0x64, 0x74, 0x61],
   META_DATA: [0x6d, 0x65, 0x74, 0x61],
