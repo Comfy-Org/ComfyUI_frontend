@@ -86,6 +86,9 @@ export const useLitegraphService = () => {
        * @internal Setup stroke styles for the node under various conditions.
        */
       #setupStrokeStyles() {
+        this.strokeStyles['noice'] = function (this: LGraphNode) {
+          return { color: '#f0ff41', lineWidth: 1, padding: 0.5 }
+        }
         this.strokeStyles['running'] = function (this: LGraphNode) {
           if (this.id == app.runningNodeId) {
             return { color: '#0f0' }
