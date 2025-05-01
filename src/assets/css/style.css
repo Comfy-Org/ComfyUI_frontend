@@ -61,7 +61,7 @@ body {
   overflow-y: auto;
   padding: 2px;
   resize: none;
-  border: 1px solid #f0ff41;
+  border: 1px solid #f0ff4144;
   box-sizing: border-box;
   font-size: var(--comfy-textarea-font-size);
 }
