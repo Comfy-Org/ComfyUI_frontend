@@ -36,13 +36,12 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
     return "link" in fromSlot && LiteGraph.isValidConnection(this.type, fromSlot.type)
   }
 
-  override isConnected(): boolean {
+  override get isConnected(): boolean {
     return this.links != null && this.links.length > 0
   }
 
   override draw(ctx: CanvasRenderingContext2D, options: Omit<IDrawOptions, "doStroke" | "labelPosition">) {
-    const originalTextAlign = ctx.textAlign
-    const originalStrokeStyle = ctx.strokeStyle
+    const { textAlign, strokeStyle } = ctx
     ctx.textAlign = "right"
     ctx.strokeStyle = "black"
 
@@ -52,7 +51,7 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
       doStroke: true,
     })
 
-    ctx.textAlign = originalTextAlign
-    ctx.strokeStyle = originalStrokeStyle
+    ctx.textAlign = textAlign
+    ctx.strokeStyle = strokeStyle
   }
 }

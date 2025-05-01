@@ -3521,7 +3521,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
         isValidTarget ||
         !slot.isWidgetInputSlot ||
         this.#isMouseOverWidget(this.getWidgetFromSlot(slot)) ||
-        slot.isConnected()
+        slot.isConnected
       ) {
         ctx.globalAlpha = isValid ? editorAlpha : 0.4 * editorAlpha
         slot.draw(ctx, {

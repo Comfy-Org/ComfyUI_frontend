@@ -22,7 +22,7 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
     this.link = slot.link
   }
 
-  override isConnected(): boolean {
+  override get isConnected(): boolean {
     return this.link != null
   }
 
@@ -31,7 +31,7 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
   }
 
   override draw(ctx: CanvasRenderingContext2D, options: Omit<IDrawOptions, "doStroke" | "labelPosition">) {
-    const originalTextAlign = ctx.textAlign
+    const { textAlign } = ctx
     ctx.textAlign = "left"
 
     super.draw(ctx, {
@@ -40,6 +40,6 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
       doStroke: false,
     })
 
-    ctx.textAlign = originalTextAlign
+    ctx.textAlign = textAlign
   }
 }

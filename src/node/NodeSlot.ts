@@ -1,4 +1,4 @@
-import type { CanvasColour, DefaultConnectionColors, INodeInputSlot, INodeOutputSlot, INodeSlot, ISlotType, IWidgetLocator, OptionalProps, Point, ReadOnlyPoint, Rect } from "@/interfaces"
+import type { CanvasColour, DefaultConnectionColors, INodeInputSlot, INodeOutputSlot, INodeSlot, OptionalProps, Point, ReadOnlyPoint } from "@/interfaces"
 import type { LGraphNode } from "@/LGraphNode"
 
 import { LabelPosition, SlotShape, SlotType } from "@/draw"
@@ -7,6 +7,7 @@ import { getCentre } from "@/measure"
 import { LinkDirection, RenderShape } from "@/types/globalEnums"
 
 import { NodeInputSlot } from "./NodeInputSlot"
+import { SlotBase } from "./SlotBase"
 
 export interface IDrawOptions {
   colorContext: DefaultConnectionColors
@@ -16,22 +17,9 @@ export interface IDrawOptions {
   highlight?: boolean
 }
 
-export abstract class NodeSlot implements INodeSlot {
-  name: string
-  localized_name?: string
-  label?: string
-  type: ISlotType
-  dir?: LinkDirection
-  removable?: boolean
-  shape?: RenderShape
-  color_off?: CanvasColour
-  color_on?: CanvasColour
-  locked?: boolean
-  nameLocked?: boolean
+/** Shared base class for {@link LGraphNode} input and output slots. */
+export abstract class NodeSlot extends SlotBase implements INodeSlot {
   pos?: Point
-  widget?: IWidgetLocator
-  hasErrors?: boolean
-  readonly boundingRect: Rect
 
   /** The offset from the parent node to the centre point of this slot. */
   get #centreOffset(): ReadOnlyPoint {
@@ -64,10 +52,9 @@ export abstract class NodeSlot implements INodeSlot {
   abstract get isWidgetInputSlot(): boolean
 
   constructor(slot: OptionalProps<INodeSlot, "boundingRect">, node: LGraphNode) {
+    super(slot.name, slot.type, slot.boundingRect ?? [0, 0, 0, 0])
+
     Object.assign(this, slot)
-    this.name = slot.name
-    this.type = slot.type
-    this.boundingRect = slot.boundingRect ?? [0, 0, 0, 0]
     this.#node = node
   }
 
@@ -82,14 +69,6 @@ export abstract class NodeSlot implements INodeSlot {
    */
   get renderingLabel(): string {
     return this.label || this.localized_name || this.name || ""
-  }
-
-  abstract isConnected(): boolean
-
-  renderingColor(colorContext: DefaultConnectionColors): CanvasColour {
-    return this.isConnected()
-      ? this.color_on || colorContext.getConnectedColor(this.type)
-      : this.color_off || colorContext.getDisconnectedColor(this.type)
   }
 
   draw(

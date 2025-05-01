@@ -38,7 +38,7 @@ export interface HasBoundingRect {
    *
    * Used for various calculations, such as overlap, selective rendering, and click checks.
    * For most items, this is cached position & size as `x, y, width, height`.
-   * Some items (such as nodes) may extend above and/or to the left of their {@link pos}.
+   * Some items (such as nodes and slots) may extend above and/or to the left of their {@link pos}.
    * @readonly
    * @see {@link move}
    */
