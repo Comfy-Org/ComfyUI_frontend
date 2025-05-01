@@ -11,7 +11,13 @@ import type {
 } from '@/types/workflowTemplateTypes'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
-const SHOULD_SORT_CATEGORIES = new Set(['Image API', 'Video API'])
+const SHOULD_SORT_CATEGORIES = new Set([
+  // API Node templates should be strictly sorted by name to avoid any
+  // favoritism or bias towards a particular API. Other categories can
+  // have their ordering specified in index.json freely.
+  'Image API',
+  'Video API'
+])
 
 export const useWorkflowTemplatesStore = defineStore(
   'workflowTemplates',
