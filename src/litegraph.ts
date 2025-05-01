@@ -109,7 +109,6 @@ export type {
   INodeInputSlot,
   INodeOutputSlot,
   INodeSlot,
-  IOptionalSlotData,
   ISlotType,
   KeysOfType,
   LinkNetwork,

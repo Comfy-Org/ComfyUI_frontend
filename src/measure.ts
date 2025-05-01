@@ -116,18 +116,6 @@ export function isInsideRectangle(
 }
 
 /**
- * Cheap, low accuracy check to determine if a point is roughly inside a sort-of octagon
- * @param x Point x
- * @param y Point y
- * @param radius Radius to use as rough guide for octagon
- * @returns `true` if the point is roughly inside the octagon centred on 0,0 with specified radius
- */
-export function isSortaInsideOctagon(x: number, y: number, radius: number): boolean {
-  const sum = Math.min(radius, Math.abs(x)) + Math.min(radius, Math.abs(y))
-  return sum < radius * 0.75
-}
-
-/**
  * Determines if two rectangles have any overlap
  * @param a Rectangle A as `x, y, width, height`
  * @param b Rectangle B as `x, y, width, height`

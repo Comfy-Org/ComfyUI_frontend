@@ -15,7 +15,6 @@ import {
   isInRectangle,
   isInsideRectangle,
   isPointInRect,
-  isSortaInsideOctagon,
   overlapBounding,
   rotateLink,
   snapPoint,
@@ -152,25 +151,6 @@ test("isInsideRectangle handles edge cases differently from isInRectangle", ({ e
   // Points outside
   expect(isInsideRectangle(-1, 5, 0, 0, 10, 10)).toBe(false)
   expect(isInsideRectangle(11, 5, 0, 0, 10, 10)).toBe(false)
-})
-
-test("isSortaInsideOctagon approximates octagon containment", ({ expect }) => {
-  const radius = 10
-
-  // Points clearly inside
-  expect(isSortaInsideOctagon(0, 0, radius)).toBe(true)
-  expect(isSortaInsideOctagon(3, 3, radius)).toBe(true)
-
-  // Points on diagonal (roughly on octagon edge)
-  expect(isSortaInsideOctagon(7, 7, radius)).toBe(false)
-
-  // Points clearly outside
-  expect(isSortaInsideOctagon(10, 10, radius)).toBe(false)
-  expect(isSortaInsideOctagon(-10, -10, radius)).toBe(false)
-
-  // Points on axes
-  expect(isSortaInsideOctagon(radius * 0.5, 0, radius)).toBe(true)
-  expect(isSortaInsideOctagon(0, radius * 0.5, radius)).toBe(true)
 })
 
 test("containsRect correctly identifies nested rectangles", ({ expect }) => {

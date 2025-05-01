@@ -4037,12 +4037,7 @@ export class LGraphCanvas {
     if (!LiteGraph.snap_highlights_node || !linkConnector.isConnecting || linkConnectorSnap) return
 
     // Reroute highlight
-    if (overReroute) {
-      const { globalAlpha } = ctx
-      ctx.globalAlpha = 1
-      overReroute.drawHighlight(ctx, "#ffcc00aa")
-      ctx.globalAlpha = globalAlpha
-    }
+    overReroute?.drawHighlight(ctx, "#ffcc00aa")
 
     // Ensure we're mousing over a node and connecting a link
     const node = this.node_over

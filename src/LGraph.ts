@@ -1189,9 +1189,9 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   }
 
   /**
-   * Returns a reroute by ID, or `undefined` if the ID is `null` or `undefined`.
-   * @param id ID of reroute to return
-   * @returns The reroute with the provided {@link id}, otherwise `undefined`. Always returns `undefined` if `id` is `null` or `undefined`.
+   * Finds the reroute with the provided ID.
+   * @param id ID of reroute to find
+   * @returns The reroute with the provided {@link id}, otherwise `undefined`. Always returns `undefined` if `id` is nullish.
    */
   getReroute(id: null | undefined): undefined
   getReroute(id: RerouteId | null | undefined): Reroute | undefined

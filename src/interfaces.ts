@@ -253,12 +253,6 @@ export interface IBoundaryNodes {
 
 export type Direction = "top" | "bottom" | "left" | "right"
 
-export interface IOptionalSlotData<TSlot extends INodeInputSlot | INodeOutputSlot> {
-  content: string
-  value: TSlot
-  className?: string
-}
-
 /**
  * A string that represents a specific data / slot type, e.g. `STRING`.
  *
