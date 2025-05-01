@@ -17,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
+import { useElementBounding, useEventListener } from '@vueuse/core'
 import { CSSProperties, computed, onMounted, ref, watch } from 'vue'
 
 import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
@@ -48,26 +48,6 @@ const { style: positionStyle, updatePosition } = useAbsolutePosition({
   useTransform: true
 })
 const { style: clippingStyle, updateClipPath } = useDomClipping()
-
-watch(
-  () => widgetState,
-  (widgetState: DomWidgetState) => {
-    updatePosition(widgetState)
-    if (enableDomClipping.value) {
-      updateDomClipping()
-    }
-
-    style.value = {
-      ...positionStyle.value,
-      ...(enableDomClipping.value ? clippingStyle.value : {}),
-      zIndex: widgetState.zIndex,
-      pointerEvents:
-        widgetState.readonly || widget.computedDisabled ? 'none' : 'auto',
-      opacity: widget.computedDisabled ? 0.5 : 1
-    }
-  },
-  { deep: true }
-)
 
 const canvasStore = useCanvasStore()
 const settingStore = useSettingStore()
@@ -105,6 +85,32 @@ const updateDomClipping = () => {
     selectedAreaConfig
   )
 }
+
+/**
+ * @note mapping between canvas position and client position depends on the
+ * canvas element's position, so we need to watch the canvas element's position
+ * and update the position of the widget accordingly.
+ */
+const { left, top } = useElementBounding(canvasStore.getCanvas().canvas)
+watch(
+  [() => widgetState, left, top],
+  ([widgetState, _, __]) => {
+    updatePosition(widgetState)
+    if (enableDomClipping.value) {
+      updateDomClipping()
+    }
+
+    style.value = {
+      ...positionStyle.value,
+      ...(enableDomClipping.value ? clippingStyle.value : {}),
+      zIndex: widgetState.zIndex,
+      pointerEvents:
+        widgetState.readonly || widget.computedDisabled ? 'none' : 'auto',
+      opacity: widget.computedDisabled ? 0.5 : 1
+    }
+  },
+  { deep: true }
+)
 
 watch(
   () => widgetState.visible,
