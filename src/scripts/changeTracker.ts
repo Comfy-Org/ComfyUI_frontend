@@ -9,7 +9,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 
 import { api } from './api'
-import type { ComfyApp } from './app'
+import { ComfyApp } from './app'
 
 function clone<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj))
@@ -203,6 +203,9 @@ export class ChangeTracker {
         // Do not trigger on repeat events (Holding down a key)
         // This can happen when user is holding down "Space" to pan the canvas.
         if (e.repeat) return
+
+        // If the mask editor is opened, we don't want to trigger on key events
+        if (ComfyApp.maskeditor_is_opended?.()) return
 
         const activeEl = document.activeElement
         requestAnimationFrame(async () => {
