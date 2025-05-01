@@ -62,6 +62,7 @@ import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import { type ComfyApi, PromptExecutionError, api } from './api'
 import { defaultGraph } from './defaultGraph'
+import { pruneWidgets } from './domWidget'
 import {
   getFlacMetadata,
   getLatentMetadata,
@@ -706,6 +707,8 @@ export class ComfyApp {
       for (const node of app.graph.nodes) {
         node.onAfterGraphConfigured?.()
       }
+
+      pruneWidgets(this.nodes)
 
       return r
     }
