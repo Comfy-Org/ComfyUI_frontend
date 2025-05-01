@@ -1311,10 +1311,7 @@ export class ComfyApp {
       } else if (mp4Info.prompt) {
         this.loadApiJson(mp4Info.prompt, fileName)
       }
-    } else if (
-      file.type === 'image/svg+xml' ||
-      file.name?.endsWith('.svg')
-    ) {
+    } else if (file.type === 'image/svg+xml' || file.name?.endsWith('.svg')) {
       const svgInfo = await getSvgMetadata(file)
       if (svgInfo.workflow) {
         this.loadGraphData(svgInfo.workflow, true, true, fileName)
