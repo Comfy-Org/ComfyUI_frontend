@@ -9,6 +9,9 @@ import type { LGraphNode } from "./LGraphNode"
 import type { CanvasEventDetail } from "./types/events"
 import type { RenderShape, TitleMode } from "./types/globalEnums"
 
+// Must remain above LiteGraphGlobal (circular dependency due to abstract factory behaviour in `configure`)
+export type { Subgraph } from "./subgraph/Subgraph"
+
 import { LiteGraphGlobal } from "./LiteGraphGlobal"
 import { loadPolyfills } from "./polyfills"
 
@@ -142,9 +145,13 @@ export {
   TitleMode,
 } from "./types/globalEnums"
 export type {
+  ExportedSubgraph,
+  ExportedSubgraphInstance,
+  ExportedSubgraphIONode,
   ISerialisedGraph,
   SerialisableGraph,
   SerialisableLLink,
+  SubgraphIO,
 } from "./types/serialisation"
 export type { IWidget } from "./types/widgets"
 export { isColorable } from "./utils/type"

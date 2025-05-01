@@ -61,6 +61,7 @@ import {
 import { NodeInputSlot } from "./node/NodeInputSlot"
 import { Reroute, type RerouteId } from "./Reroute"
 import { stringOrEmpty } from "./strings"
+import { Subgraph } from "./subgraph/Subgraph"
 import {
   CanvasItem,
   LGraphEventMode,
@@ -259,6 +260,8 @@ export class LGraphCanvas {
     hoveringOver: CanvasItem.Nothing,
     shouldSetCursor: true,
   }
+
+  declare subgraph?: Subgraph
 
   #updateCursorStyle() {
     if (!this.state.shouldSetCursor) return

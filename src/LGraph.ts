@@ -48,13 +48,17 @@ export interface LGraphConfig {
   links_ontop?: any
 }
 
+export interface BaseLGraph {
+  readonly rootGraph: LGraph
+}
+
 /**
  * LGraph is the class that contain a full graph. We instantiate one and add nodes to it, and then we can run the execution loop.
  * supported callbacks:
  * + onNodeAdded: when a new node is added to the graph
  * + onNodeRemoved: when a node inside this graph is removed
  */
-export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
+export class LGraph implements LinkNetwork, BaseLGraph, Serialisable<SerialisableGraph> {
   static serialisedSchemaVersion = 1 as const
 
   static STATUS_STOPPED = 1
@@ -145,6 +149,14 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   /** All reroutes in this graph. */
   public get reroutes(): Map<RerouteId, Reroute> {
     return this.#reroutes
+  }
+
+  get rootGraph(): LGraph {
+    return this
+  }
+
+  get isRootGraph(): boolean {
+    return this.rootGraph === this
   }
 
   /** @deprecated See {@link state}.{@link LGraphState.lastNodeId lastNodeId} */

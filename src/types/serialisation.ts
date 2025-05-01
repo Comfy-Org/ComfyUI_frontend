@@ -40,7 +40,7 @@ export interface BaseExportedGraph {
   /** Definitions of re-usable objects that are referenced elsewhere in this exported graph. */
   definitions?: {
     /** The base definition of subgraphs used in this workflow. That is, what you see when you open / edit a subgraph. */
-    subgraphs?: Record<UUID, ExportedSubgraph>
+    subgraphs?: ExportedSubgraph[]
   }
 }
 
@@ -91,7 +91,7 @@ export interface ISerialisedNode {
 }
 
 /** Properties of nodes that are used by subgraph instances. */
-type NodeSubgraphSharedProps = Omit<ISerialisedNode, "type" | "outputs" | "inputs" | "properties" | "showAdvanced" | "widgets_values">
+type NodeSubgraphSharedProps = Omit<ISerialisedNode, "properties" | "showAdvanced">
 
 /** A single instance of a subgraph; where it is used on a graph, any customisation to shape / colour etc. */
 export interface ExportedSubgraphInstance extends NodeSubgraphSharedProps {
@@ -126,16 +126,18 @@ export interface ISerialisedGraph extends BaseExportedGraph {
 export interface ExportedSubgraph extends SerialisableGraph {
   /** The display name of the subgraph. */
   name: string
+  inputNode: ExportedSubgraphIONode
+  outputNode: ExportedSubgraphIONode
   /** Ordered list of inputs to the subgraph itself. Similar to a reroute, with the input side in the graph, and the output side in the subgraph. */
-  inputs: SubgraphIO[]
+  inputs?: SubgraphIO[]
   /** Ordered list of outputs from the subgraph itself. Similar to a reroute, with the input side in the subgraph, and the output side in the graph. */
-  outputs: SubgraphIO[]
+  outputs?: SubgraphIO[]
   /** A list of node widgets displayed in the parent graph, on the subgraph object. */
-  widgets: ExposedWidget[]
+  widgets?: ExposedWidget[]
 }
 
 /** Properties shared by subgraph and node I/O slots. */
-type SubgraphIOShared = Omit<INodeSlot, "nameLocked" | "locked" | "removable" | "boundingRect" | "_floatingLinks">
+type SubgraphIOShared = Omit<INodeSlot, "nameLocked" | "locked" | "removable" | "_floatingLinks">
 
 /** Subgraph I/O slots */
 export interface SubgraphIO extends SubgraphIOShared {
@@ -143,6 +145,8 @@ export interface SubgraphIO extends SubgraphIOShared {
   id: UUID
   /** The data type this slot uses. Unlike nodes, this does not support legacy numeric types. */
   type: string
+  /** Links connected to this slot, or `undefined` if not connected. An ouptut slot should only ever have one link. */
+  linkIds?: LinkId[]
 }
 
 /** A reference to a node widget shown in the parent graph */
@@ -208,4 +212,10 @@ export interface SerialisableLLink {
   type: ISlotType
   /** ID of the last reroute (from input to output) that this link passes through, otherwise `undefined` */
   parentId?: RerouteId
+}
+
+export interface ExportedSubgraphIONode {
+  id: NodeId
+  bounding: [number, number, number, number]
+  pinned?: boolean
 }
