@@ -38,18 +38,36 @@ const emit = defineEmits<{
 
 const widgetElement = ref<HTMLElement | undefined>()
 
+/**
+ * @note Do NOT convert style to a computed value, as it will cause lag when
+ * updating the style on different animation frames. Vue's computed value is
+ * evaluated asynchronously.
+ */
+const style = ref<CSSProperties>({})
 const { style: positionStyle, updatePosition } = useAbsolutePosition({
   useTransform: true
 })
 const { style: clippingStyle, updateClipPath } = useDomClipping()
-const style = computed<CSSProperties>(() => ({
-  ...positionStyle.value,
-  ...(enableDomClipping.value ? clippingStyle.value : {}),
-  zIndex: widgetState.zIndex,
-  pointerEvents:
-    widgetState.readonly || widget.computedDisabled ? 'none' : 'auto',
-  opacity: widget.computedDisabled ? 0.5 : 1
-}))
+
+watch(
+  () => widgetState,
+  (widgetState: DomWidgetState) => {
+    updatePosition(widgetState)
+    if (enableDomClipping.value) {
+      updateDomClipping()
+    }
+
+    style.value = {
+      ...positionStyle.value,
+      ...(enableDomClipping.value ? clippingStyle.value : {}),
+      zIndex: widgetState.zIndex,
+      pointerEvents:
+        widgetState.readonly || widget.computedDisabled ? 'none' : 'auto',
+      opacity: widget.computedDisabled ? 0.5 : 1
+    }
+  },
+  { deep: true }
+)
 
 const canvasStore = useCanvasStore()
 const settingStore = useSettingStore()
@@ -87,17 +105,6 @@ const updateDomClipping = () => {
     selectedAreaConfig
   )
 }
-
-watch(
-  () => widgetState,
-  (newState) => {
-    updatePosition(newState)
-    if (enableDomClipping.value) {
-      updateDomClipping()
-    }
-  },
-  { deep: true }
-)
 
 watch(
   () => widgetState.visible,
