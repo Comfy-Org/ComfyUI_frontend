@@ -9,7 +9,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 
 import { api } from './api'
-import { ComfyApp } from './app'
+import type { ComfyApp } from './app'
 
 function clone<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj))
@@ -205,7 +205,8 @@ export class ChangeTracker {
         if (e.repeat) return
 
         // If the mask editor is opened, we don't want to trigger on key events
-        if (ComfyApp.maskeditor_is_opended?.()) return
+        const comfyApp = app.constructor as typeof ComfyApp
+        if (comfyApp.maskeditor_is_opended?.()) return
 
         const activeEl = document.activeElement
         requestAnimationFrame(async () => {
