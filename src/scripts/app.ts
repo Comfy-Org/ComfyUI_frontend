@@ -1313,7 +1313,6 @@ export class ComfyApp {
       }
     } else if (
       file.type === 'image/svg+xml' ||
-      file.type === 'image/svg' ||
       file.name?.endsWith('.svg')
     ) {
       const svgInfo = await getSvgMetadata(file)

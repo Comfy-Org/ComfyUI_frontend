@@ -12,7 +12,8 @@ test.describe('Load Workflow in Media', () => {
     'workflow.glb',
     'workflow.mp4',
     'workflow.mov',
-    'workflow.m4v'
+    'workflow.m4v',
+    'workflow.svg'
   ]
   fileNames.forEach(async (fileName) => {
     test(`Load workflow in ${fileName} (drop from filesystem)`, async ({
