@@ -14,6 +14,7 @@ LiteGraphGlobal {
   "CONNECTING_LINK_COLOR": "#AFA",
   "ContextMenu": [Function],
   "CurveEditor": [Function],
+  "DEFAULT_FONT": "Arial",
   "DEFAULT_GROUP_FONT": 24,
   "DEFAULT_GROUP_FONT_SIZE": undefined,
   "DEFAULT_POSITION": [
@@ -26,6 +27,7 @@ LiteGraphGlobal {
   "EVENT": -1,
   "EVENT_LINK_COLOR": "#A86",
   "GRID_SHAPE": 6,
+  "GROUP_FONT": "Arial",
   "Globals": {},
   "HIDDEN_LINK": -1,
   "INPUT": 1,
@@ -57,6 +59,7 @@ LiteGraphGlobal {
   "NODE_DEFAULT_COLOR": "#333",
   "NODE_DEFAULT_SHAPE": 2,
   "NODE_ERROR_COLOUR": "#E00",
+  "NODE_FONT": "Arial",
   "NODE_MIN_WIDTH": 50,
   "NODE_MODES": [
     "Always",

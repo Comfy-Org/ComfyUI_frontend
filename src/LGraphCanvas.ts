@@ -338,11 +338,11 @@ export class LGraphCanvas {
    * @deprecated Use {@link LGraphNode.titleFontStyle} instead.
    */
   get title_text_font(): string {
-    return `${LiteGraph.NODE_TEXT_SIZE}px Arial`
+    return `${LiteGraph.NODE_TEXT_SIZE}px ${LiteGraph.NODE_FONT}`
   }
 
   get inner_text_font(): string {
-    return `normal ${LiteGraph.NODE_SUBTEXT_SIZE}px Arial`
+    return `normal ${LiteGraph.NODE_SUBTEXT_SIZE}px ${LiteGraph.NODE_FONT}`
   }
 
   #maximumFrameGap = 0
@@ -4144,7 +4144,7 @@ export class LGraphCanvas {
     ctx.save()
     ctx.translate(x, y)
 
-    ctx.font = "10px Arial"
+    ctx.font = `10px ${LiteGraph.DEFAULT_FONT}`
     ctx.fillStyle = "#888"
     ctx.textAlign = "left"
     if (this.graph) {

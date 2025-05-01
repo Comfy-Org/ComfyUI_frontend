@@ -200,7 +200,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     ctx.fill()
 
     // Title
-    ctx.font = `${font_size}px Arial`
+    ctx.font = `${font_size}px ${LiteGraph.GROUP_FONT}`
     ctx.textAlign = "left"
     ctx.fillText(this.title + (this.pinned ? "📌" : ""), x + padding, y + font_size)
 
