@@ -2,135 +2,483 @@
   <metadata>
     <![CDATA[
 {
-  "prompt": {
-    "33": {
-      "inputs": {
-        "prompt": "an adorable anime fennec girl logo with the title \"comfy\"",
-        "substyle": "None",
-        "size": "1024x1024",
-        "n": 1,
-        "seed": 464293748966208
-      },
-      "class_type": "RecraftTextToVectorNode",
-      "_meta": {
-        "title": "Recraft Text to Vector"
-      }
-    },
-    "34": {
-      "inputs": {
-        "filename_prefix": "svg/ComfyUI",
-        "svg": [
-          "33",
-          0
-        ]
-      },
-      "class_type": "SaveSVG",
-      "_meta": {
-        "title": "Save SVG"
-      }
-    }
-  },
   "workflow": {
-    "id": "19434144-c786-42d9-9837-2b5f1a8de521",
-    "revision": 0,
-    "last_node_id": 34,
-    "last_link_id": 29,
+    "last_node_id": 11,
+    "last_link_id": 11,
     "nodes": [
       {
-        "id": 34,
-        "type": "SaveSVG",
-        "pos": [
-          1261,
-          483.75
-        ],
-        "size": [
-          270,
-          58
-        ],
-        "flags": {},
-        "order": 1,
-        "mode": 0,
-        "inputs": [
-          {
-            "name": "svg",
-            "type": "SVG",
-            "link": 29
-          }
-        ],
-        "outputs": [],
-        "properties": {
-          "Node name for S&R": "SaveSVG"
+        "id": 4,
+        "type": "CheckpointLoaderSimple",
+        "pos": {
+          "0": 26,
+          "1": 474
         },
-        "widgets_values": [
-          "svg/ComfyUI"
-        ]
-      },
-      {
-        "id": 33,
-        "type": "RecraftTextToVectorNode",
-        "pos": [
-          811,
-          486.25
-        ],
-        "size": [
-          400,
-          228
-        ],
+        "size": {
+          "0": 315,
+          "1": 98
+        },
         "flags": {},
         "order": 0,
         "mode": 0,
-        "inputs": [
+        "inputs": [],
+        "outputs": [
           {
-            "name": "negative_prompt",
-            "shape": 7,
-            "type": "STRING",
-            "link": null
+            "name": "MODEL",
+            "type": "MODEL",
+            "links": [
+              1
+            ],
+            "slot_index": 0
           },
           {
-            "name": "recraft_controls",
-            "shape": 7,
-            "type": "RECRAFT_CONTROLS",
-            "link": null
+            "name": "CLIP",
+            "type": "CLIP",
+            "links": [
+              3,
+              5
+            ],
+            "slot_index": 1
+          },
+          {
+            "name": "VAE",
+            "type": "VAE",
+            "links": [
+              8
+            ],
+            "slot_index": 2
+          }
+        ],
+        "properties": {
+          "Node name for S&R": "CheckpointLoaderSimple"
+        },
+        "widgets_values": [
+          "sdxl\\sd_xl_base_1.0_0.9vae.safetensors"
+        ]
+      },
+      {
+        "id": 5,
+        "type": "EmptyLatentImage",
+        "pos": {
+          "0": 473,
+          "1": 609
+        },
+        "size": {
+          "0": 315,
+          "1": 106
+        },
+        "flags": {},
+        "order": 1,
+        "mode": 0,
+        "inputs": [],
+        "outputs": [
+          {
+            "name": "LATENT",
+            "type": "LATENT",
+            "links": [
+              2
+            ],
+            "slot_index": 0
+          }
+        ],
+        "properties": {
+          "Node name for S&R": "EmptyLatentImage"
+        },
+        "widgets_values": [
+          896,
+          1152,
+          1
+        ]
+      },
+      {
+        "id": 3,
+        "type": "KSampler",
+        "pos": {
+          "0": 863,
+          "1": 186
+        },
+        "size": {
+          "0": 315,
+          "1": 262
+        },
+        "flags": {},
+        "order": 4,
+        "mode": 0,
+        "inputs": [
+          {
+            "name": "model",
+            "type": "MODEL",
+            "link": 1
+          },
+          {
+            "name": "positive",
+            "type": "CONDITIONING",
+            "link": 4
+          },
+          {
+            "name": "negative",
+            "type": "CONDITIONING",
+            "link": 6
+          },
+          {
+            "name": "latent_image",
+            "type": "LATENT",
+            "link": 2
           }
         ],
         "outputs": [
           {
-            "name": "SVG",
-            "type": "SVG",
+            "name": "LATENT",
+            "type": "LATENT",
             "links": [
-              29
-            ]
+              7
+            ],
+            "slot_index": 0
           }
         ],
         "properties": {
-          "Node name for S&R": "RecraftTextToVectorNode"
+          "Node name for S&R": "KSampler"
         },
         "widgets_values": [
-          "an adorable anime fennec girl logo with the title \"comfy\"",
-          "None",
-          "1024x1024",
-          1,
-          464293748966208,
-          "randomize"
+          0,
+          "fixed",
+          50,
+          8,
+          "euler",
+          "normal",
+          1
+        ]
+      },
+      {
+        "id": 7,
+        "type": "CLIPTextEncode",
+        "pos": {
+          "0": 413,
+          "1": 389
+        },
+        "size": {
+          "0": 425.27801513671875,
+          "1": 180.6060791015625
+        },
+        "flags": {},
+        "order": 3,
+        "mode": 0,
+        "inputs": [
+          {
+            "name": "clip",
+            "type": "CLIP",
+            "link": 5
+          }
+        ],
+        "outputs": [
+          {
+            "name": "CONDITIONING",
+            "type": "CONDITIONING",
+            "links": [
+              6
+            ],
+            "slot_index": 0
+          }
+        ],
+        "properties": {
+          "Node name for S&R": "CLIPTextEncode"
+        },
+        "widgets_values": [
+          "text, watermark"
+        ]
+      },
+      {
+        "id": 6,
+        "type": "CLIPTextEncode",
+        "pos": {
+          "0": 415,
+          "1": 186
+        },
+        "size": {
+          "0": 422.84503173828125,
+          "1": 164.31304931640625
+        },
+        "flags": {},
+        "order": 2,
+        "mode": 0,
+        "inputs": [
+          {
+            "name": "clip",
+            "type": "CLIP",
+            "link": 3
+          }
+        ],
+        "outputs": [
+          {
+            "name": "CONDITIONING",
+            "type": "CONDITIONING",
+            "links": [
+              4
+            ],
+            "slot_index": 0
+          }
+        ],
+        "properties": {
+          "Node name for S&R": "CLIPTextEncode"
+        },
+        "widgets_values": [
+          "a clear and sparkling quartz crystal on top of a cherrywood table, dispersion optics"
+        ]
+      },
+      {
+        "id": 8,
+        "type": "VAEDecode",
+        "pos": {
+          "0": 1209,
+          "1": 188
+        },
+        "size": {
+          "0": 210,
+          "1": 46
+        },
+        "flags": {},
+        "order": 5,
+        "mode": 0,
+        "inputs": [
+          {
+            "name": "samples",
+            "type": "LATENT",
+            "link": 7
+          },
+          {
+            "name": "vae",
+            "type": "VAE",
+            "link": 8
+          }
+        ],
+        "outputs": [
+          {
+            "name": "IMAGE",
+            "type": "IMAGE",
+            "links": [
+              10
+            ],
+            "slot_index": 0
+          }
+        ],
+        "properties": {
+          "Node name for S&R": "VAEDecode"
+        }
+      },
+      {
+        "id": 10,
+        "type": "SaveAnimatedWEBP",
+        "pos": {
+          "0": 1450,
+          "1": 190
+        },
+        "size": {
+          "0": 315,
+          "1": 154
+        },
+        "flags": {},
+        "order": 6,
+        "mode": 0,
+        "inputs": [
+          {
+            "name": "images",
+            "type": "IMAGE",
+            "link": 10
+          }
+        ],
+        "outputs": [],
+        "properties": {},
+        "widgets_values": [
+          "ComfyUI",
+          6,
+          false,
+          98,
+          "slowest"
         ]
       }
     ],
     "links": [
       [
-        29,
-        33,
+        1,
+        4,
         0,
-        34,
+        3,
         0,
-        "SVG"
+        "MODEL"
+      ],
+      [
+        2,
+        5,
+        0,
+        3,
+        3,
+        "LATENT"
+      ],
+      [
+        3,
+        4,
+        1,
+        6,
+        0,
+        "CLIP"
+      ],
+      [
+        4,
+        6,
+        0,
+        3,
+        1,
+        "CONDITIONING"
+      ],
+      [
+        5,
+        4,
+        1,
+        7,
+        0,
+        "CLIP"
+      ],
+      [
+        6,
+        7,
+        0,
+        3,
+        2,
+        "CONDITIONING"
+      ],
+      [
+        7,
+        3,
+        0,
+        8,
+        0,
+        "LATENT"
+      ],
+      [
+        8,
+        4,
+        2,
+        8,
+        1,
+        "VAE"
+      ],
+      [
+        10,
+        8,
+        0,
+        10,
+        0,
+        "IMAGE"
       ]
     ],
     "groups": [],
     "config": {},
     "extra": {
-      "frontendVersion": "1.18.4"
+      "ds": {
+        "scale": 0.9090909090909091,
+        "offset": [
+          -168.6014778137205,
+          15.451593017578356
+        ]
+      }
     },
-    "version": 0.4
+    "version": 0.4,
+    "widget_idx_map": {
+      "3": {
+        "seed": 0,
+        "sampler_name": 4,
+        "scheduler": 5
+      }
+    }
+  },
+  "prompt": {
+    "3": {
+      "inputs": {
+        "seed": 0,
+        "steps": 50,
+        "cfg": 8,
+        "sampler_name": "euler",
+        "scheduler": "normal",
+        "denoise": 1,
+        "model": [
+          "4",
+          0
+        ],
+        "positive": [
+          "6",
+          0
+        ],
+        "negative": [
+          "7",
+          0
+        ],
+        "latent_image": [
+          "5",
+          0
+        ]
+      },
+      "class_type": "KSampler"
+    },
+    "4": {
+      "inputs": {
+        "ckpt_name": "sdxl\\sd_xl_base_1.0_0.9vae.safetensors"
+      },
+      "class_type": "CheckpointLoaderSimple"
+    },
+    "5": {
+      "inputs": {
+        "width": 896,
+        "height": 1152,
+        "batch_size": 1
+      },
+      "class_type": "EmptyLatentImage"
+    },
+    "6": {
+      "inputs": {
+        "text": "a clear and sparkling quartz crystal on top of a cherrywood table, dispersion optics",
+        "clip": [
+          "4",
+          1
+        ]
+      },
+      "class_type": "CLIPTextEncode"
+    },
+    "7": {
+      "inputs": {
+        "text": "text, watermark",
+        "clip": [
+          "4",
+          1
+        ]
+      },
+      "class_type": "CLIPTextEncode"
+    },
+    "8": {
+      "inputs": {
+        "samples": [
+          "3",
+          0
+        ],
+        "vae": [
+          "4",
+          2
+        ]
+      },
+      "class_type": "VAEDecode"
+    },
+    "10": {
+      "inputs": {
+        "filename_prefix": "ComfyUI",
+        "fps": 6,
+        "lossless": false,
+        "quality": 98,
+        "method": "slowest",
+        "images": [
+          "8",
+          0
+        ]
+      },
+      "class_type": "SaveAnimatedWEBP"
+    }
   }
 }
     ]]>
