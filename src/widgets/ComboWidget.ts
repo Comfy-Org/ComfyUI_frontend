@@ -2,6 +2,7 @@ import type { LGraphNode } from "@/LGraphNode"
 import type { IComboWidget, IWidgetOptions } from "@/types/widgets"
 
 import { clamp, LiteGraph } from "@/litegraph"
+import { warnDeprecated } from "@/utils/feedback"
 
 import { BaseSteppedWidget } from "./BaseSteppedWidget"
 import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./BaseWidget"
@@ -42,24 +43,35 @@ export class ComboWidget extends BaseSteppedWidget implements IComboWidget {
 
   /**
    * Checks if the value is {@link Array.at at} the given index in the combo list.
-   * @param index The index to check against
+   * @param increment `true` if checking the use of the increment button, `false` for decrement
    * @returns `true` if the value is at the given index, otherwise `false`.
    */
-  #valueIsAt(index: number): boolean {
+  #canUseButton(increment: boolean): boolean {
     const { values } = this.options
-    // If using legacy duck-typed method, just return true
-    if (typeof values === "function") return true
+    // If using legacy duck-typed method, false is the most permissive return value
+    if (typeof values === "function") return false
 
     const valuesArray = toArray(values)
-    return this.value === valuesArray.at(index)
+    if (!(valuesArray.length > 1)) return false
+
+    // Edge case where the value is both the first and last item in the list
+    const firstValue = valuesArray.at(0)
+    const lastValue = valuesArray.at(-1)
+    if (firstValue === lastValue) return true
+
+    return this.value !== (increment ? lastValue : firstValue)
   }
 
+  /**
+   * Returns `true` if the current value is not the last value in the list.
+   * Handles edge case where the value is both the first and last item in the list.
+   */
   override canIncrement(): boolean {
-    return !this.#valueIsAt(-1)
+    return this.#canUseButton(true)
   }
 
   override canDecrement(): boolean {
-    return !this.#valueIsAt(0)
+    return this.#canUseButton(false)
   }
 
   override incrementValue(options: WidgetEventOptions): void {
@@ -195,6 +207,11 @@ export class ComboWidget extends BaseSteppedWidget implements IComboWidget {
   override onClick({ e, node, canvas }: WidgetEventOptions) {
     const x = e.canvasX - node.pos[0]
     const width = this.width || node.size[0]
+
+    // Deprecated functionality (warning as of v0.14.5)
+    if (typeof this.options.values === "function") {
+      warnDeprecated("Using a function for values is deprecated. Use an array of unique values instead.")
+    }
 
     // Determine if clicked on left/right arrows
     if (x < 40) return this.decrementValue({ e, node, canvas })
