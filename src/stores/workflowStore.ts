@@ -1,13 +1,15 @@
 import _ from 'lodash'
 import { defineStore } from 'pinia'
-import { computed, markRaw, ref } from 'vue'
+import { computed, markRaw, ref, watch } from 'vue'
 
 import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
+import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { defaultGraphJSON } from '@/scripts/defaultGraph'
 import { getPathDetails } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
+import { isSubgraph } from '@/utils/typeGuardUtil'
 
 import { UserFile } from './userFileStore'
 
@@ -128,7 +130,7 @@ export interface LoadedComfyWorkflow extends ComfyWorkflow {
 export interface WorkflowStore {
   activeWorkflow: LoadedComfyWorkflow | null
   isActive: (workflow: ComfyWorkflow) => boolean
-  openWorkflows: LoadedComfyWorkflow[]
+  openWorkflows: ComfyWorkflow[]
   openedWorkflowIndexShift: (shift: number) => LoadedComfyWorkflow | null
   openWorkflow: (workflow: ComfyWorkflow) => Promise<LoadedComfyWorkflow>
   openWorkflowsInBackground: (paths: {
@@ -153,6 +155,13 @@ export interface WorkflowStore {
   getWorkflowByPath: (path: string) => ComfyWorkflow | null
   syncWorkflows: (dir?: string) => Promise<void>
   reorderWorkflows: (from: number, to: number) => void
+
+  /** An ordered list of all parent subgraphs, ending with the current subgraph. */
+  subgraphNamePath: string[]
+  /** `true` if any subgraph is currently being viewed. */
+  isSubgraphActive: boolean
+  /** Updates the {@link subgraphNamePath} and {@link isSubgraphActive} values. */
+  updateActiveGraph: () => void
 }
 
 export const useWorkflowStore = defineStore('workflow', () => {
@@ -418,6 +427,29 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }
   }
 
+  /** @see WorkflowStore.subgraphNamePath */
+  const subgraphNamePath = ref<string[]>([])
+  /** @see WorkflowStore.isSubgraphActive */
+  const isSubgraphActive = ref(false)
+
+  /** @see WorkflowStore.updateActiveGraph */
+  const updateActiveGraph = () => {
+    if (!comfyApp.canvas) return
+
+    const { subgraph } = comfyApp.canvas
+    isSubgraphActive.value = isSubgraph(subgraph)
+
+    if (subgraph) {
+      const [, ...pathFromRoot] = subgraph.pathToRootGraph
+
+      subgraphNamePath.value = pathFromRoot.map((graph) => graph.name)
+    } else {
+      subgraphNamePath.value = []
+    }
+  }
+
+  watch(activeWorkflow, updateActiveGraph)
+
   return {
     activeWorkflow,
     isActive,
@@ -439,7 +471,11 @@ export const useWorkflowStore = defineStore('workflow', () => {
     persistedWorkflows,
     modifiedWorkflows,
     getWorkflowByPath,
-    syncWorkflows
+    syncWorkflows,
+
+    subgraphNamePath,
+    isSubgraphActive,
+    updateActiveGraph
   }
 }) as () => WorkflowStore
 
