@@ -54,7 +54,7 @@ import SelectButton from 'primevue/selectbutton'
 
 import TemplateWorkflowCard from '@/components/templates/TemplateWorkflowCard.vue'
 import TemplateWorkflowList from '@/components/templates/TemplateWorkflowList.vue'
-import { TemplateInfo } from '@/types/workflowTemplateTypes'
+import type { TemplateInfo } from '@/types/workflowTemplateTypes'
 
 defineProps<{
   sourceModule: string
