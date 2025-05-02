@@ -13,24 +13,14 @@ const UNSAVED_WORKFLOW_NAME = 'Unsaved Workflow'
 export const useSubgraphStore = defineStore('subgraph', () => {
   const workflowStore = useWorkflowStore()
 
-  const activeGraph = shallowRef<Subgraph | LGraph>()
-  const activeRootGraphName = ref<string>()
-
+  const activeGraph = shallowRef<Subgraph>()
   const graphNamePath = ref<string[]>([])
-
   const isSubgraphActive = ref(false)
 
   const updateActiveGraph = () => {
     activeGraph.value = comfyApp.canvas.subgraph
     isSubgraphActive.value = isSubgraph(activeGraph.value)
-  }
-
-  const updateRootGraphName = () => {
-    const isNewRoot = !isSubgraph(activeGraph.value)
-    if (!isNewRoot) return
-
-    const activeWorkflowName = workflowStore.activeWorkflow?.filename
-    activeRootGraphName.value = activeWorkflowName ?? UNSAVED_WORKFLOW_NAME
+    updateGraphPaths()
   }
 
   const updateGraphPaths = () => {
@@ -41,9 +31,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     }
 
     const { activeWorkflow } = workflowStore
-
     const namePath: string[] = []
-    const idPath: LGraph['id'][] = []
 
     let cur: LGraph | Subgraph | undefined = currentGraph
     while (cur) {
@@ -52,21 +40,14 @@ export const useSubgraphStore = defineStore('subgraph', () => {
         : activeWorkflow?.filename ?? UNSAVED_WORKFLOW_NAME
 
       namePath.unshift(name)
-      idPath.unshift(cur.id)
-
       cur = isSubgraph(cur) ? cur.parents.at(-1) : undefined
     }
 
     graphNamePath.value = namePath
   }
 
-  whenever(() => comfyApp?.graph, updateActiveGraph, {
+  whenever(() => workflowStore.activeWorkflow, updateActiveGraph, {
     immediate: true
-  })
-  whenever(() => workflowStore.activeWorkflow, updateActiveGraph)
-  whenever(activeGraph, () => {
-    updateRootGraphName()
-    updateGraphPaths()
   })
 
   return {
