@@ -43,16 +43,17 @@ export class KnobWidget extends BaseWidget implements IKnobWidget {
   drawWidget(
     ctx: CanvasRenderingContext2D,
     {
-      y,
       width,
-      show_text = true,
-      margin = BaseWidget.margin,
+      showText = true,
     }: DrawWidgetOptions,
   ): void {
     // Store original context attributes
     const originalTextAlign = ctx.textAlign
     const originalStrokeStyle = ctx.strokeStyle
     const originalFillStyle = ctx.fillStyle
+
+    const { y } = this
+    const { margin } = BaseWidget
 
     const { gradient_stops = "rgb(14, 182, 201); rgb(0, 216, 72)" } = this.options
     const effective_height = this.computedHeight || this.height
@@ -155,7 +156,7 @@ export class KnobWidget extends BaseWidget implements IKnobWidget {
     ctx.closePath()
 
     // Draw outline if not disabled
-    if (show_text && !this.computedDisabled) {
+    if (showText && !this.computedDisabled) {
       ctx.strokeStyle = this.outline_color
       // Draw value
       ctx.beginPath()
@@ -177,7 +178,7 @@ export class KnobWidget extends BaseWidget implements IKnobWidget {
     // TODO: TBD later when options work
 
     // Draw text
-    if (show_text) {
+    if (showText) {
       ctx.textAlign = "center"
       ctx.fillStyle = this.text_color
       const fixedValue = Number(this.value).toFixed(this.options.precision ?? 3)

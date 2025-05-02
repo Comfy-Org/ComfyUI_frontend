@@ -6,10 +6,8 @@ import { Point } from "@/interfaces"
 import { LiteGraph } from "@/litegraph"
 
 export interface DrawWidgetOptions {
-  y: number
   width: number
-  show_text?: boolean
-  margin?: number
+  showText?: boolean
 }
 
 export interface WidgetEventOptions {

@@ -14,23 +14,22 @@ export class BooleanWidget extends BaseWidget implements IBooleanWidget {
   }
 
   override drawWidget(ctx: CanvasRenderingContext2D, {
-    y,
     width,
-    show_text = true,
-    margin = BaseWidget.margin,
+    showText = true,
   }: DrawWidgetOptions) {
-    const { height } = this
+    const { height, y } = this
+    const { margin } = BaseWidget
 
     ctx.textAlign = "left"
     ctx.strokeStyle = this.outline_color
     ctx.fillStyle = this.background_color
     ctx.beginPath()
 
-    if (show_text)
+    if (showText)
       ctx.roundRect(margin, y, width - margin * 2, height, [height * 0.5])
     else ctx.rect(margin, y, width - margin * 2, height)
     ctx.fill()
-    if (show_text && !this.computedDisabled) ctx.stroke()
+    if (showText && !this.computedDisabled) ctx.stroke()
     ctx.fillStyle = this.value ? "#89A" : "#333"
     ctx.beginPath()
     ctx.arc(
@@ -41,7 +40,7 @@ export class BooleanWidget extends BaseWidget implements IBooleanWidget {
       Math.PI * 2,
     )
     ctx.fill()
-    if (show_text) {
+    if (showText) {
       ctx.fillStyle = this.secondary_text_color
       const label = this.label || this.name
       if (label != null) {

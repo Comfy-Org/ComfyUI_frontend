@@ -52,30 +52,29 @@ export class NumberWidget extends BaseSteppedWidget implements INumericWidget {
    * @param options The options for drawing the widget
    */
   override drawWidget(ctx: CanvasRenderingContext2D, {
-    y,
     width,
-    show_text = true,
-    margin = BaseWidget.margin,
+    showText = true,
   }: DrawWidgetOptions) {
     // Store original context attributes
     const originalTextAlign = ctx.textAlign
     const originalStrokeStyle = ctx.strokeStyle
     const originalFillStyle = ctx.fillStyle
 
-    const { height } = this
+    const { height, y } = this
+    const { margin } = BaseWidget
 
     ctx.textAlign = "left"
     ctx.strokeStyle = this.outline_color
     ctx.fillStyle = this.background_color
     ctx.beginPath()
 
-    if (show_text)
+    if (showText)
       ctx.roundRect(margin, y, width - margin * 2, height, [height * 0.5])
     else
       ctx.rect(margin, y, width - margin * 2, height)
     ctx.fill()
 
-    if (show_text) {
+    if (showText) {
       if (!this.computedDisabled) {
         ctx.stroke()
         this.drawArrowButtons(ctx, margin, y, width)
