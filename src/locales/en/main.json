@@ -113,7 +113,8 @@
     "login": "Login",
     "learnMore": "Learn more",
     "amount": "Amount",
-    "unknownError": "Unknown error"
+    "unknownError": "Unknown error",
+    "title": "Title"
   },
   "manager": {
     "title": "Custom Nodes Manager",
