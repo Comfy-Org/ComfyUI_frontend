@@ -12,6 +12,7 @@ export function useUpdateService() {
 
   async function installUpdate(): Promise<void> {
     try {
+      log.info('Trying to restart and install')
       await electronAPI.restartAndInstall()
     } catch (error) {
       log.error('Error restarting and installing update:', error)
@@ -32,6 +33,7 @@ export function useUpdateService() {
         await electronAPI.checkForUpdates({ disableUpdateReadyAction: true })
 
       if (!isUpdateAvailable) {
+        log.info('No update found')
         toastStore.add({
           severity: 'info',
           summary: t('desktopUpdate.noUpdateFound')
@@ -44,7 +46,11 @@ export function useUpdateService() {
         message: t('desktopUpdate.updateAvailableMessage'),
         type: 'default'
       })
-      if (!proceed) return
+      if (!proceed) {
+        log.info('User declined to update')
+        return
+      }
+      log.info('User agreed to update')
 
       await installUpdate()
     } catch (error) {
