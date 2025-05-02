@@ -16,7 +16,6 @@ export const useSubgraphStore = defineStore('subgraph', () => {
   const activeGraph = shallowRef<Subgraph | LGraph>()
   const activeRootGraphName = ref<string>()
 
-  const graphIdPath = ref<LGraph['id'][]>([])
   const graphNamePath = ref<string[]>([])
 
   const isSubgraphActive = ref(false)
@@ -37,7 +36,6 @@ export const useSubgraphStore = defineStore('subgraph', () => {
   const updateGraphPaths = () => {
     const currentGraph = comfyApp.canvas.graph
     if (!currentGraph) {
-      graphIdPath.value = []
       graphNamePath.value = []
       return
     }
@@ -59,7 +57,6 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       cur = isSubgraph(cur) ? cur.parents.at(-1) : undefined
     }
 
-    graphIdPath.value = idPath
     graphNamePath.value = namePath
   }
 
@@ -73,7 +70,6 @@ export const useSubgraphStore = defineStore('subgraph', () => {
   })
 
   return {
-    graphIdPath,
     graphNamePath,
     isSubgraphActive,
 
