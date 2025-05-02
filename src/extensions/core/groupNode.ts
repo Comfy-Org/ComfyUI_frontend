@@ -1591,7 +1591,7 @@ function addConvertToGroupOptions() {
     const disabled =
       selected.length < 2 ||
       selected.find((n) => GroupNodeHandler.isGroupNode(n))
-    options.splice(index + 1, null, {
+    options.splice(index, null, {
       content: `Convert to Group Node`,
       disabled,
       callback: convertSelectedNodesToGroupNode
@@ -1602,7 +1602,7 @@ function addConvertToGroupOptions() {
   function addManageOption(options, index) {
     const groups = app.graph.extra?.groupNodes
     const disabled = !groups || !Object.keys(groups).length
-    options.splice(index + 1, null, {
+    options.splice(index, null, {
       content: `Manage Group Nodes`,
       disabled,
       callback: () => manageGroupNodes()
@@ -1614,10 +1614,10 @@ function addConvertToGroupOptions() {
   LGraphCanvas.prototype.getCanvasMenuOptions = function () {
     // @ts-expect-error fixme ts strict error
     const options = getCanvasMenuOptions.apply(this, arguments)
-    const index =
-      options.findIndex((o) => o?.content === 'Add Group') + 1 || options.length
-    addConvertOption(options, index)
-    addManageOption(options, index + 1)
+    const index = options.findIndex((o) => o?.content === 'Add Group')
+    const insertAt = index === -1 ? options.length - 1 : index + 2
+    addConvertOption(options, insertAt)
+    addManageOption(options, insertAt + 1)
     return options
   }
 
@@ -1627,10 +1627,9 @@ function addConvertToGroupOptions() {
     // @ts-expect-error fixme ts strict error
     const options = getNodeMenuOptions.apply(this, arguments)
     if (!GroupNodeHandler.isGroupNode(node)) {
-      const index =
-        options.findIndex((o) => o?.content === 'Outputs') + 1 ||
-        options.length - 1
-      addConvertOption(options, index)
+      const index = options.findIndex((o) => o?.content === 'Properties')
+      const insertAt = index === -1 ? options.length - 1 : index
+      addConvertOption(options, insertAt)
     }
     return options
   }
