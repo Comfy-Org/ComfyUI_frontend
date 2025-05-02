@@ -52,6 +52,10 @@ export default defineConfig({
         target: DEV_SERVER_COMFYUI_URL
       },
 
+      '/templates': {
+        target: DEV_SERVER_COMFYUI_URL
+      },
+
       '/testsubrouteindex': {
         target: 'http://localhost:5173',
         rewrite: (path) => path.substring('/testsubrouteindex'.length)

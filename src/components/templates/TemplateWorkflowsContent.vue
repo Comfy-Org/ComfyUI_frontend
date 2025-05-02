@@ -30,7 +30,7 @@
         />
       </aside>
       <div
-        class="flex-1 overflow-auto transition-all duration-300 flex flex-col"
+        class="flex-1 overflow-auto transition-all duration-300"
         :class="{
           'pl-80': isSideNavOpen || !isSmallScreen,
           'pl-8': !isSideNavOpen && isSmallScreen
