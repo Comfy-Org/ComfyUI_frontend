@@ -205,7 +205,8 @@ import { checkMirrorReachable } from '@/utils/networkUtil'
             toastStore.add({
               severity: 'error',
               summary: t('g.error'),
-              detail: t('desktopUpdate.errorCheckingUpdate')
+              detail: t('desktopUpdate.errorCheckingUpdate'),
+              life: 10_000
             })
           }
         }
