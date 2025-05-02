@@ -6,9 +6,18 @@ import { st } from '@/i18n'
 import { api } from '@/scripts/api'
 import type {
   TemplateGroup,
+  TemplateInfo,
   WorkflowTemplates
 } from '@/types/workflowTemplateTypes'
 import { normalizeI18nKey } from '@/utils/formatUtil'
+
+const SHOULD_SORT_CATEGORIES = new Set([
+  // API Node templates should be strictly sorted by name to avoid any
+  // favoritism or bias towards a particular API. Other categories can
+  // have their ordering specified in index.json freely.
+  'Image API',
+  'Video API'
+])
 
 export const useWorkflowTemplatesStore = defineStore(
   'workflowTemplates',
@@ -17,9 +26,30 @@ export const useWorkflowTemplatesStore = defineStore(
     const coreTemplates = shallowRef<WorkflowTemplates[]>([])
     const isLoaded = ref(false)
 
+    /**
+     * Sort a list of templates in alphabetical order by name.
+     */
+    const sortTemplateList = (templates: TemplateInfo[]) =>
+      templates.sort((a, b) => a.name.localeCompare(b.name))
+
+    /**
+     * Sort any template categories (grouped templates) that should be sorted.
+     * Leave other categories' templates in their original order specified in index.json
+     */
+    const sortCategoryTemplates = (categories: WorkflowTemplates[]) =>
+      categories.map((category) => {
+        if (SHOULD_SORT_CATEGORIES.has(category.title)) {
+          return {
+            ...category,
+            templates: sortTemplateList(category.templates)
+          }
+        }
+        return category
+      })
+
     const groupedTemplates = computed<TemplateGroup[]>(() => {
       const allTemplates = [
-        ...coreTemplates.value.map((template) => ({
+        ...sortCategoryTemplates(coreTemplates.value).map((template) => ({
           ...template,
           title: st(
             `templateWorkflows.category.${normalizeI18nKey(template.title)}`,
