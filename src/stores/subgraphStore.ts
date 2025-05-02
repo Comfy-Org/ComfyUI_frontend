@@ -1,4 +1,3 @@
-import { LGraph } from '@comfyorg/litegraph'
 import { Subgraph } from '@comfyorg/litegraph'
 import { whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
@@ -7,8 +6,6 @@ import { ref, shallowRef } from 'vue'
 import { app as comfyApp } from '@/scripts/app'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { isSubgraph } from '@/utils/typeGuardUtil'
-
-const UNSAVED_WORKFLOW_NAME = 'Unsaved Workflow'
 
 export const useSubgraphStore = defineStore('subgraph', () => {
   const workflowStore = useWorkflowStore()
@@ -24,26 +21,13 @@ export const useSubgraphStore = defineStore('subgraph', () => {
   }
 
   const updateGraphPaths = () => {
-    const currentGraph = comfyApp.canvas.graph
-    if (!currentGraph) {
+    if (activeGraph.value) {
+      const [, ...pathFromRoot] = activeGraph.value.pathToRootGraph
+
+      graphNamePath.value = pathFromRoot.map((graph) => graph.name)
+    } else {
       graphNamePath.value = []
-      return
     }
-
-    const { activeWorkflow } = workflowStore
-    const namePath: string[] = []
-
-    let cur: LGraph | Subgraph | undefined = currentGraph
-    while (cur) {
-      const name = isSubgraph(cur)
-        ? cur.name
-        : activeWorkflow?.filename ?? UNSAVED_WORKFLOW_NAME
-
-      namePath.unshift(name)
-      cur = isSubgraph(cur) ? cur.parents.at(-1) : undefined
-    }
-
-    graphNamePath.value = namePath
   }
 
   whenever(() => workflowStore.activeWorkflow, updateActiveGraph, {
