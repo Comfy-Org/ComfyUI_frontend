@@ -273,6 +273,12 @@ export class ComfyApp {
       useExtensionService().invokeExtensions('onNodeOutputsUpdated', value)
   }
 
+  /**
+   * If the user has specified a preferred format to receive preview images in,
+   * this function will return that format as a url query param.
+   * If the node's outputs are not images, this param should not be used, as it will
+   * force the server to load the output file as an image.
+   */
   getPreviewFormatParam() {
     let preview_format = useSettingStore().get('Comfy.PreviewFormat')
     if (preview_format) return `&preview=${preview_format}`
