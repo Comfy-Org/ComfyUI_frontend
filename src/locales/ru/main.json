@@ -305,6 +305,7 @@
     "success": "Успех",
     "systemInfo": "Информация о системе",
     "terminal": "Терминал",
+    "title": "Заголовок",
     "unknownError": "Неизвестная ошибка",
     "update": "Обновить",
     "updateAvailable": "Доступно обновление",
