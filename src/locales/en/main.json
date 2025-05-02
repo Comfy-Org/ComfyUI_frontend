@@ -1236,6 +1236,7 @@
       "passwordResetSent": "Password reset email sent",
       "passwordResetSentDetail": "Please check your email for a link to reset your password.",
       "newUser": "New here?",
+      "userAvatar": "User Avatar",
       "signUp": "Sign up",
       "emailLabel": "Email",
       "emailPlaceholder": "Enter your email",

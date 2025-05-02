@@ -14,9 +14,10 @@
       >
         <Avatar
           :image="photoURL"
-          :icon="photoURL ? undefined : 'pi pi-user'"
+          :icon="hasAvatar ? undefined : 'pi pi-user'"
           shape="circle"
-          aria-label="User Avatar"
+          :aria-label="$t('auth.login.userAvatar')"
+          @error="handleImageError"
         />
 
         <i class="pi pi-chevron-down px-1" :style="{ fontSize: '0.5rem' }" />
@@ -41,9 +42,14 @@ import CurrentUserPopover from './CurrentUserPopover.vue'
 
 const authStore = useFirebaseAuthStore()
 
+const imageError = ref(false)
 const popover = ref<InstanceType<typeof Popover> | null>(null)
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const photoURL = computed<string | undefined>(
   () => authStore.currentUser?.photoURL ?? undefined
 )
+const handleImageError = () => {
+  imageError.value = true
+}
+const hasAvatar = computed(() => photoURL.value && !imageError.value)
 </script>
