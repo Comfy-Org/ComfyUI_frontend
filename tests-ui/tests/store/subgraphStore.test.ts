@@ -32,7 +32,6 @@ describe('useSubgraphStore', () => {
   })
 
   it('should initialize with default values', () => {
-    expect(store.graphIdPath).toEqual([])
     expect(store.graphNamePath).toEqual([])
     expect(store.isSubgraphActive).toBe(false)
   })
@@ -53,7 +52,6 @@ describe('useSubgraphStore', () => {
       store.updateActiveGraph()
       await nextTick()
 
-      expect(store.graphIdPath).toEqual([mockId])
       expect(store.graphNamePath).toEqual([mockName])
     })
   })
@@ -82,11 +80,6 @@ describe('useSubgraphStore', () => {
       store.updateActiveGraph()
       await nextTick()
 
-      expect(store.graphIdPath).toEqual([
-        'root-graph',
-        'subgraph-1',
-        'subgraph-2'
-      ])
       expect(store.graphNamePath).toEqual([
         'Root Graph',
         'Subgraph 1',
