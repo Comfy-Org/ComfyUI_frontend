@@ -41,7 +41,7 @@ import DataTable from 'primevue/datatable'
 import { ref } from 'vue'
 
 import { st } from '@/i18n'
-import { TemplateInfo } from '@/types/workflowTemplateTypes'
+import type { TemplateInfo } from '@/types/workflowTemplateTypes'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 const { sourceModule, categoryTitle, loading, templates } = defineProps<{
