@@ -30,12 +30,12 @@ export class Subgraph extends LGraph implements BaseLGraph, Serialisable<Exporte
   }
 
   /** @inheritdoc */
-  get pathToRootGraph(): readonly [LGraph, ...GraphOrSubgraph[]] {
+  get pathToRootGraph(): readonly [LGraph, ...Subgraph[]] {
     return [...this.parents, this]
   }
 
   constructor(
-    readonly parents: readonly [LGraph, ...GraphOrSubgraph[]],
+    readonly parents: readonly [LGraph, ...Subgraph[]],
     data: ExportedSubgraph,
   ) {
     if (!parents.length) throw new Error("Subgraph must have at least one parent")

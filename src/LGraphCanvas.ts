@@ -1565,22 +1565,22 @@ export class LGraphCanvas {
   }
 
   /**
-   * assigns a graph, you can reassign graphs to the same canvas
-   * @param graph
+   * Assigns a new graph to this canvas.
    */
-  setGraph(graph: LGraph, skip_clear: boolean): void {
-    if (this.graph == graph) return
+  setGraph(newGraph: LGraph | Subgraph): void {
+    const { graph } = this
+    if (newGraph === graph) return
 
-    if (!skip_clear) this.clear()
-
-    if (!graph && this.graph) {
-      this.graph.detachCanvas(this)
-      return
+    const options = {
+      bubbles: true,
+      detail: { newGraph, oldGraph: graph },
     }
 
-    graph.attachCanvas(this)
+    this.clear()
+    newGraph.attachCanvas(this)
 
-    this.setDirty(true, true)
+    this.canvas.dispatchEvent(new CustomEvent("litegraph:set-graph", options))
+    this.#dirty()
   }
 
   /**
