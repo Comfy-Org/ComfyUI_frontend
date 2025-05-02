@@ -267,6 +267,15 @@ export const addWidget = <W extends BaseDOMWidget<object | string>>(
   widget: W
 ) => {
   node.addCustomWidget(widget)
+
+  if (node.graph) {
+    useDomWidgetStore().registerWidget(widget)
+  }
+
+  node.onAdded = useChainCallback(node.onAdded, () => {
+    useDomWidgetStore().registerWidget(widget)
+  })
+
   node.onRemoved = useChainCallback(node.onRemoved, () => {
     widget.onRemove?.()
   })
@@ -275,8 +284,6 @@ export const addWidget = <W extends BaseDOMWidget<object | string>>(
     widget.options.beforeResize?.call(widget, node)
     widget.options.afterResize?.call(widget, node)
   })
-
-  useDomWidgetStore().registerWidget(widget)
 }
 
 LGraphNode.prototype.addDOMWidget = function <

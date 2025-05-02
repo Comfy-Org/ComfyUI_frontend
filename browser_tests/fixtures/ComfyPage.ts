@@ -924,6 +924,12 @@ export class ComfyPage {
       return window['app'].canvas.ds.convertOffsetToCanvas(pos)
     }, pos)
   }
+
+  /** Get number of DOM widgets on the canvas. */
+  async getDOMWidgetCount() {
+    return await this.page.locator('.dom-widget').count()
+  }
+
   async getNodeRefById(id: NodeId) {
     return new NodeReference(id, this)
   }
