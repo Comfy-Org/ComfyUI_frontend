@@ -2,9 +2,9 @@
   <Card
     ref="cardRef"
     :data-testid="`template-workflow-${template.name}`"
-    class="w-64 template-card rounded-2xl overflow-hidden cursor-pointer shadow-elevation-2 dark-theme:bg-dark-elevation-1"
+    class="w-64 template-card rounded-2xl overflow-hidden cursor-pointer shadow-elevation-2 dark-theme:bg-dark-elevation-1 h-full"
     :pt="{
-      body: { class: 'p-0' }
+      body: { class: 'p-0 h-full flex flex-col' }
     }"
     @click="$emit('loadWorkflow', template.name)"
   >
@@ -51,11 +51,11 @@
     </template>
     <template #content>
       <div class="flex items-center px-4 py-3">
-        <div class="flex-1">
-          <h3 class="line-clamp-1 text-lg font-normal" :title="title">
+        <div class="flex-1 flex flex-col">
+          <h3 class="line-clamp-2 text-lg font-normal mb-0 h-10" :title="title">
             {{ title }}
           </h3>
-          <p class="line-clamp-2 text-sm text-muted" :title="description">
+          <p class="line-clamp-2 text-sm text-muted grow" :title="description">
             {{ description }}
           </p>
         </div>
