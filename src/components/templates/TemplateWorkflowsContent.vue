@@ -36,16 +36,9 @@
           'pl-8': !isSideNavOpen && isSmallScreen
         }"
       >
-        <div
-          v-if="isReady && selectedTab"
-          class="flex flex-col px-12 pb-4 h-full"
-        >
-          <div class="py-3 text-left">
-            <h2 class="text-lg">
-              {{ selectedTab.title }}
-            </h2>
-          </div>
+        <div v-if="isReady && selectedTab" class="px-12 py-4 h-full">
           <TemplateWorkflowView
+            :title="selectedTab.title"
             :source-module="selectedTab.moduleName"
             :templates="selectedTab.templates"
             :loading="workflowLoading"

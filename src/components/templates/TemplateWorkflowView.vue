@@ -6,7 +6,8 @@
     pt:content="p-2"
   >
     <template #header>
-      <div class="flex justify-end">
+      <div class="flex justify-between items-center">
+        <h2 class="text-lg">{{ title }}</h2>
         <SelectButton
           v-model="layout"
           :options="['grid', 'list']"
@@ -57,6 +58,7 @@ import TemplateWorkflowList from '@/components/templates/TemplateWorkflowList.vu
 import type { TemplateInfo } from '@/types/workflowTemplateTypes'
 
 defineProps<{
+  title: string
   sourceModule: string
   categoryTitle: string
   loading: string | null
