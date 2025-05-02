@@ -434,6 +434,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
   /** @see WorkflowStore.updateActiveGraph */
   const updateActiveGraph = () => {
+    if (!comfyApp.canvas) return
+
     const { subgraph } = comfyApp.canvas
     isSubgraphActive.value = isSubgraph(subgraph)
 
@@ -446,9 +448,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }
   }
 
-  watch(activeWorkflow, updateActiveGraph, {
-    immediate: true
-  })
+  watch(activeWorkflow, updateActiveGraph)
 
   return {
     activeWorkflow,
