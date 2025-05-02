@@ -55,7 +55,8 @@
       "success": "Connexion réussie",
       "termsLink": "Conditions d'utilisation",
       "termsText": "En cliquant sur \"Suivant\" ou \"S'inscrire\", vous acceptez nos",
-      "title": "Connectez-vous à votre compte"
+      "title": "Connectez-vous à votre compte",
+      "userAvatar": "Avatar utilisateur"
     },
     "passwordUpdate": {
       "success": "Mot de passe mis à jour",

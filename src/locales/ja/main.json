@@ -55,7 +55,8 @@
       "success": "ログイン成功",
       "termsLink": "利用規約",
       "termsText": "「次へ」または「サインアップ」をクリックすると、私たちの",
-      "title": "アカウントにログインする"
+      "title": "アカウントにログインする",
+      "userAvatar": "ユーザーアバター"
     },
     "passwordUpdate": {
       "success": "パスワードが更新されました",
