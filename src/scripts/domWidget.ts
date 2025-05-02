@@ -268,7 +268,6 @@ export const addWidget = <W extends BaseDOMWidget<object | string>>(
 ) => {
   node.addCustomWidget(widget)
 
-  // Register widget when node is attached to a graph.
   if (node.graph) {
     useDomWidgetStore().registerWidget(widget)
   }
