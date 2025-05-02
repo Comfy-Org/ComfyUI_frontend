@@ -1,5 +1,5 @@
 <template>
-  <div class="template-workflow-view">
+  <div class="template-workflow-view h-full flex flex-col">
     <div class="view-toggle-controls mb-4 flex justify-end">
       <div class="flex p-buttonset">
         <Button
@@ -29,9 +29,9 @@
 
     <div
       v-if="viewMode === 'card'"
-      class="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-8 justify-items-center"
+      class="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] auto-rows-fr gap-8 justify-items-center flex-1 overflow-auto"
     >
-      <div v-for="template in templates" :key="template.name">
+      <div v-for="template in templates" :key="template.name" class="h-full">
         <TemplateWorkflowCard
           :source-module="sourceModule"
           :template="template"
@@ -42,7 +42,7 @@
       </div>
     </div>
 
-    <div v-if="viewMode === 'list'" class="w-full">
+    <div v-if="viewMode === 'list'" class="w-full flex-1 overflow-auto">
       <TemplateWorkflowList
         :source-module="sourceModule"
         :templates="templates"
@@ -55,8 +55,9 @@
 </template>
 
 <script setup lang="ts">
+import { useLocalStorage } from '@vueuse/core'
 import Button from 'primevue/button'
-import { ref, watch } from 'vue'
+import { watch } from 'vue'
 
 import TemplateWorkflowCard from '@/components/templates/TemplateWorkflowCard.vue'
 import TemplateWorkflowList from '@/components/templates/TemplateWorkflowList.vue'
@@ -69,20 +70,25 @@ defineProps<{
   templates: TemplateInfo[]
 }>()
 
-const storedViewMode = localStorage.getItem('templateWorkflowViewMode')
-const viewMode = ref<'card' | 'list'>(
-  storedViewMode === 'list' ? 'list' : 'card'
+const viewMode = useLocalStorage<'card' | 'list'>(
+  'Comfy.TemplateWorkflow.ViewMode',
+  'card'
 )
-
-watch(viewMode, (newValue) => {
-  localStorage.setItem('templateWorkflowViewMode', newValue)
-})
 
 const emit = defineEmits<{
   loadWorkflow: [name: string]
+  viewModeChange: [mode: 'card' | 'list']
 }>()
 
 const onLoadWorkflow = (name: string) => {
   emit('loadWorkflow', name)
 }
+
+watch(
+  viewMode,
+  (newMode) => {
+    emit('viewModeChange', newMode)
+  },
+  { immediate: true }
+)
 </script>

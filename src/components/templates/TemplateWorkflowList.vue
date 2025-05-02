@@ -1,15 +1,23 @@
 <template>
-  <div class="template-list-view">
+  <div class="flex flex-col h-full">
     <DataTable
       v-model:selection="selectedTemplate"
       :value="templates"
-      class="w-full"
+      class="w-full flex-1"
       data-testid="template-workflow-list"
       :paginator="templates.length > 10"
       :rows="10"
       :rows-per-page-options="[5, 10, 20]"
       striped-rows
       selection-mode="single"
+      :pt="{
+        root: { class: 'flex flex-col h-full' },
+        wrapper: { class: 'flex-1 overflow-auto' },
+        table: { class: 'table-fixed' },
+        footer: { class: 'mt-auto' }
+      }"
+      scrollable
+      scroll-height="flex"
       @row-select="onTemplateSelect"
     >
       <Column field="title" header="Title">
@@ -26,7 +34,7 @@
           </span>
         </template>
       </Column>
-      <Column field="actions" header="">
+      <Column field="actions" header="" :style="{ width: '5rem' }">
         <template #body="slotProps">
           <Button
             icon="pi pi-arrow-right"
@@ -52,7 +60,7 @@ import { st } from '@/i18n'
 import { TemplateInfo } from '@/types/workflowTemplateTypes'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
-const props = defineProps<{
+const { sourceModule, categoryTitle, loading, templates } = defineProps<{
   sourceModule: string
   categoryTitle: string
   loading: string | null
@@ -72,13 +80,31 @@ const onTemplateSelect = (event: any) => {
 }
 
 const getTemplateTitle = (template: TemplateInfo) => {
-  const fallback =
-    template.title ?? template.name ?? `${props.sourceModule} Template`
-  return props.sourceModule === 'default'
+  const fallback = template.title ?? template.name ?? `${sourceModule} Template`
+  return sourceModule === 'default'
     ? st(
-        `templateWorkflows.template.${normalizeI18nKey(props.categoryTitle)}.${normalizeI18nKey(template.name)}`,
+        `templateWorkflows.template.${normalizeI18nKey(categoryTitle)}.${normalizeI18nKey(template.name)}`,
         fallback
       )
     : fallback
 }
 </script>
+
+<style scoped>
+:deep(.p-paginator) {
+  margin-top: auto;
+}
+
+:deep(.p-datatable-tbody > tr) {
+  height: 3rem;
+}
+
+:deep(.p-datatable-wrapper) {
+  min-height: 30rem;
+}
+
+:deep(.p-datatable-tbody > tr > td) {
+  padding: 0.75rem 1rem;
+  vertical-align: middle;
+}
+</style>

@@ -30,35 +30,31 @@
         />
       </aside>
       <div
-        class="flex-1 overflow-auto transition-all duration-300"
+        class="flex-1 overflow-auto transition-all duration-300 flex flex-col"
         :class="{
           'pl-80': isSideNavOpen || !isSmallScreen,
           'pl-8': !isSideNavOpen && isSmallScreen
         }"
       >
-        <div v-if="isReady && selectedTab" class="flex flex-col px-12 pb-4">
+        <div
+          v-if="isReady && selectedTab"
+          class="flex flex-col px-12 pb-4"
+          :class="{ 'h-full': currentViewMode === 'list' }"
+        >
           <div class="py-3 text-left">
             <h2 class="text-lg">
               {{ selectedTab.title }}
             </h2>
           </div>
-          <div
-            class="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] auto-rows-fr gap-8 justify-items-center"
-          >
-            <div
-              v-for="template in selectedTab.templates"
-              :key="template.name"
-              class="h-full"
-            >
-              <TemplateWorkflowCard
-                :source-module="selectedTab.moduleName"
-                :template="template"
-                :loading="template.name === workflowLoading"
-                :category-title="selectedTab.title"
-                @load-workflow="loadWorkflow"
-              />
-            </div>
-          </div>
+          <TemplateWorkflowView
+            :source-module="selectedTab.moduleName"
+            :templates="selectedTab.templates"
+            :loading="workflowLoading"
+            :category-title="selectedTab.title"
+            class="flex-1 min-h-0"
+            @load-workflow="loadWorkflow"
+            @view-mode-change="updateViewMode"
+          />
         </div>
       </div>
     </div>
@@ -104,6 +100,7 @@ const selectFirstTab = () => {
 watch(isReady, selectFirstTab, { once: true })
 
 const workflowLoading = ref<string | null>(null)
+const currentViewMode = ref<'card' | 'list'>('card')
 
 const tabs = computed(() => workflowTemplatesStore.groupedTemplates)
 
@@ -117,6 +114,10 @@ const handleTabSelection = (selection: WorkflowTemplates | null) => {
       isSideNavOpen.value = false
     }
   }
+}
+
+const updateViewMode = (mode: 'card' | 'list') => {
+  currentViewMode.value = mode
 }
 
 const loadWorkflow = async (id: string) => {
