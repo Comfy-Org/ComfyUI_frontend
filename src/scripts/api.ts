@@ -33,6 +33,7 @@ import {
   type ComfyNodeDef,
   validateComfyNodeDef
 } from '@/schemas/nodeDefSchema'
+import { useToastStore } from '@/stores/toastStore'
 import { WorkflowTemplates } from '@/types/workflowTemplateTypes'
 
 interface QueuePromptRequestBody {
@@ -921,6 +922,57 @@ export class ComfyApi extends EventTarget {
    */
   async getCustomNodesI18n(): Promise<Record<string, any>> {
     return (await axios.get(this.apiURL('/i18n'))).data
+  }
+
+  /**
+   * Frees memory by unloading models and optionally freeing execution cache
+   * @param {Object} options - The options object
+   * @param {boolean} options.freeExecutionCache - If true, also frees execution cache
+   */
+  async freeMemory(options: { freeExecutionCache: boolean }) {
+    try {
+      let mode = ''
+      if (options.freeExecutionCache) {
+        mode = '{"unload_models": true, "free_memory": true}'
+      } else {
+        mode = '{"unload_models": true}'
+      }
+
+      const res = await this.fetchApi(`/free`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: mode
+      })
+
+      if (res.status === 200) {
+        if (options.freeExecutionCache) {
+          useToastStore().add({
+            severity: 'success',
+            summary: 'Models and Execution Cache have been cleared.',
+            life: 3000
+          })
+        } else {
+          useToastStore().add({
+            severity: 'success',
+            summary: 'Models have been unloaded.',
+            life: 3000
+          })
+        }
+      } else {
+        useToastStore().add({
+          severity: 'error',
+          summary:
+            'Unloading of models failed. Installed ComfyUI may be an outdated version.',
+          life: 5000
+        })
+      }
+    } catch (error) {
+      useToastStore().add({
+        severity: 'error',
+        summary: 'An error occurred while trying to unload models.',
+        life: 5000
+      })
+    }
   }
 }
 
