@@ -58,7 +58,7 @@ const handleItemClick = (event: MenuItemCommandEvent) => {
 whenever(
   () => useCanvasStore().canvas,
   (canvas) => {
-    useEventListener(canvas.canvas, 'set-graph', () => {
+    useEventListener(canvas.canvas, 'litegraph:set-graph', () => {
       useWorkflowStore().updateActiveGraph()
     })
   }
