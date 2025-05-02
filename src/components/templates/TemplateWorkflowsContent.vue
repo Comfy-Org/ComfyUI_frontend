@@ -38,8 +38,7 @@
       >
         <div
           v-if="isReady && selectedTab"
-          class="flex flex-col px-12 pb-4"
-          :class="{ 'h-full': currentViewMode === 'list' }"
+          class="flex flex-col px-12 pb-4 h-full"
         >
           <div class="py-3 text-left">
             <h2 class="text-lg">
@@ -53,7 +52,6 @@
             :category-title="selectedTab.title"
             class="flex-1 min-h-0"
             @load-workflow="loadWorkflow"
-            @view-mode-change="updateViewMode"
           />
         </div>
       </div>
@@ -100,7 +98,6 @@ const selectFirstTab = () => {
 watch(isReady, selectFirstTab, { once: true })
 
 const workflowLoading = ref<string | null>(null)
-const currentViewMode = ref<'card' | 'list'>('card')
 
 const tabs = computed(() => workflowTemplatesStore.groupedTemplates)
 
@@ -114,10 +111,6 @@ const handleTabSelection = (selection: WorkflowTemplates | null) => {
       isSideNavOpen.value = false
     }
   }
-}
-
-const updateViewMode = (mode: 'card' | 'list') => {
-  currentViewMode.value = mode
 }
 
 const loadWorkflow = async (id: string) => {
