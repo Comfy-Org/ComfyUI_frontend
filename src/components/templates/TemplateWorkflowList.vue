@@ -5,21 +5,21 @@
     striped-rows
     selection-mode="single"
   >
-    <Column field="title" header="Title">
+    <Column field="title" :header="t('g.title')">
       <template #body="slotProps">
         <span :title="getTemplateTitle(slotProps.data)">{{
           getTemplateTitle(slotProps.data)
         }}</span>
       </template>
     </Column>
-    <Column field="description" header="Description">
+    <Column field="description" :header="t('g.description')">
       <template #body="slotProps">
         <span :title="slotProps.data.description.replace(/[-_]/g, ' ')">
           {{ slotProps.data.description.replace(/[-_]/g, ' ') }}
         </span>
       </template>
     </Column>
-    <Column field="actions" header="" :style="{ width: '5rem' }">
+    <Column field="actions" header="" class="w-12">
       <template #body="slotProps">
         <Button
           icon="pi pi-arrow-right"
@@ -40,7 +40,7 @@ import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import { ref } from 'vue'
 
-import { st } from '@/i18n'
+import { st, t } from '@/i18n'
 import type { TemplateInfo } from '@/types/workflowTemplateTypes'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
