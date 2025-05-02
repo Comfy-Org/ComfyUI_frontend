@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { app } from '@/scripts/app'
-import { useSubgraphStore } from '@/stores/subgraphStore'
+import { useWorkflowStore } from '@/stores/workflowStore'
 
 vi.mock('@/scripts/app', () => ({
   app: {
@@ -23,16 +23,16 @@ vi.mock('@/stores/workflowStore', () => ({
 }))
 
 describe('useSubgraphStore', () => {
-  let store: ReturnType<typeof useSubgraphStore>
+  let store: ReturnType<typeof useWorkflowStore>
 
   beforeEach(() => {
     setActivePinia(createPinia())
-    store = useSubgraphStore()
+    store = useWorkflowStore()
     vi.clearAllMocks()
   })
 
   it('should initialize with default values', () => {
-    expect(store.graphNamePath).toEqual([])
+    expect(store.subgraphNamePath).toEqual([])
     expect(store.isSubgraphActive).toBe(false)
   })
 
@@ -52,7 +52,7 @@ describe('useSubgraphStore', () => {
       store.updateActiveGraph()
       await nextTick()
 
-      expect(store.graphNamePath).toEqual([mockName])
+      expect(store.subgraphNamePath).toEqual([mockName])
     })
   })
 
@@ -80,7 +80,7 @@ describe('useSubgraphStore', () => {
       store.updateActiveGraph()
       await nextTick()
 
-      expect(store.graphNamePath).toEqual([
+      expect(store.subgraphNamePath).toEqual([
         'Root Graph',
         'Subgraph 1',
         'Subgraph 2'

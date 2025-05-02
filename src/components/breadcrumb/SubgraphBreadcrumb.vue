@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="subgraphStore.isSubgraphActive"
+    v-if="workflowStore.isSubgraphActive"
     class="fixed top-[var(--comfy-topbar-height)] left-[var(--sidebar-width)] p-2 subgraph-breadcrumb"
   >
     <Breadcrumb
@@ -21,19 +21,17 @@ import { computed } from 'vue'
 
 import { useWorkflowService } from '@/services/workflowService'
 import { useCanvasStore } from '@/stores/graphStore'
-import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 
 const workflowService = useWorkflowService()
 const workflowStore = useWorkflowStore()
-const subgraphStore = useSubgraphStore()
 
 const workflowName = computed(() => workflowStore.activeWorkflow?.filename)
 
 const items = computed(() => {
-  if (!subgraphStore.graphNamePath.length) return []
+  if (!workflowStore.subgraphNamePath.length) return []
 
-  return subgraphStore.graphNamePath.slice(1).map<MenuItem>((name) => ({
+  return workflowStore.subgraphNamePath.map<MenuItem>((name) => ({
     label: name,
     command: async () => {
       const workflow = workflowStore.getWorkflowByPath(name)
@@ -61,7 +59,7 @@ whenever(
   () => useCanvasStore().canvas,
   (canvas) => {
     useEventListener(canvas.canvas, 'set-graph', () => {
-      useSubgraphStore().updateActiveGraph()
+      useWorkflowStore().updateActiveGraph()
     })
   }
 )
