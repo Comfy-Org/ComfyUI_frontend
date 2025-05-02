@@ -12,7 +12,7 @@ export function useUpdateService() {
 
   async function installUpdate(): Promise<void> {
     try {
-      electronAPI.restartAndInstall()
+      await electronAPI.restartAndInstall()
     } catch (error) {
       log.error('Error restarting and installing update:', error)
       toastStore.add({
@@ -48,7 +48,7 @@ export function useUpdateService() {
 
       await installUpdate()
     } catch (error) {
-      console.error('Error during update process:', error)
+      log.error('Error during update process:', error)
       toastStore.add({
         severity: 'error',
         summary: t('g.error'),
