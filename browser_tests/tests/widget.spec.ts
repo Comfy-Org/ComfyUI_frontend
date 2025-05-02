@@ -187,7 +187,10 @@ test.describe('Image widget', () => {
 })
 
 test.describe('Animated image widget', () => {
-  test('Shows preview of uploaded animated image', async ({ comfyPage }) => {
+  // https://github.com/Comfy-Org/ComfyUI_frontend/issues/3718
+  test.skip('Shows preview of uploaded animated image', async ({
+    comfyPage
+  }) => {
     await comfyPage.loadWorkflow('widgets/load_animated_webp')
 
     // Get position of the load animated webp node

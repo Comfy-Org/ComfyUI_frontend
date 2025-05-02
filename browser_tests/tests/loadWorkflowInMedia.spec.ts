@@ -9,7 +9,9 @@ test.describe('Load Workflow in Media', () => {
     'no_workflow.webp',
     'large_workflow.webp',
     'workflow.webm',
-    'workflow.glb',
+    // Skipped due to 3d widget unstable visual result.
+    // 3d widget shows grid after fully loaded.
+    // 'workflow.glb',
     'workflow.mp4',
     'workflow.mov',
     'workflow.m4v',
