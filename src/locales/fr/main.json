@@ -171,6 +171,9 @@
   },
   "desktopUpdate": {
     "description": "ComfyUI Desktop installe de nouvelles dépendances. Cela peut prendre quelques minutes.",
+    "errorCheckingUpdate": "Erreur lors de la vérification des mises à jour",
+    "errorInstallingUpdate": "Erreur lors de l'installation de la mise à jour",
+    "noUpdateFound": "Aucune mise à jour trouvée",
     "terminalDefaultMessage": "Toute sortie de console de la mise à jour sera affichée ici.",
     "title": "Mise à jour de ComfyUI Desktop",
     "updateAvailableMessage": "Une mise à jour est disponible. Voulez-vous redémarrer et mettre à jour maintenant?",

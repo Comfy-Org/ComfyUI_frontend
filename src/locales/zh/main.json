@@ -171,6 +171,9 @@
   },
   "desktopUpdate": {
     "description": "ComfyUI桌面正在安装新的依赖项。这可能需要几分钟的时间。",
+    "errorCheckingUpdate": "检查更新时出错",
+    "errorInstallingUpdate": "安装更新时出错",
+    "noUpdateFound": "未发现更新",
     "terminalDefaultMessage": "更新过程中的任何控制台输出都将在这里显示。",
     "title": "正在更新ComfyUI桌面",
     "updateAvailableMessage": "有可用的更新。您现在要重启并更新吗？",

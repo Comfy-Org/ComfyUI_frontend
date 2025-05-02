@@ -1019,7 +1019,10 @@
     "description": "ComfyUI Desktop is installing new dependencies.  This may take a few minutes.",
     "terminalDefaultMessage": "Any console output from the update will be shown here.",
     "updateFoundTitle": "Update Found (v{version})",
-    "updateAvailableMessage": "An update is available. Do you want to restart and update now?"
+    "updateAvailableMessage": "An update is available. Do you want to restart and update now?",
+    "noUpdateFound": "No update found",
+    "errorCheckingUpdate": "Error checking for updates",
+    "errorInstallingUpdate": "Error installing update"
   },
   "clipboard": {
     "successMessage": "Copied to clipboard",
