@@ -30,23 +30,22 @@
         />
       </aside>
       <div
-        class="flex-1 overflow-auto transition-all duration-300"
+        class="flex-1 transition-all duration-300"
         :class="{
           'pl-80': isSideNavOpen || !isSmallScreen,
           'pl-8': !isSideNavOpen && isSmallScreen
         }"
       >
-        <div v-if="isReady && selectedTab" class="px-12 py-4 h-full">
-          <TemplateWorkflowView
-            :title="selectedTab.title"
-            :source-module="selectedTab.moduleName"
-            :templates="selectedTab.templates"
-            :loading="workflowLoading"
-            :category-title="selectedTab.title"
-            class="flex-1 min-h-0"
-            @load-workflow="loadWorkflow"
-          />
-        </div>
+        <TemplateWorkflowView
+          v-if="isReady && selectedTab"
+          class="px-12 py-4"
+          :title="selectedTab.title"
+          :source-module="selectedTab.moduleName"
+          :templates="selectedTab.templates"
+          :loading="workflowLoading"
+          :category-title="selectedTab.title"
+          @load-workflow="loadWorkflow"
+        />
       </div>
     </div>
   </div>

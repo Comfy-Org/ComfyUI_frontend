@@ -3,7 +3,9 @@
     :value="templates"
     :layout="layout"
     data-key="name"
-    pt:content="p-2"
+    :lazy="true"
+    pt:root="h-full grid grid-rows-[auto_1fr]"
+    pt:content="p-2 overflow-auto"
   >
     <template #header>
       <div class="flex justify-between items-center">
