@@ -175,7 +175,8 @@ import { checkMirrorReachable } from '@/utils/networkUtil'
             if (!updateInfo.isUpdateAvailable) {
               toastStore.add({
                 severity: 'info',
-                summary: t('desktopUpdate.noUpdateFound')
+                summary: t('desktopUpdate.noUpdateFound'),
+                life: 5_000
               })
               return
             }
