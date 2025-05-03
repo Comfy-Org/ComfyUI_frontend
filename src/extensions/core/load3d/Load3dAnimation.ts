@@ -69,7 +69,10 @@ class Load3dAnimation extends Load3d {
     animate()
   }
 
-  override async loadModel(url: string, originalFileName?: string): Promise<void> {
+  override async loadModel(
+    url: string,
+    originalFileName?: string
+  ): Promise<void> {
     await super.loadModel(url, originalFileName)
 
     if (this.modelManager.currentModel) {
