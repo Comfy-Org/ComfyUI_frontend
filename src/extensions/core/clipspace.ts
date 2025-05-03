@@ -81,7 +81,7 @@ export class ClipspaceDialog extends ComfyDialog {
     super()
   }
 
-  createButtons() {
+  override createButtons() {
     const buttons = []
 
     for (let idx in ClipspaceDialog.items) {
@@ -177,7 +177,7 @@ export class ClipspaceDialog extends ComfyDialog {
     } else return []
   }
 
-  show() {
+  override show() {
     ClipspaceDialog.invalidate()
 
     this.element.style.display = 'block'

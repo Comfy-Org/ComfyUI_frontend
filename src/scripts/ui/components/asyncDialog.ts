@@ -22,7 +22,7 @@ export class ComfyAsyncDialog extends ComfyDialog<HTMLDialogElement> {
     )
   }
 
-  show(html: string | HTMLElement | HTMLElement[]) {
+  override show(html: string | HTMLElement | HTMLElement[]) {
     this.element.addEventListener('close', () => {
       this.close()
     })
@@ -47,7 +47,7 @@ export class ComfyAsyncDialog extends ComfyDialog<HTMLDialogElement> {
     })
   }
 
-  close(result = null) {
+  override close(result = null) {
     this.#resolve(result)
     this.element.close()
     super.close()

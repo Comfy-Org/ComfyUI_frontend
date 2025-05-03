@@ -14,7 +14,7 @@ app.registerExtension({
     }
 
     class RerouteNode extends LGraphNode {
-      static category: string | undefined
+      static override category: string | undefined
       static defaultVisibility = false
 
       constructor(title?: string) {
@@ -277,7 +277,7 @@ app.registerExtension({
         )
         return []
       }
-      computeSize(): [number, number] {
+      override computeSize(): [number, number] {
         return [
           this.properties.showOutputText && this.outputs && this.outputs.length
             ? Math.max(

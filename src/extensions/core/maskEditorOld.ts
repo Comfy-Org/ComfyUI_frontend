@@ -165,7 +165,7 @@ export class MaskEditorDialogOld extends ComfyDialog {
     ])
   }
 
-  createButtons() {
+  override createButtons() {
     return []
   }
 
@@ -442,7 +442,7 @@ export class MaskEditorDialogOld extends ComfyDialog {
     maskCanvas.style.opacity = maskCanvasStyle.opacity.toString()
   }
 
-  async show() {
+  override async show() {
     this.zoom_ratio = 1.0
     this.pan_x = 0
     this.pan_y = 0

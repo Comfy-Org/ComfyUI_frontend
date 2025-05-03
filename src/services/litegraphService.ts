@@ -57,8 +57,8 @@ export const useLitegraphService = () => {
   async function registerNodeDef(nodeId: string, nodeDefV1: ComfyNodeDefV1) {
     const node = class ComfyNode extends LGraphNode {
       static comfyClass: string
-      static title: string
-      static category: string
+      static override title: string
+      static override category: string
       static nodeData: ComfyNodeDefV1 & ComfyNodeDefV2
 
       /**

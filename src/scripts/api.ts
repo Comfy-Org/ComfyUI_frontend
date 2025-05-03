@@ -271,7 +271,7 @@ export class ComfyApi extends EventTarget {
     return fetch(this.apiURL(route), options)
   }
 
-  addEventListener<TEvent extends keyof ApiEvents>(
+  override addEventListener<TEvent extends keyof ApiEvents>(
     type: TEvent,
     callback: ((event: ApiEvents[TEvent]) => void) | null,
     options?: AddEventListenerOptions | boolean
@@ -281,7 +281,7 @@ export class ComfyApi extends EventTarget {
     this.#registered.add(type)
   }
 
-  removeEventListener<TEvent extends keyof ApiEvents>(
+  override removeEventListener<TEvent extends keyof ApiEvents>(
     type: TEvent,
     callback: ((event: ApiEvents[TEvent]) => void) | null,
     options?: EventListenerOptions | boolean
@@ -312,7 +312,7 @@ export class ComfyApi extends EventTarget {
   }
 
   /** @deprecated Use {@link dispatchCustomEvent}. */
-  dispatchEvent(event: never): boolean {
+  override dispatchEvent(event: never): boolean {
     return super.dispatchEvent(event)
   }
 

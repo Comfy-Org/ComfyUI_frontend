@@ -869,7 +869,7 @@ class MaskEditorDialog extends ComfyDialog {
     return MaskEditorDialog.instance
   }
 
-  async show() {
+  override async show() {
     this.cleanup()
     if (!this.isLayoutCreated) {
       // layout
