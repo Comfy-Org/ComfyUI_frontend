@@ -45,6 +45,7 @@
 
 <script setup lang="ts">
 import type { LGraphNode } from '@comfyorg/litegraph'
+import { useEventListener } from '@vueuse/core'
 import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
@@ -83,6 +84,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
+import { useToastStore } from '@/stores/toastStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
@@ -95,6 +97,7 @@ const nodeDefStore = useNodeDefStore()
 const workspaceStore = useWorkspaceStore()
 const canvasStore = useCanvasStore()
 const executionStore = useExecutionStore()
+const toastStore = useToastStore()
 const betaMenuEnabled = computed(
   () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
 )
@@ -246,6 +249,19 @@ watch(
       delete extra.ds
     }
   }
+)
+
+useEventListener(
+  canvasRef,
+  'litegraph:no-items-selected',
+  () => {
+    toastStore.add({
+      severity: 'warn',
+      summary: 'No items selected',
+      life: 2000
+    })
+  },
+  { passive: true }
 )
 
 const loadCustomNodesI18n = async () => {
