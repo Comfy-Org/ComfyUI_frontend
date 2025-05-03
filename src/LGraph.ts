@@ -48,6 +48,11 @@ export interface LGraphConfig {
   links_ontop?: any
 }
 
+export interface LGraphExtra extends Dictionary<unknown> {
+  reroutes?: SerialisableReroute[]
+  linkExtensions?: { id: number, parentId: number | undefined }[]
+}
+
 export interface BaseLGraph {
   readonly rootGraph: LGraph
 }
@@ -119,7 +124,7 @@ export class LGraph implements LinkNetwork, BaseLGraph, Serialisable<Serialisabl
   nodes_executing: boolean[] = []
   nodes_actioning: (string | boolean)[] = []
   nodes_executedAction: string[] = []
-  extra: Record<string, unknown> = {}
+  extra: LGraphExtra = {}
 
   /** @deprecated Deserialising a workflow sets this unused property. */
   version?: number

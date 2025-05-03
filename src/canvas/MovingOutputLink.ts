@@ -10,7 +10,7 @@ import { LinkDirection } from "@/types/globalEnums"
 import { MovingLinkBase } from "./MovingLinkBase"
 
 export class MovingOutputLink extends MovingLinkBase {
-  readonly toType = "output"
+  override readonly toType = "output"
 
   readonly node: LGraphNode
   readonly fromSlot: INodeInputSlot

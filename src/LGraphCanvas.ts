@@ -6033,7 +6033,7 @@ export class LGraphCanvas {
           dialog.close()
         } else if (e.key == "Enter") {
           if (selected instanceof HTMLElement) {
-            select(unescape(String(selected.dataset.type)))
+            select(unescape(String(selected.dataset["type"])))
           } else if (first) {
             select(first)
           } else {
@@ -6395,7 +6395,7 @@ export class LGraphCanvas {
           help.className += ` ${className}`
         }
         help.addEventListener("click", function () {
-          select(unescape(String(this.dataset.type)))
+          select(unescape(String(this.dataset["type"])))
         })
         helper.append(help)
       }

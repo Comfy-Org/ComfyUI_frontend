@@ -36,7 +36,7 @@ export class KnobWidget extends BaseWidget implements IKnobWidget {
     }
   }
 
-  get height(): number {
+  override get height(): number {
     return this.computedHeight || super.height
   }
 

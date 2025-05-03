@@ -21,7 +21,7 @@ export abstract class SubgraphSlot extends SlotBase implements SubgraphIO, Seria
 
   readonly linkIds: LinkId[] = []
 
-  readonly boundingRect: Rect = [0, 0, 0, SubgraphSlot.defaultHeight]
+  override readonly boundingRect: Rect = [0, 0, 0, SubgraphSlot.defaultHeight]
 
   override get pos() {
     return this.#pos

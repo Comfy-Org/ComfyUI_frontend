@@ -8,7 +8,7 @@ import type {
   Point,
   Size,
 } from "../interfaces"
-import type { LGraphConfig, LGraphState } from "../LGraph"
+import type { LGraphConfig, LGraphExtra, LGraphState } from "../LGraph"
 import type { IGraphGroupFlags } from "../LGraphGroup"
 import type { NodeId, NodeProperty } from "../LGraphNode"
 import type { LiteGraph } from "../litegraph"
@@ -53,7 +53,7 @@ export interface SerialisableGraph extends BaseExportedGraph {
   links?: SerialisableLLink[]
   floatingLinks?: SerialisableLLink[]
   reroutes?: SerialisableReroute[]
-  extra?: Dictionary<unknown>
+  extra?: LGraphExtra
 }
 
 export type ISerialisableNodeInput = Omit<INodeInputSlot, "boundingRect" | "widget"> & {
@@ -114,9 +114,7 @@ export interface ISerialisedGraph extends BaseExportedGraph {
   floatingLinks?: SerialisableLLink[]
   groups: ISerialisedGroup[]
   version: typeof LiteGraph.VERSION
-  extra?: Dictionary<unknown> & {
-    reroutes?: SerialisableReroute[]
-  }
+  extra?: LGraphExtra
 }
 
 /**

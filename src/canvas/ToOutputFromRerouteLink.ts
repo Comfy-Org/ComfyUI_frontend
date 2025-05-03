@@ -14,7 +14,7 @@ export class ToOutputFromRerouteLink extends ToOutputRenderLink {
     network: LinkNetwork,
     node: LGraphNode,
     fromSlot: INodeInputSlot,
-    readonly fromReroute: Reroute,
+    override readonly fromReroute: Reroute,
     readonly linkConnector: LinkConnector,
   ) {
     super(network, node, fromSlot, fromReroute)
