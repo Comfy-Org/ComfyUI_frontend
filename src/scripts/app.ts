@@ -719,7 +719,7 @@ export class ComfyApp {
   #addAfterConfigureHandler() {
     const app = this
     const onConfigure = app.graph.onConfigure
-    app.graph.onConfigure = function (this: LGraph, ...args) {
+    app.graph.onConfigure = function (...args) {
       fixLinkInputSlots(this)
 
       // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
