@@ -25,7 +25,7 @@ const replacePropertyName = 'Run widget replace on values'
 export class PrimitiveNode extends LGraphNode {
   controlValues?: any[]
   lastType?: string
-  static category: string
+  static override category: string
   constructor(title: string) {
     super(title)
     this.addOutput('connect to widget input', '*')
@@ -37,7 +37,7 @@ export class PrimitiveNode extends LGraphNode {
     }
   }
 
-  applyToGraph(extraLinks: LLink[] = []) {
+  override applyToGraph(extraLinks: LLink[] = []) {
     if (!this.outputs[0].links?.length) return
 
     const links = [
@@ -83,7 +83,7 @@ export class PrimitiveNode extends LGraphNode {
     }
   }
 
-  refreshComboInNode() {
+  override refreshComboInNode() {
     const widget = this.widgets?.[0]
     if (widget?.type === 'combo') {
       // @ts-expect-error fixme ts strict error
@@ -98,7 +98,7 @@ export class PrimitiveNode extends LGraphNode {
     }
   }
 
-  onAfterGraphConfigured() {
+  override onAfterGraphConfigured() {
     if (this.outputs[0].links?.length && !this.widgets?.length) {
       this.#onFirstConnection()
 
@@ -117,7 +117,11 @@ export class PrimitiveNode extends LGraphNode {
     }
   }
 
-  onConnectionsChange(_type: ISlotType, _index: number, connected: boolean) {
+  override onConnectionsChange(
+    _type: ISlotType,
+    _index: number,
+    connected: boolean
+  ) {
     if (app.configuringGraph) {
       // Dont run while the graph is still setting up
       return
@@ -138,7 +142,7 @@ export class PrimitiveNode extends LGraphNode {
     }
   }
 
-  onConnectOutput(
+  override onConnectOutput(
     slot: number,
     _type: string,
     input: INodeInputSlot,

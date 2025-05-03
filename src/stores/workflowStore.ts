@@ -33,7 +33,7 @@ export class ComfyWorkflow extends UserFile {
     super(options.path, options.modified, options.size)
   }
 
-  get key() {
+  override get key() {
     return this.path.substring(ComfyWorkflow.basePath.length)
   }
 
@@ -45,15 +45,15 @@ export class ComfyWorkflow extends UserFile {
     return this.changeTracker?.initialState ?? null
   }
 
-  get isLoaded(): boolean {
+  override get isLoaded(): boolean {
     return this.changeTracker !== null
   }
 
-  get isModified(): boolean {
+  override get isModified(): boolean {
     return this._isModified
   }
 
-  set isModified(value: boolean) {
+  override set isModified(value: boolean) {
     this._isModified = value
   }
 
@@ -64,7 +64,7 @@ export class ComfyWorkflow extends UserFile {
    * @param force Whether to force loading the content even if it is already loaded.
    * @returns this
    */
-  async load({
+  override async load({
     force = false
   }: { force?: boolean } = {}): Promise<LoadedComfyWorkflow> {
     await super.load({ force })
@@ -85,13 +85,13 @@ export class ComfyWorkflow extends UserFile {
     return this as LoadedComfyWorkflow
   }
 
-  unload(): void {
+  override unload(): void {
     console.debug('unload workflow', this.path)
     this.changeTracker = null
     super.unload()
   }
 
-  async save() {
+  override async save() {
     this.content = JSON.stringify(this.activeState)
     // Force save to ensure the content is updated in remote storage incase
     // the isModified state is screwed by changeTracker.
@@ -106,7 +106,7 @@ export class ComfyWorkflow extends UserFile {
    * @param path The path to save the workflow to. Note: with 'workflows/' prefix.
    * @returns this
    */
-  async saveAs(path: string) {
+  override async saveAs(path: string) {
     this.content = JSON.stringify(this.activeState)
     return await super.saveAs(path)
   }
