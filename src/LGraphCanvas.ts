@@ -2979,6 +2979,11 @@ export class LGraphCanvas {
     return
   }
 
+  #noItemsSelected(): void {
+    const event = new CustomEvent("litegraph:no-items-selected", { bubbles: true })
+    this.canvas.dispatchEvent(event)
+  }
+
   /**
    * process a key event
    */
@@ -3030,6 +3035,11 @@ export class LGraphCanvas {
         // delete or backspace
         // @ts-expect-error
         if (e.target.localName != "input" && e.target.localName != "textarea") {
+          if (this.selectedItems.size === 0) {
+            this.#noItemsSelected()
+            return
+          }
+
           this.deleteSelected()
           block_default = true
         }
