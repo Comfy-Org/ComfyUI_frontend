@@ -864,7 +864,9 @@ class MaskEditorDialog extends ComfyDialog {
       !MaskEditorDialog.instance ||
       currentSrc !== MaskEditorDialog.instance.imageURL
     ) {
+      if (MaskEditorDialog.instance) MaskEditorDialog.instance.destroy()
       MaskEditorDialog.instance = new MaskEditorDialog()
+      MaskEditorDialog.instance.imageURL = currentSrc
     }
     return MaskEditorDialog.instance
   }
@@ -937,6 +939,16 @@ class MaskEditorDialog extends ComfyDialog {
     // Remove brush elements specifically
     const brushElements = document.querySelectorAll('#maskEditor_brush')
     brushElements.forEach((element) => element.remove())
+  }
+
+  destroy() {
+    this.isLayoutCreated = false
+    this.isOpen = false
+    this.canvasHistory.clearStates()
+    this.keyboardManager.removeListeners()
+    this.cleanup()
+    this.close()
+    MaskEditorDialog.instance = null
   }
 
   isOpened() {
@@ -1117,8 +1129,7 @@ class MaskEditorDialog extends ComfyDialog {
 
     if (success) {
       ComfyApp.onClipspaceEditorSave()
-      this.close()
-      this.isOpen = false
+      this.destroy()
     } else {
       this.uiManager.setSaveButtonText(t('g.save'))
       this.uiManager.setSaveButtonEnabled(true)
@@ -3400,7 +3411,7 @@ class UIManager {
     top_bar_cancel_button.innerText = t('g.cancel')
 
     top_bar_cancel_button.addEventListener('click', () => {
-      this.maskEditor.close()
+      this.maskEditor.destroy()
     })
 
     top_bar_shortcuts_container.appendChild(top_bar_undo_button)
@@ -4843,6 +4854,11 @@ class KeyboardManager {
   private maskEditor: MaskEditorDialog
   private messageBroker: MessageBroker
 
+  // Binded functions, for use in addListeners and removeListeners
+  private handleKeyDownBound = this.handleKeyDown.bind(this)
+  private handleKeyUpBound = this.handleKeyUp.bind(this)
+  private clearKeysBound = this.clearKeys.bind(this)
+
   constructor(maskEditor: MaskEditorDialog) {
     this.maskEditor = maskEditor
     this.messageBroker = maskEditor.getMessageBroker()
@@ -4857,16 +4873,15 @@ class KeyboardManager {
   }
 
   addListeners() {
-    document.addEventListener('keydown', (event) => this.handleKeyDown(event))
-    document.addEventListener('keyup', (event) => this.handleKeyUp(event))
-    window.addEventListener('blur', () => this.clearKeys())
+    document.addEventListener('keydown', this.handleKeyDownBound)
+    document.addEventListener('keyup', this.handleKeyUpBound)
+    window.addEventListener('blur', this.clearKeysBound)
   }
 
   removeListeners() {
-    document.removeEventListener('keydown', (event) =>
-      this.handleKeyDown(event)
-    )
-    document.removeEventListener('keyup', (event) => this.handleKeyUp(event))
+    document.removeEventListener('keydown', this.handleKeyDownBound)
+    document.removeEventListener('keyup', this.handleKeyUpBound)
+    window.removeEventListener('blur', this.clearKeysBound)
   }
 
   private clearKeys() {
@@ -4877,8 +4892,15 @@ class KeyboardManager {
     if (!this.keysDown.includes(event.key)) {
       this.keysDown.push(event.key)
     }
-    //if (this.redoCombinationPressed()) return
-    //this.undoCombinationPressed()
+    if ((event.ctrlKey || event.metaKey) && !event.altKey) {
+      const key = event.key.toUpperCase()
+      // Redo: Ctrl + Y, or Ctrl + Shift + Z
+      if ((key === 'Y' && !event.shiftKey) || (key == 'Z' && event.shiftKey)) {
+        this.messageBroker.publish('redo')
+      } else if (key === 'Z' && !event.shiftKey) {
+        this.messageBroker.publish('undo')
+      }
+    }
   }
 
   private handleKeyUp(event: KeyboardEvent) {
@@ -4948,8 +4970,21 @@ app.registerExtension({
       }
     }
 
+    // Check if the dialog is already opened
+    function isOpened(): boolean {
+      const useNewEditor = app.extensionManager.setting.get(
+        'Comfy.MaskEditor.UseNewEditor'
+      )
+      if (useNewEditor) {
+        return MaskEditorDialog.instance?.isOpened?.() ?? false
+      } else {
+        return (MaskEditorDialogOld.instance as any)?.isOpened?.() ?? false
+      }
+    }
+
     // Assign the created function
-    ;(ComfyApp as any).open_maskeditor = openMaskEditor
+    ComfyApp.open_maskeditor = openMaskEditor
+    ComfyApp.maskeditor_is_opended = isOpened
 
     // Ensure boolean return type
     const context_predicate = (): boolean => {
