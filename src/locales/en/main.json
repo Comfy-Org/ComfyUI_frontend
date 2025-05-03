@@ -1057,8 +1057,14 @@
       "normal": "Normal",
       "wireframe": "Wireframe",
       "original": "Original",
-      "depth": "Depth"
-    }
+      "depth": "Depth",
+      "lineart": "Lineart"
+    },
+    "startRecording": "Start Recording",
+    "stopRecording": "Stop Recording",
+    "exportRecording": "Export Recording",
+    "clearRecording": "Clear Recording",
+    "resizeNodeMatchOutput": "Resize Node to match output"
   },
   "toastMessages": {
     "no3dScene": "No 3D scene to apply texture",

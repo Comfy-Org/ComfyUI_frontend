@@ -215,6 +215,8 @@ useExtensionService().registerExtension({
         sceneWidget.serializeValue = async () => {
           node.properties['Camera Info'] = load3d.getCameraState()
 
+          load3d.stopRecording()
+
           const {
             scene: imageData,
             mask: maskData,
@@ -234,13 +236,26 @@ useExtensionService().registerExtension({
 
           load3d.handleResize()
 
-          return {
+          const returnVal = {
             image: `threed/${data.name} [temp]`,
             mask: `threed/${dataMask.name} [temp]`,
             normal: `threed/${dataNormal.name} [temp]`,
             lineart: `threed/${dataLineart.name} [temp]`,
-            camera_info: node.properties['Camera Info']
+            camera_info: node.properties['Camera Info'],
+            recording: ''
           }
+
+          const recordingData = load3d.getRecordingData()
+
+          if (recordingData) {
+            const [recording] = await Promise.all([
+              Load3dUtils.uploadTempImage(recordingData, 'recording', 'mp4')
+            ])
+
+            returnVal['recording'] = `threed/${recording.name} [temp]`
+          }
+
+          return returnVal
         }
       }
     }
