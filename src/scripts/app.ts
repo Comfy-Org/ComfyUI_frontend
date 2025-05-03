@@ -139,7 +139,10 @@ export class ComfyApp {
   _nodeOutputs: Record<string, any>
   nodePreviewImages: Record<string, string[]>
   // @ts-expect-error fixme ts strict error
-  graph: LGraph
+  #graph: LGraph
+  get graph() {
+    return this.#graph
+  }
   // @ts-expect-error fixme ts strict error
   canvas: LGraphCanvas
   dragOverNode: LGraphNode | null = null
@@ -752,7 +755,7 @@ export class ComfyApp {
     this.#addConfigureHandler()
     this.#addApiUpdateHandlers()
 
-    this.graph = new LGraph()
+    this.#graph = new LGraph()
 
     this.#addAfterConfigureHandler()
 
