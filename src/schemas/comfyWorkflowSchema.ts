@@ -315,7 +315,7 @@ interface ComfyWorkflow1BaseType {
   state: z.infer<typeof zGraphState>
 }
 
-/** Required for recursive definition of subgraphs. */
+/** Required for recursive definition of subgraphs w/ZodEffects. */
 interface ComfyWorkflow1BaseInput extends ComfyWorkflow1BaseType {
   groups?: z.input<typeof zGroup>[]
   nodes: z.input<typeof zComfyNode>[]
@@ -323,11 +323,11 @@ interface ComfyWorkflow1BaseInput extends ComfyWorkflow1BaseType {
   floatingLinks?: z.input<typeof zComfyLinkObject>[]
   reroutes?: z.input<typeof zReroute>[]
   definitions?: {
-    subgraphs: SubgraphDefinitionBaseInput[]
+    subgraphs: SubgraphDefinitionBase<ComfyWorkflow1BaseInput>[]
   }
 }
 
-/** Required for recursive definition of subgraphs. */
+/** Required for recursive definition of subgraphs w/ZodEffects. */
 interface ComfyWorkflow1BaseOutput extends ComfyWorkflow1BaseType {
   groups?: z.output<typeof zGroup>[]
   nodes: z.output<typeof zComfyNode>[]
@@ -335,18 +335,9 @@ interface ComfyWorkflow1BaseOutput extends ComfyWorkflow1BaseType {
   floatingLinks?: z.output<typeof zComfyLinkObject>[]
   reroutes?: z.output<typeof zReroute>[]
   definitions?: {
-    subgraphs: SubgraphDefinitionBaseOutput[]
+    subgraphs: SubgraphDefinitionBase<ComfyWorkflow1BaseOutput>[]
   }
 }
-
-/** Required for recursive definition of subgraphs. */
-type SubgraphDefinitionInput = z.input<typeof zBaseExportableGraph> &
-  ComfyWorkflow1BaseInput &
-  SubgraphDefinitionBaseInput
-/** Required for recursive definition of subgraphs. */
-type SubgraphDefinitionOutput = z.output<typeof zBaseExportableGraph> &
-  ComfyWorkflow1BaseOutput &
-  SubgraphDefinitionBaseOutput
 
 /** Schema version 1 */
 export const zComfyWorkflow1 = zBaseExportableGraph
@@ -367,9 +358,9 @@ export const zComfyWorkflow1 = zBaseExportableGraph
       subgraphs: z.lazy(
         (): z.ZodArray<
           z.ZodType<
-            SubgraphDefinitionOutput,
+            SubgraphDefinitionBase<ComfyWorkflow1BaseOutput>,
             z.ZodTypeDef,
-            SubgraphDefinitionInput
+            SubgraphDefinitionBase<ComfyWorkflow1BaseInput>
           >,
           'many'
         > => z.array(zSubgraphDefinition)
@@ -389,41 +380,34 @@ export const zExposedWidget = z.object({
   name: z.string()
 })
 
-interface SubgraphDefinitionBaseInput extends ComfyWorkflow1BaseInput {
+interface SubgraphDefinitionBase<
+  T extends ComfyWorkflow1BaseInput | ComfyWorkflow1BaseOutput
+> {
   /** Unique graph ID.  Automatically generated if not provided. */
   id: string
   revision: number
   name: string
 
-  inputNode: z.input<typeof zExportedSubgraphIONode>
-  outputNode: z.input<typeof zExportedSubgraphIONode>
+  inputNode: T extends ComfyWorkflow1BaseInput
+    ? z.input<typeof zExportedSubgraphIONode>
+    : z.output<typeof zExportedSubgraphIONode>
+  outputNode: T extends ComfyWorkflow1BaseInput
+    ? z.input<typeof zExportedSubgraphIONode>
+    : z.output<typeof zExportedSubgraphIONode>
   /** Ordered list of inputs to the subgraph itself. Similar to a reroute, with the input side in the graph, and the output side in the subgraph. */
-  inputs?: z.input<typeof zSubgraphIO>[]
+  inputs?: T extends ComfyWorkflow1BaseInput
+    ? z.input<typeof zSubgraphIO>[]
+    : z.output<typeof zSubgraphIO>[]
   /** Ordered list of outputs from the subgraph itself. Similar to a reroute, with the input side in the subgraph, and the output side in the graph. */
-  outputs?: z.input<typeof zSubgraphIO>[]
+  outputs?: T extends ComfyWorkflow1BaseInput
+    ? z.input<typeof zSubgraphIO>[]
+    : z.output<typeof zSubgraphIO>[]
   /** A list of node widgets displayed in the parent graph, on the subgraph object. */
-  widgets?: z.input<typeof zExposedWidget>[]
+  widgets?: T extends ComfyWorkflow1BaseInput
+    ? z.input<typeof zExposedWidget>[]
+    : z.output<typeof zExposedWidget>[]
   definitions?: {
-    subgraphs: SubgraphDefinitionBaseInput[]
-  }
-}
-
-interface SubgraphDefinitionBaseOutput extends ComfyWorkflow1BaseOutput {
-  /** Unique graph ID.  Automatically generated if not provided. */
-  id: string
-  revision: number
-  name: string
-
-  inputNode: z.output<typeof zExportedSubgraphIONode>
-  outputNode: z.output<typeof zExportedSubgraphIONode>
-  /** Ordered list of inputs to the subgraph itself. Similar to a reroute, with the input side in the graph, and the output side in the subgraph. */
-  inputs?: z.output<typeof zSubgraphIO>[]
-  /** Ordered list of outputs from the subgraph itself. Similar to a reroute, with the input side in the subgraph, and the output side in the graph. */
-  outputs?: z.output<typeof zSubgraphIO>[]
-  /** A list of node widgets displayed in the parent graph, on the subgraph object. */
-  widgets?: z.output<typeof zExposedWidget>[]
-  definitions?: {
-    subgraphs: SubgraphDefinitionBaseOutput[]
+    subgraphs: SubgraphDefinitionBase<T>[]
   }
 }
 
@@ -447,9 +431,9 @@ export const zSubgraphDefinition = zComfyWorkflow1
       subgraphs: z.lazy(
         (): z.ZodArray<
           z.ZodType<
-            SubgraphDefinitionOutput,
+            SubgraphDefinitionBase<ComfyWorkflow1BaseInput>,
             z.ZodTypeDef,
-            SubgraphDefinitionInput
+            SubgraphDefinitionBase<ComfyWorkflow1BaseInput>
           >,
           'many'
         > => zSubgraphDefinition.array()
