@@ -132,7 +132,8 @@ export function useSettingUI(
       creditsPanel,
       userPanel,
       keybindingPanel,
-      extensionPanel
+      extensionPanel,
+      ...(isElectron() ? [serverConfigPanel] : [])
     ].filter((panel) => panel.component)
   )
 
