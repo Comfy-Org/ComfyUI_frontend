@@ -717,20 +717,20 @@ export class ComfyApp {
   }
 
   #addAfterConfigureHandler() {
-    const app = this
-    const onConfigure = app.graph.onConfigure
-    app.graph.onConfigure = function (...args) {
+    const { graph } = this
+    const { onConfigure } = graph
+    graph.onConfigure = function (...args) {
       fixLinkInputSlots(this)
 
       // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
-      for (const node of app.graph.nodes) {
+      for (const node of graph.nodes) {
         node.onGraphConfigured?.()
       }
 
       const r = onConfigure?.apply(this, args)
 
       // Fire after onConfigure, used by primitives to generate widget using input nodes config
-      for (const node of app.graph.nodes) {
+      for (const node of graph.nodes) {
         node.onAfterGraphConfigured?.()
       }
 
