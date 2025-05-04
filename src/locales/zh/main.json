@@ -4,6 +4,26 @@
     "title": "API节点",
     "totalCost": "总成本"
   },
+  "apiNodesNews": {
+    "introducing": "介绍",
+    "steps": {
+      "step1": {
+        "subtitle": "设置 > 用户 > 登录",
+        "title": "登录/创建账户："
+      },
+      "step2": {
+        "subtitle": "设置 > 积分 > 购买积分",
+        "title": "购买积分："
+      },
+      "step3": {
+        "title": "在“API 节点”部分找到新的 API 节点并添加到画布"
+      },
+      "step4": {
+        "title": "运行！"
+      }
+    },
+    "subtitle": "所有外部模型现已在 ComfyUI 中可用"
+  },
   "apiNodesSignInDialog": {
     "message": "此工作流包含API节点，需要您登录账户才能运行。",
     "title": "使用API节点需要登录"

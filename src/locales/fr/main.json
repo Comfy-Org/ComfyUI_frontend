@@ -4,6 +4,26 @@
     "title": "Nœud(s) API",
     "totalCost": "Coût total"
   },
+  "apiNodesNews": {
+    "introducing": "Présentation",
+    "steps": {
+      "step1": {
+        "subtitle": "Paramètres > Utilisateur > Connexion",
+        "title": "Connectez-vous / Créez un compte :"
+      },
+      "step2": {
+        "subtitle": "Paramètres > Crédits > Acheter des crédits",
+        "title": "Achetez des crédits :"
+      },
+      "step3": {
+        "title": "Trouvez les nouveaux nœuds API dans la section 'API Node' et ajoutez-les à la toile"
+      },
+      "step4": {
+        "title": "Lancez !"
+      }
+    },
+    "subtitle": "Tous les modèles externes sont désormais disponibles dans ComfyUI"
+  },
   "apiNodesSignInDialog": {
     "message": "Ce flux de travail contient des nœuds API, qui nécessitent que vous soyez connecté à votre compte pour pouvoir fonctionner.",
     "title": "Connexion requise pour utiliser les nœuds API"

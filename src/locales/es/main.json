@@ -4,6 +4,26 @@
     "title": "Nodo(s) de API",
     "totalCost": "Costo total"
   },
+  "apiNodesNews": {
+    "introducing": "Presentamos",
+    "steps": {
+      "step1": {
+        "subtitle": "Configuración > Usuario > Iniciar sesión",
+        "title": "Inicia sesión/Crea una cuenta:"
+      },
+      "step2": {
+        "subtitle": "Configuración > Créditos > Comprar créditos",
+        "title": "Compra créditos:"
+      },
+      "step3": {
+        "title": "Ubica los nuevos nodos API en la sección 'API Node' y agrégalos al lienzo"
+      },
+      "step4": {
+        "title": "¡Ejecuta!"
+      }
+    },
+    "subtitle": "Todos los modelos externos ahora disponibles en ComfyUI"
+  },
   "apiNodesSignInDialog": {
     "message": "Este flujo de trabajo contiene nodos de API, que requieren que inicies sesión en tu cuenta para poder ejecutar.",
     "title": "Se requiere iniciar sesión para usar los nodos de API"
