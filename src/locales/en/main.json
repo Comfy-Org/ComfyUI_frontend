@@ -1192,5 +1192,25 @@
     "provider": "Sign-in Provider",
     "notSet": "Not set",
     "updatePassword": "Update Password"
+  },
+  "apiNodesNews": {
+    "introducing": "Introducing",
+    "subtitle": "All External Models now available in ComfyUI",
+    "steps": {
+      "step1": {
+        "title": "Login/Create an account:",
+        "subtitle": "Settings > User > Login"
+      },
+      "step2": {
+        "title": "Purchase credits:",
+        "subtitle": "Settings > Credits > Buy Credits"
+      },
+      "step3": {
+        "title": "Locate new API Nodes under 'API Node' section and add to the canvas"
+      },
+      "step4": {
+        "title": "Run!"
+      }
+    }
   }
 }
