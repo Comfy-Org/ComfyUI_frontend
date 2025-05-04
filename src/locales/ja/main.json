@@ -4,6 +4,26 @@
     "title": "APIノード",
     "totalCost": "合計コスト"
   },
+  "apiNodesNews": {
+    "introducing": "紹介",
+    "steps": {
+      "step1": {
+        "subtitle": "設定 > ユーザー > ログイン",
+        "title": "ログイン／アカウント作成："
+      },
+      "step2": {
+        "subtitle": "設定 > クレジット > クレジットを購入",
+        "title": "クレジットを購入："
+      },
+      "step3": {
+        "title": "「APIノード」セクションで新しいAPIノードを見つけてキャンバスに追加"
+      },
+      "step4": {
+        "title": "実行！"
+      }
+    },
+    "subtitle": "すべての外部モデルがComfyUIで利用可能になりました"
+  },
   "apiNodesSignInDialog": {
     "message": "このワークフローにはAPIノードが含まれており、実行するためにはアカウントにサインインする必要があります。",
     "title": "APIノードを使用するためにはサインインが必要です"

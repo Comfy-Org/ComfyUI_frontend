@@ -4,6 +4,26 @@
     "title": "API 노드(들)",
     "totalCost": "총 비용"
   },
+  "apiNodesNews": {
+    "introducing": "소개합니다",
+    "steps": {
+      "step1": {
+        "subtitle": "설정 > 사용자 > 로그인",
+        "title": "로그인/계정 생성:"
+      },
+      "step2": {
+        "subtitle": "설정 > 크레딧 > 크레딧 구매",
+        "title": "크레딧 구매:"
+      },
+      "step3": {
+        "title": "'API Node' 섹션에서 새로운 API 노드를 찾아 캔버스에 추가하세요"
+      },
+      "step4": {
+        "title": "실행!"
+      }
+    },
+    "subtitle": "모든 외부 모델이 이제 ComfyUI에서 사용 가능합니다"
+  },
   "apiNodesSignInDialog": {
     "message": "이 워크플로우에는 API 노드가 포함되어 있으며, 실행하려면 계정에 로그인해야 합니다.",
     "title": "API 노드 사용에 필요한 로그인"
