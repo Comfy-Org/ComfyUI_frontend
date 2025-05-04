@@ -821,6 +821,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'LiteGraph.Pointer.TrackpadGestures',
     category: ['LiteGraph', 'Pointer', 'Trackpad Gestures'],
+    experimental: true,
     name: 'Enable trackpad gestures',
     tooltip:
       'This setting enables trackpad mode for the canvas, allowing pinch-to-zoom and panning with two fingers.',
