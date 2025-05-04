@@ -387,6 +387,10 @@
   "LiteGraph_Node_TooltipDelay": {
     "name": "工具提示延迟"
   },
+  "LiteGraph_Pointer_TrackpadGestures": {
+    "name": "启用触控板手势",
+    "tooltip": "此设置为画布启用触控板模式，允许使用双指捏合缩放和拖动。"
+  },
   "LiteGraph_Reroute_SplineOffset": {
     "name": "重新路由样条偏移",
     "tooltip": "贝塞尔控制点从重新路由中心点的偏移"

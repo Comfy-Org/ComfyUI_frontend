@@ -760,6 +760,7 @@ export class ComfyApp {
     this.ctx = canvasEl.getContext('2d')
 
     LiteGraph.alt_drag_do_clone_nodes = true
+    LiteGraph.macGesturesRequireMac = false
 
     this.graph.start()
 

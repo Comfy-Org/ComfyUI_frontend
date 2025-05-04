@@ -387,6 +387,10 @@
   "LiteGraph_Node_TooltipDelay": {
     "name": "ツールチップ遅延"
   },
+  "LiteGraph_Pointer_TrackpadGestures": {
+    "name": "トラックパッドジェスチャーを有効にする",
+    "tooltip": "この設定を有効にすると、キャンバスでトラックパッドモードが有効になり、ピンチズームや2本指でのパン操作が可能になります。"
+  },
   "LiteGraph_Reroute_SplineOffset": {
     "name": "リルートスプラインオフセット",
     "tooltip": "リルート中心点からのベジエ制御点のオフセット"

@@ -387,6 +387,10 @@
   "LiteGraph_Node_TooltipDelay": {
     "name": "Délai d'infobulle"
   },
+  "LiteGraph_Pointer_TrackpadGestures": {
+    "name": "Activer les gestes du trackpad",
+    "tooltip": "Ce paramètre active le mode trackpad pour le canevas, permettant le zoom par pincement et le déplacement à deux doigts."
+  },
   "LiteGraph_Reroute_SplineOffset": {
     "name": "Réacheminement décalage de spline",
     "tooltip": "Le point de contrôle de Bézier est décalé par rapport au point central de réacheminement"

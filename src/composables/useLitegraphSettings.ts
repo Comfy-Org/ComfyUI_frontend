@@ -122,4 +122,10 @@ export const useLitegraphSettings = () => {
       'LiteGraph.Reroute.SplineOffset'
     )
   })
+
+  watchEffect(() => {
+    LiteGraph.macTrackpadGestures = settingStore.get(
+      'LiteGraph.Pointer.TrackpadGestures'
+    )
+  })
 }

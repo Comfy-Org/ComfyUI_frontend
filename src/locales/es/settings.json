@@ -387,6 +387,10 @@
   "LiteGraph_Node_TooltipDelay": {
     "name": "Retraso de la información sobre herramientas"
   },
+  "LiteGraph_Pointer_TrackpadGestures": {
+    "name": "Habilitar gestos del trackpad",
+    "tooltip": "Esta configuración activa el modo trackpad para el lienzo, permitiendo hacer zoom con pellizco y desplazar con dos dedos."
+  },
   "LiteGraph_Reroute_SplineOffset": {
     "name": "Desvío de la compensación de la spline",
     "tooltip": "El punto de control bezier desplazado desde el punto central de reenrutamiento"

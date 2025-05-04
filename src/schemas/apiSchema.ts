@@ -456,7 +456,8 @@ const zSettings = z.object({
   'test.setting': z.any(),
   'main.sub.setting.name': z.any(),
   'single.setting': z.any(),
-  'LiteGraph.Node.DefaultPadding': z.boolean()
+  'LiteGraph.Node.DefaultPadding': z.boolean(),
+  'LiteGraph.Pointer.TrackpadGestures': z.boolean()
 })
 
 export type EmbeddingsResponse = z.infer<typeof zEmbeddingsResponse>
