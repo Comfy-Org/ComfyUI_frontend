@@ -397,6 +397,10 @@ export const useDialogService = () => {
           dialogStore.closeDialog({ key: 'api-nodes-news' })
           localStorage.setItem('api-nodes-news-seen', 'true')
         }
+      },
+      dialogComponentProps: {
+        modal: false,
+        position: 'bottomright'
       }
     })
   }
