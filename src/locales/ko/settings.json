@@ -387,6 +387,10 @@
   "LiteGraph_Node_TooltipDelay": {
     "name": "툴팁 지연"
   },
+  "LiteGraph_Pointer_TrackpadGestures": {
+    "name": "트랙패드 제스처 활성화",
+    "tooltip": "이 설정을 켜면 캔버스에서 트랙패드 모드를 사용할 수 있으며, 두 손가락으로 확대/축소 및 이동이 가능합니다."
+  },
   "LiteGraph_Reroute_SplineOffset": {
     "name": "경유점 스플라인 오프셋",
     "tooltip": "경유점 중심에서 베지어 제어점까지의 오프셋"

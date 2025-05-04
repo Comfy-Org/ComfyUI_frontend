@@ -387,6 +387,10 @@
   "LiteGraph_Node_TooltipDelay": {
     "name": "Tooltip Delay"
   },
+  "LiteGraph_Pointer_TrackpadGestures": {
+    "name": "Enable trackpad gestures",
+    "tooltip": "This setting enables trackpad mode for the canvas, allowing pinch-to-zoom and panning with two fingers."
+  },
   "LiteGraph_Reroute_SplineOffset": {
     "name": "Reroute spline offset",
     "tooltip": "The bezier control point offset from the reroute centre point"
