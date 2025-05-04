@@ -270,6 +270,7 @@ export class ComfyPage {
         localStorage.clear()
         sessionStorage.clear()
         localStorage.setItem('Comfy.userId', id)
+        localStorage.setItem('api-nodes-news-seen', 'true')
       }, this.id)
     }
     await this.goto()
