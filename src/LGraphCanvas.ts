@@ -2968,8 +2968,21 @@ export class LGraphCanvas {
 
     let { scale } = this.ds
 
-    if (delta > 0) scale *= this.zoom_speed
-    else if (delta < 0) scale *= 1 / this.zoom_speed
+    if (
+      LiteGraph.macTrackpadGestures &&
+      (!LiteGraph.macGesturesRequireMac || navigator.userAgent.includes("Mac"))
+    ) {
+      if (e.ctrlKey && !Number.isInteger(e.deltaY)) {
+        scale *= 1 + e.deltaY * (1 - this.zoom_speed) * 0.18
+      } else {
+        this.ds.offset[0] -= e.deltaX * 1.18 * (1 / scale)
+        this.ds.offset[1] -= e.deltaY * 1.18 * (1 / scale)
+      }
+    } else if (delta > 0) {
+      scale *= this.zoom_speed
+    } else if (delta < 0) {
+      scale *= 1 / (this.zoom_speed)
+    }
 
     this.ds.changeScale(scale, [e.clientX, e.clientY])
 

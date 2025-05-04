@@ -158,6 +158,8 @@ LiteGraphGlobal {
   "do_add_triggers_slots": false,
   "highlight_selected_group": true,
   "isInsideRectangle": [Function],
+  "macGesturesRequireMac": true,
+  "macTrackpadGestures": false,
   "middle_click_slot_add_default_node": false,
   "node_box_coloured_by_mode": false,
   "node_box_coloured_when_on": false,

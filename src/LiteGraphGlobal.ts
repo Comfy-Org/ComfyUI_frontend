@@ -276,6 +276,22 @@ export class LiteGraphGlobal {
    */
   onDeprecationWarning: ((message: string, source?: object) => void)[] = [console.warn]
 
+  /**
+   * If `true`, mouse wheel events will be interpreted as trackpad gestures.
+   * Tested on MacBook M4 Pro.
+   * @default false
+   * @see macGesturesRequireMac
+   */
+  macTrackpadGestures: boolean = false
+
+  /**
+   * If both this setting and {@link macTrackpadGestures} are `true`, trackpad gestures will
+   * only be enabled when the browser user agent includes "Mac".
+   * @default true
+   * @see macTrackpadGestures
+   */
+  macGesturesRequireMac: boolean = true
+
   // TODO: Remove legacy accessors
   LGraph = LGraph
   LLink = LLink
