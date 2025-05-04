@@ -122,7 +122,7 @@ export class DragAndScale {
     this.onredraw?.(this)
   }
 
-  changeScale(value: number, zooming_center?: Point): void {
+  changeScale(value: number, zooming_center?: Point, roundToScaleOne = true): void {
     if (value < this.min_scale) {
       value = this.min_scale
     } else if (value > this.max_scale) {
@@ -143,7 +143,7 @@ export class DragAndScale {
     ]
     const center = this.convertCanvasToOffset(normalizedCenter)
     this.scale = value
-    if (Math.abs(this.scale - 1) < 0.01) this.scale = 1
+    if (roundToScaleOne && Math.abs(this.scale - 1) < 0.01) this.scale = 1
     const new_center = this.convertCanvasToOffset(normalizedCenter)
     const delta_offset = [
       new_center[0] - center[0],
