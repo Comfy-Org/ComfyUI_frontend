@@ -42,6 +42,7 @@ import { StatusWsMessageStatus } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
+import { useDialogService } from '@/services/dialogService'
 import { useKeybindingService } from '@/services/keybindingService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -241,6 +242,8 @@ const onGraphReady = () => {
       // Explicitly initialize nodeSearchService to avoid indexing delay when
       // node search is triggered
       useNodeDefStore().nodeSearchService.searchNode('')
+
+      useDialogService().showApiNodesNewsDialog()
     },
     { timeout: 1000 }
   )

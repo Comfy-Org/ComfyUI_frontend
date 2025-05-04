@@ -380,12 +380,23 @@ export const useDialogService = () => {
     })
   }
 
+  /**
+   * Shows a dialog for the API nodes news.
+   * TODO: Remove the news dialog on next major feature release.
+   */
   function showApiNodesNewsDialog() {
+    if (localStorage.getItem('api-nodes-news-seen') === 'true') {
+      return
+    }
+
     return dialogStore.showDialog({
       key: 'api-nodes-news',
       component: ApiNodesNewsContent,
       props: {
-        onClose: () => dialogStore.closeDialog({ key: 'api-nodes-news' })
+        onClose: () => {
+          dialogStore.closeDialog({ key: 'api-nodes-news' })
+          localStorage.setItem('api-nodes-news-seen', 'true')
+        }
       }
     })
   }
