@@ -399,6 +399,7 @@ export const useDialogService = () => {
         }
       },
       dialogComponentProps: {
+        closable: false,
         modal: false,
         position: 'bottomright'
       }
