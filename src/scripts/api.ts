@@ -84,7 +84,7 @@ interface BackendApiCalls {
   execution_interrupted: ExecutionInterruptedWsMessage
   execution_cached: ExecutionCachedWsMessage
   logs: LogsWsMessage
-  /** Mr Blob Preview, I presume? */
+  /** Binary preview/progress data */
   b_preview: Blob
 }
 
@@ -380,21 +380,22 @@ export class ComfyApi extends EventTarget {
         if (event.data instanceof ArrayBuffer) {
           const view = new DataView(event.data)
           const eventType = view.getUint32(0)
-          const buffer = event.data.slice(4)
+          const imageType = view.getUint32(4)
+          const imageData = event.data.slice(8)
+
+          let imageMime
           switch (eventType) {
             case 1:
-              const view2 = new DataView(event.data)
-              const imageType = view2.getUint32(0)
-              let imageMime
               switch (imageType) {
+                case 2:
+                  imageMime = 'image/png'
+                  break
                 case 1:
                 default:
                   imageMime = 'image/jpeg'
                   break
-                case 2:
-                  imageMime = 'image/png'
               }
-              const imageBlob = new Blob([buffer.slice(4)], {
+              const imageBlob = new Blob([imageData], {
                 type: imageMime
               })
               this.dispatchCustomEvent('b_preview', imageBlob)
