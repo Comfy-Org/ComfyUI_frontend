@@ -5,17 +5,17 @@
     striped-rows
     selection-mode="single"
   >
-    <Column field="title" :header="t('g.title')">
+    <Column field="title" :header="$t('g.title')">
       <template #body="slotProps">
         <span :title="getTemplateTitle(slotProps.data)">{{
           getTemplateTitle(slotProps.data)
         }}</span>
       </template>
     </Column>
-    <Column field="description" :header="t('g.description')">
+    <Column field="description" :header="$t('g.description')">
       <template #body="slotProps">
-        <span :title="slotProps.data.description.replace(/[-_]/g, ' ')">
-          {{ slotProps.data.description.replace(/[-_]/g, ' ') }}
+        <span :title="getTemplateDescription(slotProps.data)">
+          {{ getTemplateDescription(slotProps.data) }}
         </span>
       </template>
     </Column>
@@ -40,11 +40,9 @@ import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import { ref } from 'vue'
 
-import { st, t } from '@/i18n'
 import type { TemplateInfo } from '@/types/workflowTemplateTypes'
-import { normalizeI18nKey } from '@/utils/formatUtil'
 
-const { sourceModule, categoryTitle, loading, templates } = defineProps<{
+const { sourceModule, loading, templates } = defineProps<{
   sourceModule: string
   categoryTitle: string
   loading: string | null
@@ -60,10 +58,13 @@ const emit = defineEmits<{
 const getTemplateTitle = (template: TemplateInfo) => {
   const fallback = template.title ?? template.name ?? `${sourceModule} Template`
   return sourceModule === 'default'
-    ? st(
-        `templateWorkflows.template.${normalizeI18nKey(categoryTitle)}.${normalizeI18nKey(template.name)}`,
-        fallback
-      )
+    ? template.localizedTitle ?? fallback
     : fallback
+}
+
+const getTemplateDescription = (template: TemplateInfo) => {
+  return sourceModule === 'default'
+    ? template.localizedDescription ?? ''
+    : template.description.replace(/[-_]/g, ' ').trim()
 }
 </script>
