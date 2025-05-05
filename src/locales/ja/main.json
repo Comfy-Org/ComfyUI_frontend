@@ -1120,6 +1120,23 @@
         "sdxl_simple_example": "SDXLシンプル",
         "sdxlturbo_example": "SDXLターボ"
       },
+      "Image API": {
+        "api-openai-dall-e-2-inpaint": "Dall-E 2 インペイント",
+        "api-openai-dall-e-2-t2i": "Dall-E 2 テキストから画像へ",
+        "api-openai-dall-e-3-t2i": "Dall-E 3 テキストから画像へ",
+        "api_bfl_flux_pro_t2i": "BFL Flux[Pro] テキストから画像へ",
+        "api_ideogram_v3_t2i": "Ideogram V3 テキストから画像へ",
+        "api_luma_photon_i2i": "Luma Photon 画像から画像へ",
+        "api_luma_photon_style_ref": "Luma Photon スタイル参照",
+        "api_openai_image_1_i2i": "OpenAI Image-1 画像から画像へ",
+        "api_openai_image_1_inpaint": "OpenAI Image-1 インペイント",
+        "api_openai_image_1_multi_inputs": "OpenAI Image-1 複数入力",
+        "api_openai_image_1_t2i": "OpenAI Image-1 テキストから画像へ",
+        "api_recraft_image_gen_with_color_control": "Recraft カラーコントロール画像生成",
+        "api_recraft_image_gen_with_style_control": "Recraft スタイルコントロール画像生成",
+        "api_recraft_vector_gen": "Recraft ベクター生成",
+        "api_stability_sd3_t2i": "Stability SD3 テキストから画像へ"
+      },
       "Upscaling": {
         "esrgan_example": "ESRGAN",
         "hiresfix_esrgan_workflow": "HiresFix ESRGANワークフロー",
@@ -1137,6 +1154,15 @@
         "txt_to_image_to_video": "テキストから画像へ、画像からビデオへ",
         "wan2_1_fun_control": "Wan 2.1 ControlNet",
         "wan2_1_fun_inp": "Wan 2.1 インペインティング"
+      },
+      "Video API": {
+        "api_hailuo_minimax_i2v": "MiniMax 画像から動画へ",
+        "api_kling_i2v": "Kling 画像から動画へ",
+        "api_luma_i2v": "Luma 画像から動画へ",
+        "api_pika_scene": "Pika シーン: 画像から動画へ",
+        "api_pixverse_t2v": "PixVerse テキストから動画へ",
+        "api_pixverse_template_i2v": "PixVerse テンプレート: 画像から動画へ",
+        "api_veo2_i2v": "Veo2 画像から動画へ"
       }
     },
     "title": "テンプレートを利用して開始"
