@@ -14,7 +14,7 @@
           <template v-if="template.mediaType === 'audio'">
             <AudioThumbnail :src="baseThumbnailSrc" />
           </template>
-          <template v-else-if="template.thumbnailVariant === 'compareSlider'">
+          <template v-else-if="thumbnailVariant === 'compareSlider'">
             <CompareSliderThumbnail
               :base-image-src="baseThumbnailSrc"
               :overlay-image-src="overlayThumbnailSrc"
@@ -22,7 +22,7 @@
               :is-hovered="isHovered"
             />
           </template>
-          <template v-else-if="template.thumbnailVariant === 'hoverDissolve'">
+          <template v-else-if="thumbnailVariant === 'hoverDissolve'">
             <HoverDissolveThumbnail
               :base-image-src="baseThumbnailSrc"
               :overlay-image-src="overlayThumbnailSrc"
@@ -36,7 +36,7 @@
               :alt="title"
               :is-hovered="isHovered"
               :hover-zoom="
-                template.thumbnailVariant === 'zoomHover'
+                thumbnailVariant === 'zoomHover'
                   ? UPSCALE_ZOOM_SCALE
                   : DEFAULT_ZOOM_SCALE
               "
@@ -103,21 +103,68 @@ const getThumbnailUrl = (index = '') => {
       ? api.fileURL(`/templates/${template.name}`)
       : api.apiURL(`/workflow_templates/${sourceModule}/${template.name}`)
 
-  // For templates from custom nodes, multiple images is not yet supported
-  const indexSuffix = sourceModule === 'default' && index ? `-${index}` : ''
-
+  const indexSuffix =
+    sourceModule === 'default' || (thumbnailVariant.value && index)
+      ? `-${index}`
+      : ''
   return `${basePath}${indexSuffix}.${template.mediaSubtype}`
 }
 
+const thumbnailVariantRe = /.*\.(?<variant>[^.]+)/
+const thumbnailVariantList = ['compareSlider', 'hoverDissolve', 'zoomHover']
+
+const getNameThumbnailVariant = (name: string) => {
+  const variant = name.match(thumbnailVariantRe)
+
+  if (variant === null) {
+    return null
+  }
+
+  if (
+    variant?.groups?.variant &&
+    thumbnailVariantList.indexOf(variant?.groups.variant) > -1
+  ) {
+    return variant?.groups.variant
+  }
+  return null
+}
+
+const tryCleanThumbnailVariant = (name: string) => {
+  const nameVariant = getNameThumbnailVariant(name)
+  if (nameVariant !== null) {
+    return name.replace(`.${nameVariant}`, '')
+  }
+  return name
+}
+
 const baseThumbnailSrc = computed(() =>
-  getThumbnailUrl(sourceModule === 'default' ? '1' : '')
+  getThumbnailUrl(
+    sourceModule === 'default' || thumbnailVariant.value ? '1' : ''
+  )
 )
 const overlayThumbnailSrc = computed(() =>
-  getThumbnailUrl(sourceModule === 'default' ? '2' : '')
+  getThumbnailUrl(
+    sourceModule === 'default' || thumbnailVariant.value ? '2' : ''
+  )
 )
 
+const thumbnailVariant = computed(() => {
+  if (template.thumbnailVariant !== undefined) {
+    return template.thumbnailVariant
+  }
+
+  const nameVariant = getNameThumbnailVariant(template.name)
+  if (nameVariant !== null) {
+    return nameVariant
+  }
+
+  return undefined
+})
+
 const title = computed(() => {
-  const fallback = template.title ?? template.name ?? `${sourceModule} Template`
+  var fallback = template.title ?? template.name ?? `${sourceModule} Template`
+  fallback = tryCleanThumbnailVariant(fallback)
+
   return sourceModule === 'default'
     ? st(
         `templateWorkflows.template.${normalizeI18nKey(categoryTitle)}.${normalizeI18nKey(template.name)}`,
@@ -126,7 +173,11 @@ const title = computed(() => {
     : fallback
 })
 
-const description = computed(() => template.description.replace(/[-_]/g, ' '))
+const description = computed(() => {
+  var description = template.description
+  description = tryCleanThumbnailVariant(description)
+  return description.replace(/[-_]/g, ' ')
+})
 
 defineEmits<{
   loadWorkflow: [name: string]
