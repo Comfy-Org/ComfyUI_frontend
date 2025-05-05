@@ -1126,7 +1126,7 @@
         "api-openai-dall-e-2-inpaint": "Dall-E 2 Inpainting",
         "api-openai-dall-e-2-t2i": "Dall-E 2 Texte vers Image",
         "api-openai-dall-e-3-t2i": "Dall-E 3 Texte vers Image",
-        "api_bfl_flux_pro_t2i": "BFL Flux[Pro] Texte vers Image",
+        "api_bfl_flux_pro_t2i": "BFL Flux 1.1[pro] Ultra Texte vers Image",
         "api_ideogram_v3_t2i": "Ideogram V3 Texte vers Image",
         "api_luma_photon_i2i": "Luma Photon Image vers Image",
         "api_luma_photon_style_ref": "Luma Photon Référence de Style",
@@ -1137,7 +1137,7 @@
         "api_recraft_image_gen_with_color_control": "Recraft Génération d’Image avec Contrôle des Couleurs",
         "api_recraft_image_gen_with_style_control": "Recraft Génération d’Image avec Contrôle du Style",
         "api_recraft_vector_gen": "Recraft Génération de Vecteur",
-        "api_stability_sd3_t2i": "Stability SD3 Texte vers Image"
+        "api_stability_sd3_t2i": "Stability AI Stable Image Ultra Texte vers Image"
       },
       "Upscaling": {
         "esrgan_example": "ESRGAN",
@@ -1163,7 +1163,7 @@
         "api_luma_i2v": "Luma Image vers Vidéo",
         "api_pika_scene": "Pika Scènes : Images vers Vidéo",
         "api_pixverse_t2v": "PixVerse Texte vers Vidéo",
-        "api_pixverse_template_i2v": "PixVerse Modèles : Image vers Vidéo",
+        "api_pixverse_template_i2v": "PixVerse Template Effects: Image vers Vidéo",
         "api_veo2_i2v": "Veo2 Image vers Vidéo"
       }
     },
