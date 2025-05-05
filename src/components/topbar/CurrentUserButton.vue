@@ -12,13 +12,7 @@
       <div
         class="flex items-center rounded-full bg-[var(--p-content-background)]"
       >
-        <Avatar
-          :image="photoURL"
-          :icon="hasAvatar ? undefined : 'pi pi-user'"
-          shape="circle"
-          :aria-label="$t('auth.login.userAvatar')"
-          @error="handleImageError"
-        />
+        <UserAvatar :photo-url="photoURL" />
 
         <i class="pi pi-chevron-down px-1" :style="{ fontSize: '0.5rem' }" />
       </div>
@@ -31,25 +25,20 @@
 </template>
 
 <script setup lang="ts">
-import Avatar from 'primevue/avatar'
 import Button from 'primevue/button'
 import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
 
+import UserAvatar from '@/components/common/UserAvatar.vue'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
 import CurrentUserPopover from './CurrentUserPopover.vue'
 
 const authStore = useFirebaseAuthStore()
 
-const imageError = ref(false)
 const popover = ref<InstanceType<typeof Popover> | null>(null)
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const photoURL = computed<string | undefined>(
   () => authStore.currentUser?.photoURL ?? undefined
 )
-const handleImageError = () => {
-  imageError.value = true
-}
-const hasAvatar = computed(() => photoURL.value && !imageError.value)
 </script>
