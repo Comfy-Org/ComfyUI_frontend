@@ -5,9 +5,11 @@
 </template>
 
 <script setup lang="ts">
-import type { LGraphNode } from '@comfyorg/litegraph'
-import { BadgePosition } from '@comfyorg/litegraph'
-import { LGraphBadge } from '@comfyorg/litegraph'
+import {
+  BadgePosition,
+  LGraphBadge,
+  type LGraphNode
+} from '@comfyorg/litegraph'
 import _ from 'lodash'
 import { computed, onMounted, watch } from 'vue'
 
@@ -83,6 +85,29 @@ onMounted(() => {
       })
 
       node.badges.push(() => badge.value)
+
+      if (node.constructor.nodeData?.api_node) {
+        const creditsBadge = computed(() => {
+          return new LGraphBadge({
+            text: '',
+            iconOptions: {
+              unicode: '\ue96b',
+              fontFamily: 'PrimeIcons',
+              color: '#FABC25',
+              bgColor: '#353535',
+              fontSize: 8
+            },
+            fgColor:
+              colorPaletteStore.completedActivePalette.colors.litegraph_base
+                .BADGE_FG_COLOR,
+            bgColor:
+              colorPaletteStore.completedActivePalette.colors.litegraph_base
+                .BADGE_BG_COLOR
+          })
+        })
+
+        node.badges.push(() => creditsBadge.value)
+      }
     }
   })
 })
