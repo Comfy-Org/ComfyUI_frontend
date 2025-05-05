@@ -5,7 +5,7 @@
         <div class="flex flex-col items-center">
           <i :class="icon" style="font-size: 3rem; margin-bottom: 1rem" />
           <h3>{{ title }}</h3>
-          <p class="whitespace-pre-line text-center">
+          <p :class="textClass" class="whitespace-pre-line text-center">
             {{ message }}
           </p>
           <Button
@@ -29,6 +29,7 @@ const props = defineProps<{
   icon?: string
   title: string
   message: string
+  textClass?: string
   buttonLabel?: string
 }>()
 
