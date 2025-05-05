@@ -62,9 +62,6 @@ export const useLitegraphService = () => {
       static override category: string
       static nodeData: ComfyNodeDefV1 & ComfyNodeDefV2
 
-      declare color?: string
-      declare bgcolor?: string
-
       /**
        * @internal The initial minimum size of the node.
        */
