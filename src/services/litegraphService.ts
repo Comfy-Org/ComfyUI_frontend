@@ -1,5 +1,6 @@
 import {
   type IContextMenuValue,
+  LGraphCanvas,
   LGraphEventMode,
   LGraphNode,
   LiteGraph,
@@ -61,6 +62,9 @@ export const useLitegraphService = () => {
       static override category: string
       static nodeData: ComfyNodeDefV1 & ComfyNodeDefV2
 
+      declare color?: string
+      declare bgcolor?: string
+
       /**
        * @internal The initial minimum size of the node.
        */
@@ -79,6 +83,13 @@ export const useLitegraphService = () => {
         this.#addOutputs(ComfyNode.nodeData.outputs)
         this.#setInitialSize()
         this.serialize_widgets = true
+
+        // Mark API Nodes yellow by default to distinguish with other nodes.
+        if (ComfyNode.nodeData.api_node) {
+          this.color = LGraphCanvas.node_colors.yellow.color
+          this.bgcolor = LGraphCanvas.node_colors.yellow.bgcolor
+        }
+
         void extensionService.invokeExtensionsAsync('nodeCreated', this)
       }
 
