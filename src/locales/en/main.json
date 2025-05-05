@@ -644,8 +644,8 @@
         "api-openai-dall-e-2-t2i": "Dall-E 2 Text to Image",
         "api-openai-dall-e-2-inpaint": "Dall-E 2 Inpaint",
         "api-openai-dall-e-3-t2i": "Dall-E 3 Text to Image",
-        "api_bfl_flux_pro_t2i": "BFL Flux[Pro] Text to Image",
-        "api_stability_sd3_t2i": "Stability SD3 Text to Image",
+        "api_bfl_flux_pro_t2i": "BFL Flux 1.1[pro] Ultra Text to Image",
+        "api_stability_sd3_t2i": "Stability AI Stable Image Ultra Text to Image",
         "api_ideogram_v3_t2i": "Ideogram V3 Text to Image",
         "api_luma_photon_i2i": "Luma Photon Image to Image",
         "api_luma_photon_style_ref": "Luma Photon Style Reference",
@@ -659,7 +659,7 @@
         "api_veo2_i2v": "Veo2 Image to Video",
         "api_hailuo_minimax_i2v": "MiniMax Image to Video",
         "api_pika_scene": "Pika Scenes: Images to Video",
-        "api_pixverse_template_i2v": "PixVerse Templates: Image to Video",
+        "api_pixverse_template_i2v": "PixVerse Template Effects: Image to Video",
         "api_pixverse_t2v": "PixVerse Text to Video"
       },
       "Image": {
