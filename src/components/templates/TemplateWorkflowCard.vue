@@ -79,15 +79,13 @@ import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue
 import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSliderThumbnail.vue'
 import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
 import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDissolveThumbnail.vue'
-import { st } from '@/i18n'
 import { api } from '@/scripts/api'
 import { TemplateInfo } from '@/types/workflowTemplateTypes'
-import { normalizeI18nKey } from '@/utils/formatUtil'
 
 const UPSCALE_ZOOM_SCALE = 16 // for upscale templates, exaggerate the hover zoom
 const DEFAULT_ZOOM_SCALE = 5
 
-const { sourceModule, categoryTitle, loading, template } = defineProps<{
+const { sourceModule, loading, template } = defineProps<{
   sourceModule: string
   categoryTitle: string
   loading: boolean
@@ -116,32 +114,16 @@ const overlayThumbnailSrc = computed(() =>
   getThumbnailUrl(sourceModule === 'default' ? '2' : '')
 )
 
-const title = computed(() => {
-  const fallback = template.title ?? template.name ?? `${sourceModule} Template`
-  return sourceModule === 'default'
-    ? st(
-        `templateWorkflows.template.${normalizeI18nKey(categoryTitle)}.${normalizeI18nKey(template.name)}`,
-        fallback
-      )
-    : fallback
-})
-
-const formatCustomNodeTemplateDescription = (description: string) =>
-  description
-    .replace(/[-_]/g, ' ') // Replace hyphens and underscores with spaces
-    .replace(/\s+/g, ' ') // Replace multiple spaces with a single space
-    .trim() // Remove leading and trailing spaces
-
-const formatCoreTemplateDescription = (description: string) =>
-  st(
-    `templateWorkflows.templateDescription.${normalizeI18nKey(categoryTitle)}.${normalizeI18nKey(template.name)}`,
-    description ?? ''
-  )
-
 const description = computed(() => {
   return sourceModule === 'default'
-    ? formatCoreTemplateDescription(template.description ?? '')
-    : formatCustomNodeTemplateDescription(template.description ?? '')
+    ? template.localizedDescription ?? ''
+    : template.description.replace(/[-_]/g, ' ').trim()
+})
+
+const title = computed(() => {
+  return sourceModule === 'default'
+    ? template.localizedTitle ?? ''
+    : template.name
 })
 
 defineEmits<{
