@@ -381,7 +381,7 @@ export class ComfyApi extends EventTarget {
           const view = new DataView(event.data)
           const eventType = view.getUint32(0)
           const imageType = view.getUint32(4)
-          const buffer = event.data.slice(4)
+          const imageData = event.data.slice(8)
 
           let imageMime
           switch (eventType) {
@@ -395,7 +395,7 @@ export class ComfyApi extends EventTarget {
                   imageMime = 'image/jpeg'
                   break
               }
-              const imageBlob = new Blob([buffer.slice(4)], {
+              const imageBlob = new Blob([imageData], {
                 type: imageMime
               })
               this.dispatchCustomEvent('b_preview', imageBlob)
