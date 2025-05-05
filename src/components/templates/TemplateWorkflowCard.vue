@@ -126,7 +126,23 @@ const title = computed(() => {
     : fallback
 })
 
-const description = computed(() => template.description.replace(/[-_]/g, ' '))
+const formatCustomNodeTemplateDescription = (description: string) =>
+  description
+    .replace(/[-_]/g, ' ') // Replace hyphens and underscores with spaces
+    .replace(/\s+/g, ' ') // Replace multiple spaces with a single space
+    .trim() // Remove leading and trailing spaces
+
+const formatCoreTemplateDescription = (description: string) =>
+  st(
+    `templateWorkflows.templateDescription.${normalizeI18nKey(categoryTitle)}.${normalizeI18nKey(template.name)}`,
+    description ?? ''
+  )
+
+const description = computed(() => {
+  return sourceModule === 'default'
+    ? formatCoreTemplateDescription(template.description ?? '')
+    : formatCustomNodeTemplateDescription(template.description ?? '')
+})
 
 defineEmits<{
   loadWorkflow: [name: string]
