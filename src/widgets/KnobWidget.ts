@@ -48,9 +48,7 @@ export class KnobWidget extends BaseWidget implements IKnobWidget {
     }: DrawWidgetOptions,
   ): void {
     // Store original context attributes
-    const originalTextAlign = ctx.textAlign
-    const originalStrokeStyle = ctx.strokeStyle
-    const originalFillStyle = ctx.fillStyle
+    const { fillStyle, strokeStyle, textAlign } = ctx
 
     const { y } = this
     const { margin } = BaseWidget
@@ -190,9 +188,7 @@ export class KnobWidget extends BaseWidget implements IKnobWidget {
     }
 
     // Restore original context attributes
-    ctx.textAlign = originalTextAlign
-    ctx.strokeStyle = originalStrokeStyle
-    ctx.fillStyle = originalFillStyle
+    Object.assign(ctx, { textAlign, strokeStyle, fillStyle })
   }
 
   onClick(): void {

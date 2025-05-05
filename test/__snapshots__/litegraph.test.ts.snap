@@ -188,6 +188,8 @@ LiteGraphGlobal {
   "snap_highlights_node": true,
   "snaps_for_comfy": true,
   "throw_errors": true,
+  "truncateWidgetTextEvenly": false,
+  "truncateWidgetValuesFirst": false,
   "use_uuids": false,
   "uuidv4": [Function],
 }

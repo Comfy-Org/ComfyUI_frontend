@@ -214,6 +214,12 @@ export type ReadOnlyPoint =
   | ReadOnlyTypedArray<Float32Array>
   | ReadOnlyTypedArray<Float64Array>
 
+/** A size represented as `[width, height]` that will not be modified */
+export type ReadOnlySize =
+  | readonly [width: number, height: number]
+  | ReadOnlyTypedArray<Float32Array>
+  | ReadOnlyTypedArray<Float64Array>
+
 /** A rectangle starting at top-left coordinates `[x, y, width, height]` that will not be modified */
 export type ReadOnlyRect =
   | readonly [x: number, y: number, width: number, height: number]

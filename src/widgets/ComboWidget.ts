@@ -1,3 +1,4 @@
+import type { WidgetEventOptions } from "./BaseWidget"
 import type { LGraphNode } from "@/LGraphNode"
 import type { IComboWidget, IWidgetOptions } from "@/types/widgets"
 
@@ -5,7 +6,6 @@ import { clamp, LiteGraph } from "@/litegraph"
 import { warnDeprecated } from "@/utils/feedback"
 
 import { BaseSteppedWidget } from "./BaseSteppedWidget"
-import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./BaseWidget"
 
 /**
  * This is used as an (invalid) assertion to resolve issues with legacy duck-typed values.
@@ -13,7 +13,7 @@ import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./B
  * Function style in use by:
  * https://github.com/kijai/ComfyUI-KJNodes/blob/c3dc82108a2a86c17094107ead61d63f8c76200e/web/js/setgetnodes.js#L401-L404
  */
-type Values = string[] | Record<string, string> | ((widget: ComboWidget, node: LGraphNode) => string[])
+type Values = string[] | Record<string, string> | ((widget?: ComboWidget, node?: LGraphNode) => string[])
 
 function toArray(values: Values): string[] {
   return Array.isArray(values) ? values : Object.keys(values)
@@ -25,6 +25,18 @@ export class ComboWidget extends BaseSteppedWidget implements IComboWidget {
   declare value: string | number
   // @ts-expect-error Workaround for Record<string, string> not being typed in IWidgetOptions
   declare options: Omit<IWidgetOptions<string>, "values"> & { values: Values }
+
+  override get displayValue() {
+    const { values: rawValues } = this.options
+    if (rawValues) {
+      const values = typeof rawValues === "function" ? rawValues() : rawValues
+
+      if (values && !Array.isArray(values)) {
+        return values[this.value]
+      }
+    }
+    return typeof this.value === "number" ? String(this.value) : this.value
+  }
 
   constructor(widget: IComboWidget) {
     super(widget)
@@ -100,107 +112,6 @@ export class ComboWidget extends BaseSteppedWidget implements IComboWidget {
       ? values[index]
       : index
     this.setValue(value, options)
-  }
-
-  /**
-   * Draws the widget
-   * @param ctx The canvas context
-   * @param options The options for drawing the widget
-   */
-  override drawWidget(ctx: CanvasRenderingContext2D, {
-    width,
-    showText = true,
-  }: DrawWidgetOptions) {
-    // Store original context attributes
-    const originalTextAlign = ctx.textAlign
-    const originalStrokeStyle = ctx.strokeStyle
-    const originalFillStyle = ctx.fillStyle
-
-    const { height, y } = this
-    const { margin } = BaseWidget
-
-    ctx.textAlign = "left"
-    ctx.strokeStyle = this.outline_color
-    ctx.fillStyle = this.background_color
-    ctx.beginPath()
-
-    if (showText)
-      ctx.roundRect(margin, y, width - margin * 2, height, [height * 0.5])
-    else
-      ctx.rect(margin, y, width - margin * 2, height)
-    ctx.fill()
-
-    if (showText) {
-      if (!this.computedDisabled) {
-        ctx.stroke()
-        this.drawArrowButtons(ctx, margin, y, width)
-      }
-
-      // Draw label
-      ctx.fillStyle = this.secondary_text_color
-      const label = this.label || this.name
-      if (label != null) {
-        ctx.fillText(label, margin * 2 + 5, y + height * 0.7)
-      }
-
-      // Draw value
-      ctx.fillStyle = this.text_color
-      ctx.textAlign = "right"
-
-      let displayValue = typeof this.value === "number" ? String(this.value) : this.value
-      if (this.options.values) {
-        let values = this.options.values
-        if (typeof values === "function") {
-          // @ts-expect-error handle () => string[] type that is not typed in IWidgetOptions
-          values = values()
-        }
-        if (values && !Array.isArray(values)) {
-          displayValue = values[this.value]
-        }
-      }
-
-      const labelWidth = ctx.measureText(label || "").width + margin * 2
-      const inputWidth = width - margin * 4
-      const availableWidth = inputWidth - labelWidth
-      const textWidth = ctx.measureText(displayValue).width
-
-      if (textWidth > availableWidth) {
-        const ELLIPSIS = "\u2026"
-        const ellipsisWidth = ctx.measureText(ELLIPSIS).width
-        const charWidthAvg = ctx.measureText("a").width
-
-        if (availableWidth <= ellipsisWidth) {
-          // One dot leader
-          displayValue = "\u2024"
-        } else {
-          displayValue = `${displayValue}`
-          const overflowWidth = (textWidth + ellipsisWidth) - availableWidth
-
-          // Only first 3 characters need to be measured precisely
-          if (overflowWidth + charWidthAvg * 3 > availableWidth) {
-            const preciseRange = availableWidth + charWidthAvg * 3
-            const preTruncateCt = Math.floor((preciseRange - ellipsisWidth) / charWidthAvg)
-            displayValue = displayValue.substr(0, preTruncateCt)
-          }
-
-          while (ctx.measureText(displayValue).width + ellipsisWidth > availableWidth) {
-            displayValue = displayValue.substr(0, displayValue.length - 1)
-          }
-          displayValue += ELLIPSIS
-        }
-      }
-
-      ctx.fillText(
-        displayValue,
-        width - margin * 2 - 20,
-        y + height * 0.7,
-      )
-    }
-
-    // Restore original context attributes
-    ctx.textAlign = originalTextAlign
-    ctx.strokeStyle = originalStrokeStyle
-    ctx.fillStyle = originalFillStyle
   }
 
   override onClick({ e, node, canvas }: WidgetEventOptions) {

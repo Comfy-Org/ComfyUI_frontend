@@ -1,15 +1,23 @@
+import type { WidgetEventOptions } from "./BaseWidget"
 import type { INumericWidget, IWidgetOptions } from "@/types/widgets"
 
 import { getWidgetStep } from "@/utils/widget"
 
 import { BaseSteppedWidget } from "./BaseSteppedWidget"
-import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./BaseWidget"
 
 export class NumberWidget extends BaseSteppedWidget implements INumericWidget {
   // INumberWidget properties
   declare type: "number"
   declare value: number
   declare options: IWidgetOptions<number>
+
+  override get displayValue() {
+    return Number(this.value).toFixed(
+      this.options.precision !== undefined
+        ? this.options.precision
+        : 3,
+    )
+  }
 
   constructor(widget: INumericWidget) {
     super(widget)
@@ -44,67 +52,6 @@ export class NumberWidget extends BaseSteppedWidget implements INumericWidget {
       newValue = this.options.max
     }
     super.setValue(newValue, options)
-  }
-
-  /**
-   * Draws the widget
-   * @param ctx The canvas context
-   * @param options The options for drawing the widget
-   */
-  override drawWidget(ctx: CanvasRenderingContext2D, {
-    width,
-    showText = true,
-  }: DrawWidgetOptions) {
-    // Store original context attributes
-    const originalTextAlign = ctx.textAlign
-    const originalStrokeStyle = ctx.strokeStyle
-    const originalFillStyle = ctx.fillStyle
-
-    const { height, y } = this
-    const { margin } = BaseWidget
-
-    ctx.textAlign = "left"
-    ctx.strokeStyle = this.outline_color
-    ctx.fillStyle = this.background_color
-    ctx.beginPath()
-
-    if (showText)
-      ctx.roundRect(margin, y, width - margin * 2, height, [height * 0.5])
-    else
-      ctx.rect(margin, y, width - margin * 2, height)
-    ctx.fill()
-
-    if (showText) {
-      if (!this.computedDisabled) {
-        ctx.stroke()
-        this.drawArrowButtons(ctx, margin, y, width)
-      }
-
-      // Draw label
-      ctx.fillStyle = this.secondary_text_color
-      const label = this.label || this.name
-      if (label != null) {
-        ctx.fillText(label, margin * 2 + 5, y + height * 0.7)
-      }
-
-      // Draw value
-      ctx.fillStyle = this.text_color
-      ctx.textAlign = "right"
-      ctx.fillText(
-        Number(this.value).toFixed(
-          this.options.precision !== undefined
-            ? this.options.precision
-            : 3,
-        ),
-        width - margin * 2 - 20,
-        y + height * 0.7,
-      )
-    }
-
-    // Restore original context attributes
-    ctx.textAlign = originalTextAlign
-    ctx.strokeStyle = originalStrokeStyle
-    ctx.fillStyle = originalFillStyle
   }
 
   override onClick({ e, node, canvas }: WidgetEventOptions) {

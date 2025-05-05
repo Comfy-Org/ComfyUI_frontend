@@ -1,4 +1,4 @@
-import { BaseWidget, type WidgetEventOptions } from "./BaseWidget"
+import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./BaseWidget"
 
 /**
  * Base class for widgets that have increment and decrement buttons.
@@ -28,13 +28,11 @@ export abstract class BaseSteppedWidget extends BaseWidget {
   /**
    * Draw the arrow buttons for the widget
    * @param ctx The canvas rendering context
-   * @param margin The margin of the widget
-   * @param y The y position of the widget
    * @param width The width of the widget
    */
-  drawArrowButtons(ctx: CanvasRenderingContext2D, margin: number, y: number, width: number) {
-    const { height, text_color, disabledTextColor } = this
-    const { arrowMargin, arrowWidth } = BaseWidget
+  drawArrowButtons(ctx: CanvasRenderingContext2D, width: number) {
+    const { height, text_color, disabledTextColor, y } = this
+    const { arrowMargin, arrowWidth, margin } = BaseWidget
     const arrowTipX = margin + arrowMargin
     const arrowInnerX = arrowTipX + arrowWidth
 
@@ -53,5 +51,20 @@ export abstract class BaseSteppedWidget extends BaseWidget {
     ctx.lineTo(width - arrowTipX, y + height * 0.5)
     ctx.lineTo(width - arrowInnerX, y + height - 5)
     ctx.fill()
+  }
+
+  override drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions) {
+    // Store original context attributes
+    const { fillStyle, strokeStyle, textAlign } = ctx
+
+    this.drawWidgetShape(ctx, options)
+    if (options.showText) {
+      if (!this.computedDisabled) this.drawArrowButtons(ctx, options.width)
+
+      this.drawTruncatingText({ ctx, width: options.width })
+    }
+
+    // Restore original context attributes
+    Object.assign(ctx, { textAlign, strokeStyle, fillStyle })
   }
 }

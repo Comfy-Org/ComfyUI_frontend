@@ -24,54 +24,16 @@ export class TextWidget extends BaseWidget implements IStringWidget {
     showText = true,
   }: DrawWidgetOptions) {
     // Store original context attributes
-    const originalTextAlign = ctx.textAlign
-    const originalStrokeStyle = ctx.strokeStyle
-    const originalFillStyle = ctx.fillStyle
+    const { fillStyle, strokeStyle, textAlign } = ctx
 
-    const { height, y } = this
-    const { margin } = BaseWidget
-
-    ctx.textAlign = "left"
-    ctx.strokeStyle = this.outline_color
-    ctx.fillStyle = this.background_color
-    ctx.beginPath()
-
-    if (showText)
-      ctx.roundRect(margin, y, width - margin * 2, height, [height * 0.5])
-    else
-      ctx.rect(margin, y, width - margin * 2, height)
-    ctx.fill()
+    this.drawWidgetShape(ctx, { width, showText })
 
     if (showText) {
-      if (!this.computedDisabled) ctx.stroke()
-      ctx.save()
-      ctx.beginPath()
-      ctx.rect(margin, y, width - margin * 2, height)
-      ctx.clip()
-
-      // Draw label
-      ctx.fillStyle = this.secondary_text_color
-      const label = this.label || this.name
-      if (label != null) {
-        ctx.fillText(label, margin * 2, y + height * 0.7)
-      }
-
-      // Draw value
-      ctx.fillStyle = this.text_color
-      ctx.textAlign = "right"
-      ctx.fillText(
-        // 30 chars max
-        String(this.value).substr(0, 30),
-        width - margin * 2,
-        y + height * 0.7,
-      )
-      ctx.restore()
+      this.drawTruncatingText({ ctx, width, leftPadding: 0, rightPadding: 0 })
     }
 
     // Restore original context attributes
-    ctx.textAlign = originalTextAlign
-    ctx.strokeStyle = originalStrokeStyle
-    ctx.fillStyle = originalFillStyle
+    Object.assign(ctx, { textAlign, strokeStyle, fillStyle })
   }
 
   override onClick({ e, node, canvas }: WidgetEventOptions) {

@@ -292,6 +292,22 @@ export class LiteGraphGlobal {
    */
   macGesturesRequireMac: boolean = true
 
+  /**
+   * If `true`, widget labels and values will both be truncated (proportionally to size),
+   * until they fit within the widget.
+   *
+   * Otherwise, the label will be truncated completely before the value is truncated.
+   * @default false
+   */
+  truncateWidgetTextEvenly: boolean = false
+
+  /**
+   * If `true`, widget values will be completely truncated when shrinking a widget,
+   * before truncating widget labels.  {@link truncateWidgetTextEvenly} must be `false`.
+   * @default false
+   */
+  truncateWidgetValuesFirst: boolean = false
+
   // TODO: Remove legacy accessors
   LGraph = LGraph
   LLink = LLink
