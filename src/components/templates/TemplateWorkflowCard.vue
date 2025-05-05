@@ -52,7 +52,7 @@
     <template #content>
       <div class="flex items-center px-4 py-3">
         <div class="flex-1 flex flex-col">
-          <h3 class="line-clamp-2 text-lg font-normal mb-0 h-10" :title="title">
+          <h3 class="line-clamp-2 text-lg font-normal mb-0 h-12" :title="title">
             {{ title }}
           </h3>
           <p class="line-clamp-2 text-sm text-muted grow" :title="description">
@@ -79,15 +79,13 @@ import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue
 import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSliderThumbnail.vue'
 import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
 import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDissolveThumbnail.vue'
-import { st } from '@/i18n'
 import { api } from '@/scripts/api'
 import { TemplateInfo } from '@/types/workflowTemplateTypes'
-import { normalizeI18nKey } from '@/utils/formatUtil'
 
 const UPSCALE_ZOOM_SCALE = 16 // for upscale templates, exaggerate the hover zoom
 const DEFAULT_ZOOM_SCALE = 5
 
-const { sourceModule, categoryTitle, loading, template } = defineProps<{
+const { sourceModule, loading, template } = defineProps<{
   sourceModule: string
   categoryTitle: string
   loading: boolean
@@ -116,17 +114,17 @@ const overlayThumbnailSrc = computed(() =>
   getThumbnailUrl(sourceModule === 'default' ? '2' : '')
 )
 
-const title = computed(() => {
-  const fallback = template.title ?? template.name ?? `${sourceModule} Template`
+const description = computed(() => {
   return sourceModule === 'default'
-    ? st(
-        `templateWorkflows.template.${normalizeI18nKey(categoryTitle)}.${normalizeI18nKey(template.name)}`,
-        fallback
-      )
-    : fallback
+    ? template.localizedDescription ?? ''
+    : template.description.replace(/[-_]/g, ' ').trim()
 })
 
-const description = computed(() => template.description.replace(/[-_]/g, ' '))
+const title = computed(() => {
+  return sourceModule === 'default'
+    ? template.localizedTitle ?? ''
+    : template.name
+})
 
 defineEmits<{
   loadWorkflow: [name: string]

@@ -1053,8 +1053,10 @@
       "Custom Nodes": "Nodos Personalizados",
       "Flux": "Flux",
       "Image": "Imagen",
+      "Image API": "API de Imagen",
       "Upscaling": "Ampliación",
-      "Video": "Video"
+      "Video": "Video",
+      "Video API": "API de Video"
     },
     "template": {
       "3D": {
@@ -1154,6 +1156,108 @@
         "api_pixverse_t2v": "PixVerse Texto a Video",
         "api_pixverse_template_i2v": "PixVerse Plantillas: Imagen a Video",
         "api_veo2_i2v": "Veo2 Imagen a Video"
+      }
+    },
+    "templateDescription": {
+      "3D": {
+        "hunyuan-3d-multiview-elf": "Usa Hunyuan3D 2mv para generar modelos desde múltiples vistas.",
+        "hunyuan-3d-turbo": "Usa Hunyuan3D 2mv turbo para generar modelos desde múltiples vistas.",
+        "hunyuan3d-non-multiview-train": "Usa Hunyuan3D 2.0 para generar modelos desde una sola vista.",
+        "stable_zero123_example": "Genera vistas 3D a partir de imágenes individuales."
+      },
+      "Area Composition": {
+        "area_composition": "Controla la composición de la imagen por áreas.",
+        "area_composition_reversed": "Invierte el flujo de composición por áreas.",
+        "area_composition_square_area_for_subject": "Crea una colocación consistente del sujeto."
+      },
+      "Audio": {
+        "stable_audio_example": "Genera audio a partir de descripciones de texto."
+      },
+      "Basics": {
+        "default": "Genera imágenes a partir de descripciones de texto.",
+        "embedding_example": "Utiliza inversión textual para estilos consistentes.",
+        "gligen_textbox_example": "Especifica la ubicación y el tamaño de los objetos.",
+        "image2image": "Transforma imágenes existentes usando indicaciones de texto.",
+        "inpain_model_outpainting": "Extiende imágenes más allá de sus límites originales.",
+        "inpaint_example": "Edita partes específicas de imágenes de manera fluida.",
+        "lora": "Aplica modelos LoRA para estilos o temas especializados.",
+        "lora_multiple": "Combina múltiples modelos LoRA para resultados únicos."
+      },
+      "ControlNet": {
+        "2_pass_pose_worship": "Genera imágenes a partir de referencias de pose.",
+        "controlnet_example": "Controla la generación de imágenes con imágenes de referencia.",
+        "depth_controlnet": "Crea imágenes con generación consciente de profundidad.",
+        "depth_t2i_adapter": "Genera rápidamente imágenes conscientes de profundidad con un adaptador T2I.",
+        "mixing_controlnets": "Combina múltiples modelos ControlNet juntos."
+      },
+      "Flux": {
+        "flux_canny_model_example": "Genera imágenes a partir de detección de bordes.",
+        "flux_depth_lora_example": "Crea imágenes con LoRA consciente de profundidad.",
+        "flux_dev_checkpoint_example": "Crea imágenes usando modelos de desarrollo de Flux.",
+        "flux_fill_inpaint_example": "Rellena partes faltantes de imágenes.",
+        "flux_fill_outpaint_example": "Extiende imágenes usando outpainting de Flux.",
+        "flux_redux_model_example": "Transfiere el estilo de una imagen de referencia para guiar la generación de imágenes con Flux.",
+        "flux_schnell": "Genera imágenes rápidamente con Flux Schnell."
+      },
+      "Image": {
+        "hidream_e1_full": "Edita imágenes con HiDream E1.",
+        "hidream_i1_dev": "Genera imágenes con HiDream I1 Dev.",
+        "hidream_i1_fast": "Genera imágenes rápidamente con HiDream I1.",
+        "hidream_i1_full": "Genera imágenes con HiDream I1.",
+        "sd3_5_large_blur": "Genera imágenes a partir de imágenes de referencia borrosas con SD 3.5.",
+        "sd3_5_large_canny_controlnet_example": "Usa detección de bordes para guiar la generación de imágenes con SD 3.5.",
+        "sd3_5_large_depth": "Crea imágenes conscientes de profundidad con SD 3.5.",
+        "sd3_5_simple_example": "Genera imágenes con SD 3.5.",
+        "sdxl_refiner_prompt_example": "Mejora los resultados de SDXL con refinadores.",
+        "sdxl_revision_text_prompts": "Transfiere conceptos de imágenes de referencia para guiar la generación de imágenes con SDXL.",
+        "sdxl_revision_zero_positive": "Agrega indicaciones de texto junto a imágenes de referencia para guiar la generación de imágenes con SDXL.",
+        "sdxl_simple_example": "Crea imágenes de alta calidad con SDXL.",
+        "sdxlturbo_example": "Genera imágenes en un solo paso con SDXL Turbo."
+      },
+      "Image API": {
+        "api-openai-dall-e-2-inpaint": "Usa la API Dall-E 2 para hacer inpainting en imágenes.",
+        "api-openai-dall-e-2-t2i": "Usa la API Dall-E 2 para generar imágenes a partir de descripciones de texto.",
+        "api-openai-dall-e-3-t2i": "Usa la API Dall-E 3 para generar imágenes a partir de descripciones de texto.",
+        "api_bfl_flux_pro_t2i": "Crea imágenes con FLUX.1 [pro] y su excelente seguimiento de indicaciones, calidad visual, detalle de imagen y diversidad de resultados.",
+        "api_ideogram_v3_t2i": "Genera imágenes con alineación de indicaciones de alta calidad, fotorrealismo y renderizado de texto. Crea logotipos de calidad profesional, carteles promocionales, conceptos de páginas de destino, fotografía de productos y más. Crea composiciones espaciales sofisticadas con fondos intrincados, iluminación y colores precisos y matizados, y detalles ambientales realistas.",
+        "api_luma_photon_i2i": "Guía la generación de imágenes usando una combinación de imágenes e indicaciones.",
+        "api_luma_photon_style_ref": "Aplica y combina referencias de estilo con control exacto. Luma Photon captura la esencia de cada imagen de referencia, permitiéndote combinar elementos visuales distintos manteniendo calidad profesional.",
+        "api_openai_image_1_i2i": "Usa la API GPT Image 1 para generar imágenes a partir de imágenes.",
+        "api_openai_image_1_inpaint": "Usa la API GPT Image 1 para hacer inpainting en imágenes.",
+        "api_openai_image_1_multi_inputs": "Usa la API GPT Image 1 con múltiples entradas para generar imágenes.",
+        "api_openai_image_1_t2i": "Usa la API GPT Image 1 para generar imágenes a partir de descripciones de texto.",
+        "api_recraft_image_gen_with_color_control": "Crea una paleta personalizada para reutilizar en múltiples imágenes o selecciona colores para cada foto. Haz coincidir la paleta de tu marca y crea imágenes visuales que sean distintivamente tuyas.",
+        "api_recraft_image_gen_with_style_control": "Controla el estilo con ejemplos visuales, alinea la posición y ajusta objetos. Guarda y comparte estilos para una consistencia perfecta de marca.",
+        "api_recraft_vector_gen": "Pasa de una indicación de texto a una imagen vectorial con el generador de vectores IA de Recraft. Produce arte vectorial de la mejor calidad para logotipos, carteles, conjuntos de iconos, anuncios, banners y maquetas. Perfecciona tus diseños con archivos SVG nítidos y de alta calidad. Crea ilustraciones vectoriales de marca para tu app o sitio web en segundos.",
+        "api_stability_sd3_t2i": "Genera imágenes de alta calidad con excelente adherencia a las indicaciones. Perfecto para casos de uso profesional a resolución de 1 megapíxel."
+      },
+      "Upscaling": {
+        "esrgan_example": "Usa modelos de escalado para mejorar la calidad de imagen.",
+        "hiresfix_esrgan_workflow": "Usa modelos de escalado durante pasos intermedios.",
+        "hiresfix_latent_workflow": "Mejora la calidad de imagen en el espacio latente.",
+        "latent_upscale_different_prompt_model": "Escala y cambia la indicación entre pasadas."
+      },
+      "Video": {
+        "hunyuan_video_text_to_video": "Genera videos usando el modelo Hunyuan.",
+        "image_to_video": "Transforma imágenes en videos animados.",
+        "image_to_video_wan": "Genera videos rápidamente a partir de imágenes.",
+        "ltxv_image_to_video": "Convierte imágenes fijas en videos.",
+        "ltxv_text_to_video": "Genera videos a partir de descripciones de texto.",
+        "mochi_text_to_video_example": "Crea videos con el modelo Mochi.",
+        "text_to_video_wan": "Genera videos rápidamente a partir de descripciones de texto.",
+        "txt_to_image_to_video": "Genera imágenes a partir de texto y luego conviértelas en videos.",
+        "wan2_1_flf2v_720_f16": "Genera video controlando el primer y último fotograma.",
+        "wan2_1_fun_control": "Guía la generación de video con pose, profundidad, controles de bordes y más.",
+        "wan2_1_fun_inp": "Crea videos a partir de fotogramas iniciales y finales."
+      },
+      "Video API": {
+        "api_hailuo_minimax_i2v": "Crea videos refinados a partir de imágenes y texto, incluyendo integración CGI y efectos fotográficos de tendencia como abrazos virales de IA. Elige entre una variedad de estilos y temas de video para que coincidan con tu visión creativa.",
+        "api_kling_i2v": "Crea videos con gran adherencia a las indicaciones para acciones, expresiones y movimientos de cámara. Ahora soporta indicaciones complejas con acciones secuenciales para que seas el director de tu escena.",
+        "api_luma_i2v": "Convierte imágenes estáticas en animaciones mágicas de alta calidad al instante.",
+        "api_pika_scene": "Usa múltiples imágenes como ingredientes y genera videos que las incorporen todas.",
+        "api_pixverse_t2v": "Genera videos con interpretación precisa de indicaciones y una dinámica visual impresionante.",
+        "api_pixverse_template_i2v": "Transforma imágenes estáticas en videos dinámicos con movimiento y efectos.",
+        "api_veo2_i2v": "Usa la API Google Veo2 para generar videos a partir de imágenes."
       }
     },
     "title": "Comienza con una Plantilla"

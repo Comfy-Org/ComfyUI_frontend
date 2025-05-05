@@ -9,6 +9,8 @@ export interface TemplateInfo {
   mediaSubtype: string
   thumbnailVariant?: string
   description: string
+  localizedTitle?: string
+  localizedDescription?: string
 }
 
 export interface WorkflowTemplates {

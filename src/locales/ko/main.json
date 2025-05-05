@@ -1053,8 +1053,10 @@
       "Custom Nodes": "사용자 정의 노드",
       "Flux": "FLUX",
       "Image": "이미지",
+      "Image API": "이미지 API",
       "Upscaling": "업스케일링",
-      "Video": "비디오"
+      "Video": "비디오",
+      "Video API": "비디오 API"
     },
     "template": {
       "3D": {
@@ -1154,6 +1156,108 @@
         "api_pixverse_t2v": "PixVerse 텍스트 투 비디오",
         "api_pixverse_template_i2v": "PixVerse 템플릿: 이미지 투 비디오",
         "api_veo2_i2v": "Veo2 이미지 투 비디오"
+      }
+    },
+    "templateDescription": {
+      "3D": {
+        "hunyuan-3d-multiview-elf": "Hunyuan3D 2mv로 여러 뷰에서 모델을 생성합니다.",
+        "hunyuan-3d-turbo": "Hunyuan3D 2mv turbo로 여러 뷰에서 모델을 생성합니다.",
+        "hunyuan3d-non-multiview-train": "Hunyuan3D 2.0으로 단일 뷰에서 모델을 생성합니다.",
+        "stable_zero123_example": "단일 이미지에서 3D 뷰를 생성합니다."
+      },
+      "Area Composition": {
+        "area_composition": "영역을 통해 이미지 구성을 제어합니다.",
+        "area_composition_reversed": "영역 구성 워크플로우를 반대로 적용합니다.",
+        "area_composition_square_area_for_subject": "일관된 피사체 배치를 만듭니다."
+      },
+      "Audio": {
+        "stable_audio_example": "텍스트 설명으로 오디오를 생성합니다."
+      },
+      "Basics": {
+        "default": "텍스트 설명으로 이미지를 생성합니다.",
+        "embedding_example": "일관된 스타일을 위해 텍스트 인버전을 사용합니다.",
+        "gligen_textbox_example": "객체의 위치와 크기를 지정합니다.",
+        "image2image": "텍스트 프롬프트를 사용하여 기존 이미지를 변환합니다.",
+        "inpain_model_outpainting": "이미지의 원래 경계를 넘어 확장합니다.",
+        "inpaint_example": "이미지의 특정 부분을 자연스럽게 편집합니다.",
+        "lora": "특정 스타일이나 주제를 위해 LoRA 모델을 적용합니다.",
+        "lora_multiple": "여러 LoRA 모델을 결합하여 독특한 결과를 만듭니다."
+      },
+      "ControlNet": {
+        "2_pass_pose_worship": "포즈 참조로 이미지를 생성합니다.",
+        "controlnet_example": "참조 이미지를 사용해 이미지 생성을 제어합니다.",
+        "depth_controlnet": "깊이 인식 이미지 생성을 합니다.",
+        "depth_t2i_adapter": "T2I 어댑터로 깊이 인식 이미지를 빠르게 생성합니다.",
+        "mixing_controlnets": "여러 ControlNet 모델을 결합합니다."
+      },
+      "Flux": {
+        "flux_canny_model_example": "에지 감지로부터 이미지를 생성합니다.",
+        "flux_depth_lora_example": "깊이 인식 LoRA로 이미지를 생성합니다.",
+        "flux_dev_checkpoint_example": "Flux 개발 모델로 이미지를 생성합니다.",
+        "flux_fill_inpaint_example": "이미지의 누락된 부분을 채웁니다.",
+        "flux_fill_outpaint_example": "Flux 아웃페인팅으로 이미지를 확장합니다.",
+        "flux_redux_model_example": "참조 이미지의 스타일을 가이드 이미지 생성에 적용합니다.",
+        "flux_schnell": "Flux Schnell로 이미지를 빠르게 생성합니다."
+      },
+      "Image": {
+        "hidream_e1_full": "HiDream E1로 이미지를 편집합니다.",
+        "hidream_i1_dev": "HiDream I1 Dev로 이미지를 생성합니다.",
+        "hidream_i1_fast": "HiDream I1로 이미지를 빠르게 생성합니다.",
+        "hidream_i1_full": "HiDream I1로 이미지를 생성합니다.",
+        "sd3_5_large_blur": "SD 3.5로 흐릿한 참조 이미지에서 이미지를 생성합니다.",
+        "sd3_5_large_canny_controlnet_example": "SD 3.5에서 에지 감지로 이미지 생성을 가이드합니다.",
+        "sd3_5_large_depth": "SD 3.5로 깊이 인식 이미지를 생성합니다.",
+        "sd3_5_simple_example": "SD 3.5로 이미지를 생성합니다.",
+        "sdxl_refiner_prompt_example": "SDXL 결과물을 리파이너로 향상시킵니다.",
+        "sdxl_revision_text_prompts": "참조 이미지의 개념을 SDXL 이미지 생성에 적용합니다.",
+        "sdxl_revision_zero_positive": "참조 이미지와 함께 텍스트 프롬프트를 추가하여 SDXL 이미지 생성을 가이드합니다.",
+        "sdxl_simple_example": "SDXL로 고품질 이미지를 생성합니다.",
+        "sdxlturbo_example": "SDXL Turbo로 한 번에 이미지를 생성합니다."
+      },
+      "Image API": {
+        "api-openai-dall-e-2-inpaint": "Dall-E 2 API로 이미지를 인페인팅합니다.",
+        "api-openai-dall-e-2-t2i": "Dall-E 2 API로 텍스트 설명에서 이미지를 생성합니다.",
+        "api-openai-dall-e-3-t2i": "Dall-E 3 API로 텍스트 설명에서 이미지를 생성합니다.",
+        "api_bfl_flux_pro_t2i": "FLUX.1 [pro]의 뛰어난 프롬프트 반영, 시각적 품질, 이미지 디테일, 다양성으로 이미지를 생성합니다.",
+        "api_ideogram_v3_t2i": "고품질 이미지-프롬프트 일치, 포토리얼리즘, 텍스트 렌더링으로 이미지를 생성합니다. 전문가 수준의 로고, 홍보 포스터, 랜딩 페이지 컨셉, 제품 사진 등을 만드세요. 정교한 배경, 섬세한 조명과 색상, 사실적인 환경 디테일로 세련된 공간 구성을 손쉽게 제작할 수 있습니다.",
+        "api_luma_photon_i2i": "이미지와 프롬프트를 조합하여 이미지 생성을 가이드합니다.",
+        "api_luma_photon_style_ref": "정확한 제어로 스타일 참조를 적용하고 혼합합니다. Luma Photon은 각 참조 이미지의 본질을 포착하여, 전문적인 품질을 유지하면서 독특한 시각적 요소를 결합할 수 있습니다.",
+        "api_openai_image_1_i2i": "GPT Image 1 API로 이미지에서 이미지를 생성합니다.",
+        "api_openai_image_1_inpaint": "GPT Image 1 API로 이미지를 인페인팅합니다.",
+        "api_openai_image_1_multi_inputs": "GPT Image 1 API로 여러 입력을 사용해 이미지를 생성합니다.",
+        "api_openai_image_1_t2i": "GPT Image 1 API로 텍스트 설명에서 이미지를 생성합니다.",
+        "api_recraft_image_gen_with_color_control": "여러 이미지에 재사용할 맞춤 팔레트를 만들거나 각 사진마다 색상을 직접 선택하세요. 브랜드의 색상 팔레트에 맞추고, 독창적인 비주얼을 제작하세요.",
+        "api_recraft_image_gen_with_style_control": "시각적 예시로 스타일을 제어하고, 위치를 맞추며, 객체를 미세 조정하세요. 스타일을 저장 및 공유하여 브랜드 일관성을 유지할 수 있습니다.",
+        "api_recraft_vector_gen": "텍스트 프롬프트에서 Recraft의 AI 벡터 생성기로 벡터 이미지를 만드세요. 로고, 포스터, 아이콘 세트, 광고, 배너, 목업 등 최고의 품질의 벡터 아트를 제작할 수 있습니다. 선명하고 고품질의 SVG 파일로 디자인을 완성하세요. 앱이나 웹사이트를 위한 브랜드 벡터 일러스트를 몇 초 만에 만드세요.",
+        "api_stability_sd3_t2i": "1메가픽셀 해상도에서 전문가용 고품질 이미지를 생성합니다. 프롬프트 반영이 우수합니다."
+      },
+      "Upscaling": {
+        "esrgan_example": "업스케일 모델로 이미지 품질을 향상합니다.",
+        "hiresfix_esrgan_workflow": "중간 단계에서 업스케일 모델을 사용합니다.",
+        "hiresfix_latent_workflow": "latent 공간에서 이미지 품질을 향상합니다.",
+        "latent_upscale_different_prompt_model": "업스케일과 프롬프트 변경을 여러 번에 걸쳐 적용합니다."
+      },
+      "Video": {
+        "hunyuan_video_text_to_video": "Hunyuan 모델을 사용하여 비디오를 생성합니다.",
+        "image_to_video": "이미지를 애니메이션 비디오로 변환합니다.",
+        "image_to_video_wan": "이미지로부터 빠르게 비디오를 생성합니다.",
+        "ltxv_image_to_video": "정지 이미지를 비디오로 변환합니다.",
+        "ltxv_text_to_video": "텍스트 설명으로 비디오를 생성합니다.",
+        "mochi_text_to_video_example": "Mochi 모델로 비디오를 생성합니다.",
+        "text_to_video_wan": "텍스트 설명으로 빠르게 비디오를 생성합니다.",
+        "txt_to_image_to_video": "텍스트로 이미지를 생성한 후 비디오로 변환합니다.",
+        "wan2_1_flf2v_720_f16": "첫 프레임과 마지막 프레임을 제어하여 비디오를 생성합니다.",
+        "wan2_1_fun_control": "포즈, 깊이, 에지 등으로 비디오 생성을 가이드합니다.",
+        "wan2_1_fun_inp": "시작 및 종료 프레임으로 비디오를 생성합니다."
+      },
+      "Video API": {
+        "api_hailuo_minimax_i2v": "이미지와 텍스트로 정교한 비디오를 생성합니다. CGI 통합, 바이럴 AI 허깅 등 트렌디한 사진 효과도 포함됩니다. 다양한 비디오 스타일과 테마로 창의적인 비전을 실현하세요.",
+        "api_kling_i2v": "동작, 표정, 카메라 움직임에 대한 프롬프트 반영이 뛰어난 비디오를 생성합니다. 이제 복잡한 프롬프트와 연속 동작도 지원되어, 장면의 연출자가 될 수 있습니다.",
+        "api_luma_i2v": "정지 이미지를 즉시 고품질 애니메이션으로 만드세요.",
+        "api_pika_scene": "여러 이미지를 재료로 사용하여 모두를 포함하는 비디오를 생성합니다.",
+        "api_pixverse_t2v": "정확한 프롬프트 해석과 놀라운 비디오 다이내믹스로 비디오를 생성합니다.",
+        "api_pixverse_template_i2v": "정지 이미지를 동적 비디오로 변환하고 모션과 효과를 추가합니다.",
+        "api_veo2_i2v": "Google Veo2 API로 이미지에서 비디오를 생성합니다."
       }
     },
     "title": "템플릿으로 시작하기"

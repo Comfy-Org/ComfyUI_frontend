@@ -1053,8 +1053,10 @@
       "Custom Nodes": "Nœuds personnalisés",
       "Flux": "Flux",
       "Image": "Image",
+      "Image API": "API d'image",
       "Upscaling": "Mise à l'échelle",
-      "Video": "Vidéo"
+      "Video": "Vidéo",
+      "Video API": "API vidéo"
     },
     "template": {
       "3D": {
@@ -1154,6 +1156,108 @@
         "api_pixverse_t2v": "PixVerse Texte vers Vidéo",
         "api_pixverse_template_i2v": "PixVerse Modèles : Image vers Vidéo",
         "api_veo2_i2v": "Veo2 Image vers Vidéo"
+      }
+    },
+    "templateDescription": {
+      "3D": {
+        "hunyuan-3d-multiview-elf": "Utilisez Hunyuan3D 2mv pour générer des modèles à partir de plusieurs vues.",
+        "hunyuan-3d-turbo": "Utilisez Hunyuan3D 2mv turbo pour générer des modèles à partir de plusieurs vues.",
+        "hunyuan3d-non-multiview-train": "Utilisez Hunyuan3D 2.0 pour générer des modèles à partir d'une seule vue.",
+        "stable_zero123_example": "Générez des vues 3D à partir d'images uniques."
+      },
+      "Area Composition": {
+        "area_composition": "Contrôlez la composition d'image avec des zones.",
+        "area_composition_reversed": "Inversez le workflow de composition de zones.",
+        "area_composition_square_area_for_subject": "Créez un placement cohérent du sujet."
+      },
+      "Audio": {
+        "stable_audio_example": "Générez de l'audio à partir de descriptions textuelles."
+      },
+      "Basics": {
+        "default": "Générez des images à partir de descriptions textuelles.",
+        "embedding_example": "Utilisez l'inversion textuelle pour des styles cohérents.",
+        "gligen_textbox_example": "Spécifiez l'emplacement et la taille des objets.",
+        "image2image": "Transformez des images existantes à l'aide de prompts textuels.",
+        "inpain_model_outpainting": "Étendez les images au-delà de leurs limites d'origine.",
+        "inpaint_example": "Modifiez de façon transparente des parties spécifiques d'une image.",
+        "lora": "Appliquez des modèles LoRA pour des styles ou sujets spécialisés.",
+        "lora_multiple": "Combinez plusieurs modèles LoRA pour des résultats uniques."
+      },
+      "ControlNet": {
+        "2_pass_pose_worship": "Générez des images à partir de références de pose.",
+        "controlnet_example": "Contrôlez la génération d'image avec des images de référence.",
+        "depth_controlnet": "Créez des images avec une génération sensible à la profondeur.",
+        "depth_t2i_adapter": "Générez rapidement des images sensibles à la profondeur avec un adaptateur T2I.",
+        "mixing_controlnets": "Combinez plusieurs modèles ControlNet ensemble."
+      },
+      "Flux": {
+        "flux_canny_model_example": "Générez des images à partir de la détection de contours.",
+        "flux_depth_lora_example": "Créez des images avec LoRA sensible à la profondeur.",
+        "flux_dev_checkpoint_example": "Créez des images avec les modèles de développement Flux.",
+        "flux_fill_inpaint_example": "Complétez les parties manquantes d'une image.",
+        "flux_fill_outpaint_example": "Étendez les images avec l'outpainting Flux.",
+        "flux_redux_model_example": "Transférez le style d'une image de référence pour guider la génération d'image avec Flux.",
+        "flux_schnell": "Générez des images rapidement avec Flux Schnell."
+      },
+      "Image": {
+        "hidream_e1_full": "Modifiez des images avec HiDream E1.",
+        "hidream_i1_dev": "Générez des images avec HiDream I1 Dev.",
+        "hidream_i1_fast": "Générez rapidement des images avec HiDream I1.",
+        "hidream_i1_full": "Générez des images avec HiDream I1.",
+        "sd3_5_large_blur": "Générez des images à partir d'images de référence floues avec SD 3.5.",
+        "sd3_5_large_canny_controlnet_example": "Utilisez la détection de contours pour guider la génération d'images avec SD 3.5.",
+        "sd3_5_large_depth": "Créez des images sensibles à la profondeur avec SD 3.5.",
+        "sd3_5_simple_example": "Générez des images avec SD 3.5.",
+        "sdxl_refiner_prompt_example": "Améliorez les résultats SDXL avec des refineurs.",
+        "sdxl_revision_text_prompts": "Transférez des concepts à partir d'images de référence pour guider la génération d'images avec SDXL.",
+        "sdxl_revision_zero_positive": "Ajoutez des prompts textuels en plus des images de référence pour guider la génération d'images avec SDXL.",
+        "sdxl_simple_example": "Créez des images de haute qualité avec SDXL.",
+        "sdxlturbo_example": "Générez des images en une seule étape avec SDXL Turbo."
+      },
+      "Image API": {
+        "api-openai-dall-e-2-inpaint": "Utilisez l'API Dall-E 2 pour faire de l'inpainting sur des images.",
+        "api-openai-dall-e-2-t2i": "Utilisez l'API Dall-E 2 pour générer des images à partir de descriptions textuelles.",
+        "api-openai-dall-e-3-t2i": "Utilisez l'API Dall-E 3 pour générer des images à partir de descriptions textuelles.",
+        "api_bfl_flux_pro_t2i": "Créez des images avec FLUX.1 [pro] pour un excellent suivi des prompts, une qualité visuelle, des détails d'image et une grande diversité de sorties.",
+        "api_ideogram_v3_t2i": "Générez des images avec un alignement prompt-image de haute qualité, du photoréalisme et du rendu de texte. Créez des logos professionnels, affiches promotionnelles, concepts de pages d'accueil, photographies de produits et plus. Composez facilement des compositions spatiales sophistiquées avec des arrière-plans complexes, un éclairage et des couleurs précis et nuancés, et des détails environnementaux réalistes.",
+        "api_luma_photon_i2i": "Guidez la génération d'image en combinant images et prompt.",
+        "api_luma_photon_style_ref": "Appliquez et mélangez des références de style avec un contrôle précis. Luma Photon capture l'essence de chaque image de référence, vous permettant de combiner des éléments visuels distincts tout en maintenant une qualité professionnelle.",
+        "api_openai_image_1_i2i": "Utilisez l'API GPT Image 1 pour générer des images à partir d'images.",
+        "api_openai_image_1_inpaint": "Utilisez l'API GPT Image 1 pour faire de l'inpainting sur des images.",
+        "api_openai_image_1_multi_inputs": "Utilisez l'API GPT Image 1 avec plusieurs entrées pour générer des images.",
+        "api_openai_image_1_t2i": "Utilisez l'API GPT Image 1 pour générer des images à partir de descriptions textuelles.",
+        "api_recraft_image_gen_with_color_control": "Créez une palette personnalisée à réutiliser pour plusieurs images ou choisissez les couleurs pour chaque photo. Adaptez la palette de couleurs de votre marque et créez des visuels qui vous ressemblent.",
+        "api_recraft_image_gen_with_style_control": "Contrôlez le style avec des exemples visuels, alignez le positionnement et affinez les objets. Stockez et partagez des styles pour une cohérence parfaite de la marque.",
+        "api_recraft_vector_gen": "Passez d'un prompt textuel à une image vectorielle avec le générateur vectoriel IA de Recraft. Produisez des illustrations vectorielles de la meilleure qualité pour des logos, affiches, icônes, publicités, bannières et maquettes. Perfectionnez vos designs avec des fichiers SVG nets et de haute qualité. Créez des illustrations vectorielles de marque pour votre application ou site web en quelques secondes.",
+        "api_stability_sd3_t2i": "Générez des images de haute qualité avec une excellente fidélité au prompt. Parfait pour les cas d'usage professionnels en résolution 1 mégapixel."
+      },
+      "Upscaling": {
+        "esrgan_example": "Utilisez des modèles d'upscaling pour améliorer la qualité d'image.",
+        "hiresfix_esrgan_workflow": "Utilisez des modèles d'upscaling lors des étapes intermédiaires.",
+        "hiresfix_latent_workflow": "Améliorez la qualité d'image dans l'espace latent.",
+        "latent_upscale_different_prompt_model": "Upscalez et changez le prompt à chaque passage."
+      },
+      "Video": {
+        "hunyuan_video_text_to_video": "Générez des vidéos avec le modèle Hunyuan.",
+        "image_to_video": "Transformez des images en vidéos animées.",
+        "image_to_video_wan": "Générez rapidement des vidéos à partir d'images.",
+        "ltxv_image_to_video": "Convertissez des images fixes en vidéos.",
+        "ltxv_text_to_video": "Générez des vidéos à partir de descriptions textuelles.",
+        "mochi_text_to_video_example": "Créez des vidéos avec le modèle Mochi.",
+        "text_to_video_wan": "Générez rapidement des vidéos à partir de descriptions textuelles.",
+        "txt_to_image_to_video": "Générez des images à partir de texte puis convertissez-les en vidéos.",
+        "wan2_1_flf2v_720_f16": "Générez une vidéo en contrôlant la première et la dernière image.",
+        "wan2_1_fun_control": "Guidez la génération vidéo avec le contrôle de pose, profondeur, contours et plus.",
+        "wan2_1_fun_inp": "Créez des vidéos à partir d'images de début et de fin."
+      },
+      "Video API": {
+        "api_hailuo_minimax_i2v": "Créez des vidéos raffinées à partir d'images et de texte, incluant l'intégration CGI et des effets photo tendance comme le hugging IA viral. Choisissez parmi une variété de styles et thèmes vidéo pour correspondre à votre vision créative.",
+        "api_kling_i2v": "Créez des vidéos avec une excellente fidélité au prompt pour les actions, expressions et mouvements de caméra. Prend désormais en charge des prompts complexes avec des actions séquentielles pour vous permettre de diriger votre scène.",
+        "api_luma_i2v": "Transformez des images statiques en animations magiques de haute qualité instantanément.",
+        "api_pika_scene": "Utilisez plusieurs images comme ingrédients et générez des vidéos qui les intègrent toutes.",
+        "api_pixverse_t2v": "Générez des vidéos avec une interprétation précise du prompt et des dynamiques vidéo impressionnantes.",
+        "api_pixverse_template_i2v": "Transformez des images statiques en vidéos dynamiques avec mouvement et effets.",
+        "api_veo2_i2v": "Utilisez l'API Google Veo2 pour générer des vidéos à partir d'images."
       }
     },
     "title": "Commencez avec un modèle"
