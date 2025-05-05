@@ -1062,8 +1062,10 @@
       "Custom Nodes": "自定义节点",
       "Flux": "Flux",
       "Image": "图片",
+      "Image API": "图像 API",
       "Upscaling": "放大",
-      "Video": "视频"
+      "Video": "视频",
+      "Video API": "视频 API"
     },
     "template": {
       "3D": {
@@ -1163,6 +1165,108 @@
         "api_pixverse_t2v": "PixVerse 文转视频",
         "api_pixverse_template_i2v": "PixVerse 模板：图转视频",
         "api_veo2_i2v": "Veo2 图生视频"
+      }
+    },
+    "templateDescription": {
+      "3D": {
+        "hunyuan-3d-multiview-elf": "使用 Hunyuan3D 2mv 从多视角生成模型。",
+        "hunyuan-3d-turbo": "使用 Hunyuan3D 2mv turbo 从多视角生成模型。",
+        "hunyuan3d-non-multiview-train": "使用 Hunyuan3D 2.0 从单视角生成模型。",
+        "stable_zero123_example": "通过单张图像生成 3D 视图。"
+      },
+      "Area Composition": {
+        "area_composition": "通过区域控制图像构图。",
+        "area_composition_reversed": "反向区域构图流程。",
+        "area_composition_square_area_for_subject": "实现主体位置一致性。"
+      },
+      "Audio": {
+        "stable_audio_example": "根据文本描述生成音频。"
+      },
+      "Basics": {
+        "default": "根据文本描述生成图像。",
+        "embedding_example": "使用文本反演实现风格一致性。",
+        "gligen_textbox_example": "指定物体的位置和大小。",
+        "image2image": "使用文本提示转换现有图像。",
+        "inpain_model_outpainting": "将图像扩展到原始边界之外。",
+        "inpaint_example": "无缝编辑图像的特定部分。",
+        "lora": "应用 LoRA 模型以实现特定风格或主题。",
+        "lora_multiple": "组合多个 LoRA 模型以获得独特效果。"
+      },
+      "ControlNet": {
+        "2_pass_pose_worship": "通过姿态参考生成图像。",
+        "controlnet_example": "通过参考图像控制图像生成。",
+        "depth_controlnet": "生成深度感知图像。",
+        "depth_t2i_adapter": "使用 T2I 适配器快速生成深度感知图像。",
+        "mixing_controlnets": "组合多个 ControlNet 模型。"
+      },
+      "Flux": {
+        "flux_canny_model_example": "通过边缘检测生成图像。",
+        "flux_depth_lora_example": "使用深度感知 LoRA 生成图像。",
+        "flux_dev_checkpoint_example": "使用 flux 开发模型生成图像。",
+        "flux_fill_inpaint_example": "填充图像中缺失的部分。",
+        "flux_fill_outpaint_example": "使用 flux 外扩生成图像。",
+        "flux_redux_model_example": "将参考图像的风格迁移到引导图像生成（flux）。",
+        "flux_schnell": "使用 flux schnell 快速生成图像。"
+      },
+      "Image": {
+        "hidream_e1_full": "使用 HiDream E1 编辑图像。",
+        "hidream_i1_dev": "使用 HiDream I1 Dev 生成图像。",
+        "hidream_i1_fast": "使用 HiDream I1 快速生成图像。",
+        "hidream_i1_full": "使用 HiDream I1 生成图像。",
+        "sd3.5_large_blur": "使用 SD 3.5 通过模糊参考图像生成图像。",
+        "sd3.5_large_canny_controlnet_example": "使用边缘检测引导 SD 3.5 图像生成。",
+        "sd3.5_large_depth": "使用 SD 3.5 生成深度感知图像。",
+        "sd3.5_simple_example": "使用 SD 3.5 生成图像。",
+        "sdxl_refiner_prompt_example": "使用精炼器提升 SDXL 输出效果。",
+        "sdxl_revision_text_prompts": "将参考图像的概念迁移到 SDXL 图像生成中。",
+        "sdxl_revision_zero_positive": "在 SDXL 图像生成中结合文本提示和参考图像。",
+        "sdxl_simple_example": "使用 SDXL 生成高质量图像。",
+        "sdxlturbo_example": "使用 SDXL Turbo 一步生成图像。"
+      },
+      "Image API": {
+        "api-openai-dall-e-2-inpaint": "使用 Dall-E 2 API 对图像进行修复。",
+        "api-openai-dall-e-2-t2i": "使用 Dall-E 2 API 根据文本描述生成图像。",
+        "api-openai-dall-e-3-t2i": "使用 Dall-E 3 API 根据文本描述生成图像。",
+        "api_bfl_flux_pro_t2i": "使用 FLUX.1 [pro] 生成高质量、细节丰富、提示遵循性强且多样化的图像。",
+        "api_ideogram_v3_t2i": "生成高质量图像与提示对齐、照片级真实感和文本渲染。可用于专业级 logo、宣传海报、落地页概念、产品摄影等。轻松打造复杂空间构图、精细背景、精准光影与色彩、逼真环境细节。",
+        "api_luma_photon_i2i": "结合图像和提示词引导图像生成。",
+        "api_luma_photon_style_ref": "精确控制并融合风格参考。Luma Photon 捕捉每个参考图像的精髓，让你在保持专业品质的同时融合不同视觉元素。",
+        "api_openai_image_1_i2i": "使用 GPT Image 1 API 通过图像生成图像。",
+        "api_openai_image_1_inpaint": "使用 GPT Image 1 API 对图像进行修复。",
+        "api_openai_image_1_multi_inputs": "使用 GPT Image 1 API 多输入生成图像。",
+        "api_openai_image_1_t2i": "使用 GPT Image 1 API 根据文本描述生成图像。",
+        "api_recraft_image_gen_with_color_control": "创建自定义调色板以复用或为每张照片手动选色。匹配品牌色彩，打造专属视觉风格。",
+        "api_recraft_image_gen_with_style_control": "通过视觉示例控制风格、对齐位置、微调物体。存储并分享风格，实现品牌一致性。",
+        "api_recraft_vector_gen": "通过文本提示生成矢量图像，使用 Recraft 的 AI 矢量生成器。可用于 logo、海报、图标集、广告、横幅和模型。生成高质量 SVG 文件，几秒内为你的应用或网站创建品牌矢量插画。",
+        "api_stability_sd3_t2i": "生成高质量、提示遵循性极佳的图像。适用于专业场景，分辨率达 1 兆像素。"
+      },
+      "Upscaling": {
+        "esrgan_example": "使用超分模型提升图像质量。",
+        "hiresfix_esrgan_workflow": "在中间步骤使用超分模型提升图像质量。",
+        "hiresfix_latent_workflow": "在 latent 空间中提升图像质量。",
+        "latent_upscale_different_prompt_model": "放大图像并在不同阶段更换提示词。"
+      },
+      "Video": {
+        "hunyuan_video_text_to_video": "使用 Hunyuan 模型生成视频。",
+        "image_to_video": "将图像转换为动画视频。",
+        "image_to_video_wan": "快速将图像生成视频。",
+        "ltxv_image_to_video": "将静态图像转换为视频。",
+        "ltxv_text_to_video": "根据文本描述生成视频。",
+        "mochi_text_to_video_example": "使用 Mochi 模型生成视频。",
+        "text_to_video_wan": "快速将文本描述生成视频。",
+        "txt_to_image_to_video": "先由文本生成图像，再转换为视频。",
+        "wan2.1_flf2v_720_f16": "通过控制首帧和尾帧生成视频。",
+        "wan2.1_fun_control": "通过姿态、深度、边缘等控制引导视频生成。",
+        "wan2.1_fun_inp": "通过起始帧和结束帧生成视频。"
+      },
+      "Video API": {
+        "api_hailuo_minimax_i2v": "通过图像和文本生成精致视频，支持 CGI 效果和流行 AI 拥抱等特效。多种视频风格和主题，满足你的创意需求。",
+        "api_kling_i2v": "生成动作、表情、镜头运动等提示遵循性强的视频。支持复杂提示和顺序动作，让你成为场景导演。",
+        "api_luma_i2v": "将静态图像瞬间转化为高质量动画。",
+        "api_pika_scene": "将多张图像作为素材，生成融合所有内容的视频。",
+        "api_pixverse_t2v": "根据提示生成高还原度、动态效果出色的视频。",
+        "api_pixverse_template_i2v": "将静态图像转化为带有动态和特效的视频。",
+        "api_veo2_i2v": "使用 Google Veo2 API 通过图像生成视频。"
       }
     },
     "title": "从模板开始"
