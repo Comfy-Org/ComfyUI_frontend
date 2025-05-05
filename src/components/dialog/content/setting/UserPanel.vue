@@ -5,12 +5,11 @@
       <Divider class="mb-3" />
 
       <div v-if="user" class="flex flex-col gap-2">
-        <Avatar
+        <UserAvatar
           v-if="user.photoURL"
-          :image="user.photoURL"
+          :photo-url="user.photoURL"
           shape="circle"
           size="large"
-          aria-label="User Avatar"
         />
 
         <div class="flex flex-col gap-0.5">
@@ -87,13 +86,13 @@
 </template>
 
 <script setup lang="ts">
-import Avatar from 'primevue/avatar'
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'
 import TabPanel from 'primevue/tabpanel'
 import { computed } from 'vue'
 
+import UserAvatar from '@/components/common/UserAvatar.vue'
 import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
