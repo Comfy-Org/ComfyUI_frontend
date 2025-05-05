@@ -1213,10 +1213,10 @@
         "hidream_i1_dev": "使用 HiDream I1 Dev 生成图像。",
         "hidream_i1_fast": "使用 HiDream I1 快速生成图像。",
         "hidream_i1_full": "使用 HiDream I1 生成图像。",
-        "sd3.5_large_blur": "使用 SD 3.5 通过模糊参考图像生成图像。",
-        "sd3.5_large_canny_controlnet_example": "使用边缘检测引导 SD 3.5 图像生成。",
-        "sd3.5_large_depth": "使用 SD 3.5 生成深度感知图像。",
-        "sd3.5_simple_example": "使用 SD 3.5 生成图像。",
+        "sd3_5_large_blur": "使用 SD 3.5 通过模糊参考图像生成图像。",
+        "sd3_5_large_canny_controlnet_example": "使用边缘检测引导 SD 3.5 图像生成。",
+        "sd3_5_large_depth": "使用 SD 3.5 生成深度感知图像。",
+        "sd3_5_simple_example": "使用 SD 3.5 生成图像。",
         "sdxl_refiner_prompt_example": "使用精炼器提升 SDXL 输出效果。",
         "sdxl_revision_text_prompts": "将参考图像的概念迁移到 SDXL 图像生成中。",
         "sdxl_revision_zero_positive": "在 SDXL 图像生成中结合文本提示和参考图像。",
@@ -1255,9 +1255,9 @@
         "mochi_text_to_video_example": "使用 Mochi 模型生成视频。",
         "text_to_video_wan": "快速将文本描述生成视频。",
         "txt_to_image_to_video": "先由文本生成图像，再转换为视频。",
-        "wan2.1_flf2v_720_f16": "通过控制首帧和尾帧生成视频。",
-        "wan2.1_fun_control": "通过姿态、深度、边缘等控制引导视频生成。",
-        "wan2.1_fun_inp": "通过起始帧和结束帧生成视频。"
+        "wan2_1_flf2v_720_f16": "通过控制首帧和尾帧生成视频。",
+        "wan2_1_fun_control": "通过姿态、深度、边缘等控制引导视频生成。",
+        "wan2_1_fun_inp": "通过起始帧和结束帧生成视频。"
       },
       "Video API": {
         "api_hailuo_minimax_i2v": "通过图像和文本生成精致视频，支持 CGI 效果和流行 AI 拥抱等特效。多种视频风格和主题，满足你的创意需求。",

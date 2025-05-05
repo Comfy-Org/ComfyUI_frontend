@@ -1213,10 +1213,10 @@
         "hidream_i1_dev": "HiDream I1 Devで画像を生成します。",
         "hidream_i1_fast": "HiDream I1で素早く画像を生成します。",
         "hidream_i1_full": "HiDream I1で画像を生成します。",
-        "sd3.5_large_blur": "SD 3.5でぼかし参照画像から画像を生成します。",
-        "sd3.5_large_canny_controlnet_example": "SD 3.5でエッジ検出を使って画像生成をガイドします。",
-        "sd3.5_large_depth": "SD 3.5で深度認識画像を生成します。",
-        "sd3.5_simple_example": "SD 3.5で画像を生成します。",
+        "sd3_5_large_blur": "SD 3.5でぼかし参照画像から画像を生成します。",
+        "sd3_5_large_canny_controlnet_example": "SD 3.5でエッジ検出を使って画像生成をガイドします。",
+        "sd3_5_large_depth": "SD 3.5で深度認識画像を生成します。",
+        "sd3_5_simple_example": "SD 3.5で画像を生成します。",
         "sdxl_refiner_prompt_example": "SDXLの出力をリファイナーで強化します。",
         "sdxl_revision_text_prompts": "参照画像からコンセプトを転送し、SDXLで画像生成をガイドします。",
         "sdxl_revision_zero_positive": "参照画像とテキストプロンプトを組み合わせてSDXLで画像生成をガイドします。",
@@ -1255,9 +1255,9 @@
         "mochi_text_to_video_example": "Mochiモデルで動画を作成します。",
         "text_to_video_wan": "テキストの説明から素早く動画を生成します。",
         "txt_to_image_to_video": "テキストから画像を生成し、それを動画に変換します。",
-        "wan2.1_flf2v_720_f16": "最初と最後のフレームを制御して動画を生成します。",
-        "wan2.1_fun_control": "ポーズ、深度、エッジ制御などで動画生成をガイドします。",
-        "wan2.1_fun_inp": "開始フレームと終了フレームから動画を作成します。"
+        "wan2_1_flf2v_720_f16": "最初と最後のフレームを制御して動画を生成します。",
+        "wan2_1_fun_control": "ポーズ、深度、エッジ制御などで動画生成をガイドします。",
+        "wan2_1_fun_inp": "開始フレームと終了フレームから動画を作成します。"
       },
       "Video API": {
         "api_hailuo_minimax_i2v": "画像とテキストから洗練された動画を作成。CGI統合や流行のAIハグなどのエフェクトも。多彩なスタイルやテーマから選択可能です。",

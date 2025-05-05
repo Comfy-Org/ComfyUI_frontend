@@ -1213,10 +1213,10 @@
         "hidream_i1_dev": "Générez des images avec HiDream I1 Dev.",
         "hidream_i1_fast": "Générez rapidement des images avec HiDream I1.",
         "hidream_i1_full": "Générez des images avec HiDream I1.",
-        "sd3.5_large_blur": "Générez des images à partir d'images de référence floues avec SD 3.5.",
-        "sd3.5_large_canny_controlnet_example": "Utilisez la détection de contours pour guider la génération d'images avec SD 3.5.",
-        "sd3.5_large_depth": "Créez des images sensibles à la profondeur avec SD 3.5.",
-        "sd3.5_simple_example": "Générez des images avec SD 3.5.",
+        "sd3_5_large_blur": "Générez des images à partir d'images de référence floues avec SD 3.5.",
+        "sd3_5_large_canny_controlnet_example": "Utilisez la détection de contours pour guider la génération d'images avec SD 3.5.",
+        "sd3_5_large_depth": "Créez des images sensibles à la profondeur avec SD 3.5.",
+        "sd3_5_simple_example": "Générez des images avec SD 3.5.",
         "sdxl_refiner_prompt_example": "Améliorez les résultats SDXL avec des refineurs.",
         "sdxl_revision_text_prompts": "Transférez des concepts à partir d'images de référence pour guider la génération d'images avec SDXL.",
         "sdxl_revision_zero_positive": "Ajoutez des prompts textuels en plus des images de référence pour guider la génération d'images avec SDXL.",
@@ -1255,9 +1255,9 @@
         "mochi_text_to_video_example": "Créez des vidéos avec le modèle Mochi.",
         "text_to_video_wan": "Générez rapidement des vidéos à partir de descriptions textuelles.",
         "txt_to_image_to_video": "Générez des images à partir de texte puis convertissez-les en vidéos.",
-        "wan2.1_flf2v_720_f16": "Générez une vidéo en contrôlant la première et la dernière image.",
-        "wan2.1_fun_control": "Guidez la génération vidéo avec le contrôle de pose, profondeur, contours et plus.",
-        "wan2.1_fun_inp": "Créez des vidéos à partir d'images de début et de fin."
+        "wan2_1_flf2v_720_f16": "Générez une vidéo en contrôlant la première et la dernière image.",
+        "wan2_1_fun_control": "Guidez la génération vidéo avec le contrôle de pose, profondeur, contours et plus.",
+        "wan2_1_fun_inp": "Créez des vidéos à partir d'images de début et de fin."
       },
       "Video API": {
         "api_hailuo_minimax_i2v": "Créez des vidéos raffinées à partir d'images et de texte, incluant l'intégration CGI et des effets photo tendance comme le hugging IA viral. Choisissez parmi une variété de styles et thèmes vidéo pour correspondre à votre vision créative.",

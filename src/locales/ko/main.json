@@ -1213,10 +1213,10 @@
         "hidream_i1_dev": "HiDream I1 Dev로 이미지를 생성합니다.",
         "hidream_i1_fast": "HiDream I1로 이미지를 빠르게 생성합니다.",
         "hidream_i1_full": "HiDream I1로 이미지를 생성합니다.",
-        "sd3.5_large_blur": "SD 3.5로 흐릿한 참조 이미지에서 이미지를 생성합니다.",
-        "sd3.5_large_canny_controlnet_example": "SD 3.5에서 에지 감지로 이미지 생성을 가이드합니다.",
-        "sd3.5_large_depth": "SD 3.5로 깊이 인식 이미지를 생성합니다.",
-        "sd3.5_simple_example": "SD 3.5로 이미지를 생성합니다.",
+        "sd3_5_large_blur": "SD 3.5로 흐릿한 참조 이미지에서 이미지를 생성합니다.",
+        "sd3_5_large_canny_controlnet_example": "SD 3.5에서 에지 감지로 이미지 생성을 가이드합니다.",
+        "sd3_5_large_depth": "SD 3.5로 깊이 인식 이미지를 생성합니다.",
+        "sd3_5_simple_example": "SD 3.5로 이미지를 생성합니다.",
         "sdxl_refiner_prompt_example": "SDXL 결과물을 리파이너로 향상시킵니다.",
         "sdxl_revision_text_prompts": "참조 이미지의 개념을 SDXL 이미지 생성에 적용합니다.",
         "sdxl_revision_zero_positive": "참조 이미지와 함께 텍스트 프롬프트를 추가하여 SDXL 이미지 생성을 가이드합니다.",
@@ -1255,9 +1255,9 @@
         "mochi_text_to_video_example": "Mochi 모델로 비디오를 생성합니다.",
         "text_to_video_wan": "텍스트 설명으로 빠르게 비디오를 생성합니다.",
         "txt_to_image_to_video": "텍스트로 이미지를 생성한 후 비디오로 변환합니다.",
-        "wan2.1_flf2v_720_f16": "첫 프레임과 마지막 프레임을 제어하여 비디오를 생성합니다.",
-        "wan2.1_fun_control": "포즈, 깊이, 에지 등으로 비디오 생성을 가이드합니다.",
-        "wan2.1_fun_inp": "시작 및 종료 프레임으로 비디오를 생성합니다."
+        "wan2_1_flf2v_720_f16": "첫 프레임과 마지막 프레임을 제어하여 비디오를 생성합니다.",
+        "wan2_1_fun_control": "포즈, 깊이, 에지 등으로 비디오 생성을 가이드합니다.",
+        "wan2_1_fun_inp": "시작 및 종료 프레임으로 비디오를 생성합니다."
       },
       "Video API": {
         "api_hailuo_minimax_i2v": "이미지와 텍스트로 정교한 비디오를 생성합니다. CGI 통합, 바이럴 AI 허깅 등 트렌디한 사진 효과도 포함됩니다. 다양한 비디오 스타일과 테마로 창의적인 비전을 실현하세요.",
