@@ -64,6 +64,6 @@ const { onClose } = defineProps<{
 }>()
 
 const handleLearnMore = () => {
-  window.open('https://blog.comfy.org/', '_blank')
+  window.open('https://blog.comfy.org/p/comfyui-native-api-nodes', '_blank')
 }
 </script>
