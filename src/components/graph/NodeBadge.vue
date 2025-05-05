@@ -5,9 +5,11 @@
 </template>
 
 <script setup lang="ts">
-import type { LGraphNode } from '@comfyorg/litegraph'
-import { BadgePosition } from '@comfyorg/litegraph'
-import { LGraphBadge } from '@comfyorg/litegraph'
+import {
+  BadgePosition,
+  LGraphBadge,
+  type LGraphNode
+} from '@comfyorg/litegraph'
 import _ from 'lodash'
 import { computed, onMounted, watch } from 'vue'
 
