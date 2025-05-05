@@ -52,7 +52,7 @@
     <template #content>
       <div class="flex items-center px-4 py-3">
         <div class="flex-1 flex flex-col">
-          <h3 class="line-clamp-2 text-lg font-normal mb-0 h-10" :title="title">
+          <h3 class="line-clamp-2 text-lg font-normal mb-0 h-12" :title="title">
             {{ title }}
           </h3>
           <p class="line-clamp-2 text-sm text-muted grow" :title="description">
