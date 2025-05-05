@@ -1110,6 +1110,23 @@
         "sdxl_simple_example": "SDXL Simple",
         "sdxlturbo_example": "SDXL Turbo"
       },
+      "Image API": {
+        "api-openai-dall-e-2-inpaint": "Dall-E 2 Inpainting",
+        "api-openai-dall-e-2-t2i": "Dall-E 2 Texte vers Image",
+        "api-openai-dall-e-3-t2i": "Dall-E 3 Texte vers Image",
+        "api_bfl_flux_pro_t2i": "BFL Flux[Pro] Texte vers Image",
+        "api_ideogram_v3_t2i": "Ideogram V3 Texte vers Image",
+        "api_luma_photon_i2i": "Luma Photon Image vers Image",
+        "api_luma_photon_style_ref": "Luma Photon Référence de Style",
+        "api_openai_image_1_i2i": "OpenAI Image-1 Image vers Image",
+        "api_openai_image_1_inpaint": "OpenAI Image-1 Inpainting",
+        "api_openai_image_1_multi_inputs": "OpenAI Image-1 Entrées Multiples",
+        "api_openai_image_1_t2i": "OpenAI Image-1 Texte vers Image",
+        "api_recraft_image_gen_with_color_control": "Recraft Génération d’Image avec Contrôle des Couleurs",
+        "api_recraft_image_gen_with_style_control": "Recraft Génération d’Image avec Contrôle du Style",
+        "api_recraft_vector_gen": "Recraft Génération de Vecteur",
+        "api_stability_sd3_t2i": "Stability SD3 Texte vers Image"
+      },
       "Upscaling": {
         "esrgan_example": "ESRGAN",
         "hiresfix_esrgan_workflow": "Flux de Travail ESRGAN HiresFix",
@@ -1127,6 +1144,15 @@
         "txt_to_image_to_video": "Texte à Image à Vidéo",
         "wan2_1_fun_control": "Wan 2.1 ControlNet",
         "wan2_1_fun_inp": "Wan 2.1 Inpainting"
+      },
+      "Video API": {
+        "api_hailuo_minimax_i2v": "MiniMax Image vers Vidéo",
+        "api_kling_i2v": "Kling Image vers Vidéo",
+        "api_luma_i2v": "Luma Image vers Vidéo",
+        "api_pika_scene": "Pika Scènes : Images vers Vidéo",
+        "api_pixverse_t2v": "PixVerse Texte vers Vidéo",
+        "api_pixverse_template_i2v": "PixVerse Modèles : Image vers Vidéo",
+        "api_veo2_i2v": "Veo2 Image vers Vidéo"
       }
     },
     "title": "Commencez avec un modèle"

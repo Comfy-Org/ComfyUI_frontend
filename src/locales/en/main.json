@@ -531,6 +531,32 @@
         "wan2_1_fun_inp": "Wan 2.1 Inpainting",
         "wan2_1_fun_control": "Wan 2.1 ControlNet"
       },
+      "Image API": {
+        "api_openai_image_1_t2i": "OpenAI Image-1 Text to Image",
+        "api_openai_image_1_i2i": "OpenAI Image-1 Image to Image",
+        "api_openai_image_1_inpaint": "OpenAI Image-1 Inpaint",
+        "api_openai_image_1_multi_inputs": "OpenAI Image-1 Multi Inputs",
+        "api-openai-dall-e-2-t2i": "Dall-E 2 Text to Image",
+        "api-openai-dall-e-2-inpaint": "Dall-E 2 Inpaint",
+        "api-openai-dall-e-3-t2i": "Dall-E 3 Text to Image",
+        "api_bfl_flux_pro_t2i": "BFL Flux[Pro] Text to Image",
+        "api_stability_sd3_t2i": "Stability SD3 Text to Image",
+        "api_ideogram_v3_t2i": "Ideogram V3 Text to Image",
+        "api_luma_photon_i2i": "Luma Photon Image to Image",
+        "api_luma_photon_style_ref": "Luma Photon Style Reference",
+        "api_recraft_image_gen_with_color_control": "Recraft Color Control Image Generation",
+        "api_recraft_image_gen_with_style_control": "Recraft Style Control Image Generation",
+        "api_recraft_vector_gen": "Recraft Vector Generation"
+      },
+      "Video API": {
+        "api_luma_i2v": "Luma Image to Video",
+        "api_kling_i2v": "Kling Image to Video",
+        "api_veo2_i2v": "Veo2 Image to Video",
+        "api_hailuo_minimax_i2v": "MiniMax Image to Video",
+        "api_pika_scene": "Pika Scenes: Images to Video",
+        "api_pixverse_template_i2v": "PixVerse Templates: Image to Video",
+        "api_pixverse_t2v": "PixVerse Text to Video"
+      },
       "Image": {
         "sd3_5_simple_example": "SD3.5 Simple",
         "sd3_5_large_canny_controlnet_example": "SD3.5 Large Canny ControlNet",

@@ -27,10 +27,20 @@ export const useWorkflowTemplatesStore = defineStore(
     const isLoaded = ref(false)
 
     /**
-     * Sort a list of templates in alphabetical order by name.
+     * Sort a list of templates in alphabetical order by localized display name.
      */
     const sortTemplateList = (templates: TemplateInfo[]) =>
-      templates.sort((a, b) => a.name.localeCompare(b.name))
+      templates.sort((a, b) => {
+        const aName = st(
+          `templateWorkflows.name.${normalizeI18nKey(a.name)}`,
+          a.title ?? a.name
+        )
+        const bName = st(
+          `templateWorkflows.name.${normalizeI18nKey(b.name)}`,
+          b.name
+        )
+        return aName.localeCompare(bName)
+      })
 
     /**
      * Sort any template categories (grouped templates) that should be sorted.

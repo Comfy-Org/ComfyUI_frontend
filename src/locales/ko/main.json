@@ -1110,6 +1110,23 @@
         "sdxl_simple_example": "간단한 SDXL 예제",
         "sdxlturbo_example": "SDXL 터보"
       },
+      "Image API": {
+        "api-openai-dall-e-2-inpaint": "Dall-E 2 인페인트",
+        "api-openai-dall-e-2-t2i": "Dall-E 2 텍스트 투 이미지",
+        "api-openai-dall-e-3-t2i": "Dall-E 3 텍스트 투 이미지",
+        "api_bfl_flux_pro_t2i": "BFL Flux[Pro] 텍스트 투 이미지",
+        "api_ideogram_v3_t2i": "Ideogram V3 텍스트 투 이미지",
+        "api_luma_photon_i2i": "Luma Photon 이미지 투 이미지",
+        "api_luma_photon_style_ref": "Luma Photon 스타일 참조",
+        "api_openai_image_1_i2i": "OpenAI Image-1 이미지 투 이미지",
+        "api_openai_image_1_inpaint": "OpenAI Image-1 인페인트",
+        "api_openai_image_1_multi_inputs": "OpenAI Image-1 멀티 입력",
+        "api_openai_image_1_t2i": "OpenAI Image-1 텍스트 투 이미지",
+        "api_recraft_image_gen_with_color_control": "Recraft 색상 제어 이미지 생성",
+        "api_recraft_image_gen_with_style_control": "Recraft 스타일 제어 이미지 생성",
+        "api_recraft_vector_gen": "Recraft 벡터 생성",
+        "api_stability_sd3_t2i": "Stability SD3 텍스트 투 이미지"
+      },
       "Upscaling": {
         "esrgan_example": "ESRGAN",
         "hiresfix_esrgan_workflow": "HiresFix ESRGAN 워크플로우",
@@ -1127,6 +1144,15 @@
         "txt_to_image_to_video": "텍스트 -> 이미지 -> 동영상",
         "wan2_1_fun_control": "Wan 2.1 컨트롤넷",
         "wan2_1_fun_inp": "Wan 2.1 인페인트"
+      },
+      "Video API": {
+        "api_hailuo_minimax_i2v": "MiniMax 이미지 투 비디오",
+        "api_kling_i2v": "Kling 이미지 투 비디오",
+        "api_luma_i2v": "Luma 이미지 투 비디오",
+        "api_pika_scene": "Pika 장면: 이미지 투 비디오",
+        "api_pixverse_t2v": "PixVerse 텍스트 투 비디오",
+        "api_pixverse_template_i2v": "PixVerse 템플릿: 이미지 투 비디오",
+        "api_veo2_i2v": "Veo2 이미지 투 비디오"
       }
     },
     "title": "템플릿으로 시작하기"
