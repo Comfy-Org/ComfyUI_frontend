@@ -393,6 +393,7 @@ export const useDialogService = () => {
       key: 'api-nodes-news',
       component: ApiNodesNewsContent,
       props: {
+        dismissableMask: true,
         onClose: () => {
           dialogStore.closeDialog({ key: 'api-nodes-news' })
           localStorage.setItem('api-nodes-news-seen', 'true')
@@ -400,7 +401,6 @@ export const useDialogService = () => {
       },
       dialogComponentProps: {
         closable: false,
-        modal: false,
         position: 'bottomright'
       }
     })
