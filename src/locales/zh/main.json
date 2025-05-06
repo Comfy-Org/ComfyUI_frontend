@@ -1126,7 +1126,7 @@
         "api-openai-dall-e-2-inpaint": "Dall-E 2 局部修复",
         "api-openai-dall-e-2-t2i": "Dall-E 2 文生图",
         "api-openai-dall-e-3-t2i": "Dall-E 3 文生图",
-        "api_bfl_flux_pro_t2i": "BFL Flux[Pro] 文生图",
+        "api_bfl_flux_pro_t2i": "BFL Flux 1.1[pro] Ultra 文生图",
         "api_ideogram_v3_t2i": "Ideogram V3 文生图",
         "api_luma_photon_i2i": "Luma Photon 图生图",
         "api_luma_photon_style_ref": "Luma Photon 风格参考",
@@ -1137,7 +1137,7 @@
         "api_recraft_image_gen_with_color_control": "Recraft 颜色控制图像生成",
         "api_recraft_image_gen_with_style_control": "Recraft 风格控制图像生成",
         "api_recraft_vector_gen": "Recraft 矢量生成",
-        "api_stability_sd3_t2i": "Stability SD3 文生图"
+        "api_stability_sd3_t2i": "Stability AI Stable Image Ultra 文生图"
       },
       "Upscaling": {
         "esrgan_example": "ESRGAN",
@@ -1161,9 +1161,9 @@
         "api_hailuo_minimax_i2v": "MiniMax 图生视频",
         "api_kling_i2v": "Kling 图生视频",
         "api_luma_i2v": "Luma 图生视频",
-        "api_pika_scene": "Pika 场景：图转视频",
-        "api_pixverse_t2v": "PixVerse 文转视频",
-        "api_pixverse_template_i2v": "PixVerse 模板：图转视频",
+        "api_pika_scene": "Pika 场景：图生视频",
+        "api_pixverse_t2v": "PixVerse 文生视频",
+        "api_pixverse_template_i2v": "PixVerse特效：图生视频",
         "api_veo2_i2v": "Veo2 图生视频"
       }
     },
