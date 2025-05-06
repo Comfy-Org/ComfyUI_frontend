@@ -441,6 +441,9 @@ export class ComfyApp {
     // Get prompt from dropped PNG or json
     document.addEventListener('drop', async (event) => {
       try {
+        // It does not disable the drag and drop of the text within TextArea.
+        if (event.target && event.target.type === 'textarea') return
+        
         event.preventDefault()
         event.stopPropagation()
 
