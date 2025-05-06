@@ -1,16 +1,11 @@
-import type { IStringWidget, IWidgetOptions } from "@/types/widgets"
+import type { IStringWidget } from "@/types/widgets"
 
 import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./BaseWidget"
 
-export class TextWidget extends BaseWidget implements IStringWidget {
-  // IStringWidget properties
-  declare type: "text" | "string"
-  declare value: string
-  declare options: IWidgetOptions<string>
-
+export class TextWidget extends BaseWidget<IStringWidget> implements IStringWidget {
   constructor(widget: IStringWidget) {
     super(widget)
-    this.type = widget.type ?? "string"
+    this.type ??= "string"
     this.value = widget.value?.toString() ?? ""
   }
 

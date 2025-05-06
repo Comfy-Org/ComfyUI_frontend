@@ -1,21 +1,12 @@
-import type { IKnobWidget, IWidgetKnobOptions } from "@/types/widgets"
+import type { IKnobWidget } from "@/types/widgets"
 
 import { clamp } from "@/litegraph"
 import { getWidgetStep } from "@/utils/widget"
 
 import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./BaseWidget"
 
-export class KnobWidget extends BaseWidget implements IKnobWidget {
-  declare type: "knob"
-  declare value: number
-  declare options: IWidgetKnobOptions
-
-  constructor(widget: IKnobWidget) {
-    super(widget)
-    this.type = "knob"
-    this.value = widget.value
-    this.options = widget.options
-  }
+export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
+  override type = "knob" as const
 
   computedHeight?: number
   /**

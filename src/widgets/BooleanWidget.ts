@@ -2,16 +2,8 @@ import type { IBooleanWidget } from "@/types/widgets"
 
 import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./BaseWidget"
 
-export class BooleanWidget extends BaseWidget implements IBooleanWidget {
-  // IBooleanWidget properties
-  declare type: "toggle"
-  declare value: boolean
-
-  constructor(widget: IBooleanWidget) {
-    super(widget)
-    this.type = "toggle"
-    this.value = widget.value
-  }
+export class BooleanWidget extends BaseWidget<IBooleanWidget> implements IBooleanWidget {
+  override type = "toggle" as const
 
   override drawWidget(ctx: CanvasRenderingContext2D, {
     width,

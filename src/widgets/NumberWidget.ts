@@ -1,15 +1,12 @@
 import type { WidgetEventOptions } from "./BaseWidget"
-import type { INumericWidget, IWidgetOptions } from "@/types/widgets"
+import type { INumericWidget } from "@/types/widgets"
 
 import { getWidgetStep } from "@/utils/widget"
 
 import { BaseSteppedWidget } from "./BaseSteppedWidget"
 
-export class NumberWidget extends BaseSteppedWidget implements INumericWidget {
-  // INumberWidget properties
-  declare type: "number"
-  declare value: number
-  declare options: IWidgetOptions<number>
+export class NumberWidget extends BaseSteppedWidget<INumericWidget> implements INumericWidget {
+  override type = "number" as const
 
   override get displayValue() {
     return Number(this.value).toFixed(
@@ -17,12 +14,6 @@ export class NumberWidget extends BaseSteppedWidget implements INumericWidget {
         ? this.options.precision
         : 3,
     )
-  }
-
-  constructor(widget: INumericWidget) {
-    super(widget)
-    this.type = "number"
-    this.value = widget.value
   }
 
   override canIncrement(): boolean {

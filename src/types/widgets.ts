@@ -1,9 +1,9 @@
 import type { CanvasPointer, LGraphCanvas, LGraphNode } from "../litegraph"
 import type { CanvasMouseEvent, CanvasPointerEvent } from "./events"
 
-import { CanvasColour, Point, Size } from "../interfaces"
+import { CanvasColour, Point, type RequiredProps, Size } from "../interfaces"
 
-export interface IWidgetOptions<TValue = unknown> extends Record<string, unknown> {
+export interface IWidgetOptions<TValues = unknown[]> {
   on?: string
   off?: string
   max?: number
@@ -27,7 +27,7 @@ export interface IWidgetOptions<TValue = unknown> extends Record<string, unknown
   /** If `true`, an input socket will not be created for this widget. */
   socketless?: boolean
 
-  values?: TValue[]
+  values?: TValues
   callback?: IWidget["callback"]
 }
 
@@ -60,71 +60,61 @@ export type IWidget =
   | IBooleanWidget
   | INumericWidget
   | IStringWidget
-  | IMultilineStringWidget
   | IComboWidget
   | ICustomWidget
   | ISliderWidget
   | IButtonWidget
   | IKnobWidget
 
-export interface IBooleanWidget extends IBaseWidget {
+export interface IBooleanWidget extends IBaseWidget<boolean, "toggle", IWidgetOptions<boolean>> {
   type: "toggle"
   value: boolean
 }
 
 /** Any widget that uses a numeric backing */
-export interface INumericWidget extends IBaseWidget {
+export interface INumericWidget extends IBaseWidget<number, "number", IWidgetOptions<number>> {
   type: "number"
   value: number
 }
 
-export interface ISliderWidget extends IBaseWidget {
+export interface ISliderWidget extends IBaseWidget<number, "slider", IWidgetSliderOptions> {
   type: "slider"
   value: number
-  options: IWidgetSliderOptions
   marker?: number
 }
 
-export interface IKnobWidget extends IBaseWidget {
+export interface IKnobWidget extends IBaseWidget<number, "knob", IWidgetKnobOptions> {
   type: "knob"
   value: number
   options: IWidgetKnobOptions
 }
 
+type ComboWidgetValues = string[] | Record<string, string> | ((widget?: IComboWidget, node?: LGraphNode) => string[])
+
 /** A combo-box widget (dropdown, select, etc) */
-export interface IComboWidget extends IBaseWidget {
+export interface IComboWidget extends IBaseWidget<
+  string | number,
+  "combo",
+  RequiredProps<IWidgetOptions<ComboWidgetValues>, "values">
+> {
   type: "combo"
   value: string | number
-  options: IWidgetOptions<string>
 }
 
-export type IStringWidgetType = IStringWidget["type"] | IMultilineStringWidget["type"]
-
 /** A widget with a string value */
-export interface IStringWidget extends IBaseWidget {
+export interface IStringWidget extends IBaseWidget<string, "string" | "text", IWidgetOptions<string>> {
   type: "string" | "text"
   value: string
 }
 
-export interface IButtonWidget extends IBaseWidget {
+export interface IButtonWidget extends IBaseWidget<undefined, "button", IWidgetOptions<undefined>> {
   type: "button"
   value: undefined
   clicked: boolean
 }
 
-/** A widget with a string value and a multiline text input */
-export interface IMultilineStringWidget<TElement extends HTMLElement = HTMLTextAreaElement> extends
-  IBaseWidget {
-
-  type: "multiline"
-  value: string
-
-  /** HTML textarea element  */
-  element?: TElement
-}
-
 /** A custom widget - accepts any value and has no built-in special handling */
-export interface ICustomWidget extends IBaseWidget {
+export interface ICustomWidget extends IBaseWidget<string | object, "custom", IWidgetOptions<string | object>> {
   type: "custom"
   value: string | object
 }
@@ -141,16 +131,16 @@ export type TWidgetValue = IWidget["value"]
  * The base type for all widgets.  Should not be implemented directly.
  * @see IWidget
  */
-export interface IBaseWidget {
+export interface IBaseWidget<TValue = unknown, TType = string, TOptions = unknown> {
   linkedWidgets?: IWidget[]
 
   name: string
-  options: IWidgetOptions
+  options: TOptions
 
   label?: string
   /** Widget type (see {@link TWidgetType}) */
-  type: TWidgetType
-  value?: TWidgetValue
+  type: TType
+  value?: TValue
 
   /**
    * Whether the widget value should be serialized on node serialization.

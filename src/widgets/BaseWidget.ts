@@ -1,6 +1,6 @@
 import type { CanvasPointer, LGraphCanvas, LGraphNode, Size } from "@/litegraph"
 import type { CanvasMouseEvent, CanvasPointerEvent } from "@/types/events"
-import type { IBaseWidget, IWidget, IWidgetOptions, TWidgetType, TWidgetValue } from "@/types/widgets"
+import type { IBaseWidget, IWidget } from "@/types/widgets"
 
 import { drawTextInArea } from "@/draw"
 import { Rectangle } from "@/infrastructure/Rectangle"
@@ -29,7 +29,7 @@ export interface WidgetEventOptions {
   canvas: LGraphCanvas
 }
 
-export abstract class BaseWidget implements IBaseWidget {
+export abstract class BaseWidget<TWidget extends IWidget = IWidget> implements IBaseWidget {
   /** From node edge to widget edge */
   static margin = 15
   /** From widget edge to tip of arrow button */
@@ -43,10 +43,10 @@ export abstract class BaseWidget implements IBaseWidget {
 
   linkedWidgets?: IWidget[]
   name: string
-  options: IWidgetOptions<unknown>
+  options: TWidget["options"]
   label?: string
-  type: TWidgetType
-  value?: TWidgetValue
+  type: TWidget["type"]
+  value: TWidget["value"]
   y: number = 0
   last_y?: number
   width?: number
@@ -74,11 +74,12 @@ export abstract class BaseWidget implements IBaseWidget {
   computeSize?(width?: number): Size
   onPointerDown?(pointer: CanvasPointer, node: LGraphNode, canvas: LGraphCanvas): boolean
 
-  constructor(widget: IBaseWidget) {
+  constructor(widget: TWidget) {
     Object.assign(this, widget)
     this.name = widget.name
     this.options = widget.options
     this.type = widget.type
+    this.value = widget.value
   }
 
   get outline_color() {
@@ -232,7 +233,7 @@ export abstract class BaseWidget implements IBaseWidget {
    * @param value The value to set
    * @param options The options for setting the value
    */
-  setValue(value: TWidgetValue, { e, node, canvas }: WidgetEventOptions) {
+  setValue(value: TWidget["value"], { e, node, canvas }: WidgetEventOptions) {
     const oldValue = this.value
     if (value === this.value) return
 

@@ -1,18 +1,14 @@
-import type { IButtonWidget, IWidgetOptions } from "@/types/widgets"
+import type { IButtonWidget } from "@/types/widgets"
 
 import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./BaseWidget"
 
-export class ButtonWidget extends BaseWidget implements IButtonWidget {
-  // IButtonWidget properties
-  declare type: "button"
-  declare options: IWidgetOptions<boolean>
-  declare clicked: boolean
-  declare value: undefined
+export class ButtonWidget extends BaseWidget<IButtonWidget> implements IButtonWidget {
+  override type = "button" as const
+  clicked: boolean
 
   constructor(widget: IButtonWidget) {
     super(widget)
-    this.type = "button"
-    this.clicked = widget.clicked ?? false
+    this.clicked ??= false
   }
 
   /**

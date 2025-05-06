@@ -1,23 +1,13 @@
-import type { ISliderWidget, IWidgetSliderOptions } from "@/types/widgets"
+import type { ISliderWidget } from "@/types/widgets"
 
 import { clamp } from "@/litegraph"
 
 import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./BaseWidget"
 
-export class SliderWidget extends BaseWidget implements ISliderWidget {
-  // ISliderWidget properties
-  declare type: "slider"
-  declare value: number
-  declare options: IWidgetSliderOptions
-  marker?: number
+export class SliderWidget extends BaseWidget<ISliderWidget> implements ISliderWidget {
+  override type = "slider" as const
 
-  constructor(widget: ISliderWidget) {
-    super(widget)
-    this.type = "slider"
-    this.value = widget.value
-    this.options = widget.options
-    this.marker = widget.marker
-  }
+  marker?: number
 
   /**
    * Draws the widget

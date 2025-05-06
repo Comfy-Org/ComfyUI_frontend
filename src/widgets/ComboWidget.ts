@@ -1,6 +1,6 @@
 import type { WidgetEventOptions } from "./BaseWidget"
 import type { LGraphNode } from "@/LGraphNode"
-import type { IComboWidget, IWidgetOptions } from "@/types/widgets"
+import type { IComboWidget } from "@/types/widgets"
 
 import { clamp, LiteGraph } from "@/litegraph"
 import { warnDeprecated } from "@/utils/feedback"
@@ -19,12 +19,8 @@ function toArray(values: Values): string[] {
   return Array.isArray(values) ? values : Object.keys(values)
 }
 
-export class ComboWidget extends BaseSteppedWidget implements IComboWidget {
-  // IComboWidget properties
-  declare type: "combo"
-  declare value: string | number
-  // @ts-expect-error Workaround for Record<string, string> not being typed in IWidgetOptions
-  declare options: Omit<IWidgetOptions<string>, "values"> & { values: Values }
+export class ComboWidget extends BaseSteppedWidget<IComboWidget> implements IComboWidget {
+  override type = "combo" as const
 
   override get displayValue() {
     const { values: rawValues } = this.options
@@ -36,12 +32,6 @@ export class ComboWidget extends BaseSteppedWidget implements IComboWidget {
       }
     }
     return typeof this.value === "number" ? String(this.value) : this.value
-  }
-
-  constructor(widget: IComboWidget) {
-    super(widget)
-    this.type = "combo"
-    this.value = widget.value
   }
 
   #getValues(node: LGraphNode): Values {

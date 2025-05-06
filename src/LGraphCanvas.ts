@@ -73,9 +73,8 @@ import {
 } from "./types/globalEnums"
 import { alignNodes, distributeNodes, getBoundaryNodes } from "./utils/arrange"
 import { findFirstNode, getAllNestedItems } from "./utils/collections"
-import { toClass } from "./utils/type"
 import { BaseWidget } from "./widgets/BaseWidget"
-import { WIDGET_TYPE_MAP } from "./widgets/widgetMap"
+import { toConcreteWidget } from "./widgets/widgetMap"
 
 interface IShowSearchOptions {
   node_to?: LGraphNode | null
@@ -2397,9 +2396,8 @@ export class LGraphCanvas {
     const x = pos[0] - node.pos[0]
     const y = pos[1] - node.pos[1]
 
-    const WidgetClass = WIDGET_TYPE_MAP[widget.type]
-    if (WidgetClass) {
-      const widgetInstance = toClass(WidgetClass, widget)
+    const widgetInstance = toConcreteWidget(widget)
+    if (widgetInstance) {
       pointer.onClick = () => widgetInstance.onClick({
         e,
         node,
