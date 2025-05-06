@@ -63,19 +63,13 @@ watch(
 )
 
 watch(
-  () => {
-    const canvas = canvasStore.canvas
-    if (!canvas) return null
-    return {
-      scale: canvas.ds.state.scale,
-      offset: [canvas.ds.state.offset[0], canvas.ds.state.offset[1]]
-    }
-  },
+  () => canvasStore.getCanvas().ds.state,
   (state) => {
     if (!state) return
 
-    positionSelectionOverlay(canvasStore.canvas as LGraphCanvas)
-  }
+    positionSelectionOverlay(canvasStore.getCanvas())
+  },
+  { deep: true }
 )
 
 watch(
