@@ -5,7 +5,11 @@
     class="comfyui-menu flex items-center"
     :class="{ dropzone: isDropZone, 'dropzone-active': isDroppable }"
   >
-    <h1 class="comfyui-logo mx-2 app-drag">ComfyUI</h1>
+    <img
+      src="/assets/images/comfy-logo-mono.svg"
+      alt="ComfyUI Logo"
+      class="comfyui-logo ml-2 app-drag h-6"
+    />
     <CommandMenubar />
     <div class="flex-grow min-w-0 app-drag h-full">
       <WorkflowTabs v-if="workflowTabsPosition === 'Topbar'" />
@@ -126,8 +130,12 @@ onMounted(() => {
 }
 
 .comfyui-logo {
-  font-size: 1.2em;
   user-select: none;
   cursor: default;
+  filter: invert(0);
+}
+
+.dark-theme .comfyui-logo {
+  filter: invert(1);
 }
 </style>
