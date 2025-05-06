@@ -1325,7 +1325,7 @@
   },
   "apiNodesNews": {
     "introducing": "Introducing",
-    "subtitle": "All External Models now available in ComfyUI",
+    "subtitle": "Access all the popular paid models natively in ComfyUI",
     "steps": {
       "step1": {
         "title": "Login/Create an account:",

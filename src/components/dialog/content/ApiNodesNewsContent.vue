@@ -35,6 +35,7 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Tag from 'primevue/tag'
+import { onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
@@ -66,4 +67,8 @@ const { onClose } = defineProps<{
 const handleLearnMore = () => {
   window.open('https://blog.comfy.org/p/comfyui-native-api-nodes', '_blank')
 }
+
+onBeforeUnmount(() => {
+  localStorage.setItem('api-nodes-news-seen', 'true')
+})
 </script>
