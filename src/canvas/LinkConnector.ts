@@ -575,13 +575,6 @@ export class LinkConnector {
       return node.outputs.some(output => this.renderLinks.some(link => link.canConnectToOutput(node, output)))
     }
 
-    // If the node has widgets, some of them might be able to be converted to
-    // input slots on drop. The logic is handled in
-    // https://github.com/Comfy-Org/ComfyUI_frontend/blob/4d35d937cfec5dd802fc1b24916883293f3cbb9e/src/extensions/core/widgetInputs.ts#L670-L695
-    if (node.widgets?.length) {
-      return true
-    }
-
     return node.inputs.some(input => this.renderLinks.some(link => link.canConnectToInput(node, input)))
   }
 
