@@ -405,18 +405,11 @@ export class LinkConnector {
     // To input
     } else if (connectingTo === "input") {
       const input = node.getInputOnPos([canvasX, canvasY])
+      const inputOrSocket = input ?? node.getSlotFromWidget(this.overWidget)
 
       // Input slot
-      if (input) {
-        this.#dropOnInput(node, input)
-      } else if (this.overWidget && renderLinks[0] instanceof ToInputRenderLink) {
-        // Widget
-        this.events.dispatch("dropped-on-widget", {
-          link: renderLinks[0],
-          node,
-          widget: this.overWidget,
-        })
-        this.overWidget = undefined
+      if (inputOrSocket) {
+        this.#dropOnInput(node, inputOrSocket)
       } else {
         // Node background / title
         this.connectToNode(node, event)
@@ -568,6 +561,10 @@ export class LinkConnector {
 
       link.connectToOutput(node, output, this.events)
     }
+  }
+
+  isInputValidDrop(node: LGraphNode, input: INodeInputSlot): boolean {
+    return this.renderLinks.some(link => link.canConnectToInput(node, input))
   }
 
   isNodeValidDrop(node: LGraphNode): boolean {

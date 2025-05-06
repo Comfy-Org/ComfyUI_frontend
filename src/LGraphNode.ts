@@ -2900,20 +2900,29 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    * @returns Position of the input slot
    */
   getInputPos(slot: number): Point {
-    const { pos: [nodeX, nodeY], inputs } = this
+    return this.getInputSlotPos(this.inputs[slot])
+  }
+
+  /**
+   * Gets the position of an input slot, in graph co-ordinates.
+   * @param input The actual node input object
+   * @returns Position of the centre of the input slot in graph co-ordinates.
+   */
+  getInputSlotPos(input: INodeInputSlot): Point {
+    const { pos: [nodeX, nodeY] } = this
 
     if (this.flags.collapsed) {
       const halfTitle = LiteGraph.NODE_TITLE_HEIGHT * 0.5
       return [nodeX, nodeY - halfTitle]
     }
 
-    const inputPos = inputs?.[slot]?.pos
-    if (inputPos) return [nodeX + inputPos[0], nodeY + inputPos[1]]
+    const { pos } = input
+    if (pos) return [nodeX + pos[0], nodeY + pos[1]]
 
     // default vertical slots
     const offsetX = LiteGraph.NODE_SLOT_HEIGHT * 0.5
     const nodeOffsetY = this.constructor.slot_start_y || 0
-    const slotIndex = this.#defaultVerticalInputs.indexOf(this.inputs[slot])
+    const slotIndex = this.#defaultVerticalInputs.indexOf(input)
     const slotY = (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT
 
     return [nodeX + offsetX, nodeY + slotY + nodeOffsetY]
@@ -3481,8 +3490,8 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   /**
    * Returns the input slot that is associated with the given widget.
    */
-  getSlotFromWidget(widget: IWidget): INodeInputSlot | undefined {
-    return this.inputs.find(slot => isWidgetInputSlot(slot) && slot.widget.name === widget.name)
+  getSlotFromWidget(widget: IWidget | undefined): INodeInputSlot | undefined {
+    if (widget) return this.inputs.find(slot => isWidgetInputSlot(slot) && slot.widget.name === widget.name)
   }
 
   /**

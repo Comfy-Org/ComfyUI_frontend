@@ -2675,23 +2675,40 @@ export class LGraphCanvas {
             if (!firstLink || !linkConnector.isNodeValidDrop(node)) {
               // No link, or none of the dragged links may be dropped here
             } else if (linkConnector.state.connectingTo === "input") {
-              if (inputId === -1 && outputId === -1) {
+              if (overWidget) {
+                // Check widgets first - inputId is only valid if over the input socket
+                const slot = node.getSlotFromWidget(overWidget)
+
+                if (slot && linkConnector.isInputValidDrop(node, slot)) {
+                  highlightInput = slot
+                  highlightPos = node.getInputSlotPos(slot)
+                  linkConnector.overWidget = overWidget
+                }
+              }
+
+              // Not over a valid widget - treat drop on invalid widget same as node background
+              if (!linkConnector.overWidget) {
+                if (inputId === -1 && outputId === -1) {
                 // Node background / title under the pointer
-                if (!linkConnector.overWidget) {
                   const result = node.findInputByType(firstLink.fromSlot.type)
                   if (result) {
                     highlightInput = result.slot
-                    highlightPos = node.getInputPos(result.index)
+                    highlightPos = node.getInputSlotPos(result.slot)
                   }
+                } else if (
+                  inputId != -1 &&
+                  node.inputs[inputId] &&
+                  LiteGraph.isValidConnection(firstLink.fromSlot.type, node.inputs[inputId].type)
+                ) {
+                  highlightPos = pos
+                  // XXX CHECK THIS
+                  highlightInput = node.inputs[inputId]
                 }
-              } else if (
-                inputId != -1 &&
-                node.inputs[inputId] &&
-                LiteGraph.isValidConnection(firstLink.fromSlot.type, node.inputs[inputId].type)
-              ) {
-                highlightPos = pos
-                // XXX CHECK THIS
-                highlightInput = node.inputs[inputId]
+
+                if (highlightInput) {
+                  const widget = node.getWidgetFromSlot(highlightInput)
+                  if (widget) linkConnector.overWidget = widget
+                }
               }
             } else if (linkConnector.state.connectingTo === "output") {
               // Connecting from an input to an output
