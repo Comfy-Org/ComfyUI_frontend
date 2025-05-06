@@ -1,6 +1,6 @@
 <template>
   <Avatar
-    :image="photoUrl"
+    :image="photoUrl ?? undefined"
     :icon="hasAvatar ? undefined : 'pi pi-user'"
     shape="circle"
     :aria-label="ariaLabel ?? $t('auth.login.userAvatar')"
@@ -13,7 +13,7 @@ import Avatar from 'primevue/avatar'
 import { computed, ref } from 'vue'
 
 const { photoUrl, ariaLabel } = defineProps<{
-  photoUrl?: string
+  photoUrl?: string | null
   ariaLabel?: string
 }>()
 

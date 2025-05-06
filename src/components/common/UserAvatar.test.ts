@@ -59,6 +59,17 @@ describe('UserAvatar', () => {
     expect(avatar.props('icon')).toBe('pi pi-user')
   })
 
+  it('renders with default icon when provided photo Url is null', () => {
+    const wrapper = mountComponent({
+      photoUrl: null
+    })
+
+    const avatar = wrapper.findComponent(Avatar)
+    expect(avatar.exists()).toBe(true)
+    expect(avatar.props('image')).toBeNull()
+    expect(avatar.props('icon')).toBe('pi pi-user')
+  })
+
   it('falls back to icon when image fails to load', async () => {
     const wrapper = mountComponent({
       photoUrl: 'https://example.com/broken-image.jpg'
