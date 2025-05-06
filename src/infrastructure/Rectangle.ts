@@ -23,9 +23,10 @@ export class Rectangle extends Float64Array {
     this[3] = height
   }
 
-  override subarray(begin?: number, end?: number): Float64Array<ArrayBuffer> {
-    const byteOffset = (begin ?? 0) << 3
-    return new Float64Array(this.buffer, byteOffset, end)
+  override subarray(begin: number = 0, end?: number): Float64Array<ArrayBuffer> {
+    const byteOffset = begin << 3
+    const length = end === undefined ? end : end - begin
+    return new Float64Array(this.buffer, byteOffset, length)
   }
 
   /**
