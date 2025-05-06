@@ -1,5 +1,15 @@
 import type { Point, ReadOnlyPoint, ReadOnlyRect, ReadOnlySize, Size } from "@/interfaces"
 
+/**
+ * A rectangle, represented as a float64 array of 4 numbers: [x, y, width, height].
+ *
+ * This class is a subclass of Float64Array, and so has all the methods of that class.  Notably,
+ * {@link Rectangle.from} can be used to convert a {@link ReadOnlyRect}.
+ *
+ * Sub-array properties ({@link Float64Array.subarray}):
+ * - {@link pos}: The position of the top-left corner of the rectangle.
+ * - {@link size}: The size of the rectangle.
+ */
 export class Rectangle extends Float64Array {
   #pos: Point | undefined
   #size: Size | undefined
@@ -14,7 +24,8 @@ export class Rectangle extends Float64Array {
   }
 
   override subarray(begin?: number, end?: number): Float64Array<ArrayBuffer> {
-    return new Float64Array(this.buffer, begin, end)
+    const byteOffset = (begin ?? 0) << 3
+    return new Float64Array(this.buffer, byteOffset, end)
   }
 
   /**
