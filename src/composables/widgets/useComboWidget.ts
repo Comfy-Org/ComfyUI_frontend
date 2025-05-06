@@ -71,10 +71,12 @@ const addComboWidget = (node: LGraphNode, inputSpec: ComboInputSpec) => {
     if (inputSpec.remote.refresh_button) remoteWidget.addRefreshButton()
 
     const origOptions = widget.options
-    widget.options = new Proxy(origOptions as Record<string | symbol, any>, {
-      get(target, prop: string | symbol) {
-        if (prop !== 'values') return target[prop]
-        return remoteWidget.getValue()
+    widget.options = new Proxy(origOptions, {
+      get(target, prop) {
+        // Assertion: Proxy handler passthrough
+        return prop !== 'values'
+          ? target[prop as keyof typeof target]
+          : remoteWidget.getValue()
       }
     })
   }

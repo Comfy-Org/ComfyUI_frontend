@@ -139,6 +139,7 @@ useExtensionService().registerExtension({
 
             if (uploadPath && modelWidget) {
               if (!modelWidget.options?.values?.includes(uploadPath)) {
+                // @ts-ignore Fails due to earlier type-assertion of IStringWidget
                 modelWidget.options?.values?.push(uploadPath)
               }
 
@@ -296,6 +297,7 @@ useExtensionService().registerExtension({
 
             if (uploadPath && modelWidget) {
               if (!modelWidget.options?.values?.includes(uploadPath)) {
+                // @ts-ignore Fails due to earlier type-assertion of IStringWidget
                 modelWidget.options?.values?.push(uploadPath)
               }
 

@@ -35,7 +35,11 @@ export function isAudioNode(node: LGraphNode | undefined): boolean {
 export function addToComboValues(widget: IComboWidget, value: string) {
   if (!widget.options) widget.options = { values: [] }
   if (!widget.options.values) widget.options.values = []
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore Combo widget values may be a dictionary or legacy function type
   if (!widget.options.values.includes(value)) {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore Combo widget values may be a dictionary or legacy function type
     widget.options.values.push(value)
   }
 }

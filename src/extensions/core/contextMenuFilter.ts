@@ -36,6 +36,7 @@ const ext = {
                 w.type === 'combo' && w.options.values?.length === values.length
             )
             .find((w) =>
+              // @ts-ignore Poorly typed; filter above "should" mitigate exceptions
               w.options.values?.every((v, i) => v === values[i])
             )?.value
 
