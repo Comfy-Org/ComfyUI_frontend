@@ -16,6 +16,49 @@ export interface ValidationResult {
 export function useWorkflowValidation() {
   const toastStore = useToastStore()
 
+  function tryFixLinks(
+    graphData: ComfyWorkflowJSON,
+    options: { silent?: boolean } = {}
+  ): ComfyWorkflowJSON | null {
+    const { silent = false } = options
+    // Collect all logs in an array
+    const logs: string[] = []
+    // Then validate and fix links if schema validation passed
+    const fixer = WorkflowLinkFixer.create(
+      graphData as unknown as ISerialisedGraph
+    )
+    fixer.logger = {
+      log: (...args: any[]) => {
+        logs.push(...args)
+      }
+    }
+    const checkBadLinksResult = fixer.check()
+    // Graph has no bad links, so we can return it as is
+    if (!checkBadLinksResult.hasBadLinks) {
+      return graphData
+    }
+
+    if (!silent) {
+      toastStore.add({
+        severity: 'warn',
+        summary: 'Workflow Validation',
+        detail: logs.join('\n')
+      })
+    }
+
+    const fixBadLinksResult = fixer.fix()
+    if (!fixBadLinksResult.hasBadLinks) {
+      if (!silent) {
+        toastStore.add({
+          severity: 'success',
+          summary: 'Workflow Links Fixed'
+        })
+      }
+      return fixBadLinksResult.graph as unknown as ComfyWorkflowJSON
+    }
+    return null
+  }
+
   /**
    * Validates a workflow, including link validation and schema validation
    */
@@ -40,34 +83,11 @@ export function useWorkflowValidation() {
     )
 
     if (validatedGraphData) {
-      // Collect all logs in an array
-      const logs: string[] = []
-      // Then validate and fix links if schema validation passed
-      const fixer = WorkflowLinkFixer.create(
-        validatedGraphData as unknown as ISerialisedGraph
-      )
-      fixer.logger = {
-        log: (...args: any[]) => {
-          logs.push(...args)
-        }
-      }
-      const checkBadLinksResult = fixer.check()
-
-      if (!silent && checkBadLinksResult.hasBadLinks) {
-        toastStore.add({
-          severity: 'warn',
-          summary: 'Workflow Validation',
-          detail: logs.join('\n')
-        })
-      }
-
-      const fixBadLinksResult = fixer.fix()
-      if (!fixBadLinksResult.hasBadLinks && !silent) {
-        toastStore.add({
-          severity: 'success',
-          summary: 'Workflow Links Fixed'
-        })
-        validatedData = fixBadLinksResult.graph as unknown as ComfyWorkflowJSON
+      try {
+        validatedData = tryFixLinks(validatedGraphData, { silent })
+      } catch (err) {
+        // Link fixer itself is throwing an error. Log it and return the original graph
+        console.error(err)
       }
     }
 
