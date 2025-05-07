@@ -1231,7 +1231,6 @@ export class GroupNodeHandler {
             const widgetName = self.groupData.oldToNewWidgetMap[n][w]
             const widget = this.widgets.find((w) => w.name === widgetName)
             if (widget) {
-              // @ts-expect-error fixme ts strict error
               widget.type = 'hidden'
               widget.computeSize = () => [0, -4]
             }

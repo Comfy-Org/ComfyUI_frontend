@@ -388,7 +388,6 @@ export class ComfyApp {
           const index = node.widgets.findIndex((obj) => obj.name === 'image')
           if (index >= 0) {
             if (
-              // @ts-expect-error custom widget type
               node.widgets[index].type != 'image' &&
               typeof node.widgets[index].value == 'string' &&
               clip_image.filename
@@ -410,7 +409,6 @@ export class ComfyApp {
             )
             if (prop && prop.type != 'button') {
               if (
-                // @ts-expect-error Custom widget type
                 prop.type != 'image' &&
                 typeof prop.value == 'string' &&
                 // @ts-expect-error Custom widget value
@@ -422,7 +420,6 @@ export class ComfyApp {
                   resultItem.filename +
                   (resultItem.type ? ` [${resultItem.type}]` : '')
               } else {
-                // @ts-expect-error fixme ts strict error
                 prop.value = value
                 prop.callback?.(value)
               }
@@ -1102,10 +1099,8 @@ export class ComfyApp {
           ) {
             if (widget.name == 'control_after_generate') {
               if (widget.value === true) {
-                // @ts-expect-error string is not assignable to boolean
                 widget.value = 'randomize'
               } else if (widget.value === false) {
-                // @ts-expect-error string is not assignable to boolean
                 widget.value = 'fixed'
               }
             }
@@ -1536,10 +1531,8 @@ export class ComfyApp {
         for (const widget of node.widgets) {
           if (widget.type === 'combo') {
             if (def['input'].required?.[widget.name] !== undefined) {
-              // @ts-expect-error Requires discriminated union
               widget.options.values = def['input'].required[widget.name][0]
             } else if (def['input'].optional?.[widget.name] !== undefined) {
-              // @ts-expect-error Requires discriminated union
               widget.options.values = def['input'].optional[widget.name][0]
             }
           }

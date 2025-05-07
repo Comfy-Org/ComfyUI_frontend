@@ -1,4 +1,4 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
+import { type LGraphNode, isComboWidget } from '@comfyorg/litegraph'
 import type {
   IBaseWidget,
   IComboWidget,
@@ -136,7 +136,7 @@ export function addValueControlWidgets(
   updateControlWidgetLabel(valueControl)
   const widgets: [IComboWidget, ...IStringWidget[]] = [valueControl]
 
-  const isCombo = targetWidget.type === 'combo'
+  const isCombo = isComboWidget(targetWidget)
   let comboFilter: IStringWidget
   if (isCombo && valueControl.options.values) {
     // @ts-expect-error Combo widget values may be a dictionary or legacy function type
