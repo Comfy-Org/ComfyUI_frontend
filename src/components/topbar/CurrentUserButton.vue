@@ -12,12 +12,7 @@
       <div
         class="flex items-center rounded-full bg-[var(--p-content-background)]"
       >
-        <Avatar
-          :image="photoURL"
-          :icon="photoURL ? undefined : 'pi pi-user'"
-          shape="circle"
-          aria-label="User Avatar"
-        />
+        <UserAvatar :photo-url="photoURL" />
 
         <i class="pi pi-chevron-down px-1" :style="{ fontSize: '0.5rem' }" />
       </div>
@@ -30,11 +25,11 @@
 </template>
 
 <script setup lang="ts">
-import Avatar from 'primevue/avatar'
 import Button from 'primevue/button'
 import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
 
+import UserAvatar from '@/components/common/UserAvatar.vue'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
 import CurrentUserPopover from './CurrentUserPopover.vue'

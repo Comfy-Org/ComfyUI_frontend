@@ -4,13 +4,13 @@
     <!-- User Info Section -->
     <div class="p-3">
       <div class="flex flex-col items-center">
-        <Avatar
+        <UserAvatar
           class="mb-3"
-          :image="user?.photoURL ?? undefined"
-          :icon="user?.photoURL ? undefined : 'pi pi-user !text-2xl'"
-          shape="circle"
+          :photo-url="user?.photoURL"
+          :pt:icon:class="{
+            '!text-2xl': !user?.photoURL
+          }"
           size="large"
-          aria-label="User Avatar"
         />
 
         <!-- User Details -->
@@ -50,11 +50,11 @@
 </template>
 
 <script setup lang="ts">
-import Avatar from 'primevue/avatar'
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import { computed, onMounted } from 'vue'
 
+import UserAvatar from '@/components/common/UserAvatar.vue'
 import UserCredit from '@/components/common/UserCredit.vue'
 import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthService } from '@/services/firebaseAuthService'

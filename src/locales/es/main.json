@@ -55,7 +55,8 @@
       "success": "Inicio de sesión exitoso",
       "termsLink": "Términos de uso",
       "termsText": "Al hacer clic en \"Siguiente\" o \"Registrarse\", aceptas nuestros",
-      "title": "Inicia sesión en tu cuenta"
+      "title": "Inicia sesión en tu cuenta",
+      "userAvatar": "Avatar de usuario"
     },
     "passwordUpdate": {
       "success": "Contraseña actualizada",

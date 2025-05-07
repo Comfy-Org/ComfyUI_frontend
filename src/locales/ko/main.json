@@ -55,7 +55,8 @@
       "success": "로그인 성공",
       "termsLink": "이용 약관",
       "termsText": "\"다음\" 또는 \"가입하기\"를 클릭하면 우리의",
-      "title": "계정에 로그인"
+      "title": "계정에 로그인",
+      "userAvatar": "사용자 아바타"
     },
     "passwordUpdate": {
       "success": "비밀번호가 업데이트되었습니다",
