@@ -2,8 +2,8 @@ import type { ColorOption, LGraph } from '@comfyorg/litegraph'
 import { LGraphGroup, LGraphNode, isColorable } from '@comfyorg/litegraph'
 import type { ISerialisedGraph } from '@comfyorg/litegraph/dist/types/serialisation'
 import type {
-  IComboWidget,
-  IWidget
+  IBaseWidget,
+  IComboWidget
 } from '@comfyorg/litegraph/dist/types/widgets'
 import _ from 'lodash'
 
@@ -92,7 +92,7 @@ export function executeWidgetsCallback(
  */
 export function migrateWidgetsValues<TWidgetValue>(
   inputDefs: Record<string, InputSpec>,
-  widgets: IWidget[],
+  widgets: IBaseWidget[],
   widgetsValues: TWidgetValue[]
 ): TWidgetValue[] {
   const widgetNames = new Set(widgets.map((w) => w.name))

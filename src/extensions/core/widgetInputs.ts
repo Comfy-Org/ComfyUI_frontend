@@ -3,11 +3,11 @@ import type {
   INodeInputSlot,
   INodeOutputSlot,
   ISlotType,
-  IWidget,
   LLink,
   Vector2
 } from '@comfyorg/litegraph'
 import type { CanvasMouseEvent } from '@comfyorg/litegraph/dist/types/events'
+import type { IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
 import {
   type CallbackParams,
@@ -226,7 +226,7 @@ export class PrimitiveNode extends LGraphNode {
 
     // Store current size as addWidget resizes the node
     const [oldWidth, oldHeight] = this.size
-    let widget: IWidget | undefined
+    let widget: IBaseWidget | undefined
     if (type in ComfyWidgets) {
       widget = (ComfyWidgets[type](this, 'value', inputData, app) || {}).widget
     } else {
@@ -426,7 +426,7 @@ function getConfig(this: LGraphNode, widgetName: string) {
  */
 export function convertToInput(
   node: LGraphNode,
-  widget: IWidget
+  widget: IBaseWidget
 ): INodeInputSlot | undefined {
   console.warn(
     'Please remove call to convertToInput. Widget to socket conversion is no longer necessary, as they co-exist now.'

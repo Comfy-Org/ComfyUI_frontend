@@ -1,7 +1,7 @@
 import { LGraphNode, LiteGraph } from '@comfyorg/litegraph'
 import type {
+  IBaseWidget,
   ICustomWidget,
-  IWidget,
   IWidgetOptions
 } from '@comfyorg/litegraph/dist/types/widgets'
 import _ from 'lodash'
@@ -81,11 +81,11 @@ export interface DOMWidgetOptions<V extends object | string>
 }
 
 export const isDOMWidget = <T extends HTMLElement, V extends object | string>(
-  widget: IWidget
+  widget: IBaseWidget
 ): widget is DOMWidget<T, V> => 'element' in widget && !!widget.element
 
 export const isComponentWidget = <V extends object | string>(
-  widget: IWidget
+  widget: IBaseWidget
 ): widget is ComponentWidget<V> => 'component' in widget && !!widget.component
 
 abstract class BaseDOMWidgetImpl<V extends object | string>

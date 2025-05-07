@@ -1,4 +1,7 @@
-import type { IStringWidget } from '@comfyorg/litegraph/dist/types/widgets'
+import type {
+  IComboWidget,
+  IStringWidget
+} from '@comfyorg/litegraph/dist/types/widgets'
 import { nextTick } from 'vue'
 
 import Load3D from '@/components/load3d/Load3D.vue'
@@ -116,7 +119,7 @@ useExtensionService().registerExtension({
           if (fileInput.files?.length) {
             const modelWidget = node.widgets?.find(
               (w) => w.name === 'model_file'
-            ) as IStringWidget
+            ) as IComboWidget & { options: { values: string[] } }
 
             node.properties['Texture'] = undefined
 
@@ -138,7 +141,6 @@ useExtensionService().registerExtension({
 
             if (uploadPath && modelWidget) {
               if (!modelWidget.options?.values?.includes(uploadPath)) {
-                // @ts-expect-error Fails due to earlier type-assertion of IStringWidget
                 modelWidget.options?.values?.push(uploadPath)
               }
 
@@ -292,7 +294,6 @@ useExtensionService().registerExtension({
 
             if (uploadPath && modelWidget) {
               if (!modelWidget.options?.values?.includes(uploadPath)) {
-                // @ts-expect-error Fails due to earlier type-assertion of IStringWidget
                 modelWidget.options?.values?.push(uploadPath)
               }
 
