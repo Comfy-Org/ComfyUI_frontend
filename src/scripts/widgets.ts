@@ -78,7 +78,7 @@ export function addValueControlWidget(
   _values?: unknown,
   widgetName?: string,
   inputData?: InputSpec
-): IWidget {
+): IComboWidget {
   let name = inputData?.[1]?.control_after_generate
   if (typeof name !== 'string') {
     name = widgetName
@@ -102,7 +102,7 @@ export function addValueControlWidgets(
   defaultValue?: string,
   options?: Record<string, any>,
   inputData?: InputSpec
-): IWidget[] {
+): [IComboWidget, ...IStringWidget[]] {
   if (!defaultValue) defaultValue = 'randomize'
   if (!options) options = {}
 
@@ -118,7 +118,6 @@ export function addValueControlWidgets(
     return name
   }
 
-  const widgets: IWidget[] = []
   const valueControl = node.addWidget(
     'combo',
     getName('control_after_generate', 'controlAfterGenerateName'),
@@ -135,12 +134,12 @@ export function addValueControlWidgets(
   // @ts-ignore index with symbol
   valueControl[IS_CONTROL_WIDGET] = true
   updateControlWidgetLabel(valueControl)
-  widgets.push(valueControl)
+  const widgets: [IComboWidget, ...IStringWidget[]] = [valueControl]
 
   const isCombo = targetWidget.type === 'combo'
   let comboFilter: IStringWidget
   if (isCombo && valueControl.options.values) {
-    // @ts-ignore Combo widget values may be a dictionary or legacy function type
+    // @ts-expect-error Combo widget values may be a dictionary or legacy function type
     valueControl.options.values.push('increment-wrap')
   }
   if (isCombo && options.addFilterList !== false) {
@@ -184,7 +183,7 @@ export function addValueControlWidgets(
           const lower = filter.toLocaleLowerCase()
           check = (item: string) => item.toLocaleLowerCase().includes(lower)
         }
-        // @ts-ignore Combo widget values may be a dictionary or legacy function type
+        // @ts-expect-error Combo widget values may be a dictionary or legacy function type
         values = values.filter((item: string) => check(item))
         if (!values.length && targetWidget.options.values?.length) {
           console.warn(
@@ -211,17 +210,17 @@ export function addValueControlWidgets(
           current_index -= 1
           break
         case 'randomize':
-          // @ts-ignore Combo widget values may be a dictionary or legacy function type
+          // @ts-expect-error Combo widget values may be a dictionary or legacy function type
           current_index = Math.floor(Math.random() * current_length)
           break
         default:
           break
       }
       current_index = Math.max(0, current_index)
-      // @ts-ignore Combo widget values may be a dictionary or legacy function type
+      // @ts-expect-error Combo widget values may be a dictionary or legacy function type
       current_index = Math.min(current_length - 1, current_index)
       if (current_index >= 0) {
-        // @ts-ignore Combo widget values may be a dictionary or legacy function type
+        // @ts-expect-error Combo widget values may be a dictionary or legacy function type
         let value = values[current_index]
         targetWidget.value = value
         targetWidget.callback?.(value)

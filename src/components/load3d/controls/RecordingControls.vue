@@ -75,7 +75,7 @@
 </template>
 
 <script setup lang="ts">
-import { IWidget, LGraphNode } from '@comfyorg/litegraph'
+import { LGraphNode } from '@comfyorg/litegraph'
 import { Tooltip } from 'primevue'
 import Button from 'primevue/button'
 
@@ -101,13 +101,13 @@ const emit = defineEmits<{
 const resizeNodeMatchOutput = () => {
   console.log('resizeNodeMatchOutput')
 
-  const outputWidth = node.widgets?.find((w: IWidget) => w.name === 'width')
-  const outputHeight = node.widgets?.find((w: IWidget) => w.name === 'height')
+  const outputWidth = node.widgets?.find((w) => w.name === 'width')
+  const outputHeight = node.widgets?.find((w) => w.name === 'height')
 
   if (outputWidth && outputHeight && outputHeight.value && outputWidth.value) {
     const [oldWidth, oldHeight] = node.size
 
-    const scene = node.widgets?.find((w: IWidget) => w.name === 'image')
+    const scene = node.widgets?.find((w) => w.name === 'image')
 
     const sceneHeight = scene?.computedHeight
 
