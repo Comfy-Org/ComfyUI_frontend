@@ -78,7 +78,7 @@ export function addValueControlWidget(
   _values?: unknown,
   widgetName?: string,
   inputData?: InputSpec
-): IWidget {
+): IComboWidget {
   let name = inputData?.[1]?.control_after_generate
   if (typeof name !== 'string') {
     name = widgetName
@@ -102,7 +102,7 @@ export function addValueControlWidgets(
   defaultValue?: string,
   options?: Record<string, any>,
   inputData?: InputSpec
-): IWidget[] {
+): [IComboWidget, ...IStringWidget[]] {
   if (!defaultValue) defaultValue = 'randomize'
   if (!options) options = {}
 
@@ -118,7 +118,6 @@ export function addValueControlWidgets(
     return name
   }
 
-  const widgets: IWidget[] = []
   const valueControl = node.addWidget(
     'combo',
     getName('control_after_generate', 'controlAfterGenerateName'),
@@ -135,7 +134,7 @@ export function addValueControlWidgets(
   // @ts-ignore index with symbol
   valueControl[IS_CONTROL_WIDGET] = true
   updateControlWidgetLabel(valueControl)
-  widgets.push(valueControl)
+  const widgets: [IComboWidget, ...IStringWidget[]] = [valueControl]
 
   const isCombo = targetWidget.type === 'combo'
   let comboFilter: IStringWidget
