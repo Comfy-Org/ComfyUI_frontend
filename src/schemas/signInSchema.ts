@@ -2,6 +2,17 @@ import { z } from 'zod'
 
 import { t } from '@/i18n'
 
+export const apiKeySchema = z.object({
+  apiKey: z
+    .string()
+    .trim()
+    .startsWith('comfyui-', t('validation.prefix', { prefix: 'comfyui-' }))
+    .min(72, t('validation.minLength', { length: 72 }))
+    .max(72, t('validation.maxLength', { length: 72 }))
+})
+
+export type ApiKeyData = z.infer<typeof apiKeySchema>
+
 export const signInSchema = z.object({
   email: z
     .string()

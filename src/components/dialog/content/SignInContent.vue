@@ -1,5 +1,5 @@
 <template>
-  <div class="w-96 p-2">
+  <div class="w-96 p-2 overflow-x-hidden">
     <!-- Header -->
     <div class="flex flex-col gap-4 mb-8">
       <h1 class="text-2xl font-medium leading-normal my-0">
@@ -22,21 +22,27 @@
     </Message>
 
     <!-- Form -->
-    <SignInForm v-if="isSignIn" @submit="signInWithEmail" />
-    <template v-else>
+    <SignInForm v-if="isSignIn && !showApiKeyForm" @submit="signInWithEmail" />
+    <template v-else-if="!isSignIn && !showApiKeyForm">
       <Message v-if="userIsInChina" severity="warn" class="mb-4">
         {{ t('auth.signup.regionRestrictionChina') }}
       </Message>
       <SignUpForm v-else @submit="signUpWithEmail" />
     </template>
+    <ApiKeyForm v-else @back="showApiKeyForm = false" @success="onSuccess" />
 
     <!-- Divider -->
-    <Divider align="center" layout="horizontal" class="my-8">
+    <Divider
+      v-if="!showApiKeyForm"
+      align="center"
+      layout="horizontal"
+      class="my-8"
+    >
       <span class="text-muted">{{ t('auth.login.orContinueWith') }}</span>
     </Divider>
 
     <!-- Social Login Buttons -->
-    <div class="flex flex-col gap-6">
+    <div v-if="!showApiKeyForm" class="flex flex-col gap-6">
       <Button
         type="button"
         class="h-10"
@@ -66,7 +72,23 @@
             : t('auth.signup.signUpWithGithub')
         }}
       </Button>
+
+      <Button
+        type="button"
+        class="h-10"
+        severity="secondary"
+        outlined
+        @click="showApiKeyForm = true"
+      >
+        <img
+          src="/assets/images/comfy-logo-mono.svg"
+          class="w-5 h-5 mr-2"
+          alt="Comfy"
+        />
+        {{ t('auth.login.useApiKey') }}
+      </Button>
     </div>
+
     <!-- Terms & Contact -->
     <p class="text-xs text-muted mt-8">
       {{ t('auth.login.termsText') }}
@@ -104,6 +126,7 @@ import { SignInData, SignUpData } from '@/schemas/signInSchema'
 import { useFirebaseAuthService } from '@/services/firebaseAuthService'
 import { isInChina } from '@/utils/networkUtil'
 
+import ApiKeyForm from './signin/ApiKeyForm.vue'
 import SignInForm from './signin/SignInForm.vue'
 import SignUpForm from './signin/SignUpForm.vue'
 
@@ -115,8 +138,11 @@ const { t } = useI18n()
 const authService = useFirebaseAuthService()
 const isSecureContext = window.isSecureContext
 const isSignIn = ref(true)
+const showApiKeyForm = ref(false)
+
 const toggleState = () => {
   isSignIn.value = !isSignIn.value
+  showApiKeyForm.value = false
 }
 
 const signInWithGoogle = async () => {
