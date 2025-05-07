@@ -15,7 +15,10 @@
       </Button>
       <Button
         class="p-button-rounded p-button-text"
-        :class="{ 'p-button-danger': isRecording }"
+        :class="{
+          'p-button-danger': isRecording,
+          'recording-button-blink': isRecording
+        }"
         @click="toggleRecording"
       >
         <i
@@ -75,16 +78,16 @@
 import { IWidget, LGraphNode } from '@comfyorg/litegraph'
 import { Tooltip } from 'primevue'
 import Button from 'primevue/button'
-import { ref, watch } from 'vue'
 
 import { t } from '@/i18n'
+import { useLoad3dService } from '@/services/load3dService'
 
 const vTooltip = Tooltip
 
-const props = defineProps<{
-  node: LGraphNode
-  isRecording: boolean
+const { hasRecording, isRecording, node, recordingDuration } = defineProps<{
   hasRecording: boolean
+  isRecording: boolean
+  node: LGraphNode
   recordingDuration: number
 }>()
 
@@ -95,46 +98,16 @@ const emit = defineEmits<{
   (e: 'clearRecording'): void
 }>()
 
-const node = ref(props.node)
-const isRecording = ref(props.isRecording)
-const hasRecording = ref(props.hasRecording)
-const recordingDuration = ref(props.recordingDuration)
-
-watch(
-  () => props.isRecording,
-  (newValue) => {
-    isRecording.value = newValue
-  }
-)
-
-watch(
-  () => props.hasRecording,
-  (newValue) => {
-    hasRecording.value = newValue
-  }
-)
-
-watch(
-  () => props.recordingDuration,
-  (newValue) => {
-    recordingDuration.value = newValue
-  }
-)
-
 const resizeNodeMatchOutput = () => {
   console.log('resizeNodeMatchOutput')
 
-  const outputWidth = node.value.widgets?.find(
-    (w: IWidget) => w.name === 'width'
-  )
-  const outputHeight = node.value.widgets?.find(
-    (w: IWidget) => w.name === 'height'
-  )
+  const outputWidth = node.widgets?.find((w: IWidget) => w.name === 'width')
+  const outputHeight = node.widgets?.find((w: IWidget) => w.name === 'height')
 
   if (outputWidth && outputHeight && outputHeight.value && outputWidth.value) {
-    const [oldWidth, oldHeight] = node.value.size
+    const [oldWidth, oldHeight] = node.size
 
-    const scene = node.value.widgets?.find((w: IWidget) => w.name === 'image')
+    const scene = node.widgets?.find((w: IWidget) => w.name === 'image')
 
     const sceneHeight = scene?.computedHeight
 
@@ -144,16 +117,21 @@ const resizeNodeMatchOutput = () => {
       const outputRatio = Number(outputHeight.value) / Number(outputWidth.value)
       const expectSceneHeight = sceneWidth * outputRatio
 
-      node.value.setSize([
-        oldWidth,
-        oldHeight + (expectSceneHeight - sceneHeight)
-      ])
+      node.setSize([oldWidth, oldHeight + (expectSceneHeight - sceneHeight)])
+
+      node.graph?.setDirtyCanvas(true, true)
+
+      const load3d = useLoad3dService().getLoad3d(node as LGraphNode)
+
+      if (load3d) {
+        load3d.refreshViewport()
+      }
     }
   }
 }
 
 const toggleRecording = () => {
-  if (isRecording.value) {
+  if (isRecording) {
     emit('stopRecording')
   } else {
     emit('startRecording')
@@ -174,3 +152,19 @@ const formatDuration = (seconds: number): string => {
   return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`
 }
 </script>
+
+<style scoped>
+.recording-button-blink {
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+</style>
