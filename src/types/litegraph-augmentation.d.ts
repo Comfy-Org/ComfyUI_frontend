@@ -35,10 +35,7 @@ declare module '@comfyorg/litegraph/dist/types/widgets' {
     onRemove?: () => void
     beforeQueued?: () => unknown
     afterQueued?: () => unknown
-    serializeValue?: (
-      node: LGraphNode,
-      index: number
-    ) => Promise<unknown> | unknown
+    serializeValue?(node: LGraphNode, index: number): Promise<unknown> | unknown
 
     /**
      * Refreshes the widget's value or options from its remote source.
@@ -64,6 +61,14 @@ declare module '@comfyorg/litegraph' {
     nodeData?: ComfyNodeDefV1 & ComfyNodeDefV2
     category?: string
     new (): T
+  }
+
+  interface TextWidget {
+    dynamicPrompts?: boolean
+  }
+
+  interface BaseWidget {
+    serializeValue?(node: LGraphNode, index: number): Promise<unknown> | unknown
   }
 
   interface LGraphNode {
