@@ -7,8 +7,7 @@ export const apiKeySchema = z.object({
     .string()
     .trim()
     .startsWith('comfyui-', t('validation.prefix', { prefix: 'comfyui-' }))
-    .min(72, t('validation.minLength', { length: 72 }))
-    .max(72, t('validation.maxLength', { length: 72 }))
+    .length(72, t('validation.length', { length: 72 }))
 })
 
 export type ApiKeyData = z.infer<typeof apiKeySchema>

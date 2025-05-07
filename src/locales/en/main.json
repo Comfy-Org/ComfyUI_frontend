@@ -1303,6 +1303,7 @@
     "minLength": "Must be at least {length} characters",
     "maxLength": "Must be no more than {length} characters",
     "prefix": "Must start with {prefix}",
+    "length": "Must be {length} characters",
     "password": {
       "requirements": "Password requirements",
       "minLength": "Must be between 8 and 32 characters",
