@@ -50,7 +50,8 @@ export const useFloatWidget = () => {
       Math.max(0, -Math.floor(Math.log10(step)))
     const enableRounding = !settingStore.get('Comfy.DisableFloatRounding')
 
-    const defaultValue = inputSpec.default ?? 0
+    /** Assertion {@link inputSpec.default} */
+    const defaultValue = (inputSpec.default as number | undefined) ?? 0
     return node.addWidget(
       widgetType,
       inputSpec.name,
