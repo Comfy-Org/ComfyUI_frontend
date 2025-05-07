@@ -104,8 +104,8 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
     type: string
     options: DOMWidgetOptions<V>
   }) {
-    const { node, ...rest } = obj
-    super({ value: undefined, y: 0, ...rest }, node)
+    const { node, name, type, options } = obj
+    super({ y: 0, name, type, options }, node)
 
     this.id = generateUUID()
   }
