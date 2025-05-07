@@ -27,6 +27,9 @@
   --content-fg: #000;
   --content-hover-bg: #adadad;
   --content-hover-fg: #000;
+  /* Colors for Comfy branding. */
+  --comfy-yellow: #f0ff41;
+  --comfy-blue: #172dd7;
 }
 
 @media (prefers-color-scheme: dark) {

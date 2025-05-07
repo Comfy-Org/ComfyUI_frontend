@@ -5,11 +5,7 @@
     class="comfyui-menu flex items-center"
     :class="{ dropzone: isDropZone, 'dropzone-active': isDroppable }"
   >
-    <img
-      src="/assets/images/comfy-logo-mono.svg"
-      alt="ComfyUI Logo"
-      class="comfyui-logo ml-2 app-drag h-6"
-    />
+    <ComfyLogo class="user-select-none cursor-default ml-2 app-drag h-6 w-6" />
     <CommandMenubar />
     <div class="flex-grow min-w-0 app-drag h-full">
       <WorkflowTabs v-if="workflowTabsPosition === 'Topbar'" />
@@ -48,6 +44,7 @@ import { computed, onMounted, provide, ref } from 'vue'
 
 import Actionbar from '@/components/actionbar/ComfyActionbar.vue'
 import BottomPanelToggleButton from '@/components/topbar/BottomPanelToggleButton.vue'
+import ComfyLogo from '@/components/topbar/ComfyLogo.vue'
 import CommandMenubar from '@/components/topbar/CommandMenubar.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
@@ -127,15 +124,5 @@ onMounted(() => {
 
 :deep(.p-menubar-item-label) {
   line-height: revert;
-}
-
-.comfyui-logo {
-  user-select: none;
-  cursor: default;
-  filter: invert(0);
-}
-
-.dark-theme .comfyui-logo {
-  filter: invert(1);
 }
 </style>
