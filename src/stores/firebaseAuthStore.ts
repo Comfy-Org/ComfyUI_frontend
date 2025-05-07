@@ -60,6 +60,9 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     prompt: 'select_account'
   })
   const githubProvider = new GithubAuthProvider()
+  githubProvider.setCustomParameters({
+    prompt: 'select_account'
+  })
 
   // Getters
   const isAuthenticated = computed(() => !!currentUser.value)
