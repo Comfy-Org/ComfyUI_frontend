@@ -115,7 +115,8 @@ export abstract class BaseWidget<TWidget extends IWidget = IWidget> implements I
     return this.label || this.name
   }
 
-  get displayValue(): string {
+  // TODO: Resolve this workaround. Ref: https://github.com/Comfy-Org/litegraph.js/issues/1022
+  get _displayValue(): string {
     return String(this.value)
   }
 
@@ -171,9 +172,9 @@ export abstract class BaseWidget<TWidget extends IWidget = IWidget> implements I
     const { margin } = BaseWidget
 
     // Measure label and value
-    const { displayName, displayValue } = this
+    const { displayName, _displayValue } = this
     const labelWidth = ctx.measureText(displayName).width
-    const valueWidth = ctx.measureText(displayValue).width
+    const valueWidth = ctx.measureText(_displayValue).width
 
     const gap = BaseWidget.labelValueGap
     const x = margin * 2 + leftPadding
@@ -218,7 +219,7 @@ export abstract class BaseWidget<TWidget extends IWidget = IWidget> implements I
       area.setWidthRightAnchored(cappedValueWidth)
     }
     ctx.fillStyle = this.text_color
-    drawTextInArea({ ctx, text: displayValue, area, align: "right" })
+    drawTextInArea({ ctx, text: _displayValue, area, align: "right" })
   }
 
   /**

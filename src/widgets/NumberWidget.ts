@@ -8,7 +8,7 @@ import { BaseSteppedWidget } from "./BaseSteppedWidget"
 export class NumberWidget extends BaseSteppedWidget<INumericWidget> implements INumericWidget {
   override type = "number" as const
 
-  override get displayValue() {
+  override get _displayValue() {
     return Number(this.value).toFixed(
       this.options.precision !== undefined
         ? this.options.precision

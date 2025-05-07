@@ -22,7 +22,7 @@ function toArray(values: Values): string[] {
 export class ComboWidget extends BaseSteppedWidget<IComboWidget> implements IComboWidget {
   override type = "combo" as const
 
-  override get displayValue() {
+  override get _displayValue() {
     const { values: rawValues } = this.options
     if (rawValues) {
       const values = typeof rawValues === "function" ? rawValues() : rawValues
