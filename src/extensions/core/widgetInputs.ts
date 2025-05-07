@@ -506,8 +506,7 @@ export function mergeIfValid(
     }
   }
 
-  // @ts-expect-error fixme ts strict error
-  return { customConfig: customSpec[1] }
+  return { customConfig: customSpec?.[1] ?? {} }
 }
 
 app.registerExtension({
