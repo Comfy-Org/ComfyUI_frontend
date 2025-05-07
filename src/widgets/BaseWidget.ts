@@ -74,7 +74,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget> impl
   computeSize?(width?: number): Size
   onPointerDown?(pointer: CanvasPointer, node: LGraphNode, canvas: LGraphCanvas): boolean
 
-  #value: TWidget["value"] = undefined
+  #value?: TWidget["value"]
   get value(): TWidget["value"] {
     return this.#value
   }
