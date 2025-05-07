@@ -8,7 +8,6 @@ import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./B
 export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
   override type = "knob" as const
 
-  computedHeight?: number
   /**
    * Compute the layout size of the widget.
    * @returns The layout size of the widget.

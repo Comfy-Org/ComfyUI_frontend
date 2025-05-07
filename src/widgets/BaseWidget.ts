@@ -41,6 +41,8 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget> impl
   /** Minimum gap between label and value */
   static labelValueGap = 5
 
+  declare computedHeight?: number
+
   #node: LGraphNode
   /** The node that this widget belongs to. */
   get node() {
@@ -72,7 +74,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget> impl
   computeSize?(width?: number): Size
   onPointerDown?(pointer: CanvasPointer, node: LGraphNode, canvas: LGraphCanvas): boolean
 
-  #value: TWidget["value"]
+  #value: TWidget["value"] = undefined
   get value(): TWidget["value"] {
     return this.#value
   }
@@ -86,7 +88,13 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget> impl
   constructor(widget: TWidget & { node: LGraphNode }, node?: LGraphNode) {
     // Private fields
     this.#node = node ?? widget.node
-    this.#value = widget.value
+
+    // The set and get functions for DOM widget values are hacked on to the options object;
+    // attempting to set value before options will throw.
+    // https://github.com/Comfy-Org/ComfyUI_frontend/blob/df86da3d672628a452baed3df3347a52c0c8d378/src/scripts/domWidget.ts#L125
+    this.name = widget.name
+    this.options = widget.options
+    this.type = widget.type
 
     // `node` has no setter - Object.assign will throw.
     // TODO: Resolve this workaround. Ref: https://github.com/Comfy-Org/litegraph.js/issues/1022
@@ -95,11 +103,6 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget> impl
     const { node: _, outline_color, background_color, height, text_color, secondary_text_color, disabledTextColor, displayName, displayValue, labelBaseline, ...safeValues } = widget
 
     Object.assign(this, safeValues)
-
-    // Re-assign to fix TS errors.
-    this.name = widget.name
-    this.options = widget.options
-    this.type = widget.type
   }
 
   get outline_color() {
