@@ -32,6 +32,7 @@
       @background-image-change="listenBackgroundImageChange"
       @animation-list-change="animationListChange"
       @up-direction-change="listenUpDirectionChange"
+      @recording-status-change="listenRecordingStatusChange"
     />
     <div class="absolute top-0 left-0 w-full h-full pointer-events-none">
       <Load3DControls
@@ -66,6 +67,21 @@
         @animation-change="animationChange"
       />
     </div>
+    <div
+      v-if="showRecordingControls"
+      class="absolute top-12 right-2 z-20 pointer-events-auto"
+    >
+      <RecordingControls
+        :node="node"
+        :is-recording="isRecording"
+        :has-recording="hasRecording"
+        :recording-duration="recordingDuration"
+        @start-recording="handleStartRecording"
+        @stop-recording="handleStopRecording"
+        @export-recording="handleExportRecording"
+        @clear-recording="handleClearRecording"
+      />
+    </div>
   </div>
 </template>
 
@@ -75,6 +91,7 @@ import { computed, ref } from 'vue'
 import Load3DAnimationControls from '@/components/load3d/Load3DAnimationControls.vue'
 import Load3DAnimationScene from '@/components/load3d/Load3DAnimationScene.vue'
 import Load3DControls from '@/components/load3d/Load3DControls.vue'
+import RecordingControls from '@/components/load3d/controls/RecordingControls.vue'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import {
   AnimationItem,
@@ -111,6 +128,11 @@ const selectedSpeed = ref(1)
 const selectedAnimation = ref(0)
 const backgroundImage = ref('')
 
+const isRecording = ref(false)
+const hasRecording = ref(false)
+const recordingDuration = ref(0)
+const showRecordingControls = ref(!inputSpec.isPreview)
+
 const showPreviewButton = computed(() => {
   return !type.includes('Preview')
 })
@@ -130,6 +152,54 @@ const handleMouseLeave = () => {
   const sceneRef = load3DAnimationSceneRef.value?.load3DSceneRef
   if (sceneRef?.load3d) {
     sceneRef.load3d.updateStatusMouseOnScene(false)
+  }
+}
+
+const handleStartRecording = async () => {
+  const sceneRef = load3DAnimationSceneRef.value?.load3DSceneRef
+  if (sceneRef?.load3d) {
+    await sceneRef.load3d.startRecording()
+    isRecording.value = true
+  }
+}
+
+const handleStopRecording = () => {
+  const sceneRef = load3DAnimationSceneRef.value?.load3DSceneRef
+  if (sceneRef?.load3d) {
+    sceneRef.load3d.stopRecording()
+    isRecording.value = false
+    hasRecording.value = true
+    recordingDuration.value = sceneRef.load3d.getRecordingDuration()
+  }
+}
+
+const handleExportRecording = () => {
+  const sceneRef = load3DAnimationSceneRef.value?.load3DSceneRef
+  if (sceneRef?.load3d) {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+    const filename = `${timestamp}-animation-recording.mp4`
+    sceneRef.load3d.exportRecording(filename)
+  }
+}
+
+const handleClearRecording = () => {
+  const sceneRef = load3DAnimationSceneRef.value?.load3DSceneRef
+  if (sceneRef?.load3d) {
+    sceneRef.load3d.clearRecording()
+    hasRecording.value = false
+    recordingDuration.value = 0
+  }
+}
+
+const listenRecordingStatusChange = (value: boolean) => {
+  isRecording.value = value
+
+  if (!value) {
+    const sceneRef = load3DAnimationSceneRef.value?.load3DSceneRef
+    if (sceneRef?.load3d) {
+      hasRecording.value = true
+      recordingDuration.value = sceneRef.load3d.getRecordingDuration()
+    }
   }
 }
 
