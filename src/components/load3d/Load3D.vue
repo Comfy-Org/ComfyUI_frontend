@@ -28,6 +28,7 @@
       @background-image-change="listenBackgroundImageChange"
       @up-direction-change="listenUpDirectionChange"
       @edge-threshold-change="listenEdgeThresholdChange"
+      @recording-status-change="listenRecordingStatusChange"
     />
     <Load3DControls
       :input-spec="inputSpec"
@@ -287,6 +288,15 @@ const listenUpDirectionChange = (value: UpDirection) => {
 
 const listenEdgeThresholdChange = (value: number) => {
   edgeThreshold.value = value
+}
+
+const listenRecordingStatusChange = (value: boolean) => {
+  isRecording.value = value
+
+  if (!value && load3DSceneRef.value?.load3d) {
+    hasRecording.value = true
+    recordingDuration.value = load3DSceneRef.value.load3d.getRecordingDuration()
+  }
 }
 
 const listenBackgroundColorChange = (value: string) => {

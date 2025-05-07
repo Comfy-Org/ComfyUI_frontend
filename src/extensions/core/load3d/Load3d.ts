@@ -456,6 +456,8 @@ class Load3d {
     this.viewHelperManager.visibleViewHelper(true)
 
     this.recordingManager.stopRecording()
+
+    this.eventManager.emitEvent('recordingStatusChange', false)
   }
 
   public isRecording(): boolean {

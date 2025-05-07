@@ -68,7 +68,9 @@ const eventConfig = {
   },
   textureLoadingStart: () =>
     loadingOverlayRef.value?.startLoading(t('load3d.applyingTexture')),
-  textureLoadingEnd: () => loadingOverlayRef.value?.endLoading()
+  textureLoadingEnd: () => loadingOverlayRef.value?.endLoading(),
+  recordingStatusChange: (value: boolean) =>
+    emit('recordingStatusChange', value)
 } as const
 
 watchEffect(async () => {
@@ -120,6 +122,7 @@ const emit = defineEmits<{
   (e: 'backgroundImageChange', backgroundImage: string): void
   (e: 'upDirectionChange', upDirection: string): void
   (e: 'edgeThresholdChange', threshold: number): void
+  (e: 'recordingStatusChange', status: boolean): void
 }>()
 
 const handleEvents = (action: 'add' | 'remove') => {
