@@ -1,10 +1,11 @@
+import type { LGraphNode } from "@/LGraphNode"
 import type { IStringWidget } from "@/types/widgets"
 
 import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./BaseWidget"
 
 export class TextWidget extends BaseWidget<IStringWidget> implements IStringWidget {
-  constructor(widget: IStringWidget) {
-    super(widget)
+  constructor(widget: IStringWidget, node: LGraphNode) {
+    super(widget, node)
     this.type ??= "string"
     this.value = widget.value?.toString() ?? ""
   }

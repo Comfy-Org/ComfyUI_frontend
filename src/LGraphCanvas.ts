@@ -34,7 +34,7 @@ import type {
   CanvasPointerExtensions,
 } from "./types/events"
 import type { ClipboardItems } from "./types/serialisation"
-import type { IWidget } from "./types/widgets"
+import type { IBaseWidget } from "./types/widgets"
 
 import { LinkConnector } from "@/canvas/LinkConnector"
 
@@ -466,7 +466,7 @@ export class LGraphCanvas {
   /** The current node being drawn by {@link drawNode}.  This should NOT be used to determine the currently selected node.  See {@link selectedItems} */
   current_node: LGraphNode | null
   /** used for widgets */
-  node_widget?: [LGraphNode, IWidget] | null
+  node_widget?: [LGraphNode, IBaseWidget] | null
   /** The link to draw a tooltip for. */
   over_link_center?: LinkSegment
   last_mouse_position: Point
@@ -1829,13 +1829,18 @@ export class LGraphCanvas {
   }
 
   /**
-   * Gets the widget at the current cursor position
+   * Gets the widget at the current cursor position.
    * @param node Optional node to check for widgets under cursor
-   * @returns The widget located at the current cursor position or null
+   * @returns The widget located at the current cursor position, if any is found.
+   * @deprecated Use {@link LGraphNode.getWidgetOnPos} instead.
+   * ```ts
+   * const [x, y] = canvas.graph_mouse
+   * const widget = canvas.node_over?.getWidgetOnPos(x, y, true)
+   * ```
    */
-  getWidgetAtCursor(node?: LGraphNode): IWidget | null {
+  getWidgetAtCursor(node?: LGraphNode): IBaseWidget | undefined {
     node ??= this.node_over
-    return node?.getWidgetOnPos(this.graph_mouse[0], this.graph_mouse[1], true) ?? null
+    return node?.getWidgetOnPos(this.graph_mouse[0], this.graph_mouse[1], true)
   }
 
   /**
@@ -1852,7 +1857,7 @@ export class LGraphCanvas {
     for (const otherNode of nodes) {
       if (otherNode.mouseOver && node != otherNode) {
         // mouse leave
-        otherNode.mouseOver = null
+        otherNode.mouseOver = undefined
         this._highlight_input = undefined
         this._highlight_pos = undefined
         this.linkConnector.overWidget = undefined
@@ -2381,7 +2386,7 @@ export class LGraphCanvas {
     this.dirty_canvas = true
   }
 
-  #processWidgetClick(e: CanvasPointerEvent, node: LGraphNode, widget: IWidget) {
+  #processWidgetClick(e: CanvasPointerEvent, node: LGraphNode, widget: IBaseWidget) {
     const { pointer } = this
 
     // Custom widget - CanvasPointer
@@ -2396,7 +2401,7 @@ export class LGraphCanvas {
     const x = pos[0] - node.pos[0]
     const y = pos[1] - node.pos[1]
 
-    const widgetInstance = toConcreteWidget(widget)
+    const widgetInstance = toConcreteWidget(widget, node, false)
     if (widgetInstance) {
       pointer.onClick = () => widgetInstance.onClick({
         e,
@@ -2629,15 +2634,11 @@ export class LGraphCanvas {
         const pos: Point = [0, 0]
         const inputId = isOverNodeInput(node, e.canvasX, e.canvasY, pos)
         const outputId = isOverNodeOutput(node, e.canvasX, e.canvasY, pos)
-        const overWidget = node.getWidgetOnPos(e.canvasX, e.canvasY, true)
+        const overWidget = node.getWidgetOnPos(e.canvasX, e.canvasY, true) ?? undefined
 
         if (!node.mouseOver) {
           // mouse enter
-          node.mouseOver = {
-            inputId: null,
-            outputId: null,
-            overWidget: null,
-          }
+          node.mouseOver = {}
           this.node_over = node
           this.dirty_canvas = true
 
@@ -2652,14 +2653,15 @@ export class LGraphCanvas {
         node.onMouseMove?.(e, [e.canvasX - node.pos[0], e.canvasY - node.pos[1]], this)
 
         // The input the mouse is over has changed
+        const { mouseOver } = node
         if (
-          node.mouseOver.inputId !== inputId ||
-          node.mouseOver.outputId !== outputId ||
-          node.mouseOver.overWidget !== overWidget
+          mouseOver.inputId !== inputId ||
+          mouseOver.outputId !== outputId ||
+          mouseOver.overWidget !== overWidget
         ) {
-          node.mouseOver.inputId = inputId
-          node.mouseOver.outputId = outputId
-          node.mouseOver.overWidget = overWidget
+          mouseOver.inputId = inputId
+          mouseOver.outputId = outputId
+          mouseOver.overWidget = overWidget
 
           // State reset
           linkConnector.overWidget = undefined

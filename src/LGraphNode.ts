@@ -24,7 +24,7 @@ import type { LGraph } from "./LGraph"
 import type { Reroute, RerouteId } from "./Reroute"
 import type { CanvasMouseEvent } from "./types/events"
 import type { ISerialisedNode } from "./types/serialisation"
-import type { IBaseWidget, IWidget, IWidgetOptions, TWidgetType, TWidgetValue } from "./types/widgets"
+import type { IBaseWidget, IWidgetOptions, TWidgetType, TWidgetValue } from "./types/widgets"
 
 import { getNodeInputOnPos, getNodeOutputOnPos } from "./canvas/measureSlots"
 import { NullGraphError } from "./infrastructure/NullGraphError"
@@ -46,7 +46,7 @@ import { findFreeSlotOfType } from "./utils/collections"
 import { distributeSpace } from "./utils/spaceDistribution"
 import { toClass } from "./utils/type"
 import { BaseWidget } from "./widgets/BaseWidget"
-import { WIDGET_TYPE_MAP } from "./widgets/widgetMap"
+import { toConcreteWidget, type WidgetTypeMap } from "./widgets/widgetMap"
 
 // #region Types
 
@@ -61,9 +61,9 @@ export interface INodePropertyInfo {
 }
 
 export interface IMouseOverData {
-  inputId: number | null
-  outputId: number | null
-  overWidget: IWidget | null
+  inputId?: number
+  outputId?: number
+  overWidget?: IBaseWidget
 }
 
 export interface ConnectByTypeOptions {
@@ -217,7 +217,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   properties: Dictionary<NodeProperty | undefined> = {}
   properties_info: INodePropertyInfo[] = []
   flags: INodeFlags = {}
-  widgets?: IWidget[]
+  widgets?: IBaseWidget[]
   /**
    * The amount of space available for widgets to grow into.
    * @see {@link layoutWidgets}
@@ -324,7 +324,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   console?: string[]
   _level?: number
   _shape?: RenderShape
-  mouseOver?: IMouseOverData | null
+  mouseOver?: IMouseOverData
   redraw_on_mouse?: boolean
   resizable?: boolean
   clonable?: boolean
@@ -510,7 +510,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     name: string,
     value: unknown,
     old_value: unknown,
-    w: IWidget,
+    w: IBaseWidget,
   ): void
   onDeselected?(this: LGraphNode): void
   onKeyUp?(this: LGraphNode, e: KeyboardEvent): void
@@ -1675,13 +1675,13 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    * @param options the object that contains special properties of this widget
    * @returns the created widget object
    */
-  addWidget(
-    type: TWidgetType,
+  addWidget<Type extends TWidgetType, TValue extends WidgetTypeMap[Type]["value"]>(
+    type: Type,
     name: string,
-    value: string | number | boolean | object,
-    callback: IWidget["callback"] | string | null,
+    value: TValue,
+    callback: IBaseWidget["callback"] | string | null,
     options?: IWidgetOptions | string,
-  ): IWidget {
+  ): WidgetTypeMap[Type] | IBaseWidget {
     this.widgets ||= []
 
     if (!options && callback && typeof callback === "object") {
@@ -1700,8 +1700,8 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       callback = null
     }
 
-    const w: IWidget = {
-      // @ts-expect-error Type check or just assert?
+    const w: IBaseWidget & { type: Type } = {
+      // @ts-expect-error
       type: type.toLowerCase(),
       name: name,
       value: value,
@@ -1726,12 +1726,13 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     return widget
   }
 
-  addCustomWidget<T extends IWidget>(custom_widget: T): T {
+  addCustomWidget<TPlainWidget extends IBaseWidget>(
+    custom_widget: TPlainWidget,
+  ): TPlainWidget | WidgetTypeMap[TPlainWidget["type"]] {
     this.widgets ||= []
-    const WidgetClass = WIDGET_TYPE_MAP[custom_widget.type]
-    const widget = WidgetClass ? new WidgetClass(custom_widget) as IWidget : custom_widget
+    const widget = toConcreteWidget(custom_widget, this, false) ?? custom_widget
     this.widgets.push(widget)
-    return widget as T
+    return widget
   }
 
   move(deltaX: number, deltaY: number): void {
@@ -1910,9 +1911,9 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     canvasX: number,
     canvasY: number,
     includeDisabled = false,
-  ): IWidget | null {
+  ): IBaseWidget | undefined {
     const { widgets, pos, size } = this
-    if (!widgets?.length) return null
+    if (!widgets?.length) return
 
     const x = canvasX - pos[0]
     const y = canvasY - pos[1]
@@ -1938,7 +1939,6 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
         return widget
       }
     }
-    return null
   }
 
   /**
@@ -3368,7 +3368,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   /**
    * Returns `true` if the widget is visible, otherwise `false`.
    */
-  isWidgetVisible(widget: IWidget): boolean {
+  isWidgetVisible(widget: IBaseWidget): boolean {
     const isHidden = (
       this.collapsed ||
       widget.hidden ||
@@ -3406,9 +3406,9 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       if (widget.computedDisabled) ctx.globalAlpha *= 0.5
       const width = widget.width || nodeWidth
 
-      const WidgetClass: typeof WIDGET_TYPE_MAP[string] = WIDGET_TYPE_MAP[widget.type]
-      if (WidgetClass) {
-        toClass(WidgetClass, widget).drawWidget(ctx, { width, showText })
+      const widgetInstance = toConcreteWidget(widget, this, false)
+      if (widgetInstance) {
+        widgetInstance.drawWidget(ctx, { width, showText })
       } else {
         widget.draw?.(ctx, this, width, y, H, lowQuality)
       }
@@ -3482,7 +3482,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     return this.#getMouseOverSlot(slot) === slot
   }
 
-  #isMouseOverWidget(widget: IWidget | undefined): boolean {
+  #isMouseOverWidget(widget: IBaseWidget | undefined): boolean {
     if (!widget) return false
     return this.mouseOver?.overWidget === widget
   }
@@ -3490,14 +3490,14 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   /**
    * Returns the input slot that is associated with the given widget.
    */
-  getSlotFromWidget(widget: IWidget | undefined): INodeInputSlot | undefined {
+  getSlotFromWidget(widget: IBaseWidget | undefined): INodeInputSlot | undefined {
     if (widget) return this.inputs.find(slot => isWidgetInputSlot(slot) && slot.widget.name === widget.name)
   }
 
   /**
    * Returns the widget that is associated with the given input slot.
    */
-  getWidgetFromSlot(slot: INodeInputSlot): IWidget | undefined {
+  getWidgetFromSlot(slot: INodeInputSlot): IBaseWidget | undefined {
     if (!isWidgetInputSlot(slot)) return
     return this.widgets?.find(w => w.name === slot.widget.name)
   }

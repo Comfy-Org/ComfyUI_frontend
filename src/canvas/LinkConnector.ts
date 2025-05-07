@@ -4,7 +4,7 @@ import type { INodeInputSlot, INodeOutputSlot } from "@/interfaces"
 import type { LGraphNode } from "@/LGraphNode"
 import type { Reroute } from "@/Reroute"
 import type { CanvasPointerEvent } from "@/types/events"
-import type { IWidget } from "@/types/widgets"
+import type { IBaseWidget } from "@/types/widgets"
 
 import { CustomEventTarget } from "@/infrastructure/CustomEventTarget"
 import { LinkConnectorEventMap } from "@/infrastructure/LinkConnectorEventMap"
@@ -83,7 +83,7 @@ export class LinkConnector {
   readonly hiddenReroutes: Set<Reroute> = new Set()
 
   /** The widget beneath the pointer, if it is a valid connection target. */
-  overWidget?: IWidget
+  overWidget?: IBaseWidget
   /** The type (returned by downstream callback) for {@link overWidget} */
   overWidgetType?: string
 

@@ -31,7 +31,7 @@ export interface IWidgetOptions<TValues = unknown[]> {
   callback?: IWidget["callback"]
 }
 
-export interface IWidgetSliderOptions extends IWidgetOptions<number> {
+export interface IWidgetSliderOptions extends IWidgetOptions<number[]> {
   min: number
   max: number
   step2: number
@@ -39,7 +39,7 @@ export interface IWidgetSliderOptions extends IWidgetOptions<number> {
   marker_color?: CanvasColour
 }
 
-export interface IWidgetKnobOptions extends IWidgetOptions<number> {
+export interface IWidgetKnobOptions extends IWidgetOptions<number[]> {
   min: number
   max: number
   step2: number
@@ -61,18 +61,19 @@ export type IWidget =
   | INumericWidget
   | IStringWidget
   | IComboWidget
+  | IStringComboWidget
   | ICustomWidget
   | ISliderWidget
   | IButtonWidget
   | IKnobWidget
 
-export interface IBooleanWidget extends IBaseWidget<boolean, "toggle", IWidgetOptions<boolean>> {
+export interface IBooleanWidget extends IBaseWidget<boolean, "toggle"> {
   type: "toggle"
   value: boolean
 }
 
 /** Any widget that uses a numeric backing */
-export interface INumericWidget extends IBaseWidget<number, "number", IWidgetOptions<number>> {
+export interface INumericWidget extends IBaseWidget<number, "number"> {
   type: "number"
   value: number
 }
@@ -89,6 +90,12 @@ export interface IKnobWidget extends IBaseWidget<number, "knob", IWidgetKnobOpti
   options: IWidgetKnobOptions
 }
 
+/** Avoids the type issues with the legacy IComboWidget type */
+export interface IStringComboWidget extends IBaseWidget<string, "combo", RequiredProps<IWidgetOptions<string[]>, "values">> {
+  type: "combo"
+  value: string
+}
+
 type ComboWidgetValues = string[] | Record<string, string> | ((widget?: IComboWidget, node?: LGraphNode) => string[])
 
 /** A combo-box widget (dropdown, select, etc) */
@@ -102,19 +109,19 @@ export interface IComboWidget extends IBaseWidget<
 }
 
 /** A widget with a string value */
-export interface IStringWidget extends IBaseWidget<string, "string" | "text", IWidgetOptions<string>> {
+export interface IStringWidget extends IBaseWidget<string, "string" | "text", IWidgetOptions<string[]>> {
   type: "string" | "text"
   value: string
 }
 
-export interface IButtonWidget extends IBaseWidget<undefined, "button", IWidgetOptions<undefined>> {
+export interface IButtonWidget extends IBaseWidget<string | undefined, "button"> {
   type: "button"
-  value: undefined
+  value: string | undefined
   clicked: boolean
 }
 
 /** A custom widget - accepts any value and has no built-in special handling */
-export interface ICustomWidget extends IBaseWidget<string | object, "custom", IWidgetOptions<string | object>> {
+export interface ICustomWidget extends IBaseWidget<string | object, "custom"> {
   type: "custom"
   value: string | object
 }
@@ -129,10 +136,17 @@ export type TWidgetValue = IWidget["value"]
 
 /**
  * The base type for all widgets.  Should not be implemented directly.
+ * @template TValue The type of value this widget holds.
+ * @template TType A string designating the type of widget, e.g. "toggle" or "string".
+ * @template TOptions The options for this widget.
  * @see IWidget
  */
-export interface IBaseWidget<TValue = unknown, TType = string, TOptions = unknown> {
-  linkedWidgets?: IWidget[]
+export interface IBaseWidget<
+  TValue = boolean | number | string | object | undefined,
+  TType extends string = string,
+  TOptions extends IWidgetOptions<unknown> = IWidgetOptions<unknown>,
+> {
+  linkedWidgets?: IBaseWidget[]
 
   name: string
   options: TOptions

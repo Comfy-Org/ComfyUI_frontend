@@ -1,11 +1,11 @@
-import type { IWidget } from "@/types/widgets"
+import type { IBaseWidget } from "@/types/widgets"
 
 import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./BaseWidget"
 
 /**
  * Base class for widgets that have increment and decrement buttons.
  */
-export abstract class BaseSteppedWidget<TWidget extends IWidget> extends BaseWidget<TWidget> {
+export abstract class BaseSteppedWidget<TWidget extends IBaseWidget = IBaseWidget> extends BaseWidget<TWidget> {
   /**
    * Whether the widget can increment its value
    * @returns `true` if the widget can increment its value, otherwise `false`

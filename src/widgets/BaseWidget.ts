@@ -1,6 +1,6 @@
 import type { CanvasPointer, LGraphCanvas, LGraphNode, Size } from "@/litegraph"
 import type { CanvasMouseEvent, CanvasPointerEvent } from "@/types/events"
-import type { IBaseWidget, IWidget } from "@/types/widgets"
+import type { IBaseWidget } from "@/types/widgets"
 
 import { drawTextInArea } from "@/draw"
 import { Rectangle } from "@/infrastructure/Rectangle"
@@ -29,7 +29,7 @@ export interface WidgetEventOptions {
   canvas: LGraphCanvas
 }
 
-export abstract class BaseWidget<TWidget extends IWidget = IWidget> implements IBaseWidget {
+export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget> implements IBaseWidget {
   /** From node edge to widget edge */
   static margin = 15
   /** From widget edge to tip of arrow button */
@@ -41,12 +41,17 @@ export abstract class BaseWidget<TWidget extends IWidget = IWidget> implements I
   /** Minimum gap between label and value */
   static labelValueGap = 5
 
-  linkedWidgets?: IWidget[]
+  #node: LGraphNode
+  /** The node that this widget belongs to. */
+  get node() {
+    return this.#node
+  }
+
+  linkedWidgets?: IBaseWidget[]
   name: string
   options: TWidget["options"]
   label?: string
   type: TWidget["type"]
-  value: TWidget["value"]
   y: number = 0
   last_y?: number
   width?: number
@@ -64,27 +69,37 @@ export abstract class BaseWidget<TWidget extends IWidget = IWidget> implements I
     e?: CanvasMouseEvent,
   ): void
   mouse?(event: CanvasPointerEvent, pointerOffset: Point, node: LGraphNode): boolean
-  draw?(
-    ctx: CanvasRenderingContext2D,
-    node: LGraphNode,
-    widget_width: number,
-    y: number,
-    H: number,
-  ): void
   computeSize?(width?: number): Size
   onPointerDown?(pointer: CanvasPointer, node: LGraphNode, canvas: LGraphCanvas): boolean
 
-  constructor(widget: TWidget) {
+  #value: TWidget["value"]
+  get value(): TWidget["value"] {
+    return this.#value
+  }
+
+  set value(value: TWidget["value"]) {
+    this.#value = value
+  }
+
+  constructor(widget: TWidget & { node: LGraphNode })
+  constructor(widget: TWidget, node: LGraphNode)
+  constructor(widget: TWidget & { node: LGraphNode }, node?: LGraphNode) {
+    // Private fields
+    this.#node = node ?? widget.node
+    this.#value = widget.value
+
+    // `node` has no setter - Object.assign will throw.
     // TODO: Resolve this workaround. Ref: https://github.com/Comfy-Org/litegraph.js/issues/1022
     // @ts-expect-error Prevent naming conflicts with custom nodes.
     // eslint-disable-next-line unused-imports/no-unused-vars
-    const { outline_color, background_color, height, text_color, secondary_text_color, disabledTextColor, displayName, displayValue, labelBaseline, ...safeValues } = widget
+    const { node: _, outline_color, background_color, height, text_color, secondary_text_color, disabledTextColor, displayName, displayValue, labelBaseline, ...safeValues } = widget
 
     Object.assign(this, safeValues)
+
+    // Re-assign to fix TS errors.
     this.name = widget.name
     this.options = widget.options
     this.type = widget.type
-    this.value = widget.value
   }
 
   get outline_color() {
@@ -254,7 +269,7 @@ export abstract class BaseWidget<TWidget extends IWidget = IWidget> implements I
     const pos = canvas.graph_mouse
     this.callback?.(this.value, canvas, node, pos, e)
 
-    node.onWidgetChanged?.(this.name ?? "", v, oldValue, this as IWidget)
+    node.onWidgetChanged?.(this.name ?? "", v, oldValue, this)
     if (node.graph) node.graph._version++
   }
 }

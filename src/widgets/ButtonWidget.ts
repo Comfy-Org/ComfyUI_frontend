@@ -1,3 +1,4 @@
+import type { LGraphNode } from "@/LGraphNode"
 import type { IButtonWidget } from "@/types/widgets"
 
 import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./BaseWidget"
@@ -6,8 +7,8 @@ export class ButtonWidget extends BaseWidget<IButtonWidget> implements IButtonWi
   override type = "button" as const
   clicked: boolean
 
-  constructor(widget: IButtonWidget) {
-    super(widget)
+  constructor(widget: IButtonWidget, node: LGraphNode) {
+    super(widget, node)
     this.clicked ??= false
   }
 
