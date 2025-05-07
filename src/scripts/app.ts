@@ -5,7 +5,8 @@ import {
   LGraphNode,
   LiteGraph
 } from '@comfyorg/litegraph'
-import type { IWidget, Vector2 } from '@comfyorg/litegraph'
+import type { Vector2 } from '@comfyorg/litegraph'
+import type { IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import _ from 'lodash'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { reactive } from 'vue'
@@ -94,7 +95,7 @@ function sanitizeNodeName(string: string) {
 }
 
 type Clipspace = {
-  widgets?: Pick<IWidget, 'type' | 'name' | 'value'>[] | null
+  widgets?: Pick<IBaseWidget, 'type' | 'name' | 'value'>[] | null
   imgs?: HTMLImageElement[] | null
   original_imgs?: HTMLImageElement[] | null
   images?: any[] | null

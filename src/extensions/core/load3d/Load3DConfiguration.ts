@@ -1,4 +1,4 @@
-import type { IWidget } from '@comfyorg/litegraph'
+import type { IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
@@ -15,17 +15,20 @@ class Load3DConfiguration {
 
   configure(
     loadFolder: 'input' | 'output',
-    modelWidget: IWidget,
+    modelWidget: IBaseWidget,
     cameraState?: any,
-    width: IWidget | null = null,
-    height: IWidget | null = null
+    width: IBaseWidget | null = null,
+    height: IBaseWidget | null = null
   ) {
     this.setupModelHandling(modelWidget, loadFolder, cameraState)
     this.setupTargetSize(width, height)
     this.setupDefaultProperties()
   }
 
-  private setupTargetSize(width: IWidget | null, height: IWidget | null) {
+  private setupTargetSize(
+    width: IBaseWidget | null,
+    height: IBaseWidget | null
+  ) {
     if (width && height) {
       this.load3d.setTargetSize(width.value as number, height.value as number)
 
@@ -51,7 +54,7 @@ class Load3DConfiguration {
   }
 
   private setupModelHandling(
-    modelWidget: IWidget,
+    modelWidget: IBaseWidget,
     loadFolder: 'input' | 'output',
     cameraState?: any
   ) {

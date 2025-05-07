@@ -1,6 +1,6 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
-import type { IWidget } from '@comfyorg/litegraph'
 import type {
+  IBaseWidget,
   IComboWidget,
   IStringWidget
 } from '@comfyorg/litegraph/dist/types/widgets'
@@ -25,7 +25,7 @@ import './errorNodeWidgets'
 export type ComfyWidgetConstructorV2 = (
   node: LGraphNode,
   inputSpec: InputSpecV2
-) => IWidget
+) => IBaseWidget
 
 export type ComfyWidgetConstructor = (
   node: LGraphNode,
@@ -33,7 +33,7 @@ export type ComfyWidgetConstructor = (
   inputData: InputSpec,
   app: ComfyApp,
   widgetName?: string
-) => { widget: IWidget; minWidth?: number; minHeight?: number }
+) => { widget: IBaseWidget; minWidth?: number; minHeight?: number }
 
 /**
  * Transforms a V2 widget constructor to a V1 widget constructor.
@@ -60,7 +60,7 @@ function controlValueRunBefore() {
   return useSettingStore().get('Comfy.WidgetControlMode') === 'before'
 }
 
-export function updateControlWidgetLabel(widget: IWidget) {
+export function updateControlWidgetLabel(widget: IBaseWidget) {
   if (controlValueRunBefore()) {
     widget.label = t('g.control_before_generate')
   } else {
@@ -73,7 +73,7 @@ const HAS_EXECUTED = Symbol()
 
 export function addValueControlWidget(
   node: LGraphNode,
-  targetWidget: IWidget,
+  targetWidget: IBaseWidget,
   defaultValue?: string,
   _values?: unknown,
   widgetName?: string,
@@ -98,7 +98,7 @@ export function addValueControlWidget(
 
 export function addValueControlWidgets(
   node: LGraphNode,
-  targetWidget: IWidget,
+  targetWidget: IBaseWidget,
   defaultValue?: string,
   options?: Record<string, any>,
   inputData?: InputSpec

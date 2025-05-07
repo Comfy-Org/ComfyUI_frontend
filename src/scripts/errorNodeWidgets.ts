@@ -1,4 +1,5 @@
-import { IWidget, LGraphNode } from '@comfyorg/litegraph'
+import { LGraphNode } from '@comfyorg/litegraph'
+import type { IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useBooleanWidget } from '@/composables/widgets/useBooleanWidget'
@@ -10,7 +11,7 @@ const FloatWidget = useFloatWidget()
 const BooleanWidget = useBooleanWidget()
 
 function addWidgetFromValue(node: LGraphNode, value: unknown) {
-  let widget: IWidget
+  let widget: IBaseWidget
 
   if (typeof value === 'string') {
     widget = StringWidget(node, {
