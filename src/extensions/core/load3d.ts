@@ -365,7 +365,7 @@ useExtensionService().registerExtension({
     const width = node.widgets?.find((w: IWidget) => w.name === 'width')
     const height = node.widgets?.find((w: IWidget) => w.name === 'height')
 
-    if (modelWidget && width && height && sceneWidget) {
+    if (modelWidget && width && height && sceneWidget && load3d) {
       const config = new Load3DConfiguration(load3d)
 
       config.configure('input', modelWidget, cameraState, width, height)
@@ -374,6 +374,10 @@ useExtensionService().registerExtension({
         node.properties['Camera Info'] = load3d.getCameraState()
 
         load3d.toggleAnimation(false)
+
+        if (load3d.isRecording()) {
+          load3d.stopRecording()
+        }
 
         const {
           scene: imageData,
@@ -392,12 +396,23 @@ useExtensionService().registerExtension({
 
         load3d.handleResize()
 
-        return {
+        const returnVal = {
           image: `threed/${data.name} [temp]`,
           mask: `threed/${dataMask.name} [temp]`,
           normal: `threed/${dataNormal.name} [temp]`,
-          camera_info: node.properties['Camera Info']
+          camera_info: node.properties['Camera Info'],
+          recording: ''
         }
+
+        const recordingData = load3d.getRecordingData()
+        if (recordingData) {
+          const [recording] = await Promise.all([
+            Load3dUtils.uploadTempImage(recordingData, 'recording', 'mp4')
+          ])
+          returnVal['recording'] = `threed/${recording.name} [temp]`
+        }
+
+        return returnVal
       }
     }
   }

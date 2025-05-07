@@ -229,6 +229,7 @@ class Load3d {
     return (
       this.STATUS_MOUSE_ON_NODE ||
       this.STATUS_MOUSE_ON_SCENE ||
+      this.isRecording() ||
       !this.INITIAL_RENDER_DONE
     )
   }
@@ -461,7 +462,7 @@ class Load3d {
   }
 
   public isRecording(): boolean {
-    return this.recordingManager.hasRecording()
+    return this.recordingManager.getIsRecording()
   }
 
   public getRecordingDuration(): number {

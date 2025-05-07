@@ -106,12 +106,16 @@ export class RecordingManager {
       return
     }
 
-    this.recordingDuration = (Date.now() - this.recordingStartTime) / 1000 // In seconds
+    this.recordingDuration = (Date.now() - this.recordingStartTime) / 1000
 
     this.mediaRecorder.stop()
     if (this.recordingStream) {
       this.recordingStream.getTracks().forEach((track) => track.stop())
     }
+  }
+
+  public getIsRecording(): boolean {
+    return this.isRecording
   }
 
   public hasRecording(): boolean {
