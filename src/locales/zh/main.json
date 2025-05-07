@@ -55,7 +55,8 @@
       "success": "登录成功",
       "termsLink": "使用条款",
       "termsText": "点击“下一步”或“注册”即表示您同意我们的",
-      "title": "登录您的账户"
+      "title": "登录您的账户",
+      "userAvatar": "用户头像"
     },
     "passwordUpdate": {
       "success": "密码已更新",
