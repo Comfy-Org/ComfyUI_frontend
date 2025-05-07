@@ -75,7 +75,12 @@ export abstract class BaseWidget<TWidget extends IWidget = IWidget> implements I
   onPointerDown?(pointer: CanvasPointer, node: LGraphNode, canvas: LGraphCanvas): boolean
 
   constructor(widget: TWidget) {
-    Object.assign(this, widget)
+    // TODO: Resolve this workaround. Ref: https://github.com/Comfy-Org/litegraph.js/issues/1022
+    // @ts-expect-error Prevent naming conflicts with custom nodes.
+    // eslint-disable-next-line unused-imports/no-unused-vars
+    const { outline_color, background_color, height, text_color, secondary_text_color, disabledTextColor, displayName, displayValue, labelBaseline, ...safeValues } = widget
+
+    Object.assign(this, safeValues)
     this.name = widget.name
     this.options = widget.options
     this.type = widget.type
