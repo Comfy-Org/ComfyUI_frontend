@@ -1,5 +1,4 @@
-import { IWidget } from '@comfyorg/litegraph'
-import { IStringWidget } from '@comfyorg/litegraph/dist/types/widgets'
+import type { IStringWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import { nextTick } from 'vue'
 
 import Load3D from '@/components/load3d/Load3D.vue'
@@ -116,7 +115,7 @@ useExtensionService().registerExtension({
         fileInput.onchange = async () => {
           if (fileInput.files?.length) {
             const modelWidget = node.widgets?.find(
-              (w: IWidget) => w.name === 'model_file'
+              (w) => w.name === 'model_file'
             ) as IStringWidget
 
             node.properties['Texture'] = undefined
@@ -155,9 +154,7 @@ useExtensionService().registerExtension({
         node.addWidget('button', 'clear', 'clear', () => {
           useLoad3dService().getLoad3d(node)?.clearModel()
 
-          const modelWidget = node.widgets?.find(
-            (w: IWidget) => w.name === 'model_file'
-          )
+          const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
           if (modelWidget) {
             modelWidget.value = ''
 
@@ -203,12 +200,10 @@ useExtensionService().registerExtension({
 
       const config = new Load3DConfiguration(load3d)
 
-      const modelWidget = node.widgets?.find(
-        (w: IWidget) => w.name === 'model_file'
-      )
-      const width = node.widgets?.find((w: IWidget) => w.name === 'width')
-      const height = node.widgets?.find((w: IWidget) => w.name === 'height')
-      const sceneWidget = node.widgets?.find((w: IWidget) => w.name === 'image')
+      const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
+      const width = node.widgets?.find((w) => w.name === 'width')
+      const height = node.widgets?.find((w) => w.name === 'height')
+      const sceneWidget = node.widgets?.find((w) => w.name === 'image')
 
       if (modelWidget && width && height && sceneWidget) {
         config.configure('input', modelWidget, cameraState, width, height)
@@ -276,7 +271,7 @@ useExtensionService().registerExtension({
         fileInput.onchange = async () => {
           if (fileInput.files?.length) {
             const modelWidget = node.widgets?.find(
-              (w: IWidget) => w.name === 'model_file'
+              (w) => w.name === 'model_file'
             ) as IStringWidget
 
             const uploadPath = await Load3dUtils.uploadFile(
@@ -313,9 +308,7 @@ useExtensionService().registerExtension({
         node.addWidget('button', 'clear', 'clear', () => {
           useLoad3dService().getLoad3d(node)?.clearModel()
 
-          const modelWidget = node.widgets?.find(
-            (w: IWidget) => w.name === 'model_file'
-          )
+          const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
           if (modelWidget) {
             modelWidget.value = ''
           }
@@ -352,18 +345,16 @@ useExtensionService().registerExtension({
 
     await nextTick()
 
-    const sceneWidget = node.widgets?.find((w: IWidget) => w.name === 'image')
+    const sceneWidget = node.widgets?.find((w) => w.name === 'image')
 
     const load3d = useLoad3dService().getLoad3d(node) as Load3dAnimation
 
-    const modelWidget = node.widgets?.find(
-      (w: IWidget) => w.name === 'model_file'
-    )
+    const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
 
     let cameraState = node.properties['Camera Info']
 
-    const width = node.widgets?.find((w: IWidget) => w.name === 'width')
-    const height = node.widgets?.find((w: IWidget) => w.name === 'height')
+    const width = node.widgets?.find((w) => w.name === 'width')
+    const height = node.widgets?.find((w) => w.name === 'height')
 
     if (modelWidget && width && height && sceneWidget) {
       const config = new Load3DConfiguration(load3d)
@@ -464,9 +455,7 @@ useExtensionService().registerExtension({
 
       let cameraState = message.result[1]
 
-      const modelWidget = node.widgets?.find(
-        (w: IWidget) => w.name === 'model_file'
-      )
+      const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
 
       if (load3d && modelWidget) {
         modelWidget.value = filePath.replaceAll('\\', '/')
@@ -540,9 +529,7 @@ useExtensionService().registerExtension({
 
       const load3d = useLoad3dService().getLoad3d(node)
 
-      const modelWidget = node.widgets?.find(
-        (w: IWidget) => w.name === 'model_file'
-      )
+      const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
       if (load3d && modelWidget) {
         modelWidget.value = filePath.replaceAll('\\', '/')
 
