@@ -666,6 +666,12 @@ test.describe('Load workflow', () => {
       expect(activeWorkflowName).toEqual(workflowPathB)
     })
   })
+
+  test('Auto fit view after loading workflow', async ({ comfyPage }) => {
+    await comfyPage.setSetting('Comfy.EnableWorkflowViewRestore', false)
+    await comfyPage.loadWorkflow('single_ksampler')
+    await expect(comfyPage.canvas).toHaveScreenshot('single_ksampler_fit.png')
+  })
 })
 
 test.describe('Load duplicate workflow', () => {
