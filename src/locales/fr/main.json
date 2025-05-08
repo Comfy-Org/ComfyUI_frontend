@@ -29,6 +29,20 @@
     "title": "Connexion requise pour utiliser les nœuds API"
   },
   "auth": {
+    "apiKey": {
+      "cleared": "Clé API supprimée",
+      "clearedDetail": "Votre clé API a été supprimée avec succès",
+      "error": "Clé API invalide",
+      "invalid": "Clé API invalide",
+      "invalidDetail": "Veuillez entrer une clé API valide",
+      "label": "Clé API",
+      "placeholder": "Entrez votre clé API",
+      "storageFailed": "Échec de l’enregistrement de la clé API",
+      "storageFailedDetail": "Veuillez réessayer.",
+      "stored": "Clé API enregistrée",
+      "storedDetail": "Votre clé API a été enregistrée avec succès",
+      "title": "Clé API"
+    },
     "login": {
       "andText": "et",
       "confirmPasswordLabel": "Confirmer le mot de passe",
@@ -56,6 +70,7 @@
       "termsLink": "Conditions d'utilisation",
       "termsText": "En cliquant sur \"Suivant\" ou \"S'inscrire\", vous acceptez nos",
       "title": "Connectez-vous à votre compte",
+      "useApiKey": "Clé API Comfy",
       "userAvatar": "Avatar utilisateur"
     },
     "passwordUpdate": {
@@ -1333,6 +1348,7 @@
       "uppercase": "Doit contenir au moins une lettre majuscule"
     },
     "personalDataConsentRequired": "Vous devez accepter le traitement de vos données personnelles.",
+    "prefix": "Doit commencer par {prefix}",
     "required": "Requis"
   },
   "welcome": {
