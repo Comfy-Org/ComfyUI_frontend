@@ -33,6 +33,8 @@
       "cleared": "Clé API supprimée",
       "clearedDetail": "Votre clé API a été supprimée avec succès",
       "error": "Clé API invalide",
+      "generateKey": "Obtenez-en une ici",
+      "helpText": "Besoin d'une clé API ?",
       "invalid": "Clé API invalide",
       "invalidDetail": "Veuillez entrer une clé API valide",
       "label": "Clé API",
@@ -1336,6 +1338,7 @@
   },
   "validation": {
     "invalidEmail": "Adresse e-mail invalide",
+    "length": "Doit comporter {length} caractères",
     "maxLength": "Ne doit pas dépasser {length} caractères",
     "minLength": "Doit contenir au moins {length} caractères",
     "password": {

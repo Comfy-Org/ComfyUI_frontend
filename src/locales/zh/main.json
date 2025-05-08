@@ -33,6 +33,8 @@
       "cleared": "API 密钥已清除",
       "clearedDetail": "您的 API 密钥已成功清除",
       "error": "无效的 API 密钥",
+      "generateKey": "在这里获取",
+      "helpText": "需要 API 密钥？",
       "invalid": "无效的 API 密钥",
       "invalidDetail": "请输入有效的 API 密钥",
       "label": "API 密钥",
@@ -1336,6 +1338,7 @@
   },
   "validation": {
     "invalidEmail": "无效的电子邮件地址",
+    "length": "必须为{length}个字符",
     "maxLength": "不能超过{length}个字符",
     "minLength": "必须至少有{length}个字符",
     "password": {

@@ -33,6 +33,8 @@
       "cleared": "API-ключ удалён",
       "clearedDetail": "Ваш API-ключ был успешно удалён",
       "error": "Недействительный API-ключ",
+      "generateKey": "Получить здесь",
+      "helpText": "Нужен API-ключ?",
       "invalid": "Недействительный API-ключ",
       "invalidDetail": "Пожалуйста, введите действительный API-ключ",
       "label": "API-ключ",
@@ -1336,6 +1338,7 @@
   },
   "validation": {
     "invalidEmail": "Недействительный адрес электронной почты",
+    "length": "Должно быть {length} символов",
     "maxLength": "Должно быть не более {length} символов",
     "minLength": "Должно быть не менее {length} символов",
     "password": {

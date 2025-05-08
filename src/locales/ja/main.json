@@ -33,6 +33,8 @@
       "cleared": "APIキーが削除されました",
       "clearedDetail": "APIキーが正常に削除されました",
       "error": "無効なAPIキーです",
+      "generateKey": "こちらから取得",
+      "helpText": "APIキーが必要ですか？",
       "invalid": "無効なAPIキーです",
       "invalidDetail": "有効なAPIキーを入力してください",
       "label": "APIキー",
@@ -1336,6 +1338,7 @@
   },
   "validation": {
     "invalidEmail": "無効なメールアドレス",
+    "length": "{length}文字でなければなりません",
     "maxLength": "{length}文字以下でなければなりません",
     "minLength": "{length}文字以上でなければなりません",
     "password": {

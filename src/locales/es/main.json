@@ -33,6 +33,8 @@
       "cleared": "Clave API eliminada",
       "clearedDetail": "Tu clave API se ha eliminado correctamente",
       "error": "Clave API no válida",
+      "generateKey": "Consíguela aquí",
+      "helpText": "¿Necesitas una clave API?",
       "invalid": "Clave API no válida",
       "invalidDetail": "Por favor, introduce una clave API válida",
       "label": "Clave API",
@@ -1336,6 +1338,7 @@
   },
   "validation": {
     "invalidEmail": "Dirección de correo electrónico inválida",
+    "length": "Debe tener {length} caracteres",
     "maxLength": "No debe tener más de {length} caracteres",
     "minLength": "Debe tener al menos {length} caracteres",
     "password": {

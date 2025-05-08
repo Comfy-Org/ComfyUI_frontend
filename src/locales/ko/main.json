@@ -33,6 +33,8 @@
       "cleared": "API 키 삭제됨",
       "clearedDetail": "API 키가 성공적으로 삭제되었습니다",
       "error": "유효하지 않은 API 키",
+      "generateKey": "여기에서 받기",
+      "helpText": "API 키가 필요하신가요?",
       "invalid": "유효하지 않은 API 키",
       "invalidDetail": "유효한 API 키를 입력해 주세요",
       "label": "API 키",
@@ -1336,6 +1338,7 @@
   },
   "validation": {
     "invalidEmail": "유효하지 않은 이메일 주소",
+    "length": "{length}자여야 합니다",
     "maxLength": "{length}자를 초과할 수 없습니다",
     "minLength": "{length}자 이상이어야 합니다",
     "password": {
