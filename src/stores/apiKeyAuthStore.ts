@@ -47,10 +47,13 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
     return true
   }, reportError)
 
+  const getApiKey = () => apiKey.value
+
   const getAuthHeader = () => {
-    if (apiKey.value) {
+    const comfyOrgApiKey = getApiKey()
+    if (comfyOrgApiKey) {
       return {
-        'X-COMFY-API-KEY': apiKey.value
+        'X-COMFY-API-KEY': comfyOrgApiKey
       }
     }
     return null
@@ -60,6 +63,7 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
     hasApiKey: computed(() => !!apiKey.value),
     storeApiKey,
     clearStoredApiKey,
-    getAuthHeader
+    getAuthHeader,
+    getApiKey
   }
 })
