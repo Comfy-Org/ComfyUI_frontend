@@ -1364,7 +1364,7 @@ export class ComfyApp {
           await this.loadGraphData(
             JSON.parse(readerResult),
             true,
-            false,
+            true,
             fileName
           )
         }
