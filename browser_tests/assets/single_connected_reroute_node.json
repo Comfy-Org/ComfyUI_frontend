@@ -106,10 +106,7 @@
   "extra": {
     "ds": {
       "scale": 1,
-      "offset": {
-        "0": 0,
-        "1": 0
-      }
+      "offset": [0, 0]
     }
   },
   "version": 0.4
