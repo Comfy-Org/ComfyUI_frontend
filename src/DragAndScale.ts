@@ -161,6 +161,37 @@ export class DragAndScale {
   }
 
   /**
+   * Fits the view to the specified bounds.
+   * @param bounds The bounds to fit the view to, defined by a rectangle.
+   */
+  fitToBounds(bounds: ReadOnlyRect, { zoom = 0.75 }: { zoom?: number } = {}): void {
+    const cw = this.element.width / window.devicePixelRatio
+    const ch = this.element.height / window.devicePixelRatio
+    let targetScale = this.scale
+
+    if (zoom > 0) {
+      const targetScaleX = (zoom * cw) / Math.max(bounds[2], 300)
+      const targetScaleY = (zoom * ch) / Math.max(bounds[3], 300)
+
+      // Choose the smaller scale to ensure the node fits into the viewport
+      // Ensure we don't go over the max scale
+      targetScale = Math.min(targetScaleX, targetScaleY, this.max_scale)
+    }
+
+    const scaledWidth = cw / targetScale
+    const scaledHeight = ch / targetScale
+
+    // Calculate the target position to center the bounds in the viewport
+    const targetX = -bounds[0] - (bounds[2] * 0.5) + (scaledWidth * 0.5)
+    const targetY = -bounds[1] - (bounds[3] * 0.5) + (scaledHeight * 0.5)
+
+    // Apply the changes immediately
+    this.offset[0] = targetX
+    this.offset[1] = targetY
+    this.scale = targetScale
+  }
+
+  /**
    * Starts an animation to fit the view around the specified selection of nodes.
    * @param bounds The bounds to animate the view to, defined by a rectangle.
    */
