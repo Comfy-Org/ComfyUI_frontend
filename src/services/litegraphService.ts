@@ -33,6 +33,7 @@ import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
+import { useUiStore } from '@/stores/uiStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
@@ -54,6 +55,7 @@ export const useLitegraphService = () => {
   const toastStore = useToastStore()
   const widgetStore = useWidgetStore()
   const canvasStore = useCanvasStore()
+  const uiStore = useUiStore()
 
   async function registerNodeDef(nodeId: string, nodeDefV1: ComfyNodeDefV1) {
     const node = class ComfyNode extends LGraphNode {
@@ -112,6 +114,15 @@ export const useLitegraphService = () => {
         this.strokeStyles['executionError'] = function (this: LGraphNode) {
           if (app.lastExecutionError?.node_id == this.id) {
             return { color: '#f0f', lineWidth: 2 }
+          }
+        }
+        this.strokeStyles['outputNode'] = function (this: LGraphNode) {
+          if (
+            this.selected &&
+            this.constructor.nodeData.output_node &&
+            uiStore.selectionToolboxExecuteButtonHovered
+          ) {
+            return { color: 'orange', lineWidth: 2, padding: 10 }
           }
         }
       }

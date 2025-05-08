@@ -107,7 +107,11 @@ export class ComfyApp {
   /**
    * List of entries to queue
    */
-  #queueItems: { number: number; batchCount: number }[] = []
+  #queueItems: {
+    number: number
+    batchCount: number
+    queueNodeIds?: NodeId[]
+  }[] = []
   /**
    * If the queue is currently being processed
    */
@@ -1144,14 +1148,22 @@ export class ComfyApp {
     })
   }
 
-  async graphToPrompt(graph = this.graph) {
+  async graphToPrompt(
+    graph = this.graph,
+    options: { queueNodeIds?: NodeId[] } = {}
+  ) {
     return graphToPrompt(graph, {
-      sortNodes: useSettingStore().get('Comfy.Workflow.SortNodeIdOnSave')
+      sortNodes: useSettingStore().get('Comfy.Workflow.SortNodeIdOnSave'),
+      queueNodeIds: options.queueNodeIds
     })
   }
 
-  async queuePrompt(number: number, batchCount: number = 1): Promise<boolean> {
-    this.#queueItems.push({ number, batchCount })
+  async queuePrompt(
+    number: number,
+    batchCount: number = 1,
+    queueNodeIds?: NodeId[]
+  ): Promise<boolean> {
+    this.#queueItems.push({ number, batchCount, queueNodeIds })
 
     // Only have one action process the items so each one gets a unique seed correctly
     if (this.#processingQueue) {
@@ -1167,14 +1179,14 @@ export class ComfyApp {
 
     try {
       while (this.#queueItems.length) {
-        const { number, batchCount } = this.#queueItems.pop()!
+        const { number, batchCount, queueNodeIds } = this.#queueItems.pop()!
 
         for (let i = 0; i < batchCount; i++) {
           // Allow widgets to run callbacks before a prompt has been queued
           // e.g. random seed before every gen
           executeWidgetsCallback(this.graph.nodes, 'beforeQueued')
 
-          const p = await this.graphToPrompt()
+          const p = await this.graphToPrompt(this.graph, { queueNodeIds })
           try {
             api.authToken = comfyOrgAuthToken
             const res = await api.queuePrompt(number, p)
