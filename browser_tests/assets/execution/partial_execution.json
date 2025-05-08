@@ -77,7 +77,7 @@
   "extra": {
     "frontendVersion": "1.19.1",
     "ds": {
-      "offset": [400, 400],
+      "offset": [0, 0],
       "scale": 1
     }
   },
