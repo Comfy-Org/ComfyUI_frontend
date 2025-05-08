@@ -316,7 +316,7 @@ export function useCoreCommands(): ComfyCommand[] {
       id: 'Comfy.QueueSelectedOutputNodes',
       icon: 'pi pi-play',
       label: 'Queue Selected Output Nodes',
-      versionAdded: '1.19.5.7',
+      versionAdded: '1.19.6',
       function: async () => {
         const batchCount = useQueueSettingsStore().batchCount
         const queueNodeIds = getSelectedNodes()
