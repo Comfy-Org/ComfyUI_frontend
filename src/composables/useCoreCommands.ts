@@ -313,6 +313,28 @@ export function useCoreCommands(): ComfyCommand[] {
       }
     },
     {
+      id: 'Comfy.QueueSelectedOutputNodes',
+      icon: 'pi pi-play',
+      label: 'Queue Selected Output Nodes',
+      versionAdded: '1.19.6',
+      function: async () => {
+        const batchCount = useQueueSettingsStore().batchCount
+        const queueNodeIds = getSelectedNodes()
+          .filter((node) => node.constructor.nodeData.output_node)
+          .map((node) => node.id)
+        if (queueNodeIds.length === 0) {
+          toastStore.add({
+            severity: 'error',
+            summary: t('toastMessages.nothingToQueue'),
+            detail: t('toastMessages.pleaseSelectOutputNodes'),
+            life: 3000
+          })
+          return
+        }
+        await app.queuePrompt(0, batchCount, queueNodeIds)
+      }
+    },
+    {
       id: 'Comfy.ShowSettingsDialog',
       icon: 'pi pi-cog',
       label: 'Show Settings Dialog',

@@ -18,3 +18,27 @@ test.describe('Execution', () => {
     )
   })
 })
+
+test.describe('Execute to selected output nodes', () => {
+  test('Execute to selected output nodes', async ({ comfyPage }) => {
+    await comfyPage.loadWorkflow('execution/partial_execution')
+    const input = await comfyPage.getNodeRefById(3)
+    const output1 = await comfyPage.getNodeRefById(1)
+    const output2 = await comfyPage.getNodeRefById(4)
+    expect(await (await input.getWidget(0)).getValue()).toBe('foo')
+    expect(await (await output1.getWidget(0)).getValue()).toBe('')
+    expect(await (await output2.getWidget(0)).getValue()).toBe('')
+
+    await output1.click('title')
+
+    await comfyPage.executeCommand('Comfy.QueueSelectedOutputNodes')
+    // @note: Wait for the execution to finish. We might want to move to a more
+    // reliable way to wait for the execution to finish. Workflow in this test
+    // is simple enough that this is fine for now.
+    await comfyPage.page.waitForTimeout(200)
+
+    expect(await (await input.getWidget(0)).getValue()).toBe('foo')
+    expect(await (await output1.getWidget(0)).getValue()).toBe('foo')
+    expect(await (await output2.getWidget(0)).getValue()).toBe('')
+  })
+})

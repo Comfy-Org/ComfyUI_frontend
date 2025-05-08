@@ -695,6 +695,7 @@
     "Previous Opened Workflow": "Предыдущий открытый рабочий процесс",
     "Queue Prompt": "Запрос в очереди",
     "Queue Prompt (Front)": "Запрос в очереди (спереди)",
+    "Queue Selected Output Nodes": "Добавить выбранные выходные узлы в очередь",
     "Quit": "Выйти",
     "Redo": "Повторить",
     "Refresh Node Definitions": "Обновить определения нод",
@@ -800,6 +801,12 @@
       "windows": "Windows (Nvidia GPU с поддержкой CUDA)"
     },
     "title": "Ваше устройство не поддерживается"
+  },
+  "selectionToolbox": {
+    "executeButton": {
+      "disabledTooltip": "Выходные узлы не выбраны",
+      "tooltip": "Выполнить для выбранных выходных узлов (выделены оранжевой рамкой)"
+    }
   },
   "serverConfig": {
     "modifiedConfigs": "Вы изменили следующие конфигурации сервера. Перезапустите, чтобы применить изменения.",
@@ -1297,8 +1304,10 @@
     "noTemplatesToExport": "Нет шаблонов для экспорта",
     "nodeDefinitionsUpdated": "Определения узлов обновлены",
     "nothingToGroup": "Нечего группировать",
+    "nothingToQueue": "Нет заданий в очереди",
     "pendingTasksDeleted": "Ожидающие задачи удалены",
     "pleaseSelectNodesToGroup": "Пожалуйста, выберите узлы (или другие группы) для создания группы",
+    "pleaseSelectOutputNodes": "Пожалуйста, выберите выходные узлы",
     "unableToGetModelFilePath": "Не удалось получить путь к файлу модели",
     "unauthorizedDomain": "Ваш домен {domain} не авторизован для использования этого сервиса. Пожалуйста, свяжитесь с {email}, чтобы добавить ваш домен в белый список.",
     "updateRequested": "Запрошено обновление",

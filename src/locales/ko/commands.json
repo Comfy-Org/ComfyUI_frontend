@@ -155,6 +155,9 @@
   "Comfy_QueuePromptFront": {
     "label": "실행 큐 맨 앞에 프롬프트 추가"
   },
+  "Comfy_QueueSelectedOutputNodes": {
+    "label": "선택한 출력 노드 대기열에 추가"
+  },
   "Comfy_Redo": {
     "label": "다시 실행"
   },

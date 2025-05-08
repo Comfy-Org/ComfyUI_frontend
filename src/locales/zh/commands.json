@@ -155,6 +155,9 @@
   "Comfy_QueuePromptFront": {
     "label": "执行提示词（前端）"
   },
+  "Comfy_QueueSelectedOutputNodes": {
+    "label": "队列所选输出节点"
+  },
   "Comfy_Redo": {
     "label": "重做"
   },

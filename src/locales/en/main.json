@@ -803,6 +803,7 @@
     "Open": "Open",
     "Queue Prompt": "Queue Prompt",
     "Queue Prompt (Front)": "Queue Prompt (Front)",
+    "Queue Selected Output Nodes": "Queue Selected Output Nodes",
     "Redo": "Redo",
     "Refresh Node Definitions": "Refresh Node Definitions",
     "Save": "Save",
@@ -1197,6 +1198,8 @@
     "resizeNodeMatchOutput": "Resize Node to match output"
   },
   "toastMessages": {
+    "nothingToQueue": "Nothing to queue",
+    "pleaseSelectOutputNodes": "Please select output nodes",
     "no3dScene": "No 3D scene to apply texture",
     "failedToApplyTexture": "Failed to apply texture",
     "no3dSceneToExport": "No 3D scene to export",
@@ -1342,6 +1345,12 @@
       "step4": {
         "title": "Run!"
       }
+    }
+  },
+  "selectionToolbox": {
+    "executeButton": {
+      "tooltip": "Execute to selected output nodes (Highlighted with orange border)",
+      "disabledTooltip": "No output nodes selected"
     }
   }
 }

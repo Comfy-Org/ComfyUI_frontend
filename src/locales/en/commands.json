@@ -155,6 +155,9 @@
   "Comfy_QueuePromptFront": {
     "label": "Queue Prompt (Front)"
   },
+  "Comfy_QueueSelectedOutputNodes": {
+    "label": "Queue Selected Output Nodes"
+  },
   "Comfy_Redo": {
     "label": "Redo"
   },

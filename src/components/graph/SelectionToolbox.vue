@@ -6,6 +6,7 @@
       content: 'p-0 flex flex-row'
     }"
   >
+    <ExecuteButton v-show="nodeSelected" />
     <ColorPickerButton v-show="nodeSelected || groupSelected" />
     <Button
       v-show="nodeSelected"
@@ -74,6 +75,7 @@ import Panel from 'primevue/panel'
 import { computed } from 'vue'
 
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
+import ExecuteButton from '@/components/graph/selectionToolbox/ExecuteButton.vue'
 import { useRefreshableSelection } from '@/composables/useRefreshableSelection'
 import { st, t } from '@/i18n'
 import { useExtensionService } from '@/services/extensionService'

@@ -155,6 +155,9 @@
   "Comfy_QueuePromptFront": {
     "label": "Очередь запросов (передняя)"
   },
+  "Comfy_QueueSelectedOutputNodes": {
+    "label": "Добавить выбранные выходные узлы в очередь"
+  },
   "Comfy_Redo": {
     "label": "Повторить"
   },

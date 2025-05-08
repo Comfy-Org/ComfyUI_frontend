@@ -155,6 +155,9 @@
   "Comfy_QueuePromptFront": {
     "label": "Invite de file d'attente (avant)"
   },
+  "Comfy_QueueSelectedOutputNodes": {
+    "label": "Mettre en file d’attente les nœuds de sortie sélectionnés"
+  },
   "Comfy_Redo": {
     "label": "Refaire"
   },

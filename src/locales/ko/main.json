@@ -695,6 +695,7 @@
     "Previous Opened Workflow": "이전 열린 워크플로",
     "Queue Prompt": "실행 큐에 프롬프트 추가",
     "Queue Prompt (Front)": "실행 큐 맨 앞에 프롬프트 추가",
+    "Queue Selected Output Nodes": "선택한 출력 노드 대기열에 추가",
     "Quit": "종료",
     "Redo": "다시 실행",
     "Refresh Node Definitions": "노드 정의 새로 고침",
@@ -800,6 +801,12 @@
       "windows": "Windows (CUDA 지원 Nvidia GPU)"
     },
     "title": "이 장치는 지원되지 않습니다."
+  },
+  "selectionToolbox": {
+    "executeButton": {
+      "disabledTooltip": "선택된 출력 노드가 없습니다",
+      "tooltip": "선택한 출력 노드에 실행 (주황색 테두리로 강조 표시됨)"
+    }
   },
   "serverConfig": {
     "modifiedConfigs": "다음 서버 구성을 수정했습니다. 변경 사항을 적용하려면 다시 시작하세오.",
@@ -1297,8 +1304,10 @@
     "noTemplatesToExport": "내보낼 템플릿이 없습니다",
     "nodeDefinitionsUpdated": "노드 정의가 업데이트되었습니다",
     "nothingToGroup": "그룹화할 항목이 없습니다",
+    "nothingToQueue": "대기열에 추가할 항목이 없습니다",
     "pendingTasksDeleted": "보류 중인 작업이 삭제되었습니다",
     "pleaseSelectNodesToGroup": "그룹을 만들기 위해 노드(또는 다른 그룹)를 선택해 주세요",
+    "pleaseSelectOutputNodes": "출력 노드를 선택해 주세요",
     "unableToGetModelFilePath": "모델 파일 경로를 가져올 수 없습니다",
     "unauthorizedDomain": "귀하의 도메인 {domain}은(는) 이 서비스를 사용할 수 있는 권한이 없습니다. 도메인을 허용 목록에 추가하려면 {email}로 문의해 주세요.",
     "updateRequested": "업데이트 요청됨",
