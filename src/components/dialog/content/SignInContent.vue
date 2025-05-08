@@ -87,6 +87,16 @@
         />
         {{ t('auth.login.useApiKey') }}
       </Button>
+      <small class="text-muted text-center">
+        {{ t('auth.apiKey.helpText') }}
+        <a
+          href="https://platform.comfy.org/login"
+          target="_blank"
+          class="text-blue-500 cursor-pointer"
+        >
+          {{ t('auth.apiKey.generateKey') }}
+        </a>
+      </small>
     </div>
 
     <!-- Terms & Contact -->

@@ -1241,7 +1241,9 @@
       "cleared": "API Key cleared",
       "clearedDetail": "Your API Key has been cleared successfully",
       "invalid": "Invalid API Key",
-      "invalidDetail": "Please enter a valid API Key"
+      "invalidDetail": "Please enter a valid API Key",
+      "helpText": "Need an API key?",
+      "generateKey": "Get one here"
     },
     "login": {
       "title": "Log in to your account",

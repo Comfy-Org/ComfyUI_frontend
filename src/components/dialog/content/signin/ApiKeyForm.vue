@@ -16,15 +16,27 @@
       >
         {{ t('auth.apiKey.label') }}
       </label>
-      <InputText
-        pt:root:id="comfy-org-api-key"
-        pt:root:autocomplete="off"
-        class="h-10"
-        name="apiKey"
-        type="password"
-        :placeholder="t('auth.apiKey.placeholder')"
-        :invalid="$form.apiKey?.invalid"
-      />
+      <div class="flex flex-col gap-2">
+        <InputText
+          pt:root:id="comfy-org-api-key"
+          pt:root:autocomplete="off"
+          class="h-10"
+          name="apiKey"
+          type="password"
+          :placeholder="t('auth.apiKey.placeholder')"
+          :invalid="$form.apiKey?.invalid"
+        />
+        <small class="text-muted">
+          {{ t('auth.apiKey.helpText') }}
+          <a
+            href="https://platform.comfy.org/login"
+            target="_blank"
+            class="text-blue-500 cursor-pointer"
+          >
+            {{ t('auth.apiKey.generateKey') }}
+          </a>
+        </small>
+      </div>
     </div>
 
     <div class="flex justify-between items-center mt-4">
