@@ -1069,6 +1069,13 @@ export class ComfyApp {
       ) {
         this.canvas.ds.offset = graphData.extra.ds.offset
         this.canvas.ds.scale = graphData.extra.ds.scale
+      } else {
+        // @note: Set view after the graph has been rendered once. fitView uses
+        // boundingRect on nodes to calculate the view bounds, which only become
+        // available after the first render.
+        requestAnimationFrame(() => {
+          useLitegraphService().fitView()
+        })
       }
     } catch (error) {
       useDialogService().showErrorDialog(error, {

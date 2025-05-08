@@ -5,7 +5,8 @@ import {
   LGraphNode,
   LiteGraph,
   RenderShape,
-  type Vector2
+  type Vector2,
+  createBounds
 } from '@comfyorg/litegraph'
 import type {
   ISerialisableNodeInput,
@@ -651,11 +652,23 @@ export const useLitegraphService = () => {
     canvas.setDirty(true, true)
   }
 
+  function fitView() {
+    const canvas = canvasStore.canvas
+    if (!canvas) return
+
+    const bounds = createBounds(app.graph.nodes)
+    if (!bounds) return
+
+    canvas.ds.fitToBounds(bounds)
+    canvas.setDirty(true, true)
+  }
+
   return {
     registerNodeDef,
     addNodeOnGraph,
     getCanvasCenter,
     goToNode,
-    resetView
+    resetView,
+    fitView
   }
 }
