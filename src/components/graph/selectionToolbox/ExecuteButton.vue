@@ -18,36 +18,50 @@
 </template>
 
 <script setup lang="ts">
+import type { LGraphNode } from '@comfyorg/litegraph'
 import Button from 'primevue/button'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
-import { useUiStore } from '@/stores/uiStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 
 const { t } = useI18n()
-const uiStore = useUiStore()
 const canvasStore = useCanvasStore()
 const commandStore = useCommandStore()
 
 const canvas = canvasStore.getCanvas()
-const selectedOutputNodes = computed(() =>
-  canvasStore.selectedItems.filter(
-    (item) => isLGraphNode(item) && item.constructor.nodeData.output_node
-  )
+const buttonHovered = ref(false)
+const selectedOutputNodes = computed(
+  () =>
+    canvasStore.selectedItems.filter(
+      (item) => isLGraphNode(item) && item.constructor.nodeData.output_node
+    ) as LGraphNode[]
 )
 
 const isDisabled = computed(() => selectedOutputNodes.value.length === 0)
 
+function outputNodeStokeStyle(this: LGraphNode) {
+  if (
+    this.selected &&
+    this.constructor.nodeData.output_node &&
+    buttonHovered.value
+  ) {
+    return { color: 'orange', lineWidth: 2, padding: 10 }
+  }
+}
+
 const handleMouseEnter = () => {
-  uiStore.selectionToolboxExecuteButtonHovered = true
+  buttonHovered.value = true
+  for (const node of selectedOutputNodes.value) {
+    node.strokeStyles['outputNode'] = outputNodeStokeStyle
+  }
   canvas.setDirty(true)
 }
 
 const handleMouseLeave = () => {
-  uiStore.selectionToolboxExecuteButtonHovered = false
+  buttonHovered.value = false
   canvas.setDirty(true)
 }
 
