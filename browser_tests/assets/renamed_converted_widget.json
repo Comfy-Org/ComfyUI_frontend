@@ -92,6 +92,10 @@
   "groups": [],
   "config": {},
   "extra": {
+    "ds": {
+      "offset": [0, 0],
+      "scale": 1
+    },
     "VHS_latentpreview": true,
     "VHS_latentpreviewrate": 0,
     "VHS_MetadataImage": false,

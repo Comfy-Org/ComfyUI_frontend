@@ -54,7 +54,11 @@
   "groups": [],
   "config": {},
   "extra": {
-    "frontendVersion": "1.17.0"
+    "frontendVersion": "1.17.0",
+    "ds": {
+      "offset": [0, 0],
+      "scale": 1
+    }
   },
   "version": 0.4
 }
