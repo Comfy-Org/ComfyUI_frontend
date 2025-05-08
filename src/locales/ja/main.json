@@ -695,6 +695,7 @@
     "Previous Opened Workflow": "前に開いたワークフロー",
     "Queue Prompt": "キューのプロンプト",
     "Queue Prompt (Front)": "キューのプロンプト (前面)",
+    "Queue Selected Output Nodes": "選択した出力ノードをキューに追加",
     "Quit": "終了",
     "Redo": "やり直す",
     "Refresh Node Definitions": "ノード定義を更新",
@@ -800,6 +801,12 @@
       "windows": "Windows (CUDA対応のNvidia GPU)"
     },
     "title": "お使いのデバイスはサポートされていません"
+  },
+  "selectionToolbox": {
+    "executeButton": {
+      "disabledTooltip": "出力ノードが選択されていません",
+      "tooltip": "選択した出力ノードに実行（オレンジ色の枠でハイライト表示）"
+    }
   },
   "serverConfig": {
     "modifiedConfigs": "以下のサーバー設定を変更しました。変更を適用するには再起動してください。",
@@ -1297,8 +1304,10 @@
     "noTemplatesToExport": "エクスポートするテンプレートがありません",
     "nodeDefinitionsUpdated": "ノード定義が更新されました",
     "nothingToGroup": "グループ化するものがありません",
+    "nothingToQueue": "キューに追加する項目がありません",
     "pendingTasksDeleted": "保留中のタスクが削除されました",
     "pleaseSelectNodesToGroup": "グループを作成するためのノード（または他のグループ）を選択してください",
+    "pleaseSelectOutputNodes": "出力ノードを選択してください",
     "unableToGetModelFilePath": "モデルファイルのパスを取得できません",
     "unauthorizedDomain": "あなたのドメイン {domain} はこのサービスを利用する権限がありません。ご利用のドメインをホワイトリストに追加するには、{email} までご連絡ください。",
     "updateRequested": "更新が要求されました",

@@ -155,6 +155,9 @@
   "Comfy_QueuePromptFront": {
     "label": "キュープロンプト（フロント）"
   },
+  "Comfy_QueueSelectedOutputNodes": {
+    "label": "選択した出力ノードをキューに追加"
+  },
   "Comfy_Redo": {
     "label": "やり直す"
   },

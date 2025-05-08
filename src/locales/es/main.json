@@ -695,6 +695,7 @@
     "Previous Opened Workflow": "Flujo de trabajo abierto anterior",
     "Queue Prompt": "Indicador de cola",
     "Queue Prompt (Front)": "Indicador de cola (Frente)",
+    "Queue Selected Output Nodes": "Encolar nodos de salida seleccionados",
     "Quit": "Salir",
     "Redo": "Rehacer",
     "Refresh Node Definitions": "Actualizar definiciones de nodo",
@@ -800,6 +801,12 @@
       "windows": "Windows (GPU Nvidia con soporte CUDA)"
     },
     "title": "Tu dispositivo no es compatible"
+  },
+  "selectionToolbox": {
+    "executeButton": {
+      "disabledTooltip": "No hay nodos de salida seleccionados",
+      "tooltip": "Ejecutar en los nodos de salida seleccionados (resaltados con borde naranja)"
+    }
   },
   "serverConfig": {
     "modifiedConfigs": "Has modificado las siguientes configuraciones del servidor. Reinicia para aplicar los cambios.",
@@ -1297,8 +1304,10 @@
     "noTemplatesToExport": "No hay plantillas para exportar",
     "nodeDefinitionsUpdated": "Definiciones de nodos actualizadas",
     "nothingToGroup": "Nada para agrupar",
+    "nothingToQueue": "Nada para poner en cola",
     "pendingTasksDeleted": "Tareas pendientes eliminadas",
     "pleaseSelectNodesToGroup": "Por favor, seleccione los nodos (u otros grupos) para crear un grupo para",
+    "pleaseSelectOutputNodes": "Por favor, selecciona los nodos de salida",
     "unableToGetModelFilePath": "No se puede obtener la ruta del archivo del modelo",
     "unauthorizedDomain": "Tu dominio {domain} no está autorizado para usar este servicio. Por favor, contacta a {email} para agregar tu dominio a la lista blanca.",
     "updateRequested": "Actualización solicitada",

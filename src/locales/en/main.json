@@ -803,6 +803,7 @@
     "Open": "Open",
     "Queue Prompt": "Queue Prompt",
     "Queue Prompt (Front)": "Queue Prompt (Front)",
+    "Queue Selected Output Nodes": "Queue Selected Output Nodes",
     "Redo": "Redo",
     "Refresh Node Definitions": "Refresh Node Definitions",
     "Save": "Save",

@@ -155,6 +155,9 @@
   "Comfy_QueuePromptFront": {
     "label": "Prompt de Cola (Frente)"
   },
+  "Comfy_QueueSelectedOutputNodes": {
+    "label": "Encolar nodos de salida seleccionados"
+  },
   "Comfy_Redo": {
     "label": "Rehacer"
   },

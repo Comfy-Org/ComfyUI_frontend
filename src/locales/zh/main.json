@@ -695,6 +695,7 @@
     "Previous Opened Workflow": "上一个打开的工作流",
     "Queue Prompt": "执行提示词",
     "Queue Prompt (Front)": "执行提示词 (优先执行)",
+    "Queue Selected Output Nodes": "将所选输出节点加入队列",
     "Quit": "退出",
     "Redo": "重做",
     "Refresh Node Definitions": "刷新节点定义",
@@ -800,6 +801,12 @@
       "windows": "Windows (支持 CUDA 的 Nvidia GPU)"
     },
     "title": "您的设备不受支持"
+  },
+  "selectionToolbox": {
+    "executeButton": {
+      "disabledTooltip": "未选择输出节点",
+      "tooltip": "执行到选定的输出节点（用橙色边框高亮显示）"
+    }
   },
   "serverConfig": {
     "modifiedConfigs": "您已修改以下服务器配置。重启以应用更改。",
@@ -1297,8 +1304,10 @@
     "noTemplatesToExport": "没有模板可以导出",
     "nodeDefinitionsUpdated": "节点定义已更新",
     "nothingToGroup": "没有可分组的内容",
+    "nothingToQueue": "没有可加入队列的内容",
     "pendingTasksDeleted": "待处理任务已删除",
     "pleaseSelectNodesToGroup": "请选取节点（或其他组）以创建分组",
+    "pleaseSelectOutputNodes": "请选择输出节点",
     "unableToGetModelFilePath": "无法获取模型文件路径",
     "unauthorizedDomain": "您的域名 {domain} 未被授权使用此服务。请联系 {email} 将您的域名添加到白名单。",
     "updateRequested": "已请求更新",

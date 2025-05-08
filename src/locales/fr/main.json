@@ -695,6 +695,7 @@
     "Previous Opened Workflow": "Flux de travail ouvert précédent",
     "Queue Prompt": "Invite de file d'attente",
     "Queue Prompt (Front)": "Invite de file d'attente (Front)",
+    "Queue Selected Output Nodes": "Mettre en file d’attente les nœuds de sortie sélectionnés",
     "Quit": "Quitter",
     "Redo": "Refaire",
     "Refresh Node Definitions": "Actualiser les définitions de nœud",
@@ -800,6 +801,12 @@
       "windows": "Windows (GPU Nvidia avec support CUDA)"
     },
     "title": "Votre appareil n'est pas pris en charge"
+  },
+  "selectionToolbox": {
+    "executeButton": {
+      "disabledTooltip": "Aucun nœud de sortie sélectionné",
+      "tooltip": "Exécuter vers les nœuds de sortie sélectionnés (surlignés avec une bordure orange)"
+    }
   },
   "serverConfig": {
     "modifiedConfigs": "Vous avez modifié les configurations suivantes du serveur. Redémarrez pour appliquer les modifications.",
@@ -1297,8 +1304,10 @@
     "noTemplatesToExport": "Aucun modèle à exporter",
     "nodeDefinitionsUpdated": "Définitions de nœuds mises à jour",
     "nothingToGroup": "Rien à regrouper",
+    "nothingToQueue": "Rien à ajouter à la file d’attente",
     "pendingTasksDeleted": "Tâches en attente supprimées",
     "pleaseSelectNodesToGroup": "Veuillez sélectionner les nœuds (ou autres groupes) pour créer un groupe pour",
+    "pleaseSelectOutputNodes": "Veuillez sélectionner les nœuds de sortie",
     "unableToGetModelFilePath": "Impossible d'obtenir le chemin du fichier modèle",
     "unauthorizedDomain": "Votre domaine {domain} n'est pas autorisé à utiliser ce service. Veuillez contacter {email} pour ajouter votre domaine à la liste blanche.",
     "updateRequested": "Mise à jour demandée",
