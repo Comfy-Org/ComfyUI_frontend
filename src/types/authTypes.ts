@@ -3,7 +3,7 @@ type LoggedInAuthHeader = {
 }
 
 export type ApiKeyAuthHeader = {
-  'X-COMFY-API-KEY': string
+  'X-API-KEY': string
 }
 
 export type AuthHeader = LoggedInAuthHeader | ApiKeyAuthHeader

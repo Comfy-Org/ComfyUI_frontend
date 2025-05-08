@@ -53,7 +53,7 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
     const comfyOrgApiKey = getApiKey()
     if (comfyOrgApiKey) {
       return {
-        'X-COMFY-API-KEY': comfyOrgApiKey
+        'X-API-KEY': comfyOrgApiKey
       }
     }
     return null

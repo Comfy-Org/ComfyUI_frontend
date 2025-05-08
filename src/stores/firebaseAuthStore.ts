@@ -103,7 +103,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
    *
    * @returns {Promise<AuthHeader | null>}
    *   - A LoggedInAuthHeader with Bearer token if Firebase authenticated
-   *   - An ApiKeyAuthHeader with X-COMFY-API-KEY if API key exists
+   *   - An ApiKeyAuthHeader with X-API-KEY if API key exists
    *   - null if neither authentication method is available
    */
   const getAuthHeader = async (): Promise<AuthHeader | null> => {
