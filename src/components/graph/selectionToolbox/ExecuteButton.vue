@@ -1,28 +1,36 @@
 <template>
   <Button
+    v-tooltip.top="{
+      value: isDisabled
+        ? t('selectionToolbox.executeButton.disabledTooltip')
+        : t('selectionToolbox.executeButton.tooltip'),
+      showDelay: 1000
+    }"
     :severity="isDisabled ? 'secondary' : 'success'"
     text
-    icon="pi pi-play"
     :disabled="isDisabled"
     @mouseenter="() => handleMouseEnter()"
     @mouseleave="() => handleMouseLeave()"
     @click="handleClick"
-  />
+  >
+    <i-lucide:play />
+  </Button>
 </template>
 
 <script setup lang="ts">
 import Button from 'primevue/button'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-import { app } from '@/scripts/app'
+import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
-import { useQueueSettingsStore } from '@/stores/queueStore'
 import { useUiStore } from '@/stores/uiStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 
+const { t } = useI18n()
 const uiStore = useUiStore()
 const canvasStore = useCanvasStore()
-const queueSettingsStore = useQueueSettingsStore()
+const commandStore = useCommandStore()
 
 const canvas = canvasStore.getCanvas()
 const selectedOutputNodes = computed(() =>
@@ -44,8 +52,6 @@ const handleMouseLeave = () => {
 }
 
 const handleClick = async () => {
-  const batchCount = queueSettingsStore.batchCount
-  const queueNodeIds = selectedOutputNodes.value.map((node) => node.id)
-  await app.queuePrompt(0, batchCount, queueNodeIds)
+  await commandStore.execute('Comfy.QueueSelectedOutputNodes')
 }
 </script>

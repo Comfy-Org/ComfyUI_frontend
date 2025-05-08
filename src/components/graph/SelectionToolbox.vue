@@ -6,7 +6,7 @@
       content: 'p-0 flex flex-row'
     }"
   >
-    <ExecuteButton />
+    <ExecuteButton v-show="nodeSelected" />
     <ColorPickerButton v-show="nodeSelected || groupSelected" />
     <Button
       v-show="nodeSelected"
