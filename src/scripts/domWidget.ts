@@ -1,7 +1,6 @@
-import { LGraphNode, LiteGraph } from '@comfyorg/litegraph'
+import { LGraphNode, LegacyWidget, LiteGraph } from '@comfyorg/litegraph'
 import type {
   IBaseWidget,
-  ICustomWidget,
   IWidgetOptions
 } from '@comfyorg/litegraph/dist/types/widgets'
 import _ from 'lodash'
@@ -13,9 +12,9 @@ import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { generateUUID } from '@/utils/formatUtil'
 
 export interface BaseDOMWidget<V extends object | string>
-  extends ICustomWidget {
+  extends IBaseWidget<V, string, DOMWidgetOptions<V>> {
   // ICustomWidget properties
-  type: 'custom'
+  type: string
   options: DOMWidgetOptions<V>
   value: V
   callback?: (value: V) => void
@@ -89,18 +88,15 @@ export const isComponentWidget = <V extends object | string>(
 ): widget is ComponentWidget<V> => 'component' in widget && !!widget.component
 
 abstract class BaseDOMWidgetImpl<V extends object | string>
+  extends LegacyWidget<IBaseWidget<V, string, DOMWidgetOptions<V>>>
   implements BaseDOMWidget<V>
 {
   static readonly DEFAULT_MARGIN = 10
-  readonly type: 'custom'
-  readonly name: string
-  readonly options: DOMWidgetOptions<V>
-  computedHeight?: number
-  y: number = 0
-  callback?: (value: V) => void
+  declare readonly name: string
+  declare readonly options: DOMWidgetOptions<V>
+  declare callback?: (value: V) => void
 
   readonly id: string
-  readonly node: LGraphNode
 
   constructor(obj: {
     node: LGraphNode
@@ -108,20 +104,17 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
     type: string
     options: DOMWidgetOptions<V>
   }) {
-    // @ts-expect-error custom widget type
-    this.type = obj.type
-    this.name = obj.name
-    this.options = obj.options
+    const { node, name, type, options } = obj
+    super({ y: 0, name, type, options }, node)
 
     this.id = generateUUID()
-    this.node = obj.node
   }
 
-  get value(): V {
+  override get value(): V {
     return this.options.getValue?.() ?? ('' as V)
   }
 
-  set value(v: V) {
+  override set value(v: V) {
     this.options.setValue?.(v)
     this.callback?.(this.value)
   }
@@ -134,7 +127,7 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
     return !['hidden'].includes(this.type) && this.node.isWidgetVisible(this)
   }
 
-  draw(
+  override draw(
     ctx: CanvasRenderingContext2D,
     _node: LGraphNode,
     widget_width: number,
@@ -168,7 +161,7 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
   extends BaseDOMWidgetImpl<V>
   implements DOMWidget<T, V>
 {
-  readonly element: T
+  override readonly element: T
 
   constructor(obj: {
     node: LGraphNode
@@ -183,7 +176,6 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
 
   /** Extract DOM widget size info */
   computeLayoutSize(node: LGraphNode) {
-    // @ts-expect-error custom widget type
     if (this.type === 'hidden') {
       return {
         minHeight: 0,
@@ -257,7 +249,7 @@ export class ComponentWidgetImpl<V extends object | string>
     }
   }
 
-  serializeValue(): V {
+  override serializeValue(): V {
     return toRaw(this.value)
   }
 }
