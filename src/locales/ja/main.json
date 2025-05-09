@@ -29,6 +29,24 @@
     "title": "APIノードを使用するためにはサインインが必要です"
   },
   "auth": {
+    "apiKey": {
+      "cleared": "APIキーが削除されました",
+      "clearedDetail": "APIキーが正常に削除されました",
+      "description": "Comfy APIキーを使用してAPIノードを有効にします",
+      "error": "無効なAPIキーです",
+      "generateKey": "こちらから取得",
+      "helpText": "APIキーが必要ですか？",
+      "invalid": "無効なAPIキーです",
+      "invalidDetail": "有効なAPIキーを入力してください",
+      "label": "APIキー",
+      "placeholder": "APIキーを入力してください",
+      "storageFailed": "APIキーの保存に失敗しました",
+      "storageFailedDetail": "もう一度お試しください。",
+      "stored": "APIキーが保存されました",
+      "storedDetail": "APIキーが正常に保存されました",
+      "title": "APIキー",
+      "whitelistInfo": "ホワイトリストに登録されていないサイトについて"
+    },
     "login": {
       "andText": "および",
       "confirmPasswordLabel": "パスワードの確認",
@@ -56,6 +74,7 @@
       "termsLink": "利用規約",
       "termsText": "「次へ」または「サインアップ」をクリックすると、私たちの",
       "title": "アカウントにログインする",
+      "useApiKey": "Comfy APIキー",
       "userAvatar": "ユーザーアバター"
     },
     "passwordUpdate": {
@@ -1312,6 +1331,7 @@
   },
   "validation": {
     "invalidEmail": "無効なメールアドレス",
+    "length": "{length}文字でなければなりません",
     "maxLength": "{length}文字以下でなければなりません",
     "minLength": "{length}文字以上でなければなりません",
     "password": {
@@ -1324,6 +1344,7 @@
       "uppercase": "少なくとも1つの大文字を含む必要があります"
     },
     "personalDataConsentRequired": "個人データの処理に同意する必要があります。",
+    "prefix": "{prefix}で始める必要があります",
     "required": "必須"
   },
   "welcome": {

@@ -1220,8 +1220,27 @@
     "unauthorizedDomain": "Your domain {domain} is not authorized to use this service. Please contact {email} to add your domain to the whitelist."
   },
   "auth": {
+    "apiKey": {
+      "title": "API Key",
+      "label": "API Key",
+      "description": "Use your Comfy API key to enable API Nodes",
+      "placeholder": "Enter your API Key",
+      "error": "Invalid API Key",
+      "storageFailed": "Failed to store API Key",
+      "storageFailedDetail": "Please try again.",
+      "stored": "API Key stored",
+      "storedDetail": "Your API Key has been stored successfully",
+      "cleared": "API Key cleared",
+      "clearedDetail": "Your API Key has been cleared successfully",
+      "invalid": "Invalid API Key",
+      "invalidDetail": "Please enter a valid API Key",
+      "helpText": "Need an API key?",
+      "generateKey": "Get one here",
+      "whitelistInfo": "About non-whitelisted sites"
+    },
     "login": {
       "title": "Log in to your account",
+      "useApiKey": "Comfy API Key",
       "signInOrSignUp": "Sign In / Sign Up",
       "forgotPasswordError": "Failed to send password reset email",
       "passwordResetSent": "Password reset email sent",
@@ -1278,6 +1297,8 @@
     "required": "Required",
     "minLength": "Must be at least {length} characters",
     "maxLength": "Must be no more than {length} characters",
+    "prefix": "Must start with {prefix}",
+    "length": "Must be {length} characters",
     "password": {
       "requirements": "Password requirements",
       "minLength": "Must be between 8 and 32 characters",

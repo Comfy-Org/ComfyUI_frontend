@@ -29,6 +29,24 @@
     "title": "API 노드 사용에 필요한 로그인"
   },
   "auth": {
+    "apiKey": {
+      "cleared": "API 키 삭제됨",
+      "clearedDetail": "API 키가 성공적으로 삭제되었습니다",
+      "description": "Comfy API 키를 사용하여 API 노드를 활성화하세요",
+      "error": "유효하지 않은 API 키",
+      "generateKey": "여기에서 받기",
+      "helpText": "API 키가 필요하신가요?",
+      "invalid": "유효하지 않은 API 키",
+      "invalidDetail": "유효한 API 키를 입력해 주세요",
+      "label": "API 키",
+      "placeholder": "API 키를 입력하세요",
+      "storageFailed": "API 키 저장 실패",
+      "storageFailedDetail": "다시 시도해 주세요.",
+      "stored": "API 키 저장됨",
+      "storedDetail": "API 키가 성공적으로 저장되었습니다",
+      "title": "API 키",
+      "whitelistInfo": "비허용 사이트에 대하여"
+    },
     "login": {
       "andText": "및",
       "confirmPasswordLabel": "비밀번호 확인",
@@ -56,6 +74,7 @@
       "termsLink": "이용 약관",
       "termsText": "\"다음\" 또는 \"가입하기\"를 클릭하면 우리의",
       "title": "계정에 로그인",
+      "useApiKey": "Comfy API 키",
       "userAvatar": "사용자 아바타"
     },
     "passwordUpdate": {
@@ -1312,6 +1331,7 @@
   },
   "validation": {
     "invalidEmail": "유효하지 않은 이메일 주소",
+    "length": "{length}자여야 합니다",
     "maxLength": "{length}자를 초과할 수 없습니다",
     "minLength": "{length}자 이상이어야 합니다",
     "password": {
@@ -1324,6 +1344,7 @@
       "uppercase": "적어도 하나의 대문자를 포함해야 합니다"
     },
     "personalDataConsentRequired": "개인 데이터 처리에 동의해야 합니다.",
+    "prefix": "{prefix}(으)로 시작해야 합니다",
     "required": "필수"
   },
   "welcome": {
