@@ -36,6 +36,21 @@ export const useWorkflowService = () => {
     }
     return defaultName
   }
+
+  /**
+   * Adds scale and offset from litegraph canvas to the workflow JSON.
+   * @param workflow The workflow to add the view restore data to
+   */
+  function addViewRestore(workflow: ComfyWorkflowJSON) {
+    if (!settingStore.get('Comfy.EnableWorkflowViewRestore')) return
+
+    const { offset, scale } = app.canvas.ds
+    const [x, y] = offset
+
+    workflow.extra ??= {}
+    workflow.extra.ds = { scale, offset: [x, y] }
+  }
+
   /**
    * Export the current workflow as a JSON file
    * @param filename The filename to save the workflow as
@@ -50,6 +65,8 @@ export const useWorkflowService = () => {
       filename = workflow.filename
     }
     const p = await app.graphToPrompt()
+
+    addViewRestore(p.workflow)
     const json = JSON.stringify(p[promptProperty], null, 2)
     const blob = new Blob([json], { type: 'application/json' })
     const file = await getFilename(filename)
