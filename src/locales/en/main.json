@@ -1232,6 +1232,7 @@
     "apiKey": {
       "title": "API Key",
       "label": "API Key",
+      "description": "Use your Comfy API key to enable API Nodes",
       "placeholder": "Enter your API Key",
       "error": "Invalid API Key",
       "storageFailed": "Failed to store API Key",
@@ -1243,7 +1244,8 @@
       "invalid": "Invalid API Key",
       "invalidDetail": "Please enter a valid API Key",
       "helpText": "Need an API key?",
-      "generateKey": "Get one here"
+      "generateKey": "Get one here",
+      "whitelistInfo": "About non-whitelisted sites"
     },
     "login": {
       "title": "Log in to your account",
