@@ -1062,20 +1062,21 @@ export class ComfyApp {
     try {
       // @ts-expect-error Discrepancies between zod and litegraph - in progress
       this.graph.configure(graphData)
-      if (
-        restore_view &&
-        useSettingStore().get('Comfy.EnableWorkflowViewRestore') &&
-        graphData.extra?.ds
-      ) {
-        this.canvas.ds.offset = graphData.extra.ds.offset
-        this.canvas.ds.scale = graphData.extra.ds.scale
-      } else {
-        // @note: Set view after the graph has been rendered once. fitView uses
-        // boundingRect on nodes to calculate the view bounds, which only become
-        // available after the first render.
-        requestAnimationFrame(() => {
-          useLitegraphService().fitView()
-        })
+      if (restore_view) {
+        if (
+          useSettingStore().get('Comfy.EnableWorkflowViewRestore') &&
+          graphData.extra?.ds
+        ) {
+          this.canvas.ds.offset = graphData.extra.ds.offset
+          this.canvas.ds.scale = graphData.extra.ds.scale
+        } else {
+          // @note: Set view after the graph has been rendered once. fitView uses
+          // boundingRect on nodes to calculate the view bounds, which only become
+          // available after the first render.
+          requestAnimationFrame(() => {
+            useLitegraphService().fitView()
+          })
+        }
       }
     } catch (error) {
       useDialogService().showErrorDialog(error, {
