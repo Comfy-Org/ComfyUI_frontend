@@ -30,14 +30,18 @@ import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
 import CurrentUserPopover from './CurrentUserPopover.vue'
 
 const authStore = useFirebaseAuthStore()
+const apiKeyStore = useApiKeyAuthStore()
 
 const popover = ref<InstanceType<typeof Popover> | null>(null)
-const isAuthenticated = computed(() => authStore.isAuthenticated)
+const isAuthenticated = computed(
+  () => authStore.isAuthenticated || apiKeyStore.isAuthenticated
+)
 const photoURL = computed<string | undefined>(
   () => authStore.currentUser?.photoURL ?? undefined
 )

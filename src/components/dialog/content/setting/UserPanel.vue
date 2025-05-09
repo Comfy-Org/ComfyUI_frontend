@@ -5,10 +5,10 @@
       <Divider class="mb-3" />
 
       <!-- Normal User Panel -->
-      <div v-if="user" class="flex flex-col gap-2">
+      <div v-if="isLoggedIn" class="flex flex-col gap-2">
         <UserAvatar
-          v-if="user.photoURL"
-          :photo-url="user.photoURL"
+          v-if="userPhotoUrl"
+          :photo-url="userPhotoUrl"
           shape="circle"
           size="large"
         />
@@ -18,7 +18,7 @@
             {{ $t('userSettings.name') }}
           </h3>
           <div class="text-muted">
-            {{ user.displayName || $t('userSettings.notSet') }}
+            {{ userDisplayName || $t('userSettings.notSet') }}
           </div>
         </div>
 
@@ -26,8 +26,8 @@
           <h3 class="font-medium">
             {{ $t('userSettings.email') }}
           </h3>
-          <a :href="'mailto:' + user.email" class="hover:underline">
-            {{ user.email }}
+          <a :href="'mailto:' + userEmail" class="hover:underline">
+            {{ userEmail }}
           </a>
         </div>
 
@@ -67,27 +67,6 @@
         />
       </div>
 
-      <!-- API Key Panel -->
-      <div v-else-if="hasApiKey" class="flex flex-col gap-4">
-        <div class="flex flex-col gap-0.5">
-          <h3 class="font-medium">
-            {{ $t('auth.apiKey.title') }}
-          </h3>
-          <div class="text-muted flex items-center gap-1">
-            <i class="pi pi-key" />
-            {{ $t('auth.apiKey.label') }}
-          </div>
-        </div>
-
-        <Button
-          class="mt-4 w-32"
-          severity="secondary"
-          :label="$t('auth.signOut.signOut')"
-          icon="pi pi-sign-out"
-          @click="handleApiKeySignOut"
-        />
-      </div>
-
       <!-- Login Section -->
       <div v-else class="flex flex-col gap-4">
         <p class="text-gray-600">
@@ -112,59 +91,22 @@ import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'
 import TabPanel from 'primevue/tabpanel'
-import { computed } from 'vue'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useDialogService } from '@/services/dialogService'
-import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { useCommandStore } from '@/stores/commandStore'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
 const dialogService = useDialogService()
-const authStore = useFirebaseAuthStore()
-const commandStore = useCommandStore()
-const apiKeyStore = useApiKeyAuthStore()
-
-const user = computed(() => authStore.currentUser)
-const loading = computed(() => authStore.loading)
-const hasApiKey = computed(() => apiKeyStore.hasApiKey)
-
-const providerName = computed(() => {
-  const providerId = user.value?.providerData[0]?.providerId
-  if (providerId?.includes('google')) {
-    return 'Google'
-  }
-  if (providerId?.includes('github')) {
-    return 'GitHub'
-  }
-  return providerId
-})
-
-const providerIcon = computed(() => {
-  const providerId = user.value?.providerData[0]?.providerId
-  if (providerId?.includes('google')) {
-    return 'pi pi-google'
-  }
-  if (providerId?.includes('github')) {
-    return 'pi pi-github'
-  }
-  return 'pi pi-user'
-})
-
-const isEmailProvider = computed(() => {
-  const providerId = user.value?.providerData[0]?.providerId
-  return providerId === 'password'
-})
-
-const handleSignOut = async () => {
-  await commandStore.execute('Comfy.User.SignOut')
-}
-
-const handleApiKeySignOut = async () => {
-  await apiKeyStore.clearStoredApiKey()
-}
-
-const handleSignIn = async () => {
-  await commandStore.execute('Comfy.User.OpenSignInDialog')
-}
+const {
+  loading,
+  isLoggedIn,
+  isEmailProvider,
+  userDisplayName,
+  userEmail,
+  userPhotoUrl,
+  providerName,
+  providerIcon,
+  handleSignOut,
+  handleSignIn
+} = useCurrentUser()
 </script>
