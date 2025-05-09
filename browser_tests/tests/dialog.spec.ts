@@ -69,6 +69,17 @@ test.describe('Missing models warning', () => {
   test('Should display a warning when missing models are found', async ({
     comfyPage
   }) => {
+    await comfyPage.page.evaluate(() => {
+      const app = window['app']
+      app.api.getModelsDownloadSettings = async () => {
+        return {
+          allowedSources: ['https://civitai.com/', 'https://huggingface.co/'],
+          allowedSuffixes: ['.safetensors', '.sft'],
+          whiteListedUrls: new Set([])
+        }
+      }
+    })
+
     await comfyPage.loadWorkflow('missing_models')
 
     const missingModelsWarning = comfyPage.page.locator('.comfy-missing-models')
@@ -81,6 +92,17 @@ test.describe('Missing models warning', () => {
   test('Should display a warning when missing models are found in node properties', async ({
     comfyPage
   }) => {
+    await comfyPage.page.evaluate(() => {
+      const app = window['app']
+      app.api.getModelsDownloadSettings = async () => {
+        return {
+          allowedSources: ['https://civitai.com/', 'https://huggingface.co/'],
+          allowedSuffixes: ['.safetensors', '.sft'],
+          whiteListedUrls: new Set([])
+        }
+      }
+    })
+
     // Load workflow that has a node with models metadata at the node level
     await comfyPage.loadWorkflow('missing_models_from_node_properties')
 
