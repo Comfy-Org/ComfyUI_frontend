@@ -61,6 +61,7 @@
       "loginWithGithub": "使用Github登录",
       "loginWithGoogle": "使用Google登录",
       "newUser": "新来的？",
+      "noAssociatedUser": "所提供的 API 密钥未关联任何 Comfy 用户",
       "orContinueWith": "或者继续使用",
       "passwordLabel": "密码",
       "passwordPlaceholder": "输入您的密码",

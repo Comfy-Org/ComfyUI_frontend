@@ -107,6 +107,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
    *   - null if neither authentication method is available
    */
   const getAuthHeader = async (): Promise<AuthHeader | null> => {
+    // If available, set header with JWT used to identify the user to Firebase service
     const token = await getIdToken()
     if (token) {
       return {
@@ -114,8 +115,8 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       }
     }
 
-    const apiKeyStore = useApiKeyAuthStore()
-    return apiKeyStore.getAuthHeader()
+    // If not authenticated with Firebase, try falling back to API key if available
+    return useApiKeyAuthStore().getAuthHeader()
   }
 
   const fetchBalance = async (): Promise<GetCustomerBalanceResponse | null> => {
@@ -356,6 +357,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     login,
     register,
     logout,
+    createCustomer,
     getIdToken,
     loginWithGoogle,
     loginWithGithub,

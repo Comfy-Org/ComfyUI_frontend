@@ -61,6 +61,7 @@
       "loginWithGithub": "Github로 로그인",
       "loginWithGoogle": "구글로 로그인",
       "newUser": "처음이신가요?",
+      "noAssociatedUser": "제공된 API 키와 연결된 Comfy 사용자가 없습니다",
       "orContinueWith": "또는 다음으로 계속",
       "passwordLabel": "비밀번호",
       "passwordPlaceholder": "비밀번호를 입력하세요",

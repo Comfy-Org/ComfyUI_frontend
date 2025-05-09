@@ -1296,7 +1296,8 @@
       "success": "Login successful",
       "failed": "Login failed",
       "insecureContextWarning": "This connection is insecure (HTTP) - your credentials may be intercepted by attackers if you proceed to login.",
-      "questionsContactPrefix": "Questions? Contact us at"
+      "questionsContactPrefix": "Questions? Contact us at",
+      "noAssociatedUser": "There is no Comfy user associated with the provided API key"
     },
     "signup": {
       "title": "Create an account",

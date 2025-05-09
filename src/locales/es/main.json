@@ -61,6 +61,7 @@
       "loginWithGithub": "Iniciar sesión con Github",
       "loginWithGoogle": "Iniciar sesión con Google",
       "newUser": "¿Eres nuevo aquí?",
+      "noAssociatedUser": "No hay ningún usuario de Comfy asociado con la clave API proporcionada",
       "orContinueWith": "O continuar con",
       "passwordLabel": "Contraseña",
       "passwordPlaceholder": "Ingresa tu contraseña",

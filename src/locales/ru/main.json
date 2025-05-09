@@ -61,6 +61,7 @@
       "loginWithGithub": "Войти через Github",
       "loginWithGoogle": "Войти через Google",
       "newUser": "Вы здесь впервые?",
+      "noAssociatedUser": "С предоставленным API-ключом не связан ни один пользователь Comfy",
       "orContinueWith": "Или продолжить с",
       "passwordLabel": "Пароль",
       "passwordPlaceholder": "Введите ваш пароль",

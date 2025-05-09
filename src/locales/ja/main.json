@@ -61,6 +61,7 @@
       "loginWithGithub": "Githubでログイン",
       "loginWithGoogle": "Googleでログイン",
       "newUser": "新規ユーザーですか？",
+      "noAssociatedUser": "指定されたAPIキーに関連付けられたComfyユーザーが存在しません",
       "orContinueWith": "または以下で続ける",
       "passwordLabel": "パスワード",
       "passwordPlaceholder": "パスワードを入力してください",
