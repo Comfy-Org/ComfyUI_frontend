@@ -37,6 +37,18 @@
 
     <Divider class="my-2" />
 
+    <Button
+      class="justify-start"
+      :label="$t('credits.apiPricing')"
+      icon="pi pi-external-link"
+      text
+      fluid
+      severity="secondary"
+      @click="handleOpenApiPricing"
+    />
+
+    <Divider class="my-2" />
+
     <div class="w-full flex flex-col gap-2 p-2">
       <div class="text-muted text-sm">
         {{ $t('credits.yourCreditBalance') }}
@@ -72,6 +84,10 @@ const handleOpenUserSettings = () => {
 
 const handleTopUp = () => {
   dialogService.showTopUpCreditsDialog()
+}
+
+const handleOpenApiPricing = () => {
+  window.open('https://docs.comfy.org/tutorials/api-nodes/pricing', '_blank')
 }
 
 onMounted(() => {
