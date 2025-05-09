@@ -1,17 +1,50 @@
 import { useLocalStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { useToastStore } from '@/stores/toastStore'
+import { ApiKeyAuthHeader } from '@/types/authTypes'
+import { operations } from '@/types/comfyRegistryTypes'
+
+type ComfyApiUser =
+  operations['createCustomer']['responses']['201']['content']['application/json']
 
 const STORAGE_KEY = 'comfy_api_key'
 
 export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
+  const firebaseAuthStore = useFirebaseAuthStore()
   const apiKey = useLocalStorage<string | null>(STORAGE_KEY, null)
   const toastStore = useToastStore()
   const { wrapWithErrorHandlingAsync, toastErrorHandler } = useErrorHandling()
+
+  const currentUser = ref<ComfyApiUser | null>(null)
+  const isAuthenticated = computed(() => !!currentUser.value)
+
+  const initializeUserFromApiKey = async () => {
+    const createCustomerResponse = await firebaseAuthStore.createCustomer()
+    if (!createCustomerResponse) {
+      apiKey.value = null
+      throw new Error(t('auth.login.noAssociatedUser'))
+    }
+    currentUser.value = createCustomerResponse
+  }
+
+  watch(
+    apiKey,
+    () => {
+      if (apiKey.value) {
+        // IF API key is set, initialize user
+        void initializeUserFromApiKey()
+      } else {
+        // IF API key is cleared, clear user
+        currentUser.value = null
+      }
+    },
+    { immediate: true }
+  )
 
   const reportError = (error: unknown) => {
     if (error instanceof Error && error.message === 'STORAGE_FAILED') {
@@ -49,7 +82,11 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
 
   const getApiKey = () => apiKey.value
 
-  const getAuthHeader = () => {
+  /**
+   * Retrieves the appropriate authentication header for API requests if an
+   * API key is available, otherwise returns null.
+   */
+  const getAuthHeader = (): ApiKeyAuthHeader | null => {
     const comfyOrgApiKey = getApiKey()
     if (comfyOrgApiKey) {
       return {
@@ -60,7 +97,11 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   }
 
   return {
-    hasApiKey: computed(() => !!apiKey.value),
+    // State
+    currentUser,
+    isAuthenticated,
+
+    // Actions
     storeApiKey,
     clearStoredApiKey,
     getAuthHeader,

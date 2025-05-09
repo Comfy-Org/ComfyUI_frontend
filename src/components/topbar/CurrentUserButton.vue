@@ -2,7 +2,7 @@
 <template>
   <div>
     <Button
-      v-if="isAuthenticated"
+      v-if="isLoggedIn"
       class="user-profile-button p-1"
       severity="secondary"
       text
@@ -30,15 +30,14 @@ import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 
 import CurrentUserPopover from './CurrentUserPopover.vue'
 
-const authStore = useFirebaseAuthStore()
+const { isLoggedIn, userPhotoUrl } = useCurrentUser()
 
 const popover = ref<InstanceType<typeof Popover> | null>(null)
-const isAuthenticated = computed(() => authStore.isAuthenticated)
 const photoURL = computed<string | undefined>(
-  () => authStore.currentUser?.photoURL ?? undefined
+  () => userPhotoUrl.value ?? undefined
 )
 </script>
