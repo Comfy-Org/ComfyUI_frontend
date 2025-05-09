@@ -152,7 +152,7 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
     this.options.onDraw?.(this)
   }
 
-  onRemove(): void {
+  override onRemove(): void {
     useDomWidgetStore().unregisterWidget(this.id)
   }
 }
@@ -175,7 +175,7 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
   }
 
   /** Extract DOM widget size info */
-  computeLayoutSize(node: LGraphNode) {
+  override computeLayoutSize(node: LGraphNode) {
     if (this.type === 'hidden') {
       return {
         minHeight: 0,
@@ -239,7 +239,7 @@ export class ComponentWidgetImpl<V extends object | string>
     this.inputSpec = obj.inputSpec
   }
 
-  computeLayoutSize() {
+  override computeLayoutSize() {
     const minHeight = this.options.getMinHeight?.() ?? 50
     const maxHeight = this.options.getMaxHeight?.()
     return {
