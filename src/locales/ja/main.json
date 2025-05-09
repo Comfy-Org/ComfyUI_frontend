@@ -61,11 +61,7 @@
       "loginWithGithub": "Githubでログイン",
       "loginWithGoogle": "Googleでログイン",
       "newUser": "新規ユーザーですか？",
-<<<<<<< Updated upstream
       "noAssociatedUser": "指定されたAPIキーに関連付けられたComfyユーザーが存在しません",
-=======
-      "noAssociatedUser": "提供されたAPIキーに関連付けられたComfyユーザーが存在しません",
->>>>>>> Stashed changes
       "orContinueWith": "または以下で続ける",
       "passwordLabel": "パスワード",
       "passwordPlaceholder": "パスワードを入力してください",
