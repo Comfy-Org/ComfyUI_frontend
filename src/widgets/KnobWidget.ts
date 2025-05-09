@@ -12,7 +12,7 @@ export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
    * Compute the layout size of the widget.
    * @returns The layout size of the widget.
    */
-  computeLayoutSize(): {
+  override computeLayoutSize(): {
     minHeight: number
     maxHeight?: number
     minWidth: number

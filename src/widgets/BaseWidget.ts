@@ -42,6 +42,13 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget> impl
   static labelValueGap = 5
 
   declare computedHeight?: number
+  declare serialize?: boolean
+  computeLayoutSize?(node: LGraphNode): {
+    minHeight: number
+    maxHeight?: number
+    minWidth: number
+    maxWidth?: number
+  }
 
   #node: LGraphNode
   /** The node that this widget belongs to. */

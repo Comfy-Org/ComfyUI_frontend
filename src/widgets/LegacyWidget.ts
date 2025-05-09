@@ -23,8 +23,7 @@ export class LegacyWidget<TWidget extends IBaseWidget = IBaseWidget> extends Bas
 
   override drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions) {
     const H = LiteGraph.NODE_WIDGET_HEIGHT
-    const thisAsICustomWidget = this
-    thisAsICustomWidget.draw?.(ctx, this.node, options.width, this.y, H, !!options.showText)
+    this.draw?.(ctx, this.node, options.width, this.y, H, !!options.showText)
   }
 
   override onClick() {
