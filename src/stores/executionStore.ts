@@ -1,12 +1,14 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
 import type {
   ExecutedWsMessage,
   ExecutionCachedWsMessage,
   ExecutionErrorWsMessage,
   ExecutionStartWsMessage,
   NodeError,
+  ProgressTextWsMessage,
   ProgressWsMessage
 } from '@/schemas/apiSchema'
 import type {
@@ -103,6 +105,7 @@ export const useExecutionStore = defineStore('execution', () => {
       handleExecutionError as EventListener
     )
   }
+  api.addEventListener('progress_text', handleProgressText as EventListener)
 
   function unbindExecutionEvents() {
     api.removeEventListener(
@@ -120,6 +123,10 @@ export const useExecutionStore = defineStore('execution', () => {
     api.removeEventListener(
       'execution_error',
       handleExecutionError as EventListener
+    )
+    api.removeEventListener(
+      'progress_text',
+      handleProgressText as EventListener
     )
   }
 
@@ -175,6 +182,13 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleExecutionError(e: CustomEvent<ExecutionErrorWsMessage>) {
     lastExecutionError.value = e.detail
+  }
+
+  function handleProgressText(e: CustomEvent<ProgressTextWsMessage>) {
+    if (!executingNodeId.value) return
+    const executingLGraphNode = app.graph.getNodeById(executingNodeId.value)
+    if (!executingLGraphNode) return
+    useNodeProgressText().showTextPreview(executingLGraphNode, e.detail)
   }
 
   function storePrompt({

@@ -86,6 +86,7 @@ interface BackendApiCalls {
   logs: LogsWsMessage
   /** Binary preview/progress data */
   b_preview: Blob
+  progress_text: string
 }
 
 /** Dictionary of all api calls */
@@ -380,12 +381,19 @@ export class ComfyApi extends EventTarget {
         if (event.data instanceof ArrayBuffer) {
           const view = new DataView(event.data)
           const eventType = view.getUint32(0)
-          const imageType = view.getUint32(4)
-          const imageData = event.data.slice(8)
 
           let imageMime
           switch (eventType) {
+            case 3:
+              const text = event.data.slice(4)
+              this.dispatchCustomEvent(
+                'progress_text',
+                new TextDecoder().decode(text)
+              )
+              break
             case 1:
+              const imageType = view.getUint32(4)
+              const imageData = event.data.slice(8)
               switch (imageType) {
                 case 2:
                   imageMime = 'image/png'
