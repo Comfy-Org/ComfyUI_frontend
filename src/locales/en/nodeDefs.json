@@ -106,6 +106,19 @@
       }
     }
   },
+  "CFGZeroStar": {
+    "display_name": "CFGZeroStar",
+    "inputs": {
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "patched_model"
+      }
+    }
+  },
   "CheckpointLoader": {
     "display_name": "Load Checkpoint With Config (DEPRECATED)",
     "inputs": {
@@ -177,7 +190,7 @@
   },
   "CLIPLoader": {
     "display_name": "Load CLIP",
-    "description": "[Recipes]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 xxl/ clip-g / clip-l\nstable_audio: t5 base\nmochi: t5 xxl\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl",
+    "description": "[Recipes]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 xxl/ clip-g / clip-l\nstable_audio: t5 base\nmochi: t5 xxl\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\n hidream: llama-3.1 (Recommend) or t5",
     "inputs": {
       "clip_name": {
         "name": "clip_name"
@@ -298,6 +311,26 @@
       },
       "guidance": {
         "name": "guidance"
+      }
+    }
+  },
+  "CLIPTextEncodeHiDream": {
+    "display_name": "CLIPTextEncodeHiDream",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "clip_l": {
+        "name": "clip_l"
+      },
+      "clip_g": {
+        "name": "clip_g"
+      },
+      "t5xxl": {
+        "name": "t5xxl"
+      },
+      "llama": {
+        "name": "llama"
       }
     }
   },
@@ -1080,6 +1113,23 @@
       }
     }
   },
+  "CreateVideo": {
+    "display_name": "Create Video",
+    "description": "Create a video from images.",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "The images to create a video from."
+      },
+      "fps": {
+        "name": "fps"
+      },
+      "audio": {
+        "name": "audio",
+        "tooltip": "The audio to add to the video."
+      }
+    }
+  },
   "CropMask": {
     "display_name": "CropMask",
     "inputs": {
@@ -1155,7 +1205,7 @@
   },
   "DualCLIPLoader": {
     "display_name": "DualCLIPLoader",
-    "description": "[Recipes]\n\nsdxl: clip-l, clip-g\nsd3: clip-l, clip-g / clip-l, t5 / clip-g, t5\nflux: clip-l, t5",
+    "description": "[Recipes]\n\nsdxl: clip-l, clip-g\nsd3: clip-l, clip-g / clip-l, t5 / clip-g, t5\nflux: clip-l, t5\nhidream: at least one of t5 or llama, recommended t5 and llama",
     "inputs": {
       "clip_name1": {
         "name": "clip_name1"
@@ -1331,6 +1381,26 @@
       }
     }
   },
+  "ExtendIntermediateSigmas": {
+    "display_name": "ExtendIntermediateSigmas",
+    "inputs": {
+      "sigmas": {
+        "name": "sigmas"
+      },
+      "steps": {
+        "name": "steps"
+      },
+      "start_at_sigma": {
+        "name": "start_at_sigma"
+      },
+      "end_at_sigma": {
+        "name": "end_at_sigma"
+      },
+      "spacing": {
+        "name": "spacing"
+      }
+    }
+  },
   "FeatherMask": {
     "display_name": "FeatherMask",
     "inputs": {
@@ -1379,6 +1449,205 @@
       }
     }
   },
+  "FluxProCannyNode": {
+    "display_name": "Flux.1 Canny Control Image",
+    "description": "Generate image using a control image (canny).",
+    "inputs": {
+      "control_image": {
+        "name": "control_image"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt for the image generation"
+      },
+      "prompt_upsampling": {
+        "name": "prompt_upsampling",
+        "tooltip": "Whether to perform upsampling on the prompt. If active, automatically modifies the prompt for more creative generation, but results are nondeterministic (same seed will not produce exactly the same result)."
+      },
+      "canny_low_threshold": {
+        "name": "canny_low_threshold",
+        "tooltip": "Low threshold for Canny edge detection; ignored if skip_processing is True"
+      },
+      "canny_high_threshold": {
+        "name": "canny_high_threshold",
+        "tooltip": "High threshold for Canny edge detection; ignored if skip_processing is True"
+      },
+      "skip_preprocessing": {
+        "name": "skip_preprocessing",
+        "tooltip": "Whether to skip preprocessing; set to True if control_image already is canny-fied, False if it is a raw image."
+      },
+      "guidance": {
+        "name": "guidance",
+        "tooltip": "Guidance strength for the image generation process"
+      },
+      "steps": {
+        "name": "steps",
+        "tooltip": "Number of steps for the image generation process"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "The random seed used for creating the noise."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
+  "FluxProDepthNode": {
+    "display_name": "Flux.1 Depth Control Image",
+    "description": "Generate image using a control image (depth).",
+    "inputs": {
+      "control_image": {
+        "name": "control_image"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt for the image generation"
+      },
+      "prompt_upsampling": {
+        "name": "prompt_upsampling",
+        "tooltip": "Whether to perform upsampling on the prompt. If active, automatically modifies the prompt for more creative generation, but results are nondeterministic (same seed will not produce exactly the same result)."
+      },
+      "skip_preprocessing": {
+        "name": "skip_preprocessing",
+        "tooltip": "Whether to skip preprocessing; set to True if control_image already is depth-ified, False if it is a raw image."
+      },
+      "guidance": {
+        "name": "guidance",
+        "tooltip": "Guidance strength for the image generation process"
+      },
+      "steps": {
+        "name": "steps",
+        "tooltip": "Number of steps for the image generation process"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "The random seed used for creating the noise."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
+  "FluxProExpandNode": {
+    "display_name": "Flux.1 Expand Image",
+    "description": "Outpaints image based on prompt.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt for the image generation"
+      },
+      "prompt_upsampling": {
+        "name": "prompt_upsampling",
+        "tooltip": "Whether to perform upsampling on the prompt. If active, automatically modifies the prompt for more creative generation, but results are nondeterministic (same seed will not produce exactly the same result)."
+      },
+      "top": {
+        "name": "top",
+        "tooltip": "Number of pixels to expand at the top of the image"
+      },
+      "bottom": {
+        "name": "bottom",
+        "tooltip": "Number of pixels to expand at the bottom of the image"
+      },
+      "left": {
+        "name": "left",
+        "tooltip": "Number of pixels to expand at the left side of the image"
+      },
+      "right": {
+        "name": "right",
+        "tooltip": "Number of pixels to expand at the right side of the image"
+      },
+      "guidance": {
+        "name": "guidance",
+        "tooltip": "Guidance strength for the image generation process"
+      },
+      "steps": {
+        "name": "steps",
+        "tooltip": "Number of steps for the image generation process"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "The random seed used for creating the noise."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
+  "FluxProFillNode": {
+    "display_name": "Flux.1 Fill Image",
+    "description": "Inpaints image based on mask and prompt.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt for the image generation"
+      },
+      "prompt_upsampling": {
+        "name": "prompt_upsampling",
+        "tooltip": "Whether to perform upsampling on the prompt. If active, automatically modifies the prompt for more creative generation, but results are nondeterministic (same seed will not produce exactly the same result)."
+      },
+      "guidance": {
+        "name": "guidance",
+        "tooltip": "Guidance strength for the image generation process"
+      },
+      "steps": {
+        "name": "steps",
+        "tooltip": "Number of steps for the image generation process"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "The random seed used for creating the noise."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
+  "FluxProUltraImageNode": {
+    "display_name": "Flux 1.1 [pro] Ultra Image",
+    "description": "Generates images using Flux Pro 1.1 Ultra via api based on prompt and resolution.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt for the image generation"
+      },
+      "prompt_upsampling": {
+        "name": "prompt_upsampling",
+        "tooltip": "Whether to perform upsampling on the prompt. If active, automatically modifies the prompt for more creative generation, but results are nondeterministic (same seed will not produce exactly the same result)."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "The random seed used for creating the noise."
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Aspect ratio of image; must be between 1:4 and 4:1."
+      },
+      "raw": {
+        "name": "raw",
+        "tooltip": "When True, generate less processed, more natural-looking images."
+      },
+      "image_prompt": {
+        "name": "image_prompt"
+      },
+      "image_prompt_strength": {
+        "name": "image_prompt_strength",
+        "tooltip": "Blend between the prompt and the image prompt."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
   "FreeU": {
     "display_name": "FreeU",
     "inputs": {
@@ -1416,6 +1685,48 @@
       },
       "s2": {
         "name": "s2"
+      }
+    }
+  },
+  "FreSca": {
+    "display_name": "FreSca",
+    "description": "Applies frequency-dependent scaling to the guidance",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "scale_low": {
+        "name": "scale_low",
+        "tooltip": "Scaling factor for low-frequency components"
+      },
+      "scale_high": {
+        "name": "scale_high",
+        "tooltip": "Scaling factor for high-frequency components"
+      },
+      "freq_cutoff": {
+        "name": "freq_cutoff",
+        "tooltip": "Number of frequency indices around center to consider as low-frequency"
+      }
+    }
+  },
+  "GetVideoComponents": {
+    "display_name": "Get Video Components",
+    "description": "Extracts all components from a video: frames, audio, and framerate.",
+    "inputs": {
+      "video": {
+        "name": "video",
+        "tooltip": "The video to extract components from."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images"
+      },
+      "1": {
+        "name": "audio"
+      },
+      "2": {
+        "name": "fps"
       }
     }
   },
@@ -1593,6 +1904,127 @@
       },
       "scale_depth": {
         "name": "scale_depth"
+      }
+    }
+  },
+  "IdeogramV1": {
+    "display_name": "Ideogram V1",
+    "description": "Generates images synchronously using the Ideogram V1 model.\n\nImages links are available for a limited period of time; if you would like to keep the image, you must download it.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt for the image generation"
+      },
+      "turbo": {
+        "name": "turbo",
+        "tooltip": "Whether to use turbo mode (faster generation, potentially lower quality)"
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "The aspect ratio for image generation."
+      },
+      "magic_prompt_option": {
+        "name": "magic_prompt_option",
+        "tooltip": "Determine if MagicPrompt should be used in generation"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Description of what to exclude from the image"
+      },
+      "num_images": {
+        "name": "num_images"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
+  "IdeogramV2": {
+    "display_name": "Ideogram V2",
+    "description": "Generates images synchronously using the Ideogram V2 model.\n\nImages links are available for a limited period of time; if you would like to keep the image, you must download it.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt for the image generation"
+      },
+      "turbo": {
+        "name": "turbo",
+        "tooltip": "Whether to use turbo mode (faster generation, potentially lower quality)"
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "The aspect ratio for image generation. Ignored if resolution is not set to AUTO."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "The resolution for image generation. If not set to AUTO, this overrides the aspect_ratio setting."
+      },
+      "magic_prompt_option": {
+        "name": "magic_prompt_option",
+        "tooltip": "Determine if MagicPrompt should be used in generation"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "style_type": {
+        "name": "style_type",
+        "tooltip": "Style type for generation (V2 only)"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Description of what to exclude from the image"
+      },
+      "num_images": {
+        "name": "num_images"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
+  "IdeogramV3": {
+    "display_name": "Ideogram V3",
+    "description": "Generates images synchronously using the Ideogram V3 model.\n\nSupports both regular image generation from text prompts and image editing with mask.\nImages links are available for a limited period of time; if you would like to keep the image, you must download it.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt for the image generation or editing"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Optional reference image for image editing."
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "Optional mask for inpainting (white areas will be replaced)"
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "The aspect ratio for image generation. Ignored if resolution is not set to Auto."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "The resolution for image generation. If not set to Auto, this overrides the aspect_ratio setting."
+      },
+      "magic_prompt_option": {
+        "name": "magic_prompt_option",
+        "tooltip": "Determine if MagicPrompt should be used in generation"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "num_images": {
+        "name": "num_images"
+      },
+      "rendering_speed": {
+        "name": "rendering_speed",
+        "tooltip": "Controls the trade-off between generation speed and quality"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
       }
     }
   },
@@ -1776,6 +2208,25 @@
       }
     }
   },
+  "ImageRGBToYUV": {
+    "display_name": "ImageRGBToYUV",
+    "inputs": {
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Y"
+      },
+      "1": {
+        "name": "U"
+      },
+      "2": {
+        "name": "V"
+      }
+    }
+  },
   "ImageScale": {
     "display_name": "Upscale Image",
     "inputs": {
@@ -1860,6 +2311,20 @@
       },
       "image": {
         "name": "image"
+      }
+    }
+  },
+  "ImageYUVToRGB": {
+    "display_name": "ImageYUVToRGB",
+    "inputs": {
+      "Y": {
+        "name": "Y"
+      },
+      "U": {
+        "name": "U"
+      },
+      "V": {
+        "name": "V"
       }
     }
   },
@@ -1959,6 +2424,416 @@
       },
       "rho": {
         "name": "rho"
+      }
+    }
+  },
+  "KlingCameraControlI2VNode": {
+    "display_name": "Kling Image to Video (Camera Control)",
+    "description": "Transform still images into cinematic videos with professional camera movements that simulate real-world cinematography. Control virtual camera actions including zoom, rotation, pan, tilt, and first-person view, while maintaining focus on your original image.",
+    "inputs": {
+      "start_frame": {
+        "name": "start_frame",
+        "tooltip": "Reference Image - URL or Base64 encoded string, cannot exceed 10MB, resolution not less than 300*300px, aspect ratio between 1:2.5 ~ 2.5:1. Base64 should not include data:image prefix."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Positive text prompt"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Negative text prompt"
+      },
+      "cfg_scale": {
+        "name": "cfg_scale"
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "camera_control": {
+        "name": "camera_control",
+        "tooltip": "Can be created using the Kling Camera Controls node. Controls the camera movement and motion during the video generation."
+      }
+    },
+    "outputs": {
+      "1": {
+        "name": "video_id"
+      },
+      "2": {
+        "name": "duration"
+      }
+    }
+  },
+  "KlingCameraControls": {
+    "display_name": "Kling Camera Controls",
+    "description": "Allows specifying configuration options for Kling Camera Controls and motion control effects.",
+    "inputs": {
+      "camera_control_type": {
+        "name": "camera_control_type"
+      },
+      "horizontal_movement": {
+        "name": "horizontal_movement",
+        "tooltip": "Controls camera's movement along horizontal axis (x-axis). Negative indicates left, positive indicates right"
+      },
+      "vertical_movement": {
+        "name": "vertical_movement",
+        "tooltip": "Controls camera's movement along vertical axis (y-axis). Negative indicates downward, positive indicates upward."
+      },
+      "pan": {
+        "name": "pan",
+        "tooltip": "Controls camera's rotation in vertical plane (x-axis). Negative indicates downward rotation, positive indicates upward rotation."
+      },
+      "tilt": {
+        "name": "tilt",
+        "tooltip": "Controls camera's rotation in horizontal plane (y-axis). Negative indicates left rotation, positive indicates right rotation."
+      },
+      "roll": {
+        "name": "roll",
+        "tooltip": "Controls camera's rolling amount (z-axis). Negative indicates counterclockwise, positive indicates clockwise."
+      },
+      "zoom": {
+        "name": "zoom",
+        "tooltip": "Controls change in camera's focal length. Negative indicates narrower field of view, positive indicates wider field of view."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_control"
+      }
+    }
+  },
+  "KlingCameraControlT2VNode": {
+    "display_name": "Kling Text to Video (Camera Control)",
+    "description": "Transform text into cinematic videos with professional camera movements that simulate real-world cinematography. Control virtual camera actions including zoom, rotation, pan, tilt, and first-person view, while maintaining focus on your original text.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Positive text prompt"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Negative text prompt"
+      },
+      "cfg_scale": {
+        "name": "cfg_scale"
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "camera_control": {
+        "name": "camera_control",
+        "tooltip": "Can be created using the Kling Camera Controls node. Controls the camera movement and motion during the video generation."
+      }
+    },
+    "outputs": {
+      "1": {
+        "name": "video_id"
+      },
+      "2": {
+        "name": "duration"
+      }
+    }
+  },
+  "KlingDualCharacterVideoEffectNode": {
+    "display_name": "Kling Dual Character Video Effects",
+    "description": "Achieve different special effects when generating a video based on the effect_scene. First image will be positioned on left side, second on right side of the composite.",
+    "inputs": {
+      "image_left": {
+        "name": "image_left",
+        "tooltip": "Left side image"
+      },
+      "image_right": {
+        "name": "image_right",
+        "tooltip": "Right side image"
+      },
+      "effect_scene": {
+        "name": "effect_scene"
+      },
+      "model_name": {
+        "name": "model_name"
+      },
+      "mode": {
+        "name": "mode"
+      },
+      "duration": {
+        "name": "duration"
+      }
+    },
+    "outputs": {
+      "1": {
+        "name": "duration"
+      }
+    }
+  },
+  "KlingImage2VideoNode": {
+    "display_name": "Kling Image to Video",
+    "description": "Kling Image to Video Node",
+    "inputs": {
+      "start_frame": {
+        "name": "start_frame",
+        "tooltip": "Reference Image - URL or Base64 encoded string, cannot exceed 10MB, resolution not less than 300*300px, aspect ratio between 1:2.5 ~ 2.5:1. Base64 should not include data:image prefix."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Positive text prompt"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Negative text prompt"
+      },
+      "model_name": {
+        "name": "model_name"
+      },
+      "cfg_scale": {
+        "name": "cfg_scale"
+      },
+      "mode": {
+        "name": "mode"
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "duration": {
+        "name": "duration"
+      }
+    },
+    "outputs": {
+      "1": {
+        "name": "video_id"
+      },
+      "2": {
+        "name": "duration"
+      }
+    }
+  },
+  "KlingImageGenerationNode": {
+    "display_name": "Kling Image Generation",
+    "description": "Kling Image Generation Node. Generate an image from a text prompt with an optional reference image.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Positive text prompt"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Negative text prompt"
+      },
+      "image_type": {
+        "name": "image_type"
+      },
+      "image_fidelity": {
+        "name": "image_fidelity",
+        "tooltip": "Reference intensity for user-uploaded images"
+      },
+      "human_fidelity": {
+        "name": "human_fidelity",
+        "tooltip": "Subject reference similarity"
+      },
+      "model_name": {
+        "name": "model_name"
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "Number of generated images"
+      },
+      "image": {
+        "name": "image"
+      }
+    }
+  },
+  "KlingLipSyncAudioToVideoNode": {
+    "display_name": "Kling Lip Sync Video with Audio",
+    "description": "Kling Lip Sync Audio to Video Node. Syncs mouth movements in a video file to the audio content of an audio file.",
+    "inputs": {
+      "video": {
+        "name": "video"
+      },
+      "audio": {
+        "name": "audio"
+      },
+      "voice_language": {
+        "name": "voice_language"
+      }
+    },
+    "outputs": {
+      "1": {
+        "name": "video_id"
+      },
+      "2": {
+        "name": "duration"
+      }
+    }
+  },
+  "KlingLipSyncTextToVideoNode": {
+    "display_name": "Kling Lip Sync Video with Text",
+    "description": "Kling Lip Sync Text to Video Node. Syncs mouth movements in a video file to a text prompt.",
+    "inputs": {
+      "video": {
+        "name": "video"
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "Text Content for Lip-Sync Video Generation. Required when mode is text2video. Maximum length is 120 characters."
+      },
+      "voice": {
+        "name": "voice"
+      },
+      "voice_speed": {
+        "name": "voice_speed",
+        "tooltip": "Speech Rate. Valid range: 0.8~2.0, accurate to one decimal place."
+      }
+    },
+    "outputs": {
+      "1": {
+        "name": "video_id"
+      },
+      "2": {
+        "name": "duration"
+      }
+    }
+  },
+  "KlingSingleImageVideoEffectNode": {
+    "display_name": "Kling Video Effects",
+    "description": "Achieve different special effects when generating a video based on the effect_scene.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": " Reference Image. URL or Base64 encoded string (without data:image prefix). File size cannot exceed 10MB, resolution not less than 300*300px, aspect ratio between 1:2.5 ~ 2.5:1"
+      },
+      "effect_scene": {
+        "name": "effect_scene"
+      },
+      "model_name": {
+        "name": "model_name"
+      },
+      "duration": {
+        "name": "duration"
+      }
+    },
+    "outputs": {
+      "1": {
+        "name": "video_id"
+      },
+      "2": {
+        "name": "duration"
+      }
+    }
+  },
+  "KlingStartEndFrameNode": {
+    "display_name": "Kling Start-End Frame to Video",
+    "description": "Generate a video sequence that transitions between your provided start and end images. The node creates all frames in between, producing a smooth transformation from the first frame to the last.",
+    "inputs": {
+      "start_frame": {
+        "name": "start_frame",
+        "tooltip": "Reference Image - URL or Base64 encoded string, cannot exceed 10MB, resolution not less than 300*300px, aspect ratio between 1:2.5 ~ 2.5:1. Base64 should not include data:image prefix."
+      },
+      "end_frame": {
+        "name": "end_frame",
+        "tooltip": "Reference Image - End frame control. URL or Base64 encoded string, cannot exceed 10MB, resolution not less than 300*300px. Base64 should not include data:image prefix."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Positive text prompt"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Negative text prompt"
+      },
+      "cfg_scale": {
+        "name": "cfg_scale"
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "The configuration to use for the video generation following the format: mode / duration / model_name."
+      }
+    },
+    "outputs": {
+      "1": {
+        "name": "video_id"
+      },
+      "2": {
+        "name": "duration"
+      }
+    }
+  },
+  "KlingTextToVideoNode": {
+    "display_name": "Kling Text to Video",
+    "description": "Kling Text to Video Node",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Positive text prompt"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Negative text prompt"
+      },
+      "cfg_scale": {
+        "name": "cfg_scale"
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "The configuration to use for the video generation following the format: mode / duration / model_name."
+      }
+    },
+    "outputs": {
+      "1": {
+        "name": "video_id"
+      },
+      "2": {
+        "name": "duration"
+      }
+    }
+  },
+  "KlingVideoExtendNode": {
+    "display_name": "Kling Video Extend",
+    "description": "Kling Video Extend Node. Extend videos made by other Kling nodes. The video_id is created by using other Kling Nodes.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Positive text prompt for guiding the video extension"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Negative text prompt for elements to avoid in the extended video"
+      },
+      "cfg_scale": {
+        "name": "cfg_scale"
+      },
+      "video_id": {
+        "name": "video_id",
+        "tooltip": "The ID of the video to be extended. Supports videos generated by text-to-video, image-to-video, and previous video extension operations. Cannot exceed 3 minutes total duration after extension."
+      }
+    },
+    "outputs": {
+      "1": {
+        "name": "video_id"
+      },
+      "2": {
+        "name": "duration"
+      }
+    }
+  },
+  "KlingVirtualTryOnNode": {
+    "display_name": "Kling Virtual Try On",
+    "description": "Kling Virtual Try On Node. Input a human image and a cloth image to try on the cloth on the human.",
+    "inputs": {
+      "human_image": {
+        "name": "human_image"
+      },
+      "cloth_image": {
+        "name": "cloth_image"
+      },
+      "model_name": {
+        "name": "model_name"
       }
     }
   },
@@ -2378,6 +3253,15 @@
       },
       "2": {
         "name": "mesh_path"
+      },
+      "3": {
+        "name": "normal"
+      },
+      "4": {
+        "name": "lineart"
+      },
+      "5": {
+        "name": "camera_info"
       }
     }
   },
@@ -2408,6 +3292,12 @@
       },
       "2": {
         "name": "mesh_path"
+      },
+      "3": {
+        "name": "normal"
+      },
+      "4": {
+        "name": "camera_info"
       }
     }
   },
@@ -2468,6 +3358,17 @@
     "inputs": {
       "latent": {
         "name": "latent"
+      }
+    }
+  },
+  "LoadVideo": {
+    "display_name": "Load Video",
+    "inputs": {
+      "file": {
+        "name": "file"
+      },
+      "upload": {
+        "name": "choose file to upload"
       }
     }
   },
@@ -2547,6 +3448,14 @@
       "text_encoder_diff": {
         "name": "text_encoder_diff",
         "tooltip": "The CLIPSubtract output to be converted to a lora."
+      }
+    }
+  },
+  "LotusConditioning": {
+    "display_name": "LotusConditioning",
+    "outputs": {
+      "0": {
+        "name": "conditioning"
       }
     }
   },
@@ -2662,6 +3571,9 @@
       },
       "batch_size": {
         "name": "batch_size"
+      },
+      "strength": {
+        "name": "strength"
       }
     },
     "outputs": {
@@ -2718,6 +3630,198 @@
       }
     }
   },
+  "LumaConceptsNode": {
+    "display_name": "Luma Concepts",
+    "description": "Holds one or more Camera Concepts for use with Luma Text to Video and Luma Image to Video nodes.",
+    "inputs": {
+      "concept1": {
+        "name": "concept1"
+      },
+      "concept2": {
+        "name": "concept2"
+      },
+      "concept3": {
+        "name": "concept3"
+      },
+      "concept4": {
+        "name": "concept4"
+      },
+      "luma_concepts": {
+        "name": "luma_concepts",
+        "tooltip": "Optional Camera Concepts to add to the ones chosen here."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "luma_concepts"
+      }
+    }
+  },
+  "LumaImageModifyNode": {
+    "display_name": "Luma Image to Image",
+    "description": "Modifies images synchronously based on prompt and aspect ratio.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt for the image generation"
+      },
+      "image_weight": {
+        "name": "image_weight",
+        "tooltip": "Weight of the image; the closer to 1.0, the less the image will be modified."
+      },
+      "model": {
+        "name": "model"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
+  "LumaImageNode": {
+    "display_name": "Luma Text to Image",
+    "description": "Generates images synchronously based on prompt and aspect ratio.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt for the image generation"
+      },
+      "model": {
+        "name": "model"
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "style_image_weight": {
+        "name": "style_image_weight",
+        "tooltip": "Weight of style image. Ignored if no style_image provided."
+      },
+      "image_luma_ref": {
+        "name": "image_luma_ref",
+        "tooltip": "Luma Reference node connection to influence generation with input images; up to 4 images can be considered."
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "Style reference image; only 1 image will be used."
+      },
+      "character_image": {
+        "name": "character_image",
+        "tooltip": "Character reference images; can be a batch of multiple, up to 4 images can be considered."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
+  "LumaImageToVideoNode": {
+    "display_name": "Luma Image to Video",
+    "description": "Generates videos synchronously based on prompt, input images, and output_size.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt for the video generation"
+      },
+      "model": {
+        "name": "model"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "loop": {
+        "name": "loop"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "first_image": {
+        "name": "first_image",
+        "tooltip": "First frame of generated video."
+      },
+      "last_image": {
+        "name": "last_image",
+        "tooltip": "Last frame of generated video."
+      },
+      "luma_concepts": {
+        "name": "luma_concepts",
+        "tooltip": "Optional Camera Concepts to dictate camera motion via the Luma Concepts node."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
+  "LumaReferenceNode": {
+    "display_name": "Luma Reference",
+    "description": "Holds an image and weight for use with Luma Generate Image node.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "Image to use as reference."
+      },
+      "weight": {
+        "name": "weight",
+        "tooltip": "Weight of image reference."
+      },
+      "luma_ref": {
+        "name": "luma_ref"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "luma_ref"
+      }
+    }
+  },
+  "LumaVideoNode": {
+    "display_name": "Luma Text to Video",
+    "description": "Generates videos synchronously based on prompt and output_size.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt for the video generation"
+      },
+      "model": {
+        "name": "model"
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "loop": {
+        "name": "loop"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "luma_concepts": {
+        "name": "luma_concepts",
+        "tooltip": "Optional Camera Concepts to dictate camera motion via the Luma Concepts node."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
   "Mahiro": {
     "display_name": "Mahiro is so cute that she deserves a better guidance function!! (。・ω・。)",
     "description": "Modify the guidance to scale more on the 'direction' of the positive prompt rather than the difference between the negative prompt.",
@@ -2752,11 +3856,66 @@
       }
     }
   },
+  "MaskPreview": {
+    "display_name": "MaskPreview",
+    "description": "Saves the input images to your ComfyUI output directory.",
+    "inputs": {
+      "mask": {
+        "name": "mask"
+      }
+    }
+  },
   "MaskToImage": {
     "display_name": "Convert Mask to Image",
     "inputs": {
       "mask": {
         "name": "mask"
+      }
+    }
+  },
+  "MinimaxImageToVideoNode": {
+    "display_name": "MiniMax Image to Video",
+    "description": "Generates videos from an image and prompts using MiniMax's API",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "Image to use as first frame of video generation"
+      },
+      "prompt_text": {
+        "name": "prompt_text",
+        "tooltip": "Text prompt to guide the video generation"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for video generation"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "The random seed used for creating the noise."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
+  "MinimaxTextToVideoNode": {
+    "display_name": "MiniMax Text to Video",
+    "description": "Generates videos from prompts using MiniMax's API",
+    "inputs": {
+      "prompt_text": {
+        "name": "prompt_text",
+        "tooltip": "Text prompt to guide the video generation"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for video generation"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "The random seed used for creating the noise."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
       }
     }
   },
@@ -4229,6 +5388,156 @@
       }
     }
   },
+  "ModelMergeWAN2_1": {
+    "display_name": "ModelMergeWAN2_1",
+    "description": "1.3B model has 30 blocks, 14B model has 40 blocks. Image to video model has the extra img_emb.",
+    "inputs": {
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "patch_embedding_": {
+        "name": "patch_embedding."
+      },
+      "time_embedding_": {
+        "name": "time_embedding."
+      },
+      "time_projection_": {
+        "name": "time_projection."
+      },
+      "text_embedding_": {
+        "name": "text_embedding."
+      },
+      "img_emb_": {
+        "name": "img_emb."
+      },
+      "blocks_0_": {
+        "name": "blocks.0."
+      },
+      "blocks_1_": {
+        "name": "blocks.1."
+      },
+      "blocks_2_": {
+        "name": "blocks.2."
+      },
+      "blocks_3_": {
+        "name": "blocks.3."
+      },
+      "blocks_4_": {
+        "name": "blocks.4."
+      },
+      "blocks_5_": {
+        "name": "blocks.5."
+      },
+      "blocks_6_": {
+        "name": "blocks.6."
+      },
+      "blocks_7_": {
+        "name": "blocks.7."
+      },
+      "blocks_8_": {
+        "name": "blocks.8."
+      },
+      "blocks_9_": {
+        "name": "blocks.9."
+      },
+      "blocks_10_": {
+        "name": "blocks.10."
+      },
+      "blocks_11_": {
+        "name": "blocks.11."
+      },
+      "blocks_12_": {
+        "name": "blocks.12."
+      },
+      "blocks_13_": {
+        "name": "blocks.13."
+      },
+      "blocks_14_": {
+        "name": "blocks.14."
+      },
+      "blocks_15_": {
+        "name": "blocks.15."
+      },
+      "blocks_16_": {
+        "name": "blocks.16."
+      },
+      "blocks_17_": {
+        "name": "blocks.17."
+      },
+      "blocks_18_": {
+        "name": "blocks.18."
+      },
+      "blocks_19_": {
+        "name": "blocks.19."
+      },
+      "blocks_20_": {
+        "name": "blocks.20."
+      },
+      "blocks_21_": {
+        "name": "blocks.21."
+      },
+      "blocks_22_": {
+        "name": "blocks.22."
+      },
+      "blocks_23_": {
+        "name": "blocks.23."
+      },
+      "blocks_24_": {
+        "name": "blocks.24."
+      },
+      "blocks_25_": {
+        "name": "blocks.25."
+      },
+      "blocks_26_": {
+        "name": "blocks.26."
+      },
+      "blocks_27_": {
+        "name": "blocks.27."
+      },
+      "blocks_28_": {
+        "name": "blocks.28."
+      },
+      "blocks_29_": {
+        "name": "blocks.29."
+      },
+      "blocks_30_": {
+        "name": "blocks.30."
+      },
+      "blocks_31_": {
+        "name": "blocks.31."
+      },
+      "blocks_32_": {
+        "name": "blocks.32."
+      },
+      "blocks_33_": {
+        "name": "blocks.33."
+      },
+      "blocks_34_": {
+        "name": "blocks.34."
+      },
+      "blocks_35_": {
+        "name": "blocks.35."
+      },
+      "blocks_36_": {
+        "name": "blocks.36."
+      },
+      "blocks_37_": {
+        "name": "blocks.37."
+      },
+      "blocks_38_": {
+        "name": "blocks.38."
+      },
+      "blocks_39_": {
+        "name": "blocks.39."
+      },
+      "head_": {
+        "name": "head."
+      }
+    }
+  },
   "ModelSamplingAuraFlow": {
     "display_name": "ModelSamplingAuraFlow",
     "inputs": {
@@ -4369,6 +5678,123 @@
       },
       "kernel_size": {
         "name": "kernel_size"
+      }
+    }
+  },
+  "OpenAIDalle2": {
+    "display_name": "OpenAI DALL·E 2",
+    "description": "Generates images synchronously via OpenAI's DALL·E 2 endpoint.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text prompt for DALL·E"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "not implemented yet in backend"
+      },
+      "size": {
+        "name": "size",
+        "tooltip": "Image size"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "How many images to generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Optional reference image for image editing."
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "Optional mask for inpainting (white areas will be replaced)"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
+  "OpenAIDalle3": {
+    "display_name": "OpenAI DALL·E 3",
+    "description": "Generates images synchronously via OpenAI's DALL·E 3 endpoint.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text prompt for DALL·E"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "not implemented yet in backend"
+      },
+      "quality": {
+        "name": "quality",
+        "tooltip": "Image quality"
+      },
+      "style": {
+        "name": "style",
+        "tooltip": "Vivid causes the model to lean towards generating hyper-real and dramatic images. Natural causes the model to produce more natural, less hyper-real looking images."
+      },
+      "size": {
+        "name": "size",
+        "tooltip": "Image size"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
+  "OpenAIGPTImage1": {
+    "display_name": "OpenAI GPT Image 1",
+    "description": "Generates images synchronously via OpenAI's GPT Image 1 endpoint.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text prompt for GPT Image 1"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "not implemented yet in backend"
+      },
+      "quality": {
+        "name": "quality",
+        "tooltip": "Image quality, affects cost and generation time."
+      },
+      "background": {
+        "name": "background",
+        "tooltip": "Return image with or without background"
+      },
+      "size": {
+        "name": "size",
+        "tooltip": "Image size"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "How many images to generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Optional reference image for image editing."
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "Optional mask for inpainting (white areas will be replaced)"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
+  "OptimalStepsScheduler": {
+    "display_name": "OptimalStepsScheduler",
+    "inputs": {
+      "model_type": {
+        "name": "model_type"
+      },
+      "steps": {
+        "name": "steps"
+      },
+      "denoise": {
+        "name": "denoise"
       }
     }
   },
@@ -4601,6 +6027,349 @@
       }
     }
   },
+  "Pikadditions": {
+    "display_name": "Pikadditions (Video Object Insertion)",
+    "description": "Add any object or image into your video. Upload a video and specify what you’d like to add to create a seamlessly integrated result.",
+    "inputs": {
+      "video": {
+        "name": "video",
+        "tooltip": "The video to add an image to."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "The image to add to the video."
+      },
+      "prompt_text": {
+        "name": "prompt_text"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
+  "Pikaffects": {
+    "display_name": "Pikaffects (Video Effects)",
+    "description": "Generate a video with a specific Pikaffect. Supported Pikaffects: Cake-ify, Crumble, Crush, Decapitate, Deflate, Dissolve, Explode, Eye-pop, Inflate, Levitate, Melt, Peel, Poke, Squish, Ta-da, Tear",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "The reference image to apply the Pikaffect to."
+      },
+      "pikaffect": {
+        "name": "pikaffect"
+      },
+      "prompt_text": {
+        "name": "prompt_text"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
+  "PikaImageToVideoNode2_2": {
+    "display_name": "Pika Image to Video",
+    "description": "Sends an image and prompt to the Pika API v2.2 to generate a video.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "The image to convert to video"
+      },
+      "prompt_text": {
+        "name": "prompt_text"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
+  "PikaScenesV2_2": {
+    "display_name": "Pika Scenes (Video Image Composition)",
+    "description": "Combine your images to create a video with the objects in them. Upload multiple images as ingredients and generate a high-quality video that incorporates all of them.",
+    "inputs": {
+      "prompt_text": {
+        "name": "prompt_text"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "ingredients_mode": {
+        "name": "ingredients_mode"
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Aspect ratio (width / height)"
+      },
+      "image_ingredient_1": {
+        "name": "image_ingredient_1",
+        "tooltip": "Image that will be used as ingredient to create a video."
+      },
+      "image_ingredient_2": {
+        "name": "image_ingredient_2",
+        "tooltip": "Image that will be used as ingredient to create a video."
+      },
+      "image_ingredient_3": {
+        "name": "image_ingredient_3",
+        "tooltip": "Image that will be used as ingredient to create a video."
+      },
+      "image_ingredient_4": {
+        "name": "image_ingredient_4",
+        "tooltip": "Image that will be used as ingredient to create a video."
+      },
+      "image_ingredient_5": {
+        "name": "image_ingredient_5",
+        "tooltip": "Image that will be used as ingredient to create a video."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
+  "PikaStartEndFrameNode2_2": {
+    "display_name": "Pika Start and End Frame to Video",
+    "description": "Generate a video by combining your first and last frame. Upload two images to define the start and end points, and let the AI create a smooth transition between them.",
+    "inputs": {
+      "image_start": {
+        "name": "image_start",
+        "tooltip": "The first image to combine."
+      },
+      "image_end": {
+        "name": "image_end",
+        "tooltip": "The last image to combine."
+      },
+      "prompt_text": {
+        "name": "prompt_text"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
+  "Pikaswaps": {
+    "display_name": "Pika Swaps (Video Object Replacement)",
+    "description": "Swap out any object or region of your video with a new image or object. Define areas to replace either with a mask or coordinates.",
+    "inputs": {
+      "video": {
+        "name": "video",
+        "tooltip": "The video to swap an object in."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "The image used to replace the masked object in the video."
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "Use the mask to define areas in the video to replace"
+      },
+      "prompt_text": {
+        "name": "prompt_text"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
+  "PikaTextToVideoNode2_2": {
+    "display_name": "Pika Text to Video",
+    "description": "Sends a text prompt to the Pika API v2.2 to generate a video.",
+    "inputs": {
+      "prompt_text": {
+        "name": "prompt_text"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Aspect ratio (width / height)"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
+  "PixverseImageToVideoNode": {
+    "display_name": "PixVerse Image to Video",
+    "description": "Generates videos synchronously based on prompt and output_size.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt for the video generation"
+      },
+      "quality": {
+        "name": "quality"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "motion_mode": {
+        "name": "motion_mode"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed for video generation."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "An optional text description of undesired elements on an image."
+      },
+      "pixverse_template": {
+        "name": "pixverse_template",
+        "tooltip": "An optional template to influence style of generation, created by the PixVerse Template node."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
+  "PixverseTemplateNode": {
+    "display_name": "PixVerse Template",
+    "inputs": {
+      "template": {
+        "name": "template"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pixverse_template"
+      }
+    }
+  },
+  "PixverseTextToVideoNode": {
+    "display_name": "PixVerse Text to Video",
+    "description": "Generates videos synchronously based on prompt and output_size.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt for the video generation"
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "quality": {
+        "name": "quality"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "motion_mode": {
+        "name": "motion_mode"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed for video generation."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "An optional text description of undesired elements on an image."
+      },
+      "pixverse_template": {
+        "name": "pixverse_template",
+        "tooltip": "An optional template to influence style of generation, created by the PixVerse Template node."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
+  "PixverseTransitionVideoNode": {
+    "display_name": "PixVerse Transition Video",
+    "description": "Generates videos synchronously based on prompt and output_size.",
+    "inputs": {
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt for the video generation"
+      },
+      "quality": {
+        "name": "quality"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "motion_mode": {
+        "name": "motion_mode"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed for video generation."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "An optional text description of undesired elements on an image."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
   "PolyexponentialScheduler": {
     "display_name": "PolyexponentialScheduler",
     "inputs": {
@@ -4644,6 +6413,9 @@
       "model_file": {
         "name": "model_file"
       },
+      "camera_info": {
+        "name": "camera_info"
+      },
       "image": {
         "name": "image"
       }
@@ -4655,9 +6427,21 @@
       "model_file": {
         "name": "model_file"
       },
+      "camera_info": {
+        "name": "camera_info"
+      },
       "image": {
         "name": "image"
       }
+    }
+  },
+  "PreviewAny": {
+    "display_name": "Preview Any",
+    "inputs": {
+      "source": {
+        "name": "source"
+      },
+      "preview": {}
     }
   },
   "PreviewAudio": {
@@ -4677,6 +6461,67 @@
     "inputs": {
       "images": {
         "name": "images"
+      }
+    }
+  },
+  "PrimitiveBoolean": {
+    "display_name": "Boolean",
+    "inputs": {
+      "value": {
+        "name": "value"
+      }
+    }
+  },
+  "PrimitiveFloat": {
+    "display_name": "Float",
+    "inputs": {
+      "value": {
+        "name": "value"
+      }
+    }
+  },
+  "PrimitiveInt": {
+    "display_name": "Int",
+    "inputs": {
+      "value": {
+        "name": "value"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
+  "PrimitiveString": {
+    "display_name": "String",
+    "inputs": {
+      "value": {
+        "name": "value"
+      }
+    }
+  },
+  "PrimitiveStringMultiline": {
+    "display_name": "String (Multiline)",
+    "inputs": {
+      "value": {
+        "name": "value"
+      }
+    }
+  },
+  "QuadrupleCLIPLoader": {
+    "display_name": "QuadrupleCLIPLoader",
+    "description": "[Recipes]\n\nhidream: long clip-l, long clip-g, t5xxl, llama_8b_3.1_instruct",
+    "inputs": {
+      "clip_name1": {
+        "name": "clip_name1"
+      },
+      "clip_name2": {
+        "name": "clip_name2"
+      },
+      "clip_name3": {
+        "name": "clip_name3"
+      },
+      "clip_name4": {
+        "name": "clip_name4"
       }
     }
   },
@@ -4710,6 +6555,318 @@
       },
       "batch_size": {
         "name": "batch_size"
+      }
+    }
+  },
+  "RecraftColorRGB": {
+    "display_name": "Recraft Color RGB",
+    "description": "Create Recraft Color by choosing specific RGB values.",
+    "inputs": {
+      "r": {
+        "name": "r",
+        "tooltip": "Red value of color."
+      },
+      "g": {
+        "name": "g",
+        "tooltip": "Green value of color."
+      },
+      "b": {
+        "name": "b",
+        "tooltip": "Blue value of color."
+      },
+      "recraft_color": {
+        "name": "recraft_color"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "recraft_color"
+      }
+    }
+  },
+  "RecraftControls": {
+    "display_name": "Recraft Controls",
+    "description": "Create Recraft Controls for customizing Recraft generation.",
+    "inputs": {
+      "colors": {
+        "name": "colors"
+      },
+      "background_color": {
+        "name": "background_color"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "recraft_controls"
+      }
+    }
+  },
+  "RecraftCreativeUpscaleNode": {
+    "display_name": "Recraft Creative Upscale Image",
+    "description": "Upscale image synchronously.\nEnhances a given raster image using ‘creative upscale’ tool, boosting resolution with a focus on refining small details and faces.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      }
+    }
+  },
+  "RecraftCrispUpscaleNode": {
+    "display_name": "Recraft Crisp Upscale Image",
+    "description": "Upscale image synchronously.\nEnhances a given raster image using ‘crisp upscale’ tool, increasing image resolution, making the image sharper and cleaner.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      }
+    }
+  },
+  "RecraftImageInpaintingNode": {
+    "display_name": "Recraft Image Inpainting",
+    "description": "Modify image based on prompt and mask.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt for the image generation."
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "The number of images to generate."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "recraft_style": {
+        "name": "recraft_style"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "An optional text description of undesired elements on an image."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
+  "RecraftImageToImageNode": {
+    "display_name": "Recraft Image to Image",
+    "description": "Modify image based on prompt and strength.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt for the image generation."
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "The number of images to generate."
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Defines the difference with the original image, should lie in [0, 1], where 0 means almost identical, and 1 means miserable similarity."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "recraft_style": {
+        "name": "recraft_style"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "An optional text description of undesired elements on an image."
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Optional additional controls over the generation via the Recraft Controls node."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
+  "RecraftRemoveBackgroundNode": {
+    "display_name": "Recraft Remove Background",
+    "description": "Remove background from image, and return processed image and mask.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      }
+    }
+  },
+  "RecraftReplaceBackgroundNode": {
+    "display_name": "Recraft Replace Background",
+    "description": "Replace background on image, based on provided prompt.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt for the image generation."
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "The number of images to generate."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "recraft_style": {
+        "name": "recraft_style"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "An optional text description of undesired elements on an image."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
+  "RecraftStyleV3DigitalIllustration": {
+    "display_name": "Recraft Style - Digital Illustration",
+    "description": "Select realistic_image style and optional substyle.",
+    "inputs": {
+      "substyle": {
+        "name": "substyle"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "recraft_style"
+      }
+    }
+  },
+  "RecraftStyleV3InfiniteStyleLibrary": {
+    "display_name": "Recraft Style - Infinite Style Library",
+    "description": "Select style based on preexisting UUID from Recraft's Infinite Style Library.",
+    "inputs": {
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "UUID of style from Infinite Style Library."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "recraft_style"
+      }
+    }
+  },
+  "RecraftStyleV3LogoRaster": {
+    "display_name": "Recraft Style - Logo Raster",
+    "description": "Select realistic_image style and optional substyle.",
+    "inputs": {
+      "substyle": {
+        "name": "substyle"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "recraft_style"
+      }
+    }
+  },
+  "RecraftStyleV3RealisticImage": {
+    "display_name": "Recraft Style - Realistic Image",
+    "description": "Select realistic_image style and optional substyle.",
+    "inputs": {
+      "substyle": {
+        "name": "substyle"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "recraft_style"
+      }
+    }
+  },
+  "RecraftTextToImageNode": {
+    "display_name": "Recraft Text to Image",
+    "description": "Generates images synchronously based on prompt and resolution.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt for the image generation."
+      },
+      "size": {
+        "name": "size",
+        "tooltip": "The size of the generated image."
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "The number of images to generate."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "recraft_style": {
+        "name": "recraft_style"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "An optional text description of undesired elements on an image."
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Optional additional controls over the generation via the Recraft Controls node."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
+  "RecraftTextToVectorNode": {
+    "display_name": "Recraft Text to Vector",
+    "description": "Generates SVG synchronously based on prompt and resolution.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt for the image generation."
+      },
+      "substyle": {
+        "name": "substyle"
+      },
+      "size": {
+        "name": "size",
+        "tooltip": "The size of the generated image."
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "The number of images to generate."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "An optional text description of undesired elements on an image."
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Optional additional controls over the generation via the Recraft Controls node."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
+  "RecraftVectorizeImageNode": {
+    "display_name": "Recraft Vectorize Image",
+    "description": "Generates SVG synchronously from an input image.",
+    "inputs": {
+      "image": {
+        "name": "image"
       }
     }
   },
@@ -5078,6 +7235,41 @@
       }
     }
   },
+  "SaveSVG": {
+    "display_name": "Save SVG",
+    "description": "Save SVG files on disk.",
+    "inputs": {
+      "svg": {
+        "name": "svg"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix",
+        "tooltip": "The prefix for the file to save. This may include formatting information such as %date:yyyy-MM-dd% or %Empty Latent Image.width% to include values from nodes."
+      }
+    }
+  },
+  "SaveVideo": {
+    "display_name": "Save Video",
+    "description": "Saves the input images to your ComfyUI output directory.",
+    "inputs": {
+      "video": {
+        "name": "video",
+        "tooltip": "The video to save."
+      },
+      "filename_prefix": {
+        "name": "filename_prefix",
+        "tooltip": "The prefix for the file to save. This may include formatting information such as %date:yyyy-MM-dd% or %Empty Latent Image.width% to include values from nodes."
+      },
+      "format": {
+        "name": "format",
+        "tooltip": "The format to save the video as."
+      },
+      "codec": {
+        "name": "codec",
+        "tooltip": "The codec to use for the video."
+      }
+    }
+  },
   "SaveWEBM": {
     "display_name": "SaveWEBM",
     "inputs": {
@@ -5324,6 +7516,154 @@
       },
       "1": {
         "name": "low_sigmas"
+      }
+    }
+  },
+  "StabilityStableImageSD_3_5Node": {
+    "display_name": "Stability AI Stable Diffusion 3.5 Image",
+    "description": "Generates images synchronously based on prompt and resolution.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "What you wish to see in the output image. A strong, descriptive prompt that clearly defines elements, colors, and subjects will lead to better results."
+      },
+      "model": {
+        "name": "model"
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Aspect ratio of generated image."
+      },
+      "style_preset": {
+        "name": "style_preset",
+        "tooltip": "Optional desired style of generated image."
+      },
+      "cfg_scale": {
+        "name": "cfg_scale",
+        "tooltip": "How strictly the diffusion process adheres to the prompt text (higher values keep your image closer to your prompt)"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "The random seed used for creating the noise."
+      },
+      "image": {
+        "name": "image"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Keywords of what you do not wish to see in the output image. This is an advanced feature."
+      },
+      "image_denoise": {
+        "name": "image_denoise",
+        "tooltip": "Denoise of input image; 0.0 yields image identical to input, 1.0 is as if no image was provided at all."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
+  "StabilityStableImageUltraNode": {
+    "display_name": "Stability AI Stable Image Ultra",
+    "description": "Generates images synchronously based on prompt and resolution.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "What you wish to see in the output image. A strong, descriptive prompt that clearly definesWhat you wish to see in the output image. A strong, descriptive prompt that clearly defineselements, colors, and subjects will lead to better results. To control the weight of a given word use the format `(word:weight)`,where `word` is the word you'd like to control the weight of and `weight`is a value between 0 and 1. For example: `The sky was a crisp (blue:0.3) and (green:0.8)`would convey a sky that was blue and green, but more green than blue."
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Aspect ratio of generated image."
+      },
+      "style_preset": {
+        "name": "style_preset",
+        "tooltip": "Optional desired style of generated image."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "The random seed used for creating the noise."
+      },
+      "image": {
+        "name": "image"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "A blurb of text describing what you do not wish to see in the output image. This is an advanced feature."
+      },
+      "image_denoise": {
+        "name": "image_denoise",
+        "tooltip": "Denoise of input image; 0.0 yields image identical to input, 1.0 is as if no image was provided at all."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
+  "StabilityUpscaleConservativeNode": {
+    "display_name": "Stability AI Upscale Conservative",
+    "description": "Upscale image with minimal alterations to 4K resolution.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "What you wish to see in the output image. A strong, descriptive prompt that clearly defines elements, colors, and subjects will lead to better results."
+      },
+      "creativity": {
+        "name": "creativity",
+        "tooltip": "Controls the likelihood of creating additional details not heavily conditioned by the init image."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "The random seed used for creating the noise."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Keywords of what you do not wish to see in the output image. This is an advanced feature."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
+  "StabilityUpscaleCreativeNode": {
+    "display_name": "Stability AI Upscale Creative",
+    "description": "Upscale image with minimal alterations to 4K resolution.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "What you wish to see in the output image. A strong, descriptive prompt that clearly defines elements, colors, and subjects will lead to better results."
+      },
+      "creativity": {
+        "name": "creativity",
+        "tooltip": "Controls the likelihood of creating additional details not heavily conditioned by the init image."
+      },
+      "style_preset": {
+        "name": "style_preset",
+        "tooltip": "Optional desired style of generated image."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "The random seed used for creating the noise."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Keywords of what you do not wish to see in the output image. This is an advanced feature."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
+  "StabilityUpscaleFastNode": {
+    "display_name": "Stability AI Upscale Fast",
+    "description": "Quickly upscales an image via Stability API call to 4x its original size; intended for upscaling low-quality/compressed images.",
+    "inputs": {
+      "image": {
+        "name": "image"
       }
     }
   },
@@ -5601,6 +7941,20 @@
       }
     }
   },
+  "T5TokenizerOptions": {
+    "display_name": "T5TokenizerOptions",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "min_padding": {
+        "name": "min_padding"
+      },
+      "min_length": {
+        "name": "min_length"
+      }
+    }
+  },
   "TextEncodeHunyuanVideo_ImageToVideo": {
     "display_name": "TextEncodeHunyuanVideo_ImageToVideo",
     "inputs": {
@@ -5649,6 +8003,17 @@
       },
       "backend": {
         "name": "backend"
+      }
+    }
+  },
+  "TrimVideoLatent": {
+    "display_name": "TrimVideoLatent",
+    "inputs": {
+      "samples": {
+        "name": "samples"
+      },
+      "trim_amount": {
+        "name": "trim_amount"
       }
     }
   },
@@ -5926,6 +8291,47 @@
       }
     }
   },
+  "VeoVideoGenerationNode": {
+    "display_name": "Google Veo2 Video Generation",
+    "description": "Generates videos from text prompts using Google's Veo API",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text description of the video"
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Aspect ratio of the output video"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Negative text prompt to guide what to avoid in the video"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "Duration of the output video in seconds"
+      },
+      "enhance_prompt": {
+        "name": "enhance_prompt",
+        "tooltip": "Whether to enhance the prompt with AI assistance"
+      },
+      "person_generation": {
+        "name": "person_generation",
+        "tooltip": "Whether to allow generating people in the video"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed for video generation (0 for random)"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Optional reference image to guide video generation"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    }
+  },
   "VideoLinearCFGGuidance": {
     "display_name": "VideoLinearCFGGuidance",
     "inputs": {
@@ -5945,6 +8351,20 @@
       },
       "min_cfg": {
         "name": "min_cfg"
+      }
+    }
+  },
+  "VoxelToMesh": {
+    "display_name": "VoxelToMesh",
+    "inputs": {
+      "voxel": {
+        "name": "voxel"
+      },
+      "algorithm": {
+        "name": "algorithm"
+      },
+      "threshold": {
+        "name": "threshold"
       }
     }
   },
@@ -5973,6 +8393,147 @@
       },
       "eps_s": {
         "name": "eps_s"
+      }
+    }
+  },
+  "WanFirstLastFrameToVideo": {
+    "display_name": "WanFirstLastFrameToVideo",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "clip_vision_start_image": {
+        "name": "clip_vision_start_image"
+      },
+      "clip_vision_end_image": {
+        "name": "clip_vision_end_image"
+      },
+      "start_image": {
+        "name": "start_image"
+      },
+      "end_image": {
+        "name": "end_image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive"
+      },
+      "1": {
+        "name": "negative"
+      },
+      "2": {
+        "name": "latent"
+      }
+    }
+  },
+  "WanFunControlToVideo": {
+    "display_name": "WanFunControlToVideo",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "start_image": {
+        "name": "start_image"
+      },
+      "control_video": {
+        "name": "control_video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive"
+      },
+      "1": {
+        "name": "negative"
+      },
+      "2": {
+        "name": "latent"
+      }
+    }
+  },
+  "WanFunInpaintToVideo": {
+    "display_name": "WanFunInpaintToVideo",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "start_image": {
+        "name": "start_image"
+      },
+      "end_image": {
+        "name": "end_image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive"
+      },
+      "1": {
+        "name": "negative"
+      },
+      "2": {
+        "name": "latent"
       }
     }
   },
@@ -6016,6 +8577,58 @@
       },
       "2": {
         "name": "latent"
+      }
+    }
+  },
+  "WanVaceToVideo": {
+    "display_name": "WanVaceToVideo",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "control_video": {
+        "name": "control_video"
+      },
+      "control_masks": {
+        "name": "control_masks"
+      },
+      "reference_image": {
+        "name": "reference_image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive"
+      },
+      "1": {
+        "name": "negative"
+      },
+      "2": {
+        "name": "latent"
+      },
+      "3": {
+        "name": "trim_latent"
       }
     }
   },
