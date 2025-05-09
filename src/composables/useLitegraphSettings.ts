@@ -78,6 +78,17 @@ export const useLitegraphSettings = () => {
   })
 
   watchEffect(() => {
+    const hideLinkConnectionStroke = settingStore.get(
+      'Comfy.Graph.HideLinkConnectionStroke'
+    )
+    const { canvas } = canvasStore
+    if (canvas) {
+      canvas.hide_connections_stroke = hideLinkConnectionStroke
+      canvas.setDirty(false, true)
+    }
+  })
+
+  watchEffect(() => {
     const maximumFps = settingStore.get('LiteGraph.Canvas.MaximumFps')
     const { canvas } = canvasStore
     if (canvas) canvas.maximumFps = maximumFps
