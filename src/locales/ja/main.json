@@ -32,6 +32,7 @@
     "apiKey": {
       "cleared": "APIキーが削除されました",
       "clearedDetail": "APIキーが正常に削除されました",
+      "description": "Comfy APIキーを使用してAPIノードを有効にします",
       "error": "無効なAPIキーです",
       "generateKey": "こちらから取得",
       "helpText": "APIキーが必要ですか？",
@@ -43,7 +44,8 @@
       "storageFailedDetail": "もう一度お試しください。",
       "stored": "APIキーが保存されました",
       "storedDetail": "APIキーが正常に保存されました",
-      "title": "APIキー"
+      "title": "APIキー",
+      "whitelistInfo": "ホワイトリストに登録されていないサイトについて"
     },
     "login": {
       "andText": "および",

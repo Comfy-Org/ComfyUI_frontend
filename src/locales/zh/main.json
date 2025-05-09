@@ -32,6 +32,7 @@
     "apiKey": {
       "cleared": "API 密钥已清除",
       "clearedDetail": "您的 API 密钥已成功清除",
+      "description": "使用您的 Comfy API 密钥以启用 API 节点",
       "error": "无效的 API 密钥",
       "generateKey": "在这里获取",
       "helpText": "需要 API 密钥？",
@@ -43,7 +44,8 @@
       "storageFailedDetail": "请重试。",
       "stored": "API 密钥已存储",
       "storedDetail": "您的 API 密钥已成功存储",
-      "title": "API 密钥"
+      "title": "API 密钥",
+      "whitelistInfo": "关于非白名单网站"
     },
     "login": {
       "andText": "和",

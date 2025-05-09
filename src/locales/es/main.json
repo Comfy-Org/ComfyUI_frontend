@@ -32,6 +32,7 @@
     "apiKey": {
       "cleared": "Clave API eliminada",
       "clearedDetail": "Tu clave API se ha eliminado correctamente",
+      "description": "Usa tu clave API de Comfy para habilitar los nodos de API",
       "error": "Clave API no válida",
       "generateKey": "Consíguela aquí",
       "helpText": "¿Necesitas una clave API?",
@@ -43,7 +44,8 @@
       "storageFailedDetail": "Por favor, inténtalo de nuevo.",
       "stored": "Clave API guardada",
       "storedDetail": "Tu clave API se ha guardado correctamente",
-      "title": "Clave API"
+      "title": "Clave API",
+      "whitelistInfo": "Acerca de los sitios no incluidos en la lista blanca"
     },
     "login": {
       "andText": "y",

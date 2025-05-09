@@ -32,6 +32,7 @@
     "apiKey": {
       "cleared": "API-ключ удалён",
       "clearedDetail": "Ваш API-ключ был успешно удалён",
+      "description": "Используйте ваш Comfy API-ключ для активации API-узлов",
       "error": "Недействительный API-ключ",
       "generateKey": "Получить здесь",
       "helpText": "Нужен API-ключ?",
@@ -43,7 +44,8 @@
       "storageFailedDetail": "Пожалуйста, попробуйте еще раз.",
       "stored": "API-ключ сохранён",
       "storedDetail": "Ваш API-ключ был успешно сохранён",
-      "title": "API-ключ"
+      "title": "API-ключ",
+      "whitelistInfo": "О не включённых в белый список сайтах"
     },
     "login": {
       "andText": "и",

@@ -32,6 +32,7 @@
     "apiKey": {
       "cleared": "Clé API supprimée",
       "clearedDetail": "Votre clé API a été supprimée avec succès",
+      "description": "Utilisez votre clé API Comfy pour activer les nœuds API",
       "error": "Clé API invalide",
       "generateKey": "Obtenez-en une ici",
       "helpText": "Besoin d'une clé API ?",
@@ -43,7 +44,8 @@
       "storageFailedDetail": "Veuillez réessayer.",
       "stored": "Clé API enregistrée",
       "storedDetail": "Votre clé API a été enregistrée avec succès",
-      "title": "Clé API"
+      "title": "Clé API",
+      "whitelistInfo": "À propos des sites non autorisés"
     },
     "login": {
       "andText": "et",

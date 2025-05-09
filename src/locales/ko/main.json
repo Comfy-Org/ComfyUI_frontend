@@ -32,6 +32,7 @@
     "apiKey": {
       "cleared": "API 키 삭제됨",
       "clearedDetail": "API 키가 성공적으로 삭제되었습니다",
+      "description": "Comfy API 키를 사용하여 API 노드를 활성화하세요",
       "error": "유효하지 않은 API 키",
       "generateKey": "여기에서 받기",
       "helpText": "API 키가 필요하신가요?",
@@ -43,7 +44,8 @@
       "storageFailedDetail": "다시 시도해 주세요.",
       "stored": "API 키 저장됨",
       "storedDetail": "API 키가 성공적으로 저장되었습니다",
-      "title": "API 키"
+      "title": "API 키",
+      "whitelistInfo": "비허용 사이트에 대하여"
     },
     "login": {
       "andText": "및",
