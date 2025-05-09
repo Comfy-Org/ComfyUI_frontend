@@ -1,32 +1,33 @@
 <template>
   <div
-    class="w-full text-xs min-h-[28px] max-h-[200px] rounded-lg px-4 py-2 overflow-y-auto"
+    class="relative w-full text-xs min-h-[28px] max-h-[200px] rounded-lg px-4 py-2 overflow-y-auto"
   >
-    <Button
-      v-if="!isParentNodeExecuting"
-      icon="pi pi-copy"
-      class="!absolute !top-2 !right-2 !p-1 !rounded-md hover:!bg-white/20 focus:!outline-none focus:!ring-2 focus:!ring-primary-500"
-      :aria-label="$t('g.copyToClipboard')"
-      text
-      @click="copyText"
-    />
-
-    <div class="break-all pr-8 flex items-center gap-2">
-      <span v-html="formattedText"></span>
-      <Skeleton v-if="isParentNodeExecuting" class="!flex-1 !h-4" />
-      <Message
-        v-if="showCopiedSuccessMessage"
-        severity="success"
-        class="absolute right-12 top-2 text-xs"
-        :pt="{
-          content: {
-            class: '!p-1'
-          }
-        }"
-        size="small"
-      >
-        {{ $t('clipboard.successMessage') }}
-      </Message>
+    <div class="flex items-center gap-2">
+      <div class="flex-1 break-all flex items-center gap-2">
+        <span v-html="formattedText"></span>
+        <Skeleton v-if="isParentNodeExecuting" class="!flex-1 !h-4" />
+        <Message
+          v-if="showCopiedSuccessMessage"
+          severity="success"
+          class="text-xs p-toast-message-enter-active"
+          :pt="{
+            content: {
+              class: '!p-1'
+            }
+          }"
+          size="small"
+        >
+          {{ $t('clipboard.successMessage') }}
+        </Message>
+      </div>
+      <Button
+        v-if="!isParentNodeExecuting"
+        icon="pi pi-copy"
+        class="!p-1 !rounded-md hover:!bg-white/20 focus:!outline-none focus:!ring-2 !ring-primary-500 shrink-0"
+        :aria-label="$t('g.copyToClipboard')"
+        text
+        @click="copyText"
+      />
     </div>
   </div>
 </template>
