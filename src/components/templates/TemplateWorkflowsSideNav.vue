@@ -4,7 +4,7 @@
       :model-value="selectedTab"
       :options="tabs"
       option-group-label="label"
-      option-label="title"
+      option-label="localizedTitle"
       option-group-children="modules"
       class="w-full border-0 bg-transparent shadow-none"
       :pt="{

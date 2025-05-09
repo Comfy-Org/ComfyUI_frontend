@@ -55,7 +55,9 @@ vi.mock('firebase/auth', () => ({
   GoogleAuthProvider: class {
     setCustomParameters = vi.fn()
   },
-  GithubAuthProvider: vi.fn(),
+  GithubAuthProvider: class {
+    setCustomParameters = vi.fn()
+  },
   browserLocalPersistence: 'browserLocalPersistence',
   setPersistence: vi.fn().mockResolvedValue(undefined)
 }))
