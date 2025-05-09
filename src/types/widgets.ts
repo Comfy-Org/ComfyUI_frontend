@@ -250,10 +250,10 @@ export interface IBaseWidget<
    * @param node The node this widget belongs to.
    * @returns The layout size of the widget.
    */
-  computeLayoutSize?: (
+  computeLayoutSize?(
     this: IBaseWidget,
     node: LGraphNode
-  ) => {
+  ): {
     minHeight: number
     maxHeight?: number
     minWidth: number
