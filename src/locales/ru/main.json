@@ -150,6 +150,7 @@
     "Unpin": "Открепить"
   },
   "credits": {
+    "apiPricing": "Цены на API",
     "credits": "Кредиты",
     "faqs": "Часто задаваемые вопросы",
     "invoiceHistory": "История счетов",

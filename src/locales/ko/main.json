@@ -150,6 +150,7 @@
     "Unpin": "고정 해제"
   },
   "credits": {
+    "apiPricing": "API 가격",
     "credits": "크레딧",
     "faqs": "자주 묻는 질문",
     "invoiceHistory": "청구서 내역",

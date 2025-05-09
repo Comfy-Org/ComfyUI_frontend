@@ -150,6 +150,7 @@
     "Unpin": "Desanclar"
   },
   "credits": {
+    "apiPricing": "Precios de la API",
     "credits": "Créditos",
     "faqs": "Preguntas frecuentes",
     "invoiceHistory": "Historial de facturas",
