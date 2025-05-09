@@ -564,8 +564,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     category: ['LiteGraph', 'Link', 'HideLinkConnectionStroke'],
     name: 'Hide link connection stroke',
     type: 'boolean',
-    defaultValue: false,
-    versionAdded: '1.3.42'
+    defaultValue: false
+    // versionAdded: '1.3.42'
   },
   {
     id: 'Comfy.DOMClippingEnabled',
