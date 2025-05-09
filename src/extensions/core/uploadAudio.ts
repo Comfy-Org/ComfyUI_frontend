@@ -90,7 +90,13 @@ app.registerExtension({
   name: 'Comfy.AudioWidget',
   async beforeRegisterNodeDef(nodeType, nodeData) {
     if (
-      ['LoadAudio', 'SaveAudio', 'PreviewAudio'].includes(
+      [
+        'LoadAudio',
+        'SaveAudio',
+        'PreviewAudio',
+        'SaveAudioMP3',
+        'SaveAudioOpus'
+      ].includes(
         // @ts-expect-error fixme ts strict error
         nodeType.prototype.comfyClass
       )
