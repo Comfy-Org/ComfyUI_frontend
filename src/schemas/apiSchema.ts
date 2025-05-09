@@ -82,7 +82,10 @@ const zExecutionErrorWsMessage = zExecutionWsMessageBase.extend({
   current_outputs: z.any()
 })
 
-const zProgressTextWsMessage = z.string()
+const zProgressTextWsMessage = z.object({
+  nodeId: zNodeId,
+  text: z.string()
+})
 
 const zTerminalSize = z.object({
   cols: z.number(),

@@ -185,10 +185,13 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleProgressText(e: CustomEvent<ProgressTextWsMessage>) {
-    if (!executingNodeId.value) return
-    const executingLGraphNode = app.graph.getNodeById(executingNodeId.value)
-    if (!executingLGraphNode) return
-    useNodeProgressText().showTextPreview(executingLGraphNode, e.detail)
+    const { nodeId, text } = e.detail
+    if (!text || !nodeId) return
+
+    const node = app.graph.getNodeById(nodeId)
+    if (!node) return
+
+    useNodeProgressText().showTextPreview(node, text)
   }
 
   function storePrompt({
