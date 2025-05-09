@@ -6,43 +6,18 @@
       <div class="flex-1 break-all flex items-center gap-2">
         <span v-html="formattedText"></span>
         <Skeleton v-if="isParentNodeExecuting" class="!flex-1 !h-4" />
-        <Message
-          v-if="showCopiedSuccessMessage"
-          severity="success"
-          class="text-xs p-toast-message-enter-active"
-          :pt="{
-            content: {
-              class: '!p-1'
-            }
-          }"
-          size="small"
-        >
-          {{ $t('clipboard.successMessage') }}
-        </Message>
       </div>
-      <Button
-        v-if="!isParentNodeExecuting"
-        icon="pi pi-copy"
-        class="!p-1 !rounded-md hover:!bg-white/20 focus:!outline-none focus:!ring-2 !ring-primary-500 shrink-0"
-        :aria-label="$t('g.copyToClipboard')"
-        text
-        @click="copyText"
-      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { NodeId } from '@comfyorg/litegraph'
-import Button from 'primevue/button'
-import Message from 'primevue/message'
 import Skeleton from 'primevue/skeleton'
 import { computed, onMounted, ref, watch } from 'vue'
 
 import { useExecutionStore } from '@/stores/executionStore'
 import { linkifyHtml, nl2br } from '@/utils/formatUtil'
-
-const COPIED_TOAST_DURATION = 756
 
 const modelValue = defineModel<string>({ required: true })
 defineProps<{
@@ -51,7 +26,6 @@ defineProps<{
 
 const executionStore = useExecutionStore()
 const isParentNodeExecuting = ref(true)
-const showCopiedSuccessMessage = ref(false)
 const formattedText = computed(() => nl2br(linkifyHtml(modelValue.value)))
 
 let executingNodeId: NodeId | null = null
@@ -76,13 +50,4 @@ const stopWatching = watch(
     }
   }
 )
-
-const copyText = () => {
-  void navigator.clipboard.writeText(modelValue.value)
-  showCopiedSuccessMessage.value = true
-  setTimeout(
-    () => (showCopiedSuccessMessage.value = false),
-    COPIED_TOAST_DURATION
-  )
-}
 </script>

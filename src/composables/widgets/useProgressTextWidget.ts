@@ -24,7 +24,7 @@ export const useTextPreviewWidget = () => {
         setValue: (value: string | object) => {
           widgetValue.value = typeof value === 'string' ? value : String(value)
         },
-        getMinHeight: () => 48 + PADDING
+        getMinHeight: () => 42 + PADDING
       }
     })
     addWidget(node, widget)
