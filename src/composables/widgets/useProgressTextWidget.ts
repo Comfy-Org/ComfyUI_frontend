@@ -1,14 +1,14 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
 import { ref } from 'vue'
 
-import PreviewTextWidget from '@/components/graph/widgets/PreviewTextWidget.vue'
+import TextPreviewWidget from '@/components/graph/widgets/TextPreviewWidget.vue'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 
 const PADDING = 16
 
-export const useProgressTextWidget = () => {
+export const useTextPreviewWidget = () => {
   const widgetConstructor: ComfyWidgetConstructorV2 = (
     node: LGraphNode,
     inputSpec: InputSpec
@@ -17,7 +17,7 @@ export const useProgressTextWidget = () => {
     const widget = new ComponentWidgetImpl<string | object>({
       node,
       name: inputSpec.name,
-      component: PreviewTextWidget,
+      component: TextPreviewWidget,
       inputSpec,
       options: {
         getValue: () => widgetValue.value,

@@ -1,6 +1,6 @@
 import { LGraphNode } from '@comfyorg/litegraph'
 
-import { useProgressTextWidget } from '@/composables/widgets/useProgressTextWidget'
+import { useTextPreviewWidget } from '@/composables/widgets/useProgressTextWidget'
 
 const TEXT_PREVIEW_WIDGET_NAME = '$$node-text-preview'
 
@@ -8,7 +8,7 @@ const TEXT_PREVIEW_WIDGET_NAME = '$$node-text-preview'
  * Composable for handling node text previews
  */
 export function useNodeProgressText() {
-  const textPreviewWidget = useProgressTextWidget()
+  const textPreviewWidget = useTextPreviewWidget()
 
   const findTextPreviewWidget = (node: LGraphNode) =>
     node.widgets?.find((w) => w.name === TEXT_PREVIEW_WIDGET_NAME)
