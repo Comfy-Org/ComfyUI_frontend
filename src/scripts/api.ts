@@ -58,6 +58,21 @@ interface QueuePromptRequestBody {
      * ```
      */
     auth_token_comfy_org?: string
+    /**
+     * The auth token for the comfy org account if the user is logged in.
+     *
+     * Backend node can access this token by specifying following input:
+     * ```python
+     * def INPUT_TYPES(s):
+     *   return {
+     *     "hidden": { "api_key": "API_KEY_COMFY_ORG" }
+     *   }
+     *
+     * def execute(self, api_key: str):
+     *   print(f"API Key: {api_key}")
+     * ```
+     */
+    api_key_comfy_org?: string
   }
   front?: boolean
   number?: number
@@ -228,6 +243,10 @@ export class ComfyApi extends EventTarget {
    * custom nodes are patched.
    */
   authToken?: string
+  /**
+   * The API key for the comfy org account if the user logged in via API key.
+   */
+  apiKey?: string
 
   constructor() {
     super()
@@ -545,6 +564,7 @@ export class ComfyApi extends EventTarget {
       prompt,
       extra_data: {
         auth_token_comfy_org: this.authToken,
+        api_key_comfy_org: this.apiKey,
         extra_pnginfo: { workflow }
       }
     }

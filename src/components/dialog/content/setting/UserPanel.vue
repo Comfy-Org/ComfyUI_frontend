@@ -4,6 +4,7 @@
       <h2 class="text-2xl font-bold mb-2">{{ $t('userSettings.title') }}</h2>
       <Divider class="mb-3" />
 
+      <!-- Normal User Panel -->
       <div v-if="user" class="flex flex-col gap-2">
         <UserAvatar
           v-if="user.photoURL"
@@ -66,6 +67,27 @@
         />
       </div>
 
+      <!-- API Key Panel -->
+      <div v-else-if="hasApiKey" class="flex flex-col gap-4">
+        <div class="flex flex-col gap-0.5">
+          <h3 class="font-medium">
+            {{ $t('auth.apiKey.title') }}
+          </h3>
+          <div class="text-muted flex items-center gap-1">
+            <i class="pi pi-key" />
+            {{ $t('auth.apiKey.label') }}
+          </div>
+        </div>
+
+        <Button
+          class="mt-4 w-32"
+          severity="secondary"
+          :label="$t('auth.signOut.signOut')"
+          icon="pi pi-sign-out"
+          @click="handleApiKeySignOut"
+        />
+      </div>
+
       <!-- Login Section -->
       <div v-else class="flex flex-col gap-4">
         <p class="text-gray-600">
@@ -94,14 +116,18 @@ import { computed } from 'vue'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import { useDialogService } from '@/services/dialogService'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
 const dialogService = useDialogService()
 const authStore = useFirebaseAuthStore()
 const commandStore = useCommandStore()
+const apiKeyStore = useApiKeyAuthStore()
+
 const user = computed(() => authStore.currentUser)
 const loading = computed(() => authStore.loading)
+const hasApiKey = computed(() => apiKeyStore.hasApiKey)
 
 const providerName = computed(() => {
   const providerId = user.value?.providerData[0]?.providerId
@@ -132,6 +158,10 @@ const isEmailProvider = computed(() => {
 
 const handleSignOut = async () => {
   await commandStore.execute('Comfy.User.SignOut')
+}
+
+const handleApiKeySignOut = async () => {
+  await apiKeyStore.clearStoredApiKey()
 }
 
 const handleSignIn = async () => {

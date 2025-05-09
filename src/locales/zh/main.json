@@ -29,6 +29,24 @@
     "title": "使用API节点需要登录"
   },
   "auth": {
+    "apiKey": {
+      "cleared": "API 密钥已清除",
+      "clearedDetail": "您的 API 密钥已成功清除",
+      "description": "使用您的 Comfy API 密钥以启用 API 节点",
+      "error": "无效的 API 密钥",
+      "generateKey": "在这里获取",
+      "helpText": "需要 API 密钥？",
+      "invalid": "无效的 API 密钥",
+      "invalidDetail": "请输入有效的 API 密钥",
+      "label": "API 密钥",
+      "placeholder": "请输入您的 API 密钥",
+      "storageFailed": "API 密钥存储失败",
+      "storageFailedDetail": "请重试。",
+      "stored": "API 密钥已存储",
+      "storedDetail": "您的 API 密钥已成功存储",
+      "title": "API 密钥",
+      "whitelistInfo": "关于非白名单网站"
+    },
     "login": {
       "andText": "和",
       "confirmPasswordLabel": "确认密码",
@@ -56,6 +74,7 @@
       "termsLink": "使用条款",
       "termsText": "点击“下一步”或“注册”即表示您同意我们的",
       "title": "登录您的账户",
+      "useApiKey": "Comfy API 密钥",
       "userAvatar": "用户头像"
     },
     "passwordUpdate": {
@@ -1330,6 +1349,7 @@
   },
   "validation": {
     "invalidEmail": "无效的电子邮件地址",
+    "length": "必须为{length}个字符",
     "maxLength": "不能超过{length}个字符",
     "minLength": "必须至少有{length}个字符",
     "password": {
@@ -1342,6 +1362,7 @@
       "uppercase": "必须包含至少一个大写字母"
     },
     "personalDataConsentRequired": "您必须同意处理您的个人数据。",
+    "prefix": "必须以 {prefix} 开头",
     "required": "必填"
   },
   "welcome": {

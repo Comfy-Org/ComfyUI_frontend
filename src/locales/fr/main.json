@@ -29,6 +29,24 @@
     "title": "Connexion requise pour utiliser les nœuds API"
   },
   "auth": {
+    "apiKey": {
+      "cleared": "Clé API supprimée",
+      "clearedDetail": "Votre clé API a été supprimée avec succès",
+      "description": "Utilisez votre clé API Comfy pour activer les nœuds API",
+      "error": "Clé API invalide",
+      "generateKey": "Obtenez-en une ici",
+      "helpText": "Besoin d'une clé API ?",
+      "invalid": "Clé API invalide",
+      "invalidDetail": "Veuillez entrer une clé API valide",
+      "label": "Clé API",
+      "placeholder": "Entrez votre clé API",
+      "storageFailed": "Échec de l’enregistrement de la clé API",
+      "storageFailedDetail": "Veuillez réessayer.",
+      "stored": "Clé API enregistrée",
+      "storedDetail": "Votre clé API a été enregistrée avec succès",
+      "title": "Clé API",
+      "whitelistInfo": "À propos des sites non autorisés"
+    },
     "login": {
       "andText": "et",
       "confirmPasswordLabel": "Confirmer le mot de passe",
@@ -56,6 +74,7 @@
       "termsLink": "Conditions d'utilisation",
       "termsText": "En cliquant sur \"Suivant\" ou \"S'inscrire\", vous acceptez nos",
       "title": "Connectez-vous à votre compte",
+      "useApiKey": "Clé API Comfy",
       "userAvatar": "Avatar utilisateur"
     },
     "passwordUpdate": {
@@ -1330,6 +1349,7 @@
   },
   "validation": {
     "invalidEmail": "Adresse e-mail invalide",
+    "length": "Doit comporter {length} caractères",
     "maxLength": "Ne doit pas dépasser {length} caractères",
     "minLength": "Doit contenir au moins {length} caractères",
     "password": {
@@ -1342,6 +1362,7 @@
       "uppercase": "Doit contenir au moins une lettre majuscule"
     },
     "personalDataConsentRequired": "Vous devez accepter le traitement de vos données personnelles.",
+    "prefix": "Doit commencer par {prefix}",
     "required": "Requis"
   },
   "welcome": {

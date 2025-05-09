@@ -36,6 +36,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowService } from '@/services/workflowService'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExtensionStore } from '@/stores/extensionStore'
@@ -1186,6 +1187,7 @@ export class ComfyApp {
 
     let comfyOrgAuthToken =
       (await useFirebaseAuthStore().getIdToken()) ?? undefined
+    let comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
 
     try {
       while (this.#queueItems.length) {
@@ -1199,8 +1201,10 @@ export class ComfyApp {
           const p = await this.graphToPrompt(this.graph, { queueNodeIds })
           try {
             api.authToken = comfyOrgAuthToken
+            api.apiKey = comfyOrgApiKey ?? undefined
             const res = await api.queuePrompt(number, p)
             delete api.authToken
+            delete api.apiKey
             executionStore.lastNodeErrors = res.node_errors ?? null
             if (executionStore.lastNodeErrors?.length) {
               this.canvas.draw(true, true)

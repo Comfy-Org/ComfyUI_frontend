@@ -29,6 +29,24 @@
     "title": "Требуется вход для использования API Nodes"
   },
   "auth": {
+    "apiKey": {
+      "cleared": "API-ключ удалён",
+      "clearedDetail": "Ваш API-ключ был успешно удалён",
+      "description": "Используйте ваш Comfy API-ключ для активации API-узлов",
+      "error": "Недействительный API-ключ",
+      "generateKey": "Получить здесь",
+      "helpText": "Нужен API-ключ?",
+      "invalid": "Недействительный API-ключ",
+      "invalidDetail": "Пожалуйста, введите действительный API-ключ",
+      "label": "API-ключ",
+      "placeholder": "Введите ваш API-ключ",
+      "storageFailed": "Не удалось сохранить API-ключ",
+      "storageFailedDetail": "Пожалуйста, попробуйте еще раз.",
+      "stored": "API-ключ сохранён",
+      "storedDetail": "Ваш API-ключ был успешно сохранён",
+      "title": "API-ключ",
+      "whitelistInfo": "О не включённых в белый список сайтах"
+    },
     "login": {
       "andText": "и",
       "confirmPasswordLabel": "Подтвердите пароль",
@@ -56,6 +74,7 @@
       "termsLink": "Условиями использования",
       "termsText": "Нажимая \"Далее\" или \"Зарегистрироваться\", вы соглашаетесь с нашими",
       "title": "Войдите в свой аккаунт",
+      "useApiKey": "Comfy API-ключ",
       "userAvatar": "Аватар пользователя"
     },
     "passwordUpdate": {
@@ -1330,6 +1349,7 @@
   },
   "validation": {
     "invalidEmail": "Недействительный адрес электронной почты",
+    "length": "Должно быть {length} символов",
     "maxLength": "Должно быть не более {length} символов",
     "minLength": "Должно быть не менее {length} символов",
     "password": {
@@ -1342,6 +1362,7 @@
       "uppercase": "Должен содержать хотя бы одну заглавную букву"
     },
     "personalDataConsentRequired": "Вы должны согласиться на обработку ваших персональных данных.",
+    "prefix": "Должно начинаться с {prefix}",
     "required": "Обязательно"
   },
   "welcome": {
