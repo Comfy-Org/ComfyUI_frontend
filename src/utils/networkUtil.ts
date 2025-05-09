@@ -74,17 +74,3 @@ export async function isInChina(): Promise<boolean> {
 
   return false
 }
-
-/**
- * Extract the first URL from a string
- * @param text - The string to extract the URL from
- * @returns The first URL in the string or null if no URL is found
- * @example
- * extractFirstUrl('Visit https://example.com for more info') // returns 'https://example.com'
- */
-export function extractFirstUrl(text: string): string | null {
-  const urlRegex =
-    /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%?=~_|])/gi
-  const match = text.match(urlRegex)
-  return match ? match[0] : null
-}

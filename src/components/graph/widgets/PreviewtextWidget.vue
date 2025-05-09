@@ -13,6 +13,7 @@
 
     <div class="break-all pr-8 flex items-center gap-2">
       <span v-html="formattedText"></span>
+      <Skeleton v-if="isParentNodeExecuting" class="!flex-1 !h-4" />
       <Message
         v-if="showCopiedSuccessMessage"
         severity="success"
@@ -26,7 +27,6 @@
       >
         {{ $t('clipboard.successMessage') }}
       </Message>
-      <Skeleton v-if="isParentNodeExecuting" class="!flex-1 !h-4" />
     </div>
   </div>
 </template>
@@ -40,7 +40,6 @@ import { computed, onMounted, ref, watch } from 'vue'
 
 import { useExecutionStore } from '@/stores/executionStore'
 import { linkifyHtml, nl2br } from '@/utils/formatUtil'
-import { extractFirstUrl } from '@/utils/networkUtil'
 
 const COPIED_TOAST_DURATION = 756
 
@@ -78,9 +77,7 @@ const stopWatching = watch(
 )
 
 const copyText = () => {
-  void navigator.clipboard.writeText(
-    extractFirstUrl(modelValue.value) ?? modelValue.value
-  )
+  void navigator.clipboard.writeText(modelValue.value)
   showCopiedSuccessMessage.value = true
   setTimeout(
     () => (showCopiedSuccessMessage.value = false),
