@@ -29,6 +29,9 @@ import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { getFromWebmFile } from '@/scripts/metadata/ebml'
 import { getGltfBinaryMetadata } from '@/scripts/metadata/gltf'
 import { getFromIsobmffFile } from '@/scripts/metadata/isobmff'
+import { getMp3Metadata } from '@/scripts/metadata/mp3'
+import { getOggMetadata } from '@/scripts/metadata/ogg'
+import { getSvgMetadata } from '@/scripts/metadata/svg'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -64,7 +67,6 @@ import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 import { type ComfyApi, PromptExecutionError, api } from './api'
 import { defaultGraph } from './defaultGraph'
 import { pruneWidgets } from './domWidget'
-import { getSvgMetadata } from './metadata/svg'
 import {
   getFlacMetadata,
   getLatentMetadata,
@@ -1297,6 +1299,24 @@ export class ComfyApp {
         this.loadGraphData(JSON.parse(workflow), true, true, fileName)
       } else if (prompt) {
         this.loadApiJson(JSON.parse(prompt), fileName)
+      } else {
+        this.showErrorOnFileLoad(file)
+      }
+    } else if (file.type === 'audio/mpeg') {
+      const { workflow, prompt } = await getMp3Metadata(file)
+      if (workflow) {
+        this.loadGraphData(workflow, true, true, fileName)
+      } else if (prompt) {
+        this.loadApiJson(prompt, fileName)
+      } else {
+        this.showErrorOnFileLoad(file)
+      }
+    } else if (file.type === 'audio/ogg') {
+      const { workflow, prompt } = await getOggMetadata(file)
+      if (workflow) {
+        this.loadGraphData(workflow, true, true, fileName)
+      } else if (prompt) {
+        this.loadApiJson(prompt, fileName)
       } else {
         this.showErrorOnFileLoad(file)
       }
