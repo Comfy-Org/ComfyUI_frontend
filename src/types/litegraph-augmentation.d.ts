@@ -29,6 +29,12 @@ declare module '@comfyorg/litegraph/dist/types/widgets' {
      * The minimum size of the node if the widget is present.
      */
     minNodeSize?: Size
+
+    /** If the widget is advanced, this will be set to true. */
+    advanced?: boolean
+
+    /** If the widget is hidden, this will be set to true. */
+    hidden?: boolean
   }
 
   interface IBaseWidget {
