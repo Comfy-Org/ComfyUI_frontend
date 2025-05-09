@@ -150,6 +150,7 @@
     "Unpin": "ピンを解除"
   },
   "credits": {
+    "apiPricing": "API料金",
     "credits": "クレジット",
     "faqs": "よくある質問",
     "invoiceHistory": "請求履歴",

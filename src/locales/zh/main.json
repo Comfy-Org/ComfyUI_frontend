@@ -150,6 +150,7 @@
     "Unpin": "取消固定"
   },
   "credits": {
+    "apiPricing": "API 价格",
     "credits": "积分",
     "faqs": "常见问题",
     "invoiceHistory": "发票历史",

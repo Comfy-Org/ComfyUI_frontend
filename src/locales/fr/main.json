@@ -150,6 +150,7 @@
     "Unpin": "Désépingler"
   },
   "credits": {
+    "apiPricing": "Tarification de l’API",
     "credits": "Crédits",
     "faqs": "FAQ",
     "invoiceHistory": "Historique des factures",
