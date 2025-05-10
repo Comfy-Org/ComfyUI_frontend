@@ -12,7 +12,8 @@
 
 <script setup lang="ts">
 import type { LGraphNode } from '@comfyorg/litegraph'
-import { computed, watch } from 'vue'
+import { whenever } from '@vueuse/core'
+import { computed } from 'vue'
 
 import DomWidget from '@/components/graph/widgets/DomWidget.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
@@ -54,18 +55,13 @@ const updateWidgets = () => {
 }
 
 const canvasStore = useCanvasStore()
-watch(
+whenever(
   () => canvasStore.canvas,
-  (lgCanvas) => {
-    if (!lgCanvas) return
-
-    lgCanvas.onDrawForeground = useChainCallback(
-      lgCanvas.onDrawForeground,
-      () => {
-        updateWidgets()
-      }
-    )
-  },
+  (canvas) =>
+    (canvas.onDrawForeground = useChainCallback(
+      canvas.onDrawForeground,
+      updateWidgets
+    )),
   { immediate: true }
 )
 </script>
