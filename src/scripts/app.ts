@@ -1574,17 +1574,15 @@ export class ComfyApp {
       node.refreshComboInNode?.(defs)
 
       if (!def?.input) continue
-      // If node def is v1 spec, convert to v2
-      const nodeInputs = def.input
-      const { required, optional } = nodeInputs
 
       if (node.widgets) {
+        const nodeInputs = def.input
         for (const widget of node.widgets) {
           if (widget.type === 'combo') {
             let inputType: 'required' | 'optional' | undefined
-            if (required?.[widget.name] !== undefined) {
+            if (nodeInputs.required?.[widget.name] !== undefined) {
               inputType = 'required'
-            } else if (optional?.[widget.name] !== undefined) {
+            } else if (nodeInputs.optional?.[widget.name] !== undefined) {
               inputType = 'optional'
             }
             if (inputType !== undefined) {
