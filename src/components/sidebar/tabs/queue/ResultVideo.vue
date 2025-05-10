@@ -8,6 +8,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import { useExtensionStore } from '@/stores/extensionStore'
 import { ResultItemImpl } from '@/stores/queueStore'
 import { useSettingStore } from '@/stores/settingStore'
 
@@ -16,9 +17,16 @@ const props = defineProps<{
 }>()
 
 const settingStore = useSettingStore()
-const vhsAdvancedPreviews = computed(() =>
-  settingStore.get('VHS.AdvancedPreviews')
-)
+const { isExtensionInstalled, isExtensionEnabled } = useExtensionStore()
+
+const vhsAdvancedPreviews = computed(() => {
+  return (
+    isExtensionInstalled('VideoHelperSuite.Core') &&
+    isExtensionEnabled('VideoHelperSuite.Core') &&
+    settingStore.get('VHS.AdvancedPreviews') &&
+    settingStore.get('VHS.AdvancedPreviews') !== 'Never'
+  )
+})
 
 const url = computed(() =>
   vhsAdvancedPreviews.value
