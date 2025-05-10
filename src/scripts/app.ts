@@ -1090,6 +1090,7 @@ export class ComfyApp {
         title: t('errorDialog.loadWorkflowTitle'),
         reportType: 'loadWorkflowError'
       })
+      console.error(error)
       return
     }
     for (const node of this.graph.nodes) {
@@ -1229,6 +1230,7 @@ export class ComfyApp {
               title: t('errorDialog.promptExecutionError'),
               reportType: 'promptExecutionError'
             })
+            console.error(error)
 
             if (error instanceof PromptExecutionError) {
               executionStore.lastNodeErrors = error.response.node_errors ?? null
