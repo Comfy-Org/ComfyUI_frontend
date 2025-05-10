@@ -5,7 +5,7 @@ import {
   LGraphNode,
   LiteGraph
 } from '@comfyorg/litegraph'
-import type { Vector2 } from '@comfyorg/litegraph'
+import type { Subgraph, Vector2 } from '@comfyorg/litegraph'
 import type { IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import _ from 'lodash'
 import type { ToastMessageOptions } from 'primevue/toast'
@@ -43,6 +43,7 @@ import { useSubgraphService } from '@/services/subgraphService'
 import { useWorkflowService } from '@/services/workflowService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
@@ -72,6 +73,7 @@ import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import { type ComfyApi, PromptExecutionError, api } from './api'
 import { defaultGraph } from './defaultGraph'
+import type { BaseDOMWidget } from './domWidget'
 import { pruneWidgets } from './domWidget'
 import {
   getFlacMetadata,
@@ -715,7 +717,7 @@ export class ComfyApp {
   }
 
   #addAfterConfigureHandler() {
-    const { graph } = this
+    const { canvas, graph } = this
     const { onConfigure } = graph
     graph.onConfigure = function (...args) {
       fixLinkInputSlots(this)
@@ -732,7 +734,8 @@ export class ComfyApp {
         node.onAfterGraphConfigured?.()
       }
 
-      pruneWidgets(this.nodes)
+      const nodes = canvas.subgraph?.nodes ?? graph.nodes
+      pruneWidgets(nodes)
 
       return r
     }
@@ -790,6 +793,27 @@ export class ComfyApp {
 
     LiteGraph.alt_drag_do_clone_nodes = true
     LiteGraph.macGesturesRequireMac = false
+
+    this.canvas.canvas.addEventListener('litegraph:set-graph', (e) => {
+      type SetGraphType = CustomEvent<{
+        newGraph: LGraph | Subgraph
+        oldGraph: LGraph | Subgraph
+      }>
+
+      // Assertion: Not yet defined in litegraph.
+      const { newGraph } = (e as SetGraphType).detail
+
+      const nodeSet = new Set(newGraph.nodes)
+      const widgetStore = useDomWidgetStore()
+      for (const { widget } of widgetStore.widgetStates.values()) {
+        // Assertions: UnwrapRef
+        if (nodeSet.has(widget.node as LGraphNode)) {
+          widgetStore.registerWidget(widget as BaseDOMWidget)
+        } else {
+          widgetStore.unregisterWidget(widget.id)
+        }
+      }
+    })
 
     this.graph.start()
 
