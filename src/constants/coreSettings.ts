@@ -560,11 +560,11 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.3.42'
   },
   {
-    id: 'Comfy.Graph.HideLinkConnectionStroke',
-    category: ['LiteGraph', 'Link', 'HideLinkConnectionStroke'],
-    name: 'Hide link connection stroke',
+    id: 'Comfy.Graph.RenderConnectionsBorder',
+    category: ['LiteGraph', 'Link', 'renderConnectionsBorder'],
+    name: 'Show link connection stroke',
     type: 'boolean',
-    defaultValue: false
+    defaultValue: true
     // versionAdded: '1.3.42'
   },
   {

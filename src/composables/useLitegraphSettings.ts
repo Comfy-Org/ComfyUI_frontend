@@ -78,12 +78,12 @@ export const useLitegraphSettings = () => {
   })
 
   watchEffect(() => {
-    const hideLinkConnectionStroke = settingStore.get(
-      'Comfy.Graph.HideLinkConnectionStroke'
+    const renderConnectionsBorder = settingStore.get(
+      'Comfy.Graph.RenderConnectionsBorder'
     )
     const { canvas } = canvasStore
     if (canvas) {
-      canvas.hide_connections_stroke = hideLinkConnectionStroke
+      canvas.render_connections_border = renderConnectionsBorder
       canvas.setDirty(false, true)
     }
   })
