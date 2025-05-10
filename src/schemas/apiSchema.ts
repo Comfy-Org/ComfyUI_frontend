@@ -82,6 +82,11 @@ const zExecutionErrorWsMessage = zExecutionWsMessageBase.extend({
   current_outputs: z.any()
 })
 
+const zProgressTextWsMessage = z.object({
+  nodeId: zNodeId,
+  text: z.string()
+})
+
 const zTerminalSize = z.object({
   cols: z.number(),
   row: z.number()
@@ -114,6 +119,7 @@ export type ExecutionInterruptedWsMessage = z.infer<
 >
 export type ExecutionErrorWsMessage = z.infer<typeof zExecutionErrorWsMessage>
 export type LogsWsMessage = z.infer<typeof zLogsWsMessage>
+export type ProgressTextWsMessage = z.infer<typeof zProgressTextWsMessage>
 // End of ws messages
 
 const zPromptInputItem = z.object({
