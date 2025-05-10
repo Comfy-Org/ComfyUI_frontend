@@ -101,6 +101,15 @@
             {{ t('auth.apiKey.generateKey') }}
           </a>
         </small>
+        <Message
+          v-if="authService.accessError.value"
+          severity="info"
+          icon="pi pi-info-circle"
+          variant="outlined"
+          closable
+        >
+          {{ t('toastMessages.useApiKeyTip') }}
+        </Message>
       </div>
 
       <!-- Terms & Contact -->
@@ -134,7 +143,7 @@
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import Message from 'primevue/message'
-import { onMounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { COMFY_PLATFORM_BASE_URL } from '@/config/comfyApi'
@@ -188,5 +197,9 @@ const signUpWithEmail = async (values: SignUpData) => {
 const userIsInChina = ref(false)
 onMounted(async () => {
   userIsInChina.value = await isInChina()
+})
+
+onUnmounted(() => {
+  authService.accessError.value = false
 })
 </script>
