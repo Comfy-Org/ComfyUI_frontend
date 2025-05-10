@@ -1,6 +1,8 @@
 import { mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
+import Tag from 'primevue/tag'
+import Tooltip from 'primevue/tooltip'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -19,7 +21,16 @@ describe('SettingItem', () => {
   const mountComponent = (props: any, options = {}): any => {
     return mount(SettingItem, {
       global: {
-        plugins: [PrimeVue, i18n, createPinia()]
+        plugins: [PrimeVue, i18n, createPinia()],
+        components: {
+          Tag
+        },
+        directives: {
+          tooltip: Tooltip
+        },
+        stubs: {
+          'i-material-symbols:experiment-outline': true
+        }
       },
       props,
       ...options
