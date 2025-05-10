@@ -692,15 +692,13 @@ export class ComfyApp {
     api.init()
   }
 
-  #addConfigureHandler() {
-    const app = this
-    const configure = LGraph.prototype.configure
-    // Flag that the graph is configuring to prevent nodes from running checks while its still loading
-    LGraph.prototype.configure = function () {
+  /** Flag that the graph is configuring to prevent nodes from running checks while its still loading */
+  #addConfigureHandler(graph: LGraph) {
+    const { configure } = graph
+    graph.configure = function (...args) {
       app.configuringGraph = true
       try {
-        // @ts-expect-error fixme ts strict error
-        return configure.apply(this, arguments)
+        return configure.apply(this, args)
       } finally {
         app.configuringGraph = false
       }
