@@ -78,6 +78,17 @@ export const useLitegraphSettings = () => {
   })
 
   watchEffect(() => {
+    const renderConnectionsBorder = settingStore.get(
+      'Comfy.Graph.RenderConnectionsBorder'
+    )
+    const { canvas } = canvasStore
+    if (canvas) {
+      canvas.render_connections_border = renderConnectionsBorder
+      canvas.setDirty(false, true)
+    }
+  })
+
+  watchEffect(() => {
     const maximumFps = settingStore.get('LiteGraph.Canvas.MaximumFps')
     const { canvas } = canvasStore
     if (canvas) canvas.maximumFps = maximumFps
