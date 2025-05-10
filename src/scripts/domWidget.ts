@@ -11,7 +11,7 @@ import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { generateUUID } from '@/utils/formatUtil'
 
-export interface BaseDOMWidget<V extends object | string>
+export interface BaseDOMWidget<V extends object | string = object | string>
   extends IBaseWidget<V, string, DOMWidgetOptions<V>> {
   // ICustomWidget properties
   type: string
