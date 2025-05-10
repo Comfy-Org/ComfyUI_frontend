@@ -82,6 +82,7 @@ import { type ComfyWidgetConstructor } from './widgets'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
+window._ = _
 function sanitizeNodeName(string: string) {
   let entityMap = {
     '&': '',
