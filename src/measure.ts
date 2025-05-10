@@ -368,3 +368,7 @@ export function snapPoint(pos: Point | Rect, snapTo: number): boolean {
   pos[1] = snapTo * Math.round(pos[1] / snapTo)
   return true
 }
+
+export function clamp(value: number, min: number, max: number): number {
+  return value < min ? min : (value > max ? max : value)
+}

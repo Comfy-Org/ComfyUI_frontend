@@ -165,7 +165,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget> impl
    * @param options The options for drawing the widget
    * @remarks Leaves {@link ctx} dirty.
    */
-  protected drawWidgetShape(ctx: CanvasRenderingContext2D, { width, showText }: DrawWidgetOptions) {
+  protected drawWidgetShape(ctx: CanvasRenderingContext2D, { width, showText }: DrawWidgetOptions): void {
     const { height, y } = this
     const { margin } = BaseWidget
 
@@ -192,7 +192,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget> impl
     width,
     leftPadding = 5,
     rightPadding = 20,
-  }: DrawTruncatingTextOptions) {
+  }: DrawTruncatingTextOptions): void {
     const { height, y } = this
     const { margin } = BaseWidget
 
@@ -264,7 +264,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget> impl
    * @param value The value to set
    * @param options The options for setting the value
    */
-  setValue(value: TWidget["value"], { e, node, canvas }: WidgetEventOptions) {
+  setValue(value: TWidget["value"], { e, node, canvas }: WidgetEventOptions): void {
     const oldValue = this.value
     if (value === this.value) return
 

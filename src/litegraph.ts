@@ -17,10 +17,6 @@ import { loadPolyfills } from "./polyfills"
 
 export const LiteGraph = new LiteGraphGlobal()
 
-export function clamp(v: number, a: number, b: number): number {
-  return a > v ? a : (b < v ? b : v)
-}
-
 // Load legacy polyfills
 loadPolyfills()
 
@@ -29,7 +25,9 @@ loadPolyfills()
 // Type definitions for litegraph.js 0.7.0
 // Project: litegraph.js
 // Definitions by: NateScarlet <https://github.com/NateScarlet>
+/** @deprecated Use {@link Point} instead. */
 export type Vector2 = Point
+/** @deprecated Use {@link Rect} instead. */
 export type Vector4 = [number, number, number, number]
 
 export interface IContextMenuItem {
@@ -133,7 +131,7 @@ export { LGraphCanvas, type LGraphCanvasState } from "./LGraphCanvas"
 export { LGraphGroup } from "./LGraphGroup"
 export { LGraphNode, type NodeId } from "./LGraphNode"
 export { type LinkId, LLink } from "./LLink"
-export { createBounds } from "./measure"
+export { clamp, createBounds } from "./measure"
 export { Reroute, type RerouteId } from "./Reroute"
 export type { CanvasPointerEvent } from "./types/events"
 export {

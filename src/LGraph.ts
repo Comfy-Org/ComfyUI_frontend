@@ -837,9 +837,15 @@ export class LGraph implements LinkNetwork, BaseLGraph, Serialisable<Serialisabl
     }
 
     // not found
-    if (this._nodes_by_id[node.id] == null) return
+    if (this._nodes_by_id[node.id] == null) {
+      console.warn("LiteGraph: node not found", node)
+      return
+    }
     // cannot be removed
-    if (node.ignore_remove) return
+    if (node.ignore_remove) {
+      console.warn("LiteGraph: node cannot be removed", node)
+      return
+    }
 
     // sure? - almost sure is wrong
     this.beforeChange()

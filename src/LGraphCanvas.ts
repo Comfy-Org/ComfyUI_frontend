@@ -334,7 +334,6 @@ export class LGraphCanvas {
     this.state.draggingCanvas = value
     this.#updateCursorStyle()
   }
-  // #endregion Legacy accessors
 
   /**
    * @deprecated Use {@link LGraphNode.titleFontStyle} instead.
@@ -342,6 +341,7 @@ export class LGraphCanvas {
   get title_text_font(): string {
     return `${LiteGraph.NODE_TEXT_SIZE}px ${LiteGraph.NODE_FONT}`
   }
+  // #endregion Legacy accessors
 
   get inner_text_font(): string {
     return `normal ${LiteGraph.NODE_SUBTEXT_SIZE}px ${LiteGraph.NODE_FONT}`
@@ -4552,7 +4552,7 @@ export class LGraphCanvas {
     // Draw node background (shape)
     ctx.beginPath()
     if (shape == RenderShape.BOX || low_quality) {
-      ctx.fillRect(area[0], area[1], area[2], area[3])
+      ctx.rect(area[0], area[1], area[2], area[3])
     } else if (shape == RenderShape.ROUND || shape == RenderShape.CARD) {
       ctx.roundRect(
         area[0],
