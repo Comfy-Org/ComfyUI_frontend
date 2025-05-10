@@ -48,7 +48,7 @@
           <small class="text-muted">
             {{ t('auth.apiKey.helpText') }}
             <a
-              href="https://platform.comfy.org/login"
+              :href="`${COMFY_PLATFORM_BASE_URL}/login`"
               target="_blank"
               class="text-blue-500 cursor-pointer"
             >
@@ -87,6 +87,7 @@ import Message from 'primevue/message'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { COMFY_PLATFORM_BASE_URL } from '@/config/comfyApi'
 import { apiKeySchema } from '@/schemas/signInSchema'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
