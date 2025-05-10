@@ -472,3 +472,33 @@ export function formatMetronomeCurrency(
 export function usdToMicros(usd: number): number {
   return Math.round(usd * 1_000_000)
 }
+
+/**
+ * Converts URLs in a string to HTML links.
+ * @param text - The string to convert
+ * @returns The string with URLs converted to HTML links
+ * @example
+ * linkifyHtml('Visit https://example.com for more info') // returns 'Visit <a href="https://example.com" target="_blank" rel="noopener noreferrer" class="text-primary-400 hover:underline">https://example.com</a> for more info'
+ */
+export function linkifyHtml(text: string): string {
+  if (!text) return ''
+  const urlRegex =
+    /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%?=~_|])|(\bwww\.[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%?=~_|])/gi
+  return text.replace(urlRegex, (_match, p1, _p2, p3) => {
+    const url = p1 || p3
+    const href = p3 ? `http://${url}` : url
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-primary-400 hover:underline">${url}</a>`
+  })
+}
+
+/**
+ * Converts newline characters to HTML <br> tags.
+ * @param text - The string to convert
+ * @returns The string with newline characters converted to <br> tags
+ * @example
+ * nl2br('Hello\nWorld') // returns 'Hello<br />World'
+ */
+export function nl2br(text: string): string {
+  if (!text) return ''
+  return text.replace(/\n/g, '<br />')
+}
