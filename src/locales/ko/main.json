@@ -1362,6 +1362,7 @@
     "unableToGetModelFilePath": "모델 파일 경로를 가져올 수 없습니다",
     "unauthorizedDomain": "귀하의 도메인 {domain}은(는) 이 서비스를 사용할 수 있는 권한이 없습니다. 도메인을 허용 목록에 추가하려면 {email}로 문의해 주세요.",
     "updateRequested": "업데이트 요청됨",
+    "useApiKeyTip": "팁: 일반 로그인을 사용할 수 없나요? Comfy API Key 옵션을 사용하세요.",
     "userNotAuthenticated": "사용자가 인증되지 않았습니다"
   },
   "userSelect": {
