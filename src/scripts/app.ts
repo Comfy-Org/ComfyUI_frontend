@@ -33,6 +33,7 @@ import {
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useSubgraphService } from '@/services/subgraphService'
 import { useWorkflowService } from '@/services/workflowService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -754,6 +755,20 @@ export class ComfyApp {
 
     this.#graph = new LGraph()
 
+    // Register the subgraph - adds type wrapper for Litegraph's `createNode` factory
+    this.graph.events.addEventListener('subgraph-created', (e) => {
+      try {
+        useSubgraphService().registerNewSubgraph(e.detail)
+      } catch (err) {
+        console.error('Failed to register subgraph', err)
+        useToastStore().add({
+          severity: 'error',
+          summary: 'Failed to register subgraph',
+          detail: err instanceof Error ? err.message : String(err)
+        })
+      }
+    })
+
     this.#addAfterConfigureHandler()
 
     this.canvas = new LGraphCanvas(canvasEl, this.graph)
@@ -1002,6 +1017,7 @@ export class ComfyApp {
       })
     }
     useWorkflowService().beforeLoadNewGraph()
+    useSubgraphService().loadSubgraphs(graphData)
 
     const missingNodeTypes: MissingNodeType[] = []
     const missingModels: ModelFile[] = []
