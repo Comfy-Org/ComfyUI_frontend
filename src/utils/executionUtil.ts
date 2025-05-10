@@ -158,7 +158,7 @@ export const graphToPrompt = async (
 
         if (link) {
           if (parent?.updateLink) {
-            // groupNode
+            // Subgraph node / groupNode callback; deprecated, should be replaced
             link = parent.updateLink(link)
           }
           if (link) {
