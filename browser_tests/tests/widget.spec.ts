@@ -69,8 +69,7 @@ test.describe('Combo text widget', () => {
     const comboValues = await comfyPage.page.evaluate(() => {
       return window['app'].graph.nodes
         .find((node) => node.title === 'Node With V2 Combo Input')
-        .widgets.find((widget) => widget.name === 'combo_input')
-        .options.values
+        .widgets.find((widget) => widget.name === 'combo_input').options.values
     })
     expect(comboValues).toEqual(['A', 'B'])
   })
