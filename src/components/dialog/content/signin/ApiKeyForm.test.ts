@@ -9,6 +9,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { COMFY_PLATFORM_BASE_URL } from '@/config/comfyApi'
+
 import ApiKeyForm from './ApiKeyForm.vue'
 
 const mockStoreApiKey = vi.fn()
@@ -39,7 +41,8 @@ const i18n = createI18n({
           error: 'Invalid API Key',
           helpText: 'Need an API key?',
           generateKey: 'Get one here',
-          whitelistInfo: 'About non-whitelisted sites'
+          whitelistInfo: 'About non-whitelisted sites',
+          description: 'Use your Comfy API key to enable API Nodes'
         }
       },
       g: {
@@ -108,7 +111,7 @@ describe('ApiKeyForm', () => {
     const helpText = wrapper.find('small')
     expect(helpText.text()).toContain('Need an API key?')
     expect(helpText.find('a').attributes('href')).toBe(
-      'https://platform.comfy.org/login'
+      `${COMFY_PLATFORM_BASE_URL}/login`
     )
   })
 })
