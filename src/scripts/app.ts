@@ -25,7 +25,11 @@ import {
   type ModelFile,
   type NodeId
 } from '@/schemas/comfyWorkflowSchema'
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import {
+  type ComfyNodeDef as ComfyNodeDefV1,
+  isComboInputSpecV1,
+  isComboInputSpecV2
+} from '@/schemas/nodeDefSchema'
 import { getFromWebmFile } from '@/scripts/metadata/ebml'
 import { getGltfBinaryMetadata } from '@/scripts/metadata/gltf'
 import { getFromIsobmffFile } from '@/scripts/metadata/isobmff'
@@ -1572,12 +1576,26 @@ export class ComfyApp {
       if (!def?.input) continue
 
       if (node.widgets) {
+        const nodeInputs = def.input
         for (const widget of node.widgets) {
           if (widget.type === 'combo') {
-            if (def['input'].required?.[widget.name] !== undefined) {
-              widget.options.values = def['input'].required[widget.name][0]
-            } else if (def['input'].optional?.[widget.name] !== undefined) {
-              widget.options.values = def['input'].optional[widget.name][0]
+            let inputType: 'required' | 'optional' | undefined
+            if (nodeInputs.required?.[widget.name] !== undefined) {
+              inputType = 'required'
+            } else if (nodeInputs.optional?.[widget.name] !== undefined) {
+              inputType = 'optional'
+            }
+            if (inputType !== undefined) {
+              // Get the input spec associated with the widget
+              const inputSpec = nodeInputs[inputType]?.[widget.name]
+              if (inputSpec) {
+                // Refresh the combo widget's options with the values from the input spec
+                if (isComboInputSpecV2(inputSpec)) {
+                  widget.options.values = inputSpec[1]?.options
+                } else if (isComboInputSpecV1(inputSpec)) {
+                  widget.options.values = inputSpec[0]
+                }
+              }
             }
           }
         }
