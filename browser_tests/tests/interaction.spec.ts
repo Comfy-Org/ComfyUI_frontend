@@ -672,6 +672,45 @@ test.describe('Load workflow', () => {
     await comfyPage.loadWorkflow('single_ksampler')
     await expect(comfyPage.canvas).toHaveScreenshot('single_ksampler_fit.png')
   })
+
+  test('Keeps viewport settings when changing tabs', async ({
+    comfyPage,
+    comfyMouse
+  }) => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+    })
+
+    // Screenshot the canvas element
+    await comfyPage.menu.topbar.saveWorkflow('Workflow A')
+    const screenshotA = await comfyPage.canvas.screenshot()
+
+    // Save as a new file, and zoom out
+    await comfyPage.menu.topbar.saveWorkflowAs('Workflow B')
+    await comfyMouse.move(comfyPage.emptySpace)
+    for (let i = 0; i < 4; i++) {
+      await comfyMouse.wheel(0, 60)
+    }
+    const screenshotB = await comfyPage.canvas.screenshot()
+
+    // Confirm zoom worked
+    expect(screenshotA).not.toEqual(screenshotB)
+
+    const tabA = comfyPage.menu.topbar.getWorkflowTab('Workflow A')
+    const tabB = comfyPage.menu.topbar.getWorkflowTab('Workflow B')
+
+    // Go back to Workflow A
+    await tabA.click()
+    await comfyPage.nextFrame()
+    const afterA = await comfyPage.canvas.screenshot()
+    expect(screenshotA).toEqual(afterA)
+
+    // And back to Workflow B
+    await tabB.click()
+    await comfyPage.nextFrame()
+    const afterB = await comfyPage.canvas.screenshot()
+    expect(screenshotB).toEqual(afterB)
+  })
 })
 
 test.describe('Load duplicate workflow', () => {
