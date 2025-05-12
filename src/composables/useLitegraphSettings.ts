@@ -128,4 +128,10 @@ export const useLitegraphSettings = () => {
       'LiteGraph.Pointer.TrackpadGestures'
     )
   })
+
+  watchEffect(() => {
+    LiteGraph.saveViewportWithGraph = settingStore.get(
+      'Comfy.EnableWorkflowViewRestore'
+    )
+  })
 }
