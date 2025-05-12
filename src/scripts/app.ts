@@ -772,7 +772,8 @@ export class ComfyApp {
     // Register the subgraph - adds type wrapper for Litegraph's `createNode` factory
     this.graph.events.addEventListener('subgraph-created', (e) => {
       try {
-        useSubgraphService().registerNewSubgraph(e.detail)
+        const { subgraph, data } = e.detail
+        useSubgraphService().registerNewSubgraph(subgraph, data)
       } catch (err) {
         console.error('Failed to register subgraph', err)
         useToastStore().add({
