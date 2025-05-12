@@ -718,7 +718,7 @@ export class ComfyApp {
   }
 
   #addAfterConfigureHandler() {
-    const { canvas, graph } = this
+    const { graph } = this
     const { onConfigure } = graph
     graph.onConfigure = function (...args) {
       fixLinkInputSlots(this)
@@ -735,8 +735,10 @@ export class ComfyApp {
         node.onAfterGraphConfigured?.()
       }
 
-      const nodes = canvas.subgraph?.nodes ?? graph.nodes
-      pruneWidgets(nodes)
+      graph.canvasAction((c) => {
+        const nodes = c.subgraph?.nodes ?? graph.nodes
+        pruneWidgets(nodes)
+      })
 
       return r
     }
