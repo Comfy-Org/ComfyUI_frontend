@@ -44,7 +44,7 @@
 </template>
 
 <script setup lang="ts">
-import type { LGraphNode } from '@comfyorg/litegraph'
+import type { LGraphNode, Point } from '@comfyorg/litegraph'
 import { useEventListener } from '@vueuse/core'
 import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 
@@ -242,7 +242,7 @@ watch(
         },
         get offset() {
           const [x, y] = canvas.ds.offset
-          return [x, y]
+          return [x, y] satisfies Point
         }
       }
     } else {
