@@ -417,3 +417,23 @@ export interface DefaultConnectionColors {
   getConnectedColor(type: ISlotType): CanvasColour
   getDisconnectedColor(type: ISlotType): CanvasColour
 }
+/**
+ * Shorthand for {@link Parameters} of optional callbacks.
+ * @example
+ * ```ts
+ * const { onClick } = CustomClass.prototype
+ * CustomClass.prototype.onClick = function (...args: CallbackParams<typeof onClick>) {
+ *   const r = onClick?.apply(this, args)
+ *   // ...
+ *   return r
+ * }
+ * ```
+ */
+export type CallbackParams<T extends ((...args: any) => any) | undefined> =
+  Parameters<Exclude<T, undefined>>
+
+/**
+ * Shorthand for {@link ReturnType} of optional callbacks.
+ * @see {@link CallbackParams}
+ */
+export type CallbackReturn<T extends ((...args: any) => any) | undefined> = ReturnType<Exclude<T, undefined>>

@@ -4,8 +4,7 @@
 
 import type { LGraphGroup } from "../LGraphGroup"
 import type { LGraphNode } from "../LGraphNode"
-import type { ConnectingLink, LinkReleaseContextExtended } from "../litegraph"
-import type { IWidget } from "./widgets"
+import type { LinkReleaseContextExtended } from "../litegraph"
 
 /** For Canvas*Event - adds graph space co-ordinates (property names are shipped) */
 export interface ICanvasPosition {
@@ -57,12 +56,9 @@ export interface CanvasDragEvent extends
 
 export type CanvasEventDetail =
   | GenericEventDetail
-  | DragggingCanvasEventDetail
-  | ReadOnlyEventDetail
   | GroupDoubleClickEventDetail
   | NodeDoubleClickEventDetail
   | EmptyDoubleClickEventDetail
-  | ConnectingWidgetLinkEventDetail
   | EmptyReleaseEventDetail
 
 export interface GenericEventDetail {
@@ -78,13 +74,6 @@ export interface EmptyReleaseEventDetail extends OriginalEvent {
   linkReleaseContext: LinkReleaseContextExtended
 }
 
-export interface ConnectingWidgetLinkEventDetail {
-  subType: "connectingWidgetLink"
-  link: ConnectingLink
-  node: LGraphNode
-  widget: IWidget
-}
-
 export interface EmptyDoubleClickEventDetail extends OriginalEvent {
   subType: "empty-double-click"
 }
@@ -97,14 +86,4 @@ export interface GroupDoubleClickEventDetail extends OriginalEvent {
 export interface NodeDoubleClickEventDetail extends OriginalEvent {
   subType: "node-double-click"
   node: LGraphNode
-}
-
-export interface DragggingCanvasEventDetail {
-  subType: "dragging-canvas"
-  draggingCanvas: boolean
-}
-
-export interface ReadOnlyEventDetail {
-  subType: "read-only"
-  readOnly: boolean
 }

@@ -1,4 +1,5 @@
 import type { ContextMenu } from "./ContextMenu"
+import type { LGraphCanvasEventMap } from "./infrastructure/LGraphCanvasEventMap"
 import type {
   CanvasColour,
   ColorOption,
@@ -27,7 +28,6 @@ import type {
 } from "./interfaces"
 import type { LGraph } from "./LGraph"
 import type {
-  CanvasEventDetail,
   CanvasMouseEvent,
   CanvasPointerEvent,
   CanvasPointerExtensions,
@@ -3151,7 +3151,7 @@ export class LGraphCanvas {
     )
   }
 
-  emitEvent(detail: CanvasEventDetail): void {
+  emitEvent(detail: LGraphCanvasEventMap["litegraph:canvas"]): void {
     this.canvas.dispatchEvent(
       new CustomEvent("litegraph:canvas", {
         bubbles: true,

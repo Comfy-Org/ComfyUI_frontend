@@ -22,7 +22,7 @@ export type SerialisedLLinkArray = [
   type: ISlotType,
 ]
 
-interface ResolvedConnection {
+export interface ResolvedConnection {
   inputNode: LGraphNode | undefined
   outputNode: LGraphNode | undefined
   input: INodeInputSlot | undefined

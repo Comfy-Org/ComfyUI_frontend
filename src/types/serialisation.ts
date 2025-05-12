@@ -34,7 +34,7 @@ export interface BaseExportedGraph {
   /** Unique graph ID.  Automatically generated if not provided. */
   id: UUID
   revision: number
-  config: LGraphConfig
+  config?: LGraphConfig
   /** Details of the appearance and location of subgraphs shown in this graph. Similar to */
   subgraphs?: ExportedSubgraphInstance[]
   /** Definitions of re-usable objects that are referenced elsewhere in this exported graph. */
@@ -161,7 +161,7 @@ export interface ISerialisedGroup {
   title: string
   bounding: number[]
   color?: string
-  font_size: number
+  font_size?: number
   flags?: IGraphGroupFlags
 }
 

@@ -1477,11 +1477,12 @@ export class LGraph implements LinkNetwork, BaseLGraph, Serialisable<Serialisabl
 
       // State
       if (data.state) {
-        const { state: { lastGroupId, lastLinkId, lastNodeId, lastRerouteId } } = data
-        if (lastGroupId != null) this.state.lastGroupId = lastGroupId
-        if (lastLinkId != null) this.state.lastLinkId = lastLinkId
-        if (lastNodeId != null) this.state.lastNodeId = lastNodeId
-        if (lastRerouteId != null) this.state.lastRerouteId = lastRerouteId
+        const { lastGroupId, lastLinkId, lastNodeId, lastRerouteId } = data.state
+        const { state } = this
+        if (lastGroupId != null) state.lastGroupId = lastGroupId
+        if (lastLinkId != null) state.lastLinkId = lastLinkId
+        if (lastNodeId != null) state.lastNodeId = lastNodeId
+        if (lastRerouteId != null) state.lastRerouteId = lastRerouteId
       }
 
       // Links

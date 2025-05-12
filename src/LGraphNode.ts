@@ -1421,13 +1421,15 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    * @param type string defining the output type ("vec3","number",...)
    * @param extra_info this can be used to have special properties of an output (label, special color, position, etc)
    */
-  addOutput(
+  addOutput<TProperties extends Partial<INodeOutputSlot>>(
     name: string,
     type: ISlotType,
-    extra_info?: Partial<INodeOutputSlot>,
-  ): INodeOutputSlot {
-    const output = new NodeOutputSlot({ name, type, links: null }, this)
-    if (extra_info) Object.assign(output, extra_info)
+    extra_info?: TProperties,
+  ): INodeOutputSlot & TProperties {
+    const output = Object.assign(
+      new NodeOutputSlot({ name, type, links: null }, this),
+      extra_info,
+    )
 
     this.outputs ||= []
     this.outputs.push(output)
@@ -1470,10 +1472,13 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    * @param type string defining the input type ("vec3","number",...), it its a generic one use 0
    * @param extra_info this can be used to have special properties of an input (label, color, position, etc)
    */
-  addInput(name: string, type: ISlotType, extra_info?: Partial<INodeInputSlot>): INodeInputSlot {
-    type = type || 0
-    const input = new NodeInputSlot({ name: name, type: type, link: null }, this)
-    if (extra_info) Object.assign(input, extra_info)
+  addInput<TProperties extends Partial<INodeInputSlot>>(name: string, type: ISlotType, extra_info?: TProperties): INodeInputSlot & TProperties {
+    type ||= 0
+
+    const input = Object.assign(
+      new NodeInputSlot({ name, type, link: null }, this),
+      extra_info,
+    )
 
     this.inputs ||= []
     this.inputs.push(input)
