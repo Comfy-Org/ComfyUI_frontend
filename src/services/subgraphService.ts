@@ -12,29 +12,14 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useLitegraphService } from './litegraphService'
 
 export const useSubgraphService = () => {
+  const nodeDefStore = useNodeDefStore()
+
   /** Loads a single subgraph definition and registers it with the node def store */
-  const deserialiseSubgraph = (
+  function registerLitegraphNode(
+    nodeDef: ComfyNodeDefV1,
     subgraph: Subgraph,
     exportedSubgraph: ExportedSubgraph
-  ) => {
-    const { id, name } = exportedSubgraph
-
-    const nodeDef: ComfyNodeDefV1 = {
-      input: { required: {} },
-      output: [],
-      output_is_list: [],
-      output_name: [],
-      output_tooltips: [],
-      name: id,
-      display_name: name,
-      description: `Subgraph node for ${name}`,
-      category: 'subgraph',
-      output_node: false,
-      python_module: 'nodes'
-    }
-
-    useNodeDefStore().addNodeDef(nodeDef)
-
+  ) {
     const instanceData: ExportedSubgraphInstance = {
       id: -1,
       type: exportedSubgraph.id,
@@ -54,31 +39,49 @@ export const useSubgraphService = () => {
     )
   }
 
-  /** Loads all exported subgraph definitionsfrom workflow */
-  const loadSubgraphs = (graphData: ComfyWorkflowJSON) => {
-    if (!graphData.definitions?.subgraphs) return
+  function createNodeDef(exportedSubgraph: ExportedSubgraph) {
+    const { id, name } = exportedSubgraph
 
-    for (const subgraphData of graphData.definitions.subgraphs) {
+    const nodeDef: ComfyNodeDefV1 = {
+      input: { required: {} },
+      output: [],
+      output_is_list: [],
+      output_name: [],
+      output_tooltips: [],
+      name: id,
+      display_name: name,
+      description: `Subgraph node for ${name}`,
+      category: 'subgraph',
+      output_node: false,
+      python_module: 'nodes'
+    }
+
+    nodeDefStore.addNodeDef(nodeDef)
+    return nodeDef
+  }
+
+  /** Loads all exported subgraph definitions from workflow */
+  function loadSubgraphs(graphData: ComfyWorkflowJSON) {
+    const subgraphs = graphData.definitions?.subgraphs
+    if (!subgraphs) return
+
+    // Assertion: overriding Zod schema
+    for (const subgraphData of subgraphs as ExportedSubgraph[]) {
       const subgraph =
         comfyApp.graph.subgraphs.get(subgraphData.id) ??
-        comfyApp.graph.createSubgraph(subgraphData as ExportedSubgraph)
+        comfyApp.graph.createSubgraph(subgraphData)
 
-      // @ts-expect-error Zod
-      deserialiseSubgraph(subgraph, subgraphData)
+      registerNewSubgraph(subgraph, subgraphData)
     }
   }
 
   /** Registers a new subgraph (e.g. user converted from nodes) */
-  const registerNewSubgraph = (
+  function registerNewSubgraph(
     subgraph: Subgraph,
     exportedSubgraph: ExportedSubgraph
-  ) => {
-    if (comfyApp.graph.subgraphs.has(subgraph.id)) {
-      console.debug(`Subgraph ${subgraph.id} already registered`)
-      return
-    }
-
-    deserialiseSubgraph(subgraph, exportedSubgraph)
+  ) {
+    const nodeDef = createNodeDef(exportedSubgraph)
+    registerLitegraphNode(nodeDef, subgraph, exportedSubgraph)
   }
 
   return {
