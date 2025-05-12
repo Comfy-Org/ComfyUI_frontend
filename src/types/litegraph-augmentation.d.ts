@@ -66,7 +66,7 @@ declare module '@comfyorg/litegraph' {
     type?: string
     comfyClass: string
     title: string
-    nodeData?: ComfyNodeDefV1 & ComfyNodeDefV2
+    nodeData?: ComfyNodeDefV1 & ComfyNodeDefV2 & { [key: symbol]: unknown }
     category?: string
     new (): T
   }
