@@ -292,7 +292,8 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   }
   function fromLGraphNode(node: LGraphNode): ComfyNodeDefImpl | null {
     // Frontend-only nodes don't have nodeDef
-    // @ts-expect-error Optional chaining used in index
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore Optional chaining used in index
     return nodeDefsByName.value[node.constructor?.nodeData?.name] ?? null
   }
 
