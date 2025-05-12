@@ -17,6 +17,7 @@ import type {
   NodeId
 } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 
 import { ComfyWorkflow } from './workflowStore'
 
