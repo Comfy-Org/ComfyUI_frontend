@@ -23,7 +23,6 @@ import type {
   ReadOnlyPoint,
   ReadOnlyRect,
   Rect,
-  Rect32,
   Size,
 } from "./interfaces"
 import type { LGraph } from "./LGraph"
@@ -45,7 +44,7 @@ import { strokeShape } from "./draw"
 import { NullGraphError } from "./infrastructure/NullGraphError"
 import { LGraphGroup } from "./LGraphGroup"
 import { LGraphNode, type NodeId, type NodeProperty } from "./LGraphNode"
-import { LiteGraph } from "./litegraph"
+import { LiteGraph, type Rectangle } from "./litegraph"
 import { type LinkId, LLink } from "./LLink"
 import {
   containsRect,
@@ -471,7 +470,7 @@ export class LGraphCanvas {
   over_link_center?: LinkSegment
   last_mouse_position: Point
   /** The visible area of this canvas.  Tightly coupled with {@link ds}. */
-  visible_area: Rect32
+  visible_area: Rectangle
   /** Contains all links and reroutes that were rendered.  Repopulated every render cycle. */
   renderedPaths: Set<LinkSegment> = new Set()
   /** @deprecated Replaced by {@link renderedPaths}, but length is set to 0 by some extensions. */

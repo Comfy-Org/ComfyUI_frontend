@@ -208,9 +208,6 @@ type ArRect = [x: number, y: number, width: number, height: number]
 /** A rectangle starting at top-left coordinates `[x, y, width, height]` */
 export type Rect = ArRect | Float32Array | Float64Array
 
-/** A rectangle starting at top-left coordinates `[x, y, width, height]`.  Requires functions exclusive to `TypedArray`. */
-export type Rect32 = Float32Array
-
 /** A point represented as `[x, y]` co-ordinates that will not be modified */
 export type ReadOnlyPoint =
   | readonly [x: number, y: number]

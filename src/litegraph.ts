@@ -95,6 +95,7 @@ export { CurveEditor } from "./CurveEditor"
 export { DragAndScale } from "./DragAndScale"
 export { LabelPosition, SlotDirection, SlotShape, SlotType } from "./draw"
 export { strokeShape } from "./draw"
+export { Rectangle } from "./infrastructure/Rectangle"
 export type {
   CanvasColour,
   ColorOption,
@@ -122,7 +123,6 @@ export type {
   ReadOnlyPoint,
   ReadOnlyRect,
   Rect,
-  Rect32,
   Size,
 } from "./interfaces"
 export { LGraph } from "./LGraph"

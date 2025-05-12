@@ -1,6 +1,6 @@
-import type { Point, ReadOnlyRect, Rect, Rect32 } from "./interfaces"
+import type { Point, ReadOnlyRect, Rect } from "./interfaces"
 
-import { EaseFunction } from "./litegraph"
+import { EaseFunction, Rectangle } from "./litegraph"
 
 export interface DragAndScaleState {
   /**
@@ -36,7 +36,7 @@ export class DragAndScale {
   enabled: boolean
   last_mouse: Point
   element: HTMLCanvasElement
-  visible_area: Rect32
+  visible_area: Rectangle
   dragging?: boolean
   viewport?: Rect
 
@@ -67,7 +67,7 @@ export class DragAndScale {
     this.min_scale = 0.1
     this.enabled = true
     this.last_mouse = [0, 0]
-    this.visible_area = new Float32Array(4)
+    this.visible_area = new Rectangle()
 
     this.element = element
   }
