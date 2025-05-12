@@ -442,7 +442,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     if (subgraph) {
       const [, ...pathFromRoot] = subgraph.pathToRootGraph
 
-      subgraphNamePath.value = pathFromRoot.map((graph) => graph.name)
+      subgraphNamePath.value = pathFromRoot.map((subgraph) => subgraph.name)
     } else {
       subgraphNamePath.value = []
     }
