@@ -330,9 +330,8 @@ LGraphNode.prototype.addDOMWidget = function <
 export const pruneWidgets = (nodes: LGraphNode[]) => {
   const nodeSet = new Set(nodes)
   const domWidgetStore = useDomWidgetStore()
-  for (const widgetState of domWidgetStore.widgetStates.values()) {
-    const widget = widgetState.widget
-    if (!nodeSet.has(widget.node as LGraphNode)) {
+  for (const { widget } of domWidgetStore.widgetStates.values()) {
+    if (!nodeSet.has(widget.node)) {
       domWidgetStore.unregisterWidget(widget.id)
     }
   }
