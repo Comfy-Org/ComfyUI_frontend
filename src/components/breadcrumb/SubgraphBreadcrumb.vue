@@ -19,11 +19,9 @@ import Breadcrumb from 'primevue/breadcrumb'
 import type { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
 import { computed } from 'vue'
 
-import { useWorkflowService } from '@/services/workflowService'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 
-const workflowService = useWorkflowService()
 const workflowStore = useWorkflowStore()
 
 const workflowName = computed(() => workflowStore.activeWorkflow?.filename)
@@ -31,11 +29,13 @@ const workflowName = computed(() => workflowStore.activeWorkflow?.filename)
 const items = computed(() => {
   if (!workflowStore.subgraphNamePath.length) return []
 
-  return workflowStore.subgraphNamePath.map<MenuItem>((name) => ({
+  return workflowStore.subgraphNamePath.map<MenuItem>((name, index) => ({
     label: name,
     command: async () => {
-      const workflow = workflowStore.getWorkflowByPath(name)
-      if (workflow) await workflowService.openWorkflow(workflow)
+      const canvas = useCanvasStore().getCanvas()
+      if (!canvas.graph) throw new TypeError('Canvas has no graph')
+
+      canvas.setGraph(canvas.graph.pathToRootGraph[index + 1])
     }
   }))
 })
