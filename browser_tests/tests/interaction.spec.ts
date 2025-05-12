@@ -677,9 +677,7 @@ test.describe('Load workflow', () => {
     comfyPage,
     comfyMouse
   }) => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-    })
+    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
 
     // Screenshot the canvas element
     await comfyPage.menu.topbar.saveWorkflow('Workflow A')
