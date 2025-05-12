@@ -308,6 +308,12 @@ export class LiteGraphGlobal {
    */
   truncateWidgetValuesFirst: boolean = false
 
+  /**
+   * If `true`, the current viewport scale & offset of the first attached canvas will be included with the graph when exporting.
+   * @default true
+   */
+  saveViewportWithGraph: boolean = true
+
   // TODO: Remove legacy accessors
   LGraph = LGraph
   LLink = LLink

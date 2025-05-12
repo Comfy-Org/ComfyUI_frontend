@@ -175,6 +175,7 @@ LiteGraphGlobal {
   "registered_slot_in_types": {},
   "registered_slot_out_types": {},
   "release_link_on_empty_shows_menu": false,
+  "saveViewportWithGraph": true,
   "search_filter_enabled": false,
   "search_hide_on_mouse_leave": true,
   "search_show_all_on_open": true,

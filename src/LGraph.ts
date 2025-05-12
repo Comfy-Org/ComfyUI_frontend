@@ -1,3 +1,4 @@
+import type { DragAndScaleState } from "./DragAndScale"
 import type {
   Dictionary,
   IContextMenuValue,
@@ -51,6 +52,7 @@ export interface LGraphConfig {
 export interface LGraphExtra extends Dictionary<unknown> {
   reroutes?: SerialisableReroute[]
   linkExtensions?: { id: number, parentId: number | undefined }[]
+  ds?: DragAndScaleState
 }
 
 export interface BaseLGraph {
@@ -1374,6 +1376,12 @@ export class LGraph implements LinkNetwork, BaseLGraph, Serialisable<Serialisabl
     }
   }
 
+  /** @returns The drag and scale state of the first attached canvas, otherwise `undefined`. */
+  #getDragAndScale(): DragAndScaleState | undefined {
+    const ds = this.list_of_graphcanvas?.at(0)?.ds
+    if (ds) return { scale: ds.scale, offset: ds.offset }
+  }
+
   /**
    * Prepares a shallow copy of this object for immediate serialisation or structuredCloning.
    * The return value should be discarded immediately.
@@ -1383,7 +1391,7 @@ export class LGraph implements LinkNetwork, BaseLGraph, Serialisable<Serialisabl
    * It is intended for use with {@link structuredClone} or {@link JSON.stringify}.
    */
   asSerialisable(options?: { sortNodes: boolean }): SerialisableGraph & Required<Pick<SerialisableGraph, "nodes" | "groups" | "extra">> {
-    const { id, revision, config, state, extra } = this
+    const { id, revision, config, state } = this
 
     const nodeList = !LiteGraph.use_uuids && options?.sortNodes
       // @ts-expect-error If LiteGraph.use_uuids is false, ids are numbers.
@@ -1396,6 +1404,11 @@ export class LGraph implements LinkNetwork, BaseLGraph, Serialisable<Serialisabl
     const links = this._links.size ? [...this._links.values()].map(x => x.asSerialisable()) : undefined
     const floatingLinks = this.floatingLinks.size ? [...this.floatingLinks.values()].map(x => x.asSerialisable()) : undefined
     const reroutes = this.reroutes.size ? [...this.reroutes.values()].map(x => x.asSerialisable()) : undefined
+
+    // Save scale and offset
+    const extra = { ...this.extra }
+    if (LiteGraph.saveViewportWithGraph) extra.ds = this.#getDragAndScale()
+    if (!extra.ds) delete extra.ds
 
     const data: ReturnType<typeof this.asSerialisable> = {
       id,
