@@ -12,9 +12,6 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useLitegraphService } from './litegraphService'
 
 export const useSubgraphService = () => {
-  /** @todo Move to store */
-  const subgraphs = new Map<string, Subgraph>()
-
   /** Loads a single subgraph definition and registers it with the node def store */
   const deserialiseSubgraph = (
     subgraph: Subgraph,
@@ -63,7 +60,7 @@ export const useSubgraphService = () => {
 
     for (const subgraphData of graphData.definitions.subgraphs) {
       const subgraph =
-        subgraphs.get(subgraphData.id) ??
+        comfyApp.graph.subgraphs.get(subgraphData.id) ??
         comfyApp.graph.createSubgraph(subgraphData as ExportedSubgraph)
 
       // @ts-expect-error Zod
@@ -72,10 +69,16 @@ export const useSubgraphService = () => {
   }
 
   /** Registers a new subgraph (e.g. user converted from nodes) */
-  const registerNewSubgraph = (subgraph: Subgraph) => {
-    subgraphs.set(subgraph.id, subgraph)
+  const registerNewSubgraph = (
+    subgraph: Subgraph,
+    exportedSubgraph: ExportedSubgraph
+  ) => {
+    if (comfyApp.graph.subgraphs.has(subgraph.id)) {
+      console.debug(`Subgraph ${subgraph.id} already registered`)
+      return
+    }
 
-    deserialiseSubgraph(subgraph, subgraph.asSerialisable())
+    deserialiseSubgraph(subgraph, exportedSubgraph)
   }
 
   return {
