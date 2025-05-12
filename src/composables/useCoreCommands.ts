@@ -320,7 +320,7 @@ export function useCoreCommands(): ComfyCommand[] {
       function: async () => {
         const batchCount = useQueueSettingsStore().batchCount
         const queueNodeIds = getSelectedNodes()
-          .filter((node) => node.constructor.nodeData.output_node)
+          .filter((node) => node.constructor.nodeData?.output_node)
           .map((node) => node.id)
         if (queueNodeIds.length === 0) {
           toastStore.add({

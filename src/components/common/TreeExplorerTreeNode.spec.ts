@@ -32,6 +32,8 @@ describe('TreeExplorerTreeNode', () => {
     handleRename: () => {}
   } as RenderedTreeExplorerNode
 
+  const mockHandleEditLabel = vi.fn()
+
   beforeAll(() => {
     // Create a Vue app instance for PrimeVuePrimeVue
     const app = createApp({})
@@ -48,7 +50,10 @@ describe('TreeExplorerTreeNode', () => {
       props: { node: mockNode },
       global: {
         components: { EditableText, Badge },
-        plugins: [createTestingPinia(), i18n]
+        plugins: [createTestingPinia(), i18n],
+        provide: {
+          [InjectKeyHandleEditLabelFunction]: mockHandleEditLabel
+        }
       }
     })
 
@@ -72,7 +77,10 @@ describe('TreeExplorerTreeNode', () => {
       },
       global: {
         components: { EditableText, Badge, InputText },
-        plugins: [createTestingPinia(), i18n, PrimeVue]
+        plugins: [createTestingPinia(), i18n, PrimeVue],
+        provide: {
+          [InjectKeyHandleEditLabelFunction]: mockHandleEditLabel
+        }
       }
     })
 

@@ -16,12 +16,12 @@ import { computed, watch } from 'vue'
 
 import DomWidget from '@/components/graph/widgets/DomWidget.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import { type DomWidgetState, useDomWidgetStore } from '@/stores/domWidgetStore'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useCanvasStore } from '@/stores/graphStore'
 
 const domWidgetStore = useDomWidgetStore()
-const widgetStates = computed(
-  () => Array.from(domWidgetStore.widgetStates.values()) as DomWidgetState[]
+const widgetStates = computed(() =>
+  Array.from(domWidgetStore.widgetStates.values())
 )
 
 const updateWidgets = () => {

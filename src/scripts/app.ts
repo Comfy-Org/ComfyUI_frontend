@@ -25,14 +25,22 @@ import {
   type ModelFile,
   type NodeId
 } from '@/schemas/comfyWorkflowSchema'
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import {
+  type ComfyNodeDef as ComfyNodeDefV1,
+  isComboInputSpecV1,
+  isComboInputSpecV2
+} from '@/schemas/nodeDefSchema'
 import { getFromWebmFile } from '@/scripts/metadata/ebml'
 import { getGltfBinaryMetadata } from '@/scripts/metadata/gltf'
 import { getFromIsobmffFile } from '@/scripts/metadata/isobmff'
+import { getMp3Metadata } from '@/scripts/metadata/mp3'
+import { getOggMetadata } from '@/scripts/metadata/ogg'
+import { getSvgMetadata } from '@/scripts/metadata/svg'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowService } from '@/services/workflowService'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExtensionStore } from '@/stores/extensionStore'
@@ -64,7 +72,6 @@ import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 import { type ComfyApi, PromptExecutionError, api } from './api'
 import { defaultGraph } from './defaultGraph'
 import { pruneWidgets } from './domWidget'
-import { getSvgMetadata } from './metadata/svg'
 import {
   getFlacMetadata,
   getLatentMetadata,
@@ -1184,6 +1191,7 @@ export class ComfyApp {
 
     let comfyOrgAuthToken =
       (await useFirebaseAuthStore().getIdToken()) ?? undefined
+    let comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
 
     try {
       while (this.#queueItems.length) {
@@ -1197,8 +1205,10 @@ export class ComfyApp {
           const p = await this.graphToPrompt(this.graph, { queueNodeIds })
           try {
             api.authToken = comfyOrgAuthToken
+            api.apiKey = comfyOrgApiKey ?? undefined
             const res = await api.queuePrompt(number, p)
             delete api.authToken
+            delete api.apiKey
             executionStore.lastNodeErrors = res.node_errors ?? null
             if (executionStore.lastNodeErrors?.length) {
               this.canvas.draw(true, true)
@@ -1297,6 +1307,24 @@ export class ComfyApp {
         this.loadGraphData(JSON.parse(workflow), true, true, fileName)
       } else if (prompt) {
         this.loadApiJson(JSON.parse(prompt), fileName)
+      } else {
+        this.showErrorOnFileLoad(file)
+      }
+    } else if (file.type === 'audio/mpeg') {
+      const { workflow, prompt } = await getMp3Metadata(file)
+      if (workflow) {
+        this.loadGraphData(workflow, true, true, fileName)
+      } else if (prompt) {
+        this.loadApiJson(prompt, fileName)
+      } else {
+        this.showErrorOnFileLoad(file)
+      }
+    } else if (file.type === 'audio/ogg') {
+      const { workflow, prompt } = await getOggMetadata(file)
+      if (workflow) {
+        this.loadGraphData(workflow, true, true, fileName)
+      } else if (prompt) {
+        this.loadApiJson(prompt, fileName)
       } else {
         this.showErrorOnFileLoad(file)
       }
@@ -1548,12 +1576,26 @@ export class ComfyApp {
       if (!def?.input) continue
 
       if (node.widgets) {
+        const nodeInputs = def.input
         for (const widget of node.widgets) {
           if (widget.type === 'combo') {
-            if (def['input'].required?.[widget.name] !== undefined) {
-              widget.options.values = def['input'].required[widget.name][0]
-            } else if (def['input'].optional?.[widget.name] !== undefined) {
-              widget.options.values = def['input'].optional[widget.name][0]
+            let inputType: 'required' | 'optional' | undefined
+            if (nodeInputs.required?.[widget.name] !== undefined) {
+              inputType = 'required'
+            } else if (nodeInputs.optional?.[widget.name] !== undefined) {
+              inputType = 'optional'
+            }
+            if (inputType !== undefined) {
+              // Get the input spec associated with the widget
+              const inputSpec = nodeInputs[inputType]?.[widget.name]
+              if (inputSpec) {
+                // Refresh the combo widget's options with the values from the input spec
+                if (isComboInputSpecV2(inputSpec)) {
+                  widget.options.values = inputSpec[1]?.options
+                } else if (isComboInputSpecV1(inputSpec)) {
+                  widget.options.values = inputSpec[0]
+                }
+              }
             }
           }
         }

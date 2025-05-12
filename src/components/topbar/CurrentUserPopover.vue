@@ -6,19 +6,19 @@
       <div class="flex flex-col items-center">
         <UserAvatar
           class="mb-3"
-          :photo-url="user?.photoURL"
+          :photo-url="userPhotoUrl"
           :pt:icon:class="{
-            '!text-2xl': !user?.photoURL
+            '!text-2xl': !userPhotoUrl
           }"
           size="large"
         />
 
         <!-- User Details -->
         <h3 class="text-lg font-semibold truncate my-0 mb-1">
-          {{ user?.displayName || $t('g.user') }}
+          {{ userDisplayName || $t('g.user') }}
         </h3>
-        <p v-if="user?.email" class="text-sm text-muted truncate my-0">
-          {{ user.email }}
+        <p v-if="userEmail" class="text-sm text-muted truncate my-0">
+          {{ userEmail }}
         </p>
       </div>
     </div>
@@ -33,6 +33,18 @@
       fluid
       severity="secondary"
       @click="handleOpenUserSettings"
+    />
+
+    <Divider class="my-2" />
+
+    <Button
+      class="justify-start"
+      :label="$t('credits.apiPricing')"
+      icon="pi pi-external-link"
+      text
+      fluid
+      severity="secondary"
+      @click="handleOpenApiPricing"
     />
 
     <Divider class="my-2" />
@@ -52,19 +64,17 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
-import { computed, onMounted } from 'vue'
+import { onMounted } from 'vue'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import UserCredit from '@/components/common/UserCredit.vue'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthService } from '@/services/firebaseAuthService'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
-const authStore = useFirebaseAuthStore()
+const { userDisplayName, userEmail, userPhotoUrl } = useCurrentUser()
 const authService = useFirebaseAuthService()
 const dialogService = useDialogService()
-
-const user = computed(() => authStore.currentUser)
 
 const handleOpenUserSettings = () => {
   dialogService.showSettingsDialog('user')
@@ -72,6 +82,10 @@ const handleOpenUserSettings = () => {
 
 const handleTopUp = () => {
   dialogService.showTopUpCreditsDialog()
+}
+
+const handleOpenApiPricing = () => {
+  window.open('https://docs.comfy.org/tutorials/api-nodes/pricing', '_blank')
 }
 
 onMounted(() => {

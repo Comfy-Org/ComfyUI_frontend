@@ -8,61 +8,63 @@ const WORKFLOW_DIR = 'tests-ui/workflows'
 
 describe('parseComfyWorkflow', () => {
   it('parses valid workflow', async () => {
-    fs.readdirSync(WORKFLOW_DIR).forEach(async (file) => {
+    for await (const file of fs.readdirSync(WORKFLOW_DIR)) {
       if (file.endsWith('.json')) {
         const data = fs.readFileSync(`${WORKFLOW_DIR}/${file}`, 'utf-8')
-        expect(await validateComfyWorkflow(JSON.parse(data))).not.toBeNull()
+        await expect(
+          validateComfyWorkflow(JSON.parse(data))
+        ).resolves.not.toBeNull()
       }
-    })
+    }
   })
 
   it('workflow.nodes', async () => {
     const workflow = JSON.parse(JSON.stringify(defaultGraph))
     workflow.nodes = undefined
-    expect(await validateComfyWorkflow(workflow)).toBeNull()
+    await expect(validateComfyWorkflow(workflow)).resolves.toBeNull()
 
     workflow.nodes = null
-    expect(await validateComfyWorkflow(workflow)).toBeNull()
+    await expect(validateComfyWorkflow(workflow)).resolves.toBeNull()
 
     workflow.nodes = []
-    expect(await validateComfyWorkflow(workflow)).not.toBeNull()
+    await expect(validateComfyWorkflow(workflow)).resolves.not.toBeNull()
   })
 
   it('workflow.version', async () => {
     const workflow = JSON.parse(JSON.stringify(defaultGraph))
     workflow.version = undefined
-    expect(await validateComfyWorkflow(workflow)).toBeNull()
+    await expect(validateComfyWorkflow(workflow)).resolves.toBeNull()
 
     workflow.version = '1.0.1' // Invalid format (string)
-    expect(await validateComfyWorkflow(workflow)).toBeNull()
+    await expect(validateComfyWorkflow(workflow)).resolves.toBeNull()
 
     // 2018-2024 schema: 0.4
     workflow.version = 0.4
-    expect(await validateComfyWorkflow(workflow)).not.toBeNull()
+    await expect(validateComfyWorkflow(workflow)).resolves.not.toBeNull()
   })
 
   it('workflow.extra', async () => {
     const workflow = JSON.parse(JSON.stringify(defaultGraph))
     workflow.extra = undefined
-    expect(await validateComfyWorkflow(workflow)).not.toBeNull()
+    await expect(validateComfyWorkflow(workflow)).resolves.not.toBeNull()
 
     workflow.extra = null
-    expect(await validateComfyWorkflow(workflow)).not.toBeNull()
+    await expect(validateComfyWorkflow(workflow)).resolves.not.toBeNull()
 
     workflow.extra = {}
-    expect(await validateComfyWorkflow(workflow)).not.toBeNull()
+    await expect(validateComfyWorkflow(workflow)).resolves.not.toBeNull()
 
     workflow.extra = { foo: 'bar' } // Should accept extra fields.
-    expect(await validateComfyWorkflow(workflow)).not.toBeNull()
+    await expect(validateComfyWorkflow(workflow)).resolves.not.toBeNull()
   })
 
   it('workflow.nodes.pos', async () => {
     const workflow = JSON.parse(JSON.stringify(defaultGraph))
     workflow.nodes[0].pos = [1, 2, 3]
-    expect(await validateComfyWorkflow(workflow)).toBeNull()
+    await expect(validateComfyWorkflow(workflow)).resolves.toBeNull()
 
     workflow.nodes[0].pos = [1, 2]
-    expect(await validateComfyWorkflow(workflow)).not.toBeNull()
+    await expect(validateComfyWorkflow(workflow)).resolves.not.toBeNull()
 
     // Should automatically transform the legacy format object to array.
     workflow.nodes[0].pos = { '0': 3, '1': 4 }
@@ -97,13 +99,13 @@ describe('parseComfyWorkflow', () => {
   it('workflow.nodes.widget_values', async () => {
     const workflow = JSON.parse(JSON.stringify(defaultGraph))
     workflow.nodes[0].widgets_values = ['foo', 'bar']
-    expect(await validateComfyWorkflow(workflow)).not.toBeNull()
+    await expect(validateComfyWorkflow(workflow)).resolves.not.toBeNull()
 
     workflow.nodes[0].widgets_values = 'foo'
-    expect(await validateComfyWorkflow(workflow)).toBeNull()
+    await expect(validateComfyWorkflow(workflow)).resolves.toBeNull()
 
     workflow.nodes[0].widgets_values = undefined
-    expect(await validateComfyWorkflow(workflow)).not.toBeNull()
+    await expect(validateComfyWorkflow(workflow)).resolves.not.toBeNull()
 
     // The object format of widgets_values is used by VHS nodes to perform
     // dynamic widgets display.
@@ -126,7 +128,7 @@ describe('parseComfyWorkflow', () => {
         'INT' // Data type
       ]
     ]
-    expect(await validateComfyWorkflow(workflow)).not.toBeNull()
+    await expect(validateComfyWorkflow(workflow)).resolves.not.toBeNull()
   })
 
   describe('workflow.nodes.properties.aux_id', () => {
@@ -137,7 +139,7 @@ describe('parseComfyWorkflow', () => {
     it.each(validAuxIds)('valid aux_id: %s', async (aux_id) => {
       const workflow = JSON.parse(JSON.stringify(defaultGraph))
       workflow.nodes[0].properties.aux_id = aux_id
-      expect(await validateComfyWorkflow(workflow)).not.toBeNull()
+      await expect(validateComfyWorkflow(workflow)).resolves.not.toBeNull()
     })
     const invalidAuxIds = [
       'invalid spaces in username/repo',
@@ -148,7 +150,7 @@ describe('parseComfyWorkflow', () => {
     it.each(invalidAuxIds)('invalid aux_id: %s', async (aux_id) => {
       const workflow = JSON.parse(JSON.stringify(defaultGraph))
       workflow.nodes[0].properties.aux_id = aux_id
-      expect(await validateComfyWorkflow(workflow)).toBeNull()
+      await expect(validateComfyWorkflow(workflow)).resolves.toBeNull()
     })
   })
 
@@ -157,14 +159,14 @@ describe('parseComfyWorkflow', () => {
     it.each(validCnrIds)('valid cnr_id: %s', async (cnr_id) => {
       const workflow = JSON.parse(JSON.stringify(defaultGraph))
       workflow.nodes[0].properties.cnr_id = cnr_id
-      expect(await validateComfyWorkflow(workflow)).not.toBeNull()
+      await expect(validateComfyWorkflow(workflow)).resolves.not.toBeNull()
     })
 
     const invalidCnrIds = ['invalid cnr-id', 'invalid^cnr-id', 'invalid cnr id']
     it.each(invalidCnrIds)('invalid cnr_id: %s', async (cnr_id) => {
       const workflow = JSON.parse(JSON.stringify(defaultGraph))
       workflow.nodes[0].properties.cnr_id = cnr_id
-      expect(await validateComfyWorkflow(workflow)).toBeNull()
+      await expect(validateComfyWorkflow(workflow)).resolves.toBeNull()
     })
   })
 
@@ -186,7 +188,7 @@ describe('parseComfyWorkflow', () => {
     it.each(validVersionStrings)('valid version: %s', async (ver) => {
       const workflow = JSON.parse(JSON.stringify(defaultGraph))
       workflow.nodes[0].properties.ver = ver
-      expect(await validateComfyWorkflow(workflow)).not.toBeNull()
+      await expect(validateComfyWorkflow(workflow)).resolves.not.toBeNull()
     })
 
     const invalidVersionStrings = [
@@ -200,7 +202,7 @@ describe('parseComfyWorkflow', () => {
     it.each(invalidVersionStrings)('invalid version: %s', async (ver) => {
       const workflow = JSON.parse(JSON.stringify(defaultGraph))
       workflow.nodes[0].properties.ver = ver
-      expect(await validateComfyWorkflow(workflow)).toBeNull()
+      await expect(validateComfyWorkflow(workflow)).resolves.toBeNull()
     })
   })
 })

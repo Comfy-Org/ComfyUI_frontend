@@ -90,7 +90,13 @@ app.registerExtension({
   name: 'Comfy.AudioWidget',
   async beforeRegisterNodeDef(nodeType, nodeData) {
     if (
-      ['LoadAudio', 'SaveAudio', 'PreviewAudio'].includes(
+      [
+        'LoadAudio',
+        'SaveAudio',
+        'PreviewAudio',
+        'SaveAudioMP3',
+        'SaveAudioOpus'
+      ].includes(
         // @ts-expect-error fixme ts strict error
         nodeType.prototype.comfyClass
       )
@@ -111,7 +117,10 @@ app.registerExtension({
           node.addDOMWidget(inputName, /* name=*/ 'audioUI', audio)
         audioUIWidget.serialize = false
 
-        const isOutputNode = node.constructor.nodeData.output_node
+        const { nodeData } = node.constructor
+        if (nodeData == null) throw new TypeError('nodeData is null')
+
+        const isOutputNode = nodeData.output_node
         if (isOutputNode) {
           // Hide the audio widget when there is no audio initially.
           audioUIWidget.element.classList.add('empty-audio-widget')
