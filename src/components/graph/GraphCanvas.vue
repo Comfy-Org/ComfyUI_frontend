@@ -44,7 +44,7 @@
 </template>
 
 <script setup lang="ts">
-import type { LGraphNode, Point } from '@comfyorg/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph'
 import { useEventListener } from '@vueuse/core'
 import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 
