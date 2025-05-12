@@ -672,13 +672,33 @@ test.describe('Load workflow', () => {
     await comfyPage.loadWorkflow('single_ksampler')
     await expect(comfyPage.canvas).toHaveScreenshot('single_ksampler_fit.png')
   })
+})
+
+test.describe('Load duplicate workflow', () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+  })
+
+  test('A workflow can be loaded multiple times in a row', async ({
+    comfyPage
+  }) => {
+    await comfyPage.loadWorkflow('single_ksampler')
+    await comfyPage.menu.workflowsTab.open()
+    await comfyPage.executeCommand('Comfy.NewBlankWorkflow')
+    await comfyPage.loadWorkflow('single_ksampler')
+    expect(await comfyPage.getGraphNodesCount()).toBe(1)
+  })
+})
+
+test.describe('Viewport settings', () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+  })
 
   test('Keeps viewport settings when changing tabs', async ({
     comfyPage,
     comfyMouse
   }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-
     // Screenshot the canvas element
     await comfyPage.menu.topbar.saveWorkflow('Workflow A')
     const screenshotA = await comfyPage.canvas.screenshot()
@@ -708,21 +728,5 @@ test.describe('Load workflow', () => {
     await comfyPage.nextFrame()
     const afterB = await comfyPage.canvas.screenshot()
     expect(screenshotB).toEqual(afterB)
-  })
-})
-
-test.describe('Load duplicate workflow', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-  })
-
-  test('A workflow can be loaded multiple times in a row', async ({
-    comfyPage
-  }) => {
-    await comfyPage.loadWorkflow('single_ksampler')
-    await comfyPage.menu.workflowsTab.open()
-    await comfyPage.executeCommand('Comfy.NewBlankWorkflow')
-    await comfyPage.loadWorkflow('single_ksampler')
-    expect(await comfyPage.getGraphNodesCount()).toBe(1)
   })
 })
