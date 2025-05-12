@@ -2,14 +2,14 @@
  * Stores all DOM widgets that are used in the canvas.
  */
 import { defineStore } from 'pinia'
-import { markRaw, ref } from 'vue'
+import { type Raw, markRaw, ref } from 'vue'
 
 import type { PositionConfig } from '@/composables/element/useAbsolutePosition'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
 
 export interface DomWidgetState extends PositionConfig {
   // Raw widget instance
-  widget: BaseDOMWidget<object | string>
+  widget: Raw<BaseDOMWidget<object | string>>
   visible: boolean
   readonly: boolean
   zIndex: number
@@ -23,7 +23,7 @@ export const useDomWidgetStore = defineStore('domWidget', () => {
     widget: BaseDOMWidget<V>
   ) => {
     widgetStates.value.set(widget.id, {
-      widget: markRaw(widget) as unknown as BaseDOMWidget<object | string>,
+      widget: markRaw(widget) as unknown as Raw<BaseDOMWidget<object | string>>,
       visible: true,
       readonly: false,
       zIndex: 0,

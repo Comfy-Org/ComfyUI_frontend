@@ -202,6 +202,5 @@ export const graphToPrompt = async (
     output = newOutput
   }
 
-  // @ts-expect-error Convert ISerializedGraph to ComfyWorkflowJSON
   return { workflow: workflow as ComfyWorkflowJSON, output }
 }

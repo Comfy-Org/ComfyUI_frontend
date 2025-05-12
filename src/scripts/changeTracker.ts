@@ -10,6 +10,7 @@ import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 
 import { api } from './api'
 import type { ComfyApp } from './app'
+import { app } from './app'
 
 function clone<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj))
@@ -35,11 +36,6 @@ export class ChangeTracker {
 
   ds?: { scale: number; offset: [number, number] }
   nodeOutputs?: Record<string, any>
-
-  static app?: ComfyApp
-  get app(): ComfyApp {
-    return ChangeTracker.app!
-  }
 
   constructor(
     /**
@@ -68,18 +64,18 @@ export class ChangeTracker {
 
   store() {
     this.ds = {
-      scale: this.app.canvas.ds.scale,
-      offset: [this.app.canvas.ds.offset[0], this.app.canvas.ds.offset[1]]
+      scale: app.canvas.ds.scale,
+      offset: [app.canvas.ds.offset[0], app.canvas.ds.offset[1]]
     }
   }
 
   restore() {
     if (this.ds) {
-      this.app.canvas.ds.scale = this.ds.scale
-      this.app.canvas.ds.offset = this.ds.offset
+      app.canvas.ds.scale = this.ds.scale
+      app.canvas.ds.offset = this.ds.offset
     }
     if (this.nodeOutputs) {
-      this.app.nodeOutputs = this.nodeOutputs
+      app.nodeOutputs = this.nodeOutputs
     }
   }
 
@@ -105,10 +101,8 @@ export class ChangeTracker {
   }
 
   checkState() {
-    if (!this.app.graph || this.changeCount) return
-    // @ts-expect-error zod type issue on ComfyWorkflowJSON. ComfyWorkflowJSON
-    // is stricter than LiteGraph's serialisation schema.
-    const currentState = clone(this.app.graph.serialize()) as ComfyWorkflowJSON
+    if (!app.graph || this.changeCount) return
+    const currentState = clone(app.graph.serialize()) as ComfyWorkflowJSON
     if (!this.activeState) {
       this.activeState = currentState
       return
@@ -132,7 +126,7 @@ export class ChangeTracker {
       target.push(this.activeState)
       this.restoringState = true
       try {
-        await this.app.loadGraphData(prevState, false, false, this.workflow, {
+        await app.loadGraphData(prevState, false, false, this.workflow, {
           showMissingModelsDialog: false,
           showMissingNodesDialog: false,
           checkForRerouteMigration: false
@@ -189,12 +183,10 @@ export class ChangeTracker {
     }
   }
 
-  static init(app: ComfyApp) {
+  static init() {
     const getCurrentChangeTracker = () =>
       useWorkflowStore().activeWorkflow?.changeTracker
     const checkState = () => getCurrentChangeTracker()?.checkState()
-
-    ChangeTracker.app = app
 
     let keyIgnored = false
     window.addEventListener(
@@ -237,7 +229,7 @@ export class ChangeTracker {
           if (await changeTracker.undoRedo(e)) return
 
           // If our active element is some type of input then handle changes after they're done
-          if (ChangeTracker.bindInput(app, bindInputEl)) return
+          if (ChangeTracker.bindInput(bindInputEl)) return
           logger.debug('checkState on keydown')
           changeTracker.checkState()
         })
@@ -339,7 +331,7 @@ export class ChangeTracker {
     })
   }
 
-  static bindInput(_app: ComfyApp, activeEl: Element | null): boolean {
+  static bindInput(activeEl: Element | null): boolean {
     if (
       !activeEl ||
       activeEl.tagName === 'CANVAS' ||

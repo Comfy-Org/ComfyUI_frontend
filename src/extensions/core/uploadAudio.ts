@@ -117,7 +117,10 @@ app.registerExtension({
           node.addDOMWidget(inputName, /* name=*/ 'audioUI', audio)
         audioUIWidget.serialize = false
 
-        const isOutputNode = node.constructor.nodeData.output_node
+        const { nodeData } = node.constructor
+        if (nodeData == null) throw new TypeError('nodeData is null')
+
+        const isOutputNode = nodeData.output_node
         if (isOutputNode) {
           // Hide the audio widget when there is no audio initially.
           audioUIWidget.element.classList.add('empty-audio-widget')

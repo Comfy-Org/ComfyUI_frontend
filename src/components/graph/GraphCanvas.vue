@@ -293,7 +293,7 @@ onMounted(async () => {
   workspaceStore.spinner = true
   // ChangeTracker needs to be initialized before setup, as it will overwrite
   // some listeners of litegraph canvas.
-  ChangeTracker.init(comfyApp)
+  ChangeTracker.init()
   await loadCustomNodesI18n()
   try {
     await settingStore.loadSettingValues()

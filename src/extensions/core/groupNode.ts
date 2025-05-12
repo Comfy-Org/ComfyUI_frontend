@@ -797,7 +797,7 @@ export class GroupNodeConfig {
 
 export class GroupNodeHandler {
   node: LGraphNode
-  groupData
+  groupData: any
   innerNodes: any
 
   constructor(node: LGraphNode) {
