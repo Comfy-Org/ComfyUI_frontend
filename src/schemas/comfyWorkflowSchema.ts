@@ -216,6 +216,7 @@ const zComfyNode = z
 
 const zGroup = z
   .object({
+    id: z.number(),
     title: z.string(),
     bounding: z.tuple([z.number(), z.number(), z.number(), z.number()]),
     color: z.string().optional(),
