@@ -12,7 +12,7 @@ import { components } from '@/types/comfyRegistryTypes'
 import { paramsToCacheKey } from '@/utils/formatUtil'
 
 const DEFAULT_MAX_CACHE_SIZE = 64
-const DEFAULT_MIN_CHARS_FOR_SUGGESTIONS = 3
+const DEFAULT_MIN_CHARS_FOR_SUGGESTIONS = 2
 
 type SafeNestedProperty<
   T,
