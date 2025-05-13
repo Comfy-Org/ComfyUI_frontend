@@ -1,12 +1,18 @@
+import QuickLRU from '@alloc/quick-lru'
 import type {
   BaseSearchParamsWithoutQuery,
   Hit,
+  SearchQuery,
   SearchResponse
 } from 'algoliasearch/dist/lite/browser'
 import { liteClient as algoliasearch } from 'algoliasearch/dist/lite/builds/browser'
 import { omit } from 'lodash'
 
 import { components } from '@/types/comfyRegistryTypes'
+import { paramsToCacheKey } from '@/utils/formatUtil'
+
+const DEFAULT_MAX_CACHE_SIZE = 64
+const DEFAULT_MIN_CHARS_FOR_SUGGESTIONS = 2
 
 type SafeNestedProperty<
   T,
@@ -15,6 +21,10 @@ type SafeNestedProperty<
 > = T[K1] extends undefined | null ? undefined : NonNullable<T[K1]>[K2]
 
 type RegistryNodePack = components['schemas']['Node']
+type SearchPacksResult = {
+  nodePacks: Hit<AlgoliaNodePack>[]
+  querySuggestions: Hit<NodesIndexSuggestion>[]
+}
 
 export interface AlgoliaNodePack {
   objectID: RegistryNodePack['id']
@@ -91,8 +101,33 @@ type SearchNodePacksParams = BaseSearchParamsWithoutQuery & {
   restrictSearchableAttributes: SearchAttribute[]
 }
 
-export const useAlgoliaSearchService = () => {
+interface AlgoliaSearchServiceOptions {
+  /**
+   * Maximum number of search results to store in the cache.
+   * The cache is automatically cleared when the component is unmounted.
+   * @default 64
+   */
+  maxCacheSize?: number
+  /**
+   * Minimum number of characters for suggestions. An additional query
+   * will be made to the suggestions/completions index for queries that
+   * are this length or longer.
+   * @default 3
+   */
+  minCharsForSuggestions?: number
+}
+
+export const useAlgoliaSearchService = (
+  options: AlgoliaSearchServiceOptions = {}
+) => {
+  const {
+    maxCacheSize = DEFAULT_MAX_CACHE_SIZE,
+    minCharsForSuggestions = DEFAULT_MIN_CHARS_FOR_SUGGESTIONS
+  } = options
   const searchClient = algoliasearch(__ALGOLIA_APP_ID__, __ALGOLIA_API_KEY__)
+  const searchPacksCache = new QuickLRU<string, SearchPacksResult>({
+    maxSize: maxCacheSize
+  })
 
   const toRegistryLatestVersion = (
     algoliaNode: AlgoliaNodePack
@@ -141,34 +176,39 @@ export const useAlgoliaSearchService = () => {
   const searchPacks = async (
     query: string,
     params: SearchNodePacksParams
-  ): Promise<{
-    nodePacks: Hit<AlgoliaNodePack>[]
-    querySuggestions: Hit<NodesIndexSuggestion>[]
-  }> => {
+  ): Promise<SearchPacksResult> => {
     const { pageSize, pageNumber } = params
     const rest = omit(params, ['pageSize', 'pageNumber'])
+
+    const requests: SearchQuery[] = [
+      {
+        query,
+        indexName: 'nodes_index',
+        attributesToRetrieve: RETRIEVE_ATTRIBUTES,
+        ...rest,
+        hitsPerPage: pageSize,
+        page: pageNumber
+      }
+    ]
+
+    const shouldQuerySuggestions = query.length >= minCharsForSuggestions
+
+    // If the query is long enough, also query the suggestions index
+    if (shouldQuerySuggestions) {
+      requests.push({
+        indexName: 'nodes_index_query_suggestions',
+        query
+      })
+    }
 
     const { results } = await searchClient.search<
       AlgoliaNodePack | NodesIndexSuggestion
     >({
-      requests: [
-        {
-          query,
-          indexName: 'nodes_index',
-          attributesToRetrieve: RETRIEVE_ATTRIBUTES,
-          ...rest,
-          hitsPerPage: pageSize,
-          page: pageNumber
-        },
-        {
-          indexName: 'nodes_index_query_suggestions',
-          query
-        }
-      ],
+      requests,
       strategy: 'none'
     })
 
-    const [nodePacks, querySuggestions] = results as [
+    const [nodePacks, querySuggestions = { hits: [] }] = results as [
       SearchResponse<AlgoliaNodePack>,
       SearchResponse<NodesIndexSuggestion>
     ]
@@ -179,8 +219,27 @@ export const useAlgoliaSearchService = () => {
     }
   }
 
+  const searchPacksCached = async (
+    query: string,
+    params: SearchNodePacksParams
+  ): Promise<SearchPacksResult> => {
+    const cacheKey = paramsToCacheKey({ query, ...params })
+    const cachedResult = searchPacksCache.get(cacheKey)
+    if (cachedResult !== undefined) return cachedResult
+
+    const result = await searchPacks(query, params)
+    searchPacksCache.set(cacheKey, result)
+    return result
+  }
+
+  const clearSearchPacksCache = () => {
+    searchPacksCache.clear()
+  }
+
   return {
     searchPacks,
-    toRegistryPack
+    searchPacksCached,
+    toRegistryPack,
+    clearSearchPacksCache
   }
 }
