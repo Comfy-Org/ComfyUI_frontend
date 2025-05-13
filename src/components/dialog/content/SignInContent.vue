@@ -101,6 +101,15 @@
             {{ t('auth.apiKey.generateKey') }}
           </a>
         </small>
+        <Message
+          v-if="authActions.accessError.value"
+          severity="info"
+          icon="pi pi-info-circle"
+          variant="outlined"
+          closable
+        >
+          {{ t('toastMessages.useApiKeyTip') }}
+        </Message>
       </div>
 
       <!-- Terms & Contact -->
@@ -134,12 +143,12 @@
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import Message from 'primevue/message'
-import { onMounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { COMFY_PLATFORM_BASE_URL } from '@/config/comfyApi'
 import { SignInData, SignUpData } from '@/schemas/signInSchema'
-import { useFirebaseAuthService } from '@/services/firebaseAuthService'
 import { isInChina } from '@/utils/networkUtil'
 
 import ApiKeyForm from './signin/ApiKeyForm.vue'
@@ -151,7 +160,7 @@ const { onSuccess } = defineProps<{
 }>()
 
 const { t } = useI18n()
-const authService = useFirebaseAuthService()
+const authActions = useFirebaseAuthActions()
 const isSecureContext = window.isSecureContext
 const isSignIn = ref(true)
 const showApiKeyForm = ref(false)
@@ -162,25 +171,25 @@ const toggleState = () => {
 }
 
 const signInWithGoogle = async () => {
-  if (await authService.signInWithGoogle()) {
+  if (await authActions.signInWithGoogle()) {
     onSuccess()
   }
 }
 
 const signInWithGithub = async () => {
-  if (await authService.signInWithGithub()) {
+  if (await authActions.signInWithGithub()) {
     onSuccess()
   }
 }
 
 const signInWithEmail = async (values: SignInData) => {
-  if (await authService.signInWithEmail(values.email, values.password)) {
+  if (await authActions.signInWithEmail(values.email, values.password)) {
     onSuccess()
   }
 }
 
 const signUpWithEmail = async (values: SignUpData) => {
-  if (await authService.signUpWithEmail(values.email, values.password)) {
+  if (await authActions.signUpWithEmail(values.email, values.password)) {
     onSuccess()
   }
 }
@@ -188,5 +197,9 @@ const signUpWithEmail = async (values: SignUpData) => {
 const userIsInChina = ref(false)
 onMounted(async () => {
   userIsInChina.value = await isInChina()
+})
+
+onUnmounted(() => {
+  authActions.accessError.value = false
 })
 </script>

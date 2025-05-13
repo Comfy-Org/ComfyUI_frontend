@@ -36,7 +36,7 @@
             text
             size="small"
             severity="secondary"
-            @click="() => authService.fetchBalance()"
+            @click="() => authActions.fetchBalance()"
           />
         </div>
       </div>
@@ -112,8 +112,8 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import UserCredit from '@/components/common/UserCredit.vue'
+import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useDialogService } from '@/services/dialogService'
-import { useFirebaseAuthService } from '@/services/firebaseAuthService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { formatMetronomeCurrency } from '@/utils/formatUtil'
 
@@ -127,7 +127,7 @@ interface CreditHistoryItemData {
 const { t } = useI18n()
 const dialogService = useDialogService()
 const authStore = useFirebaseAuthStore()
-const authService = useFirebaseAuthService()
+const authActions = useFirebaseAuthActions()
 const loading = computed(() => authStore.loading)
 const balanceLoading = computed(() => authStore.isFetchingBalance)
 
@@ -142,7 +142,7 @@ const handlePurchaseCreditsClick = () => {
 }
 
 const handleCreditsHistoryClick = async () => {
-  await authService.accessBillingPortal()
+  await authActions.accessBillingPortal()
 }
 
 const handleMessageSupport = () => {
