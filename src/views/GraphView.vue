@@ -36,6 +36,7 @@ import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
 import TopMenubar from '@/components/topbar/TopMenubar.vue'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import { i18n } from '@/i18n'
 import { StatusWsMessageStatus } from '@/schemas/apiSchema'
@@ -62,6 +63,7 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI, isElectron } from '@/utils/envUtil'
 
 setupAutoQueueHandler()
+useProgressFavicon()
 
 const { t } = useI18n()
 const toast = useToast()
