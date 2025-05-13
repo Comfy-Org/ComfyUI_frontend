@@ -133,6 +133,9 @@ export class ComfyPage {
   // Inputs
   public readonly workflowUploadInput: Locator
 
+  // Toasts
+  public readonly visibleToasts: Locator
+
   // Components
   public readonly searchBox: ComfyNodeSearchBox
   public readonly menu: ComfyMenu
@@ -159,6 +162,8 @@ export class ComfyPage {
     this.resetViewButton = page.getByRole('button', { name: 'Reset View' })
     this.queueButton = page.getByRole('button', { name: 'Queue Prompt' })
     this.workflowUploadInput = page.locator('#comfy-file-input')
+    this.visibleToasts = page.locator('.p-toast-message:visible')
+
     this.searchBox = new ComfyNodeSearchBox(page)
     this.menu = new ComfyMenu(page)
     this.actionbar = new ComfyActionbar(page)
@@ -397,6 +402,30 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
+  async deleteWorkflow(
+    workflowName: string,
+    whenMissing: 'ignoreMissing' | 'throwIfMissing' = 'ignoreMissing'
+  ) {
+    // Open workflows tab
+    const { workflowsTab } = this.menu
+    await workflowsTab.open()
+
+    // Action to take if workflow missing
+    if (whenMissing === 'ignoreMissing') {
+      const workflows = await workflowsTab.getTopLevelSavedWorkflowNames()
+      if (!workflows.includes(workflowName)) return
+    }
+
+    // Delete workflow
+    await workflowsTab.getPersistedItem(workflowName).click({ button: 'right' })
+    await this.clickContextMenuItem('Delete')
+    await this.confirmDialog.delete.click()
+
+    // Clear toast & close tab
+    await this.closeToasts(1)
+    await workflowsTab.close()
+  }
+
   async resetView() {
     if (await this.resetViewButton.isVisible()) {
       await this.resetViewButton.click()
@@ -413,7 +442,20 @@ export class ComfyPage {
   }
 
   async getVisibleToastCount() {
-    return await this.page.locator('.p-toast-message:visible').count()
+    return await this.visibleToasts.count()
+  }
+
+  async closeToasts(requireCount = 0) {
+    if (requireCount) await expect(this.visibleToasts).toHaveCount(requireCount)
+
+    // Clear all toasts
+    const toastCloseButtons = await this.page
+      .locator('.p-toast-close-button')
+      .all()
+    for (const button of toastCloseButtons) {
+      await button.click()
+    }
+    await expect(this.visibleToasts).toHaveCount(0)
   }
 
   async clickTextEncodeNode1() {
