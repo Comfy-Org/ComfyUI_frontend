@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { type ComfyPage, comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 test.describe('Item Interaction', () => {
   test('Can select/delete all items', async ({ comfyPage }) => {
@@ -693,6 +693,9 @@ test.describe('Load duplicate workflow', () => {
 test.describe('Viewport settings', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.setSetting('Comfy.Workflow.WorkflowTabsPosition', 'Topbar')
+
+    await comfyPage.setupWorkflowsDirectory({})
   })
 
   test('Keeps viewport settings when changing tabs', async ({
@@ -701,18 +704,15 @@ test.describe('Viewport settings', () => {
   }) => {
     // Screenshot the canvas element
     await comfyPage.menu.topbar.saveWorkflow('Workflow A')
-    const screenshotA = await comfyPage.canvas.screenshot()
+    await expect(comfyPage.canvas).toHaveScreenshot('viewport-workflow-a.png')
 
-    // Save as a new file, and zoom out
+    // Save workflow as a new file, then zoom out before screen shot
     await comfyPage.menu.topbar.saveWorkflowAs('Workflow B')
     await comfyMouse.move(comfyPage.emptySpace)
     for (let i = 0; i < 4; i++) {
       await comfyMouse.wheel(0, 60)
     }
-    const screenshotB = await comfyPage.canvas.screenshot()
-
-    // Confirm zoom worked
-    expect(screenshotA).not.toEqual(screenshotB)
+    await expect(comfyPage.canvas).toHaveScreenshot('viewport-workflow-b.png')
 
     const tabA = comfyPage.menu.topbar.getWorkflowTab('Workflow A')
     const tabB = comfyPage.menu.topbar.getWorkflowTab('Workflow B')
@@ -720,13 +720,11 @@ test.describe('Viewport settings', () => {
     // Go back to Workflow A
     await tabA.click()
     await comfyPage.nextFrame()
-    const afterA = await comfyPage.canvas.screenshot()
-    expect(screenshotA).toEqual(afterA)
+    await expect(comfyPage.canvas).toHaveScreenshot('viewport-workflow-a.png')
 
     // And back to Workflow B
     await tabB.click()
     await comfyPage.nextFrame()
-    const afterB = await comfyPage.canvas.screenshot()
-    expect(screenshotB).toEqual(afterB)
+    await expect(comfyPage.canvas).toHaveScreenshot('viewport-workflow-b.png')
   })
 })
