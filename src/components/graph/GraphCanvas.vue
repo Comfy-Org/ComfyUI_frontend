@@ -292,10 +292,8 @@ onMounted(async () => {
   canvasStore.canvas.render_canvas_border = false
   workspaceStore.spinner = false
 
-  // @ts-expect-error fixme ts strict error
-  window['app'] = comfyApp
-  // @ts-expect-error fixme ts strict error
-  window['graph'] = comfyApp.graph
+  window.app = comfyApp
+  window.graph = comfyApp.graph
 
   comfyAppReady.value = true
 

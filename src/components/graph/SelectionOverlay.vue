@@ -79,7 +79,7 @@ watch(
     if (draggingItems === false) {
       setTimeout(() => {
         visible.value = true
-        positionSelectionOverlay(canvasStore.canvas as LGraphCanvas)
+        positionSelectionOverlay(canvasStore.getCanvas())
       }, 100)
     } else {
       // Selection change update to visible state is delayed by a frame. Here
