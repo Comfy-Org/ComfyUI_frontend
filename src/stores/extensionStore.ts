@@ -16,7 +16,11 @@ export const ALWAYS_DISABLED_EXTENSIONS: readonly string[] = [
   // pysssss.SnapToGrid tries to write global app.shiftDown state, which is no longer
   // allowed since v1.3.12.
   // https://github.com/Comfy-Org/ComfyUI_frontend/issues/1176
-  'pysssss.SnapToGrid'
+  'pysssss.SnapToGrid',
+  // Favicon status is implemented in ComfyUI core in v1.20.
+  // https://github.com/Comfy-Org/ComfyUI_frontend/pull/3880
+  'pysssss.FaviconStatus',
+  'KJNodes.browserstatus'
 ]
 
 export const useExtensionStore = defineStore('extension', () => {
