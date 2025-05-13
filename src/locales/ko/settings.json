@@ -332,6 +332,10 @@
     },
     "tooltip": "위젯 값이 업데이트되는 시점을 제어합니다 (무작위화/증가/감소), 프롬프트가 큐에 추가되기 전 또는 후입니다."
   },
+  "Comfy_Window_TabIconProgress": {
+    "name": "브라우저 탭 아이콘(파비콘)에 진행 상황 표시",
+    "tooltip": "현재 작업의 진행 상황을 브라우저 탭 아이콘에 표시합니다."
+  },
   "Comfy_Window_UnloadConfirmation": {
     "name": "창 닫을 때 확인 표시"
   },

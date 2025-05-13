@@ -332,6 +332,10 @@
     },
     "tooltip": "控制组件值的更新时机（随机/增加/减少），可以在执行工作流之前或之后。"
   },
+  "Comfy_Window_TabIconProgress": {
+    "name": "在浏览器标签图标中显示进度",
+    "tooltip": "更新浏览器标签图标以显示当前任务的进度。"
+  },
   "Comfy_Window_UnloadConfirmation": {
     "name": "关闭窗口时显示确认"
   },

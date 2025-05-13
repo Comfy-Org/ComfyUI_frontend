@@ -332,6 +332,10 @@
     },
     "tooltip": "Contrôle quand les valeurs du widget sont mises à jour (randomize/increment/decrement), soit avant que l'invite ne soit mise en file d'attente, soit après."
   },
+  "Comfy_Window_TabIconProgress": {
+    "name": "Afficher la progression dans l’icône d’onglet du navigateur (favicon)",
+    "tooltip": "Met à jour l’icône de l’onglet du navigateur pour afficher la progression de la tâche en cours."
+  },
   "Comfy_Window_UnloadConfirmation": {
     "name": "Afficher une confirmation lors de la fermeture de la fenêtre"
   },

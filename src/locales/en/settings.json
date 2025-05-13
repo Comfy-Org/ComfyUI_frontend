@@ -332,6 +332,10 @@
       "after": "after"
     }
   },
+  "Comfy_Window_TabIconProgress": {
+    "name": "Show progress in browser tab icon (favicon)",
+    "tooltip": "Updates the browser tab icon to show the progress of the current task."
+  },
   "Comfy_Window_UnloadConfirmation": {
     "name": "Show confirmation when closing window"
   },

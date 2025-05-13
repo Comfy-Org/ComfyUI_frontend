@@ -332,6 +332,10 @@
     },
     "tooltip": "Controla cuándo se actualizan los valores del widget (aleatorizar/incrementar/decrementar), ya sea antes de que se encole el aviso o después."
   },
+  "Comfy_Window_TabIconProgress": {
+    "name": "Mostrar progreso en el icono de la pestaña del navegador (favicon)",
+    "tooltip": "Actualiza el icono de la pestaña del navegador para mostrar el progreso de la tarea actual."
+  },
   "Comfy_Window_UnloadConfirmation": {
     "name": "Mostrar confirmación al cerrar la ventana"
   },
