@@ -102,7 +102,7 @@
           </a>
         </small>
         <Message
-          v-if="authService.accessError.value"
+          v-if="authActions.accessError.value"
           severity="info"
           icon="pi pi-info-circle"
           variant="outlined"
@@ -160,7 +160,7 @@ const { onSuccess } = defineProps<{
 }>()
 
 const { t } = useI18n()
-const authService = useFirebaseAuthActions()
+const authActions = useFirebaseAuthActions()
 const isSecureContext = window.isSecureContext
 const isSignIn = ref(true)
 const showApiKeyForm = ref(false)
@@ -171,25 +171,25 @@ const toggleState = () => {
 }
 
 const signInWithGoogle = async () => {
-  if (await authService.signInWithGoogle()) {
+  if (await authActions.signInWithGoogle()) {
     onSuccess()
   }
 }
 
 const signInWithGithub = async () => {
-  if (await authService.signInWithGithub()) {
+  if (await authActions.signInWithGithub()) {
     onSuccess()
   }
 }
 
 const signInWithEmail = async (values: SignInData) => {
-  if (await authService.signInWithEmail(values.email, values.password)) {
+  if (await authActions.signInWithEmail(values.email, values.password)) {
     onSuccess()
   }
 }
 
 const signUpWithEmail = async (values: SignUpData) => {
-  if (await authService.signUpWithEmail(values.email, values.password)) {
+  if (await authActions.signUpWithEmail(values.email, values.password)) {
     onSuccess()
   }
 }
@@ -200,6 +200,6 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  authService.accessError.value = false
+  authActions.accessError.value = false
 })
 </script>

@@ -65,9 +65,9 @@ const {
   preselectedAmountOption?: number
 }>()
 
-const authService = useFirebaseAuthActions()
+const authActions = useFirebaseAuthActions()
 
 const handleSeeDetails = async () => {
-  await authService.accessBillingPortal()
+  await authActions.accessBillingPortal()
 }
 </script>

@@ -36,7 +36,7 @@
             text
             size="small"
             severity="secondary"
-            @click="() => authService.fetchBalance()"
+            @click="() => authActions.fetchBalance()"
           />
         </div>
       </div>
@@ -127,7 +127,7 @@ interface CreditHistoryItemData {
 const { t } = useI18n()
 const dialogService = useDialogService()
 const authStore = useFirebaseAuthStore()
-const authService = useFirebaseAuthActions()
+const authActions = useFirebaseAuthActions()
 const loading = computed(() => authStore.loading)
 const balanceLoading = computed(() => authStore.isFetchingBalance)
 
@@ -142,7 +142,7 @@ const handlePurchaseCreditsClick = () => {
 }
 
 const handleCreditsHistoryClick = async () => {
-  await authService.accessBillingPortal()
+  await authActions.accessBillingPortal()
 }
 
 const handleMessageSupport = () => {

@@ -73,7 +73,7 @@ import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthAction
 import { useDialogService } from '@/services/dialogService'
 
 const { userDisplayName, userEmail, userPhotoUrl } = useCurrentUser()
-const authService = useFirebaseAuthActions()
+const authActions = useFirebaseAuthActions()
 const dialogService = useDialogService()
 
 const handleOpenUserSettings = () => {
@@ -89,6 +89,6 @@ const handleOpenApiPricing = () => {
 }
 
 onMounted(() => {
-  void authService.fetchBalance()
+  void authActions.fetchBalance()
 })
 </script>

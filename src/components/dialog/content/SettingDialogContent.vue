@@ -107,7 +107,7 @@ const {
   getSearchResults
 } = useSettingSearch()
 
-const authService = useFirebaseAuthActions()
+const authActions = useFirebaseAuthActions()
 
 // Sort groups for a category
 const sortedGroups = (category: SettingTreeNode): ISettingGroup[] => {
@@ -140,7 +140,7 @@ watch(activeCategory, (_, oldValue) => {
     activeCategory.value = oldValue
   }
   if (activeCategory.value?.key === 'credits') {
-    void authService.fetchBalance()
+    void authActions.fetchBalance()
   }
 })
 </script>

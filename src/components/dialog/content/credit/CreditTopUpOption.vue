@@ -43,7 +43,7 @@ import { onBeforeUnmount, ref } from 'vue'
 
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 
-const authService = useFirebaseAuthActions()
+const authActions = useFirebaseAuthActions()
 
 const {
   amount,
@@ -61,7 +61,7 @@ const loading = ref(false)
 
 const handleBuyNow = async () => {
   loading.value = true
-  await authService.purchaseCredits(editable ? customAmount.value : amount)
+  await authActions.purchaseCredits(editable ? customAmount.value : amount)
   loading.value = false
   didClickBuyNow.value = true
 }
@@ -69,7 +69,7 @@ const handleBuyNow = async () => {
 onBeforeUnmount(() => {
   if (didClickBuyNow.value) {
     // If clicked buy now, then returned back to the dialog and closed, fetch the balance
-    void authService.fetchBalance()
+    void authActions.fetchBalance()
   }
 })
 </script>
