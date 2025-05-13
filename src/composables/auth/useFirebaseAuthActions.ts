@@ -12,7 +12,7 @@ import { usdToMicros } from '@/utils/formatUtil'
  * All actions are wrapped with error handling.
  * @returns {Object} - Object containing all Firebase Auth actions
  */
-export const useFirebaseAuthService = () => {
+export const useFirebaseAuthActions = () => {
   const authStore = useFirebaseAuthStore()
   const toastStore = useToastStore()
   const { wrapWithErrorHandlingAsync, toastErrorHandler } = useErrorHandling()

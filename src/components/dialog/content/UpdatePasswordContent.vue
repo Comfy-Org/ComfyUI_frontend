@@ -23,10 +23,10 @@ import Button from 'primevue/button'
 import { ref } from 'vue'
 
 import PasswordFields from '@/components/dialog/content/signin/PasswordFields.vue'
+import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { updatePasswordSchema } from '@/schemas/signInSchema'
-import { useFirebaseAuthService } from '@/services/firebaseAuthService'
 
-const authService = useFirebaseAuthService()
+const authService = useFirebaseAuthActions()
 const loading = ref(false)
 
 const { onSuccess } = defineProps<{

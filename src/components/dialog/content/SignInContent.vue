@@ -146,9 +146,9 @@ import Message from 'primevue/message'
 import { onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { COMFY_PLATFORM_BASE_URL } from '@/config/comfyApi'
 import { SignInData, SignUpData } from '@/schemas/signInSchema'
-import { useFirebaseAuthService } from '@/services/firebaseAuthService'
 import { isInChina } from '@/utils/networkUtil'
 
 import ApiKeyForm from './signin/ApiKeyForm.vue'
@@ -160,7 +160,7 @@ const { onSuccess } = defineProps<{
 }>()
 
 const { t } = useI18n()
-const authService = useFirebaseAuthService()
+const authService = useFirebaseAuthActions()
 const isSecureContext = window.isSecureContext
 const isSignIn = ref(true)
 const showApiKeyForm = ref(false)

@@ -41,9 +41,9 @@ import ProgressSpinner from 'primevue/progressspinner'
 import Tag from 'primevue/tag'
 import { onBeforeUnmount, ref } from 'vue'
 
-import { useFirebaseAuthService } from '@/services/firebaseAuthService'
+import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 
-const authService = useFirebaseAuthService()
+const authService = useFirebaseAuthActions()
 
 const {
   amount,
