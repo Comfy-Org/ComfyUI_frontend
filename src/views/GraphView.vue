@@ -16,7 +16,6 @@
   <GlobalToast />
   <RerouteMigrationToast />
   <UnloadWindowConfirmDialog v-if="!isElectron()" />
-  <BrowserTabTitle />
   <MenuHamburger />
 </template>
 
@@ -27,13 +26,13 @@ import { useToast } from 'primevue/usetoast'
 import { computed, onBeforeUnmount, onMounted, watch, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import BrowserTabTitle from '@/components/BrowserTabTitle.vue'
 import MenuHamburger from '@/components/MenuHamburger.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
 import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
 import TopMenubar from '@/components/topbar/TopMenubar.vue'
+import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
@@ -64,6 +63,7 @@ import { electronAPI, isElectron } from '@/utils/envUtil'
 
 setupAutoQueueHandler()
 useProgressFavicon()
+useBrowserTabTitle()
 
 const { t } = useI18n()
 const toast = useToast()
