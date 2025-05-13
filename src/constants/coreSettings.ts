@@ -828,5 +828,14 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     defaultValue: false,
     versionAdded: '1.19.1'
+  },
+  {
+    id: 'Comfy.Window.TabIconProgress',
+    name: 'Browser tab icon shows progress',
+    tooltip:
+      'Updates the browser tab icon to show the progress of the current task.',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.20.0'
   }
 ]
