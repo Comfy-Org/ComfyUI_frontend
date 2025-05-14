@@ -20,22 +20,24 @@ import type { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
 import { computed } from 'vue'
 
 import { useCanvasStore } from '@/stores/graphStore'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 
 const workflowStore = useWorkflowStore()
+const navigationStore = useSubgraphNavigationStore()
 
 const workflowName = computed(() => workflowStore.activeWorkflow?.filename)
 
 const items = computed(() => {
-  if (!workflowStore.subgraphNamePath.length) return []
+  if (!navigationStore.navigationStack.length) return []
 
-  return workflowStore.subgraphNamePath.map<MenuItem>((name, index) => ({
-    label: name,
+  return navigationStore.navigationStack.map<MenuItem>((subgraph) => ({
+    label: subgraph.name,
     command: async () => {
       const canvas = useCanvasStore().getCanvas()
       if (!canvas.graph) throw new TypeError('Canvas has no graph')
 
-      canvas.setGraph(canvas.graph.pathToRootGraph[index + 1])
+      canvas.setGraph(subgraph)
     }
   }))
 })
