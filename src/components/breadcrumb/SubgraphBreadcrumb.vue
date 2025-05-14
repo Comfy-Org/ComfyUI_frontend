@@ -33,7 +33,7 @@ const items = computed(() => {
 
   return navigationStore.navigationStack.map<MenuItem>((subgraph) => ({
     label: subgraph.name,
-    command: async () => {
+    command: () => {
       const canvas = useCanvasStore().getCanvas()
       if (!canvas.graph) throw new TypeError('Canvas has no graph')
 
@@ -45,7 +45,7 @@ const items = computed(() => {
 const home = computed(() => ({
   label: workflowName.value,
   icon: 'pi pi-home',
-  command: async () => {
+  command: () => {
     const canvas = useCanvasStore().getCanvas()
     if (!canvas.graph) throw new TypeError('Canvas has no graph')
 
