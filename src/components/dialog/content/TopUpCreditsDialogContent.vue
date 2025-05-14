@@ -51,7 +51,7 @@
 import Button from 'primevue/button'
 
 import UserCredit from '@/components/common/UserCredit.vue'
-import { useFirebaseAuthService } from '@/services/firebaseAuthService'
+import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 
 import CreditTopUpOption from './credit/CreditTopUpOption.vue'
 
@@ -65,9 +65,9 @@ const {
   preselectedAmountOption?: number
 }>()
 
-const authService = useFirebaseAuthService()
+const authActions = useFirebaseAuthActions()
 
 const handleSeeDetails = async () => {
-  await authService.accessBillingPortal()
+  await authActions.accessBillingPortal()
 }
 </script>

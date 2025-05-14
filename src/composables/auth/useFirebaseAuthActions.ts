@@ -1,4 +1,5 @@
 import { FirebaseError } from 'firebase/app'
+import { ref } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
@@ -11,10 +12,12 @@ import { usdToMicros } from '@/utils/formatUtil'
  * All actions are wrapped with error handling.
  * @returns {Object} - Object containing all Firebase Auth actions
  */
-export const useFirebaseAuthService = () => {
+export const useFirebaseAuthActions = () => {
   const authStore = useFirebaseAuthStore()
   const toastStore = useToastStore()
   const { wrapWithErrorHandlingAsync, toastErrorHandler } = useErrorHandling()
+
+  const accessError = ref(false)
 
   const reportError = (error: unknown) => {
     // Ref: https://firebase.google.com/docs/auth/admin/errors
@@ -26,6 +29,7 @@ export const useFirebaseAuthService = () => {
         'auth/unauthorized-continue-uri'
       ].includes(error.code)
     ) {
+      accessError.value = true
       toastStore.add({
         severity: 'error',
         summary: t('g.error'),
@@ -141,6 +145,7 @@ export const useFirebaseAuthService = () => {
     signInWithGithub,
     signInWithEmail,
     signUpWithEmail,
-    updatePassword
+    updatePassword,
+    accessError
   }
 }

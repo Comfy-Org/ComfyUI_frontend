@@ -26,9 +26,9 @@
           <h3 class="font-medium">
             {{ $t('userSettings.email') }}
           </h3>
-          <a :href="'mailto:' + userEmail" class="hover:underline">
+          <span class="text-muted">
             {{ userEmail }}
-          </a>
+          </span>
         </div>
 
         <div class="flex flex-col gap-0.5">

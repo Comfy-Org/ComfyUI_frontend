@@ -401,6 +401,7 @@ app.registerExtension({
                   // @ts-expect-error
                   data.groupNodes = {}
                 }
+                if (nodeData == null) throw new TypeError('nodeData is not set')
                 // @ts-expect-error
                 data.groupNodes[nodeData.name] = groupData
                 // @ts-expect-error

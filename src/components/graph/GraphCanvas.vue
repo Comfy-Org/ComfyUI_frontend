@@ -225,32 +225,6 @@ watch(
   }
 )
 
-// Save the drag & scale info in the serialized workflow if the setting is enabled
-watch(
-  [
-    () => canvasStore.canvas,
-    () => settingStore.get('Comfy.EnableWorkflowViewRestore')
-  ],
-  ([canvas, enableWorkflowViewRestore]) => {
-    const extra = canvas?.graph?.extra
-    if (!extra) return
-
-    if (enableWorkflowViewRestore) {
-      extra.ds = {
-        get scale() {
-          return canvas.ds.scale
-        },
-        get offset() {
-          const [x, y] = canvas.ds.offset
-          return [x, y]
-        }
-      }
-    } else {
-      delete extra.ds
-    }
-  }
-)
-
 useEventListener(
   canvasRef,
   'litegraph:no-items-selected',
@@ -293,7 +267,7 @@ onMounted(async () => {
   workspaceStore.spinner = true
   // ChangeTracker needs to be initialized before setup, as it will overwrite
   // some listeners of litegraph canvas.
-  ChangeTracker.init(comfyApp)
+  ChangeTracker.init()
   await loadCustomNodesI18n()
   try {
     await settingStore.loadSettingValues()
@@ -318,10 +292,8 @@ onMounted(async () => {
   canvasStore.canvas.render_canvas_border = false
   workspaceStore.spinner = false
 
-  // @ts-expect-error fixme ts strict error
-  window['app'] = comfyApp
-  // @ts-expect-error fixme ts strict error
-  window['graph'] = comfyApp.graph
+  window.app = comfyApp
+  window.graph = comfyApp.graph
 
   comfyAppReady.value = true
 

@@ -69,11 +69,11 @@ import { onMounted } from 'vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import UserCredit from '@/components/common/UserCredit.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useDialogService } from '@/services/dialogService'
-import { useFirebaseAuthService } from '@/services/firebaseAuthService'
 
 const { userDisplayName, userEmail, userPhotoUrl } = useCurrentUser()
-const authService = useFirebaseAuthService()
+const authActions = useFirebaseAuthActions()
 const dialogService = useDialogService()
 
 const handleOpenUserSettings = () => {
@@ -89,6 +89,6 @@ const handleOpenApiPricing = () => {
 }
 
 onMounted(() => {
-  void authService.fetchBalance()
+  void authActions.fetchBalance()
 })
 </script>
