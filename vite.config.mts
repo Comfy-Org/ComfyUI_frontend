@@ -6,11 +6,7 @@ import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vite'
 import type { UserConfigExport } from 'vitest/config'
 
-import {
-  addElementVnodeExportPlugin,
-  comfyAPIPlugin,
-  generateImportMapPlugin
-} from './build/plugins'
+import { comfyAPIPlugin } from './build/plugins'
 
 dotenv.config()
 
@@ -71,12 +67,6 @@ export default defineConfig({
   plugins: [
     vue(),
     comfyAPIPlugin(IS_DEV),
-    generateImportMapPlugin([
-      { name: 'vue', pattern: /[\\/]node_modules[\\/]vue[\\/]/ },
-      { name: 'primevue', pattern: /[\\/]node_modules[\\/]primevue[\\/]/ },
-      { name: 'vue-i18n', pattern: /[\\/]node_modules[\\/]vue-i18n[\\/]/ }
-    ]),
-    addElementVnodeExportPlugin(),
 
     Icons({
       compiler: 'vue3'
