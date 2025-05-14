@@ -396,6 +396,12 @@
     "inbox": "收件箱",
     "star": "星星"
   },
+  "importModelDialog": {
+    "copy": "复制",
+    "move": "移动",
+    "title": "导入模型",
+    "type": "类型"
+  },
   "install": {
     "appDataLocationTooltip": "ComfyUI 的应用数据目录。存储：\n- 日志\n- 服务器配置",
     "appPathLocationTooltip": "ComfyUI 的应用资产目录。存储 ComfyUI 代码和资产",

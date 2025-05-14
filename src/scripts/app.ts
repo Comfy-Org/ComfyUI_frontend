@@ -1256,10 +1256,22 @@ export class ComfyApp {
     return !executionStore.lastNodeErrors
   }
 
-  showErrorOnFileLoad(file: File) {
-    useToastStore().addAlert(
-      t('toastMessages.fileLoadError', { fileName: file.name })
+  onUnhandledFile(file: File) {
+    // Fire custom event to allow other parts of the app to handle the file
+    const unhandled = api.dispatchCustomEvent(
+      'unhandledFileDrop',
+      { file },
+      {
+        cancelable: true
+      }
     )
+
+    if (unhandled) {
+      // Nothing handled the event, so show the error dialog
+      useToastStore().addAlert(
+        t('toastMessages.fileLoadError', { fileName: file.name })
+      )
+    }
   }
 
   /**
@@ -1295,7 +1307,7 @@ export class ComfyApp {
           this.graph.serialize() as unknown as ComfyWorkflowJSON
         )
       } else {
-        this.showErrorOnFileLoad(file)
+        this.onUnhandledFile(file)
       }
     } else if (file.type === 'image/webp') {
       const pngInfo = await getWebpMetadata(file)
@@ -1308,7 +1320,7 @@ export class ComfyApp {
       } else if (prompt) {
         this.loadApiJson(JSON.parse(prompt), fileName)
       } else {
-        this.showErrorOnFileLoad(file)
+        this.onUnhandledFile(file)
       }
     } else if (file.type === 'audio/mpeg') {
       const { workflow, prompt } = await getMp3Metadata(file)
@@ -1317,7 +1329,7 @@ export class ComfyApp {
       } else if (prompt) {
         this.loadApiJson(prompt, fileName)
       } else {
-        this.showErrorOnFileLoad(file)
+        this.onUnhandledFile(file)
       }
     } else if (file.type === 'audio/ogg') {
       const { workflow, prompt } = await getOggMetadata(file)
@@ -1326,7 +1338,7 @@ export class ComfyApp {
       } else if (prompt) {
         this.loadApiJson(prompt, fileName)
       } else {
-        this.showErrorOnFileLoad(file)
+        this.onUnhandledFile(file)
       }
     } else if (file.type === 'audio/flac' || file.type === 'audio/x-flac') {
       const pngInfo = await getFlacMetadata(file)
@@ -1338,7 +1350,7 @@ export class ComfyApp {
       } else if (prompt) {
         this.loadApiJson(JSON.parse(prompt), fileName)
       } else {
-        this.showErrorOnFileLoad(file)
+        this.onUnhandledFile(file)
       }
     } else if (file.type === 'video/webm') {
       const webmInfo = await getFromWebmFile(file)
@@ -1347,7 +1359,7 @@ export class ComfyApp {
       } else if (webmInfo.prompt) {
         this.loadApiJson(webmInfo.prompt, fileName)
       } else {
-        this.showErrorOnFileLoad(file)
+        this.onUnhandledFile(file)
       }
     } else if (
       file.type === 'video/mp4' ||
@@ -1370,7 +1382,7 @@ export class ComfyApp {
       } else if (svgInfo.prompt) {
         this.loadApiJson(svgInfo.prompt, fileName)
       } else {
-        this.showErrorOnFileLoad(file)
+        this.onUnhandledFile(file)
       }
     } else if (
       file.type === 'model/gltf-binary' ||
@@ -1382,7 +1394,7 @@ export class ComfyApp {
       } else if (gltfInfo.prompt) {
         this.loadApiJson(gltfInfo.prompt, fileName)
       } else {
-        this.showErrorOnFileLoad(file)
+        this.onUnhandledFile(file)
       }
     } else if (
       file.type === 'application/json' ||
@@ -1413,7 +1425,7 @@ export class ComfyApp {
       const info = await getLatentMetadata(file)
       // TODO define schema to LatentMetadata
       // @ts-expect-error
-      if (info.workflow) {
+      if (info?.workflow) {
         await this.loadGraphData(
           // @ts-expect-error
           JSON.parse(info.workflow),
@@ -1422,14 +1434,14 @@ export class ComfyApp {
           fileName
         )
         // @ts-expect-error
-      } else if (info.prompt) {
+      } else if (info?.prompt) {
         // @ts-expect-error
         this.loadApiJson(JSON.parse(info.prompt))
       } else {
-        this.showErrorOnFileLoad(file)
+        this.onUnhandledFile(file)
       }
     } else {
-      this.showErrorOnFileLoad(file)
+      this.onUnhandledFile(file)
     }
   }
 

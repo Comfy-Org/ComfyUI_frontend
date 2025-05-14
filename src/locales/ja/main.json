@@ -396,6 +396,12 @@
     "inbox": "受信トレイ",
     "star": "星"
   },
+  "importModelDialog": {
+    "copy": "コピー",
+    "move": "移動",
+    "title": "モデルをインポート",
+    "type": "タイプ"
+  },
   "install": {
     "appDataLocationTooltip": "ComfyUIのアプリデータディレクトリ。保存内容:\n- ログ\n- サーバー設定",
     "appPathLocationTooltip": "ComfyUIのアプリ資産ディレクトリ。ComfyUIのコードとアセットを保存します",
