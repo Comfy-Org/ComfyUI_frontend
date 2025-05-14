@@ -1,6 +1,7 @@
+import type { Subgraph } from '@comfyorg/litegraph'
 import _ from 'lodash'
 import { defineStore } from 'pinia'
-import { computed, markRaw, ref, watch } from 'vue'
+import { computed, markRaw, ref, shallowRef, watch } from 'vue'
 
 import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
@@ -156,10 +157,9 @@ export interface WorkflowStore {
   syncWorkflows: (dir?: string) => Promise<void>
   reorderWorkflows: (from: number, to: number) => void
 
-  /** An ordered list of all parent subgraphs, ending with the current subgraph. */
-  subgraphNamePath: string[]
   /** `true` if any subgraph is currently being viewed. */
   isSubgraphActive: boolean
+  activeSubgraph: Subgraph | undefined
   /** Updates the {@link subgraphNamePath} and {@link isSubgraphActive} values. */
   updateActiveGraph: () => void
 }
@@ -427,25 +427,19 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }
   }
 
-  /** @see WorkflowStore.subgraphNamePath */
-  const subgraphNamePath = ref<string[]>([])
   /** @see WorkflowStore.isSubgraphActive */
   const isSubgraphActive = ref(false)
 
+  /** @see WorkflowStore.activeSubgraph */
+  const activeSubgraph = shallowRef<Subgraph>()
+
   /** @see WorkflowStore.updateActiveGraph */
   const updateActiveGraph = () => {
+    activeSubgraph.value = comfyApp.canvas?.subgraph
     if (!comfyApp.canvas) return
 
     const { subgraph } = comfyApp.canvas
     isSubgraphActive.value = isSubgraph(subgraph)
-
-    if (subgraph) {
-      const [, ...pathFromRoot] = subgraph.pathToRootGraph
-
-      subgraphNamePath.value = pathFromRoot.map((subgraph) => subgraph.name)
-    } else {
-      subgraphNamePath.value = []
-    }
   }
 
   watch(activeWorkflow, updateActiveGraph)
@@ -473,8 +467,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
     getWorkflowByPath,
     syncWorkflows,
 
-    subgraphNamePath,
     isSubgraphActive,
+    activeSubgraph,
     updateActiveGraph
   }
 }) satisfies () => WorkflowStore
