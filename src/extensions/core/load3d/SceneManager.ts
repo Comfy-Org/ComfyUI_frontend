@@ -82,6 +82,8 @@ export class SceneManager implements SceneManagerInterface {
   }
 
   async setBackgroundImage(uploadPath: string): Promise<void> {
+    this.eventManager.emitEvent('backgroundImageLoadingStart', null)
+
     if (uploadPath === '') {
       this.removeBackgroundImage()
       return
@@ -123,7 +125,9 @@ export class SceneManager implements SceneManagerInterface {
       )
 
       this.eventManager.emitEvent('backgroundImageChange', uploadPath)
+      this.eventManager.emitEvent('backgroundImageLoadingEnd', null)
     } catch (error) {
+      this.eventManager.emitEvent('backgroundImageLoadingEnd', null)
       console.error('Error loading background image:', error)
     }
   }
@@ -139,6 +143,7 @@ export class SceneManager implements SceneManagerInterface {
       this.backgroundTexture.dispose()
       this.backgroundTexture = null
     }
+    this.eventManager.emitEvent('backgroundImageLoadingEnd', null)
   }
 
   updateBackgroundSize(
