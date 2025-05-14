@@ -797,26 +797,29 @@ export class ComfyApp {
     LiteGraph.alt_drag_do_clone_nodes = true
     LiteGraph.macGesturesRequireMac = false
 
-    this.canvas.canvas.addEventListener('litegraph:set-graph', (e) => {
-      type SetGraphType = CustomEvent<{
-        newGraph: LGraph | Subgraph
-        oldGraph: LGraph | Subgraph
-      }>
+    this.canvas.canvas.addEventListener<'litegraph:set-graph'>(
+      'litegraph:set-graph',
+      (e) => {
+        // Assertion: Not yet defined in litegraph.
+        const { newGraph } = e.detail
 
-      // Assertion: Not yet defined in litegraph.
-      const { newGraph } = (e as SetGraphType).detail
+        const nodeSet = new Set(newGraph.nodes)
+        const widgetStore = useDomWidgetStore()
 
-      const nodeSet = new Set(newGraph.nodes)
-      const widgetStore = useDomWidgetStore()
-      for (const { widget } of widgetStore.widgetStates.values()) {
         // Assertions: UnwrapRef
-        if (nodeSet.has(widget.node as LGraphNode)) {
-          widgetStore.registerWidget(widget as BaseDOMWidget)
-        } else {
-          widgetStore.unregisterWidget(widget.id)
+        for (const { widget } of widgetStore.widgetStates.values()) {
+          if (!nodeSet.has(widget.node as LGraphNode)) {
+            widgetStore.unregisterWidget(widget.id)
+          }
+        }
+
+        for (const { widget } of widgetStore.inactiveWidgetStates.values()) {
+          if (nodeSet.has(widget.node as LGraphNode)) {
+            widgetStore.registerWidget(widget as BaseDOMWidget)
+          }
         }
       }
-    })
+    )
 
     this.graph.start()
 
