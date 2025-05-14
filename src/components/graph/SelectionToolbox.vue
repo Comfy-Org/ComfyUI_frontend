@@ -37,6 +37,19 @@
       @click="() => commandStore.execute('Comfy.Canvas.ToggleSelected.Pin')"
     />
     <Button
+      v-show="isTheOnlyImageNode"
+      v-tooltip.top="{
+        value: t('commands.Comfy_Canvas_SelectedNode_OpenMaskEditor.label'),
+        showDelay: 1000
+      }"
+      severity="secondary"
+      text
+      icon="pi pi-pencil"
+      @click="
+        () => commandStore.execute('Comfy.Canvas.SelectedNode.OpenMaskEditor')
+      "
+    />
+    <Button
       v-tooltip.top="{
         value: t('commands.Comfy_Canvas_DeleteSelectedItems.label'),
         showDelay: 1000
@@ -82,12 +95,19 @@ import { useExtensionService } from '@/services/extensionService'
 import { ComfyCommand, useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
-import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
+import { isImageNode, isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
 const extensionService = useExtensionService()
 const { isRefreshable, refreshSelected } = useRefreshableSelection()
+
+const isTheOnlyImageNode = computed(() => {
+  const isTheOnlyItem = canvasStore.selectedItems.length === 1
+  if (!isTheOnlyItem) return false
+  const selectedItem = canvasStore.selectedItems[0]
+  return isLGraphNode(selectedItem) && isImageNode(selectedItem)
+})
 const nodeSelected = computed(() =>
   canvasStore.selectedItems.some(isLGraphNode)
 )
