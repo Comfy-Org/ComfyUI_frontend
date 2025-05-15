@@ -47,11 +47,11 @@ const positionSelectionOverlay = () => {
 
 // Register listener on canvas creation.
 whenever(
-  () => canvasStore.getCanvas().state.selectionHasChanged,
+  () => canvasStore.getCanvas().state.selectionChanged,
   () => {
     requestAnimationFrame(() => {
       positionSelectionOverlay()
-      canvasStore.getCanvas().state.selectionHasChanged = false
+      canvasStore.getCanvas().state.selectionChanged = false
     })
   },
   { immediate: true }
