@@ -75,10 +75,10 @@ watch(
     // the correct position.
     // https://github.com/Comfy-Org/ComfyUI_frontend/issues/2656
     if (draggingItems === false) {
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         visible.value = true
         positionSelectionOverlay()
-      }, 100)
+      })
     } else {
       // Selection change update to visible state is delayed by a frame. Here
       // we also delay a frame so that the order of events is correct when
