@@ -6,6 +6,7 @@ import log from 'loglevel'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import type { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 
 import { api } from './api'
@@ -37,6 +38,10 @@ export class ChangeTracker {
   ds?: { scale: number; offset: [number, number] }
   nodeOutputs?: Record<string, any>
 
+  private subgraphState?: {
+    navigation: string[]
+  }
+
   constructor(
     /**
      * The workflow that this change tracker is tracking
@@ -67,6 +72,8 @@ export class ChangeTracker {
       scale: app.canvas.ds.scale,
       offset: [app.canvas.ds.offset[0], app.canvas.ds.offset[1]]
     }
+    const navigation = useSubgraphNavigationStore().exportState()
+    this.subgraphState = navigation.length ? { navigation } : undefined
   }
 
   restore() {
@@ -76,6 +83,16 @@ export class ChangeTracker {
     }
     if (this.nodeOutputs) {
       app.nodeOutputs = this.nodeOutputs
+    }
+    if (this.subgraphState) {
+      const { navigation } = this.subgraphState
+      useSubgraphNavigationStore().restoreState(navigation)
+
+      const activeId = navigation.at(-1)
+      if (activeId) {
+        const subgraph = app.graph.subgraphs.get(activeId)
+        if (subgraph) app.canvas.setGraph(subgraph)
+      }
     }
   }
 
