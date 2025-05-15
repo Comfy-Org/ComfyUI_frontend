@@ -43,6 +43,7 @@ import {
   TitleMode,
 } from "./types/globalEnums"
 import { findFreeSlotOfType } from "./utils/collections"
+import { warnDeprecated } from "./utils/feedback"
 import { distributeSpace } from "./utils/spaceDistribution"
 import { toClass } from "./utils/type"
 import { BaseWidget } from "./widgets/BaseWidget"
@@ -3001,8 +3002,12 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     return img
   }
 
-  /* Allows to get onMouseMove and onMouseUp events even if the mouse is out of focus */
+  /**
+   * Allows to get onMouseMove and onMouseUp events even if the mouse is out of focus
+   * @deprecated Use {@link LGraphCanvas.pointer} instead.
+   */
   captureInput(v: boolean): void {
+    warnDeprecated("[DEPRECATED] captureInput will be removed in a future version. Please use LGraphCanvas.pointer (CanvasPointer) instead.")
     if (!this.graph || !this.graph.list_of_graphcanvas) return
 
     const list = this.graph.list_of_graphcanvas
