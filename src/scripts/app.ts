@@ -143,13 +143,20 @@ export class ComfyApp {
   _nodeOutputs: Record<string, any>
   nodePreviewImages: Record<string, string[]>
   // @ts-expect-error fixme ts strict error
-  graph: LGraph
+  #graph: LGraph
+  get graph() {
+    return this.#graph
+  }
   // @ts-expect-error fixme ts strict error
   canvas: LGraphCanvas
   dragOverNode: LGraphNode | null = null
   // @ts-expect-error fixme ts strict error
   canvasEl: HTMLCanvasElement
-  configuringGraph: boolean = false
+
+  #configuringGraphLevel: number = 0
+  get configuringGraph() {
+    return this.#configuringGraphLevel > 0
+  }
   // @ts-expect-error fixme ts strict error
   ctx: CanvasRenderingContext2D
   bodyTop: HTMLElement
@@ -692,17 +699,16 @@ export class ComfyApp {
     api.init()
   }
 
+  /** Flag that the graph is configuring to prevent nodes from running checks while its still loading */
   #addConfigureHandler() {
     const app = this
     const configure = LGraph.prototype.configure
-    // Flag that the graph is configuring to prevent nodes from running checks while its still loading
-    LGraph.prototype.configure = function () {
-      app.configuringGraph = true
+    LGraph.prototype.configure = function (...args) {
+      app.#configuringGraphLevel++
       try {
-        // @ts-expect-error fixme ts strict error
-        return configure.apply(this, arguments)
+        return configure.apply(this, args)
       } finally {
-        app.configuringGraph = false
+        app.#configuringGraphLevel--
       }
     }
   }
@@ -756,7 +762,7 @@ export class ComfyApp {
     this.#addConfigureHandler()
     this.#addApiUpdateHandlers()
 
-    this.graph = new LGraph()
+    this.#graph = new LGraph()
 
     this.#addAfterConfigureHandler()
 
