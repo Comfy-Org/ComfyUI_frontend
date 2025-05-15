@@ -28,8 +28,8 @@ const { style, updatePosition } = useAbsolutePosition()
 const visible = ref(false)
 const showBorder = ref(false)
 
-const positionSelectionOverlay = (canvas: LGraphCanvas) => {
-  const selectedItems = canvas.selectedItems
+const positionSelectionOverlay = () => {
+  const { selectedItems } = canvasStore.getCanvas()
   showBorder.value = selectedItems.size > 1
 
   if (!selectedItems.size) {
@@ -57,17 +57,15 @@ watch(
       canvas.onSelectionChange,
       // Wait for next frame as sometimes the selected items haven't been
       // rendered yet, so the boundingRect is not available on them.
-      () => requestAnimationFrame(() => positionSelectionOverlay(canvas))
+      () => requestAnimationFrame(positionSelectionOverlay)
     )
   },
   { immediate: true }
 )
 
-whenever(
-  () => canvasStore.getCanvas().ds.state,
-  () => positionSelectionOverlay(canvasStore.getCanvas()),
-  { deep: true }
-)
+whenever(() => canvasStore.getCanvas().ds.state, positionSelectionOverlay, {
+  deep: true
+})
 
 watch(
   () => canvasStore.canvas?.state?.draggingItems,
@@ -79,7 +77,7 @@ watch(
     if (draggingItems === false) {
       setTimeout(() => {
         visible.value = true
-        positionSelectionOverlay(canvasStore.getCanvas())
+        positionSelectionOverlay()
       }, 100)
     } else {
       // Selection change update to visible state is delayed by a frame. Here
