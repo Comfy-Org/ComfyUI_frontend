@@ -5,7 +5,7 @@ import {
   LGraphNode,
   LiteGraph
 } from '@comfyorg/litegraph'
-import type { Subgraph, Vector2 } from '@comfyorg/litegraph'
+import type { Vector2 } from '@comfyorg/litegraph'
 import type { IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import _ from 'lodash'
 import type { ToastMessageOptions } from 'primevue/toast'
@@ -73,8 +73,6 @@ import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import { type ComfyApi, PromptExecutionError, api } from './api'
 import { defaultGraph } from './defaultGraph'
-import type { BaseDOMWidget } from './domWidget'
-import { pruneWidgets } from './domWidget'
 import {
   getFlacMetadata,
   getLatentMetadata,
@@ -734,11 +732,6 @@ export class ComfyApp {
         node.onAfterGraphConfigured?.()
       }
 
-      graph.canvasAction((c) => {
-        const nodes = c.subgraph?.nodes ?? graph.nodes
-        pruneWidgets(nodes)
-      })
-
       return r
     }
   }
@@ -808,14 +801,14 @@ export class ComfyApp {
 
         // Assertions: UnwrapRef
         for (const { widget } of widgetStore.widgetStates.values()) {
-          if (!nodeSet.has(widget.node as LGraphNode)) {
-            widgetStore.unregisterWidget(widget.id)
+          if (!nodeSet.has(widget.node)) {
+            widgetStore.deactivateWidget(widget.id)
           }
         }
 
-        for (const { widget } of widgetStore.inactiveWidgetStates.values()) {
-          if (nodeSet.has(widget.node as LGraphNode)) {
-            widgetStore.registerWidget(widget as BaseDOMWidget)
+        for (const { widget } of widgetStore.inactiveWidgetStates) {
+          if (nodeSet.has(widget.node)) {
+            widgetStore.activateWidget(widget.id)
           }
         }
       }
@@ -1694,6 +1687,8 @@ export class ComfyApp {
     const executionStore = useExecutionStore()
     executionStore.lastNodeErrors = null
     executionStore.lastExecutionError = null
+
+    useDomWidgetStore().clear()
   }
 
   clientPosToCanvasPos(pos: Vector2): Vector2 {
