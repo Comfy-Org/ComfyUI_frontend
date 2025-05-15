@@ -801,7 +801,7 @@ export class ComfyApp {
         const widgetStore = useDomWidgetStore()
 
         // Assertions: UnwrapRef
-        for (const { widget } of widgetStore.widgetStates.values()) {
+        for (const { widget } of widgetStore.activeWidgetStates) {
           if (!nodeSet.has(widget.node)) {
             widgetStore.deactivateWidget(widget.id)
           }
