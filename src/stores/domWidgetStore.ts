@@ -20,6 +20,9 @@ export interface DomWidgetState extends PositionConfig {
 export const useDomWidgetStore = defineStore('domWidget', () => {
   const widgetStates = ref<Map<string, DomWidgetState>>(new Map())
 
+  const activeWidgetStates = computed(() =>
+    [...widgetStates.value.values()].filter((state) => state.active)
+  )
   const inactiveWidgetStates = computed(() =>
     [...widgetStates.value.values()].filter((state) => !state.active)
   )
@@ -60,6 +63,7 @@ export const useDomWidgetStore = defineStore('domWidget', () => {
 
   return {
     widgetStates,
+    activeWidgetStates,
     inactiveWidgetStates,
     registerWidget,
     unregisterWidget,
