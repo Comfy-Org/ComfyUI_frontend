@@ -14,12 +14,10 @@
 
 <script setup lang="ts">
 import { createBounds } from '@comfyorg/litegraph'
-import type { LGraphCanvas } from '@comfyorg/litegraph'
 import { whenever } from '@vueuse/core'
 import { ref, watch } from 'vue'
 
 import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
-import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useCanvasStore } from '@/stores/graphStore'
 
 const canvasStore = useCanvasStore()
@@ -48,21 +46,6 @@ const positionSelectionOverlay = () => {
 }
 
 // Register listener on canvas creation.
-watch(
-  () => canvasStore.canvas as LGraphCanvas | null,
-  (canvas: LGraphCanvas | null) => {
-    if (!canvas) return
-
-    canvas.onSelectionChange = useChainCallback(
-      canvas.onSelectionChange,
-      // Wait for next frame as sometimes the selected items haven't been
-      // rendered yet, so the boundingRect is not available on them.
-      () => requestAnimationFrame(positionSelectionOverlay)
-    )
-  },
-  { immediate: true }
-)
-
 whenever(
   () => canvasStore.getCanvas().state.selectionHasChanged,
   () => {
