@@ -162,6 +162,12 @@ export interface LGraphCanvasState {
   hoveringOver: CanvasItem
   /** If `true`, pointer move events will set the canvas cursor style. */
   shouldSetCursor: boolean
+
+  /**
+   * Dirty flag indicating that {@link selectedItems} has changed.
+   * Downstream consumers may reset to false once actioned.
+   */
+  selectionChanged: boolean
 }
 
 /**
@@ -257,6 +263,7 @@ export class LGraphCanvas {
     readOnly: false,
     hoveringOver: CanvasItem.Nothing,
     shouldSetCursor: true,
+    selectionChanged: false,
   }
 
   declare subgraph?: Subgraph
@@ -1538,6 +1545,7 @@ export class LGraphCanvas {
     this.selected_nodes = {}
     this.selected_group = null
     this.selectedItems.clear()
+    this.state.selectionChanged = true
     this.onSelectionChange?.(this.selected_nodes)
 
     this.visible_nodes = []
@@ -3443,6 +3451,7 @@ export class LGraphCanvas {
 
     item.selected = true
     this.selectedItems.add(item)
+    this.state.selectionChanged = true
     if (!(item instanceof LGraphNode)) return
 
     // Node-specific handling
@@ -3475,6 +3484,7 @@ export class LGraphCanvas {
 
     item.selected = false
     this.selectedItems.delete(item)
+    this.state.selectionChanged = true
     if (!(item instanceof LGraphNode)) return
 
     // Node-specific handling
@@ -3613,6 +3623,7 @@ export class LGraphCanvas {
       }
     }
 
+    this.state.selectionChanged = true
     this.onSelectionChange?.(this.selected_nodes)
   }
 
@@ -3650,6 +3661,8 @@ export class LGraphCanvas {
     this.selectedItems.clear()
     this.current_node = null
     this.highlighted_links = {}
+
+    this.state.selectionChanged = true
     this.onSelectionChange?.(this.selected_nodes)
     this.setDirty(true)
     graph.afterChange()

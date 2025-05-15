@@ -827,6 +827,8 @@ export class LGraph implements LinkNetwork, BaseLGraph, Serialisable<Serialisabl
   remove(node: LGraphNode | LGraphGroup): void {
     // LEGACY: This was changed from constructor === LiteGraph.LGraphGroup
     if (node instanceof LGraphGroup) {
+      this.canvasAction(c => c.deselect(node))
+
       const index = this._groups.indexOf(node)
       if (index != -1) {
         this._groups.splice(index, 1)
@@ -887,6 +889,8 @@ export class LGraph implements LinkNetwork, BaseLGraph, Serialisable<Serialisabl
       for (const canvas of list_of_graphcanvas) {
         if (canvas.selected_nodes[node.id])
           delete canvas.selected_nodes[node.id]
+
+        canvas.deselect(node)
       }
     }
 
@@ -1289,6 +1293,8 @@ export class LGraph implements LinkNetwork, BaseLGraph, Serialisable<Serialisabl
     const { reroutes } = this
     const reroute = reroutes.get(id)
     if (!reroute) return
+
+    this.canvasAction(c => c.deselect(reroute))
 
     // Extract reroute from the reroute chain
     const { parentId, linkIds, floatingLinkIds } = reroute
