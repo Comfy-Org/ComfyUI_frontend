@@ -152,7 +152,11 @@ export class ComfyApp {
   dragOverNode: LGraphNode | null = null
   // @ts-expect-error fixme ts strict error
   canvasEl: HTMLCanvasElement
-  configuringGraph: boolean = false
+
+  #configuringGraphLevel: number = 0
+  get configuringGraph() {
+    return this.#configuringGraphLevel > 0
+  }
   // @ts-expect-error fixme ts strict error
   ctx: CanvasRenderingContext2D
   bodyTop: HTMLElement
@@ -700,12 +704,12 @@ export class ComfyApp {
     const configure = LGraph.prototype.configure
     // Flag that the graph is configuring to prevent nodes from running checks while its still loading
     LGraph.prototype.configure = function () {
-      app.configuringGraph = true
+      app.#configuringGraphLevel++
       try {
         // @ts-expect-error fixme ts strict error
         return configure.apply(this, arguments)
       } finally {
-        app.configuringGraph = false
+        app.#configuringGraphLevel--
       }
     }
   }
