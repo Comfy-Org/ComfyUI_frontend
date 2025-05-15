@@ -22,6 +22,15 @@
           severity="secondary"
           @click.stop="toggleBookmark"
         />
+        <Button
+          v-tooltip.bottom="$t('g.learnMore')"
+          class="help-button"
+          size="small"
+          icon="pi pi-question"
+          text
+          severity="secondary"
+          @click.stop="props.openNodeHelp(nodeDef)"
+        />
       </template>
     </TreeExplorerTreeNode>
 
@@ -54,6 +63,7 @@ import { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
 const props = defineProps<{
   node: RenderedTreeExplorerNode<ComfyNodeDefImpl>
+  openNodeHelp: (nodeDef: ComfyNodeDefImpl) => void
 }>()
 
 // Note: node.data should be present for leaf nodes.

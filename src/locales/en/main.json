@@ -1423,5 +1423,12 @@
     "cancelEditTooltip": "Cancel edit",
     "copiedTooltip": "Copied",
     "copyTooltip": "Copy message to clipboard"
+  },
+  "nodeHelpPage": {
+    "inputs": "Inputs",
+    "outputs": "Outputs",
+    "type": "Type",
+    "moreHelp": "For more help, visit the",
+    "documentationPage": "documentation page"
   }
 }
