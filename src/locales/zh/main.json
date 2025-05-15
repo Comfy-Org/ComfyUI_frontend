@@ -1334,6 +1334,7 @@
     "no3dSceneToExport": "没有3D场景可以导出",
     "noTemplatesToExport": "没有模板可以导出",
     "nodeDefinitionsUpdated": "节点定义已更新",
+    "nothingSelected": "未选择任何内容",
     "nothingToGroup": "没有可分组的内容",
     "nothingToQueue": "没有可加入队列的内容",
     "pendingTasksDeleted": "待处理任务已删除",
