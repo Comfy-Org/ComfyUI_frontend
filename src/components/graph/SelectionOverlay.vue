@@ -63,6 +63,17 @@ watch(
   { immediate: true }
 )
 
+whenever(
+  () => canvasStore.getCanvas().state.selectionHasChanged,
+  () => {
+    requestAnimationFrame(() => {
+      positionSelectionOverlay()
+      canvasStore.getCanvas().state.selectionHasChanged = false
+    })
+  },
+  { immediate: true }
+)
+
 whenever(() => canvasStore.getCanvas().ds.state, positionSelectionOverlay, {
   deep: true
 })
