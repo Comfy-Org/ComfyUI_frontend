@@ -14,12 +14,10 @@
 
 <script setup lang="ts">
 import { createBounds } from '@comfyorg/litegraph'
-import type { LGraphCanvas } from '@comfyorg/litegraph'
 import { whenever } from '@vueuse/core'
 import { ref, watch } from 'vue'
 
 import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
-import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useCanvasStore } from '@/stores/graphStore'
 
 const canvasStore = useCanvasStore()
@@ -28,8 +26,8 @@ const { style, updatePosition } = useAbsolutePosition()
 const visible = ref(false)
 const showBorder = ref(false)
 
-const positionSelectionOverlay = (canvas: LGraphCanvas) => {
-  const selectedItems = canvas.selectedItems
+const positionSelectionOverlay = () => {
+  const { selectedItems } = canvasStore.getCanvas()
   showBorder.value = selectedItems.size > 1
 
   if (!selectedItems.size) {
@@ -48,26 +46,20 @@ const positionSelectionOverlay = (canvas: LGraphCanvas) => {
 }
 
 // Register listener on canvas creation.
-watch(
-  () => canvasStore.canvas as LGraphCanvas | null,
-  (canvas: LGraphCanvas | null) => {
-    if (!canvas) return
-
-    canvas.onSelectionChange = useChainCallback(
-      canvas.onSelectionChange,
-      // Wait for next frame as sometimes the selected items haven't been
-      // rendered yet, so the boundingRect is not available on them.
-      () => requestAnimationFrame(() => positionSelectionOverlay(canvas))
-    )
+whenever(
+  () => canvasStore.getCanvas().state.selectionChanged,
+  () => {
+    requestAnimationFrame(() => {
+      positionSelectionOverlay()
+      canvasStore.getCanvas().state.selectionChanged = false
+    })
   },
   { immediate: true }
 )
 
-whenever(
-  () => canvasStore.getCanvas().ds.state,
-  () => positionSelectionOverlay(canvasStore.getCanvas()),
-  { deep: true }
-)
+whenever(() => canvasStore.getCanvas().ds.state, positionSelectionOverlay, {
+  deep: true
+})
 
 watch(
   () => canvasStore.canvas?.state?.draggingItems,
@@ -77,10 +69,10 @@ watch(
     // the correct position.
     // https://github.com/Comfy-Org/ComfyUI_frontend/issues/2656
     if (draggingItems === false) {
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         visible.value = true
-        positionSelectionOverlay(canvasStore.getCanvas())
-      }, 100)
+        positionSelectionOverlay()
+      })
     } else {
       // Selection change update to visible state is delayed by a frame. Here
       // we also delay a frame so that the order of events is correct when
