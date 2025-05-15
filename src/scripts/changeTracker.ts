@@ -399,7 +399,12 @@ export class ChangeTracker {
     function sortGraphNodes(graph: ComfyWorkflowJSON) {
       return {
         links: graph.links,
+        floatingLinks: graph.floatingLinks,
+        reroutes: graph.reroutes,
         groups: graph.groups,
+        extra: graph.extra,
+        definitions: graph.definitions,
+        subgraphs: graph.subgraphs,
         nodes: graph.nodes.sort((a, b) => {
           if (typeof a.id === 'number' && typeof b.id === 'number') {
             return a.id - b.id
