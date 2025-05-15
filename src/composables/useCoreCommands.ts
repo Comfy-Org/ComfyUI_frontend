@@ -17,7 +17,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowService } from '@/services/workflowService'
 import type { ComfyCommand } from '@/stores/commandStore'
-import { useTitleEditorStore } from '@/stores/graphStore'
+import { useCanvasStore, useTitleEditorStore } from '@/stores/graphStore'
 import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
@@ -34,6 +34,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const colorPaletteStore = useColorPaletteStore()
   const firebaseAuthActions = useFirebaseAuthActions()
   const toastStore = useToastStore()
+  const canvasStore = useCanvasStore()
   const getTracker = () => workflowStore.activeWorkflow?.changeTracker
 
   const getSelectedNodes = (): LGraphNode[] => {
@@ -672,6 +673,27 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.18.1',
       function: async () => {
         await firebaseAuthActions.logout()
+      }
+    },
+    {
+      id: 'Comfy.Graph.ConvertToSubgraph',
+      icon: 'pi pi-sitemap',
+      label: 'Convert Selection to Subgraph',
+      versionAdded: '1.20.1',
+      function: () => {
+        const canvas = canvasStore.getCanvas()
+        const res = canvas.graph?.convertToSubgraph(canvas.selectedItems)
+        if (!res) {
+          toastStore.add({
+            severity: 'error',
+            summary: t('toastMessages.cannotCreateSubgraph'),
+            detail: t('toastMessages.failedToConvertToSubgraph'),
+            life: 3000
+          })
+          return
+        }
+        const { node } = res
+        canvas.select(node)
       }
     }
   ]
