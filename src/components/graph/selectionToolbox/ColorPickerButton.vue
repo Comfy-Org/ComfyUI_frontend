@@ -1,6 +1,7 @@
 <template>
   <div class="relative">
     <Button
+      v-show="canvasStore.nodeSelected || canvasStore.groupSelected"
       severity="secondary"
       text
       @click="() => (showColorPicker = !showColorPicker)"

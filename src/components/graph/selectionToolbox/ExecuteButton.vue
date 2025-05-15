@@ -1,5 +1,6 @@
 <template>
   <Button
+    v-show="canvasStore.nodeSelected"
     v-tooltip.top="{
       value: isDisabled
         ? t('selectionToolbox.executeButton.disabledTooltip')
