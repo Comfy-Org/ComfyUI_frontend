@@ -695,13 +695,15 @@ export class ComfyApp {
     api.init()
   }
 
-  /** Flag that the graph is configuring to prevent nodes from running checks while its still loading */
-  #addConfigureHandler(graph: LGraph) {
-    const { configure } = graph
-    graph.configure = function (...args) {
+  #addConfigureHandler() {
+    const app = this
+    const configure = LGraph.prototype.configure
+    // Flag that the graph is configuring to prevent nodes from running checks while its still loading
+    LGraph.prototype.configure = function () {
       app.configuringGraph = true
       try {
-        return configure.apply(this, args)
+        // @ts-expect-error fixme ts strict error
+        return configure.apply(this, arguments)
       } finally {
         app.configuringGraph = false
       }
@@ -754,10 +756,10 @@ export class ComfyApp {
     await useExtensionService().loadExtensions()
 
     this.#addProcessKeyHandler()
+    this.#addConfigureHandler()
     this.#addApiUpdateHandlers()
 
     this.#graph = new LGraph()
-    this.#addConfigureHandler(this.graph)
 
     this.#addAfterConfigureHandler()
 
