@@ -1,10 +1,10 @@
 import type { Subgraph } from '@comfyorg/litegraph'
 import { defineStore } from 'pinia'
-import { computed, shallowReactive, shallowRef, watch } from 'vue'
+import { computed, shallowRef, watch } from 'vue'
 
+import { app } from '@/scripts/app'
 import { isNonNullish } from '@/utils/typeGuardUtil'
 
-import { useCanvasStore } from './graphStore'
 import { useWorkflowStore } from './workflowStore'
 
 /**
@@ -16,28 +16,42 @@ export const useSubgraphNavigationStore = defineStore(
   'subgraphNavigation',
   () => {
     const workflowStore = useWorkflowStore()
-    const canvasStore = useCanvasStore()
 
     /** The currently opened subgraph. */
     const activeSubgraph = shallowRef<Subgraph>()
 
     /** The stack of subgraph IDs from the root graph to the currently opened subgraph. */
-    const subgraphIdStack = shallowReactive<string[]>([])
+    const idStack: string[] = []
 
     /**
      * A stack representing subgraph navigation history from the root graph to
      * the current opened subgraph.
      */
     const navigationStack = computed(() =>
-      subgraphIdStack
-        .map((id) => canvasStore.getCanvas().graph?.subgraphs.get(id))
-        .filter(isNonNullish)
+      idStack.map((id) => app.graph.subgraphs.get(id)).filter(isNonNullish)
     )
+
+    /**
+     * Restore the navigation stack from a list of subgraph IDs.
+     * @param subgraphIds The list of subgraph IDs to restore the navigation stack from.
+     * @see exportState
+     */
+    const restoreState = (subgraphIds: string[]) => {
+      idStack.length = 0
+      for (const id of subgraphIds) idStack.push(id)
+    }
+
+    /**
+     * Export the navigation stack as a list of subgraph IDs.
+     * @returns The list of subgraph IDs, ending with the currently active subgraph.
+     * @see restoreState
+     */
+    const exportState = () => [...idStack]
 
     // Reset on workflow change
     watch(
       () => workflowStore.activeWorkflow,
-      () => (subgraphIdStack.length = 0)
+      () => (idStack.length = 0)
     )
 
     // Update navigation stack when opened subgraph changes
@@ -46,26 +60,28 @@ export const useSubgraphNavigationStore = defineStore(
       (subgraph) => {
         // Navigated back to the root graph
         if (!subgraph) {
-          subgraphIdStack.length = 0
+          idStack.length = 0
           return
         }
 
-        const index = subgraphIdStack.lastIndexOf(subgraph.id)
-        const lastIndex = subgraphIdStack.length - 1
+        const index = idStack.lastIndexOf(subgraph.id)
+        const lastIndex = idStack.length - 1
 
         if (index === -1) {
           // Opened a new subgraph
-          subgraphIdStack.push(subgraph.id)
+          idStack.push(subgraph.id)
         } else if (index !== lastIndex) {
           // Navigated to a different subgraph
-          subgraphIdStack.splice(index + 1, lastIndex - index)
+          idStack.splice(index + 1, lastIndex - index)
         }
       }
     )
 
     return {
       activeSubgraph,
-      navigationStack
+      navigationStack,
+      restoreState,
+      exportState
     }
   }
 )
