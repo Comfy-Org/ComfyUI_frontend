@@ -1,7 +1,9 @@
 import type { LGraphCanvas, LGraphGroup, LGraphNode } from '@comfyorg/litegraph'
 import type { Positionable } from '@comfyorg/litegraph/dist/interfaces'
 import { defineStore } from 'pinia'
-import { type Raw, markRaw, ref, shallowRef } from 'vue'
+import { type Raw, computed, markRaw, ref, shallowRef } from 'vue'
+
+import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 
 export const useTitleEditorStore = defineStore('titleEditor', () => {
   const titleEditorTarget = shallowRef<LGraphNode | LGraphGroup | null>(null)
@@ -27,6 +29,9 @@ export const useCanvasStore = defineStore('canvas', () => {
     selectedItems.value = items.map((item) => markRaw(item))
   }
 
+  const nodeSelected = computed(() => selectedItems.value.some(isLGraphNode))
+  const groupSelected = computed(() => selectedItems.value.some(isLGraphGroup))
+
   const getCanvas = () => {
     if (!canvas.value) throw new Error('getCanvas: canvas is null')
     return canvas.value
@@ -35,6 +40,8 @@ export const useCanvasStore = defineStore('canvas', () => {
   return {
     canvas,
     selectedItems,
+    nodeSelected,
+    groupSelected,
     updateSelectedItems,
     getCanvas
   }
