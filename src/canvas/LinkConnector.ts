@@ -1,4 +1,5 @@
 import type { RenderLink } from "./RenderLink"
+import type { LinkConnectorEventMap } from "@/infrastructure/LinkConnectorEventMap"
 import type { ConnectingLink, ItemLocator, LinkNetwork, LinkSegment } from "@/interfaces"
 import type { INodeInputSlot, INodeOutputSlot } from "@/interfaces"
 import type { LGraphNode } from "@/LGraphNode"
@@ -7,7 +8,6 @@ import type { CanvasPointerEvent } from "@/types/events"
 import type { IBaseWidget } from "@/types/widgets"
 
 import { CustomEventTarget } from "@/infrastructure/CustomEventTarget"
-import { LinkConnectorEventMap } from "@/infrastructure/LinkConnectorEventMap"
 import { LLink } from "@/LLink"
 import { LinkDirection } from "@/types/globalEnums"
 

@@ -1,10 +1,10 @@
+import type { Point } from "@/interfaces"
 import type { CanvasPointer, LGraphCanvas, LGraphNode, Size } from "@/litegraph"
 import type { CanvasMouseEvent, CanvasPointerEvent } from "@/types/events"
 import type { IBaseWidget } from "@/types/widgets"
 
 import { drawTextInArea } from "@/draw"
 import { Rectangle } from "@/infrastructure/Rectangle"
-import { Point } from "@/interfaces"
 import { LiteGraph } from "@/litegraph"
 
 export interface DrawWidgetOptions {

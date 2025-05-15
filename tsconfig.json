@@ -21,6 +21,7 @@
     "downlevelIteration": true,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
+    "verbatimModuleSyntax": true,
 
     /* AllowJs during migration phase */
     "allowJs": true,

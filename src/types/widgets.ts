@@ -1,7 +1,6 @@
+import type { CanvasColour, Point, RequiredProps, Size } from "../interfaces"
 import type { CanvasPointer, LGraphCanvas, LGraphNode } from "../litegraph"
 import type { CanvasMouseEvent, CanvasPointerEvent } from "./events"
-
-import { CanvasColour, Point, type RequiredProps, Size } from "../interfaces"
 
 export interface IWidgetOptions<TValues = unknown[]> {
   on?: string

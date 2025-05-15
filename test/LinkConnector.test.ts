@@ -6,10 +6,7 @@ import { describe, expect, test as baseTest, vi } from "vitest"
 
 import { LinkConnector } from "@/canvas/LinkConnector"
 import { ToInputRenderLink } from "@/canvas/ToInputRenderLink"
-import { LGraph } from "@/LGraph"
-import { LGraphNode } from "@/LGraphNode"
-import { LLink } from "@/LLink"
-import { Reroute, type RerouteId } from "@/Reroute"
+import { LGraph, LGraphNode, LLink, Reroute, type RerouteId } from "@/litegraph"
 import { LinkDirection } from "@/types/globalEnums"
 
 interface TestContext {
@@ -30,6 +27,7 @@ const test = baseTest.extend<TestContext>({
       links: new Map<number, LLink>(),
       reroutes,
       floatingLinks,
+      getLink: graph.getLink.bind(graph),
       getNodeById: (id: number) => graph.getNodeById(id),
       addFloatingLink: (link: LLink) => {
         floatingLinks.set(link.id, link)
