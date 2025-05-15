@@ -1334,6 +1334,7 @@
     "no3dSceneToExport": "내보낼 3D 장면이 없습니다",
     "noTemplatesToExport": "내보낼 템플릿이 없습니다",
     "nodeDefinitionsUpdated": "노드 정의가 업데이트되었습니다",
+    "nothingSelected": "선택된 항목이 없습니다",
     "nothingToGroup": "그룹화할 항목이 없습니다",
     "nothingToQueue": "대기열에 추가할 항목이 없습니다",
     "pendingTasksDeleted": "보류 중인 작업이 삭제되었습니다",
