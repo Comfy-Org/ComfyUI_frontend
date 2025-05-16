@@ -686,6 +686,7 @@
     "ComfyUI Forum": "Форум ComfyUI",
     "ComfyUI Issues": "Проблемы ComfyUI",
     "Contact Support": "Связаться с поддержкой",
+    "Convert Selection to Subgraph": "Преобразовать выделенное в подграф",
     "Convert selected nodes to group node": "Преобразовать выбранные ноды в групповую ноду",
     "Custom Nodes Manager": "Менеджер Пользовательских Узлов",
     "Delete Selected Items": "Удалить выбранные элементы",
@@ -1325,6 +1326,7 @@
     "title": "Начните с шаблона"
   },
   "toastMessages": {
+    "cannotCreateSubgraph": "Невозможно создать подграф",
     "couldNotDetermineFileType": "Не удалось определить тип файла",
     "dropFileError": "Не удалось обработать перетаскиваемый элемент: {error}",
     "emptyCanvas": "Пустой холст",
@@ -1333,6 +1335,7 @@
     "errorSaveSetting": "Ошибка сохранения настройки {id}: {err}",
     "failedToAccessBillingPortal": "Не удалось получить доступ к биллинговому порталу: {error}",
     "failedToApplyTexture": "Не удалось применить текстуру",
+    "failedToConvertToSubgraph": "Не удалось преобразовать элементы в подграф",
     "failedToCreateCustomer": "Не удалось создать клиента: {error}",
     "failedToDownloadFile": "Не удалось скачать файл",
     "failedToExportModel": "Не удалось экспортировать модель как {format}",
