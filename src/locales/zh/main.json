@@ -714,6 +714,7 @@
     "ComfyUI Forum": "ComfyUI 论坛",
     "ComfyUI Issues": "ComfyUI 问题",
     "Contact Support": "联系支持",
+    "Convert Selection to Subgraph": "将选中内容转换为子图",
     "Convert selected nodes to group node": "将选中节点转换为组节点",
     "Delete Selected Items": "删除选定的项目",
     "Desktop User Guide": "桌面端用户指南",
@@ -1389,6 +1390,7 @@
     "title": "从模板开始"
   },
   "toastMessages": {
+    "cannotCreateSubgraph": "无法创建子图",
     "couldNotDetermineFileType": "无法确定文件类型",
     "dropFileError": "无法处理掉落的项目：{error}",
     "emptyCanvas": "画布为空",
@@ -1397,6 +1399,7 @@
     "errorSaveSetting": "保存设置 {id} 出错：{err}",
     "failedToAccessBillingPortal": "访问账单门户失败：{error}",
     "failedToApplyTexture": "应用纹理失败",
+    "failedToConvertToSubgraph": "无法将项目转换为子图",
     "failedToCreateCustomer": "创建客户失败：{error}",
     "failedToDownloadFile": "文件下载失败",
     "failedToExportModel": "无法将模型导出为 {format}",

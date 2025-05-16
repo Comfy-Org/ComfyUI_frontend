@@ -714,6 +714,7 @@
     "ComfyUI Forum": "ComfyUI 포럼",
     "ComfyUI Issues": "ComfyUI 이슈 페이지",
     "Contact Support": "고객 지원 문의",
+    "Convert Selection to Subgraph": "선택 영역을 서브그래프로 변환",
     "Convert selected nodes to group node": "선택한 노드를 그룹 노드로 변환",
     "Delete Selected Items": "선택한 항목 삭제",
     "Desktop User Guide": "데스크톱 사용자 가이드",
@@ -1389,6 +1390,7 @@
     "title": "템플릿으로 시작하기"
   },
   "toastMessages": {
+    "cannotCreateSubgraph": "서브그래프를 생성할 수 없습니다",
     "couldNotDetermineFileType": "파일 유형을 결정할 수 없습니다",
     "dropFileError": "드롭된 항목을 처리할 수 없습니다: {error}",
     "emptyCanvas": "빈 캔버스",
@@ -1397,6 +1399,7 @@
     "errorSaveSetting": "설정 {id} 저장 오류: {err}",
     "failedToAccessBillingPortal": "결제 포털에 접근하지 못했습니다: {error}",
     "failedToApplyTexture": "텍스처 적용에 실패했습니다",
+    "failedToConvertToSubgraph": "항목을 서브그래프로 변환하지 못했습니다",
     "failedToCreateCustomer": "고객 생성에 실패했습니다: {error}",
     "failedToDownloadFile": "파일 다운로드에 실패했습니다",
     "failedToExportModel": "{format} 형식으로 모델 내보내기에 실패했습니다",
