@@ -1,6 +1,6 @@
 import type { Subgraph } from '@comfyorg/litegraph'
 import { defineStore } from 'pinia'
-import { computed, shallowRef, watch } from 'vue'
+import { computed, shallowReactive, shallowRef, watch } from 'vue'
 
 import { app } from '@/scripts/app'
 import { isNonNullish } from '@/utils/typeGuardUtil'
@@ -21,7 +21,7 @@ export const useSubgraphNavigationStore = defineStore(
     const activeSubgraph = shallowRef<Subgraph>()
 
     /** The stack of subgraph IDs from the root graph to the currently opened subgraph. */
-    const idStack: string[] = []
+    const idStack = shallowReactive<string[]>([])
 
     /**
      * A stack representing subgraph navigation history from the root graph to
