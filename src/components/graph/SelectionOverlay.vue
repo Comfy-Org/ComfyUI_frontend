@@ -57,9 +57,7 @@ whenever(
   { immediate: true }
 )
 
-whenever(() => canvasStore.getCanvas().ds.state, positionSelectionOverlay, {
-  deep: true
-})
+canvasStore.getCanvas().ds.onChanged = positionSelectionOverlay
 
 watch(
   () => canvasStore.canvas?.state?.draggingItems,
