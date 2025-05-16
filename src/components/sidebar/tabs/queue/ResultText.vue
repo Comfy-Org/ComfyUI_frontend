@@ -43,6 +43,20 @@ const { copyToClipboard } = useCopyToClipboard()
 .text-content {
   font-size: 0.875rem;
   color: var(--text-color);
+  width: 100%;
+  max-height: 100%;
+  max-width: 80vw;
+  overflow-y: auto;
+  line-height: 1.5;
+  padding-right: 0.5rem;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+/* Hide scrollbar but keep functionality */
+.text-content::-webkit-scrollbar {
+  width: 0;
+  background: transparent;
 }
 
 .copy-button {
