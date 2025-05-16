@@ -4,23 +4,30 @@
 name: Test ComfyUI Frontend
 
 on:
+  workflow_dispatch:
+    inputs:
+      frontend-branch:
+        description: "Frontend branch"
+        required: true
+        default: "main"
+
   push:
     branches: [main, master]
     paths-ignore:
-      - '.cursor/**'
-      - '.husky/**'
-      - '.vscode/**'
-      - '.github/ISSUE_TEMPLATE/**'
-      - 'test/**'
+      - ".cursor/**"
+      - ".husky/**"
+      - ".vscode/**"
+      - ".github/ISSUE_TEMPLATE/**"
+      - "test/**"
 
   pull_request:
     branches: [main, master]
     paths-ignore:
-      - '.cursor/**'
-      - '.husky/**'
-      - '.vscode/**'
-      - '.github/ISSUE_TEMPLATE/**'
-      - 'test/**'
+      - ".cursor/**"
+      - ".husky/**"
+      - ".vscode/**"
+      - ".github/ISSUE_TEMPLATE/**"
+      - "test/**"
 
 jobs:
   test-comfyui-frontend:
@@ -43,6 +50,7 @@ jobs:
         with:
           repository: "Comfy-Org/ComfyUI_frontend"
           path: "ComfyUI_frontend"
+          ref: ${{ inputs.frontend-branch }}
 
       - name: Checkout ComfyUI_devtools
         uses: actions/checkout@v4
