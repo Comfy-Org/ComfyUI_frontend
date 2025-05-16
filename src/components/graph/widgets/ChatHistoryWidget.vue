@@ -59,18 +59,18 @@ import ResponseBlurb from '@/components/graph/widgets/chatHistory/ResponseBlurb.
 import { ComponentWidget } from '@/scripts/domWidget'
 import { linkifyHtml, nl2br } from '@/utils/formatUtil'
 
-const modelValue = defineModel<string>({ required: true })
-const { widget } = defineProps<{
-  widget: ComponentWidget<string>
+const { widget, history = '[]' } = defineProps<{
+  widget?: ComponentWidget<string>
+  history: string
 }>()
 
 const editIndex = ref<number | null>(null)
 const scrollPanelRef = ref<InstanceType<typeof ScrollPanel> | null>(null)
 
-const parsedHistory = computed(() => JSON.parse(modelValue.value ?? '[]'))
+const parsedHistory = computed(() => JSON.parse(history || '[]'))
 
 const findPromptInput = () =>
-  widget.node.widgets?.find((w) => w.name === 'prompt')
+  widget?.node.widgets?.find((w) => w.name === 'prompt')
 let promptInput = findPromptInput()
 const previousPromptInput = ref<string | null>(null)
 
@@ -78,14 +78,14 @@ const getPreviousResponseId = (index: number) =>
   index > 0 ? parsedHistory.value[index - 1]?.response_id ?? '' : ''
 
 const storePromptInput = () => {
-  promptInput ??= widget.node.widgets?.find((w) => w.name === 'prompt')
+  promptInput ??= widget?.node.widgets?.find((w) => w.name === 'prompt')
   if (!promptInput) return
 
   previousPromptInput.value = String(promptInput.value)
 }
 
 const setPromptInput = (text: string, previousResponseId?: string | null) => {
-  promptInput ??= widget.node.widgets?.find((w) => w.name === 'prompt')
+  promptInput ??= widget?.node.widgets?.find((w) => w.name === 'prompt')
   if (!promptInput) return
 
   if (previousResponseId !== null) {
