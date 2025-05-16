@@ -102,6 +102,13 @@
       "title": "Crea una cuenta"
     }
   },
+  "chatHistory": {
+    "cancelEdit": "Cancelar",
+    "cancelEditTooltip": "Cancelar edición",
+    "copiedTooltip": "Copiado",
+    "copyTooltip": "Copiar mensaje al portapapeles",
+    "editTooltip": "Editar mensaje"
+  },
   "clipboard": {
     "errorMessage": "Error al copiar al portapapeles",
     "errorNotSupported": "API del portapapeles no soportada en su navegador",
@@ -277,6 +284,7 @@
     "continue": "Continuar",
     "control_after_generate": "control después de generar",
     "control_before_generate": "control antes de generar",
+    "copy": "Copiar",
     "copyToClipboard": "Copiar al portapapeles",
     "currentUser": "Usuario actual",
     "customize": "Personalizar",
@@ -288,6 +296,7 @@
     "disableAll": "Deshabilitar todo",
     "disabling": "Deshabilitando",
     "download": "Descargar",
+    "edit": "Editar",
     "empty": "Vacío",
     "enableAll": "Habilitar todo",
     "enabled": "Habilitado",
