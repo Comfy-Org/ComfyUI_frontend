@@ -19,23 +19,25 @@ import Breadcrumb from 'primevue/breadcrumb'
 import type { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
 import { computed } from 'vue'
 
-import { useWorkflowService } from '@/services/workflowService'
 import { useCanvasStore } from '@/stores/graphStore'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 
-const workflowService = useWorkflowService()
 const workflowStore = useWorkflowStore()
+const navigationStore = useSubgraphNavigationStore()
 
 const workflowName = computed(() => workflowStore.activeWorkflow?.filename)
 
 const items = computed(() => {
-  if (!workflowStore.subgraphNamePath.length) return []
+  if (!navigationStore.navigationStack.length) return []
 
-  return workflowStore.subgraphNamePath.map<MenuItem>((name) => ({
-    label: name,
-    command: async () => {
-      const workflow = workflowStore.getWorkflowByPath(name)
-      if (workflow) await workflowService.openWorkflow(workflow)
+  return navigationStore.navigationStack.map<MenuItem>((subgraph) => ({
+    label: subgraph.name,
+    command: () => {
+      const canvas = useCanvasStore().getCanvas()
+      if (!canvas.graph) throw new TypeError('Canvas has no graph')
+
+      canvas.setGraph(subgraph)
     }
   }))
 })
@@ -43,7 +45,7 @@ const items = computed(() => {
 const home = computed(() => ({
   label: workflowName.value,
   icon: 'pi pi-home',
-  command: async () => {
+  command: () => {
     const canvas = useCanvasStore().getCanvas()
     if (!canvas.graph) throw new TypeError('Canvas has no graph')
 
