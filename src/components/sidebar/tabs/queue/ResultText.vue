@@ -1,28 +1,29 @@
 <template>
-  <div class="result-text-container" @click="copyToClipboard">
+  <div class="result-text-container">
     <div class="text-content">
-      {{ result }}
+      {{ result.text }}
     </div>
-    <div class="copy-button">
-      <i class="pi pi-copy" />
-    </div>
+
+    <Button
+      class="copy-button"
+      icon="pi pi-copy"
+      text
+      @click.stop="copyToClipboard(result.text ?? '')"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
+import Button from 'primevue/button'
+
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { ResultItemImpl } from '@/stores/queueStore'
 
-const props = defineProps<{
+defineProps<{
   result: ResultItemImpl
 }>()
 
-const copyToClipboard = async () => {
-  try {
-    await navigator.clipboard.writeText(props.result.text)
-  } catch (err) {
-    console.error('Failed to copy text:', err)
-  }
-}
+const { copyToClipboard } = useCopyToClipboard()
 </script>
 
 <style scoped>

@@ -30,6 +30,7 @@ export class ResultItemImpl {
   filename: string
   subfolder: string
   type: string
+  text?: string
 
   nodeId: NodeId
   // 'audio' | 'images' | ...
@@ -43,6 +44,7 @@ export class ResultItemImpl {
     this.filename = obj.filename ?? ''
     this.subfolder = obj.subfolder ?? ''
     this.type = obj.type ?? ''
+    this.text = obj.text
 
     this.nodeId = obj.nodeId
     this.mediaType = obj.mediaType
@@ -237,14 +239,21 @@ export class TaskItemImpl {
     }
     return Object.entries(this.outputs).flatMap(([nodeId, nodeOutputs]) =>
       Object.entries(nodeOutputs).flatMap(([mediaType, items]) =>
-        (items as ResultItem[]).map(
-          (item: ResultItem) =>
-            new ResultItemImpl({
+        (items as (ResultItem | string)[]).map((item: ResultItem | string) => {
+          if (typeof item === 'string') {
+            return new ResultItemImpl({
+              text: item,
+              nodeId,
+              mediaType
+            })
+          } else {
+            return new ResultItemImpl({
               ...item,
               nodeId,
               mediaType
             })
-        )
+          }
+        })
       )
     )
   }
