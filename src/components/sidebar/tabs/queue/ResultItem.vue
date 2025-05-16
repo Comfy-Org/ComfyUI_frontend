@@ -13,6 +13,7 @@
     />
     <ResultVideo v-else-if="result.isVideo" :result="result" />
     <ResultAudio v-else-if="result.isAudio" :result="result" />
+    <ResultText v-else-if="result.isText" :result="result" />
     <div v-else class="task-result-preview">
       <i class="pi pi-file" />
       <span>{{ result.mediaType }}</span>
@@ -28,6 +29,7 @@ import { ResultItemImpl } from '@/stores/queueStore'
 import { useSettingStore } from '@/stores/settingStore'
 
 import ResultAudio from './ResultAudio.vue'
+import ResultText from './ResultText.vue'
 import ResultVideo from './ResultVideo.vue'
 
 const props = defineProps<{

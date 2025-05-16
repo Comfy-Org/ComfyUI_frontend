@@ -193,8 +193,12 @@ export class ResultItemImpl {
     )
   }
 
+  get isText(): boolean {
+    return ['text', 'json', 'display_text'].includes(this.mediaType)
+  }
+
   get supportsPreview(): boolean {
-    return this.isImage || this.isVideo || this.isAudio
+    return this.isImage || this.isVideo || this.isAudio || this.isText
   }
 }
 
