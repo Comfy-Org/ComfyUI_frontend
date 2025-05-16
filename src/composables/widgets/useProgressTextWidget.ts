@@ -8,7 +8,11 @@ import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 
 const PADDING = 16
 
-export const useTextPreviewWidget = () => {
+export const useTextPreviewWidget = (
+  options: {
+    minHeight?: number
+  } = {}
+) => {
   const widgetConstructor: ComfyWidgetConstructorV2 = (
     node: LGraphNode,
     inputSpec: InputSpec
@@ -24,7 +28,7 @@ export const useTextPreviewWidget = () => {
         setValue: (value: string | object) => {
           widgetValue.value = typeof value === 'string' ? value : String(value)
         },
-        getMinHeight: () => 42 + PADDING
+        getMinHeight: () => options.minHeight ?? 42 + PADDING
       }
     })
     addWidget(node, widget)
