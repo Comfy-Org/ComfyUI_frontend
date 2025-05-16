@@ -92,7 +92,7 @@ export class DragAndScale {
   }
 
   computeVisibleArea(viewport: Rect | undefined): void {
-    const { scale, offset } = this
+    const { scale, offset, visible_area } = this
 
     if (this.#stateHasChanged()) {
       this.onChanged?.(scale, offset)
@@ -100,11 +100,10 @@ export class DragAndScale {
     }
 
     if (!this.element) {
-      this.visible_area[0] = this.visible_area[1] = this.visible_area[2] = this.visible_area[3] = 0
+      visible_area[0] = visible_area[1] = visible_area[2] = visible_area[3] = 0
       return
     }
-    let width = this.element.width
-    let height = this.element.height
+    let { width, height } = this.element
     let startx = -offset[0]
     let starty = -offset[1]
     if (viewport) {
@@ -115,10 +114,9 @@ export class DragAndScale {
     }
     const endx = startx + width / scale
     const endy = starty + height / scale
-    this.visible_area[0] = startx
-    this.visible_area[1] = starty
-    this.visible_area[2] = endx - startx
-    this.visible_area[3] = endy - starty
+    visible_area[0] = startx
+    visible_area[1] = starty
+    visible_area.resizeBottomRight(endx, endy)
   }
 
   toCanvasContext(ctx: CanvasRenderingContext2D): void {

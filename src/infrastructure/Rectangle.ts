@@ -162,10 +162,10 @@ export class Rectangle extends Float64Array {
    */
   containsXy(x: number, y: number): boolean {
     const { x: left, y: top, width, height } = this
-    return left <= x &&
-      top <= y &&
-      left + width >= x &&
-      top + height >= y
+    return x >= left &&
+      x < left + width &&
+      y >= top &&
+      y < top + height
   }
 
   /**
@@ -242,6 +242,37 @@ export class Rectangle extends Float64Array {
   /** @returns The offset from the point [{@link x}, {@link y}] to the top-left of this rectangle, as a new {@link Point}. */
   getOffsetFrom([x, y]: ReadOnlyPoint): Point {
     return [this[0] - x, this[1] - y]
+  }
+
+  /** Resizes the rectangle without moving it, setting its top-left corner to [{@link x}, {@link y}]. */
+  resizeTopLeft(x1: number, y1: number) {
+    this[2] += this[0] - x1
+    this[3] += this[1] - y1
+
+    this[0] = x1
+    this[1] = y1
+  }
+
+  /** Resizes the rectangle without moving it, setting its bottom-left corner to [{@link x}, {@link y}]. */
+  resizeBottomLeft(x1: number, y2: number) {
+    this[2] += this[0] - x1
+    this[3] = y2 - this[1]
+
+    this[0] = x1
+  }
+
+  /** Resizes the rectangle without moving it, setting its top-right corner to [{@link x}, {@link y}]. */
+  resizeTopRight(x2: number, y1: number) {
+    this[2] = x2 - this[0]
+    this[3] += this[1] - y1
+
+    this[1] = y1
+  }
+
+  /** Resizes the rectangle without moving it, setting its bottom-right corner to [{@link x}, {@link y}]. */
+  resizeBottomRight(x2: number, y2: number) {
+    this[2] = x2 - this[0]
+    this[3] = y2 - this[1]
   }
 
   /** Sets the width without moving the right edge (changes position) */
