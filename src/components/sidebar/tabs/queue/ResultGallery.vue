@@ -55,7 +55,7 @@ import ResultVideo from './ResultVideo.vue'
 const galleryVisible = ref(false)
 
 const emit = defineEmits<{
-  (e: 'update:activeIndex', value: number): void
+  'update:activeIndex': [number]
 }>()
 
 const props = defineProps<{
