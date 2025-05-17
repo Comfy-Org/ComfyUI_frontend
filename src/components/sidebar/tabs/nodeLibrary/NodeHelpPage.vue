@@ -25,52 +25,46 @@
           <p>
             <strong>{{ $t('nodeHelpPage.inputs') }}:</strong>
           </p>
-          <table class="min-w-full table-auto text-sm">
-            <thead>
-              <tr>
-                <th class="px-4 py-2 text-left">{{ $t('g.name') }}</th>
-                <th class="px-4 py-2 text-left">
-                  {{ $t('nodeHelpPage.type') }}
-                </th>
-                <th class="px-4 py-2 text-left">{{ $t('g.description') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="input in inputList" :key="input.name">
-                <td class="border px-4 py-2">
-                  <code>{{ input.name }}</code>
-                </td>
-                <td class="border px-4 py-2">{{ input.type }}</td>
-                <td class="border px-4 py-2">{{ input.tooltip || '-' }}</td>
-              </tr>
-            </tbody>
-          </table>
+          <DataTable
+            :value="inputList"
+            class="text-sm"
+            table-style="min-width: 100%"
+          >
+            <Column field="name" :header="$t('g.name')">
+              <template #body="slotProps">
+                <code>{{ slotProps.data.name }}</code>
+              </template>
+            </Column>
+            <Column field="type" :header="$t('nodeHelpPage.type')" />
+            <Column field="tooltip" :header="$t('g.description')">
+              <template #body="slotProps">
+                {{ slotProps.data.tooltip || '-' }}
+              </template>
+            </Column>
+          </DataTable>
         </div>
 
         <div v-if="outputList.length">
           <p>
             <strong>{{ $t('nodeHelpPage.outputs') }}:</strong>
           </p>
-          <table class="min-w-full table-auto text-sm">
-            <thead>
-              <tr>
-                <th class="px-4 py-2 text-left">{{ $t('g.name') }}</th>
-                <th class="px-4 py-2 text-left">
-                  {{ $t('nodeHelpPage.type') }}
-                </th>
-                <th class="px-4 py-2 text-left">{{ $t('g.description') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="output in outputList" :key="output.name">
-                <td class="border px-4 py-2">
-                  <code>{{ output.name }}</code>
-                </td>
-                <td class="border px-4 py-2">{{ output.type }}</td>
-                <td class="border px-4 py-2">{{ output.tooltip || '-' }}</td>
-              </tr>
-            </tbody>
-          </table>
+          <DataTable
+            :value="outputList"
+            class="text-sm"
+            table-style="min-width: 100%"
+          >
+            <Column field="name" :header="$t('g.name')">
+              <template #body="slotProps">
+                <code>{{ slotProps.data.name }}</code>
+              </template>
+            </Column>
+            <Column field="type" :header="$t('nodeHelpPage.type')" />
+            <Column field="tooltip" :header="$t('g.description')">
+              <template #body="slotProps">
+                {{ slotProps.data.tooltip || '-' }}
+              </template>
+            </Column>
+          </DataTable>
         </div>
 
         <p>
@@ -91,6 +85,8 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
+import Column from 'primevue/column'
+import DataTable from 'primevue/datatable'
 import { computed } from 'vue'
 
 import MarkdownRenderer from '@/components/common/MarkdownRenderer.vue'
