@@ -81,7 +81,7 @@
           currentHelpNode!.display_name
         }}</span>
       </div>
-      <div class="p-4 overflow-auto flex-grow">
+      <div class="px-4 overflow-auto flex-grow">
         <MarkdownRenderer
           class="text-sm"
           :content="currentHelpNode!.help || currentHelpNode!.description || ''"
