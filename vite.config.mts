@@ -8,11 +8,7 @@ import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
 import type { UserConfigExport } from 'vitest/config'
 
-import {
-  addElementVnodeExportPlugin,
-  comfyAPIPlugin,
-  generateImportMapPlugin
-} from './build/plugins'
+import { comfyAPIPlugin } from './build/plugins'
 
 dotenv.config()
 
@@ -76,12 +72,6 @@ export default defineConfig({
       ? [vueDevTools(), vue(), createHtmlPlugin({})]
       : [vue()]),
     comfyAPIPlugin(IS_DEV),
-    generateImportMapPlugin([
-      { name: 'vue', pattern: /[\\/]node_modules[\\/]vue[\\/]/ },
-      { name: 'primevue', pattern: /[\\/]node_modules[\\/]primevue[\\/]/ },
-      { name: 'vue-i18n', pattern: /[\\/]node_modules[\\/]vue-i18n[\\/]/ }
-    ]),
-    addElementVnodeExportPlugin(),
 
     Icons({
       compiler: 'vue3'

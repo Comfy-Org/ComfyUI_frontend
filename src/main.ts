@@ -5,11 +5,14 @@ import * as Sentry from '@sentry/vue'
 import { initializeApp } from 'firebase/app'
 import { createPinia } from 'pinia'
 import 'primeicons/primeicons.css'
+import * as pv from 'primevue'
 import PrimeVue from 'primevue/config'
 import ConfirmationService from 'primevue/confirmationservice'
 import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
+import * as Vue from 'vue'
+import * as vueI18n from 'vue-i18n'
 import { VueFire, VueFireAuth } from 'vuefire'
 
 import '@/assets/css/style.css'
@@ -68,3 +71,7 @@ app
     modules: [VueFireAuth()]
   })
   .mount('#vue-app')
+
+window.Vue = Vue
+window.PrimeVue = pv
+window.VueI18n = vueI18n

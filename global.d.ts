@@ -16,3 +16,9 @@ interface Navigator {
     visible: boolean
   }
 }
+
+interface Window {
+  Vue: typeof import('vue')
+  PrimeVue: typeof import('primevue')
+  VueI18n: typeof import('vue-i18n')
+}
