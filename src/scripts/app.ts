@@ -769,7 +769,6 @@ export class ComfyApp {
     this.canvas = new LGraphCanvas(canvasEl, this.graph)
     // Make canvas states reactive so we can observe changes on them.
     this.canvas.state = reactive(this.canvas.state)
-    this.canvas.ds.state = reactive(this.canvas.ds.state)
 
     // @ts-expect-error fixme ts strict error
     this.ctx = canvasEl.getContext('2d')
