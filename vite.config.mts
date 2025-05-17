@@ -21,6 +21,7 @@ const SHOULD_MINIFY = process.env.ENABLE_MINIFY === 'true'
 // vite dev server will listen on all addresses, including LAN and public addresses
 const VITE_REMOTE_DEV = process.env.VITE_REMOTE_DEV === 'true'
 const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
+const DISABLE_VUE_PLUGINS = process.env.DISABLE_VUE_PLUGINS === 'true'
 
 const DEV_SERVER_COMFYUI_URL =
   process.env.DEV_SERVER_COMFYUI_URL || 'http://127.0.0.1:8188'
@@ -71,9 +72,9 @@ export default defineConfig({
   },
 
   plugins: [
-    vueDevTools(),
-    vue(),
-    createHtmlPlugin({}),
+    ...(!DISABLE_VUE_PLUGINS
+      ? [vueDevTools(), vue(), createHtmlPlugin({})]
+      : [vue()]),
     comfyAPIPlugin(IS_DEV),
     generateImportMapPlugin([
       { name: 'vue', pattern: /[\\/]node_modules[\\/]vue[\\/]/ },
