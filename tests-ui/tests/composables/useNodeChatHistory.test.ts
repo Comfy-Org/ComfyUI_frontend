@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { LGraphNode } from '@comfyorg/litegraph'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useNodeChatHistory } from '@/composables/node/useNodeChatHistory'
 
@@ -23,10 +23,10 @@ vi.mock('@/composables/widgets/useChatHistoryWidget', () => ({
 
 // Mock LGraphNode type
 type MockNode = {
-  widgets: Array<{ name: string; type: string }>;
-  setDirtyCanvas: ReturnType<typeof vi.fn>;
-  addCustomWidget: ReturnType<typeof vi.fn>;
-  [key: string]: any;
+  widgets: Array<{ name: string; type: string }>
+  setDirtyCanvas: ReturnType<typeof vi.fn>
+  addCustomWidget: ReturnType<typeof vi.fn>
+  [key: string]: any
 }
 
 describe('useNodeChatHistory', () => {
