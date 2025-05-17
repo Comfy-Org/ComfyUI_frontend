@@ -1,74 +1,94 @@
 <template>
-  <SidebarTabTemplate
-    :title="$t('sideToolbar.nodeLibrary')"
-    class="bg-[var(--p-tree-background)]"
-  >
-    <template #tool-buttons>
-      <Button
-        v-tooltip.bottom="$t('g.newFolder')"
-        class="new-folder-button"
-        icon="pi pi-folder-plus"
-        text
-        severity="secondary"
-        @click="nodeBookmarkTreeExplorerRef?.addNewBookmarkFolder()"
-      />
-      <Button
-        v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.sortOrder')"
-        class="sort-button"
-        :icon="alphabeticalSort ? 'pi pi-sort-alpha-down' : 'pi pi-sort-alt'"
-        text
-        severity="secondary"
-        @click="alphabeticalSort = !alphabeticalSort"
-      />
-    </template>
-    <template #header>
-      <div v-if="!isHelpOpen">
-        <SearchBox
-          v-model:modelValue="searchQuery"
-          class="node-lib-search-box p-2 2xl:p-4"
-          :placeholder="$t('g.searchNodes') + '...'"
-          filter-icon="pi pi-filter"
-          :filters
-          @search="handleSearch"
-          @show-filter="($event) => searchFilter?.toggle($event)"
-          @remove-filter="onRemoveFilter"
+  <div class="h-full">
+    <SidebarTabTemplate
+      v-if="!isHelpOpen"
+      :title="$t('sideToolbar.nodeLibrary')"
+      class="bg-[var(--p-tree-background)]"
+    >
+      <template #tool-buttons>
+        <Button
+          v-tooltip.bottom="$t('g.newFolder')"
+          class="new-folder-button"
+          icon="pi pi-folder-plus"
+          text
+          severity="secondary"
+          @click="nodeBookmarkTreeExplorerRef?.addNewBookmarkFolder()"
         />
+        <Button
+          v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.sortOrder')"
+          class="sort-button"
+          :icon="alphabeticalSort ? 'pi pi-sort-alpha-down' : 'pi pi-sort-alt'"
+          text
+          severity="secondary"
+          @click="alphabeticalSort = !alphabeticalSort"
+        />
+      </template>
+      <template #header>
+        <div>
+          <SearchBox
+            v-model:modelValue="searchQuery"
+            class="node-lib-search-box p-2 2xl:p-4"
+            :placeholder="$t('g.searchNodes') + '...'"
+            filter-icon="pi pi-filter"
+            :filters
+            @search="handleSearch"
+            @show-filter="($event) => searchFilter?.toggle($event)"
+            @remove-filter="onRemoveFilter"
+          />
 
-        <Popover ref="searchFilter" class="ml-[-13px]">
-          <NodeSearchFilter @add-filter="onAddFilter" />
-        </Popover>
-      </div>
-      <NodeHelpOverlayHeader
-        v-else
-        :node="currentHelpNode!"
-        @close="isHelpOpen = false"
-      />
-    </template>
-    <template #body>
-      <div v-if="!isHelpOpen">
-        <NodeBookmarkTreeExplorer
-          ref="nodeBookmarkTreeExplorerRef"
-          :filtered-node-defs="filteredNodeDefs"
-          :open-node-help="openNodeHelp"
+          <Popover ref="searchFilter" class="ml-[-13px]">
+            <NodeSearchFilter @add-filter="onAddFilter" />
+          </Popover>
+        </div>
+      </template>
+      <template #body>
+        <div>
+          <NodeBookmarkTreeExplorer
+            ref="nodeBookmarkTreeExplorerRef"
+            :filtered-node-defs="filteredNodeDefs"
+            :open-node-help="openNodeHelp"
+          />
+          <Divider
+            v-show="nodeBookmarkStore.bookmarks.length > 0"
+            type="dashed"
+            class="m-2"
+          />
+          <TreeExplorer
+            v-model:expandedKeys="expandedKeys"
+            class="node-lib-tree-explorer"
+            :root="renderedRoot"
+          >
+            <template #node="{ node }">
+              <NodeTreeLeaf :node="node" :open-node-help="openNodeHelp" />
+            </template>
+          </TreeExplorer>
+        </div>
+      </template>
+    </SidebarTabTemplate>
+
+    <div v-else class="flex flex-col h-full bg-[var(--p-tree-background)]">
+      <div
+        class="px-3 py-2 flex items-center border-b border-[var(--p-divider-color)]"
+      >
+        <Button
+          v-tooltip.bottom="$t('g.back')"
+          icon="pi pi-arrow-left"
+          text
+          severity="secondary"
+          @click="isHelpOpen = false"
         />
-        <Divider
-          v-show="nodeBookmarkStore.bookmarks.length > 0"
-          type="dashed"
-          class="m-2"
-        />
-        <TreeExplorer
-          v-model:expandedKeys="expandedKeys"
-          class="node-lib-tree-explorer"
-          :root="renderedRoot"
-        >
-          <template #node="{ node }">
-            <NodeTreeLeaf :node="node" :open-node-help="openNodeHelp" />
-          </template>
-        </TreeExplorer>
+        <span class="ml-2 font-semibold">{{
+          currentHelpNode!.display_name
+        }}</span>
       </div>
-      <NodeHelpOverlayBody v-else :node="currentHelpNode!" />
-    </template>
-  </SidebarTabTemplate>
+      <div class="p-4 overflow-auto flex-grow">
+        <MarkdownRenderer
+          class="text-sm"
+          :content="currentHelpNode!.help || currentHelpNode!.description || ''"
+        />
+      </div>
+    </div>
+  </div>
   <div id="node-library-node-preview-container" />
 </template>
 
@@ -78,6 +98,7 @@ import Divider from 'primevue/divider'
 import Popover from 'primevue/popover'
 import { Ref, computed, h, nextTick, ref, render } from 'vue'
 
+import MarkdownRenderer from '@/components/common/MarkdownRenderer.vue'
 import SearchBox from '@/components/common/SearchBox.vue'
 import { SearchFilter } from '@/components/common/SearchFilterChip.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
@@ -99,8 +120,6 @@ import { FuseFilterWithValue } from '@/utils/fuseUtil'
 import { sortedTree } from '@/utils/treeUtil'
 
 import NodeBookmarkTreeExplorer from './nodeLibrary/NodeBookmarkTreeExplorer.vue'
-import NodeHelpOverlayBody from './nodeLibrary/NodeHelpOverlayBody.vue'
-import NodeHelpOverlayHeader from './nodeLibrary/NodeHelpOverlayHeader.vue'
 
 const nodeDefStore = useNodeDefStore()
 const nodeBookmarkStore = useNodeBookmarkStore()
