@@ -22,40 +22,51 @@
       />
     </template>
     <template #header>
-      <SearchBox
-        v-model:modelValue="searchQuery"
-        class="node-lib-search-box p-2 2xl:p-4"
-        :placeholder="$t('g.searchNodes') + '...'"
-        filter-icon="pi pi-filter"
-        :filters
-        @search="handleSearch"
-        @show-filter="($event) => searchFilter?.toggle($event)"
-        @remove-filter="onRemoveFilter"
-      />
+      <div v-if="!isHelpOpen">
+        <SearchBox
+          v-model:modelValue="searchQuery"
+          class="node-lib-search-box p-2 2xl:p-4"
+          :placeholder="$t('g.searchNodes') + '...'"
+          filter-icon="pi pi-filter"
+          :filters
+          @search="handleSearch"
+          @show-filter="($event) => searchFilter?.toggle($event)"
+          @remove-filter="onRemoveFilter"
+        />
 
-      <Popover ref="searchFilter" class="ml-[-13px]">
-        <NodeSearchFilter @add-filter="onAddFilter" />
-      </Popover>
+        <Popover ref="searchFilter" class="ml-[-13px]">
+          <NodeSearchFilter @add-filter="onAddFilter" />
+        </Popover>
+      </div>
+      <NodeHelpOverlayHeader
+        v-else
+        :node="currentHelpNode!"
+        @close="isHelpOpen = false"
+      />
     </template>
     <template #body>
-      <NodeBookmarkTreeExplorer
-        ref="nodeBookmarkTreeExplorerRef"
-        :filtered-node-defs="filteredNodeDefs"
-      />
-      <Divider
-        v-show="nodeBookmarkStore.bookmarks.length > 0"
-        type="dashed"
-        class="m-2"
-      />
-      <TreeExplorer
-        v-model:expandedKeys="expandedKeys"
-        class="node-lib-tree-explorer"
-        :root="renderedRoot"
-      >
-        <template #node="{ node }">
-          <NodeTreeLeaf :node="node" />
-        </template>
-      </TreeExplorer>
+      <div v-if="!isHelpOpen">
+        <NodeBookmarkTreeExplorer
+          ref="nodeBookmarkTreeExplorerRef"
+          :filtered-node-defs="filteredNodeDefs"
+          :open-node-help="openNodeHelp"
+        />
+        <Divider
+          v-show="nodeBookmarkStore.bookmarks.length > 0"
+          type="dashed"
+          class="m-2"
+        />
+        <TreeExplorer
+          v-model:expandedKeys="expandedKeys"
+          class="node-lib-tree-explorer"
+          :root="renderedRoot"
+        >
+          <template #node="{ node }">
+            <NodeTreeLeaf :node="node" :open-node-help="openNodeHelp" />
+          </template>
+        </TreeExplorer>
+      </div>
+      <NodeHelpOverlayBody v-else :node="currentHelpNode!" />
     </template>
   </SidebarTabTemplate>
   <div id="node-library-node-preview-container" />
@@ -88,6 +99,8 @@ import { FuseFilterWithValue } from '@/utils/fuseUtil'
 import { sortedTree } from '@/utils/treeUtil'
 
 import NodeBookmarkTreeExplorer from './nodeLibrary/NodeBookmarkTreeExplorer.vue'
+import NodeHelpOverlayBody from './nodeLibrary/NodeHelpOverlayBody.vue'
+import NodeHelpOverlayHeader from './nodeLibrary/NodeHelpOverlayHeader.vue'
 
 const nodeDefStore = useNodeDefStore()
 const nodeBookmarkStore = useNodeBookmarkStore()
@@ -101,6 +114,14 @@ const searchFilter = ref<InstanceType<typeof Popover> | null>(null)
 const alphabeticalSort = ref(false)
 
 const searchQuery = ref<string>('')
+
+// Help overlay state and open function
+const isHelpOpen = ref(false)
+const currentHelpNode = ref<ComfyNodeDefImpl | null>(null)
+const openNodeHelp = (nodeDef: ComfyNodeDefImpl) => {
+  currentHelpNode.value = nodeDef
+  isHelpOpen.value = true
+}
 
 const root = computed(() => {
   const root = filteredRoot.value || nodeDefStore.nodeTree
