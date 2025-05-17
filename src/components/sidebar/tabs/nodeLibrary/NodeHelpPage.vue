@@ -21,12 +21,12 @@
 
         <div v-if="inputList.length">
           <p><strong>Inputs:</strong></p>
-          <table class="min-w-full table-auto text-sm border-collapse">
+          <table class="min-w-full table-auto text-sm">
             <thead>
               <tr>
-                <th class="px-4 py-2 text-left border-b">Name</th>
-                <th class="px-4 py-2 text-left border-b">Type</th>
-                <th class="px-4 py-2 text-left border-b">Description</th>
+                <th class="px-4 py-2 text-left">Name</th>
+                <th class="px-4 py-2 text-left">Type</th>
+                <th class="px-4 py-2 text-left">Description</th>
               </tr>
             </thead>
             <tbody>
@@ -43,12 +43,12 @@
 
         <div v-if="outputList.length">
           <p><strong>Outputs:</strong></p>
-          <table class="min-w-full table-auto text-sm border-collapse">
+          <table class="min-w-full table-auto text-sm">
             <thead>
               <tr>
-                <th class="px-4 py-2 text-left border-b">Name</th>
-                <th class="px-4 py-2 text-left border-b">Type</th>
-                <th class="px-4 py-2 text-left border-b">Description</th>
+                <th class="px-4 py-2 text-left">Name</th>
+                <th class="px-4 py-2 text-left">Type</th>
+                <th class="px-4 py-2 text-left">Description</th>
               </tr>
             </thead>
             <tbody>
