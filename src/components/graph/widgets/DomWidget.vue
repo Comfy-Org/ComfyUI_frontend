@@ -11,6 +11,7 @@
       v-if="isComponentWidget(widget)"
       :model-value="widget.value"
       :widget="widget"
+      v-bind="widget.props"
       @update:model-value="emit('update:widgetValue', $event)"
     />
   </div>

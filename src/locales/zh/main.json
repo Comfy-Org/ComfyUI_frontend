@@ -82,6 +82,13 @@
       "title": "创建一个账户"
     }
   },
+  "chatHistory": {
+    "cancelEdit": "取消",
+    "cancelEditTooltip": "取消编辑",
+    "copiedTooltip": "已复制",
+    "copyTooltip": "复制消息到剪贴板",
+    "editTooltip": "编辑消息"
+  },
   "clipboard": {
     "errorMessage": "复制到剪贴板失败",
     "errorNotSupported": "您的浏览器不支持剪贴板API",
@@ -257,6 +264,7 @@
     "continue": "继续",
     "control_after_generate": "生成后控制",
     "control_before_generate": "生成前控制",
+    "copy": "复制",
     "copyToClipboard": "复制到剪贴板",
     "currentUser": "当前用户",
     "customize": "自定义",
@@ -268,6 +276,7 @@
     "disableAll": "禁用全部",
     "disabling": "禁用中",
     "download": "下载",
+    "edit": "编辑",
     "empty": "空",
     "enableAll": "启用全部",
     "enabled": "已启用",

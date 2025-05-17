@@ -82,6 +82,13 @@
       "title": "アカウントを作成する"
     }
   },
+  "chatHistory": {
+    "cancelEdit": "キャンセル",
+    "cancelEditTooltip": "編集をキャンセル",
+    "copiedTooltip": "コピーしました",
+    "copyTooltip": "メッセージをクリップボードにコピー",
+    "editTooltip": "メッセージを編集"
+  },
   "clipboard": {
     "errorMessage": "クリップボードへのコピーに失敗しました",
     "errorNotSupported": "お使いのブラウザではクリップボードAPIがサポートされていません",
@@ -257,6 +264,7 @@
     "continue": "続ける",
     "control_after_generate": "生成後の制御",
     "control_before_generate": "生成前の制御",
+    "copy": "コピー",
     "copyToClipboard": "クリップボードにコピー",
     "currentUser": "現在のユーザー",
     "customize": "カスタマイズ",
@@ -268,6 +276,7 @@
     "disableAll": "すべて無効にする",
     "disabling": "無効化",
     "download": "ダウンロード",
+    "edit": "編集",
     "empty": "空",
     "enableAll": "すべて有効にする",
     "enabled": "有効",

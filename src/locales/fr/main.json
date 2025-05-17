@@ -82,6 +82,13 @@
       "title": "Créer un compte"
     }
   },
+  "chatHistory": {
+    "cancelEdit": "Annuler",
+    "cancelEditTooltip": "Annuler la modification",
+    "copiedTooltip": "Copié",
+    "copyTooltip": "Copier le message dans le presse-papiers",
+    "editTooltip": "Modifier le message"
+  },
   "clipboard": {
     "errorMessage": "Échec de la copie dans le presse-papiers",
     "errorNotSupported": "L'API du presse-papiers n'est pas prise en charge par votre navigateur",
@@ -257,6 +264,7 @@
     "continue": "Continuer",
     "control_after_generate": "contrôle après génération",
     "control_before_generate": "contrôle avant génération",
+    "copy": "Copier",
     "copyToClipboard": "Copier dans le presse-papiers",
     "currentUser": "Utilisateur actuel",
     "customize": "Personnaliser",
@@ -268,6 +276,7 @@
     "disableAll": "Désactiver tout",
     "disabling": "Désactivation",
     "download": "Télécharger",
+    "edit": "Modifier",
     "empty": "Vide",
     "enableAll": "Activer tout",
     "enabled": "Activé",

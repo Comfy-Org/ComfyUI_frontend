@@ -1,6 +1,7 @@
 import axios from 'axios'
 
 import type {
+  DisplayComponentWsMessage,
   EmbeddingsResponse,
   ExecutedWsMessage,
   ExecutingWsMessage,
@@ -103,6 +104,7 @@ interface BackendApiCalls {
   /** Binary preview/progress data */
   b_preview: Blob
   progress_text: ProgressTextWsMessage
+  display_component: DisplayComponentWsMessage
 }
 
 /** Dictionary of all api calls */

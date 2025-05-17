@@ -114,7 +114,9 @@
     "learnMore": "Learn more",
     "amount": "Amount",
     "unknownError": "Unknown error",
-    "title": "Title"
+    "title": "Title",
+    "edit": "Edit",
+    "copy": "Copy"
   },
   "manager": {
     "title": "Custom Nodes Manager",
@@ -1387,5 +1389,12 @@
       "tooltip": "Execute to selected output nodes (Highlighted with orange border)",
       "disabledTooltip": "No output nodes selected"
     }
+  },
+  "chatHistory": {
+    "cancelEdit": "Cancel",
+    "editTooltip": "Edit message",
+    "cancelEditTooltip": "Cancel edit",
+    "copiedTooltip": "Copied",
+    "copyTooltip": "Copy message to clipboard"
   }
 }

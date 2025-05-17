@@ -82,6 +82,13 @@
       "title": "Создать аккаунт"
     }
   },
+  "chatHistory": {
+    "cancelEdit": "Отмена",
+    "cancelEditTooltip": "Отменить редактирование",
+    "copiedTooltip": "Скопировано",
+    "copyTooltip": "Скопировать сообщение в буфер",
+    "editTooltip": "Редактировать сообщение"
+  },
   "clipboard": {
     "errorMessage": "Не удалось скопировать в буфер обмена",
     "errorNotSupported": "API буфера обмена не поддерживается в вашем браузере",
@@ -257,6 +264,7 @@
     "continue": "Продолжить",
     "control_after_generate": "управление после генерации",
     "control_before_generate": "управление до генерации",
+    "copy": "Копировать",
     "copyToClipboard": "Скопировать в буфер обмена",
     "currentUser": "Текущий пользователь",
     "customize": "Настроить",
@@ -268,6 +276,7 @@
     "disableAll": "Отключить все",
     "disabling": "Отключение",
     "download": "Скачать",
+    "edit": "Редактировать",
     "empty": "Пусто",
     "enableAll": "Включить все",
     "enabled": "Включено",
