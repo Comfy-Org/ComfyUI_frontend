@@ -1,0 +1,72 @@
+name: Create Dev PyPI Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      devVersion:
+        description: 'Dev version'
+        required: true
+        type: number
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.current_version.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+      - name: Get current version
+        id: current_version
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+      - name: Build project
+        env:
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          ALGOLIA_APP_ID: ${{ secrets.ALGOLIA_APP_ID }}
+          ALGOLIA_API_KEY: ${{ secrets.ALGOLIA_API_KEY }}
+          USE_PROD_CONFIG: 'true'
+        run: |
+          npm ci
+          npm run build
+          npm run zipdist
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-files
+          path: |
+            dist/
+            dist.zip
+
+  publish_pypi:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-files
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      - name: Install build dependencies
+        run: python -m pip install build
+      - name: Setup pypi package
+        run: |
+          mkdir -p comfyui_frontend_package/comfyui_frontend_package/static/
+          cp -r dist/* comfyui_frontend_package/comfyui_frontend_package/static/
+      - name: Build pypi package
+        run: python -m build
+        working-directory: comfyui_frontend_package
+        env:
+          COMFYUI_FRONTEND_VERSION: ${{ format('{0}.dev{1}', needs.build.outputs.version, inputs.devVersion) }}
+      - name: Publish pypi package
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_TOKEN }}
+          packages-dir: comfyui_frontend_package/dist
