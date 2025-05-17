@@ -46,7 +46,7 @@
           <NodeBookmarkTreeExplorer
             ref="nodeBookmarkTreeExplorerRef"
             :filtered-node-defs="filteredNodeDefs"
-            :open-node-help="openNodeHelp"
+            :open-node-help="openHelp"
           />
           <Divider
             v-show="nodeBookmarkStore.bookmarks.length > 0"
@@ -59,14 +59,14 @@
             :root="renderedRoot"
           >
             <template #node="{ node }">
-              <NodeTreeLeaf :node="node" :open-node-help="openNodeHelp" />
+              <NodeTreeLeaf :node="node" :open-node-help="openHelp" />
             </template>
           </TreeExplorer>
         </div>
       </template>
     </SidebarTabTemplate>
 
-    <NodeHelpPage v-else :node="currentHelpNode!" @close="isHelpOpen = false" />
+    <NodeHelpPage v-else :node="currentHelpNode!" @close="closeHelp" />
   </div>
   <div id="node-library-node-preview-container" />
 </template>
@@ -85,6 +85,7 @@ import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import NodeHelpPage from '@/components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue'
 import NodeTreeLeaf from '@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue'
+import { useNodeHelp } from '@/composables/useNodeHelp'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
@@ -113,13 +114,7 @@ const alphabeticalSort = ref(false)
 
 const searchQuery = ref<string>('')
 
-// Help overlay state and open function
-const isHelpOpen = ref(false)
-const currentHelpNode = ref<ComfyNodeDefImpl | null>(null)
-const openNodeHelp = (nodeDef: ComfyNodeDefImpl) => {
-  currentHelpNode.value = nodeDef
-  isHelpOpen.value = true
-}
+const { currentHelpNode, isHelpOpen, openHelp, closeHelp } = useNodeHelp()
 
 const root = computed(() => {
   const root = filteredRoot.value || nodeDefStore.nodeTree
