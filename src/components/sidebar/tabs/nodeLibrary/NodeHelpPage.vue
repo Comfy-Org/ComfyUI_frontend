@@ -17,16 +17,22 @@
         <MarkdownRenderer class="text-sm" :content="node.help" />
       </template>
       <div v-else class="text-sm space-y-6">
-        <p><strong>Description:</strong> {{ node.description }}</p>
+        <p>
+          <strong>{{ $t('g.description') }}:</strong> {{ node.description }}
+        </p>
 
         <div v-if="inputList.length">
-          <p><strong>Inputs:</strong></p>
+          <p>
+            <strong>{{ $t('nodeHelpPage.inputs') }}:</strong>
+          </p>
           <table class="min-w-full table-auto text-sm">
             <thead>
               <tr>
-                <th class="px-4 py-2 text-left">Name</th>
-                <th class="px-4 py-2 text-left">Type</th>
-                <th class="px-4 py-2 text-left">Description</th>
+                <th class="px-4 py-2 text-left">{{ $t('g.name') }}</th>
+                <th class="px-4 py-2 text-left">
+                  {{ $t('nodeHelpPage.type') }}
+                </th>
+                <th class="px-4 py-2 text-left">{{ $t('g.description') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -42,13 +48,17 @@
         </div>
 
         <div v-if="outputList.length">
-          <p><strong>Outputs:</strong></p>
+          <p>
+            <strong>{{ $t('nodeHelpPage.outputs') }}:</strong>
+          </p>
           <table class="min-w-full table-auto text-sm">
             <thead>
               <tr>
-                <th class="px-4 py-2 text-left">Name</th>
-                <th class="px-4 py-2 text-left">Type</th>
-                <th class="px-4 py-2 text-left">Description</th>
+                <th class="px-4 py-2 text-left">{{ $t('g.name') }}</th>
+                <th class="px-4 py-2 text-left">
+                  {{ $t('nodeHelpPage.type') }}
+                </th>
+                <th class="px-4 py-2 text-left">{{ $t('g.description') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -64,14 +74,14 @@
         </div>
 
         <p>
-          For more help, visit the
+          {{ $t('nodeHelpPage.moreHelp') }}
           <a
             href="https://docs.comfy.org/"
             target="_blank"
             rel="noopener"
             class="text-blue-600 underline"
           >
-            documentation page</a
+            {{ $t('nodeHelpPage.documentationPage') }} </a
           >.
         </p>
       </div>

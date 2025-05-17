@@ -1406,5 +1406,12 @@
       "tooltip": "Execute to selected output nodes (Highlighted with orange border)",
       "disabledTooltip": "No output nodes selected"
     }
+  },
+  "nodeHelpPage": {
+    "inputs": "Inputs",
+    "outputs": "Outputs",
+    "type": "Type",
+    "moreHelp": "For more help, visit the",
+    "documentationPage": "documentation page"
   }
 }
