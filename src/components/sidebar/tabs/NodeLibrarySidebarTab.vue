@@ -66,28 +66,7 @@
       </template>
     </SidebarTabTemplate>
 
-    <div v-else class="flex flex-col h-full bg-[var(--p-tree-background)]">
-      <div
-        class="px-3 py-2 flex items-center border-b border-[var(--p-divider-color)]"
-      >
-        <Button
-          v-tooltip.bottom="$t('g.back')"
-          icon="pi pi-arrow-left"
-          text
-          severity="secondary"
-          @click="isHelpOpen = false"
-        />
-        <span class="ml-2 font-semibold">{{
-          currentHelpNode!.display_name
-        }}</span>
-      </div>
-      <div class="px-4 overflow-auto flex-grow">
-        <MarkdownRenderer
-          class="text-sm"
-          :content="currentHelpNode!.help || currentHelpNode!.description || ''"
-        />
-      </div>
-    </div>
+    <NodeHelpPage v-else :node="currentHelpNode!" @close="isHelpOpen = false" />
   </div>
   <div id="node-library-node-preview-container" />
 </template>
@@ -98,13 +77,13 @@ import Divider from 'primevue/divider'
 import Popover from 'primevue/popover'
 import { Ref, computed, h, nextTick, ref, render } from 'vue'
 
-import MarkdownRenderer from '@/components/common/MarkdownRenderer.vue'
 import SearchBox from '@/components/common/SearchBox.vue'
 import { SearchFilter } from '@/components/common/SearchFilterChip.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
 import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
+import NodeHelpPage from '@/components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue'
 import NodeTreeLeaf from '@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useLitegraphService } from '@/services/litegraphService'
