@@ -1,6 +1,7 @@
 import axios from 'axios'
 
 import type {
+  DisplayComponentWsMessage,
   EmbeddingsResponse,
   ExecutedWsMessage,
   ExecutingWsMessage,
@@ -14,6 +15,7 @@ import type {
   LogsRawResponse,
   LogsWsMessage,
   PendingTaskItem,
+  ProgressTextWsMessage,
   ProgressWsMessage,
   PromptResponse,
   RunningTaskItem,
@@ -58,6 +60,21 @@ interface QueuePromptRequestBody {
      * ```
      */
     auth_token_comfy_org?: string
+    /**
+     * The auth token for the comfy org account if the user is logged in.
+     *
+     * Backend node can access this token by specifying following input:
+     * ```python
+     * def INPUT_TYPES(s):
+     *   return {
+     *     "hidden": { "api_key": "API_KEY_COMFY_ORG" }
+     *   }
+     *
+     * def execute(self, api_key: str):
+     *   print(f"API Key: {api_key}")
+     * ```
+     */
+    api_key_comfy_org?: string
   }
   front?: boolean
   number?: number
@@ -86,6 +103,8 @@ interface BackendApiCalls {
   logs: LogsWsMessage
   /** Binary preview/progress data */
   b_preview: Blob
+  progress_text: ProgressTextWsMessage
+  display_component: DisplayComponentWsMessage
 }
 
 /** Dictionary of all api calls */
@@ -228,6 +247,10 @@ export class ComfyApi extends EventTarget {
    * custom nodes are patched.
    */
   authToken?: string
+  /**
+   * The API key for the comfy org account if the user logged in via API key.
+   */
+  apiKey?: string
 
   constructor() {
     super()
@@ -380,12 +403,21 @@ export class ComfyApi extends EventTarget {
         if (event.data instanceof ArrayBuffer) {
           const view = new DataView(event.data)
           const eventType = view.getUint32(0)
-          const imageType = view.getUint32(4)
-          const imageData = event.data.slice(8)
 
           let imageMime
           switch (eventType) {
+            case 3:
+              const decoder = new TextDecoder()
+              const data = event.data.slice(4)
+              const nodeIdLength = view.getUint32(4)
+              this.dispatchCustomEvent('progress_text', {
+                nodeId: decoder.decode(data.slice(4, 4 + nodeIdLength)),
+                text: decoder.decode(data.slice(4 + nodeIdLength))
+              })
+              break
             case 1:
+              const imageType = view.getUint32(4)
+              const imageData = event.data.slice(8)
               switch (imageType) {
                 case 2:
                   imageMime = 'image/png'
@@ -545,6 +577,7 @@ export class ComfyApi extends EventTarget {
       prompt,
       extra_data: {
         auth_token_comfy_org: this.authToken,
+        api_key_comfy_org: this.apiKey,
         extra_pnginfo: { workflow }
       }
     }

@@ -20,6 +20,7 @@
             style: 'display: none'
           }
         }"
+        :show-empty-message="false"
         @complete="stubTrue"
         @option-select="onOptionSelect"
       />

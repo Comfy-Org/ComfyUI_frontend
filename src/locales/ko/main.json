@@ -4,31 +4,29 @@
     "title": "API 노드(들)",
     "totalCost": "총 비용"
   },
-  "apiNodesNews": {
-    "introducing": "소개합니다",
-    "steps": {
-      "step1": {
-        "subtitle": "설정 > 사용자 > 로그인",
-        "title": "로그인/계정 생성:"
-      },
-      "step2": {
-        "subtitle": "설정 > 크레딧 > 크레딧 구매",
-        "title": "크레딧 구매:"
-      },
-      "step3": {
-        "title": "'API Node' 섹션에서 새로운 API 노드를 찾아 캔버스에 추가하세요"
-      },
-      "step4": {
-        "title": "실행!"
-      }
-    },
-    "subtitle": "모든 외부 모델이 이제 ComfyUI에서 사용 가능합니다"
-  },
   "apiNodesSignInDialog": {
     "message": "이 워크플로우에는 API 노드가 포함되어 있으며, 실행하려면 계정에 로그인해야 합니다.",
     "title": "API 노드 사용에 필요한 로그인"
   },
   "auth": {
+    "apiKey": {
+      "cleared": "API 키 삭제됨",
+      "clearedDetail": "API 키가 성공적으로 삭제되었습니다",
+      "description": "Comfy API 키를 사용하여 API 노드를 활성화하세요",
+      "error": "유효하지 않은 API 키",
+      "generateKey": "여기에서 받기",
+      "helpText": "API 키가 필요하신가요?",
+      "invalid": "유효하지 않은 API 키",
+      "invalidDetail": "유효한 API 키를 입력해 주세요",
+      "label": "API 키",
+      "placeholder": "API 키를 입력하세요",
+      "storageFailed": "API 키 저장 실패",
+      "storageFailedDetail": "다시 시도해 주세요.",
+      "stored": "API 키 저장됨",
+      "storedDetail": "API 키가 성공적으로 저장되었습니다",
+      "title": "API 키",
+      "whitelistInfo": "비허용 사이트에 대하여"
+    },
     "login": {
       "andText": "및",
       "confirmPasswordLabel": "비밀번호 확인",
@@ -43,6 +41,7 @@
       "loginWithGithub": "Github로 로그인",
       "loginWithGoogle": "구글로 로그인",
       "newUser": "처음이신가요?",
+      "noAssociatedUser": "제공된 API 키와 연결된 Comfy 사용자가 없습니다",
       "orContinueWith": "또는 다음으로 계속",
       "passwordLabel": "비밀번호",
       "passwordPlaceholder": "비밀번호를 입력하세요",
@@ -56,6 +55,7 @@
       "termsLink": "이용 약관",
       "termsText": "\"다음\" 또는 \"가입하기\"를 클릭하면 우리의",
       "title": "계정에 로그인",
+      "useApiKey": "Comfy API 키",
       "userAvatar": "사용자 아바타"
     },
     "passwordUpdate": {
@@ -81,6 +81,13 @@
       "signUpWithGoogle": "구글로 가입하기",
       "title": "계정 생성"
     }
+  },
+  "chatHistory": {
+    "cancelEdit": "취소",
+    "cancelEditTooltip": "편집 취소",
+    "copiedTooltip": "복사됨",
+    "copyTooltip": "메시지를 클립보드에 복사",
+    "editTooltip": "메시지 편집"
   },
   "clipboard": {
     "errorMessage": "클립보드에 복사하지 못했습니다",
@@ -131,6 +138,7 @@
     "Unpin": "고정 해제"
   },
   "credits": {
+    "apiPricing": "API 가격",
     "credits": "크레딧",
     "faqs": "자주 묻는 질문",
     "invoiceHistory": "청구서 내역",
@@ -149,8 +157,10 @@
     "yourCreditBalance": "보유 크레딧 잔액"
   },
   "dataTypes": {
+    "*": "*",
     "AUDIO": "오디오",
     "BOOLEAN": "논리값",
+    "CAMERA_CONTROL": "카메라 제어",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "CLIP_VISION 출력",
@@ -167,20 +177,29 @@
     "INT": "정수",
     "LATENT": "잠재 데이터",
     "LATENT_OPERATION": "잠재 연산",
+    "LOAD3D_CAMERA": "3D 카메라 불러오기",
     "LOAD_3D": "3D 로드",
     "LOAD_3D_ANIMATION": "3D 애니메이션 로드",
+    "LUMA_CONCEPTS": "Luma 컨셉",
+    "LUMA_REF": "Luma 참조",
     "MASK": "마스크",
     "MESH": "메시",
     "MODEL": "모델",
     "NOISE": "노이즈",
     "PHOTOMAKER": "PHOTOMAKER",
+    "PIXVERSE_TEMPLATE": "Pixverse 템플릿",
+    "RECRAFT_COLOR": "Recraft 색상",
+    "RECRAFT_CONTROLS": "Recraft 컨트롤",
+    "RECRAFT_V3_STYLE": "Recraft V3 스타일",
     "SAMPLER": "샘플러",
     "SIGMAS": "시그마",
     "STRING": "문자열",
     "STYLE_MODEL": "스타일 모델",
+    "SVG": "SVG",
     "TIMESTEPS_RANGE": "타임스텝 범위",
     "UPSCALE_MODEL": "업스케일 모델",
     "VAE": "VAE",
+    "VIDEO": "비디오",
     "VOXEL": "복셀",
     "WEBCAM": "웹캠"
   },
@@ -245,6 +264,7 @@
     "continue": "계속",
     "control_after_generate": "생성 후 제어",
     "control_before_generate": "생성 전 제어",
+    "copy": "복사",
     "copyToClipboard": "클립보드에 복사",
     "currentUser": "현재 사용자",
     "customize": "사용자 정의",
@@ -256,6 +276,7 @@
     "disableAll": "모두 비활성화",
     "disabling": "비활성화 중",
     "download": "다운로드",
+    "edit": "편집",
     "empty": "비어 있음",
     "enableAll": "모두 활성화",
     "enabled": "활성화됨",
@@ -623,20 +644,20 @@
     "Tolerance": "허용 오차"
   },
   "menu": {
-    "autoQueue": "자동 실행 큐",
+    "autoQueue": "자동 실행 대기열",
     "batchCount": "배치 수",
-    "batchCountTooltip": "워크플로 작업을 실행 큐에 반복 추가할 횟수",
+    "batchCountTooltip": "워크플로 작업을 실행 대기열에 반복 추가할 횟수",
     "clear": "워크플로 비우기",
     "clipspace": "클립스페이스 열기",
     "disabled": "비활성화됨",
-    "disabledTooltip": "워크플로 작업을 자동으로 실행 큐에 추가하지 않습니다.",
+    "disabledTooltip": "워크플로 작업을 자동으로 실행 대기열에 추가하지 않습니다.",
     "execute": "실행",
     "hideMenu": "메뉴 숨기기",
     "instant": "즉시",
-    "instantTooltip": "워크플로 실행이 완료되면 즉시 실행 큐에 추가합니다.",
+    "instantTooltip": "워크플로 실행이 완료되면 즉시 실행 대기열에 추가합니다.",
     "interrupt": "현재 실행 취소",
     "onChange": "변경 시",
-    "onChangeTooltip": "변경이 있는 경우에만 워크플로를 실행 큐에 추가합니다.",
+    "onChangeTooltip": "변경이 있는 경우에만 워크플로를 실행 대기열에 추가합니다.",
     "refresh": "노드 정의 새로 고침",
     "resetView": "캔버스 보기 재설정",
     "run": "실행",
@@ -693,8 +714,8 @@
     "Pin/Unpin Selected Items": "선택한 항목 고정/고정 해제",
     "Pin/Unpin Selected Nodes": "선택한 노드 고정/고정 해제",
     "Previous Opened Workflow": "이전 열린 워크플로",
-    "Queue Prompt": "실행 큐에 프롬프트 추가",
-    "Queue Prompt (Front)": "실행 큐 맨 앞에 프롬프트 추가",
+    "Queue Prompt": "실행 대기열에 프롬프트 추가",
+    "Queue Prompt (Front)": "실행 대기열 맨 앞에 프롬프트 추가",
     "Queue Selected Output Nodes": "선택한 출력 노드 대기열에 추가",
     "Quit": "종료",
     "Redo": "다시 실행",
@@ -713,7 +734,7 @@
     "Toggle Model Library Sidebar": "모델 라이브러리 사이드바 전환",
     "Toggle Node Library Sidebar": "노드 라이브러리 사이드바 전환",
     "Toggle Progress Dialog": "진행 상황 대화 상자 전환",
-    "Toggle Queue Sidebar": "실행 큐 사이드바 전환",
+    "Toggle Queue Sidebar": "실행 대기열 사이드바 전환",
     "Toggle Search Box": "검색 상자 전환",
     "Toggle Terminal Bottom Panel": "터미널 하단 패널 전환",
     "Toggle Theme (Dark/Light)": "테마 전환 (어두운/밝은)",
@@ -732,10 +753,22 @@
   "nodeCategories": {
     "3d": "3d",
     "3d_models": "3D 모델",
+    "BFL": "BFL",
+    "Ideogram": "Ideogram",
+    "Kling": "Kling",
+    "Luma": "Luma",
+    "MiniMax": "MiniMax",
+    "OpenAI": "OpenAI",
+    "Pika": "Pika",
+    "PixVerse": "PixVerse",
+    "Recraft": "Recraft",
+    "Stability AI": "Stability AI",
+    "Veo": "Veo",
     "_for_testing": "_테스트용",
     "advanced": "고급",
     "animation": "애니메이션",
     "api": "API",
+    "api node": "api 노드",
     "attention_experiments": "어텐션 실험",
     "audio": "오디오",
     "batch": "배치",
@@ -760,6 +793,7 @@
     "instructpix2pix": "InstructPix2Pix",
     "latent": "잠재 데이터",
     "loaders": "로더",
+    "lotus": "lotus",
     "ltxv": "ltxv",
     "mask": "마스크",
     "model": "모델",
@@ -771,10 +805,12 @@
     "photomaker": "포토메이커",
     "postprocessing": "후처리",
     "preprocessors": "전처리기",
+    "primitive": "기본 입력",
     "samplers": "샘플러",
     "sampling": "샘플링",
     "schedulers": "스케줄러",
     "scheduling": "스케줄링",
+    "sd": "sd",
     "sd3": "sd3",
     "sigmas": "시그마",
     "stable_cascade": "Stable Cascade",
@@ -783,6 +819,10 @@
     "unet": "UNet",
     "upscale_diffusion": "업스케일 확산",
     "upscaling": "업스케일링",
+    "utils": "유틸리티",
+    "v1": "v1",
+    "v2": "v2",
+    "v3": "v3",
     "video": "비디오",
     "video_models": "비디오 모델"
   },
@@ -990,8 +1030,8 @@
     "Node Widget": "노드 위젯",
     "NodeLibrary": "노드 라이브러리",
     "Pointer": "포인터",
-    "Queue": "실행 큐",
-    "QueueButton": "실행 큐 버튼",
+    "Queue": "실행 대기열",
+    "QueueButton": "실행 대기열 버튼",
     "Reroute": "경유점",
     "RerouteBeta": "경유점 (베타)",
     "Scene": "장면",
@@ -1017,7 +1057,7 @@
       "sortOrder": "정렬 순서"
     },
     "openWorkflow": "로컬 파일 시스템에서 워크플로 열기",
-    "queue": "실행 큐",
+    "queue": "실행 대기열",
     "queueTab": {
       "backToAllTasks": "모든 작업으로 돌아가기",
       "clearPendingTasks": "보류 중인 작업 지우기",
@@ -1208,28 +1248,28 @@
         "mixing_controlnets": "여러 ControlNet 모델을 결합합니다."
       },
       "Flux": {
-        "flux_canny_model_example": "에지 감지로부터 이미지를 생성합니다.",
-        "flux_depth_lora_example": "깊이 인식 LoRA로 이미지를 생성합니다.",
-        "flux_dev_checkpoint_example": "Flux 개발 모델로 이미지를 생성합니다.",
+        "flux_canny_model_example": "검출된 경계선으로 이미지를 생성합니다.",
+        "flux_depth_lora_example": "깊이 인식 LoRA 를 이용해 이미지를 생성합니다.",
+        "flux_dev_checkpoint_example": "FLUX Dev 모델로 이미지를 생성합니다.",
         "flux_fill_inpaint_example": "이미지의 누락된 부분을 채웁니다.",
-        "flux_fill_outpaint_example": "Flux 아웃페인팅으로 이미지를 확장합니다.",
+        "flux_fill_outpaint_example": "FLUX 아웃페인팅으로 이미지를 확장합니다.",
         "flux_redux_model_example": "참조 이미지의 스타일을 가이드 이미지 생성에 적용합니다.",
-        "flux_schnell": "Flux Schnell로 이미지를 빠르게 생성합니다."
+        "flux_schnell": "FLUX Schnell 모델로 이미지를 빠르게 생성합니다."
       },
       "Image": {
-        "hidream_e1_full": "HiDream E1로 이미지를 편집합니다.",
-        "hidream_i1_dev": "HiDream I1 Dev로 이미지를 생성합니다.",
-        "hidream_i1_fast": "HiDream I1로 이미지를 빠르게 생성합니다.",
-        "hidream_i1_full": "HiDream I1로 이미지를 생성합니다.",
-        "sd3_5_large_blur": "SD 3.5로 흐릿한 참조 이미지에서 이미지를 생성합니다.",
-        "sd3_5_large_canny_controlnet_example": "SD 3.5에서 에지 감지로 이미지 생성을 가이드합니다.",
-        "sd3_5_large_depth": "SD 3.5로 깊이 인식 이미지를 생성합니다.",
-        "sd3_5_simple_example": "SD 3.5로 이미지를 생성합니다.",
+        "hidream_e1_full": "HiDream E1 모델로 이미지를 편집합니다.",
+        "hidream_i1_dev": "HiDream I1 Dev 모델로 이미지를 생성합니다.",
+        "hidream_i1_fast": "HiDream I1 Fast 모델로 이미지를 빠르게 생성합니다.",
+        "hidream_i1_full": "HiDream I1 Full 모델로 이미지를 생성합니다.",
+        "sd3_5_large_blur": "SD 3.5 모델로 흐릿한 참조 이미지에서 이미지를 생성합니다.",
+        "sd3_5_large_canny_controlnet_example": "Canny 에지 이미지를 통해 SD 3.5 모델 이미지 생성을 가이드합니다.",
+        "sd3_5_large_depth": "깊이 인식 이미지를 통해 SD 3.5 모델 이미지 생성을 가이드합니다.",
+        "sd3_5_simple_example": "SD 3.5 모델로 이미지를 생성합니다.",
         "sdxl_refiner_prompt_example": "SDXL 결과물을 리파이너로 향상시킵니다.",
         "sdxl_revision_text_prompts": "참조 이미지의 개념을 SDXL 이미지 생성에 적용합니다.",
         "sdxl_revision_zero_positive": "참조 이미지와 함께 텍스트 프롬프트를 추가하여 SDXL 이미지 생성을 가이드합니다.",
-        "sdxl_simple_example": "SDXL로 고품질 이미지를 생성합니다.",
-        "sdxlturbo_example": "SDXL Turbo로 한 번에 이미지를 생성합니다."
+        "sdxl_simple_example": "SDXL 모델로 고품질 이미지를 생성합니다.",
+        "sdxlturbo_example": "SDXL Turbo 모델로 1 스텝으로 이미지를 생성합니다."
       },
       "Image API": {
         "api-openai-dall-e-2-inpaint": "Dall-E 2 API로 이미지를 인페인팅합니다.",
@@ -1303,6 +1343,7 @@
     "no3dSceneToExport": "내보낼 3D 장면이 없습니다",
     "noTemplatesToExport": "내보낼 템플릿이 없습니다",
     "nodeDefinitionsUpdated": "노드 정의가 업데이트되었습니다",
+    "nothingSelected": "선택된 항목이 없습니다",
     "nothingToGroup": "그룹화할 항목이 없습니다",
     "nothingToQueue": "대기열에 추가할 항목이 없습니다",
     "pendingTasksDeleted": "보류 중인 작업이 삭제되었습니다",
@@ -1311,6 +1352,7 @@
     "unableToGetModelFilePath": "모델 파일 경로를 가져올 수 없습니다",
     "unauthorizedDomain": "귀하의 도메인 {domain}은(는) 이 서비스를 사용할 수 있는 권한이 없습니다. 도메인을 허용 목록에 추가하려면 {email}로 문의해 주세요.",
     "updateRequested": "업데이트 요청됨",
+    "useApiKeyTip": "팁: 일반 로그인을 사용할 수 없나요? Comfy API Key 옵션을 사용하세요.",
     "userNotAuthenticated": "사용자가 인증되지 않았습니다"
   },
   "userSelect": {
@@ -1330,6 +1372,7 @@
   },
   "validation": {
     "invalidEmail": "유효하지 않은 이메일 주소",
+    "length": "{length}자여야 합니다",
     "maxLength": "{length}자를 초과할 수 없습니다",
     "minLength": "{length}자 이상이어야 합니다",
     "password": {
@@ -1342,6 +1385,7 @@
       "uppercase": "적어도 하나의 대문자를 포함해야 합니다"
     },
     "personalDataConsentRequired": "개인 데이터 처리에 동의해야 합니다.",
+    "prefix": "{prefix}(으)로 시작해야 합니다",
     "required": "필수"
   },
   "welcome": {

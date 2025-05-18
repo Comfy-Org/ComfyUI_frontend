@@ -53,6 +53,26 @@ test.describe('Combo text widget', () => {
     const refreshedComboValues = await getComboValues()
     expect(refreshedComboValues).not.toEqual(initialComboValues)
   })
+
+  test('Should refresh combo values of nodes with v2 combo input spec', async ({
+    comfyPage
+  }) => {
+    await comfyPage.loadWorkflow('node_with_v2_combo_input')
+    // click canvas to focus
+    await comfyPage.page.mouse.click(400, 300)
+    // press R to trigger refresh
+    await comfyPage.page.keyboard.press('r')
+    // wait for nodes' widgets to be updated
+    await comfyPage.page.mouse.click(400, 300)
+    await comfyPage.nextFrame()
+    // get the combo widget's values
+    const comboValues = await comfyPage.page.evaluate(() => {
+      return window['app'].graph.nodes
+        .find((node) => node.title === 'Node With V2 Combo Input')
+        .widgets.find((widget) => widget.name === 'combo_input').options.values
+    })
+    expect(comboValues).toEqual(['A', 'B'])
+  })
 })
 
 test.describe('Boolean widget', () => {

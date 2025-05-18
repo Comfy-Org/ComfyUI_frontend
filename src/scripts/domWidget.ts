@@ -47,10 +47,13 @@ export interface DOMWidget<T extends HTMLElement, V extends object | string>
 /**
  * A DOM widget that wraps a Vue component as a litegraph widget.
  */
-export interface ComponentWidget<V extends object | string>
-  extends BaseDOMWidget<V> {
+export interface ComponentWidget<
+  V extends object | string,
+  P = Record<string, unknown>
+> extends BaseDOMWidget<V> {
   readonly component: Component
   readonly inputSpec: InputSpec
+  readonly props?: P
 }
 
 export interface DOMWidgetOptions<V extends object | string>
@@ -217,18 +220,23 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
   }
 }
 
-export class ComponentWidgetImpl<V extends object | string>
+export class ComponentWidgetImpl<
+    V extends object | string,
+    P = Record<string, unknown>
+  >
   extends BaseDOMWidgetImpl<V>
-  implements ComponentWidget<V>
+  implements ComponentWidget<V, P>
 {
   readonly component: Component
   readonly inputSpec: InputSpec
+  readonly props?: P
 
   constructor(obj: {
     node: LGraphNode
     name: string
     component: Component
     inputSpec: InputSpec
+    props?: P
     options: DOMWidgetOptions<V>
   }) {
     super({
@@ -237,6 +245,7 @@ export class ComponentWidgetImpl<V extends object | string>
     })
     this.component = obj.component
     this.inputSpec = obj.inputSpec
+    this.props = obj.props
   }
 
   override computeLayoutSize() {

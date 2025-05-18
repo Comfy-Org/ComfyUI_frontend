@@ -1,4 +1,3 @@
-import ApiNodesNewsContent from '@/components/dialog/content/ApiNodesNewsContent.vue'
 import ApiNodesSignInContent from '@/components/dialog/content/ApiNodesSignInContent.vue'
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
@@ -380,32 +379,6 @@ export const useDialogService = () => {
     })
   }
 
-  /**
-   * Shows a dialog for the API nodes news.
-   * TODO: Remove the news dialog on next major feature release.
-   */
-  function showApiNodesNewsDialog() {
-    if (localStorage.getItem('api-nodes-news-seen') === 'true') {
-      return
-    }
-
-    return dialogStore.showDialog({
-      key: 'api-nodes-news',
-      component: ApiNodesNewsContent,
-      props: {
-        dismissableMask: true,
-        onClose: () => {
-          dialogStore.closeDialog({ key: 'api-nodes-news' })
-          localStorage.setItem('api-nodes-news-seen', 'true')
-        }
-      },
-      dialogComponentProps: {
-        closable: false,
-        position: 'bottomright'
-      }
-    })
-  }
-
   return {
     showLoadWorkflowWarning,
     showMissingModelsWarning,
@@ -421,7 +394,6 @@ export const useDialogService = () => {
     showSignInDialog,
     showTopUpCreditsDialog,
     showUpdatePasswordDialog,
-    showApiNodesNewsDialog,
     prompt,
     confirm
   }

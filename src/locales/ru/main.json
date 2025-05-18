@@ -4,31 +4,29 @@
     "title": "API Node(s)",
     "totalCost": "Общая стоимость"
   },
-  "apiNodesNews": {
-    "introducing": "Представляем",
-    "steps": {
-      "step1": {
-        "subtitle": "Настройки > Пользователь > Войти",
-        "title": "Войти/Создать аккаунт:"
-      },
-      "step2": {
-        "subtitle": "Настройки > Кредиты > Купить кредиты",
-        "title": "Купить кредиты:"
-      },
-      "step3": {
-        "title": "Найдите новые API-узлы в разделе 'API Node' и добавьте их на холст"
-      },
-      "step4": {
-        "title": "Запустить!"
-      }
-    },
-    "subtitle": "Все внешние модели теперь доступны в ComfyUI"
-  },
   "apiNodesSignInDialog": {
     "message": "Этот рабочий процесс содержит API Nodes, которые требуют входа в вашу учетную запись для выполнения.",
     "title": "Требуется вход для использования API Nodes"
   },
   "auth": {
+    "apiKey": {
+      "cleared": "API-ключ удалён",
+      "clearedDetail": "Ваш API-ключ был успешно удалён",
+      "description": "Используйте ваш Comfy API-ключ для активации API-узлов",
+      "error": "Недействительный API-ключ",
+      "generateKey": "Получить здесь",
+      "helpText": "Нужен API-ключ?",
+      "invalid": "Недействительный API-ключ",
+      "invalidDetail": "Пожалуйста, введите действительный API-ключ",
+      "label": "API-ключ",
+      "placeholder": "Введите ваш API-ключ",
+      "storageFailed": "Не удалось сохранить API-ключ",
+      "storageFailedDetail": "Пожалуйста, попробуйте еще раз.",
+      "stored": "API-ключ сохранён",
+      "storedDetail": "Ваш API-ключ был успешно сохранён",
+      "title": "API-ключ",
+      "whitelistInfo": "О не включённых в белый список сайтах"
+    },
     "login": {
       "andText": "и",
       "confirmPasswordLabel": "Подтвердите пароль",
@@ -43,6 +41,7 @@
       "loginWithGithub": "Войти через Github",
       "loginWithGoogle": "Войти через Google",
       "newUser": "Вы здесь впервые?",
+      "noAssociatedUser": "С предоставленным API-ключом не связан ни один пользователь Comfy",
       "orContinueWith": "Или продолжить с",
       "passwordLabel": "Пароль",
       "passwordPlaceholder": "Введите ваш пароль",
@@ -56,6 +55,7 @@
       "termsLink": "Условиями использования",
       "termsText": "Нажимая \"Далее\" или \"Зарегистрироваться\", вы соглашаетесь с нашими",
       "title": "Войдите в свой аккаунт",
+      "useApiKey": "Comfy API-ключ",
       "userAvatar": "Аватар пользователя"
     },
     "passwordUpdate": {
@@ -81,6 +81,13 @@
       "signUpWithGoogle": "Зарегистрироваться через Google",
       "title": "Создать аккаунт"
     }
+  },
+  "chatHistory": {
+    "cancelEdit": "Отмена",
+    "cancelEditTooltip": "Отменить редактирование",
+    "copiedTooltip": "Скопировано",
+    "copyTooltip": "Скопировать сообщение в буфер",
+    "editTooltip": "Редактировать сообщение"
   },
   "clipboard": {
     "errorMessage": "Не удалось скопировать в буфер обмена",
@@ -131,6 +138,7 @@
     "Unpin": "Открепить"
   },
   "credits": {
+    "apiPricing": "Цены на API",
     "credits": "Кредиты",
     "faqs": "Часто задаваемые вопросы",
     "invoiceHistory": "История счетов",
@@ -149,8 +157,10 @@
     "yourCreditBalance": "Ваш баланс кредитов"
   },
   "dataTypes": {
+    "*": "*",
     "AUDIO": "АУДИО",
     "BOOLEAN": "БУЛЕВО",
+    "CAMERA_CONTROL": "УПРАВЛЕНИЕ_КАМЕРОЙ",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "CLIP_VISION_OUTPUT",
@@ -167,20 +177,29 @@
     "INT": "ЦЕЛОЕ",
     "LATENT": "ЛАТЕНТНЫЙ",
     "LATENT_OPERATION": "ЛАТЕНТНАЯ_ОПЕРАЦИЯ",
+    "LOAD3D_CAMERA": "ЗАГРУЗИТЬ3D_КАМЕРУ",
     "LOAD_3D": "ЗАГРУЗИТЬ_3D",
     "LOAD_3D_ANIMATION": "ЗАГРУЗИТЬ_3D_АНИМАЦИЮ",
+    "LUMA_CONCEPTS": "LUMA_CONCEPTS",
+    "LUMA_REF": "LUMA_REF",
     "MASK": "МАСКА",
     "MESH": "СЕТКА",
     "MODEL": "МОДЕЛЬ",
     "NOISE": "ШУМ",
     "PHOTOMAKER": "PHOTOMAKER",
+    "PIXVERSE_TEMPLATE": "ШАБЛОН_PIXVERSE",
+    "RECRAFT_COLOR": "RECRAFT_ЦВЕТ",
+    "RECRAFT_CONTROLS": "RECRAFT_УПРАВЛЕНИЯ",
+    "RECRAFT_V3_STYLE": "RECRAFT_V3_СТИЛЬ",
     "SAMPLER": "СЭМПЛЕР",
     "SIGMAS": "СИГМЫ",
     "STRING": "СТРОКА",
     "STYLE_MODEL": "МОДЕЛЬ_СТИЛЯ",
+    "SVG": "SVG",
     "TIMESTEPS_RANGE": "ДИАПАЗОН_ВРЕМЕННЫХ_ШАГОВ",
     "UPSCALE_MODEL": "МОДЕЛЬ_АПСКЕЙЛА",
     "VAE": "VAE",
+    "VIDEO": "ВИДЕО",
     "VOXEL": "ВОКСЕЛ",
     "WEBCAM": "ВЕБ-КАМЕРА"
   },
@@ -245,6 +264,7 @@
     "continue": "Продолжить",
     "control_after_generate": "управление после генерации",
     "control_before_generate": "управление до генерации",
+    "copy": "Копировать",
     "copyToClipboard": "Скопировать в буфер обмена",
     "currentUser": "Текущий пользователь",
     "customize": "Настроить",
@@ -256,6 +276,7 @@
     "disableAll": "Отключить все",
     "disabling": "Отключение",
     "download": "Скачать",
+    "edit": "Редактировать",
     "empty": "Пусто",
     "enableAll": "Включить все",
     "enabled": "Включено",
@@ -732,10 +753,22 @@
   "nodeCategories": {
     "3d": "3d",
     "3d_models": "3d_модели",
+    "BFL": "BFL",
+    "Ideogram": "Ideogram",
+    "Kling": "Kling",
+    "Luma": "Luma",
+    "MiniMax": "MiniMax",
+    "OpenAI": "OpenAI",
+    "Pika": "Pika",
+    "PixVerse": "PixVerse",
+    "Recraft": "Recraft",
+    "Stability AI": "Stability AI",
+    "Veo": "Veo",
     "_for_testing": "_для_тестирования",
     "advanced": "расширенный",
     "animation": "анимация",
     "api": "api",
+    "api node": "api-узел",
     "attention_experiments": "эксперименты_внимания",
     "audio": "аудио",
     "batch": "пакет",
@@ -760,6 +793,7 @@
     "instructpix2pix": "instructpix2pix",
     "latent": "латентный",
     "loaders": "загрузчики",
+    "lotus": "lotus",
     "ltxv": "ltxv",
     "mask": "маска",
     "model": "модель",
@@ -771,10 +805,12 @@
     "photomaker": "photomaker",
     "postprocessing": "постобработка",
     "preprocessors": "предобработчики",
+    "primitive": "примитив",
     "samplers": "семплеры",
     "sampling": "выборка",
     "schedulers": "schedulers",
     "scheduling": "scheduling",
+    "sd": "sd",
     "sd3": "sd3",
     "sigmas": "сигмы",
     "stable_cascade": "стабильная_каскадная",
@@ -783,6 +819,10 @@
     "unet": "unet",
     "upscale_diffusion": "диффузии_апскейла",
     "upscaling": "апскейл",
+    "utils": "утилиты",
+    "v1": "v1",
+    "v2": "v2",
+    "v3": "v3",
     "video": "видео",
     "video_models": "видеомодели"
   },
@@ -1303,6 +1343,7 @@
     "no3dSceneToExport": "Нет 3D сцены для экспорта",
     "noTemplatesToExport": "Нет шаблонов для экспорта",
     "nodeDefinitionsUpdated": "Определения узлов обновлены",
+    "nothingSelected": "Ничего не выбрано",
     "nothingToGroup": "Нечего группировать",
     "nothingToQueue": "Нет заданий в очереди",
     "pendingTasksDeleted": "Ожидающие задачи удалены",
@@ -1311,6 +1352,7 @@
     "unableToGetModelFilePath": "Не удалось получить путь к файлу модели",
     "unauthorizedDomain": "Ваш домен {domain} не авторизован для использования этого сервиса. Пожалуйста, свяжитесь с {email}, чтобы добавить ваш домен в белый список.",
     "updateRequested": "Запрошено обновление",
+    "useApiKeyTip": "Совет: Нет доступа к обычному входу? Используйте опцию Comfy API Key.",
     "userNotAuthenticated": "Пользователь не аутентифицирован"
   },
   "userSelect": {
@@ -1330,6 +1372,7 @@
   },
   "validation": {
     "invalidEmail": "Недействительный адрес электронной почты",
+    "length": "Должно быть {length} символов",
     "maxLength": "Должно быть не более {length} символов",
     "minLength": "Должно быть не менее {length} символов",
     "password": {
@@ -1342,6 +1385,7 @@
       "uppercase": "Должен содержать хотя бы одну заглавную букву"
     },
     "personalDataConsentRequired": "Вы должны согласиться на обработку ваших персональных данных.",
+    "prefix": "Должно начинаться с {prefix}",
     "required": "Обязательно"
   },
   "welcome": {

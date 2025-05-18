@@ -158,7 +158,7 @@ export const graphToPrompt = async (
 
         if (link) {
           if (parent?.updateLink) {
-            // groupNode
+            // Subgraph node / groupNode callback; deprecated, should be replaced
             link = parent.updateLink(link)
           }
           if (link) {
@@ -202,6 +202,5 @@ export const graphToPrompt = async (
     output = newOutput
   }
 
-  // @ts-expect-error Convert ISerializedGraph to ComfyWorkflowJSON
   return { workflow: workflow as ComfyWorkflowJSON, output }
 }

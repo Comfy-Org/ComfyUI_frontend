@@ -82,6 +82,17 @@ const zExecutionErrorWsMessage = zExecutionWsMessageBase.extend({
   current_outputs: z.any()
 })
 
+const zProgressTextWsMessage = z.object({
+  nodeId: zNodeId,
+  text: z.string()
+})
+
+const zDisplayComponentWsMessage = z.object({
+  node_id: zNodeId,
+  component: z.enum(['ChatHistoryWidget']),
+  props: z.record(z.string(), z.any()).optional()
+})
+
 const zTerminalSize = z.object({
   cols: z.number(),
   row: z.number()
@@ -114,6 +125,10 @@ export type ExecutionInterruptedWsMessage = z.infer<
 >
 export type ExecutionErrorWsMessage = z.infer<typeof zExecutionErrorWsMessage>
 export type LogsWsMessage = z.infer<typeof zLogsWsMessage>
+export type ProgressTextWsMessage = z.infer<typeof zProgressTextWsMessage>
+export type DisplayComponentWsMessage = z.infer<
+  typeof zDisplayComponentWsMessage
+>
 // End of ws messages
 
 const zPromptInputItem = z.object({
@@ -451,7 +466,7 @@ const zSettings = z.object({
   'Comfy.Load3D.CameraType': z.enum(['perspective', 'orthographic']),
   'pysssss.SnapToGrid': z.boolean(),
   /** VHS setting is used for queue video preview support. */
-  'VHS.AdvancedPreviews': z.boolean(),
+  'VHS.AdvancedPreviews': z.string(),
   /** Settings used for testing */
   'test.setting': z.any(),
   'main.sub.setting.name': z.any(),

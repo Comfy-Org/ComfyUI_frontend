@@ -4,31 +4,29 @@
     "title": "Nœud(s) API",
     "totalCost": "Coût total"
   },
-  "apiNodesNews": {
-    "introducing": "Présentation",
-    "steps": {
-      "step1": {
-        "subtitle": "Paramètres > Utilisateur > Connexion",
-        "title": "Connectez-vous / Créez un compte :"
-      },
-      "step2": {
-        "subtitle": "Paramètres > Crédits > Acheter des crédits",
-        "title": "Achetez des crédits :"
-      },
-      "step3": {
-        "title": "Trouvez les nouveaux nœuds API dans la section 'API Node' et ajoutez-les à la toile"
-      },
-      "step4": {
-        "title": "Lancez !"
-      }
-    },
-    "subtitle": "Tous les modèles externes sont désormais disponibles dans ComfyUI"
-  },
   "apiNodesSignInDialog": {
     "message": "Ce flux de travail contient des nœuds API, qui nécessitent que vous soyez connecté à votre compte pour pouvoir fonctionner.",
     "title": "Connexion requise pour utiliser les nœuds API"
   },
   "auth": {
+    "apiKey": {
+      "cleared": "Clé API supprimée",
+      "clearedDetail": "Votre clé API a été supprimée avec succès",
+      "description": "Utilisez votre clé API Comfy pour activer les nœuds API",
+      "error": "Clé API invalide",
+      "generateKey": "Obtenez-en une ici",
+      "helpText": "Besoin d'une clé API ?",
+      "invalid": "Clé API invalide",
+      "invalidDetail": "Veuillez entrer une clé API valide",
+      "label": "Clé API",
+      "placeholder": "Entrez votre clé API",
+      "storageFailed": "Échec de l’enregistrement de la clé API",
+      "storageFailedDetail": "Veuillez réessayer.",
+      "stored": "Clé API enregistrée",
+      "storedDetail": "Votre clé API a été enregistrée avec succès",
+      "title": "Clé API",
+      "whitelistInfo": "À propos des sites non autorisés"
+    },
     "login": {
       "andText": "et",
       "confirmPasswordLabel": "Confirmer le mot de passe",
@@ -43,6 +41,7 @@
       "loginWithGithub": "Se connecter avec Github",
       "loginWithGoogle": "Se connecter avec Google",
       "newUser": "Nouveau ici?",
+      "noAssociatedUser": "Aucun utilisateur Comfy n'est associé à la clé API fournie",
       "orContinueWith": "Ou continuer avec",
       "passwordLabel": "Mot de passe",
       "passwordPlaceholder": "Entrez votre mot de passe",
@@ -56,6 +55,7 @@
       "termsLink": "Conditions d'utilisation",
       "termsText": "En cliquant sur \"Suivant\" ou \"S'inscrire\", vous acceptez nos",
       "title": "Connectez-vous à votre compte",
+      "useApiKey": "Clé API Comfy",
       "userAvatar": "Avatar utilisateur"
     },
     "passwordUpdate": {
@@ -81,6 +81,13 @@
       "signUpWithGoogle": "S'inscrire avec Google",
       "title": "Créer un compte"
     }
+  },
+  "chatHistory": {
+    "cancelEdit": "Annuler",
+    "cancelEditTooltip": "Annuler la modification",
+    "copiedTooltip": "Copié",
+    "copyTooltip": "Copier le message dans le presse-papiers",
+    "editTooltip": "Modifier le message"
   },
   "clipboard": {
     "errorMessage": "Échec de la copie dans le presse-papiers",
@@ -131,6 +138,7 @@
     "Unpin": "Désépingler"
   },
   "credits": {
+    "apiPricing": "Tarification de l’API",
     "credits": "Crédits",
     "faqs": "FAQ",
     "invoiceHistory": "Historique des factures",
@@ -149,8 +157,10 @@
     "yourCreditBalance": "Votre solde de crédits"
   },
   "dataTypes": {
+    "*": "*",
     "AUDIO": "AUDIO",
     "BOOLEAN": "BOOLEAN",
+    "CAMERA_CONTROL": "Contrôle de la caméra",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "SORTIE_CLIP_VISION",
@@ -167,20 +177,29 @@
     "INT": "ENTIER",
     "LATENT": "LATENT",
     "LATENT_OPERATION": "OPERATION_LATENTE",
+    "LOAD3D_CAMERA": "Charger la caméra 3D",
     "LOAD_3D": "CHARGER_3D",
     "LOAD_3D_ANIMATION": "CHARGER_ANIMATION_3D",
+    "LUMA_CONCEPTS": "Concepts Luma",
+    "LUMA_REF": "Référence Luma",
     "MASK": "MASQUE",
     "MESH": "MAILLAGE",
     "MODEL": "MODÈLE",
     "NOISE": "BRUIT",
     "PHOTOMAKER": "PHOTOMAKER",
+    "PIXVERSE_TEMPLATE": "Modèle Pixverse",
+    "RECRAFT_COLOR": "Couleur Recraft",
+    "RECRAFT_CONTROLS": "Contrôles Recraft",
+    "RECRAFT_V3_STYLE": "Style Recraft V3",
     "SAMPLER": "ÉCHANTILLONNEUR",
     "SIGMAS": "SIGMAS",
     "STRING": "CHAÎNE",
     "STYLE_MODEL": "MODÈLE_DE_STYLE",
+    "SVG": "SVG",
     "TIMESTEPS_RANGE": "PLAGE_DES_ÉTAPES_TEMPORELLES",
     "UPSCALE_MODEL": "MODÈLE_DE_MISE_À_L'ÉCHELLE",
     "VAE": "VAE",
+    "VIDEO": "Vidéo",
     "VOXEL": "VOXEL",
     "WEBCAM": "WEBCAM"
   },
@@ -245,6 +264,7 @@
     "continue": "Continuer",
     "control_after_generate": "contrôle après génération",
     "control_before_generate": "contrôle avant génération",
+    "copy": "Copier",
     "copyToClipboard": "Copier dans le presse-papiers",
     "currentUser": "Utilisateur actuel",
     "customize": "Personnaliser",
@@ -256,6 +276,7 @@
     "disableAll": "Désactiver tout",
     "disabling": "Désactivation",
     "download": "Télécharger",
+    "edit": "Modifier",
     "empty": "Vide",
     "enableAll": "Activer tout",
     "enabled": "Activé",
@@ -732,10 +753,22 @@
   "nodeCategories": {
     "3d": "3d",
     "3d_models": "modèles_3d",
+    "BFL": "BFL",
+    "Ideogram": "Ideogram",
+    "Kling": "Kling",
+    "Luma": "Luma",
+    "MiniMax": "MiniMax",
+    "OpenAI": "OpenAI",
+    "Pika": "Pika",
+    "PixVerse": "PixVerse",
+    "Recraft": "Recraft",
+    "Stability AI": "Stability AI",
+    "Veo": "Veo",
     "_for_testing": "_pour_test",
     "advanced": "avancé",
     "animation": "animation",
     "api": "api",
+    "api node": "nœud api",
     "attention_experiments": "expériences_d'attention",
     "audio": "audio",
     "batch": "lot",
@@ -760,6 +793,7 @@
     "instructpix2pix": "instructpix2pix",
     "latent": "latent",
     "loaders": "chargeurs",
+    "lotus": "lotus",
     "ltxv": "ltxv",
     "mask": "masque",
     "model": "modèle",
@@ -771,10 +805,12 @@
     "photomaker": "photomaker",
     "postprocessing": "post-traitement",
     "preprocessors": "préprocesseurs",
+    "primitive": "primitif",
     "samplers": "échantillonneurs",
     "sampling": "échantillonnage",
     "schedulers": "planificateurs",
     "scheduling": "planification",
+    "sd": "sd",
     "sd3": "sd3",
     "sigmas": "sigmas",
     "stable_cascade": "stable_cascade",
@@ -783,6 +819,10 @@
     "unet": "unet",
     "upscale_diffusion": "diffusion_de_mise_à_l'échelle",
     "upscaling": "mise_à_l'échelle",
+    "utils": "utilitaires",
+    "v1": "v1",
+    "v2": "v2",
+    "v3": "v3",
     "video": "vidéo",
     "video_models": "modèles_vidéo"
   },
@@ -1303,6 +1343,7 @@
     "no3dSceneToExport": "Aucune scène 3D à exporter",
     "noTemplatesToExport": "Aucun modèle à exporter",
     "nodeDefinitionsUpdated": "Définitions de nœuds mises à jour",
+    "nothingSelected": "Aucune sélection",
     "nothingToGroup": "Rien à regrouper",
     "nothingToQueue": "Rien à ajouter à la file d’attente",
     "pendingTasksDeleted": "Tâches en attente supprimées",
@@ -1311,6 +1352,7 @@
     "unableToGetModelFilePath": "Impossible d'obtenir le chemin du fichier modèle",
     "unauthorizedDomain": "Votre domaine {domain} n'est pas autorisé à utiliser ce service. Veuillez contacter {email} pour ajouter votre domaine à la liste blanche.",
     "updateRequested": "Mise à jour demandée",
+    "useApiKeyTip": "Astuce : Vous ne pouvez pas accéder à la connexion normale ? Utilisez l’option Clé API Comfy.",
     "userNotAuthenticated": "Utilisateur non authentifié"
   },
   "userSelect": {
@@ -1330,6 +1372,7 @@
   },
   "validation": {
     "invalidEmail": "Adresse e-mail invalide",
+    "length": "Doit comporter {length} caractères",
     "maxLength": "Ne doit pas dépasser {length} caractères",
     "minLength": "Doit contenir au moins {length} caractères",
     "password": {
@@ -1342,6 +1385,7 @@
       "uppercase": "Doit contenir au moins une lettre majuscule"
     },
     "personalDataConsentRequired": "Vous devez accepter le traitement de vos données personnelles.",
+    "prefix": "Doit commencer par {prefix}",
     "required": "Requis"
   },
   "welcome": {

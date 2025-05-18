@@ -63,15 +63,6 @@ watchDebounced(
 
 // Set initial position to bottom center
 const setInitialPosition = () => {
-  if (x.value !== 0 || y.value !== 0) {
-    return
-  }
-  if (storedPosition.value.x !== 0 || storedPosition.value.y !== 0) {
-    x.value = storedPosition.value.x
-    y.value = storedPosition.value.y
-    captureLastDragState()
-    return
-  }
   if (panelRef.value) {
     const screenWidth = window.innerWidth
     const screenHeight = window.innerHeight
@@ -82,9 +73,25 @@ const setInitialPosition = () => {
       return
     }
 
-    x.value = (screenWidth - menuWidth) / 2
-    y.value = screenHeight - menuHeight - 10 // 10px margin from bottom
-    captureLastDragState()
+    // Check if stored position exists and is within bounds
+    if (storedPosition.value.x !== 0 || storedPosition.value.y !== 0) {
+      // Ensure stored position is within screen bounds
+      x.value = clamp(storedPosition.value.x, 0, screenWidth - menuWidth)
+      y.value = clamp(storedPosition.value.y, 0, screenHeight - menuHeight)
+      captureLastDragState()
+      return
+    }
+
+    // If no stored position or current position, set to bottom center
+    if (x.value === 0 && y.value === 0) {
+      x.value = clamp((screenWidth - menuWidth) / 2, 0, screenWidth - menuWidth)
+      y.value = clamp(
+        screenHeight - menuHeight - 10,
+        0,
+        screenHeight - menuHeight
+      )
+      captureLastDragState()
+    }
   }
 }
 onMounted(setInitialPosition)

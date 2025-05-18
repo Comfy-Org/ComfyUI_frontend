@@ -27,7 +27,6 @@
     class="w-full h-full touch-none"
   />
 
-  <NodeBadge />
   <NodeTooltip v-if="tooltipEnabled" />
   <NodeSearchboxPopover />
 
@@ -53,7 +52,6 @@ import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
 import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
 import DomWidgets from '@/components/graph/DomWidgets.vue'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
-import NodeBadge from '@/components/graph/NodeBadge.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
 import SelectionOverlay from '@/components/graph/SelectionOverlay.vue'
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
@@ -62,6 +60,7 @@ import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vu
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import SecondRowWorkflowTabs from '@/components/topbar/SecondRowWorkflowTabs.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
 import { useCopy } from '@/composables/useCopy'
@@ -71,7 +70,7 @@ import { usePaste } from '@/composables/usePaste'
 import { useWorkflowAutoSave } from '@/composables/useWorkflowAutoSave'
 import { useWorkflowPersistence } from '@/composables/useWorkflowPersistence'
 import { CORE_SETTINGS } from '@/constants/coreSettings'
-import { i18n } from '@/i18n'
+import { i18n, t } from '@/i18n'
 import type { NodeId } from '@/schemas/comfyWorkflowSchema'
 import { UnauthorizedError, api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
@@ -225,39 +224,13 @@ watch(
   }
 )
 
-// Save the drag & scale info in the serialized workflow if the setting is enabled
-watch(
-  [
-    () => canvasStore.canvas,
-    () => settingStore.get('Comfy.EnableWorkflowViewRestore')
-  ],
-  ([canvas, enableWorkflowViewRestore]) => {
-    const extra = canvas?.graph?.extra
-    if (!extra) return
-
-    if (enableWorkflowViewRestore) {
-      extra.ds = {
-        get scale() {
-          return canvas.ds.scale
-        },
-        get offset() {
-          const [x, y] = canvas.ds.offset
-          return [x, y]
-        }
-      }
-    } else {
-      delete extra.ds
-    }
-  }
-)
-
 useEventListener(
   canvasRef,
   'litegraph:no-items-selected',
   () => {
     toastStore.add({
       severity: 'warn',
-      summary: 'No items selected',
+      summary: t('toastMessages.nothingSelected'),
       life: 2000
     })
   },
@@ -280,6 +253,7 @@ const workflowPersistence = useWorkflowPersistence()
 // @ts-expect-error fixme ts strict error
 useCanvasDrop(canvasRef)
 useLitegraphSettings()
+useNodeBadge()
 
 onMounted(async () => {
   useGlobalLitegraph()
@@ -293,7 +267,7 @@ onMounted(async () => {
   workspaceStore.spinner = true
   // ChangeTracker needs to be initialized before setup, as it will overwrite
   // some listeners of litegraph canvas.
-  ChangeTracker.init(comfyApp)
+  ChangeTracker.init()
   await loadCustomNodesI18n()
   try {
     await settingStore.loadSettingValues()
@@ -318,10 +292,8 @@ onMounted(async () => {
   canvasStore.canvas.render_canvas_border = false
   workspaceStore.spinner = false
 
-  // @ts-expect-error fixme ts strict error
-  window['app'] = comfyApp
-  // @ts-expect-error fixme ts strict error
-  window['graph'] = comfyApp.graph
+  window.app = comfyApp
+  window.graph = comfyApp.graph
 
   comfyAppReady.value = true
 

@@ -70,11 +70,12 @@ const state = computed<GridState>(() => {
   const fromCol = fromRow * cols.value
   const toCol = toRow * cols.value
   const remainingCol = items.length - toCol
+  const hasMoreToRender = remainingCol >= 0
 
   return {
     start: clamp(fromCol, 0, items?.length),
     end: clamp(toCol, fromCol, items?.length),
-    isNearEnd: remainingCol <= cols.value * bufferRows
+    isNearEnd: hasMoreToRender && remainingCol <= cols.value * bufferRows
   }
 })
 const renderedItems = computed(() =>

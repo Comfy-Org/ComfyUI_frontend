@@ -1,12 +1,17 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import type ChatHistoryWidget from '@/components/graph/widgets/ChatHistoryWidget.vue'
+import { useNodeChatHistory } from '@/composables/node/useNodeChatHistory'
+import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
 import type {
+  DisplayComponentWsMessage,
   ExecutedWsMessage,
   ExecutionCachedWsMessage,
   ExecutionErrorWsMessage,
   ExecutionStartWsMessage,
   NodeError,
+  ProgressTextWsMessage,
   ProgressWsMessage
 } from '@/schemas/apiSchema'
 import type {
@@ -15,6 +20,7 @@ import type {
   NodeId
 } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 
 import { ComfyWorkflow } from './workflowStore'
 
@@ -103,6 +109,11 @@ export const useExecutionStore = defineStore('execution', () => {
       handleExecutionError as EventListener
     )
   }
+  api.addEventListener('progress_text', handleProgressText as EventListener)
+  api.addEventListener(
+    'display_component',
+    handleDisplayComponent as EventListener
+  )
 
   function unbindExecutionEvents() {
     api.removeEventListener(
@@ -120,6 +131,10 @@ export const useExecutionStore = defineStore('execution', () => {
     api.removeEventListener(
       'execution_error',
       handleExecutionError as EventListener
+    )
+    api.removeEventListener(
+      'progress_text',
+      handleProgressText as EventListener
     )
   }
 
@@ -175,6 +190,31 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleExecutionError(e: CustomEvent<ExecutionErrorWsMessage>) {
     lastExecutionError.value = e.detail
+  }
+
+  function handleProgressText(e: CustomEvent<ProgressTextWsMessage>) {
+    const { nodeId, text } = e.detail
+    if (!text || !nodeId) return
+
+    const node = app.graph.getNodeById(nodeId)
+    if (!node) return
+
+    useNodeProgressText().showTextPreview(node, text)
+  }
+
+  function handleDisplayComponent(e: CustomEvent<DisplayComponentWsMessage>) {
+    const { node_id, component, props = {} } = e.detail
+    const node = app.graph.getNodeById(node_id)
+    if (!node) return
+
+    if (component === 'ChatHistoryWidget') {
+      useNodeChatHistory({
+        props: props as Omit<
+          InstanceType<typeof ChatHistoryWidget>['$props'],
+          'widget'
+        >
+      }).showChatHistory(node)
+    }
   }
 
   function storePrompt({

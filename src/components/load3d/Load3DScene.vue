@@ -52,6 +52,9 @@ const eventConfig = {
   showPreviewChange: (value: boolean) => emit('showPreviewChange', value),
   backgroundImageChange: (value: string) =>
     emit('backgroundImageChange', value),
+  backgroundImageLoadingStart: () =>
+    loadingOverlayRef.value?.startLoading(t('load3d.loadingBackgroundImage')),
+  backgroundImageLoadingEnd: () => loadingOverlayRef.value?.endLoading(),
   upDirectionChange: (value: string) => emit('upDirectionChange', value),
   edgeThresholdChange: (value: number) => emit('edgeThresholdChange', value),
   modelLoadingStart: () =>
@@ -75,7 +78,7 @@ const eventConfig = {
 
 watchEffect(async () => {
   if (load3d.value) {
-    const rawLoad3d = toRaw(load3d.value)
+    const rawLoad3d = toRaw(load3d.value) as Load3d
 
     rawLoad3d.setBackgroundColor(props.backgroundColor)
     rawLoad3d.toggleGrid(props.showGrid)
@@ -84,15 +87,25 @@ watchEffect(async () => {
     rawLoad3d.toggleCamera(props.cameraType)
     rawLoad3d.togglePreview(props.showPreview)
     await rawLoad3d.setBackgroundImage(props.backgroundImage)
-    rawLoad3d.setUpDirection(props.upDirection)
   }
 })
+
+watch(
+  () => props.upDirection,
+  (newValue) => {
+    if (load3d.value) {
+      const rawLoad3d = toRaw(load3d.value) as Load3d
+
+      rawLoad3d.setUpDirection(newValue)
+    }
+  }
+)
 
 watch(
   () => props.materialMode,
   (newValue) => {
     if (load3d.value) {
-      const rawLoad3d = toRaw(load3d.value)
+      const rawLoad3d = toRaw(load3d.value) as Load3d
 
       rawLoad3d.setMaterialMode(newValue)
     }
@@ -102,10 +115,9 @@ watch(
 watch(
   () => props.edgeThreshold,
   (newValue) => {
-    if (load3d.value) {
-      const rawLoad3d = toRaw(load3d.value)
+    if (load3d.value && newValue) {
+      const rawLoad3d = toRaw(load3d.value) as Load3d
 
-      // @ts-expect-error fixme ts strict error
       rawLoad3d.setEdgeThreshold(newValue)
     }
   }
