@@ -526,7 +526,7 @@ Have another idea? Drop into Discord or open an issue, and let's chat!
 
 ## Development
 
-### Technical Stack & Prerequisites
+### Prerequisites & Technology Stack
 
 - **Required Software**:
   - Node.js (v16 or later) and npm
