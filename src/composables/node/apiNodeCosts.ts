@@ -61,7 +61,7 @@ export const apiNodeCosts: ApiNodeCostRecord = {
     nodeName: 'Ideogram V3',
     pricingParams: 'rendering_speed',
     pricePerRunRange: 'dynamic',
-    displayPrice: 'Variable pricing'
+    displayPrice: 'Variable pricing (low to medium)'
   },
   KlingCameraControlI2VNode: {
     vendor: 'Kling',
@@ -82,21 +82,21 @@ export const apiNodeCosts: ApiNodeCostRecord = {
     nodeName: 'Kling Dual Character Video Effects',
     pricingParams: 'Priced the same as t2v based on mode, model, and duration.',
     pricePerRunRange: 'dynamic',
-    displayPrice: 'Variable pricing'
+    displayPrice: 'Variable pricing (medium)'
   },
   KlingImage2VideoNode: {
     vendor: 'Kling',
     nodeName: 'Kling Image to Video',
     pricingParams: 'Same as Text to Video',
     pricePerRunRange: 'dynamic',
-    displayPrice: 'Variable pricing'
+    displayPrice: 'Variable pricing (medium)'
   },
   KlingImageGenerationNode: {
     vendor: 'Kling',
     nodeName: 'Kling Image Generation',
     pricingParams: 'modality | model',
     pricePerRunRange: 'dynamic',
-    displayPrice: 'Variable pricing'
+    displayPrice: 'Variable pricing (low)'
   },
   KlingLipSyncAudioToVideoNode: {
     vendor: 'Kling',
@@ -117,21 +117,21 @@ export const apiNodeCosts: ApiNodeCostRecord = {
     nodeName: 'Kling Video Effects',
     pricingParams: 'effect_scene',
     pricePerRunRange: 'dynamic',
-    displayPrice: 'Variable pricing'
+    displayPrice: 'Variable pricing (medium)'
   },
   KlingStartEndFrameNode: {
     vendor: 'Kling',
     nodeName: 'Kling Start-End Frame to Video',
     pricingParams: 'Same as text to video',
     pricePerRunRange: 'dynamic',
-    displayPrice: 'Variable pricing'
+    displayPrice: 'Variable pricing (medium)'
   },
   KlingTextToVideoNode: {
     vendor: 'Kling',
     nodeName: 'Kling Text to Video',
     pricingParams: 'model | duration | mode',
     pricePerRunRange: 'dynamic',
-    displayPrice: 'Variable pricing'
+    displayPrice: 'Variable pricing (medium to high)'
   },
   KlingVideoExtendNode: {
     vendor: 'Kling',
@@ -153,7 +153,7 @@ export const apiNodeCosts: ApiNodeCostRecord = {
     pricingParams: 'Same as Text to Video',
     pricePerRunRange: 'dynamic',
     rateDocumentationUrl: 'https://lumalabs.ai/api/pricing',
-    displayPrice: 'Variable pricing'
+    displayPrice: 'Variable pricing (medium to high)'
   },
   LumaVideoNode: {
     vendor: 'Luma',
@@ -161,7 +161,7 @@ export const apiNodeCosts: ApiNodeCostRecord = {
     pricingParams: 'model | resolution | duration',
     pricePerRunRange: 'dynamic',
     rateDocumentationUrl: 'https://lumalabs.ai/api/pricing',
-    displayPrice: 'Variable pricing'
+    displayPrice: 'Variable pricing (medium to high)'
   },
   MinimaxImageToVideoNode: {
     vendor: 'Minimax',
@@ -185,7 +185,7 @@ export const apiNodeCosts: ApiNodeCostRecord = {
     pricingParams: 'size',
     pricePerRunRange: 'dynamic',
     rateDocumentationUrl: 'https://platform.openai.com/docs/pricing',
-    displayPrice: 'Variable pricing'
+    displayPrice: 'Variable pricing (low)'
   },
   OpenAIDalle3: {
     vendor: 'OpenAI',
@@ -193,7 +193,7 @@ export const apiNodeCosts: ApiNodeCostRecord = {
     pricingParams: 'size | quality',
     pricePerRunRange: 'dynamic',
     rateDocumentationUrl: 'https://platform.openai.com/docs/pricing',
-    displayPrice: 'Variable pricing'
+    displayPrice: 'Variable pricing (medium)'
   },
   OpenAIGPTImage1: {
     vendor: 'OpenAI',
@@ -201,35 +201,35 @@ export const apiNodeCosts: ApiNodeCostRecord = {
     pricingParams: 'quality',
     pricePerRunRange: 'dynamic',
     rateDocumentationUrl: 'https://platform.openai.com/docs/pricing',
-    displayPrice: 'Variable pricing'
+    displayPrice: 'Variable pricing (low to high)'
   },
   PikaImageToVideoNode2_2: {
     vendor: 'Pika',
     nodeName: 'Pika Image to Video',
     pricingParams: 'duration | resolution',
     pricePerRunRange: 'dynamic',
-    displayPrice: 'Variable pricing'
+    displayPrice: 'Variable pricing (medium)'
   },
   PikaScenesV2_2: {
     vendor: 'Pika',
     nodeName: 'Pika Scenes (Video Image Composition)',
     pricingParams: 'duration | resolution',
     pricePerRunRange: 'dynamic',
-    displayPrice: 'Variable pricing'
+    displayPrice: 'Variable pricing (medium)'
   },
   PikaStartEndFrameNode2_2: {
     vendor: 'Pika',
     nodeName: 'Pika Start and End Frame to Video',
     pricingParams: 'duration | resolution',
     pricePerRunRange: 'dynamic',
-    displayPrice: 'Variable pricing'
+    displayPrice: 'Variable pricing (medium)'
   },
   PikaTextToVideoNode2_2: {
     vendor: 'Pika',
     nodeName: 'Pika Text to Video',
     pricingParams: 'duration | resolution',
     pricePerRunRange: 'dynamic',
-    displayPrice: 'Variable pricing'
+    displayPrice: 'Variable pricing (medium)'
   },
   Pikadditions: {
     vendor: 'Pika',
@@ -264,7 +264,7 @@ export const apiNodeCosts: ApiNodeCostRecord = {
     nodeName: 'PixVerse Text to Video',
     pricingParams: 'duration | quality | motion_mode',
     pricePerRunRange: 'dynamic',
-    displayPrice: 'Variable pricing'
+    displayPrice: 'Variable pricing (medium to high)'
   },
   PixverseTransitionVideoNode: {
     vendor: 'Pixverse',
@@ -342,7 +342,7 @@ export const apiNodeCosts: ApiNodeCostRecord = {
     nodeName: 'Stability AI Stable Diffusion 3.5 Image',
     pricingParams: 'model',
     pricePerRunRange: 'dynamic',
-    displayPrice: 'Variable pricing'
+    displayPrice: 'Variable pricing (low)'
   },
   StabilityStableImageUltraNode: {
     vendor: 'Stability',
@@ -387,7 +387,7 @@ export const apiNodeCosts: ApiNodeCostRecord = {
     pricingParams: 'model | aspect_ratio',
     pricePerRunRange: 'dynamic',
     rateDocumentationUrl: 'https://lumalabs.ai/api/pricing',
-    displayPrice: 'Variable pricing'
+    displayPrice: 'Variable pricing (low to medium)'
   },
   LumaImageToImageNode: {
     vendor: 'Luma',
@@ -395,7 +395,7 @@ export const apiNodeCosts: ApiNodeCostRecord = {
     pricingParams: 'Same as Text to Image',
     pricePerRunRange: 'dynamic',
     rateDocumentationUrl: 'https://lumalabs.ai/api/pricing',
-    displayPrice: 'Variable pricing'
+    displayPrice: 'Variable pricing (low to medium)'
   }
 }
 
