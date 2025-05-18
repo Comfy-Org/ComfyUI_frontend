@@ -113,27 +113,25 @@ export const useNodeBadge = () => {
           // Get price from our mapping service
           const price = nodePricing.getNodePriceDisplay(node)
 
-          // Only add the badge if we have pricing information
-          if (price) {
-            const creditsBadge = computed(() => {
-              return new LGraphBadge({
-                text: price,
-                iconOptions: {
-                  unicode: '\ue96b',
-                  fontFamily: 'PrimeIcons',
-                  color: '#FABC25',
-                  bgColor: '#353535',
-                  fontSize: 8
-                },
-                fgColor:
-                  colorPaletteStore.completedActivePalette.colors.litegraph_base
-                    .BADGE_FG_COLOR,
-                bgColor: '#8D6932'
-              })
+          // Always add the badge for API nodes, with or without price text
+          const creditsBadge = computed(() => {
+            return new LGraphBadge({
+              text: price || '',
+              iconOptions: {
+                unicode: '\ue96b',
+                fontFamily: 'PrimeIcons',
+                color: '#FABC25',
+                bgColor: '#353535',
+                fontSize: 8
+              },
+              fgColor:
+                colorPaletteStore.completedActivePalette.colors.litegraph_base
+                  .BADGE_FG_COLOR,
+              bgColor: '#8D6932'
             })
+          })
 
-            node.badges.push(() => creditsBadge.value)
-          }
+          node.badges.push(() => creditsBadge.value)
         }
       }
     })
