@@ -110,13 +110,11 @@ export const useNodeBadge = () => {
         node.badges.push(() => badge.value)
 
         if (node.constructor.nodeData?.api_node && showApiPricingBadge.value) {
-          // Get price from our mapping service
-          const price = nodePricing.getNodePriceDisplay(node)
-
+          const price = nodePricing.getNodeDisplayPrice(node)
           // Always add the badge for API nodes, with or without price text
           const creditsBadge = computed(() => {
             return new LGraphBadge({
-              text: price || '',
+              text: price,
               iconOptions: {
                 unicode: '\ue96b',
                 fontFamily: 'PrimeIcons',
