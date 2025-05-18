@@ -526,11 +526,20 @@ Have another idea? Drop into Discord or open an issue, and let's chat!
 
 ## Development
 
-### Prerequisites
+### Prerequisites & Technology Stack
 
-- Node.js (v16 or later) and npm must be installed
-- Git for version control
-- A running ComfyUI backend instance
+- **Required Software**:
+  - Node.js (v16 or later) and npm
+  - Git for version control
+  - A running ComfyUI backend instance
+  
+- **Tech Stack**:
+  - [Vue 3](https://vuejs.org/) with [TypeScript](https://www.typescriptlang.org/)
+  - [Pinia](https://pinia.vuejs.org/) for state management
+  - [PrimeVue](https://primevue.org/) with [TailwindCSS](https://tailwindcss.com/) for UI
+  - [litegraph.js](https://github.com/Comfy-Org/litegraph.js) for node editor
+  - [zod](https://zod.dev/) for schema validation
+  - [vue-i18n](https://github.com/intlify/vue-i18n) for internationalization
 
 ### Initial Setup
 
@@ -558,15 +567,6 @@ To launch ComfyUI and have it connect to your development server:
 python main.py --port 8188
 ```
 
-### Tech Stack
-
-- [Vue 3](https://vuejs.org/) with [TypeScript](https://www.typescriptlang.org/)
-- [Pinia](https://pinia.vuejs.org/) for state management
-- [PrimeVue](https://primevue.org/) with [TailwindCSS](https://tailwindcss.com/) for UI
-- [litegraph.js](https://github.com/Comfy-Org/litegraph.js) for node editor
-- [zod](https://zod.dev/) for schema validation
-- [vue-i18n](https://github.com/intlify/vue-i18n) for internationalization
-
 ### Git pre-commit hooks
 
 Run `npm run prepare` to install Git pre-commit hooks. Currently, the pre-commit
@@ -579,6 +579,7 @@ core extensions will be loaded.
 
 - Start local ComfyUI backend at `localhost:8188`
 - Run `npm run dev` to start the dev server
+- Run `npm run dev:electron` to start the dev server with electron API mocked
 
 #### Access dev server on touch devices
 
