@@ -379,6 +379,22 @@ export const apiNodeCosts: ApiNodeCostRecord = {
     pricePerRunRange: 'dynamic',
     rateDocumentationUrl:
       'https://cloud.google.com/vertex-ai/generative-ai/pricing',
+    displayPrice: 'Variable pricing (high)'
+  },
+  LumaTextToImageNode: {
+    vendor: 'Luma',
+    nodeName: 'Luma Text to Image',
+    pricingParams: 'model | aspect_ratio',
+    pricePerRunRange: 'dynamic',
+    rateDocumentationUrl: 'https://lumalabs.ai/api/pricing',
+    displayPrice: 'Variable pricing'
+  },
+  LumaImageToImageNode: {
+    vendor: 'Luma',
+    nodeName: 'Luma Image to Image',
+    pricingParams: 'Same as Text to Image',
+    pricePerRunRange: 'dynamic',
+    rateDocumentationUrl: 'https://lumalabs.ai/api/pricing',
     displayPrice: 'Variable pricing'
   }
 }
