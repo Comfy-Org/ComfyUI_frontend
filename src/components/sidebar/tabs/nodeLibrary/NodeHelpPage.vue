@@ -17,7 +17,7 @@
         <div class="text-sm" v-html="renderedHelpHtml" />
       </template>
       <div v-else class="text-sm space-y-6">
-        <p>
+        <p v-if="node.description">
           <strong>{{ $t('g.description') }}:</strong> {{ node.description }}
         </p>
 
