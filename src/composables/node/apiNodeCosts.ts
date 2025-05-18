@@ -24,7 +24,7 @@ export const apiNodeCosts: ApiNodeCostRecord = {
     nodeName: 'Flux 1: Expand Image',
     pricingParams: '-',
     pricePerRunRange: '$0.05',
-    rateDocumentation: 'https://docs.bfl.ml/pricing/',
+    rateDocumentationUrl: 'https://docs.bfl.ml/pricing/',
     displayPrice: '$0.05/Run'
   },
   FluxProFillNode: {
@@ -46,7 +46,7 @@ export const apiNodeCosts: ApiNodeCostRecord = {
     nodeName: 'Ideogram V1',
     pricingParams: '-',
     pricePerRunRange: '$0.06',
-    rateDocumentation: 'https://about.ideogram.ai/api-pricing',
+    rateDocumentationUrl: 'https://about.ideogram.ai/api-pricing',
     displayPrice: '$0.06/Run'
   },
   IdeogramV2: {
@@ -152,7 +152,7 @@ export const apiNodeCosts: ApiNodeCostRecord = {
     nodeName: 'Luma Image to Video',
     pricingParams: 'Same as Text to Video',
     pricePerRunRange: 'dynamic',
-    rateDocumentation: 'https://lumalabs.ai/api/pricing',
+    rateDocumentationUrl: 'https://lumalabs.ai/api/pricing',
     displayPrice: 'Variable pricing'
   },
   LumaVideoNode: {
@@ -160,7 +160,7 @@ export const apiNodeCosts: ApiNodeCostRecord = {
     nodeName: 'Luma Text to Video',
     pricingParams: 'model | resolution | duration',
     pricePerRunRange: 'dynamic',
-    rateDocumentation: 'https://lumalabs.ai/api/pricing',
+    rateDocumentationUrl: 'https://lumalabs.ai/api/pricing',
     displayPrice: 'Variable pricing'
   },
   MinimaxImageToVideoNode: {
@@ -168,7 +168,7 @@ export const apiNodeCosts: ApiNodeCostRecord = {
     nodeName: 'MiniMax Image to Video',
     pricingParams: '-',
     pricePerRunRange: '$0.43',
-    rateDocumentation: 'https://www.minimax.io/price',
+    rateDocumentationUrl: 'https://www.minimax.io/price',
     displayPrice: '$0.43/Run'
   },
   MinimaxTextToVideoNode: {
@@ -176,7 +176,7 @@ export const apiNodeCosts: ApiNodeCostRecord = {
     nodeName: 'MiniMax Text to Video',
     pricingParams: '-',
     pricePerRunRange: '$0.43',
-    rateDocumentation: 'https://www.minimax.io/price',
+    rateDocumentationUrl: 'https://www.minimax.io/price',
     displayPrice: '$0.43/Run'
   },
   OpenAIDalle2: {
@@ -184,7 +184,7 @@ export const apiNodeCosts: ApiNodeCostRecord = {
     nodeName: 'dall-e-2',
     pricingParams: 'size',
     pricePerRunRange: 'dynamic',
-    rateDocumentation: 'https://platform.openai.com/docs/pricing',
+    rateDocumentationUrl: 'https://platform.openai.com/docs/pricing',
     displayPrice: 'Variable pricing'
   },
   OpenAIDalle3: {
@@ -192,7 +192,7 @@ export const apiNodeCosts: ApiNodeCostRecord = {
     nodeName: 'dall-e-3',
     pricingParams: 'size | quality',
     pricePerRunRange: 'dynamic',
-    rateDocumentation: 'https://platform.openai.com/docs/pricing',
+    rateDocumentationUrl: 'https://platform.openai.com/docs/pricing',
     displayPrice: 'Variable pricing'
   },
   OpenAIGPTImage1: {
@@ -200,7 +200,7 @@ export const apiNodeCosts: ApiNodeCostRecord = {
     nodeName: 'gpt-image-1',
     pricingParams: 'quality',
     pricePerRunRange: 'dynamic',
-    rateDocumentation: 'https://platform.openai.com/docs/pricing',
+    rateDocumentationUrl: 'https://platform.openai.com/docs/pricing',
     displayPrice: 'Variable pricing'
   },
   PikaImageToVideoNode2_2: {
@@ -278,7 +278,7 @@ export const apiNodeCosts: ApiNodeCostRecord = {
     nodeName: 'Recraft Crisp Upscale Image',
     pricingParams: '-',
     pricePerRunRange: '$0.004',
-    rateDocumentation: 'https://www.recraft.ai/docs#pricing',
+    rateDocumentationUrl: 'https://www.recraft.ai/docs#pricing',
     displayPrice: '$0.004/Run'
   },
   RecraftImageInpaintingNode: {
@@ -286,7 +286,7 @@ export const apiNodeCosts: ApiNodeCostRecord = {
     nodeName: 'Recraft Image Inpainting',
     pricingParams: 'n',
     pricePerRunRange: '$$0.04 x n',
-    rateDocumentation: 'https://www.recraft.ai/docs#pricing',
+    rateDocumentationUrl: 'https://www.recraft.ai/docs#pricing',
     displayPrice: '$0.04 x n/Run'
   },
   RecraftImageToImageNode: {
@@ -294,7 +294,7 @@ export const apiNodeCosts: ApiNodeCostRecord = {
     nodeName: 'Recraft Image to Image',
     pricingParams: 'n',
     pricePerRunRange: '$0.04 x n',
-    rateDocumentation: 'https://www.recraft.ai/docs#pricing',
+    rateDocumentationUrl: 'https://www.recraft.ai/docs#pricing',
     displayPrice: '$0.04 x n/Run'
   },
   RecraftRemoveBackgroundNode: {
@@ -302,7 +302,7 @@ export const apiNodeCosts: ApiNodeCostRecord = {
     nodeName: 'Recraft Remove Background',
     pricingParams: '-',
     pricePerRunRange: '$0.01',
-    rateDocumentation: 'https://www.recraft.ai/docs#pricing',
+    rateDocumentationUrl: 'https://www.recraft.ai/docs#pricing',
     displayPrice: '$0.01/Run'
   },
   RecraftReplaceBackgroundNode: {
@@ -310,7 +310,7 @@ export const apiNodeCosts: ApiNodeCostRecord = {
     nodeName: 'Recraft Replace Background',
     pricingParams: 'n',
     pricePerRunRange: '$0.04',
-    rateDocumentation: 'https://www.recraft.ai/docs#pricing',
+    rateDocumentationUrl: 'https://www.recraft.ai/docs#pricing',
     displayPrice: '$0.04/Run'
   },
   RecraftTextToImageNode: {
@@ -318,7 +318,7 @@ export const apiNodeCosts: ApiNodeCostRecord = {
     nodeName: 'Recraft Text to Image',
     pricingParams: 'model | n',
     pricePerRunRange: '$0.04 x n',
-    rateDocumentation: 'https://www.recraft.ai/docs#pricing',
+    rateDocumentationUrl: 'https://www.recraft.ai/docs#pricing',
     displayPrice: '$0.04 x n/Run'
   },
   RecraftTextToVectorNode: {
@@ -326,7 +326,7 @@ export const apiNodeCosts: ApiNodeCostRecord = {
     nodeName: 'Recraft Text to Vector',
     pricingParams: 'model | n',
     pricePerRunRange: '$0.08 x n',
-    rateDocumentation: 'https://www.recraft.ai/docs#pricing',
+    rateDocumentationUrl: 'https://www.recraft.ai/docs#pricing',
     displayPrice: '$0.08 x n/Run'
   },
   RecraftVectorizeImageNode: {
@@ -334,7 +334,7 @@ export const apiNodeCosts: ApiNodeCostRecord = {
     nodeName: 'Recraft Vectorize Image',
     pricingParams: '-',
     pricePerRunRange: '$0.01',
-    rateDocumentation: 'https://www.recraft.ai/docs#pricing',
+    rateDocumentationUrl: 'https://www.recraft.ai/docs#pricing',
     displayPrice: '$0.01/Run'
   },
   StabilityStableImageSD_3_5Node: {
@@ -377,7 +377,7 @@ export const apiNodeCosts: ApiNodeCostRecord = {
     nodeName: 'Google Veo2 Video Generation',
     pricingParams: 'duration_seconds',
     pricePerRunRange: 'dynamic',
-    rateDocumentation:
+    rateDocumentationUrl:
       'https://cloud.google.com/vertex-ai/generative-ai/pricing',
     displayPrice: 'Variable pricing'
   }
