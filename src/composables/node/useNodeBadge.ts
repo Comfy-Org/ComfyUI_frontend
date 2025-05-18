@@ -13,6 +13,8 @@ import { useSettingStore } from '@/stores/settingStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { NodeBadgeMode } from '@/types/nodeSource'
 
+import { useNodePricing } from './useNodePricing'
+
 /**
  * Add LGraphBadge to LGraphNode based on settings.
  *
@@ -57,6 +59,8 @@ export const useNodeBadge = () => {
   }
 
   onMounted(() => {
+    const nodePricing = useNodePricing()
+
     extensionStore.registerExtension({
       name: 'Comfy.NodeBadge',
       nodeCreated(node: LGraphNode) {
@@ -95,9 +99,12 @@ export const useNodeBadge = () => {
         node.badges.push(() => badge.value)
 
         if (node.constructor.nodeData?.api_node) {
+          // Get price from our mapping service
+          const price = nodePricing.getNodePriceDisplay(node)
+
           const creditsBadge = computed(() => {
             return new LGraphBadge({
-              text: '',
+              text: price ?? '',
               iconOptions: {
                 unicode: '\ue96b',
                 fontFamily: 'PrimeIcons',
@@ -108,9 +115,7 @@ export const useNodeBadge = () => {
               fgColor:
                 colorPaletteStore.completedActivePalette.colors.litegraph_base
                   .BADGE_FG_COLOR,
-              bgColor:
-                colorPaletteStore.completedActivePalette.colors.litegraph_base
-                  .BADGE_BG_COLOR
+              bgColor: '#8D6932'
             })
           })
 
