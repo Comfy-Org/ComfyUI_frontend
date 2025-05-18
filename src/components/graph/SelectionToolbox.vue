@@ -11,6 +11,7 @@
     <BypassButton />
     <PinButton />
     <MaskEditorButton />
+    <HelpButton />
     <DeleteButton />
     <RefreshButton />
     <ExtensionCommandButton
