@@ -58,11 +58,6 @@ export default defineConfig({
         changeOrigin: true
       },
 
-      '/docs/assets': {
-        target: DEV_SERVER_COMFYUI_URL,
-        changeOrigin: true
-      },
-
       ...(!DISABLE_TEMPLATES_PROXY
         ? {
             '/templates': {
