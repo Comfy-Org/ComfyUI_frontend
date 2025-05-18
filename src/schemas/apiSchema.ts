@@ -421,6 +421,7 @@ const zSettings = z.object({
   'Comfy.NodeBadge.NodeSourceBadgeMode': zNodeBadgeMode,
   'Comfy.NodeBadge.NodeIdBadgeMode': zNodeBadgeMode,
   'Comfy.NodeBadge.NodeLifeCycleBadgeMode': zNodeBadgeMode,
+  'Comfy.NodeBadge.ShowApiPricing': z.boolean(),
   'Comfy.QueueButton.BatchCountLimit': z.number(),
   'Comfy.Queue.MaxHistoryItems': z.number(),
   'Comfy.Keybinding.UnsetBindings': z.array(zKeybinding),

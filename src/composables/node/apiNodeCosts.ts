@@ -386,11 +386,8 @@ export const apiNodeCosts: ApiNodeCostRecord = {
 
 /**
  * Get the display price for a node
- * Returns a default value if the node isn't found
+ * Returns empty string if the node isn't found or has no pricing info
  */
-export function getNodeDisplayPrice(
-  nodeName: string,
-  defaultPrice = '0.02/Run (approx)'
-): string {
-  return apiNodeCosts[nodeName]?.displayPrice || defaultPrice
+export function getNodeDisplayPrice(nodeName: string): string {
+  return apiNodeCosts[nodeName]?.displayPrice || ''
 }

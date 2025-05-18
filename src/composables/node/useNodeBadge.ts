@@ -6,14 +6,13 @@ import {
 import _ from 'lodash'
 import { computed, onMounted, watch } from 'vue'
 
+import { useNodePricing } from '@/composables/node/useNodePricing'
 import { app } from '@/scripts/app'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { NodeBadgeMode } from '@/types/nodeSource'
-
-import { useNodePricing } from './useNodePricing'
 
 /**
  * Add LGraphBadge to LGraphNode based on settings.
@@ -43,9 +42,21 @@ export const useNodeBadge = () => {
       ) as NodeBadgeMode
   )
 
-  watch([nodeSourceBadgeMode, nodeIdBadgeMode, nodeLifeCycleBadgeMode], () => {
-    app.graph?.setDirtyCanvas(true, true)
-  })
+  const showApiPricingBadge = computed(() =>
+    settingStore.get('Comfy.NodeBadge.ShowApiPricing')
+  )
+
+  watch(
+    [
+      nodeSourceBadgeMode,
+      nodeIdBadgeMode,
+      nodeLifeCycleBadgeMode,
+      showApiPricingBadge
+    ],
+    () => {
+      app.graph?.setDirtyCanvas(true, true)
+    }
+  )
 
   const nodeDefStore = useNodeDefStore()
   function badgeTextVisible(
@@ -98,28 +109,31 @@ export const useNodeBadge = () => {
 
         node.badges.push(() => badge.value)
 
-        if (node.constructor.nodeData?.api_node) {
+        if (node.constructor.nodeData?.api_node && showApiPricingBadge.value) {
           // Get price from our mapping service
           const price = nodePricing.getNodePriceDisplay(node)
 
-          const creditsBadge = computed(() => {
-            return new LGraphBadge({
-              text: price ?? '',
-              iconOptions: {
-                unicode: '\ue96b',
-                fontFamily: 'PrimeIcons',
-                color: '#FABC25',
-                bgColor: '#353535',
-                fontSize: 8
-              },
-              fgColor:
-                colorPaletteStore.completedActivePalette.colors.litegraph_base
-                  .BADGE_FG_COLOR,
-              bgColor: '#8D6932'
+          // Only add the badge if we have pricing information
+          if (price) {
+            const creditsBadge = computed(() => {
+              return new LGraphBadge({
+                text: price,
+                iconOptions: {
+                  unicode: '\ue96b',
+                  fontFamily: 'PrimeIcons',
+                  color: '#FABC25',
+                  bgColor: '#353535',
+                  fontSize: 8
+                },
+                fgColor:
+                  colorPaletteStore.completedActivePalette.colors.litegraph_base
+                    .BADGE_FG_COLOR,
+                bgColor: '#8D6932'
+              })
             })
-          })
 
-          node.badges.push(() => creditsBadge.value)
+            node.badges.push(() => creditsBadge.value)
+          }
         }
       }
     })
