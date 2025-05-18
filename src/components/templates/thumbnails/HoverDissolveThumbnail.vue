@@ -5,13 +5,13 @@
         :src="baseImageSrc"
         :alt="alt"
         draggable="false"
-        class="absolute inset-0 w-64 h-64 object-cover"
+        class="absolute inset-0 max-w-full max-h-64 object-contain"
       />
       <img
         :src="overlayImageSrc"
         :alt="alt"
         draggable="false"
-        class="absolute inset-0 w-64 h-64 object-cover transition-opacity duration-300"
+        class="absolute inset-0 max-w-full max-h-64 object-contain transition-opacity duration-300"
         :class="{ 'opacity-100': isHovered, 'opacity-0': !isHovered }"
       />
     </div>

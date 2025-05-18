@@ -35,6 +35,10 @@
               :src="baseThumbnailSrc"
               :alt="title"
               :is-hovered="isHovered"
+              :is-video="
+                template.mediaType === 'video' ||
+                template.mediaSubtype === 'webp'
+              "
               :hover-zoom="
                 template.thumbnailVariant === 'zoomHover'
                   ? UPSCALE_ZOOM_SCALE
@@ -52,17 +56,12 @@
     <template #content>
       <div class="flex items-center px-4 py-3">
         <div class="flex-1 flex flex-col">
-          <h3 class="line-clamp-2 text-lg font-normal mb-0 h-12" :title="title">
+          <h3 class="line-clamp-2 text-lg font-normal mb-0" :title="title">
             {{ title }}
           </h3>
           <p class="line-clamp-2 text-sm text-muted grow" :title="description">
             {{ description }}
           </p>
-        </div>
-        <div
-          class="flex md:hidden xl:flex items-center justify-center ml-4 w-10 h-10 rounded-full"
-        >
-          <i class="pi pi-angle-right text-2xl" />
         </div>
       </div>
     </template>

@@ -1,6 +1,6 @@
 <template>
   <BaseThumbnail>
-    <div class="w-64 h-64 flex items-center justify-center p-4">
+    <div class="w-full h-full flex items-center justify-center p-4">
       <audio controls class="w-full relative" :src="src" @click.stop />
     </div>
   </BaseThumbnail>

@@ -1,11 +1,15 @@
 <template>
   <BaseThumbnail :is-hovered="isHovered">
-    <img :src="baseImageSrc" :alt="alt" class="w-full h-full object-cover" />
+    <img
+      :src="baseImageSrc"
+      :alt="alt"
+      class="max-w-full max-h-64 object-contain"
+    />
     <div ref="containerRef" class="absolute inset-0">
       <img
         :src="overlayImageSrc"
         :alt="alt"
-        class="w-full h-full object-cover"
+        class="max-w-full max-h-64 object-contain"
         :style="{
           clipPath: `inset(0 ${100 - sliderPosition}% 0 0)`
         }"
