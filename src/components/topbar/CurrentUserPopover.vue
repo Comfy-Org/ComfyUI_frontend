@@ -72,20 +72,27 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useDialogService } from '@/services/dialogService'
 
+const emit = defineEmits<{
+  close: []
+}>()
+
 const { userDisplayName, userEmail, userPhotoUrl } = useCurrentUser()
 const authActions = useFirebaseAuthActions()
 const dialogService = useDialogService()
 
 const handleOpenUserSettings = () => {
   dialogService.showSettingsDialog('user')
+  emit('close')
 }
 
 const handleTopUp = () => {
   dialogService.showTopUpCreditsDialog()
+  emit('close')
 }
 
 const handleOpenApiPricing = () => {
   window.open('https://docs.comfy.org/tutorials/api-nodes/pricing', '_blank')
+  emit('close')
 }
 
 onMounted(() => {
