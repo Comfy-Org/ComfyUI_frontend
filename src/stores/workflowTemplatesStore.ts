@@ -101,7 +101,38 @@ export const useWorkflowTemplatesStore = defineStore(
       )
     })
 
+    // Create an "All" category that combines all templates
+    const createAllCategory = () => {
+      // Get all templates and include source module
+      return {
+        moduleName: 'all',
+        title: 'All',
+        localizedTitle: st('templateWorkflows.category.All', 'All Templates'),
+        templates: [
+          // Core templates
+          ...coreTemplates.value.flatMap((category) =>
+            category.templates.map((template) => ({
+              ...template,
+              sourceModule: category.moduleName
+            }))
+          ),
+          // Custom templates
+          ...Object.entries(customTemplates.value).flatMap(
+            ([moduleName, templates]) =>
+              templates.map((name) => ({
+                name,
+                mediaType: 'image',
+                mediaSubtype: 'jpg',
+                description: name,
+                sourceModule: moduleName
+              }))
+          )
+        ]
+      }
+    }
+
     const groupedTemplates = computed<TemplateGroup[]>(() => {
+      // Get regular categories
       const allTemplates = [
         ...sortCategoryTemplates(coreTemplates.value).map(
           localizeTemplateCategory
@@ -124,7 +155,8 @@ export const useWorkflowTemplatesStore = defineStore(
         )
       ]
 
-      return Object.entries(
+      // Create regular groups
+      const regularGroups = Object.entries(
         groupBy(allTemplates, (template) =>
           template.moduleName === 'default'
             ? st(
@@ -134,6 +166,14 @@ export const useWorkflowTemplatesStore = defineStore(
             : st('templateWorkflows.category.Custom Nodes', 'Custom Nodes')
         )
       ).map(([label, modules]) => ({ label, modules }))
+
+      // Create All category group and add it to the beginning
+      const allGroup = {
+        label: st('templateWorkflows.category.AllTemplates', 'All Templates'),
+        modules: [createAllCategory()]
+      }
+
+      return [allGroup, ...regularGroups]
     })
 
     async function loadWorkflowTemplates() {

@@ -110,6 +110,37 @@ const loadWorkflow = async (id: string) => {
 
   workflowLoading.value = id
   let json
+
+  // Special handling for "All" category
+  if (selectedTab.value?.moduleName === 'all') {
+    // Find template to determine its source module
+    const template = selectedTab.value.templates.find((t) => t.name === id)
+    if (!template) return false
+
+    // Use the stored source module for loading
+    const sourceModule = template.sourceModule
+    if (sourceModule === 'default') {
+      json = await fetch(api.fileURL(`/templates/${id}.json`)).then((r) =>
+        r.json()
+      )
+    } else {
+      json = await fetch(
+        api.apiURL(`/workflow_templates/${sourceModule}/${id}.json`)
+      ).then((r) => r.json())
+    }
+
+    // Use source module for name
+    const workflowName =
+      sourceModule === 'default'
+        ? t(`templateWorkflows.template.${id}`, id)
+        : id
+
+    useDialogStore().closeDialog()
+    await app.loadGraphData(json, true, true, workflowName)
+    return false
+  }
+
+  // Regular case for normal categories
   if (selectedTab.value?.moduleName === 'default') {
     // Default templates provided by frontend are served on this separate endpoint
     json = await fetch(api.fileURL(`/templates/${id}.json`)).then((r) =>
