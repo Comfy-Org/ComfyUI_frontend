@@ -1,5 +1,4 @@
 import DOMPurify from 'dompurify'
-import memoize from 'lodash/memoize'
 import { Renderer, marked } from 'marked'
 import { type ComputedRef, type Ref, computed, ref } from 'vue'
 
@@ -22,7 +21,8 @@ const baseUrl = computed(() => {
   const node = currentHelpNode.value
   if (node?.nodeSource.type === NodeSourceType.CustomNodes) {
     const parts = node.python_module.split('.')
-    const moduleName = parts[1].split('@')[0]
+    const moduleName =
+      parts.length > 1 ? parts[1].split('@')[0] : parts[0].split('@')[0]
     const raw = `/extensions/${moduleName}`
     return raw.replace(/\/+$/, '') + '/'
   }
@@ -40,9 +40,9 @@ const ALLOWED_ATTRS = [
   'poster'
 ]
 
-// Regex patterns to prefix relative src attributes in media tags
-const SOURCE_SRC_REGEX = /(<source[^>]*src=")(?!(?:\/|https?:\/\/))([^"\s>]+)"/g
-const VIDEO_SRC_REGEX = /(<video[^>]*src=")(?!(?:\/|https?:\/\/))([^"\s>]+)"/g
+// Regex pattern to prefix relative src attributes in <source> or <video> tags
+const MEDIA_SRC_REGEX =
+  /(<(?:source|video)[^>]*src=")(?!(?:\/|https?:\/\/))([^"\s>]+)"/g
 
 /** create a marked Renderer that prefixes relative URLs with base */
 function createRenderer(baseUrl?: string): Renderer {
@@ -54,51 +54,9 @@ function createRenderer(baseUrl?: string): Renderer {
       src = `${normalizedBase}/${href}`
     }
     const titleAttr = title ? ` title="${title}"` : ''
-    return `<img src="${src}" alt="${text}"${titleAttr} loading="lazy" />`
-  }
-  renderer.link = ({ href, title, text }) => {
-    let url = href
-    if (normalizedBase && !/^(?:\/|https?:\/\/)/.test(href)) {
-      url = `${normalizedBase}/${href}`
-    }
-    const titleAttr = title ? ` title="${title}"` : ''
-    return `<a href="${url}"${titleAttr}>${text}</a>`
+    return `<img src="${src}" alt="${text}"${titleAttr} />`
   }
   return renderer
-}
-
-/** memoized markdown -> sanitized HTML */
-const memoizedRender = memoize(
-  (markdown: string, base: string) => {
-    let html = marked.parse(markdown, {
-      renderer: createRenderer(base)
-    }) as string
-    if (base) {
-      html = html
-        .replace(SOURCE_SRC_REGEX, `$1${base}$2"`)
-        .replace(VIDEO_SRC_REGEX, `$1${base}$2"`)
-    }
-    return DOMPurify.sanitize(html, {
-      ADD_TAGS: ALLOWED_TAGS,
-      ADD_ATTR: ALLOWED_ATTRS
-    })
-  },
-  // Key resolver combines base and markdown to ensure unique cache entries
-  (markdown: string, base: string) => `${base}|${markdown}`
-)
-
-const MAX_MEMOIZE_CACHE_SIZE = 50
-const memoizeCache = memoizedRender.cache as Map<string, string>
-const originalSet = memoizeCache.set.bind(memoizeCache)
-memoizeCache.set = (key: string, value: string) => {
-  const result = originalSet(key, value)
-  if (memoizeCache.size > MAX_MEMOIZE_CACHE_SIZE) {
-    const firstKey = memoizeCache.keys().next().value
-    if (firstKey !== undefined) {
-      memoizeCache.delete(firstKey)
-    }
-  }
-  return result
 }
 
 export function useNodeHelp(): {
@@ -111,7 +69,17 @@ export function useNodeHelp(): {
 } {
   const renderedHelpHtml = computed(() => {
     const md = currentHelpNode.value?.help || ''
-    return md ? memoizedRender(md, baseUrl.value) : ''
+    if (!md) return ''
+    let html = marked.parse(md, {
+      renderer: createRenderer(baseUrl.value)
+    }) as string
+    if (baseUrl.value) {
+      html = html.replace(MEDIA_SRC_REGEX, `$1${baseUrl.value}$2"`)
+    }
+    return DOMPurify.sanitize(html, {
+      ADD_TAGS: ALLOWED_TAGS,
+      ADD_ATTR: ALLOWED_ATTRS
+    })
   })
   return {
     currentHelpNode,

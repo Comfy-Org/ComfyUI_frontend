@@ -143,4 +143,70 @@ describe('useNodeHelp', () => {
 
     expect(renderedHelpHtml.value).toBe('')
   })
+
+  it('should include alt attribute for images', async () => {
+    const { openHelp, renderedHelpHtml } = useNodeHelp()
+    openHelp(mockCustomNode as any)
+    await nextTick()
+    expect(renderedHelpHtml.value).toContain('alt="image"')
+  })
+
+  it('should not prefix absolute image paths in custom nodes', async () => {
+    const { openHelp, renderedHelpHtml } = useNodeHelp()
+    const customNodeWithAbsoluteImg = {
+      ...mockCustomNode,
+      help: '![image](/absolute.jpg)'
+    }
+    openHelp(customNodeWithAbsoluteImg as any)
+    await nextTick()
+    expect(renderedHelpHtml.value).toContain('src="/absolute.jpg"')
+  })
+
+  it('should prefix relative video src in custom nodes', async () => {
+    const { openHelp, renderedHelpHtml } = useNodeHelp()
+    const customNodeWithVideo = {
+      ...mockCustomNode,
+      help: '<video src="video.mp4"></video>'
+    }
+    openHelp(customNodeWithVideo as any)
+    await nextTick()
+    expect(renderedHelpHtml.value).toContain(
+      'src="/extensions/test_module/video.mp4"'
+    )
+  })
+
+  it('should not prefix video src for core nodes', async () => {
+    const { openHelp, renderedHelpHtml } = useNodeHelp()
+    const coreNodeWithVideo = {
+      ...mockCoreNode,
+      help: '<video src="video.mp4"></video>'
+    }
+    openHelp(coreNodeWithVideo as any)
+    await nextTick()
+    expect(renderedHelpHtml.value).toContain('src="video.mp4"')
+  })
+
+  it('should prefix relative source src in custom nodes', async () => {
+    const { openHelp, renderedHelpHtml } = useNodeHelp()
+    const customNodeWithSource = {
+      ...mockCustomNode,
+      help: '<source src="source.mp3" />'
+    }
+    openHelp(customNodeWithSource as any)
+    await nextTick()
+    expect(renderedHelpHtml.value).toContain(
+      'src="/extensions/test_module/source.mp3"'
+    )
+  })
+
+  it('should not prefix source src for core nodes', async () => {
+    const { openHelp, renderedHelpHtml } = useNodeHelp()
+    const coreNodeWithSource = {
+      ...mockCoreNode,
+      help: '<source src="source.mp3" />'
+    }
+    openHelp(coreNodeWithSource as any)
+    await nextTick()
+    expect(renderedHelpHtml.value).toContain('src="source.mp3"')
+  })
 })
