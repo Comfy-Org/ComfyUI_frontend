@@ -30,6 +30,7 @@
     "icon": "Icon",
     "color": "Color",
     "error": "Error",
+    "help": "Help",
     "loading": "Loading",
     "findIssues": "Find Issues",
     "reportIssue": "Send Report",
