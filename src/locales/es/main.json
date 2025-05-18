@@ -1138,6 +1138,8 @@
   "templateWorkflows": {
     "category": {
       "3D": "3D",
+      "All": "Todas las plantillas",
+      "AllTemplates": "Todas las plantillas",
       "Area Composition": "Composición de Área",
       "Audio": "Audio",
       "Basics": "Básicos",
