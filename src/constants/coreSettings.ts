@@ -324,7 +324,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.NodeBadge.ShowApiPricing',
-    category: ['LiteGraph', 'Node', 'ApiPricing'],
+    category: ['Comfy', 'API Nodes'],
     name: 'Show API node pricing badge',
     type: 'boolean',
     defaultValue: true,

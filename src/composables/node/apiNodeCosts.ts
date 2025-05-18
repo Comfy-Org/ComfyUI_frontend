@@ -1,10 +1,7 @@
 import { ApiNodeCostRecord } from '@/types/apiNodeTypes'
 
 /**
- * API Node cost data sourced from pricing database
- *
- * GENERATED FILE - DO NOT EDIT DIRECTLY
- * Generated from Price Run Range for each API Node CSV
+ * API Node cost data for pricing display
  */
 
 export const apiNodeCosts: ApiNodeCostRecord = {
