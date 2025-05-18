@@ -10,7 +10,7 @@ export function getNodePrice(node: LGraphNode): string {
   if (!node.constructor.nodeData?.api_node) {
     return ''
   }
-  return getNodeDisplayPrice(node.constructor.name)
+  return getNodeDisplayPrice(node.constructor.nodeData.name)
 }
 
 /**
@@ -24,7 +24,7 @@ export const useNodePricing = () => {
     if (!node.constructor.nodeData?.api_node) {
       return ''
     }
-    return getNodeDisplayPrice(node.constructor.name)
+    return getNodeDisplayPrice(node.constructor.nodeData.name)
   }
 
   return {
