@@ -225,6 +225,9 @@
       "Hide built-in": "Hide built-in"
     }
   },
+  "Comfy_NodeBadge_ShowApiPricing": {
+    "name": "Show API node pricing badge"
+  },
   "Comfy_NodeSearchBoxImpl": {
     "name": "Node search box implementation",
     "options": {

@@ -193,6 +193,9 @@
       "Show all": "Показать все"
     }
   },
+  "Comfy_NodeBadge_ShowApiPricing": {
+    "name": "Показать значок стоимости узла API"
+  },
   "Comfy_NodeSearchBoxImpl": {
     "name": "Реализация поискового поля нод",
     "options": {

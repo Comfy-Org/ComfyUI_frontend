@@ -193,6 +193,9 @@
       "Show all": "Afficher tout"
     }
   },
+  "Comfy_NodeBadge_ShowApiPricing": {
+    "name": "Afficher l’insigne de tarification API du nœud"
+  },
   "Comfy_NodeSearchBoxImpl": {
     "name": "Implémentation de la boîte de recherche de nœud",
     "options": {

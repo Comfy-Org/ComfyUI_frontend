@@ -193,6 +193,9 @@
       "Show all": "Mostrar todo"
     }
   },
+  "Comfy_NodeBadge_ShowApiPricing": {
+    "name": "Mostrar insignia de precios de nodo API"
+  },
   "Comfy_NodeSearchBoxImpl": {
     "name": "Implementación de la caja de búsqueda de nodos",
     "options": {

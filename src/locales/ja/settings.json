@@ -193,6 +193,9 @@
       "Show all": "すべて表示"
     }
   },
+  "Comfy_NodeBadge_ShowApiPricing": {
+    "name": "APIノードの料金バッジを表示"
+  },
   "Comfy_NodeSearchBoxImpl": {
     "name": "ノード検索ボックスの実装",
     "options": {
