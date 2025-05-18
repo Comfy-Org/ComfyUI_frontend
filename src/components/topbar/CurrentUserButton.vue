@@ -19,7 +19,7 @@
     </Button>
 
     <Popover ref="popover" :show-arrow="false">
-      <CurrentUserPopover />
+      <CurrentUserPopover @close="closePopover" />
     </Popover>
   </div>
 </template>
@@ -40,4 +40,8 @@ const popover = ref<InstanceType<typeof Popover> | null>(null)
 const photoURL = computed<string | undefined>(
   () => userPhotoUrl.value ?? undefined
 )
+
+const closePopover = () => {
+  popover.value?.hide()
+}
 </script>
