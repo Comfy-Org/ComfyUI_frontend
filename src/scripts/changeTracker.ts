@@ -284,9 +284,10 @@ export class ChangeTracker {
     LGraphCanvas.prototype.prompt = function (
       title: string,
       value: any,
-      stepValue: number,
       callback: (v: any) => void,
-      event: any
+      event: any,
+      multiline?: boolean,
+      stepValue?: number
     ) {
       const extendedCallback = (v: any) => {
         callback(v)
@@ -296,9 +297,10 @@ export class ChangeTracker {
       return prompt.apply(this, [
         title,
         value,
-        stepValue,
         extendedCallback,
-        event
+        event,
+        multiline,
+        stepValue
       ])
     }
 
