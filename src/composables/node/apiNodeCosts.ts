@@ -273,6 +273,14 @@ export const apiNodeCosts: ApiNodeCostRecord = {
     pricePerRunRange: '$0.9',
     displayPrice: '$0.9/Run'
   },
+  RecraftCreativeUpscaleNode: {
+    vendor: 'Recraft',
+    nodeName: 'Recraft Creative Upscale Image',
+    pricingParams: '-',
+    pricePerRunRange: '$0.25',
+    rateDocumentationUrl: 'https://www.recraft.ai/docs#pricing',
+    displayPrice: '$0.25/Run'
+  },
   RecraftCrispUpscaleNode: {
     vendor: 'Recraft',
     nodeName: 'Recraft Crisp Upscale Image',
