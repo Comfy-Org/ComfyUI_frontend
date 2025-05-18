@@ -87,6 +87,20 @@ const memoizedRender = memoize(
   (markdown: string, base: string) => `${base}|${markdown}`
 )
 
+const MAX_MEMOIZE_CACHE_SIZE = 50
+const memoizeCache = memoizedRender.cache as Map<string, string>
+const originalSet = memoizeCache.set.bind(memoizeCache)
+memoizeCache.set = (key: string, value: string) => {
+  const result = originalSet(key, value)
+  if (memoizeCache.size > MAX_MEMOIZE_CACHE_SIZE) {
+    const firstKey = memoizeCache.keys().next().value
+    if (firstKey !== undefined) {
+      memoizeCache.delete(firstKey)
+    }
+  }
+  return result
+}
+
 export function useNodeHelp(): {
   currentHelpNode: Ref<ComfyNodeDefImpl | null>
   isHelpOpen: ComputedRef<boolean>
