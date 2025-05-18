@@ -284,6 +284,7 @@ export class ChangeTracker {
     LGraphCanvas.prototype.prompt = function (
       title: string,
       value: any,
+      stepValue: number,
       callback: (v: any) => void,
       event: any
     ) {
@@ -292,7 +293,13 @@ export class ChangeTracker {
         checkState()
       }
       logger.debug('checkState on prompt')
-      return prompt.apply(this, [title, value, extendedCallback, event])
+      return prompt.apply(this, [
+        title,
+        value,
+        stepValue,
+        extendedCallback,
+        event
+      ])
     }
 
     // Handle litegraph context menu for COMBO widgets
