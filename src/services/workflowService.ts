@@ -344,8 +344,7 @@ export const useWorkflowService = () => {
     options: { position?: Vector2 } = {}
   ) => {
     const loadedWorkflow = await workflow.load()
-    const data = loadedWorkflow.initialState
-    const workflowJSON = data
+    const workflowJSON = toRaw(loadedWorkflow.initialState)
     const old = localStorage.getItem('litegrapheditor_clipboard')
     // unknown conversion: ComfyWorkflowJSON is stricter than LiteGraph's
     // serialisation schema.
