@@ -46,6 +46,7 @@ jobs:
 
   publish:
     runs-on: ubuntu-latest
+    if: inputs.tag != 'latest'
     steps:
       - uses: actions/checkout@v4
 
