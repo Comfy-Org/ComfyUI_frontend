@@ -2,7 +2,6 @@ import type { LGraphNode } from '@comfyorg/litegraph'
 
 import { ApiNodeCostRecord } from '@/types/apiNodeTypes'
 
-// Static pricing data for API nodes - defined at module level for performance
 const apiNodeCosts: ApiNodeCostRecord = {
   FluxProCannyNode: {
     vendor: 'BFL',
