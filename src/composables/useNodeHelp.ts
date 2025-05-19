@@ -2,6 +2,7 @@ import DOMPurify from 'dompurify'
 import { Renderer, marked } from 'marked'
 import { type ComputedRef, type Ref, computed, ref, watch } from 'vue'
 
+import { api } from '@/scripts/api'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
 
@@ -41,7 +42,7 @@ watch(
     if (helpPath?.endsWith('.md')) {
       isLoading.value = true
       try {
-        const res = await fetch(`${baseUrl.value}${helpPath}`)
+        const res = await fetch(api.fileURL(`${baseUrl.value}${helpPath}`))
         if (!res.ok) throw new Error(res.statusText)
         helpContent.value = await res.text()
       } catch (e: any) {
