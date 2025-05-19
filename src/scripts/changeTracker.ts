@@ -1,4 +1,5 @@
 import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
+import type { PromptOptionalParams } from '@comfyorg/litegraph/dist/types/optionalParams'
 import * as jsondiffpatch from 'jsondiffpatch'
 import _ from 'lodash'
 import log from 'loglevel'
@@ -278,8 +279,7 @@ export class ChangeTracker {
       value: any,
       callback: (v: any) => void,
       event: any,
-      multiline?: boolean,
-      stepValue?: number
+      optionalParams?: PromptOptionalParams
     ) {
       const extendedCallback = (v: any) => {
         callback(v)
@@ -291,8 +291,7 @@ export class ChangeTracker {
         value,
         extendedCallback,
         event,
-        multiline,
-        stepValue
+        optionalParams
       ])
     }
 
