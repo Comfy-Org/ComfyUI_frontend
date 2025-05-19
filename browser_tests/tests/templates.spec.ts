@@ -142,4 +142,136 @@ test.describe('Templates', () => {
     // Expect the title to be used as fallback for the template categories
     await expect(comfyPage.page.getByLabel('FALLBACK CATEGORY')).toBeVisible()
   })
+
+  test('template cards are dynamically sized and responsive', async ({
+    comfyPage
+  }) => {
+    // Open templates dialog
+    await comfyPage.executeCommand('Comfy.BrowseTemplates')
+    await expect(comfyPage.templates.content).toBeVisible()
+
+    // Wait for at least one template card to appear
+    await expect(comfyPage.page.locator('.template-card').first()).toBeVisible({
+      timeout: 5000
+    })
+
+    // Take snapshot of the template grid
+    const templateGrid = comfyPage.templates.content.locator('.grid').first()
+    await expect(templateGrid).toBeVisible()
+    await expect(templateGrid).toHaveScreenshot('template-grid-desktop.png')
+
+    // Check cards at mobile viewport size
+    await comfyPage.page.setViewportSize({ width: 640, height: 800 })
+    await expect(templateGrid).toBeVisible()
+    await expect(templateGrid).toHaveScreenshot('template-grid-mobile.png')
+
+    // Check cards at tablet size
+    await comfyPage.page.setViewportSize({ width: 1024, height: 800 })
+    await expect(templateGrid).toBeVisible()
+    await expect(templateGrid).toHaveScreenshot('template-grid-tablet.png')
+  })
+
+  test('hover effects work on template cards', async ({ comfyPage }) => {
+    // Open templates dialog
+    await comfyPage.executeCommand('Comfy.BrowseTemplates')
+    await expect(comfyPage.templates.content).toBeVisible()
+
+    // Get a template card
+    const firstCard = comfyPage.page.locator('.template-card').first()
+    await expect(firstCard).toBeVisible({ timeout: 5000 })
+
+    // Take snapshot before hover
+    await expect(firstCard).toHaveScreenshot('template-card-before-hover.png')
+
+    // Hover over the card
+    await firstCard.hover()
+
+    // Take snapshot after hover to verify hover effect
+    await expect(firstCard).toHaveScreenshot('template-card-after-hover.png')
+  })
+
+  test('template cards descriptions adjust height dynamically', async ({
+    comfyPage
+  }) => {
+    // Setup test by intercepting templates response to inject cards with varying description lengths
+    await comfyPage.page.route('**/templates/index.json', async (route, _) => {
+      const response = [
+        {
+          moduleName: 'default',
+          title: 'Test Templates',
+          type: 'image',
+          templates: [
+            {
+              name: 'short-description',
+              title: 'Short Description',
+              mediaType: 'image',
+              mediaSubtype: 'webp',
+              description: 'This is a short description.'
+            },
+            {
+              name: 'medium-description',
+              title: 'Medium Description',
+              mediaType: 'image',
+              mediaSubtype: 'webp',
+              description:
+                'This is a medium length description that should take up two lines on most displays.'
+            },
+            {
+              name: 'long-description',
+              title: 'Long Description',
+              mediaType: 'image',
+              mediaSubtype: 'webp',
+              description:
+                'This is a much longer description that should definitely wrap to multiple lines. It contains enough text to demonstrate how the cards handle varying amounts of content while maintaining a consistent layout grid.'
+            }
+          ]
+        }
+      ]
+      await route.fulfill({
+        status: 200,
+        body: JSON.stringify(response),
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store'
+        }
+      })
+    })
+
+    // Mock the thumbnail images to avoid 404s
+    await comfyPage.page.route('**/templates/**.webp', async (route) => {
+      const headers = {
+        'Content-Type': 'image/webp',
+        'Cache-Control': 'no-store'
+      }
+      await route.fulfill({
+        status: 200,
+        path: 'browser_tests/assets/example.webp',
+        headers
+      })
+    })
+
+    // Open templates dialog
+    await comfyPage.executeCommand('Comfy.BrowseTemplates')
+    await expect(comfyPage.templates.content).toBeVisible()
+
+    // Verify cards are visible with varying content lengths
+    await expect(
+      comfyPage.page.getByText('This is a short description.')
+    ).toBeVisible({ timeout: 5000 })
+    await expect(
+      comfyPage.page.getByText('This is a medium length description')
+    ).toBeVisible({ timeout: 5000 })
+    await expect(
+      comfyPage.page.getByText('This is a much longer description')
+    ).toBeVisible({ timeout: 5000 })
+
+    // Take snapshot of a grid with specific cards
+    const templateGrid = comfyPage.templates.content
+      .locator('.grid:has-text("Short Description")')
+      .first()
+    await expect(templateGrid).toBeVisible()
+    await expect(templateGrid).toHaveScreenshot(
+      'template-grid-varying-content.png'
+    )
+  })
 })
