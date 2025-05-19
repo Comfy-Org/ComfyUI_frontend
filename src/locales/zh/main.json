@@ -840,6 +840,7 @@
   "nodeHelpPage": {
     "documentationPage": "文档页面",
     "inputs": "输入",
+    "loadError": "加载帮助失败：{error}",
     "moreHelp": "如需更多帮助，请访问",
     "outputs": "输出",
     "type": "类型"

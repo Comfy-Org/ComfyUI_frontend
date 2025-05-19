@@ -840,6 +840,7 @@
   "nodeHelpPage": {
     "documentationPage": "page de documentation",
     "inputs": "Entrées",
+    "loadError": "Échec du chargement de l’aide : {error}",
     "moreHelp": "Pour plus d'aide, visitez la",
     "outputs": "Sorties",
     "type": "Type"

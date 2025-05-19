@@ -840,6 +840,7 @@
   "nodeHelpPage": {
     "documentationPage": "ドキュメントページ",
     "inputs": "入力",
+    "loadError": "ヘルプの読み込みに失敗しました: {error}",
     "moreHelp": "さらに詳しい情報は、",
     "outputs": "出力",
     "type": "タイプ"

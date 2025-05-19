@@ -840,6 +840,7 @@
   "nodeHelpPage": {
     "documentationPage": "문서 페이지",
     "inputs": "입력",
+    "loadError": "도움말을 불러오지 못했습니다: {error}",
     "moreHelp": "더 많은 도움말은",
     "outputs": "출력",
     "type": "유형"
