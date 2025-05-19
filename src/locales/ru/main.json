@@ -518,6 +518,7 @@
     "fov": "Угол обзора",
     "light": "Свет",
     "lightIntensity": "Интенсивность света",
+    "loadingBackgroundImage": "Загрузка фонового изображения",
     "loadingModel": "Загрузка 3D модели...",
     "materialMode": "Режим Материала",
     "materialModes": {
