@@ -124,12 +124,16 @@
                 :aria-label="$t('issueReport.provideAdditionalDetails')"
               />
               <Message
-                v-if="$field?.error && $field.touched && $field.value"
+                v-if="$field?.error && $field.touched"
                 severity="error"
                 size="small"
                 variant="simple"
               >
-                {{ t('issueReport.validation.maxLength') }}
+                {{
+                  $field.value
+                    ? t('issueReport.validation.maxLength')
+                    : t('issueReport.validation.descriptionRequired')
+                }}
               </Message>
             </FormField>
           </div>
