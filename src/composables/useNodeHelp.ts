@@ -35,14 +35,14 @@ const isLoading = ref<boolean>(false)
 const errorMsg = ref<string | null>(null)
 
 watch(
-  () => currentHelpNode.value?.help,
-  async (helpPath) => {
+  () => [currentHelpNode.value?.help, baseUrl.value],
+  async ([helpPath, base]) => {
     helpContent.value = ''
     errorMsg.value = null
     if (helpPath?.endsWith('.md')) {
       isLoading.value = true
       try {
-        const res = await fetch(api.fileURL(`${baseUrl.value}${helpPath}`))
+        const res = await fetch(api.fileURL(`${base}${helpPath}`))
         if (!res.ok) throw new Error(res.statusText)
         helpContent.value = await res.text()
       } catch (e: any) {
