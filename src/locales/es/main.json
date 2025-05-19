@@ -498,6 +498,8 @@
     "submitErrorReport": "Enviar Reporte de Error (Opcional)",
     "systemStats": "Estadísticas del Sistema",
     "validation": {
+      "descriptionRequired": "Se requiere una descripción",
+      "helpTypeRequired": "Se requiere el tipo de ayuda",
       "invalidEmail": "Por favor ingresa una dirección de correo electrónico válida",
       "maxLength": "Mensaje demasiado largo",
       "selectIssueType": "Por favor, seleccione un tipo de problema"
