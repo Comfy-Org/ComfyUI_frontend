@@ -10,6 +10,7 @@ import { useToastStore } from '@/stores/toastStore'
 
 import {
   EventManagerInterface,
+  Load3DOptions,
   LoaderManagerInterface,
   ModelManagerInterface
 } from './interfaces'
@@ -26,14 +27,21 @@ export class LoaderManager implements LoaderManagerInterface {
 
   constructor(
     modelManager: ModelManagerInterface,
-    eventManager: EventManagerInterface
+    eventManager: EventManagerInterface,
+    options: Load3DOptions
   ) {
+    let loadRootFolder = 'input'
+
+    if (options && options.inputSpec?.isPreview) {
+      loadRootFolder = 'output'
+    }
+
     this.modelManager = modelManager
     this.eventManager = eventManager
 
     this.gltfLoader = new GLTFLoader()
     this.objLoader = new OBJLoader()
-    this.mtlLoader = new OverrideMTLLoader()
+    this.mtlLoader = new OverrideMTLLoader(loadRootFolder)
     this.fbxLoader = new FBXLoader()
     this.stlLoader = new STLLoader()
   }
