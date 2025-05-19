@@ -1,6 +1,6 @@
 # Playwright Testing for ComfyUI_frontend
 
-This document outlines the setup and usage of Playwright for testing the ComfyUI_frontend project.
+This document outlines the setup, usage, and common patterns for Playwright browser tests in the ComfyUI_frontend project.
 
 ## WARNING
 
@@ -46,6 +46,137 @@ There are two ways to run the tests:
    This opens a user interface where you can select specific tests to run and inspect the test execution timeline.
 
    ![Playwright UI Mode](https://github.com/user-attachments/assets/6a1ebef0-90eb-4157-8694-f5ee94d03755)
+
+3. **Running specific tests:**
+   ```bash
+   npx playwright test widget.spec.ts
+   ```
+
+## Test Structure
+
+Browser tests in this project follow a specific organization pattern:
+
+- **Fixtures**: Located in `fixtures/` - These provide test setup and utilities
+  - `ComfyPage.ts` - The main fixture for interacting with ComfyUI
+  - `ComfyMouse.ts` - Utility for mouse interactions with the canvas
+  - Components fixtures in `fixtures/components/` - Page object models for UI components
+
+- **Tests**: Located in `tests/` - The actual test specifications
+  - Organized by functionality (e.g., `widget.spec.ts`, `interaction.spec.ts`)
+  - Snapshot directories (e.g., `widget.spec.ts-snapshots/`) contain reference screenshots
+
+- **Utilities**: Located in `utils/` - Common utility functions
+  - `litegraphUtils.ts` - Utilities for working with LiteGraph nodes
+
+## Common Patterns and Utilities
+
+### Page Object Pattern
+
+Tests use the Page Object pattern to create abstractions over the UI:
+
+```typescript
+// Using the ComfyPage fixture
+test('Can toggle boolean widget', async ({ comfyPage }) => {
+  await comfyPage.loadWorkflow('widgets/boolean_widget')
+  const node = (await comfyPage.getFirstNodeRef())!
+  const widget = await node.getWidget(0)
+  await widget.click()
+});
+```
+
+### Node References
+
+The `NodeReference` class provides helpers for interacting with LiteGraph nodes:
+
+```typescript
+// Getting node by type and interacting with it
+const nodes = await comfyPage.getNodeRefsByType('LoadImage')
+const loadImageNode = nodes[0]
+const widget = await loadImageNode.getWidget(0)
+await widget.click()
+```
+
+### Visual Regression Testing
+
+Tests use screenshot comparisons to verify UI state:
+
+```typescript
+// Take a screenshot and compare to reference
+await expect(comfyPage.canvas).toHaveScreenshot('boolean_widget_toggled.png')
+```
+
+### Waiting for Animations
+
+Always call `nextFrame()` after actions that trigger animations:
+
+```typescript
+await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
+await comfyPage.nextFrame() // Wait for canvas to redraw
+```
+
+### Mouse Interactions
+
+Canvas operations use special helpers to ensure proper timing:
+
+```typescript
+// Using ComfyMouse for drag and drop
+await comfyMouse.dragAndDrop(
+  { x: 100, y: 100 },  // From
+  { x: 200, y: 200 }   // To
+)
+
+// Standard ComfyPage helpers
+await comfyPage.drag({ x: 100, y: 100 }, { x: 200, y: 200 })
+await comfyPage.pan({ x: 200, y: 200 })
+await comfyPage.zoom(-100) // Zoom in
+```
+
+### Workflow Management
+
+Tests use workflows stored in `assets/` for consistent starting points:
+
+```typescript
+// Load a test workflow
+await comfyPage.loadWorkflow('single_ksampler')
+
+// Wait for workflow to load and stabilize
+await comfyPage.nextFrame()
+```
+
+### Custom Assertions
+
+The project includes custom Playwright assertions through `comfyExpect`:
+
+```typescript
+// Check if a node is in a specific state
+await expect(node).toBePinned()
+await expect(node).toBeBypassed()
+await expect(node).toBeCollapsed()
+```
+
+## Troubleshooting Common Issues
+
+### Flaky Tests
+
+- **Timing Issues**: Always wait for animations to complete with `nextFrame()`
+- **Coordinate Sensitivity**: Canvas coordinates are viewport-relative; use node references when possible
+- **Test Isolation**: Tests run in parallel; avoid dependencies between tests
+- **Screenshots vary**: Ensure your OS and browser match the reference environment (Linux)
+
+### Missing Node Elements
+
+If nodes or widgets aren't found:
+1. Ensure the workflow is loaded and rendered
+2. Verify node types and widget indices
+3. Inspect the ComfyUI backend logs for errors
+
+### Canvas State Not Reset
+
+The tests modify ComfyUI state. To reset between test runs:
+1. Stop ComfyUI
+2. Delete `ComfyUI/temp`
+3. Delete `ComfyUI/user` if needed
+4. Restart ComfyUI with `--multi-user` flag
 
 ## Screenshot Expectations
 
