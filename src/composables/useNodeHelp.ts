@@ -1,6 +1,6 @@
 import DOMPurify from 'dompurify'
 import { Renderer, marked } from 'marked'
-import { type ComputedRef, type Ref, computed, ref } from 'vue'
+import { type ComputedRef, type Ref, computed, ref, watch } from 'vue'
 
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
@@ -28,6 +28,33 @@ const baseUrl = computed(() => {
   }
   return ''
 })
+
+const helpContent = ref<string>('')
+const isLoading = ref<boolean>(false)
+const errorMsg = ref<string | null>(null)
+
+watch(
+  () => currentHelpNode.value?.help,
+  async (helpPath) => {
+    helpContent.value = ''
+    errorMsg.value = null
+    if (helpPath?.endsWith('.md')) {
+      isLoading.value = true
+      try {
+        const res = await fetch(`${baseUrl.value}${helpPath}`)
+        if (!res.ok) throw new Error(res.statusText)
+        helpContent.value = await res.text()
+      } catch (e: any) {
+        errorMsg.value = e.message
+      } finally {
+        isLoading.value = false
+      }
+    } else {
+      helpContent.value = helpPath || ''
+    }
+  },
+  { immediate: true }
+)
 
 // Allowed extra tags/attributes for sanitized markdown
 const ALLOWED_TAGS = ['video', 'source']
@@ -66,9 +93,11 @@ export function useNodeHelp(): {
   closeHelp: () => void
   baseUrl: ComputedRef<string>
   renderedHelpHtml: ComputedRef<string>
+  isLoading: Ref<boolean>
+  error: Ref<string | null>
 } {
   const renderedHelpHtml = computed(() => {
-    const md = currentHelpNode.value?.help || ''
+    const md = helpContent.value || ''
     if (!md) return ''
     let html = marked.parse(md, {
       renderer: createRenderer(baseUrl.value)
@@ -87,6 +116,8 @@ export function useNodeHelp(): {
     openHelp,
     closeHelp,
     baseUrl,
-    renderedHelpHtml
+    renderedHelpHtml,
+    isLoading,
+    error: errorMsg
   }
 }

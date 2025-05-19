@@ -14,7 +14,15 @@
     </div>
     <div class="px-4 overflow-auto flex-grow node-help-content">
       <template v-if="node.help">
-        <div class="text-sm" v-html="renderedHelpHtml" />
+        <ProgressSpinner
+          v-if="isLoading"
+          class="m-auto"
+          aria-label="Loading help"
+        />
+        <div v-else-if="error" class="text-red-500 text-center p-4">
+          {{ $t('nodeHelpPage.loadError', { error }) }}
+        </div>
+        <div v-else class="text-sm" v-html="renderedHelpHtml" />
       </template>
       <div v-else class="text-sm space-y-6">
         <p v-if="node.description">
@@ -87,6 +95,7 @@
 import Button from 'primevue/button'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
+import ProgressSpinner from 'primevue/progressspinner'
 import { computed } from 'vue'
 
 import { useNodeHelp } from '@/composables/useNodeHelp'
@@ -94,7 +103,7 @@ import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 const { node } = defineProps<{ node: ComfyNodeDefImpl }>()
 
-const { renderedHelpHtml } = useNodeHelp()
+const { renderedHelpHtml, isLoading, error } = useNodeHelp()
 
 defineEmits<{
   (e: 'close'): void

@@ -1430,6 +1430,7 @@
     "outputs": "Outputs",
     "type": "Type",
     "moreHelp": "For more help, visit the",
-    "documentationPage": "documentation page"
+    "documentationPage": "documentation page",
+    "loadError": "Failed to load help: {error}"
   }
 }
