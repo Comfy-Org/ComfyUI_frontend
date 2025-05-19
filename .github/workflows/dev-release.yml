@@ -1,0 +1,61 @@
+name: Create Dev Release
+description: Create a nightly-style npm package for a development / experimental branch. Do not use "latest" tag. This will not have a GitHub release / tag by default.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "npm tag (`ni pacakge@tag`)"
+        required: true
+        default: "dev"
+      gh-release:
+        description: "Draft a GitHub release"
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    if: inputs.gh-release == true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: lts/*
+
+      - name: Get current version
+        id: current_version
+        run: |
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.current_version.outputs.version }}
+          draft: true
+          prerelease: true
+          generate_release_notes: true
+          make_latest: "false"
+
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: lts/*
+          registry-url: "https://registry.npmjs.org"
+
+      - run: npm ci
+      - run: npm run build
+      - run: npm publish --access public --tag ${{ inputs.tag }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
