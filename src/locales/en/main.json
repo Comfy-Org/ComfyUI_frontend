@@ -1227,7 +1227,8 @@
     "stopRecording": "Stop Recording",
     "exportRecording": "Export Recording",
     "clearRecording": "Clear Recording",
-    "resizeNodeMatchOutput": "Resize Node to match output"
+    "resizeNodeMatchOutput": "Resize Node to match output",
+    "loadingBackgroundImage": "Loading Background Image"
   },
   "toastMessages": {
     "nothingToQueue": "Nothing to queue",

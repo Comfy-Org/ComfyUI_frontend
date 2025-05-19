@@ -1,10 +1,10 @@
 import * as THREE from 'three'
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
-import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader'
 
+import { OverrideMTLLoader } from '@/extensions/core/load3d/threejsOverride/OverrideMTLLoader'
 import { t } from '@/i18n'
 import { useToastStore } from '@/stores/toastStore'
 
@@ -17,7 +17,7 @@ import {
 export class LoaderManager implements LoaderManagerInterface {
   gltfLoader: GLTFLoader
   objLoader: OBJLoader
-  mtlLoader: MTLLoader
+  mtlLoader: OverrideMTLLoader
   fbxLoader: FBXLoader
   stlLoader: STLLoader
 
@@ -33,7 +33,7 @@ export class LoaderManager implements LoaderManagerInterface {
 
     this.gltfLoader = new GLTFLoader()
     this.objLoader = new OBJLoader()
-    this.mtlLoader = new MTLLoader()
+    this.mtlLoader = new OverrideMTLLoader()
     this.fbxLoader = new FBXLoader()
     this.stlLoader = new STLLoader()
   }
@@ -122,7 +122,8 @@ export class LoaderManager implements LoaderManagerInterface {
 
       case 'obj':
         if (this.modelManager.materialMode === 'original') {
-          const mtlUrl = url.replace(/\.obj([^.]*$)/, '.mtl$1')
+          const mtlUrl = url.replace(/\.obj/, '.mtl')
+
           try {
             const materials = await this.mtlLoader.loadAsync(mtlUrl)
             materials.preload()
