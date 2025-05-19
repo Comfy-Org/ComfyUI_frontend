@@ -727,7 +727,10 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.20.1',
       function: () => {
         const canvas = canvasStore.getCanvas()
-        const res = canvas.graph?.convertToSubgraph(canvas.selectedItems)
+        const graph = canvas.subgraph ?? canvas.graph
+        if (!graph) throw new TypeError('Canvas has no graph or subgraph set.')
+
+        const res = graph.convertToSubgraph(canvas.selectedItems)
         if (!res) {
           toastStore.add({
             severity: 'error',
