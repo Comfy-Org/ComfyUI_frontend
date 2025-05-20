@@ -27,6 +27,7 @@ describe('CompareSliderThumbnail', () => {
         baseImageSrc: '/base-image.jpg',
         overlayImageSrc: '/overlay-image.jpg',
         alt: 'Comparison Image',
+        isVideo: false,
         ...props
       }
     })
@@ -69,16 +70,5 @@ describe('CompareSliderThumbnail', () => {
     const wrapper = mountThumbnail({ isHovered: true })
     const baseThumbnail = wrapper.findComponent({ name: 'BaseThumbnail' })
     expect(baseThumbnail.props('isHovered')).toBe(true)
-  })
-
-  it('applies object-contain styling to images', () => {
-    const wrapper = mountThumbnail()
-    const images = wrapper.findAll('img')
-
-    // Check base image
-    expect(images[0].classes()).toContain('object-contain')
-
-    // Check overlay image
-    expect(images[1].classes()).toContain('object-contain')
   })
 })

@@ -20,6 +20,10 @@
               :overlay-image-src="overlayThumbnailSrc"
               :alt="title"
               :is-hovered="isHovered"
+              :is-video="
+                template.mediaType === 'video' ||
+                template.mediaSubtype === 'webp'
+              "
             />
           </template>
           <template v-else-if="template.thumbnailVariant === 'hoverDissolve'">
@@ -28,6 +32,10 @@
               :overlay-image-src="overlayThumbnailSrc"
               :alt="title"
               :is-hovered="isHovered"
+              :is-video="
+                template.mediaType === 'video' ||
+                template.mediaSubtype === 'webp'
+              "
             />
           </template>
           <template v-else>

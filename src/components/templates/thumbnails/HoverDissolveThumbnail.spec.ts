@@ -19,6 +19,7 @@ describe('HoverDissolveThumbnail', () => {
         overlayImageSrc: '/overlay-image.jpg',
         alt: 'Dissolve Image',
         isHovered: false,
+        isVideo: false,
         ...props
       }
     })
