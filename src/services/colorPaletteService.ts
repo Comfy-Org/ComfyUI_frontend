@@ -1,6 +1,5 @@
 import { LGraphCanvas } from '@comfyorg/litegraph'
 import { LiteGraph } from '@comfyorg/litegraph'
-import { cloneDeep, merge } from 'lodash'
 import { toRaw } from 'vue'
 import { fromZodError } from 'zod-validation-error'
 
@@ -15,11 +14,6 @@ import { downloadBlob, uploadFile } from '@/scripts/utils'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import { generateUUID } from '@/utils/formatUtil'
-
-interface ForkColorPaletteOptions {
-  name?: string
-}
 
 export const useColorPaletteService = () => {
   const colorPaletteStore = useColorPaletteStore()
@@ -69,39 +63,6 @@ export const useColorPaletteService = () => {
     colorPaletteStore.addCustomPalette(colorPalette)
     await persistCustomColorPalettes()
   }
-
-  /**
-   * Forks an existing color palette.
-   *
-   * @param id - The ID of the palette to fork.
-   * @param patch - The patch to apply to the palette.
-   * @param options - The options for the fork.
-   * @returns A version of the original palette with the patch applied.
-   */
-  const forkColorPalette = (
-    id: string,
-    patch: Partial<Palette>,
-    options: ForkColorPaletteOptions = {}
-  ): Palette => {
-    const palette = colorPaletteStore.palettesLookup[id]
-    if (!palette) {
-      throw new Error(`Palette with id ${id} does not exist`)
-    }
-    const forkedPalette = merge(cloneDeep(palette), patch)
-    forkedPalette.id = `${id}-${generateUUID()}`
-    if (options.name) forkedPalette.name = options.name
-    return forkedPalette
-  }
-
-  /**
-   * Forks the current active color palette.
-   *
-   * @returns A version of the current active palette with the given patch applied.
-   */
-  const forkCurrentColorPalette = (
-    patch: Partial<Palette>,
-    options: ForkColorPaletteOptions = {}
-  ) => forkColorPalette(colorPaletteStore.activePaletteId, patch, options)
 
   /**
    * Sets the colors of node slots and links.
@@ -239,8 +200,6 @@ export const useColorPaletteService = () => {
     ),
     loadColorPalette: wrapWithErrorHandlingAsync(loadColorPalette),
     exportColorPalette: wrapWithErrorHandling(exportColorPalette),
-    importColorPalette: wrapWithErrorHandlingAsync(importColorPalette),
-    forkColorPalette: wrapWithErrorHandling(forkColorPalette),
-    forkCurrentColorPalette
+    importColorPalette: wrapWithErrorHandlingAsync(importColorPalette)
   }
 }
