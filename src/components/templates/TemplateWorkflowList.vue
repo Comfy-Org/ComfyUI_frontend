@@ -7,15 +7,15 @@
   >
     <Column field="title" :header="$t('g.title')">
       <template #body="slotProps">
-        <span :title="getTemplateTitle(slotProps.data)">{{
-          getTemplateTitle(slotProps.data)
+        <span :title="getTemplateTitle(slotProps.data, sourceModule)">{{
+          getTemplateTitle(slotProps.data, sourceModule)
         }}</span>
       </template>
     </Column>
     <Column field="description" :header="$t('g.description')">
       <template #body="slotProps">
-        <span :title="getTemplateDescription(slotProps.data)">
-          {{ getTemplateDescription(slotProps.data) }}
+        <span :title="getTemplateDescription(slotProps.data, sourceModule)">
+          {{ getTemplateDescription(slotProps.data, sourceModule) }}
         </span>
       </template>
     </Column>
@@ -40,6 +40,7 @@ import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import { ref } from 'vue'
 
+import { useTemplateWorkflows } from '@/composables/useTemplateWorkflows'
 import type { TemplateInfo } from '@/types/workflowTemplateTypes'
 
 const { sourceModule, loading, templates } = defineProps<{
@@ -50,21 +51,9 @@ const { sourceModule, loading, templates } = defineProps<{
 }>()
 
 const selectedTemplate = ref(null)
+const { getTemplateTitle, getTemplateDescription } = useTemplateWorkflows()
 
 const emit = defineEmits<{
   loadWorkflow: [name: string]
 }>()
-
-const getTemplateTitle = (template: TemplateInfo) => {
-  const fallback = template.title ?? template.name ?? `${sourceModule} Template`
-  return sourceModule === 'default'
-    ? template.localizedTitle ?? fallback
-    : fallback
-}
-
-const getTemplateDescription = (template: TemplateInfo) => {
-  return sourceModule === 'default'
-    ? template.localizedDescription ?? ''
-    : template.description.replace(/[-_]/g, ' ').trim()
-}
 </script>
