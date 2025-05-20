@@ -70,7 +70,7 @@ const ALLOWED_ATTRS = [
 
 // Regex pattern to prefix relative src attributes in <source> or <video> tags
 const MEDIA_SRC_REGEX =
-  /(<(?:source|video)[^>]*src=")(?!(?:\/|https?:\/\/))([^"\s>]+)"/g
+  /(<(?:source|video)[^>]*\ssrc=['"])(?!(?:\/|https?:\/\/))([^'"\s>]+)['"]/gi
 
 /** create a marked Renderer that prefixes relative URLs with base */
 function createRenderer(baseUrl?: string): Renderer {
