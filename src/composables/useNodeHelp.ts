@@ -2,6 +2,7 @@ import DOMPurify from 'dompurify'
 import { Renderer, marked } from 'marked'
 import { type ComputedRef, type Ref, computed, ref, watch } from 'vue'
 
+import { i18n } from '@/i18n'
 import { api } from '@/scripts/api'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
@@ -36,7 +37,8 @@ watch(
     if (node) {
       isLoading.value = true
       try {
-        const mdUrl = `/docs/${node.name}/en.md`
+        const lang = i18n.global.locale.value || 'en'
+        const mdUrl = `/docs/${node.name}/${lang}.md`
         const res = await fetch(api.fileURL(mdUrl))
         if (!res.ok) throw new Error(res.statusText)
         helpContent.value = await res.text()
