@@ -12,6 +12,7 @@ import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { NodeBadgeMode } from '@/types/nodeSource'
+import { adjustColor } from '@/utils/colorUtil'
 
 /**
  * Add LGraphBadge to LGraphNode based on settings.
@@ -104,17 +105,20 @@ export const useNodeBadge = () => {
               iconOptions: {
                 unicode: '\ue96b',
                 fontFamily: 'PrimeIcons',
-                color: '#FABC25',
-                // Lighter background for light theme, darker for dark theme
-                bgColor: isLightTheme ? '#777777' : '#353535',
+                color: isLightTheme
+                  ? adjustColor('#FABC25', { lightness: 0.5 })
+                  : '#FABC25',
+                bgColor: isLightTheme
+                  ? adjustColor('#654020', { lightness: 0.5 })
+                  : '#654020',
                 fontSize: 8
               },
               fgColor:
                 colorPaletteStore.completedActivePalette.colors.litegraph_base
                   .BADGE_FG_COLOR,
-              bgColor:
-                colorPaletteStore.completedActivePalette.colors.litegraph_base
-                  .BADGE_BG_COLOR
+              bgColor: isLightTheme
+                ? adjustColor('#8D6932', { lightness: 0.5 })
+                : '#8D6932'
             })
           })
 
