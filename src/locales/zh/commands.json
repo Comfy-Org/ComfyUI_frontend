@@ -140,6 +140,9 @@
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "切换进度对话框"
   },
+  "Comfy_MaskEditor_OpenMaskEditor": {
+    "label": "打开选中节点的遮罩编辑器"
+  },
   "Comfy_NewBlankWorkflow": {
     "label": "新建空白工作流"
   },

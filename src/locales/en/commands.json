@@ -140,6 +140,9 @@
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "Toggle Progress Dialog"
   },
+  "Comfy_MaskEditor_OpenMaskEditor": {
+    "label": "Open Mask Editor for Selected Node"
+  },
   "Comfy_NewBlankWorkflow": {
     "label": "New Blank Workflow"
   },

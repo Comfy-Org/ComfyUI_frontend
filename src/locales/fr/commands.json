@@ -140,6 +140,9 @@
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "Basculer la boîte de dialogue de progression"
   },
+  "Comfy_MaskEditor_OpenMaskEditor": {
+    "label": "Ouvrir l'éditeur de masque pour le nœud sélectionné"
+  },
   "Comfy_NewBlankWorkflow": {
     "label": "Nouveau flux de travail vierge"
   },

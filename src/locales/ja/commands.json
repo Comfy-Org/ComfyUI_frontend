@@ -140,6 +140,9 @@
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "プログレスダイアログの切り替え"
   },
+  "Comfy_MaskEditor_OpenMaskEditor": {
+    "label": "選択したノードのマスクエディタを開く"
+  },
   "Comfy_NewBlankWorkflow": {
     "label": "新しい空のワークフロー"
   },

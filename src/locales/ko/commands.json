@@ -140,6 +140,9 @@
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "진행 상황 대화 상자 전환"
   },
+  "Comfy_MaskEditor_OpenMaskEditor": {
+    "label": "선택한 노드 마스크 편집기 열기"
+  },
   "Comfy_NewBlankWorkflow": {
     "label": "새로운 빈 워크플로"
   },
