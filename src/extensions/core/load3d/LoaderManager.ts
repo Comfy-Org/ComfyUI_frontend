@@ -130,7 +130,7 @@ export class LoaderManager implements LoaderManagerInterface {
 
       case 'obj':
         if (this.modelManager.materialMode === 'original') {
-          const mtlUrl = url.replace(/\.obj/, '.mtl')
+          const mtlUrl = url.replace(/(filename=.*?)\.obj/, '$1.mtl')
 
           try {
             const materials = await this.mtlLoader.loadAsync(mtlUrl)
