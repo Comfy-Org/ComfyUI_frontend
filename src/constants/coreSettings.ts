@@ -1,5 +1,4 @@
-import { LinkMarkerShape } from '@comfyorg/litegraph'
-import { LiteGraph } from '@comfyorg/litegraph'
+import { LinkMarkerShape, LiteGraph } from '@comfyorg/litegraph'
 
 import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
 import type { Keybinding } from '@/schemas/keyBindingSchema'
@@ -37,7 +36,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Action on link release (Shift)',
     type: 'combo',
     options: Object.values(LinkReleaseTriggerAction),
-    defaultValue: LinkReleaseTriggerAction.SEARCH_BOX
+    defaultValue: LinkReleaseTriggerAction.CONTEXT_MENU
   },
   {
     id: 'Comfy.NodeSearchBoxImpl.NodePreview',
