@@ -498,6 +498,8 @@
     "submitErrorReport": "エラーレポートを提出する（オプション）",
     "systemStats": "システム統計",
     "validation": {
+      "descriptionRequired": "説明は必須です",
+      "helpTypeRequired": "ヘルプの種類は必須です",
       "invalidEmail": "有効なメールアドレスを入力してください",
       "maxLength": "メッセージが長すぎます",
       "selectIssueType": "問題の種類を選択してください"
