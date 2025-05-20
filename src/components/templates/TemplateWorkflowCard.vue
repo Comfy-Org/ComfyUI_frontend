@@ -105,26 +105,33 @@ const isHovered = useElementHover(cardRef)
 const { getTemplateThumbnailUrl, getTemplateTitle, getTemplateDescription } =
   useTemplateWorkflows()
 
+// Determine the effective source module to use (from template or prop)
+const effectiveSourceModule = computed(
+  () => template.sourceModule || sourceModule
+)
+
 const baseThumbnailSrc = computed(() =>
   getTemplateThumbnailUrl(
     template,
-    sourceModule,
-    sourceModule === 'default' ? '1' : ''
+    effectiveSourceModule.value,
+    effectiveSourceModule.value === 'default' ? '1' : ''
   )
 )
 
 const overlayThumbnailSrc = computed(() =>
   getTemplateThumbnailUrl(
     template,
-    sourceModule,
-    sourceModule === 'default' ? '2' : ''
+    effectiveSourceModule.value,
+    effectiveSourceModule.value === 'default' ? '2' : ''
   )
 )
 
 const description = computed(() =>
-  getTemplateDescription(template, sourceModule)
+  getTemplateDescription(template, effectiveSourceModule.value)
 )
-const title = computed(() => getTemplateTitle(template, sourceModule))
+const title = computed(() =>
+  getTemplateTitle(template, effectiveSourceModule.value)
+)
 
 defineEmits<{
   loadWorkflow: [name: string]

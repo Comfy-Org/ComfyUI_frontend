@@ -103,30 +103,43 @@ export const useWorkflowTemplatesStore = defineStore(
 
     // Create an "All" category that combines all templates
     const createAllCategory = () => {
-      // Get all templates and include source module
+      // First, get core templates with source module added
+      const coreTemplatesWithSourceModule = coreTemplates.value.flatMap(
+        (category) =>
+          // For each template in each category, add the sourceModule and pass through any localized fields
+          category.templates.map((template) => {
+            // Get localized template with its original category title for i18n lookup
+            const localizedTemplate = addLocalizedFieldsToTemplate(
+              template,
+              category.title
+            )
+            return {
+              ...localizedTemplate,
+              sourceModule: category.moduleName
+            }
+          })
+      )
+
+      // Now handle custom templates
+      const customTemplatesWithSourceModule = Object.entries(
+        customTemplates.value
+      ).flatMap(([moduleName, templates]) =>
+        templates.map((name) => ({
+          name,
+          mediaType: 'image',
+          mediaSubtype: 'jpg',
+          description: name,
+          sourceModule: moduleName
+        }))
+      )
+
       return {
         moduleName: 'all',
         title: 'All',
         localizedTitle: st('templateWorkflows.category.All', 'All Templates'),
         templates: [
-          // Core templates
-          ...coreTemplates.value.flatMap((category) =>
-            category.templates.map((template) => ({
-              ...template,
-              sourceModule: category.moduleName
-            }))
-          ),
-          // Custom templates
-          ...Object.entries(customTemplates.value).flatMap(
-            ([moduleName, templates]) =>
-              templates.map((name) => ({
-                name,
-                mediaType: 'image',
-                mediaSubtype: 'jpg',
-                description: name,
-                sourceModule: moduleName
-              }))
-          )
+          ...coreTemplatesWithSourceModule,
+          ...customTemplatesWithSourceModule
         ]
       }
     }
@@ -155,8 +168,8 @@ export const useWorkflowTemplatesStore = defineStore(
         )
       ]
 
-      // Create regular groups
-      const regularGroups = Object.entries(
+      // Group templates by their main category
+      const groupedByCategory = Object.entries(
         groupBy(allTemplates, (template) =>
           template.moduleName === 'default'
             ? st(
@@ -167,13 +180,20 @@ export const useWorkflowTemplatesStore = defineStore(
         )
       ).map(([label, modules]) => ({ label, modules }))
 
-      // Create All category group and add it to the beginning
-      const allGroup = {
-        label: st('templateWorkflows.category.AllTemplates', 'All Templates'),
-        modules: [createAllCategory()]
+      // Insert the "All" category at the top of the "ComfyUI Examples" group
+      const comfyExamplesGroupIndex = groupedByCategory.findIndex(
+        (group) =>
+          group.label ===
+          st('templateWorkflows.category.ComfyUI Examples', 'ComfyUI Examples')
+      )
+
+      if (comfyExamplesGroupIndex !== -1) {
+        groupedByCategory[comfyExamplesGroupIndex].modules.unshift(
+          createAllCategory()
+        )
       }
 
-      return [allGroup, ...regularGroups]
+      return groupedByCategory
     })
 
     async function loadWorkflowTemplates() {

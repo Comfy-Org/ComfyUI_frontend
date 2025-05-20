@@ -7,15 +7,38 @@
   >
     <Column field="title" :header="$t('g.title')">
       <template #body="slotProps">
-        <span :title="getTemplateTitle(slotProps.data, sourceModule)">{{
-          getTemplateTitle(slotProps.data, sourceModule)
-        }}</span>
+        <span
+          :title="
+            getTemplateTitle(
+              slotProps.data,
+              slotProps.data.sourceModule || sourceModule
+            )
+          "
+          >{{
+            getTemplateTitle(
+              slotProps.data,
+              slotProps.data.sourceModule || sourceModule
+            )
+          }}</span
+        >
       </template>
     </Column>
     <Column field="description" :header="$t('g.description')">
       <template #body="slotProps">
-        <span :title="getTemplateDescription(slotProps.data, sourceModule)">
-          {{ getTemplateDescription(slotProps.data, sourceModule) }}
+        <span
+          :title="
+            getTemplateDescription(
+              slotProps.data,
+              slotProps.data.sourceModule || sourceModule
+            )
+          "
+        >
+          {{
+            getTemplateDescription(
+              slotProps.data,
+              slotProps.data.sourceModule || sourceModule
+            )
+          }}
         </span>
       </template>
     </Column>

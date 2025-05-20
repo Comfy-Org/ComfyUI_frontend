@@ -50,7 +50,7 @@ describe('useTemplateWorkflows', () => {
       loadWorkflowTemplates: vi.fn().mockResolvedValue(true),
       groupedTemplates: [
         {
-          label: 'All Templates',
+          label: 'ComfyUI Examples',
           modules: [
             {
               moduleName: 'all',
@@ -72,12 +72,7 @@ describe('useTemplateWorkflows', () => {
                   description: 'A custom template'
                 }
               ]
-            }
-          ]
-        },
-        {
-          label: 'Default Templates',
-          modules: [
+            },
             {
               moduleName: 'default',
               title: 'Default',
@@ -130,7 +125,7 @@ describe('useTemplateWorkflows', () => {
 
   it('should select a template category', () => {
     const { selectTemplateCategory, selectedTemplate } = useTemplateWorkflows()
-    const category = mockWorkflowTemplatesStore.groupedTemplates[1].modules[0]
+    const category = mockWorkflowTemplatesStore.groupedTemplates[0].modules[1] // Default category
 
     const result = selectTemplateCategory(category)
 

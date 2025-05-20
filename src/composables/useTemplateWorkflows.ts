@@ -106,10 +106,15 @@ export function useTemplateWorkflows() {
     try {
       // Handle "All" category as a special case
       if (sourceModule === 'all') {
-        // Find template to determine its source module
-        const allCategory = allTemplateGroups.value.find((g) =>
-          g.label.includes('All')
-        )?.modules[0]
+        // Find "All" category in the ComfyUI Examples group
+        const comfyExamplesGroup = allTemplateGroups.value.find(
+          (g) =>
+            g.label ===
+            t('templateWorkflows.category.ComfyUI Examples', 'ComfyUI Examples')
+        )
+        const allCategory = comfyExamplesGroup?.modules.find(
+          (m) => m.moduleName === 'all'
+        )
         const template = allCategory?.templates.find((t) => t.name === id)
 
         if (!template || !template.sourceModule) return false
