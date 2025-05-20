@@ -96,13 +96,17 @@ export const useNodeBadge = () => {
 
         if (node.constructor.nodeData?.api_node) {
           const creditsBadge = computed(() => {
+            // Use dynamic background color based on the theme
+            const isLightTheme =
+              colorPaletteStore.completedActivePalette.light_theme
             return new LGraphBadge({
               text: '',
               iconOptions: {
                 unicode: '\ue96b',
                 fontFamily: 'PrimeIcons',
                 color: '#FABC25',
-                bgColor: '#353535',
+                // Lighter background for light theme, darker for dark theme
+                bgColor: isLightTheme ? '#777777' : '#353535',
                 fontSize: 8
               },
               fgColor:
