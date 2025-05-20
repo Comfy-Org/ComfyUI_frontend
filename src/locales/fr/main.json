@@ -520,6 +520,7 @@
     "fov": "FOV",
     "light": "Lumière",
     "lightIntensity": "Intensité de la lumière",
+    "loadingBackgroundImage": "Chargement de l’image d’arrière-plan",
     "loadingModel": "Chargement du modèle 3D...",
     "materialMode": "Mode Matériel",
     "materialModes": {

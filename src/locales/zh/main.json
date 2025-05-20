@@ -520,6 +520,7 @@
     "fov": "视场",
     "light": "灯光",
     "lightIntensity": "光照强度",
+    "loadingBackgroundImage": "正在加载背景图像",
     "loadingModel": "正在加载3D模型...",
     "materialMode": "材质模式",
     "materialModes": {

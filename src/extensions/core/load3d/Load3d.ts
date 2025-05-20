@@ -118,7 +118,11 @@ class Load3d {
       options
     )
 
-    this.loaderManager = new LoaderManager(this.modelManager, this.eventManager)
+    this.loaderManager = new LoaderManager(
+      this.modelManager,
+      this.eventManager,
+      options
+    )
 
     this.recordingManager = new RecordingManager(
       this.sceneManager.scene,

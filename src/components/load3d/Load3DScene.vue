@@ -76,7 +76,7 @@ const eventConfig = {
     emit('recordingStatusChange', value)
 } as const
 
-watchEffect(async () => {
+watchEffect(() => {
   if (load3d.value) {
     const rawLoad3d = toRaw(load3d.value) as Load3d
 
@@ -86,9 +86,19 @@ watchEffect(async () => {
     rawLoad3d.setFOV(props.fov)
     rawLoad3d.toggleCamera(props.cameraType)
     rawLoad3d.togglePreview(props.showPreview)
-    await rawLoad3d.setBackgroundImage(props.backgroundImage)
   }
 })
+
+watch(
+  () => props.backgroundImage,
+  async (newValue) => {
+    if (load3d.value) {
+      const rawLoad3d = toRaw(load3d.value) as Load3d
+
+      await rawLoad3d.setBackgroundImage(newValue)
+    }
+  }
+)
 
 watch(
   () => props.upDirection,

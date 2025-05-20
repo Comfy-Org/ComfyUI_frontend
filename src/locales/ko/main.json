@@ -520,6 +520,7 @@
     "fov": "FOV",
     "light": "빛",
     "lightIntensity": "조명 강도",
+    "loadingBackgroundImage": "배경 이미지 불러오는 중",
     "loadingModel": "3D 모델 로딩 중...",
     "materialMode": "재질 모드",
     "materialModes": {
