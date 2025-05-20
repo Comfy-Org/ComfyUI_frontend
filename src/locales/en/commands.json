@@ -71,9 +71,6 @@
   "Comfy_Canvas_ToggleSelectedNodes_Pin": {
     "label": "Pin/Unpin Selected Nodes"
   },
-  "Comfy_MaskEditor_OpenMaskEditor": {
-    "label": "Open Mask Editor for Selected Node"
-  },
   "Comfy_Canvas_ZoomIn": {
     "label": "Zoom In"
   },
@@ -142,6 +139,9 @@
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "Toggle Progress Dialog"
+  },
+  "Comfy_MaskEditor_OpenMaskEditor": {
+    "label": "Open Mask Editor for Selected Node"
   },
   "Comfy_NewBlankWorkflow": {
     "label": "New Blank Workflow"

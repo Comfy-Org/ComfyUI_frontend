@@ -71,9 +71,6 @@
   "Comfy_Canvas_ToggleSelected_Pin": {
     "label": "Закрепить/Открепить выбранных нод"
   },
-  "Comfy_MaskEditor_OpenMaskEditor": {
-    "label": "Открыть редактор масок для выбранной ноды"
-  },
   "Comfy_Canvas_ZoomIn": {
     "label": "Увеличить"
   },
@@ -142,6 +139,9 @@
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "Переключить диалоговое окно прогресса"
+  },
+  "Comfy_MaskEditor_OpenMaskEditor": {
+    "label": "Открыть редактор масок для выбранной ноды"
   },
   "Comfy_NewBlankWorkflow": {
     "label": "Новый пустой рабочий процесс"

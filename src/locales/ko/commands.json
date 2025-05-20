@@ -71,9 +71,6 @@
   "Comfy_Canvas_ToggleSelected_Pin": {
     "label": "선택한 항목 고정/고정 해제"
   },
-  "Comfy_MaskEditor_OpenMaskEditor": {
-    "label": "선택한 노드 마스크 편집기 열기"
-  },
   "Comfy_Canvas_ZoomIn": {
     "label": "확대"
   },
@@ -142,6 +139,9 @@
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "진행 상황 대화 상자 전환"
+  },
+  "Comfy_MaskEditor_OpenMaskEditor": {
+    "label": "선택한 노드 마스크 편집기 열기"
   },
   "Comfy_NewBlankWorkflow": {
     "label": "새로운 빈 워크플로"
