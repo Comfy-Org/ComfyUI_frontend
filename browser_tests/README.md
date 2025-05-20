@@ -263,6 +263,7 @@ await expect(node).toBeCollapsed()
 - **Coordinate Sensitivity**: Canvas coordinates are viewport-relative; use node references when possible
 - **Test Isolation**: Tests run in parallel; avoid dependencies between tests
 - **Screenshots vary**: Ensure your OS and browser match the reference environment (Linux)
+- **Async / await**: Race conditions are a very common cause of test flakiness
 
 ## Screenshot Expectations
 
