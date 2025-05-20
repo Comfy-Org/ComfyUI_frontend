@@ -710,6 +710,7 @@
     "Open DevTools": "打开开发者工具",
     "Open Inputs Folder": "打开输入文件夹",
     "Open Logs Folder": "打开日志文件夹",
+    "Open Mask Editor for Selected Node": "为选中节点打开 Mask 编辑器",
     "Open Models Folder": "打开模型文件夹",
     "Open Outputs Folder": "打开输出文件夹",
     "Open Sign In Dialog": "打开登录对话框",
