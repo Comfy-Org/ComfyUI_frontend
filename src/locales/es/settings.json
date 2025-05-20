@@ -25,6 +25,10 @@
     },
     "tooltip": "Personalizado: Reemplace la barra de título del sistema con el menú superior de ComfyUI"
   },
+  "Comfy_Canvas_BackgroundImage": {
+    "name": "Imagen de fondo del lienzo",
+    "tooltip": "URL de la imagen para el fondo del lienzo. Puedes hacer clic derecho en una imagen del panel de resultados y seleccionar \"Establecer como fondo\" para usarla."
+  },
   "Comfy_Canvas_SelectionToolbox": {
     "name": "Mostrar caja de herramientas de selección"
   },

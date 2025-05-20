@@ -25,6 +25,10 @@
     },
     "tooltip": "选择自定义选项以隐藏系统标题栏"
   },
+  "Comfy_Canvas_BackgroundImage": {
+    "name": "画布背景图像",
+    "tooltip": "画布背景的图像 URL。你可以在输出面板中右键点击一张图片，并选择“设为背景”来使用它。"
+  },
   "Comfy_Canvas_SelectionToolbox": {
     "name": "显示选择工具箱"
   },

@@ -25,6 +25,10 @@
     },
     "tooltip": "システムタイトルバーを非表示にするにはカスタムオプションを選択してください"
   },
+  "Comfy_Canvas_BackgroundImage": {
+    "name": "キャンバス背景画像",
+    "tooltip": "キャンバスの背景画像のURLです。出力パネルで画像を右クリックし、「背景として設定」を選択すると使用できます。"
+  },
   "Comfy_Canvas_SelectionToolbox": {
     "name": "選択ツールボックスを表示"
   },
