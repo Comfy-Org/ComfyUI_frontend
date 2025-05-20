@@ -71,7 +71,7 @@
   "Comfy_Canvas_ToggleSelected_Pin": {
     "label": "Anclar/Desanclar elementos seleccionados"
   },
-  "Comfy_Canvas_SelectedNode_OpenMaskEditor": {
+  "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Abrir editor de máscara para el nodo seleccionado"
   },
   "Comfy_Canvas_ZoomIn": {
