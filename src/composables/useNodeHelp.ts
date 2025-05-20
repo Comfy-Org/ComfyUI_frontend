@@ -4,7 +4,6 @@ import { type ComputedRef, type Ref, computed, ref, watch } from 'vue'
 
 import { api } from '@/scripts/api'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { NodeSourceType } from '@/types/nodeSource'
 
 const currentHelpNode = ref<ComfyNodeDefImpl | null>(null)
 const isHelpOpen = computed(() => currentHelpNode.value !== null)
@@ -17,41 +16,36 @@ function closeHelp() {
   currentHelpNode.value = null
 }
 
-// Compute a base URL for relative asset links in HELP markdown
+// Base URL for relative assets in node docs markdown
 const baseUrl = computed(() => {
   const node = currentHelpNode.value
-  if (node?.nodeSource.type === NodeSourceType.CustomNodes) {
-    const parts = node.python_module.split('.')
-    const moduleName =
-      parts.length > 1 ? parts[1].split('@')[0] : parts[0].split('@')[0]
-    const raw = `/extensions/${moduleName}`
-    return raw.replace(/\/+$/, '') + '/'
-  }
-  return ''
+  if (!node) return ''
+  return `/docs/${node.name}/`
 })
 
 const helpContent = ref<string>('')
 const isLoading = ref<boolean>(false)
 const errorMsg = ref<string | null>(null)
 
+// Watch for help node changes and fetch its docs markdown
 watch(
-  () => [currentHelpNode.value?.help, baseUrl.value],
-  async ([helpPath, base]) => {
+  () => currentHelpNode.value,
+  async (node) => {
     helpContent.value = ''
     errorMsg.value = null
-    if (helpPath?.endsWith('.md')) {
+    if (node) {
       isLoading.value = true
       try {
-        const res = await fetch(api.fileURL(`${base}${helpPath}`))
+        const mdUrl = `/docs/${node.name}/en.md`
+        const res = await fetch(api.fileURL(mdUrl))
         if (!res.ok) throw new Error(res.statusText)
         helpContent.value = await res.text()
       } catch (e: any) {
         errorMsg.value = e.message
+        helpContent.value = node.description || ''
       } finally {
         isLoading.value = false
       }
-    } else {
-      helpContent.value = helpPath || ''
     }
   },
   { immediate: true }

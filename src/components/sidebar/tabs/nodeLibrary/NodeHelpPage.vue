@@ -13,17 +13,14 @@
       <span class="ml-2 font-semibold">{{ node.display_name }}</span>
     </div>
     <div class="px-4 overflow-auto flex-grow node-help-content">
-      <template v-if="node.help">
-        <ProgressSpinner
-          v-if="isLoading"
-          class="m-auto"
-          aria-label="Loading help"
-        />
-        <div v-else-if="error" class="text-red-500 text-center p-4">
-          {{ $t('nodeHelpPage.loadError', { error }) }}
-        </div>
-        <div v-else class="text-sm" v-html="renderedHelpHtml" />
-      </template>
+      <ProgressSpinner
+        v-if="isLoading"
+        class="m-auto"
+        aria-label="Loading help"
+      />
+      <!-- Markdown fetched successfully -->
+      <div v-else-if="!error" class="text-sm" v-html="renderedHelpHtml" />
+      <!-- Fallback: markdown not found or fetch error -->
       <div v-else class="text-sm space-y-6">
         <p v-if="node.description">
           <strong>{{ $t('g.description') }}:</strong> {{ node.description }}
@@ -83,8 +80,8 @@
             rel="noopener"
             class="text-blue-600 underline"
           >
-            {{ $t('nodeHelpPage.documentationPage') }} </a
-          >.
+            {{ $t('nodeHelpPage.documentationPage') }}
+          </a>
         </p>
       </div>
     </div>
