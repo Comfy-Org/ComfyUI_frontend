@@ -498,6 +498,8 @@
     "submitErrorReport": "エラーレポートを提出する（オプション）",
     "systemStats": "システム統計",
     "validation": {
+      "descriptionRequired": "説明は必須です",
+      "helpTypeRequired": "ヘルプの種類は必須です",
       "invalidEmail": "有効なメールアドレスを入力してください",
       "maxLength": "メッセージが長すぎます",
       "selectIssueType": "問題の種類を選択してください"
@@ -518,6 +520,7 @@
     "fov": "FOV",
     "light": "ライト",
     "lightIntensity": "光の強度",
+    "loadingBackgroundImage": "背景画像を読み込んでいます",
     "loadingModel": "3Dモデルを読み込んでいます...",
     "materialMode": "マテリアルモード",
     "materialModes": {

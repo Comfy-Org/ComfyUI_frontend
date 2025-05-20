@@ -96,8 +96,7 @@ const setPromptInput = (text: string, previousResponseId?: string | null) => {
 }
 
 const handleEdit = (index: number) => {
-  if (!promptInput) return
-
+  promptInput ??= widget?.node.widgets?.find((w) => w.name === 'prompt')
   editIndex.value = index
   const prevResponseId = index === 0 ? 'start' : getPreviousResponseId(index)
   const promptText = parsedHistory.value[index]?.prompt ?? ''

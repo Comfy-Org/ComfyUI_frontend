@@ -16,9 +16,6 @@ export function useNodeChatHistory(
 ) {
   const chatHistoryWidget = useChatHistoryWidget(options)
 
-  const findChatHistoryWidget = (node: LGraphNode) =>
-    node.widgets?.find((w) => w.name === CHAT_HISTORY_WIDGET_NAME)
-
   const addChatHistoryWidget = (node: LGraphNode) =>
     chatHistoryWidget(node, {
       name: CHAT_HISTORY_WIDGET_NAME,
@@ -30,9 +27,11 @@ export function useNodeChatHistory(
    * @param node The graph node to show the chat history for
    */
   function showChatHistory(node: LGraphNode) {
-    if (!findChatHistoryWidget(node)) {
-      addChatHistoryWidget(node)
-    }
+    // First remove any existing widget
+    removeChatHistory(node)
+
+    // Then add the widget with new history
+    addChatHistoryWidget(node)
     node.setDirtyCanvas?.(true)
   }
 

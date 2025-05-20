@@ -71,6 +71,9 @@
   "Comfy_Canvas_ToggleSelected_Pin": {
     "label": "Закрепить/Открепить выбранных нод"
   },
+  "Comfy_MaskEditor_OpenMaskEditor": {
+    "label": "Открыть редактор масок для выбранной ноды"
+  },
   "Comfy_Canvas_ZoomIn": {
     "label": "Увеличить"
   },

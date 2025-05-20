@@ -1,11 +1,23 @@
 <template>
   <BaseThumbnail :is-hovered="isHovered">
-    <img :src="baseImageSrc" :alt="alt" class="w-full h-full object-cover" />
+    <img
+      :src="baseImageSrc"
+      :alt="alt"
+      :class="
+        isVideoType
+          ? 'w-full h-full object-cover'
+          : 'max-w-full max-h-64 object-contain'
+      "
+    />
     <div ref="containerRef" class="absolute inset-0">
       <img
         :src="overlayImageSrc"
         :alt="alt"
-        class="w-full h-full object-cover"
+        :class="
+          isVideoType
+            ? 'w-full h-full object-cover'
+            : 'max-w-full max-h-64 object-contain'
+        "
         :style="{
           clipPath: `inset(0 ${100 - sliderPosition}% 0 0)`
         }"
@@ -28,12 +40,19 @@ import BaseThumbnail from '@/components/templates/thumbnails/BaseThumbnail.vue'
 
 const SLIDER_START_POSITION = 21
 
-const { isHovered } = defineProps<{
+const { baseImageSrc, overlayImageSrc, isHovered, isVideo } = defineProps<{
   baseImageSrc: string
   overlayImageSrc: string
   alt: string
   isHovered?: boolean
+  isVideo?: boolean
 }>()
+
+const isVideoType =
+  isVideo ||
+  baseImageSrc?.toLowerCase().endsWith('.webp') ||
+  overlayImageSrc?.toLowerCase().endsWith('.webp') ||
+  false
 
 const sliderPosition = ref(SLIDER_START_POSITION)
 const containerRef = ref<HTMLElement | null>(null)

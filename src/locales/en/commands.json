@@ -71,6 +71,9 @@
   "Comfy_Canvas_ToggleSelectedNodes_Pin": {
     "label": "Pin/Unpin Selected Nodes"
   },
+  "Comfy_MaskEditor_OpenMaskEditor": {
+    "label": "Open Mask Editor for Selected Node"
+  },
   "Comfy_Canvas_ZoomIn": {
     "label": "Zoom In"
   },

@@ -498,6 +498,8 @@
     "submitErrorReport": "오류 보고서 제출 (선택 사항)",
     "systemStats": "시스템 통계",
     "validation": {
+      "descriptionRequired": "설명은 필수입니다",
+      "helpTypeRequired": "도움 유형은 필수입니다",
       "invalidEmail": "유효한 이메일 주소를 입력해 주세요",
       "maxLength": "메시지가 너무 깁니다",
       "selectIssueType": "문제 유형을 선택해 주세요"
@@ -518,6 +520,7 @@
     "fov": "FOV",
     "light": "빛",
     "lightIntensity": "조명 강도",
+    "loadingBackgroundImage": "배경 이미지 불러오는 중",
     "loadingModel": "3D 모델 로딩 중...",
     "materialMode": "재질 모드",
     "materialModes": {

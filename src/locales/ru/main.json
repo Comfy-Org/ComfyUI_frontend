@@ -498,6 +498,8 @@
     "submitErrorReport": "Отправить отчёт об ошибке (необязательно)",
     "systemStats": "Статистика системы",
     "validation": {
+      "descriptionRequired": "Описание обязательно",
+      "helpTypeRequired": "Тип помощи обязателен",
       "invalidEmail": "Пожалуйста, введите действительный адрес электронной почты",
       "maxLength": "Сообщение слишком длинное",
       "selectIssueType": "Пожалуйста, выберите тип проблемы"
@@ -518,6 +520,7 @@
     "fov": "Угол обзора",
     "light": "Свет",
     "lightIntensity": "Интенсивность света",
+    "loadingBackgroundImage": "Загрузка фонового изображения",
     "loadingModel": "Загрузка 3D модели...",
     "materialMode": "Режим Материала",
     "materialModes": {

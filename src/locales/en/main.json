@@ -203,7 +203,9 @@
     "validation": {
       "maxLength": "Message too long",
       "invalidEmail": "Please enter a valid email address",
-      "selectIssueType": "Please select an issue type"
+      "selectIssueType": "Please select an issue type",
+      "descriptionRequired": "Description is required",
+      "helpTypeRequired": "Help type is required"
     }
   },
   "color": {
@@ -1228,7 +1230,8 @@
     "stopRecording": "Stop Recording",
     "exportRecording": "Export Recording",
     "clearRecording": "Clear Recording",
-    "resizeNodeMatchOutput": "Resize Node to match output"
+    "resizeNodeMatchOutput": "Resize Node to match output",
+    "loadingBackgroundImage": "Loading Background Image"
   },
   "toastMessages": {
     "nothingToQueue": "Nothing to queue",

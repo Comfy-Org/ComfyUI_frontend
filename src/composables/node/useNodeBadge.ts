@@ -13,6 +13,7 @@ import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { NodeBadgeMode } from '@/types/nodeSource'
+import { adjustColor } from '@/utils/colorUtil'
 
 /**
  * Add LGraphBadge to LGraphNode based on settings.
@@ -113,19 +114,28 @@ export const useNodeBadge = () => {
           const price = nodePricing.getNodeDisplayPrice(node)
           // Always add the badge for API nodes, with or without price text
           const creditsBadge = computed(() => {
+            // Use dynamic background color based on the theme
+            const isLightTheme =
+              colorPaletteStore.completedActivePalette.light_theme
             return new LGraphBadge({
               text: price,
               iconOptions: {
                 unicode: '\ue96b',
                 fontFamily: 'PrimeIcons',
-                color: '#FABC25',
-                bgColor: '#353535',
+                color: isLightTheme
+                  ? adjustColor('#FABC25', { lightness: 0.5 })
+                  : '#FABC25',
+                bgColor: isLightTheme
+                  ? adjustColor('#654020', { lightness: 0.5 })
+                  : '#654020',
                 fontSize: 8
               },
               fgColor:
                 colorPaletteStore.completedActivePalette.colors.litegraph_base
                   .BADGE_FG_COLOR,
-              bgColor: '#8D6932'
+              bgColor: isLightTheme
+                ? adjustColor('#8D6932', { lightness: 0.5 })
+                : '#8D6932'
             })
           })
 

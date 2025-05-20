@@ -10,6 +10,7 @@
     <ColorPickerButton />
     <BypassButton />
     <PinButton />
+    <MaskEditorButton />
     <DeleteButton />
     <RefreshButton />
     <ExtensionCommandButton
@@ -24,17 +25,17 @@
 import Panel from 'primevue/panel'
 import { computed } from 'vue'
 
+import BypassButton from '@/components/graph/selectionToolbox/BypassButton.vue'
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
+import DeleteButton from '@/components/graph/selectionToolbox/DeleteButton.vue'
 import ExecuteButton from '@/components/graph/selectionToolbox/ExecuteButton.vue'
+import ExtensionCommandButton from '@/components/graph/selectionToolbox/ExtensionCommandButton.vue'
+import MaskEditorButton from '@/components/graph/selectionToolbox/MaskEditorButton.vue'
+import PinButton from '@/components/graph/selectionToolbox/PinButton.vue'
+import RefreshButton from '@/components/graph/selectionToolbox/RefreshButton.vue'
 import { useExtensionService } from '@/services/extensionService'
 import { type ComfyCommandImpl, useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
-
-import BypassButton from './selectionToolbox/BypassButton.vue'
-import DeleteButton from './selectionToolbox/DeleteButton.vue'
-import ExtensionCommandButton from './selectionToolbox/ExtensionCommandButton.vue'
-import PinButton from './selectionToolbox/PinButton.vue'
-import RefreshButton from './selectionToolbox/RefreshButton.vue'
 
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()

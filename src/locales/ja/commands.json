@@ -71,6 +71,9 @@
   "Comfy_Canvas_ToggleSelected_Pin": {
     "label": "選択したアイテムのピン留め/ピン留め解除"
   },
+  "Comfy_MaskEditor_OpenMaskEditor": {
+    "label": "選択したノードのマスクエディタを開く"
+  },
   "Comfy_Canvas_ZoomIn": {
     "label": "ズームイン"
   },

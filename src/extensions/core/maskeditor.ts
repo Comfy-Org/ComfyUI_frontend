@@ -4912,6 +4912,45 @@ class KeyboardManager {
   }
 }
 
+// Function to open the mask editor
+function openMaskEditor(): void {
+  const useNewEditor = app.extensionManager.setting.get(
+    'Comfy.MaskEditor.UseNewEditor'
+  )
+  if (useNewEditor) {
+    const dlg = MaskEditorDialog.getInstance() as any
+    if (dlg?.isOpened && !dlg.isOpened()) {
+      dlg.show()
+    }
+  } else {
+    const dlg = MaskEditorDialogOld.getInstance() as any
+    if (dlg?.isOpened && !dlg.isOpened()) {
+      dlg.show()
+    }
+  }
+}
+
+// Check if the dialog is already opened
+function isOpened(): boolean {
+  const useNewEditor = app.extensionManager.setting.get(
+    'Comfy.MaskEditor.UseNewEditor'
+  )
+  if (useNewEditor) {
+    return MaskEditorDialog.instance?.isOpened?.() ?? false
+  } else {
+    return (MaskEditorDialogOld.instance as any)?.isOpened?.() ?? false
+  }
+}
+
+// Ensure boolean return type for context predicate
+const context_predicate = (): boolean => {
+  return !!(
+    ComfyApp.clipspace &&
+    ComfyApp.clipspace.imgs &&
+    ComfyApp.clipspace.imgs.length > 0
+  )
+}
+
 app.registerExtension({
   name: 'Comfy.MaskEditor',
   settings: [
@@ -4951,49 +4990,32 @@ app.registerExtension({
       experimental: true
     }
   ],
-  init(app) {
-    // Create function before assignment
-    function openMaskEditor(): void {
-      const useNewEditor = app.extensionManager.setting.get(
-        'Comfy.MaskEditor.UseNewEditor'
-      )
-      if (useNewEditor) {
-        const dlg = MaskEditorDialog.getInstance() as any
-        if (dlg?.isOpened && !dlg.isOpened()) {
-          dlg.show()
-        }
-      } else {
-        const dlg = MaskEditorDialogOld.getInstance() as any
-        if (dlg?.isOpened && !dlg.isOpened()) {
-          dlg.show()
-        }
+  commands: [
+    {
+      id: 'Comfy.MaskEditor.OpenMaskEditor',
+      icon: 'pi pi-pencil',
+      label: 'Open Mask Editor for Selected Node',
+      function: () => {
+        const selectedNodes = app.canvas.selected_nodes
+        if (!selectedNodes || Object.keys(selectedNodes).length !== 1) return
+
+        const selectedNode = selectedNodes[Object.keys(selectedNodes)[0]]
+        if (
+          !selectedNode.imgs?.length &&
+          selectedNode.previewMediaType !== 'image'
+        )
+          return
+
+        ComfyApp.copyToClipspace(selectedNode)
+        // @ts-expect-error clipspace_return_node is an extension property added at runtime
+        ComfyApp.clipspace_return_node = selectedNode
+        openMaskEditor()
       }
     }
-
-    // Check if the dialog is already opened
-    function isOpened(): boolean {
-      const useNewEditor = app.extensionManager.setting.get(
-        'Comfy.MaskEditor.UseNewEditor'
-      )
-      if (useNewEditor) {
-        return MaskEditorDialog.instance?.isOpened?.() ?? false
-      } else {
-        return (MaskEditorDialogOld.instance as any)?.isOpened?.() ?? false
-      }
-    }
-
-    // Assign the created function
+  ],
+  init() {
     ComfyApp.open_maskeditor = openMaskEditor
     ComfyApp.maskeditor_is_opended = isOpened
-
-    // Ensure boolean return type
-    const context_predicate = (): boolean => {
-      return !!(
-        ComfyApp.clipspace &&
-        ComfyApp.clipspace.imgs &&
-        ComfyApp.clipspace.imgs.length > 0
-      )
-    }
 
     ClipspaceDialog.registerButton(
       'MaskEditor',

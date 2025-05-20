@@ -498,6 +498,8 @@
     "submitErrorReport": "Soumettre un rapport d'erreur (Facultatif)",
     "systemStats": "Statistiques du système",
     "validation": {
+      "descriptionRequired": "La description est requise",
+      "helpTypeRequired": "Le type d'aide est requis",
       "invalidEmail": "Veuillez entrer une adresse e-mail valide",
       "maxLength": "Message trop long",
       "selectIssueType": "Veuillez sélectionner un type de problème"
@@ -518,6 +520,7 @@
     "fov": "FOV",
     "light": "Lumière",
     "lightIntensity": "Intensité de la lumière",
+    "loadingBackgroundImage": "Chargement de l’image d’arrière-plan",
     "loadingModel": "Chargement du modèle 3D...",
     "materialMode": "Mode Matériel",
     "materialModes": {

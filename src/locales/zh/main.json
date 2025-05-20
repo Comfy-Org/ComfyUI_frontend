@@ -498,6 +498,8 @@
     "submitErrorReport": "提交错误报告（可选）",
     "systemStats": "系统状态",
     "validation": {
+      "descriptionRequired": "描述为必填项",
+      "helpTypeRequired": "帮助类型为必选项",
       "invalidEmail": "请输入有效的电子邮件地址",
       "maxLength": "消息过长",
       "selectIssueType": "请选择一个问题类型"
@@ -518,6 +520,7 @@
     "fov": "视场",
     "light": "灯光",
     "lightIntensity": "光照强度",
+    "loadingBackgroundImage": "正在加载背景图像",
     "loadingModel": "正在加载3D模型...",
     "materialMode": "材质模式",
     "materialModes": {

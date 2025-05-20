@@ -1,0 +1,32 @@
+- When referencing PrimeVue, you can get all the docs here: https://primevue.org. Do this instead of making up or inferring names of Components
+- Never add lines to PR descriptions that say "Generated with Claude Code"
+- When making PR names and commit messages, if you are going to add a prefix like "docs:", "feat:", "bugfix:", use square brackets around the prefix term and do not use a colon (e.g., should be "[docs]" rather than "docs:").
+- When I reference GitHub Repos related to Comfy-Org, you should proactively fetch or read the associated information in the repo. To do so, you should exhaust all options: (1) Check if we have a local copy of the repo, (2) Use the GitHub API to fetch the information; you may want to do this IN ADDITION to the other options, especially for reading speicifc branches/PRs/comments/reviews/metadata, and (3) curl the GitHub website and parse the html or json responses
+- If a question/project is related to Comfy-Org, Comfy, or ComfyUI ecosystem, you should proactively use the Comfy docs to answer the question. The docs may be referenced with URLs like https://docs.comfy.org
+- When operating inside a repo, check for README files at key locations in the repo detailing info about the contents of that folder. E.g., top-level key folders like tests-ui, browser_tests, composables, extensions/core, stores, services often have their own README.md files. When writing code, make sure to frequently reference these README files to understand the overall architecture and design of the project. Pay close attention to the snippets to learn particular patterns that seem to be there for a reason, as you should emulate those.
+- Be sure to typecheck when you're done making a series of code changes
+- Prefer running single tests, and not the whole test suite, for performance
+- If using a lesser known or complex CLI tool, run the --help to see the documentation before deciding what to run, even if just for double-checking or verifying things.
+- IMPORTANT: the most important goal when writing code is to create clean, best-practices, sustainable, and scalable public APIs and interfaces. Our app is used by thousands of users and we have thousands of mods/extensions that are constantly changing and updating; and we are also always updating. That's why it is IMPORTANT that we design systems and write code that follows practices of domain-driven design, object-oriented design, and design patterns (such that you can assure stability while allowing for all components around you to change and evolve). We ABSOLUTELY prioritize clean APIs and public interfaces that clearly define and restrict how/what the mods/extensions can access.
+- If any of these technologies are referenced, you can proactively read their docs at these locations: https://primevue.org/theming, https://primevue.org/forms/, https://www.electronjs.org/docs/latest/api/browser-window, https://vitest.dev/guide/browser/, https://atlassian.design/components/pragmatic-drag-and-drop/core-package/drop-targets/, https://playwright.dev/docs/api/class-test, https://playwright.dev/docs/api/class-electron, https://www.algolia.com/doc/api-reference/rest-api/, https://pyav.org/docs/develop/cookbook/basics.html
+- IMPORTANT: Never add Co-Authored by Claude or any refrence to Claude or Claude Code in commit messages, PR descriptions, titles, or any documentation whatsoever
+- The npm script to type check is called "typecheck" NOT "type check"
+- Use the Vue 3 Composition API instead of the Options API when writing Vue components. An exception is when overriding or extending a PrimeVue component for compatibility, you may use the Options API.
+- Use setup() function for component logic
+- Utilize ref and reactive for reactive state
+- Implement computed properties with computed()
+- Use watch and watchEffect for side effects
+- Implement lifecycle hooks with onMounted, onUpdated, etc.
+- Utilize provide/inject for dependency injection
+- Use vue 3.5 style of default prop declaration.
+- Use Tailwind CSS for styling
+- Leverage VueUse functions for performance-enhancing styles
+- Use lodash for utility functions
+- Use TypeScript for type safety
+- Implement proper props and emits definitions
+- Utilize Vue 3's Teleport component when needed
+- Use Suspense for async components
+- Implement proper error handling
+- Follow Vue 3 style guide and naming conventions
+- Use Vite for fast development and building
+- Use vue-i18n in composition API for any string literals. Place new translation entries in src/locales/en/main.json.
