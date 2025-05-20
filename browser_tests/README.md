@@ -31,7 +31,7 @@ If you are running Playwright tests in parallel or running the same test multipl
 
 ## Running Tests
 
-There are two ways to run the tests:
+There are multiple ways to run the tests:
 
 1. **Headless mode with report generation:**
    ```bash
@@ -67,6 +67,107 @@ Browser tests in this project follow a specific organization pattern:
 
 - **Utilities**: Located in `utils/` - Common utility functions
   - `litegraphUtils.ts` - Utilities for working with LiteGraph nodes
+
+## Writing Effective Tests
+
+When writing new tests, follow these patterns:
+
+### Test Structure
+
+```typescript
+// Import the test fixture
+import { comfyPageFixture as test } from '../fixtures/ComfyPage';
+
+test.describe('Feature Name', () => {
+  // Set up test environment if needed
+  test.beforeEach(async ({ comfyPage }) => {
+    // Common setup
+  });
+
+  test('should do something specific', async ({ comfyPage }) => {
+    // Test implementation
+  });
+});
+```
+
+### Leverage Existing Fixtures and Helpers
+
+Always check for existing helpers and fixtures before implementing new ones:
+
+- **ComfyPage**: Main fixture with methods for canvas interaction and node management
+- **ComfyMouse**: Helper for precise mouse operations on the canvas
+- **Helpers**: Check `browser_tests/helpers/` for specialized helpers like:
+  - `actionbar.ts`: Interact with the action bar
+  - `manageGroupNode.ts`: Group node management operations
+  - `templates.ts`: Template workflows operations
+- **Component Fixtures**: Check `browser_tests/fixtures/components/` for UI component helpers
+- **Utility Functions**: Check `browser_tests/utils/` and `browser_tests/fixtures/utils/` for shared utilities
+
+Most common testing needs are already addressed by these helpers, which will make your tests more consistent and reliable.
+
+### Key Testing Patterns
+
+1. **Focus elements explicitly**:
+   Canvas-based elements often need explicit focus before interaction:
+   ```typescript
+   // Click the canvas first to focus it before pressing keys
+   await comfyPage.canvas.click();
+   await comfyPage.page.keyboard.press('a');
+   ```
+
+2. **Mark canvas as dirty if needed**:
+   Some interactions need explicit canvas updates:
+   ```typescript
+   // After programmatically changing node state, mark canvas dirty
+   await comfyPage.page.evaluate(() => {
+     window['app'].graph.setDirtyCanvas(true, true);
+   });
+   ```
+
+3. **Use node references over coordinates**: 
+   Node references from `fixtures/utils/litegraphUtils.ts` provide stable ways to interact with nodes:
+   ```typescript
+   // Prefer this:
+   const node = await comfyPage.getNodeRefsByType('LoadImage')[0];
+   await node.click('title');
+   
+   // Over this:
+   await comfyPage.canvas.click({ position: { x: 100, y: 100 } });
+   ```
+
+4. **Wait for canvas to render after UI interactions**:
+   ```typescript
+   await comfyPage.nextFrame();
+   ```
+
+5. **Clean up persistent server state**:
+   While most state is reset between tests, anything stored on the server persists:
+   ```typescript
+   // Reset settings that affect other tests (these are stored on server)
+   await comfyPage.setSetting('Comfy.ColorPalette', 'dark');
+   await comfyPage.setSetting('Comfy.NodeBadge.NodeIdBadgeMode', 'None');
+   
+   // Clean up uploaded files if needed
+   await comfyPage.request.delete(`${comfyPage.url}/api/delete/image.png`);
+   ```
+
+6. **Prefer functional assertions over screenshots**:
+   Use screenshots only when visual verification is necessary:
+   ```typescript
+   // Prefer this:
+   expect(await node.isPinned()).toBe(true);
+   expect(await node.getProperty('title')).toBe('Expected Title');
+   
+   // Over this - only use when needed:
+   await expect(comfyPage.canvas).toHaveScreenshot('state.png');
+   ```
+
+7. **Use minimal test workflows**:
+   When creating test workflows, keep them as minimal as possible:
+   ```typescript
+   // Include only the components needed for the test
+   await comfyPage.loadWorkflow('single_ksampler');
+   ```
 
 ## Common Patterns and Utilities
 
@@ -163,29 +264,21 @@ await expect(node).toBeCollapsed()
 - **Test Isolation**: Tests run in parallel; avoid dependencies between tests
 - **Screenshots vary**: Ensure your OS and browser match the reference environment (Linux)
 
-### Missing Node Elements
-
-If nodes or widgets aren't found:
-1. Ensure the workflow is loaded and rendered
-2. Verify node types and widget indices
-3. Inspect the ComfyUI backend logs for errors
-
-### Canvas State Not Reset
-
-The tests modify ComfyUI state. To reset between test runs:
-1. Stop ComfyUI
-2. Delete `ComfyUI/temp`
-3. Delete `ComfyUI/user` if needed
-4. Restart ComfyUI with `--multi-user` flag
-
 ## Screenshot Expectations
 
 Due to variations in system font rendering, screenshot expectations are platform-specific. Please note:
 
-- We maintain Linux screenshot expectations as our GitHub Action runner operates in a Linux environment.
-- To set new test expectations:
-  1. Create a pull request from a `Comfy-Org/ComfyUI_frontend` branch.
-  2. Add the `New Browser Test Expectation` tag to your pull request.
-  3. This will trigger a GitHub action to update the screenshot expectations automatically.
+- **DO NOT commit local screenshot expectations** to the repository
+- We maintain Linux screenshot expectations as our GitHub Action runner operates in a Linux environment
+- While developing, you can generate local screenshots for your tests, but these will differ from CI-generated ones
+
+To set new test expectations for PR:
+
+1. Write your test with screenshot assertions using `toHaveScreenshot(filename)`
+2. Create a pull request from a `Comfy-Org/ComfyUI_frontend` branch
+3. Add the `New Browser Test Expectation` tag to your pull request
+4. The GitHub CI will automatically generate and commit the reference screenshots
+
+This approach ensures consistent screenshot expectations across all PRs and avoids issues with platform-specific rendering.
 
 > **Note:** If you're making a pull request from a forked repository, the GitHub action won't be able to commit updated screenshot expectations directly to your PR branch.
