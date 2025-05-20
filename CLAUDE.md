@@ -1,10 +1,12 @@
+
+- Be sure to run unit tests, component tests, browser tests then typecheck, lint, format (with prettier) when you're done making a series of code changes. You can find the scripts for all these things in the package.json.
 - When referencing PrimeVue, you can get all the docs here: https://primevue.org. Do this instead of making up or inferring names of Components
 - Never add lines to PR descriptions that say "Generated with Claude Code"
 - When making PR names and commit messages, if you are going to add a prefix like "docs:", "feat:", "bugfix:", use square brackets around the prefix term and do not use a colon (e.g., should be "[docs]" rather than "docs:").
 - When I reference GitHub Repos related to Comfy-Org, you should proactively fetch or read the associated information in the repo. To do so, you should exhaust all options: (1) Check if we have a local copy of the repo, (2) Use the GitHub API to fetch the information; you may want to do this IN ADDITION to the other options, especially for reading speicifc branches/PRs/comments/reviews/metadata, and (3) curl the GitHub website and parse the html or json responses
+- For information about ComfyUI, ComfyUI_frontend, or ComfyUI-Manager, you can web search or download these wikis: https://deepwiki.com/Comfy-Org/ComfyUI-Manager, https://deepwiki.com/Comfy-Org/ComfyUI_frontend/1-overview, https://deepwiki.com/comfyanonymous/ComfyUI/2-core-architecture
 - If a question/project is related to Comfy-Org, Comfy, or ComfyUI ecosystem, you should proactively use the Comfy docs to answer the question. The docs may be referenced with URLs like https://docs.comfy.org
 - When operating inside a repo, check for README files at key locations in the repo detailing info about the contents of that folder. E.g., top-level key folders like tests-ui, browser_tests, composables, extensions/core, stores, services often have their own README.md files. When writing code, make sure to frequently reference these README files to understand the overall architecture and design of the project. Pay close attention to the snippets to learn particular patterns that seem to be there for a reason, as you should emulate those.
-- Be sure to typecheck when you're done making a series of code changes
 - Prefer running single tests, and not the whole test suite, for performance
 - If using a lesser known or complex CLI tool, run the --help to see the documentation before deciding what to run, even if just for double-checking or verifying things.
 - IMPORTANT: the most important goal when writing code is to create clean, best-practices, sustainable, and scalable public APIs and interfaces. Our app is used by thousands of users and we have thousands of mods/extensions that are constantly changing and updating; and we are also always updating. That's why it is IMPORTANT that we design systems and write code that follows practices of domain-driven design, object-oriented design, and design patterns (such that you can assure stability while allowing for all components around you to change and evolve). We ABSOLUTELY prioritize clean APIs and public interfaces that clearly define and restrict how/what the mods/extensions can access.
@@ -18,7 +20,7 @@
 - Use watch and watchEffect for side effects
 - Implement lifecycle hooks with onMounted, onUpdated, etc.
 - Utilize provide/inject for dependency injection
-- Use vue 3.5 style of default prop declaration.
+- Use vue 3.5 style of default prop declaration. Do not define a `props` variable; instead, destructure props. Since vue 3.5, destructuring props does not strip them of reactivity.
 - Use Tailwind CSS for styling
 - Leverage VueUse functions for performance-enhancing styles
 - Use lodash for utility functions

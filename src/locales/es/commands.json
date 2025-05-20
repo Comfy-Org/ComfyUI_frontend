@@ -71,9 +71,6 @@
   "Comfy_Canvas_ToggleSelected_Pin": {
     "label": "Anclar/Desanclar elementos seleccionados"
   },
-  "Comfy_MaskEditor_OpenMaskEditor": {
-    "label": "Abrir editor de máscara para el nodo seleccionado"
-  },
   "Comfy_Canvas_ZoomIn": {
     "label": "Acercar"
   },
@@ -142,6 +139,9 @@
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "Alternar diálogo de progreso del administrador"
+  },
+  "Comfy_MaskEditor_OpenMaskEditor": {
+    "label": "Abrir editor de máscara para el nodo seleccionado"
   },
   "Comfy_NewBlankWorkflow": {
     "label": "Nuevo flujo de trabajo en blanco"
