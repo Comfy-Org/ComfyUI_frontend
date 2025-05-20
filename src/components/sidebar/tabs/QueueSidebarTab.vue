@@ -92,7 +92,6 @@
 </template>
 
 <script setup lang="ts">
-import { truncate } from 'lodash'
 import Button from 'primevue/button'
 import ConfirmPopup from 'primevue/confirmpopup'
 import ContextMenu from 'primevue/contextmenu'
@@ -108,7 +107,6 @@ import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import { ComfyNode } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useCommandStore } from '@/stores/commandStore'
 import {
@@ -117,7 +115,6 @@ import {
   useQueueStore
 } from '@/stores/queueStore'
 import { useSettingStore } from '@/stores/settingStore'
-import { getPathDetails } from '@/utils/formatUtil'
 
 import SidebarTabTemplate from './SidebarTabTemplate.vue'
 import ResultGallery from './queue/ResultGallery.vue'
@@ -224,29 +221,13 @@ const menuItems = computed<MenuItem[]>(() => [
     visible: !!menuTargetNode.value
   },
   {
-    label: t('Set as background'),
+    label: t('g.setAsBackground'),
     icon: 'pi pi-image',
     command: () => {
       const url = menuTargetTask.value?.previewOutput?.url
-      const filepath = menuTargetTask.value?.previewOutput?.filename
-      if (!url || !filepath) return
-
-      const { forkCurrentColorPalette, addCustomColorPalette } =
-        useColorPaletteService()
-
-      const palettePatch = {
-        colors: {
-          comfy_base: { 'bg-img': `url('${url}') no-repeat center /cover` },
-          litegraph_base: { CLEAR_BACKGROUND_COLOR: 'transparent' }
-        }
+      if (url) {
+        void settingStore.set('Comfy.Canvas.BackgroundImage', url)
       }
-
-      const { filename } = getPathDetails(filepath)
-      const forkedPalette = forkCurrentColorPalette(palettePatch, {
-        name: `${t('g.customBackground')} - ${truncate(filename, { length: 32 })}`
-      })
-
-      addCustomColorPalette(forkedPalette)
     }
   }
 ])
