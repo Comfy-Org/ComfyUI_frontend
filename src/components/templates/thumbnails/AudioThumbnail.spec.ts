@@ -3,7 +3,6 @@ import { describe, expect, it, vi } from 'vitest'
 
 import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue'
 
-// Mock the BaseThumbnail component
 vi.mock('@/components/templates/thumbnails/BaseThumbnail.vue', () => ({
   default: {
     name: 'BaseThumbnail',

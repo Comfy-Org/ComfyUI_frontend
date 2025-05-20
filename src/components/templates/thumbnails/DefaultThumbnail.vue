@@ -22,7 +22,7 @@
 <script setup lang="ts">
 import BaseThumbnail from '@/components/templates/thumbnails/BaseThumbnail.vue'
 
-const props = defineProps<{
+const { src, isVideo } = defineProps<{
   src: string
   alt: string
   hoverZoom: number
@@ -30,7 +30,5 @@ const props = defineProps<{
   isVideo?: boolean
 }>()
 
-// Determine if this is a video type (provided or .webp extension)
-const isVideoType =
-  props.isVideo ?? (props.src?.toLowerCase().endsWith('.webp') || false)
+const isVideoType = isVideo ?? (src?.toLowerCase().endsWith('.webp') || false)
 </script>

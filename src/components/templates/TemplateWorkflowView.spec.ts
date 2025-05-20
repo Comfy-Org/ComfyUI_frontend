@@ -4,7 +4,6 @@ import { describe, expect, it, vi } from 'vitest'
 import TemplateWorkflowView from '@/components/templates/TemplateWorkflowView.vue'
 import { TemplateInfo } from '@/types/workflowTemplateTypes'
 
-// Mock the DataView component
 vi.mock('primevue/dataview', () => ({
   default: {
     name: 'DataView',
@@ -20,7 +19,6 @@ vi.mock('primevue/dataview', () => ({
   }
 }))
 
-// Mock the SelectButton component
 vi.mock('primevue/selectbutton', () => ({
   default: {
     name: 'SelectButton',
@@ -30,7 +28,6 @@ vi.mock('primevue/selectbutton', () => ({
   }
 }))
 
-// Mock the TemplateWorkflowCard component
 vi.mock('@/components/templates/TemplateWorkflowCard.vue', () => ({
   default: {
     template: `
@@ -48,7 +45,6 @@ vi.mock('@/components/templates/TemplateWorkflowCard.vue', () => ({
   }
 }))
 
-// Mock the TemplateWorkflowList component
 vi.mock('@/components/templates/TemplateWorkflowList.vue', () => ({
   default: {
     template: '<div class="mock-template-list"></div>',
@@ -57,7 +53,6 @@ vi.mock('@/components/templates/TemplateWorkflowList.vue', () => ({
   }
 }))
 
-// Mock the vueuse/core composable
 vi.mock('@vueuse/core', () => ({
   useLocalStorage: () => 'grid'
 }))
