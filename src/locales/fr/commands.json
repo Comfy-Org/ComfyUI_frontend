@@ -71,6 +71,9 @@
   "Comfy_Canvas_ToggleSelected_Pin": {
     "label": "Épingler/Désépingler les éléments sélectionnés"
   },
+  "Comfy_MaskEditor_OpenMaskEditor": {
+    "label": "Ouvrir l'éditeur de masque pour le nœud sélectionné"
+  },
   "Comfy_Canvas_ZoomIn": {
     "label": "Zoom avant"
   },
