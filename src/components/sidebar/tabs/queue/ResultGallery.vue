@@ -142,4 +142,15 @@ img.galleria-image {
   /* Set z-index so the close button doesn't get hidden behind the image when image is large */
   z-index: 1;
 }
+
+/* Mobile/tablet specific fixes */
+@media screen and (max-width: 768px) {
+  .p-galleria-prev-button,
+  .p-galleria-next-button {
+    z-index: 2;
+    opacity: 0.8 !important;
+    background-color: rgba(0, 0, 0, 0.3) !important;
+    border-radius: 50% !important;
+  }
+}
 </style>
