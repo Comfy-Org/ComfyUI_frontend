@@ -248,6 +248,7 @@
     "all": "Tout",
     "amount": "Quantité",
     "apply": "Appliquer",
+    "audioFailedToLoad": "Échec du chargement de l'audio",
     "back": "Retour",
     "cancel": "Annuler",
     "capture": "capture",
