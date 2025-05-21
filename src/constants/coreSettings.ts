@@ -568,6 +568,14 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.3.42'
   },
   {
+    id: 'Comfy.Graph.RenderConnectionsBorder',
+    category: ['LiteGraph', 'Link', 'renderConnectionsBorder'],
+    name: 'Show link connection stroke',
+    type: 'boolean',
+    defaultValue: true
+    // versionAdded: '1.3.42'
+  },
+  {
     id: 'Comfy.DOMClippingEnabled',
     category: ['LiteGraph', 'Node', 'DOMClippingEnabled'],
     name: 'Enable DOM element clipping (enabling may reduce performance)',
