@@ -148,9 +148,6 @@ img.galleria-image {
   .p-galleria-prev-button,
   .p-galleria-next-button {
     z-index: 2;
-    opacity: 0.8 !important;
-    background-color: rgba(0, 0, 0, 0.3) !important;
-    border-radius: 50% !important;
   }
 }
 </style>
