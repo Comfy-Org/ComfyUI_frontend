@@ -38,6 +38,7 @@ import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useWidgetStore } from '@/stores/widgetStore'
+import { useWorkflowStore } from '@/stores/workflowStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
   isImageNode,
@@ -879,8 +880,10 @@ export const useLitegraphService = () => {
       options
     )
 
+    const graph = useWorkflowStore().activeSubgraph ?? app.graph
+
     // @ts-expect-error fixme ts strict error
-    app.graph.add(node)
+    graph.add(node)
     // @ts-expect-error fixme ts strict error
     return node
   }
