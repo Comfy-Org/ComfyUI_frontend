@@ -118,7 +118,9 @@
     "unknownError": "Unknown error",
     "title": "Title",
     "edit": "Edit",
-    "copy": "Copy"
+    "copy": "Copy",
+    "imageUrl": "Image URL",
+    "clear": "Clear"
   },
   "manager": {
     "title": "Custom Nodes Manager",

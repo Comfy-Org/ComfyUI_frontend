@@ -27,7 +27,7 @@
   },
   "Comfy_Canvas_BackgroundImage": {
     "name": "Canvas background image",
-    "tooltip": "Image URL for the canvas background. You can right-click an image in the outputs panel and select \"Set as Background\" to use it."
+    "tooltip": "Image URL for the canvas background. You can right-click an image in the outputs panel and select \"Set as Background\" to use it, or upload your own image using the upload button."
   },
   "Comfy_Canvas_SelectionToolbox": {
     "name": "Show selection toolbox"

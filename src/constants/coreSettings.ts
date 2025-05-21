@@ -830,15 +830,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Canvas.BackgroundImage',
     category: ['Appearance', 'Canvas', 'Background'],
     name: 'Canvas background image',
-    type: 'text',
+    type: 'backgroundImage',
     tooltip:
-      'Image URL for the canvas background. You can right-click an image in the outputs panel and select "Set as Background" to use it.',
+      'Image URL for the canvas background. You can right-click an image in the outputs panel and select "Set as Background" to use it, or upload your own image using the upload button.',
     defaultValue: '',
     versionAdded: '1.20.4',
-    attrs: {
-      inputmode: 'url',
-      placeholder: 'https://example.com/image.png'
-    }
+    versionModified: '1.20.5'
   },
   {
     id: 'LiteGraph.Pointer.TrackpadGestures',
