@@ -1001,6 +1001,7 @@
   },
   "settingsCategories": {
     "3D": "3D",
+    "API Nodes": "Nœuds API",
     "About": "À Propos",
     "Appearance": "Apparence",
     "BrushAdjustment": "Ajustement de Brosse",

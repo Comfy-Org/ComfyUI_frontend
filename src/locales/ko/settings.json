@@ -193,6 +193,9 @@
       "Show all": "모두 표시"
     }
   },
+  "Comfy_NodeBadge_ShowApiPricing": {
+    "name": "API 노드 가격 배지 표시"
+  },
   "Comfy_NodeSearchBoxImpl": {
     "name": "노드 검색 상자 구현",
     "options": {

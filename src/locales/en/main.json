@@ -886,7 +886,8 @@
     "3D": "3D",
     "Light": "Light",
     "User": "User",
-    "Credits": "Credits"
+    "Credits": "Credits",
+    "API Nodes": "API Nodes"
   },
   "serverConfigItems": {
     "listen": {

@@ -1001,6 +1001,7 @@
   },
   "settingsCategories": {
     "3D": "3D",
+    "API Nodes": "Nodos API",
     "About": "Acerca de",
     "Appearance": "Apariencia",
     "BrushAdjustment": "Ajuste de Pincel",

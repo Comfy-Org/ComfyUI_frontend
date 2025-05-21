@@ -1001,6 +1001,7 @@
   },
   "settingsCategories": {
     "3D": "3D",
+    "API Nodes": "API 节点",
     "About": "关于",
     "Appearance": "外观",
     "BrushAdjustment": "画笔调整",

@@ -193,6 +193,9 @@
       "Show all": "显示全部"
     }
   },
+  "Comfy_NodeBadge_ShowApiPricing": {
+    "name": "显示 API 节点定价徽章"
+  },
   "Comfy_NodeSearchBoxImpl": {
     "name": "节点搜索框",
     "options": {

@@ -6,6 +6,7 @@ import {
 import _ from 'lodash'
 import { computed, onMounted, watch } from 'vue'
 
+import { useNodePricing } from '@/composables/node/useNodePricing'
 import { app } from '@/scripts/app'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
@@ -42,9 +43,21 @@ export const useNodeBadge = () => {
       ) as NodeBadgeMode
   )
 
-  watch([nodeSourceBadgeMode, nodeIdBadgeMode, nodeLifeCycleBadgeMode], () => {
-    app.graph?.setDirtyCanvas(true, true)
-  })
+  const showApiPricingBadge = computed(() =>
+    settingStore.get('Comfy.NodeBadge.ShowApiPricing')
+  )
+
+  watch(
+    [
+      nodeSourceBadgeMode,
+      nodeIdBadgeMode,
+      nodeLifeCycleBadgeMode,
+      showApiPricingBadge
+    ],
+    () => {
+      app.graph?.setDirtyCanvas(true, true)
+    }
+  )
 
   const nodeDefStore = useNodeDefStore()
   function badgeTextVisible(
@@ -58,6 +71,8 @@ export const useNodeBadge = () => {
   }
 
   onMounted(() => {
+    const nodePricing = useNodePricing()
+
     extensionStore.registerExtension({
       name: 'Comfy.NodeBadge',
       nodeCreated(node: LGraphNode) {
@@ -95,13 +110,15 @@ export const useNodeBadge = () => {
 
         node.badges.push(() => badge.value)
 
-        if (node.constructor.nodeData?.api_node) {
+        if (node.constructor.nodeData?.api_node && showApiPricingBadge.value) {
+          const price = nodePricing.getNodeDisplayPrice(node)
+          // Always add the badge for API nodes, with or without price text
           const creditsBadge = computed(() => {
             // Use dynamic background color based on the theme
             const isLightTheme =
               colorPaletteStore.completedActivePalette.light_theme
             return new LGraphBadge({
-              text: '',
+              text: price,
               iconOptions: {
                 unicode: '\ue96b',
                 fontFamily: 'PrimeIcons',

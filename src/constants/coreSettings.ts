@@ -323,6 +323,14 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: NodeBadgeMode.ShowAll
   },
   {
+    id: 'Comfy.NodeBadge.ShowApiPricing',
+    category: ['Comfy', 'API Nodes'],
+    name: 'Show API node pricing badge',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.20.3'
+  },
+  {
     id: 'Comfy.ConfirmClear',
     category: ['Comfy', 'Workflow', 'ConfirmClear'],
     name: 'Require confirmation when clearing workflow',
