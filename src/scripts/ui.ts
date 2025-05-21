@@ -1,3 +1,4 @@
+import { WORKFLOW_ACCEPT_STRING } from '@/constants/supportedWorkflowFormats'
 import { type StatusWsMessageStatus, TaskItem } from '@/schemas/apiSchema'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -386,7 +387,7 @@ export class ComfyUI {
     const fileInput = $el('input', {
       id: 'comfy-file-input',
       type: 'file',
-      accept: '.json,image/png,.latent,.safetensors,image/webp,audio/flac',
+      accept: WORKFLOW_ACCEPT_STRING,
       style: { display: 'none' },
       parent: document.body,
       onchange: async () => {
