@@ -93,8 +93,13 @@ export const useColorPaletteService = () => {
     // Sets the colors of the LiteGraph objects
     app.canvas.node_title_color = palette.NODE_TITLE_COLOR
     app.canvas.default_link_color = palette.LINK_COLOR
-    app.canvas.background_image = palette.BACKGROUND_IMAGE
-    app.canvas.clear_background_color = palette.CLEAR_BACKGROUND_COLOR
+    const backgroundImage = settingStore.get('Comfy.Canvas.BackgroundImage')
+    if (backgroundImage) {
+      app.canvas.clear_background_color = 'transparent'
+    } else {
+      app.canvas.background_image = palette.BACKGROUND_IMAGE
+      app.canvas.clear_background_color = palette.CLEAR_BACKGROUND_COLOR
+    }
     app.canvas._pattern = undefined
 
     for (const [key, value] of Object.entries(palette)) {
@@ -125,6 +130,13 @@ export const useColorPaletteService = () => {
       const rootStyle = document.documentElement.style
       for (const [key, value] of Object.entries(comfyColorPalette)) {
         rootStyle.setProperty('--' + key, value)
+      }
+      const backgroundImage = settingStore.get('Comfy.Canvas.BackgroundImage')
+      if (backgroundImage) {
+        rootStyle.setProperty(
+          '--bg-img',
+          `url('${backgroundImage}') no-repeat center /cover`
+        )
       }
     }
   }

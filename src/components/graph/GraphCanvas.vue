@@ -168,6 +168,20 @@ watch(
     await colorPaletteService.loadColorPalette(currentPaletteId)
   }
 )
+
+watch(
+  () => settingStore.get('Comfy.Canvas.BackgroundImage'),
+  async () => {
+    if (!canvasStore.canvas) return
+    const currentPaletteId = colorPaletteStore.activePaletteId
+    if (!currentPaletteId) return
+
+    // Reload color palette to apply background image
+    await colorPaletteService.loadColorPalette(currentPaletteId)
+    // Mark background canvas as dirty
+    canvasStore.canvas.setDirty(false, true)
+  }
+)
 watch(
   () => colorPaletteStore.activePaletteId,
   async (newValue) => {

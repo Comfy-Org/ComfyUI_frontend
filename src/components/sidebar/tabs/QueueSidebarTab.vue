@@ -219,6 +219,16 @@ const menuItems = computed<MenuItem[]>(() => [
       useLitegraphService().goToNode(menuTargetNode.value.id)
     },
     visible: !!menuTargetNode.value
+  },
+  {
+    label: t('g.setAsBackground'),
+    icon: 'pi pi-image',
+    command: () => {
+      const url = menuTargetTask.value?.previewOutput?.url
+      if (url) {
+        void settingStore.set('Comfy.Canvas.BackgroundImage', url)
+      }
+    }
   }
 ])
 

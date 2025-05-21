@@ -25,6 +25,10 @@
     },
     "tooltip": "Choisissez l'option personnalisée pour masquer la barre de titre du système"
   },
+  "Comfy_Canvas_BackgroundImage": {
+    "name": "Image de fond du canevas",
+    "tooltip": "URL de l'image pour le fond du canevas. Vous pouvez faire un clic droit sur une image dans le panneau de sortie et sélectionner « Définir comme fond » pour l'utiliser."
+  },
   "Comfy_Canvas_SelectionToolbox": {
     "name": "Afficher la boîte à outils de sélection"
   },

@@ -25,6 +25,10 @@
     },
     "tooltip": "시스템 제목 표시 줄을 숨기려면 사용자 정의 옵션을 선택하세요"
   },
+  "Comfy_Canvas_BackgroundImage": {
+    "name": "캔버스 배경 이미지",
+    "tooltip": "캔버스 배경에 사용할 이미지 URL입니다. 출력 패널에서 이미지를 마우스 오른쪽 버튼으로 클릭한 후 \"배경으로 설정\"을 선택해 사용할 수 있습니다."
+  },
   "Comfy_Canvas_SelectionToolbox": {
     "name": "선택 도구 상자 표시"
   },
