@@ -115,4 +115,42 @@ describe('TaskItemImpl', () => {
     expect(output.isVideo).toBe(true)
     expect(output.isImage).toBe(false)
   })
+
+  describe('audio format detection', () => {
+    const audioFormats = [
+      { extension: 'mp3', mimeType: 'audio/mpeg' },
+      { extension: 'wav', mimeType: 'audio/wav' },
+      { extension: 'ogg', mimeType: 'audio/ogg' },
+      { extension: 'flac', mimeType: 'audio/flac' }
+    ]
+
+    audioFormats.forEach(({ extension, mimeType }) => {
+      it(`should recognize ${extension} audio`, () => {
+        const taskItem = new TaskItemImpl(
+          'History',
+          [0, 'prompt-id', {}, { client_id: 'client-id' }, []],
+          { status_str: 'success', messages: [], completed: true },
+          {
+            'node-1': {
+              audio: [
+                {
+                  filename: `test.${extension}`,
+                  type: 'output',
+                  subfolder: ''
+                }
+              ]
+            }
+          }
+        )
+
+        const output = taskItem.flatOutputs[0]
+
+        expect(output.htmlAudioType).toBe(mimeType)
+        expect(output.isAudio).toBe(true)
+        expect(output.isVideo).toBe(false)
+        expect(output.isImage).toBe(false)
+        expect(output.supportsPreview).toBe(true)
+      })
+    })
+  })
 })

@@ -12,6 +12,7 @@
       :alt="result.filename"
     />
     <ResultVideo v-else-if="result.isVideo" :result="result" />
+    <ResultAudio v-else-if="result.isAudio" :result="result" />
     <div v-else class="task-result-preview">
       <i class="pi pi-file" />
       <span>{{ result.mediaType }}</span>
@@ -26,6 +27,7 @@ import ComfyImage from '@/components/common/ComfyImage.vue'
 import { ResultItemImpl } from '@/stores/queueStore'
 import { useSettingStore } from '@/stores/settingStore'
 
+import ResultAudio from './ResultAudio.vue'
 import ResultVideo from './ResultVideo.vue'
 
 const props = defineProps<{
