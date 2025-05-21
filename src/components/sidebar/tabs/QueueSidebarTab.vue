@@ -197,40 +197,46 @@ const confirmRemoveAll = (event: Event) => {
 const menu = ref<InstanceType<typeof ContextMenu> | null>(null)
 const menuTargetTask = ref<TaskItemImpl | null>(null)
 const menuTargetNode = ref<ComfyNode | null>(null)
-const menuItems = computed<MenuItem[]>(() => [
-  {
-    label: t('g.delete'),
-    icon: 'pi pi-trash',
-    command: () => menuTargetTask.value && removeTask(menuTargetTask.value),
-    disabled: isExpanded.value || isInFolderView.value
-  },
-  {
-    label: t('g.loadWorkflow'),
-    icon: 'pi pi-file-export',
-    command: () => menuTargetTask.value?.loadWorkflow(app),
-    disabled: !menuTargetTask.value?.workflow
-  },
-  {
-    label: t('g.goToNode'),
-    icon: 'pi pi-arrow-circle-right',
-    command: () => {
-      if (!menuTargetNode.value) return
-
-      useLitegraphService().goToNode(menuTargetNode.value.id)
+const menuItems = computed<MenuItem[]>(() => {
+  const items: MenuItem[] = [
+    {
+      label: t('g.delete'),
+      icon: 'pi pi-trash',
+      command: () => menuTargetTask.value && removeTask(menuTargetTask.value),
+      disabled: isExpanded.value || isInFolderView.value
     },
-    visible: !!menuTargetNode.value
-  },
-  {
-    label: t('g.setAsBackground'),
-    icon: 'pi pi-image',
-    command: () => {
-      const url = menuTargetTask.value?.previewOutput?.url
-      if (url) {
-        void settingStore.set('Comfy.Canvas.BackgroundImage', url)
-      }
+    {
+      label: t('g.loadWorkflow'),
+      icon: 'pi pi-file-export',
+      command: () => menuTargetTask.value?.loadWorkflow(app),
+      disabled: !menuTargetTask.value?.workflow
+    },
+    {
+      label: t('g.goToNode'),
+      icon: 'pi pi-arrow-circle-right',
+      command: () => {
+        if (!menuTargetNode.value) return
+        useLitegraphService().goToNode(menuTargetNode.value.id)
+      },
+      visible: !!menuTargetNode.value
     }
+  ]
+
+  if (menuTargetTask.value?.previewOutput?.mediaType === 'images') {
+    items.push({
+      label: t('g.setAsBackground'),
+      icon: 'pi pi-image',
+      command: () => {
+        const url = menuTargetTask.value?.previewOutput?.url
+        if (url) {
+          void settingStore.set('Comfy.Canvas.BackgroundImage', url)
+        }
+      }
+    })
   }
-])
+
+  return items
+})
 
 const handleContextMenu = ({
   task,
