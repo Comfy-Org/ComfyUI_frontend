@@ -3397,6 +3397,85 @@
       }
     }
   },
+  "Load3D": {
+    "display_name": "Charger 3D",
+    "inputs": {
+      "clear": {
+      },
+      "height": {
+        "name": "hauteur"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model_file": {
+        "name": "fichier_modèle"
+      },
+      "upload 3d model": {
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image"
+      },
+      "1": {
+        "name": "masque"
+      },
+      "2": {
+        "name": "chemin_maillage"
+      },
+      "3": {
+        "name": "normale"
+      },
+      "4": {
+        "name": "lineart"
+      },
+      "5": {
+        "name": "info_caméra"
+      }
+    }
+  },
+  "Load3DAnimation": {
+    "display_name": "Charger 3D - Animation",
+    "inputs": {
+      "clear": {
+      },
+      "height": {
+        "name": "hauteur"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model_file": {
+        "name": "fichier_modèle"
+      },
+      "upload 3d model": {
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image"
+      },
+      "1": {
+        "name": "masque"
+      },
+      "2": {
+        "name": "chemin_maillage"
+      },
+      "3": {
+        "name": "normale"
+      },
+      "4": {
+        "name": "info_caméra"
+      }
+    }
+  },
   "LoadAudio": {
     "display_name": "ChargerAudio",
     "inputs": {

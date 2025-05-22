@@ -3397,6 +3397,85 @@
       }
     }
   },
+  "Load3D": {
+    "display_name": "3Dを読み込む",
+    "inputs": {
+      "clear": {
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "model_file": {
+        "name": "モデルファイル"
+      },
+      "upload 3d model": {
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "画像"
+      },
+      "1": {
+        "name": "マスク"
+      },
+      "2": {
+        "name": "メッシュパス"
+      },
+      "3": {
+        "name": "法線"
+      },
+      "4": {
+        "name": "線画"
+      },
+      "5": {
+        "name": "カメラ情報"
+      }
+    }
+  },
+  "Load3DAnimation": {
+    "display_name": "3D読み込み - アニメーション",
+    "inputs": {
+      "clear": {
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "model_file": {
+        "name": "モデルファイル"
+      },
+      "upload 3d model": {
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "画像"
+      },
+      "1": {
+        "name": "マスク"
+      },
+      "2": {
+        "name": "メッシュパス"
+      },
+      "3": {
+        "name": "法線"
+      },
+      "4": {
+        "name": "カメラ情報"
+      }
+    }
+  },
   "LoadAudio": {
     "display_name": "音声を読み込む",
     "inputs": {
