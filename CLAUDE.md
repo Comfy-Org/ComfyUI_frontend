@@ -1,6 +1,8 @@
 
-- Be sure to run unit tests, component tests, browser tests then typecheck, lint, format (with prettier) when you're done making a series of code changes. You can find the scripts for all these things in the package.json.
+- use npm run to see what commands are available
+- After making code changes, follow this general process: (1) Create unit tests, component tests, browser tests (if appropriate for each), (2) run unit tests, component tests, and browser tests until passing, (3) run typecheck, lint, format (with prettier) -- you can use `npm run` command to see the scripts available, (4) check if any READMEs (including nested) or documentation needs to be updated, (5) Decide whether the changes are worth adding new content to the external documentation for (or would requires changes to the external documentation) at https://docs.comfy.org, then present your suggestion
 - When referencing PrimeVue, you can get all the docs here: https://primevue.org. Do this instead of making up or inferring names of Components
+- When trying to set tailwind classes for dark theme, use "dark-theme:" prefix rather than "dark:"
 - Never add lines to PR descriptions that say "Generated with Claude Code"
 - When making PR names and commit messages, if you are going to add a prefix like "docs:", "feat:", "bugfix:", use square brackets around the prefix term and do not use a colon (e.g., should be "[docs]" rather than "docs:").
 - When I reference GitHub Repos related to Comfy-Org, you should proactively fetch or read the associated information in the repo. To do so, you should exhaust all options: (1) Check if we have a local copy of the repo, (2) Use the GitHub API to fetch the information; you may want to do this IN ADDITION to the other options, especially for reading speicifc branches/PRs/comments/reviews/metadata, and (3) curl the GitHub website and parse the html or json responses
@@ -14,6 +16,8 @@
 - IMPORTANT: Never add Co-Authored by Claude or any refrence to Claude or Claude Code in commit messages, PR descriptions, titles, or any documentation whatsoever
 - The npm script to type check is called "typecheck" NOT "type check"
 - Use the Vue 3 Composition API instead of the Options API when writing Vue components. An exception is when overriding or extending a PrimeVue component for compatibility, you may use the Options API.
+- when we are solving an issue we know the link/number for, we should add "Fixes #n" (where n is the issue number) to the PR description.
+- Never write css if you can accomplish the same thing with tailwind utility classes
 - Use setup() function for component logic
 - Utilize ref and reactive for reactive state
 - Implement computed properties with computed()
