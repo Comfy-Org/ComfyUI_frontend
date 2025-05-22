@@ -62,6 +62,14 @@ export class PreviewManager implements PreviewManagerInterface {
 
   dispose(): void {
     if (this.previewRenderer) {
+      this.previewRenderer.forceContextLoss()
+      const canvas = this.previewRenderer.domElement
+      const event = new Event('webglcontextlost', {
+        bubbles: true,
+        cancelable: true
+      })
+      canvas.dispatchEvent(event)
+
       this.previewRenderer.dispose()
     }
 
