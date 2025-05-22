@@ -1,8 +1,5 @@
 <template>
-  <div
-    v-if="workflowStore.isSubgraphActive"
-    class="fixed top-[var(--comfy-topbar-height)] left-[var(--sidebar-width)] p-2 subgraph-breadcrumb"
-  >
+  <div v-if="workflowStore.isSubgraphActive" class="p-2 subgraph-breadcrumb">
     <Breadcrumb
       class="bg-transparent"
       :home="home"

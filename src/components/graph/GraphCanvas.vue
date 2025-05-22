@@ -12,10 +12,12 @@
       <BottomPanel />
     </template>
     <template #graph-canvas-panel>
-      <SecondRowWorkflowTabs
-        v-if="workflowTabsPosition === 'Topbar (2nd-row)'"
-        class="pointer-events-auto"
-      />
+      <div class="absolute top-0 left-0 w-auto max-w-full pointer-events-auto">
+        <SecondRowWorkflowTabs
+          v-if="workflowTabsPosition === 'Topbar (2nd-row)'"
+        />
+        <SubgraphBreadcrumb />
+      </div>
       <GraphCanvasMenu v-if="canvasMenuEnabled" class="pointer-events-auto" />
     </template>
   </LiteGraphCanvasSplitterOverlay>
@@ -39,7 +41,6 @@
     </SelectionOverlay>
     <DomWidgets />
   </template>
-  <SubgraphBreadcrumb />
 </template>
 
 <script setup lang="ts">
