@@ -1249,6 +1249,9 @@ export class ComfyApp {
           // Allow widgets to run callbacks before a prompt has been queued
           // e.g. random seed before every gen
           executeWidgetsCallback(this.graph.nodes, 'beforeQueued')
+          for (const subgraph of this.graph.subgraphs.values()) {
+            executeWidgetsCallback(subgraph.nodes, 'beforeQueued')
+          }
 
           const p = await this.graphToPrompt(this.graph, { queueNodeIds })
           try {
@@ -1294,6 +1297,10 @@ export class ComfyApp {
               .filter((n) => !!n),
             'afterQueued'
           )
+          for (const subgraph of this.graph.subgraphs.values()) {
+            executeWidgetsCallback(subgraph.nodes, 'afterQueued')
+          }
+
           this.canvas.draw(true, true)
           await this.ui.queue.update()
         }
