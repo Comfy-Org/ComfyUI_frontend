@@ -1,4 +1,4 @@
-import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
+import { LiteGraph } from '@comfyorg/litegraph'
 import { LGraphNode, type NodeId } from '@comfyorg/litegraph/dist/LGraphNode'
 
 import { t } from '@/i18n'
@@ -1583,57 +1583,6 @@ export class GroupNodeHandler {
   }
 }
 
-function addConvertToGroupOptions() {
-  // @ts-expect-error fixme ts strict error
-  function addConvertOption(options, index) {
-    const selected = Object.values(app.canvas.selected_nodes ?? {})
-    const disabled =
-      selected.length < 2 ||
-      selected.find((n) => GroupNodeHandler.isGroupNode(n))
-    options.splice(index, null, {
-      content: `Convert to Group Node`,
-      disabled,
-      callback: convertSelectedNodesToGroupNode
-    })
-  }
-
-  // @ts-expect-error fixme ts strict error
-  function addManageOption(options, index) {
-    const groups = app.graph.extra?.groupNodes
-    const disabled = !groups || !Object.keys(groups).length
-    options.splice(index, null, {
-      content: `Manage Group Nodes`,
-      disabled,
-      callback: () => manageGroupNodes()
-    })
-  }
-
-  // Add to canvas
-  const getCanvasMenuOptions = LGraphCanvas.prototype.getCanvasMenuOptions
-  LGraphCanvas.prototype.getCanvasMenuOptions = function () {
-    // @ts-expect-error fixme ts strict error
-    const options = getCanvasMenuOptions.apply(this, arguments)
-    const index = options.findIndex((o) => o?.content === 'Add Group')
-    const insertAt = index === -1 ? options.length - 1 : index + 2
-    addConvertOption(options, insertAt)
-    addManageOption(options, insertAt + 1)
-    return options
-  }
-
-  // Add to nodes
-  const getNodeMenuOptions = LGraphCanvas.prototype.getNodeMenuOptions
-  LGraphCanvas.prototype.getNodeMenuOptions = function (node) {
-    // @ts-expect-error fixme ts strict error
-    const options = getNodeMenuOptions.apply(this, arguments)
-    if (!GroupNodeHandler.isGroupNode(node)) {
-      const index = options.findIndex((o) => o?.content === 'Properties')
-      const insertAt = index === -1 ? options.length - 1 : index
-      addConvertOption(options, insertAt)
-    }
-    return options
-  }
-}
-
 const replaceLegacySeparators = (nodes: ComfyNode[]): void => {
   for (const node of nodes) {
     if (typeof node.type === 'string' && node.type.startsWith('workflow/')) {
@@ -1723,9 +1672,6 @@ const ext: ComfyExtension = {
       }
     }
   ],
-  setup() {
-    addConvertToGroupOptions()
-  },
   async beforeConfigureGraph(
     graphData: ComfyWorkflowJSON,
     missingNodeTypes: string[]
