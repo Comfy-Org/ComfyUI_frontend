@@ -3417,23 +3417,29 @@
         "name": "幅"
       }
     },
-    "outputs": [
-      null,
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "画像"
+      },
+      "1": {
+        "name": "マスク"
+      },
+      "2": {
+        "name": "メッシュパス"
+      },
+      "3": {
         "name": "法線"
       },
-      {
+      "4": {
         "name": "線画"
       },
-      {
+      "5": {
         "name": "カメラ情報"
       }
-    ]
+    }
   },
   "Load3DAnimation": {
-    "display_name": "3Dを読み込む - アニメーション",
+    "display_name": "3D読み込み - アニメーション",
     "inputs": {
       "clear": {
       },
@@ -3452,17 +3458,23 @@
         "name": "幅"
       }
     },
-    "outputs": [
-      null,
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "画像"
+      },
+      "1": {
+        "name": "マスク"
+      },
+      "2": {
+        "name": "メッシュパス"
+      },
+      "3": {
         "name": "法線"
       },
-      {
+      "4": {
         "name": "カメラ情報"
       }
-    ]
+    }
   },
   "LoadAudio": {
     "display_name": "音声を読み込む",
