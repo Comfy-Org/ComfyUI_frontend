@@ -1291,7 +1291,7 @@ export class ComfyApp {
           executeWidgetsCallback(
             p.workflow.nodes
               .map((n) => this.graph.getNodeById(n.id))
-              .filter((n) => !!n) as LGraphNode[],
+              .filter((n) => !!n),
             'afterQueued'
           )
           this.canvas.draw(true, true)
