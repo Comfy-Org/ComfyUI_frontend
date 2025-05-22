@@ -106,6 +106,22 @@ export class ResultItemImpl {
     return undefined
   }
 
+  get htmlAudioType(): string | undefined {
+    if (this.isMp3) {
+      return 'audio/mpeg'
+    }
+    if (this.isWav) {
+      return 'audio/wav'
+    }
+    if (this.isOgg) {
+      return 'audio/ogg'
+    }
+    if (this.isFlac) {
+      return 'audio/flac'
+    }
+    return undefined
+  }
+
   get isGif(): boolean {
     return this.filename.endsWith('.gif')
   }
@@ -130,21 +146,55 @@ export class ResultItemImpl {
     return this.isGif || this.isWebp
   }
 
+  get isMp3(): boolean {
+    return this.filename.endsWith('.mp3')
+  }
+
+  get isWav(): boolean {
+    return this.filename.endsWith('.wav')
+  }
+
+  get isOgg(): boolean {
+    return this.filename.endsWith('.ogg')
+  }
+
+  get isFlac(): boolean {
+    return this.filename.endsWith('.flac')
+  }
+
+  get isAudioBySuffix(): boolean {
+    return this.isMp3 || this.isWav || this.isOgg || this.isFlac
+  }
+
   get isVideo(): boolean {
     const isVideoByType =
       this.mediaType === 'video' || !!this.format?.startsWith('video/')
-    return this.isVideoBySuffix || (isVideoByType && !this.isImageBySuffix)
+    return (
+      this.isVideoBySuffix ||
+      (isVideoByType && !this.isImageBySuffix && !this.isAudioBySuffix)
+    )
   }
 
   get isImage(): boolean {
     return (
       this.isImageBySuffix ||
-      (this.mediaType === 'images' && !this.isVideoBySuffix)
+      (this.mediaType === 'images' &&
+        !this.isVideoBySuffix &&
+        !this.isAudioBySuffix)
+    )
+  }
+
+  get isAudio(): boolean {
+    const isAudioByType =
+      this.mediaType === 'audio' || !!this.format?.startsWith('audio/')
+    return (
+      this.isAudioBySuffix ||
+      (isAudioByType && !this.isImageBySuffix && !this.isVideoBySuffix)
     )
   }
 
   get supportsPreview(): boolean {
-    return this.isImage || this.isVideo
+    return this.isImage || this.isVideo || this.isAudio
   }
 }
 

@@ -248,6 +248,7 @@
     "all": "全部",
     "amount": "数量",
     "apply": "应用",
+    "audioFailedToLoad": "音频加载失败",
     "back": "返回",
     "cancel": "取消",
     "capture": "捕获",

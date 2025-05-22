@@ -248,6 +248,7 @@
     "all": "すべて",
     "amount": "量",
     "apply": "適用する",
+    "audioFailedToLoad": "オーディオの読み込みに失敗しました",
     "back": "戻る",
     "cancel": "キャンセル",
     "capture": "キャプチャ",

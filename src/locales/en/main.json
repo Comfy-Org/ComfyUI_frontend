@@ -13,6 +13,7 @@
     "terminal": "Terminal",
     "logs": "Logs",
     "videoFailedToLoad": "Video failed to load",
+    "audioFailedToLoad": "Audio failed to load",
     "extensionName": "Extension Name",
     "reloadToApplyChanges": "Reload to apply changes",
     "insert": "Insert",
