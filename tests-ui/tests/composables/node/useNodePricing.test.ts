@@ -340,14 +340,14 @@ describe('useNodePricing', () => {
   })
 
   describe('dynamic pricing - VeoVideoGenerationNode', () => {
-    it('should return $5.0 for 10s duration', () => {
+    it('should return $5.00 for 10s duration', () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNode('VeoVideoGenerationNode', [
         { name: 'duration_seconds', value: '10' }
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$5.0/Run')
+      expect(price).toBe('$5.00/Run')
     })
 
     it('should return $2.50 for 5s duration', () => {
@@ -370,10 +370,10 @@ describe('useNodePricing', () => {
   })
 
   describe('dynamic pricing - LumaVideoNode', () => {
-    it('should return $2.19 for rayflash-2 4K 5s', () => {
+    it('should return $2.19 for ray-flash-2 4K 5s', () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNode('LumaVideoNode', [
-        { name: 'model', value: 'rayflash-2' },
+        { name: 'model', value: 'ray-flash-2' },
         { name: 'resolution', value: '4K' },
         { name: 'duration', value: '5s' }
       ])
@@ -394,10 +394,10 @@ describe('useNodePricing', () => {
       expect(price).toBe('$6.37/Run')
     })
 
-    it('should return $0.35 for ray-1.6 model', () => {
+    it('should return $0.35 for ray-1-6 model', () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNode('LumaVideoNode', [
-        { name: 'model', value: 'ray-1.6' },
+        { name: 'model', value: 'ray-1-6' },
         { name: 'resolution', value: '1080p' },
         { name: 'duration', value: '5s' }
       ])
@@ -418,7 +418,7 @@ describe('useNodePricing', () => {
   })
 
   describe('dynamic pricing - PixverseTextToVideoNode', () => {
-    it('should return $1.2 for 5s 1080p quality', () => {
+    it('should return range for 5s 1080p quality', () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNode('PixverseTextToVideoNode', [
         { name: 'duration', value: '5s' },
@@ -426,10 +426,12 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$1.2/Run')
+      expect(price).toBe(
+        '$0.45-1.2/Run (varies with duration, quality & motion mode)'
+      )
     })
 
-    it('should return $0.45 for 5s 540p normal quality', () => {
+    it('should return range for 5s 540p normal quality', () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNode('PixverseTextToVideoNode', [
         { name: 'duration', value: '5s' },
@@ -438,7 +440,9 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.45/Run')
+      expect(price).toBe(
+        '$0.45-1.2/Run (varies with duration, quality & motion mode)'
+      )
     })
 
     it('should return range when widgets are missing', () => {
@@ -453,24 +457,24 @@ describe('useNodePricing', () => {
   })
 
   describe('dynamic pricing - KlingDualCharacterVideoEffectNode', () => {
-    it('should return $1.40 for v2-master 5s mode', () => {
+    it('should return range for v2-master 5s mode', () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNode('KlingDualCharacterVideoEffectNode', [
         { name: 'mode', value: 'standard / 5s / v2-master' }
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$1.40/Run')
+      expect(price).toBe('$0.14-2.80/Run (varies with model, mode & duration)')
     })
 
-    it('should return $0.28 for v1-6 5s mode', () => {
+    it('should return range for v1-6 5s mode', () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNode('KlingDualCharacterVideoEffectNode', [
         { name: 'mode', value: 'standard / 5s / v1-6' }
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.28/Run')
+      expect(price).toBe('$0.14-2.80/Run (varies with model, mode & duration)')
     })
 
     it('should return range when mode widget is missing', () => {
@@ -684,14 +688,14 @@ describe('useNodePricing', () => {
         const { getRelevantWidgetNames } = useNodePricing()
 
         const widgetNames = getRelevantWidgetNames('KlingTextToVideoNode')
-        expect(widgetNames).toEqual(['mode'])
+        expect(widgetNames).toEqual(['mode', 'model_name', 'duration'])
       })
 
       it('should return correct widget names for KlingImage2VideoNode', () => {
         const { getRelevantWidgetNames } = useNodePricing()
 
         const widgetNames = getRelevantWidgetNames('KlingImage2VideoNode')
-        expect(widgetNames).toEqual(['mode', 'model_name'])
+        expect(widgetNames).toEqual(['mode', 'model_name', 'duration'])
       })
 
       it('should return correct widget names for OpenAIDalle3', () => {
