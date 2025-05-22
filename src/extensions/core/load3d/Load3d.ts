@@ -486,6 +486,14 @@ class Load3d {
   }
 
   public remove(): void {
+    this.renderer.forceContextLoss()
+    const canvas = this.renderer.domElement
+    const event = new Event('webglcontextlost', {
+      bubbles: true,
+      cancelable: true
+    })
+    canvas.dispatchEvent(event)
+
     if (this.animationFrameId !== null) {
       cancelAnimationFrame(this.animationFrameId)
     }
