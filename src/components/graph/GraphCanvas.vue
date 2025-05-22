@@ -44,7 +44,7 @@
 
 <script setup lang="ts">
 import type { LGraphNode } from '@comfyorg/litegraph'
-import { useEventListener } from '@vueuse/core'
+import { useEventListener, whenever } from '@vueuse/core'
 import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
@@ -84,6 +84,7 @@ import { useCanvasStore } from '@/stores/graphStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
+import { useWorkflowStore } from '@/stores/workflowStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
@@ -337,6 +338,16 @@ onMounted(async () => {
       await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
       await useWorkflowService().reloadCurrentWorkflow()
     }
+  )
+
+  whenever(
+    () => useCanvasStore().canvas,
+    (canvas) => {
+      useEventListener(canvas.canvas, 'litegraph:set-graph', () => {
+        useWorkflowStore().updateActiveGraph()
+      })
+    },
+    { immediate: true }
   )
 
   emit('ready')
