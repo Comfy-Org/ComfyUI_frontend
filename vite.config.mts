@@ -8,11 +8,7 @@ import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
 import type { UserConfigExport } from 'vitest/config'
 
-import {
-  addElementVnodeExportPlugin,
-  comfyAPIPlugin,
-  generateImportMapPlugin
-} from './build/plugins'
+import { comfyAPIPlugin, generateImportMapPlugin } from './build/plugins'
 
 dotenv.config()
 
@@ -111,7 +107,6 @@ export default defineConfig({
         }
       }
     ]),
-    addElementVnodeExportPlugin(),
 
     Icons({
       compiler: 'vue3'
