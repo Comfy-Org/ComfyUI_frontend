@@ -3,13 +3,13 @@ import type { IComboWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
 import { useNodeFileInput } from '@/composables/node/useNodeFileInput'
 import { useNodePaste } from '@/composables/node/useNodePaste'
+import { useValueTransform } from '@/composables/useValueTransform'
 import { t } from '@/i18n'
 import { api } from '@/scripts/api'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { useToastStore } from '@/stores/toastStore'
 import { addToComboValues } from '@/utils/litegraphUtil'
 
-// Support only txt and pdf files
 const isTextFile = (file: File): boolean =>
   file.type === 'text/plain' || file.name.toLowerCase().endsWith('.txt')
 
@@ -19,7 +19,11 @@ const isPdfFile = (file: File): boolean =>
 const isSupportedFile = (file: File): boolean =>
   isTextFile(file) || isPdfFile(file)
 
-// Upload a text file and return the file path
+/**
+ * Upload a text file and return the file path
+ * @param file - The file to upload
+ * @returns The file path or null if the upload fails
+ */
 async function uploadTextFile(file: File): Promise<string | null> {
   try {
     const body = new FormData()
@@ -47,6 +51,21 @@ async function uploadTextFile(file: File): Promise<string | null> {
   return null
 }
 
+/**
+ * Upload multiple text files and return array of file paths
+ * @param files - The files to upload
+ * @returns The file paths or an empty array if the upload fails
+ */
+async function uploadTextFiles(files: File[]): Promise<string[]> {
+  const uploadPromises = files.map(uploadTextFile)
+  const results = await Promise.all(uploadPromises)
+  return results.filter((path): path is string => path !== null)
+}
+
+/**
+ * Create a text upload widget
+ * @returns The widget or an empty button if no valid inputs
+ */
 export const useTextUploadWidget = (): ComfyWidgetConstructor => {
   return (node, inputName, inputData) => {
     // Early return with empty button if no valid inputs
@@ -59,10 +78,11 @@ export const useTextUploadWidget = (): ComfyWidgetConstructor => {
       return { widget: emptyButton }
     }
 
-    // Get the name of the text input widget from the spec
+    // Get configuration from input spec
     const textInputName = inputData[1].textInputName as string
+    const allow_batch = inputData[1].allow_batch === true
 
-    // Find the combo widget that will store the file path
+    // Find the combo widget that will store the file path(s)
     const textWidget = node.widgets.find((w) => w.name === textInputName) as
       | IComboWidget
       | undefined
@@ -80,22 +100,52 @@ export const useTextUploadWidget = (): ComfyWidgetConstructor => {
       textWidget.options.values = []
     }
 
+    // Types for internal handling
+    type InternalValue = string | string[] | null | undefined
+    type ExposedValue = string | string[]
+
+    const initialFile = allow_batch ? [] : ''
+
+    // Transform function to handle batch vs single file outputs
+    const transform = (internalValue: InternalValue): ExposedValue => {
+      if (!internalValue) return initialFile
+      if (Array.isArray(internalValue))
+        return allow_batch ? internalValue : internalValue[0] || ''
+      return internalValue
+    }
+
+    // Set up value transform on the widget
+    Object.defineProperty(
+      textWidget,
+      'value',
+      useValueTransform(transform, initialFile)
+    )
+
     // Handle the file upload
     const handleFileUpload = async (files: File[]): Promise<File[]> => {
       if (!files.length) return files
 
-      const file = files[0]
-      if (!isSupportedFile(file)) {
+      // Filter supported files
+      const supportedFiles = files.filter(isSupportedFile)
+      if (!supportedFiles.length) {
         useToastStore().addAlert(t('toastMessages.invalidFileType'))
         return files
       }
 
-      const path = await uploadTextFile(file)
-      if (path && textWidget) {
-        addToComboValues(textWidget, path)
-        textWidget.value = path
+      if (!allow_batch && supportedFiles.length > 1) {
+        useToastStore().addAlert('Only single file upload is allowed')
+        return files
+      }
+
+      const filesToUpload = allow_batch ? supportedFiles : [supportedFiles[0]]
+      const paths = await uploadTextFiles(filesToUpload)
+
+      if (paths.length && textWidget) {
+        paths.forEach((path) => addToComboValues(textWidget, path))
+        // @ts-expect-error litegraph combo value type does not support arrays yet
+        textWidget.value = allow_batch ? paths : paths[0]
         if (textWidget.callback) {
-          textWidget.callback(path)
+          textWidget.callback(allow_batch ? paths : paths[0])
         }
       }
 
@@ -105,6 +155,7 @@ export const useTextUploadWidget = (): ComfyWidgetConstructor => {
     // Set up file input for upload button
     const { openFileSelection } = useNodeFileInput(node, {
       accept: '.txt,.pdf,text/plain,application/pdf',
+      allow_batch,
       onSelect: handleFileUpload
     })
 
@@ -117,6 +168,7 @@ export const useTextUploadWidget = (): ComfyWidgetConstructor => {
     // Set up paste
     useNodePaste(node, {
       fileFilter: isSupportedFile,
+      allow_batch,
       onPaste: handleFileUpload
     })
 
@@ -129,7 +181,9 @@ export const useTextUploadWidget = (): ComfyWidgetConstructor => {
       { serialize: false }
     )
 
-    uploadWidget.label = t('g.choose_file_to_upload')
+    uploadWidget.label = allow_batch
+      ? t('g.choose_files_to_upload')
+      : t('g.choose_file_to_upload')
 
     return { widget: uploadWidget }
   }
