@@ -11,6 +11,7 @@
 </template>
 
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
 import Breadcrumb from 'primevue/breadcrumb'
 import type { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
 import { computed } from 'vue'
@@ -52,6 +53,18 @@ const home = computed(() => ({
 const handleItemClick = (event: MenuItemCommandEvent) => {
   event.item.command?.(event)
 }
+
+// Escape exits from the current subgraph.
+useEventListener(document, 'keydown', (event) => {
+  if (event.key === 'Escape') {
+    const canvas = useCanvasStore().getCanvas()
+    if (!canvas.graph) throw new TypeError('Canvas has no graph')
+
+    canvas.setGraph(
+      navigationStore.navigationStack.at(-2) ?? canvas.graph.rootGraph
+    )
+  }
+})
 </script>
 
 <style>
