@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { LGraphNode } from '@comfyorg/litegraph'
-import { onMounted, onUnmounted, ref, toRaw, watch, watchEffect } from 'vue'
+import { onMounted, onUnmounted, ref, toRaw, watch } from 'vue'
 
 import LoadingOverlay from '@/components/load3d/LoadingOverlay.vue'
 import Load3d from '@/extensions/core/load3d/Load3d'
@@ -76,18 +76,71 @@ const eventConfig = {
     emit('recordingStatusChange', value)
 } as const
 
-watchEffect(() => {
-  if (load3d.value) {
-    const rawLoad3d = toRaw(load3d.value) as Load3d
+watch(
+  () => props.showPreview,
+  (newValue) => {
+    if (load3d.value) {
+      const rawLoad3d = toRaw(load3d.value) as Load3d
 
-    rawLoad3d.setBackgroundColor(props.backgroundColor)
-    rawLoad3d.toggleGrid(props.showGrid)
-    rawLoad3d.setLightIntensity(props.lightIntensity)
-    rawLoad3d.setFOV(props.fov)
-    rawLoad3d.toggleCamera(props.cameraType)
-    rawLoad3d.togglePreview(props.showPreview)
+      rawLoad3d.togglePreview(newValue)
+    }
   }
-})
+)
+
+watch(
+  () => props.cameraType,
+  (newValue) => {
+    if (load3d.value) {
+      const rawLoad3d = toRaw(load3d.value) as Load3d
+
+      rawLoad3d.toggleCamera(newValue)
+    }
+  }
+)
+
+watch(
+  () => props.fov,
+  (newValue) => {
+    if (load3d.value) {
+      const rawLoad3d = toRaw(load3d.value) as Load3d
+
+      rawLoad3d.setFOV(newValue)
+    }
+  }
+)
+
+watch(
+  () => props.lightIntensity,
+  (newValue) => {
+    if (load3d.value) {
+      const rawLoad3d = toRaw(load3d.value) as Load3d
+
+      rawLoad3d.setLightIntensity(newValue)
+    }
+  }
+)
+
+watch(
+  () => props.showGrid,
+  (newValue) => {
+    if (load3d.value) {
+      const rawLoad3d = toRaw(load3d.value) as Load3d
+
+      rawLoad3d.toggleGrid(newValue)
+    }
+  }
+)
+
+watch(
+  () => props.backgroundColor,
+  (newValue) => {
+    if (load3d.value) {
+      const rawLoad3d = toRaw(load3d.value) as Load3d
+
+      rawLoad3d.setBackgroundColor(newValue)
+    }
+  }
+)
 
 watch(
   () => props.backgroundImage,
@@ -164,12 +217,13 @@ const handleEvents = (action: 'add' | 'remove') => {
 }
 
 onMounted(() => {
-  load3d.value = useLoad3dService().registerLoad3d(
-    node.value as LGraphNode,
-    // @ts-expect-error fixme ts strict error
-    container.value,
-    props.inputSpec
-  )
+  if (container.value) {
+    load3d.value = useLoad3dService().registerLoad3d(
+      node.value as LGraphNode,
+      container.value,
+      props.inputSpec
+    )
+  }
   handleEvents('add')
 })
 

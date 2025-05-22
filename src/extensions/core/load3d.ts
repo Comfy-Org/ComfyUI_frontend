@@ -112,7 +112,7 @@ useExtensionService().registerExtension({
       LOAD_3D(node) {
         const fileInput = document.createElement('input')
         fileInput.type = 'file'
-        fileInput.accept = '.gltf,.glb,.obj,.mtl,.fbx,.stl'
+        fileInput.accept = '.gltf,.glb,.obj,.fbx,.stl'
         fileInput.style.display = 'none'
 
         fileInput.onchange = async () => {
@@ -195,9 +195,7 @@ useExtensionService().registerExtension({
 
     await nextTick()
 
-    const load3d = useLoad3dService().getLoad3d(node)
-
-    if (load3d) {
+    useLoad3dService().waitForLoad3d(node, (load3d) => {
       let cameraState = node.properties['Camera Info']
 
       const config = new Load3DConfiguration(load3d)
@@ -256,7 +254,7 @@ useExtensionService().registerExtension({
           return returnVal
         }
       }
-    }
+    })
   }
 })
 
@@ -346,67 +344,65 @@ useExtensionService().registerExtension({
 
     await nextTick()
 
-    const sceneWidget = node.widgets?.find((w) => w.name === 'image')
+    useLoad3dService().waitForLoad3d(node, (load3d) => {
+      const sceneWidget = node.widgets?.find((w) => w.name === 'image')
+      const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
+      let cameraState = node.properties['Camera Info']
+      const width = node.widgets?.find((w) => w.name === 'width')
+      const height = node.widgets?.find((w) => w.name === 'height')
 
-    const load3d = useLoad3dService().getLoad3d(node) as Load3dAnimation
+      if (modelWidget && width && height && sceneWidget && load3d) {
+        const config = new Load3DConfiguration(load3d)
 
-    const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
+        config.configure('input', modelWidget, cameraState, width, height)
 
-    let cameraState = node.properties['Camera Info']
+        sceneWidget.serializeValue = async () => {
+          node.properties['Camera Info'] = load3d.getCameraState()
 
-    const width = node.widgets?.find((w) => w.name === 'width')
-    const height = node.widgets?.find((w) => w.name === 'height')
+          const load3dAnimation = load3d as Load3dAnimation
+          load3dAnimation.toggleAnimation(false)
 
-    if (modelWidget && width && height && sceneWidget && load3d) {
-      const config = new Load3DConfiguration(load3d)
+          if (load3dAnimation.isRecording()) {
+            load3dAnimation.stopRecording()
+          }
 
-      config.configure('input', modelWidget, cameraState, width, height)
+          const {
+            scene: imageData,
+            mask: maskData,
+            normal: normalData
+          } = await load3dAnimation.captureScene(
+            width.value as number,
+            height.value as number
+          )
 
-      sceneWidget.serializeValue = async () => {
-        node.properties['Camera Info'] = load3d.getCameraState()
-
-        load3d.toggleAnimation(false)
-
-        if (load3d.isRecording()) {
-          load3d.stopRecording()
-        }
-
-        const {
-          scene: imageData,
-          mask: maskData,
-          normal: normalData
-        } = await load3d.captureScene(
-          width.value as number,
-          height.value as number
-        )
-
-        const [data, dataMask, dataNormal] = await Promise.all([
-          Load3dUtils.uploadTempImage(imageData, 'scene'),
-          Load3dUtils.uploadTempImage(maskData, 'scene_mask'),
-          Load3dUtils.uploadTempImage(normalData, 'scene_normal')
-        ])
-
-        load3d.handleResize()
-
-        const returnVal = {
-          image: `threed/${data.name} [temp]`,
-          mask: `threed/${dataMask.name} [temp]`,
-          normal: `threed/${dataNormal.name} [temp]`,
-          camera_info: node.properties['Camera Info'],
-          recording: ''
-        }
-
-        const recordingData = load3d.getRecordingData()
-        if (recordingData) {
-          const [recording] = await Promise.all([
-            Load3dUtils.uploadTempImage(recordingData, 'recording', 'mp4')
+          const [data, dataMask, dataNormal] = await Promise.all([
+            Load3dUtils.uploadTempImage(imageData, 'scene'),
+            Load3dUtils.uploadTempImage(maskData, 'scene_mask'),
+            Load3dUtils.uploadTempImage(normalData, 'scene_normal')
           ])
-          returnVal['recording'] = `threed/${recording.name} [temp]`
-        }
 
-        return returnVal
+          load3dAnimation.handleResize()
+
+          const returnVal = {
+            image: `threed/${data.name} [temp]`,
+            mask: `threed/${dataMask.name} [temp]`,
+            normal: `threed/${dataNormal.name} [temp]`,
+            camera_info: node.properties['Camera Info'],
+            recording: ''
+          }
+
+          const recordingData = load3dAnimation.getRecordingData()
+          if (recordingData) {
+            const [recording] = await Promise.all([
+              Load3dUtils.uploadTempImage(recordingData, 'recording', 'mp4')
+            ])
+            returnVal['recording'] = `threed/${recording.name} [temp]`
+          }
+
+          return returnVal
+        }
       }
-    }
+    })
   }
 })
 
@@ -467,19 +463,19 @@ useExtensionService().registerExtension({
         useToastStore().addAlert(msg)
       }
 
-      const load3d = useLoad3dService().getLoad3d(node)
-
       let cameraState = message.result[1]
 
-      const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
+      useLoad3dService().waitForLoad3d(node, (load3d) => {
+        const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
 
-      if (load3d && modelWidget) {
-        modelWidget.value = filePath.replaceAll('\\', '/')
+        if (modelWidget) {
+          modelWidget.value = filePath.replaceAll('\\', '/')
 
-        const config = new Load3DConfiguration(load3d)
+          const config = new Load3DConfiguration(load3d)
 
-        config.configure('output', modelWidget, cameraState)
-      }
+          config.configure('output', modelWidget, cameraState)
+        }
+      })
     }
   }
 })
@@ -543,16 +539,16 @@ useExtensionService().registerExtension({
 
       let cameraState = message.result[1]
 
-      const load3d = useLoad3dService().getLoad3d(node)
+      useLoad3dService().waitForLoad3d(node, (load3d) => {
+        const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
+        if (modelWidget) {
+          modelWidget.value = filePath.replaceAll('\\', '/')
 
-      const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
-      if (load3d && modelWidget) {
-        modelWidget.value = filePath.replaceAll('\\', '/')
+          const config = new Load3DConfiguration(load3d)
 
-        const config = new Load3DConfiguration(load3d)
-
-        config.configure('output', modelWidget, cameraState)
-      }
+          config.configure('output', modelWidget, cameraState)
+        }
+      })
     }
   }
 })
