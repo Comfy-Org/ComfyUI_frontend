@@ -14,7 +14,6 @@
 </template>
 
 <script setup lang="ts">
-import { useEventListener, whenever } from '@vueuse/core'
 import Breadcrumb from 'primevue/breadcrumb'
 import type { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
 import { computed } from 'vue'
@@ -56,15 +55,6 @@ const home = computed(() => ({
 const handleItemClick = (event: MenuItemCommandEvent) => {
   event.item.command?.(event)
 }
-
-whenever(
-  () => useCanvasStore().canvas,
-  (canvas) => {
-    useEventListener(canvas.canvas, 'litegraph:set-graph', () => {
-      useWorkflowStore().updateActiveGraph()
-    })
-  }
-)
 </script>
 
 <style>
