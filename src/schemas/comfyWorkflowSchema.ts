@@ -354,18 +354,20 @@ export const zComfyWorkflow1 = zBaseExportableGraph
     reroutes: z.array(zReroute).optional(),
     extra: zExtra.optional().nullable(),
     models: z.array(zModelFile).optional(),
-    definitions: z.object({
-      subgraphs: z.lazy(
-        (): z.ZodArray<
-          z.ZodType<
-            SubgraphDefinitionBase<ComfyWorkflow1BaseOutput>,
-            z.ZodTypeDef,
-            SubgraphDefinitionBase<ComfyWorkflow1BaseInput>
-          >,
-          'many'
-        > => z.array(zSubgraphDefinition)
-      )
-    })
+    definitions: z
+      .object({
+        subgraphs: z.lazy(
+          (): z.ZodArray<
+            z.ZodType<
+              SubgraphDefinitionBase<ComfyWorkflow1BaseOutput>,
+              z.ZodTypeDef,
+              SubgraphDefinitionBase<ComfyWorkflow1BaseInput>
+            >,
+            'many'
+          > => z.array(zSubgraphDefinition)
+        )
+      })
+      .optional()
   })
   .passthrough()
 
@@ -426,19 +428,21 @@ export const zSubgraphDefinition = zComfyWorkflow1
     /** Ordered list of outputs from the subgraph itself. Similar to a reroute, with the input side in the subgraph, and the output side in the graph. */
     outputs: z.array(zSubgraphIO).optional(),
     /** A list of node widgets displayed in the parent graph, on the subgraph object. */
-    widgets: z.array(zExposedWidget),
-    definitions: z.object({
-      subgraphs: z.lazy(
-        (): z.ZodArray<
-          z.ZodType<
-            SubgraphDefinitionBase<ComfyWorkflow1BaseInput>,
-            z.ZodTypeDef,
-            SubgraphDefinitionBase<ComfyWorkflow1BaseInput>
-          >,
-          'many'
-        > => zSubgraphDefinition.array()
-      )
-    })
+    widgets: z.array(zExposedWidget).optional(),
+    definitions: z
+      .object({
+        subgraphs: z.lazy(
+          (): z.ZodArray<
+            z.ZodType<
+              SubgraphDefinitionBase<ComfyWorkflow1BaseInput>,
+              z.ZodTypeDef,
+              SubgraphDefinitionBase<ComfyWorkflow1BaseInput>
+            >,
+            'many'
+          > => zSubgraphDefinition.array()
+        )
+      })
+      .optional()
   })
   .passthrough()
 
