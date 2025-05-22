@@ -3417,20 +3417,26 @@
         "name": "largeur"
       }
     },
-    "outputs": [
-      null,
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "image"
+      },
+      "1": {
+        "name": "masque"
+      },
+      "2": {
+        "name": "chemin_maillage"
+      },
+      "3": {
         "name": "normale"
       },
-      {
-        "name": "ligne artistique"
+      "4": {
+        "name": "lineart"
       },
-      {
-        "name": "informations caméra"
+      "5": {
+        "name": "info_caméra"
       }
-    ]
+    }
   },
   "Load3DAnimation": {
     "display_name": "Charger 3D - Animation",
@@ -3452,17 +3458,23 @@
         "name": "largeur"
       }
     },
-    "outputs": [
-      null,
-      null,
-      null,
-      {
-        "name": "normal"
+    "outputs": {
+      "0": {
+        "name": "image"
       },
-      {
-        "name": "camera_info"
+      "1": {
+        "name": "masque"
+      },
+      "2": {
+        "name": "chemin_maillage"
+      },
+      "3": {
+        "name": "normale"
+      },
+      "4": {
+        "name": "info_caméra"
       }
-    ]
+    }
   },
   "LoadAudio": {
     "display_name": "ChargerAudio",

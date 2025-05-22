@@ -3403,7 +3403,7 @@
       "clear": {
       },
       "height": {
-        "name": "altura"
+        "name": "alto"
       },
       "image": {
         "name": "imagen"
@@ -3417,20 +3417,26 @@
         "name": "ancho"
       }
     },
-    "outputs": [
-      null,
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "imagen"
+      },
+      "1": {
+        "name": "mask"
+      },
+      "2": {
+        "name": "ruta_malla"
+      },
+      "3": {
         "name": "normal"
       },
-      {
+      "4": {
         "name": "lineart"
       },
-      {
-        "name": "camera_info"
+      "5": {
+        "name": "info_cámara"
       }
-    ]
+    }
   },
   "Load3DAnimation": {
     "display_name": "Cargar 3D - Animación",
@@ -3438,7 +3444,7 @@
       "clear": {
       },
       "height": {
-        "name": "altura"
+        "name": "alto"
       },
       "image": {
         "name": "imagen"
@@ -3452,17 +3458,23 @@
         "name": "ancho"
       }
     },
-    "outputs": [
-      null,
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "imagen"
+      },
+      "1": {
+        "name": "mask"
+      },
+      "2": {
+        "name": "ruta_malla"
+      },
+      "3": {
         "name": "normal"
       },
-      {
-        "name": "camera_info"
+      "4": {
+        "name": "info_cámara"
       }
-    ]
+    }
   },
   "LoadAudio": {
     "display_name": "CargarAudio",

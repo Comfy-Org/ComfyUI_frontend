@@ -3417,20 +3417,26 @@
         "name": "宽度"
       }
     },
-    "outputs": [
-      null,
-      null,
-      null,
-      {
-        "name": "法线"
+    "outputs": {
+      "0": {
+        "name": "image"
       },
-      {
-        "name": "线稿"
+      "1": {
+        "name": "mask"
       },
-      {
-        "name": "相机信息"
+      "2": {
+        "name": "mesh_path"
+      },
+      "3": {
+        "name": "normal"
+      },
+      "4": {
+        "name": "lineart"
+      },
+      "5": {
+        "name": "camera_info"
       }
-    ]
+    }
   },
   "Load3DAnimation": {
     "display_name": "加载3D动画",
@@ -3452,17 +3458,23 @@
         "name": "宽度"
       }
     },
-    "outputs": [
-      null,
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "图像"
+      },
+      "1": {
+        "name": "遮罩"
+      },
+      "2": {
+        "name": "mesh_path"
+      },
+      "3": {
         "name": "法线"
       },
-      {
+      "4": {
         "name": "相机信息"
       }
-    ]
+    }
   },
   "LoadAudio": {
     "display_name": "加载音频",
