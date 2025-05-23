@@ -215,6 +215,22 @@ describe('useNodeHelp', () => {
     expect(renderedHelpHtml.value).toContain('src="/absolute.jpg"')
   })
 
+  it('should not prefix external image URLs', async () => {
+    const { openHelp, renderedHelpHtml } = useNodeHelp()
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      text: async () => '![external image](https://example.com/linktoimage.png)'
+    })
+
+    openHelp(mockCustomNode as any)
+    await flushPromises()
+    expect(renderedHelpHtml.value).toContain(
+      'src="https://example.com/linktoimage.png"'
+    )
+    expect(renderedHelpHtml.value).toContain('alt="external image"')
+  })
+
   it('should prefix relative video src in custom nodes', async () => {
     const { openHelp, renderedHelpHtml } = useNodeHelp()
 
