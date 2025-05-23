@@ -5,6 +5,7 @@ import { type ComputedRef, type Ref, computed, ref, watch } from 'vue'
 import { i18n } from '@/i18n'
 import { api } from '@/scripts/api'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { NodeSourceType, getNodeSource } from '@/types/nodeSource'
 
 const currentHelpNode = ref<ComfyNodeDefImpl | null>(null)
 const isHelpOpen = computed(() => currentHelpNode.value !== null)
@@ -21,6 +22,17 @@ function closeHelp() {
 const baseUrl = computed(() => {
   const node = currentHelpNode.value
   if (!node) return ''
+
+  const nodeSource = getNodeSource(node.python_module)
+  if (nodeSource.type === NodeSourceType.CustomNodes) {
+    // Extract custom node module name from python_module
+    const modules = node.python_module?.split('.') || []
+    if (modules.length >= 2 && modules[0] === 'custom_nodes') {
+      const customNodeName = modules[1].split('@')[0] // Remove version if present
+      return `/extensions/${customNodeName}/docs/`
+    }
+  }
+
   return `/docs/${node.name}/`
 })
 
@@ -38,10 +50,37 @@ watch(
       isLoading.value = true
       try {
         const lang = i18n.global.locale.value || 'en'
-        const mdUrl = `/docs/${node.name}/${lang}.md`
-        const res = await fetch(api.fileURL(mdUrl))
-        if (!res.ok) throw new Error(res.statusText)
-        helpContent.value = await res.text()
+        let mdUrl = ''
+
+        const nodeSource = getNodeSource(node.python_module)
+        if (nodeSource.type === NodeSourceType.CustomNodes) {
+          // For custom nodes, try multiple paths
+          const modules = node.python_module?.split('.') || []
+          if (modules.length >= 2 && modules[0] === 'custom_nodes') {
+            const customNodeName = modules[1].split('@')[0] // Remove version if present
+
+            // Try locale-specific path first
+            mdUrl = `/extensions/${customNodeName}/docs/${node.name}/${lang}.md`
+            let res = await fetch(api.fileURL(mdUrl))
+
+            if (!res.ok) {
+              // Fall back to non-locale path
+              mdUrl = `/extensions/${customNodeName}/docs/${node.name}.md`
+              res = await fetch(api.fileURL(mdUrl))
+            }
+
+            if (!res.ok) throw new Error(res.statusText)
+            helpContent.value = await res.text()
+          } else {
+            throw new Error('Invalid custom node module')
+          }
+        } else {
+          // Core node path
+          mdUrl = `/docs/${node.name}/${lang}.md`
+          const res = await fetch(api.fileURL(mdUrl))
+          if (!res.ok) throw new Error(res.statusText)
+          helpContent.value = await res.text()
+        }
       } catch (e: any) {
         errorMsg.value = e.message
         helpContent.value = node.description || ''
