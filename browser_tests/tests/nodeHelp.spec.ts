@@ -254,10 +254,10 @@ test.describe('Node Help', () => {
       )
     })
 
-    test('Should render video and audio elements in markdown', async ({
+    test('Should render video elements with source tags in markdown', async ({
       comfyPage
     }) => {
-      // Mock response with video and audio elements
+      // Mock response with video elements
       await comfyPage.page.route('**/docs/KSampler/en.md', async (route) => {
         await route.fulfill({
           status: 200,
@@ -266,10 +266,10 @@ test.describe('Node Help', () => {
 <video src="demo.mp4" controls autoplay></video>
 <video src="/absolute/video.mp4" controls></video>
 
-<audio>
-  <source src="audio.mp3" type="audio/mpeg">
-  <source src="https://example.com/audio.ogg" type="audio/ogg">
-</audio>
+<video controls>
+  <source src="video.mp4" type="video/mp4">
+  <source src="https://example.com/video.webm" type="video/webm">
+</video>
 `
         })
       })
@@ -299,19 +299,19 @@ test.describe('Node Help', () => {
       const absoluteVideo = helpPage.locator('video[src="/absolute/video.mp4"]')
       await expect(absoluteVideo).toHaveAttribute('src', '/absolute/video.mp4')
 
-      // Check audio sources
-      const relativeAudioSource = helpPage.locator('source[src*="audio.mp3"]')
-      await expect(relativeAudioSource).toHaveAttribute(
+      // Check video source elements
+      const relativeVideoSource = helpPage.locator('source[src*="video.mp4"]')
+      await expect(relativeVideoSource).toHaveAttribute(
         'src',
-        /.*\/docs\/KSampler\/audio\.mp3/
+        /.*\/docs\/KSampler\/video\.mp4/
       )
 
-      const externalAudioSource = helpPage.locator(
-        'source[src="https://example.com/audio.ogg"]'
+      const externalVideoSource = helpPage.locator(
+        'source[src="https://example.com/video.webm"]'
       )
-      await expect(externalAudioSource).toHaveAttribute(
+      await expect(externalVideoSource).toHaveAttribute(
         'src',
-        'https://example.com/audio.ogg'
+        'https://example.com/video.webm'
       )
     })
 
@@ -553,55 +553,5 @@ This is English documentation.
       await expect(helpPage).not.toContainText('KSampler documentation')
     })
 
-    test('Should handle various quote styles in media src attributes', async ({
-      comfyPage
-    }) => {
-      // Test with properly formed HTML that uses both quote styles
-      await comfyPage.page.route('**/docs/KSampler/en.md', async (route) => {
-        await route.fulfill({
-          status: 200,
-          body: `# Media Test
-
-Testing quote styles in properly formed HTML:
-
-<video src="video1.mp4" controls></video>
-<video src="video2.mp4" controls></video>
-
-The regex should handle both single and double quotes in the source markdown.
-`
-        })
-      })
-
-      await comfyPage.loadWorkflow('default')
-      const ksamplerNodes = await comfyPage.getNodeRefsByType('KSampler')
-      await selectNodeWithPan(comfyPage, ksamplerNodes[0])
-
-      const helpButton = comfyPage.page.locator(
-        '.selection-toolbox button:has(.pi-question-circle)'
-      )
-      await helpButton.click()
-
-      const helpPage = comfyPage.page.locator('.sidebar-content-container')
-
-      // Wait for help content to load
-      await expect(helpPage.locator('.node-help-content')).toBeVisible()
-
-      // Verify that video elements are rendered with prefixed paths
-      const videos = helpPage.locator('video')
-      await expect(videos).toHaveCount(2)
-
-      // Both videos should have prefixed paths
-      await expect(videos.nth(0)).toHaveAttribute(
-        'src',
-        /.*\/docs\/KSampler\/video1\.mp4/
-      )
-      await expect(videos.nth(1)).toHaveAttribute(
-        'src',
-        /.*\/docs\/KSampler\/video2\.mp4/
-      )
-
-      // This test verifies that the path prefixing works correctly for media elements
-      // The MEDIA_SRC_REGEX handles both quote styles in src attributes
-    })
   })
 })

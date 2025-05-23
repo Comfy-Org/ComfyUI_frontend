@@ -103,9 +103,9 @@ const ALLOWED_ATTRS = [
   'poster'
 ]
 
-// Regex pattern to prefix relative src attributes in <source> or <video> tags
+// Regex pattern to prefix relative src attributes in <img>, <source> or <video> tags
 const MEDIA_SRC_REGEX =
-  /(<(?:source|video)[^>]*\ssrc=['"])(?!(?:\/|https?:\/\/))([^'"\s>]+)['"]/gi
+  /(<(?:img|source|video)[^>]*\ssrc=['"])(?!(?:\/|https?:\/\/))([^'"\s>]+)(['"])/gi
 
 /** create a marked Renderer that prefixes relative URLs with base */
 function createRenderer(baseUrl?: string): Renderer {
@@ -139,7 +139,7 @@ export function useNodeHelp(): {
       renderer: createRenderer(baseUrl.value)
     }) as string
     if (baseUrl.value) {
-      html = html.replace(MEDIA_SRC_REGEX, `$1${baseUrl.value}$2"`)
+      html = html.replace(MEDIA_SRC_REGEX, `$1${baseUrl.value}$2$3`)
     }
     return DOMPurify.sanitize(html, {
       ADD_TAGS: ALLOWED_TAGS,

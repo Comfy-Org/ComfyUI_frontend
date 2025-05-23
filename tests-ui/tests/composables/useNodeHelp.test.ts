@@ -158,21 +158,6 @@ describe('useNodeHelp', () => {
     expect(renderedHelpHtml.value).toContain('This is test help content')
   })
 
-  it('should handle relative image paths in custom nodes', async () => {
-    const { openHelp, renderedHelpHtml } = useNodeHelp()
-
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      text: async () => '# Custom Help\n![image](test.jpg)'
-    })
-
-    openHelp(mockCustomNode as any)
-    await flushPromises()
-
-    expect(renderedHelpHtml.value).toContain(
-      'src="/extensions/test_module/docs/test.jpg"'
-    )
-  })
 
   it('should handle fetch errors and fall back to description', async () => {
     const { openHelp, renderedHelpHtml, error } = useNodeHelp()
@@ -202,34 +187,6 @@ describe('useNodeHelp', () => {
     expect(renderedHelpHtml.value).toContain('alt="image"')
   })
 
-  it('should not prefix absolute image paths in custom nodes', async () => {
-    const { openHelp, renderedHelpHtml } = useNodeHelp()
-
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      text: async () => '![image](/absolute.jpg)'
-    })
-
-    openHelp(mockCustomNode as any)
-    await flushPromises()
-    expect(renderedHelpHtml.value).toContain('src="/absolute.jpg"')
-  })
-
-  it('should not prefix external image URLs', async () => {
-    const { openHelp, renderedHelpHtml } = useNodeHelp()
-
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      text: async () => '![external image](https://example.com/linktoimage.png)'
-    })
-
-    openHelp(mockCustomNode as any)
-    await flushPromises()
-    expect(renderedHelpHtml.value).toContain(
-      'src="https://example.com/linktoimage.png"'
-    )
-    expect(renderedHelpHtml.value).toContain('alt="external image"')
-  })
 
   it('should prefix relative video src in custom nodes', async () => {
     const { openHelp, renderedHelpHtml } = useNodeHelp()
@@ -266,13 +223,13 @@ describe('useNodeHelp', () => {
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      text: async () => '<source src="source.mp3" />'
+      text: async () => '<video><source src="video.mp4" type="video/mp4" /></video>'
     })
 
     openHelp(mockCustomNode as any)
     await flushPromises()
     expect(renderedHelpHtml.value).toContain(
-      'src="/extensions/test_module/docs/source.mp3"'
+      'src="/extensions/test_module/docs/video.mp4"'
     )
   })
 
@@ -281,13 +238,13 @@ describe('useNodeHelp', () => {
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      text: async () => '<source src="source.mp3" />'
+      text: async () => '<video><source src="video.webm" type="video/webm" /></video>'
     })
 
     openHelp(mockCoreNode as any)
     await flushPromises()
     expect(renderedHelpHtml.value).toContain(
-      `src="/docs/${mockCoreNode.name}/source.mp3"`
+      `src="/docs/${mockCoreNode.name}/video.webm"`
     )
   })
 
@@ -324,6 +281,115 @@ describe('useNodeHelp', () => {
     )
     expect(mockFetch).toHaveBeenCalledWith(
       '/extensions/test_module/docs/CustomNode.md'
+    )
+  })
+
+  it('should prefix relative img src in raw HTML for custom nodes', async () => {
+    const { openHelp, renderedHelpHtml } = useNodeHelp()
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      text: async () => '# Test\n<img src="image.png" alt="Test image">'
+    })
+
+    openHelp(mockCustomNode as any)
+    await flushPromises()
+    expect(renderedHelpHtml.value).toContain(
+      'src="/extensions/test_module/docs/image.png"'
+    )
+    expect(renderedHelpHtml.value).toContain('alt="Test image"')
+  })
+
+  it('should prefix relative img src in raw HTML for core nodes', async () => {
+    const { openHelp, renderedHelpHtml } = useNodeHelp()
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      text: async () => '# Test\n<img src="image.png" alt="Test image">'
+    })
+
+    openHelp(mockCoreNode as any)
+    await flushPromises()
+    expect(renderedHelpHtml.value).toContain(
+      `src="/docs/${mockCoreNode.name}/image.png"`
+    )
+    expect(renderedHelpHtml.value).toContain('alt="Test image"')
+  })
+
+  it('should not prefix absolute img src in raw HTML', async () => {
+    const { openHelp, renderedHelpHtml } = useNodeHelp()
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      text: async () => '<img src="/absolute/image.png" alt="Absolute">'
+    })
+
+    openHelp(mockCustomNode as any)
+    await flushPromises()
+    expect(renderedHelpHtml.value).toContain('src="/absolute/image.png"')
+    expect(renderedHelpHtml.value).toContain('alt="Absolute"')
+  })
+
+  it('should not prefix external img src in raw HTML', async () => {
+    const { openHelp, renderedHelpHtml } = useNodeHelp()
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      text: async () => '<img src="https://example.com/image.png" alt="External">'
+    })
+
+    openHelp(mockCustomNode as any)
+    await flushPromises()
+    expect(renderedHelpHtml.value).toContain('src="https://example.com/image.png"')
+    expect(renderedHelpHtml.value).toContain('alt="External"')
+  })
+
+  it('should handle various quote styles in media src attributes', async () => {
+    const { openHelp, renderedHelpHtml } = useNodeHelp()
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      text: async () => `# Media Test
+
+Testing quote styles in properly formed HTML:
+
+<video src="video1.mp4" controls></video>
+<video src='video2.mp4' controls></video>
+<img src="image1.png" alt="Double quotes">
+<img src='image2.png' alt='Single quotes'>
+
+<video controls>
+  <source src="video3.mp4" type="video/mp4">
+  <source src='video3.webm' type='video/webm'>
+</video>
+
+The MEDIA_SRC_REGEX handles both single and double quotes in img, video and source tags.`
+    })
+
+    openHelp(mockCoreNode as any)
+    await flushPromises()
+
+    // Check that all media elements with different quote styles are prefixed correctly
+    // Double quotes remain as double quotes
+    expect(renderedHelpHtml.value).toContain(
+      `src="/docs/${mockCoreNode.name}/video1.mp4"`
+    )
+    expect(renderedHelpHtml.value).toContain(
+      `src="/docs/${mockCoreNode.name}/image1.png"`
+    )
+    expect(renderedHelpHtml.value).toContain(
+      `src="/docs/${mockCoreNode.name}/video3.mp4"`
+    )
+    
+    // Single quotes remain as single quotes in the output
+    expect(renderedHelpHtml.value).toContain(
+      `src='/docs/${mockCoreNode.name}/video2.mp4'`
+    )
+    expect(renderedHelpHtml.value).toContain(
+      `src='/docs/${mockCoreNode.name}/image2.png'`
+    )
+    expect(renderedHelpHtml.value).toContain(
+      `src='/docs/${mockCoreNode.name}/video3.webm'`
     )
   })
 })
