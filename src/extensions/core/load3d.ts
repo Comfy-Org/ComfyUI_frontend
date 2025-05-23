@@ -266,7 +266,7 @@ useExtensionService().registerExtension({
       LOAD_3D_ANIMATION(node) {
         const fileInput = document.createElement('input')
         fileInput.type = 'file'
-        fileInput.accept = '.fbx,glb,gltf'
+        fileInput.accept = '.gltf,.glb,.fbx'
         fileInput.style.display = 'none'
         fileInput.onchange = async () => {
           if (fileInput.files?.length) {
