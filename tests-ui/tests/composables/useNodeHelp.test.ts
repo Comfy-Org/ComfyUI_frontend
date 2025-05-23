@@ -1,8 +1,37 @@
+import { flushPromises } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useNodeHelp } from '@/composables/useNodeHelp'
-import { NodeSourceType } from '@/types/nodeSource'
+
+vi.mock('@/scripts/api', () => ({
+  api: {
+    fileURL: vi.fn((url) => url)
+  }
+}))
+
+vi.mock('@/i18n', () => ({
+  i18n: {
+    global: {
+      locale: {
+        value: 'en'
+      }
+    }
+  }
+}))
+
+vi.mock('@/types/nodeSource', () => ({
+  NodeSourceType: {
+    Core: 'core',
+    CustomNodes: 'custom_nodes'
+  },
+  getNodeSource: vi.fn((pythonModule) => {
+    if (pythonModule?.startsWith('custom_nodes.')) {
+      return { type: 'custom_nodes' }
+    }
+    return { type: 'core' }
+  })
+}))
 
 vi.mock('dompurify', () => ({
   default: {
@@ -28,11 +57,11 @@ vi.mock('marked', () => ({
   Renderer: class Renderer {
     image = vi.fn(
       ({ href, title, text }) =>
-        `<img src="${href}" alt="${text}" title="${title || ''}" />`
+        `<img src="${href}" alt="${text}"${title ? ` title="${title}"` : ''} />`
     )
     link = vi.fn(
       ({ href, title, text }) =>
-        `<a href="${href}" title="${title || ''}">${text}</a>`
+        `<a href="${href}"${title ? ` title="${title}"` : ''}>${text}</a>`
     )
   }
 }))
@@ -40,30 +69,30 @@ vi.mock('marked', () => ({
 describe('useNodeHelp', () => {
   // Define a mock node for testing
   const mockCoreNode = {
-    id: 'test-node',
+    name: 'TestNode',
     display_name: 'Test Node',
     description: 'A test node',
-    help: '# Test Help\nThis is test help content',
     inputs: {},
     outputs: [],
-    python_module: 'comfy.test_node',
-    nodeSource: {
-      type: NodeSourceType.Core
-    }
+    python_module: 'comfy.test_node'
   }
 
   const mockCustomNode = {
-    id: 'custom-node',
+    name: 'CustomNode',
     display_name: 'Custom Node',
     description: 'A custom node',
-    help: '# Custom Help\n![image](test.jpg)',
     inputs: {},
     outputs: [],
-    python_module: 'custom_nodes.test_module.custom@1.0.0',
-    nodeSource: {
-      type: NodeSourceType.CustomNodes
-    }
+    python_module: 'custom_nodes.test_module.custom@1.0.0'
   }
+
+  // Mock fetch responses
+  const mockFetch = vi.fn()
+  global.fetch = mockFetch
+
+  beforeEach(() => {
+    mockFetch.mockReset()
+  })
 
   // Reset state before each test
   beforeEach(() => {
@@ -103,7 +132,7 @@ describe('useNodeHelp', () => {
     openHelp(mockCoreNode as any)
     await nextTick()
 
-    expect(baseUrl.value).toBe('')
+    expect(baseUrl.value).toBe(`/docs/${mockCoreNode.name}/`)
   })
 
   it('should generate correct baseUrl for custom nodes', async () => {
@@ -112,14 +141,19 @@ describe('useNodeHelp', () => {
     openHelp(mockCustomNode as any)
     await nextTick()
 
-    expect(baseUrl.value).toBe('/extensions/test_module/')
+    expect(baseUrl.value).toBe('/extensions/test_module/docs/')
   })
 
   it('should render markdown content correctly', async () => {
     const { openHelp, renderedHelpHtml } = useNodeHelp()
 
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      text: async () => '# Test Help\nThis is test help content'
+    })
+
     openHelp(mockCoreNode as any)
-    await nextTick()
+    await flushPromises()
 
     expect(renderedHelpHtml.value).toContain('This is test help content')
   })
@@ -127,86 +161,153 @@ describe('useNodeHelp', () => {
   it('should handle relative image paths in custom nodes', async () => {
     const { openHelp, renderedHelpHtml } = useNodeHelp()
 
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      text: async () => '# Custom Help\n![image](test.jpg)'
+    })
+
     openHelp(mockCustomNode as any)
-    await nextTick()
+    await flushPromises()
 
     expect(renderedHelpHtml.value).toContain(
-      'src="/extensions/test_module/test.jpg"'
+      'src="/extensions/test_module/docs/test.jpg"'
     )
   })
 
-  it('should return empty help html when node has no help', async () => {
-    const { openHelp, renderedHelpHtml } = useNodeHelp()
+  it('should handle fetch errors and fall back to description', async () => {
+    const { openHelp, renderedHelpHtml, error } = useNodeHelp()
 
-    openHelp({ ...mockCoreNode, help: '' } as any)
-    await nextTick()
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      statusText: 'Not Found'
+    })
 
-    expect(renderedHelpHtml.value).toBe('')
+    openHelp(mockCoreNode as any)
+    await flushPromises()
+
+    expect(error.value).toBe('Not Found')
+    expect(renderedHelpHtml.value).toContain(mockCoreNode.description)
   })
 
   it('should include alt attribute for images', async () => {
     const { openHelp, renderedHelpHtml } = useNodeHelp()
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      text: async () => '![image](test.jpg)'
+    })
+
     openHelp(mockCustomNode as any)
-    await nextTick()
+    await flushPromises()
     expect(renderedHelpHtml.value).toContain('alt="image"')
   })
 
   it('should not prefix absolute image paths in custom nodes', async () => {
     const { openHelp, renderedHelpHtml } = useNodeHelp()
-    const customNodeWithAbsoluteImg = {
-      ...mockCustomNode,
-      help: '![image](/absolute.jpg)'
-    }
-    openHelp(customNodeWithAbsoluteImg as any)
-    await nextTick()
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      text: async () => '![image](/absolute.jpg)'
+    })
+
+    openHelp(mockCustomNode as any)
+    await flushPromises()
     expect(renderedHelpHtml.value).toContain('src="/absolute.jpg"')
   })
 
   it('should prefix relative video src in custom nodes', async () => {
     const { openHelp, renderedHelpHtml } = useNodeHelp()
-    const customNodeWithVideo = {
-      ...mockCustomNode,
-      help: '<video src="video.mp4"></video>'
-    }
-    openHelp(customNodeWithVideo as any)
-    await nextTick()
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      text: async () => '<video src="video.mp4"></video>'
+    })
+
+    openHelp(mockCustomNode as any)
+    await flushPromises()
     expect(renderedHelpHtml.value).toContain(
-      'src="/extensions/test_module/video.mp4"'
+      'src="/extensions/test_module/docs/video.mp4"'
     )
   })
 
-  it('should not prefix video src for core nodes', async () => {
+  it('should prefix relative video src for core nodes with node-specific base URL', async () => {
     const { openHelp, renderedHelpHtml } = useNodeHelp()
-    const coreNodeWithVideo = {
-      ...mockCoreNode,
-      help: '<video src="video.mp4"></video>'
-    }
-    openHelp(coreNodeWithVideo as any)
-    await nextTick()
-    expect(renderedHelpHtml.value).toContain('src="video.mp4"')
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      text: async () => '<video src="video.mp4"></video>'
+    })
+
+    openHelp(mockCoreNode as any)
+    await flushPromises()
+    expect(renderedHelpHtml.value).toContain(
+      `src="/docs/${mockCoreNode.name}/video.mp4"`
+    )
   })
 
   it('should prefix relative source src in custom nodes', async () => {
     const { openHelp, renderedHelpHtml } = useNodeHelp()
-    const customNodeWithSource = {
-      ...mockCustomNode,
-      help: '<source src="source.mp3" />'
-    }
-    openHelp(customNodeWithSource as any)
-    await nextTick()
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      text: async () => '<source src="source.mp3" />'
+    })
+
+    openHelp(mockCustomNode as any)
+    await flushPromises()
     expect(renderedHelpHtml.value).toContain(
-      'src="/extensions/test_module/source.mp3"'
+      'src="/extensions/test_module/docs/source.mp3"'
     )
   })
 
-  it('should not prefix source src for core nodes', async () => {
+  it('should prefix relative source src for core nodes with node-specific base URL', async () => {
     const { openHelp, renderedHelpHtml } = useNodeHelp()
-    const coreNodeWithSource = {
-      ...mockCoreNode,
-      help: '<source src="source.mp3" />'
-    }
-    openHelp(coreNodeWithSource as any)
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      text: async () => '<source src="source.mp3" />'
+    })
+
+    openHelp(mockCoreNode as any)
+    await flushPromises()
+    expect(renderedHelpHtml.value).toContain(
+      `src="/docs/${mockCoreNode.name}/source.mp3"`
+    )
+  })
+
+  it('should handle loading state', async () => {
+    const { openHelp, isLoading } = useNodeHelp()
+
+    mockFetch.mockImplementationOnce(() => new Promise(() => {})) // Never resolves
+
+    openHelp(mockCoreNode as any)
     await nextTick()
-    expect(renderedHelpHtml.value).toContain('src="source.mp3"')
+
+    expect(isLoading.value).toBe(true)
+  })
+
+  it('should try fallback URL for custom nodes', async () => {
+    const { openHelp } = useNodeHelp()
+
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: false,
+        statusText: 'Not Found'
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => '# Fallback content'
+      })
+
+    openHelp(mockCustomNode as any)
+    await flushPromises()
+
+    expect(mockFetch).toHaveBeenCalledTimes(2)
+    expect(mockFetch).toHaveBeenCalledWith(
+      '/extensions/test_module/docs/CustomNode/en.md'
+    )
+    expect(mockFetch).toHaveBeenCalledWith(
+      '/extensions/test_module/docs/CustomNode.md'
+    )
   })
 })
