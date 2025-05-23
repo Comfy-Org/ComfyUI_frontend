@@ -158,7 +158,6 @@ describe('useNodeHelp', () => {
     expect(renderedHelpHtml.value).toContain('This is test help content')
   })
 
-
   it('should handle fetch errors and fall back to description', async () => {
     const { openHelp, renderedHelpHtml, error } = useNodeHelp()
 
@@ -186,7 +185,6 @@ describe('useNodeHelp', () => {
     await flushPromises()
     expect(renderedHelpHtml.value).toContain('alt="image"')
   })
-
 
   it('should prefix relative video src in custom nodes', async () => {
     const { openHelp, renderedHelpHtml } = useNodeHelp()
@@ -223,7 +221,8 @@ describe('useNodeHelp', () => {
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      text: async () => '<video><source src="video.mp4" type="video/mp4" /></video>'
+      text: async () =>
+        '<video><source src="video.mp4" type="video/mp4" /></video>'
     })
 
     openHelp(mockCustomNode as any)
@@ -238,7 +237,8 @@ describe('useNodeHelp', () => {
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      text: async () => '<video><source src="video.webm" type="video/webm" /></video>'
+      text: async () =>
+        '<video><source src="video.webm" type="video/webm" /></video>'
     })
 
     openHelp(mockCoreNode as any)
@@ -335,12 +335,15 @@ describe('useNodeHelp', () => {
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      text: async () => '<img src="https://example.com/image.png" alt="External">'
+      text: async () =>
+        '<img src="https://example.com/image.png" alt="External">'
     })
 
     openHelp(mockCustomNode as any)
     await flushPromises()
-    expect(renderedHelpHtml.value).toContain('src="https://example.com/image.png"')
+    expect(renderedHelpHtml.value).toContain(
+      'src="https://example.com/image.png"'
+    )
     expect(renderedHelpHtml.value).toContain('alt="External"')
   })
 
@@ -380,7 +383,7 @@ The MEDIA_SRC_REGEX handles both single and double quotes in img, video and sour
     expect(renderedHelpHtml.value).toContain(
       `src="/docs/${mockCoreNode.name}/video3.mp4"`
     )
-    
+
     // Single quotes remain as single quotes in the output
     expect(renderedHelpHtml.value).toContain(
       `src='/docs/${mockCoreNode.name}/video2.mp4'`

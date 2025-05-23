@@ -552,6 +552,5 @@ This is English documentation.
       )
       await expect(helpPage).not.toContainText('KSampler documentation')
     })
-
   })
 })
