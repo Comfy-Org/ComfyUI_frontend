@@ -124,7 +124,7 @@ const outputList = computed(() =>
 </script>
 
 <style scoped lang="postcss">
-.node-help-content :is(img, video) {
+.node-help-content :deep(:is(img, video)) {
   @apply max-w-full h-auto block mb-4;
 }
 </style>

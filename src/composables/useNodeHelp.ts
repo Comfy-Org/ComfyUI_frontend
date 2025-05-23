@@ -1,14 +1,16 @@
-import DOMPurify from 'dompurify'
-import { Renderer, marked } from 'marked'
-import { type ComputedRef, type Ref, computed, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { i18n } from '@/i18n'
-import { api } from '@/scripts/api'
+import { nodeDocsService } from '@/services/nodeDocsService'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { NodeSourceType, getNodeSource } from '@/types/nodeSource'
+import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
+import { getNodeDocsBaseUrl } from '@/utils/nodeDocsUtil'
 
 const currentHelpNode = ref<ComfyNodeDefImpl | null>(null)
 const isHelpOpen = computed(() => currentHelpNode.value !== null)
+const helpContent = ref<string>('')
+const isLoading = ref<boolean>(false)
+const errorMsg = ref<string | null>(null)
 
 function openHelp(nodeDef: ComfyNodeDefImpl) {
   currentHelpNode.value = nodeDef
@@ -22,23 +24,8 @@ function closeHelp() {
 const baseUrl = computed(() => {
   const node = currentHelpNode.value
   if (!node) return ''
-
-  const nodeSource = getNodeSource(node.python_module)
-  if (nodeSource.type === NodeSourceType.CustomNodes) {
-    // Extract custom node module name from python_module
-    const modules = node.python_module?.split('.') || []
-    if (modules.length >= 2 && modules[0] === 'custom_nodes') {
-      const customNodeName = modules[1].split('@')[0] // Remove version if present
-      return `/extensions/${customNodeName}/docs/`
-    }
-  }
-
-  return `/docs/${node.name}/`
+  return getNodeDocsBaseUrl(node)
 })
-
-const helpContent = ref<string>('')
-const isLoading = ref<boolean>(false)
-const errorMsg = ref<string | null>(null)
 
 // Watch for help node changes and fetch its docs markdown
 watch(
@@ -46,41 +33,12 @@ watch(
   async (node) => {
     helpContent.value = ''
     errorMsg.value = null
+
     if (node) {
       isLoading.value = true
       try {
-        const lang = i18n.global.locale.value || 'en'
-        let mdUrl = ''
-
-        const nodeSource = getNodeSource(node.python_module)
-        if (nodeSource.type === NodeSourceType.CustomNodes) {
-          // For custom nodes, try multiple paths
-          const modules = node.python_module?.split('.') || []
-          if (modules.length >= 2 && modules[0] === 'custom_nodes') {
-            const customNodeName = modules[1].split('@')[0] // Remove version if present
-
-            // Try locale-specific path first
-            mdUrl = `/extensions/${customNodeName}/docs/${node.name}/${lang}.md`
-            let res = await fetch(api.fileURL(mdUrl))
-
-            if (!res.ok) {
-              // Fall back to non-locale path
-              mdUrl = `/extensions/${customNodeName}/docs/${node.name}.md`
-              res = await fetch(api.fileURL(mdUrl))
-            }
-
-            if (!res.ok) throw new Error(res.statusText)
-            helpContent.value = await res.text()
-          } else {
-            throw new Error('Invalid custom node module')
-          }
-        } else {
-          // Core node path
-          mdUrl = `/docs/${node.name}/${lang}.md`
-          const res = await fetch(api.fileURL(mdUrl))
-          if (!res.ok) throw new Error(res.statusText)
-          helpContent.value = await res.text()
-        }
+        const locale = i18n.global.locale.value || 'en'
+        helpContent.value = await nodeDocsService.fetchNodeDocs(node, locale)
       } catch (e: any) {
         errorMsg.value = e.message
         helpContent.value = node.description || ''
@@ -92,60 +50,11 @@ watch(
   { immediate: true }
 )
 
-// Allowed extra tags/attributes for sanitized markdown
-const ALLOWED_TAGS = ['video', 'source']
-const ALLOWED_ATTRS = [
-  'controls',
-  'autoplay',
-  'loop',
-  'muted',
-  'preload',
-  'poster'
-]
+const renderedHelpHtml = computed(() => {
+  return renderMarkdownToHtml(helpContent.value, baseUrl.value)
+})
 
-// Regex pattern to prefix relative src attributes in <img>, <source> or <video> tags
-const MEDIA_SRC_REGEX =
-  /(<(?:img|source|video)[^>]*\ssrc=['"])(?!(?:\/|https?:\/\/))([^'"\s>]+)(['"])/gi
-
-/** create a marked Renderer that prefixes relative URLs with base */
-function createRenderer(baseUrl?: string): Renderer {
-  const normalizedBase = baseUrl ? baseUrl.replace(/\/+$/, '') : ''
-  const renderer = new Renderer()
-  renderer.image = ({ href, title, text }) => {
-    let src = href
-    if (normalizedBase && !/^(?:\/|https?:\/\/)/.test(href)) {
-      src = `${normalizedBase}/${href}`
-    }
-    const titleAttr = title ? ` title="${title}"` : ''
-    return `<img src="${src}" alt="${text}"${titleAttr} />`
-  }
-  return renderer
-}
-
-export function useNodeHelp(): {
-  currentHelpNode: Ref<ComfyNodeDefImpl | null>
-  isHelpOpen: ComputedRef<boolean>
-  openHelp: (node: ComfyNodeDefImpl) => void
-  closeHelp: () => void
-  baseUrl: ComputedRef<string>
-  renderedHelpHtml: ComputedRef<string>
-  isLoading: Ref<boolean>
-  error: Ref<string | null>
-} {
-  const renderedHelpHtml = computed(() => {
-    const md = helpContent.value || ''
-    if (!md) return ''
-    let html = marked.parse(md, {
-      renderer: createRenderer(baseUrl.value)
-    }) as string
-    if (baseUrl.value) {
-      html = html.replace(MEDIA_SRC_REGEX, `$1${baseUrl.value}$2$3`)
-    }
-    return DOMPurify.sanitize(html, {
-      ADD_TAGS: ALLOWED_TAGS,
-      ADD_ATTR: ALLOWED_ATTRS
-    })
-  })
+export function useNodeHelp() {
   return {
     currentHelpNode,
     isHelpOpen,
