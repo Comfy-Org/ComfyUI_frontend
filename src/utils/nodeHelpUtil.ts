@@ -11,7 +11,7 @@ export function extractCustomNodeName(
   return null
 }
 
-export function getNodeDocsBaseUrl(node: ComfyNodeDefImpl): string {
+export function getNodeHelpBaseUrl(node: ComfyNodeDefImpl): string {
   const nodeSource = getNodeSource(node.python_module)
   if (nodeSource.type === NodeSourceType.CustomNodes) {
     const customNodeName = extractCustomNodeName(node.python_module)

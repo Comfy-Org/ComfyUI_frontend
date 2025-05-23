@@ -1,20 +1,20 @@
 import { api } from '@/scripts/api'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { NodeSourceType, getNodeSource } from '@/types/nodeSource'
-import { extractCustomNodeName } from '@/utils/nodeDocsUtil'
+import { extractCustomNodeName } from '@/utils/nodeHelpUtil'
 
-export class NodeDocsService {
-  async fetchNodeDocs(node: ComfyNodeDefImpl, locale: string): Promise<string> {
+export class NodeHelpService {
+  async fetchNodeHelp(node: ComfyNodeDefImpl, locale: string): Promise<string> {
     const nodeSource = getNodeSource(node.python_module)
 
     if (nodeSource.type === NodeSourceType.CustomNodes) {
-      return this.fetchCustomNodeDocs(node, locale)
+      return this.fetchCustomNodeHelp(node, locale)
     } else {
-      return this.fetchCoreNodeDocs(node, locale)
+      return this.fetchCoreNodeHelp(node, locale)
     }
   }
 
-  private async fetchCustomNodeDocs(
+  private async fetchCustomNodeHelp(
     node: ComfyNodeDefImpl,
     locale: string
   ): Promise<string> {
@@ -40,7 +40,7 @@ export class NodeDocsService {
     return res.text()
   }
 
-  private async fetchCoreNodeDocs(
+  private async fetchCoreNodeHelp(
     node: ComfyNodeDefImpl,
     locale: string
   ): Promise<string> {
@@ -56,4 +56,4 @@ export class NodeDocsService {
 }
 
 // Export singleton instance
-export const nodeDocsService = new NodeDocsService()
+export const nodeHelpService = new NodeHelpService()

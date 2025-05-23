@@ -1,10 +1,10 @@
 import { computed, ref, watch } from 'vue'
 
 import { i18n } from '@/i18n'
-import { nodeDocsService } from '@/services/nodeDocsService'
+import { nodeHelpService } from '@/services/nodeHelpService'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
-import { getNodeDocsBaseUrl } from '@/utils/nodeDocsUtil'
+import { getNodeHelpBaseUrl } from '@/utils/nodeHelpUtil'
 
 const currentHelpNode = ref<ComfyNodeDefImpl | null>(null)
 const isHelpOpen = computed(() => currentHelpNode.value !== null)
@@ -24,7 +24,7 @@ function closeHelp() {
 const baseUrl = computed(() => {
   const node = currentHelpNode.value
   if (!node) return ''
-  return getNodeDocsBaseUrl(node)
+  return getNodeHelpBaseUrl(node)
 })
 
 // Watch for help node changes and fetch its docs markdown
@@ -38,7 +38,7 @@ watch(
       isLoading.value = true
       try {
         const locale = i18n.global.locale.value || 'en'
-        helpContent.value = await nodeDocsService.fetchNodeDocs(node, locale)
+        helpContent.value = await nodeHelpService.fetchNodeHelp(node, locale)
       } catch (e: any) {
         errorMsg.value = e.message
         helpContent.value = node.description || ''
