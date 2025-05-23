@@ -29,20 +29,21 @@ class Load3d {
   protected animationFrameId: number | null = null
   node: LGraphNode
 
-  protected eventManager: EventManager
-  protected nodeStorage: NodeStorage
-  protected sceneManager: SceneManager
-  protected cameraManager: CameraManager
-  protected controlsManager: ControlsManager
-  protected lightingManager: LightingManager
-  protected viewHelperManager: ViewHelperManager
-  protected previewManager: PreviewManager
-  protected loaderManager: LoaderManager
-  protected modelManager: ModelManager
-  protected recordingManager: RecordingManager
+  public eventManager: EventManager
+  public nodeStorage: NodeStorage
+  public sceneManager: SceneManager
+  public cameraManager: CameraManager
+  public controlsManager: ControlsManager
+  public lightingManager: LightingManager
+  public viewHelperManager: ViewHelperManager
+  public previewManager: PreviewManager
+  public loaderManager: LoaderManager
+  public modelManager: ModelManager
+  public recordingManager: RecordingManager
 
   STATUS_MOUSE_ON_NODE: boolean
   STATUS_MOUSE_ON_SCENE: boolean
+  STATUS_MOUSE_ON_EDITOR: boolean
   INITIAL_RENDER_DONE: boolean = false
 
   constructor(
@@ -142,6 +143,7 @@ class Load3d {
 
     this.STATUS_MOUSE_ON_NODE = false
     this.STATUS_MOUSE_ON_SCENE = false
+    this.STATUS_MOUSE_ON_EDITOR = false
 
     this.handleResize()
     this.startAnimation()
@@ -243,10 +245,15 @@ class Load3d {
     this.STATUS_MOUSE_ON_SCENE = onScene
   }
 
+  updateStatusMouseOnEditor(onEditor: boolean): void {
+    this.STATUS_MOUSE_ON_EDITOR = onEditor
+  }
+
   isActive(): boolean {
     return (
       this.STATUS_MOUSE_ON_NODE ||
       this.STATUS_MOUSE_ON_SCENE ||
+      this.STATUS_MOUSE_ON_EDITOR ||
       this.isRecording() ||
       !this.INITIAL_RENDER_DONE
     )
@@ -355,6 +362,10 @@ class Load3d {
 
   getCurrentCameraType(): 'perspective' | 'orthographic' {
     return this.cameraManager.getCurrentCameraType()
+  }
+
+  getCurrentModel(): THREE.Object3D | null {
+    return this.modelManager.currentModel
   }
 
   setCameraState(state: CameraState): void {

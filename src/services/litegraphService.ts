@@ -33,6 +33,7 @@ import type {
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { ComfyApp, app } from '@/scripts/app'
 import { $el } from '@/scripts/ui'
+import { useDialogService } from '@/services/dialogService'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -43,6 +44,7 @@ import { useWorkflowStore } from '@/stores/workflowStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
   isImageNode,
+  isLoad3dNode,
   isVideoNode,
   migrateWidgetsValues
 } from '@/utils/litegraphUtil'
@@ -60,6 +62,7 @@ export const useLitegraphService = () => {
   const toastStore = useToastStore()
   const widgetStore = useWidgetStore()
   const canvasStore = useCanvasStore()
+  const dialogStore = useDialogService()
 
   // TODO: Dedupe `registerNodeDef`; this should remain synchronous.
   function registerSubgraphNodeDef(
@@ -755,6 +758,15 @@ export const useLitegraphService = () => {
             }
           })
         }
+      }
+
+      if (isLoad3dNode(this)) {
+        options.push({
+          content: 'Open in 3D Editor (Beta)',
+          callback: () => {
+            dialogStore.showLoad3dEditorDialog({ node: this })
+          }
+        })
       }
 
       return []
