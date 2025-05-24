@@ -518,6 +518,11 @@
     "camera": "Камера",
     "clearRecording": "Очистить запись",
     "edgeThreshold": "Пороговое значение края",
+    "editor": {
+      "apply": "Применить",
+      "cameraType": "Тип камеры",
+      "cancel": "Отмена"
+    },
     "export": "Экспорт",
     "exportModel": "Экспорт модели",
     "exportRecording": "Экспортировать запись",

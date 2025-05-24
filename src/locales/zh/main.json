@@ -518,6 +518,11 @@
     "camera": "摄影机",
     "clearRecording": "清除录制",
     "edgeThreshold": "边缘阈值",
+    "editor": {
+      "apply": "应用",
+      "cameraType": "相机类型",
+      "cancel": "取消"
+    },
     "export": "导出",
     "exportModel": "导出模型",
     "exportRecording": "导出录制",

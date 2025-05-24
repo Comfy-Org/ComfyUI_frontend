@@ -518,6 +518,11 @@
     "camera": "카메라",
     "clearRecording": "녹화 지우기",
     "edgeThreshold": "엣지 임계값",
+    "editor": {
+      "apply": "적용",
+      "cameraType": "카메라 유형",
+      "cancel": "취소"
+    },
     "export": "내보내기",
     "exportModel": "모델 내보내기",
     "exportRecording": "녹화 내보내기",

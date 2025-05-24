@@ -518,6 +518,11 @@
     "camera": "Cámara",
     "clearRecording": "Borrar grabación",
     "edgeThreshold": "Umbral de borde",
+    "editor": {
+      "apply": "Aplicar",
+      "cameraType": "Tipo de cámara",
+      "cancel": "Cancelar"
+    },
     "export": "Exportar",
     "exportModel": "Exportar modelo",
     "exportRecording": "Exportar grabación",

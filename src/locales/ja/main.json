@@ -518,6 +518,11 @@
     "camera": "カメラ",
     "clearRecording": "録画をクリア",
     "edgeThreshold": "エッジ閾値",
+    "editor": {
+      "apply": "適用",
+      "cameraType": "カメラタイプ",
+      "cancel": "キャンセル"
+    },
     "export": "エクスポート",
     "exportModel": "モデルをエクスポート",
     "exportRecording": "録画をエクスポート",

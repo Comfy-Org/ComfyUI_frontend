@@ -1237,7 +1237,12 @@
     "exportRecording": "Export Recording",
     "clearRecording": "Clear Recording",
     "resizeNodeMatchOutput": "Resize Node to match output",
-    "loadingBackgroundImage": "Loading Background Image"
+    "loadingBackgroundImage": "Loading Background Image",
+    "editor": {
+      "apply": "Apply",
+      "cancel": "Cancel",
+      "cameraType": "Camera Type"
+    }
   },
   "toastMessages": {
     "nothingToQueue": "Nothing to queue",
