@@ -11,6 +11,7 @@ export interface TemplateInfo {
   description: string
   localizedTitle?: string
   localizedDescription?: string
+  sourceModule?: string
 }
 
 export interface WorkflowTemplates {
