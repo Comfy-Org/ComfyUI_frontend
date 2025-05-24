@@ -38,6 +38,10 @@ class OverrideMTLLoader extends Loader {
     this.loadRootFolder = loadRootFolder
   }
 
+  setSubfolder(subfolder) {
+    this.subfolder = subfolder
+  }
+
   /**
    * Starts loading from the given URL and passes the loaded MTL asset
    * to the `onLoad()` callback.
@@ -135,7 +139,8 @@ class OverrideMTLLoader extends Loader {
     const materialCreator = new OverrideMaterialCreator(
       this.resourcePath || path,
       this.materialOptions,
-      this.loadRootFolder
+      this.loadRootFolder,
+      this.subfolder
     )
     materialCreator.setCrossOrigin(this.crossOrigin)
     materialCreator.setManager(this.manager)
@@ -155,7 +160,7 @@ class OverrideMTLLoader extends Loader {
  */
 
 class OverrideMaterialCreator {
-  constructor(baseUrl = '', options = {}, loadRootFolder) {
+  constructor(baseUrl = '', options = {}, loadRootFolder, subfolder) {
     this.baseUrl = baseUrl
     this.options = options
     this.materialsInfo = {}
@@ -164,6 +169,7 @@ class OverrideMaterialCreator {
     this.nameLookup = {}
 
     this.loadRootFolder = loadRootFolder
+    this.subfolder = subfolder
 
     this.crossOrigin = 'anonymous'
 
@@ -283,8 +289,16 @@ class OverrideMaterialCreator {
     /**
      * Override for ComfyUI api url
      */
-    function resolveURL(baseUrl, url, loadRootFolder) {
+    function resolveURL(baseUrl, url, loadRootFolder, subfolder) {
       if (typeof url !== 'string' || url === '') return ''
+
+      if (baseUrl.endsWith('/')) {
+        baseUrl = baseUrl.slice(0, -1)
+      }
+
+      if (!baseUrl.endsWith('api')) {
+        baseUrl = '/api'
+      }
 
       baseUrl =
         baseUrl +
@@ -292,7 +306,8 @@ class OverrideMaterialCreator {
         url +
         '&type=' +
         loadRootFolder +
-        '&subfolder=3d'
+        '&subfolder=' +
+        subfolder
 
       return baseUrl
     }
@@ -302,7 +317,12 @@ class OverrideMaterialCreator {
 
       const texParams = scope.getTextureParams(value, params)
       const map = scope.loadTexture(
-        resolveURL(scope.baseUrl, texParams.url, scope.loadRootFolder)
+        resolveURL(
+          scope.baseUrl,
+          texParams.url,
+          scope.loadRootFolder,
+          scope.subfolder
+        )
       )
 
       map.repeat.copy(texParams.scale)

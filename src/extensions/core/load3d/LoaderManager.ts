@@ -132,6 +132,14 @@ export class LoaderManager implements LoaderManagerInterface {
         if (this.modelManager.materialMode === 'original') {
           const mtlUrl = url.replace(/(filename=.*?)\.obj/, '$1.mtl')
 
+          const subfolderMatch = url.match(/[?&]subfolder=([^&]*)/)
+
+          const subfolder = subfolderMatch
+            ? decodeURIComponent(subfolderMatch[1])
+            : '3d'
+
+          this.mtlLoader.setSubfolder(subfolder)
+
           try {
             const materials = await this.mtlLoader.loadAsync(mtlUrl)
             materials.preload()

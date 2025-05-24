@@ -266,7 +266,7 @@ useExtensionService().registerExtension({
       LOAD_3D_ANIMATION(node) {
         const fileInput = document.createElement('input')
         fileInput.type = 'file'
-        fileInput.accept = '.fbx,glb,gltf'
+        fileInput.accept = '.gltf,.glb,.fbx'
         fileInput.style.display = 'none'
         fileInput.onchange = async () => {
           if (fileInput.files?.length) {
@@ -452,31 +452,43 @@ useExtensionService().registerExtension({
 
     const onExecuted = node.onExecuted
 
-    node.onExecuted = function (message: any) {
-      onExecuted?.apply(this, arguments as any)
+    useLoad3dService().waitForLoad3d(node, (load3d) => {
+      const config = new Load3DConfiguration(load3d)
 
-      let filePath = message.result[0]
+      const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
 
-      if (!filePath) {
-        const msg = t('toastMessages.unableToGetModelFilePath')
-        console.error(msg)
-        useToastStore().addAlert(msg)
-      }
+      if (modelWidget) {
+        const lastTimeModelFile = node.properties['Last Time Model File']
 
-      let cameraState = message.result[1]
+        if (lastTimeModelFile) {
+          modelWidget.value = lastTimeModelFile
 
-      useLoad3dService().waitForLoad3d(node, (load3d) => {
-        const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
-
-        if (modelWidget) {
-          modelWidget.value = filePath.replaceAll('\\', '/')
-
-          const config = new Load3DConfiguration(load3d)
+          const cameraState = node.properties['Camera Info']
 
           config.configure('output', modelWidget, cameraState)
         }
-      })
-    }
+
+        node.onExecuted = function (message: any) {
+          onExecuted?.apply(this, arguments as any)
+
+          let filePath = message.result[0]
+
+          if (!filePath) {
+            const msg = t('toastMessages.unableToGetModelFilePath')
+            console.error(msg)
+            useToastStore().addAlert(msg)
+          }
+
+          let cameraState = message.result[1]
+
+          modelWidget.value = filePath.replaceAll('\\', '/')
+
+          node.properties['Last Time Model File'] = modelWidget.value
+
+          config.configure('output', modelWidget, cameraState)
+        }
+      }
+    })
   }
 })
 
@@ -526,29 +538,42 @@ useExtensionService().registerExtension({
 
     const onExecuted = node.onExecuted
 
-    node.onExecuted = function (message: any) {
-      onExecuted?.apply(this, arguments as any)
+    useLoad3dService().waitForLoad3d(node, (load3d) => {
+      const config = new Load3DConfiguration(load3d)
 
-      let filePath = message.result[0]
+      const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
 
-      if (!filePath) {
-        const msg = t('toastMessages.unableToGetModelFilePath')
-        console.error(msg)
-        useToastStore().addAlert(msg)
-      }
+      if (modelWidget) {
+        const lastTimeModelFile = node.properties['Last Time Model File']
 
-      let cameraState = message.result[1]
+        if (lastTimeModelFile) {
+          modelWidget.value = lastTimeModelFile
 
-      useLoad3dService().waitForLoad3d(node, (load3d) => {
-        const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
-        if (modelWidget) {
-          modelWidget.value = filePath.replaceAll('\\', '/')
-
-          const config = new Load3DConfiguration(load3d)
+          const cameraState = node.properties['Camera Info']
 
           config.configure('output', modelWidget, cameraState)
         }
-      })
-    }
+
+        node.onExecuted = function (message: any) {
+          onExecuted?.apply(this, arguments as any)
+
+          let filePath = message.result[0]
+
+          if (!filePath) {
+            const msg = t('toastMessages.unableToGetModelFilePath')
+            console.error(msg)
+            useToastStore().addAlert(msg)
+          }
+
+          let cameraState = message.result[1]
+
+          modelWidget.value = filePath.replaceAll('\\', '/')
+
+          node.properties['Last Time Model File'] = modelWidget.value
+
+          config.configure('output', modelWidget, cameraState)
+        }
+      }
+    })
   }
 })
