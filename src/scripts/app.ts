@@ -1074,11 +1074,11 @@ export class ComfyApp {
     try {
       // @ts-expect-error Discrepancies between zod and litegraph - in progress
       this.graph.configure(graphData)
-      if (restore_view) {
-        if (
-          useSettingStore().get('Comfy.EnableWorkflowViewRestore') &&
-          graphData.extra?.ds
-        ) {
+      if (
+        restore_view &&
+        useSettingStore().get('Comfy.EnableWorkflowViewRestore')
+      ) {
+        if (graphData.extra?.ds) {
           this.canvas.ds.offset = graphData.extra.ds.offset
           this.canvas.ds.scale = graphData.extra.ds.scale
         } else {
