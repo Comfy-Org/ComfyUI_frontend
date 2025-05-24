@@ -3,9 +3,11 @@ import {
   LGraphBadge,
   type LGraphNode
 } from '@comfyorg/litegraph'
+import { computedWithControl } from '@vueuse/core'
 import _ from 'lodash'
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
+import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useNodePricing } from '@/composables/node/useNodePricing'
 import { app } from '@/scripts/app'
 import { useExtensionStore } from '@/stores/extensionStore'
@@ -111,10 +113,10 @@ export const useNodeBadge = () => {
         node.badges.push(() => badge.value)
 
         if (node.constructor.nodeData?.api_node && showApiPricingBadge.value) {
-          const price = nodePricing.getNodeDisplayPrice(node)
-          // Always add the badge for API nodes, with or without price text
-          const creditsBadge = computed(() => {
-            // Use dynamic background color based on the theme
+          const priceChangedTrigger = ref(0)
+          const creditsBadge = computedWithControl(priceChangedTrigger, () => {
+            const price = nodePricing.getNodeDisplayPrice(node)
+
             const isLightTheme =
               colorPaletteStore.completedActivePalette.light_theme
             return new LGraphBadge({
@@ -140,6 +142,31 @@ export const useNodeBadge = () => {
           })
 
           node.badges.push(() => creditsBadge.value)
+
+          // Add widget observers to trigger price badge updates when values change
+          if (node.widgets) {
+            // Get the pricing function to determine which widgets to observe
+            const pricingConfig = nodePricing.getNodePricingConfig(node)
+            if (typeof pricingConfig?.displayPrice === 'function') {
+              // For dynamic pricing nodes, observe relevant widgets
+              const relevantWidgetNames = nodePricing.getRelevantWidgetNames(
+                node.constructor.nodeData?.name
+              )
+
+              relevantWidgetNames.forEach((widgetName) => {
+                const widget = node.widgets?.find((w) => w.name === widgetName)
+                if (widget) {
+                  // Chain our callback with any existing callback
+                  widget.callback = useChainCallback(widget.callback, () => {
+                    // Trigger reactivity by updating the pricing trigger
+                    priceChangedTrigger.value++
+                    // Also trigger a canvas redraw to refresh the visual
+                    node.graph?.setDirtyCanvas(true, true)
+                  })
+                }
+              })
+            }
+          }
         }
       }
     })
