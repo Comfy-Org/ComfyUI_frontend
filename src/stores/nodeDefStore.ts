@@ -38,6 +38,7 @@ export class ComfyNodeDefImpl
   category: string
   readonly python_module: string
   readonly description: string
+  readonly help: string
   readonly deprecated: boolean
   readonly experimental: boolean
   readonly output_node: boolean
@@ -118,6 +119,7 @@ export class ComfyNodeDefImpl
     this.category = obj.category
     this.python_module = obj.python_module
     this.description = obj.description
+    this.help = obj.help ?? ''
     this.deprecated = obj.deprecated ?? obj.category === ''
     this.experimental =
       obj.experimental ?? obj.category.startsWith('_for_testing')
