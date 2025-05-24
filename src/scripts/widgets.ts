@@ -12,6 +12,7 @@ import { useImageUploadWidget } from '@/composables/widgets/useImageUploadWidget
 import { useIntWidget } from '@/composables/widgets/useIntWidget'
 import { useMarkdownWidget } from '@/composables/widgets/useMarkdownWidget'
 import { useStringWidget } from '@/composables/widgets/useStringWidget'
+import { useTextUploadWidget } from '@/composables/widgets/useTextUploadWidget'
 import { t } from '@/i18n'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -289,5 +290,6 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
   STRING: transformWidgetConstructorV2ToV1(useStringWidget()),
   MARKDOWN: transformWidgetConstructorV2ToV1(useMarkdownWidget()),
   COMBO: transformWidgetConstructorV2ToV1(useComboWidget()),
-  IMAGEUPLOAD: useImageUploadWidget()
+  IMAGEUPLOAD: useImageUploadWidget(),
+  TEXTUPLOAD: useTextUploadWidget()
 }
