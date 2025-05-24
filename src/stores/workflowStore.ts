@@ -23,7 +23,7 @@ export class ComfyWorkflow extends UserFile {
   /**
    * Whether the workflow has been modified comparing to the initial state.
    */
-  private _isModified: boolean = false
+  _isModified: boolean = false
 
   /**
    * @param options The path, modified, and size of the workflow.
@@ -131,7 +131,7 @@ export interface WorkflowStore {
   activeWorkflow: LoadedComfyWorkflow | null
   isActive: (workflow: ComfyWorkflow) => boolean
   openWorkflows: ComfyWorkflow[]
-  openedWorkflowIndexShift: (shift: number) => LoadedComfyWorkflow | null
+  openedWorkflowIndexShift: (shift: number) => ComfyWorkflow | null
   openWorkflow: (workflow: ComfyWorkflow) => Promise<LoadedComfyWorkflow>
   openWorkflowsInBackground: (paths: {
     left?: string[]
@@ -477,7 +477,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     isSubgraphActive,
     updateActiveGraph
   }
-}) as () => WorkflowStore
+}) satisfies () => WorkflowStore
 
 export const useWorkflowBookmarkStore = defineStore('workflowBookmark', () => {
   const bookmarks = ref<Set<string>>(new Set())
