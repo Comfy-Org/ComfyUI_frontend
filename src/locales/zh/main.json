@@ -1359,6 +1359,7 @@
     "pendingTasksDeleted": "待处理任务已删除",
     "pleaseSelectNodesToGroup": "请选取节点（或其他组）以创建分组",
     "pleaseSelectOutputNodes": "请选择输出节点",
+    "unableToFetchFile": "无法获取文件",
     "unableToGetModelFilePath": "无法获取模型文件路径",
     "unauthorizedDomain": "您的域名 {domain} 未被授权使用此服务。请联系 {email} 将您的域名添加到白名单。",
     "updateRequested": "已请求更新",

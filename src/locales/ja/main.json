@@ -1359,6 +1359,7 @@
     "pendingTasksDeleted": "保留中のタスクが削除されました",
     "pleaseSelectNodesToGroup": "グループを作成するためのノード（または他のグループ）を選択してください",
     "pleaseSelectOutputNodes": "出力ノードを選択してください",
+    "unableToFetchFile": "ファイルを取得できません",
     "unableToGetModelFilePath": "モデルファイルのパスを取得できません",
     "unauthorizedDomain": "あなたのドメイン {domain} はこのサービスを利用する権限がありません。ご利用のドメインをホワイトリストに追加するには、{email} までご連絡ください。",
     "updateRequested": "更新が要求されました",
