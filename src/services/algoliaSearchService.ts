@@ -1,3 +1,4 @@
+import { searchClient as algoliasearch } from '@algolia/client-search'
 import QuickLRU from '@alloc/quick-lru'
 import type {
   BaseSearchParamsWithoutQuery,
@@ -5,7 +6,6 @@ import type {
   SearchQuery,
   SearchResponse
 } from 'algoliasearch/dist/lite/browser'
-import { liteClient as algoliasearch } from 'algoliasearch/dist/lite/builds/browser'
 import { omit } from 'lodash'
 
 import { components } from '@/types/comfyRegistryTypes'
@@ -124,7 +124,15 @@ export const useAlgoliaSearchService = (
     maxCacheSize = DEFAULT_MAX_CACHE_SIZE,
     minCharsForSuggestions = DEFAULT_MIN_CHARS_FOR_SUGGESTIONS
   } = options
-  const searchClient = algoliasearch(__ALGOLIA_APP_ID__, __ALGOLIA_API_KEY__)
+  const searchClient = algoliasearch(__ALGOLIA_APP_ID__, __ALGOLIA_API_KEY__, {
+    hosts: [
+      {
+        url: 'https://search.comfy.org',
+        accept: 'read',
+        protocol: 'https'
+      }
+    ]
+  })
   const searchPacksCache = new QuickLRU<string, SearchPacksResult>({
     maxSize: maxCacheSize
   })
