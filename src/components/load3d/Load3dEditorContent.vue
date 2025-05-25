@@ -6,18 +6,12 @@
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
   >
-    <div
-      class="w-16 bg-gray-800 flex flex-col items-center py-4 space-y-4 flex-none"
-    >
+    <div class="w-16 flex flex-col items-center py-4 space-y-4 flex-none">
       <button
         v-for="item in menuItems"
         :key="item.id"
         class="w-12 h-12 rounded-lg flex items-center justify-center transition-colors"
-        :class="
-          activePanel === item.id
-            ? 'bg-blue-500 text-white'
-            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-        "
+        :class="activePanel === item.id ? 'text-white' : 'text-gray-300'"
         @click="activePanel = item.id"
       >
         <i :class="[item.icon, 'text-lg']" />
@@ -32,7 +26,7 @@
       />
     </div>
 
-    <div class="w-64 bg-gray-800 p-4 flex-none flex flex-col">
+    <div class="w-64 bp-4 flex-none flex flex-col">
       <div class="text-white mb-4 font-medium">
         {{ activePanelTitle || 'Settings Panel' }}
       </div>
@@ -65,8 +59,12 @@
           <div class="setting-item">
             <label>{{ t('load3d.editor.cameraType') }}</label>
             <select v-model="cameraType" @change="toggleCamera">
-              <option value="perspective">Perspective</option>
-              <option value="orthographic">Orthographic</option>
+              <option value="perspective">
+                {{ t('load3d.cameraType.perspective') }}
+              </option>
+              <option value="orthographic">
+                {{ t('load3d.cameraType.orthographic') }}
+              </option>
             </select>
           </div>
           <div v-if="showFOVButton" class="setting-item">
@@ -101,13 +99,13 @@
         <Button
           icon="pi pi-times"
           severity="secondary"
-          :label="t('load3d.editor.cancel')"
+          :label="t('g.cancel')"
           @click="handleCancel"
         />
         <Button
           icon="pi pi-check"
           severity="secondary"
-          :label="t('load3d.editor.apply')"
+          :label="t('g.apply')"
           @click="handleConfirm"
         />
       </div>
@@ -132,11 +130,16 @@ const props = defineProps<{
   node: LGraphNode
 }>()
 
-const activePanel = ref<string | null>('scene')
+const activePanel = ref('scene')
+
 const menuItems = [
-  { id: 'scene', icon: 'pi pi-image', title: 'Scene Settings' },
-  { id: 'camera', icon: 'pi pi-camera', title: 'Camera Settings' },
-  { id: 'light', icon: 'pi pi-sun', title: 'Light Settings' }
+  { id: 'scene', icon: 'pi pi-image', title: t('load3d.editor.sceneSetting') },
+  {
+    id: 'camera',
+    icon: 'pi pi-camera',
+    title: t('load3d.editor.cameraSetting')
+  },
+  { id: 'light', icon: 'pi pi-sun', title: t('load3d.editor.lightSetting') }
 ]
 
 const showFOVButton = ref(false)
@@ -211,26 +214,6 @@ function initializeEditor(source: Load3d) {
     load3d.modelManager.materialMode = source.modelManager.materialMode
     load3d.modelManager.currentUpDirection =
       source.modelManager.currentUpDirection
-
-    if (source.modelManager.originalMaterials) {
-      modelClone.traverse((child) => {
-        if (child instanceof THREE.Mesh) {
-          const sourceMesh = sourceModel.getObjectByName(
-            child.name
-          ) as THREE.Mesh
-          if (sourceMesh) {
-            const originalMaterial =
-              source.modelManager.originalMaterials.get(sourceMesh)
-            if (originalMaterial) {
-              load3d?.modelManager.originalMaterials.set(
-                child,
-                originalMaterial
-              )
-            }
-          }
-        }
-      })
-    }
 
     load3d.setMaterialMode(source.modelManager.materialMode)
     load3d.setUpDirection(source.modelManager.currentUpDirection)

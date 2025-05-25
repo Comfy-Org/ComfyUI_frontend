@@ -29,17 +29,17 @@ class Load3d {
   protected animationFrameId: number | null = null
   node: LGraphNode
 
-  public eventManager: EventManager
-  public nodeStorage: NodeStorage
-  public sceneManager: SceneManager
-  public cameraManager: CameraManager
-  public controlsManager: ControlsManager
-  public lightingManager: LightingManager
-  public viewHelperManager: ViewHelperManager
-  public previewManager: PreviewManager
-  public loaderManager: LoaderManager
-  public modelManager: ModelManager
-  public recordingManager: RecordingManager
+  eventManager: EventManager
+  nodeStorage: NodeStorage
+  sceneManager: SceneManager
+  cameraManager: CameraManager
+  controlsManager: ControlsManager
+  lightingManager: LightingManager
+  viewHelperManager: ViewHelperManager
+  previewManager: PreviewManager
+  loaderManager: LoaderManager
+  modelManager: ModelManager
+  recordingManager: RecordingManager
 
   STATUS_MOUSE_ON_NODE: boolean
   STATUS_MOUSE_ON_SCENE: boolean

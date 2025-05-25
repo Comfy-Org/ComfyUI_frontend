@@ -1300,10 +1300,18 @@
     "clearRecording": "Clear Recording",
     "resizeNodeMatchOutput": "Resize Node to match output",
     "loadingBackgroundImage": "Loading Background Image",
+    "cameraType": {
+      "perspective": "Perspective",
+      "orthographic": "Orthographic"
+    },
     "editor": {
+      "title": "3D Editor (Beta)",
       "apply": "Apply",
       "cancel": "Cancel",
-      "cameraType": "Camera Type"
+      "cameraType": "Camera Type",
+      "sceneSetting": "Scene Setting",
+      "cameraSetting": "Camera Setting",
+      "lightSetting": "Light Setting"
     }
   },
   "toastMessages": {

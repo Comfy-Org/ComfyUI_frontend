@@ -288,7 +288,7 @@ export const useDialogService = () => {
   ) {
     dialogStore.showDialog({
       key: 'global-load3d-editor',
-      title: '3D Editor (Beta)',
+      title: t('load3d.editor.title'),
       component: Load3dEditorContent,
       props: props,
       dialogComponentProps: {
