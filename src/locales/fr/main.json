@@ -550,12 +550,20 @@
     "applyingTexture": "Application de la texture...",
     "backgroundColor": "Couleur de fond",
     "camera": "Caméra",
+    "cameraType": {
+      "orthographic": "Orthographique",
+      "perspective": "Perspective"
+    },
     "clearRecording": "Effacer l'enregistrement",
     "edgeThreshold": "Seuil de Bordure",
     "editor": {
       "apply": "Appliquer",
+      "cameraSetting": "Paramètre de la caméra",
       "cameraType": "Type de caméra",
-      "cancel": "Annuler"
+      "cancel": "Annuler",
+      "lightSetting": "Paramètre de l’éclairage",
+      "sceneSetting": "Paramètre de la scène",
+      "title": "Éditeur 3D (Bêta)"
     },
     "export": "Exportation",
     "exportModel": "Exportation du modèle",
@@ -761,6 +769,7 @@
     "New": "Nouveau",
     "Next Opened Workflow": "Prochain flux de travail ouvert",
     "Open": "Ouvrir",
+    "Open 3D Editor (Beta) for Selected Node": "Ouvrir l’éditeur 3D (bêta) pour le nœud sélectionné",
     "Open Custom Nodes Folder": "Ouvrir le dossier des nœuds personnalisés",
     "Open DevTools": "Ouvrir DevTools",
     "Open Inputs Folder": "Ouvrir le dossier des entrées",

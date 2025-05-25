@@ -35,6 +35,9 @@
   "Comfy-Desktop_Restart": {
     "label": "Restart"
   },
+  "Comfy_3DEditor_Open3DEditor": {
+    "label": "Open 3D Editor (Beta) for Selected Node"
+  },
   "Comfy_BrowseTemplates": {
     "label": "Browse Templates"
   },
@@ -160,9 +163,6 @@
   },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Open Mask Editor for Selected Node"
-  },
-  "Comfy_3DEditor_Open3DEditor": {
-    "label": "Open 3D Editor (Beta) for Selected Node"
   },
   "Comfy_NewBlankWorkflow": {
     "label": "New Blank Workflow"

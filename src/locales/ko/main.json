@@ -550,12 +550,20 @@
     "applyingTexture": "텍스처 적용 중...",
     "backgroundColor": "배경색",
     "camera": "카메라",
+    "cameraType": {
+      "orthographic": "직교",
+      "perspective": "원근"
+    },
     "clearRecording": "녹화 지우기",
     "edgeThreshold": "엣지 임계값",
     "editor": {
       "apply": "적용",
+      "cameraSetting": "카메라 설정",
       "cameraType": "카메라 유형",
-      "cancel": "취소"
+      "cancel": "취소",
+      "lightSetting": "조명 설정",
+      "sceneSetting": "씬 설정",
+      "title": "3D 에디터 (베타)"
     },
     "export": "내보내기",
     "exportModel": "모델 내보내기",
@@ -761,6 +769,7 @@
     "New": "새로 만들기",
     "Next Opened Workflow": "다음 열린 워크플로",
     "Open": "열기",
+    "Open 3D Editor (Beta) for Selected Node": "선택한 노드에 대해 3D 에디터(베타) 열기",
     "Open Custom Nodes Folder": "사용자 정의 노드 폴더 열기",
     "Open DevTools": "개발자 도구 열기",
     "Open Inputs Folder": "입력 폴더 열기",

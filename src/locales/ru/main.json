@@ -550,12 +550,20 @@
     "applyingTexture": "Применение текстуры...",
     "backgroundColor": "Цвет фона",
     "camera": "Камера",
+    "cameraType": {
+      "orthographic": "Ортографическая",
+      "perspective": "Перспективная"
+    },
     "clearRecording": "Очистить запись",
     "edgeThreshold": "Пороговое значение края",
     "editor": {
       "apply": "Применить",
+      "cameraSetting": "Настройки камеры",
       "cameraType": "Тип камеры",
-      "cancel": "Отмена"
+      "cancel": "Отмена",
+      "lightSetting": "Настройки освещения",
+      "sceneSetting": "Настройки сцены",
+      "title": "3D редактор (Бета)"
     },
     "export": "Экспорт",
     "exportModel": "Экспорт модели",
@@ -761,6 +769,7 @@
     "New": "Новый",
     "Next Opened Workflow": "Следующий открытый рабочий процесс",
     "Open": "Открыть",
+    "Open 3D Editor (Beta) for Selected Node": "Открыть 3D-редактор (бета) для выбранного узла",
     "Open Custom Nodes Folder": "Открыть папку пользовательских нод",
     "Open DevTools": "Открыть инструменты разработчика",
     "Open Inputs Folder": "Открыть папку входных данных",
