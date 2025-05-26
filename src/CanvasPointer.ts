@@ -1,3 +1,4 @@
+import type { CompassDirection } from "./interfaces"
 import type { CanvasPointerEvent } from "./types/events"
 
 import { dist2 } from "./measure"
@@ -58,6 +59,9 @@ export class CanvasPointer {
   isDouble: boolean = false
   /** Used downstream for touch event support. */
   isDown: boolean = false
+
+  /** The resize handle currently being hovered or dragged */
+  resizeDirection?: CompassDirection
 
   /**
    * If `true`, {@link eDown}, {@link eMove}, and {@link eUp} will be set to
@@ -269,6 +273,7 @@ export class CanvasPointer {
     this.isDown = false
     this.isDouble = false
     this.dragStarted = false
+    this.resizeDirection = undefined
 
     if (this.clearEventsOnReset) {
       this.eDown = undefined

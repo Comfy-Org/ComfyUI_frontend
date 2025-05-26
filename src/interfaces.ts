@@ -238,8 +238,8 @@ type TypedArrays =
   | Float64Array
 
 type TypedBigIntArrays = BigInt64Array | BigUint64Array
-type ReadOnlyTypedArray<T extends TypedArrays | TypedBigIntArrays> =
-  Omit<T, "fill" | "copyWithin" | "reverse" | "set" | "sort" | "subarray">
+export type ReadOnlyTypedArray<T extends TypedArrays | TypedBigIntArrays> =
+  Omit<Readonly<T>, "fill" | "copyWithin" | "reverse" | "set" | "sort" | "subarray">
 
 /** Union of property names that are of type Match */
 export type KeysOfType<T, Match> = Exclude<{ [P in keyof T]: T[P] extends Match ? P : never }[keyof T], undefined>
@@ -258,6 +258,9 @@ export interface IBoundaryNodes {
 }
 
 export type Direction = "top" | "bottom" | "left" | "right"
+
+/** Resize handle positions (compass points) */
+export type CompassDirection = "N" | "NE" | "E" | "SE" | "S" | "SW" | "W" | "NW"
 
 /**
  * A string that represents a specific data / slot type, e.g. `STRING`.

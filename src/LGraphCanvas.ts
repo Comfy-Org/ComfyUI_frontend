@@ -44,7 +44,7 @@ import { strokeShape } from "./draw"
 import { NullGraphError } from "./infrastructure/NullGraphError"
 import { LGraphGroup } from "./LGraphGroup"
 import { LGraphNode, type NodeId, type NodeProperty } from "./LGraphNode"
-import { LiteGraph, type Rectangle } from "./litegraph"
+import { LiteGraph, Rectangle } from "./litegraph"
 import { type LinkId, LLink } from "./LLink"
 import {
   containsRect,
@@ -202,6 +202,17 @@ interface ICreatePanelOptions {
   height?: any
 }
 
+const cursors = {
+  N: "ns-resize",
+  NE: "nesw-resize",
+  E: "ew-resize",
+  SE: "nwse-resize",
+  S: "ns-resize",
+  SW: "nesw-resize",
+  W: "ew-resize",
+  NW: "nwse-resize",
+} as const
+
 /**
  * This class is in charge of rendering one graph inside a canvas. And provides all the interaction required.
  * Valid callbacks are: onNodeSelected, onNodeDeselected, onShowNodePanel, onNodeDblClicked
@@ -276,8 +287,8 @@ export class LGraphCanvas {
       cursor = "grabbing"
     } else if (this.state.readOnly) {
       cursor = "grab"
-    } else if (this.state.hoveringOver & CanvasItem.ResizeSe) {
-      cursor = "se-resize"
+    } else if (this.pointer.resizeDirection) {
+      cursor = cursors[this.pointer.resizeDirection] ?? cursors.SE
     } else if (this.state.hoveringOver & CanvasItem.Node) {
       cursor = "crosshair"
     } else if (this.state.hoveringOver & CanvasItem.Reroute) {
@@ -1864,6 +1875,7 @@ export class LGraphCanvas {
     for (const otherNode of nodes) {
       if (otherNode.mouseOver && node != otherNode) {
         // mouse leave
+        this.pointer.resizeDirection = undefined
         otherNode.mouseOver = undefined
         this._highlight_input = undefined
         this._highlight_pos = undefined
@@ -2240,45 +2252,6 @@ export class LGraphCanvas {
         this.setDirty(true, true)
       }
     } else if (!node.flags.collapsed) {
-      // Resize node
-      if (node.resizable !== false && node.inResizeCorner(x, y)) {
-        const b = node.boundingRect
-        const offsetX = x - (b[0] + b[2])
-        const offsetY = y - (b[1] + b[3])
-
-        pointer.onDragStart = () => {
-          graph.beforeChange()
-          this.resizing_node = node
-        }
-
-        pointer.onDrag = (eMove) => {
-          if (this.read_only) return
-
-          // Resize only by the exact pointer movement
-          const pos: Point = [
-            eMove.canvasX - node.pos[0] - offsetX,
-            eMove.canvasY - node.pos[1] - offsetY,
-          ]
-          // Unless snapping.
-          if (this.#snapToGrid) snapPoint(pos, this.#snapToGrid)
-
-          const min = node.computeSize()
-          pos[0] = Math.max(min[0], pos[0])
-          pos[1] = Math.max(min[1], pos[1])
-          node.setSize(pos)
-
-          this.#dirty()
-        }
-
-        pointer.onDragEnd = () => {
-          this.#dirty()
-          graph.afterChange(this.resizing_node)
-        }
-        pointer.finally = () => this.resizing_node = null
-        this.canvas.style.cursor = "se-resize"
-        return
-      }
-
       const { inputs, outputs } = node
 
       // Outputs
@@ -2355,7 +2328,7 @@ export class LGraphCanvas {
       }
     }
 
-    // Click was inside the node, but not on input/output, or the resize corner
+    // Click was inside the node, but not on input/output, or resize area
     const pos: Point = [x - node.pos[0], y - node.pos[1]]
 
     // Widget
@@ -2384,6 +2357,124 @@ export class LGraphCanvas {
       // Mousedown callback - can block drag
       if (node.onMouseDown?.(e, pos, this) || !this.allow_dragnodes)
         return
+
+      // Check for resize AFTER checking all other interaction areas
+      if (!node.flags.collapsed) {
+        const resizeDirection = node.findResizeDirection(x, y)
+        if (resizeDirection) {
+          pointer.resizeDirection = resizeDirection
+          const startBounds = new Rectangle(node.pos[0], node.pos[1], node.size[0], node.size[1])
+
+          pointer.onDragStart = () => {
+            graph.beforeChange()
+            this.resizing_node = node
+          }
+
+          pointer.onDrag = (eMove) => {
+            if (this.read_only) return
+
+            const deltaX = eMove.canvasX - x
+            const deltaY = eMove.canvasY - y
+
+            const newBounds = new Rectangle(startBounds.x, startBounds.y, startBounds.width, startBounds.height)
+
+            // Handle resize based on the direction
+            switch (resizeDirection) {
+            case "N": // North (top)
+              newBounds.y = startBounds.y + deltaY
+              newBounds.height = startBounds.height - deltaY
+              break
+            case "NE": // North-East (top-right)
+              newBounds.y = startBounds.y + deltaY
+              newBounds.width = startBounds.width + deltaX
+              newBounds.height = startBounds.height - deltaY
+              break
+            case "E": // East (right)
+              newBounds.width = startBounds.width + deltaX
+              break
+            case "SE": // South-East (bottom-right)
+              newBounds.width = startBounds.width + deltaX
+              newBounds.height = startBounds.height + deltaY
+              break
+            case "S": // South (bottom)
+              newBounds.height = startBounds.height + deltaY
+              break
+            case "SW": // South-West (bottom-left)
+              newBounds.x = startBounds.x + deltaX
+              newBounds.width = startBounds.width - deltaX
+              newBounds.height = startBounds.height + deltaY
+              break
+            case "W": // West (left)
+              newBounds.x = startBounds.x + deltaX
+              newBounds.width = startBounds.width - deltaX
+              break
+            case "NW": // North-West (top-left)
+              newBounds.x = startBounds.x + deltaX
+              newBounds.y = startBounds.y + deltaY
+              newBounds.width = startBounds.width - deltaX
+              newBounds.height = startBounds.height - deltaY
+              break
+            }
+
+            // Apply snapping to position changes
+            if (this.#snapToGrid) {
+              if (resizeDirection.includes("N") || resizeDirection.includes("W")) {
+                const originalX = newBounds.x
+                const originalY = newBounds.y
+
+                snapPoint(newBounds.pos, this.#snapToGrid)
+
+                // Adjust size to compensate for snapped position
+                if (resizeDirection.includes("N")) {
+                  newBounds.height += originalY - newBounds.y
+                }
+                if (resizeDirection.includes("W")) {
+                  newBounds.width += originalX - newBounds.x
+                }
+              }
+
+              snapPoint(newBounds.size, this.#snapToGrid)
+            }
+
+            // Apply snapping to size changes
+
+            // Enforce minimum size
+            const min = node.computeSize()
+            if (newBounds.width < min[0]) {
+              // If resizing from left, adjust position to maintain right edge
+              if (resizeDirection.includes("W")) {
+                newBounds.x = startBounds.x + startBounds.width - min[0]
+              }
+              newBounds.width = min[0]
+            }
+            if (newBounds.height < min[1]) {
+              // If resizing from top, adjust position to maintain bottom edge
+              if (resizeDirection.includes("N")) {
+                newBounds.y = startBounds.y + startBounds.height - min[1]
+              }
+              newBounds.height = min[1]
+            }
+
+            node.pos = newBounds.pos
+            node.setSize(newBounds.size)
+
+            this.#dirty()
+          }
+
+          pointer.onDragEnd = () => {
+            this.#dirty()
+            graph.afterChange(node)
+          }
+          pointer.finally = () => {
+            this.resizing_node = null
+            pointer.resizeDirection = undefined
+          }
+
+          // Set appropriate cursor for resize direction
+          this.canvas.style.cursor = cursors[resizeDirection]
+          return
+        }
+      }
 
       // Drag node
       pointer.onDragStart = pointer => this.#startDraggingItems(node, pointer, true)
@@ -2616,7 +2707,8 @@ export class LGraphCanvas {
       this.dirty_canvas = true
     } else if (resizingGroup) {
       // Resizing a group
-      underPointer |= CanvasItem.ResizeSe | CanvasItem.Group
+      underPointer |= CanvasItem.Group
+      this.pointer.resizeDirection = "SE"
     } else if (this.dragging_canvas) {
       this.ds.offset[0] += delta[0] / this.ds.scale
       this.ds.offset[1] += delta[1] / this.ds.scale
@@ -2744,9 +2836,12 @@ export class LGraphCanvas {
           this.dirty_canvas = true
         }
 
-        // Resize corner
-        if (node.inResizeCorner(e.canvasX, e.canvasY)) {
-          underPointer |= CanvasItem.ResizeSe
+        // Resize direction - only show resize cursor if not over inputs/outputs/widgets
+        if (inputId === -1 && outputId === -1 && !overWidget) {
+          this.pointer.resizeDirection = node.findResizeDirection(e.canvasX, e.canvasY)
+        } else {
+          // Clear resize direction when over inputs/outputs/widgets
+          this.pointer.resizeDirection &&= undefined
         }
       } else {
         // Reroutes
@@ -2768,7 +2863,10 @@ export class LGraphCanvas {
             !this.read_only &&
             group.isInResize(e.canvasX, e.canvasY)
           ) {
-            underPointer |= CanvasItem.ResizeSe
+            this.pointer.resizeDirection = "SE"
+          } else {
+            // Clear resize direction when not over any resize handle
+            this.pointer.resizeDirection = undefined
           }
         }
       }
@@ -2798,8 +2896,6 @@ export class LGraphCanvas {
 
         this.#dirty()
       }
-
-      if (this.resizing_node) underPointer |= CanvasItem.ResizeSe
     }
 
     this.hoveringOver = underPointer

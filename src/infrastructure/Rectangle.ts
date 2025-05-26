@@ -1,4 +1,6 @@
-import type { Point, ReadOnlyPoint, ReadOnlyRect, ReadOnlySize, Size } from "@/interfaces"
+import type { CompassDirection, Point, ReadOnlyPoint, ReadOnlyRect, ReadOnlySize, ReadOnlyTypedArray, Size } from "@/interfaces"
+
+import { isInRectangle } from "@/measure"
 
 /**
  * A rectangle, represented as a float64 array of 4 numbers: [x, y, width, height].
@@ -204,6 +206,60 @@ export class Rectangle extends Float64Array {
       this.y + this.height > rect[1]
   }
 
+  /**
+   * Finds the corner (if any) of this rectangle that contains the point [{@link x}, {@link y}].
+   * @param x The x-coordinate to check
+   * @param y The y-coordinate to check
+   * @param cornerSize Each corner is treated as an inset square with this width and height.
+   * @returns The compass direction of the corner that contains the point, or `undefined` if the point is not in any corner.
+   */
+  findContainingCorner(x: number, y: number, cornerSize: number): CompassDirection | undefined {
+    if (this.isInTopLeftCorner(x, y, cornerSize)) return "NW"
+    if (this.isInTopRightCorner(x, y, cornerSize)) return "NE"
+    if (this.isInBottomLeftCorner(x, y, cornerSize)) return "SW"
+    if (this.isInBottomRightCorner(x, y, cornerSize)) return "SE"
+  }
+
+  /** @returns `true` if the point [{@link x}, {@link y}] is in the top-left corner of this rectangle, otherwise `false`. */
+  isInTopLeftCorner(x: number, y: number, cornerSize: number): boolean {
+    return isInRectangle(x, y, this.x, this.y, cornerSize, cornerSize)
+  }
+
+  /** @returns `true` if the point [{@link x}, {@link y}] is in the top-right corner of this rectangle, otherwise `false`. */
+  isInTopRightCorner(x: number, y: number, cornerSize: number): boolean {
+    return isInRectangle(x, y, this.right - cornerSize, this.y, cornerSize, cornerSize)
+  }
+
+  /** @returns `true` if the point [{@link x}, {@link y}] is in the bottom-left corner of this rectangle, otherwise `false`. */
+  isInBottomLeftCorner(x: number, y: number, cornerSize: number): boolean {
+    return isInRectangle(x, y, this.x, this.bottom - cornerSize, cornerSize, cornerSize)
+  }
+
+  /** @returns `true` if the point [{@link x}, {@link y}] is in the bottom-right corner of this rectangle, otherwise `false`. */
+  isInBottomRightCorner(x: number, y: number, cornerSize: number): boolean {
+    return isInRectangle(x, y, this.right - cornerSize, this.bottom - cornerSize, cornerSize, cornerSize)
+  }
+
+  /** @returns `true` if the point [{@link x}, {@link y}] is in the top edge of this rectangle, otherwise `false`. */
+  isInTopEdge(x: number, y: number, edgeSize: number): boolean {
+    return isInRectangle(x, y, this.x, this.y, this.width, edgeSize)
+  }
+
+  /** @returns `true` if the point [{@link x}, {@link y}] is in the bottom edge of this rectangle, otherwise `false`. */
+  isInBottomEdge(x: number, y: number, edgeSize: number): boolean {
+    return isInRectangle(x, y, this.x, this.bottom - edgeSize, this.width, edgeSize)
+  }
+
+  /** @returns `true` if the point [{@link x}, {@link y}] is in the left edge of this rectangle, otherwise `false`. */
+  isInLeftEdge(x: number, y: number, edgeSize: number): boolean {
+    return isInRectangle(x, y, this.x, this.y, edgeSize, this.height)
+  }
+
+  /** @returns `true` if the point [{@link x}, {@link y}] is in the right edge of this rectangle, otherwise `false`. */
+  isInRightEdge(x: number, y: number, edgeSize: number): boolean {
+    return isInRectangle(x, y, this.right - edgeSize, this.y, edgeSize, this.height)
+  }
+
   /** @returns The centre point of this rectangle, as a new {@link Point}. */
   getCentre(): Point {
     return [this.centreX, this.centreY]
@@ -311,3 +367,15 @@ export class Rectangle extends Float64Array {
     }
   }
 }
+
+export type ReadOnlyRectangle = Omit<
+  ReadOnlyTypedArray<Rectangle>,
+  | "setHeightBottomAnchored"
+  | "setWidthRightAnchored"
+  | "resizeTopLeft"
+  | "resizeBottomLeft"
+  | "resizeTopRight"
+  | "resizeBottomRight"
+  | "resizeBottomRight"
+  | "updateTo"
+>

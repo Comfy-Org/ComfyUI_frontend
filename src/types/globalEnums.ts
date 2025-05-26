@@ -34,8 +34,6 @@ export enum CanvasItem {
   Reroute = 1 << 2,
   /** The path of a link */
   Link = 1 << 3,
-  /** A resize in the bottom-right corner */
-  ResizeSe = 1 << 4,
   /** A reroute slot */
   RerouteSlot = 1 << 5,
 }

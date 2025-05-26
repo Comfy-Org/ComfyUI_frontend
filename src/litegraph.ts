@@ -82,6 +82,8 @@ export interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
   title_color?: string
   title_text_color?: string
   keepAllLinksOnBypass: boolean
+  resizeHandleSize?: number
+  resizeEdgeSize?: number
 }
 
 // End backwards compat

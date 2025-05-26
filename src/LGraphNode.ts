@@ -1,7 +1,9 @@
 import type { DragAndScale } from "./DragAndScale"
 import type { IDrawBoundingOptions } from "./draw"
+import type { ReadOnlyRectangle } from "./infrastructure/Rectangle"
 import type {
   ColorOption,
+  CompassDirection,
   DefaultConnectionColors,
   Dictionary,
   IColorable,
@@ -30,7 +32,7 @@ import { getNodeInputOnPos, getNodeOutputOnPos } from "./canvas/measureSlots"
 import { NullGraphError } from "./infrastructure/NullGraphError"
 import { BadgePosition, LGraphBadge } from "./LGraphBadge"
 import { LGraphCanvas } from "./LGraphCanvas"
-import { type LGraphNodeConstructor, LiteGraph } from "./litegraph"
+import { type LGraphNodeConstructor, LiteGraph, Rectangle } from "./litegraph"
 import { LLink } from "./LLink"
 import { createBounds, isInRect, isInRectangle, isPointInRect, snapPoint } from "./measure"
 import { NodeInputSlot } from "./node/NodeInputSlot"
@@ -190,6 +192,9 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   static filter?: string
   static skip_list?: boolean
 
+  static resizeHandleSize = 15
+  static resizeEdgeSize = 5
+
   /** Default setting for {@link LGraphNode.connectInputToOutput}. @see {@link INodeFlags.keepAllLinksOnBypass} */
   static keepAllLinksOnBypass: boolean = false
 
@@ -320,7 +325,10 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    * Updated by {@link LGraphCanvas.drawNode}
    */
   _collapsed_width?: number
-  /** Called once at the start of every frame.  Caller may change the values in {@link out}, which will be reflected in {@link boundingRect}. */
+  /**
+   * Called once at the start of every frame.  Caller may change the values in {@link out}, which will be reflected in {@link boundingRect}.
+   * WARNING: Making changes to boundingRect via onBounding is poorly supported, and will likely result in strange behaviour.
+   */
   onBounding?(this: LGraphNode, out: Rect): void
   console?: string[]
   _level?: number
@@ -349,13 +357,13 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   }
 
   /** @inheritdoc {@link boundingRect} */
-  #boundingRect: Float32Array = new Float32Array(4)
+  #boundingRect: Rectangle = new Rectangle()
   /**
    * Cached node position & area as `x, y, width, height`.  Includes changes made by {@link onBounding}, if present.
    *
    * Determines the node hitbox and other rendering effects.  Calculated once at the start of every frame.
    */
-  get boundingRect(): ReadOnlyRect {
+  get boundingRect(): ReadOnlyRectangle {
     return this.#boundingRect
   }
 
@@ -1632,6 +1640,30 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       20,
       20,
     )
+  }
+
+  /**
+   * Returns which resize handle the point is over, or null if none
+   * @param canvasX X position in canvas coordinates
+   * @param canvasY Y position in canvas coordinates
+   * @returns Resize handle type or null
+   */
+  findResizeDirection(canvasX: number, canvasY: number): CompassDirection | undefined {
+    if (this.resizable === false) return
+
+    const { boundingRect } = this
+    if (!boundingRect.containsXy(canvasX, canvasY)) return
+
+    // Check corners first (they take priority over edges)
+    const cnr = boundingRect.findContainingCorner(canvasX, canvasY, LGraphNode.resizeHandleSize)
+    if (cnr) return cnr
+
+    // Edges - only need to check one axis because we already know the point is inside the node
+    const edgeSize = LGraphNode.resizeEdgeSize
+    if (canvasX - boundingRect.left < edgeSize) return "W"
+    if (boundingRect.right - canvasX < edgeSize) return "E"
+    if (canvasY - boundingRect.top < edgeSize) return "N"
+    if (boundingRect.bottom - canvasY < edgeSize) return "S"
   }
 
   /**
