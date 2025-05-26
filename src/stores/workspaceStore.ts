@@ -4,6 +4,7 @@ import { computed, ref } from 'vue'
 import type { Settings } from '@/schemas/apiSchema'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useDialogService } from '@/services/dialogService'
+import { useDialogStore } from '@/stores/dialogStore'
 import type { SidebarTabExtension, ToastManager } from '@/types/extensionTypes'
 
 import { useApiKeyAuthStore } from './apiKeyAuthStore'
@@ -43,6 +44,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
   const workflow = computed(() => useWorkflowStore())
   const colorPalette = useColorPaletteService()
   const dialog = useDialogService()
+  const dialogStore = useDialogStore()
   const bottomPanel = useBottomPanelStore()
 
   const authStore = useFirebaseAuthStore()
@@ -99,6 +101,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     workflow,
     colorPalette,
     dialog,
+    dialogStore,
     bottomPanel,
     user: partialUserStore,
 
