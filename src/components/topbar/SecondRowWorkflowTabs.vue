@@ -1,5 +1,5 @@
 <template>
-  <div class="absolute top-0 left-0 w-auto max-w-full">
+  <div class="w-auto max-w-full">
     <WorkflowTabs />
   </div>
 </template>

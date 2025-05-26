@@ -95,12 +95,14 @@ const addNode = (nodeDef: ComfyNodeDefImpl) => {
     return
   }
 
-  disconnectOnReset = false
   const node = litegraphService.addNodeOnGraph(nodeDef, {
     pos: getNewNodeLocation()
   })
 
-  canvasStore.getCanvas().linkConnector.connectToNode(node, triggerEvent)
+  if (disconnectOnReset) {
+    canvasStore.getCanvas().linkConnector.connectToNode(node, triggerEvent)
+  }
+  disconnectOnReset = false
 
   // Notify changeTracker - new step should be added
   useWorkflowStore().activeWorkflow?.changeTracker?.checkState()
