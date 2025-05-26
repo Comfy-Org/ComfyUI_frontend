@@ -227,6 +227,10 @@ export const useDialogService = () => {
     })
   }
 
+  function showCustomDialog(options: ShowDialogOptions) {
+    dialogStore.showDialog(options)
+  }
+
   /**
    * Shows a dialog requiring sign in for API nodes
    * @returns Promise that resolves to true if user clicks login, false if cancelled
@@ -394,6 +398,7 @@ export const useDialogService = () => {
     showSignInDialog,
     showTopUpCreditsDialog,
     showUpdatePasswordDialog,
+    showCustomDialog,
     prompt,
     confirm
   }
