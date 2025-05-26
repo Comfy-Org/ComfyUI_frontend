@@ -1,4 +1,4 @@
-import type { CompassDirection } from "./interfaces"
+import type { CompassCorners } from "./interfaces"
 import type { CanvasPointerEvent } from "./types/events"
 
 import { dist2 } from "./measure"
@@ -61,7 +61,7 @@ export class CanvasPointer {
   isDown: boolean = false
 
   /** The resize handle currently being hovered or dragged */
-  resizeDirection?: CompassDirection
+  resizeDirection?: CompassCorners
 
   /**
    * If `true`, {@link eDown}, {@link eMove}, and {@link eUp} will be set to

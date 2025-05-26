@@ -56,36 +56,6 @@ describe("LGraphNode resize functionality", () => {
       })
     })
 
-    describe("edges", () => {
-      test("should detect N (top) edge", () => {
-        // Top edge at y=80, but not in corners
-        expect(node.findResizeDirection(150, 80)).toBe("N")
-        expect(node.findResizeDirection(150, 84)).toBe("N")
-        expect(node.findResizeDirection(200, 80)).toBe("N")
-      })
-
-      test("should detect S (bottom) edge", () => {
-        // Bottom edge at y=250, but need to check within the 5px threshold
-        expect(node.findResizeDirection(150, 249)).toBe("S")
-        expect(node.findResizeDirection(150, 246)).toBe("S")
-        expect(node.findResizeDirection(200, 247)).toBe("S")
-      })
-
-      test("should detect W (left) edge", () => {
-        // Left edge at x=100, but not in corners
-        expect(node.findResizeDirection(100, 150)).toBe("W")
-        expect(node.findResizeDirection(104, 150)).toBe("W")
-        expect(node.findResizeDirection(100, 200)).toBe("W")
-      })
-
-      test("should detect E (right) edge", () => {
-        // Right edge at x=300, but need to check within the 5px threshold
-        expect(node.findResizeDirection(299, 150)).toBe("E")
-        expect(node.findResizeDirection(296, 150)).toBe("E")
-        expect(node.findResizeDirection(298, 200)).toBe("E")
-      })
-    })
-
     describe("priority", () => {
       test("corners should have priority over edges", () => {
         // These points are technically on both corner and edge
@@ -132,8 +102,6 @@ describe("LGraphNode resize functionality", () => {
 
         expect(node.findResizeDirection(0, -20)).toBe("NW") // Account for title bar
         expect(node.findResizeDirection(99, 99)).toBe("SE") // Bottom-right corner (100-1, 100-1)
-        expect(node.findResizeDirection(50, -20)).toBe("N")
-        expect(node.findResizeDirection(0, 50)).toBe("W")
       })
 
       test("should handle very small nodes", () => {

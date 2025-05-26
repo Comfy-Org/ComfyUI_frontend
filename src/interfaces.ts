@@ -260,7 +260,7 @@ export interface IBoundaryNodes {
 export type Direction = "top" | "bottom" | "left" | "right"
 
 /** Resize handle positions (compass points) */
-export type CompassDirection = "N" | "NE" | "E" | "SE" | "S" | "SW" | "W" | "NW"
+export type CompassCorners = "NE" | "SE" | "SW" | "NW"
 
 /**
  * A string that represents a specific data / slot type, e.g. `STRING`.

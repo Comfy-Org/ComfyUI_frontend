@@ -1,4 +1,4 @@
-import type { CompassDirection, Point, ReadOnlyPoint, ReadOnlyRect, ReadOnlySize, ReadOnlyTypedArray, Size } from "@/interfaces"
+import type { CompassCorners, Point, ReadOnlyPoint, ReadOnlyRect, ReadOnlySize, ReadOnlyTypedArray, Size } from "@/interfaces"
 
 import { isInRectangle } from "@/measure"
 
@@ -213,7 +213,7 @@ export class Rectangle extends Float64Array {
    * @param cornerSize Each corner is treated as an inset square with this width and height.
    * @returns The compass direction of the corner that contains the point, or `undefined` if the point is not in any corner.
    */
-  findContainingCorner(x: number, y: number, cornerSize: number): CompassDirection | undefined {
+  findContainingCorner(x: number, y: number, cornerSize: number): CompassCorners | undefined {
     if (this.isInTopLeftCorner(x, y, cornerSize)) return "NW"
     if (this.isInTopRightCorner(x, y, cornerSize)) return "NE"
     if (this.isInBottomLeftCorner(x, y, cornerSize)) return "SW"
