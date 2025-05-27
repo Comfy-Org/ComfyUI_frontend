@@ -1,6 +1,5 @@
 import { type LGraphNode, LiteGraph } from '@comfyorg/litegraph'
 import type {
-  IBaseWidget,
   ICustomWidget,
   IWidgetOptions
 } from '@comfyorg/litegraph/dist/types/widgets'
@@ -236,21 +235,17 @@ const renderPreview = (
 }
 
 class ImagePreviewWidget implements ICustomWidget {
-  readonly type: 'custom'
-  readonly name: string
-  readonly options: IWidgetOptions<string | object>
+  readonly type = 'custom'
   /** Dummy value to satisfy type requirements. */
-  value: string
+  value: string = ''
   y: number = 0
   /** Don't serialize the widget value. */
   serialize: boolean = false
 
-  constructor(name: string, options: IWidgetOptions<string | object>) {
-    this.type = 'custom'
-    this.name = name
-    this.options = options
-    this.value = ''
-  }
+  constructor(
+    readonly name: string,
+    readonly options: IWidgetOptions<string | object>
+  ) {}
 
   draw(
     ctx: CanvasRenderingContext2D,
@@ -262,7 +257,7 @@ class ImagePreviewWidget implements ICustomWidget {
     renderPreview(ctx, node, y)
   }
 
-  computeLayoutSize(this: IBaseWidget) {
+  computeLayoutSize() {
     return {
       minHeight: 220,
       minWidth: 1
