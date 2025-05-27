@@ -1,6 +1,6 @@
-import { type LGraphNode, LiteGraph } from '@comfyorg/litegraph'
+import { type LGraphNode, LegacyWidget, LiteGraph } from '@comfyorg/litegraph'
 import type {
-  ICustomWidget,
+  IBaseWidget,
   IWidgetOptions
 } from '@comfyorg/litegraph/dist/types/widgets'
 
@@ -234,30 +234,31 @@ const renderPreview = (
   }
 }
 
-class ImagePreviewWidget implements ICustomWidget {
-  readonly type = 'custom'
-  /** Dummy value to satisfy type requirements. */
-  value: string = ''
-  y: number = 0
-  /** Don't serialize the widget value. */
-  serialize: boolean = false
-
+class ImagePreviewWidget extends LegacyWidget {
   constructor(
-    readonly name: string,
-    readonly options: IWidgetOptions<string | object>
-  ) {}
-
-  draw(
-    ctx: CanvasRenderingContext2D,
     node: LGraphNode,
-    _width: number,
-    y: number,
-    _height: number
-  ): void {
-    renderPreview(ctx, node, y)
+    name: string,
+    options: IWidgetOptions<string | object>
+  ) {
+    const widget: IBaseWidget = {
+      name,
+      options,
+      type: 'custom',
+      /** Dummy value to satisfy type requirements. */
+      value: '',
+      y: 0
+    }
+    super(widget, node)
+
+    // Don't serialize the widget value
+    this.serialize = false
   }
 
-  computeLayoutSize() {
+  override drawWidget(ctx: CanvasRenderingContext2D): void {
+    renderPreview(ctx, this.node, this.y)
+  }
+
+  override computeLayoutSize() {
     return {
       minHeight: 220,
       minWidth: 1
@@ -271,7 +272,7 @@ export const useImagePreviewWidget = () => {
     inputSpec: InputSpec
   ) => {
     return node.addCustomWidget(
-      new ImagePreviewWidget(inputSpec.name, {
+      new ImagePreviewWidget(node, inputSpec.name, {
         serialize: false
       })
     )
