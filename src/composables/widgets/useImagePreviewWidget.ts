@@ -1,10 +1,11 @@
-import { type LGraphNode, LegacyWidget, LiteGraph } from '@comfyorg/litegraph'
+import { BaseWidget, type LGraphNode, LiteGraph } from '@comfyorg/litegraph'
 import type {
   IBaseWidget,
   IWidgetOptions
 } from '@comfyorg/litegraph/dist/types/widgets'
 
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { app } from '@/scripts/app'
 import { calculateImageGrid } from '@/scripts/ui/imagePreview'
 import { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import { useCanvasStore } from '@/stores/graphStore'
@@ -234,7 +235,7 @@ const renderPreview = (
   }
 }
 
-class ImagePreviewWidget extends LegacyWidget {
+class ImagePreviewWidget extends BaseWidget {
   constructor(
     node: LGraphNode,
     name: string,
@@ -256,6 +257,12 @@ class ImagePreviewWidget extends LegacyWidget {
 
   override drawWidget(ctx: CanvasRenderingContext2D): void {
     renderPreview(ctx, this.node, this.y)
+  }
+
+  override onClick(): void {}
+
+  override onDrag(): void {
+    app.canvas.dragging_canvas = true
   }
 
   override computeLayoutSize() {
