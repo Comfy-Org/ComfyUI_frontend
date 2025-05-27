@@ -1,4 +1,3 @@
-
 - use npm run to see what commands are available
 - After making code changes, follow this general process: (1) Create unit tests, component tests, browser tests (if appropriate for each), (2) run unit tests, component tests, and browser tests until passing, (3) run typecheck, lint, format (with prettier) -- you can use `npm run` command to see the scripts available, (4) check if any READMEs (including nested) or documentation needs to be updated, (5) Decide whether the changes are worth adding new content to the external documentation for (or would requires changes to the external documentation) at https://docs.comfy.org, then present your suggestion
 - When referencing PrimeVue, you can get all the docs here: https://primevue.org. Do this instead of making up or inferring names of Components
@@ -36,3 +35,4 @@
 - Follow Vue 3 style guide and naming conventions
 - Use Vite for fast development and building
 - Use vue-i18n in composition API for any string literals. Place new translation entries in src/locales/en/main.json.
+- Avoid using `@ts-expect-error` to work around type issues. We needed to employ it to migrate to TypeScript, but it should not be viewed as an accepted practice or standard.
