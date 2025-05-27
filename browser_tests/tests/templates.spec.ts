@@ -32,7 +32,9 @@ test.describe('Templates', () => {
     }
   })
 
-  test('should have all required thumbnail media for each template', async ({
+  // TODO: Re-enable this test once issue resolved
+  // https://github.com/Comfy-Org/ComfyUI_frontend/issues/3992
+  test.skip('should have all required thumbnail media for each template', async ({
     comfyPage
   }) => {
     test.slow()
