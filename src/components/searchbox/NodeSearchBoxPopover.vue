@@ -166,10 +166,11 @@ const showContextMenu = (e: CanvasPointerEvent) => {
       showSearchBox(e)
     }
   }
+  const afterRerouteId = firstLink.fromReroute?.id
   const connectionOptions =
     toType === 'input'
-      ? { nodeFrom: node, slotFrom: fromSlot }
-      : { nodeTo: node, slotTo: fromSlot }
+      ? { nodeFrom: node, slotFrom: fromSlot, afterRerouteId }
+      : { nodeTo: node, slotTo: fromSlot, afterRerouteId }
 
   const canvas = canvasStore.getCanvas()
   const menu = canvas.showConnectionMenu({
