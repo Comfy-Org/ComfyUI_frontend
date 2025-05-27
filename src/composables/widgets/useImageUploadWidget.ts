@@ -71,6 +71,7 @@ export const useImageUploadWidget = () => {
       allow_batch,
       fileFilter,
       accept,
+      folder: image_folder as string,
       onUploadComplete: (output) => {
         output.forEach((path) => addToComboValues(fileComboWidget, path))
         // @ts-expect-error litegraph combo value type does not support arrays yet

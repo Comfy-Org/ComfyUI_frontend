@@ -8,10 +8,15 @@ import { useToastStore } from '@/stores/toastStore'
 
 const PASTED_IMAGE_EXPIRY_MS = 2000
 
-const uploadFile = async (file: File, isPasted: boolean) => {
+const uploadFile = async (
+  file: File,
+  isPasted: boolean,
+  folder: string = 'input'
+) => {
   const body = new FormData()
   body.append('image', file)
   if (isPasted) body.append('subfolder', 'pasted')
+  body.append('type', folder) // 使用 folder 参数
 
   const resp = await api.fetchApi('/upload/image', {
     method: 'POST',
@@ -36,6 +41,7 @@ interface ImageUploadOptions {
    * @example 'image/png,image/jpeg,image/webp,video/webm,video/mp4'
    */
   accept?: string
+  folder?: string
 }
 
 /**
@@ -45,7 +51,14 @@ export const useNodeImageUpload = (
   node: LGraphNode,
   options: ImageUploadOptions
 ) => {
-  const { fileFilter, onUploadComplete, allow_batch, accept } = options
+  const {
+    fileFilter,
+    onUploadComplete,
+    allow_batch,
+    accept,
+    folder = 'input'
+  } = options
+  console.log('[useNodeImageUpload] folder 参数:', folder)
 
   const isPastedFile = (file: File): boolean =>
     file.name === 'image.png' &&
@@ -53,7 +66,7 @@ export const useNodeImageUpload = (
 
   const handleUpload = async (file: File) => {
     try {
-      const path = await uploadFile(file, isPastedFile(file))
+      const path = await uploadFile(file, isPastedFile(file), folder)
       if (!path) return
       return path
     } catch (error) {
