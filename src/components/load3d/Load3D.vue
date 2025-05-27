@@ -150,8 +150,8 @@ const handleStopRecording = () => {
   if (load3DSceneRef.value?.load3d) {
     load3DSceneRef.value.load3d.stopRecording()
     isRecording.value = false
-    hasRecording.value = true
     recordingDuration.value = load3DSceneRef.value.load3d.getRecordingDuration()
+    hasRecording.value = recordingDuration.value > 0
   }
 }
 
@@ -294,8 +294,8 @@ const listenRecordingStatusChange = (value: boolean) => {
   isRecording.value = value
 
   if (!value && load3DSceneRef.value?.load3d) {
-    hasRecording.value = true
     recordingDuration.value = load3DSceneRef.value.load3d.getRecordingDuration()
+    hasRecording.value = recordingDuration.value > 0
   }
 }
 

@@ -99,8 +99,6 @@ const emit = defineEmits<{
 }>()
 
 const resizeNodeMatchOutput = () => {
-  console.log('resizeNodeMatchOutput')
-
   const outputWidth = node.widgets?.find((w) => w.name === 'width')
   const outputHeight = node.widgets?.find((w) => w.name === 'height')
 

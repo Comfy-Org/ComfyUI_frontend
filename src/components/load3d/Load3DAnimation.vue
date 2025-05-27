@@ -168,8 +168,8 @@ const handleStopRecording = () => {
   if (sceneRef?.load3d) {
     sceneRef.load3d.stopRecording()
     isRecording.value = false
-    hasRecording.value = true
     recordingDuration.value = sceneRef.load3d.getRecordingDuration()
+    hasRecording.value = recordingDuration.value > 0
   }
 }
 
@@ -197,8 +197,8 @@ const listenRecordingStatusChange = (value: boolean) => {
   if (!value) {
     const sceneRef = load3DAnimationSceneRef.value?.load3DSceneRef
     if (sceneRef?.load3d) {
-      hasRecording.value = true
       recordingDuration.value = sceneRef.load3d.getRecordingDuration()
+      hasRecording.value = recordingDuration.value > 0
     }
   }
 }
