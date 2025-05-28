@@ -59,6 +59,8 @@ export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
   node: LGraphNode,
   wrapLegacyWidgets = true,
 ): WidgetTypeMap[TWidget["type"]] | undefined {
+  if (widget instanceof BaseWidget) return widget
+
   // Assertion: TypeScript has no concept of "all strings except X"
   type RemoveBaseWidgetType<T> = T extends { type: TWidgetType } ? T : never
   const narrowedWidget = widget as RemoveBaseWidgetType<TWidget>
