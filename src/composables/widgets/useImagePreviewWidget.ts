@@ -1,4 +1,9 @@
-import { BaseWidget, type LGraphNode, LiteGraph } from '@comfyorg/litegraph'
+import {
+  BaseWidget,
+  type CanvasPointer,
+  type LGraphNode,
+  LiteGraph
+} from '@comfyorg/litegraph'
 import type {
   IBaseWidget,
   IWidgetOptions
@@ -259,11 +264,33 @@ class ImagePreviewWidget extends BaseWidget {
     renderPreview(ctx, this.node, this.y)
   }
 
-  override onClick(): void {}
+  override onPointerDown(pointer: CanvasPointer, node: LGraphNode): boolean {
+    pointer.onDragStart = () => {
+      app.canvas.emitBeforeChange()
+      app.canvas.graph?.beforeChange()
+      // Ensure that dragging is properly cleaned up, on success or failure.
+      pointer.finally = () => {
+        app.canvas.isDragging = false
+        app.canvas.graph?.afterChange()
+        app.canvas.emitAfterChange()
+      }
 
-  override onDrag(): void {
-    app.canvas.dragging_canvas = true
+      app.canvas.processSelect(node, pointer.eDown)
+      app.canvas.isDragging = true
+    }
+
+    pointer.onDragEnd = (e) => {
+      const { graph } = app.canvas
+      if (e.shiftKey || LiteGraph.alwaysSnapToGrid)
+        graph?.snapToGrid(app.canvas.selectedItems)
+
+      app.canvas.setDirty(true, true)
+    }
+
+    return true
   }
+
+  override onClick(): void {}
 
   override computeLayoutSize() {
     return {
