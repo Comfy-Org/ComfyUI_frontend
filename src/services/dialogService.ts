@@ -379,6 +379,24 @@ export const useDialogService = () => {
     })
   }
 
+  /**
+   * Shows a dialog from a third party extension.
+   * @param options - The dialog options.
+   * @param options.key - The dialog key.
+   * @param options.title - The dialog title.
+   * @param options.headerComponent - The dialog header component.
+   * @param options.footerComponent - The dialog footer component.
+   * @param options.component - The dialog component.
+   * @param options.props - The dialog props.
+   * @returns The dialog instance and a function to close the dialog.
+   */
+  function showExtensionDialog(options: ShowDialogOptions & { key: string }) {
+    return {
+      dialog: dialogStore.showExtensionDialog(options),
+      closeDialog: () => dialogStore.closeDialog({ key: options.key })
+    }
+  }
+
   return {
     showLoadWorkflowWarning,
     showMissingModelsWarning,
@@ -394,6 +412,7 @@ export const useDialogService = () => {
     showSignInDialog,
     showTopUpCreditsDialog,
     showUpdatePasswordDialog,
+    showExtensionDialog,
     prompt,
     confirm
   }

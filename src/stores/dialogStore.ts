@@ -147,10 +147,33 @@ export const useDialogStore = defineStore('dialog', () => {
     return dialog
   }
 
+  /**
+   * Shows a dialog from a third party extension.
+   * Explicitly keys extension dialogs with `extension-` prefix,
+   * to avoid conflicts & prevent use of internal dialogs (available via `dialogService`).
+   */
+  function showExtensionDialog(options: ShowDialogOptions & { key: string }) {
+    const { key } = options
+    if (!key) {
+      console.error('Extension dialog key is required')
+      return
+    }
+
+    const extKey = key.startsWith('extension-') ? key : `extension-${key}`
+
+    const dialog = dialogStack.value.find((d) => d.key === extKey)
+    if (!dialog) return createDialog({ ...options, key: extKey })
+
+    dialog.visible = true
+    riseDialog(dialog)
+    return dialog
+  }
+
   return {
     dialogStack,
     riseDialog,
     showDialog,
-    closeDialog
+    closeDialog,
+    showExtensionDialog
   }
 })
