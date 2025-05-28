@@ -266,25 +266,27 @@ class ImagePreviewWidget extends BaseWidget {
 
   override onPointerDown(pointer: CanvasPointer, node: LGraphNode): boolean {
     pointer.onDragStart = () => {
-      app.canvas.emitBeforeChange()
-      app.canvas.graph?.beforeChange()
+      const { canvas } = app
+      const { graph } = canvas
+      canvas.emitBeforeChange()
+      graph?.beforeChange()
       // Ensure that dragging is properly cleaned up, on success or failure.
       pointer.finally = () => {
-        app.canvas.isDragging = false
-        app.canvas.graph?.afterChange()
-        app.canvas.emitAfterChange()
+        canvas.isDragging = false
+        graph?.afterChange()
+        canvas.emitAfterChange()
       }
 
-      app.canvas.processSelect(node, pointer.eDown)
-      app.canvas.isDragging = true
+      canvas.processSelect(node, pointer.eDown)
+      canvas.isDragging = true
     }
 
     pointer.onDragEnd = (e) => {
-      const { graph } = app.canvas
+      const { canvas } = app
       if (e.shiftKey || LiteGraph.alwaysSnapToGrid)
-        graph?.snapToGrid(app.canvas.selectedItems)
+        canvas.graph?.snapToGrid(canvas.selectedItems)
 
-      app.canvas.setDirty(true, true)
+      canvas.setDirty(true, true)
     }
 
     return true
