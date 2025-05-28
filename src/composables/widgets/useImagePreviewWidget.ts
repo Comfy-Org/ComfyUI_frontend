@@ -1,11 +1,16 @@
-import { type LGraphNode, LiteGraph } from '@comfyorg/litegraph'
+import {
+  BaseWidget,
+  type CanvasPointer,
+  type LGraphNode,
+  LiteGraph
+} from '@comfyorg/litegraph'
 import type {
   IBaseWidget,
-  ICustomWidget,
   IWidgetOptions
 } from '@comfyorg/litegraph/dist/types/widgets'
 
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { app } from '@/scripts/app'
 import { calculateImageGrid } from '@/scripts/ui/imagePreview'
 import { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import { useCanvasStore } from '@/stores/graphStore'
@@ -235,34 +240,61 @@ const renderPreview = (
   }
 }
 
-class ImagePreviewWidget implements ICustomWidget {
-  readonly type: 'custom'
-  readonly name: string
-  readonly options: IWidgetOptions<string | object>
-  /** Dummy value to satisfy type requirements. */
-  value: string
-  y: number = 0
-  /** Don't serialize the widget value. */
-  serialize: boolean = false
-
-  constructor(name: string, options: IWidgetOptions<string | object>) {
-    this.type = 'custom'
-    this.name = name
-    this.options = options
-    this.value = ''
-  }
-
-  draw(
-    ctx: CanvasRenderingContext2D,
+class ImagePreviewWidget extends BaseWidget {
+  constructor(
     node: LGraphNode,
-    _width: number,
-    y: number,
-    _height: number
-  ): void {
-    renderPreview(ctx, node, y)
+    name: string,
+    options: IWidgetOptions<string | object>
+  ) {
+    const widget: IBaseWidget = {
+      name,
+      options,
+      type: 'custom',
+      /** Dummy value to satisfy type requirements. */
+      value: '',
+      y: 0
+    }
+    super(widget, node)
+
+    // Don't serialize the widget value
+    this.serialize = false
   }
 
-  computeLayoutSize(this: IBaseWidget) {
+  override drawWidget(ctx: CanvasRenderingContext2D): void {
+    renderPreview(ctx, this.node, this.y)
+  }
+
+  override onPointerDown(pointer: CanvasPointer, node: LGraphNode): boolean {
+    pointer.onDragStart = () => {
+      const { canvas } = app
+      const { graph } = canvas
+      canvas.emitBeforeChange()
+      graph?.beforeChange()
+      // Ensure that dragging is properly cleaned up, on success or failure.
+      pointer.finally = () => {
+        canvas.isDragging = false
+        graph?.afterChange()
+        canvas.emitAfterChange()
+      }
+
+      canvas.processSelect(node, pointer.eDown)
+      canvas.isDragging = true
+    }
+
+    pointer.onDragEnd = (e) => {
+      const { canvas } = app
+      if (e.shiftKey || LiteGraph.alwaysSnapToGrid)
+        canvas.graph?.snapToGrid(canvas.selectedItems)
+
+      canvas.setDirty(true, true)
+    }
+
+    return true
+  }
+
+  override onClick(): void {}
+
+  override computeLayoutSize() {
     return {
       minHeight: 220,
       minWidth: 1
@@ -276,7 +308,7 @@ export const useImagePreviewWidget = () => {
     inputSpec: InputSpec
   ) => {
     return node.addCustomWidget(
-      new ImagePreviewWidget(inputSpec.name, {
+      new ImagePreviewWidget(node, inputSpec.name, {
         serialize: false
       })
     )
