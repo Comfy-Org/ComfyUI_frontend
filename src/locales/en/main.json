@@ -122,8 +122,7 @@
     "copy": "Copy",
     "imageUrl": "Image URL",
     "clear": "Clear",
-    "copyURL": "Copy URL",
-    "copied": "Copied"
+    "copyURL": "Copy URL"
   },
   "manager": {
     "title": "Custom Nodes Manager",

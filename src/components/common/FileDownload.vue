@@ -32,7 +32,7 @@
     </div>
     <div>
       <Button
-        :label="copyURLLabel"
+        :label="$t('g.copyURL')"
         size="small"
         outlined
         :disabled="!!props.error"
@@ -45,10 +45,10 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Message from 'primevue/message'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useDownload } from '@/composables/useDownload'
-import { t } from '@/i18n'
 import { formatSize } from '@/utils/formatUtil'
 
 const props = defineProps<{
@@ -59,18 +59,15 @@ const props = defineProps<{
 }>()
 
 const label = computed(() => props.label || props.url.split('/').pop())
-const copiedURL = ref(false)
-const copyURLLabel = computed(() =>
-  copiedURL.value ? t('g.copied') : t('g.copyURL')
-)
 
 const hint = computed(() => props.hint || props.url)
 const download = useDownload(props.url)
 const fileSize = computed(() =>
   download.fileSize.value ? formatSize(download.fileSize.value) : '?'
 )
-const copyURL = () => {
-  void navigator.clipboard.writeText(props.url)
-  copiedURL.value = true
+const copyURL = async () => {
+  await copyToClipboard(props.url)
 }
+
+const { copyToClipboard } = useCopyToClipboard()
 </script>
