@@ -1867,11 +1867,12 @@ export class LGraphCanvas {
   updateMouseOverNodes(node: LGraphNode | null, e: CanvasMouseEvent): void {
     if (!this.graph) throw new NullGraphError()
 
+    const { pointer } = this
     const nodes = this.graph._nodes
     for (const otherNode of nodes) {
       if (otherNode.mouseOver && node != otherNode) {
         // mouse leave
-        this.pointer.resizeDirection = undefined
+        if (!pointer.eDown) pointer.resizeDirection = undefined
         otherNode.mouseOver = undefined
         this._highlight_input = undefined
         this._highlight_pos = undefined
@@ -2819,11 +2820,14 @@ export class LGraphCanvas {
         }
 
         // Resize direction - only show resize cursor if not over inputs/outputs/widgets
-        if (inputId === -1 && outputId === -1 && !overWidget) {
-          this.pointer.resizeDirection = node.findResizeDirection(e.canvasX, e.canvasY)
-        } else {
-          // Clear resize direction when over inputs/outputs/widgets
-          this.pointer.resizeDirection &&= undefined
+        const { pointer } = this
+        if (!pointer.eDown) {
+          if (inputId === -1 && outputId === -1 && !overWidget) {
+            pointer.resizeDirection = node.findResizeDirection(e.canvasX, e.canvasY)
+          } else {
+            // Clear resize direction when over inputs/outputs/widgets
+            pointer.resizeDirection &&= undefined
+          }
         }
       } else {
         // Reroutes
@@ -2846,9 +2850,6 @@ export class LGraphCanvas {
             group.isInResize(e.canvasX, e.canvasY)
           ) {
             this.pointer.resizeDirection = "SE"
-          } else {
-            // Clear resize direction when not over any resize handle
-            this.pointer.resizeDirection = undefined
           }
         }
       }
