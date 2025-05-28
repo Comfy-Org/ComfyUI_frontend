@@ -19,6 +19,7 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "downlevelIteration": true,
+    "noImplicitOverride": true,
 
     /* AllowJs during migration phase */
     "allowJs": true,

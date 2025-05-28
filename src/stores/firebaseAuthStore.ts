@@ -20,6 +20,8 @@ import { useFirebaseAuth } from 'vuefire'
 
 import { COMFY_API_BASE_URL } from '@/config/comfyApi'
 import { t } from '@/i18n'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { type AuthHeader } from '@/types/authTypes'
 import { operations } from '@/types/comfyRegistryTypes'
 
 type CreditPurchaseResponse =
@@ -56,7 +58,13 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
 
   // Providers
   const googleProvider = new GoogleAuthProvider()
+  googleProvider.setCustomParameters({
+    prompt: 'select_account'
+  })
   const githubProvider = new GithubAuthProvider()
+  githubProvider.setCustomParameters({
+    prompt: 'select_account'
+  })
 
   // Getters
   const isAuthenticated = computed(() => !!currentUser.value)
@@ -87,12 +95,35 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     return null
   }
 
+  /**
+   * Retrieves the appropriate authentication header for API requests.
+   * Checks for authentication in the following order:
+   * 1. Firebase authentication token (if user is logged in)
+   * 2. API key (if stored in the browser's credential manager)
+   *
+   * @returns {Promise<AuthHeader | null>}
+   *   - A LoggedInAuthHeader with Bearer token if Firebase authenticated
+   *   - An ApiKeyAuthHeader with X-API-KEY if API key exists
+   *   - null if neither authentication method is available
+   */
+  const getAuthHeader = async (): Promise<AuthHeader | null> => {
+    // If available, set header with JWT used to identify the user to Firebase service
+    const token = await getIdToken()
+    if (token) {
+      return {
+        Authorization: `Bearer ${token}`
+      }
+    }
+
+    // If not authenticated with Firebase, try falling back to API key if available
+    return useApiKeyAuthStore().getAuthHeader()
+  }
+
   const fetchBalance = async (): Promise<GetCustomerBalanceResponse | null> => {
     isFetchingBalance.value = true
     try {
-      const token = await getIdToken()
-      if (!token) {
-        isFetchingBalance.value = false
+      const authHeader = await getAuthHeader()
+      if (!authHeader) {
         throw new FirebaseAuthStoreError(
           t('toastMessages.userNotAuthenticated')
         )
@@ -100,7 +131,8 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
 
       const response = await fetch(`${COMFY_API_BASE_URL}/customers/balance`, {
         headers: {
-          Authorization: `Bearer ${token}`
+          ...authHeader,
+          'Content-Type': 'application/json'
         }
       })
 
@@ -127,14 +159,17 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     }
   }
 
-  const createCustomer = async (
-    token: string
-  ): Promise<CreateCustomerResponse> => {
+  const createCustomer = async (): Promise<CreateCustomerResponse> => {
+    const authHeader = await getAuthHeader()
+    if (!authHeader) {
+      throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
+    }
+
     const createCustomerRes = await fetch(`${COMFY_API_BASE_URL}/customers`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
+        ...authHeader,
+        'Content-Type': 'application/json'
       }
     })
     if (!createCustomerRes.ok) {
@@ -175,7 +210,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
         if (!token) {
           throw new Error('Cannot create customer: User not authenticated')
         }
-        await createCustomer(token)
+        await createCustomer()
       }
 
       return result
@@ -236,22 +271,22 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   const addCredits = async (
     requestBodyContent: CreditPurchasePayload
   ): Promise<CreditPurchaseResponse> => {
-    const token = await getIdToken()
-    if (!token) {
+    const authHeader = await getAuthHeader()
+    if (!authHeader) {
       throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
 
     // Ensure customer was created during login/registration
     if (!customerCreated.value) {
-      await createCustomer(token)
+      await createCustomer()
       customerCreated.value = true
     }
 
     const response = await fetch(`${COMFY_API_BASE_URL}/customers/credit`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
+        ...authHeader,
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(requestBodyContent)
     })
@@ -276,16 +311,16 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   const accessBillingPortal = async (
     requestBody?: AccessBillingPortalReqBody
   ): Promise<AccessBillingPortalResponse> => {
-    const token = await getIdToken()
-    if (!token) {
+    const authHeader = await getAuthHeader()
+    if (!authHeader) {
       throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
 
     const response = await fetch(`${COMFY_API_BASE_URL}/customers/billing`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
+        ...authHeader,
+        'Content-Type': 'application/json'
       },
       ...(requestBody && {
         body: JSON.stringify(requestBody)
@@ -322,6 +357,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     login,
     register,
     logout,
+    createCustomer,
     getIdToken,
     loginWithGoogle,
     loginWithGithub,
@@ -329,6 +365,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     fetchBalance,
     accessBillingPortal,
     sendPasswordReset,
-    updatePassword: _updatePassword
+    updatePassword: _updatePassword,
+    getAuthHeader
   }
 })

@@ -864,12 +864,14 @@ class MaskEditorDialog extends ComfyDialog {
       !MaskEditorDialog.instance ||
       currentSrc !== MaskEditorDialog.instance.imageURL
     ) {
+      if (MaskEditorDialog.instance) MaskEditorDialog.instance.destroy()
       MaskEditorDialog.instance = new MaskEditorDialog()
+      MaskEditorDialog.instance.imageURL = currentSrc
     }
     return MaskEditorDialog.instance
   }
 
-  async show() {
+  override async show() {
     this.cleanup()
     if (!this.isLayoutCreated) {
       // layout
@@ -937,6 +939,16 @@ class MaskEditorDialog extends ComfyDialog {
     // Remove brush elements specifically
     const brushElements = document.querySelectorAll('#maskEditor_brush')
     brushElements.forEach((element) => element.remove())
+  }
+
+  destroy() {
+    this.isLayoutCreated = false
+    this.isOpen = false
+    this.canvasHistory.clearStates()
+    this.keyboardManager.removeListeners()
+    this.cleanup()
+    this.close()
+    MaskEditorDialog.instance = null
   }
 
   isOpened() {
@@ -1117,8 +1129,7 @@ class MaskEditorDialog extends ComfyDialog {
 
     if (success) {
       ComfyApp.onClipspaceEditorSave()
-      this.close()
-      this.isOpen = false
+      this.destroy()
     } else {
       this.uiManager.setSaveButtonText(t('g.save'))
       this.uiManager.setSaveButtonEnabled(true)
@@ -3400,7 +3411,7 @@ class UIManager {
     top_bar_cancel_button.innerText = t('g.cancel')
 
     top_bar_cancel_button.addEventListener('click', () => {
-      this.maskEditor.close()
+      this.maskEditor.destroy()
     })
 
     top_bar_shortcuts_container.appendChild(top_bar_undo_button)
@@ -4843,6 +4854,11 @@ class KeyboardManager {
   private maskEditor: MaskEditorDialog
   private messageBroker: MessageBroker
 
+  // Binded functions, for use in addListeners and removeListeners
+  private handleKeyDownBound = this.handleKeyDown.bind(this)
+  private handleKeyUpBound = this.handleKeyUp.bind(this)
+  private clearKeysBound = this.clearKeys.bind(this)
+
   constructor(maskEditor: MaskEditorDialog) {
     this.maskEditor = maskEditor
     this.messageBroker = maskEditor.getMessageBroker()
@@ -4857,16 +4873,15 @@ class KeyboardManager {
   }
 
   addListeners() {
-    document.addEventListener('keydown', (event) => this.handleKeyDown(event))
-    document.addEventListener('keyup', (event) => this.handleKeyUp(event))
-    window.addEventListener('blur', () => this.clearKeys())
+    document.addEventListener('keydown', this.handleKeyDownBound)
+    document.addEventListener('keyup', this.handleKeyUpBound)
+    window.addEventListener('blur', this.clearKeysBound)
   }
 
   removeListeners() {
-    document.removeEventListener('keydown', (event) =>
-      this.handleKeyDown(event)
-    )
-    document.removeEventListener('keyup', (event) => this.handleKeyUp(event))
+    document.removeEventListener('keydown', this.handleKeyDownBound)
+    document.removeEventListener('keyup', this.handleKeyUpBound)
+    window.removeEventListener('blur', this.clearKeysBound)
   }
 
   private clearKeys() {
@@ -4877,8 +4892,15 @@ class KeyboardManager {
     if (!this.keysDown.includes(event.key)) {
       this.keysDown.push(event.key)
     }
-    //if (this.redoCombinationPressed()) return
-    //this.undoCombinationPressed()
+    if ((event.ctrlKey || event.metaKey) && !event.altKey) {
+      const key = event.key.toUpperCase()
+      // Redo: Ctrl + Y, or Ctrl + Shift + Z
+      if ((key === 'Y' && !event.shiftKey) || (key == 'Z' && event.shiftKey)) {
+        this.messageBroker.publish('redo')
+      } else if (key === 'Z' && !event.shiftKey) {
+        this.messageBroker.publish('undo')
+      }
+    }
   }
 
   private handleKeyUp(event: KeyboardEvent) {
@@ -4888,6 +4910,45 @@ class KeyboardManager {
   private isKeyDown(key: string) {
     return this.keysDown.includes(key)
   }
+}
+
+// Function to open the mask editor
+function openMaskEditor(): void {
+  const useNewEditor = app.extensionManager.setting.get(
+    'Comfy.MaskEditor.UseNewEditor'
+  )
+  if (useNewEditor) {
+    const dlg = MaskEditorDialog.getInstance() as any
+    if (dlg?.isOpened && !dlg.isOpened()) {
+      dlg.show()
+    }
+  } else {
+    const dlg = MaskEditorDialogOld.getInstance() as any
+    if (dlg?.isOpened && !dlg.isOpened()) {
+      dlg.show()
+    }
+  }
+}
+
+// Check if the dialog is already opened
+function isOpened(): boolean {
+  const useNewEditor = app.extensionManager.setting.get(
+    'Comfy.MaskEditor.UseNewEditor'
+  )
+  if (useNewEditor) {
+    return MaskEditorDialog.instance?.isOpened?.() ?? false
+  } else {
+    return (MaskEditorDialogOld.instance as any)?.isOpened?.() ?? false
+  }
+}
+
+// Ensure boolean return type for context predicate
+const context_predicate = (): boolean => {
+  return !!(
+    ComfyApp.clipspace &&
+    ComfyApp.clipspace.imgs &&
+    ComfyApp.clipspace.imgs.length > 0
+  )
 }
 
 app.registerExtension({
@@ -4929,36 +4990,32 @@ app.registerExtension({
       experimental: true
     }
   ],
-  init(app) {
-    // Create function before assignment
-    function openMaskEditor(): void {
-      const useNewEditor = app.extensionManager.setting.get(
-        'Comfy.MaskEditor.UseNewEditor'
-      )
-      if (useNewEditor) {
-        const dlg = MaskEditorDialog.getInstance() as any
-        if (dlg?.isOpened && !dlg.isOpened()) {
-          dlg.show()
-        }
-      } else {
-        const dlg = MaskEditorDialogOld.getInstance() as any
-        if (dlg?.isOpened && !dlg.isOpened()) {
-          dlg.show()
-        }
+  commands: [
+    {
+      id: 'Comfy.MaskEditor.OpenMaskEditor',
+      icon: 'pi pi-pencil',
+      label: 'Open Mask Editor for Selected Node',
+      function: () => {
+        const selectedNodes = app.canvas.selected_nodes
+        if (!selectedNodes || Object.keys(selectedNodes).length !== 1) return
+
+        const selectedNode = selectedNodes[Object.keys(selectedNodes)[0]]
+        if (
+          !selectedNode.imgs?.length &&
+          selectedNode.previewMediaType !== 'image'
+        )
+          return
+
+        ComfyApp.copyToClipspace(selectedNode)
+        // @ts-expect-error clipspace_return_node is an extension property added at runtime
+        ComfyApp.clipspace_return_node = selectedNode
+        openMaskEditor()
       }
     }
-
-    // Assign the created function
-    ;(ComfyApp as any).open_maskeditor = openMaskEditor
-
-    // Ensure boolean return type
-    const context_predicate = (): boolean => {
-      return !!(
-        ComfyApp.clipspace &&
-        ComfyApp.clipspace.imgs &&
-        ComfyApp.clipspace.imgs.length > 0
-      )
-    }
+  ],
+  init() {
+    ComfyApp.open_maskeditor = openMaskEditor
+    ComfyApp.maskeditor_is_opended = isOpened
 
     ClipspaceDialog.registerButton(
       'MaskEditor',

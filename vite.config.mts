@@ -4,13 +4,11 @@ import IconsResolver from 'unplugin-icons/resolver'
 import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vite'
+import { createHtmlPlugin } from 'vite-plugin-html'
+import vueDevTools from 'vite-plugin-vue-devtools'
 import type { UserConfigExport } from 'vitest/config'
 
-import {
-  addElementVnodeExportPlugin,
-  comfyAPIPlugin,
-  generateImportMapPlugin
-} from './build/plugins'
+import { comfyAPIPlugin, generateImportMapPlugin } from './build/plugins'
 
 dotenv.config()
 
@@ -18,6 +16,8 @@ const IS_DEV = process.env.NODE_ENV === 'development'
 const SHOULD_MINIFY = process.env.ENABLE_MINIFY === 'true'
 // vite dev server will listen on all addresses, including LAN and public addresses
 const VITE_REMOTE_DEV = process.env.VITE_REMOTE_DEV === 'true'
+const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
+const DISABLE_VUE_PLUGINS = process.env.DISABLE_VUE_PLUGINS === 'true'
 
 const DEV_SERVER_COMFYUI_URL =
   process.env.DEV_SERVER_COMFYUI_URL || 'http://127.0.0.1:8188'
@@ -52,9 +52,13 @@ export default defineConfig({
         target: DEV_SERVER_COMFYUI_URL
       },
 
-      '/templates': {
-        target: DEV_SERVER_COMFYUI_URL
-      },
+      ...(!DISABLE_TEMPLATES_PROXY
+        ? {
+            '/templates': {
+              target: DEV_SERVER_COMFYUI_URL
+            }
+          }
+        : {}),
 
       '/testsubrouteindex': {
         target: 'http://localhost:5173',
@@ -64,14 +68,45 @@ export default defineConfig({
   },
 
   plugins: [
-    vue(),
+    ...(!DISABLE_VUE_PLUGINS
+      ? [vueDevTools(), vue(), createHtmlPlugin({})]
+      : [vue()]),
     comfyAPIPlugin(IS_DEV),
     generateImportMapPlugin([
-      { name: 'vue', pattern: /[\\/]node_modules[\\/]vue[\\/]/ },
-      { name: 'primevue', pattern: /[\\/]node_modules[\\/]primevue[\\/]/ },
-      { name: 'vue-i18n', pattern: /[\\/]node_modules[\\/]vue-i18n[\\/]/ }
+      {
+        name: 'vue',
+        pattern: 'vue',
+        entry: './dist/vue.esm-browser.prod.js'
+      },
+      {
+        name: 'vue-i18n',
+        pattern: 'vue-i18n',
+        entry: './dist/vue-i18n.esm-browser.prod.js'
+      },
+      {
+        name: 'primevue',
+        pattern: /^primevue\/?.*/,
+        entry: './index.mjs',
+        recursiveDependence: true
+      },
+      {
+        name: '@primevue/themes',
+        pattern: /^@primevue\/themes\/?.*/,
+        entry: './index.mjs',
+        recursiveDependence: true
+      },
+      {
+        name: '@primevue/forms',
+        pattern: /^@primevue\/forms\/?.*/,
+        entry: './index.mjs',
+        recursiveDependence: true,
+        override: {
+          '@primeuix/forms': {
+            entry: ''
+          }
+        }
+      }
     ]),
-    addElementVnodeExportPlugin(),
 
     Icons({
       compiler: 'vue3'

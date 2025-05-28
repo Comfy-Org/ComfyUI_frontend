@@ -34,7 +34,7 @@
 
     <template #grid="{ items }">
       <div
-        class="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] auto-rows-fr gap-8 justify-items-center"
+        class="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-x-4 gap-y-8 px-4 justify-items-center"
       >
         <TemplateWorkflowCard
           v-for="template in items"

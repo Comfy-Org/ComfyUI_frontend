@@ -189,6 +189,8 @@ export default {
         'elevation-0': 'none',
         'elevation-1':
           '0 0 2px 0px rgb(0 0 0 / 0.01), 0 1px 2px -1px rgb(0 0 0 / 0.03), 0 1px 1px -1px rgb(0 0 0 / 0.01)',
+        'elevation-1.5':
+          '0 0 2px 0px rgb(0 0 0 / 0.025), 0 1px 2px -1px rgb(0 0 0 / 0.03), 0 1px 1px -1px rgb(0 0 0 / 0.01)',
         'elevation-2':
           '0 0 10px 0px rgb(0 0 0 / 0.06), 0 6px 8px -2px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.04)',
         'elevation-3':
@@ -206,10 +208,11 @@ export default {
       backgroundColor: {
         'dark-elevation-0': 'rgba(255, 255, 255, 0)',
         'dark-elevation-1': 'rgba(255, 255, 255, 0.01)',
+        'dark-elevation-1.5': 'rgba(255, 255, 255, 0.015)',
         'dark-elevation-2': 'rgba(255, 255, 255, 0.03)',
         'dark-elevation-3': 'rgba(255, 255, 255, 0.04)',
         'dark-elevation-4': 'rgba(255, 255, 255, 0.08)',
-        'dark-elevation-5': 'rgba(255, 255, 255, 0.12)'
+        'dark-elevation-5': 'rgba(2 55, 255, 255, 0.12)'
       }
     }
   },

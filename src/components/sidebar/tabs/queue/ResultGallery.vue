@@ -35,6 +35,7 @@
         class="galleria-image"
       />
       <ResultVideo v-else-if="item.isVideo" :result="item" />
+      <ResultAudio v-else-if="item.isAudio" :result="item" />
     </template>
   </Galleria>
 </template>
@@ -46,6 +47,7 @@ import { onMounted, onUnmounted, ref, watch } from 'vue'
 import ComfyImage from '@/components/common/ComfyImage.vue'
 import { ResultItemImpl } from '@/stores/queueStore'
 
+import ResultAudio from './ResultAudio.vue'
 import ResultVideo from './ResultVideo.vue'
 
 const galleryVisible = ref(false)
@@ -141,5 +143,13 @@ img.galleria-image {
 .p-galleria-close-button {
   /* Set z-index so the close button doesn't get hidden behind the image when image is large */
   z-index: 1;
+}
+
+/* Mobile/tablet specific fixes */
+@media screen and (max-width: 768px) {
+  .p-galleria-prev-button,
+  .p-galleria-next-button {
+    z-index: 2;
+  }
 }
 </style>

@@ -36,6 +36,7 @@ import Select from 'primevue/select'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { type Component, markRaw } from 'vue'
 
+import BackgroundImageUpload from '@/components/common/BackgroundImageUpload.vue'
 import CustomFormValue from '@/components/common/CustomFormValue.vue'
 import FormColorPicker from '@/components/common/FormColorPicker.vue'
 import FormImageUpload from '@/components/common/FormImageUpload.vue'
@@ -102,6 +103,8 @@ function getFormComponent(item: FormItem): Component {
       return FormColorPicker
     case 'url':
       return UrlInput
+    case 'backgroundImage':
+      return BackgroundImageUpload
     default:
       return InputText
   }

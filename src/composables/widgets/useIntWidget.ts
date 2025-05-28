@@ -55,7 +55,8 @@ export const useIntWidget = () => {
           : 'number'
 
     const step = inputSpec.step ?? 1
-    const defaultValue = inputSpec.default ?? 0
+    /** Assertion {@link inputSpec.default} */
+    const defaultValue = (inputSpec.default as number | undefined) ?? 0
     const widget = node.addWidget(
       widgetType,
       inputSpec.name,

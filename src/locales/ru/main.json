@@ -9,6 +9,24 @@
     "title": "Требуется вход для использования API Nodes"
   },
   "auth": {
+    "apiKey": {
+      "cleared": "API-ключ удалён",
+      "clearedDetail": "Ваш API-ключ был успешно удалён",
+      "description": "Используйте ваш Comfy API-ключ для активации API-узлов",
+      "error": "Недействительный API-ключ",
+      "generateKey": "Получить здесь",
+      "helpText": "Нужен API-ключ?",
+      "invalid": "Недействительный API-ключ",
+      "invalidDetail": "Пожалуйста, введите действительный API-ключ",
+      "label": "API-ключ",
+      "placeholder": "Введите ваш API-ключ",
+      "storageFailed": "Не удалось сохранить API-ключ",
+      "storageFailedDetail": "Пожалуйста, попробуйте еще раз.",
+      "stored": "API-ключ сохранён",
+      "storedDetail": "Ваш API-ключ был успешно сохранён",
+      "title": "API-ключ",
+      "whitelistInfo": "О не включённых в белый список сайтах"
+    },
     "login": {
       "andText": "и",
       "confirmPasswordLabel": "Подтвердите пароль",
@@ -23,6 +41,7 @@
       "loginWithGithub": "Войти через Github",
       "loginWithGoogle": "Войти через Google",
       "newUser": "Вы здесь впервые?",
+      "noAssociatedUser": "С предоставленным API-ключом не связан ни один пользователь Comfy",
       "orContinueWith": "Или продолжить с",
       "passwordLabel": "Пароль",
       "passwordPlaceholder": "Введите ваш пароль",
@@ -35,7 +54,9 @@
       "success": "Вход выполнен успешно",
       "termsLink": "Условиями использования",
       "termsText": "Нажимая \"Далее\" или \"Зарегистрироваться\", вы соглашаетесь с нашими",
-      "title": "Войдите в свой аккаунт"
+      "title": "Войдите в свой аккаунт",
+      "useApiKey": "Comfy API-ключ",
+      "userAvatar": "Аватар пользователя"
     },
     "passwordUpdate": {
       "success": "Пароль обновлён",
@@ -60,6 +81,13 @@
       "signUpWithGoogle": "Зарегистрироваться через Google",
       "title": "Создать аккаунт"
     }
+  },
+  "chatHistory": {
+    "cancelEdit": "Отмена",
+    "cancelEditTooltip": "Отменить редактирование",
+    "copiedTooltip": "Скопировано",
+    "copyTooltip": "Скопировать сообщение в буфер",
+    "editTooltip": "Редактировать сообщение"
   },
   "clipboard": {
     "errorMessage": "Не удалось скопировать в буфер обмена",
@@ -110,6 +138,7 @@
     "Unpin": "Открепить"
   },
   "credits": {
+    "apiPricing": "Цены на API",
     "credits": "Кредиты",
     "faqs": "Часто задаваемые вопросы",
     "invoiceHistory": "История счетов",
@@ -128,8 +157,10 @@
     "yourCreditBalance": "Ваш баланс кредитов"
   },
   "dataTypes": {
+    "*": "*",
     "AUDIO": "АУДИО",
     "BOOLEAN": "БУЛЕВО",
+    "CAMERA_CONTROL": "УПРАВЛЕНИЕ_КАМЕРОЙ",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "CLIP_VISION_OUTPUT",
@@ -146,20 +177,29 @@
     "INT": "ЦЕЛОЕ",
     "LATENT": "ЛАТЕНТНЫЙ",
     "LATENT_OPERATION": "ЛАТЕНТНАЯ_ОПЕРАЦИЯ",
+    "LOAD3D_CAMERA": "ЗАГРУЗИТЬ3D_КАМЕРУ",
     "LOAD_3D": "ЗАГРУЗИТЬ_3D",
     "LOAD_3D_ANIMATION": "ЗАГРУЗИТЬ_3D_АНИМАЦИЮ",
+    "LUMA_CONCEPTS": "LUMA_CONCEPTS",
+    "LUMA_REF": "LUMA_REF",
     "MASK": "МАСКА",
     "MESH": "СЕТКА",
     "MODEL": "МОДЕЛЬ",
     "NOISE": "ШУМ",
     "PHOTOMAKER": "PHOTOMAKER",
+    "PIXVERSE_TEMPLATE": "ШАБЛОН_PIXVERSE",
+    "RECRAFT_COLOR": "RECRAFT_ЦВЕТ",
+    "RECRAFT_CONTROLS": "RECRAFT_УПРАВЛЕНИЯ",
+    "RECRAFT_V3_STYLE": "RECRAFT_V3_СТИЛЬ",
     "SAMPLER": "СЭМПЛЕР",
     "SIGMAS": "СИГМЫ",
     "STRING": "СТРОКА",
     "STYLE_MODEL": "МОДЕЛЬ_СТИЛЯ",
+    "SVG": "SVG",
     "TIMESTEPS_RANGE": "ДИАПАЗОН_ВРЕМЕННЫХ_ШАГОВ",
     "UPSCALE_MODEL": "МОДЕЛЬ_АПСКЕЙЛА",
     "VAE": "VAE",
+    "VIDEO": "ВИДЕО",
     "VOXEL": "ВОКСЕЛ",
     "WEBCAM": "ВЕБ-КАМЕРА"
   },
@@ -208,11 +248,13 @@
     "all": "Все",
     "amount": "Количество",
     "apply": "Применить",
+    "audioFailedToLoad": "Не удалось загрузить аудио",
     "back": "Назад",
     "cancel": "Отмена",
     "capture": "захват",
     "category": "Категория",
     "choose_file_to_upload": "выберите файл для загрузки",
+    "clear": "Очистить",
     "close": "Закрыть",
     "color": "Цвет",
     "comingSoon": "Скоро будет",
@@ -224,8 +266,11 @@
     "continue": "Продолжить",
     "control_after_generate": "управление после генерации",
     "control_before_generate": "управление до генерации",
+    "copy": "Копировать",
     "copyToClipboard": "Скопировать в буфер обмена",
+    "copyURL": "Скопировать URL",
     "currentUser": "Текущий пользователь",
+    "customBackground": "Пользовательский фон",
     "customize": "Настроить",
     "customizeFolder": "Настроить папку",
     "delete": "Удалить",
@@ -235,6 +280,7 @@
     "disableAll": "Отключить все",
     "disabling": "Отключение",
     "download": "Скачать",
+    "edit": "Редактировать",
     "empty": "Пусто",
     "enableAll": "Включить все",
     "enabled": "Включено",
@@ -250,6 +296,7 @@
     "goToNode": "Перейти к ноде",
     "icon": "Иконка",
     "imageFailedToLoad": "Не удалось загрузить изображение",
+    "imageUrl": "URL изображения",
     "import": "Импорт",
     "inProgress": "В процессе",
     "insert": "Вставить",
@@ -300,6 +347,7 @@
     "searchNodes": "Поиск нод",
     "searchSettings": "Поиск настроек",
     "searchWorkflows": "Поиск рабочих процессов",
+    "setAsBackground": "Установить как фон",
     "settings": "Настройки",
     "showReport": "Показать отчёт",
     "sort": "Сортировать",
@@ -456,6 +504,8 @@
     "submitErrorReport": "Отправить отчёт об ошибке (необязательно)",
     "systemStats": "Статистика системы",
     "validation": {
+      "descriptionRequired": "Описание обязательно",
+      "helpTypeRequired": "Тип помощи обязателен",
       "invalidEmail": "Пожалуйста, введите действительный адрес электронной почты",
       "maxLength": "Сообщение слишком длинное",
       "selectIssueType": "Пожалуйста, выберите тип проблемы"
@@ -467,17 +517,21 @@
     "applyingTexture": "Применение текстуры...",
     "backgroundColor": "Цвет фона",
     "camera": "Камера",
+    "clearRecording": "Очистить запись",
     "edgeThreshold": "Пороговое значение края",
     "export": "Экспорт",
     "exportModel": "Экспорт модели",
+    "exportRecording": "Экспортировать запись",
     "exportingModel": "Экспорт модели...",
     "fov": "Угол обзора",
     "light": "Свет",
     "lightIntensity": "Интенсивность света",
+    "loadingBackgroundImage": "Загрузка фонового изображения",
     "loadingModel": "Загрузка 3D модели...",
     "materialMode": "Режим Материала",
     "materialModes": {
       "depth": "Глубина",
+      "lineart": "Лайнарт",
       "normal": "Нормальный",
       "original": "Оригинал",
       "wireframe": "Каркас"
@@ -485,8 +539,11 @@
     "model": "Модель",
     "previewOutput": "Предварительный просмотр",
     "removeBackgroundImage": "Удалить фоновое изображение",
+    "resizeNodeMatchOutput": "Изменить размер узла под вывод",
     "scene": "Сцена",
     "showGrid": "Показать сетку",
+    "startRecording": "Начать запись",
+    "stopRecording": "Остановить запись",
     "switchCamera": "Переключить камеру",
     "switchingMaterialMode": "Переключение режима материала...",
     "upDirection": "Направление Вверх",
@@ -659,6 +716,7 @@
     "Open DevTools": "Открыть инструменты разработчика",
     "Open Inputs Folder": "Открыть папку входных данных",
     "Open Logs Folder": "Открыть папку журналов",
+    "Open Mask Editor for Selected Node": "Открыть редактор масок для выбранного узла",
     "Open Models Folder": "Открыть папку моделей",
     "Open Outputs Folder": "Открыть папку выходных данных",
     "Open Sign In Dialog": "Открыть окно входа",
@@ -668,6 +726,7 @@
     "Previous Opened Workflow": "Предыдущий открытый рабочий процесс",
     "Queue Prompt": "Запрос в очереди",
     "Queue Prompt (Front)": "Запрос в очереди (спереди)",
+    "Queue Selected Output Nodes": "Добавить выбранные выходные узлы в очередь",
     "Quit": "Выйти",
     "Redo": "Повторить",
     "Refresh Node Definitions": "Обновить определения нод",
@@ -704,10 +763,22 @@
   "nodeCategories": {
     "3d": "3d",
     "3d_models": "3d_модели",
+    "BFL": "BFL",
+    "Ideogram": "Ideogram",
+    "Kling": "Kling",
+    "Luma": "Luma",
+    "MiniMax": "MiniMax",
+    "OpenAI": "OpenAI",
+    "Pika": "Pika",
+    "PixVerse": "PixVerse",
+    "Recraft": "Recraft",
+    "Stability AI": "Stability AI",
+    "Veo": "Veo",
     "_for_testing": "_для_тестирования",
     "advanced": "расширенный",
     "animation": "анимация",
     "api": "api",
+    "api node": "api-узел",
     "attention_experiments": "эксперименты_внимания",
     "audio": "аудио",
     "batch": "пакет",
@@ -732,6 +803,7 @@
     "instructpix2pix": "instructpix2pix",
     "latent": "латентный",
     "loaders": "загрузчики",
+    "lotus": "lotus",
     "ltxv": "ltxv",
     "mask": "маска",
     "model": "модель",
@@ -743,10 +815,12 @@
     "photomaker": "photomaker",
     "postprocessing": "постобработка",
     "preprocessors": "предобработчики",
+    "primitive": "примитив",
     "samplers": "семплеры",
     "sampling": "выборка",
     "schedulers": "schedulers",
     "scheduling": "scheduling",
+    "sd": "sd",
     "sd3": "sd3",
     "sigmas": "сигмы",
     "stable_cascade": "стабильная_каскадная",
@@ -755,6 +829,10 @@
     "unet": "unet",
     "upscale_diffusion": "диффузии_апскейла",
     "upscaling": "апскейл",
+    "utils": "утилиты",
+    "v1": "v1",
+    "v2": "v2",
+    "v3": "v3",
     "video": "видео",
     "video_models": "видеомодели"
   },
@@ -773,6 +851,12 @@
       "windows": "Windows (Nvidia GPU с поддержкой CUDA)"
     },
     "title": "Ваше устройство не поддерживается"
+  },
+  "selectionToolbox": {
+    "executeButton": {
+      "disabledTooltip": "Выходные узлы не выбраны",
+      "tooltip": "Выполнить для выбранных выходных узлов (выделены оранжевой рамкой)"
+    }
   },
   "serverConfig": {
     "modifiedConfigs": "Вы изменили следующие конфигурации сервера. Перезапустите, чтобы применить изменения.",
@@ -923,6 +1007,7 @@
   },
   "settingsCategories": {
     "3D": "3D",
+    "API Nodes": "API-узлы",
     "About": "О программе",
     "Appearance": "Внешний вид",
     "BrushAdjustment": "Настройка кисти",
@@ -1036,8 +1121,10 @@
       "Custom Nodes": "Пользовательские узлы",
       "Flux": "Flux",
       "Image": "Изображение",
+      "Image API": "Image API",
       "Upscaling": "Увеличение разрешения",
-      "Video": "Видео"
+      "Video": "Видео",
+      "Video API": "Video API"
     },
     "template": {
       "3D": {
@@ -1094,6 +1181,23 @@
         "sdxl_simple_example": "SDXL Простой",
         "sdxlturbo_example": "SDXL Turbo"
       },
+      "Image API": {
+        "api-openai-dall-e-2-inpaint": "Dall-E 2: дорисовка",
+        "api-openai-dall-e-2-t2i": "Dall-E 2: текст в изображение",
+        "api-openai-dall-e-3-t2i": "Dall-E 3: текст в изображение",
+        "api_bfl_flux_pro_t2i": "BFL Flux 1.1[pro] Ultra текст в изображение",
+        "api_ideogram_v3_t2i": "Ideogram V3: текст в изображение",
+        "api_luma_photon_i2i": "Luma Photon: изображение в изображение",
+        "api_luma_photon_style_ref": "Luma Photon: стиль по образцу",
+        "api_openai_image_1_i2i": "OpenAI Image-1: изображение в изображение",
+        "api_openai_image_1_inpaint": "OpenAI Image-1: дорисовка",
+        "api_openai_image_1_multi_inputs": "OpenAI Image-1: несколько входов",
+        "api_openai_image_1_t2i": "OpenAI Image-1: текст в изображение",
+        "api_recraft_image_gen_with_color_control": "Recraft: генерация изображения с управлением цветом",
+        "api_recraft_image_gen_with_style_control": "Recraft: генерация изображения с управлением стилем",
+        "api_recraft_vector_gen": "Recraft: генерация векторного изображения",
+        "api_stability_sd3_t2i": "Stability AI Stable Image Ultra текст в изображение"
+      },
       "Upscaling": {
         "esrgan_example": "ESRGAN",
         "hiresfix_esrgan_workflow": "HiresFix ESRGAN Workflow",
@@ -1111,6 +1215,117 @@
         "txt_to_image_to_video": "Текст в изображение в видео",
         "wan2_1_fun_control": "Wan 2.1 ControlNet",
         "wan2_1_fun_inp": "Wan 2.1 Inpainting"
+      },
+      "Video API": {
+        "api_hailuo_minimax_i2v": "MiniMax: изображение в видео",
+        "api_kling_i2v": "Kling: изображение в видео",
+        "api_luma_i2v": "Luma: изображение в видео",
+        "api_pika_scene": "Pika Scenes: изображения в видео",
+        "api_pixverse_t2v": "PixVerse: текст в видео",
+        "api_pixverse_template_i2v": "PixVerse Template Effects: изображение в видео",
+        "api_veo2_i2v": "Veo2: изображение в видео"
+      }
+    },
+    "templateDescription": {
+      "3D": {
+        "hunyuan-3d-multiview-elf": "Используйте Hunyuan3D 2mv для генерации моделей по нескольким видам.",
+        "hunyuan-3d-turbo": "Используйте Hunyuan3D 2mv turbo для генерации моделей по нескольким видам.",
+        "hunyuan3d-non-multiview-train": "Используйте Hunyuan3D 2.0 для генерации моделей по одному виду.",
+        "stable_zero123_example": "Генерируйте 3D-виды по одному изображению."
+      },
+      "Area Composition": {
+        "area_composition": "Управляйте композицией изображения с помощью областей.",
+        "area_composition_reversed": "Обратный рабочий процесс композиции областей.",
+        "area_composition_square_area_for_subject": "Создавайте стабильное размещение объекта."
+      },
+      "Audio": {
+        "stable_audio_example": "Генерируйте аудио по текстовым описаниям."
+      },
+      "Basics": {
+        "default": "Генерируйте изображения по текстовым описаниям.",
+        "embedding_example": "Используйте текстовую инверсию для единых стилей.",
+        "gligen_textbox_example": "Указывайте расположение и размер объектов.",
+        "image2image": "Преобразуйте существующие изображения с помощью текстовых подсказок.",
+        "inpain_model_outpainting": "Расширяйте изображения за пределы их исходных границ.",
+        "inpaint_example": "Редактируйте отдельные части изображений без швов.",
+        "lora": "Применяйте LoRA-модели для специализированных стилей или объектов.",
+        "lora_multiple": "Комбинируйте несколько LoRA-моделей для уникальных результатов."
+      },
+      "ControlNet": {
+        "2_pass_pose_worship": "Генерируйте изображения по референсам поз.",
+        "controlnet_example": "Управляйте генерацией изображений с помощью референсных изображений.",
+        "depth_controlnet": "Создавайте изображения с учетом глубины.",
+        "depth_t2i_adapter": "Быстро генерируйте изображения с глубиной с помощью T2I-адаптера.",
+        "mixing_controlnets": "Комбинируйте несколько моделей ControlNet вместе."
+      },
+      "Flux": {
+        "flux_canny_model_example": "Генерируйте изображения по детекции границ.",
+        "flux_depth_lora_example": "Создавайте изображения с глубиной с помощью LoRA.",
+        "flux_dev_checkpoint_example": "Создавайте изображения с помощью Flux development models.",
+        "flux_fill_inpaint_example": "Заполняйте отсутствующие части изображений.",
+        "flux_fill_outpaint_example": "Расширяйте изображения с помощью Flux outpainting.",
+        "flux_redux_model_example": "Передавайте стиль с референсного изображения для управления генерацией с помощью Flux.",
+        "flux_schnell": "Быстро генерируйте изображения с Flux Schnell."
+      },
+      "Image": {
+        "hidream_e1_full": "Редактируйте изображения с HiDream E1.",
+        "hidream_i1_dev": "Генерируйте изображения с HiDream I1 Dev.",
+        "hidream_i1_fast": "Быстро генерируйте изображения с HiDream I1.",
+        "hidream_i1_full": "Генерируйте изображения с HiDream I1.",
+        "sd3_5_large_blur": "Генерируйте изображения по размытым референсам с SD 3.5.",
+        "sd3_5_large_canny_controlnet_example": "Используйте детекцию границ для управления генерацией с SD 3.5.",
+        "sd3_5_large_depth": "Создавайте изображения с глубиной с SD 3.5.",
+        "sd3_5_simple_example": "Генерируйте изображения с SD 3.5.",
+        "sdxl_refiner_prompt_example": "Улучшайте результаты SDXL с помощью refiners.",
+        "sdxl_revision_text_prompts": "Передавайте концепции с референсных изображений для управления генерацией с SDXL.",
+        "sdxl_revision_zero_positive": "Добавляйте текстовые подсказки вместе с референсными изображениями для управления генерацией с SDXL.",
+        "sdxl_simple_example": "Создавайте высококачественные изображения с SDXL.",
+        "sdxlturbo_example": "Генерируйте изображения за один шаг с SDXL Turbo."
+      },
+      "Image API": {
+        "api-openai-dall-e-2-inpaint": "Используйте Dall-E 2 API для инпейнта изображений.",
+        "api-openai-dall-e-2-t2i": "Используйте Dall-E 2 API для генерации изображений по текстовым описаниям.",
+        "api-openai-dall-e-3-t2i": "Используйте Dall-E 3 API для генерации изображений по текстовым описаниям.",
+        "api_bfl_flux_pro_t2i": "Создавайте изображения с помощью FLUX.1 [pro] с отличным следованием подсказкам, высоким качеством, детализацией и разнообразием.",
+        "api_ideogram_v3_t2i": "Генерируйте изображения с высоким соответствием подсказкам, фотореализмом и рендерингом текста. Создавайте профессиональные логотипы, промо-постеры, концепты лендингов, продуктовые фото и многое другое. Легко создавайте сложные пространственные композиции с детализированным фоном, точным освещением и реалистичной средой.",
+        "api_luma_photon_i2i": "Управляйте генерацией изображений с помощью комбинации изображений и подсказки.",
+        "api_luma_photon_style_ref": "Применяйте и смешивайте стили с точным контролем. Luma Photon захватывает суть каждого референса, позволяя комбинировать уникальные визуальные элементы с профессиональным качеством.",
+        "api_openai_image_1_i2i": "Используйте GPT Image 1 API для генерации изображений по изображениям.",
+        "api_openai_image_1_inpaint": "Используйте GPT Image 1 API для инпейнта изображений.",
+        "api_openai_image_1_multi_inputs": "Используйте GPT Image 1 API с несколькими входами для генерации изображений.",
+        "api_openai_image_1_t2i": "Используйте GPT Image 1 API для генерации изображений по текстовым описаниям.",
+        "api_recraft_image_gen_with_color_control": "Создайте собственную палитру для повторного использования или подберите цвета для каждого фото. Совместите фирменную палитру и создайте уникальные визуалы.",
+        "api_recraft_image_gen_with_style_control": "Контролируйте стиль с помощью визуальных примеров, выравнивайте объекты и настраивайте детали. Сохраняйте и делитесь стилями для идеального брендирования.",
+        "api_recraft_vector_gen": "Преобразуйте текстовую подсказку в векторное изображение с помощью AI-генератора Recraft. Создавайте лучшие векторные арты для логотипов, постеров, иконок, баннеров и мокапов. Дорабатывайте дизайн с помощью качественных SVG-файлов. Создавайте фирменные векторные иллюстрации для приложений и сайтов за секунды.",
+        "api_stability_sd3_t2i": "Генерируйте высококачественные изображения с отличным следованием подсказкам. Идеально для профессионального использования при разрешении 1 мегапиксель."
+      },
+      "Upscaling": {
+        "esrgan_example": "Используйте модели апскейлинга для повышения качества изображений.",
+        "hiresfix_esrgan_workflow": "Используйте модели апскейлинга на промежуточных этапах.",
+        "hiresfix_latent_workflow": "Улучшайте качество изображений в latent space.",
+        "latent_upscale_different_prompt_model": "Увеличивайте и меняйте подсказку на разных проходах."
+      },
+      "Video": {
+        "hunyuan_video_text_to_video": "Генерируйте видео с помощью модели Hunyuan.",
+        "image_to_video": "Преобразуйте изображения в анимированные видео.",
+        "image_to_video_wan": "Быстро генерируйте видео из изображений.",
+        "ltxv_image_to_video": "Преобразуйте статичные изображения в видео.",
+        "ltxv_text_to_video": "Генерируйте видео по текстовым описаниям.",
+        "mochi_text_to_video_example": "Создавайте видео с помощью модели Mochi.",
+        "text_to_video_wan": "Быстро генерируйте видео по текстовым описаниям.",
+        "txt_to_image_to_video": "Генерируйте изображения по тексту, а затем преобразуйте их в видео.",
+        "wan2_1_flf2v_720_f16": "Генерируйте видео, контролируя первый и последний кадры.",
+        "wan2_1_fun_control": "Управляйте генерацией видео с помощью позы, глубины, границ и других параметров.",
+        "wan2_1_fun_inp": "Создавайте видео по начальному и конечному кадрам."
+      },
+      "Video API": {
+        "api_hailuo_minimax_i2v": "Создавайте изысканные видео из изображений и текста, включая CGI и трендовые эффекты, такие как viral AI hugging. Выбирайте стили и темы для вашего креатива.",
+        "api_kling_i2v": "Создавайте видео с отличным следованием подсказкам для действий, эмоций и движений камеры. Теперь поддерживаются сложные подсказки с последовательными действиями — вы режиссёр своей сцены.",
+        "api_luma_i2v": "Преобразуйте статичные изображения в волшебные анимации высокого качества.",
+        "api_pika_scene": "Используйте несколько изображений как ингредиенты и генерируйте видео, включающие их все.",
+        "api_pixverse_t2v": "Генерируйте видео с точной интерпретацией подсказок и впечатляющей динамикой.",
+        "api_pixverse_template_i2v": "Преобразует статичные изображения в динамичные видео с движением и эффектами.",
+        "api_veo2_i2v": "Используйте Google Veo2 API для генерации видео из изображений."
       }
     },
     "title": "Начните с шаблона"
@@ -1139,12 +1354,16 @@
     "no3dSceneToExport": "Нет 3D сцены для экспорта",
     "noTemplatesToExport": "Нет шаблонов для экспорта",
     "nodeDefinitionsUpdated": "Определения узлов обновлены",
+    "nothingSelected": "Ничего не выбрано",
     "nothingToGroup": "Нечего группировать",
+    "nothingToQueue": "Нет заданий в очереди",
     "pendingTasksDeleted": "Ожидающие задачи удалены",
     "pleaseSelectNodesToGroup": "Пожалуйста, выберите узлы (или другие группы) для создания группы",
+    "pleaseSelectOutputNodes": "Пожалуйста, выберите выходные узлы",
     "unableToGetModelFilePath": "Не удалось получить путь к файлу модели",
     "unauthorizedDomain": "Ваш домен {domain} не авторизован для использования этого сервиса. Пожалуйста, свяжитесь с {email}, чтобы добавить ваш домен в белый список.",
     "updateRequested": "Запрошено обновление",
+    "useApiKeyTip": "Совет: Нет доступа к обычному входу? Используйте опцию Comfy API Key.",
     "userNotAuthenticated": "Пользователь не аутентифицирован"
   },
   "userSelect": {
@@ -1164,6 +1383,7 @@
   },
   "validation": {
     "invalidEmail": "Недействительный адрес электронной почты",
+    "length": "Должно быть {length} символов",
     "maxLength": "Должно быть не более {length} символов",
     "minLength": "Должно быть не менее {length} символов",
     "password": {
@@ -1176,6 +1396,7 @@
       "uppercase": "Должен содержать хотя бы одну заглавную букву"
     },
     "personalDataConsentRequired": "Вы должны согласиться на обработку ваших персональных данных.",
+    "prefix": "Должно начинаться с {prefix}",
     "required": "Обязательно"
   },
   "welcome": {

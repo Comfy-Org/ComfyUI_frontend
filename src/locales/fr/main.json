@@ -9,6 +9,24 @@
     "title": "Connexion requise pour utiliser les nœuds API"
   },
   "auth": {
+    "apiKey": {
+      "cleared": "Clé API supprimée",
+      "clearedDetail": "Votre clé API a été supprimée avec succès",
+      "description": "Utilisez votre clé API Comfy pour activer les nœuds API",
+      "error": "Clé API invalide",
+      "generateKey": "Obtenez-en une ici",
+      "helpText": "Besoin d'une clé API ?",
+      "invalid": "Clé API invalide",
+      "invalidDetail": "Veuillez entrer une clé API valide",
+      "label": "Clé API",
+      "placeholder": "Entrez votre clé API",
+      "storageFailed": "Échec de l’enregistrement de la clé API",
+      "storageFailedDetail": "Veuillez réessayer.",
+      "stored": "Clé API enregistrée",
+      "storedDetail": "Votre clé API a été enregistrée avec succès",
+      "title": "Clé API",
+      "whitelistInfo": "À propos des sites non autorisés"
+    },
     "login": {
       "andText": "et",
       "confirmPasswordLabel": "Confirmer le mot de passe",
@@ -23,6 +41,7 @@
       "loginWithGithub": "Se connecter avec Github",
       "loginWithGoogle": "Se connecter avec Google",
       "newUser": "Nouveau ici?",
+      "noAssociatedUser": "Aucun utilisateur Comfy n'est associé à la clé API fournie",
       "orContinueWith": "Ou continuer avec",
       "passwordLabel": "Mot de passe",
       "passwordPlaceholder": "Entrez votre mot de passe",
@@ -35,7 +54,9 @@
       "success": "Connexion réussie",
       "termsLink": "Conditions d'utilisation",
       "termsText": "En cliquant sur \"Suivant\" ou \"S'inscrire\", vous acceptez nos",
-      "title": "Connectez-vous à votre compte"
+      "title": "Connectez-vous à votre compte",
+      "useApiKey": "Clé API Comfy",
+      "userAvatar": "Avatar utilisateur"
     },
     "passwordUpdate": {
       "success": "Mot de passe mis à jour",
@@ -60,6 +81,13 @@
       "signUpWithGoogle": "S'inscrire avec Google",
       "title": "Créer un compte"
     }
+  },
+  "chatHistory": {
+    "cancelEdit": "Annuler",
+    "cancelEditTooltip": "Annuler la modification",
+    "copiedTooltip": "Copié",
+    "copyTooltip": "Copier le message dans le presse-papiers",
+    "editTooltip": "Modifier le message"
   },
   "clipboard": {
     "errorMessage": "Échec de la copie dans le presse-papiers",
@@ -110,6 +138,7 @@
     "Unpin": "Désépingler"
   },
   "credits": {
+    "apiPricing": "Tarification de l’API",
     "credits": "Crédits",
     "faqs": "FAQ",
     "invoiceHistory": "Historique des factures",
@@ -128,8 +157,10 @@
     "yourCreditBalance": "Votre solde de crédits"
   },
   "dataTypes": {
+    "*": "*",
     "AUDIO": "AUDIO",
     "BOOLEAN": "BOOLEAN",
+    "CAMERA_CONTROL": "Contrôle de la caméra",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "SORTIE_CLIP_VISION",
@@ -146,20 +177,29 @@
     "INT": "ENTIER",
     "LATENT": "LATENT",
     "LATENT_OPERATION": "OPERATION_LATENTE",
+    "LOAD3D_CAMERA": "Charger la caméra 3D",
     "LOAD_3D": "CHARGER_3D",
     "LOAD_3D_ANIMATION": "CHARGER_ANIMATION_3D",
+    "LUMA_CONCEPTS": "Concepts Luma",
+    "LUMA_REF": "Référence Luma",
     "MASK": "MASQUE",
     "MESH": "MAILLAGE",
     "MODEL": "MODÈLE",
     "NOISE": "BRUIT",
     "PHOTOMAKER": "PHOTOMAKER",
+    "PIXVERSE_TEMPLATE": "Modèle Pixverse",
+    "RECRAFT_COLOR": "Couleur Recraft",
+    "RECRAFT_CONTROLS": "Contrôles Recraft",
+    "RECRAFT_V3_STYLE": "Style Recraft V3",
     "SAMPLER": "ÉCHANTILLONNEUR",
     "SIGMAS": "SIGMAS",
     "STRING": "CHAÎNE",
     "STYLE_MODEL": "MODÈLE_DE_STYLE",
+    "SVG": "SVG",
     "TIMESTEPS_RANGE": "PLAGE_DES_ÉTAPES_TEMPORELLES",
     "UPSCALE_MODEL": "MODÈLE_DE_MISE_À_L'ÉCHELLE",
     "VAE": "VAE",
+    "VIDEO": "Vidéo",
     "VOXEL": "VOXEL",
     "WEBCAM": "WEBCAM"
   },
@@ -208,11 +248,13 @@
     "all": "Tout",
     "amount": "Quantité",
     "apply": "Appliquer",
+    "audioFailedToLoad": "Échec du chargement de l'audio",
     "back": "Retour",
     "cancel": "Annuler",
     "capture": "capture",
     "category": "Catégorie",
     "choose_file_to_upload": "choisissez le fichier à télécharger",
+    "clear": "Effacer",
     "close": "Fermer",
     "color": "Couleur",
     "comingSoon": "Bientôt disponible",
@@ -224,8 +266,11 @@
     "continue": "Continuer",
     "control_after_generate": "contrôle après génération",
     "control_before_generate": "contrôle avant génération",
+    "copy": "Copier",
     "copyToClipboard": "Copier dans le presse-papiers",
+    "copyURL": "Copier l’URL",
     "currentUser": "Utilisateur actuel",
+    "customBackground": "Arrière-plan personnalisé",
     "customize": "Personnaliser",
     "customizeFolder": "Personnaliser le dossier",
     "delete": "Supprimer",
@@ -235,6 +280,7 @@
     "disableAll": "Désactiver tout",
     "disabling": "Désactivation",
     "download": "Télécharger",
+    "edit": "Modifier",
     "empty": "Vide",
     "enableAll": "Activer tout",
     "enabled": "Activé",
@@ -250,6 +296,7 @@
     "goToNode": "Aller au nœud",
     "icon": "Icône",
     "imageFailedToLoad": "Échec du chargement de l'image",
+    "imageUrl": "URL de l'image",
     "import": "Importer",
     "inProgress": "En cours",
     "insert": "Insérer",
@@ -300,6 +347,7 @@
     "searchNodes": "Rechercher des nœuds",
     "searchSettings": "Rechercher des paramètres",
     "searchWorkflows": "Rechercher des flux de travail",
+    "setAsBackground": "Définir comme arrière-plan",
     "settings": "Paramètres",
     "showReport": "Afficher le rapport",
     "sort": "Trier",
@@ -456,6 +504,8 @@
     "submitErrorReport": "Soumettre un rapport d'erreur (Facultatif)",
     "systemStats": "Statistiques du système",
     "validation": {
+      "descriptionRequired": "La description est requise",
+      "helpTypeRequired": "Le type d'aide est requis",
       "invalidEmail": "Veuillez entrer une adresse e-mail valide",
       "maxLength": "Message trop long",
       "selectIssueType": "Veuillez sélectionner un type de problème"
@@ -467,17 +517,21 @@
     "applyingTexture": "Application de la texture...",
     "backgroundColor": "Couleur de fond",
     "camera": "Caméra",
+    "clearRecording": "Effacer l'enregistrement",
     "edgeThreshold": "Seuil de Bordure",
     "export": "Exportation",
     "exportModel": "Exportation du modèle",
+    "exportRecording": "Exporter l'enregistrement",
     "exportingModel": "Exportation du modèle en cours...",
     "fov": "FOV",
     "light": "Lumière",
     "lightIntensity": "Intensité de la lumière",
+    "loadingBackgroundImage": "Chargement de l’image d’arrière-plan",
     "loadingModel": "Chargement du modèle 3D...",
     "materialMode": "Mode Matériel",
     "materialModes": {
       "depth": "Profondeur",
+      "lineart": "Dessin au trait",
       "normal": "Normal",
       "original": "Original",
       "wireframe": "Fil de fer"
@@ -485,8 +539,11 @@
     "model": "Modèle",
     "previewOutput": "Aperçu de la sortie",
     "removeBackgroundImage": "Supprimer l'image de fond",
+    "resizeNodeMatchOutput": "Redimensionner le nœud pour correspondre à la sortie",
     "scene": "Scène",
     "showGrid": "Afficher la grille",
+    "startRecording": "Démarrer l'enregistrement",
+    "stopRecording": "Arrêter l'enregistrement",
     "switchCamera": "Changer de caméra",
     "switchingMaterialMode": "Changement de mode de matériau...",
     "upDirection": "Direction Haut",
@@ -659,6 +716,7 @@
     "Open DevTools": "Ouvrir DevTools",
     "Open Inputs Folder": "Ouvrir le dossier des entrées",
     "Open Logs Folder": "Ouvrir le dossier des journaux",
+    "Open Mask Editor for Selected Node": "Ouvrir l’éditeur de mask pour le nœud sélectionné",
     "Open Models Folder": "Ouvrir le dossier des modèles",
     "Open Outputs Folder": "Ouvrir le dossier des sorties",
     "Open Sign In Dialog": "Ouvrir la boîte de dialogue de connexion",
@@ -668,6 +726,7 @@
     "Previous Opened Workflow": "Flux de travail ouvert précédent",
     "Queue Prompt": "Invite de file d'attente",
     "Queue Prompt (Front)": "Invite de file d'attente (Front)",
+    "Queue Selected Output Nodes": "Mettre en file d’attente les nœuds de sortie sélectionnés",
     "Quit": "Quitter",
     "Redo": "Refaire",
     "Refresh Node Definitions": "Actualiser les définitions de nœud",
@@ -704,10 +763,22 @@
   "nodeCategories": {
     "3d": "3d",
     "3d_models": "modèles_3d",
+    "BFL": "BFL",
+    "Ideogram": "Ideogram",
+    "Kling": "Kling",
+    "Luma": "Luma",
+    "MiniMax": "MiniMax",
+    "OpenAI": "OpenAI",
+    "Pika": "Pika",
+    "PixVerse": "PixVerse",
+    "Recraft": "Recraft",
+    "Stability AI": "Stability AI",
+    "Veo": "Veo",
     "_for_testing": "_pour_test",
     "advanced": "avancé",
     "animation": "animation",
     "api": "api",
+    "api node": "nœud api",
     "attention_experiments": "expériences_d'attention",
     "audio": "audio",
     "batch": "lot",
@@ -732,6 +803,7 @@
     "instructpix2pix": "instructpix2pix",
     "latent": "latent",
     "loaders": "chargeurs",
+    "lotus": "lotus",
     "ltxv": "ltxv",
     "mask": "masque",
     "model": "modèle",
@@ -743,10 +815,12 @@
     "photomaker": "photomaker",
     "postprocessing": "post-traitement",
     "preprocessors": "préprocesseurs",
+    "primitive": "primitif",
     "samplers": "échantillonneurs",
     "sampling": "échantillonnage",
     "schedulers": "planificateurs",
     "scheduling": "planification",
+    "sd": "sd",
     "sd3": "sd3",
     "sigmas": "sigmas",
     "stable_cascade": "stable_cascade",
@@ -755,6 +829,10 @@
     "unet": "unet",
     "upscale_diffusion": "diffusion_de_mise_à_l'échelle",
     "upscaling": "mise_à_l'échelle",
+    "utils": "utilitaires",
+    "v1": "v1",
+    "v2": "v2",
+    "v3": "v3",
     "video": "vidéo",
     "video_models": "modèles_vidéo"
   },
@@ -773,6 +851,12 @@
       "windows": "Windows (GPU Nvidia avec support CUDA)"
     },
     "title": "Votre appareil n'est pas pris en charge"
+  },
+  "selectionToolbox": {
+    "executeButton": {
+      "disabledTooltip": "Aucun nœud de sortie sélectionné",
+      "tooltip": "Exécuter vers les nœuds de sortie sélectionnés (surlignés avec une bordure orange)"
+    }
   },
   "serverConfig": {
     "modifiedConfigs": "Vous avez modifié les configurations suivantes du serveur. Redémarrez pour appliquer les modifications.",
@@ -923,6 +1007,7 @@
   },
   "settingsCategories": {
     "3D": "3D",
+    "API Nodes": "Nœuds API",
     "About": "À Propos",
     "Appearance": "Apparence",
     "BrushAdjustment": "Ajustement de Brosse",
@@ -1036,8 +1121,10 @@
       "Custom Nodes": "Nœuds personnalisés",
       "Flux": "Flux",
       "Image": "Image",
+      "Image API": "API d'image",
       "Upscaling": "Mise à l'échelle",
-      "Video": "Vidéo"
+      "Video": "Vidéo",
+      "Video API": "API vidéo"
     },
     "template": {
       "3D": {
@@ -1094,6 +1181,23 @@
         "sdxl_simple_example": "SDXL Simple",
         "sdxlturbo_example": "SDXL Turbo"
       },
+      "Image API": {
+        "api-openai-dall-e-2-inpaint": "Dall-E 2 Inpainting",
+        "api-openai-dall-e-2-t2i": "Dall-E 2 Texte vers Image",
+        "api-openai-dall-e-3-t2i": "Dall-E 3 Texte vers Image",
+        "api_bfl_flux_pro_t2i": "BFL Flux 1.1[pro] Ultra Texte vers Image",
+        "api_ideogram_v3_t2i": "Ideogram V3 Texte vers Image",
+        "api_luma_photon_i2i": "Luma Photon Image vers Image",
+        "api_luma_photon_style_ref": "Luma Photon Référence de Style",
+        "api_openai_image_1_i2i": "OpenAI Image-1 Image vers Image",
+        "api_openai_image_1_inpaint": "OpenAI Image-1 Inpainting",
+        "api_openai_image_1_multi_inputs": "OpenAI Image-1 Entrées Multiples",
+        "api_openai_image_1_t2i": "OpenAI Image-1 Texte vers Image",
+        "api_recraft_image_gen_with_color_control": "Recraft Génération d’Image avec Contrôle des Couleurs",
+        "api_recraft_image_gen_with_style_control": "Recraft Génération d’Image avec Contrôle du Style",
+        "api_recraft_vector_gen": "Recraft Génération de Vecteur",
+        "api_stability_sd3_t2i": "Stability AI Stable Image Ultra Texte vers Image"
+      },
       "Upscaling": {
         "esrgan_example": "ESRGAN",
         "hiresfix_esrgan_workflow": "Flux de Travail ESRGAN HiresFix",
@@ -1111,6 +1215,117 @@
         "txt_to_image_to_video": "Texte à Image à Vidéo",
         "wan2_1_fun_control": "Wan 2.1 ControlNet",
         "wan2_1_fun_inp": "Wan 2.1 Inpainting"
+      },
+      "Video API": {
+        "api_hailuo_minimax_i2v": "MiniMax Image vers Vidéo",
+        "api_kling_i2v": "Kling Image vers Vidéo",
+        "api_luma_i2v": "Luma Image vers Vidéo",
+        "api_pika_scene": "Pika Scènes : Images vers Vidéo",
+        "api_pixverse_t2v": "PixVerse Texte vers Vidéo",
+        "api_pixverse_template_i2v": "PixVerse Template Effects: Image vers Vidéo",
+        "api_veo2_i2v": "Veo2 Image vers Vidéo"
+      }
+    },
+    "templateDescription": {
+      "3D": {
+        "hunyuan-3d-multiview-elf": "Utilisez Hunyuan3D 2mv pour générer des modèles à partir de plusieurs vues.",
+        "hunyuan-3d-turbo": "Utilisez Hunyuan3D 2mv turbo pour générer des modèles à partir de plusieurs vues.",
+        "hunyuan3d-non-multiview-train": "Utilisez Hunyuan3D 2.0 pour générer des modèles à partir d'une seule vue.",
+        "stable_zero123_example": "Générez des vues 3D à partir d'images uniques."
+      },
+      "Area Composition": {
+        "area_composition": "Contrôlez la composition d'image avec des zones.",
+        "area_composition_reversed": "Inversez le workflow de composition de zones.",
+        "area_composition_square_area_for_subject": "Créez un placement cohérent du sujet."
+      },
+      "Audio": {
+        "stable_audio_example": "Générez de l'audio à partir de descriptions textuelles."
+      },
+      "Basics": {
+        "default": "Générez des images à partir de descriptions textuelles.",
+        "embedding_example": "Utilisez l'inversion textuelle pour des styles cohérents.",
+        "gligen_textbox_example": "Spécifiez l'emplacement et la taille des objets.",
+        "image2image": "Transformez des images existantes à l'aide de prompts textuels.",
+        "inpain_model_outpainting": "Étendez les images au-delà de leurs limites d'origine.",
+        "inpaint_example": "Modifiez de façon transparente des parties spécifiques d'une image.",
+        "lora": "Appliquez des modèles LoRA pour des styles ou sujets spécialisés.",
+        "lora_multiple": "Combinez plusieurs modèles LoRA pour des résultats uniques."
+      },
+      "ControlNet": {
+        "2_pass_pose_worship": "Générez des images à partir de références de pose.",
+        "controlnet_example": "Contrôlez la génération d'image avec des images de référence.",
+        "depth_controlnet": "Créez des images avec une génération sensible à la profondeur.",
+        "depth_t2i_adapter": "Générez rapidement des images sensibles à la profondeur avec un adaptateur T2I.",
+        "mixing_controlnets": "Combinez plusieurs modèles ControlNet ensemble."
+      },
+      "Flux": {
+        "flux_canny_model_example": "Générez des images à partir de la détection de contours.",
+        "flux_depth_lora_example": "Créez des images avec LoRA sensible à la profondeur.",
+        "flux_dev_checkpoint_example": "Créez des images avec les modèles de développement Flux.",
+        "flux_fill_inpaint_example": "Complétez les parties manquantes d'une image.",
+        "flux_fill_outpaint_example": "Étendez les images avec l'outpainting Flux.",
+        "flux_redux_model_example": "Transférez le style d'une image de référence pour guider la génération d'image avec Flux.",
+        "flux_schnell": "Générez des images rapidement avec Flux Schnell."
+      },
+      "Image": {
+        "hidream_e1_full": "Modifiez des images avec HiDream E1.",
+        "hidream_i1_dev": "Générez des images avec HiDream I1 Dev.",
+        "hidream_i1_fast": "Générez rapidement des images avec HiDream I1.",
+        "hidream_i1_full": "Générez des images avec HiDream I1.",
+        "sd3_5_large_blur": "Générez des images à partir d'images de référence floues avec SD 3.5.",
+        "sd3_5_large_canny_controlnet_example": "Utilisez la détection de contours pour guider la génération d'images avec SD 3.5.",
+        "sd3_5_large_depth": "Créez des images sensibles à la profondeur avec SD 3.5.",
+        "sd3_5_simple_example": "Générez des images avec SD 3.5.",
+        "sdxl_refiner_prompt_example": "Améliorez les résultats SDXL avec des refineurs.",
+        "sdxl_revision_text_prompts": "Transférez des concepts à partir d'images de référence pour guider la génération d'images avec SDXL.",
+        "sdxl_revision_zero_positive": "Ajoutez des prompts textuels en plus des images de référence pour guider la génération d'images avec SDXL.",
+        "sdxl_simple_example": "Créez des images de haute qualité avec SDXL.",
+        "sdxlturbo_example": "Générez des images en une seule étape avec SDXL Turbo."
+      },
+      "Image API": {
+        "api-openai-dall-e-2-inpaint": "Utilisez l'API Dall-E 2 pour faire de l'inpainting sur des images.",
+        "api-openai-dall-e-2-t2i": "Utilisez l'API Dall-E 2 pour générer des images à partir de descriptions textuelles.",
+        "api-openai-dall-e-3-t2i": "Utilisez l'API Dall-E 3 pour générer des images à partir de descriptions textuelles.",
+        "api_bfl_flux_pro_t2i": "Créez des images avec FLUX.1 [pro] pour un excellent suivi des prompts, une qualité visuelle, des détails d'image et une grande diversité de sorties.",
+        "api_ideogram_v3_t2i": "Générez des images avec un alignement prompt-image de haute qualité, du photoréalisme et du rendu de texte. Créez des logos professionnels, affiches promotionnelles, concepts de pages d'accueil, photographies de produits et plus. Composez facilement des compositions spatiales sophistiquées avec des arrière-plans complexes, un éclairage et des couleurs précis et nuancés, et des détails environnementaux réalistes.",
+        "api_luma_photon_i2i": "Guidez la génération d'image en combinant images et prompt.",
+        "api_luma_photon_style_ref": "Appliquez et mélangez des références de style avec un contrôle précis. Luma Photon capture l'essence de chaque image de référence, vous permettant de combiner des éléments visuels distincts tout en maintenant une qualité professionnelle.",
+        "api_openai_image_1_i2i": "Utilisez l'API GPT Image 1 pour générer des images à partir d'images.",
+        "api_openai_image_1_inpaint": "Utilisez l'API GPT Image 1 pour faire de l'inpainting sur des images.",
+        "api_openai_image_1_multi_inputs": "Utilisez l'API GPT Image 1 avec plusieurs entrées pour générer des images.",
+        "api_openai_image_1_t2i": "Utilisez l'API GPT Image 1 pour générer des images à partir de descriptions textuelles.",
+        "api_recraft_image_gen_with_color_control": "Créez une palette personnalisée à réutiliser pour plusieurs images ou choisissez les couleurs pour chaque photo. Adaptez la palette de couleurs de votre marque et créez des visuels qui vous ressemblent.",
+        "api_recraft_image_gen_with_style_control": "Contrôlez le style avec des exemples visuels, alignez le positionnement et affinez les objets. Stockez et partagez des styles pour une cohérence parfaite de la marque.",
+        "api_recraft_vector_gen": "Passez d'un prompt textuel à une image vectorielle avec le générateur vectoriel IA de Recraft. Produisez des illustrations vectorielles de la meilleure qualité pour des logos, affiches, icônes, publicités, bannières et maquettes. Perfectionnez vos designs avec des fichiers SVG nets et de haute qualité. Créez des illustrations vectorielles de marque pour votre application ou site web en quelques secondes.",
+        "api_stability_sd3_t2i": "Générez des images de haute qualité avec une excellente fidélité au prompt. Parfait pour les cas d'usage professionnels en résolution 1 mégapixel."
+      },
+      "Upscaling": {
+        "esrgan_example": "Utilisez des modèles d'upscaling pour améliorer la qualité d'image.",
+        "hiresfix_esrgan_workflow": "Utilisez des modèles d'upscaling lors des étapes intermédiaires.",
+        "hiresfix_latent_workflow": "Améliorez la qualité d'image dans l'espace latent.",
+        "latent_upscale_different_prompt_model": "Upscalez et changez le prompt à chaque passage."
+      },
+      "Video": {
+        "hunyuan_video_text_to_video": "Générez des vidéos avec le modèle Hunyuan.",
+        "image_to_video": "Transformez des images en vidéos animées.",
+        "image_to_video_wan": "Générez rapidement des vidéos à partir d'images.",
+        "ltxv_image_to_video": "Convertissez des images fixes en vidéos.",
+        "ltxv_text_to_video": "Générez des vidéos à partir de descriptions textuelles.",
+        "mochi_text_to_video_example": "Créez des vidéos avec le modèle Mochi.",
+        "text_to_video_wan": "Générez rapidement des vidéos à partir de descriptions textuelles.",
+        "txt_to_image_to_video": "Générez des images à partir de texte puis convertissez-les en vidéos.",
+        "wan2_1_flf2v_720_f16": "Générez une vidéo en contrôlant la première et la dernière image.",
+        "wan2_1_fun_control": "Guidez la génération vidéo avec le contrôle de pose, profondeur, contours et plus.",
+        "wan2_1_fun_inp": "Créez des vidéos à partir d'images de début et de fin."
+      },
+      "Video API": {
+        "api_hailuo_minimax_i2v": "Créez des vidéos raffinées à partir d'images et de texte, incluant l'intégration CGI et des effets photo tendance comme le hugging IA viral. Choisissez parmi une variété de styles et thèmes vidéo pour correspondre à votre vision créative.",
+        "api_kling_i2v": "Créez des vidéos avec une excellente fidélité au prompt pour les actions, expressions et mouvements de caméra. Prend désormais en charge des prompts complexes avec des actions séquentielles pour vous permettre de diriger votre scène.",
+        "api_luma_i2v": "Transformez des images statiques en animations magiques de haute qualité instantanément.",
+        "api_pika_scene": "Utilisez plusieurs images comme ingrédients et générez des vidéos qui les intègrent toutes.",
+        "api_pixverse_t2v": "Générez des vidéos avec une interprétation précise du prompt et des dynamiques vidéo impressionnantes.",
+        "api_pixverse_template_i2v": "Transformez des images statiques en vidéos dynamiques avec mouvement et effets.",
+        "api_veo2_i2v": "Utilisez l'API Google Veo2 pour générer des vidéos à partir d'images."
       }
     },
     "title": "Commencez avec un modèle"
@@ -1139,12 +1354,16 @@
     "no3dSceneToExport": "Aucune scène 3D à exporter",
     "noTemplatesToExport": "Aucun modèle à exporter",
     "nodeDefinitionsUpdated": "Définitions de nœuds mises à jour",
+    "nothingSelected": "Aucune sélection",
     "nothingToGroup": "Rien à regrouper",
+    "nothingToQueue": "Rien à ajouter à la file d’attente",
     "pendingTasksDeleted": "Tâches en attente supprimées",
     "pleaseSelectNodesToGroup": "Veuillez sélectionner les nœuds (ou autres groupes) pour créer un groupe pour",
+    "pleaseSelectOutputNodes": "Veuillez sélectionner les nœuds de sortie",
     "unableToGetModelFilePath": "Impossible d'obtenir le chemin du fichier modèle",
     "unauthorizedDomain": "Votre domaine {domain} n'est pas autorisé à utiliser ce service. Veuillez contacter {email} pour ajouter votre domaine à la liste blanche.",
     "updateRequested": "Mise à jour demandée",
+    "useApiKeyTip": "Astuce : Vous ne pouvez pas accéder à la connexion normale ? Utilisez l’option Clé API Comfy.",
     "userNotAuthenticated": "Utilisateur non authentifié"
   },
   "userSelect": {
@@ -1164,6 +1383,7 @@
   },
   "validation": {
     "invalidEmail": "Adresse e-mail invalide",
+    "length": "Doit comporter {length} caractères",
     "maxLength": "Ne doit pas dépasser {length} caractères",
     "minLength": "Doit contenir au moins {length} caractères",
     "password": {
@@ -1176,6 +1396,7 @@
       "uppercase": "Doit contenir au moins une lettre majuscule"
     },
     "personalDataConsentRequired": "Vous devez accepter le traitement de vos données personnelles.",
+    "prefix": "Doit commencer par {prefix}",
     "required": "Requis"
   },
   "welcome": {

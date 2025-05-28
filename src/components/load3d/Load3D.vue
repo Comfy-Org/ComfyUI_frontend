@@ -28,6 +28,7 @@
       @background-image-change="listenBackgroundImageChange"
       @up-direction-change="listenUpDirectionChange"
       @edge-threshold-change="listenEdgeThresholdChange"
+      @recording-status-change="listenRecordingStatusChange"
     />
     <Load3DControls
       :input-spec="inputSpec"
@@ -57,6 +58,21 @@
       @upload-texture="handleUploadTexture"
       @export-model="handleExportModel"
     />
+    <div
+      v-if="showRecordingControls"
+      class="absolute top-12 right-2 z-20 pointer-events-auto"
+    >
+      <RecordingControls
+        :node="node"
+        :is-recording="isRecording"
+        :has-recording="hasRecording"
+        :recording-duration="recordingDuration"
+        @start-recording="handleStartRecording"
+        @stop-recording="handleStopRecording"
+        @export-recording="handleExportRecording"
+        @clear-recording="handleClearRecording"
+      />
+    </div>
   </div>
 </template>
 
@@ -66,6 +82,7 @@ import { useI18n } from 'vue-i18n'
 
 import Load3DControls from '@/components/load3d/Load3DControls.vue'
 import Load3DScene from '@/components/load3d/Load3DScene.vue'
+import RecordingControls from '@/components/load3d/controls/RecordingControls.vue'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import {
   CameraType,
@@ -101,6 +118,10 @@ const upDirection = ref<UpDirection>('original')
 const materialMode = ref<MaterialMode>('original')
 const edgeThreshold = ref(85)
 const load3DSceneRef = ref<InstanceType<typeof Load3DScene> | null>(null)
+const isRecording = ref(false)
+const hasRecording = ref(false)
+const recordingDuration = ref(0)
+const showRecordingControls = ref(!inputSpec.isPreview)
 
 const showPreviewButton = computed(() => {
   return !type.includes('Preview')
@@ -115,6 +136,38 @@ const handleMouseEnter = () => {
 const handleMouseLeave = () => {
   if (load3DSceneRef.value?.load3d) {
     load3DSceneRef.value.load3d.updateStatusMouseOnScene(false)
+  }
+}
+
+const handleStartRecording = async () => {
+  if (load3DSceneRef.value?.load3d) {
+    await load3DSceneRef.value.load3d.startRecording()
+    isRecording.value = true
+  }
+}
+
+const handleStopRecording = () => {
+  if (load3DSceneRef.value?.load3d) {
+    load3DSceneRef.value.load3d.stopRecording()
+    isRecording.value = false
+    recordingDuration.value = load3DSceneRef.value.load3d.getRecordingDuration()
+    hasRecording.value = recordingDuration.value > 0
+  }
+}
+
+const handleExportRecording = () => {
+  if (load3DSceneRef.value?.load3d) {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+    const filename = `${timestamp}-scene-recording.mp4`
+    load3DSceneRef.value.load3d.exportRecording(filename)
+  }
+}
+
+const handleClearRecording = () => {
+  if (load3DSceneRef.value?.load3d) {
+    load3DSceneRef.value.load3d.clearRecording()
+    hasRecording.value = false
+    recordingDuration.value = 0
   }
 }
 
@@ -235,6 +288,15 @@ const listenUpDirectionChange = (value: UpDirection) => {
 
 const listenEdgeThresholdChange = (value: number) => {
   edgeThreshold.value = value
+}
+
+const listenRecordingStatusChange = (value: boolean) => {
+  isRecording.value = value
+
+  if (!value && load3DSceneRef.value?.load3d) {
+    recordingDuration.value = load3DSceneRef.value.load3d.getRecordingDuration()
+    hasRecording.value = recordingDuration.value > 0
+  }
 }
 
 const listenBackgroundColorChange = (value: string) => {

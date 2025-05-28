@@ -29,21 +29,24 @@ declare module '@comfyorg/litegraph/dist/types/widgets' {
      * The minimum size of the node if the widget is present.
      */
     minNodeSize?: Size
+
+    /** If the widget is advanced, this will be set to true. */
+    advanced?: boolean
+
+    /** If the widget is hidden, this will be set to true. */
+    hidden?: boolean
   }
 
   interface IBaseWidget {
-    onRemove?: () => void
-    beforeQueued?: () => unknown
-    afterQueued?: () => unknown
-    serializeValue?: (
-      node: LGraphNode,
-      index: number
-    ) => Promise<unknown> | unknown
+    onRemove?(): void
+    beforeQueued?(): unknown
+    afterQueued?(): unknown
+    serializeValue?(node: LGraphNode, index: number): Promise<unknown> | unknown
 
     /**
      * Refreshes the widget's value or options from its remote source.
      */
-    refresh?: () => unknown
+    refresh?(): unknown
 
     /**
      * If the widget supports dynamic prompts, this will be set to true.
@@ -57,14 +60,20 @@ declare module '@comfyorg/litegraph/dist/types/widgets' {
  *  ComfyUI extensions of litegraph
  */
 declare module '@comfyorg/litegraph' {
+  import type { IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
+
   interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
     type?: string
     comfyClass: string
     title: string
-    nodeData?: ComfyNodeDefV1 & ComfyNodeDefV2
+    nodeData?: ComfyNodeDefV1 & ComfyNodeDefV2 & { [key: symbol]: unknown }
     category?: string
     new (): T
   }
+
+  // Add interface augmentations into the class itself
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  interface BaseWidget extends IBaseWidget {}
 
   interface LGraphNode {
     constructor: LGraphNodeConstructor

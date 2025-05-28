@@ -177,3 +177,12 @@ export interface LoaderManagerInterface {
   dispose(): void
   loadModel(url: string, originalFileName?: string): Promise<void>
 }
+
+export interface RecordingManagerInterface extends BaseManager {
+  startRecording(): Promise<void>
+  stopRecording(): void
+  hasRecording(): boolean
+  getRecordingDuration(): number
+  exportRecording(filename?: string): void
+  clearRecording(): void
+}

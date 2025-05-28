@@ -140,6 +140,9 @@
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "Alternar diálogo de progreso del administrador"
   },
+  "Comfy_MaskEditor_OpenMaskEditor": {
+    "label": "Abrir editor de máscara para el nodo seleccionado"
+  },
   "Comfy_NewBlankWorkflow": {
     "label": "Nuevo flujo de trabajo en blanco"
   },
@@ -154,6 +157,9 @@
   },
   "Comfy_QueuePromptFront": {
     "label": "Prompt de Cola (Frente)"
+  },
+  "Comfy_QueueSelectedOutputNodes": {
+    "label": "Encolar nodos de salida seleccionados"
   },
   "Comfy_Redo": {
     "label": "Rehacer"

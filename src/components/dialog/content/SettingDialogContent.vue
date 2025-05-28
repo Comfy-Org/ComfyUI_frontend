@@ -67,9 +67,9 @@ import Tabs from 'primevue/tabs'
 import { computed, watch } from 'vue'
 
 import SearchBox from '@/components/common/SearchBox.vue'
+import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useSettingSearch } from '@/composables/setting/useSettingSearch'
 import { useSettingUI } from '@/composables/setting/useSettingUI'
-import { useFirebaseAuthService } from '@/services/firebaseAuthService'
 import { SettingTreeNode } from '@/stores/settingStore'
 import { ISettingGroup, SettingParams } from '@/types/settingTypes'
 import { flattenTree } from '@/utils/treeUtil'
@@ -107,7 +107,7 @@ const {
   getSearchResults
 } = useSettingSearch()
 
-const authService = useFirebaseAuthService()
+const authActions = useFirebaseAuthActions()
 
 // Sort groups for a category
 const sortedGroups = (category: SettingTreeNode): ISettingGroup[] => {
@@ -140,7 +140,7 @@ watch(activeCategory, (_, oldValue) => {
     activeCategory.value = oldValue
   }
   if (activeCategory.value?.key === 'credits') {
-    void authService.fetchBalance()
+    void authActions.fetchBalance()
   }
 })
 </script>

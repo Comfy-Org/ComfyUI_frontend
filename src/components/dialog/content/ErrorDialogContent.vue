@@ -5,6 +5,7 @@
       icon="pi pi-exclamation-circle"
       :title="title"
       :message="error.exceptionMessage"
+      :text-class="'break-words max-w-[60vw]'"
     />
     <template v-if="error.extensionFile">
       <span>{{ t('errorDialog.extensionFileHint') }}:</span>

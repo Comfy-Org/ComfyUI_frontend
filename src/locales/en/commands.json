@@ -140,6 +140,9 @@
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "Toggle Progress Dialog"
   },
+  "Comfy_MaskEditor_OpenMaskEditor": {
+    "label": "Open Mask Editor for Selected Node"
+  },
   "Comfy_NewBlankWorkflow": {
     "label": "New Blank Workflow"
   },
@@ -154,6 +157,9 @@
   },
   "Comfy_QueuePromptFront": {
     "label": "Queue Prompt (Front)"
+  },
+  "Comfy_QueueSelectedOutputNodes": {
+    "label": "Queue Selected Output Nodes"
   },
   "Comfy_Redo": {
     "label": "Redo"

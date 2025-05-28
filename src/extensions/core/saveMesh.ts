@@ -1,4 +1,3 @@
-import { IWidget } from '@comfyorg/litegraph'
 import { nextTick } from 'vue'
 
 import Load3D from '@/components/load3d/Load3D.vue'
@@ -61,7 +60,7 @@ useExtensionService().registerExtension({
 
       const load3d = useLoad3dService().getLoad3d(node)
 
-      const modelWidget = node.widgets?.find((w: IWidget) => w.name === 'image')
+      const modelWidget = node.widgets?.find((w) => w.name === 'image')
 
       if (load3d && modelWidget) {
         const filePath = fileInfo['subfolder'] + '/' + fileInfo['filename']

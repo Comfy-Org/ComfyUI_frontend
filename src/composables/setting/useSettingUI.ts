@@ -7,12 +7,13 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { SettingTreeNode, useSettingStore } from '@/stores/settingStore'
 import type { SettingParams } from '@/types/settingTypes'
 import { isElectron } from '@/utils/envUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildTree } from '@/utils/treeUtil'
+
+import { useCurrentUser } from '../auth/useCurrentUser'
 
 interface SettingPanelItem {
   node: SettingTreeNode
@@ -29,7 +30,7 @@ export function useSettingUI(
     | 'credits'
 ) {
   const { t } = useI18n()
-  const firebaseAuthStore = useFirebaseAuthStore()
+  const { isLoggedIn } = useCurrentUser()
   const settingStore = useSettingStore()
   const activeCategory = ref<SettingTreeNode | null>(null)
 
@@ -132,7 +133,8 @@ export function useSettingUI(
       creditsPanel,
       userPanel,
       keybindingPanel,
-      extensionPanel
+      extensionPanel,
+      ...(isElectron() ? [serverConfigPanel] : [])
     ].filter((panel) => panel.component)
   )
 
@@ -164,7 +166,7 @@ export function useSettingUI(
       label: 'Account',
       children: [
         userPanel.node,
-        ...(firebaseAuthStore.isAuthenticated ? [creditsPanel.node] : [])
+        ...(isLoggedIn.value ? [creditsPanel.node] : [])
       ].map(translateCategory)
     },
     // Normal settings stored in the settingStore

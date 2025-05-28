@@ -1,4 +1,5 @@
-import type { IWidget, LGraphNode } from '@comfyorg/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph'
+import type { IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import { computed, ref, watchEffect } from 'vue'
 
 import { useCanvasStore } from '@/stores/graphStore'
@@ -8,9 +9,11 @@ interface RefreshableItem {
   refresh: () => Promise<void> | void
 }
 
-type RefreshableWidget = IWidget & RefreshableItem
+type RefreshableWidget = IBaseWidget & RefreshableItem
 
-const isRefreshableWidget = (widget: IWidget): widget is RefreshableWidget =>
+const isRefreshableWidget = (
+  widget: IBaseWidget
+): widget is RefreshableWidget =>
   'refresh' in widget && typeof widget.refresh === 'function'
 
 /**

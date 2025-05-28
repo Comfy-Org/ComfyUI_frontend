@@ -55,6 +55,7 @@
             />
             <div v-else class="h-full" @click="handleGridContainerClick">
               <VirtualGrid
+                id="results-grid"
                 :items="resultsWithKeys"
                 :buffer-rows="3"
                 :grid-style="GRID_STYLE"
@@ -92,7 +93,7 @@
 import { whenever } from '@vueuse/core'
 import { merge } from 'lodash'
 import Button from 'primevue/button'
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ContentDivider from '@/components/common/ContentDivider.vue'
@@ -198,6 +199,10 @@ const {
 
 const filterMissingPacks = (packs: components['schemas']['Node'][]) =>
   packs.filter((pack) => !comfyManagerStore.isPackInstalled(pack.id))
+
+whenever(selectedTab, () => {
+  pageNumber.value = 0
+})
 
 const isUpdateAvailableTab = computed(
   () => selectedTab.value?.id === ManagerTab.UpdateAvailable
@@ -416,6 +421,17 @@ whenever(selectedNodePack, async () => {
   if (data?.id === selectedNodePack.value?.id) {
     // If selected node hasn't changed since request, merge registry & Algolia data
     selectedNodePacks.value = [merge(selectedNodePack.value, data)]
+  }
+})
+
+let gridContainer: HTMLElement | null = null
+onMounted(() => {
+  gridContainer = document.getElementById('results-grid')
+})
+watch(searchQuery, () => {
+  gridContainer ??= document.getElementById('results-grid')
+  if (gridContainer) {
+    gridContainer.scrollTop = 0
   }
 })
 

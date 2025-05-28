@@ -9,6 +9,24 @@
     "title": "APIノードを使用するためにはサインインが必要です"
   },
   "auth": {
+    "apiKey": {
+      "cleared": "APIキーが削除されました",
+      "clearedDetail": "APIキーが正常に削除されました",
+      "description": "Comfy APIキーを使用してAPIノードを有効にします",
+      "error": "無効なAPIキーです",
+      "generateKey": "こちらから取得",
+      "helpText": "APIキーが必要ですか？",
+      "invalid": "無効なAPIキーです",
+      "invalidDetail": "有効なAPIキーを入力してください",
+      "label": "APIキー",
+      "placeholder": "APIキーを入力してください",
+      "storageFailed": "APIキーの保存に失敗しました",
+      "storageFailedDetail": "もう一度お試しください。",
+      "stored": "APIキーが保存されました",
+      "storedDetail": "APIキーが正常に保存されました",
+      "title": "APIキー",
+      "whitelistInfo": "ホワイトリストに登録されていないサイトについて"
+    },
     "login": {
       "andText": "および",
       "confirmPasswordLabel": "パスワードの確認",
@@ -23,6 +41,7 @@
       "loginWithGithub": "Githubでログイン",
       "loginWithGoogle": "Googleでログイン",
       "newUser": "新規ユーザーですか？",
+      "noAssociatedUser": "指定されたAPIキーに関連付けられたComfyユーザーが存在しません",
       "orContinueWith": "または以下で続ける",
       "passwordLabel": "パスワード",
       "passwordPlaceholder": "パスワードを入力してください",
@@ -35,7 +54,9 @@
       "success": "ログイン成功",
       "termsLink": "利用規約",
       "termsText": "「次へ」または「サインアップ」をクリックすると、私たちの",
-      "title": "アカウントにログインする"
+      "title": "アカウントにログインする",
+      "useApiKey": "Comfy APIキー",
+      "userAvatar": "ユーザーアバター"
     },
     "passwordUpdate": {
       "success": "パスワードが更新されました",
@@ -60,6 +81,13 @@
       "signUpWithGoogle": "Googleでサインアップ",
       "title": "アカウントを作成する"
     }
+  },
+  "chatHistory": {
+    "cancelEdit": "キャンセル",
+    "cancelEditTooltip": "編集をキャンセル",
+    "copiedTooltip": "コピーしました",
+    "copyTooltip": "メッセージをクリップボードにコピー",
+    "editTooltip": "メッセージを編集"
   },
   "clipboard": {
     "errorMessage": "クリップボードへのコピーに失敗しました",
@@ -110,6 +138,7 @@
     "Unpin": "ピンを解除"
   },
   "credits": {
+    "apiPricing": "API料金",
     "credits": "クレジット",
     "faqs": "よくある質問",
     "invoiceHistory": "請求履歴",
@@ -128,8 +157,10 @@
     "yourCreditBalance": "あなたのクレジット残高"
   },
   "dataTypes": {
+    "*": "*",
     "AUDIO": "オーディオ",
     "BOOLEAN": "ブール",
+    "CAMERA_CONTROL": "カメラコントロール",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "CLIP_VISION_OUTPUT",
@@ -146,20 +177,29 @@
     "INT": "整数",
     "LATENT": "潜在",
     "LATENT_OPERATION": "潜在操作",
+    "LOAD3D_CAMERA": "3Dカメラの読み込み",
     "LOAD_3D": "3Dをロード",
     "LOAD_3D_ANIMATION": "3Dアニメーションをロード",
+    "LUMA_CONCEPTS": "Lumaコンセプト",
+    "LUMA_REF": "Luma参照",
     "MASK": "マスク",
     "MESH": "メッシュ",
     "MODEL": "モデル",
     "NOISE": "ノイズ",
     "PHOTOMAKER": "PHOTOMAKER",
+    "PIXVERSE_TEMPLATE": "Pixverseテンプレート",
+    "RECRAFT_COLOR": "Recraftカラー",
+    "RECRAFT_CONTROLS": "Recraftコントロール",
+    "RECRAFT_V3_STYLE": "Recraft V3スタイル",
     "SAMPLER": "サンプラー",
     "SIGMAS": "シグマ",
     "STRING": "文字列",
     "STYLE_MODEL": "スタイルモデル",
+    "SVG": "SVG",
     "TIMESTEPS_RANGE": "タイムステップの範囲",
     "UPSCALE_MODEL": "アップスケールモデル",
     "VAE": "VAE",
+    "VIDEO": "ビデオ",
     "VOXEL": "ボクセル",
     "WEBCAM": "ウェブカメラ"
   },
@@ -208,11 +248,13 @@
     "all": "すべて",
     "amount": "量",
     "apply": "適用する",
+    "audioFailedToLoad": "オーディオの読み込みに失敗しました",
     "back": "戻る",
     "cancel": "キャンセル",
     "capture": "キャプチャ",
     "category": "カテゴリ",
     "choose_file_to_upload": "アップロードするファイルを選択",
+    "clear": "クリア",
     "close": "閉じる",
     "color": "色",
     "comingSoon": "近日公開",
@@ -224,8 +266,11 @@
     "continue": "続ける",
     "control_after_generate": "生成後の制御",
     "control_before_generate": "生成前の制御",
+    "copy": "コピー",
     "copyToClipboard": "クリップボードにコピー",
+    "copyURL": "URLをコピー",
     "currentUser": "現在のユーザー",
+    "customBackground": "カスタム背景",
     "customize": "カスタマイズ",
     "customizeFolder": "フォルダーをカスタマイズ",
     "delete": "削除",
@@ -235,6 +280,7 @@
     "disableAll": "すべて無効にする",
     "disabling": "無効化",
     "download": "ダウンロード",
+    "edit": "編集",
     "empty": "空",
     "enableAll": "すべて有効にする",
     "enabled": "有効",
@@ -250,6 +296,7 @@
     "goToNode": "ノードに移動",
     "icon": "アイコン",
     "imageFailedToLoad": "画像の読み込みに失敗しました",
+    "imageUrl": "画像URL",
     "import": "インポート",
     "inProgress": "進行中",
     "insert": "挿入",
@@ -300,6 +347,7 @@
     "searchNodes": "ノードを検索",
     "searchSettings": "設定を検索",
     "searchWorkflows": "ワークフローを検索",
+    "setAsBackground": "背景として設定",
     "settings": "設定",
     "showReport": "レポートを表示",
     "sort": "並び替え",
@@ -456,6 +504,8 @@
     "submitErrorReport": "エラーレポートを提出する（オプション）",
     "systemStats": "システム統計",
     "validation": {
+      "descriptionRequired": "説明は必須です",
+      "helpTypeRequired": "ヘルプの種類は必須です",
       "invalidEmail": "有効なメールアドレスを入力してください",
       "maxLength": "メッセージが長すぎます",
       "selectIssueType": "問題の種類を選択してください"
@@ -467,17 +517,21 @@
     "applyingTexture": "テクスチャを適用中...",
     "backgroundColor": "背景色",
     "camera": "カメラ",
+    "clearRecording": "録画をクリア",
     "edgeThreshold": "エッジ閾値",
     "export": "エクスポート",
     "exportModel": "モデルをエクスポート",
+    "exportRecording": "録画をエクスポート",
     "exportingModel": "モデルをエクスポート中...",
     "fov": "FOV",
     "light": "ライト",
     "lightIntensity": "光の強度",
+    "loadingBackgroundImage": "背景画像を読み込んでいます",
     "loadingModel": "3Dモデルを読み込んでいます...",
     "materialMode": "マテリアルモード",
     "materialModes": {
       "depth": "深度",
+      "lineart": "線画",
       "normal": "ノーマル",
       "original": "オリジナル",
       "wireframe": "ワイヤーフレーム"
@@ -485,8 +539,11 @@
     "model": "モデル",
     "previewOutput": "出力のプレビュー",
     "removeBackgroundImage": "背景画像を削除",
+    "resizeNodeMatchOutput": "ノードを出力に合わせてリサイズ",
     "scene": "シーン",
     "showGrid": "グリッドを表示",
+    "startRecording": "録画開始",
+    "stopRecording": "録画停止",
     "switchCamera": "カメラを切り替える",
     "switchingMaterialMode": "マテリアルモードの切り替え中...",
     "upDirection": "上方向",
@@ -659,6 +716,7 @@
     "Open DevTools": "DevToolsを開く",
     "Open Inputs Folder": "入力フォルダを開く",
     "Open Logs Folder": "ログフォルダを開く",
+    "Open Mask Editor for Selected Node": "選択したノードのマスクエディタを開く",
     "Open Models Folder": "モデルフォルダを開く",
     "Open Outputs Folder": "出力フォルダを開く",
     "Open Sign In Dialog": "サインインダイアログを開く",
@@ -668,6 +726,7 @@
     "Previous Opened Workflow": "前に開いたワークフロー",
     "Queue Prompt": "キューのプロンプト",
     "Queue Prompt (Front)": "キューのプロンプト (前面)",
+    "Queue Selected Output Nodes": "選択した出力ノードをキューに追加",
     "Quit": "終了",
     "Redo": "やり直す",
     "Refresh Node Definitions": "ノード定義を更新",
@@ -704,10 +763,22 @@
   "nodeCategories": {
     "3d": "3d",
     "3d_models": "3Dモデル",
+    "BFL": "BFL",
+    "Ideogram": "Ideogram",
+    "Kling": "Kling",
+    "Luma": "Luma",
+    "MiniMax": "MiniMax",
+    "OpenAI": "OpenAI",
+    "Pika": "Pika",
+    "PixVerse": "PixVerse",
+    "Recraft": "Recraft",
+    "Stability AI": "Stability AI",
+    "Veo": "Veo",
     "_for_testing": "_テスト用",
     "advanced": "高度な機能",
     "animation": "アニメーション",
     "api": "API",
+    "api node": "apiノード",
     "attention_experiments": "アテンション実験",
     "audio": "オーディオ",
     "batch": "バッチ",
@@ -732,6 +803,7 @@
     "instructpix2pix": "インストラクションピクス2ピクス",
     "latent": "潜在",
     "loaders": "ローダー",
+    "lotus": "lotus",
     "ltxv": "LTXV",
     "mask": "マスク",
     "model": "モデル",
@@ -743,10 +815,12 @@
     "photomaker": "photomaker",
     "postprocessing": "ポストプロセッシング",
     "preprocessors": "前処理",
+    "primitive": "プリミティブ",
     "samplers": "サンプラー",
     "sampling": "サンプリング",
     "schedulers": "スケジューラー",
     "scheduling": "スケジューリング",
+    "sd": "sd",
     "sd3": "SD3",
     "sigmas": "シグマ",
     "stable_cascade": "安定したカスケード",
@@ -755,6 +829,10 @@
     "unet": "U-Net",
     "upscale_diffusion": "アップスケール拡散",
     "upscaling": "アップスケーリング",
+    "utils": "ユーティリティ",
+    "v1": "v1",
+    "v2": "v2",
+    "v3": "v3",
     "video": "ビデオ",
     "video_models": "ビデオモデル"
   },
@@ -773,6 +851,12 @@
       "windows": "Windows (CUDA対応のNvidia GPU)"
     },
     "title": "お使いのデバイスはサポートされていません"
+  },
+  "selectionToolbox": {
+    "executeButton": {
+      "disabledTooltip": "出力ノードが選択されていません",
+      "tooltip": "選択した出力ノードに実行（オレンジ色の枠でハイライト表示）"
+    }
   },
   "serverConfig": {
     "modifiedConfigs": "以下のサーバー設定を変更しました。変更を適用するには再起動してください。",
@@ -923,6 +1007,7 @@
   },
   "settingsCategories": {
     "3D": "3D",
+    "API Nodes": "APIノード",
     "About": "情報",
     "Appearance": "外観",
     "BrushAdjustment": "ブラシ調整",
@@ -1036,8 +1121,10 @@
       "Custom Nodes": "カスタムノード",
       "Flux": "Flux",
       "Image": "画像",
+      "Image API": "画像API",
       "Upscaling": "アップスケーリング",
-      "Video": "ビデオ"
+      "Video": "ビデオ",
+      "Video API": "動画API"
     },
     "template": {
       "3D": {
@@ -1094,6 +1181,23 @@
         "sdxl_simple_example": "SDXLシンプル",
         "sdxlturbo_example": "SDXLターボ"
       },
+      "Image API": {
+        "api-openai-dall-e-2-inpaint": "Dall-E 2 インペイント",
+        "api-openai-dall-e-2-t2i": "Dall-E 2 テキストから画像へ",
+        "api-openai-dall-e-3-t2i": "Dall-E 3 テキストから画像へ",
+        "api_bfl_flux_pro_t2i": "BFL Flux 1.1[pro] Ultra テキストから画像へ",
+        "api_ideogram_v3_t2i": "Ideogram V3 テキストから画像へ",
+        "api_luma_photon_i2i": "Luma Photon 画像から画像へ",
+        "api_luma_photon_style_ref": "Luma Photon スタイル参照",
+        "api_openai_image_1_i2i": "OpenAI Image-1 画像から画像へ",
+        "api_openai_image_1_inpaint": "OpenAI Image-1 インペイント",
+        "api_openai_image_1_multi_inputs": "OpenAI Image-1 複数入力",
+        "api_openai_image_1_t2i": "OpenAI Image-1 テキストから画像へ",
+        "api_recraft_image_gen_with_color_control": "Recraft カラーコントロール画像生成",
+        "api_recraft_image_gen_with_style_control": "Recraft スタイルコントロール画像生成",
+        "api_recraft_vector_gen": "Recraft ベクター生成",
+        "api_stability_sd3_t2i": "Stability AI Stable Image Ultra テキストから画像へ"
+      },
       "Upscaling": {
         "esrgan_example": "ESRGAN",
         "hiresfix_esrgan_workflow": "HiresFix ESRGANワークフロー",
@@ -1111,6 +1215,117 @@
         "txt_to_image_to_video": "テキストから画像へ、画像からビデオへ",
         "wan2_1_fun_control": "Wan 2.1 ControlNet",
         "wan2_1_fun_inp": "Wan 2.1 インペインティング"
+      },
+      "Video API": {
+        "api_hailuo_minimax_i2v": "MiniMax 画像から動画へ",
+        "api_kling_i2v": "Kling 画像から動画へ",
+        "api_luma_i2v": "Luma 画像から動画へ",
+        "api_pika_scene": "Pika シーン: 画像から動画へ",
+        "api_pixverse_t2v": "PixVerse テキストから動画へ",
+        "api_pixverse_template_i2v": "PixVerse Template Effects: 画像から動画へ",
+        "api_veo2_i2v": "Veo2 画像から動画へ"
+      }
+    },
+    "templateDescription": {
+      "3D": {
+        "hunyuan-3d-multiview-elf": "Hunyuan3D 2mvで複数ビューからモデルを生成します。",
+        "hunyuan-3d-turbo": "Hunyuan3D 2mv turboで複数ビューからモデルを生成します。",
+        "hunyuan3d-non-multiview-train": "Hunyuan3D 2.0で単一ビューからモデルを生成します。",
+        "stable_zero123_example": "単一画像から3Dビューを生成します。"
+      },
+      "Area Composition": {
+        "area_composition": "エリアで画像構成をコントロールします。",
+        "area_composition_reversed": "エリア構成ワークフローを逆転します。",
+        "area_composition_square_area_for_subject": "被写体の配置を一貫させます。"
+      },
+      "Audio": {
+        "stable_audio_example": "テキストの説明から音声を生成します。"
+      },
+      "Basics": {
+        "default": "テキストの説明から画像を生成します。",
+        "embedding_example": "テキスト反転を使って一貫したスタイルを実現します。",
+        "gligen_textbox_example": "オブジェクトの位置とサイズを指定します。",
+        "image2image": "テキストプロンプトを使って既存の画像を変換します。",
+        "inpain_model_outpainting": "画像を元の境界を超えて拡張します。",
+        "inpaint_example": "画像の特定部分をシームレスに編集します。",
+        "lora": "LoRAモデルを適用して特定のスタイルや対象を表現します。",
+        "lora_multiple": "複数のLoRAモデルを組み合わせて独自の結果を得ます。"
+      },
+      "ControlNet": {
+        "2_pass_pose_worship": "ポーズ参照から画像を生成します。",
+        "controlnet_example": "参照画像で画像生成をコントロールします。",
+        "depth_controlnet": "深度認識生成で画像を作成します。",
+        "depth_t2i_adapter": "T2Iアダプターで素早く深度認識画像を生成します。",
+        "mixing_controlnets": "複数のControlNetモデルを組み合わせます。"
+      },
+      "Flux": {
+        "flux_canny_model_example": "エッジ検出から画像を生成します。",
+        "flux_depth_lora_example": "深度認識LoRAで画像を生成します。",
+        "flux_dev_checkpoint_example": "Flux開発モデルを使って画像を生成します。",
+        "flux_fill_inpaint_example": "画像の欠損部分を補完します。",
+        "flux_fill_outpaint_example": "Fluxのアウトペイントで画像を拡張します。",
+        "flux_redux_model_example": "参照画像のスタイルを転送し、Fluxで画像生成をガイドします。",
+        "flux_schnell": "Flux Schnellで素早く画像を生成します。"
+      },
+      "Image": {
+        "hidream_e1_full": "HiDream E1で画像を編集します。",
+        "hidream_i1_dev": "HiDream I1 Devで画像を生成します。",
+        "hidream_i1_fast": "HiDream I1で素早く画像を生成します。",
+        "hidream_i1_full": "HiDream I1で画像を生成します。",
+        "sd3_5_large_blur": "SD 3.5でぼかし参照画像から画像を生成します。",
+        "sd3_5_large_canny_controlnet_example": "SD 3.5でエッジ検出を使って画像生成をガイドします。",
+        "sd3_5_large_depth": "SD 3.5で深度認識画像を生成します。",
+        "sd3_5_simple_example": "SD 3.5で画像を生成します。",
+        "sdxl_refiner_prompt_example": "SDXLの出力をリファイナーで強化します。",
+        "sdxl_revision_text_prompts": "参照画像からコンセプトを転送し、SDXLで画像生成をガイドします。",
+        "sdxl_revision_zero_positive": "参照画像とテキストプロンプトを組み合わせてSDXLで画像生成をガイドします。",
+        "sdxl_simple_example": "SDXLで高品質な画像を生成します。",
+        "sdxlturbo_example": "SDXL Turboでワンステップで画像を生成します。"
+      },
+      "Image API": {
+        "api-openai-dall-e-2-inpaint": "Dall-E 2 APIで画像のインペイントを行います。",
+        "api-openai-dall-e-2-t2i": "Dall-E 2 APIでテキストの説明から画像を生成します。",
+        "api-openai-dall-e-3-t2i": "Dall-E 3 APIでテキストの説明から画像を生成します。",
+        "api_bfl_flux_pro_t2i": "FLUX.1 [pro]で優れたプロンプト追従性、画質、ディテール、多様な出力の画像を生成します。",
+        "api_ideogram_v3_t2i": "高品質な画像・プロンプト整合性、フォトリアリズム、テキスト描画で画像を生成します。プロ品質のロゴ、ポスター、ランディングページ、商品写真などを作成。複雑な背景や精密なライティング、リアルな環境ディテールで洗練された空間構成を簡単に作成できます。",
+        "api_luma_photon_i2i": "画像とプロンプトを組み合わせて画像生成をガイドします。",
+        "api_luma_photon_style_ref": "スタイル参照を正確に適用・ブレンドします。Luma Photonは各参照画像の本質を捉え、異なるビジュアル要素を組み合わせつつプロ品質を維持します。",
+        "api_openai_image_1_i2i": "GPT Image 1 APIで画像から画像を生成します。",
+        "api_openai_image_1_inpaint": "GPT Image 1 APIで画像のインペイントを行います。",
+        "api_openai_image_1_multi_inputs": "GPT Image 1 APIで複数入力を使って画像を生成します。",
+        "api_openai_image_1_t2i": "GPT Image 1 APIでテキストの説明から画像を生成します。",
+        "api_recraft_image_gen_with_color_control": "カスタムパレットを作成して複数画像で再利用したり、各写真の色を手動で選択できます。ブランドのカラーパレットに合わせて独自のビジュアルを作成します。",
+        "api_recraft_image_gen_with_style_control": "ビジュアル例でスタイルを制御し、位置合わせやオブジェクトの微調整が可能です。スタイルを保存・共有してブランドの一貫性を保ちます。",
+        "api_recraft_vector_gen": "テキストプロンプトからRecraftのAIベクター生成でベクター画像を作成します。ロゴ、ポスター、アイコンセット、広告、バナー、モックアップに最適な高品質SVGファイルを生成。アプリやウェブサイト用のブランドベクターイラストを数秒で作成します。",
+        "api_stability_sd3_t2i": "高品質でプロンプト追従性の高い画像を生成します。1メガピクセル解像度でプロ用途に最適です。"
+      },
+      "Upscaling": {
+        "esrgan_example": "アップスケールモデルで画像品質を向上させます。",
+        "hiresfix_esrgan_workflow": "中間ステップでアップスケールモデルを使用します。",
+        "hiresfix_latent_workflow": "latent空間で画像品質を向上させます。",
+        "latent_upscale_different_prompt_model": "アップスケールしつつパスごとにプロンプトを変更します。"
+      },
+      "Video": {
+        "hunyuan_video_text_to_video": "Hunyuanモデルで動画を生成します。",
+        "image_to_video": "画像をアニメーション動画に変換します。",
+        "image_to_video_wan": "画像から素早く動画を生成します。",
+        "ltxv_image_to_video": "静止画像を動画に変換します。",
+        "ltxv_text_to_video": "テキストの説明から動画を生成します。",
+        "mochi_text_to_video_example": "Mochiモデルで動画を作成します。",
+        "text_to_video_wan": "テキストの説明から素早く動画を生成します。",
+        "txt_to_image_to_video": "テキストから画像を生成し、それを動画に変換します。",
+        "wan2_1_flf2v_720_f16": "最初と最後のフレームを制御して動画を生成します。",
+        "wan2_1_fun_control": "ポーズ、深度、エッジ制御などで動画生成をガイドします。",
+        "wan2_1_fun_inp": "開始フレームと終了フレームから動画を作成します。"
+      },
+      "Video API": {
+        "api_hailuo_minimax_i2v": "画像とテキストから洗練された動画を作成。CGI統合や流行のAIハグなどのエフェクトも。多彩なスタイルやテーマから選択可能です。",
+        "api_kling_i2v": "アクション、表情、カメラワークのプロンプト追従性に優れた動画を作成します。複雑なシーケンシャルアクションもサポートし、あなたがシーンの監督になれます。",
+        "api_luma_i2v": "静止画像から瞬時に高品質なアニメーションを作成します。",
+        "api_pika_scene": "複数の画像を素材として使い、それらを組み込んだ動画を生成します。",
+        "api_pixverse_t2v": "プロンプト解釈が正確で、ダイナミックな動画を生成します。",
+        "api_pixverse_template_i2v": "静止画像を動きやエフェクトのあるダイナミックな動画に変換します。",
+        "api_veo2_i2v": "Google Veo2 APIで画像から動画を生成します。"
       }
     },
     "title": "テンプレートを利用して開始"
@@ -1139,12 +1354,16 @@
     "no3dSceneToExport": "エクスポートする3Dシーンがありません",
     "noTemplatesToExport": "エクスポートするテンプレートがありません",
     "nodeDefinitionsUpdated": "ノード定義が更新されました",
+    "nothingSelected": "選択されていません",
     "nothingToGroup": "グループ化するものがありません",
+    "nothingToQueue": "キューに追加する項目がありません",
     "pendingTasksDeleted": "保留中のタスクが削除されました",
     "pleaseSelectNodesToGroup": "グループを作成するためのノード（または他のグループ）を選択してください",
+    "pleaseSelectOutputNodes": "出力ノードを選択してください",
     "unableToGetModelFilePath": "モデルファイルのパスを取得できません",
     "unauthorizedDomain": "あなたのドメイン {domain} はこのサービスを利用する権限がありません。ご利用のドメインをホワイトリストに追加するには、{email} までご連絡ください。",
     "updateRequested": "更新が要求されました",
+    "useApiKeyTip": "ヒント：通常のログインにアクセスできませんか？Comfy APIキーオプションを使用してください。",
     "userNotAuthenticated": "ユーザーが認証されていません"
   },
   "userSelect": {
@@ -1164,6 +1383,7 @@
   },
   "validation": {
     "invalidEmail": "無効なメールアドレス",
+    "length": "{length}文字でなければなりません",
     "maxLength": "{length}文字以下でなければなりません",
     "minLength": "{length}文字以上でなければなりません",
     "password": {
@@ -1176,6 +1396,7 @@
       "uppercase": "少なくとも1つの大文字を含む必要があります"
     },
     "personalDataConsentRequired": "個人データの処理に同意する必要があります。",
+    "prefix": "{prefix}で始める必要があります",
     "required": "必須"
   },
   "welcome": {

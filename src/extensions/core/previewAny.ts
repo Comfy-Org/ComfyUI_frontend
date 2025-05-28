@@ -3,8 +3,7 @@ Preview Any - original implement from
 https://github.com/rgthree/rgthree-comfy/blob/main/py/display_any.py
 upstream requested in https://github.com/Kosinkadink/rfcs/blob/main/rfcs/0000-corenodes.md#preview-nodes
  */
-import { IWidget } from '@comfyorg/litegraph'
-
+import { app } from '@/scripts/app'
 import { DOMWidget } from '@/scripts/domWidget'
 import { ComfyWidgets } from '@/scripts/widgets'
 import { useExtensionService } from '@/services/extensionService'
@@ -37,9 +36,7 @@ useExtensionService().registerExtension({
           ? void 0
           : onExecuted.apply(this, [message])
 
-        const previewWidget = this.widgets?.find(
-          (w: IWidget) => w.name === 'preview'
-        )
+        const previewWidget = this.widgets?.find((w) => w.name === 'preview')
 
         if (previewWidget) {
           previewWidget.value = message.text[0]

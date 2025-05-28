@@ -1,7 +1,7 @@
 import { watchDebounced } from '@vueuse/core'
 import type { Hit } from 'algoliasearch/dist/lite/browser'
 import { memoize, orderBy } from 'lodash'
-import { computed, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 
 import {
   AlgoliaNodePack,
@@ -11,10 +11,10 @@ import {
 import type { NodesIndexSuggestion } from '@/services/algoliaSearchService'
 import { SortableAlgoliaField } from '@/types/comfyManagerTypes'
 
-const SEARCH_DEBOUNCE_TIME = 256
+const SEARCH_DEBOUNCE_TIME = 320
 const DEFAULT_PAGE_SIZE = 64
 const DEFAULT_SORT_FIELD = SortableAlgoliaField.Downloads // Set in the index configuration
-
+const DEFAULT_MAX_CACHE_SIZE = 64
 const SORT_DIRECTIONS: Record<SortableAlgoliaField, 'asc' | 'desc'> = {
   [SortableAlgoliaField.Downloads]: 'desc',
   [SortableAlgoliaField.Created]: 'desc',
@@ -30,7 +30,12 @@ const isDateField = (field: SortableAlgoliaField): boolean =>
 /**
  * Composable for managing UI state of Comfy Node Registry search.
  */
-export function useRegistrySearch() {
+export function useRegistrySearch(
+  options: {
+    maxCacheSize?: number
+  } = {}
+) {
+  const { maxCacheSize = DEFAULT_MAX_CACHE_SIZE } = options
   const isLoading = ref(false)
   const sortField = ref<SortableAlgoliaField>(SortableAlgoliaField.Downloads)
   const searchMode = ref<'nodes' | 'packs'>('packs')
@@ -56,7 +61,10 @@ export function useRegistrySearch() {
       : []
   )
 
-  const { searchPacks, toRegistryPack } = useAlgoliaSearchService()
+  const { searchPacksCached, toRegistryPack, clearSearchPacksCache } =
+    useAlgoliaSearchService({
+      maxCacheSize
+    })
 
   const algoliaToRegistry = memoize(
     toRegistryPack,
@@ -77,7 +85,7 @@ export function useRegistrySearch() {
     if (!options.append) {
       pageNumber.value = 0
     }
-    const { nodePacks, querySuggestions } = await searchPacks(
+    const { nodePacks, querySuggestions } = await searchPacksCached(
       searchQuery.value,
       {
         pageSize: pageSize.value,
@@ -115,6 +123,8 @@ export function useRegistrySearch() {
     debounce: SEARCH_DEBOUNCE_TIME,
     immediate: true
   })
+
+  onUnmounted(clearSearchPacksCache)
 
   return {
     isLoading,

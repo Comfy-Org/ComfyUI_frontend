@@ -13,6 +13,7 @@
     "terminal": "Terminal",
     "logs": "Logs",
     "videoFailedToLoad": "Video failed to load",
+    "audioFailedToLoad": "Audio failed to load",
     "extensionName": "Extension Name",
     "reloadToApplyChanges": "Reload to apply changes",
     "insert": "Insert",
@@ -57,6 +58,8 @@
     "deprecated": "DEPR",
     "loadWorkflow": "Load Workflow",
     "goToNode": "Go to Node",
+    "setAsBackground": "Set as Background",
+    "customBackground": "Custom Background",
     "settings": "Settings",
     "searchWorkflows": "Search Workflows",
     "searchSettings": "Search Settings",
@@ -114,7 +117,12 @@
     "learnMore": "Learn more",
     "amount": "Amount",
     "unknownError": "Unknown error",
-    "title": "Title"
+    "title": "Title",
+    "edit": "Edit",
+    "copy": "Copy",
+    "imageUrl": "Image URL",
+    "clear": "Clear",
+    "copyURL": "Copy URL"
   },
   "manager": {
     "title": "Custom Nodes Manager",
@@ -201,7 +209,9 @@
     "validation": {
       "maxLength": "Message too long",
       "invalidEmail": "Please enter a valid email address",
-      "selectIssueType": "Please select an issue type"
+      "selectIssueType": "Please select an issue type",
+      "descriptionRequired": "Description is required",
+      "helpTypeRequired": "Help type is required"
     }
   },
   "color": {
@@ -485,7 +495,111 @@
       "Image": "Image",
       "Area Composition": "Area Composition",
       "3D": "3D",
-      "Audio": "Audio"
+      "Audio": "Audio",
+      "Image API": "Image API",
+      "Video API": "Video API"
+    },
+    "templateDescription": {
+      "Basics": {
+        "default": "Generate images from text descriptions.",
+        "image2image": "Transform existing images using text prompts.",
+        "lora": "Apply LoRA models for specialized styles or subjects.",
+        "inpaint_example": "Edit specific parts of images seamlessly.",
+        "inpain_model_outpainting": "Extend images beyond their original boundaries.",
+        "embedding_example": "Use textual inversion for consistent styles.",
+        "gligen_textbox_example": "Specify the location and size of objects.",
+        "lora_multiple": "Combine multiple LoRA models for unique results."
+      },
+      "Flux": {
+        "flux_dev_checkpoint_example": "Create images using Flux development models.",
+        "flux_schnell": "Generate images quickly with Flux Schnell.",
+        "flux_fill_inpaint_example": "Fill in missing parts of images.",
+        "flux_fill_outpaint_example": "Extend images using Flux outpainting.",
+        "flux_canny_model_example": "Generate images from edge detection.",
+        "flux_depth_lora_example": "Create images with depth-aware LoRA.",
+        "flux_redux_model_example": "Transfer style from a reference image to guide image generation with Flux."
+      },
+      "Image": {
+        "hidream_i1_dev": "Generate images with HiDream I1 Dev.",
+        "hidream_i1_fast": "Generate images quickly with HiDream I1.",
+        "hidream_i1_full": "Generate images with HiDream I1.",
+        "hidream_e1_full": "Edit images with HiDream E1.",
+        "sd3_5_simple_example": "Generate images with SD 3.5.",
+        "sd3_5_large_canny_controlnet_example": "Use edge detection to guide image generation with SD 3.5.",
+        "sd3_5_large_depth": "Create depth-aware images with SD 3.5.",
+        "sd3_5_large_blur": "Generate images from blurred reference images with SD 3.5.",
+        "sdxl_simple_example": "Create high-quality images with SDXL.",
+        "sdxl_refiner_prompt_example": "Enhance SDXL outputs with refiners.",
+        "sdxl_revision_text_prompts": "Transfer concepts from reference images to guide image generation with SDXL.",
+        "sdxl_revision_zero_positive": "Add text prompts alongside reference images to guide image generation with SDXL.",
+        "sdxlturbo_example": "Generate images in a single step with SDXL Turbo."
+      },
+      "Video": {
+        "text_to_video_wan": "Quickly Generate videos from text descriptions.",
+        "image_to_video_wan": "Quickly Generate videos from images.",
+        "wan2_1_fun_inp": "Create videos from start and end frames.",
+        "wan2_1_fun_control": "Guide video generation with pose, depth, edge controls and more.",
+        "wan2_1_flf2v_720_f16": "Generate video through controlling the first and last frames.",
+        "ltxv_text_to_video": "Generate videos from text descriptions.",
+        "ltxv_image_to_video": "Convert still images into videos.",
+        "mochi_text_to_video_example": "Create videos with Mochi model.",
+        "hunyuan_video_text_to_video": "Generate videos using Hunyuan model.",
+        "image_to_video": "Transform images into animated videos.",
+        "txt_to_image_to_video": "Generate images from text and then convert them into videos."
+      },
+      "Image API": {
+        "api_openai_image_1_t2i": "Use GPT Image 1 API to generate images from text descriptions.",
+        "api_openai_image_1_i2i": "Use GPT Image 1 API to generate images from images.",
+        "api_openai_image_1_inpaint": "Use GPT Image 1 API to inpaint images.",
+        "api_openai_image_1_multi_inputs": "Use GPT Image 1 API with multiple inputs to generate images.",
+        "api-openai-dall-e-2-t2i": "Use Dall-E 2 API to generate images from text descriptions.",
+        "api-openai-dall-e-2-inpaint": "Use Dall-E 2 API to inpaint images.",
+        "api-openai-dall-e-3-t2i": "Use Dall-E 3 API to generate images from text descriptions.",
+        "api_bfl_flux_pro_t2i": "Create images with FLUX.1 [pro]'s excellent prompt following, visual quality, image detail and output diversity.",
+        "api_stability_sd3_t2i": "Generate high quality images with excellent prompt adherence. Perfect for professional use cases at 1 megapixel resolution.",
+        "api_ideogram_v3_t2i": "Generate images with high-quality image-prompt alignment, photorealism, and text rendering. Create professional-quality logos, promotional posters, landing page concepts, product photography, and more. Effortlessly craft sophisticated spatial compositions with intricate backgrounds, precise and nuanced lighting and colors, and lifelike environmental detail.",
+        "api_luma_photon_i2i": "Guide image generation using a combination of images and prompt.",
+        "api_luma_photon_style_ref": "Apply and blend style references with exact control. Luma Photon captures the essence of each reference image, letting you combine distinct visual elements while maintaining professional quality.",
+        "api_recraft_image_gen_with_color_control": "Create a custom palette to reuse for multiple images or hand-pick colors for each photo. Match your brand's color palette and craft visuals that are distinctly yours.",
+        "api_recraft_image_gen_with_style_control": "Control style with visual examples, align positioning, and fine-tune objects. Store and share styles for perfect brand consistency.",
+        "api_recraft_vector_gen": "Go from a text prompt to vector image with Recraft's AI vector generator. Produce the best-quality vector art for logos, posters, icon sets, ads, banners and mockups. Perfect your designs with sharp, high-quality SVG files. Create branded vector illustrations for your app or website in seconds."
+      },
+      "Video API": {
+        "api_luma_i2v": "Take static images and instantly create magical high quality animations.",
+        "api_kling_i2v": "Create videos with great prompt adherence for actions, expressions, and camera movements. Now supporting complex prompts with sequential actions for you to be the director of your scene.",
+        "api_veo2_i2v": "Use Google Veo2 API to generate videos from images.",
+        "api_hailuo_minimax_i2v": "Create refined videos from images and text, including CGI integration and trendy photo effects like viral AI hugging. Choose from a variety of video styles and themes to match your creative vision.",
+        "api_pika_scene": "Use multiple images as ingredients and generate videos that incorporate all of them.",
+        "api_pixverse_template_i2v": "Transforms static images into dynamic videos with motion and effects.",
+        "api_pixverse_t2v": "Generate videos with accurate prompt interpretation and stunning video dynamics."
+      },
+      "Upscaling": {
+        "hiresfix_latent_workflow": "Enhance image quality in latent space.",
+        "esrgan_example": "Use upscale models to enhance image quality.",
+        "hiresfix_esrgan_workflow": "Use upscale models during intermediate steps.",
+        "latent_upscale_different_prompt_model": "Upscale and change prompt across passes."
+      },
+      "ControlNet": {
+        "controlnet_example": "Control image generation with reference images.",
+        "2_pass_pose_worship": "Generate images from pose references.",
+        "depth_controlnet": "Create images with depth-aware generation.",
+        "depth_t2i_adapter": "Quickly generate depth-aware images with a T2I adapter.",
+        "mixing_controlnets": "Combine multiple ControlNet models together."
+      },
+      "Area Composition": {
+        "area_composition": "Control image composition with areas.",
+        "area_composition_reversed": "Reverse area composition workflow.",
+        "area_composition_square_area_for_subject": "Create consistent subject placement."
+      },
+      "3D": {
+        "hunyuan3d-non-multiview-train": "Use Hunyuan3D 2.0 to generate models from a single view.",
+        "hunyuan-3d-multiview-elf": " Use Hunyuan3D 2mv to generate models from multiple views.",
+        "hunyuan-3d-turbo": "Use Hunyuan3D 2mv turbo to generate models from multiple views.",
+        "stable_zero123_example": "Generate 3D views from single images."
+      },
+      "Audio": {
+        "stable_audio_example": "Generate audio from text descriptions."
+      }
     },
     "template": {
       "Flux": {
@@ -531,6 +645,32 @@
         "hunyuan_video_text_to_video": "Hunyuan Video Text to Video",
         "wan2_1_fun_inp": "Wan 2.1 Inpainting",
         "wan2_1_fun_control": "Wan 2.1 ControlNet"
+      },
+      "Image API": {
+        "api_openai_image_1_t2i": "OpenAI Image-1 Text to Image",
+        "api_openai_image_1_i2i": "OpenAI Image-1 Image to Image",
+        "api_openai_image_1_inpaint": "OpenAI Image-1 Inpaint",
+        "api_openai_image_1_multi_inputs": "OpenAI Image-1 Multi Inputs",
+        "api-openai-dall-e-2-t2i": "Dall-E 2 Text to Image",
+        "api-openai-dall-e-2-inpaint": "Dall-E 2 Inpaint",
+        "api-openai-dall-e-3-t2i": "Dall-E 3 Text to Image",
+        "api_bfl_flux_pro_t2i": "BFL Flux 1.1[pro] Ultra Text to Image",
+        "api_stability_sd3_t2i": "Stability AI Stable Image Ultra Text to Image",
+        "api_ideogram_v3_t2i": "Ideogram V3 Text to Image",
+        "api_luma_photon_i2i": "Luma Photon Image to Image",
+        "api_luma_photon_style_ref": "Luma Photon Style Reference",
+        "api_recraft_image_gen_with_color_control": "Recraft Color Control Image Generation",
+        "api_recraft_image_gen_with_style_control": "Recraft Style Control Image Generation",
+        "api_recraft_vector_gen": "Recraft Vector Generation"
+      },
+      "Video API": {
+        "api_luma_i2v": "Luma Image to Video",
+        "api_kling_i2v": "Kling Image to Video",
+        "api_veo2_i2v": "Veo2 Image to Video",
+        "api_hailuo_minimax_i2v": "MiniMax Image to Video",
+        "api_pika_scene": "Pika Scenes: Images to Video",
+        "api_pixverse_template_i2v": "PixVerse Template Effects: Image to Video",
+        "api_pixverse_t2v": "PixVerse Text to Video"
       },
       "Image": {
         "sd3_5_simple_example": "SD3.5 Simple",
@@ -668,11 +808,13 @@
     "Load Default Workflow": "Load Default Workflow",
     "Custom Nodes Manager": "Custom Nodes Manager",
     "Toggle Progress Dialog": "Toggle Progress Dialog",
+    "Open Mask Editor for Selected Node": "Open Mask Editor for Selected Node",
     "New": "New",
     "Clipspace": "Clipspace",
     "Open": "Open",
     "Queue Prompt": "Queue Prompt",
     "Queue Prompt (Front)": "Queue Prompt (Front)",
+    "Queue Selected Output Nodes": "Queue Selected Output Nodes",
     "Redo": "Redo",
     "Refresh Node Definitions": "Refresh Node Definitions",
     "Save": "Save",
@@ -750,7 +892,8 @@
     "3D": "3D",
     "Light": "Light",
     "User": "User",
-    "Credits": "Credits"
+    "Credits": "Credits",
+    "API Nodes": "API Nodes"
   },
   "serverConfigItems": {
     "listen": {
@@ -891,6 +1034,7 @@
     "image": "image",
     "preprocessors": "preprocessors",
     "advanced": "advanced",
+    "guidance": "guidance",
     "loaders": "loaders",
     "model_merging": "model_merging",
     "attention_experiments": "attention_experiments",
@@ -903,44 +1047,64 @@
     "inpaint": "inpaint",
     "scheduling": "scheduling",
     "create": "create",
+    "video": "video",
     "mask": "mask",
     "deprecated": "deprecated",
     "latent": "latent",
-    "video": "video",
     "audio": "audio",
     "3d": "3d",
     "ltxv": "ltxv",
     "sd3": "sd3",
     "sigmas": "sigmas",
+    "api node": "api node",
+    "BFL": "BFL",
     "model_patches": "model_patches",
     "unet": "unet",
     "gligen": "gligen",
     "video_models": "video_models",
+    "Ideogram": "Ideogram",
+    "v1": "v1",
+    "v2": "v2",
+    "v3": "v3",
     "postprocessing": "postprocessing",
     "transform": "transform",
     "batch": "batch",
     "upscaling": "upscaling",
     "instructpix2pix": "instructpix2pix",
     "compositing": "compositing",
+    "Kling": "Kling",
     "samplers": "samplers",
     "operations": "operations",
+    "lotus": "lotus",
+    "Luma": "Luma",
+    "MiniMax": "MiniMax",
     "debug": "debug",
     "model": "model",
     "model_specific": "model_specific",
+    "OpenAI": "OpenAI",
     "cond pair": "cond pair",
     "photomaker": "photomaker",
+    "Pika": "Pika",
+    "PixVerse": "PixVerse",
+    "utils": "utils",
+    "primitive": "primitive",
+    "Recraft": "Recraft",
     "animation": "animation",
     "api": "api",
     "upscale_diffusion": "upscale_diffusion",
     "clip": "clip",
-    "guidance": "guidance",
+    "Stability AI": "Stability AI",
     "stable_cascade": "stable_cascade",
     "3d_models": "3d_models",
-    "style_model": "style_model"
+    "style_model": "style_model",
+    "sd": "sd",
+    "Veo": "Veo"
   },
   "dataTypes": {
+    "*": "*",
     "AUDIO": "AUDIO",
     "BOOLEAN": "BOOLEAN",
+    "CAMERA_CONTROL": "CAMERA_CONTROL",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "CLIP_VISION_OUTPUT",
@@ -959,18 +1123,27 @@
     "LATENT_OPERATION": "LATENT_OPERATION",
     "LOAD_3D": "LOAD_3D",
     "LOAD_3D_ANIMATION": "LOAD_3D_ANIMATION",
+    "LOAD3D_CAMERA": "LOAD3D_CAMERA",
+    "LUMA_CONCEPTS": "LUMA_CONCEPTS",
+    "LUMA_REF": "LUMA_REF",
     "MASK": "MASK",
     "MESH": "MESH",
     "MODEL": "MODEL",
     "NOISE": "NOISE",
     "PHOTOMAKER": "PHOTOMAKER",
+    "PIXVERSE_TEMPLATE": "PIXVERSE_TEMPLATE",
+    "RECRAFT_COLOR": "RECRAFT_COLOR",
+    "RECRAFT_CONTROLS": "RECRAFT_CONTROLS",
+    "RECRAFT_V3_STYLE": "RECRAFT_V3_STYLE",
     "SAMPLER": "SAMPLER",
     "SIGMAS": "SIGMAS",
     "STRING": "STRING",
     "STYLE_MODEL": "STYLE_MODEL",
+    "SVG": "SVG",
     "TIMESTEPS_RANGE": "TIMESTEPS_RANGE",
     "UPSCALE_MODEL": "UPSCALE_MODEL",
     "VAE": "VAE",
+    "VIDEO": "VIDEO",
     "VOXEL": "VOXEL",
     "WEBCAM": "WEBCAM"
   },
@@ -1057,10 +1230,19 @@
       "normal": "Normal",
       "wireframe": "Wireframe",
       "original": "Original",
-      "depth": "Depth"
-    }
+      "depth": "Depth",
+      "lineart": "Lineart"
+    },
+    "startRecording": "Start Recording",
+    "stopRecording": "Stop Recording",
+    "exportRecording": "Export Recording",
+    "clearRecording": "Clear Recording",
+    "resizeNodeMatchOutput": "Resize Node to match output",
+    "loadingBackgroundImage": "Loading Background Image"
   },
   "toastMessages": {
+    "nothingToQueue": "Nothing to queue",
+    "pleaseSelectOutputNodes": "Please select output nodes",
     "no3dScene": "No 3D scene to apply texture",
     "failedToApplyTexture": "Failed to apply texture",
     "no3dSceneToExport": "No 3D scene to export",
@@ -1090,16 +1272,38 @@
     "failedToInitiateCreditPurchase": "Failed to initiate credit purchase: {error}",
     "failedToAccessBillingPortal": "Failed to access billing portal: {error}",
     "failedToPurchaseCredits": "Failed to purchase credits: {error}",
-    "unauthorizedDomain": "Your domain {domain} is not authorized to use this service. Please contact {email} to add your domain to the whitelist."
+    "unauthorizedDomain": "Your domain {domain} is not authorized to use this service. Please contact {email} to add your domain to the whitelist.",
+    "useApiKeyTip": "Tip: Can't access normal login? Use the Comfy API Key option.",
+    "nothingSelected": "Nothing selected"
   },
   "auth": {
+    "apiKey": {
+      "title": "API Key",
+      "label": "API Key",
+      "description": "Use your Comfy API key to enable API Nodes",
+      "placeholder": "Enter your API Key",
+      "error": "Invalid API Key",
+      "storageFailed": "Failed to store API Key",
+      "storageFailedDetail": "Please try again.",
+      "stored": "API Key stored",
+      "storedDetail": "Your API Key has been stored successfully",
+      "cleared": "API Key cleared",
+      "clearedDetail": "Your API Key has been cleared successfully",
+      "invalid": "Invalid API Key",
+      "invalidDetail": "Please enter a valid API Key",
+      "helpText": "Need an API key?",
+      "generateKey": "Get one here",
+      "whitelistInfo": "About non-whitelisted sites"
+    },
     "login": {
       "title": "Log in to your account",
+      "useApiKey": "Comfy API Key",
       "signInOrSignUp": "Sign In / Sign Up",
       "forgotPasswordError": "Failed to send password reset email",
       "passwordResetSent": "Password reset email sent",
       "passwordResetSentDetail": "Please check your email for a link to reset your password.",
       "newUser": "New here?",
+      "userAvatar": "User Avatar",
       "signUp": "Sign up",
       "emailLabel": "Email",
       "emailPlaceholder": "Enter your email",
@@ -1119,7 +1323,8 @@
       "success": "Login successful",
       "failed": "Login failed",
       "insecureContextWarning": "This connection is insecure (HTTP) - your credentials may be intercepted by attackers if you proceed to login.",
-      "questionsContactPrefix": "Questions? Contact us at"
+      "questionsContactPrefix": "Questions? Contact us at",
+      "noAssociatedUser": "There is no Comfy user associated with the provided API key"
     },
     "signup": {
       "title": "Create an account",
@@ -1150,6 +1355,8 @@
     "required": "Required",
     "minLength": "Must be at least {length} characters",
     "maxLength": "Must be no more than {length} characters",
+    "prefix": "Must start with {prefix}",
+    "length": "Must be {length} characters",
     "password": {
       "requirements": "Password requirements",
       "minLength": "Must be between 8 and 32 characters",
@@ -1166,6 +1373,7 @@
     "yourCreditBalance": "Your credit balance",
     "purchaseCredits": "Purchase Credits",
     "invoiceHistory": "Invoice History",
+    "apiPricing": "API Pricing",
     "faqs": "FAQs",
     "messageSupport": "Message Support",
     "lastUpdated": "Last updated",
@@ -1186,5 +1394,18 @@
     "provider": "Sign-in Provider",
     "notSet": "Not set",
     "updatePassword": "Update Password"
+  },
+  "selectionToolbox": {
+    "executeButton": {
+      "tooltip": "Execute to selected output nodes (Highlighted with orange border)",
+      "disabledTooltip": "No output nodes selected"
+    }
+  },
+  "chatHistory": {
+    "cancelEdit": "Cancel",
+    "editTooltip": "Edit message",
+    "cancelEditTooltip": "Cancel edit",
+    "copiedTooltip": "Copied",
+    "copyTooltip": "Copy message to clipboard"
   }
 }

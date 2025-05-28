@@ -30,7 +30,7 @@
       </div>
     </template>
   </ListBox>
-  <div class="flex justify-end py-3">
+  <div v-if="isManagerInstalled" class="flex justify-end py-3">
     <Button label="Open Manager" size="small" outlined @click="openManager" />
   </div>
 </template>
@@ -42,12 +42,26 @@ import { computed } from 'vue'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import { useDialogService } from '@/services/dialogService'
+import { useAboutPanelStore } from '@/stores/aboutPanelStore'
 import type { MissingNodeType } from '@/types/comfy'
 import { ManagerTab } from '@/types/comfyManagerTypes'
 
 const props = defineProps<{
   missingNodeTypes: MissingNodeType[]
 }>()
+
+const aboutPanelStore = useAboutPanelStore()
+
+// Determines if ComfyUI-Manager is installed by checking for its badge in the about panel
+// This allows us to conditionally show the Manager button only when the extension is available
+// TODO: Remove this check when Manager functionality is fully migrated into core
+const isManagerInstalled = computed(() => {
+  return aboutPanelStore.badges.some(
+    (badge) =>
+      badge.label.includes('ComfyUI-Manager') ||
+      badge.url.includes('ComfyUI-Manager')
+  )
+})
 
 const uniqueNodes = computed(() => {
   const seenTypes = new Set()

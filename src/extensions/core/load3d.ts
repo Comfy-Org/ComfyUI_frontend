@@ -1,5 +1,7 @@
-import { IWidget } from '@comfyorg/litegraph'
-import { IStringWidget } from '@comfyorg/litegraph/dist/types/widgets'
+import type {
+  IComboWidget,
+  IStringWidget
+} from '@comfyorg/litegraph/dist/types/widgets'
 import { nextTick } from 'vue'
 
 import Load3D from '@/components/load3d/Load3D.vue'
@@ -110,14 +112,14 @@ useExtensionService().registerExtension({
       LOAD_3D(node) {
         const fileInput = document.createElement('input')
         fileInput.type = 'file'
-        fileInput.accept = '.gltf,.glb,.obj,.mtl,.fbx,.stl'
+        fileInput.accept = '.gltf,.glb,.obj,.fbx,.stl'
         fileInput.style.display = 'none'
 
         fileInput.onchange = async () => {
           if (fileInput.files?.length) {
             const modelWidget = node.widgets?.find(
-              (w: IWidget) => w.name === 'model_file'
-            ) as IStringWidget
+              (w) => w.name === 'model_file'
+            ) as IComboWidget & { options: { values: string[] } }
 
             node.properties['Texture'] = undefined
 
@@ -154,9 +156,7 @@ useExtensionService().registerExtension({
         node.addWidget('button', 'clear', 'clear', () => {
           useLoad3dService().getLoad3d(node)?.clearModel()
 
-          const modelWidget = node.widgets?.find(
-            (w: IWidget) => w.name === 'model_file'
-          )
+          const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
           if (modelWidget) {
             modelWidget.value = ''
 
@@ -195,25 +195,23 @@ useExtensionService().registerExtension({
 
     await nextTick()
 
-    const load3d = useLoad3dService().getLoad3d(node)
-
-    if (load3d) {
+    useLoad3dService().waitForLoad3d(node, (load3d) => {
       let cameraState = node.properties['Camera Info']
 
       const config = new Load3DConfiguration(load3d)
 
-      const modelWidget = node.widgets?.find(
-        (w: IWidget) => w.name === 'model_file'
-      )
-      const width = node.widgets?.find((w: IWidget) => w.name === 'width')
-      const height = node.widgets?.find((w: IWidget) => w.name === 'height')
-      const sceneWidget = node.widgets?.find((w: IWidget) => w.name === 'image')
+      const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
+      const width = node.widgets?.find((w) => w.name === 'width')
+      const height = node.widgets?.find((w) => w.name === 'height')
+      const sceneWidget = node.widgets?.find((w) => w.name === 'image')
 
       if (modelWidget && width && height && sceneWidget) {
         config.configure('input', modelWidget, cameraState, width, height)
 
         sceneWidget.serializeValue = async () => {
           node.properties['Camera Info'] = load3d.getCameraState()
+
+          load3d.stopRecording()
 
           const {
             scene: imageData,
@@ -234,16 +232,29 @@ useExtensionService().registerExtension({
 
           load3d.handleResize()
 
-          return {
+          const returnVal = {
             image: `threed/${data.name} [temp]`,
             mask: `threed/${dataMask.name} [temp]`,
             normal: `threed/${dataNormal.name} [temp]`,
             lineart: `threed/${dataLineart.name} [temp]`,
-            camera_info: node.properties['Camera Info']
+            camera_info: node.properties['Camera Info'],
+            recording: ''
           }
+
+          const recordingData = load3d.getRecordingData()
+
+          if (recordingData) {
+            const [recording] = await Promise.all([
+              Load3dUtils.uploadTempImage(recordingData, 'recording', 'mp4')
+            ])
+
+            returnVal['recording'] = `threed/${recording.name} [temp]`
+          }
+
+          return returnVal
         }
       }
-    }
+    })
   }
 })
 
@@ -255,12 +266,12 @@ useExtensionService().registerExtension({
       LOAD_3D_ANIMATION(node) {
         const fileInput = document.createElement('input')
         fileInput.type = 'file'
-        fileInput.accept = '.fbx,glb,gltf'
+        fileInput.accept = '.gltf,.glb,.fbx'
         fileInput.style.display = 'none'
         fileInput.onchange = async () => {
           if (fileInput.files?.length) {
             const modelWidget = node.widgets?.find(
-              (w: IWidget) => w.name === 'model_file'
+              (w) => w.name === 'model_file'
             ) as IStringWidget
 
             const uploadPath = await Load3dUtils.uploadFile(
@@ -296,9 +307,7 @@ useExtensionService().registerExtension({
         node.addWidget('button', 'clear', 'clear', () => {
           useLoad3dService().getLoad3d(node)?.clearModel()
 
-          const modelWidget = node.widgets?.find(
-            (w: IWidget) => w.name === 'model_file'
-          )
+          const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
           if (modelWidget) {
             modelWidget.value = ''
           }
@@ -335,54 +344,65 @@ useExtensionService().registerExtension({
 
     await nextTick()
 
-    const sceneWidget = node.widgets?.find((w: IWidget) => w.name === 'image')
+    useLoad3dService().waitForLoad3d(node, (load3d) => {
+      const sceneWidget = node.widgets?.find((w) => w.name === 'image')
+      const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
+      let cameraState = node.properties['Camera Info']
+      const width = node.widgets?.find((w) => w.name === 'width')
+      const height = node.widgets?.find((w) => w.name === 'height')
 
-    const load3d = useLoad3dService().getLoad3d(node) as Load3dAnimation
+      if (modelWidget && width && height && sceneWidget && load3d) {
+        const config = new Load3DConfiguration(load3d)
 
-    const modelWidget = node.widgets?.find(
-      (w: IWidget) => w.name === 'model_file'
-    )
+        config.configure('input', modelWidget, cameraState, width, height)
 
-    let cameraState = node.properties['Camera Info']
+        sceneWidget.serializeValue = async () => {
+          node.properties['Camera Info'] = load3d.getCameraState()
 
-    const width = node.widgets?.find((w: IWidget) => w.name === 'width')
-    const height = node.widgets?.find((w: IWidget) => w.name === 'height')
+          const load3dAnimation = load3d as Load3dAnimation
+          load3dAnimation.toggleAnimation(false)
 
-    if (modelWidget && width && height && sceneWidget) {
-      const config = new Load3DConfiguration(load3d)
+          if (load3dAnimation.isRecording()) {
+            load3dAnimation.stopRecording()
+          }
 
-      config.configure('input', modelWidget, cameraState, width, height)
+          const {
+            scene: imageData,
+            mask: maskData,
+            normal: normalData
+          } = await load3dAnimation.captureScene(
+            width.value as number,
+            height.value as number
+          )
 
-      sceneWidget.serializeValue = async () => {
-        node.properties['Camera Info'] = load3d.getCameraState()
+          const [data, dataMask, dataNormal] = await Promise.all([
+            Load3dUtils.uploadTempImage(imageData, 'scene'),
+            Load3dUtils.uploadTempImage(maskData, 'scene_mask'),
+            Load3dUtils.uploadTempImage(normalData, 'scene_normal')
+          ])
 
-        load3d.toggleAnimation(false)
+          load3dAnimation.handleResize()
 
-        const {
-          scene: imageData,
-          mask: maskData,
-          normal: normalData
-        } = await load3d.captureScene(
-          width.value as number,
-          height.value as number
-        )
+          const returnVal = {
+            image: `threed/${data.name} [temp]`,
+            mask: `threed/${dataMask.name} [temp]`,
+            normal: `threed/${dataNormal.name} [temp]`,
+            camera_info: node.properties['Camera Info'],
+            recording: ''
+          }
 
-        const [data, dataMask, dataNormal] = await Promise.all([
-          Load3dUtils.uploadTempImage(imageData, 'scene'),
-          Load3dUtils.uploadTempImage(maskData, 'scene_mask'),
-          Load3dUtils.uploadTempImage(normalData, 'scene_normal')
-        ])
+          const recordingData = load3dAnimation.getRecordingData()
+          if (recordingData) {
+            const [recording] = await Promise.all([
+              Load3dUtils.uploadTempImage(recordingData, 'recording', 'mp4')
+            ])
+            returnVal['recording'] = `threed/${recording.name} [temp]`
+          }
 
-        load3d.handleResize()
-
-        return {
-          image: `threed/${data.name} [temp]`,
-          mask: `threed/${dataMask.name} [temp]`,
-          normal: `threed/${dataNormal.name} [temp]`,
-          camera_info: node.properties['Camera Info']
+          return returnVal
         }
       }
-    }
+    })
   }
 })
 
@@ -432,33 +452,43 @@ useExtensionService().registerExtension({
 
     const onExecuted = node.onExecuted
 
-    node.onExecuted = function (message: any) {
-      onExecuted?.apply(this, arguments as any)
+    useLoad3dService().waitForLoad3d(node, (load3d) => {
+      const config = new Load3DConfiguration(load3d)
 
-      let filePath = message.result[0]
+      const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
 
-      if (!filePath) {
-        const msg = t('toastMessages.unableToGetModelFilePath')
-        console.error(msg)
-        useToastStore().addAlert(msg)
+      if (modelWidget) {
+        const lastTimeModelFile = node.properties['Last Time Model File']
+
+        if (lastTimeModelFile) {
+          modelWidget.value = lastTimeModelFile
+
+          const cameraState = node.properties['Camera Info']
+
+          config.configure('output', modelWidget, cameraState)
+        }
+
+        node.onExecuted = function (message: any) {
+          onExecuted?.apply(this, arguments as any)
+
+          let filePath = message.result[0]
+
+          if (!filePath) {
+            const msg = t('toastMessages.unableToGetModelFilePath')
+            console.error(msg)
+            useToastStore().addAlert(msg)
+          }
+
+          let cameraState = message.result[1]
+
+          modelWidget.value = filePath.replaceAll('\\', '/')
+
+          node.properties['Last Time Model File'] = modelWidget.value
+
+          config.configure('output', modelWidget, cameraState)
+        }
       }
-
-      const load3d = useLoad3dService().getLoad3d(node)
-
-      let cameraState = message.result[1]
-
-      const modelWidget = node.widgets?.find(
-        (w: IWidget) => w.name === 'model_file'
-      )
-
-      if (load3d && modelWidget) {
-        modelWidget.value = filePath.replaceAll('\\', '/')
-
-        const config = new Load3DConfiguration(load3d)
-
-        config.configure('output', modelWidget, cameraState)
-      }
-    }
+    })
   }
 })
 
@@ -508,31 +538,42 @@ useExtensionService().registerExtension({
 
     const onExecuted = node.onExecuted
 
-    node.onExecuted = function (message: any) {
-      onExecuted?.apply(this, arguments as any)
+    useLoad3dService().waitForLoad3d(node, (load3d) => {
+      const config = new Load3DConfiguration(load3d)
 
-      let filePath = message.result[0]
+      const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
 
-      if (!filePath) {
-        const msg = t('toastMessages.unableToGetModelFilePath')
-        console.error(msg)
-        useToastStore().addAlert(msg)
+      if (modelWidget) {
+        const lastTimeModelFile = node.properties['Last Time Model File']
+
+        if (lastTimeModelFile) {
+          modelWidget.value = lastTimeModelFile
+
+          const cameraState = node.properties['Camera Info']
+
+          config.configure('output', modelWidget, cameraState)
+        }
+
+        node.onExecuted = function (message: any) {
+          onExecuted?.apply(this, arguments as any)
+
+          let filePath = message.result[0]
+
+          if (!filePath) {
+            const msg = t('toastMessages.unableToGetModelFilePath')
+            console.error(msg)
+            useToastStore().addAlert(msg)
+          }
+
+          let cameraState = message.result[1]
+
+          modelWidget.value = filePath.replaceAll('\\', '/')
+
+          node.properties['Last Time Model File'] = modelWidget.value
+
+          config.configure('output', modelWidget, cameraState)
+        }
       }
-
-      let cameraState = message.result[1]
-
-      const load3d = useLoad3dService().getLoad3d(node)
-
-      const modelWidget = node.widgets?.find(
-        (w: IWidget) => w.name === 'model_file'
-      )
-      if (load3d && modelWidget) {
-        modelWidget.value = filePath.replaceAll('\\', '/')
-
-        const config = new Load3DConfiguration(load3d)
-
-        config.configure('output', modelWidget, cameraState)
-      }
-    }
+    })
   }
 })

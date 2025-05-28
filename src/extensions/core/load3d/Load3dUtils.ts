@@ -4,10 +4,16 @@ import { app } from '@/scripts/app'
 import { useToastStore } from '@/stores/toastStore'
 
 class Load3dUtils {
-  static async uploadTempImage(imageData: string, prefix: string) {
+  static async uploadTempImage(
+    imageData: string,
+    prefix: string,
+    fileType: string = 'png'
+  ) {
     const blob = await fetch(imageData).then((r) => r.blob())
-    const name = `${prefix}_${Date.now()}.png`
-    const file = new File([blob], name)
+    const name = `${prefix}_${Date.now()}.${fileType}`
+    const file = new File([blob], name, {
+      type: fileType === 'mp4' ? 'video/mp4' : 'image/png'
+    })
 
     const body = new FormData()
     body.append('image', file)
@@ -20,7 +26,7 @@ class Load3dUtils {
     })
 
     if (resp.status !== 200) {
-      const err = `Error uploading temp image: ${resp.status} - ${resp.statusText}`
+      const err = `Error uploading temp file: ${resp.status} - ${resp.statusText}`
       useToastStore().addAlert(err)
       throw new Error(err)
     }

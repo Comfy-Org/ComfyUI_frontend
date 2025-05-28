@@ -25,6 +25,10 @@
     },
     "tooltip": "Choisissez l'option personnalisée pour masquer la barre de titre du système"
   },
+  "Comfy_Canvas_BackgroundImage": {
+    "name": "Image de fond du canevas",
+    "tooltip": "URL de l'image pour le fond du canevas. Vous pouvez faire un clic droit sur une image dans le panneau de sortie et sélectionner « Définir comme fond » pour l'utiliser."
+  },
   "Comfy_Canvas_SelectionToolbox": {
     "name": "Afficher la boîte à outils de sélection"
   },
@@ -192,6 +196,9 @@
       "None": "Aucun",
       "Show all": "Afficher tout"
     }
+  },
+  "Comfy_NodeBadge_ShowApiPricing": {
+    "name": "Afficher l’insigne de tarification API du nœud"
   },
   "Comfy_NodeSearchBoxImpl": {
     "name": "Implémentation de la boîte de recherche de nœud",
@@ -386,6 +393,10 @@
   },
   "LiteGraph_Node_TooltipDelay": {
     "name": "Délai d'infobulle"
+  },
+  "LiteGraph_Pointer_TrackpadGestures": {
+    "name": "Activer les gestes du trackpad",
+    "tooltip": "Ce paramètre active le mode trackpad pour le canevas, permettant le zoom par pincement et le déplacement à deux doigts."
   },
   "LiteGraph_Reroute_SplineOffset": {
     "name": "Réacheminement décalage de spline",

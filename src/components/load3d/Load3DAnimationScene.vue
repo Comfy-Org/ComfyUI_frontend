@@ -20,6 +20,7 @@
     @camera-type-change="listenCameraTypeChange"
     @show-grid-change="listenShowGridChange"
     @show-preview-change="listenShowPreviewChange"
+    @recording-status-change="listenRecordingStatusChange"
   />
 </template>
 <script setup lang="ts">
@@ -148,6 +149,15 @@ watch(
 
 const emit = defineEmits<{
   (e: 'animationListChange', animationList: string): void
+  (e: 'materialModeChange', materialMode: string): void
+  (e: 'backgroundColorChange', color: string): void
+  (e: 'lightIntensityChange', lightIntensity: number): void
+  (e: 'fovChange', fov: number): void
+  (e: 'cameraTypeChange', cameraType: string): void
+  (e: 'showGridChange', showGrid: boolean): void
+  (e: 'showPreviewChange', showPreview: boolean): void
+  (e: 'upDirectionChange', direction: string): void
+  (e: 'recording-status-change', status: boolean): void
 }>()
 
 const listenMaterialModeChange = (mode: MaterialMode) => {
@@ -180,6 +190,10 @@ const listenShowGridChange = (value: boolean) => {
 
 const listenShowPreviewChange = (value: boolean) => {
   showPreview.value = value
+}
+
+const listenRecordingStatusChange = (value: boolean) => {
+  emit('recording-status-change', value)
 }
 
 const animationListeners = {

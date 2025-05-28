@@ -1,10 +1,12 @@
 import {
   type IContextMenuValue,
+  LGraphCanvas,
   LGraphEventMode,
   LGraphNode,
   LiteGraph,
   RenderShape,
-  type Vector2
+  type Vector2,
+  createBounds
 } from '@comfyorg/litegraph'
 import type {
   ISerialisableNodeInput,
@@ -57,8 +59,8 @@ export const useLitegraphService = () => {
   async function registerNodeDef(nodeId: string, nodeDefV1: ComfyNodeDefV1) {
     const node = class ComfyNode extends LGraphNode {
       static comfyClass: string
-      static title: string
-      static category: string
+      static override title: string
+      static override category: string
       static nodeData: ComfyNodeDefV1 & ComfyNodeDefV2
 
       /**
@@ -79,6 +81,13 @@ export const useLitegraphService = () => {
         this.#addOutputs(ComfyNode.nodeData.outputs)
         this.#setInitialSize()
         this.serialize_widgets = true
+
+        // Mark API Nodes yellow by default to distinguish with other nodes.
+        if (ComfyNode.nodeData.api_node) {
+          this.color = LGraphCanvas.node_colors.yellow.color
+          this.bgcolor = LGraphCanvas.node_colors.yellow.bgcolor
+        }
+
         void extensionService.invokeExtensionsAsync('nodeCreated', this)
       }
 
@@ -643,11 +652,23 @@ export const useLitegraphService = () => {
     canvas.setDirty(true, true)
   }
 
+  function fitView() {
+    const canvas = canvasStore.canvas
+    if (!canvas) return
+
+    const bounds = createBounds(app.graph.nodes)
+    if (!bounds) return
+
+    canvas.ds.fitToBounds(bounds)
+    canvas.setDirty(true, true)
+  }
+
   return {
     registerNodeDef,
     addNodeOnGraph,
     getCanvasCenter,
     goToNode,
-    resetView
+    resetView,
+    fitView
   }
 }

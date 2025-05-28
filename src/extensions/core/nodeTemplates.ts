@@ -61,7 +61,7 @@ class ManageTemplates extends ComfyDialog {
     }) as HTMLInputElement
   }
 
-  createButtons() {
+  override createButtons() {
     const btns = super.createButtons()
     btns[0].textContent = 'Close'
     btns[0].onclick = () => {
@@ -160,7 +160,7 @@ class ManageTemplates extends ComfyDialog {
     }, 0)
   }
 
-  show() {
+  override show() {
     // Show list of template names + delete button
     super.show(
       $el(
@@ -401,6 +401,7 @@ app.registerExtension({
                   // @ts-expect-error
                   data.groupNodes = {}
                 }
+                if (nodeData == null) throw new TypeError('nodeData is not set')
                 // @ts-expect-error
                 data.groupNodes[nodeData.name] = groupData
                 // @ts-expect-error

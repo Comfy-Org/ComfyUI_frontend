@@ -323,6 +323,14 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: NodeBadgeMode.ShowAll
   },
   {
+    id: 'Comfy.NodeBadge.ShowApiPricing',
+    category: ['Comfy', 'API Nodes'],
+    name: 'Show API node pricing badge',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.20.3'
+  },
+  {
     id: 'Comfy.ConfirmClear',
     category: ['Comfy', 'Workflow', 'ConfirmClear'],
     name: 'Require confirmation when clearing workflow',
@@ -817,5 +825,27 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     defaultValue: false,
     versionAdded: '1.18.0'
+  },
+  {
+    id: 'Comfy.Canvas.BackgroundImage',
+    category: ['Appearance', 'Canvas', 'Background'],
+    name: 'Canvas background image',
+    type: 'backgroundImage',
+    tooltip:
+      'Image URL for the canvas background. You can right-click an image in the outputs panel and select "Set as Background" to use it, or upload your own image using the upload button.',
+    defaultValue: '',
+    versionAdded: '1.20.4',
+    versionModified: '1.20.5'
+  },
+  {
+    id: 'LiteGraph.Pointer.TrackpadGestures',
+    category: ['LiteGraph', 'Pointer', 'Trackpad Gestures'],
+    experimental: true,
+    name: 'Enable trackpad gestures',
+    tooltip:
+      'This setting enables trackpad mode for the canvas, allowing pinch-to-zoom and panning with two fingers.',
+    type: 'boolean',
+    defaultValue: false,
+    versionAdded: '1.19.1'
   }
 ]

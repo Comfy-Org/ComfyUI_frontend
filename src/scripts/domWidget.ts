@@ -1,7 +1,6 @@
-import { LGraphNode, LiteGraph } from '@comfyorg/litegraph'
+import { LGraphNode, LegacyWidget, LiteGraph } from '@comfyorg/litegraph'
 import type {
-  ICustomWidget,
-  IWidget,
+  IBaseWidget,
   IWidgetOptions
 } from '@comfyorg/litegraph/dist/types/widgets'
 import _ from 'lodash'
@@ -13,9 +12,9 @@ import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { generateUUID } from '@/utils/formatUtil'
 
 export interface BaseDOMWidget<V extends object | string>
-  extends ICustomWidget {
+  extends IBaseWidget<V, string, DOMWidgetOptions<V>> {
   // ICustomWidget properties
-  type: 'custom'
+  type: string
   options: DOMWidgetOptions<V>
   value: V
   callback?: (value: V) => void
@@ -48,10 +47,13 @@ export interface DOMWidget<T extends HTMLElement, V extends object | string>
 /**
  * A DOM widget that wraps a Vue component as a litegraph widget.
  */
-export interface ComponentWidget<V extends object | string>
-  extends BaseDOMWidget<V> {
+export interface ComponentWidget<
+  V extends object | string,
+  P = Record<string, unknown>
+> extends BaseDOMWidget<V> {
   readonly component: Component
   readonly inputSpec: InputSpec
+  readonly props?: P
 }
 
 export interface DOMWidgetOptions<V extends object | string>
@@ -81,26 +83,23 @@ export interface DOMWidgetOptions<V extends object | string>
 }
 
 export const isDOMWidget = <T extends HTMLElement, V extends object | string>(
-  widget: IWidget
+  widget: IBaseWidget
 ): widget is DOMWidget<T, V> => 'element' in widget && !!widget.element
 
 export const isComponentWidget = <V extends object | string>(
-  widget: IWidget
+  widget: IBaseWidget
 ): widget is ComponentWidget<V> => 'component' in widget && !!widget.component
 
 abstract class BaseDOMWidgetImpl<V extends object | string>
+  extends LegacyWidget<IBaseWidget<V, string, DOMWidgetOptions<V>>>
   implements BaseDOMWidget<V>
 {
   static readonly DEFAULT_MARGIN = 10
-  readonly type: 'custom'
-  readonly name: string
-  readonly options: DOMWidgetOptions<V>
-  computedHeight?: number
-  y: number = 0
-  callback?: (value: V) => void
+  declare readonly name: string
+  declare readonly options: DOMWidgetOptions<V>
+  declare callback?: (value: V) => void
 
   readonly id: string
-  readonly node: LGraphNode
 
   constructor(obj: {
     node: LGraphNode
@@ -108,20 +107,17 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
     type: string
     options: DOMWidgetOptions<V>
   }) {
-    // @ts-expect-error custom widget type
-    this.type = obj.type
-    this.name = obj.name
-    this.options = obj.options
+    const { node, name, type, options } = obj
+    super({ y: 0, name, type, options }, node)
 
     this.id = generateUUID()
-    this.node = obj.node
   }
 
-  get value(): V {
+  override get value(): V {
     return this.options.getValue?.() ?? ('' as V)
   }
 
-  set value(v: V) {
+  override set value(v: V) {
     this.options.setValue?.(v)
     this.callback?.(this.value)
   }
@@ -134,7 +130,7 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
     return !['hidden'].includes(this.type) && this.node.isWidgetVisible(this)
   }
 
-  draw(
+  override draw(
     ctx: CanvasRenderingContext2D,
     _node: LGraphNode,
     widget_width: number,
@@ -159,7 +155,7 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
     this.options.onDraw?.(this)
   }
 
-  onRemove(): void {
+  override onRemove(): void {
     useDomWidgetStore().unregisterWidget(this.id)
   }
 }
@@ -168,7 +164,7 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
   extends BaseDOMWidgetImpl<V>
   implements DOMWidget<T, V>
 {
-  readonly element: T
+  override readonly element: T
 
   constructor(obj: {
     node: LGraphNode
@@ -182,8 +178,7 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
   }
 
   /** Extract DOM widget size info */
-  computeLayoutSize(node: LGraphNode) {
-    // @ts-expect-error custom widget type
+  override computeLayoutSize(node: LGraphNode) {
     if (this.type === 'hidden') {
       return {
         minHeight: 0,
@@ -225,18 +220,23 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
   }
 }
 
-export class ComponentWidgetImpl<V extends object | string>
+export class ComponentWidgetImpl<
+    V extends object | string,
+    P = Record<string, unknown>
+  >
   extends BaseDOMWidgetImpl<V>
-  implements ComponentWidget<V>
+  implements ComponentWidget<V, P>
 {
   readonly component: Component
   readonly inputSpec: InputSpec
+  readonly props?: P
 
   constructor(obj: {
     node: LGraphNode
     name: string
     component: Component
     inputSpec: InputSpec
+    props?: P
     options: DOMWidgetOptions<V>
   }) {
     super({
@@ -245,9 +245,10 @@ export class ComponentWidgetImpl<V extends object | string>
     })
     this.component = obj.component
     this.inputSpec = obj.inputSpec
+    this.props = obj.props
   }
 
-  computeLayoutSize() {
+  override computeLayoutSize() {
     const minHeight = this.options.getMinHeight?.() ?? 50
     const maxHeight = this.options.getMaxHeight?.()
     return {
@@ -257,7 +258,7 @@ export class ComponentWidgetImpl<V extends object | string>
     }
   }
 
-  serializeValue(): V {
+  override serializeValue(): V {
     return toRaw(this.value)
   }
 }

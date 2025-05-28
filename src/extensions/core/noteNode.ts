@@ -10,14 +10,14 @@ app.registerExtension({
   name: 'Comfy.NoteNode',
   registerCustomNodes() {
     class NoteNode extends LGraphNode {
-      static category: string
+      static override category: string
       static collapsable: boolean
       static title_mode: number
 
-      color = LGraphCanvas.node_colors.yellow.color
-      bgcolor = LGraphCanvas.node_colors.yellow.bgcolor
+      override color = LGraphCanvas.node_colors.yellow.color
+      override bgcolor = LGraphCanvas.node_colors.yellow.bgcolor
       groupcolor = LGraphCanvas.node_colors.yellow.groupcolor
-      isVirtualNode: boolean
+      override isVirtualNode: boolean
 
       constructor(title: string) {
         super(title)
@@ -51,10 +51,10 @@ app.registerExtension({
 
     /** Markdown variant of NoteNode */
     class MarkdownNoteNode extends LGraphNode {
-      static title = 'Markdown Note'
+      static override title = 'Markdown Note'
 
-      color = LGraphCanvas.node_colors.yellow.color
-      bgcolor = LGraphCanvas.node_colors.yellow.bgcolor
+      override color = LGraphCanvas.node_colors.yellow.color
+      override bgcolor = LGraphCanvas.node_colors.yellow.bgcolor
       groupcolor = LGraphCanvas.node_colors.yellow.groupcolor
 
       constructor(title: string) {

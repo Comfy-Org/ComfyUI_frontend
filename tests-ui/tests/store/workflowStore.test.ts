@@ -271,7 +271,7 @@ describe('useWorkflowStore', () => {
 
       // Set up initial bookmark
       expect(workflow.path).toBe('workflows/dir/test.json')
-      bookmarkStore.setBookmarked(workflow.path, true)
+      await bookmarkStore.setBookmarked(workflow.path, true)
       expect(bookmarkStore.isBookmarked(workflow.path)).toBe(true)
 
       // Mock super.rename
@@ -351,7 +351,7 @@ describe('useWorkflowStore', () => {
       vi.spyOn(workflow, 'delete').mockResolvedValue()
 
       // Bookmark the workflow
-      bookmarkStore.setBookmarked(workflow.path, true)
+      await bookmarkStore.setBookmarked(workflow.path, true)
       expect(bookmarkStore.isBookmarked(workflow.path)).toBe(true)
 
       // Delete the workflow

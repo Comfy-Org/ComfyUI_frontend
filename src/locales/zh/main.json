@@ -9,6 +9,24 @@
     "title": "使用API节点需要登录"
   },
   "auth": {
+    "apiKey": {
+      "cleared": "API 密钥已清除",
+      "clearedDetail": "您的 API 密钥已成功清除",
+      "description": "使用您的 Comfy API 密钥以启用 API 节点",
+      "error": "无效的 API 密钥",
+      "generateKey": "在这里获取",
+      "helpText": "需要 API 密钥？",
+      "invalid": "无效的 API 密钥",
+      "invalidDetail": "请输入有效的 API 密钥",
+      "label": "API 密钥",
+      "placeholder": "请输入您的 API 密钥",
+      "storageFailed": "API 密钥存储失败",
+      "storageFailedDetail": "请重试。",
+      "stored": "API 密钥已存储",
+      "storedDetail": "您的 API 密钥已成功存储",
+      "title": "API 密钥",
+      "whitelistInfo": "关于非白名单网站"
+    },
     "login": {
       "andText": "和",
       "confirmPasswordLabel": "确认密码",
@@ -23,6 +41,7 @@
       "loginWithGithub": "使用Github登录",
       "loginWithGoogle": "使用Google登录",
       "newUser": "新来的？",
+      "noAssociatedUser": "所提供的 API 密钥未关联任何 Comfy 用户",
       "orContinueWith": "或者继续使用",
       "passwordLabel": "密码",
       "passwordPlaceholder": "输入您的密码",
@@ -35,7 +54,9 @@
       "success": "登录成功",
       "termsLink": "使用条款",
       "termsText": "点击“下一步”或“注册”即表示您同意我们的",
-      "title": "登录您的账户"
+      "title": "登录您的账户",
+      "useApiKey": "Comfy API 密钥",
+      "userAvatar": "用户头像"
     },
     "passwordUpdate": {
       "success": "密码已更新",
@@ -60,6 +81,13 @@
       "signUpWithGoogle": "使用Google注册",
       "title": "创建一个账户"
     }
+  },
+  "chatHistory": {
+    "cancelEdit": "取消",
+    "cancelEditTooltip": "取消编辑",
+    "copiedTooltip": "已复制",
+    "copyTooltip": "复制消息到剪贴板",
+    "editTooltip": "编辑消息"
   },
   "clipboard": {
     "errorMessage": "复制到剪贴板失败",
@@ -110,6 +138,7 @@
     "Unpin": "取消固定"
   },
   "credits": {
+    "apiPricing": "API 价格",
     "credits": "积分",
     "faqs": "常见问题",
     "invoiceHistory": "发票历史",
@@ -128,8 +157,10 @@
     "yourCreditBalance": "您的积分余额"
   },
   "dataTypes": {
+    "*": "*",
     "AUDIO": "音频",
     "BOOLEAN": "布尔",
+    "CAMERA_CONTROL": "相机控制",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP视觉",
     "CLIP_VISION_OUTPUT": "CLIP视觉输出",
@@ -146,20 +177,29 @@
     "INT": "整数",
     "LATENT": "Latent",
     "LATENT_OPERATION": "Latent操作",
+    "LOAD3D_CAMERA": "加载3D相机",
     "LOAD_3D": "加载3D",
     "LOAD_3D_ANIMATION": "加载3D动画",
+    "LUMA_CONCEPTS": "Luma 概念",
+    "LUMA_REF": "Luma 参考",
     "MASK": "遮罩",
     "MESH": "网格",
     "MODEL": "模型",
     "NOISE": "噪波",
     "PHOTOMAKER": "PhotoMaker",
+    "PIXVERSE_TEMPLATE": "Pixverse 模板",
+    "RECRAFT_COLOR": "Recraft 颜色",
+    "RECRAFT_CONTROLS": "Recraft 控件",
+    "RECRAFT_V3_STYLE": "Recraft V3 风格",
     "SAMPLER": "采样器",
     "SIGMAS": "Sigmas",
     "STRING": "字符串",
     "STYLE_MODEL": "风格模型",
+    "SVG": "SVG",
     "TIMESTEPS_RANGE": "时间间隔范围",
     "UPSCALE_MODEL": "放大模型",
     "VAE": "VAE",
+    "VIDEO": "视频",
     "VOXEL": "体素",
     "WEBCAM": "摄像头"
   },
@@ -208,11 +248,13 @@
     "all": "全部",
     "amount": "数量",
     "apply": "应用",
+    "audioFailedToLoad": "音频加载失败",
     "back": "返回",
     "cancel": "取消",
     "capture": "捕获",
     "category": "类别",
     "choose_file_to_upload": "选择要上传的文件",
+    "clear": "清除",
     "close": "关闭",
     "color": "颜色",
     "comingSoon": "即将推出",
@@ -224,8 +266,11 @@
     "continue": "继续",
     "control_after_generate": "生成后控制",
     "control_before_generate": "生成前控制",
+    "copy": "复制",
     "copyToClipboard": "复制到剪贴板",
+    "copyURL": "复制链接",
     "currentUser": "当前用户",
+    "customBackground": "自定义背景",
     "customize": "自定义",
     "customizeFolder": "自定义文件夹",
     "delete": "删除",
@@ -235,6 +280,7 @@
     "disableAll": "禁用全部",
     "disabling": "禁用中",
     "download": "下载",
+    "edit": "编辑",
     "empty": "空",
     "enableAll": "启用全部",
     "enabled": "已启用",
@@ -250,6 +296,7 @@
     "goToNode": "转到节点",
     "icon": "图标",
     "imageFailedToLoad": "图像加载失败",
+    "imageUrl": "图片网址",
     "import": "导入",
     "inProgress": "进行中",
     "insert": "插入",
@@ -300,6 +347,7 @@
     "searchNodes": "搜索节点",
     "searchSettings": "搜索设置",
     "searchWorkflows": "搜索工作流",
+    "setAsBackground": "设为背景",
     "settings": "设置",
     "showReport": "显示报告",
     "sort": "排序",
@@ -456,6 +504,8 @@
     "submitErrorReport": "提交错误报告（可选）",
     "systemStats": "系统状态",
     "validation": {
+      "descriptionRequired": "描述为必填项",
+      "helpTypeRequired": "帮助类型为必选项",
       "invalidEmail": "请输入有效的电子邮件地址",
       "maxLength": "消息过长",
       "selectIssueType": "请选择一个问题类型"
@@ -467,17 +517,21 @@
     "applyingTexture": "应用纹理中...",
     "backgroundColor": "背景颜色",
     "camera": "摄影机",
+    "clearRecording": "清除录制",
     "edgeThreshold": "边缘阈值",
     "export": "导出",
     "exportModel": "导出模型",
+    "exportRecording": "导出录制",
     "exportingModel": "正在导出模型...",
     "fov": "视场",
     "light": "灯光",
     "lightIntensity": "光照强度",
+    "loadingBackgroundImage": "正在加载背景图像",
     "loadingModel": "正在加载3D模型...",
     "materialMode": "材质模式",
     "materialModes": {
       "depth": "深度",
+      "lineart": "线稿",
       "normal": "法线",
       "original": "原始",
       "wireframe": "线框"
@@ -485,8 +539,11 @@
     "model": "模型",
     "previewOutput": "预览输出",
     "removeBackgroundImage": "移除背景图片",
+    "resizeNodeMatchOutput": "调整节点以匹配输出",
     "scene": "场景",
     "showGrid": "显示网格",
+    "startRecording": "开始录制",
+    "stopRecording": "停止录制",
     "switchCamera": "切换摄影机类型",
     "switchingMaterialMode": "切换材质模式中...",
     "upDirection": "上方向",
@@ -659,6 +716,7 @@
     "Open DevTools": "打开开发者工具",
     "Open Inputs Folder": "打开输入文件夹",
     "Open Logs Folder": "打开日志文件夹",
+    "Open Mask Editor for Selected Node": "为选中节点打开 Mask 编辑器",
     "Open Models Folder": "打开模型文件夹",
     "Open Outputs Folder": "打开输出文件夹",
     "Open Sign In Dialog": "打开登录对话框",
@@ -668,6 +726,7 @@
     "Previous Opened Workflow": "上一个打开的工作流",
     "Queue Prompt": "执行提示词",
     "Queue Prompt (Front)": "执行提示词 (优先执行)",
+    "Queue Selected Output Nodes": "将所选输出节点加入队列",
     "Quit": "退出",
     "Redo": "重做",
     "Refresh Node Definitions": "刷新节点定义",
@@ -704,10 +763,22 @@
   "nodeCategories": {
     "3d": "3d",
     "3d_models": "3D模型",
+    "BFL": "BFL",
+    "Ideogram": "Ideogram",
+    "Kling": "Kling",
+    "Luma": "Luma",
+    "MiniMax": "MiniMax",
+    "OpenAI": "OpenAI",
+    "Pika": "Pika",
+    "PixVerse": "PixVerse",
+    "Recraft": "Recraft",
+    "Stability AI": "Stability AI",
+    "Veo": "Veo",
     "_for_testing": "_用于测试",
     "advanced": "高级",
     "animation": "动画",
     "api": "API",
+    "api node": "api 节点",
     "attention_experiments": "注意力实验",
     "audio": "音频",
     "batch": "批处理",
@@ -732,6 +803,7 @@
     "instructpix2pix": "InstructPix2Pix",
     "latent": "Latent",
     "loaders": "加载器",
+    "lotus": "lotus",
     "ltxv": "LTXV",
     "mask": "遮罩",
     "model": "模型",
@@ -743,10 +815,12 @@
     "photomaker": "PhotoMaker",
     "postprocessing": "后处理",
     "preprocessors": "预处理器",
+    "primitive": "基础",
     "samplers": "采样器",
     "sampling": "采样",
     "schedulers": "调度器",
     "scheduling": "调度",
+    "sd": "sd",
     "sd3": "SD3",
     "sigmas": "Sigmas",
     "stable_cascade": "StableCascade",
@@ -755,6 +829,10 @@
     "unet": "U-Net",
     "upscale_diffusion": "放大扩散",
     "upscaling": "放大",
+    "utils": "工具",
+    "v1": "v1",
+    "v2": "v2",
+    "v3": "v3",
     "video": "视频",
     "video_models": "视频模型"
   },
@@ -773,6 +851,12 @@
       "windows": "Windows (支持 CUDA 的 Nvidia GPU)"
     },
     "title": "您的设备不受支持"
+  },
+  "selectionToolbox": {
+    "executeButton": {
+      "disabledTooltip": "未选择输出节点",
+      "tooltip": "执行到选定的输出节点（用橙色边框高亮显示）"
+    }
   },
   "serverConfig": {
     "modifiedConfigs": "您已修改以下服务器配置。重启以应用更改。",
@@ -923,6 +1007,7 @@
   },
   "settingsCategories": {
     "3D": "3D",
+    "API Nodes": "API 节点",
     "About": "关于",
     "Appearance": "外观",
     "BrushAdjustment": "画笔调整",
@@ -1036,8 +1121,10 @@
       "Custom Nodes": "自定义节点",
       "Flux": "Flux",
       "Image": "图片",
+      "Image API": "图像 API",
       "Upscaling": "放大",
-      "Video": "视频"
+      "Video": "视频",
+      "Video API": "视频 API"
     },
     "template": {
       "3D": {
@@ -1094,6 +1181,23 @@
         "sdxl_simple_example": "SDXL简单",
         "sdxlturbo_example": "SDXL Turbo"
       },
+      "Image API": {
+        "api-openai-dall-e-2-inpaint": "Dall-E 2 局部修复",
+        "api-openai-dall-e-2-t2i": "Dall-E 2 文生图",
+        "api-openai-dall-e-3-t2i": "Dall-E 3 文生图",
+        "api_bfl_flux_pro_t2i": "BFL Flux 1.1[pro] Ultra 文生图",
+        "api_ideogram_v3_t2i": "Ideogram V3 文生图",
+        "api_luma_photon_i2i": "Luma Photon 图生图",
+        "api_luma_photon_style_ref": "Luma Photon 风格参考",
+        "api_openai_image_1_i2i": "OpenAI Image-1 图生图",
+        "api_openai_image_1_inpaint": "OpenAI Image-1 局部修复",
+        "api_openai_image_1_multi_inputs": "OpenAI Image-1 多输入",
+        "api_openai_image_1_t2i": "OpenAI Image-1 文生图",
+        "api_recraft_image_gen_with_color_control": "Recraft 颜色控制图像生成",
+        "api_recraft_image_gen_with_style_control": "Recraft 风格控制图像生成",
+        "api_recraft_vector_gen": "Recraft 矢量生成",
+        "api_stability_sd3_t2i": "Stability AI Stable Image Ultra 文生图"
+      },
       "Upscaling": {
         "esrgan_example": "ESRGAN",
         "hiresfix_esrgan_workflow": "HiresFix ESRGAN工作流",
@@ -1111,6 +1215,117 @@
         "txt_to_image_to_video": "文本到图像到视频",
         "wan2_1_fun_control": "Wan 2.1 ControlNet",
         "wan2_1_fun_inp": "Wan 2.1 图像修复"
+      },
+      "Video API": {
+        "api_hailuo_minimax_i2v": "MiniMax 图生视频",
+        "api_kling_i2v": "Kling 图生视频",
+        "api_luma_i2v": "Luma 图生视频",
+        "api_pika_scene": "Pika 场景：图生视频",
+        "api_pixverse_t2v": "PixVerse 文生视频",
+        "api_pixverse_template_i2v": "PixVerse特效：图生视频",
+        "api_veo2_i2v": "Veo2 图生视频"
+      }
+    },
+    "templateDescription": {
+      "3D": {
+        "hunyuan-3d-multiview-elf": "使用 Hunyuan3D 2mv 从多视角生成模型。",
+        "hunyuan-3d-turbo": "使用 Hunyuan3D 2mv turbo 从多视角生成模型。",
+        "hunyuan3d-non-multiview-train": "使用 Hunyuan3D 2.0 从单视角生成模型。",
+        "stable_zero123_example": "通过单张图像生成 3D 视图。"
+      },
+      "Area Composition": {
+        "area_composition": "通过区域控制图像构图。",
+        "area_composition_reversed": "反向区域构图流程。",
+        "area_composition_square_area_for_subject": "实现主体位置一致性。"
+      },
+      "Audio": {
+        "stable_audio_example": "根据文本描述生成音频。"
+      },
+      "Basics": {
+        "default": "根据文本描述生成图像。",
+        "embedding_example": "使用文本反演实现风格一致性。",
+        "gligen_textbox_example": "指定物体的位置和大小。",
+        "image2image": "使用文本提示转换现有图像。",
+        "inpain_model_outpainting": "将图像扩展到原始边界之外。",
+        "inpaint_example": "无缝编辑图像的特定部分。",
+        "lora": "应用 LoRA 模型以实现特定风格或主题。",
+        "lora_multiple": "组合多个 LoRA 模型以获得独特效果。"
+      },
+      "ControlNet": {
+        "2_pass_pose_worship": "通过姿态参考生成图像。",
+        "controlnet_example": "通过参考图像控制图像生成。",
+        "depth_controlnet": "生成深度感知图像。",
+        "depth_t2i_adapter": "使用 T2I 适配器快速生成深度感知图像。",
+        "mixing_controlnets": "组合多个 ControlNet 模型。"
+      },
+      "Flux": {
+        "flux_canny_model_example": "通过边缘检测生成图像。",
+        "flux_depth_lora_example": "使用深度感知 LoRA 生成图像。",
+        "flux_dev_checkpoint_example": "使用 flux 开发模型生成图像。",
+        "flux_fill_inpaint_example": "填充图像中缺失的部分。",
+        "flux_fill_outpaint_example": "使用 flux 外扩生成图像。",
+        "flux_redux_model_example": "将参考图像的风格迁移到引导图像生成（flux）。",
+        "flux_schnell": "使用 flux schnell 快速生成图像。"
+      },
+      "Image": {
+        "hidream_e1_full": "使用 HiDream E1 编辑图像。",
+        "hidream_i1_dev": "使用 HiDream I1 Dev 生成图像。",
+        "hidream_i1_fast": "使用 HiDream I1 快速生成图像。",
+        "hidream_i1_full": "使用 HiDream I1 生成图像。",
+        "sd3_5_large_blur": "使用 SD 3.5 通过模糊参考图像生成图像。",
+        "sd3_5_large_canny_controlnet_example": "使用边缘检测引导 SD 3.5 图像生成。",
+        "sd3_5_large_depth": "使用 SD 3.5 生成深度感知图像。",
+        "sd3_5_simple_example": "使用 SD 3.5 生成图像。",
+        "sdxl_refiner_prompt_example": "使用精炼器提升 SDXL 输出效果。",
+        "sdxl_revision_text_prompts": "将参考图像的概念迁移到 SDXL 图像生成中。",
+        "sdxl_revision_zero_positive": "在 SDXL 图像生成中结合文本提示和参考图像。",
+        "sdxl_simple_example": "使用 SDXL 生成高质量图像。",
+        "sdxlturbo_example": "使用 SDXL Turbo 一步生成图像。"
+      },
+      "Image API": {
+        "api-openai-dall-e-2-inpaint": "使用 Dall-E 2 API 对图像进行修复。",
+        "api-openai-dall-e-2-t2i": "使用 Dall-E 2 API 根据文本描述生成图像。",
+        "api-openai-dall-e-3-t2i": "使用 Dall-E 3 API 根据文本描述生成图像。",
+        "api_bfl_flux_pro_t2i": "使用 FLUX.1 [pro] 生成高质量、细节丰富、提示遵循性强且多样化的图像。",
+        "api_ideogram_v3_t2i": "生成高质量图像与提示对齐、照片级真实感和文本渲染。可用于专业级 logo、宣传海报、落地页概念、产品摄影等。轻松打造复杂空间构图、精细背景、精准光影与色彩、逼真环境细节。",
+        "api_luma_photon_i2i": "结合图像和提示词引导图像生成。",
+        "api_luma_photon_style_ref": "精确控制并融合风格参考。Luma Photon 捕捉每个参考图像的精髓，让你在保持专业品质的同时融合不同视觉元素。",
+        "api_openai_image_1_i2i": "使用 GPT Image 1 API 通过图像生成图像。",
+        "api_openai_image_1_inpaint": "使用 GPT Image 1 API 对图像进行修复。",
+        "api_openai_image_1_multi_inputs": "使用 GPT Image 1 API 多输入生成图像。",
+        "api_openai_image_1_t2i": "使用 GPT Image 1 API 根据文本描述生成图像。",
+        "api_recraft_image_gen_with_color_control": "创建自定义调色板以复用或为每张照片手动选色。匹配品牌色彩，打造专属视觉风格。",
+        "api_recraft_image_gen_with_style_control": "通过视觉示例控制风格、对齐位置、微调物体。存储并分享风格，实现品牌一致性。",
+        "api_recraft_vector_gen": "通过文本提示生成矢量图像，使用 Recraft 的 AI 矢量生成器。可用于 logo、海报、图标集、广告、横幅和模型。生成高质量 SVG 文件，几秒内为你的应用或网站创建品牌矢量插画。",
+        "api_stability_sd3_t2i": "生成高质量、提示遵循性极佳的图像。适用于专业场景，分辨率达 1 兆像素。"
+      },
+      "Upscaling": {
+        "esrgan_example": "使用超分模型提升图像质量。",
+        "hiresfix_esrgan_workflow": "在中间步骤使用超分模型提升图像质量。",
+        "hiresfix_latent_workflow": "在 latent 空间中提升图像质量。",
+        "latent_upscale_different_prompt_model": "放大图像并在不同阶段更换提示词。"
+      },
+      "Video": {
+        "hunyuan_video_text_to_video": "使用 Hunyuan 模型生成视频。",
+        "image_to_video": "将图像转换为动画视频。",
+        "image_to_video_wan": "快速将图像生成视频。",
+        "ltxv_image_to_video": "将静态图像转换为视频。",
+        "ltxv_text_to_video": "根据文本描述生成视频。",
+        "mochi_text_to_video_example": "使用 Mochi 模型生成视频。",
+        "text_to_video_wan": "快速将文本描述生成视频。",
+        "txt_to_image_to_video": "先由文本生成图像，再转换为视频。",
+        "wan2_1_flf2v_720_f16": "通过控制首帧和尾帧生成视频。",
+        "wan2_1_fun_control": "通过姿态、深度、边缘等控制引导视频生成。",
+        "wan2_1_fun_inp": "通过起始帧和结束帧生成视频。"
+      },
+      "Video API": {
+        "api_hailuo_minimax_i2v": "通过图像和文本生成精致视频，支持 CGI 效果和流行 AI 拥抱等特效。多种视频风格和主题，满足你的创意需求。",
+        "api_kling_i2v": "生成动作、表情、镜头运动等提示遵循性强的视频。支持复杂提示和顺序动作，让你成为场景导演。",
+        "api_luma_i2v": "将静态图像瞬间转化为高质量动画。",
+        "api_pika_scene": "将多张图像作为素材，生成融合所有内容的视频。",
+        "api_pixverse_t2v": "根据提示生成高还原度、动态效果出色的视频。",
+        "api_pixverse_template_i2v": "将静态图像转化为带有动态和特效的视频。",
+        "api_veo2_i2v": "使用 Google Veo2 API 通过图像生成视频。"
       }
     },
     "title": "从模板开始"
@@ -1139,12 +1354,16 @@
     "no3dSceneToExport": "没有3D场景可以导出",
     "noTemplatesToExport": "没有模板可以导出",
     "nodeDefinitionsUpdated": "节点定义已更新",
+    "nothingSelected": "未选择任何内容",
     "nothingToGroup": "没有可分组的内容",
+    "nothingToQueue": "没有可加入队列的内容",
     "pendingTasksDeleted": "待处理任务已删除",
     "pleaseSelectNodesToGroup": "请选取节点（或其他组）以创建分组",
+    "pleaseSelectOutputNodes": "请选择输出节点",
     "unableToGetModelFilePath": "无法获取模型文件路径",
     "unauthorizedDomain": "您的域名 {domain} 未被授权使用此服务。请联系 {email} 将您的域名添加到白名单。",
     "updateRequested": "已请求更新",
+    "useApiKeyTip": "提示：无法正常登录？请使用 Comfy API Key 选项。",
     "userNotAuthenticated": "用户未认证"
   },
   "userSelect": {
@@ -1164,6 +1383,7 @@
   },
   "validation": {
     "invalidEmail": "无效的电子邮件地址",
+    "length": "必须为{length}个字符",
     "maxLength": "不能超过{length}个字符",
     "minLength": "必须至少有{length}个字符",
     "password": {
@@ -1176,6 +1396,7 @@
       "uppercase": "必须包含至少一个大写字母"
     },
     "personalDataConsentRequired": "您必须同意处理您的个人数据。",
+    "prefix": "必须以 {prefix} 开头",
     "required": "必填"
   },
   "welcome": {

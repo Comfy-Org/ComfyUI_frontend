@@ -122,4 +122,16 @@ export const useLitegraphSettings = () => {
       'LiteGraph.Reroute.SplineOffset'
     )
   })
+
+  watchEffect(() => {
+    LiteGraph.macTrackpadGestures = settingStore.get(
+      'LiteGraph.Pointer.TrackpadGestures'
+    )
+  })
+
+  watchEffect(() => {
+    LiteGraph.saveViewportWithGraph = settingStore.get(
+      'Comfy.EnableWorkflowViewRestore'
+    )
+  })
 }
