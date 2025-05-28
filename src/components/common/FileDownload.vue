@@ -30,6 +30,15 @@
         @click="download.triggerBrowserDownload"
       />
     </div>
+    <div>
+      <Button
+        :label="$t('g.copyURL')"
+        size="small"
+        outlined
+        :disabled="!!props.error"
+        @click="copyURL"
+      />
+    </div>
   </div>
 </template>
 
@@ -38,6 +47,7 @@ import Button from 'primevue/button'
 import Message from 'primevue/message'
 import { computed } from 'vue'
 
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useDownload } from '@/composables/useDownload'
 import { formatSize } from '@/utils/formatUtil'
 
@@ -49,9 +59,15 @@ const props = defineProps<{
 }>()
 
 const label = computed(() => props.label || props.url.split('/').pop())
+
 const hint = computed(() => props.hint || props.url)
 const download = useDownload(props.url)
 const fileSize = computed(() =>
   download.fileSize.value ? formatSize(download.fileSize.value) : '?'
 )
+const copyURL = async () => {
+  await copyToClipboard(props.url)
+}
+
+const { copyToClipboard } = useCopyToClipboard()
 </script>
