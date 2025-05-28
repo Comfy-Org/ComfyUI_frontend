@@ -6,16 +6,19 @@
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
   >
-    <div class="w-16 flex flex-col items-center py-4 space-y-4 flex-none">
-      <button
+    <div class="w-16 flex-col py-4 space-y-4">
+      <Button
         v-for="item in menuItems"
         :key="item.id"
-        class="w-12 h-12 rounded-lg flex items-center justify-center transition-colors"
+        class="w-12 h-12 rounded-lg items-center justify-center"
         :class="activePanel === item.id ? 'text-white' : 'text-gray-300'"
         @click="activePanel = item.id"
       >
-        <i :class="[item.icon, 'text-lg']" />
-      </button>
+        <i
+          v-tooltip.right="{ value: t(item.title), showDelay: 300 }"
+          :class="[item.icon, 'text-lg']"
+        />
+      </Button>
     </div>
 
     <div ref="mainContentRef" class="flex-1 relative">
@@ -26,25 +29,27 @@
       />
     </div>
 
-    <div class="w-64 bp-4 flex-none flex flex-col">
-      <div class="text-white mb-4 font-medium">
-        {{ activePanelTitle || 'Settings Panel' }}
+    <div class="w-64 p-4 flex flex-col">
+      <div class="mb-4">
+        {{ activePanelTitle }}
       </div>
 
-      <div class="text-gray-300 flex-1">
-        <div v-show="activePanel === 'scene'" class="settings-panel">
-          <div class="setting-item">
-            <label>{{ t('load3d.backgroundColor') }}</label>
+      <div class="flex-1 space-y-4">
+        <div v-show="activePanel === 'scene'" class="space-y-4">
+          <div class="space-y-4">
+            <label>
+              {{ t('load3d.backgroundColor') }}
+            </label>
             <input
               ref="colorPickerRef"
               type="color"
               :value="backgroundColor"
+              class="w-full"
               @input="
                 updateBackgroundColor(($event.target as HTMLInputElement).value)
               "
             />
-          </div>
-          <div class="setting-item">
+
             <Checkbox
               v-model="showGrid"
               input-id="showGrid"
@@ -52,26 +57,32 @@
               name="showGrid"
               @change="toggleGrid"
             />
-            <label for="showGrid">{{ t('load3d.showGrid') }}</label>
+
+            <label for="showGrid" class="pl-2">
+              {{ t('load3d.showGrid') }}
+            </label>
           </div>
         </div>
-        <div v-show="activePanel === 'camera'" class="settings-panel">
-          <div class="setting-item">
-            <label>{{ t('load3d.editor.cameraType') }}</label>
-            <select v-model="cameraType" @change="toggleCamera">
-              <option value="perspective">
-                {{ t('load3d.cameraType.perspective') }}
-              </option>
-              <option value="orthographic">
-                {{ t('load3d.cameraType.orthographic') }}
-              </option>
-            </select>
+
+        <div v-show="activePanel === 'camera'" class="space-y-4">
+          <div class="space-y-4">
+            <label>
+              {{ t('load3d.editor.cameraType') }}
+            </label>
+            <Select
+              v-model="cameraType"
+              :options="cameras"
+              option-label="title"
+              option-value="value"
+              @change="toggleCamera"
+            >
+            </Select>
           </div>
-          <div v-if="showFOVButton" class="setting-item">
+
+          <div v-if="showFOVButton" class="space-y-4">
             <label>{{ t('load3d.fov') }}</label>
             <Slider
               v-model="fov"
-              class="w-full"
               :min="10"
               :max="150"
               :step="1"
@@ -80,18 +91,17 @@
             />
           </div>
         </div>
-        <div v-show="activePanel === 'light'" class="settings-panel">
-          <div class="setting-item">
-            <label>{{ t('load3d.lightIntensity') }}</label>
-            <Slider
-              v-model="lightIntensity"
-              class="w-full"
-              :min="1"
-              :max="20"
-              :step="1"
-              @change="updateLightIntensity"
-            />
-          </div>
+
+        <div v-show="activePanel === 'light'" class="space-y-4">
+          <label>{{ t('load3d.lightIntensity') }}</label>
+
+          <Slider
+            v-model="lightIntensity"
+            :min="1"
+            :max="20"
+            :step="1"
+            @change="updateLightIntensity"
+          />
         </div>
       </div>
 
@@ -115,8 +125,10 @@
 
 <script setup lang="ts">
 import { LGraphNode } from '@comfyorg/litegraph'
+import { Tooltip } from 'primevue'
 import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
+import Select from 'primevue/select'
 import Slider from 'primevue/slider'
 import * as THREE from 'three'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
@@ -126,20 +138,27 @@ import { t } from '@/i18n'
 import { useLoad3dService } from '@/services/load3dService'
 import { useDialogStore } from '@/stores/dialogStore'
 
+const vTooltip = Tooltip
+
 const props = defineProps<{
   node: LGraphNode
 }>()
 
+const cameras = [
+  { title: t('load3d.cameraType.perspective'), value: 'perspective' },
+  { title: t('load3d.cameraType.orthographic'), value: 'orthographic' }
+]
+
 const activePanel = ref('scene')
 
 const menuItems = [
-  { id: 'scene', icon: 'pi pi-image', title: t('load3d.editor.sceneSetting') },
+  { id: 'scene', icon: 'pi pi-image', title: t('load3d.editor.sceneSettings') },
   {
     id: 'camera',
     icon: 'pi pi-camera',
-    title: t('load3d.editor.cameraSetting')
+    title: t('load3d.editor.cameraSettings')
   },
-  { id: 'light', icon: 'pi pi-sun', title: t('load3d.editor.lightSetting') }
+  { id: 'light', icon: 'pi pi-sun', title: t('load3d.editor.lightSettings') }
 ]
 
 const showFOVButton = ref(false)
@@ -388,29 +407,3 @@ onBeforeUnmount(() => {
   sourceLoad3d = null
 })
 </script>
-
-<style>
-.settings-panel {
-  padding: 1rem;
-}
-
-.setting-item {
-  margin-bottom: 1rem;
-}
-
-.setting-item label {
-  display: block;
-  margin-bottom: 0.5rem;
-  color: var(--input-text);
-}
-
-.setting-item input[type='range'],
-.setting-item input[type='color'],
-.setting-item select {
-  width: 100%;
-  padding: 0.5rem;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  color: var(--input-text);
-}
-</style>

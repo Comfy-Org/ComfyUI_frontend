@@ -1310,9 +1310,9 @@
       "apply": "Apply",
       "cancel": "Cancel",
       "cameraType": "Camera Type",
-      "sceneSetting": "Scene Setting",
-      "cameraSetting": "Camera Setting",
-      "lightSetting": "Light Setting"
+      "sceneSettings": "Scene Settings",
+      "cameraSettings": "Camera Settings",
+      "lightSettings": "Light Settings"
     }
   },
   "toastMessages": {
