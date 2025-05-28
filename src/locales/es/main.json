@@ -558,11 +558,11 @@
     "edgeThreshold": "Umbral de borde",
     "editor": {
       "apply": "Aplicar",
-      "cameraSetting": "Configuración de cámara",
+      "cameraSettings": "Configuración de la cámara",
       "cameraType": "Tipo de cámara",
       "cancel": "Cancelar",
-      "lightSetting": "Configuración de luz",
-      "sceneSetting": "Configuración de escena",
+      "lightSettings": "Configuración de la iluminación",
+      "sceneSettings": "Configuración de la escena",
       "title": "Editor 3D (Beta)"
     },
     "export": "Exportar",

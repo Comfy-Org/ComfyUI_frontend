@@ -558,11 +558,11 @@
     "edgeThreshold": "엣지 임계값",
     "editor": {
       "apply": "적용",
-      "cameraSetting": "카메라 설정",
+      "cameraSettings": "카메라 설정",
       "cameraType": "카메라 유형",
       "cancel": "취소",
-      "lightSetting": "조명 설정",
-      "sceneSetting": "씬 설정",
+      "lightSettings": "조명 설정",
+      "sceneSettings": "씬 설정",
       "title": "3D 에디터 (베타)"
     },
     "export": "내보내기",

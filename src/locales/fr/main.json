@@ -558,11 +558,11 @@
     "edgeThreshold": "Seuil de Bordure",
     "editor": {
       "apply": "Appliquer",
-      "cameraSetting": "Paramètre de la caméra",
+      "cameraSettings": "Paramètres de la caméra",
       "cameraType": "Type de caméra",
       "cancel": "Annuler",
-      "lightSetting": "Paramètre de l’éclairage",
-      "sceneSetting": "Paramètre de la scène",
+      "lightSettings": "Paramètres de l’éclairage",
+      "sceneSettings": "Paramètres de la scène",
       "title": "Éditeur 3D (Bêta)"
     },
     "export": "Exportation",

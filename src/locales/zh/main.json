@@ -558,11 +558,11 @@
     "edgeThreshold": "边缘阈值",
     "editor": {
       "apply": "应用",
-      "cameraSetting": "相机设置",
+      "cameraSettings": "相机设置",
       "cameraType": "相机类型",
       "cancel": "取消",
-      "lightSetting": "灯光设置",
-      "sceneSetting": "场景设置",
+      "lightSettings": "灯光设置",
+      "sceneSettings": "场景设置",
       "title": "3D编辑器（测试版）"
     },
     "export": "导出",

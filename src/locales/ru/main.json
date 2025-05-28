@@ -558,11 +558,11 @@
     "edgeThreshold": "Пороговое значение края",
     "editor": {
       "apply": "Применить",
-      "cameraSetting": "Настройки камеры",
+      "cameraSettings": "Настройки камеры",
       "cameraType": "Тип камеры",
       "cancel": "Отмена",
-      "lightSetting": "Настройки освещения",
-      "sceneSetting": "Настройки сцены",
+      "lightSettings": "Настройки освещения",
+      "sceneSettings": "Настройки сцены",
       "title": "3D редактор (Бета)"
     },
     "export": "Экспорт",

@@ -558,11 +558,11 @@
     "edgeThreshold": "エッジ閾値",
     "editor": {
       "apply": "適用",
-      "cameraSetting": "カメラ設定",
+      "cameraSettings": "カメラ設定",
       "cameraType": "カメラタイプ",
       "cancel": "キャンセル",
-      "lightSetting": "ライト設定",
-      "sceneSetting": "シーン設定",
+      "lightSettings": "ライト設定",
+      "sceneSettings": "シーン設定",
       "title": "3Dエディター（ベータ）"
     },
     "export": "エクスポート",
