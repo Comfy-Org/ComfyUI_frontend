@@ -447,7 +447,7 @@ const fluxKontextGroupNode = {
       },
       widgets_values: [
         'clip_l.safetensors',
-        't5xxl_fp8_scaled.safetensors',
+        't5xxl_fp8_e4m3fn_scaled.safetensors',
         'flux',
         'default'
       ],
@@ -578,7 +578,7 @@ function setWidgetValues(node: LGraphNode) {
   seedInput.value = Math.floor(Math.random() * 1_125_899_906_842_624)
 
   const firstClip = node.widgets?.find((x) => x.name === 'clip_name1')
-  setPreferredValue('t5xxl_fp8_scaled.safetensors', 't5xxl', firstClip)
+  setPreferredValue('t5xxl_fp8_e4m3fn_scaled.safetensors', 't5xxl', firstClip)
 
   const secondClip = node.widgets?.find((x) => x.name === 'clip_name2')
   setPreferredValue('clip_l.safetensors', 'clip_l', secondClip)
