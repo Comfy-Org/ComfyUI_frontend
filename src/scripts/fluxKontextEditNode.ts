@@ -521,8 +521,8 @@ const fluxKontextGroupNode = {
     '5': {},
     '6': {},
     '7': { input: { text: { visible: false } } },
-    '8': {},
-    '9': { input: { type: { visible: false } } },
+    '8': { input: { weight_dtype: { visible: false } } },
+    '9': { input: { type: { visible: false }, device: { visible: false } } },
     '10': {}
   }
 }
