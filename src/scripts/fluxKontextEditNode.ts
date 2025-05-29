@@ -529,12 +529,17 @@ export async function ensureGraphHasFluxKontextGroupNode(
 ) {
   graph.extra ??= {}
   graph.extra.groupNodes ??= {}
-  graph.extra.groupNodes['FLUX.1 Kontext Image Edit'] ??=
+  if (graph.extra.groupNodes['FLUX.1 Kontext Image Edit']) return
+
+  graph.extra.groupNodes['FLUX.1 Kontext Image Edit'] =
     structuredClone(fluxKontextGroupNode)
 
   // Lazy import to avoid circular dependency issues
   const { GroupNodeConfig } = await import('@/extensions/core/groupNode')
-  await GroupNodeConfig.registerFromWorkflow(graph.extra.groupNodes, [])
+  await GroupNodeConfig.registerFromWorkflow(
+    [graph.extra.groupNodes['FLUX.1 Kontext Image Edit']],
+    []
+  )
 }
 
 export async function addFluxKontextGroupNode(fromNode: LGraphNode) {
