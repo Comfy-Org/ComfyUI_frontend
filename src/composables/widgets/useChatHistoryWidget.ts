@@ -32,7 +32,8 @@ export const useChatHistoryWidget = (
         setValue: (value: string | object) => {
           widgetValue.value = typeof value === 'string' ? value : String(value)
         },
-        getMinHeight: () => 400 + PADDING
+        getMinHeight: () => 400 + PADDING,
+        serialize: false
       }
     })
     addWidget(node, widget)
