@@ -6,7 +6,10 @@ import {
   LiteGraph,
   type Point
 } from '@comfyorg/litegraph'
+import type { IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import _ from 'lodash'
+
+import { parseFilePath } from '@/utils/formatUtil'
 
 import { app } from './app'
 
@@ -385,7 +388,7 @@ const fluxKontextGroupNode = {
         cnr_id: 'comfy-core',
         ver: '0.3.38'
       },
-      widgets_values: ['preliminary-dev-kontext.sft', 'default'],
+      widgets_values: ['flux1-kontext-dev.safetensors', 'default'],
       color: '#223',
       bgcolor: '#335',
       index: 8
@@ -444,7 +447,7 @@ const fluxKontextGroupNode = {
       },
       widgets_values: [
         'clip_l.safetensors',
-        't5xxl_fp16.safetensors',
+        't5xxl_fp8_scaled.safetensors',
         'flux',
         'default'
       ],
@@ -561,6 +564,48 @@ export async function addFluxKontextGroupNode(fromNode: LGraphNode) {
   app.canvas.processSelect(node, undefined)
 
   connectPreviousLatent(fromNode, node)
+
+  const symb = Object.getOwnPropertySymbols(node)[0]
+  // @ts-expect-error It's there -- promise.
+  node[symb].populateWidgets()
+
+  setWidgetValues(node)
+}
+
+function setWidgetValues(node: LGraphNode) {
+  const seedInput = node.widgets?.find((x) => x.name === 'seed')
+  if (!seedInput) throw new TypeError('Seed input not found')
+  seedInput.value = Math.floor(Math.random() * 1_125_899_906_842_624)
+
+  const firstClip = node.widgets?.find((x) => x.name === 'clip_name1')
+  setPreferredValue('t5xxl_fp8_scaled.safetensors', 't5xxl', firstClip)
+
+  const secondClip = node.widgets?.find((x) => x.name === 'clip_name2')
+  setPreferredValue('clip_l.safetensors', 'clip_l', secondClip)
+
+  const unet = node.widgets?.find((x) => x.name === 'unet_name')
+  setPreferredValue('flux1-kontext-dev.safetensors', 'kontext', unet)
+
+  const vae = node.widgets?.find((x) => x.name === 'vae_name')
+  setPreferredValue('ae.safetensors', 'ae.s', vae)
+}
+
+function setPreferredValue(
+  preferred: string,
+  match: string,
+  widget: IBaseWidget | undefined
+): void {
+  if (!widget) throw new TypeError('Widget not found')
+
+  const { values } = widget.options
+  if (!Array.isArray(values)) return
+
+  // Match against filename portion only
+  const mapped = values.map((x) => parseFilePath(x).filename)
+  const value =
+    mapped.find((x) => x === preferred) ??
+    mapped.find((x) => x.includes?.(match))
+  widget.value = value ?? preferred
 }
 
 function getPosToRightOfNode(fromNode: LGraphNode) {
