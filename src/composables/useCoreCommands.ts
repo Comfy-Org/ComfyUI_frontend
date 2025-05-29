@@ -722,7 +722,7 @@ export function useCoreCommands(): ComfyCommand[] {
     },
     {
       id: 'Comfy.Canvas.AddEditModelStep',
-      icon: 'pi pi-thumbs-up-fill',
+      icon: 'pi pi-pen-to-square',
       label: 'Add Edit Model Step',
       versionAdded: '1.23.3',
       function: async () => {

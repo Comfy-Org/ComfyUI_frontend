@@ -7,7 +7,7 @@
     }"
     severity="secondary"
     text
-    icon="pi pi-thumbs-up-fill"
+    icon="pi pi-pen-to-square"
     @click="() => commandStore.execute('Comfy.Canvas.AddEditModelStep')"
   />
 </template>
