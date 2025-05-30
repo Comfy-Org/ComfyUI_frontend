@@ -421,7 +421,7 @@
       "groupStrategies": {
         "category": "Category",
         "categoryDesc": "Group by node category",
-        "module": "Module", 
+        "module": "Module",
         "moduleDesc": "Group by module source",
         "source": "Source",
         "sourceDesc": "Group by source type (Core, Custom, API)"
