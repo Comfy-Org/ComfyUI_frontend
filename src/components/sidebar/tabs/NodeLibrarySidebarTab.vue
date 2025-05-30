@@ -26,6 +26,13 @@
         severity="secondary"
         @click="sortingPopover?.toggle($event)"
       />
+      <Button
+        v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.resetView')"
+        icon="pi pi-refresh"
+        text
+        severity="secondary"
+        @click="resetOrganization"
+      />
       <Popover ref="groupingPopover">
         <div class="flex flex-col gap-1 p-2">
           <Button
@@ -183,6 +190,11 @@ const selectGrouping = (groupingId: string) => {
 const selectSorting = (sortingId: string) => {
   selectedSortingId.value = sortingId as SortingStrategyId
   sortingPopover.value?.hide()
+}
+
+const resetOrganization = () => {
+  selectedGroupingId.value = DEFAULT_GROUPING_ID
+  selectedSortingId.value = DEFAULT_SORTING_ID
 }
 
 const root = computed(() => {
