@@ -693,10 +693,28 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
       displayPrice: '$0.004/Run'
     },
     RecraftImageInpaintingNode: {
-      displayPrice: '$0.04 x n/Run'
+      displayPrice: (node: LGraphNode): string => {
+        const nWidget = node.widgets?.find(
+          (w) => w.name === 'n'
+        ) as IComboWidget
+        if (!nWidget) return '$0.04 x n/Run'
+
+        const n = Number(nWidget.value) || 1
+        const cost = (0.04 * n).toFixed(2)
+        return `$${cost}/Run`
+      }
     },
     RecraftImageToImageNode: {
-      displayPrice: '$0.04 x n/Run'
+      displayPrice: (node: LGraphNode): string => {
+        const nWidget = node.widgets?.find(
+          (w) => w.name === 'n'
+        ) as IComboWidget
+        if (!nWidget) return '$0.04 x n/Run'
+
+        const n = Number(nWidget.value) || 1
+        const cost = (0.04 * n).toFixed(2)
+        return `$${cost}/Run`
+      }
     },
     RecraftRemoveBackgroundNode: {
       displayPrice: '$0.01/Run'
@@ -705,10 +723,28 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
       displayPrice: '$0.04/Run'
     },
     RecraftTextToImageNode: {
-      displayPrice: '$0.04 x n/Run'
+      displayPrice: (node: LGraphNode): string => {
+        const nWidget = node.widgets?.find(
+          (w) => w.name === 'n'
+        ) as IComboWidget
+        if (!nWidget) return '$0.04 x n/Run'
+
+        const n = Number(nWidget.value) || 1
+        const cost = (0.04 * n).toFixed(2)
+        return `$${cost}/Run`
+      }
     },
     RecraftTextToVectorNode: {
-      displayPrice: '$0.08 x n/Run'
+      displayPrice: (node: LGraphNode): string => {
+        const nWidget = node.widgets?.find(
+          (w) => w.name === 'n'
+        ) as IComboWidget
+        if (!nWidget) return '$0.08 x n/Run'
+
+        const n = Number(nWidget.value) || 1
+        const cost = (0.08 * n).toFixed(2)
+        return `$${cost}/Run`
+      }
     },
     RecraftVectorizeImageNode: {
       displayPrice: '$0.01/Run'
@@ -878,7 +914,11 @@ export const useNodePricing = () => {
         'quality'
       ],
       PixverseImageToVideoNode: ['duration_seconds', 'quality', 'motion_mode'],
-      StabilityStableImageSD_3_5Node: ['model']
+      StabilityStableImageSD_3_5Node: ['model'],
+      RecraftTextToImageNode: ['n'],
+      RecraftImageToImageNode: ['n'],
+      RecraftImageInpaintingNode: ['n'],
+      RecraftTextToVectorNode: ['n']
     }
     return widgetMap[nodeType] || []
   }

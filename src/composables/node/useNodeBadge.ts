@@ -3,12 +3,11 @@ import {
   LGraphBadge,
   type LGraphNode
 } from '@comfyorg/litegraph'
-import { computedWithControl } from '@vueuse/core'
 import _ from 'lodash'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 
-import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useNodePricing } from '@/composables/node/useNodePricing'
+import { useComputedWithWidgetWatch } from '@/composables/node/useWatchWidget'
 import { app } from '@/scripts/app'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
@@ -113,8 +112,13 @@ export const useNodeBadge = () => {
         node.badges.push(() => badge.value)
 
         if (node.constructor.nodeData?.api_node && showApiPricingBadge.value) {
-          const priceChangedTrigger = ref(0)
-          const creditsBadge = computedWithControl(priceChangedTrigger, () => {
+          // Get the pricing function to determine if this node has dynamic pricing
+          const pricingConfig = nodePricing.getNodePricingConfig(node)
+          const hasDynamicPricing =
+            typeof pricingConfig?.displayPrice === 'function'
+
+          let creditsBadge
+          const createBadge = () => {
             const price = nodePricing.getNodeDisplayPrice(node)
 
             const isLightTheme =
@@ -139,34 +143,26 @@ export const useNodeBadge = () => {
                 ? adjustColor('#8D6932', { lightness: 0.5 })
                 : '#8D6932'
             })
-          })
+          }
+
+          if (hasDynamicPricing) {
+            // For dynamic pricing nodes, use computed that watches widget changes
+            const relevantWidgetNames = nodePricing.getRelevantWidgetNames(
+              node.constructor.nodeData?.name
+            )
+
+            const computedWithWidgetWatch = useComputedWithWidgetWatch(node, {
+              widgetNames: relevantWidgetNames,
+              triggerCanvasRedraw: true
+            })
+
+            creditsBadge = computedWithWidgetWatch(createBadge)
+          } else {
+            // For static pricing nodes, use regular computed
+            creditsBadge = computed(createBadge)
+          }
 
           node.badges.push(() => creditsBadge.value)
-
-          // Add widget observers to trigger price badge updates when values change
-          if (node.widgets) {
-            // Get the pricing function to determine which widgets to observe
-            const pricingConfig = nodePricing.getNodePricingConfig(node)
-            if (typeof pricingConfig?.displayPrice === 'function') {
-              // For dynamic pricing nodes, observe relevant widgets
-              const relevantWidgetNames = nodePricing.getRelevantWidgetNames(
-                node.constructor.nodeData?.name
-              )
-
-              relevantWidgetNames.forEach((widgetName) => {
-                const widget = node.widgets?.find((w) => w.name === widgetName)
-                if (widget) {
-                  // Chain our callback with any existing callback
-                  widget.callback = useChainCallback(widget.callback, () => {
-                    // Trigger reactivity by updating the pricing trigger
-                    priceChangedTrigger.value++
-                    // Also trigger a canvas redraw to refresh the visual
-                    node.graph?.setDirtyCanvas(true, true)
-                  })
-                }
-              })
-            }
-          }
         }
       }
     })

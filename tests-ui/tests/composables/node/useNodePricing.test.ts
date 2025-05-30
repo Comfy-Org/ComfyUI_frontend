@@ -741,6 +741,62 @@ describe('useNodePricing', () => {
         const widgetNames = getRelevantWidgetNames('UnknownNode')
         expect(widgetNames).toEqual([])
       })
+
+      describe('Recraft nodes with n parameter', () => {
+        it('should return correct widget names for RecraftTextToImageNode', () => {
+          const { getRelevantWidgetNames } = useNodePricing()
+
+          const widgetNames = getRelevantWidgetNames('RecraftTextToImageNode')
+          expect(widgetNames).toEqual(['n'])
+        })
+
+        it('should return correct widget names for RecraftTextToVectorNode', () => {
+          const { getRelevantWidgetNames } = useNodePricing()
+
+          const widgetNames = getRelevantWidgetNames('RecraftTextToVectorNode')
+          expect(widgetNames).toEqual(['n'])
+        })
+      })
+    })
+
+    describe('Recraft nodes dynamic pricing', () => {
+      it('should calculate dynamic pricing for RecraftTextToImageNode based on n value', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        const node = createMockNode('RecraftTextToImageNode', [
+          { name: 'n', value: 3 }
+        ])
+
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe('$0.12/Run') // 0.04 * 3
+      })
+
+      it('should calculate dynamic pricing for RecraftTextToVectorNode based on n value', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        const node = createMockNode('RecraftTextToVectorNode', [
+          { name: 'n', value: 2 }
+        ])
+
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe('$0.16/Run') // 0.08 * 2
+      })
+
+      it('should fall back to static display when n widget is missing', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        const node = createMockNode('RecraftTextToImageNode', [])
+
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe('$0.04 x n/Run')
+      })
+
+      it('should handle edge case when n value is 1', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        const node = createMockNode('RecraftImageInpaintingNode', [
+          { name: 'n', value: 1 }
+        ])
+
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe('$0.04/Run') // 0.04 * 1
+      })
     })
   })
 })
