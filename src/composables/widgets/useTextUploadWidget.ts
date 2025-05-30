@@ -1,14 +1,21 @@
-import type { IComboWidget } from '@comfyorg/litegraph/dist/types/widgets'
+import { isComboWidget } from '@comfyorg/litegraph'
 
 import { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
 import { useNodeFileInput } from '@/composables/node/useNodeFileInput'
 import { useNodePaste } from '@/composables/node/useNodePaste'
 import { useValueTransform } from '@/composables/useValueTransform'
 import { t } from '@/i18n'
+import type {
+  CustomInputSpec,
+  InputSpec
+} from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { api } from '@/scripts/api'
-import type { ComfyWidgetConstructor } from '@/scripts/widgets'
+import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import { useToastStore } from '@/stores/toastStore'
 import { addToComboValues } from '@/utils/litegraphUtil'
+
+const SUPPORTED_FILE_TYPES = ['text/plain', 'application/pdf', '.txt', '.pdf']
+const TEXT_FILE_UPLOAD = 'TEXT_FILE_UPLOAD'
 
 const isTextFile = (file: File): boolean =>
   file.type === 'text/plain' || file.name.toLowerCase().endsWith('.txt')
@@ -62,36 +69,55 @@ async function uploadTextFiles(files: File[]): Promise<string[]> {
   return results.filter((path) => path !== null)
 }
 
+interface TextUploadInputSpec extends CustomInputSpec {
+  type: 'TEXT_FILE_UPLOAD'
+  textInputName: string
+  allow_batch?: boolean
+}
+
+export const isTextUploadInputSpec = (
+  inputSpec: InputSpec
+): inputSpec is TextUploadInputSpec => {
+  return (
+    inputSpec.type === TEXT_FILE_UPLOAD &&
+    'textInputName' in inputSpec &&
+    typeof inputSpec.textInputName === 'string'
+  )
+}
+
 /**
- * Create a text upload widget
- * @returns The widget or an empty button if no valid inputs
+ * Creates a disabled button widget when text upload configuration is invalid
  */
-export const useTextUploadWidget = (): ComfyWidgetConstructor => {
-  return (node, inputName, inputData) => {
-    // Early return with empty button if no valid inputs
-    if (
-      !node.widgets ||
-      !inputData[1] ||
-      typeof inputData[1].textInputName !== 'string'
-    ) {
-      const emptyButton = node.addWidget('button', inputName, '', () => {})
-      return { widget: emptyButton }
+const createDisabledUploadButton = (node: any, inputName: string) =>
+  node.addWidget('button', inputName, '', () => {})
+
+/**
+ * Create a text upload widget using V2 input spec
+ */
+export const useTextUploadWidget = () => {
+  const widgetConstructor: ComfyWidgetConstructorV2 = (
+    node,
+    inputSpec: InputSpec
+  ) => {
+    if (!isTextUploadInputSpec(inputSpec)) {
+      throw new Error(`Invalid input spec for text upload: ${inputSpec}`)
     }
 
     // Get configuration from input spec
-    const textInputName = inputData[1].textInputName as string
-    const allow_batch = inputData[1].allow_batch === true
+    const textInputName = inputSpec.textInputName
+    const allow_batch = inputSpec.allow_batch === true
 
     // Find the combo widget that will store the file path(s)
-    const textWidget = node.widgets.find((w) => w.name === textInputName) as
-      | IComboWidget
-      | undefined
+    const foundWidget = node.widgets?.find((w) => w.name === textInputName)
 
-    if (!textWidget) {
-      console.error(`Text widget with name "${textInputName}" not found`)
-      const fallbackButton = node.addWidget('button', inputName, '', () => {})
-      return { widget: fallbackButton }
+    if (!foundWidget || !isComboWidget(foundWidget)) {
+      console.error(
+        `Text widget with name "${textInputName}" not found or is not a combo widget`
+      )
+      return createDisabledUploadButton(node, inputSpec.name)
     }
+
+    const textWidget = foundWidget
 
     // Ensure options and values are initialized
     if (!textWidget.options) {
@@ -154,7 +180,7 @@ export const useTextUploadWidget = (): ComfyWidgetConstructor => {
 
     // Set up file input for upload button
     const { openFileSelection } = useNodeFileInput(node, {
-      accept: '.txt,.pdf,text/plain,application/pdf',
+      accept: SUPPORTED_FILE_TYPES.join(','),
       allow_batch,
       onSelect: handleFileUpload
     })
@@ -175,7 +201,7 @@ export const useTextUploadWidget = (): ComfyWidgetConstructor => {
     // Create upload button widget
     const uploadWidget = node.addWidget(
       'button',
-      inputName,
+      inputSpec.name,
       '',
       openFileSelection,
       { serialize: false }
@@ -185,6 +211,8 @@ export const useTextUploadWidget = (): ComfyWidgetConstructor => {
       ? t('g.choose_files_to_upload')
       : t('g.choose_file_to_upload')
 
-    return { widget: uploadWidget }
+    return uploadWidget
   }
+
+  return widgetConstructor
 }

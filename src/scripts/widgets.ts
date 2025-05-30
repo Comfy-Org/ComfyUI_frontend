@@ -291,5 +291,5 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
   MARKDOWN: transformWidgetConstructorV2ToV1(useMarkdownWidget()),
   COMBO: transformWidgetConstructorV2ToV1(useComboWidget()),
   IMAGEUPLOAD: useImageUploadWidget(),
-  TEXTUPLOAD: useTextUploadWidget()
+  TEXT_FILE_UPLOAD: transformWidgetConstructorV2ToV1(useTextUploadWidget())
 }

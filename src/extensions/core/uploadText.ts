@@ -12,7 +12,7 @@ const isTextUploadComboInput = (inputSpec: InputSpec) => {
   const [inputName, inputOptions] = inputSpec
   if (!inputOptions) return false
 
-  const isUploadInput = inputOptions['text_upload'] === true
+  const isUploadInput = inputOptions['text_file_upload'] === true
 
   return (
     isUploadInput && (isComboInputSpecV1(inputSpec) || inputName === 'COMBO')
@@ -23,7 +23,7 @@ const createUploadInput = (
   textInputName: string,
   textInputOptions: InputSpec
 ): InputSpec => [
-  'TEXTUPLOAD',
+  'TEXT_FILE_UPLOAD',
   {
     ...textInputOptions[1],
     textInputName
