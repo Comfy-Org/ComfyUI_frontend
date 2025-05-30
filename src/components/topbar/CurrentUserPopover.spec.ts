@@ -50,9 +50,11 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 }))
 
 // Mock the useFirebaseAuthActions composable
+const mockLogout = vi.fn()
 vi.mock('@/composables/auth/useFirebaseAuthActions', () => ({
   useFirebaseAuthActions: vi.fn(() => ({
-    fetchBalance: vi.fn().mockResolvedValue(undefined)
+    fetchBalance: vi.fn().mockResolvedValue(undefined),
+    logout: mockLogout
   }))
 }))
 
@@ -100,8 +102,7 @@ describe('CurrentUserPopover', () => {
       global: {
         plugins: [i18n],
         stubs: {
-          Divider: true,
-          Button: true
+          Divider: true
         }
       }
     })
@@ -112,6 +113,18 @@ describe('CurrentUserPopover', () => {
 
     expect(wrapper.text()).toContain('Test User')
     expect(wrapper.text()).toContain('test@example.com')
+  })
+
+  it('renders logout button with correct props', () => {
+    const wrapper = mountComponent()
+
+    // Find all buttons and get the logout button (second one)
+    const buttons = wrapper.findAllComponents(Button)
+    const logoutButton = buttons[1]
+
+    // Check that logout button has correct props
+    expect(logoutButton.props('label')).toBe('Log Out')
+    expect(logoutButton.props('icon')).toBe('pi pi-sign-out')
   })
 
   it('opens user settings and emits close event when settings button is clicked', async () => {
@@ -132,12 +145,30 @@ describe('CurrentUserPopover', () => {
     expect(wrapper.emitted('close')!.length).toBe(1)
   })
 
+  it('calls logout function and emits close event when logout button is clicked', async () => {
+    const wrapper = mountComponent()
+
+    // Find all buttons and get the logout button (second one)
+    const buttons = wrapper.findAllComponents(Button)
+    const logoutButton = buttons[1]
+
+    // Click the logout button
+    await logoutButton.trigger('click')
+
+    // Verify logout was called
+    expect(mockLogout).toHaveBeenCalled()
+
+    // Verify close event was emitted
+    expect(wrapper.emitted('close')).toBeTruthy()
+    expect(wrapper.emitted('close')!.length).toBe(1)
+  })
+
   it('opens API pricing docs and emits close event when API pricing button is clicked', async () => {
     const wrapper = mountComponent()
 
-    // Find all buttons and get the API pricing button (second one)
+    // Find all buttons and get the API pricing button (third one now)
     const buttons = wrapper.findAllComponents(Button)
-    const apiPricingButton = buttons[1]
+    const apiPricingButton = buttons[2]
 
     // Click the API pricing button
     await apiPricingButton.trigger('click')
