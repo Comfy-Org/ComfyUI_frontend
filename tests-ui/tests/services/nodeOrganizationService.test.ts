@@ -127,12 +127,12 @@ describe('nodeOrganizationService', () => {
   describe('getGroupingIcon', () => {
     it('should return strategy icon', () => {
       const icon = nodeOrganizationService.getGroupingIcon('category')
-      expect(icon).toBe('pi pi-sitemap')
+      expect(icon).toBe('pi pi-folder')
     })
 
     it('should return fallback icon for unknown strategy', () => {
       const icon = nodeOrganizationService.getGroupingIcon('unknown')
-      expect(icon).toBe('pi pi-sort-alt')
+      expect(icon).toBe('pi pi-sort')
     })
   })
 
@@ -144,7 +144,7 @@ describe('nodeOrganizationService', () => {
 
     it('should return fallback icon for unknown strategy', () => {
       const icon = nodeOrganizationService.getSortingIcon('unknown')
-      expect(icon).toBe('pi pi-sort-alt')
+      expect(icon).toBe('pi pi-sort')
     })
   })
 
@@ -166,7 +166,7 @@ describe('nodeOrganizationService', () => {
     it('source grouping should categorize by source type', () => {
       const strategy = nodeOrganizationService.getGroupingStrategy('source')
       const path = strategy?.getNodePath(mockNodeDef)
-      expect(path).toEqual(['custom_nodes', 'TestNode'])
+      expect(path).toEqual(['Custom nodes', 'TestNode'])
     })
   })
 

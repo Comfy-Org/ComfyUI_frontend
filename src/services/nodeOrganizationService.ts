@@ -18,7 +18,7 @@ export class NodeOrganizationService {
     {
       id: 'category',
       label: 'sideToolbar.nodeLibraryTab.groupStrategies.category',
-      icon: 'pi pi-sort',
+      icon: 'pi pi-folder',
       description: 'sideToolbar.nodeLibraryTab.groupStrategies.categoryDesc',
       getNodePath: (nodeDef: ComfyNodeDefImpl) => {
         const category = nodeDef.category || ''
