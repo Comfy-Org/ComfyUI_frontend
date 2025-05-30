@@ -10,6 +10,10 @@ const ALLOWED_ATTRS = [
   'preload',
   'poster'
 ]
+
+// Matches relative src attributes in img, source, and video HTML tags
+// Captures: 1) opening tag with src=", 2) relative path, 3) closing quote
+// Excludes absolute paths (starting with /) and URLs (http:// or https://)
 const MEDIA_SRC_REGEX =
   /(<(?:img|source|video)[^>]*\ssrc=['"])(?!(?:\/|https?:\/\/))([^'"\s>]+)(['"])/gi
 
