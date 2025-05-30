@@ -39,6 +39,18 @@
 
     <Button
       class="justify-start"
+      :label="$t('auth.signOut.signOut')"
+      icon="pi pi-sign-out"
+      text
+      fluid
+      severity="secondary"
+      @click="handleLogout"
+    />
+
+    <Divider class="my-2" />
+
+    <Button
+      class="justify-start"
       :label="$t('credits.apiPricing')"
       icon="pi pi-external-link"
       text
@@ -87,6 +99,11 @@ const handleOpenUserSettings = () => {
 
 const handleTopUp = () => {
   dialogService.showTopUpCreditsDialog()
+  emit('close')
+}
+
+const handleLogout = async () => {
+  await authActions.logout()
   emit('close')
 }
 
