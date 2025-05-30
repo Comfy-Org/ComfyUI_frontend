@@ -100,6 +100,7 @@
 </template>
 
 <script setup lang="ts">
+import { useLocalStorage } from '@vueuse/core'
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import Popover from 'primevue/popover'
@@ -142,8 +143,14 @@ const nodeBookmarkTreeExplorerRef = ref<InstanceType<
 const searchFilter = ref<InstanceType<typeof Popover> | null>(null)
 const groupingPopover = ref<InstanceType<typeof Popover> | null>(null)
 const sortingPopover = ref<InstanceType<typeof Popover> | null>(null)
-const selectedGroupingId = ref<GroupingStrategyId>(DEFAULT_GROUPING_ID)
-const selectedSortingId = ref<SortingStrategyId>(DEFAULT_SORTING_ID)
+const selectedGroupingId = useLocalStorage<GroupingStrategyId>(
+  'Comfy.NodeLibrary.GroupBy',
+  DEFAULT_GROUPING_ID
+)
+const selectedSortingId = useLocalStorage<SortingStrategyId>(
+  'Comfy.NodeLibrary.SortBy',
+  DEFAULT_SORTING_ID
+)
 
 const searchQuery = ref<string>('')
 
