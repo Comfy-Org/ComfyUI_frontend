@@ -77,18 +77,20 @@
 </template>
 
 <script setup lang="ts">
+import { storeToRefs } from 'pinia'
 import Button from 'primevue/button'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed } from 'vue'
 
-import { useNodeHelp } from '@/composables/useNodeHelp'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
 
 const { node } = defineProps<{ node: ComfyNodeDefImpl }>()
 
-const { renderedHelpHtml, isLoading, error } = useNodeHelp()
+const nodeHelpStore = useNodeHelpStore()
+const { renderedHelpHtml, isLoading, error } = storeToRefs(nodeHelpStore)
 
 defineEmits<{
   (e: 'close'): void

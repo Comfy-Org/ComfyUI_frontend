@@ -118,6 +118,7 @@
 
 <script setup lang="ts">
 import { useLocalStorage } from '@vueuse/core'
+import { storeToRefs } from 'pinia'
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import Popover from 'primevue/popover'
@@ -131,7 +132,6 @@ import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import NodeHelpPage from '@/components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue'
 import NodeTreeLeaf from '@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue'
-import { useNodeHelp } from '@/composables/useNodeHelp'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useLitegraphService } from '@/services/litegraphService'
 import {
@@ -141,6 +141,7 @@ import {
 } from '@/services/nodeOrganizationService'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
 import type {
   GroupingStrategyId,
   SortingStrategyId
@@ -153,6 +154,7 @@ import NodeBookmarkTreeExplorer from './nodeLibrary/NodeBookmarkTreeExplorer.vue
 
 const nodeDefStore = useNodeDefStore()
 const nodeBookmarkStore = useNodeBookmarkStore()
+const nodeHelpStore = useNodeHelpStore()
 const expandedKeys = ref<Record<string, boolean>>({})
 const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 
@@ -173,7 +175,8 @@ const selectedSortingId = useLocalStorage<SortingStrategyId>(
 
 const searchQuery = ref<string>('')
 
-const { currentHelpNode, isHelpOpen, openHelp, closeHelp } = useNodeHelp()
+const { currentHelpNode, isHelpOpen } = storeToRefs(nodeHelpStore)
+const { openHelp, closeHelp } = nodeHelpStore
 
 const groupingOptions = computed(() =>
   nodeOrganizationService.getGroupingStrategies().map((strategy) => ({
