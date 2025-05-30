@@ -71,18 +71,6 @@
             </Column>
           </DataTable>
         </div>
-
-        <p>
-          {{ $t('nodeHelpPage.moreHelp') }}
-          <a
-            href="https://docs.comfy.org/"
-            target="_blank"
-            rel="noopener"
-            class="text-blue-600 underline"
-          >
-            {{ $t('nodeHelpPage.documentationPage') }}
-          </a>
-        </p>
       </div>
     </div>
   </div>
