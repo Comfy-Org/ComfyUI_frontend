@@ -1,9 +1,20 @@
 import type { ModelFile } from '@/schemas/comfyWorkflowSchema'
 
 /**
- * Filters model metadata to only include models currently selected in the node's widget values.
- * This prevents false positives in the missing models dialog when outdated model metadata
- * exists but the actual selected models have changed.
+ * Gets models from the node's `properties.models` field, excluding those
+ * not currently selected in at least 1 of the node's widget values.
+ *
+ * @example
+ * ```ts
+ * const node = {
+ *   type: 'CheckpointLoaderSimple',
+ *   widgets_values: ['model1', 'model2'],
+ *   properties: { models: [{ name: 'model1' }, { name: 'model2' }, { name: 'model3' }] }
+ *   ... other properties
+ * }
+ * const selectedModels = getSelectedModelsMetadata(node)
+ * // selectedModels = [{ name: 'model1' }, { name: 'model2' }]
+ * ```
  *
  * @param node - The workflow node to process
  * @returns Filtered array containing only models that are currently selected
@@ -23,17 +34,16 @@ export function getSelectedModelsMetadata(node: {
 
     if (!widgetValues.length) return []
 
-    // Create set of selected model names from widget values (only process combo inputs)
-    const selectedModelNames = new Set<string>()
+    const stringWidgetValues = new Set<string>()
     for (const widgetValue of widgetValues) {
       if (typeof widgetValue === 'string' && widgetValue.trim()) {
-        selectedModelNames.add(widgetValue)
+        stringWidgetValues.add(widgetValue)
       }
     }
 
-    // Filter models to only include those currently selected
+    // Return the node's models that are present in the widget values
     return node.properties.models.filter((model) =>
-      selectedModelNames.has(model.name)
+      stringWidgetValues.has(model.name)
     )
   } catch (error) {
     console.error('Error filtering models by current selection:', error)

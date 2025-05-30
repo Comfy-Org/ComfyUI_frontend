@@ -1037,7 +1037,7 @@ export class ComfyApp {
         n.type = sanitizeNodeName(n.type)
       }
 
-      // Collect models metadata from node if the model names are present in the widget values
+      // Collect models metadata from node
       const selectedModels = getSelectedModelsMetadata(n)
       if (selectedModels && selectedModels.length > 0) {
         embeddedModels.push(...selectedModels)
