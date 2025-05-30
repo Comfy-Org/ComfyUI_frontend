@@ -13,13 +13,51 @@
         @click="nodeBookmarkTreeExplorerRef?.addNewBookmarkFolder()"
       />
       <Button
-        v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.sortOrder')"
-        class="sort-button"
-        :icon="alphabeticalSort ? 'pi pi-sort-alpha-down' : 'pi pi-sort-alt'"
+        v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.groupBy')"
+        :icon="selectedGroupingIcon"
         text
         severity="secondary"
-        @click="alphabeticalSort = !alphabeticalSort"
+        @click="groupingPopover?.toggle($event)"
       />
+      <Button
+        v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.sortMode')"
+        :icon="selectedSortingIcon"
+        text
+        severity="secondary"
+        @click="sortingPopover?.toggle($event)"
+      />
+      <Popover ref="groupingPopover">
+        <div class="flex flex-col gap-1 p-2">
+          <Button
+            v-for="option in groupingOptions"
+            :key="option.id"
+            :icon="option.icon"
+            :label="$t(option.label)"
+            text
+            :severity="
+              selectedGroupingId === option.id ? 'primary' : 'secondary'
+            "
+            class="justify-start"
+            @click="selectGrouping(option.id)"
+          />
+        </div>
+      </Popover>
+      <Popover ref="sortingPopover">
+        <div class="flex flex-col gap-1 p-2">
+          <Button
+            v-for="option in sortingOptions"
+            :key="option.id"
+            :icon="option.icon"
+            :label="$t(option.label)"
+            text
+            :severity="
+              selectedSortingId === option.id ? 'primary' : 'secondary'
+            "
+            class="justify-start"
+            @click="selectSorting(option.id)"
+          />
+        </div>
+      </Popover>
     </template>
     <template #header>
       <SearchBox
@@ -76,16 +114,20 @@ import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue
 import NodeTreeLeaf from '@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useLitegraphService } from '@/services/litegraphService'
-import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import {
-  ComfyNodeDefImpl,
-  buildNodeDefTree,
-  useNodeDefStore
-} from '@/stores/nodeDefStore'
+  DEFAULT_GROUPING_ID,
+  DEFAULT_SORTING_ID,
+  nodeOrganizationService
+} from '@/services/nodeOrganizationService'
+import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
+import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import type {
+  GroupingStrategyId,
+  SortingStrategyId
+} from '@/types/nodeOrganizationTypes'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { FuseFilterWithValue } from '@/utils/fuseUtil'
-import { sortedTree } from '@/utils/treeUtil'
 
 import NodeBookmarkTreeExplorer from './nodeLibrary/NodeBookmarkTreeExplorer.vue'
 
@@ -98,13 +140,56 @@ const nodeBookmarkTreeExplorerRef = ref<InstanceType<
   typeof NodeBookmarkTreeExplorer
 > | null>(null)
 const searchFilter = ref<InstanceType<typeof Popover> | null>(null)
-const alphabeticalSort = ref(false)
+const groupingPopover = ref<InstanceType<typeof Popover> | null>(null)
+const sortingPopover = ref<InstanceType<typeof Popover> | null>(null)
+const selectedGroupingId = ref<GroupingStrategyId>(DEFAULT_GROUPING_ID)
+const selectedSortingId = ref<SortingStrategyId>(DEFAULT_SORTING_ID)
 
 const searchQuery = ref<string>('')
 
+const groupingOptions = computed(() =>
+  nodeOrganizationService.getGroupingStrategies().map((strategy) => ({
+    id: strategy.id,
+    label: strategy.label,
+    icon: strategy.icon
+  }))
+)
+const sortingOptions = computed(() =>
+  nodeOrganizationService.getSortingStrategies().map((strategy) => ({
+    id: strategy.id,
+    label: strategy.label,
+    icon: strategy.icon
+  }))
+)
+
+const selectedGroupingIcon = computed(() =>
+  nodeOrganizationService.getGroupingIcon(selectedGroupingId.value)
+)
+const selectedSortingIcon = computed(() =>
+  nodeOrganizationService.getSortingIcon(selectedSortingId.value)
+)
+
+const selectGrouping = (groupingId: string) => {
+  selectedGroupingId.value = groupingId as GroupingStrategyId
+  groupingPopover.value?.hide()
+}
+const selectSorting = (sortingId: string) => {
+  selectedSortingId.value = sortingId as SortingStrategyId
+  sortingPopover.value?.hide()
+}
+
 const root = computed(() => {
-  const root = filteredRoot.value || nodeDefStore.nodeTree
-  return alphabeticalSort.value ? sortedTree(root, { groupLeaf: true }) : root
+  // Determine which nodes to use
+  const nodes =
+    filteredNodeDefs.value.length > 0
+      ? filteredNodeDefs.value
+      : nodeDefStore.visibleNodeDefs
+
+  // Use the service to organize nodes
+  return nodeOrganizationService.organizeNodes(nodes, {
+    groupBy: selectedGroupingId.value,
+    sortBy: selectedSortingId.value
+  })
 })
 
 const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
@@ -144,12 +229,6 @@ const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
 })
 
 const filteredNodeDefs = ref<ComfyNodeDefImpl[]>([])
-const filteredRoot = computed<TreeNode | null>(() => {
-  if (!filteredNodeDefs.value.length) {
-    return null
-  }
-  return buildNodeDefTree(filteredNodeDefs.value)
-})
 const filters: Ref<
   (SearchFilter & { filter: FuseFilterWithValue<ComfyNodeDefImpl, string> })[]
 > = ref([])
@@ -175,8 +254,10 @@ const handleSearch = async (query: string) => {
   )
 
   await nextTick()
-  // @ts-expect-error fixme ts strict error
-  expandNode(filteredRoot.value)
+  // Expand the search results tree
+  if (filteredNodeDefs.value.length > 0) {
+    expandNode(root.value)
+  }
 }
 
 const onAddFilter = async (

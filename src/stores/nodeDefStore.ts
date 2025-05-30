@@ -216,10 +216,22 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDefV1> = {
   }
 }
 
-export function buildNodeDefTree(nodeDefs: ComfyNodeDefImpl[]): TreeNode {
-  return buildTree(nodeDefs, (nodeDef: ComfyNodeDefImpl) =>
+export interface BuildNodeDefTreeOptions {
+  /**
+   * Custom function to extract the tree path from a node definition.
+   * If not provided, uses the default path based on nodeDef.nodePath.
+   */
+  pathExtractor?: (nodeDef: ComfyNodeDefImpl) => string[]
+}
+
+export function buildNodeDefTree(
+  nodeDefs: ComfyNodeDefImpl[],
+  options: BuildNodeDefTreeOptions = {}
+): TreeNode {
+  const { pathExtractor } = options
+  const defaultPathExtractor = (nodeDef: ComfyNodeDefImpl) =>
     nodeDef.nodePath.split('/')
-  )
+  return buildTree(nodeDefs, pathExtractor || defaultPathExtractor)
 }
 
 export function createDummyFolderNodeDef(folderPath: string): ComfyNodeDefImpl {
