@@ -72,6 +72,7 @@
 </template>
 
 <script setup lang="ts">
+import { storeToRefs } from 'pinia'
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import Popover from 'primevue/popover'
@@ -85,7 +86,6 @@ import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import NodeHelpPage from '@/components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue'
 import NodeTreeLeaf from '@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue'
-import { useNodeHelp } from '@/composables/useNodeHelp'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
@@ -94,6 +94,7 @@ import {
   buildNodeDefTree,
   useNodeDefStore
 } from '@/stores/nodeDefStore'
+import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { FuseFilterWithValue } from '@/utils/fuseUtil'
@@ -103,6 +104,7 @@ import NodeBookmarkTreeExplorer from './nodeLibrary/NodeBookmarkTreeExplorer.vue
 
 const nodeDefStore = useNodeDefStore()
 const nodeBookmarkStore = useNodeBookmarkStore()
+const nodeHelpStore = useNodeHelpStore()
 const expandedKeys = ref<Record<string, boolean>>({})
 const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 
@@ -114,7 +116,8 @@ const alphabeticalSort = ref(false)
 
 const searchQuery = ref<string>('')
 
-const { currentHelpNode, isHelpOpen, openHelp, closeHelp } = useNodeHelp()
+const { currentHelpNode, isHelpOpen } = storeToRefs(nodeHelpStore)
+const { openHelp, closeHelp } = nodeHelpStore
 
 const root = computed(() => {
   const root = filteredRoot.value || nodeDefStore.nodeTree
