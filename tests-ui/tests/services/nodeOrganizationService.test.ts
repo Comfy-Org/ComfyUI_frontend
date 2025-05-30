@@ -170,6 +170,144 @@ describe('nodeOrganizationService', () => {
     })
   })
 
+  describe('edge cases', () => {
+    describe('module grouping edge cases', () => {
+      const strategy = nodeOrganizationService.getGroupingStrategy('module')
+
+      it('should handle empty python_module', () => {
+        const nodeDef = createMockNodeDef({ python_module: '' })
+        const path = strategy?.getNodePath(nodeDef)
+        expect(path).toEqual(['unknown_module', 'TestNode'])
+      })
+
+      it('should handle undefined python_module', () => {
+        const nodeDef = createMockNodeDef({ python_module: undefined })
+        const path = strategy?.getNodePath(nodeDef)
+        expect(path).toEqual(['unknown_module', 'TestNode'])
+      })
+
+      it('should handle modules with spaces in the name', () => {
+        const nodeDef = createMockNodeDef({
+          python_module: 'custom_nodes.My Package With Spaces.nodes'
+        })
+        const path = strategy?.getNodePath(nodeDef)
+        expect(path).toEqual(['My Package With Spaces', 'TestNode'])
+      })
+
+      it('should handle modules with special characters', () => {
+        const nodeDef = createMockNodeDef({
+          python_module: 'custom_nodes.my-package_v2.0.nodes'
+        })
+        const path = strategy?.getNodePath(nodeDef)
+        expect(path).toEqual(['my-package_v2', 'TestNode'])
+      })
+
+      it('should handle deeply nested modules', () => {
+        const nodeDef = createMockNodeDef({
+          python_module: 'custom_nodes.package.subpackage.module.nodes'
+        })
+        const path = strategy?.getNodePath(nodeDef)
+        expect(path).toEqual(['package', 'TestNode'])
+      })
+
+      it('should handle core nodes module path', () => {
+        const nodeDef = createMockNodeDef({ python_module: 'nodes' })
+        const path = strategy?.getNodePath(nodeDef)
+        expect(path).toEqual(['core', 'TestNode'])
+      })
+
+      it('should handle non-standard module paths', () => {
+        const nodeDef = createMockNodeDef({
+          python_module: 'some.other.module.path'
+        })
+        const path = strategy?.getNodePath(nodeDef)
+        expect(path).toEqual(['some', 'other', 'module', 'path', 'TestNode'])
+      })
+    })
+
+    describe('category grouping edge cases', () => {
+      const strategy = nodeOrganizationService.getGroupingStrategy('category')
+
+      it('should handle empty category', () => {
+        const nodeDef = createMockNodeDef({ category: '' })
+        const path = strategy?.getNodePath(nodeDef)
+        expect(path).toEqual(['TestNode'])
+      })
+
+      it('should handle undefined category', () => {
+        const nodeDef = createMockNodeDef({ category: undefined })
+        const path = strategy?.getNodePath(nodeDef)
+        expect(path).toEqual(['TestNode'])
+      })
+
+      it('should handle category with trailing slash', () => {
+        const nodeDef = createMockNodeDef({ category: 'test/subcategory/' })
+        const path = strategy?.getNodePath(nodeDef)
+        expect(path).toEqual(['test', 'subcategory', '', 'TestNode'])
+      })
+
+      it('should handle category with multiple consecutive slashes', () => {
+        const nodeDef = createMockNodeDef({ category: 'test//subcategory' })
+        const path = strategy?.getNodePath(nodeDef)
+        expect(path).toEqual(['test', '', 'subcategory', 'TestNode'])
+      })
+    })
+
+    describe('source grouping edge cases', () => {
+      const strategy = nodeOrganizationService.getGroupingStrategy('source')
+
+      it('should handle API nodes', () => {
+        const nodeDef = createMockNodeDef({
+          api_node: true,
+          nodeSource: {
+            type: NodeSourceType.Core,
+            className: 'comfy-core',
+            displayText: 'Core',
+            badgeText: 'C'
+          }
+        })
+        const path = strategy?.getNodePath(nodeDef)
+        expect(path).toEqual(['API nodes', 'TestNode'])
+      })
+
+      it('should handle unknown source type', () => {
+        const nodeDef = createMockNodeDef({
+          nodeSource: {
+            type: 'unknown' as any,
+            className: 'unknown',
+            displayText: 'Unknown',
+            badgeText: '?'
+          }
+        })
+        const path = strategy?.getNodePath(nodeDef)
+        expect(path).toEqual(['Unknown', 'TestNode'])
+      })
+    })
+
+    describe('node name edge cases', () => {
+      it('should handle nodes with special characters in name', () => {
+        const nodeDef = createMockNodeDef({
+          name: 'Test/Node:With*Special<Chars>'
+        })
+        const strategy = nodeOrganizationService.getGroupingStrategy('category')
+        const path = strategy?.getNodePath(nodeDef)
+        expect(path).toEqual([
+          'test',
+          'subcategory',
+          'Test/Node:With*Special<Chars>'
+        ])
+      })
+
+      it('should handle nodes with very long names', () => {
+        const longName = 'A'.repeat(100)
+        const nodeDef = createMockNodeDef({ name: longName })
+        const strategy = nodeOrganizationService.getGroupingStrategy('category')
+        const path = strategy?.getNodePath(nodeDef)
+        expect(path).toEqual(['test', 'subcategory', longName])
+      })
+    })
+  })
+
   describe('sorting comparison', () => {
     it('original sort should keep order', () => {
       const strategy = nodeOrganizationService.getSortingStrategy('original')
