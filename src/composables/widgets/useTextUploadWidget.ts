@@ -59,7 +59,7 @@ async function uploadTextFile(file: File): Promise<string | null> {
 async function uploadTextFiles(files: File[]): Promise<string[]> {
   const uploadPromises = files.map(uploadTextFile)
   const results = await Promise.all(uploadPromises)
-  return results.filter((path): path is string => path !== null)
+  return results.filter((path) => path !== null)
 }
 
 /**
