@@ -23,7 +23,7 @@ export function getSelectedModelsMetadata(node: {
   type: string
   widgets_values?: unknown[] | Record<string, unknown>
   properties?: { models?: ModelFile[] }
-}): ModelFile[] {
+}): ModelFile[] | undefined {
   try {
     if (!node.properties?.models?.length) return
     if (!node.widgets_values) return
