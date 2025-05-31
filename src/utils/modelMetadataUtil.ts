@@ -47,6 +47,5 @@ export function getSelectedModelsMetadata(node: {
     )
   } catch (error) {
     console.error('Error filtering models by current selection:', error)
-    return []
   }
 }
