@@ -6,6 +6,7 @@
       content: 'p-0 flex flex-row'
     }"
   >
+    <HelpButton />
     <ExecuteButton />
     <ColorPickerButton />
     <BypassButton />
@@ -30,6 +31,7 @@ import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerBu
 import DeleteButton from '@/components/graph/selectionToolbox/DeleteButton.vue'
 import ExecuteButton from '@/components/graph/selectionToolbox/ExecuteButton.vue'
 import ExtensionCommandButton from '@/components/graph/selectionToolbox/ExtensionCommandButton.vue'
+import HelpButton from '@/components/graph/selectionToolbox/HelpButton.vue'
 import MaskEditorButton from '@/components/graph/selectionToolbox/MaskEditorButton.vue'
 import PinButton from '@/components/graph/selectionToolbox/PinButton.vue'
 import RefreshButton from '@/components/graph/selectionToolbox/RefreshButton.vue'

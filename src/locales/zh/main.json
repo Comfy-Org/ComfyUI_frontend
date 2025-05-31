@@ -294,6 +294,7 @@
     "findIssues": "查找问题",
     "firstTimeUIMessage": "这是您第一次使用新界面。选择 \"菜单 > 使用新菜单 > 禁用\" 来恢复旧界面。",
     "goToNode": "转到节点",
+    "help": "帮助",
     "icon": "图标",
     "imageFailedToLoad": "图像加载失败",
     "imageUrl": "图片网址",
@@ -835,6 +836,14 @@
     "v3": "v3",
     "video": "视频",
     "video_models": "视频模型"
+  },
+  "nodeHelpPage": {
+    "documentationPage": "文档页面",
+    "inputs": "输入",
+    "loadError": "加载帮助失败：{error}",
+    "moreHelp": "如需更多帮助，请访问",
+    "outputs": "输出",
+    "type": "类型"
   },
   "nodeTemplates": {
     "enterName": "输入名称",
