@@ -32,7 +32,7 @@ export function getSelectedModelsMetadata(node: {
       ? node.widgets_values
       : Object.values(node.widgets_values)
 
-    if (!widgetValues.length) return []
+    if (!widgetValues.length) return
 
     const stringWidgetValues = new Set<string>()
     for (const widgetValue of widgetValues) {
