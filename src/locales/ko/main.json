@@ -1074,6 +1074,7 @@
         "source": "소스",
         "sourceDesc": "소스 유형(Core, Custom, API)별로 그룹화"
       },
+      "resetView": "기본 보기로 재설정",
       "sortBy": {
         "alphabetical": "알파벳순",
         "alphabeticalDesc": "그룹 내에서 알파벳순으로 정렬",

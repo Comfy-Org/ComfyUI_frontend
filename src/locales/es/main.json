@@ -1074,6 +1074,7 @@
         "source": "Fuente",
         "sourceDesc": "Agrupar por tipo de fuente (Core, Custom, API)"
       },
+      "resetView": "Restablecer vista a la predeterminada",
       "sortBy": {
         "alphabetical": "Alfabético",
         "alphabeticalDesc": "Ordenar alfabéticamente dentro de los grupos",

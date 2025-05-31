@@ -1074,6 +1074,7 @@
         "source": "来源",
         "sourceDesc": "按来源类型分组（核心，自定义，API）"
       },
+      "resetView": "重置视图为默认",
       "sortBy": {
         "alphabetical": "字母顺序",
         "alphabeticalDesc": "在分组内按字母顺序排序",

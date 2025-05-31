@@ -1074,6 +1074,7 @@
         "source": "Источник",
         "sourceDesc": "Группировать по типу источника (Core, Custom, API)"
       },
+      "resetView": "Сбросить вид по умолчанию",
       "sortBy": {
         "alphabetical": "По алфавиту",
         "alphabeticalDesc": "Сортировать по алфавиту внутри групп",

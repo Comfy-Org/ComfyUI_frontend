@@ -1074,6 +1074,7 @@
         "source": "ソース",
         "sourceDesc": "ソースタイプ（Core、Custom、API）でグループ化"
       },
+      "resetView": "ビューをデフォルトにリセット",
       "sortBy": {
         "alphabetical": "アルファベット順",
         "alphabeticalDesc": "グループ内でアルファベット順に並び替え",

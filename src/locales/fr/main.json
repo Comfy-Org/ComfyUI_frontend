@@ -1074,6 +1074,7 @@
         "source": "Source",
         "sourceDesc": "Grouper par type de source (Core, Custom, API)"
       },
+      "resetView": "Réinitialiser la vue par défaut",
       "sortBy": {
         "alphabetical": "Alphabétique",
         "alphabeticalDesc": "Trier alphabétiquement dans les groupes",
