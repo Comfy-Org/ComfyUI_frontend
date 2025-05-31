@@ -1065,7 +1065,23 @@
     "newBlankWorkflow": "Создайте новый пустой рабочий процесс",
     "nodeLibrary": "Библиотека нод",
     "nodeLibraryTab": {
-      "sortOrder": "Порядок сортировки"
+      "groupBy": "Группировать по",
+      "groupStrategies": {
+        "category": "Категория",
+        "categoryDesc": "Группировать по категории узла",
+        "module": "Модуль",
+        "moduleDesc": "Группировать по источнику модуля",
+        "source": "Источник",
+        "sourceDesc": "Группировать по типу источника (Core, Custom, API)"
+      },
+      "resetView": "Сбросить вид по умолчанию",
+      "sortBy": {
+        "alphabetical": "По алфавиту",
+        "alphabeticalDesc": "Сортировать по алфавиту внутри групп",
+        "original": "Оригинальный порядок",
+        "originalDesc": "Сохранять исходный порядок"
+      },
+      "sortMode": "Режим сортировки"
     },
     "openWorkflow": "Открыть рабочий процесс в локальной файловой системе",
     "queue": "Очередь",

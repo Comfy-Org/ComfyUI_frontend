@@ -1065,7 +1065,23 @@
     "newBlankWorkflow": "Créer un nouveau flux de travail vierge",
     "nodeLibrary": "Bibliothèque de nœuds",
     "nodeLibraryTab": {
-      "sortOrder": "Ordre de tri"
+      "groupBy": "Grouper par",
+      "groupStrategies": {
+        "category": "Catégorie",
+        "categoryDesc": "Grouper par catégorie de nœud",
+        "module": "Module",
+        "moduleDesc": "Grouper par source du module",
+        "source": "Source",
+        "sourceDesc": "Grouper par type de source (Core, Custom, API)"
+      },
+      "resetView": "Réinitialiser la vue par défaut",
+      "sortBy": {
+        "alphabetical": "Alphabétique",
+        "alphabeticalDesc": "Trier alphabétiquement dans les groupes",
+        "original": "Original",
+        "originalDesc": "Conserver l'ordre d'origine"
+      },
+      "sortMode": "Mode de tri"
     },
     "openWorkflow": "Ouvrir le flux de travail dans le système de fichiers local",
     "queue": "File d'attente",

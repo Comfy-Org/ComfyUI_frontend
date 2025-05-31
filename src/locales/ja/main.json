@@ -1065,7 +1065,23 @@
     "newBlankWorkflow": "新しい空のワークフローを作成",
     "nodeLibrary": "ノードライブラリ",
     "nodeLibraryTab": {
-      "sortOrder": "並び順"
+      "groupBy": "グループ化",
+      "groupStrategies": {
+        "category": "カテゴリ",
+        "categoryDesc": "ノードカテゴリでグループ化",
+        "module": "モジュール",
+        "moduleDesc": "モジュールソースでグループ化",
+        "source": "ソース",
+        "sourceDesc": "ソースタイプ（Core、Custom、API）でグループ化"
+      },
+      "resetView": "ビューをデフォルトにリセット",
+      "sortBy": {
+        "alphabetical": "アルファベット順",
+        "alphabeticalDesc": "グループ内でアルファベット順に並び替え",
+        "original": "元の順序",
+        "originalDesc": "元の順序を維持"
+      },
+      "sortMode": "並び替えモード"
     },
     "openWorkflow": "ローカルでワークフローを開く",
     "queue": "キュー",

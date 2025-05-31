@@ -1065,7 +1065,23 @@
     "newBlankWorkflow": "Crear un nuevo flujo de trabajo en blanco",
     "nodeLibrary": "Biblioteca de nodos",
     "nodeLibraryTab": {
-      "sortOrder": "Orden de clasificación"
+      "groupBy": "Agrupar por",
+      "groupStrategies": {
+        "category": "Categoría",
+        "categoryDesc": "Agrupar por categoría de nodo",
+        "module": "Módulo",
+        "moduleDesc": "Agrupar por fuente del módulo",
+        "source": "Fuente",
+        "sourceDesc": "Agrupar por tipo de fuente (Core, Custom, API)"
+      },
+      "resetView": "Restablecer vista a la predeterminada",
+      "sortBy": {
+        "alphabetical": "Alfabético",
+        "alphabeticalDesc": "Ordenar alfabéticamente dentro de los grupos",
+        "original": "Original",
+        "originalDesc": "Mantener el orden original"
+      },
+      "sortMode": "Modo de ordenación"
     },
     "openWorkflow": "Abrir flujo de trabajo en el sistema de archivos local",
     "queue": "Cola",

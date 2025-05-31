@@ -1065,7 +1065,23 @@
     "newBlankWorkflow": "创建空白工作流",
     "nodeLibrary": "节点库",
     "nodeLibraryTab": {
-      "sortOrder": "排序顺序"
+      "groupBy": "分组方式",
+      "groupStrategies": {
+        "category": "类别",
+        "categoryDesc": "按节点类别分组",
+        "module": "模块",
+        "moduleDesc": "按模块来源分组",
+        "source": "来源",
+        "sourceDesc": "按来源类型分组（核心，自定义，API）"
+      },
+      "resetView": "重置视图为默认",
+      "sortBy": {
+        "alphabetical": "字母顺序",
+        "alphabeticalDesc": "在分组内按字母顺序排序",
+        "original": "原始顺序",
+        "originalDesc": "保持原始顺序"
+      },
+      "sortMode": "排序模式"
     },
     "openWorkflow": "在本地文件系统中打开工作流",
     "queue": "队列",

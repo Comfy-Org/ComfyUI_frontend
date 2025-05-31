@@ -416,7 +416,23 @@
     "openWorkflow": "Open workflow in local file system",
     "newBlankWorkflow": "Create a new blank workflow",
     "nodeLibraryTab": {
-      "sortOrder": "Sort Order"
+      "groupBy": "Group By",
+      "sortMode": "Sort Mode",
+      "resetView": "Reset View to Default",
+      "groupStrategies": {
+        "category": "Category",
+        "categoryDesc": "Group by node category",
+        "module": "Module",
+        "moduleDesc": "Group by module source",
+        "source": "Source",
+        "sourceDesc": "Group by source type (Core, Custom, API)"
+      },
+      "sortBy": {
+        "original": "Original",
+        "originalDesc": "Keep original order",
+        "alphabetical": "Alphabetical",
+        "alphabeticalDesc": "Sort alphabetically within groups"
+      }
     },
     "modelLibrary": "Model Library",
     "downloads": "Downloads",
