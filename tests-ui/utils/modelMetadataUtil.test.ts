@@ -27,7 +27,7 @@ describe('modelMetadataUtil', () => {
       const result = getSelectedModelsMetadata(node)
 
       expect(result).toHaveLength(1)
-      expect(result[0].name).toBe('model_a.safetensors')
+      expect(result![0].name).toBe('model_a.safetensors')
     })
 
     it('should return empty array when no models match selection', () => {
@@ -78,7 +78,7 @@ describe('modelMetadataUtil', () => {
       const result = getSelectedModelsMetadata(node)
 
       expect(result).toHaveLength(2)
-      expect(result.map((m) => m.name)).toEqual([
+      expect(result!.map((m) => m.name)).toEqual([
         'model_a.safetensors',
         'model_c.ckpt'
       ])
@@ -102,7 +102,7 @@ describe('modelMetadataUtil', () => {
       const result = getSelectedModelsMetadata(node)
 
       expect(result).toHaveLength(1)
-      expect(result[0].name).toBe('model_a.safetensors')
+      expect(result![0].name).toBe('model_a.safetensors')
     })
 
     it('should ignore empty strings', () => {
@@ -123,10 +123,10 @@ describe('modelMetadataUtil', () => {
       const result = getSelectedModelsMetadata(node)
 
       expect(result).toHaveLength(1)
-      expect(result[0].name).toBe('model_a.safetensors')
+      expect(result![0].name).toBe('model_a.safetensors')
     })
 
-    it('should return empty array for nodes without model metadata', () => {
+    it('should return undefined for nodes without model metadata', () => {
       const node = {
         type: 'SomeNode',
         widgets_values: ['model_a.safetensors']
@@ -134,10 +134,10 @@ describe('modelMetadataUtil', () => {
 
       const result = getSelectedModelsMetadata(node)
 
-      expect(result).toHaveLength(0)
+      expect(result).toBeUndefined()
     })
 
-    it('should return empty array for nodes without widgets_values', () => {
+    it('should return undefined for nodes without widgets_values', () => {
       const node = {
         type: 'SomeNode',
         properties: {
@@ -153,10 +153,10 @@ describe('modelMetadataUtil', () => {
 
       const result = getSelectedModelsMetadata(node)
 
-      expect(result).toHaveLength(0)
+      expect(result).toBeUndefined()
     })
 
-    it('should return empty array for nodes with empty widgets_values', () => {
+    it('should return undefined for nodes with empty widgets_values', () => {
       const node = {
         type: 'SomeNode',
         widgets_values: [],
@@ -173,10 +173,10 @@ describe('modelMetadataUtil', () => {
 
       const result = getSelectedModelsMetadata(node)
 
-      expect(result).toHaveLength(0)
+      expect(result).toBeUndefined()
     })
 
-    it('should return empty array for nodes with empty models array', () => {
+    it('should return undefined for nodes with empty models array', () => {
       const node = {
         type: 'SomeNode',
         widgets_values: ['model_a.safetensors'],
@@ -187,7 +187,7 @@ describe('modelMetadataUtil', () => {
 
       const result = getSelectedModelsMetadata(node)
 
-      expect(result).toHaveLength(0)
+      expect(result).toBeUndefined()
     })
 
     it('should handle object widget values', () => {
@@ -216,7 +216,7 @@ describe('modelMetadataUtil', () => {
       const result = getSelectedModelsMetadata(node)
 
       expect(result).toHaveLength(1)
-      expect(result[0].name).toBe('model_a.safetensors')
+      expect(result![0].name).toBe('model_a.safetensors')
     })
 
     it('should work end-to-end to filter outdated metadata', () => {
