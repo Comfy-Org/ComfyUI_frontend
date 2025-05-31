@@ -25,8 +25,8 @@ export function getSelectedModelsMetadata(node: {
   properties?: { models?: ModelFile[] }
 }): ModelFile[] {
   try {
-    if (!node.properties?.models?.length) return []
-    if (!node.widgets_values) return []
+    if (!node.properties?.models?.length) return
+    if (!node.widgets_values) return
 
     const widgetValues = Array.isArray(node.widgets_values)
       ? node.widgets_values
