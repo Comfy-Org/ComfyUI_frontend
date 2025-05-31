@@ -137,6 +137,8 @@ export const useColorPaletteService = () => {
           '--bg-img',
           `url('${backgroundImage}') no-repeat center /cover`
         )
+      } else {
+        rootStyle.removeProperty('--bg-img')
       }
     }
   }
