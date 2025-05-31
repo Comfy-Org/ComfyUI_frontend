@@ -7,6 +7,7 @@ import _ from 'lodash'
 import { computed, onMounted, watch } from 'vue'
 
 import { useNodePricing } from '@/composables/node/useNodePricing'
+import { useComputedWithWidgetWatch } from '@/composables/node/useWatchWidget'
 import { app } from '@/scripts/app'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
@@ -111,10 +112,15 @@ export const useNodeBadge = () => {
         node.badges.push(() => badge.value)
 
         if (node.constructor.nodeData?.api_node && showApiPricingBadge.value) {
-          const price = nodePricing.getNodeDisplayPrice(node)
-          // Always add the badge for API nodes, with or without price text
-          const creditsBadge = computed(() => {
-            // Use dynamic background color based on the theme
+          // Get the pricing function to determine if this node has dynamic pricing
+          const pricingConfig = nodePricing.getNodePricingConfig(node)
+          const hasDynamicPricing =
+            typeof pricingConfig?.displayPrice === 'function'
+
+          let creditsBadge
+          const createBadge = () => {
+            const price = nodePricing.getNodeDisplayPrice(node)
+
             const isLightTheme =
               colorPaletteStore.completedActivePalette.light_theme
             return new LGraphBadge({
@@ -137,7 +143,24 @@ export const useNodeBadge = () => {
                 ? adjustColor('#8D6932', { lightness: 0.5 })
                 : '#8D6932'
             })
-          })
+          }
+
+          if (hasDynamicPricing) {
+            // For dynamic pricing nodes, use computed that watches widget changes
+            const relevantWidgetNames = nodePricing.getRelevantWidgetNames(
+              node.constructor.nodeData?.name
+            )
+
+            const computedWithWidgetWatch = useComputedWithWidgetWatch(node, {
+              widgetNames: relevantWidgetNames,
+              triggerCanvasRedraw: true
+            })
+
+            creditsBadge = computedWithWidgetWatch(createBadge)
+          } else {
+            // For static pricing nodes, use regular computed
+            creditsBadge = computed(createBadge)
+          }
 
           node.badges.push(() => creditsBadge.value)
         }
