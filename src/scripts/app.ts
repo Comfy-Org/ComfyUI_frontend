@@ -1039,7 +1039,7 @@ export class ComfyApp {
 
       // Collect models metadata from node
       const selectedModels = getSelectedModelsMetadata(n)
-      if (selectedModels && selectedModels.length > 0) {
+      if (selectedModels?.length) {
         embeddedModels.push(...selectedModels)
       }
     }
