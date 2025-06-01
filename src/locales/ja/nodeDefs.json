@@ -3584,7 +3584,8 @@
   "Load3D": {
     "display_name": "3Dを読み込む",
     "inputs": {
-      "clear": {},
+      "clear": {
+      },
       "height": {
         "name": "高さ"
       },
@@ -3594,21 +3595,38 @@
       "model_file": {
         "name": "モデルファイル"
       },
-      "upload 3d model": {},
+      "upload 3d model": {
+      },
       "width": {
         "name": "幅"
       }
     },
-    "outputs": {
-      "6": {
-        "name": "recording_video"
+    "outputs": [
+      {
+        "name": "画像"
+      },
+      {
+        "name": "マスク"
+      },
+      {
+        "name": "メッシュパス"
+      },
+      {
+        "name": "法線"
+      },
+      {
+        "name": "線画"
+      },
+      {
+        "name": "カメラ情報"
       }
-    }
+    ]
   },
   "Load3DAnimation": {
     "display_name": "3D読み込み - アニメーション",
     "inputs": {
-      "clear": {},
+      "clear": {
+      },
       "height": {
         "name": "高さ"
       },
@@ -3618,16 +3636,29 @@
       "model_file": {
         "name": "モデルファイル"
       },
-      "upload 3d model": {},
+      "upload 3d model": {
+      },
       "width": {
         "name": "幅"
       }
     },
-    "outputs": {
-      "5": {
-        "name": "録画ビデオ"
+    "outputs": [
+      {
+        "name": "画像"
+      },
+      {
+        "name": "mask"
+      },
+      {
+        "name": "メッシュパス"
+      },
+      {
+        "name": "法線"
+      },
+      {
+        "name": "カメラ情報"
       }
-    }
+    ]
   },
   "LoadAudio": {
     "display_name": "音声を読み込む",
@@ -3675,7 +3706,8 @@
       "image": {
         "name": "画像"
       },
-      "refresh": {},
+      "refresh": {
+      },
       "upload": {
         "name": "アップロードするファイルを選択"
       }
@@ -6657,7 +6689,8 @@
   "PreviewAny": {
     "display_name": "プレビュー任意",
     "inputs": {
-      "preview": {},
+      "preview": {
+      },
       "source": {
         "name": "ソース"
       }
@@ -9627,7 +9660,8 @@
       "image": {
         "name": "画像"
       },
-      "waiting for camera___": {},
+      "waiting for camera___": {
+      },
       "width": {
         "name": "幅"
       }

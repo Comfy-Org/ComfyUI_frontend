@@ -3584,7 +3584,8 @@
   "Load3D": {
     "display_name": "Charger 3D",
     "inputs": {
-      "clear": {},
+      "clear": {
+      },
       "height": {
         "name": "hauteur"
       },
@@ -3594,21 +3595,38 @@
       "model_file": {
         "name": "fichier_modèle"
       },
-      "upload 3d model": {},
+      "upload 3d model": {
+      },
       "width": {
         "name": "largeur"
       }
     },
-    "outputs": {
-      "6": {
-        "name": "enregistrement_vidéo"
+    "outputs": [
+      {
+        "name": "image"
+      },
+      {
+        "name": "mask"
+      },
+      {
+        "name": "mesh_path"
+      },
+      {
+        "name": "normal"
+      },
+      {
+        "name": "lineart"
+      },
+      {
+        "name": "camera_info"
       }
-    }
+    ]
   },
   "Load3DAnimation": {
     "display_name": "Charger 3D - Animation",
     "inputs": {
-      "clear": {},
+      "clear": {
+      },
       "height": {
         "name": "hauteur"
       },
@@ -3618,16 +3636,29 @@
       "model_file": {
         "name": "fichier_modèle"
       },
-      "upload 3d model": {},
+      "upload 3d model": {
+      },
       "width": {
         "name": "largeur"
       }
     },
-    "outputs": {
-      "5": {
-        "name": "enregistrement_vidéo"
+    "outputs": [
+      {
+        "name": "image"
+      },
+      {
+        "name": "mask"
+      },
+      {
+        "name": "mesh_path"
+      },
+      {
+        "name": "normal"
+      },
+      {
+        "name": "camera_info"
       }
-    }
+    ]
   },
   "LoadAudio": {
     "display_name": "ChargerAudio",
@@ -3675,7 +3706,8 @@
       "image": {
         "name": "image"
       },
-      "refresh": {},
+      "refresh": {
+      },
       "upload": {
         "name": "choisissez le fichier à télécharger"
       }
@@ -6657,7 +6689,8 @@
   "PreviewAny": {
     "display_name": "Aperçu de n'importe quel",
     "inputs": {
-      "preview": {},
+      "preview": {
+      },
       "source": {
         "name": "source"
       }
@@ -9627,7 +9660,8 @@
       "image": {
         "name": "image"
       },
-      "waiting for camera___": {},
+      "waiting for camera___": {
+      },
       "width": {
         "name": "largeur"
       }
