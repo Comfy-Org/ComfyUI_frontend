@@ -62,6 +62,7 @@ import {
   findLegacyRerouteNodes,
   noNativeReroutes
 } from '@/utils/migration/migrateReroute'
+import { getSelectedModelsMetadata } from '@/utils/modelMetadataUtil'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import { type ComfyApi, PromptExecutionError, api } from './api'
@@ -1026,8 +1027,10 @@ export class ComfyApp {
       }
 
       // Collect models metadata from node
-      if (n.properties?.models?.length)
-        embeddedModels.push(...n.properties.models)
+      const selectedModels = getSelectedModelsMetadata(n)
+      if (selectedModels?.length) {
+        embeddedModels.push(...selectedModels)
+      }
     }
 
     // Merge models from the workflow's root-level 'models' field
