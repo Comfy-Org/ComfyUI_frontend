@@ -324,10 +324,6 @@
       "Top": "상단"
     }
   },
-  "Comfy_Validation_NodeDefs": {
-    "name": "노드 정의 유효성 검사 (느림)",
-    "tooltip": "노드 개발자에게 권장됩니다. 시작 시 모든 노드 정의를 유효성 검사합니다."
-  },
   "Comfy_Validation_Workflows": {
     "name": "워크플로 유효성 검사"
   },
