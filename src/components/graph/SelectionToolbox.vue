@@ -6,13 +6,11 @@
       content: 'p-0 flex flex-row'
     }"
   >
-    <HelpButton />
     <ExecuteButton />
     <ColorPickerButton />
     <BypassButton />
     <PinButton />
     <MaskEditorButton />
-    <HelpButton />
     <DeleteButton />
     <RefreshButton />
     <ExtensionCommandButton
