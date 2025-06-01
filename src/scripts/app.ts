@@ -52,7 +52,7 @@ import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import { ExtensionManager } from '@/types/extensionTypes'
 import { ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
-import { getFileHandler } from '@/utils/fileHandlers'
+import { getFileHandler, resolveDragDropFile } from '@/utils/fileHandlers'
 import {
   executeWidgetsCallback,
   fixLinkInputSlots,
@@ -463,20 +463,11 @@ export class ComfyApp {
           event.dataTransfer.files.length &&
           event.dataTransfer.files[0].type !== 'image/bmp'
         ) {
-          await this.handleFile(event.dataTransfer.files[0])
-        } else {
-          // Try loading the first URI in the transfer list
-          const validTypes = ['text/uri-list', 'text/x-moz-url']
-          const match = [...event.dataTransfer.types].find((t) =>
-            validTypes.find((v) => t === v)
+          const resolvedFile = await resolveDragDropFile(
+            event.dataTransfer.files[0],
+            event.dataTransfer
           )
-          if (match) {
-            const uri = event.dataTransfer.getData(match)?.split('\n')?.[0]
-            if (uri) {
-              const blob = await (await fetch(uri)).blob()
-              await this.handleFile(new File([blob], uri, { type: blob.type }))
-            }
-          }
+          await this.handleFile(resolvedFile)
         }
       } catch (err: any) {
         useToastStore().addAlert(
