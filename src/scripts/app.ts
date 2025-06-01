@@ -468,6 +468,19 @@ export class ComfyApp {
             event.dataTransfer
           )
           await this.handleFile(resolvedFile)
+        } else {
+          // Try loading the first URI in the transfer list (handles Chrome->Firefox BMP case)
+          const validTypes = ['text/uri-list', 'text/x-moz-url']
+          const match = [...event.dataTransfer.types].find((t) =>
+            validTypes.find((v) => t === v)
+          )
+          if (match) {
+            const uri = event.dataTransfer.getData(match)?.split('\n')?.[0]
+            if (uri) {
+              const blob = await (await fetch(uri)).blob()
+              await this.handleFile(new File([blob], uri, { type: blob.type }))
+            }
+          }
         }
       } catch (err: any) {
         useToastStore().addAlert(
