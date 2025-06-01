@@ -3584,8 +3584,7 @@
   "Load3D": {
     "display_name": "3D 불러오기",
     "inputs": {
-      "clear": {
-      },
+      "clear": {},
       "height": {
         "name": "높이"
       },
@@ -3595,29 +3594,21 @@
       "model_file": {
         "name": "모델 파일"
       },
-      "upload 3d model": {
-      },
+      "upload 3d model": {},
       "width": {
         "name": "너비"
       }
     },
-    "outputs": [
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      {
+    "outputs": {
+      "6": {
         "name": "녹화_비디오"
       }
-    ]
+    }
   },
   "Load3DAnimation": {
     "display_name": "3D 불러오기 - 애니메이션",
     "inputs": {
-      "clear": {
-      },
+      "clear": {},
       "height": {
         "name": "높이"
       },
@@ -3627,22 +3618,16 @@
       "model_file": {
         "name": "모델 파일"
       },
-      "upload 3d model": {
-      },
+      "upload 3d model": {},
       "width": {
         "name": "너비"
       }
     },
-    "outputs": [
-      null,
-      null,
-      null,
-      null,
-      null,
-      {
+    "outputs": {
+      "5": {
         "name": "녹화_비디오"
       }
-    ]
+    }
   },
   "LoadAudio": {
     "display_name": "오디오 로드",
@@ -3690,8 +3675,7 @@
       "image": {
         "name": "이미지"
       },
-      "refresh": {
-      },
+      "refresh": {},
       "upload": {
         "name": "업로드할 파일 선택"
       }
@@ -6673,8 +6657,7 @@
   "PreviewAny": {
     "display_name": "미리보기 아무거나",
     "inputs": {
-      "preview": {
-      },
+      "preview": {},
       "source": {
         "name": "소스"
       }
@@ -9644,8 +9627,7 @@
       "image": {
         "name": "이미지"
       },
-      "waiting for camera___": {
-      },
+      "waiting for camera___": {},
       "width": {
         "name": "너비"
       }

@@ -3584,8 +3584,7 @@
   "Load3D": {
     "display_name": "Cargar 3D",
     "inputs": {
-      "clear": {
-      },
+      "clear": {},
       "height": {
         "name": "alto"
       },
@@ -3595,29 +3594,21 @@
       "model_file": {
         "name": "archivo_modelo"
       },
-      "upload 3d model": {
-      },
+      "upload 3d model": {},
       "width": {
         "name": "ancho"
       }
     },
-    "outputs": [
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      {
+    "outputs": {
+      "6": {
         "name": "grabando_video"
       }
-    ]
+    }
   },
   "Load3DAnimation": {
     "display_name": "Cargar 3D - Animación",
     "inputs": {
-      "clear": {
-      },
+      "clear": {},
       "height": {
         "name": "alto"
       },
@@ -3627,22 +3618,16 @@
       "model_file": {
         "name": "archivo_modelo"
       },
-      "upload 3d model": {
-      },
+      "upload 3d model": {},
       "width": {
         "name": "ancho"
       }
     },
-    "outputs": [
-      null,
-      null,
-      null,
-      null,
-      null,
-      {
+    "outputs": {
+      "5": {
         "name": "grabando_video"
       }
-    ]
+    }
   },
   "LoadAudio": {
     "display_name": "CargarAudio",
@@ -3690,8 +3675,7 @@
       "image": {
         "name": "imagen"
       },
-      "refresh": {
-      },
+      "refresh": {},
       "upload": {
         "name": "elige archivo para subir"
       }
@@ -6673,8 +6657,7 @@
   "PreviewAny": {
     "display_name": "Vista previa de cualquier",
     "inputs": {
-      "preview": {
-      },
+      "preview": {},
       "source": {
         "name": "fuente"
       }
@@ -9644,8 +9627,7 @@
       "image": {
         "name": "imagen"
       },
-      "waiting for camera___": {
-      },
+      "waiting for camera___": {},
       "width": {
         "name": "ancho"
       }

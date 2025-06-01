@@ -3584,8 +3584,7 @@
   "Load3D": {
     "display_name": "3Dを読み込む",
     "inputs": {
-      "clear": {
-      },
+      "clear": {},
       "height": {
         "name": "高さ"
       },
@@ -3595,29 +3594,21 @@
       "model_file": {
         "name": "モデルファイル"
       },
-      "upload 3d model": {
-      },
+      "upload 3d model": {},
       "width": {
         "name": "幅"
       }
     },
-    "outputs": [
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      {
+    "outputs": {
+      "6": {
         "name": "recording_video"
       }
-    ]
+    }
   },
   "Load3DAnimation": {
     "display_name": "3D読み込み - アニメーション",
     "inputs": {
-      "clear": {
-      },
+      "clear": {},
       "height": {
         "name": "高さ"
       },
@@ -3627,22 +3618,16 @@
       "model_file": {
         "name": "モデルファイル"
       },
-      "upload 3d model": {
-      },
+      "upload 3d model": {},
       "width": {
         "name": "幅"
       }
     },
-    "outputs": [
-      null,
-      null,
-      null,
-      null,
-      null,
-      {
+    "outputs": {
+      "5": {
         "name": "録画ビデオ"
       }
-    ]
+    }
   },
   "LoadAudio": {
     "display_name": "音声を読み込む",
@@ -3690,8 +3675,7 @@
       "image": {
         "name": "画像"
       },
-      "refresh": {
-      },
+      "refresh": {},
       "upload": {
         "name": "アップロードするファイルを選択"
       }
@@ -6673,8 +6657,7 @@
   "PreviewAny": {
     "display_name": "プレビュー任意",
     "inputs": {
-      "preview": {
-      },
+      "preview": {},
       "source": {
         "name": "ソース"
       }
@@ -9644,8 +9627,7 @@
       "image": {
         "name": "画像"
       },
-      "waiting for camera___": {
-      },
+      "waiting for camera___": {},
       "width": {
         "name": "幅"
       }

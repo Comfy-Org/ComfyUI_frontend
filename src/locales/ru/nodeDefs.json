@@ -3584,8 +3584,7 @@
   "Load3D": {
     "display_name": "Загрузить 3D",
     "inputs": {
-      "clear": {
-      },
+      "clear": {},
       "height": {
         "name": "высота"
       },
@@ -3595,29 +3594,21 @@
       "model_file": {
         "name": "файл модели"
       },
-      "upload 3d model": {
-      },
+      "upload 3d model": {},
       "width": {
         "name": "ширина"
       }
     },
-    "outputs": [
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      {
+    "outputs": {
+      "6": {
         "name": "запись_видео"
       }
-    ]
+    }
   },
   "Load3DAnimation": {
     "display_name": "Загрузить 3D - Анимация",
     "inputs": {
-      "clear": {
-      },
+      "clear": {},
       "height": {
         "name": "высота"
       },
@@ -3627,22 +3618,16 @@
       "model_file": {
         "name": "файл_модели"
       },
-      "upload 3d model": {
-      },
+      "upload 3d model": {},
       "width": {
         "name": "ширина"
       }
     },
-    "outputs": [
-      null,
-      null,
-      null,
-      null,
-      null,
-      {
+    "outputs": {
+      "5": {
         "name": "запись_видео"
       }
-    ]
+    }
   },
   "LoadAudio": {
     "display_name": "Загрузить аудио",
@@ -3690,8 +3675,7 @@
       "image": {
         "name": "изображение"
       },
-      "refresh": {
-      },
+      "refresh": {},
       "upload": {
         "name": "выберите файл для загрузки"
       }
@@ -6673,8 +6657,7 @@
   "PreviewAny": {
     "display_name": "Предпросмотр любого",
     "inputs": {
-      "preview": {
-      },
+      "preview": {},
       "source": {
         "name": "источник"
       }
@@ -9644,8 +9627,7 @@
       "image": {
         "name": "изображение"
       },
-      "waiting for camera___": {
-      },
+      "waiting for camera___": {},
       "width": {
         "name": "ширина"
       }
