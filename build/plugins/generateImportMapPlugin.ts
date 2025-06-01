@@ -1,24 +1,9 @@
-import glob from 'fast-glob'
-import fs from 'fs-extra'
-import { dirname, join } from 'node:path'
-import { HtmlTagDescriptor, Plugin, normalizePath } from 'vite'
+import type { OutputOptions } from 'rollup'
+import { HtmlTagDescriptor, Plugin } from 'vite'
 
-interface ImportMapSource {
+interface VendorLibrary {
   name: string
-  pattern: string | RegExp
-  entry: string
-  recursiveDependence?: boolean
-  override?: Record<string, Partial<ImportMapSource>>
-}
-
-const parseDeps = (root: string, pkg: string) => {
-  const pkgPath = join(root, 'node_modules', pkg, 'package.json')
-  if (fs.existsSync(pkgPath)) {
-    const content = fs.readFileSync(pkgPath, 'utf-8')
-    const pkg = JSON.parse(content)
-    return Object.keys(pkg.dependencies || {})
-  }
-  return []
+  pattern: RegExp
 }
 
 /**
@@ -38,89 +23,53 @@ const parseDeps = (root: string, pkg: string) => {
  * @returns {Plugin} A Vite plugin that generates and injects an import map
  */
 export function generateImportMapPlugin(
-  importMapSources: ImportMapSource[]
+  vendorLibraries: VendorLibrary[]
 ): Plugin {
   const importMapEntries: Record<string, string> = {}
-  const resolvedImportMapSources: Map<string, ImportMapSource> = new Map()
-  const assetDir = 'assets/lib'
-  let root: string
 
   return {
     name: 'generate-import-map-plugin',
 
     // Configure manual chunks during the build process
     configResolved(config) {
-      root = config.root
-
       if (config.build) {
         // Ensure rollupOptions exists
         if (!config.build.rollupOptions) {
           config.build.rollupOptions = {}
         }
 
-        for (const source of importMapSources) {
-          resolvedImportMapSources.set(source.name, source)
-          if (source.recursiveDependence) {
-            const deps = parseDeps(root, source.name)
-
-            while (deps.length) {
-              const dep = deps.shift()!
-              const depSource = Object.assign({}, source, {
-                name: dep,
-                pattern: dep,
-                ...source.override?.[dep]
-              })
-              resolvedImportMapSources.set(depSource.name, depSource)
-
-              const _deps = parseDeps(root, depSource.name)
-              deps.unshift(..._deps)
+        const outputOptions: OutputOptions = {
+          manualChunks: (id: string) => {
+            for (const lib of vendorLibraries) {
+              if (lib.pattern.test(id)) {
+                return `vendor-${lib.name}`
+              }
             }
-          }
+            return null
+          },
+          // Disable minification of internal exports to preserve function names
+          minifyInternalExports: false
         }
-
-        const external: (string | RegExp)[] = []
-        for (const [, source] of resolvedImportMapSources) {
-          external.push(source.pattern)
-        }
-        config.build.rollupOptions.external = external
+        config.build.rollupOptions.output = outputOptions
       }
     },
 
-    generateBundle(_options) {
-      for (const [, source] of resolvedImportMapSources) {
-        if (source.entry) {
-          const moduleFile = join(source.name, source.entry)
-          const sourceFile = join(root, 'node_modules', moduleFile)
-          const targetFile = join(root, 'dist', assetDir, moduleFile)
+    generateBundle(_options, bundle) {
+      for (const fileName in bundle) {
+        const chunk = bundle[fileName]
+        if (chunk.type === 'chunk' && !chunk.isEntry) {
+          // Find matching vendor library by chunk name
+          const vendorLib = vendorLibraries.find(
+            (lib) => chunk.name === `vendor-${lib.name}`
+          )
 
-          importMapEntries[source.name] =
-            './' + normalizePath(join(assetDir, moduleFile))
+          if (vendorLib) {
+            const relativePath = `./${chunk.fileName.replace(/\\/g, '/')}`
+            importMapEntries[vendorLib.name] = relativePath
 
-          const targetDir = dirname(targetFile)
-          if (!fs.existsSync(targetDir)) {
-            fs.mkdirSync(targetDir, { recursive: true })
-          }
-          fs.copyFileSync(sourceFile, targetFile)
-        }
-
-        if (source.recursiveDependence) {
-          const files = glob.sync(['**/*.{js,mjs}'], {
-            cwd: join(root, 'node_modules', source.name)
-          })
-
-          for (const file of files) {
-            const moduleFile = join(source.name, file)
-            const sourceFile = join(root, 'node_modules', moduleFile)
-            const targetFile = join(root, 'dist', assetDir, moduleFile)
-
-            importMapEntries[normalizePath(join(source.name, dirname(file)))] =
-              './' + normalizePath(join(assetDir, moduleFile))
-
-            const targetDir = dirname(targetFile)
-            if (!fs.existsSync(targetDir)) {
-              fs.mkdirSync(targetDir, { recursive: true })
-            }
-            fs.copyFileSync(sourceFile, targetFile)
+            console.log(
+              `[ImportMap Plugin] Found chunk: ${chunk.name} -> Mapped '${vendorLib.name}' to '${relativePath}'`
+            )
           }
         }
       }
