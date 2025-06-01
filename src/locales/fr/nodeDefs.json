@@ -1,24 +1,4 @@
 {
-  "APG": {
-    "display_name": "Guidage Projeté Adaptatif",
-    "inputs": {
-      "eta": {
-        "name": "eta",
-        "tooltip": "Contrôle l’échelle du vecteur de guidage parallèle. Comportement CFG par défaut à une valeur de 1."
-      },
-      "model": {
-        "name": "modèle"
-      },
-      "momentum": {
-        "name": "momentum",
-        "tooltip": "Contrôle une moyenne glissante du guidage pendant la diffusion, désactivé à 0."
-      },
-      "norm_threshold": {
-        "name": "seuil de normalisation",
-        "tooltip": "Normalise le vecteur de guidage à cette valeur, la normalisation est désactivée à 0."
-      }
-    }
-  },
   "AddNoise": {
     "display_name": "AjouterBruit",
     "inputs": {
@@ -451,17 +431,6 @@
       },
       "low_threshold": {
         "name": "seuil_bas"
-      }
-    }
-  },
-  "CaseConverter": {
-    "display_name": "Convertisseur de casse",
-    "inputs": {
-      "mode": {
-        "name": "mode"
-      },
-      "string": {
-        "name": "chaîne"
       }
     }
   },
@@ -1252,18 +1221,6 @@
       }
     }
   },
-  "EmptyAceStepLatentAudio": {
-    "display_name": "EmptyAceStepLatentAudio",
-    "inputs": {
-      "batch_size": {
-        "name": "taille_du_lot",
-        "tooltip": "Le nombre d’images latentes dans le lot."
-      },
-      "seconds": {
-        "name": "secondes"
-      }
-    }
-  },
   "EmptyCosmosLatentVideo": {
     "display_name": "VidéoLatenteCosmosVide",
     "inputs": {
@@ -1489,78 +1446,6 @@
       },
       "guidance": {
         "name": "guidage"
-      }
-    }
-  },
-  "FluxKontextMaxImageNode": {
-    "description": "Modifie les images en utilisant Flux.1 Kontext [max] via l'API selon l'invite et le format d'image.",
-    "display_name": "Flux.1 Kontext [max] Image",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "format d'image",
-        "tooltip": "Format d'image ; doit être compris entre 1:4 et 4:1."
-      },
-      "control_after_generate": {
-        "name": "contrôle après génération"
-      },
-      "guidance": {
-        "name": "guidage",
-        "tooltip": "Intensité du guidage pour le processus de génération d'image"
-      },
-      "input_image": {
-        "name": "image d'entrée"
-      },
-      "prompt": {
-        "name": "invite",
-        "tooltip": "Invite pour la génération d'image - spécifiez quoi et comment éditer."
-      },
-      "prompt_upsampling": {
-        "name": "suréchantillonnage de l'invite",
-        "tooltip": "Indique s'il faut effectuer un suréchantillonnage sur l'invite. Si activé, modifie automatiquement l'invite pour une génération plus créative, mais les résultats sont non déterministes (la même graine ne produira pas exactement le même résultat)."
-      },
-      "seed": {
-        "name": "graine",
-        "tooltip": "La graine aléatoire utilisée pour créer le bruit."
-      },
-      "steps": {
-        "name": "étapes",
-        "tooltip": "Nombre d'étapes pour le processus de génération d'image"
-      }
-    }
-  },
-  "FluxKontextProImageNode": {
-    "description": "Modifie les images en utilisant Flux.1 Kontext [pro] via l'API selon l'invite et le format d'image.",
-    "display_name": "Flux.1 Kontext [pro] Image",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "format d'image",
-        "tooltip": "Format d'image ; doit être compris entre 1:4 et 4:1."
-      },
-      "control_after_generate": {
-        "name": "contrôle après génération"
-      },
-      "guidance": {
-        "name": "guidage",
-        "tooltip": "Intensité du guidage pour le processus de génération d'image"
-      },
-      "input_image": {
-        "name": "image d'entrée"
-      },
-      "prompt": {
-        "name": "invite",
-        "tooltip": "Invite pour la génération d'image - spécifiez quoi et comment éditer."
-      },
-      "prompt_upsampling": {
-        "name": "suréchantillonnage de l'invite",
-        "tooltip": "Indique si un suréchantillonnage de l'invite doit être effectué. Si activé, modifie automatiquement l'invite pour une génération plus créative, mais les résultats sont non déterministes (la même graine ne produira pas exactement le même résultat)."
-      },
-      "seed": {
-        "name": "graine",
-        "tooltip": "La graine aléatoire utilisée pour créer le bruit."
-      },
-      "steps": {
-        "name": "étapes",
-        "tooltip": "Nombre d'étapes pour le processus de génération d'image"
       }
     }
   },
@@ -1875,57 +1760,6 @@
       }
     }
   },
-  "GeminiInputFiles": {
-    "description": "Charge et prépare les fichiers d'entrée à inclure comme entrées pour les nœuds Gemini LLM. Les fichiers seront lus par le modèle Gemini lors de la génération d'une réponse. Le contenu du fichier texte compte dans la limite de jetons. 🛈 ASTUCE : Peut être enchaîné avec d'autres nœuds de fichier d'entrée Gemini.",
-    "display_name": "Fichiers d'entrée Gemini",
-    "inputs": {
-      "GEMINI_INPUT_FILES": {
-        "name": "GEMINI_INPUT_FILES",
-        "tooltip": "Un ou des fichiers supplémentaires optionnels à regrouper avec le fichier chargé depuis ce nœud. Permet d'enchaîner des fichiers d'entrée afin qu'un seul message puisse inclure plusieurs fichiers d'entrée."
-      },
-      "file": {
-        "name": "fichier",
-        "tooltip": "Fichiers d'entrée à inclure comme contexte pour le modèle. N'accepte pour l'instant que les fichiers texte (.txt) et PDF (.pdf)."
-      }
-    }
-  },
-  "GeminiNode": {
-    "description": "Générez des réponses textuelles avec le modèle d'IA Gemini de Google. Vous pouvez fournir plusieurs types d’entrées (texte, images, audio, vidéo) comme contexte pour générer des réponses plus pertinentes et significatives.",
-    "display_name": "Google Gemini",
-    "inputs": {
-      "audio": {
-        "name": "audio",
-        "tooltip": "Audio optionnel à utiliser comme contexte pour le modèle."
-      },
-      "control_after_generate": {
-        "name": "contrôle après génération"
-      },
-      "files": {
-        "name": "fichiers",
-        "tooltip": "Fichier(s) optionnel(s) à utiliser comme contexte pour le modèle. Accepte les entrées du nœud Gemini Generate Content Input Files."
-      },
-      "images": {
-        "name": "images",
-        "tooltip": "Image(s) optionnelle(s) à utiliser comme contexte pour le modèle. Pour inclure plusieurs images, vous pouvez utiliser le nœud Batch Images."
-      },
-      "model": {
-        "name": "modèle",
-        "tooltip": "Le modèle Gemini à utiliser pour générer des réponses."
-      },
-      "prompt": {
-        "name": "invite",
-        "tooltip": "Entrées textuelles pour le modèle, utilisées pour générer une réponse. Vous pouvez inclure des instructions détaillées, des questions ou du contexte pour le modèle."
-      },
-      "seed": {
-        "name": "graine",
-        "tooltip": "Lorsque la graine est fixée à une valeur spécifique, le modèle fait de son mieux pour fournir la même réponse lors de requêtes répétées. Un résultat déterministe n'est pas garanti. De plus, changer le modèle ou les paramètres, comme la température, peut entraîner des variations dans la réponse même si vous utilisez la même valeur de graine. Par défaut, une valeur de graine aléatoire est utilisée."
-      },
-      "video": {
-        "name": "vidéo",
-        "tooltip": "Vidéo optionnelle à utiliser comme contexte pour le modèle."
-      }
-    }
-  },
   "GetVideoComponents": {
     "description": "Extrait tous les composants d'une vidéo : images, audio et fréquence d’images.",
     "display_name": "Obtenir les composants vidéo",
@@ -2191,24 +2025,6 @@
       },
       "seed": {
         "name": "seed"
-      }
-    }
-  },
-  "ImageAddNoise": {
-    "display_name": "ImageAddNoise",
-    "inputs": {
-      "control_after_generate": {
-        "name": "contrôler après génération"
-      },
-      "image": {
-        "name": "image"
-      },
-      "seed": {
-        "name": "graine",
-        "tooltip": "La graine aléatoire utilisée pour créer le bruit."
-      },
-      "strength": {
-        "name": "intensité"
       }
     }
   },
@@ -3601,26 +3417,26 @@
         "name": "largeur"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "name": "image"
       },
-      {
-        "name": "mask"
+      "1": {
+        "name": "masque"
       },
-      {
-        "name": "mesh_path"
+      "2": {
+        "name": "chemin_maillage"
       },
-      {
-        "name": "normal"
+      "3": {
+        "name": "normale"
       },
-      {
+      "4": {
         "name": "lineart"
       },
-      {
-        "name": "camera_info"
+      "5": {
+        "name": "info_caméra"
       }
-    ]
+    }
   },
   "Load3DAnimation": {
     "display_name": "Charger 3D - Animation",
@@ -3642,23 +3458,23 @@
         "name": "largeur"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "name": "image"
       },
-      {
-        "name": "mask"
+      "1": {
+        "name": "masque"
       },
-      {
-        "name": "mesh_path"
+      "2": {
+        "name": "chemin_maillage"
       },
-      {
-        "name": "normal"
+      "3": {
+        "name": "normale"
       },
-      {
-        "name": "camera_info"
+      "4": {
+        "name": "info_caméra"
       }
-    ]
+    }
   },
   "LoadAudio": {
     "display_name": "ChargerAudio",
@@ -5870,54 +5686,6 @@
       }
     }
   },
-  "OpenAIChatConfig": {
-    "description": "Permet de spécifier des options de configuration avancées pour les nœuds OpenAI Chat.",
-    "display_name": "Options avancées OpenAI Chat",
-    "inputs": {
-      "instructions": {
-        "name": "instructions",
-        "tooltip": "Instructions pour le modèle sur la façon de générer la réponse."
-      },
-      "max_output_tokens": {
-        "name": "max_output_tokens",
-        "tooltip": "Une limite supérieure pour le nombre de jetons pouvant être générés pour une réponse, y compris les jetons de sortie visibles."
-      },
-      "truncation": {
-        "name": "truncation",
-        "tooltip": "La stratégie de troncature à utiliser pour la réponse du modèle. auto : Si le contexte de cette réponse et des précédentes dépasse la taille de la fenêtre de contexte du modèle, le modèle tronquera la réponse pour l'adapter à la fenêtre de contexte en supprimant des éléments d'entrée au milieu de la conversation. disabled : Si une réponse du modèle dépasse la taille de la fenêtre de contexte, la requête échouera avec une erreur 400."
-      }
-    }
-  },
-  "OpenAIChatNode": {
-    "description": "Générer des réponses textuelles à partir d’un modèle OpenAI.",
-    "display_name": "OpenAI Chat",
-    "inputs": {
-      "advanced_options": {
-        "name": "options_avancées",
-        "tooltip": "Configuration optionnelle pour le modèle. Accepte les entrées du nœud OpenAI Chat Advanced Options."
-      },
-      "files": {
-        "name": "fichiers",
-        "tooltip": "Fichier(s) optionnel(s) à utiliser comme contexte pour le modèle. Accepte les entrées du nœud OpenAI Chat Input Files."
-      },
-      "images": {
-        "name": "images",
-        "tooltip": "Image(s) optionnelle(s) à utiliser comme contexte pour le modèle. Pour inclure plusieurs images, vous pouvez utiliser le nœud Batch Images."
-      },
-      "model": {
-        "name": "modèle",
-        "tooltip": "Le modèle utilisé pour générer la réponse"
-      },
-      "persist_context": {
-        "name": "conserver_contexte",
-        "tooltip": "Conserver le contexte de la conversation entre les appels (conversation multi-tours)"
-      },
-      "prompt": {
-        "name": "invite",
-        "tooltip": "Entrées textuelles pour le modèle, utilisées pour générer une réponse."
-      }
-    }
-  },
   "OpenAIDalle2": {
     "description": "Génère des images de façon synchrone via l’endpoint DALL·E 2 d’OpenAI.",
     "display_name": "OpenAI DALL·E 2",
@@ -6018,20 +5786,6 @@
       "size": {
         "name": "taille",
         "tooltip": "Taille de l'image"
-      }
-    }
-  },
-  "OpenAIInputFiles": {
-    "description": "Charge et prépare des fichiers d'entrée (texte, pdf, etc.) à inclure comme entrées pour le nœud OpenAI Chat. Les fichiers seront lus par le modèle OpenAI lors de la génération d'une réponse. 🛈 ASTUCE : Peut être enchaîné avec d'autres nœuds de fichier d'entrée OpenAI.",
-    "display_name": "Fichiers d'entrée OpenAI Chat",
-    "inputs": {
-      "OPENAI_INPUT_FILES": {
-        "name": "OPENAI_INPUT_FILES",
-        "tooltip": "Un ou plusieurs fichiers supplémentaires optionnels à regrouper avec le fichier chargé depuis ce nœud. Permet d'enchaîner des fichiers d'entrée afin qu'un seul message puisse inclure plusieurs fichiers d'entrée."
-      },
-      "file": {
-        "name": "fichier",
-        "tooltip": "Fichiers d'entrée à inclure comme contexte pour le modèle. Accepte uniquement les fichiers texte (.txt) et PDF (.pdf) pour le moment."
       }
     }
   },
@@ -7122,57 +6876,6 @@
       }
     }
   },
-  "RegexExtract": {
-    "display_name": "Extraction par expression régulière",
-    "inputs": {
-      "case_insensitive": {
-        "name": "insensible_à_la_casse"
-      },
-      "dotall": {
-        "name": "dotall"
-      },
-      "group_index": {
-        "name": "index_groupe"
-      },
-      "mode": {
-        "name": "mode"
-      },
-      "multiline": {
-        "name": "multiligne"
-      },
-      "regex_pattern": {
-        "name": "motif_regex"
-      },
-      "string": {
-        "name": "chaîne"
-      }
-    }
-  },
-  "RegexMatch": {
-    "display_name": "Correspondance Regex",
-    "inputs": {
-      "case_insensitive": {
-        "name": "insensible_à_la_casse"
-      },
-      "dotall": {
-        "name": "dotall"
-      },
-      "multiline": {
-        "name": "multiligne"
-      },
-      "regex_pattern": {
-        "name": "motif_regex"
-      },
-      "string": {
-        "name": "chaîne"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "correspondances"
-      }
-    }
-  },
   "RenormCFG": {
     "display_name": "RenormCFG",
     "inputs": {
@@ -7217,194 +6920,6 @@
       },
       "multiplier": {
         "name": "multiplicateur"
-      }
-    }
-  },
-  "Rodin3D_Detail": {
-    "description": "Générez des ressources 3D en utilisant l'API Rodin",
-    "display_name": "Rodin 3D Générer - Génération de détails",
-    "inputs": {
-      "Images": {
-        "name": "Images"
-      },
-      "Material_Type": {
-        "name": "Type de matériau"
-      },
-      "Polygon_count": {
-        "name": "Nombre de polygones"
-      },
-      "Seed": {
-        "name": "Graine"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "Chemin du modèle 3D"
-      }
-    }
-  },
-  "Rodin3D_Regular": {
-    "description": "Générez des ressources 3D en utilisant l'API Rodin",
-    "display_name": "Rodin 3D Générer - Génération régulière",
-    "inputs": {
-      "Images": {
-        "name": "Images"
-      },
-      "Material_Type": {
-        "name": "Type de matériau"
-      },
-      "Polygon_count": {
-        "name": "Nombre de polygones"
-      },
-      "Seed": {
-        "name": "Graine"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "Chemin du modèle 3D"
-      }
-    }
-  },
-  "Rodin3D_Sketch": {
-    "description": "Générez des ressources 3D en utilisant l'API Rodin",
-    "display_name": "Rodin 3D Générer - Génération de croquis",
-    "inputs": {
-      "Images": {
-        "name": "Images"
-      },
-      "Seed": {
-        "name": "Graine"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "Chemin du modèle 3D"
-      }
-    }
-  },
-  "Rodin3D_Smooth": {
-    "description": "Générez des ressources 3D en utilisant l'API Rodin",
-    "display_name": "Rodin 3D Générer - Génération Lisse",
-    "inputs": {
-      "Images": {
-        "name": "Images"
-      },
-      "Material_Type": {
-        "name": "Type de matériau"
-      },
-      "Polygon_count": {
-        "name": "Nombre de polygones"
-      },
-      "Seed": {
-        "name": "Graine"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "Chemin du modèle 3D"
-      }
-    }
-  },
-  "RunwayFirstLastFrameNode": {
-    "description": "Téléchargez la première et la dernière image clé, rédigez un prompt et générez une vidéo. Les transitions plus complexes, comme lorsque la dernière image est complètement différente de la première, peuvent bénéficier d'une durée plus longue de 10s. Cela donnera plus de temps à la génération pour effectuer une transition fluide entre les deux entrées. Avant de commencer, consultez ces bonnes pratiques pour vous assurer que vos sélections d'entrée permettront une génération réussie : https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
-    "display_name": "Runway Première-Dernière-Image vers Vidéo",
-    "inputs": {
-      "control_after_generate": {
-        "name": "contrôle après génération"
-      },
-      "duration": {
-        "name": "durée"
-      },
-      "end_frame": {
-        "name": "image de fin",
-        "tooltip": "Image de fin à utiliser pour la vidéo. Pris en charge uniquement pour gen3a_turbo."
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Prompt textuel pour la génération"
-      },
-      "ratio": {
-        "name": "ratio"
-      },
-      "seed": {
-        "name": "graine",
-        "tooltip": "Graine aléatoire pour la génération"
-      },
-      "start_frame": {
-        "name": "image de début",
-        "tooltip": "Image de début à utiliser pour la vidéo"
-      }
-    }
-  },
-  "RunwayImageToVideoNodeGen3a": {
-    "description": "Générez une vidéo à partir d'une seule image de départ en utilisant le modèle Gen3a Turbo. Avant de commencer, consultez ces bonnes pratiques pour vous assurer que vos choix d'entrée permettront une génération réussie : https://help.runwayml.com/hc/en-us/articles/33927968552339-Creating-with-Act-One-on-Gen-3-Alpha-and-Turbo.",
-    "display_name": "Runway Image to Video (Gen3a Turbo)",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "duration"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Invite textuelle pour la génération"
-      },
-      "ratio": {
-        "name": "ratio"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Graine aléatoire pour la génération"
-      },
-      "start_frame": {
-        "name": "start_frame",
-        "tooltip": "Image de départ à utiliser pour la vidéo"
-      }
-    }
-  },
-  "RunwayImageToVideoNodeGen4": {
-    "description": "Générez une vidéo à partir d'une seule image de départ en utilisant le modèle Gen4 Turbo. Avant de commencer, consultez ces bonnes pratiques pour vous assurer que vos choix d'entrée permettront une génération réussie : https://help.runwayml.com/hc/en-us/articles/37327109429011-Creating-with-Gen-4-Video.",
-    "display_name": "Runway Image to Video (Gen4 Turbo)",
-    "inputs": {
-      "control_after_generate": {
-        "name": "contrôle après génération"
-      },
-      "duration": {
-        "name": "durée"
-      },
-      "prompt": {
-        "name": "invite",
-        "tooltip": "Invite textuelle pour la génération"
-      },
-      "ratio": {
-        "name": "ratio"
-      },
-      "seed": {
-        "name": "graine",
-        "tooltip": "Graine aléatoire pour la génération"
-      },
-      "start_frame": {
-        "name": "image de départ",
-        "tooltip": "Image de départ à utiliser pour la vidéo"
-      }
-    }
-  },
-  "RunwayTextToImageNode": {
-    "description": "Générez une image à partir d'une invite textuelle en utilisant le modèle Gen 4 de Runway. Vous pouvez également inclure des images de référence pour guider la génération.",
-    "display_name": "Runway Texte vers Image",
-    "inputs": {
-      "prompt": {
-        "name": "invite",
-        "tooltip": "Invite textuelle pour la génération d'image"
-      },
-      "ratio": {
-        "name": "ratio"
-      },
-      "reference_image": {
-        "name": "image de référence",
-        "tooltip": "Image de référence optionnelle pour guider la génération"
       }
     }
   },
@@ -7804,40 +7319,6 @@
       }
     }
   },
-  "SaveAudioMP3": {
-    "display_name": "Enregistrer l'audio (MP3)",
-    "inputs": {
-      "audio": {
-        "name": "audio"
-      },
-      "audioUI": {
-        "name": "audioUI"
-      },
-      "filename_prefix": {
-        "name": "préfixe_nom_fichier"
-      },
-      "quality": {
-        "name": "qualité"
-      }
-    }
-  },
-  "SaveAudioOpus": {
-    "display_name": "Enregistrer l'audio (Opus)",
-    "inputs": {
-      "audio": {
-        "name": "audio"
-      },
-      "audioUI": {
-        "name": "interface audio"
-      },
-      "filename_prefix": {
-        "name": "préfixe du nom de fichier"
-      },
-      "quality": {
-        "name": "qualité"
-      }
-    }
-  },
   "SaveGLB": {
     "display_name": "SaveGLB",
     "inputs": {
@@ -7885,9 +7366,9 @@
       }
     }
   },
-  "SaveSVGNode": {
+  "SaveSVG": {
     "description": "Enregistrer les fichiers SVG sur le disque.",
-    "display_name": "SaveSVGNode",
+    "display_name": "Enregistrer SVG",
     "inputs": {
       "filename_prefix": {
         "name": "préfixe_nom_fichier",
@@ -8438,108 +7919,6 @@
       }
     }
   },
-  "StringCompare": {
-    "display_name": "Comparer",
-    "inputs": {
-      "case_sensitive": {
-        "name": "case_sensitive"
-      },
-      "mode": {
-        "name": "mode"
-      },
-      "string_a": {
-        "name": "string_a"
-      },
-      "string_b": {
-        "name": "string_b"
-      }
-    }
-  },
-  "StringConcatenate": {
-    "display_name": "Concaténer",
-    "inputs": {
-      "delimiter": {
-        "name": "délimiteur"
-      },
-      "string_a": {
-        "name": "string_a"
-      },
-      "string_b": {
-        "name": "string_b"
-      }
-    }
-  },
-  "StringContains": {
-    "display_name": "Contient",
-    "inputs": {
-      "case_sensitive": {
-        "name": "sensible à la casse"
-      },
-      "string": {
-        "name": "chaîne"
-      },
-      "substring": {
-        "name": "sous-chaîne"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "contient"
-      }
-    }
-  },
-  "StringLength": {
-    "display_name": "Longueur",
-    "inputs": {
-      "string": {
-        "name": "chaîne"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "longueur"
-      }
-    }
-  },
-  "StringReplace": {
-    "display_name": "Remplacer",
-    "inputs": {
-      "find": {
-        "name": "chercher"
-      },
-      "replace": {
-        "name": "remplacer"
-      },
-      "string": {
-        "name": "chaîne"
-      }
-    }
-  },
-  "StringSubstring": {
-    "display_name": "Sous-chaîne",
-    "inputs": {
-      "end": {
-        "name": "fin"
-      },
-      "start": {
-        "name": "début"
-      },
-      "string": {
-        "name": "chaîne"
-      }
-    }
-  },
-  "StringTrim": {
-    "display_name": "Rogner",
-    "inputs": {
-      "mode": {
-        "name": "mode"
-      },
-      "string": {
-        "name": "chaîne"
-      }
-    }
-  },
   "StyleModelApply": {
     "display_name": "Appliquer le modèle de style",
     "inputs": {
@@ -8579,23 +7958,6 @@
       },
       "min_padding": {
         "name": "remplissage_min"
-      }
-    }
-  },
-  "TextEncodeAceStepAudio": {
-    "display_name": "TextEncodeAceStepAudio",
-    "inputs": {
-      "clip": {
-        "name": "clip"
-      },
-      "lyrics": {
-        "name": "paroles"
-      },
-      "lyrics_strength": {
-        "name": "intensité_des_paroles"
-      },
-      "tags": {
-        "name": "tags"
       }
     }
   },
@@ -8673,268 +8035,6 @@
       },
       "clip_name3": {
         "name": "nom_clip3"
-      }
-    }
-  },
-  "TripoConversionNode": {
-    "display_name": "Tripo : Convertir le modèle",
-    "inputs": {
-      "face_limit": {
-        "name": "limite de faces"
-      },
-      "format": {
-        "name": "format"
-      },
-      "original_model_task_id": {
-        "name": "original_model_task_id"
-      },
-      "quad": {
-        "name": "quad"
-      },
-      "texture_format": {
-        "name": "format de texture"
-      },
-      "texture_size": {
-        "name": "taille de texture"
-      }
-    }
-  },
-  "TripoImageToModelNode": {
-    "display_name": "Tripo : Image vers Modèle",
-    "inputs": {
-      "face_limit": {
-        "name": "limite de faces"
-      },
-      "image": {
-        "name": "image"
-      },
-      "model_seed": {
-        "name": "graine du modèle"
-      },
-      "model_version": {
-        "name": "version du modèle",
-        "tooltip": "La version du modèle à utiliser pour la génération"
-      },
-      "orientation": {
-        "name": "orientation"
-      },
-      "pbr": {
-        "name": "pbr"
-      },
-      "quad": {
-        "name": "quad"
-      },
-      "style": {
-        "name": "style"
-      },
-      "texture": {
-        "name": "texture"
-      },
-      "texture_alignment": {
-        "name": "alignement de texture"
-      },
-      "texture_quality": {
-        "name": "qualité de texture"
-      },
-      "texture_seed": {
-        "name": "graine de texture"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "fichier modèle"
-      },
-      "1": {
-        "name": "ID tâche modèle"
-      }
-    }
-  },
-  "TripoMultiviewToModelNode": {
-    "display_name": "Tripo : Multivue vers Modèle",
-    "inputs": {
-      "face_limit": {
-        "name": "limite_faces"
-      },
-      "image": {
-        "name": "image"
-      },
-      "image_back": {
-        "name": "image_arrière"
-      },
-      "image_left": {
-        "name": "image_gauche"
-      },
-      "image_right": {
-        "name": "image_droite"
-      },
-      "model_seed": {
-        "name": "graine_modèle"
-      },
-      "model_version": {
-        "name": "version_modèle",
-        "tooltip": "La version du modèle à utiliser pour la génération"
-      },
-      "orientation": {
-        "name": "orientation"
-      },
-      "pbr": {
-        "name": "pbr"
-      },
-      "quad": {
-        "name": "quad"
-      },
-      "texture": {
-        "name": "texture"
-      },
-      "texture_alignment": {
-        "name": "alignement_texture"
-      },
-      "texture_quality": {
-        "name": "qualité_texture"
-      },
-      "texture_seed": {
-        "name": "graine_texture"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "fichier_modèle"
-      },
-      "1": {
-        "name": "id_tâche_modèle"
-      }
-    }
-  },
-  "TripoRefineNode": {
-    "description": "Affinez un modèle brouillon créé uniquement par les modèles Tripo v1.4.",
-    "display_name": "Tripo : Affiner le modèle brouillon",
-    "inputs": {
-      "model_task_id": {
-        "name": "model_task_id",
-        "tooltip": "Doit être un modèle Tripo v1.4"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "model_file"
-      },
-      "1": {
-        "name": "model task_id"
-      }
-    }
-  },
-  "TripoRetargetNode": {
-    "display_name": "Tripo : Retargeter un modèle rigged",
-    "inputs": {
-      "animation": {
-        "name": "animation"
-      },
-      "original_model_task_id": {
-        "name": "original_model_task_id"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "fichier modèle"
-      },
-      "1": {
-        "name": "retarget task_id"
-      }
-    }
-  },
-  "TripoRigNode": {
-    "display_name": "Tripo : Modèle de rig",
-    "inputs": {
-      "original_model_task_id": {
-        "name": "original_model_task_id"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "fichier du modèle"
-      },
-      "1": {
-        "name": "ID de tâche de rig"
-      }
-    }
-  },
-  "TripoTextToModelNode": {
-    "display_name": "Tripo : Texte vers Modèle",
-    "inputs": {
-      "face_limit": {
-        "name": "limite_de_faces"
-      },
-      "image_seed": {
-        "name": "graine_image"
-      },
-      "model_seed": {
-        "name": "graine_modèle"
-      },
-      "model_version": {
-        "name": "version_du_modèle"
-      },
-      "negative_prompt": {
-        "name": "invite_négative"
-      },
-      "pbr": {
-        "name": "pbr"
-      },
-      "prompt": {
-        "name": "invite"
-      },
-      "quad": {
-        "name": "quad"
-      },
-      "style": {
-        "name": "style"
-      },
-      "texture": {
-        "name": "texture"
-      },
-      "texture_quality": {
-        "name": "qualité_texture"
-      },
-      "texture_seed": {
-        "name": "graine_texture"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "fichier_modèle"
-      },
-      "1": {
-        "name": "id_tâche_modèle"
-      }
-    }
-  },
-  "TripoTextureNode": {
-    "display_name": "Tripo : Modèle de texture",
-    "inputs": {
-      "model_task_id": {
-        "name": "model_task_id"
-      },
-      "pbr": {
-        "name": "pbr"
-      },
-      "texture": {
-        "name": "texture"
-      },
-      "texture_alignment": {
-        "name": "alignement de texture"
-      },
-      "texture_quality": {
-        "name": "qualité de texture"
-      },
-      "texture_seed": {
-        "name": "graine de texture"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "fichier modèle"
-      },
-      "1": {
-        "name": "model task_id"
       }
     }
   },
@@ -9277,98 +8377,6 @@
       }
     }
   },
-  "WanCameraEmbedding": {
-    "display_name": "WanCameraEmbedding",
-    "inputs": {
-      "camera_pose": {
-        "name": "position_camera"
-      },
-      "cx": {
-        "name": "cx"
-      },
-      "cy": {
-        "name": "cy"
-      },
-      "fx": {
-        "name": "fx"
-      },
-      "fy": {
-        "name": "fy"
-      },
-      "height": {
-        "name": "hauteur"
-      },
-      "length": {
-        "name": "longueur"
-      },
-      "speed": {
-        "name": "vitesse"
-      },
-      "width": {
-        "name": "largeur"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "camera_embedding"
-      },
-      "1": {
-        "name": "largeur"
-      },
-      "2": {
-        "name": "hauteur"
-      },
-      "3": {
-        "name": "longueur"
-      }
-    }
-  },
-  "WanCameraImageToVideo": {
-    "display_name": "WanCameraImageToVideo",
-    "inputs": {
-      "batch_size": {
-        "name": "taille_du_lot"
-      },
-      "camera_conditions": {
-        "name": "conditions_de_caméra"
-      },
-      "clip_vision_output": {
-        "name": "clip_vision_output"
-      },
-      "height": {
-        "name": "hauteur"
-      },
-      "length": {
-        "name": "longueur"
-      },
-      "negative": {
-        "name": "négatif"
-      },
-      "positive": {
-        "name": "positif"
-      },
-      "start_image": {
-        "name": "image_de_départ"
-      },
-      "vae": {
-        "name": "vae"
-      },
-      "width": {
-        "name": "largeur"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "positif"
-      },
-      "1": {
-        "name": "négatif"
-      },
-      "2": {
-        "name": "latent"
-      }
-    }
-  },
   "WanFirstLastFrameToVideo": {
     "display_name": "WanFirstLastFrameToVideo",
     "inputs": {
@@ -9549,49 +8557,6 @@
         "name": "négatif"
       },
       "2": {
-        "name": "latent"
-      }
-    }
-  },
-  "WanPhantomSubjectToVideo": {
-    "display_name": "WanPhantomSubjectToVideo",
-    "inputs": {
-      "batch_size": {
-        "name": "taille_du_lot"
-      },
-      "height": {
-        "name": "hauteur"
-      },
-      "images": {
-        "name": "images"
-      },
-      "length": {
-        "name": "longueur"
-      },
-      "negative": {
-        "name": "négatif"
-      },
-      "positive": {
-        "name": "positif"
-      },
-      "vae": {
-        "name": "vae"
-      },
-      "width": {
-        "name": "largeur"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "positif"
-      },
-      "1": {
-        "name": "texte_négatif"
-      },
-      "2": {
-        "name": "texte_img_négatif"
-      },
-      "3": {
         "name": "latent"
       }
     }

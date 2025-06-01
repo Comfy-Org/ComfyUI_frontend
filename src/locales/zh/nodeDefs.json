@@ -1,24 +1,4 @@
 {
-  "APG": {
-    "display_name": "自适应投影引导",
-    "inputs": {
-      "eta": {
-        "name": "eta",
-        "tooltip": "控制并行引导向量的缩放比例。设置为1时为默认CFG行为。"
-      },
-      "model": {
-        "name": "model"
-      },
-      "momentum": {
-        "name": "momentum",
-        "tooltip": "在扩散过程中控制引导的滑动平均，设置为0时禁用。"
-      },
-      "norm_threshold": {
-        "name": "norm_threshold",
-        "tooltip": "将引导向量归一化到该值，设置为0时禁用归一化。"
-      }
-    }
-  },
   "AddNoise": {
     "display_name": "添加噪波",
     "inputs": {
@@ -451,17 +431,6 @@
       },
       "low_threshold": {
         "name": "低阈值"
-      }
-    }
-  },
-  "CaseConverter": {
-    "display_name": "大小写转换器",
-    "inputs": {
-      "mode": {
-        "name": "模式"
-      },
-      "string": {
-        "name": "字符串"
       }
     }
   },
@@ -1252,18 +1221,6 @@
       }
     }
   },
-  "EmptyAceStepLatentAudio": {
-    "display_name": "EmptyAceStepLatentAudio",
-    "inputs": {
-      "batch_size": {
-        "name": "批量大小",
-        "tooltip": "批次中的latent图像数量。"
-      },
-      "seconds": {
-        "name": "秒数"
-      }
-    }
-  },
   "EmptyCosmosLatentVideo": {
     "display_name": "空的Cosmos潜在视频",
     "inputs": {
@@ -1489,78 +1446,6 @@
       },
       "guidance": {
         "name": "引导"
-      }
-    }
-  },
-  "FluxKontextMaxImageNode": {
-    "description": "通过 API 使用 Flux.1 Kontext [max] 根据提示词和宽高比编辑图像。",
-    "display_name": "Flux.1 Kontext [max] 图像",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "宽高比",
-        "tooltip": "图像的宽高比；必须在 1:4 到 4:1 之间。"
-      },
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "guidance": {
-        "name": "引导强度",
-        "tooltip": "图像生成过程中的引导强度"
-      },
-      "input_image": {
-        "name": "输入图像"
-      },
-      "prompt": {
-        "name": "提示词",
-        "tooltip": "用于图像生成的提示词——指定要编辑的内容和方式。"
-      },
-      "prompt_upsampling": {
-        "name": "提示词上采样",
-        "tooltip": "是否对提示词进行上采样。启用后会自动修改提示词以获得更具创意的生成，但结果是非确定性的（相同种子不会产生完全相同的结果）。"
-      },
-      "seed": {
-        "name": "随机种子",
-        "tooltip": "用于生成噪声的随机种子。"
-      },
-      "steps": {
-        "name": "步数",
-        "tooltip": "图像生成过程的步数"
-      }
-    }
-  },
-  "FluxKontextProImageNode": {
-    "description": "通过 API 使用 Flux.1 Kontext [pro] 根据提示词和宽高比编辑图像。",
-    "display_name": "Flux.1 Kontext [pro] 图像",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "宽高比",
-        "tooltip": "图像的宽高比；必须在 1:4 到 4:1 之间。"
-      },
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "guidance": {
-        "name": "引导强度",
-        "tooltip": "图像生成过程的引导强度"
-      },
-      "input_image": {
-        "name": "输入图像"
-      },
-      "prompt": {
-        "name": "提示词",
-        "tooltip": "用于图像生成的提示词——指定要编辑的内容和方式。"
-      },
-      "prompt_upsampling": {
-        "name": "提示词上采样",
-        "tooltip": "是否对提示词进行上采样。启用后会自动修改提示词以获得更具创意的生成，但结果是非确定性的（相同种子不会产生完全相同的结果）。"
-      },
-      "seed": {
-        "name": "随机种子",
-        "tooltip": "用于生成噪声的随机种子。"
-      },
-      "steps": {
-        "name": "步数",
-        "tooltip": "图像生成过程的步数"
       }
     }
   },
@@ -1875,57 +1760,6 @@
       }
     }
   },
-  "GeminiInputFiles": {
-    "description": "加载并准备输入文件，以作为 Gemini LLM 节点的输入。这些文件将在 Gemini 模型生成响应时被读取。文本文件的内容将计入 token 限制。🛈 提示：可以与其他 Gemini 输入文件节点串联使用。",
-    "display_name": "Gemini 输入文件",
-    "inputs": {
-      "GEMINI_INPUT_FILES": {
-        "name": "GEMINI_INPUT_FILES",
-        "tooltip": "可选的附加文件，与本节点加载的文件一起批量处理。允许输入文件串联，以便单条消息可包含多个输入文件。"
-      },
-      "file": {
-        "name": "file",
-        "tooltip": "要作为模型上下文包含的输入文件。目前仅支持文本（.txt）和 PDF（.pdf）文件。"
-      }
-    }
-  },
-  "GeminiNode": {
-    "description": "使用 Google 的 Gemini AI 模型生成文本回复。你可以提供多种类型的输入（文本、图片、音频、视频）作为上下文，以生成更相关和有意义的回复。",
-    "display_name": "Google Gemini",
-    "inputs": {
-      "audio": {
-        "name": "音频",
-        "tooltip": "可选的音频，作为模型的上下文输入。"
-      },
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "files": {
-        "name": "文件",
-        "tooltip": "可选的文件，作为模型的上下文输入。可接受来自 Gemini 生成内容输入文件节点的输入。"
-      },
-      "images": {
-        "name": "图片",
-        "tooltip": "可选的图片，作为模型的上下文输入。要包含多张图片，可以使用批量图片节点。"
-      },
-      "model": {
-        "name": "模型",
-        "tooltip": "用于生成回复的 Gemini 模型。"
-      },
-      "prompt": {
-        "name": "提示词",
-        "tooltip": "输入给模型的文本，用于生成回复。你可以包含详细的指令、问题或上下文信息。"
-      },
-      "seed": {
-        "name": "种子",
-        "tooltip": "当种子值被固定时，模型会尽量在重复请求时提供相同的回复，但不能保证完全确定性输出。此外，更改模型或参数设置（如温度）即使使用相同的种子值，也可能导致回复不同。默认情况下会使用随机种子值。"
-      },
-      "video": {
-        "name": "视频",
-        "tooltip": "可选的视频，作为模型的上下文输入。"
-      }
-    }
-  },
   "GetVideoComponents": {
     "description": "提取视频中的所有组件：帧、音频和帧率。",
     "display_name": "获取视频组件",
@@ -2191,24 +2025,6 @@
       },
       "seed": {
         "name": "seed"
-      }
-    }
-  },
-  "ImageAddNoise": {
-    "display_name": "ImageAddNoise",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "image": {
-        "name": "image"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "用于生成噪声的随机种子。"
-      },
-      "strength": {
-        "name": "strength"
       }
     }
   },
@@ -3601,26 +3417,26 @@
         "name": "宽度"
       }
     },
-    "outputs": [
-      {
-        "name": "图像"
+    "outputs": {
+      "0": {
+        "name": "image"
       },
-      {
+      "1": {
         "name": "mask"
       },
-      {
-        "name": "网格路径"
+      "2": {
+        "name": "mesh_path"
       },
-      {
-        "name": "法线"
+      "3": {
+        "name": "normal"
       },
-      {
-        "name": "线稿"
+      "4": {
+        "name": "lineart"
       },
-      {
-        "name": "相机信息"
+      "5": {
+        "name": "camera_info"
       }
-    ]
+    }
   },
   "Load3DAnimation": {
     "display_name": "加载3D动画",
@@ -3642,23 +3458,23 @@
         "name": "宽度"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "name": "图像"
       },
-      {
-        "name": "mask"
+      "1": {
+        "name": "遮罩"
       },
-      {
-        "name": "网格路径"
+      "2": {
+        "name": "mesh_path"
       },
-      {
+      "3": {
         "name": "法线"
       },
-      {
+      "4": {
         "name": "相机信息"
       }
-    ]
+    }
   },
   "LoadAudio": {
     "display_name": "加载音频",
@@ -5870,54 +5686,6 @@
       }
     }
   },
-  "OpenAIChatConfig": {
-    "description": "允许为 OpenAI 聊天节点指定高级配置选项。",
-    "display_name": "OpenAI 聊天高级选项",
-    "inputs": {
-      "instructions": {
-        "name": "instructions",
-        "tooltip": "为模型生成回复提供的指令"
-      },
-      "max_output_tokens": {
-        "name": "max_output_tokens",
-        "tooltip": "可生成回复的最大 token 数（包括可见输出 token）"
-      },
-      "truncation": {
-        "name": "truncation",
-        "tooltip": "用于模型回复的截断策略。auto：如果本次回复及之前的内容超过了模型的上下文窗口大小，模型会通过丢弃对话中间的输入项来截断回复以适应上下文窗口。disabled：如果模型回复会超过模型的上下文窗口大小，请求将以 400 错误失败。"
-      }
-    }
-  },
-  "OpenAIChatNode": {
-    "description": "使用 OpenAI 模型生成文本回复。",
-    "display_name": "OpenAI 聊天",
-    "inputs": {
-      "advanced_options": {
-        "name": "高级选项",
-        "tooltip": "模型的可选配置。可接受来自 OpenAI 聊天高级选项节点的输入。"
-      },
-      "files": {
-        "name": "文件",
-        "tooltip": "可选文件，作为模型的上下文。可接受来自 OpenAI 聊天输入文件节点的输入。"
-      },
-      "images": {
-        "name": "图片",
-        "tooltip": "可选图片，作为模型的上下文。要包含多张图片，可以使用批量图片节点。"
-      },
-      "model": {
-        "name": "模型",
-        "tooltip": "用于生成回复的模型"
-      },
-      "persist_context": {
-        "name": "保留上下文",
-        "tooltip": "在多轮对话中保留聊天上下文"
-      },
-      "prompt": {
-        "name": "提示词",
-        "tooltip": "输入给模型的文本，用于生成回复。"
-      }
-    }
-  },
   "OpenAIDalle2": {
     "description": "通过 OpenAI 的 DALL·E 2 接口同步生成图像。",
     "display_name": "OpenAI DALL·E 2",
@@ -6018,20 +5786,6 @@
       "size": {
         "name": "尺寸",
         "tooltip": "图像尺寸"
-      }
-    }
-  },
-  "OpenAIInputFiles": {
-    "description": "加载并准备输入文件（文本、PDF 等），以作为 OpenAI 聊天节点的输入。这些文件将在生成回复时被 OpenAI 模型读取。🛈 提示：可以与其他 OpenAI 输入文件节点串联使用。",
-    "display_name": "OpenAI 聊天输入文件",
-    "inputs": {
-      "OPENAI_INPUT_FILES": {
-        "name": "OPENAI_INPUT_FILES",
-        "tooltip": "可选的额外文件，与本节点加载的文件一起批量处理。允许输入文件串联，使单条消息可包含多个输入文件。"
-      },
-      "file": {
-        "name": "file",
-        "tooltip": "要作为模型上下文包含的输入文件。目前仅支持文本（.txt）和 PDF（.pdf）文件。"
       }
     }
   },
@@ -7122,57 +6876,6 @@
       }
     }
   },
-  "RegexExtract": {
-    "display_name": "正则提取",
-    "inputs": {
-      "case_insensitive": {
-        "name": "忽略大小写"
-      },
-      "dotall": {
-        "name": "点通配符匹配换行"
-      },
-      "group_index": {
-        "name": "分组索引"
-      },
-      "mode": {
-        "name": "模式"
-      },
-      "multiline": {
-        "name": "多行"
-      },
-      "regex_pattern": {
-        "name": "正则表达式"
-      },
-      "string": {
-        "name": "字符串"
-      }
-    }
-  },
-  "RegexMatch": {
-    "display_name": "正则匹配",
-    "inputs": {
-      "case_insensitive": {
-        "name": "不区分大小写"
-      },
-      "dotall": {
-        "name": "点号匹配所有"
-      },
-      "multiline": {
-        "name": "多行模式"
-      },
-      "regex_pattern": {
-        "name": "正则表达式"
-      },
-      "string": {
-        "name": "字符串"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "匹配结果"
-      }
-    }
-  },
   "RenormCFG": {
     "display_name": "RenormCFG",
     "inputs": {
@@ -7217,194 +6920,6 @@
       },
       "multiplier": {
         "name": "乘数"
-      }
-    }
-  },
-  "Rodin3D_Detail": {
-    "description": "使用 Rodin API 生成 3D 资产",
-    "display_name": "Rodin 3D 生成 - 细节生成",
-    "inputs": {
-      "Images": {
-        "name": "图片"
-      },
-      "Material_Type": {
-        "name": "材质类型"
-      },
-      "Polygon_count": {
-        "name": "多边形数量"
-      },
-      "Seed": {
-        "name": "种子"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "3D 模型路径"
-      }
-    }
-  },
-  "Rodin3D_Regular": {
-    "description": "使用 Rodin API 生成 3D 资产",
-    "display_name": "Rodin 3D 生成 - 常规生成",
-    "inputs": {
-      "Images": {
-        "name": "图片"
-      },
-      "Material_Type": {
-        "name": "材质类型"
-      },
-      "Polygon_count": {
-        "name": "多边形数量"
-      },
-      "Seed": {
-        "name": "种子"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "3D 模型路径"
-      }
-    }
-  },
-  "Rodin3D_Sketch": {
-    "description": "使用 Rodin API 生成 3D 资产",
-    "display_name": "Rodin 3D 生成 - 草图生成",
-    "inputs": {
-      "Images": {
-        "name": "图片"
-      },
-      "Seed": {
-        "name": "种子"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "3D 模型路径"
-      }
-    }
-  },
-  "Rodin3D_Smooth": {
-    "description": "使用 Rodin API 生成 3D 资产",
-    "display_name": "Rodin 3D 生成 - 平滑生成",
-    "inputs": {
-      "Images": {
-        "name": "图片"
-      },
-      "Material_Type": {
-        "name": "材质类型"
-      },
-      "Polygon_count": {
-        "name": "多边形数量"
-      },
-      "Seed": {
-        "name": "种子"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "3D 模型路径"
-      }
-    }
-  },
-  "RunwayFirstLastFrameNode": {
-    "description": "上传首帧和末帧关键帧，编写提示词，生成视频。更复杂的过渡（例如末帧与首帧完全不同的情况）可以选择更长的 10 秒时长，这样生成过程有更多时间在两个输入之间平滑过渡。在开始之前，请查阅以下最佳实践，确保你的输入选择有助于生成成功：https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3。",
-    "display_name": "Runway 首帧-末帧生成视频",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "duration": {
-        "name": "时长"
-      },
-      "end_frame": {
-        "name": "结束帧",
-        "tooltip": "用于视频的结束帧，仅支持 gen3a_turbo。"
-      },
-      "prompt": {
-        "name": "提示词",
-        "tooltip": "用于生成的文本提示词"
-      },
-      "ratio": {
-        "name": "比例"
-      },
-      "seed": {
-        "name": "随机种子",
-        "tooltip": "用于生成的随机种子"
-      },
-      "start_frame": {
-        "name": "起始帧",
-        "tooltip": "用于视频的起始帧"
-      }
-    }
-  },
-  "RunwayImageToVideoNodeGen3a": {
-    "description": "使用 Gen3a Turbo 模型从单一起始帧生成视频。在开始之前，请查阅以下最佳实践，确保您的输入选择能够帮助您顺利生成：https://help.runwayml.com/hc/en-us/articles/33927968552339-Creating-with-Act-One-on-Gen-3-Alpha-and-Turbo。",
-    "display_name": "Runway 图像转视频（Gen3a Turbo）",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "duration": {
-        "name": "时长"
-      },
-      "prompt": {
-        "name": "提示词",
-        "tooltip": "用于生成的文本提示"
-      },
-      "ratio": {
-        "name": "比例"
-      },
-      "seed": {
-        "name": "随机种子",
-        "tooltip": "用于生成的随机种子"
-      },
-      "start_frame": {
-        "name": "起始帧",
-        "tooltip": "用于视频的起始帧"
-      }
-    }
-  },
-  "RunwayImageToVideoNodeGen4": {
-    "description": "使用 Gen4 Turbo 模型从单一起始帧生成视频。在开始之前，请查阅这些最佳实践，确保你的输入选择能让生成顺利进行：https://help.runwayml.com/hc/en-us/articles/37327109429011-Creating-with-Gen-4-Video。",
-    "display_name": "Runway 图像转视频（Gen4 Turbo）",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "duration": {
-        "name": "时长"
-      },
-      "prompt": {
-        "name": "提示词",
-        "tooltip": "用于生成的文本提示"
-      },
-      "ratio": {
-        "name": "比例"
-      },
-      "seed": {
-        "name": "种子",
-        "tooltip": "用于生成的随机种子"
-      },
-      "start_frame": {
-        "name": "起始帧",
-        "tooltip": "用于视频的起始帧"
-      }
-    }
-  },
-  "RunwayTextToImageNode": {
-    "description": "使用 Runway 的 Gen 4 模型根据文本提示生成图像。你还可以添加参考图像来辅助生成。",
-    "display_name": "Runway 文本转图像",
-    "inputs": {
-      "prompt": {
-        "name": "提示词",
-        "tooltip": "用于图像生成的文本提示"
-      },
-      "ratio": {
-        "name": "比例"
-      },
-      "reference_image": {
-        "name": "参考图像",
-        "tooltip": "可选的参考图像，用于辅助生成"
       }
     }
   },
@@ -7804,40 +7319,6 @@
       }
     }
   },
-  "SaveAudioMP3": {
-    "display_name": "保存音频（MP3）",
-    "inputs": {
-      "audio": {
-        "name": "音频"
-      },
-      "audioUI": {
-        "name": "音频界面"
-      },
-      "filename_prefix": {
-        "name": "文件名前缀"
-      },
-      "quality": {
-        "name": "音质"
-      }
-    }
-  },
-  "SaveAudioOpus": {
-    "display_name": "保存音频（Opus）",
-    "inputs": {
-      "audio": {
-        "name": "音频"
-      },
-      "audioUI": {
-        "name": "音频界面"
-      },
-      "filename_prefix": {
-        "name": "文件名前缀"
-      },
-      "quality": {
-        "name": "质量"
-      }
-    }
-  },
   "SaveGLB": {
     "display_name": "SaveGLB",
     "inputs": {
@@ -7885,13 +7366,13 @@
       }
     }
   },
-  "SaveSVGNode": {
-    "description": "将SVG文件保存到磁盘。",
-    "display_name": "SaveSVGNode",
+  "SaveSVG": {
+    "description": "将 SVG 文件保存到磁盘。",
+    "display_name": "保存 SVG",
     "inputs": {
       "filename_prefix": {
         "name": "文件名前缀",
-        "tooltip": "要保存文件的前缀。可以包含格式化信息，如 %date:yyyy-MM-dd% 或 %Empty Latent Image.width%，以包含来自节点的值。"
+        "tooltip": "要保存文件的前缀。可以包含格式化信息，如 %date:yyyy-MM-dd% 或 %Empty Latent Image.width%，以包含来自节点的数值。"
       },
       "svg": {
         "name": "svg"
@@ -8438,108 +7919,6 @@
       }
     }
   },
-  "StringCompare": {
-    "display_name": "比较",
-    "inputs": {
-      "case_sensitive": {
-        "name": "区分大小写"
-      },
-      "mode": {
-        "name": "mode"
-      },
-      "string_a": {
-        "name": "string_a"
-      },
-      "string_b": {
-        "name": "string_b"
-      }
-    }
-  },
-  "StringConcatenate": {
-    "display_name": "连接",
-    "inputs": {
-      "delimiter": {
-        "name": "分隔符"
-      },
-      "string_a": {
-        "name": "string_a"
-      },
-      "string_b": {
-        "name": "string_b"
-      }
-    }
-  },
-  "StringContains": {
-    "display_name": "包含",
-    "inputs": {
-      "case_sensitive": {
-        "name": "区分大小写"
-      },
-      "string": {
-        "name": "字符串"
-      },
-      "substring": {
-        "name": "子字符串"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "包含"
-      }
-    }
-  },
-  "StringLength": {
-    "display_name": "长度",
-    "inputs": {
-      "string": {
-        "name": "字符串"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "长度"
-      }
-    }
-  },
-  "StringReplace": {
-    "display_name": "替换",
-    "inputs": {
-      "find": {
-        "name": "查找"
-      },
-      "replace": {
-        "name": "替换为"
-      },
-      "string": {
-        "name": "字符串"
-      }
-    }
-  },
-  "StringSubstring": {
-    "display_name": "子字符串",
-    "inputs": {
-      "end": {
-        "name": "结束位置"
-      },
-      "start": {
-        "name": "起始位置"
-      },
-      "string": {
-        "name": "字符串"
-      }
-    }
-  },
-  "StringTrim": {
-    "display_name": "裁剪",
-    "inputs": {
-      "mode": {
-        "name": "模式"
-      },
-      "string": {
-        "name": "字符串"
-      }
-    }
-  },
   "StyleModelApply": {
     "display_name": "应用风格模型",
     "inputs": {
@@ -8579,23 +7958,6 @@
       },
       "min_padding": {
         "name": "最小填充"
-      }
-    }
-  },
-  "TextEncodeAceStepAudio": {
-    "display_name": "TextEncodeAceStepAudio",
-    "inputs": {
-      "clip": {
-        "name": "clip"
-      },
-      "lyrics": {
-        "name": "歌词"
-      },
-      "lyrics_strength": {
-        "name": "歌词强度"
-      },
-      "tags": {
-        "name": "标签"
       }
     }
   },
@@ -8673,268 +8035,6 @@
       },
       "clip_name3": {
         "name": "CLIP名称3"
-      }
-    }
-  },
-  "TripoConversionNode": {
-    "display_name": "Tripo：模型转换",
-    "inputs": {
-      "face_limit": {
-        "name": "面数限制"
-      },
-      "format": {
-        "name": "格式"
-      },
-      "original_model_task_id": {
-        "name": "原始模型任务ID"
-      },
-      "quad": {
-        "name": "四边形"
-      },
-      "texture_format": {
-        "name": "纹理格式"
-      },
-      "texture_size": {
-        "name": "纹理尺寸"
-      }
-    }
-  },
-  "TripoImageToModelNode": {
-    "display_name": "Tripo：图像转模型",
-    "inputs": {
-      "face_limit": {
-        "name": "面数限制"
-      },
-      "image": {
-        "name": "图像"
-      },
-      "model_seed": {
-        "name": "模型种子"
-      },
-      "model_version": {
-        "name": "模型版本",
-        "tooltip": "用于生成的模型版本"
-      },
-      "orientation": {
-        "name": "方向"
-      },
-      "pbr": {
-        "name": "PBR"
-      },
-      "quad": {
-        "name": "四边形"
-      },
-      "style": {
-        "name": "风格"
-      },
-      "texture": {
-        "name": "纹理"
-      },
-      "texture_alignment": {
-        "name": "纹理对齐"
-      },
-      "texture_quality": {
-        "name": "纹理质量"
-      },
-      "texture_seed": {
-        "name": "纹理种子"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "模型文件"
-      },
-      "1": {
-        "name": "模型任务ID"
-      }
-    }
-  },
-  "TripoMultiviewToModelNode": {
-    "display_name": "Tripo：多视图转模型",
-    "inputs": {
-      "face_limit": {
-        "name": "面数限制"
-      },
-      "image": {
-        "name": "图片"
-      },
-      "image_back": {
-        "name": "后视图图片"
-      },
-      "image_left": {
-        "name": "左视图图片"
-      },
-      "image_right": {
-        "name": "右视图图片"
-      },
-      "model_seed": {
-        "name": "模型种子"
-      },
-      "model_version": {
-        "name": "模型版本",
-        "tooltip": "用于生成的模型版本"
-      },
-      "orientation": {
-        "name": "朝向"
-      },
-      "pbr": {
-        "name": "PBR"
-      },
-      "quad": {
-        "name": "四边面"
-      },
-      "texture": {
-        "name": "贴图"
-      },
-      "texture_alignment": {
-        "name": "贴图对齐"
-      },
-      "texture_quality": {
-        "name": "贴图质量"
-      },
-      "texture_seed": {
-        "name": "贴图种子"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "模型文件"
-      },
-      "1": {
-        "name": "模型任务ID"
-      }
-    }
-  },
-  "TripoRefineNode": {
-    "description": "仅可精细化由 v1.4 Tripo 模型创建的草稿模型。",
-    "display_name": "Tripo：精细化草稿模型",
-    "inputs": {
-      "model_task_id": {
-        "name": "model_task_id",
-        "tooltip": "必须是 v1.4 Tripo 模型"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "model_file"
-      },
-      "1": {
-        "name": "model task_id"
-      }
-    }
-  },
-  "TripoRetargetNode": {
-    "display_name": "Tripo：重定向绑定模型",
-    "inputs": {
-      "animation": {
-        "name": "动画"
-      },
-      "original_model_task_id": {
-        "name": "original_model_task_id"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "模型文件"
-      },
-      "1": {
-        "name": "重定向任务ID"
-      }
-    }
-  },
-  "TripoRigNode": {
-    "display_name": "Tripo：绑定模型",
-    "inputs": {
-      "original_model_task_id": {
-        "name": "original_model_task_id"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "模型文件"
-      },
-      "1": {
-        "name": "绑定任务ID"
-      }
-    }
-  },
-  "TripoTextToModelNode": {
-    "display_name": "Tripo：文本转模型",
-    "inputs": {
-      "face_limit": {
-        "name": "面数限制"
-      },
-      "image_seed": {
-        "name": "图像种子"
-      },
-      "model_seed": {
-        "name": "模型种子"
-      },
-      "model_version": {
-        "name": "模型版本"
-      },
-      "negative_prompt": {
-        "name": "反向提示词"
-      },
-      "pbr": {
-        "name": "PBR"
-      },
-      "prompt": {
-        "name": "提示词"
-      },
-      "quad": {
-        "name": "四边面"
-      },
-      "style": {
-        "name": "风格"
-      },
-      "texture": {
-        "name": "材质"
-      },
-      "texture_quality": {
-        "name": "材质质量"
-      },
-      "texture_seed": {
-        "name": "材质种子"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "模型文件"
-      },
-      "1": {
-        "name": "模型任务ID"
-      }
-    }
-  },
-  "TripoTextureNode": {
-    "display_name": "Tripo：纹理模型",
-    "inputs": {
-      "model_task_id": {
-        "name": "模型任务ID"
-      },
-      "pbr": {
-        "name": "PBR"
-      },
-      "texture": {
-        "name": "纹理"
-      },
-      "texture_alignment": {
-        "name": "纹理对齐"
-      },
-      "texture_quality": {
-        "name": "纹理质量"
-      },
-      "texture_seed": {
-        "name": "纹理种子"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "模型文件"
-      },
-      "1": {
-        "name": "模型任务ID"
       }
     }
   },
@@ -9277,98 +8377,6 @@
       }
     }
   },
-  "WanCameraEmbedding": {
-    "display_name": "WanCameraEmbedding",
-    "inputs": {
-      "camera_pose": {
-        "name": "camera_pose"
-      },
-      "cx": {
-        "name": "cx"
-      },
-      "cy": {
-        "name": "cy"
-      },
-      "fx": {
-        "name": "fx"
-      },
-      "fy": {
-        "name": "fy"
-      },
-      "height": {
-        "name": "高度"
-      },
-      "length": {
-        "name": "长度"
-      },
-      "speed": {
-        "name": "速度"
-      },
-      "width": {
-        "name": "宽度"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "camera_embedding"
-      },
-      "1": {
-        "name": "宽度"
-      },
-      "2": {
-        "name": "高度"
-      },
-      "3": {
-        "name": "长度"
-      }
-    }
-  },
-  "WanCameraImageToVideo": {
-    "display_name": "WanCameraImageToVideo",
-    "inputs": {
-      "batch_size": {
-        "name": "批量大小"
-      },
-      "camera_conditions": {
-        "name": "相机条件"
-      },
-      "clip_vision_output": {
-        "name": "clip 视觉输出"
-      },
-      "height": {
-        "name": "高度"
-      },
-      "length": {
-        "name": "长度"
-      },
-      "negative": {
-        "name": "负向"
-      },
-      "positive": {
-        "name": "正向"
-      },
-      "start_image": {
-        "name": "起始图像"
-      },
-      "vae": {
-        "name": "vae"
-      },
-      "width": {
-        "name": "宽度"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "正向"
-      },
-      "1": {
-        "name": "负向"
-      },
-      "2": {
-        "name": "latent"
-      }
-    }
-  },
   "WanFirstLastFrameToVideo": {
     "display_name": "WanFirstLastFrameToVideo",
     "inputs": {
@@ -9550,49 +8558,6 @@
       },
       "2": {
         "name": "潜在"
-      }
-    }
-  },
-  "WanPhantomSubjectToVideo": {
-    "display_name": "WanPhantomSubjectToVideo",
-    "inputs": {
-      "batch_size": {
-        "name": "批量大小"
-      },
-      "height": {
-        "name": "高度"
-      },
-      "images": {
-        "name": "图像"
-      },
-      "length": {
-        "name": "长度"
-      },
-      "negative": {
-        "name": "负向"
-      },
-      "positive": {
-        "name": "正向"
-      },
-      "vae": {
-        "name": "vae"
-      },
-      "width": {
-        "name": "宽度"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "正向"
-      },
-      "1": {
-        "name": "负向文本"
-      },
-      "2": {
-        "name": "负向图像文本"
-      },
-      "3": {
-        "name": "latent"
       }
     }
   },

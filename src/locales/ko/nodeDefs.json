@@ -1,24 +1,4 @@
 {
-  "APG": {
-    "display_name": "적응형 투영 가이던스",
-    "inputs": {
-      "eta": {
-        "name": "eta",
-        "tooltip": "병렬 가이던스 벡터의 크기를 조절합니다. 1로 설정하면 기본 CFG 동작입니다."
-      },
-      "model": {
-        "name": "model"
-      },
-      "momentum": {
-        "name": "momentum",
-        "tooltip": "확산 과정에서 가이던스의 이동 평균을 조절합니다. 0으로 설정하면 비활성화됩니다."
-      },
-      "norm_threshold": {
-        "name": "norm_threshold",
-        "tooltip": "가이던스 벡터를 이 값으로 정규화합니다. 0으로 설정하면 정규화가 비활성화됩니다."
-      }
-    }
-  },
   "AddNoise": {
     "display_name": "노이즈 추가",
     "inputs": {
@@ -451,17 +431,6 @@
       },
       "low_threshold": {
         "name": "낮은 임계값"
-      }
-    }
-  },
-  "CaseConverter": {
-    "display_name": "대소문자 변환기",
-    "inputs": {
-      "mode": {
-        "name": "모드"
-      },
-      "string": {
-        "name": "문자열"
       }
     }
   },
@@ -1252,18 +1221,6 @@
       }
     }
   },
-  "EmptyAceStepLatentAudio": {
-    "display_name": "EmptyAceStepLatentAudio",
-    "inputs": {
-      "batch_size": {
-        "name": "batch_size",
-        "tooltip": "배치에 포함된 latent 이미지의 수입니다."
-      },
-      "seconds": {
-        "name": "seconds"
-      }
-    }
-  },
   "EmptyCosmosLatentVideo": {
     "display_name": "빈 잠재 비디오 (Cosmos)",
     "inputs": {
@@ -1489,78 +1446,6 @@
       },
       "guidance": {
         "name": "지침"
-      }
-    }
-  },
-  "FluxKontextMaxImageNode": {
-    "description": "프롬프트와 종횡비를 기반으로 api를 통해 Flux.1 Kontext [max]로 이미지를 편집합니다.",
-    "display_name": "Flux.1 Kontext [max] 이미지",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "종횡비",
-        "tooltip": "이미지의 종횡비; 1:4에서 4:1 사이여야 합니다."
-      },
-      "control_after_generate": {
-        "name": "생성 후 제어"
-      },
-      "guidance": {
-        "name": "가이던스",
-        "tooltip": "이미지 생성 과정의 가이던스 강도"
-      },
-      "input_image": {
-        "name": "입력 이미지"
-      },
-      "prompt": {
-        "name": "프롬프트",
-        "tooltip": "이미지 생성 프롬프트 - 무엇을 어떻게 편집할지 지정하세요."
-      },
-      "prompt_upsampling": {
-        "name": "프롬프트 업샘플링",
-        "tooltip": "프롬프트에 업샘플링을 수행할지 여부입니다. 활성화 시, 더 창의적인 생성을 위해 프롬프트가 자동으로 수정되지만 결과는 비결정적입니다(같은 시드라도 정확히 같은 결과가 나오지 않습니다)."
-      },
-      "seed": {
-        "name": "시드",
-        "tooltip": "노이즈 생성을 위한 랜덤 시드입니다."
-      },
-      "steps": {
-        "name": "스텝 수",
-        "tooltip": "이미지 생성 과정의 스텝 수"
-      }
-    }
-  },
-  "FluxKontextProImageNode": {
-    "description": "프롬프트와 종횡비를 기반으로 api를 통해 Flux.1 Kontext [pro]로 이미지를 편집합니다.",
-    "display_name": "Flux.1 Kontext [pro] 이미지",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "종횡비",
-        "tooltip": "이미지의 종횡비; 1:4에서 4:1 사이여야 합니다."
-      },
-      "control_after_generate": {
-        "name": "생성 후 제어"
-      },
-      "guidance": {
-        "name": "가이던스",
-        "tooltip": "이미지 생성 과정의 가이던스 강도"
-      },
-      "input_image": {
-        "name": "입력 이미지"
-      },
-      "prompt": {
-        "name": "프롬프트",
-        "tooltip": "이미지 생성 프롬프트 - 무엇을 어떻게 편집할지 지정하세요."
-      },
-      "prompt_upsampling": {
-        "name": "프롬프트 업샘플링",
-        "tooltip": "프롬프트에 업샘플링을 수행할지 여부입니다. 활성화 시, 더 창의적인 생성을 위해 프롬프트가 자동으로 수정되지만 결과는 비결정적입니다(같은 시드라도 정확히 같은 결과가 나오지 않습니다)."
-      },
-      "seed": {
-        "name": "시드",
-        "tooltip": "노이즈 생성을 위한 랜덤 시드입니다."
-      },
-      "steps": {
-        "name": "스텝 수",
-        "tooltip": "이미지 생성 과정의 스텝 수"
       }
     }
   },
@@ -1875,57 +1760,6 @@
       }
     }
   },
-  "GeminiInputFiles": {
-    "description": "Gemini LLM 노드에 입력으로 포함할 파일을 불러오고 준비합니다. 파일은 Gemini 모델이 응답을 생성할 때 읽게 됩니다. 텍스트 파일의 내용은 토큰 제한에 포함됩니다. 🛈 TIP: 다른 Gemini 입력 파일 노드와 함께 연결하여 사용할 수 있습니다.",
-    "display_name": "Gemini 입력 파일",
-    "inputs": {
-      "GEMINI_INPUT_FILES": {
-        "name": "GEMINI_INPUT_FILES",
-        "tooltip": "이 노드에서 불러온 파일과 함께 배치할 추가 파일(들)입니다. 입력 파일을 연결하여 하나의 메시지에 여러 입력 파일을 포함할 수 있습니다."
-      },
-      "file": {
-        "name": "file",
-        "tooltip": "모델의 컨텍스트로 포함할 입력 파일입니다. 현재는 텍스트(.txt)와 PDF(.pdf) 파일만 지원합니다."
-      }
-    }
-  },
-  "GeminiNode": {
-    "description": "Google의 Gemini AI 모델로 텍스트 응답을 생성합니다. 더 관련성 있고 의미 있는 응답을 생성하기 위해 여러 유형의 입력(텍스트, 이미지, 오디오, 비디오)을 컨텍스트로 제공할 수 있습니다.",
-    "display_name": "Google Gemini",
-    "inputs": {
-      "audio": {
-        "name": "오디오",
-        "tooltip": "모델의 컨텍스트로 사용할 선택적 오디오입니다."
-      },
-      "control_after_generate": {
-        "name": "생성 후 제어"
-      },
-      "files": {
-        "name": "파일",
-        "tooltip": "모델의 컨텍스트로 사용할 선택적 파일입니다. Gemini Generate Content Input Files 노드에서 입력을 받을 수 있습니다."
-      },
-      "images": {
-        "name": "이미지",
-        "tooltip": "모델의 컨텍스트로 사용할 선택적 이미지입니다. 여러 이미지를 포함하려면 Batch Images 노드를 사용할 수 있습니다."
-      },
-      "model": {
-        "name": "모델",
-        "tooltip": "응답 생성을 위해 사용할 Gemini 모델입니다."
-      },
-      "prompt": {
-        "name": "프롬프트",
-        "tooltip": "모델에 입력하는 텍스트로, 응답을 생성하는 데 사용됩니다. 자세한 지침, 질문 또는 컨텍스트를 포함할 수 있습니다."
-      },
-      "seed": {
-        "name": "시드",
-        "tooltip": "시드를 특정 값으로 고정하면, 모델은 반복 요청에 대해 동일한 응답을 제공하려고 최선을 다합니다. 결정적 결과는 보장되지 않습니다. 또한, 모델이나 파라미터(예: temperature)를 변경하면 동일한 시드 값을 사용해도 응답이 달라질 수 있습니다. 기본적으로는 무작위 시드 값이 사용됩니다."
-      },
-      "video": {
-        "name": "비디오",
-        "tooltip": "모델의 컨텍스트로 사용할 선택적 비디오입니다."
-      }
-    }
-  },
   "GetVideoComponents": {
     "description": "비디오에서 모든 컴포넌트(프레임, 오디오, 프레임레이트)를 추출합니다.",
     "display_name": "비디오 컴포넌트 추출",
@@ -2191,24 +2025,6 @@
       },
       "seed": {
         "name": "시드"
-      }
-    }
-  },
-  "ImageAddNoise": {
-    "display_name": "ImageAddNoise",
-    "inputs": {
-      "control_after_generate": {
-        "name": "생성 후 제어"
-      },
-      "image": {
-        "name": "image"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "노이즈 생성을 위해 사용되는 랜덤 시드입니다."
-      },
-      "strength": {
-        "name": "strength"
       }
     }
   },
@@ -3601,26 +3417,26 @@
         "name": "너비"
       }
     },
-    "outputs": [
-      {
-        "name": "image"
+    "outputs": {
+      "0": {
+        "name": "이미지"
       },
-      {
-        "name": "mask"
+      "1": {
+        "name": "마스크"
       },
-      {
-        "name": "mesh_path"
+      "2": {
+        "name": "메시 경로"
       },
-      {
-        "name": "normal"
+      "3": {
+        "name": "노멀"
       },
-      {
-        "name": "lineart"
+      "4": {
+        "name": "라인아트"
       },
-      {
-        "name": "camera_info"
+      "5": {
+        "name": "카메라 정보"
       }
-    ]
+    }
   },
   "Load3DAnimation": {
     "display_name": "3D 불러오기 - 애니메이션",
@@ -3642,23 +3458,23 @@
         "name": "너비"
       }
     },
-    "outputs": [
-      {
-        "name": "image"
+    "outputs": {
+      "0": {
+        "name": "이미지"
       },
-      {
-        "name": "mask"
+      "1": {
+        "name": "마스크"
       },
-      {
-        "name": "mesh_path"
+      "2": {
+        "name": "메시 경로"
       },
-      {
-        "name": "normal"
+      "3": {
+        "name": "노멀"
       },
-      {
-        "name": "camera_info"
+      "4": {
+        "name": "카메라 정보"
       }
-    ]
+    }
   },
   "LoadAudio": {
     "display_name": "오디오 로드",
@@ -5870,54 +5686,6 @@
       }
     }
   },
-  "OpenAIChatConfig": {
-    "description": "OpenAI Chat 노드에 대한 고급 구성 옵션을 지정할 수 있습니다.",
-    "display_name": "OpenAI Chat 고급 옵션",
-    "inputs": {
-      "instructions": {
-        "name": "instructions",
-        "tooltip": "모델이 응답을 생성하는 방법에 대한 지침"
-      },
-      "max_output_tokens": {
-        "name": "max_output_tokens",
-        "tooltip": "응답에 대해 생성될 수 있는 토큰의 최대 개수(출력에 표시되는 토큰 포함)"
-      },
-      "truncation": {
-        "name": "truncation",
-        "tooltip": "모델 응답에 사용할 잘라내기 전략입니다. auto: 이 응답과 이전 응답의 컨텍스트가 모델의 컨텍스트 윈도우 크기를 초과하면, 모델은 대화 중간의 입력 항목을 제거하여 컨텍스트 윈도우에 맞게 응답을 잘라냅니다. disabled: 모델 응답이 컨텍스트 윈도우 크기를 초과할 경우, 요청이 400 오류와 함께 실패합니다."
-      }
-    }
-  },
-  "OpenAIChatNode": {
-    "description": "OpenAI 모델에서 텍스트 응답을 생성합니다.",
-    "display_name": "OpenAI 채팅",
-    "inputs": {
-      "advanced_options": {
-        "name": "고급 옵션",
-        "tooltip": "모델의 선택적 구성입니다. OpenAI Chat Advanced Options 노드에서 입력을 받을 수 있습니다."
-      },
-      "files": {
-        "name": "파일",
-        "tooltip": "모델의 컨텍스트로 사용할 선택적 파일입니다. OpenAI Chat Input Files 노드에서 입력을 받을 수 있습니다."
-      },
-      "images": {
-        "name": "이미지",
-        "tooltip": "모델의 컨텍스트로 사용할 선택적 이미지입니다. 여러 이미지를 포함하려면 Batch Images 노드를 사용할 수 있습니다."
-      },
-      "model": {
-        "name": "모델",
-        "tooltip": "응답을 생성하는 데 사용되는 모델"
-      },
-      "persist_context": {
-        "name": "컨텍스트 유지",
-        "tooltip": "호출 간 채팅 컨텍스트를 유지합니다 (다중 턴 대화)."
-      },
-      "prompt": {
-        "name": "프롬프트",
-        "tooltip": "모델에 입력할 텍스트로, 응답을 생성하는 데 사용됩니다."
-      }
-    }
-  },
   "OpenAIDalle2": {
     "description": "OpenAI의 DALL·E 2 엔드포인트를 통해 동기적으로 이미지를 생성합니다.",
     "display_name": "OpenAI DALL·E 2",
@@ -6018,20 +5786,6 @@
       "size": {
         "name": "크기",
         "tooltip": "이미지 크기"
-      }
-    }
-  },
-  "OpenAIInputFiles": {
-    "description": "OpenAI 챗 노드에 입력으로 포함할 파일(텍스트, PDF 등)을 불러오고 준비합니다. 파일은 OpenAI 모델이 응답을 생성할 때 읽게 됩니다. 🛈 TIP: 다른 OpenAI 입력 파일 노드와 함께 연결하여 사용할 수 있습니다.",
-    "display_name": "OpenAI 챗 입력 파일",
-    "inputs": {
-      "OPENAI_INPUT_FILES": {
-        "name": "OPENAI_INPUT_FILES",
-        "tooltip": "이 노드에서 불러온 파일과 함께 배치할 추가 파일(들)입니다. 입력 파일을 연결하여 하나의 메시지에 여러 입력 파일을 포함할 수 있습니다."
-      },
-      "file": {
-        "name": "file",
-        "tooltip": "모델의 컨텍스트로 포함할 입력 파일입니다. 현재는 텍스트(.txt)와 PDF(.pdf) 파일만 지원합니다."
       }
     }
   },
@@ -7122,57 +6876,6 @@
       }
     }
   },
-  "RegexExtract": {
-    "display_name": "정규식 추출",
-    "inputs": {
-      "case_insensitive": {
-        "name": "대소문자_구분_없음"
-      },
-      "dotall": {
-        "name": "dotall"
-      },
-      "group_index": {
-        "name": "그룹_인덱스"
-      },
-      "mode": {
-        "name": "모드"
-      },
-      "multiline": {
-        "name": "여러_줄"
-      },
-      "regex_pattern": {
-        "name": "정규식_패턴"
-      },
-      "string": {
-        "name": "문자열"
-      }
-    }
-  },
-  "RegexMatch": {
-    "display_name": "정규식 일치",
-    "inputs": {
-      "case_insensitive": {
-        "name": "대소문자_구분_없음"
-      },
-      "dotall": {
-        "name": "dotall"
-      },
-      "multiline": {
-        "name": "여러_줄"
-      },
-      "regex_pattern": {
-        "name": "정규식_패턴"
-      },
-      "string": {
-        "name": "문자열"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "일치_결과"
-      }
-    }
-  },
   "RenormCFG": {
     "display_name": "RenormCFG",
     "inputs": {
@@ -7217,194 +6920,6 @@
       },
       "multiplier": {
         "name": "배율"
-      }
-    }
-  },
-  "Rodin3D_Detail": {
-    "description": "Rodin API를 사용하여 3D 에셋 생성",
-    "display_name": "Rodin 3D 생성 - 디테일 생성",
-    "inputs": {
-      "Images": {
-        "name": "이미지"
-      },
-      "Material_Type": {
-        "name": "재질 유형"
-      },
-      "Polygon_count": {
-        "name": "폴리곤 수"
-      },
-      "Seed": {
-        "name": "시드"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "3D 모델 경로"
-      }
-    }
-  },
-  "Rodin3D_Regular": {
-    "description": "Rodin API를 사용하여 3D 에셋 생성",
-    "display_name": "Rodin 3D 생성 - 일반 생성",
-    "inputs": {
-      "Images": {
-        "name": "이미지"
-      },
-      "Material_Type": {
-        "name": "재질 유형"
-      },
-      "Polygon_count": {
-        "name": "폴리곤 수"
-      },
-      "Seed": {
-        "name": "시드"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "3D 모델 경로"
-      }
-    }
-  },
-  "Rodin3D_Sketch": {
-    "description": "Rodin API를 사용하여 3D 에셋 생성",
-    "display_name": "Rodin 3D 생성 - 스케치 생성",
-    "inputs": {
-      "Images": {
-        "name": "이미지"
-      },
-      "Seed": {
-        "name": "시드"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "3D 모델 경로"
-      }
-    }
-  },
-  "Rodin3D_Smooth": {
-    "description": "Rodin API를 사용하여 3D 에셋 생성",
-    "display_name": "Rodin 3D 생성 - 부드럽게 생성",
-    "inputs": {
-      "Images": {
-        "name": "이미지"
-      },
-      "Material_Type": {
-        "name": "재질 유형"
-      },
-      "Polygon_count": {
-        "name": "폴리곤 수"
-      },
-      "Seed": {
-        "name": "시드"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "3D 모델 경로"
-      }
-    }
-  },
-  "RunwayFirstLastFrameNode": {
-    "description": "첫 번째와 마지막 키프레임을 업로드하고, 프롬프트를 작성하여 비디오를 생성하세요. 마지막 프레임이 첫 프레임과 완전히 다를 때와 같이 더 복잡한 전환에는 10초의 더 긴 지속 시간이 도움이 될 수 있습니다. 이렇게 하면 두 입력 간에 더 부드럽게 전환할 수 있는 시간이 더 주어집니다. 시작하기 전에, 입력 선택이 성공적인 생성으로 이어질 수 있도록 다음 모범 사례를 검토하세요: https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
-    "display_name": "Runway 첫-마지막 프레임에서 비디오로",
-    "inputs": {
-      "control_after_generate": {
-        "name": "생성 후 제어"
-      },
-      "duration": {
-        "name": "지속 시간"
-      },
-      "end_frame": {
-        "name": "마지막 프레임",
-        "tooltip": "비디오에 사용할 마지막 프레임. gen3a_turbo에서만 지원됩니다."
-      },
-      "prompt": {
-        "name": "프롬프트",
-        "tooltip": "생성을 위한 텍스트 프롬프트"
-      },
-      "ratio": {
-        "name": "비율"
-      },
-      "seed": {
-        "name": "시드",
-        "tooltip": "생성을 위한 랜덤 시드"
-      },
-      "start_frame": {
-        "name": "시작 프레임",
-        "tooltip": "비디오에 사용할 시작 프레임"
-      }
-    }
-  },
-  "RunwayImageToVideoNodeGen3a": {
-    "description": "Gen3a Turbo 모델을 사용하여 단일 시작 프레임에서 비디오를 생성합니다. 시작하기 전에, 입력 선택이 성공적인 생성을 위해 적합한지 확인하려면 다음 모범 사례를 검토하세요: https://help.runwayml.com/hc/en-us/articles/33927968552339-Creating-with-Act-One-on-Gen-3-Alpha-and-Turbo.",
-    "display_name": "Runway 이미지에서 비디오로 (Gen3a Turbo)",
-    "inputs": {
-      "control_after_generate": {
-        "name": "생성 후 제어"
-      },
-      "duration": {
-        "name": "지속 시간"
-      },
-      "prompt": {
-        "name": "프롬프트",
-        "tooltip": "생성을 위한 텍스트 프롬프트"
-      },
-      "ratio": {
-        "name": "비율"
-      },
-      "seed": {
-        "name": "시드",
-        "tooltip": "생성을 위한 랜덤 시드"
-      },
-      "start_frame": {
-        "name": "시작 프레임",
-        "tooltip": "비디오에 사용할 시작 프레임"
-      }
-    }
-  },
-  "RunwayImageToVideoNodeGen4": {
-    "description": "Gen4 Turbo 모델을 사용하여 단일 시작 프레임에서 비디오를 생성합니다. 시작하기 전에, 입력 선택이 성공적인 생성으로 이어질 수 있도록 다음 모범 사례를 반드시 확인하세요: https://help.runwayml.com/hc/en-us/articles/37327109429011-Creating-with-Gen-4-Video.",
-    "display_name": "Runway 이미지 투 비디오 (Gen4 Turbo)",
-    "inputs": {
-      "control_after_generate": {
-        "name": "생성 후 제어"
-      },
-      "duration": {
-        "name": "지속 시간"
-      },
-      "prompt": {
-        "name": "프롬프트",
-        "tooltip": "생성을 위한 텍스트 프롬프트"
-      },
-      "ratio": {
-        "name": "비율"
-      },
-      "seed": {
-        "name": "시드",
-        "tooltip": "생성을 위한 랜덤 시드"
-      },
-      "start_frame": {
-        "name": "시작 프레임",
-        "tooltip": "비디오에 사용할 시작 프레임"
-      }
-    }
-  },
-  "RunwayTextToImageNode": {
-    "description": "Runway의 Gen 4 모델을 사용하여 텍스트 프롬프트로 이미지를 생성합니다. 생성 과정을 안내하기 위해 참조 이미지를 포함할 수도 있습니다.",
-    "display_name": "Runway 텍스트 투 이미지",
-    "inputs": {
-      "prompt": {
-        "name": "프롬프트",
-        "tooltip": "이미지 생성을 위한 텍스트 프롬프트"
-      },
-      "ratio": {
-        "name": "비율"
-      },
-      "reference_image": {
-        "name": "참조 이미지",
-        "tooltip": "생성 과정을 안내할 선택적 참조 이미지"
       }
     }
   },
@@ -7804,40 +7319,6 @@
       }
     }
   },
-  "SaveAudioMP3": {
-    "display_name": "오디오 저장 (MP3)",
-    "inputs": {
-      "audio": {
-        "name": "오디오"
-      },
-      "audioUI": {
-        "name": "오디오 UI"
-      },
-      "filename_prefix": {
-        "name": "파일명 접두사"
-      },
-      "quality": {
-        "name": "품질"
-      }
-    }
-  },
-  "SaveAudioOpus": {
-    "display_name": "오디오 저장 (Opus)",
-    "inputs": {
-      "audio": {
-        "name": "오디오"
-      },
-      "audioUI": {
-        "name": "오디오 UI"
-      },
-      "filename_prefix": {
-        "name": "파일명 접두사"
-      },
-      "quality": {
-        "name": "품질"
-      }
-    }
-  },
   "SaveGLB": {
     "display_name": "GLB 저장",
     "inputs": {
@@ -7885,13 +7366,13 @@
       }
     }
   },
-  "SaveSVGNode": {
+  "SaveSVG": {
     "description": "SVG 파일을 디스크에 저장합니다.",
-    "display_name": "SaveSVGNode",
+    "display_name": "SVG 저장",
     "inputs": {
       "filename_prefix": {
         "name": "파일명 접두사",
-        "tooltip": "저장할 파일의 접두사입니다. %date:yyyy-MM-dd% 또는 %Empty Latent Image.width%와 같이 노드의 값을 포함하는 포맷 정보를 사용할 수 있습니다."
+        "tooltip": "저장할 파일의 접두사입니다. %date:yyyy-MM-dd% 또는 %Empty Latent Image.width%와 같이 노드의 값을 포함하는 형식 정보를 사용할 수 있습니다."
       },
       "svg": {
         "name": "svg"
@@ -8438,108 +7919,6 @@
       }
     }
   },
-  "StringCompare": {
-    "display_name": "비교",
-    "inputs": {
-      "case_sensitive": {
-        "name": "case_sensitive"
-      },
-      "mode": {
-        "name": "mode"
-      },
-      "string_a": {
-        "name": "string_a"
-      },
-      "string_b": {
-        "name": "string_b"
-      }
-    }
-  },
-  "StringConcatenate": {
-    "display_name": "연결",
-    "inputs": {
-      "delimiter": {
-        "name": "delimiter"
-      },
-      "string_a": {
-        "name": "string_a"
-      },
-      "string_b": {
-        "name": "string_b"
-      }
-    }
-  },
-  "StringContains": {
-    "display_name": "포함",
-    "inputs": {
-      "case_sensitive": {
-        "name": "대소문자 구분"
-      },
-      "string": {
-        "name": "문자열"
-      },
-      "substring": {
-        "name": "부분 문자열"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "포함 여부"
-      }
-    }
-  },
-  "StringLength": {
-    "display_name": "길이",
-    "inputs": {
-      "string": {
-        "name": "문자열"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "길이"
-      }
-    }
-  },
-  "StringReplace": {
-    "display_name": "교체",
-    "inputs": {
-      "find": {
-        "name": "찾기"
-      },
-      "replace": {
-        "name": "바꾸기"
-      },
-      "string": {
-        "name": "문자열"
-      }
-    }
-  },
-  "StringSubstring": {
-    "display_name": "부분 문자열",
-    "inputs": {
-      "end": {
-        "name": "end"
-      },
-      "start": {
-        "name": "start"
-      },
-      "string": {
-        "name": "string"
-      }
-    }
-  },
-  "StringTrim": {
-    "display_name": "자르기",
-    "inputs": {
-      "mode": {
-        "name": "모드"
-      },
-      "string": {
-        "name": "문자열"
-      }
-    }
-  },
   "StyleModelApply": {
     "display_name": "스타일 모델 적용",
     "inputs": {
@@ -8579,23 +7958,6 @@
       },
       "min_padding": {
         "name": "최소 패딩"
-      }
-    }
-  },
-  "TextEncodeAceStepAudio": {
-    "display_name": "TextEncodeAceStepAudio",
-    "inputs": {
-      "clip": {
-        "name": "clip"
-      },
-      "lyrics": {
-        "name": "가사"
-      },
-      "lyrics_strength": {
-        "name": "가사 강도"
-      },
-      "tags": {
-        "name": "태그"
       }
     }
   },
@@ -8673,268 +8035,6 @@
       },
       "clip_name3": {
         "name": "CLIP 파일명3"
-      }
-    }
-  },
-  "TripoConversionNode": {
-    "display_name": "Tripo: 모델 변환",
-    "inputs": {
-      "face_limit": {
-        "name": "면 제한"
-      },
-      "format": {
-        "name": "포맷"
-      },
-      "original_model_task_id": {
-        "name": "original_model_task_id"
-      },
-      "quad": {
-        "name": "쿼드"
-      },
-      "texture_format": {
-        "name": "텍스처 포맷"
-      },
-      "texture_size": {
-        "name": "텍스처 크기"
-      }
-    }
-  },
-  "TripoImageToModelNode": {
-    "display_name": "Tripo: 이미지에서 모델로",
-    "inputs": {
-      "face_limit": {
-        "name": "면 제한"
-      },
-      "image": {
-        "name": "이미지"
-      },
-      "model_seed": {
-        "name": "모델 시드"
-      },
-      "model_version": {
-        "name": "모델 버전",
-        "tooltip": "생성에 사용할 모델 버전"
-      },
-      "orientation": {
-        "name": "방향"
-      },
-      "pbr": {
-        "name": "PBR"
-      },
-      "quad": {
-        "name": "쿼드"
-      },
-      "style": {
-        "name": "스타일"
-      },
-      "texture": {
-        "name": "텍스처"
-      },
-      "texture_alignment": {
-        "name": "텍스처 정렬"
-      },
-      "texture_quality": {
-        "name": "텍스처 품질"
-      },
-      "texture_seed": {
-        "name": "텍스처 시드"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "모델 파일"
-      },
-      "1": {
-        "name": "모델 task_id"
-      }
-    }
-  },
-  "TripoMultiviewToModelNode": {
-    "display_name": "Tripo: 다중 뷰에서 모델로",
-    "inputs": {
-      "face_limit": {
-        "name": "면 제한"
-      },
-      "image": {
-        "name": "이미지"
-      },
-      "image_back": {
-        "name": "뒤쪽 이미지"
-      },
-      "image_left": {
-        "name": "왼쪽 이미지"
-      },
-      "image_right": {
-        "name": "오른쪽 이미지"
-      },
-      "model_seed": {
-        "name": "모델 시드"
-      },
-      "model_version": {
-        "name": "모델 버전",
-        "tooltip": "생성에 사용할 모델 버전"
-      },
-      "orientation": {
-        "name": "방향"
-      },
-      "pbr": {
-        "name": "PBR"
-      },
-      "quad": {
-        "name": "쿼드"
-      },
-      "texture": {
-        "name": "텍스처"
-      },
-      "texture_alignment": {
-        "name": "텍스처 정렬"
-      },
-      "texture_quality": {
-        "name": "텍스처 품질"
-      },
-      "texture_seed": {
-        "name": "텍스처 시드"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "모델 파일"
-      },
-      "1": {
-        "name": "모델 task_id"
-      }
-    }
-  },
-  "TripoRefineNode": {
-    "description": "v1.4 Tripo 모델로 생성된 초안 모델을 정제합니다.",
-    "display_name": "Tripo: 초안 모델 정제",
-    "inputs": {
-      "model_task_id": {
-        "name": "model_task_id",
-        "tooltip": "v1.4 Tripo 모델이어야 합니다"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "model_file"
-      },
-      "1": {
-        "name": "model task_id"
-      }
-    }
-  },
-  "TripoRetargetNode": {
-    "display_name": "Tripo: 리깅된 모델 리타겟",
-    "inputs": {
-      "animation": {
-        "name": "애니메이션"
-      },
-      "original_model_task_id": {
-        "name": "original_model_task_id"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "모델 파일"
-      },
-      "1": {
-        "name": "리타겟 task_id"
-      }
-    }
-  },
-  "TripoRigNode": {
-    "display_name": "Tripo: 리그 모델",
-    "inputs": {
-      "original_model_task_id": {
-        "name": "original_model_task_id"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "model_file"
-      },
-      "1": {
-        "name": "rig task_id"
-      }
-    }
-  },
-  "TripoTextToModelNode": {
-    "display_name": "Tripo: 텍스트에서 모델로",
-    "inputs": {
-      "face_limit": {
-        "name": "면 제한"
-      },
-      "image_seed": {
-        "name": "이미지 시드"
-      },
-      "model_seed": {
-        "name": "모델 시드"
-      },
-      "model_version": {
-        "name": "모델 버전"
-      },
-      "negative_prompt": {
-        "name": "네거티브 프롬프트"
-      },
-      "pbr": {
-        "name": "PBR"
-      },
-      "prompt": {
-        "name": "프롬프트"
-      },
-      "quad": {
-        "name": "쿼드"
-      },
-      "style": {
-        "name": "스타일"
-      },
-      "texture": {
-        "name": "텍스처"
-      },
-      "texture_quality": {
-        "name": "텍스처 품질"
-      },
-      "texture_seed": {
-        "name": "텍스처 시드"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "모델 파일"
-      },
-      "1": {
-        "name": "모델 작업 ID"
-      }
-    }
-  },
-  "TripoTextureNode": {
-    "display_name": "Tripo: 텍스처 모델",
-    "inputs": {
-      "model_task_id": {
-        "name": "model_task_id"
-      },
-      "pbr": {
-        "name": "PBR"
-      },
-      "texture": {
-        "name": "텍스처"
-      },
-      "texture_alignment": {
-        "name": "텍스처 정렬"
-      },
-      "texture_quality": {
-        "name": "텍스처 품질"
-      },
-      "texture_seed": {
-        "name": "텍스처 시드"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "모델 파일"
-      },
-      "1": {
-        "name": "모델 task_id"
       }
     }
   },
@@ -9277,98 +8377,6 @@
       }
     }
   },
-  "WanCameraEmbedding": {
-    "display_name": "WanCameraEmbedding",
-    "inputs": {
-      "camera_pose": {
-        "name": "camera_pose"
-      },
-      "cx": {
-        "name": "cx"
-      },
-      "cy": {
-        "name": "cy"
-      },
-      "fx": {
-        "name": "fx"
-      },
-      "fy": {
-        "name": "fy"
-      },
-      "height": {
-        "name": "높이"
-      },
-      "length": {
-        "name": "길이"
-      },
-      "speed": {
-        "name": "속도"
-      },
-      "width": {
-        "name": "너비"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "camera_embedding"
-      },
-      "1": {
-        "name": "너비"
-      },
-      "2": {
-        "name": "높이"
-      },
-      "3": {
-        "name": "길이"
-      }
-    }
-  },
-  "WanCameraImageToVideo": {
-    "display_name": "WanCameraImageToVideo",
-    "inputs": {
-      "batch_size": {
-        "name": "배치 크기"
-      },
-      "camera_conditions": {
-        "name": "카메라 조건"
-      },
-      "clip_vision_output": {
-        "name": "clip 비전 출력"
-      },
-      "height": {
-        "name": "높이"
-      },
-      "length": {
-        "name": "길이"
-      },
-      "negative": {
-        "name": "negative"
-      },
-      "positive": {
-        "name": "positive"
-      },
-      "start_image": {
-        "name": "시작 이미지"
-      },
-      "vae": {
-        "name": "vae"
-      },
-      "width": {
-        "name": "너비"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "positive"
-      },
-      "1": {
-        "name": "negative"
-      },
-      "2": {
-        "name": "latent"
-      }
-    }
-  },
   "WanFirstLastFrameToVideo": {
     "display_name": "WAN 비디오 생성 (시작-끝 프레임)",
     "inputs": {
@@ -9550,49 +8558,6 @@
       },
       "2": {
         "name": "잠재 비디오"
-      }
-    }
-  },
-  "WanPhantomSubjectToVideo": {
-    "display_name": "WanPhantomSubjectToVideo",
-    "inputs": {
-      "batch_size": {
-        "name": "배치 크기"
-      },
-      "height": {
-        "name": "높이"
-      },
-      "images": {
-        "name": "이미지"
-      },
-      "length": {
-        "name": "길이"
-      },
-      "negative": {
-        "name": "negative"
-      },
-      "positive": {
-        "name": "positive"
-      },
-      "vae": {
-        "name": "vae"
-      },
-      "width": {
-        "name": "너비"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "positive"
-      },
-      "1": {
-        "name": "negative_text"
-      },
-      "2": {
-        "name": "negative_img_text"
-      },
-      "3": {
-        "name": "latent"
       }
     }
   },
