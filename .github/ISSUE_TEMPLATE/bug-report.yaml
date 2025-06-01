@@ -12,8 +12,6 @@ body:
 
         - **1:** You are running the latest version of ComfyUI.
         - **2:** You have looked at the existing bug reports and made sure this isn't already reported.
-        - **3:** You confirmed that the bug is not caused by a custom node. You can disable all custom nodes by passing
-        `--disable-all-custom-nodes` command line argument.
 
   - type: checkboxes
     id: custom-nodes-test
