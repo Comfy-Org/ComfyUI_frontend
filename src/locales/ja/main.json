@@ -294,6 +294,7 @@
     "findIssues": "問題を見つける",
     "firstTimeUIMessage": "新しいUIを初めて使用しています。「メニュー > 新しいメニューを使用 > 無効」を選択することで古いUIに戻すことが可能です。",
     "goToNode": "ノードに移動",
+    "help": "ヘルプ",
     "icon": "アイコン",
     "imageFailedToLoad": "画像の読み込みに失敗しました",
     "imageUrl": "画像URL",
@@ -835,6 +836,14 @@
     "v3": "v3",
     "video": "ビデオ",
     "video_models": "ビデオモデル"
+  },
+  "nodeHelpPage": {
+    "documentationPage": "ドキュメントページ",
+    "inputs": "入力",
+    "loadError": "ヘルプの読み込みに失敗しました: {error}",
+    "moreHelp": "さらに詳しい情報は、",
+    "outputs": "出力",
+    "type": "タイプ"
   },
   "nodeTemplates": {
     "enterName": "名前を入力",

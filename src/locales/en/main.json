@@ -30,6 +30,7 @@
     "icon": "Icon",
     "color": "Color",
     "error": "Error",
+    "help": "Help",
     "loading": "Loading",
     "findIssues": "Find Issues",
     "reportIssue": "Send Report",
@@ -1423,5 +1424,13 @@
     "cancelEditTooltip": "Cancel edit",
     "copiedTooltip": "Copied",
     "copyTooltip": "Copy message to clipboard"
+  },
+  "nodeHelpPage": {
+    "inputs": "Inputs",
+    "outputs": "Outputs",
+    "type": "Type",
+    "moreHelp": "For more help, visit the",
+    "documentationPage": "documentation page",
+    "loadError": "Failed to load help: {error}"
   }
 }

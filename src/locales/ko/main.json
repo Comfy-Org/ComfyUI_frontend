@@ -294,6 +294,7 @@
     "findIssues": "문제 찾기",
     "firstTimeUIMessage": "새 UI를 처음 사용합니다. \"메뉴 > 새 메뉴 사용 > 비활성화\"를 선택하여 이전 UI로 복원하세요.",
     "goToNode": "노드로 이동",
+    "help": "도움말",
     "icon": "아이콘",
     "imageFailedToLoad": "이미지를 로드하지 못했습니다.",
     "imageUrl": "이미지 URL",
@@ -835,6 +836,14 @@
     "v3": "v3",
     "video": "비디오",
     "video_models": "비디오 모델"
+  },
+  "nodeHelpPage": {
+    "documentationPage": "문서 페이지",
+    "inputs": "입력",
+    "loadError": "도움말을 불러오지 못했습니다: {error}",
+    "moreHelp": "더 많은 도움말은",
+    "outputs": "출력",
+    "type": "유형"
   },
   "nodeTemplates": {
     "enterName": "이름 입력",

@@ -9,7 +9,7 @@
       <NodeTreeFolder :node="node" />
     </template>
     <template #node="{ node }">
-      <NodeTreeLeaf :node="node" />
+      <NodeTreeLeaf :node="node" :open-node-help="props.openNodeHelp" />
     </template>
   </TreeExplorer>
 
@@ -43,6 +43,7 @@ import type {
 
 const props = defineProps<{
   filteredNodeDefs: ComfyNodeDefImpl[]
+  openNodeHelp: (nodeDef: ComfyNodeDefImpl) => void
 }>()
 
 const expandedKeys = ref<Record<string, boolean>>({})

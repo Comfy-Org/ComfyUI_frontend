@@ -52,6 +52,18 @@ export default defineConfig({
         target: DEV_SERVER_COMFYUI_URL
       },
 
+      // Proxy extension assets (images/videos) under /extensions to the ComfyUI backend
+      '/extensions': {
+        target: DEV_SERVER_COMFYUI_URL,
+        changeOrigin: true
+      },
+
+      // Proxy docs markdown from backend
+      '/docs': {
+        target: DEV_SERVER_COMFYUI_URL,
+        changeOrigin: true
+      },
+
       ...(!DISABLE_TEMPLATES_PROXY
         ? {
             '/templates': {

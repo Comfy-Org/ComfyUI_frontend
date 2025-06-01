@@ -294,6 +294,7 @@
     "findIssues": "Encontrar problemas",
     "firstTimeUIMessage": "Esta es la primera vez que usas la nueva interfaz. Elige \"Menú > Usar nuevo menú > Desactivado\" para restaurar la antigua interfaz.",
     "goToNode": "Ir al nodo",
+    "help": "Ayuda",
     "icon": "Icono",
     "imageFailedToLoad": "Falló la carga de la imagen",
     "imageUrl": "URL de la imagen",
@@ -835,6 +836,14 @@
     "v3": "v3",
     "video": "video",
     "video_models": "modelos_de_video"
+  },
+  "nodeHelpPage": {
+    "documentationPage": "página de documentación",
+    "inputs": "Entradas",
+    "loadError": "Error al cargar la ayuda: {error}",
+    "moreHelp": "Para más ayuda, visita la",
+    "outputs": "Salidas",
+    "type": "Tipo"
   },
   "nodeTemplates": {
     "enterName": "Introduzca el nombre",
