@@ -124,7 +124,19 @@ export const useAlgoliaSearchService = (
     maxCacheSize = DEFAULT_MAX_CACHE_SIZE,
     minCharsForSuggestions = DEFAULT_MIN_CHARS_FOR_SUGGESTIONS
   } = options
-  const searchClient = algoliasearch(__ALGOLIA_APP_ID__, __ALGOLIA_API_KEY__)
+  const searchClient = algoliasearch(__ALGOLIA_APP_ID__, __ALGOLIA_API_KEY__, {
+    hosts: [
+      {
+        url: 'search.comfy.org/api/search',
+        accept: 'readWrite',
+        protocol: 'https'
+      }
+    ],
+    baseHeaders: {
+      'X-Algolia-Application-Id': __ALGOLIA_APP_ID__,
+      'X-Algolia-API-Key': __ALGOLIA_API_KEY__
+    }
+  })
   const searchPacksCache = new QuickLRU<string, SearchPacksResult>({
     maxSize: maxCacheSize
   })
