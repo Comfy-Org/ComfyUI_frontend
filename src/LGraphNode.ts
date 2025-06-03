@@ -3440,11 +3440,10 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       if (widget.computedDisabled) ctx.globalAlpha *= 0.5
       const width = widget.width || nodeWidth
 
-      const widgetInstance = toConcreteWidget(widget, this, false)
-      if (widgetInstance) {
-        widgetInstance.drawWidget(ctx, { width, showText })
+      if (typeof widget.draw === "function") {
+        widget.draw(ctx, this, width, y, H, lowQuality)
       } else {
-        widget.draw?.(ctx, this, width, y, H, lowQuality)
+        toConcreteWidget(widget, this, false)?.drawWidget(ctx, { width, showText })
       }
       ctx.globalAlpha = editorAlpha
     }
