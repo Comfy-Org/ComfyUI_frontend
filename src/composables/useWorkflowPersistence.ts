@@ -1,12 +1,13 @@
 import { computed, watch } from 'vue'
 
+import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { getStorageValue, setStorageValue } from '@/scripts/utils'
 import { useWorkflowService } from '@/services/workflowService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useSettingStore } from '@/stores/settingStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
+import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 
 export function useWorkflowPersistence() {
   const workflowStore = useWorkflowStore()
@@ -16,40 +17,75 @@ export function useWorkflowPersistence() {
     settingStore.get('Comfy.Workflow.Persist')
   )
 
-  const persistCurrentWorkflow = () => {
+  const persistCurrentWorkflows = () => {
     if (!workflowPersistenceEnabled.value) return
-    const workflow = JSON.stringify(comfyApp.graph.serialize())
-    localStorage.setItem('workflow', workflow)
+    const workflows: Record<string, ComfyWorkflowJSON> = {}
+    for (const workflow of workflowStore.workflows) {
+      if (workflow.isLoaded) {
+        workflows[workflow.path] = workflow.activeState as ComfyWorkflowJSON
+      }
+    }
+    const serialized = JSON.stringify(workflows)
+    localStorage.setItem('workflows', serialized)
     if (api.clientId) {
-      sessionStorage.setItem(`workflow:${api.clientId}`, workflow)
+      sessionStorage.setItem(`workflows:${api.clientId}`, serialized)
     }
   }
 
-  const loadWorkflowFromStorage = async (
+  const loadWorkflowsFromStorage = async (
     json: string | null,
-    workflowName: string | null
+    activeWorkflowName: string | null
   ) => {
     if (!json) return false
-    const workflow = JSON.parse(json)
-    await comfyApp.loadGraphData(workflow, true, true, workflowName)
+    const workflows = JSON.parse(json) as Record<string, ComfyWorkflowJSON>
+    if (Object.values(workflows).length === 0) return false
+
+    // Find the path of the active workflow if it exists
+    const activeWorkflowPath = activeWorkflowName
+      ? Object.keys(workflows).find(
+          (path) =>
+            path.substring(ComfyWorkflow.basePath.length) === activeWorkflowName
+        )
+      : null
+
+    let isFirstWorkflow = true
+
+    // Process all workflows in a single pass
+    for (const [path, workflow] of Object.entries(workflows)) {
+      // If this is the active workflow, load it as active
+      const basename = path.substring(ComfyWorkflow.basePath.length)
+      if (
+        path === activeWorkflowPath ||
+        (activeWorkflowPath === null && isFirstWorkflow)
+      ) {
+        await comfyApp.loadGraphData(workflow, true, true, basename)
+        isFirstWorkflow = false
+      }
+      // Otherwise, load in background
+      else {
+        const tempWorkflow = workflowStore.createTemporary(basename, workflow)
+        await tempWorkflow.load()
+        workflowStore.openWorkflowsInBackground({ right: [tempWorkflow.path] })
+      }
+    }
     return true
   }
 
-  const loadPreviousWorkflowFromStorage = async () => {
-    const workflowName = getStorageValue('Comfy.PreviousWorkflow')
+  const loadPreviousWorkflowsFromStorage = async () => {
+    const activeWorkflowName = getStorageValue('Comfy.PreviousWorkflow')
     const clientId = api.initialClientId ?? api.clientId
 
     // Try loading from session storage first
     if (clientId) {
-      const sessionWorkflow = sessionStorage.getItem(`workflow:${clientId}`)
-      if (await loadWorkflowFromStorage(sessionWorkflow, workflowName)) {
+      const workflows = sessionStorage.getItem(`workflows:${clientId}`)
+      if (await loadWorkflowsFromStorage(workflows, activeWorkflowName)) {
         return true
       }
     }
 
     // Fall back to local storage
-    const localWorkflow = localStorage.getItem('workflow')
-    return await loadWorkflowFromStorage(localWorkflow, workflowName)
+    const workflows = localStorage.getItem('workflows')
+    return await loadWorkflowsFromStorage(workflows, activeWorkflowName)
   }
 
   const loadDefaultWorkflow = async () => {
@@ -65,7 +101,7 @@ export function useWorkflowPersistence() {
   const restorePreviousWorkflow = async () => {
     if (!workflowPersistenceEnabled.value) return
     try {
-      const restored = await loadPreviousWorkflowFromStorage()
+      const restored = await loadPreviousWorkflowsFromStorage()
       if (!restored) {
         await loadDefaultWorkflow()
       }
@@ -83,10 +119,10 @@ export function useWorkflowPersistence() {
       setStorageValue('Comfy.PreviousWorkflow', activeWorkflowKey)
       // When the activeWorkflow changes, the graph has already been loaded.
       // Saving the current state of the graph to the localStorage.
-      persistCurrentWorkflow()
+      persistCurrentWorkflows()
     }
   )
-  api.addEventListener('graphChanged', persistCurrentWorkflow)
+  api.addEventListener('graphChanged', persistCurrentWorkflows)
 
   // Restore workflow tabs states
   const openWorkflows = computed(() => workflowStore.openWorkflows)
