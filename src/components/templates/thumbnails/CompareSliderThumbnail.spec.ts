@@ -63,7 +63,7 @@ describe('CompareSliderThumbnail', () => {
   it('positions slider based on default value', () => {
     const wrapper = mountThumbnail()
     const divider = wrapper.find('.bg-white\\/30')
-    expect(divider.attributes('style')).toContain('left: 21%')
+    expect(divider.attributes('style')).toContain('left: 50%')
   })
 
   it('passes isHovered prop to BaseThumbnail', () => {
