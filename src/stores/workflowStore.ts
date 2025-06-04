@@ -1,7 +1,7 @@
 import type { Subgraph } from '@comfyorg/litegraph'
 import _ from 'lodash'
 import { defineStore } from 'pinia'
-import { computed, markRaw, ref, shallowRef, watch } from 'vue'
+import { type Raw, computed, markRaw, ref, shallowRef, watch } from 'vue'
 
 import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
@@ -431,14 +431,14 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const isSubgraphActive = ref(false)
 
   /** @see WorkflowStore.activeSubgraph */
-  const activeSubgraph = shallowRef<Subgraph>()
+  const activeSubgraph = shallowRef<Raw<Subgraph>>()
 
   /** @see WorkflowStore.updateActiveGraph */
   const updateActiveGraph = () => {
-    activeSubgraph.value = comfyApp.canvas?.subgraph
+    const subgraph = comfyApp.canvas?.subgraph
+    activeSubgraph.value = subgraph ? markRaw(subgraph) : undefined
     if (!comfyApp.canvas) return
 
-    const { subgraph } = comfyApp.canvas
     isSubgraphActive.value = isSubgraph(subgraph)
   }
 
