@@ -6,7 +6,6 @@
       <i class="pi pi-download text-muted"></i>
       <span>{{ formattedDownloads }}</span>
     </div>
-    <div v-else></div>
     <PackInstallButton :node-packs="[nodePack]" />
   </div>
 </template>
