@@ -86,7 +86,7 @@ import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue
 import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSliderThumbnail.vue'
 import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
 import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDissolveThumbnail.vue'
-import { api } from '@/scripts/api'
+import { useTemplateWorkflows } from '@/composables/useTemplateWorkflows'
 import { TemplateInfo } from '@/types/workflowTemplateTypes'
 
 const UPSCALE_ZOOM_SCALE = 16 // for upscale templates, exaggerate the hover zoom
@@ -102,36 +102,36 @@ const { sourceModule, loading, template } = defineProps<{
 const cardRef = ref<HTMLElement | null>(null)
 const isHovered = useElementHover(cardRef)
 
-const getThumbnailUrl = (index = '') => {
-  const basePath =
-    sourceModule === 'default'
-      ? api.fileURL(`/templates/${template.name}`)
-      : api.apiURL(`/workflow_templates/${sourceModule}/${template.name}`)
+const { getTemplateThumbnailUrl, getTemplateTitle, getTemplateDescription } =
+  useTemplateWorkflows()
 
-  // For templates from custom nodes, multiple images is not yet supported
-  const indexSuffix = sourceModule === 'default' && index ? `-${index}` : ''
-
-  return `${basePath}${indexSuffix}.${template.mediaSubtype}`
-}
+// Determine the effective source module to use (from template or prop)
+const effectiveSourceModule = computed(
+  () => template.sourceModule || sourceModule
+)
 
 const baseThumbnailSrc = computed(() =>
-  getThumbnailUrl(sourceModule === 'default' ? '1' : '')
+  getTemplateThumbnailUrl(
+    template,
+    effectiveSourceModule.value,
+    effectiveSourceModule.value === 'default' ? '1' : ''
+  )
 )
+
 const overlayThumbnailSrc = computed(() =>
-  getThumbnailUrl(sourceModule === 'default' ? '2' : '')
+  getTemplateThumbnailUrl(
+    template,
+    effectiveSourceModule.value,
+    effectiveSourceModule.value === 'default' ? '2' : ''
+  )
 )
 
-const description = computed(() => {
-  return sourceModule === 'default'
-    ? template.localizedDescription ?? ''
-    : template.description.replace(/[-_]/g, ' ').trim()
-})
-
-const title = computed(() => {
-  return sourceModule === 'default'
-    ? template.localizedTitle ?? ''
-    : template.name
-})
+const description = computed(() =>
+  getTemplateDescription(template, effectiveSourceModule.value)
+)
+const title = computed(() =>
+  getTemplateTitle(template, effectiveSourceModule.value)
+)
 
 defineEmits<{
   loadWorkflow: [name: string]

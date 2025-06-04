@@ -1138,6 +1138,7 @@
   "templateWorkflows": {
     "category": {
       "3D": "3D",
+      "All": "すべてのテンプレート",
       "Area Composition": "エリア構成",
       "Audio": "オーディオ",
       "Basics": "基本",

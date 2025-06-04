@@ -1,21 +1,19 @@
 <template>
   <DataTable
     v-model:selection="selectedTemplate"
-    :value="templates"
+    :value="enrichedTemplates"
     striped-rows
     selection-mode="single"
   >
     <Column field="title" :header="$t('g.title')">
       <template #body="slotProps">
-        <span :title="getTemplateTitle(slotProps.data)">{{
-          getTemplateTitle(slotProps.data)
-        }}</span>
+        <span :title="slotProps.data.title">{{ slotProps.data.title }}</span>
       </template>
     </Column>
     <Column field="description" :header="$t('g.description')">
       <template #body="slotProps">
-        <span :title="getTemplateDescription(slotProps.data)">
-          {{ getTemplateDescription(slotProps.data) }}
+        <span :title="slotProps.data.description">
+          {{ slotProps.data.description }}
         </span>
       </template>
     </Column>
@@ -38,8 +36,9 @@
 import Button from 'primevue/button'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
+import { useTemplateWorkflows } from '@/composables/useTemplateWorkflows'
 import type { TemplateInfo } from '@/types/workflowTemplateTypes'
 
 const { sourceModule, loading, templates } = defineProps<{
@@ -50,21 +49,20 @@ const { sourceModule, loading, templates } = defineProps<{
 }>()
 
 const selectedTemplate = ref(null)
+const { getTemplateTitle, getTemplateDescription } = useTemplateWorkflows()
+
+const enrichedTemplates = computed(() => {
+  return templates.map((template) => {
+    const actualSourceModule = template.sourceModule || sourceModule
+    return {
+      ...template,
+      title: getTemplateTitle(template, actualSourceModule),
+      description: getTemplateDescription(template, actualSourceModule)
+    }
+  })
+})
 
 const emit = defineEmits<{
   loadWorkflow: [name: string]
 }>()
-
-const getTemplateTitle = (template: TemplateInfo) => {
-  const fallback = template.title ?? template.name ?? `${sourceModule} Template`
-  return sourceModule === 'default'
-    ? template.localizedTitle ?? fallback
-    : fallback
-}
-
-const getTemplateDescription = (template: TemplateInfo) => {
-  return sourceModule === 'default'
-    ? template.localizedDescription ?? ''
-    : template.description.replace(/[-_]/g, ' ').trim()
-}
 </script>
