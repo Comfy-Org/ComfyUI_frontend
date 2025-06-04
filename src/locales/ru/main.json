@@ -1138,6 +1138,7 @@
   "templateWorkflows": {
     "category": {
       "3D": "3D",
+      "All": "Все шаблоны",
       "Area Composition": "Композиция области",
       "Audio": "Аудио",
       "Basics": "Основы",

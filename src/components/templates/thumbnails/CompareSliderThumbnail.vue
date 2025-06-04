@@ -38,7 +38,7 @@ import { ref, watch } from 'vue'
 
 import BaseThumbnail from '@/components/templates/thumbnails/BaseThumbnail.vue'
 
-const SLIDER_START_POSITION = 21
+const SLIDER_START_POSITION = 50
 
 const { baseImageSrc, overlayImageSrc, isHovered, isVideo } = defineProps<{
   baseImageSrc: string

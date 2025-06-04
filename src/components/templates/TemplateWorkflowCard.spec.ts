@@ -46,8 +46,66 @@ vi.mock('@vueuse/core', () => ({
 vi.mock('@/scripts/api', () => ({
   api: {
     fileURL: (path: string) => `/fileURL${path}`,
-    apiURL: (path: string) => `/apiURL${path}`
+    apiURL: (path: string) => `/apiURL${path}`,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn()
   }
+}))
+
+vi.mock('@/scripts/app', () => ({
+  app: {
+    loadGraphData: vi.fn()
+  }
+}))
+
+vi.mock('@/stores/dialogStore', () => ({
+  useDialogStore: () => ({
+    closeDialog: vi.fn()
+  })
+}))
+
+vi.mock('@/stores/workflowTemplatesStore', () => ({
+  useWorkflowTemplatesStore: () => ({
+    isLoaded: true,
+    loadWorkflowTemplates: vi.fn().mockResolvedValue(true),
+    groupedTemplates: []
+  })
+}))
+
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({
+    t: (key: string, fallback: string) => fallback || key
+  })
+}))
+
+vi.mock('@/composables/useTemplateWorkflows', () => ({
+  useTemplateWorkflows: () => ({
+    getTemplateThumbnailUrl: (
+      template: TemplateInfo,
+      sourceModule: string,
+      index = ''
+    ) => {
+      const basePath =
+        sourceModule === 'default'
+          ? `/fileURL/templates/${template.name}`
+          : `/apiURL/workflow_templates/${sourceModule}/${template.name}`
+      const indexSuffix = sourceModule === 'default' && index ? `-${index}` : ''
+      return `${basePath}${indexSuffix}.${template.mediaSubtype}`
+    },
+    getTemplateTitle: (template: TemplateInfo, sourceModule: string) => {
+      const fallback =
+        template.title ?? template.name ?? `${sourceModule} Template`
+      return sourceModule === 'default'
+        ? template.localizedTitle ?? fallback
+        : fallback
+    },
+    getTemplateDescription: (template: TemplateInfo, sourceModule: string) => {
+      return sourceModule === 'default'
+        ? template.localizedDescription ?? ''
+        : template.description?.replace(/[-_]/g, ' ').trim() ?? ''
+    },
+    loadWorkflowTemplate: vi.fn()
+  })
 }))
 
 describe('TemplateWorkflowCard', () => {

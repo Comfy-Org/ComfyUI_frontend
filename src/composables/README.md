@@ -101,6 +101,7 @@ Composables for sidebar functionality:
 - `useNodeLibrarySidebarTab` - Manages the node library sidebar tab
 - `useQueueSidebarTab` - Manages the queue sidebar tab
 - `useWorkflowsSidebarTab` - Manages the workflows sidebar tab
+- `useTemplateWorkflows` - Manages template workflow loading, selection, and display
 
 ### Widgets
 

@@ -514,7 +514,8 @@
       "3D": "3D",
       "Audio": "Audio",
       "Image API": "Image API",
-      "Video API": "Video API"
+      "Video API": "Video API",
+      "All": "All Templates"
     },
     "templateDescription": {
       "Basics": {
