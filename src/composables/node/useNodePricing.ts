@@ -125,7 +125,7 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         if (!renderingSpeedWidget)
           return '$0.03-0.08/Run (varies with rendering speed)'
 
-        const renderingSpeed = renderingSpeedWidget.value as string
+        const renderingSpeed = String(renderingSpeedWidget.value)
         if (renderingSpeed.toLowerCase().includes('quality')) {
           return '$0.08/Run'
         } else if (renderingSpeed.toLowerCase().includes('balanced')) {
