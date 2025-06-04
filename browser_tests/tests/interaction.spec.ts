@@ -92,7 +92,7 @@ test.describe('Node Interaction', () => {
       )
     })
 
-    test('Can move selected nodes with CTRL + arrow keys', async ({
+    test('Can move selected nodes using the Comfy.Canvas.MoveSelectedNodes.{Up|Down|Left|Right} commands', async ({
       comfyPage
     }) => {
       const clipNodes = await comfyPage.getNodeRefsByType('CLIPTextEncode')
@@ -107,6 +107,9 @@ test.describe('Node Interaction', () => {
       }) => {
         const originalPositions = await getPositions()
         await dragSelectNodes(comfyPage, clipNodes)
+        await comfyPage.executeCommand(
+          `Comfy.Canvas.MoveSelectedNodes.${direction}`
+        )
         await comfyPage.canvas.press(`Control+Arrow${direction}`)
         const newPositions = await getPositions()
         expect(newPositions).toEqual(originalPositions.map(expectedPosition))

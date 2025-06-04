@@ -173,37 +173,5 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       key: 'f'
     },
     commandId: 'Workspace.ToggleFocusMode'
-  },
-  {
-    combo: {
-      ctrl: true,
-      key: 'ArrowUp'
-    },
-    commandId: 'Comfy.Canvas.MoveSelectedNodes.Up',
-    targetElementId: 'graph-canvas'
-  },
-  {
-    combo: {
-      ctrl: true,
-      key: 'ArrowDown'
-    },
-    commandId: 'Comfy.Canvas.MoveSelectedNodes.Down',
-    targetElementId: 'graph-canvas'
-  },
-  {
-    combo: {
-      ctrl: true,
-      key: 'ArrowLeft'
-    },
-    commandId: 'Comfy.Canvas.MoveSelectedNodes.Left',
-    targetElementId: 'graph-canvas'
-  },
-  {
-    combo: {
-      ctrl: true,
-      key: 'ArrowRight'
-    },
-    commandId: 'Comfy.Canvas.MoveSelectedNodes.Right',
-    targetElementId: 'graph-canvas'
   }
 ]
