@@ -2,7 +2,7 @@
   <img
     :src="isImageError ? DEFAULT_BANNER : imgSrc"
     :alt="nodePack.name + ' banner'"
-    class="w-full h-full object-cover rounded-t-lg cursor-pointer"
+    class="object-cover"
     :style="{ width: cssWidth, height: cssHeight }"
     @error="isImageError = true"
   />
@@ -20,7 +20,7 @@ const {
   width = '100%',
   height = '12rem'
 } = defineProps<{
-  nodePack: components['schemas']['Node'] & { banner?: string }
+  nodePack: components['schemas']['Node'] & { banner?: string } //
   width?: string
   height?: string
 }>()

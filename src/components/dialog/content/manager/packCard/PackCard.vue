@@ -8,6 +8,7 @@
     :pt="{
       body: { class: 'p-0 flex flex-col w-full h-full rounded-2xl gap-0' },
       content: { class: 'flex-1 flex flex-col rounded-2xl min-h-0' },
+      titlle: { class: 'w-full h-full rounded-t-lg cursor-pointer' },
       footer: { class: 'p-0 m-0' }
     }"
   >
