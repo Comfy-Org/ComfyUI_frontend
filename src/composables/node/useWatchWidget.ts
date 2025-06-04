@@ -48,9 +48,8 @@ export const useComputedWithWidgetWatch = (
   // Create a reactive trigger based on widget values
   const widgetValues = ref<Record<string, any>>({})
 
-  const initializeObserverCallbacks = () => {
-    if (!node.widgets) return
-
+  // Initialize widget observers
+  if (node.widgets) {
     const widgetsToObserve = widgetNames
       ? node.widgets.filter((widget) => widgetNames.includes(widget.name))
       : node.widgets
@@ -77,8 +76,6 @@ export const useComputedWithWidgetWatch = (
       })
     })
   }
-
-  initializeObserverCallbacks()
 
   // Returns a function that creates a computed that responds to widget changes.
   // The computed will be re-evaluated whenever any observed widget changes.
