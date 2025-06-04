@@ -1,44 +1,19 @@
 <template>
   <DataTable
     v-model:selection="selectedTemplate"
-    :value="templates"
+    :value="enrichedTemplates"
     striped-rows
     selection-mode="single"
   >
     <Column field="title" :header="$t('g.title')">
       <template #body="slotProps">
-        <span
-          :title="
-            getTemplateTitle(
-              slotProps.data,
-              slotProps.data.sourceModule || sourceModule
-            )
-          "
-          >{{
-            getTemplateTitle(
-              slotProps.data,
-              slotProps.data.sourceModule || sourceModule
-            )
-          }}</span
-        >
+        <span :title="slotProps.data.title">{{ slotProps.data.title }}</span>
       </template>
     </Column>
     <Column field="description" :header="$t('g.description')">
       <template #body="slotProps">
-        <span
-          :title="
-            getTemplateDescription(
-              slotProps.data,
-              slotProps.data.sourceModule || sourceModule
-            )
-          "
-        >
-          {{
-            getTemplateDescription(
-              slotProps.data,
-              slotProps.data.sourceModule || sourceModule
-            )
-          }}
+        <span :title="slotProps.data.description">
+          {{ slotProps.data.description }}
         </span>
       </template>
     </Column>
@@ -61,7 +36,7 @@
 import Button from 'primevue/button'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { useTemplateWorkflows } from '@/composables/useTemplateWorkflows'
 import type { TemplateInfo } from '@/types/workflowTemplateTypes'
@@ -75,6 +50,17 @@ const { sourceModule, loading, templates } = defineProps<{
 
 const selectedTemplate = ref(null)
 const { getTemplateTitle, getTemplateDescription } = useTemplateWorkflows()
+
+const enrichedTemplates = computed(() => {
+  return templates.map((template) => {
+    const actualSourceModule = template.sourceModule || sourceModule
+    return {
+      ...template,
+      title: getTemplateTitle(template, actualSourceModule),
+      description: getTemplateDescription(template, actualSourceModule)
+    }
+  })
+})
 
 const emit = defineEmits<{
   loadWorkflow: [name: string]
