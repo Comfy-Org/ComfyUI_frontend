@@ -7,14 +7,28 @@ on:
 jobs:
   update-manager-types:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
-      - uses: Comfy-Org/ComfyUI_frontend_setup_action@v2.3
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Checkout ComfyUI-Manager repository
         uses: actions/checkout@v4
         with:
           repository: Comfy-Org/ComfyUI-Manager
           path: ComfyUI-Manager
+          clean: true
 
       - name: Get Manager commit information
         id: manager-info
@@ -27,34 +41,52 @@ jobs:
       - name: Generate Manager API types
         run: |
           echo "Generating TypeScript types from ComfyUI-Manager@${{ steps.manager-info.outputs.commit }}..."
-          npx openapi-typescript "$(pwd)/ComfyUI-Manager/openapi.yaml" --output ./ComfyUI_frontend/src/types/generatedManagerTypes.ts
+          npx openapi-typescript ./ComfyUI-Manager/openapi.yaml --output ./src/types/generatedManagerTypes.ts
 
       - name: Validate generated types
         run: |
-          if [ ! -f ./ComfyUI_frontend/src/types/generatedManagerTypes.ts ]; then
+          if [ ! -f ./src/types/generatedManagerTypes.ts ]; then
             echo "Error: Types file was not generated."
             exit 1
           fi
 
           # Check if file is not empty
-          if [ ! -s ./ComfyUI_frontend/src/types/generatedManagerTypes.ts ]; then
+          if [ ! -s ./src/types/generatedManagerTypes.ts ]; then
             echo "Error: Generated types file is empty."
             exit 1
           fi
 
-      - name: Debugging info
+      - name: Check for changes
+        id: check-changes
         run: |
-          echo "Branch: ${{ github.head_ref }}"
-          git status
-        working-directory: ComfyUI_frontend
+          if [[ -z $(git status --porcelain ./src/types/generatedManagerTypes.ts) ]]; then
+            echo "No changes to ComfyUI-Manager API types detected."
+            echo "changed=false" >> $GITHUB_OUTPUT
+            exit 0
+          else
+            echo "Changes detected in ComfyUI-Manager API types."
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
 
-      - name: Commit updated types
-        run: |
-          git config --global user.name 'github-actions'
-          git config --global user.email 'github-actions@github.com'
-          git fetch origin ${{ github.head_ref }}
-          git checkout -B ${{ github.head_ref }} origin/${{ github.head_ref }}
-          git add src/types/generatedManagerTypes.ts
-          git commit -m "[chore] Update ComfyUI-Manager API types from ComfyUI-Manager@${{ steps.manager-info.outputs.commit }}" || echo "No changes to commit"
-          git push origin HEAD:${{ github.head_ref }}
-        working-directory: ComfyUI_frontend
+      - name: Create Pull Request
+        if: steps.check-changes.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.PR_GH_TOKEN }}
+          commit-message: '[chore] Update ComfyUI-Manager API types from ComfyUI-Manager@${{ steps.manager-info.outputs.commit }}'
+          title: '[chore] Update ComfyUI-Manager API types from ComfyUI-Manager@${{ steps.manager-info.outputs.commit }}'
+          body: |
+            ## Automated API Type Update
+
+            This PR updates the ComfyUI-Manager API types from the latest ComfyUI-Manager OpenAPI specification.
+
+            - Manager commit: ${{ steps.manager-info.outputs.commit }}
+            - Generated on: ${{ github.event.repository.updated_at }}
+
+            These types are automatically generated using openapi-typescript.
+          branch: update-manager-types-${{ steps.manager-info.outputs.commit }}
+          base: main
+          labels: Manager
+          delete-branch: true
+          add-paths: |
+            src/types/generatedManagerTypes.ts
