@@ -324,10 +324,6 @@
       "Top": "Haut"
     }
   },
-  "Comfy_Validation_NodeDefs": {
-    "name": "Valider les définitions de nœuds (lent)",
-    "tooltip": "Recommandé pour les développeurs de nœuds. Cela validera toutes les définitions de nœuds au démarrage."
-  },
   "Comfy_Validation_Workflows": {
     "name": "Valider les flux de travail"
   },
