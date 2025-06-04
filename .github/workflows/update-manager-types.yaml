@@ -1,0 +1,63 @@
+name: Update ComfyUI-Manager API Types
+
+on:
+  # Manual trigger
+  workflow_dispatch:
+
+jobs:
+  update-manager-types:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Checkout ComfyUI-Manager repository
+        uses: actions/checkout@v4
+        with:
+          repository: Comfy-Org/ComfyUI-Manager
+          path: ComfyUI-Manager
+
+      - name: Get Manager commit information
+        id: manager-info
+        run: |
+          cd ComfyUI-Manager
+          MANAGER_COMMIT=$(git rev-parse --short HEAD)
+          echo "commit=${MANAGER_COMMIT}" >> $GITHUB_OUTPUT
+          cd ..
+
+      - name: Generate Manager API types
+        run: |
+          echo "Generating TypeScript types from ComfyUI-Manager@${{ steps.manager-info.outputs.commit }}..."
+          npx openapi-typescript "$(pwd)/ComfyUI-Manager/openapi.yaml" --output ./src/types/generatedManagerTypes.ts
+
+      - name: Validate generated types
+        run: |
+          if [ ! -f ./src/types/generatedManagerTypes.ts ]; then
+            echo "Error: Types file was not generated."
+            exit 1
+          fi
+
+          # Check if file is not empty
+          if [ ! -s ./src/types/generatedManagerTypes.ts ]; then
+            echo "Error: Generated types file is empty."
+            exit 1
+          fi
+
+      - name: Commit changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add ./src/types/generatedManagerTypes.ts
+          git commit -m "[chore] Update ComfyUI-Manager API types from ComfyUI-Manager@${{ steps.manager-info.outputs.commit }}" || echo "No changes to commit"
+          git push || echo "No changes to push"
