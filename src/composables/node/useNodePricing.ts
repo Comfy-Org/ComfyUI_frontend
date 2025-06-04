@@ -1,426 +1,931 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
+import type { IComboWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
-import { ApiNodeCostRecord } from '@/types/apiNodeTypes'
+/**
+ * Function that calculates dynamic pricing based on node widget values
+ */
+type PricingFunction = (node: LGraphNode) => string
 
-const apiNodeCosts: ApiNodeCostRecord = {
-  FluxProCannyNode: {
-    vendor: 'BFL',
-    nodeName: 'Flux 1: Canny Control Image',
-    pricingParams: '-',
-    pricePerRunRange: '$0.05',
-    displayPrice: '$0.05/Run'
-  },
-  FluxProDepthNode: {
-    vendor: 'BFL',
-    nodeName: 'Flux 1: Depth Control Image',
-    pricingParams: '-',
-    pricePerRunRange: '$0.05',
-    displayPrice: '$0.05/Run'
-  },
-  FluxProExpandNode: {
-    vendor: 'BFL',
-    nodeName: 'Flux 1: Expand Image',
-    pricingParams: '-',
-    pricePerRunRange: '$0.05',
-    rateDocumentationUrl: 'https://docs.bfl.ml/pricing/',
-    displayPrice: '$0.05/Run'
-  },
-  FluxProFillNode: {
-    vendor: 'BFL',
-    nodeName: 'Flux 1: Fill Image',
-    pricingParams: '-',
-    pricePerRunRange: '$0.05',
-    displayPrice: '$0.05/Run'
-  },
-  FluxProUltraImageNode: {
-    vendor: 'BFL',
-    nodeName: 'Flux 1.1: [pro] Ultra Image',
-    pricingParams: '-',
-    pricePerRunRange: '$0.06',
-    displayPrice: '$0.06/Run'
-  },
-  IdeogramV1: {
-    vendor: 'Ideogram',
-    nodeName: 'Ideogram V1',
-    pricingParams: '-',
-    pricePerRunRange: '$0.06',
-    rateDocumentationUrl: 'https://about.ideogram.ai/api-pricing',
-    displayPrice: '$0.06/Run'
-  },
-  IdeogramV2: {
-    vendor: 'Ideogram',
-    nodeName: 'Ideogram V2',
-    pricingParams: '-',
-    pricePerRunRange: '$0.08',
-    displayPrice: '$0.08/Run'
-  },
-  IdeogramV3: {
-    vendor: 'Ideogram',
-    nodeName: 'Ideogram V3',
-    pricingParams: 'rendering_speed',
-    pricePerRunRange: 'dynamic',
-    displayPrice: 'Variable pricing (low to medium)'
-  },
-  KlingCameraControlI2VNode: {
-    vendor: 'Kling',
-    nodeName: 'Kling Image to Video (Camera Control)',
-    pricingParams: '-',
-    pricePerRunRange: '$0.49',
-    displayPrice: '$0.49/Run'
-  },
-  KlingCameraControlT2VNode: {
-    vendor: 'Kling',
-    nodeName: 'Kling Text to Video (Camera Control)',
-    pricingParams: '-',
-    pricePerRunRange: '$0.14',
-    displayPrice: '$0.14/Run'
-  },
-  KlingDualCharacterVideoEffectNode: {
-    vendor: 'Kling',
-    nodeName: 'Kling Dual Character Video Effects',
-    pricingParams: 'Priced the same as t2v based on mode, model, and duration.',
-    pricePerRunRange: 'dynamic',
-    displayPrice: 'Variable pricing (medium)'
-  },
-  KlingImage2VideoNode: {
-    vendor: 'Kling',
-    nodeName: 'Kling Image to Video',
-    pricingParams: 'Same as Text to Video',
-    pricePerRunRange: 'dynamic',
-    displayPrice: 'Variable pricing (medium)'
-  },
-  KlingImageGenerationNode: {
-    vendor: 'Kling',
-    nodeName: 'Kling Image Generation',
-    pricingParams: 'modality | model',
-    pricePerRunRange: 'dynamic',
-    displayPrice: 'Variable pricing (low)'
-  },
-  KlingLipSyncAudioToVideoNode: {
-    vendor: 'Kling',
-    nodeName: 'Kling Lip Sync Video with Audio',
-    pricingParams: 'duration of input video',
-    pricePerRunRange: '$0.07',
-    displayPrice: '$0.07/Run'
-  },
-  KlingLipSyncTextToVideoNode: {
-    vendor: 'Kling',
-    nodeName: 'Kling Lip Sync Video with Text',
-    pricingParams: 'duration of input video',
-    pricePerRunRange: '$0.07',
-    displayPrice: '$0.07/Run'
-  },
-  KlingSingleImageVideoEffectNode: {
-    vendor: 'Kling',
-    nodeName: 'Kling Video Effects',
-    pricingParams: 'effect_scene',
-    pricePerRunRange: 'dynamic',
-    displayPrice: 'Variable pricing (medium)'
-  },
-  KlingStartEndFrameNode: {
-    vendor: 'Kling',
-    nodeName: 'Kling Start-End Frame to Video',
-    pricingParams: 'Same as text to video',
-    pricePerRunRange: 'dynamic',
-    displayPrice: 'Variable pricing (medium)'
-  },
-  KlingTextToVideoNode: {
-    vendor: 'Kling',
-    nodeName: 'Kling Text to Video',
-    pricingParams: 'model | duration | mode',
-    pricePerRunRange: 'dynamic',
-    displayPrice: 'Variable pricing (medium to high)'
-  },
-  KlingVideoExtendNode: {
-    vendor: 'Kling',
-    nodeName: 'Kling Video Extend',
-    pricingParams: '-',
-    pricePerRunRange: '$0.28',
-    displayPrice: '$0.28/Run'
-  },
-  KlingVirtualTryOnNode: {
-    vendor: 'Kling',
-    nodeName: 'Kling Virtual Try On',
-    pricingParams: '-',
-    pricePerRunRange: '$0.07',
-    displayPrice: '$0.07/Run'
-  },
-  LumaImageToVideoNode: {
-    vendor: 'Luma',
-    nodeName: 'Luma Image to Video',
-    pricingParams: 'Same as Text to Video',
-    pricePerRunRange: 'dynamic',
-    rateDocumentationUrl: 'https://lumalabs.ai/api/pricing',
-    displayPrice: 'Variable pricing (medium to high)'
-  },
-  LumaVideoNode: {
-    vendor: 'Luma',
-    nodeName: 'Luma Text to Video',
-    pricingParams: 'model | resolution | duration',
-    pricePerRunRange: 'dynamic',
-    rateDocumentationUrl: 'https://lumalabs.ai/api/pricing',
-    displayPrice: 'Variable pricing (medium to high)'
-  },
-  MinimaxImageToVideoNode: {
-    vendor: 'Minimax',
-    nodeName: 'MiniMax Image to Video',
-    pricingParams: '-',
-    pricePerRunRange: '$0.43',
-    rateDocumentationUrl: 'https://www.minimax.io/price',
-    displayPrice: '$0.43/Run'
-  },
-  MinimaxTextToVideoNode: {
-    vendor: 'Minimax',
-    nodeName: 'MiniMax Text to Video',
-    pricingParams: '-',
-    pricePerRunRange: '$0.43',
-    rateDocumentationUrl: 'https://www.minimax.io/price',
-    displayPrice: '$0.43/Run'
-  },
-  OpenAIDalle2: {
-    vendor: 'OpenAI',
-    nodeName: 'dall-e-2',
-    pricingParams: 'size',
-    pricePerRunRange: 'dynamic',
-    rateDocumentationUrl: 'https://platform.openai.com/docs/pricing',
-    displayPrice: 'Variable pricing (low)'
-  },
-  OpenAIDalle3: {
-    vendor: 'OpenAI',
-    nodeName: 'dall-e-3',
-    pricingParams: 'size | quality',
-    pricePerRunRange: 'dynamic',
-    rateDocumentationUrl: 'https://platform.openai.com/docs/pricing',
-    displayPrice: 'Variable pricing (medium)'
-  },
-  OpenAIGPTImage1: {
-    vendor: 'OpenAI',
-    nodeName: 'gpt-image-1',
-    pricingParams: 'quality',
-    pricePerRunRange: 'dynamic',
-    rateDocumentationUrl: 'https://platform.openai.com/docs/pricing',
-    displayPrice: 'Variable pricing (low to high)'
-  },
-  PikaImageToVideoNode2_2: {
-    vendor: 'Pika',
-    nodeName: 'Pika Image to Video',
-    pricingParams: 'duration | resolution',
-    pricePerRunRange: 'dynamic',
-    displayPrice: 'Variable pricing (medium)'
-  },
-  PikaScenesV2_2: {
-    vendor: 'Pika',
-    nodeName: 'Pika Scenes (Video Image Composition)',
-    pricingParams: 'duration | resolution',
-    pricePerRunRange: 'dynamic',
-    displayPrice: 'Variable pricing (medium)'
-  },
-  PikaStartEndFrameNode2_2: {
-    vendor: 'Pika',
-    nodeName: 'Pika Start and End Frame to Video',
-    pricingParams: 'duration | resolution',
-    pricePerRunRange: 'dynamic',
-    displayPrice: 'Variable pricing (medium)'
-  },
-  PikaTextToVideoNode2_2: {
-    vendor: 'Pika',
-    nodeName: 'Pika Text to Video',
-    pricingParams: 'duration | resolution',
-    pricePerRunRange: 'dynamic',
-    displayPrice: 'Variable pricing (medium)'
-  },
-  Pikadditions: {
-    vendor: 'Pika',
-    nodeName: 'Pikadditions (Video Object Insertion)',
-    pricingParams: '-',
-    pricePerRunRange: '$0.3',
-    displayPrice: '$0.3/Run'
-  },
-  Pikaffects: {
-    vendor: 'Pika',
-    nodeName: 'Pikaffects (Video Effects)',
-    pricingParams: '-',
-    pricePerRunRange: '$0.45',
-    displayPrice: '$0.45/Run'
-  },
-  Pikaswaps: {
-    vendor: 'Pika',
-    nodeName: 'Pika Swaps (Video Object Replacement)',
-    pricingParams: '-',
-    pricePerRunRange: '$0.3',
-    displayPrice: '$0.3/Run'
-  },
-  PixverseImageToVideoNode: {
-    vendor: 'Pixverse',
-    nodeName: 'PixVerse Image to Video',
-    pricingParams: 'same as text to video',
-    pricePerRunRange: '$0.9',
-    displayPrice: '$0.9/Run'
-  },
-  PixverseTextToVideoNode: {
-    vendor: 'Pixverse',
-    nodeName: 'PixVerse Text to Video',
-    pricingParams: 'duration | quality | motion_mode',
-    pricePerRunRange: 'dynamic',
-    displayPrice: 'Variable pricing (medium to high)'
-  },
-  PixverseTransitionVideoNode: {
-    vendor: 'Pixverse',
-    nodeName: 'PixVerse Transition Video',
-    pricingParams: 'same as text to video',
-    pricePerRunRange: '$0.9',
-    displayPrice: '$0.9/Run'
-  },
-  RecraftCreativeUpscaleNode: {
-    vendor: 'Recraft',
-    nodeName: 'Recraft Creative Upscale Image',
-    pricingParams: '-',
-    pricePerRunRange: '$0.25',
-    rateDocumentationUrl: 'https://www.recraft.ai/docs#pricing',
-    displayPrice: '$0.25/Run'
-  },
-  RecraftCrispUpscaleNode: {
-    vendor: 'Recraft',
-    nodeName: 'Recraft Crisp Upscale Image',
-    pricingParams: '-',
-    pricePerRunRange: '$0.004',
-    rateDocumentationUrl: 'https://www.recraft.ai/docs#pricing',
-    displayPrice: '$0.004/Run'
-  },
-  RecraftImageInpaintingNode: {
-    vendor: 'Recraft',
-    nodeName: 'Recraft Image Inpainting',
-    pricingParams: 'n',
-    pricePerRunRange: '$$0.04 x n',
-    rateDocumentationUrl: 'https://www.recraft.ai/docs#pricing',
-    displayPrice: '$0.04 x n/Run'
-  },
-  RecraftImageToImageNode: {
-    vendor: 'Recraft',
-    nodeName: 'Recraft Image to Image',
-    pricingParams: 'n',
-    pricePerRunRange: '$0.04 x n',
-    rateDocumentationUrl: 'https://www.recraft.ai/docs#pricing',
-    displayPrice: '$0.04 x n/Run'
-  },
-  RecraftRemoveBackgroundNode: {
-    vendor: 'Recraft',
-    nodeName: 'Recraft Remove Background',
-    pricingParams: '-',
-    pricePerRunRange: '$0.01',
-    rateDocumentationUrl: 'https://www.recraft.ai/docs#pricing',
-    displayPrice: '$0.01/Run'
-  },
-  RecraftReplaceBackgroundNode: {
-    vendor: 'Recraft',
-    nodeName: 'Recraft Replace Background',
-    pricingParams: 'n',
-    pricePerRunRange: '$0.04',
-    rateDocumentationUrl: 'https://www.recraft.ai/docs#pricing',
-    displayPrice: '$0.04/Run'
-  },
-  RecraftTextToImageNode: {
-    vendor: 'Recraft',
-    nodeName: 'Recraft Text to Image',
-    pricingParams: 'model | n',
-    pricePerRunRange: '$0.04 x n',
-    rateDocumentationUrl: 'https://www.recraft.ai/docs#pricing',
-    displayPrice: '$0.04 x n/Run'
-  },
-  RecraftTextToVectorNode: {
-    vendor: 'Recraft',
-    nodeName: 'Recraft Text to Vector',
-    pricingParams: 'model | n',
-    pricePerRunRange: '$0.08 x n',
-    rateDocumentationUrl: 'https://www.recraft.ai/docs#pricing',
-    displayPrice: '$0.08 x n/Run'
-  },
-  RecraftVectorizeImageNode: {
-    vendor: 'Recraft',
-    nodeName: 'Recraft Vectorize Image',
-    pricingParams: '-',
-    pricePerRunRange: '$0.01',
-    rateDocumentationUrl: 'https://www.recraft.ai/docs#pricing',
-    displayPrice: '$0.01/Run'
-  },
-  StabilityStableImageSD_3_5Node: {
-    vendor: 'Stability',
-    nodeName: 'Stability AI Stable Diffusion 3.5 Image',
-    pricingParams: 'model',
-    pricePerRunRange: 'dynamic',
-    displayPrice: 'Variable pricing (low)'
-  },
-  StabilityStableImageUltraNode: {
-    vendor: 'Stability',
-    nodeName: 'Stability AI Stable Image Ultra',
-    pricingParams: '-',
-    pricePerRunRange: '$0.08',
-    displayPrice: '$0.08/Run'
-  },
-  StabilityUpscaleConservativeNode: {
-    vendor: 'Stability',
-    nodeName: 'Stability AI Upscale Conservative',
-    pricingParams: '-',
-    pricePerRunRange: '$0.25',
-    displayPrice: '$0.25/Run'
-  },
-  StabilityUpscaleCreativeNode: {
-    vendor: 'Stability',
-    nodeName: 'Stability AI Upscale Creative',
-    pricingParams: '-',
-    pricePerRunRange: '$0.25',
-    displayPrice: '$0.25/Run'
-  },
-  StabilityUpscaleFastNode: {
-    vendor: 'Stability',
-    nodeName: 'Stability AI Upscale Fast',
-    pricingParams: '-',
-    pricePerRunRange: '$0.01',
-    displayPrice: '$0.01/Run'
-  },
-  VeoVideoGenerationNode: {
-    vendor: 'Veo',
-    nodeName: 'Google Veo2 Video Generation',
-    pricingParams: 'duration_seconds',
-    pricePerRunRange: 'dynamic',
-    rateDocumentationUrl:
-      'https://cloud.google.com/vertex-ai/generative-ai/pricing',
-    displayPrice: 'Variable pricing (high)'
-  },
-  LumaTextToImageNode: {
-    vendor: 'Luma',
-    nodeName: 'Luma Text to Image',
-    pricingParams: 'model | aspect_ratio',
-    pricePerRunRange: 'dynamic',
-    rateDocumentationUrl: 'https://lumalabs.ai/api/pricing',
-    displayPrice: 'Variable pricing (low to medium)'
-  },
-  LumaImageToImageNode: {
-    vendor: 'Luma',
-    nodeName: 'Luma Image to Image',
-    pricingParams: 'Same as Text to Image',
-    pricePerRunRange: 'dynamic',
-    rateDocumentationUrl: 'https://lumalabs.ai/api/pricing',
-    displayPrice: 'Variable pricing (low to medium)'
+/**
+ * Safely executes a pricing function with error handling
+ * Returns null if the function throws an error, allowing the node to still render
+ */
+function safePricingExecution(
+  fn: PricingFunction,
+  node: LGraphNode,
+  fallback: string = ''
+): string {
+  try {
+    return fn(node)
+  } catch (error) {
+    // Log error in development but don't throw to avoid breaking node rendering
+    if (process.env.NODE_ENV === 'development') {
+      console.warn(
+        'Pricing calculation failed for node:',
+        node.constructor?.nodeData?.name,
+        error
+      )
+    }
+    return fallback
   }
 }
+
+const pixversePricingCalculator = (node: LGraphNode): string => {
+  const durationWidget = node.widgets?.find(
+    (w) => w.name === 'duration_seconds'
+  ) as IComboWidget
+  const qualityWidget = node.widgets?.find(
+    (w) => w.name === 'quality'
+  ) as IComboWidget
+  const motionModeWidget = node.widgets?.find(
+    (w) => w.name === 'motion_mode'
+  ) as IComboWidget
+
+  if (!durationWidget || !qualityWidget) {
+    return '$0.45-1.2/Run (varies with duration, quality & motion mode)'
+  }
+
+  const duration = String(durationWidget.value)
+  const quality = String(qualityWidget.value)
+  const motionMode = String(motionModeWidget?.value)
+
+  // Basic pricing based on duration and quality
+  if (duration.includes('5')) {
+    if (quality.includes('1080p')) return '$1.2/Run'
+    if (quality.includes('720p') && motionMode?.includes('fast'))
+      return '$1.2/Run'
+    if (quality.includes('720p') && motionMode?.includes('normal'))
+      return '$0.6/Run'
+    if (quality.includes('540p') && motionMode?.includes('fast'))
+      return '$0.9/Run'
+    if (quality.includes('540p') && motionMode?.includes('normal'))
+      return '$0.45/Run'
+    if (quality.includes('360p') && motionMode?.includes('fast'))
+      return '$0.9/Run'
+    if (quality.includes('360p') && motionMode?.includes('normal'))
+      return '$0.45/Run'
+    if (quality.includes('720p') && motionMode?.includes('fast'))
+      return '$1.2/Run'
+  } else if (duration.includes('8')) {
+    if (quality.includes('720p') && motionMode?.includes('normal'))
+      return '$1.2/Run'
+    if (quality.includes('540p') && motionMode?.includes('normal'))
+      return '$0.9/Run'
+    if (quality.includes('540p') && motionMode?.includes('fast'))
+      return '$1.2/Run'
+    if (quality.includes('360p') && motionMode?.includes('normal'))
+      return '$0.9/Run'
+    if (quality.includes('360p') && motionMode?.includes('fast'))
+      return '$1.2/Run'
+    if (quality.includes('1080p') && motionMode?.includes('normal'))
+      return '$1.2/Run'
+    if (quality.includes('1080p') && motionMode?.includes('fast'))
+      return '$1.2/Run'
+    if (quality.includes('720p') && motionMode?.includes('normal'))
+      return '$1.2/Run'
+    if (quality.includes('720p') && motionMode?.includes('fast'))
+      return '$1.2/Run'
+  }
+
+  return '$0.9/Run'
+}
+
+/**
+ * Static pricing data for API nodes, now supporting both strings and functions
+ */
+const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
+  {
+    FluxProCannyNode: {
+      displayPrice: '$0.05/Run'
+    },
+    FluxProDepthNode: {
+      displayPrice: '$0.05/Run'
+    },
+    FluxProExpandNode: {
+      displayPrice: '$0.05/Run'
+    },
+    FluxProFillNode: {
+      displayPrice: '$0.05/Run'
+    },
+    FluxProUltraImageNode: {
+      displayPrice: '$0.06/Run'
+    },
+    IdeogramV1: {
+      displayPrice: '$0.06/Run'
+    },
+    IdeogramV2: {
+      displayPrice: '$0.08/Run'
+    },
+    IdeogramV3: {
+      displayPrice: (node: LGraphNode): string => {
+        const renderingSpeedWidget = node.widgets?.find(
+          (w) => w.name === 'rendering_speed'
+        ) as IComboWidget
+
+        if (!renderingSpeedWidget)
+          return '$0.03-0.08/Run (varies with rendering speed)'
+
+        const renderingSpeed = String(renderingSpeedWidget.value)
+        if (renderingSpeed.toLowerCase().includes('quality')) {
+          return '$0.08/Run'
+        } else if (renderingSpeed.toLowerCase().includes('balanced')) {
+          return '$0.06/Run'
+        } else if (renderingSpeed.toLowerCase().includes('turbo')) {
+          return '$0.03/Run'
+        }
+
+        return '$0.06/Run'
+      }
+    },
+    KlingCameraControlI2VNode: {
+      displayPrice: '$0.49/Run'
+    },
+    KlingCameraControlT2VNode: {
+      displayPrice: '$0.14/Run'
+    },
+    KlingDualCharacterVideoEffectNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const modeWidget = node.widgets?.find(
+          (w) => w.name === 'mode'
+        ) as IComboWidget
+        const modelWidget = node.widgets?.find(
+          (w) => w.name === 'model_name'
+        ) as IComboWidget
+        const durationWidget = node.widgets?.find(
+          (w) => w.name === 'duration'
+        ) as IComboWidget
+        if (!modeWidget || !modelWidget || !durationWidget)
+          return '$0.14-2.80/Run (varies with model, mode & duration)'
+
+        const modeValue = String(modeWidget.value)
+        const durationValue = String(durationWidget.value)
+        const modelValue = String(modelWidget.value)
+        console.log('modelValue', modelValue)
+        console.log('modeValue', modeValue)
+        console.log('durationValue', durationValue)
+
+        // Same pricing matrix as KlingTextToVideoNode
+        if (modelValue.includes('v1-6') || modelValue.includes('v1-5')) {
+          if (modeValue.includes('pro')) {
+            return durationValue.includes('10') ? '$0.98/Run' : '$0.49/Run'
+          } else {
+            return durationValue.includes('10') ? '$0.56/Run' : '$0.28/Run'
+          }
+        } else if (modelValue.includes('v1')) {
+          if (modeValue.includes('pro')) {
+            return durationValue.includes('10') ? '$0.98/Run' : '$0.49/Run'
+          } else {
+            return durationValue.includes('10') ? '$0.28/Run' : '$0.14/Run'
+          }
+        }
+
+        return '$0.14/Run'
+      }
+    },
+    KlingImage2VideoNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const modeWidget = node.widgets?.find(
+          (w) => w.name === 'mode'
+        ) as IComboWidget
+        const modelWidget = node.widgets?.find(
+          (w) => w.name === 'model_name'
+        ) as IComboWidget
+        const durationWidget = node.widgets?.find(
+          (w) => w.name === 'duration'
+        ) as IComboWidget
+
+        if (!modeWidget) {
+          if (!modelWidget)
+            return '$0.14-2.80/Run (varies with model, mode & duration)'
+
+          const modelValue = String(modelWidget.value)
+          if (modelValue.includes('v2-master')) {
+            return '$1.40/Run'
+          } else if (
+            modelValue.includes('v1-6') ||
+            modelValue.includes('v1-5')
+          ) {
+            return '$0.28/Run'
+          }
+          return '$0.14/Run'
+        }
+
+        const modeValue = String(modeWidget.value)
+        const durationValue = String(durationWidget.value)
+        const modelValue = String(modelWidget.value)
+        console.log('modelValue', modelValue)
+        console.log('modeValue', modeValue)
+        console.log('durationValue', durationValue)
+
+        // Same pricing matrix as KlingTextToVideoNode
+        if (modelValue.includes('v2-master')) {
+          if (durationValue.includes('10')) {
+            return '$2.80/Run'
+          }
+          return '$1.40/Run' // 5s default
+        } else if (modelValue.includes('v1-6') || modelValue.includes('v1-5')) {
+          if (modeValue.includes('pro')) {
+            return durationValue.includes('10') ? '$0.98/Run' : '$0.49/Run'
+          } else {
+            return durationValue.includes('10') ? '$0.56/Run' : '$0.28/Run'
+          }
+        } else if (modelValue.includes('v1')) {
+          if (modeValue.includes('pro')) {
+            return durationValue.includes('10') ? '$0.98/Run' : '$0.49/Run'
+          } else {
+            return durationValue.includes('10') ? '$0.28/Run' : '$0.14/Run'
+          }
+        }
+
+        return '$0.14/Run'
+      }
+    },
+    KlingImageGenerationNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const imageInputWidget = node.inputs?.find((i) => i.name === 'image')
+        // If link is not null => image is connected => modality is image to image
+        const modality = imageInputWidget?.link
+          ? 'image to image'
+          : 'text to image'
+        const modelWidget = node.widgets?.find(
+          (w) => w.name === 'model_name'
+        ) as IComboWidget
+
+        if (!modelWidget)
+          return '$0.0035-0.028/Run (varies with modality & model)'
+
+        const model = String(modelWidget.value)
+
+        if (modality.includes('text to image')) {
+          if (model.includes('kling-v1')) {
+            return '$0.0035/Run'
+          } else if (
+            model.includes('kling-v1-5') ||
+            model.includes('kling-v2')
+          ) {
+            return '$0.014/Run'
+          }
+        } else if (modality.includes('image to image')) {
+          if (model.includes('kling-v1')) {
+            return '$0.0035/Run'
+          } else if (model.includes('kling-v1-5')) {
+            return '$0.028/Run'
+          }
+        }
+
+        return '$0.014/Run'
+      }
+    },
+    KlingLipSyncAudioToVideoNode: {
+      displayPrice: '~$0.10/Run'
+    },
+    KlingLipSyncTextToVideoNode: {
+      displayPrice: '~$0.10/Run'
+    },
+    KlingSingleImageVideoEffectNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const effectSceneWidget = node.widgets?.find(
+          (w) => w.name === 'effect_scene'
+        ) as IComboWidget
+
+        if (!effectSceneWidget)
+          return '$0.28-0.49/Run (varies with effect scene)'
+
+        const effectScene = String(effectSceneWidget.value)
+        if (
+          effectScene.includes('fuzzyfuzzy') ||
+          effectScene.includes('squish') ||
+          effectScene.includes('expansion')
+        ) {
+          return '$0.28/Run'
+        } else if (
+          effectScene.includes('dizzydizzy') ||
+          effectScene.includes('bloombloom')
+        ) {
+          return '$0.49/Run'
+        }
+
+        return '$0.28/Run'
+      }
+    },
+    KlingStartEndFrameNode: {
+      displayPrice: (node: LGraphNode): string => {
+        // Same pricing as KlingTextToVideoNode per CSV ("Same as text to video")
+        const modeWidget = node.widgets?.find(
+          (w) => w.name === 'mode'
+        ) as IComboWidget
+        if (!modeWidget)
+          return '$0.14-2.80/Run (varies with model, mode & duration)'
+
+        const modeValue = String(modeWidget.value)
+
+        // Same pricing matrix as KlingTextToVideoNode
+        if (modeValue.includes('v2-master')) {
+          if (modeValue.includes('10s')) {
+            return '$2.80/Run'
+          }
+          return '$1.40/Run' // 5s default
+        } else if (modeValue.includes('v1-6')) {
+          if (modeValue.includes('pro')) {
+            return modeValue.includes('10s') ? '$0.98/Run' : '$0.49/Run'
+          } else {
+            return modeValue.includes('10s') ? '$0.56/Run' : '$0.28/Run'
+          }
+        } else if (modeValue.includes('v1')) {
+          if (modeValue.includes('pro')) {
+            return modeValue.includes('10s') ? '$0.98/Run' : '$0.49/Run'
+          } else {
+            return modeValue.includes('10s') ? '$0.28/Run' : '$0.14/Run'
+          }
+        }
+
+        return '$0.14/Run'
+      }
+    },
+    KlingTextToVideoNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const modeWidget = node.widgets?.find(
+          (w) => w.name === 'mode'
+        ) as IComboWidget
+        if (!modeWidget)
+          return '$0.14-2.80/Run (varies with model, mode & duration)'
+
+        const modeValue = String(modeWidget.value)
+
+        // Pricing matrix from CSV data based on mode string content
+        if (modeValue.includes('v2-master')) {
+          if (modeValue.includes('10s')) {
+            return '$2.80/Run'
+          }
+          return '$1.40/Run' // 5s default
+        } else if (modeValue.includes('v1-6')) {
+          if (modeValue.includes('pro')) {
+            return modeValue.includes('10s') ? '$0.98/Run' : '$0.49/Run'
+          } else {
+            return modeValue.includes('10s') ? '$0.56/Run' : '$0.28/Run'
+          }
+        } else if (modeValue.includes('v1')) {
+          if (modeValue.includes('pro')) {
+            return modeValue.includes('10s') ? '$0.98/Run' : '$0.49/Run'
+          } else {
+            return modeValue.includes('10s') ? '$0.28/Run' : '$0.14/Run'
+          }
+        }
+
+        return '$0.14/Run'
+      }
+    },
+    KlingVideoExtendNode: {
+      displayPrice: '$0.28/Run'
+    },
+    KlingVirtualTryOnNode: {
+      displayPrice: '$0.07/Run'
+    },
+    LumaImageToVideoNode: {
+      displayPrice: (node: LGraphNode): string => {
+        // Same pricing as LumaVideoNode per CSV
+        const modelWidget = node.widgets?.find(
+          (w) => w.name === 'model'
+        ) as IComboWidget
+        const resolutionWidget = node.widgets?.find(
+          (w) => w.name === 'resolution'
+        ) as IComboWidget
+        const durationWidget = node.widgets?.find(
+          (w) => w.name === 'duration'
+        ) as IComboWidget
+
+        if (!modelWidget || !resolutionWidget || !durationWidget) {
+          return '$0.14-11.47/Run (varies with model, resolution & duration)'
+        }
+
+        const model = String(modelWidget.value)
+        const resolution = String(resolutionWidget.value).toLowerCase()
+        const duration = String(durationWidget.value)
+        console.log('model', model)
+        console.log('resolution', resolution)
+        console.log('duration', duration)
+
+        if (model.includes('ray-flash-2')) {
+          if (duration.includes('5s')) {
+            if (resolution.includes('4k')) return '$2.19/Run'
+            if (resolution.includes('1080p')) return '$0.55/Run'
+            if (resolution.includes('720p')) return '$0.24/Run'
+            if (resolution.includes('540p')) return '$0.14/Run'
+          } else if (duration.includes('9s')) {
+            if (resolution.includes('4k')) return '$3.95/Run'
+            if (resolution.includes('1080p')) return '$0.99/Run'
+            if (resolution.includes('720p')) return '$0.43/Run'
+            if (resolution.includes('540p')) return '$0.252/Run'
+          }
+        } else if (model.includes('ray-2')) {
+          if (duration.includes('5s')) {
+            if (resolution.includes('4k')) return '$6.37/Run'
+            if (resolution.includes('1080p')) return '$2.30/Run'
+            if (resolution.includes('720p')) return '$0.71/Run'
+            if (resolution.includes('540p')) return '$0.40/Run'
+          } else if (duration.includes('9s')) {
+            if (resolution.includes('4k')) return '$11.47/Run'
+            if (resolution.includes('1080p')) return '$4.14/Run'
+            if (resolution.includes('720p')) return '$1.28/Run'
+            if (resolution.includes('540p')) return '$0.72/Run'
+          }
+        } else if (model.includes('ray-1.6')) {
+          return '$0.35/Run'
+        }
+
+        return '$0.55/Run'
+      }
+    },
+    LumaVideoNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const modelWidget = node.widgets?.find(
+          (w) => w.name === 'model'
+        ) as IComboWidget
+        const resolutionWidget = node.widgets?.find(
+          (w) => w.name === 'resolution'
+        ) as IComboWidget
+        const durationWidget = node.widgets?.find(
+          (w) => w.name === 'duration'
+        ) as IComboWidget
+
+        if (!modelWidget || !resolutionWidget || !durationWidget) {
+          return '$0.14-11.47/Run (varies with model, resolution & duration)'
+        }
+
+        const model = String(modelWidget.value)
+        const resolution = String(resolutionWidget.value).toLowerCase()
+        const duration = String(durationWidget.value)
+
+        if (model.includes('ray-flash-2')) {
+          if (duration.includes('5s')) {
+            if (resolution.includes('4k')) return '$2.19/Run'
+            if (resolution.includes('1080p')) return '$0.55/Run'
+            if (resolution.includes('720p')) return '$0.24/Run'
+            if (resolution.includes('540p')) return '$0.14/Run'
+          } else if (duration.includes('9s')) {
+            if (resolution.includes('4k')) return '$3.95/Run'
+            if (resolution.includes('1080p')) return '$0.99/Run'
+            if (resolution.includes('720p')) return '$0.43/Run'
+            if (resolution.includes('540p')) return '$0.252/Run'
+          }
+        } else if (model.includes('ray-2')) {
+          if (duration.includes('5s')) {
+            if (resolution.includes('4k')) return '$6.37/Run'
+            if (resolution.includes('1080p')) return '$2.30/Run'
+            if (resolution.includes('720p')) return '$0.71/Run'
+            if (resolution.includes('540p')) return '$0.40/Run'
+          } else if (duration.includes('9s')) {
+            if (resolution.includes('4k')) return '$11.47/Run'
+            if (resolution.includes('1080p')) return '$4.14/Run'
+            if (resolution.includes('720p')) return '$1.28/Run'
+            if (resolution.includes('540p')) return '$0.72/Run'
+          }
+        } else if (model.includes('ray-1-6')) {
+          return '$0.35/Run'
+        }
+
+        return '$0.55/Run'
+      }
+    },
+    MinimaxImageToVideoNode: {
+      displayPrice: '$0.43/Run'
+    },
+    MinimaxTextToVideoNode: {
+      displayPrice: '$0.43/Run'
+    },
+    OpenAIDalle2: {
+      displayPrice: (node: LGraphNode): string => {
+        const sizeWidget = node.widgets?.find(
+          (w) => w.name === 'size'
+        ) as IComboWidget
+
+        if (!sizeWidget) return '$0.016-0.02/Run (varies with size)'
+
+        const size = String(sizeWidget.value)
+        if (size.includes('1024x1024')) {
+          return '$0.02/Run'
+        } else if (size.includes('512x512')) {
+          return '$0.018/Run'
+        } else if (size.includes('256x256')) {
+          return '$0.016/Run'
+        }
+
+        return '$0.02/Run'
+      }
+    },
+    OpenAIDalle3: {
+      displayPrice: (node: LGraphNode): string => {
+        // Get size and quality widgets
+        const sizeWidget = node.widgets?.find(
+          (w) => w.name === 'size'
+        ) as IComboWidget
+        const qualityWidget = node.widgets?.find(
+          (w) => w.name === 'quality'
+        ) as IComboWidget
+
+        if (!sizeWidget || !qualityWidget)
+          return '$0.04-0.12/Run (varies with size & quality)'
+
+        const size = String(sizeWidget.value)
+        const quality = String(qualityWidget.value)
+
+        // Pricing matrix based on CSV data
+        if (size.includes('1024x1024')) {
+          return quality.includes('hd') ? '$0.08/Run' : '$0.04/Run'
+        } else if (size.includes('1792x1024') || size.includes('1024x1792')) {
+          return quality.includes('hd') ? '$0.12/Run' : '$0.08/Run'
+        }
+
+        // Default value
+        return '$0.04/Run'
+      }
+    },
+    OpenAIGPTImage1: {
+      displayPrice: (node: LGraphNode): string => {
+        const qualityWidget = node.widgets?.find(
+          (w) => w.name === 'quality'
+        ) as IComboWidget
+
+        if (!qualityWidget) return '$0.011-0.30/Run (varies with quality)'
+
+        const quality = String(qualityWidget.value)
+        if (quality.includes('high')) {
+          return '$0.167-0.30/Run'
+        } else if (quality.includes('medium')) {
+          return '$0.046-0.07/Run'
+        } else if (quality.includes('low')) {
+          return '$0.011-0.02/Run'
+        }
+
+        return '$0.046-0.07/Run'
+      }
+    },
+    PikaImageToVideoNode2_2: {
+      displayPrice: (node: LGraphNode): string => {
+        const durationWidget = node.widgets?.find(
+          (w) => w.name === 'duration'
+        ) as IComboWidget
+        const resolutionWidget = node.widgets?.find(
+          (w) => w.name === 'resolution'
+        ) as IComboWidget
+
+        if (!durationWidget || !resolutionWidget) {
+          return '$0.2-1.0/Run (varies with duration & resolution)'
+        }
+
+        const duration = String(durationWidget.value)
+        const resolution = String(resolutionWidget.value)
+
+        if (duration.includes('5')) {
+          if (resolution.includes('1080p')) return '$0.45/Run'
+          if (resolution.includes('720p')) return '$0.2/Run'
+        } else if (duration.includes('10')) {
+          if (resolution.includes('1080p')) return '$1.0/Run'
+          if (resolution.includes('720p')) return '$0.6/Run'
+        }
+
+        return '$0.2/Run'
+      }
+    },
+    PikaScenesV2_2: {
+      displayPrice: (node: LGraphNode): string => {
+        const durationWidget = node.widgets?.find(
+          (w) => w.name === 'duration'
+        ) as IComboWidget
+        const resolutionWidget = node.widgets?.find(
+          (w) => w.name === 'resolution'
+        ) as IComboWidget
+
+        if (!durationWidget || !resolutionWidget) {
+          return '$0.2-1.0/Run (varies with duration & resolution)'
+        }
+
+        const duration = String(durationWidget.value)
+        const resolution = String(resolutionWidget.value)
+
+        if (duration.includes('5')) {
+          if (resolution.includes('720p')) return '$0.3/Run'
+          if (resolution.includes('1080p')) return '~$0.3/Run'
+        } else if (duration.includes('10')) {
+          if (resolution.includes('720p')) return '$0.25/Run'
+          if (resolution.includes('1080p')) return '$1.0/Run'
+        }
+
+        return '$0.3/Run'
+      }
+    },
+    PikaStartEndFrameNode2_2: {
+      displayPrice: (node: LGraphNode): string => {
+        const durationWidget = node.widgets?.find(
+          (w) => w.name === 'duration'
+        ) as IComboWidget
+        const resolutionWidget = node.widgets?.find(
+          (w) => w.name === 'resolution'
+        ) as IComboWidget
+
+        if (!durationWidget || !resolutionWidget) {
+          return '$0.2-1.0/Run (varies with duration & resolution)'
+        }
+
+        const duration = String(durationWidget.value)
+        const resolution = String(resolutionWidget.value)
+
+        if (duration.includes('5')) {
+          if (resolution.includes('720p')) return '$0.2/Run'
+          if (resolution.includes('1080p')) return '~$0.45/Run'
+        } else if (duration.includes('10')) {
+          if (resolution.includes('720p')) return '$0.6/Run'
+          if (resolution.includes('1080p')) return '$1.0/Run'
+        }
+
+        return '$0.2/Run'
+      }
+    },
+    PikaTextToVideoNode2_2: {
+      displayPrice: (node: LGraphNode): string => {
+        const durationWidget = node.widgets?.find(
+          (w) => w.name === 'duration'
+        ) as IComboWidget
+        const resolutionWidget = node.widgets?.find(
+          (w) => w.name === 'resolution'
+        ) as IComboWidget
+
+        if (!durationWidget || !resolutionWidget) {
+          return '$0.2-1.5/Run (varies with duration & resolution)'
+        }
+
+        const duration = String(durationWidget.value)
+        const resolution = String(resolutionWidget.value)
+
+        if (duration.includes('5')) {
+          if (resolution.includes('1080p')) return '$0.45/Run'
+          if (resolution.includes('720p')) return '$0.2/Run'
+        } else if (duration.includes('10')) {
+          if (resolution.includes('1080p')) return '$1.0/Run'
+          if (resolution.includes('720p')) return '$0.6/Run'
+        }
+
+        return '$0.45/Run'
+      }
+    },
+    Pikadditions: {
+      displayPrice: '$0.3/Run'
+    },
+    Pikaffects: {
+      displayPrice: '$0.45/Run'
+    },
+    Pikaswaps: {
+      displayPrice: '$0.3/Run'
+    },
+    PixverseImageToVideoNode: {
+      displayPrice: pixversePricingCalculator
+    },
+    PixverseTextToVideoNode: {
+      displayPrice: pixversePricingCalculator
+    },
+    PixverseTransitionVideoNode: {
+      displayPrice: pixversePricingCalculator
+    },
+    RecraftCreativeUpscaleNode: {
+      displayPrice: '$0.25/Run'
+    },
+    RecraftCrispUpscaleNode: {
+      displayPrice: '$0.004/Run'
+    },
+    RecraftImageInpaintingNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const nWidget = node.widgets?.find(
+          (w) => w.name === 'n'
+        ) as IComboWidget
+        if (!nWidget) return '$0.04 x n/Run'
+
+        const n = Number(nWidget.value) || 1
+        const cost = (0.04 * n).toFixed(2)
+        return `$${cost}/Run`
+      }
+    },
+    RecraftImageToImageNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const nWidget = node.widgets?.find(
+          (w) => w.name === 'n'
+        ) as IComboWidget
+        if (!nWidget) return '$0.04 x n/Run'
+
+        const n = Number(nWidget.value) || 1
+        const cost = (0.04 * n).toFixed(2)
+        return `$${cost}/Run`
+      }
+    },
+    RecraftRemoveBackgroundNode: {
+      displayPrice: '$0.01/Run'
+    },
+    RecraftReplaceBackgroundNode: {
+      displayPrice: '$0.04/Run'
+    },
+    RecraftTextToImageNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const nWidget = node.widgets?.find(
+          (w) => w.name === 'n'
+        ) as IComboWidget
+        if (!nWidget) return '$0.04 x n/Run'
+
+        const n = Number(nWidget.value) || 1
+        const cost = (0.04 * n).toFixed(2)
+        return `$${cost}/Run`
+      }
+    },
+    RecraftTextToVectorNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const nWidget = node.widgets?.find(
+          (w) => w.name === 'n'
+        ) as IComboWidget
+        if (!nWidget) return '$0.08 x n/Run'
+
+        const n = Number(nWidget.value) || 1
+        const cost = (0.08 * n).toFixed(2)
+        return `$${cost}/Run`
+      }
+    },
+    RecraftVectorizeImageNode: {
+      displayPrice: '$0.01/Run'
+    },
+    StabilityStableImageSD_3_5Node: {
+      displayPrice: (node: LGraphNode): string => {
+        const modelWidget = node.widgets?.find(
+          (w) => w.name === 'model'
+        ) as IComboWidget
+
+        if (!modelWidget) return '$0.035-0.065/Run (varies with model)'
+
+        const model = String(modelWidget.value).toLowerCase()
+        if (model.includes('large')) {
+          return '$0.065/Run'
+        } else if (model.includes('medium')) {
+          return '$0.035/Run'
+        }
+
+        return '$0.035/Run'
+      }
+    },
+    StabilityStableImageUltraNode: {
+      displayPrice: '$0.08/Run'
+    },
+    StabilityUpscaleConservativeNode: {
+      displayPrice: '$0.25/Run'
+    },
+    StabilityUpscaleCreativeNode: {
+      displayPrice: '$0.25/Run'
+    },
+    StabilityUpscaleFastNode: {
+      displayPrice: '$0.01/Run'
+    },
+    VeoVideoGenerationNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const durationWidget = node.widgets?.find(
+          (w) => w.name === 'duration_seconds'
+        ) as IComboWidget
+
+        if (!durationWidget) return '$2.50-5.0/Run (varies with duration)'
+
+        const price = 0.5 * Number(durationWidget.value)
+        return `$${price.toFixed(2)}/Run`
+      }
+    },
+    LumaImageNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const modelWidget = node.widgets?.find(
+          (w) => w.name === 'model'
+        ) as IComboWidget
+        const aspectRatioWidget = node.widgets?.find(
+          (w) => w.name === 'aspect_ratio'
+        ) as IComboWidget
+
+        if (!modelWidget || !aspectRatioWidget) {
+          return '$0.0045-0.0182/Run (varies with model & aspect ratio)'
+        }
+
+        const model = String(modelWidget.value)
+        const aspectRatio = String(aspectRatioWidget.value)
+
+        if (model.includes('photon-flash-1')) {
+          if (aspectRatio.includes('1:1')) return '$0.0045/Run'
+          if (aspectRatio.includes('16:9')) return '$0.0045/Run'
+          if (aspectRatio.includes('4:3')) return '$0.0046/Run'
+          if (aspectRatio.includes('21:9')) return '$0.0047/Run'
+        } else if (model.includes('photon-1')) {
+          if (aspectRatio.includes('1:1')) return '$0.0172/Run'
+          if (aspectRatio.includes('16:9')) return '$0.0172/Run'
+          if (aspectRatio.includes('4:3')) return '$0.0176/Run'
+          if (aspectRatio.includes('21:9')) return '$0.0182/Run'
+        }
+
+        return '$0.0172/Run'
+      }
+    },
+    LumaImageModifyNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const modelWidget = node.widgets?.find(
+          (w) => w.name === 'model'
+        ) as IComboWidget
+        const aspectRatioWidget = node.widgets?.find(
+          (w) => w.name === 'aspect_ratio'
+        ) as IComboWidget
+
+        if (!modelWidget) {
+          return '$0.0045-0.0182/Run (varies with model & aspect ratio)'
+        }
+
+        const model = String(modelWidget.value)
+        const aspectRatio = aspectRatioWidget
+          ? String(aspectRatioWidget.value)
+          : null
+
+        if (model.includes('photon-flash-1')) {
+          if (!aspectRatio) return '$0.0045/Run'
+          if (aspectRatio.includes('1:1')) return '~$0.0045/Run'
+          if (aspectRatio.includes('16:9')) return '~$0.0045/Run'
+          if (aspectRatio.includes('4:3')) return '~$0.0046/Run'
+          if (aspectRatio.includes('21:9')) return '~$0.0047/Run'
+        } else if (model.includes('photon-1')) {
+          if (!aspectRatio) return '$0.0172/Run'
+          if (aspectRatio.includes('1:1')) return '~$0.0172/Run'
+          if (aspectRatio.includes('16:9')) return '~$0.0172/Run'
+          if (aspectRatio.includes('4:3')) return '~$0.0176/Run'
+          if (aspectRatio.includes('21:9')) return '~$0.0182/Run'
+        }
+
+        return '$0.0172/Run'
+      }
+    }
+  }
 
 /**
  * Composable to get node pricing information for API nodes
  */
 export const useNodePricing = () => {
-  const getNodePrice = (nodeName: string): string =>
-    apiNodeCosts[nodeName]?.displayPrice || ''
-
   /**
    * Get the price display for a node
    */
   const getNodeDisplayPrice = (node: LGraphNode): string => {
-    if (!node.constructor.nodeData?.api_node) return ''
-    return getNodePrice(node.constructor.nodeData.name)
+    if (!node.constructor?.nodeData?.api_node) return ''
+
+    const nodeName = node.constructor.nodeData.name
+    const priceConfig = apiNodeCosts[nodeName]
+
+    if (!priceConfig) return ''
+
+    // If it's a function, call it with the node to get dynamic pricing
+    if (typeof priceConfig.displayPrice === 'function') {
+      return safePricingExecution(priceConfig.displayPrice, node, '')
+    }
+
+    // Otherwise return the static price
+    return priceConfig.displayPrice
+  }
+
+  const getNodePricingConfig = (node: LGraphNode) =>
+    apiNodeCosts[node.constructor.nodeData?.name ?? '']
+
+  const getRelevantWidgetNames = (nodeType: string): string[] => {
+    const widgetMap: Record<string, string[]> = {
+      KlingTextToVideoNode: ['mode', 'model_name', 'duration'],
+      KlingImage2VideoNode: ['mode', 'model_name', 'duration'],
+      KlingImageGenerationNode: ['modality', 'model_name'],
+      KlingDualCharacterVideoEffectNode: ['mode', 'model_name', 'duration'],
+      KlingSingleImageVideoEffectNode: ['effect_scene'],
+      KlingStartEndFrameNode: ['mode', 'model_name', 'duration'],
+      OpenAIDalle3: ['size', 'quality'],
+      OpenAIDalle2: ['size'],
+      OpenAIGPTImage1: ['quality'],
+      IdeogramV3: ['rendering_speed'],
+      VeoVideoGenerationNode: ['duration_seconds'],
+      LumaVideoNode: ['model', 'resolution', 'duration'],
+      LumaImageToVideoNode: ['model', 'resolution', 'duration'],
+      LumaImageNode: ['model', 'aspect_ratio'],
+      LumaImageModifyNode: ['model', 'aspect_ratio'],
+      PikaTextToVideoNode2_2: ['duration', 'resolution'],
+      PikaImageToVideoNode2_2: ['duration', 'resolution'],
+      PikaScenesV2_2: ['duration', 'resolution'],
+      PikaStartEndFrameNode2_2: ['duration', 'resolution'],
+      PixverseTextToVideoNode: ['duration_seconds', 'quality', 'motion_mode'],
+      PixverseTransitionVideoNode: [
+        'duration_seconds',
+        'motion_mode',
+        'quality'
+      ],
+      PixverseImageToVideoNode: ['duration_seconds', 'quality', 'motion_mode'],
+      StabilityStableImageSD_3_5Node: ['model'],
+      RecraftTextToImageNode: ['n'],
+      RecraftImageToImageNode: ['n'],
+      RecraftImageInpaintingNode: ['n'],
+      RecraftTextToVectorNode: ['n']
+    }
+    return widgetMap[nodeType] || []
   }
 
   return {
-    getNodeDisplayPrice
+    getNodeDisplayPrice,
+    getNodePricingConfig,
+    getRelevantWidgetNames
   }
 }
