@@ -7,20 +7,8 @@ on:
 jobs:
   update-manager-types:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
+      - uses: Comfy-Org/ComfyUI_frontend_setup_action@v2.3
 
       - name: Checkout ComfyUI-Manager repository
         uses: actions/checkout@v4
@@ -39,25 +27,34 @@ jobs:
       - name: Generate Manager API types
         run: |
           echo "Generating TypeScript types from ComfyUI-Manager@${{ steps.manager-info.outputs.commit }}..."
-          npx openapi-typescript "$(pwd)/ComfyUI-Manager/openapi.yaml" --output ./src/types/generatedManagerTypes.ts
+          npx openapi-typescript "$(pwd)/ComfyUI-Manager/openapi.yaml" --output ./ComfyUI_frontend/src/types/generatedManagerTypes.ts
 
       - name: Validate generated types
         run: |
-          if [ ! -f ./src/types/generatedManagerTypes.ts ]; then
+          if [ ! -f ./ComfyUI_frontend/src/types/generatedManagerTypes.ts ]; then
             echo "Error: Types file was not generated."
             exit 1
           fi
 
           # Check if file is not empty
-          if [ ! -s ./src/types/generatedManagerTypes.ts ]; then
+          if [ ! -s ./ComfyUI_frontend/src/types/generatedManagerTypes.ts ]; then
             echo "Error: Generated types file is empty."
             exit 1
           fi
 
-      - name: Commit changes
+      - name: Debugging info
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add ./src/types/generatedManagerTypes.ts
+          echo "Branch: ${{ github.head_ref }}"
+          git status
+        working-directory: ComfyUI_frontend
+
+      - name: Commit updated types
+        run: |
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
+          git fetch origin ${{ github.head_ref }}
+          git checkout -B ${{ github.head_ref }} origin/${{ github.head_ref }}
+          git add src/types/generatedManagerTypes.ts
           git commit -m "[chore] Update ComfyUI-Manager API types from ComfyUI-Manager@${{ steps.manager-info.outputs.commit }}" || echo "No changes to commit"
-          git push || echo "No changes to push"
+          git push origin HEAD:${{ github.head_ref }}
+        working-directory: ComfyUI_frontend
