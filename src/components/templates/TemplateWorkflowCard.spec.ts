@@ -104,8 +104,7 @@ vi.mock('@/composables/useTemplateWorkflows', () => ({
         ? template.localizedDescription ?? ''
         : template.description?.replace(/[-_]/g, ' ').trim() ?? ''
     },
-    loadWorkflowTemplate: vi.fn(),
-    fetchTemplateJson: vi.fn()
+    loadWorkflowTemplate: vi.fn()
   })
 }))
 
