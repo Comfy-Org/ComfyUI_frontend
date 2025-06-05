@@ -73,14 +73,10 @@
                     <PackVersionBadge :node-pack="nodePack" />
                   </div>
                   <div
-                    v-if="nodePack.latest_version?.createdAt"
+                    v-if="formattedLatestVersionDate"
                     class="px-2 py-1 flex justify-center items-center gap-1 text-xs text-muted font-medium"
                   >
-                    {{
-                      $d(new Date(nodePack.latest_version.createdAt), {
-                        dateStyle: 'medium'
-                      })
-                    }}
+                    {{ formattedLatestVersionDate }}
                   </div>
                 </div>
                 <div class="flex">
@@ -109,6 +105,7 @@ import { whenever } from '@vueuse/core'
 import Card from 'primevue/card'
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed, provide, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import ContentDivider from '@/components/common/ContentDivider.vue'
 import PackVersionBadge from '@/components/dialog/content/manager/PackVersionBadge.vue'
@@ -123,6 +120,8 @@ const { nodePack, isSelected = false } = defineProps<{
   nodePack: components['schemas']['Node']
   isSelected?: boolean
 }>()
+
+const { d } = useI18n()
 
 const isInstalling = ref(false)
 provide(IsInstallingKey, isInstalling)
@@ -145,5 +144,13 @@ const publisherName = computed(() => {
 
   const { publisher, author } = nodePack
   return publisher?.name ?? publisher?.id ?? author
+})
+
+const formattedLatestVersionDate = computed(() => {
+  if (!nodePack.latest_version?.createdAt) return null
+
+  return d(new Date(nodePack.latest_version.createdAt), {
+    dateStyle: 'medium'
+  })
 })
 </script>
