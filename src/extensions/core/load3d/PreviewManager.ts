@@ -4,7 +4,6 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { EventManagerInterface, PreviewManagerInterface } from './interfaces'
 
 export class PreviewManager implements PreviewManagerInterface {
-  previewRenderer: THREE.WebGLRenderer | null = null
   previewCamera: THREE.Camera
   previewContainer: HTMLDivElement = {} as HTMLDivElement
   showPreview: boolean = true
@@ -17,13 +16,14 @@ export class PreviewManager implements PreviewManagerInterface {
   private getControls: () => OrbitControls
   private eventManager: EventManagerInterface
 
-  // @ts-expect-error unused variable
   private getRenderer: () => THREE.WebGLRenderer
 
   private previewBackgroundScene: THREE.Scene
   private previewBackgroundCamera: THREE.OrthographicCamera
   private previewBackgroundMesh: THREE.Mesh | null = null
   private previewBackgroundTexture: THREE.Texture | null = null
+
+  private previewBackgroundColor: THREE.Color = new THREE.Color(0x282828)
 
   constructor(
     scene: THREE.Scene,
@@ -61,18 +61,6 @@ export class PreviewManager implements PreviewManagerInterface {
   init(): void {}
 
   dispose(): void {
-    if (this.previewRenderer) {
-      this.previewRenderer.forceContextLoss()
-      const canvas = this.previewRenderer.domElement
-      const event = new Event('webglcontextlost', {
-        bubbles: true,
-        cancelable: true
-      })
-      canvas.dispatchEvent(event)
-
-      this.previewRenderer.dispose()
-    }
-
     if (this.previewBackgroundTexture) {
       this.previewBackgroundTexture.dispose()
     }
@@ -84,17 +72,6 @@ export class PreviewManager implements PreviewManagerInterface {
   }
 
   createCapturePreview(container: Element | HTMLElement): void {
-    this.previewRenderer = new THREE.WebGLRenderer({
-      alpha: true,
-      antialias: true,
-      preserveDrawingBuffer: true
-    })
-
-    this.previewRenderer.setSize(this.targetWidth, this.targetHeight)
-    this.previewRenderer.setClearColor(0x282828)
-    this.previewRenderer.autoClear = false
-    this.previewRenderer.outputColorSpace = THREE.SRGBColorSpace
-
     this.previewContainer = document.createElement('div')
     this.previewContainer.style.cssText = `
       position: absolute;
@@ -104,7 +81,6 @@ export class PreviewManager implements PreviewManagerInterface {
       display: block;
       transition: border-color 0.1s ease;
     `
-    this.previewContainer.appendChild(this.previewRenderer.domElement)
 
     const MIN_PREVIEW_WIDTH = 120
     const MAX_PREVIEW_WIDTH = 240
@@ -131,7 +107,6 @@ export class PreviewManager implements PreviewManagerInterface {
       }
 
       this.updatePreviewSize()
-      this.updatePreviewRender()
     })
 
     this.previewContainer.style.display = this.showPreview ? 'block' : 'none'
@@ -159,13 +134,48 @@ export class PreviewManager implements PreviewManagerInterface {
 
     const previewHeight =
       (this.previewWidth * this.targetHeight) / this.targetWidth
-    this.previewRenderer?.setSize(this.previewWidth, previewHeight, false)
+
+    this.previewContainer.style.width = `${this.previewWidth}px`
+    this.previewContainer.style.height = `${previewHeight}px`
+  }
+
+  getPreviewViewport(): {
+    left: number
+    bottom: number
+    width: number
+    height: number
+  } | null {
+    if (!this.showPreview || !this.previewContainer) {
+      return null
+    }
+
+    const renderer = this.getRenderer()
+    const canvas = renderer.domElement
+
+    const containerRect = this.previewContainer.getBoundingClientRect()
+    const canvasRect = canvas.getBoundingClientRect()
+
+    if (
+      containerRect.bottom < canvasRect.top ||
+      containerRect.top > canvasRect.bottom ||
+      containerRect.right < canvasRect.left ||
+      containerRect.left > canvasRect.right
+    ) {
+      return null
+    }
+
+    const width = parseFloat(this.previewContainer.style.width)
+    const height = parseFloat(this.previewContainer.style.height)
+
+    const left = this.getRenderer().domElement.clientWidth - width
+
+    const bottom = 0
+
+    return { left, bottom, width, height }
   }
 
   syncWithMainCamera(): void {
-    if (!this.previewRenderer || !this.previewContainer || !this.showPreview) {
-      return
-    }
+    if (!this.showPreview) return
 
     this.previewCamera = this.getActiveCamera().clone()
 
@@ -203,85 +213,73 @@ export class PreviewManager implements PreviewManagerInterface {
     }
 
     this.previewCamera.lookAt(this.getControls().target)
-
-    this.updatePreviewRender()
   }
 
-  updatePreviewRender(): void {
-    if (!this.previewRenderer || !this.previewContainer || !this.showPreview)
-      return
+  renderPreview(): void {
+    const viewport = this.getPreviewViewport()
+    if (!viewport) return
 
-    if (
-      !this.previewCamera ||
-      (this.getActiveCamera() instanceof THREE.PerspectiveCamera &&
-        !(this.previewCamera instanceof THREE.PerspectiveCamera)) ||
-      (this.getActiveCamera() instanceof THREE.OrthographicCamera &&
-        !(this.previewCamera instanceof THREE.OrthographicCamera))
-    ) {
-      this.previewCamera = this.getActiveCamera().clone()
-    }
+    const renderer = this.getRenderer()
 
-    this.previewCamera.position.copy(this.getActiveCamera().position)
-    this.previewCamera.rotation.copy(this.getActiveCamera().rotation)
+    const originalClearColor = renderer.getClearColor(new THREE.Color())
+    const originalClearAlpha = renderer.getClearAlpha()
 
-    const aspect = this.targetWidth / this.targetHeight
+    this.syncWithMainCamera()
 
-    if (this.getActiveCamera() instanceof THREE.OrthographicCamera) {
-      const activeOrtho = this.getActiveCamera() as THREE.OrthographicCamera
-      const previewOrtho = this.previewCamera as THREE.OrthographicCamera
+    renderer.setViewport(
+      viewport.left,
+      viewport.bottom,
+      viewport.width,
+      viewport.height
+    )
+    renderer.setScissor(
+      viewport.left,
+      viewport.bottom,
+      viewport.width,
+      viewport.height
+    )
 
-      const frustumHeight =
-        (activeOrtho.top - activeOrtho.bottom) / activeOrtho.zoom
-
-      const frustumWidth = frustumHeight * aspect
-
-      previewOrtho.top = frustumHeight / 2
-      previewOrtho.left = -frustumWidth / 2
-      previewOrtho.right = frustumWidth / 2
-      previewOrtho.bottom = -frustumHeight / 2
-      previewOrtho.zoom = 1
-
-      previewOrtho.updateProjectionMatrix()
-    } else {
-      ;(this.previewCamera as THREE.PerspectiveCamera).aspect = aspect
-      ;(this.previewCamera as THREE.PerspectiveCamera).fov = (
-        this.getActiveCamera() as THREE.PerspectiveCamera
-      ).fov
-      ;(this.previewCamera as THREE.PerspectiveCamera).updateProjectionMatrix()
-    }
-
-    this.previewCamera.lookAt(this.getControls().target)
-
-    const previewHeight =
-      (this.previewWidth * this.targetHeight) / this.targetWidth
-    this.previewRenderer.setSize(this.previewWidth, previewHeight, false)
-    this.previewRenderer.outputColorSpace = THREE.SRGBColorSpace
-    this.previewRenderer.clear()
+    renderer.setClearColor(this.previewBackgroundColor, 1.0)
+    renderer.clear()
 
     if (this.previewBackgroundMesh && this.previewBackgroundTexture) {
       const material = this.previewBackgroundMesh
         .material as THREE.MeshBasicMaterial
       if (material.map) {
-        const currentToneMapping = this.previewRenderer.toneMapping
-        const currentExposure = this.previewRenderer.toneMappingExposure
+        const currentToneMapping = renderer.toneMapping
+        const currentExposure = renderer.toneMappingExposure
 
-        this.previewRenderer.toneMapping = THREE.NoToneMapping
-        this.previewRenderer.render(
+        renderer.toneMapping = THREE.NoToneMapping
+        renderer.render(
           this.previewBackgroundScene,
           this.previewBackgroundCamera
         )
 
-        this.previewRenderer.toneMapping = currentToneMapping
-        this.previewRenderer.toneMappingExposure = currentExposure
+        renderer.toneMapping = currentToneMapping
+        renderer.toneMappingExposure = currentExposure
       }
     }
 
-    this.previewRenderer.render(this.scene, this.previewCamera)
+    renderer.render(this.scene, this.previewCamera)
+
+    renderer.setClearColor(originalClearColor, originalClearAlpha)
+  }
+
+  setPreviewBackgroundColor(color: string | number): void {
+    this.previewBackgroundColor.set(color)
+  }
+
+  getPreviewBackgroundColor(): THREE.Color {
+    return this.previewBackgroundColor.clone()
+  }
+
+  updatePreviewRender(): void {
+    this.syncWithMainCamera()
   }
 
   togglePreview(showPreview: boolean): void {
-    if (this.previewRenderer) {
-      this.showPreview = showPreview
+    this.showPreview = showPreview
+    if (this.previewContainer) {
       this.previewContainer.style.display = this.showPreview ? 'block' : 'none'
     }
 
@@ -306,7 +304,7 @@ export class PreviewManager implements PreviewManagerInterface {
       )
     }
 
-    if (this.previewRenderer && this.previewCamera) {
+    if (this.previewCamera) {
       if (this.previewCamera instanceof THREE.PerspectiveCamera) {
         this.previewCamera.aspect = width / height
         this.previewCamera.updateProjectionMatrix()
@@ -322,7 +320,6 @@ export class PreviewManager implements PreviewManagerInterface {
 
   handleResize(): void {
     this.updatePreviewSize()
-    this.updatePreviewRender()
   }
 
   updateBackgroundTexture(texture: THREE.Texture | null): void {
