@@ -13,6 +13,8 @@
     "*.mts",
     "*.config.js",
     "browser_tests/**/*.ts",
+    "scripts/**/*.js",
+    "scripts/**/*.ts",
     "tests-ui/**/*.ts"
   ]
 }
