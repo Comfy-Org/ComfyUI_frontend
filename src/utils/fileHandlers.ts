@@ -334,3 +334,51 @@ export function getFileHandler(file: File): WorkflowFileHandler | null {
 
   return null
 }
+
+/**
+ * Resolves the correct file from drag and drop events with URI fallback
+ * when direct file processing doesn't yield workflow data
+ */
+export async function resolveDragDropFile(
+  file: File,
+  dataTransfer: DataTransfer
+): Promise<File> {
+  const fileHandler = getFileHandler(file)
+  if (!fileHandler) {
+    return file
+  }
+
+  // First try direct file processing
+  const directResult = await fileHandler(file)
+
+  // If we got workflow data, return the original file
+  if (
+    directResult.workflow ||
+    directResult.prompt ||
+    directResult.parameters ||
+    directResult.jsonTemplateData
+  ) {
+    return file
+  }
+
+  // No workflow data found, try URI approach as fallback
+  const validTypes = ['text/uri-list', 'text/x-moz-url']
+  const match = [...dataTransfer.types].find((t) =>
+    validTypes.find((v) => t === v)
+  )
+
+  if (match) {
+    const uri = dataTransfer.getData(match)?.split('\n')?.[0]
+    if (uri) {
+      try {
+        const blob = await (await fetch(uri)).blob()
+        return new File([blob], file.name, { type: blob.type })
+      } catch (error) {
+        console.warn('URI fetch failed, using original file:', error)
+      }
+    }
+  }
+
+  // Return original file as fallback
+  return file
+}
