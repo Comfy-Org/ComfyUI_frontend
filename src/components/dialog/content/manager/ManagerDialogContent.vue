@@ -413,13 +413,16 @@ const lastFetchedPackId = ref<string | null>(null)
 
 // Whenever a single pack is selected, fetch its full info once
 whenever(selectedNodePack, async () => {
+  // Cancel any in-flight requests from previously selected node pack
   getPackById.cancel()
+  // If only a single node pack is selected, fetch full node pack info from registry
   const pack = selectedNodePack.value
   if (!pack?.id) return
   if (hasMultipleSelections.value) return
   // Only fetch if we haven't already for this pack
   if (lastFetchedPackId.value === pack.id) return
   const data = await getPackById.call(pack.id)
+  // If selected node hasn't changed since request, merge registry & Algolia data
   if (data?.id === pack.id) {
     lastFetchedPackId.value = pack.id
     const mergedPack = merge({}, pack, data)
