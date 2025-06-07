@@ -194,8 +194,6 @@ export class PreviewManager implements PreviewManagerInterface {
     const viewport = this.getPreviewViewport()
     if (!viewport) return
 
-    console.log(123)
-
     const renderer = this.getRenderer()
 
     const originalClearColor = renderer.getClearColor(new THREE.Color())
@@ -233,11 +231,15 @@ export class PreviewManager implements PreviewManagerInterface {
 
       previewOrtho.updateProjectionMatrix()
     } else {
-      ;(this.previewCamera as THREE.PerspectiveCamera).aspect = aspect
-      ;(this.previewCamera as THREE.PerspectiveCamera).fov = (
+      const activePerspective =
         this.getActiveCamera() as THREE.PerspectiveCamera
-      ).fov
-      ;(this.previewCamera as THREE.PerspectiveCamera).updateProjectionMatrix()
+      const previewPerspective = this.previewCamera as THREE.PerspectiveCamera
+
+      previewPerspective.fov = activePerspective.fov
+      previewPerspective.zoom = activePerspective.zoom
+      previewPerspective.aspect = aspect
+
+      previewPerspective.updateProjectionMatrix()
     }
 
     this.previewCamera.lookAt(this.getControls().target)
