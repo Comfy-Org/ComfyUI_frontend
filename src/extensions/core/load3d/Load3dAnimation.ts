@@ -42,10 +42,6 @@ class Load3dAnimation extends Load3d {
         return
       }
 
-      if (this.previewManager.showPreview) {
-        this.previewManager.updatePreviewRender()
-      }
-
       const delta = this.clock.getDelta()
 
       this.animationManager.update(delta)
@@ -54,12 +50,13 @@ class Load3dAnimation extends Load3d {
 
       this.controlsManager.update()
 
-      this.renderer.clear()
-      this.sceneManager.renderBackground()
-      this.renderer.render(
-        this.sceneManager.scene,
-        this.cameraManager.activeCamera
-      )
+      this.renderMainScene()
+
+      if (this.previewManager.showPreview) {
+        this.renderPreviewScene()
+      }
+
+      this.resetViewport()
 
       if (this.viewHelperManager.viewHelper.render) {
         this.viewHelperManager.viewHelper.render(this.renderer)
