@@ -33,9 +33,11 @@ import {
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useSubgraphService } from '@/services/subgraphService'
 import { useWorkflowService } from '@/services/workflowService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
@@ -67,7 +69,6 @@ import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import { type ComfyApi, PromptExecutionError, api } from './api'
 import { defaultGraph } from './defaultGraph'
-import { pruneWidgets } from './domWidget'
 import { importA1111 } from './pnginfo'
 import { $el, ComfyUI } from './ui'
 import { ComfyAppMenu } from './ui/menu/index'
@@ -704,24 +705,22 @@ export class ComfyApp {
   }
 
   #addAfterConfigureHandler() {
-    const app = this
-    const onConfigure = app.graph.onConfigure
-    app.graph.onConfigure = function (this: LGraph, ...args) {
+    const { graph } = this
+    const { onConfigure } = graph
+    graph.onConfigure = function (...args) {
       fixLinkInputSlots(this)
 
       // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
-      for (const node of app.graph.nodes) {
+      for (const node of graph.nodes) {
         node.onGraphConfigured?.()
       }
 
       const r = onConfigure?.apply(this, args)
 
       // Fire after onConfigure, used by primitives to generate widget using input nodes config
-      for (const node of app.graph.nodes) {
+      for (const node of graph.nodes) {
         node.onAfterGraphConfigured?.()
       }
-
-      pruneWidgets(this.nodes)
 
       return r
     }
@@ -754,6 +753,21 @@ export class ComfyApp {
 
     this.#graph = new LGraph()
 
+    // Register the subgraph - adds type wrapper for Litegraph's `createNode` factory
+    this.graph.events.addEventListener('subgraph-created', (e) => {
+      try {
+        const { subgraph, data } = e.detail
+        useSubgraphService().registerNewSubgraph(subgraph, data)
+      } catch (err) {
+        console.error('Failed to register subgraph', err)
+        useToastStore().add({
+          severity: 'error',
+          summary: 'Failed to register subgraph',
+          detail: err instanceof Error ? err.message : String(err)
+        })
+      }
+    })
+
     this.#addAfterConfigureHandler()
 
     this.canvas = new LGraphCanvas(canvasEl, this.graph)
@@ -765,6 +779,30 @@ export class ComfyApp {
 
     LiteGraph.alt_drag_do_clone_nodes = true
     LiteGraph.macGesturesRequireMac = false
+
+    this.canvas.canvas.addEventListener<'litegraph:set-graph'>(
+      'litegraph:set-graph',
+      (e) => {
+        // Assertion: Not yet defined in litegraph.
+        const { newGraph } = e.detail
+
+        const nodeSet = new Set(newGraph.nodes)
+        const widgetStore = useDomWidgetStore()
+
+        // Assertions: UnwrapRef
+        for (const { widget } of widgetStore.activeWidgetStates) {
+          if (!nodeSet.has(widget.node)) {
+            widgetStore.deactivateWidget(widget.id)
+          }
+        }
+
+        for (const { widget } of widgetStore.inactiveWidgetStates) {
+          if (nodeSet.has(widget.node)) {
+            widgetStore.activateWidget(widget.id)
+          }
+        }
+      }
+    )
 
     this.graph.start()
 
@@ -1002,6 +1040,7 @@ export class ComfyApp {
       })
     }
     useWorkflowService().beforeLoadNewGraph()
+    useSubgraphService().loadSubgraphs(graphData)
 
     const missingNodeTypes: MissingNodeType[] = []
     const missingModels: ModelFile[] = []
@@ -1199,6 +1238,9 @@ export class ComfyApp {
           // Allow widgets to run callbacks before a prompt has been queued
           // e.g. random seed before every gen
           executeWidgetsCallback(this.graph.nodes, 'beforeQueued')
+          for (const subgraph of this.graph.subgraphs.values()) {
+            executeWidgetsCallback(subgraph.nodes, 'beforeQueued')
+          }
 
           const p = await this.graphToPrompt(this.graph, { queueNodeIds })
           try {
@@ -1241,9 +1283,13 @@ export class ComfyApp {
           executeWidgetsCallback(
             p.workflow.nodes
               .map((n) => this.graph.getNodeById(n.id))
-              .filter((n) => !!n) as LGraphNode[],
+              .filter((n) => !!n),
             'afterQueued'
           )
+          for (const subgraph of this.graph.subgraphs.values()) {
+            executeWidgetsCallback(subgraph.nodes, 'afterQueued')
+          }
+
           this.canvas.draw(true, true)
           await this.ui.queue.update()
         }
@@ -1523,6 +1569,8 @@ export class ComfyApp {
     const executionStore = useExecutionStore()
     executionStore.lastNodeErrors = null
     executionStore.lastExecutionError = null
+
+    useDomWidgetStore().clear()
   }
 
   clientPosToCanvasPos(pos: Vector2): Vector2 {
