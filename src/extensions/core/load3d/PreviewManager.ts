@@ -23,16 +23,15 @@ export class PreviewManager implements PreviewManagerInterface {
   private previewBackgroundMesh: THREE.Mesh | null = null
   private previewBackgroundTexture: THREE.Texture | null = null
 
-  private previewBackgroundColor: THREE.Color = new THREE.Color(0x282828)
+  private previewBackgroundColorMaterial: THREE.MeshBasicMaterial | null = null
+  private currentBackgroundColor: THREE.Color = new THREE.Color(0x282828)
 
   constructor(
     scene: THREE.Scene,
     getActiveCamera: () => THREE.Camera,
     getControls: () => OrbitControls,
     getRenderer: () => THREE.WebGLRenderer,
-    eventManager: EventManagerInterface,
-    backgroundScene: THREE.Scene,
-    backgroundCamera: THREE.OrthographicCamera
+    eventManager: EventManagerInterface
   ) {
     this.scene = scene
     this.getActiveCamera = getActiveCamera
@@ -42,18 +41,34 @@ export class PreviewManager implements PreviewManagerInterface {
 
     this.previewCamera = this.getActiveCamera().clone()
 
-    this.previewBackgroundScene = backgroundScene.clone()
-    this.previewBackgroundCamera = backgroundCamera.clone()
+    this.previewBackgroundScene = new THREE.Scene()
+    this.previewBackgroundCamera = new THREE.OrthographicCamera(
+      -1,
+      1,
+      1,
+      -1,
+      -1,
+      1
+    )
 
+    this.initPreviewBackgroundScene()
+  }
+
+  private initPreviewBackgroundScene(): void {
     const planeGeometry = new THREE.PlaneGeometry(2, 2)
-    const planeMaterial = new THREE.MeshBasicMaterial({
-      transparent: true,
+
+    this.previewBackgroundColorMaterial = new THREE.MeshBasicMaterial({
+      color: this.currentBackgroundColor.clone(),
+      transparent: false,
       depthWrite: false,
       depthTest: false,
       side: THREE.DoubleSide
     })
 
-    this.previewBackgroundMesh = new THREE.Mesh(planeGeometry, planeMaterial)
+    this.previewBackgroundMesh = new THREE.Mesh(
+      planeGeometry,
+      this.previewBackgroundColorMaterial
+    )
     this.previewBackgroundMesh.position.set(0, 0, 0)
     this.previewBackgroundScene.add(this.previewBackgroundMesh)
   }
@@ -65,9 +80,15 @@ export class PreviewManager implements PreviewManagerInterface {
       this.previewBackgroundTexture.dispose()
     }
 
+    if (this.previewBackgroundColorMaterial) {
+      this.previewBackgroundColorMaterial.dispose()
+    }
+
     if (this.previewBackgroundMesh) {
       this.previewBackgroundMesh.geometry.dispose()
-      ;(this.previewBackgroundMesh.material as THREE.Material).dispose()
+      if (this.previewBackgroundMesh.material instanceof THREE.Material) {
+        this.previewBackgroundMesh.material.dispose()
+      }
     }
   }
 
@@ -239,38 +260,46 @@ export class PreviewManager implements PreviewManagerInterface {
       viewport.height
     )
 
-    renderer.setClearColor(this.previewBackgroundColor, 1.0)
+    renderer.setClearColor(0x000000, 0)
     renderer.clear()
 
-    if (this.previewBackgroundMesh && this.previewBackgroundTexture) {
-      const material = this.previewBackgroundMesh
-        .material as THREE.MeshBasicMaterial
-      if (material.map) {
-        const currentToneMapping = renderer.toneMapping
-        const currentExposure = renderer.toneMappingExposure
-
-        renderer.toneMapping = THREE.NoToneMapping
-        renderer.render(
-          this.previewBackgroundScene,
-          this.previewBackgroundCamera
-        )
-
-        renderer.toneMapping = currentToneMapping
-        renderer.toneMappingExposure = currentExposure
-      }
-    }
+    this.renderPreviewBackground(renderer)
 
     renderer.render(this.scene, this.previewCamera)
 
     renderer.setClearColor(originalClearColor, originalClearAlpha)
   }
 
-  setPreviewBackgroundColor(color: string | number): void {
-    this.previewBackgroundColor.set(color)
+  private renderPreviewBackground(renderer: THREE.WebGLRenderer): void {
+    if (this.previewBackgroundMesh) {
+      const currentToneMapping = renderer.toneMapping
+      const currentExposure = renderer.toneMappingExposure
+
+      renderer.toneMapping = THREE.NoToneMapping
+      renderer.render(this.previewBackgroundScene, this.previewBackgroundCamera)
+
+      renderer.toneMapping = currentToneMapping
+      renderer.toneMappingExposure = currentExposure
+    }
   }
 
-  getPreviewBackgroundColor(): THREE.Color {
-    return this.previewBackgroundColor.clone()
+  setPreviewBackgroundColor(color: string | number | THREE.Color): void {
+    this.currentBackgroundColor.set(color)
+
+    if (!this.previewBackgroundMesh || !this.previewBackgroundColorMaterial) {
+      this.initPreviewBackgroundScene()
+    }
+
+    this.previewBackgroundColorMaterial!.color.copy(this.currentBackgroundColor)
+
+    if (this.previewBackgroundMesh) {
+      this.previewBackgroundMesh.material = this.previewBackgroundColorMaterial!
+    }
+
+    if (this.previewBackgroundTexture) {
+      this.previewBackgroundTexture.dispose()
+      this.previewBackgroundTexture = null
+    }
   }
 
   updatePreviewRender(): void {
@@ -323,26 +352,42 @@ export class PreviewManager implements PreviewManagerInterface {
   }
 
   updateBackgroundTexture(texture: THREE.Texture | null): void {
-    if (this.previewBackgroundTexture) {
-      this.previewBackgroundTexture.dispose()
-    }
+    if (texture) {
+      if (this.previewBackgroundTexture) {
+        this.previewBackgroundTexture.dispose()
+      }
 
-    this.previewBackgroundTexture = texture
+      this.previewBackgroundTexture = texture
 
-    if (texture && this.previewBackgroundMesh) {
-      const material2 = this.previewBackgroundMesh
-        .material as THREE.MeshBasicMaterial
-      material2.map = texture
-      material2.needsUpdate = true
+      if (this.previewBackgroundMesh) {
+        const imageMaterial = new THREE.MeshBasicMaterial({
+          map: texture,
+          transparent: true,
+          depthWrite: false,
+          depthTest: false,
+          side: THREE.DoubleSide
+        })
 
-      this.previewBackgroundMesh.position.set(0, 0, 0)
+        if (
+          this.previewBackgroundMesh.material instanceof THREE.Material &&
+          this.previewBackgroundMesh.material !==
+            this.previewBackgroundColorMaterial
+        ) {
+          this.previewBackgroundMesh.material.dispose()
+        }
 
-      this.updateBackgroundSize(
-        this.previewBackgroundTexture,
-        this.previewBackgroundMesh,
-        this.targetWidth,
-        this.targetHeight
-      )
+        this.previewBackgroundMesh.material = imageMaterial
+        this.previewBackgroundMesh.position.set(0, 0, 0)
+
+        this.updateBackgroundSize(
+          this.previewBackgroundTexture,
+          this.previewBackgroundMesh,
+          this.targetWidth,
+          this.targetHeight
+        )
+      }
+    } else {
+      this.setPreviewBackgroundColor(this.currentBackgroundColor)
     }
   }
 

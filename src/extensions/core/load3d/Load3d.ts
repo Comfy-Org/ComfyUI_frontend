@@ -104,9 +104,7 @@ class Load3d {
       this.getActiveCamera.bind(this),
       this.getControls.bind(this),
       () => this.renderer,
-      this.eventManager,
-      this.sceneManager.backgroundScene,
-      this.sceneManager.backgroundCamera
+      this.eventManager
     )
 
     this.modelManager = new ModelManager(
@@ -183,7 +181,6 @@ class Load3d {
     this.renderer.setScissor(0, 0, width, height)
     this.renderer.setScissorTest(true)
 
-    this.renderer.clear()
     this.sceneManager.renderBackground()
     this.renderer.render(
       this.sceneManager.scene,
@@ -321,6 +318,9 @@ class Load3d {
 
   setBackgroundColor(color: string): void {
     this.sceneManager.setBackgroundColor(color)
+
+    this.previewManager.setPreviewBackgroundColor(color)
+
     this.forceRender()
   }
 
@@ -337,9 +337,9 @@ class Load3d {
   removeBackgroundImage(): void {
     this.sceneManager.removeBackgroundImage()
 
-    if (this.previewManager.previewCamera) {
-      this.previewManager.updateBackgroundTexture(null)
-    }
+    this.previewManager.setPreviewBackgroundColor(
+      this.sceneManager.currentBackgroundColor
+    )
 
     this.forceRender()
   }
