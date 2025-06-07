@@ -53,7 +53,7 @@ class Load3dAnimation extends Load3d {
       this.renderMainScene()
 
       if (this.previewManager.showPreview) {
-        this.renderPreviewScene()
+        this.previewManager.renderPreview()
       }
 
       this.resetViewport()

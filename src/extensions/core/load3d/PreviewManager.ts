@@ -31,7 +31,9 @@ export class PreviewManager implements PreviewManagerInterface {
     getActiveCamera: () => THREE.Camera,
     getControls: () => OrbitControls,
     getRenderer: () => THREE.WebGLRenderer,
-    eventManager: EventManagerInterface
+    eventManager: EventManagerInterface,
+    backgroundScene: THREE.Scene,
+    backgroundCamera: THREE.OrthographicCamera
   ) {
     this.scene = scene
     this.getActiveCamera = getActiveCamera
@@ -41,15 +43,8 @@ export class PreviewManager implements PreviewManagerInterface {
 
     this.previewCamera = this.getActiveCamera().clone()
 
-    this.previewBackgroundScene = new THREE.Scene()
-    this.previewBackgroundCamera = new THREE.OrthographicCamera(
-      -1,
-      1,
-      1,
-      -1,
-      -1,
-      1
-    )
+    this.previewBackgroundScene = backgroundScene.clone()
+    this.previewBackgroundCamera = backgroundCamera.clone()
 
     this.initPreviewBackgroundScene()
   }
@@ -195,10 +190,26 @@ export class PreviewManager implements PreviewManagerInterface {
     return { left, bottom, width, height }
   }
 
-  syncWithMainCamera(): void {
-    if (!this.showPreview) return
+  renderPreview(): void {
+    const viewport = this.getPreviewViewport()
+    if (!viewport) return
 
-    this.previewCamera = this.getActiveCamera().clone()
+    console.log(123)
+
+    const renderer = this.getRenderer()
+
+    const originalClearColor = renderer.getClearColor(new THREE.Color())
+    const originalClearAlpha = renderer.getClearAlpha()
+
+    if (
+      !this.previewCamera ||
+      (this.getActiveCamera() instanceof THREE.PerspectiveCamera &&
+        !(this.previewCamera instanceof THREE.PerspectiveCamera)) ||
+      (this.getActiveCamera() instanceof THREE.OrthographicCamera &&
+        !(this.previewCamera instanceof THREE.OrthographicCamera))
+    ) {
+      this.previewCamera = this.getActiveCamera().clone()
+    }
 
     this.previewCamera.position.copy(this.getActiveCamera().position)
     this.previewCamera.rotation.copy(this.getActiveCamera().rotation)
@@ -209,43 +220,27 @@ export class PreviewManager implements PreviewManagerInterface {
       const activeOrtho = this.getActiveCamera() as THREE.OrthographicCamera
       const previewOrtho = this.previewCamera as THREE.OrthographicCamera
 
-      previewOrtho.zoom = activeOrtho.zoom
-
       const frustumHeight =
         (activeOrtho.top - activeOrtho.bottom) / activeOrtho.zoom
+
       const frustumWidth = frustumHeight * aspect
 
       previewOrtho.top = frustumHeight / 2
       previewOrtho.left = -frustumWidth / 2
       previewOrtho.right = frustumWidth / 2
       previewOrtho.bottom = -frustumHeight / 2
+      previewOrtho.zoom = 1
 
       previewOrtho.updateProjectionMatrix()
     } else {
-      const activePerspective =
+      ;(this.previewCamera as THREE.PerspectiveCamera).aspect = aspect
+      ;(this.previewCamera as THREE.PerspectiveCamera).fov = (
         this.getActiveCamera() as THREE.PerspectiveCamera
-      const previewPerspective = this.previewCamera as THREE.PerspectiveCamera
-
-      previewPerspective.fov = activePerspective.fov
-      previewPerspective.zoom = activePerspective.zoom
-      previewPerspective.aspect = aspect
-
-      previewPerspective.updateProjectionMatrix()
+      ).fov
+      ;(this.previewCamera as THREE.PerspectiveCamera).updateProjectionMatrix()
     }
 
     this.previewCamera.lookAt(this.getControls().target)
-  }
-
-  renderPreview(): void {
-    const viewport = this.getPreviewViewport()
-    if (!viewport) return
-
-    const renderer = this.getRenderer()
-
-    const originalClearColor = renderer.getClearColor(new THREE.Color())
-    const originalClearAlpha = renderer.getClearAlpha()
-
-    this.syncWithMainCamera()
 
     renderer.setViewport(
       viewport.left,
@@ -300,10 +295,6 @@ export class PreviewManager implements PreviewManagerInterface {
       this.previewBackgroundTexture.dispose()
       this.previewBackgroundTexture = null
     }
-  }
-
-  updatePreviewRender(): void {
-    this.syncWithMainCamera()
   }
 
   togglePreview(showPreview: boolean): void {

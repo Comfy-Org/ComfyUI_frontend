@@ -104,7 +104,9 @@ class Load3d {
       this.getActiveCamera.bind(this),
       this.getControls.bind(this),
       () => this.renderer,
-      this.eventManager
+      this.eventManager,
+      this.sceneManager.backgroundScene,
+      this.sceneManager.backgroundCamera
     )
 
     this.modelManager = new ModelManager(
@@ -161,7 +163,7 @@ class Load3d {
     this.renderMainScene()
 
     if (this.previewManager.showPreview) {
-      this.renderPreviewScene()
+      this.previewManager.renderPreview()
     }
 
     this.resetViewport()
@@ -186,10 +188,6 @@ class Load3d {
       this.sceneManager.scene,
       this.cameraManager.activeCamera
     )
-  }
-
-  renderPreviewScene(): void {
-    this.previewManager.renderPreview()
   }
 
   resetViewport(): void {
@@ -228,7 +226,7 @@ class Load3d {
       this.renderMainScene()
 
       if (this.previewManager.showPreview) {
-        this.renderPreviewScene()
+        this.previewManager.renderPreview()
       }
 
       this.resetViewport()
@@ -365,10 +363,6 @@ class Load3d {
 
   setCameraState(state: CameraState): void {
     this.cameraManager.setCameraState(state)
-
-    if (this.previewManager.showPreview) {
-      this.previewManager.syncWithMainCamera()
-    }
 
     this.forceRender()
   }
