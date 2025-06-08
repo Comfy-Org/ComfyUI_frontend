@@ -38,6 +38,20 @@ const tailwindCssBestPractices = [
   "Implement responsive design with Tailwind CSS",
 ]
 
+// PrimeVue deprecated components - DO NOT USE
+const deprecatedPrimeVueComponents = [
+  "DO NOT use deprecated PrimeVue components. Use these replacements instead:",
+  "Dropdown → Use Select (import from 'primevue/select')",
+  "OverlayPanel → Use Popover (import from 'primevue/popover')",
+  "Calendar → Use DatePicker (import from 'primevue/datepicker')",
+  "InputSwitch → Use ToggleSwitch (import from 'primevue/toggleswitch')",
+  "Sidebar → Use Drawer (import from 'primevue/drawer')",
+  "Chips → Use AutoComplete with multiple enabled and typeahead disabled",
+  "TabMenu → Use Tabs without panels",
+  "Steps → Use Stepper without panels",
+  "InlineMessage → Use Message component"
+]
+
 // Additional instructions
 const additionalInstructions = `
 1. Leverage VueUse functions for performance-enhancing styles
@@ -51,4 +65,5 @@ const additionalInstructions = `
 9. Use Vite for fast development and building
 10. Use vue-i18n in composition API for any string literals. Place new translation
 entries in src/locales/en/main.json.
+11. Never use deprecated PrimeVue components listed above
 `;

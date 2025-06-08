@@ -36,3 +36,13 @@
 - Use Vite for fast development and building
 - Use vue-i18n in composition API for any string literals. Place new translation entries in src/locales/en/main.json.
 - Avoid using `@ts-expect-error` to work around type issues. We needed to employ it to migrate to TypeScript, but it should not be viewed as an accepted practice or standard.
+- DO NOT use deprecated PrimeVue components. Use these replacements instead:
+  * `Dropdown` → Use `Select` (import from 'primevue/select')
+  * `OverlayPanel` → Use `Popover` (import from 'primevue/popover') 
+  * `Calendar` → Use `DatePicker` (import from 'primevue/datepicker')
+  * `InputSwitch` → Use `ToggleSwitch` (import from 'primevue/toggleswitch')
+  * `Sidebar` → Use `Drawer` (import from 'primevue/drawer')
+  * `Chips` → Use `AutoComplete` with multiple enabled and typeahead disabled
+  * `TabMenu` → Use `Tabs` without panels
+  * `Steps` → Use `Stepper` without panels
+  * `InlineMessage` → Use `Message` component
