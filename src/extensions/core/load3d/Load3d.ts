@@ -163,7 +163,7 @@ class Load3d {
     this.renderMainScene()
 
     if (this.previewManager.showPreview) {
-      this.renderPreviewScene()
+      this.previewManager.renderPreview()
     }
 
     this.resetViewport()
@@ -183,16 +183,11 @@ class Load3d {
     this.renderer.setScissor(0, 0, width, height)
     this.renderer.setScissorTest(true)
 
-    this.renderer.clear()
     this.sceneManager.renderBackground()
     this.renderer.render(
       this.sceneManager.scene,
       this.cameraManager.activeCamera
     )
-  }
-
-  renderPreviewScene(): void {
-    this.previewManager.renderPreview()
   }
 
   resetViewport(): void {
@@ -231,7 +226,7 @@ class Load3d {
       this.renderMainScene()
 
       if (this.previewManager.showPreview) {
-        this.renderPreviewScene()
+        this.previewManager.renderPreview()
       }
 
       this.resetViewport()
@@ -321,6 +316,9 @@ class Load3d {
 
   setBackgroundColor(color: string): void {
     this.sceneManager.setBackgroundColor(color)
+
+    this.previewManager.setPreviewBackgroundColor(color)
+
     this.forceRender()
   }
 
@@ -337,9 +335,9 @@ class Load3d {
   removeBackgroundImage(): void {
     this.sceneManager.removeBackgroundImage()
 
-    if (this.previewManager.previewCamera) {
-      this.previewManager.updateBackgroundTexture(null)
-    }
+    this.previewManager.setPreviewBackgroundColor(
+      this.sceneManager.currentBackgroundColor
+    )
 
     this.forceRender()
   }
@@ -365,10 +363,6 @@ class Load3d {
 
   setCameraState(state: CameraState): void {
     this.cameraManager.setCameraState(state)
-
-    if (this.previewManager.showPreview) {
-      this.previewManager.syncWithMainCamera()
-    }
 
     this.forceRender()
   }

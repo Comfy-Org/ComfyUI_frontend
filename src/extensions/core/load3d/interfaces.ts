@@ -106,7 +106,6 @@ export interface PreviewManagerInterface extends BaseManager {
   previewWidth: number
   createCapturePreview(container: Element | HTMLElement): void
   updatePreviewSize(): void
-  updatePreviewRender(): void
   togglePreview(showPreview: boolean): void
   setTargetSize(width: number, height: number): void
   handleResize(): void
@@ -118,7 +117,6 @@ export interface PreviewManagerInterface extends BaseManager {
     height: number
   } | null
   renderPreview(): void
-  syncWithMainCamera(): void
 }
 
 export interface EventManagerInterface {
