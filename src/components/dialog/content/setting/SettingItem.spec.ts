@@ -17,11 +17,6 @@ vi.mock('@/utils/formatUtil', () => ({
   normalizeI18nKey: vi.fn()
 }))
 
-vi.mock('@/i18n', () => ({
-  st: vi.fn((_key: string, fallback: string) => fallback),
-  t: vi.fn((key: string) => key)
-}))
-
 describe('SettingItem', () => {
   const mountComponent = (props: any, options = {}): any => {
     return mount(SettingItem, {
