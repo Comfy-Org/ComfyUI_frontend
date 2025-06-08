@@ -1427,7 +1427,6 @@ export class ComfyApp {
   /**
    * Registers a Comfy web extension with the app
    * @param {ComfyExtension} extension
-   * @deprecated Use useExtensionService().registerExtension instead
    */
   registerExtension(extension: ComfyExtension) {
     useExtensionService().registerExtension(extension)
