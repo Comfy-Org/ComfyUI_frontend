@@ -1,29 +1,24 @@
 import { defineStore } from 'pinia'
-import { computed, onMounted } from 'vue'
+import { computed } from 'vue'
 
 import { AboutPageBadge } from '@/types/comfy'
 import { electronAPI, isElectron } from '@/utils/envUtil'
 
 import { useExtensionStore } from './extensionStore'
 import { useSystemStatsStore } from './systemStatsStore'
-import { useTemplateVersionStore } from './templateVersionStore'
 
 export const useAboutPanelStore = defineStore('aboutPanel', () => {
   const frontendVersion = __COMFYUI_FRONTEND_VERSION__
   const extensionStore = useExtensionStore()
   const systemStatsStore = useSystemStatsStore()
-  const templateVersionStore = useTemplateVersionStore()
 
   const coreVersion = computed(
     () => systemStatsStore?.systemStats?.system?.comfyui_version ?? ''
   )
   const workflowsTemplatesVersion = computed(
-    () => templateVersionStore?.workflowsTemplatesVersion
+    () =>
+      systemStatsStore?.systemStats?.system?.workflows_templates_version ?? ''
   )
-
-  onMounted(async () => {
-    await templateVersionStore.fetchTemplateVersion()
-  })
 
   const coreBadges = computed<AboutPageBadge[]>(() => [
     // In electron, the ComfyUI is packaged without the git repo,

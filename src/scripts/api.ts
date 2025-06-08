@@ -733,14 +733,6 @@ export class ComfyApi extends EventTarget {
     return await res.json()
   }
 
-  async getTemplatesVersion(): Promise<{ version: string }> {
-    const res = await this.fetchApi('/templates_version')
-    if (!res.ok) {
-      throw new Error(`Failed to fetch /templates_version: ${res.statusText}`)
-    }
-    return res.json()
-  }
-
   /**
    * Sends a POST request to the API
    * @param {*} type The endpoint to post to
