@@ -52,7 +52,6 @@ import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import { ExtensionManager } from '@/types/extensionTypes'
 import { ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
-import { getFileHandler } from '@/utils/fileHandlers'
 import {
   executeWidgetsCallback,
   fixLinkInputSlots,
@@ -1266,6 +1265,7 @@ export class ComfyApp {
    * @param {File} file
    */
   async handleFile(file: File) {
+    const { getFileHandler } = await import('@/utils/fileHandlers')
     const removeExt = (f: string) => {
       if (!f) return f
       const p = f.lastIndexOf('.')
