@@ -17,6 +17,11 @@ vi.mock('@/utils/formatUtil', () => ({
   normalizeI18nKey: vi.fn()
 }))
 
+vi.mock('@/i18n', () => ({
+  st: vi.fn((_key: string, fallback: string) => fallback),
+  t: vi.fn((key: string) => key)
+}))
+
 describe('SettingItem', () => {
   const mountComponent = (props: any, options = {}): any => {
     return mount(SettingItem, {
@@ -53,5 +58,22 @@ describe('SettingItem', () => {
     expect(options).toEqual([
       { text: 'Correctly Translated', value: 'Correctly Translated' }
     ])
+  })
+
+  it('handles tooltips with @ symbols without errors', () => {
+    const wrapper = mountComponent({
+      setting: {
+        id: 'TestSetting',
+        name: 'Test Setting',
+        type: 'boolean',
+        tooltip:
+          'This will load a larger version of @mtb/markdown-parser that bundles shiki'
+      }
+    })
+
+    // Should not throw an error and tooltip should be preserved as-is
+    expect(wrapper.vm.formItem.tooltip).toBe(
+      'This will load a larger version of @mtb/markdown-parser that bundles shiki'
+    )
   })
 })
