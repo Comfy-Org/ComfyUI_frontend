@@ -237,6 +237,7 @@ export class ComponentWidgetImpl<
     component: Component
     inputSpec: InputSpec
     props?: P
+    componentProps?: Record<string, unknown>
     options: DOMWidgetOptions<V>
   }) {
     super({
@@ -245,7 +246,9 @@ export class ComponentWidgetImpl<
     })
     this.component = obj.component
     this.inputSpec = obj.inputSpec
-    this.props = obj.props
+    this.props = obj.componentProps
+      ? ({ ...obj.props, ...obj.componentProps } as P)
+      : obj.props
   }
 
   override computeLayoutSize() {

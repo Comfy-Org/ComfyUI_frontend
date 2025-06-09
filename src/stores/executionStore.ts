@@ -12,6 +12,8 @@ import type {
   ExecutionErrorWsMessage,
   ExecutionStartWsMessage,
   NodeError,
+  NodeProgressState,
+  ProgressStateWsMessage,
   ProgressTextWsMessage,
   ProgressWsMessage
 } from '@/schemas/apiSchema'
@@ -46,7 +48,22 @@ export const useExecutionStore = defineStore('execution', () => {
   const queuedPrompts = ref<Record<NodeId, QueuedPrompt>>({})
   const lastNodeErrors = ref<Record<NodeId, NodeError> | null>(null)
   const lastExecutionError = ref<ExecutionErrorWsMessage | null>(null)
-  const executingNodeId = ref<NodeId | null>(null)
+  // This is the progress of all nodes in the currently executing workflow
+  const nodeProgressStates = ref<Record<string, NodeProgressState>>({})
+
+  // Easily access all currently executing node IDs
+  const executingNodeIds = computed<NodeId[]>(() => {
+    return Object.entries(nodeProgressStates)
+      .filter(([_, state]) => state.state === 'running')
+      .map(([nodeId, _]) => nodeId)
+  })
+
+  // For backward compatibility - stores the primary executing node ID
+  const executingNodeId = computed<NodeId | null>(() => {
+    return executingNodeIds.value.length > 0 ? executingNodeIds.value[0] : null
+  })
+
+  // For backward compatibility - returns the primary executing node
   const executingNode = computed<ComfyNode | null>(() => {
     if (!executingNodeId.value) return null
 
@@ -116,7 +133,7 @@ export const useExecutionStore = defineStore('execution', () => {
     }
   }
 
-  // This is the progress of the currently executing node, if any
+  // This is the progress of the currently executing node (for backward compatibility)
   const _executingNodeProgress = ref<ProgressWsMessage | null>(null)
   const executingNodeProgress = computed(() =>
     _executingNodeProgress.value
@@ -153,6 +170,7 @@ export const useExecutionStore = defineStore('execution', () => {
     api.addEventListener('executed', handleExecuted)
     api.addEventListener('executing', handleExecuting)
     api.addEventListener('progress', handleProgress)
+    api.addEventListener('progress_state', handleProgressState)
     api.addEventListener('status', handleStatus)
     api.addEventListener('execution_error', handleExecutionError)
   }
@@ -165,6 +183,7 @@ export const useExecutionStore = defineStore('execution', () => {
     api.removeEventListener('executed', handleExecuted)
     api.removeEventListener('executing', handleExecuting)
     api.removeEventListener('progress', handleProgress)
+    api.removeEventListener('progress_state', handleProgressState)
     api.removeEventListener('status', handleStatus)
     api.removeEventListener('execution_error', handleExecutionError)
     api.removeEventListener('progress_text', handleProgressText)
@@ -194,19 +213,41 @@ export const useExecutionStore = defineStore('execution', () => {
 
     if (!activePrompt.value) return
 
-    if (executingNodeId.value && activePrompt.value) {
-      // Seems sometimes nodes that are cached fire executing but not executed
-      activePrompt.value.nodes[executingNodeId.value] = true
+    // Update the executing nodes list
+    if (e.detail === null) {
+      if (activePromptId.value) {
+        delete queuedPrompts.value[activePromptId.value]
+      }
     }
-    if (typeof e.detail === 'string') {
-      executingNodeId.value = executionIdToCurrentId(e.detail) ?? null
-    } else {
-      executingNodeId.value = e.detail
-      if (executingNodeId.value === null) {
-        if (activePromptId.value) {
-          delete queuedPrompts.value[activePromptId.value]
-        }
-        activePromptId.value = null
+  }
+
+  function handleProgressState(e: CustomEvent<ProgressStateWsMessage>) {
+    const { nodes } = e.detail
+
+    // Revoke previews for nodes that are starting to execute
+    for (const nodeId in nodes) {
+      const nodeState = nodes[nodeId]
+      if (nodeState.state === 'running' && !nodeProgressStates.value[nodeId]) {
+        // This node just started executing, revoke its previews
+        // Note that we're doing the *actual* node id instead of the display node id
+        // here intentionally. That way, we don't clear the preview every time a new node
+        // within an expanded graph starts executing.
+        app.revokePreviews(nodeId)
+        delete app.nodePreviewImages[nodeId]
+      }
+    }
+
+    // Update the progress states for all nodes
+    nodeProgressStates.value = nodes
+
+    // If we have progress for the currently executing node, update it for backwards compatibility
+    if (executingNodeId.value && nodes[executingNodeId.value]) {
+      const nodeState = nodes[executingNodeId.value]
+      _executingNodeProgress.value = {
+        value: nodeState.value,
+        max: nodeState.max,
+        prompt_id: nodeState.prompt_id,
+        node: nodeState.display_node_id || nodeState.node_id
       }
     }
   }
@@ -310,9 +351,13 @@ export const useExecutionStore = defineStore('execution', () => {
      */
     lastExecutionError,
     /**
-     * The id of the node that is currently being executed
+     * The id of the node that is currently being executed (backward compatibility)
      */
     executingNodeId,
+    /**
+     * The list of all nodes that are currently executing
+     */
+    executingNodeIds,
     /**
      * The prompt that is currently being executed
      */
@@ -330,13 +375,17 @@ export const useExecutionStore = defineStore('execution', () => {
      */
     executionProgress,
     /**
-     * The node that is currently being executed
+     * The node that is currently being executed (backward compatibility)
      */
     executingNode,
     /**
-     * The progress of the executing node (if the node reports progress)
+     * The progress of the executing node (backward compatibility)
      */
     executingNodeProgress,
+    /**
+     * All node progress states from progress_state events
+     */
+    nodeProgressStates,
     bindExecutionEvents,
     unbindExecutionEvents,
     storePrompt,
