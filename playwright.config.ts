@@ -39,7 +39,7 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
       timeout: 15000,
-      grepInvert: /@mobile/ // Run all tests except those tagged with @mobile
+      grepInvert: /@mobile|@perf/ // Run all tests except those tagged with @mobile or @perf
     },
 
     {
@@ -47,6 +47,21 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'], deviceScaleFactor: 2 },
       timeout: 15000,
       grep: /@2x/ // Run all tests tagged with @2x
+    },
+
+    {
+      // Set workers in cli or in upper config
+      name: 'performance',
+      use: {
+        ...devices['Desktop Chrome'],
+        // Single worker for consistent performance measurements
+        trace: 'retain-on-failure'
+      },
+      timeout: 30000, // Longer timeout for performance tests
+      grep: /@perf/, // Run only tests tagged with @perf
+      ignoreSnapshots: true,
+      // repeatEach: 5,
+      fullyParallel: false
     },
 
     // {

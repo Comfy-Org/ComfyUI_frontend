@@ -10,6 +10,7 @@ import type { KeyCombo } from '../../src/schemas/keyBindingSchema'
 import type { useWorkspaceStore } from '../../src/stores/workspaceStore'
 import { NodeBadgeMode } from '../../src/types/nodeSource'
 import { ComfyActionbar } from '../helpers/actionbar'
+import { PerformanceMonitor } from '../helpers/performanceMonitor'
 import { ComfyTemplates } from '../helpers/templates'
 import { ComfyMouse } from './ComfyMouse'
 import { ComfyNodeSearchBox } from './components/ComfyNodeSearchBox'
@@ -143,6 +144,7 @@ export class ComfyPage {
   public readonly templates: ComfyTemplates
   public readonly settingDialog: SettingDialog
   public readonly confirmDialog: ConfirmDialog
+  public readonly performanceMonitor: PerformanceMonitor
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -170,6 +172,7 @@ export class ComfyPage {
     this.templates = new ComfyTemplates(page)
     this.settingDialog = new SettingDialog(page)
     this.confirmDialog = new ConfirmDialog(page)
+    this.performanceMonitor = new PerformanceMonitor(page)
   }
 
   convertLeafToContent(structure: FolderStructure): FolderStructure {
@@ -762,7 +765,7 @@ export class ComfyPage {
         y: 625
       }
     })
-    this.page.mouse.move(10, 10)
+    await this.page.mouse.move(10, 10)
     await this.nextFrame()
   }
 
@@ -774,7 +777,7 @@ export class ComfyPage {
       },
       button: 'right'
     })
-    this.page.mouse.move(10, 10)
+    await this.page.mouse.move(10, 10)
     await this.nextFrame()
   }
 
@@ -1058,6 +1061,14 @@ export const comfyPageFixture = base.extend<{
     const userId = await comfyPage.setupUser(username)
     comfyPage.userIds[parallelIndex] = userId
 
+    // Enable performance monitoring for @perf tagged tests
+    const isPerformanceTest = testInfo.title.includes('@perf')
+    // console.log('test info', testInfo)
+    if (isPerformanceTest) {
+      console.log('Enabling performance monitoring')
+      // PerformanceMonitor.enable()
+    }
+
     try {
       await comfyPage.setupSettings({
         'Comfy.UseNewMenu': 'Disabled',
@@ -1078,12 +1089,24 @@ export const comfyPageFixture = base.extend<{
       console.error(e)
     }
 
+    if (isPerformanceTest) {
+      // Start performance monitoring just before test execution
+      console.log('Starting performance monitoring')
+      await comfyPage.performanceMonitor.startMonitoring(testInfo.title)
+    }
+
     await comfyPage.setup()
     await use(comfyPage)
+
+    // Cleanup performance monitoring and collect final metrics
+    if (isPerformanceTest) {
+      console.log('Finishing performance monitoring')
+      await comfyPage.performanceMonitor.finishMonitoring(testInfo.title)
+    }
   },
   comfyMouse: async ({ comfyPage }, use) => {
     const comfyMouse = new ComfyMouse(comfyPage)
-    use(comfyMouse)
+    void use(comfyMouse)
   }
 })
 
