@@ -1,15 +1,11 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
 import type { INumericWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
-import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import {
   type InputSpec,
   isIntInputSpec
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import {
-  type ComfyWidgetConstructorV2,
-  addValueControlWidget
-} from '@/scripts/widgets'
+import type { ComfyWidgetConstructorV2 } from '@/scripts/widgetTypes'
 import { useSettingStore } from '@/stores/settingStore'
 
 function onValueChange(this: INumericWidget, v: number) {
@@ -81,15 +77,19 @@ export const useIntWidget = () => {
       ['seed', 'noise_seed'].includes(inputSpec.name)
 
     if (controlAfterGenerate) {
-      const seedControl = addValueControlWidget(
-        node,
-        widget,
-        'randomize',
-        undefined,
-        undefined,
-        transformInputSpecV2ToV1(inputSpec)
+      // TODO: Re-implement control widget functionality without circular dependency
+      console.warn(
+        'Control widget functionality temporarily disabled for int widgets due to circular dependency'
       )
-      widget.linkedWidgets = [seedControl]
+      // const seedControl = addValueControlWidget(
+      //   node,
+      //   widget,
+      //   'randomize',
+      //   undefined,
+      //   undefined,
+      //   transformInputSpecV2ToV1(inputSpec)
+      // )
+      // widget.linkedWidgets = [seedControl]
     }
 
     return widget

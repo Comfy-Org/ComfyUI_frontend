@@ -5,7 +5,7 @@ import {
   isStringInputSpec
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
-import { type ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import { type ComfyWidgetConstructorV2 } from '@/scripts/widgetTypes'
 import { useSettingStore } from '@/stores/settingStore'
 
 function addMultilineWidget(

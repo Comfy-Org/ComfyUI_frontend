@@ -4,7 +4,7 @@ import {
   type InputSpec,
   isBooleanInputSpec
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { type ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import { type ComfyWidgetConstructorV2 } from '@/scripts/widgetTypes'
 
 export const useBooleanWidget = () => {
   const widgetConstructor: ComfyWidgetConstructorV2 = (

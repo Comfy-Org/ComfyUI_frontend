@@ -6,7 +6,7 @@ import {
   type InputSpec,
   isFloatInputSpec
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { type ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import { type ComfyWidgetConstructorV2 } from '@/scripts/widgetTypes'
 import { useSettingStore } from '@/stores/settingStore'
 
 function onFloatValueChange(this: INumericWidget, v: number) {

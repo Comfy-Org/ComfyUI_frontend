@@ -2,17 +2,17 @@
   <div class="badged-number-input relative w-full">
     <InputGroup class="w-full rounded-lg">
       <!-- State badge prefix -->
-      <InputGroupAddon v-if="badgeState !== 'normal'" class="!p-1 rounded-l-lg">
-        <Badge
-          :value="badgeIcon"
-          :severity="badgeSeverity"
-          class="text-xs font-medium"
+      <InputGroupAddon v-if="badgeState !== 'normal'" class="rounded-l-lg">
+        <i
+          :class="badgeIcon"
           :title="badgeTooltip"
-        />
+          :style="{ color: badgeColor }"
+        ></i>
       </InputGroupAddon>
 
-      <!-- Number input -->
+      <!-- Number input for non-slider mode -->
       <InputNumber
+        v-if="!isSliderMode"
         v-model="numericValue"
         :min="min"
         :max="max"
@@ -29,15 +29,44 @@
         :increment-button-icon="'pi pi-plus'"
         :decrement-button-icon="'pi pi-minus'"
       />
+
+      <!-- Slider mode -->
+      <div
+        v-else
+        :class="{
+          'rounded-r-lg': badgeState !== 'normal',
+          'rounded-lg': badgeState === 'normal'
+        }"
+        class="flex-1 flex items-center gap-2 px-3 py-2 bg-surface-0 border border-surface-300"
+      >
+        <Slider
+          v-model="numericValue"
+          :min="min"
+          :max="max"
+          :step="step"
+          :disabled="disabled"
+          class="flex-1"
+        />
+        <InputNumber
+          v-model="numericValue"
+          :min="min"
+          :max="max"
+          :step="step"
+          :disabled="disabled"
+          class="w-16"
+          :show-buttons="false"
+          size="small"
+        />
+      </div>
     </InputGroup>
   </div>
 </template>
 
 <script setup lang="ts">
-import Badge from 'primevue/badge'
 import InputGroup from 'primevue/inputgroup'
 import InputGroupAddon from 'primevue/inputgroupaddon'
 import InputNumber from 'primevue/inputnumber'
+import Slider from 'primevue/slider'
 import { computed } from 'vue'
 
 import type { ComponentWidget } from '@/scripts/domWidget'
@@ -71,34 +100,40 @@ const max = (inputSpec as any).max ?? 100
 const step = (inputSpec as any).step ?? 1
 const placeholder = (inputSpec as any).placeholder ?? 'Enter number'
 
+// Check if slider mode should be enabled
+const isSliderMode = computed(() => {
+  console.log('inputSpec', inputSpec)
+  return (inputSpec as any).slider === true
+})
+
 // Badge configuration
 const badgeIcon = computed(() => {
   switch (badgeState) {
     case 'random':
-      return '🎲'
+      return 'pi pi-refresh'
     case 'lock':
-      return '🔒'
+      return 'pi pi-lock'
     case 'increment':
-      return '⬆️'
+      return 'pi pi-arrow-up'
     case 'decrement':
-      return '⬇️'
+      return 'pi pi-arrow-down'
     default:
       return ''
   }
 })
 
-const badgeSeverity = computed(() => {
+const badgeColor = computed(() => {
   switch (badgeState) {
     case 'random':
-      return 'info'
+      return 'var(--p-primary-color)'
     case 'lock':
-      return 'warn'
+      return 'var(--p-orange-500)'
     case 'increment':
-      return 'success'
+      return 'var(--p-green-500)'
     case 'decrement':
-      return 'danger'
+      return 'var(--p-red-500)'
     default:
-      return 'info'
+      return 'var(--p-text-color)'
   }
 })
 

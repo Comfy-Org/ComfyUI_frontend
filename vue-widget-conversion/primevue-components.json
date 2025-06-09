@@ -1,0 +1,919 @@
+{
+  "version": "4.2.5",
+  "generatedAt": "2025-06-09T04:50:20.566Z",
+  "totalComponents": 147,
+  "categories": {
+    "Panel": [
+      {
+        "name": "accordion",
+        "description": "Groups a collection of contents in tabs",
+        "documentationUrl": "https://primevue.org/accordion/",
+        "pascalCase": "Accordion"
+      },
+      {
+        "name": "accordioncontent",
+        "description": "Content container for accordion panels",
+        "documentationUrl": "https://primevue.org/accordion/",
+        "pascalCase": "Accordioncontent"
+      },
+      {
+        "name": "accordionheader",
+        "description": "Header section for accordion panels",
+        "documentationUrl": "https://primevue.org/accordion/",
+        "pascalCase": "Accordionheader"
+      },
+      {
+        "name": "accordionpanel",
+        "description": "Individual panel in an accordion",
+        "documentationUrl": "https://primevue.org/accordion/",
+        "pascalCase": "Accordionpanel"
+      },
+      {
+        "name": "accordiontab",
+        "description": "Legacy accordion tab component",
+        "documentationUrl": "https://primevue.org/accordion/",
+        "pascalCase": "Accordiontab"
+      },
+      {
+        "name": "card",
+        "description": "Flexible content container",
+        "documentationUrl": "https://primevue.org/card/",
+        "pascalCase": "Card"
+      },
+      {
+        "name": "deferredcontent",
+        "description": "Loads content on demand",
+        "documentationUrl": "https://primevue.org/deferredcontent/",
+        "pascalCase": "Deferredcontent"
+      },
+      {
+        "name": "divider",
+        "description": "Separator component",
+        "documentationUrl": "https://primevue.org/divider/",
+        "pascalCase": "Divider"
+      },
+      {
+        "name": "fieldset",
+        "description": "Groups related form elements",
+        "documentationUrl": "https://primevue.org/fieldset/",
+        "pascalCase": "Fieldset"
+      },
+      {
+        "name": "panel",
+        "description": "Collapsible content container",
+        "documentationUrl": "https://primevue.org/panel/",
+        "pascalCase": "Panel"
+      },
+      {
+        "name": "scrollpanel",
+        "description": "Scrollable content container",
+        "documentationUrl": "https://primevue.org/scrollpanel/",
+        "pascalCase": "Scrollpanel"
+      },
+      {
+        "name": "splitter",
+        "description": "Resizable split panels",
+        "documentationUrl": "https://primevue.org/splitter/",
+        "pascalCase": "Splitter"
+      },
+      {
+        "name": "splitterpanel",
+        "description": "Panel within splitter",
+        "documentationUrl": "https://primevue.org/splitter/",
+        "pascalCase": "Splitterpanel"
+      },
+      {
+        "name": "tab",
+        "description": "Individual tab component",
+        "documentationUrl": "https://primevue.org/tabs/",
+        "pascalCase": "Tab"
+      },
+      {
+        "name": "tablist",
+        "description": "Container for tabs",
+        "documentationUrl": "https://primevue.org/tabs/",
+        "pascalCase": "Tablist"
+      },
+      {
+        "name": "tabpanel",
+        "description": "Content panel for tabs",
+        "documentationUrl": "https://primevue.org/tabs/",
+        "pascalCase": "Tabpanel"
+      },
+      {
+        "name": "tabpanels",
+        "description": "Container for tab panels",
+        "documentationUrl": "https://primevue.org/tabs/",
+        "pascalCase": "Tabpanels"
+      },
+      {
+        "name": "tabs",
+        "description": "Modern tab container",
+        "documentationUrl": "https://primevue.org/tabs/",
+        "pascalCase": "Tabs"
+      },
+      {
+        "name": "tabview",
+        "description": "Legacy tabbed interface",
+        "documentationUrl": "https://primevue.org/tabview/",
+        "pascalCase": "Tabview"
+      }
+    ],
+    "Directives": [
+      {
+        "name": "animateonscroll",
+        "description": "Directive to apply animations when element becomes visible",
+        "documentationUrl": "https://primevue.org/animateonscroll/",
+        "pascalCase": "Animateonscroll"
+      },
+      {
+        "name": "badgedirective",
+        "description": "Directive to add badges to any element",
+        "documentationUrl": "https://primevue.org/badge/",
+        "pascalCase": "Badgedirective"
+      },
+      {
+        "name": "focustrap",
+        "description": "Directive to trap focus within element",
+        "documentationUrl": "https://primevue.org/focustrap/",
+        "pascalCase": "Focustrap"
+      },
+      {
+        "name": "keyfilter",
+        "description": "Directive to filter keyboard input",
+        "documentationUrl": "https://primevue.org/keyfilter/",
+        "pascalCase": "Keyfilter"
+      },
+      {
+        "name": "ripple",
+        "description": "Directive for material design ripple effect",
+        "documentationUrl": "https://primevue.org/ripple/",
+        "pascalCase": "Ripple"
+      },
+      {
+        "name": "styleclass",
+        "description": "Directive for dynamic styling",
+        "documentationUrl": "https://primevue.org/styleclass/",
+        "pascalCase": "Styleclass"
+      }
+    ],
+    "Form": [
+      {
+        "name": "autocomplete",
+        "description": "Provides filtered suggestions while typing input, supports multiple selection and custom item templates",
+        "documentationUrl": "https://primevue.org/autocomplete/",
+        "pascalCase": "Autocomplete"
+      },
+      {
+        "name": "calendar",
+        "description": "Input component for date selection (legacy)",
+        "documentationUrl": "https://primevue.org/calendar/",
+        "pascalCase": "Calendar"
+      },
+      {
+        "name": "cascadeselect",
+        "description": "Nested dropdown selection component",
+        "documentationUrl": "https://primevue.org/cascadeselect/",
+        "pascalCase": "Cascadeselect"
+      },
+      {
+        "name": "checkbox",
+        "description": "Binary selection component",
+        "documentationUrl": "https://primevue.org/checkbox/",
+        "pascalCase": "Checkbox"
+      },
+      {
+        "name": "checkboxgroup",
+        "description": "Groups multiple checkboxes",
+        "documentationUrl": "https://primevue.org/checkbox/",
+        "pascalCase": "Checkboxgroup"
+      },
+      {
+        "name": "chips",
+        "description": "Input component for entering multiple values",
+        "documentationUrl": "https://primevue.org/chips/",
+        "pascalCase": "Chips"
+      },
+      {
+        "name": "colorpicker",
+        "description": "Input component for color selection",
+        "documentationUrl": "https://primevue.org/colorpicker/",
+        "pascalCase": "Colorpicker"
+      },
+      {
+        "name": "datepicker",
+        "description": "Input component for date and time selection with calendar popup, supports date ranges and custom formatting",
+        "documentationUrl": "https://primevue.org/datepicker/",
+        "pascalCase": "Datepicker"
+      },
+      {
+        "name": "dropdown",
+        "description": "Single selection dropdown",
+        "documentationUrl": "https://primevue.org/dropdown/",
+        "pascalCase": "Dropdown"
+      },
+      {
+        "name": "editor",
+        "description": "Rich text editor component",
+        "documentationUrl": "https://primevue.org/editor/",
+        "pascalCase": "Editor"
+      },
+      {
+        "name": "floatlabel",
+        "description": "Floating label for input components",
+        "documentationUrl": "https://primevue.org/inputtext/",
+        "pascalCase": "Floatlabel"
+      },
+      {
+        "name": "iconfield",
+        "description": "Input field with icon",
+        "documentationUrl": "https://primevue.org/inputtext/",
+        "pascalCase": "Iconfield"
+      },
+      {
+        "name": "iftalabel",
+        "description": "Input field with top-aligned label",
+        "documentationUrl": "https://primevue.org/inputtext/",
+        "pascalCase": "Iftalabel"
+      },
+      {
+        "name": "inputchips",
+        "description": "Multiple input values as chips",
+        "documentationUrl": "https://primevue.org/chips/",
+        "pascalCase": "Inputchips"
+      },
+      {
+        "name": "inputgroup",
+        "description": "Groups input elements",
+        "documentationUrl": "https://primevue.org/inputtext/",
+        "pascalCase": "Inputgroup"
+      },
+      {
+        "name": "inputgroupaddon",
+        "description": "Addon for input groups",
+        "documentationUrl": "https://primevue.org/inputtext/",
+        "pascalCase": "Inputgroupaddon"
+      },
+      {
+        "name": "inputicon",
+        "description": "Icon for input components",
+        "documentationUrl": "https://primevue.org/inputtext/",
+        "pascalCase": "Inputicon"
+      },
+      {
+        "name": "inputmask",
+        "description": "Input with format masking",
+        "documentationUrl": "https://primevue.org/inputtext/",
+        "pascalCase": "Inputmask"
+      },
+      {
+        "name": "inputnumber",
+        "description": "Numeric input with spinner",
+        "documentationUrl": "https://primevue.org/inputtext/",
+        "pascalCase": "Inputnumber"
+      },
+      {
+        "name": "inputotp",
+        "description": "One-time password input",
+        "documentationUrl": "https://primevue.org/inputtext/",
+        "pascalCase": "Inputotp"
+      },
+      {
+        "name": "inputswitch",
+        "description": "Binary switch component",
+        "documentationUrl": "https://primevue.org/toggleswitch/",
+        "pascalCase": "Inputswitch"
+      },
+      {
+        "name": "inputtext",
+        "description": "Text input component",
+        "documentationUrl": "https://primevue.org/inputtext/",
+        "pascalCase": "Inputtext"
+      },
+      {
+        "name": "knob",
+        "description": "Circular input component",
+        "documentationUrl": "https://primevue.org/knob/",
+        "pascalCase": "Knob"
+      },
+      {
+        "name": "listbox",
+        "description": "Selection component with list interface",
+        "documentationUrl": "https://primevue.org/listbox/",
+        "pascalCase": "Listbox"
+      },
+      {
+        "name": "multiselect",
+        "description": "Multiple selection dropdown",
+        "documentationUrl": "https://primevue.org/multiselect/",
+        "pascalCase": "Multiselect"
+      },
+      {
+        "name": "password",
+        "description": "Password input with strength meter",
+        "documentationUrl": "https://primevue.org/password/",
+        "pascalCase": "Password"
+      },
+      {
+        "name": "radiobutton",
+        "description": "Single selection from group",
+        "documentationUrl": "https://primevue.org/radiobutton/",
+        "pascalCase": "Radiobutton"
+      },
+      {
+        "name": "radiobuttongroup",
+        "description": "Groups radio buttons",
+        "documentationUrl": "https://primevue.org/radiobutton/",
+        "pascalCase": "Radiobuttongroup"
+      },
+      {
+        "name": "rating",
+        "description": "Star rating input component",
+        "documentationUrl": "https://primevue.org/rating/",
+        "pascalCase": "Rating"
+      },
+      {
+        "name": "select",
+        "description": "Modern dropdown selection",
+        "documentationUrl": "https://primevue.org/select/",
+        "pascalCase": "Select"
+      },
+      {
+        "name": "selectbutton",
+        "description": "Button-style selection component",
+        "documentationUrl": "https://primevue.org/selectbutton/",
+        "pascalCase": "Selectbutton"
+      },
+      {
+        "name": "slider",
+        "description": "Range selection component",
+        "documentationUrl": "https://primevue.org/slider/",
+        "pascalCase": "Slider"
+      },
+      {
+        "name": "textarea",
+        "description": "Multi-line text input",
+        "documentationUrl": "https://primevue.org/textarea/",
+        "pascalCase": "Textarea"
+      },
+      {
+        "name": "togglebutton",
+        "description": "Two-state button component",
+        "documentationUrl": "https://primevue.org/togglebutton/",
+        "pascalCase": "Togglebutton"
+      },
+      {
+        "name": "toggleswitch",
+        "description": "Switch component for binary state",
+        "documentationUrl": "https://primevue.org/toggleswitch/",
+        "pascalCase": "Toggleswitch"
+      },
+      {
+        "name": "treeselect",
+        "description": "Tree-structured selection",
+        "documentationUrl": "https://primevue.org/treeselect/",
+        "pascalCase": "Treeselect"
+      }
+    ],
+    "Misc": [
+      {
+        "name": "avatar",
+        "description": "Represents people using icons, labels and images",
+        "documentationUrl": "https://primevue.org/avatar/",
+        "pascalCase": "Avatar"
+      },
+      {
+        "name": "avatargroup",
+        "description": "Groups multiple avatars together",
+        "documentationUrl": "https://primevue.org/avatar/",
+        "pascalCase": "Avatargroup"
+      },
+      {
+        "name": "badge",
+        "description": "Small numeric indicator for other components",
+        "documentationUrl": "https://primevue.org/badge/",
+        "pascalCase": "Badge"
+      },
+      {
+        "name": "blockui",
+        "description": "Blocks user interaction with page elements",
+        "documentationUrl": "https://primevue.org/blockui/",
+        "pascalCase": "Blockui"
+      },
+      {
+        "name": "chip",
+        "description": "Compact element representing input, attribute or action",
+        "documentationUrl": "https://primevue.org/chip/",
+        "pascalCase": "Chip"
+      },
+      {
+        "name": "inplace",
+        "description": "Editable content in place",
+        "documentationUrl": "https://primevue.org/inplace/",
+        "pascalCase": "Inplace"
+      },
+      {
+        "name": "metergroup",
+        "description": "Displays multiple meter values",
+        "documentationUrl": "https://primevue.org/metergroup/",
+        "pascalCase": "Metergroup"
+      },
+      {
+        "name": "overlaybadge",
+        "description": "Badge overlay for components",
+        "documentationUrl": "https://primevue.org/badge/",
+        "pascalCase": "Overlaybadge"
+      },
+      {
+        "name": "progressbar",
+        "description": "Progress indication component",
+        "documentationUrl": "https://primevue.org/progressbar/",
+        "pascalCase": "Progressbar"
+      },
+      {
+        "name": "progressspinner",
+        "description": "Loading spinner component",
+        "documentationUrl": "https://primevue.org/progressspinner/",
+        "pascalCase": "Progressspinner"
+      },
+      {
+        "name": "skeleton",
+        "description": "Placeholder for loading content",
+        "documentationUrl": "https://primevue.org/skeleton/",
+        "pascalCase": "Skeleton"
+      },
+      {
+        "name": "tag",
+        "description": "Label component for categorization",
+        "documentationUrl": "https://primevue.org/tag/",
+        "pascalCase": "Tag"
+      },
+      {
+        "name": "terminal",
+        "description": "Command line interface",
+        "documentationUrl": "https://primevue.org/terminal/",
+        "pascalCase": "Terminal"
+      }
+    ],
+    "Menu": [
+      {
+        "name": "breadcrumb",
+        "description": "Navigation component showing current page location",
+        "documentationUrl": "https://primevue.org/breadcrumb/",
+        "pascalCase": "Breadcrumb"
+      },
+      {
+        "name": "contextmenu",
+        "description": "Right-click context menu",
+        "documentationUrl": "https://primevue.org/contextmenu/",
+        "pascalCase": "Contextmenu"
+      },
+      {
+        "name": "dock",
+        "description": "Dock layout with expandable items",
+        "documentationUrl": "https://primevue.org/dock/",
+        "pascalCase": "Dock"
+      },
+      {
+        "name": "megamenu",
+        "description": "Navigation with grouped menu items",
+        "documentationUrl": "https://primevue.org/megamenu/",
+        "pascalCase": "Megamenu"
+      },
+      {
+        "name": "menu",
+        "description": "Navigation menu component",
+        "documentationUrl": "https://primevue.org/menu/",
+        "pascalCase": "Menu"
+      },
+      {
+        "name": "menubar",
+        "description": "Horizontal navigation menu",
+        "documentationUrl": "https://primevue.org/menubar/",
+        "pascalCase": "Menubar"
+      },
+      {
+        "name": "panelmenu",
+        "description": "Vertical navigation menu",
+        "documentationUrl": "https://primevue.org/panelmenu/",
+        "pascalCase": "Panelmenu"
+      },
+      {
+        "name": "steps",
+        "description": "Step-by-step navigation",
+        "documentationUrl": "https://primevue.org/steps/",
+        "pascalCase": "Steps"
+      },
+      {
+        "name": "tabmenu",
+        "description": "Menu styled as tabs",
+        "documentationUrl": "https://primevue.org/tabmenu/",
+        "pascalCase": "Tabmenu"
+      },
+      {
+        "name": "tieredmenu",
+        "description": "Hierarchical menu component",
+        "documentationUrl": "https://primevue.org/tieredmenu/",
+        "pascalCase": "Tieredmenu"
+      }
+    ],
+    "Button": [
+      {
+        "name": "button",
+        "description": "Standard button component with various styles and severity levels, supports icons and loading states",
+        "documentationUrl": "https://primevue.org/button/",
+        "pascalCase": "Button"
+      },
+      {
+        "name": "buttongroup",
+        "description": "Groups multiple buttons together as a cohesive unit with shared styling",
+        "documentationUrl": "https://primevue.org/button/",
+        "pascalCase": "Buttongroup"
+      },
+      {
+        "name": "speeddial",
+        "description": "Floating action button with expandable menu items, supports radial and linear layouts",
+        "documentationUrl": "https://primevue.org/speeddial/",
+        "pascalCase": "Speeddial"
+      },
+      {
+        "name": "splitbutton",
+        "description": "Button with attached dropdown menu for additional actions",
+        "documentationUrl": "https://primevue.org/splitbutton/",
+        "pascalCase": "Splitbutton"
+      }
+    ],
+    "Data": [
+      {
+        "name": "carousel",
+        "description": "Displays content in a rotating slideshow",
+        "documentationUrl": "https://primevue.org/carousel/",
+        "pascalCase": "Carousel"
+      },
+      {
+        "name": "datatable",
+        "description": "Advanced data table with sorting, filtering, pagination, row selection, and column resizing",
+        "documentationUrl": "https://primevue.org/datatable/",
+        "pascalCase": "Datatable"
+      },
+      {
+        "name": "dataview",
+        "description": "Displays data in list layout",
+        "documentationUrl": "https://primevue.org/dataview/",
+        "pascalCase": "Dataview"
+      },
+      {
+        "name": "orderlist",
+        "description": "Reorderable list component",
+        "documentationUrl": "https://primevue.org/orderlist/",
+        "pascalCase": "Orderlist"
+      },
+      {
+        "name": "organizationchart",
+        "description": "Hierarchical organization display",
+        "documentationUrl": "https://primevue.org/organizationchart/",
+        "pascalCase": "Organizationchart"
+      },
+      {
+        "name": "paginator",
+        "description": "Navigation for paged data",
+        "documentationUrl": "https://primevue.org/paginator/",
+        "pascalCase": "Paginator"
+      },
+      {
+        "name": "picklist",
+        "description": "Dual list for item transfer",
+        "documentationUrl": "https://primevue.org/picklist/",
+        "pascalCase": "Picklist"
+      },
+      {
+        "name": "timeline",
+        "description": "Chronological event display",
+        "documentationUrl": "https://primevue.org/timeline/",
+        "pascalCase": "Timeline"
+      },
+      {
+        "name": "tree",
+        "description": "Hierarchical tree structure",
+        "documentationUrl": "https://primevue.org/tree/",
+        "pascalCase": "Tree"
+      },
+      {
+        "name": "treetable",
+        "description": "Table with tree structure",
+        "documentationUrl": "https://primevue.org/treetable/",
+        "pascalCase": "Treetable"
+      },
+      {
+        "name": "virtualscroller",
+        "description": "Virtual scrolling for large datasets",
+        "documentationUrl": "https://primevue.org/virtualscroller/",
+        "pascalCase": "Virtualscroller"
+      }
+    ],
+    "Chart": [
+      {
+        "name": "chart",
+        "description": "Charts and graphs using Chart.js",
+        "documentationUrl": "https://primevue.org/chart/",
+        "pascalCase": "Chart"
+      }
+    ],
+    "Utilities": [
+      {
+        "name": "column",
+        "description": "Table column component for DataTable",
+        "documentationUrl": "https://primevue.org/datatable/",
+        "pascalCase": "Column"
+      },
+      {
+        "name": "columngroup",
+        "description": "Groups table columns",
+        "documentationUrl": "https://primevue.org/datatable/",
+        "pascalCase": "Columngroup"
+      },
+      {
+        "name": "confirmationservice",
+        "description": "Service for programmatically displaying and managing confirmation dialogs",
+        "documentationUrl": "https://primevue.org/confirmdialog/",
+        "pascalCase": "Confirmationservice"
+      },
+      {
+        "name": "dialogservice",
+        "description": "Service for dynamic dialog creation",
+        "documentationUrl": "https://primevue.org/dialogservice/",
+        "pascalCase": "Dialogservice"
+      },
+      {
+        "name": "fluid",
+        "description": "Container with fluid width",
+        "documentationUrl": "https://primevue.org/fluid/",
+        "pascalCase": "Fluid"
+      },
+      {
+        "name": "portal",
+        "description": "Renders content in different DOM location",
+        "documentationUrl": "https://primevue.org/portal/",
+        "pascalCase": "Portal"
+      },
+      {
+        "name": "row",
+        "description": "Table row component",
+        "documentationUrl": "https://primevue.org/datatable/",
+        "pascalCase": "Row"
+      },
+      {
+        "name": "scrolltop",
+        "description": "Button to scroll to top",
+        "documentationUrl": "https://primevue.org/scrolltop/",
+        "pascalCase": "Scrolltop"
+      },
+      {
+        "name": "terminalservice",
+        "description": "Service for terminal component",
+        "documentationUrl": "https://primevue.org/terminal/",
+        "pascalCase": "Terminalservice"
+      },
+      {
+        "name": "useconfirm",
+        "description": "Composable for confirmation dialogs",
+        "documentationUrl": "https://primevue.org/confirmdialog/",
+        "pascalCase": "Useconfirm"
+      },
+      {
+        "name": "usedialog",
+        "description": "Composable for dynamic dialogs",
+        "documentationUrl": "https://primevue.org/dynamicdialog/",
+        "pascalCase": "Usedialog"
+      },
+      {
+        "name": "usestyle",
+        "description": "Composable for dynamic styling",
+        "documentationUrl": "https://primevue.org/usestyle/",
+        "pascalCase": "Usestyle"
+      },
+      {
+        "name": "usetoast",
+        "description": "Composable for toast notifications",
+        "documentationUrl": "https://primevue.org/toast/",
+        "pascalCase": "Usetoast"
+      }
+    ],
+    "Uncategorized": [
+      {
+        "name": "config",
+        "description": "Configuration utility for global PrimeVue settings including theming, locale, and component options",
+        "documentationUrl": "https://primevue.org/config/",
+        "pascalCase": "Config"
+      },
+      {
+        "name": "confirmationeventbus",
+        "description": "Internal event bus system for managing confirmation dialog events and communication",
+        "documentationUrl": "https://primevue.org/confirmdialog/",
+        "pascalCase": "Confirmationeventbus"
+      },
+      {
+        "name": "confirmationoptions",
+        "description": "TypeScript interface definitions for confirmation dialog configuration options",
+        "documentationUrl": "https://primevue.org/confirmdialog/",
+        "pascalCase": "Confirmationoptions"
+      },
+      {
+        "name": "dynamicdialogeventbus",
+        "description": "Internal event bus system for managing dynamic dialog creation and communication",
+        "documentationUrl": "https://primevue.org/dynamicdialog/",
+        "pascalCase": "Dynamicdialogeventbus"
+      },
+      {
+        "name": "dynamicdialogoptions",
+        "description": "TypeScript interface definitions for dynamic dialog configuration options",
+        "documentationUrl": "https://primevue.org/dynamicdialog/",
+        "pascalCase": "Dynamicdialogoptions"
+      },
+      {
+        "name": "menuitem",
+        "description": "TypeScript interface definitions for menu item configuration shared across menu components",
+        "documentationUrl": "https://primevue.org/menuitem/",
+        "pascalCase": "Menuitem"
+      },
+      {
+        "name": "overlayeventbus",
+        "description": "Internal event bus system for managing overlay component events and communication",
+        "documentationUrl": "https://primevue.org/overlaypanel/",
+        "pascalCase": "Overlayeventbus"
+      },
+      {
+        "name": "passthrough",
+        "description": "Utility for customizing component styling and attributes through pass-through properties",
+        "documentationUrl": "https://primevue.org/passthrough/",
+        "pascalCase": "Passthrough"
+      },
+      {
+        "name": "toasteventbus",
+        "description": "Internal event bus system for managing toast notification events and communication",
+        "documentationUrl": "https://primevue.org/toast/",
+        "pascalCase": "Toasteventbus"
+      },
+      {
+        "name": "toastservice",
+        "description": "Service for programmatically displaying and managing toast notifications",
+        "documentationUrl": "https://primevue.org/toast/",
+        "pascalCase": "Toastservice"
+      },
+      {
+        "name": "toolbar",
+        "description": "Container for action buttons",
+        "documentationUrl": "https://primevue.org/toolbar/",
+        "pascalCase": "Toolbar"
+      },
+      {
+        "name": "treenode",
+        "description": "Individual node in tree",
+        "documentationUrl": "https://primevue.org/tree/",
+        "pascalCase": "Treenode"
+      }
+    ],
+    "Overlay": [
+      {
+        "name": "confirmdialog",
+        "description": "Modal dialog for user confirmation",
+        "documentationUrl": "https://primevue.org/confirmdialog/",
+        "pascalCase": "Confirmdialog"
+      },
+      {
+        "name": "confirmpopup",
+        "description": "Popup for user confirmation",
+        "documentationUrl": "https://primevue.org/confirmdialog/",
+        "pascalCase": "Confirmpopup"
+      },
+      {
+        "name": "dialog",
+        "description": "Modal dialog component",
+        "documentationUrl": "https://primevue.org/dialog/",
+        "pascalCase": "Dialog"
+      },
+      {
+        "name": "drawer",
+        "description": "Sliding panel overlay",
+        "documentationUrl": "https://primevue.org/drawer/",
+        "pascalCase": "Drawer"
+      },
+      {
+        "name": "dynamicdialog",
+        "description": "Programmatically created dialogs",
+        "documentationUrl": "https://primevue.org/dynamicdialog/",
+        "pascalCase": "Dynamicdialog"
+      },
+      {
+        "name": "overlaypanel",
+        "description": "Overlay panel component",
+        "documentationUrl": "https://primevue.org/overlaypanel/",
+        "pascalCase": "Overlaypanel"
+      },
+      {
+        "name": "popover",
+        "description": "Overlay component triggered by user interaction",
+        "documentationUrl": "https://primevue.org/popover/",
+        "pascalCase": "Popover"
+      },
+      {
+        "name": "sidebar",
+        "description": "Side panel overlay",
+        "documentationUrl": "https://primevue.org/sidebar/",
+        "pascalCase": "Sidebar"
+      },
+      {
+        "name": "tooltip",
+        "description": "Informational popup on hover",
+        "documentationUrl": "https://primevue.org/tooltip/",
+        "pascalCase": "Tooltip"
+      }
+    ],
+    "File": [
+      {
+        "name": "fileupload",
+        "description": "File upload component with drag-drop",
+        "documentationUrl": "https://primevue.org/fileupload/",
+        "pascalCase": "Fileupload"
+      }
+    ],
+    "Media": [
+      {
+        "name": "galleria",
+        "description": "Image gallery with thumbnails",
+        "documentationUrl": "https://primevue.org/galleria/",
+        "pascalCase": "Galleria"
+      },
+      {
+        "name": "image",
+        "description": "Enhanced image component with preview",
+        "documentationUrl": "https://primevue.org/image/",
+        "pascalCase": "Image"
+      },
+      {
+        "name": "imagecompare",
+        "description": "Before/after image comparison slider",
+        "documentationUrl": "https://primevue.org/imagecompare/",
+        "pascalCase": "Imagecompare"
+      }
+    ],
+    "Messages": [
+      {
+        "name": "inlinemessage",
+        "description": "Inline message display",
+        "documentationUrl": "https://primevue.org/inlinemessage/",
+        "pascalCase": "Inlinemessage"
+      },
+      {
+        "name": "message",
+        "description": "Message component for notifications",
+        "documentationUrl": "https://primevue.org/message/",
+        "pascalCase": "Message"
+      },
+      {
+        "name": "toast",
+        "description": "Temporary message notifications",
+        "documentationUrl": "https://primevue.org/toast/",
+        "pascalCase": "Toast"
+      }
+    ],
+    "Stepper": [
+      {
+        "name": "step",
+        "description": "Individual step in stepper",
+        "documentationUrl": "https://primevue.org/stepper/",
+        "pascalCase": "Step"
+      },
+      {
+        "name": "stepitem",
+        "description": "Item within step",
+        "documentationUrl": "https://primevue.org/stepper/",
+        "pascalCase": "Stepitem"
+      },
+      {
+        "name": "steplist",
+        "description": "List of steps",
+        "documentationUrl": "https://primevue.org/stepper/",
+        "pascalCase": "Steplist"
+      },
+      {
+        "name": "steppanel",
+        "description": "Content panel for stepper",
+        "documentationUrl": "https://primevue.org/stepper/",
+        "pascalCase": "Steppanel"
+      },
+      {
+        "name": "steppanels",
+        "description": "Container for step panels",
+        "documentationUrl": "https://primevue.org/stepper/",
+        "pascalCase": "Steppanels"
+      },
+      {
+        "name": "stepper",
+        "description": "Multi-step process navigation",
+        "documentationUrl": "https://primevue.org/stepper/",
+        "pascalCase": "Stepper"
+      }
+    ]
+  }
+}
