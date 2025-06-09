@@ -43,7 +43,7 @@ export const useBadgedNumberInput = (
   const {
     defaultValue = 0,
     disabled = false,
-    minHeight = 40,
+    minHeight = 32,
     serialize = true,
     mode = 'int'
   } = options
@@ -117,6 +117,8 @@ export const useBadgedNumberInput = (
 
         // Optional: minimum height for the widget
         getMinHeight: () => minHeight + PADDING,
+        // Lock maximum height to prevent oversizing
+        getMaxHeight: () => 45,
 
         // Optional: whether to serialize this widget's value
         serialize

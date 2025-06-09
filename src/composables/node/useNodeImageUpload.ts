@@ -2,7 +2,6 @@ import type { LGraphNode } from '@comfyorg/litegraph'
 
 import { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
 import { useNodeFileInput } from '@/composables/node/useNodeFileInput'
-import { useNodeMediaUpload } from '@/composables/node/useNodeMediaUpload'
 import { useNodePaste } from '@/composables/node/useNodePaste'
 import { api } from '@/scripts/api'
 import { useToastStore } from '@/stores/toastStore'
@@ -37,28 +36,16 @@ interface ImageUploadOptions {
    * @example 'image/png,image/jpeg,image/webp,video/webm,video/mp4'
    */
   accept?: string
-  /**
-   * Whether to use the new Vue MediaLoader widget instead of traditional drag/drop/paste
-   * @default true
-   */
-  useMediaLoaderWidget?: boolean
 }
 
 /**
  * Adds image upload to a node via drag & drop, paste, and file input.
- * Optionally can use the new Vue MediaLoader widget.
  */
 export const useNodeImageUpload = (
   node: LGraphNode,
   options: ImageUploadOptions
 ) => {
-  const {
-    fileFilter,
-    onUploadComplete,
-    allow_batch,
-    accept,
-    useMediaLoaderWidget = true
-  } = options
+  const { fileFilter, onUploadComplete, allow_batch, accept } = options
 
   const isPastedFile = (file: File): boolean =>
     file.name === 'image.png' &&
@@ -81,21 +68,8 @@ export const useNodeImageUpload = (
     return validPaths
   }
 
-  // If using the new MediaLoader widget, set it up and return early
-  if (useMediaLoaderWidget) {
-    const { showMediaLoader } = useNodeMediaUpload()
-    const widget = showMediaLoader(node, {
-      fileFilter,
-      onUploadComplete,
-      allow_batch,
-      accept
-    })
-    return {
-      openFileSelection: () => {},
-      handleUpload,
-      mediaLoaderWidget: widget
-    }
-  }
+  // Note: MediaLoader widget functionality is handled directly by
+  // useImageUploadMediaWidget.ts to avoid circular dependencies
 
   // Traditional approach: Handle drag & drop
   useNodeDragAndDrop(node, {

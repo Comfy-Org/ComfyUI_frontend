@@ -1,21 +1,44 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
 import { IComboWidget } from '@comfyorg/litegraph/dist/types/widgets'
+import { ref } from 'vue'
 
 import MediaLoaderWidget from '@/components/graph/widgets/MediaLoaderWidget.vue'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
-import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
+import { useNodeImagePreview } from '@/composables/node/useNodeImagePreview'
 import { useValueTransform } from '@/composables/useValueTransform'
 import type { ResultItem } from '@/schemas/apiSchema'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
+import { api } from '@/scripts/api'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useToastStore } from '@/stores/toastStore'
 import { createAnnotatedPath } from '@/utils/formatUtil'
 import { addToComboValues } from '@/utils/litegraphUtil'
 
 const ACCEPTED_IMAGE_TYPES = 'image/png,image/jpeg,image/webp'
 const ACCEPTED_VIDEO_TYPES = 'video/webm,video/mp4'
+const PASTED_IMAGE_EXPIRY_MS = 2000
+
+const uploadFile = async (file: File, isPasted: boolean) => {
+  const body = new FormData()
+  body.append('image', file)
+  if (isPasted) body.append('subfolder', 'pasted')
+
+  const resp = await api.fetchApi('/upload/image', {
+    method: 'POST',
+    body
+  })
+
+  if (resp.status !== 200) {
+    useToastStore().addAlert(resp.status + ' - ' + resp.statusText)
+    return
+  }
+
+  const data = await resp.json()
+  return data.subfolder ? `${data.subfolder}/${data.name}` : data.name
+}
 
 type InternalFile = string | ResultItem
 type InternalValue = InternalFile | InternalFile[]
@@ -43,6 +66,7 @@ export const useImageUploadMediaWidget = () => {
     const isVideo = !!inputOptions.video_upload
     const accept = isVideo ? ACCEPTED_VIDEO_TYPES : ACCEPTED_IMAGE_TYPES
     const { showPreview } = isVideo ? useNodeVideo(node) : useNodeImage(node)
+    const { showImagePreview } = useNodeImagePreview()
 
     const fileFilter = isVideo ? isVideoFile : isImageFile
     // @ts-expect-error InputSpec is not typed correctly
@@ -72,7 +96,8 @@ export const useImageUploadMediaWidget = () => {
 
     // Handle widget dimensions based on input options
     const getMinHeight = () => {
-      let baseHeight = 200
+      // Use smaller height for MediaLoader upload widget
+      let baseHeight = 176
 
       // Handle multiline attribute for expanded height
       if (inputOptions.multiline) {
@@ -92,6 +117,19 @@ export const useImageUploadMediaWidget = () => {
       return baseHeight + 8 // Add padding
     }
 
+    const getMaxHeight = () => {
+      // Lock maximum height to prevent oversizing of upload widget
+      if (inputOptions.multiline || inputOptions.min_height) {
+        // Allow more height for special cases
+        return Math.max(200, getMinHeight())
+      }
+      // Lock standard upload widget to ~80px max
+      return 80
+    }
+
+    // State for MediaLoader widget
+    const uploadedFiles = ref<string[]>([])
+
     // Create the MediaLoader widget directly
     const uploadWidget = new ComponentWidgetImpl<string[], { accept?: string }>(
       {
@@ -103,32 +141,47 @@ export const useImageUploadMediaWidget = () => {
           accept
         },
         options: {
-          getValue: () => [],
-          setValue: () => {},
+          getValue: () => uploadedFiles.value,
+          setValue: (value: string[]) => {
+            uploadedFiles.value = value
+          },
           getMinHeight,
+          getMaxHeight, // Lock maximum height to prevent oversizing
           serialize: false,
           onFilesSelected: async (files: File[]) => {
-            // Use the existing upload infrastructure
-            const { handleUpload } = useNodeImageUpload(node, {
-              // @ts-expect-error InputSpec is not typed correctly
-              allow_batch,
-              fileFilter,
-              accept,
-              onUploadComplete: (output) => {
-                output.forEach((path) =>
-                  addToComboValues(fileComboWidget, path)
-                )
-                // @ts-expect-error litegraph combo value type does not support arrays yet
-                fileComboWidget.value = output
-                fileComboWidget.callback?.(output)
-              }
-            })
+            const isPastedFile = (file: File): boolean =>
+              file.name === 'image.png' &&
+              file.lastModified - Date.now() < PASTED_IMAGE_EXPIRY_MS
 
-            // Handle each file
-            for (const file of files) {
-              if (fileFilter(file)) {
-                await handleUpload(file)
+            const handleUpload = async (file: File) => {
+              try {
+                const path = await uploadFile(file, isPastedFile(file))
+                if (!path) return
+                return path
+              } catch (error) {
+                useToastStore().addAlert(String(error))
               }
+            }
+
+            // Filter and upload files
+            const filteredFiles = files.filter(fileFilter)
+            const paths = await Promise.all(filteredFiles.map(handleUpload))
+            const validPaths = paths.filter((p): p is string => !!p)
+
+            if (validPaths.length) {
+              validPaths.forEach((path) =>
+                addToComboValues(fileComboWidget, path)
+              )
+
+              const output = allow_batch ? validPaths : validPaths[0]
+              // @ts-expect-error litegraph combo value type does not support arrays yet
+              fileComboWidget.value = output
+
+              // Update widget value to show file names
+              uploadedFiles.value = Array.isArray(output) ? output : [output]
+
+              // Trigger the combo widget callback to update all dependent widgets
+              fileComboWidget.callback?.(output)
             }
           }
         } as any
@@ -138,11 +191,27 @@ export const useImageUploadMediaWidget = () => {
     // Register the widget with the node
     addWidget(node, uploadWidget as any)
 
+    // Store the original callback if it exists
+    const originalCallback = fileComboWidget.callback
+
     // Add our own callback to the combo widget to render an image when it changes
-    fileComboWidget.callback = function () {
+    fileComboWidget.callback = function (value?: any) {
+      // Call original callback first if it exists
+      originalCallback?.call(this, value)
+
       nodeOutputStore.setNodeOutputs(node, fileComboWidget.value, {
         isAnimated
       })
+
+      // Use Vue widget for image preview, fallback to DOM widget for video
+      if (!isVideo) {
+        showImagePreview(node, fileComboWidget.value, {
+          allow_batch: allow_batch as boolean,
+          image_folder: image_folder as string,
+          imageInputName: imageInputName as string
+        })
+      }
+
       node.graph?.setDirtyCanvas(true)
     }
 
@@ -153,7 +222,17 @@ export const useImageUploadMediaWidget = () => {
       nodeOutputStore.setNodeOutputs(node, fileComboWidget.value, {
         isAnimated
       })
-      showPreview({ block: false })
+
+      // Use appropriate preview method
+      if (isVideo) {
+        showPreview({ block: false })
+      } else {
+        showImagePreview(node, fileComboWidget.value, {
+          allow_batch: allow_batch as boolean,
+          image_folder: image_folder as string,
+          imageInputName: imageInputName as string
+        })
+      }
     })
 
     return { widget: uploadWidget }

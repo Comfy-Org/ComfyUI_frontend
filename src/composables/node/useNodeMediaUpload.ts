@@ -1,10 +1,31 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
 
-import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 import { useMediaLoaderWidget } from '@/composables/widgets/useMediaLoaderWidget'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { api } from '@/scripts/api'
+import { useToastStore } from '@/stores/toastStore'
 
 const MEDIA_LOADER_WIDGET_NAME = '$$node-media-loader'
+const PASTED_IMAGE_EXPIRY_MS = 2000
+
+const uploadFile = async (file: File, isPasted: boolean) => {
+  const body = new FormData()
+  body.append('image', file)
+  if (isPasted) body.append('subfolder', 'pasted')
+
+  const resp = await api.fetchApi('/upload/image', {
+    method: 'POST',
+    body
+  })
+
+  if (resp.status !== 200) {
+    useToastStore().addAlert(resp.status + ' - ' + resp.statusText)
+    return
+  }
+
+  const data = await resp.json()
+  return data.subfolder ? `${data.subfolder}/${data.name}` : data.name
+}
 
 interface MediaUploadOptions {
   fileFilter?: (file: File) => boolean
@@ -26,8 +47,19 @@ export function useNodeMediaUpload() {
     node: LGraphNode,
     options: MediaUploadOptions
   ) => {
-    // Set up the file upload handling using existing logic
-    const { handleUpload } = useNodeImageUpload(node, options)
+    const isPastedFile = (file: File): boolean =>
+      file.name === 'image.png' &&
+      file.lastModified - Date.now() < PASTED_IMAGE_EXPIRY_MS
+
+    const handleUpload = async (file: File) => {
+      try {
+        const path = await uploadFile(file, isPastedFile(file))
+        if (!path) return
+        return path
+      } catch (error) {
+        useToastStore().addAlert(String(error))
+      }
+    }
 
     // Create the MediaLoader widget
     const widget = mediaLoaderWidget(node, {
@@ -38,7 +70,11 @@ export function useNodeMediaUpload() {
     // Connect the widget to the upload handler
     if (widget.options) {
       ;(widget.options as any).onFilesSelected = async (files: File[]) => {
-        const paths = await Promise.all(files.map(handleUpload))
+        const filteredFiles = options.fileFilter
+          ? files.filter(options.fileFilter)
+          : files
+
+        const paths = await Promise.all(filteredFiles.map(handleUpload))
         const validPaths = paths.filter((p): p is string => !!p)
         if (validPaths.length) {
           options.onUploadComplete(validPaths)
