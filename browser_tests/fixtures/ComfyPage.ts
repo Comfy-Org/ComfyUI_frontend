@@ -1086,7 +1086,7 @@ export const comfyPageFixture = base.extend<{
   },
   comfyMouse: async ({ comfyPage }, use) => {
     const comfyMouse = new ComfyMouse(comfyPage)
-    void use(comfyMouse)
+    use(comfyMouse)
   }
 })
 
