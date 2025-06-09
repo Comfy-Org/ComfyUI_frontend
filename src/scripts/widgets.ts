@@ -7,6 +7,7 @@ import type {
 
 import { useBadgedNumberInput } from '@/composables/widgets/useBadgedNumberInput'
 import { useBooleanWidget } from '@/composables/widgets/useBooleanWidget'
+import { useColorPickerWidget } from '@/composables/widgets/useColorPickerWidget'
 import { useComboWidget } from '@/composables/widgets/useComboWidget'
 import { useImageUploadWidget } from '@/composables/widgets/useImageUploadWidget'
 import { useMarkdownWidget } from '@/composables/widgets/useMarkdownWidget'
@@ -286,5 +287,6 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
   MARKDOWN: transformWidgetConstructorV2ToV1(useMarkdownWidget()),
   COMBO: transformWidgetConstructorV2ToV1(useComboWidget()),
   IMAGEUPLOAD: useImageUploadWidget(),
-  BADGED_NUMBER: transformWidgetConstructorV2ToV1(useBadgedNumberInput())
+  BADGED_NUMBER: transformWidgetConstructorV2ToV1(useBadgedNumberInput()),
+  COLOR: transformWidgetConstructorV2ToV1(useColorPickerWidget())
 }
