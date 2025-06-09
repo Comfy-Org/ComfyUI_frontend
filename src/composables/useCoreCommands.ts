@@ -28,7 +28,7 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
-const moveSelectedNodesVersionAdded = '1.22.1'
+const moveSelectedNodesVersionAdded = '1.22.2'
 
 export function useCoreCommands(): ComfyCommand[] {
   const workflowService = useWorkflowService()
