@@ -91,6 +91,55 @@ function addMultilineWidget(
   return widget
 }
 
+function addSingleLineWidget(
+  node: LGraphNode,
+  name: string,
+  opts: { defaultVal: string; placeholder?: string }
+) {
+  const inputEl = document.createElement('input')
+  inputEl.className = 'comfy-text-input'
+  inputEl.type = 'text'
+  inputEl.value = opts.defaultVal
+  inputEl.placeholder = opts.placeholder || name
+
+  const widget = node.addDOMWidget(name, 'text', inputEl, {
+    getValue(): string {
+      return inputEl.value
+    },
+    setValue(v: string) {
+      inputEl.value = v
+    }
+  })
+
+  widget.inputEl = inputEl
+  widget.options.minNodeSize = [200, 40]
+
+  inputEl.addEventListener('input', () => {
+    widget.callback?.(widget.value)
+  })
+
+  // Allow middle mouse button panning
+  inputEl.addEventListener('pointerdown', (event: PointerEvent) => {
+    if (event.button === 1) {
+      app.canvas.processMouseDown(event)
+    }
+  })
+
+  inputEl.addEventListener('pointermove', (event: PointerEvent) => {
+    if ((event.buttons & 4) === 4) {
+      app.canvas.processMouseMove(event)
+    }
+  })
+
+  inputEl.addEventListener('pointerup', (event: PointerEvent) => {
+    if (event.button === 1) {
+      app.canvas.processMouseUp(event)
+    }
+  })
+
+  return widget
+}
+
 export const useStringWidget = () => {
   const widgetConstructor: ComfyWidgetConstructorV2 = (
     node: LGraphNode,
@@ -108,7 +157,10 @@ export const useStringWidget = () => {
           defaultVal,
           placeholder: inputSpec.placeholder
         })
-      : node.addWidget('text', inputSpec.name, defaultVal, () => {}, {})
+      : addSingleLineWidget(node, inputSpec.name, {
+          defaultVal,
+          placeholder: inputSpec.placeholder
+        })
 
     if (typeof inputSpec.dynamicPrompts === 'boolean') {
       widget.dynamicPrompts = inputSpec.dynamicPrompts
