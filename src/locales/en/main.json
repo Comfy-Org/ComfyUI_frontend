@@ -230,6 +230,16 @@
     "black": "Black",
     "custom": "Custom"
   },
+  "widgets": {
+    "colorPicker": {
+      "clickToEdit": "Click to edit color",
+      "selectColor": "Select a color",
+      "formatRGBA": "RGBA",
+      "formatHSLA": "HSLA", 
+      "formatHSVA": "HSVA",
+      "formatHEX": "HEX"
+    }
+  },
   "contextMenu": {
     "Inputs": "Inputs",
     "Outputs": "Outputs",
