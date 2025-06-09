@@ -52,7 +52,7 @@ export const useDropdownComboWidget = (
         },
 
         // Optional: minimum height for the widget (dropdown needs some height)
-        getMinHeight: () => 42 + PADDING,
+        getMinHeight: () => 48 + PADDING,
 
         // Optional: whether to serialize this widget's value
         serialize: true
