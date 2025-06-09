@@ -9,6 +9,7 @@ import { useBadgedNumberInput } from '@/composables/widgets/useBadgedNumberInput
 import { useBooleanWidget } from '@/composables/widgets/useBooleanWidget'
 import { useColorPickerWidget } from '@/composables/widgets/useColorPickerWidget'
 import { useComboWidget } from '@/composables/widgets/useComboWidget'
+import { useImagePreviewWidget } from '@/composables/widgets/useImagePreviewWidget'
 import { useImageUploadMediaWidget } from '@/composables/widgets/useImageUploadMediaWidget'
 import { useMarkdownWidget } from '@/composables/widgets/useMarkdownWidget'
 import { useMediaLoaderWidget } from '@/composables/widgets/useMediaLoaderWidget'
@@ -292,5 +293,6 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
   COLOR: transformWidgetConstructorV2ToV1(useColorPickerWidget()),
   IMAGEUPLOAD: useImageUploadMediaWidget(),
   MEDIA_LOADER: transformWidgetConstructorV2ToV1(useMediaLoaderWidget()),
+  IMAGEPREVIEW: transformWidgetConstructorV2ToV1(useImagePreviewWidget()),
   BADGED_NUMBER: transformWidgetConstructorV2ToV1(useBadgedNumberInput())
 }

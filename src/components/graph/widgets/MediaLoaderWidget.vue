@@ -1,5 +1,5 @@
 <template>
-  <div class="media-loader-widget w-full px-2">
+  <div class="media-loader-widget w-full px-2 max-h-44">
     <div
       class="upload-area border-2 border-dashed border-surface-300 dark-theme:border-surface-600 rounded-lg p-6 text-center bg-surface-50 dark-theme:bg-surface-800 hover:bg-surface-100 dark-theme:hover:bg-surface-700 transition-colors cursor-pointer"
       :class="{

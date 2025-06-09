@@ -13,8 +13,6 @@ import { addValueControlWidgets } from '@/scripts/widgets'
 
 import { useRemoteWidget } from './useRemoteWidget'
 
-const PADDING = 8
-
 const getDefaultValue = (inputSpec: ComboInputSpec) => {
   if (inputSpec.default) return inputSpec.default
   if (inputSpec.options?.length) return inputSpec.options[0]
@@ -51,8 +49,10 @@ export const useDropdownComboWidget = (
           widgetValue.value = value
         },
 
-        // Optional: minimum height for the widget (dropdown needs some height)
-        getMinHeight: () => 48 + PADDING,
+        // Optional: minimum height for the widget (dropdown needs minimal height)
+        getMinHeight: () => 48,
+        // Lock maximum height to prevent oversizing
+        getMaxHeight: () => 64,
 
         // Optional: whether to serialize this widget's value
         serialize: true

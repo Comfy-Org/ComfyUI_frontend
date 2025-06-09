@@ -50,7 +50,9 @@ export const useMediaLoaderWidget = (options: MediaLoaderOptions = {}) => {
         },
 
         // Optional: minimum height for the widget
-        getMinHeight: () => (options.minHeight ?? 500) + PADDING,
+        // getMinHeight: () => (options.minHeight ?? 64) + PADDING,
+        getMaxHeight: () => 225 + PADDING,
+        getMinHeight: () => 176 + PADDING,
 
         // Optional: whether to serialize this widget's value
         serialize: true,
