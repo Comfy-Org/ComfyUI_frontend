@@ -15,6 +15,7 @@ import {
 } from '@/schemas/comfyWorkflowSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useDialogService } from '@/services/dialogService'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useWidgetStore } from '@/stores/widgetStore'
@@ -1224,9 +1225,10 @@ export class GroupNodeHandler {
     node.onDrawForeground = function (ctx) {
       // @ts-expect-error fixme ts strict error
       onDrawForeground?.apply?.(this, arguments)
+      const executionStore = useExecutionStore()
       if (
-        // @ts-expect-error fixme ts strict error
-        +app.runningNodeId === this.id &&
+        executionStore.nodeProgressStates[this.id] &&
+        executionStore.nodeProgressStates[this.id].state === 'running' &&
         this.runningInternalNodeId !== null
       ) {
         // @ts-expect-error fixme ts strict error
@@ -1321,6 +1323,45 @@ export class GroupNodeHandler {
       // @ts-expect-error fixme ts strict error
       (_, id) => id
     )
+    /*
+    // Handle progress_state events for multiple executing nodes
+    const progress_state = handleEvent.call(
+      this,
+      'progress_state',
+      (d) => {
+        // Check if any of our inner nodes are in this progress state update
+        for (const nodeId in d.nodes) {
+          const innerNodeIndex = this.innerNodes?.findIndex((n) => n.id == nodeId);
+          if (innerNodeIndex > -1) return nodeId;
+        }
+        return null;
+      },
+      (d, id, node) => {
+        // Create a new progress_state event with just our group node
+        const newProgressState = { ...d };
+        newProgressState.nodes = { [id]: { 
+          node: id, 
+          state: 'running',
+          value: 0,
+          max: 1,
+          prompt_id: d.prompt_id 
+        }};
+        
+        // If we have a specific running internal node, update its state
+        if (node.runningInternalNodeId !== null) {
+          const innerNodeId = this.innerNodes[node.runningInternalNodeId].id;
+          if (d.nodes[innerNodeId]) {
+            newProgressState.nodes[id] = {
+              ...d.nodes[innerNodeId],
+              node: id
+            };
+          }
+        }
+        
+        return newProgressState;
+      }
+    );
+    */
 
     const executed = handleEvent.call(
       this,
@@ -1340,6 +1381,7 @@ export class GroupNodeHandler {
     this.node.onRemoved = function () {
       // @ts-expect-error fixme ts strict error
       onRemoved?.apply(this, arguments)
+      // api.removeEventListener('progress_state', progress_state)
       api.removeEventListener('executing', executing)
       api.removeEventListener('executed', executed)
     }
