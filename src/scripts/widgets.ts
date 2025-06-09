@@ -11,6 +11,7 @@ import { useComboWidget } from '@/composables/widgets/useComboWidget'
 import { useImageUploadWidget } from '@/composables/widgets/useImageUploadWidget'
 import { useMarkdownWidget } from '@/composables/widgets/useMarkdownWidget'
 import { useStringWidget } from '@/composables/widgets/useStringWidget'
+import { useStringWidgetVue } from '@/composables/widgets/useStringWidgetVue'
 import { t } from '@/i18n'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
@@ -282,7 +283,8 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
     useBadgedNumberInput({ mode: 'float' })
   ),
   BOOLEAN: transformWidgetConstructorV2ToV1(useBooleanWidget()),
-  STRING: transformWidgetConstructorV2ToV1(useStringWidget()),
+  STRING: transformWidgetConstructorV2ToV1(useStringWidgetVue()),
+  STRING_DOM: transformWidgetConstructorV2ToV1(useStringWidget()), // Fallback to DOM-based implementation
   MARKDOWN: transformWidgetConstructorV2ToV1(useMarkdownWidget()),
   COMBO: transformWidgetConstructorV2ToV1(useComboWidget()),
   IMAGEUPLOAD: useImageUploadWidget(),
