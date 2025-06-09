@@ -71,7 +71,6 @@ import { useWorkflowAutoSave } from '@/composables/useWorkflowAutoSave'
 import { useWorkflowPersistence } from '@/composables/useWorkflowPersistence'
 import { CORE_SETTINGS } from '@/constants/coreSettings'
 import { i18n, t } from '@/i18n'
-import type { NodeId } from '@/schemas/comfyWorkflowSchema'
 import { UnauthorizedError, api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
@@ -189,22 +188,46 @@ watch(
   }
 )
 
-// Update the progress of the executing node
+// Update the progress of executing nodes
 watch(
-  () =>
-    [executionStore.executingNodeId, executionStore.executingNodeProgress] as [
-      NodeId | null,
-      number | null
-    ],
-  ([executingNodeId, executingNodeProgress]) => {
+  () => executionStore.nodeProgressStates,
+  (nodeProgressStates) => {
+    // Clear progress for all nodes first
     for (const node of comfyApp.graph.nodes) {
-      if (node.id == executingNodeId) {
-        node.progress = executingNodeProgress ?? undefined
-      } else {
-        node.progress = undefined
+      node.progress = undefined
+    }
+
+    // Then set progress for nodes with progress states
+    for (const nodeId in nodeProgressStates) {
+      const progressState = nodeProgressStates[nodeId]
+      const node = comfyApp.graph.getNodeById(progressState.display_node_id)
+
+      if (node && progressState) {
+        // Only show progress for running nodes
+        if (progressState.state === 'running') {
+          if (node.progress === undefined || node.progress === 0.0) {
+            console.log(
+              `${Date.now()} Setting progress for node ${node.id} to ${progressState.value / progressState.max}=${progressState.value}/${progressState.max} due to ${nodeId}`
+            )
+            node.progress = progressState.value / progressState.max
+          } else {
+            // Update progress if it was already set
+            console.log(
+              `${Date.now()} Setting progress for node ${node.id} to Math.min(${node.progress}, ${progressState.value / progressState.max}=${progressState.value}/${progressState.max}) due to ${nodeId}`
+            )
+            node.progress = Math.min(
+              node.progress,
+              progressState.value / progressState.max
+            )
+          }
+        }
       }
     }
-  }
+
+    // TODO - Do we need to force canvas redraw here?
+    // comfyApp.graph.setDirtyCanvas(true, true)
+  },
+  { deep: true }
 )
 
 // Update node slot errors
