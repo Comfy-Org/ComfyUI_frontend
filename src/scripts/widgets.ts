@@ -5,6 +5,7 @@ import type {
   IStringWidget
 } from '@comfyorg/litegraph/dist/types/widgets'
 
+import { useBadgedNumberInput } from '@/composables/widgets/useBadgedNumberInput'
 import { useBooleanWidget } from '@/composables/widgets/useBooleanWidget'
 import { useComboWidget } from '@/composables/widgets/useComboWidget'
 import { useFloatWidget } from '@/composables/widgets/useFloatWidget'
@@ -289,5 +290,6 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
   STRING: transformWidgetConstructorV2ToV1(useStringWidget()),
   MARKDOWN: transformWidgetConstructorV2ToV1(useMarkdownWidget()),
   COMBO: transformWidgetConstructorV2ToV1(useComboWidget()),
-  IMAGEUPLOAD: useImageUploadWidget()
+  IMAGEUPLOAD: useImageUploadWidget(),
+  BADGED_NUMBER: transformWidgetConstructorV2ToV1(useBadgedNumberInput())
 }
