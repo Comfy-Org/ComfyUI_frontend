@@ -235,7 +235,7 @@
       "clickToEdit": "Click to edit color",
       "selectColor": "Select a color",
       "formatRGBA": "RGBA",
-      "formatHSLA": "HSLA", 
+      "formatHSLA": "HSLA",
       "formatHSVA": "HSVA",
       "formatHEX": "HEX"
     }

@@ -1429,6 +1429,16 @@
     "getStarted": "开始使用",
     "title": "欢迎使用 ComfyUI"
   },
+  "widgets": {
+    "colorPicker": {
+      "clickToEdit": "点击编辑颜色",
+      "formatHEX": "HEX",
+      "formatHSLA": "HSLA",
+      "formatHSVA": "HSVA",
+      "formatRGBA": "RGBA",
+      "selectColor": "选择颜色"
+    }
+  },
   "workflowService": {
     "enterFilename": "输入文件名",
     "exportWorkflow": "导出工作流",

@@ -1429,6 +1429,16 @@
     "getStarted": "はじめる",
     "title": "ComfyUIへようこそ"
   },
+  "widgets": {
+    "colorPicker": {
+      "clickToEdit": "色を編集するにはクリックしてください",
+      "formatHEX": "HEX",
+      "formatHSLA": "HSLA",
+      "formatHSVA": "HSVA",
+      "formatRGBA": "RGBA",
+      "selectColor": "色を選択"
+    }
+  },
   "workflowService": {
     "enterFilename": "ファイル名を入力",
     "exportWorkflow": "ワークフローをエクスポート",

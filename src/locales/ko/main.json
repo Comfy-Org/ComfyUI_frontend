@@ -1429,6 +1429,16 @@
     "getStarted": "시작하기",
     "title": "ComfyUI에 오신 것을 환영합니다"
   },
+  "widgets": {
+    "colorPicker": {
+      "clickToEdit": "색상 편집하려면 클릭하세요",
+      "formatHEX": "HEX",
+      "formatHSLA": "HSLA",
+      "formatHSVA": "HSVA",
+      "formatRGBA": "RGBA",
+      "selectColor": "색상 선택"
+    }
+  },
   "workflowService": {
     "enterFilename": "파일 이름 입력",
     "exportWorkflow": "워크플로 내보내기",
