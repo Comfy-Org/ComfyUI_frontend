@@ -38,7 +38,8 @@
           :pt="{
             pcInputText: {
               root: {
-                class: 'max-w-12'
+                class:
+                  'max-w-12 bg-[#222222] text-xs shadow-none border-[#222222]'
               }
             }
           }"
@@ -54,15 +55,8 @@
         :options="colorFormats"
         option-label="label"
         option-value="value"
-        class="w-24 ml-3"
+        class="w-24 ml-3 bg-[#222222] text-xs shadow-none border-none p-0"
         size="small"
-        :pt="{
-          pcInputText: {
-            root: {
-              class: 'max-w-12'
-            }
-          }
-        }"
         @update:model-value="handleFormatChange"
       />
     </div>

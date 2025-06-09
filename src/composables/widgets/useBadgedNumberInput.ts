@@ -118,7 +118,7 @@ export const useBadgedNumberInput = (
         // Optional: minimum height for the widget
         getMinHeight: () => minHeight + PADDING,
         // Lock maximum height to prevent oversizing
-        getMaxHeight: () => 45,
+        getMaxHeight: () => 48,
 
         // Optional: whether to serialize this widget's value
         serialize

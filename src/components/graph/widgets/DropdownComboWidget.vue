@@ -4,7 +4,7 @@
       v-model="selectedValue"
       :options="computedOptions"
       :placeholder="placeholder"
-      class="w-full rounded-lg"
+      class="w-full rounded-lg bg-[#222222] text-xs border-[#222222] shadow-none"
       :disabled="isLoading"
     />
   </div>

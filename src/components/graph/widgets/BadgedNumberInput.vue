@@ -1,10 +1,13 @@
 <template>
   <div class="badged-number-input relative w-full">
-    <InputGroup class="w-full rounded-lg">
+    <InputGroup class="w-full rounded-lg border-none px-0.5">
       <!-- State badge prefix -->
-      <InputGroupAddon v-if="badgeState !== 'normal'" class="rounded-l-lg">
+      <InputGroupAddon
+        v-if="badgeState !== 'normal'"
+        class="rounded-l-lg bg-[#222222] border-[#222222] shadow-none border-r-[#A0A1A2] rounded-r-none"
+      >
         <i
-          :class="badgeIcon"
+          :class="badgeIcon + ' text-xs'"
           :title="badgeTooltip"
           :style="{ color: badgeColor }"
         ></i>
@@ -19,11 +22,26 @@
         :step="step"
         :placeholder="placeholder"
         :disabled="disabled"
-        :class="{
-          'rounded-r-lg': badgeState !== 'normal',
-          'rounded-lg': badgeState === 'normal'
+        size="small"
+        :pt="{
+          pcInputText: {
+            root: {
+              class: 'bg-[#222222] text-xs shadow-none rounded-none !border-0'
+            }
+          },
+          incrementButton: {
+            class: 'text-xs shadow-none bg-[#222222] rounded-l-none !border-0'
+          },
+          decrementButton: {
+            class: {
+              'text-xs shadow-none bg-[#222222] rounded-r-none !border-0':
+                badgeState === 'normal',
+              'text-xs shadow-none bg-[#222222] rounded-none !border-0':
+                badgeState !== 'normal'
+            }
+          }
         }"
-        class="flex-1"
+        class="flex-1 rounded-none"
         show-buttons
         button-layout="horizontal"
         :increment-button-icon="'pi pi-plus'"
@@ -37,7 +55,7 @@
           'rounded-r-lg': badgeState !== 'normal',
           'rounded-lg': badgeState === 'normal'
         }"
-        class="flex-1 flex items-center gap-2 px-3 py-2 bg-surface-0 border border-surface-300"
+        class="flex-1 flex items-center gap-2 px-1 bg-surface-0 border border-surface-300"
       >
         <Slider
           v-model="numericValue"
@@ -53,7 +71,14 @@
           :max="max"
           :step="step"
           :disabled="disabled"
-          class="w-16"
+          class="w-16 rounded-md"
+          :pt="{
+            pcInputText: {
+              root: {
+                class: 'bg-[#222222] text-xs shadow-none border-[#222222]'
+              }
+            }
+          }"
           :show-buttons="false"
           size="small"
         />

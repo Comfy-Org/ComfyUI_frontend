@@ -5,7 +5,7 @@
       v-if="!isMultiline"
       v-model="modelValue"
       :placeholder="placeholder"
-      class="w-full rounded-lg px-3 py-2 text-sm"
+      class="w-full rounded-lg px-3 py-2 text-sm bg-[#222222] text-xs mt-0.5 border-[#222222] shadow-none"
     />
 
     <!-- Multi-line textarea -->
@@ -15,7 +15,7 @@
       :placeholder="placeholder"
       :auto-resize="true"
       :rows="3"
-      class="w-full rounded-lg px-3 py-2 text-sm resize-none"
+      class="w-full rounded-lg px-3 py-2 text-sm resize-none bg-[#222222] text-xs mt-0.5 border-[#222222] shadow-none"
     />
   </div>
 </template>
