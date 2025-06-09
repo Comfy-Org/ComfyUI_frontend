@@ -12,12 +12,11 @@ export const useAboutPanelStore = defineStore('aboutPanel', () => {
   const extensionStore = useExtensionStore()
   const systemStatsStore = useSystemStatsStore()
 
-  const coreVersion = computed(
-    () => systemStatsStore?.systemStats?.system?.comfyui_version ?? ''
-  )
+  const system = computed(() => systemStatsStore?.systemStats?.system)
+
+  const coreVersion = computed(() => system.value?.comfyui_version ?? '')
   const workflowsTemplatesVersion = computed(
-    () =>
-      systemStatsStore?.systemStats?.system?.workflows_templates_version ?? ''
+    () => system.value?.workflows_templates_version ?? ''
   )
 
   const coreBadges = computed<AboutPageBadge[]>(() => [
