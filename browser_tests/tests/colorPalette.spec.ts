@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import type { Palette } from '../../src/schemas/colorPaletteSchema'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { PerformanceMonitor } from '../helpers/performanceMonitor'
 
 const customColorPalettes: Record<string, Palette> = {
   obsidian: {
@@ -148,45 +149,99 @@ const customColorPalettes: Record<string, Palette> = {
 }
 
 test.describe('Color Palette', () => {
-  test('Can show custom color palette', async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.CustomColorPalettes', customColorPalettes)
+  test('@perf Can show custom color palette', async ({ comfyPage }) => {
+    const perfMonitor = new PerformanceMonitor(comfyPage.page)
+    const testName = 'show-custom-color-palette'
+
+    await perfMonitor.startMonitoring(testName)
+
+    await perfMonitor.measureOperation('set-custom-palettes', async () => {
+      await comfyPage.setSetting(
+        'Comfy.CustomColorPalettes',
+        customColorPalettes
+      )
+    })
+
     // Reload to apply the new setting. Setting Comfy.CustomColorPalettes directly
     // doesn't update the store immediately.
-    await comfyPage.setup()
+    await perfMonitor.measureOperation('reload-page', async () => {
+      await comfyPage.setup()
+    })
 
-    await comfyPage.loadWorkflow('every_node_color')
-    await comfyPage.setSetting('Comfy.ColorPalette', 'obsidian_dark')
+    await perfMonitor.measureOperation('load-workflow', async () => {
+      await comfyPage.loadWorkflow('every_node_color')
+    })
+
+    await perfMonitor.measureOperation(
+      'apply-obsidian-dark-palette',
+      async () => {
+        await comfyPage.setSetting('Comfy.ColorPalette', 'obsidian_dark')
+      }
+    )
+
     await expect(comfyPage.canvas).toHaveScreenshot(
       'custom-color-palette-obsidian-dark-all-colors.png'
     )
-    await comfyPage.setSetting('Comfy.ColorPalette', 'light_red')
-    await comfyPage.nextFrame()
+
+    await perfMonitor.measureOperation('apply-light-red-palette', async () => {
+      await comfyPage.setSetting('Comfy.ColorPalette', 'light_red')
+      await comfyPage.nextFrame()
+    })
+
     await expect(comfyPage.canvas).toHaveScreenshot(
       'custom-color-palette-light-red.png'
     )
 
-    await comfyPage.setSetting('Comfy.ColorPalette', 'dark')
-    await comfyPage.nextFrame()
+    await perfMonitor.measureOperation(
+      'apply-default-dark-palette',
+      async () => {
+        await comfyPage.setSetting('Comfy.ColorPalette', 'dark')
+        await comfyPage.nextFrame()
+      }
+    )
+
     await expect(comfyPage.canvas).toHaveScreenshot('default-color-palette.png')
+
+    await perfMonitor.finishMonitoring(testName)
   })
 
-  test('Can add custom color palette', async ({ comfyPage }) => {
-    await comfyPage.page.evaluate((p) => {
-      window['app'].extensionManager.colorPalette.addCustomColorPalette(p)
-    }, customColorPalettes.obsidian_dark)
+  test('@perf Can add custom color palette', async ({ comfyPage }) => {
+    const perfMonitor = new PerformanceMonitor(comfyPage.page)
+    const testName = 'add-custom-color-palette'
+
+    await perfMonitor.startMonitoring(testName)
+
+    await perfMonitor.measureOperation('add-palette-via-api', async () => {
+      await comfyPage.page.evaluate((p) => {
+        window['app'].extensionManager.colorPalette.addCustomColorPalette(p)
+      }, customColorPalettes.obsidian_dark)
+    })
+
     expect(await comfyPage.getToastErrorCount()).toBe(0)
 
-    await comfyPage.setSetting('Comfy.ColorPalette', 'obsidian_dark')
-    await comfyPage.nextFrame()
+    await perfMonitor.measureOperation('apply-custom-palette', async () => {
+      await comfyPage.setSetting('Comfy.ColorPalette', 'obsidian_dark')
+      await comfyPage.nextFrame()
+    })
+
     await expect(comfyPage.canvas).toHaveScreenshot(
       'custom-color-palette-obsidian-dark.png'
     )
+
     // Legacy `custom_` prefix is still supported
-    await comfyPage.setSetting('Comfy.ColorPalette', 'custom_obsidian_dark')
-    await comfyPage.nextFrame()
+    await perfMonitor.measureOperation(
+      'apply-custom-palette-legacy-prefix',
+      async () => {
+        await comfyPage.setSetting('Comfy.ColorPalette', 'custom_obsidian_dark')
+        await comfyPage.nextFrame()
+      }
+    )
+
     await expect(comfyPage.canvas).toHaveScreenshot(
       'custom-color-palette-obsidian-dark.png'
     )
+
+    await perfMonitor.finishMonitoring(testName)
   })
 })
 
@@ -195,58 +250,120 @@ test.describe('Node Color Adjustments', () => {
     await comfyPage.loadWorkflow('every_node_color')
   })
 
-  test('should adjust opacity via node opacity setting', async ({
+  test('@perf should adjust opacity via node opacity setting', async ({
     comfyPage
   }) => {
-    await comfyPage.setSetting('Comfy.Node.Opacity', 0.5)
-    await comfyPage.page.waitForTimeout(128)
+    const perfMonitor = new PerformanceMonitor(comfyPage.page)
+    const testName = 'adjust-node-opacity'
+
+    await perfMonitor.startMonitoring(testName)
+
+    await perfMonitor.measureOperation('set-opacity-0-5', async () => {
+      await comfyPage.setSetting('Comfy.Node.Opacity', 0.5)
+      await comfyPage.page.waitForTimeout(128)
+    })
 
     // Drag mouse to force canvas to redraw
-    await comfyPage.page.mouse.move(0, 0)
+    await perfMonitor.measureOperation('redraw-canvas', async () => {
+      await comfyPage.page.mouse.move(0, 0)
+    })
 
     await expect(comfyPage.canvas).toHaveScreenshot('node-opacity-0.5.png')
 
-    await comfyPage.setSetting('Comfy.Node.Opacity', 1.0)
-    await comfyPage.page.waitForTimeout(128)
+    await perfMonitor.measureOperation('set-opacity-1-0', async () => {
+      await comfyPage.setSetting('Comfy.Node.Opacity', 1.0)
+      await comfyPage.page.waitForTimeout(128)
+    })
 
-    await comfyPage.page.mouse.move(8, 8)
+    await perfMonitor.measureOperation(
+      'redraw-canvas-full-opacity',
+      async () => {
+        await comfyPage.page.mouse.move(8, 8)
+      }
+    )
+
     await expect(comfyPage.canvas).toHaveScreenshot('node-opacity-1.png')
+
+    await perfMonitor.finishMonitoring(testName)
   })
 
-  test('should persist color adjustments when changing themes', async ({
+  test('@perf should persist color adjustments when changing themes', async ({
     comfyPage
   }) => {
-    await comfyPage.setSetting('Comfy.Node.Opacity', 0.2)
-    await comfyPage.setSetting('Comfy.ColorPalette', 'arc')
-    await comfyPage.nextFrame()
-    await comfyPage.page.mouse.move(0, 0)
+    const perfMonitor = new PerformanceMonitor(comfyPage.page)
+    const testName = 'persist-opacity-across-themes'
+
+    await perfMonitor.startMonitoring(testName)
+
+    await perfMonitor.measureOperation('set-opacity-and-theme', async () => {
+      await comfyPage.setSetting('Comfy.Node.Opacity', 0.2)
+      await comfyPage.setSetting('Comfy.ColorPalette', 'arc')
+      await comfyPage.nextFrame()
+    })
+
+    await perfMonitor.measureOperation('redraw-canvas-with-theme', async () => {
+      await comfyPage.page.mouse.move(0, 0)
+    })
+
     await expect(comfyPage.canvas).toHaveScreenshot(
       'node-opacity-0.2-arc-theme.png'
     )
+
+    await perfMonitor.finishMonitoring(testName)
   })
 
-  test('should not serialize color adjustments in workflow', async ({
+  test('@perf should not serialize color adjustments in workflow', async ({
     comfyPage
   }) => {
-    await comfyPage.setSetting('Comfy.Node.Opacity', 0.5)
-    await comfyPage.setSetting('Comfy.ColorPalette', 'light')
-    const saveWorkflowInterval = 1000
-    await comfyPage.page.waitForTimeout(saveWorkflowInterval)
-    const workflow = await comfyPage.page.evaluate(() => {
-      return localStorage.getItem('workflow')
+    const perfMonitor = new PerformanceMonitor(comfyPage.page)
+    const testName = 'workflow-serialization-color-adjustments'
+
+    await perfMonitor.startMonitoring(testName)
+
+    await perfMonitor.measureOperation('apply-color-settings', async () => {
+      await comfyPage.setSetting('Comfy.Node.Opacity', 0.5)
+      await comfyPage.setSetting('Comfy.ColorPalette', 'light')
     })
-    for (const node of JSON.parse(workflow ?? '{}').nodes) {
+
+    const saveWorkflowInterval = 1000
+    await perfMonitor.measureOperation('wait-for-workflow-save', async () => {
+      await comfyPage.page.waitForTimeout(saveWorkflowInterval)
+    })
+
+    let workflow: string | null
+    await perfMonitor.measureOperation(
+      'get-workflow-from-storage',
+      async () => {
+        workflow = await comfyPage.page.evaluate(() => {
+          return localStorage.getItem('workflow')
+        })
+      }
+    )
+
+    for (const node of JSON.parse(workflow! ?? '{}').nodes) {
       if (node.bgcolor) expect(node.bgcolor).not.toMatch(/hsla/)
       if (node.color) expect(node.color).not.toMatch(/hsla/)
     }
+
+    await perfMonitor.finishMonitoring(testName)
   })
 
-  test('should lighten node colors when switching to light theme', async ({
+  test('@perf should lighten node colors when switching to light theme', async ({
     comfyPage
   }) => {
-    await comfyPage.setSetting('Comfy.ColorPalette', 'light')
-    await comfyPage.nextFrame()
+    const perfMonitor = new PerformanceMonitor(comfyPage.page)
+    const testName = 'lighten-colors-light-theme'
+
+    await perfMonitor.startMonitoring(testName)
+
+    await perfMonitor.measureOperation('apply-light-theme', async () => {
+      await comfyPage.setSetting('Comfy.ColorPalette', 'light')
+      await comfyPage.nextFrame()
+    })
+
     await expect(comfyPage.canvas).toHaveScreenshot('node-lightened-colors.png')
+
+    await perfMonitor.finishMonitoring(testName)
   })
 
   test.describe('Context menu color adjustments', () => {
@@ -257,26 +374,48 @@ test.describe('Node Color Adjustments', () => {
       await node?.clickContextMenuOption('Colors')
     })
 
-    test('should persist color adjustments when changing custom node colors', async ({
+    test('@perf should persist color adjustments when changing custom node colors', async ({
       comfyPage
     }) => {
-      await comfyPage.page
-        .locator('.litemenu-entry.submenu span:has-text("red")')
-        .click()
+      const perfMonitor = new PerformanceMonitor(comfyPage.page)
+      const testName = 'persist-opacity-color-change'
+
+      await perfMonitor.startMonitoring(testName)
+
+      // Context menu interaction - monitor the node color change operation
+      await perfMonitor.measureOperation('select-red-color', async () => {
+        await comfyPage.page
+          .locator('.litemenu-entry.submenu span:has-text("red")')
+          .click()
+      })
+
       await expect(comfyPage.canvas).toHaveScreenshot(
         'node-opacity-0.3-color-changed.png'
       )
+
+      await perfMonitor.finishMonitoring(testName)
     })
 
-    test('should persist color adjustments when removing custom node color', async ({
+    test('@perf should persist color adjustments when removing custom node color', async ({
       comfyPage
     }) => {
-      await comfyPage.page
-        .locator('.litemenu-entry.submenu span:has-text("No color")')
-        .click()
+      const perfMonitor = new PerformanceMonitor(comfyPage.page)
+      const testName = 'persist-opacity-color-removal'
+
+      await perfMonitor.startMonitoring(testName)
+
+      // Context menu interaction - monitor the node color removal operation
+      await perfMonitor.measureOperation('remove-node-color', async () => {
+        await comfyPage.page
+          .locator('.litemenu-entry.submenu span:has-text("No color")')
+          .click()
+      })
+
       await expect(comfyPage.canvas).toHaveScreenshot(
         'node-opacity-0.3-color-removed.png'
       )
+
+      await perfMonitor.finishMonitoring(testName)
     })
   })
 })

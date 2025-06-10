@@ -3,6 +3,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '../fixtures/ComfyPage'
+import { PerformanceMonitor } from '../helpers/performanceMonitor'
 
 async function beforeChange(comfyPage: ComfyPage) {
   await comfyPage.page.evaluate(() => {
@@ -22,93 +23,161 @@ test.describe('Change Tracker', () => {
       await comfyPage.setupWorkflowsDirectory({})
     })
 
-    test('Can undo multiple operations', async ({ comfyPage }) => {
+    test('@perf Can undo multiple operations', async ({ comfyPage }) => {
+      const perfMonitor = new PerformanceMonitor(comfyPage.page)
+      const testName = 'undo-multiple-operations'
+
+      await perfMonitor.startMonitoring(testName)
+
       expect(await comfyPage.getUndoQueueSize()).toBe(0)
       expect(await comfyPage.getRedoQueueSize()).toBe(0)
 
       // Save, confirm no errors & workflow modified flag removed
-      await comfyPage.menu.topbar.saveWorkflow('undo-redo-test')
+      await perfMonitor.measureOperation('save-workflow', async () => {
+        await comfyPage.menu.topbar.saveWorkflow('undo-redo-test')
+      })
       expect(await comfyPage.getToastErrorCount()).toBe(0)
       expect(await comfyPage.isCurrentWorkflowModified()).toBe(false)
       expect(await comfyPage.getUndoQueueSize()).toBe(0)
       expect(await comfyPage.getRedoQueueSize()).toBe(0)
 
       const node = (await comfyPage.getFirstNodeRef())!
-      await node.click('title')
-      await node.click('collapse')
+
+      await perfMonitor.measureOperation('click-node-title', async () => {
+        await node.click('title')
+      })
+
+      await perfMonitor.measureOperation('collapse-node', async () => {
+        await node.click('collapse')
+      })
       await expect(node).toBeCollapsed()
       expect(await comfyPage.isCurrentWorkflowModified()).toBe(true)
       expect(await comfyPage.getUndoQueueSize()).toBe(1)
       expect(await comfyPage.getRedoQueueSize()).toBe(0)
 
-      await comfyPage.ctrlB()
+      await perfMonitor.measureOperation('bypass-node', async () => {
+        await comfyPage.ctrlB()
+      })
       await expect(node).toBeBypassed()
       expect(await comfyPage.isCurrentWorkflowModified()).toBe(true)
       expect(await comfyPage.getUndoQueueSize()).toBe(2)
       expect(await comfyPage.getRedoQueueSize()).toBe(0)
 
-      await comfyPage.ctrlZ()
+      await perfMonitor.markEvent('before-undo-operations')
+
+      await perfMonitor.measureOperation('undo-bypass', async () => {
+        await comfyPage.ctrlZ()
+      })
       await expect(node).not.toBeBypassed()
       expect(await comfyPage.isCurrentWorkflowModified()).toBe(true)
       expect(await comfyPage.getUndoQueueSize()).toBe(1)
       expect(await comfyPage.getRedoQueueSize()).toBe(1)
 
-      await comfyPage.ctrlZ()
+      await perfMonitor.measureOperation('undo-collapse', async () => {
+        await comfyPage.ctrlZ()
+      })
       await expect(node).not.toBeCollapsed()
       expect(await comfyPage.isCurrentWorkflowModified()).toBe(false)
       expect(await comfyPage.getUndoQueueSize()).toBe(0)
       expect(await comfyPage.getRedoQueueSize()).toBe(2)
+
+      await perfMonitor.finishMonitoring(testName)
     })
   })
 
-  test('Can group multiple change actions into a single transaction', async ({
+  test('@perf Can group multiple change actions into a single transaction', async ({
     comfyPage
   }) => {
+    const perfMonitor = new PerformanceMonitor(comfyPage.page)
+    const testName = 'group-change-transactions'
+
+    await perfMonitor.startMonitoring(testName)
+
     const node = (await comfyPage.getFirstNodeRef())!
     expect(node).toBeTruthy()
     await expect(node).not.toBeCollapsed()
     await expect(node).not.toBeBypassed()
 
+    await perfMonitor.markEvent('individual-changes-start')
+
     // Make changes outside set
     // Bypass + collapse node
-    await node.click('title')
-    await node.click('collapse')
-    await comfyPage.ctrlB()
+    await perfMonitor.measureOperation('click-node-title', async () => {
+      await node.click('title')
+    })
+
+    await perfMonitor.measureOperation('collapse-node', async () => {
+      await node.click('collapse')
+    })
+
+    await perfMonitor.measureOperation('bypass-node', async () => {
+      await comfyPage.ctrlB()
+    })
     await expect(node).toBeCollapsed()
     await expect(node).toBeBypassed()
 
     // Undo, undo, ensure both changes undone
-    await comfyPage.ctrlZ()
+    await perfMonitor.measureOperation('undo-bypass', async () => {
+      await comfyPage.ctrlZ()
+    })
     await expect(node).not.toBeBypassed()
     await expect(node).toBeCollapsed()
-    await comfyPage.ctrlZ()
+
+    await perfMonitor.measureOperation('undo-collapse', async () => {
+      await comfyPage.ctrlZ()
+    })
     await expect(node).not.toBeBypassed()
     await expect(node).not.toBeCollapsed()
 
     // Prevent clicks registering a double-click
-    await comfyPage.clickEmptySpace()
-    await node.click('title')
+    await perfMonitor.measureOperation('click-empty-space', async () => {
+      await comfyPage.clickEmptySpace()
+    })
+
+    await perfMonitor.measureOperation('click-node-title-again', async () => {
+      await node.click('title')
+    })
+
+    await perfMonitor.markEvent('transaction-changes-start')
 
     // Run again, but within a change transaction
-    await beforeChange(comfyPage)
+    await perfMonitor.measureOperation('begin-change-transaction', async () => {
+      await beforeChange(comfyPage)
+    })
 
-    await node.click('collapse')
-    await comfyPage.ctrlB()
+    await perfMonitor.measureOperation('collapse-in-transaction', async () => {
+      await node.click('collapse')
+    })
+
+    await perfMonitor.measureOperation('bypass-in-transaction', async () => {
+      await comfyPage.ctrlB()
+    })
     await expect(node).toBeCollapsed()
     await expect(node).toBeBypassed()
 
     // End transaction
-    await afterChange(comfyPage)
+    await perfMonitor.measureOperation('end-change-transaction', async () => {
+      await afterChange(comfyPage)
+    })
 
     // Ensure undo reverts both changes
-    await comfyPage.ctrlZ()
+    await perfMonitor.measureOperation('undo-transaction', async () => {
+      await comfyPage.ctrlZ()
+    })
     await expect(node).not.toBeBypassed()
     await expect(node).not.toBeCollapsed()
+
+    await perfMonitor.finishMonitoring(testName)
   })
 
-  test('Can nest multiple change transactions without adding undo steps', async ({
+  test('@perf Can nest multiple change transactions without adding undo steps', async ({
     comfyPage
   }) => {
+    const perfMonitor = new PerformanceMonitor(comfyPage.page)
+    const testName = 'nested-change-transactions'
+
+    await perfMonitor.startMonitoring(testName)
+
     const node = (await comfyPage.getFirstNodeRef())!
     const bypassAndPin = async () => {
       await beforeChange(comfyPage)
@@ -136,32 +205,66 @@ test.describe('Change Tracker', () => {
       await afterChange(comfyPage)
     }
 
-    await multipleChanges()
+    await perfMonitor.measureOperation(
+      'execute-nested-transactions',
+      async () => {
+        await multipleChanges()
+      }
+    )
 
-    await comfyPage.ctrlZ()
+    await perfMonitor.measureOperation('undo-all-changes', async () => {
+      await comfyPage.ctrlZ()
+    })
     await expect(node).not.toBeBypassed()
     await expect(node).not.toBePinned()
     await expect(node).not.toBeCollapsed()
 
-    await comfyPage.ctrlY()
+    await perfMonitor.measureOperation('redo-all-changes', async () => {
+      await comfyPage.ctrlY()
+    })
     await expect(node).toBeBypassed()
     await expect(node).toBePinned()
     await expect(node).toBeCollapsed()
+
+    await perfMonitor.finishMonitoring(testName)
   })
 
-  test('Can detect changes in workflow.extra', async ({ comfyPage }) => {
+  test('@perf Can detect changes in workflow.extra', async ({ comfyPage }) => {
+    const perfMonitor = new PerformanceMonitor(comfyPage.page)
+    const testName = 'detect-workflow-extra-changes'
+
+    await perfMonitor.startMonitoring(testName)
+
     expect(await comfyPage.getUndoQueueSize()).toBe(0)
-    await comfyPage.page.evaluate(() => {
-      window['app'].graph.extra.foo = 'bar'
+
+    await perfMonitor.measureOperation('modify-workflow-extra', async () => {
+      await comfyPage.page.evaluate(() => {
+        window['app'].graph.extra.foo = 'bar'
+      })
     })
+
     // Click empty space to trigger a change detection.
-    await comfyPage.clickEmptySpace()
+    await perfMonitor.measureOperation('trigger-change-detection', async () => {
+      await comfyPage.clickEmptySpace()
+    })
     expect(await comfyPage.getUndoQueueSize()).toBe(1)
+
+    await perfMonitor.finishMonitoring(testName)
   })
 
-  test('Ignores changes in workflow.ds', async ({ comfyPage }) => {
+  test('@perf Ignores changes in workflow.ds', async ({ comfyPage }) => {
+    const perfMonitor = new PerformanceMonitor(comfyPage.page)
+    const testName = 'ignore-workflow-ds-changes'
+
+    await perfMonitor.startMonitoring(testName)
+
     expect(await comfyPage.getUndoQueueSize()).toBe(0)
-    await comfyPage.pan({ x: 10, y: 10 })
+
+    await perfMonitor.measureOperation('pan-canvas', async () => {
+      await comfyPage.pan({ x: 10, y: 10 })
+    })
     expect(await comfyPage.getUndoQueueSize()).toBe(0)
+
+    await perfMonitor.finishMonitoring(testName)
   })
 })
