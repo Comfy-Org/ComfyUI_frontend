@@ -2,6 +2,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '../fixtures/ComfyPage'
+import { PerformanceMonitor } from '../helpers/performanceMonitor'
 
 test.describe('Node search box', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -27,24 +28,61 @@ test.describe('Node search box', () => {
     await expect(comfyPage.searchBox.input).toHaveCount(1)
   })
 
-  test('Can add node', async ({ comfyPage }) => {
-    await comfyPage.doubleClickCanvas()
-    await expect(comfyPage.searchBox.input).toHaveCount(1)
-    await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
-    await expect(comfyPage.canvas).toHaveScreenshot('added-node.png')
-  })
+  test('@perf Can add node', async ({ comfyPage }) => {
+    const perfMonitor = new PerformanceMonitor(comfyPage.page)
+    const testName = 'add-node-via-search'
 
-  test('Can auto link node', async ({ comfyPage }) => {
-    await comfyPage.disconnectEdge()
-    // Select the second item as the first item is always reroute
-    await comfyPage.searchBox.fillAndSelectFirstNode('CLIPTextEncode', {
-      suggestionIndex: 0
+    await perfMonitor.startMonitoring(testName)
+
+    await perfMonitor.measureOperation('double-click-canvas', async () => {
+      await comfyPage.doubleClickCanvas()
     })
-    await expect(comfyPage.canvas).toHaveScreenshot('auto-linked-node.png')
+
+    await expect(comfyPage.searchBox.input).toHaveCount(1)
+
+    await perfMonitor.measureOperation('search-and-add-node', async () => {
+      await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
+    })
+
+    await expect(comfyPage.canvas).toHaveScreenshot('added-node.png')
+
+    await perfMonitor.finishMonitoring(testName)
   })
 
-  test('Can auto link batch moved node', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('batch_move_links')
+  test('@perf Can auto link node', async ({ comfyPage }) => {
+    const perfMonitor = new PerformanceMonitor(comfyPage.page)
+    const testName = 'auto-link-node'
+
+    await perfMonitor.startMonitoring(testName)
+
+    await perfMonitor.measureOperation('disconnect-edge', async () => {
+      await comfyPage.disconnectEdge()
+    })
+
+    // Select the second item as the first item is always reroute
+    await perfMonitor.measureOperation(
+      'search-and-auto-link-node',
+      async () => {
+        await comfyPage.searchBox.fillAndSelectFirstNode('CLIPTextEncode', {
+          suggestionIndex: 0
+        })
+      }
+    )
+
+    await expect(comfyPage.canvas).toHaveScreenshot('auto-linked-node.png')
+
+    await perfMonitor.finishMonitoring(testName)
+  })
+
+  test('@perf Can auto link batch moved node', async ({ comfyPage }) => {
+    const perfMonitor = new PerformanceMonitor(comfyPage.page)
+    const testName = 'auto-link-batch-moved-node'
+
+    await perfMonitor.startMonitoring(testName)
+
+    await perfMonitor.measureOperation('load-workflow', async () => {
+      await comfyPage.loadWorkflow('batch_move_links')
+    })
 
     const outputSlot1Pos = {
       x: 304,
@@ -54,29 +92,57 @@ test.describe('Node search box', () => {
       x: 5,
       y: 5
     }
-    await comfyPage.page.keyboard.down('Shift')
-    await comfyPage.dragAndDrop(outputSlot1Pos, emptySpacePos)
-    await comfyPage.page.keyboard.up('Shift')
+
+    await perfMonitor.measureOperation('batch-move-links', async () => {
+      await comfyPage.page.keyboard.down('Shift')
+      await comfyPage.dragAndDrop(outputSlot1Pos, emptySpacePos)
+      await comfyPage.page.keyboard.up('Shift')
+    })
 
     // Select the second item as the first item is always reroute
-    await comfyPage.searchBox.fillAndSelectFirstNode('Load Checkpoint', {
-      suggestionIndex: 0
-    })
+    await perfMonitor.measureOperation(
+      'search-and-auto-link-batch-node',
+      async () => {
+        await comfyPage.searchBox.fillAndSelectFirstNode('Load Checkpoint', {
+          suggestionIndex: 0
+        })
+      }
+    )
+
     await expect(comfyPage.canvas).toHaveScreenshot(
       'auto-linked-node-batch.png'
     )
+
+    await perfMonitor.finishMonitoring(testName)
   })
 
-  test('Link release connecting to node with no slots', async ({
+  test('@perf Link release connecting to node with no slots', async ({
     comfyPage
   }) => {
-    await comfyPage.disconnectEdge()
+    const perfMonitor = new PerformanceMonitor(comfyPage.page)
+    const testName = 'link-release-no-slots'
+
+    await perfMonitor.startMonitoring(testName)
+
+    await perfMonitor.measureOperation('disconnect-edge', async () => {
+      await comfyPage.disconnectEdge()
+    })
+
     await expect(comfyPage.searchBox.input).toHaveCount(1)
-    await comfyPage.page.locator('.p-chip-remove-icon').click()
-    await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
+
+    await perfMonitor.measureOperation('remove-filter-chip', async () => {
+      await comfyPage.page.locator('.p-chip-remove-icon').click()
+    })
+
+    await perfMonitor.measureOperation('add-node-no-connection', async () => {
+      await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
+    })
+
     await expect(comfyPage.canvas).toHaveScreenshot(
       'added-node-no-connection.png'
     )
+
+    await perfMonitor.finishMonitoring(testName)
   })
 
   test('Has correct aria-labels on search results', async ({ comfyPage }) => {
@@ -172,10 +238,10 @@ test.describe('Node search box', () => {
       await comfyPage.page.mouse.click(panelBounds!.x - 10, panelBounds!.y - 10)
 
       // Verify the filter selection panel is hidden
-      expect(panel.header).not.toBeVisible()
+      await expect(panel.header).not.toBeVisible()
 
       // Verify the node search dialog is still visible
-      expect(comfyPage.searchBox.input).toBeVisible()
+      await expect(comfyPage.searchBox.input).toBeVisible()
     })
 
     test('Can add multiple filters', async ({ comfyPage }) => {
@@ -252,16 +318,38 @@ test.describe('Release context menu', () => {
     )
   })
 
-  test('Can search and add node from context menu', async ({
+  test('@perf Can search and add node from context menu', async ({
     comfyPage,
     comfyMouse
   }) => {
-    await comfyPage.disconnectEdge()
-    await comfyMouse.move({ x: 10, y: 10 })
-    await comfyPage.clickContextMenuItem('Search')
-    await comfyPage.searchBox.fillAndSelectFirstNode('CLIP Prompt')
+    const perfMonitor = new PerformanceMonitor(comfyPage.page)
+    const testName = 'context-menu-search-add-node'
+
+    await perfMonitor.startMonitoring(testName)
+
+    await perfMonitor.measureOperation('disconnect-edge', async () => {
+      await comfyPage.disconnectEdge()
+    })
+
+    await perfMonitor.measureOperation('position-mouse', async () => {
+      await comfyMouse.move({ x: 10, y: 10 })
+    })
+
+    await perfMonitor.measureOperation(
+      'click-context-menu-search',
+      async () => {
+        await comfyPage.clickContextMenuItem('Search')
+      }
+    )
+
+    await perfMonitor.measureOperation('search-and-add-node', async () => {
+      await comfyPage.searchBox.fillAndSelectFirstNode('CLIP Prompt')
+    })
+
     await expect(comfyPage.canvas).toHaveScreenshot(
       'link-context-menu-search.png'
     )
+
+    await perfMonitor.finishMonitoring(testName)
   })
 })
