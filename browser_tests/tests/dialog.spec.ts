@@ -2,6 +2,7 @@ import { Locator, expect } from '@playwright/test'
 
 import type { Keybinding } from '../../src/schemas/keyBindingSchema'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { PerformanceMonitor } from '../helpers/performanceMonitor'
 
 test.describe('Load workflow warning', () => {
   test('Should display a warning when loading a workflow with missing nodes', async ({
@@ -15,46 +16,89 @@ test.describe('Load workflow warning', () => {
   })
 })
 
-test('Does not report warning on undo/redo', async ({ comfyPage }) => {
+test('@perf Does not report warning on undo/redo', async ({ comfyPage }) => {
+  const perfMonitor = new PerformanceMonitor(comfyPage.page)
+  const testName = 'undo-redo-no-warning'
+
+  await perfMonitor.startMonitoring(testName)
+
   await comfyPage.setSetting('Comfy.NodeSearchBoxImpl', 'default')
 
-  await comfyPage.loadWorkflow('missing_nodes')
+  await perfMonitor.measureOperation('load-workflow', async () => {
+    await comfyPage.loadWorkflow('missing_nodes')
+  })
+
   await comfyPage.closeDialog()
 
   // Make a change to the graph
-  await comfyPage.doubleClickCanvas()
-  await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
+  await perfMonitor.measureOperation('add-node-sequence', async () => {
+    await comfyPage.doubleClickCanvas()
+    await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
+  })
 
   // Undo and redo the change
-  await comfyPage.ctrlZ()
+  await perfMonitor.measureOperation('undo-operation', async () => {
+    await comfyPage.ctrlZ()
+  })
+
   await expect(comfyPage.page.locator('.comfy-missing-nodes')).not.toBeVisible()
-  await comfyPage.ctrlY()
+
+  await perfMonitor.measureOperation('redo-operation', async () => {
+    await comfyPage.ctrlY()
+  })
+
   await expect(comfyPage.page.locator('.comfy-missing-nodes')).not.toBeVisible()
+
+  await perfMonitor.finishMonitoring(testName)
 })
 
 test.describe('Execution error', () => {
-  test('Should display an error message when an execution error occurs', async ({
+  test('@perf Should display an error message when an execution error occurs', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('execution_error')
-    await comfyPage.queueButton.click()
-    await comfyPage.nextFrame()
+    const perfMonitor = new PerformanceMonitor(comfyPage.page)
+    const testName = 'execution-error-display'
+
+    await perfMonitor.startMonitoring(testName)
+
+    await perfMonitor.measureOperation('load-workflow', async () => {
+      await comfyPage.loadWorkflow('execution_error')
+    })
+
+    await perfMonitor.measureOperation('queue-execution', async () => {
+      await comfyPage.queueButton.click()
+      await comfyPage.nextFrame()
+    })
 
     // Wait for the element with the .comfy-execution-error selector to be visible
     const executionError = comfyPage.page.locator('.comfy-error-report')
     await expect(executionError).toBeVisible()
+
+    await perfMonitor.finishMonitoring(testName)
   })
 
-  test('Can display Issue Report form', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('execution_error')
-    await comfyPage.queueButton.click()
-    await comfyPage.nextFrame()
+  test('@perf Can display Issue Report form', async ({ comfyPage }) => {
+    const perfMonitor = new PerformanceMonitor(comfyPage.page)
+    const testName = 'issue-report-form-display'
+
+    await perfMonitor.startMonitoring(testName)
+
+    await perfMonitor.measureOperation('load-workflow', async () => {
+      await comfyPage.loadWorkflow('execution_error')
+    })
+
+    await perfMonitor.measureOperation('queue-execution', async () => {
+      await comfyPage.queueButton.click()
+      await comfyPage.nextFrame()
+    })
 
     await comfyPage.page.getByLabel('Help Fix This').click()
     const issueReportForm = comfyPage.page.getByText(
       'Submit Error Report (Optional)'
     )
     await expect(issueReportForm).toBeVisible()
+
+    await perfMonitor.finishMonitoring(testName)
   })
 })
 
@@ -355,18 +399,28 @@ test.describe('Error dialog', () => {
 })
 
 test.describe('Signin dialog', () => {
-  test('Paste content to signin dialog should not paste node on canvas', async ({
+  test('@perf Paste content to signin dialog should not paste node on canvas', async ({
     comfyPage
   }) => {
-    const nodeNum = (await comfyPage.getNodes()).length
-    await comfyPage.clickEmptyLatentNode()
-    await comfyPage.ctrlC()
+    const perfMonitor = new PerformanceMonitor(comfyPage.page)
+    const testName = 'signin-dialog-paste-isolation'
 
-    const textBox = comfyPage.widgetTextBox
-    await textBox.click()
-    await textBox.fill('test_password')
-    await textBox.press('Control+a')
-    await textBox.press('Control+c')
+    await perfMonitor.startMonitoring(testName)
+
+    const nodeNum = (await comfyPage.getNodes()).length
+
+    await perfMonitor.measureOperation('copy-node-sequence', async () => {
+      await comfyPage.clickEmptyLatentNode()
+      await comfyPage.ctrlC()
+    })
+
+    await perfMonitor.measureOperation('widget-text-operations', async () => {
+      const textBox = comfyPage.widgetTextBox
+      await textBox.click()
+      await textBox.fill('test_password')
+      await textBox.press('Control+a')
+      await textBox.press('Control+c')
+    })
 
     await comfyPage.page.evaluate(() => {
       window['app'].extensionManager.dialog.showSignInDialog()
@@ -378,5 +432,7 @@ test.describe('Signin dialog', () => {
     await expect(input).toHaveValue('test_password')
 
     expect(await comfyPage.getNodes()).toHaveLength(nodeNum)
+
+    await perfMonitor.finishMonitoring(testName)
   })
 })
