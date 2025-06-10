@@ -1,5 +1,5 @@
 # Run performance tests with more detailed output
-npx playwright test --workers 1 --project=performance --reporter=line --ignore-snapshots
+npx playwright test --workers 1 --project=performance --reporter=line --ignore-snapshots --ui
 
 # Run performance tests on specific files
 #npx playwright test --workers 1 --project=performance interaction.spec.ts

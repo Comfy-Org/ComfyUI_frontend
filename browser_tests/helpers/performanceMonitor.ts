@@ -1,4 +1,6 @@
-import type { Page } from '@playwright/test'
+import type { Page, TestInfo } from '@playwright/test'
+import * as fs from 'fs'
+import * as path from 'path'
 
 export interface PerformanceMetrics {
   testName: string
@@ -20,10 +22,27 @@ export interface PerformanceMetrics {
   customMetrics: Record<string, number>
 }
 
+export interface PerformanceRunSummary {
+  runId: string
+  timestamp: number
+  branch: string
+  gitCommit?: string
+  environment: {
+    nodeVersion: string
+    playwrightVersion: string
+    os: string
+  }
+  testMetrics: PerformanceMetrics[]
+}
+
 export class PerformanceMonitor {
   private metrics: PerformanceMetrics[] = []
+  private static allMetrics: PerformanceMetrics[] = []
 
-  constructor(private page: Page) {}
+  constructor(
+    private page: Page,
+    private testInfo?: TestInfo
+  ) {}
 
   async startMonitoring(testName: string) {
     await this.page.evaluate((testName) => {
@@ -158,7 +177,27 @@ export class PerformanceMonitor {
 
     if (metrics) {
       this.metrics.push(metrics)
+      PerformanceMonitor.allMetrics.push(metrics)
+
+      // Write individual metric file immediately for worker persistence
+      try {
+        const tempDir = path.join(process.cwd(), 'test-results', '.perf-temp')
+        if (!fs.existsSync(tempDir)) {
+          fs.mkdirSync(tempDir, { recursive: true })
+        }
+        const tempFile = path.join(
+          tempDir,
+          `metric-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.json`
+        )
+        fs.writeFileSync(tempFile, JSON.stringify(metrics, null, 2))
+      } catch (error) {
+        console.warn('Failed to write temp metric file:', error)
+      }
+
       console.log('PERFORMANCE_METRICS:', JSON.stringify(metrics))
+      console.log(
+        `📈 Total metrics collected so far: ${PerformanceMonitor.allMetrics.length}`
+      )
     }
 
     return metrics
@@ -181,6 +220,107 @@ export class PerformanceMonitor {
 
   getAllMetrics(): PerformanceMetrics[] {
     return this.metrics
+  }
+
+  static getAllCollectedMetrics(): PerformanceMetrics[] {
+    return PerformanceMonitor.allMetrics
+  }
+
+  static clearAllMetrics() {
+    PerformanceMonitor.allMetrics = []
+  }
+
+  static async saveMetricsToFile(outputPath?: string): Promise<string> {
+    // This runs in Node.js context (global teardown), not browser
+    if (typeof window !== 'undefined') {
+      throw new Error(
+        'saveMetricsToFile should only be called from Node.js context'
+      )
+    }
+
+    // Collect metrics from temp files (handles worker persistence)
+    const allMetrics: PerformanceMetrics[] = []
+    const tempDir = path.join(process.cwd(), 'test-results', '.perf-temp')
+
+    if (fs.existsSync(tempDir)) {
+      const tempFiles = fs
+        .readdirSync(tempDir)
+        .filter((f) => f.startsWith('metric-') && f.endsWith('.json'))
+      for (const file of tempFiles) {
+        try {
+          const content = fs.readFileSync(path.join(tempDir, file), 'utf8')
+          const metric = JSON.parse(content)
+          allMetrics.push(metric)
+        } catch (error) {
+          console.warn(`Failed to read temp metric file ${file}:`, error)
+        }
+      }
+
+      // Clean up temp files
+      try {
+        fs.rmSync(tempDir, { recursive: true, force: true })
+      } catch (error) {
+        console.warn('Failed to clean up temp directory:', error)
+      }
+    }
+
+    // Also include any metrics from static array (fallback)
+    allMetrics.push(...PerformanceMonitor.allMetrics)
+
+    const defaultPath = path.join(process.cwd(), 'test-results', 'performance')
+    const resultsDir = outputPath || defaultPath
+
+    // Ensure directory exists
+    if (!fs.existsSync(resultsDir)) {
+      fs.mkdirSync(resultsDir, { recursive: true })
+    }
+
+    const runId = `run-${new Date().toISOString().replace(/[:.]/g, '-')}`
+    const branch =
+      process.env.GIT_BRANCH ||
+      process.env.GITHUB_HEAD_REF ||
+      process.env.GITHUB_REF_NAME ||
+      'unknown'
+
+    // Get Playwright version more safely
+    let playwrightVersion = 'unknown'
+    try {
+      playwrightVersion = require('@playwright/test/package.json').version
+    } catch {
+      // Fallback if package.json not accessible
+      playwrightVersion = 'unknown'
+    }
+
+    const summary: PerformanceRunSummary = {
+      runId,
+      timestamp: Date.now(),
+      branch,
+      gitCommit: process.env.GITHUB_SHA || process.env.GIT_COMMIT,
+      environment: {
+        nodeVersion: process.version,
+        playwrightVersion,
+        os: process.platform
+      },
+      testMetrics: allMetrics
+    }
+
+    const fileName = `${runId}.json`
+    const filePath = path.join(resultsDir, fileName)
+
+    try {
+      fs.writeFileSync(filePath, JSON.stringify(summary, null, 2))
+      console.log(`\n📊 Performance metrics saved to: ${filePath}`)
+      console.log(`📈 Total tests measured: ${allMetrics.length}`)
+
+      // Also create/update a latest.json for easy access
+      const latestPath = path.join(resultsDir, 'latest.json')
+      fs.writeFileSync(latestPath, JSON.stringify(summary, null, 2))
+
+      return filePath
+    } catch (error) {
+      console.error('Failed to save performance metrics:', error)
+      throw error
+    }
   }
 }
 
