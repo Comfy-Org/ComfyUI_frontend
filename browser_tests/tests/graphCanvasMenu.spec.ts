@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { PerformanceMonitor } from '../helpers/performanceMonitor'
 
 test.describe('Graph Canvas Menu', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -9,14 +10,28 @@ test.describe('Graph Canvas Menu', () => {
     await comfyPage.setSetting('Comfy.LinkRenderMode', 2)
   })
 
-  test('Can toggle link visibility', async ({ comfyPage }) => {
+  test('@perf Can toggle link visibility', async ({ comfyPage }) => {
+    const perfMonitor = new PerformanceMonitor(comfyPage.page)
+    const testName = 'toggle-link-visibility'
+
+    await perfMonitor.startMonitoring(testName)
+
     // Note: `Comfy.Graph.CanvasMenu` is disabled in comfyPage setup.
     // so no cleanup is needed.
-    await comfyPage.setSetting('Comfy.Graph.CanvasMenu', true)
+    await perfMonitor.measureOperation('enable-canvas-menu', async () => {
+      await comfyPage.setSetting('Comfy.Graph.CanvasMenu', true)
+    })
 
     const button = comfyPage.page.getByTestId('toggle-link-visibility-button')
-    await button.click()
-    await comfyPage.nextFrame()
+
+    await perfMonitor.markEvent('before-hide-links')
+    await perfMonitor.measureOperation('hide-links', async () => {
+      await button.click()
+      await comfyPage.nextFrame()
+    })
+    await perfMonitor.markEvent('after-hide-links')
+
+    // Screenshot assertions and validations stay outside performance monitoring
     await expect(comfyPage.canvas).toHaveScreenshot(
       'canvas-with-hidden-links.png'
     )
@@ -27,13 +42,21 @@ test.describe('Graph Canvas Menu', () => {
       hiddenLinkRenderMode
     )
 
-    await button.click()
-    await comfyPage.nextFrame()
+    await perfMonitor.markEvent('before-show-links')
+    await perfMonitor.measureOperation('show-links', async () => {
+      await button.click()
+      await comfyPage.nextFrame()
+    })
+    await perfMonitor.markEvent('after-show-links')
+
+    // Screenshot assertions and validations stay outside performance monitoring
     await expect(comfyPage.canvas).toHaveScreenshot(
       'canvas-with-visible-links.png'
     )
     expect(await comfyPage.getSetting('Comfy.LinkRenderMode')).not.toBe(
       hiddenLinkRenderMode
     )
+
+    await perfMonitor.finishMonitoring(testName)
   })
 })
