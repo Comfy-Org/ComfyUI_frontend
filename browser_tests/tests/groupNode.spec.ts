@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import { ComfyPage, comfyPageFixture as test } from '../fixtures/ComfyPage'
 import type { NodeReference } from '../fixtures/utils/litegraphUtils'
+import { PerformanceMonitor } from '../helpers/performanceMonitor'
 
 test.describe('Group Node', () => {
   test.describe('Node library sidebar', () => {
@@ -21,25 +22,47 @@ test.describe('Group Node', () => {
       expect(await libraryTab.getFolder('group nodes').count()).toBe(1)
     })
 
-    test('Can be added to canvas using node library sidebar', async ({
+    test('@perf Can be added to canvas using node library sidebar', async ({
       comfyPage
     }) => {
+      const perfMonitor = new PerformanceMonitor(comfyPage.page)
+      const testName = 'add-group-node-from-library'
+
+      await perfMonitor.startMonitoring(testName)
+
       const initialNodeCount = await comfyPage.getGraphNodesCount()
 
       // Add group node from node library sidebar
-      await libraryTab.getFolder(groupNodeCategory).click()
-      await libraryTab.getNode(groupNodeName).click()
+      await perfMonitor.measureOperation('expand-category-folder', async () => {
+        await libraryTab.getFolder(groupNodeCategory).click()
+      })
+
+      await perfMonitor.measureOperation('add-node-from-library', async () => {
+        await libraryTab.getNode(groupNodeName).click()
+      })
 
       // Verify the node is added to the canvas
       expect(await comfyPage.getGraphNodesCount()).toBe(initialNodeCount + 1)
+
+      await perfMonitor.finishMonitoring(testName)
     })
 
-    test('Can be bookmarked and unbookmarked', async ({ comfyPage }) => {
-      await libraryTab.getFolder(groupNodeCategory).click()
-      await libraryTab
-        .getNode(groupNodeName)
-        .locator('.bookmark-button')
-        .click()
+    test('@perf Can be bookmarked and unbookmarked', async ({ comfyPage }) => {
+      const perfMonitor = new PerformanceMonitor(comfyPage.page)
+      const testName = 'bookmark-unbookmark-group-node'
+
+      await perfMonitor.startMonitoring(testName)
+
+      await perfMonitor.measureOperation('expand-category-folder', async () => {
+        await libraryTab.getFolder(groupNodeCategory).click()
+      })
+
+      await perfMonitor.measureOperation('bookmark-node', async () => {
+        await libraryTab
+          .getNode(groupNodeName)
+          .locator('.bookmark-button')
+          .click()
+      })
 
       // Verify the node is added to the bookmarks tab
       expect(
@@ -49,16 +72,20 @@ test.describe('Group Node', () => {
       expect(await libraryTab.getNode(groupNodeName).count()).not.toBe(0)
 
       // Unbookmark the node
-      await libraryTab
-        .getNode(groupNodeName)
-        .locator('.bookmark-button')
-        .first()
-        .click()
+      await perfMonitor.measureOperation('unbookmark-node', async () => {
+        await libraryTab
+          .getNode(groupNodeName)
+          .locator('.bookmark-button')
+          .first()
+          .click()
+      })
 
       // Verify the node is removed from the bookmarks tab
       expect(
         await comfyPage.getSetting('Comfy.NodeLibrary.Bookmarks.V2')
       ).toHaveLength(0)
+
+      await perfMonitor.finishMonitoring(testName)
     })
 
     test('Displays preview on bookmark hover', async ({ comfyPage }) => {
@@ -95,18 +122,37 @@ test.describe('Group Node', () => {
     )
   })
 
-  test('Displays tooltip on title hover', async ({ comfyPage }) => {
+  test('@perf Displays tooltip on title hover', async ({ comfyPage }) => {
+    const perfMonitor = new PerformanceMonitor(comfyPage.page)
+    const testName = 'group-node-tooltip-display'
+
+    await perfMonitor.startMonitoring(testName)
+
     await comfyPage.setSetting('Comfy.EnableTooltips', true)
-    await comfyPage.convertAllNodesToGroupNode('Group Node')
-    await comfyPage.page.mouse.move(47, 173)
-    const tooltipTimeout = 500
-    await comfyPage.page.waitForTimeout(tooltipTimeout + 16)
+
+    await perfMonitor.measureOperation('convert-to-group-node', async () => {
+      await comfyPage.convertAllNodesToGroupNode('Group Node')
+    })
+
+    await perfMonitor.measureOperation('hover-for-tooltip', async () => {
+      await comfyPage.page.mouse.move(47, 173)
+      const tooltipTimeout = 500
+      await comfyPage.page.waitForTimeout(tooltipTimeout + 16)
+    })
+
     await expect(comfyPage.page.locator('.node-tooltip')).toBeVisible()
+
+    await perfMonitor.finishMonitoring(testName)
   })
 
-  test('Manage group opens with the correct group selected', async ({
+  test('@perf Manage group opens with the correct group selected', async ({
     comfyPage
   }) => {
+    const perfMonitor = new PerformanceMonitor(comfyPage.page)
+    const testName = 'manage-group-node-selection'
+
+    await perfMonitor.startMonitoring(testName)
+
     const makeGroup = async (name, type1, type2) => {
       const node1 = (await comfyPage.getNodeRefsByType(type1))[0]
       const node2 = (await comfyPage.getNodeRefsByType(type2))[0]
@@ -117,21 +163,44 @@ test.describe('Group Node', () => {
       return await node2.convertToGroupNode(name)
     }
 
-    const group1 = await makeGroup(
-      'g1',
-      'CLIPTextEncode',
-      'CheckpointLoaderSimple'
-    )
-    const group2 = await makeGroup('g2', 'EmptyLatentImage', 'KSampler')
+    let group1
+    await perfMonitor.measureOperation('create-first-group', async () => {
+      group1 = await makeGroup('g1', 'CLIPTextEncode', 'CheckpointLoaderSimple')
+    })
 
-    const manage1 = await group1.manageGroupNode()
-    await comfyPage.nextFrame()
+    let group2
+    await perfMonitor.measureOperation('create-second-group', async () => {
+      group2 = await makeGroup('g2', 'EmptyLatentImage', 'KSampler')
+    })
+
+    let manage1
+    await perfMonitor.measureOperation('open-first-manage-dialog', async () => {
+      manage1 = await group1.manageGroupNode()
+      await comfyPage.nextFrame()
+    })
+
     expect(await manage1.getSelectedNodeType()).toBe('g1')
-    await manage1.close()
+
+    await perfMonitor.measureOperation(
+      'close-first-manage-dialog',
+      async () => {
+        await manage1.close()
+      }
+    )
+
     await expect(manage1.root).not.toBeVisible()
 
-    const manage2 = await group2.manageGroupNode()
+    let manage2
+    await perfMonitor.measureOperation(
+      'open-second-manage-dialog',
+      async () => {
+        manage2 = await group2.manageGroupNode()
+      }
+    )
+
     expect(await manage2.getSelectedNodeType()).toBe('g2')
+
+    await perfMonitor.finishMonitoring(testName)
   })
 
   test('Preserves hidden input configuration when containing duplicate node types', async ({
@@ -165,9 +234,14 @@ test.describe('Group Node', () => {
     expect(visibleInputCount).toBe(2)
   })
 
-  test('Reconnects inputs after configuration changed via manage dialog save', async ({
+  test('@perf Reconnects inputs after configuration changed via manage dialog save', async ({
     comfyPage
   }) => {
+    const perfMonitor = new PerformanceMonitor(comfyPage.page)
+    const testName = 'reconnect-inputs-after-config-change'
+
+    await perfMonitor.startMonitoring(testName)
+
     const expectSingleNode = async (type: string) => {
       const nodes = await comfyPage.getNodeRefsByType(type)
       expect(nodes).toHaveLength(1)
@@ -175,30 +249,65 @@ test.describe('Group Node', () => {
     }
     const latent = await expectSingleNode('EmptyLatentImage')
     const sampler = await expectSingleNode('KSampler')
+
     // Remove existing link
     const samplerInput = await sampler.getInput(0)
-    await samplerInput.removeLinks()
+    await perfMonitor.measureOperation('remove-existing-links', async () => {
+      await samplerInput.removeLinks()
+    })
+
     // Group latent + sampler
-    await latent.click('title', {
-      modifiers: ['Shift']
+    await perfMonitor.measureOperation('select-nodes-for-group', async () => {
+      await latent.click('title', {
+        modifiers: ['Shift']
+      })
+      await sampler.click('title', {
+        modifiers: ['Shift']
+      })
     })
-    await sampler.click('title', {
-      modifiers: ['Shift']
+
+    let groupNode
+    await perfMonitor.measureOperation('convert-to-group-node', async () => {
+      groupNode = await sampler.convertToGroupNode()
     })
-    const groupNode = await sampler.convertToGroupNode()
+
     // Connect node to group
     const ckpt = await expectSingleNode('CheckpointLoaderSimple')
-    const input = await ckpt.connectOutput(0, groupNode, 0)
+    let input
+    await perfMonitor.measureOperation('connect-nodes', async () => {
+      input = await ckpt.connectOutput(0, groupNode, 0)
+    })
+
     expect(await input.getLinkCount()).toBe(1)
+
     // Modify the group node via manage dialog
-    const manage = await groupNode.manageGroupNode()
-    await manage.selectNode('KSampler')
-    await manage.changeTab('Inputs')
-    await manage.setLabel('model', 'test')
-    await manage.save()
-    await manage.close()
+    await perfMonitor.markEvent('before-manage-dialog')
+
+    let manage
+    await perfMonitor.measureOperation('open-manage-dialog', async () => {
+      manage = await groupNode.manageGroupNode()
+    })
+
+    await perfMonitor.measureOperation(
+      'configure-in-manage-dialog',
+      async () => {
+        await manage.selectNode('KSampler')
+        await manage.changeTab('Inputs')
+        await manage.setLabel('model', 'test')
+        await manage.save()
+      }
+    )
+
+    await perfMonitor.measureOperation('close-manage-dialog', async () => {
+      await manage.close()
+    })
+
+    await perfMonitor.markEvent('after-manage-dialog')
+
     // Ensure the link is still present
     expect(await input.getLinkCount()).toBe(1)
+
+    await perfMonitor.finishMonitoring(testName)
   })
 
   test('Loads from a workflow using the legacy path separator ("/")', async ({
@@ -254,57 +363,131 @@ test.describe('Group Node', () => {
       await groupNode.copy()
     })
 
-    test('Copies and pastes group node within the same workflow', async ({
+    test('@perf Copies and pastes group node within the same workflow', async ({
       comfyPage
     }) => {
-      await comfyPage.ctrlV()
+      const perfMonitor = new PerformanceMonitor(comfyPage.page)
+      const testName = 'copy-paste-group-node-same-workflow'
+
+      await perfMonitor.startMonitoring(testName)
+
+      await perfMonitor.measureOperation('paste-group-node', async () => {
+        await comfyPage.ctrlV()
+      })
+
       await verifyNodeLoaded(comfyPage, 2)
+
+      await perfMonitor.finishMonitoring(testName)
     })
 
-    test('Copies and pastes group node after clearing workflow', async ({
+    test('@perf Copies and pastes group node after clearing workflow', async ({
       comfyPage
     }) => {
-      await comfyPage.menu.topbar.triggerTopbarCommand([
-        'Edit',
-        'Clear Workflow'
-      ])
-      await comfyPage.ctrlV()
+      const perfMonitor = new PerformanceMonitor(comfyPage.page)
+      const testName = 'copy-paste-group-node-after-clear'
+
+      await perfMonitor.startMonitoring(testName)
+
+      await perfMonitor.measureOperation('clear-workflow', async () => {
+        await comfyPage.menu.topbar.triggerTopbarCommand([
+          'Edit',
+          'Clear Workflow'
+        ])
+      })
+
+      await perfMonitor.measureOperation('paste-group-node', async () => {
+        await comfyPage.ctrlV()
+      })
+
       await verifyNodeLoaded(comfyPage, 1)
+
+      await perfMonitor.finishMonitoring(testName)
     })
 
-    test('Copies and pastes group node into a newly created blank workflow', async ({
+    test('@perf Copies and pastes group node into a newly created blank workflow', async ({
       comfyPage
     }) => {
-      await comfyPage.menu.topbar.triggerTopbarCommand(['Workflow', 'New'])
-      await comfyPage.ctrlV()
+      const perfMonitor = new PerformanceMonitor(comfyPage.page)
+      const testName = 'copy-paste-group-node-new-workflow'
+
+      await perfMonitor.startMonitoring(testName)
+
+      await perfMonitor.measureOperation('create-new-workflow', async () => {
+        await comfyPage.menu.topbar.triggerTopbarCommand(['Workflow', 'New'])
+      })
+
+      await perfMonitor.measureOperation('paste-group-node', async () => {
+        await comfyPage.ctrlV()
+      })
+
       await verifyNodeLoaded(comfyPage, 1)
+
+      await perfMonitor.finishMonitoring(testName)
     })
 
-    test('Copies and pastes group node across different workflows', async ({
+    test('@perf Copies and pastes group node across different workflows', async ({
       comfyPage
     }) => {
-      await comfyPage.loadWorkflow('default')
-      await comfyPage.ctrlV()
-      await verifyNodeLoaded(comfyPage, 1)
-    })
+      const perfMonitor = new PerformanceMonitor(comfyPage.page)
+      const testName = 'copy-paste-group-node-different-workflow'
 
-    test('Serializes group node after copy and paste across workflows', async ({
-      comfyPage
-    }) => {
-      await comfyPage.menu.topbar.triggerTopbarCommand(['Workflow', 'New'])
-      await comfyPage.ctrlV()
-      const currentGraphState = await comfyPage.page.evaluate(() =>
-        window['app'].graph.serialize()
+      await perfMonitor.startMonitoring(testName)
+
+      await perfMonitor.measureOperation(
+        'load-different-workflow',
+        async () => {
+          await comfyPage.loadWorkflow('default')
+        }
       )
 
-      await test.step('Load workflow containing a group node pasted from a different workflow', async () => {
-        await comfyPage.page.evaluate(
-          (workflow) => window['app'].loadGraphData(workflow),
-          currentGraphState
+      await perfMonitor.measureOperation('paste-group-node', async () => {
+        await comfyPage.ctrlV()
+      })
+
+      await verifyNodeLoaded(comfyPage, 1)
+
+      await perfMonitor.finishMonitoring(testName)
+    })
+
+    test('@perf Serializes group node after copy and paste across workflows', async ({
+      comfyPage
+    }) => {
+      const perfMonitor = new PerformanceMonitor(comfyPage.page)
+      const testName = 'serialize-group-node-cross-workflow'
+
+      await perfMonitor.startMonitoring(testName)
+
+      await perfMonitor.measureOperation('create-new-workflow', async () => {
+        await comfyPage.menu.topbar.triggerTopbarCommand(['Workflow', 'New'])
+      })
+
+      await perfMonitor.measureOperation('paste-group-node', async () => {
+        await comfyPage.ctrlV()
+      })
+
+      let currentGraphState
+      await perfMonitor.measureOperation('serialize-graph', async () => {
+        currentGraphState = await comfyPage.page.evaluate(() =>
+          window['app'].graph.serialize()
         )
-        await comfyPage.nextFrame()
+      })
+
+      await test.step('Load workflow containing a group node pasted from a different workflow', async () => {
+        await perfMonitor.measureOperation(
+          'load-serialized-workflow',
+          async () => {
+            await comfyPage.page.evaluate(
+              (workflow) => window['app'].loadGraphData(workflow),
+              currentGraphState
+            )
+            await comfyPage.nextFrame()
+          }
+        )
+
         await verifyNodeLoaded(comfyPage, 1)
       })
+
+      await perfMonitor.finishMonitoring(testName)
     })
   })
 
@@ -315,12 +498,31 @@ test.describe('Group Node', () => {
       await comfyPage.page.waitForTimeout(300)
       expect(await comfyPage.getVisibleToastCount()).toBe(1)
     })
-    test('Convert to group node, selected 1 node', async ({ comfyPage }) => {
+    test('@perf Convert to group node, selected 1 node', async ({
+      comfyPage
+    }) => {
+      const perfMonitor = new PerformanceMonitor(comfyPage.page)
+      const testName = 'convert-single-node-to-group-keybinding'
+
+      await perfMonitor.startMonitoring(testName)
+
       expect(await comfyPage.getVisibleToastCount()).toBe(0)
-      await comfyPage.clickTextEncodeNode1()
-      await comfyPage.page.keyboard.press('Alt+g')
-      await comfyPage.page.waitForTimeout(300)
+
+      await perfMonitor.measureOperation('select-node', async () => {
+        await comfyPage.clickTextEncodeNode1()
+      })
+
+      await perfMonitor.measureOperation(
+        'trigger-group-keybinding',
+        async () => {
+          await comfyPage.page.keyboard.press('Alt+g')
+          await comfyPage.page.waitForTimeout(300)
+        }
+      )
+
       expect(await comfyPage.getVisibleToastCount()).toBe(1)
+
+      await perfMonitor.finishMonitoring(testName)
     })
   })
 })
