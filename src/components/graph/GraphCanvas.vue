@@ -37,7 +37,7 @@
     <SelectionOverlay v-if="selectionToolboxEnabled">
       <SelectionToolbox />
     </SelectionOverlay>
-    <DomWidgets />
+    <DomWidgets v-if="!vueNodeRenderingEnabled" />
     <VueNodeOverlay v-if="vueNodeRenderingEnabled" />
   </template>
   <SubgraphBreadcrumb />
@@ -54,15 +54,16 @@ import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
 import DomWidgets from '@/components/graph/DomWidgets.vue'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
-import VueNodeOverlay from '@/components/graph/nodes/VueNodeOverlay.vue'
 import SelectionOverlay from '@/components/graph/SelectionOverlay.vue'
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
+import VueNodeOverlay from '@/components/graph/nodes/VueNodeOverlay.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import SecondRowWorkflowTabs from '@/components/topbar/SecondRowWorkflowTabs.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
+import { useTestPhantomNodes } from '@/composables/nodeRendering/useTestPhantomNodes'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
 import { useCopy } from '@/composables/useCopy'
@@ -114,6 +115,17 @@ const selectionToolboxEnabled = computed(() =>
 )
 // Temporarily enable Vue node rendering for testing
 const vueNodeRenderingEnabled = computed(() => true)
+
+// Use test helper for automatic phantom mode enabling
+useTestPhantomNodes()
+
+// Debug logging
+watchEffect(() => {
+  console.log(
+    '🖼️ GraphCanvas: Vue node rendering enabled:',
+    vueNodeRenderingEnabled.value
+  )
+})
 
 watchEffect(() => {
   nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')
@@ -281,6 +293,7 @@ onMounted(async () => {
   useWorkflowAutoSave()
 
   comfyApp.vueAppReady = true
+  console.log('🖼️ GraphCanvas: comfyApp.vueAppReady:', comfyApp.vueAppReady)
 
   workspaceStore.spinner = true
   // ChangeTracker needs to be initialized before setup, as it will overwrite
@@ -314,6 +327,7 @@ onMounted(async () => {
   window.graph = comfyApp.graph
 
   comfyAppReady.value = true
+  console.log('🖼️ GraphCanvas: comfyAppReady:', comfyAppReady.value)
 
   comfyApp.canvas.onSelectionChange = useChainCallback(
     comfyApp.canvas.onSelectionChange,

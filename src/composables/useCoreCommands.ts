@@ -255,6 +255,8 @@ export function useCoreCommands(): ComfyCommand[] {
           return
         }
         app.canvas.fitViewToSelectionAnimated()
+        // Trigger re-render of Vue nodes after view change
+        api.dispatchCustomEvent('graphChanged')
       }
     },
     {

@@ -1,55 +1,40 @@
 <template>
-  <div class="vue-node-body">
-    <!-- Render widgets using existing Vue widget system -->
-    <div 
-      v-for="(widget, index) in widgets" 
-      :key="`widget-${index}`"
-      class="widget-container mb-2 last:mb-0"
+  <!-- Render Vue component widgets only -->
+  <div>
+    <div
+      v-for="widget in vueComponentWidgets"
+      :key="`vue-widget-${widget.name}`"
+      class="_sb_row _long_field"
     >
-      <!-- Use existing Vue widget components if available -->
-      <component
-        v-if="getWidgetComponent(widget)"
-        :is="getWidgetComponent(widget)"
-        :widget="widget"
-        v-model="widget.value"
-        @update:model-value="onWidgetChange(index, $event)"
-      />
-      
-      <!-- Fallback for non-Vue widgets -->
-      <div 
-        v-else
-        class="legacy-widget p-2 bg-gray-50 dark-theme:bg-gray-700 rounded text-sm"
-      >
-        <div class="flex items-center justify-between">
-          <span class="font-medium">{{ widget.name || 'Widget' }}</span>
-          <span class="text-gray-500">{{ widget.type || 'unknown' }}</span>
-        </div>
-        <div class="mt-1 text-gray-600 dark-theme:text-gray-400">
-          Value: {{ formatWidgetValue(widget.value) }}
-        </div>
+      <div class="_sb_col widget-content">
+        <component
+          :is="widget.component"
+          :model-value="widget.value"
+          :widget="widget"
+          v-bind="widget.props"
+          v-if="widgetsShouldShow"
+          @update:model-value="updateWidgetValue(widget, $event)"
+        />
       </div>
-    </div>
-    
-    <!-- Message when no widgets -->
-    <div 
-      v-if="widgets.length === 0" 
-      class="text-center text-gray-500 dark-theme:text-gray-400 text-sm py-2"
-    >
-      No widgets
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import type { LGraphNode } from '@comfyorg/litegraph'
 import type { BaseWidget } from '@comfyorg/litegraph'
-// Import existing Vue widget components
-import StringWidget from '@/components/graph/widgets/StringWidget.vue'
-import ColorPickerWidget from '@/components/graph/widgets/ColorPickerWidget.vue'
-import ImagePreviewWidget from '@/components/graph/widgets/ImagePreviewWidget.vue'
-import ImageUploadWidget from '@/components/graph/widgets/ImageUploadWidget.vue'
+import { computed, ref } from 'vue'
 
+import { app } from '@/scripts/app'
+import { isComponentWidget } from '@/scripts/domWidget'
+
+const widgetsShouldShow = ref(true)
+
+app.api.addEventListener('graphChanged', () => {
+  widgetsShouldShow.value = app.canvas.ds.scale > .55
+})
+
+console.log('app.canvas.ds.scale', app.canvas.ds.scale)
 interface VueNodeBodyProps {
   widgets: BaseWidget[]
   node: LGraphNode
@@ -57,48 +42,25 @@ interface VueNodeBodyProps {
 
 const props = defineProps<VueNodeBodyProps>()
 
-const emit = defineEmits<{
-  'widget-change': [widgetIndex: number, value: any]
-}>()
+// Note: emit available for future widget change events if needed
 
-// Map widget types to Vue components
-const widgetComponentMap: Record<string, any> = {
-  'STRING': StringWidget,
-  'text': StringWidget,
-  'COLOR': ColorPickerWidget,
-  'color': ColorPickerWidget,
-  'IMAGE': ImagePreviewWidget,
-  'image': ImagePreviewWidget,
-  'IMAGEUPLOAD': ImageUploadWidget,
-  'image_upload': ImageUploadWidget
-}
+// Get Vue component widgets only
+const vueComponentWidgets = computed(() => {
+  return props.widgets.filter((widget: any) => isComponentWidget(widget))
+})
 
-// Get the Vue component for a widget type
-const getWidgetComponent = (widget: BaseWidget) => {
-  const widgetType = widget.type?.toUpperCase()
-  return widgetType ? widgetComponentMap[widgetType] : null
-}
-
-// Format widget value for display
-const formatWidgetValue = (value: any) => {
-  if (value === null || value === undefined) return 'null'
-  if (typeof value === 'object') return JSON.stringify(value, null, 2)
-  if (typeof value === 'string' && value.length > 50) {
-    return value.substring(0, 47) + '...'
+// Update widget value when component emits changes
+const updateWidgetValue = (widget: any, value: any) => {
+  if (widget.options?.setValue) {
+    widget.options.setValue(value)
   }
-  return String(value)
-}
-
-const onWidgetChange = (index: number, value: any) => {
-  emit('widget-change', index, value)
-  
-  // Trigger node property change if the widget has a callback
-  const widget = props.widgets[index]
-  if (widget?.callback) {
-    // Note: callback signature may need adjustment based on widget requirements
-    widget.callback(value, null, props.node, [0, 0], {})
+  // Also trigger the widget's callback if it exists
+  if (widget.callback) {
+    widget.callback(value)
   }
 }
+
+// Note: onWidgetChange available for future use if needed
 </script>
 
 <style scoped>

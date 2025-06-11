@@ -86,16 +86,27 @@ export function useNodePositionSync() {
 
   // Get visible nodes (within viewport bounds)
   const visibleNodes = computed(() => {
-    if (!canvas.value?.graph) return []
+    if (!canvas.value?.graph) {
+      console.log('🚫 useNodePositionSync: No canvas or graph available')
+      return []
+    }
 
-    const nodes = canvas.value.graph._nodes.filter((node: LGraphNode) => {
-      // Only return nodes that have phantom_mode enabled
-      return node.phantom_mode === true
+    const allNodes = canvas.value.graph._nodes
+    console.log('🔍 useNodePositionSync: Checking', allNodes.length, 'total nodes')
+    
+    const phantomNodes = allNodes.filter((node: LGraphNode) => {
+      const isPhantom = node.phantom_mode === true
+      if (isPhantom) {
+        console.log('👻 Found phantom node:', { id: node.id, title: node.title, phantom_mode: node.phantom_mode })
+      }
+      return isPhantom
     })
 
+    console.log('📊 useNodePositionSync: Found', phantomNodes.length, 'phantom nodes out of', allNodes.length, 'total')
+    
     // TODO: Add viewport culling for performance
     // For now, return all phantom nodes
-    return nodes
+    return phantomNodes
   })
 
   // Manual sync function for external triggers

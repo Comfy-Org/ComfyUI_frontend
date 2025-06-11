@@ -271,6 +271,27 @@ export class ChangeTracker {
       return v
     }
 
+    // Handle wheel events (zoom/pan with mouse wheel)
+    const processMouseWheel = LGraphCanvas.prototype.processMouseWheel
+    LGraphCanvas.prototype.processMouseWheel = function (e) {
+      const v = processMouseWheel.apply(this, [e])
+      logger.debug('checkState on processMouseWheel')
+      checkState()
+      return v
+    }
+
+    // Handle drag events (panning)
+    const processMouseMove = LGraphCanvas.prototype.processMouseMove
+    LGraphCanvas.prototype.processMouseMove = function (e) {
+      const v = processMouseMove.apply(this, [e])
+      // Only check state if we're dragging the canvas (not a node)
+      if (this.dragging_canvas) {
+        logger.debug('checkState on processMouseMove (canvas drag)')
+        checkState()
+      }
+      return v
+    }
+
     // Handle litegraph dialog popup for number/string widgets
     const prompt = LGraphCanvas.prototype.prompt
     LGraphCanvas.prototype.prompt = function (
@@ -369,10 +390,8 @@ export class ChangeTracker {
         return false
       }
 
-      // Compare extra properties ignoring ds
-      if (
-        !_.isEqual(_.omit(a.extra ?? {}, ['ds']), _.omit(b.extra ?? {}, ['ds']))
-      )
+      // Compare extra properties including ds for Vue node position updates
+      if (!_.isEqual(a.extra ?? {}, b.extra ?? {}))
         return false
 
       // Compare other properties normally

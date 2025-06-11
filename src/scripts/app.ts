@@ -1150,6 +1150,7 @@ export class ComfyApp {
       }
 
       useExtensionService().invokeExtensions('loadedGraphNode', node)
+      api.dispatchCustomEvent('graphChanged', { workflow: this.graph.serialize() as unknown as ComfyWorkflowJSON })
     }
 
     if (missingNodeTypes.length && showMissingNodesDialog) {
@@ -1169,6 +1170,7 @@ export class ComfyApp {
     )
     requestAnimationFrame(() => {
       this.graph.setDirtyCanvas(true, true)
+      api.dispatchCustomEvent('graphChanged', { workflow: this.graph.serialize() as unknown as ComfyWorkflowJSON })
     })
   }
 
