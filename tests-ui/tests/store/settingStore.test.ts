@@ -122,6 +122,26 @@ describe('useSettingStore', () => {
       expect(store.get('test.setting')).toBe('default')
     })
 
+    it('should use versioned default based on installation version', () => {
+      // Set up an installed version
+      store.settingValues['Comfy.InstalledVersion'] = '1.25.0'
+
+      const setting: SettingParams = {
+        id: 'test.versionedSetting',
+        name: 'test.versionedSetting',
+        type: 'text',
+        defaultValue: 'original',
+        defaultsByInstallVersion: {
+          '1.20.0': 'version_1_20',
+          '1.24.0': 'version_1_24'
+        }
+      }
+      store.addSetting(setting)
+
+      // Should use the highest version <= installed version
+      expect(store.get('test.versionedSetting')).toBe('version_1_24')
+    })
+
     it('should set value and trigger onChange', async () => {
       const onChangeMock = vi.fn()
       const dispatchChangeMock = vi.mocked(app.ui.settings.dispatchChange)
