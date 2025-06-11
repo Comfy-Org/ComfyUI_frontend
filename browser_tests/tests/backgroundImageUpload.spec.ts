@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { PerformanceMonitor } from '../helpers/performanceMonitor'
 
 test.describe('Background Image Upload', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -44,9 +45,14 @@ test.describe('Background Image Upload', () => {
     await expect(clearButton).toBeDisabled() // Should be disabled when no image
   })
 
-  test('should upload image file and set as background', async ({
+  test('@perf should upload image file and set as background', async ({
     comfyPage
   }) => {
+    const perfMonitor = new PerformanceMonitor(comfyPage.page)
+    const testName = 'upload-background-image-file'
+
+    await perfMonitor.startMonitoring(testName)
+
     // Open settings dialog
     await comfyPage.page.keyboard.press('Control+,')
 
@@ -63,16 +69,18 @@ test.describe('Background Image Upload', () => {
       'button:has(.pi-upload)'
     )
 
-    // Set up file upload handler
-    const fileChooserPromise = comfyPage.page.waitForEvent('filechooser')
-    await uploadButton.click()
-    const fileChooser = await fileChooserPromise
-
-    // Upload the test image
-    await fileChooser.setFiles(comfyPage.assetPath('image32x32.webp'))
+    // Set up file upload handler and upload
+    await perfMonitor.measureOperation('trigger-file-upload', async () => {
+      const fileChooserPromise = comfyPage.page.waitForEvent('filechooser')
+      await uploadButton.click()
+      const fileChooser = await fileChooserPromise
+      await fileChooser.setFiles(comfyPage.assetPath('image32x32.webp'))
+    })
 
     // Wait for upload to complete and verify the setting was updated
-    await comfyPage.page.waitForTimeout(500) // Give time for file reading
+    await perfMonitor.measureOperation('process-uploaded-file', async () => {
+      await comfyPage.page.waitForTimeout(500) // Give time for file reading
+    })
 
     // Verify the URL input now has an API URL
     const urlInput = backgroundImageSetting.locator('input[type="text"]')
@@ -88,11 +96,18 @@ test.describe('Background Image Upload', () => {
       'Comfy.Canvas.BackgroundImage'
     )
     expect(settingValue).toMatch(/^\/api\/view\?.*subfolder=backgrounds/)
+
+    await perfMonitor.finishMonitoring(testName)
   })
 
-  test('should accept URL input for background image', async ({
+  test('@perf should accept URL input for background image', async ({
     comfyPage
   }) => {
+    const perfMonitor = new PerformanceMonitor(comfyPage.page)
+    const testName = 'input-background-image-url'
+
+    await perfMonitor.startMonitoring(testName)
+
     const testImageUrl = 'https://example.com/test-image.png'
 
     // Open settings dialog
@@ -106,12 +121,13 @@ test.describe('Background Image Upload', () => {
     const backgroundImageSetting = comfyPage.page.locator(
       '#Comfy\\.Canvas\\.BackgroundImage'
     )
+
     // Enter URL in the input field
     const urlInput = backgroundImageSetting.locator('input[type="text"]')
-    await urlInput.fill(testImageUrl)
-
-    // Trigger blur event to ensure the value is set
-    await urlInput.blur()
+    await perfMonitor.measureOperation('input-url-text', async () => {
+      await urlInput.fill(testImageUrl)
+      await urlInput.blur()
+    })
 
     // Verify clear button is now enabled
     const clearButton = backgroundImageSetting.locator('button:has(.pi-trash)')
@@ -122,15 +138,24 @@ test.describe('Background Image Upload', () => {
       'Comfy.Canvas.BackgroundImage'
     )
     expect(settingValue).toBe(testImageUrl)
+
+    await perfMonitor.finishMonitoring(testName)
   })
 
-  test('should clear background image when clear button is clicked', async ({
+  test('@perf should clear background image when clear button is clicked', async ({
     comfyPage
   }) => {
+    const perfMonitor = new PerformanceMonitor(comfyPage.page)
+    const testName = 'clear-background-image'
+
+    await perfMonitor.startMonitoring(testName)
+
     const testImageUrl = 'https://example.com/test-image.png'
 
     // First set a background image
-    await comfyPage.setSetting('Comfy.Canvas.BackgroundImage', testImageUrl)
+    await perfMonitor.measureOperation('set-initial-setting', async () => {
+      await comfyPage.setSetting('Comfy.Canvas.BackgroundImage', testImageUrl)
+    })
 
     // Open settings dialog
     await comfyPage.page.keyboard.press('Control+,')
@@ -152,7 +177,9 @@ test.describe('Background Image Upload', () => {
     await expect(clearButton).toBeEnabled()
 
     // Click the clear button
-    await clearButton.click()
+    await perfMonitor.measureOperation('click-clear-button', async () => {
+      await clearButton.click()
+    })
 
     // Verify the input is now empty
     await expect(urlInput).toHaveValue('')
@@ -165,6 +192,8 @@ test.describe('Background Image Upload', () => {
       'Comfy.Canvas.BackgroundImage'
     )
     expect(settingValue).toBe('')
+
+    await perfMonitor.finishMonitoring(testName)
   })
 
   test('should show tooltip on upload and clear buttons', async ({
@@ -211,9 +240,14 @@ test.describe('Background Image Upload', () => {
     await expect(clearTooltip).toBeVisible()
   })
 
-  test('should maintain reactive updates between URL input and clear button state', async ({
+  test('@perf should maintain reactive updates between URL input and clear button state', async ({
     comfyPage
   }) => {
+    const perfMonitor = new PerformanceMonitor(comfyPage.page)
+    const testName = 'reactive-widget-updates'
+
+    await perfMonitor.startMonitoring(testName)
+
     // Open settings dialog
     await comfyPage.page.keyboard.press('Control+,')
 
@@ -232,20 +266,30 @@ test.describe('Background Image Upload', () => {
     await expect(clearButton).toBeDisabled()
 
     // Type some text - clear button should become enabled
-    await urlInput.fill('test')
+    await perfMonitor.measureOperation('input-partial-text', async () => {
+      await urlInput.fill('test')
+    })
     await expect(clearButton).toBeEnabled()
 
     // Clear the text manually - clear button should become disabled again
-    await urlInput.fill('')
+    await perfMonitor.measureOperation('clear-input-manually', async () => {
+      await urlInput.fill('')
+    })
     await expect(clearButton).toBeDisabled()
 
     // Add text again - clear button should become enabled
-    await urlInput.fill('https://example.com/image.png')
+    await perfMonitor.measureOperation('input-full-url', async () => {
+      await urlInput.fill('https://example.com/image.png')
+    })
     await expect(clearButton).toBeEnabled()
 
     // Use clear button - should clear input and disable itself
-    await clearButton.click()
+    await perfMonitor.measureOperation('clear-via-button', async () => {
+      await clearButton.click()
+    })
     await expect(urlInput).toHaveValue('')
     await expect(clearButton).toBeDisabled()
+
+    await perfMonitor.finishMonitoring(testName)
   })
 })

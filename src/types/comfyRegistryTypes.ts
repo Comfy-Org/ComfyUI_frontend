@@ -28,7 +28,11 @@ export interface paths {
       path?: never
       cookie?: never
     }
-    get?: never
+    /**
+     * Search for customers
+     * @description Search for customers by email, name, Stripe ID, or Metronome ID.
+     */
+    get: operations['searchCustomers']
     put?: never
     /**
      * Create a new customer
@@ -36,6 +40,81 @@ export interface paths {
      */
     post: operations['createCustomer']
     delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/customers/me': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get authenticated customer details
+     * @description Returns details about the currently authenticated customer based on their JWT token.
+     */
+    get: operations['getAuthenticatedCustomer']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/customers/{customer_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get a customer by ID
+     * @description Returns details about a customer by their ID.
+     */
+    get: operations['getCustomerById']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/customers/api-keys': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** List all API keys for a customer */
+    get: operations['listCustomerAPIKeys']
+    put?: never
+    /** Create a new API key for a customer */
+    post: operations['createCustomerAPIKey']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/customers/api-keys/{api_key_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    /** Delete an API key for a customer */
+    delete: operations['deleteCustomerAPIKey']
     options?: never
     head?: never
     patch?: never
@@ -78,6 +157,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/customers/usage': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Get customer's usage
+     * @description Returns the customer's as a dashboard URL.
+     */
+    post: operations['GetCustomerUsage']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/customers/balance': {
     parameters: {
       query?: never
@@ -98,6 +197,80 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/customers/{customer_id}/balance': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get customer's remaining balance by ID
+     * @description Returns the specified customer's current remaining balance in microamount and its currency.
+     */
+    get: operations['GetCustomerBalanceById']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/customers/storage': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Store a resource for a customer
+     * @description Store a resource for a customer. Resource will have a 24 hour expiry. The signed URL will be generated for the specified file path.
+     */
+    post: operations['createCustomerStorageResource']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/customers/{customer_id}/events': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Get events related to customer */
+    get: operations['GetCustomerEventsById']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/customers/events': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Get events related to customer */
+    get: operations['GetCustomerEvents']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/upload-artifact': {
     parameters: {
       query?: never
@@ -107,7 +280,10 @@ export interface paths {
     }
     get?: never
     put?: never
-    /** Receive artifacts (output files) from the ComfyUI GitHub Action */
+    /**
+     * Receive artifacts (output files) from the ComfyUI GitHub Action
+     * @description Receive artifacts (output files) from the ComfyUI GitHub Action
+     */
     post: {
       parameters: {
         query?: never
@@ -977,6 +1153,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/proxy/dummy': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Dummy proxy
+     * @description Dummy proxy endpoint that returns a simple string
+     */
+    post: operations['dummyProxy']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/proxy/minimax/video_generation': {
     parameters: {
       query?: never
@@ -1051,6 +1247,114 @@ export interface paths {
      * @description Forwards image generation requests to Ideogram's API and returns the results.
      */
     post: operations['ideogramGenerate']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/ideogram/ideogram-v3/generate': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Proxy request to Ideogram for image generation
+     * @description Forwards image generation requests to Ideogram's API and returns the results.
+     */
+    post: operations['ideogramV3Generate']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/ideogram/ideogram-v3/edit': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Proxy request to Ideogram for image editing
+     * @description Forwards image editing requests to Ideogram's API and returns the results.
+     */
+    post: operations['ideogramV3Edit']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/ideogram/ideogram-v3/remix': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Remix an image using a prompt */
+    post: operations['ideogramV3Remix']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/ideogram/ideogram-v3/reframe': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Reframe an image to a chosen resolution */
+    post: operations['ideogramV3Reframe']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/ideogram/ideogram-v3/replace-background': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Replace background of an image using a prompt */
+    post: operations['ideogramV3ReplaceBackground']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/kling/v1/account/costs': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** KlingAI Query Resource Package Information */
+    get: operations['klingQueryResourcePackages']
+    put?: never
+    post?: never
     delete?: never
     options?: never
     head?: never
@@ -1302,17 +1606,60 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/proxy/kling/v1/account/costs': {
+  '/proxy/bfl/flux-kontext-pro/generate': {
     parameters: {
       query?: never
       header?: never
       path?: never
       cookie?: never
     }
-    /** KlingAI Query Resource Package Information */
-    get: operations['klingQueryResourcePackages']
+    get?: never
     put?: never
-    post?: never
+    /**
+     * Proxy request to BFL Flux Kontext Pro for image editing
+     * @description Forwards image editing requests to BFL's Flux Kontext Pro API and returns the results.
+     */
+    post: operations['bflFluxKontextProGenerate']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/bfl/flux-kontext-max/generate': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Proxy request to BFL Flux Kontext Max for image editing
+     * @description Forwards image editing requests to BFL's Flux Kontext Max API and returns the results.
+     */
+    post: operations['bflFluxKontextMaxGenerate']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/bfl/flux-pro-1.1/generate': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Proxy request to BFL Flux Pro 1.1 for image generation
+     * @description Forwards image generation requests to BFL's Flux Pro 1.1 API and returns the results.
+     */
+    post: operations['bflFluxPro1_1Generate']
     delete?: never
     options?: never
     head?: never
@@ -1333,6 +1680,231 @@ export interface paths {
      * @description Forwards image generation requests to BFL's Flux Pro 1.1 Ultra API and returns the results.
      */
     post: operations['bflFluxProGenerate']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/bfl/flux-pro-1.0-expand/generate': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Expand an image by adding pixels on any side.
+     * @description Submits an image expansion task that adds the specified number of pixels to any combination of sides (top, bottom, left, right) while maintaining context.
+     */
+    post: operations['BFLExpand_v1_flux_pro_1_0_expand_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/bfl/flux-pro-1.0-fill/generate': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Generate an image with FLUX.1 Fill [pro] using an input image and mask.
+     * @description Submits an image generation task with the FLUX.1 Fill [pro] model using an input image and mask. Mask can be applied to alpha channel or submitted as a separate image.
+     */
+    post: operations['BFLFill_v1_flux_pro_1_0_fill_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/bfl/flux-pro-1.0-canny/generate': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Generate an image with FLUX.1 Canny [pro] using a control image.
+     * @description Submits an image generation task with FLUX.1 Canny [pro].
+     */
+    post: operations['BFLPro_canny_v1_flux_pro_1_0_canny_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/bfl/flux-pro-1.0-depth/generate': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Generate an image with FLUX.1 Depth [pro] using a control image.
+     * @description Submits an image generation task with FLUX.1 Depth [pro].
+     */
+    post: operations['BFLPro_depth_v1_flux_pro_1_0_depth_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/luma/generations': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Create a generation
+     * @description Initiate a new generation with the provided prompt
+     */
+    post: operations['lumaCreateGeneration']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/luma/generations/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get a generation
+     * @description Retrieve details of a specific generation by its ID
+     */
+    get: operations['lumaGetGeneration']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/luma/generations/image': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Generate an image
+     * @description Generate an image with the provided prompt
+     */
+    post: operations['lumaGenerateImage']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/pixverse/video/text/generate': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Generate video from text prompt. */
+    post: operations['PixverseGenerateTextVideo']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/pixverse/video/img/generate': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Generate video from image. */
+    post: operations['PixverseGenerateImageVideo']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/pixverse/video/transition/generate': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Generate transition video between two images. */
+    post: operations['PixverseGenerateTransitionVideo']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/pixverse/image/upload': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Upload an image to the server. */
+    post: operations['PixverseUploadImage']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/pixverse/video/result/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Get the result of a video generation. */
+    get: operations['PixverseGetVideoResult']
+    put?: never
+    post?: never
     delete?: never
     options?: never
     head?: never
@@ -1387,6 +1959,999 @@ export interface paths {
      * @description Forwards image generation requests to Recraft's API and returns the generated images.
      */
     post: operations['recraftImageGeneration']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/recraft/images/vectorize': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Vectorize an image */
+    post: operations['recraftVectorize']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/recraft/images/crispUpscale': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Upscale an image */
+    post: operations['recraftCrispUpscale']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/recraft/images/removeBackground': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Remove background from an image */
+    post: operations['recraftRemoveBackground']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/recraft/images/imageToImage': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Generate image from image and prompt */
+    post: operations['RecraftImageToImage']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/recraft/images/inpaint': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Inpaint Image */
+    post: operations['RecraftInpaintImage']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/recraft/images/replaceBackground': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Replace Background */
+    post: operations['RecraftReplaceBackground']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/recraft/images/creativeUpscale': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Creative Upscale */
+    post: operations['RecraftCreativeUpscale']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/runway/image_to_video': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Runway Image to Video Generation
+     * @description Converts an image to a video using Runway's API
+     */
+    post: operations['runwayImageToVideo']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/runway/tasks/{task_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Runway Task Status
+     * @description Get the status and output of a Runway task
+     */
+    get: operations['runwayGetTaskStatus']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/runway/text_to_image': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Runway Text to Image Generation
+     * @description Generates an image from text using Runway's API
+     */
+    post: operations['runwayTextToImage']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/veo/generate': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Generate a video from a text prompt and optional image. Deprecated. Use /proxy/veo/{modelId}/generate instead. */
+    post: operations['veoGenerate']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/veo/poll': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Poll the status of a Veo prediction operation. Deprecated. Use /proxy/veo/{modelId}/generate instead. */
+    post: operations['veoPoll']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/veo/{modelId}/generate': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Generate a video from a text prompt and optional image */
+    post: operations['veoGenerateNew']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/veo/{modelId}/poll': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Poll the status of a Veo prediction operation */
+    post: operations['veoPollNew']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/openai/v1/responses': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post: operations['createOpenAIResponse']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/openai/v1/responses/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Retrieves a model response with the given ID.
+     *      */
+    get: operations['getOpenAIResponse']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/openai/images/generations': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Generate an image using OpenAI's models */
+    post: operations['openAIGenerateImage']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/openai/images/edits': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Edit an image using OpenAI's DALL-E model */
+    post: operations['openAIEditImage']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/pika/generate/pikadditions': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Generate Pikadditions */
+    post: operations['PikaGenerate_pikadditions_generate_pikadditions_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/pika/generate/pikaswaps': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Generate Pikaswaps
+     * @description Exactly one of `modifyRegionMask` and `modifyRegionRoi` must be provided.
+     */
+    post: operations['PikaGenerate_pikaswaps_generate_pikaswaps_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/pika/generate/pikaffects': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Generate Pikaffects
+     * @description Generate a video with a specific Pikaffect. Supported Pikaffects: Cake-ify, Crumble, Crush, Decapitate, Deflate, Dissolve, Explode, Eye-pop, Inflate, Levitate, Melt, Peel, Poke, Squish, Ta-da, Tear
+     */
+    post: operations['PikaGenerate_pikaffects_generate_pikaffects_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/pika/generate/2.2/t2v': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Generate 2 2 T2V */
+    post: operations['PikaGenerate_2_2_t2v_generate_2_2_t2v_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/pika/generate/2.2/pikaframes': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Generate 2 2 Keyframe */
+    post: operations['PikaGenerate_2_2_keyframe_generate_2_2_pikaframes_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/pika/generate/2.2/pikascenes': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Generate 2 2 C2V */
+    post: operations['PikaGenerate_2_2_c2v_generate_2_2_pikascenes_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/pika/generate/2.2/i2v': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Generate 2 2 I2V */
+    post: operations['PikaGenerate_2_2_i2v_generate_2_2_i2v_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/pika/videos/{video_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Get Video */
+    get: operations['PikaGet_video_videos__video_id__get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/stability/v2beta/stable-image/generate/ultra': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Stable Image Ultra
+     * @description Our most advanced text to image generation service, Stable Image Ultra creates the highest quality images with unprecedented prompt understanding. Ultra excels in typography, complex compositions, dynamic lighting, vibrant hues, and overall cohesion and structure of an art piece. Made from the most advanced models, including Stable Diffusion 3.5, Ultra offers the best of the Stable Diffusion ecosystem. ### Try it out Grab your [API key](https://platform.stability.ai/account/keys) and head over to [![Open Google Colab](https://platform.stability.ai/svg/google-colab.svg)](https://colab.research.google.com/github/stability-ai/stability-sdk/blob/main/nbs/Stable_Image_API_Public.ipynb#scrollTo=yXhs626oZdr1) ### How to use Please invoke this endpoint with a `POST` request. The headers of the request must include an API key in the `authorization` field. The body of the request must be `multipart/form-data`.  The accept header should be set to one of the following: - `image/*` to receive the image in the format specified by the `output_format` parameter. - `application/json` to receive the image in the format specified by the `output_format` parameter, but encoded to base64 in a JSON response. The only required parameter is the `prompt` field, which should contain the text prompt for the image generation. The body of the request should include: - `prompt` - text to generate the image from The body may optionally include: - `image` - the image to use as the starting point for the generation - `strength` - controls how much influence the `image` parameter has on the output image - `aspect_ratio` - the aspect ratio of the output image - `negative_prompt` - keywords of what you **do not** wish to see in the output image - `seed` - the randomness seed to use for the generation - `output_format` - the the format of the output image > **Note:** for the full list of optional parameters, please see the request schema below. ### Output The resolution of the generated image will be 1 megapixel. The default resolution is 1024x1024. ### Credits The Ultra service uses 8 credits per successful result. You will not be charged for failed results.
+     */
+    post: operations['StabilityImageGenrationUltra']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/stability/v2beta/stable-image/generate/sd3': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Stable Diffusion 3.5
+     * @description Generate using Stable Diffusion 3.5 models, Stability AI latest base model:
+     *
+     *     - **Stable Diffusion 3.5 Large**: At 8 billion parameters, with superior quality and
+     *
+     *
+     *
+     *       prompt adherence, this base model is the most powerful in the Stable Diffusion
+     *       family. This model is ideal for professional use cases at 1 megapixel resolution.
+     *
+     *     - **Stable Diffusion 3.5 Large Turbo**: A distilled version of Stable Diffusion 3.5 Large.
+     *
+     *
+     *
+     *       SD3.5 Large Turbo generates high-quality images with exceptional prompt adherence
+     *       in just 4 steps, making it considerably faster than Stable Diffusion 3.5 Large.
+     *
+     *     - **Stable Diffusion 3.5 Medium**: With 2.5 billion parameters, the model delivers an
+     *
+     *
+     *
+     *       optimal balance between prompt accuracy and image quality, making it an efficient
+     *       choice for fast high-performance image generation.
+     *
+     *     Read more about the model capabilities [here](https://stability.ai/news/introducing-stable-diffusion-3-5).
+     *
+     *     As of April 17, 2025, we have deprecated the Stable Diffusion 3.0 APIs and will be automatically
+     *     re-routing calls to Stable Diffusion 3.0 models to Stable Diffusion 3.5 APIs at no extra cost.
+     *     You can read more in the [release notes](/docs/release-notes#api-deprecation-notice).
+     *
+     *     ### Try it out
+     *     Grab your [API key](https://platform.stability.ai/account/keys) and head over to [![Open Google Colab](https://platform.stability.ai/svg/google-colab.svg)](https://colab.research.google.com/github/stability-ai/stability-sdk/blob/main/nbs/SD3_API.ipynb)
+     *
+     *     ### How to use
+     *     Please invoke this endpoint with a `POST` request.
+     *
+     *     The headers of the request must include an API key in the `authorization` field. The body of the request must be
+     *     `multipart/form-data`.  The accept header should be set to one of the following:
+     *     - `image/*` to receive the image in the format specified by the `output_format` parameter.
+     *     - `application/json` to receive the image encoded as base64 in a JSON response.
+     *
+     *     #### **Generating with a prompt**
+     *     Commonly referred to as **text-to-image**, this mode generates an image from text alone. While the only required
+     *     parameter is the `prompt`, it also supports an `aspect_ratio` parameter which can be used to control the
+     *     aspect ratio of the generated image.
+     *
+     *     #### **Generating with a prompt *and* an image**
+     *     Commonly referred to as **image-to-image**, this mode also generates an image from text but uses an existing image as the
+     *     starting point. The required parameters are:
+     *     - `prompt` - text to generate the image from
+     *     - `image` - the image to use as the starting point for the generation
+     *     - `strength` - controls how much influence the `image` parameter has on the output image
+     *     - `mode` - must be set to `image-to-image`
+     *
+     *     > **Note:** maximum request size is 10MiB.
+     *
+     *     #### **Optional Parameters:**
+     *     Both modes support the following optional parameters:
+     *     - `model` - the model to use (SD3.5 Large, SD3.5 Large Turbo, SD3.5 Medium)
+     *     - `output_format` - the the format of the output image
+     *     - `seed` - the randomness seed to use for the generation
+     *     - `negative_prompt` - keywords of what you **do not** wish to see in the output image
+     *     - `cfg_scale` - controls how strictly the diffusion process adheres to the prompt text
+     *     - `style_preset` - guides the image model towards a particular style
+     *
+     *     > **Note:** for more details about these parameters please see the request schema below.
+     *
+     *     ### Output
+     *     The resolution of the generated image will be 1MP. The default resolution is 1024x1024.
+     *
+     *     ### Credits
+     *     - **SD 3.5 Large**: Flat rate of 6.5 credits per successful generation.
+     *     - **SD 3.5 Large Turbo**: Flat rate of 4 credits per successful generation.
+     *     - **SD 3.5 Medium**: Flat rate of 3.5 credits per successful generation.
+     *
+     *     As always, you will not be charged for failed generations.
+     */
+    post: operations['StabilityImageGenrationSD3']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/stability/v2beta/stable-image/upscale/conservative': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Conservative
+     * @description Takes images between 64x64 and 1 megapixel and upscales them all the way to 4K resolution. Put more generally, it can upscale images ~20-40x times while preserving all aspects. Conservative Upscale minimizes alterations to the image and should not be used to reimagine an image.
+     *
+     *     ### Try it out
+     *     Grab your [API key](https://platform.stability.ai/account/keys) and head over to [![Open Google Colab](https://platform.stability.ai/svg/google-colab.svg)](https://colab.research.google.com/github/stability-ai/stability-sdk/blob/main/nbs/Stable_Image_API_Public.ipynb#scrollTo=t1Q4w2uvvza0)
+     *
+     *     ### How to use
+     *
+     *     Please invoke this endpoint with a `POST` request.
+     *
+     *     The headers of the request must include an API key in the `authorization` field. The body of the request must be
+     *     `multipart/form-data`, and the `accept` header should be set to one of the following:
+     *
+     *
+     *
+     *       - `image/*` to receive the image in the format specified by the `output_format` parameter.
+     *       - `application/json` to receive the image encoded as base64 in a JSON response.
+     *
+     *     The body of the request must include:
+     *     - `image`
+     *     - `prompt`
+     *
+     *     Optionally, the body of the request may also include:
+     *     - `negative_prompt`
+     *     - `seed`
+     *     - `output_format`
+     *     - `creativity`
+     *
+     *     > **Note:** for more details about these parameters please see the request schema below.
+     *
+     *     ### Output
+     *     The resolution of the generated image will be 4 megapixels.
+     *
+     *     ### Credits
+     *     Flat rate of 25 credits per successful generation.  You will not be charged for failed generations.
+     */
+    post: operations['StabilityImageGenrationUpscaleConservative']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/stability/v2beta/stable-image/upscale/creative': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Creative Upscale (async)
+     * @description Takes images between 64x64 and 1 megapixel and upscales them all the way to **4K** resolution.  Put more
+     *     generally, it can upscale images ~20-40x times while preserving, and often enhancing, quality.
+     *     Creative Upscale **works best on highly degraded images and is not for photos of 1mp or above** as it performs
+     *     heavy reimagining (controlled by creativity scale).
+     *
+     *     ### Try it out
+     *     Grab your [API key](https://platform.stability.ai/account/keys) and head over to [![Open Google Colab](https://platform.stability.ai/svg/google-colab.svg)](https://colab.research.google.com/github/stability-ai/stability-sdk/blob/main/nbs/Stable_Image_API_Public.ipynb#scrollTo=QXxi9tfI425t)
+     *
+     *
+     *     ### How to use
+     *     Please invoke this endpoint with a `POST` request.
+     *
+     *     The headers of the request must include an API key in the `authorization` field. The body of the request must be
+     *     `multipart/form-data`.
+     *
+     *     The body of the request should include:
+     *     - `image`
+     *     - `prompt`
+     *
+     *     The body may optionally include:
+     *     - `seed`
+     *     - `negative_prompt`
+     *     - `output_format`
+     *     - `creativity`
+     *     - `style_preset`
+     *
+     *     > **Note:** for more details about these parameters please see the request schema below.
+     *
+     *     ### Results
+     *     After invoking this endpoint with the required parameters, use the `id` in the response to poll for results at the
+     *     [results/{id} endpoint](#tag/Results/paths/~1v2beta~1results~1%7Bid%7D/get).  Rate-limiting or other errors may occur if you poll more than once every 10 seconds.
+     *
+     *     ### Credits
+     *     Flat rate of 25 credits per successful generation.  You will not be charged for failed generations.
+     */
+    post: operations['StabilityImageGenrationUpscaleCreative']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/stability/v2beta/stable-image/upscale/fast': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Fast
+     * @description Our Fast Upscaler service enhances image resolution by 4x using predictive and generative AI. This lightweight and fast service (processing in ~1 second) is ideal for enhancing the quality of compressed images, making it suitable for social media posts and other applications.
+     *
+     *     ### Try it out
+     *     Grab your [API key](https://platform.stability.ai/account/keys) and head over to [![Open Google Colab](https://platform.stability.ai/svg/google-colab.svg)](https://colab.research.google.com/github/stability-ai/stability-sdk/blob/main/nbs/Stable_Image_API_Public.ipynb#scrollTo=t1Q4w2uvvza0)
+     *
+     *     ### How to use
+     *
+     *     Please invoke this endpoint with a `POST` request.
+     *
+     *     The headers of the request must include an API key in the `authorization` field. The body of the request must be
+     *     `multipart/form-data`, and the `accept` header should be set to one of the following:
+     *
+     *
+     *
+     *       - `image/*` to receive the image in the format specified by the `output_format` parameter.
+     *       - `application/json` to receive the image encoded as base64 in a JSON response.
+     *
+     *     The body of the request must include:
+     *     - `image`
+     *
+     *     Optionally, the body of the request may also include:
+     *     - `output_format`
+     *
+     *     > **Note:** for more details about these parameters please see the request schema below.
+     *
+     *     ### Output
+     *     The resolution of the generated image is 4 times that of the input image with a maximum size of 16 megapixels.
+     *
+     *     ### Credits
+     *     Flat rate of 1 credit per successful generation. You will not be charged for failed generations.
+     */
+    post: operations['StabilityImageGenerationUpscaleFast']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/stability/v2beta/results/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Result
+     * @description Get the result of a generation
+     */
+    get: operations['StabilityGetResult']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/vertexai/gemini/{model}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Generate content using a specified model. */
+    post: operations['GeminiGenerateContent']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/vertexai/imagen/{model}': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description image generation model */
+        model:
+          | 'imagen-3.0-generate-002'
+          | 'imagen-3.0-generate-001'
+          | 'imagen-3.0-fast-generate-001'
+          | 'imagegeneration@006'
+          | 'imagegeneration@005'
+          | 'imagegeneration@002'
+      }
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Generate images from a text prompt */
+    post: operations['ImagenGenerateImages']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/tripo/v2/openapi/task/{task_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Get Task Status */
+    get: operations['tripoGetTask']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/tripo/v2/openapi/upload': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Upload File for 3D Generation */
+    post: operations['tripoUploadFile']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/tripo/v2/openapi/task': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Create 3D Generation Task */
+    post: operations['tripoCreateTask']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/tripo/v2/openapi/user/balance': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Query Account Balance */
+    get: operations['tripoGetBalance']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/rodin/api/v2/rodin': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Create 3D generate Task using Rodin API. */
+    post: operations['rodinGenerate3DAsset']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/rodin/api/v2/status': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Check Rodin 3D Generate Status. */
+    post: operations['rodinCheckStatus']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/rodin/api/v2/download': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Get rodin 3D Assets download list. */
+    post: operations['rodinDownload']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/moonvalley/prompts/{prompt_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Get Prompt Details */
+    get: operations['Moonvalley']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/moonvalley/prompts': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Create Text-to-Video or Image-to-Video Prompt */
+    post: operations['MoonvalleyCreatePrompt']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/moonvalley/prompts/video-to-video': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Create Video-to-Video Prompt */
+    post: operations['MoonvalleyCreateVideoToVideoPrompt']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/moonvalley/prompts/text-to-image': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Create Text-to-Image Prompt */
+    post: operations['MoonvalleyCreateTextToImagePrompt']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/moonvalley/uploads': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Upload File */
+    post: operations['MoonvalleyUploadFile']
     delete?: never
     options?: never
     head?: never
@@ -1477,6 +3042,22 @@ export interface components {
     ErrorResponse: {
       error: string
       message: string
+    }
+    RunwayTextToImageRequest: {
+      /** @description Text prompt for the image generation */
+      promptText: string
+      /**
+       * @description Model to use for generation
+       * @enum {string}
+       */
+      model: 'gen4_image'
+      /** @description The resolution (aspect ratio) of the output image */
+      ratio: components['schemas']['RunwayTextToImageAspectRatioEnum']
+      /** @description Array of reference images to guide the generation */
+      referenceImages?: {
+        /** @description A HTTPS URL or data URI containing an encoded image */
+        uri?: string
+      }[]
     }
     ActionJobResult: {
       /**
@@ -1594,6 +3175,14 @@ export interface components {
       /** @description URL to the node's repository. */
       repository?: string
       tags?: string[]
+      /** @description List of operating systems that this node supports */
+      supported_os?: string[]
+      /** @description List of accelerators (e.g. CUDA, DirectML, ROCm) that this node supports */
+      supported_accelerators?: string[]
+      /** @description Supported versions of ComfyUI */
+      supported_comfyui_version?: string
+      /** @description Supported versions of ComfyUI frontend */
+      supported_comfyui_frontend_version?: string
       /** @description The latest version of the node. */
       latest_version?: components['schemas']['NodeVersion']
       /** @description The average rating of the node. */
@@ -1606,11 +3195,18 @@ export interface components {
       status?: components['schemas']['NodeStatus']
       /** @description The status detail of the node. */
       status_detail?: string
+      /** @description Translations of node metadata in different languages. */
       translations?: {
         [key: string]: {
           [key: string]: unknown
         }
       }
+      /** @description A numerical value representing the node's search ranking, used for sorting search results. */
+      search_ranking?: number
+      /** @description A list of Comfy node names that are preempted by this node. */
+      preempted_comfy_node_names?: string[]
+      /** @description URL to the node's banner. */
+      banner_url?: string
     }
     NodeVersion: {
       id?: string
@@ -1637,6 +3233,14 @@ export interface components {
       node_id?: string
       /** @description The status of comfy node extraction process. */
       comfy_node_extract_status?: string
+      /** @description Supported versions of ComfyUI */
+      supported_comfyui_version?: string
+      /** @description Supported versions of ComfyUI frontend */
+      supported_comfyui_frontend_version?: string
+      /** @description List of operating systems that this node supports */
+      supported_os?: string[]
+      /** @description List of accelerators (e.g. CUDA, DirectML, ROCm) that this node supports */
+      supported_accelerators?: string[]
     }
     ComfyNode: {
       /** @description Unique identifier for the node */
@@ -1735,7 +3339,112 @@ export interface components {
        * @description The date and time the user was last updated
        */
       updatedAt?: string
+      /** @description Whether the user is an admin */
+      is_admin?: boolean
+      /** @description The Stripe customer ID */
+      stripe_id?: string
+      /** @description The Metronome customer ID */
+      metronome_id?: string
     }
+    AuditLog: {
+      /** @description the type of the event */
+      event_type?: string
+      /** @description the id of the event */
+      event_id?: string
+      /** @description data related to the event */
+      params?: {
+        [key: string]: unknown
+      }
+      /**
+       * Format: date-time
+       * @description The date and time the event was created
+       */
+      createdAt?: string
+    }
+    IdeogramV3Request: {
+      /** @description The text prompt for image generation */
+      prompt: string
+      /** @description Seed value for reproducible generation */
+      seed?: number
+      /**
+       * @description Image resolution in format WxH
+       * @example 1280x800
+       */
+      resolution?: string
+      /**
+       * @description Aspect ratio in format WxH
+       * @example 1x3
+       */
+      aspect_ratio?: string
+      rendering_speed: components['schemas']['RenderingSpeed']
+      /**
+       * @description Whether to enable magic prompt enhancement
+       * @enum {string}
+       */
+      magic_prompt?: 'ON' | 'OFF'
+      /** @description Text prompt specifying what to avoid in the generation */
+      negative_prompt?: string
+      /** @description Number of images to generate */
+      num_images?: number
+      color_palette?: {
+        /**
+         * @description Name of the color palette
+         * @example PASTEL
+         */
+        name: string
+      }
+      /** @description Array of style codes in hexadecimal format */
+      style_codes?: string[]
+      /**
+       * @description The type of style to apply
+       * @enum {string}
+       */
+      style_type?: 'GENERAL'
+      /** @description Array of reference image URLs or identifiers */
+      style_reference_images?: string[]
+    }
+    IdeogramV3EditRequest: {
+      /**
+       * Format: binary
+       * @description The image being edited (max size 10MB); only JPEG, WebP and PNG formats are supported at this time.
+       */
+      image?: string
+      /**
+       * Format: binary
+       * @description A black and white image of the same size as the image being edited (max size 10MB). Black regions in the mask should match up with the regions of the image that you would like to edit; only JPEG, WebP and PNG formats are supported at this time.
+       */
+      mask?: string
+      /** @description The prompt used to describe the edited result. */
+      prompt: string
+      /** @description Determine if MagicPrompt should be used in generating the request or not. */
+      magic_prompt?: string
+      /** @description The number of images to generate. */
+      num_images?: number
+      /** @description Random seed. Set for reproducible generation. */
+      seed?: number
+      rendering_speed: components['schemas']['RenderingSpeed']
+      /** @description A color palette for generation, must EITHER be specified via one of the presets (name) or explicitly via hexadecimal representations of the color with optional weights (members). Not supported by V_1, V_1_TURBO, V_2A and V_2A_TURBO models. */
+      color_palette?: components['schemas']['IdeogramColorPalette']
+      /** @description A list of 8 character hexadecimal codes representing the style of the image. Cannot be used in conjunction with style_reference_images or style_type. */
+      style_codes?: string[]
+      /** @description A set of images to use as style references (maximum total size 10MB across all style references). The images should be in JPEG, PNG or WebP format. */
+      style_reference_images?: string[]
+    }
+    /** @description A color palette specification that can either use a preset name or explicit color definitions with weights */
+    IdeogramColorPalette:
+      | {
+          /** @description Name of the preset color palette */
+          name: string
+        }
+      | {
+          /** @description Array of color definitions with optional weights */
+          members: {
+            /** @description Hexadecimal color code */
+            color?: string
+            /** @description Optional weight for the color (0-1) */
+            weight?: number
+          }[]
+        }
     /** @description Parameters for the Ideogram generation proxy request. Based on Ideogram's API. */
     IdeogramGenerateRequest: {
       /** @description The image generation request parameters. */
@@ -1744,8 +3453,8 @@ export interface components {
         prompt: string
         /** @description Optional. The aspect ratio (e.g., 'ASPECT_16_9', 'ASPECT_1_1'). Cannot be used with resolution. Defaults to 'ASPECT_1_1' if unspecified. */
         aspect_ratio?: string
-        /** @description Optional. The model used (e.g., 'V_2', 'V_2A_TURBO'). Defaults to 'V_2' if unspecified. */
-        model?: string
+        /** @description The model used (e.g., 'V_2', 'V_2A_TURBO') */
+        model: string
         /** @description Optional. MagicPrompt usage ('AUTO', 'ON', 'OFF'). */
         magic_prompt_option?: string
         /**
@@ -1793,58 +3502,250 @@ export interface components {
         style_type?: string
       }[]
     }
-    KlingText2VideoRequest: {
+    IdeogramV3RemixRequest: {
+      /** Format: binary */
+      image?: string
+      prompt: string
+      /** @default 50 */
+      image_weight: number
+      seed?: number
+      resolution?: string
+      aspect_ratio?: string
+      /** @enum {string} */
+      rendering_speed?: 'TURBO' | 'DEFAULT' | 'QUALITY'
+      /** @enum {string} */
+      magic_prompt?: 'AUTO' | 'ON' | 'OFF'
+      negative_prompt?: string
+      num_images?: number
+      color_palette?: Record<string, never>
+      style_codes?: string[]
+      /** @enum {string} */
+      style_type?: 'AUTO' | 'GENERAL' | 'REALISTIC' | 'DESIGN'
+      style_reference_images?: string[]
+    }
+    IdeogramV3IdeogramResponse: {
+      /** Format: date-time */
+      created?: string
+      data?: {
+        prompt?: string
+        resolution?: string
+        is_image_safe?: boolean
+        seed?: number
+        url?: string
+        style_type?: string
+      }[]
+    }
+    IdeogramV3ReframeRequest: {
+      /** Format: binary */
+      image?: string
+      resolution: string
+      num_images?: number
+      seed?: number
+      /** @enum {string} */
+      rendering_speed?: 'TURBO' | 'DEFAULT' | 'QUALITY'
+      color_palette?: Record<string, never>
+      style_codes?: string[]
+      style_reference_images?: string[]
+    }
+    IdeogramV3ReplaceBackgroundRequest: {
+      /** Format: binary */
+      image?: string
+      prompt: string
+      /** @enum {string} */
+      magic_prompt?: 'AUTO' | 'ON' | 'OFF'
+      num_images?: number
+      seed?: number
+      /** @enum {string} */
+      rendering_speed?: 'TURBO' | 'DEFAULT' | 'QUALITY'
+      color_palette?: Record<string, never>
+      style_codes?: string[]
+      style_reference_images?: string[]
+    }
+    /**
+     * @description Task Status
+     * @enum {string}
+     */
+    KlingTaskStatus: 'submitted' | 'processing' | 'succeed' | 'failed'
+    /**
+     * @description Model Name
+     * @default kling-v1
+     * @enum {string}
+     */
+    KlingTextToVideoModelName: 'kling-v1' | 'kling-v1-6'
+    /**
+     * @description Model Name
+     * @default kling-v2-master
+     * @enum {string}
+     */
+    KlingVideoGenModelName:
+      | 'kling-v1'
+      | 'kling-v1-5'
+      | 'kling-v1-6'
+      | 'kling-v2-master'
+    /**
+     * @description Video generation mode. std: Standard Mode, which is cost-effective. pro: Professional Mode, generates videos with longer duration but higher quality output.
+     * @default std
+     * @enum {string}
+     */
+    KlingVideoGenMode: 'std' | 'pro'
+    /**
+     * @description Video aspect ratio
+     * @default 16:9
+     * @enum {string}
+     */
+    KlingVideoGenAspectRatio: '16:9' | '9:16' | '1:1'
+    /**
+     * @description Video length in seconds
+     * @default 5
+     * @enum {string}
+     */
+    KlingVideoGenDuration: '5' | '10'
+    /**
+     * Format: float
+     * @description Flexibility in video generation. The higher the value, the lower the model's degree of flexibility, and the stronger the relevance to the user's prompt.
+     * @default 0.5
+     */
+    KlingVideoGenCfgScale: number
+    KlingCameraControl: {
+      type?: components['schemas']['KlingCameraControlType']
+      config?: components['schemas']['KlingCameraConfig']
+    }
+    /**
+     * @description Predefined camera movements type. simple: Customizable camera movement. down_back: Camera descends and moves backward. forward_up: Camera moves forward and tilts up. right_turn_forward: Rotate right and move forward. left_turn_forward: Rotate left and move forward.
+     * @enum {string}
+     */
+    KlingCameraControlType:
+      | 'simple'
+      | 'down_back'
+      | 'forward_up'
+      | 'right_turn_forward'
+      | 'left_turn_forward'
+    KlingCameraConfig: {
+      /** @description Controls camera's movement along horizontal axis (x-axis). Negative indicates left, positive indicates right. */
+      horizontal?: number
+      /** @description Controls camera's movement along vertical axis (y-axis). Negative indicates downward, positive indicates upward. */
+      vertical?: number
+      /** @description Controls camera's rotation in vertical plane (x-axis). Negative indicates downward rotation, positive indicates upward rotation. */
+      pan?: number
+      /** @description Controls camera's rotation in horizontal plane (y-axis). Negative indicates left rotation, positive indicates right rotation. */
+      tilt?: number
+      /** @description Controls camera's rolling amount (z-axis). Negative indicates counterclockwise, positive indicates clockwise. */
+      roll?: number
+      /** @description Controls change in camera's focal length. Negative indicates narrower field of view, positive indicates wider field of view. */
+      zoom?: number
+    }
+    KlingVideoResult: {
+      /** @description Generated video ID */
+      id?: string
       /**
-       * @description Model Name
-       * @default kling-v1
-       * @enum {string}
+       * Format: uri
+       * @description URL for generated video
        */
-      model_name: 'kling-v1' | 'kling-v1-6'
+      url?: string
+      /** @description Total video duration */
+      duration?: string
+    }
+    /**
+     * @description Method of Transmitting Audio Files for Lip-Sync. Required when mode is audio2video.
+     * @enum {string}
+     */
+    KlingAudioUploadType: 'file' | 'url'
+    /**
+     * @description Video Generation Mode. text2video: Text-to-video generation mode; audio2video: Audio-to-video generation mode
+     * @enum {string}
+     */
+    KlingLipSyncMode: 'text2video' | 'audio2video'
+    /**
+     * @description The voice language corresponds to the Voice ID.
+     * @default en
+     * @enum {string}
+     */
+    KlingLipSyncVoiceLanguage: 'zh' | 'en'
+    /**
+     * @description Scene Name. Dual-character Effects (hug, kiss, heart_gesture).
+     * @enum {string}
+     */
+    KlingDualCharacterEffectsScene: 'hug' | 'kiss' | 'heart_gesture'
+    /**
+     * @description Scene Name. Single Image Effects (bloombloom, dizzydizzy, fuzzyfuzzy, squish, expansion).
+     * @enum {string}
+     */
+    KlingSingleImageEffectsScene:
+      | 'bloombloom'
+      | 'dizzydizzy'
+      | 'fuzzyfuzzy'
+      | 'squish'
+      | 'expansion'
+    /**
+     * @description Model Name. Can be kling-v1, kling-v1-5, or kling-v1-6.
+     * @default kling-v1
+     * @enum {string}
+     */
+    KlingCharacterEffectModelName: 'kling-v1' | 'kling-v1-5' | 'kling-v1-6'
+    /**
+     * @description Model Name. Only kling-v1-6 is supported for single image effects.
+     * @enum {string}
+     */
+    KlingSingleImageEffectModelName: 'kling-v1-6'
+    /**
+     * @description Video Length in seconds. Only 5-second videos are supported.
+     * @enum {string}
+     */
+    KlingSingleImageEffectDuration: '5'
+    KlingDualCharacterImages: string[]
+    /**
+     * @description Aspect ratio of the generated images
+     * @default 16:9
+     * @enum {string}
+     */
+    KlingImageGenAspectRatio:
+      | '16:9'
+      | '9:16'
+      | '1:1'
+      | '4:3'
+      | '3:4'
+      | '3:2'
+      | '2:3'
+      | '21:9'
+    /**
+     * @description Image reference type
+     * @enum {string}
+     */
+    KlingImageGenImageReferenceType: 'subject' | 'face'
+    /**
+     * @description Model Name
+     * @default kling-v1
+     * @enum {string}
+     */
+    KlingImageGenModelName: 'kling-v1' | 'kling-v1-5' | 'kling-v2'
+    KlingImageResult: {
+      /** @description Image Number (0-9) */
+      index?: number
+      /**
+       * Format: uri
+       * @description URL for generated image
+       */
+      url?: string
+    }
+    /**
+     * @description Model Name
+     * @default kolors-virtual-try-on-v1
+     * @enum {string}
+     */
+    KlingVirtualTryOnModelName:
+      | 'kolors-virtual-try-on-v1'
+      | 'kolors-virtual-try-on-v1-5'
+    KlingText2VideoRequest: {
+      model_name?: components['schemas']['KlingTextToVideoModelName']
       /** @description Positive text prompt */
       prompt?: string
       /** @description Negative text prompt */
       negative_prompt?: string
-      /**
-       * @description Flexibility in video generation
-       * @default 0.5
-       */
-      cfg_scale: number
-      /**
-       * @description Video generation mode
-       * @default std
-       * @enum {string}
-       */
-      mode: 'std' | 'pro'
-      camera_control?: {
-        /**
-         * @description Predefined camera movements type
-         * @enum {string}
-         */
-        type?:
-          | 'simple'
-          | 'down_back'
-          | 'forward_up'
-          | 'right_turn_forward'
-          | 'left_turn_forward'
-        config?: {
-          horizontal?: number
-          vertical?: number
-          pan?: number
-          tilt?: number
-          roll?: number
-          zoom?: number
-        }
-      }
-      /**
-       * @default 16:9
-       * @enum {string}
-       */
-      aspect_ratio: '16:9' | '9:16' | '1:1'
-      /**
-       * @default 5
-       * @enum {string}
-       */
-      duration: 5 | 10
+      cfg_scale?: components['schemas']['KlingVideoGenCfgScale']
+      mode?: components['schemas']['KlingVideoGenMode']
+      camera_control?: components['schemas']['KlingCameraControl']
+      aspect_ratio?: components['schemas']['KlingVideoGenAspectRatio']
+      duration?: components['schemas']['KlingVideoGenDuration']
       /**
        * Format: uri
        * @description The callback notification address
@@ -1863,8 +3764,7 @@ export interface components {
       data?: {
         /** @description Task ID */
         task_id?: string
-        /** @enum {string} */
-        task_status?: 'submitted' | 'processing' | 'succeed' | 'failed'
+        task_status?: components['schemas']['KlingTaskStatus']
         task_info?: {
           external_task_id?: string
         }
@@ -1873,83 +3773,47 @@ export interface components {
         /** @description Task update time */
         updated_at?: number
         task_result?: {
-          videos?: {
-            /** @description Generated video ID */
-            id?: string
-            /**
-             * Format: uri
-             * @description URL for generated video
-             */
-            url?: string
-            /** @description Total video duration */
-            duration?: string
-          }[]
+          videos?: components['schemas']['KlingVideoResult'][]
         }
       }
     }
     KlingImage2VideoRequest: {
-      /**
-       * @description Model Name
-       * @default kling-v1
-       * @enum {string}
-       */
-      model_name: 'kling-v1' | 'kling-v1-6'
-      /**
-       * Format: uri
-       * @description URL of the image to be used for video generation
-       */
-      image_url?: string
+      model_name?: components['schemas']['KlingVideoGenModelName']
+      /** @description Reference Image - URL or Base64 encoded string, cannot exceed 10MB, resolution not less than 300*300px, aspect ratio between 1:2.5 ~ 2.5:1. Base64 should not include data:image prefix. */
+      image?: string
+      /** @description Reference Image - End frame control. URL or Base64 encoded string, cannot exceed 10MB, resolution not less than 300*300px. Base64 should not include data:image prefix. */
+      image_tail?: string
       /** @description Positive text prompt */
       prompt?: string
       /** @description Negative text prompt */
       negative_prompt?: string
-      /**
-       * @description Flexibility in video generation
-       * @default 0.5
-       */
-      cfg_scale: number
-      /**
-       * @description Video generation mode
-       * @default std
-       * @enum {string}
-       */
-      mode: 'std' | 'pro'
-      camera_control?: {
+      cfg_scale?: components['schemas']['KlingVideoGenCfgScale']
+      mode?: components['schemas']['KlingVideoGenMode']
+      /** @description Static Brush Application Area (Mask image created by users using the motion brush). The aspect ratio must match the input image. */
+      static_mask?: string
+      /** @description Dynamic Brush Configuration List (up to 6 groups). For 5-second videos, trajectory length must not exceed 77 coordinates. */
+      dynamic_masks?: {
         /**
-         * @description Predefined camera movements type
-         * @enum {string}
+         * Format: uri
+         * @description Dynamic Brush Application Area (Mask image created by users using the motion brush). The aspect ratio must match the input image.
          */
-        type?:
-          | 'simple'
-          | 'down_back'
-          | 'forward_up'
-          | 'right_turn_forward'
-          | 'left_turn_forward'
-        config?: {
-          horizontal?: number
-          vertical?: number
-          pan?: number
-          tilt?: number
-          roll?: number
-          zoom?: number
-        }
-      }
-      /**
-       * @default 16:9
-       * @enum {string}
-       */
-      aspect_ratio: '16:9' | '9:16' | '1:1'
-      /**
-       * @default 5
-       * @enum {string}
-       */
-      duration: 5 | 10
+        mask?: string
+        trajectories?: {
+          /** @description The horizontal coordinate of trajectory point. Based on bottom-left corner of image as origin (0,0). */
+          x?: number
+          /** @description The vertical coordinate of trajectory point. Based on bottom-left corner of image as origin (0,0). */
+          y?: number
+        }[]
+      }[]
+      camera_control?: components['schemas']['KlingCameraControl']
+      aspect_ratio?: components['schemas']['KlingVideoGenAspectRatio']
+      duration?: components['schemas']['KlingVideoGenDuration']
       /**
        * Format: uri
-       * @description The callback notification address
+       * @description The callback notification address. Server will notify when the task status changes.
        */
       callback_url?: string
-      /** @description Customized Task ID */
+      /** @description Customized Task ID. Must be unique within a single user account. */
       external_task_id?: string
     }
     KlingImage2VideoResponse: {
@@ -1962,8 +3826,7 @@ export interface components {
       data?: {
         /** @description Task ID */
         task_id?: string
-        /** @enum {string} */
-        task_status?: 'submitted' | 'processing' | 'succeed' | 'failed'
+        task_status?: components['schemas']['KlingTaskStatus']
         task_info?: {
           external_task_id?: string
         }
@@ -1972,84 +3835,23 @@ export interface components {
         /** @description Task update time */
         updated_at?: number
         task_result?: {
-          videos?: {
-            /** @description Generated video ID */
-            id?: string
-            /**
-             * Format: uri
-             * @description URL for generated video
-             */
-            url?: string
-            /** @description Total video duration */
-            duration?: string
-          }[]
+          videos?: components['schemas']['KlingVideoResult'][]
         }
       }
     }
     KlingVideoExtendRequest: {
-      /**
-       * @description Model Name
-       * @default kling-v1
-       * @enum {string}
-       */
-      model_name: 'kling-v1' | 'kling-v1-6'
-      /**
-       * Format: uri
-       * @description URL of the video to be extended
-       */
-      video_url?: string
-      /** @description Positive text prompt */
+      /** @description The ID of the video to be extended. Supports videos generated by text-to-video, image-to-video, and previous video extension operations. Cannot exceed 3 minutes total duration after extension. */
+      video_id?: string
+      /** @description Positive text prompt for guiding the video extension */
       prompt?: string
-      /** @description Negative text prompt */
+      /** @description Negative text prompt for elements to avoid in the extended video */
       negative_prompt?: string
-      /**
-       * @description Flexibility in video generation
-       * @default 0.5
-       */
-      cfg_scale: number
-      /**
-       * @description Video generation mode
-       * @default std
-       * @enum {string}
-       */
-      mode: 'std' | 'pro'
-      camera_control?: {
-        /**
-         * @description Predefined camera movements type
-         * @enum {string}
-         */
-        type?:
-          | 'simple'
-          | 'down_back'
-          | 'forward_up'
-          | 'right_turn_forward'
-          | 'left_turn_forward'
-        config?: {
-          horizontal?: number
-          vertical?: number
-          pan?: number
-          tilt?: number
-          roll?: number
-          zoom?: number
-        }
-      }
-      /**
-       * @default 16:9
-       * @enum {string}
-       */
-      aspect_ratio: '16:9' | '9:16' | '1:1'
-      /**
-       * @default 5
-       * @enum {string}
-       */
-      duration: 5 | 10
+      cfg_scale?: components['schemas']['KlingVideoGenCfgScale']
       /**
        * Format: uri
-       * @description The callback notification address
+       * @description The callback notification address. Server will notify when the task status changes.
        */
       callback_url?: string
-      /** @description Customized Task ID */
-      external_task_id?: string
     }
     KlingVideoExtendResponse: {
       /** @description Error code */
@@ -2061,8 +3863,7 @@ export interface components {
       data?: {
         /** @description Task ID */
         task_id?: string
-        /** @enum {string} */
-        task_status?: 'submitted' | 'processing' | 'succeed' | 'failed'
+        task_status?: components['schemas']['KlingTaskStatus']
         task_info?: {
           external_task_id?: string
         }
@@ -2071,89 +3872,39 @@ export interface components {
         /** @description Task update time */
         updated_at?: number
         task_result?: {
-          videos?: {
-            /** @description Generated video ID */
-            id?: string
-            /**
-             * Format: uri
-             * @description URL for generated video
-             */
-            url?: string
-            /** @description Total video duration */
-            duration?: string
-          }[]
+          videos?: components['schemas']['KlingVideoResult'][]
         }
       }
     }
-    KlingLipSyncRequest: {
-      /**
-       * @description Model Name
-       * @default kling-v1
-       * @enum {string}
-       */
-      model_name: 'kling-v1' | 'kling-v1-6'
-      /**
-       * Format: uri
-       * @description URL of the video to be lip-synced
-       */
+    KlingLipSyncInputObject: {
+      /** @description The ID of the video generated by Kling AI. Only supports 5-second and 10-second videos generated within the last 30 days. */
+      video_id?: string
+      /** @description Get link for uploaded video. Video files support .mp4/.mov, file size does not exceed 100MB, video length between 2-10s. */
       video_url?: string
+      mode: components['schemas']['KlingLipSyncMode']
+      /** @description Text Content for Lip-Sync Video Generation. Required when mode is text2video. Maximum length is 120 characters. */
+      text?: string
+      /** @description Voice ID. Required when mode is text2video. The system offers a variety of voice options to choose from. */
+      voice_id?: string
+      voice_language?: components['schemas']['KlingLipSyncVoiceLanguage']
       /**
-       * Format: uri
-       * @description URL of the audio to be used for lip-syncing
+       * @description Speech Rate. Valid range: 0.8~2.0, accurate to one decimal place.
+       * @default 1
        */
+      voice_speed: number
+      audio_type?: components['schemas']['KlingAudioUploadType']
+      /** @description Local Path of Audio File. Supported formats: .mp3/.wav/.m4a/.aac, maximum file size of 5MB. Base64 code. */
+      audio_file?: string
+      /** @description Audio File Download URL. Supported formats: .mp3/.wav/.m4a/.aac, maximum file size of 5MB. */
       audio_url?: string
-      /** @description Positive text prompt */
-      prompt?: string
-      /** @description Negative text prompt */
-      negative_prompt?: string
-      /**
-       * @description Flexibility in video generation
-       * @default 0.5
-       */
-      cfg_scale: number
-      /**
-       * @description Video generation mode
-       * @default std
-       * @enum {string}
-       */
-      mode: 'std' | 'pro'
-      camera_control?: {
-        /**
-         * @description Predefined camera movements type
-         * @enum {string}
-         */
-        type?:
-          | 'simple'
-          | 'down_back'
-          | 'forward_up'
-          | 'right_turn_forward'
-          | 'left_turn_forward'
-        config?: {
-          horizontal?: number
-          vertical?: number
-          pan?: number
-          tilt?: number
-          roll?: number
-          zoom?: number
-        }
-      }
-      /**
-       * @default 16:9
-       * @enum {string}
-       */
-      aspect_ratio: '16:9' | '9:16' | '1:1'
-      /**
-       * @default 5
-       * @enum {string}
-       */
-      duration: 5 | 10
+    }
+    KlingLipSyncRequest: {
+      input: components['schemas']['KlingLipSyncInputObject']
       /**
        * Format: uri
-       * @description The callback notification address
+       * @description The callback notification address. Server will notify when the task status changes.
        */
       callback_url?: string
-      /** @description Customized Task ID */
-      external_task_id?: string
     }
     KlingLipSyncResponse: {
       /** @description Error code */
@@ -2165,8 +3916,7 @@ export interface components {
       data?: {
         /** @description Task ID */
         task_id?: string
-        /** @enum {string} */
-        task_status?: 'submitted' | 'processing' | 'succeed' | 'failed'
+        task_status?: components['schemas']['KlingTaskStatus']
         task_info?: {
           external_task_id?: string
         }
@@ -2175,84 +3925,37 @@ export interface components {
         /** @description Task update time */
         updated_at?: number
         task_result?: {
-          videos?: {
-            /** @description Generated video ID */
-            id?: string
-            /**
-             * Format: uri
-             * @description URL for generated video
-             */
-            url?: string
-            /** @description Total video duration */
-            duration?: string
-          }[]
+          videos?: components['schemas']['KlingVideoResult'][]
         }
       }
     }
     KlingVideoEffectsRequest: {
-      /**
-       * @description Model Name
-       * @default kling-v1
-       * @enum {string}
-       */
-      model_name: 'kling-v1' | 'kling-v1-6'
+      effect_scene:
+        | components['schemas']['KlingDualCharacterEffectsScene']
+        | components['schemas']['KlingSingleImageEffectsScene']
+      input: components['schemas']['KlingVideoEffectsInput']
       /**
        * Format: uri
-       * @description URL of the video to be used for effects generation
-       */
-      video_url?: string
-      /** @description Positive text prompt */
-      prompt?: string
-      /** @description Negative text prompt */
-      negative_prompt?: string
-      /**
-       * @description Flexibility in video generation
-       * @default 0.5
-       */
-      cfg_scale: number
-      /**
-       * @description Video generation mode
-       * @default std
-       * @enum {string}
-       */
-      mode: 'std' | 'pro'
-      camera_control?: {
-        /**
-         * @description Predefined camera movements type
-         * @enum {string}
-         */
-        type?:
-          | 'simple'
-          | 'down_back'
-          | 'forward_up'
-          | 'right_turn_forward'
-          | 'left_turn_forward'
-        config?: {
-          horizontal?: number
-          vertical?: number
-          pan?: number
-          tilt?: number
-          roll?: number
-          zoom?: number
-        }
-      }
-      /**
-       * @default 16:9
-       * @enum {string}
-       */
-      aspect_ratio: '16:9' | '9:16' | '1:1'
-      /**
-       * @default 5
-       * @enum {string}
-       */
-      duration: 5 | 10
-      /**
-       * Format: uri
-       * @description The callback notification address
+       * @description The callback notification address for the result of this task.
        */
       callback_url?: string
-      /** @description Customized Task ID */
+      /** @description Customized Task ID. Must be unique within a single user account. */
       external_task_id?: string
+    }
+    KlingVideoEffectsInput:
+      | components['schemas']['KlingSingleImageEffectInput']
+      | components['schemas']['KlingDualCharacterEffectInput']
+    KlingSingleImageEffectInput: {
+      model_name: components['schemas']['KlingSingleImageEffectModelName']
+      /** @description Reference Image. URL or Base64 encoded string (without data:image prefix). File size cannot exceed 10MB, resolution not less than 300*300px, aspect ratio between 1:2.5 ~ 2.5:1. */
+      image: string
+      duration: components['schemas']['KlingSingleImageEffectDuration']
+    }
+    KlingDualCharacterEffectInput: {
+      model_name?: components['schemas']['KlingCharacterEffectModelName']
+      mode?: components['schemas']['KlingVideoGenMode']
+      images: components['schemas']['KlingDualCharacterImages']
+      duration: components['schemas']['KlingVideoGenDuration']
     }
     KlingVideoEffectsResponse: {
       /** @description Error code */
@@ -2264,8 +3967,7 @@ export interface components {
       data?: {
         /** @description Task ID */
         task_id?: string
-        /** @enum {string} */
-        task_status?: 'submitted' | 'processing' | 'succeed' | 'failed'
+        task_status?: components['schemas']['KlingTaskStatus']
         task_info?: {
           external_task_id?: string
         }
@@ -2274,38 +3976,19 @@ export interface components {
         /** @description Task update time */
         updated_at?: number
         task_result?: {
-          videos?: {
-            /** @description Generated video ID */
-            id?: string
-            /**
-             * Format: uri
-             * @description URL for generated video
-             */
-            url?: string
-            /** @description Total video duration */
-            duration?: string
-          }[]
+          videos?: components['schemas']['KlingVideoResult'][]
         }
       }
     }
     KlingImageGenerationsRequest: {
-      /**
-       * @description Model Name
-       * @default kling-v1
-       * @enum {string}
-       */
-      model_name: 'kling-v1' | 'kling-v1-5'
+      model_name?: components['schemas']['KlingImageGenModelName']
       /** @description Positive text prompt */
       prompt: string
       /** @description Negative text prompt */
       negative_prompt?: string
       /** @description Reference Image - Base64 encoded string or image URL */
       image?: string
-      /**
-       * @description Image reference type
-       * @enum {string}
-       */
-      image_reference?: 'subject' | 'face'
+      image_reference?: components['schemas']['KlingImageGenImageReferenceType']
       /**
        * @description Reference intensity for user-uploaded images
        * @default 0.5
@@ -2321,20 +4004,7 @@ export interface components {
        * @default 1
        */
       n: number
-      /**
-       * @description Aspect ratio of the generated images
-       * @default 16:9
-       * @enum {string}
-       */
-      aspect_ratio:
-        | '16:9'
-        | '9:16'
-        | '1:1'
-        | '4:3'
-        | '3:4'
-        | '3:2'
-        | '2:3'
-        | '21:9'
+      aspect_ratio?: components['schemas']['KlingImageGenAspectRatio']
       /**
        * Format: uri
        * @description The callback notification address
@@ -2351,8 +4021,7 @@ export interface components {
       data?: {
         /** @description Task ID */
         task_id?: string
-        /** @enum {string} */
-        task_status?: 'submitted' | 'processing' | 'succeed' | 'failed'
+        task_status?: components['schemas']['KlingTaskStatus']
         /** @description Task status information */
         task_status_msg?: string
         /** @description Task creation time */
@@ -2360,25 +4029,12 @@ export interface components {
         /** @description Task update time */
         updated_at?: number
         task_result?: {
-          images?: {
-            /** @description Image Number (0-9) */
-            index?: number
-            /**
-             * Format: uri
-             * @description URL for generated image
-             */
-            url?: string
-          }[]
+          images?: components['schemas']['KlingImageResult'][]
         }
       }
     }
     KlingVirtualTryOnRequest: {
-      /**
-       * @description Model Name
-       * @default kolors-virtual-try-on-v1
-       * @enum {string}
-       */
-      model_name: 'kolors-virtual-try-on-v1' | 'kolors-virtual-try-on-v1-5'
+      model_name?: components['schemas']['KlingVirtualTryOnModelName']
       /** @description Reference human image - Base64 encoded string or image URL */
       human_image: string
       /** @description Reference clothing image - Base64 encoded string or image URL */
@@ -2399,8 +4055,7 @@ export interface components {
       data?: {
         /** @description Task ID */
         task_id?: string
-        /** @enum {string} */
-        task_status?: 'submitted' | 'processing' | 'succeed' | 'failed'
+        task_status?: components['schemas']['KlingTaskStatus']
         /** @description Task status information */
         task_status_msg?: string
         /** @description Task creation time */
@@ -2408,15 +4063,7 @@ export interface components {
         /** @description Task update time */
         updated_at?: number
         task_result?: {
-          images?: {
-            /** @description Image Number */
-            index?: number
-            /**
-             * Format: uri
-             * @description URL for generated image
-             */
-            url?: string
-          }[]
+          images?: components['schemas']['KlingImageResult'][]
         }
       }
     }
@@ -2767,6 +4414,81 @@ export interface components {
       file_id?: string
       base_resp: components['schemas']['MinimaxBaseResponse']
     }
+    BFLFluxKontextProGenerateRequest: {
+      /** @description The text prompt describing what to edit on the image */
+      prompt: string
+      /** @description Base64 encoded image to be edited */
+      input_image: string
+      /**
+       * @description Number of inference steps
+       * @default 50
+       */
+      steps: number
+      /**
+       * @description The guidance scale for generation
+       * @default 3
+       */
+      guidance: number
+    }
+    BFLFluxKontextProGenerateResponse: {
+      /** @description Job ID for tracking */
+      id: string
+      /** @description URL to poll for results */
+      polling_url: string
+    }
+    BFLFluxKontextMaxGenerateRequest: {
+      /** @description The text prompt describing what to edit on the image */
+      prompt: string
+      /** @description Base64 encoded image to be edited */
+      input_image: string
+      /**
+       * @description Number of inference steps
+       * @default 50
+       */
+      steps: number
+      /**
+       * @description The guidance scale for generation
+       * @default 3
+       */
+      guidance: number
+    }
+    BFLFluxKontextMaxGenerateResponse: {
+      /** @description Job ID for tracking */
+      id: string
+      /** @description URL to poll for results */
+      polling_url: string
+    }
+    BFLFluxPro1_1GenerateRequest: {
+      /** @description The main text prompt for image generation */
+      prompt: string
+      /** @description Optional image prompt */
+      image_prompt?: string
+      /** @description Width of the generated image */
+      width: number
+      /** @description Height of the generated image */
+      height: number
+      /** @description Whether to use prompt upsampling */
+      prompt_upsampling?: boolean
+      /** @description Random seed for reproducibility */
+      seed?: number
+      /** @description Safety tolerance level */
+      safety_tolerance?: number
+      /**
+       * @description Output image format
+       * @enum {string}
+       */
+      output_format?: 'jpeg' | 'png'
+      /** @description Optional webhook URL for async processing */
+      webhook_url?: string
+      /** @description Optional webhook secret for async processing */
+      webhook_secret?: string
+    }
+    BFLFluxPro1_1GenerateResponse: {
+      /** @description Job ID for tracking */
+      id: string
+      /** @description URL to poll for results */
+      polling_url: string
+    }
     /** @description Request body for the BFL Flux Pro 1.1 Ultra image generation API. */
     BFLFluxProGenerateRequest: {
       /** @description The text prompt for image generation. */
@@ -2797,14 +4519,355 @@ export interface components {
     BFLFluxProStatusResponse: {
       /** @description The unique identifier for the generation task. */
       id: string
-      /** @description The status of the task (e.g., "Pending", "Completed", "Failed"). */
-      status: string
+      /** @description The status of the task. */
+      status: components['schemas']['BFLStatus']
       /** @description The result of the task (null if not completed). */
       result?: Record<string, never> | null
-      /** @description The progress of the task (0.0 to 1.0). */
+      /**
+       * Format: float
+       * @description The progress of the task (0.0 to 1.0).
+       */
       progress: number
       /** @description Additional details about the task (null if not available). */
       details?: Record<string, never> | null
+    }
+    /**
+     * @description Possible statuses for a BFL Flux Pro generation task.
+     * @example Ready
+     * @enum {string}
+     */
+    BFLStatus:
+      | 'Task not found'
+      | 'Pending'
+      | 'Request Moderated'
+      | 'Content Moderated'
+      | 'Ready'
+      | 'Error'
+    /** FluxProFillInputs */
+    BFLFluxProFillInputs: {
+      /**
+       * Image
+       * @description A Base64-encoded string representing the image you wish to modify. Can contain alpha mask if desired.
+       */
+      image: string
+      /**
+       * Mask
+       * @description A Base64-encoded string representing a mask for the areas you want to modify in the image. The mask should be the same dimensions as the image and in black and white. Black areas (0%) indicate no modification, while white areas (100%) specify areas for inpainting. Optional if you provide an alpha mask in the original image. Validation: The endpoint verifies that the dimensions of the mask match the original image.
+       */
+      mask?: string
+      /**
+       * Prompt
+       * @description The description of the changes you want to make. This text guides the inpainting process, allowing you to specify features, styles, or modifications for the masked area.
+       * @default
+       * @example ein fantastisches bild
+       */
+      prompt: string
+      /**
+       * Steps
+       * @description Number of steps for the image generation process
+       * @default 50
+       * @example 50
+       */
+      steps: number
+      /**
+       * Prompt Upsampling
+       * @description Whether to perform upsampling on the prompt. If active, automatically modifies the prompt for more creative generation
+       * @default false
+       */
+      prompt_upsampling: boolean
+      /**
+       * Seed
+       * @description Optional seed for reproducibility
+       */
+      seed?: number
+      /**
+       * Guidance
+       * @description Guidance strength for the image generation process
+       * @default 60
+       */
+      guidance: number
+      /**
+       * @description Output format for the generated image. Can be 'jpeg' or 'png'.
+       * @default jpeg
+       */
+      output_format: components['schemas']['BFLOutputFormat']
+      /**
+       * Safety Tolerance
+       * @description Tolerance level for input and output moderation. Between 0 and 6, 0 being most strict, 6 being least strict.
+       * @default 2
+       * @example 2
+       */
+      safety_tolerance: number
+      /**
+       * Webhook Url
+       * @description URL to receive webhook notifications
+       */
+      webhook_url?: string
+      /**
+       * Webhook Secret
+       * @description Optional secret for webhook signature verification
+       */
+      webhook_secret?: string
+    }
+    /** AsyncResponse */
+    BFLAsyncResponse: {
+      /** Id */
+      id: string
+      /** Polling Url */
+      polling_url: string
+    }
+    /** AsyncWebhookResponse */
+    BFLAsyncWebhookResponse: {
+      /** Id */
+      id: string
+      /** Status */
+      status: string
+      /** Webhook Url */
+      webhook_url: string
+    }
+    /** HTTPValidationError */
+    BFLHTTPValidationError: {
+      /** Detail */
+      detail?: components['schemas']['BFLValidationError'][]
+    }
+    /** FluxProExpandInputs */
+    BFLFluxProExpandInputs: {
+      /**
+       * Image
+       * @description A Base64-encoded string representing the image you wish to expand.
+       */
+      image: string
+      /**
+       * Top
+       * @description Number of pixels to expand at the top of the image
+       * @default 0
+       */
+      top: number
+      /**
+       * Bottom
+       * @description Number of pixels to expand at the bottom of the image
+       * @default 0
+       */
+      bottom: number
+      /**
+       * Left
+       * @description Number of pixels to expand on the left side of the image
+       * @default 0
+       */
+      left: number
+      /**
+       * Right
+       * @description Number of pixels to expand on the right side of the image
+       * @default 0
+       */
+      right: number
+      /**
+       * Prompt
+       * @description The description of the changes you want to make. This text guides the expansion process, allowing you to specify features, styles, or modifications for the expanded areas.
+       * @default
+       * @example ein fantastisches bild
+       */
+      prompt: string
+      /**
+       * Steps
+       * @description Number of steps for the image generation process
+       * @default 50
+       * @example 50
+       */
+      steps: number
+      /**
+       * Prompt Upsampling
+       * @description Whether to perform upsampling on the prompt. If active, automatically modifies the prompt for more creative generation
+       * @default false
+       */
+      prompt_upsampling: boolean
+      /**
+       * Seed
+       * @description Optional seed for reproducibility
+       */
+      seed?: number
+      /**
+       * Guidance
+       * @description Guidance strength for the image generation process
+       * @default 60
+       */
+      guidance: number
+      /**
+       * @description Output format for the generated image. Can be 'jpeg' or 'png'.
+       * @default jpeg
+       */
+      output_format: components['schemas']['BFLOutputFormat']
+      /**
+       * Safety Tolerance
+       * @description Tolerance level for input and output moderation. Between 0 and 6, 0 being most strict, 6 being least strict.
+       * @default 2
+       * @example 2
+       */
+      safety_tolerance: number
+      /**
+       * Webhook Url
+       * @description URL to receive webhook notifications
+       */
+      webhook_url?: string
+      /**
+       * Webhook Secret
+       * @description Optional secret for webhook signature verification
+       */
+      webhook_secret?: string
+    }
+    /** CannyInputs */
+    BFLCannyInputs: {
+      /**
+       * Prompt
+       * @description Text prompt for image generation
+       * @example ein fantastisches bild
+       */
+      prompt: string
+      /**
+       * Control Image
+       * @description Base64 encoded image to use as control input if no preprocessed image is provided
+       */
+      control_image?: string
+      /**
+       * Preprocessed Image
+       * @description Optional pre-processed image that will bypass the control preprocessing step
+       */
+      preprocessed_image?: string
+      /**
+       * Canny Low Threshold
+       * @description Low threshold for Canny edge detection
+       * @default 50
+       */
+      canny_low_threshold: number
+      /**
+       * Canny High Threshold
+       * @description High threshold for Canny edge detection
+       * @default 200
+       */
+      canny_high_threshold: number
+      /**
+       * Prompt Upsampling
+       * @description Whether to perform upsampling on the prompt
+       * @default false
+       */
+      prompt_upsampling: boolean
+      /**
+       * Seed
+       * @description Optional seed for reproducibility
+       * @example 42
+       */
+      seed?: number
+      /**
+       * Steps
+       * @description Number of steps for the image generation process
+       * @default 50
+       */
+      steps: number
+      /**
+       * @description Output format for the generated image. Can be 'jpeg' or 'png'.
+       * @default jpeg
+       */
+      output_format: components['schemas']['BFLOutputFormat']
+      /**
+       * Guidance
+       * @description Guidance strength for the image generation process
+       * @default 30
+       */
+      guidance: number
+      /**
+       * Safety Tolerance
+       * @description Tolerance level for input and output moderation. Between 0 and 6, 0 being most strict, 6 being least strict.
+       * @default 2
+       */
+      safety_tolerance: number
+      /**
+       * Webhook Url
+       * @description URL to receive webhook notifications
+       */
+      webhook_url?: string
+      /**
+       * Webhook Secret
+       * @description Optional secret for webhook signature verification
+       */
+      webhook_secret?: string
+    }
+    /** DepthInputs */
+    BFLDepthInputs: {
+      /**
+       * Prompt
+       * @description Text prompt for image generation
+       * @example ein fantastisches bild
+       */
+      prompt: string
+      /**
+       * Control Image
+       * @description Base64 encoded image to use as control input
+       */
+      control_image?: string
+      /**
+       * Preprocessed Image
+       * @description Optional pre-processed image that will bypass the control preprocessing step
+       */
+      preprocessed_image?: string
+      /**
+       * Prompt Upsampling
+       * @description Whether to perform upsampling on the prompt
+       * @default false
+       */
+      prompt_upsampling: boolean
+      /**
+       * Seed
+       * @description Optional seed for reproducibility
+       * @example 42
+       */
+      seed?: number
+      /**
+       * Steps
+       * @description Number of steps for the image generation process
+       * @default 50
+       */
+      steps: number
+      /**
+       * @description Output format for the generated image. Can be 'jpeg' or 'png'.
+       * @default jpeg
+       */
+      output_format: components['schemas']['BFLOutputFormat']
+      /**
+       * Guidance
+       * @description Guidance strength for the image generation process
+       * @default 15
+       */
+      guidance: number
+      /**
+       * Safety Tolerance
+       * @description Tolerance level for input and output moderation. Between 0 and 6, 0 being most strict, 6 being least strict.
+       * @default 2
+       */
+      safety_tolerance: number
+      /**
+       * Webhook Url
+       * @description URL to receive webhook notifications
+       */
+      webhook_url?: string
+      /**
+       * Webhook Secret
+       * @description Optional secret for webhook signature verification
+       */
+      webhook_secret?: string
+    }
+    /**
+     * OutputFormat
+     * @enum {string}
+     */
+    BFLOutputFormat: 'jpeg' | 'png'
+    /** ValidationError */
+    BFLValidationError: {
+      /** Location */
+      loc: (string | number)[]
+      /** Message */
+      msg: string
+      /** Error Type */
+      type: string
     }
     /** @description Parameters for the Recraft image generation proxy request. */
     RecraftImageGenerationRequest: {
@@ -2814,8 +4877,21 @@ export interface components {
       model: string
       /** @description The style to apply to the generated image (e.g., "digital_illustration") */
       style?: string
+      /** @description The style ID to apply to the generated image (e.g., "123e4567-e89b-12d3-a456-426614174000"). If style_id is provided, style should not be provided. */
+      style_id?: string
       /** @description The size of the generated image (e.g., "1024x1024") */
       size: string
+      /** @description The controls for the generated image */
+      controls?: {
+        /** @description Defines artistic tone of your image. At a simple level, the person looks straight at the camera in a static and clean style. Dynamic and eccentric levels introduce movement and creativity. */
+        artistic_level?: number | null
+        /** @description An array of preferable colors */
+        colors?: components['schemas']['RGBColor'][]
+        /** @description Use given color as a desired background color */
+        background_color?: components['schemas']['RGBColor']
+        /** @description Do not embed text layouts */
+        no_text?: boolean
+      }
       /** @description The number of images to generate */
       n: number
     }
@@ -2833,73 +4909,3795 @@ export interface components {
         url?: string
       }[]
     }
+    RecraftImageFeatures: {
+      nsfw_score?: number
+    }
+    RecraftTextLayoutItem: {
+      bbox: number[][]
+      text: string
+    }
+    RecraftImageColor: {
+      rgb?: number[]
+      std?: number[]
+      weight?: number
+    }
+    /** @enum {string} */
+    RecraftImageStyle:
+      | 'digital_illustration'
+      | 'icon'
+      | 'realistic_image'
+      | 'vector_illustration'
+    /** @enum {string} */
+    RecraftImageSubStyle:
+      | '2d_art_poster'
+      | '3d'
+      | '80s'
+      | 'glow'
+      | 'grain'
+      | 'hand_drawn'
+      | 'infantile_sketch'
+      | 'kawaii'
+      | 'pixel_art'
+      | 'psychedelic'
+      | 'seamless'
+      | 'voxel'
+      | 'watercolor'
+      | 'broken_line'
+      | 'colored_outline'
+      | 'colored_shapes'
+      | 'colored_shapes_gradient'
+      | 'doodle_fill'
+      | 'doodle_offset_fill'
+      | 'offset_fill'
+      | 'outline'
+      | 'outline_gradient'
+      | 'uneven_fill'
+      | '70s'
+      | 'cartoon'
+      | 'doodle_line_art'
+      | 'engraving'
+      | 'flat_2'
+      | 'kawaii'
+      | 'line_art'
+      | 'linocut'
+      | 'seamless'
+      | 'b_and_w'
+      | 'enterprise'
+      | 'hard_flash'
+      | 'hdr'
+      | 'motion_blur'
+      | 'natural_light'
+      | 'studio_portrait'
+      | 'line_circuit'
+      | '2d_art_poster_2'
+      | 'engraving_color'
+      | 'flat_air_art'
+      | 'hand_drawn_outline'
+      | 'handmade_3d'
+      | 'stickers_drawings'
+      | 'plastic'
+      | 'pictogram'
+    /** @enum {string} */
+    RecraftTransformModel:
+      | 'refm1'
+      | 'recraft20b'
+      | 'recraftv2'
+      | 'recraftv3'
+      | 'flux1_1pro'
+      | 'flux1dev'
+      | 'imagen3'
+      | 'hidream_i1_dev'
+    /** @enum {string} */
+    RecraftImageFormat: 'webp' | 'png'
+    /** @enum {string} */
+    RecraftResponseFormat: 'url' | 'b64_json'
+    RecraftImage: {
+      b64_json?: string
+      features?: components['schemas']['RecraftImageFeatures']
+      /** Format: uuid */
+      image_id: string
+      revised_prompt?: string
+      url?: string
+    }
+    RecraftUserControls: {
+      artistic_level?: number
+      background_color?: components['schemas']['RecraftImageColor']
+      colors?: components['schemas']['RecraftImageColor'][]
+      no_text?: boolean
+    }
+    RecraftTextLayout: components['schemas']['RecraftTextLayoutItem'][]
+    RecraftProcessImageRequest: {
+      /** Format: binary */
+      image: string
+      image_format?: components['schemas']['RecraftImageFormat']
+      response_format?: components['schemas']['RecraftResponseFormat']
+    }
+    RecraftProcessImageResponse: {
+      created: number
+      credits: number
+      image: components['schemas']['RecraftImage']
+    }
+    RecraftImageToImageRequest: {
+      block_nsfw?: boolean
+      calculate_features?: boolean
+      controls?: components['schemas']['RecraftUserControls']
+      /** Format: binary */
+      image: string
+      image_format?: components['schemas']['RecraftImageFormat']
+      model?: components['schemas']['RecraftTransformModel']
+      n?: number
+      negative_prompt?: string
+      prompt: string
+      response_format?: components['schemas']['RecraftResponseFormat']
+      strength: number
+      style?: components['schemas']['RecraftImageStyle']
+      /** Format: uuid */
+      style_id?: string
+      substyle?: components['schemas']['RecraftImageSubStyle']
+      text_layout?: components['schemas']['RecraftTextLayout']
+    }
+    RecraftGenerateImageResponse: {
+      created: number
+      credits: number
+      data: components['schemas']['RecraftImage'][]
+    }
+    RecraftTransformImageWithMaskRequest: {
+      block_nsfw?: boolean
+      calculate_features?: boolean
+      /** Format: binary */
+      image: string
+      image_format?: components['schemas']['RecraftImageFormat']
+      /** Format: binary */
+      mask: string
+      model?: components['schemas']['RecraftTransformModel']
+      n?: number
+      negative_prompt?: string
+      prompt: string
+      response_format?: components['schemas']['RecraftResponseFormat']
+      style?: components['schemas']['RecraftImageStyle']
+      /** Format: uuid */
+      style_id?: string
+      substyle?: components['schemas']['RecraftImageSubStyle']
+      text_layout?: components['schemas']['RecraftTextLayout']
+    }
     KlingErrorResponse: {
-      /** @description Error code value as defined in the API documentation */
+      /** @description - 1000: Authentication failed
+       *     - 1001: Authorization is empty
+       *     - 1002: Authorization is invalid
+       *     - 1003: Authorization is not yet valid
+       *     - 1004: Authorization has expired
+       *     - 1100: Account exception
+       *     - 1101: Account in arrears (postpaid scenario)
+       *     - 1102: Resource pack depleted or expired (prepaid scenario)
+       *     - 1103: Unauthorized access to requested resource
+       *     - 1200: Invalid request parameters
+       *     - 1201: Invalid parameters
+       *     - 1202: Invalid request method
+       *     - 1203: Requested resource does not exist
+       *     - 1300: Trigger platform strategy
+       *     - 1301: Trigger content security policy
+       *     - 1302: API request too frequent
+       *     - 1303: Concurrency/QPS exceeds limit
+       *     - 1304: Trigger IP whitelist policy
+       *     - 5000: Internal server error
+       *     - 5001: Service temporarily unavailable
+       *     - 5002: Server internal timeout
+       *      */
       code: number
       /** @description Human-readable error message */
       message: string
       /** @description Request ID for tracking and troubleshooting */
       request_id: string
     }
-    KlingAuthenticationError: components['schemas']['KlingErrorResponse'] & {
-      /**
-       * @description - 1000: Authentication failed
-       *     - 1001: Authorization is empty
-       *     - 1002: Authorization is invalid
-       *     - 1003: Authorization is not yet valid
-       *     - 1004: Authorization has expired
-       *
-       * @enum {unknown}
-       */
-      code?: 1000 | 1001 | 1002 | 1003 | 1004
+    TripoTask: {
+      task_id: string
+      type: string
+      /** @enum {string} */
+      status:
+        | 'queued'
+        | 'running'
+        | 'success'
+        | 'failed'
+        | 'cancelled'
+        | 'unknown'
+        | 'banned'
+        | 'expired'
+      input: Record<string, never>
+      output: {
+        model?: string
+        base_model?: string
+        pbr_model?: string
+        rendered_image?: string
+        riggable?: boolean
+        /** @enum {string} */
+        topology?: 'bip' | 'quad'
+      }
+      progress: number
+      create_time: number
     }
-    KlingAccountError: components['schemas']['KlingErrorResponse'] & {
-      /**
-       * @description - 1100: Account exception
-       *     - 1101: Account in arrears (postpaid scenario)
-       *     - 1102: Resource pack depleted or expired (prepaid scenario)
-       *     - 1103: Unauthorized access to requested resource
-       *
-       * @enum {unknown}
-       */
-      code?: 1100 | 1101 | 1102 | 1103
+    TripoSuccessTask: {
+      /** @enum {integer} */
+      code: 0
+      data: {
+        /** @description used for getTask */
+        task_id: string
+      }
     }
-    KlingRequestError: components['schemas']['KlingErrorResponse'] & {
-      /**
-       * @description - 1200: Invalid request parameters
-       *     - 1201: Invalid parameters
-       *     - 1202: Invalid request method
-       *     - 1203: Requested resource does not exist
-       *
-       * @enum {unknown}
-       */
-      code?: 1200 | 1201 | 1202 | 1203
+    TripoBalance: {
+      balance: number
+      frozen: number
     }
-    KlingStrategyError: components['schemas']['KlingErrorResponse'] & {
-      /**
-       * @description - 1300: Trigger platform strategy
-       *     - 1301: Trigger content security policy
-       *     - 1302: API request too frequent
-       *     - 1303: Concurrency/QPS exceeds limit
-       *     - 1304: Trigger IP whitelist policy
-       *
-       * @enum {unknown}
-       */
-      code?: 1300 | 1301 | 1302 | 1303 | 1304
+    TripoErrorResponse: {
+      /** @enum {integer} */
+      code: 1001 | 2000 | 2001 | 2002 | 2003 | 2004 | 2006 | 2007 | 2008 | 2010
+      message: string
+      suggestion: string
     }
-    KlingServerError: components['schemas']['KlingErrorResponse'] & {
+    /**
+     * @description Standard success code for Tripo API responses. Typically 0 for success.
+     * @example 0
+     */
+    TripoResponseSuccessCode: number
+    /**
+     * @description The type of the Tripo task, specifically for text-to-model operations.
+     * @example text_to_model
+     * @enum {string}
+     */
+    TripoTextToModel: 'text_to_model'
+    /**
+     * @description Version of the Tripo model.
+     * @example v2.5-20250123
+     * @enum {string}
+     */
+    TripoModelVersion: 'v2.5-20250123' | 'v2.0-20240919' | 'v1.4-20240625'
+    /**
+     * @description Style for the Tripo model generation.
+     * @example object:clay
+     * @enum {string}
+     */
+    TripoModelStyle:
+      | 'person:person2cartoon'
+      | 'animal:venom'
+      | 'object:clay'
+      | 'object:steampunk'
+      | 'object:christmas'
+      | 'object:barbie'
+      | 'gold'
+      | 'ancient_bronze'
+    /**
+     * @description Task type for Tripo image-to-model generation.
+     * @example image_to_model
+     * @enum {string}
+     */
+    TripoImageToModel: 'image_to_model'
+    /**
+     * @description Task type for Tripo multiview-to-model generation.
+     * @example multiview_to_model
+     * @enum {string}
+     */
+    TripoMultiviewToModel: 'multiview_to_model'
+    /**
+     * @description Mode for multiview generation, specifying view orientation.
+     * @example LEFT
+     * @enum {string}
+     */
+    TripoMultiviewMode: 'LEFT' | 'RIGHT'
+    /** @enum {string} */
+    TripoTextureQuality: 'standard' | 'detailed'
+    /** @enum {string} */
+    TripoTextureAlignment: 'original_image' | 'geometry'
+    /**
+     * @default default
+     * @enum {string}
+     */
+    TripoOrientation: 'align_image' | 'default'
+    /** @enum {string} */
+    TripoTypeTextureModel: 'texture_model'
+    /** @enum {string} */
+    TripoTypeRefineModel: 'refine_model'
+    /** @enum {string} */
+    TripoTypeAnimatePrerigcheck: 'animate_prerigcheck'
+    /** @enum {string} */
+    TripoTypeAnimateRig: 'animate_rig'
+    /** @enum {string} */
+    TripoStandardFormat: 'glb' | 'fbx'
+    /** @enum {string} */
+    TripoTopology: 'bip' | 'quad'
+    /** @enum {string} */
+    TripoSpec: 'mixamo' | 'tripo'
+    /** @enum {string} */
+    TripoTypeAnimateRetarget: 'animate_retarget'
+    /** @enum {string} */
+    TripoAnimation:
+      | 'preset:idle'
+      | 'preset:walk'
+      | 'preset:climb'
+      | 'preset:jump'
+      | 'preset:run'
+      | 'preset:slash'
+      | 'preset:shoot'
+      | 'preset:hurt'
+      | 'preset:fall'
+      | 'preset:turn'
+    /** @enum {string} */
+    TripoTypeStylizeModel: 'stylize_model'
+    /** @enum {string} */
+    TripoStylizeOptions: 'lego' | 'voxel' | 'voronoi' | 'minecraft'
+    /** @enum {string} */
+    TripoTypeConvertModel: 'convert_model'
+    /** @enum {string} */
+    TripoConvertFormat: 'GLTF' | 'USDZ' | 'FBX' | 'OBJ' | 'STL' | '3MF'
+    /** @enum {string} */
+    TripoTextureFormat:
+      | 'BMP'
+      | 'DPX'
+      | 'HDR'
+      | 'JPEG'
+      | 'OPEN_EXR'
+      | 'PNG'
+      | 'TARGA'
+      | 'TIFF'
+      | 'WEBP'
+    /**
+     * @description The aspect ratio of the generation
+     * @default 16:9
+     * @example 16:9
+     * @enum {string}
+     */
+    LumaAspectRatio: '1:1' | '16:9' | '9:16' | '4:3' | '3:4' | '21:9' | '9:21'
+    /**
+     * @description The keyframes of the generation
+     * @example {
+     *       "frame0": {
+     *         "type": "image",
+     *         "url": "https://example.com/image.jpg"
+     *       },
+     *       "frame1": {
+     *         "type": "generation",
+     *         "id": "123e4567-e89b-12d3-a456-426614174000"
+     *       }
+     *     }
+     */
+    LumaKeyframes: {
+      frame0?: components['schemas']['LumaKeyframe']
+      frame1?: components['schemas']['LumaKeyframe']
+    }
+    /**
+     * @description The video model used for the generation
+     * @default ray-2
+     * @example ray-2
+     * @enum {string}
+     */
+    LumaVideoModel: 'ray-2' | 'ray-flash-2' | 'ray-1-6'
+    LumaVideoModelOutputResolution: ('540p' | '720p' | '1080p' | '4k') | string
+    LumaVideoModelOutputDuration: ('5s' | '9s') | string
+    /**
+     * @description The image model used for the generation
+     * @default photon-1
+     * @enum {string}
+     */
+    LumaImageModel: 'photon-1' | 'photon-flash-1'
+    /** @description The image reference object */
+    LumaImageRef: {
       /**
-       * @description - 5000: Internal server error
-       *     - 5001: Service temporarily unavailable
-       *     - 5002: Server internal timeout
-       *
-       * @enum {unknown}
+       * Format: uri
+       * @description The URL of the image reference
        */
-      code?: 5000 | 5001 | 5002
+      url?: string
+      /** @description The weight of the image reference */
+      weight?: number
+    }
+    /** @description The image identity object */
+    LumaImageIdentity: {
+      /** @description The URLs of the image identity */
+      images?: string[]
+    }
+    /** @description The modify image reference object */
+    LumaModifyImageRef: {
+      /**
+       * Format: uri
+       * @description The URL of the image reference
+       */
+      url?: string
+      /** @description The weight of the modify image reference */
+      weight?: number
+    }
+    /**
+     * @description The generation reference object
+     * @example {
+     *       "type": "generation",
+     *       "id": "123e4567-e89b-12d3-a456-426614174003"
+     *     }
+     */
+    LumaGenerationReference: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'generation'
+      /**
+       * Format: uuid
+       * @description The ID of the generation
+       */
+      id: string
+    }
+    /**
+     * @description The image object
+     * @example {
+     *       "type": "image",
+     *       "url": "https://example.com/image.jpg"
+     *     }
+     */
+    LumaImageReference: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'image'
+      /**
+       * Format: uri
+       * @description The URL of the image
+       */
+      url: string
+    }
+    /** @description A keyframe can be either a Generation reference, an Image, or a Video */
+    LumaKeyframe:
+      | components['schemas']['LumaGenerationReference']
+      | components['schemas']['LumaImageReference']
+    /** @enum {string} */
+    LumaGenerationType: 'video' | 'image'
+    /**
+     * @description The state of the generation
+     * @example completed
+     * @enum {string}
+     */
+    LumaState: 'queued' | 'dreaming' | 'completed' | 'failed'
+    /** @description The assets of the generation */
+    LumaAssets: {
+      /**
+       * Format: uri
+       * @description The URL of the video
+       */
+      video?: string
+      /**
+       * Format: uri
+       * @description The URL of the image
+       */
+      image?: string
+      /**
+       * Format: uri
+       * @description The URL of the progress video
+       */
+      progress_video?: string
+    }
+    /** @description The generation request object */
+    LumaGenerationRequest: {
+      /**
+       * @default video
+       * @enum {string}
+       */
+      generation_type: 'video'
+      /** @description The prompt of the generation */
+      prompt: string
+      aspect_ratio: components['schemas']['LumaAspectRatio']
+      /** @description Whether to loop the video */
+      loop?: boolean
+      keyframes?: components['schemas']['LumaKeyframes']
+      /**
+       * Format: uri
+       * @description The callback URL of the generation, a POST request with Generation object will be sent to the callback URL when the generation is dreaming, completed, or failed
+       */
+      callback_url?: string
+      model: components['schemas']['LumaVideoModel']
+      resolution: components['schemas']['LumaVideoModelOutputResolution']
+      duration: components['schemas']['LumaVideoModelOutputDuration']
+    }
+    /** @description The image generation request object */
+    LumaImageGenerationRequest: {
+      /**
+       * @default image
+       * @enum {string}
+       */
+      generation_type: 'image'
+      model?: components['schemas']['LumaImageModel']
+      /** @description The prompt of the generation */
+      prompt?: string
+      aspect_ratio?: components['schemas']['LumaAspectRatio']
+      /**
+       * Format: uri
+       * @description The callback URL for the generation
+       */
+      callback_url?: string
+      image_ref?: components['schemas']['LumaImageRef'][]
+      style_ref?: components['schemas']['LumaImageRef'][]
+      character_ref?: {
+        identity0?: components['schemas']['LumaImageIdentity']
+      }
+      modify_image_ref?: components['schemas']['LumaModifyImageRef']
+    }
+    /** @description The upscale generation request object */
+    LumaUpscaleVideoGenerationRequest: {
+      /**
+       * @default upscale_video
+       * @enum {string}
+       */
+      generation_type: 'upscale_video'
+      resolution?: components['schemas']['LumaVideoModelOutputResolution']
+      /**
+       * Format: uri
+       * @description The callback URL for the upscale
+       */
+      callback_url?: string
+    }
+    /** @description The audio generation request object */
+    LumaAudioGenerationRequest: {
+      /**
+       * @default add_audio
+       * @enum {string}
+       */
+      generation_type: 'add_audio'
+      /** @description The prompt of the audio */
+      prompt?: string
+      /** @description The negative prompt of the audio */
+      negative_prompt?: string
+      /**
+       * Format: uri
+       * @description The callback URL for the audio
+       */
+      callback_url?: string
+    }
+    /**
+     * @description The error object
+     * @example {
+     *       "detail": "Invalid API key is provided"
+     *     }
+     */
+    LumaError: {
+      /** @description The error message */
+      detail?: string
+    }
+    /**
+     * @description The generation response object
+     * @example {
+     *       "id": "123e4567-e89b-12d3-a456-426614174000",
+     *       "state": "completed",
+     *       "failure_reason": null,
+     *       "created_at": "2023-06-01T12:00:00Z",
+     *       "assets": {
+     *         "video": "https://example.com/video.mp4"
+     *       },
+     *       "model": "ray-2",
+     *       "request": {
+     *         "prompt": "A serene lake surrounded by mountains at sunset",
+     *         "aspect_ratio": "16:9",
+     *         "loop": true,
+     *         "keyframes": {
+     *           "frame0": {
+     *             "type": "image",
+     *             "url": "https://example.com/image.jpg"
+     *           },
+     *           "frame1": {
+     *             "type": "generation",
+     *             "id": "123e4567-e89b-12d3-a456-426614174000"
+     *           }
+     *         }
+     *       }
+     *     }
+     */
+    LumaGeneration: {
+      /**
+       * Format: uuid
+       * @description The ID of the generation
+       */
+      id?: string
+      generation_type?: components['schemas']['LumaGenerationType']
+      state?: components['schemas']['LumaState']
+      /** @description The reason for the state of the generation */
+      failure_reason?: string
+      /**
+       * Format: date-time
+       * @description The date and time when the generation was created
+       */
+      created_at?: string
+      assets?: components['schemas']['LumaAssets']
+      /** @description The model used for the generation */
+      model?: string
+      /** @description The request of the generation */
+      request?:
+        | components['schemas']['LumaGenerationRequest']
+        | components['schemas']['LumaImageGenerationRequest']
+        | components['schemas']['LumaUpscaleVideoGenerationRequest']
+        | components['schemas']['LumaAudioGenerationRequest']
+    }
+    PixverseTextVideoRequest: {
+      /** @enum {string} */
+      aspect_ratio: '16:9' | '4:3' | '1:1' | '3:4' | '9:16'
+      /** @enum {integer} */
+      duration: 5 | 8
+      /** @enum {string} */
+      model: 'v3.5'
+      /** @enum {string} */
+      motion_mode?: 'normal' | 'fast'
+      negative_prompt?: string
+      prompt: string
+      /** @enum {string} */
+      quality: '360p' | '540p' | '720p' | '1080p'
+      seed?: number
+      /** @enum {string} */
+      style?: 'anime' | '3d_animation' | 'clay' | 'comic' | 'cyberpunk'
+      template_id?: number
+      water_mark?: boolean
+    }
+    PixverseVideoResponse: {
+      ErrCode?: number
+      ErrMsg?: string
+      Resp?: {
+        video_id?: number
+      }
+    }
+    PixverseImageUploadResponse: {
+      ErrCode?: number
+      ErrMsg?: string
+      Resp?: {
+        img_id?: number
+      }
+    }
+    PixverseImageVideoRequest: {
+      img_id: number
+      /** @enum {string} */
+      model: 'v3.5'
+      prompt: string
+      /** @enum {integer} */
+      duration: 5 | 8
+      /** @enum {string} */
+      quality: '360p' | '540p' | '720p' | '1080p'
+      /** @enum {string} */
+      motion_mode?: 'normal' | 'fast'
+      seed?: number
+      /** @enum {string} */
+      style?: 'anime' | '3d_animation' | 'clay' | 'comic' | 'cyberpunk'
+      template_id?: number
+      water_mark?: boolean
+    }
+    PixverseTransitionVideoRequest: {
+      first_frame_img: number
+      last_frame_img: number
+      /** @enum {string} */
+      model: 'v3.5'
+      /** @enum {integer} */
+      duration: 5 | 8
+      /** @enum {string} */
+      quality: '360p' | '540p' | '720p' | '1080p'
+      /** @enum {string} */
+      motion_mode: 'normal' | 'fast'
+      seed: number
+      prompt: string
+      /** @enum {string} */
+      style?: 'anime' | '3d_animation' | 'clay' | 'comic' | 'cyberpunk'
+      template_id?: number
+      water_mark?: boolean
+    }
+    PixverseVideoResultResponse: {
+      ErrCode?: number
+      ErrMsg?: string
+      Resp?: {
+        create_time?: string
+        id?: number
+        modify_time?: string
+        negative_prompt?: string
+        outputHeight?: number
+        outputWidth?: number
+        prompt?: string
+        resolution_ratio?: number
+        seed?: number
+        size?: number
+        /**
+         * @description Video generation status codes:
+         *     * 1 - Generation successful
+         *     * 5 - Generating
+         *     * 6 - Deleted
+         *     * 7 - Contents moderation failed
+         *     * 8 - Generation failed
+         *
+         * @enum {integer}
+         */
+        status?: 1 | 5 | 6 | 7 | 8
+        style?: string
+        url?: string
+      }
+    }
+    Veo2GenVidRequest: {
+      instances?: {
+        /** @description Text description of the video */
+        prompt: string
+        /** @description Optional image to guide video generation */
+        image?: {
+          /** Format: byte */
+          bytesBase64Encoded?: string
+          gcsUri?: string
+          mimeType?: string
+        } & (unknown | unknown)
+      }[]
+      parameters?: {
+        /** @example 16:9 */
+        aspectRatio?: string
+        negativePrompt?: string
+        /** @enum {string} */
+        personGeneration?: 'ALLOW' | 'BLOCK'
+        sampleCount?: number
+        /** Format: uint32 */
+        seed?: number
+        /** @description Optional Cloud Storage URI to upload the video */
+        storageUri?: string
+        durationSeconds?: number
+        enhancePrompt?: boolean
+      }
+    }
+    Veo2GenVidResponse: {
+      /**
+       * @description Operation resource name
+       * @example projects/PROJECT_ID/locations/us-central1/publishers/google/models/MODEL_ID/operations/a1b07c8e-7b5a-4aba-bb34-3e1ccb8afcc8
+       */
+      name: string
+    }
+    Veo2GenVidPollRequest: {
+      /**
+       * @description Full operation name (from predict response)
+       * @example projects/PROJECT_ID/locations/us-central1/publishers/google/models/MODEL_ID/operations/OPERATION_ID
+       */
+      operationName: string
+    }
+    Veo2GenVidPollResponse: {
+      name?: string
+      done?: boolean
+      /** @description The actual prediction response if done is true */
+      response?: {
+        /** @example type.googleapis.com/cloud.ai.large_models.vision.GenerateVideoResponse */
+        '@type'?: string
+        /** @description Count of media filtered by responsible AI policies */
+        raiMediaFilteredCount?: number
+        /** @description Reasons why media was filtered by responsible AI policies */
+        raiMediaFilteredReasons?: string[]
+        videos?: {
+          /** @description Cloud Storage URI of the video */
+          gcsUri?: string
+          /** @description Base64-encoded video content */
+          bytesBase64Encoded?: string
+          /** @description Video MIME type */
+          mimeType?: string
+        }[]
+      }
+      /** @description Error details if operation failed */
+      error?: {
+        /** @description Error code */
+        code?: number
+        /** @description Error message */
+        message?: string
+      }
+    }
+    VeoGenVidRequest: {
+      instances?: {
+        /** @description Text description of the video */
+        prompt: string
+        /** @description Optional image to guide video generation */
+        image?: {
+          /** Format: byte */
+          bytesBase64Encoded?: string
+          gcsUri?: string
+          mimeType?: string
+        } & (unknown | unknown)
+      }[]
+      parameters?: {
+        /** @example 16:9 */
+        aspectRatio?: string
+        negativePrompt?: string
+        /** @enum {string} */
+        personGeneration?: 'ALLOW' | 'BLOCK'
+        sampleCount?: number
+        /** Format: uint32 */
+        seed?: number
+        /** @description Optional Cloud Storage URI to upload the video */
+        storageUri?: string
+        durationSeconds?: number
+        enhancePrompt?: boolean
+      }
+    }
+    VeoGenVidResponse: {
+      /**
+       * @description Operation resource name
+       * @example projects/PROJECT_ID/locations/us-central1/publishers/google/models/MODEL_ID/operations/a1b07c8e-7b5a-4aba-bb34-3e1ccb8afcc8
+       */
+      name: string
+    }
+    VeoGenVidPollRequest: {
+      /**
+       * @description Full operation name (from predict response)
+       * @example projects/PROJECT_ID/locations/us-central1/publishers/google/models/MODEL_ID/operations/OPERATION_ID
+       */
+      operationName: string
+    }
+    VeoGenVidPollResponse: {
+      name?: string
+      done?: boolean
+      /** @description The actual prediction response if done is true */
+      response?: {
+        /** @example type.googleapis.com/cloud.ai.large_models.vision.GenerateVideoResponse */
+        '@type'?: string
+        /** @description Count of media filtered by responsible AI policies */
+        raiMediaFilteredCount?: number
+        /** @description Reasons why media was filtered by responsible AI policies */
+        raiMediaFilteredReasons?: string[]
+        videos?: {
+          /** @description Cloud Storage URI of the video */
+          gcsUri?: string
+          /** @description Base64-encoded video content */
+          bytesBase64Encoded?: string
+          /** @description Video MIME type */
+          mimeType?: string
+        }[]
+      }
+      /** @description Error details if operation failed */
+      error?: {
+        /** @description Error code */
+        code?: number
+        /** @description Error message */
+        message?: string
+      }
+    }
+    RunwayImageToVideoRequest: {
+      promptImage: components['schemas']['RunwayPromptImageObject']
+      /**
+       * Format: int64
+       * @description Random seed for generation
+       */
+      seed: number
+      /** @description Model to use for generation */
+      model: components['schemas']['RunwayModelEnum']
+      /** @description Text prompt for the generation */
+      promptText?: string
+      /** @description The number of seconds of duration for the output video. */
+      duration: components['schemas']['RunwayDurationEnum']
+      /** @description The resolution (aspect ratio) of the output video. Allowable values depend on the selected model. 1280:768 and 768:1280 are only supported for gen3a_turbo. */
+      ratio: components['schemas']['RunwayAspectRatioEnum']
+    }
+    RunwayImageToVideoResponse: {
+      /** @description Task ID */
+      id?: string
+    }
+    RunwayTextToImageResponse: {
+      /** @description Task ID */
+      id?: string
+    }
+    RunwayTaskStatusResponse: {
+      /** @description Task ID */
+      id: string
+      /** @description Task status */
+      status: components['schemas']['RunwayTaskStatusEnum']
+      /**
+       * Format: date-time
+       * @description Task creation timestamp
+       */
+      createdAt: string
+      /** @description Array of output video URLs */
+      output?: string[]
+      /**
+       * Format: float
+       * @description Float value between 0 and 1 representing the progress of the task. Only available if status is RUNNING.
+       */
+      progress?: number
+    }
+    /**
+     * @description Possible statuses for a Runway task.
+     * @enum {string}
+     */
+    RunwayTaskStatusEnum:
+      | 'SUCCEEDED'
+      | 'RUNNING'
+      | 'FAILED'
+      | 'PENDING'
+      | 'CANCELLED'
+      | 'THROTTLED'
+    /**
+     * @description Available Runway models for generation.
+     * @enum {string}
+     */
+    RunwayModelEnum: 'gen4_turbo' | 'gen3a_turbo'
+    /** @description Represents an image with its position in the video sequence. */
+    RunwayPromptImageDetailedObject: {
+      /** @description A HTTPS URL or data URI containing an encoded image. */
+      uri: string
+      /**
+       * @description The position of the image in the output video. 'last' is currently supported for gen3a_turbo only.
+       * @enum {string}
+       */
+      position: 'first' | 'last'
+    }
+    /** @enum {integer} */
+    RunwayDurationEnum: 5 | 10
+    /** @enum {string} */
+    RunwayAspectRatioEnum:
+      | '1280:720'
+      | '720:1280'
+      | '1104:832'
+      | '832:1104'
+      | '960:960'
+      | '1584:672'
+      | '1280:768'
+      | '768:1280'
+    /** @enum {string} */
+    RunwayTextToImageAspectRatioEnum:
+      | '1920:1080'
+      | '1080:1920'
+      | '1024:1024'
+      | '1360:768'
+      | '1080:1080'
+      | '1168:880'
+      | '1440:1080'
+      | '1080:1440'
+      | '1808:768'
+      | '2112:912'
+    /** @description Image(s) to use for the video generation. Can be a single URI or an array of image objects with positions. */
+    RunwayPromptImageObject:
+      | string
+      | components['schemas']['RunwayPromptImageDetailedObject'][]
+    OpenAIImageGenerationResponse: {
+      data?: {
+        /** @description Base64 encoded image data */
+        b64_json?: string
+        /** @description URL of the image */
+        url?: string
+        /** @description Revised prompt */
+        revised_prompt?: string
+      }[]
+      usage?: {
+        input_tokens?: number
+        input_tokens_details?: {
+          text_tokens?: number
+          image_tokens?: number
+        }
+        output_tokens?: number
+        total_tokens?: number
+      }
+    }
+    OpenAIImageGenerationRequest: {
+      /**
+       * @description The model to use for image generation
+       * @example dall-e-3
+       */
+      model?: string
+      /**
+       * @description A text description of the desired image
+       * @example Draw a rocket in front of a blackhole in deep space
+       */
+      prompt: string
+      /**
+       * @description The number of images to generate (1-10). Only 1 supported for dall-e-3.
+       * @example 1
+       */
+      n?: number
+      /**
+       * @description The quality of the generated image
+       * @example high
+       * @enum {string}
+       */
+      quality?: 'low' | 'medium' | 'high' | 'standard' | 'hd'
+      /**
+       * @description Size of the image (e.g., 1024x1024, 1536x1024, auto)
+       * @example 1024x1536
+       */
+      size?: string
+      /**
+       * @description Format of the output image
+       * @example png
+       * @enum {string}
+       */
+      output_format?: 'png' | 'webp' | 'jpeg'
+      /**
+       * @description Compression level for JPEG or WebP (0-100)
+       * @example 100
+       */
+      output_compression?: number
+      /**
+       * @description Content moderation setting
+       * @example auto
+       * @enum {string}
+       */
+      moderation?: 'low' | 'auto'
+      /**
+       * @description Background transparency
+       * @example opaque
+       * @enum {string}
+       */
+      background?: 'transparent' | 'opaque'
+      /**
+       * @description Response format of image data
+       * @example b64_json
+       * @enum {string}
+       */
+      response_format?: 'url' | 'b64_json'
+      /**
+       * @description Style of the image (only for dall-e-3)
+       * @example vivid
+       * @enum {string}
+       */
+      style?: 'vivid' | 'natural'
+      /**
+       * @description A unique identifier for end-user monitoring
+       * @example user-1234
+       */
+      user?: string
+    }
+    OpenAIImageEditRequest: {
+      /**
+       * @description The model to use for image editing
+       * @example gpt-image-1
+       */
+      model: string
+      /**
+       * @description A text description of the desired edit
+       * @example Give the rocketship rainbow coloring
+       */
+      prompt: string
+      /**
+       * @description The number of images to generate
+       * @example 1
+       */
+      n?: number
+      /**
+       * @description The quality of the edited image
+       * @example low
+       */
+      quality?: string
+      /**
+       * @description Size of the output image
+       * @example 1024x1024
+       */
+      size?: string
+      /**
+       * @description Format of the output image
+       * @example png
+       * @enum {string}
+       */
+      output_format?: 'png' | 'webp' | 'jpeg'
+      /**
+       * @description Compression level for JPEG or WebP (0-100)
+       * @example 100
+       */
+      output_compression?: number
+      /**
+       * @description Content moderation setting
+       * @example auto
+       * @enum {string}
+       */
+      moderation?: 'low' | 'auto'
+      /**
+       * @description Background transparency
+       * @example opaque
+       */
+      background?: string
+      /**
+       * @description A unique identifier for end-user monitoring
+       * @example user-1234
+       */
+      user?: string
+    }
+    CustomerStorageResourceResponse: {
+      /** @description The signed URL to use for downloading the file from the specified path */
+      download_url?: string
+      /** @description The signed URL to use for uploading the file to the specified path */
+      upload_url?: string
+      /**
+       * Format: date-time
+       * @description When the signed URL will expire
+       */
+      expires_at?: string
+      /** @description Whether an existing file with the same hash was found */
+      existing_file?: boolean
+    }
+    /** @enum {string} */
+    Pikaffect:
+      | 'Cake-ify'
+      | 'Crumble'
+      | 'Crush'
+      | 'Decapitate'
+      | 'Deflate'
+      | 'Dissolve'
+      | 'Explode'
+      | 'Eye-pop'
+      | 'Inflate'
+      | 'Levitate'
+      | 'Melt'
+      | 'Peel'
+      | 'Poke'
+      | 'Squish'
+      | 'Ta-da'
+      | 'Tear'
+    /** Body_generate_pikaffects_generate_pikaffects_post */
+    PikaBody_generate_pikaffects_generate_pikaffects_post: {
+      /**
+       * Image
+       * Format: binary
+       */
+      image?: string
+      /** Pikaffect */
+      pikaffect?: components['schemas']['Pikaffect']
+      /** Prompttext */
+      promptText?: string
+      /** Negativeprompt */
+      negativePrompt?: string
+      /** Seed */
+      seed?: number
+    }
+    /** GenerateResponse */
+    PikaGenerateResponse: {
+      /** Video Id */
+      video_id: string
+    }
+    /** HTTPValidationError */
+    PikaHTTPValidationError: {
+      /** Detail */
+      detail?: components['schemas']['PikaValidationError'][]
+    }
+    /** Body_generate_pikadditions_generate_pikadditions_post */
+    PikaBody_generate_pikadditions_generate_pikadditions_post: {
+      /**
+       * Video
+       * Format: binary
+       */
+      video?: string
+      /**
+       * Image
+       * Format: binary
+       */
+      image?: string
+      /** Prompttext */
+      promptText?: string
+      /** Negativeprompt */
+      negativePrompt?: string
+      /** Seed */
+      seed?: number
+    }
+    /** Body_generate_pikaswaps_generate_pikaswaps_post */
+    PikaBody_generate_pikaswaps_generate_pikaswaps_post: {
+      /**
+       * Video
+       * Format: binary
+       */
+      video?: string
+      /** Image */
+      image?: string
+      /** Prompttext */
+      promptText?: string
+      /**
+       * Modifyregionmask
+       * @description A mask image that specifies the region to modify, where the mask is white and the background is black
+       */
+      modifyRegionMask?: string
+      /**
+       * Modifyregionroi
+       * @description Plaintext description of the object / region to modify
+       */
+      modifyRegionRoi?: string
+      /** Negativeprompt */
+      negativePrompt?: string
+      /** Seed */
+      seed?: number
+    }
+    /** Body_generate_2_2_t2v_generate_2_2_t2v_post */
+    PikaBody_generate_2_2_t2v_generate_2_2_t2v_post: {
+      /** Prompttext */
+      promptText: string
+      /** Negativeprompt */
+      negativePrompt?: string | null
+      /** Seed */
+      seed?: number | null
+      /** Resolution */
+      resolution?: components['schemas']['PikaResolutionEnum']
+      /** Duration */
+      duration?: components['schemas']['PikaDurationEnum']
+      /**
+       * Aspectratio
+       * Format: float
+       * @description Aspect ratio (width / height)
+       * @default 1.7777777777777777
+       */
+      aspectRatio: number
+    }
+    /** Body_generate_2_2_i2v_generate_2_2_i2v_post */
+    PikaBody_generate_2_2_i2v_generate_2_2_i2v_post: {
+      /**
+       * Image
+       * Format: binary
+       */
+      image?: string | null
+      /** Prompttext */
+      promptText?: string | null
+      /** Negativeprompt */
+      negativePrompt?: string | null
+      /** Seed */
+      seed?: number | null
+      /** Resolution */
+      resolution?: components['schemas']['PikaResolutionEnum']
+      /** Duration */
+      duration?: components['schemas']['PikaDurationEnum']
+    }
+    /** Body_generate_2_2_c2v_generate_2_2_pikascenes_post */
+    PikaBody_generate_2_2_c2v_generate_2_2_pikascenes_post: {
+      /** Images */
+      images?: string[]
+      /**
+       * Ingredientsmode
+       * @enum {string}
+       */
+      ingredientsMode: 'creative' | 'precise'
+      /** Prompttext */
+      promptText?: string
+      /** Negativeprompt */
+      negativePrompt?: string
+      /** Seed */
+      seed?: number
+      /**
+       * Resolution
+       * @default 1080p
+       */
+      resolution: string
+      /**
+       * Duration
+       * @default 5
+       */
+      duration: number
+      /**
+       * Aspectratio
+       * @description Aspect ratio (width / height)
+       */
+      aspectRatio?: number
+    }
+    /** Body_generate_2_2_keyframe_generate_2_2_pikaframes_post */
+    PikaBody_generate_2_2_keyframe_generate_2_2_pikaframes_post: {
+      /**
+       * Keyframes
+       * @description Array of keyframe images
+       */
+      keyFrames?: string[]
+      /** Prompttext */
+      promptText: string
+      /** Negativeprompt */
+      negativePrompt?: string
+      /** Seed */
+      seed?: number
+      /** Resolution */
+      resolution?: components['schemas']['PikaResolutionEnum']
+      /** Duration */
+      duration?: number
+    }
+    /** VideoResponse */
+    PikaVideoResponse: {
+      /** Id */
+      id: string
+      /**
+       * Status
+       * @description The status of the video
+       */
+      status: components['schemas']['PikaStatusEnum']
+      /**
+       * Url
+       * @default null
+       */
+      url: string | null
+      /**
+       * Progress
+       * @default null
+       */
+      progress: number | null
+    }
+    /** @enum {string} */
+    PikaStatusEnum: 'queued' | 'started' | 'finished'
+    /** ValidationError */
+    PikaValidationError: {
+      /** Location */
+      loc: (string | number)[]
+      /** Message */
+      msg: string
+      /** Error Type */
+      type: string
+    }
+    /**
+     * @default 1080p
+     * @enum {string}
+     */
+    PikaResolutionEnum: '1080p' | '720p'
+    /**
+     * @default 5
+     * @enum {integer}
+     */
+    PikaDurationEnum: 5 | 10
+    /**
+     * @description RGB color values
+     * @example {
+     *       "rgb": [
+     *         255,
+     *         0,
+     *         0
+     *       ]
+     *     }
+     */
+    RGBColor: {
+      rgb: number[]
+    }
+    /** @example {
+     *       "id": "2a1b2d4eafe2bc6ab4cd4d5c6133f513",
+     *       "name": "internal_error",
+     *       "errors": [
+     *         "An unexpected server error has occurred, please try again later."
+     *       ]
+     *     } */
+    StabilityError: {
+      /**
+       * @description A unique identifier associated with this error. Please include this in any [support tickets](https://kb.stability.ai/knowledge-base/kb-tickets/new) you file, as it will greatly assist us in diagnosing the root cause of the problem.
+       *
+       * @example a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
+       */
+      id: string
+      /**
+       * @description Short-hand name for an error, useful for discriminating between errors with the same status code.
+       * @example bad_request
+       */
+      name: string
+      /**
+       * @description One or more error messages indicating what went wrong.
+       * @example [
+       *       {
+       *         "some-field": "is required"
+       *       }
+       *     ]
+       */
+      errors: string[]
+    }
+    /**
+     * @description The name of your application, used to help us communicate app-specific debugging or moderation issues to you.
+     * @example my-awesome-app
+     */
+    StabilityStabilityClientID: string
+    /**
+     * @description A unique identifier for your end user. Used to help us communicate user-specific debugging or moderation issues to you. Feel free to obfuscate this value to protect user privacy.
+     * @example DiscordUser#9999
+     */
+    StabilityStabilityClientUserID: string
+    /**
+     * @description The version of your application, used to help us communicate version-specific debugging or moderation issues to you.
+     * @example 1.2.1
+     */
+    StabilityStabilityClientVersion: string
+    /**
+     * @description Your request was flagged by our content moderation system.
+     * @example {
+     *       "id": "ed14db44362126aab3cbd25cca51ffe3",
+     *       "name": "content_moderation",
+     *       "errors": [
+     *         "Your request was flagged by our content moderation system, as a result your request was denied and you were not charged."
+     *       ]
+     *     }
+     */
+    StabilityContentModerationResponse: {
+      /**
+       * @description A unique identifier associated with this error. Please include this in any [support tickets](https://kb.stability.ai/knowledge-base/kb-tickets/new) you file, as it will greatly assist us in diagnosing the root cause of the problem.
+       * @example a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
+       */
+      id: string
+      /**
+       * @description Our content moderation system has flagged some part of your request and subsequently denied it.  You were not charged for this request.  While this may at times be frustrating, it is necessary to maintain the integrity of our platform and ensure a safe experience for all users. If you would like to provide feedback, please use the [Support Form](https://kb.stability.ai/knowledge-base/kb-tickets/new).
+       * @enum {string}
+       */
+      name: 'content_moderation'
+      /**
+       * @description One or more error messages indicating what went wrong.
+       * @example [
+       *       "some-field: is required"
+       *     ]
+       */
+      errors: string[]
+    }
+    ImagenGenerateImageRequest: {
+      instances: components['schemas']['ImagenImageGenerationInstance'][]
+      parameters: components['schemas']['ImagenImageGenerationParameters']
+    }
+    ImagenGenerateImageResponse: {
+      predictions?: components['schemas']['ImagenImagePrediction'][]
+    }
+    ImagenImageGenerationInstance: {
+      /** @description Text prompt for image generation */
+      prompt: string
+    }
+    ImagenImageGenerationParameters: {
+      sampleCount?: number
+      /** Format: uint32 */
+      seed?: number
+      addWatermark?: boolean
+      /** @enum {string} */
+      aspectRatio?: '1:1' | '9:16' | '16:9' | '3:4' | '4:3'
+      enhancePrompt?: boolean
+      includeRaiReason?: boolean
+      includeSafetyAttributes?: boolean
+      outputOptions?: components['schemas']['ImagenOutputOptions']
+      /** @enum {string} */
+      personGeneration?: 'dont_allow' | 'allow_adult' | 'allow_all'
+      /** @enum {string} */
+      safetySetting?: 'block_most' | 'block_some' | 'block_few' | 'block_fewest'
+      /** Format: uri */
+      storageUri?: string
+    }
+    ImagenImagePrediction: {
+      /** @description MIME type of the generated image */
+      mimeType?: string
+      /** @description Enhanced or rewritten prompt used to generate this image */
+      prompt?: string
+      /**
+       * Format: byte
+       * @description Base64-encoded image content
+       */
+      bytesBase64Encoded?: string
+    }
+    ImagenOutputOptions: {
+      /** @enum {string} */
+      mimeType?: 'image/png' | 'image/jpeg'
+      compressionQuality?: number
+    }
+    /**
+     * @description The rendering speed setting that controls the trade-off between generation speed and quality
+     * @default BALANCED
+     * @enum {string}
+     */
+    RenderingSpeed: 'BALANCED' | 'TURBO' | 'QUALITY'
+    /**
+     * @description Controls the likelihood of creating additional details not heavily conditioned by the init image.
+     * @default 0.35
+     */
+    StabilityCreativity: number
+    /**
+     * @description The `id` of a generation, typically used for async generations, that can be used to check the status of the generation or retrieve the result.
+     * @example a6dc6c6e20acda010fe14d71f180658f2896ed9b4ec25aa99a6ff06c796987c4
+     */
+    StabilityGenerationID: string
+    StabilityImageGenerationSD3_Request: {
+      /** @description What you wish to see in the output image. A strong, descriptive prompt that clearly defines
+       *     elements, colors, and subjects will lead to better results. */
+      prompt: string
+      /**
+       * GenerationMode
+       * @description Controls whether this is a text-to-image or image-to-image generation, which affects which parameters are required:
+       *     - **text-to-image** requires only the `prompt` parameter
+       *     - **image-to-image** requires the `prompt`, `image`, and `strength` parameters
+       * @default text-to-image
+       * @enum {string}
+       */
+      mode: 'text-to-image' | 'image-to-image'
+      /**
+       * Format: binary
+       * @description The image to use as the starting point for the generation.
+       *
+       *     Supported formats:
+       *
+       *
+       *
+       *       - jpeg
+       *       - png
+       *       - webp
+       *
+       *     Supported dimensions:
+       *
+       *
+       *
+       *       - Every side must be at least 64 pixels
+       *
+       *     > **Important:** This parameter is only valid for **image-to-image** requests.
+       */
+      image?: string
+      /** @description Sometimes referred to as _denoising_, this parameter controls how much influence the
+       *     `image` parameter has on the generated image.  A value of 0 would yield an image that
+       *     is identical to the input.  A value of 1 would be as if you passed in no image at all.
+       *
+       *     > **Important:** This parameter is only valid for **image-to-image** requests. */
+      strength?: number
+      /**
+       * @description Controls the aspect ratio of the generated image. Defaults to 1:1.
+       *
+       *     > **Important:** This parameter is only valid for **text-to-image** requests.
+       * @default 1:1
+       * @enum {string}
+       */
+      aspect_ratio:
+        | '21:9'
+        | '16:9'
+        | '3:2'
+        | '5:4'
+        | '1:1'
+        | '4:5'
+        | '2:3'
+        | '9:16'
+        | '9:21'
+      /**
+       * @description The model to use for generation.
+       *
+       *     - `sd3.5-large` requires 6.5 credits per generation
+       *     - `sd3.5-large-turbo` requires 4 credits per generation
+       *     - `sd3.5-medium` requires 3.5 credits per generation
+       *     - As of the April 17, 2025, `sd3-large`, `sd3-large-turbo` and `sd3-medium`
+       *
+       *
+       *
+       *       are re-routed to their `sd3.5-[model version]` equivalent, at the same price.
+       * @default sd3.5-large
+       * @enum {string}
+       */
+      model: 'sd3.5-large' | 'sd3.5-large-turbo' | 'sd3.5-medium'
+      /**
+       * @description A specific value that is used to guide the 'randomness' of the generation. (Omit this parameter or pass `0` to use a random seed.)
+       * @default 0
+       */
+      seed: number
+      /**
+       * @description Dictates the `content-type` of the generated image.
+       * @default png
+       * @enum {string}
+       */
+      output_format: 'png' | 'jpeg'
+      /**
+       * @description Guides the image model towards a particular style.
+       * @enum {string}
+       */
+      style_preset?:
+        | 'enhance'
+        | 'anime'
+        | 'photographic'
+        | 'digital-art'
+        | 'comic-book'
+        | 'fantasy-art'
+        | 'line-art'
+        | 'analog-film'
+        | 'neon-punk'
+        | 'isometric'
+        | 'low-poly'
+        | 'origami'
+        | 'modeling-compound'
+        | 'cinematic'
+        | '3d-model'
+        | 'pixel-art'
+        | 'tile-texture'
+      /** @description Keywords of what you **do not** wish to see in the output image.
+       *     This is an advanced feature. */
+      negative_prompt?: string
+      /** @description How strictly the diffusion process adheres to the prompt text (higher values keep your image closer to your prompt). The _Large_ and _Medium_ models use a default of `4`. The _Turbo_ model uses a default of `1`. */
+      cfg_scale?: number
+    }
+    StabilityImageGenrationSD3_Response_200: {
+      /**
+       * @description The generated image, encoded to base64.
+       * @example AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1...
+       */
+      image: string
+      /**
+       * @description The seed used as random noise for this generation.
+       * @default 0
+       * @example 343940597
+       */
+      seed: number
+      /**
+       * @description The reason the generation finished.
+       *
+       *     - `SUCCESS` = successful generation.
+       *     - `CONTENT_FILTERED` = successful generation, however the output violated our content moderation
+       *     policy and has been blurred as a result.
+       * @example SUCCESS
+       * @enum {string}
+       */
+      finish_reason: 'SUCCESS' | 'CONTENT_FILTERED'
+    }
+    StabilityImageGenrationSD3_Response_400: {
+      /**
+       * @description A unique identifier associated with this error. Please include this in any [support tickets](https://kb.stability.ai/knowledge-base/kb-tickets/new)
+       *     you file, as it will greatly assist us in diagnosing the root cause of the problem.
+       * @example a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
+       */
+      id: string
+      /**
+       * @description Short-hand name for an error, useful for discriminating between errors with the same status code.
+       * @example bad_request
+       */
+      name: string
+      /**
+       * @description One or more error messages indicating what went wrong.
+       * @example [
+       *       "some-field: is required"
+       *     ]
+       */
+      errors: string[]
+    }
+    /** @example {
+     *       "id": "4212a4b66fbe1cedca4bf2133d35dca5",
+     *       "name": "payload_too_large",
+     *       "errors": [
+     *         "body: payloads cannot be larger than 10MiB in size"
+     *       ]
+     *     } */
+    StabilityImageGenrationSD3_Response_413: {
+      /**
+       * @description A unique identifier associated with this error. Please include this in any [support tickets](https://kb.stability.ai/knowledge-base/kb-tickets/new)
+       *     you file, as it will greatly assist us in diagnosing the root cause of the problem.
+       * @example a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
+       */
+      id: string
+      /**
+       * @description Short-hand name for an error, useful for discriminating between errors with the same status code.
+       * @example bad_request
+       */
+      name: string
+      /**
+       * @description One or more error messages indicating what went wrong.
+       * @example [
+       *       "some-field: is required"
+       *     ]
+       */
+      errors: string[]
+    }
+    StabilityImageGenrationSD3_Response_422: {
+      /**
+       * @description A unique identifier associated with this error. Please include this in any [support tickets](https://kb.stability.ai/knowledge-base/kb-tickets/new)
+       *     you file, as it will greatly assist us in diagnosing the root cause of the problem.
+       * @example a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
+       */
+      id: string
+      /**
+       * @description Short-hand name for an error, useful for discriminating between errors with the same status code.
+       * @example bad_request
+       */
+      name: string
+      /**
+       * @description One or more error messages indicating what went wrong.
+       * @example [
+       *       "some-field: is required"
+       *     ]
+       */
+      errors: string[]
+    }
+    /** @example {
+     *       "id": "rate_limit_exceeded",
+     *       "name": "rate_limit_exceeded",
+     *       "errors": [
+     *         "You have exceeded the rate limit of 150 requests within a 10 second period, and have been timed out for 60 seconds."
+     *       ]
+     *     } */
+    StabilityImageGenrationSD3_Response_429: {
+      /**
+       * @description A unique identifier associated with this error. Please include this in any [support tickets](https://kb.stability.ai/knowledge-base/kb-tickets/new)
+       *     you file, as it will greatly assist us in diagnosing the root cause of the problem.
+       * @example a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
+       */
+      id: string
+      /**
+       * @description Short-hand name for an error, useful for discriminating between errors with the same status code.
+       * @example bad_request
+       */
+      name: string
+      /**
+       * @description One or more error messages indicating what went wrong.
+       * @example [
+       *       "some-field: is required"
+       *     ]
+       */
+      errors: string[]
+    }
+    /** @example {
+     *       "id": "2a1b2d4eafe2bc6ab4cd4d5c6133f513",
+     *       "name": "internal_error",
+     *       "errors": [
+     *         "An unexpected server error has occurred, please try again later."
+     *       ]
+     *     } */
+    StabilityImageGenrationSD3_Response_500: {
+      /**
+       * @description A unique identifier associated with this error. Please include this in any [support tickets](https://kb.stability.ai/knowledge-base/kb-tickets/new)
+       *     you file, as it will greatly assist us in diagnosing the root cause of the problem.
+       * @example a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
+       */
+      id: string
+      /**
+       * @description Short-hand name for an error, useful for discriminating between errors with the same status code.
+       * @example bad_request
+       */
+      name: string
+      /**
+       * @description One or more error messages indicating what went wrong.
+       * @example [
+       *       "some-field: is required"
+       *     ]
+       */
+      errors: string[]
+    }
+    StabilityImageGenrationUpscaleConservative_Request: {
+      /**
+       * Format: binary
+       * @description The image you wish to upscale.
+       *
+       *     Supported Formats:
+       *     - jpeg
+       *     - png
+       *     - webp
+       *
+       *     Validation Rules:
+       *     - Every side must be at least 64 pixels
+       *     - Total pixel count must be between 4,096 and 9,437,184 pixels
+       *     - The aspect ratio must be between 1:2.5 and 2.5:1
+       * @example ./some/image.png
+       */
+      image: string
+      /** @description What you wish to see in the output image. A strong, descriptive prompt that clearly defines
+       *     elements, colors, and subjects will lead to better results.
+       *
+       *     To control the weight of a given word use the format `(word:weight)`,
+       *     where `word` is the word you'd like to control the weight of and `weight`
+       *     is a value between 0 and 1. For example: `The sky was a crisp (blue:0.3) and (green:0.8)`
+       *     would convey a sky that was blue and green, but more green than blue. */
+      prompt: string
+      /** @description A blurb of text describing what you **do not** wish to see in the output image.
+       *     This is an advanced feature. */
+      negative_prompt?: string
+      /**
+       * @description A specific value that is used to guide the 'randomness' of the generation. (Omit this parameter or pass `0` to use a random seed.)
+       * @default 0
+       */
+      seed: number
+      /**
+       * @description Dictates the `content-type` of the generated image.
+       * @default png
+       * @enum {string}
+       */
+      output_format: 'jpeg' | 'png' | 'webp'
+      creativity?: components['schemas']['StabilityCreativity']
+    }
+    StabilityImageGenrationUpscaleConservative_Response_200: {
+      /**
+       * @description The generated image, encoded to base64.
+       * @example AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1...
+       */
+      image: string
+      /**
+       * @description The seed used as random noise for this generation.
+       * @default 0
+       * @example 343940597
+       */
+      seed: number
+      /**
+       * @description The reason the generation finished.
+       *
+       *     - `SUCCESS` = successful generation.
+       *     - `CONTENT_FILTERED` = successful generation, however the output violated our content moderation
+       *     policy and has been blurred as a result.
+       * @example SUCCESS
+       * @enum {string}
+       */
+      finish_reason: 'SUCCESS' | 'CONTENT_FILTERED'
+    }
+    StabilityImageGenrationUpscaleConservative_Response_400: {
+      /**
+       * @description A unique identifier associated with this error. Please include this in any [support tickets](https://kb.stability.ai/knowledge-base/kb-tickets/new)
+       *     you file, as it will greatly assist us in diagnosing the root cause of the problem.
+       * @example a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
+       */
+      id: string
+      /**
+       * @description Short-hand name for an error, useful for discriminating between errors with the same status code.
+       * @example bad_request
+       */
+      name: string
+      /**
+       * @description One or more error messages indicating what went wrong.
+       * @example [
+       *       "some-field: is required"
+       *     ]
+       */
+      errors: string[]
+    }
+    /** @example {
+     *       "id": "4212a4b66fbe1cedca4bf2133d35dca5",
+     *       "name": "payload_too_large",
+     *       "errors": [
+     *         "body: payloads cannot be larger than 10MiB in size"
+     *       ]
+     *     } */
+    StabilityImageGenrationUpscaleConservative_Response_413: {
+      /**
+       * @description A unique identifier associated with this error. Please include this in any [support tickets](https://kb.stability.ai/knowledge-base/kb-tickets/new)
+       *     you file, as it will greatly assist us in diagnosing the root cause of the problem.
+       * @example a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
+       */
+      id: string
+      /**
+       * @description Short-hand name for an error, useful for discriminating between errors with the same status code.
+       * @example bad_request
+       */
+      name: string
+      /**
+       * @description One or more error messages indicating what went wrong.
+       * @example [
+       *       "some-field: is required"
+       *     ]
+       */
+      errors: string[]
+    }
+    StabilityImageGenrationUpscaleConservative_Response_422: {
+      /**
+       * @description A unique identifier associated with this error. Please include this in any [support tickets](https://kb.stability.ai/knowledge-base/kb-tickets/new)
+       *     you file, as it will greatly assist us in diagnosing the root cause of the problem.
+       * @example a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
+       */
+      id: string
+      /**
+       * @description Short-hand name for an error, useful for discriminating between errors with the same status code.
+       * @example bad_request
+       */
+      name: string
+      /**
+       * @description One or more error messages indicating what went wrong.
+       * @example [
+       *       "some-field: is required"
+       *     ]
+       */
+      errors: string[]
+    }
+    /** @example {
+     *       "id": "rate_limit_exceeded",
+     *       "name": "rate_limit_exceeded",
+     *       "errors": [
+     *         "You have exceeded the rate limit of 150 requests within a 10 second period, and have been timed out for 60 seconds."
+     *       ]
+     *     } */
+    StabilityImageGenrationUpscaleConservative_Response_429: {
+      /**
+       * @description A unique identifier associated with this error. Please include this in any [support tickets](https://kb.stability.ai/knowledge-base/kb-tickets/new)
+       *     you file, as it will greatly assist us in diagnosing the root cause of the problem.
+       * @example a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
+       */
+      id: string
+      /**
+       * @description Short-hand name for an error, useful for discriminating between errors with the same status code.
+       * @example bad_request
+       */
+      name: string
+      /**
+       * @description One or more error messages indicating what went wrong.
+       * @example [
+       *       "some-field: is required"
+       *     ]
+       */
+      errors: string[]
+    }
+    /** @example {
+     *       "id": "2a1b2d4eafe2bc6ab4cd4d5c6133f513",
+     *       "name": "internal_error",
+     *       "errors": [
+     *         "An unexpected server error has occurred, please try again later."
+     *       ]
+     *     } */
+    StabilityImageGenrationUpscaleConservative_Response_500: {
+      /**
+       * @description A unique identifier associated with this error. Please include this in any [support tickets](https://kb.stability.ai/knowledge-base/kb-tickets/new)
+       *     you file, as it will greatly assist us in diagnosing the root cause of the problem.
+       * @example a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
+       */
+      id: string
+      /**
+       * @description Short-hand name for an error, useful for discriminating between errors with the same status code.
+       * @example bad_request
+       */
+      name: string
+      /**
+       * @description One or more error messages indicating what went wrong.
+       * @example [
+       *       "some-field: is required"
+       *     ]
+       */
+      errors: string[]
+    }
+    StabilityImageGenrationUpscaleCreative_Request: {
+      /**
+       * Format: binary
+       * @description The image you wish to upscale.
+       *
+       *     Supported Formats:
+       *     - jpeg
+       *     - png
+       *     - webp
+       *
+       *     Validation Rules:
+       *     - Every side must be at least 64 pixels
+       *     - Total pixel count must be between 4,096 and 1,048,576 pixels
+       * @example ./some/image.png
+       */
+      image: string
+      /** @description What you wish to see in the output image. A strong, descriptive prompt that clearly defines
+       *     elements, colors, and subjects will lead to better results.
+       *
+       *     To control the weight of a given word use the format `(word:weight)`,
+       *     where `word` is the word you'd like to control the weight of and `weight`
+       *     is a value between 0 and 1. For example: `The sky was a crisp (blue:0.3) and (green:0.8)`
+       *     would convey a sky that was blue and green, but more green than blue. */
+      prompt: string
+      /** @description A blurb of text describing what you **do not** wish to see in the output image.
+       *     This is an advanced feature. */
+      negative_prompt?: string
+      /**
+       * @description Dictates the `content-type` of the generated image.
+       * @default png
+       * @enum {string}
+       */
+      output_format: 'jpeg' | 'png' | 'webp'
+      /**
+       * @description A specific value that is used to guide the 'randomness' of the generation. (Omit this parameter or pass `0` to use a random seed.)
+       * @default 0
+       */
+      seed: number
+      /**
+       * @description Indicates how creative the model should be when upscaling an image.
+       *     Higher values will result in more details being added to the image during upscaling.
+       * @default 0.3
+       */
+      creativity: number
+      /**
+       * @description Guides the image model towards a particular style.
+       * @enum {string}
+       */
+      style_preset?:
+        | 'enhance'
+        | 'anime'
+        | 'photographic'
+        | 'digital-art'
+        | 'comic-book'
+        | 'fantasy-art'
+        | 'line-art'
+        | 'analog-film'
+        | 'neon-punk'
+        | 'isometric'
+        | 'low-poly'
+        | 'origami'
+        | 'modeling-compound'
+        | 'cinematic'
+        | '3d-model'
+        | 'pixel-art'
+        | 'tile-texture'
+    }
+    StabilityImageGenrationUpscaleCreative_Response_200: {
+      id: components['schemas']['StabilityGenerationID']
+    }
+    StabilityImageGenrationUpscaleCreative_Response_400: {
+      /**
+       * @description A unique identifier associated with this error. Please include this in any [support tickets](https://kb.stability.ai/knowledge-base/kb-tickets/new)
+       *     you file, as it will greatly assist us in diagnosing the root cause of the problem.
+       * @example a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
+       */
+      id: string
+      /**
+       * @description Short-hand name for an error, useful for discriminating between errors with the same status code.
+       * @example bad_request
+       */
+      name: string
+      /**
+       * @description One or more error messages indicating what went wrong.
+       * @example [
+       *       "some-field: is required"
+       *     ]
+       */
+      errors: string[]
+    }
+    /** @example {
+     *       "id": "4212a4b66fbe1cedca4bf2133d35dca5",
+     *       "name": "payload_too_large",
+     *       "errors": [
+     *         "body: payloads cannot be larger than 10MiB in size"
+     *       ]
+     *     } */
+    StabilityImageGenrationUpscaleCreative_Response_413: {
+      /**
+       * @description A unique identifier associated with this error. Please include this in any [support tickets](https://kb.stability.ai/knowledge-base/kb-tickets/new)
+       *     you file, as it will greatly assist us in diagnosing the root cause of the problem.
+       * @example a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
+       */
+      id: string
+      /**
+       * @description Short-hand name for an error, useful for discriminating between errors with the same status code.
+       * @example bad_request
+       */
+      name: string
+      /**
+       * @description One or more error messages indicating what went wrong.
+       * @example [
+       *       "some-field: is required"
+       *     ]
+       */
+      errors: string[]
+    }
+    StabilityImageGenrationUpscaleCreative_Response_422: {
+      /**
+       * @description A unique identifier associated with this error. Please include this in any [support tickets](https://kb.stability.ai/knowledge-base/kb-tickets/new)
+       *     you file, as it will greatly assist us in diagnosing the root cause of the problem.
+       * @example a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
+       */
+      id: string
+      /**
+       * @description Short-hand name for an error, useful for discriminating between errors with the same status code.
+       * @example bad_request
+       */
+      name: string
+      /**
+       * @description One or more error messages indicating what went wrong.
+       * @example [
+       *       "some-field: is required"
+       *     ]
+       */
+      errors: string[]
+    }
+    /** @example {
+     *       "id": "rate_limit_exceeded",
+     *       "name": "rate_limit_exceeded",
+     *       "errors": [
+     *         "You have exceeded the rate limit of 150 requests within a 10 second period, and have been timed out for 60 seconds."
+     *       ]
+     *     } */
+    StabilityImageGenrationUpscaleCreative_Response_429: {
+      /**
+       * @description A unique identifier associated with this error. Please include this in any [support tickets](https://kb.stability.ai/knowledge-base/kb-tickets/new)
+       *     you file, as it will greatly assist us in diagnosing the root cause of the problem.
+       * @example a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
+       */
+      id: string
+      /**
+       * @description Short-hand name for an error, useful for discriminating between errors with the same status code.
+       * @example bad_request
+       */
+      name: string
+      /**
+       * @description One or more error messages indicating what went wrong.
+       * @example [
+       *       "some-field: is required"
+       *     ]
+       */
+      errors: string[]
+    }
+    /** @example {
+     *       "id": "2a1b2d4eafe2bc6ab4cd4d5c6133f513",
+     *       "name": "internal_error",
+     *       "errors": [
+     *         "An unexpected server error has occurred, please try again later."
+     *       ]
+     *     } */
+    StabilityImageGenrationUpscaleCreative_Response_500: {
+      /**
+       * @description A unique identifier associated with this error. Please include this in any [support tickets](https://kb.stability.ai/knowledge-base/kb-tickets/new)
+       *     you file, as it will greatly assist us in diagnosing the root cause of the problem.
+       * @example a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
+       */
+      id: string
+      /**
+       * @description Short-hand name for an error, useful for discriminating between errors with the same status code.
+       * @example bad_request
+       */
+      name: string
+      /**
+       * @description One or more error messages indicating what went wrong.
+       * @example [
+       *       "some-field: is required"
+       *     ]
+       */
+      errors: string[]
+    }
+    StabilityImageGenrationUpscaleFast_Request: {
+      /**
+       * Format: binary
+       * @description The image you wish to upscale.
+       *
+       *     Supported Formats:
+       *     - jpeg
+       *     - png
+       *     - webp
+       *
+       *     Validation Rules:
+       *     - Width must be between 32 and 1,536 pixels
+       *     - Height must be between 32 and 1,536 pixels
+       *     - Total pixel count must be between 1,024 and 1,048,576 pixels
+       * @example ./some/image.png
+       */
+      image: string
+      /**
+       * @description Dictates the `content-type` of the generated image.
+       * @default png
+       * @enum {string}
+       */
+      output_format: 'jpeg' | 'png' | 'webp'
+    }
+    StabilityImageGenrationUpscaleFast_Response_200: {
+      /**
+       * @description The generated image, encoded to base64.
+       * @example AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1...
+       */
+      image: string
+      /**
+       * @description The seed used as random noise for this generation.
+       * @default 0
+       * @example 343940597
+       */
+      seed: number
+      /**
+       * @description The reason the generation finished.
+       *
+       *     - `SUCCESS` = successful generation.
+       *     - `CONTENT_FILTERED` = successful generation, however the output violated our content moderation
+       *     policy and has been blurred as a result.
+       * @example SUCCESS
+       * @enum {string}
+       */
+      finish_reason: 'SUCCESS' | 'CONTENT_FILTERED'
+    }
+    StabilityImageGenrationUpscaleFast_Response_400: {
+      /**
+       * @description A unique identifier associated with this error. Please include this in any [support tickets](https://kb.stability.ai/knowledge-base/kb-tickets/new)
+       *     you file, as it will greatly assist us in diagnosing the root cause of the problem.
+       * @example a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
+       */
+      id: string
+      /**
+       * @description Short-hand name for an error, useful for discriminating between errors with the same status code.
+       * @example bad_request
+       */
+      name: string
+      /**
+       * @description One or more error messages indicating what went wrong.
+       * @example [
+       *       "some-field: is required"
+       *     ]
+       */
+      errors: string[]
+    }
+    /** @example {
+     *       "id": "4212a4b66fbe1cedca4bf2133d35dca5",
+     *       "name": "payload_too_large",
+     *       "errors": [
+     *         "body: payloads cannot be larger than 10MiB in size"
+     *       ]
+     *     } */
+    StabilityImageGenrationUpscaleFast_Response_413: {
+      /**
+       * @description A unique identifier associated with this error. Please include this in any [support tickets](https://kb.stability.ai/knowledge-base/kb-tickets/new)
+       *     you file, as it will greatly assist us in diagnosing the root cause of the problem.
+       * @example a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
+       */
+      id: string
+      /**
+       * @description Short-hand name for an error, useful for discriminating between errors with the same status code.
+       * @example bad_request
+       */
+      name: string
+      /**
+       * @description One or more error messages indicating what went wrong.
+       * @example [
+       *       "some-field: is required"
+       *     ]
+       */
+      errors: string[]
+    }
+    StabilityImageGenrationUpscaleFast_Response_422: {
+      /**
+       * @description A unique identifier associated with this error. Please include this in any [support tickets](https://kb.stability.ai/knowledge-base/kb-tickets/new)
+       *     you file, as it will greatly assist us in diagnosing the root cause of the problem.
+       * @example a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
+       */
+      id: string
+      /**
+       * @description Short-hand name for an error, useful for discriminating between errors with the same status code.
+       * @example bad_request
+       */
+      name: string
+      /**
+       * @description One or more error messages indicating what went wrong.
+       * @example [
+       *       "some-field: is required"
+       *     ]
+       */
+      errors: string[]
+    }
+    /** @example {
+     *       "id": "rate_limit_exceeded",
+     *       "name": "rate_limit_exceeded",
+     *       "errors": [
+     *         "You have exceeded the rate limit of 150 requests within a 10 second period, and have been timed out for 60 seconds."
+     *       ]
+     *     } */
+    StabilityImageGenrationUpscaleFast_Response_429: {
+      /**
+       * @description A unique identifier associated with this error. Please include this in any [support tickets](https://kb.stability.ai/knowledge-base/kb-tickets/new)
+       *     you file, as it will greatly assist us in diagnosing the root cause of the problem.
+       * @example a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
+       */
+      id: string
+      /**
+       * @description Short-hand name for an error, useful for discriminating between errors with the same status code.
+       * @example bad_request
+       */
+      name: string
+      /**
+       * @description One or more error messages indicating what went wrong.
+       * @example [
+       *       "some-field: is required"
+       *     ]
+       */
+      errors: string[]
+    }
+    StabilityGetResultResponse_202: {
+      /** @enum {string} */
+      status?: 'in-progress'
+      /**
+       * @description The ID of the generation result.
+       * @example 1234567890
+       */
+      id?: string
+    }
+    APIKey: {
+      id?: string
+      name?: string
+      description?: string
+      key_prefix?: string
+      /** Format: date-time */
+      created_at?: string
+    }
+    APIKeyWithPlaintext: components['schemas']['APIKey'] & {
+      /** @description The full API key (only returned at creation) */
+      plaintext_key?: string
+    }
+    GeminiGenerateContentRequest: {
+      contents: components['schemas']['GeminiContent'][]
+      tools?: components['schemas']['GeminiTool'][]
+      safetySettings?: components['schemas']['GeminiSafetySetting'][]
+      generationConfig?: components['schemas']['GeminiGenerationConfig']
+      systemInstruction?: components['schemas']['GeminiSystemInstructionContent']
+      videoMetadata?: components['schemas']['GeminiVideoMetadata']
+    }
+    GeminiGenerateContentResponse: {
+      candidates?: components['schemas']['GeminiCandidate'][]
+      promptFeedback?: components['schemas']['GeminiPromptFeedback']
+      usageMetadata?: components['schemas']['GeminiUsageMetadata']
+    }
+    GeminiUsageMetadata: {
+      /** @description Number of tokens in the request. When cachedContent is set, this is still the total effective prompt size meaning this includes the number of tokens in the cached content. */
+      promptTokenCount?: number
+      /** @description Number of tokens in the response(s). */
+      candidatesTokenCount?: number
+      /** @description Number of tokens present in tool-use prompt(s). */
+      toolUsePromptTokenCount?: number
+      /** @description Number of tokens present in thoughts output. */
+      thoughtsTokenCount?: number
+      /** @description Output only. Number of tokens in the cached part in the input (the cached content). */
+      cachedContentTokenCount?: number
+      /** @description Breakdown of prompt tokens by modality. */
+      promptTokensDetails?: components['schemas']['ModalityTokenCount'][]
+      /** @description Breakdown of candidate tokens by modality. */
+      candidatesTokensDetails?: components['schemas']['ModalityTokenCount'][]
+    }
+    ModalityTokenCount: {
+      modality?: components['schemas']['Modality']
+      /** @description Number of tokens for the given modality. */
+      tokenCount?: number
+    }
+    /**
+     * @description Type of input or output content modality.
+     * @enum {string}
+     */
+    Modality:
+      | 'MODALITY_UNSPECIFIED'
+      | 'TEXT'
+      | 'IMAGE'
+      | 'VIDEO'
+      | 'AUDIO'
+      | 'DOCUMENT'
+    /** @description Available for gemini-2.0-flash and gemini-2.0-flash-lite. Instructions for the model to steer it toward better performance. For example, "Answer as concisely as possible" or "Don't use technical terms in your response". The text strings count toward the token limit. The role field of systemInstruction is ignored and doesn't affect the performance of the model. Note: Only text should be used in parts and content in each part should be in a separate paragraph.
+     *      */
+    GeminiSystemInstructionContent: {
+      /**
+       * @description The identity of the entity that creates the message. The following values are supported: user: This indicates that the message is sent by a real person, typically a user-generated message. model: This indicates that the message is generated by the model. The model value is used to insert messages from the model into the conversation during multi-turn conversations. For non-multi-turn conversations, this field can be left blank or unset.
+       *
+       * @example user
+       * @enum {string}
+       */
+      role: 'user' | 'model'
+      /** @description A list of ordered parts that make up a single message. Different parts may have different IANA MIME types. For limits on the inputs, such as the maximum number of tokens or the number of images, see the model specifications on the Google models page.
+       *      */
+      parts: components['schemas']['GeminiTextPart'][]
+    }
+    /** @description The content of the current conversation with the model. For single-turn queries, this is a single instance. For multi-turn queries, this is a repeated field that contains conversation history and the latest request.
+     *      */
+    GeminiContent: {
+      /**
+       * @example user
+       * @enum {string}
+       */
+      role: 'user' | 'model'
+      parts: components['schemas']['GeminiPart'][]
+    }
+    /** @description A piece of code that enables the system to interact with external systems to perform an action, or set of actions, outside of knowledge and scope of the model. See Function calling.
+     *      */
+    GeminiTool: {
+      functionDeclarations?: components['schemas']['GeminiFunctionDeclaration'][]
+    }
+    /** @description Per request settings for blocking unsafe content. Enforced on GenerateContentResponse.candidates.
+     *      */
+    GeminiSafetySetting: {
+      category: components['schemas']['GeminiSafetyCategory']
+      threshold: components['schemas']['GeminiSafetyThreshold']
+    }
+    /** @enum {string} */
+    GeminiSafetyCategory:
+      | 'HARM_CATEGORY_SEXUALLY_EXPLICIT'
+      | 'HARM_CATEGORY_HATE_SPEECH'
+      | 'HARM_CATEGORY_HARASSMENT'
+      | 'HARM_CATEGORY_DANGEROUS_CONTENT'
+    /** @enum {string} */
+    GeminiSafetyThreshold:
+      | 'OFF'
+      | 'BLOCK_NONE'
+      | 'BLOCK_LOW_AND_ABOVE'
+      | 'BLOCK_MEDIUM_AND_ABOVE'
+      | 'BLOCK_ONLY_HIGH'
+    GeminiGenerationConfig: {
+      /**
+       * Format: float
+       * @description The temperature is used for sampling during response generation, which occurs when topP and topK are applied. Temperature controls the degree of randomness in token selection. Lower temperatures are good for prompts that require a less open-ended or creative response, while higher temperatures can lead to more diverse or creative results. A temperature of 0 means that the highest probability tokens are always selected. In this case, responses for a given prompt are mostly deterministic, but a small amount of variation is still possible. If the model returns a response that's too generic, too short, or the model gives a fallback response, try increasing the temperature
+       *
+       * @default 1
+       */
+      temperature: number
+      /**
+       * Format: float
+       * @description If specified, nucleus sampling is used.
+       *     Top-P changes how the model selects tokens for output. Tokens are selected from the most (see top-K) to least probable until the sum of their probabilities equals the top-P value. For example, if tokens A, B, and C have a probability of 0.3, 0.2, and 0.1 and the top-P value is 0.5, then the model will select either A or B as the next token by using temperature and excludes C as a candidate.
+       *     Specify a lower value for less random responses and a higher value for more random responses.
+       *
+       * @default 0.95
+       */
+      topP: number
+      /**
+       * @description Top-K changes how the model selects tokens for output. A top-K of 1 means the next selected token is the most probable among all tokens in the model's vocabulary. A top-K of 3 means that the next token is selected from among the 3 most probable tokens by using temperature.
+       *
+       * @default 40
+       * @example 40
+       */
+      topK: number
+      /**
+       * @description Maximum number of tokens that can be generated in the response. A token is approximately 4 characters. 100 tokens correspond to roughly 60-80 words.
+       *
+       * @example 2048
+       */
+      maxOutputTokens?: number
+      /**
+       * @description When seed is fixed to a specific value, the model makes a best effort to provide the same response for repeated requests. Deterministic output isn't guaranteed. Also, changing the model or parameter settings, such as the temperature, can cause variations in the response even when you use the same seed value. By default, a random seed value is used. Available for the following models:, gemini-2.5-flash-preview-04-1, gemini-2.5-pro-preview-05-0, gemini-2.0-flash-lite-00, gemini-2.0-flash-001
+       *
+       * @example 343940597
+       */
+      seed?: number
+      stopSequences?: string[]
+    }
+    /** @description For video input, the start and end offset of the video in Duration format. For example, to specify a 10 second clip starting at 1:00, set "startOffset": { "seconds": 60 } and "endOffset": { "seconds": 70 }. The metadata should only be specified while the video data is presented in inlineData or fileData.
+     *      */
+    GeminiVideoMetadata: {
+      startOffset?: components['schemas']['GeminiOffset']
+      endOffset?: components['schemas']['GeminiOffset']
+    }
+    /** @description Represents a duration offset for video timeline positions.
+     *      */
+    GeminiOffset: {
+      /**
+       * @description Signed seconds of the span of time. Must be from -315,576,000,000 to +315,576,000,000 inclusive.
+       *
+       * @example 60
+       */
+      seconds?: number
+      /**
+       * @description Signed fractions of a second at nanosecond resolution. Negative second values with fractions must still have non-negative nanos values.
+       *
+       * @example 0
+       */
+      nanos?: number
+    }
+    GeminiCandidate: {
+      content?: components['schemas']['GeminiContent']
+      finishReason?: string
+      safetyRatings?: components['schemas']['GeminiSafetyRating'][]
+      citationMetadata?: components['schemas']['GeminiCitationMetadata']
+    }
+    /**
+     * @description The media type of the file specified in the data or fileUri fields. Acceptable values include the following. For gemini-2.0-flash-lite and gemini-2.0-flash, the maximum length of an audio file is 8.4 hours and the maximum length of a video file (without audio) is one hour. For more information, see Gemini audio and video requirements. Text files must be UTF-8 encoded. The contents of the text file count toward the token limit. There is no limit on image resolution.
+     * @enum {string}
+     */
+    GeminiMimeType:
+      | 'application/pdf'
+      | 'audio/mpeg'
+      | 'audio/mp3'
+      | 'audio/wav'
+      | 'image/png'
+      | 'image/jpeg'
+      | 'image/webp'
+      | 'text/plain'
+      | 'video/mov'
+      | 'video/mpeg'
+      | 'video/mp4'
+      | 'video/mpg'
+      | 'video/avi'
+      | 'video/wmv'
+      | 'video/mpegps'
+      | 'video/flv'
+    GeminiPromptFeedback: {
+      safetyRatings?: components['schemas']['GeminiSafetyRating'][]
+      blockReason?: string
+      blockReasonMessage?: string
+    }
+    GeminiTextPart: {
+      /**
+       * @description A text prompt or code snippet.
+       * @example Answer as concisely as possible
+       */
+      text?: string
+    }
+    GeminiPart: {
+      /**
+       * @description A text prompt or code snippet.
+       * @example Write a story about a robot learning to paint
+       */
+      text?: string
+      inlineData?: components['schemas']['GeminiInlineData']
+    }
+    GeminiFunctionDeclaration: {
+      name: string
+      description?: string
+      /** @description JSON schema for the function parameters */
+      parameters: Record<string, never>
+    }
+    GeminiSafetyRating: {
+      category?: components['schemas']['GeminiSafetyCategory']
+      /**
+       * @description The probability that the content violates the specified safety category
+       * @enum {string}
+       */
+      probability?: 'NEGLIGIBLE' | 'LOW' | 'MEDIUM' | 'HIGH' | 'UNKNOWN'
+    }
+    GeminiCitationMetadata: {
+      citations?: components['schemas']['GeminiCitation'][]
+    }
+    /** @description Inline data in raw bytes. For gemini-2.0-flash-lite and gemini-2.0-flash, you can specify up to 3000 images by using inlineData.
+     *      */
+    GeminiInlineData: {
+      mimeType?: components['schemas']['GeminiMimeType']
+      /**
+       * Format: byte
+       * @description The base64 encoding of the image, PDF, or video to include inline in the prompt. When including media inline, you must also specify the media type (mimeType) of the data. Size limit: 20MB
+       *
+       */
+      data?: string
+    }
+    GeminiCitation: {
+      startIndex?: number
+      endIndex?: number
+      uri?: string
+      title?: string
+      license?: string
+      /** Format: date */
+      publicationDate?: string
+      authors?: string[]
+    }
+    Rodin3DGenerateRequest: {
+      /** @description The reference images to generate 3D Assets. */
+      images: string
+      /** @description Seed. */
+      seed?: number
+      tier?: components['schemas']['RodinTierType']
+      material?: components['schemas']['RodinMaterialType']
+      quality?: components['schemas']['RodinQualityType']
+      mesh_mode?: components['schemas']['RodinMeshModeType']
+    }
+    /**
+     * @description Rodin Tier para options
+     * @enum {string}
+     */
+    RodinTierType: 'Regular' | 'Sketch' | 'Detail' | 'Smooth'
+    /**
+     * @description Rodin Material para options
+     * @enum {string}
+     */
+    RodinMaterialType: 'PBR' | 'Shaded'
+    /**
+     * @description Rodin Quality para options
+     * @enum {string}
+     */
+    RodinQualityType: 'extra-low' | 'low' | 'medium' | 'high'
+    /**
+     * @description Rodin Mesh_Mode para options
+     * @enum {string}
+     */
+    RodinMeshModeType: 'Quad' | 'Raw'
+    Rodin3DCheckStatusRequest: {
+      /** @description subscription from generate endpoint */
+      subscription_key: string
+    }
+    Rodin3DDownloadRequest: {
+      /** @description Task UUID */
+      task_uuid: string
+    }
+    Rodin3DGenerateResponse: {
+      /** @description message */
+      message?: string
+      /** @description prompt */
+      prompt?: string
+      /** @description Time */
+      submit_time?: string
+      /** @description Task UUID */
+      uuid?: string
+      jobs?: components['schemas']['RodinGenerateJobsData']
+    }
+    RodinGenerateJobsData: {
+      /** @description subjobs uuid. */
+      uuids?: string[]
+      /** @description Subscription Key. */
+      subscription_key?: string
+    }
+    Rodin3DCheckStatusResponse: {
+      /** @description Details for the generation status. */
+      jobs?: components['schemas']['RodinCheckStatusJobItem'][]
+    }
+    RodinCheckStatusJobItem: {
+      /** @description sub uuid */
+      uuid?: string
+      status?: components['schemas']['RodinStatusOptions']
+    }
+    /** @enum {string} */
+    RodinStatusOptions: 'Done' | 'Failed' | 'Generating' | 'Waiting'
+    Rodin3DDownloadResponse: {
+      list?: components['schemas']['RodinResourceItem'][]
+    }
+    RodinResourceItem: {
+      /** @description Download url */
+      url?: string
+      /** @description File name */
+      name?: string
+    }
+    CreateAPIKeyRequest: {
+      name: string
+      description?: string
+    }
+    /** @example {
+     *       "id": "2a1b2d4eafe2bc6ab4cd4d5c6133f513",
+     *       "name": "internal_error",
+     *       "errors": [
+     *         "An unexpected server error has occurred, please try again later."
+     *       ]
+     *     } */
+    StabilityImageGenrationUpscaleFast_Response_500: {
+      /**
+       * @description A unique identifier associated with this error. Please include this in any [support tickets](https://kb.stability.ai/knowledge-base/kb-tickets/new)
+       *     you file, as it will greatly assist us in diagnosing the root cause of the problem.
+       * @example a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
+       */
+      id: string
+      /**
+       * @description Short-hand name for an error, useful for discriminating between errors with the same status code.
+       * @example bad_request
+       */
+      name: string
+      /**
+       * @description One or more error messages indicating what went wrong.
+       * @example [
+       *       "some-field: is required"
+       *     ]
+       */
+      errors: string[]
+    }
+    /** @description Common properties for model responses */
+    ModelResponseProperties: {
+      /** @description The model used to generate the response */
+      model?: string
+      /** @description Instructions for the model on how to generate the response */
+      instructions?: string
+      /** @description Maximum number of tokens to generate */
+      max_output_tokens?: number
+      /**
+       * @description Controls randomness in the response
+       * @default 1
+       */
+      temperature: number
+      /**
+       * @description Controls diversity of the response via nucleus sampling
+       * @default 1
+       */
+      top_p: number
+      /**
+       * @description How to handle truncation of the response
+       * @default disabled
+       * @enum {string}
+       */
+      truncation: 'disabled' | 'auto'
+    }
+    /**
+     * Input file
+     * @description A file input to the model.
+     */
+    InputFileContent: {
+      /**
+       * @description The type of the input item. Always `input_file`.
+       * @default input_file
+       * @enum {string}
+       */
+      type: 'input_file'
+      /** @description The ID of the file to be sent to the model. */
+      file_id?: string
+      /** @description The name of the file to be sent to the model. */
+      filename?: string
+      /** @description The content of the file to be sent to the model.
+       *      */
+      file_data?: string
+    }
+    ResponseProperties: {
+      /** @description The unique ID of the previous response to the model. Use this to
+       *     create multi-turn conversations. Learn more about
+       *     [conversation state](/docs/guides/conversation-state).
+       *      */
+      previous_response_id?: string
+      /** @description Model ID used to generate the response, like `gpt-4o` or `o3`. OpenAI
+       *     offers a wide range of models with different capabilities, performance
+       *     characteristics, and price points. Refer to the [model guide](/docs/models)
+       *     to browse and compare available models.
+       *      */
+      model?: components['schemas']['OpenAIModels']
+      reasoning?: components['schemas']['Reasoning']
+      /** @description An upper bound for the number of tokens that can be generated for a response, including visible output tokens and [reasoning tokens](/docs/guides/reasoning).
+       *      */
+      max_output_tokens?: number
+      /** @description Inserts a system (or developer) message as the first item in the model's context.
+       *
+       *     When using along with `previous_response_id`, the instructions from a previous
+       *     response will not be carried over to the next response. This makes it simple
+       *     to swap out system (or developer) messages in new responses.
+       *      */
+      instructions?: string
+      text?: {
+        format?: components['schemas']['TextResponseFormatConfiguration']
+      }
+      tools?: components['schemas']['Tool'][]
+      /** @description How the model should select which tool (or tools) to use when generating
+       *     a response. See the `tools` parameter to see how to specify which tools
+       *     the model can call.
+       *      */
+      tool_choice?:
+        | components['schemas']['ToolChoiceOptions']
+        | components['schemas']['ToolChoiceTypes']
+        | components['schemas']['ToolChoiceFunction']
+      /**
+       * @description The truncation strategy to use for the model response.
+       *     - `auto`: If the context of this response and previous ones exceeds
+       *       the model's context window size, the model will truncate the
+       *       response to fit the context window by dropping input items in the
+       *       middle of the conversation.
+       *     - `disabled` (default): If a model response will exceed the context window
+       *       size for a model, the request will fail with a 400 error.
+       *
+       * @default disabled
+       * @enum {string}
+       */
+      truncation: 'auto' | 'disabled'
+    }
+    /** @description An object specifying the format that the model must output.
+     *
+     *     Configuring `{ "type": "json_schema" }` enables Structured Outputs,
+     *     which ensures the model will match your supplied JSON schema. Learn more in the
+     *     [Structured Outputs guide](/docs/guides/structured-outputs).
+     *
+     *     The default format is `{ "type": "text" }` with no additional options.
+     *
+     *     **Not recommended for gpt-4o and newer models:**
+     *
+     *     Setting to `{ "type": "json_object" }` enables the older JSON mode, which
+     *     ensures the message the model generates is valid JSON. Using `json_schema`
+     *     is preferred for models that support it.
+     *      */
+    TextResponseFormatConfiguration:
+      | components['schemas']['ResponseFormatText']
+      | components['schemas']['TextResponseFormatJsonSchema']
+      | components['schemas']['ResponseFormatJsonObject']
+    /**
+     * JSON object
+     * @description JSON object response format. An older method of generating JSON responses.
+     *     Using `json_schema` is recommended for models that support it. Note that the
+     *     model will not generate JSON without a system or user message instructing it
+     *     to do so.
+     *
+     */
+    ResponseFormatJsonObject: {
+      /**
+       * @description The type of response format being defined. Always `json_object`.
+       * @enum {string}
+       */
+      type: 'json_object'
+    }
+    /**
+     * JSON schema
+     * @description JSON Schema response format. Used to generate structured JSON responses.
+     *     Learn more about [Structured Outputs](/docs/guides/structured-outputs).
+     *
+     */
+    ResponseFormatJsonSchema: {
+      /** @default json_schema */
+      type: string
+      /**
+       * JSON schema
+       * @description Structured Outputs configuration options, including a JSON Schema.
+       *
+       */
+      json_schema: {
+        /** @description A description of what the response format is for, used by the model to
+         *     determine how to respond in the format.
+         *      */
+        description?: string
+        /** @description The name of the response format. Must be a-z, A-Z, 0-9, or contain
+         *     underscores and dashes, with a maximum length of 64.
+         *      */
+        name: string
+        schema?: components['schemas']['ResponseFormatJsonSchemaSchema']
+        /**
+         * @description Whether to enable strict schema adherence when generating the output.
+         *     If set to true, the model will always follow the exact schema defined
+         *     in the `schema` field. Only a subset of JSON Schema is supported when
+         *     `strict` is `true`. To learn more, read the [Structured Outputs
+         *     guide](/docs/guides/structured-outputs).
+         *
+         * @default false
+         */
+        strict: boolean
+      }
+    }
+    /**
+     * JSON schema
+     * @description The schema for the response format, described as a JSON Schema object.
+     *     Learn how to build JSON schemas [here](https://json-schema.org/).
+     *
+     */
+    ResponseFormatJsonSchemaSchema: {
+      [key: string]: unknown
+    }
+    /**
+     * Text
+     * @description Default response format. Used to generate text responses.
+     *
+     */
+    ResponseFormatText: {
+      /**
+       * @description The type of response format being defined. Always `text`.
+       * @enum {string}
+       */
+      type: 'text'
+    }
+    /**
+     * JSON schema
+     * @description JSON Schema response format. Used to generate structured JSON responses.
+     *     Learn more about [Structured Outputs](/docs/guides/structured-outputs).
+     *
+     */
+    TextResponseFormatJsonSchema: {
+      /**
+       * @description The type of response format being defined. Always `json_schema`.
+       * @enum {string}
+       */
+      type: 'json_schema'
+      /** @description A description of what the response format is for, used by the model to
+       *     determine how to respond in the format.
+       *      */
+      description?: string
+      /** @description The name of the response format. Must be a-z, A-Z, 0-9, or contain
+       *     underscores and dashes, with a maximum length of 64.
+       *      */
+      name: string
+      schema: components['schemas']['ResponseFormatJsonSchemaSchema']
+      /**
+       * @description Whether to enable strict schema adherence when generating the output.
+       *     If set to true, the model will always follow the exact schema defined
+       *     in the `schema` field. Only a subset of JSON Schema is supported when
+       *     `strict` is `true`. To learn more, read the [Structured Outputs
+       *     guide](/docs/guides/structured-outputs).
+       *
+       * @default false
+       */
+      strict: boolean
+    }
+    /**
+     * Reasoning
+     * @description **o-series models only**
+     *
+     *     Configuration options for
+     *     [reasoning models](https://platform.openai.com/docs/guides/reasoning).
+     *
+     */
+    Reasoning: {
+      effort?: components['schemas']['ReasoningEffort']
+      /**
+       * @description A summary of the reasoning performed by the model. This can be
+       *     useful for debugging and understanding the model's reasoning process.
+       *     One of `auto`, `concise`, or `detailed`.
+       *
+       * @enum {string}
+       */
+      summary?: 'auto' | 'concise' | 'detailed'
+      /**
+       * @deprecated
+       * @description **Deprecated:** use `summary` instead.
+       *
+       *     A summary of the reasoning performed by the model. This can be
+       *     useful for debugging and understanding the model's reasoning process.
+       *     One of `auto`, `concise`, or `detailed`.
+       *
+       * @enum {string}
+       */
+      generate_summary?: 'auto' | 'concise' | 'detailed'
+    }
+    /**
+     * @description **o-series models only**
+     *
+     *     Constrains effort on reasoning for
+     *     [reasoning models](https://platform.openai.com/docs/guides/reasoning).
+     *     Currently supported values are `low`, `medium`, and `high`. Reducing
+     *     reasoning effort can result in faster responses and fewer tokens used
+     *     on reasoning in a response.
+     *
+     * @default medium
+     * @enum {string}
+     */
+    ReasoningEffort: 'low' | 'medium' | 'high'
+    /**
+     * Web search preview
+     * @description This tool searches the web for relevant results to use in a response. Learn more about the [web search tool](https://platform.openai.com/docs/guides/tools-web-search).
+     */
+    WebSearchPreviewTool: {
+      /**
+       * @description The type of the web search tool. One of `web_search_preview` or `web_search_preview_2025_03_11`. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      type: 'WebSearchPreviewTool'
+      /**
+       * @description High level guidance for the amount of context window space to use for the search. One of `low`, `medium`, or `high`. `medium` is the default.
+       * @enum {string}
+       */
+      search_context_size?: 'low' | 'medium' | 'high'
+    }
+    /**
+     * Computer use preview
+     * @description A tool that controls a virtual computer. Learn more about the [computer tool](https://platform.openai.com/docs/guides/tools-computer-use).
+     */
+    ComputerUsePreviewTool: {
+      /**
+       * @description The type of the computer use tool. Always `computer_use_preview`. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      type: 'ComputerUsePreviewTool'
+      /**
+       * @description The type of computer environment to control.
+       * @enum {string}
+       */
+      environment: 'windows' | 'mac' | 'linux' | 'ubuntu' | 'browser'
+      /** @description The width of the computer display. */
+      display_width: number
+      /** @description The height of the computer display. */
+      display_height: number
+    }
+    Tool:
+      | components['schemas']['FileSearchTool']
+      | components['schemas']['FunctionTool']
+      | components['schemas']['WebSearchPreviewTool']
+      | components['schemas']['ComputerUsePreviewTool']
+    /** @description Emitted when an error occurs. */
+    ResponseErrorEvent: {
+      /**
+       * @description The type of the event. Always `error`.
+       *
+       * @enum {string}
+       */
+      type: 'error'
+      /** @description The error code.
+       *      */
+      code: string
+      /** @description The error message.
+       *      */
+      message: string
+      /** @description The error parameter.
+       *      */
+      param: string
+    }
+    /** @description Emitted when a new output item is added. */
+    ResponseOutputItemAddedEvent: {
+      /**
+       * @description The type of the event. Always `response.output_item.added`.
+       *
+       * @enum {string}
+       */
+      type: 'response.output_item.added'
+      /** @description The index of the output item that was added.
+       *      */
+      output_index: number
+      /** @description The output item that was added.
+       *      */
+      item: components['schemas']['OutputItem']
+    }
+    /** @description Emitted when an output item is marked done. */
+    ResponseOutputItemDoneEvent: {
+      /**
+       * @description The type of the event. Always `response.output_item.done`.
+       *
+       * @enum {string}
+       */
+      type: 'response.output_item.done'
+      /** @description The index of the output item that was marked done.
+       *      */
+      output_index: number
+      /** @description The output item that was marked done.
+       *      */
+      item: components['schemas']['OutputItem']
+    }
+    /**
+     * Function tool
+     * @description Use this option to force the model to call a specific function.
+     *
+     */
+    ToolChoiceFunction: {
+      /**
+       * @description For function calling, the type is always `function`.
+       * @enum {string}
+       */
+      type: 'function'
+      /** @description The name of the function to call. */
+      name: string
+    }
+    /**
+     * Tool choice mode
+     * @description Controls which (if any) tool is called by the model.
+     *
+     *     `none` means the model will not call any tool and instead generates a message.
+     *
+     *     `auto` means the model can pick between generating a message or calling one or
+     *     more tools.
+     *
+     *     `required` means the model must call one or more tools.
+     *
+     * @enum {string}
+     */
+    ToolChoiceOptions: 'none' | 'auto' | 'required'
+    /**
+     * Hosted tool
+     * @description Indicates that the model should use a built-in tool to generate a response.
+     *     [Learn more about built-in tools](/docs/guides/tools).
+     *
+     */
+    ToolChoiceTypes: {
+      /**
+       * @description The type of hosted tool the model should to use. Learn more about
+       *     [built-in tools](/docs/guides/tools).
+       *
+       *     Allowed values are:
+       *     - `file_search`
+       *     - `web_search_preview`
+       *     - `computer_use_preview`
+       *
+       * @enum {string}
+       */
+      type:
+        | 'file_search'
+        | 'web_search_preview'
+        | 'computer_use_preview'
+        | 'web_search_preview_2025_03_11'
+    }
+    /** @description An event that is emitted when a response fails.
+     *      */
+    ResponseFailedEvent: {
+      /**
+       * @description The type of the event. Always `response.failed`.
+       *
+       * @enum {string}
+       */
+      type: 'response.failed'
+      /** @description The response that failed.
+       *      */
+      response: components['schemas']['OpenAIResponse']
+    }
+    /** @description Emitted when the response is in progress. */
+    ResponseInProgressEvent: {
+      /**
+       * @description The type of the event. Always `response.in_progress`.
+       *
+       * @enum {string}
+       */
+      type: 'response.in_progress'
+      /** @description The response that is in progress.
+       *      */
+      response: components['schemas']['OpenAIResponse']
+    }
+    /** @description An event that is emitted when a response finishes as incomplete.
+     *      */
+    ResponseIncompleteEvent: {
+      /**
+       * @description The type of the event. Always `response.incomplete`.
+       *
+       * @enum {string}
+       */
+      type: 'response.incomplete'
+      /** @description The response that was incomplete.
+       *      */
+      response: components['schemas']['OpenAIResponse']
+    }
+    /** @description An event that is emitted when a response is created. */
+    ResponseCreatedEvent: {
+      /**
+       * @description The type of the event. Always `response.created`.
+       * @enum {string}
+       */
+      type: 'response.created'
+      /** @description The response that was created. */
+      response: components['schemas']['OpenAIResponse']
+    }
+    /** @description Emitted when the model response is complete. */
+    ResponseCompletedEvent: {
+      /**
+       * @description The type of the event. Always `response.completed`.
+       * @enum {string}
+       */
+      type: 'response.completed'
+      /** @description Properties of the completed response. */
+      response: components['schemas']['OpenAIResponse']
+    }
+    /** @description Emitted when a new content part is added. */
+    ResponseContentPartAddedEvent: {
+      /**
+       * @description The type of the event. Always `response.content_part.added`.
+       * @enum {string}
+       */
+      type: 'response.content_part.added'
+      /** @description The ID of the output item that the content part was added to. */
+      item_id: string
+      /** @description The index of the output item that the content part was added to. */
+      output_index: number
+      /** @description The index of the content part that was added. */
+      content_index: number
+      /** @description The content part that was added. */
+      part: components['schemas']['OutputContent']
+    }
+    /** @description Emitted when a content part is done. */
+    ResponseContentPartDoneEvent: {
+      /**
+       * @description The type of the event. Always `response.content_part.done`.
+       * @enum {string}
+       */
+      type: 'response.content_part.done'
+      /** @description The ID of the output item that the content part was added to. */
+      item_id: string
+      /** @description The index of the output item that the content part was added to. */
+      output_index: number
+      /** @description The index of the content part that is done. */
+      content_index: number
+      /** @description The content part that is done. */
+      part: components['schemas']['OutputContent']
+    }
+    ResponseTool:
+      | components['schemas']['WebSearchTool']
+      | components['schemas']['FileSearchTool']
+      | components['schemas']['FunctionTool']
+    WebSearchTool: {
+      /**
+       * @description The type of tool
+       * @enum {string}
+       */
+      type: 'web_search'
+      /** @description Optional list of domains to restrict search to */
+      domains?: string[]
+    }
+    FileSearchTool: {
+      /**
+       * @description The type of tool (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      type: 'FileSearchTool'
+      /** @description IDs of vector stores to search in */
+      vector_store_ids: string[]
+    }
+    FunctionTool: {
+      /**
+       * @description The type of tool (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      type: 'FunctionTool'
+      /** @description Name of the function */
+      name: string
+      /** @description Description of what the function does */
+      description?: string
+      /** @description JSON Schema object describing the function parameters */
+      parameters: Record<string, never>
+    }
+    OutputItem:
+      | components['schemas']['OutputMessage']
+      | components['schemas']['FileSearchToolCall']
+      | components['schemas']['FunctionToolCall']
+      | components['schemas']['WebSearchToolCall']
+      | components['schemas']['ComputerToolCall']
+      | components['schemas']['ReasoningItem']
+    /**
+     * Web search tool call
+     * @description The results of a web search tool call. See the
+     *     [web search guide](/docs/guides/tools-web-search) for more information.
+     *
+     */
+    WebSearchToolCall: {
+      /** @description The unique ID of the web search tool call.
+       *      */
+      id: string
+      /**
+       * @description The type of the web search tool call. Always `web_search_call`.
+       *      (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      type: 'WebSearchToolCall'
+      /**
+       * @description The status of the web search tool call.
+       *
+       * @enum {string}
+       */
+      status: 'in_progress' | 'searching' | 'completed' | 'failed'
+    }
+    /**
+     * File search tool call
+     * @description The results of a file search tool call. See the
+     *     [file search guide](/docs/guides/tools-file-search) for more information.
+     *
+     */
+    FileSearchToolCall: {
+      /** @description The unique ID of the file search tool call.
+       *      */
+      id: string
+      /**
+       * @description The type of the file search tool call. Always `file_search_call`.
+       *      (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      type: 'FileSearchToolCall'
+      /**
+       * @description The status of the file search tool call. One of `in_progress`,
+       *     `searching`, `incomplete` or `failed`,
+       *
+       * @enum {string}
+       */
+      status:
+        | 'in_progress'
+        | 'searching'
+        | 'completed'
+        | 'incomplete'
+        | 'failed'
+      /** @description The queries used to search for files.
+       *      */
+      queries: string[]
+      /** @description The results of the file search tool call.
+       *      */
+      results?: {
+        /** @description The unique ID of the file.
+         *      */
+        file_id?: string
+        /** @description The text that was retrieved from the file.
+         *      */
+        text?: string
+        /** @description The name of the file.
+         *      */
+        filename?: string
+        /**
+         * Format: float
+         * @description The relevance score of the file - a value between 0 and 1.
+         *
+         */
+        score?: number
+      }[]
+    }
+    /**
+     * Function tool call
+     * @description A tool call to run a function. See the
+     *     [function calling guide](/docs/guides/function-calling) for more information.
+     *
+     */
+    FunctionToolCall: {
+      /** @description The unique ID of the function tool call.
+       *      */
+      id?: string
+      /**
+       * @description The type of the function tool call. Always `function_call`.
+       *
+       * @enum {string}
+       */
+      type: 'function_call'
+      /** @description The unique ID of the function tool call generated by the model.
+       *      */
+      call_id: string
+      /** @description The name of the function to run.
+       *      */
+      name: string
+      /** @description A JSON string of the arguments to pass to the function.
+       *      */
+      arguments: string
+      /**
+       * @description The status of the item. One of `in_progress`, `completed`, or
+       *     `incomplete`. Populated when items are returned via API.
+       *
+       * @enum {string}
+       */
+      status?: 'in_progress' | 'completed' | 'incomplete'
+    }
+    OutputMessage: {
+      /**
+       * @description The type of output item (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      type: 'OutputMessage'
+      /**
+       * @description The role of the message
+       * @enum {string}
+       */
+      role: 'assistant'
+      /** @description The content of the message */
+      content: components['schemas']['OutputContent'][]
+    }
+    OutputContent:
+      | components['schemas']['OutputTextContent']
+      | components['schemas']['OutputAudioContent']
+    OutputTextContent: {
+      /**
+       * @description The type of output content
+       * @enum {string}
+       */
+      type: 'output_text'
+      /** @description The text content */
+      text: string
+    }
+    OutputAudioContent: {
+      /**
+       * @description The type of output content
+       * @enum {string}
+       */
+      type: 'output_audio'
+      /** @description Base64-encoded audio data */
+      data: string
+      /** @description Transcript of the audio */
+      transcript: string
+    }
+    /** @description Represents token usage details including input tokens, output tokens,
+     *     a breakdown of output tokens, and the total tokens used.
+     *      */
+    ResponseUsage: {
+      /** @description The number of input tokens. */
+      input_tokens: number
+      /** @description A detailed breakdown of the input tokens. */
+      input_tokens_details: {
+        /** @description The number of tokens that were retrieved from the cache.
+         *     [More on prompt caching](/docs/guides/prompt-caching).
+         *      */
+        cached_tokens: number
+      }
+      /** @description The number of output tokens. */
+      output_tokens: number
+      /** @description A detailed breakdown of the output tokens. */
+      output_tokens_details: {
+        /** @description The number of reasoning tokens. */
+        reasoning_tokens: number
+      }
+      /** @description The total number of tokens used. */
+      total_tokens: number
+    }
+    /** @description A response from the model */
+    OpenAIResponse: components['schemas']['ModelResponseProperties'] &
+      components['schemas']['ResponseProperties'] & {
+        /** @description Unique identifier for this Response. */
+        id?: string
+        /**
+         * @description The object type of this resource - always set to `response`.
+         * @enum {string}
+         */
+        object?: 'response'
+        /**
+         * @description The status of the response generation. One of `completed`, `failed`, `in_progress`, or `incomplete`.
+         * @enum {string}
+         */
+        status?: 'completed' | 'failed' | 'in_progress' | 'incomplete'
+        /** @description Unix timestamp (in seconds) of when this Response was created. */
+        created_at?: number
+        error?: components['schemas']['ResponseError']
+        /** @description Details about why the response is incomplete.
+         *      */
+        incomplete_details?: {
+          /**
+           * @description The reason why the response is incomplete.
+           * @enum {string}
+           */
+          reason?: 'max_output_tokens' | 'content_filter'
+        } | null
+        /** @description An array of content items generated by the model.
+         *
+         *     - The length and order of items in the `output` array is dependent
+         *       on the model's response.
+         *     - Rather than accessing the first item in the `output` array and
+         *       assuming it's an `assistant` message with the content generated by
+         *       the model, you might consider using the `output_text` property where
+         *       supported in SDKs.
+         *      */
+        output?: components['schemas']['OutputItem'][]
+        /** @description SDK-only convenience property that contains the aggregated text output
+         *     from all `output_text` items in the `output` array, if any are present.
+         *     Supported in the Python and JavaScript SDKs.
+         *      */
+        output_text?: string | null
+        usage?: components['schemas']['ResponseUsage']
+        /**
+         * @description Whether to allow the model to run tool calls in parallel.
+         *
+         * @default true
+         */
+        parallel_tool_calls: boolean
+      }
+    /** @description An error object returned when the model fails to generate a Response. */
+    ResponseError: {
+      code: components['schemas']['ResponseErrorCode']
+      /** @description A human-readable description of the error. */
+      message: string
+    }
+    /**
+     * @description The error code for the response.
+     * @enum {string}
+     */
+    ResponseErrorCode:
+      | 'server_error'
+      | 'rate_limit_exceeded'
+      | 'invalid_prompt'
+      | 'vector_store_timeout'
+      | 'invalid_image'
+      | 'invalid_image_format'
+      | 'invalid_base64_image'
+      | 'invalid_image_url'
+      | 'image_too_large'
+      | 'image_too_small'
+      | 'image_parse_error'
+      | 'image_content_policy_violation'
+      | 'invalid_image_mode'
+      | 'image_file_too_large'
+      | 'unsupported_image_media_type'
+      | 'empty_image_file'
+      | 'failed_to_download_image'
+      | 'image_file_not_found'
+    /** @description Events that can be emitted during response streaming */
+    OpenAIResponseStreamEvent:
+      | components['schemas']['ResponseCreatedEvent']
+      | components['schemas']['ResponseInProgressEvent']
+      | components['schemas']['ResponseCompletedEvent']
+      | components['schemas']['ResponseFailedEvent']
+      | components['schemas']['ResponseIncompleteEvent']
+      | components['schemas']['ResponseOutputItemAddedEvent']
+      | components['schemas']['ResponseOutputItemDoneEvent']
+      | components['schemas']['ResponseContentPartAddedEvent']
+      | components['schemas']['ResponseContentPartDoneEvent']
+      | components['schemas']['ResponseErrorEvent']
+    InputMessage: {
+      /** @enum {string} */
+      type?: 'message'
+      /** @enum {string} */
+      role?: 'user' | 'system' | 'developer'
+      /** @enum {string} */
+      status?: 'in_progress' | 'completed' | 'incomplete'
+      content?: components['schemas']['InputMessageContentList']
+    }
+    /**
+     * Input item content list
+     * @description A list of one or many input items to the model, containing different content
+     *     types.
+     *
+     */
+    InputMessageContentList: components['schemas']['InputContent'][]
+    InputContent:
+      | components['schemas']['InputTextContent']
+      | components['schemas']['InputImageContent']
+      | components['schemas']['InputFileContent']
+    /**
+     * Input text
+     * @description A text input to the model.
+     */
+    InputTextContent: {
+      /**
+       * @description The type of the input item. Always `input_text`.
+       * @default input_text
+       * @enum {string}
+       */
+      type: 'input_text'
+      /** @description The text input to the model. */
+      text: string
+    }
+    /**
+     * Input image
+     * @description An image input to the model. Learn about [image inputs](/docs/guides/vision).
+     */
+    InputImageContent: {
+      /**
+       * @description The type of the input item. Always `input_image`.
+       * @default input_image
+       * @enum {string}
+       */
+      type: 'input_image'
+      /** @description The URL of the image to be sent to the model. A fully qualified URL or base64 encoded image in a data URL. */
+      image_url?: string
+      /** @description The ID of the file to be sent to the model. */
+      file_id?: string
+      /**
+       * @description The detail level of the image to be sent to the model. One of `high`, `low`, or `auto`. Defaults to `auto`.
+       * @enum {string}
+       */
+      detail: 'low' | 'high' | 'auto'
+    }
+    InputMessageResource: components['schemas']['InputMessage'] & {
+      /** @description The unique ID of the message input.
+       *      */
+      id: string
+    } & {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'InputMessageResource'
+    }
+    /** @description Content item used to generate a response.
+     *      */
+    ItemResource:
+      | components['schemas']['InputMessageResource']
+      | components['schemas']['OutputMessage']
+      | components['schemas']['FileSearchToolCall']
+      | components['schemas']['ComputerToolCall']
+      | components['schemas']['WebSearchToolCall']
+      | components['schemas']['FunctionToolCallResource']
+    FunctionToolCallResource: components['schemas']['FunctionToolCall'] & {
+      /** @description The unique ID of the function tool call.
+       *      */
+      id: string
+    } & {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'FunctionToolCallResource'
+    }
+    /**
+     * Computer tool call
+     * @description A tool call to a computer use tool. See the
+     *     [computer use guide](/docs/guides/tools-computer-use) for more information.
+     *
+     */
+    ComputerToolCall: {
+      /**
+       * @description The type of the computer call. Always `computer_call`. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      type: 'ComputerToolCall'
+      /** @description The unique ID of the computer call. */
+      id: string
+      /** @description An identifier used when responding to the tool call with output.
+       *      */
+      call_id: string
+      action: Record<string, never>
+      /**
+       * @description The status of the item. One of `in_progress`, `completed`, or
+       *     `incomplete`. Populated when items are returned via API.
+       *
+       * @enum {string}
+       */
+      status: 'in_progress' | 'completed' | 'incomplete'
+    }
+    /** @description A list of Response items. */
+    ResponseItemList: {
+      /**
+       * @description The type of object returned, must be `list`.
+       * @enum {string}
+       */
+      object: 'list'
+      /** @description A list of items used to generate this response. */
+      data: components['schemas']['ItemResource'][]
+      /** @description Whether there are more items available. */
+      has_more: boolean
+      /** @description The ID of the first item in the list. */
+      first_id: string
+      /** @description The ID of the last item in the list. */
+      last_id: string
+    }
+    /**
+     * @description Specify additional output data to include in the model response. Currently
+     *     supported values are:
+     *     - `file_search_call.results`: Include the search results of
+     *       the file search tool call.
+     *     - `message.input_image.image_url`: Include image urls from the input message.
+     *     - `computer_call_output.output.image_url`: Include image urls from the computer call output.
+     *
+     * @enum {string}
+     */
+    Includable:
+      | 'file_search_call.results'
+      | 'message.input_image.image_url'
+      | 'computer_call_output.output.image_url'
+    CreateModelResponseProperties: components['schemas']['ModelResponseProperties']
+    InputItem:
+      | components['schemas']['EasyInputMessage']
+      | components['schemas']['Item']
+    /** @description Content item used to generate a response.
+     *      */
+    Item:
+      | components['schemas']['InputMessage']
+      | components['schemas']['OutputMessage']
+      | components['schemas']['FileSearchToolCall']
+      | components['schemas']['ComputerToolCall']
+      | components['schemas']['WebSearchToolCall']
+      | components['schemas']['FunctionToolCall']
+      | components['schemas']['ReasoningItem']
+    /**
+     * Reasoning
+     * @description A description of the chain of thought used by a reasoning model while generating
+     *     a response.
+     *
+     */
+    ReasoningItem: {
+      /**
+       * @description The type of the object. Always `reasoning`.
+       *
+       * @enum {string}
+       */
+      type: 'reasoning'
+      /** @description The unique identifier of the reasoning content.
+       *      */
+      id: string
+      /** @description Reasoning text contents.
+       *      */
+      summary: {
+        /**
+         * @description The type of the object. Always `summary_text`.
+         *
+         * @enum {string}
+         */
+        type: 'summary_text'
+        /** @description A short summary of the reasoning used by the model when generating
+         *     the response.
+         *      */
+        text: string
+      }[]
+      /**
+       * @description The status of the item. One of `in_progress`, `completed`, or
+       *     `incomplete`. Populated when items are returned via API.
+       *
+       * @enum {string}
+       */
+      status?: 'in_progress' | 'completed' | 'incomplete'
+    }
+    /**
+     * Input message
+     * @description A message input to the model with a role indicating instruction following
+     *     hierarchy. Instructions given with the `developer` or `system` role take
+     *     precedence over instructions given with the `user` role. Messages with the
+     *     `assistant` role are presumed to have been generated by the model in previous
+     *     interactions.
+     *
+     */
+    EasyInputMessage: {
+      /**
+       * @description The role of the message input. One of `user`, `assistant`, `system`, or
+       *     `developer`.
+       *
+       * @enum {string}
+       */
+      role: 'user' | 'assistant' | 'system' | 'developer'
+      /** @description Text, image, or audio input to the model, used to generate a response.
+       *     Can also contain previous assistant responses.
+       *      */
+      content: string | components['schemas']['InputMessageContentList']
+      /**
+       * @description The type of the message input. Always `message`.
+       *
+       * @enum {string}
+       */
+      type?: 'message'
+    }
+    OpenAICreateResponse: components['schemas']['CreateModelResponseProperties'] &
+      components['schemas']['ResponseProperties'] & {
+        /** @description Text, image, or file inputs to the model, used to generate a response.
+         *
+         *     Learn more:
+         *     - [Text inputs and outputs](/docs/guides/text)
+         *     - [Image inputs](/docs/guides/images)
+         *     - [File inputs](/docs/guides/pdf-files)
+         *     - [Conversation state](/docs/guides/conversation-state)
+         *     - [Function calling](/docs/guides/function-calling)
+         *      */
+        input: string | components['schemas']['InputItem'][]
+        /** @description Specify additional output data to include in the model response. Currently
+         *     supported values are:
+         *     - `file_search_call.results`: Include the search results of
+         *       the file search tool call.
+         *     - `message.input_image.image_url`: Include image urls from the input message.
+         *     - `computer_call_output.output.image_url`: Include image urls from the computer call output.
+         *      */
+        include?: components['schemas']['Includable'][] | null
+        usage?: components['schemas']['ResponseUsage']
+        /**
+         * @description Whether to allow the model to run tool calls in parallel.
+         *
+         * @default true
+         */
+        parallel_tool_calls: boolean | null
+        /**
+         * @description Whether to store the generated model response for later retrieval via
+         *     API.
+         *
+         * @default true
+         */
+        store: boolean | null
+        /**
+         * @description If set to true, the model response data will be streamed to the client
+         *     as it is generated using [server-sent events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events#Event_stream_format).
+         *     See the [Streaming section below](/docs/api-reference/responses-streaming)
+         *     for more information.
+         *
+         * @default false
+         */
+        stream: boolean | null
+      }
+    /** @enum {string} */
+    OpenAIModels:
+      | 'gpt-4'
+      | 'gpt-4-0314'
+      | 'gpt-4-0613'
+      | 'gpt-4-32k'
+      | 'gpt-4-32k-0314'
+      | 'gpt-4-32k-0613'
+      | 'gpt-4-0125-preview'
+      | 'gpt-4-turbo'
+      | 'gpt-4-turbo-2024-04-09'
+      | 'gpt-4-turbo-preview'
+      | 'gpt-4-1106-preview'
+      | 'gpt-4-vision-preview'
+      | 'gpt-3.5-turbo'
+      | 'gpt-3.5-turbo-16k'
+      | 'gpt-3.5-turbo-0301'
+      | 'gpt-3.5-turbo-0613'
+      | 'gpt-3.5-turbo-1106'
+      | 'gpt-3.5-turbo-0125'
+      | 'gpt-3.5-turbo-16k-0613'
+      | 'gpt-4.1'
+      | 'gpt-4.1-mini'
+      | 'gpt-4.1-nano'
+      | 'gpt-4.1-2025-04-14'
+      | 'gpt-4.1-mini-2025-04-14'
+      | 'gpt-4.1-nano-2025-04-14'
+      | 'o1'
+      | 'o1-mini'
+      | 'o1-preview'
+      | 'o1-pro'
+      | 'o1-2024-12-17'
+      | 'o1-preview-2024-09-12'
+      | 'o1-mini-2024-09-12'
+      | 'o1-pro-2025-03-19'
+      | 'o3'
+      | 'o3-mini'
+      | 'o3-2025-04-16'
+      | 'o3-mini-2025-01-31'
+      | 'o4-mini'
+      | 'o4-mini-2025-04-16'
+      | 'gpt-4o'
+      | 'gpt-4o-mini'
+      | 'gpt-4o-2024-11-20'
+      | 'gpt-4o-2024-08-06'
+      | 'gpt-4o-2024-05-13'
+      | 'gpt-4o-mini-2024-07-18'
+      | 'gpt-4o-audio-preview'
+      | 'gpt-4o-audio-preview-2024-10-01'
+      | 'gpt-4o-audio-preview-2024-12-17'
+      | 'gpt-4o-mini-audio-preview'
+      | 'gpt-4o-mini-audio-preview-2024-12-17'
+      | 'gpt-4o-search-preview'
+      | 'gpt-4o-mini-search-preview'
+      | 'gpt-4o-search-preview-2025-03-11'
+      | 'gpt-4o-mini-search-preview-2025-03-11'
+      | 'computer-use-preview'
+      | 'computer-use-preview-2025-03-11'
+      | 'chatgpt-4o-latest'
+    MoonvalleyInferenceParams: {
+      /** @default 1080 */
+      height: number
+      /** @default 1920 */
+      width: number
+      /** @default 64 */
+      num_frames: number
+      /** @default 24 */
+      fps: number
+      /**
+       * Format: float
+       * @default 12.5
+       */
+      guidance_scale: number
+      seed?: number
+      /** @default 80 */
+      steps: number
+      /** @default true */
+      use_timestep_transform: boolean
+      /**
+       * Format: float
+       * @default 3
+       */
+      shift_value: number
+      /** @default true */
+      use_guidance_schedule: boolean
+      /** @default true */
+      add_quality_guidance: boolean
+      /**
+       * Format: float
+       * @default 3
+       */
+      clip_value: number
+      /** @default false */
+      use_negative_prompts: boolean
+      negative_prompt?: string
+      warmup_steps?: number
+      cooldown_steps?: number
+      /**
+       * Format: float
+       * @default 0.3
+       */
+      caching_coefficient: number
+      /** @default 3 */
+      caching_warmup: number
+      /** @default 3 */
+      caching_cooldown: number
+      /** @default 0 */
+      conditioning_frame_index: number
+    }
+    MoonvalleyPromptResponse: {
+      id?: string
+      status?: string
+      prompt_text?: string
+      output_url?: string
+      inference_params?: Record<string, never>
+      model_params?: Record<string, never>
+      meta?: Record<string, never>
+      frame_conditioning?: Record<string, never>
+      error?: Record<string, never>
+    }
+    MoonvalleyCreatePromptRequest: {
+      prompt_text: string
+      image_url?: string
+      inference_params?: components['schemas']['MoonvalleyInferenceParams']
+      webhook_url?: string
+    }
+    MoonvalleyCreatePromptResponse: {
+      id?: string
+      status?: string
+      approximate_wait_time?: number
+    }
+    MoonvalleyCreateVideoToVideoRequest: {
+      prompt_text: string
+      video_url: string
+      /** @enum {string} */
+      control_type: 'motion_control'
+      inference_params?: components['schemas']['MoonvalleyInferenceParams']
+      webhook_url?: string
+    }
+    MoonvalleyUploadResponse: {
+      access_url?: string
     }
   }
   responses: never
-  parameters: never
+  parameters: {
+    /** @description Unique UUID for each request. */
+    PixverseAiTraceId: string
+  }
   requestBodies: never
   headers: never
   pathItems: never
@@ -2940,6 +8738,83 @@ export interface operations {
       }
     }
   }
+  searchCustomers: {
+    parameters: {
+      query?: {
+        /** @description Email address to search for */
+        email?: string
+        /** @description Customer name to search for */
+        name?: string
+        /** @description Stripe customer ID to search for */
+        stripe_id?: string
+        /** @description Metronome customer ID to search for\ */
+        metronome_id?: string
+        /** @description Page number to retrieve */
+        page?: number
+        /** @description Number of customers to return per page */
+        limit?: number
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Customers matching the search criteria */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /** @description Current page number */
+            page?: number
+            /** @description Number of customers per page */
+            limit?: number
+            /** @description Total number of pages available */
+            totalPages?: number
+            customers?: components['schemas']['Customer'][]
+            /** @description Total number of matching customers */
+            total?: number
+          }
+        }
+      }
+      /** @description Invalid request parameters */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Forbidden - insufficient permissions */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
   createCustomer: {
     parameters: {
       query?: never
@@ -2949,6 +8824,15 @@ export interface operations {
     }
     requestBody?: never
     responses: {
+      /** @description Customer already exists */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Customer']
+        }
+      }
       /** @description Customer created successfully */
       201: {
         headers: {
@@ -2958,7 +8842,7 @@ export interface operations {
           'application/json': components['schemas']['Customer']
         }
       }
-      /** @description Bad request, invalid token or user already exists */
+      /** @description Invalid request */
       400: {
         headers: {
           [name: string]: unknown
@@ -2967,8 +8851,248 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponse']
         }
       }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  getAuthenticatedCustomer: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Customer details retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Customer']
+        }
+      }
       /** @description Unauthorized or invalid token */
       401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Customer not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  getCustomerById: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        customer_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Customer details retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            customer?: components['schemas']['Customer']
+          }
+        }
+      }
+      /** @description Unauthorized or invalid token */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Customer not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  listCustomerAPIKeys: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description List of API keys */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            api_keys?: components['schemas']['APIKey'][]
+          }
+        }
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Customer not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  createCustomerAPIKey: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateAPIKeyRequest']
+      }
+    }
+    responses: {
+      /** @description API key created */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            api_key?: components['schemas']['APIKeyWithPlaintext']
+          }
+        }
+      }
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Customer or API key not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  deleteCustomerAPIKey: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        api_key_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description API key deleted */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Customer or API key not found */
+      404: {
         headers: {
           [name: string]: unknown
         }
@@ -3100,6 +9224,52 @@ export interface operations {
       }
     }
   }
+  GetCustomerUsage: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /** @description The dashboard URL for the customer's usage */
+            url?: string
+          }
+        }
+      }
+      /** @description Unauthorized or invalid token */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Customer not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
   GetCustomerBalance: {
     parameters: {
       query?: never
@@ -3117,7 +9287,7 @@ export interface operations {
         content: {
           'application/json': {
             /**
-             * Format: int64
+             * Format: double
              * @description The remaining balance in microamount (1/1,000,000 of the currency unit)
              */
             amount_micros: number
@@ -3141,6 +9311,249 @@ export interface operations {
         content: {
           'application/json': components['schemas']['ErrorResponse']
         }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  GetCustomerBalanceById: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The ID of the customer whose balance to retrieve */
+        customer_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Customer balance retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /**
+             * Format: double
+             * @description The remaining balance in microamount (1/1,000,000 of the currency unit)
+             */
+            amount_micros: number
+            /** @description The currency code (e.g., "usd") */
+            currency: string
+          }
+        }
+      }
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Unauthorized or invalid token */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Customer not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  createCustomerStorageResource: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @description The desired name of the file (e.g., 'profile.jpg') */
+          file_name: string
+          /** @description The content type of the file (e.g., 'image/png') */
+          content_type?: string
+          /** @description The hash of the file. If provided, an existing file with the same hash may be returned. */
+          file_hash?: string
+        }
+      }
+    }
+    responses: {
+      /** @description Signed URL generated successfully */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerStorageResourceResponse']
+        }
+      }
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  GetCustomerEventsById: {
+    parameters: {
+      query?: {
+        /** @description Page number of the nodes list */
+        page?: number
+        /** @description Number of nodes to return per page */
+        limit?: number
+        /** @description Event type to filter */
+        filter?: string
+      }
+      header?: never
+      path: {
+        customer_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description A paginated list of nodes */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /** @description Total number of events available */
+            total?: number
+            events?: components['schemas']['AuditLog'][]
+            /** @description Current page number */
+            page?: number
+            /** @description Maximum number of nodes per page */
+            limit?: number
+            /** @description Total number of pages available */
+            totalPages?: number
+          }
+        }
+      }
+      /** @description Invalid input, object invalid */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  GetCustomerEvents: {
+    parameters: {
+      query?: {
+        /** @description Page number of the nodes list */
+        page?: number
+        /** @description Number of nodes to return per page */
+        limit?: number
+        /** @description Event type to filter */
+        filter?: string
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description A paginated list of nodes */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /** @description Total number of events available */
+            total?: number
+            events?: components['schemas']['AuditLog'][]
+            /** @description Current page number */
+            page?: number
+            /** @description Maximum number of nodes per page */
+            limit?: number
+            /** @description Total number of pages available */
+            totalPages?: number
+          }
+        }
+      }
+      /** @description Invalid input, object invalid */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
       }
       /** @description Internal server error */
       500: {
@@ -4316,8 +10729,14 @@ export interface operations {
         limit?: number
         /** @description Keyword to search the nodes */
         search?: string
+        /** @description Keyword to search the nodes by repository URL */
+        repository_url_search?: string
         /** @description Keyword to search the nodes by comfy node name */
         comfy_node_search?: string
+        /** @description Filter nodes by supported operating systems */
+        supported_os?: string
+        /** @description Filter nodes by supported accelerator */
+        supported_accelerator?: string
         /** @description Number of nodes to return per page */
         include_banned?: boolean
       }
@@ -4419,6 +10838,10 @@ export interface operations {
         page?: number
         /** @description Number of nodes to return per page */
         limit?: number
+        /** @description Filter nodes by supported operating systems */
+        supported_os?: string
+        /** @description Filter nodes by supported accelerator */
+        supported_accelerator?: string
         /** @description Number of nodes to return per page */
         include_banned?: boolean
         /** @description Retrieve nodes created or updated after this timestamp (ISO 8601 format) */
@@ -4806,6 +11229,8 @@ export interface operations {
         page?: number
         /** @description The number of items to include per page. */
         pageSize?: number
+        /** @description search for status_reason, case insensitive */
+        status_reason?: string
       }
       header?: never
       path?: never
@@ -5302,6 +11727,30 @@ export interface operations {
       }
     }
   }
+  dummyProxy: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: {
+      content: {
+        'application/json': {
+          message?: string
+        }
+      }
+    }
+    responses: {
+      /** @description Reindex completed successfully. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+    }
+  }
   minimaxVideoGeneration: {
     parameters: {
       query?: never
@@ -5632,6 +12081,358 @@ export interface operations {
       }
     }
   }
+  ideogramV3Generate: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** @description Parameters for Ideogram V3 image generation */
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['IdeogramV3Request']
+      }
+    }
+    responses: {
+      /** @description Successful response from Ideogram proxy */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['IdeogramGenerateResponse']
+        }
+      }
+      /** @description Internal Server Error (proxy or upstream issue) */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  ideogramV3Edit: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** @description Parameters for Ideogram V3 image editing */
+    requestBody: {
+      content: {
+        'multipart/form-data': components['schemas']['IdeogramV3EditRequest']
+      }
+    }
+    responses: {
+      /** @description Successful response from Ideogram proxy */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['IdeogramGenerateResponse']
+        }
+      }
+      /** @description Bad Request (invalid input to proxy) */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Prompt or Initial Image failed the safety checks. */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Rate limit exceeded (either from proxy or Ideogram) */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Internal Server Error (proxy or upstream issue) */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  ideogramV3Remix: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'multipart/form-data': components['schemas']['IdeogramV3RemixRequest']
+      }
+    }
+    responses: {
+      /** @description Remix generated successfully */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['IdeogramV3IdeogramResponse']
+        }
+      }
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Unprocessable Entity */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Too Many Requests */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+    }
+  }
+  ideogramV3Reframe: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'multipart/form-data': components['schemas']['IdeogramV3ReframeRequest']
+      }
+    }
+    responses: {
+      /** @description Reframed image successfully returned */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['IdeogramV3IdeogramResponse']
+        }
+      }
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Unprocessable Entity */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Too Many Requests */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+    }
+  }
+  ideogramV3ReplaceBackground: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'multipart/form-data': components['schemas']['IdeogramV3ReplaceBackgroundRequest']
+      }
+    }
+    responses: {
+      /** @description Background replaced successfully */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['IdeogramV3IdeogramResponse']
+        }
+      }
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Unprocessable Entity */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Too Many Requests */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+    }
+  }
+  klingQueryResourcePackages: {
+    parameters: {
+      query: {
+        start_time: number
+        end_time: number
+        resource_pack_name?: string
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful response (Request successful) */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingResourcePackageResponse']
+        }
+      }
+      /** @description Invalid request parameters */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingErrorResponse']
+        }
+      }
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingErrorResponse']
+        }
+      }
+      /** @description Unauthorized access to requested resource */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingErrorResponse']
+        }
+      }
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingErrorResponse']
+        }
+      }
+      /** @description Account exception or Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingErrorResponse']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingErrorResponse']
+        }
+      }
+      /** @description Service temporarily unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingErrorResponse']
+        }
+      }
+      /** @description Server timeout */
+      504: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KlingErrorResponse']
+        }
+      }
+    }
+  }
   klingText2VideoQueryTaskList: {
     parameters: {
       query?: {
@@ -5661,9 +12462,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingRequestError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Authentication failed */
@@ -5672,7 +12471,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAuthenticationError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Unauthorized access to requested resource */
@@ -5681,7 +12480,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAccountError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Resource not found */
@@ -5690,7 +12489,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingRequestError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Account exception or Rate limit exceeded */
@@ -5699,9 +12498,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingAccountError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Internal server error */
@@ -5710,7 +12507,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Service temporarily unavailable */
@@ -5719,7 +12516,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Server timeout */
@@ -5728,7 +12525,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
     }
@@ -5762,9 +12559,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingRequestError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Authentication failed */
@@ -5773,7 +12568,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAuthenticationError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Unauthorized access to requested resource */
@@ -5782,7 +12577,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAccountError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Resource not found */
@@ -5791,7 +12586,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingRequestError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Account exception or Rate limit exceeded */
@@ -5800,9 +12595,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingAccountError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Internal server error */
@@ -5811,7 +12604,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Service temporarily unavailable */
@@ -5820,7 +12613,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Server timeout */
@@ -5829,7 +12622,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
     }
@@ -5861,9 +12654,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingRequestError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Authentication failed */
@@ -5872,7 +12663,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAuthenticationError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Unauthorized access to requested resource */
@@ -5881,7 +12672,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAccountError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Resource not found */
@@ -5890,7 +12681,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingRequestError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Account exception or Rate limit exceeded */
@@ -5899,9 +12690,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingAccountError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Internal server error */
@@ -5910,7 +12699,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Service temporarily unavailable */
@@ -5919,7 +12708,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Server timeout */
@@ -5928,7 +12717,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
     }
@@ -5962,9 +12751,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingRequestError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Authentication failed */
@@ -5973,7 +12760,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAuthenticationError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Unauthorized access to requested resource */
@@ -5982,7 +12769,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAccountError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Resource not found */
@@ -5991,7 +12778,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingRequestError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Account exception or Rate limit exceeded */
@@ -6000,9 +12787,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingAccountError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Internal server error */
@@ -6011,7 +12796,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Service temporarily unavailable */
@@ -6020,7 +12805,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Server timeout */
@@ -6029,7 +12814,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
     }
@@ -6063,9 +12848,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingRequestError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Authentication failed */
@@ -6074,7 +12857,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAuthenticationError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Unauthorized access to requested resource */
@@ -6083,7 +12866,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAccountError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Resource not found */
@@ -6092,7 +12875,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingRequestError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Account exception or Rate limit exceeded */
@@ -6101,9 +12884,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingAccountError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Internal server error */
@@ -6112,7 +12893,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Service temporarily unavailable */
@@ -6121,7 +12902,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Server timeout */
@@ -6130,7 +12911,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
     }
@@ -6162,9 +12943,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingRequestError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Authentication failed */
@@ -6173,7 +12952,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAuthenticationError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Unauthorized access to requested resource */
@@ -6182,7 +12961,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAccountError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Resource not found */
@@ -6191,7 +12970,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingRequestError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Account exception or Rate limit exceeded */
@@ -6200,9 +12979,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingAccountError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Internal server error */
@@ -6211,7 +12988,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Service temporarily unavailable */
@@ -6220,7 +12997,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Server timeout */
@@ -6229,7 +13006,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
     }
@@ -6263,9 +13040,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingRequestError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Authentication failed */
@@ -6274,7 +13049,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAuthenticationError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Unauthorized access to requested resource */
@@ -6283,7 +13058,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAccountError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Resource not found */
@@ -6292,7 +13067,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingRequestError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Account exception or Rate limit exceeded */
@@ -6301,9 +13076,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingAccountError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Internal server error */
@@ -6312,7 +13085,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Service temporarily unavailable */
@@ -6321,7 +13094,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Server timeout */
@@ -6330,7 +13103,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
     }
@@ -6364,9 +13137,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingRequestError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Authentication failed */
@@ -6375,7 +13146,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAuthenticationError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Unauthorized access to requested resource */
@@ -6384,7 +13155,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAccountError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Resource not found */
@@ -6393,7 +13164,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingRequestError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Account exception or Rate limit exceeded */
@@ -6402,9 +13173,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingAccountError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Internal server error */
@@ -6413,7 +13182,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Service temporarily unavailable */
@@ -6422,7 +13191,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Server timeout */
@@ -6431,7 +13200,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
     }
@@ -6463,9 +13232,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingRequestError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Authentication failed */
@@ -6474,7 +13241,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAuthenticationError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Unauthorized access to requested resource */
@@ -6483,7 +13250,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAccountError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Resource not found */
@@ -6492,7 +13259,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingRequestError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Account exception or Rate limit exceeded */
@@ -6501,9 +13268,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingAccountError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Internal server error */
@@ -6512,7 +13277,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Service temporarily unavailable */
@@ -6521,7 +13286,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Server timeout */
@@ -6530,7 +13295,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
     }
@@ -6564,9 +13329,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingRequestError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Authentication failed */
@@ -6575,7 +13338,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAuthenticationError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Unauthorized access to requested resource */
@@ -6584,7 +13347,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAccountError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Resource not found */
@@ -6593,7 +13356,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingRequestError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Account exception or Rate limit exceeded */
@@ -6602,9 +13365,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingAccountError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Internal server error */
@@ -6613,7 +13374,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Service temporarily unavailable */
@@ -6622,7 +13383,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Server timeout */
@@ -6631,7 +13392,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
     }
@@ -6665,9 +13426,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingRequestError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Authentication failed */
@@ -6676,7 +13435,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAuthenticationError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Unauthorized access to requested resource */
@@ -6685,7 +13444,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAccountError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Resource not found */
@@ -6694,7 +13453,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingRequestError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Account exception or Rate limit exceeded */
@@ -6703,9 +13462,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingAccountError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Internal server error */
@@ -6714,7 +13471,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Service temporarily unavailable */
@@ -6723,7 +13480,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Server timeout */
@@ -6732,7 +13489,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
     }
@@ -6764,9 +13521,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingRequestError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Authentication failed */
@@ -6775,7 +13530,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAuthenticationError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Unauthorized access to requested resource */
@@ -6784,7 +13539,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAccountError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Resource not found */
@@ -6793,7 +13548,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingRequestError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Account exception or Rate limit exceeded */
@@ -6802,9 +13557,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingAccountError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Internal server error */
@@ -6813,7 +13566,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Service temporarily unavailable */
@@ -6822,7 +13575,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Server timeout */
@@ -6831,7 +13584,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
     }
@@ -6865,9 +13618,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingRequestError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Authentication failed */
@@ -6876,7 +13627,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAuthenticationError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Unauthorized access to requested resource */
@@ -6885,7 +13636,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAccountError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Resource not found */
@@ -6894,7 +13645,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingRequestError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Account exception or Rate limit exceeded */
@@ -6903,9 +13654,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingAccountError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Internal server error */
@@ -6914,7 +13663,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Service temporarily unavailable */
@@ -6923,7 +13672,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Server timeout */
@@ -6932,7 +13681,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
     }
@@ -6966,9 +13715,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingRequestError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Authentication failed */
@@ -6977,7 +13724,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAuthenticationError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Unauthorized access to requested resource */
@@ -6986,7 +13733,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAccountError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Resource not found */
@@ -6995,7 +13742,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingRequestError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Account exception or Rate limit exceeded */
@@ -7004,9 +13751,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingAccountError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Internal server error */
@@ -7015,7 +13760,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Service temporarily unavailable */
@@ -7024,7 +13769,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Server timeout */
@@ -7033,7 +13778,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
     }
@@ -7065,9 +13810,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingRequestError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Authentication failed */
@@ -7076,7 +13819,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAuthenticationError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Unauthorized access to requested resource */
@@ -7085,7 +13828,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAccountError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Resource not found */
@@ -7094,7 +13837,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingRequestError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Account exception or Rate limit exceeded */
@@ -7103,9 +13846,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingAccountError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Internal server error */
@@ -7114,7 +13855,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Service temporarily unavailable */
@@ -7123,7 +13864,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Server timeout */
@@ -7132,7 +13873,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
     }
@@ -7166,9 +13907,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingRequestError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Authentication failed */
@@ -7177,7 +13916,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAuthenticationError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Unauthorized access to requested resource */
@@ -7186,7 +13925,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAccountError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Resource not found */
@@ -7195,7 +13934,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingRequestError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Account exception or Rate limit exceeded */
@@ -7204,9 +13943,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingAccountError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Internal server error */
@@ -7215,7 +13952,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Service temporarily unavailable */
@@ -7224,7 +13961,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Server timeout */
@@ -7233,7 +13970,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
     }
@@ -7267,9 +14004,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingRequestError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Authentication failed */
@@ -7278,7 +14013,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAuthenticationError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Unauthorized access to requested resource */
@@ -7287,7 +14022,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAccountError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Resource not found */
@@ -7296,7 +14031,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingRequestError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Account exception or Rate limit exceeded */
@@ -7305,9 +14040,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingAccountError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Internal server error */
@@ -7316,7 +14049,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Service temporarily unavailable */
@@ -7325,7 +14058,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Server timeout */
@@ -7334,7 +14067,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
     }
@@ -7366,9 +14099,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingRequestError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Authentication failed */
@@ -7377,7 +14108,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAuthenticationError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Unauthorized access to requested resource */
@@ -7386,7 +14117,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAccountError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Resource not found */
@@ -7395,7 +14126,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingRequestError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Account exception or Rate limit exceeded */
@@ -7404,9 +14135,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingAccountError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Internal server error */
@@ -7415,7 +14144,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Service temporarily unavailable */
@@ -7424,7 +14153,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Server timeout */
@@ -7433,7 +14162,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
     }
@@ -7467,9 +14196,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingRequestError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Authentication failed */
@@ -7478,7 +14205,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAuthenticationError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Unauthorized access to requested resource */
@@ -7487,7 +14214,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAccountError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Resource not found */
@@ -7496,7 +14223,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingRequestError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Account exception or Rate limit exceeded */
@@ -7505,9 +14232,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingAccountError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Internal server error */
@@ -7516,7 +14241,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Service temporarily unavailable */
@@ -7525,7 +14250,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Server timeout */
@@ -7534,7 +14259,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
     }
@@ -7568,9 +14293,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingRequestError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Authentication failed */
@@ -7579,7 +14302,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAuthenticationError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Unauthorized access to requested resource */
@@ -7588,7 +14311,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAccountError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Resource not found */
@@ -7597,7 +14320,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingRequestError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Account exception or Rate limit exceeded */
@@ -7606,9 +14329,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingAccountError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Internal server error */
@@ -7617,7 +14338,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Service temporarily unavailable */
@@ -7626,7 +14347,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Server timeout */
@@ -7635,7 +14356,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
     }
@@ -7667,9 +14388,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingRequestError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Authentication failed */
@@ -7678,7 +14397,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAuthenticationError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Unauthorized access to requested resource */
@@ -7687,7 +14406,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingAccountError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Resource not found */
@@ -7696,7 +14415,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingRequestError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Account exception or Rate limit exceeded */
@@ -7705,9 +14424,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingAccountError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Internal server error */
@@ -7716,7 +14433,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Service temporarily unavailable */
@@ -7725,7 +14442,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
       /** @description Server timeout */
@@ -7734,107 +14451,256 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['KlingErrorResponse']
         }
       }
     }
   }
-  klingQueryResourcePackages: {
+  bflFluxKontextProGenerate: {
     parameters: {
-      query: {
-        start_time: number
-        end_time: number
-        resource_pack_name?: string
-      }
+      query?: never
       header?: never
       path?: never
       cookie?: never
     }
-    requestBody?: never
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['BFLFluxKontextProGenerateRequest']
+      }
+    }
     responses: {
-      /** @description Successful response (Request successful) */
+      /** @description Successful response from BFL Flux Kontext Pro proxy */
       200: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingResourcePackageResponse']
+          'application/json': components['schemas']['BFLFluxKontextProGenerateResponse']
         }
       }
-      /** @description Invalid request parameters */
+      /** @description Bad Request (invalid input to proxy) */
       400: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingRequestError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['ErrorResponse']
         }
       }
-      /** @description Authentication failed */
+      /** @description Unauthorized */
       401: {
         headers: {
           [name: string]: unknown
         }
-        content: {
-          'application/json': components['schemas']['KlingAuthenticationError']
-        }
+        content?: never
       }
-      /** @description Unauthorized access to requested resource */
-      403: {
+      /** @description Payment Required */
+      402: {
         headers: {
           [name: string]: unknown
         }
-        content: {
-          'application/json': components['schemas']['KlingAccountError']
-        }
+        content?: never
       }
-      /** @description Resource not found */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['KlingRequestError']
-        }
-      }
-      /** @description Account exception or Rate limit exceeded */
+      /** @description Rate limit exceeded (either from proxy or BFL) */
       429: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['KlingAccountError']
-            | components['schemas']['KlingStrategyError']
+          'application/json': components['schemas']['ErrorResponse']
         }
       }
-      /** @description Internal server error */
+      /** @description Internal Server Error (proxy or upstream issue) */
       500: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['ErrorResponse']
         }
       }
-      /** @description Service temporarily unavailable */
-      503: {
+      /** @description Bad Gateway (error communicating with BFL) */
+      502: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['ErrorResponse']
         }
       }
-      /** @description Server timeout */
+      /** @description Gateway Timeout (BFL took too long to respond) */
       504: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['KlingServerError']
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  bflFluxKontextMaxGenerate: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['BFLFluxKontextMaxGenerateRequest']
+      }
+    }
+    responses: {
+      /** @description Successful response from BFL Flux Kontext Max proxy */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['BFLFluxKontextMaxGenerateResponse']
+        }
+      }
+      /** @description Bad Request (invalid input to proxy) */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Payment Required */
+      402: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Rate limit exceeded (either from proxy or BFL) */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Internal Server Error (proxy or upstream issue) */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Bad Gateway (error communicating with BFL) */
+      502: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Gateway Timeout (BFL took too long to respond) */
+      504: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  bflFluxPro1_1Generate: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['BFLFluxPro1_1GenerateRequest']
+      }
+    }
+    responses: {
+      /** @description Successful response from BFL Flux Pro proxy */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['BFLFluxPro1_1GenerateResponse']
+        }
+      }
+      /** @description Bad Request (invalid input to proxy) */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Payment Required */
+      402: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Rate limit exceeded (either from proxy or BFL) */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Internal Server Error (proxy or upstream issue) */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Bad Gateway (error communicating with BFL) */
+      502: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Gateway Timeout (BFL took too long to respond) */
+      504: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
         }
       }
     }
@@ -7922,6 +14788,546 @@ export interface operations {
       }
     }
   }
+  BFLExpand_v1_flux_pro_1_0_expand_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['BFLFluxProExpandInputs']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['BFLAsyncResponse']
+            | components['schemas']['BFLAsyncWebhookResponse']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['BFLHTTPValidationError']
+        }
+      }
+    }
+  }
+  BFLFill_v1_flux_pro_1_0_fill_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['BFLFluxProFillInputs']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['BFLAsyncResponse']
+            | components['schemas']['BFLAsyncWebhookResponse']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['BFLHTTPValidationError']
+        }
+      }
+    }
+  }
+  BFLPro_canny_v1_flux_pro_1_0_canny_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['BFLCannyInputs']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['BFLAsyncResponse']
+            | components['schemas']['BFLAsyncWebhookResponse']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['BFLHTTPValidationError']
+        }
+      }
+    }
+  }
+  BFLPro_depth_v1_flux_pro_1_0_depth_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['BFLDepthInputs']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['BFLAsyncResponse']
+            | components['schemas']['BFLAsyncWebhookResponse']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['BFLHTTPValidationError']
+        }
+      }
+    }
+  }
+  lumaCreateGeneration: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** @description The generation request object */
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['LumaGenerationRequest']
+      }
+    }
+    responses: {
+      /** @description Generation created */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['LumaGeneration']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['LumaError']
+        }
+      }
+    }
+  }
+  lumaGetGeneration: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The ID of the generation */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Generation found */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['LumaGeneration']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['LumaError']
+        }
+      }
+    }
+  }
+  lumaGenerateImage: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** @description The image generation request object */
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['LumaImageGenerationRequest']
+      }
+    }
+    responses: {
+      /** @description Image generated */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['LumaGeneration']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['LumaError']
+        }
+      }
+    }
+  }
+  PixverseGenerateTextVideo: {
+    parameters: {
+      query?: never
+      header: {
+        /** @description Unique UUID for each request. */
+        'Ai-trace-id': components['parameters']['PixverseAiTraceId']
+      }
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PixverseTextVideoRequest']
+      }
+    }
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PixverseVideoResponse']
+        }
+      }
+      /** @description Bad Request (invalid input to proxy) */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Payment Required */
+      402: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Internal Server Error (proxy or upstream issue) */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  PixverseGenerateImageVideo: {
+    parameters: {
+      query?: never
+      header: {
+        /** @description Unique UUID for each request. */
+        'Ai-trace-id': components['parameters']['PixverseAiTraceId']
+      }
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PixverseImageVideoRequest']
+      }
+    }
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PixverseVideoResponse']
+        }
+      }
+      /** @description Bad Request (invalid input to proxy) */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Payment Required */
+      402: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Internal Server Error (proxy or upstream issue) */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  PixverseGenerateTransitionVideo: {
+    parameters: {
+      query?: never
+      header: {
+        /** @description Unique UUID for each request. */
+        'Ai-trace-id': components['parameters']['PixverseAiTraceId']
+      }
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PixverseTransitionVideoRequest']
+      }
+    }
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PixverseVideoResponse']
+        }
+      }
+      /** @description Bad Request (invalid input to proxy) */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Payment Required */
+      402: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Internal Server Error (proxy or upstream issue) */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  PixverseUploadImage: {
+    parameters: {
+      query?: never
+      header: {
+        /** @description Unique UUID for each request. */
+        'Ai-trace-id': components['parameters']['PixverseAiTraceId']
+      }
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          /** Format: binary */
+          image?: string
+        }
+      }
+    }
+    responses: {
+      /** @description Image uploaded */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PixverseImageUploadResponse']
+        }
+      }
+      /** @description Bad Request (invalid input to proxy) */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Payment Required */
+      402: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Internal Server Error (proxy or upstream issue) */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  PixverseGetVideoResult: {
+    parameters: {
+      query?: never
+      header: {
+        /** @description Unique UUID for each request. */
+        'Ai-trace-id': components['parameters']['PixverseAiTraceId']
+      }
+      path: {
+        id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Result fetched */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PixverseVideoResultResponse']
+        }
+      }
+    }
+  }
   metronomeZeroBalance: {
     parameters: {
       query?: never
@@ -7932,7 +15338,11 @@ export interface operations {
     requestBody: {
       content: {
         'application/json': {
-          properties?: {
+          /** @description the id of the webhook */
+          id: string
+          /** @description the type of the webhook */
+          type: string
+          properties: {
             /** @description the metronome customer id */
             customer_id?: string
             /** @description the customer remaining balance */
@@ -7996,9 +15406,7 @@ export interface operations {
         headers: {
           [name: string]: unknown
         }
-        content: {
-          'application/json': components['schemas']['IdeogramGenerateResponse']
-        }
+        content?: never
       }
       /** @description Bad Request */
       400: {
@@ -8106,6 +15514,2878 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  recraftVectorize: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          /**
+           * Format: binary
+           * @description Image file to process
+           */
+          file: string
+        }
+      }
+    }
+    responses: {
+      /** @description Background removed successfully */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RecraftImageGenerationResponse']
+        }
+      }
+      /** @description Bad request - Invalid parameters or file */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Unauthorized - Invalid or missing API token */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+    }
+  }
+  recraftCrispUpscale: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          /**
+           * Format: binary
+           * @description Image file to process
+           */
+          file: string
+        }
+      }
+    }
+    responses: {
+      /** @description Background removed successfully */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RecraftImageGenerationResponse']
+        }
+      }
+      /** @description Bad request - Invalid parameters or file */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Unauthorized - Invalid or missing API token */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+    }
+  }
+  recraftRemoveBackground: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          /**
+           * Format: binary
+           * @description Image file to process
+           */
+          file: string
+        }
+      }
+    }
+    responses: {
+      /** @description Background removed successfully */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            image?: {
+              /**
+               * Format: uri
+               * @description URL of the processed image
+               */
+              url?: string
+            }
+          }
+        }
+      }
+      /** @description Bad request - Invalid parameters or file */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Unauthorized - Invalid or missing API token */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+    }
+  }
+  RecraftImageToImage: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: {
+      content: {
+        'multipart/form-data': components['schemas']['RecraftImageToImageRequest']
+      }
+    }
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RecraftGenerateImageResponse']
+        }
+      }
+    }
+  }
+  RecraftInpaintImage: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: {
+      content: {
+        'multipart/form-data': components['schemas']['RecraftTransformImageWithMaskRequest']
+      }
+    }
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RecraftGenerateImageResponse']
+        }
+      }
+    }
+  }
+  RecraftReplaceBackground: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: {
+      content: {
+        'multipart/form-data': components['schemas']['RecraftTransformImageWithMaskRequest']
+      }
+    }
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RecraftGenerateImageResponse']
+        }
+      }
+    }
+  }
+  RecraftCreativeUpscale: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: {
+      content: {
+        'multipart/form-data': components['schemas']['RecraftProcessImageRequest']
+      }
+    }
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RecraftProcessImageResponse']
+        }
+      }
+    }
+  }
+  runwayImageToVideo: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RunwayImageToVideoRequest']
+      }
+    }
+    responses: {
+      /** @description Successful response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RunwayImageToVideoResponse']
+        }
+      }
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Payment Required */
+      402: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  runwayGetTaskStatus: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description ID of the task to check */
+        task_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RunwayTaskStatusResponse']
+        }
+      }
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Payment Required */
+      402: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Task not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  runwayTextToImage: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RunwayTextToImageRequest']
+      }
+    }
+    responses: {
+      /** @description Successful response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RunwayTextToImageResponse']
+        }
+      }
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Payment Required */
+      402: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  veoGenerate: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['Veo2GenVidRequest']
+      }
+    }
+    responses: {
+      /** @description Video generation successful */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Veo2GenVidResponse']
+        }
+      }
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+    }
+  }
+  veoPoll: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['Veo2GenVidPollRequest']
+      }
+    }
+    responses: {
+      /** @description Operation status and result */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Veo2GenVidPollResponse']
+        }
+      }
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Operation not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Internal error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+    }
+  }
+  veoGenerateNew: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The ID of the model to use for generation */
+        modelId: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['VeoGenVidRequest']
+      }
+    }
+    responses: {
+      /** @description Video generation successful */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['VeoGenVidResponse']
+        }
+      }
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+    }
+  }
+  veoPollNew: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The ID of the model to use for generation */
+        modelId: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['VeoGenVidPollRequest']
+      }
+    }
+    responses: {
+      /** @description Operation status and result */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['VeoGenVidPollResponse']
+        }
+      }
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Operation not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Internal error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+    }
+  }
+  createOpenAIResponse: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OpenAICreateResponse']
+      }
+    }
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OpenAIResponse']
+          'text/event-stream': components['schemas']['OpenAIResponseStreamEvent']
+        }
+      }
+    }
+  }
+  getOpenAIResponse: {
+    parameters: {
+      query?: {
+        /** @description Additional fields to include in the response. See the `include`
+         *     parameter for Response creation above for more information.
+         *      */
+        include?: components['schemas']['Includable'][]
+      }
+      header?: never
+      path: {
+        /** @description The ID of the response to retrieve. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OpenAIResponse']
+        }
+      }
+    }
+  }
+  openAIGenerateImage: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OpenAIImageGenerationRequest']
+      }
+    }
+    responses: {
+      /** @description Image generated successfully */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OpenAIImageGenerationResponse']
+        }
+      }
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Payment Required */
+      402: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  openAIEditImage: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'multipart/form-data': components['schemas']['OpenAIImageEditRequest']
+      }
+    }
+    responses: {
+      /** @description Image edited successfully */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OpenAIImageGenerationResponse']
+        }
+      }
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Payment Required */
+      402: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  PikaGenerate_pikadditions_generate_pikadditions_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'multipart/form-data': components['schemas']['PikaBody_generate_pikadditions_generate_pikadditions_post']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PikaGenerateResponse']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PikaHTTPValidationError']
+        }
+      }
+    }
+  }
+  PikaGenerate_pikaswaps_generate_pikaswaps_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'multipart/form-data': components['schemas']['PikaBody_generate_pikaswaps_generate_pikaswaps_post']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PikaGenerateResponse']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PikaHTTPValidationError']
+        }
+      }
+    }
+  }
+  PikaGenerate_pikaffects_generate_pikaffects_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'multipart/form-data': components['schemas']['PikaBody_generate_pikaffects_generate_pikaffects_post']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PikaGenerateResponse']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PikaHTTPValidationError']
+        }
+      }
+    }
+  }
+  PikaGenerate_2_2_t2v_generate_2_2_t2v_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/x-www-form-urlencoded': components['schemas']['PikaBody_generate_2_2_t2v_generate_2_2_t2v_post']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PikaGenerateResponse']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PikaHTTPValidationError']
+        }
+      }
+    }
+  }
+  PikaGenerate_2_2_keyframe_generate_2_2_pikaframes_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'multipart/form-data': components['schemas']['PikaBody_generate_2_2_keyframe_generate_2_2_pikaframes_post']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PikaGenerateResponse']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PikaHTTPValidationError']
+        }
+      }
+    }
+  }
+  PikaGenerate_2_2_c2v_generate_2_2_pikascenes_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'multipart/form-data': components['schemas']['PikaBody_generate_2_2_c2v_generate_2_2_pikascenes_post']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PikaGenerateResponse']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PikaHTTPValidationError']
+        }
+      }
+    }
+  }
+  PikaGenerate_2_2_i2v_generate_2_2_i2v_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'multipart/form-data': components['schemas']['PikaBody_generate_2_2_i2v_generate_2_2_i2v_post']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PikaGenerateResponse']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PikaHTTPValidationError']
+        }
+      }
+    }
+  }
+  PikaGet_video_videos__video_id__get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        video_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PikaVideoResponse']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PikaHTTPValidationError']
+        }
+      }
+    }
+  }
+  StabilityImageGenrationUltra: {
+    parameters: {
+      query?: never
+      header: {
+        authorization: string
+        'content-type': string
+        accept?: 'image/*' | 'application/json'
+        'stability-client-id'?: components['schemas']['StabilityStabilityClientID']
+        'stability-client-user-id'?: components['schemas']['StabilityStabilityClientUserID']
+        'stability-client-version'?: components['schemas']['StabilityStabilityClientVersion']
+      }
+      path?: never
+      cookie?: never
+    }
+    requestBody?: {
+      content: {
+        'multipart/form-data': {
+          /** @description What you wish to see in the output image. A strong, descriptive prompt that clearly defines elements, colors, and subjects will lead to better results. To control the weight of a given word use the format `(word:weight)`, where `word` is the word you'd like to control the weight of and `weight` is a value between 0 and 1. For example: `The sky was a crisp (blue:0.3) and (green:0.8)` would convey a sky that was blue and green, but more green than blue. */
+          prompt: string
+          /** @description A blurb of text describing what you **do not** wish to see in the output image. This is an advanced feature. */
+          negative_prompt?: string
+          /**
+           * @description Controls the aspect ratio of the generated image.
+           * @default 1:1
+           * @enum {string}
+           */
+          aspect_ratio?:
+            | '21:9'
+            | '16:9'
+            | '3:2'
+            | '5:4'
+            | '1:1'
+            | '4:5'
+            | '2:3'
+            | '9:16'
+            | '9:21'
+          /**
+           * @description A specific value that is used to guide the 'randomness' of the generation. (Omit this parameter or pass `0` to use a random seed.)
+           * @default 0
+           */
+          seed?: number
+          /**
+           * @description Dictates the `content-type` of the generated image.
+           * @default png
+           * @enum {string}
+           */
+          output_format?: 'jpeg' | 'png' | 'webp'
+          /**
+           * Format: binary
+           * @description The image to use as the starting point for the generation. > **Important:** The `strength` parameter is required when `image` is provided. Supported Formats: - jpeg - png - webp Validation Rules: - Width must be between 64 and 16,384 pixels - Height must be between 64 and 16,384 pixels - Total pixel count must be at least 4,096 pixels
+           * @example ./some/image.png
+           */
+          image?: string
+          /**
+           * @description Guides the image model towards a particular style.
+           * @enum {string}
+           */
+          style_preset?:
+            | 'enhance'
+            | 'anime'
+            | 'photographic'
+            | 'digital-art'
+            | 'comic-book'
+            | 'fantasy-art'
+            | 'line-art'
+            | 'analog-film'
+            | 'neon-punk'
+            | 'isometric'
+            | 'low-poly'
+            | 'origami'
+            | 'modeling-compound'
+            | 'cinematic'
+            | '3d-model'
+            | 'pixel-art'
+            | 'tile-texture'
+          /** @description Sometimes referred to as _denoising_, this parameter controls how much influence the
+           *     `image` parameter has on the generated image.  A value of 0 would yield an image that
+           *     is identical to the input.  A value of 1 would be as if you passed in no image at all.
+           *
+           *     > **Important:** This parameter is required when `image` is provided. */
+          strength?: number
+        }
+      }
+    }
+    responses: {
+      /** @description Generation was successful. */
+      200: {
+        headers: {
+          /** @description A unique identifier for this request. */
+          'x-request-id'?: string
+          /** @description The format of the generated image.
+           *       To receive the bytes of the image directly, specify `image/*` in the accept header. To receive the bytes base64 encoded inside of a JSON payload, specify `application/json`. */
+          'content-type'?: string
+          /** @description Indicates the reason the generation finished. - `SUCCESS` = successful generation. - `CONTENT_FILTERED` = successful generation, however the output violated our content moderation policy and has been blurred as a result. > **NOTE:** This header is absent on JSON encoded responses because it is present in the body as `finish_reason`. */
+          'finish-reason'?: 'SUCCESS' | 'CONTENT_FILTERED'
+          /**
+           * @description The seed used as random noise for this generation. > **NOTE:** This header is absent on JSON encoded responses because it is present in the body as `seed`.
+           * @example 343940597
+           */
+          seed?: string
+          [name: string]: unknown
+        }
+        content: {
+          /** @example The bytes of the generated jpeg */
+          'image/jpeg': string
+          'application/json; type=image/jpeg': {
+            /**
+             * @description The generated image, encoded to base64.
+             * @example AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1...
+             */
+            image: string
+            /**
+             * @description The seed used as random noise for this generation.
+             * @default 0
+             * @example 343940597
+             */
+            seed: number
+            /**
+             * @description The reason the generation finished. - `SUCCESS` = successful generation. - `CONTENT_FILTERED` = successful generation, however the output violated our content moderation policy and has been blurred as a result.
+             * @example SUCCESS
+             * @enum {string}
+             */
+            finish_reason: 'SUCCESS' | 'CONTENT_FILTERED'
+          }
+          /** @example The bytes of the generated png */
+          'image/png': string
+          'application/json; type=image/png': {
+            /**
+             * @description The generated image, encoded to base64.
+             * @example AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1...
+             */
+            image: string
+            /**
+             * @description The seed used as random noise for this generation.
+             * @default 0
+             * @example 343940597
+             */
+            seed: number
+            /**
+             * @description The reason the generation finished. - `SUCCESS` = successful generation. - `CONTENT_FILTERED` = successful generation, however the output violated our content moderation policy and has been blurred as a result.
+             * @example SUCCESS
+             * @enum {string}
+             */
+            finish_reason: 'SUCCESS' | 'CONTENT_FILTERED'
+          }
+          /** @example The bytes of the generated webp */
+          'image/webp': string
+          'application/json; type=image/webp': {
+            /**
+             * @description The generated image, encoded to base64.
+             * @example AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1...
+             */
+            image: string
+            /**
+             * @description The seed used as random noise for this generation.
+             * @default 0
+             * @example 343940597
+             */
+            seed: number
+            /**
+             * @description The reason the generation finished. - `SUCCESS` = successful generation. - `CONTENT_FILTERED` = successful generation, however the output violated our content moderation policy and has been blurred as a result.
+             * @example SUCCESS
+             * @enum {string}
+             */
+            finish_reason: 'SUCCESS' | 'CONTENT_FILTERED'
+          }
+        }
+      }
+      /** @description Invalid parameter(s), see the `errors` field for details. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /**
+             * @description A unique identifier associated with this error. Please include this in any [support tickets](https://kb.stability.ai/knowledge-base/kb-tickets/new) you file, as it will greatly assist us in diagnosing the root cause of the problem.
+             * @example a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
+             */
+            id: string
+            /**
+             * @description Short-hand name for an error, useful for discriminating between errors with the same status code.
+             * @example bad_request
+             */
+            name: string
+            /**
+             * @description One or more error messages indicating what went wrong.
+             * @example [
+             *       "some-field: is required"
+             *     ]
+             */
+            errors: string[]
+          }
+        }
+      }
+      /** @description Your request was flagged by our content moderation system. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['StabilityContentModerationResponse']
+        }
+      }
+      /** @description Your request was larger than 10MiB. */
+      413: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /**
+             * @description A unique identifier associated with this error. Please include this in any [support tickets](https://kb.stability.ai/knowledge-base/kb-tickets/new) you file, as it will greatly assist us in diagnosing the root cause of the problem.
+             * @example a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
+             */
+            id: string
+            /**
+             * @description Short-hand name for an error, useful for discriminating between errors with the same status code.
+             * @example bad_request
+             */
+            name: string
+            /**
+             * @description One or more error messages indicating what went wrong.
+             * @example [
+             *       "some-field: is required"
+             *     ]
+             */
+            errors: string[]
+          }
+        }
+      }
+      /** @description Your request was well-formed, but rejected. See the `errors` field for details. */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /**
+             * @description A unique identifier associated with this error. Please include this in any [support tickets](https://kb.stability.ai/knowledge-base/kb-tickets/new) you file, as it will greatly assist us in diagnosing the root cause of the problem.
+             * @example a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
+             */
+            id: string
+            /**
+             * @description Short-hand name for an error, useful for discriminating between errors with the same status code.
+             * @example bad_request
+             */
+            name: string
+            /**
+             * @description One or more error messages indicating what went wrong.
+             * @example [
+             *       "some-field: is required"
+             *     ]
+             */
+            errors: string[]
+          }
+        }
+      }
+      /** @description You have made more than 150 requests in 10 seconds. */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /**
+             * @description A unique identifier associated with this error. Please include this in any [support tickets](https://kb.stability.ai/knowledge-base/kb-tickets/new) you file, as it will greatly assist us in diagnosing the root cause of the problem.
+             * @example a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
+             */
+            id: string
+            /**
+             * @description Short-hand name for an error, useful for discriminating between errors with the same status code.
+             * @example bad_request
+             */
+            name: string
+            /**
+             * @description One or more error messages indicating what went wrong.
+             * @example [
+             *       "some-field: is required"
+             *     ]
+             */
+            errors: string[]
+          }
+        }
+      }
+      /** @description An internal error occurred. If the problem persists [contact support](https://kb.stability.ai/knowledge-base/kb-tickets/new). */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /**
+             * @description A unique identifier associated with this error. Please include this in any [support tickets](https://kb.stability.ai/knowledge-base/kb-tickets/new) you file, as it will greatly assist us in diagnosing the root cause of the problem.
+             * @example a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
+             */
+            id: string
+            /**
+             * @description Short-hand name for an error, useful for discriminating between errors with the same status code.
+             * @example bad_request
+             */
+            name: string
+            /**
+             * @description One or more error messages indicating what went wrong.
+             * @example [
+             *       "some-field: is required"
+             *     ]
+             */
+            errors: string[]
+          }
+        }
+      }
+    }
+  }
+  StabilityImageGenrationSD3: {
+    parameters: {
+      query?: never
+      header: {
+        authorization: string
+        'content-type': string
+        accept?: 'image/*' | 'application/json'
+        'stability-client-id'?: components['schemas']['StabilityStabilityClientID']
+        'stability-client-user-id'?: components['schemas']['StabilityStabilityClientUserID']
+        'stability-client-version'?: components['schemas']['StabilityStabilityClientVersion']
+      }
+      path?: never
+      cookie?: never
+    }
+    requestBody?: {
+      content: {
+        'multipart/form-data': components['schemas']['StabilityImageGenerationSD3_Request']
+      }
+    }
+    responses: {
+      /** @description Generation was successful. */
+      200: {
+        headers: {
+          /** @description A unique identifier for this request. */
+          'x-request-id'?: string
+          /** @description The format of the generated image.
+           *
+           *      To receive the bytes of the image directly, specify `image/*` in the accept header. To receive the bytes base64 encoded inside of a JSON payload, specify `application/json`. */
+          'content-type'?: string
+          /** @description Indicates the reason the generation finished.
+           *
+           *     - `SUCCESS` = successful generation.
+           *     - `CONTENT_FILTERED` = successful generation, however the output violated our content moderation
+           *     policy and has been blurred as a result.
+           *
+           *     > **NOTE:** This header is absent on JSON encoded responses because it is present in the body as `finish_reason`. */
+          'finish-reason'?: 'SUCCESS' | 'CONTENT_FILTERED'
+          /**
+           * @description The seed used as random noise for this generation.
+           *
+           *     > **NOTE:** This header is absent on JSON encoded responses because it is present in the body as `seed`.
+           * @example 343940597
+           */
+          seed?: string
+          [name: string]: unknown
+        }
+        content: {
+          /** @example The bytes of the generated png */
+          'image/png': string
+          'application/json; type=image/png': components['schemas']['StabilityImageGenrationSD3_Response_200']
+          /** @example The bytes of the generated jpeg */
+          'image/jpeg': string
+          'application/json; type=image/jpeg': components['schemas']['StabilityImageGenrationSD3_Response_200']
+        }
+      }
+      /** @description Invalid parameter(s), see the `errors` field for details. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['StabilityImageGenrationSD3_Response_400']
+        }
+      }
+      /** @description Your request was flagged by our content moderation system. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['StabilityContentModerationResponse']
+        }
+      }
+      /** @description Your request was larger than 10MiB. */
+      413: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['StabilityImageGenrationSD3_Response_413']
+        }
+      }
+      /** @description Your request was well-formed, but rejected. See the `errors` field for details. */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['StabilityImageGenrationSD3_Response_422']
+        }
+      }
+      /** @description You have made more than 150 requests in 10 seconds. */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['StabilityImageGenrationSD3_Response_429']
+        }
+      }
+      /** @description An internal error occurred. If the problem persists [contact support](https://kb.stability.ai/knowledge-base/kb-tickets/new). */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['StabilityImageGenrationSD3_Response_500']
+        }
+      }
+    }
+  }
+  StabilityImageGenrationUpscaleConservative: {
+    parameters: {
+      query?: never
+      header: {
+        authorization: string
+        'content-type': string
+        accept?: 'image/*' | 'application/json'
+        'stability-client-id'?: components['schemas']['StabilityStabilityClientID']
+        'stability-client-user-id'?: components['schemas']['StabilityStabilityClientUserID']
+        'stability-client-version'?: components['schemas']['StabilityStabilityClientVersion']
+      }
+      path?: never
+      cookie?: never
+    }
+    requestBody?: {
+      content: {
+        'multipart/form-data': components['schemas']['StabilityImageGenrationUpscaleConservative_Request']
+      }
+    }
+    responses: {
+      /** @description Upscale was successful. */
+      200: {
+        headers: {
+          /** @description A unique identifier for this request. */
+          'x-request-id'?: string
+          /** @description The format of the generated image.
+           *
+           *      To receive the bytes of the image directly, specify `image/*` in the accept header. To receive the bytes base64 encoded inside of a JSON payload, specify `application/json`. */
+          'content-type'?: string
+          /** @description Indicates the reason the generation finished.
+           *
+           *     - `SUCCESS` = successful generation.
+           *     - `CONTENT_FILTERED` = successful generation, however the output violated our content moderation
+           *     policy and has been blurred as a result.
+           *
+           *     > **NOTE:** This header is absent on JSON encoded responses because it is present in the body as `finish_reason`. */
+          'finish-reason'?: 'SUCCESS' | 'CONTENT_FILTERED'
+          /**
+           * @description The seed used as random noise for this generation.
+           *
+           *     > **NOTE:** This header is absent on JSON encoded responses because it is present in the body as `seed`.
+           * @example 343940597
+           */
+          seed?: string
+          [name: string]: unknown
+        }
+        content: {
+          /** @example The bytes of the generated jpeg */
+          'image/jpeg': string
+          'application/json; type=image/jpeg': components['schemas']['StabilityImageGenrationUpscaleConservative_Response_200']
+          /** @example The bytes of the generated png */
+          'image/png': string
+          'application/json; type=image/png': components['schemas']['StabilityImageGenrationUpscaleConservative_Response_200']
+          /** @example The bytes of the generated webp */
+          'image/webp': string
+          'application/json; type=image/webp': components['schemas']['StabilityImageGenrationUpscaleConservative_Response_200']
+        }
+      }
+      /** @description Invalid parameter(s), see the `errors` field for details. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['StabilityImageGenrationUpscaleConservative_Response_400']
+        }
+      }
+      /** @description Your request was flagged by our content moderation system. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['StabilityContentModerationResponse']
+        }
+      }
+      /** @description Your request was larger than 10MiB. */
+      413: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['StabilityImageGenrationUpscaleConservative_Response_413']
+        }
+      }
+      /** @description Your request was well-formed, but rejected. See the `errors` field for details. */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['StabilityImageGenrationUpscaleConservative_Response_422']
+        }
+      }
+      /** @description You have made more than 150 requests in 10 seconds. */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['StabilityImageGenrationUpscaleConservative_Response_429']
+        }
+      }
+      /** @description An internal error occurred. If the problem persists [contact support](https://kb.stability.ai/knowledge-base/kb-tickets/new). */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['StabilityImageGenrationUpscaleConservative_Response_500']
+        }
+      }
+    }
+  }
+  StabilityImageGenrationUpscaleCreative: {
+    parameters: {
+      query?: never
+      header: {
+        authorization: string
+        'content-type': string
+        'stability-client-id'?: components['schemas']['StabilityStabilityClientID']
+        'stability-client-user-id'?: components['schemas']['StabilityStabilityClientUserID']
+        'stability-client-version'?: components['schemas']['StabilityStabilityClientVersion']
+      }
+      path?: never
+      cookie?: never
+    }
+    requestBody?: {
+      content: {
+        'multipart/form-data': components['schemas']['StabilityImageGenrationUpscaleCreative_Request']
+      }
+    }
+    responses: {
+      /** @description Upscale was started. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['StabilityImageGenrationUpscaleCreative_Response_200']
+        }
+      }
+      /** @description Invalid parameter(s), see the `errors` field for details. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['StabilityImageGenrationUpscaleCreative_Response_400']
+        }
+      }
+      /** @description Your request was flagged by our content moderation system. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['StabilityContentModerationResponse']
+        }
+      }
+      /** @description Your request was larger than 10MiB. */
+      413: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['StabilityImageGenrationUpscaleCreative_Response_413']
+        }
+      }
+      /** @description Your request was well-formed, but rejected. See the `errors` field for details. */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['StabilityImageGenrationUpscaleCreative_Response_422']
+        }
+      }
+      /** @description You have made more than 150 requests in 10 seconds. */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['StabilityImageGenrationUpscaleCreative_Response_429']
+        }
+      }
+      /** @description An internal error occurred. If the problem persists [contact support](https://kb.stability.ai/knowledge-base/kb-tickets/new). */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['StabilityImageGenrationUpscaleCreative_Response_500']
+        }
+      }
+    }
+  }
+  StabilityImageGenerationUpscaleFast: {
+    parameters: {
+      query?: never
+      header: {
+        authorization: string
+        'content-type': string
+        accept?: 'image/*' | 'application/json'
+        'stability-client-id'?: components['schemas']['StabilityStabilityClientID']
+        'stability-client-user-id'?: components['schemas']['StabilityStabilityClientUserID']
+        'stability-client-version'?: components['schemas']['StabilityStabilityClientVersion']
+      }
+      path?: never
+      cookie?: never
+    }
+    requestBody?: {
+      content: {
+        'multipart/form-data': components['schemas']['StabilityImageGenrationUpscaleFast_Request']
+      }
+    }
+    responses: {
+      /** @description Upscale was successful. */
+      200: {
+        headers: {
+          /** @description A unique identifier for this request. */
+          'x-request-id'?: string
+          /** @description The format of the generated image.
+           *
+           *      To receive the bytes of the image directly, specify `image/*` in the accept header. To receive the bytes base64 encoded inside of a JSON payload, specify `application/json`. */
+          'content-type'?: string
+          /** @description Indicates the reason the generation finished.
+           *
+           *     - `SUCCESS` = successful generation.
+           *     - `CONTENT_FILTERED` = successful generation, however the output violated our content moderation
+           *     policy and has been blurred as a result.
+           *
+           *     > **NOTE:** This header is absent on JSON encoded responses because it is present in the body as `finish_reason`. */
+          'finish-reason'?: 'SUCCESS' | 'CONTENT_FILTERED'
+          /**
+           * @description The seed used as random noise for this generation.
+           *
+           *     > **NOTE:** This header is absent on JSON encoded responses because it is present in the body as `seed`.
+           * @example 343940597
+           */
+          seed?: string
+          [name: string]: unknown
+        }
+        content: {
+          /** @example The bytes of the generated jpeg */
+          'image/jpeg': string
+          'application/json; type=image/jpeg': components['schemas']['StabilityImageGenrationUpscaleFast_Response_200']
+          /** @example The bytes of the generated png */
+          'image/png': string
+          'application/json; type=image/png': components['schemas']['StabilityImageGenrationUpscaleFast_Response_200']
+          /** @example The bytes of the generated webp */
+          'image/webp': string
+          'application/json; type=image/webp': components['schemas']['StabilityImageGenrationUpscaleFast_Response_200']
+        }
+      }
+      /** @description Invalid parameter(s), see the `errors` field for details. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['StabilityImageGenrationUpscaleFast_Response_400']
+        }
+      }
+      /** @description Your request was flagged by our content moderation system. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['StabilityContentModerationResponse']
+        }
+      }
+      /** @description Your request was larger than 10MiB. */
+      413: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['StabilityImageGenrationUpscaleFast_Response_413']
+        }
+      }
+      /** @description Your request was well-formed, but rejected. See the `errors` field for details. */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['StabilityImageGenrationUpscaleFast_Response_422']
+        }
+      }
+      /** @description You have made more than 150 requests in 10 seconds. */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['StabilityImageGenrationUpscaleFast_Response_429']
+        }
+      }
+      /** @description An internal error occurred. If the problem persists [contact support](https://kb.stability.ai/knowledge-base/kb-tickets/new). */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['StabilityImageGenrationUpscaleFast_Response_500']
+        }
+      }
+    }
+  }
+  StabilityGetResult: {
+    parameters: {
+      query?: never
+      header?: {
+        /** @description Set to image/* to receive image bytes. */
+        Accept?: string
+      }
+      path: {
+        /** @description The ID of the generation result to retrieve. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description The generated image as JPEG bytes. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'image/jpeg': string
+          'application/json; type=image/jpeg': {
+            /**
+             * @description The generated image, encoded to base64.
+             * @example AAAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1...
+             */
+            image: string
+            /**
+             * @description The seed used as random noise for this generation.
+             * @default 0
+             * @example 343940597
+             */
+            seed: number
+            /**
+             * @description The reason the generation finished.
+             *
+             *     - `SUCCESS` = successful generation.
+             *     - `CONTENT_FILTERED` = successful generation, however the output violated our content moderation
+             *       policy and has been blurred as a result.
+             * @example SUCCESS
+             * @enum {string}
+             */
+            finish_reason: 'SUCCESS' | 'CONTENT_FILTERED'
+          }
+          /** @example The bytes of the generated png */
+          'image/png': string
+          'application/json; type=image/png': {
+            /**
+             * @description The generated image, encoded to base64.
+             * @example AAAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1...
+             */
+            image: string
+            /**
+             * @description The seed used as random noise for this generation.
+             * @default 0
+             * @example 343940597
+             */
+            seed: number
+            /**
+             * @description The reason the generation finished.
+             *
+             *     - `SUCCESS` = successful generation.
+             *     - `CONTENT_FILTERED` = successful generation, however the output violated our content moderation
+             *       policy and has been blurred as a result.
+             * @example SUCCESS
+             * @enum {string}
+             */
+            finish_reason: 'SUCCESS' | 'CONTENT_FILTERED'
+          }
+          /** @example The bytes of the generated webp */
+          'image/webp': string
+          'application/json; type=image/webp': {
+            /**
+             * @description The generated image, encoded to base64.
+             * @example AAAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1...
+             */
+            image: string
+            /**
+             * @description The seed used as random noise for this generation.
+             * @default 0
+             * @example 343940597
+             */
+            seed: number
+            /**
+             * @description The reason the generation finished.
+             *
+             *     - `SUCCESS` = successful generation.
+             *     - `CONTENT_FILTERED` = successful generation, however the output violated our content moderation
+             *       policy and has been blurred as a result.
+             * @example SUCCESS
+             * @enum {string}
+             */
+            finish_reason: 'SUCCESS' | 'CONTENT_FILTERED'
+          }
+        }
+      }
+      /** @description The generation is still in progress. */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['StabilityGetResultResponse_202']
+        }
+      }
+      /** @description Invalid result ID. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['StabilityError']
+        }
+      }
+      /** @description Result not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['StabilityError']
+        }
+      }
+      /** @description An internal error occurred. If the problem persists [contact support](https://kb.stability.ai/knowledge-base/kb-tickets/new). */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['StabilityError']
+        }
+      }
+    }
+  }
+  GeminiGenerateContent: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description Full resource name of the model. */
+        model: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['GeminiGenerateContentRequest']
+      }
+    }
+    responses: {
+      /** @description Generated content response. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['GeminiGenerateContentResponse']
+        }
+      }
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+    }
+  }
+  ImagenGenerateImages: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description image generation model */
+        model:
+          | 'imagen-3.0-generate-002'
+          | 'imagen-3.0-generate-001'
+          | 'imagen-3.0-fast-generate-001'
+          | 'imagegeneration@006'
+          | 'imagegeneration@005'
+          | 'imagegeneration@002'
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ImagenGenerateImageRequest']
+      }
+    }
+    responses: {
+      /** @description Successful image generation */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ImagenGenerateImageResponse']
+        }
+      }
+      /** @description Client error */
+      '4XX': {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Server error */
+      '5XX': {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+    }
+  }
+  tripoGetTask: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        task_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Request successful */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            code: components['schemas']['TripoResponseSuccessCode']
+            data: components['schemas']['TripoTask']
+          }
+        }
+      }
+      /** @description Invalid request parameters */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TripoErrorResponse']
+        }
+      }
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TripoErrorResponse']
+        }
+      }
+      /** @description Unauthorized access to requested resource */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TripoErrorResponse']
+        }
+      }
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TripoErrorResponse']
+        }
+      }
+      /** @description Account exception or Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TripoErrorResponse']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TripoErrorResponse']
+        }
+      }
+      /** @description Service temporarily unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TripoErrorResponse']
+        }
+      }
+      /** @description Server timeout */
+      504: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TripoErrorResponse']
+        }
+      }
+    }
+  }
+  tripoUploadFile: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: {
+      content: {
+        'multipart/form-data': {
+          /** Format: binary */
+          file: string
+        }
+      }
+    }
+    responses: {
+      /** @description Request successful */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            code: components['schemas']['TripoResponseSuccessCode']
+            data: {
+              image_token: string
+            }
+          }
+        }
+      }
+      /** @description Invalid request parameters */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TripoErrorResponse']
+        }
+      }
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TripoErrorResponse']
+        }
+      }
+      /** @description Unauthorized access to requested resource */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TripoErrorResponse']
+        }
+      }
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TripoErrorResponse']
+        }
+      }
+      /** @description Account exception or Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TripoErrorResponse']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TripoErrorResponse']
+        }
+      }
+      /** @description Service temporarily unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TripoErrorResponse']
+        }
+      }
+      /** @description Server timeout */
+      504: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TripoErrorResponse']
+        }
+      }
+    }
+  }
+  tripoCreateTask: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: {
+      content: {
+        'application/json':
+          | {
+              type: components['schemas']['TripoTextToModel']
+              prompt: string
+              negative_prompt?: string
+              model_version?: components['schemas']['TripoModelVersion']
+              face_limit?: number
+              /** @default true */
+              texture?: boolean
+              /** @default true */
+              pbr?: boolean
+              text_seed?: number
+              model_seed?: number
+              texture_seed?: number
+              /** @default standard */
+              texture_quality?: components['schemas']['TripoTextureQuality']
+              style?: components['schemas']['TripoModelStyle']
+              /** @default false */
+              auto_size?: boolean
+              /** @default false */
+              quad?: boolean
+            }
+          | {
+              type: components['schemas']['TripoImageToModel']
+              file: {
+                type: string
+                file_token: string
+              }
+              model_version?: components['schemas']['TripoModelVersion']
+              face_limit?: number
+              /** @default true */
+              texture?: boolean
+              /** @default true */
+              pbr?: boolean
+              model_seed?: number
+              texture_seed?: number
+              /** @default standard */
+              texture_quality?: components['schemas']['TripoTextureQuality']
+              /** @default original_image */
+              texture_alignment?: components['schemas']['TripoTextureAlignment']
+              style?: components['schemas']['TripoModelStyle']
+              /** @default false */
+              auto_size?: boolean
+              /** @default default */
+              orientation?: components['schemas']['TripoOrientation']
+              /** @default false */
+              quad?: boolean
+            }
+          | {
+              type: components['schemas']['TripoMultiviewToModel']
+              files: {
+                type: string
+                file_token: string
+              }[]
+              mode?: components['schemas']['TripoMultiviewMode']
+              model_version?: components['schemas']['TripoModelVersion']
+              /** @default false */
+              orthographic_projection?: boolean
+              face_limit?: number
+              /** @default true */
+              texture?: boolean
+              /** @default true */
+              pbr?: boolean
+              model_seed?: number
+              texture_seed?: number
+              /** @default standard */
+              texture_quality?: components['schemas']['TripoTextureQuality']
+              /** @default original_image */
+              texture_alignment?: components['schemas']['TripoTextureAlignment']
+              /** @default false */
+              auto_size?: boolean
+              /** @default default */
+              orientation?: components['schemas']['TripoOrientation']
+              /** @default false */
+              quad?: boolean
+            }
+          | {
+              type: components['schemas']['TripoTypeTextureModel']
+              /** @default true */
+              texture?: boolean
+              /** @default true */
+              pbr?: boolean
+              model_seed?: number
+              texture_seed?: number
+              texture_quality?: components['schemas']['TripoTextureQuality']
+              /** @default original_image */
+              texture_alignment?: components['schemas']['TripoTextureAlignment']
+              original_model_task_id: string
+            }
+          | {
+              type: components['schemas']['TripoTypeRefineModel']
+              draft_model_task_id: string
+            }
+          | {
+              type: components['schemas']['TripoTypeAnimatePrerigcheck']
+              original_model_task_id: string
+            }
+          | {
+              type: components['schemas']['TripoTypeAnimateRig']
+              original_model_task_id: string
+              /** @default glb */
+              out_format?: components['schemas']['TripoStandardFormat']
+              topology?: components['schemas']['TripoTopology']
+              /** @default tripo */
+              spec?: components['schemas']['TripoSpec']
+            }
+          | {
+              type: components['schemas']['TripoTypeAnimateRetarget']
+              original_model_task_id: string
+              /** @default glb */
+              out_format?: components['schemas']['TripoStandardFormat']
+              animation: components['schemas']['TripoAnimation']
+              /** @default true */
+              bake_animation?: boolean
+            }
+          | {
+              type: components['schemas']['TripoTypeStylizeModel']
+              style: components['schemas']['TripoStylizeOptions']
+              original_model_task_id: string
+              /** @default 80 */
+              block_size?: number
+            }
+          | {
+              type: components['schemas']['TripoTypeConvertModel']
+              format: components['schemas']['TripoConvertFormat']
+              original_model_task_id: string
+              /** @default false */
+              quad?: boolean
+              /** @default false */
+              force_symmetry?: boolean
+              /** @default 10000 */
+              face_limit?: number
+              /** @default false */
+              flatten_bottom?: boolean
+              /** @default 0.01 */
+              flatten_bottom_threshold?: number
+              /** @default 4096 */
+              texture_size?: number
+              /** @default JPEG */
+              texture_format?: components['schemas']['TripoTextureFormat']
+              /** @default false */
+              pivot_to_center_bottom?: boolean
+            }
+      }
+    }
+    responses: {
+      /** @description Request successful */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TripoSuccessTask']
+        }
+      }
+      /** @description Invalid request parameters */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TripoErrorResponse']
+        }
+      }
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TripoErrorResponse']
+        }
+      }
+      /** @description Unauthorized access to requested resource */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TripoErrorResponse']
+        }
+      }
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TripoErrorResponse']
+        }
+      }
+      /** @description Account exception or Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TripoErrorResponse']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TripoErrorResponse']
+        }
+      }
+      /** @description Service temporarily unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TripoErrorResponse']
+        }
+      }
+      /** @description Server timeout */
+      504: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TripoErrorResponse']
+        }
+      }
+    }
+  }
+  tripoGetBalance: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Request successful */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            code: components['schemas']['TripoResponseSuccessCode']
+            data: components['schemas']['TripoBalance']
+          }
+        }
+      }
+      /** @description Invalid request parameters */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TripoErrorResponse']
+        }
+      }
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TripoErrorResponse']
+        }
+      }
+      /** @description Unauthorized access to requested resource */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TripoErrorResponse']
+        }
+      }
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TripoErrorResponse']
+        }
+      }
+      /** @description Account exception or Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TripoErrorResponse']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TripoErrorResponse']
+        }
+      }
+      /** @description Service temporarily unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TripoErrorResponse']
+        }
+      }
+      /** @description Server timeout */
+      504: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TripoErrorResponse']
+        }
+      }
+    }
+  }
+  rodinGenerate3DAsset: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'multipart/form-data': components['schemas']['Rodin3DGenerateRequest']
+      }
+    }
+    responses: {
+      /** @description 3D generate Task submitted successfully. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Rodin3DGenerateResponse']
+        }
+      }
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+    }
+  }
+  rodinCheckStatus: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'multipart/form-data': components['schemas']['Rodin3DCheckStatusRequest']
+      }
+    }
+    responses: {
+      /** @description Get the status of the 3D Assets generation. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Rodin3DCheckStatusResponse']
+        }
+      }
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+    }
+  }
+  rodinDownload: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'multipart/form-data': components['schemas']['Rodin3DDownloadRequest']
+      }
+    }
+    responses: {
+      /** @description Get the download list for the Rodin 3D Assets. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Rodin3DDownloadResponse']
+        }
+      }
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+    }
+  }
+  Moonvalley: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        prompt_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Prompt details */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MoonvalleyPromptResponse']
+        }
+      }
+    }
+  }
+  MoonvalleyCreatePrompt: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MoonvalleyCreatePromptRequest']
+      }
+    }
+    responses: {
+      /** @description Prompt created */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MoonvalleyCreatePromptResponse']
+        }
+      }
+    }
+  }
+  MoonvalleyCreateVideoToVideoPrompt: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MoonvalleyCreateVideoToVideoRequest']
+      }
+    }
+    responses: {
+      /** @description Prompt created */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MoonvalleyCreatePromptResponse']
+        }
+      }
+    }
+  }
+  MoonvalleyCreateTextToImagePrompt: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MoonvalleyCreatePromptRequest']
+      }
+    }
+    responses: {
+      /** @description Prompt created */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MoonvalleyCreatePromptResponse']
+        }
+      }
+    }
+  }
+  MoonvalleyUploadFile: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          /** Format: binary */
+          file?: string
+        }
+      }
+    }
+    responses: {
+      /** @description Upload successful */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MoonvalleyUploadResponse']
         }
       }
     }
