@@ -122,6 +122,61 @@ describe('useSettingStore', () => {
       expect(store.get('test.setting')).toBe('default')
     })
 
+    it('should use versioned default based on installation version', () => {
+      // Set up an installed version
+      store.settingValues['Comfy.InstalledVersion'] = '1.25.0'
+
+      const setting: SettingParams = {
+        id: 'test.versionedSetting',
+        name: 'test.versionedSetting',
+        type: 'text',
+        defaultValue: 'original',
+        defaultsByInstallVersion: {
+          '1.20.0': 'version_1_20',
+          '1.24.0': 'version_1_24'
+        }
+      }
+      store.addSetting(setting)
+
+      // Should use the highest version <= installed version
+      expect(store.get('test.versionedSetting')).toBe('version_1_24')
+    })
+
+    it('should fallback to original default when no installation version is set', () => {
+      const setting: SettingParams = {
+        id: 'test.versionedSetting2',
+        name: 'test.versionedSetting2',
+        type: 'text',
+        defaultValue: 'original',
+        defaultsByInstallVersion: {
+          '1.20.0': 'version_1_20'
+        }
+      }
+      store.addSetting(setting)
+
+      // Should use original default when no installation version
+      expect(store.get('test.versionedSetting2')).toBe('original')
+    })
+
+    it('should fallback to original default when installation version is older than any versioned default', () => {
+      store.settingValues['Comfy.InstalledVersion'] = '1.10.0'
+
+      const setting: SettingParams = {
+        id: 'test.versionedSetting3',
+        name: 'test.versionedSetting3',
+        type: 'text',
+        defaultValue: 'original',
+        defaultsByInstallVersion: {
+          '1.20.0': 'version_1_20',
+          '1.24.0': 'version_1_24'
+        }
+      }
+      store.addSetting(setting)
+
+      // Should use original default when installation version is too old
+      expect(store.get('test.versionedSetting3')).toBe('original')
+    })
+
     it('should set value and trigger onChange', async () => {
       const onChangeMock = vi.fn()
       const dispatchChangeMock = vi.mocked(app.ui.settings.dispatchChange)

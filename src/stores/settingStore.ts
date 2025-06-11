@@ -8,6 +8,31 @@ import { app } from '@/scripts/app'
 import type { SettingParams } from '@/types/settingTypes'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 
+/**
+ * Compare two semantic version strings.
+ * @param a - First version string
+ * @param b - Second version string
+ * @returns 0 if equal, 1 if a > b, -1 if a < b
+ */
+function compareVersions(a: string, b: string): number {
+  const parseVersion = (version: string) => {
+    return version.split('.').map((v) => parseInt(v, 10) || 0)
+  }
+
+  const versionA = parseVersion(a)
+  const versionB = parseVersion(b)
+
+  for (let i = 0; i < Math.max(versionA.length, versionB.length); i++) {
+    const numA = versionA[i] || 0
+    const numB = versionB[i] || 0
+
+    if (numA > numB) return 1
+    if (numA < numB) return -1
+  }
+
+  return 0
+}
+
 export const getSettingInfo = (setting: SettingParams) => {
   const parts = setting.category || setting.id.split('.')
   return {
@@ -83,6 +108,29 @@ export const useSettingStore = defineStore('setting', () => {
    */
   function getDefaultValue<K extends keyof Settings>(key: K): Settings[K] {
     const param = settingsById.value[key]
+
+    // Check for versioned defaults based on installation version
+    if (param?.defaultsByInstallVersion) {
+      const installedVersion = settingValues.value['Comfy.InstalledVersion']
+
+      if (installedVersion) {
+        // Find the highest version that is <= installedVersion
+        const sortedVersions = Object.keys(param.defaultsByInstallVersion).sort(
+          (a, b) => compareVersions(a, b)
+        )
+
+        for (const version of sortedVersions.reverse()) {
+          if (compareVersions(installedVersion, version) >= 0) {
+            const versionedDefault = param.defaultsByInstallVersion[version]
+            return typeof versionedDefault === 'function'
+              ? versionedDefault()
+              : versionedDefault
+          }
+        }
+      }
+    }
+
+    // Fall back to original defaultValue
     return typeof param?.defaultValue === 'function'
       ? param.defaultValue()
       : param?.defaultValue
