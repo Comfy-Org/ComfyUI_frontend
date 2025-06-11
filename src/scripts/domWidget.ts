@@ -241,7 +241,8 @@ export class ComponentWidgetImpl<
   }) {
     super({
       ...obj,
-      type: 'custom'
+      type: 'custom',
+      options: { hideOnZoom: true, ...obj.options }
     })
     this.component = obj.component
     this.inputSpec = obj.inputSpec
