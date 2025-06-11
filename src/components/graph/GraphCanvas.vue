@@ -38,6 +38,7 @@
       <SelectionToolbox />
     </SelectionOverlay>
     <DomWidgets />
+    <VueNodeOverlay v-if="vueNodeRenderingEnabled" />
   </template>
   <SubgraphBreadcrumb />
 </template>
@@ -53,6 +54,7 @@ import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
 import DomWidgets from '@/components/graph/DomWidgets.vue'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
+import VueNodeOverlay from '@/components/graph/nodes/VueNodeOverlay.vue'
 import SelectionOverlay from '@/components/graph/SelectionOverlay.vue'
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
@@ -110,6 +112,8 @@ const tooltipEnabled = computed(() => settingStore.get('Comfy.EnableTooltips'))
 const selectionToolboxEnabled = computed(() =>
   settingStore.get('Comfy.Canvas.SelectionToolbox')
 )
+// Temporarily enable Vue node rendering for testing
+const vueNodeRenderingEnabled = computed(() => true)
 
 watchEffect(() => {
   nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')

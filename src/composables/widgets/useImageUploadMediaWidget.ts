@@ -94,38 +94,6 @@ export const useImageUploadMediaWidget = () => {
     // Convert the V1 input spec to V2 format for the MediaLoader widget
     const inputSpecV2 = transformInputSpecV1ToV2(inputData, { name: inputName })
 
-    // Handle widget dimensions based on input options
-    const getMinHeight = () => {
-      // Use smaller height for MediaLoader upload widget
-      let baseHeight = 176
-
-      // Handle multiline attribute for expanded height
-      if (inputOptions.multiline) {
-        baseHeight = Math.max(
-          baseHeight,
-          inputOptions.multiline === true
-            ? 120
-            : Number(inputOptions.multiline) || 120
-        )
-      }
-
-      // Handle other height-related attributes
-      if (inputOptions.min_height) {
-        baseHeight = Math.max(baseHeight, Number(inputOptions.min_height))
-      }
-
-      return baseHeight + 8 // Add padding
-    }
-
-    const getMaxHeight = () => {
-      // Lock maximum height to prevent oversizing of upload widget
-      if (inputOptions.multiline || inputOptions.min_height) {
-        // Allow more height for special cases
-        return Math.max(200, getMinHeight())
-      }
-      // Lock standard upload widget to ~80px max
-      return 80
-    }
 
     // State for MediaLoader widget
     const uploadedFiles = ref<string[]>([])
@@ -145,8 +113,6 @@ export const useImageUploadMediaWidget = () => {
           setValue: (value: string[]) => {
             uploadedFiles.value = value
           },
-          getMinHeight,
-          getMaxHeight, // Lock maximum height to prevent oversizing
           serialize: false,
           onFilesSelected: async (files: File[]) => {
             const isPastedFile = (file: File): boolean =>

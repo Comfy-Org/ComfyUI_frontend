@@ -30,10 +30,6 @@ const addMultiSelectWidget = (node: LGraphNode, inputSpec: ComboInputSpec) => {
       setValue: (value: string[]) => {
         widgetValue.value = value
       },
-      // Optional: minimum height for the widget (multiselect needs minimal height)
-      getMinHeight: () => 24,
-      // Lock maximum height to prevent oversizing
-      getMaxHeight: () => 32,
       // Optional: whether to serialize this widget's value
       serialize: true
     }

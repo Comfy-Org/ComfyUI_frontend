@@ -6,12 +6,9 @@ import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgetTypes'
 
-const PADDING = 8
-
 interface ColorPickerWidgetOptions {
   defaultValue?: string
   defaultFormat?: 'rgba' | 'hsla' | 'hsva' | 'hex'
-  minHeight?: number
   serialize?: boolean
 }
 
@@ -20,7 +17,6 @@ export const useColorPickerWidget = (
 ) => {
   const {
     defaultValue = 'rgba(255, 0, 0, 1)',
-    minHeight = 48,
     serialize = true
   } = options
 
@@ -63,9 +59,6 @@ export const useColorPickerWidget = (
             widgetValue.value = String(value)
           }
         },
-
-        // Optional: minimum height for the widget
-        getMinHeight: () => minHeight + PADDING,
 
         // Optional: whether to serialize this widget's value
         serialize

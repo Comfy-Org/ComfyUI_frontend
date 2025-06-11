@@ -6,7 +6,6 @@ import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgetTypes'
 
-const PADDING = 8
 
 type BadgeState = 'normal' | 'random' | 'lock' | 'increment' | 'decrement'
 
@@ -16,7 +15,6 @@ interface BadgedNumberInputOptions {
   defaultValue?: number
   badgeState?: BadgeState
   disabled?: boolean
-  minHeight?: number
   serialize?: boolean
   mode?: NumberWidgetMode
 }
@@ -43,7 +41,6 @@ export const useBadgedNumberInput = (
   const {
     defaultValue = 0,
     disabled = false,
-    minHeight = 32,
     serialize = true,
     mode = 'int'
   } = options
@@ -115,10 +112,6 @@ export const useBadgedNumberInput = (
           }
         },
 
-        // Optional: minimum height for the widget
-        getMinHeight: () => minHeight + PADDING,
-        // Lock maximum height to prevent oversizing
-        getMaxHeight: () => 48,
 
         // Optional: whether to serialize this widget's value
         serialize

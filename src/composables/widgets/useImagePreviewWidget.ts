@@ -6,7 +6,7 @@ import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import { type ComfyWidgetConstructorV2 } from '@/scripts/widgetTypes'
 
-const PADDING = 8
+// Removed PADDING constant as it's no longer needed for CSS flexbox layout
 
 export const useImagePreviewWidget = (
   options: { defaultValue?: string | string[] } = {}
@@ -34,10 +34,6 @@ export const useImagePreviewWidget = (
         setValue: (value: string | string[]) => {
           widgetValue.value = value
         },
-
-        // Optional: minimum height for the widget
-        getMinHeight: () => 320 + PADDING,
-        getMaxHeight: () => 512 + PADDING,
 
         // Optional: whether to serialize this widget's value
         serialize: false

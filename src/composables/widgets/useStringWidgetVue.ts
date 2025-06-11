@@ -9,7 +9,7 @@ import {
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import { type ComfyWidgetConstructorV2 } from '@/scripts/widgetTypes'
 
-const PADDING = 8
+// Removed PADDING constant as it's no longer needed for CSS flexbox layout
 
 export const useStringWidgetVue = (options: { defaultValue?: string } = {}) => {
   const widgetConstructor: ComfyWidgetConstructorV2 = (
@@ -38,11 +38,6 @@ export const useStringWidgetVue = (options: { defaultValue?: string } = {}) => {
         // Required: setter for widget value
         setValue: (value: string) => {
           widgetValue.value = value
-        },
-
-        // Optional: minimum height for the widget
-        getMinHeight: () => {
-          return inputSpec.multiline ? 80 + PADDING : 40 + PADDING
         },
 
         // Optional: whether to serialize this widget's value

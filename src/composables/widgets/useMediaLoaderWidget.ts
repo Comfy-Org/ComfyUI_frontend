@@ -10,11 +10,9 @@ import {
 } from '@/scripts/domWidget'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgetTypes'
 
-const PADDING = 8
 
 interface MediaLoaderOptions {
   defaultValue?: string[]
-  minHeight?: number
   accept?: string
   onFilesSelected?: (files: File[]) => void
 }
@@ -49,10 +47,6 @@ export const useMediaLoaderWidget = (options: MediaLoaderOptions = {}) => {
           widgetValue.value = Array.isArray(value) ? value : []
         },
 
-        // Optional: minimum height for the widget
-        // getMinHeight: () => (options.minHeight ?? 64) + PADDING,
-        getMaxHeight: () => 225 + PADDING,
-        getMinHeight: () => 176 + PADDING,
 
         // Optional: whether to serialize this widget's value
         serialize: true,
