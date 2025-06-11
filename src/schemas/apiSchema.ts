@@ -448,6 +448,7 @@ const zSettings = z.object({
   'Comfy.Toast.DisableReconnectingToast': z.boolean(),
   'Comfy.Workflow.Persist': z.boolean(),
   'Comfy.TutorialCompleted': z.boolean(),
+  'Comfy.InstalledVersion': z.string().nullable(),
   'Comfy.Node.AllowImageSizeDraw': z.boolean(),
   'Comfy-Desktop.AutoUpdate': z.boolean(),
   'Comfy-Desktop.SendStatistics': z.boolean(),
@@ -471,6 +472,7 @@ const zSettings = z.object({
   'VHS.AdvancedPreviews': z.string(),
   /** Settings used for testing */
   'test.setting': z.any(),
+  'test.versionedSetting': z.any(),
   'main.sub.setting.name': z.any(),
   'single.setting': z.any(),
   'LiteGraph.Node.DefaultPadding': z.boolean(),

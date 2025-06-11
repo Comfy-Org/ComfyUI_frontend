@@ -44,6 +44,18 @@
   "Comfy_Canvas_FitView": {
     "label": "Подогнать вид к выбранным нодам"
   },
+  "Comfy_Canvas_MoveSelectedNodes_Down": {
+    "label": "Переместить выбранные узлы вниз"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Left": {
+    "label": "Переместить выбранные узлы влево"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Right": {
+    "label": "Переместить выбранные узлы вправо"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Up": {
+    "label": "Переместить выбранные узлы вверх"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "Сбросить вид"
   },

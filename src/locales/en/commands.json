@@ -44,6 +44,18 @@
   "Comfy_Canvas_FitView": {
     "label": "Fit view to selected nodes"
   },
+  "Comfy_Canvas_MoveSelectedNodes_Down": {
+    "label": "Move Selected Nodes Down"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Left": {
+    "label": "Move Selected Nodes Left"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Right": {
+    "label": "Move Selected Nodes Right"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Up": {
+    "label": "Move Selected Nodes Up"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "Reset View"
   },

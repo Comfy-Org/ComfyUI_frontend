@@ -44,6 +44,18 @@
   "Comfy_Canvas_FitView": {
     "label": "선택한 노드에 뷰 맞추기"
   },
+  "Comfy_Canvas_MoveSelectedNodes_Down": {
+    "label": "선택한 노드 아래로 이동"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Left": {
+    "label": "선택한 노드 왼쪽으로 이동"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Right": {
+    "label": "선택한 노드 오른쪽으로 이동"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Up": {
+    "label": "선택한 노드 위로 이동"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "뷰 재설정"
   },

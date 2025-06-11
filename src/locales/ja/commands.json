@@ -44,6 +44,18 @@
   "Comfy_Canvas_FitView": {
     "label": "選択したノードにビューを合わせる"
   },
+  "Comfy_Canvas_MoveSelectedNodes_Down": {
+    "label": "選択したノードを下に移動"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Left": {
+    "label": "選択したノードを左に移動"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Right": {
+    "label": "選択したノードを右に移動"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Up": {
+    "label": "選択したノードを上に移動"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "ビューをリセット"
   },
