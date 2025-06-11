@@ -57,7 +57,7 @@ export default defineConfig({
         // Single worker for consistent performance measurements
         trace: 'retain-on-failure'
       },
-      timeout: 30000, // Longer timeout for performance tests
+      timeout: 60_000 * 2, // Longer timeout for performance tests
       grep: /@perf/, // Run only tests tagged with @perf
       ignoreSnapshots: true,
       // repeatEach: 5,
