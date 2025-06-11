@@ -6,7 +6,25 @@ import { getStorageValue, setStorageValue } from '@/scripts/utils'
 import { useWorkflowService } from '@/services/workflowService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useSettingStore } from '@/stores/settingStore'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
+import { electronAPI, isElectron } from '@/utils/envUtil'
+
+/**
+ * Get the current ComfyUI version for version tracking
+ */
+function getCurrentVersion(): string {
+  if (isElectron()) {
+    return electronAPI().getComfyUIVersion()
+  } else {
+    // For web version, use systemStats or fallback to frontend version
+    const systemStatsStore = useSystemStatsStore()
+    return (
+      systemStatsStore.systemStats?.system?.comfyui_version ||
+      __COMFYUI_FRONTEND_VERSION__
+    )
+  }
+}
 
 export function useWorkflowPersistence() {
   const workflowStore = useWorkflowStore()
@@ -53,6 +71,11 @@ export function useWorkflowPersistence() {
   }
 
   const loadDefaultWorkflow = async () => {
+    // Initialize installed version for new users
+    if (!settingStore.get('Comfy.InstalledVersion')) {
+      await settingStore.set('Comfy.InstalledVersion', getCurrentVersion())
+    }
+
     if (!settingStore.get('Comfy.TutorialCompleted')) {
       await settingStore.set('Comfy.TutorialCompleted', true)
       await useWorkflowService().loadBlankWorkflow()

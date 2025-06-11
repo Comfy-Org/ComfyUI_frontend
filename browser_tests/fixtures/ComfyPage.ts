@@ -762,7 +762,7 @@ export class ComfyPage {
         y: 625
       }
     })
-    this.page.mouse.move(10, 10)
+    await this.page.mouse.move(10, 10)
     await this.nextFrame()
   }
 
@@ -774,7 +774,7 @@ export class ComfyPage {
       },
       button: 'right'
     })
-    this.page.mouse.move(10, 10)
+    await this.page.mouse.move(10, 10)
     await this.nextFrame()
   }
 
@@ -1072,7 +1072,9 @@ export const comfyPageFixture = base.extend<{
         'Comfy.EnableTooltips': false,
         'Comfy.userId': userId,
         // Set tutorial completed to true to avoid loading the tutorial workflow.
-        'Comfy.TutorialCompleted': true
+        'Comfy.TutorialCompleted': true,
+        // Set installed version for consistent test behavior.
+        'Comfy.InstalledVersion': '1.22.0'
       })
     } catch (e) {
       console.error(e)
@@ -1083,7 +1085,7 @@ export const comfyPageFixture = base.extend<{
   },
   comfyMouse: async ({ comfyPage }, use) => {
     const comfyMouse = new ComfyMouse(comfyPage)
-    use(comfyMouse)
+    await use(comfyMouse)
   }
 })
 
