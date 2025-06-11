@@ -128,7 +128,7 @@ export const useAlgoliaSearchService = (
     hosts: [
       {
         url: 'search.comfy.org/api/search',
-        accept: 'read',
+        accept: 'readWrite',
         protocol: 'https'
       }
     ],
