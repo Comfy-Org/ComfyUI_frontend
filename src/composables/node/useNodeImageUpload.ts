@@ -68,7 +68,10 @@ export const useNodeImageUpload = (
     return validPaths
   }
 
-  // Handle drag & drop
+  // Note: MediaLoader widget functionality is handled directly by
+  // useImageUploadMediaWidget.ts to avoid circular dependencies
+
+  // Traditional approach: Handle drag & drop
   useNodeDragAndDrop(node, {
     fileFilter,
     onDrop: handleUploadBatch

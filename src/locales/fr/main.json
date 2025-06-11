@@ -1429,6 +1429,16 @@
     "getStarted": "Commencer",
     "title": "Bienvenue sur ComfyUI"
   },
+  "widgets": {
+    "colorPicker": {
+      "clickToEdit": "Cliquez pour modifier la couleur",
+      "formatHEX": "HEX",
+      "formatHSLA": "HSLA",
+      "formatHSVA": "HSVA",
+      "formatRGBA": "RGBA",
+      "selectColor": "Sélectionnez une couleur"
+    }
+  },
   "workflowService": {
     "enterFilename": "Entrez le nom du fichier",
     "exportWorkflow": "Exporter le flux de travail",

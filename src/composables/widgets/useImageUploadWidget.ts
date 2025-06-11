@@ -2,6 +2,7 @@ import type { LGraphNode } from '@comfyorg/litegraph'
 import { IComboWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
+import { useNodeImagePreview } from '@/composables/node/useNodeImagePreview'
 import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 import { useValueTransform } from '@/composables/useValueTransform'
 import { t } from '@/i18n'
@@ -41,6 +42,7 @@ export const useImageUploadWidget = () => {
     const isVideo = !!inputOptions.video_upload
     const accept = isVideo ? ACCEPTED_VIDEO_TYPES : ACCEPTED_IMAGE_TYPES
     const { showPreview } = isVideo ? useNodeVideo(node) : useNodeImage(node)
+    const { showImagePreview } = useNodeImagePreview()
 
     const fileFilter = isVideo ? isVideoFile : isImageFile
     // @ts-expect-error InputSpec is not typed correctly
@@ -96,6 +98,16 @@ export const useImageUploadWidget = () => {
       nodeOutputStore.setNodeOutputs(node, fileComboWidget.value, {
         isAnimated
       })
+
+      // Use Vue widget for image preview, fallback to DOM widget for video
+      if (!isVideo) {
+        showImagePreview(node, fileComboWidget.value, {
+          allow_batch: allow_batch as boolean,
+          image_folder: image_folder as string,
+          imageInputName: imageInputName as string
+        })
+      }
+
       node.graph?.setDirtyCanvas(true)
     }
 
@@ -106,7 +118,17 @@ export const useImageUploadWidget = () => {
       nodeOutputStore.setNodeOutputs(node, fileComboWidget.value, {
         isAnimated
       })
-      showPreview({ block: false })
+
+      // Use appropriate preview method
+      if (isVideo) {
+        showPreview({ block: false })
+      } else {
+        showImagePreview(node, fileComboWidget.value, {
+          allow_batch: allow_batch as boolean,
+          image_folder: image_folder as string,
+          imageInputName: imageInputName as string
+        })
+      }
     })
 
     return { widget: uploadWidget }

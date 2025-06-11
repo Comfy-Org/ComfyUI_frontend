@@ -5,27 +5,25 @@ import type {
   IStringWidget
 } from '@comfyorg/litegraph/dist/types/widgets'
 
+import { useBadgedNumberInput } from '@/composables/widgets/useBadgedNumberInput'
 import { useBooleanWidget } from '@/composables/widgets/useBooleanWidget'
+import { useColorPickerWidget } from '@/composables/widgets/useColorPickerWidget'
 import { useComboWidget } from '@/composables/widgets/useComboWidget'
-import { useFloatWidget } from '@/composables/widgets/useFloatWidget'
-import { useImageUploadWidget } from '@/composables/widgets/useImageUploadWidget'
-import { useIntWidget } from '@/composables/widgets/useIntWidget'
+import { useImagePreviewWidget } from '@/composables/widgets/useImagePreviewWidget'
+import { useImageUploadMediaWidget } from '@/composables/widgets/useImageUploadMediaWidget'
 import { useMarkdownWidget } from '@/composables/widgets/useMarkdownWidget'
+import { useMediaLoaderWidget } from '@/composables/widgets/useMediaLoaderWidget'
 import { useStringWidget } from '@/composables/widgets/useStringWidget'
+import { useStringWidgetVue } from '@/composables/widgets/useStringWidgetVue'
 import { t } from '@/i18n'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
-import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { useSettingStore } from '@/stores/settingStore'
 
 import type { ComfyApp } from './app'
 import './domWidget'
 import './errorNodeWidgets'
-
-export type ComfyWidgetConstructorV2 = (
-  node: LGraphNode,
-  inputSpec: InputSpecV2
-) => IBaseWidget
+import type { ComfyWidgetConstructorV2 } from './widgetTypes'
 
 export type ComfyWidgetConstructor = (
   node: LGraphNode,
@@ -283,11 +281,18 @@ export function addValueControlWidgets(
 }
 
 export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
-  INT: transformWidgetConstructorV2ToV1(useIntWidget()),
-  FLOAT: transformWidgetConstructorV2ToV1(useFloatWidget()),
+  INT: transformWidgetConstructorV2ToV1(useBadgedNumberInput({ mode: 'int' })),
+  FLOAT: transformWidgetConstructorV2ToV1(
+    useBadgedNumberInput({ mode: 'float' })
+  ),
   BOOLEAN: transformWidgetConstructorV2ToV1(useBooleanWidget()),
-  STRING: transformWidgetConstructorV2ToV1(useStringWidget()),
+  STRING: transformWidgetConstructorV2ToV1(useStringWidgetVue()),
+  STRING_DOM: transformWidgetConstructorV2ToV1(useStringWidget()), // Fallback to DOM-based implementation
   MARKDOWN: transformWidgetConstructorV2ToV1(useMarkdownWidget()),
   COMBO: transformWidgetConstructorV2ToV1(useComboWidget()),
-  IMAGEUPLOAD: useImageUploadWidget()
+  COLOR: transformWidgetConstructorV2ToV1(useColorPickerWidget()),
+  IMAGEUPLOAD: useImageUploadMediaWidget(),
+  MEDIA_LOADER: transformWidgetConstructorV2ToV1(useMediaLoaderWidget()),
+  IMAGEPREVIEW: transformWidgetConstructorV2ToV1(useImagePreviewWidget()),
+  BADGED_NUMBER: transformWidgetConstructorV2ToV1(useBadgedNumberInput())
 }
