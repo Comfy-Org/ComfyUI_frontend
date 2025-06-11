@@ -762,7 +762,7 @@ export class ComfyPage {
         y: 625
       }
     })
-    this.page.mouse.move(10, 10)
+    await this.page.mouse.move(10, 10)
     await this.nextFrame()
   }
 
@@ -774,7 +774,7 @@ export class ComfyPage {
       },
       button: 'right'
     })
-    this.page.mouse.move(10, 10)
+    await this.page.mouse.move(10, 10)
     await this.nextFrame()
   }
 
@@ -1046,6 +1046,8 @@ export class ComfyPage {
   }
 }
 
+export const testComfySnapToGridGridSize = 50
+
 export const comfyPageFixture = base.extend<{
   comfyPage: ComfyPage
   comfyMouse: ComfyMouse
@@ -1072,7 +1074,8 @@ export const comfyPageFixture = base.extend<{
         'Comfy.EnableTooltips': false,
         'Comfy.userId': userId,
         // Set tutorial completed to true to avoid loading the tutorial workflow.
-        'Comfy.TutorialCompleted': true
+        'Comfy.TutorialCompleted': true,
+        'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize
       })
     } catch (e) {
       console.error(e)
