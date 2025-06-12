@@ -15,7 +15,10 @@ export const useProgressFavicon = () => {
       if (isIdle) {
         favicon.value = defaultFavicon
       } else {
-        const frame = Math.floor(progress * totalFrames)
+        const frame = Math.min(
+          Math.max(0, Math.floor(progress * totalFrames)),
+          totalFrames - 1
+        )
         favicon.value = `/assets/images/favicon_progress_16x16/frame_${frame}.png`
       }
     }

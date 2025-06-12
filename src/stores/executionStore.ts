@@ -88,7 +88,7 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!activePrompt.value) return 0
     const total = totalNodesToExecute.value
     const done = nodesExecuted.value
-    return done / total
+    return total > 0 ? done / total : 0
   })
 
   function bindExecutionEvents() {
