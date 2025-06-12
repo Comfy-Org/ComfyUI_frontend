@@ -1152,6 +1152,8 @@
       "Video": "视频",
       "Video API": "视频 API"
     },
+    "currentVersion": "当前版本：v{version}",
+    "requiresUpgrade": "需要 ComfyUI v{version} 或更高版本",
     "template": {
       "3D": {
         "hunyuan-3d-multiview-elf": "混元3D多视图",
@@ -1354,7 +1356,8 @@
         "api_veo2_i2v": "使用 Google Veo2 API 通过图像生成视频。"
       }
     },
-    "title": "从模板开始"
+    "title": "从模板开始",
+    "upgradeToUse": "升级以使用此模板"
   },
   "toastMessages": {
     "couldNotDetermineFileType": "无法确定文件类型",
