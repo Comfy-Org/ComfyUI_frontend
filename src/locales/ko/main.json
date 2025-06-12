@@ -1152,8 +1152,6 @@
       "Video": "비디오",
       "Video API": "비디오 API"
     },
-    "currentVersion": "현재 버전: v{version}",
-    "requiresUpgrade": "ComfyUI v{version} 이상이 필요합니다",
     "template": {
       "3D": {
         "hunyuan-3d-multiview-elf": "Hunyuan3D 다중뷰",
@@ -1356,8 +1354,7 @@
         "api_veo2_i2v": "Google Veo2 API로 이미지에서 비디오를 생성합니다."
       }
     },
-    "title": "템플릿으로 시작하기",
-    "upgradeToUse": "이 템플릿을 사용하려면 업그레이드하세요"
+    "title": "템플릿으로 시작하기"
   },
   "toastMessages": {
     "couldNotDetermineFileType": "파일 유형을 결정할 수 없습니다",

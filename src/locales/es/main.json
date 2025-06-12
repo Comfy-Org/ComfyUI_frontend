@@ -1152,8 +1152,6 @@
       "Video": "Video",
       "Video API": "API de Video"
     },
-    "currentVersion": "Versión actual: v{version}",
-    "requiresUpgrade": "Requiere ComfyUI v{version} o superior",
     "template": {
       "3D": {
         "hunyuan-3d-multiview-elf": "Hunyuan3D 2.0 MV",
@@ -1356,8 +1354,7 @@
         "api_veo2_i2v": "Usa la API Google Veo2 para generar videos a partir de imágenes."
       }
     },
-    "title": "Comienza con una Plantilla",
-    "upgradeToUse": "Actualiza para usar esta plantilla"
+    "title": "Comienza con una Plantilla"
   },
   "toastMessages": {
     "couldNotDetermineFileType": "No se pudo determinar el tipo de archivo",

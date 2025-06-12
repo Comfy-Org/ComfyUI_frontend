@@ -1152,8 +1152,6 @@
       "Video": "ビデオ",
       "Video API": "動画API"
     },
-    "currentVersion": "現在のバージョン: v{version}",
-    "requiresUpgrade": "ComfyUI v{version} 以上が必要です",
     "template": {
       "3D": {
         "hunyuan-3d-multiview-elf": "Hunyuan3D マルチビュー",
@@ -1356,8 +1354,7 @@
         "api_veo2_i2v": "Google Veo2 APIで画像から動画を生成します。"
       }
     },
-    "title": "テンプレートを利用して開始",
-    "upgradeToUse": "このテンプレートを使用するにはアップグレードしてください"
+    "title": "テンプレートを利用して開始"
   },
   "toastMessages": {
     "couldNotDetermineFileType": "ファイルタイプを判断できませんでした",
