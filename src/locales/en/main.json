@@ -501,6 +501,9 @@
   },
   "templateWorkflows": {
     "title": "Get Started with a Template",
+    "requiresUpgrade": "Requires ComfyUI v{version} or higher",
+    "upgradeToUse": "Upgrade to use this template",
+    "currentVersion": "Current version: v{version}",
     "category": {
       "ComfyUI Examples": "ComfyUI Examples",
       "Custom Nodes": "Custom Nodes",
