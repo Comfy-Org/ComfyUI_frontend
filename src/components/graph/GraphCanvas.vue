@@ -86,7 +86,6 @@ import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { getCurrentVersion } from '@/utils/versioning'
 
 const emit = defineEmits<{
   ready: []
@@ -301,11 +300,11 @@ onMounted(async () => {
   CORE_SETTINGS.forEach((setting) => {
     settingStore.addSetting(setting)
   })
-  if (!settingStore.get('Comfy.InstalledVersion')) {
+  if (!settingStore.exists('Comfy.InstalledVersion')) {
     const currentVersion =
       Object.keys(settingStore.settingValues).length > 0
-        ? '0.0.1'
-        : getCurrentVersion()
+        ? ''
+        : __COMFYUI_FRONTEND_VERSION__
     await settingStore.set('Comfy.InstalledVersion', currentVersion)
   }
   // @ts-expect-error fixme ts strict error
