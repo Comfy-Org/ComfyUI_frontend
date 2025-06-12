@@ -1,10 +1,17 @@
 import type { InjectionKey, Ref } from 'vue'
 
 import type { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
+import type { AlgoliaNodePack } from '@/types/algoliaTypes'
 import type { components } from '@/types/comfyRegistryTypes'
 
-type RegistryPack = components['schemas']['Node']
 type WorkflowNodeProperties = ComfyWorkflowJSON['nodes'][0]['properties']
+
+export type RegistryPack = components['schemas']['Node']
+export type MergedNodePack = RegistryPack & AlgoliaNodePack
+export const isMergedNodePack = (
+  nodePack: RegistryPack | AlgoliaNodePack
+): nodePack is MergedNodePack => 'comfy_nodes' in nodePack
+
 export type PackField = keyof RegistryPack | null
 
 export const IsInstallingKey: InjectionKey<Ref<boolean>> =

@@ -56,7 +56,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SearchFilterDropdown from '@/components/dialog/content/manager/registrySearchBar/SearchFilterDropdown.vue'
-import type { NodesIndexSuggestion } from '@/services/algoliaSearchService'
+import type { NodesIndexSuggestion } from '@/types/algoliaTypes'
 import {
   type SearchOption,
   SortableAlgoliaField

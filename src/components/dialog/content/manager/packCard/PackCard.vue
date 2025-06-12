@@ -113,11 +113,15 @@ import PackBanner from '@/components/dialog/content/manager/packBanner/PackBanne
 import PackCardFooter from '@/components/dialog/content/manager/packCard/PackCardFooter.vue'
 import { usePackUpdateStatus } from '@/composables/nodePack/usePackUpdateStatus'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import { IsInstallingKey } from '@/types/comfyManagerTypes'
-import type { components } from '@/types/comfyRegistryTypes'
+import {
+  IsInstallingKey,
+  type MergedNodePack,
+  type RegistryPack,
+  isMergedNodePack
+} from '@/types/comfyManagerTypes'
 
 const { nodePack, isSelected = false } = defineProps<{
-  nodePack: components['schemas']['Node']
+  nodePack: MergedNodePack | RegistryPack
   isSelected?: boolean
 }>()
 
@@ -136,9 +140,9 @@ const isDisabled = computed(
 
 whenever(isInstalled, () => (isInstalling.value = false))
 
-// TODO: remove type assertion once comfy_nodes is added to node (pack) info type in backend
-const nodesCount = computed(() => (nodePack as any).comfy_nodes?.length)
-
+const nodesCount = computed(() =>
+  isMergedNodePack(nodePack) ? nodePack.comfy_nodes?.length : undefined
+)
 const publisherName = computed(() => {
   if (!nodePack) return null
 
