@@ -232,7 +232,11 @@ watch(
 
     if (!isEmptySearch.value) {
       displayPacks.value = filterOutdatedPacks(installedPacks.value)
-    } else if (!installedPacks.value.length) {
+    } else if (
+      !installedPacks.value.length &&
+      !installedPacksReady.value &&
+      !isLoadingInstalled.value
+    ) {
       await startFetchInstalled()
     } else {
       displayPacks.value = filterOutdatedPacks(installedPacks.value)
