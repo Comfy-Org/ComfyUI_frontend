@@ -32,6 +32,7 @@
             v-model:sortField="sortField"
             :search-results="searchResults"
             :suggestions="suggestions"
+            :is-missing-tab="isMissingTab"
           />
           <div class="flex-1 overflow-auto">
             <div

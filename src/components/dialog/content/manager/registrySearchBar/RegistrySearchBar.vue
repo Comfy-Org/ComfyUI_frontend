@@ -24,6 +24,11 @@
         @complete="stubTrue"
         @option-select="onOptionSelect"
       />
+      <PackInstallAllButton
+        v-if="isMissingTab"
+        :disabled="!hasResults"
+        :node-packs="searchResults || []"
+      />
     </div>
     <div class="flex mt-3 text-sm">
       <div class="flex gap-6 ml-1">
@@ -52,9 +57,10 @@ import { stubTrue } from 'lodash'
 import AutoComplete, {
   AutoCompleteOptionSelectEvent
 } from 'primevue/autocomplete'
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import PackInstallAllButton from '@/components/dialog/content/manager/button/PackInstallAllButton.vue'
 import SearchFilterDropdown from '@/components/dialog/content/manager/registrySearchBar/SearchFilterDropdown.vue'
 import type { NodesIndexSuggestion } from '@/services/algoliaSearchService'
 import {
@@ -66,6 +72,7 @@ import { components } from '@/types/comfyRegistryTypes'
 const { searchResults } = defineProps<{
   searchResults?: components['schemas']['Node'][]
   suggestions?: NodesIndexSuggestion[]
+  isMissingTab?: boolean
 }>()
 
 const searchQuery = defineModel<string>('searchQuery')
@@ -78,6 +85,14 @@ const { t } = useI18n()
 
 const hasResults = computed(
   () => searchQuery.value?.trim() && searchResults?.length
+)
+
+watch(
+  () => searchResults,
+  (newVal) => {
+    console.log('searchResults:', newVal)
+  },
+  { immediate: true, deep: true }
 )
 
 const sortOptions: SearchOption<SortableAlgoliaField>[] = [
