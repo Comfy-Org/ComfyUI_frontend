@@ -78,6 +78,7 @@ const { searchResults, sortOptions } = defineProps<{
   isMissingTab?: boolean
   suggestions?: QuerySuggestion[]
   sortOptions?: SortableField[]
+  isMissingTab?: boolean
 }>()
 
 const searchQuery = defineModel<string>('searchQuery')

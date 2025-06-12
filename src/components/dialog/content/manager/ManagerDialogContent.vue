@@ -34,6 +34,7 @@
             :suggestions="suggestions"
             :is-missing-tab="isMissingTab"
             :sort-options="sortOptions"
+            :is-missing-tab="isMissingTab"
           />
           <div class="flex-1 overflow-auto">
             <div
