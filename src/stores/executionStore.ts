@@ -20,8 +20,8 @@ import type {
   NodeId
 } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
 
+import { useCanvasStore } from './graphStore'
 import { ComfyWorkflow } from './workflowStore'
 
 export interface QueuedPrompt {
@@ -37,6 +37,8 @@ export interface QueuedPrompt {
 }
 
 export const useExecutionStore = defineStore('execution', () => {
+  const canvasStore = useCanvasStore()
+
   const clientId = ref<string | null>(null)
   const activePromptId = ref<string | null>(null)
   const queuedPrompts = ref<Record<NodeId, QueuedPrompt>>({})
@@ -54,9 +56,8 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!canvasState) return null
 
     return (
-      canvasState.nodes.find(
-        (n: ComfyNode) => String(n.id) === executingNodeId.value
-      ) ?? null
+      canvasState.nodes.find((n) => String(n.id) === executingNodeId.value) ??
+      null
     )
   })
 
@@ -156,7 +157,7 @@ export const useExecutionStore = defineStore('execution', () => {
     activePrompt.value.nodes[e.detail.node] = true
   }
 
-  function handleExecuting(e: CustomEvent<NodeId | null>) {
+  function handleExecuting(e: CustomEvent<NodeId | null>): void {
     // Clear the current node progress when a new node starts executing
     _executingNodeProgress.value = null
 
@@ -196,7 +197,7 @@ export const useExecutionStore = defineStore('execution', () => {
     const { nodeId, text } = e.detail
     if (!text || !nodeId) return
 
-    const node = app.graph.getNodeById(nodeId)
+    const node = canvasStore.getCanvas().graph?.getNodeById(nodeId)
     if (!node) return
 
     useNodeProgressText().showTextPreview(node, text)
@@ -204,7 +205,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleDisplayComponent(e: CustomEvent<DisplayComponentWsMessage>) {
     const { node_id, component, props = {} } = e.detail
-    const node = app.graph.getNodeById(node_id)
+    const node = canvasStore.getCanvas().graph?.getNodeById(node_id)
     if (!node) return
 
     if (component === 'ChatHistoryWidget') {
