@@ -8,7 +8,8 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
-import { SelectedVersion } from '@/types/comfyManagerTypes'
+
+// SelectedVersion is now using direct strings instead of enum
 
 import PackVersionSelectorPopover from './PackVersionSelectorPopover.vue'
 
@@ -123,8 +124,8 @@ describe('PackVersionSelectorPopover', () => {
     expect(options.length).toBe(defaultMockVersions.length + 2) // 2 special options + version options
 
     // Check that special options exist
-    expect(options.some((o) => o.value === SelectedVersion.NIGHTLY)).toBe(true)
-    expect(options.some((o) => o.value === SelectedVersion.LATEST)).toBe(true)
+    expect(options.some((o) => o.value === 'nightly')).toBe(true)
+    expect(options.some((o) => o.value === 'latest')).toBe(true)
 
     // Check that version options exist
     expect(options.some((o) => o.value === '1.0.0')).toBe(true)
@@ -304,7 +305,7 @@ describe('PackVersionSelectorPopover', () => {
       await waitForPromises()
       const listbox = wrapper.findComponent(Listbox)
       expect(listbox.exists()).toBe(true)
-      expect(listbox.props('modelValue')).toBe(SelectedVersion.NIGHTLY)
+      expect(listbox.props('modelValue')).toBe('nightly')
     })
 
     it('defaults to nightly when publisher name is "Unclaimed"', async () => {
@@ -325,7 +326,7 @@ describe('PackVersionSelectorPopover', () => {
       await waitForPromises()
       const listbox = wrapper.findComponent(Listbox)
       expect(listbox.exists()).toBe(true)
-      expect(listbox.props('modelValue')).toBe(SelectedVersion.NIGHTLY)
+      expect(listbox.props('modelValue')).toBe('nightly')
     })
   })
 })
