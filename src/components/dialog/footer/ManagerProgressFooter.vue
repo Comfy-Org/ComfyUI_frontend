@@ -83,7 +83,7 @@ const dialogStore = useDialogStore()
 const progressDialogContent = useManagerProgressDialogStore()
 const comfyManagerStore = useComfyManagerStore()
 
-const isInProgress = computed(() => comfyManagerStore.uncompletedCount > 0)
+const isInProgress = computed(() => comfyManagerStore.isProcessingTasks)
 
 const closeDialog = () => {
   dialogStore.closeDialog({ key: 'global-manager-progress-dialog' })
