@@ -1,12 +1,12 @@
 import { VueWrapper, mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
+import Button from 'primevue/button'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
-import { SelectedVersion } from '@/types/comfyManagerTypes'
 
 import PackVersionBadge from './PackVersionBadge.vue'
 import PackVersionSelectorPopover from './PackVersionSelectorPopover.vue'
@@ -118,9 +118,9 @@ describe('PackVersionBadge', () => {
       props: { nodePack: noVersionPack }
     })
 
-    const badge = wrapper.find('[role="button"]')
-    expect(badge.exists()).toBe(true)
-    expect(badge.find('span').text()).toBe(SelectedVersion.NIGHTLY)
+    const button = wrapper.findComponent(Button)
+    expect(button.exists()).toBe(true)
+    expect(button.props('label')).toBe('nightly')
   })
 
   it('falls back to NIGHTLY when nodePack.id is missing', () => {
@@ -132,9 +132,9 @@ describe('PackVersionBadge', () => {
       props: { nodePack: invalidPack }
     })
 
-    const badge = wrapper.find('[role="button"]')
-    expect(badge.exists()).toBe(true)
-    expect(badge.find('span').text()).toBe(SelectedVersion.NIGHTLY)
+    const button = wrapper.findComponent(Button)
+    expect(button.exists()).toBe(true)
+    expect(button.props('label')).toBe('nightly')
   })
 
   it('toggles the popover when button is clicked', async () => {
