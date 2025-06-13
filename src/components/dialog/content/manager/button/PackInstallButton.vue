@@ -19,13 +19,9 @@ import { inject, ref } from 'vue'
 
 import PackActionButton from '@/components/dialog/content/manager/button/PackActionButton.vue'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import {
-  IsInstallingKey,
-  ManagerChannel,
-  ManagerDatabaseSource,
-  SelectedVersion
-} from '@/types/comfyManagerTypes'
+import { IsInstallingKey } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
+import { components as ManagerComponents } from '@/types/generatedManagerTypes'
 
 type NodePack = components['schemas']['Node']
 
@@ -43,19 +39,26 @@ const onClick = (): void => {
 
 const managerStore = useComfyManagerStore()
 
-const createPayload = (installItem: NodePack) => {
+const createPayload = (
+  installItem: NodePack
+): ManagerComponents['schemas']['InstallPackParams'] => {
+  if (!installItem.id) {
+    throw new Error('Node ID is required for installation')
+  }
+
   const isUnclaimedPack = installItem.publisher?.name === 'Unclaimed'
   const versionToInstall = isUnclaimedPack
-    ? SelectedVersion.NIGHTLY
-    : installItem.latest_version?.version ?? SelectedVersion.LATEST
+    ? ('nightly' as ManagerComponents['schemas']['SelectedVersion'])
+    : installItem.latest_version?.version ??
+      ('latest' as ManagerComponents['schemas']['SelectedVersion'])
 
   return {
     id: installItem.id,
+    version: versionToInstall,
     repository: installItem.repository ?? '',
-    channel: ManagerChannel.DEV,
-    mode: ManagerDatabaseSource.CACHE,
-    selected_version: versionToInstall,
-    version: versionToInstall
+    channel: 'dev' as ManagerComponents['schemas']['ManagerChannel'],
+    mode: 'cache' as ManagerComponents['schemas']['ManagerDatabaseSource'],
+    selected_version: versionToInstall
   }
 }
 
@@ -65,7 +68,7 @@ const installPack = (item: NodePack) =>
 const installAllPacks = async () => {
   if (!nodePacks?.length) return
 
-  isInstalling.value = true
+  // isInstalling.value = true
 
   const uninstalledPacks = nodePacks.filter(
     (pack) => !managerStore.isPackInstalled(pack.id)
