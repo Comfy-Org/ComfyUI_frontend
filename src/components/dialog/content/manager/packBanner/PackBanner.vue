@@ -46,7 +46,7 @@ const {
   width = '100%',
   height = '12rem'
 } = defineProps<{
-  nodePack: components['schemas']['Node'] & { banner?: string } // Temporary measure until banner is in backend
+  nodePack: components['schemas']['Node']
   width?: string
   height?: string
 }>()
