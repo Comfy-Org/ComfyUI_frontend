@@ -31,9 +31,6 @@ export default defineConfig({
   server: {
     host: VITE_REMOTE_DEV ? '0.0.0.0' : undefined,
     proxy: {
-      '/templates_version': {
-        target: DEV_SERVER_COMFYUI_URL
-      },
       '/internal': {
         target: DEV_SERVER_COMFYUI_URL
       },
