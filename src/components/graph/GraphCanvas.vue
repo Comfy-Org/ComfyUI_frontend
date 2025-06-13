@@ -194,10 +194,10 @@ watch(
 // Update the progress of the executing node
 watch(
   () =>
-    [executionStore.executingNodeId, executionStore.executingNodeProgress] as [
-      NodeId | null,
-      number | null
-    ],
+    [
+      executionStore.executingNodeId,
+      executionStore.executingNodeProgress
+    ] satisfies [NodeId | null, number | null],
   ([executingNodeId, executingNodeProgress]) => {
     for (const node of comfyApp.graph.nodes) {
       if (node.id == executingNodeId) {
