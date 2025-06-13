@@ -1152,6 +1152,8 @@
       "Video": "Видео",
       "Video API": "Video API"
     },
+    "currentVersion": "Текущая версия: v{version}",
+    "requiresUpgrade": "Требуется ComfyUI версии {version} или выше",
     "template": {
       "3D": {
         "hunyuan-3d-multiview-elf": "Hunyuan3D Многовидовой",
@@ -1354,7 +1356,8 @@
         "api_veo2_i2v": "Используйте Google Veo2 API для генерации видео из изображений."
       }
     },
-    "title": "Начните с шаблона"
+    "title": "Начните с шаблона",
+    "upgradeToUse": "Обновите, чтобы использовать этот шаблон"
   },
   "toastMessages": {
     "couldNotDetermineFileType": "Не удалось определить тип файла",
