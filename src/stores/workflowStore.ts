@@ -442,6 +442,14 @@ export const useWorkflowStore = defineStore('workflow', () => {
     isSubgraphActive.value = isSubgraph(subgraph)
   }
 
+  const executionIdToCurrentId = (id: string) => {
+    const subgraph = activeSubgraph.value
+
+    if (!id.includes(':')) {
+      return subgraph
+    }
+  }
+
   watch(activeWorkflow, updateActiveGraph)
 
   return {
@@ -469,7 +477,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
     isSubgraphActive,
     activeSubgraph,
-    updateActiveGraph
+    updateActiveGraph,
+    executionIdToCurrentId
   }
 }) satisfies () => WorkflowStore
 
