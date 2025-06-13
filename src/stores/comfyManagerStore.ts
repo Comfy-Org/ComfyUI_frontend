@@ -90,6 +90,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     () => {
       partitionTasks()
       partitionTaskLogs()
+      console.log('installed pack ids', installedPacksIds.value)
     },
     { deep: true }
   )
@@ -153,12 +154,26 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
 
   const updateInstalledIds = (packs: ManagerPackInstalled[]) => {
     const newIds = packsToIdSet(packs)
+    console.log('updateInstalledIds: creating set with:', Array.from(newIds))
     installedPacksIds.value = newIds
+    console.log(
+      'updateInstalledIds: final installedPacksIds:',
+      Array.from(installedPacksIds.value)
+    )
   }
 
   const onPacksChanged = () => {
     const packs = Object.values(installedPacks.value)
-
+    console.log(
+      'onPacksChanged called with packs:',
+      packs.map((p) => ({
+        key: Object.keys(installedPacks.value).find(
+          (k) => installedPacks.value[k] === p
+        ),
+        cnr_id: p.cnr_id,
+        aux_id: p.aux_id
+      }))
+    )
     updateDisabledIds(packs)
     updateInstalledIds(packs)
   }
@@ -178,9 +193,8 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     taskName: string
   ) => {
     const taskId = uuidv4()
-    const { logs } = useServerLogs({
-      ui_id: taskId,
-      immediate: true
+    const { startListening, logs } = useServerLogs({
+      ui_id: taskId
     })
 
     try {
@@ -190,6 +204,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
 
       // Prepare logging hook
       taskLogs.value.push({ taskName, taskId, logs: logs.value })
+      await startListening()
 
       // Queue the task to the server
       await task(taskId)
@@ -313,7 +328,6 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     isPackInstalled: isInstalledPackId,
     isPackEnabled: isEnabledPackId,
     getInstalledPackVersion,
-    refreshInstalledList,
 
     // Task queue state and actions
     taskHistory,
@@ -322,7 +336,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     failedTasksIds,
     succeededTasksLogs,
     failedTasksLogs,
-    managerQueue,
+    managerQueue, // Expose full queue composable for advanced usage
 
     // Pack actions
     installPack,

@@ -7,10 +7,8 @@ import { components } from '@/types/generatedManagerTypes'
 
 const LOGS_MESSAGE_TYPE = 'logs'
 const MANAGER_WS_TASK_DONE_NAME = 'cm-task-completed'
-const MANAGER_WS_TASK_STARTED_NAME = 'cm-task-started'
 
 type ManagerWsTaskDoneMsg = components['schemas']['MessageTaskDone']
-type ManagerWsTaskStartedMsg = components['schemas']['MessageTaskStarted']
 
 interface UseServerLogsOptions {
   ui_id: string
@@ -25,10 +23,8 @@ export const useServerLogs = (options: UseServerLogsOptions) => {
   } = options
 
   const logs = ref<string[]>([])
-  const isTaskStarted = ref(false)
   let stopLogs: ReturnType<typeof useEventListener> | null = null
   let stopTaskDone: ReturnType<typeof useEventListener> | null = null
-  let stopTaskStarted: ReturnType<typeof useEventListener> | null = null
 
   const isValidLogEvent = (event: CustomEvent<LogsWsMessage>) =>
     event?.type === LOGS_MESSAGE_TYPE && event.detail?.entries?.length > 0
@@ -37,9 +33,6 @@ export const useServerLogs = (options: UseServerLogsOptions) => {
     event.detail.entries.map((e) => e.m).filter(messageFilter)
 
   const handleLogMessage = (event: CustomEvent<LogsWsMessage>) => {
-    // Only capture logs if this task has started
-    if (!isTaskStarted.value) return
-
     if (isValidLogEvent(event)) {
       const messages = parseLogMessage(event)
       if (messages.length > 0) {
@@ -48,24 +41,11 @@ export const useServerLogs = (options: UseServerLogsOptions) => {
     }
   }
 
-  const handleTaskStarted = (event: CustomEvent<ManagerWsTaskStartedMsg>) => {
-    if (event?.type === MANAGER_WS_TASK_STARTED_NAME) {
-      // Check if this is our task starting
-      const isOurTask = event.detail.ui_id === options.ui_id
-      if (isOurTask) {
-        isTaskStarted.value = true
-        void stopTaskStarted?.()
-      }
-    }
-  }
-
   const handleTaskDone = (event: CustomEvent<ManagerWsTaskDoneMsg>) => {
     if (event?.type === MANAGER_WS_TASK_DONE_NAME) {
       const { state } = event.detail
       // Check if our task is now in the history (completed)
-      const isOurTaskDone = state.history[options.ui_id]
-      if (isOurTaskDone) {
-        isTaskStarted.value = false
+      if (state.history[options.ui_id]) {
         void stopListening()
       }
     }
@@ -74,11 +54,6 @@ export const useServerLogs = (options: UseServerLogsOptions) => {
   const startListening = async () => {
     await api.subscribeLogs(true)
     stopLogs = useEventListener(api, LOGS_MESSAGE_TYPE, handleLogMessage)
-    stopTaskStarted = useEventListener(
-      api,
-      MANAGER_WS_TASK_STARTED_NAME,
-      handleTaskStarted
-    )
     stopTaskDone = useEventListener(
       api,
       MANAGER_WS_TASK_DONE_NAME,
@@ -87,15 +62,12 @@ export const useServerLogs = (options: UseServerLogsOptions) => {
   }
 
   const stopListening = async () => {
+    console.log('stopListening')
     stopLogs?.()
-    stopTaskStarted?.()
     stopTaskDone?.()
     stopLogs = null
-    stopTaskStarted = null
     stopTaskDone = null
-    // TODO: move subscribe/unsubscribe logs to useManagerQueue. Subscribe when task starts if not already subscribed.
-    // Unsubscribe ONLY when there are no tasks running or queued up and the only remaining task finishes.
-    // await api.subscribeLogs(false)
+    await api.subscribeLogs(false)
   }
 
   if (immediate) {
@@ -105,7 +77,6 @@ export const useServerLogs = (options: UseServerLogsOptions) => {
   const cleanup = async () => {
     await stopListening()
     logs.value = []
-    isTaskStarted.value = false
   }
 
   return {
