@@ -2790,7 +2790,10 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     }
 
     const input = this.inputs[slot]
-    if (!input) return false
+    if (!input) {
+      console.debug("disconnectInput: input not found", slot, this.inputs)
+      return false
+    }
 
     const { graph } = this
     if (!graph) throw new NullGraphError()
@@ -2810,10 +2813,16 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       const link_info = graph._links.get(link_id)
       if (link_info) {
         const target_node = graph.getNodeById(link_info.origin_id)
-        if (!target_node) return false
+        if (!target_node) {
+          console.debug("disconnectInput: target node not found", link_info.origin_id)
+          return false
+        }
 
         const output = target_node.outputs[link_info.origin_slot]
-        if (!(output?.links?.length)) return false
+        if (!(output?.links?.length)) {
+          console.debug("disconnectInput: output not found", link_info.origin_slot)
+          return false
+        }
 
         // search in the inputs list for this link
         let i = 0
