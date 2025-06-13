@@ -7,7 +7,8 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
-import { SelectedVersion } from '@/types/comfyManagerTypes'
+
+// SelectedVersion is now using direct strings instead of enum
 
 import PackVersionBadge from './PackVersionBadge.vue'
 import PackVersionSelectorPopover from './PackVersionSelectorPopover.vue'
@@ -115,7 +116,7 @@ describe('PackVersionBadge', () => {
 
     const button = wrapper.findComponent(Button)
     expect(button.exists()).toBe(true)
-    expect(button.props('label')).toBe(SelectedVersion.NIGHTLY)
+    expect(button.props('label')).toBe('nightly')
   })
 
   it('falls back to NIGHTLY when nodePack.id is missing', () => {
@@ -129,7 +130,7 @@ describe('PackVersionBadge', () => {
 
     const button = wrapper.findComponent(Button)
     expect(button.exists()).toBe(true)
-    expect(button.props('label')).toBe(SelectedVersion.NIGHTLY)
+    expect(button.props('label')).toBe('nightly')
   })
 
   it('toggles the popover when button is clicked', async () => {
