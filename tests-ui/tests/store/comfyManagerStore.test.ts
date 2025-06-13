@@ -4,10 +4,10 @@ import { nextTick, ref } from 'vue'
 
 import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import {
-  InstalledPacksResponse,
-  ManagerPackInstalled
-} from '@/types/comfyManagerTypes'
+import { components } from '@/types/generatedManagerTypes'
+
+type InstalledPacksResponse = components['schemas']['InstalledPacksResponse']
+type ManagerPackInstalled = components['schemas']['ManagerPackInstalled']
 
 vi.mock('@/services/comfyManagerService', () => ({
   useComfyManagerService: vi.fn()
