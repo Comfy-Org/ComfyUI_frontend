@@ -4,12 +4,12 @@ import type { InjectionKey, ModelRef } from 'vue'
 
 export interface TreeNode extends PrimeVueTreeNode {
   label: string
-  children?: TreeNode[]
+  children?: this[]
 }
 
 export interface TreeExplorerNode<T = any> extends TreeNode {
   data?: T
-  children?: TreeExplorerNode<T>[]
+  children?: this[]
   icon?: string
   /**
    * Function to override what icon to use for the node.
@@ -62,7 +62,7 @@ export interface TreeExplorerNode<T = any> extends TreeNode {
 }
 
 export interface RenderedTreeExplorerNode<T = any> extends TreeExplorerNode<T> {
-  children?: RenderedTreeExplorerNode<T>[]
+  children?: this[]
   icon: string
   type: 'folder' | 'node'
   /** Total number of leaves in the subtree */
