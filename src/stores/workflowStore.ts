@@ -1,4 +1,4 @@
-import type { Subgraph } from '@comfyorg/litegraph'
+import type { LGraph, Subgraph } from '@comfyorg/litegraph'
 import _ from 'lodash'
 import { defineStore } from 'pinia'
 import { type Raw, computed, markRaw, ref, shallowRef, watch } from 'vue'
@@ -162,6 +162,7 @@ export interface WorkflowStore {
   activeSubgraph: Subgraph | undefined
   /** Updates the {@link subgraphNamePath} and {@link isSubgraphActive} values. */
   updateActiveGraph: () => void
+  executionIdToCurrentId: (id: string) => any
 }
 
 export const useWorkflowStore = defineStore('workflow', () => {
@@ -442,11 +443,46 @@ export const useWorkflowStore = defineStore('workflow', () => {
     isSubgraphActive.value = isSubgraph(subgraph)
   }
 
+  const subgraphNodeIdToSubgraph = (id: string, graph: LGraph | Subgraph) => {
+    const node = graph.getNodeById(id)
+    if (node?.isSubgraphNode()) return node.subgraph
+  }
+
+  const getSubgraphsFromInstanceIds = (
+    currentGraph: LGraph | Subgraph,
+    subgraphNodeIds: string[],
+    subgraphs: Subgraph[] = []
+  ): Subgraph[] => {
+    const currentPart = subgraphNodeIds.shift()
+    if (currentPart === undefined) return subgraphs
+
+    const subgraph = subgraphNodeIdToSubgraph(currentPart, currentGraph)
+    if (subgraph === undefined) throw new Error('Subgraph not found')
+
+    subgraphs.push(subgraph)
+    return getSubgraphsFromInstanceIds(subgraph, subgraphNodeIds, subgraphs)
+  }
+
   const executionIdToCurrentId = (id: string) => {
     const subgraph = activeSubgraph.value
 
+    // Short-circuit: ID belongs to the parent workflow / no active subgraph
     if (!id.includes(':')) {
-      return subgraph
+      return !subgraph ? id : undefined
+    } else if (!subgraph) {
+      return
+    }
+
+    // Parse the hierarchical ID (e.g., "123:456:789")
+    const subgraphNodeIds = id.split(':')
+
+    // Start from the root graph
+    const { graph } = comfyApp
+
+    // If the last subgraph is the active subgraph, return the node ID
+    const subgraphs = getSubgraphsFromInstanceIds(graph, subgraphNodeIds)
+    if (subgraphs.at(-1) === subgraph) {
+      return subgraphNodeIds.at(-1)
     }
   }
 
