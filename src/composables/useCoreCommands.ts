@@ -4,6 +4,7 @@ import {
   LGraphNode,
   LiteGraph
 } from '@comfyorg/litegraph'
+import { Point } from '@comfyorg/litegraph'
 
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import {
@@ -26,6 +27,8 @@ import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+
+const moveSelectedNodesVersionAdded = '1.22.2'
 
 export function useCoreCommands(): ComfyCommand[] {
   const workflowService = useWorkflowService()
@@ -56,6 +59,20 @@ export function useCoreCommands(): ComfyCommand[] {
         node.mode = mode
       }
     })
+  }
+
+  const moveSelectedNodes = (
+    positionUpdater: (pos: Point, gridSize: number) => Point
+  ) => {
+    const selectedNodes = getSelectedNodes()
+    if (selectedNodes.length === 0) return
+
+    const gridSize = useSettingStore().get('Comfy.SnapToGrid.GridSize')
+    selectedNodes.forEach((node) => {
+      node.pos = positionUpdater(node.pos, gridSize)
+    })
+    app.canvas.state.selectionChanged = true
+    app.canvas.setDirty(true, true)
   }
 
   const commands = [
@@ -673,6 +690,34 @@ export function useCoreCommands(): ComfyCommand[] {
       function: async () => {
         await firebaseAuthActions.logout()
       }
+    },
+    {
+      id: 'Comfy.Canvas.MoveSelectedNodes.Up',
+      icon: 'pi pi-arrow-up',
+      label: 'Move Selected Nodes Up',
+      versionAdded: moveSelectedNodesVersionAdded,
+      function: () => moveSelectedNodes(([x, y], gridSize) => [x, y - gridSize])
+    },
+    {
+      id: 'Comfy.Canvas.MoveSelectedNodes.Down',
+      icon: 'pi pi-arrow-down',
+      label: 'Move Selected Nodes Down',
+      versionAdded: moveSelectedNodesVersionAdded,
+      function: () => moveSelectedNodes(([x, y], gridSize) => [x, y + gridSize])
+    },
+    {
+      id: 'Comfy.Canvas.MoveSelectedNodes.Left',
+      icon: 'pi pi-arrow-left',
+      label: 'Move Selected Nodes Left',
+      versionAdded: moveSelectedNodesVersionAdded,
+      function: () => moveSelectedNodes(([x, y], gridSize) => [x - gridSize, y])
+    },
+    {
+      id: 'Comfy.Canvas.MoveSelectedNodes.Right',
+      icon: 'pi pi-arrow-right',
+      label: 'Move Selected Nodes Right',
+      versionAdded: moveSelectedNodesVersionAdded,
+      function: () => moveSelectedNodes(([x, y], gridSize) => [x + gridSize, y])
     }
   ]
 

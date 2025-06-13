@@ -100,18 +100,23 @@ export interface ViewHelperManagerInterface extends BaseManager {
 }
 
 export interface PreviewManagerInterface extends BaseManager {
-  previewRenderer: THREE.WebGLRenderer | null
   previewCamera: THREE.Camera
   previewContainer: HTMLDivElement
   showPreview: boolean
   previewWidth: number
   createCapturePreview(container: Element | HTMLElement): void
   updatePreviewSize(): void
-  updatePreviewRender(): void
   togglePreview(showPreview: boolean): void
   setTargetSize(width: number, height: number): void
   handleResize(): void
   updateBackgroundTexture(texture: THREE.Texture | null): void
+  getPreviewViewport(): {
+    left: number
+    bottom: number
+    width: number
+    height: number
+  } | null
+  renderPreview(): void
 }
 
 export interface EventManagerInterface {

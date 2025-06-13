@@ -44,6 +44,18 @@
   "Comfy_Canvas_FitView": {
     "label": "适应视图到选中节点"
   },
+  "Comfy_Canvas_MoveSelectedNodes_Down": {
+    "label": "下移选中的节点"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Left": {
+    "label": "向左移动选中节点"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Right": {
+    "label": "向右移动选中节点"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Up": {
+    "label": "上移选中的节点"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "重置视图"
   },

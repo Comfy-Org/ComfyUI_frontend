@@ -33,7 +33,7 @@ jobs:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       working-directory: ComfyUI_frontend
     - name: Create Pull Request
-      uses: peter-evans/create-pull-request@v7
+      uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e
       with:
         token: ${{ secrets.PR_GH_TOKEN }}
         commit-message: "Update locales for node definitions"

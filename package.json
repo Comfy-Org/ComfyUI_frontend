@@ -1,7 +1,7 @@
 {
   "name": "@comfyorg/comfyui-frontend",
   "private": true,
-  "version": "1.22.0",
+  "version": "1.22.1",
   "type": "module",
   "repository": "https://github.com/Comfy-Org/ComfyUI_frontend",
   "homepage": "https://comfy.org",
@@ -29,10 +29,11 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.8.0",
+    "@executeautomation/playwright-mcp-server": "^1.0.5",
     "@iconify/json": "^2.2.245",
     "@lobehub/i18n-cli": "^1.20.0",
     "@pinia/testing": "^0.1.5",
-    "@playwright/test": "^1.44.1",
+    "@playwright/test": "^1.52.0",
     "@trivago/prettier-plugin-sort-imports": "^5.2.0",
     "@types/dompurify": "^3.0.5",
     "@types/fs-extra": "^11.0.4",
