@@ -61,8 +61,8 @@ const mergeNumericInputSpec = <T extends IntInputSpec | FloatInputSpec>(
   }
 
   return mergeCommonInputSpec(
-    [type, { ...options1, ...mergedOptions }] as unknown as T,
-    [type, { ...options2, ...mergedOptions }] as unknown as T
+    [type, { ...options1, ...mergedOptions }] as T,
+    [type, { ...options2, ...mergedOptions }] as T
   )
 }
 
@@ -84,8 +84,8 @@ const mergeComboInputSpec = <T extends ComboInputSpec | ComboInputSpecV2>(
   }
 
   return mergeCommonInputSpec(
-    ['COMBO', { ...options1, options: intersection }] as unknown as T,
-    ['COMBO', { ...options2, options: intersection }] as unknown as T
+    ['COMBO', { ...options1, options: intersection }] as T,
+    ['COMBO', { ...options2, options: intersection }] as T
   )
 }
 
@@ -107,9 +107,7 @@ const mergeCommonInputSpec = <T extends InputSpec>(
     return value1 === value2 || (_.isNil(value1) && _.isNil(value2))
   })
 
-  return mergeIsValid
-    ? ([type, { ...options1, ...options2 }] as unknown as T)
-    : null
+  return mergeIsValid ? ([type, { ...options1, ...options2 }] as T) : null
 }
 
 /**
