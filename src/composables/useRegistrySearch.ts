@@ -3,12 +3,12 @@ import type { Hit } from 'algoliasearch/dist/lite/browser'
 import { memoize, orderBy } from 'lodash'
 import { computed, onUnmounted, ref, watch } from 'vue'
 
-import {
+import { useAlgoliaSearchService } from '@/services/algoliaSearchService'
+import type {
   AlgoliaNodePack,
-  SearchAttribute,
-  useAlgoliaSearchService
-} from '@/services/algoliaSearchService'
-import type { NodesIndexSuggestion } from '@/services/algoliaSearchService'
+  NodesIndexSuggestion,
+  SearchAttribute
+} from '@/types/algoliaTypes'
 import { SortableAlgoliaField } from '@/types/comfyManagerTypes'
 
 const SEARCH_DEBOUNCE_TIME = 320

@@ -62,7 +62,7 @@ import { useI18n } from 'vue-i18n'
 
 import PackInstallAllButton from '@/components/dialog/content/manager/button/PackInstallAllButton.vue'
 import SearchFilterDropdown from '@/components/dialog/content/manager/registrySearchBar/SearchFilterDropdown.vue'
-import type { NodesIndexSuggestion } from '@/services/algoliaSearchService'
+import type { NodesIndexSuggestion } from '@/types/algoliaTypes'
 import {
   type SearchOption,
   SortableAlgoliaField
