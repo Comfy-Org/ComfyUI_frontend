@@ -92,50 +92,26 @@ export const useExecutionStore = defineStore('execution', () => {
   })
 
   function bindExecutionEvents() {
-    api.addEventListener(
-      'execution_start',
-      handleExecutionStart as EventListener
-    )
-    api.addEventListener(
-      'execution_cached',
-      handleExecutionCached as EventListener
-    )
-    api.addEventListener('executed', handleExecuted as EventListener)
-    api.addEventListener('executing', handleExecuting as EventListener)
-    api.addEventListener('progress', handleProgress as EventListener)
-    api.addEventListener('status', handleStatus as EventListener)
-    api.addEventListener(
-      'execution_error',
-      handleExecutionError as EventListener
-    )
+    api.addEventListener('execution_start', handleExecutionStart)
+    api.addEventListener('execution_cached', handleExecutionCached)
+    api.addEventListener('executed', handleExecuted)
+    api.addEventListener('executing', handleExecuting)
+    api.addEventListener('progress', handleProgress)
+    api.addEventListener('status', handleStatus)
+    api.addEventListener('execution_error', handleExecutionError)
   }
-  api.addEventListener('progress_text', handleProgressText as EventListener)
-  api.addEventListener(
-    'display_component',
-    handleDisplayComponent as EventListener
-  )
+  api.addEventListener('progress_text', handleProgressText)
+  api.addEventListener('display_component', handleDisplayComponent)
 
   function unbindExecutionEvents() {
-    api.removeEventListener(
-      'execution_start',
-      handleExecutionStart as EventListener
-    )
-    api.removeEventListener(
-      'execution_cached',
-      handleExecutionCached as EventListener
-    )
-    api.removeEventListener('executed', handleExecuted as EventListener)
-    api.removeEventListener('executing', handleExecuting as EventListener)
-    api.removeEventListener('progress', handleProgress as EventListener)
-    api.removeEventListener('status', handleStatus as EventListener)
-    api.removeEventListener(
-      'execution_error',
-      handleExecutionError as EventListener
-    )
-    api.removeEventListener(
-      'progress_text',
-      handleProgressText as EventListener
-    )
+    api.removeEventListener('execution_start', handleExecutionStart)
+    api.removeEventListener('execution_cached', handleExecutionCached)
+    api.removeEventListener('executed', handleExecuted)
+    api.removeEventListener('executing', handleExecuting)
+    api.removeEventListener('progress', handleProgress)
+    api.removeEventListener('status', handleStatus)
+    api.removeEventListener('execution_error', handleExecutionError)
+    api.removeEventListener('progress_text', handleProgressText)
   }
 
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
@@ -184,7 +160,7 @@ export const useExecutionStore = defineStore('execution', () => {
       clientId.value = api.clientId
 
       // Once we've received the clientId we no longer need to listen
-      api.removeEventListener('status', handleStatus as EventListener)
+      api.removeEventListener('status', handleStatus)
     }
   }
 
