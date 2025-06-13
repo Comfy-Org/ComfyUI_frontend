@@ -35,6 +35,9 @@
   "Comfy-Desktop_Restart": {
     "label": "재시작"
   },
+  "Comfy_3DEditor_Open3DEditor": {
+    "label": "선택한 노드에 대해 3D 에디터(베타) 열기"
+  },
   "Comfy_BrowseTemplates": {
     "label": "템플릿 탐색"
   },

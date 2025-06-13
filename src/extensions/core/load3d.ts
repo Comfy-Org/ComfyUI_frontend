@@ -12,10 +12,13 @@ import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { t } from '@/i18n'
 import { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { api } from '@/scripts/api'
+import { ComfyApp, app } from '@/scripts/app'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
+import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLoad3dService } from '@/services/load3dService'
 import { useToastStore } from '@/stores/toastStore'
+import { isLoad3dNode } from '@/utils/litegraphUtil'
 
 useExtensionService().registerExtension({
   name: 'Comfy.Load3D',
@@ -105,6 +108,27 @@ useExtensionService().registerExtension({
       },
       defaultValue: 0.5,
       experimental: true
+    }
+  ],
+  commands: [
+    {
+      id: 'Comfy.3DEditor.Open3DEditor',
+      icon: 'pi pi-pencil',
+      label: 'Open 3D Editor (Beta) for Selected Node',
+      function: () => {
+        const selectedNodes = app.canvas.selected_nodes
+        if (!selectedNodes || Object.keys(selectedNodes).length !== 1) return
+
+        const selectedNode = selectedNodes[Object.keys(selectedNodes)[0]]
+
+        if (!isLoad3dNode(selectedNode)) return
+
+        ComfyApp.copyToClipspace(selectedNode)
+        // @ts-expect-error clipspace_return_node is an extension property added at runtime
+        ComfyApp.clipspace_return_node = selectedNode
+
+        useDialogService().showLoad3dEditorDialog({ node: selectedNode })
+      }
     }
   ],
   getCustomWidgets() {

@@ -611,7 +611,8 @@ audio.comfy-audio.empty-audio-widget {
 .comfy-load-3d canvas,
 .comfy-load-3d-animation canvas,
 .comfy-preview-3d canvas,
-.comfy-preview-3d-animation canvas{
+.comfy-preview-3d-animation canvas,
+.comfy-load-3d-editor canvas{
   display: flex;
   width: 100% !important;
   height: 100% !important;

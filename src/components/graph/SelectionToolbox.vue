@@ -11,6 +11,7 @@
     <BypassButton />
     <PinButton />
     <MaskEditorButton />
+    <Load3DEditorButton />
     <DeleteButton />
     <RefreshButton />
     <ExtensionCommandButton
@@ -32,6 +33,7 @@ import DeleteButton from '@/components/graph/selectionToolbox/DeleteButton.vue'
 import ExecuteButton from '@/components/graph/selectionToolbox/ExecuteButton.vue'
 import ExtensionCommandButton from '@/components/graph/selectionToolbox/ExtensionCommandButton.vue'
 import HelpButton from '@/components/graph/selectionToolbox/HelpButton.vue'
+import Load3DEditorButton from '@/components/graph/selectionToolbox/Load3DEditorButton.vue'
 import MaskEditorButton from '@/components/graph/selectionToolbox/MaskEditorButton.vue'
 import PinButton from '@/components/graph/selectionToolbox/PinButton.vue'
 import RefreshButton from '@/components/graph/selectionToolbox/RefreshButton.vue'
