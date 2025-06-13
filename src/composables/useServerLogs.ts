@@ -1,24 +1,30 @@
 import { useEventListener } from '@vueuse/core'
-import { onUnmounted, ref } from 'vue'
+import { ref } from 'vue'
 
 import { LogsWsMessage } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
+import { components } from '@/types/generatedManagerTypes'
 
 const LOGS_MESSAGE_TYPE = 'logs'
+const MANAGER_WS_TASK_DONE_NAME = 'cm-task-completed'
+
+type ManagerWsTaskDoneMsg = components['schemas']['MessageTaskDone']
 
 interface UseServerLogsOptions {
+  ui_id: string
   immediate?: boolean
   messageFilter?: (message: string) => boolean
 }
 
-export const useServerLogs = (options: UseServerLogsOptions = {}) => {
+export const useServerLogs = (options: UseServerLogsOptions) => {
   const {
     immediate = false,
     messageFilter = (msg: string) => Boolean(msg.trim())
   } = options
 
   const logs = ref<string[]>([])
-  let stop: ReturnType<typeof useEventListener> | null = null
+  let stopLogs: ReturnType<typeof useEventListener> | null = null
+  let stopTaskDone: ReturnType<typeof useEventListener> | null = null
 
   const isValidLogEvent = (event: CustomEvent<LogsWsMessage>) =>
     event?.type === LOGS_MESSAGE_TYPE && event.detail?.entries?.length > 0
@@ -28,33 +34,55 @@ export const useServerLogs = (options: UseServerLogsOptions = {}) => {
 
   const handleLogMessage = (event: CustomEvent<LogsWsMessage>) => {
     if (isValidLogEvent(event)) {
-      logs.value.push(...parseLogMessage(event))
+      const messages = parseLogMessage(event)
+      if (messages.length > 0) {
+        logs.value.push(...messages)
+      }
     }
   }
 
-  const start = async () => {
+  const handleTaskDone = (event: CustomEvent<ManagerWsTaskDoneMsg>) => {
+    if (event?.type === MANAGER_WS_TASK_DONE_NAME) {
+      const { state } = event.detail
+      // Check if our task is now in the history (completed)
+      if (state.history[options.ui_id]) {
+        void stopListening()
+      }
+    }
+  }
+
+  const startListening = async () => {
     await api.subscribeLogs(true)
-    stop = useEventListener(api, LOGS_MESSAGE_TYPE, handleLogMessage)
+    stopLogs = useEventListener(api, LOGS_MESSAGE_TYPE, handleLogMessage)
+    stopTaskDone = useEventListener(
+      api,
+      MANAGER_WS_TASK_DONE_NAME,
+      handleTaskDone
+    )
   }
 
   const stopListening = async () => {
-    stop?.()
-    stop = null
+    console.log('stopListening')
+    stopLogs?.()
+    stopTaskDone?.()
+    stopLogs = null
+    stopTaskDone = null
     await api.subscribeLogs(false)
   }
 
   if (immediate) {
-    void start()
+    void startListening()
   }
 
-  onUnmounted(async () => {
+  const cleanup = async () => {
     await stopListening()
     logs.value = []
-  })
+  }
 
   return {
     logs,
-    startListening: start,
-    stopListening
+    startListening,
+    stopListening,
+    cleanup
   }
 }
