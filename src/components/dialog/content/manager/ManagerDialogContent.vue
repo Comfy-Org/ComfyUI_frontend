@@ -430,7 +430,13 @@ whenever(selectedNodePack, async () => {
   if (data?.id === pack.id) {
     lastFetchedPackId.value = pack.id
     const mergedPack = merge({}, pack, data)
-    selectedNodePacks.value = [mergedPack]
+    // Update the pack in current selection without changing selection state
+    const packIndex = selectedNodePacks.value.findIndex(
+      (p) => p.id === mergedPack.id
+    )
+    if (packIndex !== -1) {
+      selectedNodePacks.value.splice(packIndex, 1, mergedPack)
+    }
     // Replace pack in displayPacks so that children receive a fresh prop reference
     const idx = displayPacks.value.findIndex((p) => p.id === mergedPack.id)
     if (idx !== -1) {
