@@ -30,7 +30,10 @@
       </div>
     </template>
   </ListBox>
-  <div v-if="isManagerInstalled" class="flex justify-end py-3">
+  <div
+    v-if="isManagerInstalled && !isLegacyManager"
+    class="flex justify-end py-3"
+  >
     <Button label="Open Manager" size="small" outlined @click="openManager" />
   </div>
 </template>
@@ -38,9 +41,10 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import ListBox from 'primevue/listbox'
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
+import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useDialogService } from '@/services/dialogService'
 import { useAboutPanelStore } from '@/stores/aboutPanelStore'
 import type { MissingNodeType } from '@/types/comfy'
@@ -62,6 +66,7 @@ const isManagerInstalled = computed(() => {
       badge.url.includes('ComfyUI-Manager')
   )
 })
+const isLegacyManager = ref(false)
 
 const uniqueNodes = computed(() => {
   const seenTypes = new Set()
@@ -89,6 +94,13 @@ const openManager = () => {
     initialTab: ManagerTab.Missing
   })
 }
+
+onMounted(async () => {
+  const isLegacyResponse = await useComfyManagerService().isLegacyManagerUI()
+  if (isLegacyResponse?.is_legacy_manager_ui) {
+    isLegacyManager.value = true
+  }
+})
 </script>
 
 <style scoped>

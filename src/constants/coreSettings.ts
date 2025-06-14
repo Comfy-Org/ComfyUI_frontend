@@ -847,5 +847,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     defaultValue: false,
     versionAdded: '1.19.1'
+  },
+  {
+    id: 'Comfy.Memory.AllowManualUnload',
+    name: 'Allow manual unload of models and execution cache via user command',
+    type: 'hidden',
+    defaultValue: true,
+    versionAdded: '1.18.0'
   }
 ]

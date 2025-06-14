@@ -24,22 +24,22 @@ describe('useServerLogs', () => {
   })
 
   it('should initialize with empty logs array', () => {
-    const { logs } = useServerLogs()
+    const { logs } = useServerLogs({ ui_id: 'test-ui-id' })
     expect(logs.value).toEqual([])
   })
 
   it('should not subscribe to logs by default', () => {
-    useServerLogs()
+    useServerLogs({ ui_id: 'test-ui-id' })
     expect(api.subscribeLogs).not.toHaveBeenCalled()
   })
 
   it('should subscribe to logs when immediate is true', () => {
-    useServerLogs({ immediate: true })
+    useServerLogs({ ui_id: 'test-ui-id', immediate: true })
     expect(api.subscribeLogs).toHaveBeenCalledWith(true)
   })
 
   it('should start listening when startListening is called', async () => {
-    const { startListening } = useServerLogs()
+    const { startListening } = useServerLogs({ ui_id: 'test-ui-id' })
 
     await startListening()
 
@@ -47,7 +47,9 @@ describe('useServerLogs', () => {
   })
 
   it('should stop listening when stopListening is called', async () => {
-    const { startListening, stopListening } = useServerLogs()
+    const { startListening, stopListening } = useServerLogs({
+      ui_id: 'test-ui-id'
+    })
 
     await startListening()
     await stopListening()
@@ -56,7 +58,7 @@ describe('useServerLogs', () => {
   })
 
   it('should register event listener when starting', async () => {
-    const { startListening } = useServerLogs()
+    const { startListening } = useServerLogs({ ui_id: 'test-ui-id' })
 
     await startListening()
 
@@ -68,7 +70,7 @@ describe('useServerLogs', () => {
   })
 
   it('should handle log messages correctly', async () => {
-    const { logs, startListening } = useServerLogs()
+    const { logs, startListening } = useServerLogs({ ui_id: 'test-ui-id' })
 
     await startListening()
 
@@ -93,6 +95,7 @@ describe('useServerLogs', () => {
 
   it('should use the message filter if provided', async () => {
     const { logs, startListening } = useServerLogs({
+      ui_id: 'test-ui-id',
       messageFilter: (msg) => msg !== 'remove me'
     })
 

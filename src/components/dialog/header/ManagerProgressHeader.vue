@@ -18,13 +18,15 @@
 
 <script setup lang="ts">
 import TabMenu from 'primevue/tabmenu'
-import { ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useManagerProgressDialogStore } from '@/stores/comfyManagerStore'
 
 const progressDialogContent = useManagerProgressDialogStore()
-const activeTabIndex = ref(0)
+const activeTabIndex = computed(() => {
+  return progressDialogContent.getActiveTabIndex()
+})
 const { t } = useI18n()
 const tabs = [
   { label: t('manager.installationQueue') },

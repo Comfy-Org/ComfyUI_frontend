@@ -139,6 +139,7 @@ export const useDialogService = () => {
       headerComponent: ManagerHeader,
       dialogComponentProps: {
         closable: false,
+        modal: false,
         pt: {
           header: { class: '!p-0 !m-0' },
           content: { class: '!px-0 h-[83vh] w-[90vw] overflow-y-hidden' }
