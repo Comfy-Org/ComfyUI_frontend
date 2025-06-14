@@ -1,5 +1,8 @@
 import type { InjectionKey, Ref } from 'vue'
 
+import type { AlgoliaNodePack } from '@/types/algoliaTypes'
+import type { components } from '@/types/comfyRegistryTypes'
+
 export const IsInstallingKey: InjectionKey<Ref<boolean>> =
   Symbol('isInstalling')
 
@@ -39,4 +42,20 @@ export type TaskLog = {
 export interface UseNodePacksOptions {
   immediate?: boolean
   maxConcurrent?: number
+}
+
+// Node pack types from different sources
+export type RegistryPack = components['schemas']['Node']
+
+// MergedNodePack is the intersection of AlgoliaNodePack and RegistryPack
+// created by lodash merge operation: merge({}, algoliaNodePack, registryPack)
+export type MergedNodePack = AlgoliaNodePack & RegistryPack
+
+/**
+ * Type guard to check if a node pack is from Algolia (has comfy_nodes)
+ */
+export function isMergedNodePack(
+  pack: MergedNodePack | RegistryPack
+): pack is MergedNodePack {
+  return 'comfy_nodes' in pack && Array.isArray(pack.comfy_nodes)
 }
