@@ -45,6 +45,22 @@ const zProgressWsMessage = z.object({
   node: zNodeId
 })
 
+const zNodeProgressState = z.object({
+  value: z.number(),
+  max: z.number(),
+  state: z.enum(['pending', 'running', 'finished', 'error']),
+  node_id: zNodeId,
+  prompt_id: zPromptId,
+  display_node_id: zNodeId.optional(),
+  parent_node_id: zNodeId.optional(),
+  real_node_id: zNodeId.optional()
+})
+
+const zProgressStateWsMessage = z.object({
+  prompt_id: zPromptId,
+  nodes: z.record(zNodeId, zNodeProgressState)
+})
+
 const zExecutingWsMessage = z.object({
   node: zNodeId,
   display_node: zNodeId,
@@ -129,6 +145,8 @@ export type ProgressTextWsMessage = z.infer<typeof zProgressTextWsMessage>
 export type DisplayComponentWsMessage = z.infer<
   typeof zDisplayComponentWsMessage
 >
+export type NodeProgressState = z.infer<typeof zNodeProgressState>
+export type ProgressStateWsMessage = z.infer<typeof zProgressStateWsMessage>
 // End of ws messages
 
 const zPromptInputItem = z.object({
