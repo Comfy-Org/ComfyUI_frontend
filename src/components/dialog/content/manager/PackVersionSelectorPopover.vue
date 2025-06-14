@@ -62,7 +62,7 @@ import { whenever } from '@vueuse/core'
 import Button from 'primevue/button'
 import Listbox from 'primevue/listbox'
 import ProgressSpinner from 'primevue/progressspinner'
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ContentDivider from '@/components/common/ContentDivider.vue'
@@ -161,9 +161,11 @@ const onNodePackChange = async () => {
 }
 
 whenever(
-  () => nodePack,
-  () => {
-    void onNodePackChange()
+  () => nodePack.id,
+  (nodePackId, oldNodePackId) => {
+    if (nodePackId !== oldNodePackId) {
+      void onNodePackChange()
+    }
   },
   { deep: true, immediate: true }
 )
@@ -182,8 +184,4 @@ const handleSubmit = async () => {
   isQueueing.value = false
   emit('submit')
 }
-
-onUnmounted(() => {
-  managerStore.installPack.clear()
-})
 </script>

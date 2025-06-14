@@ -32,7 +32,7 @@
             />
           </MetadataRow>
           <MetadataRow :label="t('manager.version')">
-            <PackVersionBadge :node-pack="nodePack" />
+            <PackVersionBadge :node-pack="nodePack" :is-selected="false" />
           </MetadataRow>
         </div>
         <div class="mb-6 overflow-hidden">

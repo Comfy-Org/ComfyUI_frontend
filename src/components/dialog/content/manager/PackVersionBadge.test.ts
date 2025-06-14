@@ -62,6 +62,7 @@ describe('PackVersionBadge', () => {
     return mount(PackVersionBadge, {
       props: {
         nodePack: mockNodePack,
+        isSelected: false,
         ...props
       },
       global: {
@@ -161,5 +162,59 @@ describe('PackVersionBadge', () => {
 
     // Verify that the hide method was called
     expect(mockHide).toHaveBeenCalled()
+  })
+
+  describe('selection state changes', () => {
+    it('closes the popover when card is deselected', async () => {
+      const wrapper = mountComponent({
+        props: { isSelected: true }
+      })
+
+      // Change isSelected from true to false
+      await wrapper.setProps({ isSelected: false })
+      await nextTick()
+
+      // Verify that the hide method was called
+      expect(mockHide).toHaveBeenCalled()
+    })
+
+    it('does not close the popover when card is selected', async () => {
+      const wrapper = mountComponent({
+        props: { isSelected: false }
+      })
+
+      // Change isSelected from false to true
+      await wrapper.setProps({ isSelected: true })
+      await nextTick()
+
+      // Verify that the hide method was NOT called
+      expect(mockHide).not.toHaveBeenCalled()
+    })
+
+    it('does not close the popover when isSelected remains false', async () => {
+      const wrapper = mountComponent({
+        props: { isSelected: false }
+      })
+
+      // Change isSelected from false to false (no change)
+      await wrapper.setProps({ isSelected: false })
+      await nextTick()
+
+      // Verify that the hide method was NOT called
+      expect(mockHide).not.toHaveBeenCalled()
+    })
+
+    it('does not close the popover when isSelected remains true', async () => {
+      const wrapper = mountComponent({
+        props: { isSelected: true }
+      })
+
+      // Change isSelected from true to true (no change)
+      await wrapper.setProps({ isSelected: true })
+      await nextTick()
+
+      // Verify that the hide method was NOT called
+      expect(mockHide).not.toHaveBeenCalled()
+    })
   })
 })
