@@ -70,7 +70,10 @@
                     >
                       <i class="pi pi-arrow-circle-up text-blue-600" />
                     </div>
-                    <PackVersionBadge :node-pack="nodePack" />
+                    <PackVersionBadge
+                      :node-pack="nodePack"
+                      :is-selected="isSelected"
+                    />
                   </div>
                   <div
                     v-if="formattedLatestVersionDate"
