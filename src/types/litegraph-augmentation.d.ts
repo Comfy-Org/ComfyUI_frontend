@@ -75,6 +75,22 @@ declare module '@comfyorg/litegraph' {
   // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   interface BaseWidget extends IBaseWidget {}
 
+  /** Actual members required for execution. */
+  type ExecutableLGraphNode = Pick<
+    LGraphNode,
+    | 'id'
+    | 'type'
+    | 'comfyClass'
+    | 'title'
+    | 'mode'
+    | 'inputs'
+    | 'widgets'
+    | 'isVirtualNode'
+    | 'applyToGraph'
+    | 'getInputNode'
+    | 'getInputLink'
+  >
+
   interface LGraphNode {
     constructor: LGraphNodeConstructor
 
@@ -88,7 +104,10 @@ declare module '@comfyorg/litegraph' {
     /** @deprecated groupNode */
     setInnerNodes?(nodes: LGraphNode[]): void
     /** Originally a group node API. */
-    getInnerNodes?(): LGraphNode[]
+    getInnerNodes?(
+      nodes?: ExecutableLGraphNode[],
+      subgraphs?: WeakSet<LGraphNode>
+    ): ExecutableLGraphNode[]
     /** @deprecated groupNode */
     convertToNodes?(): LGraphNode[]
     recreate?(): Promise<LGraphNode>
