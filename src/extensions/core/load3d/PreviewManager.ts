@@ -5,7 +5,7 @@ import { EventManagerInterface, PreviewManagerInterface } from './interfaces'
 
 export class PreviewManager implements PreviewManagerInterface {
   previewCamera: THREE.Camera
-  previewContainer: HTMLDivElement = {} as HTMLDivElement
+  previewContainer: HTMLDivElement = null!
   showPreview: boolean = true
   previewWidth: number = 120
 
