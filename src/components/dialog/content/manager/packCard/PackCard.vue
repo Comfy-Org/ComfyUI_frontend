@@ -2,7 +2,7 @@
   <Card
     class="w-full h-full inline-flex flex-col justify-between items-start overflow-hidden rounded-2xl shadow-elevation-3 dark-theme:bg-dark-elevation-2 transition-all duration-200"
     :class="{
-      'outline outline-[6px] outline-[var(--p-primary-color)]': isSelected,
+      'selected-card': isSelected,
       'opacity-60': isDisabled
     }"
     :pt="{
@@ -158,3 +158,22 @@ const formattedLatestVersionDate = computed(() => {
   })
 })
 </script>
+
+<style scoped>
+.selected-card {
+  position: relative;
+}
+
+.selected-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 6px solid var(--p-primary-color);
+  border-radius: 1rem;
+  pointer-events: none;
+  z-index: 100;
+}
+</style>
