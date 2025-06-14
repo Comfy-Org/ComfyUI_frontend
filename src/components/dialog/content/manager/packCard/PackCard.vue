@@ -1,13 +1,13 @@
 <template>
   <Card
-    class="w-full h-full inline-flex flex-col justify-between items-start overflow-hidden rounded-2xl shadow-elevation-3 dark-theme:bg-dark-elevation-2 transition-all duration-200"
+    class="w-full h-full inline-flex flex-col justify-between items-start overflow-hidden rounded-lg shadow-elevation-3 dark-theme:bg-dark-elevation-2 transition-all duration-200"
     :class="{
       'selected-card': isSelected,
       'opacity-60': isDisabled
     }"
     :pt="{
-      body: { class: 'p-0 flex flex-col w-full h-full rounded-2xl gap-0' },
-      content: { class: 'flex-1 flex flex-col rounded-2xl min-h-0' },
+      body: { class: 'p-0 flex flex-col w-full h-full rounded-lg gap-0' },
+      content: { class: 'flex-1 flex flex-col rounded-lg min-h-0' },
       title: { class: 'w-full h-full rounded-t-lg cursor-pointer' },
       footer: { class: 'p-0 m-0' }
     }"
@@ -171,8 +171,8 @@ const formattedLatestVersionDate = computed(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  border: 6px solid var(--p-primary-color);
-  border-radius: 1rem;
+  border: 3px solid var(--p-primary-color);
+  border-radius: 0.5rem;
   pointer-events: none;
   z-index: 100;
 }
