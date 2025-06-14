@@ -23,6 +23,9 @@ export const useTextPreviewWidget = (
       name: inputSpec.name,
       component: TextPreviewWidget,
       inputSpec,
+      componentProps: {
+        nodeId: node.id
+      },
       options: {
         getValue: () => widgetValue.value,
         setValue: (value: string | object) => {
