@@ -7,7 +7,7 @@ on:
       tag:
         description: "npm tag (`ni pacakge@tag`)"
         required: true
-        default: "dev"
+        default: "subgraph"
       gh-release:
         description: "Draft a GitHub release"
         type: boolean
