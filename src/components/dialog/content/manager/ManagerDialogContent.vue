@@ -93,7 +93,14 @@
 import { whenever } from '@vueuse/core'
 import { merge } from 'lodash'
 import Button from 'primevue/button'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  onUnmounted,
+  ref,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ContentDivider from '@/components/common/ContentDivider.vue'
@@ -106,6 +113,7 @@ import PackCard from '@/components/dialog/content/manager/packCard/PackCard.vue'
 import RegistrySearchBar from '@/components/dialog/content/manager/registrySearchBar/RegistrySearchBar.vue'
 import GridSkeleton from '@/components/dialog/content/manager/skeleton/GridSkeleton.vue'
 import { useResponsiveCollapse } from '@/composables/element/useResponsiveCollapse'
+import { useManagerStatePersistence } from '@/composables/manager/useManagerStatePersistence'
 import { useInstalledPacks } from '@/composables/nodePack/useInstalledPacks'
 import { usePackUpdateStatus } from '@/composables/nodePack/usePackUpdateStatus'
 import { useWorkflowPacks } from '@/composables/nodePack/useWorkflowPacks'
@@ -116,13 +124,15 @@ import type { TabItem } from '@/types/comfyManagerTypes'
 import { ManagerTab } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
 
-const { initialTab = ManagerTab.All } = defineProps<{
-  initialTab: ManagerTab
+const { initialTab } = defineProps<{
+  initialTab?: ManagerTab
 }>()
 
 const { t } = useI18n()
 const comfyManagerStore = useComfyManagerStore()
 const { getPackById } = useComfyRegistryStore()
+const persistedState = useManagerStatePersistence()
+const initialState = persistedState.loadStoredState()
 
 const GRID_STYLE = {
   display: 'grid',
@@ -156,8 +166,10 @@ const tabs = ref<TabItem[]>([
     icon: 'pi-sync'
   }
 ])
+
+const initialTabId = initialTab ?? initialState.selectedTabId
 const selectedTab = ref<TabItem>(
-  tabs.value.find((tab) => tab.id === initialTab) || tabs.value[0]
+  tabs.value.find((tab) => tab.id === initialTabId) || tabs.value[0]
 )
 
 const {
@@ -168,7 +180,11 @@ const {
   searchMode,
   sortField,
   suggestions
-} = useRegistrySearch()
+} = useRegistrySearch({
+  initialSortField: initialState.sortField,
+  initialSearchMode: initialState.searchMode,
+  initialSearchQuery: initialState.searchQuery
+})
 pageNumber.value = 0
 const onApproachEnd = () => {
   pageNumber.value++
@@ -454,6 +470,15 @@ watch(searchQuery, () => {
   if (gridContainer) {
     gridContainer.scrollTop = 0
   }
+})
+
+onBeforeUnmount(() => {
+  persistedState.persistState({
+    selectedTabId: selectedTab.value?.id,
+    searchQuery: searchQuery.value,
+    searchMode: searchMode.value,
+    sortField: sortField.value
+  })
 })
 
 onUnmounted(() => {
