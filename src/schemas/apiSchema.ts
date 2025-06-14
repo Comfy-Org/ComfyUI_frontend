@@ -313,6 +313,7 @@ export const zSystemStats = z.object({
     python_version: z.string(),
     embedded_python: z.boolean(),
     comfyui_version: z.string(),
+    workflows_templates_version: z.string(),
     pytorch_version: z.string(),
     argv: z.array(z.string()),
     ram_total: z.number(),
