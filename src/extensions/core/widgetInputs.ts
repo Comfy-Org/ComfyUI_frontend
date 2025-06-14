@@ -506,7 +506,12 @@ export function mergeIfValid(
     }
   }
 
-  return { customConfig: customSpec?.[1] ?? {} }
+  return {
+    customConfig:
+      customSpec && Array.isArray(customSpec) && customSpec[1]
+        ? customSpec[1]
+        : {}
+  }
 }
 
 app.registerExtension({
