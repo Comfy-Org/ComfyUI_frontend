@@ -30,11 +30,20 @@ const defaultMockTaskLogs = [
 
 vi.mock('@/stores/comfyManagerStore', () => ({
   useComfyManagerStore: vi.fn(() => ({
-    taskLogs: [...defaultMockTaskLogs]
+    taskLogs: [...defaultMockTaskLogs],
+    succeededTasksLogs: [...defaultMockTaskLogs],
+    failedTasksLogs: [...defaultMockTaskLogs],
+    managerQueue: { historyCount: 2 },
+    isLoading: false
   })),
   useManagerProgressDialogStore: vi.fn(() => ({
     isExpanded: true,
-    collapse: mockCollapse
+    activeTabIndex: 0,
+    getActiveTabIndex: vi.fn(() => 0),
+    setActiveTabIndex: vi.fn(),
+    toggle: vi.fn(),
+    collapse: mockCollapse,
+    expand: vi.fn()
   }))
 }))
 
