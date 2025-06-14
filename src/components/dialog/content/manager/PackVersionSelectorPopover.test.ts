@@ -191,6 +191,100 @@ describe('PackVersionSelectorPopover', () => {
     expect(mockGetPackVersions).toHaveBeenCalledWith(newNodePack.id)
   })
 
+  describe('nodePack.id changes', () => {
+    it('re-fetches versions when nodePack.id changes', async () => {
+      // Set up the mock for the initial fetch
+      mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
+
+      const wrapper = mountComponent()
+      await waitForPromises()
+
+      // Verify initial fetch
+      expect(mockGetPackVersions).toHaveBeenCalledTimes(1)
+      expect(mockGetPackVersions).toHaveBeenCalledWith(mockNodePack.id)
+
+      // Set up the mock for the second fetch
+      const newVersions = [
+        { version: '2.0.0', createdAt: '2023-06-01' },
+        { version: '1.9.0', createdAt: '2023-05-01' }
+      ]
+      mockGetPackVersions.mockResolvedValueOnce(newVersions)
+
+      // Update the nodePack with a new ID
+      const newNodePack = {
+        ...mockNodePack,
+        id: 'different-pack',
+        name: 'Different Pack'
+      }
+      await wrapper.setProps({ nodePack: newNodePack })
+      await waitForPromises()
+
+      // Should fetch versions for the new nodePack
+      expect(mockGetPackVersions).toHaveBeenCalledTimes(2)
+      expect(mockGetPackVersions).toHaveBeenLastCalledWith(newNodePack.id)
+
+      // Check that new versions are displayed
+      const listbox = wrapper.findComponent(Listbox)
+      const options = listbox.props('options')!
+      expect(options.some((o) => o.value === '2.0.0')).toBe(true)
+      expect(options.some((o) => o.value === '1.9.0')).toBe(true)
+    })
+
+    it('does not re-fetch when nodePack changes but id remains the same', async () => {
+      // Set up the mock for the initial fetch
+      mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
+
+      const wrapper = mountComponent()
+      await waitForPromises()
+
+      // Verify initial fetch
+      expect(mockGetPackVersions).toHaveBeenCalledTimes(1)
+
+      // Update the nodePack with same ID but different properties
+      const updatedNodePack = {
+        ...mockNodePack,
+        name: 'Updated Test Pack',
+        description: 'New description'
+      }
+      await wrapper.setProps({ nodePack: updatedNodePack })
+      await waitForPromises()
+
+      // Should NOT fetch versions again
+      expect(mockGetPackVersions).toHaveBeenCalledTimes(1)
+    })
+
+    it('maintains selected version when switching to a new pack', async () => {
+      // Set up the mock for the initial fetch
+      mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
+
+      const wrapper = mountComponent()
+      await waitForPromises()
+
+      // Select a specific version
+      const listbox = wrapper.findComponent(Listbox)
+      await listbox.setValue('0.9.0')
+      expect(listbox.props('modelValue')).toBe('0.9.0')
+
+      // Set up the mock for the second fetch
+      mockGetPackVersions.mockResolvedValueOnce([
+        { version: '3.0.0', createdAt: '2023-07-01' },
+        { version: '0.9.0', createdAt: '2023-04-01' }
+      ])
+
+      // Update to a new pack that also has version 0.9.0
+      const newNodePack = {
+        id: 'another-pack',
+        name: 'Another Pack',
+        latest_version: { version: '3.0.0' }
+      }
+      await wrapper.setProps({ nodePack: newNodePack })
+      await waitForPromises()
+
+      // Selected version should remain the same if available
+      expect(listbox.props('modelValue')).toBe('0.9.0')
+    })
+  })
+
   describe('Unclaimed GitHub packs handling', () => {
     it('falls back to nightly when no versions exist', async () => {
       // Set up the mock to return versions

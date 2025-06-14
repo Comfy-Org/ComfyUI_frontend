@@ -33,7 +33,7 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Popover from 'primevue/popover'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import PackVersionSelectorPopover from '@/components/dialog/content/manager/PackVersionSelectorPopover.vue'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
@@ -43,8 +43,9 @@ import { isSemVer } from '@/utils/formatUtil'
 
 const TRUNCATED_HASH_LENGTH = 7
 
-const { nodePack } = defineProps<{
+const { nodePack, isSelected } = defineProps<{
   nodePack: components['schemas']['Node']
+  isSelected: boolean
 }>()
 
 const popoverRef = ref()
@@ -69,4 +70,14 @@ const toggleVersionSelector = (event: Event) => {
 const closeVersionSelector = () => {
   popoverRef.value.hide()
 }
+
+// If the card is unselected, automatically close the version selector popover
+watch(
+  () => isSelected,
+  (isSelected, wasSelected) => {
+    if (wasSelected && !isSelected) {
+      closeVersionSelector()
+    }
+  }
+)
 </script>
