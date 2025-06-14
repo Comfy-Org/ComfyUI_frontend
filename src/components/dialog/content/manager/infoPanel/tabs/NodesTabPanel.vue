@@ -51,6 +51,7 @@ const isLoading = ref(false)
 const registryNodeDefs = shallowRef<ListComfyNodesResponse | null>(null)
 
 const fetchNodeDefs = async () => {
+  getNodeDefs.cancel()
   isLoading.value = true
 
   const { id: packId } = nodePack
