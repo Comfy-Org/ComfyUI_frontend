@@ -11,6 +11,7 @@
     <BypassButton />
     <PinButton />
     <MaskEditorButton />
+    <ConvertToSubgraphButton />
     <DeleteButton />
     <RefreshButton />
     <ExtensionCommandButton
@@ -28,6 +29,7 @@ import { computed } from 'vue'
 
 import BypassButton from '@/components/graph/selectionToolbox/BypassButton.vue'
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
+import ConvertToSubgraphButton from '@/components/graph/selectionToolbox/ConvertToSubgraphButton.vue'
 import DeleteButton from '@/components/graph/selectionToolbox/DeleteButton.vue'
 import ExecuteButton from '@/components/graph/selectionToolbox/ExecuteButton.vue'
 import ExtensionCommandButton from '@/components/graph/selectionToolbox/ExtensionCommandButton.vue'

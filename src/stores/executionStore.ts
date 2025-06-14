@@ -1,3 +1,4 @@
+import type { LGraph, Subgraph } from '@comfyorg/litegraph'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
@@ -20,9 +21,9 @@ import type {
   NodeId
 } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
 
-import { ComfyWorkflow } from './workflowStore'
+import { useCanvasStore } from './graphStore'
+import { ComfyWorkflow, useWorkflowStore } from './workflowStore'
 
 export interface QueuedPrompt {
   /**
@@ -37,6 +38,9 @@ export interface QueuedPrompt {
 }
 
 export const useExecutionStore = defineStore('execution', () => {
+  const workflowStore = useWorkflowStore()
+  const canvasStore = useCanvasStore()
+
   const clientId = ref<string | null>(null)
   const activePromptId = ref<string | null>(null)
   const queuedPrompts = ref<Record<NodeId, QueuedPrompt>>({})
@@ -54,11 +58,63 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!canvasState) return null
 
     return (
-      canvasState.nodes.find(
-        (n: ComfyNode) => String(n.id) === executingNodeId.value
-      ) ?? null
+      canvasState.nodes.find((n) => String(n.id) === executingNodeId.value) ??
+      null
     )
   })
+
+  const subgraphNodeIdToSubgraph = (id: string, graph: LGraph | Subgraph) => {
+    const node = graph.getNodeById(id)
+    if (node?.isSubgraphNode()) return node.subgraph
+  }
+
+  /**
+   * Recursively get the subgraph objects for the given subgraph instance IDs
+   * @param currentGraph The current graph
+   * @param subgraphNodeIds The instance IDs
+   * @param subgraphs The subgraphs
+   * @returns The subgraphs that correspond to each of the instance IDs.
+   */
+  const getSubgraphsFromInstanceIds = (
+    currentGraph: LGraph | Subgraph,
+    subgraphNodeIds: string[],
+    subgraphs: Subgraph[] = []
+  ): Subgraph[] => {
+    // Last segment is the node portion; nothing to do.
+    if (subgraphNodeIds.length === 1) return subgraphs
+
+    const currentPart = subgraphNodeIds.shift()
+    if (currentPart === undefined) return subgraphs
+
+    const subgraph = subgraphNodeIdToSubgraph(currentPart, currentGraph)
+    if (!subgraph) throw new Error(`Subgraph not found: ${currentPart}`)
+
+    subgraphs.push(subgraph)
+    return getSubgraphsFromInstanceIds(subgraph, subgraphNodeIds, subgraphs)
+  }
+
+  const executionIdToCurrentId = (id: string) => {
+    const subgraph = workflowStore.activeSubgraph
+
+    // Short-circuit: ID belongs to the parent workflow / no active subgraph
+    if (!id.includes(':')) {
+      return !subgraph ? id : undefined
+    } else if (!subgraph) {
+      return
+    }
+
+    // Parse the hierarchical ID (e.g., "123:456:789")
+    const subgraphNodeIds = id.split(':')
+
+    // If the last subgraph is the active subgraph, return the node ID
+    const subgraphs = getSubgraphsFromInstanceIds(
+      subgraph.rootGraph,
+      subgraphNodeIds
+    )
+    if (subgraphs.at(-1) === subgraph) {
+      return subgraphNodeIds.at(-1)
+    }
+  }
 
   // This is the progress of the currently executing node, if any
   const _executingNodeProgress = ref<ProgressWsMessage | null>(null)
@@ -132,7 +188,7 @@ export const useExecutionStore = defineStore('execution', () => {
     activePrompt.value.nodes[e.detail.node] = true
   }
 
-  function handleExecuting(e: CustomEvent<NodeId | null>) {
+  function handleExecuting(e: CustomEvent<NodeId | null>): void {
     // Clear the current node progress when a new node starts executing
     _executingNodeProgress.value = null
 
@@ -142,12 +198,16 @@ export const useExecutionStore = defineStore('execution', () => {
       // Seems sometimes nodes that are cached fire executing but not executed
       activePrompt.value.nodes[executingNodeId.value] = true
     }
-    executingNodeId.value = e.detail
-    if (executingNodeId.value === null) {
-      if (activePromptId.value) {
-        delete queuedPrompts.value[activePromptId.value]
+    if (typeof e.detail === 'string') {
+      executingNodeId.value = executionIdToCurrentId(e.detail) ?? null
+    } else {
+      executingNodeId.value = e.detail
+      if (executingNodeId.value === null) {
+        if (activePromptId.value) {
+          delete queuedPrompts.value[activePromptId.value]
+        }
+        activePromptId.value = null
       }
-      activePromptId.value = null
     }
   }
 
@@ -168,19 +228,31 @@ export const useExecutionStore = defineStore('execution', () => {
     lastExecutionError.value = e.detail
   }
 
+  function getNodeIdIfExecuting(nodeId: string | number) {
+    const nodeIdStr = String(nodeId)
+    return nodeIdStr.includes(':')
+      ? workflowStore.executionIdToCurrentId(nodeIdStr)
+      : nodeIdStr
+  }
+
   function handleProgressText(e: CustomEvent<ProgressTextWsMessage>) {
     const { nodeId, text } = e.detail
     if (!text || !nodeId) return
 
-    const node = app.graph.getNodeById(nodeId)
+    // Handle hierarchical node IDs for subgraphs
+    const currentId = getNodeIdIfExecuting(nodeId)
+    const node = canvasStore.getCanvas().graph?.getNodeById(currentId)
     if (!node) return
 
     useNodeProgressText().showTextPreview(node, text)
   }
 
   function handleDisplayComponent(e: CustomEvent<DisplayComponentWsMessage>) {
-    const { node_id, component, props = {} } = e.detail
-    const node = app.graph.getNodeById(node_id)
+    const { node_id: nodeId, component, props = {} } = e.detail
+
+    // Handle hierarchical node IDs for subgraphs
+    const currentId = getNodeIdIfExecuting(nodeId)
+    const node = canvasStore.getCanvas().graph?.getNodeById(currentId)
     if (!node) return
 
     if (component === 'ChatHistoryWidget') {
