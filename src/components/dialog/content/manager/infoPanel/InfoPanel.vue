@@ -32,7 +32,7 @@
             />
           </MetadataRow>
           <MetadataRow :label="t('manager.version')">
-            <PackVersionBadge :node-pack="nodePack" />
+            <PackVersionBadge :node-pack="nodePack" :is-selected="true" />
           </MetadataRow>
         </div>
         <div class="mb-6 overflow-hidden">
@@ -118,7 +118,15 @@ const onNodePackChange = () => {
   y.value = 0
 }
 
-whenever(() => nodePack, onNodePackChange, { immediate: true, deep: true })
+whenever(
+  () => nodePack.id,
+  (nodePackId, oldNodePackId) => {
+    if (nodePackId !== oldNodePackId) {
+      onNodePackChange()
+    }
+  },
+  { immediate: true }
+)
 </script>
 <style scoped>
 .hidden-scrollbar {
