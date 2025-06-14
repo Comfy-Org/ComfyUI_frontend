@@ -658,19 +658,19 @@ export function useCoreCommands(): ComfyCommand[] {
     {
       id: 'Comfy.Manager.CustomNodesManager',
       icon: 'pi pi-puzzle',
-      label: 'Custom Nodes Manager',
+      label: 'Toggle the Custom Nodes Manager',
       versionAdded: '1.12.10',
       function: () => {
-        dialogService.showManagerDialog()
+        dialogService.toggleManagerDialog()
       }
     },
     {
       id: 'Comfy.Manager.ToggleManagerProgressDialog',
       icon: 'pi pi-spinner',
-      label: 'Toggle Progress Dialog',
+      label: 'Toggle the Custom Nodes Manager Progress Bar',
       versionAdded: '1.13.9',
       function: () => {
-        dialogService.showManagerProgressDialog()
+        dialogService.toggleManagerProgressDialog()
       }
     },
     {

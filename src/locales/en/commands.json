@@ -147,10 +147,10 @@
     "label": "Load Default Workflow"
   },
   "Comfy_Manager_CustomNodesManager": {
-    "label": "Custom Nodes Manager"
+    "label": "Toggle the Custom Nodes Manager"
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
-    "label": "Toggle Progress Dialog"
+    "label": "Toggle the Custom Nodes Manager Progress Bar"
   },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Open Mask Editor for Selected Node"
