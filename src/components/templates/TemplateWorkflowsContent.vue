@@ -56,12 +56,13 @@ import { useAsyncState } from '@vueuse/core'
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'
-import { watch } from 'vue'
+import { onMounted, watch } from 'vue'
 
 import TemplateWorkflowView from '@/components/templates/TemplateWorkflowView.vue'
 import TemplateWorkflowsSideNav from '@/components/templates/TemplateWorkflowsSideNav.vue'
 import { useResponsiveCollapse } from '@/composables/element/useResponsiveCollapse'
 import { useTemplateWorkflows } from '@/composables/useTemplateWorkflows'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { WorkflowTemplates } from '@/types/workflowTemplateTypes'
 
 const {
@@ -82,6 +83,14 @@ const {
 } = useTemplateWorkflows()
 
 const { isReady } = useAsyncState(loadTemplates, null)
+const systemStatsStore = useSystemStatsStore()
+
+// Initialize system stats when component mounts
+onMounted(async () => {
+  if (!systemStatsStore.systemStats) {
+    await systemStatsStore.fetchSystemStats()
+  }
+})
 
 watch(
   isReady,
