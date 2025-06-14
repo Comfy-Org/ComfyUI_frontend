@@ -169,11 +169,16 @@ export const useDialogStore = defineStore('dialog', () => {
     return dialog
   }
 
+  function isDialogOpen(key: string) {
+    return dialogStack.value.some((d) => d.key === key)
+  }
+
   return {
     dialogStack,
     riseDialog,
     showDialog,
     closeDialog,
-    showExtensionDialog
+    showExtensionDialog,
+    isDialogOpen
   }
 })
