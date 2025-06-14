@@ -101,6 +101,12 @@
   "Comfy_DuplicateWorkflow": {
     "label": "复制当前工作流"
   },
+  "Comfy_Edit_Copy": {
+    "label": "复制"
+  },
+  "Comfy_Edit_Paste": {
+    "label": "粘贴"
+  },
   "Comfy_ExportWorkflow": {
     "label": "导出工作流"
   },

@@ -101,6 +101,12 @@
   "Comfy_DuplicateWorkflow": {
     "label": "Дублировать текущий рабочий процесс"
   },
+  "Comfy_Edit_Copy": {
+    "label": "Копировать"
+  },
+  "Comfy_Edit_Paste": {
+    "label": "Вставить"
+  },
   "Comfy_ExportWorkflow": {
     "label": "Экспорт рабочего процесса"
   },

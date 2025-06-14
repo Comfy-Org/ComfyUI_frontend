@@ -101,6 +101,12 @@
   "Comfy_DuplicateWorkflow": {
     "label": "現在のワークフローを複製"
   },
+  "Comfy_Edit_Copy": {
+    "label": "コピー"
+  },
+  "Comfy_Edit_Paste": {
+    "label": "貼り付け"
+  },
   "Comfy_ExportWorkflow": {
     "label": "ワークフローをエクスポート"
   },

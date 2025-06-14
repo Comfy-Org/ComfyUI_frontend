@@ -18,7 +18,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowService } from '@/services/workflowService'
 import type { ComfyCommand } from '@/stores/commandStore'
-import { useTitleEditorStore } from '@/stores/graphStore'
+import { useCanvasStore, useTitleEditorStore } from '@/stores/graphStore'
 import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
@@ -154,6 +154,30 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Redo',
       function: async () => {
         await getTracker()?.redo?.()
+      }
+    },
+    {
+      id: 'Comfy.Edit.Copy',
+      icon: 'pi pi-copy',
+      label: 'Copy',
+      function: () => {
+        // Leverage existing copy logic
+        const canvas = useCanvasStore().canvas
+        if (canvas?.selectedItems) {
+          canvas.copyToClipboard()
+        }
+      }
+    },
+    {
+      id: 'Comfy.Edit.Paste',
+      icon: 'pi pi-clipboard',
+      label: 'Paste',
+      function: () => {
+        // Leverage existing paste logic, position at last interaction point
+        const canvas = useCanvasStore().canvas
+        if (canvas) {
+          canvas.pasteFromClipboard()
+        }
       }
     },
     {

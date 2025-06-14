@@ -101,6 +101,12 @@
   "Comfy_DuplicateWorkflow": {
     "label": "Dupliquer le flux de travail actuel"
   },
+  "Comfy_Edit_Copy": {
+    "label": "Copier"
+  },
+  "Comfy_Edit_Paste": {
+    "label": "Coller"
+  },
   "Comfy_ExportWorkflow": {
     "label": "Exporter le flux de travail"
   },

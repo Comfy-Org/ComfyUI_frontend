@@ -173,5 +173,15 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       key: 'f'
     },
     commandId: 'Workspace.ToggleFocusMode'
+  },
+  {
+    combo: { ctrl: true, key: 'c' },
+    commandId: 'Comfy.Edit.Copy',
+    targetElementId: 'graph-canvas'
+  },
+  {
+    combo: { ctrl: true, key: 'v' },
+    commandId: 'Comfy.Edit.Paste',
+    targetElementId: 'graph-canvas'
   }
 ]
