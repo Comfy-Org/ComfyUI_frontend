@@ -323,6 +323,7 @@
     "noTasksFoundMessage": "No hay tareas en la cola.",
     "noWorkflowsFound": "No se encontraron flujos de trabajo.",
     "nodes": "Nodos",
+    "nodesRunning": "nodos en ejecución",
     "ok": "OK",
     "openNewIssue": "Abrir nuevo problema",
     "overwrite": "Sobrescribir",

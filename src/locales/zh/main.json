@@ -323,6 +323,7 @@
     "noTasksFoundMessage": "队列中没有任务。",
     "noWorkflowsFound": "未找到工作流。",
     "nodes": "节点",
+    "nodesRunning": "节点正在运行",
     "ok": "确定",
     "openNewIssue": "打开新问题",
     "overwrite": "覆盖",

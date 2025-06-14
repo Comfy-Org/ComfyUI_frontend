@@ -323,6 +323,7 @@
     "noTasksFoundMessage": "대기열에 작업이 없습니다.",
     "noWorkflowsFound": "워크플로를 찾을 수 없습니다.",
     "nodes": "노드",
+    "nodesRunning": "노드 실행 중",
     "ok": "확인",
     "openNewIssue": "새 문제 열기",
     "overwrite": "덮어쓰기",
