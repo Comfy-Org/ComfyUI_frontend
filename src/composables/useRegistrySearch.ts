@@ -1,7 +1,7 @@
 import { watchDebounced } from '@vueuse/core'
 import type { Hit } from 'algoliasearch/dist/lite/browser'
 import { memoize, orderBy } from 'lodash'
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { useAlgoliaSearchService } from '@/services/algoliaSearchService'
 import type {
@@ -14,7 +14,6 @@ import { SortableAlgoliaField } from '@/types/comfyManagerTypes'
 const SEARCH_DEBOUNCE_TIME = 320
 const DEFAULT_PAGE_SIZE = 64
 const DEFAULT_SORT_FIELD = SortableAlgoliaField.Downloads // Set in the index configuration
-const DEFAULT_MAX_CACHE_SIZE = 64
 const SORT_DIRECTIONS: Record<SortableAlgoliaField, 'asc' | 'desc'> = {
   [SortableAlgoliaField.Downloads]: 'desc',
   [SortableAlgoliaField.Created]: 'desc',
@@ -30,18 +29,25 @@ const isDateField = (field: SortableAlgoliaField): boolean =>
 /**
  * Composable for managing UI state of Comfy Node Registry search.
  */
-export function useRegistrySearch(
-  options: {
-    maxCacheSize?: number
-  } = {}
-) {
-  const { maxCacheSize = DEFAULT_MAX_CACHE_SIZE } = options
+export function useRegistrySearch(options: {
+  initialSortField?: SortableAlgoliaField
+  initialSearchMode?: 'nodes' | 'packs'
+  initialSearchQuery?: string
+  initialPageNumber?: number
+}) {
+  const {
+    initialSortField = SortableAlgoliaField.Downloads,
+    initialSearchMode = 'packs',
+    initialSearchQuery = '',
+    initialPageNumber = 0
+  } = options
+
   const isLoading = ref(false)
-  const sortField = ref<SortableAlgoliaField>(SortableAlgoliaField.Downloads)
-  const searchMode = ref<'nodes' | 'packs'>('packs')
+  const sortField = ref<SortableAlgoliaField>(initialSortField)
+  const searchMode = ref<'nodes' | 'packs'>(initialSearchMode)
   const pageSize = ref(DEFAULT_PAGE_SIZE)
-  const pageNumber = ref(0)
-  const searchQuery = ref('')
+  const pageNumber = ref(initialPageNumber)
+  const searchQuery = ref(initialSearchQuery)
   const results = ref<AlgoliaNodePack[]>([])
   const suggestions = ref<NodesIndexSuggestion[]>([])
 
@@ -62,9 +68,7 @@ export function useRegistrySearch(
   )
 
   const { searchPacksCached, toRegistryPack, clearSearchPacksCache } =
-    useAlgoliaSearchService({
-      maxCacheSize
-    })
+    useAlgoliaSearchService()
 
   const algoliaToRegistry = memoize(
     toRegistryPack,
@@ -124,8 +128,6 @@ export function useRegistrySearch(
     immediate: true
   })
 
-  onUnmounted(clearSearchPacksCache)
-
   return {
     isLoading,
     pageNumber,
@@ -135,6 +137,7 @@ export function useRegistrySearch(
     searchQuery,
     suggestions,
     searchResults: resultsAsRegistryPacks,
-    nodeSearchResults: resultsAsNodes
+    nodeSearchResults: resultsAsNodes,
+    clearCache: clearSearchPacksCache
   }
 }

@@ -39,7 +39,7 @@ export enum SortableAlgoliaField {
 }
 
 export interface TabItem {
-  id: string
+  id: ManagerTab
   label: string
   icon: string
 }
@@ -233,4 +233,11 @@ export interface InstallPackParams extends ManagerPackInfo {
  */
 export interface UpdateAllPacksParams {
   mode?: ManagerDatabaseSource
+}
+
+export interface ManagerState {
+  selectedTabId: ManagerTab
+  searchQuery: string
+  searchMode: 'nodes' | 'packs'
+  sortField: SortableAlgoliaField
 }

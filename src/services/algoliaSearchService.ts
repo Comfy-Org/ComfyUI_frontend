@@ -41,12 +41,6 @@ const RETRIEVE_ATTRIBUTES: SearchAttribute[] = [
 
 interface AlgoliaSearchServiceOptions {
   /**
-   * Maximum number of search results to store in the cache.
-   * The cache is automatically cleared when the component is unmounted.
-   * @default 64
-   */
-  maxCacheSize?: number
-  /**
    * Minimum number of characters for suggestions. An additional query
    * will be made to the suggestions/completions index for queries that
    * are this length or longer.
@@ -55,17 +49,15 @@ interface AlgoliaSearchServiceOptions {
   minCharsForSuggestions?: number
 }
 
+const searchPacksCache = new QuickLRU<string, SearchPacksResult>({
+  maxSize: DEFAULT_MAX_CACHE_SIZE
+})
+
 export const useAlgoliaSearchService = (
   options: AlgoliaSearchServiceOptions = {}
 ) => {
-  const {
-    maxCacheSize = DEFAULT_MAX_CACHE_SIZE,
-    minCharsForSuggestions = DEFAULT_MIN_CHARS_FOR_SUGGESTIONS
-  } = options
+  const { minCharsForSuggestions = DEFAULT_MIN_CHARS_FOR_SUGGESTIONS } = options
   const searchClient = algoliasearch(__ALGOLIA_APP_ID__, __ALGOLIA_API_KEY__)
-  const searchPacksCache = new QuickLRU<string, SearchPacksResult>({
-    maxSize: maxCacheSize
-  })
 
   const toRegistryLatestVersion = (
     algoliaNode: AlgoliaNodePack

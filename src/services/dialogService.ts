@@ -21,7 +21,6 @@ import TemplateWorkflowsDialogHeader from '@/components/templates/TemplateWorkfl
 import { t } from '@/i18n'
 import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
 import { type ShowDialogOptions, useDialogStore } from '@/stores/dialogStore'
-import { ManagerTab } from '@/types/comfyManagerTypes'
 
 export type ConfirmationDialogType =
   | 'default'
@@ -129,9 +128,7 @@ export const useDialogService = () => {
   }
 
   function showManagerDialog(
-    props: InstanceType<typeof ManagerDialogContent>['$props'] = {
-      initialTab: ManagerTab.All
-    }
+    props: InstanceType<typeof ManagerDialogContent>['$props'] = {}
   ) {
     dialogStore.showDialog({
       key: 'global-manager',
