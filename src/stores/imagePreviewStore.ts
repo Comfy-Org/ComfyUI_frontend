@@ -1,11 +1,7 @@
 import { LGraphNode } from '@comfyorg/litegraph'
 import { defineStore } from 'pinia'
 
-import {
-  ExecutedWsMessage,
-  ResultItem,
-  ResultItemType
-} from '@/schemas/apiSchema'
+import { ExecutedWsMessage, ResultItem } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { parseFilePath } from '@/utils/formatUtil'
@@ -13,7 +9,7 @@ import { isVideoNode } from '@/utils/litegraphUtil'
 
 const createOutputs = (
   filenames: string[],
-  type: ResultItemType,
+  type: string,
   isAnimated: boolean
 ): ExecutedWsMessage['output'] => {
   return {
@@ -92,7 +88,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     {
       folder = 'input',
       isAnimated = false
-    }: { folder?: ResultItemType; isAnimated?: boolean } = {}
+    }: { folder?: string; isAnimated?: boolean } = {}
   ) {
     if (!filenames || !node) return
 
