@@ -50,6 +50,11 @@ interface ImageUploadOptions {
    * @example 'image/png,image/jpeg,image/webp,video/webm,video/mp4'
    */
   accept?: string
+  /**
+   * The folder to upload the file to.
+   * @example 'input', 'output', 'temp'
+   */
+  folder?: ResultItemType
 }
 
 /**
@@ -67,7 +72,9 @@ export const useNodeImageUpload = (
 
   const handleUpload = async (file: File) => {
     try {
-      const path = await uploadFile(file, isPastedFile(file), {})
+      const path = await uploadFile(file, isPastedFile(file), {
+        type: options.folder
+      })
       if (!path) return
       return path
     } catch (error) {
