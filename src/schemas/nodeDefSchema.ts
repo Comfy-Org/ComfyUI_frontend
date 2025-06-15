@@ -1,6 +1,8 @@
 import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
+import { resultItemType } from './apiSchema'
+
 const zComboOption = z.union([z.string(), z.number()])
 const zRemoteWidgetConfig = z.object({
   route: z.string().url().or(z.string().startsWith('/')),
@@ -72,14 +74,19 @@ export const zStringInputOptions = zBaseInputOptions.extend({
 export const zComboInputOptions = zBaseInputOptions.extend({
   control_after_generate: z.boolean().optional(),
   image_upload: z.boolean().optional(),
-  image_folder: z.enum(['input', 'output', 'temp']).optional(),
+  image_folder: resultItemType.optional(),
   allow_batch: z.boolean().optional(),
   video_upload: z.boolean().optional(),
   animated_image_upload: z.boolean().optional(),
   options: z.array(zComboOption).optional(),
   remote: zRemoteWidgetConfig.optional(),
   /** Whether the widget is a multi-select widget. */
-  multi_select: zMultiSelectOption.optional()
+  multi_select: zMultiSelectOption.optional(),
+  /**
+   * The name of the image upload input (filename combo) if it exists
+   * @example 'image'
+   */
+  imageInputName: z.string().optional()
 })
 
 const zIntInputSpec = z.tuple([z.literal('INT'), zIntInputOptions.optional()])

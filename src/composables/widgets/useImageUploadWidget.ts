@@ -6,7 +6,8 @@ import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 import { useValueTransform } from '@/composables/useValueTransform'
 import { t } from '@/i18n'
 import type { ResultItem } from '@/schemas/apiSchema'
-import type { InputSpec } from '@/schemas/nodeDefSchema'
+import type { ComboInputOptions, InputSpec } from '@/schemas/nodeDefSchema'
+import { isComboInputSpecV1, isComboInputSpecV2 } from '@/schemas/nodeDefSchema'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { createAnnotatedPath } from '@/utils/formatUtil'
@@ -33,7 +34,12 @@ export const useImageUploadWidget = () => {
     inputName: string,
     inputData: InputSpec
   ) => {
-    const inputOptions = inputData[1] ?? {}
+    // Extract options based on the input spec type
+    let inputOptions: ComboInputOptions = {}
+    if (isComboInputSpecV1(inputData) || isComboInputSpecV2(inputData)) {
+      inputOptions = inputData[1] ?? {}
+    }
+
     const { imageInputName, allow_batch, image_folder = 'input' } = inputOptions
     const nodeOutputStore = useNodeOutputStore()
 
@@ -43,11 +49,9 @@ export const useImageUploadWidget = () => {
     const { showPreview } = isVideo ? useNodeVideo(node) : useNodeImage(node)
 
     const fileFilter = isVideo ? isVideoFile : isImageFile
-    // @ts-expect-error InputSpec is not typed correctly
-    const fileComboWidget = findFileComboWidget(node, imageInputName)
+    const fileComboWidget = findFileComboWidget(node, imageInputName ?? '')
     const initialFile = `${fileComboWidget.value}`
     const formatPath = (value: InternalFile) =>
-      // @ts-expect-error InputSpec is not typed correctly
       createAnnotatedPath(value, { rootFolder: image_folder })
 
     const transform = (internalValue: InternalValue): ExposedValue => {
@@ -67,7 +71,6 @@ export const useImageUploadWidget = () => {
 
     // Setup file upload handling
     const { openFileSelection } = useNodeImageUpload(node, {
-      // @ts-expect-error InputSpec is not typed correctly
       allow_batch,
       fileFilter,
       accept,
