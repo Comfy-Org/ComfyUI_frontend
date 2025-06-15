@@ -32,6 +32,7 @@
             v-model:sortField="sortField"
             :search-results="searchResults"
             :suggestions="suggestions"
+            :sort-options="sortOptions"
           />
           <div class="flex-1 overflow-auto">
             <div
@@ -179,7 +180,8 @@ const {
   searchResults,
   searchMode,
   sortField,
-  suggestions
+  suggestions,
+  sortOptions
 } = useRegistrySearch({
   initialSortField: initialState.sortField,
   initialSearchMode: initialState.searchMode,

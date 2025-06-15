@@ -34,7 +34,7 @@
         />
         <SearchFilterDropdown
           v-model:modelValue="sortField"
-          :options="sortOptions"
+          :options="availableSortOptions"
           :label="$t('g.sort')"
         />
       </div>
@@ -56,21 +56,22 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SearchFilterDropdown from '@/components/dialog/content/manager/registrySearchBar/SearchFilterDropdown.vue'
-import type { NodesIndexSuggestion } from '@/types/algoliaTypes'
 import {
   type SearchOption,
   SortableAlgoliaField
 } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
+import type { QuerySuggestion, SortableField } from '@/types/searchServiceTypes'
 
-const { searchResults } = defineProps<{
+const { searchResults, sortOptions } = defineProps<{
   searchResults?: components['schemas']['Node'][]
-  suggestions?: NodesIndexSuggestion[]
+  suggestions?: QuerySuggestion[]
+  sortOptions?: SortableField[]
 }>()
 
 const searchQuery = defineModel<string>('searchQuery')
 const searchMode = defineModel<string>('searchMode', { default: 'packs' })
-const sortField = defineModel<SortableAlgoliaField>('sortField', {
+const sortField = defineModel<string>('sortField', {
   default: SortableAlgoliaField.Downloads
 })
 
@@ -80,13 +81,12 @@ const hasResults = computed(
   () => searchQuery.value?.trim() && searchResults?.length
 )
 
-const sortOptions: SearchOption<SortableAlgoliaField>[] = [
-  { id: SortableAlgoliaField.Downloads, label: t('manager.sort.downloads') },
-  { id: SortableAlgoliaField.Created, label: t('manager.sort.created') },
-  { id: SortableAlgoliaField.Updated, label: t('manager.sort.updated') },
-  { id: SortableAlgoliaField.Publisher, label: t('manager.sort.publisher') },
-  { id: SortableAlgoliaField.Name, label: t('g.name') }
-]
+const availableSortOptions = computed<SearchOption<string>[]>(() => {
+  return (sortOptions ?? []).map((field) => ({
+    id: field.id,
+    label: field.label
+  }))
+})
 const filterOptions: SearchOption<string>[] = [
   { id: 'packs', label: t('manager.filter.nodePack') },
   { id: 'nodes', label: t('g.nodes') }
