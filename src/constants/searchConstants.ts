@@ -1,0 +1,2 @@
+export const SEARCH_CACHE_MAX_SIZE = 64
+export const MIN_CHARS_FOR_SUGGESTIONS_ALGOLIA = 2
