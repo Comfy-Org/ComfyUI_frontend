@@ -70,5 +70,5 @@ export interface NodesIndexSuggestion {
 export type SearchNodePacksParams = BaseSearchParamsWithoutQuery & {
   pageSize: number
   pageNumber: number
-  restrictSearchableAttributes: SearchAttribute[]
+  restrictSearchableAttributes?: SearchAttribute[]
 }

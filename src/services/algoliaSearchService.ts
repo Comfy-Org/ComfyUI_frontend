@@ -4,22 +4,28 @@ import type {
   SearchResponse
 } from 'algoliasearch/dist/lite/browser'
 import { liteClient as algoliasearch } from 'algoliasearch/dist/lite/builds/browser'
-import { omit } from 'lodash'
+import { memoize, omit } from 'lodash'
 
+import {
+  MIN_CHARS_FOR_SUGGESTIONS_ALGOLIA,
+  SEARCH_CACHE_MAX_SIZE
+} from '@/constants/searchConstants'
 import type {
   AlgoliaNodePack,
   NodesIndexSuggestion,
   SearchAttribute,
-  SearchNodePacksParams,
-  SearchPacksResult
+  SearchNodePacksParams
 } from '@/types/algoliaTypes'
+import { SortableAlgoliaField } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
+import type {
+  NodePackSearchProvider,
+  SearchPacksResult,
+  SortableField
+} from '@/types/searchServiceTypes'
 import { paramsToCacheKey } from '@/utils/formatUtil'
 
 type RegistryNodePack = components['schemas']['Node']
-
-const DEFAULT_MAX_CACHE_SIZE = 64
-const DEFAULT_MIN_CHARS_FOR_SUGGESTIONS = 2
 
 const RETRIEVE_ATTRIBUTES: SearchAttribute[] = [
   'comfy_nodes',
@@ -39,51 +45,36 @@ const RETRIEVE_ATTRIBUTES: SearchAttribute[] = [
   'icon_url'
 ]
 
-interface AlgoliaSearchServiceOptions {
-  /**
-   * Minimum number of characters for suggestions. An additional query
-   * will be made to the suggestions/completions index for queries that
-   * are this length or longer.
-   * @default 3
-   */
-  minCharsForSuggestions?: number
-}
-
 const searchPacksCache = new QuickLRU<string, SearchPacksResult>({
-  maxSize: DEFAULT_MAX_CACHE_SIZE
+  maxSize: SEARCH_CACHE_MAX_SIZE
 })
 
-export const useAlgoliaSearchService = (
-  options: AlgoliaSearchServiceOptions = {}
-) => {
-  const { minCharsForSuggestions = DEFAULT_MIN_CHARS_FOR_SUGGESTIONS } = options
-  const searchClient = algoliasearch(__ALGOLIA_APP_ID__, __ALGOLIA_API_KEY__)
-
-  const toRegistryLatestVersion = (
-    algoliaNode: AlgoliaNodePack
-  ): RegistryNodePack['latest_version'] => {
-    return {
-      version: algoliaNode.latest_version,
-      createdAt: algoliaNode.update_time,
-      status: algoliaNode.latest_version_status,
-      comfy_node_extract_status:
-        algoliaNode.comfy_node_extract_status ?? undefined
-    }
+const toRegistryLatestVersion = (
+  algoliaNode: AlgoliaNodePack
+): RegistryNodePack['latest_version'] => {
+  return {
+    version: algoliaNode.latest_version,
+    createdAt: algoliaNode.update_time,
+    status: algoliaNode.latest_version_status,
+    comfy_node_extract_status:
+      algoliaNode.comfy_node_extract_status ?? undefined
   }
+}
 
-  const toRegistryPublisher = (
-    algoliaNode: AlgoliaNodePack
-  ): RegistryNodePack['publisher'] => {
-    return {
-      id: algoliaNode.publisher_id,
-      name: algoliaNode.publisher_id
-    }
+const toRegistryPublisher = (
+  algoliaNode: AlgoliaNodePack
+): RegistryNodePack['publisher'] => {
+  return {
+    id: algoliaNode.publisher_id,
+    name: algoliaNode.publisher_id
   }
+}
 
-  /**
-   * Convert from node pack in Algolia format to Comfy Registry format
-   */
-  function toRegistryPack(algoliaNode: AlgoliaNodePack): RegistryNodePack {
+/**
+ * Convert from node pack in Algolia format to Comfy Registry format
+ */
+const toRegistryPack = memoize(
+  (algoliaNode: AlgoliaNodePack): RegistryNodePack => {
     return {
       id: algoliaNode.id ?? algoliaNode.objectID,
       name: algoliaNode.name,
@@ -95,15 +86,21 @@ export const useAlgoliaSearchService = (
       icon: algoliaNode.icon_url,
       latest_version: toRegistryLatestVersion(algoliaNode),
       publisher: toRegistryPublisher(algoliaNode),
-      // @ts-expect-error remove when comfy_nodes is added to node (pack) info
+      // @ts-expect-error create_time is not in the RegistryNodePack type, comfy_nodes also not in node info
+      create_time: algoliaNode.create_time,
       comfy_nodes: algoliaNode.comfy_nodes
     }
-  }
+  },
+  (algoliaNode: AlgoliaNodePack) => algoliaNode.id
+)
+
+export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
+  const searchClient = algoliasearch(__ALGOLIA_APP_ID__, __ALGOLIA_API_KEY__)
 
   /**
-   * Search for node packs in Algolia
+   * Search for node packs in Algolia (internal method)
    */
-  const searchPacks = async (
+  const searchPacksInternal = async (
     query: string,
     params: SearchNodePacksParams
   ): Promise<SearchPacksResult> => {
@@ -121,7 +118,8 @@ export const useAlgoliaSearchService = (
       }
     ]
 
-    const shouldQuerySuggestions = query.length >= minCharsForSuggestions
+    const shouldQuerySuggestions =
+      query.length >= MIN_CHARS_FOR_SUGGESTIONS_ALGOLIA
 
     // If the query is long enough, also query the suggestions index
     if (shouldQuerySuggestions) {
@@ -143,13 +141,22 @@ export const useAlgoliaSearchService = (
       SearchResponse<NodesIndexSuggestion>
     ]
 
+    // Convert Algolia hits to RegistryNodePack format
+    const registryPacks = nodePacks.hits.map(toRegistryPack)
+
+    // Extract query suggestions from search results
+    const suggestions = querySuggestions.hits.map((suggestion) => ({
+      query: suggestion.query,
+      popularity: suggestion.popularity
+    }))
+
     return {
-      nodePacks: nodePacks.hits,
-      querySuggestions: querySuggestions.hits
+      nodePacks: registryPacks,
+      querySuggestions: suggestions
     }
   }
 
-  const searchPacksCached = async (
+  const searchPacks = async (
     query: string,
     params: SearchNodePacksParams
   ): Promise<SearchPacksResult> => {
@@ -157,19 +164,76 @@ export const useAlgoliaSearchService = (
     const cachedResult = searchPacksCache.get(cacheKey)
     if (cachedResult !== undefined) return cachedResult
 
-    const result = await searchPacks(query, params)
+    const result = await searchPacksInternal(query, params)
     searchPacksCache.set(cacheKey, result)
     return result
   }
 
-  const clearSearchPacksCache = () => {
+  const clearSearchCache = () => {
     searchPacksCache.clear()
+  }
+
+  const getSortValue = (
+    pack: RegistryNodePack,
+    sortField: string
+  ): string | number => {
+    // For Algolia, we rely on the default sorting behavior
+    // The results are already sorted by the index configuration
+    // This is mainly used for re-sorting after results are fetched
+    switch (sortField) {
+      case SortableAlgoliaField.Downloads:
+        return pack.downloads ?? 0
+      case SortableAlgoliaField.Created: {
+        // Use create_time from the Algolia data
+        const createTime = (pack as any).create_time
+        return createTime ? new Date(createTime).getTime() : 0
+      }
+      case SortableAlgoliaField.Updated:
+        return pack.latest_version?.createdAt
+          ? new Date(pack.latest_version.createdAt).getTime()
+          : 0
+      case SortableAlgoliaField.Publisher:
+        return pack.publisher?.name ?? ''
+      case SortableAlgoliaField.Name:
+        return pack.name ?? ''
+      default:
+        return 0
+    }
+  }
+
+  const getSortableFields = (): SortableField[] => {
+    // These match the fields available in Algolia indices
+    return [
+      {
+        id: SortableAlgoliaField.Downloads,
+        label: 'Downloads',
+        direction: 'desc'
+      },
+      { id: SortableAlgoliaField.Created, label: 'Created', direction: 'desc' },
+      { id: SortableAlgoliaField.Updated, label: 'Updated', direction: 'desc' },
+      {
+        id: SortableAlgoliaField.Publisher,
+        label: 'Publisher',
+        direction: 'asc'
+      },
+      { id: SortableAlgoliaField.Name, label: 'Name', direction: 'asc' }
+    ]
   }
 
   return {
     searchPacks,
-    searchPacksCached,
+    clearSearchCache,
+    getSortValue,
+    getSortableFields
+  }
+}
+
+// Compatibility export for existing code
+export const useAlgoliaSearchService = () => {
+  const provider = useAlgoliaSearchProvider()
+  return {
+    searchPacksCached: provider.searchPacks,
     toRegistryPack,
-    clearSearchPacksCache
+    clearSearchPacksCache: provider.clearSearchCache
   }
 }
