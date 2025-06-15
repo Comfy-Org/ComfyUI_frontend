@@ -2,6 +2,8 @@ import { LGraphNode } from '@comfyorg/litegraph'
 import { IWidget } from '@comfyorg/litegraph'
 import axios from 'axios'
 
+import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { useTaskCompletionWatcher } from '@/composables/useTaskCompletionWatcher'
 import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
 
 const MAX_RETRIES = 5
@@ -219,6 +221,50 @@ export function useRemoteWidget<
   function addRefreshButton() {
     node.addWidget('button', 'refresh', 'refresh', widget.refresh)
   }
+
+  /**
+   * Add auto-refresh toggle widget and task completion watcher
+   */
+  function addAutoRefreshToggle() {
+    let taskWatcher: ReturnType<typeof useTaskCompletionWatcher> | null = null
+
+    // Initialize task completion watcher
+    taskWatcher = useTaskCompletionWatcher({
+      immediate: true,
+      onComplete: () => {
+        if (widget.refresh) {
+          widget.refresh()
+        }
+      }
+    })
+
+    // Add toggle widget
+    const autoRefreshWidget = node.addWidget(
+      'toggle',
+      'Auto-refresh on task completion',
+      true,
+      (value: boolean) => {
+        if (value) {
+          taskWatcher?.start()
+        } else {
+          taskWatcher?.stop()
+        }
+      },
+      {
+        serialize: false
+      }
+    )
+
+    // Cleanup on node removal
+    node.onRemoved = useChainCallback(node.onRemoved, function () {
+      taskWatcher?.stop()
+    })
+
+    return autoRefreshWidget
+  }
+
+  // Always add auto-refresh toggle for remote widgets
+  addAutoRefreshToggle()
 
   return {
     getCachedValue,

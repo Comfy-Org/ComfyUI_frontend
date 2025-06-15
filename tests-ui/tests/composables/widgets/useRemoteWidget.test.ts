@@ -26,6 +26,24 @@ vi.mock('@/stores/settingStore', () => ({
   })
 }))
 
+vi.mock('@/composables/useTaskCompletionWatcher', () => ({
+  useTaskCompletionWatcher: vi.fn(() => ({
+    start: vi.fn(),
+    stop: vi.fn(),
+    trigger: vi.fn(),
+    isWatching: { value: false } as any
+  }))
+}))
+
+vi.mock('@/composables/functional/useChainCallback', () => ({
+  useChainCallback: vi.fn((original, ...callbacks) => {
+    return function (this: any, ...args: any[]) {
+      original?.apply(this, args)
+      callbacks.forEach((cb: any) => cb.apply(this, args))
+    }
+  })
+}))
+
 const FIRST_BACKOFF = 1000 // backoff is 1s on first retry
 const DEFAULT_VALUE = 'Loading...'
 
@@ -40,7 +58,9 @@ function createMockConfig(overrides = {}): RemoteWidgetConfig {
 const createMockOptions = (inputOverrides = {}) => ({
   remoteConfig: createMockConfig(inputOverrides),
   defaultValue: DEFAULT_VALUE,
-  node: {} as any,
+  node: {
+    addWidget: vi.fn()
+  } as any,
   widget: {} as any
 })
 
@@ -497,6 +517,156 @@ describe('useRemoteWidget', () => {
 
       const data2 = await getResolvedValue(hook)
       expect(data2).toEqual(DEFAULT_VALUE)
+    })
+  })
+
+  describe('auto-refresh on task completion', () => {
+    it('should add auto-refresh toggle widget', () => {
+      const mockNode = {
+        addWidget: vi.fn(),
+        widgets: []
+      }
+      const mockWidget = {
+        refresh: vi.fn()
+      }
+
+      useRemoteWidget({
+        remoteConfig: createMockConfig(),
+        defaultValue: DEFAULT_VALUE,
+        node: mockNode as any,
+        widget: mockWidget as any
+      })
+
+      // Should add auto-refresh toggle widget
+      expect(mockNode.addWidget).toHaveBeenCalledWith(
+        'toggle',
+        'Auto-refresh on task completion',
+        false,
+        expect.any(Function),
+        {
+          on: 'Auto ON',
+          off: 'Auto OFF',
+          serialize: false
+        }
+      )
+    })
+
+    it('should start/stop task watcher when toggle changes', async () => {
+      const { useTaskCompletionWatcher } = await import(
+        '@/composables/useTaskCompletionWatcher'
+      )
+      const mockWatcher = {
+        start: vi.fn(),
+        stop: vi.fn(),
+        trigger: vi.fn(),
+        isWatching: { value: false } as any
+      }
+      vi.mocked(useTaskCompletionWatcher).mockReturnValue(mockWatcher as any)
+
+      const mockNode = {
+        addWidget: vi.fn(),
+        widgets: []
+      }
+      const mockWidget = {
+        refresh: vi.fn()
+      }
+
+      useRemoteWidget({
+        remoteConfig: createMockConfig(),
+        defaultValue: DEFAULT_VALUE,
+        node: mockNode as any,
+        widget: mockWidget as any
+      })
+
+      // Get the toggle callback
+      const toggleCallback = mockNode.addWidget.mock.calls.find(
+        (call) => call[0] === 'toggle'
+      )?.[3]
+
+      // Enable auto-refresh
+      toggleCallback?.(true)
+      expect(mockWatcher.start).toHaveBeenCalled()
+
+      // Disable auto-refresh
+      toggleCallback?.(false)
+      expect(mockWatcher.stop).toHaveBeenCalled()
+    })
+
+    it('should refresh widget when task completes', async () => {
+      const { useTaskCompletionWatcher } = await import(
+        '@/composables/useTaskCompletionWatcher'
+      )
+      let onCompleteCallback: (() => void) | undefined
+      vi.mocked(useTaskCompletionWatcher).mockImplementation((options) => {
+        onCompleteCallback = options?.onComplete
+        return {
+          start: vi.fn(),
+          stop: vi.fn(),
+          trigger: vi.fn(),
+          isWatching: { value: false } as any
+        } as any
+      })
+
+      const mockNode = {
+        addWidget: vi.fn(),
+        widgets: []
+      }
+      const mockWidget = {} as any
+
+      useRemoteWidget({
+        remoteConfig: createMockConfig(),
+        defaultValue: DEFAULT_VALUE,
+        node: mockNode as any,
+        widget: mockWidget
+      })
+
+      // Spy on the refresh function that was added by useRemoteWidget
+      const refreshSpy = vi.spyOn(mockWidget, 'refresh')
+
+      // Get the toggle callback and enable auto-refresh
+      const toggleCallback = mockNode.addWidget.mock.calls.find(
+        (call) => call[0] === 'toggle'
+      )?.[3]
+      toggleCallback?.(true)
+
+      // Simulate task completion
+      onCompleteCallback?.()
+
+      expect(refreshSpy).toHaveBeenCalled()
+    })
+
+    it('should cleanup watcher on node removal', async () => {
+      const { useTaskCompletionWatcher } = await import(
+        '@/composables/useTaskCompletionWatcher'
+      )
+      const mockWatcher = {
+        start: vi.fn(),
+        stop: vi.fn(),
+        trigger: vi.fn(),
+        isWatching: { value: false } as any
+      }
+      vi.mocked(useTaskCompletionWatcher).mockReturnValue(mockWatcher as any)
+
+      const mockNode = {
+        addWidget: vi.fn(),
+        widgets: [],
+        onRemoved: undefined as any
+      }
+      const mockWidget = {
+        refresh: vi.fn()
+      }
+
+      useRemoteWidget({
+        remoteConfig: createMockConfig(),
+        defaultValue: DEFAULT_VALUE,
+        node: mockNode as any,
+        widget: mockWidget as any
+      })
+
+      // Simulate node removal
+      mockNode.onRemoved?.()
+
+      expect(mockWatcher.stop).toHaveBeenCalled()
     })
   })
 })
