@@ -1,7 +1,4 @@
-import type {
-  BaseSearchParamsWithoutQuery,
-  Hit
-} from 'algoliasearch/dist/lite/browser'
+import type { Hit } from 'algoliasearch/dist/lite/browser'
 
 import type { components } from '@/types/comfyRegistryTypes'
 
@@ -86,8 +83,11 @@ export interface NodesIndexSuggestion {
 /**
  * Parameters for searching the Algolia index.
  */
-export type SearchNodePacksParams = BaseSearchParamsWithoutQuery & {
+export interface SearchNodePacksParams {
   pageSize: number
   pageNumber: number
   restrictSearchableAttributes?: SearchAttribute[]
+  filters?: Record<string, string | string[] | boolean>
+  sortField?: string
+  sortDirection?: 'asc' | 'desc'
 }

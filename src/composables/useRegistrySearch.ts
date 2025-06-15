@@ -1,18 +1,20 @@
 import { watchDebounced } from '@vueuse/core'
-import { orderBy } from 'lodash'
 import { computed, ref, watch } from 'vue'
 
 import { DEFAULT_PAGE_SIZE } from '@/constants/searchConstants'
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
 import type { SearchAttribute } from '@/types/algoliaTypes'
-import { SortableAlgoliaField } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
-import type { QuerySuggestion, SearchMode } from '@/types/searchServiceTypes'
+import type {
+  ActiveFilters,
+  QuerySuggestion,
+  SearchMode
+} from '@/types/searchServiceTypes'
 
 type RegistryNodePack = components['schemas']['Node']
 
 const SEARCH_DEBOUNCE_TIME = 320
-const DEFAULT_SORT_FIELD = SortableAlgoliaField.Downloads // Set in the index configuration
+const DEFAULT_SORT_FIELD = 'total_install' // Downloads field in the database
 
 /**
  * Composable for managing UI state of Comfy Node Registry search.
@@ -40,6 +42,7 @@ export function useRegistrySearch(
   const searchQuery = ref(initialSearchQuery)
   const searchResults = ref<RegistryNodePack[]>([])
   const suggestions = ref<QuerySuggestion[]>([])
+  const activeFilters = ref<ActiveFilters>({})
 
   const searchAttributes = computed<SearchAttribute[]>(() =>
     searchMode.value === 'nodes' ? ['comfy_nodes'] : ['name', 'description']
@@ -47,43 +50,40 @@ export function useRegistrySearch(
 
   const searchGateway = useRegistrySearchGateway()
 
-  const { searchPacks, clearSearchCache, getSortValue, getSortableFields } =
-    searchGateway
+  const {
+    searchPacks,
+    clearSearchCache,
+    getSortableFields,
+    getFilterableFields
+  } = searchGateway
 
   const updateSearchResults = async (options: { append?: boolean }) => {
     isLoading.value = true
     if (!options.append) {
       pageNumber.value = 0
     }
+
+    // Get the sort direction from the provider's sortable fields
+    const sortableFields = getSortableFields()
+    const fieldConfig = sortableFields.find((f) => f.id === sortField.value)
+    const sortDirection = fieldConfig?.direction || 'desc'
+
     const { nodePacks, querySuggestions } = await searchPacks(
       searchQuery.value,
       {
         pageSize: pageSize.value,
         pageNumber: pageNumber.value,
-        restrictSearchableAttributes: searchAttributes.value
+        restrictSearchableAttributes: searchAttributes.value,
+        filters: activeFilters.value,
+        sortField: sortField.value,
+        sortDirection
       }
     )
 
-    let sortedPacks = nodePacks
-
-    // Results are sorted by the default field to begin with -- so don't manually sort again
-    if (sortField.value && sortField.value !== DEFAULT_SORT_FIELD) {
-      // Get the sort direction from the provider's sortable fields
-      const sortableFields = getSortableFields()
-      const fieldConfig = sortableFields.find((f) => f.id === sortField.value)
-      const direction = fieldConfig?.direction || 'desc'
-
-      sortedPacks = orderBy(
-        nodePacks,
-        [(pack) => getSortValue(pack, sortField.value)],
-        [direction]
-      )
-    }
-
     if (options.append && searchResults.value?.length) {
-      searchResults.value = searchResults.value.concat(sortedPacks)
+      searchResults.value = searchResults.value.concat(nodePacks)
     } else {
-      searchResults.value = sortedPacks
+      searchResults.value = nodePacks
     }
     suggestions.value = querySuggestions
     isLoading.value = false
@@ -93,6 +93,7 @@ export function useRegistrySearch(
   const onPageChange = () => updateSearchResults({ append: true })
 
   watch([sortField, searchMode], onQueryChange)
+  watch(activeFilters, onQueryChange, { deep: true })
   watch(pageNumber, onPageChange)
   watchDebounced(searchQuery, onQueryChange, {
     debounce: SEARCH_DEBOUNCE_TIME,
@@ -102,6 +103,29 @@ export function useRegistrySearch(
   const sortOptions = computed(() => {
     return getSortableFields()
   })
+
+  const filterOptions = computed(() => {
+    return getFilterableFields()
+  })
+
+  // Initialize filters with default values when they become available
+  const filterOptionsInitialized = ref(false)
+  watch(
+    filterOptions,
+    (newOptions) => {
+      if (!filterOptionsInitialized.value && newOptions.length > 0) {
+        const defaultFilters: ActiveFilters = {}
+        for (const option of newOptions) {
+          if (option.defaultValue !== undefined) {
+            defaultFilters[option.id] = option.defaultValue
+          }
+        }
+        activeFilters.value = { ...activeFilters.value, ...defaultFilters }
+        filterOptionsInitialized.value = true
+      }
+    },
+    { immediate: true }
+  )
 
   return {
     isLoading,
@@ -113,6 +137,8 @@ export function useRegistrySearch(
     suggestions,
     searchResults,
     sortOptions,
+    activeFilters,
+    filterOptions,
     clearCache: clearSearchCache
   }
 }

@@ -30,14 +30,16 @@ describe('useRegistrySearchGateway', () => {
         searchPacks: vi.fn(),
         clearSearchCache: vi.fn(),
         getSortValue: vi.fn(),
-        getSortableFields: vi.fn().mockReturnValue([])
+        getSortableFields: vi.fn().mockReturnValue([]),
+        getFilterableFields: vi.fn().mockReturnValue([])
       }
 
       const mockRegistryProvider = {
         searchPacks: vi.fn(),
         clearSearchCache: vi.fn(),
         getSortValue: vi.fn(),
-        getSortableFields: vi.fn().mockReturnValue([])
+        getSortableFields: vi.fn().mockReturnValue([]),
+        getFilterableFields: vi.fn().mockReturnValue([])
       }
 
       vi.mocked(useAlgoliaSearchProvider).mockReturnValue(mockAlgoliaProvider)
@@ -63,7 +65,8 @@ describe('useRegistrySearchGateway', () => {
           .mockResolvedValue({ nodePacks: [], querySuggestions: [] }),
         clearSearchCache: vi.fn(),
         getSortValue: vi.fn(),
-        getSortableFields: vi.fn().mockReturnValue([])
+        getSortableFields: vi.fn().mockReturnValue([]),
+        getFilterableFields: vi.fn().mockReturnValue([])
       }
 
       vi.mocked(useComfyRegistrySearchProvider).mockReturnValue(
@@ -101,14 +104,16 @@ describe('useRegistrySearchGateway', () => {
           .mockRejectedValueOnce(new Error('Algolia failed')),
         clearSearchCache: vi.fn(),
         getSortValue: vi.fn(),
-        getSortableFields: vi.fn().mockReturnValue([])
+        getSortableFields: vi.fn().mockReturnValue([]),
+        getFilterableFields: vi.fn().mockReturnValue([])
       }
 
       const mockRegistryProvider = {
         searchPacks: vi.fn().mockResolvedValue(registryResult),
         clearSearchCache: vi.fn(),
         getSortValue: vi.fn(),
-        getSortableFields: vi.fn().mockReturnValue([])
+        getSortableFields: vi.fn().mockReturnValue([]),
+        getFilterableFields: vi.fn().mockReturnValue([])
       }
 
       vi.mocked(useAlgoliaSearchProvider).mockReturnValue(mockAlgoliaProvider)
@@ -138,14 +143,16 @@ describe('useRegistrySearchGateway', () => {
         searchPacks: vi.fn().mockRejectedValue(new Error('Algolia failed')),
         clearSearchCache: vi.fn(),
         getSortValue: vi.fn(),
-        getSortableFields: vi.fn().mockReturnValue([])
+        getSortableFields: vi.fn().mockReturnValue([]),
+        getFilterableFields: vi.fn().mockReturnValue([])
       }
 
       const mockRegistryProvider = {
         searchPacks: vi.fn().mockRejectedValue(new Error('Registry failed')),
         clearSearchCache: vi.fn(),
         getSortValue: vi.fn(),
-        getSortableFields: vi.fn().mockReturnValue([])
+        getSortableFields: vi.fn().mockReturnValue([]),
+        getFilterableFields: vi.fn().mockReturnValue([])
       }
 
       vi.mocked(useAlgoliaSearchProvider).mockReturnValue(mockAlgoliaProvider)
@@ -173,14 +180,16 @@ describe('useRegistrySearchGateway', () => {
         searchPacks: vi.fn().mockRejectedValue(new Error('Algolia failed')),
         clearSearchCache: vi.fn(),
         getSortValue: vi.fn(),
-        getSortableFields: vi.fn().mockReturnValue([])
+        getSortableFields: vi.fn().mockReturnValue([]),
+        getFilterableFields: vi.fn().mockReturnValue([])
       }
 
       const mockRegistryProvider = {
         searchPacks: vi.fn().mockResolvedValue(registryResult),
         clearSearchCache: vi.fn(),
         getSortValue: vi.fn(),
-        getSortableFields: vi.fn().mockReturnValue([])
+        getSortableFields: vi.fn().mockReturnValue([]),
+        getFilterableFields: vi.fn().mockReturnValue([])
       }
 
       vi.mocked(useAlgoliaSearchProvider).mockReturnValue(mockAlgoliaProvider)
@@ -214,7 +223,8 @@ describe('useRegistrySearchGateway', () => {
         searchPacks: vi.fn().mockRejectedValue(new Error('Persistent failure')),
         clearSearchCache: vi.fn(),
         getSortValue: vi.fn(),
-        getSortableFields: vi.fn().mockReturnValue([])
+        getSortableFields: vi.fn().mockReturnValue([]),
+        getFilterableFields: vi.fn().mockReturnValue([])
       }
 
       const mockRegistryProvider = {
@@ -223,7 +233,8 @@ describe('useRegistrySearchGateway', () => {
           .mockResolvedValue({ nodePacks: [], querySuggestions: [] }),
         clearSearchCache: vi.fn(),
         getSortValue: vi.fn(),
-        getSortableFields: vi.fn().mockReturnValue([])
+        getSortableFields: vi.fn().mockReturnValue([]),
+        getFilterableFields: vi.fn().mockReturnValue([])
       }
 
       vi.mocked(useAlgoliaSearchProvider).mockReturnValue(mockAlgoliaProvider)
@@ -242,14 +253,16 @@ describe('useRegistrySearchGateway', () => {
         searchPacks: vi.fn(),
         clearSearchCache: vi.fn(),
         getSortValue: vi.fn(),
-        getSortableFields: vi.fn().mockReturnValue([])
+        getSortableFields: vi.fn().mockReturnValue([]),
+        getFilterableFields: vi.fn().mockReturnValue([])
       }
 
       const mockRegistryProvider = {
         searchPacks: vi.fn(),
         clearSearchCache: vi.fn(),
         getSortValue: vi.fn(),
-        getSortableFields: vi.fn().mockReturnValue([])
+        getSortableFields: vi.fn().mockReturnValue([]),
+        getFilterableFields: vi.fn().mockReturnValue([])
       }
 
       vi.mocked(useAlgoliaSearchProvider).mockReturnValue(mockAlgoliaProvider)
@@ -271,14 +284,16 @@ describe('useRegistrySearchGateway', () => {
           throw new Error('Cache clear failed')
         }),
         getSortValue: vi.fn(),
-        getSortableFields: vi.fn().mockReturnValue([])
+        getSortableFields: vi.fn().mockReturnValue([]),
+        getFilterableFields: vi.fn().mockReturnValue([])
       }
 
       const mockRegistryProvider = {
         searchPacks: vi.fn(),
         clearSearchCache: vi.fn(),
         getSortValue: vi.fn(),
-        getSortableFields: vi.fn().mockReturnValue([])
+        getSortableFields: vi.fn().mockReturnValue([]),
+        getFilterableFields: vi.fn().mockReturnValue([])
       }
 
       vi.mocked(useAlgoliaSearchProvider).mockReturnValue(mockAlgoliaProvider)
@@ -307,14 +322,16 @@ describe('useRegistrySearchGateway', () => {
         searchPacks: vi.fn(),
         clearSearchCache: vi.fn(),
         getSortValue: vi.fn(),
-        getSortableFields: vi.fn().mockReturnValue(algoliaFields)
+        getSortableFields: vi.fn().mockReturnValue(algoliaFields),
+        getFilterableFields: vi.fn().mockReturnValue([])
       }
 
       const mockRegistryProvider = {
         searchPacks: vi.fn(),
         clearSearchCache: vi.fn(),
         getSortValue: vi.fn(),
-        getSortableFields: vi.fn().mockReturnValue([])
+        getSortableFields: vi.fn().mockReturnValue([]),
+        getFilterableFields: vi.fn().mockReturnValue([])
       }
 
       vi.mocked(useAlgoliaSearchProvider).mockReturnValue(mockAlgoliaProvider)
@@ -338,7 +355,8 @@ describe('useRegistrySearchGateway', () => {
         searchPacks: vi.fn().mockRejectedValue(new Error('Algolia failed')),
         clearSearchCache: vi.fn(),
         getSortValue: vi.fn(),
-        getSortableFields: vi.fn().mockReturnValue(algoliaFields)
+        getSortableFields: vi.fn().mockReturnValue(algoliaFields),
+        getFilterableFields: vi.fn().mockReturnValue([])
       }
 
       const mockRegistryProvider = {
@@ -347,7 +365,8 @@ describe('useRegistrySearchGateway', () => {
           .mockResolvedValue({ nodePacks: [], querySuggestions: [] }),
         clearSearchCache: vi.fn(),
         getSortValue: vi.fn(),
-        getSortableFields: vi.fn().mockReturnValue(registryFields)
+        getSortableFields: vi.fn().mockReturnValue(registryFields),
+        getFilterableFields: vi.fn().mockReturnValue([])
       }
 
       vi.mocked(useAlgoliaSearchProvider).mockReturnValue(mockAlgoliaProvider)
@@ -372,14 +391,16 @@ describe('useRegistrySearchGateway', () => {
         searchPacks: vi.fn(),
         clearSearchCache: vi.fn(),
         getSortValue: vi.fn().mockReturnValue(100),
-        getSortableFields: vi.fn().mockReturnValue([])
+        getSortableFields: vi.fn().mockReturnValue([]),
+        getFilterableFields: vi.fn().mockReturnValue([])
       }
 
       const mockRegistryProvider = {
         searchPacks: vi.fn(),
         clearSearchCache: vi.fn(),
         getSortValue: vi.fn(),
-        getSortableFields: vi.fn().mockReturnValue([])
+        getSortableFields: vi.fn().mockReturnValue([]),
+        getFilterableFields: vi.fn().mockReturnValue([])
       }
 
       vi.mocked(useAlgoliaSearchProvider).mockReturnValue(mockAlgoliaProvider)
@@ -412,14 +433,16 @@ describe('useRegistrySearchGateway', () => {
         searchPacks: vi.fn().mockRejectedValue(algoliaError),
         clearSearchCache: vi.fn(),
         getSortValue: vi.fn(),
-        getSortableFields: vi.fn().mockReturnValue([])
+        getSortableFields: vi.fn().mockReturnValue([]),
+        getFilterableFields: vi.fn().mockReturnValue([])
       }
 
       const mockRegistryProvider = {
         searchPacks: vi.fn().mockResolvedValue(registryResult),
         clearSearchCache: vi.fn(),
         getSortValue: vi.fn(),
-        getSortableFields: vi.fn().mockReturnValue([])
+        getSortableFields: vi.fn().mockReturnValue([]),
+        getFilterableFields: vi.fn().mockReturnValue([])
       }
 
       vi.mocked(useAlgoliaSearchProvider).mockReturnValue(mockAlgoliaProvider)

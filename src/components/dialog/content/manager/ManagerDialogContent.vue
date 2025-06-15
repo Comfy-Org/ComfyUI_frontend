@@ -30,9 +30,11 @@
             v-model:searchQuery="searchQuery"
             v-model:searchMode="searchMode"
             v-model:sortField="sortField"
+            v-model:activeFilters="activeFilters"
             :search-results="searchResults"
             :suggestions="suggestions"
             :sort-options="sortOptions"
+            :filter-options="filterOptions"
           />
           <div class="flex-1 overflow-auto">
             <div
@@ -121,6 +123,7 @@ import { useWorkflowPacks } from '@/composables/nodePack/useWorkflowPacks'
 import { useRegistrySearch } from '@/composables/useRegistrySearch'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { TabItem } from '@/types/comfyManagerTypes'
 import { ManagerTab } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
@@ -132,6 +135,7 @@ const { initialTab } = defineProps<{
 const { t } = useI18n()
 const comfyManagerStore = useComfyManagerStore()
 const { getPackById } = useComfyRegistryStore()
+const systemStatsStore = useSystemStatsStore()
 const persistedState = useManagerStatePersistence()
 const initialState = persistedState.loadStoredState()
 
@@ -181,7 +185,9 @@ const {
   searchMode,
   sortField,
   suggestions,
-  sortOptions
+  sortOptions,
+  activeFilters,
+  filterOptions
 } = useRegistrySearch({
   initialSortField: initialState.sortField,
   initialSearchMode: initialState.searchMode,
@@ -464,8 +470,13 @@ whenever(selectedNodePack, async () => {
 })
 
 let gridContainer: HTMLElement | null = null
-onMounted(() => {
+onMounted(async () => {
   gridContainer = document.getElementById('results-grid')
+
+  // Fetch system stats if not already loaded
+  if (!systemStatsStore.systemStats && !systemStatsStore.isLoading) {
+    await systemStatsStore.fetchSystemStats()
+  }
 })
 watch(searchQuery, () => {
   gridContainer ??= document.getElementById('results-grid')
