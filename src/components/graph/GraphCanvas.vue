@@ -300,6 +300,13 @@ onMounted(async () => {
   CORE_SETTINGS.forEach((setting) => {
     settingStore.addSetting(setting)
   })
+  if (!settingStore.exists('Comfy.InstalledVersion')) {
+    const currentVersion =
+      Object.keys(settingStore.settingValues).length > 0
+        ? ''
+        : __COMFYUI_FRONTEND_VERSION__
+    await settingStore.set('Comfy.InstalledVersion', currentVersion)
+  }
   // @ts-expect-error fixme ts strict error
   await comfyApp.setup(canvasRef.value)
   canvasStore.canvas = comfyApp.canvas
