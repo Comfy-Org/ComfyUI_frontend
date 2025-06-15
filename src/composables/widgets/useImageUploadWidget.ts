@@ -7,7 +7,6 @@ import { useValueTransform } from '@/composables/useValueTransform'
 import { t } from '@/i18n'
 import type { ResultItem } from '@/schemas/apiSchema'
 import type { ComboInputOptions, InputSpec } from '@/schemas/nodeDefSchema'
-import { isComboInputSpecV1, isComboInputSpecV2 } from '@/schemas/nodeDefSchema'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { createAnnotatedPath } from '@/utils/formatUtil'
@@ -34,12 +33,7 @@ export const useImageUploadWidget = () => {
     inputName: string,
     inputData: InputSpec
   ) => {
-    // Extract options based on the input spec type
-    let inputOptions: ComboInputOptions = {}
-    if (isComboInputSpecV1(inputData) || isComboInputSpecV2(inputData)) {
-      inputOptions = inputData[1] ?? {}
-    }
-
+    const inputOptions = (inputData[1] ?? {}) as ComboInputOptions
     const { imageInputName, allow_batch, image_folder = 'input' } = inputOptions
     const nodeOutputStore = useNodeOutputStore()
 
