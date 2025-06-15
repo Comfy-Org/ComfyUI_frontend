@@ -2,6 +2,10 @@
   "Comfy-Desktop_AutoUpdate": {
     "name": "자동 업데이트 확인"
   },
+  "Comfy-Desktop_LaunchOptions": {
+    "name": "사용자 지정 실행 인수",
+    "tooltip": "백엔드 실행을 위한 사용자 지정 명령줄 인수입니다(예: --cpu). 재시작이 필요합니다."
+  },
   "Comfy-Desktop_SendStatistics": {
     "name": "익명 사용 통계 보내기"
   },

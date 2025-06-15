@@ -2,6 +2,10 @@
   "Comfy-Desktop_AutoUpdate": {
     "name": "自动检查更新"
   },
+  "Comfy-Desktop_LaunchOptions": {
+    "name": "自定义启动参数",
+    "tooltip": "用于启动后端的自定义命令行参数（例如：--cpu）。需要重启。"
+  },
   "Comfy-Desktop_SendStatistics": {
     "name": "发送匿名使用情况统计"
   },
