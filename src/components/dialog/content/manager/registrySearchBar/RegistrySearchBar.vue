@@ -61,7 +61,11 @@ import {
   SortableAlgoliaField
 } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
-import type { QuerySuggestion, SortableField } from '@/types/searchServiceTypes'
+import type {
+  QuerySuggestion,
+  SearchMode,
+  SortableField
+} from '@/types/searchServiceTypes'
 
 const { searchResults, sortOptions } = defineProps<{
   searchResults?: components['schemas']['Node'][]
@@ -70,7 +74,7 @@ const { searchResults, sortOptions } = defineProps<{
 }>()
 
 const searchQuery = defineModel<string>('searchQuery')
-const searchMode = defineModel<string>('searchMode', { default: 'packs' })
+const searchMode = defineModel<SearchMode>('searchMode', { default: 'packs' })
 const sortField = defineModel<string>('sortField', {
   default: SortableAlgoliaField.Downloads
 })
@@ -88,7 +92,7 @@ const availableSortOptions = computed<SearchOption<string>[]>(() => {
     label: field.label
   }))
 })
-const filterOptions: SearchOption<string>[] = [
+const filterOptions: SearchOption<SearchMode>[] = [
   { id: 'packs', label: t('manager.filter.nodePack') },
   { id: 'nodes', label: t('g.nodes') }
 ]

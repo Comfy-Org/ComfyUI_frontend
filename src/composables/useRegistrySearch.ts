@@ -3,11 +3,11 @@ import { orderBy } from 'lodash'
 import { computed, ref, watch } from 'vue'
 
 import { DEFAULT_PAGE_SIZE } from '@/constants/searchConstants'
-import { useRegistrySearchGateway } from '@/services/registrySearchGateway'
+import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
 import type { SearchAttribute } from '@/types/algoliaTypes'
 import { SortableAlgoliaField } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
-import type { QuerySuggestion } from '@/types/searchServiceTypes'
+import type { QuerySuggestion, SearchMode } from '@/types/searchServiceTypes'
 
 type RegistryNodePack = components['schemas']['Node']
 
@@ -20,7 +20,7 @@ const DEFAULT_SORT_FIELD = SortableAlgoliaField.Downloads // Set in the index co
 export function useRegistrySearch(
   options: {
     initialSortField?: string
-    initialSearchMode?: 'nodes' | 'packs'
+    initialSearchMode?: SearchMode
     initialSearchQuery?: string
     initialPageNumber?: number
   } = {}
@@ -34,7 +34,7 @@ export function useRegistrySearch(
 
   const isLoading = ref(false)
   const sortField = ref<string>(initialSortField)
-  const searchMode = ref<'nodes' | 'packs'>(initialSearchMode)
+  const searchMode = ref<SearchMode>(initialSearchMode)
   const pageSize = ref(DEFAULT_PAGE_SIZE)
   const pageNumber = ref(initialPageNumber)
   const searchQuery = ref(initialSearchQuery)
