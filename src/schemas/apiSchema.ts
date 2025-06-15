@@ -8,6 +8,7 @@ import { zKeybinding } from '@/schemas/keyBindingSchema'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 
+export const resultItemType = z.enum(['input', 'output', 'temp'])
 const zNodeType = z.string()
 const zQueueIndex = z.number()
 const zPromptId = z.string()
@@ -19,6 +20,7 @@ const zResultItem = z.object({
   subfolder: z.string().optional(),
   type: resultItemType.optional()
 })
+export type ResultItemType = z.infer<typeof resultItemType>
 export type ResultItem = z.infer<typeof zResultItem>
 const zOutputs = z
   .object({
