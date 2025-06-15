@@ -15,14 +15,16 @@ const DEFAULT_SORT_FIELD = SortableAlgoliaField.Downloads // Set in the index co
 /**
  * Composable for managing UI state of Comfy Node Registry search.
  */
-export function useRegistrySearch(options: {
-  initialSortField?: SortableAlgoliaField
-  initialSearchMode?: 'nodes' | 'packs'
-  initialSearchQuery?: string
-  initialPageNumber?: number
-} = {}) {
+export function useRegistrySearch(
+  options: {
+    initialSortField?: string
+    initialSearchMode?: 'nodes' | 'packs'
+    initialSearchQuery?: string
+    initialPageNumber?: number
+  } = {}
+) {
   const {
-    initialSortField = SortableAlgoliaField.Downloads,
+    initialSortField = DEFAULT_SORT_FIELD,
     initialSearchMode = 'packs',
     initialSearchQuery = '',
     initialPageNumber = 0

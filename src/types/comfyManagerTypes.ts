@@ -239,5 +239,5 @@ export interface ManagerState {
   selectedTabId: ManagerTab
   searchQuery: string
   searchMode: 'nodes' | 'packs'
-  sortField: SortableAlgoliaField
+  sortField: string
 }
