@@ -3,15 +3,29 @@ import type { LGraphNode } from '@comfyorg/litegraph'
 import { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
 import { useNodeFileInput } from '@/composables/node/useNodeFileInput'
 import { useNodePaste } from '@/composables/node/useNodePaste'
+import type { ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useToastStore } from '@/stores/toastStore'
 
 const PASTED_IMAGE_EXPIRY_MS = 2000
 
-const uploadFile = async (file: File, isPasted: boolean) => {
+interface ImageUploadFormFields {
+  /**
+   * The folder to upload the file to.
+   * @example 'input', 'output', 'temp'
+   */
+  type: ResultItemType
+}
+
+const uploadFile = async (
+  file: File,
+  isPasted: boolean,
+  formFields: Partial<ImageUploadFormFields> = {}
+) => {
   const body = new FormData()
   body.append('image', file)
   if (isPasted) body.append('subfolder', 'pasted')
+  if (formFields.type) body.append('type', formFields.type)
 
   const resp = await api.fetchApi('/upload/image', {
     method: 'POST',
@@ -53,7 +67,7 @@ export const useNodeImageUpload = (
 
   const handleUpload = async (file: File) => {
     try {
-      const path = await uploadFile(file, isPastedFile(file))
+      const path = await uploadFile(file, isPastedFile(file), {})
       if (!path) return
       return path
     } catch (error) {
