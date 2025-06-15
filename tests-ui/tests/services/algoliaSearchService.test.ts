@@ -1,5 +1,5 @@
 import { liteClient as algoliasearch } from 'algoliasearch/dist/lite/builds/browser'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAlgoliaSearchProvider } from '@/services/algoliaSearchService'
 import { SortableAlgoliaField } from '@/types/comfyManagerTypes'
@@ -26,6 +26,12 @@ describe('useAlgoliaSearchProvider', () => {
     }
 
     vi.mocked(algoliasearch).mockReturnValue(mockSearchClient)
+  })
+
+  afterEach(() => {
+    // Clear the module-level cache between tests
+    const provider = useAlgoliaSearchProvider()
+    provider.clearSearchCache()
   })
 
   describe('searchPacks', () => {
