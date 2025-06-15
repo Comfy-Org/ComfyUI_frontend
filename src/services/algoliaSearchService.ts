@@ -86,9 +86,9 @@ const toRegistryPack = memoize(
       icon: algoliaNode.icon_url,
       latest_version: toRegistryLatestVersion(algoliaNode),
       publisher: toRegistryPublisher(algoliaNode),
-      // @ts-expect-error create_time is not in the RegistryNodePack type, comfy_nodes also not in node info
-      create_time: algoliaNode.create_time,
-      comfy_nodes: algoliaNode.comfy_nodes
+      // @ts-expect-error comfy_nodes also not in node info
+      comfy_nodes: algoliaNode.comfy_nodes,
+      create_time: algoliaNode.create_time
     }
   },
   (algoliaNode: AlgoliaNodePack) => algoliaNode.id
@@ -156,6 +156,9 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
     }
   }
 
+  /**
+   * Search for node packs in Algolia with caching.
+   */
   const searchPacks = async (
     query: string,
     params: SearchNodePacksParams
@@ -184,8 +187,9 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
       case SortableAlgoliaField.Downloads:
         return pack.downloads ?? 0
       case SortableAlgoliaField.Created: {
-        // Use create_time from the Algolia data
-        const createTime = (pack as any).create_time
+        // TODO: add create time to backend return type
+        // @ts-expect-error create_time is not in the RegistryNodePack type
+        const createTime = pack.create_time
         return createTime ? new Date(createTime).getTime() : 0
       }
       case SortableAlgoliaField.Updated:
@@ -202,7 +206,6 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
   }
 
   const getSortableFields = (): SortableField[] => {
-    // These match the fields available in Algolia indices
     return [
       {
         id: SortableAlgoliaField.Downloads,
@@ -225,15 +228,5 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
     clearSearchCache,
     getSortValue,
     getSortableFields
-  }
-}
-
-// Compatibility export for existing code
-export const useAlgoliaSearchService = () => {
-  const provider = useAlgoliaSearchProvider()
-  return {
-    searchPacksCached: provider.searchPacks,
-    toRegistryPack,
-    clearSearchPacksCache: provider.clearSearchCache
   }
 }

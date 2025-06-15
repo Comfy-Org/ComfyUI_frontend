@@ -47,13 +47,14 @@ export const useRegistrySearchGateway = (): NodePackSearchProvider => {
     console.warn('Failed to initialize Algolia provider:', error)
   }
 
-  // Always add the ComfyRegistry provider as the final fallback
   providers.push({
     provider: useComfyRegistrySearchProvider(),
     name: 'ComfyRegistry',
     isHealthy: true,
     consecutiveFailures: 0
   })
+
+  // TODO: Add an "offline" provider that operates on a local cache of the registry.
 
   /**
    * Check if a provider's circuit breaker should be closed (available to try)
@@ -126,15 +127,18 @@ export const useRegistrySearchGateway = (): NodePackSearchProvider => {
   }
 
   /**
-   * Update the active provider index after a failure
+   * Update the active provider index after a failure.
+   * Move to the next provider if available.
    */
   const updateActiveProviderOnFailure = () => {
-    // Move to the next provider if available
     if (activeProviderIndex < providers.length - 1) {
       activeProviderIndex++
     }
   }
 
+  /**
+   * Search for node packs.
+   */
   const searchPacks = async (
     query: string,
     params: SearchNodePacksParams
@@ -170,8 +174,10 @@ export const useRegistrySearchGateway = (): NodePackSearchProvider => {
     )
   }
 
+  /**
+   * Clear the search cache for all providers that implement it.
+   */
   const clearSearchCache = () => {
-    // Clear cache for all providers
     for (const providerState of providers) {
       try {
         providerState.provider.clearSearchCache()
@@ -184,6 +190,17 @@ export const useRegistrySearchGateway = (): NodePackSearchProvider => {
     }
   }
 
+  /**
+   * Get the sort value for a pack.
+   * @example
+   * const pack = {
+   *   id: '123',
+   *   name: 'Test Pack',
+   *   downloads: 100
+   * }
+   * const sortValue = getSortValue(pack, 'downloads')
+   * console.log(sortValue) // 100
+   */
   const getSortValue = (
     pack: RegistryNodePack,
     sortField: string
@@ -191,6 +208,12 @@ export const useRegistrySearchGateway = (): NodePackSearchProvider => {
     return getActiveProvider().getSortValue(pack, sortField)
   }
 
+  /**
+   * Get the sortable fields for the active provider.
+   * @example
+   * const sortableFields = getSortableFields()
+   * console.log(sortableFields) // ['downloads', 'created', 'updated', 'publisher', 'name']
+   */
   const getSortableFields = () => {
     return getActiveProvider().getSortableFields()
   }

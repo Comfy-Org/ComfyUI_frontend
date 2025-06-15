@@ -82,7 +82,8 @@ const hasResults = computed(
 )
 
 const availableSortOptions = computed<SearchOption<string>[]>(() => {
-  return (sortOptions ?? []).map((field) => ({
+  if (!sortOptions) return []
+  return sortOptions.map((field) => ({
     id: field.id,
     label: field.label
   }))
@@ -92,6 +93,7 @@ const filterOptions: SearchOption<string>[] = [
   { id: 'nodes', label: t('g.nodes') }
 ]
 
+// When a dropdown query suggestion is selected, update the search query
 const onOptionSelect = (event: AutoCompleteOptionSelectEvent) => {
   searchQuery.value = event.value.query
 }

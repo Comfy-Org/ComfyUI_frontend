@@ -9,11 +9,15 @@ import type {
 
 type RegistryNodePack = components['schemas']['Node']
 
+/**
+ * Search provider for the Comfy Registry.
+ * Uses public Comfy Registry API.
+ */
 export const useComfyRegistrySearchProvider = (): NodePackSearchProvider => {
   const registryStore = useComfyRegistryStore()
 
   /**
-   * Search for node packs using the registry API
+   * Search for node packs using the Comfy Registry API.
    */
   const searchPacks = async (
     query: string,
@@ -40,7 +44,6 @@ export const useComfyRegistrySearchProvider = (): NodePackSearchProvider => {
       }
     }
 
-    // Registry API already returns results sorted by downloads by default
     return {
       nodePacks: searchResult.nodes,
       querySuggestions: [] // Registry doesn't support query suggestions
@@ -48,8 +51,7 @@ export const useComfyRegistrySearchProvider = (): NodePackSearchProvider => {
   }
 
   const clearSearchCache = () => {
-    // The registry store handles its own caching
-    registryStore.clearCache()
+    registryStore.search.clear()
   }
 
   const getSortValue = (

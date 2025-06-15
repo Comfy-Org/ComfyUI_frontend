@@ -2,16 +2,18 @@ import { watchDebounced } from '@vueuse/core'
 import { orderBy } from 'lodash'
 import { computed, ref, watch } from 'vue'
 
+import { DEFAULT_PAGE_SIZE } from '@/constants/searchConstants'
 import { useRegistrySearchGateway } from '@/services/registrySearchGateway'
 import type { SearchAttribute } from '@/types/algoliaTypes'
 import { SortableAlgoliaField } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
+import type { QuerySuggestion } from '@/types/searchServiceTypes'
 
 type RegistryNodePack = components['schemas']['Node']
 
 const SEARCH_DEBOUNCE_TIME = 320
-const DEFAULT_PAGE_SIZE = 64
 const DEFAULT_SORT_FIELD = SortableAlgoliaField.Downloads // Set in the index configuration
+
 /**
  * Composable for managing UI state of Comfy Node Registry search.
  */
@@ -37,7 +39,7 @@ export function useRegistrySearch(
   const pageNumber = ref(initialPageNumber)
   const searchQuery = ref(initialSearchQuery)
   const searchResults = ref<RegistryNodePack[]>([])
-  const suggestions = ref<Array<{ query: string; popularity: number }>>([])
+  const suggestions = ref<QuerySuggestion[]>([])
 
   const searchAttributes = computed<SearchAttribute[]>(() =>
     searchMode.value === 'nodes' ? ['comfy_nodes'] : ['name', 'description']
