@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useComfyRegistrySearchProvider } from '@/services/registrySearchService'
+import { useComfyRegistrySearchProvider } from '@/services/registrySearchProvider'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 
 // Mock the store
@@ -10,7 +10,7 @@ vi.mock('@/stores/comfyRegistryStore', () => ({
 
 describe('useComfyRegistrySearchProvider', () => {
   const mockSearchCall = vi.fn()
-  const mockClearCache = vi.fn()
+  const mockSearchClear = vi.fn()
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -18,9 +18,9 @@ describe('useComfyRegistrySearchProvider', () => {
     // Setup store mock
     vi.mocked(useComfyRegistryStore).mockReturnValue({
       search: {
-        call: mockSearchCall
-      },
-      clearCache: mockClearCache
+        call: mockSearchCall,
+        clear: mockSearchClear
+      }
     } as any)
   })
 
@@ -114,11 +114,11 @@ describe('useComfyRegistrySearchProvider', () => {
   })
 
   describe('clearSearchCache', () => {
-    it('should delegate to store clearCache', () => {
+    it('should delegate to store search.clear', () => {
       const provider = useComfyRegistrySearchProvider()
       provider.clearSearchCache()
 
-      expect(mockClearCache).toHaveBeenCalled()
+      expect(mockSearchClear).toHaveBeenCalled()
     })
   })
 

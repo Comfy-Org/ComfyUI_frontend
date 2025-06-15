@@ -1,12 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useAlgoliaSearchProvider } from '@/services/algoliaSearchService'
-import { useRegistrySearchGateway } from '@/services/registrySearchGateway'
-import { useComfyRegistrySearchProvider } from '@/services/registrySearchService'
+import { useAlgoliaSearchProvider } from '@/services/algoliaSearchProvider'
+import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
+import { useComfyRegistrySearchProvider } from '@/services/registrySearchProvider'
 
 // Mock the provider modules to control their behavior
-vi.mock('@/services/algoliaSearchService')
-vi.mock('@/services/registrySearchService')
+vi.mock('@/services/algoliaSearchProvider')
+vi.mock('@/services/registrySearchProvider')
 
 describe('useRegistrySearchGateway', () => {
   let consoleWarnSpy: any
