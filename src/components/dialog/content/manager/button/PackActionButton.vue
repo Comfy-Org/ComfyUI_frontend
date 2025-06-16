@@ -1,9 +1,11 @@
 <template>
   <Button
     outlined
-    class="m-0 p-0 rounded-lg"
+    class="!m-0 p-0 rounded-lg"
     :class="[
-      variant === 'black' ? 'bg-neutral-900 text-white' : 'border-neutral-700',
+      variant === 'black'
+        ? 'bg-neutral-900 text-white border-neutral-900'
+        : 'border-neutral-700',
       fullWidth ? 'w-full' : 'w-min-content',
       halfWidth ? 'w-1/2' : 'w-min-content'
     ]"

@@ -26,8 +26,8 @@
       />
       <PackInstallAllButton
         v-if="isMissingTab"
-        :disabled="!hasResults"
-        :node-packs="searchResults || []"
+        :disabled="isLoading || !!error || missingNodePacks.length === 0"
+        :node-packs="missingNodePacks || []"
       />
     </div>
     <div class="flex mt-3 text-sm">
@@ -57,11 +57,12 @@ import { stubTrue } from 'lodash'
 import AutoComplete, {
   AutoCompleteOptionSelectEvent
 } from 'primevue/autocomplete'
-import { computed, watch } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PackInstallAllButton from '@/components/dialog/content/manager/button/PackInstallAllButton.vue'
 import SearchFilterDropdown from '@/components/dialog/content/manager/registrySearchBar/SearchFilterDropdown.vue'
+import { useMissingNodes } from '@/composables/nodePack/useMissingNodes'
 import {
   type SearchOption,
   SortableAlgoliaField
@@ -75,7 +76,6 @@ import type {
 
 const { searchResults, sortOptions } = defineProps<{
   searchResults?: components['schemas']['Node'][]
-  isMissingTab?: boolean
   suggestions?: QuerySuggestion[]
   sortOptions?: SortableField[]
   isMissingTab?: boolean
@@ -89,16 +89,11 @@ const sortField = defineModel<string>('sortField', {
 
 const { t } = useI18n()
 
+// Get missing node packs from workflow with loading and error states
+const { missingNodePacks, isLoading, error } = useMissingNodes()
+
 const hasResults = computed(
   () => searchQuery.value?.trim() && searchResults?.length
-)
-
-watch(
-  () => searchResults,
-  (newVal) => {
-    console.log('searchResults:', newVal)
-  },
-  { immediate: true, deep: true }
 )
 
 const availableSortOptions = computed<SearchOption<string>[]>(() => {

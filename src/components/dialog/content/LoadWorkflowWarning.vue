@@ -31,6 +31,10 @@
     </template>
   </ListBox>
   <div v-if="isManagerInstalled" class="flex justify-end py-3">
+    <PackInstallAllButton
+      :disabled="isLoading || !!error || missingNodePacks.length === 0"
+      :node-packs="missingNodePacks"
+    />
     <Button label="Open Manager" size="small" outlined @click="openManager" />
   </div>
 </template>
@@ -41,6 +45,8 @@ import ListBox from 'primevue/listbox'
 import { computed } from 'vue'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
+import PackInstallAllButton from '@/components/dialog/content/manager/button/PackInstallAllButton.vue'
+import { useMissingNodes } from '@/composables/nodePack/useMissingNodes'
 import { useDialogService } from '@/services/dialogService'
 import { useAboutPanelStore } from '@/stores/aboutPanelStore'
 import type { MissingNodeType } from '@/types/comfy'
@@ -51,6 +57,9 @@ const props = defineProps<{
 }>()
 
 const aboutPanelStore = useAboutPanelStore()
+
+// Get missing node packs from workflow with loading and error states
+const { missingNodePacks, isLoading, error } = useMissingNodes()
 
 // Determines if ComfyUI-Manager is installed by checking for its badge in the about panel
 // This allows us to conditionally show the Manager button only when the extension is available
