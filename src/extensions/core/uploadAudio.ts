@@ -5,14 +5,13 @@ import { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
 import { useNodeFileInput } from '@/composables/node/useNodeFileInput'
 import { useNodePaste } from '@/composables/node/useNodePaste'
 import { t } from '@/i18n'
+import type { ResultItemType } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { DOMWidget } from '@/scripts/domWidget'
 import { useToastStore } from '@/stores/toastStore'
 
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
-
-type FolderType = 'input' | 'output' | 'temp'
 
 function splitFilePath(path: string): [string, string] {
   const folder_separator = path.lastIndexOf('/')
@@ -28,7 +27,7 @@ function splitFilePath(path: string): [string, string] {
 function getResourceURL(
   subfolder: string,
   filename: string,
-  type: FolderType = 'input'
+  type: ResultItemType = 'input'
 ): string {
   const params = [
     'filename=' + encodeURIComponent(filename),
