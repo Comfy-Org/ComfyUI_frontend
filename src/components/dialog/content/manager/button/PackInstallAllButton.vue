@@ -5,7 +5,6 @@
     :loading="isInstalling"
     :loading-message="$t('g.installing')"
     variant="black"
-    half-width
     @action="installAllPacks"
     @click="onClick"
   />

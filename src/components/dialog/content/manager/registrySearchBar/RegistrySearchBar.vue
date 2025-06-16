@@ -1,29 +1,31 @@
 <template>
   <div class="relative w-full p-6">
-    <div class="flex items-center w-full">
-      <AutoComplete
-        v-model.lazy="searchQuery"
-        :suggestions="suggestions || []"
-        :placeholder="$t('manager.searchPlaceholder')"
-        :complete-on-focus="false"
-        :delay="8"
-        option-label="query"
-        class="w-full"
-        :pt="{
-          pcInputText: {
-            root: {
-              autofocus: true,
-              class: 'w-5/12 rounded-2xl'
+    <div class="h-12 flex items-center gap-1 justify-between">
+      <div class="flex items-center w-5/12">
+        <AutoComplete
+          v-model.lazy="searchQuery"
+          :suggestions="suggestions || []"
+          :placeholder="$t('manager.searchPlaceholder')"
+          :complete-on-focus="false"
+          :delay="8"
+          option-label="query"
+          class="w-full"
+          :pt="{
+            pcInputText: {
+              root: {
+                autofocus: true,
+                class: 'w-full rounded-2xl'
+              }
+            },
+            loader: {
+              style: 'display: none'
             }
-          },
-          loader: {
-            style: 'display: none'
-          }
-        }"
-        :show-empty-message="false"
-        @complete="stubTrue"
-        @option-select="onOptionSelect"
-      />
+          }"
+          :show-empty-message="false"
+          @complete="stubTrue"
+          @option-select="onOptionSelect"
+        />
+      </div>
       <PackInstallAllButton
         v-if="isMissingTab && missingNodePacks.length > 0"
         :disabled="isLoading || !!error"

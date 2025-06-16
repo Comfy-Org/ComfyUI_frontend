@@ -6,8 +6,7 @@
       variant === 'black'
         ? 'bg-neutral-900 text-white border-neutral-900'
         : 'border-neutral-700',
-      fullWidth ? 'w-full' : 'w-min-content',
-      halfWidth ? 'w-1/2' : 'w-min-content'
+      fullWidth ? 'w-full' : 'w-min-content'
     ]"
     :disabled="loading"
     v-bind="$attrs"
@@ -31,14 +30,12 @@ const {
   label,
   loadingMessage,
   fullWidth = false,
-  halfWidth = false,
   variant = 'default'
 } = defineProps<{
   label: string
   loading?: boolean
   loadingMessage?: string
   fullWidth?: boolean
-  halfWidth?: boolean
   variant?: 'default' | 'black'
 }>()
 
