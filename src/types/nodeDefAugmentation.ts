@@ -16,7 +16,7 @@ export interface ImageUploadComboOptions extends ComboInputOptions {
    * Reference to the associated filename combo widget.
    * Injected by uploadImage.ts to link upload buttons with their combo widgets.
    *
-   * @frontend-only This property exists only in the frontend runtime.
+   * @remarks This property exists only in the frontend runtime.
    */
   imageInputName: string
 }
