@@ -586,6 +586,7 @@
     },
     "inWorkflow": "워크플로우 내",
     "infoPanelEmpty": "정보를 보려면 항목을 클릭하세요",
+    "installAllMissingNodes": "모든 누락된 노드 설치",
     "installSelected": "선택한 항목 설치",
     "installationQueue": "설치 대기열",
     "lastUpdated": "마지막 업데이트",

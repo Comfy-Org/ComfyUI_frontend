@@ -586,6 +586,7 @@
     },
     "inWorkflow": "在工作流中",
     "infoPanelEmpty": "点击一个项目查看信息",
+    "installAllMissingNodes": "安装所有缺失节点",
     "installSelected": "安装选定",
     "installationQueue": "安装队列",
     "lastUpdated": "最后更新",

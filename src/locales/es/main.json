@@ -586,6 +586,7 @@
     },
     "inWorkflow": "En Flujo de Trabajo",
     "infoPanelEmpty": "Haz clic en un elemento para ver la información",
+    "installAllMissingNodes": "Instalar todos los nodos faltantes",
     "installSelected": "Instalar Seleccionado",
     "installationQueue": "Cola de Instalación",
     "lastUpdated": "Última Actualización",

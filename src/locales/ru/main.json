@@ -586,6 +586,7 @@
     },
     "inWorkflow": "В рабочем процессе",
     "infoPanelEmpty": "Нажмите на элемент, чтобы увидеть информацию",
+    "installAllMissingNodes": "Установить все отсутствующие узлы",
     "installSelected": "Установить выбранное",
     "installationQueue": "Очередь установки",
     "lastUpdated": "Последнее обновление",
