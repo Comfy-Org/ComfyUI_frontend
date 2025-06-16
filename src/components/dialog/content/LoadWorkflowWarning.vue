@@ -30,12 +30,18 @@
       </div>
     </template>
   </ListBox>
-  <div v-if="isManagerInstalled" class="flex justify-end py-3">
+  <div class="flex justify-end py-3">
     <PackInstallAllButton
       :disabled="isLoading || !!error || missingNodePacks.length === 0"
       :node-packs="missingNodePacks"
     />
-    <Button label="Open Manager" size="small" outlined @click="openManager" />
+    <Button
+      v-if="isManagerInstalled"
+      label="Open Manager"
+      size="small"
+      outlined
+      @click="openManager"
+    />
   </div>
 </template>
 

@@ -25,8 +25,8 @@
         @option-select="onOptionSelect"
       />
       <PackInstallAllButton
-        v-if="isMissingTab"
-        :disabled="isLoading || !!error || missingNodePacks.length === 0"
+        v-if="isMissingTab && missingNodePacks.length > 0"
+        :disabled="isLoading || !!error"
         :node-packs="missingNodePacks || []"
       />
     </div>
