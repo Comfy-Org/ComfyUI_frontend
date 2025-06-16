@@ -108,25 +108,6 @@ export function useRegistrySearch(
     return getFilterableFields()
   })
 
-  // Initialize filters with default values when they become available
-  const filterOptionsInitialized = ref(false)
-  watch(
-    filterOptions,
-    (newOptions) => {
-      if (!filterOptionsInitialized.value && newOptions.length > 0) {
-        const defaultFilters: ActiveFilters = {}
-        for (const option of newOptions) {
-          if (option.defaultValue !== undefined) {
-            defaultFilters[option.id] = option.defaultValue
-          }
-        }
-        activeFilters.value = { ...activeFilters.value, ...defaultFilters }
-        filterOptionsInitialized.value = true
-      }
-    },
-    { immediate: true }
-  )
-
   return {
     isLoading,
     pageNumber,

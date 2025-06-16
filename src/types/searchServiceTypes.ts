@@ -16,9 +16,9 @@ export type QuerySuggestion = {
 export interface SearchFilter {
   id: string
   label: string
-  type: 'multi-select' | 'single-select' | 'boolean'
+  type: 'single-select' | 'boolean'
   options?: FilterOption[]
-  defaultValue?: string | string[] | boolean
+  defaultValue?: string | boolean
 }
 
 export interface FilterOption {
@@ -27,7 +27,7 @@ export interface FilterOption {
   icon?: string
 }
 
-export type ActiveFilters = Record<string, string | string[] | boolean>
+export type ActiveFilters = Record<string, string | boolean>
 
 export interface SearchPacksResult {
   nodePacks: RegistryNodePack[]
