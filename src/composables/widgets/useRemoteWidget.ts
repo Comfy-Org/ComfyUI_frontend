@@ -242,7 +242,7 @@ export function useRemoteWidget<
     const autoRefreshWidget = node.addWidget(
       'toggle',
       'Auto-refresh on task completion',
-      true,
+      false,
       (value: boolean) => {
         if (value) {
           taskWatcher?.start()
@@ -251,6 +251,8 @@ export function useRemoteWidget<
         }
       },
       {
+        on: 'Auto ON',
+        off: 'Auto OFF',
         serialize: false
       }
     )
