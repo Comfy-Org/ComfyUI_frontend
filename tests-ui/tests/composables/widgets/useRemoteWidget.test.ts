@@ -538,7 +538,7 @@ describe('useRemoteWidget', () => {
       // Should add auto-refresh toggle widget
       expect(mockNode.addWidget).toHaveBeenCalledWith(
         'toggle',
-        'Auto-refresh on workflow completion',
+        'Auto-refresh after generation',
         false,
         expect.any(Function),
         {
