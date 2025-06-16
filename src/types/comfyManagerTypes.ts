@@ -3,6 +3,7 @@ import type { InjectionKey, Ref } from 'vue'
 import type { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import type { AlgoliaNodePack } from '@/types/algoliaTypes'
 import type { components } from '@/types/comfyRegistryTypes'
+import type { SearchMode } from '@/types/searchServiceTypes'
 
 type WorkflowNodeProperties = ComfyWorkflowJSON['nodes'][0]['properties']
 
@@ -238,6 +239,6 @@ export interface UpdateAllPacksParams {
 export interface ManagerState {
   selectedTabId: ManagerTab
   searchQuery: string
-  searchMode: 'nodes' | 'packs'
-  sortField: SortableAlgoliaField
+  searchMode: SearchMode
+  sortField: string
 }

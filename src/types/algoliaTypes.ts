@@ -12,11 +12,20 @@ type SafeNestedProperty<
 > = T[K1] extends undefined | null ? undefined : NonNullable<T[K1]>[K2]
 
 type RegistryNodePack = components['schemas']['Node']
+
+/**
+ * Result of searching the Algolia index.
+ * Represents the entire result of a search query.
+ */
 export type SearchPacksResult = {
   nodePacks: Hit<AlgoliaNodePack>[]
   querySuggestions: Hit<NodesIndexSuggestion>[]
 }
 
+/**
+ * Node pack record after it has been mapped to Algolia index format.
+ * @see https://github.com/Comfy-Org/comfy-api/blob/main/mapper/algolia.go
+ */
 export interface AlgoliaNodePack {
   objectID: RegistryNodePack['id']
   name: RegistryNodePack['name']
@@ -52,7 +61,14 @@ export interface AlgoliaNodePack {
   icon_url: RegistryNodePack['icon']
 }
 
+/**
+ * An attribute that can be used to search the Algolia index by.
+ */
 export type SearchAttribute = keyof AlgoliaNodePack
+
+/**
+ * Suggestion for a search query (autocomplete).
+ */
 export interface NodesIndexSuggestion {
   nb_words: number
   nodes_index: {
@@ -67,8 +83,11 @@ export interface NodesIndexSuggestion {
   query: string
 }
 
+/**
+ * Parameters for searching the Algolia index.
+ */
 export type SearchNodePacksParams = BaseSearchParamsWithoutQuery & {
   pageSize: number
   pageNumber: number
-  restrictSearchableAttributes: SearchAttribute[]
+  restrictSearchableAttributes?: SearchAttribute[]
 }
