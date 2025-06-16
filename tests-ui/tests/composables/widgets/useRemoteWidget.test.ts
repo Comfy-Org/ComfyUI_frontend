@@ -544,8 +544,6 @@ describe('useRemoteWidget', () => {
         false,
         expect.any(Function),
         {
-          on: 'Auto ON',
-          off: 'Auto OFF',
           serialize: false
         }
       )

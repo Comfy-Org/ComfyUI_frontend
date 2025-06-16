@@ -251,8 +251,6 @@ export function useRemoteWidget<
         }
       },
       {
-        on: 'Auto ON',
-        off: 'Auto OFF',
         serialize: false
       }
     )
