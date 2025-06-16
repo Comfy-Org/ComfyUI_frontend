@@ -329,8 +329,17 @@ test.describe('Animated image widget', () => {
       }
     }, saveAnimatedPNGNode.id)
 
-    // Move mouse and click on canvas to trigger render
-    await comfyPage.page.mouse.click(128, 128)
+    // Wait for the image to load
+    await comfyPage.page.waitForTimeout(500)
+
+    // Multiple canvas interactions to trigger render
+    await comfyPage.page.mouse.move(200, 200)
+    await comfyPage.page.mouse.click(200, 200)
+    await comfyPage.nextFrame()
+
+    // Click near the node to ensure it's rendered
+    const nodePos = await saveAnimatedPNGNode.getPosition()
+    await comfyPage.page.mouse.click(nodePos.x + 50, nodePos.y + 50)
     await comfyPage.nextFrame()
 
     // Expect the SaveAnimatedPNG node to have an output preview
