@@ -26,13 +26,11 @@ vi.mock('@/stores/settingStore', () => ({
   })
 }))
 
-vi.mock('@/composables/useTaskCompletionWatcher', () => ({
-  useTaskCompletionWatcher: vi.fn(() => ({
-    start: vi.fn(),
-    stop: vi.fn(),
-    trigger: vi.fn(),
-    isWatching: { value: false } as any
-  }))
+vi.mock('@/scripts/api', () => ({
+  api: {
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn()
+  }
 }))
 
 vi.mock('@/composables/functional/useChainCallback', () => ({
@@ -540,7 +538,7 @@ describe('useRemoteWidget', () => {
       // Should add auto-refresh toggle widget
       expect(mockNode.addWidget).toHaveBeenCalledWith(
         'toggle',
-        'Auto-refresh on task completion',
+        'Auto-refresh on workflow completion',
         false,
         expect.any(Function),
         {
@@ -549,17 +547,8 @@ describe('useRemoteWidget', () => {
       )
     })
 
-    it('should start/stop task watcher when toggle changes', async () => {
-      const { useTaskCompletionWatcher } = await import(
-        '@/composables/useTaskCompletionWatcher'
-      )
-      const mockWatcher = {
-        start: vi.fn(),
-        stop: vi.fn(),
-        trigger: vi.fn(),
-        isWatching: { value: false } as any
-      }
-      vi.mocked(useTaskCompletionWatcher).mockReturnValue(mockWatcher as any)
+    it('should register event listener when enabled', async () => {
+      const { api } = await import('@/scripts/api')
 
       const mockNode = {
         addWidget: vi.fn(),
@@ -576,33 +565,22 @@ describe('useRemoteWidget', () => {
         widget: mockWidget as any
       })
 
-      // Get the toggle callback
-      const toggleCallback = mockNode.addWidget.mock.calls.find(
-        (call) => call[0] === 'toggle'
-      )?.[3]
-
-      // Enable auto-refresh
-      toggleCallback?.(true)
-      expect(mockWatcher.start).toHaveBeenCalled()
-
-      // Disable auto-refresh
-      toggleCallback?.(false)
-      expect(mockWatcher.stop).toHaveBeenCalled()
+      // Event listener should be registered immediately
+      expect(api.addEventListener).toHaveBeenCalledWith(
+        'execution_success',
+        expect.any(Function)
+      )
     })
 
-    it('should refresh widget when task completes', async () => {
-      const { useTaskCompletionWatcher } = await import(
-        '@/composables/useTaskCompletionWatcher'
-      )
-      let onCompleteCallback: (() => void) | undefined
-      vi.mocked(useTaskCompletionWatcher).mockImplementation((options) => {
-        onCompleteCallback = options?.onComplete
-        return {
-          start: vi.fn(),
-          stop: vi.fn(),
-          trigger: vi.fn(),
-          isWatching: { value: false } as any
-        } as any
+    it('should refresh widget when workflow completes successfully', async () => {
+      const { api } = await import('@/scripts/api')
+      let executionSuccessHandler: (() => void) | undefined
+
+      // Capture the event handler
+      vi.mocked(api.addEventListener).mockImplementation((event, handler) => {
+        if (event === 'execution_success') {
+          executionSuccessHandler = handler as () => void
+        }
       })
 
       const mockNode = {
@@ -627,23 +605,56 @@ describe('useRemoteWidget', () => {
       )?.[3]
       toggleCallback?.(true)
 
-      // Simulate task completion
-      onCompleteCallback?.()
+      // Simulate workflow completion
+      executionSuccessHandler?.()
 
       expect(refreshSpy).toHaveBeenCalled()
     })
 
-    it('should cleanup watcher on node removal', async () => {
-      const { useTaskCompletionWatcher } = await import(
-        '@/composables/useTaskCompletionWatcher'
-      )
-      const mockWatcher = {
-        start: vi.fn(),
-        stop: vi.fn(),
-        trigger: vi.fn(),
-        isWatching: { value: false } as any
+    it('should not refresh when toggle is disabled', async () => {
+      const { api } = await import('@/scripts/api')
+      let executionSuccessHandler: (() => void) | undefined
+
+      // Capture the event handler
+      vi.mocked(api.addEventListener).mockImplementation((event, handler) => {
+        if (event === 'execution_success') {
+          executionSuccessHandler = handler as () => void
+        }
+      })
+
+      const mockNode = {
+        addWidget: vi.fn(),
+        widgets: []
       }
-      vi.mocked(useTaskCompletionWatcher).mockReturnValue(mockWatcher as any)
+      const mockWidget = {} as any
+
+      useRemoteWidget({
+        remoteConfig: createMockConfig(),
+        defaultValue: DEFAULT_VALUE,
+        node: mockNode as any,
+        widget: mockWidget
+      })
+
+      // Spy on the refresh function that was added by useRemoteWidget
+      const refreshSpy = vi.spyOn(mockWidget, 'refresh')
+
+      // Toggle is disabled by default
+      // Simulate workflow completion
+      executionSuccessHandler?.()
+
+      expect(refreshSpy).not.toHaveBeenCalled()
+    })
+
+    it('should cleanup event listener on node removal', async () => {
+      const { api } = await import('@/scripts/api')
+      let executionSuccessHandler: (() => void) | undefined
+
+      // Capture the event handler
+      vi.mocked(api.addEventListener).mockImplementation((event, handler) => {
+        if (event === 'execution_success') {
+          executionSuccessHandler = handler as () => void
+        }
+      })
 
       const mockNode = {
         addWidget: vi.fn(),
@@ -664,7 +675,10 @@ describe('useRemoteWidget', () => {
       // Simulate node removal
       mockNode.onRemoved?.()
 
-      expect(mockWatcher.stop).toHaveBeenCalled()
+      expect(api.removeEventListener).toHaveBeenCalledWith(
+        'execution_success',
+        executionSuccessHandler
+      )
     })
   })
 })

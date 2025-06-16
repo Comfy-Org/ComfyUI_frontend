@@ -3,8 +3,8 @@ import { IWidget } from '@comfyorg/litegraph'
 import axios from 'axios'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import { useTaskCompletionWatcher } from '@/composables/useTaskCompletionWatcher'
 import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
+import { api } from '@/scripts/api'
 
 const MAX_RETRIES = 5
 const TIMEOUT = 4096
@@ -223,41 +223,38 @@ export function useRemoteWidget<
   }
 
   /**
-   * Add auto-refresh toggle widget and task completion watcher
+   * Add auto-refresh toggle widget and execution success listener
    */
   function addAutoRefreshToggle() {
-    let taskWatcher: ReturnType<typeof useTaskCompletionWatcher> | null = null
+    let autoRefreshEnabled = false
 
-    // Initialize task completion watcher
-    taskWatcher = useTaskCompletionWatcher({
-      immediate: true,
-      onComplete: () => {
-        if (widget.refresh) {
-          widget.refresh()
-        }
+    // Handler for execution success
+    const handleExecutionSuccess = () => {
+      console.log('handleExecutionSuccess', autoRefreshEnabled)
+      if (autoRefreshEnabled && widget.refresh) {
+        widget.refresh()
       }
-    })
+    }
 
     // Add toggle widget
     const autoRefreshWidget = node.addWidget(
       'toggle',
-      'Auto-refresh on task completion',
+      'Auto-refresh after generation',
       false,
       (value: boolean) => {
-        if (value) {
-          taskWatcher?.start()
-        } else {
-          taskWatcher?.stop()
-        }
+        autoRefreshEnabled = value
       },
       {
         serialize: false
       }
     )
 
+    // Register event listener
+    api.addEventListener('execution_success', handleExecutionSuccess)
+
     // Cleanup on node removal
     node.onRemoved = useChainCallback(node.onRemoved, function () {
-      taskWatcher?.stop()
+      api.removeEventListener('execution_success', handleExecutionSuccess)
     })
 
     return autoRefreshWidget
