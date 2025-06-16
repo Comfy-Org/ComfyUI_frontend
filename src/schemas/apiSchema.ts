@@ -11,10 +11,13 @@ import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 const zNodeType = z.string()
 const zQueueIndex = z.number()
 const zPromptId = z.string()
+export const resultItemType = z.enum(['input', 'output', 'temp'])
+export type ResultItemType = z.infer<typeof resultItemType>
+
 const zResultItem = z.object({
   filename: z.string().optional(),
   subfolder: z.string().optional(),
-  type: z.string().optional()
+  type: resultItemType.optional()
 })
 export type ResultItem = z.infer<typeof zResultItem>
 const zOutputs = z
