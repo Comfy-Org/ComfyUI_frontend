@@ -328,6 +328,9 @@ test.describe('Animated image widget', () => {
         animated: [true]
       }
     }, saveAnimatedPNGNode.id)
+
+    // Move mouse and click on canvas to trigger render
+    await comfyPage.page.mouse.click(128, 128)
     await comfyPage.nextFrame()
 
     // Expect the SaveAnimatedPNG node to have an output preview
