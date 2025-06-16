@@ -134,7 +134,10 @@ export const graphToPrompt = async (
             link = parent.getInputLink(link.origin_slot)
             if (!link) break
 
-            parent = parent.getInputNode(link.target_slot)
+            parent = parent.isSubgraphNode()
+              ? parent.getInputNodeFromSubgraph(link.target_slot)
+              : parent.getInputNode(link.target_slot)
+
             if (!parent) break
           } else if (!parent.inputs) {
             // Maintains existing behaviour if parent.getInputLink is overriden
