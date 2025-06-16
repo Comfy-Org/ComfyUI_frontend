@@ -1355,27 +1355,37 @@ export class ComfyApp {
       }
     }
 
+    // Try to load workflow first
     if (metadata.workflow) {
       const workflowData = metadata.workflow()
       if (workflowData) {
         await this.loadGraphData(workflowData, true, true, fileName)
+        return
       }
-    } else if (metadata.prompt) {
+    }
+
+    // If no workflow, try prompt
+    if (metadata.prompt) {
       const promptData = metadata.prompt()
       if (promptData) {
         this.loadApiJson(promptData, fileName)
+        return
       }
-    } else if (metadata.parameters) {
-      // A1111 import
+    }
+
+    // If no workflow or prompt, try A1111 parameters
+    if (metadata.parameters) {
       useWorkflowService().beforeLoadNewGraph()
       importA1111(this.graph, metadata.parameters)
       useWorkflowService().afterLoadNewGraph(
         fileName,
         this.graph.serialize() as unknown as ComfyWorkflowJSON
       )
-    } else {
-      this.showErrorOnFileLoad(file)
+      return
     }
+
+    // No valid data found
+    this.showErrorOnFileLoad(file)
   }
 
   isApiJson(data: unknown) {
