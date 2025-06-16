@@ -32,10 +32,7 @@
             v-model:sortField="sortField"
             :search-results="searchResults"
             :suggestions="suggestions"
-<<<<<<< migration/feat/installall
             :is-missing-tab="isMissingTab"
-=======
->>>>>>> main
             :sort-options="sortOptions"
           />
           <div class="flex-1 overflow-auto">

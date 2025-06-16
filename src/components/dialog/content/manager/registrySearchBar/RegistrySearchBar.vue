@@ -64,10 +64,7 @@ import { useI18n } from 'vue-i18n'
 
 import PackInstallAllButton from '@/components/dialog/content/manager/button/PackInstallAllButton.vue'
 import SearchFilterDropdown from '@/components/dialog/content/manager/registrySearchBar/SearchFilterDropdown.vue'
-<<<<<<< migration/feat/installall
 import { useMissingNodes } from '@/composables/nodePack/useMissingNodes'
-=======
->>>>>>> main
 import {
   type SearchOption,
   SortableAlgoliaField
@@ -83,10 +80,7 @@ const { searchResults, sortOptions } = defineProps<{
   searchResults?: components['schemas']['Node'][]
   suggestions?: QuerySuggestion[]
   sortOptions?: SortableField[]
-<<<<<<< migration/feat/installall
   isMissingTab?: boolean
-=======
->>>>>>> main
 }>()
 
 const searchQuery = defineModel<string>('searchQuery')
