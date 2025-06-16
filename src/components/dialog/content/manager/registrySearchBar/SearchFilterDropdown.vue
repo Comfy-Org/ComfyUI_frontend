@@ -6,6 +6,7 @@
       :options="options"
       option-label="label"
       option-value="id"
+      placeholder="Any"
       class="min-w-[6rem] border-none bg-transparent shadow-none"
       :pt="{
         input: { class: 'py-0 px-1 border-none' },

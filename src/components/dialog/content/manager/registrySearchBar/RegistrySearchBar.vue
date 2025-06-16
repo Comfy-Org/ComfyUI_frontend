@@ -25,23 +25,35 @@
         @option-select="onOptionSelect"
       />
     </div>
-    <div class="flex mt-3 text-sm">
-      <div class="flex gap-6 ml-1">
-        <SearchFilterDropdown
-          v-model:modelValue="searchMode"
-          :options="filterOptions"
-          :label="$t('g.filter')"
-        />
-        <SearchFilterDropdown
-          v-model:modelValue="sortField"
-          :options="availableSortOptions"
-          :label="$t('g.sort')"
-        />
+    <div class="flex flex-col gap-3">
+      <div class="flex items-center justify-between mt-3 text-sm">
+        <div class="flex gap-6 ml-1">
+          <SearchFilterDropdown
+            v-model:modelValue="searchMode"
+            :options="searchModeOptions"
+            :label="$t('g.filter')"
+          />
+          <SearchFilterDropdown
+            v-model:modelValue="sortField"
+            :options="availableSortOptions"
+            :label="$t('g.sort')"
+          />
+        </div>
+        <div class="flex items-center gap-4 mr-6">
+          <small v-if="hasResults" class="text-color-secondary">
+            {{ $t('g.resultsCount', { count: searchResults?.length || 0 }) }}
+          </small>
+        </div>
       </div>
-      <div class="flex items-center gap-4 ml-6">
-        <small v-if="hasResults" class="text-color-secondary">
-          {{ $t('g.resultsCount', { count: searchResults?.length || 0 }) }}
-        </small>
+      <!-- Add search refinement dropdowns if provider supports them -->
+      <div v-if="filterOptions?.length" class="flex gap-3 ml-1 text-sm">
+        <SearchFilterDropdown
+          v-for="filterOption in filterOptions"
+          :key="filterOption.id"
+          v-model:modelValue="selectedFilters[filterOption.id]"
+          :options="availableFilterOptions(filterOption)"
+          :label="filterOption.label"
+        />
       </div>
     </div>
   </div>
@@ -56,27 +68,30 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SearchFilterDropdown from '@/components/dialog/content/manager/registrySearchBar/SearchFilterDropdown.vue'
-import {
-  type SearchOption,
-  SortableAlgoliaField
-} from '@/types/comfyManagerTypes'
+import { type SearchOption } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
 import type {
+  ActiveFilters,
   QuerySuggestion,
+  SearchFilter,
   SearchMode,
   SortableField
 } from '@/types/searchServiceTypes'
 
-const { searchResults, sortOptions } = defineProps<{
+const { searchResults, sortOptions, filterOptions } = defineProps<{
   searchResults?: components['schemas']['Node'][]
   suggestions?: QuerySuggestion[]
   sortOptions?: SortableField[]
+  filterOptions?: SearchFilter[]
 }>()
 
 const searchQuery = defineModel<string>('searchQuery')
 const searchMode = defineModel<SearchMode>('searchMode', { default: 'packs' })
 const sortField = defineModel<string>('sortField', {
-  default: SortableAlgoliaField.Downloads
+  default: 'total_install'
+})
+const selectedFilters = defineModel<ActiveFilters>('activeFilters', {
+  default: () => ({})
 })
 
 const { t } = useI18n()
@@ -92,10 +107,21 @@ const availableSortOptions = computed<SearchOption<string>[]>(() => {
     label: field.label
   }))
 })
-const filterOptions: SearchOption<SearchMode>[] = [
+const searchModeOptions: SearchOption<SearchMode>[] = [
   { id: 'packs', label: t('manager.filter.nodePack') },
   { id: 'nodes', label: t('g.nodes') }
 ]
+
+// Convert filter options to SearchOption format for SearchFilterDropdown
+const availableFilterOptions = (
+  filter: SearchFilter
+): SearchOption<string>[] => {
+  if (!filter.options) return []
+  return filter.options.map((option) => ({
+    id: option.value,
+    label: option.label
+  }))
+}
 
 // When a dropdown query suggestion is selected, update the search query
 const onOptionSelect = (event: AutoCompleteOptionSelectEvent) => {

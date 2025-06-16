@@ -1,10 +1,12 @@
 import QuickLRU from '@alloc/quick-lru'
 import { partition } from 'lodash'
 import { defineStore } from 'pinia'
+import { ref } from 'vue'
 
 import { useCachedRequest } from '@/composables/useCachedRequest'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { components, operations } from '@/types/comfyRegistryTypes'
+import type { ProviderState } from '@/types/searchServiceTypes'
 
 const PACK_LIST_CACHE_SIZE = 20
 const PACK_BY_ID_CACHE_SIZE = 64
@@ -33,6 +35,11 @@ export const useComfyRegistryStore = defineStore('comfyRegistry', () => {
   const getPacksByIdCache = new QuickLRU<NodePack['id'], NodePack>({
     maxSize: PACK_BY_ID_CACHE_SIZE
   })
+
+  // Search gateway state
+  const searchProviders = ref<ProviderState[]>([])
+  const activeSearchProviderIndex = ref(0)
+  const isSearchGatewayInitialized = ref(false)
 
   /**
    * Get a list of all node packs from the registry
@@ -137,6 +144,11 @@ export const useComfyRegistryStore = defineStore('comfyRegistry', () => {
     cancelRequests,
 
     isLoading: registryService.isLoading,
-    error: registryService.error
+    error: registryService.error,
+
+    // Search gateway state
+    searchProviders,
+    activeSearchProviderIndex,
+    isSearchGatewayInitialized
   }
 })

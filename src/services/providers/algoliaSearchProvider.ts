@@ -20,6 +20,7 @@ import { SortableAlgoliaField } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
 import type {
   NodePackSearchProvider,
+  SearchFilter,
   SearchPacksResult,
   SortableField
 } from '@/types/searchServiceTypes'
@@ -105,7 +106,14 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
     params: SearchNodePacksParams
   ): Promise<SearchPacksResult> => {
     const { pageSize, pageNumber } = params
-    const rest = omit(params, ['pageSize', 'pageNumber'])
+    const rest = omit(params, [
+      'pageSize',
+      'pageNumber',
+      'sortField',
+      'sortDirection',
+      'filters'
+    ])
+    // TODO:'filters', `sortField` and `sortDirection` need to be mapped to the appropriate Algolia syntax later
 
     const requests: SearchQuery[] = [
       {
@@ -223,10 +231,16 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
     ]
   }
 
+  const getFilterableFields = (): SearchFilter[] => {
+    // Algolia provider doesn't support filters yet, returning empty array
+    return []
+  }
+
   return {
     searchPacks,
     clearSearchCache,
     getSortValue,
-    getSortableFields
+    getSortableFields,
+    getFilterableFields
   }
 }

@@ -7,10 +7,27 @@ type RegistryNodePack = components['schemas']['Node']
  * Search mode for filtering results
  */
 export type SearchMode = 'nodes' | 'packs'
+
 export type QuerySuggestion = {
   query: string
   popularity: number
 }
+
+export interface SearchFilter {
+  id: string
+  label: string
+  type: 'single-select' | 'boolean'
+  options?: FilterOption[]
+  defaultValue?: string | boolean
+}
+
+export interface FilterOption {
+  value: string
+  label: string
+  icon?: string
+}
+
+export type ActiveFilters = Record<string, string | boolean>
 
 export interface SearchPacksResult {
   nodePacks: RegistryNodePack[]
@@ -46,4 +63,22 @@ export interface NodePackSearchProvider {
    * Get the list of sortable fields supported by this provider
    */
   getSortableFields(): SortableField[]
+
+  /**
+   * Get the list of filterable fields supported by this provider
+   * Providers that don't support filters should return an empty array
+   */
+  getFilterableFields(): SearchFilter[]
+}
+
+/**
+ * State of a search provider
+ */
+export interface ProviderState {
+  provider: NodePackSearchProvider
+  name: string
+  isHealthy: boolean
+  lastError?: Error
+  lastAttempt?: Date
+  consecutiveFailures: number
 }
