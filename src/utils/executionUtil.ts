@@ -1,4 +1,4 @@
-import type { LGraph, NodeId } from '@comfyorg/litegraph'
+import type { LGraph, LGraphNode, NodeId } from '@comfyorg/litegraph'
 import { LGraphEventMode } from '@comfyorg/litegraph'
 
 import type {
@@ -120,7 +120,7 @@ export const graphToPrompt = async (
 
       // Store all node links
       for (const [i, input] of node.inputs.entries()) {
-        let parent = node.getInputNode(i)
+        let parent: LGraphNode | null | undefined = node.getInputNode(i)
         if (!parent) continue
 
         let link = node.getInputLink(i)
@@ -135,7 +135,7 @@ export const graphToPrompt = async (
             if (!link) break
 
             parent = parent.isSubgraphNode()
-              ? parent.getInputNodeFromSubgraph(link.target_slot)
+              ? parent.getOutputNodeFromSubgraph(link.origin_slot)
               : parent.getInputNode(link.target_slot)
 
             if (!parent) break
