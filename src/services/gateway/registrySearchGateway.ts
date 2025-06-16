@@ -1,32 +1,18 @@
-import { ref } from 'vue'
-
 import { useAlgoliaSearchProvider } from '@/services/providers/algoliaSearchProvider'
 import { useComfyRegistrySearchProvider } from '@/services/providers/registrySearchProvider'
+import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { SearchNodePacksParams } from '@/types/algoliaTypes'
 import type { components } from '@/types/comfyRegistryTypes'
 import type {
   NodePackSearchProvider,
+  ProviderState,
   SearchPacksResult
 } from '@/types/searchServiceTypes'
 
 type RegistryNodePack = components['schemas']['Node']
 
-interface ProviderState {
-  provider: NodePackSearchProvider
-  name: string
-  isHealthy: boolean
-  lastError?: Error
-  lastAttempt?: Date
-  consecutiveFailures: number
-}
-
 const CIRCUIT_BREAKER_THRESHOLD = 3 // Number of failures before circuit opens
 const CIRCUIT_BREAKER_TIMEOUT = 60000 // 1 minute before retry
-
-// Global state shared across all uses of the gateway
-const providers: ProviderState[] = []
-const activeProviderIndex = ref(0)
-let isInitialized = false
 
 /**
  * API Gateway for registry search providers with circuit breaker pattern.
@@ -39,11 +25,13 @@ let isInitialized = false
  * - Automatic failover: Cascades through providers on failure
  */
 export const useRegistrySearchGateway = (): NodePackSearchProvider => {
+  const store = useComfyRegistryStore()
+
   // Initialize providers only once
-  if (!isInitialized) {
+  if (!store.isSearchGatewayInitialized) {
     // Initialize providers in priority order
     try {
-      providers.push({
+      store.searchProviders.push({
         provider: useAlgoliaSearchProvider(),
         name: 'Algolia',
         isHealthy: true,
@@ -53,14 +41,14 @@ export const useRegistrySearchGateway = (): NodePackSearchProvider => {
       console.warn('Failed to initialize Algolia provider:', error)
     }
 
-    providers.push({
+    store.searchProviders.push({
       provider: useComfyRegistrySearchProvider(),
       name: 'ComfyRegistry',
       isHealthy: true,
       consecutiveFailures: 0
     })
 
-    isInitialized = true
+    store.isSearchGatewayInitialized = true
   }
 
   // TODO: Add an "offline" provider that operates on a local cache of the registry.
@@ -118,16 +106,17 @@ export const useRegistrySearchGateway = (): NodePackSearchProvider => {
    */
   const getActiveProvider = (): NodePackSearchProvider => {
     // First, try to use the current active provider if it's healthy
-    const currentProvider = providers[activeProviderIndex.value]
+    const currentProvider =
+      store.searchProviders[store.activeSearchProviderIndex]
     if (currentProvider && isCircuitClosed(currentProvider)) {
       return currentProvider.provider
     }
 
     // Otherwise, find the first healthy provider
-    for (let i = 0; i < providers.length; i++) {
-      const providerState = providers[i]
+    for (let i = 0; i < store.searchProviders.length; i++) {
+      const providerState = store.searchProviders[i]
       if (isCircuitClosed(providerState)) {
-        activeProviderIndex.value = i
+        store.activeSearchProviderIndex = i
         return providerState.provider
       }
     }
@@ -140,8 +129,8 @@ export const useRegistrySearchGateway = (): NodePackSearchProvider => {
    * Move to the next provider if available.
    */
   const updateActiveProviderOnFailure = () => {
-    if (activeProviderIndex.value < providers.length - 1) {
-      activeProviderIndex.value++
+    if (store.activeSearchProviderIndex < store.searchProviders.length - 1) {
+      store.activeSearchProviderIndex++
     }
   }
 
@@ -155,17 +144,23 @@ export const useRegistrySearchGateway = (): NodePackSearchProvider => {
     let lastError: Error | null = null
 
     // Start with the current active provider
-    for (let attempts = 0; attempts < providers.length; attempts++) {
+    for (
+      let attempts = 0;
+      attempts < store.searchProviders.length;
+      attempts++
+    ) {
       try {
         const provider = getActiveProvider()
-        const providerState = providers[activeProviderIndex.value]
+        const providerState =
+          store.searchProviders[store.activeSearchProviderIndex]
 
         const result = await provider.searchPacks(query, params)
         recordSuccess(providerState)
         return result
       } catch (error) {
         lastError = error as Error
-        const providerState = providers[activeProviderIndex.value]
+        const providerState =
+          store.searchProviders[store.activeSearchProviderIndex]
         recordFailure(providerState, lastError)
         console.warn(
           `${providerState.name} search provider failed (${providerState.consecutiveFailures} failures):`,
@@ -187,7 +182,7 @@ export const useRegistrySearchGateway = (): NodePackSearchProvider => {
    * Clear the search cache for all providers that implement it.
    */
   const clearSearchCache = () => {
-    for (const providerState of providers) {
+    for (const providerState of store.searchProviders) {
       try {
         providerState.provider.clearSearchCache()
       } catch (error) {
@@ -229,11 +224,8 @@ export const useRegistrySearchGateway = (): NodePackSearchProvider => {
 
   /**
    * Get the filterable fields for the active provider.
-   * This is now a computed property that will react to provider changes.
    */
   const getFilterableFields = () => {
-    // Access activeProviderIndex.value to establish reactivity
-    void activeProviderIndex.value
     const provider = getActiveProvider()
     return provider.getFilterableFields()
   }

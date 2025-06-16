@@ -70,3 +70,15 @@ export interface NodePackSearchProvider {
    */
   getFilterableFields(): SearchFilter[]
 }
+
+/**
+ * State of a search provider
+ */
+export interface ProviderState {
+  provider: NodePackSearchProvider
+  name: string
+  isHealthy: boolean
+  lastError?: Error
+  lastAttempt?: Date
+  consecutiveFailures: number
+}
