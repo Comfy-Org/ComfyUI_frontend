@@ -1,3 +1,4 @@
+import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useComfyRegistrySearchProvider } from '@/services/providers/registrySearchProvider'
@@ -14,6 +15,7 @@ describe('useComfyRegistrySearchProvider', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    setActivePinia(createPinia())
 
     // Setup store mock
     vi.mocked(useComfyRegistryStore).mockReturnValue({
@@ -45,7 +47,7 @@ describe('useComfyRegistrySearchProvider', () => {
         search: 'test',
         comfy_node_search: undefined,
         limit: 10,
-        offset: 0
+        page: 1
       })
       expect(result.nodePacks).toEqual(mockResults.nodes)
       expect(result.querySuggestions).toEqual([])
@@ -68,7 +70,7 @@ describe('useComfyRegistrySearchProvider', () => {
         search: undefined,
         comfy_node_search: 'LoadImage',
         limit: 20,
-        offset: 20
+        page: 2
       })
       expect(result.nodePacks).toEqual(mockResults.nodes)
     })
@@ -136,7 +138,7 @@ describe('useComfyRegistrySearchProvider', () => {
 
     it('should return download count for downloads field', () => {
       const provider = useComfyRegistrySearchProvider()
-      expect(provider.getSortValue(testPack, 'downloads')).toBe(100)
+      expect(provider.getSortValue(testPack, 'total_install')).toBe(100)
     })
 
     it('should return pack name for name field', () => {
@@ -146,22 +148,24 @@ describe('useComfyRegistrySearchProvider', () => {
 
     it('should return publisher name for publisher field', () => {
       const provider = useComfyRegistrySearchProvider()
-      expect(provider.getSortValue(testPack, 'publisher')).toBe('Publisher One')
+      expect(provider.getSortValue(testPack, 'publisher_name')).toBe(
+        'Publisher One'
+      )
     })
 
     it('should return timestamp for updated field', () => {
       const provider = useComfyRegistrySearchProvider()
       const timestamp = new Date('2024-01-15T10:00:00Z').getTime()
-      expect(provider.getSortValue(testPack, 'updated')).toBe(timestamp)
+      expect(provider.getSortValue(testPack, 'last_updated')).toBe(timestamp)
     })
 
     it('should handle missing values gracefully', () => {
       const incompletePack = { id: '1', name: 'Incomplete' }
       const provider = useComfyRegistrySearchProvider()
 
-      expect(provider.getSortValue(incompletePack, 'downloads')).toBe(0)
-      expect(provider.getSortValue(incompletePack, 'publisher')).toBe('')
-      expect(provider.getSortValue(incompletePack, 'updated')).toBe(0)
+      expect(provider.getSortValue(incompletePack, 'total_install')).toBe(0)
+      expect(provider.getSortValue(incompletePack, 'publisher_name')).toBe('')
+      expect(provider.getSortValue(incompletePack, 'last_updated')).toBe(0)
     })
 
     it('should return 0 for unknown sort fields', () => {
@@ -176,10 +180,10 @@ describe('useComfyRegistrySearchProvider', () => {
       const fields = provider.getSortableFields()
 
       expect(fields).toEqual([
-        { id: 'downloads', label: 'Downloads', direction: 'desc' },
+        { id: 'total_install', label: 'Downloads', direction: 'desc' },
         { id: 'name', label: 'Name', direction: 'asc' },
-        { id: 'publisher', label: 'Publisher', direction: 'asc' },
-        { id: 'updated', label: 'Updated', direction: 'desc' }
+        { id: 'publisher_name', label: 'Publisher', direction: 'asc' },
+        { id: 'last_updated', label: 'Updated', direction: 'desc' }
       ])
     })
   })

@@ -1,3 +1,4 @@
+import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
@@ -14,6 +15,7 @@ describe('useRegistrySearchGateway', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    setActivePinia(createPinia())
     consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
   })
