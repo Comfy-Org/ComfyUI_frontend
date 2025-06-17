@@ -635,6 +635,8 @@
     "uninstallSelected": "Удалить выбранное",
     "uninstalling": "Удаление",
     "update": "Обновить",
+    "updateAll": "Обновить все",
+    "updateSelected": "Обновить выбранное",
     "updatingAllPacks": "Обновление всех пакетов",
     "version": "Версия"
   },

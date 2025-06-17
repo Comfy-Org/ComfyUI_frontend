@@ -635,6 +635,8 @@
     "uninstallSelected": "Désinstaller sélectionné",
     "uninstalling": "Désinstallation",
     "update": "Mettre à jour",
+    "updateAll": "Tout mettre à jour",
+    "updateSelected": "Mettre à jour la sélection",
     "updatingAllPacks": "Mise à jour de tous les paquets",
     "version": "Version"
   },

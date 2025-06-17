@@ -635,6 +635,8 @@
     "uninstallSelected": "卸载所选",
     "uninstalling": "正在卸载",
     "update": "更新",
+    "updateAll": "全部更新",
+    "updateSelected": "更新所选",
     "updatingAllPacks": "更新所有包",
     "version": "版本"
   },
