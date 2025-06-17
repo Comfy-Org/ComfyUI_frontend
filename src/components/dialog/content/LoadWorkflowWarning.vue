@@ -30,18 +30,14 @@
       </div>
     </template>
   </ListBox>
-  <div class="flex justify-end py-3">
-    <PackInstallAllButton
+  <div v-if="isManagerInstalled" class="flex justify-end py-3">
+    <PackInstallButton
       :disabled="isLoading || !!error || missingNodePacks.length === 0"
       :node-packs="missingNodePacks"
+      variant="black"
+      :label="$t('manager.installAllMissingNodes')"
     />
-    <Button
-      v-if="isManagerInstalled"
-      label="Open Manager"
-      size="small"
-      outlined
-      @click="openManager"
-    />
+    <Button label="Open Manager" size="small" outlined @click="openManager" />
   </div>
 </template>
 
@@ -51,7 +47,7 @@ import ListBox from 'primevue/listbox'
 import { computed } from 'vue'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-import PackInstallAllButton from '@/components/dialog/content/manager/button/PackInstallAllButton.vue'
+import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
 import { useMissingNodes } from '@/composables/nodePack/useMissingNodes'
 import { useDialogService } from '@/services/dialogService'
 import { useAboutPanelStore } from '@/stores/aboutPanelStore'

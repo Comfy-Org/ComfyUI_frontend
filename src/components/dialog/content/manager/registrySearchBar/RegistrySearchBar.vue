@@ -26,10 +26,12 @@
           @option-select="onOptionSelect"
         />
       </div>
-      <PackInstallAllButton
+      <PackInstallButton
         v-if="isMissingTab && missingNodePacks.length > 0"
+        variant="black"
         :disabled="isLoading || !!error"
-        :node-packs="missingNodePacks || []"
+        :node-packs="missingNodePacks"
+        :label="$t('manager.installAllMissingNodes')"
       />
     </div>
     <div class="flex mt-3 text-sm">
@@ -62,7 +64,7 @@ import AutoComplete, {
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import PackInstallAllButton from '@/components/dialog/content/manager/button/PackInstallAllButton.vue'
+import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
 import SearchFilterDropdown from '@/components/dialog/content/manager/registrySearchBar/SearchFilterDropdown.vue'
 import { useMissingNodes } from '@/composables/nodePack/useMissingNodes'
 import {

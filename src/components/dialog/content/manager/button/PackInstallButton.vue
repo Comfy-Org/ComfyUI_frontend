@@ -2,9 +2,11 @@
   <PackActionButton
     v-bind="$attrs"
     :label="
-      nodePacks.length > 1 ? $t('manager.installSelected') : $t('g.install')
+      label ??
+      (nodePacks.length > 1 ? $t('manager.installSelected') : $t('g.install'))
     "
-    severity="secondary"
+    :severity="variant === 'black' ? undefined : 'secondary'"
+    :variant="variant"
     :loading="isInstalling"
     :loading-message="$t('g.installing')"
     @action="installAllPacks"
@@ -27,8 +29,10 @@ import type { components } from '@/types/comfyRegistryTypes'
 
 type NodePack = components['schemas']['Node']
 
-const { nodePacks } = defineProps<{
+const { nodePacks, variant, label } = defineProps<{
   nodePacks: NodePack[]
+  variant?: 'default' | 'black'
+  label?: string
 }>()
 
 const isInstalling = inject(IsInstallingKey, ref(false))
