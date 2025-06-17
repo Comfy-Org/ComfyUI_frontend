@@ -28,6 +28,7 @@ import Button from 'primevue/button'
 
 const {
   label,
+  loading = false,
   loadingMessage,
   fullWidth = false,
   variant = 'default'
