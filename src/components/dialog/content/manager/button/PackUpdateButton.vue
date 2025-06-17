@@ -1,17 +1,12 @@
 <template>
-  <div>
-    <div class="text-xs text-gray-500 mb-2">
-      Debug: isUpdating = {{ isUpdating }}, nodePacks = {{ nodePacks.length }}
-    </div>
-    <PackActionButton
-      v-bind="$attrs"
-      :label="nodePacks.length > 1 ? $t('manager.updateAll') : $t('g.update')"
-      severity="info"
-      :loading="isUpdating"
-      :loading-message="$t('g.updating')"
-      @action="updateAllPacks"
-    />
-  </div>
+  <PackActionButton
+    v-bind="$attrs"
+    :label="$t('manager.updateAll')"
+    severity="info"
+    :loading="isUpdating"
+    :loading-message="$t('g.updating')"
+    @action="updateAllPacks"
+  />
 </template>
 
 <script setup lang="ts">
