@@ -12,6 +12,8 @@ export const useNodeLibrarySidebarTab = (): SidebarTabExtension => {
     title: t('sideToolbar.nodeLibrary'),
     tooltip: t('sideToolbar.nodeLibrary'),
     component: markRaw(NodeLibrarySidebarTab),
-    type: 'vue'
+    type: 'vue',
+    i18nTitleKey: 'sideToolbar.nodeLibrary',
+    i18nTooltipKey: 'sideToolbar.nodeLibrary'
   }
 }
