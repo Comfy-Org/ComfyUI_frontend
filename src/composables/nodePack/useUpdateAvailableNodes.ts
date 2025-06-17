@@ -44,6 +44,11 @@ export const useUpdateAvailableNodes = () => {
     return filterOutdatedPacks(installedPacks.value)
   })
 
+  // Check if there are any outdated packs
+  const hasUpdateAvailable = computed(() => {
+    return updateAvailableNodePacks.value.length > 0
+  })
+
   // Automatically fetch installed pack data when composable is used
   onMounted(async () => {
     if (!installedPacks.value.length && !isLoading.value) {
@@ -53,6 +58,7 @@ export const useUpdateAvailableNodes = () => {
 
   return {
     updateAvailableNodePacks,
+    hasUpdateAvailable,
     isLoading,
     error
   }

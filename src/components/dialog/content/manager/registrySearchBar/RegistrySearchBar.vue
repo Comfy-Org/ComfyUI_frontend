@@ -34,7 +34,7 @@
         :label="$t('manager.installAllMissingNodes')"
       />
       <PackUpdateButton
-        v-if="isUpdateAvailableTab && updateAvailableNodePacks.length > 0"
+        v-if="isUpdateAvailableTab && hasUpdateAvailable"
         :node-packs="updateAvailableNodePacks"
       />
     </div>
@@ -104,7 +104,8 @@ const { t } = useI18n()
 const { missingNodePacks, isLoading, error } = useMissingNodes()
 
 // Use the composable to get update available nodes
-const { updateAvailableNodePacks } = useUpdateAvailableNodes()
+const { hasUpdateAvailable, updateAvailableNodePacks } =
+  useUpdateAvailableNodes()
 
 const hasResults = computed(
   () => searchQuery.value?.trim() && searchResults?.length
