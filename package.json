@@ -1,7 +1,7 @@
 {
   "name": "@comfyorg/comfyui-frontend",
   "private": true,
-  "version": "1.22.2",
+  "version": "1.23.0",
   "type": "module",
   "repository": "https://github.com/Comfy-Org/ComfyUI_frontend",
   "homepage": "https://comfy.org",
