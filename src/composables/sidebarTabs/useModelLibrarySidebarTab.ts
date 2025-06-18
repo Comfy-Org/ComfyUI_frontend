@@ -25,6 +25,8 @@ export const useModelLibrarySidebarTab = (): SidebarTabExtension => {
       }
 
       return null
-    }
+    },
+    i18nTitleKey: 'sideToolbar.modelLibrary',
+    i18nTooltipKey: 'sideToolbar.modelLibrary'
   }
 }

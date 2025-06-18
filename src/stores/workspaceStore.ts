@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import type { Settings } from '@/schemas/apiSchema'
 import { useColorPaletteService } from '@/services/colorPaletteService'
@@ -17,6 +18,7 @@ import { useBottomPanelStore } from './workspace/bottomPanelStore'
 import { useSidebarTabStore } from './workspace/sidebarTabStore'
 
 export const useWorkspaceStore = defineStore('workspace', () => {
+  const { t } = useI18n()
   const spinner = ref(false)
   const shiftDown = ref(false)
   /**
@@ -84,6 +86,16 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     return sidebarTab.value.sidebarTabs
   }
 
+  /**
+   * Update sidebar tab's title and tooltip
+   */
+  function updateSidebarText() {
+    sidebarTab.value.sidebarTabs.forEach((tab) => {
+      tab.title = t(tab.i18nTitleKey)
+      tab.tooltip = t(tab.i18nTooltipKey)
+    })
+  }
+
   return {
     spinner,
     shiftDown,
@@ -104,6 +116,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
 
     registerSidebarTab,
     unregisterSidebarTab,
-    getSidebarTabs
+    getSidebarTabs,
+    updateSidebarText
   }
 })

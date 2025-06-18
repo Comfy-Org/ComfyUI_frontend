@@ -26,6 +26,8 @@ export const useWorkflowsSidebarTab = (): SidebarTabExtension => {
     title: t('sideToolbar.workflows'),
     tooltip: t('sideToolbar.workflows'),
     component: markRaw(WorkflowsSidebarTab),
-    type: 'vue'
+    type: 'vue',
+    i18nTitleKey: 'sideToolbar.workflows',
+    i18nTooltipKey: 'sideToolbar.workflows'
   }
 }
