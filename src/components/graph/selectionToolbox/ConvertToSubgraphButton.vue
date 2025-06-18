@@ -1,14 +1,14 @@
 <template>
   <Button
-    v-show="isDeletable"
+    v-show="isVisible"
     v-tooltip.top="{
-      value: t('commands.Comfy_Canvas_DeleteSelectedItems.label'),
+      value: t('commands.Comfy_Graph_ConvertToSubgraph.label'),
       showDelay: 1000
     }"
-    severity="danger"
+    severity="secondary"
     text
-    icon="pi pi-trash"
-    @click="() => commandStore.execute('Comfy.Canvas.DeleteSelectedItems')"
+    icon="pi pi-box"
+    @click="() => commandStore.execute('Comfy.Graph.ConvertToSubgraph')"
   />
 </template>
 
@@ -24,7 +24,11 @@ const { t } = useI18n()
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
 
-const isDeletable = computed(() =>
-  canvasStore.selectedItems.some((x) => x.removable !== false)
-)
+const isVisible = computed(() => {
+  return (
+    canvasStore.groupSelected ||
+    canvasStore.rerouteSelected ||
+    canvasStore.nodeSelected
+  )
+})
 </script>

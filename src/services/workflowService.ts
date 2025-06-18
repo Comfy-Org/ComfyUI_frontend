@@ -7,6 +7,7 @@ import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { downloadBlob } from '@/scripts/utils'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
@@ -20,6 +21,7 @@ export const useWorkflowService = () => {
   const workflowStore = useWorkflowStore()
   const toastStore = useToastStore()
   const dialogService = useDialogService()
+  const domWidgetStore = useDomWidgetStore()
 
   async function getFilename(defaultName: string): Promise<string | null> {
     if (settingStore.get('Comfy.PromptFilename')) {
@@ -285,11 +287,8 @@ export const useWorkflowService = () => {
    */
   const beforeLoadNewGraph = () => {
     // Use workspaceStore here as it is patched in unit tests.
-    const workflowStore = useWorkspaceStore().workflow
-    const activeWorkflow = workflowStore.activeWorkflow
-    if (activeWorkflow) {
-      activeWorkflow.changeTracker.store()
-    }
+    useWorkspaceStore().workflow.activeWorkflow?.changeTracker?.store()
+    domWidgetStore.clear()
   }
 
   /**
@@ -345,8 +344,7 @@ export const useWorkflowService = () => {
     options: { position?: Vector2 } = {}
   ) => {
     const loadedWorkflow = await workflow.load()
-    const data = loadedWorkflow.initialState
-    const workflowJSON = data
+    const workflowJSON = toRaw(loadedWorkflow.initialState)
     const old = localStorage.getItem('litegrapheditor_clipboard')
     // unknown conversion: ComfyWorkflowJSON is stricter than LiteGraph's
     // serialisation schema.
