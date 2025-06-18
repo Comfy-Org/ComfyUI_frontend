@@ -65,6 +65,7 @@ jobs:
       - name: Restore cached setup
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684
         with:
+          fail-on-cache-miss: true
           path: |
             ComfyUI
             ComfyUI_frontend
