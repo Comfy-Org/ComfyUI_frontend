@@ -586,6 +586,7 @@
     },
     "inWorkflow": "ワークフロー内",
     "infoPanelEmpty": "アイテムをクリックして情報を表示します",
+    "installAllMissingNodes": "すべての不足しているノードをインストール",
     "installSelected": "選択したものをインストール",
     "installationQueue": "インストールキュー",
     "lastUpdated": "最終更新日",

@@ -161,6 +161,7 @@
     "lastUpdated": "Last Updated",
     "noDescription": "No description available",
     "installSelected": "Install Selected",
+    "installAllMissingNodes": "Install All Missing Nodes",
     "packsSelected": "Packs Selected",
     "status": {
       "active": "Active",

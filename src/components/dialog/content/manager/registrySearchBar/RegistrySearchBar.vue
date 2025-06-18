@@ -1,28 +1,37 @@
 <template>
   <div class="relative w-full p-6">
-    <div class="flex items-center w-full">
-      <AutoComplete
-        v-model.lazy="searchQuery"
-        :suggestions="suggestions || []"
-        :placeholder="$t('manager.searchPlaceholder')"
-        :complete-on-focus="false"
-        :delay="8"
-        option-label="query"
-        class="w-full"
-        :pt="{
-          pcInputText: {
-            root: {
-              autofocus: true,
-              class: 'w-5/12 rounded-2xl'
+    <div class="h-12 flex items-center gap-1 justify-between">
+      <div class="flex items-center w-5/12">
+        <AutoComplete
+          v-model.lazy="searchQuery"
+          :suggestions="suggestions || []"
+          :placeholder="$t('manager.searchPlaceholder')"
+          :complete-on-focus="false"
+          :delay="8"
+          option-label="query"
+          class="w-full"
+          :pt="{
+            pcInputText: {
+              root: {
+                autofocus: true,
+                class: 'w-full rounded-2xl'
+              }
+            },
+            loader: {
+              style: 'display: none'
             }
-          },
-          loader: {
-            style: 'display: none'
-          }
-        }"
-        :show-empty-message="false"
-        @complete="stubTrue"
-        @option-select="onOptionSelect"
+          }"
+          :show-empty-message="false"
+          @complete="stubTrue"
+          @option-select="onOptionSelect"
+        />
+      </div>
+      <PackInstallButton
+        v-if="isMissingTab && missingNodePacks.length > 0"
+        variant="black"
+        :disabled="isLoading || !!error"
+        :node-packs="missingNodePacks"
+        :label="$t('manager.installAllMissingNodes')"
       />
     </div>
     <div class="flex mt-3 text-sm">
@@ -55,7 +64,9 @@ import AutoComplete, {
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
 import SearchFilterDropdown from '@/components/dialog/content/manager/registrySearchBar/SearchFilterDropdown.vue'
+import { useMissingNodes } from '@/composables/nodePack/useMissingNodes'
 import {
   type SearchOption,
   SortableAlgoliaField
@@ -71,6 +82,7 @@ const { searchResults, sortOptions } = defineProps<{
   searchResults?: components['schemas']['Node'][]
   suggestions?: QuerySuggestion[]
   sortOptions?: SortableField[]
+  isMissingTab?: boolean
 }>()
 
 const searchQuery = defineModel<string>('searchQuery')
@@ -80,6 +92,9 @@ const sortField = defineModel<string>('sortField', {
 })
 
 const { t } = useI18n()
+
+// Get missing node packs from workflow with loading and error states
+const { missingNodePacks, isLoading, error } = useMissingNodes()
 
 const hasResults = computed(
   () => searchQuery.value?.trim() && searchResults?.length
