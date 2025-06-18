@@ -62,6 +62,16 @@ jobs:
       matrix:
         browser: [chromium, chromium-2x, mobile-chrome]
     steps:
+      - name: Wait for cache
+        timeout-minutes: 2
+        run: |
+          while ! gh cache list -k "comfyui-setup-${{ needs.setup.outputs.cache-key }}" | grep -q .; do
+            echo "Waiting for cache..."
+            sleep 10
+          done
+        env:
+          GH_TOKEN: ${{ github.token }}
+
       - name: Restore cached setup
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684
         with:
