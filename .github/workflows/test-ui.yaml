@@ -46,8 +46,8 @@ jobs:
         id: cache-key
         run: echo "key=$(date +%s)" >> $GITHUB_OUTPUT
 
-      - name: Cache setup
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684
+      - name: Save cache
+        uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684
         with:
           path: |
             ComfyUI
@@ -62,18 +62,11 @@ jobs:
       matrix:
         browser: [chromium, chromium-2x, mobile-chrome]
     steps:
-      - name: Wait for cache
-        timeout-minutes: 2
-        run: |
-          while ! gh cache list -R ${{ github.repository }} -k "comfyui-setup-${{ needs.setup.outputs.cache-key }}" | grep -q .; do
-            echo "Waiting for cache..."
-            sleep 10
-          done
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Wait for cache propagation
+        run: sleep 10
 
       - name: Restore cached setup
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684
+        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684
         with:
           fail-on-cache-miss: true
           path: |
