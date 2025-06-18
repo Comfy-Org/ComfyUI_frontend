@@ -47,7 +47,7 @@ jobs:
         run: echo "key=$(date +%s)" >> $GITHUB_OUTPUT
 
       - name: Cache setup
-        uses: actions/cache@v3
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684
         with:
           path: |
             ComfyUI
@@ -63,7 +63,7 @@ jobs:
         browser: [chromium, chromium-2x, mobile-chrome]
     steps:
       - name: Restore cached setup
-        uses: actions/cache@v3
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684
         with:
           path: |
             ComfyUI
