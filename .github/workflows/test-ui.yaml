@@ -65,7 +65,7 @@ jobs:
       - name: Wait for cache
         timeout-minutes: 2
         run: |
-          while ! gh cache list -k "comfyui-setup-${{ needs.setup.outputs.cache-key }}" | grep -q .; do
+          while ! gh cache list -R ${{ github.repository }} -k "comfyui-setup-${{ needs.setup.outputs.cache-key }}" | grep -q .; do
             echo "Waiting for cache..."
             sleep 10
           done
