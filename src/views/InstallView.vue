@@ -88,6 +88,10 @@
             :device="device"
             class="mt-6"
           />
+          <ModelsDownloadConfiguration
+            v-model:extraAllowedSource="extraAllowedSource"
+            class="mt-6"
+          />
           <div class="flex mt-6 justify-between">
             <Button
               :label="$t('g.back')"
@@ -128,6 +132,7 @@ import GpuPicker from '@/components/install/GpuPicker.vue'
 import InstallLocationPicker from '@/components/install/InstallLocationPicker.vue'
 import MigrationPicker from '@/components/install/MigrationPicker.vue'
 import MirrorsConfiguration from '@/components/install/MirrorsConfiguration.vue'
+import ModelsDownloadConfiguration from '@/components/install/ModelsDownloadConfiguration.vue'
 import { electronAPI } from '@/utils/envUtil'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
@@ -144,6 +149,7 @@ const allowMetrics = ref(true)
 const pythonMirror = ref('')
 const pypiMirror = ref('')
 const torchMirror = ref('')
+const extraAllowedSource = ref('')
 
 /** Forces each install step to be visited at least once. */
 const highestStep = ref(0)
@@ -176,6 +182,7 @@ const install = async () => {
     pythonMirror: pythonMirror.value,
     pypiMirror: pypiMirror.value,
     torchMirror: torchMirror.value,
+    extraAllowedSource: extraAllowedSource.value,
     // @ts-expect-error fixme ts strict error
     device: device.value
   }
