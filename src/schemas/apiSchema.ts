@@ -472,6 +472,14 @@ const zSettings = z.object({
   'pysssss.SnapToGrid': z.boolean(),
   /** VHS setting is used for queue video preview support. */
   'VHS.AdvancedPreviews': z.string(),
+  /** Release data settings */
+  'Comfy.Release.Version': z.string(),
+  'Comfy.Release.Status': z.enum([
+    'skipped',
+    'changelog seen',
+    "what's new seen"
+  ]),
+  'Comfy.Release.Timestamp': z.number(),
   /** Settings used for testing */
   'test.setting': z.any(),
   'main.sub.setting.name': z.any(),
