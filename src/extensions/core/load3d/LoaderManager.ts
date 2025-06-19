@@ -92,21 +92,25 @@ export class LoaderManager implements LoaderManagerInterface {
   ): Promise<THREE.Object3D | null> {
     let model: THREE.Object3D | null = null
 
-    const filename = new URLSearchParams(url.split('?')[1]).get('filename')
+    const params = new URLSearchParams(url.split('?')[1])
+
+    const filename = params.get('filename')
 
     if (!filename) {
+      console.error('Missing filename in URL:', url)
+
       return null
     }
 
-    const loadRootFolder = new URLSearchParams(url.split('?')[1]).get('type')
+    const loadRootFolder = params.get('type') === 'output' ? 'output' : 'input'
 
-    const subfolder = new URLSearchParams(url.split('?')[1]).get('subfolder')
+    const subfolder = params.get('subfolder') ?? ''
 
     const path =
       'api/view?type=' +
       loadRootFolder +
       '&subfolder=' +
-      subfolder +
+      encodeURIComponent(subfolder) +
       '&filename='
 
     switch (fileExtension) {
