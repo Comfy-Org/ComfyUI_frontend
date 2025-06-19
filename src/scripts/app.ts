@@ -832,7 +832,8 @@ export class ComfyApp {
           output_is_list: [],
           output_node: false,
           python_module: 'custom_nodes.frontend_only',
-          description: `Frontend only node for ${name}`
+          // @ts-expect-error description doesn't exist in core LT types
+          description: node.description || `Frontend only node for ${name}`
         } as ComfyNodeDefV1
       ])
     )
