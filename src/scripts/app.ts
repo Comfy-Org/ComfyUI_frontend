@@ -869,12 +869,7 @@ export class ComfyApp {
         .join('/')
     })
 
-    return _.mapValues(
-      await api.getNodeDefs({
-        validate: useSettingStore().get('Comfy.Validation.NodeDefs')
-      }),
-      (def) => translateNodeDef(def)
-    )
+    return _.mapValues(await api.getNodeDefs(), (def) => translateNodeDef(def))
   }
 
   /**
