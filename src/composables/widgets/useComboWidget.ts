@@ -1,9 +1,7 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
-import type { IComboWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import { ref } from 'vue'
 
 import MultiSelectWidget from '@/components/graph/widgets/MultiSelectWidget.vue'
-import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import {
   ComboInputSpec,
   type InputSpec,
@@ -14,19 +12,11 @@ import {
   ComponentWidgetImpl,
   addWidget
 } from '@/scripts/domWidget'
-import {
-  type ComfyWidgetConstructorV2,
-  addValueControlWidgets
-} from '@/scripts/widgets'
+import type { ComfyWidgetConstructorV2 } from '@/scripts/widgetTypes'
 
-import { useRemoteWidget } from './useRemoteWidget'
+import { useDropdownComboWidget } from './useDropdownComboWidget'
 
-const getDefaultValue = (inputSpec: ComboInputSpec) => {
-  if (inputSpec.default) return inputSpec.default
-  if (inputSpec.options?.length) return inputSpec.options[0]
-  if (inputSpec.remote) return 'Loading...'
-  return undefined
-}
+// Default value logic is now handled in useDropdownComboWidget
 
 const addMultiSelectWidget = (node: LGraphNode, inputSpec: ComboInputSpec) => {
   const widgetValue = ref<string[]>([])
@@ -39,7 +29,13 @@ const addMultiSelectWidget = (node: LGraphNode, inputSpec: ComboInputSpec) => {
       getValue: () => widgetValue.value,
       setValue: (value: string[]) => {
         widgetValue.value = value
-      }
+      },
+      // Optional: minimum height for the widget (multiselect needs minimal height)
+      getMinHeight: () => 24,
+      // Lock maximum height to prevent oversizing
+      getMaxHeight: () => 32,
+      // Optional: whether to serialize this widget's value
+      serialize: true
     }
   })
   addWidget(node, widget as BaseDOMWidget<object | string>)
@@ -49,49 +45,9 @@ const addMultiSelectWidget = (node: LGraphNode, inputSpec: ComboInputSpec) => {
 }
 
 const addComboWidget = (node: LGraphNode, inputSpec: ComboInputSpec) => {
-  const defaultValue = getDefaultValue(inputSpec)
-  const comboOptions = inputSpec.options ?? []
-  const widget = node.addWidget(
-    'combo',
-    inputSpec.name,
-    defaultValue,
-    () => {},
-    {
-      values: comboOptions
-    }
-  ) as IComboWidget
-
-  if (inputSpec.remote) {
-    const remoteWidget = useRemoteWidget({
-      remoteConfig: inputSpec.remote,
-      defaultValue,
-      node,
-      widget
-    })
-    if (inputSpec.remote.refresh_button) remoteWidget.addRefreshButton()
-
-    const origOptions = widget.options
-    widget.options = new Proxy(origOptions, {
-      get(target, prop) {
-        // Assertion: Proxy handler passthrough
-        return prop !== 'values'
-          ? target[prop as keyof typeof target]
-          : remoteWidget.getValue()
-      }
-    })
-  }
-
-  if (inputSpec.control_after_generate) {
-    widget.linkedWidgets = addValueControlWidgets(
-      node,
-      widget,
-      undefined,
-      undefined,
-      transformInputSpecV2ToV1(inputSpec)
-    )
-  }
-
-  return widget
+  // Use the new dropdown combo widget for single-selection combo widgets
+  const dropdownWidget = useDropdownComboWidget()
+  return dropdownWidget(node, inputSpec)
 }
 
 export const useComboWidget = () => {
