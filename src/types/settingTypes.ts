@@ -8,6 +8,7 @@ export type SettingInputType =
   | 'combo'
   | 'text'
   | 'image'
+  | 'audio'
   | 'color'
   | 'url'
   | 'hidden'
