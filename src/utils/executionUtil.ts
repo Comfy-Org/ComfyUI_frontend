@@ -135,7 +135,7 @@ export const graphToPrompt = async (
             if (!link) break
 
             parent = parent.isSubgraphNode()
-              ? parent.getOutputNodeFromSubgraph(link.origin_slot)
+              ? parent.resolveSubgraphOutputLink(link.origin_slot)?.outputNode
               : parent.getInputNode(link.target_slot)
 
             if (!parent) break
