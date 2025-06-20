@@ -40,6 +40,7 @@ interface DialogInstance {
   contentProps: Record<string, any>
   footerComponent?: Component
   dialogComponentProps: DialogComponentProps
+  priority: number
 }
 
 export interface ShowDialogOptions {
@@ -50,6 +51,12 @@ export interface ShowDialogOptions {
   component: Component
   props?: Record<string, any>
   dialogComponentProps?: DialogComponentProps
+  /**
+   * Optional priority for dialog stacking.
+   * A dialog will never be shown above a dialog with a higher priority.
+   * @default 1
+   */
+  priority?: number
 }
 
 export const useDialogStore = defineStore('dialog', () => {
@@ -57,13 +64,29 @@ export const useDialogStore = defineStore('dialog', () => {
 
   const genDialogKey = () => `dialog-${Math.random().toString(36).slice(2, 9)}`
 
+  /**
+   * Inserts a dialog into the stack at the correct position based on priority.
+   * Higher priority dialogs are placed before lower priority ones.
+   */
+  function insertDialogByPriority(dialog: DialogInstance) {
+    const insertIndex = dialogStack.value.findIndex(
+      (d) => d.priority <= dialog.priority
+    )
+
+    dialogStack.value.splice(
+      insertIndex === -1 ? dialogStack.value.length : insertIndex,
+      0,
+      dialog
+    )
+  }
+
   function riseDialog(options: { key: string }) {
     const dialogKey = options.key
 
     const index = dialogStack.value.findIndex((d) => d.key === dialogKey)
     if (index !== -1) {
-      const dialogs = dialogStack.value.splice(index, 1)
-      dialogStack.value.push(...dialogs)
+      const [dialog] = dialogStack.value.splice(index, 1)
+      insertDialogByPriority(dialog)
     }
   }
 
@@ -85,12 +108,13 @@ export const useDialogStore = defineStore('dialog', () => {
     component: Component
     props?: Record<string, any>
     dialogComponentProps?: DialogComponentProps
+    priority?: number
   }) {
     if (dialogStack.value.length >= 10) {
       dialogStack.value.shift()
     }
 
-    const dialog = {
+    const dialog: DialogInstance = {
       key: options.key,
       visible: true,
       title: options.title,
@@ -102,6 +126,7 @@ export const useDialogStore = defineStore('dialog', () => {
         : undefined,
       component: markRaw(options.component),
       contentProps: { ...options.props },
+      priority: options.priority ?? 1,
       dialogComponentProps: {
         maximizable: false,
         modal: true,
@@ -110,6 +135,7 @@ export const useDialogStore = defineStore('dialog', () => {
         dismissableMask: true,
         ...options.dialogComponentProps,
         maximized: false,
+        // @ts-expect-error TODO: fix this
         onMaximize: () => {
           dialog.dialogComponentProps.maximized = true
         },
@@ -128,7 +154,8 @@ export const useDialogStore = defineStore('dialog', () => {
         })
       }
     }
-    dialogStack.value.push(dialog)
+
+    insertDialogByPriority(dialog)
 
     return dialog
   }
