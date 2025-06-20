@@ -792,6 +792,7 @@
     "Quit": "Quit",
     "Reinstall": "Reinstall",
     "Restart": "Restart",
+    "Open 3D Editor (Beta) for Selected Node": "Open 3D Editor (Beta) for Selected Node",
     "Browse Templates": "Browse Templates",
     "Delete Selected Items": "Delete Selected Items",
     "Fit view to selected nodes": "Fit view to selected nodes",
@@ -1261,7 +1262,20 @@
     "exportRecording": "Export Recording",
     "clearRecording": "Clear Recording",
     "resizeNodeMatchOutput": "Resize Node to match output",
-    "loadingBackgroundImage": "Loading Background Image"
+    "loadingBackgroundImage": "Loading Background Image",
+    "cameraType": {
+      "perspective": "Perspective",
+      "orthographic": "Orthographic"
+    },
+    "editor": {
+      "title": "3D Editor (Beta)",
+      "apply": "Apply",
+      "cancel": "Cancel",
+      "cameraType": "Camera Type",
+      "sceneSettings": "Scene Settings",
+      "cameraSettings": "Camera Settings",
+      "lightSettings": "Light Settings"
+    }
   },
   "toastMessages": {
     "nothingToQueue": "Nothing to queue",
