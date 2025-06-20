@@ -154,6 +154,7 @@ export const useDialogService = () => {
       headerComponent: ManagerProgressHeader,
       footerComponent: ManagerProgressFooter,
       props: options?.props,
+      priority: 2,
       dialogComponentProps: {
         closable: false,
         modal: false,
