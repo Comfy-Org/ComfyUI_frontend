@@ -1,5 +1,6 @@
 import {
   type IContextMenuValue,
+  LGraphBadge,
   LGraphCanvas,
   LGraphEventMode,
   LGraphNode,
@@ -92,6 +93,13 @@ export const useLitegraphService = () => {
         this.#setInitialSize()
         this.serialize_widgets = true
         void extensionService.invokeExtensionsAsync('nodeCreated', this)
+        this.badges.push(
+          new LGraphBadge({
+            text: '⇌',
+            fgColor: '#dad0de',
+            bgColor: '#b3b'
+          })
+        )
       }
 
       /**
