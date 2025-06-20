@@ -551,6 +551,11 @@
     "uploadBackgroundImage": "Subir imagen de fondo",
     "uploadTexture": "Subir textura"
   },
+  "loadWorkflowWarning": {
+    "coreNodesFromVersion": "Requiere ComfyUI {version}:",
+    "outdatedVersion": "Algunos nodos requieren una versión más reciente de ComfyUI (actual: {version}). Por favor, actualiza para usar todos los nodos.",
+    "outdatedVersionGeneric": "Algunos nodos requieren una versión más reciente de ComfyUI. Por favor, actualiza para usar todos los nodos."
+  },
   "maintenance": {
     "None": "Ninguno",
     "OK": "OK",
