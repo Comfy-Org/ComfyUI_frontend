@@ -135,6 +135,7 @@ export const useDialogStore = defineStore('dialog', () => {
         dismissableMask: true,
         ...options.dialogComponentProps,
         maximized: false,
+        // @ts-expect-error TODO: fix this
         onMaximize: () => {
           dialog.dialogComponentProps.maximized = true
         },
