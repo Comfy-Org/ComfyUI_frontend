@@ -142,7 +142,8 @@ export const useDialogService = () => {
           },
           header: { class: '!py-0 px-6 !m-0 h-[68px]' },
           content: {
-            class: '!px-0 h-[83vh] w-[90vw] max-w-full flex-1 overflow-y-hidden'
+            class:
+              '!px-0 h-[83vh] max-h-[956px] w-[90vw] max-w-full flex-1 overflow-y-hidden'
           },
           root: { class: 'manager-dialog' }
         }

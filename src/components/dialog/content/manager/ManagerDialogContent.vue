@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex flex-col mx-auto overflow-hidden h-[83vh]"
+    class="flex flex-col mx-auto overflow-hidden h-[83vh] max-h-[956px]"
     :aria-label="$t('manager.title')"
   >
     <ContentDivider :width="0.3" />
