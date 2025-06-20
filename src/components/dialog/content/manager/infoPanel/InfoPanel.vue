@@ -1,6 +1,6 @@
 <template>
   <template v-if="nodePack">
-    <div class="flex flex-col h-full z-40 w-80 overflow-hidden relative">
+    <div class="flex flex-col h-full z-40 overflow-hidden relative">
       <div class="top-0 z-10 px-6 pt-6 w-full">
         <InfoPanelHeader :node-packs="[nodePack]" />
       </div>
@@ -42,7 +42,7 @@
     </div>
   </template>
   <template v-else>
-    <div class="mt-4 mx-8 flex-1 overflow-hidden text-sm">
+    <div class="pt-4 px-8 flex-1 overflow-hidden text-sm">
       {{ $t('manager.infoPanelEmpty') }}
     </div>
   </template>
