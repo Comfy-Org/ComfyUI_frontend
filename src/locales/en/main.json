@@ -1195,6 +1195,11 @@
     "missingModels": "Missing Models",
     "missingModelsMessage": "When loading the graph, the following models were not found"
   },
+  "loadWorkflowWarning": {
+    "outdatedVersion": "Some nodes require a newer version of ComfyUI (current: {version}). Please update to use all nodes.",
+    "outdatedVersionGeneric": "Some nodes require a newer version of ComfyUI. Please update to use all nodes.",
+    "coreNodesFromVersion": "Requires ComfyUI {version}:"
+  },
   "errorDialog": {
     "defaultTitle": "An error occurred",
     "loadWorkflowTitle": "Loading aborted due to error reloading workflow data",
