@@ -5,6 +5,7 @@
     title="Missing Node Types"
     message="When loading the graph, the following node types were not found"
   />
+  <MissingCoreNodesMessage :missing-core-nodes="missingCoreNodes" />
   <ListBox
     :options="uniqueNodes"
     option-label="label"
@@ -47,6 +48,7 @@ import ListBox from 'primevue/listbox'
 import { computed } from 'vue'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
+import MissingCoreNodesMessage from '@/components/dialog/content/MissingCoreNodesMessage.vue'
 import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
 import { useMissingNodes } from '@/composables/nodePack/useMissingNodes'
 import { useDialogService } from '@/services/dialogService'
@@ -61,7 +63,8 @@ const props = defineProps<{
 const aboutPanelStore = useAboutPanelStore()
 
 // Get missing node packs from workflow with loading and error states
-const { missingNodePacks, isLoading, error } = useMissingNodes()
+const { missingNodePacks, isLoading, error, missingCoreNodes } =
+  useMissingNodes()
 
 // Determines if ComfyUI-Manager is installed by checking for its badge in the about panel
 // This allows us to conditionally show the Manager button only when the extension is available

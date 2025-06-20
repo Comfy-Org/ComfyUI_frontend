@@ -551,6 +551,11 @@
     "uploadBackgroundImage": "Télécharger l'image de fond",
     "uploadTexture": "Télécharger Texture"
   },
+  "loadWorkflowWarning": {
+    "coreNodesFromVersion": "Nécessite ComfyUI {version} :",
+    "outdatedVersion": "Certains nœuds nécessitent une version plus récente de ComfyUI (actuelle : {version}). Veuillez mettre à jour pour utiliser tous les nœuds.",
+    "outdatedVersionGeneric": "Certains nœuds nécessitent une version plus récente de ComfyUI. Veuillez mettre à jour pour utiliser tous les nœuds."
+  },
   "maintenance": {
     "None": "Aucun",
     "OK": "OK",

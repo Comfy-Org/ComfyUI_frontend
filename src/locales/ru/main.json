@@ -551,6 +551,11 @@
     "uploadBackgroundImage": "Загрузить фоновое изображение",
     "uploadTexture": "Загрузить текстуру"
   },
+  "loadWorkflowWarning": {
+    "coreNodesFromVersion": "Требуется ComfyUI {version}:",
+    "outdatedVersion": "Некоторые узлы требуют более новой версии ComfyUI (текущая: {version}). Пожалуйста, обновите, чтобы использовать все узлы.",
+    "outdatedVersionGeneric": "Некоторые узлы требуют более новой версии ComfyUI. Пожалуйста, обновите, чтобы использовать все узлы."
+  },
   "maintenance": {
     "None": "Нет",
     "OK": "OK",

@@ -551,6 +551,11 @@
     "uploadBackgroundImage": "背景画像をアップロード",
     "uploadTexture": "テクスチャをアップロード"
   },
+  "loadWorkflowWarning": {
+    "coreNodesFromVersion": "ComfyUI {version} が必要です：",
+    "outdatedVersion": "一部のノードはより新しいバージョンのComfyUIが必要です（現在のバージョン：{version}）。すべてのノードを使用するにはアップデートしてください。",
+    "outdatedVersionGeneric": "一部のノードはより新しいバージョンのComfyUIが必要です。すべてのノードを使用するにはアップデートしてください。"
+  },
   "maintenance": {
     "None": "なし",
     "OK": "OK",
