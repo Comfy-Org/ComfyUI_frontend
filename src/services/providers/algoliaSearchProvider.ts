@@ -48,7 +48,6 @@ const RETRIEVE_ATTRIBUTES: SearchAttribute[] = [
   'supported_comfyui_version',
   'supported_comfyui_frontend_version',
   'supported_accelerators',
-  'tags',
   'banner_url'
 ]
 
@@ -102,6 +101,8 @@ const toRegistryPack = memoize(
       supported_comfyui_version: algoliaNode.supported_comfyui_version,
       supported_comfyui_frontend_version:
         algoliaNode.supported_comfyui_frontend_version,
+      supported_accelerators: algoliaNode.supported_accelerators,
+      banner_url: algoliaNode.banner_url,
       // @ts-expect-error comfy_nodes also not in node info
       comfy_nodes: algoliaNode.comfy_nodes
     }
