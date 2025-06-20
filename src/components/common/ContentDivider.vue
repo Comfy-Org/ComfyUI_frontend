@@ -34,6 +34,8 @@ const isLightTheme = computed(
   padding: 0;
   border: none;
   flex-shrink: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .content-divider--horizontal {
