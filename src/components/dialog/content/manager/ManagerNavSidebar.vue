@@ -11,7 +11,7 @@
         class="w-full border-0 bg-transparent shadow-none"
         :pt="{
           list: { class: 'p-3 gap-2' },
-          option: { class: 'px-4 py-2 text-lg rounded-xl' },
+          option: { class: 'px-4 py-2 text-lg rounded-lg' },
           optionGroup: { class: 'p-0 text-left text-inherit' }
         }"
       >
