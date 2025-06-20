@@ -896,6 +896,23 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/nodes/update-github-stars': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Update GitHub stars for nodes */
+    post: operations['updateGithubStars']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/nodes': {
     parameters: {
       query?: never
@@ -1072,6 +1089,30 @@ export interface paths {
      */
     put: operations['adminUpdateNodeVersion']
     post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/releases': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get release notes
+     * @description Fetch release notes from Strapi with caching
+     */
+    get: operations['getReleaseNotes']
+    put?: never
+    /**
+     * Process Github release webhook
+     * @description Webhook endpoint to process Github release events and generate release notes
+     */
+    post: operations['processReleaseWebhook']
     delete?: never
     options?: never
     head?: never
@@ -3207,6 +3248,13 @@ export interface components {
       preempted_comfy_node_names?: string[]
       /** @description URL to the node's banner. */
       banner_url?: string
+      /** @description Number of stars on the GitHub repository. */
+      github_stars?: number
+      /**
+       * Format: date-time
+       * @description The date and time when the node was created
+       */
+      created_at?: string
     }
     NodeVersion: {
       id?: string
@@ -3345,6 +3393,8 @@ export interface components {
       stripe_id?: string
       /** @description The Metronome customer ID */
       metronome_id?: string
+      /** @description Whether the user has funds */
+      has_fund?: boolean
     }
     AuditLog: {
       /** @description the type of the event */
@@ -8692,6 +8742,71 @@ export interface components {
     MoonvalleyUploadResponse: {
       access_url?: string
     }
+    GithubReleaseWebhook: {
+      /** @description The action performed on the release */
+      action: string
+      release: {
+        /** @description The tag name of the release */
+        tag_name: string
+        /** @description The name of the release */
+        name: string
+        /** @description The release notes/body */
+        body: string
+        /** @description Whether the release is a draft */
+        draft: boolean
+        /** @description Whether the release is a prerelease */
+        prerelease: boolean
+        /**
+         * Format: date-time
+         * @description When the release was created
+         */
+        created_at?: string
+        /**
+         * Format: date-time
+         * @description When the release was published
+         */
+        published_at?: string
+        /** @description URL to the tarball */
+        tarball_url?: string
+        /** @description URL to the zipball */
+        zipball_url?: string
+        /** @description The branch or commit the release was created from */
+        target_commitish: string
+      }
+      repository: {
+        /** @description The name of the repository */
+        name: string
+        /** @description The full name of the repository (owner/repo) */
+        full_name: string
+        /** @description The HTML URL of the repository */
+        html_url: string
+        /** @description The clone URL of the repository */
+        clone_url: string
+      }
+    }
+    ReleaseNote: {
+      /** @description Unique identifier for the release note */
+      id?: number
+      /**
+       * @description The project this release note belongs to
+       * @enum {string}
+       */
+      project: 'comfyui' | 'comfyui_frontend' | 'desktop'
+      /** @description The version of the release */
+      version: string
+      /**
+       * @description The attention level for this release
+       * @enum {string}
+       */
+      attention: 'low' | 'medium' | 'high'
+      /** @description The content of the release note in markdown format */
+      content: string
+      /**
+       * Format: date-time
+       * @description When the release note was published
+       */
+      published_at?: string
+    }
   }
   responses: never
   parameters: {
@@ -10795,8 +10910,6 @@ export interface operations {
       query?: {
         /** @description Maximum number of nodes to send to algolia at a time */
         max_batch?: number
-        /** @description Minimum interval from the last time the nodes were indexed to algolia */
-        min_age?: string
       }
       header?: never
       path?: never
@@ -10819,6 +10932,52 @@ export interface operations {
         content: {
           'application/json': components['schemas']['ErrorResponse']
         }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  updateGithubStars: {
+    parameters: {
+      query?: {
+        /** @description Maximum number of nodes to update in one batch */
+        max_batch?: number
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Update GithubStars request triggered successfully */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Bad request. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
       }
       /** @description Internal server error */
       500: {
@@ -11400,6 +11559,89 @@ export interface operations {
       }
       /** @description Version not found */
       404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  getReleaseNotes: {
+    parameters: {
+      query: {
+        /** @description The project to get release notes for */
+        project: 'comfyui' | 'comfyui_frontend' | 'desktop'
+        /** @description The current version to filter release notes */
+        current_version?: string
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Release notes retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ReleaseNote'][]
+        }
+      }
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  processReleaseWebhook: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['GithubReleaseWebhook']
+      }
+    }
+    responses: {
+      /** @description Webhook processed successfully */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Bad request */
+      400: {
         headers: {
           [name: string]: unknown
         }
