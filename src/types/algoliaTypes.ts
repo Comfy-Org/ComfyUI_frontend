@@ -59,6 +59,15 @@ export interface AlgoliaNodePack {
     'comfy_node_extract_status'
   >
   icon_url: RegistryNodePack['icon']
+  category: RegistryNodePack['category']
+  author: RegistryNodePack['author']
+  tags: RegistryNodePack['tags']
+  github_stars: RegistryNodePack['github_stars']
+  supported_os: RegistryNodePack['supported_os']
+  supported_comfyui_version: RegistryNodePack['supported_comfyui_version']
+  supported_comfyui_frontend_version: RegistryNodePack['supported_comfyui_frontend_version']
+  supported_accelerators: RegistryNodePack['supported_accelerators']
+  banner_url: RegistryNodePack['banner_url']
 }
 
 /**
