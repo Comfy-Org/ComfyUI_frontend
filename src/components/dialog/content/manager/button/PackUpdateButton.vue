@@ -1,8 +1,8 @@
 <template>
   <PackActionButton
     v-bind="$attrs"
+    variant="black"
     :label="$t('manager.updateAll')"
-    severity="info"
     :loading="isUpdating"
     :loading-message="$t('g.updating')"
     @action="updateAllPacks"
