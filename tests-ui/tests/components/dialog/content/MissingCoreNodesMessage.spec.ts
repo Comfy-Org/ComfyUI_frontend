@@ -38,10 +38,12 @@ describe('MissingCoreNodesMessage', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    // Reset the mock store state
+    mockSystemStatsStore.systemStats = null
+    mockSystemStatsStore.fetchSystemStats = vi.fn()
     // @ts-expect-error - Mocking the return value of useSystemStatsStore for testing.
     // The actual store has more properties, but we only need these for our tests.
     useSystemStatsStore.mockReturnValue(mockSystemStatsStore)
-    mockSystemStatsStore.systemStats = null
   })
 
   const mountComponent = (props = {}) => {
@@ -85,11 +87,14 @@ describe('MissingCoreNodesMessage', () => {
   })
 
   it('fetches and displays current ComfyUI version', async () => {
-    // Pre-set the systemStats before mounting
-    mockSystemStatsStore.fetchSystemStats.mockResolvedValue(undefined)
-    mockSystemStatsStore.systemStats = {
-      system: { comfyui_version: '1.0.0' }
-    }
+    // Start with no systemStats to trigger fetch
+    mockSystemStatsStore.fetchSystemStats.mockImplementation(() => {
+      // Simulate the fetch setting the systemStats
+      mockSystemStatsStore.systemStats = {
+        system: { comfyui_version: '1.0.0' }
+      }
+      return Promise.resolve()
+    })
 
     const missingCoreNodes = {
       '1.2.0': [createMockNode('TestNode', '1.2.0')]
@@ -109,11 +114,18 @@ describe('MissingCoreNodesMessage', () => {
   })
 
   it('displays generic message when version is unavailable', async () => {
+    // Mock fetchSystemStats to resolve without setting systemStats
+    mockSystemStatsStore.fetchSystemStats.mockResolvedValue(undefined)
+
     const missingCoreNodes = {
       '1.2.0': [createMockNode('TestNode', '1.2.0')]
     }
 
     const wrapper = mountComponent({ missingCoreNodes })
+
+    // Wait for the async operations to complete
+    await nextTick()
+    await new Promise((resolve) => setTimeout(resolve, 0))
     await nextTick()
 
     expect(wrapper.text()).toContain(
