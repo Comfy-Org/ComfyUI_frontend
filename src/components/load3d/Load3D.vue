@@ -206,7 +206,11 @@ const handleBackgroundImageUpdate = async (file: File | null) => {
     return
   }
 
-  backgroundImage.value = await Load3dUtils.uploadFile(file)
+  const resourceFolder = (node.properties['Resource Folder'] as string) || ''
+
+  const subfolder = resourceFolder.trim() ? `3d/${resourceFolder.trim()}` : '3d'
+
+  backgroundImage.value = await Load3dUtils.uploadFile(file, subfolder)
 
   node.properties['Background Image'] = backgroundImage.value
 }
@@ -218,7 +222,14 @@ const handleUploadTexture = async (file: File) => {
   }
 
   try {
-    const texturePath = await Load3dUtils.uploadFile(file)
+    const resourceFolder = (node.properties['Resource Folder'] as string) || ''
+
+    const subfolder = resourceFolder.trim()
+      ? `3d/${resourceFolder.trim()}`
+      : '3d'
+
+    const texturePath = await Load3dUtils.uploadFile(file, subfolder)
+
     await load3DSceneRef.value.load3d.applyTexture(texturePath)
 
     node.properties['Texture'] = texturePath

@@ -238,7 +238,11 @@ const handleBackgroundImageUpdate = async (file: File | null) => {
     return
   }
 
-  backgroundImage.value = await Load3dUtils.uploadFile(file)
+  const resourceFolder = (node.properties['Resource Folder'] as string) || ''
+
+  const subfolder = resourceFolder.trim() ? `3d/${resourceFolder.trim()}` : '3d'
+
+  backgroundImage.value = await Load3dUtils.uploadFile(file, subfolder)
 
   node.properties['Background Image'] = backgroundImage.value
 }
