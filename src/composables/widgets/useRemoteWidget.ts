@@ -230,7 +230,6 @@ export function useRemoteWidget<
 
     // Handler for execution success
     const handleExecutionSuccess = () => {
-      console.log('handleExecutionSuccess', autoRefreshEnabled)
       if (autoRefreshEnabled && widget.refresh) {
         widget.refresh()
       }
