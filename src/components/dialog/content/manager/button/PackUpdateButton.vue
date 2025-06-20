@@ -37,7 +37,10 @@ const updatePack = (item: NodePack) =>
   managerStore.updatePack.call(createPayload(item))
 
 const updateAllPacks = async () => {
-  if (!nodePacks?.length) return
+  if (!nodePacks?.length) {
+    console.warn('No packs provided for update')
+    return
+  }
 
   isUpdating.value = true
 
@@ -46,15 +49,23 @@ const updateAllPacks = async () => {
   )
 
   if (!updatablePacks.length) {
+    console.info('No installed packs available for update')
     isUpdating.value = false
     return
   }
 
+  console.info(`Starting update of ${updatablePacks.length} packs`)
+
   try {
     await Promise.all(updatablePacks.map(updatePack))
     managerStore.updatePack.clear()
+    console.info('All packs updated successfully')
   } catch (error) {
-    console.error('Failed to update packs:', error)
+    console.error('Pack update failed:', error)
+    console.error(
+      'Failed packs info:',
+      updatablePacks.map((p) => p.id)
+    )
   } finally {
     isUpdating.value = false
   }

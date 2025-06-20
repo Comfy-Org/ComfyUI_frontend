@@ -66,16 +66,37 @@ const installPack = (item: NodePack) =>
   managerStore.installPack.call(createPayload(item))
 
 const installAllPacks = async () => {
-  if (!nodePacks?.length) return
+  if (!nodePacks?.length) {
+    console.warn('No packs provided for installation')
+    return
+  }
 
   // isInstalling.value = true
 
   const uninstalledPacks = nodePacks.filter(
     (pack) => !managerStore.isPackInstalled(pack.id)
   )
-  if (!uninstalledPacks.length) return
 
-  await Promise.all(uninstalledPacks.map(installPack))
-  managerStore.installPack.clear()
+  if (!uninstalledPacks.length) {
+    console.info('All packs are already installed')
+    isInstalling.value = false
+    return
+  }
+
+  console.info(`Starting installation of ${uninstalledPacks.length} packs`)
+
+  try {
+    await Promise.all(uninstalledPacks.map(installPack))
+    managerStore.installPack.clear()
+    console.info('All packs installed successfully')
+  } catch (error) {
+    console.error('Pack installation failed:', error)
+    console.error(
+      'Failed packs info:',
+      uninstalledPacks.map((p) => p.id)
+    )
+  } finally {
+    isInstalling.value = false
+  }
 }
 </script>
