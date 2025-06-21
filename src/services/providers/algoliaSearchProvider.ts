@@ -80,7 +80,9 @@ const toRegistryPublisher = (
  * Convert from node pack in Algolia format to Comfy Registry format
  */
 const toRegistryPack = memoize(
-  (algoliaNode: AlgoliaNodePack): RegistryNodePack => {
+  (
+    algoliaNode: AlgoliaNodePack
+  ): RegistryNodePack & { comfy_nodes: string[] } => {
     return {
       id: algoliaNode.id ?? algoliaNode.objectID,
       name: algoliaNode.name,
@@ -103,7 +105,6 @@ const toRegistryPack = memoize(
         algoliaNode.supported_comfyui_frontend_version,
       supported_accelerators: algoliaNode.supported_accelerators,
       banner_url: algoliaNode.banner_url,
-      // @ts-expect-error comfy_nodes also not in node info
       comfy_nodes: algoliaNode.comfy_nodes
     }
   },
