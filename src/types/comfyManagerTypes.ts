@@ -59,3 +59,10 @@ export function isMergedNodePack(
 ): pack is MergedNodePack {
   return 'comfy_nodes' in pack && Array.isArray(pack.comfy_nodes)
 }
+
+export interface ManagerState {
+  selectedTabId: ManagerTab
+  searchQuery: string
+  searchMode: 'nodes' | 'packs'
+  sortField: string
+}
