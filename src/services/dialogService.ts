@@ -137,8 +137,15 @@ export const useDialogService = () => {
       dialogComponentProps: {
         closable: true,
         pt: {
-          header: { class: '!p-0 !m-0' },
-          content: { class: '!px-0 h-[83vh] w-[90vw] overflow-y-hidden' }
+          pcCloseButton: {
+            root: { class: 'bg-gray-500 w-9 h-9 p-1.5 rounded-full text-white' }
+          },
+          header: { class: '!py-0 px-6 !m-0 h-[68px]' },
+          content: {
+            class:
+              '!px-0 h-[83vh] max-h-[956px] w-[90vw] max-w-full flex-1 overflow-y-hidden'
+          },
+          root: { class: 'manager-dialog' }
         }
       },
       props

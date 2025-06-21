@@ -1,15 +1,12 @@
 <template>
-  <hr
+  <div
     :class="{
-      'm-0': true,
-      'border-t': orientation === 'horizontal',
-      'border-l': orientation === 'vertical',
-      'h-full': orientation === 'vertical',
-      'w-full': orientation === 'horizontal'
+      'content-divider': true,
+      'content-divider--horizontal': orientation === 'horizontal',
+      'content-divider--vertical': orientation === 'vertical'
     }"
     :style="{
-      borderColor: isLightTheme ? '#DCDAE1' : '#2C2C2C',
-      borderWidth: `${width}px !important`
+      backgroundColor: isLightTheme ? '#DCDAE1' : '#2C2C2C'
     }"
   />
 </template>
@@ -29,3 +26,25 @@ const isLightTheme = computed(
   () => colorPaletteStore.completedActivePalette.light_theme
 )
 </script>
+
+<style scoped>
+.content-divider {
+  display: inline-block;
+  margin: 0;
+  padding: 0;
+  border: none;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.content-divider--horizontal {
+  width: 100%;
+  height: v-bind('width + "px"');
+}
+
+.content-divider--vertical {
+  height: 100%;
+  width: v-bind('width + "px"');
+}
+</style>

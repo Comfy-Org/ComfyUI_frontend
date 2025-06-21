@@ -50,4 +50,9 @@ const dialogStore = useDialogStore()
   @apply p-2 2xl:p-[var(--p-dialog-content-padding)];
   @apply pt-0;
 }
+
+.manager-dialog {
+  max-width: 1724px;
+  max-height: 1026px;
+}
 </style>
