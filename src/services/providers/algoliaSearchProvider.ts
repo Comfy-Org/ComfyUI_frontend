@@ -203,9 +203,7 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
       case SortableAlgoliaField.Downloads:
         return pack.downloads ?? 0
       case SortableAlgoliaField.Created: {
-        // TODO: add create time to backend return type
-        // @ts-expect-error create_time is not in the RegistryNodePack type
-        const createTime = pack.create_time
+        const createTime = pack.created_at
         return createTime ? new Date(createTime).getTime() : 0
       }
       case SortableAlgoliaField.Updated:
