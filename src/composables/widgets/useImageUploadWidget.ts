@@ -5,7 +5,7 @@ import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
 import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 import { useValueTransform } from '@/composables/useValueTransform'
 import { t } from '@/i18n'
-import type { ResultItem } from '@/schemas/apiSchema'
+import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
@@ -42,6 +42,7 @@ export const useImageUploadWidget = () => {
 
     const inputOptions = inputData[1]
     const { imageInputName, allow_batch, image_folder = 'input' } = inputOptions
+    const folder: ResultItemType | undefined = image_folder
     const nodeOutputStore = useNodeOutputStore()
 
     const isAnimated = !!inputOptions.animated_image_upload
@@ -75,6 +76,7 @@ export const useImageUploadWidget = () => {
       allow_batch,
       fileFilter,
       accept,
+      folder,
       onUploadComplete: (output) => {
         output.forEach((path) => addToComboValues(fileComboWidget, path))
         // @ts-expect-error litegraph combo value type does not support arrays yet
