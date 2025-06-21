@@ -662,9 +662,9 @@ export function useCoreCommands(): ComfyCommand[] {
       }
     },
     {
-      id: 'Comfy.Manager.CustomNodesManager',
+      id: 'Comfy.Manager.CustomNodesManager.ShowCustomNodesMenu',
       icon: 'pi pi-puzzle',
-      label: 'Toggle the Custom Nodes Manager',
+      label: 'Show the Custom Nodes Manager',
       versionAdded: '1.12.10',
       function: async () => {
         const { is_legacy_manager_ui } =
