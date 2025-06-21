@@ -42,7 +42,13 @@ const RETRIEVE_ATTRIBUTES: SearchAttribute[] = [
   'latest_version_status',
   'comfy_node_extract_status',
   'id',
-  'icon_url'
+  'icon_url',
+  'github_stars',
+  'supported_os',
+  'supported_comfyui_version',
+  'supported_comfyui_frontend_version',
+  'supported_accelerators',
+  'banner_url'
 ]
 
 const searchPacksCache = new QuickLRU<string, SearchPacksResult>({
@@ -86,9 +92,19 @@ const toRegistryPack = memoize(
       icon: algoliaNode.icon_url,
       latest_version: toRegistryLatestVersion(algoliaNode),
       publisher: toRegistryPublisher(algoliaNode),
+      created_at: algoliaNode.create_time,
+      category: algoliaNode.category,
+      author: algoliaNode.author,
+      tags: algoliaNode.tags,
+      github_stars: algoliaNode.github_stars,
+      supported_os: algoliaNode.supported_os,
+      supported_comfyui_version: algoliaNode.supported_comfyui_version,
+      supported_comfyui_frontend_version:
+        algoliaNode.supported_comfyui_frontend_version,
+      supported_accelerators: algoliaNode.supported_accelerators,
+      banner_url: algoliaNode.banner_url,
       // @ts-expect-error comfy_nodes also not in node info
-      comfy_nodes: algoliaNode.comfy_nodes,
-      create_time: algoliaNode.create_time
+      comfy_nodes: algoliaNode.comfy_nodes
     }
   },
   (algoliaNode: AlgoliaNodePack) => algoliaNode.id
@@ -187,9 +203,7 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
       case SortableAlgoliaField.Downloads:
         return pack.downloads ?? 0
       case SortableAlgoliaField.Created: {
-        // TODO: add create time to backend return type
-        // @ts-expect-error create_time is not in the RegistryNodePack type
-        const createTime = pack.create_time
+        const createTime = pack.created_at
         return createTime ? new Date(createTime).getTime() : 0
       }
       case SortableAlgoliaField.Updated:
