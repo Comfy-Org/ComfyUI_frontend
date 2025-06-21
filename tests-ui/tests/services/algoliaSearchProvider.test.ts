@@ -108,8 +108,17 @@ describe('useAlgoliaSearchProvider', () => {
           id: 'publisher-1',
           name: 'publisher-1'
         },
-        create_time: '2024-01-01T00:00:00Z',
-        comfy_nodes: ['LoadImage', 'SaveImage']
+        created_at: '2024-01-01T00:00:00Z',
+        comfy_nodes: ['LoadImage', 'SaveImage'],
+        category: undefined,
+        author: undefined,
+        tags: undefined,
+        github_stars: undefined,
+        supported_os: undefined,
+        supported_comfyui_version: undefined,
+        supported_comfyui_frontend_version: undefined,
+        supported_accelerators: undefined,
+        banner_url: undefined
       })
     })
 
@@ -253,7 +262,7 @@ describe('useAlgoliaSearchProvider', () => {
         version: '1.0.0',
         createdAt: '2024-01-15T10:00:00Z'
       },
-      create_time: '2024-01-01T10:00:00Z'
+      created_at: '2024-01-01T10:00:00Z'
     }
 
     it('should return correct values for each sort field', () => {
