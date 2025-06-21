@@ -153,7 +153,7 @@
     "label": "Load Default Workflow"
   },
   "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
-    "label": "Custom Nodes Manager"
+    "label": "Show the Custom Nodes Manager"
   },
   "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
     "label": "Custom Nodes (Legacy)"
@@ -166,27 +166,6 @@
   },
   "Comfy_Manager_ShowUpdateAvailablePacks": {
     "label": "Check for Custom Node Updates"
-  },
-  "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
-    "label": "Custom Nodes Manager"
-  },
-  "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
-    "label": "Custom Nodes (Legacy)"
-  },
-  "Comfy_Manager_ShowLegacyManagerMenu": {
-    "label": "Manager Menu (Legacy)"
-  },
-  "Comfy_Manager_ShowMissingPacks": {
-    "label": "Install Missing Custom Nodes"
-  },
-  "Comfy_Manager_ShowUpdateAvailablePacks": {
-    "label": "Check for Custom Node Updates"
-  },
-  "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
-    "label": "Custom Nodes (Legacy)"
-  },
-  "Comfy_Manager_ShowLegacyManagerMenu": {
-    "label": "Manager Menu (Legacy)"
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "Toggle the Custom Nodes Manager Progress Bar"
