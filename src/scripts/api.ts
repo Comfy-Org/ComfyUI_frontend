@@ -35,6 +35,7 @@ import {
   type ComfyNodeDef,
   validateComfyNodeDef
 } from '@/schemas/nodeDefSchema'
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { WorkflowTemplates } from '@/types/workflowTemplateTypes'
 
 interface QueuePromptRequestBody {
@@ -273,7 +274,27 @@ export class ComfyApi extends EventTarget {
     return this.api_base + route
   }
 
-  fetchApi(route: string, options?: RequestInit) {
+  /**
+   * Waits for Firebase auth to be initialized before proceeding
+   */
+  async #waitForAuthInitialization(): Promise<void> {
+    const authStore = useFirebaseAuthStore()
+
+    if (authStore.isInitialized) {
+      return
+    }
+
+    return new Promise<void>((resolve) => {
+      const unwatch = authStore.$subscribe((_, state) => {
+        if (state.isInitialized) {
+          unwatch()
+          resolve()
+        }
+      })
+    })
+  }
+
+  async fetchApi(route: string, options?: RequestInit) {
     if (!options) {
       options = {}
     }
@@ -282,6 +303,30 @@ export class ComfyApi extends EventTarget {
     }
     if (!options.cache) {
       options.cache = 'no-cache'
+    }
+
+    // Wait for Firebase auth to be initialized before making any API request
+    await this.#waitForAuthInitialization()
+
+    // Add Firebase JWT token if user is logged in
+    try {
+      const authHeader = await useFirebaseAuthStore().getAuthHeader()
+      if (authHeader) {
+        if (Array.isArray(options.headers)) {
+          for (const [key, value] of Object.entries(authHeader)) {
+            options.headers.push([key, value])
+          }
+        } else if (options.headers instanceof Headers) {
+          for (const [key, value] of Object.entries(authHeader)) {
+            options.headers.set(key, value)
+          }
+        } else {
+          Object.assign(options.headers, authHeader)
+        }
+      }
+    } catch (error) {
+      // Silently ignore auth errors to avoid breaking API calls
+      console.warn('Failed to get auth header:', error)
     }
 
     if (Array.isArray(options.headers)) {
