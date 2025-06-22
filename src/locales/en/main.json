@@ -150,7 +150,9 @@
   "manager": {
     "title": "Custom Nodes Manager",
     "legacyMenuNotAvailable": "Legacy manager menu is not available, defaulting to the new manager menu.",
-    "failed": "Failed ({count})",
+    "legacyManagerUI": "Use Legacy UI",
+    "legacyManagerUIDescription": "To use the legacy Manager UI, start ComfyUI with --enable-manager-legacy-ui",
+    "failed": "Failed",
     "noNodesFound": "No nodes found",
     "noNodesFoundDescription": "The pack's nodes either could not be parsed, or the pack is a frontend extension only and doesn't have any nodes.",
     "installationQueue": "Installation Queue",
