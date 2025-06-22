@@ -311,6 +311,14 @@ export class ComfyApp {
     return '&rand=' + Math.random()
   }
 
+  getClientIdParam() {
+    const clientId = window.name
+    if (clientId) {
+      return '&client_id=' + clientId
+    }
+    return ''
+  }
+
   static onClipspaceEditorSave() {
     if (ComfyApp.clipspace_return_node) {
       ComfyApp.pasteFromClipspace(ComfyApp.clipspace_return_node)
