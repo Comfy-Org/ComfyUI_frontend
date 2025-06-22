@@ -57,6 +57,11 @@ export class ResultItemImpl {
     params.set('type', this.type)
     params.set('subfolder', this.subfolder)
 
+    const clientId = window.name
+    if (clientId) {
+      params.set('client_id', clientId)
+    }
+
     if (this.format) {
       params.set('format', this.format)
     }
