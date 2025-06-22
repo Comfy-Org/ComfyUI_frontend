@@ -74,12 +74,26 @@ describe('useServerLogs', () => {
 
     await startListening()
 
-    // Get the callback that was registered with useEventListener
-    const eventCallback = vi.mocked(useEventListener).mock.calls[0][2] as (
+    // Get the callbacks that were registered with useEventListener
+    const mockCalls = vi.mocked(useEventListener).mock.calls
+    const logsCallback = mockCalls.find((call) => call[1] === 'logs')?.[2] as (
       event: CustomEvent<LogsWsMessage>
     ) => void
+    const taskStartedCallback = mockCalls.find(
+      (call) => call[1] === 'cm-task-started'
+    )?.[2] as (event: CustomEvent<any>) => void
 
-    // Simulate receiving a log event
+    // First, simulate task started event
+    const taskStartedEvent = new CustomEvent('cm-task-started', {
+      detail: {
+        type: 'cm-task-started',
+        ui_id: 'test-ui-id'
+      }
+    })
+    taskStartedCallback(taskStartedEvent)
+    await nextTick()
+
+    // Now simulate receiving a log event
     const mockEvent = new CustomEvent('logs', {
       detail: {
         type: 'logs',
@@ -87,7 +101,7 @@ describe('useServerLogs', () => {
       } as unknown as LogsWsMessage
     }) as CustomEvent<LogsWsMessage>
 
-    eventCallback(mockEvent)
+    logsCallback(mockEvent)
     await nextTick()
 
     expect(logs.value).toEqual(['Log message 1', 'Log message 2'])
@@ -101,10 +115,26 @@ describe('useServerLogs', () => {
 
     await startListening()
 
-    const eventCallback = vi.mocked(useEventListener).mock.calls[0][2] as (
+    // Get the callbacks that were registered with useEventListener
+    const mockCalls = vi.mocked(useEventListener).mock.calls
+    const logsCallback = mockCalls.find((call) => call[1] === 'logs')?.[2] as (
       event: CustomEvent<LogsWsMessage>
     ) => void
+    const taskStartedCallback = mockCalls.find(
+      (call) => call[1] === 'cm-task-started'
+    )?.[2] as (event: CustomEvent<any>) => void
 
+    // First, simulate task started event
+    const taskStartedEvent = new CustomEvent('cm-task-started', {
+      detail: {
+        type: 'cm-task-started',
+        ui_id: 'test-ui-id'
+      }
+    })
+    taskStartedCallback(taskStartedEvent)
+    await nextTick()
+
+    // Now simulate receiving a log event
     const mockEvent = new CustomEvent('logs', {
       detail: {
         type: 'logs',
@@ -116,7 +146,7 @@ describe('useServerLogs', () => {
       } as unknown as LogsWsMessage
     }) as CustomEvent<LogsWsMessage>
 
-    eventCallback(mockEvent)
+    logsCallback(mockEvent)
     await nextTick()
 
     expect(logs.value).toEqual(['Log message 1 dont remove me', ''])
