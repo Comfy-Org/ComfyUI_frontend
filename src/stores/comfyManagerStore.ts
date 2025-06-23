@@ -213,6 +213,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     isPackInstalled: isInstalledPackId,
     isPackEnabled: isEnabledPackId,
     getInstalledPackVersion,
+    refreshInstalledList,
 
     // Pack actions
     installPack,
