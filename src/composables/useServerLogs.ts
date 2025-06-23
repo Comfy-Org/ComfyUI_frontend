@@ -93,7 +93,9 @@ export const useServerLogs = (options: UseServerLogsOptions) => {
     stopLogs = null
     stopTaskStarted = null
     stopTaskDone = null
-    await api.subscribeLogs(false)
+    // TODO: move subscribe/unsubscribe logs to useManagerQueue. Subscribe when task starts if not already subscribed.
+    // Unsubscribe ONLY when there are no tasks running or queued up and the only remaining task finishes.
+    // await api.subscribeLogs(false)
   }
 
   if (immediate) {
