@@ -45,7 +45,7 @@ describe('useComfyRegistrySearchProvider', () => {
         search: 'test',
         comfy_node_search: undefined,
         limit: 10,
-        offset: 0
+        page: 1
       })
       expect(result.nodePacks).toEqual(mockResults.nodes)
       expect(result.querySuggestions).toEqual([])
@@ -68,7 +68,7 @@ describe('useComfyRegistrySearchProvider', () => {
         search: undefined,
         comfy_node_search: 'LoadImage',
         limit: 20,
-        offset: 20
+        page: 2
       })
       expect(result.nodePacks).toEqual(mockResults.nodes)
     })
