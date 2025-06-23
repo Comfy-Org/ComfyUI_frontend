@@ -138,7 +138,10 @@ export const useDialogService = () => {
         closable: true,
         pt: {
           pcCloseButton: {
-            root: { class: 'bg-gray-500 w-9 h-9 p-1.5 rounded-full text-white' }
+            root: {
+              class:
+                'bg-gray-500 dark-theme:bg-neutral-700 w-9 h-9 p-1.5 rounded-full text-white'
+            }
           },
           header: { class: '!py-0 px-6 !m-0 h-[68px]' },
           content: {
