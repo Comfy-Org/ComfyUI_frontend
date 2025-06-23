@@ -59,7 +59,7 @@
               <VirtualGrid
                 id="results-grid"
                 :items="resultsWithKeys"
-                :buffer-rows="3"
+                :buffer-rows="4"
                 :grid-style="GRID_STYLE"
                 @approach-end="onApproachEnd"
               >
