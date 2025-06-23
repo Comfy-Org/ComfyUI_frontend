@@ -178,8 +178,9 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     taskName: string
   ) => {
     const taskId = uuidv4()
-    const { startListening, logs } = useServerLogs({
-      ui_id: taskId
+    const { logs } = useServerLogs({
+      ui_id: taskId,
+      immediate: true
     })
 
     try {
@@ -189,7 +190,6 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
 
       // Prepare logging hook
       taskLogs.value.push({ taskName, taskId, logs: logs.value })
-      await startListening()
 
       // Queue the task to the server
       await task(taskId)
