@@ -92,12 +92,21 @@ whenever(
 const updateItemSize = () => {
   if (container.value) {
     const firstItem = container.value.querySelector('[data-virtual-grid-item]')
-    itemHeight.value = firstItem?.clientHeight || defaultItemHeight
-    itemWidth.value = firstItem?.clientWidth || defaultItemWidth
+
+    // Don't update item size if the first item is not rendered yet
+    if (!firstItem?.clientHeight || !firstItem?.clientWidth) return
+
+    if (itemHeight.value !== firstItem.clientHeight) {
+      itemHeight.value = firstItem.clientHeight
+    }
+    if (itemWidth.value !== firstItem.clientWidth) {
+      itemWidth.value = firstItem.clientWidth
+    }
   }
 }
 const onResize = debounce(updateItemSize, resizeDebounce)
 watch([width, height], onResize, { flush: 'post' })
+whenever(() => items, updateItemSize)
 onBeforeUnmount(() => {
   onResize.cancel() // Clear pending debounced calls
 })

@@ -219,10 +219,6 @@ const {
 const filterMissingPacks = (packs: components['schemas']['Node'][]) =>
   packs.filter((pack) => !comfyManagerStore.isPackInstalled(pack.id))
 
-whenever(selectedTab, () => {
-  pageNumber.value = 0
-})
-
 const isUpdateAvailableTab = computed(
   () => selectedTab.value?.id === ManagerTab.UpdateAvailable
 )
@@ -468,9 +464,10 @@ let gridContainer: HTMLElement | null = null
 onMounted(() => {
   gridContainer = document.getElementById('results-grid')
 })
-watch(searchQuery, () => {
+watch([searchQuery, selectedTab], () => {
   gridContainer ??= document.getElementById('results-grid')
   if (gridContainer) {
+    pageNumber.value = 0
     gridContainer.scrollTop = 0
   }
 })
