@@ -18,6 +18,11 @@ export const useInstalledPacks = (options: UseNodePacksOptions = {}) => {
   const filterInstalledPack = (packs: components['schemas']['Node'][]) =>
     packs.filter((pack) => comfyManagerStore.isPackInstalled(pack.id))
 
+  const startFetchInstalled = async () => {
+    await comfyManagerStore.refreshInstalledList()
+    await startFetch()
+  }
+
   onUnmounted(() => {
     cleanup()
   })
@@ -27,7 +32,7 @@ export const useInstalledPacks = (options: UseNodePacksOptions = {}) => {
     isLoading,
     isReady,
     installedPacks: nodePacks,
-    startFetchInstalled: startFetch,
+    startFetchInstalled,
     filterInstalledPack
   }
 }
