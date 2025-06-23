@@ -20,7 +20,7 @@
         :tabs="tabs"
       />
       <div
-        class="flex-1 overflow-auto bg-[#F7F7F7]"
+        class="flex-1 overflow-auto bg-gray-50 dark-theme:bg-neutral-900"
         :class="{
           'transition-all duration-300': isSmallScreen
         }"
