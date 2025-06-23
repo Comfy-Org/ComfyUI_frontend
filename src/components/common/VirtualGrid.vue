@@ -106,7 +106,7 @@ const updateItemSize = () => {
 }
 const onResize = debounce(updateItemSize, resizeDebounce)
 watch([width, height], onResize, { flush: 'post' })
-whenever(() => items, updateItemSize)
+whenever(() => items, updateItemSize, { flush: 'post' })
 onBeforeUnmount(() => {
   onResize.cancel() // Clear pending debounced calls
 })
