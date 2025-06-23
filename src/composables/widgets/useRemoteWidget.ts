@@ -255,6 +255,8 @@ export function useRemoteWidget<
     node.onRemoved = useChainCallback(node.onRemoved, function () {
       api.removeEventListener('execution_success', handleExecutionSuccess)
     })
+
+    return autoRefreshWidget
   }
 
   // Always add auto-refresh toggle for remote widgets
