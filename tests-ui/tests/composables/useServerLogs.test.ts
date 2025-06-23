@@ -54,7 +54,10 @@ describe('useServerLogs', () => {
     await startListening()
     await stopListening()
 
-    expect(api.subscribeLogs).toHaveBeenCalledWith(false)
+    // TODO: Update this test when subscribeLogs(false) is re-enabled
+    // Currently commented out in useServerLogs to prevent logs from stopping
+    // after 1st of multiple queue tasks
+    expect(api.subscribeLogs).toHaveBeenCalledWith(true)
   })
 
   it('should register event listener when starting', async () => {
