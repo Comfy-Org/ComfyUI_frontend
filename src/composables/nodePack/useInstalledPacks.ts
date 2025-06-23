@@ -1,3 +1,4 @@
+import { whenever } from '@vueuse/core'
 import { computed, onUnmounted } from 'vue'
 
 import { useNodePacks } from '@/composables/nodePack/useNodePacks'
@@ -22,6 +23,11 @@ export const useInstalledPacks = (options: UseNodePacksOptions = {}) => {
     await comfyManagerStore.refreshInstalledList()
     await startFetch()
   }
+
+  // When installedPackIds changes, we need to update the nodePacks
+  whenever(installedPackIds, async () => {
+    await startFetch()
+  })
 
   onUnmounted(() => {
     cleanup()
