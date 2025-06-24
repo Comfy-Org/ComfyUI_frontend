@@ -8742,16 +8742,42 @@ export interface components {
     MoonvalleyUploadResponse: {
       access_url?: string
     }
+    /** @description GitHub release webhook payload based on official webhook documentation */
     GithubReleaseWebhook: {
-      /** @description The action performed on the release */
-      action: string
+      /**
+       * @description The action performed on the release
+       * @enum {string}
+       */
+      action:
+        | 'published'
+        | 'unpublished'
+        | 'created'
+        | 'edited'
+        | 'deleted'
+        | 'prereleased'
+        | 'released'
+      /** @description The release object */
       release: {
+        /** @description The ID of the release */
+        id: number
+        /** @description The node ID of the release */
+        node_id: string
+        /** @description The API URL of the release */
+        url: string
+        /** @description The HTML URL of the release */
+        html_url: string
+        /** @description The URL to the release assets */
+        assets_url?: string
+        /** @description The URL to upload release assets */
+        upload_url?: string
         /** @description The tag name of the release */
         tag_name: string
+        /** @description The branch or commit the release was created from */
+        target_commitish: string
         /** @description The name of the release */
-        name: string
+        name?: string | null
         /** @description The release notes/body */
-        body: string
+        body?: string | null
         /** @description Whether the release is a draft */
         draft: boolean
         /** @description Whether the release is a prerelease */
@@ -8760,33 +8786,228 @@ export interface components {
          * Format: date-time
          * @description When the release was created
          */
-        created_at?: string
+        created_at: string
         /**
          * Format: date-time
          * @description When the release was published
          */
-        published_at?: string
+        published_at?: string | null
+        author: components['schemas']['GithubUser']
         /** @description URL to the tarball */
-        tarball_url?: string
+        tarball_url: string
         /** @description URL to the zipball */
-        zipball_url?: string
-        /** @description The branch or commit the release was created from */
-        target_commitish: string
+        zipball_url: string
+        /** @description Array of release assets */
+        assets: components['schemas']['GithubReleaseAsset'][]
       }
-      repository: {
-        /** @description The name of the repository */
-        name: string
-        /** @description The full name of the repository (owner/repo) */
-        full_name: string
-        /** @description The HTML URL of the repository */
-        html_url: string
-        /** @description The clone URL of the repository */
-        clone_url: string
-      }
+      repository: components['schemas']['GithubRepository']
+      sender: components['schemas']['GithubUser']
+      organization?: components['schemas']['GithubOrganization']
+      installation?: components['schemas']['GithubInstallation']
+      enterprise?: components['schemas']['GithubEnterprise']
+    }
+    /** @description A GitHub user */
+    GithubUser: {
+      /** @description The user's login name */
+      login: string
+      /** @description The user's ID */
+      id: number
+      /** @description The user's node ID */
+      node_id: string
+      /** @description URL to the user's avatar */
+      avatar_url: string
+      /** @description The user's gravatar ID */
+      gravatar_id?: string | null
+      /** @description The API URL of the user */
+      url: string
+      /** @description The HTML URL of the user */
+      html_url: string
+      /**
+       * @description The type of user
+       * @enum {string}
+       */
+      type: 'Bot' | 'User' | 'Organization'
+      /** @description Whether the user is a site admin */
+      site_admin: boolean
+    }
+    /** @description A GitHub repository */
+    GithubRepository: {
+      /** @description The repository ID */
+      id: number
+      /** @description The repository node ID */
+      node_id: string
+      /** @description The name of the repository */
+      name: string
+      /** @description The full name of the repository (owner/repo) */
+      full_name: string
+      /** @description Whether the repository is private */
+      private: boolean
+      owner: components['schemas']['GithubUser']
+      /** @description The HTML URL of the repository */
+      html_url: string
+      /** @description The repository description */
+      description?: string | null
+      /** @description Whether the repository is a fork */
+      fork: boolean
+      /** @description The API URL of the repository */
+      url: string
+      /** @description The clone URL of the repository */
+      clone_url: string
+      /** @description The git URL of the repository */
+      git_url: string
+      /** @description The SSH URL of the repository */
+      ssh_url: string
+      /** @description The default branch of the repository */
+      default_branch: string
+      /**
+       * Format: date-time
+       * @description When the repository was created
+       */
+      created_at: string
+      /**
+       * Format: date-time
+       * @description When the repository was last updated
+       */
+      updated_at: string
+      /**
+       * Format: date-time
+       * @description When the repository was last pushed to
+       */
+      pushed_at: string
+    }
+    /** @description A GitHub release asset */
+    GithubReleaseAsset: {
+      /** @description The asset ID */
+      id: number
+      /** @description The asset node ID */
+      node_id: string
+      /** @description The name of the asset */
+      name: string
+      /** @description The label of the asset */
+      label?: string | null
+      /** @description The content type of the asset */
+      content_type: string
+      /**
+       * @description The state of the asset
+       * @enum {string}
+       */
+      state: 'uploaded' | 'open'
+      /** @description The size of the asset in bytes */
+      size: number
+      /** @description The number of downloads */
+      download_count: number
+      /**
+       * Format: date-time
+       * @description When the asset was created
+       */
+      created_at: string
+      /**
+       * Format: date-time
+       * @description When the asset was last updated
+       */
+      updated_at: string
+      /** @description The browser download URL */
+      browser_download_url: string
+      uploader: components['schemas']['GithubUser']
+    }
+    /** @description A GitHub organization */
+    GithubOrganization: {
+      /** @description The organization's login name */
+      login: string
+      /** @description The organization ID */
+      id: number
+      /** @description The organization node ID */
+      node_id: string
+      /** @description The API URL of the organization */
+      url: string
+      /** @description The API URL of the organization's repositories */
+      repos_url: string
+      /** @description The API URL of the organization's events */
+      events_url: string
+      /** @description The API URL of the organization's hooks */
+      hooks_url: string
+      /** @description The API URL of the organization's issues */
+      issues_url: string
+      /** @description The API URL of the organization's members */
+      members_url: string
+      /** @description The API URL of the organization's public members */
+      public_members_url: string
+      /** @description URL to the organization's avatar */
+      avatar_url: string
+      /** @description The organization description */
+      description?: string | null
+    }
+    /** @description A GitHub App installation */
+    GithubInstallation: {
+      /** @description The installation ID */
+      id: number
+      account: components['schemas']['GithubUser']
+      /**
+       * @description Repository selection for the installation
+       * @enum {string}
+       */
+      repository_selection: 'selected' | 'all'
+      /** @description The API URL for access tokens */
+      access_tokens_url: string
+      /** @description The API URL for repositories */
+      repositories_url: string
+      /** @description The HTML URL of the installation */
+      html_url: string
+      /** @description The GitHub App ID */
+      app_id: number
+      /** @description The target ID */
+      target_id: number
+      /** @description The target type */
+      target_type: string
+      /** @description The installation permissions */
+      permissions: Record<string, never>
+      /** @description The events the installation subscribes to */
+      events: string[]
+      /**
+       * Format: date-time
+       * @description When the installation was created
+       */
+      created_at: string
+      /**
+       * Format: date-time
+       * @description When the installation was last updated
+       */
+      updated_at: string
+      /** @description The single file name if applicable */
+      single_file_name?: string | null
+    }
+    /** @description A GitHub enterprise */
+    GithubEnterprise: {
+      /** @description The enterprise ID */
+      id: number
+      /** @description The enterprise slug */
+      slug: string
+      /** @description The enterprise name */
+      name: string
+      /** @description The enterprise node ID */
+      node_id: string
+      /** @description URL to the enterprise avatar */
+      avatar_url: string
+      /** @description The enterprise description */
+      description?: string | null
+      /** @description The enterprise website URL */
+      website_url?: string | null
+      /** @description The HTML URL of the enterprise */
+      html_url: string
+      /**
+       * Format: date-time
+       * @description When the enterprise was created
+       */
+      created_at: string
+      /**
+       * Format: date-time
+       * @description When the enterprise was last updated
+       */
+      updated_at: string
     }
     ReleaseNote: {
       /** @description Unique identifier for the release note */
-      id?: number
+      id: number
       /**
        * @description The project this release note belongs to
        * @enum {string}
@@ -8805,7 +9026,7 @@ export interface components {
        * Format: date-time
        * @description When the release note was published
        */
-      published_at?: string
+      published_at: string
     }
   }
   responses: never
@@ -11011,6 +11232,8 @@ export interface operations {
         sort?: string[]
         /** @description node_id to use as filter */
         node_id?: string[]
+        /** @description Comfy UI version */
+        comfyui_version?: string
         /** @description The platform requesting the nodes */
         form_factor?: string
       }
@@ -11584,6 +11807,8 @@ export interface operations {
         project: 'comfyui' | 'comfyui_frontend' | 'desktop'
         /** @description The current version to filter release notes */
         current_version?: string
+        /** @description The platform requesting the release notes */
+        form_factor?: string
       }
       header?: never
       path?: never
@@ -11623,7 +11848,20 @@ export interface operations {
   processReleaseWebhook: {
     parameters: {
       query?: never
-      header?: never
+      header: {
+        /** @description The name of the event that triggered the delivery */
+        'X-GitHub-Event': 'release'
+        /** @description A globally unique identifier (GUID) to identify the event */
+        'X-GitHub-Delivery': string
+        /** @description The unique identifier of the webhook */
+        'X-GitHub-Hook-ID': string
+        /** @description HMAC hex digest of the request body using SHA-256 hash function */
+        'X-Hub-Signature-256'?: string
+        /** @description The type of resource where the webhook was created */
+        'X-GitHub-Hook-Installation-Target-Type'?: string
+        /** @description The unique identifier of the resource where the webhook was created */
+        'X-GitHub-Hook-Installation-Target-ID'?: string
+      }
       path?: never
       cookie?: never
     }
@@ -11642,6 +11880,15 @@ export interface operations {
       }
       /** @description Bad request */
       400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Validation failed or endpoint has been spammed */
+      422: {
         headers: {
           [name: string]: unknown
         }
