@@ -60,9 +60,9 @@
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref } from 'vue'
 
-import HelpCenterMenuContent from '@/components/sidebar/HelpCenterMenuContent.vue'
-import ReleaseNotificationToast from '@/components/toast/ReleaseNotificationToast.vue'
-import WhatsNewPopup from '@/components/toast/WhatsNewPopup.vue'
+import HelpCenterMenuContent from '@/components/helpcenter/HelpCenterMenuContent.vue'
+import ReleaseNotificationToast from '@/components/helpcenter/ReleaseNotificationToast.vue'
+import WhatsNewPopup from '@/components/helpcenter/WhatsNewPopup.vue'
 import { useReleaseStore } from '@/stores/releaseStore'
 import { useSettingStore } from '@/stores/settingStore'
 

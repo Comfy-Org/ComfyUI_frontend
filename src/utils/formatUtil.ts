@@ -502,3 +502,15 @@ export function nl2br(text: string): string {
   if (!text) return ''
   return text.replace(/\n/g, '<br />')
 }
+
+/**
+ * Converts a version string to an anchor-safe format by replacing dots with dashes.
+ * @param version The version string (e.g., "1.0.0", "2.1.3-beta.1")
+ * @returns The anchor-safe version string (e.g., "1-0-0", "2-1-3-beta-1")
+ * @example
+ * formatVersionAnchor("1.0.0") // returns "1-0-0"
+ * formatVersionAnchor("2.1.3-beta.1") // returns "2-1-3-beta-1"
+ */
+export function formatVersionAnchor(version: string): string {
+  return version.replace(/\./g, '-')
+}

@@ -53,7 +53,7 @@
       "signUp": "注册",
       "success": "登录成功",
       "termsLink": "使用条款",
-      "termsText": "点击“下一步”或“注册”即表示您同意我们的",
+      "termsText": "点击\"下一步\"或\"注册\"即表示您同意我们的",
       "title": "登录您的账户",
       "useApiKey": "Comfy API 密钥",
       "userAvatar": "用户头像"
@@ -1117,6 +1117,7 @@
       "showFlatList": "平铺结果"
     },
     "themeToggle": "主题切换",
+    "helpCenter": "帮助中心",
     "workflowTab": {
       "confirmDelete": "您确定要删除此工作流吗？",
       "confirmDeleteTitle": "删除工作流？",
@@ -1135,6 +1136,29 @@
       }
     },
     "workflows": "工作流"
+  },
+  "helpCenter": {
+    "docs": "文档",
+    "github": "Github",
+    "helpFeedback": "帮助与反馈",
+    "more": "更多...",
+    "whatsNew": "新功能?",
+    "clickToLearnMore": "点击了解更多 →",
+    "loadingReleases": "加载发布信息...",
+    "noRecentReleases": "没有最近的发布",
+    "updateAvailable": "更新",
+    "desktopUserGuide": "桌面端用户指南",
+    "openDevTools": "打开开发者工具",
+    "reinstall": "重新安装"
+  },
+  "releaseToast": {
+    "newVersionAvailable": "新版本可用！",
+    "whatsNew": "新功能?",
+    "skip": "跳过",
+    "update": "更新"
+  },
+  "whatsNewPopup": {
+    "learnMore": "了解更多"
   },
   "tabMenu": {
     "addToBookmarks": "添加到书签",

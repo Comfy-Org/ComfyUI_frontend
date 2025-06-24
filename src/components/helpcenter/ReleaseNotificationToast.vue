@@ -22,7 +22,7 @@
           <div class="left-actions">
             <a
               class="learn-more-link"
-              href="https://docs.comfy.org/changelog"
+              :href="changelogUrl"
               target="_blank"
               rel="noopener,noreferrer"
               @click="handleLearnMore"
@@ -35,7 +35,7 @@
               {{ $t('releaseToast.skip') }}
             </button>
             <button class="cta-button" @click="handleUpdate">
-              {{ $t('releaseToast.cta') }}
+              {{ $t('releaseToast.update') }}
             </button>
           </div>
         </div>
@@ -46,10 +46,13 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import type { ReleaseNote } from '@/services/releaseService'
 import { useReleaseStore } from '@/stores/releaseStore'
+import { formatVersionAnchor } from '@/utils/formatUtil'
 
+const { locale } = useI18n()
 const releaseStore = useReleaseStore()
 
 // Local state for dismissed status
@@ -64,6 +67,20 @@ const latestRelease = computed<ReleaseNote | null>(
 const shouldShow = computed(
   () => releaseStore.shouldShowToast && !isDismissed.value
 )
+
+// Generate changelog URL with version anchor (language-aware)
+const changelogUrl = computed(() => {
+  const isChineseLocale = locale.value === 'zh'
+  const baseUrl = isChineseLocale
+    ? 'https://docs.comfy.org/zh-CN/changelog'
+    : 'https://docs.comfy.org/changelog'
+
+  if (latestRelease.value?.version) {
+    const versionAnchor = formatVersionAnchor(latestRelease.value.version)
+    return `${baseUrl}#${versionAnchor}`
+  }
+  return baseUrl
+})
 
 // Auto-hide timer
 let hideTimer: ReturnType<typeof setTimeout> | null = null

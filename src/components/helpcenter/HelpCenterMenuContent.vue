@@ -1,15 +1,17 @@
 <template>
   <div class="help-center-menu" role="menu" aria-label="Help Center Menu">
-    <!-- Help Center Menu Items -->
+    <!-- Main Menu Items -->
     <nav class="help-menu-section" role="menubar">
       <button
-        v-for="menuItem in MENU_ITEMS"
+        v-for="menuItem in menuItems"
         :key="menuItem.key"
         type="button"
         class="help-menu-item"
         :class="{ 'more-item': menuItem.key === 'more' }"
         role="menuitem"
         @click="menuItem.action"
+        @mouseenter="onMenuItemHover(menuItem.key, $event)"
+        @mouseleave="onMenuItemLeave(menuItem.key)"
       >
         <i :class="menuItem.icon" class="help-menu-icon" />
         <span class="menu-label">{{ menuItem.label }}</span>
@@ -17,11 +19,45 @@
       </button>
     </nav>
 
+    <!-- More Submenu -->
+    <Teleport to="body">
+      <div
+        v-if="isSubmenuVisible"
+        ref="submenuRef"
+        class="more-submenu"
+        :style="submenuStyle"
+        @mouseenter="onSubmenuHover"
+        @mouseleave="onSubmenuLeave"
+      >
+        <button
+          v-for="submenuItem in submenuItems"
+          :key="submenuItem.key"
+          type="button"
+          class="help-menu-item submenu-item"
+          role="menuitem"
+          @click="submenuItem.action"
+        >
+          <span class="menu-label">{{ submenuItem.label }}</span>
+        </button>
+
+        <div class="submenu-divider" />
+
+        <button
+          type="button"
+          class="help-menu-item submenu-item"
+          role="menuitem"
+          @click="onReinstall"
+        >
+          <span class="menu-label">{{ $t('helpCenter.reinstall') }}</span>
+        </button>
+      </div>
+    </Teleport>
+
     <!-- What's New Section -->
     <section class="whats-new-section">
       <h3 class="section-description">{{ $t('helpCenter.whatsNew') }}</h3>
 
-      <!-- Release items -->
+      <!-- Release Items -->
       <div v-if="hasReleases" role="group" aria-label="Recent releases">
         <article
           v-for="release in releaseStore.recentReleases"
@@ -29,9 +65,9 @@
           class="help-menu-item release-menu-item"
           role="button"
           tabindex="0"
-          @click="handleReleaseClick(release)"
-          @keydown.enter="handleReleaseClick(release)"
-          @keydown.space.prevent="handleReleaseClick(release)"
+          @click="onReleaseClick(release)"
+          @keydown.enter="onReleaseClick(release)"
+          @keydown.space.prevent="onReleaseClick(release)"
         >
           <i class="pi pi-refresh help-menu-icon" aria-hidden="true" />
           <div class="release-content">
@@ -52,12 +88,12 @@
             :label="$t('helpCenter.updateAvailable')"
             size="small"
             class="update-button"
-            @click.stop="handleUpdate(release)"
+            @click.stop="onUpdate(release)"
           />
         </article>
       </div>
 
-      <!-- Loading state -->
+      <!-- Loading State -->
       <div
         v-else-if="releaseStore.isLoading"
         class="help-menu-item"
@@ -68,7 +104,7 @@
         <span>{{ $t('helpCenter.loadingReleases') }}</span>
       </div>
 
-      <!-- No releases state -->
+      <!-- No Releases State -->
       <div v-else class="help-menu-item" role="status">
         <i class="pi pi-info-circle help-menu-icon" aria-hidden="true" />
         <span>{{ $t('helpCenter.noRecentReleases') }}</span>
@@ -79,18 +115,35 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import { computed, onMounted } from 'vue'
+import { type CSSProperties, computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { type ReleaseNote } from '@/services/releaseService'
 import { useReleaseStore } from '@/stores/releaseStore'
+import { electronAPI, isElectron } from '@/utils/envUtil'
+import { formatVersionAnchor } from '@/utils/formatUtil'
+
+// Types
+interface MenuItem {
+  key: string
+  icon: string
+  label: string
+  action: () => void
+}
+
+interface SubmenuItem {
+  key: string
+  label: string
+  action: () => void
+}
 
 // Constants
 const EXTERNAL_LINKS = {
   DOCS: 'https://docs.comfy.org/',
   DISCORD: 'https://www.comfy.org/discord',
   GITHUB: 'https://github.com/comfyanonymous/ComfyUI',
-  CHANGELOG: 'https://docs.comfy.org/changelog'
+  DESKTOP_GUIDE: 'https://docs.comfy.org/installation/desktop',
+  UPDATE_GUIDE: 'https://docs.comfy.org/installation/update_comfyui'
 } as const
 
 const TIME_UNITS = {
@@ -102,14 +155,26 @@ const TIME_UNITS = {
   YEAR: 365 * 24 * 60 * 60 * 1000
 } as const
 
+const SUBMENU_CONFIG = {
+  DELAY_MS: 100,
+  OFFSET_PX: 8,
+  Z_INDEX: 1002
+} as const
+
 // Composables
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const releaseStore = useReleaseStore()
+
+// State
+const isSubmenuVisible = ref(false)
+const submenuRef = ref<HTMLElement | null>(null)
+const submenuStyle = ref<CSSProperties>({})
+let hoverTimeout: number | null = null
 
 // Computed
 const hasReleases = computed(() => releaseStore.releases.length > 0)
 
-const MENU_ITEMS = computed(() => [
+const menuItems = computed<MenuItem[]>(() => [
   {
     key: 'docs',
     icon: 'pi pi-book',
@@ -138,13 +203,76 @@ const MENU_ITEMS = computed(() => [
     key: 'more',
     icon: '',
     label: t('helpCenter.more'),
-    action: handleShowMore
+    action: () => {} // No action for more item
   }
 ])
 
-// Methods
+const submenuItems = computed<SubmenuItem[]>(() => [
+  {
+    key: 'desktop-guide',
+    label: t('helpCenter.desktopUserGuide'),
+    action: () => openExternalLink(EXTERNAL_LINKS.DESKTOP_GUIDE)
+  },
+  {
+    key: 'dev-tools',
+    label: t('helpCenter.openDevTools'),
+    action: openDevTools
+  }
+])
+
+// Utility Functions
 const openExternalLink = (url: string): void => {
   window.open(url, '_blank', 'noopener,noreferrer')
+}
+
+const clearHoverTimeout = (): void => {
+  if (hoverTimeout) {
+    clearTimeout(hoverTimeout)
+    hoverTimeout = null
+  }
+}
+
+const calculateSubmenuPosition = (button: HTMLElement): CSSProperties => {
+  const rect = button.getBoundingClientRect()
+  const submenuWidth = 210 // Width defined in CSS
+
+  // Get actual submenu height if available, otherwise use estimated height
+  const submenuHeight = submenuRef.value?.offsetHeight || 120 // More realistic estimate for 2 items
+
+  // Get viewport dimensions
+  const viewportWidth = window.innerWidth
+  const viewportHeight = window.innerHeight
+
+  // Calculate basic position (aligned with button)
+  let top = rect.top
+  let left = rect.right + SUBMENU_CONFIG.OFFSET_PX
+
+  // Check if submenu would overflow viewport on the right
+  if (left + submenuWidth > viewportWidth) {
+    // Position submenu to the left of the button instead
+    left = rect.left - submenuWidth - SUBMENU_CONFIG.OFFSET_PX
+  }
+
+  // Check if submenu would overflow viewport at the bottom
+  if (top + submenuHeight > viewportHeight) {
+    // Position submenu above the button, aligned to bottom
+    top = Math.max(
+      SUBMENU_CONFIG.OFFSET_PX, // Minimum distance from top of viewport
+      rect.bottom - submenuHeight
+    )
+  }
+
+  // Ensure submenu doesn't go above viewport
+  if (top < SUBMENU_CONFIG.OFFSET_PX) {
+    top = SUBMENU_CONFIG.OFFSET_PX
+  }
+
+  return {
+    position: 'fixed',
+    top: `${top}px`,
+    left: `${left}px`,
+    zIndex: SUBMENU_CONFIG.Z_INDEX
+  }
 }
 
 const formatReleaseDate = (dateString?: string): string => {
@@ -180,19 +308,75 @@ const shouldShowUpdateButton = (release: ReleaseNote): boolean => {
   )
 }
 
-// Event handlers
-const handleReleaseClick = (release: ReleaseNote): void => {
-  // Mark changelog as seen
+// Event Handlers
+const onMenuItemHover = async (
+  key: string,
+  event: MouseEvent
+): Promise<void> => {
+  if (key !== 'more') return
+
+  clearHoverTimeout()
+
+  const moreButton = event.currentTarget as HTMLElement
+
+  // Calculate initial position before showing submenu
+  submenuStyle.value = calculateSubmenuPosition(moreButton)
+
+  // Show submenu with correct position
+  isSubmenuVisible.value = true
+
+  // After submenu is rendered, refine position if needed
+  await nextTick()
+  if (submenuRef.value) {
+    submenuStyle.value = calculateSubmenuPosition(moreButton)
+  }
+}
+
+const onMenuItemLeave = (key: string): void => {
+  if (key !== 'more') return
+
+  hoverTimeout = window.setTimeout(() => {
+    isSubmenuVisible.value = false
+  }, SUBMENU_CONFIG.DELAY_MS)
+}
+
+const onSubmenuHover = (): void => {
+  clearHoverTimeout()
+}
+
+const onSubmenuLeave = (): void => {
+  isSubmenuVisible.value = false
+}
+
+const openDevTools = (): void => {
+  if (isElectron()) {
+    electronAPI().openDevTools()
+  }
+}
+
+const onReinstall = (): void => {
+  if (isElectron()) {
+    void electronAPI().reinstall()
+  }
+}
+
+const onReleaseClick = (release: ReleaseNote): void => {
   void releaseStore.handleShowChangelog(release.version)
-  openExternalLink(EXTERNAL_LINKS.CHANGELOG)
+  const versionAnchor = formatVersionAnchor(release.version)
+  const changelogUrl = `${getChangelogUrl()}#${versionAnchor}`
+  openExternalLink(changelogUrl)
 }
 
-const handleUpdate = (_: ReleaseNote): void => {
-  window.open('https://docs.comfy.org/installation/update_comfyui', '_blank')
+const onUpdate = (_: ReleaseNote): void => {
+  openExternalLink(EXTERNAL_LINKS.UPDATE_GUIDE)
 }
 
-const handleShowMore = (): void => {
-  // TODO: Implement show more functionality
+// Generate language-aware changelog URL
+const getChangelogUrl = (): string => {
+  const isChineseLocale = locale.value === 'zh'
+  return isChineseLocale
+    ? 'https://docs.comfy.org/zh-CN/changelog'
+    : 'https://docs.comfy.org/changelog'
 }
 
 // Lifecycle
@@ -213,6 +397,7 @@ onMounted(async () => {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
   border: 1px solid var(--p-content-border-color);
   backdrop-filter: blur(8px);
+  position: relative;
 }
 
 .help-menu-section {
@@ -234,14 +419,14 @@ onMounted(async () => {
   text-align: left;
 }
 
-.help-menu-item:hover,
-.help-menu-item:focus-visible {
+.help-menu-item:hover {
   background-color: #007aff26;
-  outline: none;
 }
 
+.help-menu-item:focus,
 .help-menu-item:focus-visible {
-  box-shadow: inset 0 0 0 2px var(--p-primary-color);
+  outline: none;
+  box-shadow: none;
 }
 
 .help-menu-icon {
@@ -320,7 +505,43 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 
-/* Scrollbar styling */
+/* Submenu Styles */
+.more-submenu {
+  width: 210px;
+  padding: 0.5rem 0;
+  background: var(--p-content-background);
+  border-radius: 12px;
+  border: 1px solid var(--p-content-border-color);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  transition: opacity 0.15s ease-out;
+}
+
+.submenu-item {
+  padding: 0.75rem 1rem;
+  color: inherit;
+  font-size: 0.9rem;
+  font-weight: inherit;
+  line-height: inherit;
+}
+
+.submenu-item:hover {
+  background-color: #007aff26;
+}
+
+.submenu-item:focus,
+.submenu-item:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.submenu-divider {
+  height: 1px;
+  background: #3e3e3e;
+  margin: 0.5rem 0;
+}
+
+/* Scrollbar Styling */
 .help-center-menu::-webkit-scrollbar {
   width: 6px;
 }
@@ -338,12 +559,7 @@ onMounted(async () => {
   background: var(--p-text-muted-color);
 }
 
-/* Focus management */
-.help-menu-item:focus {
-  outline: 2px solid var(--p-primary-color);
-  outline-offset: -2px;
-}
-
+/* Reduced Motion */
 @media (prefers-reduced-motion: reduce) {
   .help-menu-item {
     transition: none;

@@ -15,14 +15,15 @@
       <div class="popup-actions">
         <a
           class="learn-more-link"
-          href="https://docs.comfy.org/changelog"
+          :href="changelogUrl"
           target="_blank"
           rel="noopener,noreferrer"
           @click="closePopup"
         >
-          Learn more
+          {{ $t('whatsNewPopup.learnMore') }}
         </a>
-        <button class="cta-button" @click="handleCTA">CTA</button>
+        <!-- TODO: CTA button -->
+        <!-- <button class="cta-button" @click="handleCTA">CTA</button> -->
       </div>
     </div>
   </div>
@@ -30,11 +31,14 @@
 
 <script setup lang="ts">
 import { marked } from 'marked'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import type { ReleaseNote } from '@/services/releaseService'
 import { useReleaseStore } from '@/stores/releaseStore'
+import { formatVersionAnchor } from '@/utils/formatUtil'
 
+const { locale } = useI18n()
 const releaseStore = useReleaseStore()
 
 // Local state for dismissed status
@@ -49,6 +53,20 @@ const latestRelease = computed<ReleaseNote | null>(
 const shouldShow = computed(
   () => releaseStore.shouldShowPopup && !isDismissed.value
 )
+
+// Generate changelog URL with version anchor (language-aware)
+const changelogUrl = computed(() => {
+  const isChineseLocale = locale.value === 'zh'
+  const baseUrl = isChineseLocale
+    ? 'https://docs.comfy.org/zh-CN/changelog'
+    : 'https://docs.comfy.org/changelog'
+
+  if (latestRelease.value?.version) {
+    const versionAnchor = formatVersionAnchor(latestRelease.value.version)
+    return `${baseUrl}#${versionAnchor}`
+  }
+  return baseUrl
+})
 
 // Format release content for display using marked
 const formattedContent = computed(() => {
@@ -77,34 +95,26 @@ const hide = () => {
   isDismissed.value = true
 }
 
-const closePopup = () => {
+const closePopup = async () => {
+  // Mark "what's new" seen when popup is closed
+  if (latestRelease.value) {
+    await releaseStore.handleWhatsNewSeen(latestRelease.value.version)
+  }
   hide()
 }
 
 // Learn more handled by anchor href
 
-const handleCTA = () => {
-  window.open('https://docs.comfy.org/installation/update_comfyui', '_blank')
-  closePopup()
-}
+// const handleCTA = async () => {
+//   window.open('https://docs.comfy.org/installation/update_comfyui', '_blank')
+//   await closePopup()
+// }
 
 // Initialize on mount
 onMounted(async () => {
   // Fetch releases if not already loaded
   if (!releaseStore.releases.length) {
     await releaseStore.fetchReleases()
-  }
-
-  // Mark "what's new" seen when popup is shown initially
-  if (shouldShow.value && latestRelease.value) {
-    await releaseStore.handleWhatsNewSeen(latestRelease.value.version)
-  }
-})
-
-// Watch for popup visibility to mark as seen
-watch(shouldShow, async (isVisible) => {
-  if (isVisible && latestRelease.value) {
-    await releaseStore.handleWhatsNewSeen(latestRelease.value.version)
   }
 })
 
