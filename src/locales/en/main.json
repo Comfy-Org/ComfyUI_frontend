@@ -169,6 +169,8 @@
     "uninstalling": "Uninstalling",
     "update": "Update",
     "uninstallSelected": "Uninstall Selected",
+    "updateSelected": "Update Selected",
+    "updateAll": "Update All",
     "updatingAllPacks": "Updating all packages",
     "license": "License",
     "nightlyVersion": "Nightly",

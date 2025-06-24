@@ -685,6 +685,8 @@
     "uninstallSelected": "選択したものをアンインストール",
     "uninstalling": "アンインストール中",
     "update": "更新",
+    "updateSelected": "選択を更新",
+    "updateAll": "すべて更新",
     "updatingAllPacks": "すべてのパッケージを更新中",
     "version": "バージョン"
   },
