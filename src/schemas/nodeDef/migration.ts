@@ -45,7 +45,7 @@ export function transformNodeDefV1ToV2(
   // Transform outputs
   const outputs: OutputSpecV2[] = []
 
-  if (nodeDefV1.output) {
+  if (nodeDefV1.output && Array.isArray(nodeDefV1.output)) {
     nodeDefV1.output.forEach((outputType, index) => {
       const outputSpec: OutputSpecV2 = {
         index,
