@@ -200,7 +200,8 @@ export const useReleaseStore = defineStore('release', () => {
 
       const fetchedReleases = await releaseService.getReleases({
         project: 'comfyui',
-        current_version: currentComfyUIVersion.value
+        current_version: currentComfyUIVersion.value,
+        form_factor: systemStatsStore.getFormFactor()
       })
 
       if (fetchedReleases !== null) {
