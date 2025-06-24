@@ -52,6 +52,7 @@ const dialogStore = useDialogStore()
 }
 
 .manager-dialog {
+  height: 80vh;
   max-width: 1724px;
   max-height: 1026px;
 }
@@ -59,7 +60,7 @@ const dialogStore = useDialogStore()
 @media (min-width: 3000px) {
   .manager-dialog {
     max-width: 2200px;
-    max-height: 1300px;
+    max-height: 1320px;
   }
 }
 </style>
