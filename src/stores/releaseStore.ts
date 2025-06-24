@@ -4,7 +4,7 @@ import { computed, ref } from 'vue'
 import { type ReleaseNote, useReleaseService } from '@/services/releaseService'
 import { useSettingStore } from '@/stores/settingStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { compareVersions } from '@/utils/formatUtil'
+import { compareVersions, stringToLocale } from '@/utils/formatUtil'
 
 // Store for managing release notes
 export const useReleaseStore = defineStore('release', () => {
@@ -24,6 +24,7 @@ export const useReleaseStore = defineStore('release', () => {
   )
 
   // Release data from settings
+  const locale = computed(() => settingStore.get('Comfy.Locale'))
   const releaseVersion = computed(() =>
     settingStore.get('Comfy.Release.Version')
   )
@@ -55,21 +56,29 @@ export const useReleaseStore = defineStore('release', () => {
       ) > 0
   )
 
+  const isLatestVersion = computed(
+    () =>
+      !!recentRelease.value &&
+      !compareVersions(recentRelease.value.version, currentComfyUIVersion.value)
+  )
+
+  const hasMediumOrHighAttention = computed(() =>
+    recentReleases.value
+      .slice(0, -1)
+      .some(
+        (release) =>
+          release.attention === 'medium' || release.attention === 'high'
+      )
+  )
+
   // Show toast if needed
   const shouldShowToast = computed(() => {
     if (!isNewVersionAvailable.value) {
       return false
     }
 
-    const hasMediumOrHighAttention = recentReleases.value
-      .slice(0, -1)
-      .some(
-        (release) =>
-          release.attention === 'medium' || release.attention === 'high'
-      )
-
     // Skip if low attention
-    if (!hasMediumOrHighAttention) {
+    if (!hasMediumOrHighAttention.value) {
       return false
     }
 
@@ -92,12 +101,6 @@ export const useReleaseStore = defineStore('release', () => {
     }
 
     const { version } = recentRelease.value
-    const hasMediumOrHighAttention = recentReleases.value
-      .slice(0, -1)
-      .some(
-        (release) =>
-          release.attention === 'medium' || release.attention === 'high'
-      )
 
     // Changelog seen → clear dot
     if (
@@ -108,7 +111,7 @@ export const useReleaseStore = defineStore('release', () => {
     }
 
     // Attention medium / high (levels 2 & 3)
-    if (hasMediumOrHighAttention) {
+    if (hasMediumOrHighAttention.value) {
       // Persist until changelog is opened
       return true
     }
@@ -129,14 +132,7 @@ export const useReleaseStore = defineStore('release', () => {
 
   // Show "What's New" popup
   const shouldShowPopup = computed(() => {
-    if (!recentRelease.value) {
-      return false
-    }
-
-    // Only on latest
-    const isLatestVersion =
-      recentRelease.value.version === currentComfyUIVersion.value
-    if (!isLatestVersion) {
+    if (!isLatestVersion.value) {
       return false
     }
 
@@ -201,7 +197,8 @@ export const useReleaseStore = defineStore('release', () => {
       const fetchedReleases = await releaseService.getReleases({
         project: 'comfyui',
         current_version: currentComfyUIVersion.value,
-        form_factor: systemStatsStore.getFormFactor()
+        form_factor: systemStatsStore.getFormFactor(),
+        locale: stringToLocale(locale.value)
       })
 
       if (fetchedReleases !== null) {

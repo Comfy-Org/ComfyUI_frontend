@@ -274,9 +274,12 @@ describe('useReleaseStore', () => {
       expect(store.shouldShowRedDot).toBe(true)
     })
 
-    it('should show popup for latest version', () => {
+    it('should show popup for latest version', async () => {
       mockSystemStatsStore.systemStats.system.comfyui_version = '1.2.0' // Same as release
       mockSettingStore.get.mockReturnValue(null)
+
+      const { compareVersions } = await import('@/utils/formatUtil')
+      vi.mocked(compareVersions).mockReturnValue(0) // versions are equal (latest version)
 
       store.releases = [mockRelease]
 

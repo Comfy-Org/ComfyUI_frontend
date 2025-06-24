@@ -478,13 +478,16 @@
     "clickToLearnMore": "Click to learn more →",
     "loadingReleases": "Loading releases...",
     "noRecentReleases": "No recent releases",
-    "updateAvailable": "Update"
+    "updateAvailable": "Update",
+    "desktopUserGuide": "Desktop User Guide",
+    "openDevTools": "Open Dev Tools",
+    "reinstall": "Re-Install"
   },
   "releaseToast": {
     "newVersionAvailable": "New Version Available!",
     "whatsNew": "What's New?",
     "skip": "Skip",
-    "cta": "CTA"
+    "update": "Update"
   },
   "menu": {
     "hideMenu": "Hide Menu",
@@ -1462,5 +1465,8 @@
     "moreHelp": "For more help, visit the",
     "documentationPage": "documentation page",
     "loadError": "Failed to load help: {error}"
+  },
+  "whatsNewPopup": {
+    "learnMore": "Learn more"
   }
 }
