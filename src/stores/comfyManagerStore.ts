@@ -328,6 +328,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     isPackInstalled: isInstalledPackId,
     isPackEnabled: isEnabledPackId,
     getInstalledPackVersion,
+    refreshInstalledList,
 
     // Task queue state and actions
     taskHistory,

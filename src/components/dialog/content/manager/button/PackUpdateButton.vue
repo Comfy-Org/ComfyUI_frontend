@@ -28,13 +28,18 @@ const managerStore = useComfyManagerStore()
 
 const createPayload = (updateItem: NodePack) => {
   return {
-    id: updateItem.id,
-    version: updateItem.latest_version?.version
+    id: updateItem.id!,
+    version: updateItem.latest_version!.version!
   }
 }
 
-const updatePack = (item: NodePack) =>
-  managerStore.updatePack.call(createPayload(item))
+const updatePack = async (item: NodePack) => {
+  if (!item.id || !item.latest_version?.version) {
+    console.warn('Pack missing required id or version:', item)
+    return
+  }
+  await managerStore.updatePack.call(createPayload(item))
+}
 
 const updateAllPacks = async () => {
   if (!nodePacks?.length) {
