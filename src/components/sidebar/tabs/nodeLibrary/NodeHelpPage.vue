@@ -188,7 +188,7 @@ const outputList = computed(() =>
 
 .markdown-content :deep(li),
 .fallback-content li {
-  @apply my-1;
+  @apply my-2;
 }
 
 .markdown-content :deep(*:first-child),
@@ -198,7 +198,7 @@ const outputList = computed(() =>
 
 .markdown-content :deep(code),
 .fallback-content code {
-  @apply text-[var(--error-text)] bg-[var(--content-bg)] rounded px-1 py-0.5;
+  @apply text-[rgba(0,122,255,1)] bg-[rgba(96,165,250,0.2)] rounded px-1.5 py-0.5;
 }
 
 .markdown-content :deep(table),
