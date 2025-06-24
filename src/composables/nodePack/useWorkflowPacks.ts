@@ -7,7 +7,7 @@ import { app } from '@/scripts/app'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { SelectedVersion, UseNodePacksOptions } from '@/types/comfyManagerTypes'
+import { UseNodePacksOptions } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
 
 type WorkflowPack = {
@@ -65,8 +65,7 @@ export const useWorkflowPacks = (options: UseNodePacksOptions = {}) => {
       return {
         id: CORE_NODES_PACK_NAME,
         version:
-          systemStatsStore.systemStats?.system?.comfyui_version ??
-          SelectedVersion.NIGHTLY
+          systemStatsStore.systemStats?.system?.comfyui_version ?? 'nightly'
       }
     }
 
@@ -79,7 +78,7 @@ export const useWorkflowPacks = (options: UseNodePacksOptions = {}) => {
       const pack = searchResult.nodes[0]
       return {
         id: pack.id,
-        version: pack.latest_version?.version ?? SelectedVersion.NIGHTLY
+        version: pack.latest_version?.version ?? 'nightly'
       }
     }
   }

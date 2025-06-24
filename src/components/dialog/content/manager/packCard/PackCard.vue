@@ -136,12 +136,20 @@ provide(IsInstallingKey, isInstalling)
 const { isPackInstalled, isPackEnabled } = useComfyManagerStore()
 const { isUpdateAvailable } = usePackUpdateStatus(nodePack)
 
-const isInstalled = computed(() => isPackInstalled(nodePack?.id))
-const isDisabled = computed(
-  () => isInstalled.value && !isPackEnabled(nodePack?.id)
-)
+const isDisabled = ref(false)
+const managerStore = useComfyManagerStore()
 
-whenever(isInstalled, () => (isInstalling.value = false))
+// Watch the installedPacks object directly (which gets updated from WebSocket)
+whenever(
+  () => managerStore.installedPacksIds,
+  () => {
+    const isInstalled = isPackInstalled(nodePack?.id)
+    isDisabled.value = isInstalled && !isPackEnabled(nodePack?.id)
+
+    // Update isInstalling state after installation is complete
+    if (isInstalling.value && isInstalled) isInstalling.value = false
+  }
+)
 
 const nodesCount = computed(() =>
   isMergedNodePack(nodePack) ? nodePack.comfy_nodes?.length : undefined

@@ -22,7 +22,7 @@
     </div>
     <div class="flex items-center gap-4">
       <span v-if="isInProgress" class="text-xs font-bold text-neutral-600">
-        {{ comfyManagerStore.uncompletedCount }} of
+        {{ comfyManagerStore.taskLogs.length }} of
         {{ comfyManagerStore.taskLogs.length }}
       </span>
       <div class="flex items-center">
@@ -83,7 +83,7 @@ const dialogStore = useDialogStore()
 const progressDialogContent = useManagerProgressDialogStore()
 const comfyManagerStore = useComfyManagerStore()
 
-const isInProgress = computed(() => comfyManagerStore.uncompletedCount > 0)
+const isInProgress = computed(() => comfyManagerStore.isProcessingTasks)
 
 const closeDialog = () => {
   dialogStore.closeDialog({ key: 'global-manager-progress-dialog' })

@@ -69,12 +69,8 @@ import ContentDivider from '@/components/common/ContentDivider.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import {
-  ManagerChannel,
-  ManagerDatabaseSource,
-  SelectedVersion
-} from '@/types/comfyManagerTypes'
-import { components } from '@/types/comfyRegistryTypes'
+import type { components } from '@/types/comfyRegistryTypes'
+import { components as ManagerComponents } from '@/types/generatedManagerTypes'
 import { isSemVer } from '@/utils/formatUtil'
 
 const { nodePack } = defineProps<{
@@ -92,19 +88,20 @@ const managerStore = useComfyManagerStore()
 
 const isQueueing = ref(false)
 
-const selectedVersion = ref<string>(SelectedVersion.LATEST)
+const selectedVersion = ref<string>('latest')
 onMounted(() => {
-  const initialVersion = getInitialSelectedVersion() ?? SelectedVersion.LATEST
+  const initialVersion = getInitialSelectedVersion() ?? 'latest'
   selectedVersion.value =
     // Use NIGHTLY when version is a Git hash
-    isSemVer(initialVersion) ? initialVersion : SelectedVersion.NIGHTLY
+    isSemVer(initialVersion) ? initialVersion : 'nightly'
 })
 
 const getInitialSelectedVersion = () => {
   if (!nodePack.id) return
 
   // If unclaimed, set selected version to nightly
-  if (nodePack.publisher?.name === 'Unclaimed') return SelectedVersion.NIGHTLY
+  if (nodePack.publisher?.name === 'Unclaimed')
+    return 'nightly' as ManagerComponents['schemas']['SelectedVersion']
 
   // If node pack is installed, set selected version to the installed version
   if (managerStore.isPackInstalled(nodePack.id))
@@ -143,7 +140,7 @@ const onNodePackChange = async () => {
   // Add Latest option
   const defaultVersions = [
     {
-      value: SelectedVersion.LATEST,
+      value: 'latest' as ManagerComponents['schemas']['SelectedVersion'],
       label: t('manager.latestVersion')
     }
   ]
@@ -151,7 +148,7 @@ const onNodePackChange = async () => {
   // Add Nightly option if there is a non-empty `repository` field
   if (nodePack.repository?.length) {
     defaultVersions.push({
-      value: SelectedVersion.NIGHTLY,
+      value: 'nightly' as ManagerComponents['schemas']['SelectedVersion'],
       label: t('manager.nightlyVersion')
     })
   }
@@ -172,12 +169,16 @@ whenever(
 
 const handleSubmit = async () => {
   isQueueing.value = true
+  if (!nodePack.id) {
+    throw new Error('Node ID is required for installation')
+  }
+
   await managerStore.installPack.call({
     id: nodePack.id,
-    repository: nodePack.repository ?? '',
-    channel: ManagerChannel.DEFAULT,
-    mode: ManagerDatabaseSource.CACHE,
     version: selectedVersion.value,
+    repository: nodePack.repository ?? '',
+    channel: 'default' as ManagerComponents['schemas']['ManagerChannel'],
+    mode: 'cache' as ManagerComponents['schemas']['ManagerDatabaseSource'],
     selected_version: selectedVersion.value
   })
 
