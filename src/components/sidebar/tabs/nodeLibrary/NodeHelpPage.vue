@@ -227,4 +227,15 @@ const outputList = computed(() =>
 .fallback-content thead {
   border-bottom: 1px solid var(--p-text-color);
 }
+
+.markdown-content :deep(pre),
+.fallback-content pre {
+  @apply rounded p-4 my-4 overflow-x-auto;
+  background-color: rgba(60, 60, 60, 0.12);
+
+  code {
+    @apply bg-transparent p-0;
+    color: var(--p-text-color);
+  }
+}
 </style>
