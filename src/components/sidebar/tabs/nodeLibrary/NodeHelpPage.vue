@@ -12,7 +12,7 @@
       />
       <span class="ml-2 font-semibold">{{ node.display_name }}</span>
     </div>
-    <div class="p-4 flex-grow node-help-content max-w-[600px] mx-auto">
+    <div class="p-4 flex-grow node-help-content w-full mx-auto">
       <ProgressSpinner
         v-if="isLoading"
         class="m-auto"
