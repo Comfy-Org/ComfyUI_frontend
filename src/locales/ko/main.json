@@ -635,8 +635,8 @@
     "uninstallSelected": "선택 항목 제거",
     "uninstalling": "제거 중",
     "update": "업데이트",
-    "updateAll": "모두 업데이트",
     "updateSelected": "선택 항목 업데이트",
+    "updateAll": "전체 업데이트",
     "updatingAllPacks": "모든 패키지 업데이트 중",
     "version": "버전"
   },
