@@ -107,12 +107,8 @@ const { size = 24, duration = '2s' } = defineProps<{
 
 const colorPaletteStore = useColorPaletteStore()
 
-// Dark theme 상태에 따라 색상 자동 조정
-const color = computed(
-  () =>
-    colorPaletteStore.completedActivePalette.light_theme
-      ? '#2C2B30' // light theme: 진한 회색
-      : '#D4D4D4' // dark theme: 밝은 회색
+const color = computed(() =>
+  colorPaletteStore.completedActivePalette.light_theme ? '#2C2B30' : '#D4D4D4'
 )
 </script>
 
@@ -132,7 +128,6 @@ const color = computed(
   }
 }
 
-/* 각 점이 순차적으로 밝아지는 효과 */
 .dot-animation:nth-child(1) {
   animation-delay: 0s;
 }
