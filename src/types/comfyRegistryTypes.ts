@@ -11807,6 +11807,8 @@ export interface operations {
         project: 'comfyui' | 'comfyui_frontend' | 'desktop'
         /** @description The current version to filter release notes */
         current_version?: string
+        /** @description The locale for the release notes */
+        locale?: 'en' | 'es' | 'fr' | 'ja' | 'ko' | 'ru' | 'zh'
         /** @description The platform requesting the release notes */
         form_factor?: string
       }
