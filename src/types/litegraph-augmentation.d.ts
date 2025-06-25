@@ -60,6 +60,7 @@ declare module '@comfyorg/litegraph/dist/types/widgets' {
  *  ComfyUI extensions of litegraph
  */
 declare module '@comfyorg/litegraph' {
+  import type { ExecutableLGraphNode } from '@comfyorg/litegraph'
   import type { IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
   interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
