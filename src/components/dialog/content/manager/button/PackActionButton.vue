@@ -1,7 +1,7 @@
 <template>
   <Button
     outlined
-    class="!m-0 p-0 rounded-lg"
+    class="!m-0 p-0 rounded-lg text-gray-900 dark-theme:text-gray-50"
     :class="[
       variant === 'black'
         ? 'bg-neutral-900 text-white border-neutral-900'
@@ -12,7 +12,7 @@
     v-bind="$attrs"
     @click="onClick"
   >
-    <span class="py-2.5 px-3 whitespace-nowrap">
+    <span class="py-2 px-3 whitespace-nowrap">
       <template v-if="loading">
         {{ loadingMessage ?? $t('g.loading') }}
       </template>
