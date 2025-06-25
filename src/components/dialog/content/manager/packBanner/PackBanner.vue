@@ -1,5 +1,5 @@
 <template>
-  <div :style="{ width: cssWidth, height: cssHeight }" class="overflow-hidden">
+  <div class="w-full aspect-[7/3] overflow-hidden">
     <!-- default banner show -->
     <div v-if="showDefaultBanner" class="w-full h-full">
       <img
@@ -41,24 +41,12 @@ import { components } from '@/types/comfyRegistryTypes'
 
 const DEFAULT_BANNER = '/assets/images/fallback-gradient-avatar.svg'
 
-const {
-  nodePack,
-  width = '100%',
-  height = '12rem'
-} = defineProps<{
+const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']
-  width?: string
-  height?: string
 }>()
 
 const isImageError = ref(false)
 
 const showDefaultBanner = computed(() => !nodePack.banner_url && !nodePack.icon)
 const imgSrc = computed(() => nodePack.banner_url || nodePack.icon)
-
-const convertToCssValue = (value: string | number) =>
-  typeof value === 'number' ? `${value}rem` : value
-
-const cssWidth = computed(() => convertToCssValue(width))
-const cssHeight = computed(() => convertToCssValue(height))
 </script>
