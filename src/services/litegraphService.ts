@@ -552,7 +552,13 @@ export const useLitegraphService = () => {
         showAnimatedPreview(this)
       } else {
         removeAnimatedPreview(this)
-        showCanvasImagePreview(this)
+        // Only show canvas image preview if we don't already have a Vue image preview widget
+        const hasVueImagePreview = this.widgets?.some(
+          (w) => w.name === '$$node-image-preview' || w.type === 'IMAGEPREVIEW'
+        )
+        if (!hasVueImagePreview) {
+          showCanvasImagePreview(this)
+        }
       }
     }
 
