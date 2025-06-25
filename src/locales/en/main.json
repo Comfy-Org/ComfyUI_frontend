@@ -123,7 +123,11 @@
     "copy": "Copy",
     "imageUrl": "Image URL",
     "clear": "Clear",
-    "copyURL": "Copy URL"
+    "copyURL": "Copy URL",
+    "startRecording": "Start Recording",
+    "stopRecording": "Stop Recording",
+    "micPermissionDenied": "Microphone permission denied",
+    "noAudioRecorded": "No audio recorded"
   },
   "manager": {
     "title": "Custom Nodes Manager",
