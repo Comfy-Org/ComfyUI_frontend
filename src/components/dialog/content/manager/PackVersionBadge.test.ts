@@ -1,6 +1,5 @@
 import { VueWrapper, mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
-import Button from 'primevue/button'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -30,6 +29,12 @@ vi.mock('@/stores/comfyManagerStore', () => ({
     installedPacks: mockInstalledPacks,
     isPackInstalled: (id: string) =>
       !!mockInstalledPacks[id as keyof typeof mockInstalledPacks]
+  }))
+}))
+
+vi.mock('@/composables/nodePack/usePackUpdateStatus', () => ({
+  usePackUpdateStatus: vi.fn(() => ({
+    isUpdateAvailable: false
   }))
 }))
 
@@ -78,9 +83,9 @@ describe('PackVersionBadge', () => {
   it('renders with installed version from store', () => {
     const wrapper = mountComponent()
 
-    const button = wrapper.findComponent(Button)
-    expect(button.exists()).toBe(true)
-    expect(button.props('label')).toBe('1.5.0') // From mockInstalledPacks
+    const badge = wrapper.find('[role="button"]')
+    expect(badge.exists()).toBe(true)
+    expect(badge.find('span').text()).toBe('1.5.0') // From mockInstalledPacks
   })
 
   it('falls back to latest_version when not installed', () => {
@@ -97,9 +102,9 @@ describe('PackVersionBadge', () => {
       props: { nodePack: uninstalledPack }
     })
 
-    const button = wrapper.findComponent(Button)
-    expect(button.exists()).toBe(true)
-    expect(button.props('label')).toBe('3.0.0') // From latest_version
+    const badge = wrapper.find('[role="button"]')
+    expect(badge.exists()).toBe(true)
+    expect(badge.find('span').text()).toBe('3.0.0') // From latest_version
   })
 
   it('falls back to NIGHTLY when no latest_version and not installed', () => {
@@ -113,9 +118,9 @@ describe('PackVersionBadge', () => {
       props: { nodePack: noVersionPack }
     })
 
-    const button = wrapper.findComponent(Button)
-    expect(button.exists()).toBe(true)
-    expect(button.props('label')).toBe(SelectedVersion.NIGHTLY)
+    const badge = wrapper.find('[role="button"]')
+    expect(badge.exists()).toBe(true)
+    expect(badge.find('span').text()).toBe(SelectedVersion.NIGHTLY)
   })
 
   it('falls back to NIGHTLY when nodePack.id is missing', () => {
@@ -127,16 +132,16 @@ describe('PackVersionBadge', () => {
       props: { nodePack: invalidPack }
     })
 
-    const button = wrapper.findComponent(Button)
-    expect(button.exists()).toBe(true)
-    expect(button.props('label')).toBe(SelectedVersion.NIGHTLY)
+    const badge = wrapper.find('[role="button"]')
+    expect(badge.exists()).toBe(true)
+    expect(badge.find('span').text()).toBe(SelectedVersion.NIGHTLY)
   })
 
   it('toggles the popover when button is clicked', async () => {
     const wrapper = mountComponent()
 
-    // Click the button
-    await wrapper.findComponent(Button).trigger('click')
+    // Click the badge
+    await wrapper.find('[role="button"]').trigger('click')
 
     // Verify that the toggle method was called
     expect(mockToggle).toHaveBeenCalled()
