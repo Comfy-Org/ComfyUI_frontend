@@ -1,31 +1,29 @@
 <template>
   <div
-    class="w-full px-6 py-4 shadow-lg flex items-center justify-between"
+    class="w-full px-6 py-2 shadow-lg flex items-center justify-between"
     :class="{
       'rounded-t-none': progressDialogContent.isExpanded,
       'rounded-lg': !progressDialogContent.isExpanded
     }"
   >
-    <div class="justify-center text-sm font-bold leading-none">
+    <div class="flex items-center text-base leading-none">
       <div class="flex items-center">
         <template v-if="isInProgress">
-          <i class="pi pi-spin pi-spinner mr-2 text-3xl" />
+          <DotSpinner duration="1s" class="mr-2" />
           <span>{{ currentTaskName }}</span>
         </template>
         <template v-else-if="isRestartCompleted">
-          <span class="mr-2 text-2xl">🎉</span>
-          <span class="leading-none">{{ currentTaskName }}</span>
+          <span class="mr-2">🎉</span>
+          <span>{{ currentTaskName }}</span>
         </template>
         <template v-else>
-          <span class="mr-2 text-2xl">✅</span>
-          <span class="leading-none">{{
-            $t('manager.restartToApplyChanges')
-          }}</span>
+          <span class="mr-2">✅</span>
+          <span>{{ $t('manager.restartToApplyChanges') }}</span>
         </template>
       </div>
     </div>
     <div class="flex items-center gap-4">
-      <span v-if="isInProgress" class="text-xs font-bold text-neutral-600">
+      <span v-if="isInProgress" class="text-sm text-neutral-700">
         {{ completedTasksCount }} of {{ comfyManagerStore.taskLogs.length }}
       </span>
       <div class="flex items-center">
@@ -33,13 +31,13 @@
           v-if="!isInProgress && !isRestartCompleted"
           rounded
           outlined
-          class="px-4 py-2 rounded-md mr-4"
+          class="mr-4 rounded-md border-2 px-3 text-neutral-600 border-neutral-900 hover:bg-neutral-100 dark-theme:bg-none dark-theme:text-white dark-theme:border-white"
           @click="handleRestart"
         >
           {{ $t('manager.applyChanges') }}
         </Button>
         <Button
-          v-if="!isRestartCompleted"
+          v-else-if="!isRestartCompleted"
           :icon="
             progressDialogContent.isExpanded
               ? 'pi pi-chevron-up'
@@ -48,6 +46,7 @@
           text
           rounded
           size="small"
+          class="font-bold"
           severity="secondary"
           :aria-label="progressDialogContent.isExpanded ? 'Collapse' : 'Expand'"
           @click.stop="progressDialogContent.toggle"
@@ -57,6 +56,7 @@
           text
           rounded
           size="small"
+          class="font-bold"
           severity="secondary"
           aria-label="Close"
           @click.stop="closeDialog"
@@ -72,6 +72,7 @@ import Button from 'primevue/button'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import DotSpinner from '@/components/common/DotSpinner.vue'
 import { api } from '@/scripts/api'
 import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useWorkflowService } from '@/services/workflowService'
@@ -108,7 +109,7 @@ const closeDialog = () => {
   dialogStore.closeDialog({ key: 'global-manager-progress-dialog' })
 }
 
-const fallbackTaskName = t('g.installing')
+const fallbackTaskName = t('manager.installingDependencies')
 const currentTaskName = computed(() => {
   if (isRestarting.value) {
     return t('manager.restartingBackend')

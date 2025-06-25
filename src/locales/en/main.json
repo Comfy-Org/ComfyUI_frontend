@@ -147,6 +147,7 @@
     "selectVersion": "Select Version",
     "downloads": "Downloads",
     "repository": "Repository",
+    "installingDependencies": "Installing dependencies...",
     "uninstall": "Uninstall",
     "uninstalling": "Uninstalling",
     "update": "Update",
