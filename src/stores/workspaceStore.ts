@@ -100,6 +100,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     colorPalette,
     dialog,
     bottomPanel,
+    defineStore,
     user: partialUserStore,
 
     registerSidebarTab,
