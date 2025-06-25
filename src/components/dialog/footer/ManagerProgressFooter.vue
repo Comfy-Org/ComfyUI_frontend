@@ -39,6 +39,7 @@
           {{ $t('manager.applyChanges') }}
         </Button>
         <Button
+          v-if="!isRestartCompleted"
           :icon="
             progressDialogContent.isExpanded
               ? 'pi pi-chevron-up'
