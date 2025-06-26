@@ -7,7 +7,7 @@
       xmlns="http://www.w3.org/2000/svg"
       :width="size"
       :height="size"
-      :viewBox="`0 0 14 14`"
+      viewBox="0 0 14 14"
       fill="none"
       class="animate-spin"
       :style="{ animationDuration: duration }"
@@ -126,30 +126,5 @@ const color = computed(() =>
   40% {
     opacity: 1;
   }
-}
-
-.dot-animation:nth-child(1) {
-  animation-delay: 0s;
-}
-.dot-animation:nth-child(2) {
-  animation-delay: 0.125s;
-}
-.dot-animation:nth-child(3) {
-  animation-delay: 0.25s;
-}
-.dot-animation:nth-child(4) {
-  animation-delay: 0.375s;
-}
-.dot-animation:nth-child(5) {
-  animation-delay: 0.5s;
-}
-.dot-animation:nth-child(6) {
-  animation-delay: 0.625s;
-}
-.dot-animation:nth-child(7) {
-  animation-delay: 0.75s;
-}
-.dot-animation:nth-child(8) {
-  animation-delay: 0.875s;
 }
 </style>
