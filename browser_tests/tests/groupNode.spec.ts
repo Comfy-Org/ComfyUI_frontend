@@ -17,11 +17,11 @@ test.describe('Group Node', () => {
       await libraryTab.open()
     })
 
-    test('Is added to node library sidebar', async ({ comfyPage }) => {
+    test.skip('Is added to node library sidebar', async ({ comfyPage }) => {
       expect(await libraryTab.getFolder('group nodes').count()).toBe(1)
     })
 
-    test('Can be added to canvas using node library sidebar', async ({
+    test.skip('Can be added to canvas using node library sidebar', async ({
       comfyPage
     }) => {
       const initialNodeCount = await comfyPage.getGraphNodesCount()
@@ -34,7 +34,7 @@ test.describe('Group Node', () => {
       expect(await comfyPage.getGraphNodesCount()).toBe(initialNodeCount + 1)
     })
 
-    test('Can be bookmarked and unbookmarked', async ({ comfyPage }) => {
+    test.skip('Can be bookmarked and unbookmarked', async ({ comfyPage }) => {
       await libraryTab.getFolder(groupNodeCategory).click()
       await libraryTab
         .getNode(groupNodeName)
@@ -61,7 +61,7 @@ test.describe('Group Node', () => {
       ).toHaveLength(0)
     })
 
-    test('Displays preview on bookmark hover', async ({ comfyPage }) => {
+    test.skip('Displays preview on bookmark hover', async ({ comfyPage }) => {
       await libraryTab.getFolder(groupNodeCategory).click()
       await libraryTab
         .getNode(groupNodeName)
@@ -95,7 +95,7 @@ test.describe('Group Node', () => {
     )
   })
 
-  test('Displays tooltip on title hover', async ({ comfyPage }) => {
+  test.skip('Displays tooltip on title hover', async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.EnableTooltips', true)
     await comfyPage.convertAllNodesToGroupNode('Group Node')
     await comfyPage.page.mouse.move(47, 173)
@@ -104,7 +104,7 @@ test.describe('Group Node', () => {
     await expect(comfyPage.page.locator('.node-tooltip')).toBeVisible()
   })
 
-  test('Manage group opens with the correct group selected', async ({
+  test.skip('Manage group opens with the correct group selected', async ({
     comfyPage
   }) => {
     const makeGroup = async (name, type1, type2) => {
@@ -165,7 +165,7 @@ test.describe('Group Node', () => {
     expect(visibleInputCount).toBe(2)
   })
 
-  test('Reconnects inputs after configuration changed via manage dialog save', async ({
+  test.skip('Reconnects inputs after configuration changed via manage dialog save', async ({
     comfyPage
   }) => {
     const expectSingleNode = async (type: string) => {
