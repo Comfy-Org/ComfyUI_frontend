@@ -848,11 +848,23 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: false,
     versionAdded: '1.19.1'
   },
+  // Release data stored in settings
   {
-    id: 'Comfy.Memory.AllowManualUnload',
-    name: 'Allow manual unload of models and execution cache via user command',
+    id: 'Comfy.Release.Version',
+    name: 'Last seen release version',
     type: 'hidden',
-    defaultValue: true,
-    versionAdded: '1.18.0'
+    defaultValue: ''
+  },
+  {
+    id: 'Comfy.Release.Status',
+    name: 'Release status',
+    type: 'hidden',
+    defaultValue: 'skipped'
+  },
+  {
+    id: 'Comfy.Release.Timestamp',
+    name: 'Release seen timestamp',
+    type: 'hidden',
+    defaultValue: 0
   }
 ]
