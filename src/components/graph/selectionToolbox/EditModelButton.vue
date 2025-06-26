@@ -1,6 +1,6 @@
 <template>
   <Button
-    v-show="canvasStore.nodeSelected || canvasStore.groupSelected"
+    v-show="isImageOutputSelected"
     v-tooltip.top="{
       value: t('commands.Comfy_Canvas_AddEditModelStep.label'),
       showDelay: 1000
@@ -14,12 +14,24 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
+import { isLGraphNode } from '@/utils/litegraphUtil'
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
+
+const isImageOutputOrEditModelNode = (node: unknown) =>
+  isLGraphNode(node) &&
+  (node.images?.length || node.type === 'workflow>FLUX.1 Kontext Image Edit')
+
+const isImageOutputSelected = computed(
+  () =>
+    canvasStore.selectedItems.length === 1 &&
+    isImageOutputOrEditModelNode(canvasStore.selectedItems[0])
+)
 </script>
