@@ -584,7 +584,7 @@ function setWidgetValues(node: LGraphNode) {
   setPreferredValue('clip_l.safetensors', 'clip_l', secondClip)
 
   const unet = node.widgets?.find((x) => x.name === 'unet_name')
-  setPreferredValue('flux1-kontext-dev.safetensors', 'kontext', unet)
+  setPreferredValue('flux1-dev-kontext_fp8_scaled.safetensors', 'kontext', unet)
 
   const vae = node.widgets?.find((x) => x.name === 'vae_name')
   setPreferredValue('ae.safetensors', 'ae.s', vae)
