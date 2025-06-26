@@ -299,12 +299,31 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     taskLogs.value = []
   }
 
+  const resetTaskState = () => {
+    // Clear all task-related reactive state for fresh start after restart
+    taskLogs.value = []
+    taskHistory.value = {}
+    succeededTasksIds.value = []
+    failedTasksIds.value = []
+    succeededTasksLogs.value = []
+    failedTasksLogs.value = []
+
+    // Reset task queue to initial state
+    taskQueue.value = {
+      history: {},
+      running_queue: [],
+      pending_queue: [],
+      installed_packs: {}
+    }
+  }
+
   return {
     // Manager state
     isLoading: managerService.isLoading,
     error: managerService.error,
     taskLogs,
     clearLogs,
+    resetTaskState,
     setStale,
 
     // Installed packs state
