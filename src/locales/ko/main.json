@@ -381,6 +381,20 @@
     "create": "그룹 노드 만들기",
     "enterName": "이름 입력"
   },
+  "helpCenter": {
+    "clickToLearnMore": "자세히 알아보기 →",
+    "desktopUserGuide": "데스크톱 사용자 가이드",
+    "docs": "문서",
+    "github": "Github",
+    "helpFeedback": "도움말 및 피드백",
+    "loadingReleases": "릴리즈 불러오는 중...",
+    "more": "더보기...",
+    "noRecentReleases": "최근 릴리즈 없음",
+    "openDevTools": "개발자 도구 열기",
+    "reinstall": "재설치",
+    "updateAvailable": "업데이트",
+    "whatsNew": "새로운 소식?"
+  },
   "icon": {
     "bookmark": "북마크",
     "box": "상자",
@@ -872,6 +886,12 @@
     },
     "title": "이 장치는 지원되지 않습니다."
   },
+  "releaseToast": {
+    "newVersionAvailable": "새 버전이 있습니다!",
+    "skip": "건너뛰기",
+    "update": "업데이트",
+    "whatsNew": "새로운 기능 보기"
+  },
   "selectionToolbox": {
     "executeButton": {
       "disabledTooltip": "선택된 출력 노드가 없습니다",
@@ -1080,6 +1100,7 @@
   "sideToolbar": {
     "browseTemplates": "예제 템플릿 탐색",
     "downloads": "다운로드",
+    "helpCenter": "도움말 센터",
     "logout": "로그아웃",
     "modelLibrary": "모델 라이브러리",
     "newBlankWorkflow": "새 빈 워크플로 만들기",
@@ -1439,6 +1460,9 @@
   "welcome": {
     "getStarted": "시작하기",
     "title": "ComfyUI에 오신 것을 환영합니다"
+  },
+  "whatsNewPopup": {
+    "learnMore": "자세히 알아보기"
   },
   "workflowService": {
     "enterFilename": "파일 이름 입력",

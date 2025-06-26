@@ -381,6 +381,20 @@
     "create": "Créer un nœud de groupe",
     "enterName": "Entrer le nom"
   },
+  "helpCenter": {
+    "clickToLearnMore": "Cliquez pour en savoir plus →",
+    "desktopUserGuide": "Guide utilisateur de bureau",
+    "docs": "Docs",
+    "github": "Github",
+    "helpFeedback": "Aide & Retour",
+    "loadingReleases": "Chargement des versions...",
+    "more": "Plus...",
+    "noRecentReleases": "Aucune version récente",
+    "openDevTools": "Ouvrir les outils de développement",
+    "reinstall": "Réinstaller",
+    "updateAvailable": "Mise à jour",
+    "whatsNew": "Quoi de neuf ?"
+  },
   "icon": {
     "bookmark": "Favori",
     "box": "Boîte",
@@ -872,6 +886,12 @@
     },
     "title": "Votre appareil n'est pas pris en charge"
   },
+  "releaseToast": {
+    "newVersionAvailable": "Nouvelle version disponible !",
+    "skip": "Ignorer",
+    "update": "Mettre à jour",
+    "whatsNew": "Quoi de neuf ?"
+  },
   "selectionToolbox": {
     "executeButton": {
       "disabledTooltip": "Aucun nœud de sortie sélectionné",
@@ -1080,6 +1100,7 @@
   "sideToolbar": {
     "browseTemplates": "Parcourir les modèles d'exemple",
     "downloads": "Téléchargements",
+    "helpCenter": "Centre d'aide",
     "logout": "Déconnexion",
     "modelLibrary": "Bibliothèque de modèles",
     "newBlankWorkflow": "Créer un nouveau flux de travail vierge",
@@ -1439,6 +1460,9 @@
   "welcome": {
     "getStarted": "Commencer",
     "title": "Bienvenue sur ComfyUI"
+  },
+  "whatsNewPopup": {
+    "learnMore": "En savoir plus"
   },
   "workflowService": {
     "enterFilename": "Entrez le nom du fichier",

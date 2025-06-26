@@ -381,6 +381,20 @@
     "create": "Создать ноду группы",
     "enterName": "Введите название"
   },
+  "helpCenter": {
+    "clickToLearnMore": "Нажмите, чтобы узнать больше →",
+    "desktopUserGuide": "Руководство пользователя для Desktop",
+    "docs": "Документация",
+    "github": "Github",
+    "helpFeedback": "Помощь и обратная связь",
+    "loadingReleases": "Загрузка релизов...",
+    "more": "Ещё...",
+    "noRecentReleases": "Нет недавних релизов",
+    "openDevTools": "Открыть инструменты разработчика",
+    "reinstall": "Переустановить",
+    "updateAvailable": "Обновить",
+    "whatsNew": "Что нового?"
+  },
   "icon": {
     "bookmark": "Закладка",
     "box": "Коробка",
@@ -872,6 +886,12 @@
     },
     "title": "Ваше устройство не поддерживается"
   },
+  "releaseToast": {
+    "newVersionAvailable": "Доступна новая версия!",
+    "skip": "Пропустить",
+    "update": "Обновить",
+    "whatsNew": "Что нового?"
+  },
   "selectionToolbox": {
     "executeButton": {
       "disabledTooltip": "Выходные узлы не выбраны",
@@ -1080,6 +1100,7 @@
   "sideToolbar": {
     "browseTemplates": "Просмотреть примеры шаблонов",
     "downloads": "Загрузки",
+    "helpCenter": "Центр поддержки",
     "logout": "Выйти",
     "modelLibrary": "Библиотека моделей",
     "newBlankWorkflow": "Создайте новый пустой рабочий процесс",
@@ -1439,6 +1460,9 @@
   "welcome": {
     "getStarted": "Начать",
     "title": "Добро пожаловать в ComfyUI"
+  },
+  "whatsNewPopup": {
+    "learnMore": "Узнать больше"
   },
   "workflowService": {
     "enterFilename": "Введите название файла",

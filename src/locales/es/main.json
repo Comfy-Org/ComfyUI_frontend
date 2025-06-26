@@ -381,6 +381,20 @@
     "create": "Crear nodo de grupo",
     "enterName": "Introduzca el nombre"
   },
+  "helpCenter": {
+    "clickToLearnMore": "Haz clic para saber más →",
+    "desktopUserGuide": "Guía de usuario de escritorio",
+    "docs": "Documentación",
+    "github": "Github",
+    "helpFeedback": "Ayuda y comentarios",
+    "loadingReleases": "Cargando versiones...",
+    "more": "Más...",
+    "noRecentReleases": "No hay versiones recientes",
+    "openDevTools": "Abrir herramientas de desarrollo",
+    "reinstall": "Reinstalar",
+    "updateAvailable": "Actualizar",
+    "whatsNew": "¿Qué hay de nuevo?"
+  },
   "icon": {
     "bookmark": "Marcador",
     "box": "Caja",
@@ -872,6 +886,12 @@
     },
     "title": "Tu dispositivo no es compatible"
   },
+  "releaseToast": {
+    "newVersionAvailable": "¡Nueva versión disponible!",
+    "skip": "Omitir",
+    "update": "Actualizar",
+    "whatsNew": "¿Qué hay de nuevo?"
+  },
   "selectionToolbox": {
     "executeButton": {
       "disabledTooltip": "No hay nodos de salida seleccionados",
@@ -1080,6 +1100,7 @@
   "sideToolbar": {
     "browseTemplates": "Explorar plantillas de ejemplo",
     "downloads": "Descargas",
+    "helpCenter": "Centro de ayuda",
     "logout": "Cerrar sesión",
     "modelLibrary": "Biblioteca de modelos",
     "newBlankWorkflow": "Crear un nuevo flujo de trabajo en blanco",
@@ -1439,6 +1460,9 @@
   "welcome": {
     "getStarted": "Empezar",
     "title": "Bienvenido a ComfyUI"
+  },
+  "whatsNewPopup": {
+    "learnMore": "Aprende más"
   },
   "workflowService": {
     "enterFilename": "Introduzca el nombre del archivo",
