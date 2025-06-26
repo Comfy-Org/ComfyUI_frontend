@@ -15,6 +15,7 @@ import { t } from '@/i18n'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { addFluxKontextGroupNode } from '@/scripts/fluxKontextEditNode'
+import { addFluxKontextGroupNode } from '@/scripts/fluxKontextEditNode'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowService } from '@/services/workflowService'
@@ -773,30 +774,6 @@ export function useCoreCommands(): ComfyCommand[] {
         const node = app.canvas.selectedItems.values().next().value
         if (!(node instanceof LGraphNode)) return
         await addFluxKontextGroupNode(node)
-      }
-    },
-    {
-      id: 'Comfy.Graph.ConvertToSubgraph',
-      icon: 'pi pi-sitemap',
-      label: 'Convert Selection to Subgraph',
-      versionAdded: '1.20.1',
-      function: () => {
-        const canvas = canvasStore.getCanvas()
-        const graph = canvas.subgraph ?? canvas.graph
-        if (!graph) throw new TypeError('Canvas has no graph or subgraph set.')
-
-        const res = graph.convertToSubgraph(canvas.selectedItems)
-        if (!res) {
-          toastStore.add({
-            severity: 'error',
-            summary: t('toastMessages.cannotCreateSubgraph'),
-            detail: t('toastMessages.failedToConvertToSubgraph'),
-            life: 3000
-          })
-          return
-        }
-        const { node } = res
-        canvas.select(node)
       }
     }
   ]
