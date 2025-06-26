@@ -10,6 +10,7 @@
     <ColorPickerButton />
     <BypassButton />
     <PinButton />
+    <EditModelButton />
     <MaskEditorButton />
     <DeleteButton />
     <RefreshButton />
