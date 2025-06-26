@@ -490,6 +490,7 @@ onMounted(async () => {
 }
 
 .release-date {
+  height: 16px;
   font-size: 0.75rem;
   color: var(--p-text-muted-color);
 }
