@@ -2637,7 +2637,7 @@ export class LGraphCanvas {
 
     if (this.set_canvas_dirty_on_mouse_event) this.dirty_canvas = true
 
-    const { graph, resizingGroup, linkConnector } = this
+    const { graph, resizingGroup, linkConnector, pointer } = this
     if (!graph) return
 
     LGraphCanvas.active_canvas = this
@@ -2653,7 +2653,7 @@ export class LGraphCanvas {
     this.graph_mouse[0] = e.canvasX
     this.graph_mouse[1] = e.canvasY
 
-    if (e.isPrimary) this.pointer.move(e)
+    if (e.isPrimary) pointer.move(e)
 
     if (this.block_click) {
       e.preventDefault()
@@ -2691,7 +2691,7 @@ export class LGraphCanvas {
     } else if (resizingGroup) {
       // Resizing a group
       underPointer |= CanvasItem.Group
-      this.pointer.resizeDirection = "SE"
+      pointer.resizeDirection = "SE"
     } else if (this.dragging_canvas) {
       this.ds.offset[0] += delta[0] / this.ds.scale
       this.ds.offset[1] += delta[1] / this.ds.scale
@@ -2820,7 +2820,6 @@ export class LGraphCanvas {
         }
 
         // Resize direction - only show resize cursor if not over inputs/outputs/widgets
-        const { pointer } = this
         if (!pointer.eDown) {
           if (inputId === -1 && outputId === -1 && !overWidget) {
             pointer.resizeDirection = node.findResizeDirection(e.canvasX, e.canvasY)
@@ -2849,7 +2848,9 @@ export class LGraphCanvas {
             !this.read_only &&
             group.isInResize(e.canvasX, e.canvasY)
           ) {
-            this.pointer.resizeDirection = "SE"
+            pointer.resizeDirection = "SE"
+          } else {
+            pointer.resizeDirection &&= undefined
           }
         }
       }
