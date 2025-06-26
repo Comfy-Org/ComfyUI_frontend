@@ -104,6 +104,6 @@ export const useWorkspaceStore = defineStore('workspace', () => {
 
     registerSidebarTab,
     unregisterSidebarTab,
-    getSidebarTabs,
+    getSidebarTabs
   }
 })
