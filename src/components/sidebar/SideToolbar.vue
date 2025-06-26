@@ -6,7 +6,8 @@
         :key="tab.id"
         :icon="tab.icon"
         :icon-badge="tab.iconBadge"
-        :tooltip="tab.tooltip + getTabTooltipSuffix(tab)"
+        :tooltip="tab.tooltip"
+        :tooltip-suffix="getTabTooltipSuffix(tab)"
         :selected="tab.id === selectedTab?.id"
         :class="tab.id + '-tab-button'"
         @click="onTabClick(tab)"
@@ -27,9 +28,7 @@
 </template>
 
 <script setup lang="ts">
-import { watchImmediate } from '@vueuse/core'
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import { useKeybindingStore } from '@/stores/keybindingStore'
@@ -46,7 +45,6 @@ import SidebarThemeToggleIcon from './SidebarThemeToggleIcon.vue'
 const workspaceStore = useWorkspaceStore()
 const settingStore = useSettingStore()
 const userStore = useUserStore()
-const { locale } = useI18n()
 
 const teleportTarget = computed(() =>
   settingStore.get('Comfy.Sidebar.Location') === 'left'
@@ -70,11 +68,6 @@ const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
   )
   return keybinding ? ` (${keybinding.combo.toString()})` : ''
 }
-
-// Update sidebar tab's text when locale changes
-watchImmediate(locale, () => {
-  workspaceStore.updateSidebarText()
-})
 </script>
 
 <style scoped>

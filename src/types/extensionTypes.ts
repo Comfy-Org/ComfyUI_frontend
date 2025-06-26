@@ -9,8 +9,6 @@ export interface BaseSidebarTabExtension {
   icon?: string
   iconBadge?: string | (() => string | null)
   tooltip?: string
-  i18nTitleKey: string
-  i18nTooltipKey: string
 }
 
 export interface BaseBottomPanelExtension {
