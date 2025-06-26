@@ -30,7 +30,7 @@ const fluxKontextGroupNode = {
     },
     {
       id: -1,
-      type: 'FluxKontext',
+      type: 'ReferenceLatent',
       pos: [2730, -220],
       size: [197.712890625, 46],
       flags: {},
@@ -60,7 +60,7 @@ const fluxKontextGroupNode = {
         }
       ],
       properties: {
-        'Node name for S&R': 'FluxKontext',
+        'Node name for S&R': 'ReferenceLatent',
         cnr_id: 'comfy-core',
         ver: '0.3.38'
       },
