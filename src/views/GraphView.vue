@@ -15,6 +15,7 @@
 
   <GlobalToast />
   <RerouteMigrationToast />
+  <!-- Release toast now managed by SidebarHelpCenterIcon component -->
   <UnloadWindowConfirmDialog v-if="!isElectron()" />
   <MenuHamburger />
 </template>
@@ -218,6 +219,9 @@ onBeforeUnmount(() => {
 useEventListener(window, 'keydown', useKeybindingService().keybindHandler)
 
 const { wrapWithErrorHandling, wrapWithErrorHandlingAsync } = useErrorHandling()
+
+// Note: WhatsNew popup functionality is now handled directly by the toast
+
 const onGraphReady = () => {
   requestIdleCallback(
     () => {
