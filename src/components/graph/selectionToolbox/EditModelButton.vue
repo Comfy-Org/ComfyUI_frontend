@@ -19,7 +19,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
-import { isLGraphNode } from '@/utils/litegraphUtil'
+import { isImageNode, isLGraphNode } from '@/utils/litegraphUtil'
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
@@ -27,7 +27,7 @@ const canvasStore = useCanvasStore()
 
 const isImageOutputOrEditModelNode = (node: unknown) =>
   isLGraphNode(node) &&
-  (node.images?.length || node.type === 'workflow>FLUX.1 Kontext Image Edit')
+  (isImageNode(node) || node.type === 'workflow>FLUX.1 Kontext Image Edit')
 
 const isImageOutputSelected = computed(
   () =>
