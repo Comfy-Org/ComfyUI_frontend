@@ -38,6 +38,9 @@
   "Comfy_BrowseTemplates": {
     "label": "浏览模板"
   },
+  "Comfy_Canvas_AddEditModelStep": {
+    "label": "添加编辑模型步骤"
+  },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "删除选定的项目"
   },

@@ -7,7 +7,8 @@ import {
 import { useToastStore } from '@/stores/toastStore'
 
 import { type ComfyApp, app } from '../../scripts/app'
-import { $el, ComfyDialog } from '../../scripts/ui'
+import { $el } from '../../scripts/ui'
+import { ComfyDialog } from '../../scripts/ui/dialog'
 import { DraggableList } from '../../scripts/ui/draggableList'
 import { GroupNodeConfig, GroupNodeHandler } from './groupNode'
 import './groupNodeManage.css'

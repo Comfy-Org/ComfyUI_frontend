@@ -14,7 +14,7 @@ import {
 import { t } from '@/i18n'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { useComfyManagerService } from '@/services/comfyManagerService'
+import { addFluxKontextGroupNode } from '@/scripts/fluxKontextEditNode'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowService } from '@/services/workflowService'
@@ -764,81 +764,14 @@ export function useCoreCommands(): ComfyCommand[] {
       function: () => moveSelectedNodes(([x, y], gridSize) => [x + gridSize, y])
     },
     {
-      id: 'Comfy.Manager.CustomNodesManager.ShowLegacyCustomNodesMenu',
-      icon: 'pi pi-bars',
-      label: 'Custom Nodes (Legacy)',
-      versionAdded: '1.16.4',
+      id: 'Comfy.Canvas.AddEditModelStep',
+      icon: 'pi pi-pen-to-square',
+      label: 'Add Edit Model Step',
+      versionAdded: '1.23.3',
       function: async () => {
-        try {
-          await useCommandStore().execute(
-            'Comfy.Manager.CustomNodesManager.ToggleVisibility'
-          )
-        } catch (error) {
-          useToastStore().add({
-            severity: 'error',
-            summary: t('g.error'),
-            detail: t('manager.legacyMenuNotAvailable'),
-            life: 3000
-          })
-        }
-      }
-    },
-    {
-      id: 'Comfy.Manager.ShowLegacyManagerMenu',
-      icon: 'mdi mdi-puzzle',
-      label: 'Manager Menu (Legacy)',
-      versionAdded: '1.16.4',
-      function: async () => {
-        try {
-          await useCommandStore().execute('Comfy.Manager.Menu.ToggleVisibility')
-        } catch (error) {
-          useToastStore().add({
-            severity: 'error',
-            summary: t('g.error'),
-            detail: t('manager.legacyMenuNotAvailable'),
-            life: 3000
-          })
-        }
-      }
-    },
-    {
-      id: 'Comfy.Memory.UnloadModels',
-      icon: 'mdi mdi-vacuum-outline',
-      label: 'Unload Models',
-      versionAdded: '1.16.4',
-      function: async () => {
-        if (!useSettingStore().get('Comfy.Memory.AllowManualUnload')) {
-          useToastStore().add({
-            severity: 'error',
-            summary: t('g.error'),
-            detail: t('g.commandProhibited', {
-              command: 'Comfy.Memory.UnloadModels'
-            }),
-            life: 3000
-          })
-          return
-        }
-        await api.freeMemory({ freeExecutionCache: false })
-      }
-    },
-    {
-      id: 'Comfy.Memory.UnloadModelsAndExecutionCache',
-      icon: 'mdi mdi-vacuum-outline',
-      label: 'Unload Models and Execution Cache',
-      versionAdded: '1.16.4',
-      function: async () => {
-        if (!useSettingStore().get('Comfy.Memory.AllowManualUnload')) {
-          useToastStore().add({
-            severity: 'error',
-            summary: t('g.error'),
-            detail: t('g.commandProhibited', {
-              command: 'Comfy.Memory.UnloadModelsAndExecutionCache'
-            }),
-            life: 3000
-          })
-          return
-        }
-        await api.freeMemory({ freeExecutionCache: true })
+        const node = app.canvas.selectedItems.values().next().value
+        if (!(node instanceof LGraphNode)) return
+        await addFluxKontextGroupNode(node)
       }
     }
   ]

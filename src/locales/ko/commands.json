@@ -38,6 +38,9 @@
   "Comfy_BrowseTemplates": {
     "label": "템플릿 탐색"
   },
+  "Comfy_Canvas_AddEditModelStep": {
+    "label": "모델 편집 단계 추가"
+  },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "선택한 항목 삭제"
   },

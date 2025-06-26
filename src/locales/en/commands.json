@@ -38,6 +38,9 @@
   "Comfy_BrowseTemplates": {
     "label": "Browse Templates"
   },
+  "Comfy_Canvas_AddEditModelStep": {
+    "label": "Add Edit Model Step"
+  },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "Delete Selected Items"
   },
