@@ -22,6 +22,7 @@
     <!-- More Submenu -->
     <Teleport to="body">
       <div
+        v-if="isSubmenuVisible"
         ref="submenuRef"
         class="more-submenu"
         :style="submenuStyle"
