@@ -684,6 +684,7 @@
   },
   "menuLabels": {
     "About ComfyUI": "关于ComfyUI",
+    "Add Edit Model Step": "添加编辑模型步骤",
     "Browse Templates": "浏览模板",
     "Bypass/Unbypass Selected Nodes": "忽略/取消忽略选定节点",
     "Canvas Toggle Link Visibility": "切换连线可见性",

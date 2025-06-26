@@ -38,6 +38,9 @@
   "Comfy_BrowseTemplates": {
     "label": "Parcourir les modèles"
   },
+  "Comfy_Canvas_AddEditModelStep": {
+    "label": "Ajouter/Modifier une étape de modèle"
+  },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "Supprimer les éléments sélectionnés"
   },

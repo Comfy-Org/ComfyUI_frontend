@@ -684,6 +684,7 @@
   },
   "menuLabels": {
     "About ComfyUI": "ComfyUI에 대하여",
+    "Add Edit Model Step": "모델 편집 단계 추가",
     "Browse Templates": "템플릿 탐색",
     "Bypass/Unbypass Selected Nodes": "선택한 노드 우회/우회 해제",
     "Canvas Toggle Link Visibility": "캔버스 토글 링크 가시성",

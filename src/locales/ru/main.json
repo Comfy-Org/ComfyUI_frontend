@@ -684,6 +684,7 @@
   },
   "menuLabels": {
     "About ComfyUI": "О ComfyUI",
+    "Add Edit Model Step": "Добавить или изменить шаг модели",
     "Browse Templates": "Просмотреть шаблоны",
     "Bypass/Unbypass Selected Nodes": "Обойти/восстановить выбранные ноды",
     "Canvas Toggle Link Visibility": "Переключение видимости ссылки на холст",

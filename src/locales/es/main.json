@@ -684,6 +684,7 @@
   },
   "menuLabels": {
     "About ComfyUI": "Acerca de ComfyUI",
+    "Add Edit Model Step": "Agregar paso de edición de modelo",
     "Browse Templates": "Explorar plantillas",
     "Bypass/Unbypass Selected Nodes": "Evitar/No evitar nodos seleccionados",
     "Canvas Toggle Link Visibility": "Alternar visibilidad de enlace en lienzo",

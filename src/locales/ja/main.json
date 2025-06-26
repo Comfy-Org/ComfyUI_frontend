@@ -684,6 +684,7 @@
   },
   "menuLabels": {
     "About ComfyUI": "ComfyUIについて",
+    "Add Edit Model Step": "モデル編集ステップを追加",
     "Browse Templates": "テンプレートを参照",
     "Bypass/Unbypass Selected Nodes": "選択したノードのバイパス/バイパス解除",
     "Canvas Toggle Link Visibility": "キャンバスのリンク表示を切り替え",
