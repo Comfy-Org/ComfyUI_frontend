@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keybinding Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .keybinding-display {
+            background: #f5f5f5;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        .success {
+            color: green;
+        }
+        .error {
+            color: red;
+        }
+        .info {
+            color: blue;
+        }
+    </style>
+</head>
+<body>
+    <h1>ComfyUI Keybinding Layout Independence Test</h1>
+    
+    <div class="test-section">
+        <h2>Test Instructions</h2>
+        <p>This test verifies that keybindings work regardless of keyboard layout.</p>
+        <ol>
+            <li>Open the ComfyUI frontend at <a href="http://localhost:5173" target="_blank">http://localhost:5173</a></li>
+            <li>Try the following keybindings in different keyboard layouts:</li>
+            <ul>
+                <li><strong>Ctrl+S</strong> - Should save workflow (physical S key, not localized character)</li>
+                <li><strong>Ctrl+O</strong> - Should open workflow (physical O key)</li>
+                <li><strong>Ctrl+G</strong> - Should group selected nodes (physical G key)</li>
+                <li><strong>F</strong> - Should toggle focus mode (physical F key)</li>
+            </ul>
+            <li>Test with different keyboard layouts (QWERTY, AZERTY, QWERTZ, etc.)</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>Expected Behavior</h2>
+        <div class="keybinding-display">
+            <p><strong>Before fix:</strong> Keybindings only worked with the current keyboard layout</p>
+            <p><strong>After fix:</strong> Keybindings work with any keyboard layout</p>
+        </div>
+        
+        <h3>Test Cases:</h3>
+        <ul>
+            <li><strong>QWERTY layout:</strong> Ctrl+S should work normally</li>
+            <li><strong>AZERTY layout:</strong> Ctrl+S should still work (not Ctrl+Q)</li>
+            <li><strong>QWERTZ layout:</strong> Ctrl+S should still work (not Ctrl+Y)</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>Technical Details</h2>
+        <p>The fix uses <code>event.code</code> instead of <code>event.key</code> for key identification:</p>
+        <div class="keybinding-display">
+            <p><strong>event.key:</strong> Returns localized character (varies by layout)</p>
+            <p><strong>event.code:</strong> Returns physical key position (consistent across layouts)</p>
+        </div>
+        
+        <h3>Example:</h3>
+        <ul>
+            <li>On AZERTY: S key → <code>event.key = "q"</code>, <code>event.code = "KeyS"</code></li>
+            <li>On QWERTZ: S key → <code>event.key = "y"</code>, <code>event.code = "KeyS"</code></li>
+            <li>On QWERTY: S key → <code>event.key = "s"</code>, <code>event.code = "KeyS"</code></li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>Verification Steps</h2>
+        <ol>
+            <li>Open ComfyUI in browser</li>
+            <li>Create a simple workflow</li>
+            <li>Try Ctrl+S to save - should work</li>
+            <li>Change keyboard layout in OS settings</li>
+            <li>Try Ctrl+S again - should still work</li>
+            <li>Test other keybindings (Ctrl+O, Ctrl+G, F, etc.)</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>Browser Console Test</h2>
+        <p>You can also test in the browser console:</p>
+        <div class="keybinding-display">
+            <p>// Test key event properties</p>
+            <p>document.addEventListener('keydown', (e) => {</p>
+            <p>  console.log('Key:', e.key, 'Code:', e.code, 'Ctrl:', e.ctrlKey);</p>
+            <p>});</p>
+        </div>
+    </div>
+
+    <script>
+        // Add a simple test to show the difference between key and code
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey) {
+                console.log(`Ctrl+${e.key} pressed (key: "${e.key}", code: "${e.code}")`);
+            }
+        });
+    </script>
+</body>
+</html> 
