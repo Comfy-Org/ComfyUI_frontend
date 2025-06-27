@@ -2,7 +2,8 @@ import { z } from 'zod'
 
 // KeyCombo schema
 export const zKeyCombo = z.object({
-  key: z.string(),
+  key: z.string(), // Display character (localized)
+  code: z.string(), // Physical key code (layout-independent)
   ctrl: z.boolean().optional(),
   alt: z.boolean().optional(),
   shift: z.boolean().optional(),
