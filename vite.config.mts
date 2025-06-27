@@ -23,7 +23,7 @@ const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
 const DISABLE_VUE_PLUGINS = process.env.DISABLE_VUE_PLUGINS === 'true'
 
 const DEV_SERVER_COMFYUI_URL =
-  process.env.DEV_SERVER_COMFYUI_URL || 'http://127.0.0.1:8888'
+  process.env.DEV_SERVER_COMFYUI_URL || 'http://127.0.0.1:8188'
 
 export default defineConfig({
   base: '',
