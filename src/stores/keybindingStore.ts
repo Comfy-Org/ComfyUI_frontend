@@ -28,7 +28,8 @@ export class KeybindingImpl implements Keybinding {
 }
 
 export class KeyComboImpl implements KeyCombo {
-  key: string
+  key: string // Display character (localized)
+  code: string // Physical key code (layout-independent)
   // ctrl or meta(cmd on mac)
   ctrl: boolean
   alt: boolean
@@ -36,6 +37,7 @@ export class KeyComboImpl implements KeyCombo {
 
   constructor(obj: KeyCombo) {
     this.key = obj.key
+    this.code = obj.code
     this.ctrl = obj.ctrl ?? false
     this.alt = obj.alt ?? false
     this.shift = obj.shift ?? false
@@ -44,6 +46,7 @@ export class KeyComboImpl implements KeyCombo {
   static fromEvent(event: KeyboardEvent) {
     return new KeyComboImpl({
       key: event.key,
+      code: event.code,
       ctrl: event.ctrlKey || event.metaKey,
       alt: event.altKey,
       shift: event.shiftKey
@@ -54,7 +57,7 @@ export class KeyComboImpl implements KeyCombo {
     const raw = toRaw(other)
 
     return raw instanceof KeyComboImpl
-      ? this.key.toUpperCase() === raw.key.toUpperCase() &&
+      ? this.code === raw.code &&
           this.ctrl === raw.ctrl &&
           this.alt === raw.alt &&
           this.shift === raw.shift
@@ -62,7 +65,7 @@ export class KeyComboImpl implements KeyCombo {
   }
 
   serialize(): string {
-    return `${this.key.toUpperCase()}:${this.ctrl}:${this.alt}:${this.shift}`
+    return `${this.code}:${this.ctrl}:${this.alt}:${this.shift}`
   }
 
   toString(): string {
@@ -74,7 +77,7 @@ export class KeyComboImpl implements KeyCombo {
   }
 
   get isModifier(): boolean {
-    return ['Control', 'Meta', 'Alt', 'Shift'].includes(this.key)
+    return ['Control', 'Meta', 'Alt', 'Shift'].includes(this.code)
   }
 
   get modifierCount(): number {
