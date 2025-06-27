@@ -12,7 +12,7 @@ describe('useKeybindingStore', () => {
     const store = useKeybindingStore()
     const keybinding = new KeybindingImpl({
       commandId: 'test.command',
-      combo: { key: 'A', ctrl: true }
+      combo: { key: 'A', code: 'KeyA', ctrl: true }
     })
 
     store.addDefaultKeybinding(keybinding)
@@ -25,7 +25,7 @@ describe('useKeybindingStore', () => {
     const store = useKeybindingStore()
     const keybinding = new KeybindingImpl({
       commandId: 'test.command',
-      combo: { key: 'B', alt: true }
+      combo: { key: 'B', code: 'KeyB', alt: true }
     })
 
     store.addUserKeybinding(keybinding)
@@ -38,7 +38,7 @@ describe('useKeybindingStore', () => {
     const store = useKeybindingStore()
     const keybinding = new KeybindingImpl({
       commandId: 'test.command',
-      combo: { key: 'C', ctrl: true }
+      combo: { key: 'C', code: 'KeyC', ctrl: true }
     })
     store.addDefaultKeybinding(keybinding)
     expect(store.getKeybindingsByCommandId('test.command')).toEqual([
@@ -50,11 +50,11 @@ describe('useKeybindingStore', () => {
     const store = useKeybindingStore()
     const defaultKeybinding = new KeybindingImpl({
       commandId: 'test.command1',
-      combo: { key: 'C', ctrl: true }
+      combo: { key: 'C', code: 'KeyC', ctrl: true }
     })
     const userKeybinding = new KeybindingImpl({
       commandId: 'test.command2',
-      combo: { key: 'C', ctrl: true }
+      combo: { key: 'C', code: 'KeyC', ctrl: true }
     })
 
     store.addDefaultKeybinding(defaultKeybinding)
@@ -68,14 +68,14 @@ describe('useKeybindingStore', () => {
     const store = useKeybindingStore()
     const defaultKeybinding = new KeybindingImpl({
       commandId: 'test.command1',
-      combo: { key: 'C', ctrl: true }
+      combo: { key: 'C', code: 'KeyC', ctrl: true }
     })
     store.addDefaultKeybinding(defaultKeybinding)
     store.unsetKeybinding(defaultKeybinding)
 
     const userKeybinding = new KeybindingImpl({
       commandId: 'test.command2',
-      combo: { key: 'C', ctrl: true }
+      combo: { key: 'C', code: 'KeyC', ctrl: true }
     })
     store.addUserKeybinding(userKeybinding)
 
@@ -87,7 +87,7 @@ describe('useKeybindingStore', () => {
     const store = useKeybindingStore()
     const keybinding = new KeybindingImpl({
       commandId: 'test.command',
-      combo: { key: 'D', meta: true }
+      combo: { key: 'D', code: 'KeyD', meta: true }
     })
 
     store.addUserKeybinding(keybinding)
@@ -101,7 +101,7 @@ describe('useKeybindingStore', () => {
     const store = useKeybindingStore()
     const keybinding = new KeybindingImpl({
       commandId: 'test.command',
-      combo: { key: 'E', ctrl: true, alt: true }
+      combo: { key: 'E', code: 'KeyE', ctrl: true, alt: true }
     })
 
     store.addDefaultKeybinding(keybinding)
@@ -115,7 +115,7 @@ describe('useKeybindingStore', () => {
     const store = useKeybindingStore()
     const keybinding = new KeybindingImpl({
       commandId: 'test.command',
-      combo: { key: 'F', shift: true }
+      combo: { key: 'F', code: 'KeyF', shift: true }
     })
 
     store.addDefaultKeybinding(keybinding)
@@ -126,11 +126,11 @@ describe('useKeybindingStore', () => {
     const store = useKeybindingStore()
     const keybinding1 = new KeybindingImpl({
       commandId: 'test.command1',
-      combo: { key: 'G', ctrl: true }
+      combo: { key: 'G', code: 'KeyG', ctrl: true }
     })
     const keybinding2 = new KeybindingImpl({
       commandId: 'test.command2',
-      combo: { key: 'G', ctrl: true }
+      combo: { key: 'G', code: 'KeyG', ctrl: true }
     })
 
     store.addUserKeybinding(keybinding1)
@@ -144,7 +144,7 @@ describe('useKeybindingStore', () => {
     const store = useKeybindingStore()
     const keybinding = new KeybindingImpl({
       commandId: 'test.command',
-      combo: { key: 'H', alt: true, shift: true }
+      combo: { key: 'H', code: 'KeyH', alt: true, shift: true }
     })
 
     expect(() => store.unsetKeybinding(keybinding)).not.toThrow()
@@ -154,7 +154,7 @@ describe('useKeybindingStore', () => {
     const store = useKeybindingStore()
     const keybinding = new KeybindingImpl({
       commandId: 'test.command',
-      combo: { key: 'I', ctrl: true }
+      combo: { key: 'I', code: 'KeyI', ctrl: true }
     })
     store.addUserKeybinding(keybinding)
 
@@ -162,7 +162,7 @@ describe('useKeybindingStore', () => {
       store.unsetKeybinding(
         new KeybindingImpl({
           commandId: 'test.foo',
-          combo: { key: 'I', ctrl: true }
+          combo: { key: 'I', code: 'KeyI', ctrl: true }
         })
       )
     ).not.toThrow()
@@ -172,7 +172,7 @@ describe('useKeybindingStore', () => {
     const store = useKeybindingStore()
     const defaultKeybinding = new KeybindingImpl({
       commandId: 'test.command',
-      combo: { key: 'I', ctrl: true }
+      combo: { key: 'I', code: 'KeyI', ctrl: true }
     })
 
     // Add default keybinding
@@ -197,7 +197,7 @@ describe('useKeybindingStore', () => {
     const store = useKeybindingStore()
     const keybinding = new KeybindingImpl({
       commandId: 'test.command',
-      combo: { key: 'J', ctrl: true }
+      combo: { key: 'J', code: 'KeyJ', ctrl: true }
     })
     // Add default keybinding.
     // This can happen when we change default keybindings.
@@ -219,21 +219,21 @@ describe('useKeybindingStore', () => {
     const userUnsetKeybindings = [
       new KeybindingImpl({
         commandId: 'foo',
-        combo: { key: 'K', ctrl: true }
+        combo: { key: 'K', code: 'KeyK', ctrl: true }
       })
     ]
 
     const userNewKeybindings = [
       new KeybindingImpl({
         commandId: 'foo',
-        combo: { key: 'A', ctrl: true }
+        combo: { key: 'A', code: 'KeyA', ctrl: true }
       })
     ]
 
     const newCoreKeybindings = [
       new KeybindingImpl({
         commandId: 'foo',
-        combo: { key: 'A', ctrl: true }
+        combo: { key: 'A', code: 'KeyA', ctrl: true }
       })
     ]
 
@@ -270,14 +270,14 @@ describe('useKeybindingStore', () => {
 
     const oldKeybinding = new KeybindingImpl({
       commandId: 'command1',
-      combo: { key: 'A', ctrl: true }
+      combo: { key: 'A', code: 'KeyA', ctrl: true }
     })
 
     store.addUserKeybinding(oldKeybinding)
 
     const newKeybinding = new KeybindingImpl({
       commandId: 'command2',
-      combo: { key: 'A', ctrl: true }
+      combo: { key: 'A', code: 'KeyA', ctrl: true }
     })
 
     store.updateKeybindingOnCommand(newKeybinding)
@@ -297,7 +297,7 @@ describe('useKeybindingStore', () => {
     const store = useKeybindingStore()
     const defaultKeybinding = new KeybindingImpl({
       commandId: 'test.command',
-      combo: { key: 'L', ctrl: true }
+      combo: { key: 'L', code: 'KeyL', ctrl: true }
     })
 
     store.addDefaultKeybinding(defaultKeybinding)
@@ -314,7 +314,7 @@ describe('useKeybindingStore', () => {
     const store = useKeybindingStore()
     const userKeybinding = new KeybindingImpl({
       commandId: 'test.command',
-      combo: { key: 'M', ctrl: true }
+      combo: { key: 'M', code: 'KeyM', ctrl: true }
     })
 
     store.addUserKeybinding(userKeybinding)
@@ -331,12 +331,12 @@ describe('useKeybindingStore', () => {
 
     const defaultKeybinding = new KeybindingImpl({
       commandId: 'test.command',
-      combo: { key: 'N', ctrl: true }
+      combo: { key: 'N', code: 'KeyN', ctrl: true }
     })
 
     const userKeybinding = new KeybindingImpl({
       commandId: 'test.command',
-      combo: { key: 'O', alt: true }
+      combo: { key: 'O', code: 'KeyO', alt: true }
     })
 
     store.addDefaultKeybinding(defaultKeybinding)
@@ -361,7 +361,7 @@ describe('useKeybindingStore', () => {
 
     const defaultKeybinding = new KeybindingImpl({
       commandId: 'test.command',
-      combo: { key: 'P', ctrl: true }
+      combo: { key: 'P', code: 'KeyP', ctrl: true }
     })
 
     store.addDefaultKeybinding(defaultKeybinding)
@@ -393,7 +393,7 @@ describe('useKeybindingStore', () => {
     // Create default keybinding
     const defaultKeybinding = new KeybindingImpl({
       commandId: 'test.command',
-      combo: { key: 'Q', ctrl: true }
+      combo: { key: 'Q', code: 'KeyQ', ctrl: true }
     })
     store.addDefaultKeybinding(defaultKeybinding)
 
@@ -404,7 +404,7 @@ describe('useKeybindingStore', () => {
     // Add user keybinding with different combo
     const userKeybinding = new KeybindingImpl({
       commandId: 'test.command',
-      combo: { key: 'R', alt: true }
+      combo: { key: 'R', code: 'KeyR', alt: true }
     })
     store.addUserKeybinding(userKeybinding)
     expect(store.keybindings).toHaveLength(1)
