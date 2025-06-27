@@ -667,7 +667,6 @@ export class ComfyApp {
     })
 
     api.addEventListener('execution_error', ({ detail }) => {
-      console.log('execution_error', detail)
       // Check if this is an auth-related error or credits-related error
       if (
         detail.exception_message?.includes(
