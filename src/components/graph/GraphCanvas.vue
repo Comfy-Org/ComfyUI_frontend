@@ -43,6 +43,7 @@
 </template>
 
 <script setup lang="ts">
+import { LiteGraph, LGraphNode, LGraphCanvas } from '@comfyorg/litegraph'
 import type { LGraphNode } from '@comfyorg/litegraph'
 import { useEventListener } from '@vueuse/core'
 import { computed, onMounted, ref, watch, watchEffect } from 'vue'
@@ -86,7 +87,11 @@ import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-
+  
+declare const LiteGraph: any;
+var dragging = false, startTime = 0, endTime = 0
+let menuElement: NodeListOf<Element> | HTMLElement | null, temp: Element | HTMLElement
+let observer: MutationObserver | null = null;
 const emit = defineEmits<{
   ready: []
 }>()
@@ -341,4 +346,76 @@ onMounted(async () => {
 
   emit('ready')
 })
+  
+  const OriginalContextMenu = LiteGraph.ContextMenu as any;
+LiteGraph.ContextMenu = function (items: any, options: any, ref_window: any) {
+  if (observer) {
+    try {
+      observer.disconnect();
+      observer = null;
+    } catch (err) {
+      console.warn("Failed to disconnect old observer:", err);
+    }
+  }
+
+  const instance = new OriginalContextMenu(items, options, ref_window);
+  menuElement = document.querySelectorAll(".litecontextmenu")
+  menuElement.forEach((el, i, arr) => {
+    if (i < arr.length - 1) el.remove();
+  });
+  menuElement = document.querySelector(".litecontextmenu") as HTMLElement
+  if (menuElement) {
+    observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        for (const removedNode of mutation.removedNodes) {
+          if (removedNode === menuElement) {
+            //console.log("🚫 Someone tried to remove the menu — reattaching");
+            // other here is just to transform data types because appendCild requires HTMLElement
+            temp = menuElement
+            startTime = Date.now()
+            const main = setInterval(function () {
+              endTime = Date.now()
+              if (dragging) {
+                document.body.appendChild(temp); // Put it back 
+                dragging = false
+                clearInterval(main)
+                menuElement = null
+              }
+              if (endTime - startTime > 500) {
+                clearInterval(main)
+              }
+            }, 1)
+          }
+        }
+      }
+    });
+    observer.observe(document.body, { childList: true });
+  }
+  return instance;
+} as any;
+
+const processMouseMove = LGraphCanvas.prototype.processMouseMove
+LGraphCanvas.prototype.processMouseMove = function (e: PointerEvent) {
+  menuElement = document.querySelector(".litecontextmenu") as HTMLElement
+  const prevOffset = [...this.ds.offset];
+  processMouseMove.call(this, e); // run original logic
+  if (this.dragging_canvas) {
+    dragging = true
+    if (menuElement) {
+      const dx = this.ds.offset[0] - prevOffset[0];
+      const dy = this.ds.offset[1] - prevOffset[1];
+      // ✅ Canvas is being dragged      
+      console.log("🟡 Canvas dragging", dx, dy);
+      const left = parseFloat(menuElement.style.left || "0");
+      const top = parseFloat(menuElement.style.top || "0");
+      menuElement.style.left = `${left + dx}px`;
+      menuElement.style.top = `${top + dy}px`;
+      // Because when dragged besides sidebars (top & left) it shows over them
+      (menuElement as HTMLElement).style.setProperty("z-index", "inherit", "important");
+    }
+  } else {
+    dragging = false
+  }
+}
+  
 </script>
