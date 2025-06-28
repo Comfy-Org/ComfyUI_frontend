@@ -1419,6 +1419,7 @@
     "personalDataConsentRequired": "You must agree to the processing of your personal data."
   },
   "credits": {
+    "activity": "Activity",
     "credits": "Credits",
     "yourCreditBalance": "Your credit balance",
     "purchaseCredits": "Purchase Credits",
