@@ -2,6 +2,7 @@ import { LGraph, LGraphCanvas } from '@comfyorg/litegraph'
 import type { SerialisableGraph, Vector2 } from '@comfyorg/litegraph'
 import { toRaw } from 'vue'
 
+import { useWorkflowThumbnail } from '@/composables/useWorkflowThumbnail'
 import { t } from '@/i18n'
 import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import { app } from '@/scripts/app'
@@ -20,6 +21,7 @@ export const useWorkflowService = () => {
   const workflowStore = useWorkflowStore()
   const toastStore = useToastStore()
   const dialogService = useDialogService()
+  const workflowThumbnail = useWorkflowThumbnail()
 
   async function getFilename(defaultName: string): Promise<string | null> {
     if (settingStore.get('Comfy.PromptFilename')) {
@@ -227,6 +229,7 @@ export const useWorkflowService = () => {
     }
 
     await workflowStore.closeWorkflow(workflow)
+    workflowThumbnail.clearThumbnail(workflow.key)
     return true
   }
 
@@ -289,6 +292,8 @@ export const useWorkflowService = () => {
     const activeWorkflow = workflowStore.activeWorkflow
     if (activeWorkflow) {
       activeWorkflow.changeTracker.store()
+      // Capture thumbnail before loading new graph
+      workflowThumbnail.storeThumbnail(activeWorkflow)
     }
   }
 
