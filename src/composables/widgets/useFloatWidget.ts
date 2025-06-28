@@ -62,7 +62,7 @@ export const useFloatWidget = () => {
         max: inputSpec.max ?? 2048,
         round:
           enableRounding && precision && !inputSpec.round
-            ? (1_000_000 * Math.pow(0.1, precision)) / 1_000_000
+            ? Math.pow(10, -precision)
             : (inputSpec.round as number),
         /** @deprecated Use step2 instead. The 10x value is a legacy implementation. */
         step: step * 10.0,
