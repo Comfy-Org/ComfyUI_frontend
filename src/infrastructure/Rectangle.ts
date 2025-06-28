@@ -6,7 +6,8 @@ import { isInRectangle } from "@/measure"
  * A rectangle, represented as a float64 array of 4 numbers: [x, y, width, height].
  *
  * This class is a subclass of Float64Array, and so has all the methods of that class.  Notably,
- * {@link Rectangle.from} can be used to convert a {@link ReadOnlyRect}.
+ * {@link Rectangle.from} can be used to convert a {@link ReadOnlyRect}. Typing of this however,
+ * is broken due to the base TS lib returning Float64Array rather than `this`.
  *
  * Sub-array properties ({@link Float64Array.subarray}):
  * - {@link pos}: The position of the top-left corner of the rectangle.
@@ -23,6 +24,29 @@ export class Rectangle extends Float64Array {
     this[1] = y
     this[2] = width
     this[3] = height
+  }
+
+  static override from([x, y, width, height]: ReadOnlyRect): Rectangle {
+    return new Rectangle(x, y, width, height)
+  }
+
+  /**
+   * Creates a new rectangle positioned at the given centre, with the given width/height.
+   * @param centre The centre of the rectangle, as an `[x, y]` point
+   * @param width The width of the rectangle
+   * @param height The height of the rectangle.  Default: {@link width}
+   * @returns A new rectangle whose centre is at {@link x}
+   */
+  static fromCentre([x, y]: ReadOnlyPoint, width: number, height = width): Rectangle {
+    const left = x - width * 0.5
+    const top = y - height * 0.5
+    return new Rectangle(left, top, width, height)
+  }
+
+  static ensureRect(rect: ReadOnlyRect): Rectangle {
+    return rect instanceof Rectangle
+      ? rect
+      : new Rectangle(rect[0], rect[1], rect[2], rect[3])
   }
 
   override subarray(begin: number = 0, end?: number): Float64Array<ArrayBuffer> {
@@ -163,7 +187,7 @@ export class Rectangle extends Float64Array {
    * @returns `true` if the point is inside this rectangle, otherwise `false`.
    */
   containsXy(x: number, y: number): boolean {
-    const { x: left, y: top, width, height } = this
+    const [left, top, width, height] = this
     return x >= left &&
       x < left + width &&
       y >= top &&
@@ -175,23 +199,35 @@ export class Rectangle extends Float64Array {
    * @param point The point to check
    * @returns `true` if {@link point} is inside this rectangle, otherwise `false`.
    */
-  containsPoint(point: ReadOnlyPoint): boolean {
-    return this.x <= point[0] &&
-      this.y <= point[1] &&
-      this.x + this.width >= point[0] &&
-      this.y + this.height >= point[1]
+  containsPoint([x, y]: ReadOnlyPoint): boolean {
+    const [left, top, width, height] = this
+    return x >= left &&
+      x < left + width &&
+      y >= top &&
+      y < top + height
   }
 
   /**
-   * Checks if {@link rect} is inside this rectangle.
-   * @param rect The rectangle to check
-   * @returns `true` if {@link rect} is inside this rectangle, otherwise `false`.
+   * Checks if {@link other} is a smaller rectangle inside this rectangle.
+   * One **must** be larger than the other; identical rectangles are not considered to contain each other.
+   * @param other The rectangle to check
+   * @returns `true` if {@link other} is inside this rectangle, otherwise `false`.
    */
-  containsRect(rect: ReadOnlyRect): boolean {
-    return this.x <= rect[0] &&
-      this.y <= rect[1] &&
-      this.x + this.width >= rect[0] + rect[2] &&
-      this.y + this.height >= rect[1] + rect[3]
+  containsRect(other: ReadOnlyRect): boolean {
+    const { right, bottom } = this
+    const otherRight = other[0] + other[2]
+    const otherBottom = other[1] + other[3]
+
+    const identical = this.x === other[0] &&
+      this.y === other[1] &&
+      right === otherRight &&
+      bottom === otherBottom
+
+    return !identical &&
+      this.x <= other[0] &&
+      this.y <= other[1] &&
+      right >= otherRight &&
+      bottom >= otherBottom
   }
 
   /**
@@ -345,6 +381,10 @@ export class Rectangle extends Float64Array {
     this[1] += currentHeight - height
   }
 
+  clone(): Rectangle {
+    return new Rectangle(this[0], this[1], this[2], this[3])
+  }
+
   /** Alias of {@link export}. */
   toArray() { return this.export() }
 
@@ -353,7 +393,10 @@ export class Rectangle extends Float64Array {
     return [this[0], this[1], this[2], this[3]]
   }
 
-  /** Draws a debug outline of this rectangle. */
+  /**
+   * Draws a debug outline of this rectangle.
+   * @internal Convenience debug/development interface; not for production use.
+   */
   _drawDebug(ctx: CanvasRenderingContext2D, colour = "red") {
     const { strokeStyle, lineWidth } = ctx
     try {

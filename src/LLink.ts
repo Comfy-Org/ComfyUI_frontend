@@ -9,7 +9,9 @@ import type {
 } from "./interfaces"
 import type { LGraphNode, NodeId } from "./LGraphNode"
 import type { Reroute, RerouteId } from "./Reroute"
-import type { Serialisable, SerialisableLLink } from "./types/serialisation"
+import type { Serialisable, SerialisableLLink, SubgraphIO } from "./types/serialisation"
+
+import { SUBGRAPH_INPUT_ID, SUBGRAPH_OUTPUT_ID } from "@/constants"
 
 export type LinkId = number
 
@@ -22,18 +24,61 @@ export type SerialisedLLinkArray = [
   type: ISlotType,
 ]
 
-export interface ResolvedConnection {
-  inputNode: LGraphNode | undefined
-  outputNode: LGraphNode | undefined
-  input: INodeInputSlot | undefined
-  output: INodeOutputSlot | undefined
+// Resolved connection union; eliminates subgraph in/out as a possibility
+export type ResolvedConnection = BaseResolvedConnection &
+  (
+    (ResolvedSubgraphInput & ResolvedNormalOutput) |
+    (ResolvedNormalInput & ResolvedSubgraphOutput) |
+    (ResolvedNormalInput & ResolvedNormalOutput)
+  )
+
+interface BaseResolvedConnection {
   link: LLink
+  /** The node on the input side of the link (owns {@link input}) */
+  inputNode?: LGraphNode
+  /** The input the link is connected to (mutually exclusive with {@link subgraphOutput}) */
+  input?: INodeInputSlot
+  /** The node on the output side of the link (owns {@link output}) */
+  outputNode?: LGraphNode
+  /** The output the link is connected to (mutually exclusive with {@link subgraphInput}) */
+  output?: INodeOutputSlot
+  /** The subgraph output the link is connected to (mutually exclusive with {@link input}) */
+  subgraphOutput?: SubgraphIO
+  /** The subgraph input the link is connected to (mutually exclusive with {@link output}) */
+  subgraphInput?: SubgraphIO
 }
 
-type BasicReadonlyNetwork = Pick<ReadonlyLinkNetwork, "getNodeById" | "links" | "getLink">
+interface ResolvedNormalInput {
+  inputNode: LGraphNode | undefined
+  input: INodeInputSlot | undefined
+  subgraphOutput?: undefined
+}
+
+interface ResolvedNormalOutput {
+  outputNode: LGraphNode | undefined
+  output: INodeOutputSlot | undefined
+  subgraphInput?: undefined
+}
+
+interface ResolvedSubgraphInput {
+  inputNode?: undefined
+  /** The actual input slot the link is connected to (mutually exclusive with {@link subgraphOutput}) */
+  input?: undefined
+  subgraphOutput: SubgraphIO
+}
+
+interface ResolvedSubgraphOutput {
+  outputNode?: undefined
+  output?: undefined
+  subgraphInput: SubgraphIO
+}
+
+type BasicReadonlyNetwork = Pick<ReadonlyLinkNetwork, "getNodeById" | "links" | "getLink" | "inputNode" | "outputNode">
 
 // this is the class in charge of storing link information
 export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
+  static _drawDebug = false
+
   /** Link ID */
   id: LinkId
   parentId?: RerouteId
@@ -81,6 +126,16 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
 
   public get isFloating(): boolean {
     return this.isFloatingOutput || this.isFloatingInput
+  }
+
+  /** `true` if this link is connected to a subgraph input node (the actual origin is in a different graph). */
+  get originIsIoNode(): boolean {
+    return this.origin_id === SUBGRAPH_INPUT_ID
+  }
+
+  /** `true` if this link is connected to a subgraph output node (the actual target is in a different graph). */
+  get targetIsIoNode(): boolean {
+    return this.target_id === SUBGRAPH_OUTPUT_ID
   }
 
   constructor(
@@ -230,10 +285,20 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    */
   resolve(network: BasicReadonlyNetwork): ResolvedConnection {
     const inputNode = this.target_id === -1 ? undefined : network.getNodeById(this.target_id) ?? undefined
-    const outputNode = this.origin_id === -1 ? undefined : network.getNodeById(this.origin_id) ?? undefined
     const input = inputNode?.inputs[this.target_slot]
+    const subgraphInput = this.originIsIoNode ? network.inputNode?.slots[this.origin_slot] : undefined
+    if (subgraphInput) {
+      return { inputNode, input, subgraphInput, link: this }
+    }
+
+    const outputNode = this.origin_id === -1 ? undefined : network.getNodeById(this.origin_id) ?? undefined
     const output = outputNode?.outputs[this.origin_slot]
-    return { inputNode, outputNode, input, output, link: this }
+    const subgraphOutput = this.targetIsIoNode ? network.outputNode?.slots[this.target_slot] : undefined
+    if (subgraphOutput) {
+      return { outputNode, output, subgraphInput: undefined, subgraphOutput, link: this }
+    }
+
+    return { inputNode, outputNode, input, output, subgraphInput, subgraphOutput, link: this }
   }
 
   configure(o: LLink | SerialisedLLinkArray) {

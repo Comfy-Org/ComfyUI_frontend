@@ -2,7 +2,7 @@ import type { CanvasColour, DefaultConnectionColors, INodeInputSlot, INodeOutput
 import type { LGraphNode } from "@/LGraphNode"
 
 import { LabelPosition, SlotShape, SlotType } from "@/draw"
-import { LiteGraph } from "@/litegraph"
+import { LiteGraph, Rectangle } from "@/litegraph"
 import { getCentre } from "@/measure"
 import { LinkDirection, RenderShape } from "@/types/globalEnums"
 
@@ -52,9 +52,12 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
   abstract get isWidgetInputSlot(): boolean
 
   constructor(slot: OptionalProps<INodeSlot, "boundingRect">, node: LGraphNode) {
-    super(slot.name, slot.type, slot.boundingRect ?? [0, 0, 0, 0])
+    const { boundingRect, name, type, ...rest } = slot
+    const rectangle = boundingRect ? Rectangle.ensureRect(boundingRect) : new Rectangle()
 
-    Object.assign(this, slot)
+    super(name, type, rectangle)
+
+    Object.assign(this, rest)
     this.#node = node
   }
 

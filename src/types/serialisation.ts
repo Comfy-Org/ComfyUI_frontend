@@ -33,6 +33,7 @@ export interface Serialisable<SerialisableObject> {
 export interface BaseExportedGraph {
   /** Unique graph ID.  Automatically generated if not provided. */
   id: UUID
+  /** The revision number of this graph. Not automatically incremented; intended for use by a downstream save function. */
   revision: number
   config?: LGraphConfig
   /** Details of the appearance and location of subgraphs shown in this graph. Similar to */
@@ -135,7 +136,7 @@ export interface ExportedSubgraph extends SerialisableGraph {
 }
 
 /** Properties shared by subgraph and node I/O slots. */
-type SubgraphIOShared = Omit<INodeSlot, "nameLocked" | "locked" | "removable" | "_floatingLinks">
+type SubgraphIOShared = Omit<INodeSlot, "boundingRect" | "nameLocked" | "locked" | "removable" | "_floatingLinks">
 
 /** Subgraph I/O slots */
 export interface SubgraphIO extends SubgraphIOShared {

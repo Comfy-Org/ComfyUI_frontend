@@ -7,7 +7,10 @@ import type { Point } from "@/interfaces"
 import type { LGraphNode, NodeId } from "@/LGraphNode"
 import type { LLink } from "@/LLink"
 import type { Reroute } from "@/Reroute"
+import type { SubgraphInput } from "@/subgraph/SubgraphInput"
+import type { SubgraphOutput } from "@/subgraph/SubgraphOutput"
 
+import { SUBGRAPH_INPUT_ID, SUBGRAPH_OUTPUT_ID } from "@/constants"
 import { LinkDirection } from "@/types/globalEnums"
 
 /**
@@ -130,6 +133,26 @@ export class FloatingRenderLink implements RenderLink {
     const floatingLink = this.link
     floatingLink.origin_id = node.id
     floatingLink.origin_slot = node.outputs.indexOf(output)
+
+    this.fromSlot._floatingLinks?.delete(floatingLink)
+    output._floatingLinks ??= new Set()
+    output._floatingLinks.add(floatingLink)
+  }
+
+  connectToSubgraphInput(input: SubgraphInput, _events?: CustomEventTarget<LinkConnectorEventMap>): void {
+    const floatingLink = this.link
+    floatingLink.origin_id = SUBGRAPH_INPUT_ID
+    floatingLink.origin_slot = input.parent.slots.indexOf(input)
+
+    this.fromSlot._floatingLinks?.delete(floatingLink)
+    input._floatingLinks ??= new Set()
+    input._floatingLinks.add(floatingLink)
+  }
+
+  connectToSubgraphOutput(output: SubgraphOutput, _events?: CustomEventTarget<LinkConnectorEventMap>): void {
+    const floatingLink = this.link
+    floatingLink.origin_id = SUBGRAPH_OUTPUT_ID
+    floatingLink.origin_slot = output.parent.slots.indexOf(output)
 
     this.fromSlot._floatingLinks?.delete(floatingLink)
     output._floatingLinks ??= new Set()

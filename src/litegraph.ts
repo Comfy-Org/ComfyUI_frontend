@@ -91,6 +91,7 @@ export interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
 export { InputIndicators } from "./canvas/InputIndicators"
 export { isOverNodeInput, isOverNodeOutput } from "./canvas/measureSlots"
 export { CanvasPointer } from "./CanvasPointer"
+export * as Constants from "./constants"
 export { ContextMenu } from "./ContextMenu"
 export { CurveEditor } from "./CurveEditor"
 export { DragAndScale } from "./DragAndScale"
@@ -134,6 +135,8 @@ export { LGraphNode, type NodeId } from "./LGraphNode"
 export { type LinkId, LLink } from "./LLink"
 export { clamp, createBounds } from "./measure"
 export { Reroute, type RerouteId } from "./Reroute"
+export { type ExecutableLGraphNode, ExecutableNodeDTO } from "./subgraph/ExecutableNodeDTO"
+export { SubgraphNode } from "./subgraph/SubgraphNode"
 export type { CanvasPointerEvent } from "./types/events"
 export {
   CanvasItem,

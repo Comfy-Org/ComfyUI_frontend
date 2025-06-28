@@ -3,6 +3,9 @@ import type { LinkConnectorEventMap } from "@/infrastructure/LinkConnectorEventM
 import type { LinkNetwork, Point } from "@/interfaces"
 import type { LGraphNode } from "@/LGraphNode"
 import type { INodeInputSlot, INodeOutputSlot, LLink, Reroute } from "@/litegraph"
+import type { SubgraphInput } from "@/subgraph/SubgraphInput"
+import type { SubgraphIONodeBase } from "@/subgraph/SubgraphIONodeBase"
+import type { SubgraphOutput } from "@/subgraph/SubgraphOutput"
 import type { LinkDirection } from "@/types/globalEnums"
 
 export interface RenderLink {
@@ -18,9 +21,9 @@ export interface RenderLink {
   /** The network that the link belongs to. */
   readonly network: LinkNetwork
   /** The node that the link is being connected from. */
-  readonly node: LGraphNode
+  readonly node: LGraphNode | SubgraphIONodeBase<SubgraphInput | SubgraphOutput>
   /** The slot that the link is being connected from. */
-  readonly fromSlot: INodeOutputSlot | INodeInputSlot
+  readonly fromSlot: INodeOutputSlot | INodeInputSlot | SubgraphInput | SubgraphOutput
   /** The index of the slot that the link is being connected from. */
   readonly fromSlotIndex: number
   /** The reroute that the link is being connected from. */
@@ -28,6 +31,8 @@ export interface RenderLink {
 
   connectToInput(node: LGraphNode, input: INodeInputSlot, events?: CustomEventTarget<LinkConnectorEventMap>): void
   connectToOutput(node: LGraphNode, output: INodeOutputSlot, events?: CustomEventTarget<LinkConnectorEventMap>): void
+  connectToSubgraphInput(input: SubgraphInput, events?: CustomEventTarget<LinkConnectorEventMap>): void
+  connectToSubgraphOutput(output: SubgraphOutput, events?: CustomEventTarget<LinkConnectorEventMap>): void
 
   connectToRerouteInput(
     reroute: Reroute,

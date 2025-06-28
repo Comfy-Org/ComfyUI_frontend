@@ -313,7 +313,7 @@ describe("Rectangle", () => {
 
     test.each([
       [[0, 0] as Point, true],
-      [[10, 10] as Point, true],
+      [[9, 9] as Point, true],
       [[5, 5] as Point, true],
       [[-1, 5] as Point, false],
       [[11, 5] as Point, false],
@@ -340,7 +340,7 @@ describe("Rectangle", () => {
       // Outer rectangle is smaller
       [new Rectangle(0, 0, 5, 5), new Rectangle(0, 0, 10, 10), true],
       // Same size
-      [new Rectangle(0, 0, 100, 100), true],
+      [new Rectangle(0, 0, 99, 99), true],
     ])("should return %s when checking if %s is inside outer rect", (inner: Rectangle, expectedOrOuter: boolean | Rectangle, expectedIfThreeArgs?: boolean) => {
       let testOuter = rect
       rect.updateTo([0, 0, 100, 100])

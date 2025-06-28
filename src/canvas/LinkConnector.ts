@@ -2,20 +2,28 @@ import type { RenderLink } from "./RenderLink"
 import type { LinkConnectorEventMap } from "@/infrastructure/LinkConnectorEventMap"
 import type { ConnectingLink, ItemLocator, LinkNetwork, LinkSegment } from "@/interfaces"
 import type { INodeInputSlot, INodeOutputSlot } from "@/interfaces"
-import type { LGraphNode } from "@/LGraphNode"
 import type { Reroute } from "@/Reroute"
+import type { SubgraphInput } from "@/subgraph/SubgraphInput"
 import type { CanvasPointerEvent } from "@/types/events"
 import type { IBaseWidget } from "@/types/widgets"
 
+import { SUBGRAPH_INPUT_ID, SUBGRAPH_OUTPUT_ID } from "@/constants"
 import { CustomEventTarget } from "@/infrastructure/CustomEventTarget"
+import { LGraphNode } from "@/LGraphNode"
 import { LLink } from "@/LLink"
+import { Subgraph } from "@/subgraph/Subgraph"
+import { SubgraphInputNode } from "@/subgraph/SubgraphInputNode"
+import { SubgraphOutput } from "@/subgraph/SubgraphOutput"
+import { SubgraphOutputNode } from "@/subgraph/SubgraphOutputNode"
 import { LinkDirection } from "@/types/globalEnums"
 
 import { FloatingRenderLink } from "./FloatingRenderLink"
 import { MovingInputLink } from "./MovingInputLink"
 import { MovingLinkBase } from "./MovingLinkBase"
 import { MovingOutputLink } from "./MovingOutputLink"
+import { ToInputFromIoNodeLink } from "./ToInputFromIoNodeLink"
 import { ToInputRenderLink } from "./ToInputRenderLink"
+import { ToOutputFromIoNodeLink } from "./ToOutputFromIoNodeLink"
 import { ToOutputFromRerouteLink } from "./ToOutputFromRerouteLink"
 import { ToOutputRenderLink } from "./ToOutputRenderLink"
 
@@ -39,7 +47,14 @@ export interface LinkConnectorState {
 }
 
 /** Discriminated union to simplify type narrowing. */
-type RenderLinkUnion = MovingInputLink | MovingOutputLink | FloatingRenderLink | ToInputRenderLink | ToOutputRenderLink
+type RenderLinkUnion =
+  | MovingInputLink
+  | MovingOutputLink
+  | FloatingRenderLink
+  | ToInputRenderLink
+  | ToOutputRenderLink
+  | ToInputFromIoNodeLink
+  | ToOutputFromIoNodeLink
 
 export interface LinkConnectorExport {
   renderLinks: RenderLink[]
@@ -261,6 +276,24 @@ export class LinkConnector {
     this.#setLegacyLinks(true)
   }
 
+  dragNewFromSubgraphInput(network: LinkNetwork, inputNode: SubgraphInputNode, input: SubgraphInput, fromReroute?: Reroute): void {
+    if (this.isConnecting) throw new Error("Already dragging links.")
+
+    const renderLink = new ToInputFromIoNodeLink(network, inputNode, input, fromReroute)
+    this.renderLinks.push(renderLink)
+
+    this.state.connectingTo = "input"
+  }
+
+  dragNewFromSubgraphOutput(network: LinkNetwork, outputNode: SubgraphOutputNode, output: SubgraphOutput, fromReroute?: Reroute): void {
+    if (this.isConnecting) throw new Error("Already dragging links.")
+
+    const renderLink = new ToOutputFromIoNodeLink(network, outputNode, output, fromReroute)
+    this.renderLinks.push(renderLink)
+
+    this.state.connectingTo = "output"
+  }
+
   /**
    * Drags a new link from a reroute to an input slot.
    * @param network The network that the link being connected belongs to
@@ -272,6 +305,25 @@ export class LinkConnector {
     const link = reroute.firstLink ?? reroute.firstFloatingLink
     if (!link) {
       console.warn("No link found for reroute.")
+      return
+    }
+
+    if (link.origin_id === SUBGRAPH_INPUT_ID) {
+      if (!(network instanceof Subgraph)) {
+        console.warn("Subgraph input link found in non-subgraph network.")
+        return
+      }
+
+      const input = network.inputs.at(link.origin_slot)
+      if (!input) throw new Error("No subgraph input found for link.")
+
+      const renderLink = new ToInputFromIoNodeLink(network, network.inputNode, input, reroute)
+      renderLink.fromDirection = LinkDirection.NONE
+      this.renderLinks.push(renderLink)
+
+      this.state.connectingTo = "input"
+
+      this.#setLegacyLinks(false)
       return
     }
 
@@ -307,6 +359,25 @@ export class LinkConnector {
     const link = reroute.firstLink ?? reroute.firstFloatingLink
     if (!link) {
       console.warn("No link found for reroute.")
+      return
+    }
+
+    if (link.target_id === SUBGRAPH_OUTPUT_ID) {
+      if (!(network instanceof Subgraph)) {
+        console.warn("Subgraph output link found in non-subgraph network.")
+        return
+      }
+
+      const output = network.outputs.at(link.target_slot)
+      if (!output) throw new Error("No subgraph output found for link.")
+
+      const renderLink = new ToOutputFromIoNodeLink(network, network.outputNode, output, reroute)
+      renderLink.fromDirection = LinkDirection.NONE
+      this.renderLinks.push(renderLink)
+
+      this.state.connectingTo = "output"
+
+      this.#setLegacyLinks(false)
       return
     }
 
@@ -367,22 +438,55 @@ export class LinkConnector {
     const mayContinue = this.events.dispatch("before-drop-links", { renderLinks, event })
     if (mayContinue === false) return
 
-    const { canvasX, canvasY } = event
-    const node = locator.getNodeOnPos(canvasX, canvasY) ?? undefined
-    if (node) {
-      this.dropOnNode(node, event)
-    } else {
-      // Get reroute if no node is found
-      const reroute = locator.getRerouteOnPos(canvasX, canvasY)
-      // Drop output->input link on reroute is not impl.
-      if (reroute && this.isRerouteValidDrop(reroute)) {
-        this.dropOnReroute(reroute, event)
-      } else {
-        this.dropOnNothing(event)
-      }
-    }
+    try {
+      const { canvasX, canvasY } = event
 
-    this.events.dispatch("after-drop-links", { renderLinks, event })
+      const ioNode = locator.getIoNodeOnPos?.(canvasX, canvasY)
+      if (ioNode) {
+        this.dropOnIoNode(ioNode, event)
+        return
+      }
+
+      const node = locator.getNodeOnPos(canvasX, canvasY) ?? undefined
+      if (node) {
+        this.dropOnNode(node, event)
+      } else {
+        // Get reroute if no node is found
+        const reroute = locator.getRerouteOnPos(canvasX, canvasY)
+        // Drop output->input link on reroute is not impl.
+        if (reroute && this.isRerouteValidDrop(reroute)) {
+          this.dropOnReroute(reroute, event)
+        } else {
+          this.dropOnNothing(event)
+        }
+      }
+    } finally {
+      this.events.dispatch("after-drop-links", { renderLinks, event })
+    }
+  }
+
+  dropOnIoNode(ioNode: SubgraphInputNode | SubgraphOutputNode, event: CanvasPointerEvent) {
+    const { renderLinks, state } = this
+    const { connectingTo } = state
+    const { canvasX, canvasY } = event
+
+    if (connectingTo === "input" && ioNode instanceof SubgraphOutputNode) {
+      const output = ioNode.getSlotInPosition(canvasX, canvasY)
+      if (!output) throw new Error("No output slot found for link.")
+
+      for (const link of renderLinks) {
+        link.connectToSubgraphOutput(output, this.events)
+      }
+    } else if (connectingTo === "output" && ioNode instanceof SubgraphInputNode) {
+      const input = ioNode.getSlotInPosition(canvasX, canvasY)
+      if (!input) throw new Error("No input slot found for link.")
+
+      for (const link of renderLinks) {
+        link.connectToSubgraphInput(input, this.events)
+      }
+    } else {
+      console.error("Invalid connectingTo state &/ ioNode", connectingTo, ioNode)
+    }
   }
 
   dropOnNode(node: LGraphNode, event: CanvasPointerEvent) {
@@ -523,7 +627,8 @@ export class LinkConnector {
     if (connectingTo === "output") {
       // Dropping new output link
       const output = node.findOutputByType(firstLink.fromSlot.type)?.slot
-      if (!output) {
+      console.debug("out", node, output, firstLink.fromSlot)
+      if (output === undefined) {
         console.warn(`Could not find slot for link type: [${firstLink.fromSlot.type}].`)
         return
       }
@@ -532,7 +637,8 @@ export class LinkConnector {
     } else if (connectingTo === "input") {
       // Dropping new input link
       const input = node.findInputByType(firstLink.fromSlot.type)?.slot
-      if (!input) {
+      console.debug("in", node, input, firstLink.fromSlot)
+      if (input === undefined) {
         console.warn(`Could not find slot for link type: [${firstLink.fromSlot.type}].`)
         return
       }
@@ -616,7 +722,7 @@ export class LinkConnector {
       const afterRerouteId = link instanceof MovingLinkBase ? link.link?.parentId : link.fromReroute?.id
 
       return {
-        node: link.node,
+        node: link.node as LGraphNode,
         slot: link.fromSlotIndex,
         input,
         output,
@@ -690,7 +796,7 @@ export class LinkConnector {
 
 /** Validates that a single {@link RenderLink} can be dropped on the specified reroute. */
 function canConnectInputLinkToReroute(
-  link: ToInputRenderLink | MovingInputLink | FloatingRenderLink,
+  link: ToInputRenderLink | MovingInputLink | FloatingRenderLink | ToInputFromIoNodeLink,
   inputNode: LGraphNode,
   input: INodeInputSlot,
   reroute: Reroute,

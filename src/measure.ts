@@ -6,7 +6,7 @@ import type {
   Rect,
 } from "./interfaces"
 
-import { LinkDirection } from "./types/globalEnums"
+import { Alignment, hasFlag, LinkDirection } from "./types/globalEnums"
 
 /**
  * Calculates the distance between two points (2D vector)
@@ -367,6 +367,92 @@ export function snapPoint(pos: Point | Rect, snapTo: number): boolean {
   pos[0] = snapTo * Math.round(pos[0] / snapTo)
   pos[1] = snapTo * Math.round(pos[1] / snapTo)
   return true
+}
+
+/**
+ * Aligns a {@link Rect} relative to the edges or centre of a {@link container} rectangle.
+ *
+ * With no {@link inset}, the element will be placed on the interior of the {@link container},
+ * with their edges lined up on the {@link anchors}.  A positive {@link inset} moves the element towards the centre,
+ * negative will push it outside the {@link container}.
+ * @param rect The bounding rect of the element to align.
+ * If using the element's pos/size backing store, this function will move the element.
+ * @param anchors The direction(s) to anchor the element to
+ * @param container The rectangle inside which to align the element
+ * @param inset Relative offset from each {@link anchors} edge, with positive always leading to the centre, as an `[x, y]` point
+ * @returns The original {@link rect}, modified in place.
+ */
+export function alignToContainer(
+  rect: Rect,
+  anchors: Alignment,
+  [containerX, containerY, containerWidth, containerHeight]: ReadOnlyRect,
+  [insetX, insetY]: ReadOnlyPoint = [0, 0],
+): Rect {
+  if (hasFlag(anchors, Alignment.Left)) {
+    // Left
+    rect[0] = containerX + insetX
+  } else if (hasFlag(anchors, Alignment.Right)) {
+    // Right
+    rect[0] = containerX + containerWidth - insetX - rect[2]
+  } else if (hasFlag(anchors, Alignment.Centre)) {
+    // Horizontal centre
+    rect[0] = containerX + (containerWidth * 0.5) - (rect[2] * 0.5)
+  }
+
+  if (hasFlag(anchors, Alignment.Top)) {
+    // Top
+    rect[1] = containerY + insetY
+  } else if (hasFlag(anchors, Alignment.Bottom)) {
+    // Bottom
+    rect[1] = containerY + containerHeight - insetY - rect[3]
+  } else if (hasFlag(anchors, Alignment.Middle)) {
+    // Vertical middle
+    rect[1] = containerY + (containerHeight * 0.5) - (rect[3] * 0.5)
+  }
+  return rect
+}
+
+/**
+ * Aligns a {@link Rect} relative to the edges of {@link other}.
+ *
+ * With no {@link outset}, the element will be placed on the exterior of the {@link other},
+ * with their edges lined up on the {@link anchors}.  A positive {@link outset} moves the element away from the {@link other},
+ * negative will push it inside the {@link other}.
+ * @param rect The bounding rect of the element to align.
+ * If using the element's pos/size backing store, this function will move the element.
+ * @param anchors The direction(s) to anchor the element to
+ * @param other The rectangle to align {@link rect} to
+ * @param outset Relative offset from each {@link anchors} edge, with positive always moving away from the centre of the {@link other}, as an `[x, y]` point
+ * @returns The original {@link rect}, modified in place.
+ */
+export function alignOutsideContainer(
+  rect: Rect,
+  anchors: Alignment,
+  [otherX, otherY, otherWidth, otherHeight]: ReadOnlyRect,
+  [outsetX, outsetY]: ReadOnlyPoint = [0, 0],
+): Rect {
+  if (hasFlag(anchors, Alignment.Left)) {
+    // Left
+    rect[0] = otherX - outsetX - rect[2]
+  } else if (hasFlag(anchors, Alignment.Right)) {
+    // Right
+    rect[0] = otherX + otherWidth + outsetX
+  } else if (hasFlag(anchors, Alignment.Centre)) {
+    // Horizontal centre
+    rect[0] = otherX + (otherWidth * 0.5) - (rect[2] * 0.5)
+  }
+
+  if (hasFlag(anchors, Alignment.Top)) {
+    // Top
+    rect[1] = otherY - outsetY - rect[3]
+  } else if (hasFlag(anchors, Alignment.Bottom)) {
+    // Bottom
+    rect[1] = otherY + otherHeight + outsetY
+  } else if (hasFlag(anchors, Alignment.Middle)) {
+    // Vertical middle
+    rect[1] = otherY + (otherHeight * 0.5) - (rect[3] * 0.5)
+  }
+  return rect
 }
 
 export function clamp(value: number, min: number, max: number): number {

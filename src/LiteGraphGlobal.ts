@@ -5,6 +5,7 @@ import { ContextMenu } from "./ContextMenu"
 import { CurveEditor } from "./CurveEditor"
 import { DragAndScale } from "./DragAndScale"
 import { LabelPosition, SlotDirection, SlotShape, SlotType } from "./draw"
+import { Rectangle } from "./infrastructure/Rectangle"
 import { LGraph } from "./LGraph"
 import { LGraphCanvas } from "./LGraphCanvas"
 import { LGraphGroup } from "./LGraphGroup"
@@ -12,6 +13,8 @@ import { LGraphNode } from "./LGraphNode"
 import { LLink } from "./LLink"
 import { distance, isInsideRectangle, overlapBounding } from "./measure"
 import { Reroute } from "./Reroute"
+import { SubgraphIONodeBase } from "./subgraph/SubgraphIONodeBase"
+import { SubgraphSlot } from "./subgraph/SubgraphSlotBase"
 import {
   LGraphEventMode,
   LinkDirection,
@@ -324,7 +327,21 @@ export class LiteGraphGlobal {
   ContextMenu = ContextMenu
   CurveEditor = CurveEditor
   Reroute = Reroute
-  InputIndicators = InputIndicators
+
+  constructor() {
+    Object.defineProperty(this, "Classes", { writable: false })
+  }
+
+  Classes = {
+    get SubgraphSlot() { return SubgraphSlot },
+    get SubgraphIONodeBase() { return SubgraphIONodeBase },
+
+    // Rich drawing
+    get Rectangle() { return Rectangle },
+
+    // Debug / helpers
+    get InputIndicators() { return InputIndicators },
+  }
 
   onNodeTypeRegistered?(type: string, base_class: typeof LGraphNode): void
   onNodeTypeReplaced?(type: string, base_class: typeof LGraphNode, prev: unknown): void

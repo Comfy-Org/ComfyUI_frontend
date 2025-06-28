@@ -36,6 +36,10 @@ export enum CanvasItem {
   Link = 1 << 3,
   /** A reroute slot */
   RerouteSlot = 1 << 5,
+  /** A subgraph input or output node */
+  SubgraphIoNode = 1 << 6,
+  /** A subgraph input or output slot */
+  SubgraphIoSlot = 1 << 7,
 }
 
 /** The direction that a link point will flow towards - e.g. horizontal outputs are right by default */
@@ -89,4 +93,50 @@ export enum EaseFunction {
   EASE_IN_QUAD = "easeInQuad",
   EASE_OUT_QUAD = "easeOutQuad",
   EASE_IN_OUT_QUAD = "easeInOutQuad",
+}
+
+/** Bit flags used to indicate what the pointer is currently hovering over. */
+export enum Alignment {
+  /** No items / none */
+  None = 0,
+  /** Top */
+  Top = 1,
+  /** Bottom */
+  Bottom = 1 << 1,
+  /** Vertical middle */
+  Middle = 1 << 2,
+  /** Left */
+  Left = 1 << 3,
+  /** Right */
+  Right = 1 << 4,
+  /** Horizontal centre */
+  Centre = 1 << 5,
+  /** Top left */
+  TopLeft = Top | Left,
+  /** Top side, horizontally centred */
+  TopCentre = Top | Centre,
+  /** Top right */
+  TopRight = Top | Right,
+  /** Left side, vertically centred */
+  MidLeft = Left | Middle,
+  /** Middle centre */
+  MidCentre = Middle | Centre,
+  /** Right side, vertically centred */
+  MidRight = Right | Middle,
+  /** Bottom left */
+  BottomLeft = Bottom | Left,
+  /** Bottom side, horizontally centred */
+  BottomCentre = Bottom | Centre,
+  /** Bottom right */
+  BottomRight = Bottom | Right,
+}
+
+/**
+ * Checks if the bitwise {@link flag} is set in the {@link flagSet}.
+ * @param flagSet The unknown set of flags - will be checked for the presence of {@link flag}
+ * @param flag The flag to check for
+ * @returns `true` if the flag is set, `false` otherwise.
+ */
+export function hasFlag(flagSet: number, flag: number): boolean {
+  return (flagSet & flag) === flag
 }

@@ -6,6 +6,8 @@ import type { ToInputRenderLink } from "@/canvas/ToInputRenderLink"
 import type { LGraphNode } from "@/LGraphNode"
 import type { LLink } from "@/LLink"
 import type { Reroute } from "@/Reroute"
+import type { SubgraphInputNode } from "@/subgraph/SubgraphInputNode"
+import type { SubgraphOutputNode } from "@/subgraph/SubgraphOutputNode"
 import type { CanvasPointerEvent } from "@/types/events"
 import type { IWidget } from "@/types/widgets"
 
@@ -35,6 +37,10 @@ export interface LinkConnectorEventMap {
   }
   "dropped-on-node": {
     node: LGraphNode
+    event: CanvasPointerEvent
+  }
+  "dropped-on-io-node": {
+    node: SubgraphInputNode | SubgraphOutputNode
     event: CanvasPointerEvent
   }
   "dropped-on-canvas": CanvasPointerEvent

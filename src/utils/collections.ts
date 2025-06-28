@@ -1,7 +1,7 @@
-import type { ConnectingLink, INodeInputSlot, INodeOutputSlot, ISlotType, Positionable } from "../interfaces"
+import type { ConnectingLink, ISlotType, Positionable } from "../interfaces"
 import type { LinkId } from "@/LLink"
 
-import { type IGenericLinkOrLinks, LGraphNode } from "@/LGraphNode"
+import { LGraphNode } from "@/LGraphNode"
 import { parseSlotTypes } from "@/strings"
 
 /**
@@ -48,8 +48,7 @@ export function isDraggingLink(linkId: LinkId, connectingLinks: ConnectingLink[]
   }
 }
 
-type InputOrOutput = (INodeInputSlot | INodeOutputSlot) & IGenericLinkOrLinks
-type FreeSlotResult<T extends InputOrOutput> = { index: number, slot: T } | undefined
+type FreeSlotResult<T extends { type: ISlotType }> = { index: number, slot: T } | undefined
 
 /**
  * Finds the first free in/out slot with any of the comma-delimited types in {@link type}.
@@ -60,12 +59,14 @@ type FreeSlotResult<T extends InputOrOutput> = { index: number, slot: T } | unde
  * - The first occupied wildcard slot
  * @param slots The iterable of node slots slots to search through
  * @param type The {@link ISlotType type} of slot to find
+ * @param hasNoLinks A predicate that returns `true` if the slot is free.
  * @returns The index and slot if found, otherwise `undefined`.
  */
-export function findFreeSlotOfType<T extends InputOrOutput>(
+export function findFreeSlotOfType<T extends { type: ISlotType }>(
   slots: T[],
   type: ISlotType,
-): FreeSlotResult<T> {
+  hasNoLinks: (slot: T) => boolean,
+) {
   if (!slots?.length) return
 
   let occupiedSlot: FreeSlotResult<T>
@@ -80,7 +81,7 @@ export function findFreeSlotOfType<T extends InputOrOutput>(
     for (const validType of validTypes) {
       for (const slotType of slotTypes) {
         if (slotType === validType) {
-          if (slot.link == null && !slot.links?.length) {
+          if (hasNoLinks(slot)) {
             // Exact match - short circuit
             return { index, slot }
           }
@@ -88,7 +89,7 @@ export function findFreeSlotOfType<T extends InputOrOutput>(
           occupiedSlot ??= { index, slot }
         } else if (!wildSlot && (validType === "*" || slotType === "*")) {
           // Save the first free wildcard slot as a fallback
-          if (slot.link == null && !slot.links?.length) {
+          if (hasNoLinks(slot)) {
             wildSlot = { index, slot }
           } else {
             occupiedWildSlot ??= { index, slot }
@@ -98,4 +99,12 @@ export function findFreeSlotOfType<T extends InputOrOutput>(
     }
   }
   return wildSlot ?? occupiedSlot ?? occupiedWildSlot
+}
+
+export function removeFromArray<T>(array: T[], value: T): boolean {
+  const index = array.indexOf(value)
+  const found = index !== -1
+
+  if (found) array.splice(index, 1)
+  return found
 }

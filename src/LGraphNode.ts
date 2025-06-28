@@ -18,21 +18,26 @@ import type {
   ISlotType,
   Point,
   Positionable,
+  ReadOnlyPoint,
   ReadOnlyRect,
   Rect,
   Size,
 } from "./interfaces"
 import type { LGraph } from "./LGraph"
 import type { Reroute, RerouteId } from "./Reroute"
+import type { SubgraphInputNode } from "./subgraph/SubgraphInputNode"
+import type { SubgraphOutputNode } from "./subgraph/SubgraphOutputNode"
 import type { CanvasMouseEvent } from "./types/events"
-import type { ISerialisedNode } from "./types/serialisation"
+import type { NodeLike } from "./types/NodeLike"
+import type { ISerialisedNode, SubgraphIO } from "./types/serialisation"
 import type { IBaseWidget, IWidgetOptions, TWidgetType, TWidgetValue } from "./types/widgets"
 
 import { getNodeInputOnPos, getNodeOutputOnPos } from "./canvas/measureSlots"
 import { NullGraphError } from "./infrastructure/NullGraphError"
+import { Rectangle } from "./infrastructure/Rectangle"
 import { BadgePosition, LGraphBadge } from "./LGraphBadge"
 import { LGraphCanvas } from "./LGraphCanvas"
-import { type LGraphNodeConstructor, LiteGraph, Rectangle } from "./litegraph"
+import { type LGraphNodeConstructor, LiteGraph, type Subgraph, type SubgraphNode } from "./litegraph"
 import { LLink } from "./LLink"
 import { createBounds, isInRect, isInRectangle, isPointInRect, snapPoint } from "./measure"
 import { NodeInputSlot } from "./node/NodeInputSlot"
@@ -183,7 +188,7 @@ export interface LGraphNode {
  * @param type a type for the node
  */
 // eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
-export class LGraphNode implements Positionable, IPinnable, IColorable {
+export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable {
   // Static properties used by dynamic child classes
   static title?: string
   static MAX_CONSOLE?: number
@@ -211,7 +216,11 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     return `normal ${LiteGraph.NODE_SUBTEXT_SIZE}px ${LiteGraph.NODE_FONT}`
   }
 
-  graph: LGraph | null = null
+  get displayType(): string {
+    return this.type
+  }
+
+  graph: LGraph | Subgraph | null = null
   id: NodeId
   type: string = ""
   inputs: INodeInputSlot[] = []
@@ -346,6 +355,14 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   selected?: boolean
   showAdvanced?: boolean
 
+  declare comfyClass?: string
+  declare isVirtualNode?: boolean
+  applyToGraph?(extraLinks?: LLink[]): void
+
+  isSubgraphNode(): this is SubgraphNode {
+    return false
+  }
+
   /** @inheritdoc {@link renderArea} */
   #renderArea: Float32Array = new Float32Array(4)
   /**
@@ -365,6 +382,12 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    */
   get boundingRect(): ReadOnlyRectangle {
     return this.#boundingRect
+  }
+
+  /** The offset from {@link pos} to the top-left of {@link boundingRect}. */
+  get boundingOffset(): ReadOnlyPoint {
+    const { pos: [posX, posY], boundingRect: [bX, bY] } = this
+    return [posX - bX, posY - bY]
   }
 
   /** {@link pos} and {@link size} values are backed by this {@link Rect}. */
@@ -451,16 +474,16 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     this: LGraphNode,
     target_slot: number,
     type: unknown,
-    output: INodeOutputSlot,
-    node: LGraphNode,
+    output: INodeOutputSlot | SubgraphIO,
+    node: LGraphNode | SubgraphInputNode,
     slot: number,
   ): boolean
   onConnectOutput?(
     this: LGraphNode,
     slot: number,
     type: unknown,
-    input: INodeInputSlot,
-    target_node: number | LGraphNode,
+    input: INodeInputSlot | SubgraphIO,
+    target_node: number | LGraphNode | SubgraphOutputNode,
     target_slot: number,
   ): boolean
   onResize?(this: LGraphNode, size: Size): void
@@ -477,7 +500,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     index: number,
     isConnected: boolean,
     link_info: LLink | null | undefined,
-    inputOrOutput: INodeInputSlot | INodeOutputSlot,
+    inputOrOutput: INodeInputSlot | INodeOutputSlot | SubgraphIO,
   ): void
   onInputAdded?(this: LGraphNode, input: INodeInputSlot): void
   onOutputAdded?(this: LGraphNode, output: INodeOutputSlot): void
@@ -2309,7 +2332,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    * @returns The index and slot if found, otherwise `undefined`.
    */
   findOutputByType(type: ISlotType): { index: number, slot: INodeOutputSlot } | undefined {
-    return findFreeSlotOfType(this.outputs, type)
+    return findFreeSlotOfType(this.outputs, type, output => !output.links?.length)
   }
 
   /**
@@ -2323,7 +2346,7 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
    * @returns The index and slot if found, otherwise `undefined`.
    */
   findInputByType(type: ISlotType): { index: number, slot: INodeInputSlot } | undefined {
-    return findFreeSlotOfType(this.inputs, type)
+    return findFreeSlotOfType(this.inputs, type, input => input.link == null)
   }
 
   /**
@@ -2384,9 +2407,9 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
   }
 
   canConnectTo(
-    node: LGraphNode,
-    toSlot: INodeInputSlot,
-    fromSlot: INodeOutputSlot,
+    node: NodeLike,
+    toSlot: INodeInputSlot | SubgraphIO,
+    fromSlot: INodeOutputSlot | SubgraphIO,
   ) {
     return this.id !== node.id && LiteGraph.isValidConnection(fromSlot.type, toSlot.type)
   }
@@ -2596,7 +2619,6 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
 
     this.setDirtyCanvas(false, true)
     graph.afterChange()
-    graph.connectionChange(this)
 
     return link
   }
@@ -2764,7 +2786,6 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     }
 
     this.setDirtyCanvas(false, true)
-    graph.connectionChange(this)
     return true
   }
 
@@ -2812,6 +2833,12 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
       // remove other side
       const link_info = graph._links.get(link_id)
       if (link_info) {
+        // Let SubgraphInput do the disconnect.
+        if (link_info.origin_id === -10 && "inputNode" in graph) {
+          graph.inputNode._disconnectNodeInput(this, input, link_info)
+          return true
+        }
+
         const target_node = graph.getNodeById(link_info.origin_id)
         if (!target_node) {
           console.debug("disconnectInput: target node not found", link_info.origin_id)
@@ -2854,7 +2881,6 @@ export class LGraphNode implements Positionable, IPinnable, IColorable {
     }
 
     this.setDirtyCanvas(false, true)
-    graph?.connectionChange(this)
     return true
   }
 

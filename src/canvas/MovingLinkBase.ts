@@ -5,6 +5,8 @@ import type { INodeInputSlot, INodeOutputSlot, LinkNetwork, Point } from "@/inte
 import type { LGraphNode, NodeId } from "@/LGraphNode"
 import type { LLink } from "@/LLink"
 import type { Reroute } from "@/Reroute"
+import type { SubgraphInput } from "@/subgraph/SubgraphInput"
+import type { SubgraphOutput } from "@/subgraph/SubgraphOutput"
 
 import { LinkDirection } from "@/types/globalEnums"
 
@@ -82,6 +84,8 @@ export abstract class MovingLinkBase implements RenderLink {
 
   abstract connectToInput(node: LGraphNode, input: INodeInputSlot, events?: CustomEventTarget<LinkConnectorEventMap>): void
   abstract connectToOutput(node: LGraphNode, output: INodeOutputSlot, events?: CustomEventTarget<LinkConnectorEventMap>): void
+  abstract connectToSubgraphInput(input: SubgraphInput, events?: CustomEventTarget<LinkConnectorEventMap>): void
+  abstract connectToSubgraphOutput(output: SubgraphOutput, events?: CustomEventTarget<LinkConnectorEventMap>): void
   abstract connectToRerouteInput(reroute: Reroute, { node, input, link }: { node: LGraphNode, input: INodeInputSlot, link: LLink }, events: CustomEventTarget<LinkConnectorEventMap>, originalReroutes: Reroute[]): void
   abstract connectToRerouteOutput(reroute: Reroute, outputNode: LGraphNode, output: INodeOutputSlot, events: CustomEventTarget<LinkConnectorEventMap>): void
 

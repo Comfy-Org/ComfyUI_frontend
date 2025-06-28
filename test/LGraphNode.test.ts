@@ -28,6 +28,8 @@ describe("LGraphNode", () => {
 
   beforeEach(() => {
     origLiteGraph = Object.assign({}, LiteGraph)
+    // @ts-expect-error
+    delete origLiteGraph.Classes
 
     Object.assign(LiteGraph, {
       NODE_TITLE_HEIGHT: 20,
