@@ -113,6 +113,9 @@
   "Comfy_Feedback": {
     "label": "피드백"
   },
+  "Comfy_Graph_ConvertToSubgraph": {
+    "label": "선택 영역을 서브그래프로 변환"
+  },
   "Comfy_Graph_FitGroupToContents": {
     "label": "그룹을 내용에 맞게 맞추기"
   },

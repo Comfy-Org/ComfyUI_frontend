@@ -25,8 +25,9 @@ const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
 
 const isSingleImageNode = computed(() => {
-  const nodes = canvasStore.selectedItems.filter(isLGraphNode)
-  return nodes.length === 1 && nodes.some(isImageNode)
+  const { selectedItems } = canvasStore
+  const item = selectedItems[0]
+  return selectedItems.length === 1 && isLGraphNode(item) && isImageNode(item)
 })
 
 const openMaskEditor = () => {
