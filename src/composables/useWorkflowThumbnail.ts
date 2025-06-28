@@ -79,20 +79,15 @@ export const useWorkflowThumbnail = () => {
   /**
    * Store a thumbnail for a workflow
    */
-  const storeThumbnail = (
+  const storeThumbnail = async (
     workflow: ComfyWorkflow,
     width: number = DEFAULT_THUMBNAIL_WIDTH,
     height: number = DEFAULT_THUMBNAIL_HEIGHT
   ) => {
-    captureCanvasThumbnail(width, height)
-      .then((thumbnail) => {
-        if (thumbnail) {
-          workflowThumbnails.value.set(workflow.key, thumbnail)
-        }
-      })
-      .catch((error) =>
-        console.error('Failed to capture canvas thumbnail:', error)
-      )
+    const thumbnail = await captureCanvasThumbnail(width, height)
+    if (thumbnail) {
+      workflowThumbnails.value.set(workflow.key, thumbnail)
+    }
   }
 
   /**
@@ -111,7 +106,6 @@ export const useWorkflowThumbnail = () => {
       URL.revokeObjectURL(thumbnail)
     }
     workflowThumbnails.value.delete(workflowKey)
-    console.log('removed thumbnail', workflowKey)
   }
 
   /**

@@ -293,7 +293,7 @@ export const useWorkflowService = () => {
     if (activeWorkflow) {
       activeWorkflow.changeTracker.store()
       // Capture thumbnail before loading new graph
-      workflowThumbnail.storeThumbnail(activeWorkflow)
+      void workflowThumbnail.storeThumbnail(activeWorkflow)
     }
   }
 
