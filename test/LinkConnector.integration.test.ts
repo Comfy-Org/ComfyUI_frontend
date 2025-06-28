@@ -2,8 +2,8 @@ import type { CanvasPointerEvent } from "@/types/events"
 
 import { afterEach, describe, expect, vi } from "vitest"
 
-import { LinkConnector } from "@/canvas/LinkConnector"
 import { LGraph, LGraphNode, LLink, Reroute, type RerouteId } from "@/litegraph"
+import { LinkConnector } from "@/litegraph"
 
 import { test as baseTest } from "./testExtensions"
 
