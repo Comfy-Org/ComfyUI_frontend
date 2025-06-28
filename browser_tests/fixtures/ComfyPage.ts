@@ -740,8 +740,8 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
-  async rightClickCanvas() {
-    await this.page.mouse.click(10, 10, { button: 'right' })
+  async rightClickCanvas(x: number = 10, y: number = 10) {
+    await this.page.mouse.click(x, y, { button: 'right' })
     await this.nextFrame()
   }
 
@@ -1086,7 +1086,7 @@ export const comfyPageFixture = base.extend<{
   },
   comfyMouse: async ({ comfyPage }, use) => {
     const comfyMouse = new ComfyMouse(comfyPage)
-    use(comfyMouse)
+    await use(comfyMouse)
   }
 })
 
