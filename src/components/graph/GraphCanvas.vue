@@ -325,6 +325,11 @@ onMounted(async () => {
   await workflowPersistence.restorePreviousWorkflow()
   workflowPersistence.restoreWorkflowTabsState()
 
+  // Initialize release store to fetch releases from comfy-api (fire-and-forget)
+  const { useReleaseStore } = await import('@/stores/releaseStore')
+  const releaseStore = useReleaseStore()
+  void releaseStore.initialize()
+
   // Start watching for locale change after the initial value is loaded.
   watch(
     () => settingStore.get('Comfy.Locale'),

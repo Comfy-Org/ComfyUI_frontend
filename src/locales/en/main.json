@@ -410,6 +410,7 @@
   },
   "sideToolbar": {
     "themeToggle": "Toggle Theme",
+    "helpCenter": "Help Center",
     "logout": "Logout",
     "queue": "Queue",
     "nodeLibrary": "Node Library",
@@ -467,6 +468,26 @@
         "open": "Open"
       }
     }
+  },
+  "helpCenter": {
+    "docs": "Docs",
+    "github": "Github",
+    "helpFeedback": "Help & Feedback",
+    "more": "More...",
+    "whatsNew": "What's New?",
+    "clickToLearnMore": "Click to learn more →",
+    "loadingReleases": "Loading releases...",
+    "noRecentReleases": "No recent releases",
+    "updateAvailable": "Update",
+    "desktopUserGuide": "Desktop User Guide",
+    "openDevTools": "Open Dev Tools",
+    "reinstall": "Re-Install"
+  },
+  "releaseToast": {
+    "newVersionAvailable": "New Version Available!",
+    "whatsNew": "What's New?",
+    "skip": "Skip",
+    "update": "Update"
   },
   "menu": {
     "hideMenu": "Hide Menu",
@@ -793,6 +814,7 @@
     "Reinstall": "Reinstall",
     "Restart": "Restart",
     "Browse Templates": "Browse Templates",
+    "Add Edit Model Step": "Add Edit Model Step",
     "Delete Selected Items": "Delete Selected Items",
     "Fit view to selected nodes": "Fit view to selected nodes",
     "Move Selected Nodes Down": "Move Selected Nodes Down",
@@ -1443,5 +1465,8 @@
     "moreHelp": "For more help, visit the",
     "documentationPage": "documentation page",
     "loadError": "Failed to load help: {error}"
+  },
+  "whatsNewPopup": {
+    "learnMore": "Learn more"
   }
 }

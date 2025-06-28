@@ -9,7 +9,12 @@
       body: { class: 'p-0 flex flex-col w-full h-full rounded-lg gap-0' },
       content: { class: 'flex-1 flex flex-col rounded-lg min-h-0' },
       title: { class: 'w-full h-full rounded-t-lg cursor-pointer' },
-      footer: { class: 'p-0 m-0' }
+      footer: {
+        class: 'p-0 m-0 flex flex-col gap-0',
+        style: {
+          borderTop: isLightTheme ? '1px solid #f4f4f4' : '1px solid #2C2C2C'
+        }
+      }
     }"
   >
     <template #title>
@@ -29,67 +34,43 @@
         </div>
       </template>
       <template v-else>
-        <div
-          class="self-stretch inline-flex flex-col justify-start items-start"
-        >
-          <div
-            class="px-4 py-3 inline-flex justify-start items-start cursor-pointer w-full"
-          >
-            <div
-              class="inline-flex flex-col justify-start items-start overflow-hidden gap-y-3 w-full"
+        <div class="pt-4 px-4 pb-3 w-full h-full">
+          <div class="flex flex-col gap-y-1 w-full h-full">
+            <span
+              class="text-sm font-bold truncate overflow-hidden text-ellipsis"
             >
-              <span
-                class="text-base font-bold truncate overflow-hidden text-ellipsis"
-              >
-                {{ nodePack.name }}
-              </span>
-              <p
-                v-if="nodePack.description"
-                class="flex-1 justify-start text-muted text-sm font-medium break-words overflow-hidden min-h-12 line-clamp-3 my-0 leading-5"
-              >
-                {{ nodePack.description }}
-              </p>
-              <div class="flex flex-col gap-y-2">
+              {{ nodePack.name }}
+            </span>
+            <p
+              v-if="nodePack.description"
+              class="flex-1 text-muted text-xs font-medium break-words overflow-hidden min-h-12 line-clamp-3 my-0 leading-4 mb-1 overflow-hidden"
+            >
+              {{ nodePack.description }}
+            </p>
+            <div class="flex flex-col gap-y-2">
+              <div class="flex-1 flex items-center gap-2">
+                <div v-if="nodesCount" class="p-2 pl-0 text-xs">
+                  {{ nodesCount }} {{ $t('g.nodes') }}
+                </div>
+                <PackVersionBadge
+                  :node-pack="nodePack"
+                  :is-selected="isSelected"
+                  :fill="false"
+                />
                 <div
-                  class="self-stretch inline-flex justify-start items-center gap-1"
+                  v-if="formattedLatestVersionDate"
+                  class="px-2 py-1 flex justify-center items-center gap-1 text-xs text-muted font-medium"
                 >
-                  <div
-                    v-if="nodesCount"
-                    class="pr-2 py-1 flex justify-center text-sm items-center gap-1"
-                  >
-                    <div
-                      class="text-center justify-center font-medium leading-3"
-                    >
-                      {{ nodesCount }} {{ $t('g.nodes') }}
-                    </div>
-                  </div>
-                  <div class="px-2 py-1 flex justify-center items-center gap-1">
-                    <div
-                      v-if="isUpdateAvailable"
-                      class="w-4 h-4 relative overflow-hidden"
-                    >
-                      <i class="pi pi-arrow-circle-up text-blue-600" />
-                    </div>
-                    <PackVersionBadge
-                      :node-pack="nodePack"
-                      :is-selected="isSelected"
-                    />
-                  </div>
-                  <div
-                    v-if="formattedLatestVersionDate"
-                    class="px-2 py-1 flex justify-center items-center gap-1 text-xs text-muted font-medium"
-                  >
-                    {{ formattedLatestVersionDate }}
-                  </div>
+                  {{ formattedLatestVersionDate }}
                 </div>
-                <div class="flex">
-                  <span
-                    v-if="publisherName"
-                    class="text-xs text-muted font-medium leading-3 max-w-40 truncate"
-                  >
-                    {{ publisherName }}
-                  </span>
-                </div>
+              </div>
+              <div class="flex">
+                <span
+                  v-if="publisherName"
+                  class="text-xs text-muted font-medium leading-3 max-w-40 truncate"
+                >
+                  {{ publisherName }}
+                </span>
               </div>
             </div>
           </div>
@@ -97,7 +78,6 @@
       </template>
     </template>
     <template #footer>
-      <ContentDivider :width="0.1" />
       <PackCardFooter :node-pack="nodePack" />
     </template>
   </Card>
@@ -110,12 +90,11 @@ import ProgressSpinner from 'primevue/progressspinner'
 import { computed, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import ContentDivider from '@/components/common/ContentDivider.vue'
 import PackVersionBadge from '@/components/dialog/content/manager/PackVersionBadge.vue'
 import PackBanner from '@/components/dialog/content/manager/packBanner/PackBanner.vue'
 import PackCardFooter from '@/components/dialog/content/manager/packCard/PackCardFooter.vue'
-import { usePackUpdateStatus } from '@/composables/nodePack/usePackUpdateStatus'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import {
   IsInstallingKey,
   type MergedNodePack,
@@ -130,11 +109,15 @@ const { nodePack, isSelected = false } = defineProps<{
 
 const { d } = useI18n()
 
+const colorPaletteStore = useColorPaletteStore()
+const isLightTheme = computed(
+  () => colorPaletteStore.completedActivePalette.light_theme
+)
+
 const isInstalling = ref(false)
 provide(IsInstallingKey, isInstalling)
 
 const { isPackInstalled, isPackEnabled } = useComfyManagerStore()
-const { isUpdateAvailable } = usePackUpdateStatus(nodePack)
 
 const isInstalled = computed(() => isPackInstalled(nodePack?.id))
 const isDisabled = computed(
@@ -167,14 +150,14 @@ const formattedLatestVersionDate = computed(() => {
   position: relative;
 }
 
-.selected-card::before {
+.selected-card::after {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  border: 3px solid var(--p-primary-color);
+  border: 4px solid var(--p-primary-color);
   border-radius: 0.5rem;
   pointer-events: none;
   z-index: 100;
