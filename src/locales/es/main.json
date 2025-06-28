@@ -714,6 +714,7 @@
     "ComfyUI Forum": "Foro de ComfyUI",
     "ComfyUI Issues": "Problemas de ComfyUI",
     "Contact Support": "Contactar soporte",
+    "Convert Selection to Subgraph": "Convertir selección en subgrafo",
     "Convert selected nodes to group node": "Convertir nodos seleccionados en nodo de grupo",
     "Delete Selected Items": "Eliminar elementos seleccionados",
     "Desktop User Guide": "Guía de usuario de escritorio",
@@ -1389,6 +1390,7 @@
     "title": "Comienza con una Plantilla"
   },
   "toastMessages": {
+    "cannotCreateSubgraph": "No se puede crear el subgrafo",
     "couldNotDetermineFileType": "No se pudo determinar el tipo de archivo",
     "dropFileError": "No se puede procesar el elemento soltado: {error}",
     "emptyCanvas": "Lienzo vacío",
@@ -1397,6 +1399,7 @@
     "errorSaveSetting": "Error al guardar la configuración {id}: {err}",
     "failedToAccessBillingPortal": "No se pudo acceder al portal de facturación: {error}",
     "failedToApplyTexture": "Error al aplicar textura",
+    "failedToConvertToSubgraph": "No se pudo convertir los elementos en subgrafo",
     "failedToCreateCustomer": "No se pudo crear el cliente: {error}",
     "failedToDownloadFile": "Error al descargar el archivo",
     "failedToExportModel": "Error al exportar modelo como {format}",

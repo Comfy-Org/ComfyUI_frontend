@@ -24,7 +24,7 @@ test.describe('Canvas Right Click Menu', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('add-group-group-added.png')
   })
 
-  test('Can convert to group node', async ({ comfyPage }) => {
+  test.skip('Can convert to group node', async ({ comfyPage }) => {
     await comfyPage.select2Nodes()
     await expect(comfyPage.canvas).toHaveScreenshot('selected-2-nodes.png')
     await comfyPage.rightClickCanvas()

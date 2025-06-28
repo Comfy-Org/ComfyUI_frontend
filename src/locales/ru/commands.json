@@ -113,6 +113,9 @@
   "Comfy_Feedback": {
     "label": "Обратная связь"
   },
+  "Comfy_Graph_ConvertToSubgraph": {
+    "label": "Преобразовать выделенное в подграф"
+  },
   "Comfy_Graph_FitGroupToContents": {
     "label": "Подогнать группу к содержимому"
   },

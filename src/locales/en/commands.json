@@ -113,6 +113,9 @@
   "Comfy_Feedback": {
     "label": "Give Feedback"
   },
+  "Comfy_Graph_ConvertToSubgraph": {
+    "label": "Convert Selection to Subgraph"
+  },
   "Comfy_Graph_FitGroupToContents": {
     "label": "Fit Group To Contents"
   },
