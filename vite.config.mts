@@ -29,6 +29,11 @@ export default defineConfig({
   base: '',
   server: {
     host: VITE_REMOTE_DEV ? '0.0.0.0' : undefined,
+    allowedHosts: true,
+    cors: true,
+    headers: {
+      'Access-Control-Allow-Origin': '*'
+    },
     proxy: {
       '/internal': {
         target: DEV_SERVER_COMFYUI_URL

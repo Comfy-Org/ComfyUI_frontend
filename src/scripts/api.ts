@@ -340,21 +340,6 @@ export class ComfyApi extends EventTarget {
   }
 
   /**
-   * Poll status  for colab and other things that don't support websockets.
-   */
-  #pollQueue() {
-    setInterval(async () => {
-      try {
-        const resp = await this.fetchApi('/prompt')
-        const status = (await resp.json()) as StatusWsMessageStatus
-        this.dispatchCustomEvent('status', status)
-      } catch (error) {
-        this.dispatchCustomEvent('status', null)
-      }
-    }, 1000)
-  }
-
-  /**
    * Creates and connects a WebSocket for realtime updates
    * @param {boolean} isReconnect If the socket is connection is a reconnect attempt
    */
@@ -383,7 +368,7 @@ export class ComfyApi extends EventTarget {
     this.socket.addEventListener('error', () => {
       if (this.socket) this.socket.close()
       if (!isReconnect && !opened) {
-        this.#pollQueue()
+        //this.#pollQueue()
       }
     })
 
@@ -490,7 +475,7 @@ export class ComfyApi extends EventTarget {
    * Initialises sockets and realtime updates
    */
   init() {
-    this.#createSocket()
+    //this.#createSocket()
   }
 
   /**
