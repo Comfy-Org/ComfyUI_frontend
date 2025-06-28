@@ -1436,7 +1436,14 @@
       "buyNow": "Buy now",
       "seeDetails": "See details",
       "topUp": "Top Up"
-    }
+    },
+    "eventType": "Event Type",
+    "details": "Details",
+    "time": "Time",
+    "additionalInfo": "Additional Info",
+    "model": "Model",
+    "added": "Added",
+    "accountInitialized": "Account initialized"
   },
   "userSettings": {
     "title": "User Settings",

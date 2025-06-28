@@ -18,7 +18,7 @@
       responsive-layout="scroll"
       @page="onPageChange"
     >
-      <Column field="event_type" header="Event Type">
+      <Column field="event_type" :header="$t('credits.eventType')">
         <template #body="{ data }">
           <Badge
             :value="formatEventType(data.event_type)"
@@ -26,19 +26,21 @@
           />
         </template>
       </Column>
-      <Column field="details" header="Details">
+      <Column field="details" :header="$t('credits.details')">
         <template #body="{ data }">
           <div class="event-details">
             <!-- Credits Added -->
             <template v-if="data.event_type === 'credit_added'">
               <div class="text-green-500 font-semibold">
-                Added ${{ formatAmount(data.params?.amount) }}
+                {{ $t('credits.added') }} ${{
+                  formatAmount(data.params?.amount)
+                }}
               </div>
             </template>
 
             <!-- Account Created -->
             <template v-else-if="data.event_type === 'account_created'">
-              <div>Account initialized</div>
+              <div>{{ $t('credits.accountInitialized') }}</div>
             </template>
 
             <!-- API Usage -->
@@ -48,23 +50,33 @@
                   {{ data.params?.api_name || 'API' }}
                 </div>
                 <div class="text-sm text-gray-400">
-                  Model: {{ data.params?.model || '-' }}
+                  {{ $t('credits.model') }}: {{ data.params?.model || '-' }}
                 </div>
               </div>
             </template>
           </div>
         </template>
       </Column>
-      <Column field="createdAt" header="Time">
+      <Column field="createdAt" :header="$t('credits.time')">
         <template #body="{ data }">
           {{ formatDate(data.createdAt) }}
         </template>
       </Column>
-      <Column field="params" header="Additional Info">
+      <Column field="params" :header="$t('credits.additionalInfo')">
         <template #body="{ data }">
           <Button
             v-if="hasAdditionalInfo(data)"
-            v-tooltip.top="{ escape: false, value: getTooltipContent(data) }"
+            v-tooltip.top="{
+              escape: false,
+              value: getTooltipContent(data),
+              pt: {
+                text: {
+                  style: {
+                    width: 'max-content !important'
+                  }
+                }
+              }
+            }"
             icon="pi pi-info-circle"
             class="p-button-text p-button-sm"
           />
