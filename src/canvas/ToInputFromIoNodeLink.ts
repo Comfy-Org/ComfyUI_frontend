@@ -7,7 +7,6 @@ import type { LLink } from "@/LLink"
 import type { Reroute } from "@/Reroute"
 import type { SubgraphInput } from "@/subgraph/SubgraphInput"
 import type { SubgraphInputNode } from "@/subgraph/SubgraphInputNode"
-import type { SubgraphOutput } from "@/subgraph/SubgraphOutput"
 import type { NodeLike } from "@/types/NodeLike"
 
 import { LinkDirection } from "@/types/globalEnums"
@@ -53,7 +52,7 @@ export class ToInputFromIoNodeLink implements RenderLink {
     events.dispatch("link-created", newLink)
   }
 
-  connectToSubgraphOutput(output: SubgraphOutput, events?: CustomEventTarget<LinkConnectorEventMap>): void {
+  connectToSubgraphOutput(): void {
     throw new Error("Not implemented")
   }
 
