@@ -138,13 +138,21 @@
     "Unpin": "Désépingler"
   },
   "credits": {
+    "accountInitialized": "Compte initialisé",
+    "activity": "Activité",
+    "added": "Ajouté",
+    "additionalInfo": "Informations supplémentaires",
     "apiPricing": "Tarification de l’API",
     "credits": "Crédits",
+    "details": "Détails",
+    "eventType": "Type d'événement",
     "faqs": "FAQ",
     "invoiceHistory": "Historique des factures",
     "lastUpdated": "Dernière mise à jour",
     "messageSupport": "Contacter le support",
+    "model": "Modèle",
     "purchaseCredits": "Acheter des crédits",
+    "time": "Heure",
     "topUp": {
       "buyNow": "Acheter maintenant",
       "insufficientMessage": "Vous n'avez pas assez de crédits pour exécuter ce workflow.",

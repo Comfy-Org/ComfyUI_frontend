@@ -41,7 +41,8 @@
         </div>
       </div>
 
-      <div class="flex justify-between items-center mt-8">
+      <div class="flex justify-between items-center">
+        <h3>{{ $t('credits.activity') }}</h3>
         <Button
           :label="$t('credits.invoiceHistory')"
           text
@@ -81,6 +82,8 @@
 
       <Divider />
 
+      <UsageLogsTable ref="usageLogsTableRef" />
+
       <div class="flex flex-row gap-2">
         <Button
           :label="$t('credits.faqs')"
@@ -108,10 +111,11 @@ import DataTable from 'primevue/datatable'
 import Divider from 'primevue/divider'
 import Skeleton from 'primevue/skeleton'
 import TabPanel from 'primevue/tabpanel'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import UserCredit from '@/components/common/UserCredit.vue'
+import UsageLogsTable from '@/components/dialog/content/setting/UsageLogsTable.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
@@ -131,10 +135,21 @@ const authActions = useFirebaseAuthActions()
 const loading = computed(() => authStore.loading)
 const balanceLoading = computed(() => authStore.isFetchingBalance)
 
+const usageLogsTableRef = ref<InstanceType<typeof UsageLogsTable> | null>(null)
+
 const formattedLastUpdateTime = computed(() =>
   authStore.lastBalanceUpdateTime
     ? authStore.lastBalanceUpdateTime.toLocaleString()
     : ''
+)
+
+watch(
+  () => authStore.lastBalanceUpdateTime,
+  (newTime, oldTime) => {
+    if (newTime && newTime !== oldTime && usageLogsTableRef.value) {
+      usageLogsTableRef.value.refresh()
+    }
+  }
 )
 
 const handlePurchaseCreditsClick = () => {
