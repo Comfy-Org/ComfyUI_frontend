@@ -145,11 +145,9 @@ export const useCustomerEventsService = () => {
   }
 
   function getTooltipContent(event: AuditLog) {
-    const { amount, api_name, model, ...otherParams } = event.params || {}
+    const { ...params } = event.params || {}
 
-    if (Object.keys(otherParams).length === 0) return ''
-
-    return Object.entries(otherParams)
+    return Object.entries(params)
       .map(([key, value]) => {
         const formattedKey = formatJsonKey(key)
         const formattedValue = formatJsonValue(value)
