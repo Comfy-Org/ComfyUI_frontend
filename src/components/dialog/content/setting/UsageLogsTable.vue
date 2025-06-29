@@ -95,11 +95,14 @@ import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed, ref } from 'vue'
 
-import { AuditLog, getMyEvents } from '@/services/customerService'
+import { useCustomerService } from '@/services/customerService'
+import type { components } from '@/types/comfyRegistryTypes'
 
-const events = ref<AuditLog[]>([])
+const events = ref<components['schemas']['AuditLog'][]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
+
+const customerService = useCustomerService()
 
 const pagination = ref({
   page: 1,
@@ -152,12 +155,12 @@ const formatDate = (dateString: string) => {
   })
 }
 
-const hasAdditionalInfo = (event: AuditLog) => {
+const hasAdditionalInfo = (event: components['schemas']['AuditLog']) => {
   const { amount, api_name, model, ...otherParams } = event.params || {}
   return Object.keys(otherParams).length > 0
 }
 
-const getTooltipContent = (event: AuditLog) => {
+const getTooltipContent = (event: components['schemas']['AuditLog']) => {
   const { amount, api_name, model, ...otherParams } = event.params || {}
 
   if (Object.keys(otherParams).length === 0) return ''
@@ -176,18 +179,33 @@ const loadEvents = async () => {
   error.value = null
 
   try {
-    // Use public endpoint when no customerId is provided
-    const response = await getMyEvents({
+    const response = await customerService.getMyEvents({
       page: pagination.value.page,
       limit: pagination.value.limit
     })
 
-    events.value = response.events
-    pagination.value = {
-      page: response.page,
-      limit: response.limit,
-      total: response.total,
-      totalPages: response.totalPages
+    if (response) {
+      if (response.events) {
+        events.value = response.events
+      }
+
+      if (response.page) {
+        pagination.value.page = response.page
+      }
+
+      if (response.limit) {
+        pagination.value.limit = response.limit
+      }
+
+      if (response.total) {
+        pagination.value.total = response.total
+      }
+
+      if (response.totalPages) {
+        pagination.value.totalPages = response.totalPages
+      }
+    } else {
+      error.value = customerService.error.value || 'Failed to load events'
     }
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Unknown error'
@@ -209,9 +227,7 @@ const formatJsonKey = (key: string) => {
     .join(' ')
 }
 
-const formatJsonValue = (
-  value: string | number | boolean | null | undefined
-) => {
+const formatJsonValue = (value: any) => {
   if (typeof value === 'number') {
     // Format numbers with commas and decimals if needed
     return value.toLocaleString()

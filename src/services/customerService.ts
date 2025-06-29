@@ -1,51 +1,110 @@
+import axios, { AxiosError, AxiosResponse } from 'axios'
+import { ref } from 'vue'
+
 import { COMFY_API_BASE_URL } from '@/config/comfyApi'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { operations } from '@/types/comfyRegistryTypes'
+import { isAbortError } from '@/utils/typeGuardUtil'
 
-export type AuditLogType =
-  | 'account_created'
-  | 'credit_added'
-  | 'api_usage_started'
-  | 'api_usage_completed'
+type CustomerEventsResponse =
+  operations['GetCustomerEvents']['responses']['200']['content']['application/json']
 
-export interface AuditLog {
-  event_type: AuditLogType
-  event_id: string
-  params: Record<string, any> // Using Record since it's additionalProperties: true
-  createdAt: string
-}
+type CustomerEventsResponseQuery =
+  operations['GetCustomerEvents']['parameters']['query']
 
-interface CustomerEventsResponse {
-  events: AuditLog[]
-  total: number
-  page: number
-  limit: number
-  totalPages: number
-}
+const customerApiClient = axios.create({
+  baseURL: COMFY_API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+})
 
-export async function getMyEvents({
-  page = 1,
-  limit = 10
-}: {
-  page?: number
-  limit?: number
-} = {}): Promise<CustomerEventsResponse> {
-  const headers = await useFirebaseAuthStore().getAuthHeader()
+export const useCustomerService = () => {
+  const isLoading = ref(false)
+  const error = ref<string | null>(null)
 
-  const url = new URL(`${COMFY_API_BASE_URL}/customers/events`)
-  url.searchParams.append('page', page.toString())
-  url.searchParams.append('limit', limit.toString())
+  const handleRequestError = (
+    err: unknown,
+    context: string,
+    routeSpecificErrors?: Record<number, string>
+  ) => {
+    // Don't treat cancellation as an error
+    if (isAbortError(err)) return
 
-  if (!headers) {
-    throw new Error('Authentication header is missing')
+    let message: string
+    if (!axios.isAxiosError(err)) {
+      message = `${context} failed: ${err instanceof Error ? err.message : String(err)}`
+    } else {
+      const axiosError = err as AxiosError<{ message: string }>
+      const status = axiosError.response?.status
+      if (status && routeSpecificErrors?.[status]) {
+        message = routeSpecificErrors[status]
+      } else {
+        message =
+          axiosError.response?.data?.message ??
+          `${context} failed with status ${status}`
+      }
+    }
+
+    error.value = message
   }
 
-  const response = await fetch(url.toString(), {
-    headers
-  })
+  const executeRequest = async <T>(
+    requestCall: () => Promise<AxiosResponse<T>>,
+    options: {
+      errorContext: string
+      routeSpecificErrors?: Record<number, string>
+    }
+  ): Promise<T | null> => {
+    const { errorContext, routeSpecificErrors } = options
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch events: ${response.status}`)
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const response = await requestCall()
+      return response.data
+    } catch (err) {
+      handleRequestError(err, errorContext, routeSpecificErrors)
+      return null
+    } finally {
+      isLoading.value = false
+    }
   }
 
-  return await response.json()
+  async function getMyEvents({
+    page = 1,
+    limit = 10
+  }: CustomerEventsResponseQuery = {}): Promise<CustomerEventsResponse | null> {
+    const errorContext = 'Fetching customer events'
+    const routeSpecificErrors = {
+      400: 'Invalid input, object invalid',
+      404: 'Not found'
+    }
+
+    // Get auth headers
+    const authHeaders = await useFirebaseAuthStore().getAuthHeader()
+    if (!authHeaders) {
+      error.value = 'Authentication header is missing'
+      return null
+    }
+
+    return executeRequest<CustomerEventsResponse>(
+      () =>
+        customerApiClient.get('/customers/events', {
+          params: { page, limit },
+          headers: authHeaders
+        }),
+      { errorContext, routeSpecificErrors }
+    )
+  }
+
+  return {
+    // State
+    isLoading,
+    error,
+
+    // Methods
+    getMyEvents
+  }
 }
