@@ -12,7 +12,7 @@
       />
       <span class="ml-2 font-semibold">{{ node.display_name }}</span>
     </div>
-    <div class="p-4 flex-grow node-help-content max-w-[600px] mx-auto">
+    <div class="p-4 flex-grow node-help-content w-full mx-auto">
       <ProgressSpinner
         v-if="isLoading"
         class="m-auto"
@@ -188,7 +188,7 @@ const outputList = computed(() =>
 
 .markdown-content :deep(li),
 .fallback-content li {
-  @apply my-1;
+  @apply my-2;
 }
 
 .markdown-content :deep(*:first-child),
@@ -198,7 +198,7 @@ const outputList = computed(() =>
 
 .markdown-content :deep(code),
 .fallback-content code {
-  @apply text-[var(--error-text)] bg-[var(--content-bg)] rounded px-1 py-0.5;
+  @apply text-[rgba(0,122,255,1)] bg-[rgba(96,165,250,0.2)] rounded px-1.5 py-0.5;
 }
 
 .markdown-content :deep(table),
@@ -226,5 +226,16 @@ const outputList = computed(() =>
 .markdown-content :deep(thead),
 .fallback-content thead {
   border-bottom: 1px solid var(--p-text-color);
+}
+
+.markdown-content :deep(pre),
+.fallback-content pre {
+  @apply rounded p-4 my-4 overflow-x-auto;
+  background-color: rgba(60, 60, 60, 0.12);
+
+  code {
+    @apply bg-transparent p-0;
+    color: var(--p-text-color);
+  }
 }
 </style>
