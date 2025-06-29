@@ -1,7 +1,4 @@
-import type {
-  IComboWidget,
-  IStringWidget
-} from '@comfyorg/litegraph/dist/types/widgets'
+import type { IStringWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import { nextTick } from 'vue'
 
 import Load3D from '@/components/load3d/Load3D.vue'
@@ -16,6 +13,80 @@ import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import { useExtensionService } from '@/services/extensionService'
 import { useLoad3dService } from '@/services/load3dService'
 import { useToastStore } from '@/stores/toastStore'
+
+async function handleModelUpload(files: FileList, node: any) {
+  if (!files?.length) return
+
+  const modelWidget = node.widgets?.find(
+    (w: any) => w.name === 'model_file'
+  ) as IStringWidget
+
+  node.properties['Texture'] = undefined
+
+  try {
+    const resourceFolder = (node.properties['Resource Folder'] as string) || ''
+
+    const subfolder = resourceFolder.trim()
+      ? `3d/${resourceFolder.trim()}`
+      : '3d'
+
+    const uploadPath = await Load3dUtils.uploadFile(files[0], subfolder)
+
+    if (!uploadPath) {
+      useToastStore().addAlert(t('toastMessages.fileUploadFailed'))
+      return
+    }
+
+    const modelUrl = api.apiURL(
+      Load3dUtils.getResourceURL(
+        ...Load3dUtils.splitFilePath(uploadPath),
+        'input'
+      )
+    )
+
+    await useLoad3dService().getLoad3d(node)?.loadModel(modelUrl)
+
+    if (uploadPath && modelWidget) {
+      if (!modelWidget.options?.values?.includes(uploadPath)) {
+        modelWidget.options?.values?.push(uploadPath)
+      }
+
+      modelWidget.value = uploadPath
+    }
+  } catch (error) {
+    console.error('Model upload failed:', error)
+    useToastStore().addAlert(t('toastMessages.fileUploadFailed'))
+  }
+}
+
+async function handleResourcesUpload(files: FileList, node: any) {
+  if (!files?.length) return
+
+  try {
+    const resourceFolder = (node.properties['Resource Folder'] as string) || ''
+
+    const subfolder = resourceFolder.trim()
+      ? `3d/${resourceFolder.trim()}`
+      : '3d'
+
+    await Load3dUtils.uploadMultipleFiles(files, subfolder)
+  } catch (error) {
+    console.error('Extra resources upload failed:', error)
+    useToastStore().addAlert(t('toastMessages.extraResourcesUploadFailed'))
+  }
+}
+
+function createFileInput(
+  accept: string,
+  multiple: boolean = false
+): HTMLInputElement {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = accept
+  input.multiple = multiple
+  input.style.display = 'none'
+  return input
+}
 
 useExtensionService().registerExtension({
   name: 'Comfy.Load3D',
@@ -110,48 +181,33 @@ useExtensionService().registerExtension({
   getCustomWidgets() {
     return {
       LOAD_3D(node) {
-        const fileInput = document.createElement('input')
-        fileInput.type = 'file'
-        fileInput.accept = '.gltf,.glb,.obj,.fbx,.stl'
-        fileInput.style.display = 'none'
+        const fileInput = createFileInput('.gltf,.glb,.obj,.fbx,.stl', false)
+
+        node.properties['Resource Folder'] = ''
 
         fileInput.onchange = async () => {
-          if (fileInput.files?.length) {
-            const modelWidget = node.widgets?.find(
-              (w) => w.name === 'model_file'
-            ) as IComboWidget & { options: { values: string[] } }
-
-            node.properties['Texture'] = undefined
-
-            const uploadPath = await Load3dUtils.uploadFile(
-              fileInput.files[0]
-            ).catch((error) => {
-              console.error('File upload failed:', error)
-              useToastStore().addAlert(t('toastMessages.fileUploadFailed'))
-            })
-
-            const modelUrl = api.apiURL(
-              Load3dUtils.getResourceURL(
-                ...Load3dUtils.splitFilePath(uploadPath),
-                'input'
-              )
-            )
-
-            await useLoad3dService().getLoad3d(node)?.loadModel(modelUrl)
-
-            if (uploadPath && modelWidget) {
-              if (!modelWidget.options?.values?.includes(uploadPath)) {
-                modelWidget.options?.values?.push(uploadPath)
-              }
-
-              modelWidget.value = uploadPath
-            }
-          }
+          await handleModelUpload(fileInput.files!, node)
         }
 
         node.addWidget('button', 'upload 3d model', 'upload3dmodel', () => {
           fileInput.click()
         })
+
+        const resourcesInput = createFileInput('*', true)
+
+        resourcesInput.onchange = async () => {
+          await handleResourcesUpload(resourcesInput.files!, node)
+          resourcesInput.value = ''
+        }
+
+        node.addWidget(
+          'button',
+          'upload extra resources',
+          'uploadExtraResources',
+          () => {
+            resourcesInput.click()
+          }
+        )
 
         node.addWidget('button', 'clear', 'clear', () => {
           useLoad3dService().getLoad3d(node)?.clearModel()
@@ -264,45 +320,33 @@ useExtensionService().registerExtension({
   getCustomWidgets() {
     return {
       LOAD_3D_ANIMATION(node) {
-        const fileInput = document.createElement('input')
-        fileInput.type = 'file'
-        fileInput.accept = '.gltf,.glb,.fbx'
-        fileInput.style.display = 'none'
+        const fileInput = createFileInput('.gltf,.glb,.fbx', false)
+
+        node.properties['Resource Folder'] = ''
+
         fileInput.onchange = async () => {
-          if (fileInput.files?.length) {
-            const modelWidget = node.widgets?.find(
-              (w) => w.name === 'model_file'
-            ) as IStringWidget
-
-            const uploadPath = await Load3dUtils.uploadFile(
-              fileInput.files[0]
-            ).catch((error) => {
-              console.error('File upload failed:', error)
-              useToastStore().addAlert(t('toastMessages.fileUploadFailed'))
-            })
-
-            const modelUrl = api.apiURL(
-              Load3dUtils.getResourceURL(
-                ...Load3dUtils.splitFilePath(uploadPath),
-                'input'
-              )
-            )
-
-            await useLoad3dService().getLoad3d(node)?.loadModel(modelUrl)
-
-            if (uploadPath && modelWidget) {
-              if (!modelWidget.options?.values?.includes(uploadPath)) {
-                modelWidget.options?.values?.push(uploadPath)
-              }
-
-              modelWidget.value = uploadPath
-            }
-          }
+          await handleModelUpload(fileInput.files!, node)
         }
 
         node.addWidget('button', 'upload 3d model', 'upload3dmodel', () => {
           fileInput.click()
         })
+
+        const resourcesInput = createFileInput('*', true)
+
+        resourcesInput.onchange = async () => {
+          await handleResourcesUpload(resourcesInput.files!, node)
+          resourcesInput.value = ''
+        }
+
+        node.addWidget(
+          'button',
+          'upload extra resources',
+          'uploadExtraResources',
+          () => {
+            resourcesInput.click()
+          }
+        )
 
         node.addWidget('button', 'clear', 'clear', () => {
           useLoad3dService().getLoad3d(node)?.clearModel()
