@@ -35,7 +35,10 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Action on link release (No modifier)',
     type: 'combo',
     options: Object.values(LinkReleaseTriggerAction),
-    defaultValue: LinkReleaseTriggerAction.CONTEXT_MENU
+    defaultValue: LinkReleaseTriggerAction.CONTEXT_MENU,
+    defaultsByInstallVersion: {
+      '1.21.3': LinkReleaseTriggerAction.SEARCH_BOX
+    }
   },
   {
     id: 'Comfy.LinkRelease.ActionShift',
@@ -746,6 +749,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: false,
     versionAdded: '1.8.7'
+  },
+  {
+    id: 'Comfy.InstalledVersion',
+    name: 'Installed version',
+    type: 'hidden',
+    defaultValue: null,
+    versionAdded: '1.22.1'
   },
   {
     id: 'LiteGraph.ContextMenu.Scaling',
