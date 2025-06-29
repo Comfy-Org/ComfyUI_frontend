@@ -250,14 +250,6 @@ app.registerExtension({
 app.registerExtension({
   name: 'Comfy.RecordAudio',
 
-  async setup() {
-    try {
-      await register(await connect())
-      console.log('WAV encoder registered successfully')
-    } catch (error) {
-      console.error('Failed to register WAV encoder:', error)
-    }
-  },
   getCustomWidgets() {
     return {
       AUDIO_RECORD(node, inputName: string) {
@@ -298,7 +290,7 @@ app.registerExtension({
 
           const body = new FormData()
           body.append('image', file)
-          body.append('subfolder', 'threed')
+          body.append('subfolder', 'audio')
           body.append('type', 'temp')
 
           const resp = await api.fetchApi('/upload/image', {
@@ -313,7 +305,7 @@ app.registerExtension({
           }
 
           const tempAudio = await resp.json()
-          return `threed/${tempAudio.name} [temp]`
+          return `audio/${tempAudio.name} [temp]`
         }
 
         let mediaRecorder: MediaRecorder | null = null
@@ -385,6 +377,24 @@ app.registerExtension({
 
         recordWidget.label = t('g.startRecording')
         return { widget: recordWidget }
+      }
+    }
+  },
+
+  async nodeCreated(node) {
+    if (node.constructor.comfyClass !== 'RecordAudio') return
+
+    try {
+      await register(await connect())
+      console.log('WAV encoder registered successfully')
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.includes('already an encoder stored')
+      ) {
+        console.log('WAV encoder already registered.')
+      } else {
+        console.error('Failed to register WAV encoder:', error)
       }
     }
   }
