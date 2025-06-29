@@ -15,14 +15,13 @@
       :first="dataTableFirst"
       :lazy="true"
       class="p-datatable-sm custom-datatable"
-      responsive-layout="scroll"
       @page="onPageChange"
     >
       <Column field="event_type" :header="$t('credits.eventType')">
         <template #body="{ data }">
           <Badge
-            :value="formatEventType(data.event_type)"
-            :severity="getEventSeverity(data.event_type)"
+            :value="customerEventService.formatEventType(data.event_type)"
+            :severity="customerEventService.getEventSeverity(data.event_type)"
           />
         </template>
       </Column>
@@ -30,21 +29,23 @@
         <template #body="{ data }">
           <div class="event-details">
             <!-- Credits Added -->
-            <template v-if="data.event_type === 'credit_added'">
+            <template v-if="data.event_type === EventType.CREDIT_ADDED">
               <div class="text-green-500 font-semibold">
                 {{ $t('credits.added') }} ${{
-                  formatAmount(data.params?.amount)
+                  customerEventService.formatAmount(data.params?.amount)
                 }}
               </div>
             </template>
 
             <!-- Account Created -->
-            <template v-else-if="data.event_type === 'account_created'">
+            <template v-else-if="data.event_type === EventType.ACCOUNT_CREATED">
               <div>{{ $t('credits.accountInitialized') }}</div>
             </template>
 
             <!-- API Usage -->
-            <template v-else-if="data.event_type === 'api_usage_completed'">
+            <template
+              v-else-if="data.event_type === EventType.API_USAGE_COMPLETED"
+            >
               <div class="flex flex-col gap-1">
                 <div class="font-semibold">
                   {{ data.params?.api_name || 'API' }}
@@ -59,16 +60,16 @@
       </Column>
       <Column field="createdAt" :header="$t('credits.time')">
         <template #body="{ data }">
-          {{ formatDate(data.createdAt) }}
+          {{ customerEventService.formatDate(data.createdAt) }}
         </template>
       </Column>
       <Column field="params" :header="$t('credits.additionalInfo')">
         <template #body="{ data }">
           <Button
-            v-if="hasAdditionalInfo(data)"
+            v-if="customerEventService.hasAdditionalInfo(data)"
             v-tooltip.top="{
               escape: false,
-              value: getTooltipContent(data),
+              value: tooltipContentMap.get(data.event_id) || '',
               pt: {
                 text: {
                   style: {
@@ -95,14 +96,17 @@ import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed, ref } from 'vue'
 
-import { useCustomerService } from '@/services/customerService'
-import type { components } from '@/types/comfyRegistryTypes'
+import {
+  AuditLog,
+  EventType,
+  useCustomerEventsService
+} from '@/services/customerEventsService'
 
-const events = ref<components['schemas']['AuditLog'][]>([])
+const events = ref<AuditLog[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
 
-const customerService = useCustomerService()
+const customerEventService = useCustomerEventsService()
 
 const pagination = ref({
   page: 1,
@@ -115,71 +119,22 @@ const dataTableFirst = computed(
   () => (pagination.value.page - 1) * pagination.value.limit
 )
 
-const formatEventType = (eventType: string) => {
-  switch (eventType) {
-    case 'credit_added':
-      return 'Credits Added'
-    case 'account_created':
-      return 'Account Created'
-    case 'api_usage_completed':
-      return 'API Usage'
-    default:
-      return eventType
-  }
-}
-
-const getEventSeverity = (eventType: string) => {
-  switch (eventType) {
-    case 'credit_added':
-      return 'success'
-    case 'account_created':
-      return 'info'
-    case 'api_usage_completed':
-      return 'warning'
-    default:
-      return 'info'
-  }
-}
-
-const formatAmount = (amountMicros?: number) => {
-  if (!amountMicros) return '0.00'
-  return (amountMicros / 100).toFixed(2)
-}
-
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
+const tooltipContentMap = computed(() => {
+  const map = new Map<string, string>()
+  events.value.forEach((event) => {
+    if (customerEventService.hasAdditionalInfo(event) && event.event_id) {
+      map.set(event.event_id, customerEventService.getTooltipContent(event))
+    }
   })
-}
-
-const hasAdditionalInfo = (event: components['schemas']['AuditLog']) => {
-  const { amount, api_name, model, ...otherParams } = event.params || {}
-  return Object.keys(otherParams).length > 0
-}
-
-const getTooltipContent = (event: components['schemas']['AuditLog']) => {
-  const { amount, api_name, model, ...otherParams } = event.params || {}
-
-  if (Object.keys(otherParams).length === 0) return ''
-
-  return Object.entries(otherParams)
-    .map(([key, value]) => {
-      const formattedKey = formatJsonKey(key)
-      const formattedValue = formatJsonValue(value)
-      return `<strong>${formattedKey}:</strong> ${formattedValue}`
-    })
-    .join('<br>')
-}
+  return map
+})
 
 const loadEvents = async () => {
   loading.value = true
   error.value = null
 
   try {
-    const response = await customerService.getMyEvents({
+    const response = await customerEventService.getMyEvents({
       page: pagination.value.page,
       limit: pagination.value.limit
     })
@@ -205,7 +160,7 @@ const loadEvents = async () => {
         pagination.value.totalPages = response.totalPages
       }
     } else {
-      error.value = customerService.error.value || 'Failed to load events'
+      error.value = customerEventService.error.value || 'Failed to load events'
     }
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Unknown error'
@@ -218,25 +173,6 @@ const loadEvents = async () => {
 const onPageChange = (event: { page: number }) => {
   pagination.value.page = event.page + 1
   void loadEvents()
-}
-
-const formatJsonKey = (key: string) => {
-  return key
-    .split('_')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ')
-}
-
-const formatJsonValue = (value: any) => {
-  if (typeof value === 'number') {
-    // Format numbers with commas and decimals if needed
-    return value.toLocaleString()
-  }
-  if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}/)) {
-    // Format dates nicely
-    return new Date(value).toLocaleString()
-  }
-  return value
 }
 
 const refresh = async () => {
