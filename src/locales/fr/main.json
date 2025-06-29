@@ -714,6 +714,7 @@
     "ComfyUI Forum": "Forum ComfyUI",
     "ComfyUI Issues": "Problèmes de ComfyUI",
     "Contact Support": "Contacter le support",
+    "Convert Selection to Subgraph": "Convertir la sélection en sous-graphe",
     "Convert selected nodes to group node": "Convertir les nœuds sélectionnés en nœud de groupe",
     "Delete Selected Items": "Supprimer les éléments sélectionnés",
     "Desktop User Guide": "Guide de l'utilisateur de bureau",
@@ -1389,6 +1390,7 @@
     "title": "Commencez avec un modèle"
   },
   "toastMessages": {
+    "cannotCreateSubgraph": "Impossible de créer le sous-graphe",
     "couldNotDetermineFileType": "Impossible de déterminer le type de fichier",
     "dropFileError": "Impossible de traiter l'élément déposé : {error}",
     "emptyCanvas": "Toile vide",
@@ -1397,6 +1399,7 @@
     "errorSaveSetting": "Erreur lors de l'enregistrement du paramètre {id}: {err}",
     "failedToAccessBillingPortal": "Échec de l'accès au portail de facturation : {error}",
     "failedToApplyTexture": "Échec de l'application de la texture",
+    "failedToConvertToSubgraph": "Échec de la conversion des éléments en sous-graphe",
     "failedToCreateCustomer": "Échec de la création du client : {error}",
     "failedToDownloadFile": "Échec du téléchargement du fichier",
     "failedToExportModel": "Échec de l'exportation du modèle en {format}",

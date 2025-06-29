@@ -714,6 +714,7 @@
     "ComfyUI Forum": "ComfyUI フォーラム",
     "ComfyUI Issues": "ComfyUIの問題",
     "Contact Support": "サポートに連絡",
+    "Convert Selection to Subgraph": "選択範囲をサブグラフに変換",
     "Convert selected nodes to group node": "選択したノードをグループノードに変換",
     "Delete Selected Items": "選択したアイテムを削除",
     "Desktop User Guide": "デスクトップユーザーガイド",
@@ -1389,6 +1390,7 @@
     "title": "テンプレートを利用して開始"
   },
   "toastMessages": {
+    "cannotCreateSubgraph": "サブグラフを作成できません",
     "couldNotDetermineFileType": "ファイルタイプを判断できませんでした",
     "dropFileError": "ドロップされたアイテムを処理できません: {error}",
     "emptyCanvas": "キャンバスが空です",
@@ -1397,6 +1399,7 @@
     "errorSaveSetting": "設定{id}の保存エラー: {err}",
     "failedToAccessBillingPortal": "請求ポータルへのアクセスに失敗しました: {error}",
     "failedToApplyTexture": "テクスチャの適用に失敗しました",
+    "failedToConvertToSubgraph": "アイテムをサブグラフに変換できませんでした",
     "failedToCreateCustomer": "顧客の作成に失敗しました: {error}",
     "failedToDownloadFile": "ファイルのダウンロードに失敗しました",
     "failedToExportModel": "{format}としてモデルのエクスポートに失敗しました",

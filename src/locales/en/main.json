@@ -839,6 +839,7 @@
     "Export": "Export",
     "Export (API)": "Export (API)",
     "Give Feedback": "Give Feedback",
+    "Convert Selection to Subgraph": "Convert Selection to Subgraph",
     "Fit Group To Contents": "Fit Group To Contents",
     "Group Selected Nodes": "Group Selected Nodes",
     "Convert selected nodes to group node": "Convert selected nodes to group node",
@@ -1324,7 +1325,9 @@
     "failedToPurchaseCredits": "Failed to purchase credits: {error}",
     "unauthorizedDomain": "Your domain {domain} is not authorized to use this service. Please contact {email} to add your domain to the whitelist.",
     "useApiKeyTip": "Tip: Can't access normal login? Use the Comfy API Key option.",
-    "nothingSelected": "Nothing selected"
+    "nothingSelected": "Nothing selected",
+    "cannotCreateSubgraph": "Cannot create subgraph",
+    "failedToConvertToSubgraph": "Failed to convert items to subgraph"
   },
   "auth": {
     "apiKey": {
