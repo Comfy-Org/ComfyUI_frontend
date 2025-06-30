@@ -1,10 +1,6 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
 import type { IStringWidget } from '@comfyorg/litegraph/dist/types/widgets'
-import {
-  MediaRecorder as ExtendableMediaRecorder,
-  register
-} from 'extendable-media-recorder'
-import { connect } from 'extendable-media-recorder-wav-encoder'
+import { MediaRecorder as ExtendableMediaRecorder } from 'extendable-media-recorder'
 
 import { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
 import { useNodeFileInput } from '@/composables/node/useNodeFileInput'
@@ -13,6 +9,7 @@ import { t } from '@/i18n'
 import type { ResultItemType } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { DOMWidget } from '@/scripts/domWidget'
+import { useAudioService } from '@/services/audioService'
 import { useToastStore } from '@/stores/toastStore'
 
 import { api } from '../../scripts/api'
@@ -261,17 +258,26 @@ app.registerExtension({
         const audioUIWidget: DOMWidget<HTMLAudioElement, string> =
           node.addDOMWidget(inputName, /* name=*/ 'audioUI', audio)
 
+        let mediaRecorder: MediaRecorder | null = null
+        let isRecording = false
+        let audioChunks: Blob[] = []
+        let currentStream: MediaStream | null = null
+        let recordWidget: any = null
+
         audioUIWidget.serializeValue = async () => {
           if (isRecording && mediaRecorder) {
+            console.log('Auto-stopping recording before serialization...')
             mediaRecorder.stop()
 
             await new Promise((resolve) => setTimeout(resolve, 500))
 
             if (isRecording) {
               console.warn('Force stopping recording...')
-              stopAllTracks()
+              useAudioService().stopAllTracks(currentStream)
               isRecording = false
-              recordWidget.label = t('g.startRecording')
+              if (recordWidget) {
+                recordWidget.label = t('g.startRecording')
+              }
             }
           }
 
@@ -283,46 +289,11 @@ app.registerExtension({
           }
 
           const blob = await fetch(audioSrc).then((r) => r.blob())
-          const name = `${Date.now()}.wav`
-          const file = new File([blob], name, {
-            type: blob.type || 'audio/wav'
-          })
 
-          const body = new FormData()
-          body.append('image', file)
-          body.append('subfolder', 'audio')
-          body.append('type', 'temp')
-
-          const resp = await api.fetchApi('/upload/image', {
-            method: 'POST',
-            body
-          })
-
-          if (resp.status !== 200) {
-            const err = `Error uploading temp file: ${resp.status} - ${resp.statusText}`
-            useToastStore().addAlert(err)
-            throw new Error(err)
-          }
-
-          const tempAudio = await resp.json()
-          return `audio/${tempAudio.name} [temp]`
+          return await useAudioService().convertBlobToFileAndSubmit(blob)
         }
 
-        let mediaRecorder: MediaRecorder | null = null
-        let isRecording = false
-        let audioChunks: Blob[] = []
-        let currentStream: MediaStream | null = null
-
-        const stopAllTracks = () => {
-          if (currentStream) {
-            currentStream.getTracks().forEach((track) => {
-              track.stop()
-            })
-            currentStream = null
-          }
-        }
-
-        const recordWidget = node.addWidget(
+        recordWidget = node.addWidget(
           'button',
           inputName,
           '',
@@ -346,7 +317,7 @@ app.registerExtension({
                 mediaRecorder.onstop = async () => {
                   const audioBlob = new Blob(audioChunks, { type: 'audio/wav' })
 
-                  stopAllTracks()
+                  useAudioService().stopAllTracks(currentStream)
 
                   audioUIWidget.element.src = URL.createObjectURL(audioBlob)
 
@@ -356,7 +327,9 @@ app.registerExtension({
 
                 mediaRecorder.onerror = (event) => {
                   console.error('MediaRecorder error:', event)
-                  stopAllTracks()
+                  useAudioService().stopAllTracks(currentStream)
+                  isRecording = false
+                  recordWidget.label = t('g.startRecording')
                 }
 
                 mediaRecorder.start()
@@ -366,7 +339,9 @@ app.registerExtension({
                 console.error('Error accessing microphone:', err)
                 useToastStore().addAlert(t('g.micPermissionDenied'))
 
-                stopAllTracks()
+                useAudioService().stopAllTracks(currentStream)
+                isRecording = false
+                recordWidget.label = t('g.startRecording')
               }
             } else if (mediaRecorder && isRecording) {
               mediaRecorder.stop()
@@ -384,18 +359,6 @@ app.registerExtension({
   async nodeCreated(node) {
     if (node.constructor.comfyClass !== 'RecordAudio') return
 
-    try {
-      await register(await connect())
-      console.log('WAV encoder registered successfully')
-    } catch (error) {
-      if (
-        error instanceof Error &&
-        error.message.includes('already an encoder stored')
-      ) {
-        console.log('WAV encoder already registered.')
-      } else {
-        console.error('Failed to register WAV encoder:', error)
-      }
-    }
+    await useAudioService().registerWavEncoder()
   }
 })
