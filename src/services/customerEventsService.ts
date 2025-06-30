@@ -200,6 +200,8 @@ export const useCustomerEventsService = () => {
     formatAmount,
     hasAdditionalInfo,
     formatDate,
+    formatJsonKey,
+    formatJsonValue,
     getTooltipContent
   }
 }
