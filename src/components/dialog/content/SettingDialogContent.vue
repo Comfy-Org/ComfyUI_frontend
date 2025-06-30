@@ -88,6 +88,7 @@ const { defaultPanel } = defineProps<{
     | 'server-config'
     | 'user'
     | 'credits'
+    | 'widget-test'
 }>()
 
 const {

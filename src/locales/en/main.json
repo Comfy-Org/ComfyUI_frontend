@@ -72,6 +72,9 @@
     "searchFailedMessage": "We couldn't find any settings matching your search. Try adjusting your search terms.",
     "noTasksFound": "No Tasks Found",
     "noTasksFoundMessage": "There are no tasks in the queue.",
+    "widgetTesting": "Widget Testing",
+    "readonlyMode": "Readonly Mode",
+    "noCallbacksTriggered": "No callbacks triggered yet...",
     "newFolder": "New Folder",
     "enableAll": "Enable All",
     "disableAll": "Disable All",
@@ -916,6 +919,7 @@
     "Light": "Light",
     "User": "User",
     "Credits": "Credits",
+    "Widget Test": "Widget Test",
     "API Nodes": "API Nodes"
   },
   "serverConfigItems": {

@@ -28,6 +28,7 @@ export function useSettingUI(
     | 'server-config'
     | 'user'
     | 'credits'
+    | 'widget-test'
 ) {
   const { t } = useI18n()
   const { isLoggedIn } = useCurrentUser()
@@ -127,6 +128,17 @@ export function useSettingUI(
     )
   }
 
+  const widgetTestPanel: SettingPanelItem = {
+    node: {
+      key: 'widget-test',
+      label: 'Widget Test',
+      children: []
+    },
+    component: defineAsyncComponent(
+      () => import('@/components/dialog/content/setting/WidgetTestPanel.vue')
+    )
+  }
+
   const panels = computed<SettingPanelItem[]>(() =>
     [
       aboutPanel,
@@ -134,6 +146,7 @@ export function useSettingUI(
       userPanel,
       keybindingPanel,
       extensionPanel,
+      widgetTestPanel,
       ...(isElectron() ? [serverConfigPanel] : [])
     ].filter((panel) => panel.component)
   )
@@ -182,6 +195,7 @@ export function useSettingUI(
       children: [
         keybindingPanel.node,
         extensionPanel.node,
+        widgetTestPanel.node,
         aboutPanel.node,
         ...(isElectron() ? [serverConfigPanel.node] : [])
       ].map(translateCategory)
