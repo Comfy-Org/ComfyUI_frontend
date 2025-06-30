@@ -112,6 +112,11 @@ const zDisplayComponentWsMessage = z.object({
   props: z.record(z.string(), z.any()).optional()
 })
 
+const zNotificationWsMessage = z.object({
+  value: z.string(),
+  id: z.string().optional()
+})
+
 const zTerminalSize = z.object({
   cols: z.number(),
   row: z.number()
@@ -153,6 +158,7 @@ export type DisplayComponentWsMessage = z.infer<
 export type NodeProgressState = z.infer<typeof zNodeProgressState>
 export type ProgressStateWsMessage = z.infer<typeof zProgressStateWsMessage>
 export type FeatureFlagsWsMessage = z.infer<typeof zFeatureFlagsWsMessage>
+export type NotificationWsMessage = z.infer<typeof zNotificationWsMessage>
 // End of ws messages
 
 const zPromptInputItem = z.object({
