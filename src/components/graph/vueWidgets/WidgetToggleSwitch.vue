@@ -3,7 +3,23 @@
     <label v-if="widget.name" class="text-sm opacity-80">{{
       widget.name
     }}</label>
-    <ToggleSwitch v-model="value" v-bind="filteredProps" :disabled="readonly" />
+    <ToggleSwitch
+      v-model="value"
+      v-bind="filteredProps"
+      :disabled="readonly"
+      :pt="{
+        slider: ({ props }) => ({
+          style: {
+            backgroundColor: props.modelValue ? '#0b8ce9' : '#0e0e12'
+          }
+        }),
+        handle: ({ props }) => ({
+          style: {
+            backgroundColor: props.modelValue ? '#ffffff' : '#5b5e7d'
+          }
+        })
+      }"
+    />
   </div>
 </template>
 
