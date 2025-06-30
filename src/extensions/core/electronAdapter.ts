@@ -286,6 +286,7 @@ import { checkMirrorReachable } from '@/utils/networkUtil'
         commandId: 'Workspace.CloseWorkflow',
         combo: {
           key: 'w',
+          code: 'KeyW',
           ctrl: true
         }
       }
