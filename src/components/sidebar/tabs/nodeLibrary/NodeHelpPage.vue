@@ -198,7 +198,9 @@ const outputList = computed(() =>
 
 .markdown-content :deep(code),
 .fallback-content code {
-  @apply text-[rgba(0,122,255,1)] bg-[rgba(96,165,250,0.2)] rounded px-1.5 py-0.5;
+  color: var(--code-text-color);
+  background-color: var(--code-bg-color);
+  @apply rounded px-1.5 py-0.5;
 }
 
 .markdown-content :deep(table),
@@ -231,7 +233,7 @@ const outputList = computed(() =>
 .markdown-content :deep(pre),
 .fallback-content pre {
   @apply rounded p-4 my-4 overflow-x-auto;
-  background-color: rgba(60, 60, 60, 0.12);
+  background-color: var(--code-block-bg-color);
 
   code {
     @apply bg-transparent p-0;
