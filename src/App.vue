@@ -15,6 +15,7 @@ import ProgressSpinner from 'primevue/progressspinner'
 import { computed, onMounted } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
+import { useConflictDetection } from '@/composables/useConflictDetection'
 import config from '@/config'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
@@ -22,6 +23,8 @@ import { electronAPI, isElectron } from './utils/envUtil'
 
 const workspaceStore = useWorkspaceStore()
 const isLoading = computed<boolean>(() => workspaceStore.spinner)
+
+const { initializeConflictDetection } = useConflictDetection()
 const handleKey = (e: KeyboardEvent) => {
   workspaceStore.shiftDown = e.shiftKey
 }
@@ -47,5 +50,7 @@ onMounted(() => {
   if (isElectron()) {
     document.addEventListener('contextmenu', showContextMenu)
   }
+
+  initializeConflictDetection()
 })
 </script>
