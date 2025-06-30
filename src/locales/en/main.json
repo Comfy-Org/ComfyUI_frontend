@@ -1439,6 +1439,7 @@
     "personalDataConsentRequired": "You must agree to the processing of your personal data."
   },
   "credits": {
+    "activity": "Activity",
     "credits": "Credits",
     "yourCreditBalance": "Your credit balance",
     "purchaseCredits": "Purchase Credits",
@@ -1455,7 +1456,14 @@
       "buyNow": "Buy now",
       "seeDetails": "See details",
       "topUp": "Top Up"
-    }
+    },
+    "eventType": "Event Type",
+    "details": "Details",
+    "time": "Time",
+    "additionalInfo": "Additional Info",
+    "model": "Model",
+    "added": "Added",
+    "accountInitialized": "Account initialized"
   },
   "userSettings": {
     "title": "User Settings",

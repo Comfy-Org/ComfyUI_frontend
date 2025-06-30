@@ -138,13 +138,21 @@
     "Unpin": "ピンを解除"
   },
   "credits": {
+    "accountInitialized": "アカウントが初期化されました",
+    "activity": "アクティビティ",
+    "added": "追加済み",
+    "additionalInfo": "追加情報",
     "apiPricing": "API料金",
     "credits": "クレジット",
+    "details": "詳細",
+    "eventType": "イベントタイプ",
     "faqs": "よくある質問",
     "invoiceHistory": "請求履歴",
     "lastUpdated": "最終更新",
     "messageSupport": "サポートにメッセージ",
+    "model": "モデル",
     "purchaseCredits": "クレジットを購入",
+    "time": "時間",
     "topUp": {
       "buyNow": "今すぐ購入",
       "insufficientMessage": "このワークフローを実行するのに十分なクレジットがありません。",
