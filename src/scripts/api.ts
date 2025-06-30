@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { debounce } from 'lodash'
 
 import type {
   DisplayComponentWsMessage,
@@ -14,6 +15,7 @@ import type {
   HistoryTaskItem,
   LogsRawResponse,
   LogsWsMessage,
+  NotificationWsMessage,
   PendingTaskItem,
   ProgressTextWsMessage,
   ProgressWsMessage,
@@ -36,6 +38,7 @@ import {
   validateComfyNodeDef
 } from '@/schemas/nodeDefSchema'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useToastStore } from '@/stores/toastStore'
 import { WorkflowTemplates } from '@/types/workflowTemplateTypes'
 
 interface QueuePromptRequestBody {
@@ -106,6 +109,7 @@ interface BackendApiCalls {
   b_preview: Blob
   progress_text: ProgressTextWsMessage
   display_component: DisplayComponentWsMessage
+  notification: NotificationWsMessage
 }
 
 /** Dictionary of all api calls */
@@ -234,6 +238,81 @@ export class ComfyApi extends EventTarget {
   socket: WebSocket | null = null
 
   reportedUnknownMessageTypes = new Set<string>()
+
+  /**
+   * Map of notification toasts by ID
+   */
+  #notificationToasts = new Map<string, any>()
+
+  /**
+   * Map of timers for auto-hiding notifications by ID
+   */
+  #notificationTimers = new Map<string, number>()
+
+  /**
+   * Handle notification messages (with optional ID for multiple parallel notifications)
+   */
+  #handleNotification(value: string, id?: string) {
+    try {
+      const toastStore = useToastStore()
+      const notificationId = id || 'default'
+
+      console.log(`Updating notification (${notificationId}):`, value)
+
+      // Get existing toast for this ID
+      const existingToast = this.#notificationToasts.get(notificationId)
+
+      if (existingToast) {
+        // Update existing toast by removing and re-adding with new content
+        console.log(`Updating existing notification toast: ${notificationId}`)
+        toastStore.remove(existingToast)
+
+        // Update the detail text
+        existingToast.detail = value
+        toastStore.add(existingToast)
+      } else {
+        // Create new persistent notification toast
+        console.log(`Creating new notification toast: ${notificationId}`)
+        const newToast = {
+          severity: 'info' as const,
+          summary: 'Notification',
+          detail: value,
+          closable: true
+          // No 'life' property means it won't auto-hide
+        }
+        this.#notificationToasts.set(notificationId, newToast)
+        toastStore.add(newToast)
+      }
+
+      // Clear existing timer for this ID and set new one
+      const existingTimer = this.#notificationTimers.get(notificationId)
+      if (existingTimer) {
+        clearTimeout(existingTimer)
+      }
+
+      const timer = window.setTimeout(() => {
+        const toast = this.#notificationToasts.get(notificationId)
+        if (toast) {
+          console.log(`Auto-hiding notification toast: ${notificationId}`)
+          toastStore.remove(toast)
+          this.#notificationToasts.delete(notificationId)
+          this.#notificationTimers.delete(notificationId)
+        }
+      }, 3000)
+
+      this.#notificationTimers.set(notificationId, timer)
+      console.log('Toast updated successfully')
+    } catch (error) {
+      console.error('Error handling notification:', error)
+    }
+  }
+
+  /**
+   * Debounced notification handler to avoid rapid toast updates
+   */
+  #debouncedNotificationHandler = debounce((value: string, id?: string) => {
+    this.#handleNotification(value, id)
+  }, 300) // 300ms debounce delay
 
   /**
    * The auth token for the comfy org account if the user is logged in.
@@ -513,6 +592,16 @@ export class ComfyApi extends EventTarget {
             case 'b_preview':
               this.dispatchCustomEvent(msg.type, msg.data)
               break
+            case 'notification':
+              // Display notification in toast with debouncing
+              console.log(
+                'Received notification message:',
+                msg.data.value,
+                msg.data.id ? `(ID: ${msg.data.id})` : ''
+              )
+              this.#debouncedNotificationHandler(msg.data.value, msg.data.id)
+              this.dispatchCustomEvent(msg.type, msg.data)
+              break
             default:
               if (this.#registered.has(msg.type)) {
                 // Fallback for custom types - calls super direct.
@@ -536,6 +625,35 @@ export class ComfyApi extends EventTarget {
    */
   init() {
     this.#createSocket()
+  }
+
+  /**
+   * Test method to simulate a notification message (for development/testing)
+   */
+  testNotification(message: string = 'Test notification message', id?: string) {
+    console.log(
+      'Testing notification with message:',
+      message,
+      id ? `(ID: ${id})` : ''
+    )
+    const mockEvent = {
+      data: JSON.stringify({
+        type: 'notification',
+        data: { value: message, id }
+      })
+    }
+
+    // Simulate the websocket message handler
+    const msg = JSON.parse(mockEvent.data)
+    if (msg.type === 'notification') {
+      console.log(
+        'Received notification message:',
+        msg.data.value,
+        msg.data.id ? `(ID: ${msg.data.id})` : ''
+      )
+      this.#debouncedNotificationHandler(msg.data.value, msg.data.id)
+      this.dispatchCustomEvent(msg.type, msg.data)
+    }
   }
 
   /**

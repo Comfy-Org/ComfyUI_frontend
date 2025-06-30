@@ -3,6 +3,7 @@ import { IWidget } from '@comfyorg/litegraph'
 import axios from 'axios'
 
 import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
 const MAX_RETRIES = 5
 const TIMEOUT = 4096
@@ -56,10 +57,21 @@ const fetchData = async (
   controller: AbortController
 ) => {
   const { route, response_key, query_params, timeout = TIMEOUT } = config
+
+  // Get auth header from Firebase
+  const authStore = useFirebaseAuthStore()
+  const authHeader = await authStore.getAuthHeader()
+
+  const headers: Record<string, string> = {}
+  if (authHeader) {
+    Object.assign(headers, authHeader)
+  }
+
   const res = await axios.get(route, {
     params: query_params,
     signal: controller.signal,
-    timeout
+    timeout,
+    headers
   })
   return response_key ? res.data[response_key] : res.data
 }
