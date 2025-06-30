@@ -138,13 +138,21 @@
     "Unpin": "Открепить"
   },
   "credits": {
+    "accountInitialized": "Аккаунт инициализирован",
+    "activity": "Активность",
+    "added": "Добавлено",
+    "additionalInfo": "Дополнительная информация",
     "apiPricing": "Цены на API",
     "credits": "Кредиты",
+    "details": "Детали",
+    "eventType": "Тип события",
     "faqs": "Часто задаваемые вопросы",
     "invoiceHistory": "История счетов",
     "lastUpdated": "Последнее обновление",
     "messageSupport": "Связаться с поддержкой",
+    "model": "Модель",
     "purchaseCredits": "Купить кредиты",
+    "time": "Время",
     "topUp": {
       "buyNow": "Купить сейчас",
       "insufficientMessage": "У вас недостаточно кредитов для запуска этого рабочего процесса.",
