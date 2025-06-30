@@ -10,7 +10,7 @@
     </div>
 
     <ScrollPanel class="h-[60vh]">
-      <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 pr-4">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 pr-4">
         <!-- Text Input Widget -->
         <div class="border rounded-lg p-4">
           <h3 class="font-semibold mb-2">Text Input (STRING)</h3>
