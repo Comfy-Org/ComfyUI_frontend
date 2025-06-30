@@ -28,7 +28,7 @@ enum ManagerRoute {
   UNINSTALL = 'manager/queue/uninstall',
   DISABLE = 'manager/queue/disable',
   FIX_NODE = 'manager/queue/fix',
-  LIST_INSTALLED = 'customnode/installed',
+  LIST_INSTALLED = 'v2/customnode/installed',
   GET_NODES = 'customnode/getmappings',
   GET_PACKS = 'customnode/getlist',
   IMPORT_FAIL_INFO = 'customnode/import_fail_info',
