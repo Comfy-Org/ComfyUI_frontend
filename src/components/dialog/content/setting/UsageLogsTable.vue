@@ -184,5 +184,3 @@ defineExpose({
   refresh
 })
 </script>
-
-<style scoped></style>
