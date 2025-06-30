@@ -68,8 +68,8 @@ describe('useConflictDetection', () => {
     vi.restoreAllMocks()
   })
 
-  describe('시스템 환경 감지', () => {
-    it('정상적으로 시스템 환경 정보를 수집해야 함', async () => {
+  describe('system environment detection', () => {
+    it('should collect system environment information successfully', async () => {
       const { detectSystemEnvironment } = useConflictDetection()
       const environment = await detectSystemEnvironment()
 
@@ -81,9 +81,9 @@ describe('useConflictDetection', () => {
       expect(environment.primary_accelerator).toBe('mps')
     })
 
-    it('API 실패시 fallback 환경 정보를 반환해야 함', async () => {
+    it('should return fallback environment information when API fails', async () => {
       // Mock API failure
-      mockApi.fetchApi.mockRejectedValue(new Error('API 실패'))
+      mockApi.fetchApi.mockRejectedValue(new Error('API failure'))
 
       const { detectSystemEnvironment } = useConflictDetection()
       const environment = await detectSystemEnvironment()
@@ -95,8 +95,8 @@ describe('useConflictDetection', () => {
     })
   })
 
-  describe('패키지 요구사항 감지', () => {
-    it('설치된 패키지들을 정상적으로 변환해야 함', async () => {
+  describe('package requirements detection', () => {
+    it('should properly convert installed packages', async () => {
       const mockInstalledPacks: InstalledPacksResponse = {
         'ComfyUI-Manager': {
           ver: 'cb0fa5829d5378e5dddb8e8515b30a3ff20e1471',
@@ -123,7 +123,7 @@ describe('useConflictDetection', () => {
       expect(result.summary.total_packages).toBe(2)
       expect(result.results).toHaveLength(2)
 
-      // 비활성화된 노드는 금지된 것으로 처리
+      // Disabled nodes should be treated as banned
       const disabledNode = result.results.find(
         (r) => r.package_id === 'ComfyUI-TestNode'
       )
@@ -137,7 +137,7 @@ describe('useConflictDetection', () => {
       )
     })
 
-    it('패키지 정보를 가져올 수 없을 때 빈 배열을 반환해야 함', async () => {
+    it('should return empty array when package information cannot be retrieved', async () => {
       mockComfyManagerService.listInstalledPacks.mockResolvedValue(null)
 
       const { performConflictDetection } = useConflictDetection()
@@ -149,8 +149,8 @@ describe('useConflictDetection', () => {
     })
   })
 
-  describe('충돌 감지 로직', () => {
-    it('호환 가능한 패키지는 충돌이 없어야 함', async () => {
+  describe('conflict detection logic', () => {
+    it('should have no conflicts for compatible packages', async () => {
       const mockInstalledPacks: InstalledPacksResponse = {
         CompatibleNode: {
           ver: '1.0.0',
@@ -173,7 +173,7 @@ describe('useConflictDetection', () => {
       expect(result.results[0].conflicts).toHaveLength(0)
     })
 
-    it('비활성화된 패키지는 금지된 패키지로 처리되어야 함', async () => {
+    it('should treat disabled packages as banned packages', async () => {
       const mockInstalledPacks: InstalledPacksResponse = {
         DisabledNode: {
           ver: '1.0.0',
@@ -199,7 +199,7 @@ describe('useConflictDetection', () => {
           expect.objectContaining({
             type: 'banned',
             severity: 'error',
-            description: expect.stringContaining('금지')
+            description: expect.stringContaining('banned')
           })
         ])
       )
@@ -207,14 +207,14 @@ describe('useConflictDetection', () => {
     })
   })
 
-  describe('Computed 속성들', () => {
-    it('hasConflicts는 충돌이 있을 때 true를 반환해야 함', async () => {
+  describe('computed properties', () => {
+    it('should return true for hasConflicts when conflicts exist', async () => {
       const mockInstalledPacks: InstalledPacksResponse = {
         ConflictedNode: {
           ver: '1.0.0',
           cnr_id: 'conflicted-node',
           aux_id: null,
-          enabled: false // 비활성화 = 충돌
+          enabled: false // disabled = conflict
         }
       }
 
@@ -224,24 +224,24 @@ describe('useConflictDetection', () => {
 
       const { hasConflicts, performConflictDetection } = useConflictDetection()
 
-      // 초기값은 false
+      // Initial value should be false
       expect(hasConflicts.value).toBe(false)
 
-      // 충돌 감지 실행
+      // Execute conflict detection
       await performConflictDetection()
       await nextTick()
 
-      // 충돌이 감지되면 true
+      // Should be true when conflicts are detected
       expect(hasConflicts.value).toBe(true)
     })
 
-    it('criticalConflicts는 심각도가 error인 충돌만 반환해야 함', async () => {
+    it('should return only error-level conflicts for criticalConflicts', async () => {
       const mockInstalledPacks: InstalledPacksResponse = {
         ErrorNode: {
           ver: '1.0.0',
           cnr_id: 'error-node',
           aux_id: null,
-          enabled: false // 이것은 error 레벨 충돌을 생성함
+          enabled: false // This creates error-level conflicts
         }
       }
 
@@ -259,7 +259,7 @@ describe('useConflictDetection', () => {
       expect(criticalConflicts.value[0].severity).toBe('error')
     })
 
-    it('bannedPackages는 금지된 패키지만 반환해야 함', async () => {
+    it('should return only banned packages for bannedPackages', async () => {
       const mockInstalledPacks: InstalledPacksResponse = {
         BannedNode: {
           ver: '1.0.0',
@@ -290,8 +290,8 @@ describe('useConflictDetection', () => {
     })
   })
 
-  describe('에러 복원력', () => {
-    it('시스템 환경 감지 실패시에도 계속 진행해야 함', async () => {
+  describe('error resilience', () => {
+    it('should continue execution even when system environment detection fails', async () => {
       mockApi.fetchApi.mockRejectedValue(new Error('Network error'))
       mockComfyManagerService.listInstalledPacks.mockResolvedValue({})
 
@@ -304,7 +304,7 @@ describe('useConflictDetection', () => {
       )
     })
 
-    it('패키지 정보 실패시에도 시스템은 계속 작동해야 함', async () => {
+    it('should continue system operation even when package information fails', async () => {
       mockComfyManagerService.listInstalledPacks.mockRejectedValue(
         new Error('Service error')
       )
@@ -316,7 +316,7 @@ describe('useConflictDetection', () => {
       expect(result.summary.total_packages).toBe(0)
     })
 
-    it('전체 시스템 실패시 에러 응답을 반환해야 함', async () => {
+    it('should return error response when entire system fails', async () => {
       mockApi.fetchApi.mockRejectedValue(new Error('Critical error'))
       mockComfyManagerService.listInstalledPacks.mockRejectedValue(
         new Error('Critical error')
@@ -325,13 +325,13 @@ describe('useConflictDetection', () => {
       const { performConflictDetection } = useConflictDetection()
       const result = await performConflictDetection()
 
-      expect(result.success).toBe(true) // 에러 복원력이 있어서 success는 여전히 true
+      expect(result.success).toBe(true) // success is still true due to error resilience
       expect(result.summary.total_packages).toBe(0)
     })
   })
 
-  describe('초기화', () => {
-    it('initializeConflictDetection은 에러 없이 실행되어야 함', async () => {
+  describe('initialization', () => {
+    it('should execute initializeConflictDetection without errors', async () => {
       mockComfyManagerService.listInstalledPacks.mockResolvedValue({})
 
       const { initializeConflictDetection } = useConflictDetection()
@@ -341,7 +341,7 @@ describe('useConflictDetection', () => {
       }).not.toThrow()
     })
 
-    it('초기 상태값들이 올바르게 설정되어야 함', () => {
+    it('should set initial state values correctly', () => {
       const {
         isDetecting,
         lastDetectionTime,
