@@ -1,9 +1,11 @@
+import type { SubgraphEventMap } from "@/infrastructure/SubgraphEventMap"
 import type { DefaultConnectionColors } from "@/interfaces"
 import type { LGraphCanvas } from "@/LGraphCanvas"
 import type { ExportedSubgraph, ExposedWidget, ISerialisedGraph, Serialisable, SerialisableGraph } from "@/types/serialisation"
 
+import { CustomEventTarget } from "@/infrastructure/CustomEventTarget"
 import { type BaseLGraph, LGraph } from "@/LGraph"
-import { createUuidv4, type LGraphNode } from "@/litegraph"
+import { createUuidv4 } from "@/litegraph"
 
 import { SubgraphInput } from "./SubgraphInput"
 import { SubgraphInputNode } from "./SubgraphInputNode"
@@ -15,6 +17,8 @@ export type GraphOrSubgraph = LGraph | Subgraph
 
 /** A subgraph definition. */
 export class Subgraph extends LGraph implements BaseLGraph, Serialisable<ExportedSubgraph> {
+  declare readonly events: CustomEventTarget<SubgraphEventMap>
+
   /** Limits the number of levels / depth that subgraphs may be nested.  Prevents uncontrolled programmatic nesting. */
   static MAX_NESTED_SUBGRAPHS = 1000
 
@@ -99,6 +103,8 @@ export class Subgraph extends LGraph implements BaseLGraph, Serialisable<Exporte
   }
 
   addInput(name: string, type: string): SubgraphInput {
+    this.events.dispatch("adding-input", { name, type })
+
     const input = new SubgraphInput({
       id: createUuidv4(),
       name,
@@ -106,18 +112,14 @@ export class Subgraph extends LGraph implements BaseLGraph, Serialisable<Exporte
     }, this.inputNode)
 
     this.inputs.push(input)
-
-    const subgraphId = this.id
-    this.#forAllNodes((node) => {
-      if (node.type === subgraphId) {
-        node.addInput(name, type)
-      }
-    })
+    this.events.dispatch("input-added", { input })
 
     return input
   }
 
   addOutput(name: string, type: string): SubgraphOutput {
+    this.events.dispatch("adding-output", { name, type })
+
     const output = new SubgraphOutput({
       id: createUuidv4(),
       name,
@@ -125,28 +127,9 @@ export class Subgraph extends LGraph implements BaseLGraph, Serialisable<Exporte
     }, this.outputNode)
 
     this.outputs.push(output)
-
-    const subgraphId = this.id
-    this.#forAllNodes((node) => {
-      if (node.type === subgraphId) {
-        node.addOutput(name, type)
-      }
-    })
+    this.events.dispatch("output-added", { output })
 
     return output
-  }
-
-  #forAllNodes(callback: (node: LGraphNode) => void): void {
-    forNodes(this.rootGraph.nodes)
-    for (const subgraph of this.rootGraph.subgraphs.values()) {
-      forNodes(subgraph.nodes)
-    }
-
-    function forNodes(nodes: LGraphNode[]) {
-      for (const node of nodes) {
-        callback(node)
-      }
-    }
   }
 
   /**
@@ -155,15 +138,13 @@ export class Subgraph extends LGraph implements BaseLGraph, Serialisable<Exporte
    * @param name The new name for the input slot.
    */
   renameInput(input: SubgraphInput, name: string): void {
-    input.label = name
     const index = this.inputs.indexOf(input)
     if (index === -1) throw new Error("Input not found")
 
-    this.#forAllNodes((node) => {
-      if (node.type === this.id) {
-        node.inputs[index].label = name
-      }
-    })
+    const oldName = input.displayName
+    this.events.dispatch("renaming-input", { input, index, oldName, newName: name })
+
+    input.label = name
   }
 
   /**
@@ -172,15 +153,13 @@ export class Subgraph extends LGraph implements BaseLGraph, Serialisable<Exporte
    * @param name The new name for the output slot.
    */
   renameOutput(output: SubgraphOutput, name: string): void {
-    output.label = name
     const index = this.outputs.indexOf(output)
     if (index === -1) throw new Error("Output not found")
 
-    this.#forAllNodes((node) => {
-      if (node.type === this.id) {
-        node.outputs[index].label = name
-      }
-    })
+    const oldName = output.displayName
+    this.events.dispatch("renaming-output", { output, index, oldName, newName: name })
+
+    output.label = name
   }
 
   /**
@@ -193,18 +172,15 @@ export class Subgraph extends LGraph implements BaseLGraph, Serialisable<Exporte
     const index = this.inputs.indexOf(input)
     if (index === -1) throw new Error("Input not found")
 
+    const mayContinue = this.events.dispatch("removing-input", { input, index })
+    if (!mayContinue) return
+
     this.inputs.splice(index, 1)
 
     const { length } = this.inputs
     for (let i = index; i < length; i++) {
       this.inputs[i].decrementSlots("inputs")
     }
-
-    this.#forAllNodes((node) => {
-      if (node.type === this.id) {
-        node.removeInput(index)
-      }
-    })
   }
 
   /**
@@ -217,18 +193,15 @@ export class Subgraph extends LGraph implements BaseLGraph, Serialisable<Exporte
     const index = this.outputs.indexOf(output)
     if (index === -1) throw new Error("Output not found")
 
+    const mayContinue = this.events.dispatch("removing-output", { output, index })
+    if (!mayContinue) return
+
     this.outputs.splice(index, 1)
 
     const { length } = this.outputs
     for (let i = index; i < length; i++) {
       this.outputs[i].decrementSlots("outputs")
     }
-
-    this.#forAllNodes((node) => {
-      if (node.type === this.id) {
-        node.removeOutput(index)
-      }
-    })
   }
 
   draw(ctx: CanvasRenderingContext2D, colorContext: DefaultConnectionColors): void {
