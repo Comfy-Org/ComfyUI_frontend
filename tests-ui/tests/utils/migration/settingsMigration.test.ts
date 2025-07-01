@@ -115,6 +115,24 @@ describe('settingsMigration', () => {
       )
     })
 
+    it('should delete targetSelector property after migration', async () => {
+      // Setup with old format
+      store.settingValues = {
+        'Comfy.Keybinding.UnsetBindings': [
+          { targetSelector: '#graph-canvas', key: 'a' }
+        ]
+      }
+
+      // Run migration
+      await SETTING_MIGRATIONS[1].migrate()
+
+      // Verify targetSelector is deleted and targetElementId is added
+      const result = store.settingValues['Comfy.Keybinding.UnsetBindings'][0]
+      expect(result).not.toHaveProperty('targetSelector')
+      expect(result).toHaveProperty('targetElementId', 'graph-canvas')
+      expect(result).toHaveProperty('key', 'a')
+    })
+
     it('should not migrate when all keybindings use new format', () => {
       // Setup with new format
       store.settingValues = {
