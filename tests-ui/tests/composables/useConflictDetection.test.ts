@@ -30,9 +30,22 @@ vi.mock('@/config', () => ({
   }
 }))
 
+// Mock import.meta.env
+Object.defineProperty(globalThis, 'import', {
+  value: {
+    meta: {
+      env: {
+        VITE_APP_VERSION: '1.23.2',
+        MODE: 'test'
+      }
+    }
+  }
+})
+
 describe('useConflictDetection with Registry Store', () => {
   const mockComfyManagerService = {
-    listInstalledPacks: vi.fn()
+    listInstalledPacks: vi.fn(),
+    getImportFailInfo: vi.fn()
   }
 
   const mockRegistryStore = {
@@ -60,7 +73,7 @@ describe('useConflictDetection with Registry Store', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
 
-    // Mock useComfyManagerService / ComfyManagerService 모킹
+    // Mock useComfyManagerService
     const { useComfyManagerService } = await import(
       '@/services/comfyManagerService'
     )
@@ -68,13 +81,13 @@ describe('useConflictDetection with Registry Store', () => {
       mockComfyManagerService as any
     )
 
-    // Mock useComfyRegistryStore / ComfyRegistryStore 모킹
+    // Mock useComfyRegistryStore
     const { useComfyRegistryStore } = await import(
       '@/stores/comfyRegistryStore'
     )
     vi.mocked(useComfyRegistryStore).mockReturnValue(mockRegistryStore as any)
 
-    // Mock useSystemStatsStore / SystemStatsStore 모킹
+    // Mock useSystemStatsStore
     const { useSystemStatsStore } = await import('@/stores/systemStatsStore')
     vi.mocked(useSystemStatsStore).mockReturnValue(mockSystemStatsStore as any)
   })
@@ -110,12 +123,13 @@ describe('useConflictDetection with Registry Store', () => {
       expect(environment.frontend_version).toBe('1.23.2')
       expect(environment.python_version).toBe('unknown')
       expect(environment.available_accelerators).toEqual(['cpu'])
+      expect(environment.primary_accelerator).toBe('cpu')
     })
   })
 
   describe('package requirements detection with Registry Store', () => {
     it('should fetch and combine local + Registry data successfully', async () => {
-      // Mock installed packages / 설치된 패키지 모킹
+      // Mock installed packages
       const mockInstalledPacks: InstalledPacksResponse = {
         'ComfyUI-Manager': {
           ver: 'cb0fa5829d5378e5dddb8e8515b30a3ff20e1471',
@@ -131,7 +145,10 @@ describe('useConflictDetection with Registry Store', () => {
         }
       }
 
-      // Mock Registry data / Registry 데이터 모킹
+      // Mock import failure info
+      const mockImportFailInfo = {}
+
+      // Mock Registry data
       const mockRegistryPacks: components['schemas']['Node'][] = [
         {
           id: 'ComfyUI-Manager',
@@ -154,8 +171,11 @@ describe('useConflictDetection with Registry Store', () => {
       mockComfyManagerService.listInstalledPacks.mockResolvedValue(
         mockInstalledPacks
       )
+      mockComfyManagerService.getImportFailInfo.mockResolvedValue(
+        mockImportFailInfo
+      )
 
-      // Mock Registry Store batch call / Registry Store 배치 호출 모킹
+      // Mock Registry Store batch call
       mockRegistryStore.getPacksByIds.call.mockResolvedValue(mockRegistryPacks)
 
       const { performConflictDetection } = useConflictDetection()
@@ -165,19 +185,19 @@ describe('useConflictDetection with Registry Store', () => {
       expect(result.summary.total_packages).toBe(2)
       expect(result.results).toHaveLength(2)
 
-      // Verify batch call was made with correct package IDs / 올바른 패키지 ID로 배치 호출이 이루어졌는지 확인
+      // Verify batch call was made with correct package IDs
       expect(mockRegistryStore.getPacksByIds.call).toHaveBeenCalledWith([
         'ComfyUI-Manager',
         'ComfyUI-TestNode'
       ])
 
-      // Check that Registry data was properly integrated / Registry 데이터가 제대로 통합되었는지 확인
+      // Check that Registry data was properly integrated
       const managerNode = result.results.find(
         (r) => r.package_id === 'ComfyUI-Manager'
       )
-      expect(managerNode?.is_compatible).toBe(true) // Should be compatible / 호환되어야 함
+      expect(managerNode?.is_compatible).toBe(true) // Should be compatible
 
-      // Disabled + banned node should have conflicts / 비활성화 + 금지된 노드는 충돌이 있어야 함
+      // Disabled + banned node should have conflicts
       const testNode = result.results.find(
         (r) => r.package_id === 'ComfyUI-TestNode'
       )
@@ -192,7 +212,7 @@ describe('useConflictDetection with Registry Store', () => {
     })
 
     it('should handle Registry Store failures gracefully', async () => {
-      // Mock installed packages / 설치된 패키지 모킹
+      // Mock installed packages
       const mockInstalledPacks: InstalledPacksResponse = {
         'Unknown-Package': {
           ver: '1.0.0',
@@ -205,8 +225,9 @@ describe('useConflictDetection with Registry Store', () => {
       mockComfyManagerService.listInstalledPacks.mockResolvedValue(
         mockInstalledPacks
       )
+      mockComfyManagerService.getImportFailInfo.mockResolvedValue({})
 
-      // Mock Registry Store returning empty array (no packages found) / Registry Store에서 빈 배열 반환 (패키지를 찾을 수 없음) 모킹
+      // Mock Registry Store returning empty array (no packages found)
       mockRegistryStore.getPacksByIds.call.mockResolvedValue([])
 
       const { performConflictDetection } = useConflictDetection()
@@ -216,7 +237,7 @@ describe('useConflictDetection with Registry Store', () => {
       expect(result.summary.total_packages).toBe(1)
       expect(result.results).toHaveLength(1)
 
-      // Should have warning about missing Registry data / Registry 데이터 누락에 대한 경고가 있어야 함
+      // Should have warning about missing Registry data
       const unknownPackage = result.results[0]
       expect(unknownPackage.conflicts).toEqual(
         expect.arrayContaining([
@@ -239,11 +260,138 @@ describe('useConflictDetection with Registry Store', () => {
       expect(result.summary.total_packages).toBe(0)
       expect(result.results).toHaveLength(0)
     })
+
+    it('should detect import failures and add import_failed conflicts', async () => {
+      // Mock installed packages
+      const mockInstalledPacks: InstalledPacksResponse = {
+        ImportFailedNode: {
+          ver: '1.0.0',
+          cnr_id: 'import-failed-node',
+          aux_id: null,
+          enabled: true
+        },
+        WorkingNode: {
+          ver: '1.0.0',
+          cnr_id: 'working-node',
+          aux_id: null,
+          enabled: true
+        }
+      }
+
+      // Mock import failure info with one failing package
+      const mockImportFailInfo = {
+        ImportFailedNode:
+          "ModuleNotFoundError: No module named 'some_dependency'"
+      }
+
+      // Mock Registry data
+      const mockRegistryPacks: components['schemas']['Node'][] = [
+        {
+          id: 'ImportFailedNode',
+          name: 'Import Failed Node',
+          supported_os: ['windows', 'linux', 'macos'],
+          supported_accelerators: ['cuda', 'mps', 'cpu'],
+          supported_comfyui_version: '>=0.3.0',
+          status: 'NodeStatusActive'
+        } as components['schemas']['Node'],
+        {
+          id: 'WorkingNode',
+          name: 'Working Node',
+          supported_os: ['windows', 'linux', 'macos'],
+          supported_accelerators: ['cuda', 'mps', 'cpu'],
+          supported_comfyui_version: '>=0.3.0',
+          status: 'NodeStatusActive'
+        } as components['schemas']['Node']
+      ]
+
+      mockComfyManagerService.listInstalledPacks.mockResolvedValue(
+        mockInstalledPacks
+      )
+      mockComfyManagerService.getImportFailInfo.mockResolvedValue(
+        mockImportFailInfo
+      )
+      mockRegistryStore.getPacksByIds.call.mockResolvedValue(mockRegistryPacks)
+
+      const { performConflictDetection } = useConflictDetection()
+      const result = await performConflictDetection()
+
+      expect(result.success).toBe(true)
+      expect(result.summary.total_packages).toBe(2)
+      expect(result.results).toHaveLength(2)
+
+      // Check that the import failed node has import_failed conflict
+      const importFailedNode = result.results.find(
+        (r) => r.package_id === 'ImportFailedNode'
+      )
+      expect(importFailedNode?.conflicts).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: 'import_failed',
+            severity: 'error',
+            description: expect.stringContaining('ModuleNotFoundError')
+          })
+        ])
+      )
+
+      // Check that the working node has no import failures
+      const workingNode = result.results.find(
+        (r) => r.package_id === 'WorkingNode'
+      )
+      expect(
+        workingNode?.conflicts.some((c) => c.type === 'import_failed')
+      ).toBe(false)
+    })
+
+    it('should handle getImportFailInfo API failures gracefully', async () => {
+      // Mock installed packages
+      const mockInstalledPacks: InstalledPacksResponse = {
+        TestNode: {
+          ver: '1.0.0',
+          cnr_id: 'test-node',
+          aux_id: null,
+          enabled: true
+        }
+      }
+
+      // Mock Registry data
+      const mockRegistryPacks: components['schemas']['Node'][] = [
+        {
+          id: 'TestNode',
+          name: 'Test Node',
+          supported_os: ['windows', 'linux', 'macos'],
+          supported_accelerators: ['cuda', 'mps', 'cpu'],
+          supported_comfyui_version: '>=0.3.0',
+          status: 'NodeStatusActive'
+        } as components['schemas']['Node']
+      ]
+
+      mockComfyManagerService.listInstalledPacks.mockResolvedValue(
+        mockInstalledPacks
+      )
+      // Mock import fail info API failure
+      mockComfyManagerService.getImportFailInfo.mockRejectedValue(
+        new Error('API failure')
+      )
+      mockRegistryStore.getPacksByIds.call.mockResolvedValue(mockRegistryPacks)
+
+      const { performConflictDetection } = useConflictDetection()
+      const result = await performConflictDetection()
+
+      expect(result.success).toBe(true)
+      expect(result.summary.total_packages).toBe(1)
+      expect(result.results).toHaveLength(1)
+
+      // Should continue without import failure info
+      const testNode = result.results[0]
+      expect(testNode.conflicts.some((c) => c.type === 'import_failed')).toBe(
+        false
+      )
+    })
   })
 
   describe('conflict detection logic with Registry Store', () => {
     it('should detect no conflicts for fully compatible packages', async () => {
-      // Mock compatible package / 호환되는 패키지 모킹
+      // Mock compatible package
       const mockInstalledPacks: InstalledPacksResponse = {
         CompatibleNode: {
           ver: '1.0.0',
@@ -257,9 +405,9 @@ describe('useConflictDetection with Registry Store', () => {
         {
           id: 'CompatibleNode',
           name: 'Compatible Node',
-          supported_os: ['windows', 'linux', 'macos'], // Includes current OS / 현재 OS 포함
-          supported_accelerators: ['mps', 'cuda', 'cpu'], // Includes current accelerator / 현재 가속기 포함
-          supported_comfyui_version: '>=0.3.0', // Compatible with 0.3.41 / 0.3.41과 호환
+          supported_os: ['windows', 'linux', 'macos'], // Includes all OS
+          supported_accelerators: ['mps', 'cuda', 'cpu'], // Includes all accelerators
+          supported_comfyui_version: '>=0.3.0', // Compatible with 0.3.41
           status: 'NodeStatusActive'
         } as components['schemas']['Node']
       ]
@@ -267,6 +415,7 @@ describe('useConflictDetection with Registry Store', () => {
       mockComfyManagerService.listInstalledPacks.mockResolvedValue(
         mockInstalledPacks
       )
+      mockComfyManagerService.getImportFailInfo.mockResolvedValue({})
       mockRegistryStore.getPacksByIds.call.mockResolvedValue(
         mockCompatibleRegistryPacks
       )
@@ -281,7 +430,7 @@ describe('useConflictDetection with Registry Store', () => {
     })
 
     it('should detect OS incompatibility conflicts', async () => {
-      // Mock OS-incompatible package / OS 비호환 패키지 모킹
+      // Mock OS-incompatible package
       const mockInstalledPacks: InstalledPacksResponse = {
         WindowsOnlyNode: {
           ver: '1.0.0',
@@ -295,7 +444,7 @@ describe('useConflictDetection with Registry Store', () => {
         {
           id: 'WindowsOnlyNode',
           name: 'Windows Only Node',
-          supported_os: ['windows'], // Only Windows, but we're on macOS / Windows만 지원하지만 현재는 macOS
+          supported_os: ['windows'], // Only Windows, but we're on macOS
           supported_accelerators: ['mps', 'cuda', 'cpu'],
           supported_comfyui_version: '>=0.3.0',
           status: 'NodeStatusActive'
@@ -305,6 +454,7 @@ describe('useConflictDetection with Registry Store', () => {
       mockComfyManagerService.listInstalledPacks.mockResolvedValue(
         mockInstalledPacks
       )
+      mockComfyManagerService.getImportFailInfo.mockResolvedValue({})
       mockRegistryStore.getPacksByIds.call.mockResolvedValue(
         mockWindowsOnlyRegistryPacks
       )
@@ -328,7 +478,7 @@ describe('useConflictDetection with Registry Store', () => {
     })
 
     it('should detect accelerator incompatibility conflicts', async () => {
-      // Mock CUDA-only package / CUDA 전용 패키지 모킹
+      // Mock CUDA-only package
       const mockInstalledPacks: InstalledPacksResponse = {
         CudaOnlyNode: {
           ver: '1.0.0',
@@ -343,7 +493,7 @@ describe('useConflictDetection with Registry Store', () => {
           id: 'CudaOnlyNode',
           name: 'CUDA Only Node',
           supported_os: ['windows', 'linux', 'macos'],
-          supported_accelerators: ['cuda'], // Only CUDA, but we have MPS / CUDA만 지원하지만 현재는 MPS
+          supported_accelerators: ['cuda'], // Only CUDA, but we have MPS
           supported_comfyui_version: '>=0.3.0',
           status: 'NodeStatusActive'
         } as components['schemas']['Node']
@@ -352,6 +502,7 @@ describe('useConflictDetection with Registry Store', () => {
       mockComfyManagerService.listInstalledPacks.mockResolvedValue(
         mockInstalledPacks
       )
+      mockComfyManagerService.getImportFailInfo.mockResolvedValue({})
       mockRegistryStore.getPacksByIds.call.mockResolvedValue(
         mockCudaOnlyRegistryPacks
       )
@@ -377,13 +528,13 @@ describe('useConflictDetection with Registry Store', () => {
     })
 
     it('should treat Registry-banned packages as conflicts', async () => {
-      // Mock Registry-banned package / Registry에서 금지된 패키지 모킹
+      // Mock Registry-banned package
       const mockInstalledPacks: InstalledPacksResponse = {
         BannedNode: {
           ver: '1.0.0',
           cnr_id: 'banned-node',
           aux_id: null,
-          enabled: true // Enabled locally but banned in Registry / 로컬에서는 활성화되었지만 Registry에서 금지
+          enabled: true // Enabled locally but banned in Registry
         }
       }
 
@@ -394,13 +545,14 @@ describe('useConflictDetection with Registry Store', () => {
           supported_os: ['windows', 'linux', 'macos'],
           supported_accelerators: ['mps', 'cuda', 'cpu'],
           supported_comfyui_version: '>=0.3.0',
-          status: 'NodeStatusBanned' // Banned in Registry / Registry에서 금지됨
+          status: 'NodeStatusBanned' // Banned in Registry
         } as components['schemas']['Node']
       ]
 
       mockComfyManagerService.listInstalledPacks.mockResolvedValue(
         mockInstalledPacks
       )
+      mockComfyManagerService.getImportFailInfo.mockResolvedValue({})
       mockRegistryStore.getPacksByIds.call.mockResolvedValue(
         mockBannedRegistryPacks
       )
@@ -427,13 +579,13 @@ describe('useConflictDetection with Registry Store', () => {
     })
 
     it('should treat locally disabled packages as banned', async () => {
-      // Mock locally disabled package / 로컬에서 비활성화된 패키지 모킹
+      // Mock locally disabled package
       const mockInstalledPacks: InstalledPacksResponse = {
         DisabledNode: {
           ver: '1.0.0',
           cnr_id: 'disabled-node',
           aux_id: null,
-          enabled: false // Disabled locally / 로컬에서 비활성화
+          enabled: false // Disabled locally
         }
       }
 
@@ -444,13 +596,14 @@ describe('useConflictDetection with Registry Store', () => {
           supported_os: ['windows', 'linux', 'macos'],
           supported_accelerators: ['mps', 'cuda', 'cpu'],
           supported_comfyui_version: '>=0.3.0',
-          status: 'NodeStatusActive' // Active in Registry but disabled locally / Registry에서는 활성이지만 로컬에서 비활성
+          status: 'NodeStatusActive' // Active in Registry but disabled locally
         } as components['schemas']['Node']
       ]
 
       mockComfyManagerService.listInstalledPacks.mockResolvedValue(
         mockInstalledPacks
       )
+      mockComfyManagerService.getImportFailInfo.mockResolvedValue({})
       mockRegistryStore.getPacksByIds.call.mockResolvedValue(
         mockActiveRegistryPacks
       )
@@ -477,7 +630,7 @@ describe('useConflictDetection with Registry Store', () => {
 
   describe('computed properties with Registry Store', () => {
     it('should return true for hasConflicts when Registry conflicts exist', async () => {
-      // Mock package with OS incompatibility / OS 비호환성이 있는 패키지 모킹
+      // Mock package with OS incompatibility
       const mockInstalledPacks: InstalledPacksResponse = {
         ConflictedNode: {
           ver: '1.0.0',
@@ -491,7 +644,7 @@ describe('useConflictDetection with Registry Store', () => {
         {
           id: 'ConflictedNode',
           name: 'Conflicted Node',
-          supported_os: ['windows'], // Only Windows, causing OS conflict / Windows만 지원하여 OS 충돌 발생
+          supported_os: ['windows'], // Only Windows, causing OS conflict
           supported_accelerators: ['mps', 'cuda', 'cpu'],
           supported_comfyui_version: '>=0.3.0',
           status: 'NodeStatusActive'
@@ -501,25 +654,26 @@ describe('useConflictDetection with Registry Store', () => {
       mockComfyManagerService.listInstalledPacks.mockResolvedValue(
         mockInstalledPacks
       )
+      mockComfyManagerService.getImportFailInfo.mockResolvedValue({})
       mockRegistryStore.getPacksByIds.call.mockResolvedValue(
         mockConflictedRegistryPacks
       )
 
       const { hasConflicts, performConflictDetection } = useConflictDetection()
 
-      // Initial value should be false / 초기값은 false여야 함
+      // Initial value should be false
       expect(hasConflicts.value).toBe(false)
 
-      // Execute conflict detection / 충돌 감지 실행
+      // Execute conflict detection
       await performConflictDetection()
       await nextTick()
 
-      // Should be true when conflicts are detected / 충돌이 감지되면 true여야 함
+      // Should be true when conflicts are detected
       expect(hasConflicts.value).toBe(true)
     })
 
     it('should return only error-level conflicts for criticalConflicts', async () => {
-      // Mock package with error-level conflict / 에러 수준 충돌이 있는 패키지 모킹
+      // Mock package with error-level conflict
       const mockInstalledPacks: InstalledPacksResponse = {
         ErrorNode: {
           ver: '1.0.0',
@@ -533,8 +687,8 @@ describe('useConflictDetection with Registry Store', () => {
         {
           id: 'ErrorNode',
           name: 'Error Node',
-          supported_os: ['windows'], // OS conflict = error / OS 충돌 = 에러
-          supported_accelerators: ['cuda'], // Accelerator conflict = error / 가속기 충돌 = 에러
+          supported_os: ['windows'], // OS conflict = error
+          supported_accelerators: ['cuda'], // Accelerator conflict = error
           supported_comfyui_version: '>=0.3.0',
           status: 'NodeStatusActive'
         } as components['schemas']['Node']
@@ -543,6 +697,7 @@ describe('useConflictDetection with Registry Store', () => {
       mockComfyManagerService.listInstalledPacks.mockResolvedValue(
         mockInstalledPacks
       )
+      mockComfyManagerService.getImportFailInfo.mockResolvedValue({})
       mockRegistryStore.getPacksByIds.call.mockResolvedValue(
         mockErrorRegistryPacks
       )
@@ -562,13 +717,13 @@ describe('useConflictDetection with Registry Store', () => {
     })
 
     it('should return only banned packages for bannedPackages', async () => {
-      // Mock one banned and one normal package / 금지된 패키지 하나와 일반 패키지 하나 모킹
+      // Mock one banned and one normal package
       const mockInstalledPacks: InstalledPacksResponse = {
         BannedNode: {
           ver: '1.0.0',
           cnr_id: 'banned-node',
           aux_id: null,
-          enabled: false // Disabled locally = banned / 로컬에서 비활성화 = 금지
+          enabled: false // Disabled locally = banned
         },
         NormalNode: {
           ver: '1.0.0',
@@ -600,6 +755,7 @@ describe('useConflictDetection with Registry Store', () => {
       mockComfyManagerService.listInstalledPacks.mockResolvedValue(
         mockInstalledPacks
       )
+      mockComfyManagerService.getImportFailInfo.mockResolvedValue({})
       mockRegistryStore.getPacksByIds.call.mockResolvedValue(mockRegistryPacks)
 
       const { bannedPackages, performConflictDetection } =
@@ -615,12 +771,13 @@ describe('useConflictDetection with Registry Store', () => {
 
   describe('error resilience with Registry Store', () => {
     it('should continue execution even when system environment detection fails', async () => {
-      // Mock system stats store failure / 시스템 통계 스토어 실패 모킹
+      // Mock system stats store failure
       mockSystemStatsStore.fetchSystemStats.mockRejectedValue(
         new Error('Store error')
       )
       mockSystemStatsStore.systemStats = null
       mockComfyManagerService.listInstalledPacks.mockResolvedValue({})
+      mockComfyManagerService.getImportFailInfo.mockResolvedValue({})
       mockRegistryStore.getPacksByIds.call.mockResolvedValue([])
 
       const { performConflictDetection } = useConflictDetection()
@@ -633,7 +790,7 @@ describe('useConflictDetection with Registry Store', () => {
     })
 
     it('should continue system operation even when local package information fails', async () => {
-      // Mock local package service failure / 로컬 패키지 서비스 실패 모킹
+      // Mock local package service failure
       mockComfyManagerService.listInstalledPacks.mockRejectedValue(
         new Error('Service error')
       )
@@ -646,7 +803,7 @@ describe('useConflictDetection with Registry Store', () => {
     })
 
     it('should handle Registry Store partial data gracefully', async () => {
-      // Mock successful local data but partial Registry data / 로컬 데이터는 성공하지만 부분적인 Registry 데이터 모킹
+      // Mock successful local data but partial Registry data
       const mockInstalledPacks: InstalledPacksResponse = {
         'Package-A': { ver: '1.0.0', cnr_id: 'a', aux_id: null, enabled: true },
         'Package-B': { ver: '2.0.0', cnr_id: 'b', aux_id: null, enabled: true }
@@ -655,8 +812,9 @@ describe('useConflictDetection with Registry Store', () => {
       mockComfyManagerService.listInstalledPacks.mockResolvedValue(
         mockInstalledPacks
       )
+      mockComfyManagerService.getImportFailInfo.mockResolvedValue({})
 
-      // Only first package found in Registry / Registry에서 첫 번째 패키지만 찾음
+      // Only first package found in Registry
       const mockPartialRegistryPacks: components['schemas']['Node'][] = [
         {
           id: 'Package-A',
@@ -678,11 +836,11 @@ describe('useConflictDetection with Registry Store', () => {
       expect(result.success).toBe(true)
       expect(result.summary.total_packages).toBe(2)
 
-      // Package A should have Registry data / Package A는 Registry 데이터가 있어야 함
+      // Package A should have Registry data
       const packageA = result.results.find((r) => r.package_id === 'Package-A')
-      expect(packageA?.conflicts).toHaveLength(0) // No conflicts / 충돌 없음
+      expect(packageA?.conflicts).toHaveLength(0) // No conflicts
 
-      // Package B should have warning about missing Registry data / Package B는 Registry 데이터 누락 경고가 있어야 함
+      // Package B should have warning about missing Registry data
       const packageB = result.results.find((r) => r.package_id === 'Package-B')
       expect(packageB?.conflicts).toEqual(
         expect.arrayContaining([
@@ -696,12 +854,15 @@ describe('useConflictDetection with Registry Store', () => {
     })
 
     it('should handle complete system failure gracefully', async () => {
-      // Mock all stores/services failing / 모든 스토어/서비스 실패 모킹
+      // Mock all stores/services failing
       mockSystemStatsStore.fetchSystemStats.mockRejectedValue(
         new Error('Critical error')
       )
       mockSystemStatsStore.systemStats = null
       mockComfyManagerService.listInstalledPacks.mockRejectedValue(
+        new Error('Critical error')
+      )
+      mockComfyManagerService.getImportFailInfo.mockRejectedValue(
         new Error('Critical error')
       )
       mockRegistryStore.getPacksByIds.call.mockRejectedValue(
@@ -711,7 +872,7 @@ describe('useConflictDetection with Registry Store', () => {
       const { performConflictDetection } = useConflictDetection()
       const result = await performConflictDetection()
 
-      expect(result.success).toBe(true) // Error resilience maintains success / 에러 복원력으로 성공 유지
+      expect(result.success).toBe(true) // Error resilience maintains success
       expect(result.summary.total_packages).toBe(0)
     })
   })
@@ -719,6 +880,7 @@ describe('useConflictDetection with Registry Store', () => {
   describe('initialization', () => {
     it('should execute initializeConflictDetection without errors', async () => {
       mockComfyManagerService.listInstalledPacks.mockResolvedValue({})
+      mockComfyManagerService.getImportFailInfo.mockResolvedValue({})
 
       const { initializeConflictDetection } = useConflictDetection()
 

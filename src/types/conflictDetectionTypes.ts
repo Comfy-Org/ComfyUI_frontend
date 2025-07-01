@@ -15,6 +15,7 @@ export type ConflictType =
   | 'accelerator' // GPU/accelerator incompatibility
   | 'banned' // Banned package
   | 'security_pending' // Security verification pending
+  | 'import_failed' // Python import failed
 
 /**
  * Security scan status for packages
@@ -55,50 +56,54 @@ export interface VersionRequirement {
  * Registry API에서 가져온 노드 팩 요구사항 정보
  */
 export interface NodePackRequirements {
-  // Package basic information / 패키지 기본 정보
-  /** @description Unique package identifier / 고유 패키지 식별자 */
+  // Package basic information
+  /** @description Unique package identifier */
   package_id: string
-  /** @description Human-readable package name / 사람이 읽을 수 있는 패키지 이름 */
+  /** @description Human-readable package name */
   package_name: string
-  /** @description Currently installed version / 현재 설치된 버전 */
+  /** @description Currently installed version */
   installed_version: string
-  /** @description Whether the package is enabled locally / 로컬에서 패키지가 활성화되어 있는지 */
+  /** @description Whether the package is enabled locally */
   is_enabled: boolean
+  /** @description Whether the package failed to import in Python */
+  import_failed?: boolean
+  /** @description Import failure reason if available */
+  import_failure_reason?: string
 
-  // Registry compatibility data / Registry 호환성 데이터
-  /** @description Supported ComfyUI version from Registry / Registry에서 가져온 지원 ComfyUI 버전 */
+  // Registry compatibility data
+  /** @description Supported ComfyUI version from Registry */
   supported_comfyui_version?: string
-  /** @description Supported frontend version from Registry / Registry에서 가져온 지원 프론트엔드 버전 */
+  /** @description Supported frontend version from Registry */
   supported_comfyui_frontend_version?: string
-  /** @description List of supported operating systems from Registry / Registry에서 가져온 지원 OS 목록 */
+  /** @description List of supported operating systems from Registry */
   supported_os?: SupportedOS[]
-  /** @description List of supported accelerators from Registry / Registry에서 가져온 지원 가속기 목록 */
+  /** @description List of supported accelerators from Registry */
   supported_accelerators?: SupportedAccelerator[]
-  /** @description Package dependencies from Registry / Registry에서 가져온 패키지 의존성 */
+  /** @description Package dependencies from Registry */
   dependencies?: string[]
 
-  // Status information / 상태 정보
-  /** @description Node status from Registry (Active/Banned/Deleted) / Registry의 노드 상태 */
+  // Status information
+  /** @description Node status from Registry (Active/Banned/Deleted) */
   registry_status?:
     | 'NodeStatusActive'
     | 'NodeStatusBanned'
     | 'NodeStatusDeleted'
-  /** @description Node version status from Registry / Registry의 노드 버전 상태 */
+  /** @description Node version status from Registry */
   version_status?:
     | 'NodeVersionStatusActive'
     | 'NodeVersionStatusBanned'
     | 'NodeVersionStatusDeleted'
     | 'NodeVersionStatusPending'
     | 'NodeVersionStatusFlagged'
-  /** @description Whether package is banned (derived from status) / 패키지 금지 여부 (상태에서 파생) */
+  /** @description Whether package is banned (derived from status) */
   is_banned: boolean
-  /** @description Reason for ban if applicable / 금지 이유 (해당하는 경우) */
+  /** @description Reason for ban if applicable */
   ban_reason?: string
 
-  // Metadata / 메타데이터
-  /** @description Registry data fetch timestamp / Registry 데이터 가져온 시각 */
+  // Metadata
+  /** @description Registry data fetch timestamp */
   registry_fetch_time: string
-  /** @description Whether Registry data was successfully fetched / Registry 데이터 성공적으로 가져왔는지 */
+  /** @description Whether Registry data was successfully fetched */
   has_registry_data: boolean
 }
 

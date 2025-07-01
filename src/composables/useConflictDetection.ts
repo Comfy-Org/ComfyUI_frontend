@@ -4,7 +4,6 @@ import config from '@/config'
 import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import type { InstalledPacksResponse } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
 import type {
   ConflictDetail,
@@ -172,16 +171,38 @@ export function useConflictDetection() {
         '[ConflictDetection] Fetching package requirements from Registry Store...'
       )
 
-      // Step 1: Get locally installed packages
+      // Step 1: Get locally installed packages and import failures
       const comfyManagerService = useComfyManagerService()
-      const installedNodes: InstalledPacksResponse | null =
-        await comfyManagerService.listInstalledPacks()
+      const [installedNodesResult, importFailInfoResult] =
+        await Promise.allSettled([
+          comfyManagerService.listInstalledPacks(),
+          comfyManagerService.getImportFailInfo()
+        ])
 
-      if (!installedNodes) {
+      // Handle installed packages result
+      if (
+        installedNodesResult.status === 'rejected' ||
+        !installedNodesResult.value
+      ) {
         console.warn(
           '[ConflictDetection] Unable to fetch installed package information'
         )
         return []
+      }
+
+      const installedNodes = installedNodesResult.value
+
+      // Handle import fail info result (optional, don't fail if unavailable)
+      const importFailInfo =
+        importFailInfoResult.status === 'fulfilled'
+          ? importFailInfoResult.value
+          : null
+
+      if (importFailInfoResult.status === 'rejected') {
+        console.warn(
+          '[ConflictDetection] Failed to fetch import failure info (continuing without it):',
+          importFailInfoResult.reason
+        )
       }
 
       const packageIds = Object.keys(installedNodes)
@@ -215,6 +236,12 @@ export function useConflictDetection() {
       for (const [packageName, nodeInfo] of Object.entries(installedNodes)) {
         const registryData = registryMap.get(packageName)
 
+        // Check if this package has import failures
+        const hasImportFailure = checkPackageImportFailure(
+          packageName,
+          importFailInfo
+        )
+
         if (registryData) {
           console.log(
             `[ConflictDetection] Processing ${packageName} with Registry data`
@@ -227,6 +254,8 @@ export function useConflictDetection() {
             package_name: registryData.name || packageName,
             installed_version: nodeInfo.ver || 'unknown',
             is_enabled: nodeInfo.enabled,
+            import_failed: hasImportFailure.failed,
+            import_failure_reason: hasImportFailure.reason,
 
             // Registry compatibility data
             supported_comfyui_version: registryData.supported_comfyui_version,
@@ -273,6 +302,8 @@ export function useConflictDetection() {
             package_name: packageName,
             installed_version: nodeInfo.ver || 'unknown',
             is_enabled: nodeInfo.enabled,
+            import_failed: hasImportFailure.failed,
+            import_failure_reason: hasImportFailure.reason,
             is_banned: !nodeInfo.enabled,
             ban_reason: !nodeInfo.enabled
               ? 'Package is disabled locally'
@@ -362,7 +393,24 @@ export function useConflictDetection() {
       })
     }
 
-    // 6. Registry data availability check
+    // 6. Import failure check
+    if (packageReq.import_failed) {
+      conflicts.push({
+        type: 'import_failed',
+        severity: 'error',
+        description: `Package failed to import: ${packageReq.import_failure_reason || 'Unknown Python error'}`,
+        current_value: 'import_failed',
+        required_value: 'import_successful',
+        resolution_steps: [
+          'Check Python dependencies',
+          'Verify package installation',
+          'Check ComfyUI logs for detailed error information',
+          'Consider reinstalling the package'
+        ]
+      })
+    }
+
+    // 7. Registry data availability check
     if (!packageReq.has_registry_data) {
       conflicts.push({
         type: 'security_pending',
@@ -579,6 +627,35 @@ function detectOS(platform: string): any {
   if (p.includes('mac')) return 'macos'
   if (p.includes('linux')) return 'linux'
   return 'any'
+}
+
+/**
+ * Checks if a package has Python import failures.
+ * @param packageName Package name to check
+ * @param importFailInfo Import failure information from ComfyManager API
+ * @returns Object with failure status and reason
+ */
+function checkPackageImportFailure(
+  packageName: string,
+  importFailInfo: any
+): { failed: boolean; reason?: string } {
+  if (!importFailInfo || typeof importFailInfo !== 'object') {
+    return { failed: false }
+  }
+
+  // Check if the package is in the import failure list
+  if (importFailInfo[packageName]) {
+    const failureReason = importFailInfo[packageName]
+    return {
+      failed: true,
+      reason:
+        typeof failureReason === 'string'
+          ? failureReason
+          : 'Python import error'
+    }
+  }
+
+  return { failed: false }
 }
 
 /**
@@ -829,7 +906,8 @@ function generateSummary(
     os: 0,
     accelerator: 0,
     banned: 0,
-    security_pending: 0
+    security_pending: 0,
+    import_failed: 0
   }
 
   let bannedCount = 0
@@ -873,7 +951,8 @@ function getEmptySummary(): ConflictDetectionSummary {
       os: 0,
       accelerator: 0,
       banned: 0,
-      security_pending: 0
+      security_pending: 0,
+      import_failed: 0
     },
     last_check_timestamp: new Date().toISOString(),
     check_duration_ms: 0
