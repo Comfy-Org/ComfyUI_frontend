@@ -1,9 +1,11 @@
-import { computed, readonly, ref } from 'vue'
+import { computed, getCurrentInstance, onUnmounted, readonly, ref } from 'vue'
 
 import config from '@/config'
-import { api } from '@/scripts/api'
 import { useComfyManagerService } from '@/services/comfyManagerService'
+import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { InstalledPacksResponse } from '@/types/comfyManagerTypes'
+import type { components } from '@/types/comfyRegistryTypes'
 import type {
   ConflictDetail,
   ConflictDetectionResponse,
@@ -11,8 +13,7 @@ import type {
   ConflictDetectionSummary,
   ConflictType,
   NodePackRequirements,
-  SystemEnvironment,
-  VersionRequirement
+  SystemEnvironment
 } from '@/types/conflictDetectionTypes'
 
 /**
@@ -31,6 +32,9 @@ export function useConflictDetection() {
   // Conflict detection results
   const detectionResults = ref<ConflictDetectionResult[]>([])
   const detectionSummary = ref<ConflictDetectionSummary | null>(null)
+
+  // Registry API request cancellation
+  const abortController = ref<AbortController | null>(null)
 
   // Computed properties
   const hasConflicts = computed(() =>
@@ -76,31 +80,31 @@ export function useConflictDetection() {
         node_env: import.meta.env.MODE as 'development' | 'production'
       }
 
-      // Fetch version information from backend (with error resilience)
-      const [comfyuiVersion, frontendVersion, pythonVersion] =
-        await Promise.allSettled([
-          fetchComfyUIVersion(),
-          fetchFrontendVersion(),
-          fetchPythonVersion()
-        ])
+      // Get system stats from store (with error resilience)
+      const systemStatsStore = useSystemStatsStore()
+      await systemStatsStore.fetchSystemStats()
 
-      // Detect GPU/accelerator information
-      const acceleratorInfo = await detectAccelerators()
+      // Fetch version information from backend (with error resilience)
+      const [frontendVersion] = await Promise.allSettled([
+        fetchFrontendVersion()
+      ])
+
+      // Extract system information from store or use fallback
+      const systemStats = systemStatsStore.systemStats
+      const comfyuiVersion = systemStats?.system?.comfyui_version || 'unknown'
+      const pythonVersion = systemStats?.system?.python_version || 'unknown'
+
+      // Detect GPU/accelerator information from system stats
+      const acceleratorInfo = extractAcceleratorInfo(systemStats)
 
       const environment: SystemEnvironment = {
         // Version information (use 'unknown' on failure)
-        comfyui_version:
-          comfyuiVersion.status === 'fulfilled'
-            ? comfyuiVersion.value
-            : 'unknown',
+        comfyui_version: comfyuiVersion,
         frontend_version:
           frontendVersion.status === 'fulfilled'
             ? frontendVersion.value
             : 'unknown',
-        python_version:
-          pythonVersion.status === 'fulfilled'
-            ? pythonVersion.value
-            : 'unknown',
+        python_version: pythonVersion,
 
         // Platform information
         os: detectOS(browserInfo.platform_details),
@@ -149,31 +153,26 @@ export function useConflictDetection() {
   }
 
   /**
-   * Fetches requirement information for installed packages.
+   * Fetches requirement information for installed packages using Registry Store.
    *
-   * NOTE: This is a temporary implementation using existing APIs as fallback.
-   * The ideal solution would be a dedicated `/api/customnode/requirements` endpoint
-   * that provides actual compatibility metadata (min versions, supported OS/GPU, etc.)
-   * from package manifests like pyproject.toml or package.json.
+   * This function combines local installation data with Registry API compatibility metadata
+   * using the established store layer pattern with caching and batch requests.
    *
-   * Current implementation limitations:
-   * - Uses basic assumptions (all packages support 'any' OS/accelerator)
-   * - Treats disabled nodes as banned packages
-   * - Security status is always 'unknown'
-   * - No real version requirement checking
-   *
-   * When the proper API becomes available, this function should be updated to:
-   * 1. Call the new endpoint instead of generating mock data
-   * 2. Use real compatibility requirements from package metadata
-   * 3. Provide accurate security scan results
+   * Process
+   * 1. Get locally installed packages
+   * 2. Batch fetch Registry data using store layer
+   * 3. Combine local + Registry data
+   * 4. Extract compatibility requirements
    *
    * @returns Promise that resolves to array of node pack requirements
    */
   async function fetchPackageRequirements(): Promise<NodePackRequirements[]> {
     try {
-      console.log('[ConflictDetection] Fetching package requirements...')
+      console.log(
+        '[ConflictDetection] Fetching package requirements from Registry Store...'
+      )
 
-      // Get installed package list using ComfyManagerService
+      // Step 1: Get locally installed packages
       const comfyManagerService = useComfyManagerService()
       const installedNodes: InstalledPacksResponse | null =
         await comfyManagerService.listInstalledPacks()
@@ -185,35 +184,110 @@ export function useConflictDetection() {
         return []
       }
 
+      const packageIds = Object.keys(installedNodes)
+      console.log('[ConflictDetection] Found installed packages:', packageIds)
+
+      // Step 2: Get Registry store with caching support
+      const registryStore = useComfyRegistryStore()
+
+      // Step 3: Setup abort controller for request cancellation
+      abortController.value = new AbortController()
+
+      // Step 4: Batch fetch Registry data for better performance
       console.log(
-        '[ConflictDetection] Original installed custom nodes data:',
-        installedNodes
+        '[ConflictDetection] Batch fetching Registry data for packages...'
       )
 
-      // Convert API response object to array
-      const nodeEntries = Object.entries(installedNodes)
+      const registryPacks: components['schemas']['Node'][] =
+        await registryStore.getPacksByIds.call(packageIds)
+
+      // Step 5: Create a map for quick lookup
+      const registryMap = new Map<string, components['schemas']['Node']>()
+      registryPacks.forEach((pack) => {
+        if (pack?.id) {
+          registryMap.set(pack.id, pack)
+        }
+      })
+
+      // Step 6: Combine local installation data with Registry data
+      const requirements: NodePackRequirements[] = []
+
+      for (const [packageName, nodeInfo] of Object.entries(installedNodes)) {
+        const registryData = registryMap.get(packageName)
+
+        if (registryData) {
+          console.log(
+            `[ConflictDetection] Processing ${packageName} with Registry data`
+          )
+
+          // Combine local installation data with Registry data
+          const requirement: NodePackRequirements = {
+            // Basic package info
+            package_id: packageName,
+            package_name: registryData.name || packageName,
+            installed_version: nodeInfo.ver || 'unknown',
+            is_enabled: nodeInfo.enabled,
+
+            // Registry compatibility data
+            supported_comfyui_version: registryData.supported_comfyui_version,
+            supported_comfyui_frontend_version:
+              registryData.supported_comfyui_frontend_version,
+            supported_os: registryData.supported_os as any[],
+            supported_accelerators:
+              registryData.supported_accelerators as any[],
+            dependencies: [], // Note: Registry Node doesn't have dependencies, only NodeVersion does
+
+            // Status information
+            registry_status: registryData.status,
+            version_status: undefined, // We'd need to fetch specific version data for this
+            is_banned:
+              registryData.status === 'NodeStatusBanned' || !nodeInfo.enabled,
+            ban_reason:
+              registryData.status === 'NodeStatusBanned'
+                ? 'Package is banned in Registry'
+                : !nodeInfo.enabled
+                  ? 'Package is disabled locally'
+                  : undefined,
+
+            // Metadata
+            registry_fetch_time: new Date().toISOString(),
+            has_registry_data: true
+          }
+
+          requirements.push(requirement)
+
+          console.log(`[ConflictDetection] Processed ${packageName}:`, {
+            hasRegistryData: true,
+            supportedOS: requirement.supported_os,
+            supportedAccelerators: requirement.supported_accelerators,
+            isBanned: requirement.is_banned
+          })
+        } else {
+          console.warn(
+            `[ConflictDetection] No Registry data found for ${packageName}, using fallback`
+          )
+
+          // Create fallback requirement without Registry data
+          const fallbackRequirement: NodePackRequirements = {
+            package_id: packageName,
+            package_name: packageName,
+            installed_version: nodeInfo.ver || 'unknown',
+            is_enabled: nodeInfo.enabled,
+            is_banned: !nodeInfo.enabled,
+            ban_reason: !nodeInfo.enabled
+              ? 'Package is disabled locally'
+              : undefined,
+            registry_fetch_time: new Date().toISOString(),
+            has_registry_data: false
+          }
+
+          requirements.push(fallbackRequirement)
+        }
+      }
+
       console.log(
-        `[ConflictDetection] Retrieved ${nodeEntries.length} installed custom nodes`
+        `[ConflictDetection] Successfully processed ${requirements.length} packages`
       )
-
-      // TEMPORARY: Generate basic requirements based on installed node information
-      // This should be replaced with actual API call when `/api/customnode/requirements` is available
-      const requirements: NodePackRequirements[] = nodeEntries.map(
-        ([packageName, nodeInfo]) => ({
-          package_id: packageName,
-          package_name: packageName,
-          version: nodeInfo.ver || 'unknown',
-          supported_os: ['any'], // TODO: Get from package metadata
-          supported_accelerators: ['any'], // TODO: Get from package metadata
-          is_banned: !nodeInfo.enabled, // ASSUMPTION: disabled = banned
-          ban_reason: !nodeInfo.enabled ? 'Node is disabled' : undefined,
-          security_scan_status: 'unknown' as const, // TODO: Get from security API
-          last_updated: new Date().toISOString(),
-          created_at: new Date().toISOString()
-        })
-      )
-
-      console.log('[ConflictDetection] Generated requirements:', requirements)
 
       return requirements
     } catch (error) {
@@ -221,14 +295,14 @@ export function useConflictDetection() {
         '[ConflictDetection] Failed to fetch package requirements:',
         error
       )
-      // Return empty array if API is unavailable or fails
       return []
     }
   }
 
   /**
-   * Detects conflicts for an individual package.
-   * @param packageReq Package requirements to check
+   * Detects conflicts for an individual package using Registry API data.
+   *
+   * @param packageReq Package requirements from Registry
    * @param sysEnv Current system environment
    * @returns Conflict detection result for the package
    */
@@ -239,47 +313,44 @@ export function useConflictDetection() {
     const conflicts: ConflictDetail[] = []
 
     // 1. ComfyUI version conflict check
-    if (packageReq.comfyui_version_requirement) {
-      const versionConflict = checkVersionConflict(
+    if (packageReq.supported_comfyui_version && packageReq.has_registry_data) {
+      const versionConflict = checkVersionStringConflict(
         'comfyui_version',
         sysEnv.comfyui_version,
-        packageReq.comfyui_version_requirement
+        packageReq.supported_comfyui_version
       )
       if (versionConflict) conflicts.push(versionConflict)
     }
 
     // 2. Frontend version conflict check
-    if (packageReq.frontend_version_requirement) {
-      const versionConflict = checkVersionConflict(
+    if (
+      packageReq.supported_comfyui_frontend_version &&
+      packageReq.has_registry_data
+    ) {
+      const versionConflict = checkVersionStringConflict(
         'frontend_version',
         sysEnv.frontend_version,
-        packageReq.frontend_version_requirement
+        packageReq.supported_comfyui_frontend_version
       )
       if (versionConflict) conflicts.push(versionConflict)
     }
 
-    // 3. Python version conflict check
-    if (packageReq.python_version_requirement) {
-      const versionConflict = checkVersionConflict(
-        'python_version',
-        sysEnv.python_version,
-        packageReq.python_version_requirement
-      )
-      if (versionConflict) conflicts.push(versionConflict)
+    // 3. OS compatibility check
+    if (packageReq.supported_os && packageReq.has_registry_data) {
+      const osConflict = checkOSConflict(packageReq.supported_os, sysEnv.os)
+      if (osConflict) conflicts.push(osConflict)
     }
 
-    // 4. OS compatibility check
-    const osConflict = checkOSConflict(packageReq.supported_os, sysEnv.os)
-    if (osConflict) conflicts.push(osConflict)
+    // 4. Accelerator compatibility check
+    if (packageReq.supported_accelerators && packageReq.has_registry_data) {
+      const acceleratorConflict = checkAcceleratorConflict(
+        packageReq.supported_accelerators,
+        sysEnv.available_accelerators
+      )
+      if (acceleratorConflict) conflicts.push(acceleratorConflict)
+    }
 
-    // 5. Accelerator compatibility check
-    const acceleratorConflict = checkAcceleratorConflict(
-      packageReq.supported_accelerators,
-      sysEnv.available_accelerators
-    )
-    if (acceleratorConflict) conflicts.push(acceleratorConflict)
-
-    // 6. Banned package check
+    // 5. Banned package check
     if (packageReq.is_banned) {
       conflicts.push({
         type: 'banned',
@@ -291,29 +362,19 @@ export function useConflictDetection() {
       })
     }
 
-    // 7. Security verification status check
-    if (packageReq.security_scan_status === 'pending') {
+    // 6. Registry data availability check
+    if (!packageReq.has_registry_data) {
       conflicts.push({
         type: 'security_pending',
         severity: 'warning',
-        description: 'Security verification not completed',
-        current_value: 'pending',
-        required_value: 'passed',
+        description:
+          'Registry data not available - compatibility cannot be verified',
+        current_value: 'no_registry_data',
+        required_value: 'registry_data_available',
         resolution_steps: [
-          'Wait for security verification completion',
-          'Use trusted packages'
-        ]
-      })
-    } else if (packageReq.security_scan_status === 'failed') {
-      conflicts.push({
-        type: 'security_pending',
-        severity: 'error',
-        description: `Security verification failed: ${packageReq.security_scan_details || ''}`,
-        current_value: 'failed',
-        required_value: 'passed',
-        resolution_steps: [
-          'Remove package',
-          'Wait for security issue resolution'
+          'Check if package exists in Registry',
+          'Verify package name is correct',
+          'Try again later if Registry is temporarily unavailable'
         ]
       })
     }
@@ -436,6 +497,23 @@ export function useConflictDetection() {
     }, 100) // Execute after 100ms to allow other components to initialize first
   }
 
+  // Cleanup function for request cancellation
+  function cancelRequests(): void {
+    if (abortController.value) {
+      abortController.value.abort()
+      abortController.value = null
+    }
+  }
+
+  // Auto-cleanup on component unmount
+  // Only register lifecycle hooks if we're in a Vue component context
+  const instance = getCurrentInstance()
+  if (instance) {
+    onUnmounted(() => {
+      cancelRequests()
+    })
+  }
+
   // Helper functions (implementations at the bottom of the file)
 
   return {
@@ -457,26 +535,12 @@ export function useConflictDetection() {
     // Methods
     performConflictDetection,
     detectSystemEnvironment,
-    initializeConflictDetection
+    initializeConflictDetection,
+    cancelRequests
   }
 }
 
 // Helper Functions Implementation
-
-/**
- * Fetches ComfyUI version from system stats.
- * @returns Promise that resolves to ComfyUI version string
- */
-async function fetchComfyUIVersion(): Promise<string> {
-  try {
-    // Get ComfyUI version from system_stats
-    const response = await api.fetchApi('/system_stats')
-    const data = await response.json()
-    return data.system?.comfyui_version || 'unknown'
-  } catch {
-    return 'unknown'
-  }
-}
 
 /**
  * Fetches frontend version from config.
@@ -486,21 +550,6 @@ async function fetchFrontendVersion(): Promise<string> {
   try {
     // Get frontend version from config
     return import.meta.env.VITE_APP_VERSION || config.app_version || 'unknown'
-  } catch {
-    return 'unknown'
-  }
-}
-
-/**
- * Fetches Python version from system stats.
- * @returns Promise that resolves to Python version string
- */
-async function fetchPythonVersion(): Promise<string> {
-  try {
-    // Get Python version from system_stats
-    const response = await api.fetchApi('/system_stats')
-    const data = await response.json()
-    return data.system?.python_version || 'unknown'
   } catch {
     return 'unknown'
   }
@@ -533,17 +582,14 @@ function detectOS(platform: string): any {
 }
 
 /**
- * Detects available accelerators from system stats.
- * @returns Promise that resolves to accelerator information
+ * Extracts accelerator information from system stats.
+ * @param systemStats System stats data from store
+ * @returns Accelerator information object
  */
-async function detectAccelerators(): Promise<any> {
+function extractAcceleratorInfo(systemStats: any): any {
   try {
-    // Get GPU information from system_stats
-    const response = await api.fetchApi('/system_stats')
-    const data = await response.json()
-
-    if (data.devices && data.devices.length > 0) {
-      const device = data.devices[0]
+    if (systemStats?.devices && systemStats.devices.length > 0) {
+      const device = systemStats.devices[0]
       const accelerators = []
 
       // Determine accelerator based on device type
@@ -566,7 +612,10 @@ async function detectAccelerators(): Promise<any> {
       }
     }
   } catch (error) {
-    console.warn('[ConflictDetection] Failed to detect GPU information:', error)
+    console.warn(
+      '[ConflictDetection] Failed to extract GPU information:',
+      error
+    )
   }
 
   // Default values
@@ -578,31 +627,111 @@ async function detectAccelerators(): Promise<any> {
 }
 
 /**
- * Checks for version conflicts between current and required versions.
+ * Checks for version conflicts using Registry API version strings.
+ *
+ * Registry version format examples
+ * - ">=1.0.0" (minimum version
+ * - "1.0.0" (exact version
+ * - ">=1.0.0,<2.0.0" (version range
+ *
  * @param type Type of version being checked
  * @param currentVersion Current version string
- * @param requirement Version requirement specification
+ * @param supportedVersion Supported version from Registry
  * @returns Conflict detail if conflict exists, null otherwise
  */
-function checkVersionConflict(
+function checkVersionStringConflict(
   type: ConflictType,
   currentVersion: string,
-  requirement: VersionRequirement
+  supportedVersion: string
 ): ConflictDetail | null {
-  // Version comparison logic implementation
+  // If current version is unknown, return warning
   if (currentVersion === 'unknown') {
     return {
       type,
       severity: 'warning',
-      description: `Cannot verify ${type} version`,
+      description: `Cannot verify ${type} version - current version unknown`,
       current_value: currentVersion,
-      required_value: `${requirement.operator} ${requirement.version}`,
-      resolution_steps: ['Check system version', 'Compare with requirements']
+      required_value: supportedVersion,
+      resolution_steps: [
+        'Check system version',
+        'Update to a compatible version if needed'
+      ]
     }
   }
 
-  // Actual version comparison logic should be implemented using semver library
-  return null
+  // If Registry doesn't specify version requirements, assume compatible
+  if (!supportedVersion || supportedVersion.trim() === '') {
+    return null
+  }
+
+  // Basic version string parsing and comparison
+  try {
+    // Handle simple cases for now
+    if (supportedVersion.startsWith('>=')) {
+      const requiredVersion = supportedVersion.substring(2).trim()
+      // For now, just check if versions are exactly equal or current is "unknown"
+      if (
+        currentVersion !== requiredVersion &&
+        !currentVersion.includes(requiredVersion)
+      ) {
+        return {
+          type,
+          severity: 'warning',
+          description: `${type} version might be incompatible`,
+          current_value: currentVersion,
+          required_value: supportedVersion,
+          resolution_steps: [
+            `Update ${type} to version ${requiredVersion} or higher`,
+            'Check compatibility documentation'
+          ]
+        }
+      }
+    } else if (supportedVersion.includes(',')) {
+      // Version range - for now just warn
+      return {
+        type,
+        severity: 'info',
+        description: `${type} version range specified in Registry`,
+        current_value: currentVersion,
+        required_value: supportedVersion,
+        resolution_steps: [
+          'Verify your version is within the supported range',
+          'Update if necessary'
+        ]
+      }
+    } else {
+      // Exact version match
+      if (currentVersion !== supportedVersion) {
+        return {
+          type,
+          severity: 'warning',
+          description: `${type} version mismatch`,
+          current_value: currentVersion,
+          required_value: supportedVersion,
+          resolution_steps: [
+            `Update ${type} to version ${supportedVersion}`,
+            'Check if current version is compatible'
+          ]
+        }
+      }
+    }
+
+    // No conflict detected
+    return null
+  } catch (error) {
+    // If version parsing fails, return info-level conflict
+    return {
+      type,
+      severity: 'info',
+      description: `Unable to parse version requirement: ${supportedVersion}`,
+      current_value: currentVersion,
+      required_value: supportedVersion,
+      resolution_steps: [
+        'Check version format in Registry',
+        'Manually verify compatibility'
+      ]
+    }
+  }
 }
 
 /**

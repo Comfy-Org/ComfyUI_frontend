@@ -51,46 +51,55 @@ export interface VersionRequirement {
 }
 
 /**
- * Node Pack requirements (data received from API)
+ * Node Pack requirements from Registry API
+ * Registry API에서 가져온 노드 팩 요구사항 정보
  */
 export interface NodePackRequirements {
-  // Package basic information
-  /** @description Unique package identifier */
+  // Package basic information / 패키지 기본 정보
+  /** @description Unique package identifier / 고유 패키지 식별자 */
   package_id: string
-  /** @description Human-readable package name */
+  /** @description Human-readable package name / 사람이 읽을 수 있는 패키지 이름 */
   package_name: string
-  /** @description Package version */
-  version: string
+  /** @description Currently installed version / 현재 설치된 버전 */
+  installed_version: string
+  /** @description Whether the package is enabled locally / 로컬에서 패키지가 활성화되어 있는지 */
+  is_enabled: boolean
 
-  // Version requirements
-  /** @description ComfyUI version requirement */
-  comfyui_version_requirement?: VersionRequirement
-  /** @description Frontend version requirement */
-  frontend_version_requirement?: VersionRequirement
-  /** @description Python version requirement */
-  python_version_requirement?: VersionRequirement
+  // Registry compatibility data / Registry 호환성 데이터
+  /** @description Supported ComfyUI version from Registry / Registry에서 가져온 지원 ComfyUI 버전 */
+  supported_comfyui_version?: string
+  /** @description Supported frontend version from Registry / Registry에서 가져온 지원 프론트엔드 버전 */
+  supported_comfyui_frontend_version?: string
+  /** @description List of supported operating systems from Registry / Registry에서 가져온 지원 OS 목록 */
+  supported_os?: SupportedOS[]
+  /** @description List of supported accelerators from Registry / Registry에서 가져온 지원 가속기 목록 */
+  supported_accelerators?: SupportedAccelerator[]
+  /** @description Package dependencies from Registry / Registry에서 가져온 패키지 의존성 */
+  dependencies?: string[]
 
-  // Platform requirements
-  /** @description List of supported operating systems */
-  supported_os: SupportedOS[]
-  /** @description List of supported accelerators */
-  supported_accelerators: SupportedAccelerator[]
-
-  // Security and status
-  /** @description Whether the package is banned */
+  // Status information / 상태 정보
+  /** @description Node status from Registry (Active/Banned/Deleted) / Registry의 노드 상태 */
+  registry_status?:
+    | 'NodeStatusActive'
+    | 'NodeStatusBanned'
+    | 'NodeStatusDeleted'
+  /** @description Node version status from Registry / Registry의 노드 버전 상태 */
+  version_status?:
+    | 'NodeVersionStatusActive'
+    | 'NodeVersionStatusBanned'
+    | 'NodeVersionStatusDeleted'
+    | 'NodeVersionStatusPending'
+    | 'NodeVersionStatusFlagged'
+  /** @description Whether package is banned (derived from status) / 패키지 금지 여부 (상태에서 파생) */
   is_banned: boolean
-  /** @description Reason for package ban, if applicable */
+  /** @description Reason for ban if applicable / 금지 이유 (해당하는 경우) */
   ban_reason?: string
-  /** @description Current security scan status */
-  security_scan_status: SecurityScanStatus
-  /** @description Detailed security scan information */
-  security_scan_details?: string
 
-  // Metadata
-  /** @description Last update timestamp */
-  last_updated: string
-  /** @description Package creation timestamp */
-  created_at: string
+  // Metadata / 메타데이터
+  /** @description Registry data fetch timestamp / Registry 데이터 가져온 시각 */
+  registry_fetch_time: string
+  /** @description Whether Registry data was successfully fetched / Registry 데이터 성공적으로 가져왔는지 */
+  has_registry_data: boolean
 }
 
 /**
