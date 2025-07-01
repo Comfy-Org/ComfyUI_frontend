@@ -8,6 +8,10 @@
       v-bind="filteredProps"
       :disabled="readonly"
       :pt="{
+        root: {
+          class:
+            'hover:outline hover:outline-1 hover:outline-[#5B5E7D] rounded-full'
+        },
         slider: ({ props }) => ({
           style: {
             backgroundColor: props.modelValue ? '#0b8ce9' : '#0e0e12'
