@@ -199,18 +199,20 @@
 import ScrollPanel from 'primevue/scrollpanel'
 import { reactive, ref } from 'vue'
 
-// Import all widget components
-import WidgetButton from '@/components/graph/vueWidgets/WidgetButton.vue'
-import WidgetColorPicker from '@/components/graph/vueWidgets/WidgetColorPicker.vue'
-import WidgetFileUpload from '@/components/graph/vueWidgets/WidgetFileUpload.vue'
-import WidgetInputText from '@/components/graph/vueWidgets/WidgetInputText.vue'
-import WidgetMultiSelect from '@/components/graph/vueWidgets/WidgetMultiSelect.vue'
-import WidgetSelect from '@/components/graph/vueWidgets/WidgetSelect.vue'
-import WidgetSelectButton from '@/components/graph/vueWidgets/WidgetSelectButton.vue'
-import WidgetSlider from '@/components/graph/vueWidgets/WidgetSlider.vue'
-import WidgetTextarea from '@/components/graph/vueWidgets/WidgetTextarea.vue'
-import WidgetToggleSwitch from '@/components/graph/vueWidgets/WidgetToggleSwitch.vue'
-import WidgetTreeSelect from '@/components/graph/vueWidgets/WidgetTreeSelect.vue'
+// Import all widget components from index
+import {
+  WidgetButton,
+  WidgetColorPicker,
+  WidgetFileUpload,
+  WidgetInputText,
+  WidgetMultiSelect,
+  WidgetSelect,
+  WidgetSelectButton,
+  WidgetSlider,
+  WidgetTextarea,
+  WidgetToggleSwitch,
+  WidgetTreeSelect
+} from '@/components/graph/vueWidgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import PanelTemplate from './PanelTemplate.vue'
