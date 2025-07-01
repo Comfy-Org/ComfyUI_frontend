@@ -19,7 +19,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowService } from '@/services/workflowService'
 import type { ComfyCommand } from '@/stores/commandStore'
-import { useTitleEditorStore } from '@/stores/graphStore'
+import { useCanvasStore, useTitleEditorStore } from '@/stores/graphStore'
 import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
@@ -38,6 +38,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const colorPaletteStore = useColorPaletteStore()
   const firebaseAuthActions = useFirebaseAuthActions()
   const toastStore = useToastStore()
+  const canvasStore = useCanvasStore()
   const getTracker = () => workflowStore.activeWorkflow?.changeTracker
 
   const getSelectedNodes = (): LGraphNode[] => {
@@ -729,6 +730,30 @@ export function useCoreCommands(): ComfyCommand[] {
         const node = app.canvas.selectedItems.values().next().value
         if (!(node instanceof LGraphNode)) return
         await addFluxKontextGroupNode(node)
+      }
+    },
+    {
+      id: 'Comfy.Graph.ConvertToSubgraph',
+      icon: 'pi pi-sitemap',
+      label: 'Convert Selection to Subgraph',
+      versionAdded: '1.20.1',
+      function: () => {
+        const canvas = canvasStore.getCanvas()
+        const graph = canvas.subgraph ?? canvas.graph
+        if (!graph) throw new TypeError('Canvas has no graph or subgraph set.')
+
+        const res = graph.convertToSubgraph(canvas.selectedItems)
+        if (!res) {
+          toastStore.add({
+            severity: 'error',
+            summary: t('toastMessages.cannotCreateSubgraph'),
+            detail: t('toastMessages.failedToConvertToSubgraph'),
+            life: 3000
+          })
+          return
+        }
+        const { node } = res
+        canvas.select(node)
       }
     }
   ]

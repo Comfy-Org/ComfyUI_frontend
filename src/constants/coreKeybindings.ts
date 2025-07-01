@@ -224,5 +224,13 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       code: getKeyCode('f')
     },
     commandId: 'Workspace.ToggleFocusMode'
+  },
+  {
+    combo: {
+      key: 'e',
+      ctrl: true,
+      shift: true
+    },
+    commandId: 'Comfy.Graph.ConvertToSubgraph'
   }
 ]
