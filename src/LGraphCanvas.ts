@@ -3182,7 +3182,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       LiteGraph.macTrackpadGestures &&
       (!LiteGraph.macGesturesRequireMac || navigator.userAgent.includes("Mac"))
     ) {
-      if (e.ctrlKey && !Number.isInteger(e.deltaY)) {
+      if (e.ctrlKey) {
         scale *= 1 + e.deltaY * (1 - this.zoom_speed) * 0.18
         this.ds.changeScale(scale, [e.clientX, e.clientY], false)
       } else {
