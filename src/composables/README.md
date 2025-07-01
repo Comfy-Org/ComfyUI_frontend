@@ -66,50 +66,150 @@ The following diagram shows how composables fit into the application architectur
 
 ## Composable Categories
 
-ComfyUI's composables are organized into several categories:
+The following tables list ALL composables in the system as of 2025-01-30:
 
 ### Auth
-
 Composables for authentication and user management:
-- `useCurrentUser` - Provides access to the current user information
-- `useFirebaseAuthActions` - Handles Firebase authentication operations
+
+| Composable | Description |
+|------------|-------------|
+| `useCurrentUser` | Provides access to the current user information |
+| `useFirebaseAuthActions` | Handles Firebase authentication operations |
+
+### Bottom Panel Tabs
+Composables for terminal and bottom panel functionality:
+
+| Composable | Description |
+|------------|-------------|
+| `useTerminal` | Core terminal functionality |
+| `useTerminalBuffer` | Manages terminal output buffer |
+| `useTerminalTabs` | Handles multiple terminal tab management |
 
 ### Element
-
 Composables for DOM and element interactions:
-- `useAbsolutePosition` - Handles element positioning
-- `useDomClipping` - Manages clipping of DOM elements
-- `useResponsiveCollapse` - Manages responsive collapsing of elements
+
+| Composable | Description |
+|------------|-------------|
+| `useAbsolutePosition` | Handles element positioning |
+| `useCanvasPositionConversion` | Converts between canvas and DOM coordinates |
+| `useDomClipping` | Manages clipping of DOM elements |
+| `useResponsiveCollapse` | Manages responsive collapsing of elements |
+
+### Functional
+Utility composables for common patterns:
+
+| Composable | Description |
+|------------|-------------|
+| `useChainCallback` | Chains multiple callbacks together |
+
+### Manager
+Composables for ComfyUI Manager integration:
+
+| Composable | Description |
+|------------|-------------|
+| `useManagerStatePersistence` | Persists manager UI state |
+
+### Node Pack
+Composables for node package management:
+
+| Composable | Description |
+|------------|-------------|
+| `useInstalledPacks` | Manages installed node packages |
+| `useMissingNodes` | Detects and handles missing nodes |
+| `useNodePacks` | Core node package functionality |
+| `usePackUpdateStatus` | Tracks package update availability |
+| `useWorkflowPacks` | Manages packages used in workflows |
 
 ### Node
-
 Composables for node-specific functionality:
-- `useNodeBadge` - Handles node badge display and interaction
-- `useNodeImage` - Manages node image preview
-- `useNodeDragAndDrop` - Handles drag and drop for nodes
-- `useNodeChatHistory` - Manages chat history for nodes
+
+| Composable | Description |
+|------------|-------------|
+| `useNodeAnimatedImage` | Handles animated images in nodes |
+| `useNodeBadge` | Handles node badge display and interaction |
+| `useNodeCanvasImagePreview` | Canvas-based image preview for nodes |
+| `useNodeChatHistory` | Manages chat history for nodes |
+| `useNodeDragAndDrop` | Handles drag and drop for nodes |
+| `useNodeFileInput` | Manages file input widgets in nodes |
+| `useNodeImage` | Manages node image preview |
+| `useNodeImageUpload` | Handles image upload for nodes |
+| `useNodePaste` | Manages paste operations for nodes |
+| `useNodePricing` | Handles pricing display for nodes |
+| `useNodeProgressText` | Displays progress text in nodes |
+| `useWatchWidget` | Watches widget value changes |
 
 ### Settings
-
 Composables for settings management:
-- `useSettingSearch` - Provides search functionality for settings
-- `useSettingUI` - Manages settings UI interactions
 
-### Sidebar
+| Composable | Description |
+|------------|-------------|
+| `useSettingSearch` | Provides search functionality for settings |
+| `useSettingUI` | Manages settings UI interactions |
 
+### Sidebar Tabs
 Composables for sidebar functionality:
-- `useNodeLibrarySidebarTab` - Manages the node library sidebar tab
-- `useQueueSidebarTab` - Manages the queue sidebar tab
-- `useWorkflowsSidebarTab` - Manages the workflows sidebar tab
-- `useTemplateWorkflows` - Manages template workflow loading, selection, and display
+
+| Composable | Description |
+|------------|-------------|
+| `useModelLibrarySidebarTab` | Manages the model library sidebar tab |
+| `useNodeLibrarySidebarTab` | Manages the node library sidebar tab |
+| `useQueueSidebarTab` | Manages the queue sidebar tab |
+| `useWorkflowsSidebarTab` | Manages the workflows sidebar tab |
+
+### Tree
+Composables for tree structure operations:
+
+| Composable | Description |
+|------------|-------------|
+| `useTreeFolderOperations` | Handles folder operations in tree views |
 
 ### Widgets
-
 Composables for widget functionality:
-- `useBooleanWidget` - Manages boolean widget interactions
-- `useComboWidget` - Manages combo box widget interactions
-- `useFloatWidget` - Manages float input widget interactions
-- `useImagePreviewWidget` - Manages image preview widget
+
+| Composable | Description |
+|------------|-------------|
+| `useBooleanWidget` | Manages boolean widget interactions |
+| `useChatHistoryWidget` | Handles chat history widget |
+| `useComboWidget` | Manages combo box widget interactions |
+| `useFloatWidget` | Manages float input widget interactions |
+| `useImagePreviewWidget` | Manages image preview widget |
+| `useImageUploadWidget` | Handles image upload widget |
+| `useIntWidget` | Manages integer input widget |
+| `useMarkdownWidget` | Handles markdown display widget |
+| `useProgressTextWidget` | Manages progress text widget |
+| `useRemoteWidget` | Handles remote widget connections |
+| `useStringWidget` | Manages string input widget |
+
+### Root-level Composables
+General-purpose composables:
+
+| Composable | Description |
+|------------|-------------|
+| `useBrowserTabTitle` | Manages browser tab title updates |
+| `useCachedRequest` | Provides request caching functionality |
+| `useCanvasDrop` | Handles drop operations on canvas |
+| `useCivitaiModel` | Integrates with Civitai model API |
+| `useContextMenuTranslation` | Handles context menu translations |
+| `useCopy` | Provides copy functionality |
+| `useCopyToClipboard` | Manages clipboard operations |
+| `useCoreCommands` | Provides core command functionality |
+| `useDownload` | Handles file download operations |
+| `useErrorHandling` | Centralized error handling |
+| `useGlobalLitegraph` | Access to global LiteGraph instance |
+| `useLitegraphSettings` | Manages LiteGraph configuration |
+| `useManagerQueue` | Handles manager queue operations |
+| `usePaste` | Provides paste functionality |
+| `usePragmaticDragAndDrop` | Integrates Atlassian's drag-and-drop library |
+| `useProgressFavicon` | Updates favicon with progress indicator |
+| `useRefreshableSelection` | Manages refreshable selections |
+| `useRegistrySearch` | Searches the ComfyUI registry |
+| `useServerLogs` | Manages server log display |
+| `useTemplateWorkflows` | Manages template workflow loading, selection, and display |
+| `useTreeExpansion` | Handles tree node expansion state |
+| `useValueTransform` | Transforms values between formats |
+| `useWorkflowAutoSave` | Handles automatic workflow saving |
+| `useWorkflowPersistence` | Manages workflow persistence |
+| `useWorkflowValidation` | Validates workflow integrity |
 
 ## Usage Guidelines
 

@@ -138,13 +138,21 @@
     "Unpin": "고정 해제"
   },
   "credits": {
+    "accountInitialized": "계정이 초기화됨",
+    "activity": "활동",
+    "added": "추가됨",
+    "additionalInfo": "추가 정보",
     "apiPricing": "API 가격",
     "credits": "크레딧",
+    "details": "세부 정보",
+    "eventType": "이벤트 유형",
     "faqs": "자주 묻는 질문",
     "invoiceHistory": "청구서 내역",
     "lastUpdated": "마지막 업데이트",
     "messageSupport": "지원 문의",
+    "model": "모델",
     "purchaseCredits": "크레딧 구매",
+    "time": "시간",
     "topUp": {
       "buyNow": "지금 구매",
       "insufficientMessage": "이 워크플로우를 실행하기에 크레딧이 부족합니다.",

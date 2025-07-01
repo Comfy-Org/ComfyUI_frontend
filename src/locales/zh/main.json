@@ -138,13 +138,21 @@
     "Unpin": "取消固定"
   },
   "credits": {
+    "accountInitialized": "账户已初始化",
+    "activity": "活动",
+    "added": "已添加",
+    "additionalInfo": "附加信息",
     "apiPricing": "API 价格",
     "credits": "积分",
+    "details": "详情",
+    "eventType": "事件类型",
     "faqs": "常见问题",
     "invoiceHistory": "发票历史",
     "lastUpdated": "最近更新",
     "messageSupport": "联系客服",
+    "model": "模型",
     "purchaseCredits": "购买积分",
+    "time": "时间",
     "topUp": {
       "buyNow": "立即购买",
       "insufficientMessage": "您的积分不足，无法运行此工作流。",

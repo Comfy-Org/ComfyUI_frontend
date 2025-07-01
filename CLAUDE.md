@@ -1,8 +1,9 @@
-- use npm run to see what commands are available
+- use `npm run` to see what commands are available
+- For component communication, prefer Vue's event-based pattern (emit/@event-name) for state changes and notifications; use defineExpose with refs only for imperative operations that need direct control (like form.validate(), modal.open(), or editor.focus()); events promote loose coupling and are better for reusable components, while exposed methods are acceptable for tightly-coupled component pairs or when wrapping third-party libraries that require imperative APIs
 - After making code changes, follow this general process: (1) Create unit tests, component tests, browser tests (if appropriate for each), (2) run unit tests, component tests, and browser tests until passing, (3) run typecheck, lint, format (with prettier) -- you can use `npm run` command to see the scripts available, (4) check if any READMEs (including nested) or documentation needs to be updated, (5) Decide whether the changes are worth adding new content to the external documentation for (or would requires changes to the external documentation) at https://docs.comfy.org, then present your suggestion
 - When referencing PrimeVue, you can get all the docs here: https://primevue.org. Do this instead of making up or inferring names of Components
 - When trying to set tailwind classes for dark theme, use "dark-theme:" prefix rather than "dark:"
-- Never add lines to PR descriptions that say "Generated with Claude Code"
+- Never add lines to PR descriptions or commit messages that say "Generated with Claude Code"
 - When making PR names and commit messages, if you are going to add a prefix like "docs:", "feat:", "bugfix:", use square brackets around the prefix term and do not use a colon (e.g., should be "[docs]" rather than "docs:").
 - When I reference GitHub Repos related to Comfy-Org, you should proactively fetch or read the associated information in the repo. To do so, you should exhaust all options: (1) Check if we have a local copy of the repo, (2) Use the GitHub API to fetch the information; you may want to do this IN ADDITION to the other options, especially for reading specific branches/PRs/comments/reviews/metadata, and (3) curl the GitHub website and parse the html or json responses
 - For information about ComfyUI, ComfyUI_frontend, or ComfyUI-Manager, you can web search or download these wikis: https://deepwiki.com/Comfy-Org/ComfyUI-Manager, https://deepwiki.com/Comfy-Org/ComfyUI_frontend/1-overview, https://deepwiki.com/comfyanonymous/ComfyUI/2-core-architecture
@@ -17,7 +18,6 @@
 - Use the Vue 3 Composition API instead of the Options API when writing Vue components. An exception is when overriding or extending a PrimeVue component for compatibility, you may use the Options API.
 - when we are solving an issue we know the link/number for, we should add "Fixes #n" (where n is the issue number) to the PR description.
 - Never write css if you can accomplish the same thing with tailwind utility classes
-- Use setup() function for component logic
 - Utilize ref and reactive for reactive state
 - Implement computed properties with computed()
 - Use watch and watchEffect for side effects
@@ -27,13 +27,11 @@
 - Use Tailwind CSS for styling
 - Leverage VueUse functions for performance-enhancing styles
 - Use lodash for utility functions
-- Use TypeScript for type safety
 - Implement proper props and emits definitions
 - Utilize Vue 3's Teleport component when needed
 - Use Suspense for async components
 - Implement proper error handling
 - Follow Vue 3 style guide and naming conventions
-- Use Vite for fast development and building
 - Use vue-i18n in composition API for any string literals. Place new translation entries in src/locales/en/main.json.
 - Avoid using `@ts-expect-error` to work around type issues. We needed to employ it to migrate to TypeScript, but it should not be viewed as an accepted practice or standard.
 - DO NOT use deprecated PrimeVue components. Use these replacements instead:

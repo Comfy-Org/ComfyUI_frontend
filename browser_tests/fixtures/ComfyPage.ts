@@ -268,8 +268,35 @@ export class ComfyPage {
     return this._history
   }
 
-  async setup({ clearStorage = true }: { clearStorage?: boolean } = {}) {
+  async setup({
+    clearStorage = true,
+    mockReleases = true
+  }: {
+    clearStorage?: boolean
+    mockReleases?: boolean
+  } = {}) {
     await this.goto()
+
+    // Mock release endpoint to prevent changelog popups
+    if (mockReleases) {
+      await this.page.route('**/releases**', async (route) => {
+        const url = route.request().url()
+        if (
+          url.includes('api.comfy.org') ||
+          url.includes('stagingapi.comfy.org')
+        ) {
+          console.log('Mocking releases API')
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify([])
+          })
+        } else {
+          await route.continue()
+        }
+      })
+    }
+
     if (clearStorage) {
       await this.page.evaluate((id) => {
         localStorage.clear()
@@ -1086,7 +1113,7 @@ export const comfyPageFixture = base.extend<{
   },
   comfyMouse: async ({ comfyPage }, use) => {
     const comfyMouse = new ComfyMouse(comfyPage)
-    use(comfyMouse)
+    await use(comfyMouse)
   }
 })
 
