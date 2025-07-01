@@ -44,7 +44,7 @@
 </template>
 
 <script setup lang="ts">
-import { LiteGraph, LGraphNode, LGraphCanvas } from '@comfyorg/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph'
 import { useEventListener, whenever } from '@vueuse/core'
 import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 
