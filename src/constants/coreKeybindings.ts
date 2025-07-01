@@ -3,26 +3,26 @@ import type { Keybinding } from '@/schemas/keyBindingSchema'
 // Helper function to map key characters to their physical key codes
 function getKeyCode(key: string): string {
   const keyToCodeMap: Record<string, string> = {
-    'Enter': 'Enter',
-    'r': 'KeyR',
-    'q': 'KeyQ',
-    'w': 'KeyW',
-    'n': 'KeyN',
-    'm': 'KeyM',
-    's': 'KeyS',
-    'o': 'KeyO',
-    'Backspace': 'Backspace',
-    'g': 'KeyG',
+    Enter: 'Enter',
+    r: 'KeyR',
+    q: 'KeyQ',
+    w: 'KeyW',
+    n: 'KeyN',
+    m: 'KeyM',
+    s: 'KeyS',
+    o: 'KeyO',
+    Backspace: 'Backspace',
+    g: 'KeyG',
     ',': 'Comma',
     '=': 'Equal',
     '+': 'Equal', // Same physical key as '='
     '-': 'Minus',
     '.': 'Period',
-    'p': 'KeyP',
-    'c': 'KeyC',
-    'b': 'KeyB',
+    p: 'KeyP',
+    c: 'KeyC',
+    b: 'KeyB',
     '`': 'Backquote',
-    'f': 'KeyF'
+    f: 'KeyF'
   }
   return keyToCodeMap[key] || key
 }
