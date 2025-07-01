@@ -7,6 +7,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { SettingParams } from '@/types/settingTypes'
 import type { TreeNode } from '@/types/treeExplorerTypes'
+import { runSettingMigrations } from '@/utils/migration/settingsMigration'
 
 export const getSettingInfo = (setting: SettingParams) => {
   const parts = setting.category || setting.id.split('.')
@@ -109,6 +110,9 @@ export const useSettingStore = defineStore('setting', () => {
       )
     }
     settingValues.value = await api.getSettings()
+
+    // Run migrations after loading values but before settings are registered
+    await runSettingMigrations()
   }
 
   return {
