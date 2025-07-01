@@ -16,3 +16,23 @@ export interface ToggleSwitchProps {
   ariaLabelledby?: string
   ariaLabel?: string
 }
+
+/**
+ * Allowed ToggleSwitch props that can be passed through widget options
+ * (excludes style-related props that are filtered out)
+ */
+export type AllowedToggleSwitchProps = Pick<
+  ToggleSwitchProps,
+  | 'modelValue'
+  | 'defaultValue'
+  | 'name'
+  | 'trueValue'
+  | 'falseValue'
+  | 'invalid'
+  | 'disabled'
+  | 'readonly'
+  | 'tabindex'
+  | 'inputId'
+  | 'ariaLabelledby'
+  | 'ariaLabel'
+>
