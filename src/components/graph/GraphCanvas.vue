@@ -86,6 +86,7 @@ import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { runSettingMigrations } from '@/utils/migration/settingsMigration'
 
 const emit = defineEmits<{
   ready: []
@@ -297,6 +298,10 @@ onMounted(async () => {
       throw error
     }
   }
+
+  // Run cross-setting migrations
+  await runSettingMigrations()
+
   CORE_SETTINGS.forEach((setting) => {
     settingStore.addSetting(setting)
   })

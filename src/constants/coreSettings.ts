@@ -430,14 +430,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: 'Top',
     name: 'Use new menu',
     type: 'combo',
-    options: ['Disabled', 'Top', 'Bottom'],
-    migrateDeprecatedValue: (value: string) => {
-      // Floating is now supported by dragging the docked actionbar off.
-      if (value === 'Floating') {
-        return 'Top'
-      }
-      return value
-    }
+    options: ['Disabled', 'Top', 'Bottom']
   },
   {
     id: 'Comfy.Workflow.WorkflowTabsPosition',
@@ -470,15 +463,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: [] as Keybinding[],
     versionAdded: '1.3.7',
-    versionModified: '1.7.3',
-    migrateDeprecatedValue: (value: any[]) => {
-      return value.map((keybinding) => {
-        if (keybinding['targetSelector'] === '#graph-canvas') {
-          keybinding['targetElementId'] = 'graph-canvas'
-        }
-        return keybinding
-      })
-    }
+    versionModified: '1.7.3'
   },
   {
     id: 'Comfy.Keybinding.NewBindings',
@@ -716,11 +701,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'The active color palette id',
     type: 'hidden',
     defaultValue: 'dark',
-    versionModified: '1.6.7',
-    migrateDeprecatedValue(value: string) {
-      // Legacy custom palettes were prefixed with 'custom_'
-      return value.startsWith('custom_') ? value.replace('custom_', '') : value
-    }
+    versionModified: '1.6.7'
   },
   {
     id: 'Comfy.CustomColorPalettes',

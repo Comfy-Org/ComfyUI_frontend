@@ -20,10 +20,6 @@ export interface SettingTreeNode extends TreeNode {
   data?: SettingParams
 }
 
-function tryMigrateDeprecatedValue(setting: SettingParams, value: any) {
-  return setting?.migrateDeprecatedValue?.(value) ?? value
-}
-
 function onChange(setting: SettingParams, newValue: any, oldValue: any) {
   if (setting?.onChange) {
     setting.onChange(newValue, oldValue)
@@ -54,16 +50,12 @@ export const useSettingStore = defineStore('setting', () => {
   async function set<K extends keyof Settings>(key: K, value: Settings[K]) {
     // Clone the incoming value to prevent external mutations
     const clonedValue = _.cloneDeep(value)
-    const newValue = tryMigrateDeprecatedValue(
-      settingsById.value[key],
-      clonedValue
-    )
     const oldValue = get(key)
-    if (newValue === oldValue) return
+    if (clonedValue === oldValue) return
 
-    onChange(settingsById.value[key], newValue, oldValue)
-    settingValues.value[key] = newValue
-    await api.storeSetting(key, newValue)
+    onChange(settingsById.value[key], clonedValue, oldValue)
+    settingValues.value[key] = clonedValue
+    await api.storeSetting(key, clonedValue)
   }
 
   /**
@@ -102,12 +94,7 @@ export const useSettingStore = defineStore('setting', () => {
 
     settingsById.value[setting.id] = setting
 
-    if (settingValues.value[setting.id] !== undefined) {
-      settingValues.value[setting.id] = tryMigrateDeprecatedValue(
-        setting,
-        settingValues.value[setting.id]
-      )
-    }
+    // Trigger onChange callback with current value
     onChange(setting, get(setting.id), undefined)
   }
 

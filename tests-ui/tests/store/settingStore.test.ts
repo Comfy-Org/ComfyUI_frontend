@@ -92,21 +92,6 @@ describe('useSettingStore', () => {
         'Setting test.setting must have a unique ID.'
       )
     })
-
-    it('should migrate deprecated values', () => {
-      const setting: SettingParams = {
-        id: 'test.setting',
-        name: 'test.setting',
-        type: 'text',
-        defaultValue: 'default',
-        migrateDeprecatedValue: (value: string) => value.toUpperCase()
-      }
-
-      store.settingValues['test.setting'] = 'oldvalue'
-      store.addSetting(setting)
-
-      expect(store.settingValues['test.setting']).toBe('OLDVALUE')
-    })
   })
 
   describe('get and set', () => {
