@@ -52,7 +52,7 @@
   - Templates: `api.fileURL('/templates/default.json')`
   - Extensions: `api.fileURL(extensionPath)` for loading JS modules
   - Any static assets that exist in the public directory
-- Sanitize dynamically generated HTML content or use templates instead of v-html
+- When implementing code that outputs raw HTML (e.g., using v-html directive), always ensure dynamic content has been properly sanitized with DOMPurify or validated through trusted sources. Prefer Vue templates over v-html when possible.
 - For any async operations (API calls, timers, etc), implement cleanup/cancellation in component unmount to prevent memory leaks
 - Extract complex template conditionals into separate components or computed properties
 - Error messages should be actionable and user-friendly (e.g., "Failed to load data. Please refresh the page." instead of "Unknown error")
