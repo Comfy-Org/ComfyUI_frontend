@@ -41,6 +41,40 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   ) {
     super(subgraph.name, subgraph.id)
 
+    // Update this node when the subgraph input / output slots are changed
+    const subgraphEvents = this.subgraph.events
+    subgraphEvents.addEventListener("input-added", (e) => {
+      const { name, type } = e.detail.input
+      this.addInput(name, type)
+    })
+    subgraphEvents.addEventListener("removing-input", (e) => {
+      this.removeInput(e.detail.index)
+    })
+
+    subgraphEvents.addEventListener("output-added", (e) => {
+      const { name, type } = e.detail.output
+      this.addOutput(name, type)
+    })
+    subgraphEvents.addEventListener("removing-output", (e) => {
+      this.removeOutput(e.detail.index)
+    })
+
+    subgraphEvents.addEventListener("renaming-input", (e) => {
+      const { index, newName } = e.detail
+      const input = this.inputs.at(index)
+      if (!input) throw new Error("Subgraph input not found")
+
+      input.label = newName
+    })
+
+    subgraphEvents.addEventListener("renaming-output", (e) => {
+      const { index, newName } = e.detail
+      const output = this.outputs.at(index)
+      if (!output) throw new Error("Subgraph output not found")
+
+      output.label = newName
+    })
+
     this.type = subgraph.id
     this.configure(instanceData)
   }
