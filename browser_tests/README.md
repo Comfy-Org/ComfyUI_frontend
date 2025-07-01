@@ -29,6 +29,16 @@ A template with helpful information can be found in `.env_example`.
 ### Multiple Tests
 If you are running Playwright tests in parallel or running the same test multiple times, the flag `--multi-user` must be added to the main ComfyUI process.
 
+### Release API Mocking
+By default, all tests mock the release API (`api.comfy.org/releases`) to prevent release notification popups from interfering with test execution. This is necessary because the release notifications can appear over UI elements and block test interactions.
+
+To test with real release data, you can disable mocking:
+```typescript
+await comfyPage.setup({ mockReleases: false });
+```
+
+For tests that specifically need to test release functionality, see the example in `tests/releaseNotifications.spec.ts`.
+
 ## Running Tests
 
 There are multiple ways to run the tests:
