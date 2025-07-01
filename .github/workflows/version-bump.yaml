@@ -8,10 +8,12 @@ on:
         required: true
         default: 'patch'
         type: 'choice'
-        options:
-          - patch
-          - minor
-          - major
+        options: [patch, minor, major, prepatch, preminor, premajor, prerelease]
+      pre_release:
+        description: Pre-release ID (suffix)
+        required: false
+        default: ''
+        type: string
 
 jobs:
   bump-version:
@@ -37,14 +39,20 @@ jobs:
           NEW_VERSION=$(node -p "require('./package.json').version")
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
 
+      - name: Format PR string
+        id: capitalised
+        run: |
+          CAPITALISED_TYPE=${{ github.event.inputs.version_type }}
+          echo "capitalised=${CAPITALISED_TYPE@u}" >> $GITHUB_OUTPUT
+
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e
         with:
           token: ${{ secrets.PR_GH_TOKEN }}
-          commit-message: '[release] Bump version to ${{ steps.bump-version.outputs.NEW_VERSION }}'
-          title: '${{ steps.bump-version.outputs.NEW_VERSION }}'
+          commit-message: '[release] Increment version to ${{ steps.bump-version.outputs.NEW_VERSION }}'
+          title: ${{ steps.bump-version.outputs.NEW_VERSION }}
           body: |
-            Automated version bump to ${{ steps.bump-version.outputs.NEW_VERSION }}
+            ${{ steps.capitalised.outputs.capitalised }} version increment to ${{ steps.bump-version.outputs.NEW_VERSION }}
           branch: version-bump-${{ steps.bump-version.outputs.NEW_VERSION }}
           base: main
           labels: |
