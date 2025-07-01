@@ -172,7 +172,9 @@ const loadEvents = async () => {
 
 const onPageChange = (event: { page: number }) => {
   pagination.value.page = event.page + 1
-  void loadEvents()
+  loadEvents().catch((error) => {
+    console.error('Error loading events:', error)
+  })
 }
 
 const refresh = async () => {
@@ -184,5 +186,3 @@ defineExpose({
   refresh
 })
 </script>
-
-<style scoped></style>
