@@ -30,7 +30,8 @@
     "lint:fix": "eslint --fix",
     "lint:ci": "eslint src",
     "format": "prettier --check './src/*.{js,ts,tsx,vue,mts}'",
-    "format:fix": "prettier --write './src/*.{js,ts,tsx,vue,mts}'"
+    "format:fix": "prettier --write './src/*.{js,ts,tsx,vue,mts}'",
+    "typecheck": "tsc"
   },
   "repository": {
     "type": "git",

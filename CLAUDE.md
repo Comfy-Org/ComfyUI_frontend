@@ -9,9 +9,9 @@
 
 # Bash commands
 
-- `tsc` Run the typechecker
-- `nr build` Build the project
-- `nr lint:fix` Run ESLint
+- `npm run typecheck` Run the typechecker
+- `npm run build` Build the project
+- `npm run lint:fix` Run ESLint
 
 # Code style
 
