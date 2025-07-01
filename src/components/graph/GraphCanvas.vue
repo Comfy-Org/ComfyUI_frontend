@@ -45,7 +45,6 @@
 
 <script setup lang="ts">
 import { LiteGraph, LGraphNode, LGraphCanvas } from '@comfyorg/litegraph'
-import type { LGraphNode } from '@comfyorg/litegraph'
 import { useEventListener, whenever } from '@vueuse/core'
 import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 
@@ -65,6 +64,7 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
+import { useContextMenuOverride } from '@/composables/useContextMenuOverride';
 import { useCopy } from '@/composables/useCopy'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
 import { useLitegraphSettings } from '@/composables/useLitegraphSettings'
@@ -90,10 +90,8 @@ import { useWorkflowStore } from '@/stores/workflowStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
   
-declare const LiteGraph: any;
-var dragging = false, startTime = 0, endTime = 0
-let menuElement: NodeListOf<Element> | HTMLElement | null, temp: Element | HTMLElement
-let observer: MutationObserver | null = null;
+
+useContextMenuOverride()
 const emit = defineEmits<{
   ready: []
 }>()
@@ -355,10 +353,13 @@ onMounted(async () => {
     },
     { immediate: true }
   )
+  
 
   emit('ready')
+
 })
-  
+
+/*
   const OriginalContextMenu = LiteGraph.ContextMenu as any;
 LiteGraph.ContextMenu = function (items: any, options: any, ref_window: any) {
   if (observer) {
@@ -381,8 +382,7 @@ LiteGraph.ContextMenu = function (items: any, options: any, ref_window: any) {
       for (const mutation of mutations) {
         for (const removedNode of mutation.removedNodes) {
           if (removedNode === menuElement) {
-            //console.log("🚫 Someone tried to remove the menu — reattaching");
-            // other here is just to transform data types because appendCild requires HTMLElement
+            // reattaching the menu when it removed
             temp = menuElement
             startTime = Date.now()
             const main = setInterval(function () {
@@ -396,7 +396,7 @@ LiteGraph.ContextMenu = function (items: any, options: any, ref_window: any) {
               if (endTime - startTime > 500) {
                 clearInterval(main)
               }
-            }, 1)
+            }, 16)
           }
         }
       }
@@ -416,8 +416,7 @@ LGraphCanvas.prototype.processMouseMove = function (e: PointerEvent) {
     if (menuElement) {
       const dx = this.ds.offset[0] - prevOffset[0];
       const dy = this.ds.offset[1] - prevOffset[1];
-      // ✅ Canvas is being dragged      
-      console.log("🟡 Canvas dragging", dx, dy);
+      // Canvas is being dragged      
       const left = parseFloat(menuElement.style.left || "0");
       const top = parseFloat(menuElement.style.top || "0");
       menuElement.style.left = `${left + dx}px`;
@@ -429,5 +428,5 @@ LGraphCanvas.prototype.processMouseMove = function (e: PointerEvent) {
     dragging = false
   }
 }
-  
+  */
 </script>
