@@ -40,13 +40,18 @@ export const SETTING_MIGRATIONS: SettingMigration[] = [
       const settingStore = useSettingStore()
       const keybindings = settingStore.get(
         'Comfy.Keybinding.UnsetBindings'
-      ) as any[]
+      ) as Keybinding[]
       const migrated = keybindings.map((keybinding) => {
-        if (keybinding['targetSelector'] === '#graph-canvas') {
-          keybinding['targetElementId'] = 'graph-canvas'
-          delete keybinding['targetSelector']
+        // Create a new object to avoid mutating the original
+        const newKeybinding = { ...keybinding }
+        if (
+          'targetSelector' in newKeybinding &&
+          newKeybinding['targetSelector'] === '#graph-canvas'
+        ) {
+          newKeybinding['targetElementId'] = 'graph-canvas'
+          delete newKeybinding['targetSelector']
         }
-        return keybinding
+        return newKeybinding
       })
       await settingStore.set('Comfy.Keybinding.UnsetBindings', migrated)
     }
