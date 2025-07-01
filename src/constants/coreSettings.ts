@@ -431,6 +431,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Use new menu',
     type: 'combo',
     options: ['Disabled', 'Top', 'Bottom'],
+    tooltip:
+      'Menu bar position. On mobile devices, the menu is always shown at the top.',
     migrateDeprecatedValue: (value: string) => {
       // Floating is now supported by dragging the docked actionbar off.
       if (value === 'Floating') {
