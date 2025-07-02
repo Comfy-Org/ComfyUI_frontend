@@ -31,7 +31,6 @@ import {
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import { ComfyModelDef } from '@/stores/modelStore'
-import { useSettingStore } from '@/stores/settingStore'
 import { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
 import ModelPreview from './ModelPreview.vue'
@@ -62,11 +61,6 @@ const modelPreviewStyle = ref<CSSProperties>({
   left: '0px'
 })
 
-const settingStore = useSettingStore()
-const sidebarLocation = computed<'left' | 'right'>(() =>
-  settingStore.get('Comfy.Sidebar.Location')
-)
-
 const handleModelHover = async () => {
   const hoverTarget = modelContentElement.value
   if (!hoverTarget) return
@@ -80,11 +74,7 @@ const handleModelHover = async () => {
     previewHeight > availableSpaceBelow
       ? `${Math.max(0, targetRect.top - (previewHeight - availableSpaceBelow) - 20)}px`
       : `${targetRect.top - 40}px`
-  if (sidebarLocation.value === 'left') {
-    modelPreviewStyle.value.left = `${targetRect.right}px`
-  } else {
-    modelPreviewStyle.value.left = `${targetRect.left - 400}px`
-  }
+  modelPreviewStyle.value.left = `${targetRect.right}px`
 
   await modelDef.value.load()
 }

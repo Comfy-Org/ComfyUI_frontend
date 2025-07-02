@@ -1,5 +1,5 @@
 <template>
-  <teleport :to="teleportTarget">
+  <teleport to=".comfyui-body-left">
     <nav class="side-tool-bar-container" :class="{ 'small-sidebar': isSmall }">
       <SidebarIcon
         v-for="tab in tabs"
@@ -46,12 +46,6 @@ import SidebarThemeToggleIcon from './SidebarThemeToggleIcon.vue'
 const workspaceStore = useWorkspaceStore()
 const settingStore = useSettingStore()
 const userStore = useUserStore()
-
-const teleportTarget = computed(() =>
-  settingStore.get('Comfy.Sidebar.Location') === 'left'
-    ? '.comfyui-body-left'
-    : '.comfyui-body-right'
-)
 
 const isSmall = computed(
   () => settingStore.get('Comfy.Sidebar.Size') === 'small'

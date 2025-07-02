@@ -82,9 +82,4 @@ watch(
   () => nextTick(updateToastPosition),
   { immediate: true }
 )
-watch(
-  () => settingStore.get('Comfy.Sidebar.Location'),
-  () => nextTick(updateToastPosition),
-  { immediate: true }
-)
 </script>

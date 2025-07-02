@@ -12,10 +12,8 @@
     <Teleport to="#graph-canvas-container">
       <div
         v-if="isHelpCenterVisible"
-        class="help-center-popup"
+        class="help-center-popup sidebar-left"
         :class="{
-          'sidebar-left': sidebarLocation === 'left',
-          'sidebar-right': sidebarLocation === 'right',
           'small-sidebar': sidebarSize === 'small'
         }"
       >
@@ -26,9 +24,8 @@
     <!-- Release Notification Toast positioned within canvas area -->
     <Teleport to="#graph-canvas-container">
       <ReleaseNotificationToast
+        class="sidebar-left"
         :class="{
-          'sidebar-left': sidebarLocation === 'left',
-          'sidebar-right': sidebarLocation === 'right',
           'small-sidebar': sidebarSize === 'small'
         }"
       />
@@ -37,9 +34,8 @@
     <!-- WhatsNew Popup positioned within canvas area -->
     <Teleport to="#graph-canvas-container">
       <WhatsNewPopup
+        class="sidebar-left"
         :class="{
-          'sidebar-left': sidebarLocation === 'left',
-          'sidebar-right': sidebarLocation === 'right',
           'small-sidebar': sidebarSize === 'small'
         }"
       />
@@ -72,10 +68,6 @@ const settingStore = useSettingStore()
 const releaseStore = useReleaseStore()
 const { shouldShowRedDot } = storeToRefs(releaseStore)
 const isHelpCenterVisible = ref(false)
-
-const sidebarLocation = computed(() =>
-  settingStore.get('Comfy.Sidebar.Location')
-)
 
 const sidebarSize = computed(() => settingStore.get('Comfy.Sidebar.Size'))
 
@@ -119,10 +111,6 @@ onMounted(async () => {
 
 .help-center-popup.sidebar-left.small-sidebar {
   left: 1rem;
-}
-
-.help-center-popup.sidebar-right {
-  right: 1rem;
 }
 
 @keyframes slideInUp {
