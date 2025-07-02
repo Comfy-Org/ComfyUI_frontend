@@ -132,17 +132,13 @@ async function checkNewUnusedKeys() {
     process.exit(0)
   }
 
-  console.log('Checking for unused keys in staged locale files...\n')
-
   // Get all new keys from staged files
   const newKeys = getNewKeysFromStagedFiles(stagedLocaleFiles)
 
   if (newKeys.size === 0) {
-    console.log('✅ No new keys added in staged files')
+    // Silent success - no output needed
     process.exit(0)
   }
-
-  console.log(`Found ${newKeys.size} new keys in staged files`)
 
   // Get all source files
   const sourceFiles = globSync(SOURCE_PATTERNS)
@@ -172,7 +168,7 @@ async function checkNewUnusedKeys() {
 
     process.exit(1)
   } else {
-    console.log('\n✅ All new i18n keys are being used!')
+    // Silent success - no output needed
   }
 }
 
