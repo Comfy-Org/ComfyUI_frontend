@@ -40,6 +40,7 @@
       <SelectionToolbox />
     </SelectionOverlay>
     <DomWidgets />
+    <RightSideToolbar />
   </template>
 </template>
 
@@ -58,6 +59,7 @@ import SelectionOverlay from '@/components/graph/SelectionOverlay.vue'
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
+import RightSideToolbar from '@/components/sidebar/RightSideToolbar.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import SecondRowWorkflowTabs from '@/components/topbar/SecondRowWorkflowTabs.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'

@@ -19,6 +19,19 @@
     <CurrentUserButton class="flex-shrink-0" />
     <BottomPanelToggleButton class="flex-shrink-0" />
     <Button
+      v-tooltip="{ value: 'Toggle Right Sidebar', showDelay: 300 }"
+      class="flex-shrink-0"
+      :icon="
+        rightSidebarTabStore.isVisible
+          ? 'pi pi-angle-double-right'
+          : 'pi pi-angle-double-left'
+      "
+      severity="secondary"
+      text
+      aria-label="Toggle Right Sidebar"
+      @click="rightSidebarTabStore.toggleVisibility()"
+    />
+    <Button
       v-tooltip="{ value: $t('menu.hideMenu'), showDelay: 300 }"
       class="flex-shrink-0"
       icon="pi pi-bars"
@@ -53,6 +66,7 @@ import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { app } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'
+import { useRightSidebarTabStore } from '@/stores/workspace/rightSidebarTabStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import {
   electronAPI,
@@ -63,6 +77,7 @@ import {
 
 const workspaceState = useWorkspaceStore()
 const settingStore = useSettingStore()
+const rightSidebarTabStore = useRightSidebarTabStore()
 
 const workflowTabsPosition = computed(() =>
   settingStore.get('Comfy.Workflow.WorkflowTabsPosition')

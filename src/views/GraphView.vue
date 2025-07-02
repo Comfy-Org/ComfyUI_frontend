@@ -317,6 +317,7 @@ const onGraphReady = () => {
   z-index: 10;
   grid-column: 3;
   grid-row: 2;
+  display: flex;
 }
 
 .comfyui-body-bottom {
