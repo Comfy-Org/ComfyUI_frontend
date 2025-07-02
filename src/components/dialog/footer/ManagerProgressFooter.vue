@@ -22,6 +22,7 @@
     </div>
     <div class="flex items-center gap-4">
       <span v-if="isInProgress" class="text-xs font-bold text-neutral-600">
+        <!-- eslint-disable-next-line @intlify/vue-i18n/no-raw-text -->
         {{ comfyManagerStore.uncompletedCount }} of
         {{ comfyManagerStore.taskLogs.length }}
       </span>

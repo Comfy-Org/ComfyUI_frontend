@@ -31,6 +31,7 @@
     "@eslint/js": "^9.8.0",
     "@executeautomation/playwright-mcp-server": "^1.0.5",
     "@iconify/json": "^2.2.245",
+    "@intlify/eslint-plugin-vue-i18n": "^3.2.0",
     "@lobehub/i18n-cli": "^1.20.0",
     "@pinia/testing": "^0.1.5",
     "@playwright/test": "^1.52.0",

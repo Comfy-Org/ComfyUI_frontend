@@ -15,7 +15,7 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
         <div class="_sb_dot headdot" />
         {{ nodeDef.display_name }}
       </div>
-      <div class="_sb_preview_badge">PREVIEW</div>
+      <div class="_sb_preview_badge">{{ $t('g.preview') }}</div>
 
       <!-- Node slot I/O -->
       <div

@@ -46,7 +46,7 @@
       <div class="flex flex-col gap-2">
         <div class="flex items-center gap-2">
           <i class="pi pi-folder text-neutral-400" />
-          <span class="text-neutral-400">App Data:</span>
+          <span class="text-neutral-400">{{ $t('install.appData') }}:</span>
           <span class="text-neutral-200">{{ appData }}</span>
           <span
             v-tooltip="$t('install.appDataLocationTooltip')"
@@ -55,7 +55,7 @@
         </div>
         <div class="flex items-center gap-2">
           <i class="pi pi-desktop text-neutral-400" />
-          <span class="text-neutral-400">App Path:</span>
+          <span class="text-neutral-400">{{ $t('install.appPath') }}:</span>
           <span class="text-neutral-200">{{ appPath }}</span>
           <span
             v-tooltip="$t('install.appPathLocationTooltip')"

@@ -131,6 +131,7 @@
           {{ t('auth.login.privacyLink') }} </a
         >.
         {{ t('auth.login.questionsContactPrefix') }}
+        <!-- eslint-disable-next-line @intlify/vue-i18n/no-raw-text -->
         <a href="mailto:hello@comfy.org" class="text-blue-500 cursor-pointer">
           hello@comfy.org</a
         >.

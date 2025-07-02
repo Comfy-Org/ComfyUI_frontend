@@ -64,9 +64,11 @@
         >
           <i class="pi pi-refresh help-menu-icon" aria-hidden="true" />
           <div class="release-content">
+            <!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
             <span class="release-title">
               Comfy {{ release.version }} Release
             </span>
+            <!-- eslint-enable @intlify/vue-i18n/no-raw-text -->
             <time class="release-date" :datetime="release.published_at">
               <span class="normal-state">
                 {{ formatReleaseDate(release.published_at) }}
