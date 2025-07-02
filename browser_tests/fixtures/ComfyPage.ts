@@ -285,7 +285,6 @@ export class ComfyPage {
           url.includes('api.comfy.org') ||
           url.includes('stagingapi.comfy.org')
         ) {
-          console.log('Mocking releases API')
           await route.fulfill({
             status: 200,
             contentType: 'application/json',

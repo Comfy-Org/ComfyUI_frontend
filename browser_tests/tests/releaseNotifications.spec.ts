@@ -3,6 +3,10 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 test.describe('Release Notifications', () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+  })
+
   test('should show help center with release information', async ({
     comfyPage
   }) => {
