@@ -4,6 +4,7 @@
     <nav class="help-menu-section" role="menubar">
       <button
         v-for="menuItem in menuItems"
+        v-show="menuItem.visible !== false"
         :key="menuItem.key"
         type="button"
         class="help-menu-item"
@@ -35,8 +36,6 @@
             v-else
             type="button"
             class="help-menu-item submenu-item"
-            :class="{ disabled: submenuItem.disabled }"
-            :disabled="submenuItem.disabled"
             role="menuitem"
             @click="submenuItem.action"
           >
@@ -116,6 +115,7 @@ import Button from 'primevue/button'
 import { type CSSProperties, computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useCoreCommands } from '@/composables/useCoreCommands'
 import { type ReleaseNote } from '@/services/releaseService'
 import { useReleaseStore } from '@/stores/releaseStore'
 import { electronAPI, isElectron } from '@/utils/envUtil'
@@ -127,6 +127,7 @@ interface MenuItem {
   icon: string
   label: string
   action: () => void
+  visible?: boolean
 }
 
 interface SubmenuItem {
@@ -134,7 +135,6 @@ interface SubmenuItem {
   type?: 'item' | 'divider'
   label?: string
   action?: () => void
-  disabled?: boolean
 }
 
 // Constants
@@ -164,6 +164,7 @@ const SUBMENU_CONFIG = {
 // Composables
 const { t, locale } = useI18n()
 const releaseStore = useReleaseStore()
+const coreCommands = useCoreCommands()
 
 // State
 const isSubmenuVisible = ref(false)
@@ -197,13 +198,21 @@ const menuItems = computed<MenuItem[]>(() => [
     key: 'help',
     icon: 'pi pi-question-circle',
     label: t('helpCenter.helpFeedback'),
-    action: () => openExternalLink(EXTERNAL_LINKS.DISCORD)
+    action: () => {
+      const feedbackCommand = coreCommands.find(
+        (cmd) => cmd.id === 'Comfy.Feedback'
+      )
+      if (feedbackCommand) {
+        void feedbackCommand.function()
+      }
+    }
   },
   {
     key: 'more',
     icon: '',
     label: t('helpCenter.more'),
-    action: () => {} // No action for more item
+    action: () => {}, // No action for more item
+    visible: isElectron()
   }
 ])
 
@@ -212,15 +221,13 @@ const submenuItems = computed<SubmenuItem[]>(() => [
     key: 'desktop-guide',
     type: 'item',
     label: t('helpCenter.desktopUserGuide'),
-    action: () => openExternalLink(EXTERNAL_LINKS.DESKTOP_GUIDE),
-    disabled: false
+    action: () => openExternalLink(EXTERNAL_LINKS.DESKTOP_GUIDE)
   },
   {
     key: 'dev-tools',
     type: 'item',
     label: t('helpCenter.openDevTools'),
-    action: openDevTools,
-    disabled: !isElectron()
+    action: openDevTools
   },
   {
     key: 'divider-1',
@@ -230,8 +237,7 @@ const submenuItems = computed<SubmenuItem[]>(() => [
     key: 'reinstall',
     type: 'item',
     label: t('helpCenter.reinstall'),
-    action: onReinstall,
-    disabled: !isElectron()
+    action: onReinstall
   }
 ])
 
@@ -549,13 +555,6 @@ onMounted(async () => {
 .submenu-item:focus-visible {
   outline: none;
   box-shadow: none;
-}
-
-.submenu-item.disabled,
-.submenu-item:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  pointer-events: none;
 }
 
 .submenu-divider {
