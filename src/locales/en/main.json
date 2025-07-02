@@ -32,6 +32,13 @@
     "error": "Error",
     "help": "Help",
     "loading": "Loading",
+    "loadingPanel": "Loading {panel} panel...",
+    "preview": "PREVIEW",
+    "addNodeFilterCondition": "Add node filter condition",
+    "architecture": "Architecture",
+    "author": "Author",
+    "usageHint": "Usage hint",
+    "triggerPhrase": "Trigger phrase",
     "findIssues": "Find Issues",
     "reportIssue": "Send Report",
     "reportIssueTooltip": "Submit the error report to Comfy Org",
@@ -123,7 +130,10 @@
     "copy": "Copy",
     "imageUrl": "Image URL",
     "clear": "Clear",
-    "copyURL": "Copy URL"
+    "copyURL": "Copy URL",
+    "releaseTitle": "{package} {version} Release",
+    "progressCountOf": "of",
+    "keybindingAlreadyExists": "Keybinding already exists on"
   },
   "manager": {
     "title": "Custom Nodes Manager",
