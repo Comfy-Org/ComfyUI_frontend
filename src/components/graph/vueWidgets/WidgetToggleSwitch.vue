@@ -32,19 +32,20 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import { computed } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { WidgetToggleSwitchProps } from '@/types/widgetPropTypes'
 import {
-  STANDARD_EXCLUDED_PROPS,
+  INPUT_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
 const value = defineModel<boolean>({ required: true })
 
 const props = defineProps<{
-  widget: SimplifiedWidget<boolean>
+  widget: SimplifiedWidget<boolean, WidgetToggleSwitchProps>
   readonly?: boolean
 }>()
 
 const filteredProps = computed(() =>
-  filterWidgetProps(props.widget.options, STANDARD_EXCLUDED_PROPS)
+  filterWidgetProps(props.widget.options, INPUT_EXCLUDED_PROPS)
 )
 </script>
