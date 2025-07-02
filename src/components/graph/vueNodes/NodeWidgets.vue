@@ -3,36 +3,44 @@
     ⚠️ Node Widgets Error
   </div>
   <div v-else class="lg-node-widgets flex flex-col gap-2">
-    <div
-      v-for="(widget, index) in widgets"
+    <component
+      :is="getVueComponent(widget)"
+      v-for="(widget, index) in supportedWidgets"
       :key="`widget-${index}-${widget.name}`"
-      class="widget-stub"
-    >
-      <div class="text-xs text-gray-400">{{ widget.name }}</div>
-      <div class="text-sm text-gray-200 bg-gray-800 px-2 py-1 rounded">
-        {{ widget.type }}: {{ getWidgetValue(widget) }}
-      </div>
-    </div>
+      :widget="simplifiedWidget(widget)"
+      :model-value="getWidgetValue(widget)"
+      :readonly="readonly"
+      @update:model-value="
+        (value: unknown) => handleWidgetUpdate(widget, value)
+      "
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import type { LGraphNode } from '@comfyorg/litegraph'
-import type { IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
-import { computed, onErrorCaptured, ref, markRaw } from 'vue'
+import { computed, onErrorCaptured, ref } from 'vue'
 
-import {
-  WidgetType,
-  getWidgetComponent as getWidgetComponentFromRegistry
-} from '@/components/graph/vueWidgets/widgetRegistry'
+// Import widget components directly
+import WidgetInputText from '@/components/graph/vueWidgets/WidgetInputText.vue'
+import { widgetTypeToComponent } from '@/components/graph/vueWidgets/widgetRegistry'
+import type {
+  SafeWidgetData,
+  VueNodeData
+} from '@/composables/graph/useGraphNodeManager'
+import { useWidgetRenderer } from '@/composables/graph/useWidgetRenderer'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 interface NodeWidgetsProps {
-  node: LGraphNode
+  node?: LGraphNode // For backwards compatibility
+  nodeData?: VueNodeData // New clean data structure
   readonly?: boolean
 }
 
 const props = defineProps<NodeWidgetsProps>()
+
+// Use widget renderer composable
+const { getWidgetComponent, shouldRenderAsVue } = useWidgetRenderer()
 
 // Error boundary implementation
 const renderError = ref<string | null>(null)
@@ -43,46 +51,67 @@ onErrorCaptured((error) => {
   return false
 })
 
+const nodeInfo = computed(() => props.nodeData || props.node)
+
 // Get non-hidden widgets
-const widgets = computed(() => {
-  // Mark widgets as raw to prevent Vue proxy wrapping
-  return (props.node.widgets?.filter((w) => !w.options?.hidden) || []).map(w => markRaw(w))
+const widgets = computed((): SafeWidgetData[] => {
+  const info = nodeInfo.value
+  if (!info?.widgets) return []
+
+  console.log('[NodeWidgets] Raw widgets from nodeInfo:', info.widgets)
+
+  const filtered = (info.widgets as SafeWidgetData[]).filter(
+    (w: SafeWidgetData) => !w.options?.hidden
+  )
+  console.log('[NodeWidgets] Filtered widgets:', filtered)
+
+  return filtered
 })
 
-// Map widget type to our widget registry
-const getWidgetComponent = (widget: IBaseWidget) => {
-  // Map LiteGraph widget types to our WidgetType enum
-  const typeMapping: Record<string, WidgetType> = {
-    number: WidgetType.SLIDER,
-    float: WidgetType.SLIDER,
-    int: WidgetType.SLIDER,
-    string: WidgetType.STRING,
-    text: WidgetType.TEXTAREA,
-    combo: WidgetType.COMBO,
-    toggle: WidgetType.BOOLEAN,
-    boolean: WidgetType.BOOLEAN,
-    button: WidgetType.BUTTON,
-    color: WidgetType.COLOR,
-    image: WidgetType.IMAGE,
-    file: WidgetType.FILEUPLOAD
-  }
+// Only render widgets that have Vue component support
+const supportedWidgets = computed((): SafeWidgetData[] => {
+  const allWidgets = widgets.value
+  console.log('[NodeWidgets] All widgets:', allWidgets)
 
-  const widgetType = typeMapping[widget.type] || widget.type.toUpperCase()
-  return getWidgetComponentFromRegistry(widgetType) || null
+  const supported = allWidgets.filter((widget: SafeWidgetData) => {
+    const isSupported = shouldRenderAsVue(widget)
+    console.log(
+      '[NodeWidgets] Widget:',
+      widget.name,
+      'type:',
+      widget.type,
+      'supported:',
+      isSupported
+    )
+    return isSupported
+  })
+
+  console.log('[NodeWidgets] Supported widgets:', supported)
+  return supported
+})
+
+// Get Vue component for widget
+const getVueComponent = (widget: SafeWidgetData) => {
+  const componentName = getWidgetComponent(widget.type)
+  console.log(
+    '[NodeWidgets] Widget type:',
+    widget.type,
+    'Component name:',
+    componentName
+  )
+
+  const component = widgetTypeToComponent[componentName]
+  console.log('[NodeWidgets] Resolved component:', component)
+
+  return component || WidgetInputText // Fallback to text input
 }
 
-// Get widget value safely (handles private field access)
-const getWidgetValue = (widget: IBaseWidget): any => {
-  try {
-    // The widget has a getter for value that accesses the private #value field
-    return widget.value
-  } catch {
-    return undefined
-  }
+const getWidgetValue = (widget: SafeWidgetData): unknown => {
+  console.log('[NodeWidgets] Widget value for', widget.name, ':', widget.value)
+  return widget.value
 }
 
-// Convert LiteGraph widget to SimplifiedWidget interface
-const simplifiedWidget = (widget: IBaseWidget): SimplifiedWidget => {
+const simplifiedWidget = (widget: SafeWidgetData): SimplifiedWidget => {
   return {
     name: widget.name,
     type: widget.type,
@@ -93,17 +122,13 @@ const simplifiedWidget = (widget: IBaseWidget): SimplifiedWidget => {
 }
 
 // Handle widget value updates
-const handleWidgetUpdate = (widget: IBaseWidget, value: any) => {
+const handleWidgetUpdate = (widget: SafeWidgetData, value: unknown) => {
   widget.value = value
 
-  // Call widget callback if exists
   if (widget.callback) {
     widget.callback(value)
   }
 
-  // Mark node as dirty for LiteGraph
-  if (props.node.onWidgetChanged) {
-    props.node.onWidgetChanged(widget.name, value, null, widget)
-  }
+  // TODO: Implement proper widget change handling to sync back to LiteGraph
 }
 </script>
