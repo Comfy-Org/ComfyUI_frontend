@@ -64,7 +64,8 @@ export default [
           // 1. Less than 2 characters
           // 2. Only symbols/numbers/whitespace (no letters)
           // 3. Match specific patterns
-          ignorePattern: '^[^a-zA-Z]*$|^.{0,1}$',
+          ignorePattern:
+            '^[^a-zA-Z]*$|^.{0,1}$|^[\\w._%+-]+@[\\w.-]+\\.[A-Za-z]{2,}$',
           ignoreNodes: ['md-icon', 'v-icon', 'pre', 'code', 'script', 'style'],
           // Brand names and technical terms that shouldn't be translated
           ignoreText: [

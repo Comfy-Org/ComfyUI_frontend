@@ -97,15 +97,13 @@
           fluid
           @keydown.stop.prevent="captureKeybinding"
         />
-        <!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
         <Message v-if="existingKeybindingOnCombo" severity="warn">
-          Keybinding already exists on
+          {{ $t('g.keybindingAlreadyExists') }}
           <Tag
             severity="secondary"
             :value="existingKeybindingOnCombo.commandId"
           />
         </Message>
-        <!-- eslint-enable @intlify/vue-i18n/no-raw-text -->
       </div>
       <template #footer>
         <Button
