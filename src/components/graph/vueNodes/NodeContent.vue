@@ -15,8 +15,11 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
 import { onErrorCaptured, ref } from 'vue'
 
+import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+
 interface NodeContentProps {
-  node: LGraphNode
+  node?: LGraphNode // For backwards compatibility
+  nodeData?: VueNodeData // New clean data structure
   readonly?: boolean
 }
 

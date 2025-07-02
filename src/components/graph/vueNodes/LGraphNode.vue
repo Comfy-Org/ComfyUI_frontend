@@ -7,53 +7,58 @@
     :class="[
       'lg-node absolute border-2 rounded',
       'contain-layout contain-style contain-paint',
-      selected
-        ? 'border-blue-500 ring-2 ring-blue-300'
-        : 'border-gray-600',
+      selected ? 'border-blue-500 ring-2 ring-blue-300' : 'border-gray-600',
       executing ? 'animate-pulse' : '',
-      node.mode === 4 ? 'opacity-50' : '', // bypassed
+      nodeData.mode === 4 ? 'opacity-50' : '', // bypassed
       error ? 'border-red-500 bg-red-50' : '',
       isDragging ? 'will-change-transform' : ''
     ]"
     :style="{
-      transform: `translate(${position?.x ?? node.pos[0]}px, ${position?.y ?? node.pos[1]}px)`,
-      width: size ? `${size.width}px` : `${node.size[0]}px`,
-      height: size && !node.flags?.collapsed ? `${size.height}px` : 'auto',
-      backgroundColor: node.bgcolor || '#353535'
+      transform: `translate(${position?.x ?? 0}px, ${position?.y ?? 0}px)`,
+      width: size ? `${size.width}px` : '200px',
+      height: size ? `${size.height}px` : 'auto',
+      backgroundColor: '#353535'
     }"
     @pointerdown="handlePointerDown"
   >
     <!-- Header only updates on title/color changes -->
     <NodeHeader
-      v-memo="[node.title, node.color]"
-      :node="node"
+      v-memo="[nodeData.title]"
+      :node-data="nodeData"
       :readonly="readonly"
       @collapse="handleCollapse"
     />
 
-    <!-- Node Body (only visible when not collapsed) -->
-    <div v-if="!node.flags?.collapsed" class="flex flex-col gap-2 p-2">
+    <!-- Node Body -->
+    <div class="flex flex-col gap-2 p-2">
       <!-- Slots only update when connections change -->
       <NodeSlots
-        v-memo="[node.inputs?.length, node.outputs?.length]"
-        :node="node"
+        v-memo="[nodeData.inputs?.length, nodeData.outputs?.length]"
+        :node-data="nodeData"
         :readonly="readonly"
         @slot-click="handleSlotClick"
       />
 
       <!-- Widgets update on value changes -->
       <NodeWidgets
-        v-if="node.widgets?.length"
-        v-memo="[node.widgets?.length]"
-        :node="node"
+        v-if="nodeData.widgets?.length"
+        v-memo="[nodeData.widgets?.length]"
+        :node-data="nodeData"
         :readonly="readonly"
       />
 
       <!-- Custom content area -->
-      <NodeContent v-if="hasCustomContent" :node="node" :readonly="readonly" />
-      
+      <NodeContent
+        v-if="hasCustomContent"
+        :node-data="nodeData"
+        :readonly="readonly"
+      />
+
       <!-- Placeholder if no widgets -->
-      <div v-if="!node.widgets?.length && !hasCustomContent" class="text-gray-500 text-sm text-center py-4">
+      <div
+        v-if="!nodeData.widgets?.length && !hasCustomContent"
+        class="text-gray-500 text-sm text-center py-4"
+      >
         No widgets
       </div>
     </div>
@@ -68,8 +73,10 @@
 </template>
 
 <script setup lang="ts">
-import type { LGraphNode } from '@comfyorg/litegraph'
 import { computed, onErrorCaptured, ref } from 'vue'
+
+// Import the VueNodeData type
+import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
@@ -78,7 +85,7 @@ import NodeWidgets from './NodeWidgets.vue'
 
 // Extended props for main node component
 interface LGraphNodeProps {
-  node: LGraphNode
+  nodeData: VueNodeData
   position?: { x: number; y: number }
   size?: { width: number; height: number }
   readonly?: boolean
@@ -92,10 +99,10 @@ interface LGraphNodeProps {
 const props = defineProps<LGraphNodeProps>()
 
 const emit = defineEmits<{
-  'node-click': [event: PointerEvent, node: LGraphNode]
+  'node-click': [event: PointerEvent, nodeData: VueNodeData]
   'slot-click': [
     event: PointerEvent,
-    node: LGraphNode,
+    nodeData: VueNodeData,
     slotIndex: number,
     isInput: boolean
   ]
@@ -123,13 +130,10 @@ const hasCustomContent = computed(() => {
 
 // Event handlers
 const handlePointerDown = (event: PointerEvent) => {
-  emit('node-click', event, props.node)
-  // The parent component will handle setting isDragging when appropriate
+  emit('node-click', event, props.nodeData!)
 }
 
 const handleCollapse = () => {
-  // Parent component should handle node mutations
-  // This is just emitting the event upwards
   emit('collapse')
 }
 
@@ -138,7 +142,7 @@ const handleSlotClick = (
   slotIndex: number,
   isInput: boolean
 ) => {
-  emit('slot-click', event, props.node, slotIndex, isInput)
+  emit('slot-click', event, props.nodeData!, slotIndex, isInput)
 }
 
 // Expose methods for parent to control dragging state
