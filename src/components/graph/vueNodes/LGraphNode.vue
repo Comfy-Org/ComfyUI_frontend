@@ -5,20 +5,21 @@
   <div
     v-else
     :class="[
-      'lg-node absolute border-2 rounded bg-surface-0',
+      'lg-node absolute border-2 rounded',
       'contain-layout contain-style contain-paint',
       selected
-        ? 'border-primary-500 ring-2 ring-primary-300'
-        : 'border-surface-300',
+        ? 'border-blue-500 ring-2 ring-blue-300'
+        : 'border-gray-600',
       executing ? 'animate-pulse' : '',
       node.mode === 4 ? 'opacity-50' : '', // bypassed
       error ? 'border-red-500 bg-red-50' : '',
       isDragging ? 'will-change-transform' : ''
     ]"
     :style="{
-      transform: `translate(${position.x}px, ${position.y}px)`,
-      width: node.size ? `${node.size[0]}px` : 'auto',
-      minWidth: '200px'
+      transform: `translate(${position?.x ?? node.pos[0]}px, ${position?.y ?? node.pos[1]}px)`,
+      width: size ? `${size.width}px` : `${node.size[0]}px`,
+      height: size && !node.flags?.collapsed ? `${size.height}px` : 'auto',
+      backgroundColor: node.bgcolor || '#353535'
     }"
     @pointerdown="handlePointerDown"
   >
@@ -43,16 +44,18 @@
       <!-- Widgets update on value changes -->
       <NodeWidgets
         v-if="node.widgets?.length"
-        v-memo="[
-          node.widgets?.length,
-          ...(node.widgets?.map((w) => w.value) ?? [])
-        ]"
+        v-memo="[node.widgets?.length]"
         :node="node"
         :readonly="readonly"
       />
 
       <!-- Custom content area -->
       <NodeContent v-if="hasCustomContent" :node="node" :readonly="readonly" />
+      
+      <!-- Placeholder if no widgets -->
+      <div v-if="!node.widgets?.length && !hasCustomContent" class="text-gray-500 text-sm text-center py-4">
+        No widgets
+      </div>
     </div>
 
     <!-- Progress bar for executing state -->
@@ -66,7 +69,7 @@
 
 <script setup lang="ts">
 import type { LGraphNode } from '@comfyorg/litegraph'
-import { computed, onErrorCaptured, reactive, ref, watch } from 'vue'
+import { computed, onErrorCaptured, ref } from 'vue'
 
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
@@ -76,6 +79,8 @@ import NodeWidgets from './NodeWidgets.vue'
 // Extended props for main node component
 interface LGraphNodeProps {
   node: LGraphNode
+  position?: { x: number; y: number }
+  size?: { width: number; height: number }
   readonly?: boolean
   selected?: boolean
   executing?: boolean
@@ -106,27 +111,8 @@ onErrorCaptured((error) => {
   return false // Prevent error propagation
 })
 
-// Position state - initialized from node.pos but then controlled via transforms
-const position = reactive({
-  x: props.node.pos[0],
-  y: props.node.pos[1]
-})
-
 // Track dragging state for will-change optimization
 const isDragging = ref(false)
-
-// Only update position when node.pos changes AND we're not dragging
-// This prevents reflows during drag operations
-watch(
-  () => props.node.pos,
-  (newPos) => {
-    if (!isDragging.value) {
-      position.x = newPos[0]
-      position.y = newPos[1]
-    }
-  },
-  { deep: true }
-)
 
 // Check if node has custom content
 const hasCustomContent = computed(() => {
@@ -155,12 +141,8 @@ const handleSlotClick = (
   emit('slot-click', event, props.node, slotIndex, isInput)
 }
 
-// Expose methods for parent to control position during drag
+// Expose methods for parent to control dragging state
 defineExpose({
-  setPosition(x: number, y: number) {
-    position.x = x
-    position.y = y
-  },
   setDragging(dragging: boolean) {
     isDragging.value = dragging
   }

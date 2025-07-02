@@ -57,8 +57,8 @@ export const useTransformState = () => {
 
   // Get node's screen bounds for culling
   const getNodeScreenBounds = (
-    pos: [number, number],
-    size: [number, number]
+    pos: ArrayLike<number>,
+    size: ArrayLike<number>
   ): DOMRect => {
     const topLeft = canvasToScreen({ x: pos[0], y: pos[1] })
     const width = size[0] * camera.z
@@ -67,26 +67,46 @@ export const useTransformState = () => {
     return new DOMRect(topLeft.x, topLeft.y, width, height)
   }
 
-  // Check if node is within viewport
+  // Check if node is within viewport with frustum and size-based culling
   const isNodeInViewport = (
-    nodePos: [number, number],
-    nodeSize: [number, number],
-    viewport: DOMRect,
+    nodePos: ArrayLike<number>,
+    nodeSize: ArrayLike<number>,
+    viewport: { width: number; height: number },
     margin: number = 0.2 // 20% margin by default
   ): boolean => {
-    const nodeBounds = getNodeScreenBounds(nodePos, nodeSize)
-    const expandedViewport = new DOMRect(
-      viewport.x - viewport.width * margin,
-      viewport.y - viewport.height * margin,
-      viewport.width * (1 + margin * 2),
-      viewport.height * (1 + margin * 2)
-    )
-
+    const screenPos = canvasToScreen({ x: nodePos[0], y: nodePos[1] })
+    
+    // Adjust margin based on zoom level for better performance
+    let adjustedMargin = margin
+    if (camera.z < 0.1) {
+      adjustedMargin = Math.min(margin * 5, 2.0) // More aggressive at low zoom
+    } else if (camera.z > 3.0) {
+      adjustedMargin = Math.max(margin * 0.5, 0.05) // Tighter at high zoom
+    }
+    
+    // Skip nodes too small to be visible
+    const nodeScreenSize = Math.max(nodeSize[0], nodeSize[1]) * camera.z
+    if (nodeScreenSize < 4) {
+      return false
+    }
+    
+    // Early rejection tests for performance
+    const nodeRight = screenPos.x + (nodeSize[0] * camera.z)
+    const nodeBottom = screenPos.y + (nodeSize[1] * camera.z)
+    
+    // Use actual viewport dimensions (already accounts for browser zoom via clientWidth/Height)
+    const marginX = viewport.width * adjustedMargin
+    const marginY = viewport.height * adjustedMargin
+    const expandedLeft = -marginX
+    const expandedRight = viewport.width + marginX
+    const expandedTop = -marginY
+    const expandedBottom = viewport.height + marginY
+    
     return !(
-      nodeBounds.right < expandedViewport.left ||
-      nodeBounds.left > expandedViewport.right ||
-      nodeBounds.bottom < expandedViewport.top ||
-      nodeBounds.top > expandedViewport.bottom
+      nodeRight < expandedLeft || 
+      screenPos.x > expandedRight ||
+      nodeBottom < expandedTop || 
+      screenPos.y > expandedBottom
     )
   }
 

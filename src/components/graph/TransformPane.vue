@@ -18,7 +18,7 @@ import { useTransformState } from '@/composables/element/useTransformState'
 
 interface TransformPaneProps {
   canvas?: LGraphCanvas
-  viewport?: DOMRect
+  viewport?: { width: number; height: number }
 }
 
 const props = defineProps<TransformPaneProps>()
@@ -76,10 +76,19 @@ const handlePointerDown = (event: PointerEvent) => {
 
 // Sync with canvas on RAF
 let rafId: number | null = null
+const emit = defineEmits<{
+  rafStatusChange: [active: boolean]
+  transformUpdate: [time: number]
+}>()
+
 const startSync = () => {
+  emit('rafStatusChange', true)
   const sync = () => {
     if (props.canvas) {
+      const startTime = performance.now()
       syncWithCanvas(props.canvas)
+      const endTime = performance.now()
+      emit('transformUpdate', endTime - startTime)
     }
     rafId = requestAnimationFrame(sync)
   }
@@ -90,6 +99,7 @@ const stopSync = () => {
   if (rafId !== null) {
     cancelAnimationFrame(rafId)
     rafId = null
+    emit('rafStatusChange', false)
   }
 }
 

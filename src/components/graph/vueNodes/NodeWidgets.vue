@@ -3,22 +3,23 @@
     ⚠️ Node Widgets Error
   </div>
   <div v-else class="lg-node-widgets flex flex-col gap-2">
-    <component
-      :is="getWidgetComponent(widget)"
+    <div
       v-for="(widget, index) in widgets"
       :key="`widget-${index}-${widget.name}`"
-      v-model="widget.value"
-      :widget="simplifiedWidget(widget)"
-      :readonly="readonly"
-      @update:model-value="(value: any) => handleWidgetUpdate(widget, value)"
-    />
+      class="widget-stub"
+    >
+      <div class="text-xs text-gray-400">{{ widget.name }}</div>
+      <div class="text-sm text-gray-200 bg-gray-800 px-2 py-1 rounded">
+        {{ widget.type }}: {{ getWidgetValue(widget) }}
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { LGraphNode } from '@comfyorg/litegraph'
 import type { IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
-import { computed, onErrorCaptured, ref } from 'vue'
+import { computed, onErrorCaptured, ref, markRaw } from 'vue'
 
 import {
   WidgetType,
@@ -44,7 +45,8 @@ onErrorCaptured((error) => {
 
 // Get non-hidden widgets
 const widgets = computed(() => {
-  return props.node.widgets?.filter((w) => !w.options?.hidden) || []
+  // Mark widgets as raw to prevent Vue proxy wrapping
+  return (props.node.widgets?.filter((w) => !w.options?.hidden) || []).map(w => markRaw(w))
 })
 
 // Map widget type to our widget registry
@@ -69,12 +71,22 @@ const getWidgetComponent = (widget: IBaseWidget) => {
   return getWidgetComponentFromRegistry(widgetType) || null
 }
 
+// Get widget value safely (handles private field access)
+const getWidgetValue = (widget: IBaseWidget): any => {
+  try {
+    // The widget has a getter for value that accesses the private #value field
+    return widget.value
+  } catch {
+    return undefined
+  }
+}
+
 // Convert LiteGraph widget to SimplifiedWidget interface
 const simplifiedWidget = (widget: IBaseWidget): SimplifiedWidget => {
   return {
     name: widget.name,
     type: widget.type,
-    value: widget.value,
+    value: getWidgetValue(widget),
     options: widget.options,
     callback: widget.callback
   }

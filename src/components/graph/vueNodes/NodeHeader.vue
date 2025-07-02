@@ -20,8 +20,8 @@
     <div class="flex items-center gap-1 ml-2">
       <!-- Collapse/Expand Button -->
       <button
-        v-if="!readonly"
-        class="lg-node-header__control p-0.5 rounded hover:bg-black/10 transition-colors"
+        v-if="!readonly && node.collapsible !== false"
+        class="lg-node-header__control p-0.5 rounded hover:bg-white/20 dark-theme:hover:bg-black/20 transition-colors opacity-60 hover:opacity-100"
         :title="node.flags?.collapsed ? 'Expand' : 'Collapse'"
         @click.stop="handleCollapse"
       >
