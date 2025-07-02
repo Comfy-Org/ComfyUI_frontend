@@ -83,7 +83,9 @@ export default [
             'KB',
             'ms',
             'fps',
-            'px'
+            'px',
+            'App Data:',
+            'App Path:'
           ]
         }
       ]

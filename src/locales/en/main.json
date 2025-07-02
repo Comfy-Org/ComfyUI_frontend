@@ -325,8 +325,6 @@
     "unhandledError": "Unknown error",
     "installLocationDescription": "Select the directory for ComfyUI's user data. A python environment will be installed to the selected location.",
     "installLocationTooltip": "ComfyUI's user data directory. Stores:\n- Python Environment\n- Models\n- Custom nodes\n",
-    "appData": "App Data",
-    "appPath": "App Path",
     "appDataLocationTooltip": "ComfyUI's app data directory. Stores:\n- Logs\n- Server configs",
     "appPathLocationTooltip": "ComfyUI's app asset directory. Stores the ComfyUI code and assets",
     "migrateFromExistingInstallation": "Migrate from Existing Installation",
