@@ -166,6 +166,11 @@ const { t, locale } = useI18n()
 const releaseStore = useReleaseStore()
 const coreCommands = useCoreCommands()
 
+// Emits
+const emit = defineEmits<{
+  close: []
+}>()
+
 // State
 const isSubmenuVisible = ref(false)
 const submenuRef = ref<HTMLElement | null>(null)
@@ -180,19 +185,28 @@ const menuItems = computed<MenuItem[]>(() => [
     key: 'docs',
     icon: 'pi pi-book',
     label: t('helpCenter.docs'),
-    action: () => openExternalLink(EXTERNAL_LINKS.DOCS)
+    action: () => {
+      openExternalLink(EXTERNAL_LINKS.DOCS)
+      emit('close')
+    }
   },
   {
     key: 'discord',
     icon: 'pi pi-discord',
     label: 'Discord',
-    action: () => openExternalLink(EXTERNAL_LINKS.DISCORD)
+    action: () => {
+      openExternalLink(EXTERNAL_LINKS.DISCORD)
+      emit('close')
+    }
   },
   {
     key: 'github',
     icon: 'pi pi-github',
     label: t('helpCenter.github'),
-    action: () => openExternalLink(EXTERNAL_LINKS.GITHUB)
+    action: () => {
+      openExternalLink(EXTERNAL_LINKS.GITHUB)
+      emit('close')
+    }
   },
   {
     key: 'help',
@@ -205,6 +219,7 @@ const menuItems = computed<MenuItem[]>(() => [
       if (feedbackCommand) {
         void feedbackCommand.function()
       }
+      emit('close')
     }
   },
   {
@@ -221,13 +236,19 @@ const submenuItems = computed<SubmenuItem[]>(() => [
     key: 'desktop-guide',
     type: 'item',
     label: t('helpCenter.desktopUserGuide'),
-    action: () => openExternalLink(EXTERNAL_LINKS.DESKTOP_GUIDE)
+    action: () => {
+      openExternalLink(EXTERNAL_LINKS.DESKTOP_GUIDE)
+      emit('close')
+    }
   },
   {
     key: 'dev-tools',
     type: 'item',
     label: t('helpCenter.openDevTools'),
-    action: openDevTools
+    action: () => {
+      openDevTools()
+      emit('close')
+    }
   },
   {
     key: 'divider-1',
@@ -237,7 +258,10 @@ const submenuItems = computed<SubmenuItem[]>(() => [
     key: 'reinstall',
     type: 'item',
     label: t('helpCenter.reinstall'),
-    action: onReinstall
+    action: () => {
+      onReinstall()
+      emit('close')
+    }
   }
 ])
 
@@ -386,10 +410,12 @@ const onReleaseClick = (release: ReleaseNote): void => {
   const versionAnchor = formatVersionAnchor(release.version)
   const changelogUrl = `${getChangelogUrl()}#${versionAnchor}`
   openExternalLink(changelogUrl)
+  emit('close')
 }
 
 const onUpdate = (_: ReleaseNote): void => {
   openExternalLink(EXTERNAL_LINKS.UPDATE_GUIDE)
+  emit('close')
 }
 
 // Generate language-aware changelog URL
