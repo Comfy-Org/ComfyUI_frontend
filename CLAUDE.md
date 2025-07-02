@@ -32,7 +32,7 @@
 - Use Suspense for async components
 - Implement proper error handling
 - Follow Vue 3 style guide and naming conventions
-- Use vue-i18n in composition API for any string literals. Place new translation entries in src/locales/en/main.json.
+- IMPORTANT: Use vue-i18n for ALL user-facing strings - no hard-coded text in services/utilities. Place new translation entries in src/locales/en/main.json
 - Avoid using `@ts-expect-error` to work around type issues. We needed to employ it to migrate to TypeScript, but it should not be viewed as an accepted practice or standard.
 - DO NOT use deprecated PrimeVue components. Use these replacements instead:
   * `Dropdown` → Use `Select` (import from 'primevue/select')
@@ -52,3 +52,7 @@
   - Templates: `api.fileURL('/templates/default.json')`
   - Extensions: `api.fileURL(extensionPath)` for loading JS modules
   - Any static assets that exist in the public directory
+- When implementing code that outputs raw HTML (e.g., using v-html directive), always ensure dynamic content has been properly sanitized with DOMPurify or validated through trusted sources. Prefer Vue templates over v-html when possible.
+- For any async operations (API calls, timers, etc), implement cleanup/cancellation in component unmount to prevent memory leaks
+- Extract complex template conditionals into separate components or computed properties
+- Error messages should be actionable and user-friendly (e.g., "Failed to load data. Please refresh the page." instead of "Unknown error")
