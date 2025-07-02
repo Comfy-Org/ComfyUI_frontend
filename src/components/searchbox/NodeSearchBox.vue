@@ -27,7 +27,7 @@
       @hide="reFocusInput"
     >
       <template #header>
-        <h3>Add node filter condition</h3>
+        <h3>{{ $t('g.addNodeFilterCondition') }}</h3>
       </template>
       <div class="_dialog-body">
         <NodeSearchFilter @add-filter="onAddFilter" />
