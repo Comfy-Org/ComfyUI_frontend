@@ -364,11 +364,13 @@ onMounted(async () => {
       if (active && active.tagName === 'VIDEO') {
         const canvas = comfyApp.canvas
         const selected = canvas.selected_nodes;
-        // Actually remove the selected nodes
-        for (let id in selected) {
-          const node = selected[id];
-          if (node) {
-            canvas.graph.remove(node);
+        if (canvas.graph) {
+          // Actually remove the selected nodes
+          for (let id in selected) {
+            const node = selected[id];
+            if (node) {
+              canvas.graph.remove(node);
+            }
           }
         }
         event.preventDefault();
