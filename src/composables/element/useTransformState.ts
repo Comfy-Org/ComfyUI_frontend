@@ -75,7 +75,7 @@ export const useTransformState = () => {
     margin: number = 0.2 // 20% margin by default
   ): boolean => {
     const screenPos = canvasToScreen({ x: nodePos[0], y: nodePos[1] })
-    
+
     // Adjust margin based on zoom level for better performance
     let adjustedMargin = margin
     if (camera.z < 0.1) {
@@ -83,17 +83,17 @@ export const useTransformState = () => {
     } else if (camera.z > 3.0) {
       adjustedMargin = Math.max(margin * 0.5, 0.05) // Tighter at high zoom
     }
-    
+
     // Skip nodes too small to be visible
     const nodeScreenSize = Math.max(nodeSize[0], nodeSize[1]) * camera.z
     if (nodeScreenSize < 4) {
       return false
     }
-    
+
     // Early rejection tests for performance
-    const nodeRight = screenPos.x + (nodeSize[0] * camera.z)
-    const nodeBottom = screenPos.y + (nodeSize[1] * camera.z)
-    
+    const nodeRight = screenPos.x + nodeSize[0] * camera.z
+    const nodeBottom = screenPos.y + nodeSize[1] * camera.z
+
     // Use actual viewport dimensions (already accounts for browser zoom via clientWidth/Height)
     const marginX = viewport.width * adjustedMargin
     const marginY = viewport.height * adjustedMargin
@@ -101,11 +101,11 @@ export const useTransformState = () => {
     const expandedRight = viewport.width + marginX
     const expandedTop = -marginY
     const expandedBottom = viewport.height + marginY
-    
+
     return !(
-      nodeRight < expandedLeft || 
+      nodeRight < expandedLeft ||
       screenPos.x > expandedRight ||
-      nodeBottom < expandedTop || 
+      nodeBottom < expandedTop ||
       screenPos.y > expandedBottom
     )
   }
