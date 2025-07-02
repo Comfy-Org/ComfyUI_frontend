@@ -38,6 +38,7 @@ test.describe('Release Notifications', () => {
 
     // Open help center
     const helpCenterButton = comfyPage.page.locator('.comfy-help-center-btn')
+    await helpCenterButton.waitFor({ state: 'visible' })
     await helpCenterButton.click()
 
     // Verify help center menu appears
@@ -66,6 +67,7 @@ test.describe('Release Notifications', () => {
 
     // Open help center
     const helpCenterButton = comfyPage.page.locator('.comfy-help-center-btn')
+    await helpCenterButton.waitFor({ state: 'visible' })
     await helpCenterButton.click()
 
     // Verify help center menu appears
@@ -111,6 +113,7 @@ test.describe('Release Notifications', () => {
 
     // Open help center
     const helpCenterButton = comfyPage.page.locator('.comfy-help-center-btn')
+    await helpCenterButton.waitFor({ state: 'visible' })
     await helpCenterButton.click()
 
     // Verify help center still works despite API error
