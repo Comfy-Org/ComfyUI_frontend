@@ -65,7 +65,12 @@
           <i class="pi pi-refresh help-menu-icon" aria-hidden="true" />
           <div class="release-content">
             <span class="release-title">
-              Comfy {{ release.version }} Release
+              {{
+                $t('g.releaseTitle', {
+                  package: 'Comfy',
+                  version: release.version
+                })
+              }}
             </span>
             <time class="release-date" :datetime="release.published_at">
               <span class="normal-state">

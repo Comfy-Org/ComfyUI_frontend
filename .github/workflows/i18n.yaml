@@ -3,6 +3,12 @@ name: Update Locales
 on:
   pull_request:
     branches: [ main, master, dev* ]
+    paths-ignore:
+      - '.github/**'
+      - '.husky/**'
+      - '.vscode/**'
+      - 'browser_tests/**'
+      - 'tests-ui/**'
 
 jobs:
   update-locales:
