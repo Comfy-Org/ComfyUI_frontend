@@ -3,7 +3,12 @@
     <label v-if="widget.name" class="text-sm opacity-80">{{
       widget.name
     }}</label>
-    <Select v-model="value" v-bind="filteredProps" :disabled="readonly" />
+    <Select
+      v-model="value"
+      :options="selectOptions"
+      v-bind="filteredProps"
+      :disabled="readonly"
+    />
   </div>
 </template>
 
@@ -27,4 +32,15 @@ const props = defineProps<{
 const filteredProps = computed(() =>
   filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS)
 )
+
+// Extract select options from widget options
+const selectOptions = computed(() => {
+  const options = props.widget.options
+
+  if (options?.values && Array.isArray(options.values)) {
+    return options.values
+  }
+
+  return []
+})
 </script>
