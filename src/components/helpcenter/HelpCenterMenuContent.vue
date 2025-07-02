@@ -30,10 +30,18 @@
         @mouseenter="onSubmenuHover"
         @mouseleave="onSubmenuLeave"
       >
-        <template v-for="submenuItem in submenuItems" :key="submenuItem.key">
-          <div v-if="submenuItem.type === 'divider'" class="submenu-divider" />
+        <template
+          v-for="submenuItem in moreMenuItem?.items"
+          :key="submenuItem.key"
+        >
+          <div
+            v-if="submenuItem.type === 'divider'"
+            v-show="submenuItem.visible !== false"
+            class="submenu-divider"
+          />
           <button
             v-else
+            v-show="submenuItem.visible !== false"
             type="button"
             class="help-menu-item submenu-item"
             role="menuitem"
@@ -124,17 +132,12 @@ import { formatVersionAnchor } from '@/utils/formatUtil'
 // Types
 interface MenuItem {
   key: string
-  icon: string
-  label: string
-  action: () => void
-  visible?: boolean
-}
-
-interface SubmenuItem {
-  key: string
-  type?: 'item' | 'divider'
+  icon?: string
   label?: string
   action?: () => void
+  visible?: boolean
+  type?: 'item' | 'divider'
+  items?: MenuItem[]
 }
 
 // Constants
@@ -142,7 +145,7 @@ const EXTERNAL_LINKS = {
   DOCS: 'https://docs.comfy.org/',
   DISCORD: 'https://www.comfy.org/discord',
   GITHUB: 'https://github.com/comfyanonymous/ComfyUI',
-  DESKTOP_GUIDE: 'https://docs.comfy.org/installation/desktop',
+  DESKTOP_GUIDE: 'https://comfyorg.notion.site/',
   UPDATE_GUIDE: 'https://docs.comfy.org/installation/update_comfyui'
 } as const
 
@@ -180,90 +183,104 @@ let hoverTimeout: number | null = null
 // Computed
 const hasReleases = computed(() => releaseStore.releases.length > 0)
 
-const menuItems = computed<MenuItem[]>(() => [
-  {
-    key: 'docs',
-    icon: 'pi pi-book',
-    label: t('helpCenter.docs'),
-    action: () => {
-      openExternalLink(EXTERNAL_LINKS.DOCS)
-      emit('close')
-    }
-  },
-  {
-    key: 'discord',
-    icon: 'pi pi-discord',
-    label: 'Discord',
-    action: () => {
-      openExternalLink(EXTERNAL_LINKS.DISCORD)
-      emit('close')
-    }
-  },
-  {
-    key: 'github',
-    icon: 'pi pi-github',
-    label: t('helpCenter.github'),
-    action: () => {
-      openExternalLink(EXTERNAL_LINKS.GITHUB)
-      emit('close')
-    }
-  },
-  {
-    key: 'help',
-    icon: 'pi pi-question-circle',
-    label: t('helpCenter.helpFeedback'),
-    action: () => {
-      const feedbackCommand = coreCommands.find(
-        (cmd) => cmd.id === 'Comfy.Feedback'
-      )
-      if (feedbackCommand) {
-        void feedbackCommand.function()
-      }
-      emit('close')
-    }
-  },
-  {
-    key: 'more',
-    icon: '',
-    label: t('helpCenter.more'),
-    action: () => {}, // No action for more item
-    visible: isElectron()
-  }
-])
+const moreMenuItem = computed(() =>
+  menuItems.value.find((item) => item.key === 'more')
+)
 
-const submenuItems = computed<SubmenuItem[]>(() => [
-  {
-    key: 'desktop-guide',
-    type: 'item',
-    label: t('helpCenter.desktopUserGuide'),
-    action: () => {
-      openExternalLink(EXTERNAL_LINKS.DESKTOP_GUIDE)
-      emit('close')
+const menuItems = computed<MenuItem[]>(() => {
+  const moreItems: MenuItem[] = [
+    {
+      key: 'desktop-guide',
+      type: 'item',
+      label: t('helpCenter.desktopUserGuide'),
+      action: () => {
+        openExternalLink(EXTERNAL_LINKS.DESKTOP_GUIDE)
+        emit('close')
+      }
+    },
+    {
+      key: 'dev-tools',
+      type: 'item',
+      label: t('helpCenter.openDevTools'),
+      visible: isElectron(),
+      action: () => {
+        openDevTools()
+        emit('close')
+      }
+    },
+    {
+      key: 'divider-1',
+      type: 'divider',
+      visible: isElectron()
+    },
+    {
+      key: 'reinstall',
+      type: 'item',
+      label: t('helpCenter.reinstall'),
+      visible: isElectron(),
+      action: () => {
+        onReinstall()
+        emit('close')
+      }
     }
-  },
-  {
-    key: 'dev-tools',
-    type: 'item',
-    label: t('helpCenter.openDevTools'),
-    action: () => {
-      openDevTools()
-      emit('close')
+  ]
+
+  return [
+    {
+      key: 'docs',
+      type: 'item',
+      icon: 'pi pi-book',
+      label: t('helpCenter.docs'),
+      action: () => {
+        openExternalLink(EXTERNAL_LINKS.DOCS)
+        emit('close')
+      }
+    },
+    {
+      key: 'discord',
+      type: 'item',
+      icon: 'pi pi-discord',
+      label: 'Discord',
+      action: () => {
+        openExternalLink(EXTERNAL_LINKS.DISCORD)
+        emit('close')
+      }
+    },
+    {
+      key: 'github',
+      type: 'item',
+      icon: 'pi pi-github',
+      label: t('helpCenter.github'),
+      action: () => {
+        openExternalLink(EXTERNAL_LINKS.GITHUB)
+        emit('close')
+      }
+    },
+    {
+      key: 'help',
+      type: 'item',
+      icon: 'pi pi-question-circle',
+      label: t('helpCenter.helpFeedback'),
+      action: () => {
+        const feedbackCommand = coreCommands.find(
+          (cmd) => cmd.id === 'Comfy.Feedback'
+        )
+        if (feedbackCommand) {
+          void feedbackCommand.function()
+        }
+        emit('close')
+      }
+    },
+    {
+      key: 'more',
+      type: 'item',
+      icon: '',
+      label: t('helpCenter.more'),
+      action: () => {}, // No action for more item
+      items: moreItems
     }
-  },
-  {
-    key: 'divider-1',
-    type: 'divider'
-  },
-  {
-    key: 'reinstall',
-    type: 'item',
-    label: t('helpCenter.reinstall'),
-    action: () => {
-      onReinstall()
-      emit('close')
-    }
-  }
-])
+  ]
+})
 
 // Utility Functions
 const openExternalLink = (url: string): void => {
@@ -281,8 +298,12 @@ const calculateSubmenuPosition = (button: HTMLElement): CSSProperties => {
   const rect = button.getBoundingClientRect()
   const submenuWidth = 210 // Width defined in CSS
 
-  // Get actual submenu height if available, otherwise use estimated height
-  const submenuHeight = submenuRef.value?.offsetHeight || 120 // More realistic estimate for 2 items
+  // Get actual submenu height if available, otherwise estimate based on visible item count
+  const visibleItemCount =
+    moreMenuItem.value?.items?.filter((item) => item.visible !== false)
+      .length || 0
+  const estimatedHeight = visibleItemCount * 48 + 16 // ~48px per item + padding
+  const submenuHeight = submenuRef.value?.offsetHeight || estimatedHeight
 
   // Get viewport dimensions
   const viewportWidth = window.innerWidth
@@ -311,6 +332,8 @@ const calculateSubmenuPosition = (button: HTMLElement): CSSProperties => {
   if (top < SUBMENU_CONFIG.OFFSET_PX) {
     top = SUBMENU_CONFIG.OFFSET_PX
   }
+
+  top -= 8
 
   return {
     position: 'fixed',
@@ -358,7 +381,13 @@ const onMenuItemHover = async (
   key: string,
   event: MouseEvent
 ): Promise<void> => {
-  if (key !== 'more') return
+  if (key !== 'more' || !moreMenuItem.value?.items) return
+
+  // Don't show submenu if all items are hidden
+  const hasVisibleItems = moreMenuItem.value.items.some(
+    (item) => item.visible !== false
+  )
+  if (!hasVisibleItems) return
 
   clearHoverTimeout()
 
