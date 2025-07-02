@@ -123,8 +123,8 @@ import Button from 'primevue/button'
 import { type CSSProperties, computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useCoreCommands } from '@/composables/useCoreCommands'
 import { type ReleaseNote } from '@/services/releaseService'
+import { useCommandStore } from '@/stores/commandStore'
 import { useReleaseStore } from '@/stores/releaseStore'
 import { electronAPI, isElectron } from '@/utils/envUtil'
 import { formatVersionAnchor } from '@/utils/formatUtil'
@@ -167,7 +167,7 @@ const SUBMENU_CONFIG = {
 // Composables
 const { t, locale } = useI18n()
 const releaseStore = useReleaseStore()
-const coreCommands = useCoreCommands()
+const commandStore = useCommandStore()
 
 // Emits
 const emit = defineEmits<{
@@ -262,12 +262,7 @@ const menuItems = computed<MenuItem[]>(() => {
       icon: 'pi pi-question-circle',
       label: t('helpCenter.helpFeedback'),
       action: () => {
-        const feedbackCommand = coreCommands.find(
-          (cmd) => cmd.id === 'Comfy.Feedback'
-        )
-        if (feedbackCommand) {
-          void feedbackCommand.function()
-        }
+        void commandStore.execute('Comfy.Feedback')
         emit('close')
       }
     },
