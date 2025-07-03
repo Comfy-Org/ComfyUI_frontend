@@ -748,6 +748,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.8.7'
   },
   {
+    id: 'Comfy.InstalledVersion',
+    name: 'Installed frontend version',
+    type: 'hidden',
+    defaultValue: null,
+    versionAdded: '1.24.0'
+  },
+  {
     id: 'LiteGraph.ContextMenu.Scaling',
     name: 'Scale node combo widget menus (lists) when zoomed in',
     defaultValue: false,

@@ -302,6 +302,17 @@ onMounted(async () => {
   CORE_SETTINGS.forEach((setting) => {
     settingStore.addSetting(setting)
   })
+
+  // to determine if the user is "new user" or not, we check if the settingValues is empty. only it is empty, we set Comfy.InstalledVersion.
+  // more info: user settings are loaded in the BE folder ComfyUI/user/default/comfy.settings.json and new instance of ComfyUI will have no settings.
+  // if this settings file is not empty, it means the user has already used ComfyUI before, and we should not set the Comfy.InstalledVersion, according to https://github.com/Comfy-Org/ComfyUI_frontend/issues/4073
+  if (Object.keys(settingStore.settingValues).length == 0) {
+    await settingStore.set(
+      'Comfy.InstalledVersion',
+      __COMFYUI_FRONTEND_VERSION__
+    )
+  }
+
   // @ts-expect-error fixme ts strict error
   await comfyApp.setup(canvasRef.value)
   canvasStore.canvas = comfyApp.canvas
