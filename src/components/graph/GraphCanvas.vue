@@ -34,6 +34,7 @@
     v-if="transformPaneEnabled && canvasStore.canvas && comfyAppReady"
     :canvas="canvasStore.canvas as any"
     :viewport="canvasViewport"
+    :show-debug-overlay="showPerformanceOverlay"
     @raf-status-change="rafActive = $event"
     @transform-update="handleTransformUpdate"
   >
