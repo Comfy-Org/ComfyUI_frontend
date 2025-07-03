@@ -1,8 +1,11 @@
 import type { SubgraphInputNode } from "./SubgraphInputNode"
+import type { SubgraphInputEventMap } from "@/infrastructure/SubgraphInputEventMap"
 import type { INodeInputSlot, Point, ReadOnlyRect } from "@/interfaces"
 import type { LGraphNode } from "@/LGraphNode"
 import type { RerouteId } from "@/Reroute"
+import type { IBaseWidget } from "@/types/widgets"
 
+import { CustomEventTarget } from "@/infrastructure/CustomEventTarget"
 import { LLink } from "@/LLink"
 import { NodeSlotType } from "@/types/globalEnums"
 
@@ -21,6 +24,19 @@ import { SubgraphSlot } from "./SubgraphSlotBase"
  */
 export class SubgraphInput extends SubgraphSlot {
   declare parent: SubgraphInputNode
+
+  events = new CustomEventTarget<SubgraphInputEventMap>()
+
+  /** The linked widget that this slot is connected to. */
+  #widgetRef?: WeakRef<IBaseWidget>
+
+  get _widget() {
+    return this.#widgetRef?.deref()
+  }
+
+  set _widget(widget) {
+    this.#widgetRef = widget ? new WeakRef(widget) : undefined
+  }
 
   override connect(slot: INodeInputSlot, node: LGraphNode, afterRerouteId?: RerouteId): LLink | undefined {
     const { subgraph } = this.parent
@@ -47,6 +63,17 @@ export class SubgraphInput extends SubgraphSlot {
       subgraph.beforeChange()
       const link = subgraph.getLink(slot.link)
       this.parent._disconnectNodeInput(node, slot, link)
+    }
+
+    const inputWidget = node.getWidgetFromSlot(slot)
+    if (inputWidget) {
+      if (!this.matchesWidget(inputWidget)) {
+        console.warn("Target input has invalid widget.", slot, node)
+        return
+      }
+
+      this._widget ??= inputWidget
+      this.events.dispatch("input-connected", { input: slot, widget: inputWidget })
     }
 
     const link = new LLink(
@@ -102,6 +129,73 @@ export class SubgraphInput extends SubgraphSlot {
   get labelPos(): Point {
     const [x, y, , height] = this.boundingRect
     return [x, y + height * 0.5]
+  }
+
+  getConnectedWidgets(): IBaseWidget[] {
+    const { subgraph } = this.parent
+    const widgets: IBaseWidget[] = []
+
+    for (const linkId of this.linkIds) {
+      const link = subgraph.getLink(linkId)
+      if (!link) {
+        console.error("Link not found", linkId)
+        continue
+      }
+
+      const resolved = link.resolve(subgraph)
+      if (resolved.input && resolved.inputNode?.widgets) {
+        // Has no widget
+        const widgetNamePojo = resolved.input.widget
+        if (!widgetNamePojo) continue
+
+        // Invalid widget name
+        if (!widgetNamePojo.name) {
+          console.warn("Invalid widget name", widgetNamePojo)
+          continue
+        }
+
+        const widget = resolved.inputNode.widgets.find(w => w.name === widgetNamePojo.name)
+        if (!widget) {
+          console.warn("Widget not found", widgetNamePojo)
+          continue
+        }
+
+        widgets.push(widget)
+      } else {
+        console.debug("No input found on link id", linkId, link)
+      }
+    }
+    return widgets
+  }
+
+  /**
+   * Validates that the connection between the new slot and the existing widget is valid.
+   * Used to prevent connections between widgets that are not of the same type.
+   * @param otherWidget The widget to compare to.
+   * @returns `true` if the connection is valid, otherwise `false`.
+   */
+  matchesWidget(otherWidget: IBaseWidget): boolean {
+    const widget = this.#widgetRef?.deref()
+    if (!widget) return true
+
+    if (
+      otherWidget.type !== widget.type ||
+      otherWidget.options.min !== widget.options.min ||
+      otherWidget.options.max !== widget.options.max ||
+      otherWidget.options.step !== widget.options.step ||
+      otherWidget.options.step2 !== widget.options.step2 ||
+      otherWidget.options.precision !== widget.options.precision
+    ) {
+      return false
+    }
+
+    return true
+  }
+
+  override disconnect(): void {
+    super.disconnect()
+
+    this.events.dispatch("input-disconnected", { input: this })
   }
 
   /** For inputs, x is the right edge of the input node. */

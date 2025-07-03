@@ -1,6 +1,7 @@
 import type { INodeInputSlot, INodeOutputSlot, OptionalProps, ReadOnlyPoint } from "@/interfaces"
 import type { LGraphNode } from "@/LGraphNode"
 import type { LinkId } from "@/LLink"
+import type { IBaseWidget } from "@/types/widgets"
 
 import { LabelPosition } from "@/draw"
 import { LiteGraph } from "@/litegraph"
@@ -11,6 +12,17 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
 
   get isWidgetInputSlot(): boolean {
     return !!this.widget
+  }
+
+  #widget: WeakRef<IBaseWidget> | undefined
+
+  /** Internal use only; API is not finalised and may change at any time. */
+  get _widget(): IBaseWidget | undefined {
+    return this.#widget?.deref()
+  }
+
+  set _widget(widget: IBaseWidget | undefined) {
+    this.#widget = widget ? new WeakRef(widget) : undefined
   }
 
   get collapsedPos(): ReadOnlyPoint {

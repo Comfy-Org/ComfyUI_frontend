@@ -68,7 +68,9 @@ export class Subgraph extends LGraph implements BaseLGraph, Serialisable<Exporte
     if (inputs) {
       this.inputs.length = 0
       for (const input of inputs) {
-        this.inputs.push(new SubgraphInput(input, this.inputNode))
+        const subgraphInput = new SubgraphInput(input, this.inputNode)
+        this.inputs.push(subgraphInput)
+        this.events.dispatch("input-added", { input: subgraphInput })
       }
     }
 

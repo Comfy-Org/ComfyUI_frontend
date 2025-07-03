@@ -1,15 +1,18 @@
+import type { SubgraphInput } from "./SubgraphInput"
 import type { ISubgraphInput } from "@/interfaces"
 import type { BaseLGraph, LGraph } from "@/LGraph"
-import type { INodeInputSlot, ISlotType, NodeId } from "@/litegraph"
 import type { GraphOrSubgraph, Subgraph } from "@/subgraph/Subgraph"
 import type { ExportedSubgraphInstance } from "@/types/serialisation"
+import type { IBaseWidget } from "@/types/widgets"
 import type { UUID } from "@/utils/uuid"
 
 import { RecursionError } from "@/infrastructure/RecursionError"
 import { LGraphNode } from "@/LGraphNode"
+import { type INodeInputSlot, type ISlotType, type NodeId } from "@/litegraph"
 import { LLink, type ResolvedConnection } from "@/LLink"
 import { NodeInputSlot } from "@/node/NodeInputSlot"
 import { NodeOutputSlot } from "@/node/NodeOutputSlot"
+import { toConcreteWidget } from "@/widgets/widgetMap"
 
 import { type ExecutableLGraphNode, ExecutableNodeDTO } from "./ExecutableNodeDTO"
 
@@ -17,6 +20,8 @@ import { type ExecutableLGraphNode, ExecutableNodeDTO } from "./ExecutableNodeDT
  * An instance of a {@link Subgraph}, displayed as a node on the containing (parent) graph.
  */
 export class SubgraphNode extends LGraphNode implements BaseLGraph {
+  declare inputs: (INodeInputSlot & Partial<ISubgraphInput>)[]
+
   override readonly type: UUID
   override readonly isVirtualNode = true as const
 
@@ -32,6 +37,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     return true
   }
 
+  override widgets: IBaseWidget[] = []
+
   constructor(
     /** The (sub)graph that contains this subgraph instance. */
     override readonly graph: GraphOrSubgraph,
@@ -44,10 +51,17 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     // Update this node when the subgraph input / output slots are changed
     const subgraphEvents = this.subgraph.events
     subgraphEvents.addEventListener("input-added", (e) => {
-      const { name, type } = e.detail.input
-      this.addInput(name, type)
+      const subgraphInput = e.detail.input
+      const { name, type } = subgraphInput
+      const input = this.addInput(name, type)
+
+      this.#addSubgraphInputListeners(subgraphInput, input)
     })
+
     subgraphEvents.addEventListener("removing-input", (e) => {
+      const widget = e.detail.input._widget
+      if (widget) this.ensureWidgetRemoved(widget)
+
       this.removeInput(e.detail.index)
     })
 
@@ -55,6 +69,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       const { name, type } = e.detail.output
       this.addOutput(name, type)
     })
+
     subgraphEvents.addEventListener("removing-output", (e) => {
       this.removeOutput(e.detail.index)
     })
@@ -79,7 +94,46 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     this.configure(instanceData)
   }
 
+  #addSubgraphInputListeners(subgraphInput: SubgraphInput, input: INodeInputSlot & Partial<ISubgraphInput>) {
+    input._listenerController?.abort()
+    input._listenerController = new AbortController()
+    const { signal } = input._listenerController
+
+    subgraphInput.events.addEventListener(
+      "input-connected",
+      () => {
+        if (input._widget) return
+
+        const widget = subgraphInput._widget
+        if (!widget) return
+
+        this.#setWidget(subgraphInput, input, widget)
+      },
+      { signal },
+    )
+
+    subgraphInput.events.addEventListener(
+      "input-disconnected",
+      () => {
+        // If the input is connected to more than one widget, don't remove the widget
+        const connectedWidgets = subgraphInput.getConnectedWidgets()
+        if (connectedWidgets.length > 0) return
+
+        this.removeWidgetByName(input.name)
+
+        delete input.pos
+        delete input.widget
+        input._widget = undefined
+      },
+      { signal },
+    )
+  }
+
   override configure(info: ExportedSubgraphInstance): void {
+    for (const input of this.inputs) {
+      input._listenerController?.abort()
+    }
+
     this.inputs.length = 0
     this.inputs.push(
       ...this.subgraph.inputNode.slots.map(
@@ -95,6 +149,71 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     )
 
     super.configure(info)
+  }
+
+  override _internalConfigureAfterSlots() {
+    // Reset widgets
+    this.widgets.length = 0
+
+    // Check all inputs for connected widgets
+    for (const input of this.inputs) {
+      const subgraphInput = this.subgraph.inputNode.slots.find(slot => slot.name === input.name)
+      if (!subgraphInput) throw new Error(`[SubgraphNode.configure] No subgraph input found for input ${input.name}`)
+
+      this.#addSubgraphInputListeners(subgraphInput, input)
+
+      // Find the first widget that this slot is connected to
+      for (const linkId of subgraphInput.linkIds) {
+        const link = this.subgraph.getLink(linkId)
+        if (!link) {
+          console.warn(`[SubgraphNode.configure] No link found for link ID ${linkId}`, this)
+          continue
+        }
+
+        const resolved = link.resolve(this.subgraph)
+        if (!resolved.input || !resolved.inputNode) {
+          console.warn("Invalid resolved link", resolved, this)
+          continue
+        }
+
+        // No widget - ignore this link
+        const widget = resolved.inputNode.getWidgetFromSlot(resolved.input)
+        if (!widget) continue
+
+        this.#setWidget(subgraphInput, input, widget)
+        break
+      }
+    }
+  }
+
+  #setWidget(subgraphInput: Readonly<SubgraphInput>, input: INodeInputSlot, widget: Readonly<IBaseWidget>) {
+    // Use the first matching widget
+    const promotedWidget = toConcreteWidget(widget, this).createCopyForNode(this)
+    Object.assign(promotedWidget, {
+      get name() {
+        return subgraphInput.name
+      },
+      set name(value) {
+        console.warn("Promoted widget: setting name is not allowed", this, value)
+      },
+      get localized_name() {
+        return subgraphInput.localized_name
+      },
+      set localized_name(value) {
+        console.warn("Promoted widget: setting localized_name is not allowed", this, value)
+      },
+      get label() {
+        return subgraphInput.label
+      },
+      set label(value) {
+        console.warn("Promoted widget: setting label is not allowed", this, value)
+      },
+    })
+
+    this.widgets.push(promotedWidget)
+
+    input.widget = { name: subgraphInput.name }
+    input._widget = promotedWidget
   }
 
   /**
@@ -178,5 +297,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       }
     }
     return nodes
+  }
+
+  override onRemoved(): void {
+    for (const input of this.inputs) {
+      input._listenerController?.abort()
+    }
   }
 }

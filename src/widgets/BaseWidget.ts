@@ -282,4 +282,19 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget> impl
     node.onWidgetChanged?.(this.name ?? "", v, oldValue, this)
     if (node.graph) node.graph._version++
   }
+
+  /**
+   * Clones the widget.
+   * @param node The node that will own the cloned widget.
+   * @returns A new widget with the same properties as the original
+   * @remarks Subclasses with custom constructors must override this method.
+   *
+   * Correctly and safely typing this is currently not possible (practical?) in TypeScript 5.8.
+   */
+  createCopyForNode(node: LGraphNode): this {
+    // @ts-expect-error
+    const cloned: this = new (this.constructor as typeof this)(this, node)
+    cloned.value = this.value
+    return cloned
+  }
 }
