@@ -1225,10 +1225,10 @@ export class GroupNodeHandler {
     node.onDrawForeground = function (ctx) {
       // @ts-expect-error fixme ts strict error
       onDrawForeground?.apply?.(this, arguments)
-      const executionStore = useExecutionStore()
+      const progressState = useExecutionStore().nodeProgressStates[this.id]
       if (
-        executionStore.nodeProgressStates[this.id] &&
-        executionStore.nodeProgressStates[this.id].state === 'running' &&
+        progressState &&
+        progressState.state === 'running' &&
         this.runningInternalNodeId !== null
       ) {
         // @ts-expect-error fixme ts strict error

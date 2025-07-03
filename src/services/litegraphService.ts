@@ -363,12 +363,9 @@ export const useLitegraphService = () => {
        */
       #setupStrokeStyles() {
         this.strokeStyles['running'] = function (this: LGraphNode) {
-          const nodeProgressStates = useExecutionStore().nodeProgressStates
           const nodeId = String(this.id)
-          if (
-            nodeProgressStates[nodeId] &&
-            nodeProgressStates[nodeId].state === 'running'
-          ) {
+          const state = useExecutionStore().nodeProgressStates[nodeId]?.state
+          if (state === 'running') {
             return { color: '#0f0' }
           }
         }

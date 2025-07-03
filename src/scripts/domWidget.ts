@@ -237,7 +237,7 @@ export class ComponentWidgetImpl<
     component: Component
     inputSpec: InputSpec
     props?: P
-    componentProps?: Record<string, unknown>
+    componentProps?: Partial<P>
     options: DOMWidgetOptions<V>
   }) {
     super({

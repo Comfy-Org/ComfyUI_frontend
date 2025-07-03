@@ -23,6 +23,7 @@ import type {
   NodeId
 } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 
 import { useCanvasStore } from './graphStore'
 import { ComfyWorkflow, useWorkflowStore } from './workflowStore'
@@ -108,29 +109,6 @@ export const useExecutionStore = defineStore('execution', () => {
 
     subgraphs.push(subgraph)
     return getSubgraphsFromInstanceIds(subgraph, subgraphNodeIds, subgraphs)
-  }
-
-  const executionIdToCurrentId = (id: string) => {
-    const subgraph = workflowStore.activeSubgraph
-
-    // Short-circuit: ID belongs to the parent workflow / no active subgraph
-    if (!id.includes(':')) {
-      return !subgraph ? id : undefined
-    } else if (!subgraph) {
-      return
-    }
-
-    // Parse the hierarchical ID (e.g., "123:456:789")
-    const subgraphNodeIds = id.split(':')
-
-    // If the last subgraph is the active subgraph, return the node ID
-    const subgraphs = getSubgraphsFromInstanceIds(
-      subgraph.rootGraph,
-      subgraphNodeIds
-    )
-    if (subgraphs.at(-1) === subgraph) {
-      return subgraphNodeIds.at(-1)
-    }
   }
 
   // This is the progress of the currently executing node (for backward compatibility)

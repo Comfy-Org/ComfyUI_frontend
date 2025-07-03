@@ -46,25 +46,24 @@ export const useBrowserTabTitle = () => {
       ([_, state]) => state.state === 'running'
     )
 
-    if (runningNodes.length > 0) {
-      // If multiple nodes are running
-      if (runningNodes.length > 1) {
-        return `${executionText.value}[${runningNodes.length} ${t('g.nodesRunning', 'nodes running')}]`
-      }
-      // If only one node is running
-      else {
-        const [nodeId, state] = runningNodes[0]
-        const progress = Math.round((state.value / state.max) * 100)
-        const nodeType =
-          executionStore.activePrompt?.workflow?.changeTracker?.activeState?.nodes.find(
-            (n) => String(n.id) === nodeId
-          )?.type || 'Node'
-
-        return `${executionText.value}[${progress}%] ${nodeType}`
-      }
+    if (runningNodes.length === 0) {
+      return ''
     }
 
-    return ''
+    // If multiple nodes are running
+    if (runningNodes.length > 1) {
+      return `${executionText.value}[${runningNodes.length} ${t('g.nodesRunning', 'nodes running')}]`
+    }
+
+    // If only one node is running
+    const [nodeId, state] = runningNodes[0]
+    const progress = Math.round((state.value / state.max) * 100)
+    const nodeType =
+      executionStore.activePrompt?.workflow?.changeTracker?.activeState?.nodes.find(
+        (n) => String(n.id) === nodeId
+      )?.type || 'Node'
+
+    return `${executionText.value}[${progress}%] ${nodeType}`
   })
 
   const workflowTitle = computed(
