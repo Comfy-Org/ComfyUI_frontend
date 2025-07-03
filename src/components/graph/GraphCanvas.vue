@@ -208,15 +208,9 @@ watch(
         // Only show progress for running nodes
         if (progressState.state === 'running') {
           if (node.progress === undefined || node.progress === 0.0) {
-            console.log(
-              `${Date.now()} Setting progress for node ${node.id} to ${progressState.value / progressState.max}=${progressState.value}/${progressState.max} due to ${nodeId}`
-            )
             node.progress = progressState.value / progressState.max
           } else {
             // Update progress if it was already set
-            console.log(
-              `${Date.now()} Setting progress for node ${node.id} to Math.min(${node.progress}, ${progressState.value / progressState.max}=${progressState.value}/${progressState.max}) due to ${nodeId}`
-            )
             node.progress = Math.min(
               node.progress,
               progressState.value / progressState.max
@@ -226,8 +220,8 @@ watch(
       }
     }
 
-    // TODO - Do we need to force canvas redraw here?
-    // comfyApp.graph.setDirtyCanvas(true, true)
+    // Force canvas redraw to ensure progress updates are visible
+    comfyApp.graph.setDirtyCanvas(true, false)
   },
   { deep: true }
 )
