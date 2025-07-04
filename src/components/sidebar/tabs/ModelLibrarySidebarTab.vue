@@ -30,6 +30,10 @@
     <template #body>
       <ElectronDownloadItems v-if="isElectron()" />
 
+      <div v-if="!searchQuery" class="model-library-content">
+        <RecentModelsSection :render-tree-node="renderedRoot" />
+      </div>
+
       <TreeExplorer
         v-model:expandedKeys="expandedKeys"
         class="model-lib-tree-explorer"
@@ -53,6 +57,7 @@ import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ElectronDownloadItems from '@/components/sidebar/tabs/modelLibrary/ElectronDownloadItems.vue'
 import ModelTreeLeaf from '@/components/sidebar/tabs/modelLibrary/ModelTreeLeaf.vue'
+import RecentModelsSection from '@/components/sidebar/tabs/modelLibrary/RecentModelsSection.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useLitegraphService } from '@/services/litegraphService'
 import {
@@ -185,7 +190,12 @@ watch(
 )
 
 onMounted(async () => {
-  if (settingStore.get('Comfy.ModelLibrary.AutoLoadAll')) {
+  if (
+    settingStore.get('Comfy.ModelLibrary.AutoLoadAll') ||
+    // if we don't load all, we can't filter the recent items
+    settingStore.get('Comfy.Sidebar.RecentItems.ShowRecentlyAdded') ||
+    settingStore.get('Comfy.Sidebar.RecentItems.ShowRecentlyUsed')
+  ) {
     await modelStore.loadModels()
   }
 })

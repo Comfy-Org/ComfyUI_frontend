@@ -64,6 +64,12 @@
             </template>
           </TreeExplorer>
         </div>
+
+        <RecentWorkflowsSection
+          :selection-keys="selectionKeys"
+          :render-tree-node="renderTreeNode"
+        />
+
         <div
           v-show="workflowStore.bookmarkedWorkflows.length > 0"
           class="comfyui-workflows-bookmarks"
@@ -139,11 +145,13 @@ import TextDivider from '@/components/common/TextDivider.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
+import RecentWorkflowsSection from '@/components/sidebar/tabs/workflows/RecentWorkflowsSection.vue'
 import WorkflowTreeLeaf from '@/components/sidebar/tabs/workflows/WorkflowTreeLeaf.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useWorkflowService } from '@/services/workflowService'
 import { useSettingStore } from '@/stores/settingStore'
 import {
+  WorkflowTreeType,
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/stores/workflowStore'
@@ -172,9 +180,11 @@ const handleSearch = async (query: string) => {
     return
   }
   const lowerQuery = query.toLocaleLowerCase()
-  filteredWorkflows.value = workflowStore.workflows.filter((workflow) => {
-    return workflow.path.toLocaleLowerCase().includes(lowerQuery)
-  })
+  filteredWorkflows.value = workflowStore.workflows.filter(
+    (workflow: ComfyWorkflow) => {
+      return workflow.path.toLocaleLowerCase().includes(lowerQuery)
+    }
+  )
   await nextTick()
   expandNode(filteredRoot.value)
 }
@@ -195,12 +205,6 @@ const handleCloseWorkflow = async (workflow?: ComfyWorkflow) => {
   }
 }
 
-enum WorkflowTreeType {
-  Open = 'Open',
-  Bookmarks = 'Bookmarks',
-  Browse = 'Browse'
-}
-
 const buildWorkflowTree = (workflows: ComfyWorkflow[]) => {
   return buildTree(workflows, (workflow: ComfyWorkflow) =>
     workflow.key.split('/')
@@ -214,11 +218,15 @@ const workflowsTree = computed(() =>
 )
 // Bookmarked workflows tree is flat.
 const bookmarkedWorkflowsTree = computed(() =>
-  buildTree(workflowStore.bookmarkedWorkflows, (workflow) => [workflow.key])
+  buildTree(workflowStore.bookmarkedWorkflows, (workflow: ComfyWorkflow) => [
+    workflow.key
+  ])
 )
 // Open workflows tree is flat.
 const openWorkflowsTree = computed(() =>
-  buildTree(workflowStore.openWorkflows, (workflow) => [workflow.key])
+  buildTree(workflowStore.openWorkflows, (workflow: ComfyWorkflow) => [
+    workflow.key
+  ])
 )
 
 const renderTreeNode = (
