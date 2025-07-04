@@ -4,6 +4,7 @@ import config from '@/config'
 import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
+import type { SystemStats } from '@/types'
 import type { components } from '@/types/comfyRegistryTypes'
 import type {
   ConflictDetail,
@@ -602,7 +603,7 @@ function detectOS(platform: string): SupportedOS {
  * @param systemStats System stats data from store
  * @returns Accelerator information object
  */
-function extractAcceleratorInfo(systemStats: any): {
+function extractAcceleratorInfo(systemStats: SystemStats | null): {
   available: SupportedAccelerator[]
   primary: SupportedAccelerator
   memory_mb?: number
@@ -625,7 +626,7 @@ function extractAcceleratorInfo(systemStats: any): {
 
       return {
         available: accelerators,
-        primary: device.type || 'cpu',
+        primary: (device.type as SupportedAccelerator) || 'cpu',
         memory_mb: device.vram_total
           ? Math.round(device.vram_total / 1024 / 1024)
           : undefined
