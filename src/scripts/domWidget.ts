@@ -11,7 +11,7 @@ import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { generateUUID } from '@/utils/formatUtil'
 
-export interface BaseDOMWidget<V extends object | string>
+export interface BaseDOMWidget<V extends object | string = object | string>
   extends IBaseWidget<V, string, DOMWidgetOptions<V>> {
   // ICustomWidget properties
   type: string
@@ -330,9 +330,8 @@ LGraphNode.prototype.addDOMWidget = function <
 export const pruneWidgets = (nodes: LGraphNode[]) => {
   const nodeSet = new Set(nodes)
   const domWidgetStore = useDomWidgetStore()
-  for (const widgetState of domWidgetStore.widgetStates.values()) {
-    const widget = widgetState.widget
-    if (!nodeSet.has(widget.node as LGraphNode)) {
+  for (const { widget } of domWidgetStore.widgetStates.values()) {
+    if (!nodeSet.has(widget.node)) {
       domWidgetStore.unregisterWidget(widget.id)
     }
   }

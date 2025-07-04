@@ -38,6 +38,9 @@
   "Comfy_BrowseTemplates": {
     "label": "テンプレートを参照"
   },
+  "Comfy_Canvas_AddEditModelStep": {
+    "label": "編集モデルステップを追加"
+  },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "選択したアイテムを削除"
   },
@@ -109,6 +112,9 @@
   },
   "Comfy_Feedback": {
     "label": "フィードバック"
+  },
+  "Comfy_Graph_ConvertToSubgraph": {
+    "label": "選択範囲をサブグラフに変換"
   },
   "Comfy_Graph_FitGroupToContents": {
     "label": "グループを内容に合わせて調整"

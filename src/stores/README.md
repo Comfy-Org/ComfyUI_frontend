@@ -100,7 +100,48 @@ The following diagram illustrates the store architecture and data flow:
 
 ## Core Stores
 
-The core stores include:
+The following table lists ALL stores in the system as of 2025-01-30:
+
+### Main Stores
+
+| Store | Description | Category |
+|-------|-------------|----------|
+| aboutPanelStore.ts | Manages the About panel state and badges | UI |
+| apiKeyAuthStore.ts | Handles API key authentication | Auth |
+| comfyManagerStore.ts | Manages ComfyUI application state | Core |
+| comfyRegistryStore.ts | Handles extensions registry | Registry |
+| commandStore.ts | Manages commands and command execution | Core |
+| dialogStore.ts | Controls dialog/modal display and state | UI |
+| domWidgetStore.ts | Manages DOM widget state | Widgets |
+| electronDownloadStore.ts | Handles Electron-specific download operations | Platform |
+| executionStore.ts | Tracks workflow execution state | Execution |
+| extensionStore.ts | Manages extension registration and state | Extensions |
+| firebaseAuthStore.ts | Handles Firebase authentication | Auth |
+| graphStore.ts | Manages the graph canvas state | Core |
+| imagePreviewStore.ts | Controls image preview functionality | Media |
+| keybindingStore.ts | Manages keyboard shortcuts | Input |
+| maintenanceTaskStore.ts | Handles system maintenance tasks | System |
+| menuItemStore.ts | Handles menu items and their state | UI |
+| modelStore.ts | Manages AI models information | Models |
+| modelToNodeStore.ts | Maps models to compatible nodes | Models |
+| nodeBookmarkStore.ts | Manages node bookmarks and favorites | Nodes |
+| nodeDefStore.ts | Manages node definitions | Nodes |
+| queueStore.ts | Handles the execution queue | Execution |
+| releaseStore.ts | Manages application release information | System |
+| serverConfigStore.ts | Handles server configuration | Config |
+| settingStore.ts | Manages application settings | Config |
+| subgraphNavigationStore.ts | Handles subgraph navigation state | Navigation |
+| systemStatsStore.ts | Tracks system performance statistics | System |
+| toastStore.ts | Manages toast notifications | UI |
+| userFileStore.ts | Manages user file operations | Files |
+| userStore.ts | Manages user data and preferences | User |
+| widgetStore.ts | Manages widget configurations | Widgets |
+| workflowStore.ts | Handles workflow data and operations | Workflows |
+| workflowTemplatesStore.ts | Manages workflow templates | Workflows |
+| workspaceStore.ts | Manages overall workspace state | Workspace |
+
+### Workspace Stores
+Located in `stores/workspace/`:
 
 | Store | Description |
 |-------|-------------|
@@ -126,6 +167,11 @@ The core stores include:
 | userStore.ts | Manages user data and preferences |
 | workflowStore.ts | Handles workflow data and operations |
 | workspace/* | Stores related to the workspace UI |
+| bottomPanelStore.ts | Controls bottom panel visibility and state |
+| colorPaletteStore.ts | Manages color palette configurations |
+| nodeHelpStore.ts | Handles node help and documentation display |
+| searchBoxStore.ts | Manages search box functionality |
+| sidebarTabStore.ts | Controls sidebar tab states and navigation |
 
 ## Store Development Guidelines
 

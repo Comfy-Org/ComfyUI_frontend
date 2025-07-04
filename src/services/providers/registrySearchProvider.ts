@@ -32,7 +32,7 @@ export const useComfyRegistrySearchProvider = (): NodePackSearchProvider => {
       search: isNodeSearch ? undefined : query,
       comfy_node_search: isNodeSearch ? query : undefined,
       limit: pageSize,
-      offset: pageNumber * pageSize
+      page: pageNumber + 1 // Registry API uses 1-based pagination
     }
 
     const searchResult = await registryStore.search.call(searchParams)

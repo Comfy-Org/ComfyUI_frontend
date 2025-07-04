@@ -138,13 +138,21 @@
     "Unpin": "取消固定"
   },
   "credits": {
+    "accountInitialized": "账户已初始化",
+    "activity": "活动",
+    "added": "已添加",
+    "additionalInfo": "附加信息",
     "apiPricing": "API 价格",
     "credits": "积分",
+    "details": "详情",
+    "eventType": "事件类型",
     "faqs": "常见问题",
     "invoiceHistory": "发票历史",
     "lastUpdated": "最近更新",
     "messageSupport": "联系客服",
+    "model": "模型",
     "purchaseCredits": "购买积分",
+    "time": "时间",
     "topUp": {
       "buyNow": "立即购买",
       "insufficientMessage": "您的积分不足，无法运行此工作流。",
@@ -245,10 +253,13 @@
   "g": {
     "about": "关于",
     "add": "添加",
+    "addNodeFilterCondition": "添加节点筛选条件",
     "all": "全部",
     "amount": "数量",
     "apply": "应用",
+    "architecture": "架构",
     "audioFailedToLoad": "音频加载失败",
+    "author": "作者",
     "back": "返回",
     "cancel": "取消",
     "capture": "捕获",
@@ -306,10 +317,12 @@
     "installing": "正在安装",
     "interrupted": "已中断",
     "keybinding": "按键绑定",
+    "keybindingAlreadyExists": "快捷键已存在",
     "learnMore": "了解更多",
     "loadAllFolders": "加载所有文件夹",
     "loadWorkflow": "加载工作流",
     "loading": "加载中",
+    "loadingPanel": "正在加载{panel}面板...",
     "login": "登录",
     "logs": "日志",
     "migrate": "迁移",
@@ -326,9 +339,12 @@
     "ok": "确定",
     "openNewIssue": "打开新问题",
     "overwrite": "覆盖",
+    "preview": "预览",
+    "progressCountOf": "共",
     "reconnected": "已重新连接",
     "reconnecting": "重新连接中",
     "refresh": "刷新",
+    "releaseTitle": "{package} {version} 发布",
     "reloadToApplyChanges": "重新加载以应用更改",
     "rename": "重命名",
     "reportIssue": "发送报告",
@@ -358,12 +374,14 @@
     "systemInfo": "系统信息",
     "terminal": "终端",
     "title": "标题",
+    "triggerPhrase": "触发短语",
     "unknownError": "未知错误",
     "update": "更新",
     "updateAvailable": "有更新可用",
     "updated": "已更新",
     "updating": "更新中",
     "upload": "上传",
+    "usageHint": "使用提示",
     "user": "用户",
     "videoFailedToLoad": "视频加载失败",
     "workflow": "工作流"
@@ -380,6 +398,20 @@
   "groupNode": {
     "create": "创建组节点",
     "enterName": "输入名称"
+  },
+  "helpCenter": {
+    "clickToLearnMore": "点击了解更多 →",
+    "desktopUserGuide": "桌面端用户指南",
+    "docs": "文档",
+    "github": "Github",
+    "helpFeedback": "帮助与反馈",
+    "loadingReleases": "加载发布信息...",
+    "more": "更多...",
+    "noRecentReleases": "没有最近的发布",
+    "openDevTools": "打开开发者工具",
+    "reinstall": "重新安装",
+    "updateAvailable": "更新",
+    "whatsNew": "新功能?"
   },
   "icon": {
     "bookmark": "书签",
@@ -684,6 +716,7 @@
   },
   "menuLabels": {
     "About ComfyUI": "关于ComfyUI",
+    "Add Edit Model Step": "添加编辑模型步骤",
     "Browse Templates": "浏览模板",
     "Bypass/Unbypass Selected Nodes": "忽略/取消忽略选定节点",
     "Canvas Toggle Link Visibility": "切换连线可见性",
@@ -699,6 +732,7 @@
     "ComfyUI Forum": "ComfyUI 论坛",
     "ComfyUI Issues": "ComfyUI 问题",
     "Contact Support": "联系支持",
+    "Convert Selection to Subgraph": "将选中内容转换为子图",
     "Convert selected nodes to group node": "将选中节点转换为组节点",
     "Delete Selected Items": "删除选定的项目",
     "Desktop User Guide": "桌面端用户指南",
@@ -870,6 +904,12 @@
       "windows": "Windows (支持 CUDA 的 Nvidia GPU)"
     },
     "title": "您的设备不受支持"
+  },
+  "releaseToast": {
+    "newVersionAvailable": "新版本可用！",
+    "skip": "跳过",
+    "update": "更新",
+    "whatsNew": "新功能?"
   },
   "selectionToolbox": {
     "executeButton": {
@@ -1043,7 +1083,7 @@
     "Extension": "扩展",
     "General": "常规",
     "Graph": "画面",
-    "Group": "组节点",
+    "Group": "组",
     "Keybinding": "快捷键",
     "Light": "光照",
     "Link": "连线",
@@ -1079,6 +1119,7 @@
   "sideToolbar": {
     "browseTemplates": "浏览示例模板",
     "downloads": "下载",
+    "helpCenter": "帮助中心",
     "logout": "登出",
     "modelLibrary": "模型库",
     "modelLibraryTab": {
@@ -1373,6 +1414,7 @@
     "title": "从模板开始"
   },
   "toastMessages": {
+    "cannotCreateSubgraph": "无法创建子图",
     "couldNotDetermineFileType": "无法确定文件类型",
     "dropFileError": "无法处理掉落的项目：{error}",
     "emptyCanvas": "画布为空",
@@ -1381,6 +1423,7 @@
     "errorSaveSetting": "保存设置 {id} 出错：{err}",
     "failedToAccessBillingPortal": "访问账单门户失败：{error}",
     "failedToApplyTexture": "应用纹理失败",
+    "failedToConvertToSubgraph": "无法将项目转换为子图",
     "failedToCreateCustomer": "创建客户失败：{error}",
     "failedToDownloadFile": "文件下载失败",
     "failedToExportModel": "无法将模型导出为 {format}",
@@ -1444,6 +1487,9 @@
   "welcome": {
     "getStarted": "开始使用",
     "title": "欢迎使用 ComfyUI"
+  },
+  "whatsNewPopup": {
+    "learnMore": "了解更多"
   },
   "workflowService": {
     "enterFilename": "输入文件名",

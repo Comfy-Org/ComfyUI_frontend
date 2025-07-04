@@ -138,13 +138,21 @@
     "Unpin": "Открепить"
   },
   "credits": {
+    "accountInitialized": "Аккаунт инициализирован",
+    "activity": "Активность",
+    "added": "Добавлено",
+    "additionalInfo": "Дополнительная информация",
     "apiPricing": "Цены на API",
     "credits": "Кредиты",
+    "details": "Детали",
+    "eventType": "Тип события",
     "faqs": "Часто задаваемые вопросы",
     "invoiceHistory": "История счетов",
     "lastUpdated": "Последнее обновление",
     "messageSupport": "Связаться с поддержкой",
+    "model": "Модель",
     "purchaseCredits": "Купить кредиты",
+    "time": "Время",
     "topUp": {
       "buyNow": "Купить сейчас",
       "insufficientMessage": "У вас недостаточно кредитов для запуска этого рабочего процесса.",
@@ -245,10 +253,13 @@
   "g": {
     "about": "О программе",
     "add": "Добавить",
+    "addNodeFilterCondition": "Добавить условие фильтрации узла",
     "all": "Все",
     "amount": "Количество",
     "apply": "Применить",
+    "architecture": "Архитектура",
     "audioFailedToLoad": "Не удалось загрузить аудио",
+    "author": "Автор",
     "back": "Назад",
     "cancel": "Отмена",
     "capture": "захват",
@@ -306,10 +317,12 @@
     "installing": "Установка",
     "interrupted": "Прервано",
     "keybinding": "Привязка клавиш",
+    "keybindingAlreadyExists": "Горячая клавиша уже существует",
     "learnMore": "Узнать больше",
     "loadAllFolders": "Загрузить все папки",
     "loadWorkflow": "Загрузить рабочий процесс",
     "loading": "Загрузка",
+    "loadingPanel": "Загрузка панели {panel}...",
     "login": "Вход",
     "logs": "Логи",
     "migrate": "Мигрировать",
@@ -326,9 +339,12 @@
     "ok": "ОК",
     "openNewIssue": "Открыть новую проблему",
     "overwrite": "Перезаписать",
+    "preview": "ПРЕДПРОСМОТР",
+    "progressCountOf": "из",
     "reconnected": "Переподключено",
     "reconnecting": "Переподключение",
     "refresh": "Обновить",
+    "releaseTitle": "Релиз {package} {version}",
     "reloadToApplyChanges": "Перезагрузите, чтобы применить изменения",
     "rename": "Переименовать",
     "reportIssue": "Отправить отчёт",
@@ -358,12 +374,14 @@
     "systemInfo": "Информация о системе",
     "terminal": "Терминал",
     "title": "Заголовок",
+    "triggerPhrase": "Триггерная фраза",
     "unknownError": "Неизвестная ошибка",
     "update": "Обновить",
     "updateAvailable": "Доступно обновление",
     "updated": "Обновлено",
     "updating": "Обновление",
     "upload": "Загрузить",
+    "usageHint": "Подсказка по использованию",
     "user": "Пользователь",
     "videoFailedToLoad": "Не удалось загрузить видео",
     "workflow": "Рабочий процесс"
@@ -380,6 +398,20 @@
   "groupNode": {
     "create": "Создать ноду группы",
     "enterName": "Введите название"
+  },
+  "helpCenter": {
+    "clickToLearnMore": "Нажмите, чтобы узнать больше →",
+    "desktopUserGuide": "Руководство пользователя для Desktop",
+    "docs": "Документация",
+    "github": "Github",
+    "helpFeedback": "Помощь и обратная связь",
+    "loadingReleases": "Загрузка релизов...",
+    "more": "Ещё...",
+    "noRecentReleases": "Нет недавних релизов",
+    "openDevTools": "Открыть инструменты разработчика",
+    "reinstall": "Переустановить",
+    "updateAvailable": "Обновить",
+    "whatsNew": "Что нового?"
   },
   "icon": {
     "bookmark": "Закладка",
@@ -684,6 +716,7 @@
   },
   "menuLabels": {
     "About ComfyUI": "О ComfyUI",
+    "Add Edit Model Step": "Добавить или изменить шаг модели",
     "Browse Templates": "Просмотреть шаблоны",
     "Bypass/Unbypass Selected Nodes": "Обойти/восстановить выбранные ноды",
     "Canvas Toggle Link Visibility": "Переключение видимости ссылки на холст",
@@ -699,6 +732,7 @@
     "ComfyUI Forum": "Форум ComfyUI",
     "ComfyUI Issues": "Проблемы ComfyUI",
     "Contact Support": "Связаться с поддержкой",
+    "Convert Selection to Subgraph": "Преобразовать выделенное в подграф",
     "Convert selected nodes to group node": "Преобразовать выбранные ноды в групповую ноду",
     "Delete Selected Items": "Удалить выбранные элементы",
     "Desktop User Guide": "Руководство пользователя для настольных ПК",
@@ -870,6 +904,12 @@
       "windows": "Windows (Nvidia GPU с поддержкой CUDA)"
     },
     "title": "Ваше устройство не поддерживается"
+  },
+  "releaseToast": {
+    "newVersionAvailable": "Доступна новая версия!",
+    "skip": "Пропустить",
+    "update": "Обновить",
+    "whatsNew": "Что нового?"
   },
   "selectionToolbox": {
     "executeButton": {
@@ -1079,6 +1119,7 @@
   "sideToolbar": {
     "browseTemplates": "Просмотреть примеры шаблонов",
     "downloads": "Загрузки",
+    "helpCenter": "Центр поддержки",
     "logout": "Выйти",
     "modelLibrary": "Библиотека моделей",
     "modelLibraryTab": {
@@ -1373,6 +1414,7 @@
     "title": "Начните с шаблона"
   },
   "toastMessages": {
+    "cannotCreateSubgraph": "Невозможно создать подграф",
     "couldNotDetermineFileType": "Не удалось определить тип файла",
     "dropFileError": "Не удалось обработать перетаскиваемый элемент: {error}",
     "emptyCanvas": "Пустой холст",
@@ -1381,6 +1423,7 @@
     "errorSaveSetting": "Ошибка сохранения настройки {id}: {err}",
     "failedToAccessBillingPortal": "Не удалось получить доступ к биллинговому порталу: {error}",
     "failedToApplyTexture": "Не удалось применить текстуру",
+    "failedToConvertToSubgraph": "Не удалось преобразовать элементы в подграф",
     "failedToCreateCustomer": "Не удалось создать клиента: {error}",
     "failedToDownloadFile": "Не удалось скачать файл",
     "failedToExportModel": "Не удалось экспортировать модель как {format}",
@@ -1444,6 +1487,9 @@
   "welcome": {
     "getStarted": "Начать",
     "title": "Добро пожаловать в ComfyUI"
+  },
+  "whatsNewPopup": {
+    "learnMore": "Узнать больше"
   },
   "workflowService": {
     "enterFilename": "Введите название файла",

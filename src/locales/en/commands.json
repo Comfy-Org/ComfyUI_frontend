@@ -38,6 +38,9 @@
   "Comfy_BrowseTemplates": {
     "label": "Browse Templates"
   },
+  "Comfy_Canvas_AddEditModelStep": {
+    "label": "Add Edit Model Step"
+  },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "Delete Selected Items"
   },
@@ -109,6 +112,9 @@
   },
   "Comfy_Feedback": {
     "label": "Give Feedback"
+  },
+  "Comfy_Graph_ConvertToSubgraph": {
+    "label": "Convert Selection to Subgraph"
   },
   "Comfy_Graph_FitGroupToContents": {
     "label": "Fit Group To Contents"

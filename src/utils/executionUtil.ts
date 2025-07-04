@@ -1,5 +1,9 @@
 import type { LGraph, NodeId } from '@comfyorg/litegraph'
-import { LGraphEventMode } from '@comfyorg/litegraph'
+import {
+  ExecutableNodeDTO,
+  LGraphEventMode,
+  SubgraphNode
+} from '@comfyorg/litegraph'
 
 import type {
   ComfyApiWorkflow,
@@ -74,20 +78,31 @@ export const graphToPrompt = async (
   workflow.extra ??= {}
   workflow.extra.frontendVersion = __COMFYUI_FRONTEND_VERSION__
 
+  const computedNodeDtos = graph
+    .computeExecutionOrder(false)
+    .map(
+      (node) =>
+        new ExecutableNodeDTO(
+          node,
+          [],
+          node instanceof SubgraphNode ? node : undefined
+        )
+    )
+
   let output: ComfyApiWorkflow = {}
   // Process nodes in order of execution
-  for (const outerNode of graph.computeExecutionOrder(false)) {
-    const skipNode =
+  for (const outerNode of computedNodeDtos) {
+    // Don't serialize muted nodes
+    if (
       outerNode.mode === LGraphEventMode.NEVER ||
       outerNode.mode === LGraphEventMode.BYPASS
-    const innerNodes =
-      !skipNode && outerNode.getInnerNodes
-        ? outerNode.getInnerNodes()
-        : [outerNode]
-    for (const node of innerNodes) {
+    ) {
+      continue
+    }
+
+    for (const node of outerNode.getInnerNodes()) {
       if (
         node.isVirtualNode ||
-        // Don't serialize muted nodes
         node.mode === LGraphEventMode.NEVER ||
         node.mode === LGraphEventMode.BYPASS
       ) {
@@ -120,55 +135,14 @@ export const graphToPrompt = async (
 
       // Store all node links
       for (const [i, input] of node.inputs.entries()) {
-        let parent = node.getInputNode(i)
-        if (!parent) continue
+        const resolvedInput = node.resolveInput(i)
+        if (!resolvedInput) continue
 
-        let link = node.getInputLink(i)
-        while (
-          parent?.mode === LGraphEventMode.BYPASS ||
-          parent?.isVirtualNode
-        ) {
-          if (!link) break
-
-          if (parent.isVirtualNode) {
-            link = parent.getInputLink(link.origin_slot)
-            if (!link) break
-
-            parent = parent.getInputNode(link.target_slot)
-            if (!parent) break
-          } else if (!parent.inputs) {
-            // Maintains existing behaviour if parent.getInputLink is overriden
-            break
-          } else if (parent.mode === LGraphEventMode.BYPASS) {
-            // Bypass nodes by finding first input with matching type
-            const parentInputIndexes = Object.keys(parent.inputs).map(Number)
-            // Prioritise exact slot index
-            const indexes = [link.origin_slot].concat(parentInputIndexes)
-
-            const matchingIndex = indexes.find(
-              (index) => parent?.inputs[index]?.type === input.type
-            )
-            // No input types match
-            if (matchingIndex === undefined) break
-
-            link = parent.getInputLink(matchingIndex)
-            if (link) parent = parent.getInputNode(matchingIndex)
-          }
-        }
-
-        if (link) {
-          if (parent?.updateLink) {
-            // Subgraph node / groupNode callback; deprecated, should be replaced
-            link = parent.updateLink(link)
-          }
-          if (link) {
-            inputs[input.name] = [
-              String(link.origin_id),
-              // @ts-expect-error link.origin_slot is already number.
-              parseInt(link.origin_slot)
-            ]
-          }
-        }
+        inputs[input.name] = [
+          String(resolvedInput.origin_id),
+          // @ts-expect-error link.origin_slot is already number.
+          parseInt(resolvedInput.origin_slot)
+        ]
       }
 
       output[String(node.id)] = {

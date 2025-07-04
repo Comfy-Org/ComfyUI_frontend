@@ -12,10 +12,12 @@
       <BottomPanel />
     </template>
     <template #graph-canvas-panel>
-      <SecondRowWorkflowTabs
-        v-if="workflowTabsPosition === 'Topbar (2nd-row)'"
-        class="pointer-events-auto"
-      />
+      <div class="absolute top-0 left-0 w-auto max-w-full pointer-events-auto">
+        <SecondRowWorkflowTabs
+          v-if="workflowTabsPosition === 'Topbar (2nd-row)'"
+        />
+        <SubgraphBreadcrumb />
+      </div>
       <GraphCanvasMenu v-if="canvasMenuEnabled" class="pointer-events-auto" />
     </template>
   </LiteGraphCanvasSplitterOverlay>
@@ -39,12 +41,11 @@
     </SelectionOverlay>
     <DomWidgets />
   </template>
-  <SubgraphBreadcrumb />
 </template>
 
 <script setup lang="ts">
 import type { LGraphNode } from '@comfyorg/litegraph'
-import { useEventListener } from '@vueuse/core'
+import { useEventListener, whenever } from '@vueuse/core'
 import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
@@ -84,6 +85,7 @@ import { useCanvasStore } from '@/stores/graphStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
+import { useWorkflowStore } from '@/stores/workflowStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
@@ -192,10 +194,10 @@ watch(
 // Update the progress of the executing node
 watch(
   () =>
-    [executionStore.executingNodeId, executionStore.executingNodeProgress] as [
-      NodeId | null,
-      number | null
-    ],
+    [
+      executionStore.executingNodeId,
+      executionStore.executingNodeProgress
+    ] satisfies [NodeId | null, number | null],
   ([executingNodeId, executingNodeProgress]) => {
     for (const node of comfyApp.graph.nodes) {
       if (node.id == executingNodeId) {
@@ -325,6 +327,11 @@ onMounted(async () => {
   await workflowPersistence.restorePreviousWorkflow()
   workflowPersistence.restoreWorkflowTabsState()
 
+  // Initialize release store to fetch releases from comfy-api (fire-and-forget)
+  const { useReleaseStore } = await import('@/stores/releaseStore')
+  const releaseStore = useReleaseStore()
+  void releaseStore.initialize()
+
   // Start watching for locale change after the initial value is loaded.
   watch(
     () => settingStore.get('Comfy.Locale'),
@@ -332,6 +339,16 @@ onMounted(async () => {
       await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
       await useWorkflowService().reloadCurrentWorkflow()
     }
+  )
+
+  whenever(
+    () => useCanvasStore().canvas,
+    (canvas) => {
+      useEventListener(canvas.canvas, 'litegraph:set-graph', () => {
+        useWorkflowStore().updateActiveGraph()
+      })
+    },
+    { immediate: true }
   )
 
   emit('ready')

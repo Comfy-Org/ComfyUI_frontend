@@ -38,6 +38,9 @@
   "Comfy_BrowseTemplates": {
     "label": "浏览模板"
   },
+  "Comfy_Canvas_AddEditModelStep": {
+    "label": "添加编辑模型步骤"
+  },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "删除选定的项目"
   },
@@ -109,6 +112,9 @@
   },
   "Comfy_Feedback": {
     "label": "反馈"
+  },
+  "Comfy_Graph_ConvertToSubgraph": {
+    "label": "将选区转换为子图"
   },
   "Comfy_Graph_FitGroupToContents": {
     "label": "适应节点框到内容"
