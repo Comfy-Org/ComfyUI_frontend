@@ -46,7 +46,7 @@ export class UserFile {
     /**
      * Created at timestamp.
      */
-    public created: number = Date.now()
+    public created: number
   ) {
     const details = getPathDetails(path)
     this.path = path
@@ -66,7 +66,7 @@ export class UserFile {
   }
 
   static createTemporary(path: string): UserFile {
-    return new UserFile(path, Date.now(), -1)
+    return new UserFile(path, Date.now(), -1, Date.now())
   }
 
   get isTemporary() {

@@ -90,7 +90,7 @@ describe('useUserFileStore', () => {
   describe('UserFile', () => {
     describe('load', () => {
       it('should load file content', async () => {
-        const file = new UserFile('file1.txt', 123, 100)
+        const file = new UserFile('file1.txt', 123, 100, 123)
         vi.mocked(api.getUserData).mockResolvedValue({
           status: 200,
           text: () => Promise.resolve('file content')
@@ -105,7 +105,7 @@ describe('useUserFileStore', () => {
       })
 
       it('should throw error on failed load', async () => {
-        const file = new UserFile('file1.txt', 123, 100)
+        const file = new UserFile('file1.txt', 123, 100, 123)
         vi.mocked(api.getUserData).mockResolvedValue({
           status: 404,
           statusText: 'Not Found'
@@ -119,7 +119,7 @@ describe('useUserFileStore', () => {
 
     describe('save', () => {
       it('should save modified file', async () => {
-        const file = new UserFile('file1.txt', 123, 100)
+        const file = new UserFile('file1.txt', 123, 100, 123)
         file.content = 'modified content'
         file.originalContent = 'original content'
         vi.mocked(api.storeUserData).mockResolvedValue({
@@ -139,7 +139,7 @@ describe('useUserFileStore', () => {
       })
 
       it('should not save unmodified file', async () => {
-        const file = new UserFile('file1.txt', 123, 100)
+        const file = new UserFile('file1.txt', 123, 100, 123)
         file.content = 'content'
         file.originalContent = 'content'
 
@@ -151,7 +151,7 @@ describe('useUserFileStore', () => {
 
     describe('delete', () => {
       it('should delete file', async () => {
-        const file = new UserFile('file1.txt', 123, 100)
+        const file = new UserFile('file1.txt', 123, 100, 123)
         vi.mocked(api.deleteUserData).mockResolvedValue({
           status: 204
         } as Response)
@@ -164,7 +164,7 @@ describe('useUserFileStore', () => {
 
     describe('rename', () => {
       it('should rename file', async () => {
-        const file = new UserFile('file1.txt', 123, 100)
+        const file = new UserFile('file1.txt', 123, 100, 123)
         vi.mocked(api.moveUserData).mockResolvedValue({
           status: 200,
           json: () => Promise.resolve({ modified: 456, size: 200 })
@@ -184,7 +184,7 @@ describe('useUserFileStore', () => {
 
     describe('saveAs', () => {
       it('should save file with new path', async () => {
-        const file = new UserFile('file1.txt', 123, 100)
+        const file = new UserFile('file1.txt', 123, 100, 123)
         file.content = 'file content'
         vi.mocked(api.storeUserData).mockResolvedValue({
           status: 200,
