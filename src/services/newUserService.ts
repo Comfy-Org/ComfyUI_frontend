@@ -39,9 +39,6 @@ export const newUserService = () => {
     if (isNewUserDetermined) return
 
     isNewUserCached = checkIsNewUser(settingStore)
-
-    console.log(`New user status determined: ${isNewUserCached}`)
-
     isNewUserDetermined = true
 
     if (!isNewUserCached) {
