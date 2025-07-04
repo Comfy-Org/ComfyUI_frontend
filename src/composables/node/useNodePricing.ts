@@ -111,30 +111,55 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
       displayPrice: '$0.06/Run'
     },
     IdeogramV1: {
-      displayPrice: '$0.06/Run'
+      displayPrice: (node: LGraphNode): string => {
+        const numImagesWidget = node.widgets?.find(
+          (w) => w.name === 'num_images'
+        ) as IComboWidget
+        if (!numImagesWidget) return '$0.06 x num_images/Run'
+
+        const numImages = Number(numImagesWidget.value) || 1
+        const cost = (0.06 * numImages).toFixed(2)
+        return `$${cost}/Run`
+      }
     },
     IdeogramV2: {
-      displayPrice: '$0.08/Run'
+      displayPrice: (node: LGraphNode): string => {
+        const numImagesWidget = node.widgets?.find(
+          (w) => w.name === 'num_images'
+        ) as IComboWidget
+        if (!numImagesWidget) return '$0.08 x num_images/Run'
+
+        const numImages = Number(numImagesWidget.value) || 1
+        const cost = (0.08 * numImages).toFixed(2)
+        return `$${cost}/Run`
+      }
     },
     IdeogramV3: {
       displayPrice: (node: LGraphNode): string => {
         const renderingSpeedWidget = node.widgets?.find(
           (w) => w.name === 'rendering_speed'
         ) as IComboWidget
+        const numImagesWidget = node.widgets?.find(
+          (w) => w.name === 'num_images'
+        ) as IComboWidget
 
         if (!renderingSpeedWidget)
-          return '$0.03-0.08/Run (varies with rendering speed)'
+          return '$0.03-0.08 x num_images/Run (varies with rendering speed & num_images)'
+
+        const numImages = Number(numImagesWidget?.value) || 1
+        let basePrice = 0.06 // default balanced price
 
         const renderingSpeed = String(renderingSpeedWidget.value)
         if (renderingSpeed.toLowerCase().includes('quality')) {
-          return '$0.08/Run'
+          basePrice = 0.08
         } else if (renderingSpeed.toLowerCase().includes('balanced')) {
-          return '$0.06/Run'
+          basePrice = 0.06
         } else if (renderingSpeed.toLowerCase().includes('turbo')) {
-          return '$0.03/Run'
+          basePrice = 0.03
         }
 
-        return '$0.06/Run'
+        const totalCost = (basePrice * numImages).toFixed(2)
+        return `$${totalCost}/Run`
       }
     },
     KlingCameraControlI2VNode: {
@@ -897,7 +922,9 @@ export const useNodePricing = () => {
       OpenAIDalle3: ['size', 'quality'],
       OpenAIDalle2: ['size'],
       OpenAIGPTImage1: ['quality'],
-      IdeogramV3: ['rendering_speed'],
+      IdeogramV1: ['num_images'],
+      IdeogramV2: ['num_images'],
+      IdeogramV3: ['rendering_speed', 'num_images'],
       VeoVideoGenerationNode: ['duration_seconds'],
       LumaVideoNode: ['model', 'resolution', 'duration'],
       LumaImageToVideoNode: ['model', 'resolution', 'duration'],
