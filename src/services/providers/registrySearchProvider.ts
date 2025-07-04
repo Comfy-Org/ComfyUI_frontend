@@ -86,6 +86,10 @@ export const useComfyRegistrySearchProvider = (): NodePackSearchProvider => {
 
       // Apply sort if provided (only supported by list endpoint)
       if (sortField) {
+        // Validate sort field to prevent malformed API requests
+        if (!/^[a-zA-Z_]+$/.test(sortField)) {
+          throw new Error(`Invalid sort field: ${sortField}`)
+        }
         const sortParam =
           sortDirection === 'desc' ? `${sortField};desc` : sortField
         listParams.sort = [sortParam]
@@ -161,12 +165,15 @@ export const useComfyRegistrySearchProvider = (): NodePackSearchProvider => {
     const stats = systemStatsStore.systemStats
     if (!stats?.devices || stats.devices.length === 0) return undefined
 
-    // Look for the first GPU device
+    // Look for the first GPU device - check for additional patterns
     for (const device of stats.devices) {
       const deviceType = device.type.toLowerCase()
-      if (deviceType.includes('cuda')) return 'cuda'
-      if (deviceType.includes('mps')) return 'mps'
-      if (deviceType.includes('rocm')) return 'rocm'
+      if (deviceType.includes('nvidia') || deviceType.includes('cuda'))
+        return 'cuda'
+      if (deviceType.includes('apple') || deviceType.includes('mps'))
+        return 'mps'
+      if (deviceType.includes('amd') || deviceType.includes('rocm'))
+        return 'rocm'
       if (deviceType.includes('directml')) return 'directml'
     }
     return undefined
