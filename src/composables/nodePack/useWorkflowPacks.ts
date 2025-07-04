@@ -26,7 +26,7 @@ const CORE_NODES_PACK_NAME = 'comfy-core'
 export const useWorkflowPacks = (options: UseNodePacksOptions = {}) => {
   const nodeDefStore = useNodeDefStore()
   const systemStatsStore = useSystemStatsStore()
-  const { search } = useComfyRegistryStore()
+  const { inferPackFromNodeName } = useComfyRegistryStore()
 
   const workflowPacks = ref<WorkflowPack[]>([])
 
@@ -70,18 +70,19 @@ export const useWorkflowPacks = (options: UseNodePacksOptions = {}) => {
       }
     }
 
-    // Search the registry for non-core nodes
-    const searchResult = await search.call({
-      comfy_node_search: nodeName,
-      limit: 1
-    })
-    if (searchResult?.nodes?.length) {
-      const pack = searchResult.nodes[0]
+    // Query the registry to find which pack provides this node
+    const pack = await inferPackFromNodeName.call(nodeName)
+
+    if (pack) {
       return {
         id: pack.id,
         version: pack.latest_version?.version ?? SelectedVersion.NIGHTLY
       }
     }
+
+    // No pack found - this node doesn't exist in the registry or couldn't be
+    // extracted from the parent node pack successfully
+    return undefined
   }
 
   /**
