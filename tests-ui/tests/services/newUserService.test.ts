@@ -323,9 +323,7 @@ describe('newUserService', () => {
       expect(mockSettingStore.set).toHaveBeenCalledTimes(1)
     })
 
-    it('should log new user status', async () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-
+    it('should correctly determine new user status', async () => {
       mockSettingStore.settingValues = {}
       mockSettingStore.get.mockImplementation((key: string) => {
         if (key === 'Comfy.TutorialCompleted') return undefined
@@ -333,12 +331,19 @@ describe('newUserService', () => {
       })
       mockLocalStorage.getItem.mockReturnValue(null)
 
+      // Before initialization, isNewUser should return null
+      expect(service.isNewUser()).toBeNull()
+
       await service.initializeIfNewUser(mockSettingStore)
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'New user status determined: true'
+      // After initialization, isNewUser should return true for a new user
+      expect(service.isNewUser()).toBe(true)
+
+      // Should set the installed version for new users
+      expect(mockSettingStore.set).toHaveBeenCalledWith(
+        'Comfy.InstalledVersion',
+        expect.any(String)
       )
-      consoleSpy.mockRestore()
     })
   })
 
