@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex justify-between items-center px-4 py-2 text-xs text-muted font-medium leading-3"
+    class="min-h-12 flex justify-between items-center px-4 py-2 text-xs text-muted font-medium leading-3"
   >
     <div v-if="nodePack.downloads" class="flex items-center gap-1.5">
       <i class="pi pi-download text-muted"></i>

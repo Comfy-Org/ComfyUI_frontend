@@ -1,8 +1,8 @@
 <template>
   <aside
-    class="absolute translate-x-0 top-0 left-0 h-full w-80 shadow-md z-5 transition-transform duration-300 ease-in-out flex"
+    class="flex translate-x-0 max-w-[250px] w-3/12 z-5 transition-transform duration-300 ease-in-out"
   >
-    <ScrollPanel class="w-80 mt-7">
+    <ScrollPanel class="flex-1">
       <Listbox
         v-model="selectedTab"
         :options="tabs"
@@ -10,20 +10,20 @@
         list-style="max-height:unset"
         class="w-full border-0 bg-transparent shadow-none"
         :pt="{
-          list: { class: 'p-5' },
-          option: { class: 'px-8 py-3 text-lg rounded-xl' },
+          list: { class: 'p-3 gap-2' },
+          option: { class: 'px-4 py-2 text-lg rounded-lg' },
           optionGroup: { class: 'p-0 text-left text-inherit' }
         }"
       >
         <template #option="slotProps">
           <div class="text-left flex items-center">
-            <i :class="['pi', slotProps.option.icon, 'mr-3']" />
-            <span class="text-lg">{{ slotProps.option.label }}</span>
+            <i :class="['pi', slotProps.option.icon, 'text-sm mr-2']" />
+            <span class="text-sm">{{ slotProps.option.label }}</span>
           </div>
         </template>
       </Listbox>
     </ScrollPanel>
-    <ContentDivider orientation="vertical" />
+    <ContentDivider orientation="vertical" :width="0.3" />
   </aside>
 </template>
 

@@ -1,4 +1,5 @@
 import { ResultItem } from '@/schemas/apiSchema'
+import type { operations } from '@/types/comfyRegistryTypes'
 
 export function formatCamelCase(str: string): string {
   // Check if the string is camel case
@@ -501,4 +502,47 @@ export function linkifyHtml(text: string): string {
 export function nl2br(text: string): string {
   if (!text) return ''
   return text.replace(/\n/g, '<br />')
+}
+
+/**
+ * Converts a version string to an anchor-safe format by replacing dots with dashes.
+ * @param version The version string (e.g., "1.0.0", "2.1.3-beta.1")
+ * @returns The anchor-safe version string (e.g., "v1-0-0", "v2-1-3-beta-1")
+ * @example
+ * formatVersionAnchor("1.0.0") // returns "v1-0-0"
+ * formatVersionAnchor("2.1.3-beta.1") // returns "v2-1-3-beta-1"
+ */
+export function formatVersionAnchor(version: string): string {
+  return `v${version.replace(/\./g, '-')}`
+}
+
+/**
+ * Supported locale types for the application (from OpenAPI schema)
+ */
+export type SupportedLocale = NonNullable<
+  operations['getReleaseNotes']['parameters']['query']['locale']
+>
+
+/**
+ * Converts a string to a valid locale type with 'en' as default
+ * @param locale - The locale string to validate and convert
+ * @returns A valid SupportedLocale type, defaults to 'en' if invalid
+ * @example
+ * stringToLocale('fr') // returns 'fr'
+ * stringToLocale('invalid') // returns 'en'
+ * stringToLocale('') // returns 'en'
+ */
+export function stringToLocale(locale: string): SupportedLocale {
+  const supportedLocales: SupportedLocale[] = [
+    'en',
+    'es',
+    'fr',
+    'ja',
+    'ko',
+    'ru',
+    'zh'
+  ]
+  return supportedLocales.includes(locale as SupportedLocale)
+    ? (locale as SupportedLocale)
+    : 'en'
 }

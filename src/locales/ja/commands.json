@@ -38,6 +38,9 @@
   "Comfy_BrowseTemplates": {
     "label": "テンプレートを参照"
   },
+  "Comfy_Canvas_AddEditModelStep": {
+    "label": "編集モデルステップを追加"
+  },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "選択したアイテムを削除"
   },

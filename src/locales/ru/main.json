@@ -381,6 +381,20 @@
     "create": "Создать ноду группы",
     "enterName": "Введите название"
   },
+  "helpCenter": {
+    "clickToLearnMore": "Нажмите, чтобы узнать больше →",
+    "desktopUserGuide": "Руководство пользователя для Desktop",
+    "docs": "Документация",
+    "github": "Github",
+    "helpFeedback": "Помощь и обратная связь",
+    "loadingReleases": "Загрузка релизов...",
+    "more": "Ещё...",
+    "noRecentReleases": "Нет недавних релизов",
+    "openDevTools": "Открыть инструменты разработчика",
+    "reinstall": "Переустановить",
+    "updateAvailable": "Обновить",
+    "whatsNew": "Что нового?"
+  },
   "icon": {
     "bookmark": "Закладка",
     "box": "Коробка",
@@ -551,6 +565,11 @@
     "uploadBackgroundImage": "Загрузить фоновое изображение",
     "uploadTexture": "Загрузить текстуру"
   },
+  "loadWorkflowWarning": {
+    "coreNodesFromVersion": "Требуется ComfyUI {version}:",
+    "outdatedVersion": "Некоторые узлы требуют более новой версии ComfyUI (текущая: {version}). Пожалуйста, обновите, чтобы использовать все узлы.",
+    "outdatedVersionGeneric": "Некоторые узлы требуют более новой версии ComfyUI. Пожалуйста, обновите, чтобы использовать все узлы."
+  },
   "maintenance": {
     "None": "Нет",
     "OK": "OK",
@@ -679,6 +698,7 @@
   },
   "menuLabels": {
     "About ComfyUI": "О ComfyUI",
+    "Add Edit Model Step": "Добавить или изменить шаг модели",
     "Browse Templates": "Просмотреть шаблоны",
     "Bypass/Unbypass Selected Nodes": "Обойти/восстановить выбранные ноды",
     "Canvas Toggle Link Visibility": "Переключение видимости ссылки на холст",
@@ -865,6 +885,12 @@
       "windows": "Windows (Nvidia GPU с поддержкой CUDA)"
     },
     "title": "Ваше устройство не поддерживается"
+  },
+  "releaseToast": {
+    "newVersionAvailable": "Доступна новая версия!",
+    "skip": "Пропустить",
+    "update": "Обновить",
+    "whatsNew": "Что нового?"
   },
   "selectionToolbox": {
     "executeButton": {
@@ -1074,6 +1100,7 @@
   "sideToolbar": {
     "browseTemplates": "Просмотреть примеры шаблонов",
     "downloads": "Загрузки",
+    "helpCenter": "Центр поддержки",
     "logout": "Выйти",
     "modelLibrary": "Библиотека моделей",
     "newBlankWorkflow": "Создайте новый пустой рабочий процесс",
@@ -1433,6 +1460,9 @@
   "welcome": {
     "getStarted": "Начать",
     "title": "Добро пожаловать в ComfyUI"
+  },
+  "whatsNewPopup": {
+    "learnMore": "Узнать больше"
   },
   "workflowService": {
     "enterFilename": "Введите название файла",

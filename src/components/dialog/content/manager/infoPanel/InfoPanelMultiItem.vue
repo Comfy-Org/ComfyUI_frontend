@@ -51,7 +51,11 @@ const getPackNodes = async (pack: components['schemas']['Node']) => {
   if (!pack.latest_version?.version) return []
   const nodeDefs = await getNodeDefs.call({
     packId: pack.id,
-    version: pack.latest_version?.version
+    version: pack.latest_version?.version,
+    // Fetch all nodes.
+    // TODO: Render all nodes previews and handle pagination.
+    // For determining length, use the `totalNumberOfPages` field of response
+    limit: 8192
   })
   return nodeDefs?.comfy_nodes ?? []
 }

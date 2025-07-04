@@ -1,14 +1,16 @@
 <template>
   <div
-    class="flex flex-col mx-auto overflow-hidden h-[83vh] relative"
+    class="h-full flex flex-col mx-auto overflow-hidden"
     :aria-label="$t('manager.title')"
   >
+    <ContentDivider :width="0.3" />
     <Button
       v-if="isSmallScreen"
       :icon="isSideNavOpen ? 'pi pi-chevron-left' : 'pi pi-chevron-right'"
-      text
+      severity="secondary"
+      filled
       class="absolute top-1/2 -translate-y-1/2 z-10"
-      :class="isSideNavOpen ? 'left-[19rem]' : 'left-2'"
+      :class="isSideNavOpen ? 'left-[12rem]' : 'left-2'"
       @click="toggleSideNav"
     />
     <div class="flex flex-1 relative overflow-hidden">
@@ -18,14 +20,12 @@
         :tabs="tabs"
       />
       <div
-        class="flex-1 overflow-auto pr-80"
+        class="flex-1 overflow-auto bg-gray-50 dark-theme:bg-neutral-900"
         :class="{
-          'transition-all duration-300': isSmallScreen,
-          'pl-80': isSideNavOpen || !isSmallScreen,
-          'pl-8': !isSideNavOpen && isSmallScreen
+          'transition-all duration-300': isSmallScreen
         }"
       >
-        <div class="px-6 pt-6 flex flex-col h-full">
+        <div class="px-6 flex flex-col h-full">
           <RegistrySearchBar
             v-model:searchQuery="searchQuery"
             v-model:searchMode="searchMode"
@@ -59,7 +59,7 @@
               <VirtualGrid
                 id="results-grid"
                 :items="resultsWithKeys"
-                :buffer-rows="3"
+                :buffer-rows="4"
                 :grid-style="GRID_STYLE"
                 @approach-end="onApproachEnd"
               >
@@ -77,9 +77,9 @@
           </div>
         </div>
       </div>
-      <div class="w-80 border-l-0 absolute right-0 top-0 bottom-0 flex z-20">
+      <div class="w-[clamp(250px,33%,306px)] border-l-0 flex z-20">
         <ContentDivider orientation="vertical" :width="0.2" />
-        <div class="flex-1 flex flex-col isolate">
+        <div class="w-full flex flex-col isolate">
           <InfoPanel
             v-if="!hasMultipleSelections && selectedNodePack"
             :node-pack="selectedNodePack"
@@ -218,10 +218,6 @@ const {
 
 const filterMissingPacks = (packs: components['schemas']['Node'][]) =>
   packs.filter((pack) => !comfyManagerStore.isPackInstalled(pack.id))
-
-whenever(selectedTab, () => {
-  pageNumber.value = 0
-})
 
 const isUpdateAvailableTab = computed(
   () => selectedTab.value?.id === ManagerTab.UpdateAvailable
@@ -468,9 +464,10 @@ let gridContainer: HTMLElement | null = null
 onMounted(() => {
   gridContainer = document.getElementById('results-grid')
 })
-watch(searchQuery, () => {
+watch([searchQuery, selectedTab], () => {
   gridContainer ??= document.getElementById('results-grid')
   if (gridContainer) {
+    pageNumber.value = 0
     gridContainer.scrollTop = 0
   }
 })
