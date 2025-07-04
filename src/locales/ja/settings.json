@@ -293,6 +293,15 @@
       "right": "右"
     }
   },
+  "Comfy_Sidebar_RecentItems_MaxCount": {
+    "name": "サイドバーの最近使用した項目の最大数"
+  },
+  "Comfy_Sidebar_RecentItems_ShowRecentlyAdded": {
+    "name": "サイドバーで最近追加された項目を表示"
+  },
+  "Comfy_Sidebar_RecentItems_ShowRecentlyUsed": {
+    "name": "サイドバーで最近使用した項目を表示"
+  },
   "Comfy_Sidebar_Size": {
     "name": "サイドバーのサイズ",
     "options": {

@@ -303,6 +303,15 @@
   "Comfy_Sidebar_UnifiedWidth": {
     "name": "Unified sidebar width"
   },
+  "Comfy_Sidebar_RecentItems_MaxCount": {
+    "name": "Sidebar recent items maximum count"
+  },
+  "Comfy_Sidebar_RecentItems_ShowRecentlyAdded": {
+    "name": "Sidebar show recently added items"
+  },
+  "Comfy_Sidebar_RecentItems_ShowRecentlyUsed": {
+    "name": "Sidebar show recently used items"
+  },
   "Comfy_SnapToGrid_GridSize": {
     "name": "Snap to grid size",
     "tooltip": "When dragging and resizing nodes while holding shift they will be aligned to the grid, this controls the size of that grid."

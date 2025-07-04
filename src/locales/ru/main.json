@@ -1081,6 +1081,10 @@
     "downloads": "Загрузки",
     "logout": "Выйти",
     "modelLibrary": "Библиотека моделей",
+    "modelLibraryTab": {
+      "recentlyAddedModels": "Недавно добавленные модели",
+      "recentlyUsedModels": "Недавно использованные модели"
+    },
     "newBlankWorkflow": "Создайте новый пустой рабочий процесс",
     "nodeLibrary": "Библиотека нод",
     "nodeLibraryTab": {
@@ -1131,7 +1135,9 @@
       "workflowTreeType": {
         "bookmarks": "Закладки",
         "browse": "Просмотреть",
-        "open": "Открыть"
+        "open": "Открыть",
+        "recentlyAddedWorkflows": "Недавно добавленные рабочие процессы",
+        "recentlyUsedWorkflows": "Недавно использованные рабочие процессы"
       }
     },
     "workflows": "Рабочие процессы"

@@ -1081,6 +1081,10 @@
     "downloads": "下载",
     "logout": "登出",
     "modelLibrary": "模型库",
+    "modelLibraryTab": {
+      "recentlyAddedModels": "最近添加的模型",
+      "recentlyUsedModels": "最近使用的模型"
+    },
     "newBlankWorkflow": "创建空白工作流",
     "nodeLibrary": "节点库",
     "nodeLibraryTab": {
@@ -1131,7 +1135,9 @@
       "workflowTreeType": {
         "bookmarks": "书签",
         "browse": "浏览",
-        "open": "打开"
+        "open": "打开",
+        "recentlyAddedWorkflows": "最近添加的工作流",
+        "recentlyUsedWorkflows": "最近使用的工作流"
       }
     },
     "workflows": "工作流"

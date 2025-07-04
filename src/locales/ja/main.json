@@ -1081,6 +1081,10 @@
     "downloads": "ダウンロード",
     "logout": "ログアウト",
     "modelLibrary": "モデルライブラリ",
+    "modelLibraryTab": {
+      "recentlyAddedModels": "最近追加されたモデル",
+      "recentlyUsedModels": "最近使用したモデル"
+    },
     "newBlankWorkflow": "新しい空のワークフローを作成",
     "nodeLibrary": "ノードライブラリ",
     "nodeLibraryTab": {
@@ -1131,7 +1135,9 @@
       "workflowTreeType": {
         "bookmarks": "ブックマーク",
         "browse": "ブラウズ",
-        "open": "開く"
+        "open": "開く",
+        "recentlyAddedWorkflows": "最近追加されたワークフロー",
+        "recentlyUsedWorkflows": "最近使用したワークフロー"
       }
     },
     "workflows": "ワークフロー"

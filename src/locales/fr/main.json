@@ -1081,6 +1081,10 @@
     "downloads": "Téléchargements",
     "logout": "Déconnexion",
     "modelLibrary": "Bibliothèque de modèles",
+    "modelLibraryTab": {
+      "recentlyAddedModels": "Modèles récemment ajoutés",
+      "recentlyUsedModels": "Modèles récemment utilisés"
+    },
     "newBlankWorkflow": "Créer un nouveau flux de travail vierge",
     "nodeLibrary": "Bibliothèque de nœuds",
     "nodeLibraryTab": {
@@ -1131,7 +1135,9 @@
       "workflowTreeType": {
         "bookmarks": "Favoris",
         "browse": "Parcourir",
-        "open": "Ouvrir"
+        "open": "Ouvrir",
+        "recentlyAddedWorkflows": "Flux de travail récemment ajoutés",
+        "recentlyUsedWorkflows": "Flux de travail récemment utilisés"
       }
     },
     "workflows": "Flux de travail"

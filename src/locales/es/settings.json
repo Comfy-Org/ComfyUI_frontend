@@ -293,6 +293,15 @@
       "right": "derecha"
     }
   },
+  "Comfy_Sidebar_RecentItems_MaxCount": {
+    "name": "Cantidad máxima de elementos recientes en la barra lateral"
+  },
+  "Comfy_Sidebar_RecentItems_ShowRecentlyAdded": {
+    "name": "Barra lateral mostrar elementos añadidos recientemente"
+  },
+  "Comfy_Sidebar_RecentItems_ShowRecentlyUsed": {
+    "name": "Barra lateral mostrar elementos usados recientemente"
+  },
   "Comfy_Sidebar_Size": {
     "name": "Tamaño de la barra lateral",
     "options": {

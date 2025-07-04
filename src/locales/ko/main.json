@@ -1081,6 +1081,10 @@
     "downloads": "다운로드",
     "logout": "로그아웃",
     "modelLibrary": "모델 라이브러리",
+    "modelLibraryTab": {
+      "recentlyAddedModels": "최근 추가된 모델",
+      "recentlyUsedModels": "최근 사용한 모델"
+    },
     "newBlankWorkflow": "새 빈 워크플로 만들기",
     "nodeLibrary": "노드 라이브러리",
     "nodeLibraryTab": {
@@ -1131,7 +1135,9 @@
       "workflowTreeType": {
         "bookmarks": "북마크",
         "browse": "찾아보기",
-        "open": "열기"
+        "open": "열기",
+        "recentlyAddedWorkflows": "최근 추가된 워크플로우",
+        "recentlyUsedWorkflows": "최근 사용한 워크플로우"
       }
     },
     "workflows": "워크플로"
