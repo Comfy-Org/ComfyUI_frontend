@@ -121,6 +121,7 @@ The core stores include:
 | modelStore.ts | Manages AI models information |
 | nodeDefStore.ts | Manages node definitions |
 | queueStore.ts | Handles the execution queue |
+| recentItemsStore.ts | Tracks recently used workflows and models |
 | settingStore.ts | Manages application settings |
 | userStore.ts | Manages user data and preferences |
 | workflowStore.ts | Handles workflow data and operations |
