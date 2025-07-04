@@ -54,7 +54,8 @@ import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import { ExtensionManager } from '@/types/extensionTypes'
 import { ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
-import { getFileHandler } from '@/utils/fileHandlers'
+import { useFileHandlerStore } from '@/stores/fileHandlerStore'
+import { registerCoreFileHandlers } from '@/extensions/core/coreFileHandlers'
 import {
   executeWidgetsCallback,
   fixLinkInputSlots,
@@ -749,6 +750,9 @@ export class ComfyApp {
     await useWorkspaceStore().workflow.syncWorkflows()
     await useExtensionService().loadExtensions()
 
+    // Register core file handlers
+    registerCoreFileHandlers()
+
     this.#addProcessKeyHandler()
     this.#addConfigureHandler()
     this.#addApiUpdateHandlers()
@@ -1322,7 +1326,8 @@ export class ComfyApp {
     }
     const fileName = removeExt(file.name)
 
-    const handler = getFileHandler(file)
+    const fileHandlerStore = useFileHandlerStore()
+    const handler = fileHandlerStore.getHandlerForFile(file)
     if (!handler) {
       this.showErrorOnFileLoad(file)
       return

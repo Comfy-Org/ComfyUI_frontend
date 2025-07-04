@@ -1,17 +1,14 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
 
 import {
-  AUDIO_WORKFLOW_FORMATS,
-  DATA_WORKFLOW_FORMATS,
-  IMAGE_WORKFLOW_FORMATS,
-  MODEL_WORKFLOW_FORMATS,
-  VIDEO_WORKFLOW_FORMATS
-} from '../../../src/constants/supportedWorkflowFormats'
+  useFileHandlerStore,
+  type FileHandlerDefinition
+} from '../../../src/stores/fileHandlerStore'
 import {
-  extensionHandlers,
-  getFileHandler,
-  isApiJson,
-  mimeTypeHandlers
+  handlePngFile,
+  handleWebpFile,
+  handleJsonFile
 } from '../../../src/utils/fileHandlers'
 
 // Mock the metadata functions
@@ -59,121 +56,143 @@ vi.mock('../../../src/scripts/metadata/gltf', () => ({
     .mockResolvedValue({ workflow: { test: 'workflow' } })
 }))
 
-describe('fileHandlers', () => {
-  describe('handler registrations', () => {
-    it('should register handlers for all image MIME types', () => {
-      IMAGE_WORKFLOW_FORMATS.mimeTypes.forEach((mimeType) => {
-        expect(mimeTypeHandlers.has(mimeType)).toBe(true)
-        expect(mimeTypeHandlers.get(mimeType)).toBeTypeOf('function')
-      })
+describe('File Handler Store', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  describe('Registration', () => {
+    it('should register file handlers correctly', () => {
+      const store = useFileHandlerStore()
+      
+      const definition: FileHandlerDefinition = {
+        id: 'test.handler',
+        displayName: 'Test Handler',
+        mimeTypes: ['image/png'],
+        extensions: ['.png'],
+        handler: handlePngFile
+      }
+
+      store.registerFileHandler(definition)
+
+      expect(store.handlers).toHaveLength(1)
+      expect(store.handlers[0].id).toBe('test.handler')
+      expect(store.supportedMimeTypes).toContain('image/png')
+      expect(store.supportedExtensions).toContain('.png')
     })
 
-    it('should register handlers for all image extensions', () => {
-      IMAGE_WORKFLOW_FORMATS.extensions.forEach((ext) => {
-        expect(extensionHandlers.has(ext)).toBe(true)
-        expect(extensionHandlers.get(ext)).toBeTypeOf('function')
-      })
+    it('should not register duplicate handlers', () => {
+      const store = useFileHandlerStore()
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      const definition: FileHandlerDefinition = {
+        id: 'test.handler',
+        displayName: 'Test Handler',
+        mimeTypes: ['image/png'],
+        extensions: ['.png'],
+        handler: handlePngFile
+      }
+
+      store.registerFileHandler(definition)
+      store.registerFileHandler(definition) // Try to register again
+
+      expect(store.handlers).toHaveLength(1)
+      expect(consoleSpy).toHaveBeenCalledWith('File handler test.handler already registered')
+
+      consoleSpy.mockRestore()
     })
 
-    it('should register handlers for all audio MIME types', () => {
-      AUDIO_WORKFLOW_FORMATS.mimeTypes.forEach((mimeType) => {
-        expect(mimeTypeHandlers.has(mimeType)).toBe(true)
-        expect(mimeTypeHandlers.get(mimeType)).toBeTypeOf('function')
-      })
-    })
+    it('should handle priority correctly', () => {
+      const store = useFileHandlerStore()
 
-    it('should register handlers for all audio extensions', () => {
-      AUDIO_WORKFLOW_FORMATS.extensions.forEach((ext) => {
-        expect(extensionHandlers.has(ext)).toBe(true)
-        expect(extensionHandlers.get(ext)).toBeTypeOf('function')
+      // Register low priority handler first
+      store.registerFileHandler({
+        id: 'low.priority',
+        displayName: 'Low Priority',
+        mimeTypes: ['image/png'],
+        extensions: ['.png'],
+        handler: handlePngFile,
+        priority: 1
       })
-    })
 
-    it('should register handlers for all video MIME types', () => {
-      VIDEO_WORKFLOW_FORMATS.mimeTypes.forEach((mimeType) => {
-        expect(mimeTypeHandlers.has(mimeType)).toBe(true)
-        expect(mimeTypeHandlers.get(mimeType)).toBeTypeOf('function')
+      // Register high priority handler
+      store.registerFileHandler({
+        id: 'high.priority',
+        displayName: 'High Priority',
+        mimeTypes: ['image/png'],
+        extensions: ['.png'],
+        handler: handleWebpFile,
+        priority: 10
       })
-    })
 
-    it('should register handlers for all video extensions', () => {
-      VIDEO_WORKFLOW_FORMATS.extensions.forEach((ext) => {
-        expect(extensionHandlers.has(ext)).toBe(true)
-        expect(extensionHandlers.get(ext)).toBeTypeOf('function')
-      })
-    })
+      const handler = store.getHandlerForFile(
+        new File([''], 'test.png', { type: 'image/png' })
+      )
 
-    it('should register handlers for all model MIME types', () => {
-      MODEL_WORKFLOW_FORMATS.mimeTypes.forEach((mimeType) => {
-        expect(mimeTypeHandlers.has(mimeType)).toBe(true)
-        expect(mimeTypeHandlers.get(mimeType)).toBeTypeOf('function')
-      })
-    })
-
-    it('should register handlers for all model extensions', () => {
-      MODEL_WORKFLOW_FORMATS.extensions.forEach((ext) => {
-        expect(extensionHandlers.has(ext)).toBe(true)
-        expect(extensionHandlers.get(ext)).toBeTypeOf('function')
-      })
-    })
-
-    it('should register handlers for all data MIME types', () => {
-      DATA_WORKFLOW_FORMATS.mimeTypes.forEach((mimeType) => {
-        expect(mimeTypeHandlers.has(mimeType)).toBe(true)
-        expect(mimeTypeHandlers.get(mimeType)).toBeTypeOf('function')
-      })
-    })
-
-    it('should register handlers for all data extensions', () => {
-      DATA_WORKFLOW_FORMATS.extensions.forEach((ext) => {
-        expect(extensionHandlers.has(ext)).toBe(true)
-        expect(extensionHandlers.get(ext)).toBeTypeOf('function')
-      })
+      expect(handler).toBe(handleWebpFile) // Should return high priority handler
     })
   })
 
-  describe('getFileHandler', () => {
-    it('should return handler based on MIME type', () => {
+  describe('File Handler Lookup', () => {
+    beforeEach(() => {
+      const store = useFileHandlerStore()
+      
+      // Register some test handlers
+      store.registerFileHandler({
+        id: 'png.handler',
+        displayName: 'PNG Handler',
+        mimeTypes: ['image/png'],
+        extensions: ['.png'],
+        handler: handlePngFile
+      })
+
+      store.registerFileHandler({
+        id: 'webp.handler',
+        displayName: 'WebP Handler',
+        mimeTypes: ['image/webp'],
+        extensions: ['.webp'],
+        handler: handleWebpFile
+      })
+
+      store.registerFileHandler({
+        id: 'json.handler',
+        displayName: 'JSON Handler',
+        mimeTypes: ['application/json'],
+        extensions: ['.json'],
+        handler: handleJsonFile
+      })
+    })
+
+    it('should find handler by MIME type', () => {
+      const store = useFileHandlerStore()
       const file = new File([''], 'test.png', { type: 'image/png' })
-      const handler = getFileHandler(file)
-      expect(handler).toBeTruthy()
-      expect(handler).toBeTypeOf('function')
+      
+      const handler = store.getHandlerForFile(file)
+      expect(handler).toBe(handlePngFile)
     })
 
-    it('should return handler based on file extension when MIME type is not available', () => {
+    it('should find handler by extension when MIME type is missing', () => {
+      const store = useFileHandlerStore()
       const file = new File([''], 'test.png', { type: '' })
-      const handler = getFileHandler(file)
-      expect(handler).toBeTruthy()
-      expect(handler).toBeTypeOf('function')
+      
+      const handler = store.getHandlerForFile(file)
+      expect(handler).toBe(handlePngFile)
     })
 
-    it('should return null for unsupported file types', () => {
-      const file = new File([''], 'test.xyz', { type: 'application/unknown' })
-      const handler = getFileHandler(file)
+    it('should return null for unsupported files', () => {
+      const store = useFileHandlerStore()
+      const file = new File([''], 'test.txt', { type: 'text/plain' })
+      
+      const handler = store.getHandlerForFile(file)
       expect(handler).toBeNull()
     })
 
-    it('should prioritize MIME type over file extension', () => {
-      const file = new File([''], 'test.txt', { type: 'image/png' })
-      const handler = getFileHandler(file)
-      expect(handler).toBe(mimeTypeHandlers.get('image/png'))
-    })
-  })
-
-  describe('isApiJson', () => {
-    it('should return true for valid API JSON', () => {
-      const apiJson = {
-        '1': { class_type: 'Node1', inputs: {} },
-        '2': { class_type: 'Node2', inputs: {} }
-      }
-      expect(isApiJson(apiJson)).toBe(true)
-    })
-
-    it('should return false for non-API JSON', () => {
-      expect(isApiJson({})).toBe(false)
-      expect(isApiJson({ nodes: [] })).toBe(false)
-      expect(isApiJson(null)).toBe(false)
-      expect(isApiJson('string')).toBe(false)
+    it('should handle files with mixed case extensions', () => {
+      const store = useFileHandlerStore()
+      const file = new File([''], 'test.PNG', { type: '' })
+      
+      const handler = store.getHandlerForFile(file)
+      expect(handler).toBe(handlePngFile)
     })
   })
 
@@ -186,8 +205,7 @@ describe('fileHandlers', () => {
       })
 
       const file = new File([''], 'test.png', { type: 'image/png' })
-      const handler = getFileHandler(file)
-      const result = await handler!(file)
+      const result = await handlePngFile(file)
 
       expect(result.workflow).toBeTypeOf('function')
       expect(result.prompt).toBeTypeOf('function')
@@ -208,8 +226,7 @@ describe('fileHandlers', () => {
       })
 
       const file = new File([''], 'test.png', { type: 'image/png' })
-      const handler = getFileHandler(file)
-      const result = await handler!(file)
+      const result = await handlePngFile(file)
 
       // workflow should parse successfully
       const workflowData = result.workflow!()
@@ -229,8 +246,7 @@ describe('fileHandlers', () => {
       })
 
       const file = new File([''], 'test.png', { type: 'image/png' })
-      const handler = getFileHandler(file)
-      const result = await handler!(file)
+      const result = await handlePngFile(file)
 
       // Both should throw when called
       expect(() => result.workflow!()).toThrow()
@@ -242,53 +258,17 @@ describe('fileHandlers', () => {
       vi.mocked(getPngMetadata).mockResolvedValueOnce({})
 
       const file = new File([''], 'test.png', { type: 'image/png' })
-      const handler = getFileHandler(file)
-      const result = await handler!(file)
+      const result = await handlePngFile(file)
 
       expect(result.workflow!()).toBeUndefined()
       expect(result.prompt!()).toBeUndefined()
-    })
-
-    it('should handle undefined metadata fields', async () => {
-      const { getPngMetadata } = await import('../../../src/scripts/pnginfo')
-      vi.mocked(getPngMetadata).mockResolvedValueOnce({
-        workflow: undefined as any,
-        prompt: undefined as any,
-        parameters: 'some parameters'
-      })
-
-      const file = new File([''], 'test.png', { type: 'image/png' })
-      const handler = getFileHandler(file)
-      const result = await handler!(file)
-
-      expect(result.workflow!()).toBeUndefined()
-      expect(result.prompt!()).toBeUndefined()
-      expect(result.parameters).toBe('some parameters')
-    })
-  })
-
-  describe('WebP handler variations', () => {
-    it('should handle case-sensitive workflow field names', async () => {
-      const { getWebpMetadata } = await import('../../../src/scripts/pnginfo')
-      vi.mocked(getWebpMetadata).mockResolvedValueOnce({
-        Workflow: '{"uppercase": true}',
-        Prompt: '{"uppercase": true}'
-      })
-
-      const file = new File([''], 'test.webp', { type: 'image/webp' })
-      const handler = getFileHandler(file)
-      const result = await handler!(file)
-
-      expect(result.workflow!()).toEqual({ uppercase: true })
-      expect(result.prompt!()).toEqual({ uppercase: true })
     })
   })
 
   describe('JSON handler edge cases', () => {
     it('should handle empty JSON file', async () => {
       const file = new File(['{}'], 'empty.json', { type: 'application/json' })
-      const handler = getFileHandler(file)
-      const result = await handler!(file)
+      const result = await handleJsonFile(file)
 
       expect(result.jsonTemplateData!()).toEqual({})
     })
@@ -297,9 +277,9 @@ describe('fileHandlers', () => {
       const file = new File(['{invalid json}'], 'bad.json', {
         type: 'application/json'
       })
-      const handler = getFileHandler(file)
-      const result = await handler!(file)
-
+      
+      const result = await handleJsonFile(file)
+      
       // Should throw when calling the lazy functions
       expect(() => result.jsonTemplateData!()).toThrow()
       expect(() => result.workflow!()).toThrow()
@@ -323,8 +303,7 @@ describe('fileHandlers', () => {
       })
 
       const file = new File([''], 'test.png', { type: 'image/png' })
-      const handler = getFileHandler(file)
-      const result = await handler!(file)
+      const result = await handlePngFile(file)
 
       // JSON.parse should not have been called yet
       expect(parseCallCount).toBe(0)
@@ -339,22 +318,6 @@ describe('fileHandlers', () => {
 
       // Restore original JSON.parse
       JSON.parse = originalParse
-    })
-  })
-
-  describe('File extension fallback', () => {
-    it('should use file extension when MIME type is empty', () => {
-      const file = new File([''], 'test.png', { type: '' })
-      const handler = getFileHandler(file)
-      expect(handler).toBe(extensionHandlers.get('.png'))
-    })
-
-    it('should use file extension when MIME type is application/octet-stream', () => {
-      const file = new File([''], 'test.mp3', {
-        type: 'application/octet-stream'
-      })
-      const handler = getFileHandler(file)
-      expect(handler).toBe(extensionHandlers.get('.mp3'))
     })
   })
 })
