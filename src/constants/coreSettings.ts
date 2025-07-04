@@ -749,7 +749,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.InstalledVersion',
-    name: 'Installed frontend version',
+    name: 'The frontend version that was running when the user first installed ComfyUI',
     type: 'hidden',
     defaultValue: null,
     versionAdded: '1.24.0'
