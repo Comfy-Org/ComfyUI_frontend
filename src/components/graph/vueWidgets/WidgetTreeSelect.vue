@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-1">
+  <div class="flex items-center justify-between">
     <label v-if="widget.name" class="text-sm opacity-80">{{
       widget.name
     }}</label>
