@@ -270,22 +270,20 @@ export function useNodeCompatibilityService() {
   /**
    * Error-resilient initialization function.
    * Can be called during app startup without affecting other components.
+   * Async function that doesn't block UI setup.
    */
-  function initializeCompatibilityCheck(): void {
-    console.log('[NodeCompatibility] Scheduling compatibility check...')
+  async function initializeCompatibilityCheck(): Promise<void> {
+    console.log('[NodeCompatibility] Starting compatibility check...')
 
-    // Use setTimeout to avoid blocking other initialization
-    setTimeout(async () => {
-      try {
-        await performCompatibilityCheck()
-      } catch (error) {
-        console.warn(
-          '[NodeCompatibility] Initialization failed (ignored):',
-          error
-        )
-        // Errors are logged but don't affect app startup
-      }
-    }, 200) // Small delay to allow other components to initialize
+    try {
+      await performCompatibilityCheck()
+    } catch (error) {
+      console.warn(
+        '[NodeCompatibility] Initialization failed (ignored):',
+        error
+      )
+      // Errors are logged but don't affect app startup
+    }
   }
 
   return {

@@ -51,7 +51,7 @@ onMounted(() => {
   }
 
   // Initialize node compatibility checking in background
-  // This runs silently and doesn't affect app startup even if it fails
-  nodeCompatibilityService.initializeCompatibilityCheck()
+  // This runs async and doesn't block UI setup
+  void nodeCompatibilityService.initializeCompatibilityCheck()
 })
 </script>

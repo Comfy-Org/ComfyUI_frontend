@@ -493,23 +493,20 @@ export function useConflictDetection() {
 
   /**
    * Error-resilient initialization (called on app mount).
-   * Uses setTimeout to avoid blocking other component initialization.
+   * Async function that doesn't block UI setup.
    */
-  function initializeConflictDetection(): void {
-    console.log('[ConflictDetection] Starting initialization (async)')
+  async function initializeConflictDetection(): Promise<void> {
+    console.log('[ConflictDetection] Starting initialization...')
 
-    // Use setTimeout to avoid interfering with other component initialization
-    setTimeout(async () => {
-      try {
-        await performConflictDetection()
-      } catch (error) {
-        console.warn(
-          '[ConflictDetection] Error during initialization (ignored):',
-          error
-        )
-        // Errors do not affect other parts of the app
-      }
-    }, 100) // Execute after 100ms to allow other components to initialize first
+    try {
+      await performConflictDetection()
+    } catch (error) {
+      console.warn(
+        '[ConflictDetection] Error during initialization (ignored):',
+        error
+      )
+      // Errors do not affect other parts of the app
+    }
   }
 
   // Cleanup function for request cancellation
