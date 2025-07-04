@@ -103,6 +103,27 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.18.1'
   },
   {
+    id: 'Comfy.Sidebar.RecentItems.MaxCount',
+    category: ['Appearance', 'Sidebar', 'RecentItems', 'MaxCount'],
+    name: 'Max number of sidebar recent items',
+    type: 'number',
+    defaultValue: 5
+  },
+  {
+    id: 'Comfy.Sidebar.RecentItems.ShowRecentlyUsed',
+    category: ['Appearance', 'Sidebar', 'RecentItems', 'ShowRecentlyUsed'],
+    name: 'Show recently used items in sidebar',
+    type: 'boolean',
+    defaultValue: true
+  },
+  {
+    id: 'Comfy.Sidebar.RecentItems.ShowRecentlyAdded',
+    category: ['Appearance', 'Sidebar', 'RecentItems', 'ShowRecentlyAdded'],
+    name: 'Show recently added items in sidebar',
+    type: 'boolean',
+    defaultValue: true
+  },
+  {
     id: 'Comfy.TextareaWidget.FontSize',
     category: ['Appearance', 'Node Widget', 'TextareaWidget', 'FontSize'],
     name: 'Textarea widget font size',
