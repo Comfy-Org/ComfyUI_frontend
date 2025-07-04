@@ -4,10 +4,11 @@
       widget.name
     }}</label>
     <Select
-      v-model="value"
+      v-model="localValue"
       :options="selectOptions"
       v-bind="filteredProps"
       :disabled="readonly"
+      @update:model-value="onChange"
     />
   </div>
 </template>
@@ -21,13 +22,25 @@ import {
   PANEL_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
-
-const value = defineModel<any>({ required: true })
+import { useWidgetValue } from '@/composables/graph/useWidgetValue'
 
 const props = defineProps<{
   widget: SimplifiedWidget<any>
+  modelValue: any
   readonly?: boolean
 }>()
+
+const emit = defineEmits<{
+  'update:modelValue': [value: any]
+}>()
+
+// Use the composable for consistent widget value handling
+const { localValue, onChange } = useWidgetValue({
+  widget: props.widget,
+  modelValue: props.modelValue,
+  defaultValue: props.widget.options?.values?.[0] || '',
+  emit
+})
 
 const filteredProps = computed(() =>
   filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS)

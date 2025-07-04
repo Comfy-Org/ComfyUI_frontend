@@ -3,7 +3,12 @@
     <label v-if="widget.name" class="text-sm opacity-80">{{
       widget.name
     }}</label>
-    <Slider v-model="value" v-bind="filteredProps" :disabled="readonly" />
+    <Slider 
+      v-model="localValue" 
+      v-bind="filteredProps" 
+      :disabled="readonly"
+      @update:model-value="onChange" 
+    />
   </div>
 </template>
 
@@ -16,13 +21,24 @@ import {
   STANDARD_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
-
-const value = defineModel<number>({ required: true })
+import { useNumberWidgetValue } from '@/composables/graph/useWidgetValue'
 
 const props = defineProps<{
   widget: SimplifiedWidget<number>
+  modelValue: number
   readonly?: boolean
 }>()
+
+const emit = defineEmits<{
+  'update:modelValue': [value: number]
+}>()
+
+// Use the composable for consistent widget value handling
+const { localValue, onChange } = useNumberWidgetValue(
+  props.widget,
+  props.modelValue,
+  emit
+)
 
 const filteredProps = computed(() =>
   filterWidgetProps(props.widget.options, STANDARD_EXCLUDED_PROPS)

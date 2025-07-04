@@ -123,12 +123,11 @@ const simplifiedWidget = (widget: SafeWidgetData): SimplifiedWidget => {
 
 // Handle widget value updates
 const handleWidgetUpdate = (widget: SafeWidgetData, value: unknown) => {
-  widget.value = value
-
+  // Call LiteGraph callback to update the authoritative state
+  // The callback will trigger the chained callback in useGraphNodeManager
+  // which will update the Vue state automatically
   if (widget.callback) {
     widget.callback(value)
   }
-
-  // TODO: Implement proper widget change handling to sync back to LiteGraph
 }
 </script>

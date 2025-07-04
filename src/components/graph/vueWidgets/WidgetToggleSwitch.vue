@@ -3,7 +3,12 @@
     <label v-if="widget.name" class="text-sm opacity-80">{{
       widget.name
     }}</label>
-    <ToggleSwitch v-model="value" v-bind="filteredProps" :disabled="readonly" />
+    <ToggleSwitch 
+      v-model="localValue" 
+      v-bind="filteredProps" 
+      :disabled="readonly"
+      @update:model-value="onChange" 
+    />
   </div>
 </template>
 
@@ -16,13 +21,24 @@ import {
   STANDARD_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
-
-const value = defineModel<boolean>({ required: true })
+import { useBooleanWidgetValue } from '@/composables/graph/useWidgetValue'
 
 const props = defineProps<{
   widget: SimplifiedWidget<boolean>
+  modelValue: boolean
   readonly?: boolean
 }>()
+
+const emit = defineEmits<{
+  'update:modelValue': [value: boolean]
+}>()
+
+// Use the composable for consistent widget value handling
+const { localValue, onChange } = useBooleanWidgetValue(
+  props.widget,
+  props.modelValue,
+  emit
+)
 
 const filteredProps = computed(() =>
   filterWidgetProps(props.widget.options, STANDARD_EXCLUDED_PROPS)

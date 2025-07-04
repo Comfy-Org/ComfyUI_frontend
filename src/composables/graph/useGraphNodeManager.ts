@@ -4,7 +4,7 @@
  */
 import type { LGraph, LGraphNode } from '@comfyorg/litegraph'
 import { nextTick, reactive, readonly } from 'vue'
-import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { QuadTree, type Bounds } from '@/utils/spatial/QuadTree'
 
 export interface NodeState {
   visible: boolean
@@ -51,6 +51,13 @@ export interface VueNodeData {
   outputs?: unknown[]
 }
 
+export interface SpatialMetrics {
+  strategy: 'linear' | 'quadtree'
+  queryTime: number
+  nodesInIndex: number
+  threshold: number
+}
+
 export interface GraphNodeManager {
   // Reactive state - safe data extracted from LiteGraph nodes
   vueNodeData: ReadonlyMap<string, VueNodeData>
@@ -73,8 +80,15 @@ export interface GraphNodeManager {
   forceSync(): void
   detectChangesInRAF(): void
 
+  // Spatial queries
+  getVisibleNodeIds(viewportBounds: Bounds): Set<string>
+
   // Performance
   performanceMetrics: PerformanceMetrics
+  spatialMetrics: SpatialMetrics
+  
+  // Debug
+  getSpatialIndexDebugInfo(): any | null
 }
 
 export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
@@ -104,6 +118,23 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
     callbackUpdateCount: 0,
     rafUpdateCount: 0,
     adaptiveQuality: false
+  })
+
+  // Spatial indexing for large graphs (auto-enables at 100+ nodes)
+  const SPATIAL_INDEX_THRESHOLD = 100
+  const spatialIndex = new QuadTree<string>(
+    { x: -10000, y: -10000, width: 20000, height: 20000 },
+    { maxDepth: 6, maxItemsPerNode: 4 }
+  )
+  let spatialIndexEnabled = false
+  let lastSpatialQueryTime = 0
+
+  // Spatial metrics
+  const spatialMetrics = reactive<SpatialMetrics>({
+    strategy: 'linear',
+    queryTime: 0,
+    nodesInIndex: 0,
+    threshold: SPATIAL_INDEX_THRESHOLD
   })
 
   // FPS tracking state
@@ -228,13 +259,24 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
     const nodeId = String(node.id)
     
     node.widgets?.forEach(widget => {
-      widget.callback = useChainCallback(widget.callback, () => {
+      // Create a new callback that updates the widget value AND the Vue state
+      const originalCallback = widget.callback
+      widget.callback = (value: string | number | boolean | object | undefined, ...args: unknown[]) => {
+        // 1. Update the widget value in LiteGraph
+        widget.value = value
+        
+        // 2. Call the original callback if it exists
+        if (originalCallback) {
+          originalCallback.call(widget, value as Parameters<typeof originalCallback>[0], ...args)
+        }
+        
+        // 3. Update Vue state
         try {
           const currentData = vueNodeData.get(nodeId)
           if (currentData?.widgets) {
             const updatedWidgets = currentData.widgets.map(w => 
               w.name === widget.name 
-                ? { ...w, value: widget.value }
+                ? { ...w, value: value }
                 : w
             )
             vueNodeData.set(nodeId, { 
@@ -246,7 +288,7 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
         } catch (error) {
           console.warn(`[useGraphNodeManager] Failed to update Vue state for widget ${widget.name}:`, error)
         }
-      })
+      }
     })
   }
 
@@ -363,6 +405,41 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
   }
 
   // Most performant: Direct position sync without re-setting entire node
+  // Query visible nodes using spatial index when available
+  const getVisibleNodeIds = (viewportBounds: Bounds): Set<string> => {
+    const startTime = performance.now()
+    
+    let visibleIds: Set<string>
+    
+    if (spatialIndexEnabled) {
+      // Use QuadTree for fast spatial query
+      const results = spatialIndex.query(viewportBounds)
+      visibleIds = new Set(results)
+    } else {
+      // Use simple linear search for small graphs
+      visibleIds = new Set<string>()
+      for (const [id, pos] of nodePositions) {
+        const size = nodeSizes.get(id)
+        if (!size) continue
+        
+        // Simple bounds check
+        if (!(
+          pos.x + size.width < viewportBounds.x ||
+          pos.x > viewportBounds.x + viewportBounds.width ||
+          pos.y + size.height < viewportBounds.y ||
+          pos.y > viewportBounds.y + viewportBounds.height
+        )) {
+          visibleIds.add(id)
+        }
+      }
+    }
+    
+    lastSpatialQueryTime = performance.now() - startTime
+    spatialMetrics.queryTime = lastSpatialQueryTime
+    
+    return visibleIds
+  }
+
   const detectChangesInRAF = () => {
     const startTime = performance.now()
     
@@ -371,11 +448,26 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
     let positionUpdates = 0
     let sizeUpdates = 0
 
+    // Check if we should enable/disable spatial indexing
+    const nodeCount = graph._nodes.length
+    const shouldUseSpatialIndex = nodeCount >= SPATIAL_INDEX_THRESHOLD
+    
+    if (shouldUseSpatialIndex !== spatialIndexEnabled) {
+      spatialIndexEnabled = shouldUseSpatialIndex
+      if (!spatialIndexEnabled) {
+        spatialIndex.clear()
+      }
+      spatialMetrics.strategy = spatialIndexEnabled ? 'quadtree' : 'linear'
+    }
+
     // Update reactive positions and sizes
     for (const node of graph._nodes) {
       const id = String(node.id)
       const currentPos = nodePositions.get(id)
       const currentSize = nodeSizes.get(id)
+
+      let posChanged = false
+      let sizeChanged = false
 
       if (
         !currentPos ||
@@ -384,6 +476,7 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
       ) {
         nodePositions.set(id, { x: node.pos[0], y: node.pos[1] })
         positionUpdates++
+        posChanged = true
       }
 
       if (
@@ -393,6 +486,18 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
       ) {
         nodeSizes.set(id, { width: node.size[0], height: node.size[1] })
         sizeUpdates++
+        sizeChanged = true
+      }
+
+      // Update spatial index if enabled and position/size changed
+      if (spatialIndexEnabled && (posChanged || sizeChanged)) {
+        const bounds: Bounds = {
+          x: node.pos[0],
+          y: node.pos[1],
+          width: node.size[0],
+          height: node.size[1]
+        }
+        spatialIndex.update(id, bounds)
       }
     }
 
@@ -403,6 +508,7 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
     performanceMetrics.culledCount = Array.from(nodeState.values()).filter(
       state => state.culled
     ).length
+    spatialMetrics.nodesInIndex = spatialIndexEnabled ? spatialIndex.size : 0
     
     if (positionUpdates > 0 || sizeUpdates > 0) {
       performanceMetrics.rafUpdateCount++
@@ -421,8 +527,11 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
 
       // Store non-reactive reference to original node
       nodeRefs.set(id, node)
+      
+      // Set up widget callbacks BEFORE extracting data
+      setupNodeWidgetCallbacks(node)
 
-      // Extract safe data for Vue
+      // Extract safe data for Vue (now with proper callbacks)
       vueNodeData.set(id, extractVueNodeData(node))
 
       // Set up reactive tracking
@@ -436,7 +545,16 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
       nodeSizes.set(id, { width: node.size[0], height: node.size[1] })
       attachMetadata(node)
       
-      setupNodeWidgetCallbacks(node)
+      // Add to spatial index if enabled
+      if (spatialIndexEnabled) {
+        const bounds: Bounds = {
+          x: node.pos[0],
+          y: node.pos[1],
+          width: node.size[0],
+          height: node.size[1]
+        }
+        spatialIndex.insert(id, bounds, id)
+      }
       
       if (originalOnNodeAdded) {
         void originalOnNodeAdded(node)
@@ -445,6 +563,12 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
 
     graph.onNodeRemoved = (node: LGraphNode) => {
       const id = String(node.id)
+      
+      // Remove from spatial index if enabled
+      if (spatialIndexEnabled) {
+        spatialIndex.remove(id)
+      }
+      
       nodeRefs.delete(id)
       vueNodeData.delete(id)
       nodeState.delete(id)
@@ -485,6 +609,7 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
       pendingUpdates.clear()
       criticalUpdates.clear()
       lowPriorityUpdates.clear()
+      spatialIndex.clear()
     }
   }
 
@@ -508,6 +633,9 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
     scheduleUpdate,
     forceSync: syncWithGraph,
     detectChangesInRAF,
-    performanceMetrics
+    getVisibleNodeIds,
+    performanceMetrics,
+    spatialMetrics: readonly(spatialMetrics),
+    getSpatialIndexDebugInfo: () => spatialIndexEnabled ? spatialIndex.getDebugInfo() : null
   }
 }
