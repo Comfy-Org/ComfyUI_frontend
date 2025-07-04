@@ -1,7 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { newUserService } from '@/services/newUserService'
-
 const mockLocalStorage = vi.hoisted(() => ({
   getItem: vi.fn(),
   setItem: vi.fn(),
@@ -22,11 +20,20 @@ vi.mock('@/config/version', () => ({
 global.__COMFYUI_FRONTEND_VERSION__ = '1.24.0'
 
 describe('newUserService', () => {
-  let service: ReturnType<typeof newUserService>
+  let service: ReturnType<
+    typeof import('@/services/newUserService').newUserService
+  >
   let mockSettingStore: any
+  let newUserService: typeof import('@/services/newUserService').newUserService
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks()
+
+    vi.resetModules()
+
+    const module = await import('@/services/newUserService')
+    newUserService = module.newUserService
+
     service = newUserService()
 
     mockSettingStore = {
@@ -380,6 +387,48 @@ describe('newUserService', () => {
 
       await service.registerInitCallback(mockCallback1)
       await service.registerInitCallback(mockCallback2)
+
+      expect(mockCallback1).toHaveBeenCalledTimes(1)
+      expect(mockCallback2).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('state sharing between instances', () => {
+    it('should share state between multiple service instances', async () => {
+      const service1 = newUserService()
+      const service2 = newUserService()
+
+      mockSettingStore.settingValues = {}
+      mockSettingStore.get.mockImplementation((key: string) => {
+        if (key === 'Comfy.TutorialCompleted') return undefined
+        return undefined
+      })
+      mockLocalStorage.getItem.mockReturnValue(null)
+
+      await service1.initializeIfNewUser(mockSettingStore)
+
+      expect(service2.isNewUser()).toBe(true)
+      expect(service1.isNewUser()).toBe(service2.isNewUser())
+    })
+
+    it('should execute callbacks registered on different instances', async () => {
+      const service1 = newUserService()
+      const service2 = newUserService()
+
+      const mockCallback1 = vi.fn().mockResolvedValue(undefined)
+      const mockCallback2 = vi.fn().mockResolvedValue(undefined)
+
+      await service1.registerInitCallback(mockCallback1)
+      await service2.registerInitCallback(mockCallback2)
+
+      mockSettingStore.settingValues = {}
+      mockSettingStore.get.mockImplementation((key: string) => {
+        if (key === 'Comfy.TutorialCompleted') return undefined
+        return undefined
+      })
+      mockLocalStorage.getItem.mockReturnValue(null)
+
+      await service1.initializeIfNewUser(mockSettingStore)
 
       expect(mockCallback1).toHaveBeenCalledTimes(1)
       expect(mockCallback2).toHaveBeenCalledTimes(1)

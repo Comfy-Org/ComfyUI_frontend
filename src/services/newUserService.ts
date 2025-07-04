@@ -1,10 +1,10 @@
 import type { useSettingStore } from '@/stores/settingStore'
 
-export const newUserService = () => {
-  let isNewUserDetermined = false
-  let isNewUserCached: boolean | null = null
-  let pendingCallbacks: Array<() => Promise<void>> = []
+let pendingCallbacks: Array<() => Promise<void>> = []
+let isNewUserDetermined = false
+let isNewUserCached: boolean | null = null
 
+export const newUserService = () => {
   function checkIsNewUser(
     settingStore: ReturnType<typeof useSettingStore>
   ): boolean {
