@@ -1460,5 +1460,24 @@
     "moreHelp": "For more help, visit the",
     "documentationPage": "documentation page",
     "loadError": "Failed to load help: {error}"
+  },
+  "nodeCompatibility": {
+    "incompatibleNodesDetected": "Incompatible Nodes Detected",
+    "incompatibilityMessage": "{count} node package(s) have compatibility issues",
+    "viewDetails": "View Details",
+    "acknowledge": "OK",
+    "bannedNodesInWorkflow": "Banned Nodes in Workflow",
+    "incompatibleNodesInWorkflow": "Incompatible Nodes in Workflow",
+    "bannedNodesMessage": "{count} banned node(s) are being used in this workflow and may not function properly",
+    "bannedAndIncompatibleNodesMessage": "{bannedCount} banned and {otherCount} incompatible node(s) are being used in this workflow",
+    "incompatibleNodesMessage": "{count} incompatible node(s) are being used in this workflow and may not function properly",
+    "dismiss": "Dismiss",
+    "compatibilityCheck": "Compatibility Check",
+    "checkingCompatibility": "Checking node compatibility...",
+    "compatibilityComplete": "Compatibility check complete",
+    "reEnableNode": "Re-enable Node",
+    "cannotReEnableBanned": "Cannot re-enable banned nodes",
+    "nodeReEnabled": "Node re-enabled successfully",
+    "failedToReEnable": "Failed to re-enable node"
   }
 }
