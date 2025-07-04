@@ -1,5 +1,6 @@
 import './clipspace'
 import './contextMenuFilter'
+import './colorPicker'
 import './dynamicPrompts'
 import './editAttention'
 import './electronAdapter'

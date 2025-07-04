@@ -17,6 +17,13 @@
   <RerouteMigrationToast />
   <UnloadWindowConfirmDialog v-if="!isElectron()" />
   <MenuHamburger />
+  <div class="fixed top-20 left-20 z-50">
+    <ColorPicker 
+      :is-open="colorPickerStore.isOpen" 
+      @update:open="colorPickerStore.isOpen = $event"
+      @update:rgb="colorPickerStore.selectedColor = $event"
+    />
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -32,6 +39,7 @@ import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
 import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
 import TopMenubar from '@/components/topbar/TopMenubar.vue'
+import ColorPicker from '@/components/colorpicker/ColorPicker.vue'
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -56,6 +64,7 @@ import { useServerConfigStore } from '@/stores/serverConfigStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useColorPickerStore } from '@/stores/colorPickerStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI, isElectron } from '@/utils/envUtil'
@@ -69,6 +78,7 @@ const toast = useToast()
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
 const colorPaletteStore = useColorPaletteStore()
+const colorPickerStore = useColorPickerStore()
 const queueStore = useQueueStore()
 
 watch(
