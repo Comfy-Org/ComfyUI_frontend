@@ -29,8 +29,13 @@ export class ComfyWorkflow extends UserFile {
    * @param options The path, modified, and size of the workflow.
    * Note: path is the full path, including the 'workflows/' prefix.
    */
-  constructor(options: { path: string; modified: number; size: number }) {
-    super(options.path, options.modified, options.size)
+  constructor(options: {
+    path: string
+    modified: number
+    size: number
+    created: number
+  }) {
+    super(options.path, options.modified, options.size, options.created)
   }
 
   override get key() {
@@ -164,6 +169,14 @@ export interface WorkflowStore {
   updateActiveGraph: () => void
 }
 
+export enum WorkflowTreeType {
+  Open = 'Open',
+  Bookmarks = 'Bookmarks',
+  Browse = 'Browse',
+  RecentlyAddedWorkflows = 'RecentlyAddedWorkflows',
+  RecentlyUsedWorkflows = 'RecentlyUsedWorkflows'
+}
+
 export const useWorkflowStore = defineStore('workflow', () => {
   /**
    * Detach the workflow from the store. lightweight helper function.
@@ -293,7 +306,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
     const workflow = new ComfyWorkflow({
       path: fullPath,
       modified: Date.now(),
-      size: -1
+      size: -1,
+      created: Date.now()
     })
 
     workflow.originalContent = workflow.content = workflowData
@@ -346,7 +360,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
         new ComfyWorkflow({
           path: file.path,
           modified: file.modified,
-          size: file.size
+          size: file.size,
+          created: file.created
         }),
       (existingWorkflow, file) => {
         existingWorkflow.lastModified = file.modified

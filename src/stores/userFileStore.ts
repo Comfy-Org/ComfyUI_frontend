@@ -42,7 +42,11 @@ export class UserFile {
     /**
      * File size in bytes. -1 for temporary files.
      */
-    public size: number
+    public size: number,
+    /**
+     * Created at timestamp.
+     */
+    public created: number = Date.now()
   ) {
     const details = getPathDetails(path)
     this.path = path
@@ -214,10 +218,11 @@ export const useUserFileStore = defineStore('userFile', () => {
     await syncEntities(
       dir,
       userFilesByPath.value,
-      (file) => new UserFile(file.path, file.modified, file.size),
+      (file) => new UserFile(file.path, file.modified, file.size, file.created),
       (existingFile, file) => {
         existingFile.lastModified = file.modified
         existingFile.size = file.size
+        existingFile.created = file.created
         existingFile.unload()
       }
     )

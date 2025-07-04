@@ -15,9 +15,27 @@ vi.mock('@/scripts/api', () => ({
 
 function enableMocks() {
   vi.mocked(api.getModels).mockResolvedValue([
-    { name: 'sdxl.safetensors', pathIndex: 0 },
-    { name: 'sdv15.safetensors', pathIndex: 0 },
-    { name: 'noinfo.safetensors', pathIndex: 0 }
+    {
+      name: 'sdxl.safetensors',
+      pathIndex: 0,
+      created: 1700000000,
+      modified: 1700000000,
+      size: 12345678
+    },
+    {
+      name: 'sdv15.safetensors',
+      pathIndex: 0,
+      created: 1700000000,
+      modified: 1700000000,
+      size: 23456789
+    },
+    {
+      name: 'noinfo.safetensors',
+      pathIndex: 0,
+      created: 1700000000,
+      modified: 1700000000,
+      size: 34567890
+    }
   ])
   vi.mocked(api.getModelFolders).mockResolvedValue([
     { name: 'checkpoints', folders: ['/path/to/checkpoints'] },

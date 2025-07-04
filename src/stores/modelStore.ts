@@ -32,6 +32,12 @@ export class ComfyModelDef {
   readonly simplified_file_name: string
   /** Key for the model, used to uniquely identify the model. */
   readonly key: string
+  /** The last time the model was modified: from backend os.mtime */
+  readonly last_modified: number
+  /** The time the model was modified: from backend os.ctime */
+  readonly date_created: number
+  /** The size of the model in bytes */
+  readonly file_size: number
   /** Title / display name of the model, sometimes same as the name but not always */
   title: string
   /** Metadata: architecture ID for the model, such as 'stable-diffusion-xl-v1-base' */
@@ -57,7 +63,14 @@ export class ComfyModelDef {
   /** A string full of auto-computed lowercase-only searchable text for this model */
   searchable: string = ''
 
-  constructor(name: string, directory: string, pathIndex: number) {
+  constructor(
+    name: string,
+    directory: string,
+    pathIndex: number,
+    dateCreated: number,
+    lastModified: number,
+    fileSize: number
+  ) {
     this.path_index = pathIndex
     this.file_name = name
     this.normalized_file_name = name.replaceAll('\\', '/')
@@ -72,6 +85,9 @@ export class ComfyModelDef {
     this.directory = directory
     this.key = `${directory}/${this.normalized_file_name}`
     this.updateSearchable()
+    this.last_modified = lastModified // from backend os.mtime
+    this.date_created = dateCreated // from backend os.mtime
+    this.file_size = fileSize
   }
 
   updateSearchable() {
@@ -172,7 +188,10 @@ export class ModelFolder {
       this.models[`${model.pathIndex}/${model.name}`] = new ComfyModelDef(
         model.name,
         this.directory,
-        model.pathIndex
+        model.pathIndex,
+        model.created,
+        model.modified,
+        model.size
       )
     }
     this.state = ResourceState.Loaded
