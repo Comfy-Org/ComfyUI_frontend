@@ -278,7 +278,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     /** The list of nodes to add to. */
     nodes: ExecutableLGraphNode[] = [],
     /** The set of visited nodes. */
-    visited = new WeakSet<SubgraphNode>(),
+    visited = new Set<SubgraphNode>(),
     /** The path of subgraph node IDs. */
     subgraphNodePath: readonly NodeId[] = [],
   ): ExecutableLGraphNode[] {
@@ -289,7 +289,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     for (const node of this.subgraph.nodes) {
       if ("getInnerNodes" in node) {
-        node.getInnerNodes(nodes, visited, subgraphInstanceIdPath)
+        node.getInnerNodes(nodes, new Set(visited), subgraphInstanceIdPath)
       } else {
         // Create minimal DTOs rather than cloning the node
         const aVeryRealNode = new ExecutableNodeDTO(node, subgraphInstanceIdPath, this)
