@@ -318,6 +318,47 @@ export const useComfyRegistryService = () => {
     )
   }
 
+  /**
+   * Get the node pack that contains a specific ComfyUI node by its name.
+   * This method queries the registry to find which pack provides the given node.
+   *
+   * When multiple packs contain a node with the same name, the API returns the best match based on:
+   * 1. Preemption match - If the node name matches any in the pack's preempted_comfy_node_names array
+   * 2. Search ranking - Lower search_ranking values are preferred
+   * 3. Total installs - Higher installation counts are preferred as a tiebreaker
+   *
+   * @param nodeName - The name of the ComfyUI node (e.g., 'KSampler', 'CLIPTextEncode')
+   * @param signal - Optional AbortSignal for request cancellation
+   * @returns The node pack containing the specified node, or null if not found or on error
+   *
+   * @example
+   * ```typescript
+   * const pack = await inferPackFromNodeName('KSampler')
+   * if (pack) {
+   *   console.log(`Node found in pack: ${pack.name}`)
+   * }
+   * ```
+   */
+  const inferPackFromNodeName = async (
+    nodeName: operations['getNodeByComfyNodeName']['parameters']['path']['comfyNodeName'],
+    signal?: AbortSignal
+  ) => {
+    const endpoint = `/comfy-nodes/${nodeName}/node`
+    const errorContext = 'Failed to infer pack from comfy node name'
+    const routeSpecificErrors = {
+      404: `Comfy node not found: The node with name ${nodeName} does not exist in the registry`
+    }
+
+    return executeApiRequest(
+      () =>
+        registryApiClient.get<components['schemas']['Node']>(endpoint, {
+          signal
+        }),
+      errorContext,
+      routeSpecificErrors
+    )
+  }
+
   return {
     isLoading,
     error,
@@ -330,6 +371,7 @@ export const useComfyRegistryService = () => {
     getPublisherById,
     listPacksForPublisher,
     getNodeDefs,
-    postPackReview
+    postPackReview,
+    inferPackFromNodeName
   }
 }
