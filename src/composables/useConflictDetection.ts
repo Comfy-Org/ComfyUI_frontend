@@ -488,6 +488,10 @@ export function useConflictDetection() {
       }
     } finally {
       isDetecting.value = false
+      // Clear abort controller to prevent memory leaks
+      if (abortController.value) {
+        abortController.value = null
+      }
     }
   }
 
