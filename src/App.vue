@@ -16,11 +16,13 @@ import { computed, onMounted } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
+import { useNodeCompatibilityService } from '@/services/nodeCompatibilityService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import { electronAPI, isElectron } from './utils/envUtil'
 
 const workspaceStore = useWorkspaceStore()
+const nodeCompatibilityService = useNodeCompatibilityService()
 const isLoading = computed<boolean>(() => workspaceStore.spinner)
 const handleKey = (e: KeyboardEvent) => {
   workspaceStore.shiftDown = e.shiftKey
@@ -47,5 +49,9 @@ onMounted(() => {
   if (isElectron()) {
     document.addEventListener('contextmenu', showContextMenu)
   }
+
+  // Initialize node compatibility checking in background
+  // This runs silently and doesn't affect app startup even if it fails
+  nodeCompatibilityService.initializeCompatibilityCheck()
 })
 </script>
