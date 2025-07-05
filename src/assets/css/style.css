@@ -679,6 +679,11 @@ audio.comfy-audio.empty-audio-widget {
 /* Smooth transitions between LOD levels */
 .lg-node {
   transition: min-height 0.2s ease;
+  /* Disable text selection on all nodes */
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 .lg-node .lg-slot,
