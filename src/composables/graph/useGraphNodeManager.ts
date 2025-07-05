@@ -130,41 +130,6 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
     nodesInIndex: 0
   })
 
-  // FPS tracking state
-  let lastFrameTime = performance.now()
-  let frameCount = 0
-  let fpsUpdateInterval: number | null = null
-
-  const updateFPS = () => {
-    frameCount++
-    const now = performance.now()
-    const elapsed = now - lastFrameTime
-
-    if (elapsed >= 1000) {
-      performanceMetrics.fps = Math.round((frameCount * 1000) / elapsed)
-      performanceMetrics.frameTime = elapsed / frameCount
-      frameCount = 0
-      lastFrameTime = now
-    }
-  }
-
-  const startFPSTracking = () => {
-    if (fpsUpdateInterval) return
-
-    const trackFrame = () => {
-      updateFPS()
-      fpsUpdateInterval = requestAnimationFrame(trackFrame)
-    }
-    fpsUpdateInterval = requestAnimationFrame(trackFrame)
-  }
-
-  const stopFPSTracking = () => {
-    if (fpsUpdateInterval) {
-      cancelAnimationFrame(fpsUpdateInterval)
-      fpsUpdateInterval = null
-    }
-  }
-
   // Update batching
   const pendingUpdates = new Set<string>()
   const criticalUpdates = new Set<string>()
@@ -242,39 +207,68 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
     return nodeRefs.get(id)
   }
 
+  /**
+   * Updates Vue state when widget values change
+   */
+  const updateVueWidgetState = (
+    nodeId: string,
+    widgetName: string,
+    value: unknown
+  ): void => {
+    try {
+      const currentData = vueNodeData.get(nodeId)
+      if (!currentData?.widgets) return
+
+      const updatedWidgets = currentData.widgets.map((w) =>
+        w.name === widgetName ? { ...w, value: value } : w
+      )
+      vueNodeData.set(nodeId, {
+        ...currentData,
+        widgets: updatedWidgets
+      })
+      performanceMetrics.callbackUpdateCount++
+    } catch (error) {
+      // Ignore widget update errors to prevent cascade failures
+    }
+  }
+
+  /**
+   * Creates a wrapped callback for a widget that maintains LiteGraph/Vue sync
+   */
+  const createWrappedWidgetCallback = (
+    widget: any,
+    originalCallback: ((value: unknown) => void) | undefined,
+    nodeId: string
+  ) => {
+    return (value: unknown) => {
+      // 1. Update the widget value in LiteGraph (critical for LiteGraph state)
+      widget.value = value as string | number | boolean | object | undefined
+
+      // 2. Call the original callback if it exists
+      if (originalCallback) {
+        originalCallback.call(widget, value)
+      }
+
+      // 3. Update Vue state to maintain synchronization
+      updateVueWidgetState(nodeId, widget.name, value)
+    }
+  }
+
+  /**
+   * Sets up widget callbacks for a node - now with reduced nesting
+   */
   const setupNodeWidgetCallbacks = (node: LGraphNode) => {
+    if (!node.widgets) return
+
     const nodeId = String(node.id)
 
-    node.widgets?.forEach((widget) => {
-      // Create a new callback that updates the widget value AND the Vue state
+    node.widgets.forEach((widget) => {
       const originalCallback = widget.callback
-      widget.callback = (value: unknown) => {
-        // 1. Update the widget value in LiteGraph
-        // Widget value can be various types, cast appropriately
-        widget.value = value as string | number | boolean | object | undefined
-
-        // 2. Call the original callback if it exists
-        if (originalCallback) {
-          originalCallback.call(widget, value)
-        }
-
-        // 3. Update Vue state
-        try {
-          const currentData = vueNodeData.get(nodeId)
-          if (currentData?.widgets) {
-            const updatedWidgets = currentData.widgets.map((w) =>
-              w.name === widget.name ? { ...w, value: value } : w
-            )
-            vueNodeData.set(nodeId, {
-              ...currentData,
-              widgets: updatedWidgets
-            })
-          }
-          performanceMetrics.callbackUpdateCount++
-        } catch (error) {
-          // Ignore widget update errors to prevent cascade failures
-        }
-      }
+      widget.callback = createWrappedWidgetCallback(
+        widget,
+        originalCallback,
+        nodeId
+      )
     })
   }
 
@@ -415,56 +409,61 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
     return visibleIds
   }
 
-  const detectChangesInRAF = () => {
-    const startTime = performance.now()
+  /**
+   * Detects position changes for a single node and updates reactive state
+   */
+  const detectPositionChanges = (node: LGraphNode, id: string): boolean => {
+    const currentPos = nodePositions.get(id)
 
-    if (!graph?._nodes) return
-
-    let positionUpdates = 0
-    let sizeUpdates = 0
-
-    // Update reactive positions and sizes
-    for (const node of graph._nodes) {
-      const id = String(node.id)
-      const currentPos = nodePositions.get(id)
-      const currentSize = nodeSizes.get(id)
-
-      let posChanged = false
-      let sizeChanged = false
-
-      if (
-        !currentPos ||
-        currentPos.x !== node.pos[0] ||
-        currentPos.y !== node.pos[1]
-      ) {
-        nodePositions.set(id, { x: node.pos[0], y: node.pos[1] })
-        positionUpdates++
-        posChanged = true
-      }
-
-      if (
-        !currentSize ||
-        currentSize.width !== node.size[0] ||
-        currentSize.height !== node.size[1]
-      ) {
-        nodeSizes.set(id, { width: node.size[0], height: node.size[1] })
-        sizeUpdates++
-        sizeChanged = true
-      }
-
-      // Update spatial index if position/size changed
-      if (posChanged || sizeChanged) {
-        const bounds: Bounds = {
-          x: node.pos[0],
-          y: node.pos[1],
-          width: node.size[0],
-          height: node.size[1]
-        }
-        spatialIndex.update(id, bounds)
-      }
+    if (
+      !currentPos ||
+      currentPos.x !== node.pos[0] ||
+      currentPos.y !== node.pos[1]
+    ) {
+      nodePositions.set(id, { x: node.pos[0], y: node.pos[1] })
+      return true
     }
+    return false
+  }
 
-    // Update performance metrics
+  /**
+   * Detects size changes for a single node and updates reactive state
+   */
+  const detectSizeChanges = (node: LGraphNode, id: string): boolean => {
+    const currentSize = nodeSizes.get(id)
+
+    if (
+      !currentSize ||
+      currentSize.width !== node.size[0] ||
+      currentSize.height !== node.size[1]
+    ) {
+      nodeSizes.set(id, { width: node.size[0], height: node.size[1] })
+      return true
+    }
+    return false
+  }
+
+  /**
+   * Updates spatial index for a node if bounds changed
+   */
+  const updateSpatialIndex = (node: LGraphNode, id: string): void => {
+    const bounds: Bounds = {
+      x: node.pos[0],
+      y: node.pos[1],
+      width: node.size[0],
+      height: node.size[1]
+    }
+    spatialIndex.update(id, bounds)
+  }
+
+  /**
+   * Updates performance metrics after change detection
+   */
+  const updatePerformanceMetrics = (
+    startTime: number,
+    positionUpdates: number,
+    sizeUpdates: number
+  ): void => {
     const endTime = performance.now()
     performanceMetrics.updateTime = endTime - startTime
     performanceMetrics.nodeCount = vueNodeData.size
@@ -478,75 +477,117 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
     }
   }
 
-  const setupEventListeners = (): (() => void) => {
-    // Store original callbacks
-    const originalOnNodeAdded = graph.onNodeAdded
-    const originalOnNodeRemoved = graph.onNodeRemoved
+  /**
+   * Main RAF change detection function - now simplified with extracted helpers
+   */
+  const detectChangesInRAF = () => {
+    const startTime = performance.now()
 
-    // Override callbacks
-    graph.onNodeAdded = (node: LGraphNode) => {
+    if (!graph?._nodes) return
+
+    let positionUpdates = 0
+    let sizeUpdates = 0
+
+    // Process each node for changes
+    for (const node of graph._nodes) {
       const id = String(node.id)
 
-      // Store non-reactive reference to original node
-      nodeRefs.set(id, node)
+      const posChanged = detectPositionChanges(node, id)
+      const sizeChanged = detectSizeChanges(node, id)
 
-      // Set up widget callbacks BEFORE extracting data
-      setupNodeWidgetCallbacks(node)
+      if (posChanged) positionUpdates++
+      if (sizeChanged) sizeUpdates++
 
-      // Extract safe data for Vue (now with proper callbacks)
-      vueNodeData.set(id, extractVueNodeData(node))
-
-      // Set up reactive tracking
-      nodeState.set(id, {
-        visible: true,
-        dirty: false,
-        lastUpdate: performance.now(),
-        culled: false
-      })
-      nodePositions.set(id, { x: node.pos[0], y: node.pos[1] })
-      nodeSizes.set(id, { width: node.size[0], height: node.size[1] })
-      attachMetadata(node)
-
-      // Add to spatial index
-      const bounds: Bounds = {
-        x: node.pos[0],
-        y: node.pos[1],
-        width: node.size[0],
-        height: node.size[1]
-      }
-      spatialIndex.insert(id, bounds, id)
-
-      if (originalOnNodeAdded) {
-        void originalOnNodeAdded(node)
+      // Update spatial index if geometry changed
+      if (posChanged || sizeChanged) {
+        updateSpatialIndex(node, id)
       }
     }
 
-    graph.onNodeRemoved = (node: LGraphNode) => {
-      const id = String(node.id)
+    updatePerformanceMetrics(startTime, positionUpdates, sizeUpdates)
+  }
 
-      // Remove from spatial index
-      spatialIndex.remove(id)
+  /**
+   * Handles node addition to the graph - sets up Vue state and spatial indexing
+   */
+  const handleNodeAdded = (
+    node: LGraphNode,
+    originalCallback?: (node: LGraphNode) => void
+  ) => {
+    const id = String(node.id)
 
-      nodeRefs.delete(id)
-      vueNodeData.delete(id)
-      nodeState.delete(id)
-      nodePositions.delete(id)
-      nodeSizes.delete(id)
-      lastNodesSnapshot.delete(id)
-      originalOnNodeRemoved?.(node)
+    // Store non-reactive reference to original node
+    nodeRefs.set(id, node)
+
+    // Set up widget callbacks BEFORE extracting data (critical order)
+    setupNodeWidgetCallbacks(node)
+
+    // Extract safe data for Vue (now with proper callbacks)
+    vueNodeData.set(id, extractVueNodeData(node))
+
+    // Set up reactive tracking state
+    nodeState.set(id, {
+      visible: true,
+      dirty: false,
+      lastUpdate: performance.now(),
+      culled: false
+    })
+    nodePositions.set(id, { x: node.pos[0], y: node.pos[1] })
+    nodeSizes.set(id, { width: node.size[0], height: node.size[1] })
+    attachMetadata(node)
+
+    // Add to spatial index for viewport culling
+    const bounds: Bounds = {
+      x: node.pos[0],
+      y: node.pos[1],
+      width: node.size[0],
+      height: node.size[1]
     }
+    spatialIndex.insert(id, bounds, id)
 
-    // Initial sync
-    syncWithGraph()
+    // Call original callback if provided
+    if (originalCallback) {
+      void originalCallback(node)
+    }
+  }
 
-    // Start FPS tracking
-    startFPSTracking()
+  /**
+   * Handles node removal from the graph - cleans up all references
+   */
+  const handleNodeRemoved = (
+    node: LGraphNode,
+    originalCallback?: (node: LGraphNode) => void
+  ) => {
+    const id = String(node.id)
 
-    // Return cleanup function
+    // Remove from spatial index
+    spatialIndex.remove(id)
+
+    // Clean up all tracking references
+    nodeRefs.delete(id)
+    vueNodeData.delete(id)
+    nodeState.delete(id)
+    nodePositions.delete(id)
+    nodeSizes.delete(id)
+    lastNodesSnapshot.delete(id)
+
+    // Call original callback if provided
+    if (originalCallback) {
+      originalCallback(node)
+    }
+  }
+
+  /**
+   * Creates cleanup function for event listeners and state
+   */
+  const createCleanupFunction = (
+    originalOnNodeAdded: ((node: LGraphNode) => void) | undefined,
+    originalOnNodeRemoved: ((node: LGraphNode) => void) | undefined
+  ) => {
     return () => {
       // Restore original callbacks
-      graph.onNodeAdded = originalOnNodeAdded
-      graph.onNodeRemoved = originalOnNodeRemoved
+      graph.onNodeAdded = originalOnNodeAdded || undefined
+      graph.onNodeRemoved = originalOnNodeRemoved || undefined
 
       // Clear pending updates
       if (batchTimeoutId !== null) {
@@ -554,10 +595,7 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
         batchTimeoutId = null
       }
 
-      // Stop FPS tracking
-      stopFPSTracking()
-
-      // Clear state
+      // Clear all state maps
       nodeRefs.clear()
       vueNodeData.clear()
       nodeState.clear()
@@ -569,6 +607,33 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
       lowPriorityUpdates.clear()
       spatialIndex.clear()
     }
+  }
+
+  /**
+   * Sets up event listeners - now simplified with extracted handlers
+   */
+  const setupEventListeners = (): (() => void) => {
+    // Store original callbacks
+    const originalOnNodeAdded = graph.onNodeAdded
+    const originalOnNodeRemoved = graph.onNodeRemoved
+
+    // Set up graph event handlers
+    graph.onNodeAdded = (node: LGraphNode) => {
+      handleNodeAdded(node, originalOnNodeAdded)
+    }
+
+    graph.onNodeRemoved = (node: LGraphNode) => {
+      handleNodeRemoved(node, originalOnNodeRemoved)
+    }
+
+    // Initialize state
+    syncWithGraph()
+
+    // Return cleanup function
+    return createCleanupFunction(
+      originalOnNodeAdded || undefined,
+      originalOnNodeRemoved || undefined
+    )
   }
 
   // Set up event listeners immediately
