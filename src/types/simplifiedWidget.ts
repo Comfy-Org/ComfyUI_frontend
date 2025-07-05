@@ -3,7 +3,21 @@
  * Removes all DOM manipulation and positioning concerns
  */
 
-export interface SimplifiedWidget<T = any, O = Record<string, any>> {
+/** Valid types for widget values */
+export type WidgetValue =
+  | string
+  | number
+  | boolean
+  | object
+  | undefined
+  | null
+  | void
+  | File[]
+
+export interface SimplifiedWidget<
+  T extends WidgetValue = WidgetValue,
+  O = Record<string, any>
+> {
   /** Display name of the widget */
   name: string
 
