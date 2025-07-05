@@ -4,6 +4,7 @@ import PrimeVue from 'primevue/config'
 import OverlayBadge from 'primevue/overlaybadge'
 import Tooltip from 'primevue/tooltip'
 import { describe, expect, it } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import SidebarIcon from './SidebarIcon.vue'
 
@@ -15,6 +16,14 @@ type SidebarIconProps = {
   iconBadge?: string | (() => string | null)
 }
 
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: {
+    en: {}
+  }
+})
+
 describe('SidebarIcon', () => {
   const exampleProps: SidebarIconProps = {
     icon: 'pi pi-cog',
@@ -24,7 +33,7 @@ describe('SidebarIcon', () => {
   const mountSidebarIcon = (props: Partial<SidebarIconProps>, options = {}) => {
     return mount(SidebarIcon, {
       global: {
-        plugins: [PrimeVue],
+        plugins: [PrimeVue, i18n],
         directives: { tooltip: Tooltip },
         components: { OverlayBadge, Button }
       },
