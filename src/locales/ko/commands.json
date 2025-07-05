@@ -38,6 +38,9 @@
   "Comfy_BrowseTemplates": {
     "label": "템플릿 탐색"
   },
+  "Comfy_Canvas_AddEditModelStep": {
+    "label": "모델 편집 단계 추가"
+  },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "선택한 항목 삭제"
   },
@@ -109,6 +112,9 @@
   },
   "Comfy_Feedback": {
     "label": "피드백"
+  },
+  "Comfy_Graph_ConvertToSubgraph": {
+    "label": "선택 영역을 서브그래프로 변환"
   },
   "Comfy_Graph_FitGroupToContents": {
     "label": "그룹을 내용에 맞게 맞추기"

@@ -27,6 +27,11 @@
   --content-fg: #000;
   --content-hover-bg: #adadad;
   --content-hover-fg: #000;
+  
+  /* Code styling colors for help menu*/
+  --code-text-color: rgba(0, 122, 255, 1);
+  --code-bg-color: rgba(96, 165, 250, 0.2);
+  --code-block-bg-color: rgba(60, 60, 60, 0.12);
 }
 
 @media (prefers-color-scheme: dark) {

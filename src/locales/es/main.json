@@ -138,13 +138,21 @@
     "Unpin": "Desanclar"
   },
   "credits": {
+    "accountInitialized": "Cuenta inicializada",
+    "activity": "Actividad",
+    "added": "Añadido",
+    "additionalInfo": "Información adicional",
     "apiPricing": "Precios de la API",
     "credits": "Créditos",
+    "details": "Detalles",
+    "eventType": "Tipo de evento",
     "faqs": "Preguntas frecuentes",
     "invoiceHistory": "Historial de facturas",
     "lastUpdated": "Última actualización",
     "messageSupport": "Contactar soporte",
+    "model": "Modelo",
     "purchaseCredits": "Comprar créditos",
+    "time": "Hora",
     "topUp": {
       "buyNow": "Comprar ahora",
       "insufficientMessage": "No tienes suficientes créditos para ejecutar este flujo de trabajo.",
@@ -380,6 +388,20 @@
   "groupNode": {
     "create": "Crear nodo de grupo",
     "enterName": "Introduzca el nombre"
+  },
+  "helpCenter": {
+    "clickToLearnMore": "Haz clic para saber más →",
+    "desktopUserGuide": "Guía de usuario de escritorio",
+    "docs": "Documentación",
+    "github": "Github",
+    "helpFeedback": "Ayuda y comentarios",
+    "loadingReleases": "Cargando versiones...",
+    "more": "Más...",
+    "noRecentReleases": "No hay versiones recientes",
+    "openDevTools": "Abrir herramientas de desarrollo",
+    "reinstall": "Reinstalar",
+    "updateAvailable": "Actualizar",
+    "whatsNew": "¿Qué hay de nuevo?"
   },
   "icon": {
     "bookmark": "Marcador",
@@ -684,6 +706,7 @@
   },
   "menuLabels": {
     "About ComfyUI": "Acerca de ComfyUI",
+    "Add Edit Model Step": "Agregar paso de edición de modelo",
     "Browse Templates": "Explorar plantillas",
     "Bypass/Unbypass Selected Nodes": "Evitar/No evitar nodos seleccionados",
     "Canvas Toggle Link Visibility": "Alternar visibilidad de enlace en lienzo",
@@ -699,6 +722,7 @@
     "ComfyUI Forum": "Foro de ComfyUI",
     "ComfyUI Issues": "Problemas de ComfyUI",
     "Contact Support": "Contactar soporte",
+    "Convert Selection to Subgraph": "Convertir selección en subgrafo",
     "Convert selected nodes to group node": "Convertir nodos seleccionados en nodo de grupo",
     "Delete Selected Items": "Eliminar elementos seleccionados",
     "Desktop User Guide": "Guía de usuario de escritorio",
@@ -870,6 +894,12 @@
       "windows": "Windows (GPU Nvidia con soporte CUDA)"
     },
     "title": "Tu dispositivo no es compatible"
+  },
+  "releaseToast": {
+    "newVersionAvailable": "¡Nueva versión disponible!",
+    "skip": "Omitir",
+    "update": "Actualizar",
+    "whatsNew": "¿Qué hay de nuevo?"
   },
   "selectionToolbox": {
     "executeButton": {
@@ -1079,6 +1109,7 @@
   "sideToolbar": {
     "browseTemplates": "Explorar plantillas de ejemplo",
     "downloads": "Descargas",
+    "helpCenter": "Centro de ayuda",
     "logout": "Cerrar sesión",
     "modelLibrary": "Biblioteca de modelos",
     "newBlankWorkflow": "Crear un nuevo flujo de trabajo en blanco",
@@ -1367,6 +1398,7 @@
     "title": "Comienza con una Plantilla"
   },
   "toastMessages": {
+    "cannotCreateSubgraph": "No se puede crear el subgrafo",
     "couldNotDetermineFileType": "No se pudo determinar el tipo de archivo",
     "dropFileError": "No se puede procesar el elemento soltado: {error}",
     "emptyCanvas": "Lienzo vacío",
@@ -1375,6 +1407,7 @@
     "errorSaveSetting": "Error al guardar la configuración {id}: {err}",
     "failedToAccessBillingPortal": "No se pudo acceder al portal de facturación: {error}",
     "failedToApplyTexture": "Error al aplicar textura",
+    "failedToConvertToSubgraph": "No se pudo convertir los elementos en subgrafo",
     "failedToCreateCustomer": "No se pudo crear el cliente: {error}",
     "failedToDownloadFile": "Error al descargar el archivo",
     "failedToExportModel": "Error al exportar modelo como {format}",
@@ -1438,6 +1471,9 @@
   "welcome": {
     "getStarted": "Empezar",
     "title": "Bienvenido a ComfyUI"
+  },
+  "whatsNewPopup": {
+    "learnMore": "Aprende más"
   },
   "workflowService": {
     "enterFilename": "Introduzca el nombre del archivo",

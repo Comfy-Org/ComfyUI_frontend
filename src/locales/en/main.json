@@ -410,6 +410,7 @@
   },
   "sideToolbar": {
     "themeToggle": "Toggle Theme",
+    "helpCenter": "Help Center",
     "logout": "Logout",
     "queue": "Queue",
     "nodeLibrary": "Node Library",
@@ -467,6 +468,26 @@
         "open": "Open"
       }
     }
+  },
+  "helpCenter": {
+    "docs": "Docs",
+    "github": "Github",
+    "helpFeedback": "Help & Feedback",
+    "more": "More...",
+    "whatsNew": "What's New?",
+    "clickToLearnMore": "Click to learn more →",
+    "loadingReleases": "Loading releases...",
+    "noRecentReleases": "No recent releases",
+    "updateAvailable": "Update",
+    "desktopUserGuide": "Desktop User Guide",
+    "openDevTools": "Open Dev Tools",
+    "reinstall": "Re-Install"
+  },
+  "releaseToast": {
+    "newVersionAvailable": "New Version Available!",
+    "whatsNew": "What's New?",
+    "skip": "Skip",
+    "update": "Update"
   },
   "menu": {
     "hideMenu": "Hide Menu",
@@ -793,6 +814,7 @@
     "Reinstall": "Reinstall",
     "Restart": "Restart",
     "Browse Templates": "Browse Templates",
+    "Add Edit Model Step": "Add Edit Model Step",
     "Delete Selected Items": "Delete Selected Items",
     "Fit view to selected nodes": "Fit view to selected nodes",
     "Move Selected Nodes Down": "Move Selected Nodes Down",
@@ -817,6 +839,7 @@
     "Export": "Export",
     "Export (API)": "Export (API)",
     "Give Feedback": "Give Feedback",
+    "Convert Selection to Subgraph": "Convert Selection to Subgraph",
     "Fit Group To Contents": "Fit Group To Contents",
     "Group Selected Nodes": "Group Selected Nodes",
     "Convert selected nodes to group node": "Convert selected nodes to group node",
@@ -1302,7 +1325,9 @@
     "failedToPurchaseCredits": "Failed to purchase credits: {error}",
     "unauthorizedDomain": "Your domain {domain} is not authorized to use this service. Please contact {email} to add your domain to the whitelist.",
     "useApiKeyTip": "Tip: Can't access normal login? Use the Comfy API Key option.",
-    "nothingSelected": "Nothing selected"
+    "nothingSelected": "Nothing selected",
+    "cannotCreateSubgraph": "Cannot create subgraph",
+    "failedToConvertToSubgraph": "Failed to convert items to subgraph"
   },
   "auth": {
     "apiKey": {
@@ -1397,6 +1422,7 @@
     "personalDataConsentRequired": "You must agree to the processing of your personal data."
   },
   "credits": {
+    "activity": "Activity",
     "credits": "Credits",
     "yourCreditBalance": "Your credit balance",
     "purchaseCredits": "Purchase Credits",
@@ -1413,7 +1439,14 @@
       "buyNow": "Buy now",
       "seeDetails": "See details",
       "topUp": "Top Up"
-    }
+    },
+    "eventType": "Event Type",
+    "details": "Details",
+    "time": "Time",
+    "additionalInfo": "Additional Info",
+    "model": "Model",
+    "added": "Added",
+    "accountInitialized": "Account initialized"
   },
   "userSettings": {
     "title": "User Settings",
@@ -1443,5 +1476,8 @@
     "moreHelp": "For more help, visit the",
     "documentationPage": "documentation page",
     "loadError": "Failed to load help: {error}"
+  },
+  "whatsNewPopup": {
+    "learnMore": "Learn more"
   }
 }
