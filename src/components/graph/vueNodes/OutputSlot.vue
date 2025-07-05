@@ -30,6 +30,7 @@
 import type { INodeSlot, LGraphNode } from '@comfyorg/litegraph'
 import { computed, onErrorCaptured, ref } from 'vue'
 
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { getSlotColor } from '@/constants/slotColors'
 
 interface OutputSlotProps {
@@ -50,9 +51,11 @@ const emit = defineEmits<{
 // Error boundary implementation
 const renderError = ref<string | null>(null)
 
+const { toastErrorHandler } = useErrorHandling()
+
 onErrorCaptured((error) => {
   renderError.value = error.message
-  console.error('Vue output slot error:', error)
+  toastErrorHandler(error)
   return false
 })
 

@@ -3,11 +3,11 @@
     <label v-if="widget.name" class="text-sm opacity-80">{{
       widget.name
     }}</label>
-    <InputText 
-      v-model="localValue" 
-      v-bind="filteredProps" 
+    <InputText
+      v-model="localValue"
+      v-bind="filteredProps"
       :disabled="readonly"
-      @update:model-value="onChange" 
+      @update:model-value="onChange"
     />
   </div>
 </template>
@@ -16,12 +16,12 @@
 import InputText from 'primevue/inputtext'
 import { computed } from 'vue'
 
+import { useStringWidgetValue } from '@/composables/graph/useWidgetValue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import {
   INPUT_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
-import { useStringWidgetValue } from '@/composables/graph/useWidgetValue'
 
 const props = defineProps<{
   widget: SimplifiedWidget<string>

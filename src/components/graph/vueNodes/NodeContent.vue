@@ -16,21 +16,25 @@ import type { LGraphNode } from '@comfyorg/litegraph'
 import { onErrorCaptured, ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import type { LODLevel } from '@/composables/graph/useLOD'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 
 interface NodeContentProps {
   node?: LGraphNode // For backwards compatibility
   nodeData?: VueNodeData // New clean data structure
   readonly?: boolean
+  lodLevel?: LODLevel
 }
 
 defineProps<NodeContentProps>()
 
 // Error boundary implementation
 const renderError = ref<string | null>(null)
+const { toastErrorHandler } = useErrorHandling()
 
 onErrorCaptured((error) => {
   renderError.value = error.message
-  console.error('Vue node content error:', error)
+  toastErrorHandler(error)
   return false
 })
 </script>

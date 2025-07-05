@@ -46,11 +46,14 @@ import type { LGraphNode } from '@comfyorg/litegraph'
 import { computed, onErrorCaptured, ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import type { LODLevel } from '@/composables/graph/useLOD'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 
 interface NodeHeaderProps {
   node?: LGraphNode // For backwards compatibility
   nodeData?: VueNodeData // New clean data structure
   readonly?: boolean
+  lodLevel?: LODLevel
 }
 
 const props = defineProps<NodeHeaderProps>()
@@ -62,10 +65,11 @@ const emit = defineEmits<{
 
 // Error boundary implementation
 const renderError = ref<string | null>(null)
+const { toastErrorHandler } = useErrorHandling()
 
 onErrorCaptured((error) => {
   renderError.value = error.message
-  console.error('Vue node header error:', error)
+  toastErrorHandler(error)
   return false
 })
 

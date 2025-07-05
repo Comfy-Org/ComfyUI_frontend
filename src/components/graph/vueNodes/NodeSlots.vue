@@ -36,11 +36,15 @@ import { computed, onErrorCaptured, ref } from 'vue'
 // import OutputSlot from './OutputSlot.vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import type { LODLevel } from '@/composables/graph/useLOD'
+import { useErrorHandling } from '@/composables/useErrorHandling'
+import { isSlotObject } from '@/utils/typeGuardUtil'
 
 interface NodeSlotsProps {
   node?: LGraphNode // For backwards compatibility
   nodeData?: VueNodeData // New clean data structure
   readonly?: boolean
+  lodLevel?: LODLevel
 }
 
 const props = defineProps<NodeSlotsProps>()
@@ -48,31 +52,40 @@ const props = defineProps<NodeSlotsProps>()
 const nodeInfo = computed(() => props.nodeData || props.node)
 
 const getInputName = (input: unknown, index: number): string => {
-  const inputObj = input as { name?: string } | null | undefined
-  return inputObj?.name || `Input ${index}`
+  if (isSlotObject(input) && input.name) {
+    return input.name
+  }
+  return `Input ${index}`
 }
 
 const getInputType = (input: unknown): string => {
-  const inputObj = input as { type?: string } | null | undefined
-  return inputObj?.type || 'any'
+  if (isSlotObject(input) && input.type) {
+    return input.type
+  }
+  return 'any'
 }
 
 const getOutputName = (output: unknown, index: number): string => {
-  const outputObj = output as { name?: string } | null | undefined
-  return outputObj?.name || `Output ${index}`
+  if (isSlotObject(output) && output.name) {
+    return output.name
+  }
+  return `Output ${index}`
 }
 
 const getOutputType = (output: unknown): string => {
-  const outputObj = output as { type?: string } | null | undefined
-  return outputObj?.type || 'any'
+  if (isSlotObject(output) && output.type) {
+    return output.type
+  }
+  return 'any'
 }
 
 // Error boundary implementation
 const renderError = ref<string | null>(null)
+const { toastErrorHandler } = useErrorHandling()
 
 onErrorCaptured((error) => {
   renderError.value = error.message
-  console.error('Vue node slots error:', error)
+  toastErrorHandler(error)
   return false
 })
 </script>

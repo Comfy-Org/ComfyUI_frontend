@@ -2,7 +2,8 @@
  * Composable for managing widget value synchronization between Vue and LiteGraph
  * Provides consistent pattern for immediate UI updates and LiteGraph callbacks
  */
-import { ref, watch, type Ref } from 'vue'
+import { type Ref, ref, watch } from 'vue'
+
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 export interface UseWidgetValueOptions<T, U = T> {
@@ -27,7 +28,7 @@ export interface UseWidgetValueReturn<T, U = T> {
 
 /**
  * Manages widget value synchronization with LiteGraph
- * 
+ *
  * @example
  * ```vue
  * const { localValue, onChange } = useWidgetValue({
@@ -54,15 +55,27 @@ export function useWidgetValue<T, U = T>({
     if (transform) {
       processedValue = transform(newValue)
     } else {
-      processedValue = newValue as unknown as T
+      // Ensure type safety - only cast when types are compatible
+      if (
+        typeof newValue === typeof defaultValue ||
+        newValue === null ||
+        newValue === undefined
+      ) {
+        processedValue = (newValue ?? defaultValue) as T
+      } else {
+        console.warn(
+          `useWidgetValue: Type mismatch for widget ${widget.name}. Expected ${typeof defaultValue}, got ${typeof newValue}`
+        )
+        processedValue = defaultValue
+      }
     }
-    
+
     // 1. Update local state for immediate UI feedback
     localValue.value = processedValue
-    
+
     // 2. Emit to parent component
     emit('update:modelValue', processedValue)
-    
+
     // 3. Call LiteGraph callback to update authoritative state
     if (widget.callback) {
       widget.callback(processedValue)
@@ -70,9 +83,12 @@ export function useWidgetValue<T, U = T>({
   }
 
   // Watch for external updates from LiteGraph
-  watch(() => modelValue, (newValue) => {
-    localValue.value = newValue ?? defaultValue
-  })
+  watch(
+    () => modelValue,
+    (newValue) => {
+      localValue.value = newValue ?? defaultValue
+    }
+  )
 
   return {
     localValue: localValue as Ref<T>,
@@ -113,7 +129,7 @@ export function useNumberWidgetValue(
     transform: (value: number | number[]) => {
       // Handle PrimeVue Slider which can emit number | number[]
       if (Array.isArray(value)) {
-        return value[0] || 0
+        return value.length > 0 ? value[0] ?? 0 : 0
       }
       return Number(value) || 0
     }

@@ -75,7 +75,7 @@ class QuadNode<T> {
   }
 
   remove(item: QuadTreeItem<T>): boolean {
-    const index = this.items.findIndex(i => i.id === item.id)
+    const index = this.items.findIndex((i) => i.id === item.id)
     if (index !== -1) {
       this.items.splice(index, 1)
       return true
@@ -92,7 +92,10 @@ class QuadNode<T> {
     return false
   }
 
-  query(searchBounds: Bounds, found: QuadTreeItem<T>[] = []): QuadTreeItem<T>[] {
+  query(
+    searchBounds: Bounds,
+    found: QuadTreeItem<T>[] = []
+  ): QuadTreeItem<T>[] {
     // Check if search area intersects with this node
     if (!this.intersects(searchBounds)) {
       return found
@@ -144,7 +147,12 @@ class QuadNode<T> {
       ),
       // Bottom-right
       new QuadNode<T>(
-        { x: x + halfWidth, y: y + halfHeight, width: halfWidth, height: halfHeight },
+        {
+          x: x + halfWidth,
+          y: y + halfHeight,
+          width: halfWidth,
+          height: halfHeight
+        },
         this.depth + 1,
         this.maxDepth,
         this.maxItems
@@ -156,7 +164,7 @@ class QuadNode<T> {
     // Redistribute existing items to children
     const itemsToRedistribute = [...this.items]
     this.items = []
-    
+
     for (const item of itemsToRedistribute) {
       let inserted = false
       for (const child of this.children) {
@@ -201,7 +209,7 @@ class QuadNode<T> {
       depth: this.depth,
       itemCount: this.items.length,
       divided: this.divided,
-      children: this.children?.map(child => child.getDebugInfo())
+      children: this.children?.map((child) => child.getDebugInfo())
     }
   }
 }
@@ -228,7 +236,7 @@ export class QuadTree<T> {
 
   insert(id: string, bounds: Bounds, data: T): boolean {
     const item: QuadTreeItem<T> = { id, bounds, data }
-    
+
     // Remove old item if it exists
     if (this.itemMap.has(id)) {
       this.remove(id)
@@ -264,7 +272,7 @@ export class QuadTree<T> {
 
   query(searchBounds: Bounds): T[] {
     const items = this.root.query(searchBounds)
-    return items.map(item => item.data)
+    return items.map((item) => item.data)
   }
 
   clear() {

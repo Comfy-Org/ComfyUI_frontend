@@ -73,7 +73,8 @@ export const useSpatialIndex = (options: SpatialIndexOptions = {}) => {
       height: size.height
     }
 
-    quadTree.value!.update(nodeId, bounds)
+    // Use insert instead of update - insert handles both new and existing nodes
+    quadTree.value!.insert(nodeId, bounds, nodeId)
     metrics.totalNodes = quadTree.value!.size
   }
 
@@ -96,7 +97,8 @@ export const useSpatialIndex = (options: SpatialIndexOptions = {}) => {
         width: update.size.width,
         height: update.size.height
       }
-      quadTree.value!.update(update.id, bounds)
+      // Use insert instead of update - insert handles both new and existing nodes
+      quadTree.value!.insert(update.id, bounds, update.id)
     }
 
     metrics.totalNodes = quadTree.value!.size

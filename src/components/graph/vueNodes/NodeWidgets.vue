@@ -28,13 +28,16 @@ import type {
   SafeWidgetData,
   VueNodeData
 } from '@/composables/graph/useGraphNodeManager'
+import { LODLevel } from '@/composables/graph/useLOD'
 import { useWidgetRenderer } from '@/composables/graph/useWidgetRenderer'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 interface NodeWidgetsProps {
-  node?: LGraphNode // For backwards compatibility
-  nodeData?: VueNodeData // New clean data structure
+  node?: LGraphNode
+  nodeData?: VueNodeData
   readonly?: boolean
+  lodLevel?: LODLevel
 }
 
 const props = defineProps<NodeWidgetsProps>()
@@ -45,9 +48,11 @@ const { getWidgetComponent, shouldRenderAsVue } = useWidgetRenderer()
 // Error boundary implementation
 const renderError = ref<string | null>(null)
 
+const { toastErrorHandler } = useErrorHandling()
+
 onErrorCaptured((error) => {
   renderError.value = error.message
-  console.error('Vue node widgets error:', error)
+  toastErrorHandler(error)
   return false
 })
 
@@ -64,12 +69,33 @@ const widgets = computed((): SafeWidgetData[] => {
   return filtered
 })
 
-// Only render widgets that have Vue component support
+// Filter widgets based on LOD level and Vue component support
 const supportedWidgets = computed((): SafeWidgetData[] => {
   const allWidgets = widgets.value
-  const supported = allWidgets.filter((widget: SafeWidgetData) => {
+
+  // Filter by Vue component support
+  let supported = allWidgets.filter((widget: SafeWidgetData) => {
     return shouldRenderAsVue(widget)
   })
+
+  // Apply LOD filtering for reduced detail level
+  if (props.lodLevel === LODLevel.REDUCED) {
+    const essentialTypes = [
+      'combo',
+      'select',
+      'toggle',
+      'boolean',
+      'slider',
+      'number'
+    ]
+    supported = supported.filter((widget: SafeWidgetData) => {
+      return essentialTypes.includes(widget.type?.toLowerCase() || '')
+    })
+  } else if (props.lodLevel === LODLevel.MINIMAL) {
+    // No widgets rendered at minimal LOD
+    return []
+  }
+
   return supported
 })
 

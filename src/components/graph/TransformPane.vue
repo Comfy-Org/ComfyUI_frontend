@@ -7,7 +7,7 @@
   >
     <!-- Vue nodes will be rendered here -->
     <slot />
-    
+
     <!-- Debug: Viewport bounds visualization -->
     <div
       v-if="props.showDebugOverlay"
@@ -23,9 +23,19 @@
         opacity: 0.5
       }"
     >
-      <div style="position: absolute; top: 0; left: 0; background: red; color: white; padding: 2px 5px; font-size: 10px;">
-        Viewport: {{ props.viewport?.width }}x{{ props.viewport?.height }}
-        DPR: {{ devicePixelRatio }}
+      <div
+        style="
+          position: absolute;
+          top: 0;
+          left: 0;
+          background: red;
+          color: white;
+          padding: 2px 5px;
+          font-size: 10px;
+        "
+      >
+        Viewport: {{ props.viewport?.width }}x{{ props.viewport?.height }} DPR:
+        {{ devicePixelRatio }}
       </div>
     </div>
   </div>
@@ -93,9 +103,12 @@ const handlePointerDown = (event: PointerEvent) => {
   const nodeElement = target.closest('[data-node-id]')
 
   if (nodeElement) {
-    const nodeId = nodeElement.getAttribute('data-node-id')
     // TODO: Emit event for node interaction
-    console.log('Node interaction:', nodeId)
+    // Node interaction with nodeId will be handled in future implementation
+    console.log(
+      'Node interaction detected:',
+      nodeElement.getAttribute('data-node-id')
+    )
   }
 }
 

@@ -637,3 +637,90 @@ audio.comfy-audio.empty-audio-widget {
   width: calc(100vw - env(titlebar-area-width, 100vw));
 }
 /* End of [Desktop] Electron window specific styles */
+
+/* Vue Node LOD (Level of Detail) System */
+/* These classes control rendering detail based on zoom level */
+
+/* Minimal LOD (zoom <= 0.4) - Title only for performance */
+.lg-node--lod-minimal {
+  min-height: 32px;
+  transition: min-height 0.2s ease;
+}
+
+.lg-node--lod-minimal .lg-node-body {
+  display: none !important;
+}
+
+/* Reduced LOD (0.4 < zoom <= 0.8) - Essential widgets, simplified styling */
+.lg-node--lod-reduced {
+  transition: opacity 0.1s ease;
+}
+
+.lg-node--lod-reduced .lg-widget-label,
+.lg-node--lod-reduced .lg-slot-label {
+  display: none;
+}
+
+.lg-node--lod-reduced .lg-slot {
+  opacity: 0.6;
+  font-size: 0.75rem;
+}
+
+.lg-node--lod-reduced .lg-widget {
+  margin: 2px 0;
+  font-size: 0.875rem;
+}
+
+/* Full LOD (zoom > 0.8) - Complete detail rendering */
+.lg-node--lod-full {
+  /* Uses default styling - no overrides needed */
+}
+
+/* Smooth transitions between LOD levels */
+.lg-node {
+  transition: min-height 0.2s ease;
+}
+
+.lg-node .lg-slot,
+.lg-node .lg-widget {
+  transition: opacity 0.1s ease, font-size 0.1s ease;
+}
+
+/* LOD (Level of Detail) CSS classes for Vue nodes */
+
+/* Full detail - zoom > 0.8 */
+.lg-node--lod-full {
+  /* All elements visible, full interactivity */
+}
+
+/* Reduced detail - 0.4 < zoom <= 0.8 */
+.lg-node--lod-reduced {
+  /* Simplified rendering, essential widgets only */
+}
+
+.lg-node--lod-reduced .lg-node-header {
+  font-size: 0.875rem; /* Slightly smaller text */
+}
+
+.lg-node--lod-reduced .lg-node-widgets {
+  /* Only essential widgets shown */
+}
+
+.lg-node--lod-reduced .text-xs {
+  font-size: 0.625rem; /* Even smaller auxiliary text */
+}
+
+/* Minimal detail - zoom <= 0.4 */
+.lg-node--lod-minimal {
+  /* Only header visible, no body content */
+  min-height: auto !important;
+}
+
+.lg-node--lod-minimal .lg-node-header {
+  font-size: 0.75rem; /* Smaller header text */
+  padding: 0.25rem 0.5rem; /* Reduced padding */
+}
+
+.lg-node--lod-minimal .lg-node-header__control {
+  display: none; /* Hide controls at minimal zoom */
+}

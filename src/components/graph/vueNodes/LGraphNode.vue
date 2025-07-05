@@ -11,7 +11,8 @@
       executing ? 'animate-pulse' : '',
       nodeData.mode === 4 ? 'opacity-50' : '', // bypassed
       error ? 'border-red-500 bg-red-50' : '',
-      isDragging ? 'will-change-transform' : ''
+      isDragging ? 'will-change-transform' : '',
+      lodCssClass
     ]"
     :style="{
       transform: `translate(${position?.x ?? 0}px, ${position?.y ?? 0}px)`,
@@ -23,40 +24,45 @@
   >
     <!-- Header only updates on title/color changes -->
     <NodeHeader
-      v-memo="[nodeData.title]"
+      v-memo="[nodeData.title, lodLevel]"
       :node-data="nodeData"
       :readonly="readonly"
+      :lod-level="lodLevel"
       @collapse="handleCollapse"
     />
 
-    <!-- Node Body -->
-    <div class="flex flex-col gap-2 p-2">
-      <!-- Slots only update when connections change -->
+    <!-- Node Body - rendered based on LOD level -->
+    <div v-if="!isMinimalLOD" class="flex flex-col gap-2 p-2">
+      <!-- Slots only rendered at full detail -->
       <NodeSlots
-        v-memo="[nodeData.inputs?.length, nodeData.outputs?.length]"
+        v-if="shouldRenderSlots"
+        v-memo="[nodeData.inputs?.length, nodeData.outputs?.length, lodLevel]"
         :node-data="nodeData"
         :readonly="readonly"
+        :lod-level="lodLevel"
         @slot-click="handleSlotClick"
       />
 
-      <!-- Widgets update on value changes -->
+      <!-- Widgets rendered at reduced+ detail -->
       <NodeWidgets
-        v-if="nodeData.widgets?.length"
-        v-memo="[nodeData.widgets?.length]"
+        v-if="shouldRenderWidgets && nodeData.widgets?.length"
+        v-memo="[nodeData.widgets?.length, lodLevel]"
         :node-data="nodeData"
         :readonly="readonly"
+        :lod-level="lodLevel"
       />
 
-      <!-- Custom content area -->
+      <!-- Custom content at reduced+ detail -->
       <NodeContent
-        v-if="hasCustomContent"
+        v-if="shouldRenderContent && hasCustomContent"
         :node-data="nodeData"
         :readonly="readonly"
+        :lod-level="lodLevel"
       />
 
-      <!-- Placeholder if no widgets -->
+      <!-- Placeholder if no widgets and in reduced+ mode -->
       <div
-        v-if="!nodeData.widgets?.length && !hasCustomContent"
+        v-if="!nodeData.widgets?.length && !hasCustomContent && !isMinimalLOD"
         class="text-gray-500 text-sm text-center py-4"
       >
         No widgets
@@ -73,10 +79,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onErrorCaptured, ref } from 'vue'
+import { computed, onErrorCaptured, ref, toRef } from 'vue'
 
 // Import the VueNodeData type
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { LODLevel, useLOD } from '@/composables/graph/useLOD'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
@@ -109,12 +117,26 @@ const emit = defineEmits<{
   collapse: []
 }>()
 
+// LOD (Level of Detail) system based on zoom level
+const zoomRef = toRef(() => props.zoomLevel ?? 1)
+const {
+  lodLevel,
+  shouldRenderWidgets,
+  shouldRenderSlots,
+  shouldRenderContent,
+  lodCssClass
+} = useLOD(zoomRef)
+
+// Computed properties for template usage
+const isMinimalLOD = computed(() => lodLevel.value === LODLevel.MINIMAL)
+
 // Error boundary implementation
 const renderError = ref<string | null>(null)
+const { toastErrorHandler } = useErrorHandling()
 
 onErrorCaptured((error) => {
   renderError.value = error.message
-  console.error('Vue node component error:', error)
+  toastErrorHandler(error)
   return false // Prevent error propagation
 })
 
@@ -130,7 +152,11 @@ const hasCustomContent = computed(() => {
 
 // Event handlers
 const handlePointerDown = (event: PointerEvent) => {
-  emit('node-click', event, props.nodeData!)
+  if (!props.nodeData) {
+    console.warn('LGraphNode: nodeData is null/undefined in handlePointerDown')
+    return
+  }
+  emit('node-click', event, props.nodeData)
 }
 
 const handleCollapse = () => {
@@ -142,7 +168,11 @@ const handleSlotClick = (
   slotIndex: number,
   isInput: boolean
 ) => {
-  emit('slot-click', event, props.nodeData!, slotIndex, isInput)
+  if (!props.nodeData) {
+    console.warn('LGraphNode: nodeData is null/undefined in handleSlotClick')
+    return
+  }
+  emit('slot-click', event, props.nodeData, slotIndex, isInput)
 }
 
 // Expose methods for parent to control dragging state

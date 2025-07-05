@@ -17,12 +17,12 @@
 import Select from 'primevue/select'
 import { computed } from 'vue'
 
+import { useWidgetValue } from '@/composables/graph/useWidgetValue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import {
   PANEL_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
-import { useWidgetValue } from '@/composables/graph/useWidgetValue'
 
 const props = defineProps<{
   widget: SimplifiedWidget<any>

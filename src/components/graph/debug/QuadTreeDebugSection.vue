@@ -82,9 +82,11 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  metrics: undefined,
   strategy: 'quadtree',
   threshold: 100,
-  showVisualization: false
+  showVisualization: false,
+  performanceComparison: undefined
 })
 
 defineEmits<{

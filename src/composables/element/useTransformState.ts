@@ -144,47 +144,66 @@ export const useTransformState = () => {
     return new DOMRect(topLeft.x, topLeft.y, width, height)
   }
 
+  // Helper: Calculate zoom-adjusted margin for viewport culling
+  const calculateAdjustedMargin = (baseMargin: number): number => {
+    if (camera.z < 0.1) return Math.min(baseMargin * 5, 2.0)
+    if (camera.z > 3.0) return Math.max(baseMargin * 0.5, 0.05)
+    return baseMargin
+  }
+
+  // Helper: Check if node is too small to be visible at current zoom
+  const isNodeTooSmall = (nodeSize: ArrayLike<number>): boolean => {
+    const nodeScreenSize = Math.max(nodeSize[0], nodeSize[1]) * camera.z
+    return nodeScreenSize < 4
+  }
+
+  // Helper: Calculate expanded viewport bounds with margin
+  const getExpandedViewportBounds = (
+    viewport: { width: number; height: number },
+    margin: number
+  ) => {
+    const marginX = viewport.width * margin
+    const marginY = viewport.height * margin
+    return {
+      left: -marginX,
+      right: viewport.width + marginX,
+      top: -marginY,
+      bottom: viewport.height + marginY
+    }
+  }
+
+  // Helper: Test if node intersects with viewport bounds
+  const testViewportIntersection = (
+    screenPos: { x: number; y: number },
+    nodeSize: ArrayLike<number>,
+    bounds: { left: number; right: number; top: number; bottom: number }
+  ): boolean => {
+    const nodeRight = screenPos.x + nodeSize[0] * camera.z
+    const nodeBottom = screenPos.y + nodeSize[1] * camera.z
+
+    return !(
+      nodeRight < bounds.left ||
+      screenPos.x > bounds.right ||
+      nodeBottom < bounds.top ||
+      screenPos.y > bounds.bottom
+    )
+  }
+
   // Check if node is within viewport with frustum and size-based culling
   const isNodeInViewport = (
     nodePos: ArrayLike<number>,
     nodeSize: ArrayLike<number>,
     viewport: { width: number; height: number },
-    margin: number = 0.2 // 20% margin by default
+    margin: number = 0.2
   ): boolean => {
+    // Early exit for tiny nodes
+    if (isNodeTooSmall(nodeSize)) return false
+
     const screenPos = canvasToScreen({ x: nodePos[0], y: nodePos[1] })
+    const adjustedMargin = calculateAdjustedMargin(margin)
+    const bounds = getExpandedViewportBounds(viewport, adjustedMargin)
 
-    // Adjust margin based on zoom level for better performance
-    let adjustedMargin = margin
-    if (camera.z < 0.1) {
-      adjustedMargin = Math.min(margin * 5, 2.0) // More aggressive at low zoom
-    } else if (camera.z > 3.0) {
-      adjustedMargin = Math.max(margin * 0.5, 0.05) // Tighter at high zoom
-    }
-
-    // Skip nodes too small to be visible
-    const nodeScreenSize = Math.max(nodeSize[0], nodeSize[1]) * camera.z
-    if (nodeScreenSize < 4) {
-      return false
-    }
-
-    // Early rejection tests for performance
-    const nodeRight = screenPos.x + nodeSize[0] * camera.z
-    const nodeBottom = screenPos.y + nodeSize[1] * camera.z
-
-    // Use actual viewport dimensions (already accounts for browser zoom via clientWidth/Height)
-    const marginX = viewport.width * adjustedMargin
-    const marginY = viewport.height * adjustedMargin
-    const expandedLeft = -marginX
-    const expandedRight = viewport.width + marginX
-    const expandedTop = -marginY
-    const expandedBottom = viewport.height + marginY
-
-    return !(
-      nodeRight < expandedLeft ||
-      screenPos.x > expandedRight ||
-      nodeBottom < expandedTop ||
-      screenPos.y > expandedBottom
-    )
+    return testViewportIntersection(screenPos, nodeSize, bounds)
   }
 
   // Get viewport bounds in canvas coordinates (for spatial index queries)

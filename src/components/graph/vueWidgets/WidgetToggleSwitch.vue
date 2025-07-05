@@ -3,11 +3,11 @@
     <label v-if="widget.name" class="text-sm opacity-80">{{
       widget.name
     }}</label>
-    <ToggleSwitch 
-      v-model="localValue" 
-      v-bind="filteredProps" 
+    <ToggleSwitch
+      v-model="localValue"
+      v-bind="filteredProps"
       :disabled="readonly"
-      @update:model-value="onChange" 
+      @update:model-value="onChange"
     />
   </div>
 </template>
@@ -16,12 +16,12 @@
 import ToggleSwitch from 'primevue/toggleswitch'
 import { computed } from 'vue'
 
+import { useBooleanWidgetValue } from '@/composables/graph/useWidgetValue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import {
   STANDARD_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
-import { useBooleanWidgetValue } from '@/composables/graph/useWidgetValue'
 
 const props = defineProps<{
   widget: SimplifiedWidget<boolean>
