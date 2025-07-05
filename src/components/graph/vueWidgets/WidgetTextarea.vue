@@ -1,10 +1,11 @@
 <template>
-  <div class="flex flex-col gap-1">
-    <label v-if="widget.name" class="text-sm opacity-80">{{
-      widget.name
-    }}</label>
-    <Textarea v-model="value" v-bind="filteredProps" :disabled="readonly" />
-  </div>
+  <Textarea
+    v-model="value"
+    v-bind="filteredProps"
+    :disabled="readonly"
+    class="w-full"
+    rows="3"
+  />
 </template>
 
 <script setup lang="ts">
