@@ -4,11 +4,12 @@
       widget.name
     }}</label>
     <TreeSelect
-      v-model="value"
+      v-model="localValue"
       v-bind="filteredProps"
       :disabled="readonly"
       class="flex-grow min-w-[8em] max-w-[20em] text-xs"
       size="small"
+      @update:model-value="onChange"
     />
   </div>
 </template>
@@ -17,18 +18,30 @@
 import TreeSelect from 'primevue/treeselect'
 import { computed } from 'vue'
 
+import { useWidgetValue } from '@/composables/graph/useWidgetValue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import {
   PANEL_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
-const value = defineModel<any>({ required: true })
-
 const props = defineProps<{
   widget: SimplifiedWidget<any>
+  modelValue: any
   readonly?: boolean
 }>()
+
+const emit = defineEmits<{
+  'update:modelValue': [value: any]
+}>()
+
+// Use the composable for consistent widget value handling
+const { localValue, onChange } = useWidgetValue({
+  widget: props.widget,
+  modelValue: props.modelValue,
+  defaultValue: null,
+  emit
+})
 
 // TreeSelect specific excluded props
 const TREE_SELECT_EXCLUDED_PROPS = [

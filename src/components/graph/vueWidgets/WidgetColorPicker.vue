@@ -5,10 +5,11 @@
       widget.name
     }}</label>
     <ColorPicker
-      v-model="value"
+      v-model="localValue"
       v-bind="filteredProps"
       :disabled="readonly"
       inline
+      @update:model-value="onChange"
     />
   </div>
 </template>
@@ -17,18 +18,30 @@
 import ColorPicker from 'primevue/colorpicker'
 import { computed } from 'vue'
 
+import { useWidgetValue } from '@/composables/graph/useWidgetValue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import {
   PANEL_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
-const value = defineModel<string>({ required: true })
-
 const props = defineProps<{
   widget: SimplifiedWidget<string>
+  modelValue: string
   readonly?: boolean
 }>()
+
+const emit = defineEmits<{
+  'update:modelValue': [value: string]
+}>()
+
+// Use the composable for consistent widget value handling
+const { localValue, onChange } = useWidgetValue({
+  widget: props.widget,
+  modelValue: props.modelValue,
+  defaultValue: '#000000',
+  emit
+})
 
 // ColorPicker specific excluded props include panel/overlay classes
 const COLOR_PICKER_EXCLUDED_PROPS = [...PANEL_EXCLUDED_PROPS] as const
