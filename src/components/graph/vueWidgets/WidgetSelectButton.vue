@@ -28,3 +28,13 @@ const filteredProps = computed(() =>
   filterWidgetProps(props.widget.options, STANDARD_EXCLUDED_PROPS)
 )
 </script>
+
+<style scoped>
+:deep(.p-selectbutton) {
+  border: 1px solid transparent;
+}
+
+:deep(.p-selectbutton:hover) {
+  border-color: currentColor;
+}
+</style>
