@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center justify-between gap-2">
+  <div class="flex items-center justify-between gap-4">
     <label v-if="widget.name" class="text-xs opacity-80 min-w-[4em] truncate">{{
       widget.name
     }}</label>
