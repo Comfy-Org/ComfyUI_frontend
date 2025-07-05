@@ -160,12 +160,6 @@ class Load3DConfiguration {
 
       this.load3d.setEdgeThreshold(edgeThreshold)
 
-      const texturePath = this.load3d.loadNodeProperty('Texture', null)
-
-      if (texturePath) {
-        await this.load3d.applyTexture(texturePath)
-      }
-
       if (isFirstLoad && cameraState && typeof cameraState === 'object') {
         try {
           this.load3d.setCameraState(cameraState)
