@@ -419,7 +419,6 @@
     "restart": "Restart"
   },
   "sideToolbar": {
-    "themeToggle": "Toggle Theme",
     "helpCenter": "Help Center",
     "logout": "Logout",
     "queue": "Queue",
@@ -520,7 +519,13 @@
     "clipspace": "Open Clipspace",
     "resetView": "Reset canvas view",
     "clear": "Clear workflow",
-    "toggleBottomPanel": "Toggle Bottom Panel"
+    "toggleBottomPanel": "Toggle Bottom Panel",
+    "theme": "Theme",
+    "dark": "Dark",
+    "light": "Light",
+    "manageExtensions": "Manage Extensions",
+    "settings": "Settings",
+    "help": "Help"
   },
   "tabMenu": {
     "duplicateTab": "Duplicate Tab",
@@ -979,7 +984,6 @@
     "Save": "Save",
     "Save As": "Save As",
     "Show Settings Dialog": "Show Settings Dialog",
-    "Toggle Theme (Dark/Light)": "Toggle Theme (Dark/Light)",
     "Undo": "Undo",
     "Open Sign In Dialog": "Open Sign In Dialog",
     "Sign Out": "Sign Out",

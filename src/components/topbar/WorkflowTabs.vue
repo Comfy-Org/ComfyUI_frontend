@@ -1,5 +1,16 @@
 <template>
-  <div class="workflow-tabs-container flex flex-row max-w-full h-full">
+  <div
+    class="workflow-tabs-container flex flex-row max-w-full h-full flex-auto overflow-hidden"
+  >
+    <Button
+      v-if="showOverflowArrows"
+      icon="pi pi-chevron-left"
+      text
+      severity="secondary"
+      class="overflow-arrow-left"
+      :disabled="!leftArrowEnabled"
+      @mousedown="whileMouseDown($event, () => scroll(-1))"
+    />
     <ScrollPanel
       ref="scrollPanelRef"
       class="overflow-hidden no-drag"
@@ -28,8 +39,17 @@
       </SelectButton>
     </ScrollPanel>
     <Button
+      v-if="showOverflowArrows"
+      icon="pi pi-chevron-right"
+      text
+      severity="secondary"
+      class="overflow-arrow-right"
+      :disabled="!rightArrowEnabled"
+      @mousedown="whileMouseDown($event, () => scroll(1))"
+    />
+    <Button
       v-tooltip="{ value: $t('sideToolbar.newBlankWorkflow'), showDelay: 300 }"
-      class="new-blank-workflow-button flex-shrink-0 no-drag"
+      class="new-blank-workflow-button flex-shrink-0 no-drag rounded-none"
       icon="pi pi-plus"
       text
       severity="secondary"
@@ -41,19 +61,22 @@
 </template>
 
 <script setup lang="ts">
+import { useScroll } from '@vueuse/core'
 import Button from 'primevue/button'
 import ContextMenu from 'primevue/contextmenu'
 import ScrollPanel from 'primevue/scrollpanel'
 import SelectButton from 'primevue/selectbutton'
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUpdated, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
+import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
 import { useWorkflowService } from '@/services/workflowService'
 import { useCommandStore } from '@/stores/commandStore'
 import { ComfyWorkflow, useWorkflowBookmarkStore } from '@/stores/workflowStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { whileMouseDown } from '@/utils/mouseDownUtil'
 
 interface WorkflowOption {
   value: string
@@ -72,6 +95,9 @@ const workflowBookmarkStore = useWorkflowBookmarkStore()
 const rightClickedTab = ref<WorkflowOption | undefined>()
 const menu = ref()
 const scrollPanelRef = ref()
+const showOverflowArrows = ref(false)
+const leftArrowEnabled = ref(false)
+const rightArrowEnabled = ref(false)
 
 const workflowToOption = (workflow: ComfyWorkflow): WorkflowOption => ({
   value: workflow.path,
@@ -86,6 +112,7 @@ const selectedWorkflow = computed<WorkflowOption | null>(() =>
     ? workflowToOption(workflowStore.activeWorkflow as ComfyWorkflow)
     : null
 )
+
 const onWorkflowChange = async (option: WorkflowOption) => {
   // Prevent unselecting the current workflow
   if (!option) {
@@ -178,6 +205,13 @@ const handleWheel = (event: WheelEvent) => {
   })
 }
 
+const scroll = (direction: number) => {
+  const scrollElement = scrollPanelRef.value.$el.querySelector(
+    '.p-scrollpanel-content'
+  ) as HTMLElement
+  scrollElement.scrollBy({ left: direction * 20 })
+}
+
 // Scroll to active offscreen tab when opened
 watch(
   () => workflowStore.activeWorkflow,
@@ -208,12 +242,52 @@ watch(
   },
   { immediate: true }
 )
+
+onMounted(() => {
+  const scrollContent = scrollPanelRef.value.$el.querySelector(
+    '.p-scrollpanel-content'
+  ) as HTMLElement
+
+  // Show overflow arrows when there is overflow
+  const { isOverflowing, checkOverflow } = useOverflowObserver(scrollContent)
+  watch(isOverflowing, (value) => {
+    showOverflowArrows.value = value
+  })
+
+  onUpdated(checkOverflow)
+
+  // Disable arrows when scrolled to the edges
+  const scrollState = useScroll(scrollContent, {
+    onScroll: () => {
+      leftArrowEnabled.value = !scrollState.arrivedState.left
+      rightArrowEnabled.value = !scrollState.arrivedState.right
+    }
+  })
+})
 </script>
 
 <style scoped>
+.workflow-tabs-container {
+  background-color: var(--comfy-menu-secondary-bg);
+}
+
 :deep(.p-togglebutton) {
-  @apply p-0 bg-transparent rounded-none flex-shrink-0 relative border-0 border-r border-solid;
+  @apply p-0 bg-transparent rounded-none flex-shrink relative border-0 border-r border-solid;
   border-right-color: var(--border-color);
+  min-width: 90px;
+}
+
+.overflow-arrow-right,
+.overflow-arrow-left {
+  @apply px-2 rounded-none;
+}
+
+:deep(.p-togglebutton > .p-togglebutton-content) {
+  @apply max-w-full;
+}
+
+:deep(.workflow-tab) {
+  @apply max-w-full;
 }
 
 :deep(.p-togglebutton::before) {
@@ -253,6 +327,10 @@ watch(
 
 :deep(.p-scrollpanel-content) {
   @apply h-full;
+}
+
+:deep(.workflow-tabs) {
+  display: flex;
 }
 
 /* Scrollbar half opacity to avoid blocking the active tab bottom border */

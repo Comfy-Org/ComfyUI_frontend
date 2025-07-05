@@ -637,3 +637,8 @@ audio.comfy-audio.empty-audio-widget {
   width: calc(100vw - env(titlebar-area-width, 100vw));
 }
 /* End of [Desktop] Electron window specific styles */
+
+/* Fix tooltip going under menu, primevue config doesnt seem to work to change this */
+.p-tooltip {
+  z-index: 1100 !important;
+}

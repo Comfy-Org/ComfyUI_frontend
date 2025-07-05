@@ -1,51 +1,96 @@
 <template>
-  <Menubar
-    :model="translatedItems"
-    class="top-menubar border-none p-0 bg-transparent"
-    :pt="{
-      rootList: 'gap-0 flex-nowrap w-auto',
-      submenu: `dropdown-direction-${dropdownDirection}`,
-      item: 'relative'
+  <div
+    class="p-1 flex items-center cursor-pointer m-1 rounded-md hover:bg-white/20"
+    :class="{
+      'bg-white/20': menuRef?.visible
     }"
+    @click="menuRef?.toggle($event)"
   >
-    <template #item="{ item, props, root }">
+    <img
+      src="/assets/images/comfy-logo-mono.svg"
+      alt="ComfyUI Logo"
+      class="comfyui-logo app-drag h-7"
+    />
+    <i class="pi pi-angle-down ml-1 text-[10px]" />
+  </div>
+  <TieredMenu
+    ref="menuRef"
+    :model="translatedItems"
+    :popup="true"
+    class="comfy-command-menu"
+  >
+    <template #item="{ item, props }">
+      <div
+        v-if="item.key === 'theme'"
+        class="flex items-center gap-4 px-4 py-5 border-solid border-0 border-t border-b border-gray-500/30"
+        @click.stop.prevent
+      >
+        {{ item.label }}
+        <SelectButton
+          :options="[darkLabel, lightLabel]"
+          :model-value="activeTheme"
+          @click.stop.prevent
+          @update:model-value="onThemeChange"
+        >
+          <template #option="{ option }">
+            <div class="flex items-center gap-2">
+              <i v-if="option === lightLabel" class="pi pi-sun" />
+              <i v-if="option === darkLabel" class="pi pi-moon" />
+              <span>{{ option }}</span>
+            </div>
+          </template>
+        </SelectButton>
+      </div>
       <a
-        class="p-menubar-item-link"
+        v-else
+        class="p-menubar-item-link px-4 py-2"
         v-bind="props.action"
         :href="item.url"
         target="_blank"
       >
         <span v-if="item.icon" class="p-menubar-item-icon" :class="item.icon" />
-        <span class="p-menubar-item-label">{{ item.label }}</span>
+        <span class="p-menubar-item-label text-nowrap">{{ item.label }}</span>
         <span
           v-if="item?.comfyCommand?.keybinding"
           class="ml-auto border border-surface rounded text-muted text-xs text-nowrap p-1 keybinding-tag"
         >
           {{ item.comfyCommand.keybinding.combo.toString() }}
         </span>
-        <i v-if="!root && item.items" class="ml-auto pi pi-angle-right" />
+        <i v-if="item.items" class="ml-auto pi pi-angle-right" />
       </a>
     </template>
-  </Menubar>
+  </TieredMenu>
 </template>
 
 <script setup lang="ts">
-import Menubar from 'primevue/menubar'
 import type { MenuItem } from 'primevue/menuitem'
-import { computed } from 'vue'
+import SelectButton from 'primevue/selectbutton'
+import TieredMenu, {
+  type TieredMenuMethods,
+  type TieredMenuState
+} from 'primevue/tieredmenu'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import SettingDialogContent from '@/components/dialog/content/SettingDialogContent.vue'
+import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.vue'
+import { useDialogService } from '@/services/dialogService'
+import { useAboutPanelStore } from '@/stores/aboutPanelStore'
+import { useCommandStore } from '@/stores/commandStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
-import { useSettingStore } from '@/stores/settingStore'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
-const settingStore = useSettingStore()
-const dropdownDirection = computed(() =>
-  settingStore.get('Comfy.UseNewMenu') === 'Top' ? 'down' : 'up'
-)
-
+const colorPaletteStore = useColorPaletteStore()
 const menuItemsStore = useMenuItemStore()
+const commandStore = useCommandStore()
+const dialogStore = useDialogStore()
+const aboutPanelStore = useAboutPanelStore()
 const { t } = useI18n()
+
+const menuRef = ref<(TieredMenuMethods & TieredMenuState) | null>(null)
+
 const translateMenuItem = (item: MenuItem): MenuItem => {
   const label = typeof item.label === 'function' ? item.label() : item.label
   const translatedLabel = label
@@ -59,9 +104,83 @@ const translateMenuItem = (item: MenuItem): MenuItem => {
   }
 }
 
-const translatedItems = computed(() =>
-  menuItemsStore.menuItems.map(translateMenuItem)
-)
+const showSettings = (defaultPanel?: string) => {
+  dialogStore.showDialog({
+    key: 'global-settings',
+    headerComponent: SettingDialogHeader,
+    component: SettingDialogContent,
+    props: {
+      defaultPanel
+    }
+  })
+}
+
+// Temporary duplicated from LoadWorkflowWarning.vue
+// Determines if ComfyUI-Manager is installed by checking for its badge in the about panel
+// This allows us to conditionally show the Manager button only when the extension is available
+// TODO: Remove this check when Manager functionality is fully migrated into core
+const isManagerInstalled = computed(() => {
+  return aboutPanelStore.badges.some(
+    (badge) =>
+      badge.label.includes('ComfyUI-Manager') ||
+      badge.url.includes('ComfyUI-Manager')
+  )
+})
+
+const showManageExtensions = () => {
+  if (isManagerInstalled.value) {
+    useDialogService().showManagerDialog()
+  } else {
+    showSettings('extension')
+  }
+}
+
+const extraMenuItems: MenuItem[] = [
+  {
+    key: 'theme',
+    label: t('menu.theme')
+  },
+  {
+    key: 'manage-extensions',
+    label: t('menu.manageExtensions'),
+    icon: 'mdi mdi-puzzle-outline',
+    command: showManageExtensions
+  },
+  {
+    key: 'settings',
+    label: t('g.settings'),
+    icon: 'mdi mdi-cog-outline',
+    command: () => showSettings()
+  }
+]
+
+const lightLabel = t('menu.light')
+const darkLabel = t('menu.dark')
+
+const activeTheme = computed(() => {
+  return colorPaletteStore.completedActivePalette.light_theme
+    ? lightLabel
+    : darkLabel
+})
+
+const onThemeChange = async () => {
+  await commandStore.execute('Comfy.ToggleTheme')
+}
+
+const translatedItems = computed(() => {
+  const items = menuItemsStore.menuItems.map(translateMenuItem)
+  let helpIndex = items.findIndex((item) => item.key === 'Help')
+  if (helpIndex !== -1) {
+    items[helpIndex].icon = 'mdi mdi-help-circle-outline'
+    items[helpIndex].class = 'border-solid border-0 border-t border-gray-500/30'
+  } else {
+    helpIndex = items.length
+  }
+
+  items.splice(helpIndex, 0, ...extraMenuItems)
+
+  return items
+})
 </script>
 
 <style scoped>
@@ -73,5 +192,11 @@ const translatedItems = computed(() =>
   background: var(--p-content-hover-background);
   border-color: var(--p-content-border-color);
   border-style: solid;
+}
+</style>
+
+<style>
+.comfy-command-menu ul {
+  background-color: var(--comfy-menu-secondary-bg) !important;
 }
 </style>

@@ -2,7 +2,7 @@
   <div ref="workflowTabRef" class="flex p-2 gap-2 workflow-tab" v-bind="$attrs">
     <span
       v-tooltip.bottom="workflowOption.workflow.key"
-      class="workflow-label text-sm max-w-[150px] truncate inline-block"
+      class="workflow-label text-sm max-w-[150px] min-w-[30px] truncate inline-block"
     >
       {{ workflowOption.workflow.filename }}
     </span>
