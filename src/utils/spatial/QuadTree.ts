@@ -2,6 +2,10 @@
  * QuadTree implementation for spatial indexing of nodes
  * Optimized for viewport culling in large node graphs
  */
+import type {
+  QuadNodeDebugInfo,
+  SpatialIndexDebugInfo
+} from '@/types/spatialIndex'
 
 export interface Bounds {
   x: number
@@ -203,7 +207,7 @@ class QuadNode<T> {
   }
 
   // Debug helper to get tree structure
-  getDebugInfo(): any {
+  getDebugInfo(): QuadNodeDebugInfo {
     return {
       bounds: this.bounds,
       depth: this.depth,
@@ -289,7 +293,7 @@ export class QuadTree<T> {
     return this.itemMap.size
   }
 
-  getDebugInfo() {
+  getDebugInfo(): SpatialIndexDebugInfo {
     return {
       size: this.size,
       tree: this.root.getDebugInfo()
