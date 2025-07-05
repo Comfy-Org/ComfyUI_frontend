@@ -31,7 +31,7 @@ import type {
 import { LODLevel } from '@/composables/graph/useLOD'
 import { useWidgetRenderer } from '@/composables/graph/useWidgetRenderer'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 
 interface NodeWidgetsProps {
   node?: LGraphNode
@@ -106,7 +106,7 @@ const getVueComponent = (widget: SafeWidgetData) => {
   return component || WidgetInputText // Fallback to text input
 }
 
-const getWidgetValue = (widget: SafeWidgetData): unknown => {
+const getWidgetValue = (widget: SafeWidgetData): WidgetValue => {
   return widget.value
 }
 

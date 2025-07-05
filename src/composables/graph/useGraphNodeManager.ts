@@ -5,6 +5,9 @@
 import type { LGraph, LGraphNode } from '@comfyorg/litegraph'
 import { nextTick, reactive, readonly } from 'vue'
 
+import type { WidgetValue } from '@/types/simplifiedWidget'
+import type { SpatialIndexDebugInfo } from '@/types/spatialIndex'
+
 import { type Bounds, QuadTree } from '../../utils/spatial/QuadTree'
 
 export interface NodeState {
@@ -18,7 +21,7 @@ export interface NodeMetadata {
   lastRenderTime: number
   cachedBounds: DOMRect | null
   lodLevel: 'high' | 'medium' | 'low'
-  spatialIndex?: any
+  spatialIndex?: QuadTree<string>
 }
 
 export interface PerformanceMetrics {
@@ -35,7 +38,7 @@ export interface PerformanceMetrics {
 export interface SafeWidgetData {
   name: string
   type: string
-  value: unknown
+  value: WidgetValue
   options?: Record<string, unknown>
   callback?: ((value: unknown) => void) | undefined
 }
@@ -87,7 +90,7 @@ export interface GraphNodeManager {
   spatialMetrics: SpatialMetrics
 
   // Debug
-  getSpatialIndexDebugInfo(): any | null
+  getSpatialIndexDebugInfo(): SpatialIndexDebugInfo | null
 }
 
 export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
@@ -182,7 +185,7 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
         return {
           name: widget.name || 'unknown',
           type: widget.type || 'text',
-          value: undefined,
+          value: undefined, // Already a valid WidgetValue
           options: undefined,
           callback: undefined
         }
@@ -208,6 +211,33 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
   }
 
   /**
+   * Validates that a value is a valid WidgetValue type
+   */
+  const validateWidgetValue = (value: unknown): WidgetValue => {
+    if (value === null || value === undefined || value === void 0) {
+      return undefined
+    }
+    if (
+      typeof value === 'string' ||
+      typeof value === 'number' ||
+      typeof value === 'boolean'
+    ) {
+      return value
+    }
+    if (typeof value === 'object') {
+      // Check if it's a File array
+      if (Array.isArray(value) && value.every((item) => item instanceof File)) {
+        return value as File[]
+      }
+      // Otherwise it's a generic object
+      return value as object
+    }
+    // If none of the above, return undefined
+    console.warn(`Invalid widget value type: ${typeof value}`, value)
+    return undefined
+  }
+
+  /**
    * Updates Vue state when widget values change
    */
   const updateVueWidgetState = (
@@ -220,7 +250,7 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
       if (!currentData?.widgets) return
 
       const updatedWidgets = currentData.widgets.map((w) =>
-        w.name === widgetName ? { ...w, value: value } : w
+        w.name === widgetName ? { ...w, value: validateWidgetValue(value) } : w
       )
       vueNodeData.set(nodeId, {
         ...currentData,
@@ -236,13 +266,25 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
    * Creates a wrapped callback for a widget that maintains LiteGraph/Vue sync
    */
   const createWrappedWidgetCallback = (
-    widget: any,
+    widget: { value?: unknown; name: string }, // LiteGraph widget with minimal typing
     originalCallback: ((value: unknown) => void) | undefined,
     nodeId: string
   ) => {
     return (value: unknown) => {
       // 1. Update the widget value in LiteGraph (critical for LiteGraph state)
-      widget.value = value as string | number | boolean | object | undefined
+      // Validate that the value is of an acceptable type
+      if (
+        value !== null &&
+        value !== undefined &&
+        typeof value !== 'string' &&
+        typeof value !== 'number' &&
+        typeof value !== 'boolean' &&
+        typeof value !== 'object'
+      ) {
+        console.warn(`Invalid widget value type: ${typeof value}`)
+        return
+      }
+      widget.value = value
 
       // 2. Call the original callback if it exists
       if (originalCallback) {
@@ -361,6 +403,9 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
 
       // Store non-reactive reference
       nodeRefs.set(id, node)
+
+      // Set up widget callbacks BEFORE extracting data (critical order)
+      setupNodeWidgetCallbacks(node)
 
       // Extract and store safe data for Vue
       vueNodeData.set(id, extractVueNodeData(node))

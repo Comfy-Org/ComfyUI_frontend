@@ -25,13 +25,13 @@ import {
 } from '@/utils/widgetPropFilter'
 
 const props = defineProps<{
-  widget: SimplifiedWidget<any>
-  modelValue: any
+  widget: SimplifiedWidget<string | number | undefined>
+  modelValue: string | number | undefined
   readonly?: boolean
 }>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: any]
+  'update:modelValue': [value: string | number | undefined]
 }>()
 
 // Use the composable for consistent widget value handling
