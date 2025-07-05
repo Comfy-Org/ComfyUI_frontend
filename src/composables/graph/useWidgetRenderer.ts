@@ -44,7 +44,15 @@ export const useWidgetRenderer = () => {
       image: WidgetType.IMAGE,
       IMAGE: WidgetType.IMAGE,
       file: WidgetType.FILEUPLOAD,
-      FILEUPLOAD: WidgetType.FILEUPLOAD
+      FILEUPLOAD: WidgetType.FILEUPLOAD,
+
+      // Button widget
+      button: WidgetType.BUTTON,
+      BUTTON: WidgetType.BUTTON,
+
+      // Text-based widgets that don't have dedicated components yet
+      MARKDOWN: WidgetType.TEXTAREA, // Markdown should use textarea for now
+      customtext: WidgetType.TEXTAREA // Custom text widgets use textarea for multiline
     }
 
     // Get mapped enum key
@@ -53,13 +61,6 @@ export const useWidgetRenderer = () => {
     // Check if we have a component for this type
     if (enumKey && widgetTypeToComponent[enumKey]) {
       return enumKey
-    }
-
-    // Log unmapped widget types for debugging
-    if (process.env.NODE_ENV === 'development') {
-      console.warn(
-        `[useWidgetRenderer] Unknown widget type: ${widgetType}, falling back to WidgetInputText`
-      )
     }
 
     return WidgetType.STRING // Return enum key for WidgetInputText

@@ -441,11 +441,11 @@ watch(
 )
 
 // Transform state for viewport culling
-const { isNodeInViewport } = useTransformState()
+const { syncWithCanvas } = useTransformState()
 
 // Viewport culling settings - use feature flags as defaults but allow debug override
-const viewportCullingEnabled = ref(false) // Debug override, starts false for testing
-const cullingMargin = ref(0.2) // Debug override
+const viewportCullingEnabled = ref(true) // Enable viewport culling
+const cullingMargin = ref(0.2) // 20% margin outside viewport
 
 // Initialize from feature flags
 watch(
@@ -467,47 +467,63 @@ watch(
 // Replace problematic computed property with proper reactive system
 const nodesToRender = computed(() => {
   // Access performanceMetrics to trigger on RAF updates
-  const updateCount = performanceMetrics.updateTime
+  void performanceMetrics.updateTime
 
-  console.log(
-    '[GraphCanvas] Computing nodesToRender. renderAllNodes:',
-    renderAllNodes.value,
-    'vueNodeData size:',
-    vueNodeData.value.size,
-    'updateCount:',
-    updateCount,
-    'transformPaneEnabled:',
-    transformPaneEnabled.value,
-    'shouldRenderVueNodes:',
-    shouldRenderVueNodes.value
-  )
-  if (!renderAllNodes.value || !comfyApp.graph) {
-    console.log(
-      '[GraphCanvas] Early return - renderAllNodes:',
-      renderAllNodes.value,
-      'graph:',
-      !!comfyApp.graph
-    )
+  if (!renderAllNodes.value || !comfyApp.graph || !transformPaneEnabled.value) {
     return []
   }
 
   const allNodes = Array.from(vueNodeData.value.values())
 
-  // Apply viewport culling
-  if (viewportCullingEnabled.value && nodeManager) {
-    const filtered = allNodes.filter((nodeData) => {
-      const originalNode = nodeManager?.getNode(nodeData.id)
-      if (!originalNode) return false
+  // Apply viewport culling - check if node bounds intersect with viewport
+  if (
+    viewportCullingEnabled.value &&
+    nodeManager &&
+    canvasStore.canvas &&
+    comfyApp.canvas
+  ) {
+    const canvas = canvasStore.canvas
+    const manager = nodeManager
 
-      const inViewport = isNodeInViewport(
-        originalNode.pos,
-        originalNode.size,
-        canvasViewport.value,
-        cullingMargin.value
+    // Ensure transform is synced before checking visibility
+    syncWithCanvas(comfyApp.canvas)
+
+    const ds = canvas.ds
+
+    // Access transform time to make this reactive to transform changes
+    void lastTransformTime.value
+
+    // Work in screen space - viewport is simply the canvas element size
+    const viewport_width = canvas.canvas.width
+    const viewport_height = canvas.canvas.height
+
+    // Add margin that represents a constant distance in canvas space
+    // Convert canvas units to screen pixels by multiplying by scale
+    const canvasMarginDistance = 200 // Fixed margin in canvas units
+    const margin_x = canvasMarginDistance * ds.scale
+    const margin_y = canvasMarginDistance * ds.scale
+
+    const filtered = allNodes.filter((nodeData) => {
+      const node = manager.getNode(nodeData.id)
+      if (!node) return false
+
+      // Transform node position to screen space (same as DOM widgets)
+      const screen_x = (node.pos[0] + ds.offset[0]) * ds.scale
+      const screen_y = (node.pos[1] + ds.offset[1]) * ds.scale
+      const screen_width = node.size[0] * ds.scale
+      const screen_height = node.size[1] * ds.scale
+
+      // Check if node bounds intersect with expanded viewport (in screen space)
+      const isVisible = !(
+        screen_x + screen_width < -margin_x ||
+        screen_x > viewport_width + margin_x ||
+        screen_y + screen_height < -margin_y ||
+        screen_y > viewport_height + margin_y
       )
 
-      return inViewport
+      return isVisible
     })
+
     return filtered
   }
 
@@ -530,9 +546,42 @@ watch(
   }
 )
 
+// Update performance metrics when node counts change
+watch(
+  () => [vueNodeData.value.size, nodesToRender.value.length],
+  ([totalNodes, visibleNodes]) => {
+    performanceMetrics.nodeCount = totalNodes
+    performanceMetrics.culledCount = totalNodes - visibleNodes
+  }
+)
+
 // Integrate change detection with TransformPane RAF
+// Track previous transform to detect changes
+let lastScale = 1
+let lastOffsetX = 0
+let lastOffsetY = 0
+
 const handleTransformUpdate = (time: number) => {
   lastTransformTime.value = time
+
+  // Sync transform state only when it changes (avoids reflows)
+  if (comfyApp.canvas?.ds) {
+    const currentScale = comfyApp.canvas.ds.scale
+    const currentOffsetX = comfyApp.canvas.ds.offset[0]
+    const currentOffsetY = comfyApp.canvas.ds.offset[1]
+
+    if (
+      currentScale !== lastScale ||
+      currentOffsetX !== lastOffsetX ||
+      currentOffsetY !== lastOffsetY
+    ) {
+      syncWithCanvas(comfyApp.canvas)
+      lastScale = currentScale
+      lastOffsetX = currentOffsetX
+      lastOffsetY = currentOffsetY
+    }
+  }
+
   // Detect node changes during transform updates
   detectChangesInRAF()
 
@@ -706,7 +755,7 @@ const loadCustomNodesI18n = async () => {
       i18n.global.mergeLocaleMessage(locale, message)
     })
   } catch (error) {
-    console.error('Failed to load custom nodes i18n', error)
+    // Ignore i18n loading errors - not critical
   }
 }
 
@@ -735,9 +784,6 @@ onMounted(async () => {
     await settingStore.loadSettingValues()
   } catch (error) {
     if (error instanceof UnauthorizedError) {
-      console.log(
-        'Failed loading user settings, user unauthorized, cleaning local Comfy.userId'
-      )
       localStorage.removeItem('Comfy.userId')
       localStorage.removeItem('Comfy.userName')
       window.location.reload()

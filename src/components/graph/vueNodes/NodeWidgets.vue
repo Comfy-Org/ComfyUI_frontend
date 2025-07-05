@@ -58,56 +58,29 @@ const widgets = computed((): SafeWidgetData[] => {
   const info = nodeInfo.value
   if (!info?.widgets) return []
 
-  console.log('[NodeWidgets] Raw widgets from nodeInfo:', info.widgets)
-
   const filtered = (info.widgets as SafeWidgetData[]).filter(
     (w: SafeWidgetData) => !w.options?.hidden
   )
-  console.log('[NodeWidgets] Filtered widgets:', filtered)
-
   return filtered
 })
 
 // Only render widgets that have Vue component support
 const supportedWidgets = computed((): SafeWidgetData[] => {
   const allWidgets = widgets.value
-  console.log('[NodeWidgets] All widgets:', allWidgets)
-
   const supported = allWidgets.filter((widget: SafeWidgetData) => {
-    const isSupported = shouldRenderAsVue(widget)
-    console.log(
-      '[NodeWidgets] Widget:',
-      widget.name,
-      'type:',
-      widget.type,
-      'supported:',
-      isSupported
-    )
-    return isSupported
+    return shouldRenderAsVue(widget)
   })
-
-  console.log('[NodeWidgets] Supported widgets:', supported)
   return supported
 })
 
 // Get Vue component for widget
 const getVueComponent = (widget: SafeWidgetData) => {
   const componentName = getWidgetComponent(widget.type)
-  console.log(
-    '[NodeWidgets] Widget type:',
-    widget.type,
-    'Component name:',
-    componentName
-  )
-
   const component = widgetTypeToComponent[componentName]
-  console.log('[NodeWidgets] Resolved component:', component)
-
   return component || WidgetInputText // Fallback to text input
 }
 
 const getWidgetValue = (widget: SafeWidgetData): unknown => {
-  console.log('[NodeWidgets] Widget value for', widget.name, ':', widget.value)
   return widget.value
 }
 
