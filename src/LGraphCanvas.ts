@@ -29,7 +29,6 @@ import type {
 } from "./interfaces"
 import type { LGraph } from "./LGraph"
 import type {
-  CanvasMouseEvent,
   CanvasPointerEvent,
   CanvasPointerExtensions,
 } from "./types/events"
@@ -114,7 +113,7 @@ interface ICreateNodeOptions {
   // FIXME: Should not be optional
   /** choose a nodetype to add, AUTO to set at first good */
   nodeType?: string
-  e?: CanvasMouseEvent
+  e?: CanvasPointerEvent
   allow_searchbox?: boolean
 }
 
@@ -502,7 +501,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   /** to personalize the search box */
   onSearchBox?: (helper: Element, str: string, canvas: LGraphCanvas) => any
   onSearchBoxSelection?: (name: any, event: any, canvas: LGraphCanvas) => void
-  onMouse?: (e: CanvasMouseEvent) => boolean
+  onMouse?: (e: CanvasPointerEvent) => boolean
   /** to render background objects (behind nodes and connections) in the canvas affected by transform */
   onDrawBackground?: (ctx: CanvasRenderingContext2D, visible_area: any) => void
   /** to render foreground objects (above nodes and connections) in the canvas affected by transform */
@@ -590,7 +589,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   selected_group_resizing?: boolean
   /** @deprecated See {@link pointer}.{@link CanvasPointer.dragStarted dragStarted} */
   last_mouse_dragging?: boolean
-  onMouseDown?: (arg0: CanvasMouseEvent) => void
+  onMouseDown?: (arg0: CanvasPointerEvent) => void
   _highlight_pos?: Point
   _highlight_input?: INodeInputSlot
   // TODO: Check if panels are used
@@ -1727,7 +1726,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    */
   bindEvents(): void {
     if (this._events_binded) {
-      console.warn("LGraphCanvas: events already binded")
+      console.warn("LGraphCanvas: events already bound")
       return
     }
 
@@ -1771,7 +1770,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    */
   unbindEvents(): void {
     if (!this._events_binded) {
-      console.warn("LGraphCanvas: no events binded")
+      console.warn("LGraphCanvas: no events bound")
       return
     }
 
@@ -1911,7 +1910,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * @param node The node that the mouse is now over
    * @param e MouseEvent that is triggering this
    */
-  updateMouseOverNodes(node: LGraphNode | null, e: CanvasMouseEvent): void {
+  updateMouseOverNodes(node: LGraphNode | null, e: CanvasPointerEvent): void {
     if (!this.graph) throw new NullGraphError()
 
     const { pointer } = this
@@ -3150,7 +3149,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * Called when the mouse moves off the canvas.  Clears all node hover states.
    * @param e
    */
-  processMouseOut(e: MouseEvent): void {
+  processMouseOut(e: PointerEvent): void {
     // TODO: Check if document.contains(e.relatedTarget) - handle mouseover node textarea etc.
     this.adjustMouseEvent(e)
     this.updateMouseOverNodes(null, e)
@@ -3614,7 +3613,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    */
   processSelect<TPositionable extends Positionable = LGraphNode>(
     item: TPositionable | null | undefined,
-    e: CanvasMouseEvent | undefined,
+    e: CanvasPointerEvent | undefined,
     sticky: boolean = false,
   ): void {
     const addModifier = e?.shiftKey
@@ -3717,7 +3716,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   /** @deprecated See {@link LGraphCanvas.processSelect} */
-  processNodeSelected(item: LGraphNode, e: CanvasMouseEvent): void {
+  processNodeSelected(item: LGraphNode, e: CanvasPointerEvent): void {
     this.processSelect(
       item,
       e,
@@ -3894,7 +3893,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    */
   adjustMouseEvent<T extends MouseEvent>(
     e: T & Partial<CanvasPointerExtensions>,
-  ): asserts e is T & CanvasMouseEvent {
+  ): asserts e is T & CanvasPointerEvent {
     let clientX_rel = e.clientX
     let clientY_rel = e.clientY
 
@@ -4251,7 +4250,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   /** @returns If the pointer is over a link centre marker, the link segment it belongs to.  Otherwise, `undefined`.  */
-  #getLinkCentreOnPos(e: CanvasMouseEvent): LinkSegment | undefined {
+  #getLinkCentreOnPos(e: CanvasPointerEvent): LinkSegment | undefined {
     for (const linkSegment of this.renderedPaths) {
       const centre = linkSegment._pos
       if (!centre) continue
@@ -5676,7 +5675,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     return LGraphCanvas.getBoundaryNodes(this.selected_nodes)
   }
 
-  showLinkMenu(segment: LinkSegment, e: CanvasMouseEvent): boolean {
+  showLinkMenu(segment: LinkSegment, e: CanvasPointerEvent): boolean {
     const { graph } = this
     if (!graph) throw new NullGraphError()
 
@@ -6092,7 +6091,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     title: string,
     value: any,
     callback: (arg0: any) => void,
-    event: CanvasMouseEvent,
+    event: CanvasPointerEvent,
     multiline?: boolean,
   ): HTMLDivElement {
     const that = this
@@ -7505,7 +7504,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     return group.getMenuOptions()
   }
 
-  processContextMenu(node: LGraphNode | undefined, event: CanvasMouseEvent): void {
+  processContextMenu(node: LGraphNode | undefined, event: CanvasPointerEvent): void {
     const canvas = LGraphCanvas.active_canvas
     const ref_window = canvas.getCanvasWindow()
 

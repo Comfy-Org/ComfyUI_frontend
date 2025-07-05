@@ -27,7 +27,7 @@ import type { LGraph } from "./LGraph"
 import type { Reroute, RerouteId } from "./Reroute"
 import type { SubgraphInputNode } from "./subgraph/SubgraphInputNode"
 import type { SubgraphOutputNode } from "./subgraph/SubgraphOutputNode"
-import type { CanvasMouseEvent } from "./types/events"
+import type { CanvasPointerEvent } from "./types/events"
 import type { NodeLike } from "./types/NodeLike"
 import type { ISerialisedNode, SubgraphIO } from "./types/serialisation"
 import type { IBaseWidget, IWidgetOptions, TWidgetType, TWidgetValue } from "./types/widgets"
@@ -566,7 +566,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     canvas: LGraphCanvas,
     canvasElement: HTMLCanvasElement,
   ): void
-  onMouseLeave?(this: LGraphNode, e: CanvasMouseEvent): void
+  onMouseLeave?(this: LGraphNode, e: CanvasPointerEvent): void
   /**
    * Override the default slot menu options.
    */
@@ -585,10 +585,10 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     file: any,
   ): void
   onDropFile?(this: LGraphNode, file: any): void
-  onInputClick?(this: LGraphNode, index: number, e: CanvasMouseEvent): void
-  onInputDblClick?(this: LGraphNode, index: number, e: CanvasMouseEvent): void
-  onOutputClick?(this: LGraphNode, index: number, e: CanvasMouseEvent): void
-  onOutputDblClick?(this: LGraphNode, index: number, e: CanvasMouseEvent): void
+  onInputClick?(this: LGraphNode, index: number, e: CanvasPointerEvent): void
+  onInputDblClick?(this: LGraphNode, index: number, e: CanvasPointerEvent): void
+  onOutputClick?(this: LGraphNode, index: number, e: CanvasPointerEvent): void
+  onOutputDblClick?(this: LGraphNode, index: number, e: CanvasPointerEvent): void
   // TODO: Return type
   onGetPropertyInfo?(this: LGraphNode, property: string): any
   onNodeOutputAdd?(this: LGraphNode, value: unknown): void
@@ -601,26 +601,26 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     this: LGraphNode,
     entries: (IContextMenuValue<INodeSlotContextItem> | null)[],
   ): (IContextMenuValue<INodeSlotContextItem> | null)[]
-  onMouseUp?(this: LGraphNode, e: CanvasMouseEvent, pos: Point): void
-  onMouseEnter?(this: LGraphNode, e: CanvasMouseEvent): void
+  onMouseUp?(this: LGraphNode, e: CanvasPointerEvent, pos: Point): void
+  onMouseEnter?(this: LGraphNode, e: CanvasPointerEvent): void
   /** Blocks drag if return value is truthy. @param pos Offset from {@link LGraphNode.pos}. */
   onMouseDown?(
     this: LGraphNode,
-    e: CanvasMouseEvent,
+    e: CanvasPointerEvent,
     pos: Point,
     canvas: LGraphCanvas,
   ): boolean
   /** @param pos Offset from {@link LGraphNode.pos}. */
   onDblClick?(
     this: LGraphNode,
-    e: CanvasMouseEvent,
+    e: CanvasPointerEvent,
     pos: Point,
     canvas: LGraphCanvas,
   ): void
   /** @param pos Offset from {@link LGraphNode.pos}. */
   onNodeTitleDblClick?(
     this: LGraphNode,
-    e: CanvasMouseEvent,
+    e: CanvasPointerEvent,
     pos: Point,
     canvas: LGraphCanvas,
   ): void
@@ -652,7 +652,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
   onRemoved?(this: LGraphNode): void
   onMouseMove?(
     this: LGraphNode,
-    e: MouseEvent,
+    e: CanvasPointerEvent,
     pos: Point,
     arg2: LGraphCanvas,
   ): void

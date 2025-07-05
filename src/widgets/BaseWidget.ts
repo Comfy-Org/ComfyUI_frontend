@@ -1,6 +1,6 @@
 import type { Point } from "@/interfaces"
 import type { CanvasPointer, LGraphCanvas, LGraphNode, Size } from "@/litegraph"
-import type { CanvasMouseEvent, CanvasPointerEvent } from "@/types/events"
+import type { CanvasPointerEvent } from "@/types/events"
 import type { IBaseWidget } from "@/types/widgets"
 
 import { drawTextInArea } from "@/draw"
@@ -24,7 +24,7 @@ export interface DrawTruncatingTextOptions extends DrawWidgetOptions {
 }
 
 export interface WidgetEventOptions {
-  e: CanvasMouseEvent
+  e: CanvasPointerEvent
   node: LGraphNode
   canvas: LGraphCanvas
 }
@@ -75,7 +75,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget> impl
     canvas?: LGraphCanvas,
     node?: LGraphNode,
     pos?: Point,
-    e?: CanvasMouseEvent,
+    e?: CanvasPointerEvent,
   ): void
   mouse?(event: CanvasPointerEvent, pointerOffset: Point, node: LGraphNode): boolean
   computeSize?(width?: number): Size

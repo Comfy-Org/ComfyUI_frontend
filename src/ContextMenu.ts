@@ -347,7 +347,7 @@ export class ContextMenu<TValue = unknown> {
     const evt = document.createEvent("CustomEvent")
     evt.initCustomEvent(event_name, true, true, params)
     if (element.dispatchEvent) element.dispatchEvent(evt)
-    // else nothing seems binded here so nothing to do
+    // else nothing seems bound here so nothing to do
     return evt
   }
 
