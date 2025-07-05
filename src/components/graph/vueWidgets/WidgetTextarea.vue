@@ -3,7 +3,8 @@
     v-model="value"
     v-bind="filteredProps"
     :disabled="readonly"
-    class="w-full"
+    class="w-full text-xs"
+    size="small"
     rows="3"
   />
 </template>

@@ -1,9 +1,15 @@
+<!-- Needs custom color picker for alpha support -->
 <template>
   <div class="flex items-center justify-between">
     <label v-if="widget.name" class="text-sm opacity-80">{{
       widget.name
     }}</label>
-    <ColorPicker v-model="value" v-bind="filteredProps" :disabled="readonly" />
+    <ColorPicker
+      v-model="value"
+      v-bind="filteredProps"
+      :disabled="readonly"
+      inline
+    />
   </div>
 </template>
 

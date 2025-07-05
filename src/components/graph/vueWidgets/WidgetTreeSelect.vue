@@ -1,9 +1,15 @@
 <template>
-  <div class="flex items-center justify-between">
-    <label v-if="widget.name" class="text-sm opacity-80">{{
+  <div class="flex items-center justify-between gap-4">
+    <label v-if="widget.name" class="text-xs opacity-80 min-w-[4em] truncate">{{
       widget.name
     }}</label>
-    <TreeSelect v-model="value" v-bind="filteredProps" :disabled="readonly" />
+    <TreeSelect
+      v-model="value"
+      v-bind="filteredProps"
+      :disabled="readonly"
+      class="flex-grow min-w-[8em] max-w-[20em] text-xs"
+      size="small"
+    />
   </div>
 </template>
 
