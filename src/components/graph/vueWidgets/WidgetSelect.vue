@@ -9,6 +9,9 @@
       v-bind="filteredProps"
       :disabled="readonly"
       class="flex-grow min-w-[8em] max-w-[20em] text-xs"
+      :pt="{
+        option: 'text-xs'
+      }"
       @update:model-value="onChange"
     />
   </div>
