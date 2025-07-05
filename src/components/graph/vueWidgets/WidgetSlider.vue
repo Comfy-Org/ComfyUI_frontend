@@ -18,7 +18,8 @@
         :min="widget.options?.min"
         :max="widget.options?.max"
         :step="widget.options?.step"
-        class="w-[6em] text-center text-xs"
+        class="w-[4em] text-center text-xs px-0"
+        size="small"
         @input="handleInputChange"
       />
     </div>
@@ -71,3 +72,17 @@ const handleInputChange = (event: Event) => {
   }
 }
 </script>
+
+<style scoped>
+/* Remove number input spinners */
+:deep(input[type='number']::-webkit-inner-spin-button),
+:deep(input[type='number']::-webkit-outer-spin-button) {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+:deep(input[type='number']) {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+</style>
