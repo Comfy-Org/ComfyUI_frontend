@@ -7,6 +7,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { SettingParams } from '@/types/settingTypes'
 import type { TreeNode } from '@/types/treeExplorerTypes'
+import { compareVersions } from '@/utils/formatUtil'
 
 export const getSettingInfo = (setting: SettingParams) => {
   const parts = setting.category || setting.id.split('.')
@@ -83,6 +84,26 @@ export const useSettingStore = defineStore('setting', () => {
    */
   function getDefaultValue<K extends keyof Settings>(key: K): Settings[K] {
     const param = settingsById.value[key]
+
+    if (param?.defaultsByInstallVersion) {
+      const installedVersion = get('Comfy.InstalledVersion')
+
+      if (installedVersion) {
+        const sortedVersions = Object.keys(param.defaultsByInstallVersion).sort(
+          (a, b) => compareVersions(a, b)
+        )
+
+        for (const version of sortedVersions.reverse()) {
+          if (compareVersions(installedVersion, version) >= 0) {
+            const versionedDefault = param.defaultsByInstallVersion[version]
+            return typeof versionedDefault === 'function'
+              ? versionedDefault()
+              : versionedDefault
+          }
+        }
+      }
+    }
+
     return typeof param?.defaultValue === 'function'
       ? param.defaultValue()
       : param?.defaultValue
