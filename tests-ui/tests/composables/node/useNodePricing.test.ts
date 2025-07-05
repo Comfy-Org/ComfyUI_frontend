@@ -335,7 +335,31 @@ describe('useNodePricing', () => {
       const node = createMockNode('IdeogramV3', [])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.03-0.08/Run (varies with rendering speed)')
+      expect(price).toBe(
+        '$0.03-0.08 x num_images/Run (varies with rendering speed & num_images)'
+      )
+    })
+
+    it('should multiply price by num_images for Quality rendering speed', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('IdeogramV3', [
+        { name: 'rendering_speed', value: 'Quality' },
+        { name: 'num_images', value: 3 }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.24/Run') // 0.08 * 3
+    })
+
+    it('should multiply price by num_images for Turbo rendering speed', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('IdeogramV3', [
+        { name: 'rendering_speed', value: 'Turbo' },
+        { name: 'num_images', value: 5 }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.15/Run') // 0.03 * 5
     })
   })
 
@@ -742,6 +766,29 @@ describe('useNodePricing', () => {
         expect(widgetNames).toEqual([])
       })
 
+      describe('Ideogram nodes with num_images parameter', () => {
+        it('should return correct widget names for IdeogramV1', () => {
+          const { getRelevantWidgetNames } = useNodePricing()
+
+          const widgetNames = getRelevantWidgetNames('IdeogramV1')
+          expect(widgetNames).toEqual(['num_images'])
+        })
+
+        it('should return correct widget names for IdeogramV2', () => {
+          const { getRelevantWidgetNames } = useNodePricing()
+
+          const widgetNames = getRelevantWidgetNames('IdeogramV2')
+          expect(widgetNames).toEqual(['num_images'])
+        })
+
+        it('should return correct widget names for IdeogramV3', () => {
+          const { getRelevantWidgetNames } = useNodePricing()
+
+          const widgetNames = getRelevantWidgetNames('IdeogramV3')
+          expect(widgetNames).toEqual(['rendering_speed', 'num_images'])
+        })
+      })
+
       describe('Recraft nodes with n parameter', () => {
         it('should return correct widget names for RecraftTextToImageNode', () => {
           const { getRelevantWidgetNames } = useNodePricing()
@@ -756,6 +803,54 @@ describe('useNodePricing', () => {
           const widgetNames = getRelevantWidgetNames('RecraftTextToVectorNode')
           expect(widgetNames).toEqual(['n'])
         })
+      })
+    })
+
+    describe('Ideogram nodes dynamic pricing', () => {
+      it('should calculate dynamic pricing for IdeogramV1 based on num_images value', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        const node = createMockNode('IdeogramV1', [
+          { name: 'num_images', value: 3 }
+        ])
+
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe('$0.18/Run') // 0.06 * 3
+      })
+
+      it('should calculate dynamic pricing for IdeogramV2 based on num_images value', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        const node = createMockNode('IdeogramV2', [
+          { name: 'num_images', value: 4 }
+        ])
+
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe('$0.32/Run') // 0.08 * 4
+      })
+
+      it('should fall back to static display when num_images widget is missing for IdeogramV1', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        const node = createMockNode('IdeogramV1', [])
+
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe('$0.06 x num_images/Run')
+      })
+
+      it('should fall back to static display when num_images widget is missing for IdeogramV2', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        const node = createMockNode('IdeogramV2', [])
+
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe('$0.08 x num_images/Run')
+      })
+
+      it('should handle edge case when num_images value is 1 for IdeogramV1', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        const node = createMockNode('IdeogramV1', [
+          { name: 'num_images', value: 1 }
+        ])
+
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe('$0.06/Run') // 0.06 * 1
       })
     })
 

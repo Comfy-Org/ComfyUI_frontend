@@ -78,6 +78,7 @@ import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
 import { useColorPaletteService } from '@/services/colorPaletteService'
+import { newUserService } from '@/services/newUserService'
 import { useWorkflowService } from '@/services/workflowService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -302,6 +303,9 @@ onMounted(async () => {
   CORE_SETTINGS.forEach((setting) => {
     settingStore.addSetting(setting)
   })
+
+  await newUserService().initializeIfNewUser(settingStore)
+
   // @ts-expect-error fixme ts strict error
   await comfyApp.setup(canvasRef.value)
   canvasStore.canvas = comfyApp.canvas
