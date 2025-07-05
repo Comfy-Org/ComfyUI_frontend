@@ -71,6 +71,7 @@ const {
 // Interaction state
 const isInteracting = ref(false)
 let interactionTimeout: number | null = null
+let wheelTimeout: number | null = null
 
 // Provide transform utilities to child components
 provide('transformState', {
@@ -81,6 +82,7 @@ provide('transformState', {
 })
 
 // Handle will-change for performance
+// This adds/removes "will-change: transform" CSS property to optimize GPU rendering during interactions
 const setInteracting = (interactive: boolean) => {
   isInteracting.value = interactive
 
@@ -105,10 +107,6 @@ const handlePointerDown = (event: PointerEvent) => {
   if (nodeElement) {
     // TODO: Emit event for node interaction
     // Node interaction with nodeId will be handled in future implementation
-    console.log(
-      'Node interaction detected:',
-      nodeElement.getAttribute('data-node-id')
-    )
   }
 }
 
@@ -142,26 +140,53 @@ const stopSync = () => {
 }
 
 // Canvas event listeners
-const handleCanvasInteractionStart = () => setInteracting(true)
-const handleCanvasInteractionEnd = () => setInteracting(false)
+const handleWheel = () => {
+  // Clear any existing wheel timeout
+  if (wheelTimeout !== null) {
+    clearTimeout(wheelTimeout)
+  }
+
+  // Start interaction if not already active
+  if (!isInteracting.value) {
+    setInteracting(true)
+  }
+
+  // Set timeout to end interaction after wheel stops
+  wheelTimeout = window.setTimeout(() => {
+    setInteracting(false)
+    wheelTimeout = null
+  }, 150) // 150ms after last wheel event
+}
+
+const handleCanvasInteractionStart = () => {
+  setInteracting(true)
+}
+
+const handleCanvasInteractionEnd = () => {
+  setInteracting(false)
+}
 
 onMounted(() => {
   startSync()
 
   // Listen to canvas interaction events if available
-  if (props.canvas) {
-    props.canvas.canvas.addEventListener('wheel', handleCanvasInteractionStart)
+  if (props.canvas && props.canvas.canvas) {
+    // Use capture phase (true) to intercept events before LiteGraph
+    props.canvas.canvas.addEventListener('wheel', handleWheel, true)
     props.canvas.canvas.addEventListener(
       'pointerdown',
-      handleCanvasInteractionStart
+      handleCanvasInteractionStart,
+      true
     )
     props.canvas.canvas.addEventListener(
       'pointerup',
-      handleCanvasInteractionEnd
+      handleCanvasInteractionEnd,
+      true
     )
     props.canvas.canvas.addEventListener(
       'pointercancel',
-      handleCanvasInteractionEnd
+      handleCanvasInteractionEnd,
+      true
     )
   }
 })
@@ -173,23 +198,27 @@ onUnmounted(() => {
     clearTimeout(interactionTimeout)
   }
 
-  // Clean up event listeners
-  if (props.canvas) {
-    props.canvas.canvas.removeEventListener(
-      'wheel',
-      handleCanvasInteractionStart
-    )
+  if (wheelTimeout !== null) {
+    clearTimeout(wheelTimeout)
+  }
+
+  // Clean up event listeners (must match capture phase)
+  if (props.canvas && props.canvas.canvas) {
+    props.canvas.canvas.removeEventListener('wheel', handleWheel, true)
     props.canvas.canvas.removeEventListener(
       'pointerdown',
-      handleCanvasInteractionStart
+      handleCanvasInteractionStart,
+      true
     )
     props.canvas.canvas.removeEventListener(
       'pointerup',
-      handleCanvasInteractionEnd
+      handleCanvasInteractionEnd,
+      true
     )
     props.canvas.canvas.removeEventListener(
       'pointercancel',
-      handleCanvasInteractionEnd
+      handleCanvasInteractionEnd,
+      true
     )
   }
 })
