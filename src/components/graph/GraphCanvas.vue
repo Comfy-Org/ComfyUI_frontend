@@ -32,7 +32,7 @@
   <!-- TransformPane for Vue node rendering (development) -->
   <TransformPane
     v-if="transformPaneEnabled && canvasStore.canvas && comfyAppReady"
-    :canvas="canvasStore.canvas as any"
+    :canvas="canvasStore.canvas as LGraphCanvas"
     :viewport="canvasViewport"
     :show-debug-overlay="showPerformanceOverlay"
     @raf-status-change="rafActive = $event"
@@ -215,7 +215,7 @@
 </template>
 
 <script setup lang="ts">
-import type { LGraphNode } from '@comfyorg/litegraph'
+import type { LGraphCanvas, LGraphNode } from '@comfyorg/litegraph'
 import { useEventListener, whenever } from '@vueuse/core'
 import {
   computed,
@@ -392,10 +392,14 @@ watch(canvasRef, () => {
 
 // Vue node lifecycle management - initialize after graph is ready
 let nodeManager: ReturnType<typeof useGraphNodeManager> | null = null
-const vueNodeData = ref<Map<string, any>>(new Map())
-const nodeState = ref<Map<string, NodeState>>(new Map())
-const nodePositions = ref<Map<string, { x: number; y: number }>>(new Map())
-const nodeSizes = ref<Map<string, { width: number; height: number }>>(new Map())
+const vueNodeData = ref<ReadonlyMap<string, VueNodeData>>(new Map())
+const nodeState = ref<ReadonlyMap<string, NodeState>>(new Map())
+const nodePositions = ref<ReadonlyMap<string, { x: number; y: number }>>(
+  new Map()
+)
+const nodeSizes = ref<ReadonlyMap<string, { width: number; height: number }>>(
+  new Map()
+)
 let detectChangesInRAF = () => {}
 const performanceMetrics = reactive({
   frameTime: 0,
@@ -414,16 +418,10 @@ const initializeNodeManager = () => {
   nodeManager = useGraphNodeManager(comfyApp.graph)
 
   // Use the manager's reactive maps directly
-  vueNodeData.value = nodeManager.vueNodeData as Map<string, any>
-  nodeState.value = nodeManager.nodeState as Map<string, NodeState>
-  nodePositions.value = nodeManager.nodePositions as Map<
-    string,
-    { x: number; y: number }
-  >
-  nodeSizes.value = nodeManager.nodeSizes as Map<
-    string,
-    { width: number; height: number }
-  >
+  vueNodeData.value = nodeManager.vueNodeData
+  nodeState.value = nodeManager.nodeState
+  nodePositions.value = nodeManager.nodePositions
+  nodeSizes.value = nodeManager.nodeSizes
 
   detectChangesInRAF = nodeManager.detectChangesInRAF
   Object.assign(performanceMetrics, nodeManager.performanceMetrics)
@@ -856,6 +854,12 @@ onUnmounted(() => {
   if (fpsRafId !== null) {
     cancelAnimationFrame(fpsRafId)
     fpsRafId = null
+  }
+
+  // Clean up node manager
+  if (nodeManager) {
+    nodeManager.cleanup()
+    nodeManager = null
   }
 })
 </script>
