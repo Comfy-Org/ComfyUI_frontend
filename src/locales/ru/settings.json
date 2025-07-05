@@ -293,6 +293,15 @@
       "right": "справа"
     }
   },
+  "Comfy_Sidebar_RecentItems_MaxCount": {
+    "name": "Максимальное количество недавних элементов в боковой панели"
+  },
+  "Comfy_Sidebar_RecentItems_ShowRecentlyAdded": {
+    "name": "Боковая панель: показывать недавно добавленные элементы"
+  },
+  "Comfy_Sidebar_RecentItems_ShowRecentlyUsed": {
+    "name": "Боковая панель: показывать недавно использованные элементы"
+  },
   "Comfy_Sidebar_Size": {
     "name": "Размер боковой панели",
     "options": {

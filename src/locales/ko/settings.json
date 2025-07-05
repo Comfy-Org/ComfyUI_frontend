@@ -293,6 +293,15 @@
       "right": "오른쪽"
     }
   },
+  "Comfy_Sidebar_RecentItems_MaxCount": {
+    "name": "사이드바 최근 항목 최대 개수"
+  },
+  "Comfy_Sidebar_RecentItems_ShowRecentlyAdded": {
+    "name": "사이드바에 최근 추가된 항목 표시"
+  },
+  "Comfy_Sidebar_RecentItems_ShowRecentlyUsed": {
+    "name": "사이드바에 최근 사용 항목 표시"
+  },
   "Comfy_Sidebar_Size": {
     "name": "사이드바 크기",
     "options": {

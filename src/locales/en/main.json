@@ -448,6 +448,10 @@
       }
     },
     "modelLibrary": "Model Library",
+    "modelLibraryTab": {
+      "recentlyAddedModels": "Recently Added Models",
+      "recentlyUsedModels": "Recently Used Models"
+    },
     "downloads": "Downloads",
     "queueTab": {
       "showFlatList": "Show Flat List",
@@ -475,7 +479,9 @@
       "workflowTreeType": {
         "browse": "Browse",
         "bookmarks": "Bookmarks",
-        "open": "Open"
+        "open": "Open",
+        "recentlyAddedWorkflows": "Recently Added Workflows",
+        "recentlyUsedWorkflows": "Recently Used Workflows"
       }
     }
   },
