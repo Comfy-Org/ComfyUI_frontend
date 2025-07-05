@@ -44,3 +44,13 @@ const filteredProps = computed(() =>
   filterWidgetProps(props.widget.options, STANDARD_EXCLUDED_PROPS)
 )
 </script>
+
+<style scoped>
+:deep(.p-toggleswitch .p-toggleswitch-slider) {
+  border: 1px solid transparent;
+}
+
+:deep(.p-toggleswitch:hover .p-toggleswitch-slider) {
+  border-color: currentColor;
+}
+</style>
