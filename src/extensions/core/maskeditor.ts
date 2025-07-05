@@ -4854,7 +4854,7 @@ class KeyboardManager {
   private maskEditor: MaskEditorDialog
   private messageBroker: MessageBroker
 
-  // Binded functions, for use in addListeners and removeListeners
+  // Bound functions, for use in addListeners and removeListeners
   private handleKeyDownBound = this.handleKeyDown.bind(this)
   private handleKeyUpBound = this.handleKeyUp.bind(this)
   private clearKeysBound = this.clearKeys.bind(this)
