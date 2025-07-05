@@ -1,12 +1,13 @@
 <template>
-  <div class="flex flex-col gap-1">
-    <label v-if="widget.name" class="text-sm opacity-80">{{
+  <div class="flex items-center justify-between gap-4">
+    <label v-if="widget.name" class="text-xs opacity-80 min-w-[4em] truncate">{{
       widget.name
     }}</label>
     <InputText
       v-model="localValue"
       v-bind="filteredProps"
       :disabled="readonly"
+      class="flex-grow min-w-[8em] max-w-[20em] text-xs"
       @update:model-value="onChange"
     />
   </div>
