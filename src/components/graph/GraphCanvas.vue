@@ -158,41 +158,16 @@
           Vue Nodes: {{ shouldRenderVueNodes ? 'Enabled' : 'Disabled' }}
         </p>
         <p class="text-muted text-xs">
-          Viewport Culling:
-          {{ isViewportCullingEnabled ? 'Enabled' : 'Disabled' }}
-        </p>
-        <p class="text-muted text-xs">
           Dev Mode: {{ isDevModeEnabled ? 'Enabled' : 'Disabled' }}
         </p>
       </div>
 
-      <!-- Node Rendering Options -->
+      <!-- Performance Options -->
       <div
         v-if="transformPaneEnabled"
         class="pt-2 border-t border-surface-200 dark-theme:border-surface-700"
       >
-        <h4 class="font-semibold mb-1">Debug Overrides</h4>
-        <label class="flex items-center gap-2 mb-1">
-          <input v-model="renderAllNodes" type="checkbox" />
-          <span>Force Render All Nodes</span>
-        </label>
-        <label class="flex items-center gap-2 mb-1">
-          <input v-model="viewportCullingEnabled" type="checkbox" />
-          <span>Debug: Viewport Culling</span>
-        </label>
-        <div v-if="viewportCullingEnabled" class="ml-4 mb-1">
-          <label class="text-xs">
-            Culling Margin: {{ (cullingMargin * 100).toFixed(0) }}%
-          </label>
-          <input
-            v-model.number="cullingMargin"
-            type="range"
-            min="0"
-            max="1"
-            step="0.05"
-            class="w-full"
-          />
-        </div>
+        <h4 class="font-semibold mb-1">Debug Options</h4>
         <label class="flex items-center gap-2">
           <input v-model="showPerformanceOverlay" type="checkbox" />
           <span>Show Performance Overlay</span>
@@ -306,8 +281,8 @@ const selectionToolboxEnabled = computed(() =>
 // Feature flags
 const {
   shouldRenderVueNodes,
-  isViewportCullingEnabled,
-  cullingMargin: featureCullingMargin,
+  // isViewportCullingEnabled, // Unused
+  // cullingMargin: featureCullingMargin, // Unused
   isDevModeEnabled
 } = useFeatureFlags()
 
@@ -343,7 +318,6 @@ const lastTransformTime = shallowRef(0)
 const rafActive = shallowRef(false)
 
 // Rendering options
-const renderAllNodes = ref(true) // Default to true
 const showPerformanceOverlay = ref(false)
 
 // FPS tracking
@@ -411,6 +385,9 @@ const performanceMetrics = reactive({
 })
 
 // Initialize node manager when graph becomes available
+// Add a reactivity trigger to force computed re-evaluation
+const nodeDataTrigger = ref(0)
+
 const initializeNodeManager = () => {
   if (!comfyApp.graph || nodeManager) {
     return
@@ -426,6 +403,9 @@ const initializeNodeManager = () => {
 
   detectChangesInRAF = nodeManager.detectChangesInRAF
   Object.assign(performanceMetrics, nodeManager.performanceMetrics)
+
+  // Force computed properties to re-evaluate
+  nodeDataTrigger.value++
 }
 
 // Watch for graph availability
@@ -442,45 +422,23 @@ watch(
 // Transform state for viewport culling
 const { syncWithCanvas } = useTransformState()
 
-// Viewport culling settings - use feature flags as defaults but allow debug override
-const viewportCullingEnabled = ref(true) // Enable viewport culling
-const cullingMargin = ref(0.2) // 20% margin outside viewport
-
-// Initialize from feature flags
-watch(
-  isViewportCullingEnabled,
-  (enabled) => {
-    viewportCullingEnabled.value = enabled
-  },
-  { immediate: true }
-)
-
-watch(
-  featureCullingMargin,
-  (margin) => {
-    cullingMargin.value = margin
-  },
-  { immediate: true }
-)
+// const cullingMargin = 0.2 // 20% margin outside viewport (unused)
 
 // Replace problematic computed property with proper reactive system
 const nodesToRender = computed(() => {
   // Access performanceMetrics to trigger on RAF updates
   void performanceMetrics.updateTime
+  // Access trigger to force re-evaluation after nodeManager initialization
+  void nodeDataTrigger.value
 
-  if (!renderAllNodes.value || !comfyApp.graph || !transformPaneEnabled.value) {
+  if (!comfyApp.graph || !transformPaneEnabled.value) {
     return []
   }
 
   const allNodes = Array.from(vueNodeData.value.values())
 
   // Apply viewport culling - check if node bounds intersect with viewport
-  if (
-    viewportCullingEnabled.value &&
-    nodeManager &&
-    canvasStore.canvas &&
-    comfyApp.canvas
-  ) {
+  if (nodeManager && canvasStore.canvas && comfyApp.canvas) {
     const canvas = canvasStore.canvas
     const manager = nodeManager
 
