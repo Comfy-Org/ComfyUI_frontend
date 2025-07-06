@@ -1,6 +1,6 @@
 <template>
   <div
-    class="subgraph-breadcrumb w-full"
+    class="subgraph-breadcrumb w-auto"
     :class="{
       'subgraph-breadcrumb-collapse': collapseTabs,
       'subgraph-breadcrumb-overflow': overflowingTabs
@@ -155,6 +155,8 @@ onUpdated(() => {
 
 <style scoped>
 .subgraph-breadcrumb:not(:empty) {
+  flex: auto;
+  flex-shrink: 10000;
   min-width: 120px;
 }
 

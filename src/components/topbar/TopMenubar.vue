@@ -15,7 +15,10 @@
     >
       <CommandMenubar />
       <div class="flex-grow min-w-0 app-drag h-full"></div>
-      <div ref="menuRight" class="comfyui-menu-right flex-shrink-0" />
+      <div
+        ref="menuRight"
+        class="comfyui-menu-right flex-shrink-1 overflow-auto"
+      />
       <Actionbar />
       <CurrentUserButton class="flex-shrink-0" />
     </div>
@@ -57,6 +60,7 @@ const menuRight = ref<HTMLDivElement | null>(null)
 // Menu-right holds legacy topbar elements attached by custom scripts
 onMounted(() => {
   if (menuRight.value) {
+    app.menu.element.style.width = 'fit-content'
     menuRight.value.appendChild(app.menu.element)
   }
 })
