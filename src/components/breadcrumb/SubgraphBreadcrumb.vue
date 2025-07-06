@@ -1,37 +1,27 @@
 <template>
   <div
-    v-if="workflowStore.isSubgraphActive"
-    class="py-2 subgraph-breadcrumb w-full"
+    class="subgraph-breadcrumb w-full"
     :class="{
       'subgraph-breadcrumb-collapse': collapseTabs,
       'subgraph-breadcrumb-overflow': overflowingTabs
     }"
     :style="{
       '--p-breadcrumb-gap': `${ITEM_GAP}px`,
-      '--p-breadcrumb-item-min-width': `${MIN_WIDTH}px`
+      '--p-breadcrumb-item-min-width': `${MIN_WIDTH}px`,
+      '--p-breadcrumb-item-padding': `${ITEM_PADDING}px`
     }"
   >
     <Breadcrumb
       ref="breadcrumbRef"
-      class="bg-transparent"
-      :home="home"
+      class="bg-transparent p-0"
       :model="items"
       aria-label="Graph navigation"
     >
       <template #item="{ item }">
-        <a
-          v-tooltip.bottom="item.label"
-          href="#"
-          class="cursor-pointer p-breadcrumb-item-link"
-          @click="(event) => item.command?.({ item, originalEvent: event })"
-        >
-          <i
-            v-if="item.icon"
-            :class="item.icon"
-            class="p-breadcrumb-item-icon"
-          />
-          <span class="p-breadcrumb-item-label">{{ item.label }}</span>
-        </a>
+        <SubgraphBreadcrumbItem
+          :item="item"
+          :is-active="item === items.at(-1)"
+        />
       </template>
       <template #separator
         ><span style="transform: scale(1.5)"> / </span></template
@@ -46,6 +36,7 @@ import Breadcrumb from 'primevue/breadcrumb'
 import type { MenuItem } from 'primevue/menuitem'
 import { computed, onUpdated, ref, watch } from 'vue'
 
+import SubgraphBreadcrumbItem from '@/components/breadcrumb/SubgraphBreadcrumbItem.vue'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
@@ -53,6 +44,7 @@ import { useWorkflowStore } from '@/stores/workflowStore'
 
 const MIN_WIDTH = 28
 const ITEM_GAP = 8
+const ITEM_PADDING = 8
 
 const workflowStore = useWorkflowStore()
 const navigationStore = useSubgraphNavigationStore()
@@ -70,8 +62,6 @@ const breadcrumbElement = computed(() => {
 })
 
 const items = computed(() => {
-  if (!navigationStore.navigationStack.length) return []
-
   const items = navigationStore.navigationStack.map<MenuItem>((subgraph) => ({
     label: subgraph.name,
     command: () => {
@@ -82,12 +72,13 @@ const items = computed(() => {
     }
   }))
 
-  return [...items]
+  return [home.value, ...items]
 })
 
 const home = computed(() => ({
   label: workflowName.value,
   icon: 'pi pi-home',
+  key: 'root',
   command: () => {
     const canvas = useCanvasStore().getCanvas()
     if (!canvas.graph) throw new TypeError('Canvas has no graph')
@@ -135,8 +126,9 @@ watch(breadcrumbElement, (el) => {
           const separator = separators[separators.length - 1] as HTMLElement
           const separatorWidth = separator.offsetWidth
 
-          // items + separators + gaps + home icon
-          const itemsWidth = MIN_WIDTH * items.length + 20
+          // items + separators + gaps + icons
+          const itemsWidth =
+            (MIN_WIDTH + ITEM_PADDING + ITEM_PADDING) * items.length + 40
           const separatorsWidth = (items.length - 1) * separatorWidth
           const gapsWidth = (items.length - 1) * (ITEM_GAP * 2)
           const totalWidth = itemsWidth + separatorsWidth + gapsWidth
@@ -167,26 +159,23 @@ onUpdated(() => {
 }
 
 .subgraph-breadcrumb,
-:deep(.p-breadcrumb),
-:deep(.p-breadcrumb-item) {
+:deep(.p-breadcrumb) {
   @apply overflow-hidden;
 }
 
-:deep(.p-breadcrumb-item:first-child) {
-  min-width: calc(var(--p-breadcrumb-item-min-width) + 20px);
-}
-
 :deep(.p-breadcrumb-item) {
-  min-width: var(--p-breadcrumb-item-min-width);
+  @apply flex items-center rounded-lg overflow-hidden;
+  min-width: calc(var(--p-breadcrumb-item-min-width) + 1rem);
 }
 
-:deep(.p-breadcrumb-item-link),
-:deep(.p-breadcrumb-item-icon) {
-  @apply select-none;
+:deep(.p-breadcrumb-item:has(.p-breadcrumb-item-link-icon-visible)) {
+  min-width: calc(var(--p-breadcrumb-item-min-width) + 1rem + 20px);
 }
 
-:deep(.p-breadcrumb-item-label) {
-  @apply whitespace-nowrap text-ellipsis overflow-hidden min-w-8;
+:deep(.p-breadcrumb-item:hover),
+:deep(.p-breadcrumb-item:has(.p-breadcrumb-item-link-menu-visible)) {
+  background-color: color-mix(in srgb, var(--fg-color) 10%, transparent);
+  color: var(--fg-color);
 }
 </style>
 
@@ -194,15 +183,13 @@ onUpdated(() => {
 .subgraph-breadcrumb-collapse .p-breadcrumb-list {
   .p-breadcrumb-item,
   .p-breadcrumb-separator {
-    display: none;
+    @apply hidden;
   }
 
-  /* .p-breadcrumb-item:first-child, */
-  /* .p-breadcrumb-item:first-child+.p-breadcrumb-separator, */
   .p-breadcrumb-item:nth-last-child(3),
   .p-breadcrumb-separator:nth-last-child(2),
   .p-breadcrumb-item:nth-last-child(1) {
-    display: block;
+    @apply block;
   }
 }
 </style>

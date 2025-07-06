@@ -1,8 +1,8 @@
 <template>
   <div
-    class="p-1 flex items-center cursor-pointer m-1 rounded-md hover:bg-white/20"
+    class="comfyui-logo-wrapper p-1 flex items-center cursor-pointer m-1 rounded-md"
     :class="{
-      'bg-white/20': menuRef?.visible
+      'comfyui-logo-menu-visible': menuRef?.visible
     }"
     @click="menuRef?.toggle($event)"
   >
@@ -195,6 +195,11 @@ const translatedItems = computed(() => {
   background: var(--p-content-hover-background);
   border-color: var(--p-content-border-color);
   border-style: solid;
+}
+
+.comfyui-logo-menu-visible,
+.comfyui-logo-wrapper:hover {
+  background-color: color-mix(in srgb, var(--fg-color) 10%, transparent);
 }
 </style>
 

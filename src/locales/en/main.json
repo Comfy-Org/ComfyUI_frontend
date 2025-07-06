@@ -1598,5 +1598,11 @@
   "whatsNewPopup": {
     "learnMore": "Learn more",
     "noReleaseNotes": "No release notes available."
+  },
+  "breadcrumbsMenu": {
+    "duplicate": "Duplicate",
+    "clearWorkflow": "Clear Workflow",
+    "deleteWorkflow": "Delete Workflow",
+    "enterNewName": "Enter new name"
   }
 }
