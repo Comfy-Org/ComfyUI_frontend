@@ -947,6 +947,60 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
 
         return '$0.0172/Run'
       }
+    },
+    MoonvalleyTxt2VideoNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const lengthWidget = node.widgets?.find(
+          (w) => w.name === 'length'
+        ) as IComboWidget
+
+        if (!lengthWidget) return '$1.50-3.00/Run (varies with length)'
+
+        const length = String(lengthWidget.value)
+        if (length === '5s') {
+          return '$1.50/Run'
+        } else if (length === '10s') {
+          return '$3.00/Run'
+        }
+
+        return '$1.50/Run'
+      }
+    },
+    MoonvalleyImg2VideoNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const lengthWidget = node.widgets?.find(
+          (w) => w.name === 'length'
+        ) as IComboWidget
+
+        if (!lengthWidget) return '$1.50-3.00/Run (varies with length)'
+
+        const length = String(lengthWidget.value)
+        if (length === '5s') {
+          return '$1.50/Run'
+        } else if (length === '10s') {
+          return '$3.00/Run'
+        }
+
+        return '$1.50/Run'
+      }
+    },
+    MoonvalleyVideo2VideoNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const lengthWidget = node.widgets?.find(
+          (w) => w.name === 'length'
+        ) as IComboWidget
+
+        if (!lengthWidget) return '$2.00-4.00/Run (varies with length)'
+
+        const length = String(lengthWidget.value)
+        if (length === '5s') {
+          return '$2.00/Run'
+        } else if (length === '10s') {
+          return '$4.00/Run'
+        }
+
+        return '$2.00/Run'
+      }
     }
   }
 
@@ -1015,7 +1069,10 @@ export const useNodePricing = () => {
       RecraftVectorizeImageNode: ['n'],
       RecraftGenerateColorFromImageNode: ['n'],
       RecraftGenerateImageNode: ['n'],
-      RecraftGenerateVectorImageNode: ['n']
+      RecraftGenerateVectorImageNode: ['n'],
+      MoonvalleyTxt2VideoNode: ['length'],
+      MoonvalleyImg2VideoNode: ['length'],
+      MoonvalleyVideo2VideoNode: ['length']
     }
     return widgetMap[nodeType] || []
   }
