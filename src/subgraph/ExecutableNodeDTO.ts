@@ -194,6 +194,17 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     if (node.isVirtualNode) {
       if (this.inputs.at(slot)) return this.resolveInput(slot, visited)
 
+      // Fallback check for nodes performing link redirection
+      const virtualLink = this.node.getInputLink(slot)
+      if (virtualLink) {
+        const outputNode = this.graph.getNodeById(virtualLink.origin_id)
+        if (!outputNode) throw new InvalidLinkError(`Virtual node failed to resolve parent [${this.id}] slot [${slot}]`)
+
+        const outputNodeDto = new ExecutableNodeDTO(outputNode, this.subgraphNodePath, this.subgraphNode)
+
+        return outputNodeDto.resolveOutput(virtualLink.origin_slot, type, visited)
+      }
+
       // Virtual nodes without a matching input should be discarded.
       return
     }
