@@ -85,7 +85,23 @@ export const useSettingStore = defineStore('setting', () => {
   function getDefaultValue<K extends keyof Settings>(key: K): Settings[K] {
     const param = settingsById.value[key]
 
-    if (param?.defaultsByInstallVersion) {
+    const versionedDefault = getVersionedDefaultValue(key, param)
+
+    if (versionedDefault) {
+      return versionedDefault
+    }
+
+    return typeof param?.defaultValue === 'function'
+      ? param.defaultValue()
+      : param?.defaultValue
+  }
+
+  function getVersionedDefaultValue<K extends keyof Settings>(
+    key: K,
+    param: SettingParams
+  ): Settings[K] | null {
+    // get default versioned value, skipping if the key is 'Comfy.InstalledVersion' to prevent infinite loop
+    if (param?.defaultsByInstallVersion && key !== 'Comfy.InstalledVersion') {
       const installedVersion = get('Comfy.InstalledVersion')
 
       if (installedVersion) {
@@ -94,6 +110,11 @@ export const useSettingStore = defineStore('setting', () => {
         )
 
         for (const version of sortedVersions.reverse()) {
+          // Ensure the version is in a valid format before comparing
+          if (!isValidVersionFormat(version)) {
+            continue
+          }
+
           if (compareVersions(installedVersion, version) >= 0) {
             const versionedDefault = param.defaultsByInstallVersion[version]
             return typeof versionedDefault === 'function'
@@ -104,9 +125,13 @@ export const useSettingStore = defineStore('setting', () => {
       }
     }
 
-    return typeof param?.defaultValue === 'function'
-      ? param.defaultValue()
-      : param?.defaultValue
+    return null
+  }
+
+  function isValidVersionFormat(
+    version: string
+  ): version is `${number}.${number}.${number}` {
+    return /^\d+\.\d+\.\d+$/.test(version)
   }
 
   /**
