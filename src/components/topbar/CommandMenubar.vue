@@ -23,7 +23,7 @@
     <template #item="{ item, props }">
       <div
         v-if="item.key === 'theme'"
-        class="flex items-center gap-4 px-4 py-5 border-solid border-0 border-t border-b border-gray-500/30"
+        class="flex items-center gap-4 px-4 py-5"
         @click.stop.prevent
       >
         {{ item.label }}
@@ -141,10 +141,12 @@ const showManageExtensions = () => {
 }
 
 const extraMenuItems: MenuItem[] = [
+  { separator: true },
   {
     key: 'theme',
     label: t('menu.theme')
   },
+  { separator: true },
   {
     key: 'manage-extensions',
     label: t('menu.manageExtensions'),
@@ -175,14 +177,39 @@ const onThemeChange = async () => {
 const translatedItems = computed(() => {
   const items = menuItemsStore.menuItems.map(translateMenuItem)
   let helpIndex = items.findIndex((item) => item.key === 'Help')
+  let helpItem: MenuItem | undefined
+
   if (helpIndex !== -1) {
     items[helpIndex].icon = 'mdi mdi-help-circle-outline'
-    items[helpIndex].class = 'border-solid border-0 border-t border-gray-500/30'
-  } else {
-    helpIndex = items.length
+    // If help is not the last item (i.e. we have extension commands), separate them
+    const isLastItem = helpIndex !== items.length - 1
+    helpItem = items.splice(
+      helpIndex,
+      1,
+      ...(isLastItem
+        ? [
+            {
+              separator: true
+            }
+          ]
+        : [])
+    )[0]
   }
+  helpIndex = items.length
 
-  items.splice(helpIndex, 0, ...extraMenuItems)
+  items.splice(
+    helpIndex,
+    0,
+    ...extraMenuItems,
+    ...(helpItem
+      ? [
+          {
+            separator: true
+          },
+          helpItem
+        ]
+      : [])
+  )
 
   return items
 })

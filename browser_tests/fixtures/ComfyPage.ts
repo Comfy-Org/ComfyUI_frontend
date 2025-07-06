@@ -168,7 +168,7 @@ export class ComfyPage {
     this.menu = new ComfyMenu(page)
     this.actionbar = new ComfyActionbar(page)
     this.templates = new ComfyTemplates(page)
-    this.settingDialog = new SettingDialog(page)
+    this.settingDialog = new SettingDialog(page, this)
     this.confirmDialog = new ConfirmDialog(page)
   }
 
