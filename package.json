@@ -65,7 +65,7 @@
     "vite-plugin-dts": "^4.3.0",
     "vite-plugin-static-copy": "^1.0.5",
     "vitest": "^2.1.9",
-    "vue-tsc": "^2.1.10",
+    "vue-tsc": "^2.2.12",
     "zip-dir": "^2.0.0",
     "zod-to-json-schema": "^3.24.1"
   },
