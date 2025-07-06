@@ -275,30 +275,33 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const modelWidget = node.widgets?.find(
           (w) => w.name === 'model_name'
         ) as IComboWidget
+        const nWidget = node.widgets?.find(
+          (w) => w.name === 'n'
+        ) as IComboWidget
 
         if (!modelWidget)
-          return '$0.0035-0.028/Run (varies with modality & model)'
+          return '$0.0035-0.028 x n/Run (varies with modality & model)'
 
         const model = String(modelWidget.value)
+        const n = Number(nWidget?.value) || 1
+        let basePrice = 0.014 // default
 
         if (modality.includes('text to image')) {
-          if (model.includes('kling-v1')) {
-            return '$0.0035/Run'
-          } else if (
-            model.includes('kling-v1-5') ||
-            model.includes('kling-v2')
-          ) {
-            return '$0.014/Run'
+          if (model.includes('kling-v1-5') || model.includes('kling-v2')) {
+            basePrice = 0.014
+          } else if (model.includes('kling-v1')) {
+            basePrice = 0.0035
           }
         } else if (modality.includes('image to image')) {
-          if (model.includes('kling-v1')) {
-            return '$0.0035/Run'
-          } else if (model.includes('kling-v1-5')) {
-            return '$0.028/Run'
+          if (model.includes('kling-v1-5')) {
+            basePrice = 0.028
+          } else if (model.includes('kling-v1')) {
+            basePrice = 0.0035
           }
         }
 
-        return '$0.014/Run'
+        const totalCost = (basePrice * n).toFixed(4)
+        return `$${totalCost}/Run`
       }
     },
     KlingLipSyncAudioToVideoNode: {
@@ -523,19 +526,26 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const sizeWidget = node.widgets?.find(
           (w) => w.name === 'size'
         ) as IComboWidget
+        const nWidget = node.widgets?.find(
+          (w) => w.name === 'n'
+        ) as IComboWidget
 
-        if (!sizeWidget) return '$0.016-0.02/Run (varies with size)'
+        if (!sizeWidget) return '$0.016-0.02 x n/Run (varies with size & n)'
 
         const size = String(sizeWidget.value)
+        const n = Number(nWidget?.value) || 1
+        let basePrice = 0.02 // default
+
         if (size.includes('1024x1024')) {
-          return '$0.02/Run'
+          basePrice = 0.02
         } else if (size.includes('512x512')) {
-          return '$0.018/Run'
+          basePrice = 0.018
         } else if (size.includes('256x256')) {
-          return '$0.016/Run'
+          basePrice = 0.016
         }
 
-        return '$0.02/Run'
+        const totalCost = (basePrice * n).toFixed(3)
+        return `$${totalCost}/Run`
       }
     },
     OpenAIDalle3: {
@@ -570,19 +580,30 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const qualityWidget = node.widgets?.find(
           (w) => w.name === 'quality'
         ) as IComboWidget
+        const nWidget = node.widgets?.find(
+          (w) => w.name === 'n'
+        ) as IComboWidget
 
-        if (!qualityWidget) return '$0.011-0.30/Run (varies with quality)'
+        if (!qualityWidget)
+          return '$0.011-0.30 x n/Run (varies with quality & n)'
 
         const quality = String(qualityWidget.value)
+        const n = Number(nWidget?.value) || 1
+        let basePriceRange = '$0.046-0.07' // default medium
+
         if (quality.includes('high')) {
-          return '$0.167-0.30/Run'
+          basePriceRange = '$0.167-0.30'
         } else if (quality.includes('medium')) {
-          return '$0.046-0.07/Run'
+          basePriceRange = '$0.046-0.07'
         } else if (quality.includes('low')) {
-          return '$0.011-0.02/Run'
+          basePriceRange = '$0.011-0.02'
         }
 
-        return '$0.046-0.07/Run'
+        if (n === 1) {
+          return `${basePriceRange}/Run`
+        } else {
+          return `${basePriceRange} x ${n}/Run`
+        }
       }
     },
     PikaImageToVideoNode2_2: {
@@ -717,6 +738,42 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
     RecraftCrispUpscaleNode: {
       displayPrice: '$0.004/Run'
     },
+    RecraftGenerateColorFromImageNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const nWidget = node.widgets?.find(
+          (w) => w.name === 'n'
+        ) as IComboWidget
+        if (!nWidget) return '$0.04 x n/Run'
+
+        const n = Number(nWidget.value) || 1
+        const cost = (0.04 * n).toFixed(2)
+        return `$${cost}/Run`
+      }
+    },
+    RecraftGenerateImageNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const nWidget = node.widgets?.find(
+          (w) => w.name === 'n'
+        ) as IComboWidget
+        if (!nWidget) return '$0.04 x n/Run'
+
+        const n = Number(nWidget.value) || 1
+        const cost = (0.04 * n).toFixed(2)
+        return `$${cost}/Run`
+      }
+    },
+    RecraftGenerateVectorImageNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const nWidget = node.widgets?.find(
+          (w) => w.name === 'n'
+        ) as IComboWidget
+        if (!nWidget) return '$0.08 x n/Run'
+
+        const n = Number(nWidget.value) || 1
+        const cost = (0.08 * n).toFixed(2)
+        return `$${cost}/Run`
+      }
+    },
     RecraftImageInpaintingNode: {
       displayPrice: (node: LGraphNode): string => {
         const nWidget = node.widgets?.find(
@@ -772,7 +829,16 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
       }
     },
     RecraftVectorizeImageNode: {
-      displayPrice: '$0.01/Run'
+      displayPrice: (node: LGraphNode): string => {
+        const nWidget = node.widgets?.find(
+          (w) => w.name === 'n'
+        ) as IComboWidget
+        if (!nWidget) return '$0.01 x n/Run'
+
+        const n = Number(nWidget.value) || 1
+        const cost = (0.01 * n).toFixed(2)
+        return `$${cost}/Run`
+      }
     },
     StabilityStableImageSD_3_5Node: {
       displayPrice: (node: LGraphNode): string => {
@@ -915,13 +981,13 @@ export const useNodePricing = () => {
     const widgetMap: Record<string, string[]> = {
       KlingTextToVideoNode: ['mode', 'model_name', 'duration'],
       KlingImage2VideoNode: ['mode', 'model_name', 'duration'],
-      KlingImageGenerationNode: ['modality', 'model_name'],
+      KlingImageGenerationNode: ['modality', 'model_name', 'n'],
       KlingDualCharacterVideoEffectNode: ['mode', 'model_name', 'duration'],
       KlingSingleImageVideoEffectNode: ['effect_scene'],
       KlingStartEndFrameNode: ['mode', 'model_name', 'duration'],
       OpenAIDalle3: ['size', 'quality'],
-      OpenAIDalle2: ['size'],
-      OpenAIGPTImage1: ['quality'],
+      OpenAIDalle2: ['size', 'n'],
+      OpenAIGPTImage1: ['quality', 'n'],
       IdeogramV1: ['num_images'],
       IdeogramV2: ['num_images'],
       IdeogramV3: ['rendering_speed', 'num_images'],
@@ -945,7 +1011,11 @@ export const useNodePricing = () => {
       RecraftTextToImageNode: ['n'],
       RecraftImageToImageNode: ['n'],
       RecraftImageInpaintingNode: ['n'],
-      RecraftTextToVectorNode: ['n']
+      RecraftTextToVectorNode: ['n'],
+      RecraftVectorizeImageNode: ['n'],
+      RecraftGenerateColorFromImageNode: ['n'],
+      RecraftGenerateImageNode: ['n'],
+      RecraftGenerateVectorImageNode: ['n']
     }
     return widgetMap[nodeType] || []
   }
