@@ -317,6 +317,7 @@ export const zSystemStats = z.object({
     embedded_python: z.boolean(),
     comfyui_version: z.string(),
     pytorch_version: z.string(),
+    required_frontend_version: z.string().optional(),
     argv: z.array(z.string()),
     ram_total: z.number(),
     ram_free: z.number()
@@ -481,6 +482,8 @@ const zSettings = z.object({
     "what's new seen"
   ]),
   'Comfy.Release.Timestamp': z.number(),
+  /** Version compatibility settings */
+  'Comfy.VersionMismatch.DismissedVersion': z.string(),
   /** Settings used for testing */
   'test.setting': z.any(),
   'main.sub.setting.name': z.any(),
