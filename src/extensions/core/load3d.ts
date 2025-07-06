@@ -3,6 +3,7 @@ import { nextTick } from 'vue'
 
 import Load3D from '@/components/load3d/Load3D.vue'
 import Load3DAnimation from '@/components/load3d/Load3DAnimation.vue'
+import Load3dEditorContent from '@/components/load3d/Load3dEditorContent.vue'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import Load3dAnimation from '@/extensions/core/load3d/Load3dAnimation'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
@@ -11,9 +12,9 @@ import { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { api } from '@/scripts/api'
 import { ComfyApp, app } from '@/scripts/app'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
-import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLoad3dService } from '@/services/load3dService'
+import { useDialogStore } from '@/stores/dialogStore'
 import { useToastStore } from '@/stores/toastStore'
 import { isLoad3dNode } from '@/utils/litegraphUtil'
 
@@ -198,7 +199,18 @@ useExtensionService().registerExtension({
         // @ts-expect-error clipspace_return_node is an extension property added at runtime
         ComfyApp.clipspace_return_node = selectedNode
 
-        useDialogService().showLoad3dEditorDialog({ node: selectedNode })
+        const props = { node: selectedNode }
+
+        useDialogStore().showDialog({
+          key: 'global-load3d-editor',
+          title: t('load3d.editor.title'),
+          component: Load3dEditorContent,
+          props: props,
+          dialogComponentProps: {
+            style: 'width: 80vw; height: 80vh;',
+            maximizable: true
+          }
+        })
       }
     }
   ],

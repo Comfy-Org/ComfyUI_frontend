@@ -16,7 +16,6 @@ import ManagerProgressFooter from '@/components/dialog/footer/ManagerProgressFoo
 import ComfyOrgHeader from '@/components/dialog/header/ComfyOrgHeader.vue'
 import ManagerProgressHeader from '@/components/dialog/header/ManagerProgressHeader.vue'
 import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.vue'
-import Load3dEditorContent from '@/components/load3d/Load3dEditorContent.vue'
 import TemplateWorkflowsContent from '@/components/templates/TemplateWorkflowsContent.vue'
 import TemplateWorkflowsDialogHeader from '@/components/templates/TemplateWorkflowsDialogHeader.vue'
 import { t } from '@/i18n'
@@ -283,21 +282,6 @@ export const useDialogService = () => {
     })
   }
 
-  function showLoad3dEditorDialog(
-    props: InstanceType<typeof Load3dEditorContent>['$props']
-  ) {
-    dialogStore.showDialog({
-      key: 'global-load3d-editor',
-      title: t('load3d.editor.title'),
-      component: Load3dEditorContent,
-      props: props,
-      dialogComponentProps: {
-        style: 'width: 80vw; height: 80vh;',
-        maximizable: true
-      }
-    })
-  }
-
   async function prompt({
     title,
     message,
@@ -456,7 +440,6 @@ export const useDialogService = () => {
     showTopUpCreditsDialog,
     showUpdatePasswordDialog,
     showExtensionDialog,
-    showLoad3dEditorDialog,
     prompt,
     confirm,
     toggleManagerDialog,
