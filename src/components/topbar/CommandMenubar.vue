@@ -9,7 +9,8 @@
     <img
       src="/assets/images/comfy-logo-mono.svg"
       alt="ComfyUI Logo"
-      class="comfyui-logo app-drag h-7"
+      class="comfyui-logo h-7"
+      @contextmenu="showNativeSystemMenu"
     />
     <i class="pi pi-angle-down ml-1 text-[10px]" />
   </div>
@@ -83,6 +84,7 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { showNativeSystemMenu } from '@/utils/envUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 const colorPaletteStore = useColorPaletteStore()

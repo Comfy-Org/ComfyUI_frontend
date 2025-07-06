@@ -3,6 +3,7 @@
     <div
       v-show="showTopMenu && workflowTabsPosition === 'Topbar'"
       class="w-full flex content-end z-[1001] h-[38px]"
+      style="background: var(--border-color)"
     >
       <WorkflowTabs />
     </div>
@@ -17,10 +18,6 @@
       <div ref="menuRight" class="comfyui-menu-right flex-shrink-0" />
       <Actionbar />
       <CurrentUserButton class="flex-shrink-0" />
-      <div
-        v-show="menuSetting !== 'Bottom'"
-        class="window-actions-spacer flex-shrink-0"
-      />
     </div>
 
     <!-- Virtual top menu for native window (drag handle) -->

@@ -166,10 +166,22 @@ onUpdated(() => {
 :deep(.p-breadcrumb-item) {
   @apply flex items-center rounded-lg overflow-hidden;
   min-width: calc(var(--p-breadcrumb-item-min-width) + 1rem);
+  /* Collapse middle items first */
+  flex-shrink: 10000;
 }
 
 :deep(.p-breadcrumb-item:has(.p-breadcrumb-item-link-icon-visible)) {
   min-width: calc(var(--p-breadcrumb-item-min-width) + 1rem + 20px);
+}
+
+:deep(.p-breadcrumb-item:first-child) {
+  /* Then collapse the root workflow */
+  flex-shrink: 5000;
+}
+
+:deep(.p-breadcrumb-item:last-child) {
+  /* Then collapse the active item */
+  flex-shrink: 1;
 }
 
 :deep(.p-breadcrumb-item:hover),

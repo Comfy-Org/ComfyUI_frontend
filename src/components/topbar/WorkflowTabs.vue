@@ -1,13 +1,14 @@
 <template>
   <div
     class="workflow-tabs-container flex flex-row max-w-full h-full flex-auto overflow-hidden"
+    :class="{ 'workflow-tabs-container-desktop': isDesktop }"
   >
     <Button
       v-if="showOverflowArrows"
       icon="pi pi-chevron-left"
       text
       severity="secondary"
-      class="overflow-arrow-left"
+      class="overflow-arrow overflow-arrow-left"
       :disabled="!leftArrowEnabled"
       @mousedown="whileMouseDown($event, () => scroll(-1))"
     />
@@ -43,7 +44,7 @@
       icon="pi pi-chevron-right"
       text
       severity="secondary"
-      class="overflow-arrow-right"
+      class="overflow-arrow overflow-arrow-right"
       :disabled="!rightArrowEnabled"
       @mousedown="whileMouseDown($event, () => scroll(1))"
     />
@@ -57,6 +58,10 @@
       @click="() => commandStore.execute('Comfy.NewBlankWorkflow')"
     />
     <ContextMenu ref="menu" :model="contextMenuItems" />
+    <div
+      v-if="menuSetting !== 'Bottom' && isDesktop"
+      class="window-actions-spacer flex-shrink-0 app-drag"
+    />
   </div>
 </template>
 
@@ -66,16 +71,18 @@ import Button from 'primevue/button'
 import ContextMenu from 'primevue/contextmenu'
 import ScrollPanel from 'primevue/scrollpanel'
 import SelectButton from 'primevue/selectbutton'
-import { computed, nextTick, onMounted, onUpdated, ref, watch } from 'vue'
+import { computed, nextTick, onUpdated, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
 import { useWorkflowService } from '@/services/workflowService'
 import { useCommandStore } from '@/stores/commandStore'
+import { useSettingStore } from '@/stores/settingStore'
 import { ComfyWorkflow, useWorkflowBookmarkStore } from '@/stores/workflowStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { isElectron } from '@/utils/envUtil'
 import { whileMouseDown } from '@/utils/mouseDownUtil'
 
 interface WorkflowOption {
@@ -90,14 +97,19 @@ const props = defineProps<{
 const { t } = useI18n()
 const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
-const workflowService = useWorkflowService()
 const workflowBookmarkStore = useWorkflowBookmarkStore()
+const settingStore = useSettingStore()
+const workflowService = useWorkflowService()
+
 const rightClickedTab = ref<WorkflowOption | undefined>()
 const menu = ref()
 const scrollPanelRef = ref()
 const showOverflowArrows = ref(false)
 const leftArrowEnabled = ref(false)
 const rightArrowEnabled = ref(false)
+
+const isDesktop = isElectron()
+const menuSetting = computed(() => settingStore.get('Comfy.UseNewMenu'))
 
 const workflowToOption = (workflow: ComfyWorkflow): WorkflowOption => ({
   value: workflow.path,
@@ -243,26 +255,42 @@ watch(
   { immediate: true }
 )
 
-onMounted(() => {
-  const scrollContent = scrollPanelRef.value.$el.querySelector(
-    '.p-scrollpanel-content'
-  ) as HTMLElement
+const scrollContent = computed(
+  () =>
+    scrollPanelRef.value?.$el.querySelector(
+      '.p-scrollpanel-content'
+    ) as HTMLElement
+)
+let overflowObserver: ReturnType<typeof useOverflowObserver> | null = null
+let overflowWatch: ReturnType<typeof watch> | null = null
+watch(scrollContent, (value) => {
+  const scrollState = useScroll(value)
 
-  // Show overflow arrows when there is overflow
-  const { isOverflowing, checkOverflow } = useOverflowObserver(scrollContent)
-  watch(isOverflowing, (value) => {
-    showOverflowArrows.value = value
+  watch(scrollState.arrivedState, () => {
+    leftArrowEnabled.value = !scrollState.arrivedState.left
+    rightArrowEnabled.value = !scrollState.arrivedState.right
   })
 
-  onUpdated(checkOverflow)
+  overflowObserver?.dispose()
+  overflowWatch?.stop()
+  overflowObserver = useOverflowObserver(value)
+  overflowWatch = watch(
+    overflowObserver.isOverflowing,
+    (value) => {
+      showOverflowArrows.value = value
+      void nextTick(() => {
+        // Force a new check after arrows are updated
+        scrollState.measure()
+      })
+    },
+    { immediate: true }
+  )
+})
 
-  // Disable arrows when scrolled to the edges
-  const scrollState = useScroll(scrollContent, {
-    onScroll: () => {
-      leftArrowEnabled.value = !scrollState.arrivedState.left
-      rightArrowEnabled.value = !scrollState.arrivedState.right
-    }
-  })
+onUpdated(() => {
+  if (!overflowObserver?.disposed.value) {
+    overflowObserver?.checkOverflow()
+  }
 })
 </script>
 
@@ -277,9 +305,12 @@ onMounted(() => {
   min-width: 90px;
 }
 
-.overflow-arrow-right,
-.overflow-arrow-left {
+.overflow-arrow {
   @apply px-2 rounded-none;
+}
+
+.overflow-arrow[disabled] {
+  @apply opacity-25;
 }
 
 :deep(.p-togglebutton > .p-togglebutton-content) {
@@ -341,5 +372,16 @@ onMounted(() => {
 
 :deep(.p-selectbutton) {
   @apply rounded-none h-full;
+}
+
+.workflow-tabs-container-desktop {
+  max-width: env(titlebar-area-width, 100vw);
+}
+
+.window-actions-spacer {
+  @apply flex-auto;
+  /* If we are using custom titlebar, then we need to add a gap for the user to drag the window */
+  --window-actions-spacer-width: min(75px, env(titlebar-area-width, 0) * 9999);
+  min-width: var(--window-actions-spacer-width);
 }
 </style>
