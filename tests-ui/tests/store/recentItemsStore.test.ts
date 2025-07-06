@@ -191,8 +191,9 @@ describe('useRecentItemsStore', () => {
       vi.mocked(api.listUserDataFullInfo).mockResolvedValue(
         manyWorkflows.map((workflow) => ({
           path: workflow.path,
+          size: workflow.size,
           modified: workflow.modified,
-          size: workflow.size
+          created: workflow.created
         }))
       )
 

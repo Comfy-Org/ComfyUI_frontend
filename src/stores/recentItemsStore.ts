@@ -18,8 +18,9 @@ export const useRecentItemsStore = defineStore('recentItems', () => {
       return []
     }
 
-    // Sort by dateCreated and pick the first 5
+    // Sort by dateCreated and pick the first {maxRecentItemCount}
     return workflows
+      .filter((a) => typeof a.created === 'number')
       .sort((a, b) => b.created - a.created)
       .slice(0, maxRecentItemCount)
   })
@@ -29,14 +30,16 @@ export const useRecentItemsStore = defineStore('recentItems', () => {
     if (models.length === 0) {
       return []
     }
-    // Sort by dateCreated and pick the first 5
+    // Sort by dateCreated and pick the first {maxRecentItemCount}
     return models
+      .filter((a) => typeof a.date_created === 'number')
       .sort((a, b) => b.date_created - a.date_created)
       .slice(0, maxRecentItemCount)
   })
 
   const recentlyUsedWorkflows = computed(() => {
     return workflowStore.workflows
+      .filter((a) => typeof a.lastModified === 'number')
       .sort((a, b) => {
         return (b.lastModified ?? 0) - (a.lastModified ?? 0)
       })
@@ -45,6 +48,7 @@ export const useRecentItemsStore = defineStore('recentItems', () => {
 
   const recentlyUsedModels = computed(() => {
     return modelStore.models
+      .filter((a) => typeof a.last_modified === 'number')
       .sort((a, b) => {
         return (b.last_modified ?? 0) - (a.last_modified ?? 0)
       })
