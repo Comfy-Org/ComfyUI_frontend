@@ -1,7 +1,7 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
 import axios from 'axios'
+import _ from 'lodash'
 import { defineStore } from 'pinia'
-import type { TreeNode } from 'primevue/treenode'
 import { computed, ref } from 'vue'
 
 import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
@@ -15,18 +15,19 @@ import type {
   ComfyNodeDef as ComfyNodeDefV1,
   ComfyOutputTypesSpec as ComfyOutputSpecV1
 } from '@/schemas/nodeDefSchema'
-import {
-  NodeSearchService,
-  type SearchAuxScore
-} from '@/services/nodeSearchService'
+import { NodeSearchService } from '@/services/nodeSearchService'
 import {
   type NodeSource,
   NodeSourceType,
   getNodeSource
 } from '@/types/nodeSource'
+import type { TreeNode } from '@/types/treeExplorerTypes'
+import type { FuseSearchable, SearchAuxScore } from '@/utils/fuseUtil'
 import { buildTree } from '@/utils/treeUtil'
 
-export class ComfyNodeDefImpl implements ComfyNodeDefV1, ComfyNodeDefV2 {
+export class ComfyNodeDefImpl
+  implements ComfyNodeDefV1, ComfyNodeDefV2, FuseSearchable
+{
   // ComfyNodeDef fields (V1)
   readonly name: string
   readonly display_name: string
@@ -37,9 +38,11 @@ export class ComfyNodeDefImpl implements ComfyNodeDefV1, ComfyNodeDefV2 {
   category: string
   readonly python_module: string
   readonly description: string
+  readonly help: string
   readonly deprecated: boolean
   readonly experimental: boolean
   readonly output_node: boolean
+  readonly api_node: boolean
   /**
    * @deprecated Use `inputs` instead
    */
@@ -69,7 +72,41 @@ export class ComfyNodeDefImpl implements ComfyNodeDefV1, ComfyNodeDefV2 {
   // ComfyNodeDefImpl fields
   readonly nodeSource: NodeSource
 
-  constructor(obj: ComfyNodeDefV1) {
+  /**
+   * @internal
+   * Migrate default input options to forceInput.
+   */
+  static #migrateDefaultInput(nodeDef: ComfyNodeDefV1): ComfyNodeDefV1 {
+    const def = _.cloneDeep(nodeDef)
+    def.input ??= {}
+    // For required inputs, now we have the input socket always present. Specifying
+    // it now has no effect.
+    for (const [name, spec] of Object.entries(def.input.required ?? {})) {
+      const inputOptions = spec[1]
+      if (inputOptions && inputOptions.defaultInput) {
+        console.warn(
+          `Use of defaultInput on required input ${nodeDef.python_module}:${nodeDef.name}:${name} is deprecated. Please drop the defaultInput option.`
+        )
+      }
+    }
+    // For optional inputs, defaultInput is used to distinguish the null state.
+    // We migrate it to forceInput. One example is the "seed_override" input usage.
+    // User can connect the socket to override the seed.
+    for (const [name, spec] of Object.entries(def.input.optional ?? {})) {
+      const inputOptions = spec[1]
+      if (inputOptions && inputOptions.defaultInput) {
+        console.warn(
+          `Use of defaultInput on optional input ${nodeDef.python_module}:${nodeDef.name}:${name} is deprecated. Please use forceInput instead.`
+        )
+        inputOptions.forceInput = true
+      }
+    }
+    return def
+  }
+
+  constructor(def: ComfyNodeDefV1) {
+    const obj = ComfyNodeDefImpl.#migrateDefaultInput(def)
+
     /**
      * Assign extra fields to `this` for compatibility with group node feature.
      * TODO: Remove this once group node feature is removed.
@@ -82,10 +119,12 @@ export class ComfyNodeDefImpl implements ComfyNodeDefV1, ComfyNodeDefV2 {
     this.category = obj.category
     this.python_module = obj.python_module
     this.description = obj.description
+    this.help = obj.help ?? ''
     this.deprecated = obj.deprecated ?? obj.category === ''
     this.experimental =
       obj.experimental ?? obj.category.startsWith('_for_testing')
     this.output_node = obj.output_node
+    this.api_node = !!obj.api_node
     this.input = obj.input ?? {}
     this.output = obj.output ?? []
     this.output_is_list = obj.output_is_list
@@ -179,10 +218,22 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDefV1> = {
   }
 }
 
-export function buildNodeDefTree(nodeDefs: ComfyNodeDefImpl[]): TreeNode {
-  return buildTree(nodeDefs, (nodeDef: ComfyNodeDefImpl) =>
+export interface BuildNodeDefTreeOptions {
+  /**
+   * Custom function to extract the tree path from a node definition.
+   * If not provided, uses the default path based on nodeDef.nodePath.
+   */
+  pathExtractor?: (nodeDef: ComfyNodeDefImpl) => string[]
+}
+
+export function buildNodeDefTree(
+  nodeDefs: ComfyNodeDefImpl[],
+  options: BuildNodeDefTreeOptions = {}
+): TreeNode {
+  const { pathExtractor } = options
+  const defaultPathExtractor = (nodeDef: ComfyNodeDefImpl) =>
     nodeDef.nodePath.split('/')
-  )
+  return buildTree(nodeDefs, pathExtractor || defaultPathExtractor)
 }
 
 export function createDummyFolderNodeDef(folderPath: string): ComfyNodeDefImpl {
@@ -255,6 +306,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   }
   function fromLGraphNode(node: LGraphNode): ComfyNodeDefImpl | null {
     // Frontend-only nodes don't have nodeDef
+    // @ts-expect-error Optional chaining used in index
     return nodeDefsByName.value[node.constructor?.nodeData?.name] ?? null
   }
 

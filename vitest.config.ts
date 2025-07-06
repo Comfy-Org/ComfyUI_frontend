@@ -7,7 +7,10 @@ export default defineConfig({
     globals: true,
     environment: 'happy-dom',
     setupFiles: ['./vitest.setup.ts'],
-    include: ['**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    include: [
+      'tests-ui/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+      'src/components/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
+    ],
     coverage: {
       reporter: ['text', 'json', 'html']
     }
@@ -16,5 +19,8 @@ export default defineConfig({
     alias: {
       '@': '/src'
     }
+  },
+  define: {
+    __USE_PROD_CONFIG__: process.env.USE_PROD_CONFIG === 'true'
   }
 })

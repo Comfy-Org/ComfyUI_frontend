@@ -4,7 +4,7 @@ import '@xterm/xterm/css/xterm.css'
 import { debounce } from 'lodash'
 import { Ref, markRaw, onMounted, onUnmounted } from 'vue'
 
-export function useTerminal(element: Ref<HTMLElement>) {
+export function useTerminal(element: Ref<HTMLElement | undefined>) {
   const fitAddon = new FitAddon()
   const terminal = markRaw(
     new Terminal({
@@ -27,7 +27,9 @@ export function useTerminal(element: Ref<HTMLElement>) {
   })
 
   onMounted(async () => {
-    terminal.open(element.value)
+    if (element.value) {
+      terminal.open(element.value)
+    }
   })
 
   onUnmounted(() => {
@@ -44,16 +46,16 @@ export function useTerminal(element: Ref<HTMLElement>) {
       minRows = Number.NEGATIVE_INFINITY,
       onResize
     }: {
-      root: Ref<HTMLElement>
+      root: Ref<HTMLElement | undefined>
       autoRows?: boolean
       autoCols?: boolean
       minCols?: number
       minRows?: number
       onResize?: () => void
     }) {
-      const ensureValidRows = (rows: number | undefined) => {
+      const ensureValidRows = (rows: number | undefined): number => {
         if (rows == null || isNaN(rows)) {
-          return root.value?.clientHeight / 20
+          return (root.value?.clientHeight ?? 80) / 20
         }
         return rows
       }
@@ -61,7 +63,7 @@ export function useTerminal(element: Ref<HTMLElement>) {
       const ensureValidCols = (cols: number | undefined): number => {
         if (cols == null || isNaN(cols)) {
           // Sometimes this is NaN if so, estimate.
-          return root.value?.clientWidth / 8
+          return (root.value?.clientWidth ?? 80) / 8
         }
         return cols
       }
@@ -85,8 +87,10 @@ export function useTerminal(element: Ref<HTMLElement>) {
       const resizeObserver = new ResizeObserver(debounce(resize, 25))
 
       onMounted(async () => {
-        resizeObserver.observe(root.value)
-        resize()
+        if (root.value) {
+          resizeObserver.observe(root.value)
+          resize()
+        }
       })
 
       onUnmounted(() => {

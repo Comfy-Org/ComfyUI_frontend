@@ -1,7 +1,6 @@
 import _ from 'lodash'
 import { defineStore } from 'pinia'
-import { toRaw } from 'vue'
-import { computed, ref } from 'vue'
+import { computed, ref, toRaw } from 'vue'
 
 import type {
   ResultItem,
@@ -89,23 +88,38 @@ export class ResultItemImpl {
   }
 
   get htmlVideoType(): string | undefined {
-    const defaultType = undefined
-
-    if (!this.isVhsFormat) {
-      return defaultType
-    }
-
-    if (this.format?.endsWith('webm')) {
+    if (this.isWebm) {
       return 'video/webm'
     }
-    if (this.format?.endsWith('mp4')) {
+    if (this.isMp4) {
       return 'video/mp4'
     }
-    return defaultType
+
+    if (this.isVhsFormat) {
+      if (this.format?.endsWith('webm')) {
+        return 'video/webm'
+      }
+      if (this.format?.endsWith('mp4')) {
+        return 'video/mp4'
+      }
+    }
+    return undefined
   }
 
-  get isVideo(): boolean {
-    return !this.isImage && !!this.format?.startsWith('video/')
+  get htmlAudioType(): string | undefined {
+    if (this.isMp3) {
+      return 'audio/mpeg'
+    }
+    if (this.isWav) {
+      return 'audio/wav'
+    }
+    if (this.isOgg) {
+      return 'audio/ogg'
+    }
+    if (this.isFlac) {
+      return 'audio/flac'
+    }
+    return undefined
   }
 
   get isGif(): boolean {
@@ -116,12 +130,71 @@ export class ResultItemImpl {
     return this.filename.endsWith('.webp')
   }
 
+  get isWebm(): boolean {
+    return this.filename.endsWith('.webm')
+  }
+
+  get isMp4(): boolean {
+    return this.filename.endsWith('.mp4')
+  }
+
+  get isVideoBySuffix(): boolean {
+    return this.isWebm || this.isMp4
+  }
+
+  get isImageBySuffix(): boolean {
+    return this.isGif || this.isWebp
+  }
+
+  get isMp3(): boolean {
+    return this.filename.endsWith('.mp3')
+  }
+
+  get isWav(): boolean {
+    return this.filename.endsWith('.wav')
+  }
+
+  get isOgg(): boolean {
+    return this.filename.endsWith('.ogg')
+  }
+
+  get isFlac(): boolean {
+    return this.filename.endsWith('.flac')
+  }
+
+  get isAudioBySuffix(): boolean {
+    return this.isMp3 || this.isWav || this.isOgg || this.isFlac
+  }
+
+  get isVideo(): boolean {
+    const isVideoByType =
+      this.mediaType === 'video' || !!this.format?.startsWith('video/')
+    return (
+      this.isVideoBySuffix ||
+      (isVideoByType && !this.isImageBySuffix && !this.isAudioBySuffix)
+    )
+  }
+
   get isImage(): boolean {
-    return this.mediaType === 'images' || this.isGif || this.isWebp
+    return (
+      this.isImageBySuffix ||
+      (this.mediaType === 'images' &&
+        !this.isVideoBySuffix &&
+        !this.isAudioBySuffix)
+    )
+  }
+
+  get isAudio(): boolean {
+    const isAudioByType =
+      this.mediaType === 'audio' || !!this.format?.startsWith('audio/')
+    return (
+      this.isAudioBySuffix ||
+      (isAudioByType && !this.isImageBySuffix && !this.isVideoBySuffix)
+    )
   }
 
   get supportsPreview(): boolean {
-    return this.isImage || this.isVideo
+    return this.isImage || this.isVideo || this.isAudio
   }
 }
 

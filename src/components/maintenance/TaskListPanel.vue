@@ -60,7 +60,7 @@ const confirm = useConfirm()
 const taskStore = useMaintenanceTaskStore()
 
 // Properties
-const props = defineProps<{
+defineProps<{
   displayAsList: string
   filter: MaintenanceFilter
   isRefreshing: boolean

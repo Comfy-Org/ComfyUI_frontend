@@ -1,26 +1,34 @@
-import type { IWidget } from '@comfyorg/litegraph'
+import type { IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
-import { MaterialMode } from '@/extensions/core/load3d/interfaces'
 import { api } from '@/scripts/api'
+import { useSettingStore } from '@/stores/settingStore'
 
 class Load3DConfiguration {
   constructor(private load3d: Load3d) {}
 
+  configureForSaveMesh(loadFolder: 'input' | 'output', filePath: string) {
+    this.setupModelHandlingForSaveMesh(filePath, loadFolder)
+    this.setupDefaultProperties()
+  }
+
   configure(
     loadFolder: 'input' | 'output',
-    modelWidget: IWidget,
+    modelWidget: IBaseWidget,
     cameraState?: any,
-    width: IWidget | null = null,
-    height: IWidget | null = null
+    width: IBaseWidget | null = null,
+    height: IBaseWidget | null = null
   ) {
     this.setupModelHandling(modelWidget, loadFolder, cameraState)
     this.setupTargetSize(width, height)
     this.setupDefaultProperties()
   }
 
-  private setupTargetSize(width: IWidget | null, height: IWidget | null) {
+  private setupTargetSize(
+    width: IBaseWidget | null,
+    height: IBaseWidget | null
+  ) {
     if (width && height) {
       this.load3d.setTargetSize(width.value as number, height.value as number)
 
@@ -34,8 +42,19 @@ class Load3DConfiguration {
     }
   }
 
+  private setupModelHandlingForSaveMesh(
+    filePath: string,
+    loadFolder: 'input' | 'output'
+  ) {
+    const onModelWidgetUpdate = this.createModelUpdateHandler(loadFolder)
+
+    if (filePath) {
+      onModelWidgetUpdate(filePath)
+    }
+  }
+
   private setupModelHandling(
-    modelWidget: IWidget,
+    modelWidget: IBaseWidget,
     loadFolder: 'input' | 'output',
     cameraState?: any
   ) {
@@ -46,33 +65,52 @@ class Load3DConfiguration {
     if (modelWidget.value) {
       onModelWidgetUpdate(modelWidget.value)
     }
-    modelWidget.callback = onModelWidgetUpdate
+
+    modelWidget.callback = (value: string | number | boolean | object) => {
+      this.load3d.node.properties['Texture'] = undefined
+
+      onModelWidgetUpdate(value)
+    }
   }
 
   private setupDefaultProperties() {
     const cameraType = this.load3d.loadNodeProperty(
       'Camera Type',
-      'perspective'
+      useSettingStore().get('Comfy.Load3D.CameraType')
     )
     this.load3d.toggleCamera(cameraType)
 
-    const showGrid = this.load3d.loadNodeProperty('Show Grid', true)
+    const showGrid = this.load3d.loadNodeProperty(
+      'Show Grid',
+      useSettingStore().get('Comfy.Load3D.ShowGrid')
+    )
 
     this.load3d.toggleGrid(showGrid)
 
-    const showPreview = this.load3d.loadNodeProperty('Show Preview', true)
+    const showPreview = this.load3d.loadNodeProperty(
+      'Show Preview',
+      useSettingStore().get('Comfy.Load3D.ShowPreview')
+    )
 
     this.load3d.togglePreview(showPreview)
 
-    const bgColor = this.load3d.loadNodeProperty('Background Color', '#282828')
+    const bgColor = this.load3d.loadNodeProperty(
+      'Background Color',
+      '#' + useSettingStore().get('Comfy.Load3D.BackgroundColor')
+    )
 
     this.load3d.setBackgroundColor(bgColor)
 
-    const lightIntensity = this.load3d.loadNodeProperty('Light Intensity', 5)
+    const lightIntensity: number = Number(
+      this.load3d.loadNodeProperty(
+        'Light Intensity',
+        useSettingStore().get('Comfy.Load3D.LightIntensity')
+      )
+    )
 
     this.load3d.setLightIntensity(lightIntensity)
 
-    const fov = this.load3d.loadNodeProperty('FOV', 35)
+    const fov: number = Number(this.load3d.loadNodeProperty('FOV', 35))
 
     this.load3d.setFOV(fov)
 
@@ -90,6 +128,9 @@ class Load3DConfiguration {
       if (!value) return
 
       const filename = value as string
+
+      this.setResourceFolder(filename)
+
       const modelUrl = api.apiURL(
         Load3dUtils.getResourceURL(
           ...Load3dUtils.splitFilePath(filename),
@@ -113,6 +154,18 @@ class Load3DConfiguration {
 
       this.load3d.setMaterialMode(materialMode)
 
+      const edgeThreshold: number = Number(
+        this.load3d.loadNodeProperty('Edge Threshold', 85)
+      )
+
+      this.load3d.setEdgeThreshold(edgeThreshold)
+
+      const texturePath = this.load3d.loadNodeProperty('Texture', null)
+
+      if (texturePath) {
+        await this.load3d.applyTexture(texturePath)
+      }
+
       if (isFirstLoad && cameraState && typeof cameraState === 'object') {
         try {
           this.load3d.setCameraState(cameraState)
@@ -121,6 +174,21 @@ class Load3DConfiguration {
         }
         isFirstLoad = false
       }
+    }
+  }
+
+  private setResourceFolder(filename: string): void {
+    const pathParts = filename.split('/').filter((part) => part.trim())
+
+    if (pathParts.length <= 2) {
+      return
+    }
+
+    const subfolderParts = pathParts.slice(1, -1)
+    const subfolder = subfolderParts.join('/')
+
+    if (subfolder) {
+      this.load3d.node.properties['Resource Folder'] = subfolder
     }
   }
 }

@@ -10,6 +10,7 @@ Our project supports multiple languages using `vue-i18n`. This allows users arou
 - ja (日本語)
 - ko (한국어)
 - fr (Français)
+- es (Español)
 
 ## How to Add a New Language
 
@@ -28,7 +29,7 @@ module.exports = defineConfig({
   entry: 'src/locales/en.json', // Base language file
   entryLocale: 'en',
   output: 'src/locales',
-  outputLocales: ['zh', 'ru', 'ja', 'ko', 'fr'], // Add the new language(s) here
+  outputLocales: ['zh', 'ru', 'ja', 'ko', 'fr', 'es'], // Add the new language(s) here
 });
 ```
 
@@ -66,7 +67,8 @@ Add the newly added language to the following item in `src/constants/coreSetting
       { value: 'ru', text: 'Русский' },
       { value: 'ja', text: '日本語' },
       { value: 'ko', text: '한국어' },
-      { value: 'fr', text: 'Français' }
+      { value: 'fr', text: 'Français' },
+      { value: 'es', text: 'Español' }
     ],
     defaultValue: navigator.language.split('-')[0] || 'en'
   },

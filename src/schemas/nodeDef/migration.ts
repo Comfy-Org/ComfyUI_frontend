@@ -46,22 +46,26 @@ export function transformNodeDefV1ToV2(
   const outputs: OutputSpecV2[] = []
 
   if (nodeDefV1.output) {
-    nodeDefV1.output.forEach((outputType, index) => {
-      const outputSpec: OutputSpecV2 = {
-        index,
-        name: nodeDefV1.output_name?.[index] || `output_${index}`,
-        type: Array.isArray(outputType) ? 'COMBO' : outputType,
-        is_list: nodeDefV1.output_is_list?.[index] || false,
-        tooltip: nodeDefV1.output_tooltips?.[index]
-      }
+    if (Array.isArray(nodeDefV1.output)) {
+      nodeDefV1.output.forEach((outputType, index) => {
+        const outputSpec: OutputSpecV2 = {
+          index,
+          name: nodeDefV1.output_name?.[index] || `output_${index}`,
+          type: Array.isArray(outputType) ? 'COMBO' : outputType,
+          is_list: nodeDefV1.output_is_list?.[index] || false,
+          tooltip: nodeDefV1.output_tooltips?.[index]
+        }
 
-      // Add options for combo outputs
-      if (Array.isArray(outputType)) {
-        outputSpec.options = outputType
-      }
+        // Add options for combo outputs
+        if (Array.isArray(outputType)) {
+          outputSpec.options = outputType
+        }
 
-      outputs.push(outputSpec)
-    })
+        outputs.push(outputSpec)
+      })
+    } else {
+      console.warn('nodeDefV1.output is not an array:', nodeDefV1.output)
+    }
   }
 
   // Create the V2 node definition

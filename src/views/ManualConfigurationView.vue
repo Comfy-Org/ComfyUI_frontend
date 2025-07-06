@@ -13,7 +13,7 @@
           icon="pi pi-exclamation-triangle"
           severity="warn"
           :value="t('icon.exclamation-triangle')"
-        ></Tag>
+        />
         <strong class="ml-2">{{
           $t('install.gpuSelection.customComfyNeedsPython')
         }}</strong>
@@ -64,7 +64,7 @@ const { t } = useI18n()
 
 const electron = electronAPI()
 
-const basePath = ref<string>(null)
+const basePath = ref<string | null>(null)
 const sep = ref<'\\' | '/'>('/')
 
 const restartApp = (message?: string) => electron.restartApp(message)

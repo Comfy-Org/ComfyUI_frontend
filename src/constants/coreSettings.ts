@@ -1,5 +1,4 @@
-import { LinkMarkerShape } from '@comfyorg/litegraph'
-import { LiteGraph } from '@comfyorg/litegraph'
+import { LinkMarkerShape, LiteGraph } from '@comfyorg/litegraph'
 
 import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
 import type { Keybinding } from '@/schemas/keyBindingSchema'
@@ -7,6 +6,13 @@ import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 import type { SettingParams } from '@/types/settingTypes'
 
+/**
+ * Core settings are essential configuration parameters required for ComfyUI's basic functionality.
+ * These settings must be present in the settings store and cannot be omitted.
+ *
+ * IMPORTANT: To prevent ID conflicts, settings should be marked as deprecated rather than removed
+ * when they are no longer needed.
+ */
 export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'Comfy.Validation.Workflows',
@@ -87,6 +93,14 @@ export const CORE_SETTINGS: SettingParams[] = [
     options: ['normal', 'small'],
     // Default to small if the window is less than 1536px(2xl) wide.
     defaultValue: () => (window.innerWidth < 1536 ? 'small' : 'normal')
+  },
+  {
+    id: 'Comfy.Sidebar.UnifiedWidth',
+    category: ['Appearance', 'Sidebar', 'UnifiedWidth'],
+    name: 'Unified sidebar width',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.18.1'
   },
   {
     id: 'Comfy.TextareaWidget.FontSize',
@@ -220,6 +234,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: true
   },
   {
+    id: 'Comfy.Node.AllowImageSizeDraw',
+    category: ['LiteGraph', 'Node Widget', 'AllowImageSizeDraw'],
+    name: 'Show width × height below the image preview',
+    type: 'boolean',
+    defaultValue: true
+  },
+  {
     id: 'Comfy.Group.DoubleClickTitleToEdit',
     category: ['LiteGraph', 'Group', 'DoubleClickTitleToEdit'],
     name: 'Double click group title to edit',
@@ -272,7 +293,8 @@ export const CORE_SETTINGS: SettingParams[] = [
       { value: 'ru', text: 'Русский' },
       { value: 'ja', text: '日本語' },
       { value: 'ko', text: '한국어' },
-      { value: 'fr', text: 'Français' }
+      { value: 'fr', text: 'Français' },
+      { value: 'es', text: 'Español' }
     ],
     defaultValue: () => navigator.language.split('-')[0] || 'en'
   },
@@ -299,6 +321,14 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'combo',
     options: [NodeBadgeMode.None, NodeBadgeMode.ShowAll],
     defaultValue: NodeBadgeMode.ShowAll
+  },
+  {
+    id: 'Comfy.NodeBadge.ShowApiPricing',
+    category: ['Comfy', 'API Nodes'],
+    name: 'Show API node pricing badge',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.20.3'
   },
   {
     id: 'Comfy.ConfirmClear',
@@ -525,17 +555,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.3.42'
   },
   {
-    id: 'Comfy.RerouteBeta',
-    category: ['LiteGraph', 'RerouteBeta'],
-    name: 'Opt-in to the reroute beta test',
-    tooltip:
-      'Enables the new native reroutes.\n\nReroutes can be added by holding alt and dragging from a link line, or on the link menu.\n\nDisabling this option is non-destructive - reroutes are hidden.',
-    experimental: true,
-    type: 'boolean',
-    defaultValue: false,
-    versionAdded: '1.3.42'
-  },
-  {
     id: 'Comfy.Graph.LinkMarkers',
     category: ['LiteGraph', 'Link', 'LinkMarkers'],
     name: 'Link midpoint markers',
@@ -729,6 +748,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.8.7'
   },
   {
+    id: 'Comfy.InstalledVersion',
+    name: 'The frontend version that was running when the user first installed ComfyUI',
+    type: 'hidden',
+    defaultValue: null,
+    versionAdded: '1.24.0'
+  },
+  {
     id: 'LiteGraph.ContextMenu.Scaling',
     name: 'Scale node combo widget menus (lists) when zoomed in',
     defaultValue: false,
@@ -755,5 +781,97 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     defaultValue: true,
     versionAdded: '1.10.5'
+  },
+  {
+    id: 'LiteGraph.Reroute.SplineOffset',
+    name: 'Reroute spline offset',
+    tooltip: 'The bezier control point offset from the reroute centre point',
+    type: 'slider',
+    defaultValue: 20,
+    attrs: {
+      min: 0,
+      max: 400
+    },
+    versionAdded: '1.15.7'
+  },
+  {
+    id: 'Comfy.Toast.DisableReconnectingToast',
+    name: 'Disable toasts when reconnecting or reconnected',
+    type: 'hidden',
+    defaultValue: false,
+    versionAdded: '1.15.12'
+  },
+  {
+    id: 'Comfy.Workflow.AutoSaveDelay',
+    name: 'Auto Save Delay (ms)',
+    defaultValue: 1000,
+    type: 'number',
+    tooltip: 'Only applies if Auto Save is set to "after delay".',
+    versionAdded: '1.16.0'
+  },
+  {
+    id: 'Comfy.Workflow.AutoSave',
+    name: 'Auto Save',
+    type: 'combo',
+    options: ['off', 'after delay'], // Room for other options like on focus change, tab change, window change
+    defaultValue: 'off', // Popular requst by users (https://github.com/Comfy-Org/ComfyUI_frontend/issues/1584#issuecomment-2536610154)
+    versionAdded: '1.16.0'
+  },
+  {
+    id: 'Comfy.Workflow.Persist',
+    name: 'Persist workflow state and restore on page (re)load',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.16.1'
+  },
+  {
+    id: 'LiteGraph.Node.DefaultPadding',
+    name: 'Always shrink new nodes',
+    tooltip:
+      'Resize nodes to the smallest possible size when created. When disabled, a newly added node will be widened slightly to show widget values.',
+    type: 'boolean',
+    defaultValue: false,
+    versionAdded: '1.18.0'
+  },
+  {
+    id: 'Comfy.Canvas.BackgroundImage',
+    category: ['Appearance', 'Canvas', 'Background'],
+    name: 'Canvas background image',
+    type: 'backgroundImage',
+    tooltip:
+      'Image URL for the canvas background. You can right-click an image in the outputs panel and select "Set as Background" to use it, or upload your own image using the upload button.',
+    defaultValue: '',
+    versionAdded: '1.20.4',
+    versionModified: '1.20.5'
+  },
+  {
+    id: 'LiteGraph.Pointer.TrackpadGestures',
+    category: ['LiteGraph', 'Pointer', 'Trackpad Gestures'],
+    experimental: true,
+    name: 'Enable trackpad gestures',
+    tooltip:
+      'This setting enables trackpad mode for the canvas, allowing pinch-to-zoom and panning with two fingers.',
+    type: 'boolean',
+    defaultValue: false,
+    versionAdded: '1.19.1'
+  },
+  // Release data stored in settings
+  {
+    id: 'Comfy.Release.Version',
+    name: 'Last seen release version',
+    type: 'hidden',
+    defaultValue: ''
+  },
+  {
+    id: 'Comfy.Release.Status',
+    name: 'Release status',
+    type: 'hidden',
+    defaultValue: 'skipped'
+  },
+  {
+    id: 'Comfy.Release.Timestamp',
+    name: 'Release seen timestamp',
+    type: 'hidden',
+    defaultValue: 0
   }
 ]

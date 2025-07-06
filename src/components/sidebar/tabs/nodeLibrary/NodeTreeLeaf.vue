@@ -22,12 +22,21 @@
           severity="secondary"
           @click.stop="toggleBookmark"
         />
+        <Button
+          v-tooltip.bottom="$t('g.learnMore')"
+          class="help-button"
+          size="small"
+          icon="pi pi-question"
+          text
+          severity="secondary"
+          @click.stop="props.openNodeHelp(nodeDef)"
+        />
       </template>
     </TreeExplorerTreeNode>
 
     <teleport v-if="isHovered" to="#node-library-node-preview-container">
       <div class="node-lib-node-preview" :style="nodePreviewStyle">
-        <NodePreview ref="previewRef" :nodeDef="nodeDef"></NodePreview>
+        <NodePreview ref="previewRef" :node-def="nodeDef" />
       </div>
     </teleport>
   </div>
@@ -54,9 +63,11 @@ import { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
 const props = defineProps<{
   node: RenderedTreeExplorerNode<ComfyNodeDefImpl>
+  openNodeHelp: (nodeDef: ComfyNodeDefImpl) => void
 }>()
 
-const nodeDef = computed(() => props.node.data)
+// Note: node.data should be present for leaf nodes.
+const nodeDef = computed(() => props.node.data!)
 const nodeBookmarkStore = useNodeBookmarkStore()
 const isBookmarked = computed(() =>
   nodeBookmarkStore.isBookmarked(nodeDef.value)
@@ -66,12 +77,8 @@ const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
 )
 
-const emit = defineEmits<{
-  (e: 'toggle-bookmark', value: ComfyNodeDefImpl): void
-}>()
-
-const toggleBookmark = () => {
-  nodeBookmarkStore.toggleBookmark(nodeDef.value)
+const toggleBookmark = async () => {
+  await nodeBookmarkStore.toggleBookmark(nodeDef.value)
 }
 
 const previewRef = ref<InstanceType<typeof NodePreview> | null>(null)
@@ -83,6 +90,8 @@ const nodePreviewStyle = ref<CSSProperties>({
 
 const handleNodeHover = async () => {
   const hoverTarget = nodeContentElement.value
+  if (!hoverTarget) return
+
   const targetRect = hoverTarget.getBoundingClientRect()
 
   const previewHeight = previewRef.value?.$el.offsetHeight || 0
@@ -105,13 +114,14 @@ const isHovered = ref(false)
 const handleMouseEnter = async () => {
   isHovered.value = true
   await nextTick()
-  handleNodeHover()
+  await handleNodeHover()
 }
 const handleMouseLeave = () => {
   isHovered.value = false
 }
 onMounted(() => {
-  nodeContentElement.value = container.value?.closest('.p-tree-node-content')
+  nodeContentElement.value =
+    container.value?.closest('.p-tree-node-content') ?? null
   nodeContentElement.value?.addEventListener('mouseenter', handleMouseEnter)
   nodeContentElement.value?.addEventListener('mouseleave', handleMouseLeave)
 })

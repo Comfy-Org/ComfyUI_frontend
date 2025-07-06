@@ -1,36 +1,36 @@
-// @ts-strict-ignore
 import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
 
 import { app } from '../../scripts/app'
 
-let touchZooming
+let touchZooming = false
 let touchCount = 0
 
 app.registerExtension({
   name: 'Comfy.SimpleTouchSupport',
   setup() {
-    let touchDist
-    let touchTime
-    let lastTouch
-    let lastScale
-    function getMultiTouchPos(e) {
+    let touchDist: number | null = null
+    let touchTime: Date | null = null
+    let lastTouch: { clientX: number; clientY: number } | null = null
+    let lastScale: number | null = null
+    function getMultiTouchPos(e: TouchEvent) {
       return Math.hypot(
         e.touches[0].clientX - e.touches[1].clientX,
         e.touches[0].clientY - e.touches[1].clientY
       )
     }
 
-    function getMultiTouchCenter(e) {
+    function getMultiTouchCenter(e: TouchEvent) {
       return {
         clientX: (e.touches[0].clientX + e.touches[1].clientX) / 2,
         clientY: (e.touches[0].clientY + e.touches[1].clientY) / 2
       }
     }
 
-    app.canvasEl.parentElement.addEventListener(
+    app.canvasEl.parentElement?.addEventListener(
       'touchstart',
       (e: TouchEvent) => {
-        touchCount++
+        touchCount += e.changedTouches.length
+
         lastTouch = null
         lastScale = null
         if (e.touches?.length === 1) {
@@ -52,31 +52,48 @@ app.registerExtension({
       true
     )
 
-    app.canvasEl.parentElement.addEventListener('touchend', (e: TouchEvent) => {
-      touchCount--
+    app.canvasEl.parentElement?.addEventListener(
+      'touchend',
+      (e: TouchEvent) => {
+        touchCount -= e.changedTouches.length
 
-      if (e.touches?.length !== 1) touchZooming = false
-      if (touchTime && !e.touches?.length) {
-        if (new Date().getTime() - touchTime > 600) {
-          if (e.target === app.canvasEl) {
-            app.canvasEl.dispatchEvent(
-              new PointerEvent('pointerdown', {
-                button: 2,
+        if (e.touches?.length !== 1) touchZooming = false
+        if (touchTime && !e.touches?.length) {
+          if (new Date().getTime() - touchTime.getTime() > 600) {
+            if (e.target === app.canvasEl) {
+              const touch = {
+                button: 2, // Right click
                 clientX: e.changedTouches[0].clientX,
-                clientY: e.changedTouches[0].clientY
+                clientY: e.changedTouches[0].clientY,
+                pointerId: 1, // changedTouches' id is 0, set it to any number
+                isPrimary: true // changedTouches' isPrimary is false, so set it to true
+              }
+              // context menu info set in 'pointerdown' event
+              app.canvasEl.dispatchEvent(new PointerEvent('pointerdown', touch))
+              // then, context menu open after 'pointerup' event
+              setTimeout(() => {
+                app.canvasEl.dispatchEvent(new PointerEvent('pointerup', touch))
               })
-            )
-            e.preventDefault()
+              e.preventDefault()
+            }
           }
+          touchTime = null
         }
-        touchTime = null
       }
-    })
+    )
 
-    app.canvasEl.parentElement.addEventListener(
+    app.canvasEl.parentElement?.addEventListener(
       'touchmove',
       (e) => {
-        touchTime = null
+        // make a threshold for touchmove to prevent clear touchTime for long press
+        if (touchTime && lastTouch && e.touches?.length === 1) {
+          const onlyTouch = e.touches[0]
+          const deltaX = onlyTouch.clientX - lastTouch.clientX
+          const deltaY = onlyTouch.clientY - lastTouch.clientY
+          if (deltaX * deltaX + deltaY * deltaY > 30) {
+            touchTime = null
+          }
+        }
         if (e.touches?.length === 2 && lastTouch && !e.ctrlKey && !e.shiftKey) {
           e.preventDefault() // Prevent browser from zooming when two textareas are touched
           app.canvas.pointer.isDown = false
@@ -89,6 +106,7 @@ app.registerExtension({
 
           const center = getMultiTouchCenter(e)
 
+          if (lastScale === null || touchDist === null) return
           let scale = (lastScale * newTouchDist) / touchDist
 
           const newX = (center.clientX - lastTouch.clientX) / scale
@@ -112,7 +130,7 @@ app.registerExtension({
 
           const newScale = app.canvas.ds.scale
 
-          const convertScaleToOffset = (scale) => [
+          const convertScaleToOffset = (scale: number) => [
             center.clientX / scale - app.canvas.ds.offset[0],
             center.clientY / scale - app.canvas.ds.offset[1]
           ]
@@ -134,18 +152,18 @@ app.registerExtension({
 })
 
 const processMouseDown = LGraphCanvas.prototype.processMouseDown
-LGraphCanvas.prototype.processMouseDown = function (e) {
+LGraphCanvas.prototype.processMouseDown = function (e: PointerEvent) {
   if (touchZooming || touchCount) {
     return
   }
   app.canvas.pointer.isDown = false // Prevent context menu from opening on second tap
-  return processMouseDown.apply(this, arguments)
+  return processMouseDown.apply(this, [e])
 }
 
 const processMouseMove = LGraphCanvas.prototype.processMouseMove
-LGraphCanvas.prototype.processMouseMove = function (e) {
+LGraphCanvas.prototype.processMouseMove = function (e: PointerEvent) {
   if (touchZooming || touchCount > 1) {
     return
   }
-  return processMouseMove.apply(this, arguments)
+  return processMouseMove.apply(this, [e])
 }

@@ -1,28 +1,27 @@
 <template>
   <TreeExplorer
-    class="node-lib-bookmark-tree-explorer"
     ref="treeExplorerRef"
-    :roots="renderedBookmarkedRoot.children"
-    :expandedKeys="expandedKeys"
+    class="node-lib-bookmark-tree-explorer"
+    :root="renderedBookmarkedRoot"
+    :expanded-keys="expandedKeys"
   >
     <template #folder="{ node }">
       <NodeTreeFolder :node="node" />
     </template>
     <template #node="{ node }">
-      <NodeTreeLeaf :node="node" />
+      <NodeTreeLeaf :node="node" :open-node-help="props.openNodeHelp" />
     </template>
   </TreeExplorer>
 
   <FolderCustomizationDialog
     v-model="showCustomizationDialog"
+    :initial-icon="initialIcon"
+    :initial-color="initialColor"
     @confirm="updateCustomization"
-    :initialIcon="initialIcon"
-    :initialColor="initialColor"
   />
 </template>
 
 <script setup lang="ts">
-import type { TreeNode } from 'primevue/treenode'
 import { computed, h, nextTick, ref, render, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -35,15 +34,16 @@ import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { TreeNode } from '@/types/treeExplorerTypes'
 import type {
   RenderedTreeExplorerNode,
   TreeExplorerDragAndDropData,
   TreeExplorerNode
 } from '@/types/treeExplorerTypes'
-import { findNodeByKey } from '@/utils/treeUtil'
 
 const props = defineProps<{
   filteredNodeDefs: ComfyNodeDefImpl[]
+  openNodeHelp: (nodeDef: ComfyNodeDefImpl) => void
 }>()
 
 const expandedKeys = ref<Record<string, boolean>>({})
@@ -83,9 +83,10 @@ const bookmarkedRoot = computed<TreeNode>(() => {
 })
 watch(
   () => props.filteredNodeDefs,
-  (newValue) => {
+  async (newValue) => {
     if (newValue.length) {
-      nextTick(() => expandNode(bookmarkedRoot.value))
+      await nextTick()
+      expandNode(bookmarkedRoot.value)
     }
   }
 )
@@ -95,17 +96,11 @@ const extraMenuItems = (
   menuTargetNode: RenderedTreeExplorerNode<ComfyNodeDefImpl>
 ) => [
   {
-    label: t('g.newFolder'),
-    icon: 'pi pi-folder-plus',
-    command: () => {
-      addNewBookmarkFolder(menuTargetNode)
-    },
-    visible: !menuTargetNode?.leaf
-  },
-  {
     label: t('g.customize'),
     icon: 'pi pi-palette',
     command: () => {
+      if (!menuTargetNode.data) return
+
       const customization =
         nodeBookmarkStore.bookmarksCustomization[menuTargetNode.data.nodePath]
       initialIcon.value =
@@ -152,6 +147,11 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
         },
         children: sortedChildren,
         draggable: node.leaf,
+        async handleAddFolder(newName: string) {
+          if (newName !== '') {
+            await nodeBookmarkStore.addNewBookmarkFolder(this.data, newName)
+          }
+        },
         renderDragPreview(container) {
           const vnode = h(NodePreview, { nodeDef: node.data })
           render(vnode, container)
@@ -160,18 +160,22 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
           }
         },
         droppable: !node.leaf,
-        handleDrop(data: TreeExplorerDragAndDropData<ComfyNodeDefImpl>) {
+        async handleDrop(data: TreeExplorerDragAndDropData<ComfyNodeDefImpl>) {
           const nodeDefToAdd = data.data.data
           // Remove bookmark if the source is the top level bookmarked node.
+          // @ts-expect-error fixme ts strict error
           if (nodeBookmarkStore.isBookmarked(nodeDefToAdd)) {
-            nodeBookmarkStore.toggleBookmark(nodeDefToAdd)
+            // @ts-expect-error fixme ts strict error
+            await nodeBookmarkStore.toggleBookmark(nodeDefToAdd)
           }
           const folderNodeDef = node.data as ComfyNodeDefImpl
+          // @ts-expect-error fixme ts strict error
           const nodePath = folderNodeDef.category + '/' + nodeDefToAdd.name
-          nodeBookmarkStore.addBookmark(nodePath)
+          await nodeBookmarkStore.addBookmark(nodePath)
         },
         handleClick(e: MouseEvent) {
           if (this.leaf) {
+            // @ts-expect-error fixme ts strict error
             useLitegraphService().addNodeOnGraph(this.data)
           } else {
             toggleNodeOnEvent(e, node)
@@ -181,13 +185,17 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
         ...(node.leaf
           ? {}
           : {
-              handleRename(newName: string) {
+              async handleRename(newName: string) {
                 if (this.data && this.data.isDummyFolder) {
-                  nodeBookmarkStore.renameBookmarkFolder(this.data, newName)
+                  await nodeBookmarkStore.renameBookmarkFolder(
+                    this.data,
+                    newName
+                  )
                 }
               },
-              handleDelete() {
-                nodeBookmarkStore.deleteBookmarkFolder(this.data)
+              async handleDelete() {
+                // @ts-expect-error fixme ts strict error
+                await nodeBookmarkStore.deleteBookmarkFolder(this.data)
               }
             })
       }
@@ -197,34 +205,17 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
 )
 
 const treeExplorerRef = ref<InstanceType<typeof TreeExplorer> | null>(null)
-const addNewBookmarkFolder = (
-  parent?: RenderedTreeExplorerNode<ComfyNodeDefImpl>
-) => {
-  const newFolderKey =
-    'root/' + nodeBookmarkStore.addNewBookmarkFolder(parent?.data).slice(0, -1)
-  nextTick(() => {
-    treeExplorerRef.value?.renameCommand(
-      findNodeByKey(
-        renderedBookmarkedRoot.value,
-        newFolderKey
-      ) as RenderedTreeExplorerNode
-    )
-    if (parent) {
-      expandedKeys.value[parent.key] = true
-    }
-  })
-}
 defineExpose({
-  addNewBookmarkFolder
+  addNewBookmarkFolder: () => treeExplorerRef.value?.addFolderCommand('root')
 })
 
 const showCustomizationDialog = ref(false)
 const initialIcon = ref(nodeBookmarkStore.defaultBookmarkIcon)
 const initialColor = ref(nodeBookmarkStore.defaultBookmarkColor)
 const customizationTargetNodePath = ref('')
-const updateCustomization = (icon: string, color: string) => {
+const updateCustomization = async (icon: string, color: string) => {
   if (customizationTargetNodePath.value) {
-    nodeBookmarkStore.updateBookmarkCustomization(
+    await nodeBookmarkStore.updateBookmarkCustomization(
       customizationTargetNodePath.value,
       { icon, color }
     )

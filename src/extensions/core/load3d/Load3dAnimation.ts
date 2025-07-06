@@ -38,8 +38,8 @@ class Load3dAnimation extends Load3d {
     const animate = () => {
       this.animationFrameId = requestAnimationFrame(animate)
 
-      if (this.previewManager.showPreview) {
-        this.previewManager.updatePreviewRender()
+      if (!this.isActive()) {
+        return
       }
 
       const delta = this.clock.getDelta()
@@ -50,12 +50,13 @@ class Load3dAnimation extends Load3d {
 
       this.controlsManager.update()
 
-      this.renderer.clear()
-      this.sceneManager.renderBackground()
-      this.renderer.render(
-        this.sceneManager.scene,
-        this.cameraManager.activeCamera
-      )
+      this.renderMainScene()
+
+      if (this.previewManager.showPreview) {
+        this.previewManager.renderPreview()
+      }
+
+      this.resetViewport()
 
       if (this.viewHelperManager.viewHelper.render) {
         this.viewHelperManager.viewHelper.render(this.renderer)
@@ -65,7 +66,10 @@ class Load3dAnimation extends Load3d {
     animate()
   }
 
-  async loadModel(url: string, originalFileName?: string): Promise<void> {
+  override async loadModel(
+    url: string,
+    originalFileName?: string
+  ): Promise<void> {
     await super.loadModel(url, originalFileName)
 
     if (this.modelManager.currentModel) {
@@ -76,7 +80,7 @@ class Load3dAnimation extends Load3d {
     }
   }
 
-  clearModel(): void {
+  override clearModel(): void {
     this.animationManager.dispose()
     super.clearModel()
   }
@@ -121,7 +125,7 @@ class Load3dAnimation extends Load3d {
     return this.animationManager.currentAnimation
   }
 
-  remove(): void {
+  override remove(): void {
     this.animationManager.dispose()
     super.remove()
   }

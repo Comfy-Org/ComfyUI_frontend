@@ -101,4 +101,5 @@ export const useContextMenuTranslation = () => {
   }
 
   LiteGraph.ContextMenu = ContextMenu as unknown as typeof LiteGraph.ContextMenu
+  LiteGraph.ContextMenu.prototype = OriginalContextMenu.prototype
 }

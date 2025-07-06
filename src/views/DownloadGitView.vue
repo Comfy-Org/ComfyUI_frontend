@@ -27,14 +27,14 @@
           :label="$t('downloadGit.gitWebsite')"
           icon="pi pi-external-link"
           icon-pos="right"
-          @click="openGitDownloads"
           severity="primary"
+          @click="openGitDownloads"
         />
         <Button
           :label="$t('downloadGit.skip')"
           icon="pi pi-exclamation-triangle"
-          @click="skipGit"
           severity="secondary"
+          @click="skipGit"
         />
       </div>
     </div>
@@ -51,9 +51,9 @@ const openGitDownloads = () => {
   window.open('https://git-scm.com/downloads/', '_blank')
 }
 
-const skipGit = () => {
+const skipGit = async () => {
   console.warn('pushing')
   const router = useRouter()
-  router.push('install')
+  await router.push('install')
 }
 </script>

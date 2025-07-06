@@ -1,4 +1,5 @@
 import { ResultItem } from '@/schemas/apiSchema'
+import type { operations } from '@/types/comfyRegistryTypes'
 
 export function formatCamelCase(str: string): string {
   // Check if the string is camel case
@@ -316,7 +317,232 @@ export const paramsToCacheKey = (params: unknown): string => {
 }
 
 /**
- * Generates a random 4-character string to use as a unique suffix
+ * Generates a RFC4122 compliant UUID v4 using the native crypto API when available
+ * @returns A properly formatted UUID string
  */
-export const generateRandomSuffix = (): string =>
-  Math.random().toString(36).substring(2, 6)
+export const generateUUID = (): string => {
+  // Use native crypto.randomUUID() if available (modern browsers)
+  if (
+    typeof crypto !== 'undefined' &&
+    typeof crypto.randomUUID === 'function'
+  ) {
+    return crypto.randomUUID()
+  }
+
+  // Fallback implementation for older browsers
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0
+    const v = c === 'x' ? r : (r & 0x3) | 0x8
+    return v.toString(16)
+  })
+}
+
+/**
+ * Checks if a URL is a Civitai model URL
+ * @example
+ * isCivitaiModelUrl('https://civitai.com/api/download/models/1234567890') // true
+ * isCivitaiModelUrl('https://civitai.com/api/v1/models/1234567890') // true
+ * isCivitaiModelUrl('https://civitai.com/api/v1/models-versions/15342') // true
+ * isCivitaiModelUrl('https://example.com/model.safetensors') // false
+ */
+export const isCivitaiModelUrl = (url: string): boolean => {
+  if (!isValidUrl(url)) return false
+  if (!url.includes('civitai.com')) return false
+
+  const urlObj = new URL(url)
+  const pathname = urlObj.pathname
+
+  return (
+    /^\/api\/download\/models\/(\d+)$/.test(pathname) ||
+    /^\/api\/v1\/models\/(\d+)$/.test(pathname) ||
+    /^\/api\/v1\/models-versions\/(\d+)$/.test(pathname)
+  )
+}
+
+/**
+ * Converts a Hugging Face download URL to a repository page URL
+ * @param url The download URL to convert
+ * @returns The repository page URL or the original URL if conversion fails
+ * @example
+ * downloadUrlToHfRepoUrl(
+ *  'https://huggingface.co/bfl/FLUX.1/resolve/main/flux1-canny-dev.safetensors?download=true'
+ * ) // https://huggingface.co/bfl/FLUX.1
+ */
+export const downloadUrlToHfRepoUrl = (url: string): string => {
+  try {
+    const urlObj = new URL(url)
+    const pathname = urlObj.pathname
+
+    // Use regex to match everything before /resolve/ or /blob/
+    const regex = /^(.*?)(?:\/resolve\/|\/blob\/|$)/
+    const repoPathMatch = regex.exec(pathname)
+
+    // Extract the repository path and remove leading slash if present
+    const repoPath = repoPathMatch?.[1]?.replace(/^\//, '') || ''
+
+    return `https://huggingface.co/${repoPath}`
+  } catch (error) {
+    return url
+  }
+}
+
+export const isSemVer = (version: string) => {
+  const regex = /^(\d+)\.(\d+)\.(\d+)$/
+  return regex.test(version)
+}
+
+const normalizeVersion = (version: string) =>
+  version
+    .split(/[+.-]/)
+    .map(Number)
+    .filter((part) => !Number.isNaN(part))
+
+export function compareVersions(
+  versionA: string | undefined,
+  versionB: string | undefined
+): number {
+  versionA ??= '0.0.0'
+  versionB ??= '0.0.0'
+
+  const aParts = normalizeVersion(versionA)
+  const bParts = normalizeVersion(versionB)
+
+  for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
+    const aPart = aParts[i] ?? 0
+    const bPart = bParts[i] ?? 0
+    if (aPart < bPart) return -1
+    if (aPart > bPart) return 1
+  }
+
+  return 0
+}
+
+/**
+ * Converts a currency amount to Metronome's integer representation.
+ * For USD, converts to cents (multiplied by 100).
+ * For all other currencies (including custom pricing units), returns the amount as is.
+ * This is specific to Metronome's API requirements.
+ *
+ * @param amount - The amount in currency to convert
+ * @param currency - The currency to convert
+ * @returns The amount in Metronome's integer format (cents for USD, base units for others)
+ * @example
+ * toMetronomeCurrency(1.23, 'usd') // returns 123 (cents)
+ * toMetronomeCurrency(1000, 'jpy') // returns 1000 (yen)
+ */
+export function toMetronomeCurrency(amount: number, currency: string): number {
+  if (currency === 'usd') {
+    return Math.round(amount * 100)
+  }
+  return amount
+}
+
+/**
+ * Converts Metronome's integer amount back to a formatted currency string.
+ * For USD, converts from cents to dollars.
+ * For all other currencies (including custom pricing units), returns the amount as is.
+ * This is specific to Metronome's API requirements.
+ *
+ * @param amount - The amount in Metronome's integer format (cents for USD, base units for others)
+ * @param currency - The currency to convert
+ * @returns The formatted amount in currency with 2 decimal places for USD
+ * @example
+ * formatMetronomeCurrency(123, 'usd') // returns "1.23" (cents to USD)
+ * formatMetronomeCurrency(1000, 'jpy') // returns "1000" (yen)
+ */
+export function formatMetronomeCurrency(
+  amount: number,
+  currency: string
+): string {
+  if (currency === 'usd') {
+    return (amount / 100).toFixed(2)
+  }
+  return amount.toString()
+}
+
+/**
+ * Converts a USD amount to microdollars (1/1,000,000 of a dollar).
+ * This conversion is commonly used in financial systems to avoid floating-point precision issues
+ * by representing monetary values as integers.
+ *
+ * @param usd - The amount in US dollars to convert
+ * @returns The amount in microdollars (multiplied by 1,000,000)
+ * @example
+ * usdToMicros(1.23) // returns 1230000
+ */
+export function usdToMicros(usd: number): number {
+  return Math.round(usd * 1_000_000)
+}
+
+/**
+ * Converts URLs in a string to HTML links.
+ * @param text - The string to convert
+ * @returns The string with URLs converted to HTML links
+ * @example
+ * linkifyHtml('Visit https://example.com for more info') // returns 'Visit <a href="https://example.com" target="_blank" rel="noopener noreferrer" class="text-primary-400 hover:underline">https://example.com</a> for more info'
+ */
+export function linkifyHtml(text: string): string {
+  if (!text) return ''
+  const urlRegex =
+    /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%?=~_|])|(\bwww\.[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%?=~_|])/gi
+  return text.replace(urlRegex, (_match, p1, _p2, p3) => {
+    const url = p1 || p3
+    const href = p3 ? `http://${url}` : url
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-primary-400 hover:underline">${url}</a>`
+  })
+}
+
+/**
+ * Converts newline characters to HTML <br> tags.
+ * @param text - The string to convert
+ * @returns The string with newline characters converted to <br> tags
+ * @example
+ * nl2br('Hello\nWorld') // returns 'Hello<br />World'
+ */
+export function nl2br(text: string): string {
+  if (!text) return ''
+  return text.replace(/\n/g, '<br />')
+}
+
+/**
+ * Converts a version string to an anchor-safe format by replacing dots with dashes.
+ * @param version The version string (e.g., "1.0.0", "2.1.3-beta.1")
+ * @returns The anchor-safe version string (e.g., "v1-0-0", "v2-1-3-beta-1")
+ * @example
+ * formatVersionAnchor("1.0.0") // returns "v1-0-0"
+ * formatVersionAnchor("2.1.3-beta.1") // returns "v2-1-3-beta-1"
+ */
+export function formatVersionAnchor(version: string): string {
+  return `v${version.replace(/\./g, '-')}`
+}
+
+/**
+ * Supported locale types for the application (from OpenAPI schema)
+ */
+export type SupportedLocale = NonNullable<
+  operations['getReleaseNotes']['parameters']['query']['locale']
+>
+
+/**
+ * Converts a string to a valid locale type with 'en' as default
+ * @param locale - The locale string to validate and convert
+ * @returns A valid SupportedLocale type, defaults to 'en' if invalid
+ * @example
+ * stringToLocale('fr') // returns 'fr'
+ * stringToLocale('invalid') // returns 'en'
+ * stringToLocale('') // returns 'en'
+ */
+export function stringToLocale(locale: string): SupportedLocale {
+  const supportedLocales: SupportedLocale[] = [
+    'en',
+    'es',
+    'fr',
+    'ja',
+    'ko',
+    'ru',
+    'zh'
+  ]
+  return supportedLocales.includes(locale as SupportedLocale)
+    ? (locale as SupportedLocale)
+    : 'en'
+}

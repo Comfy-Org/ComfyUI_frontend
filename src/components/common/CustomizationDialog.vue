@@ -6,14 +6,14 @@
         <SelectButton
           v-model="selectedIcon"
           :options="iconOptions"
-          optionLabel="name"
-          dataKey="value"
+          option-label="name"
+          data-key="value"
         >
           <template #option="slotProps">
             <i
               :class="['pi', slotProps.option.value, 'mr-2']"
               :style="{ color: finalColor }"
-            ></i>
+            />
           </template>
         </SelectButton>
       </div>
@@ -30,14 +30,14 @@
       <Button
         :label="$t('g.reset')"
         icon="pi pi-refresh"
-        @click="resetCustomization"
         class="p-button-text"
+        @click="resetCustomization"
       />
       <Button
         :label="$t('g.confirm')"
         icon="pi pi-check"
-        @click="confirmCustomization"
         autofocus
+        @click="confirmCustomization"
       />
     </template>
   </Dialog>
@@ -98,12 +98,14 @@ const defaultIcon = iconOptions.find(
   (option) => option.value === nodeBookmarkStore.defaultBookmarkIcon
 )
 
+// @ts-expect-error fixme ts strict error
 const selectedIcon = ref<{ name: string; value: string }>(defaultIcon)
 const finalColor = ref(
   props.initialColor || nodeBookmarkStore.defaultBookmarkColor
 )
 
 const resetCustomization = () => {
+  // @ts-expect-error fixme ts strict error
   selectedIcon.value =
     iconOptions.find((option) => option.value === props.initialIcon) ||
     defaultIcon

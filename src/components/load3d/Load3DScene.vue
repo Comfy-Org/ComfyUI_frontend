@@ -1,12 +1,12 @@
 <template>
-  <div ref="container" class="w-full h-full relative">
+  <div ref="container" class="w-full h-full relative comfy-load-3d">
     <LoadingOverlay ref="loadingOverlayRef" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { LGraphNode } from '@comfyorg/litegraph'
-import { onMounted, onUnmounted, ref, toRaw, watch, watchEffect } from 'vue'
+import { onMounted, onUnmounted, ref, toRaw, watch } from 'vue'
 
 import LoadingOverlay from '@/components/load3d/LoadingOverlay.vue'
 import Load3d from '@/extensions/core/load3d/Load3d'
@@ -17,11 +17,12 @@ import {
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
 import { t } from '@/i18n'
+import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useLoad3dService } from '@/services/load3dService'
 
 const props = defineProps<{
-  node: any
-  type: 'Load3D' | 'Load3DAnimation' | 'Preview3D' | 'Preview3DAnimation'
+  node: LGraphNode
+  inputSpec: CustomInputSpec
   backgroundColor: string
   showGrid: boolean
   lightIntensity: number
@@ -31,6 +32,7 @@ const props = defineProps<{
   backgroundImage: string
   upDirection: UpDirection
   materialMode: MaterialMode
+  edgeThreshold?: number
   extraListeners?: Record<string, (value: any) => void>
 }>()
 
@@ -50,37 +52,136 @@ const eventConfig = {
   showPreviewChange: (value: boolean) => emit('showPreviewChange', value),
   backgroundImageChange: (value: string) =>
     emit('backgroundImageChange', value),
+  backgroundImageLoadingStart: () =>
+    loadingOverlayRef.value?.startLoading(t('load3d.loadingBackgroundImage')),
+  backgroundImageLoadingEnd: () => loadingOverlayRef.value?.endLoading(),
   upDirectionChange: (value: string) => emit('upDirectionChange', value),
+  edgeThresholdChange: (value: number) => emit('edgeThresholdChange', value),
   modelLoadingStart: () =>
     loadingOverlayRef.value?.startLoading(t('load3d.loadingModel')),
   modelLoadingEnd: () => loadingOverlayRef.value?.endLoading(),
   materialLoadingStart: () =>
     loadingOverlayRef.value?.startLoading(t('load3d.switchingMaterialMode')),
-  materialLoadingEnd: () => loadingOverlayRef.value?.endLoading()
+  materialLoadingEnd: () => loadingOverlayRef.value?.endLoading(),
+  exportLoadingStart: (message: string) => {
+    loadingOverlayRef.value?.startLoading(message || t('load3d.exportingModel'))
+  },
+  exportLoadingEnd: () => {
+    loadingOverlayRef.value?.endLoading()
+  },
+  textureLoadingStart: () =>
+    loadingOverlayRef.value?.startLoading(t('load3d.applyingTexture')),
+  textureLoadingEnd: () => loadingOverlayRef.value?.endLoading(),
+  recordingStatusChange: (value: boolean) =>
+    emit('recordingStatusChange', value)
 } as const
 
-watchEffect(() => {
-  if (load3d.value) {
-    const rawLoad3d = toRaw(load3d.value)
+watch(
+  () => props.showPreview,
+  (newValue) => {
+    if (load3d.value) {
+      const rawLoad3d = toRaw(load3d.value) as Load3d
 
-    rawLoad3d.setBackgroundColor(props.backgroundColor)
-    rawLoad3d.toggleGrid(props.showGrid)
-    rawLoad3d.setLightIntensity(props.lightIntensity)
-    rawLoad3d.setFOV(props.fov)
-    rawLoad3d.toggleCamera(props.cameraType)
-    rawLoad3d.togglePreview(props.showPreview)
-    rawLoad3d.setBackgroundImage(props.backgroundImage)
-    rawLoad3d.setUpDirection(props.upDirection)
+      rawLoad3d.togglePreview(newValue)
+    }
   }
-})
+)
+
+watch(
+  () => props.cameraType,
+  (newValue) => {
+    if (load3d.value) {
+      const rawLoad3d = toRaw(load3d.value) as Load3d
+
+      rawLoad3d.toggleCamera(newValue)
+    }
+  }
+)
+
+watch(
+  () => props.fov,
+  (newValue) => {
+    if (load3d.value) {
+      const rawLoad3d = toRaw(load3d.value) as Load3d
+
+      rawLoad3d.setFOV(newValue)
+    }
+  }
+)
+
+watch(
+  () => props.lightIntensity,
+  (newValue) => {
+    if (load3d.value) {
+      const rawLoad3d = toRaw(load3d.value) as Load3d
+
+      rawLoad3d.setLightIntensity(newValue)
+    }
+  }
+)
+
+watch(
+  () => props.showGrid,
+  (newValue) => {
+    if (load3d.value) {
+      const rawLoad3d = toRaw(load3d.value) as Load3d
+
+      rawLoad3d.toggleGrid(newValue)
+    }
+  }
+)
+
+watch(
+  () => props.backgroundColor,
+  (newValue) => {
+    if (load3d.value) {
+      const rawLoad3d = toRaw(load3d.value) as Load3d
+
+      rawLoad3d.setBackgroundColor(newValue)
+    }
+  }
+)
+
+watch(
+  () => props.backgroundImage,
+  async (newValue) => {
+    if (load3d.value) {
+      const rawLoad3d = toRaw(load3d.value) as Load3d
+
+      await rawLoad3d.setBackgroundImage(newValue)
+    }
+  }
+)
+
+watch(
+  () => props.upDirection,
+  (newValue) => {
+    if (load3d.value) {
+      const rawLoad3d = toRaw(load3d.value) as Load3d
+
+      rawLoad3d.setUpDirection(newValue)
+    }
+  }
+)
 
 watch(
   () => props.materialMode,
   (newValue) => {
     if (load3d.value) {
-      const rawLoad3d = toRaw(load3d.value)
+      const rawLoad3d = toRaw(load3d.value) as Load3d
 
       rawLoad3d.setMaterialMode(newValue)
+    }
+  }
+)
+
+watch(
+  () => props.edgeThreshold,
+  (newValue) => {
+    if (load3d.value && newValue) {
+      const rawLoad3d = toRaw(load3d.value) as Load3d
+
+      rawLoad3d.setEdgeThreshold(newValue)
     }
   }
 )
@@ -95,6 +196,8 @@ const emit = defineEmits<{
   (e: 'showPreviewChange', showPreview: boolean): void
   (e: 'backgroundImageChange', backgroundImage: string): void
   (e: 'upDirectionChange', upDirection: string): void
+  (e: 'edgeThresholdChange', threshold: number): void
+  (e: 'recordingStatusChange', status: boolean): void
 }>()
 
 const handleEvents = (action: 'add' | 'remove') => {
@@ -114,11 +217,13 @@ const handleEvents = (action: 'add' | 'remove') => {
 }
 
 onMounted(() => {
-  load3d.value = useLoad3dService().registerLoad3d(
-    node.value as LGraphNode,
-    container.value,
-    props.type
-  )
+  if (container.value) {
+    load3d.value = useLoad3dService().registerLoad3d(
+      node.value as LGraphNode,
+      container.value,
+      props.inputSpec
+    )
+  }
   handleEvents('add')
 })
 

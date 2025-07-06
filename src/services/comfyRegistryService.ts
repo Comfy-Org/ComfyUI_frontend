@@ -1,7 +1,6 @@
 import axios, { AxiosError, AxiosResponse } from 'axios'
 import { ref } from 'vue'
 
-import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { components, operations } from '@/types/comfyRegistryTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'
 
@@ -11,6 +10,10 @@ const registryApiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json'
+  },
+  paramsSerializer: {
+    // Disables PHP-style notation (e.g. param[]=value) in favor of repeated params (e.g. param=value1&param=value2)
+    indexes: null
   }
 })
 
@@ -20,16 +23,6 @@ const registryApiClient = axios.create({
 export const useComfyRegistryService = () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
-
-  const nodeDefStore = useNodeDefStore()
-
-  const isLocalNode = (nodeName: string, nodePackId: string) => {
-    if (!nodeDefStore.nodeDefsByName[nodeName]) return false
-    return (
-      nodeDefStore.nodeDefsByName[nodeName].python_module.toLowerCase() ===
-      nodePackId.toLowerCase()
-    )
-  }
 
   const handleApiError = (
     err: unknown,
@@ -100,24 +93,23 @@ export const useComfyRegistryService = () => {
   }
 
   /**
-   * Get Comfy Node definition for a specific node in a specific version of a node pack
+   * Get the Comfy Node definitions in a specific version of a node pack
    * @param packId - The ID of the node pack
    * @param versionId - The version of the node pack
-   * @param comfyNodeName - The name of the comfy node (corresponds to `ComfyNodeDef#name`)
-   * @returns The node definition or null if not found or an error occurred
+   * @returns The node definitions or null if not found or an error occurred
    */
-  const getNodeDef = async (
-    packId: components['schemas']['Node']['id'],
-    versionId: components['schemas']['NodeVersion']['id'],
-    comfyNodeName: components['schemas']['ComfyNode']['comfy_node_name'],
+  const getNodeDefs = async (
+    params: {
+      packId: components['schemas']['Node']['id']
+      version: components['schemas']['NodeVersion']['version']
+    } & operations['ListComfyNodes']['parameters']['query'],
     signal?: AbortSignal
   ) => {
-    if (!comfyNodeName || !packId) return null
-    if (isLocalNode(comfyNodeName, packId))
-      return nodeDefStore.nodeDefsByName[comfyNodeName]
+    const { packId, version: versionId, ...queryParams } = params
+    if (!packId || !versionId) return null
 
-    const endpoint = `/nodes/${packId}/versions/${versionId}/comfy-nodes/${comfyNodeName}`
-    const errorContext = 'Failed to get node definition'
+    const endpoint = `/nodes/${packId}/versions/${versionId}/comfy-nodes`
+    const errorContext = 'Failed to get node definitions'
     const routeSpecificErrors = {
       403: 'This pack has been banned and its definition is not available',
       404: 'The requested node, version, or comfy node does not exist'
@@ -125,7 +117,10 @@ export const useComfyRegistryService = () => {
 
     return executeApiRequest(
       () =>
-        registryApiClient.get<components['schemas']['ComfyNode']>(endpoint, {
+        registryApiClient.get<
+          operations['ListComfyNodes']['responses'][200]['content']['application/json']
+        >(endpoint, {
+          params: queryParams,
           signal
         }),
       errorContext,
@@ -323,6 +318,47 @@ export const useComfyRegistryService = () => {
     )
   }
 
+  /**
+   * Get the node pack that contains a specific ComfyUI node by its name.
+   * This method queries the registry to find which pack provides the given node.
+   *
+   * When multiple packs contain a node with the same name, the API returns the best match based on:
+   * 1. Preemption match - If the node name matches any in the pack's preempted_comfy_node_names array
+   * 2. Search ranking - Lower search_ranking values are preferred
+   * 3. Total installs - Higher installation counts are preferred as a tiebreaker
+   *
+   * @param nodeName - The name of the ComfyUI node (e.g., 'KSampler', 'CLIPTextEncode')
+   * @param signal - Optional AbortSignal for request cancellation
+   * @returns The node pack containing the specified node, or null if not found or on error
+   *
+   * @example
+   * ```typescript
+   * const pack = await inferPackFromNodeName('KSampler')
+   * if (pack) {
+   *   console.log(`Node found in pack: ${pack.name}`)
+   * }
+   * ```
+   */
+  const inferPackFromNodeName = async (
+    nodeName: operations['getNodeByComfyNodeName']['parameters']['path']['comfyNodeName'],
+    signal?: AbortSignal
+  ) => {
+    const endpoint = `/comfy-nodes/${nodeName}/node`
+    const errorContext = 'Failed to infer pack from comfy node name'
+    const routeSpecificErrors = {
+      404: `Comfy node not found: The node with name ${nodeName} does not exist in the registry`
+    }
+
+    return executeApiRequest(
+      () =>
+        registryApiClient.get<components['schemas']['Node']>(endpoint, {
+          signal
+        }),
+      errorContext,
+      routeSpecificErrors
+    )
+  }
+
   return {
     isLoading,
     error,
@@ -334,7 +370,8 @@ export const useComfyRegistryService = () => {
     getPackByVersion,
     getPublisherById,
     listPacksForPublisher,
-    getNodeDef,
-    postPackReview
+    getNodeDefs,
+    postPackReview,
+    inferPackFromNodeName
   }
 }

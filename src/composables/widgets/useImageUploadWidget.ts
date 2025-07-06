@@ -5,11 +5,11 @@ import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
 import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 import { useValueTransform } from '@/composables/useValueTransform'
 import { t } from '@/i18n'
-import type { ResultItem } from '@/schemas/apiSchema'
+import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
-import type { ComfyApp } from '@/types'
+import { isImageUploadInput } from '@/types/nodeDefAugmentation'
 import { createAnnotatedPath } from '@/utils/formatUtil'
 import { addToComboValues } from '@/utils/litegraphUtil'
 
@@ -32,23 +32,28 @@ export const useImageUploadWidget = () => {
   const widgetConstructor: ComfyWidgetConstructor = (
     node: LGraphNode,
     inputName: string,
-    inputData: InputSpec,
-    app: ComfyApp
+    inputData: InputSpec
   ) => {
-    const inputOptions = inputData[1] ?? {}
+    if (!isImageUploadInput(inputData)) {
+      throw new Error(
+        'Image upload widget requires imageInputName augmentation'
+      )
+    }
+
+    const inputOptions = inputData[1]
     const { imageInputName, allow_batch, image_folder = 'input' } = inputOptions
+    const folder: ResultItemType | undefined = image_folder
     const nodeOutputStore = useNodeOutputStore()
 
+    const isAnimated = !!inputOptions.animated_image_upload
     const isVideo = !!inputOptions.video_upload
     const accept = isVideo ? ACCEPTED_VIDEO_TYPES : ACCEPTED_IMAGE_TYPES
     const { showPreview } = isVideo ? useNodeVideo(node) : useNodeImage(node)
 
     const fileFilter = isVideo ? isVideoFile : isImageFile
-    // @ts-expect-error InputSpec is not typed correctly
     const fileComboWidget = findFileComboWidget(node, imageInputName)
     const initialFile = `${fileComboWidget.value}`
     const formatPath = (value: InternalFile) =>
-      // @ts-expect-error InputSpec is not typed correctly
       createAnnotatedPath(value, { rootFolder: image_folder })
 
     const transform = (internalValue: InternalValue): ExposedValue => {
@@ -68,10 +73,10 @@ export const useImageUploadWidget = () => {
 
     // Setup file upload handling
     const { openFileSelection } = useNodeImageUpload(node, {
-      // @ts-expect-error InputSpec is not typed correctly
       allow_batch,
       fileFilter,
       accept,
+      folder,
       onUploadComplete: (output) => {
         output.forEach((path) => addToComboValues(fileComboWidget, path))
         // @ts-expect-error litegraph combo value type does not support arrays yet
@@ -94,14 +99,19 @@ export const useImageUploadWidget = () => {
 
     // Add our own callback to the combo widget to render an image when it changes
     fileComboWidget.callback = function () {
-      nodeOutputStore.setNodeOutputs(node, fileComboWidget.value)
+      nodeOutputStore.setNodeOutputs(node, fileComboWidget.value, {
+        isAnimated
+      })
+      node.graph?.setDirtyCanvas(true)
     }
 
     // On load if we have a value then render the image
     // The value isnt set immediately so we need to wait a moment
     // No change callbacks seem to be fired on initial setting of the value
     requestAnimationFrame(() => {
-      nodeOutputStore.setNodeOutputs(node, fileComboWidget.value)
+      nodeOutputStore.setNodeOutputs(node, fileComboWidget.value, {
+        isAnimated
+      })
       showPreview({ block: false })
     })
 

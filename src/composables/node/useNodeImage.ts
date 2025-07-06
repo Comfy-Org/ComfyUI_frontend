@@ -1,16 +1,17 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
 
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { fitDimensionsToNodeWidth } from '@/utils/imageUtil'
 
-const VIDEO_WIDGET_NAME = 'video-preview' as const
+const VIDEO_WIDGET_NAME = 'video-preview'
 const VIDEO_DEFAULT_OPTIONS = {
   playsInline: true,
   controls: true,
   loop: true
 } as const
-const MEDIA_LOAD_TIMEOUT = 8192 as const
-const MAX_RETRIES = 1 as const
-const VIDEO_PIXEL_OFFSET = 64 as const
+const MEDIA_LOAD_TIMEOUT = 8192
+const MAX_RETRIES = 1
+const DEFAULT_VIDEO_SIZE = 256
 
 type MediaElement = HTMLImageElement | HTMLVideoElement
 
@@ -111,7 +112,6 @@ export const useNodeImage = (node: LGraphNode) => {
   const onLoaded = (elements: HTMLImageElement[]) => {
     node.imageIndex = null
     node.imgs = elements
-    node.setSizeForImage?.()
   }
 
   return useNodePreview(node, {
@@ -128,12 +128,29 @@ export const useNodeImage = (node: LGraphNode) => {
  */
 export const useNodeVideo = (node: LGraphNode) => {
   node.previewMediaType = 'video'
+  let minHeight = DEFAULT_VIDEO_SIZE
+  let minWidth = DEFAULT_VIDEO_SIZE
+
+  const setMinDimensions = (video: HTMLVideoElement) => {
+    const { minHeight: calculatedHeight, minWidth: calculatedWidth } =
+      fitDimensionsToNodeWidth(
+        video.videoWidth,
+        video.videoHeight,
+        node.size?.[0] || DEFAULT_VIDEO_SIZE
+      )
+
+    minWidth = calculatedWidth
+    minHeight = calculatedHeight
+  }
 
   const loadElement = (url: string): Promise<HTMLVideoElement | null> =>
     new Promise((resolve) => {
       const video = document.createElement('video')
       Object.assign(video, VIDEO_DEFAULT_OPTIONS)
-      video.onloadeddata = () => resolve(video)
+      video.onloadeddata = () => {
+        setMinDimensions(video)
+        resolve(video)
+      }
       video.onerror = () => resolve(null)
       video.src = url
     })
@@ -141,9 +158,13 @@ export const useNodeVideo = (node: LGraphNode) => {
   const addVideoDomWidget = (container: HTMLElement) => {
     const hasWidget = node.widgets?.some((w) => w.name === VIDEO_WIDGET_NAME)
     if (!hasWidget) {
-      node.addDOMWidget(VIDEO_WIDGET_NAME, 'video', container, {
-        hideOnZoom: false,
-        serialize: false
+      const widget = node.addDOMWidget(VIDEO_WIDGET_NAME, 'video', container, {
+        hideOnZoom: false
+      })
+      widget.serialize = false
+      widget.computeLayoutSize = () => ({
+        minHeight,
+        minWidth
       })
     }
   }
@@ -158,8 +179,6 @@ export const useNodeVideo = (node: LGraphNode) => {
     }
 
     node.videoContainer.replaceChildren(videoElement)
-    node.imageOffset = VIDEO_PIXEL_OFFSET
-    node.setSizeForImage?.(true)
   }
 
   return useNodePreview(node, {

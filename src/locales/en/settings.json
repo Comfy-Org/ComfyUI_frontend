@@ -25,6 +25,10 @@
       "custom": "custom"
     }
   },
+  "Comfy_Canvas_BackgroundImage": {
+    "name": "Canvas background image",
+    "tooltip": "Image URL for the canvas background. You can right-click an image in the outputs panel and select \"Set as Background\" to use it, or upload your own image using the upload button."
+  },
   "Comfy_Canvas_SelectionToolbox": {
     "name": "Show selection toolbox"
   },
@@ -108,6 +112,42 @@
       "Hidden": "Hidden"
     }
   },
+  "Comfy_Load3D_BackgroundColor": {
+    "name": "Initial Background Color",
+    "tooltip": "Controls the default background color of the 3D scene. This setting determines the background appearance when a new 3D widget is created, but can be adjusted individually for each widget after creation."
+  },
+  "Comfy_Load3D_CameraType": {
+    "name": "Initial Camera Type",
+    "tooltip": "Controls whether the camera is perspective or orthographic by default when a new 3D widget is created. This default can still be toggled individually for each widget after creation.",
+    "options": {
+      "perspective": "perspective",
+      "orthographic": "orthographic"
+    }
+  },
+  "Comfy_Load3D_LightAdjustmentIncrement": {
+    "name": "Light Adjustment Increment",
+    "tooltip": "Controls the increment size when adjusting light intensity in 3D scenes. A smaller step value allows for finer control over lighting adjustments, while a larger value results in more noticeable changes per adjustment."
+  },
+  "Comfy_Load3D_LightIntensity": {
+    "name": "Initial Light Intensity",
+    "tooltip": "Sets the default brightness level of lighting in the 3D scene. This value determines how intensely lights illuminate objects when a new 3D widget is created, but can be adjusted individually for each widget after creation."
+  },
+  "Comfy_Load3D_LightIntensityMaximum": {
+    "name": "Light Intensity Maximum",
+    "tooltip": "Sets the maximum allowable light intensity value for 3D scenes. This defines the upper brightness limit that can be set when adjusting lighting in any 3D widget."
+  },
+  "Comfy_Load3D_LightIntensityMinimum": {
+    "name": "Light Intensity Minimum",
+    "tooltip": "Sets the minimum allowable light intensity value for 3D scenes. This defines the lower brightness limit that can be set when adjusting lighting in any 3D widget."
+  },
+  "Comfy_Load3D_ShowGrid": {
+    "name": "Initial Grid Visibility",
+    "tooltip": "Controls whether the grid is visible by default when a new 3D widget is created. This default can still be toggled individually for each widget after creation."
+  },
+  "Comfy_Load3D_ShowPreview": {
+    "name": "Initial Preview Visibility",
+    "tooltip": "Controls whether the preview screen is visible by default when a new 3D widget is created. This default can still be toggled individually for each widget after creation."
+  },
   "Comfy_Locale": {
     "name": "Language"
   },
@@ -134,6 +174,9 @@
       "filename": "filename",
       "title": "title"
     }
+  },
+  "Comfy_Node_AllowImageSizeDraw": {
+    "name": "Show width × height below the image preview"
   },
   "Comfy_Node_AutoSnapLinkToSlot": {
     "name": "Auto snap link to node slot",
@@ -186,8 +229,8 @@
       "Hide built-in": "Hide built-in"
     }
   },
-  "Comfy_NodeInputConversionSubmenus": {
-    "name": "In the node context menu, place the entries that convert between input/widget in sub-menus."
+  "Comfy_NodeBadge_ShowApiPricing": {
+    "name": "Show API node pricing badge"
   },
   "Comfy_NodeSearchBoxImpl": {
     "name": "Node search box implementation",
@@ -243,10 +286,6 @@
     "name": "Batch count limit",
     "tooltip": "The maximum number of tasks added to the queue at one button click"
   },
-  "Comfy_RerouteBeta": {
-    "name": "Opt-in to the reroute beta test",
-    "tooltip": "Enables the new native reroutes.\n\nReroutes can be added by holding alt and dragging from a link line, or on the link menu.\n\nDisabling this option is non-destructive - reroutes are hidden."
-  },
   "Comfy_Sidebar_Location": {
     "name": "Sidebar location",
     "options": {
@@ -260,6 +299,9 @@
       "normal": "normal",
       "small": "small"
     }
+  },
+  "Comfy_Sidebar_UnifiedWidth": {
+    "name": "Unified sidebar width"
   },
   "Comfy_SnapToGrid_GridSize": {
     "name": "Snap to grid size",
@@ -300,8 +342,22 @@
   "Comfy_Window_UnloadConfirmation": {
     "name": "Show confirmation when closing window"
   },
+  "Comfy_Workflow_AutoSave": {
+    "name": "Auto Save",
+    "options": {
+      "off": "off",
+      "after delay": "after delay"
+    }
+  },
+  "Comfy_Workflow_AutoSaveDelay": {
+    "name": "Auto Save Delay (ms)",
+    "tooltip": "Only applies if Auto Save is set to \"after delay\"."
+  },
   "Comfy_Workflow_ConfirmDelete": {
     "name": "Show confirmation when deleting workflows"
+  },
+  "Comfy_Workflow_Persist": {
+    "name": "Persist workflow state and restore on page (re)load"
   },
   "Comfy_Workflow_ShowMissingModelsWarning": {
     "name": "Show missing models warning"
@@ -331,8 +387,20 @@
   "LiteGraph_ContextMenu_Scaling": {
     "name": "Scale node combo widget menus (lists) when zoomed in"
   },
+  "LiteGraph_Node_DefaultPadding": {
+    "name": "Always shrink new nodes",
+    "tooltip": "Resize nodes to the smallest possible size when created. When disabled, a newly added node will be widened slightly to show widget values."
+  },
   "LiteGraph_Node_TooltipDelay": {
     "name": "Tooltip Delay"
+  },
+  "LiteGraph_Pointer_TrackpadGestures": {
+    "name": "Enable trackpad gestures",
+    "tooltip": "This setting enables trackpad mode for the canvas, allowing pinch-to-zoom and panning with two fingers."
+  },
+  "LiteGraph_Reroute_SplineOffset": {
+    "name": "Reroute spline offset",
+    "tooltip": "The bezier control point offset from the reroute centre point"
   },
   "pysssss_SnapToGrid": {
     "name": "Always snap to grid"

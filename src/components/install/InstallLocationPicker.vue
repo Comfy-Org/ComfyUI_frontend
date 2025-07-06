@@ -16,15 +16,15 @@
             v-model="installPath"
             class="w-full"
             :class="{ 'p-invalid': pathError }"
-            @update:modelValue="validatePath"
+            @update:model-value="validatePath"
             @focus="onFocus"
           />
           <InputIcon
-            class="pi pi-info-circle"
             v-tooltip.top="$t('install.installLocationTooltip')"
+            class="pi pi-info-circle"
           />
         </IconField>
-        <Button icon="pi pi-folder" @click="browsePath" class="w-12" />
+        <Button icon="pi pi-folder" class="w-12" @click="browsePath" />
       </div>
 
       <Message v-if="pathError" severity="error" class="whitespace-pre-line">
@@ -32,6 +32,9 @@
       </Message>
       <Message v-if="pathExists" severity="warn">
         {{ $t('install.pathExists') }}
+      </Message>
+      <Message v-if="nonDefaultDrive" severity="warn">
+        {{ $t('install.nonDefaultDrive') }}
       </Message>
     </div>
 
@@ -46,18 +49,18 @@
           <span class="text-neutral-400">App Data:</span>
           <span class="text-neutral-200">{{ appData }}</span>
           <span
-            class="pi pi-info-circle"
             v-tooltip="$t('install.appDataLocationTooltip')"
-          ></span>
+            class="pi pi-info-circle"
+          />
         </div>
         <div class="flex items-center gap-2">
           <i class="pi pi-desktop text-neutral-400" />
           <span class="text-neutral-400">App Path:</span>
           <span class="text-neutral-200">{{ appPath }}</span>
           <span
-            class="pi pi-info-circle"
             v-tooltip="$t('install.appPathLocationTooltip')"
-          ></span>
+            class="pi pi-info-circle"
+          />
         </div>
       </div>
     </div>
@@ -80,6 +83,7 @@ const { t } = useI18n()
 const installPath = defineModel<string>('installPath', { required: true })
 const pathError = defineModel<string>('pathError', { required: true })
 const pathExists = ref(false)
+const nonDefaultDrive = ref(false)
 const appData = ref('')
 const appPath = ref('')
 const inputTouched = ref(false)
@@ -96,11 +100,12 @@ onMounted(async () => {
   await validatePath(paths.defaultInstallPath)
 })
 
-const validatePath = async (path: string) => {
+const validatePath = async (path: string | undefined) => {
   try {
     pathError.value = ''
     pathExists.value = false
-    const validation = await electron.validateInstallPath(path)
+    nonDefaultDrive.value = false
+    const validation = await electron.validateInstallPath(path ?? '')
 
     // Create a pre-formatted list of errors
     if (!validation.isValid) {
@@ -111,12 +116,14 @@ const validatePath = async (path: string) => {
         errors.push(`${t('install.insufficientFreeSpace')}: ${requiredGB} GB`)
       }
       if (validation.parentMissing) errors.push(t('install.parentMissing'))
+      if (validation.isOneDrive) errors.push(t('install.isOneDrive'))
+
       if (validation.error)
         errors.push(`${t('install.unhandledError')}: ${validation.error}`)
       pathError.value = errors.join('\n')
     }
 
-    // Display the path exists warning
+    if (validation.isNonDefaultDrive) nonDefaultDrive.value = true
     if (validation.exists) pathExists.value = true
   } catch (error) {
     pathError.value = t('install.pathValidationFailed')
@@ -135,12 +142,12 @@ const browsePath = async () => {
   }
 }
 
-const onFocus = () => {
+const onFocus = async () => {
   if (!inputTouched.value) {
     inputTouched.value = true
     return
   }
   // Refresh validation on re-focus
-  validatePath(installPath.value)
+  await validatePath(installPath.value)
 }
 </script>

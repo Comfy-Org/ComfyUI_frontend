@@ -21,7 +21,7 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
   }
 
   const bottomPanelTabs = ref<BottomPanelExtension[]>([])
-  const activeBottomPanelTabId = ref<string | null>(null)
+  const activeBottomPanelTabId = ref<string>('')
   const activeBottomPanelTab = computed<BottomPanelExtension | null>(() => {
     return (
       bottomPanelTabs.value.find(
@@ -49,7 +49,8 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
       id: `Workspace.ToggleBottomPanelTab.${tab.id}`,
       icon: 'pi pi-list',
       label: `Toggle ${tab.title} Bottom Panel`,
-      function: () => toggleBottomPanelTab(tab.id)
+      function: () => toggleBottomPanelTab(tab.id),
+      source: 'System'
     })
   }
 

@@ -6,11 +6,11 @@
       </div>
       <div class="actions">
         <Select
-          class="w-44"
           v-model="activePaletteId"
+          class="w-44"
           :options="palettes"
-          optionLabel="name"
-          optionValue="id"
+          option-label="name"
+          option-value="id"
         />
         <Button
           icon="pi pi-file-export"
@@ -29,8 +29,8 @@
           severity="danger"
           text
           :title="$t('g.delete')"
-          @click="colorPaletteService.deleteCustomColorPalette(activePaletteId)"
           :disabled="!colorPaletteStore.isCustomPalette(activePaletteId)"
+          @click="colorPaletteService.deleteCustomColorPalette(activePaletteId)"
         />
       </div>
     </div>
@@ -55,7 +55,7 @@ const { palettes, activePaletteId } = storeToRefs(colorPaletteStore)
 const importCustomPalette = async () => {
   const palette = await colorPaletteService.importColorPalette()
   if (palette) {
-    settingStore.set('Comfy.ColorPalette', palette.id)
+    await settingStore.set('Comfy.ColorPalette', palette.id)
   }
 }
 </script>

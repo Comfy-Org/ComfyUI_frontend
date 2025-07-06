@@ -2,7 +2,7 @@
   <router-view />
   <ProgressSpinner
     v-if="isLoading"
-    class="absolute inset-0 flex justify-center items-center h-screen"
+    class="absolute inset-0 flex justify-center items-center h-[unset]"
   />
   <GlobalDialog />
   <BlockUI full-screen :blocked="isLoading" />
@@ -28,7 +28,7 @@ const handleKey = (e: KeyboardEvent) => {
 useEventListener(window, 'keydown', handleKey)
 useEventListener(window, 'keyup', handleKey)
 
-const showContextMenu = (event: PointerEvent) => {
+const showContextMenu = (event: MouseEvent) => {
   const { target } = event
   switch (true) {
     case target instanceof HTMLTextAreaElement:
@@ -40,6 +40,7 @@ const showContextMenu = (event: PointerEvent) => {
 }
 
 onMounted(() => {
+  // @ts-expect-error fixme ts strict error
   window['__COMFYUI_FRONTEND_VERSION__'] = config.app_version
   console.log('ComfyUI Front-end version:', config.app_version)
 

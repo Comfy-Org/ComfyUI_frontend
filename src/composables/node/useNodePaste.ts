@@ -23,9 +23,7 @@ export const useNodePaste = <T>(
 
     const paste = allow_batch ? filteredFiles : filteredFiles.slice(0, 1)
 
-    onPaste(paste).then((result) => {
-      if (!result) return
-    })
+    void onPaste(paste)
     return true
   }
 }

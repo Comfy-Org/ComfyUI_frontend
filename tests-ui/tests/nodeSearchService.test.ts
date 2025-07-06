@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { describe, expect, it } from 'vitest'
 
 import { ComfyNodeDef } from '@/schemas/nodeDefSchema'
@@ -65,10 +64,14 @@ const EXAMPLE_NODE_DEFS: ComfyNodeDefImpl[] = (
 describe('nodeSearchService', () => {
   it('searches with input filter', () => {
     const service = new NodeSearchService(EXAMPLE_NODE_DEFS)
-    const inputFilter = service.getFilterById('input')
-    expect(service.searchNode('L', [[inputFilter, 'LATENT']])).toHaveLength(1)
+    const inputFilter = service.inputTypeFilter
+    expect(
+      service.searchNode('L', [{ filterDef: inputFilter, value: 'LATENT' }])
+    ).toHaveLength(1)
     // Wildcard should match all.
-    expect(service.searchNode('L', [[inputFilter, '*']])).toHaveLength(2)
+    expect(
+      service.searchNode('L', [{ filterDef: inputFilter, value: '*' }])
+    ).toHaveLength(2)
     expect(service.searchNode('L')).toHaveLength(2)
   })
 })

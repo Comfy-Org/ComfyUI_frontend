@@ -37,7 +37,6 @@ describe('useSettingStore', () => {
   it('should initialize with empty settings', () => {
     expect(store.settingValues).toEqual({})
     expect(store.settingsById).toEqual({})
-    expect(store.settingTree.children).toEqual([])
   })
 
   describe('loadSettingValues', () => {
@@ -189,11 +188,11 @@ describe('useSettingStore', () => {
         expect(storedValue).toEqual({ foo: 'bar', nested: { value: 123 } })
       })
 
-      it('should prevent mutations of retrieved objects', () => {
+      it('should prevent mutations of retrieved objects', async () => {
         const initialValue = { foo: 'bar', nested: { value: 123 } }
 
         // Set initial value
-        store.set('test.setting', initialValue)
+        await store.set('test.setting', initialValue)
 
         // Get the value and try to mutate it
         const retrievedValue = store.get('test.setting')
@@ -230,11 +229,11 @@ describe('useSettingStore', () => {
         expect(storedValue).toEqual([1, 2, { value: 3 }])
       })
 
-      it('should prevent mutations of retrieved arrays', () => {
+      it('should prevent mutations of retrieved arrays', async () => {
         const initialArray = [1, 2, { value: 3 }]
 
         // Set initial value
-        store.set('test.setting', initialArray)
+        await store.set('test.setting', initialArray)
 
         // Get the value and try to mutate it
         const retrievedArray = store.get('test.setting')

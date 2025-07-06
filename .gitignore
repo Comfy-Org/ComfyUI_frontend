@@ -38,7 +38,7 @@ tests-ui/workflows/examples
 /playwright-report/
 /blob-report/
 /playwright/.cache/
-browser_tests/*/*-win32.png
+browser_tests/**/*-win32.png
 
 .env
 
@@ -55,3 +55,6 @@ dist.zip
 
 # Temporary repository directory
 templates_repo/
+
+# Vite’s timestamped config modules
+vite.config.mts.timestamp-*.mjs

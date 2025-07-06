@@ -5,8 +5,9 @@
         v-for="tab in tabs"
         :key="tab.id"
         :icon="tab.icon"
-        :iconBadge="tab.iconBadge"
-        :tooltip="tab.tooltip + getTabTooltipSuffix(tab)"
+        :icon-badge="tab.iconBadge"
+        :tooltip="tab.tooltip"
+        :tooltip-suffix="getTabTooltipSuffix(tab)"
         :selected="tab.id === selectedTab?.id"
         :class="tab.id + '-tab-button'"
         @click="onTabClick(tab)"
@@ -14,6 +15,7 @@
       <div class="side-tool-bar-end">
         <SidebarLogoutIcon v-if="userStore.isMultiUserServer" />
         <SidebarThemeToggleIcon />
+        <SidebarHelpCenterIcon />
         <SidebarSettingsToggleIcon />
       </div>
     </nav>
@@ -36,6 +38,7 @@ import { useUserStore } from '@/stores/userStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
 
+import SidebarHelpCenterIcon from './SidebarHelpCenterIcon.vue'
 import SidebarIcon from './SidebarIcon.vue'
 import SidebarLogoutIcon from './SidebarLogoutIcon.vue'
 import SidebarSettingsToggleIcon from './SidebarSettingsToggleIcon.vue'

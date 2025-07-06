@@ -1,6 +1,8 @@
 import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
+import { resultItemType } from '@/schemas/apiSchema'
+
 const zComboOption = z.union([z.string(), z.number()])
 const zRemoteWidgetConfig = z.object({
   route: z.string().url().or(z.string().startsWith('/')),
@@ -12,16 +14,20 @@ const zRemoteWidgetConfig = z.object({
   timeout: z.number().gte(0).optional(),
   max_retries: z.number().gte(0).optional()
 })
+const zMultiSelectOption = z.object({
+  placeholder: z.string().optional(),
+  chip: z.boolean().optional()
+})
 
 export const zBaseInputOptions = z
   .object({
     default: z.any().optional(),
-    /** @deprecated Group node uses this field. Remove when group node feature is removed. */
     defaultInput: z.boolean().optional(),
     forceInput: z.boolean().optional(),
     tooltip: z.string().optional(),
     hidden: z.boolean().optional(),
     advanced: z.boolean().optional(),
+    widgetType: z.string().optional(),
     /** Backend-only properties. */
     rawLink: z.boolean().optional(),
     lazy: z.boolean().optional()
@@ -32,7 +38,7 @@ export const zNumericInputOptions = zBaseInputOptions.extend({
   min: z.number().optional(),
   max: z.number().optional(),
   step: z.number().optional(),
-  // Note: Many node authors are using INT/FLOAT to pass list of INT/FLOAT.
+  /** Note: Many node authors are using INT/FLOAT to pass list of INT/FLOAT. */
   default: z.union([z.number(), z.array(z.number())]).optional(),
   display: z.enum(['slider', 'number', 'knob']).optional()
 })
@@ -68,11 +74,14 @@ export const zStringInputOptions = zBaseInputOptions.extend({
 export const zComboInputOptions = zBaseInputOptions.extend({
   control_after_generate: z.boolean().optional(),
   image_upload: z.boolean().optional(),
-  image_folder: z.enum(['input', 'output', 'temp']).optional(),
+  image_folder: resultItemType.optional(),
   allow_batch: z.boolean().optional(),
   video_upload: z.boolean().optional(),
+  animated_image_upload: z.boolean().optional(),
   options: z.array(zComboOption).optional(),
-  remote: zRemoteWidgetConfig.optional()
+  remote: zRemoteWidgetConfig.optional(),
+  /** Whether the widget is a multi-select widget. */
+  multi_select: zMultiSelectOption.optional()
 })
 
 const zIntInputSpec = z.tuple([z.literal('INT'), zIntInputOptions.optional()])
@@ -212,11 +221,18 @@ export const zComfyNodeDef = z.object({
   name: z.string(),
   display_name: z.string(),
   description: z.string(),
+  help: z.string().optional(),
   category: z.string(),
   output_node: z.boolean(),
   python_module: z.string(),
   deprecated: z.boolean().optional(),
-  experimental: z.boolean().optional()
+  experimental: z.boolean().optional(),
+  /**
+   * Whether the node is an API node. Running API nodes requires login to
+   * Comfy Org account.
+   * https://docs.comfy.org/tutorials/api-nodes/overview
+   */
+  api_node: z.boolean().optional()
 })
 
 // `/object_info`

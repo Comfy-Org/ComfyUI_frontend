@@ -1,6 +1,6 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
-import type { IWidget } from '@comfyorg/litegraph'
+import { type LGraphNode, isComboWidget } from '@comfyorg/litegraph'
 import type {
+  IBaseWidget,
   IComboWidget,
   IStringWidget
 } from '@comfyorg/litegraph/dist/types/widgets'
@@ -20,11 +20,12 @@ import { useSettingStore } from '@/stores/settingStore'
 
 import type { ComfyApp } from './app'
 import './domWidget'
+import './errorNodeWidgets'
 
 export type ComfyWidgetConstructorV2 = (
   node: LGraphNode,
   inputSpec: InputSpecV2
-) => IWidget
+) => IBaseWidget
 
 export type ComfyWidgetConstructor = (
   node: LGraphNode,
@@ -32,7 +33,7 @@ export type ComfyWidgetConstructor = (
   inputData: InputSpec,
   app: ComfyApp,
   widgetName?: string
-) => { widget: IWidget; minWidth?: number; minHeight?: number }
+) => { widget: IBaseWidget; minWidth?: number; minHeight?: number }
 
 /**
  * Transforms a V2 widget constructor to a V1 widget constructor.
@@ -59,7 +60,7 @@ function controlValueRunBefore() {
   return useSettingStore().get('Comfy.WidgetControlMode') === 'before'
 }
 
-export function updateControlWidgetLabel(widget: IWidget) {
+export function updateControlWidgetLabel(widget: IBaseWidget) {
   if (controlValueRunBefore()) {
     widget.label = t('g.control_before_generate')
   } else {
@@ -72,12 +73,12 @@ const HAS_EXECUTED = Symbol()
 
 export function addValueControlWidget(
   node: LGraphNode,
-  targetWidget: IWidget,
+  targetWidget: IBaseWidget,
   defaultValue?: string,
-  values?: unknown,
+  _values?: unknown,
   widgetName?: string,
   inputData?: InputSpec
-): IWidget {
+): IComboWidget {
   let name = inputData?.[1]?.control_after_generate
   if (typeof name !== 'string') {
     name = widgetName
@@ -97,11 +98,11 @@ export function addValueControlWidget(
 
 export function addValueControlWidgets(
   node: LGraphNode,
-  targetWidget: IWidget,
+  targetWidget: IBaseWidget,
   defaultValue?: string,
   options?: Record<string, any>,
   inputData?: InputSpec
-): IWidget[] {
+): [IComboWidget, ...IStringWidget[]] {
   if (!defaultValue) defaultValue = 'randomize'
   if (!options) options = {}
 
@@ -117,7 +118,6 @@ export function addValueControlWidgets(
     return name
   }
 
-  const widgets: IWidget[] = []
   const valueControl = node.addWidget(
     'combo',
     getName('control_after_generate', 'controlAfterGenerateName'),
@@ -134,11 +134,12 @@ export function addValueControlWidgets(
   // @ts-ignore index with symbol
   valueControl[IS_CONTROL_WIDGET] = true
   updateControlWidgetLabel(valueControl)
-  widgets.push(valueControl)
+  const widgets: [IComboWidget, ...IStringWidget[]] = [valueControl]
 
-  const isCombo = targetWidget.type === 'combo'
+  const isCombo = isComboWidget(targetWidget)
   let comboFilter: IStringWidget
   if (isCombo && valueControl.options.values) {
+    // @ts-expect-error Combo widget values may be a dictionary or legacy function type
     valueControl.options.values.push('increment-wrap')
   }
   if (isCombo && options.addFilterList !== false) {
@@ -182,6 +183,7 @@ export function addValueControlWidgets(
           const lower = filter.toLocaleLowerCase()
           check = (item: string) => item.toLocaleLowerCase().includes(lower)
         }
+        // @ts-expect-error Combo widget values may be a dictionary or legacy function type
         values = values.filter((item: string) => check(item))
         if (!values.length && targetWidget.options.values?.length) {
           console.warn(
@@ -208,25 +210,28 @@ export function addValueControlWidgets(
           current_index -= 1
           break
         case 'randomize':
+          // @ts-expect-error Combo widget values may be a dictionary or legacy function type
           current_index = Math.floor(Math.random() * current_length)
           break
         default:
           break
       }
       current_index = Math.max(0, current_index)
+      // @ts-expect-error Combo widget values may be a dictionary or legacy function type
       current_index = Math.min(current_length - 1, current_index)
       if (current_index >= 0) {
+        // @ts-expect-error Combo widget values may be a dictionary or legacy function type
         let value = values[current_index]
         targetWidget.value = value
         targetWidget.callback?.(value)
       }
     } else {
       //number
-      let { min = 0, max = 1, step = 1 } = targetWidget.options
+      let { min = 0, max = 1, step2 = 1 } = targetWidget.options
       // limit to something that javascript can handle
       max = Math.min(1125899906842624, max)
       min = Math.max(-1125899906842624, min)
-      let range = (max - min) / (step / 10)
+      let range = (max - min) / step2
 
       //adjust values based on valueControl Behaviour
       switch (v) {
@@ -234,15 +239,14 @@ export function addValueControlWidgets(
           break
         case 'increment':
           // @ts-expect-error targetWidget.value can be number or string
-          targetWidget.value += step / 10
+          targetWidget.value += step2
           break
         case 'decrement':
           // @ts-expect-error targetWidget.value can be number or string
-          targetWidget.value -= step / 10
+          targetWidget.value -= step2
           break
         case 'randomize':
-          targetWidget.value =
-            Math.floor(Math.random() * range) * (step / 10) + min
+          targetWidget.value = Math.floor(Math.random() * range) * step2 + min
           break
         default:
           break

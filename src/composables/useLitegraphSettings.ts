@@ -78,15 +78,6 @@ export const useLitegraphSettings = () => {
   })
 
   watchEffect(() => {
-    const reroutesEnabled = settingStore.get('Comfy.RerouteBeta')
-    const { canvas } = canvasStore
-    if (canvas) {
-      canvas.reroutesEnabled = reroutesEnabled
-      canvas.setDirty(false, true)
-    }
-  })
-
-  watchEffect(() => {
     const maximumFps = settingStore.get('LiteGraph.Canvas.MaximumFps')
     const { canvas } = canvasStore
     if (canvas) canvas.maximumFps = maximumFps
@@ -123,6 +114,24 @@ export const useLitegraphSettings = () => {
   watchEffect(() => {
     LiteGraph.context_menu_scaling = settingStore.get(
       'LiteGraph.ContextMenu.Scaling'
+    )
+  })
+
+  watchEffect(() => {
+    LiteGraph.Reroute.maxSplineOffset = settingStore.get(
+      'LiteGraph.Reroute.SplineOffset'
+    )
+  })
+
+  watchEffect(() => {
+    LiteGraph.macTrackpadGestures = settingStore.get(
+      'LiteGraph.Pointer.TrackpadGestures'
+    )
+  })
+
+  watchEffect(() => {
+    LiteGraph.saveViewportWithGraph = settingStore.get(
+      'Comfy.EnableWorkflowViewRestore'
     )
   })
 }

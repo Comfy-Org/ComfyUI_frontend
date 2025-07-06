@@ -1,5 +1,5 @@
 /** Button, Tag, etc severity type is 'string' instead of this list. */
-export type VueSeverity =
+export type PrimeVueSeverity =
   | 'primary'
   | 'secondary'
   | 'success'

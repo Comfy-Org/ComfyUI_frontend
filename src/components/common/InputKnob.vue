@@ -1,26 +1,26 @@
 <template>
   <div class="input-knob flex flex-row items-center gap-2">
     <Knob
-      :modelValue="modelValue"
-      @update:modelValue="updateValue"
-      :valueTemplate="displayValue"
+      :model-value="modelValue"
+      :value-template="displayValue"
       class="knob-part"
       :class="knobClass"
       :min="min"
       :max="max"
       :step="step"
       v-bind="$attrs"
+      @update:model-value="updateValue"
     />
     <InputNumber
-      :modelValue="modelValue"
-      @update:modelValue="updateValue"
+      :model-value="modelValue"
       class="input-part"
       :max-fraction-digits="3"
       :class="inputClass"
       :min="min"
       :max="max"
       :step="step"
-      :allowEmpty="false"
+      :allow-empty="false"
+      @update:model-value="updateValue"
     />
   </div>
 </template>
@@ -76,7 +76,7 @@ const updateValue = (newValue: number | null) => {
 
 const displayValue = (value: number): string => {
   updateValue(value)
-  const stepString = props.step.toString()
+  const stepString = (props.step ?? 1).toString()
   const resolution = stepString.includes('.')
     ? stepString.split('.')[1].length
     : 0

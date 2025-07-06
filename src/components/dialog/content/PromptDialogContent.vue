@@ -4,13 +4,15 @@
       <InputText
         ref="inputRef"
         v-model="inputValue"
+        autofocus
         @keyup.enter="onConfirm"
         @focus="selectAllText"
-        autofocus
       />
       <label>{{ message }}</label>
     </FloatLabel>
-    <Button @click="onConfirm">{{ $t('g.confirm') }}</Button>
+    <Button @click="onConfirm">
+      {{ $t('g.confirm') }}
+    </Button>
   </div>
 </template>
 
@@ -35,9 +37,10 @@ const onConfirm = () => {
   useDialogStore().closeDialog()
 }
 
-const inputRef = ref(null)
+const inputRef = ref<InstanceType<typeof InputText> | undefined>()
 const selectAllText = () => {
   if (!inputRef.value) return
+  // @ts-expect-error - $el is an internal property of the InputText component
   const inputElement = inputRef.value.$el
   inputElement.setSelectionRange(0, inputElement.value.length)
 }

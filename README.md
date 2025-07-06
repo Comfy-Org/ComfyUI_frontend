@@ -510,16 +510,62 @@ The selection toolbox will display the command button when items are selected:
 
 </details>
 
+## Contributing
+
+We're building this frontend together and would love your help — no matter how you'd like to pitch in! You don't need to write code to make a difference.
+
+Here are some ways to get involved:
+
+- **Pull Requests:** Add features, fix bugs, or improve code health. Browse [issues](https://github.com/Comfy-Org/ComfyUI_frontend/issues) for inspiration.
+- **Vote on Features:** Give a 👍 to the feature requests you care about to help us prioritize.
+- **Verify Bugs:** Try reproducing reported issues and share your results (even if the bug doesn't occur!).
+- **Community Support:** Hop into our [Discord](https://www.comfy.org/discord) to answer questions or get help.
+- **Share & Advocate:** Tell your friends, tweet about us, or share tips to support the project.
+
+Have another idea? Drop into Discord or open an issue, and let's chat!
+
 ## Development
 
-### Tech Stack
+### Prerequisites & Technology Stack
 
-- [Vue 3](https://vuejs.org/) with [TypeScript](https://www.typescriptlang.org/)
-- [Pinia](https://pinia.vuejs.org/) for state management
-- [PrimeVue](https://primevue.org/) with [TailwindCSS](https://tailwindcss.com/) for UI
-- [litegraph.js](https://github.com/Comfy-Org/litegraph.js) for node editor
-- [zod](https://zod.dev/) for schema validation
-- [vue-i18n](https://github.com/intlify/vue-i18n) for internationalization
+- **Required Software**:
+  - Node.js (v16 or later) and npm
+  - Git for version control
+  - A running ComfyUI backend instance
+  
+- **Tech Stack**:
+  - [Vue 3](https://vuejs.org/) with [TypeScript](https://www.typescriptlang.org/)
+  - [Pinia](https://pinia.vuejs.org/) for state management
+  - [PrimeVue](https://primevue.org/) with [TailwindCSS](https://tailwindcss.com/) for UI
+  - [litegraph.js](https://github.com/Comfy-Org/litegraph.js) for node editor
+  - [zod](https://zod.dev/) for schema validation
+  - [vue-i18n](https://github.com/intlify/vue-i18n) for internationalization
+
+### Initial Setup
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Comfy-Org/ComfyUI_frontend.git
+   cd ComfyUI_frontend
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Configure environment (optional):
+   Create a `.env` file in the project root based on the provided [.env.example](.env.example) file.
+
+   **Note about ports**: By default, the dev server expects the ComfyUI backend at `localhost:8188`. If your ComfyUI instance runs on a different port, update this in your `.env` file.
+
+### Dev Server Configuration
+
+To launch ComfyUI and have it connect to your development server:
+
+```bash
+python main.py --port 8188
+```
 
 ### Git pre-commit hooks
 
@@ -557,6 +603,74 @@ After you start the dev server, you should see following logs:
 Make sure your desktop machine and touch device are on the same network. On your touch device,
 navigate to `http://<server_ip>:5173` (e.g. `http://192.168.2.20:5173` here), to access the ComfyUI frontend.
 
+### Recommended Code Editor Configuration
+
+This project includes `.vscode/launch.json.default` and `.vscode/settings.json.default` files with recommended launch and workspace settings for editors that use the `.vscode` directory (e.g., VS Code, Cursor, etc.).
+
+We've also included a list of recommended extensions in `.vscode/extensions.json`. Your editor should detect this file and show a human friendly list in the Extensions panel, linking each entry to its marketplace page.
+
+### Recommended MCP Integrations
+
+#### Playwright Browser Automation
+
+The Playwright MCP server enables LLM coding assistants (like Copilot, Claude Code, etc.) to control and inspect web browsers programmatically. This allows assistants to navigate websites, take screenshots, and interact with web pages on your behalf.
+
+For ComfyUI_frontend development, you can ask coding assistants to use Playwright screenshots to continuously verify that your code changes produce the expected visual results.
+
+##### Setup for Claude Code
+
+After installing dependencies with `npm i`, the Playwright MCP server will be automatically available when you start Claude Code locally.
+
+Here's how Claude Code can use the Playwright MCP server to inspect the interface of the local development server (assuming you're running the dev server at `localhost:5173`):
+
+
+```
+> navigate to localhost:5173 and take a screenshot.
+   tell me the items in the menubar
+
+● I'll navigate to localhost:5173 and take a
+  screenshot to see the menubar items.
+
+● playwright:playwright_navigate (MCP)(url:       …
+                                      "http://local
+                                      host:5173")
+  ⎿  Navigated to http://localhost:5173
+
+● playwright:playwright_screenshot (MCP)(name: "lo…
+                                        alhost_5173
+                                        _menubar")
+
+  ⎿ Screenshot saved to: ../../../Downloads/localho
+    st_5173_menubar-2025-05-30T17-23-00-942Z.png
+  ⎿  Screenshot also stored in memory with name:
+     'localhost_5173_menubar'
+
+● Read(../../../Downloads/localhost_5173_menubar-2…
+      25-05-30T17-23-00-942Z.png)
+  ⎿  Read image (94.3KB)
+
+● Based on the screenshot, I can see the menubar at
+   the top of the ComfyUI interface contains the
+  following items:
+
+  Main Menubar Items:
+  - Workflow - Menu for workflow-related actions
+  - Edit - Menu for editing operations
+  - Help - Menu for help and documentation
+
+  Additional UI Elements:
+  - ComfyUI Logo - On the far left
+  - Workflow Tab - Shows "Unsaved Workflow" with a
+  dropdown and close button
+  - Layout Controls - On the far right (grid view
+  and hamburger menu icons)
+
+  The interface shows a typical ComfyUI workflow
+  graph with nodes like "Load Checkpoint", "CLIP
+  Text Encode (Prompt)", "KSampler", and "Empty
+  Latent Image" connected with colored cables.
+```
+
 ### Unit Test
 
 - `npm i` to install all dependencies
@@ -586,3 +700,11 @@ This will replace the litegraph package in this repo with the local litegraph re
 ### i18n
 
 See [locales/README.md](src/locales/README.md) for details.
+
+## Troubleshooting
+
+For comprehensive troubleshooting and technical support, please refer to our official documentation:
+
+- **[General Troubleshooting Guide](https://docs.comfy.org/troubleshooting/overview)** - Common issues, performance optimization, and reporting bugs
+- **[Custom Node Issues](https://docs.comfy.org/troubleshooting/custom-node-issues)** - Debugging custom node problems and conflicts
+- **[Desktop Installation Guide](https://docs.comfy.org/installation/desktop/windows)** - Desktop-specific installation and troubleshooting

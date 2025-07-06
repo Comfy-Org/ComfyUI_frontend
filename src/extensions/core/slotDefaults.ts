@@ -23,14 +23,14 @@ app.registerExtension({
         step: 1
       },
       defaultValue: 5,
-      onChange: (newVal, oldVal) => {
+      onChange: (newVal) => {
         this.setDefaults(newVal)
       }
     })
   },
   slot_types_default_out: {},
   slot_types_default_in: {},
-  async beforeRegisterNodeDef(nodeType, nodeData, app) {
+  async beforeRegisterNodeDef(nodeType, nodeData) {
     var nodeId = nodeData.name
     const inputs = nodeData['input']?.['required'] //only show required inputs to reduce the mess also not logical to create node with optional inputs
     for (const inputKey in inputs) {
@@ -65,9 +65,10 @@ app.registerExtension({
     for (const el of outputs) {
       const type = el as string
       if (!(type in this.slot_types_default_in)) {
-        this.slot_types_default_in[type] = ['Reroute'] // ["Reroute", "Primitive"];  primitive doesn't always work :'()
+        this.slot_types_default_in[type] = ['Reroute']
       }
 
+      if (this.slot_types_default_in[type].includes(nodeId)) continue
       this.slot_types_default_in[type].push(nodeId)
 
       // Store each node that can handle this output type

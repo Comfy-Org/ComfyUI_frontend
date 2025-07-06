@@ -1,24 +1,29 @@
 <template>
   <div
+    v-show="showTopMenu"
     ref="topMenuRef"
     class="comfyui-menu flex items-center"
-    v-show="showTopMenu"
     :class="{ dropzone: isDropZone, 'dropzone-active': isDroppable }"
   >
-    <h1 class="comfyui-logo mx-2 app-drag">ComfyUI</h1>
+    <img
+      src="/assets/images/comfy-logo-mono.svg"
+      alt="ComfyUI Logo"
+      class="comfyui-logo ml-2 app-drag h-6"
+    />
     <CommandMenubar />
     <div class="flex-grow min-w-0 app-drag h-full">
       <WorkflowTabs v-if="workflowTabsPosition === 'Topbar'" />
     </div>
-    <div class="comfyui-menu-right flex-shrink-0" ref="menuRight"></div>
+    <div ref="menuRight" class="comfyui-menu-right flex-shrink-0" />
     <Actionbar />
+    <CurrentUserButton class="flex-shrink-0" />
     <BottomPanelToggleButton class="flex-shrink-0" />
     <Button
+      v-tooltip="{ value: $t('menu.hideMenu'), showDelay: 300 }"
       class="flex-shrink-0"
       icon="pi pi-bars"
       severity="secondary"
       text
-      v-tooltip="{ value: $t('menu.hideMenu'), showDelay: 300 }"
       :aria-label="$t('menu.hideMenu')"
       @click="workspaceState.focusMode = true"
       @contextmenu="showNativeSystemMenu"
@@ -44,6 +49,7 @@ import { computed, onMounted, provide, ref } from 'vue'
 import Actionbar from '@/components/actionbar/ComfyActionbar.vue'
 import BottomPanelToggleButton from '@/components/topbar/BottomPanelToggleButton.vue'
 import CommandMenubar from '@/components/topbar/CommandMenubar.vue'
+import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { app } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'
@@ -57,6 +63,7 @@ import {
 
 const workspaceState = useWorkspaceStore()
 const settingStore = useSettingStore()
+
 const workflowTabsPosition = computed(() =>
   settingStore.get('Comfy.Workflow.WorkflowTabsPosition')
 )
@@ -89,7 +96,7 @@ eventBus.on((event: string, payload: any) => {
 onMounted(() => {
   if (isElectron()) {
     electronAPI().changeTheme({
-      height: topMenuRef.value.getBoundingClientRect().height
+      height: topMenuRef.value?.getBoundingClientRect().height ?? 0
     })
   }
 })
@@ -123,8 +130,12 @@ onMounted(() => {
 }
 
 .comfyui-logo {
-  font-size: 1.2em;
   user-select: none;
   cursor: default;
+  filter: invert(0);
+}
+
+.dark-theme .comfyui-logo {
+  filter: invert(1);
 }
 </style>

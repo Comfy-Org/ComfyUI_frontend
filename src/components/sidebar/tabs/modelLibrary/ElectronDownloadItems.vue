@@ -1,5 +1,5 @@
 <template>
-  <div class="mx-6 mb-4" v-if="inProgressDownloads.length > 0">
+  <div v-if="inProgressDownloads.length > 0" class="mx-6 mb-4">
     <div class="text-lg my-4">
       {{ $t('electronFileDownload.inProgress') }}
     </div>

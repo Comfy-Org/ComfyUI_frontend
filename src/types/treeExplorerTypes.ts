@@ -1,16 +1,27 @@
 import type { MenuItem } from 'primevue/menuitem'
+import type { TreeNode as PrimeVueTreeNode } from 'primevue/treenode'
+import type { InjectionKey, ModelRef } from 'vue'
 
-export interface TreeExplorerNode<T = any> {
-  key: string
+export interface TreeNode extends PrimeVueTreeNode {
   label: string
-  leaf: boolean
+  children?: this[]
+}
+
+export interface TreeExplorerNode<T = any> extends TreeNode {
   data?: T
-  children?: TreeExplorerNode<T>[]
+  children?: this[]
   icon?: string
-  /** Function to override what icon to use for the node */
-  getIcon?: (this: TreeExplorerNode<T>) => string
-  /** Function to override what text to use for the leaf-count badge on a folder node */
-  getBadgeText?: (this: TreeExplorerNode<T>) => string
+  /**
+   * Function to override what icon to use for the node.
+   * Return undefined to fallback to {@link icon} property.
+   */
+  getIcon?: (this: TreeExplorerNode<T>) => string | undefined
+  /**
+   * Function to override what text to use for the leaf-count badge on a folder node.
+   * Return undefined to fallback to default badge text, which is the subtree's leaf count.
+   * Return empty string to hide the badge.
+   */
+  getBadgeText?: (this: TreeExplorerNode<T>) => string | undefined
   /** Function to handle renaming the node */
   handleRename?: (
     this: TreeExplorerNode<T>,
@@ -18,10 +29,10 @@ export interface TreeExplorerNode<T = any> {
   ) => void | Promise<void>
   /** Function to handle deleting the node */
   handleDelete?: (this: TreeExplorerNode<T>) => void | Promise<void>
-  /** Function to handle adding a child node */
-  handleAddChild?: (
+  /** Function to handle adding a folder */
+  handleAddFolder?: (
     this: TreeExplorerNode<T>,
-    child: TreeExplorerNode<T>
+    folderName: string
   ) => void | Promise<void>
   /** Whether the node is draggable */
   draggable?: boolean
@@ -51,16 +62,26 @@ export interface TreeExplorerNode<T = any> {
 }
 
 export interface RenderedTreeExplorerNode<T = any> extends TreeExplorerNode<T> {
-  children?: RenderedTreeExplorerNode<T>[]
+  children?: this[]
   icon: string
   type: 'folder' | 'node'
   /** Total number of leaves in the subtree */
   totalLeaves: number
   /** Text to display on the leaf-count badge. Empty string means no badge. */
   badgeText?: string
+  /** Whether the node label is currently being edited */
+  isEditingLabel?: boolean
 }
 
 export type TreeExplorerDragAndDropData<T = any> = {
   type: 'tree-explorer-node'
   data: RenderedTreeExplorerNode<T>
 }
+
+export const InjectKeyHandleEditLabelFunction: InjectionKey<
+  (node: RenderedTreeExplorerNode, newName: string) => void
+> = Symbol()
+
+export const InjectKeyExpandedKeys: InjectionKey<
+  ModelRef<Record<string, boolean>>
+> = Symbol()

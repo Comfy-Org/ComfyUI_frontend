@@ -1,13 +1,14 @@
 <template>
   <div class="relative">
     <Button
+      v-show="canvasStore.nodeSelected || canvasStore.groupSelected"
       severity="secondary"
       text
       @click="() => (showColorPicker = !showColorPicker)"
     >
       <template #icon>
         <div class="flex items-center gap-1">
-          <i class="pi pi-circle-fill" :style="{ color: currentColor }" />
+          <i class="pi pi-circle-fill" :style="{ color: currentColor ?? '' }" />
           <i class="pi pi-chevron-down" :style="{ fontSize: '0.5rem' }" />
         </div>
       </template>
@@ -17,19 +18,19 @@
       class="color-picker-container absolute -top-10 left-1/2"
     >
       <SelectButton
-        :modelValue="selectedColorOption"
-        @update:modelValue="applyColor"
+        :model-value="selectedColorOption"
         :options="colorOptions"
-        optionLabel="name"
-        dataKey="value"
+        option-label="name"
+        data-key="value"
+        @update:model-value="applyColor"
       >
         <template #option="{ option }">
           <i
+            v-tooltip.top="option.localizedName"
             class="pi pi-circle-fill"
             :style="{
               color: isLightTheme ? option.value.light : option.value.dark
             }"
-            v-tooltip.top="option.localizedName"
             :data-testid="option.name"
           />
         </template>
@@ -47,6 +48,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCanvasStore } from '@/stores/graphStore'
+import { useWorkflowStore } from '@/stores/workflowStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@/utils/colorUtil'
 import { getItemsColorOption } from '@/utils/litegraphUtil'
@@ -54,6 +56,7 @@ import { getItemsColorOption } from '@/utils/litegraphUtil'
 const { t } = useI18n()
 const canvasStore = useCanvasStore()
 const colorPaletteStore = useColorPaletteStore()
+const workflowStore = useWorkflowStore()
 const isLightTheme = computed(
   () => colorPaletteStore.completedActivePalette.light_theme
 )
@@ -108,6 +111,7 @@ const applyColor = (colorOption: ColorOption | null) => {
   canvasStore.canvas?.setDirty(true, true)
   currentColorOption.value = canvasColorOption
   showColorPicker.value = false
+  workflowStore.activeWorkflow?.changeTracker.checkState()
 }
 
 const currentColorOption = ref<CanvasColorOption | null>(null)

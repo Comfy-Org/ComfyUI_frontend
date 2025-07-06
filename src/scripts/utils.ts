@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { applyTextReplacements as _applyTextReplacements } from '@/utils/searchAndReplace'
 
 import { api } from './api'
@@ -90,12 +89,15 @@ export function prop<T>(
     name: string
   ) => void
 ): T {
+  // @ts-expect-error fixme ts strict error
   let currentValue
   Object.defineProperty(target, name, {
     get() {
+      // @ts-expect-error fixme ts strict error
       return currentValue
     },
     set(newValue) {
+      // @ts-expect-error fixme ts strict error
       const prevValue = currentValue
       currentValue = newValue
       onChanged?.(currentValue, prevValue, target, name)

@@ -1,4 +1,7 @@
 {
+  "Comfy-Desktop_CheckForUpdates": {
+    "label": "Vérifier les mises à jour"
+  },
   "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
     "label": "Ouvrir le dossier des nœuds personnalisés"
   },
@@ -35,14 +38,32 @@
   "Comfy_BrowseTemplates": {
     "label": "Parcourir les modèles"
   },
+  "Comfy_Canvas_AddEditModelStep": {
+    "label": "Ajouter/Modifier une étape de modèle"
+  },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "Supprimer les éléments sélectionnés"
   },
   "Comfy_Canvas_FitView": {
     "label": "Ajuster la vue aux nœuds sélectionnés"
   },
+  "Comfy_Canvas_MoveSelectedNodes_Down": {
+    "label": "Déplacer les nœuds sélectionnés vers le bas"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Left": {
+    "label": "Déplacer les nœuds sélectionnés vers la gauche"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Right": {
+    "label": "Déplacer les nœuds sélectionnés vers la droite"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Up": {
+    "label": "Déplacer les nœuds sélectionnés vers le haut"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "Réinitialiser la vue"
+  },
+  "Comfy_Canvas_Resize": {
+    "label": "Redimensionner les nœuds sélectionnés"
   },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "Basculer la visibilité du lien sur le canevas"
@@ -77,6 +98,9 @@
   "Comfy_ClearWorkflow": {
     "label": "Effacer le flux de travail"
   },
+  "Comfy_ContactSupport": {
+    "label": "Contacter le support"
+  },
   "Comfy_DuplicateWorkflow": {
     "label": "Dupliquer le flux de travail actuel"
   },
@@ -88,6 +112,9 @@
   },
   "Comfy_Feedback": {
     "label": "Retour d'information"
+  },
+  "Comfy_Graph_ConvertToSubgraph": {
+    "label": "Convertir la sélection en sous-graphe"
   },
   "Comfy_Graph_FitGroupToContents": {
     "label": "Ajuster le groupe au contenu"
@@ -125,6 +152,15 @@
   "Comfy_LoadDefaultWorkflow": {
     "label": "Charger le flux de travail par défaut"
   },
+  "Comfy_Manager_CustomNodesManager": {
+    "label": "Gestionnaire de Nœuds Personnalisés"
+  },
+  "Comfy_Manager_ToggleManagerProgressDialog": {
+    "label": "Basculer la boîte de dialogue de progression"
+  },
+  "Comfy_MaskEditor_OpenMaskEditor": {
+    "label": "Ouvrir l'éditeur de masque pour le nœud sélectionné"
+  },
   "Comfy_NewBlankWorkflow": {
     "label": "Nouveau flux de travail vierge"
   },
@@ -139,6 +175,9 @@
   },
   "Comfy_QueuePromptFront": {
     "label": "Invite de file d'attente (avant)"
+  },
+  "Comfy_QueueSelectedOutputNodes": {
+    "label": "Mettre en file d’attente les nœuds de sortie sélectionnés"
   },
   "Comfy_Redo": {
     "label": "Refaire"
@@ -160,6 +199,12 @@
   },
   "Comfy_Undo": {
     "label": "Annuler"
+  },
+  "Comfy_User_OpenSignInDialog": {
+    "label": "Ouvrir la boîte de dialogue de connexion"
+  },
+  "Comfy_User_SignOut": {
+    "label": "Se déconnecter"
   },
   "Workspace_CloseWorkflow": {
     "label": "Fermer le flux de travail actuel"

@@ -1,4 +1,7 @@
 {
+  "Comfy-Desktop_CheckForUpdates": {
+    "label": "업데이트 확인"
+  },
   "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
     "label": "사용자 정의 노드 폴더 열기"
   },
@@ -35,14 +38,32 @@
   "Comfy_BrowseTemplates": {
     "label": "템플릿 탐색"
   },
+  "Comfy_Canvas_AddEditModelStep": {
+    "label": "모델 편집 단계 추가"
+  },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "선택한 항목 삭제"
   },
   "Comfy_Canvas_FitView": {
     "label": "선택한 노드에 뷰 맞추기"
   },
+  "Comfy_Canvas_MoveSelectedNodes_Down": {
+    "label": "선택한 노드 아래로 이동"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Left": {
+    "label": "선택한 노드 왼쪽으로 이동"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Right": {
+    "label": "선택한 노드 오른쪽으로 이동"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Up": {
+    "label": "선택한 노드 위로 이동"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "뷰 재설정"
+  },
+  "Comfy_Canvas_Resize": {
+    "label": "선택된 노드 크기 조정"
   },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "캔버스 링크 가시성 토글"
@@ -77,6 +98,9 @@
   "Comfy_ClearWorkflow": {
     "label": "워크플로 지우기"
   },
+  "Comfy_ContactSupport": {
+    "label": "지원팀에 문의하기"
+  },
   "Comfy_DuplicateWorkflow": {
     "label": "현재 워크플로우 복제"
   },
@@ -88,6 +112,9 @@
   },
   "Comfy_Feedback": {
     "label": "피드백"
+  },
+  "Comfy_Graph_ConvertToSubgraph": {
+    "label": "선택 영역을 서브그래프로 변환"
   },
   "Comfy_Graph_FitGroupToContents": {
     "label": "그룹을 내용에 맞게 맞추기"
@@ -125,6 +152,15 @@
   "Comfy_LoadDefaultWorkflow": {
     "label": "기본 워크플로 로드"
   },
+  "Comfy_Manager_CustomNodesManager": {
+    "label": "사용자 정의 노드 관리자"
+  },
+  "Comfy_Manager_ToggleManagerProgressDialog": {
+    "label": "진행 상황 대화 상자 전환"
+  },
+  "Comfy_MaskEditor_OpenMaskEditor": {
+    "label": "선택한 노드 마스크 편집기 열기"
+  },
   "Comfy_NewBlankWorkflow": {
     "label": "새로운 빈 워크플로"
   },
@@ -139,6 +175,9 @@
   },
   "Comfy_QueuePromptFront": {
     "label": "실행 큐 맨 앞에 프롬프트 추가"
+  },
+  "Comfy_QueueSelectedOutputNodes": {
+    "label": "선택한 출력 노드 대기열에 추가"
   },
   "Comfy_Redo": {
     "label": "다시 실행"
@@ -160,6 +199,12 @@
   },
   "Comfy_Undo": {
     "label": "실행 취소"
+  },
+  "Comfy_User_OpenSignInDialog": {
+    "label": "로그인 대화상자 열기"
+  },
+  "Comfy_User_SignOut": {
+    "label": "로그아웃"
   },
   "Workspace_CloseWorkflow": {
     "label": "현재 워크플로우 닫기"

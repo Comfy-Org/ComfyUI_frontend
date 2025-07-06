@@ -6,94 +6,48 @@
       content: 'p-0 flex flex-row'
     }"
   >
-    <ColorPickerButton v-show="nodeSelected || groupSelected" />
-    <Button
-      v-show="nodeSelected"
-      severity="secondary"
-      text
-      @click="
-        () => commandStore.execute('Comfy.Canvas.ToggleSelectedNodes.Bypass')
-      "
-      data-testid="bypass-button"
-      v-tooltip.top="{
-        value: t('commands.Comfy_Canvas_ToggleSelectedNodes_Bypass.label'),
-        showDelay: 1000
-      }"
-    >
-      <template #icon>
-        <i-game-icons:detour />
-      </template>
-    </Button>
-    <Button
-      v-show="nodeSelected || groupSelected"
-      severity="secondary"
-      text
-      icon="pi pi-thumbtack"
-      @click="() => commandStore.execute('Comfy.Canvas.ToggleSelected.Pin')"
-      v-tooltip.top="{
-        value: t('commands.Comfy_Canvas_ToggleSelectedNodes_Pin.label'),
-        showDelay: 1000
-      }"
-    />
-    <Button
-      severity="danger"
-      text
-      icon="pi pi-trash"
-      @click="() => commandStore.execute('Comfy.Canvas.DeleteSelectedItems')"
-      v-tooltip.top="{
-        value: t('commands.Comfy_Canvas_DeleteSelectedItems.label'),
-        showDelay: 1000
-      }"
-    />
-    <Button
-      v-show="isRefreshable"
-      severity="info"
-      text
-      icon="pi pi-refresh"
-      @click="refreshSelected"
-    />
-    <Button
+    <ExecuteButton />
+    <ColorPickerButton />
+    <BypassButton />
+    <PinButton />
+    <EditModelButton />
+    <MaskEditorButton />
+    <ConvertToSubgraphButton />
+    <DeleteButton />
+    <RefreshButton />
+    <ExtensionCommandButton
       v-for="command in extensionToolboxCommands"
       :key="command.id"
-      severity="secondary"
-      text
-      :icon="typeof command.icon === 'function' ? command.icon() : command.icon"
-      @click="() => commandStore.execute(command.id)"
-      v-tooltip.top="{
-        value:
-          st(`commands.${normalizeI18nKey(command.id)}.label`, '') || undefined,
-        showDelay: 1000
-      }"
+      :command="command"
     />
+    <HelpButton />
   </Panel>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Panel from 'primevue/panel'
 import { computed } from 'vue'
 
+import BypassButton from '@/components/graph/selectionToolbox/BypassButton.vue'
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
-import { useRefreshableSelection } from '@/composables/useRefreshableSelection'
-import { st, t } from '@/i18n'
+import ConvertToSubgraphButton from '@/components/graph/selectionToolbox/ConvertToSubgraphButton.vue'
+import DeleteButton from '@/components/graph/selectionToolbox/DeleteButton.vue'
+import EditModelButton from '@/components/graph/selectionToolbox/EditModelButton.vue'
+import ExecuteButton from '@/components/graph/selectionToolbox/ExecuteButton.vue'
+import ExtensionCommandButton from '@/components/graph/selectionToolbox/ExtensionCommandButton.vue'
+import HelpButton from '@/components/graph/selectionToolbox/HelpButton.vue'
+import MaskEditorButton from '@/components/graph/selectionToolbox/MaskEditorButton.vue'
+import PinButton from '@/components/graph/selectionToolbox/PinButton.vue'
+import RefreshButton from '@/components/graph/selectionToolbox/RefreshButton.vue'
 import { useExtensionService } from '@/services/extensionService'
-import { ComfyCommand, useCommandStore } from '@/stores/commandStore'
+import { type ComfyCommandImpl, useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
-import { normalizeI18nKey } from '@/utils/formatUtil'
-import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
 const extensionService = useExtensionService()
-const { isRefreshable, refreshSelected } = useRefreshableSelection()
-const nodeSelected = computed(() =>
-  canvasStore.selectedItems.some(isLGraphNode)
-)
-const groupSelected = computed(() =>
-  canvasStore.selectedItems.some(isLGraphGroup)
-)
 
-const extensionToolboxCommands = computed<ComfyCommand[]>(() => {
+const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
   const commandIds = new Set<string>(
     canvasStore.selectedItems
       .map(
@@ -106,7 +60,7 @@ const extensionToolboxCommands = computed<ComfyCommand[]>(() => {
   )
   return Array.from(commandIds)
     .map((commandId) => commandStore.getCommand(commandId))
-    .filter((command) => command !== undefined)
+    .filter((command): command is ComfyCommandImpl => command !== undefined)
 })
 </script>
 

@@ -133,6 +133,9 @@ export class ComfyPage {
   // Inputs
   public readonly workflowUploadInput: Locator
 
+  // Toasts
+  public readonly visibleToasts: Locator
+
   // Components
   public readonly searchBox: ComfyNodeSearchBox
   public readonly menu: ComfyMenu
@@ -159,6 +162,8 @@ export class ComfyPage {
     this.resetViewButton = page.getByRole('button', { name: 'Reset View' })
     this.queueButton = page.getByRole('button', { name: 'Queue Prompt' })
     this.workflowUploadInput = page.locator('#comfy-file-input')
+    this.visibleToasts = page.locator('.p-toast-message:visible')
+
     this.searchBox = new ComfyNodeSearchBox(page)
     this.menu = new ComfyMenu(page)
     this.actionbar = new ComfyActionbar(page)
@@ -214,6 +219,10 @@ export class ComfyPage {
         `Failed to setup workflows directory: ${await resp.text()}`
       )
     }
+
+    await this.page.evaluate(async () => {
+      await window['app'].extensionManager.workflow.syncWorkflows()
+    })
   }
 
   async setupUser(username: string) {
@@ -259,8 +268,34 @@ export class ComfyPage {
     return this._history
   }
 
-  async setup({ clearStorage = true }: { clearStorage?: boolean } = {}) {
+  async setup({
+    clearStorage = true,
+    mockReleases = true
+  }: {
+    clearStorage?: boolean
+    mockReleases?: boolean
+  } = {}) {
     await this.goto()
+
+    // Mock release endpoint to prevent changelog popups
+    if (mockReleases) {
+      await this.page.route('**/releases**', async (route) => {
+        const url = route.request().url()
+        if (
+          url.includes('api.comfy.org') ||
+          url.includes('stagingapi.comfy.org')
+        ) {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify([])
+          })
+        } else {
+          await route.continue()
+        }
+      })
+    }
+
     if (clearStorage) {
       await this.page.evaluate((id) => {
         localStorage.clear()
@@ -392,6 +427,30 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
+  async deleteWorkflow(
+    workflowName: string,
+    whenMissing: 'ignoreMissing' | 'throwIfMissing' = 'ignoreMissing'
+  ) {
+    // Open workflows tab
+    const { workflowsTab } = this.menu
+    await workflowsTab.open()
+
+    // Action to take if workflow missing
+    if (whenMissing === 'ignoreMissing') {
+      const workflows = await workflowsTab.getTopLevelSavedWorkflowNames()
+      if (!workflows.includes(workflowName)) return
+    }
+
+    // Delete workflow
+    await workflowsTab.getPersistedItem(workflowName).click({ button: 'right' })
+    await this.clickContextMenuItem('Delete')
+    await this.confirmDialog.delete.click()
+
+    // Clear toast & close tab
+    await this.closeToasts(1)
+    await workflowsTab.close()
+  }
+
   async resetView() {
     if (await this.resetViewButton.isVisible()) {
       await this.resetViewButton.click()
@@ -408,7 +467,20 @@ export class ComfyPage {
   }
 
   async getVisibleToastCount() {
-    return await this.page.locator('.p-toast:visible').count()
+    return await this.visibleToasts.count()
+  }
+
+  async closeToasts(requireCount = 0) {
+    if (requireCount) await expect(this.visibleToasts).toHaveCount(requireCount)
+
+    // Clear all toasts
+    const toastCloseButtons = await this.page
+      .locator('.p-toast-close-button')
+      .all()
+    for (const button of toastCloseButtons) {
+      await button.click()
+    }
+    await expect(this.visibleToasts).toHaveCount(0)
   }
 
   async clickTextEncodeNode1() {
@@ -459,53 +531,127 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
-  async dragAndDropFile(fileName: string) {
-    const filePath = this.assetPath(fileName)
+  async dragAndDropExternalResource(
+    options: {
+      fileName?: string
+      url?: string
+      dropPosition?: Position
+    } = {}
+  ) {
+    const { dropPosition = { x: 100, y: 100 }, fileName, url } = options
 
-    // Read the file content
-    const buffer = fs.readFileSync(filePath)
+    if (!fileName && !url)
+      throw new Error('Must provide either fileName or url')
 
-    // Get file type
-    const getFileType = (fileName: string) => {
-      if (fileName.endsWith('.png')) return 'image/png'
-      if (fileName.endsWith('.webp')) return 'image/webp'
-      if (fileName.endsWith('.webm')) return 'video/webm'
-      if (fileName.endsWith('.json')) return 'application/json'
-      return 'application/octet-stream'
+    const evaluateParams: {
+      dropPosition: Position
+      fileName?: string
+      fileType?: string
+      buffer?: Uint8Array | number[]
+      url?: string
+    } = { dropPosition }
+
+    // Dropping a file from the filesystem
+    if (fileName) {
+      const filePath = this.assetPath(fileName)
+      const buffer = fs.readFileSync(filePath)
+
+      const getFileType = (fileName: string) => {
+        if (fileName.endsWith('.png')) return 'image/png'
+        if (fileName.endsWith('.svg')) return 'image/svg+xml'
+        if (fileName.endsWith('.webp')) return 'image/webp'
+        if (fileName.endsWith('.webm')) return 'video/webm'
+        if (fileName.endsWith('.json')) return 'application/json'
+        if (fileName.endsWith('.glb')) return 'model/gltf-binary'
+        return 'application/octet-stream'
+      }
+
+      evaluateParams.fileName = fileName
+      evaluateParams.fileType = getFileType(fileName)
+      evaluateParams.buffer = [...new Uint8Array(buffer)]
     }
 
-    const fileType = getFileType(fileName)
+    // Dropping a URL (e.g., dropping image across browser tabs in Firefox)
+    if (url) evaluateParams.url = url
 
-    await this.page.evaluate(
-      async ({ buffer, fileName, fileType }) => {
-        const file = new File([new Uint8Array(buffer)], fileName, {
-          type: fileType
-        })
-        const dataTransfer = new DataTransfer()
+    // Execute the drag and drop in the browser
+    await this.page.evaluate(async (params) => {
+      const dataTransfer = new DataTransfer()
+
+      // Add file if provided
+      if (params.buffer && params.fileName && params.fileType) {
+        const file = new File(
+          [new Uint8Array(params.buffer)],
+          params.fileName,
+          {
+            type: params.fileType
+          }
+        )
         dataTransfer.items.add(file)
+      }
 
-        const dropEvent = new DragEvent('drop', {
-          bubbles: true,
-          cancelable: true,
-          dataTransfer
-        })
+      // Add URL data if provided
+      if (params.url) {
+        dataTransfer.setData('text/uri-list', params.url)
+        dataTransfer.setData('text/x-moz-url', params.url)
+      }
 
-        Object.defineProperty(dropEvent, 'preventDefault', {
-          value: () => {},
-          writable: false
-        })
+      const targetElement = document.elementFromPoint(
+        params.dropPosition.x,
+        params.dropPosition.y
+      )
 
-        Object.defineProperty(dropEvent, 'stopPropagation', {
-          value: () => {},
-          writable: false
-        })
+      if (!targetElement) {
+        console.error('No element found at drop position:', params.dropPosition)
+        return { success: false, error: 'No element at position' }
+      }
 
-        document.dispatchEvent(dropEvent)
-      },
-      { buffer: [...new Uint8Array(buffer)], fileName, fileType }
-    )
+      const eventOptions = {
+        bubbles: true,
+        cancelable: true,
+        dataTransfer,
+        clientX: params.dropPosition.x,
+        clientY: params.dropPosition.y
+      }
+
+      const dragOverEvent = new DragEvent('dragover', eventOptions)
+      const dropEvent = new DragEvent('drop', eventOptions)
+
+      Object.defineProperty(dropEvent, 'preventDefault', {
+        value: () => {},
+        writable: false
+      })
+
+      Object.defineProperty(dropEvent, 'stopPropagation', {
+        value: () => {},
+        writable: false
+      })
+
+      targetElement.dispatchEvent(dragOverEvent)
+      targetElement.dispatchEvent(dropEvent)
+
+      return {
+        success: true,
+        targetInfo: {
+          tagName: targetElement.tagName,
+          id: targetElement.id,
+          classList: Array.from(targetElement.classList)
+        }
+      }
+    }, evaluateParams)
 
     await this.nextFrame()
+  }
+
+  async dragAndDropFile(
+    fileName: string,
+    options: { dropPosition?: Position } = {}
+  ) {
+    return this.dragAndDropExternalResource({ fileName, ...options })
+  }
+
+  async dragAndDropURL(url: string, options: { dropPosition?: Position } = {}) {
+    return this.dragAndDropExternalResource({ url, ...options })
   }
 
   async dragNode2() {
@@ -553,11 +699,20 @@ export class ComfyPage {
     await this.dragAndDrop(this.clipTextEncodeNode1InputSlot, this.emptySpace)
   }
 
-  async connectEdge() {
-    await this.dragAndDrop(
-      this.loadCheckpointNodeClipOutputSlot,
-      this.clipTextEncodeNode1InputSlot
-    )
+  async connectEdge(
+    options: {
+      reverse?: boolean
+    } = {}
+  ) {
+    const { reverse = false } = options
+    const start = reverse
+      ? this.clipTextEncodeNode1InputSlot
+      : this.loadCheckpointNodeClipOutputSlot
+    const end = reverse
+      ? this.loadCheckpointNodeClipOutputSlot
+      : this.clipTextEncodeNode1InputSlot
+
+    await this.dragAndDrop(start, end)
   }
 
   async adjustWidgetValue() {
@@ -633,7 +788,7 @@ export class ComfyPage {
         y: 625
       }
     })
-    this.page.mouse.move(10, 10)
+    await this.page.mouse.move(10, 10)
     await this.nextFrame()
   }
 
@@ -645,7 +800,7 @@ export class ComfyPage {
       },
       button: 'right'
     })
-    this.page.mouse.move(10, 10)
+    await this.page.mouse.move(10, 10)
     await this.nextFrame()
   }
 
@@ -837,10 +992,16 @@ export class ComfyPage {
       return window['app'].canvas.ds.convertOffsetToCanvas(pos)
     }, pos)
   }
+
+  /** Get number of DOM widgets on the canvas. */
+  async getDOMWidgetCount() {
+    return await this.page.locator('.dom-widget').count()
+  }
+
   async getNodeRefById(id: NodeId) {
     return new NodeReference(id, this)
   }
-  async getNodes() {
+  async getNodes(): Promise<LGraphNode[]> {
     return await this.page.evaluate(() => {
       return window['app'].graph.nodes
     })
@@ -911,6 +1072,8 @@ export class ComfyPage {
   }
 }
 
+export const testComfySnapToGridGridSize = 50
+
 export const comfyPageFixture = base.extend<{
   comfyPage: ComfyPage
   comfyMouse: ComfyMouse
@@ -937,7 +1100,8 @@ export const comfyPageFixture = base.extend<{
         'Comfy.EnableTooltips': false,
         'Comfy.userId': userId,
         // Set tutorial completed to true to avoid loading the tutorial workflow.
-        'Comfy.TutorialCompleted': true
+        'Comfy.TutorialCompleted': true,
+        'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize
       })
     } catch (e) {
       console.error(e)
@@ -948,7 +1112,7 @@ export const comfyPageFixture = base.extend<{
   },
   comfyMouse: async ({ comfyPage }, use) => {
     const comfyMouse = new ComfyMouse(comfyPage)
-    use(comfyMouse)
+    await use(comfyMouse)
   }
 })
 

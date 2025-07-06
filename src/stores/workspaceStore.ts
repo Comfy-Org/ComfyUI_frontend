@@ -1,11 +1,14 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import type { Settings } from '@/schemas/apiSchema'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useDialogService } from '@/services/dialogService'
 import type { SidebarTabExtension, ToastManager } from '@/types/extensionTypes'
 
+import { useApiKeyAuthStore } from './apiKeyAuthStore'
 import { useCommandStore } from './commandStore'
+import { useFirebaseAuthStore } from './firebaseAuthStore'
 import { useQueueSettingsStore } from './queueStore'
 import { useSettingStore } from './settingStore'
 import { useToastStore } from './toastStore'
@@ -31,13 +34,28 @@ export const useWorkspaceStore = defineStore('workspace', () => {
   const sidebarTab = computed(() => useSidebarTabStore())
   const setting = computed(() => ({
     settings: useSettingStore().settingsById,
-    get: useSettingStore().get,
-    set: useSettingStore().set
+    // Allow generic key access to settings as custom nodes may add their
+    // own settings which is not tracked by the `Setting` schema.
+    get: (key: string) => useSettingStore().get(key as keyof Settings),
+    set: (key: string, value: unknown) =>
+      useSettingStore().set(key as keyof Settings, value)
   }))
   const workflow = computed(() => useWorkflowStore())
   const colorPalette = useColorPaletteService()
   const dialog = useDialogService()
   const bottomPanel = useBottomPanelStore()
+
+  const authStore = useFirebaseAuthStore()
+  const apiKeyStore = useApiKeyAuthStore()
+
+  const firebaseUser = computed(() => authStore.currentUser)
+  const isApiKeyLogin = computed(() => apiKeyStore.isAuthenticated)
+  const isLoggedIn = computed(
+    () => !!isApiKeyLogin.value || firebaseUser.value !== null
+  )
+  const partialUserStore = {
+    isLoggedIn
+  }
 
   /**
    * Registers a sidebar tab.
@@ -82,6 +100,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     colorPalette,
     dialog,
     bottomPanel,
+    user: partialUserStore,
 
     registerSidebarTab,
     unregisterSidebarTab,

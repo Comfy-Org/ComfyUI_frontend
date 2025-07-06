@@ -1,5 +1,6 @@
 <template>
   <div
+    ref="container"
     :class="[
       'tree-node',
       {
@@ -8,17 +9,16 @@
         'tree-leaf': props.node.leaf
       }
     ]"
-    ref="container"
   >
     <div class="node-content">
       <span class="node-label">
-        <slot name="before-label" :node="props.node"></slot>
+        <slot name="before-label" :node="props.node" />
         <EditableText
-          :modelValue="node.label"
-          :isEditing="isEditing"
+          :model-value="node.label"
+          :is-editing="isEditing"
           @edit="handleRename"
         />
-        <slot name="after-label" :node="props.node"></slot>
+        <slot name="after-label" :node="props.node" />
       </span>
       <Badge
         v-if="showNodeBadgeText"
@@ -30,7 +30,7 @@
     <div
       class="node-actions motion-safe:opacity-0 motion-safe:group-hover/tree-node:opacity-100"
     >
-      <slot name="actions" :node="props.node"></slot>
+      <slot name="actions" :node="props.node" />
     </div>
   </div>
 </template>
@@ -38,18 +38,17 @@
 <script setup lang="ts">
 import { setCustomNativeDragPreview } from '@atlaskit/pragmatic-drag-and-drop/element/set-custom-native-drag-preview'
 import Badge from 'primevue/badge'
-import { Ref, computed, inject, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'
-import { useErrorHandling } from '@/composables/useErrorHandling'
 import {
   usePragmaticDraggable,
   usePragmaticDroppable
 } from '@/composables/usePragmaticDragAndDrop'
-import type {
-  RenderedTreeExplorerNode,
-  TreeExplorerDragAndDropData,
-  TreeExplorerNode
+import {
+  InjectKeyHandleEditLabelFunction,
+  type RenderedTreeExplorerNode,
+  type TreeExplorerDragAndDropData
 } from '@/types/treeExplorerTypes'
 
 const props = defineProps<{
@@ -77,22 +76,12 @@ const nodeBadgeText = computed<string>(() => {
 })
 const showNodeBadgeText = computed<boolean>(() => nodeBadgeText.value !== '')
 
-const labelEditable = computed<boolean>(() => !!props.node.handleRename)
-const renameEditingNode =
-  inject<Ref<TreeExplorerNode | null>>('renameEditingNode')
-const isEditing = computed(
-  () => labelEditable.value && renameEditingNode.value?.key === props.node.key
-)
-const errorHandling = useErrorHandling()
-const handleRename = errorHandling.wrapWithErrorHandlingAsync(
-  async (newName: string) => {
-    await props.node.handleRename(newName)
-  },
-  props.node.handleError,
-  () => {
-    renameEditingNode.value = null
-  }
-)
+const isEditing = computed<boolean>(() => props.node.isEditingLabel ?? false)
+const handleEditLabel = inject(InjectKeyHandleEditLabelFunction)
+const handleRename = (newName: string) => {
+  handleEditLabel?.(props.node, newName)
+}
+
 const container = ref<HTMLElement | null>(null)
 const canDrop = ref(false)
 
@@ -113,7 +102,7 @@ if (props.node.draggable) {
       ? ({ nativeSetDragImage }) => {
           setCustomNativeDragPreview({
             render: ({ container }) => {
-              return props.node.renderDragPreview(container)
+              return props.node.renderDragPreview?.(container)
             },
             nativeSetDragImage
           })

@@ -1,5 +1,5 @@
-import { LGraphCanvas } from '@comfyorg/litegraph'
-import type { Vector2 } from '@comfyorg/litegraph'
+import { LGraph, LGraphCanvas } from '@comfyorg/litegraph'
+import type { SerialisableGraph, Vector2 } from '@comfyorg/litegraph'
 import { toRaw } from 'vue'
 
 import { t } from '@/i18n'
@@ -7,11 +7,12 @@ import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { downloadBlob } from '@/scripts/utils'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { appendJsonExt } from '@/utils/formatUtil'
+import { appendJsonExt, generateUUID } from '@/utils/formatUtil'
 
 import { useDialogService } from './dialogService'
 
@@ -20,6 +21,7 @@ export const useWorkflowService = () => {
   const workflowStore = useWorkflowStore()
   const toastStore = useToastStore()
   const dialogService = useDialogService()
+  const domWidgetStore = useDomWidgetStore()
 
   async function getFilename(defaultName: string): Promise<string | null> {
     if (settingStore.get('Comfy.PromptFilename')) {
@@ -36,6 +38,21 @@ export const useWorkflowService = () => {
     }
     return defaultName
   }
+
+  /**
+   * Adds scale and offset from litegraph canvas to the workflow JSON.
+   * @param workflow The workflow to add the view restore data to
+   */
+  function addViewRestore(workflow: ComfyWorkflowJSON) {
+    if (!settingStore.get('Comfy.EnableWorkflowViewRestore')) return
+
+    const { offset, scale } = app.canvas.ds
+    const [x, y] = offset
+
+    workflow.extra ??= {}
+    workflow.extra.ds = { scale, offset: [x, y] }
+  }
+
   /**
    * Export the current workflow as a JSON file
    * @param filename The filename to save the workflow as
@@ -50,6 +67,8 @@ export const useWorkflowService = () => {
       filename = workflow.filename
     }
     const p = await app.graphToPrompt()
+
+    addViewRestore(p.workflow)
     const json = JSON.stringify(p[promptProperty], null, 2)
     const blob = new Blob([json], { type: 'application/json' })
     const file = await getFilename(filename)
@@ -94,10 +113,14 @@ export const useWorkflowService = () => {
       await renameWorkflow(workflow, newPath)
       await workflowStore.saveWorkflow(workflow)
     } else {
-      const tempWorkflow = workflowStore.createTemporary(
-        newKey,
-        workflow.activeState as ComfyWorkflowJSON
-      )
+      // Generate new id when saving existing workflow as a new file
+      const id = generateUUID()
+      const state = JSON.parse(
+        JSON.stringify(workflow.activeState)
+      ) as ComfyWorkflowJSON
+      state.id = id
+
+      const tempWorkflow = workflowStore.createTemporary(newKey, state)
       await openWorkflow(tempWorkflow)
       await workflowStore.saveWorkflow(tempWorkflow)
     }
@@ -163,7 +186,8 @@ export const useWorkflowService = () => {
       workflow,
       {
         showMissingModelsDialog: loadFromRemote,
-        showMissingNodesDialog: loadFromRemote
+        showMissingNodesDialog: loadFromRemote,
+        checkForRerouteMigration: false
       }
     )
   }
@@ -263,11 +287,8 @@ export const useWorkflowService = () => {
    */
   const beforeLoadNewGraph = () => {
     // Use workspaceStore here as it is patched in unit tests.
-    const workflowStore = useWorkspaceStore().workflow
-    const activeWorkflow = workflowStore.activeWorkflow
-    if (activeWorkflow) {
-      activeWorkflow.changeTracker.store()
-    }
+    useWorkspaceStore().workflow.activeWorkflow?.changeTracker?.store()
+    domWidgetStore.clear()
   }
 
   /**
@@ -323,16 +344,16 @@ export const useWorkflowService = () => {
     options: { position?: Vector2 } = {}
   ) => {
     const loadedWorkflow = await workflow.load()
-    const data = loadedWorkflow.initialState
+    const workflowJSON = toRaw(loadedWorkflow.initialState)
     const old = localStorage.getItem('litegrapheditor_clipboard')
-    // @ts-expect-error: zod issue. Should be fixed after enable ts-strict globally
-    const graph = new LGraph(data)
+    // unknown conversion: ComfyWorkflowJSON is stricter than LiteGraph's
+    // serialisation schema.
+    const graph = new LGraph(workflowJSON as unknown as SerialisableGraph)
     const canvasElement = document.createElement('canvas')
     const canvas = new LGraphCanvas(canvasElement, graph, {
       skip_events: true,
       skip_render: true
     })
-    canvas.reroutesEnabled = app.canvas.reroutesEnabled
     canvas.selectItems()
     canvas.copyToClipboard()
     app.canvas.pasteFromClipboard(options)

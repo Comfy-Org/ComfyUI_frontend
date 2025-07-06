@@ -1,69 +1,118 @@
-import { debounce } from 'lodash'
-import { onUnmounted, ref, watch } from 'vue'
+import { watchDebounced } from '@vueuse/core'
+import { orderBy } from 'lodash'
+import { computed, ref, watch } from 'vue'
 
-import { useComfyRegistryService } from '@/services/comfyRegistryService'
-import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
+import { DEFAULT_PAGE_SIZE } from '@/constants/searchConstants'
+import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
+import type { SearchAttribute } from '@/types/algoliaTypes'
+import { SortableAlgoliaField } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
+import type { QuerySuggestion, SearchMode } from '@/types/searchServiceTypes'
 
-const SEARCH_DEBOUNCE_TIME = 256
-const DEFAULT_PAGE_SIZE = 60
+type RegistryNodePack = components['schemas']['Node']
+
+const SEARCH_DEBOUNCE_TIME = 320
+const DEFAULT_SORT_FIELD = SortableAlgoliaField.Downloads // Set in the index configuration
 
 /**
  * Composable for managing UI state of Comfy Node Registry search.
  */
-export function useRegistrySearch() {
-  const registryStore = useComfyRegistryStore()
-  const registryService = useComfyRegistryService()
+export function useRegistrySearch(
+  options: {
+    initialSortField?: string
+    initialSearchMode?: SearchMode
+    initialSearchQuery?: string
+    initialPageNumber?: number
+  } = {}
+) {
+  const {
+    initialSortField = DEFAULT_SORT_FIELD,
+    initialSearchMode = 'packs',
+    initialSearchQuery = '',
+    initialPageNumber = 0
+  } = options
 
-  const searchQuery = ref('')
-  const pageNumber = ref(1)
+  const isLoading = ref(false)
+  const sortField = ref<string>(initialSortField)
+  const searchMode = ref<SearchMode>(initialSearchMode)
   const pageSize = ref(DEFAULT_PAGE_SIZE)
-  const searchResults = ref<components['schemas']['Node'][]>([])
+  const pageNumber = ref(initialPageNumber)
+  const searchQuery = ref(initialSearchQuery)
+  const searchResults = ref<RegistryNodePack[]>([])
+  const suggestions = ref<QuerySuggestion[]>([])
 
-  const search = async () => {
-    try {
-      const isEmptySearch = searchQuery.value === ''
-      const result = isEmptySearch
-        ? await registryStore.listAllPacks({
-            page: pageNumber.value,
-            limit: pageSize.value
-          })
-        : await registryService.search({
-            search: searchQuery.value,
-            page: pageNumber.value,
-            limit: pageSize.value
-          })
+  const searchAttributes = computed<SearchAttribute[]>(() =>
+    searchMode.value === 'nodes' ? ['comfy_nodes'] : ['name', 'description']
+  )
 
-      if (result) {
-        searchResults.value = result.nodes || []
-      } else {
-        searchResults.value = []
-      }
-    } catch (err) {
-      console.error('Error loading packs:', err)
-      searchResults.value = []
+  const searchGateway = useRegistrySearchGateway()
+
+  const { searchPacks, clearSearchCache, getSortValue, getSortableFields } =
+    searchGateway
+
+  const updateSearchResults = async (options: { append?: boolean }) => {
+    isLoading.value = true
+    if (!options.append) {
+      pageNumber.value = 0
     }
+    const { nodePacks, querySuggestions } = await searchPacks(
+      searchQuery.value,
+      {
+        pageSize: pageSize.value,
+        pageNumber: pageNumber.value,
+        restrictSearchableAttributes: searchAttributes.value
+      }
+    )
+
+    let sortedPacks = nodePacks
+
+    // Results are sorted by the default field to begin with -- so don't manually sort again
+    if (sortField.value && sortField.value !== DEFAULT_SORT_FIELD) {
+      // Get the sort direction from the provider's sortable fields
+      const sortableFields = getSortableFields()
+      const fieldConfig = sortableFields.find((f) => f.id === sortField.value)
+      const direction = fieldConfig?.direction || 'desc'
+
+      sortedPacks = orderBy(
+        nodePacks,
+        [(pack) => getSortValue(pack, sortField.value)],
+        [direction]
+      )
+    }
+
+    if (options.append && searchResults.value?.length) {
+      searchResults.value = searchResults.value.concat(sortedPacks)
+    } else {
+      searchResults.value = sortedPacks
+    }
+    suggestions.value = querySuggestions
+    isLoading.value = false
   }
 
-  // Debounce search when query changes
-  const debouncedSearch = debounce(search, SEARCH_DEBOUNCE_TIME)
-  watch(() => searchQuery.value, debouncedSearch)
+  const onQueryChange = () => updateSearchResults({ append: false })
+  const onPageChange = () => updateSearchResults({ append: true })
 
-  // Normal search when page number changes and on load
-  watch(() => pageNumber.value, search, { immediate: true })
+  watch([sortField, searchMode], onQueryChange)
+  watch(pageNumber, onPageChange)
+  watchDebounced(searchQuery, onQueryChange, {
+    debounce: SEARCH_DEBOUNCE_TIME,
+    immediate: true
+  })
 
-  onUnmounted(() => {
-    debouncedSearch.cancel() // Cancel debounced searches
-    registryStore.cancelRequests() // Cancel in-flight requests
-    registryStore.clearCache() // Clear cached responses
+  const sortOptions = computed(() => {
+    return getSortableFields()
   })
 
   return {
+    isLoading,
     pageNumber,
     pageSize,
+    sortField,
+    searchMode,
     searchQuery,
+    suggestions,
     searchResults,
-    isLoading: registryService.isLoading,
-    error: registryService.error
+    sortOptions,
+    clearCache: clearSearchCache
   }
 }

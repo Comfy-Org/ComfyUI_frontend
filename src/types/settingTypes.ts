@@ -11,6 +11,7 @@ export type SettingInputType =
   | 'color'
   | 'url'
   | 'hidden'
+  | 'backgroundImage'
 
 export type SettingCustomRenderer = (
   name: string,

@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import type { LGraph, LGraphCanvas, LGraphNode } from '@comfyorg/litegraph'
 import { LiteGraph } from '@comfyorg/litegraph'
 
@@ -32,6 +31,7 @@ export function serialise(nodes: LGraphNode[], graph: LGraph): string {
       continue
     }
 
+    // @ts-expect-error fixme ts strict error
     serialisable.nodes.push(cloned.serialize())
     if (!node.inputs?.length) continue
 
@@ -46,6 +46,7 @@ export function serialise(nodes: LGraphNode[], graph: LGraph): string {
       if (!outNode) continue
 
       // Special format for old Litegraph copy & paste only
+      // @ts-expect-error fixme ts strict error
       serialisable.links.push([
         outNode._relative_id,
         link.origin_slot,
@@ -70,6 +71,7 @@ export function deserialiseAndCreate(data: string, canvas: LGraphCanvas): void {
   const { graph, graph_mouse } = canvas
   canvas.emitBeforeChange()
   try {
+    // @ts-expect-error fixme ts strict error
     graph.beforeChange()
 
     const deserialised = JSON.parse(data)
@@ -99,6 +101,7 @@ export function deserialiseAndCreate(data: string, canvas: LGraphCanvas): void {
       node.pos[0] += graph_mouse[0] - topLeft[0]
       node.pos[1] += graph_mouse[1] - topLeft[1]
 
+      // @ts-expect-error fixme ts strict error
       graph.add(node, true)
       nodes.push(node)
     }
@@ -115,6 +118,7 @@ export function deserialiseAndCreate(data: string, canvas: LGraphCanvas): void {
 
     canvas.selectNodes(nodes)
 
+    // @ts-expect-error fixme ts strict error
     graph.afterChange()
   } finally {
     canvas.emitAfterChange()

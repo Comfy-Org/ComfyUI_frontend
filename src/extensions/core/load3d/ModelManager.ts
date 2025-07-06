@@ -5,6 +5,7 @@ import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeome
 import { GLTF } from 'three/examples/jsm/loaders/GLTFLoader'
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils'
 
+import Load3dUtils from './Load3dUtils'
 import { ColoredShadowMaterial } from './conditional-lines/ColoredShadowMaterial'
 import { ConditionalEdgesGeometry } from './conditional-lines/ConditionalEdgesGeometry'
 import { ConditionalEdgesShader } from './conditional-lines/ConditionalEdgesShader.js'
@@ -12,6 +13,7 @@ import { ConditionalLineMaterial } from './conditional-lines/Lines2/ConditionalL
 import { ConditionalLineSegmentsGeometry } from './conditional-lines/Lines2/ConditionalLineSegmentsGeometry'
 import {
   EventManagerInterface,
+  Load3DOptions,
   MaterialMode,
   ModelManagerInterface,
   UpDirection
@@ -34,6 +36,10 @@ export class ModelManager implements ModelManagerInterface {
   standardMaterial: THREE.MeshStandardMaterial
   wireframeMaterial: THREE.MeshBasicMaterial
   depthMaterial: THREE.MeshDepthMaterial
+  originalFileName: string | null = null
+  originalURL: string | null = null
+  appliedTexture: THREE.Texture | null = null
+  textureLoader: THREE.TextureLoader
 
   private scene: THREE.Scene
   private renderer: THREE.WebGLRenderer
@@ -41,6 +47,7 @@ export class ModelManager implements ModelManagerInterface {
   private activeCamera: THREE.Camera
   private setupCamera: (size: THREE.Vector3) => void
   private lineartModel: THREE.Group
+  private createLineartModel: boolean = false
 
   LIGHT_MODEL = 0xffffff
   LIGHT_LINES = 0x455a64
@@ -56,13 +63,23 @@ export class ModelManager implements ModelManagerInterface {
     renderer: THREE.WebGLRenderer,
     eventManager: EventManagerInterface,
     getActiveCamera: () => THREE.Camera,
-    setupCamera: (size: THREE.Vector3) => void
+    setupCamera: (size: THREE.Vector3) => void,
+    options: Load3DOptions
   ) {
     this.scene = scene
     this.renderer = renderer
     this.eventManager = eventManager
     this.activeCamera = getActiveCamera()
     this.setupCamera = setupCamera
+    this.textureLoader = new THREE.TextureLoader()
+
+    if (
+      options &&
+      !options.inputSpec?.isPreview &&
+      !options.inputSpec?.isAnimation
+    ) {
+      this.createLineartModel = true
+    }
 
     this.normalMaterial = new THREE.MeshNormalMaterial({
       flatShading: false,
@@ -100,6 +117,11 @@ export class ModelManager implements ModelManagerInterface {
     this.wireframeMaterial.dispose()
     this.depthMaterial.dispose()
 
+    if (this.appliedTexture) {
+      this.appliedTexture.dispose()
+      this.appliedTexture = null
+    }
+
     this.disposeLineartModel()
   }
 
@@ -111,6 +133,66 @@ export class ModelManager implements ModelManagerInterface {
       flatShading: false,
       side: THREE.DoubleSide
     })
+  }
+
+  async applyTexture(texturePath: string): Promise<void> {
+    if (!this.currentModel) {
+      throw new Error('No model available to apply texture to')
+    }
+
+    if (this.appliedTexture) {
+      this.appliedTexture.dispose()
+    }
+
+    try {
+      let imageUrl = Load3dUtils.getResourceURL(
+        ...Load3dUtils.splitFilePath(texturePath)
+      )
+
+      if (!imageUrl.startsWith('/api')) {
+        imageUrl = '/api' + imageUrl
+      }
+
+      this.appliedTexture = await new Promise<THREE.Texture>(
+        (resolve, reject) => {
+          this.textureLoader.load(
+            imageUrl,
+            (texture) => {
+              texture.colorSpace = THREE.SRGBColorSpace
+              texture.wrapS = THREE.RepeatWrapping
+              texture.wrapT = THREE.RepeatWrapping
+              resolve(texture)
+            },
+            undefined,
+            (error) => reject(error)
+          )
+        }
+      )
+
+      if (this.materialMode === 'original') {
+        this.currentModel.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            const material = new THREE.MeshStandardMaterial({
+              map: this.appliedTexture,
+              metalness: 0.1,
+              roughness: 0.8,
+              side: THREE.DoubleSide
+            })
+
+            if (!this.originalMaterials.has(child)) {
+              this.originalMaterials.set(child, child.material)
+            }
+
+            child.material = material
+          }
+        })
+      }
+
+      return Promise.resolve()
+    } catch (error) {
+      console.error('Error applying texture:', error)
+      return Promise.reject(error)
+    }
   }
 
   disposeLineartModel(): void {
@@ -161,7 +243,7 @@ export class ModelManager implements ModelManagerInterface {
       const mesh = meshes[key]
       const parent = mesh.parent
 
-      let lineGeom = new THREE.EdgesGeometry(mesh.geometry, 10)
+      let lineGeom = new THREE.EdgesGeometry(mesh.geometry, 85)
 
       const line = new THREE.LineSegments(
         lineGeom,
@@ -198,6 +280,76 @@ export class ModelManager implements ModelManagerInterface {
         child.material.linewidth = 1
       }
     })
+  }
+
+  setEdgeThreshold(threshold: number): void {
+    if (!this.edgesModel || !this.currentModel) {
+      return
+    }
+
+    const linesToRemove: THREE.Object3D[] = []
+    this.edgesModel.traverse((child) => {
+      if (
+        child instanceof THREE.LineSegments ||
+        child instanceof LineSegments2
+      ) {
+        linesToRemove.push(child)
+      }
+    })
+
+    for (const line of linesToRemove) {
+      if (line.parent) {
+        line.parent.remove(line)
+      }
+    }
+
+    const meshes: THREE.Mesh[] = []
+    this.currentModel.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        meshes.push(child)
+      }
+    })
+
+    for (const mesh of meshes) {
+      const meshClone = mesh.clone()
+
+      let lineGeom = new THREE.EdgesGeometry(meshClone.geometry, threshold)
+
+      const line = new THREE.LineSegments(
+        lineGeom,
+        new THREE.LineBasicMaterial({ color: this.LIGHT_LINES })
+      )
+      line.position.copy(mesh.position)
+      line.scale.copy(mesh.scale)
+      line.rotation.copy(mesh.rotation)
+
+      const thickLineGeom = new LineSegmentsGeometry().fromEdgesGeometry(
+        lineGeom
+      )
+      const thickLines = new LineSegments2(
+        thickLineGeom,
+        new LineMaterial({ color: this.LIGHT_LINES, linewidth: 13 })
+      )
+      thickLines.position.copy(mesh.position)
+      thickLines.scale.copy(mesh.scale)
+      thickLines.rotation.copy(mesh.rotation)
+
+      this.edgesModel.add(line)
+      this.edgesModel.add(thickLines)
+    }
+
+    this.edgesModel.traverse((child) => {
+      if (
+        child instanceof THREE.Mesh &&
+        child.material &&
+        child.material.resolution
+      ) {
+        this.renderer.getSize(child.material.resolution)
+        child.material.resolution.multiplyScalar(window.devicePixelRatio)
+        child.material.linewidth = 1
+      }
+    })
+    this.eventManager.emitEvent('edgeThresholdChange', threshold)
   }
 
   disposeBackgroundModel(): void {
@@ -493,7 +645,16 @@ export class ModelManager implements ModelManagerInterface {
             if (originalMaterial) {
               child.material = originalMaterial
             } else {
-              child.material = this.standardMaterial
+              if (this.appliedTexture) {
+                child.material = new THREE.MeshStandardMaterial({
+                  map: this.appliedTexture,
+                  metalness: 0.1,
+                  roughness: 0.8,
+                  side: THREE.DoubleSide
+                })
+              } else {
+                child.material = this.standardMaterial
+              }
             }
             break
         }
@@ -552,6 +713,13 @@ export class ModelManager implements ModelManagerInterface {
     this.originalRotation = null
     this.currentUpDirection = 'original'
     this.setMaterialMode('original')
+    this.originalFileName = null
+    this.originalURL = null
+
+    if (this.appliedTexture) {
+      this.appliedTexture.dispose()
+      this.appliedTexture = null
+    }
 
     this.originalMaterials = new WeakMap()
   }
@@ -587,7 +755,9 @@ export class ModelManager implements ModelManagerInterface {
 
     this.setupCamera(size)
 
-    this.setupLineartModel()
+    if (this.createLineartModel) {
+      this.setupLineartModel()
+    }
   }
 
   setupLineartModel(): void {

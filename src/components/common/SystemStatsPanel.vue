@@ -1,10 +1,14 @@
 <template>
   <div class="system-stats">
     <div class="mb-6">
-      <h2 class="text-2xl font-semibold mb-4">{{ $t('g.systemInfo') }}</h2>
+      <h2 class="text-2xl font-semibold mb-4">
+        {{ $t('g.systemInfo') }}
+      </h2>
       <div class="grid grid-cols-2 gap-2">
         <template v-for="col in systemColumns" :key="col.field">
-          <div class="font-medium">{{ col.header }}</div>
+          <div class="font-medium">
+            {{ col.header }}
+          </div>
           <div>{{ formatValue(systemInfo[col.field], col.field) }}</div>
         </template>
       </div>
@@ -13,7 +17,9 @@
     <Divider />
 
     <div>
-      <h2 class="text-2xl font-semibold mb-4">{{ $t('g.devices') }}</h2>
+      <h2 class="text-2xl font-semibold mb-4">
+        {{ $t('g.devices') }}
+      </h2>
       <TabView v-if="props.stats.devices.length > 1">
         <TabPanel
           v-for="device in props.stats.devices"
@@ -48,15 +54,16 @@ const systemInfo = computed(() => ({
   argv: props.stats.system.argv.join(' ')
 }))
 
-const systemColumns = [
-  { field: 'os', header: 'OS' },
-  { field: 'python_version', header: 'Python Version' },
-  { field: 'embedded_python', header: 'Embedded Python' },
-  { field: 'pytorch_version', header: 'Pytorch Version' },
-  { field: 'argv', header: 'Arguments' },
-  { field: 'ram_total', header: 'RAM Total' },
-  { field: 'ram_free', header: 'RAM Free' }
-]
+const systemColumns: { field: keyof SystemStats['system']; header: string }[] =
+  [
+    { field: 'os', header: 'OS' },
+    { field: 'python_version', header: 'Python Version' },
+    { field: 'embedded_python', header: 'Embedded Python' },
+    { field: 'pytorch_version', header: 'Pytorch Version' },
+    { field: 'argv', header: 'Arguments' },
+    { field: 'ram_total', header: 'RAM Total' },
+    { field: 'ram_free', header: 'RAM Free' }
+  ]
 
 const formatValue = (value: any, field: string) => {
   if (['ram_total', 'ram_free'].includes(field)) {

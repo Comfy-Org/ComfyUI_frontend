@@ -46,7 +46,7 @@ export default defineConfig({
       name: 'chromium-2x',
       use: { ...devices['Desktop Chrome'], deviceScaleFactor: 2 },
       timeout: 15000,
-      grepInvert: /@mobile/ // Run all tests except those tagged with @mobile
+      grep: /@2x/ // Run all tests tagged with @2x
     },
 
     // {

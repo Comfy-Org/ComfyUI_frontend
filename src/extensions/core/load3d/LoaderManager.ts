@@ -1,10 +1,11 @@
 import * as THREE from 'three'
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
-import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader'
 
+import { t } from '@/i18n'
 import { useToastStore } from '@/stores/toastStore'
 
 import {
@@ -47,16 +48,27 @@ export class LoaderManager implements LoaderManagerInterface {
 
       this.modelManager.clearModel()
 
+      this.modelManager.originalURL = url
+
       let fileExtension: string | undefined
       if (originalFileName) {
         fileExtension = originalFileName.split('.').pop()?.toLowerCase()
+
+        this.modelManager.originalFileName =
+          originalFileName.split('/').pop()?.split('.')[0] || 'model'
       } else {
         const filename = new URLSearchParams(url.split('?')[1]).get('filename')
         fileExtension = filename?.split('.').pop()?.toLowerCase()
+
+        if (filename) {
+          this.modelManager.originalFileName = filename.split('.')[0] || 'model'
+        } else {
+          this.modelManager.originalFileName = 'model'
+        }
       }
 
       if (!fileExtension) {
-        useToastStore().addAlert('Could not determine file type')
+        useToastStore().addAlert(t('toastMessages.couldNotDetermineFileType'))
         return
       }
 
@@ -70,7 +82,7 @@ export class LoaderManager implements LoaderManagerInterface {
     } catch (error) {
       this.eventManager.emitEvent('modelLoadingEnd', null)
       console.error('Error loading model:', error)
-      useToastStore().addAlert('Error loading model')
+      useToastStore().addAlert(t('toastMessages.errorLoadingModel'))
     }
   }
 
@@ -80,9 +92,31 @@ export class LoaderManager implements LoaderManagerInterface {
   ): Promise<THREE.Object3D | null> {
     let model: THREE.Object3D | null = null
 
+    const params = new URLSearchParams(url.split('?')[1])
+
+    const filename = params.get('filename')
+
+    if (!filename) {
+      console.error('Missing filename in URL:', url)
+
+      return null
+    }
+
+    const loadRootFolder = params.get('type') === 'output' ? 'output' : 'input'
+
+    const subfolder = params.get('subfolder') ?? ''
+
+    const path =
+      'api/view?type=' +
+      loadRootFolder +
+      '&subfolder=' +
+      encodeURIComponent(subfolder) +
+      '&filename='
+
     switch (fileExtension) {
       case 'stl':
-        const geometry = await this.stlLoader.loadAsync(url)
+        this.stlLoader.setPath(path)
+        const geometry = await this.stlLoader.loadAsync(filename)
         this.modelManager.setOriginalModel(geometry)
         geometry.computeVertexNormals()
 
@@ -97,7 +131,10 @@ export class LoaderManager implements LoaderManagerInterface {
         break
 
       case 'fbx':
-        const fbxModel = await this.fbxLoader.loadAsync(url)
+        this.fbxLoader.setPath(path)
+
+        const fbxModel = await this.fbxLoader.loadAsync(filename)
+
         this.modelManager.setOriginalModel(fbxModel)
         model = fbxModel
 
@@ -110,9 +147,12 @@ export class LoaderManager implements LoaderManagerInterface {
 
       case 'obj':
         if (this.modelManager.materialMode === 'original') {
-          const mtlUrl = url.replace(/\.obj([^.]*$)/, '.mtl$1')
           try {
-            const materials = await this.mtlLoader.loadAsync(mtlUrl)
+            this.mtlLoader.setPath(path)
+
+            const mtlFileName = filename.replace(/\.obj$/, '.mtl')
+
+            const materials = await this.mtlLoader.loadAsync(mtlFileName)
             materials.preload()
             this.objLoader.setMaterials(materials)
           } catch (e) {
@@ -122,7 +162,8 @@ export class LoaderManager implements LoaderManagerInterface {
           }
         }
 
-        model = await this.objLoader.loadAsync(url)
+        this.objLoader.setPath(path)
+        model = await this.objLoader.loadAsync(filename)
         model.traverse((child) => {
           if (child instanceof THREE.Mesh) {
             this.modelManager.originalMaterials.set(child, child.material)
@@ -132,7 +173,10 @@ export class LoaderManager implements LoaderManagerInterface {
 
       case 'gltf':
       case 'glb':
-        const gltf = await this.gltfLoader.loadAsync(url)
+        this.gltfLoader.setPath(path)
+
+        const gltf = await this.gltfLoader.loadAsync(filename)
+
         this.modelManager.setOriginalModel(gltf)
         model = gltf.scene
 

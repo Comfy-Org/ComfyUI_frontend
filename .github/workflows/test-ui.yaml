@@ -30,7 +30,7 @@ jobs:
         with:
           repository: 'Comfy-Org/ComfyUI_devtools'
           path: 'ComfyUI/custom_nodes/ComfyUI_devtools'
-          ref: '080e6d4af809a46852d1c4b7ed85f06e8a3a72be'
+          ref: 'd05fd48dd787a4192e16802d4244cfcc0e2f9684'
 
       - uses: actions/setup-node@v4
         with:
@@ -39,7 +39,6 @@ jobs:
       - name: Build ComfyUI_frontend
         run: |
           npm ci
-          npm run fetch-templates
           npm run build
         working-directory: ComfyUI_frontend
 
@@ -47,8 +46,8 @@ jobs:
         id: cache-key
         run: echo "key=$(date +%s)" >> $GITHUB_OUTPUT
 
-      - name: Cache setup
-        uses: actions/cache@v3
+      - name: Save cache
+        uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684
         with:
           path: |
             ComfyUI
@@ -63,9 +62,13 @@ jobs:
       matrix:
         browser: [chromium, chromium-2x, mobile-chrome]
     steps:
+      - name: Wait for cache propagation
+        run: sleep 10
+
       - name: Restore cached setup
-        uses: actions/cache@v3
+        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684
         with:
+          fail-on-cache-miss: true
           path: |
             ComfyUI
             ComfyUI_frontend

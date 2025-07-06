@@ -1,4 +1,7 @@
 {
+  "Comfy-Desktop_CheckForUpdates": {
+    "label": "Проверить наличие обновлений"
+  },
   "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
     "label": "Открыть папку пользовательских нод"
   },
@@ -35,14 +38,32 @@
   "Comfy_BrowseTemplates": {
     "label": "Просмотр шаблонов"
   },
+  "Comfy_Canvas_AddEditModelStep": {
+    "label": "Добавить или изменить шаг модели"
+  },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "Удалить выбранные элементы"
   },
   "Comfy_Canvas_FitView": {
     "label": "Подогнать вид к выбранным нодам"
   },
+  "Comfy_Canvas_MoveSelectedNodes_Down": {
+    "label": "Переместить выбранные узлы вниз"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Left": {
+    "label": "Переместить выбранные узлы влево"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Right": {
+    "label": "Переместить выбранные узлы вправо"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Up": {
+    "label": "Переместить выбранные узлы вверх"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "Сбросить вид"
+  },
+  "Comfy_Canvas_Resize": {
+    "label": "Изменить размер выбранных узлов"
   },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "Переключить видимость ссылки"
@@ -77,6 +98,9 @@
   "Comfy_ClearWorkflow": {
     "label": "Очистить рабочий процесс"
   },
+  "Comfy_ContactSupport": {
+    "label": "Связаться с поддержкой"
+  },
   "Comfy_DuplicateWorkflow": {
     "label": "Дублировать текущий рабочий процесс"
   },
@@ -88,6 +112,9 @@
   },
   "Comfy_Feedback": {
     "label": "Обратная связь"
+  },
+  "Comfy_Graph_ConvertToSubgraph": {
+    "label": "Преобразовать выделенное в подграф"
   },
   "Comfy_Graph_FitGroupToContents": {
     "label": "Подогнать группу к содержимому"
@@ -125,6 +152,15 @@
   "Comfy_LoadDefaultWorkflow": {
     "label": "Загрузить стандартный рабочий процесс"
   },
+  "Comfy_Manager_CustomNodesManager": {
+    "label": "Менеджер Пользовательских Узлов"
+  },
+  "Comfy_Manager_ToggleManagerProgressDialog": {
+    "label": "Переключить диалоговое окно прогресса"
+  },
+  "Comfy_MaskEditor_OpenMaskEditor": {
+    "label": "Открыть редактор масок для выбранной ноды"
+  },
   "Comfy_NewBlankWorkflow": {
     "label": "Новый пустой рабочий процесс"
   },
@@ -139,6 +175,9 @@
   },
   "Comfy_QueuePromptFront": {
     "label": "Очередь запросов (передняя)"
+  },
+  "Comfy_QueueSelectedOutputNodes": {
+    "label": "Добавить выбранные выходные узлы в очередь"
   },
   "Comfy_Redo": {
     "label": "Повторить"
@@ -160,6 +199,12 @@
   },
   "Comfy_Undo": {
     "label": "Отменить"
+  },
+  "Comfy_User_OpenSignInDialog": {
+    "label": "Открыть окно входа"
+  },
+  "Comfy_User_SignOut": {
+    "label": "Выйти"
   },
   "Workspace_CloseWorkflow": {
     "label": "Закрыть текущий рабочий процесс"

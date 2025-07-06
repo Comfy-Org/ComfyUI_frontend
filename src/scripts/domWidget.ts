@@ -1,56 +1,76 @@
-import { LGraphCanvas, LGraphNode } from '@comfyorg/litegraph'
-import type { Vector4 } from '@comfyorg/litegraph'
-import type { ISerialisedNode } from '@comfyorg/litegraph/dist/types/serialisation'
+import { LGraphNode, LegacyWidget, LiteGraph } from '@comfyorg/litegraph'
 import type {
-  ICustomWidget,
+  IBaseWidget,
   IWidgetOptions
 } from '@comfyorg/litegraph/dist/types/widgets'
+import _ from 'lodash'
+import { type Component, toRaw } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import { app } from '@/scripts/app'
+import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
-import { useSettingStore } from '@/stores/settingStore'
-import { generateRandomSuffix } from '@/utils/formatUtil'
+import { generateUUID } from '@/utils/formatUtil'
 
-interface Rect {
-  height: number
-  width: number
-  x: number
-  y: number
+export interface BaseDOMWidget<V extends object | string = object | string>
+  extends IBaseWidget<V, string, DOMWidgetOptions<V>> {
+  // ICustomWidget properties
+  type: string
+  options: DOMWidgetOptions<V>
+  value: V
+  callback?: (value: V) => void
+
+  // BaseDOMWidget properties
+  /** The unique ID of the widget. */
+  readonly id: string
+  /** The node that the widget belongs to. */
+  readonly node: LGraphNode
+  /** Whether the widget is visible. */
+  isVisible(): boolean
+  /** The margin of the widget. */
+  margin: number
 }
 
+/**
+ * A DOM widget that wraps a custom HTML element as a litegraph widget.
+ */
 export interface DOMWidget<T extends HTMLElement, V extends object | string>
-  extends ICustomWidget<T> {
-  // ICustomWidget properties
-  type: 'custom'
+  extends BaseDOMWidget<V> {
   element: T
-  options: DOMWidgetOptions<T, V>
-  value: V
   /**
    * @deprecated Legacy property used by some extensions for customtext
-   * (textarea) widgets. Use `element` instead as it provides the same
+   * (textarea) widgets. Use {@link element} instead as it provides the same
    * functionality and works for all DOMWidget types.
    */
   inputEl?: T
-  callback?: (value: V) => void
-  // DOMWidget properties
-  /** The unique ID of the widget. */
-  id: string
 }
 
-export interface DOMWidgetOptions<
-  T extends HTMLElement,
-  V extends object | string
-> extends IWidgetOptions {
+/**
+ * A DOM widget that wraps a Vue component as a litegraph widget.
+ */
+export interface ComponentWidget<
+  V extends object | string,
+  P = Record<string, unknown>
+> extends BaseDOMWidget<V> {
+  readonly component: Component
+  readonly inputSpec: InputSpec
+  readonly props?: P
+}
+
+export interface DOMWidgetOptions<V extends object | string>
+  extends IWidgetOptions {
+  /**
+   * Whether to render a placeholder rectangle when zoomed out.
+   */
   hideOnZoom?: boolean
   selectOn?: string[]
-  onHide?: (widget: DOMWidget<T, V>) => void
+  onHide?: (widget: BaseDOMWidget<V>) => void
   getValue?: () => V
   setValue?: (value: V) => void
   getMinHeight?: () => number
   getMaxHeight?: () => number
   getHeight?: () => string | number
-  onDraw?: (widget: DOMWidget<T, V>) => void
+  onDraw?: (widget: BaseDOMWidget<V>) => void
+  margin?: number
   /**
    * @deprecated Use `afterResize` instead. This callback is a legacy API
    * that fires before resize happens, but it is no longer supported. Now it
@@ -58,146 +78,107 @@ export interface DOMWidgetOptions<
    * The resize logic has been upstreamed to litegraph in
    * https://github.com/Comfy-Org/ComfyUI_frontend/pull/2557
    */
-  beforeResize?: (this: DOMWidget<T, V>, node: LGraphNode) => void
-  afterResize?: (this: DOMWidget<T, V>, node: LGraphNode) => void
+  beforeResize?: (this: BaseDOMWidget<V>, node: LGraphNode) => void
+  afterResize?: (this: BaseDOMWidget<V>, node: LGraphNode) => void
 }
 
-function intersect(a: Rect, b: Rect): Vector4 | null {
-  const x = Math.max(a.x, b.x)
-  const num1 = Math.min(a.x + a.width, b.x + b.width)
-  const y = Math.max(a.y, b.y)
-  const num2 = Math.min(a.y + a.height, b.y + b.height)
-  if (num1 >= x && num2 >= y) return [x, y, num1 - x, num2 - y]
-  else return null
-}
+export const isDOMWidget = <T extends HTMLElement, V extends object | string>(
+  widget: IBaseWidget
+): widget is DOMWidget<T, V> => 'element' in widget && !!widget.element
 
-function getClipPath(
-  node: LGraphNode,
-  element: HTMLElement,
-  canvasRect: DOMRect
-): string {
-  const selectedNode: LGraphNode = Object.values(
-    app.canvas.selected_nodes ?? {}
-  )[0] as LGraphNode
-  if (selectedNode && selectedNode !== node) {
-    const elRect = element.getBoundingClientRect()
-    const MARGIN = 4
-    const { offset, scale } = app.canvas.ds
-    const { renderArea } = selectedNode
+export const isComponentWidget = <V extends object | string>(
+  widget: IBaseWidget
+): widget is ComponentWidget<V> => 'component' in widget && !!widget.component
 
-    // Get intersection in browser space
-    const intersection = intersect(
-      {
-        x: elRect.left - canvasRect.left,
-        y: elRect.top - canvasRect.top,
-        width: elRect.width,
-        height: elRect.height
-      },
-      {
-        x: (renderArea[0] + offset[0] - MARGIN) * scale,
-        y: (renderArea[1] + offset[1] - MARGIN) * scale,
-        width: (renderArea[2] + 2 * MARGIN) * scale,
-        height: (renderArea[3] + 2 * MARGIN) * scale
-      }
-    )
-
-    if (!intersection) {
-      return ''
-    }
-
-    // Convert intersection to canvas scale (element has scale transform)
-    const clipX =
-      (intersection[0] - elRect.left + canvasRect.left) / scale + 'px'
-    const clipY = (intersection[1] - elRect.top + canvasRect.top) / scale + 'px'
-    const clipWidth = intersection[2] / scale + 'px'
-    const clipHeight = intersection[3] / scale + 'px'
-    const path = `polygon(0% 0%, 0% 100%, ${clipX} 100%, ${clipX} ${clipY}, calc(${clipX} + ${clipWidth}) ${clipY}, calc(${clipX} + ${clipWidth}) calc(${clipY} + ${clipHeight}), ${clipX} calc(${clipY} + ${clipHeight}), ${clipX} 100%, 100% 100%, 100% 0%)`
-    return path
-  }
-  return ''
-}
-
-// Override the compute visible nodes function to allow us to hide/show DOM elements when the node goes offscreen
-const elementWidgets = new Set<LGraphNode>()
-const computeVisibleNodes = LGraphCanvas.prototype.computeVisibleNodes
-LGraphCanvas.prototype.computeVisibleNodes = function (
-  nodes?: LGraphNode[],
-  out?: LGraphNode[]
-): LGraphNode[] {
-  const visibleNodes = computeVisibleNodes.call(this, nodes, out)
-
-  for (const node of app.graph.nodes) {
-    if (elementWidgets.has(node)) {
-      const hidden = visibleNodes.indexOf(node) === -1
-      for (const w of node.widgets ?? []) {
-        if (w.element) {
-          w.element.dataset.isInVisibleNodes = hidden ? 'false' : 'true'
-          const shouldOtherwiseHide = w.element.dataset.shouldHide === 'true'
-          const wasHidden = w.element.hidden
-          const actualHidden = hidden || shouldOtherwiseHide || node.collapsed
-          w.element.hidden = actualHidden
-          w.element.style.display = actualHidden ? 'none' : ''
-          if (actualHidden && !wasHidden) {
-            w.options.onHide?.(w as DOMWidget<HTMLElement, object>)
-          }
-        }
-      }
-    }
-  }
-
-  return visibleNodes
-}
-
-export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
-  implements DOMWidget<T, V>
+abstract class BaseDOMWidgetImpl<V extends object | string>
+  extends LegacyWidget<IBaseWidget<V, string, DOMWidgetOptions<V>>>
+  implements BaseDOMWidget<V>
 {
-  readonly type: 'custom'
-  readonly name: string
-  readonly element: T
-  readonly options: DOMWidgetOptions<T, V>
-  computedHeight?: number
-  callback?: (value: V) => void
+  static readonly DEFAULT_MARGIN = 10
+  declare readonly name: string
+  declare readonly options: DOMWidgetOptions<V>
+  declare callback?: (value: V) => void
 
   readonly id: string
-  mouseDownHandler?: (event: MouseEvent) => void
 
   constructor(obj: {
-    id: string
+    node: LGraphNode
     name: string
     type: string
-    element: T
-    options: DOMWidgetOptions<T, V>
+    options: DOMWidgetOptions<V>
   }) {
-    // @ts-expect-error custom widget type
-    this.type = obj.type
-    this.name = obj.name
-    this.element = obj.element
-    this.options = obj.options
+    const { node, name, type, options } = obj
+    super({ y: 0, name, type, options }, node)
 
-    this.id = obj.id
-
-    if (this.element.blur) {
-      this.mouseDownHandler = (event) => {
-        if (!this.element.contains(event.target as HTMLElement)) {
-          this.element.blur()
-        }
-      }
-      document.addEventListener('mousedown', this.mouseDownHandler)
-    }
+    this.id = generateUUID()
   }
 
-  get value(): V {
+  override get value(): V {
     return this.options.getValue?.() ?? ('' as V)
   }
 
-  set value(v: V) {
+  override set value(v: V) {
     this.options.setValue?.(v)
     this.callback?.(this.value)
   }
 
+  get margin(): number {
+    return this.options.margin ?? BaseDOMWidgetImpl.DEFAULT_MARGIN
+  }
+
+  isVisible(): boolean {
+    return !['hidden'].includes(this.type) && this.node.isWidgetVisible(this)
+  }
+
+  override draw(
+    ctx: CanvasRenderingContext2D,
+    _node: LGraphNode,
+    widget_width: number,
+    y: number,
+    widget_height: number,
+    lowQuality?: boolean
+  ): void {
+    if (this.options.hideOnZoom && lowQuality && this.isVisible()) {
+      // Draw a placeholder rectangle
+      const originalFillStyle = ctx.fillStyle
+      ctx.beginPath()
+      ctx.fillStyle = LiteGraph.WIDGET_BGCOLOR
+      ctx.rect(
+        this.margin,
+        y + this.margin,
+        widget_width - this.margin * 2,
+        (this.computedHeight ?? widget_height) - 2 * this.margin
+      )
+      ctx.fill()
+      ctx.fillStyle = originalFillStyle
+    }
+    this.options.onDraw?.(this)
+  }
+
+  override onRemove(): void {
+    useDomWidgetStore().unregisterWidget(this.id)
+  }
+}
+
+export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
+  extends BaseDOMWidgetImpl<V>
+  implements DOMWidget<T, V>
+{
+  override readonly element: T
+
+  constructor(obj: {
+    node: LGraphNode
+    name: string
+    type: string
+    element: T
+    options: DOMWidgetOptions<V>
+  }) {
+    super(obj)
+    this.element = obj.element
+  }
+
   /** Extract DOM widget size info */
-  computeLayoutSize(node: LGraphNode) {
-    // @ts-expect-error custom widget type
+  override computeLayoutSize(node: LGraphNode) {
     if (this.type === 'hidden') {
       return {
         minHeight: 0,
@@ -237,70 +218,73 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
       minWidth: 0
     }
   }
+}
 
-  draw(
-    ctx: CanvasRenderingContext2D,
-    node: LGraphNode,
-    widgetWidth: number,
-    y: number
-  ): void {
-    const { offset, scale } = app.canvas.ds
-    const hidden =
-      (!!this.options.hideOnZoom && app.canvas.low_quality) ||
-      (this.computedHeight ?? 0) <= 0 ||
-      // @ts-expect-error custom widget type
-      this.type === 'converted-widget' ||
-      // @ts-expect-error custom widget type
-      this.type === 'hidden' ||
-      node.collapsed
+export class ComponentWidgetImpl<
+    V extends object | string,
+    P = Record<string, unknown>
+  >
+  extends BaseDOMWidgetImpl<V>
+  implements ComponentWidget<V, P>
+{
+  readonly component: Component
+  readonly inputSpec: InputSpec
+  readonly props?: P
 
-    this.element.dataset.shouldHide = hidden ? 'true' : 'false'
-    const isInVisibleNodes = this.element.dataset.isInVisibleNodes === 'true'
-    const actualHidden = hidden || !isInVisibleNodes
-    const wasHidden = this.element.hidden
-    this.element.hidden = actualHidden
-    this.element.style.display = actualHidden ? 'none' : ''
-
-    if (actualHidden && !wasHidden) {
-      this.options.onHide?.(this)
-    }
-    if (actualHidden) {
-      return
-    }
-
-    const elRect = ctx.canvas.getBoundingClientRect()
-    const margin = 10
-    const top = node.pos[0] + offset[0] + margin
-    const left = node.pos[1] + offset[1] + margin + y
-
-    Object.assign(this.element.style, {
-      transformOrigin: '0 0',
-      transform: `scale(${scale})`,
-      left: `${top * scale}px`,
-      top: `${left * scale}px`,
-      width: `${widgetWidth - margin * 2}px`,
-      height: `${(this.computedHeight ?? 50) - margin * 2}px`,
-      position: 'absolute',
-      zIndex: app.graph.nodes.indexOf(node),
-      pointerEvents: app.canvas.read_only ? 'none' : 'auto'
+  constructor(obj: {
+    node: LGraphNode
+    name: string
+    component: Component
+    inputSpec: InputSpec
+    props?: P
+    options: DOMWidgetOptions<V>
+  }) {
+    super({
+      ...obj,
+      type: 'custom'
     })
-
-    if (useSettingStore().get('Comfy.DOMClippingEnabled')) {
-      const clipPath = getClipPath(node, this.element, elRect)
-      this.element.style.clipPath = clipPath ?? 'none'
-      this.element.style.willChange = 'clip-path'
-    }
-
-    this.options.onDraw?.(this)
+    this.component = obj.component
+    this.inputSpec = obj.inputSpec
+    this.props = obj.props
   }
 
-  onRemove(): void {
-    if (this.mouseDownHandler) {
-      document.removeEventListener('mousedown', this.mouseDownHandler)
+  override computeLayoutSize() {
+    const minHeight = this.options.getMinHeight?.() ?? 50
+    const maxHeight = this.options.getMaxHeight?.()
+    return {
+      minHeight,
+      maxHeight,
+      minWidth: 0
     }
-    this.element.remove()
-    useDomWidgetStore().unregisterWidget(this.id)
   }
+
+  override serializeValue(): V {
+    return toRaw(this.value)
+  }
+}
+
+export const addWidget = <W extends BaseDOMWidget<object | string>>(
+  node: LGraphNode,
+  widget: W
+) => {
+  node.addCustomWidget(widget)
+
+  if (node.graph) {
+    useDomWidgetStore().registerWidget(widget)
+  }
+
+  node.onAdded = useChainCallback(node.onAdded, () => {
+    useDomWidgetStore().registerWidget(widget)
+  })
+
+  node.onRemoved = useChainCallback(node.onRemoved, () => {
+    widget.onRemove?.()
+  })
+
+  node.onResize = useChainCallback(node.onResize, () => {
+    widget.options.beforeResize?.call(widget, node)
+    widget.options.afterResize?.call(widget, node)
+  })
 }
 
 LGraphNode.prototype.addDOMWidget = function <
@@ -311,27 +295,17 @@ LGraphNode.prototype.addDOMWidget = function <
   name: string,
   type: string,
   element: T,
-  options: DOMWidgetOptions<T, V> = {}
+  options: DOMWidgetOptions<V> = {}
 ): DOMWidget<T, V> {
-  options = { hideOnZoom: true, selectOn: ['focus', 'click'], ...options }
-
-  element.hidden = true
-  element.style.display = 'none'
-
-  const { nodeData } = this.constructor
-  const tooltip = (nodeData?.input.required?.[name] ??
-    nodeData?.input.optional?.[name])?.[1]?.tooltip
-  if (tooltip && !element.title) {
-    element.title = tooltip
-  }
-
   const widget = new DOMWidgetImpl({
-    id: `${this.id}:${name}:${generateRandomSuffix()}`,
+    node: this,
     name,
     type,
     element,
-    options
+    options: { hideOnZoom: true, ...options }
   })
+  // Note: Before `LGraphNode.configure` is called, `this.id` is always `-1`.
+  addWidget(this, widget as unknown as BaseDOMWidget<object | string>)
 
   // Workaround for https://github.com/Comfy-Org/ComfyUI_frontend/issues/2493
   // Some custom nodes are explicitly expecting getter and setter of `value`
@@ -346,31 +320,19 @@ LGraphNode.prototype.addDOMWidget = function <
     }
   })
 
-  // Ensure selectOn exists before iteration
-  const selectEvents = options.selectOn ?? ['focus', 'click']
-  for (const evt of selectEvents) {
-    element.addEventListener(evt, () => {
-      app.canvas.selectNode(this)
-      app.canvas.bringToFront(this)
-    })
-  }
-
-  this.addCustomWidget(widget)
-  elementWidgets.add(this)
-
-  const onRemoved = this.onRemoved
-  this.onRemoved = function (this: LGraphNode) {
-    widget.onRemove()
-    elementWidgets.delete(this)
-    onRemoved?.call(this)
-  }
-
-  this.onResize = useChainCallback(this.onResize, () => {
-    options.beforeResize?.call(widget, this)
-    options.afterResize?.call(widget, this)
-  })
-
-  useDomWidgetStore().registerWidget(widget)
-
   return widget
+}
+
+/**
+ * Prunes widgets that are no longer in the graph.
+ * @param nodes The nodes to prune widgets for.
+ */
+export const pruneWidgets = (nodes: LGraphNode[]) => {
+  const nodeSet = new Set(nodes)
+  const domWidgetStore = useDomWidgetStore()
+  for (const { widget } of domWidgetStore.widgetStates.values()) {
+    if (!nodeSet.has(widget.node)) {
+      domWidgetStore.unregisterWidget(widget.id)
+    }
+  }
 }

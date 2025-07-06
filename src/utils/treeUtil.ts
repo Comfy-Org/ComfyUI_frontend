@@ -1,4 +1,4 @@
-import type { TreeNode } from 'primevue/treenode'
+import type { TreeNode } from '@/types/treeExplorerTypes'
 
 export function buildTree<T>(items: T[], key: (item: T) => string[]): TreeNode {
   const root: TreeNode = {
@@ -45,7 +45,7 @@ export function flattenTree<T>(tree: TreeNode): T[] {
   while (stack.length) {
     const node = stack.pop()!
     if (node.leaf && node.data) result.push(node.data)
-    stack.push(...(node.children || []))
+    stack.push(...(node.children ?? []))
   }
   return result
 }
@@ -105,7 +105,10 @@ export function sortedTree(
   return newNode
 }
 
-export const findNodeByKey = (root: TreeNode, key: string): TreeNode | null => {
+export const findNodeByKey = <T extends TreeNode>(
+  root: T,
+  key: string
+): T | null => {
   if (root.key === key) {
     return root
   }
@@ -119,4 +122,40 @@ export const findNodeByKey = (root: TreeNode, key: string): TreeNode | null => {
     }
   }
   return null
+}
+
+/**
+ * Deep clone a tree node and its children.
+ * @param node - The node to clone.
+ * @returns A deep clone of the node.
+ */
+export function cloneTree<T extends TreeNode>(node: T): T {
+  const clone = { ...node }
+
+  // Clone children recursively
+  if (node.children && node.children.length > 0) {
+    clone.children = node.children.map((child) => cloneTree(child))
+  }
+
+  return clone
+}
+
+/**
+ * Merge a subtree into the tree.
+ * @param root - The root of the tree.
+ * @param subtree - The subtree to merge.
+ * @returns A new tree with the subtree merged.
+ */
+export const combineTrees = <T extends TreeNode>(root: T, subtree: T): T => {
+  const newRoot = cloneTree(root)
+
+  const parentKey = subtree.key.slice(0, subtree.key.lastIndexOf('/'))
+  const parent = findNodeByKey(newRoot, parentKey)
+
+  if (parent) {
+    parent.children ??= []
+    parent.children.push(cloneTree(subtree))
+  }
+
+  return newRoot
 }

@@ -8,13 +8,13 @@
         "
       >
         <ResultItem
-          v-if="flatOutputs.length"
+          v-if="flatOutputs.length && coverResult"
           :result="coverResult"
           @preview="handlePreview"
         />
       </template>
       <template v-if="task.displayStatus === TaskItemDisplayStatus.Running">
-        <i v-if="!progressPreviewBlobUrl" class="pi pi-spin pi-spinner"></i>
+        <i v-if="!progressPreviewBlobUrl" class="pi pi-spin pi-spinner" />
         <img
           v-else
           :src="progressPreviewBlobUrl"
@@ -27,11 +27,11 @@
       <i
         v-else-if="cancelledWithoutResults"
         class="pi pi-exclamation-triangle"
-      ></i>
+      />
       <i
         v-else-if="task.displayStatus === TaskItemDisplayStatus.Failed"
         class="pi pi-exclamation-circle"
-      ></i>
+      />
     </div>
 
     <div class="task-item-details">
@@ -42,11 +42,16 @@
             :label="`${node?.type} (#${node?.id})`"
             link
             size="small"
-            @click="litegraphService.goToNode(node?.id)"
+            @click="
+              () => {
+                if (!node) return
+                litegraphService.goToNode(node.id)
+              }
+            "
           />
         </Tag>
         <Tag :severity="taskTagSeverity(task.displayStatus)">
-          <span v-html="taskStatusText(task.displayStatus)"></span>
+          <span v-html="taskStatusText(task.displayStatus)" />
           <span v-if="task.isHistory" class="task-time">
             {{ formatTime(task.executionTimeInSeconds) }}
           </span>
@@ -95,7 +100,7 @@ const coverResult = flatOutputs.length
 const node: ComfyNode | null =
   flatOutputs.length && props.task.workflow
     ? props.task.workflow.nodes.find(
-        (n: ComfyNode) => n.id == coverResult.nodeId
+        (n: ComfyNode) => n.id == coverResult?.nodeId
       ) ?? null
     : null
 const progressPreviewBlobUrl = ref('')
@@ -103,7 +108,7 @@ const progressPreviewBlobUrl = ref('')
 const emit = defineEmits<{
   (
     e: 'contextmenu',
-    value: { task: TaskItemImpl; event: MouseEvent; node?: ComfyNode }
+    value: { task: TaskItemImpl; event: MouseEvent; node: ComfyNode | null }
   ): void
   (e: 'preview', value: TaskItemImpl): void
   (e: 'task-output-length-clicked', value: TaskItemImpl): void
@@ -226,6 +231,13 @@ const cancelledWithoutResults = computed(() => {
   align-items: center;
   width: 100%;
   z-index: 1;
+  pointer-events: none; /* Allow clicks to pass through this div */
+}
+
+/* Make individual controls clickable again by restoring pointer events */
+.task-item-details .tag-wrapper,
+.task-item-details button {
+  pointer-events: auto;
 }
 
 .task-node-link {

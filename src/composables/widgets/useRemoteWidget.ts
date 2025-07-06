@@ -2,7 +2,9 @@ import { LGraphNode } from '@comfyorg/litegraph'
 import { IWidget } from '@comfyorg/litegraph'
 import axios from 'axios'
 
+import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
+import { api } from '@/scripts/api'
 
 const MAX_RETRIES = 5
 const TIMEOUT = 4096
@@ -189,14 +191,18 @@ export function useRemoteWidget<
    * @returns the most recent value of the widget.
    */
   function getValue(onFulfilled?: () => void) {
-    fetchValue().then((data) => {
-      if (isFirstLoad()) onFirstLoad(data)
-      if (refreshQueued && data !== defaultValue) {
-        onRefresh()
-        refreshQueued = false
-      }
-      onFulfilled?.()
-    })
+    void fetchValue()
+      .then((data) => {
+        if (isFirstLoad()) onFirstLoad(data)
+        if (refreshQueued && data !== defaultValue) {
+          onRefresh()
+          refreshQueued = false
+        }
+        onFulfilled?.()
+      })
+      .catch((err) => {
+        console.error(err)
+      })
     return getCachedValue() ?? defaultValue
   }
 
@@ -215,6 +221,46 @@ export function useRemoteWidget<
   function addRefreshButton() {
     node.addWidget('button', 'refresh', 'refresh', widget.refresh)
   }
+
+  /**
+   * Add auto-refresh toggle widget and execution success listener
+   */
+  function addAutoRefreshToggle() {
+    let autoRefreshEnabled = false
+
+    // Handler for execution success
+    const handleExecutionSuccess = () => {
+      if (autoRefreshEnabled && widget.refresh) {
+        widget.refresh()
+      }
+    }
+
+    // Add toggle widget
+    const autoRefreshWidget = node.addWidget(
+      'toggle',
+      'Auto-refresh after generation',
+      false,
+      (value: boolean) => {
+        autoRefreshEnabled = value
+      },
+      {
+        serialize: false
+      }
+    )
+
+    // Register event listener
+    api.addEventListener('execution_success', handleExecutionSuccess)
+
+    // Cleanup on node removal
+    node.onRemoved = useChainCallback(node.onRemoved, function () {
+      api.removeEventListener('execution_success', handleExecutionSuccess)
+    })
+
+    return autoRefreshWidget
+  }
+
+  // Always add auto-refresh toggle for remote widgets
+  addAutoRefreshToggle()
 
   return {
     getCachedValue,

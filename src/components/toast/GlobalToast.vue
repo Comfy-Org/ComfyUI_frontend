@@ -59,7 +59,9 @@ function updateToastPosition() {
     document.getElementById('dynamic-toast-style') || createStyleElement()
   const rect = document
     .querySelector('.graph-canvas-container')
-    .getBoundingClientRect()
+    ?.getBoundingClientRect()
+  if (!rect) return
+
   styleElement.textContent = `
     .p-toast.p-component.p-toast-top-right {
       top: ${rect.top + 20}px !important;

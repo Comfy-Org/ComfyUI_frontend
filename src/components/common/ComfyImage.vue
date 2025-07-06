@@ -8,57 +8,45 @@
     <img
       v-if="contain"
       :src="src"
-      @error="handleImageError"
       :data-test="src"
       class="comfy-image-blur"
       :style="{ 'background-image': `url(${src})` }"
       :alt="alt"
+      @error="handleImageError"
     />
     <img
       :src="src"
-      @error="handleImageError"
       class="comfy-image-main"
-      :class="[...classArray]"
+      :class="classProp"
       :alt="alt"
+      @error="handleImageError"
     />
   </span>
   <div v-if="imageBroken" class="broken-image-placeholder">
-    <i class="pi pi-image"></i>
+    <i class="pi pi-image" />
     <span>{{ $t('g.imageFailedToLoad') }}</span>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 
-const props = withDefaults(
-  defineProps<{
-    src: string
-    class?: string | string[] | object
-    contain: boolean
-    alt?: string
-  }>(),
-  {
-    contain: false,
-    alt: 'Image content'
-  }
-)
+const {
+  src,
+  class: classProp,
+  contain = false,
+  alt = 'Image content'
+} = defineProps<{
+  src: string
+  class?: any
+  contain?: boolean
+  alt?: string
+}>()
 
 const imageBroken = ref(false)
-const handleImageError = (e: Event) => {
+const handleImageError = () => {
   imageBroken.value = true
 }
-
-const classArray = computed(() => {
-  if (Array.isArray(props.class)) {
-    return props.class
-  } else if (typeof props.class === 'string') {
-    return props.class.split(' ')
-  } else if (typeof props.class === 'object') {
-    return Object.keys(props.class).filter((key) => props.class[key])
-  }
-  return []
-})
 </script>
 
 <style scoped>

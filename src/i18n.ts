@@ -4,6 +4,10 @@ import enCommands from './locales/en/commands.json'
 import en from './locales/en/main.json'
 import enNodes from './locales/en/nodeDefs.json'
 import enSettings from './locales/en/settings.json'
+import esCommands from './locales/es/commands.json'
+import es from './locales/es/main.json'
+import esNodes from './locales/es/nodeDefs.json'
+import esSettings from './locales/es/settings.json'
 import frCommands from './locales/fr/commands.json'
 import fr from './locales/fr/main.json'
 import frNodes from './locales/fr/nodeDefs.json'
@@ -40,7 +44,8 @@ const messages = {
   ru: buildLocale(ru, ruNodes, ruCommands, ruSettings),
   ja: buildLocale(ja, jaNodes, jaCommands, jaSettings),
   ko: buildLocale(ko, koNodes, koCommands, koSettings),
-  fr: buildLocale(fr, frNodes, frCommands, frSettings)
+  fr: buildLocale(fr, frNodes, frCommands, frSettings),
+  es: buildLocale(es, esNodes, esCommands, esSettings)
 }
 
 export const i18n = createI18n({
@@ -50,7 +55,7 @@ export const i18n = createI18n({
   fallbackLocale: 'en',
   messages,
   // Ignore warnings for locale options as each option is in its own language.
-  // e.g. "English", "中文", "Русский", "日本語", "한국어", "Français"
+  // e.g. "English", "中文", "Русский", "日本語", "한국어", "Français", "Español"
   missingWarn: /^(?!settings\.Comfy_Locale\.options\.).+/,
   fallbackWarn: /^(?!settings\.Comfy_Locale\.options\.).+/
 })
