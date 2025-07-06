@@ -106,10 +106,10 @@ export const useSettingStore = defineStore('setting', () => {
 
       if (installedVersion) {
         const sortedVersions = Object.keys(param.defaultsByInstallVersion).sort(
-          (a, b) => compareVersions(a, b)
+          (a, b) => compareVersions(b, a)
         )
 
-        for (const version of sortedVersions.reverse()) {
+        for (const version of sortedVersions) {
           // Ensure the version is in a valid format before comparing
           if (!isValidVersionFormat(version)) {
             continue
