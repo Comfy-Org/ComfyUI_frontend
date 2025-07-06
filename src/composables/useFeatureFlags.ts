@@ -34,18 +34,6 @@ export const useFeatureFlags = () => {
   })
 
   /**
-   * Enable viewport culling for performance
-   * When disabled, all Vue nodes render regardless of viewport
-   */
-  const isViewportCullingEnabled = computed(() => {
-    try {
-      return settingStore.get('Comfy.VueNodes.ViewportCulling' as any) ?? true
-    } catch {
-      return true
-    }
-  })
-
-  /**
    * Development mode features (debug panel, etc.)
    * Automatically enabled in development builds
    */
@@ -71,23 +59,10 @@ export const useFeatureFlags = () => {
       true
   )
 
-  /**
-   * Get culling margin setting
-   */
-  const cullingMargin = computed(() => {
-    try {
-      return settingStore.get('Comfy.VueNodes.CullingMargin' as any) ?? 0.2
-    } catch {
-      return 0.2
-    }
-  })
-
   return {
     isVueNodesEnabled,
     isVueWidgetsEnabled,
-    isViewportCullingEnabled,
     isDevModeEnabled,
-    shouldRenderVueNodes,
-    cullingMargin
+    shouldRenderVueNodes
   }
 }

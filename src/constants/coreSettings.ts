@@ -887,30 +887,5 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip: 'Render widgets as Vue components within Vue nodes.',
     type: 'boolean',
     defaultValue: true
-  },
-  {
-    id: 'Comfy.VueNodes.ViewportCulling' as any,
-    category: ['Comfy', 'Vue Nodes', 'Performance'],
-    experimental: true,
-    name: 'Enable viewport culling',
-    tooltip:
-      'Only render Vue nodes visible in viewport for better performance.',
-    type: 'boolean',
-    defaultValue: true
-  },
-  {
-    id: 'Comfy.VueNodes.CullingMargin' as any,
-    category: ['Comfy', 'Vue Nodes', 'Performance'],
-    experimental: true,
-    name: 'Viewport culling margin',
-    tooltip:
-      'Percentage of viewport to extend culling bounds (0.2 = 20% margin).',
-    type: 'slider',
-    defaultValue: 0.2,
-    attrs: {
-      min: 0,
-      max: 1,
-      step: 0.05
-    }
   }
 ]

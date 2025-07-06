@@ -179,12 +179,7 @@ const selectionToolboxEnabled = computed(() =>
 )
 
 // Feature flags
-const {
-  shouldRenderVueNodes,
-  // isViewportCullingEnabled, // Unused
-  // cullingMargin: featureCullingMargin, // Unused
-  isDevModeEnabled
-} = useFeatureFlags()
+const { shouldRenderVueNodes, isDevModeEnabled } = useFeatureFlags()
 
 // TransformPane enabled when Vue nodes are enabled OR debug override
 const debugOverrideVueNodes = ref(true) // Default to true for development
@@ -321,8 +316,6 @@ watch(
 
 // Transform state for viewport culling
 const { syncWithCanvas } = useTransformState()
-
-// const cullingMargin = 0.2 // 20% margin outside viewport (unused)
 
 // Replace problematic computed property with proper reactive system
 const nodesToRender = computed(() => {
