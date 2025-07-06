@@ -9,14 +9,13 @@ import {
 } from 'vitest'
 import { ref } from 'vue'
 
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-
 import {
   useBooleanWidgetValue,
   useNumberWidgetValue,
   useStringWidgetValue,
   useWidgetValue
-} from './useWidgetValue'
+} from '@/composables/graph/useWidgetValue'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 describe('useWidgetValue', () => {
   let mockWidget: SimplifiedWidget<string>
