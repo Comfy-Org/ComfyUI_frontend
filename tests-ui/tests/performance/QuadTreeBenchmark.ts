@@ -2,7 +2,7 @@
  * Performance benchmark for QuadTree vs linear culling
  * Measures query performance at different node counts and zoom levels
  */
-import { type Bounds, QuadTree } from './QuadTree'
+import { type Bounds, QuadTree } from '../../../src/utils/spatial/QuadTree'
 
 export interface BenchmarkResult {
   nodeCount: number
