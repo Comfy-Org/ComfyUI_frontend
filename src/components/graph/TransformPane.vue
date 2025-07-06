@@ -8,7 +8,7 @@
     <!-- Vue nodes will be rendered here -->
     <slot />
 
-    <!-- Debug: Viewport bounds visualization -->
+    <!-- DEV ONLY: Viewport bounds visualization -->
     <div
       v-if="props.showDebugOverlay"
       class="viewport-debug-overlay"
@@ -43,9 +43,11 @@
 
 <script setup lang="ts">
 import type { LGraphCanvas } from '@comfyorg/litegraph'
-import { onMounted, onUnmounted, provide, ref } from 'vue'
+import { computed, provide } from 'vue'
 
 import { useTransformState } from '@/composables/element/useTransformState'
+import { useCanvasTransformSync } from '@/composables/graph/useCanvasTransformSync'
+import { useTransformSettling } from '@/composables/graph/useTransformSettling'
 
 interface TransformPaneProps {
   canvas?: LGraphCanvas
@@ -68,10 +70,15 @@ const {
   isNodeInViewport
 } = useTransformState()
 
-// Interaction state
-const isInteracting = ref(false)
-let interactionTimeout: number | null = null
-let wheelTimeout: number | null = null
+// Transform settling detection for re-rasterization optimization
+const canvasElement = computed(() => props.canvas?.canvas)
+const { isTransforming } = useTransformSettling(canvasElement, {
+  settleDelay: 200,
+  trackPan: true
+})
+
+// Use isTransforming for the CSS class (aliased for clarity)
+const isInteracting = isTransforming
 
 // Provide transform utilities to child components
 provide('transformState', {
@@ -80,24 +87,6 @@ provide('transformState', {
   screenToCanvas,
   isNodeInViewport
 })
-
-// Handle will-change for performance
-// This adds/removes "will-change: transform" CSS property to optimize GPU rendering during interactions
-const setInteracting = (interactive: boolean) => {
-  isInteracting.value = interactive
-
-  if (!interactive && interactionTimeout !== null) {
-    clearTimeout(interactionTimeout)
-    interactionTimeout = null
-  }
-
-  if (!interactive) {
-    // Delay removing will-change to avoid thrashing
-    interactionTimeout = window.setTimeout(() => {
-      isInteracting.value = false
-    }, 200)
-  }
-}
 
 // Event delegation for node interactions
 const handlePointerDown = (event: PointerEvent) => {
@@ -110,117 +99,16 @@ const handlePointerDown = (event: PointerEvent) => {
   }
 }
 
-// Sync with canvas on RAF
-let rafId: number | null = null
+// Canvas transform synchronization
 const emit = defineEmits<{
   rafStatusChange: [active: boolean]
   transformUpdate: [time: number]
 }>()
 
-const startSync = () => {
-  emit('rafStatusChange', true)
-  const sync = () => {
-    if (props.canvas) {
-      const startTime = performance.now()
-      syncWithCanvas(props.canvas)
-      const endTime = performance.now()
-      emit('transformUpdate', endTime - startTime)
-    }
-    rafId = requestAnimationFrame(sync)
-  }
-  sync()
-}
-
-const stopSync = () => {
-  if (rafId !== null) {
-    cancelAnimationFrame(rafId)
-    rafId = null
-    emit('rafStatusChange', false)
-  }
-}
-
-// Canvas event listeners
-const handleWheel = () => {
-  // Clear any existing wheel timeout
-  if (wheelTimeout !== null) {
-    clearTimeout(wheelTimeout)
-  }
-
-  // Start interaction if not already active
-  if (!isInteracting.value) {
-    setInteracting(true)
-  }
-
-  // Set timeout to end interaction after wheel stops
-  wheelTimeout = window.setTimeout(() => {
-    setInteracting(false)
-    wheelTimeout = null
-  }, 150) // 150ms after last wheel event
-}
-
-const handleCanvasInteractionStart = () => {
-  setInteracting(true)
-}
-
-const handleCanvasInteractionEnd = () => {
-  setInteracting(false)
-}
-
-onMounted(() => {
-  startSync()
-
-  // Listen to canvas interaction events if available
-  if (props.canvas && props.canvas.canvas) {
-    // Use capture phase (true) to intercept events before LiteGraph
-    props.canvas.canvas.addEventListener('wheel', handleWheel, true)
-    props.canvas.canvas.addEventListener(
-      'pointerdown',
-      handleCanvasInteractionStart,
-      true
-    )
-    props.canvas.canvas.addEventListener(
-      'pointerup',
-      handleCanvasInteractionEnd,
-      true
-    )
-    props.canvas.canvas.addEventListener(
-      'pointercancel',
-      handleCanvasInteractionEnd,
-      true
-    )
-  }
-})
-
-onUnmounted(() => {
-  stopSync()
-
-  if (interactionTimeout !== null) {
-    clearTimeout(interactionTimeout)
-  }
-
-  if (wheelTimeout !== null) {
-    clearTimeout(wheelTimeout)
-  }
-
-  // Clean up event listeners (must match capture phase)
-  if (props.canvas && props.canvas.canvas) {
-    props.canvas.canvas.removeEventListener('wheel', handleWheel, true)
-    props.canvas.canvas.removeEventListener(
-      'pointerdown',
-      handleCanvasInteractionStart,
-      true
-    )
-    props.canvas.canvas.removeEventListener(
-      'pointerup',
-      handleCanvasInteractionEnd,
-      true
-    )
-    props.canvas.canvas.removeEventListener(
-      'pointercancel',
-      handleCanvasInteractionEnd,
-      true
-    )
-  }
+useCanvasTransformSync(props.canvas, syncWithCanvas, {
+  onStart: () => emit('rafStatusChange', true),
+  onUpdate: (duration) => emit('transformUpdate', duration),
+  onStop: () => emit('rafStatusChange', false)
 })
 </script>
 
