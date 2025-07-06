@@ -20,18 +20,11 @@
 </template>
 
 <script setup lang="ts">
-import {
-  CSSProperties,
-  computed,
-  nextTick,
-  onMounted,
-  onUnmounted,
-  ref
-} from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
+import { useModelPreview } from '@/composables/sidebarTabs/useModelPreview'
 import { ComfyModelDef } from '@/stores/modelStore'
-import { useSettingStore } from '@/stores/settingStore'
 import { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
 import ModelPreview from './ModelPreview.vue'
@@ -55,77 +48,53 @@ const modelPreviewUrl = computed(() => {
   return `/api/experiment/models/preview/${folder}/${path_index}/${encodedFilename}`
 })
 
-const previewRef = ref<InstanceType<typeof ModelPreview> | null>(null)
-const modelPreviewStyle = ref<CSSProperties>({
-  position: 'absolute',
-  top: '0px',
-  left: '0px'
-})
-
-const settingStore = useSettingStore()
-const sidebarLocation = computed<'left' | 'right'>(() =>
-  settingStore.get('Comfy.Sidebar.Location')
-)
-
-const handleModelHover = async () => {
-  const hoverTarget = modelContentElement.value
-  if (!hoverTarget) return
-
-  const targetRect = hoverTarget.getBoundingClientRect()
-
-  const previewHeight = previewRef.value?.$el.offsetHeight || 0
-  const availableSpaceBelow = window.innerHeight - targetRect.bottom
-
-  modelPreviewStyle.value.top =
-    previewHeight > availableSpaceBelow
-      ? `${Math.max(0, targetRect.top - (previewHeight - availableSpaceBelow) - 20)}px`
-      : `${targetRect.top - 40}px`
-  if (sidebarLocation.value === 'left') {
-    modelPreviewStyle.value.left = `${targetRect.right}px`
-  } else {
-    modelPreviewStyle.value.left = `${targetRect.left - 400}px`
-  }
-
-  await modelDef.value.load()
-}
+// Use the preview composable
+const {
+  previewRef,
+  modelPreviewStyle,
+  shouldShowPreview,
+  handleMouseEnter,
+  handleMouseLeave
+} = useModelPreview()
 
 const container = ref<HTMLElement | undefined>()
 const modelContentElement = ref<HTMLElement | undefined>()
-const isHovered = ref(false)
 
-const showPreview = computed(() => {
-  return (
-    isHovered.value &&
-    modelDef.value &&
-    modelDef.value.has_loaded_metadata &&
-    (modelDef.value.author ||
-      modelDef.value.simplified_file_name != modelDef.value.title ||
-      modelDef.value.description ||
-      modelDef.value.usage_hint ||
-      modelDef.value.trigger_phrase ||
-      modelDef.value.image)
-  )
-})
+const showPreview = computed(() => shouldShowPreview(modelDef.value))
 
-const handleMouseEnter = async () => {
-  isHovered.value = true
-  await nextTick()
-  await handleModelHover()
+const handleMouseEnterEvent = async () => {
+  if (modelContentElement.value) {
+    await handleMouseEnter(modelContentElement.value, modelDef.value)
+  }
 }
-const handleMouseLeave = () => {
-  isHovered.value = false
+
+const handleMouseLeaveEvent = () => {
+  handleMouseLeave()
 }
+
 onMounted(async () => {
   modelContentElement.value =
     container.value?.closest('.p-tree-node-content') ?? undefined
-  modelContentElement.value?.addEventListener('mouseenter', handleMouseEnter)
-  modelContentElement.value?.addEventListener('mouseleave', handleMouseLeave)
+  modelContentElement.value?.addEventListener(
+    'mouseenter',
+    handleMouseEnterEvent
+  )
+  modelContentElement.value?.addEventListener(
+    'mouseleave',
+    handleMouseLeaveEvent
+  )
   await modelDef.value.load()
 })
 
 onUnmounted(() => {
-  modelContentElement.value?.removeEventListener('mouseenter', handleMouseEnter)
-  modelContentElement.value?.removeEventListener('mouseleave', handleMouseLeave)
+  modelContentElement.value?.removeEventListener(
+    'mouseenter',
+    handleMouseEnterEvent
+  )
+  modelContentElement.value?.removeEventListener(
+    'mouseleave',
+    handleMouseLeaveEvent
+  )
 })
 </script>
 
