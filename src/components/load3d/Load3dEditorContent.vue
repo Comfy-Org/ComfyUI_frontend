@@ -15,7 +15,7 @@
         @click="activePanel = item.id"
       >
         <i
-          v-tooltip.right="{ value: t(item.title), showDelay: 300 }"
+          v-tooltip.right="{ value: item.title, showDelay: 300 }"
           :class="[item.icon, 'text-lg']"
         />
       </Button>
@@ -36,71 +36,28 @@
 
       <div class="flex-1 space-y-4">
         <div v-show="activePanel === 'scene'" class="space-y-4">
-          <div class="space-y-4">
-            <label>
-              {{ t('load3d.backgroundColor') }}
-            </label>
-            <input
-              ref="colorPickerRef"
-              type="color"
-              :value="backgroundColor"
-              class="w-full"
-              @input="
-                updateBackgroundColor(($event.target as HTMLInputElement).value)
-              "
-            />
-
-            <Checkbox
-              v-model="showGrid"
-              input-id="showGrid"
-              binary
-              name="showGrid"
-              @change="toggleGrid"
-            />
-
-            <label for="showGrid" class="pl-2">
-              {{ t('load3d.showGrid') }}
-            </label>
-          </div>
+          <SceneControls
+            :background-color="backgroundColor"
+            :show-grid="showGrid"
+            @toggle-grid="toggleGrid"
+            @update-background-color="updateBackgroundColor"
+          />
         </div>
 
         <div v-show="activePanel === 'camera'" class="space-y-4">
-          <div class="space-y-4">
-            <label>
-              {{ t('load3d.editor.cameraType') }}
-            </label>
-            <Select
-              v-model="cameraType"
-              :options="cameras"
-              option-label="title"
-              option-value="value"
-              @change="toggleCamera"
-            >
-            </Select>
-          </div>
-
-          <div v-if="showFOVButton" class="space-y-4">
-            <label>{{ t('load3d.fov') }}</label>
-            <Slider
-              v-model="fov"
-              :min="10"
-              :max="150"
-              :step="1"
-              aria-label="fov"
-              @change="updateFOV"
-            />
-          </div>
+          <CameraControls
+            :camera-type="cameraType"
+            :fov="fov"
+            :show-f-o-v-button="showFOVButton"
+            @switch-camera="toggleCamera"
+            @update-f-o-v="updateFOV"
+          />
         </div>
 
         <div v-show="activePanel === 'light'" class="space-y-4">
-          <label>{{ t('load3d.lightIntensity') }}</label>
-
-          <Slider
-            v-model="lightIntensity"
-            :min="1"
-            :max="20"
-            :step="1"
-            @change="updateLightIntensity"
+          <LightControls
+            :light-intensity="lightIntensity"
+            @update-light-intensity="updateLightIntensity"
           />
         </div>
       </div>
@@ -127,13 +84,13 @@
 import { LGraphNode } from '@comfyorg/litegraph'
 import { Tooltip } from 'primevue'
 import Button from 'primevue/button'
-import Checkbox from 'primevue/checkbox'
-import Select from 'primevue/select'
-import Slider from 'primevue/slider'
-import * as THREE from 'three'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
+import CameraControls from '@/components/load3d/controls/editor/CameraControls.vue'
+import LightControls from '@/components/load3d/controls/editor/LightControls.vue'
+import SceneControls from '@/components/load3d/controls/editor/SceneControls.vue'
 import Load3d from '@/extensions/core/load3d/Load3d'
+import { CameraType } from '@/extensions/core/load3d/interfaces'
 import { t } from '@/i18n'
 import { useLoad3dService } from '@/services/load3dService'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -143,11 +100,6 @@ const vTooltip = Tooltip
 const props = defineProps<{
   node: LGraphNode
 }>()
-
-const cameras = [
-  { title: t('load3d.cameraType.perspective'), value: 'perspective' },
-  { title: t('load3d.cameraType.orthographic'), value: 'orthographic' }
-]
 
 const activePanel = ref('scene')
 
@@ -170,11 +122,9 @@ const maximized = ref(false)
 
 const backgroundColor = ref('#282828')
 const showGrid = ref(true)
-const cameraType = ref<'perspective' | 'orthographic'>('perspective')
+const cameraType = ref<CameraType>('perspective')
 const fov = ref(75)
 const lightIntensity = ref(1)
-
-const colorPickerRef = ref<HTMLInputElement | null>(null)
 
 let load3d: Load3d | null = null
 let sourceLoad3d: Load3d | null = null
@@ -182,7 +132,7 @@ let sourceLoad3d: Load3d | null = null
 const initialState = ref({
   backgroundColor: '#282828',
   showGrid: true,
-  cameraType: 'perspective' as 'perspective' | 'orthographic',
+  cameraType: 'perspective' as CameraType,
   fov: 75,
   lightIntensity: 1,
   cameraState: null as any
@@ -197,20 +147,25 @@ const updateBackgroundColor = (color: string) => {
   load3d?.setBackgroundColor(color)
 }
 
-function toggleGrid() {
+function toggleGrid(show: boolean) {
+  showGrid.value = show
+
   load3d?.toggleGrid(showGrid.value)
 }
 
-function toggleCamera() {
-  showFOVButton.value = cameraType.value === 'perspective'
+function toggleCamera(camera: CameraType) {
+  cameraType.value = camera
   load3d?.toggleCamera(cameraType.value)
 }
 
-function updateFOV() {
+function updateFOV(fovValue: number) {
+  fov.value = fovValue
   load3d?.setFOV(Number(fov.value))
 }
 
-function updateLightIntensity() {
+function updateLightIntensity(lightValue: number) {
+  lightIntensity.value = lightValue
+
   load3d?.setLightIntensity(Number(lightIntensity.value))
 }
 
@@ -249,8 +204,8 @@ function initializeEditor(source: Load3d) {
   load3d.toggleCamera(sourceCameraType)
   load3d.setCameraState(sourceCameraState)
 
-  const clearColor = source.renderer.getClearColor(new THREE.Color())
-  backgroundColor.value = '#' + clearColor.getHexString()
+  backgroundColor.value = source.sceneManager.currentBackgroundColor
+
   load3d.setBackgroundColor(backgroundColor.value)
 
   showGrid.value = source.sceneManager.gridHelper.visible
