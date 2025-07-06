@@ -64,17 +64,19 @@ export const useDialogStore = defineStore('dialog', () => {
     if (index !== -1) {
       const dialogs = dialogStack.value.splice(index, 1)
       dialogStack.value.push(...dialogs)
+      updateCloseOnEscapeStates()
     }
   }
 
   function closeDialog(options?: { key: string }) {
     const targetDialog = options
       ? dialogStack.value.find((d) => d.key === options.key)
-      : dialogStack.value[0]
+      : dialogStack.value[dialogStack.value.length - 1]
     if (!targetDialog) return
 
     targetDialog.dialogComponentProps?.onClose?.()
     dialogStack.value.splice(dialogStack.value.indexOf(targetDialog), 1)
+    updateCloseOnEscapeStates()
   }
 
   function createDialog(options: {
@@ -90,7 +92,7 @@ export const useDialogStore = defineStore('dialog', () => {
       dialogStack.value.shift()
     }
 
-    const dialog = {
+    const dialog: DialogInstance = {
       key: options.key,
       visible: true,
       title: options.title,
@@ -129,8 +131,26 @@ export const useDialogStore = defineStore('dialog', () => {
       }
     }
     dialogStack.value.push(dialog)
+    updateCloseOnEscapeStates()
 
     return dialog
+  }
+
+  /**
+   * Ensures only the top-most dialog in the stack can be closed with the Escape key.
+   * This is necessary because PrimeVue Dialogs do not handle `closeOnEscape` prop
+   * correctly when multiple dialogs are open.
+   */
+  function updateCloseOnEscapeStates() {
+    if (dialogStack.value.length === 0) return
+
+    const topDialog = dialogStack.value[dialogStack.value.length - 1]
+    const topClosable = topDialog.dialogComponentProps.closable
+
+    dialogStack.value.forEach((dialog) => {
+      dialog.dialogComponentProps.closeOnEscape =
+        topClosable && dialog === topDialog
+    })
   }
 
   function showDialog(options: ShowDialogOptions) {
