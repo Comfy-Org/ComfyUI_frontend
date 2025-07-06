@@ -196,7 +196,7 @@
   "issueReport": {
     "submitErrorReport": "Submit Error Report (Optional)",
     "provideEmail": "Give us your email (optional)",
-    "provideAdditionalDetails": "Provide additional details (optional)",
+    "provideAdditionalDetails": "Provide additional details",
     "stackTrace": "Stack Trace",
     "systemStats": "System Stats",
     "contactFollowUp": "Contact me for follow up",
