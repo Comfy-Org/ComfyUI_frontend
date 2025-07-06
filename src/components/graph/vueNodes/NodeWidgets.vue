@@ -4,15 +4,13 @@
   </div>
   <div v-else class="lg-node-widgets flex flex-col gap-2">
     <component
-      :is="getVueComponent(widget)"
-      v-for="(widget, index) in supportedWidgets"
+      :is="widget.vueComponent"
+      v-for="(widget, index) in processedWidgets"
       :key="`widget-${index}-${widget.name}`"
-      :widget="simplifiedWidget(widget)"
-      :model-value="getWidgetValue(widget)"
+      :widget="widget.simplified"
+      :model-value="widget.value"
       :readonly="readonly"
-      @update:model-value="
-        (value: unknown) => handleWidgetUpdate(widget, value)
-      "
+      @update:model-value="widget.updateHandler"
     />
   </div>
 </template>
@@ -29,7 +27,10 @@ import type {
   VueNodeData
 } from '@/composables/graph/useGraphNodeManager'
 import { LODLevel } from '@/composables/graph/useLOD'
-import { useWidgetRenderer } from '@/composables/graph/useWidgetRenderer'
+import {
+  ESSENTIAL_WIDGET_TYPES,
+  useWidgetRenderer
+} from '@/composables/graph/useWidgetRenderer'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 
@@ -58,75 +59,64 @@ onErrorCaptured((error) => {
 
 const nodeInfo = computed(() => props.nodeData || props.node)
 
-// Get non-hidden widgets
-const widgets = computed((): SafeWidgetData[] => {
+interface ProcessedWidget {
+  name: string
+  vueComponent: any
+  simplified: SimplifiedWidget
+  value: WidgetValue
+  updateHandler: (value: unknown) => void
+}
+
+const processedWidgets = computed((): ProcessedWidget[] => {
   const info = nodeInfo.value
   if (!info?.widgets) return []
 
-  const filtered = (info.widgets as SafeWidgetData[]).filter(
-    (w: SafeWidgetData) => !w.options?.hidden
-  )
-  return filtered
-})
+  const widgets = info.widgets as SafeWidgetData[]
+  const lodLevel = props.lodLevel
+  const result: ProcessedWidget[] = []
 
-// Filter widgets based on LOD level and Vue component support
-const supportedWidgets = computed((): SafeWidgetData[] => {
-  const allWidgets = widgets.value
-
-  // Filter by Vue component support
-  let supported = allWidgets.filter((widget: SafeWidgetData) => {
-    return shouldRenderAsVue(widget)
-  })
-
-  // Apply LOD filtering for reduced detail level
-  if (props.lodLevel === LODLevel.REDUCED) {
-    const essentialTypes = [
-      'combo',
-      'select',
-      'toggle',
-      'boolean',
-      'slider',
-      'number'
-    ]
-    supported = supported.filter((widget: SafeWidgetData) => {
-      return essentialTypes.includes(widget.type?.toLowerCase() || '')
-    })
-  } else if (props.lodLevel === LODLevel.MINIMAL) {
-    // No widgets rendered at minimal LOD
+  if (lodLevel === LODLevel.MINIMAL) {
     return []
   }
 
-  return supported
+  for (const widget of widgets) {
+    if (widget.options?.hidden) continue
+    if (widget.options?.canvasOnly) continue
+    if (!widget.type) continue
+    if (!shouldRenderAsVue(widget)) continue
+
+    if (
+      lodLevel === LODLevel.REDUCED &&
+      !ESSENTIAL_WIDGET_TYPES.has(widget.type)
+    )
+      continue
+
+    const componentName = getWidgetComponent(widget.type)
+    const vueComponent = widgetTypeToComponent[componentName] || WidgetInputText
+
+    const simplified: SimplifiedWidget = {
+      name: widget.name,
+      type: widget.type,
+      value: widget.value,
+      options: widget.options,
+      callback: widget.callback
+    }
+
+    const updateHandler = (value: unknown) => {
+      if (widget.callback) {
+        widget.callback(value)
+      }
+    }
+
+    result.push({
+      name: widget.name,
+      vueComponent,
+      simplified,
+      value: widget.value,
+      updateHandler
+    })
+  }
+
+  return result
 })
-
-// Get Vue component for widget
-const getVueComponent = (widget: SafeWidgetData) => {
-  const componentName = getWidgetComponent(widget.type)
-  const component = widgetTypeToComponent[componentName]
-  return component || WidgetInputText // Fallback to text input
-}
-
-const getWidgetValue = (widget: SafeWidgetData): WidgetValue => {
-  return widget.value
-}
-
-const simplifiedWidget = (widget: SafeWidgetData): SimplifiedWidget => {
-  return {
-    name: widget.name,
-    type: widget.type,
-    value: getWidgetValue(widget),
-    options: widget.options,
-    callback: widget.callback
-  }
-}
-
-// Handle widget value updates
-const handleWidgetUpdate = (widget: SafeWidgetData, value: unknown) => {
-  // Call LiteGraph callback to update the authoritative state
-  // The callback will trigger the chained callback in useGraphNodeManager
-  // which will update the Vue state automatically
-  if (widget.callback) {
-    widget.callback(value)
-  }
-}
 </script>
