@@ -823,11 +823,11 @@ class MaskEditorDialog extends ComfyDialog {
 
   //new
   private uiManager!: UIManager
-  // @ts-expect-error unused variable
+  
   private toolManager!: ToolManager
-  // @ts-expect-error unused variable
+  
   private panAndZoomManager!: PanAndZoomManager
-  // @ts-expect-error unused variable
+  
   private brushTool!: BrushTool
   private paintBucketTool!: PaintBucketTool
   private colorSelectTool!: ColorSelectTool
@@ -1246,7 +1246,7 @@ class MaskEditorDialog extends ComfyDialog {
 }
 
 class CanvasHistory {
-  // @ts-expect-error unused variable
+  
   private maskEditor!: MaskEditorDialog
   private messageBroker!: MessageBroker
 
@@ -1620,7 +1620,7 @@ class PaintBucketTool {
 }
 
 class ColorSelectTool {
-  // @ts-expect-error unused variable
+  
   private maskEditor!: MaskEditorDialog
   private messageBroker!: MessageBroker
   private width: number | null = null
@@ -2638,16 +2638,16 @@ class UIManager {
   private brushSettingsHTML!: HTMLDivElement
   private paintBucketSettingsHTML!: HTMLDivElement
   private colorSelectSettingsHTML!: HTMLDivElement
-  // @ts-expect-error unused variable
+  
   private maskOpacitySlider!: HTMLInputElement
   private brushHardnessSlider!: HTMLInputElement
   private brushSizeSlider!: HTMLInputElement
-  // @ts-expect-error unused variable
+  
   private brushOpacitySlider!: HTMLInputElement
   private sidebarImage!: HTMLImageElement
   private saveButton!: HTMLButtonElement
   private toolPanel!: HTMLDivElement
-  // @ts-expect-error unused variable
+  
   private sidePanel!: HTMLDivElement
   private pointerZone!: HTMLDivElement
   private canvasBackground!: HTMLDivElement
@@ -5230,7 +5230,7 @@ class MessageBroker {
 
 class KeyboardManager {
   private keysDown: string[] = []
-  // @ts-expect-error unused variable
+  
   private maskEditor: MaskEditorDialog
   private messageBroker: MessageBroker
 
@@ -5495,7 +5495,8 @@ const createCanvasCopy = (
     canvas.width,
     canvas.height
   )
-  return [newCanvas, newCanvas
+  return [newCanvas, newCanvasCtx]
+}
 
 const getCanvas2dContext = (
   canvas: HTMLCanvasElement

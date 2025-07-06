@@ -415,14 +415,14 @@ export class ComfyApp {
       }
       
       // Paste the combined canvas if it exists
-      if (ComfyApp.clipspace.imgs[ComfyApp.clipspace.combinedIndex] && node.imgs) {
+      if (ComfyApp.clipspace.imgs?.[ComfyApp.clipspace.combinedIndex] && node.imgs) {
         const combinedImg = new Image();
         combinedImg.src = ComfyApp.clipspace.imgs[ComfyApp.clipspace.combinedIndex].src;
         node.imgs.push(combinedImg); // Add the combined canvas to the node's images
       }
 
       // Paste the RGB canvas if paintedindex exists
-      if (ComfyApp.clipspace.imgs[ComfyApp.clipspace.paintedIndex] && node.imgs) {
+      if (ComfyApp.clipspace.imgs?.[ComfyApp.clipspace.paintedIndex] && node.imgs) {
         const paintedImg = new Image();
         paintedImg.src = ComfyApp.clipspace.imgs[ComfyApp.clipspace.paintedIndex].src;
         node.imgs.push(paintedImg); // Add the RGB canvas to the node's images
@@ -436,7 +436,6 @@ export class ComfyApp {
           const index = node.widgets.findIndex((obj) => obj.name === 'image');
           if (index >= 0) {
             if (
-              // @ts-expect-error custom widget type
               node.widgets[index].type != 'image' &&
               typeof node.widgets[index].value == 'string' &&
               clip_image.filename
