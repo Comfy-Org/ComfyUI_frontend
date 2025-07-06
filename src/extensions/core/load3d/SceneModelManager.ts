@@ -19,7 +19,7 @@ import {
   UpDirection
 } from './interfaces'
 
-export class ModelManager implements ModelManagerInterface {
+export class SceneModelManager implements ModelManagerInterface {
   currentModel: THREE.Object3D | null = null
   originalModel:
     | THREE.Object3D

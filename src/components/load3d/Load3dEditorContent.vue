@@ -60,6 +60,10 @@
             @update-light-intensity="updateLightIntensity"
           />
         </div>
+
+        <div v-show="activePanel === 'export'" class="space-y-4">
+          <ExportControls @export-model="exportModel" />
+        </div>
       </div>
 
       <div class="flex gap-2 mt-4">
@@ -87,6 +91,7 @@ import Button from 'primevue/button'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import CameraControls from '@/components/load3d/controls/editor/CameraControls.vue'
+import ExportControls from '@/components/load3d/controls/editor/ExportControls.vue'
 import LightControls from '@/components/load3d/controls/editor/LightControls.vue'
 import SceneControls from '@/components/load3d/controls/editor/SceneControls.vue'
 import Load3d from '@/extensions/core/load3d/Load3d'
@@ -94,6 +99,7 @@ import { CameraType } from '@/extensions/core/load3d/interfaces'
 import { t } from '@/i18n'
 import { useLoad3dService } from '@/services/load3dService'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useToastStore } from '@/stores/toastStore'
 
 const vTooltip = Tooltip
 
@@ -110,7 +116,12 @@ const menuItems = [
     icon: 'pi pi-camera',
     title: t('load3d.editor.cameraSettings')
   },
-  { id: 'light', icon: 'pi pi-sun', title: t('load3d.editor.lightSettings') }
+  { id: 'light', icon: 'pi pi-sun', title: t('load3d.editor.lightSettings') },
+  {
+    id: 'export',
+    icon: 'pi pi-download',
+    title: t('load3d.editor.exportSettings')
+  }
 ]
 
 const showFOVButton = ref(false)
@@ -120,7 +131,7 @@ const containerRef = ref<HTMLDivElement>()
 const mainContentRef = ref<HTMLDivElement>()
 const maximized = ref(false)
 
-const backgroundColor = ref('#282828')
+const backgroundColor = ref('')
 const showGrid = ref(true)
 const cameraType = ref<CameraType>('perspective')
 const fov = ref(75)
@@ -144,29 +155,90 @@ const activePanelTitle = computed(() => {
 
 const updateBackgroundColor = (color: string) => {
   backgroundColor.value = color
-  load3d?.setBackgroundColor(color)
+
+  try {
+    load3d?.setBackgroundColor(color)
+  } catch (error) {
+    console.error('Error updating background color:', error)
+    useToastStore().addAlert(
+      t('toastMessages.failedToUpdateBackgroundColor', {
+        color: color
+      })
+    )
+  }
 }
 
 function toggleGrid(show: boolean) {
   showGrid.value = show
 
-  load3d?.toggleGrid(showGrid.value)
+  try {
+    load3d?.toggleGrid(showGrid.value)
+  } catch (error) {
+    console.error('Error toggling grid:', error)
+    useToastStore().addAlert(
+      t('toastMessages.failedToToggleGrid', {
+        show: show ? 'on' : 'off'
+      })
+    )
+  }
 }
 
 function toggleCamera(camera: CameraType) {
   cameraType.value = camera
-  load3d?.toggleCamera(cameraType.value)
+
+  try {
+    load3d?.toggleCamera(cameraType.value)
+  } catch (error) {
+    console.error('Error toggling camera:', error)
+    useToastStore().addAlert(
+      t('toastMessages.failedToToggleCamera', {
+        camera: cameraType.value
+      })
+    )
+  }
+}
+
+const exportModel = async (format: string) => {
+  try {
+    await load3d?.exportModel(format)
+  } catch (error) {
+    console.error('Error exporting model:', error)
+    useToastStore().addAlert(
+      t('toastMessages.failedToExportModel', {
+        format: format.toUpperCase()
+      })
+    )
+  }
 }
 
 function updateFOV(fovValue: number) {
   fov.value = fovValue
-  load3d?.setFOV(Number(fov.value))
+
+  try {
+    load3d?.setFOV(Number(fov.value))
+  } catch (error) {
+    console.error('Error updating FOV:', error)
+    useToastStore().addAlert(
+      t('toastMessages.failedToUpdateFOV', {
+        fov: fov.value
+      })
+    )
+  }
 }
 
 function updateLightIntensity(lightValue: number) {
   lightIntensity.value = lightValue
 
-  load3d?.setLightIntensity(Number(lightIntensity.value))
+  try {
+    load3d?.setLightIntensity(Number(lightIntensity.value))
+  } catch (error) {
+    console.error('Error updating light intensity:', error)
+    useToastStore().addAlert(
+      t('toastMessages.failedToUpdateLightIntensity', {
+        intensity: lightIntensity.value
+      })
+    )
+  }
 }
 
 function initializeEditor(source: Load3d) {
@@ -174,76 +246,42 @@ function initializeEditor(source: Load3d) {
 
   sourceLoad3d = source
 
-  load3d = new Load3d(containerRef.value, {
-    node: props.node
-  })
+  try {
+    load3d = new Load3d(containerRef.value, {
+      node: props.node
+    })
 
-  const sourceModel = source.modelManager.currentModel
-  if (sourceModel) {
-    const modelClone = sourceModel.clone()
+    useLoad3dService().copyLoad3dState(source, load3d)
 
-    load3d.modelManager.currentModel = modelClone
-    load3d.sceneManager.scene.add(modelClone)
+    const sourceCameraType = source.getCurrentCameraType()
+    const sourceCameraState = source.getCameraState()
 
-    load3d.modelManager.materialMode = source.modelManager.materialMode
-    load3d.modelManager.currentUpDirection =
-      source.modelManager.currentUpDirection
+    cameraType.value = sourceCameraType
 
-    load3d.setMaterialMode(source.modelManager.materialMode)
-    load3d.setUpDirection(source.modelManager.currentUpDirection)
+    backgroundColor.value = source.sceneManager.currentBackgroundColor
 
-    if (source.modelManager.appliedTexture) {
-      load3d.modelManager.appliedTexture = source.modelManager.appliedTexture
+    showGrid.value = source.sceneManager.gridHelper.visible
+
+    lightIntensity.value = source.lightingManager.lights[1]?.intensity || 1
+
+    if (sourceCameraType === 'perspective') {
+      fov.value = source.cameraManager.perspectiveCamera.fov
     }
+
+    showFOVButton.value = cameraType.value === 'perspective'
+
+    initialState.value = {
+      backgroundColor: backgroundColor.value,
+      showGrid: showGrid.value,
+      cameraType: cameraType.value,
+      fov: fov.value,
+      lightIntensity: lightIntensity.value,
+      cameraState: sourceCameraState
+    }
+  } catch (error) {
+    console.error('Error initializing Load3d editor:', error)
+    useToastStore().addAlert(t('toastMessages.failedToInitializeLoad3dEditor'))
   }
-
-  const sourceCameraType = source.getCurrentCameraType()
-  const sourceCameraState = source.getCameraState()
-
-  cameraType.value = sourceCameraType
-  load3d.toggleCamera(sourceCameraType)
-  load3d.setCameraState(sourceCameraState)
-
-  backgroundColor.value = source.sceneManager.currentBackgroundColor
-
-  load3d.setBackgroundColor(backgroundColor.value)
-
-  showGrid.value = source.sceneManager.gridHelper.visible
-  load3d.toggleGrid(showGrid.value)
-
-  lightIntensity.value = source.lightingManager.lights[1]?.intensity || 1
-  load3d.setLightIntensity(lightIntensity.value)
-
-  if (sourceCameraType === 'perspective') {
-    fov.value = source.cameraManager.perspectiveCamera.fov
-    load3d.setFOV(fov.value)
-  }
-
-  showFOVButton.value = cameraType.value === 'perspective'
-
-  initialState.value = {
-    backgroundColor: backgroundColor.value,
-    showGrid: showGrid.value,
-    cameraType: cameraType.value,
-    fov: fov.value,
-    lightIntensity: lightIntensity.value,
-    cameraState: sourceCameraState
-  }
-}
-
-function handleViewportRefresh() {
-  if (!load3d || !mainContentRef.value) return
-
-  load3d.handleResize()
-
-  const currentType = load3d.getCurrentCameraType()
-
-  load3d.toggleCamera(
-    currentType === 'perspective' ? 'orthographic' : 'perspective'
-  )
-  load3d.toggleCamera(currentType)
-
-  load3d.controlsManager.controls.update()
 }
 
 onMounted(async () => {
@@ -264,7 +302,7 @@ onMounted(async () => {
             'true'
 
           setTimeout(() => {
-            handleViewportRefresh()
+            useLoad3dService().handleViewportRefresh(load3d)
           }, 0)
         }
       })
@@ -293,7 +331,7 @@ const handleMouseLeave = () => {
 
 const handleResize = () => {
   if (load3d) {
-    load3d.handleResize()
+    load3d?.handleResize()
   }
 }
 
@@ -318,22 +356,9 @@ const handleConfirm = () => {
     return
   }
 
-  sourceLoad3d.setBackgroundColor(backgroundColor.value)
-
-  sourceLoad3d.toggleGrid(showGrid.value)
-
-  if (sourceLoad3d.getCurrentCameraType() !== cameraType.value) {
-    sourceLoad3d.toggleCamera(cameraType.value)
-  }
-
-  if (cameraType.value === 'perspective') {
-    sourceLoad3d.setFOV(fov.value)
-  }
-
-  sourceLoad3d.setLightIntensity(lightIntensity.value)
+  useLoad3dService().copyLoad3dState(load3d, sourceLoad3d)
 
   const editorCameraState = load3d.getCameraState()
-  sourceLoad3d.setCameraState(editorCameraState)
 
   const node = props.node
   if (node.properties) {

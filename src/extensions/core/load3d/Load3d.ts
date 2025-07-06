@@ -9,11 +9,11 @@ import { EventManager } from './EventManager'
 import { LightingManager } from './LightingManager'
 import { LoaderManager } from './LoaderManager'
 import { ModelExporter } from './ModelExporter'
-import { ModelManager } from './ModelManager'
 import { NodeStorage } from './NodeStorage'
 import { PreviewManager } from './PreviewManager'
 import { RecordingManager } from './RecordingManager'
 import { SceneManager } from './SceneManager'
+import { SceneModelManager } from './SceneModelManager'
 import { ViewHelperManager } from './ViewHelperManager'
 import {
   CameraState,
@@ -38,7 +38,7 @@ class Load3d {
   viewHelperManager: ViewHelperManager
   previewManager: PreviewManager
   loaderManager: LoaderManager
-  modelManager: ModelManager
+  modelManager: SceneModelManager
   recordingManager: RecordingManager
 
   STATUS_MOUSE_ON_NODE: boolean
@@ -110,7 +110,7 @@ class Load3d {
       this.sceneManager.backgroundCamera
     )
 
-    this.modelManager = new ModelManager(
+    this.modelManager = new SceneModelManager(
       this.sceneManager.scene,
       this.renderer,
       this.eventManager,
@@ -151,6 +151,41 @@ class Load3d {
     setTimeout(() => {
       this.forceRender()
     }, 100)
+  }
+
+  getEventManager(): EventManager {
+    return this.eventManager
+  }
+
+  getNodeStorage(): NodeStorage {
+    return this.nodeStorage
+  }
+  getSceneManager(): SceneManager {
+    return this.sceneManager
+  }
+  getCameraManager(): CameraManager {
+    return this.cameraManager
+  }
+  getControlsManager(): ControlsManager {
+    return this.controlsManager
+  }
+  getLightingManager(): LightingManager {
+    return this.lightingManager
+  }
+  getViewHelperManager(): ViewHelperManager {
+    return this.viewHelperManager
+  }
+  getPreviewManager(): PreviewManager {
+    return this.previewManager
+  }
+  getLoaderManager(): LoaderManager {
+    return this.loaderManager
+  }
+  getModelManager(): SceneModelManager {
+    return this.modelManager
+  }
+  getRecordingManager(): RecordingManager {
+    return this.recordingManager
   }
 
   forceRender(): void {
