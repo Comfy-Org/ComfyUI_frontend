@@ -60,6 +60,8 @@
       </a>
     </template>
   </TieredMenu>
+
+  <SubgraphBreadcrumb />
 </template>
 
 <script setup lang="ts">
@@ -72,6 +74,7 @@ import TieredMenu, {
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
 import SettingDialogContent from '@/components/dialog/content/SettingDialogContent.vue'
 import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.vue'
 import { useDialogService } from '@/services/dialogService'

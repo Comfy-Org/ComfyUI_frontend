@@ -13,20 +13,27 @@ import { readonly, ref } from 'vue'
  */
 export const useOverflowObserver = (
   element: HTMLElement,
-  options: {
+  options?: {
     debounceTime?: number
     useMutationObserver?: boolean
     useResizeObserver?: boolean
-  } = {
-    debounceTime: 10,
-    useMutationObserver: true,
-    useResizeObserver: true
+    onCheck?: (isOverflowing: boolean) => void
   }
 ) => {
+  options = {
+    debounceTime: 25,
+    useMutationObserver: true,
+    useResizeObserver: true,
+    ...options
+  }
+
   const isOverflowing = ref(false)
+  const disposeFns: (() => void)[] = []
+  const disposed = ref(false)
 
   const checkOverflowFn = () => {
     isOverflowing.value = element.scrollWidth > element.clientWidth
+    options.onCheck?.(isOverflowing.value)
   }
 
   const checkOverflow = options.debounceTime
@@ -34,14 +41,24 @@ export const useOverflowObserver = (
     : checkOverflowFn
 
   if (options.useMutationObserver) {
-    useMutationObserver(element, checkOverflow, {
-      subtree: true,
-      childList: true
-    })
+    disposeFns.push(
+      useMutationObserver(element, checkOverflow, {
+        subtree: true,
+        childList: true
+      }).stop
+    )
   }
   if (options.useResizeObserver) {
-    useResizeObserver(element, checkOverflow)
+    disposeFns.push(useResizeObserver(element, checkOverflow).stop)
   }
 
-  return { isOverflowing: readonly(isOverflowing), checkOverflow }
+  return {
+    isOverflowing: readonly(isOverflowing),
+    disposed: readonly(disposed),
+    checkOverflow,
+    dispose: () => {
+      disposed.value = true
+      disposeFns.forEach((fn) => fn())
+    }
+  }
 }

@@ -1,6 +1,9 @@
 <template>
   <div>
-    <div v-show="showTopMenu" class="w-full flex content-end z-[1001] h-[38px]">
+    <div
+      v-show="showTopMenu && workflowTabsPosition === 'Topbar'"
+      class="w-full flex content-end z-[1001] h-[38px]"
+    >
       <WorkflowTabs />
     </div>
     <div
@@ -48,6 +51,9 @@ const menuSetting = computed(() => settingStore.get('Comfy.UseNewMenu'))
 const betaMenuEnabled = computed(() => menuSetting.value !== 'Disabled')
 const showTopMenu = computed(
   () => betaMenuEnabled.value && !workspaceState.focusMode
+)
+const workflowTabsPosition = computed(() =>
+  settingStore.get('Comfy.Workflow.WorkflowTabsPosition')
 )
 
 const menuRight = ref<HTMLDivElement | null>(null)
