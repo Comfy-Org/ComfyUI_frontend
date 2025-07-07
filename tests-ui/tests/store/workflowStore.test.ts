@@ -1,3 +1,4 @@
+import type { Subgraph } from '@comfyorg/litegraph'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -11,6 +12,7 @@ import {
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/stores/workflowStore'
+import { isSubgraph } from '@/utils/typeGuardUtil'
 
 // Add mock for api at the top of the file
 vi.mock('@/scripts/api', () => ({
@@ -26,8 +28,13 @@ vi.mock('@/scripts/api', () => ({
 // Mock comfyApp globally for the store setup
 vi.mock('@/scripts/app', () => ({
   app: {
-    canvas: null // Start with canvas potentially undefined or null
+    canvas: {} // Start with empty canvas object
   }
+}))
+
+// Mock isSubgraph
+vi.mock('@/utils/typeGuardUtil', () => ({
+  isSubgraph: vi.fn(() => false)
 }))
 
 describe('useWorkflowStore', () => {
@@ -567,6 +574,133 @@ describe('useWorkflowStore', () => {
       // Assert: Check that the state was updated by the watcher based on the *new* canvas state
       expect(store.isSubgraphActive).toBe(false) // Should reflect the change to undefined subgraph
       expect(store.activeSubgraph).toBeUndefined()
+    })
+  })
+
+  describe('NodeLocatorId conversions', () => {
+    beforeEach(() => {
+      // Setup mock graph structure with subgraphs
+      const mockSubgraph = {
+        id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        _nodes: []
+      }
+
+      const mockNode = {
+        id: 123,
+        isSubgraphNode: () => true,
+        subgraph: mockSubgraph
+      }
+
+      const mockRootGraph = {
+        _nodes: [mockNode],
+        subgraphs: new Map([[mockSubgraph.id, mockSubgraph]]),
+        getNodeById: (id: string | number) => {
+          if (String(id) === '123') return mockNode
+          return null
+        }
+      }
+
+      vi.mocked(comfyApp).graph = mockRootGraph as any
+      vi.mocked(comfyApp.canvas).subgraph = mockSubgraph as any
+      store.activeSubgraph = mockSubgraph as any
+    })
+
+    describe('nodeIdToNodeLocatorId', () => {
+      it('should convert node ID to NodeLocatorId for subgraph nodes', () => {
+        const result = store.nodeIdToNodeLocatorId(456)
+        expect(result).toBe('a1b2c3d4-e5f6-7890-abcd-ef1234567890:456')
+      })
+
+      it('should return simple node ID for root graph nodes', () => {
+        store.activeSubgraph = undefined
+        const result = store.nodeIdToNodeLocatorId(123)
+        expect(result).toBe('123')
+      })
+
+      it('should use provided subgraph instead of active one', () => {
+        const customSubgraph = {
+          id: 'custom-uuid-1234-5678-90ab-cdef12345678'
+        } as any
+        const result = store.nodeIdToNodeLocatorId(789, customSubgraph)
+        expect(result).toBe('custom-uuid-1234-5678-90ab-cdef12345678:789')
+      })
+    })
+
+    describe('hierarchicalIdToNodeLocatorId', () => {
+      it('should convert hierarchical ID to NodeLocatorId', () => {
+        const result = store.hierarchicalIdToNodeLocatorId('123:456')
+        expect(result).toBe('a1b2c3d4-e5f6-7890-abcd-ef1234567890:456')
+      })
+
+      it('should return simple node ID for root level nodes', () => {
+        const result = store.hierarchicalIdToNodeLocatorId('123')
+        expect(result).toBe('123')
+      })
+
+      it('should return null for invalid hierarchical IDs', () => {
+        const result = store.hierarchicalIdToNodeLocatorId('999:456')
+        expect(result).toBeNull()
+      })
+    })
+
+    describe('nodeLocatorIdToNodeId', () => {
+      it('should extract node ID from NodeLocatorId', () => {
+        const result = store.nodeLocatorIdToNodeId(
+          'a1b2c3d4-e5f6-7890-abcd-ef1234567890:456'
+        )
+        expect(result).toBe(456)
+      })
+
+      it('should handle string node IDs', () => {
+        const result = store.nodeLocatorIdToNodeId(
+          'a1b2c3d4-e5f6-7890-abcd-ef1234567890:node_1'
+        )
+        expect(result).toBe('node_1')
+      })
+
+      it('should handle simple node IDs (root graph)', () => {
+        const result = store.nodeLocatorIdToNodeId('123')
+        expect(result).toBe(123)
+
+        const stringResult = store.nodeLocatorIdToNodeId('node_1')
+        expect(stringResult).toBe('node_1')
+      })
+
+      it('should return null for invalid NodeLocatorId', () => {
+        const result = store.nodeLocatorIdToNodeId('invalid:format')
+        expect(result).toBeNull()
+      })
+    })
+
+    describe('nodeLocatorIdToHierarchicalId', () => {
+      it('should convert NodeLocatorId to hierarchical ID', () => {
+        // Need to mock isSubgraph to identify our mockSubgraph
+        vi.mocked(isSubgraph).mockImplementation((obj): obj is Subgraph => {
+          return obj === store.activeSubgraph
+        })
+
+        const result = store.nodeLocatorIdToHierarchicalId(
+          'a1b2c3d4-e5f6-7890-abcd-ef1234567890:456'
+        )
+        expect(result).toBe('123:456')
+      })
+
+      it('should handle simple node IDs (root graph)', () => {
+        const result = store.nodeLocatorIdToHierarchicalId('123')
+        expect(result).toBe('123')
+      })
+
+      it('should return null for unknown subgraph UUID', () => {
+        const result = store.nodeLocatorIdToHierarchicalId(
+          'unknown-uuid-1234-5678-90ab-cdef12345678:456'
+        )
+        expect(result).toBeNull()
+      })
+
+      it('should return null for invalid NodeLocatorId', () => {
+        const result = store.nodeLocatorIdToHierarchicalId('invalid:format')
+        expect(result).toBeNull()
+      })
     })
   })
 })

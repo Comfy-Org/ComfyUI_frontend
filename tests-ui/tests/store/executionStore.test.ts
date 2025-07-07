@@ -2,10 +2,11 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useExecutionStore } from '@/stores/executionStore'
+import { useWorkflowStore } from '@/stores/workflowStore'
 
 // Remove any previous global types
 declare global {
-  // Empty interface to override any previous declarations
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   interface Window {}
 }
 
@@ -78,5 +79,95 @@ describe('executionStore - display_component handling', () => {
 
     expect(mockApp.graph.getNodeById).toHaveBeenCalledWith('non-existent')
     expect(mockShowChatHistory).not.toHaveBeenCalled()
+  })
+})
+
+describe('useExecutionStore - NodeLocatorId conversions', () => {
+  let store: ReturnType<typeof useExecutionStore>
+  let workflowStore: ReturnType<typeof useWorkflowStore>
+
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    store = useExecutionStore()
+    workflowStore = useWorkflowStore()
+    vi.clearAllMocks()
+  })
+
+  describe('executionIdToNodeLocatorId', () => {
+    it('should convert hierarchical execution ID to NodeLocatorId', () => {
+      const mockNodeLocatorId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890:456'
+      vi.spyOn(workflowStore, 'hierarchicalIdToNodeLocatorId').mockReturnValue(
+        mockNodeLocatorId as any
+      )
+
+      const result = store.executionIdToNodeLocatorId('123:456')
+
+      expect(workflowStore.hierarchicalIdToNodeLocatorId).toHaveBeenCalledWith(
+        '123:456'
+      )
+      expect(result).toBe(mockNodeLocatorId)
+    })
+
+    it('should convert simple node ID to NodeLocatorId', () => {
+      const mockNodeLocatorId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890:123'
+      vi.spyOn(workflowStore, 'nodeIdToNodeLocatorId').mockReturnValue(
+        mockNodeLocatorId as any
+      )
+
+      const result = store.executionIdToNodeLocatorId('123')
+
+      expect(workflowStore.nodeIdToNodeLocatorId).toHaveBeenCalledWith('123')
+      expect(result).toBe(mockNodeLocatorId)
+    })
+
+    it('should handle numeric node IDs', () => {
+      const mockNodeLocatorId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890:123'
+      vi.spyOn(workflowStore, 'nodeIdToNodeLocatorId').mockReturnValue(
+        mockNodeLocatorId as any
+      )
+
+      const result = store.executionIdToNodeLocatorId(123)
+
+      expect(workflowStore.nodeIdToNodeLocatorId).toHaveBeenCalledWith('123')
+      expect(result).toBe(mockNodeLocatorId)
+    })
+
+    it('should return null when conversion fails', () => {
+      vi.spyOn(workflowStore, 'hierarchicalIdToNodeLocatorId').mockReturnValue(
+        null
+      )
+
+      const result = store.executionIdToNodeLocatorId('123:456')
+
+      expect(result).toBeNull()
+    })
+  })
+
+  describe('nodeLocatorIdToExecutionId', () => {
+    it('should convert NodeLocatorId to hierarchical execution ID', () => {
+      const mockHierarchicalId = '123:456'
+      vi.spyOn(workflowStore, 'nodeLocatorIdToHierarchicalId').mockReturnValue(
+        mockHierarchicalId as any
+      )
+
+      const result = store.nodeLocatorIdToExecutionId(
+        'a1b2c3d4-e5f6-7890-abcd-ef1234567890:456'
+      )
+
+      expect(workflowStore.nodeLocatorIdToHierarchicalId).toHaveBeenCalledWith(
+        'a1b2c3d4-e5f6-7890-abcd-ef1234567890:456'
+      )
+      expect(result).toBe(mockHierarchicalId)
+    })
+
+    it('should return null when conversion fails', () => {
+      vi.spyOn(workflowStore, 'nodeLocatorIdToHierarchicalId').mockReturnValue(
+        null
+      )
+
+      const result = store.nodeLocatorIdToExecutionId('invalid:format')
+
+      expect(result).toBeNull()
+    })
   })
 })
