@@ -1,3 +1,5 @@
+import * as semver from 'semver'
+
 import { useConflictDetection } from '@/composables/useConflictDetection'
 import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
@@ -318,28 +320,49 @@ function checkVersionConflict(
     return null
   }
 
-  // Simple version check - for production, use proper semver comparison
-  if (supportedVersion.startsWith('>=')) {
-    const requiredVersion = supportedVersion.substring(2).trim()
-    if (
-      currentVersion !== requiredVersion &&
-      !currentVersion.includes(requiredVersion)
-    ) {
+  try {
+    // Clean the current version string
+    const cleanCurrent = semver.clean(currentVersion) || currentVersion
+    
+    // Check if current version satisfies the supported version range
+    const isCompatible = semver.satisfies(cleanCurrent, supportedVersion)
+    
+    if (!isCompatible) {
+      // Determine severity based on version difference
+      let severity: 'error' | 'warning' | 'info' = 'error'
+      
+      // If it's just a minor version difference, use warning
+      if (supportedVersion.startsWith('>=')) {
+        const minVersion = supportedVersion.substring(2).trim()
+        if (semver.valid(cleanCurrent) && semver.valid(minVersion)) {
+          const diff = semver.diff(cleanCurrent, minVersion)
+          if (diff === 'minor' || diff === 'patch') {
+            severity = 'warning'
+          }
+        }
+      }
+      
       return {
         type,
-        severity: 'error',
+        severity,
         description: `${type} incompatible: requires ${supportedVersion}, current: ${currentVersion}`,
         current_value: currentVersion,
         required_value: supportedVersion
       }
     }
-  } else if (currentVersion !== supportedVersion) {
-    return {
-      type,
-      severity: 'error',
-      description: `${type} mismatch: requires ${supportedVersion}, current: ${currentVersion}`,
-      current_value: currentVersion,
-      required_value: supportedVersion
+  } catch (error) {
+    // If semver parsing fails, fallback to simple string comparison
+    console.warn(`[NodeCompatibility] Semver parsing failed for ${type}:`, error)
+    
+    // Simple fallback logic
+    if (currentVersion !== supportedVersion) {
+      return {
+        type,
+        severity: 'warning',
+        description: `${type} may be incompatible: requires ${supportedVersion}, current: ${currentVersion}`,
+        current_value: currentVersion,
+        required_value: supportedVersion
+      }
     }
   }
 

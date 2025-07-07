@@ -1,4 +1,5 @@
 import { computed, getCurrentInstance, onUnmounted, readonly, ref } from 'vue'
+import * as semver from 'semver'
 
 import config from '@/config'
 import { useComfyManagerService } from '@/services/comfyManagerService'
@@ -676,62 +677,72 @@ function checkVersionStringConflict(
     return null
   }
 
-  // Basic version string parsing and comparison
+  // Use semver for robust version comparison
   try {
-    // Handle simple cases for now
-    if (supportedVersion.startsWith('>=')) {
-      const requiredVersion = supportedVersion.substring(2).trim()
-
-      // Simple semver comparison for basic cases
-      if (isVersionCompatible(currentVersion, requiredVersion)) {
-        return null // Compatible
-      } else {
-        return {
-          type,
-          severity: 'warning',
-          description: `${type} version might be incompatible`,
-          current_value: currentVersion,
-          required_value: supportedVersion,
-          resolution_steps: [
-            `Update ${type} to version ${requiredVersion} or higher`,
-            'Check compatibility documentation'
-          ]
-        }
-      }
-    } else if (supportedVersion.includes(',')) {
-      // Version range - for now just warn
-      return {
-        type,
-        severity: 'info',
-        description: `${type} version range specified in Registry`,
-        current_value: currentVersion,
-        required_value: supportedVersion,
-        resolution_steps: [
+    // Clean the current version (remove 'v' prefix if present)
+    const cleanCurrent = semver.clean(currentVersion) || currentVersion
+    
+    // Check if the current version satisfies the supported version range
+    if (!isVersionCompatible(cleanCurrent, supportedVersion)) {
+      // Parse the version requirement for better error messages
+      let description = `${type} version incompatible`
+      let resolutionSteps: string[] = []
+      
+      if (supportedVersion.startsWith('>=')) {
+        const minVersion = supportedVersion.substring(2).trim()
+        description = `${type} version too old`
+        resolutionSteps = [
+          `Update ${type} to version ${minVersion} or higher`,
+          'Check release notes for compatibility changes'
+        ]
+      } else if (supportedVersion.includes(' - ')) {
+        // Range like "1.0.0 - 2.0.0"
+        description = `${type} version outside supported range`
+        resolutionSteps = [
           'Verify your version is within the supported range',
-          'Update if necessary'
+          `Supported range: ${supportedVersion}`
+        ]
+      } else if (supportedVersion.includes('||')) {
+        // Multiple ranges
+        description = `${type} version not in any supported range`
+        resolutionSteps = [
+          'Check which version ranges are supported',
+          `Supported: ${supportedVersion}`
+        ]
+      } else if (supportedVersion.startsWith('^') || supportedVersion.startsWith('~')) {
+        // Caret or tilde ranges
+        description = `${type} version outside compatible range`
+        resolutionSteps = [
+          `Compatible versions: ${supportedVersion}`,
+          'Consider updating or downgrading as needed'
+        ]
+      } else {
+        // Exact version or other patterns
+        description = `${type} version mismatch`
+        resolutionSteps = [
+          `Required version: ${supportedVersion}`,
+          'Check if your version is compatible'
         ]
       }
-    } else {
-      // Exact version match
-      if (currentVersion !== supportedVersion) {
-        return {
-          type,
-          severity: 'warning',
-          description: `${type} version mismatch`,
-          current_value: currentVersion,
-          required_value: supportedVersion,
-          resolution_steps: [
-            `Update ${type} to version ${supportedVersion}`,
-            'Check if current version is compatible'
-          ]
-        }
+      
+      return {
+        type,
+        severity: 'warning',
+        description,
+        current_value: currentVersion,
+        required_value: supportedVersion,
+        resolution_steps: resolutionSteps
       }
     }
-
+    
     // No conflict detected
     return null
   } catch (error) {
     // If version parsing fails, return info-level conflict
+    console.warn(
+      `[ConflictDetection] Failed to parse version requirement: ${supportedVersion}`,
+      error
+    )
     return {
       type,
       severity: 'info',
@@ -895,37 +906,29 @@ function getEmptySummary(): ConflictDetectionSummary {
 }
 
 /**
- * Simple version compatibility check for >= requirements
+ * Simple version compatibility check using semver
  * @param current Current version (e.g., "0.3.41")
- * @param required Required minimum version (e.g., "0.3.0")
- * @returns true if current >= required
+ * @param versionRange Version range to check against (e.g., ">=0.3.0")
+ * @returns true if current satisfies the version range
  */
-function isVersionCompatible(current: string, required: string): boolean {
+function isVersionCompatible(current: string, versionRange: string): boolean {
   try {
-    // Simple version parsing for x.y.z format
-    const currentParts = current.split('.').map((n) => parseInt(n, 10))
-    const requiredParts = required.split('.').map((n) => parseInt(n, 10))
-
-    // Pad arrays to same length
-    while (currentParts.length < requiredParts.length) currentParts.push(0)
-    while (requiredParts.length < currentParts.length) requiredParts.push(0)
-
-    // Compare each part
-    for (
-      let i = 0;
-      i < Math.max(currentParts.length, requiredParts.length);
-      i++
-    ) {
-      const currentPart = currentParts[i] || 0
-      const requiredPart = requiredParts[i] || 0
-
-      if (currentPart > requiredPart) return true
-      if (currentPart < requiredPart) return false
-      // If equal, continue to next part
+    // Clean the current version string (remove any prefixes like 'v')
+    const cleanCurrent = semver.clean(current) || current
+    
+    // Handle simple version strings without operators
+    if (!versionRange.match(/[<>=~^]/)) {
+      // If no operator, assume exact match
+      return semver.eq(cleanCurrent, versionRange)
     }
-
-    return true // Equal versions are compatible
-  } catch {
+    
+    // Use semver to check if current version satisfies the range
+    return semver.satisfies(cleanCurrent, versionRange)
+  } catch (error) {
+    console.warn(
+      `[ConflictDetection] Version comparison failed: ${current} vs ${versionRange}`,
+      error
+    )
     // If parsing fails, assume compatible to avoid false positives
     return true
   }
