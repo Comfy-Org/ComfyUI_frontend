@@ -460,20 +460,26 @@ export function useConflictDetection() {
       // 2. Collect package requirement information
       const packageRequirements = await fetchPackageRequirements()
 
-      // 3. Detect conflicts for each package
-      const results: ConflictDetectionResult[] = []
-      for (const packageReq of packageRequirements) {
-        try {
-          const result = detectPackageConflicts(packageReq, sysEnv)
-          results.push(result)
-        } catch (error) {
-          console.warn(
-            `[ConflictDetection] Failed to detect conflicts for package ${packageReq.package_name}:`,
-            error
-          )
-          // Ignore individual package failures and continue
+      // 3. Detect conflicts for each package (parallel processing)
+      const conflictDetectionTasks = packageRequirements.map(
+        async (packageReq) => {
+          try {
+            return detectPackageConflicts(packageReq, sysEnv)
+          } catch (error) {
+            console.warn(
+              `[ConflictDetection] Failed to detect conflicts for package ${packageReq.package_name}:`,
+              error
+            )
+            // Return null for failed packages, will be filtered out
+            return null
+          }
         }
-      }
+      )
+
+      const conflictResults = await Promise.allSettled(conflictDetectionTasks)
+      const results: ConflictDetectionResult[] = conflictResults
+        .map((result) => (result.status === 'fulfilled' ? result.value : null))
+        .filter((result): result is ConflictDetectionResult => result !== null)
 
       // 4. Generate summary information
       const summary = generateSummary(results, Date.now() - startTime)
