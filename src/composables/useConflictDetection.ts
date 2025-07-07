@@ -1,4 +1,3 @@
-import * as semver from 'semver'
 import { computed, getCurrentInstance, onUnmounted, readonly, ref } from 'vue'
 
 import config from '@/config'
@@ -20,6 +19,11 @@ import type {
   SystemEnvironment
 } from '@/types/conflictDetectionTypes'
 import type { components as ManagerComponents } from '@/types/generatedManagerTypes'
+import {
+  cleanVersion,
+  describeVersionRange,
+  satisfiesVersion
+} from '@/utils/versionUtil'
 
 /**
  * Composable for conflict detection system.
@@ -342,7 +346,7 @@ export function useConflictDetection() {
       packageReq.has_registry_data &&
       !isCompatibleWithAll(packageReq.supported_comfyui_version)
     ) {
-      const versionConflict = checkVersionStringConflict(
+      const versionConflict = checkVersionConflict(
         'comfyui_version',
         sysEnv.comfyui_version,
         packageReq.supported_comfyui_version!
@@ -355,7 +359,7 @@ export function useConflictDetection() {
       packageReq.has_registry_data &&
       !isCompatibleWithAll(packageReq.supported_comfyui_frontend_version)
     ) {
-      const versionConflict = checkVersionStringConflict(
+      const versionConflict = checkVersionConflict(
         'frontend_version',
         sysEnv.frontend_version,
         packageReq.supported_comfyui_frontend_version!
@@ -836,25 +840,19 @@ function extractAcceleratorInfo(systemStats: SystemStats | null): {
 }
 
 /**
- * Checks for version conflicts using Registry API version strings.
- *
- * Registry version format examples
- * - ">=1.0.0" (minimum version
- * - "1.0.0" (exact version
- * - ">=1.0.0,<2.0.0" (version range
- *
+ * Unified version conflict check using Registry API version strings.
+ * Uses shared versionUtil functions for consistent version handling.
  * @param type Type of version being checked
  * @param currentVersion Current version string
  * @param supportedVersion Supported version from Registry
  * @returns Conflict detail if conflict exists, null otherwise
  */
-function checkVersionStringConflict(
+function checkVersionConflict(
   type: ConflictType,
   currentVersion: string,
   supportedVersion: string
 ): ConflictDetail | null {
   // If current version is unknown, assume compatible (no conflict)
-  // This prevents false positives in test environments or when system detection fails
   if (currentVersion === 'unknown') {
     return null
   }
@@ -864,34 +862,33 @@ function checkVersionStringConflict(
     return null
   }
 
-  // Use semver for robust version comparison
   try {
-    // Clean the current version (remove 'v' prefix if present)
-    const cleanCurrent = semver.clean(currentVersion) || currentVersion
+    // Clean the current version using shared utility
+    const cleanCurrent = cleanVersion(currentVersion)
 
-    // Check if the current version satisfies the supported version range
-    if (!isVersionCompatible(cleanCurrent, supportedVersion)) {
-      // Parse the version requirement for better error messages
-      let description = `${type} version incompatible`
+    // Check version compatibility using shared utility
+    const isCompatible = satisfiesVersion(cleanCurrent, supportedVersion)
+
+    if (!isCompatible) {
+      // Generate user-friendly description using shared utility
+      const rangeDescription = describeVersionRange(supportedVersion)
+      const description = `${type} version incompatible: requires ${rangeDescription}`
+
+      // Generate resolution steps based on version range type
       let resolutionSteps: string[] = []
 
       if (supportedVersion.startsWith('>=')) {
         const minVersion = supportedVersion.substring(2).trim()
-        description = `${type} version too old`
         resolutionSteps = [
           `Update ${type} to version ${minVersion} or higher`,
           'Check release notes for compatibility changes'
         ]
       } else if (supportedVersion.includes(' - ')) {
-        // Range like "1.0.0 - 2.0.0"
-        description = `${type} version outside supported range`
         resolutionSteps = [
           'Verify your version is within the supported range',
           `Supported range: ${supportedVersion}`
         ]
       } else if (supportedVersion.includes('||')) {
-        // Multiple ranges
-        description = `${type} version not in any supported range`
         resolutionSteps = [
           'Check which version ranges are supported',
           `Supported: ${supportedVersion}`
@@ -900,15 +897,11 @@ function checkVersionStringConflict(
         supportedVersion.startsWith('^') ||
         supportedVersion.startsWith('~')
       ) {
-        // Caret or tilde ranges
-        description = `${type} version outside compatible range`
         resolutionSteps = [
           `Compatible versions: ${supportedVersion}`,
           'Consider updating or downgrading as needed'
         ]
       } else {
-        // Exact version or other patterns
-        description = `${type} version mismatch`
         resolutionSteps = [
           `Required version: ${supportedVersion}`,
           'Check if your version is compatible'
@@ -925,10 +918,8 @@ function checkVersionStringConflict(
       }
     }
 
-    // No conflict detected
     return null
   } catch (error) {
-    // If version parsing fails, return info-level conflict
     console.warn(
       `[ConflictDetection] Failed to parse version requirement: ${supportedVersion}`,
       error
@@ -949,9 +940,6 @@ function checkVersionStringConflict(
 
 /**
  * Checks for OS compatibility conflicts.
- * @param supportedOS List of supported operating systems
- * @param currentOS Current operating system
- * @returns Conflict detail if conflict exists, null otherwise
  */
 function checkOSConflict(
   supportedOS: SupportedOS[],
@@ -973,9 +961,6 @@ function checkOSConflict(
 
 /**
  * Checks for accelerator compatibility conflicts.
- * @param supportedAccelerators List of supported accelerators
- * @param availableAccelerators List of available accelerators
- * @returns Conflict detail if conflict exists, null otherwise
  */
 function checkAcceleratorConflict(
   supportedAccelerators: SupportedAccelerator[],
@@ -1000,8 +985,6 @@ function checkAcceleratorConflict(
 
 /**
  * Determines recommended action based on detected conflicts.
- * @param conflicts Array of detected conflicts
- * @returns Recommended action object
  */
 function determineRecommendedAction(
   conflicts: ConflictDetail[]
@@ -1029,9 +1012,6 @@ function determineRecommendedAction(
 
 /**
  * Generates summary of conflict detection results.
- * @param results Array of conflict detection results
- * @param durationMs Duration of the detection process in milliseconds
- * @returns Conflict detection summary
  */
 function generateSummary(
   results: ConflictDetectionResult[],
@@ -1064,7 +1044,6 @@ function generateSummary(
     result.conflicts.forEach((conflict) => {
       conflictsByType[conflict.type]++
 
-      // 해당 충돌 타입에 노드 ID 추가 (중복 방지)
       if (!conflictsByTypeDetails[conflict.type].includes(result.package_id)) {
         conflictsByTypeDetails[conflict.type].push(result.package_id)
       }
@@ -1088,7 +1067,6 @@ function generateSummary(
 
 /**
  * Creates an empty summary for error cases.
- * @returns Empty conflict detection summary
  */
 function getEmptySummary(): ConflictDetectionSummary {
   return {
@@ -1108,34 +1086,5 @@ function getEmptySummary(): ConflictDetectionSummary {
     },
     last_check_timestamp: new Date().toISOString(),
     check_duration_ms: 0
-  }
-}
-
-/**
- * Simple version compatibility check using semver
- * @param current Current version (e.g., "0.3.41")
- * @param versionRange Version range to check against (e.g., ">=0.3.0")
- * @returns true if current satisfies the version range
- */
-function isVersionCompatible(current: string, versionRange: string): boolean {
-  try {
-    // Clean the current version string (remove any prefixes like 'v')
-    const cleanCurrent = semver.clean(current) || current
-
-    // Handle simple version strings without operators
-    if (!versionRange.match(/[<>=~^]/)) {
-      // If no operator, assume exact match
-      return semver.eq(cleanCurrent, versionRange)
-    }
-
-    // Use semver to check if current version satisfies the range
-    return semver.satisfies(cleanCurrent, versionRange)
-  } catch (error) {
-    console.warn(
-      `[ConflictDetection] Version comparison failed: ${current} vs ${versionRange}`,
-      error
-    )
-    // If parsing fails, assume compatible to avoid false positives
-    return true
   }
 }
