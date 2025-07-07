@@ -7,7 +7,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { SettingParams } from '@/types/settingTypes'
 import type { TreeNode } from '@/types/treeExplorerTypes'
-import { compareVersions } from '@/utils/formatUtil'
+import { compareVersions, isSemVer } from '@/utils/formatUtil'
 
 export const getSettingInfo = (setting: SettingParams) => {
   const parts = setting.category || setting.id.split('.')
@@ -112,7 +112,7 @@ export const useSettingStore = defineStore('setting', () => {
 
         for (const version of sortedVersions) {
           // Ensure the version is in a valid format before comparing
-          if (!isValidVersionFormat(version)) {
+          if (!isSemVer(version)) {
             continue
           }
 
@@ -127,12 +127,6 @@ export const useSettingStore = defineStore('setting', () => {
     }
 
     return null
-  }
-
-  function isValidVersionFormat(
-    version: string
-  ): version is `${number}.${number}.${number}` {
-    return /^\d+\.\d+\.\d+$/.test(version)
   }
 
   /**

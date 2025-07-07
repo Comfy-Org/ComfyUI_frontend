@@ -386,7 +386,9 @@ export const downloadUrlToHfRepoUrl = (url: string): string => {
   }
 }
 
-export const isSemVer = (version: string) => {
+export const isSemVer = (
+  version: string
+): version is `${number}.${number}.${number}` => {
   const regex = /^(\d+)\.(\d+)\.(\d+)$/
   return regex.test(version)
 }
