@@ -5,6 +5,7 @@
   @tailwind utilities;
 }
 
+
 :root {
   --fg-color: #000;
   --bg-color: #fff;
@@ -645,6 +646,9 @@ audio.comfy-audio.empty-audio-widget {
 .lg-node--lod-minimal {
   min-height: 32px;
   transition: min-height 0.2s ease;
+  /* Performance optimizations */
+  text-shadow: none;
+  backdrop-filter: none;
 }
 
 .lg-node--lod-minimal .lg-node-body {
@@ -654,6 +658,8 @@ audio.comfy-audio.empty-audio-widget {
 /* Reduced LOD (0.4 < zoom <= 0.8) - Essential widgets, simplified styling */
 .lg-node--lod-reduced {
   transition: opacity 0.1s ease;
+  /* Performance optimizations */
+  text-shadow: none;
 }
 
 .lg-node--lod-reduced .lg-widget-label,
@@ -691,41 +697,12 @@ audio.comfy-audio.empty-audio-widget {
   transition: opacity 0.1s ease, font-size 0.1s ease;
 }
 
-/* LOD (Level of Detail) CSS classes for Vue nodes */
-
-/* Full detail - zoom > 0.8 */
-.lg-node--lod-full {
-  /* All elements visible, full interactivity */
+/* Performance optimization during canvas interaction */
+.transform-pane--interacting .lg-node * {
+  transition: none !important;
 }
 
-/* Reduced detail - 0.4 < zoom <= 0.8 */
-.lg-node--lod-reduced {
-  /* Simplified rendering, essential widgets only */
+.transform-pane--interacting .lg-node {
+  will-change: transform;
 }
 
-.lg-node--lod-reduced .lg-node-header {
-  font-size: 0.875rem; /* Slightly smaller text */
-}
-
-.lg-node--lod-reduced .lg-node-widgets {
-  /* Only essential widgets shown */
-}
-
-.lg-node--lod-reduced .text-xs {
-  font-size: 0.625rem; /* Even smaller auxiliary text */
-}
-
-/* Minimal detail - zoom <= 0.4 */
-.lg-node--lod-minimal {
-  /* Only header visible, no body content */
-  min-height: auto !important;
-}
-
-.lg-node--lod-minimal .lg-node-header {
-  font-size: 0.75rem; /* Smaller header text */
-  padding: 0.25rem 0.5rem; /* Reduced padding */
-}
-
-.lg-node--lod-minimal .lg-node-header__control {
-  display: none; /* Hide controls at minimal zoom */
-}
