@@ -15,10 +15,6 @@ export class Topbar {
       .innerText()
   }
 
-  async openSubmenuMobile() {
-    await this.page.locator('.p-menubar-mobile .p-menubar-button').click()
-  }
-
   getMenuItem(itemLabel: string): Locator {
     return this.page.locator(`.p-menubar-item-label:text-is("${itemLabel}")`)
   }

@@ -63,7 +63,7 @@ test.describe('Menu', () => {
     test('@mobile Items fully visible on mobile screen width', async ({
       comfyPage
     }) => {
-      await comfyPage.menu.topbar.openSubmenuMobile()
+      await comfyPage.menu.topbar.openTopbarMenu()
       const topLevelMenuItem = comfyPage.page
         .locator('a.p-menubar-item-link')
         .first()
