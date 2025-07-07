@@ -42,6 +42,9 @@ const { lodScore, lodLevel } = useLOD(toRef(() => props.zoomLevel))
 </script>
 ```
 
+**Primary API:** Use `lodScore` (0-1) for granular control and smooth transitions  
+**Convenience API:** Use `lodLevel` ('minimal'|'reduced'|'full') for simple on/off decisions
+
 ### Step 2: Choose What to Show at Different Zoom Levels
 
 #### Understanding the LOD Score
@@ -178,10 +181,11 @@ const widgetClasses = computed(() => {
 // Always show the main functionality
 const showMainControl = computed(() => true)
 
-// Show labels when readable
+// Granular control with lodScore
 const showLabels = computed(() => lodScore.value > 0.4)
+const labelOpacity = computed(() => Math.max(0.3, lodScore.value))
 
-// Show extra info when focused
+// Simple control with lodLevel  
 const showExtras = computed(() => lodLevel.value === 'full')
 ```
 
