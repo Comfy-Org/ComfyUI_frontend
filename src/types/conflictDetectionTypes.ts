@@ -23,16 +23,16 @@ export type ConflictType =
 export type SecurityScanStatus = 'pending' | 'passed' | 'failed' | 'unknown'
 
 /**
- * Supported operating systems
+ * Supported operating systems (as per Registry Admin guide)
  * @enum {string}
  */
-export type SupportedOS = 'windows' | 'macos' | 'linux' | 'any'
+export type SupportedOS = 'Windows' | 'macOS' | 'Linux' | 'any'
 
 /**
- * Supported accelerators for GPU computation
+ * Supported accelerators for GPU computation (as per Registry Admin guide)
  * @enum {string}
  */
-export type SupportedAccelerator = 'cuda' | 'rocm' | 'mps' | 'cpu' | 'any'
+export type SupportedAccelerator = 'CUDA' | 'ROCm' | 'Metal' | 'CPU' | 'any'
 
 /**
  * Version comparison operators

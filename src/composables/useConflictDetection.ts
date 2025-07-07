@@ -91,13 +91,15 @@ export function useConflictDetection() {
 
       // Use system stats for OS detection (more accurate than browser detection)
       const systemOS = systemStats?.system?.os || 'unknown'
-      const detectedOS = detectOSFromSystemStats(systemOS)
 
       // Extract architecture from system stats device information
       const architecture = extractArchitectureFromSystemStats(systemStats)
 
       // Detect GPU/accelerator information from system stats
       const acceleratorInfo = extractAcceleratorInfo(systemStats)
+
+      // Enhanced OS detection using multiple sources
+      const detectedOS = detectOSFromSystemStats(systemOS, systemStats)
 
       const environment: SystemEnvironment = {
         // Version information (use 'unknown' on failure)
@@ -151,8 +153,8 @@ export function useConflictDetection() {
         os: detectOSFromSystemStats(navigator.platform),
         platform_details: navigator.platform,
         architecture: getArchitecture(),
-        available_accelerators: ['cpu'],
-        primary_accelerator: 'cpu',
+        available_accelerators: ['CPU'],
+        primary_accelerator: 'CPU',
         node_env: import.meta.env.MODE as 'development' | 'production',
         user_agent: navigator.userAgent
       }
@@ -257,7 +259,7 @@ export function useConflictDetection() {
             supported_comfyui_version: versionData.supported_comfyui_version,
             supported_comfyui_frontend_version:
               versionData.supported_comfyui_frontend_version,
-            supported_os: versionData.supported_os as SupportedOS[],
+            supported_os: normalizeOSValues(versionData.supported_os),
             supported_accelerators:
               versionData.supported_accelerators as SupportedAccelerator[],
             dependencies: versionData.dependencies || [],
@@ -599,15 +601,83 @@ function getArchitecture(): string {
 }
 
 /**
- * Detects operating system from system stats OS string.
+ * Normalizes OS values from Registry API to match our SupportedOS type.
+ * Registry Admin guide specifies: Windows, macOS, Linux
+ * @param osValues OS values from Registry API
+ * @returns Normalized OS values
+ */
+function normalizeOSValues(osValues: string[] | undefined): SupportedOS[] {
+  if (!osValues || osValues.length === 0) {
+    return []
+  }
+
+  return osValues.map((os) => {
+    // Map to standard Registry values (case-sensitive)
+    if (os === 'Windows' || os.toLowerCase().includes('win')) {
+      return 'Windows'
+    }
+    if (os === 'macOS' || os.toLowerCase().includes('mac') || os === 'darwin') {
+      return 'macOS'
+    }
+    if (os === 'Linux' || os.toLowerCase().includes('linux')) {
+      return 'Linux'
+    }
+    if (os.toLowerCase() === 'any') {
+      return 'any'
+    }
+
+    // Return as-is if it matches standard format
+    return os as SupportedOS
+  })
+}
+
+/**
+ * Detects operating system from system stats OS string and additional system information.
  * @param systemOS OS string from system stats API
+ * @param systemStats Full system stats object for additional context
  * @returns Operating system type
  */
-function detectOSFromSystemStats(systemOS: string): SupportedOS {
+function detectOSFromSystemStats(
+  systemOS: string,
+  systemStats?: SystemStats | null
+): SupportedOS {
   const os = systemOS.toLowerCase()
-  if (os.includes('darwin') || os.includes('mac')) return 'macos'
-  if (os.includes('linux')) return 'linux'
-  if (os.includes('win')) return 'windows'
+
+  // Handle specific OS strings (return Registry standard format)
+  if (os.includes('darwin') || os.includes('mac')) return 'macOS'
+  if (os.includes('linux')) return 'Linux'
+  if (os.includes('win') || os === 'nt') return 'Windows'
+
+  // Handle Python's os.name values
+  if (os === 'posix') {
+    // posix could be macOS or Linux, need additional detection
+
+    // Method 1: Check for MPS device (Metal Performance Shaders = macOS)
+    if (systemStats?.devices) {
+      const hasMpsDevice = systemStats.devices.some(
+        (device) => device.type === 'mps'
+      )
+      if (hasMpsDevice) {
+        return 'macOS' // Registry standard format
+      }
+    }
+
+    // Method 2: Check Python version string for platform hints
+    if (systemStats?.system?.python_version) {
+      const pythonVersion = systemStats.system.python_version.toLowerCase()
+      if (pythonVersion.includes('darwin')) return 'macOS'
+      if (pythonVersion.includes('linux')) return 'Linux'
+    }
+
+    // Method 3: Check user agent as fallback
+    const userAgent = navigator.userAgent.toLowerCase()
+    if (userAgent.includes('mac')) return 'macOS'
+    if (userAgent.includes('linux')) return 'Linux'
+
+    // Default to 'any' if we can't determine
+    return 'any'
+  }
+
   return 'any'
 }
 
@@ -686,7 +756,7 @@ function extractAcceleratorInfo(systemStats: SystemStats | null): {
   try {
     if (systemStats?.devices && systemStats.devices.length > 0) {
       const accelerators = new Set<SupportedAccelerator>()
-      let primaryDevice: SupportedAccelerator = 'cpu'
+      let primaryDevice: SupportedAccelerator = 'CPU'
       let totalMemory = 0
       let maxDevicePriority = 0
 
@@ -717,10 +787,14 @@ function extractAcceleratorInfo(systemStats: SystemStats | null): {
         const deviceType = device.type.toLowerCase()
         const priority = getDevicePriority(deviceType)
 
-        // Map device type to SupportedAccelerator
-        let acceleratorType: SupportedAccelerator = 'cpu'
-        if (['cuda', 'mps', 'rocm'].includes(deviceType)) {
-          acceleratorType = deviceType as SupportedAccelerator
+        // Map device type to SupportedAccelerator (Registry standard format)
+        let acceleratorType: SupportedAccelerator = 'CPU'
+        if (deviceType === 'cuda') {
+          acceleratorType = 'CUDA'
+        } else if (deviceType === 'mps') {
+          acceleratorType = 'Metal' // MPS = Metal Performance Shaders
+        } else if (deviceType === 'rocm') {
+          acceleratorType = 'ROCm'
         }
 
         accelerators.add(acceleratorType)
@@ -737,7 +811,7 @@ function extractAcceleratorInfo(systemStats: SystemStats | null): {
         }
       }
 
-      accelerators.add('cpu') // CPU is always available
+      accelerators.add('CPU') // CPU is always available
 
       return {
         available: Array.from(accelerators),
@@ -755,8 +829,8 @@ function extractAcceleratorInfo(systemStats: SystemStats | null): {
 
   // Default values
   return {
-    available: ['cpu'],
-    primary: 'cpu',
+    available: ['CPU'],
+    primary: 'CPU',
     memory_mb: undefined
   }
 }

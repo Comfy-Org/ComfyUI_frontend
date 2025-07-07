@@ -114,9 +114,9 @@ describe('useConflictDetection with Registry Store', () => {
       expect(environment.comfyui_version).toBe('0.3.41')
       expect(environment.frontend_version).toBe('1.24.0-1')
       expect(environment.python_version).toBe('3.12.11')
-      expect(environment.available_accelerators).toContain('mps')
-      expect(environment.available_accelerators).toContain('cpu')
-      expect(environment.primary_accelerator).toBe('mps')
+      expect(environment.available_accelerators).toContain('Metal')
+      expect(environment.available_accelerators).toContain('CPU')
+      expect(environment.primary_accelerator).toBe('Metal')
     })
 
     it('should return fallback environment information when systemStatsStore fails', async () => {
@@ -132,7 +132,7 @@ describe('useConflictDetection with Registry Store', () => {
       expect(environment.comfyui_version).toBe('unknown')
       expect(environment.frontend_version).toBe('1.24.0-1')
       expect(environment.python_version).toBe('unknown')
-      expect(environment.available_accelerators).toEqual(['cpu'])
+      expect(environment.available_accelerators).toEqual(['CPU'])
     })
   })
 
@@ -160,16 +160,16 @@ describe('useConflictDetection with Registry Store', () => {
         {
           id: 'ComfyUI-Manager',
           name: 'ComfyUI Manager',
-          supported_os: ['windows', 'linux', 'macos'],
-          supported_accelerators: ['cuda', 'mps', 'cpu'],
+          supported_os: ['Windows', 'Linux', 'macOS'],
+          supported_accelerators: ['CUDA', 'Metal', 'CPU'],
           supported_comfyui_version: '>=0.3.0',
           status: 'NodeStatusActive'
         } as components['schemas']['Node'],
         {
           id: 'ComfyUI-TestNode',
           name: 'Test Node',
-          supported_os: ['windows', 'linux'],
-          supported_accelerators: ['cuda'],
+          supported_os: ['Windows', 'Linux'],
+          supported_accelerators: ['CUDA'],
           supported_comfyui_version: '>=0.2.0',
           status: 'NodeStatusBanned'
         } as components['schemas']['Node']
@@ -305,8 +305,8 @@ describe('useConflictDetection with Registry Store', () => {
         {
           id: 'CompatibleNode',
           name: 'Compatible Node',
-          supported_os: ['windows', 'linux', 'macos'],
-          supported_accelerators: ['mps', 'cuda', 'cpu'],
+          supported_os: ['Windows', 'Linux', 'macOS'],
+          supported_accelerators: ['Metal', 'CUDA', 'CPU'],
           supported_comfyui_version: '>=0.3.0',
           status: 'NodeStatusActive'
         } as components['schemas']['Node']
@@ -317,7 +317,7 @@ describe('useConflictDetection with Registry Store', () => {
       )
       // Mock Registry Service for compatible package
       mockRegistryService.getPackByVersion.mockImplementation(
-        (packageName: string, version: string) => {
+        (packageName: string) => {
           const packageData = mockCompatibleRegistryPacks.find(
             (p) => p.id === packageName
           )
@@ -350,8 +350,8 @@ describe('useConflictDetection with Registry Store', () => {
         {
           id: 'WindowsOnlyNode',
           name: 'Windows Only Node',
-          supported_os: ['windows'],
-          supported_accelerators: ['mps', 'cuda', 'cpu'],
+          supported_os: ['Windows'],
+          supported_accelerators: ['Metal', 'CUDA', 'CPU'],
           supported_comfyui_version: '>=0.3.0',
           status: 'NodeStatusActive'
         } as components['schemas']['Node']
@@ -361,7 +361,7 @@ describe('useConflictDetection with Registry Store', () => {
         mockInstalledPacks
       )
       mockRegistryService.getPackByVersion.mockImplementation(
-        (packageName: string, version: string) => {
+        (packageName: string) => {
           const packageData = mockWindowsOnlyRegistryPacks.find(
             (p: any) => p.id === packageName
           )
@@ -404,7 +404,7 @@ describe('useConflictDetection with Registry Store', () => {
           id: 'CudaOnlyNode',
           name: 'CUDA Only Node',
           supported_os: ['windows', 'linux', 'macos'],
-          supported_accelerators: ['cuda'],
+          supported_accelerators: ['CUDA'],
           supported_comfyui_version: '>=0.3.0',
           status: 'NodeStatusActive'
         } as components['schemas']['Node']
@@ -414,7 +414,7 @@ describe('useConflictDetection with Registry Store', () => {
         mockInstalledPacks
       )
       mockRegistryService.getPackByVersion.mockImplementation(
-        (packageName: string, version: string) => {
+        (packageName: string) => {
           const packageData = mockCudaOnlyRegistryPacks.find(
             (p: any) => p.id === packageName
           )
@@ -458,7 +458,7 @@ describe('useConflictDetection with Registry Store', () => {
         {
           id: 'BannedNode',
           supported_os: ['windows', 'linux', 'macos'],
-          supported_accelerators: ['mps', 'cuda', 'cpu'],
+          supported_accelerators: ['Metal', 'CUDA', 'CPU'],
           supported_comfyui_version: '>=0.3.0',
           status: 'NodeVersionStatusBanned'
         } as components['schemas']['NodeVersion']
@@ -468,7 +468,7 @@ describe('useConflictDetection with Registry Store', () => {
         mockInstalledPacks
       )
       mockRegistryService.getPackByVersion.mockImplementation(
-        (packageName: string, version: string) => {
+        (packageName: string) => {
           const packageData = mockBannedRegistryPacks.find(
             (p: any) => p.id === packageName
           )
@@ -512,7 +512,7 @@ describe('useConflictDetection with Registry Store', () => {
           id: 'DisabledNode',
           name: 'Disabled Node',
           supported_os: ['windows', 'linux', 'macos'],
-          supported_accelerators: ['mps', 'cuda', 'cpu'],
+          supported_accelerators: ['Metal', 'CUDA', 'CPU'],
           supported_comfyui_version: '>=0.3.0',
           status: 'NodeStatusActive'
         } as components['schemas']['Node']
@@ -522,7 +522,7 @@ describe('useConflictDetection with Registry Store', () => {
         mockInstalledPacks
       )
       mockRegistryService.getPackByVersion.mockImplementation(
-        (packageName: string, version: string) => {
+        (packageName: string) => {
           const packageData = mockActiveRegistryPacks.find(
             (p: any) => p.id === packageName
           )
@@ -567,8 +567,8 @@ describe('useConflictDetection with Registry Store', () => {
         {
           id: 'ConflictedNode',
           name: 'Conflicted Node',
-          supported_os: ['windows'],
-          supported_accelerators: ['mps', 'cuda', 'cpu'],
+          supported_os: ['Windows'],
+          supported_accelerators: ['Metal', 'CUDA', 'CPU'],
           supported_comfyui_version: '>=0.3.0',
           status: 'NodeStatusActive'
         } as components['schemas']['Node']
@@ -615,8 +615,8 @@ describe('useConflictDetection with Registry Store', () => {
         {
           id: 'ErrorNode',
           name: 'Error Node',
-          supported_os: ['windows'],
-          supported_accelerators: ['cuda'],
+          supported_os: ['Windows'],
+          supported_accelerators: ['CUDA'],
           supported_comfyui_version: '>=0.3.0',
           status: 'NodeStatusActive'
         } as components['schemas']['Node']
@@ -626,7 +626,7 @@ describe('useConflictDetection with Registry Store', () => {
         mockInstalledPacks
       )
       mockRegistryService.getPackByVersion.mockImplementation(
-        (packageName: string, version: string) => {
+        (packageName: string) => {
           const packageData = mockErrorRegistryPacks.find(
             (p: any) => p.id === packageName
           )
@@ -671,7 +671,7 @@ describe('useConflictDetection with Registry Store', () => {
           id: 'BannedNode',
           name: 'Banned Node',
           supported_os: ['windows', 'linux', 'macos'],
-          supported_accelerators: ['mps', 'cuda', 'cpu'],
+          supported_accelerators: ['Metal', 'CUDA', 'CPU'],
           supported_comfyui_version: '>=0.3.0',
           status: 'NodeStatusActive'
         } as components['schemas']['Node'],
@@ -679,7 +679,7 @@ describe('useConflictDetection with Registry Store', () => {
           id: 'NormalNode',
           name: 'Normal Node',
           supported_os: ['windows', 'linux', 'macos'],
-          supported_accelerators: ['mps', 'cuda', 'cpu'],
+          supported_accelerators: ['Metal', 'CUDA', 'CPU'],
           supported_comfyui_version: '>=0.3.0',
           status: 'NodeStatusActive'
         } as components['schemas']['Node']
@@ -773,7 +773,7 @@ describe('useConflictDetection with Registry Store', () => {
           id: 'Package-A',
           name: 'Package A',
           supported_os: ['windows', 'linux', 'macos'],
-          supported_accelerators: ['mps', 'cuda', 'cpu'],
+          supported_accelerators: ['Metal', 'CUDA', 'CPU'],
           status: 'NodeStatusActive'
         } as components['schemas']['Node']
         // Package-B is missing from Registry results
