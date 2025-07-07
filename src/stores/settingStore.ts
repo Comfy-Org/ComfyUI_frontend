@@ -98,7 +98,7 @@ export const useSettingStore = defineStore('setting', () => {
 
   function getVersionedDefaultValue<K extends keyof Settings>(
     key: K,
-    param: SettingParams
+    param: SettingParams | undefined
   ): Settings[K] | null {
     // get default versioned value, skipping if the key is 'Comfy.InstalledVersion' to prevent infinite loop
     if (param?.defaultsByInstallVersion && key !== 'Comfy.InstalledVersion') {
