@@ -954,7 +954,8 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
           (w) => w.name === 'length'
         ) as IComboWidget
 
-        if (!lengthWidget) return '$1.50-3.00/Run (varies with length)'
+        // If no length widget exists, default to 5s pricing
+        if (!lengthWidget) return '$1.50/Run'
 
         const length = String(lengthWidget.value)
         if (length === '5s') {
@@ -972,7 +973,8 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
           (w) => w.name === 'length'
         ) as IComboWidget
 
-        if (!lengthWidget) return '$1.50-3.00/Run (varies with length)'
+        // If no length widget exists, default to 5s pricing
+        if (!lengthWidget) return '$1.50/Run'
 
         const length = String(lengthWidget.value)
         if (length === '5s') {
@@ -990,7 +992,8 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
           (w) => w.name === 'length'
         ) as IComboWidget
 
-        if (!lengthWidget) return '$2.00-4.00/Run (varies with length)'
+        // If no length widget exists, default to 5s pricing
+        if (!lengthWidget) return '$2.00/Run'
 
         const length = String(lengthWidget.value)
         if (length === '5s') {
