@@ -35,6 +35,8 @@ const TYPE_TO_ENUM_MAP: Record<string, string> = {
   // Multiline text
   multiline: WidgetType.TEXTAREA,
   textarea: WidgetType.TEXTAREA,
+  customtext: WidgetType.TEXTAREA,
+  MARKDOWN: WidgetType.MARKDOWN,
 
   // Advanced widgets
   color: WidgetType.COLOR,
@@ -46,11 +48,7 @@ const TYPE_TO_ENUM_MAP: Record<string, string> = {
 
   // Button widget
   button: WidgetType.BUTTON,
-  BUTTON: WidgetType.BUTTON,
-
-  // Text-based widgets that don't have dedicated components yet
-  MARKDOWN: WidgetType.TEXTAREA, // Markdown should use textarea for now
-  customtext: WidgetType.TEXTAREA // Custom text widgets use textarea for multiline
+  BUTTON: WidgetType.BUTTON
 } as const
 
 /**
