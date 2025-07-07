@@ -85,7 +85,7 @@ export const useReleaseStore = defineStore('release', () => {
     // Skip if user already skipped or changelog seen
     if (
       releaseVersion.value === recentRelease.value?.version &&
-      !['skipped', 'changelog seen'].includes(releaseStatus.value)
+      ['skipped', 'changelog seen'].includes(releaseStatus.value)
     ) {
       return false
     }
