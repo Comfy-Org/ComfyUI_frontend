@@ -14,7 +14,7 @@
 import Textarea from 'primevue/textarea'
 import { computed } from 'vue'
 
-import { useWidgetValue } from '@/composables/graph/useWidgetValue'
+import { useStringWidgetValue } from '@/composables/graph/useWidgetValue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import {
   INPUT_EXCLUDED_PROPS,
@@ -32,12 +32,11 @@ const emit = defineEmits<{
 }>()
 
 // Use the composable for consistent widget value handling
-const { localValue, onChange } = useWidgetValue({
-  widget: props.widget,
-  modelValue: props.modelValue,
-  defaultValue: '',
+const { localValue, onChange } = useStringWidgetValue(
+  props.widget,
+  props.modelValue,
   emit
-})
+)
 
 const filteredProps = computed(() =>
   filterWidgetProps(props.widget.options, INPUT_EXCLUDED_PROPS)
