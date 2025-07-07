@@ -21,16 +21,24 @@ export interface SettingTreeNode extends TreeNode {
   data?: SettingParams
 }
 
-function tryMigrateDeprecatedValue(setting: SettingParams, value: any) {
+function tryMigrateDeprecatedValue(
+  setting: SettingParams | undefined,
+  value: any
+) {
   return setting?.migrateDeprecatedValue?.(value) ?? value
 }
 
-function onChange(setting: SettingParams, newValue: any, oldValue: any) {
+function onChange(
+  setting: SettingParams | undefined,
+  newValue: any,
+  oldValue: any
+) {
   if (setting?.onChange) {
     setting.onChange(newValue, oldValue)
   }
   // Backward compatibility with old settings dialog.
   // Some extensions still listens event emitted by the old settings dialog.
+  // @ts-expect-error 'setting' is possibly 'undefined'.ts(18048)
   app.ui.settings.dispatchChange(setting.id, newValue, oldValue)
 }
 
@@ -112,10 +120,10 @@ export const useSettingStore = defineStore('setting', () => {
       : param.defaultValue
   }
 
-  function getVersionedDefaultValue<K extends keyof Settings>(
-    key: K,
-    param: SettingParams | undefined
-  ): Settings[K] | null {
+  function getVersionedDefaultValue<
+    K extends keyof Settings,
+    TValue = Settings[K]
+  >(key: K, param: SettingParams<TValue> | undefined): TValue | null {
     // get default versioned value, skipping if the key is 'Comfy.InstalledVersion' to prevent infinite loop
     const defaultsByInstallVersion = param?.defaultsByInstallVersion
     if (defaultsByInstallVersion && key !== 'Comfy.InstalledVersion') {
