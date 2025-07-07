@@ -197,40 +197,46 @@ export function useConflictDetection() {
       // Step 3: Setup abort controller for request cancellation
       abortController.value = new AbortController()
 
-      // Step 4: Fetch version-specific data for each package individually
-      // Map to store version data
+      // Step 4: Fetch version-specific data in chunks to avoid overwhelming the Registry API
+      //         - Each chunk processes up to 30 packages concurrently
+      //         - Results are stored in versionDataMap for later use
+      const entries = Object.entries(installedNodes)
+      const chunkSize = 30 // 청크 크기
       const versionDataMap = new Map<
         string,
         components['schemas']['NodeVersion']
       >()
 
-      // Step 5: For each installed package, fetch its version-specific data
-      for (const [packageName, nodeInfo] of Object.entries(installedNodes)) {
-        const typedNodeInfo: ManagerComponents['schemas']['ManagerPackInstalled'] =
-          nodeInfo
-        const version = typedNodeInfo.ver || 'latest'
+      for (let i = 0; i < entries.length; i += chunkSize) {
+        const chunk = entries.slice(i, i + chunkSize)
 
-        try {
-          // Use existing getPackByVersion function from registryService
-          const versionData = await registryService.getPackByVersion(
-            packageName,
-            version,
-            abortController.value?.signal
-          )
+        const fetchTasks = chunk.map(async ([packageName, nodeInfo]) => {
+          const typedNodeInfo: ManagerComponents['schemas']['ManagerPackInstalled'] =
+            nodeInfo
+          const version = typedNodeInfo.ver || 'latest'
 
-          if (versionData) {
-            versionDataMap.set(packageName, versionData)
+          try {
+            const versionData = await registryService.getPackByVersion(
+              packageName,
+              version,
+              abortController.value?.signal
+            )
+
+            if (versionData) {
+              versionDataMap.set(packageName, versionData)
+            }
+          } catch (error) {
+            console.warn(
+              `[ConflictDetection] Failed to fetch version data for ${packageName}@${version}:`,
+              error
+            )
           }
-        } catch (error) {
-          console.warn(
-            `[ConflictDetection] Failed to fetch version data for ${packageName}@${version}:`,
-            error
-          )
-          // Continue processing other packages even if one fails
-        }
+        })
+
+        await Promise.allSettled(fetchTasks)
       }
 
-      // Step 6: Combine local installation data with Registry version data
+      // Step 5: Combine local installation data with Registry version data
       const requirements: NodePackRequirements[] = []
 
       for (const [packageName, nodeInfo] of Object.entries(installedNodes)) {
@@ -247,7 +253,7 @@ export function useConflictDetection() {
             installed_version: typedNodeInfo.ver || 'unknown',
             is_enabled: typedNodeInfo.enabled,
 
-            // Version-specific compatibility data (실제 데이터!)
+            // Version-specific compatibility data
             supported_comfyui_version: versionData.supported_comfyui_version,
             supported_comfyui_frontend_version:
               versionData.supported_comfyui_frontend_version,
@@ -321,39 +327,56 @@ export function useConflictDetection() {
   ): ConflictDetectionResult {
     const conflicts: ConflictDetail[] = []
 
+    // Helper function to check if a value indicates "compatible with all"
+    const isCompatibleWithAll = (value: any): boolean => {
+      if (value === null || value === undefined) return true
+      if (typeof value === 'string' && value.trim() === '') return true
+      if (Array.isArray(value) && value.length === 0) return true
+      return false
+    }
+
     // 1. ComfyUI version conflict check
-    if (packageReq.supported_comfyui_version && packageReq.has_registry_data) {
+    if (
+      packageReq.has_registry_data &&
+      !isCompatibleWithAll(packageReq.supported_comfyui_version)
+    ) {
       const versionConflict = checkVersionStringConflict(
         'comfyui_version',
         sysEnv.comfyui_version,
-        packageReq.supported_comfyui_version
+        packageReq.supported_comfyui_version!
       )
       if (versionConflict) conflicts.push(versionConflict)
     }
 
     // 2. Frontend version conflict check
     if (
-      packageReq.supported_comfyui_frontend_version &&
-      packageReq.has_registry_data
+      packageReq.has_registry_data &&
+      !isCompatibleWithAll(packageReq.supported_comfyui_frontend_version)
     ) {
       const versionConflict = checkVersionStringConflict(
         'frontend_version',
         sysEnv.frontend_version,
-        packageReq.supported_comfyui_frontend_version
+        packageReq.supported_comfyui_frontend_version!
       )
       if (versionConflict) conflicts.push(versionConflict)
     }
 
     // 3. OS compatibility check
-    if (packageReq.supported_os && packageReq.has_registry_data) {
-      const osConflict = checkOSConflict(packageReq.supported_os, sysEnv.os)
+    if (
+      packageReq.has_registry_data &&
+      !isCompatibleWithAll(packageReq.supported_os)
+    ) {
+      const osConflict = checkOSConflict(packageReq.supported_os!, sysEnv.os)
       if (osConflict) conflicts.push(osConflict)
     }
 
     // 4. Accelerator compatibility check
-    if (packageReq.supported_accelerators && packageReq.has_registry_data) {
+    if (
+      packageReq.has_registry_data &&
+      !isCompatibleWithAll(packageReq.supported_accelerators)
+    ) {
       const acceleratorConflict = checkAcceleratorConflict(
-        packageReq.supported_accelerators,
+        packageReq.supported_accelerators!,
         sysEnv.available_accelerators
       )
       if (acceleratorConflict) conflicts.push(acceleratorConflict)
@@ -598,7 +621,17 @@ function extractArchitectureFromSystemStats(
 ): string {
   try {
     if (systemStats?.devices && systemStats.devices.length > 0) {
-      // Check device names for architecture hints
+      // Check if we have MPS device (indicates Apple Silicon)
+      const hasMpsDevice = systemStats.devices.some(
+        (device) => device.type === 'mps'
+      )
+
+      if (hasMpsDevice) {
+        // MPS is only available on Apple Silicon Macs
+        return 'arm64'
+      }
+
+      // Check device names for architecture hints (fallback)
       for (const device of systemStats.devices) {
         if (!device?.name || typeof device.name !== 'string') {
           continue
@@ -652,26 +685,65 @@ function extractAcceleratorInfo(systemStats: SystemStats | null): {
 } {
   try {
     if (systemStats?.devices && systemStats.devices.length > 0) {
-      const device = systemStats.devices[0]
-      const accelerators: SupportedAccelerator[] = []
+      const accelerators = new Set<SupportedAccelerator>()
+      let primaryDevice: SupportedAccelerator = 'cpu'
+      let totalMemory = 0
+      let maxDevicePriority = 0
 
-      // Determine accelerator based on device type
-      if (device.type === 'cuda') {
-        accelerators.push('cuda')
-      } else if (device.type === 'mps') {
-        accelerators.push('mps')
-      } else if (device.type === 'rocm') {
-        accelerators.push('rocm')
+      // Device type priority (higher = better)
+      const getDevicePriority = (type: string): number => {
+        switch (type.toLowerCase()) {
+          case 'cuda':
+            return 5
+          case 'mps':
+            return 4
+          case 'rocm':
+            return 3
+          case 'xpu':
+            return 2 // Intel GPU
+          case 'npu':
+            return 1 // Neural Processing Unit
+          case 'mlu':
+            return 1 // Cambricon MLU
+          case 'cpu':
+            return 0
+          default:
+            return 0
+        }
       }
 
-      accelerators.push('cpu') // CPU is always available
+      // Process all devices
+      for (const device of systemStats.devices) {
+        const deviceType = device.type.toLowerCase()
+        const priority = getDevicePriority(deviceType)
+
+        // Map device type to SupportedAccelerator
+        let acceleratorType: SupportedAccelerator = 'cpu'
+        if (['cuda', 'mps', 'rocm'].includes(deviceType)) {
+          acceleratorType = deviceType as SupportedAccelerator
+        }
+
+        accelerators.add(acceleratorType)
+
+        // Update primary device if this one has higher priority
+        if (priority > maxDevicePriority) {
+          primaryDevice = acceleratorType
+          maxDevicePriority = priority
+        }
+
+        // Accumulate memory from all devices
+        if (device.vram_total) {
+          totalMemory += device.vram_total
+        }
+      }
+
+      accelerators.add('cpu') // CPU is always available
 
       return {
-        available: accelerators,
-        primary: (device.type as SupportedAccelerator) || 'cpu',
-        memory_mb: device.vram_total
-          ? Math.round(device.vram_total / 1024 / 1024)
-          : undefined
+        available: Array.from(accelerators),
+        primary: primaryDevice,
+        memory_mb:
+          totalMemory > 0 ? Math.round(totalMemory / 1024 / 1024) : undefined
       }
     }
   } catch (error) {
