@@ -102,11 +102,12 @@ export const useSettingStore = defineStore('setting', () => {
    * @param key - The key of the setting to get.
    * @returns The default value of the setting.
    */
-  function getDefaultValue<K extends keyof Settings>(key: K): Settings[K] {
+  function getDefaultValue<K extends keyof Settings>(
+    key: K
+  ): Settings[K] | undefined {
     // Assertion: settingsById is not typed.
     const param = getSettingById(key)
 
-    // @ts-expect-error `undefined` is not valid
     if (param === undefined) return
 
     const versionedDefault = getVersionedDefaultValue(key, param)
