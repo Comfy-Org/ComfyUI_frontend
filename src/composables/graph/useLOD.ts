@@ -79,6 +79,12 @@ const LOD_CONFIGS: Record<LODLevel, LODConfig> = {
  * @returns LOD state and configuration
  */
 export function useLOD(zoomRef: Ref<number>) {
+  // Continuous LOD score (0-1) for smooth transitions
+  const lodScore = computed(() => {
+    const zoom = zoomRef.value
+    return Math.max(0, Math.min(1, zoom))
+  })
+
   // Determine current LOD level based on zoom
   const lodLevel = computed<LODLevel>(() => {
     const zoom = zoomRef.value
@@ -136,6 +142,7 @@ export function useLOD(zoomRef: Ref<number>) {
     // Core LOD state
     lodLevel: readonly(lodLevel),
     lodConfig: readonly(lodConfig),
+    lodScore: readonly(lodScore),
 
     // Rendering decisions
     shouldRenderWidgets,
