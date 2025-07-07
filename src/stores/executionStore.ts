@@ -24,6 +24,7 @@ import type {
 } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
 
 import { useCanvasStore } from './graphStore'
 import { ComfyWorkflow, useWorkflowStore } from './workflowStore'
@@ -309,6 +310,40 @@ export const useExecutionStore = defineStore('execution', () => {
     )
   }
 
+  /**
+   * Convert execution context node IDs to NodeLocatorIds
+   * @param nodeId The node ID from execution context (could be hierarchical)
+   * @returns The NodeLocatorId
+   */
+  const executionIdToNodeLocatorId = (
+    nodeId: string | number
+  ): NodeLocatorId => {
+    const nodeIdStr = String(nodeId)
+
+    // If it's a hierarchical ID, use the workflow store's conversion
+    if (nodeIdStr.includes(':')) {
+      const result = workflowStore.hierarchicalIdToNodeLocatorId(nodeIdStr)
+      // If conversion fails, return the original ID as-is
+      return result ?? (nodeIdStr as NodeLocatorId)
+    }
+
+    // For simple node IDs, we need the active subgraph context
+    return workflowStore.nodeIdToNodeLocatorId(nodeIdStr)
+  }
+
+  /**
+   * Convert a NodeLocatorId to an execution context ID (hierarchical ID)
+   * @param locatorId The NodeLocatorId
+   * @returns The hierarchical execution ID or null if conversion fails
+   */
+  const nodeLocatorIdToExecutionId = (
+    locatorId: NodeLocatorId | string
+  ): string | null => {
+    const hierarchicalId =
+      workflowStore.nodeLocatorIdToHierarchicalId(locatorId)
+    return hierarchicalId
+  }
+
   return {
     isIdle,
     clientId,
@@ -368,6 +403,9 @@ export const useExecutionStore = defineStore('execution', () => {
     unbindExecutionEvents,
     storePrompt,
     // Raw executing progress data for backward compatibility in ComfyApp.
-    _executingNodeProgress
+    _executingNodeProgress,
+    // NodeLocatorId conversion helpers
+    executionIdToNodeLocatorId,
+    nodeLocatorIdToExecutionId
   }
 })
