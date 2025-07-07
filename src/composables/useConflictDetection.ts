@@ -1,9 +1,9 @@
-import { computed, getCurrentInstance, onUnmounted, readonly, ref } from 'vue'
 import * as semver from 'semver'
+import { computed, getCurrentInstance, onUnmounted, readonly, ref } from 'vue'
 
 import config from '@/config'
 import { useComfyManagerService } from '@/services/comfyManagerService'
-import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
+import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { SystemStats } from '@/types'
 import type { components } from '@/types/comfyRegistryTypes'
@@ -74,18 +74,8 @@ export function useConflictDetection() {
    * @returns Promise that resolves to system environment information
    */
   async function detectSystemEnvironment(): Promise<SystemEnvironment> {
-    console.log('[ConflictDetection] Starting system environment detection...')
-
     try {
-      // Information directly available from the browser
-      const browserInfo = {
-        platform_details: navigator.platform,
-        architecture: getArchitecture(),
-        user_agent: navigator.userAgent,
-        node_env: import.meta.env.MODE as 'development' | 'production'
-      }
-
-      // Get system stats from store (with error resilience)
+      // Get system stats from store (primary source of system information)
       const systemStatsStore = useSystemStatsStore()
       await systemStatsStore.fetchSystemStats()
 
@@ -94,10 +84,17 @@ export function useConflictDetection() {
         fetchFrontendVersion()
       ])
 
-      // Extract system information from store or use fallback
+      // Extract system information from system stats
       const systemStats = systemStatsStore.systemStats
       const comfyuiVersion = systemStats?.system?.comfyui_version || 'unknown'
       const pythonVersion = systemStats?.system?.python_version || 'unknown'
+
+      // Use system stats for OS detection (more accurate than browser detection)
+      const systemOS = systemStats?.system?.os || 'unknown'
+      const detectedOS = detectOSFromSystemStats(systemOS)
+
+      // Extract architecture from system stats device information
+      const architecture = extractArchitectureFromSystemStats(systemStats)
 
       // Detect GPU/accelerator information from system stats
       const acceleratorInfo = extractAcceleratorInfo(systemStats)
@@ -111,10 +108,10 @@ export function useConflictDetection() {
             : 'unknown',
         python_version: pythonVersion,
 
-        // Platform information
-        os: detectOS(browserInfo.platform_details),
-        platform_details: browserInfo.platform_details,
-        architecture: browserInfo.architecture,
+        // Platform information (from system stats)
+        os: detectedOS,
+        platform_details: systemOS,
+        architecture: architecture,
 
         // GPU/accelerator information
         available_accelerators: acceleratorInfo.available,
@@ -122,8 +119,8 @@ export function useConflictDetection() {
         gpu_memory_mb: acceleratorInfo.memory_mb,
 
         // Runtime information
-        node_env: browserInfo.node_env,
-        user_agent: browserInfo.user_agent
+        node_env: import.meta.env.MODE as 'development' | 'production',
+        user_agent: navigator.userAgent
       }
 
       systemEnvironment.value = environment
@@ -151,7 +148,7 @@ export function useConflictDetection() {
         comfyui_version: 'unknown',
         frontend_version: frontendVersion,
         python_version: 'unknown',
-        os: detectOS(navigator.platform),
+        os: detectOSFromSystemStats(navigator.platform),
         platform_details: navigator.platform,
         architecture: getArchitecture(),
         available_accelerators: ['cpu'],
@@ -181,10 +178,6 @@ export function useConflictDetection() {
    */
   async function fetchPackageRequirements(): Promise<NodePackRequirements[]> {
     try {
-      console.log(
-        '[ConflictDetection] Fetching package requirements from Registry Store...'
-      )
-
       // Step 1: Get locally installed packages
       const comfyManagerService = useComfyManagerService()
       const installedNodes:
@@ -198,70 +191,80 @@ export function useConflictDetection() {
         return []
       }
 
-      const packageIds = Object.keys(installedNodes)
-      console.log('[ConflictDetection] Found installed packages:', packageIds)
-
-      // Step 2: Get Registry store with caching support
-      const registryStore = useComfyRegistryStore()
+      // Step 2: Get Registry service for individual API calls
+      const registryService = useComfyRegistryService()
 
       // Step 3: Setup abort controller for request cancellation
       abortController.value = new AbortController()
 
-      // Step 4: Batch fetch Registry data for better performance
-      console.log(
-        '[ConflictDetection] Batch fetching Registry data for packages...'
-      )
+      // Step 4: Fetch version-specific data for each package individually
+      // Map to store version data
+      const versionDataMap = new Map<
+        string,
+        components['schemas']['NodeVersion']
+      >()
 
-      const registryPacks: components['schemas']['Node'][] =
-        await registryStore.getPacksByIds.call(packageIds)
+      // Step 5: For each installed package, fetch its version-specific data
+      for (const [packageName, nodeInfo] of Object.entries(installedNodes)) {
+        const typedNodeInfo: ManagerComponents['schemas']['ManagerPackInstalled'] =
+          nodeInfo
+        const version = typedNodeInfo.ver || 'latest'
 
-      // Step 5: Create a map for quick lookup
-      const registryMap = new Map<string, components['schemas']['Node']>()
-      registryPacks.forEach((pack) => {
-        if (pack?.id) {
-          registryMap.set(pack.id, pack)
+        try {
+          // Use existing getPackByVersion function from registryService
+          const versionData = await registryService.getPackByVersion(
+            packageName,
+            version,
+            abortController.value?.signal
+          )
+
+          if (versionData) {
+            versionDataMap.set(packageName, versionData)
+          }
+        } catch (error) {
+          console.warn(
+            `[ConflictDetection] Failed to fetch version data for ${packageName}@${version}:`,
+            error
+          )
+          // Continue processing other packages even if one fails
         }
-      })
+      }
 
-      // Step 6: Combine local installation data with Registry data
+      // Step 6: Combine local installation data with Registry version data
       const requirements: NodePackRequirements[] = []
 
       for (const [packageName, nodeInfo] of Object.entries(installedNodes)) {
         const typedNodeInfo: ManagerComponents['schemas']['ManagerPackInstalled'] =
           nodeInfo
-        const registryData = registryMap.get(packageName)
+        const versionData = versionDataMap.get(packageName)
 
-        if (registryData) {
-          console.log(
-            `[ConflictDetection] Processing ${packageName} with Registry data`
-          )
-
-          // Combine local installation data with Registry data
+        if (versionData) {
+          // Combine local installation data with version-specific Registry data
           const requirement: NodePackRequirements = {
             // Basic package info
             package_id: packageName,
-            package_name: registryData.name || packageName,
+            package_name: packageName, // We don't need to fetch node info separately
             installed_version: typedNodeInfo.ver || 'unknown',
             is_enabled: typedNodeInfo.enabled,
 
-            // Registry compatibility data
-            supported_comfyui_version: registryData.supported_comfyui_version,
+            // Version-specific compatibility data (실제 데이터!)
+            supported_comfyui_version: versionData.supported_comfyui_version,
             supported_comfyui_frontend_version:
-              registryData.supported_comfyui_frontend_version,
-            supported_os: registryData.supported_os as SupportedOS[],
+              versionData.supported_comfyui_frontend_version,
+            supported_os: versionData.supported_os as SupportedOS[],
             supported_accelerators:
-              registryData.supported_accelerators as SupportedAccelerator[],
-            dependencies: [], // Note: Registry Node doesn't have dependencies, only NodeVersion does
+              versionData.supported_accelerators as SupportedAccelerator[],
+            dependencies: versionData.dependencies || [],
 
             // Status information
-            registry_status: registryData.status,
-            version_status: undefined, // We'd need to fetch specific version data for this
+            registry_status: undefined, // Node status - not critical for conflict detection
+            version_status: versionData.status,
             is_banned:
-              registryData.status === 'NodeStatusBanned' ||
+              versionData.status === 'NodeVersionStatusBanned' ||
               !typedNodeInfo.enabled,
             ban_reason:
-              registryData.status === 'NodeStatusBanned'
-                ? 'Package is banned in Registry'
+              versionData.status === 'NodeVersionStatusBanned'
+                ? 'Version is banned in Registry'
                 : !typedNodeInfo.enabled
                   ? 'Package is disabled locally'
                   : undefined,
@@ -272,13 +275,6 @@ export function useConflictDetection() {
           }
 
           requirements.push(requirement)
-
-          console.log(`[ConflictDetection] Processed ${packageName}:`, {
-            hasRegistryData: true,
-            supportedOS: requirement.supported_os,
-            supportedAccelerators: requirement.supported_accelerators,
-            isBanned: requirement.is_banned
-          })
         } else {
           console.warn(
             `[ConflictDetection] No Registry data found for ${packageName}, using fallback`
@@ -301,10 +297,6 @@ export function useConflictDetection() {
           requirements.push(fallbackRequirement)
         }
       }
-
-      console.log(
-        `[ConflictDetection] Successfully processed ${requirements.length} packages`
-      )
 
       return requirements
     } catch (error) {
@@ -433,8 +425,6 @@ export function useConflictDetection() {
     const startTime = Date.now()
 
     try {
-      console.log('[ConflictDetection] Starting conflict detection...')
-
       // 1. Collect system environment information
       const sysEnv = await detectSystemEnvironment()
 
@@ -502,8 +492,6 @@ export function useConflictDetection() {
    * Async function that doesn't block UI setup.
    */
   async function initializeConflictDetection(): Promise<void> {
-    console.log('[ConflictDetection] Starting initialization...')
-
     try {
       await performConflictDetection()
     } catch (error) {
@@ -575,6 +563,7 @@ async function fetchFrontendVersion(): Promise<string> {
 
 /**
  * Detects system architecture from user agent.
+ * Note: Browser architecture detection has limitations and may not be 100% accurate.
  * @returns Architecture string
  */
 function getArchitecture(): string {
@@ -587,16 +576,64 @@ function getArchitecture(): string {
 }
 
 /**
- * Detects operating system from platform string.
- * @param platform Platform string from navigator
+ * Detects operating system from system stats OS string.
+ * @param systemOS OS string from system stats API
  * @returns Operating system type
  */
-function detectOS(platform: string): SupportedOS {
-  const p = platform.toLowerCase()
-  if (p.includes('darwin') || p.includes('mac')) return 'macos'
-  if (p.includes('linux')) return 'linux'
-  if (p.includes('win')) return 'windows'
+function detectOSFromSystemStats(systemOS: string): SupportedOS {
+  const os = systemOS.toLowerCase()
+  if (os.includes('darwin') || os.includes('mac')) return 'macos'
+  if (os.includes('linux')) return 'linux'
+  if (os.includes('win')) return 'windows'
   return 'any'
+}
+
+/**
+ * Extracts architecture information from system stats.
+ * @param systemStats System stats data from API
+ * @returns Architecture string
+ */
+function extractArchitectureFromSystemStats(
+  systemStats: SystemStats | null
+): string {
+  try {
+    if (systemStats?.devices && systemStats.devices.length > 0) {
+      // Check device names for architecture hints
+      for (const device of systemStats.devices) {
+        const deviceName = device.name.toLowerCase()
+
+        // Apple Silicon detection
+        if (
+          deviceName.includes('apple m1') ||
+          deviceName.includes('apple m2') ||
+          deviceName.includes('apple m3') ||
+          deviceName.includes('apple m4')
+        ) {
+          return 'arm64'
+        }
+
+        // Intel/AMD detection
+        if (
+          deviceName.includes('intel') ||
+          deviceName.includes('amd') ||
+          deviceName.includes('nvidia') ||
+          deviceName.includes('geforce') ||
+          deviceName.includes('radeon')
+        ) {
+          return 'x64'
+        }
+      }
+    }
+
+    // Fallback to basic User-Agent detection if system stats don't provide clear info
+    return getArchitecture()
+  } catch (error) {
+    console.warn(
+      '[ConflictDetection] Failed to extract architecture from system stats:',
+      error
+    )
+    return getArchitecture()
+  }
 }
 
 /**
@@ -681,13 +718,13 @@ function checkVersionStringConflict(
   try {
     // Clean the current version (remove 'v' prefix if present)
     const cleanCurrent = semver.clean(currentVersion) || currentVersion
-    
+
     // Check if the current version satisfies the supported version range
     if (!isVersionCompatible(cleanCurrent, supportedVersion)) {
       // Parse the version requirement for better error messages
       let description = `${type} version incompatible`
       let resolutionSteps: string[] = []
-      
+
       if (supportedVersion.startsWith('>=')) {
         const minVersion = supportedVersion.substring(2).trim()
         description = `${type} version too old`
@@ -709,7 +746,10 @@ function checkVersionStringConflict(
           'Check which version ranges are supported',
           `Supported: ${supportedVersion}`
         ]
-      } else if (supportedVersion.startsWith('^') || supportedVersion.startsWith('~')) {
+      } else if (
+        supportedVersion.startsWith('^') ||
+        supportedVersion.startsWith('~')
+      ) {
         // Caret or tilde ranges
         description = `${type} version outside compatible range`
         resolutionSteps = [
@@ -724,7 +764,7 @@ function checkVersionStringConflict(
           'Check if your version is compatible'
         ]
       }
-      
+
       return {
         type,
         severity: 'warning',
@@ -734,7 +774,7 @@ function checkVersionStringConflict(
         resolution_steps: resolutionSteps
       }
     }
-    
+
     // No conflict detected
     return null
   } catch (error) {
@@ -857,12 +897,28 @@ function generateSummary(
     security_pending: 0
   }
 
+  const conflictsByTypeDetails: Record<ConflictType, string[]> = {
+    comfyui_version: [],
+    frontend_version: [],
+    python_version: [],
+    os: [],
+    accelerator: [],
+    banned: [],
+    security_pending: []
+  }
+
   let bannedCount = 0
   let securityPendingCount = 0
 
   results.forEach((result) => {
     result.conflicts.forEach((conflict) => {
       conflictsByType[conflict.type]++
+
+      // 해당 충돌 타입에 노드 ID 추가 (중복 방지)
+      if (!conflictsByTypeDetails[conflict.type].includes(result.package_id)) {
+        conflictsByTypeDetails[conflict.type].push(result.package_id)
+      }
+
       if (conflict.type === 'banned') bannedCount++
       if (conflict.type === 'security_pending') securityPendingCount++
     })
@@ -874,7 +930,7 @@ function generateSummary(
     conflicted_packages: results.filter((r) => r.has_conflict).length,
     banned_packages: bannedCount,
     security_pending_packages: securityPendingCount,
-    conflicts_by_type: conflictsByType,
+    conflicts_by_type_details: conflictsByTypeDetails,
     last_check_timestamp: new Date().toISOString(),
     check_duration_ms: durationMs
   }
@@ -891,14 +947,14 @@ function getEmptySummary(): ConflictDetectionSummary {
     conflicted_packages: 0,
     banned_packages: 0,
     security_pending_packages: 0,
-    conflicts_by_type: {
-      comfyui_version: 0,
-      frontend_version: 0,
-      python_version: 0,
-      os: 0,
-      accelerator: 0,
-      banned: 0,
-      security_pending: 0
+    conflicts_by_type_details: {
+      comfyui_version: [],
+      frontend_version: [],
+      python_version: [],
+      os: [],
+      accelerator: [],
+      banned: [],
+      security_pending: []
     },
     last_check_timestamp: new Date().toISOString(),
     check_duration_ms: 0
@@ -915,13 +971,13 @@ function isVersionCompatible(current: string, versionRange: string): boolean {
   try {
     // Clean the current version string (remove any prefixes like 'v')
     const cleanCurrent = semver.clean(current) || current
-    
+
     // Handle simple version strings without operators
     if (!versionRange.match(/[<>=~^]/)) {
       // If no operator, assume exact match
       return semver.eq(cleanCurrent, versionRange)
     }
-    
+
     // Use semver to check if current version satisfies the range
     return semver.satisfies(cleanCurrent, versionRange)
   } catch (error) {

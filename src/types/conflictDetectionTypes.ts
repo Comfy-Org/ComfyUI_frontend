@@ -199,10 +199,8 @@ export interface ConflictDetectionSummary {
   banned_packages: number
   /** @description Number of packages pending security verification */
   security_pending_packages: number
-
-  /** @description Breakdown of conflicts by type */
-  conflicts_by_type: Record<ConflictType, number>
-
+  /** @description Node IDs grouped by conflict type */
+  conflicts_by_type_details: Record<ConflictType, string[]>
   /** @description Timestamp of the last conflict check */
   last_check_timestamp: string
   /** @description Duration of the conflict check in milliseconds */
