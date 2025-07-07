@@ -23,15 +23,15 @@ export interface SettingTreeNode extends TreeNode {
 
 function tryMigrateDeprecatedValue(
   setting: SettingParams | undefined,
-  value: any
+  value: unknown
 ) {
   return setting?.migrateDeprecatedValue?.(value) ?? value
 }
 
 function onChange(
   setting: SettingParams | undefined,
-  newValue: any,
-  oldValue: any
+  newValue: unknown,
+  oldValue: unknown
 ) {
   if (setting?.onChange) {
     setting.onChange(newValue, oldValue)
