@@ -101,11 +101,12 @@ export const useSettingStore = defineStore('setting', () => {
     param: SettingParams | undefined
   ): Settings[K] | null {
     // get default versioned value, skipping if the key is 'Comfy.InstalledVersion' to prevent infinite loop
-    if (param?.defaultsByInstallVersion && key !== 'Comfy.InstalledVersion') {
+    const defaultsByInstallVersion = param?.defaultsByInstallVersion
+    if (defaultsByInstallVersion && key !== 'Comfy.InstalledVersion') {
       const installedVersion = get('Comfy.InstalledVersion')
 
       if (installedVersion) {
-        const sortedVersions = Object.keys(param.defaultsByInstallVersion).sort(
+        const sortedVersions = Object.keys(defaultsByInstallVersion).sort(
           (a, b) => compareVersions(b, a)
         )
 
@@ -116,7 +117,7 @@ export const useSettingStore = defineStore('setting', () => {
           }
 
           if (compareVersions(installedVersion, version) >= 0) {
-            const versionedDefault = param.defaultsByInstallVersion[version]
+            const versionedDefault = defaultsByInstallVersion[version]
             return typeof versionedDefault === 'function'
               ? versionedDefault()
               : versionedDefault
