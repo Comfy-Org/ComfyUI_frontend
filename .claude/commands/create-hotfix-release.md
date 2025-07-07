@@ -26,14 +26,15 @@ Before starting, ensure:
 
 ### Step 1: Identify Target Core Branch
 
-1. Fetch the current ComfyUI requirements.txt from main branch:
+1. Fetch the current ComfyUI requirements.txt from master branch:
    ```bash
-   curl -s https://raw.githubusercontent.com/comfyanonymous/ComfyUI/main/requirements.txt
+   curl -s https://raw.githubusercontent.com/comfyanonymous/ComfyUI/master/requirements.txt | grep "comfyui-frontend-package"
    ```
-2. Extract the `comfyui_frontend_package` version (e.g., `1.23.4`)
-3. Determine core branch: `core/<major>.<minor>` (e.g., `core/1.23`)
-4. Verify the core branch exists in origin
-5. **CONFIRMATION REQUIRED**: Is `core/X.Y` the correct target branch?
+2. Extract the `comfyui-frontend-package` version (e.g., `comfyui-frontend-package==1.23.4`)
+3. Parse version to get major.minor (e.g., `1.23.4` → `1.23`)
+4. Determine core branch: `core/<major>.<minor>` (e.g., `core/1.23`)
+5. Verify the core branch exists: `git ls-remote origin refs/heads/core/*`
+6. **CONFIRMATION REQUIRED**: Is `core/X.Y` the correct target branch?
 
 ### Step 2: Parse and Validate Arguments
 
