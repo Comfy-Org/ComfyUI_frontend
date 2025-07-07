@@ -128,3 +128,29 @@ onMounted(() => {
   border-left: 1px solid var(--border-color);
 }
 </style>
+
+<style>
+.comfyui-menu-right::-webkit-scrollbar {
+  max-height: 5px;
+}
+
+.comfyui-menu-right:hover::-webkit-scrollbar {
+  cursor: grab;
+}
+
+.comfyui-menu-right::-webkit-scrollbar-track {
+  background: color-mix(in srgb, var(--border-color) 60%, transparent);
+}
+
+.comfyui-menu-right:hover::-webkit-scrollbar-track {
+  background: color-mix(in srgb, var(--border-color) 80%, transparent);
+}
+
+.comfyui-menu-right::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--fg-color) 30%, transparent);
+}
+
+.comfyui-menu-right::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--fg-color) 80%, transparent);
+}
+</style>
