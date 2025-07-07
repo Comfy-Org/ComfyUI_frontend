@@ -78,12 +78,28 @@ export const useSettingStore = defineStore('setting', () => {
   }
 
   /**
+   * Gets the setting params, asserting the type that is intentionally left off
+   * of {@link settingsById}.
+   * @param key The key of the setting to get.
+   * @returns The setting.
+   */
+  function getSettingById<K extends keyof Settings>(
+    key: K
+  ): SettingParams<Settings[K]> | undefined {
+    return settingsById.value[key] as SettingParams<Settings[K]> | undefined
+  }
+
+  /**
    * Get the default value of a setting.
    * @param key - The key of the setting to get.
    * @returns The default value of the setting.
    */
   function getDefaultValue<K extends keyof Settings>(key: K): Settings[K] {
-    const param = settingsById.value[key]
+    // Assertion: settingsById is not typed.
+    const param = getSettingById(key)
+
+    // @ts-expect-error `undefined` is not valid
+    if (param === undefined) return
 
     const versionedDefault = getVersionedDefaultValue(key, param)
 
@@ -91,9 +107,9 @@ export const useSettingStore = defineStore('setting', () => {
       return versionedDefault
     }
 
-    return typeof param?.defaultValue === 'function'
+    return typeof param.defaultValue === 'function'
       ? param.defaultValue()
-      : param?.defaultValue
+      : param.defaultValue
   }
 
   function getVersionedDefaultValue<K extends keyof Settings>(
