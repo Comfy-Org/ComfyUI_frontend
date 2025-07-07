@@ -4,6 +4,7 @@ import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { useNodeCompatibilityStore } from '@/stores/nodeCompatibilityStore'
 import type { components } from '@/types/comfyRegistryTypes'
 import type {
+  ConflictDetail,
   ConflictType,
   SupportedAccelerator,
   SupportedOS,
@@ -214,14 +215,8 @@ export function useNodeCompatibilityService() {
   async function detectPackageConflicts(
     registryData: components['schemas']['Node'],
     systemEnv: SystemEnvironment
-  ): Promise<
-    Array<{ type: ConflictType; severity: string; description: string }>
-  > {
-    const conflicts: Array<{
-      type: ConflictType
-      severity: string
-      description: string
-    }> = []
+  ): Promise<ConflictDetail[]> {
+    const conflicts: ConflictDetail[] = []
 
     // ComfyUI version check
     if (registryData.supported_comfyui_version) {
@@ -308,12 +303,14 @@ function checkVersionConflict(
   type: ConflictType,
   currentVersion: string,
   supportedVersion: string
-): { type: ConflictType; severity: string; description: string } | null {
+): ConflictDetail | null {
   if (currentVersion === 'unknown') {
     return {
       type,
       severity: 'warning',
-      description: `Cannot verify ${type} - current version unknown`
+      description: `Cannot verify ${type} - current version unknown`,
+      current_value: currentVersion,
+      required_value: supportedVersion || 'unknown'
     }
   }
 
@@ -331,14 +328,18 @@ function checkVersionConflict(
       return {
         type,
         severity: 'error',
-        description: `${type} incompatible: requires ${supportedVersion}, current: ${currentVersion}`
+        description: `${type} incompatible: requires ${supportedVersion}, current: ${currentVersion}`,
+        current_value: currentVersion,
+        required_value: supportedVersion
       }
     }
   } else if (currentVersion !== supportedVersion) {
     return {
       type,
       severity: 'error',
-      description: `${type} mismatch: requires ${supportedVersion}, current: ${currentVersion}`
+      description: `${type} mismatch: requires ${supportedVersion}, current: ${currentVersion}`,
+      current_value: currentVersion,
+      required_value: supportedVersion
     }
   }
 
@@ -348,7 +349,7 @@ function checkVersionConflict(
 function checkOSConflict(
   supportedOS: SupportedOS[],
   currentOS: SupportedOS
-): { type: ConflictType; severity: string; description: string } | null {
+): ConflictDetail | null {
   if (supportedOS.includes('any') || supportedOS.includes(currentOS)) {
     return null
   }
@@ -356,14 +357,16 @@ function checkOSConflict(
   return {
     type: 'os',
     severity: 'error',
-    description: `Unsupported OS: requires ${supportedOS.join(', ')}, current: ${currentOS}`
+    description: `Unsupported OS: requires ${supportedOS.join(', ')}, current: ${currentOS}`,
+    current_value: currentOS,
+    required_value: supportedOS.join(', ')
   }
 }
 
 function checkAcceleratorConflict(
   supportedAccelerators: SupportedAccelerator[],
   availableAccelerators: SupportedAccelerator[]
-): { type: ConflictType; severity: string; description: string } | null {
+): ConflictDetail | null {
   if (
     supportedAccelerators.includes('any') ||
     supportedAccelerators.some((acc) => availableAccelerators.includes(acc))
@@ -374,6 +377,8 @@ function checkAcceleratorConflict(
   return {
     type: 'accelerator',
     severity: 'error',
-    description: `Required accelerator not available: requires ${supportedAccelerators.join(', ')}, available: ${availableAccelerators.join(', ')}`
+    description: `Required accelerator not available: requires ${supportedAccelerators.join(', ')}, available: ${availableAccelerators.join(', ')}`,
+    current_value: availableAccelerators.join(', '),
+    required_value: supportedAccelerators.join(', ')
   }
 }

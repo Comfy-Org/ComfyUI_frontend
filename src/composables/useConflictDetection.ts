@@ -226,8 +226,8 @@ export function useConflictDetection() {
       const requirements: NodePackRequirements[] = []
 
       for (const [packageName, nodeInfo] of Object.entries(installedNodes)) {
-        const typedNodeInfo =
-          nodeInfo as ManagerComponents['schemas']['ManagerPackInstalled']
+        const typedNodeInfo: ManagerComponents['schemas']['ManagerPackInstalled'] =
+          nodeInfo
         const registryData = registryMap.get(packageName)
 
         if (registryData) {
