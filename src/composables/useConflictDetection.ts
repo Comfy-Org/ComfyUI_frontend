@@ -600,6 +600,10 @@ function extractArchitectureFromSystemStats(
     if (systemStats?.devices && systemStats.devices.length > 0) {
       // Check device names for architecture hints
       for (const device of systemStats.devices) {
+        if (!device?.name || typeof device.name !== 'string') {
+          continue
+        }
+
         const deviceName = device.name.toLowerCase()
 
         // Apple Silicon detection

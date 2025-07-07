@@ -16,8 +16,8 @@ vi.mock('@/services/comfyManagerService', () => ({
   useComfyManagerService: vi.fn()
 }))
 
-vi.mock('@/stores/comfyRegistryStore', () => ({
-  useComfyRegistryStore: vi.fn()
+vi.mock('@/services/comfyRegistryService', () => ({
+  useComfyRegistryService: vi.fn()
 }))
 
 vi.mock('@/stores/systemStatsStore', () => ({
@@ -35,10 +35,8 @@ describe('useConflictDetection with Registry Store', () => {
     listInstalledPacks: vi.fn()
   }
 
-  const mockRegistryStore = {
-    getPacksByIds: {
-      call: vi.fn()
-    }
+  const mockRegistryService = {
+    getPackByVersion: vi.fn()
   }
 
   const mockSystemStatsStore = {
@@ -46,10 +44,12 @@ describe('useConflictDetection with Registry Store', () => {
     systemStats: {
       system: {
         comfyui_version: '0.3.41',
-        python_version: '3.12.11'
+        python_version: '3.12.11',
+        os: 'Darwin'
       },
       devices: [
         {
+          name: 'Apple M1 Pro',
           type: 'mps',
           vram_total: 17179869184
         }
@@ -60,6 +60,27 @@ describe('useConflictDetection with Registry Store', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
 
+    // Reset mock system stats to default state
+    mockSystemStatsStore.systemStats = {
+      system: {
+        comfyui_version: '0.3.41',
+        python_version: '3.12.11',
+        os: 'Darwin'
+      },
+      devices: [
+        {
+          name: 'Apple M1 Pro',
+          type: 'mps',
+          vram_total: 17179869184
+        }
+      ]
+    } as any
+
+    // Reset mock functions
+    mockSystemStatsStore.fetchSystemStats.mockResolvedValue(undefined)
+    mockComfyManagerService.listInstalledPacks.mockReset()
+    mockRegistryService.getPackByVersion.mockReset()
+
     // Mock useComfyManagerService / ComfyManagerService 모킹
     const { useComfyManagerService } = await import(
       '@/services/comfyManagerService'
@@ -68,11 +89,13 @@ describe('useConflictDetection with Registry Store', () => {
       mockComfyManagerService as any
     )
 
-    // Mock useComfyRegistryStore / ComfyRegistryStore 모킹
-    const { useComfyRegistryStore } = await import(
-      '@/stores/comfyRegistryStore'
+    // Mock useComfyRegistryService / ComfyRegistryService 모킹
+    const { useComfyRegistryService } = await import(
+      '@/services/comfyRegistryService'
     )
-    vi.mocked(useComfyRegistryStore).mockReturnValue(mockRegistryStore as any)
+    vi.mocked(useComfyRegistryService).mockReturnValue(
+      mockRegistryService as any
+    )
 
     // Mock useSystemStatsStore / SystemStatsStore 모킹
     const { useSystemStatsStore } = await import('@/stores/systemStatsStore')
@@ -140,7 +163,7 @@ describe('useConflictDetection with Registry Store', () => {
           supported_os: ['windows', 'linux', 'macos'],
           supported_accelerators: ['cuda', 'mps', 'cpu'],
           supported_comfyui_version: '>=0.3.0',
-          status: 'NodeStatusActive'
+          status: 'NodeVersionStatusActive'
         } as components['schemas']['Node'],
         {
           id: 'ComfyUI-TestNode',
@@ -148,7 +171,7 @@ describe('useConflictDetection with Registry Store', () => {
           supported_os: ['windows', 'linux'],
           supported_accelerators: ['cuda'],
           supported_comfyui_version: '>=0.2.0',
-          status: 'NodeStatusBanned'
+          status: 'NodeVersionStatusBanned'
         } as components['schemas']['Node']
       ]
 
@@ -156,8 +179,24 @@ describe('useConflictDetection with Registry Store', () => {
         mockInstalledPacks
       )
 
-      // Mock Registry Store batch call / Registry Store 배치 호출 모킹
-      mockRegistryStore.getPacksByIds.call.mockResolvedValue(mockRegistryPacks)
+      // Mock Registry Service individual calls / Registry Service 개별 호출 모킹
+      mockRegistryService.getPackByVersion.mockImplementation(
+        (packageName: string, version: string) => {
+          const packageData = mockRegistryPacks.find(
+            (p) => p.id === packageName
+          )
+          if (packageData) {
+            return Promise.resolve({
+              ...packageData,
+              supported_comfyui_version: packageData.supported_comfyui_version,
+              supported_os: packageData.supported_os,
+              supported_accelerators: packageData.supported_accelerators,
+              status: packageData.status
+            })
+          }
+          return Promise.resolve(null)
+        }
+      )
 
       const { performConflictDetection } = useConflictDetection()
       const result = await performConflictDetection()
@@ -166,11 +205,17 @@ describe('useConflictDetection with Registry Store', () => {
       expect(result.summary.total_packages).toBe(2)
       expect(result.results).toHaveLength(2)
 
-      // Verify batch call was made with correct package IDs / 올바른 패키지 ID로 배치 호출이 이루어졌는지 확인
-      expect(mockRegistryStore.getPacksByIds.call).toHaveBeenCalledWith([
+      // Verify individual calls were made / 개별 호출이 이루어졌는지 확인
+      expect(mockRegistryService.getPackByVersion).toHaveBeenCalledWith(
         'ComfyUI-Manager',
-        'ComfyUI-TestNode'
-      ])
+        'cb0fa5829d5378e5dddb8e8515b30a3ff20e1471',
+        expect.anything()
+      )
+      expect(mockRegistryService.getPackByVersion).toHaveBeenCalledWith(
+        'ComfyUI-TestNode',
+        '1.0.0',
+        expect.anything()
+      )
 
       // Check that Registry data was properly integrated / Registry 데이터가 제대로 통합되었는지 확인
       const managerNode = result.results.find(
@@ -208,8 +253,8 @@ describe('useConflictDetection with Registry Store', () => {
         mockInstalledPacks
       )
 
-      // Mock Registry Store returning empty array (no packages found) / Registry Store에서 빈 배열 반환 (패키지를 찾을 수 없음) 모킹
-      mockRegistryStore.getPacksByIds.call.mockResolvedValue([])
+      // Mock Registry Service returning null (no packages found) / Registry Service에서 null 반환 (패키지를 찾을 수 없음) 모킹
+      mockRegistryService.getPackByVersion.mockResolvedValue(null)
 
       const { performConflictDetection } = useConflictDetection()
       const result = await performConflictDetection()
@@ -263,15 +308,21 @@ describe('useConflictDetection with Registry Store', () => {
           supported_os: ['windows', 'linux', 'macos'], // Includes current OS / 현재 OS 포함
           supported_accelerators: ['mps', 'cuda', 'cpu'], // Includes current accelerator / 현재 가속기 포함
           supported_comfyui_version: '>=0.3.0', // Compatible with 0.3.41 / 0.3.41과 호환
-          status: 'NodeStatusActive'
+          status: 'NodeVersionStatusActive'
         } as components['schemas']['Node']
       ]
 
       mockComfyManagerService.listInstalledPacks.mockResolvedValue(
         mockInstalledPacks
       )
-      mockRegistryStore.getPacksByIds.call.mockResolvedValue(
-        mockCompatibleRegistryPacks
+      // Mock Registry Service for compatible package
+      mockRegistryService.getPackByVersion.mockImplementation(
+        (packageName: string, version: string) => {
+          const packageData = mockCompatibleRegistryPacks.find(
+            (p) => p.id === packageName
+          )
+          return Promise.resolve(packageData || null)
+        }
       )
 
       const { performConflictDetection } = useConflictDetection()
@@ -302,15 +353,20 @@ describe('useConflictDetection with Registry Store', () => {
           supported_os: ['windows'], // Only Windows, but we're on macOS / Windows만 지원하지만 현재는 macOS
           supported_accelerators: ['mps', 'cuda', 'cpu'],
           supported_comfyui_version: '>=0.3.0',
-          status: 'NodeStatusActive'
+          status: 'NodeVersionStatusActive'
         } as components['schemas']['Node']
       ]
 
       mockComfyManagerService.listInstalledPacks.mockResolvedValue(
         mockInstalledPacks
       )
-      mockRegistryStore.getPacksByIds.call.mockResolvedValue(
-        mockWindowsOnlyRegistryPacks
+      mockRegistryService.getPackByVersion.mockImplementation(
+        (packageName: string, version: string) => {
+          const packageData = mockWindowsOnlyRegistryPacks.find(
+            (p: any) => p.id === packageName
+          )
+          return Promise.resolve(packageData || null)
+        }
       )
 
       const { performConflictDetection } = useConflictDetection()
@@ -350,15 +406,20 @@ describe('useConflictDetection with Registry Store', () => {
           supported_os: ['windows', 'linux', 'macos'],
           supported_accelerators: ['cuda'], // Only CUDA, but we have MPS / CUDA만 지원하지만 현재는 MPS
           supported_comfyui_version: '>=0.3.0',
-          status: 'NodeStatusActive'
+          status: 'NodeVersionStatusActive'
         } as components['schemas']['Node']
       ]
 
       mockComfyManagerService.listInstalledPacks.mockResolvedValue(
         mockInstalledPacks
       )
-      mockRegistryStore.getPacksByIds.call.mockResolvedValue(
-        mockCudaOnlyRegistryPacks
+      mockRegistryService.getPackByVersion.mockImplementation(
+        (packageName: string, version: string) => {
+          const packageData = mockCudaOnlyRegistryPacks.find(
+            (p: any) => p.id === packageName
+          )
+          return Promise.resolve(packageData || null)
+        }
       )
 
       const { performConflictDetection } = useConflictDetection()
@@ -400,15 +461,20 @@ describe('useConflictDetection with Registry Store', () => {
           supported_os: ['windows', 'linux', 'macos'],
           supported_accelerators: ['mps', 'cuda', 'cpu'],
           supported_comfyui_version: '>=0.3.0',
-          status: 'NodeStatusBanned' // Banned in Registry / Registry에서 금지됨
+          status: 'NodeVersionStatusBanned' // Banned in Registry / Registry에서 금지됨
         } as components['schemas']['Node']
       ]
 
       mockComfyManagerService.listInstalledPacks.mockResolvedValue(
         mockInstalledPacks
       )
-      mockRegistryStore.getPacksByIds.call.mockResolvedValue(
-        mockBannedRegistryPacks
+      mockRegistryService.getPackByVersion.mockImplementation(
+        (packageName: string, version: string) => {
+          const packageData = mockBannedRegistryPacks.find(
+            (p: any) => p.id === packageName
+          )
+          return Promise.resolve(packageData || null)
+        }
       )
 
       const { performConflictDetection } = useConflictDetection()
@@ -423,9 +489,7 @@ describe('useConflictDetection with Registry Store', () => {
           expect.objectContaining({
             type: 'banned',
             severity: 'error',
-            description: expect.stringContaining(
-              'Package is banned in Registry'
-            )
+            description: expect.stringContaining('Package is banned')
           })
         ])
       )
@@ -451,15 +515,20 @@ describe('useConflictDetection with Registry Store', () => {
           supported_os: ['windows', 'linux', 'macos'],
           supported_accelerators: ['mps', 'cuda', 'cpu'],
           supported_comfyui_version: '>=0.3.0',
-          status: 'NodeStatusActive' // Active in Registry but disabled locally / Registry에서는 활성이지만 로컬에서 비활성
+          status: 'NodeVersionStatusActive' // Active in Registry but disabled locally / Registry에서는 활성이지만 로컬에서 비활성
         } as components['schemas']['Node']
       ]
 
       mockComfyManagerService.listInstalledPacks.mockResolvedValue(
         mockInstalledPacks
       )
-      mockRegistryStore.getPacksByIds.call.mockResolvedValue(
-        mockActiveRegistryPacks
+      mockRegistryService.getPackByVersion.mockImplementation(
+        (packageName: string, version: string) => {
+          const packageData = mockActiveRegistryPacks.find(
+            (p: any) => p.id === packageName
+          )
+          return Promise.resolve(packageData || null)
+        }
       )
 
       const { performConflictDetection } = useConflictDetection()
@@ -502,15 +571,20 @@ describe('useConflictDetection with Registry Store', () => {
           supported_os: ['windows'], // Only Windows, causing OS conflict / Windows만 지원하여 OS 충돌 발생
           supported_accelerators: ['mps', 'cuda', 'cpu'],
           supported_comfyui_version: '>=0.3.0',
-          status: 'NodeStatusActive'
+          status: 'NodeVersionStatusActive'
         } as components['schemas']['Node']
       ]
 
       mockComfyManagerService.listInstalledPacks.mockResolvedValue(
         mockInstalledPacks
       )
-      mockRegistryStore.getPacksByIds.call.mockResolvedValue(
-        mockConflictedRegistryPacks
+      mockRegistryService.getPackByVersion.mockImplementation(
+        (packageName: string, version: string) => {
+          const packageData = mockConflictedRegistryPacks.find(
+            (p: any) => p.id === packageName
+          )
+          return Promise.resolve(packageData || null)
+        }
       )
 
       const { hasConflicts, performConflictDetection } = useConflictDetection()
@@ -545,15 +619,20 @@ describe('useConflictDetection with Registry Store', () => {
           supported_os: ['windows'], // OS conflict = error / OS 충돌 = 에러
           supported_accelerators: ['cuda'], // Accelerator conflict = error / 가속기 충돌 = 에러
           supported_comfyui_version: '>=0.3.0',
-          status: 'NodeStatusActive'
+          status: 'NodeVersionStatusActive'
         } as components['schemas']['Node']
       ]
 
       mockComfyManagerService.listInstalledPacks.mockResolvedValue(
         mockInstalledPacks
       )
-      mockRegistryStore.getPacksByIds.call.mockResolvedValue(
-        mockErrorRegistryPacks
+      mockRegistryService.getPackByVersion.mockImplementation(
+        (packageName: string, version: string) => {
+          const packageData = mockErrorRegistryPacks.find(
+            (p: any) => p.id === packageName
+          )
+          return Promise.resolve(packageData || null)
+        }
       )
 
       const { criticalConflicts, performConflictDetection } =
@@ -595,7 +674,7 @@ describe('useConflictDetection with Registry Store', () => {
           supported_os: ['windows', 'linux', 'macos'],
           supported_accelerators: ['mps', 'cuda', 'cpu'],
           supported_comfyui_version: '>=0.3.0',
-          status: 'NodeStatusActive'
+          status: 'NodeVersionStatusActive'
         } as components['schemas']['Node'],
         {
           id: 'NormalNode',
@@ -603,14 +682,21 @@ describe('useConflictDetection with Registry Store', () => {
           supported_os: ['windows', 'linux', 'macos'],
           supported_accelerators: ['mps', 'cuda', 'cpu'],
           supported_comfyui_version: '>=0.3.0',
-          status: 'NodeStatusActive'
+          status: 'NodeVersionStatusActive'
         } as components['schemas']['Node']
       ]
 
       mockComfyManagerService.listInstalledPacks.mockResolvedValue(
         mockInstalledPacks
       )
-      mockRegistryStore.getPacksByIds.call.mockResolvedValue(mockRegistryPacks)
+      mockRegistryService.getPackByVersion.mockImplementation(
+        (packageName: string, version: string) => {
+          const packageData = mockRegistryPacks.find(
+            (p: any) => p.id === packageName
+          )
+          return Promise.resolve(packageData || null)
+        }
+      )
 
       const { bannedPackages, performConflictDetection } =
         useConflictDetection()
@@ -631,7 +717,12 @@ describe('useConflictDetection with Registry Store', () => {
       )
       mockSystemStatsStore.systemStats = null
       mockComfyManagerService.listInstalledPacks.mockResolvedValue({})
-      mockRegistryStore.getPacksByIds.call.mockResolvedValue([])
+      mockRegistryService.getPackByVersion.mockImplementation(
+        (packageName: string, version: string) => {
+          const packageData = [].find((p: any) => p.id === packageName)
+          return Promise.resolve(packageData || null)
+        }
+      )
 
       const { performConflictDetection } = useConflictDetection()
       const result = await performConflictDetection()
@@ -684,13 +775,18 @@ describe('useConflictDetection with Registry Store', () => {
           name: 'Package A',
           supported_os: ['windows', 'linux', 'macos'],
           supported_accelerators: ['mps', 'cuda', 'cpu'],
-          status: 'NodeStatusActive'
+          status: 'NodeVersionStatusActive'
         } as components['schemas']['Node']
         // Package-B is missing from Registry results
       ]
 
-      mockRegistryStore.getPacksByIds.call.mockResolvedValue(
-        mockPartialRegistryPacks
+      mockRegistryService.getPackByVersion.mockImplementation(
+        (packageName: string, version: string) => {
+          const packageData = mockPartialRegistryPacks.find(
+            (p: any) => p.id === packageName
+          )
+          return Promise.resolve(packageData || null)
+        }
       )
 
       const { performConflictDetection } = useConflictDetection()
@@ -725,7 +821,7 @@ describe('useConflictDetection with Registry Store', () => {
       mockComfyManagerService.listInstalledPacks.mockRejectedValue(
         new Error('Critical error')
       )
-      mockRegistryStore.getPacksByIds.call.mockRejectedValue(
+      mockRegistryService.getPackByVersion.mockRejectedValue(
         new Error('Critical error')
       )
 
