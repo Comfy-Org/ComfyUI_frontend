@@ -10,6 +10,7 @@ import type { IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import _ from 'lodash'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { reactive } from 'vue'
+
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { useWorkflowValidation } from '@/composables/useWorkflowValidation'
 import { st, t } from '@/i18n'
@@ -359,7 +360,7 @@ export class ComfyApp {
     if (selectedIndex != 0) {
       combinedIndex = selectedIndex + 2
     }
-    
+
     ComfyApp.clipspace = {
       widgets: widgets,
       imgs: imgs,
@@ -381,59 +382,69 @@ export class ComfyApp {
   static pasteFromClipspace(node: LGraphNode) {
     if (ComfyApp.clipspace) {
       // image paste
+      const combinedImgSrc =
+        ComfyApp.clipspace.imgs?.[ComfyApp.clipspace.combinedIndex].src
       if (ComfyApp.clipspace.imgs && node.imgs) {
         if (node.images && ComfyApp.clipspace.images) {
           if (ComfyApp.clipspace['img_paste_mode'] == 'selected') {
             node.images = [
               ComfyApp.clipspace.images[ComfyApp.clipspace['selectedIndex']]
-            ];
+            ]
           } else {
-            node.images = ComfyApp.clipspace.images;
+            node.images = ComfyApp.clipspace.images
           }
-  
-          if (app.nodeOutputs[node.id + ''])
-            app.nodeOutputs[node.id + ''].images = node.images;
+
+          if (app.nodeOutputs[node.id + '']) {
+            app.nodeOutputs[node.id + ''].images = node.images
+          }
         }
-  
+
         if (ComfyApp.clipspace.imgs) {
           // deep-copy to cut link with clipspace
           if (ComfyApp.clipspace['img_paste_mode'] == 'selected') {
-            const img = new Image();
+            const img = new Image()
             img.src =
-              ComfyApp.clipspace.imgs[ComfyApp.clipspace['selectedIndex']].src;
-            node.imgs = [img];
-            node.imageIndex = 0;
+              ComfyApp.clipspace.imgs[ComfyApp.clipspace['selectedIndex']].src
+            node.imgs = [img]
+            node.imageIndex = 0
           } else {
-            const imgs = [];
+            const imgs = []
             for (let i = 0; i < ComfyApp.clipspace.imgs.length; i++) {
-              imgs[i] = new Image();
-              imgs[i].src = ComfyApp.clipspace.imgs[i].src;
-              node.imgs = imgs;
+              imgs[i] = new Image()
+              imgs[i].src = ComfyApp.clipspace.imgs[i].src
+              node.imgs = imgs
             }
           }
         }
       }
-      
+
       // Paste the combined canvas if it exists
-      if (ComfyApp.clipspace.imgs?.[ComfyApp.clipspace.combinedIndex] && node.imgs) {
-        const combinedImg = new Image();
-        combinedImg.src = ComfyApp.clipspace.imgs[ComfyApp.clipspace.combinedIndex].src;
-        node.imgs.push(combinedImg); // Add the combined canvas to the node's images
+      if (
+        ComfyApp.clipspace.imgs?.[ComfyApp.clipspace.combinedIndex] &&
+        node.imgs &&
+        combinedImgSrc
+      ) {
+        const combinedImg = new Image()
+        combinedImg.src = combinedImgSrc
+        node.imgs.push(combinedImg) // Add the combined canvas to the node's images
       }
 
       // Paste the RGB canvas if paintedindex exists
-      if (ComfyApp.clipspace.imgs?.[ComfyApp.clipspace.paintedIndex] && node.imgs) {
-        const paintedImg = new Image();
-        paintedImg.src = ComfyApp.clipspace.imgs[ComfyApp.clipspace.paintedIndex].src;
-        node.imgs.push(paintedImg); // Add the RGB canvas to the node's images
+      if (
+        ComfyApp.clipspace.imgs?.[ComfyApp.clipspace.paintedIndex] &&
+        node.imgs
+      ) {
+        const paintedImg = new Image()
+        paintedImg.src =
+          ComfyApp.clipspace.imgs[ComfyApp.clipspace.paintedIndex].src
+        node.imgs.push(paintedImg) // Add the RGB canvas to the node's images
       }
-      
-  
+
       if (node.widgets) {
         if (ComfyApp.clipspace.images) {
           const clip_image =
-            ComfyApp.clipspace.images[ComfyApp.clipspace['selectedIndex']];
-          const index = node.widgets.findIndex((obj) => obj.name === 'image');
+            ComfyApp.clipspace.images[ComfyApp.clipspace['selectedIndex']]
+          const index = node.widgets.findIndex((obj) => obj.name === 'image')
           if (index >= 0) {
             if (
               node.widgets[index].type != 'image' &&
@@ -443,9 +454,9 @@ export class ComfyApp {
               node.widgets[index].value =
                 (clip_image.subfolder ? clip_image.subfolder + '/' : '') +
                 clip_image.filename +
-                (clip_image.type ? ` [${clip_image.type}]` : '');
+                (clip_image.type ? ` [${clip_image.type}]` : '')
             } else {
-              node.widgets[index].value = clip_image;
+              node.widgets[index].value = clip_image
             }
           }
         }
@@ -472,11 +483,15 @@ export class ComfyApp {
                 prop.callback?.(value)
               }
             }
-          });
+          })
         }
       }
-  
-      app.graph.setDirtyCanvas(true);
+
+      node.imgs?.forEach((imgEl) => {
+        if (imgEl.src === combinedImgSrc) return
+        imgEl.setAttribute('data-nopreview', 'true')
+      })
+      app.graph.setDirtyCanvas(true)
     }
   }
 

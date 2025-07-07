@@ -823,11 +823,11 @@ class MaskEditorDialog extends ComfyDialog {
 
   //new
   private uiManager!: UIManager
-  
+
   private toolManager!: ToolManager
-  
+
   private panAndZoomManager!: PanAndZoomManager
-  
+
   private brushTool!: BrushTool
   private paintBucketTool!: PaintBucketTool
   private colorSelectTool!: ColorSelectTool
@@ -1079,7 +1079,7 @@ class MaskEditorDialog extends ComfyDialog {
     this.keyboardManager.removeListeners()
 
     const maskUploadStatus = await requestWithRetries(() =>
-      this.uploadMask(refs.maskedImage, formDatas.maskedImage)
+      this.uploadMask(refs.maskedImage, formDatas.maskedImage, 'selectedIndex')
     )
     const paintUploadStatus = await requestWithRetries(() =>
       this.uploadImage(refs.paint, formDatas.paint)
@@ -1097,7 +1097,7 @@ class MaskEditorDialog extends ComfyDialog {
       this.uploadMask(
         refs.paintedMaskedImage,
         formDatas.paintedMaskedImage,
-        false
+        'combinedIndex'
       )
     )
 
@@ -1194,7 +1194,7 @@ class MaskEditorDialog extends ComfyDialog {
   private async uploadMask(
     filepath: Ref,
     formData: FormData,
-    andSaveToClipspace = true,
+    clipspaceLocation: 'selectedIndex' | 'combinedIndex',
     retries = 3
   ) {
     if (retries <= 0) {
@@ -1209,34 +1209,36 @@ class MaskEditorDialog extends ComfyDialog {
       .then((response) => {
         if (!response.ok) {
           console.log('Failed to upload mask:', response)
-          this.uploadMask(filepath, formData, andSaveToClipspace, -1)
+          this.uploadMask(filepath, formData, clipspaceLocation, -1)
         }
       })
       .catch((error) => {
         console.error('Error:', error)
       })
 
-    if (!andSaveToClipspace) {
-      ClipspaceDialog.invalidatePreview()
-      return
-    }
     try {
-      const selectedIndex = ComfyApp.clipspace?.selectedIndex
-      if (ComfyApp.clipspace?.imgs && selectedIndex !== undefined) {
-        // Create and set new image
-        const newImage = new Image()
-        newImage.src = api.apiURL(
-          '/view?' +
-            new URLSearchParams(filepath).toString() +
-            app.getPreviewFormatParam() +
-            app.getRandParam()
-        )
-        ComfyApp.clipspace.imgs[selectedIndex] = newImage
+      const nameOfIndexToSaveTo = (
+        {
+          selectedIndex: 'selectedIndex',
+          combinedIndex: 'combinedIndex'
+        } as const
+      )[clipspaceLocation]
+      if (!nameOfIndexToSaveTo) return
+      const indexToSaveTo = ComfyApp.clipspace?.[nameOfIndexToSaveTo]
+      if (!ComfyApp.clipspace?.imgs || indexToSaveTo === undefined) return
+      // Create and set new image
+      const newImage = new Image()
+      newImage.src = api.apiURL(
+        '/view?' +
+          new URLSearchParams(filepath).toString() +
+          app.getPreviewFormatParam() +
+          app.getRandParam()
+      )
+      ComfyApp.clipspace.imgs[indexToSaveTo] = newImage
 
-        // Update images array if it exists
-        if (ComfyApp.clipspace.images) {
-          ComfyApp.clipspace.images[selectedIndex] = filepath
-        }
+      // Update images array if it exists
+      if (ComfyApp.clipspace.images) {
+        ComfyApp.clipspace.images[indexToSaveTo] = filepath
       }
     } catch (err) {
       console.warn('Failed to update clipspace image:', err)
@@ -1246,7 +1248,6 @@ class MaskEditorDialog extends ComfyDialog {
 }
 
 class CanvasHistory {
-  
   private maskEditor!: MaskEditorDialog
   private messageBroker!: MessageBroker
 
@@ -1620,7 +1621,6 @@ class PaintBucketTool {
 }
 
 class ColorSelectTool {
-  
   private maskEditor!: MaskEditorDialog
   private messageBroker!: MessageBroker
   private width: number | null = null
@@ -2638,16 +2638,16 @@ class UIManager {
   private brushSettingsHTML!: HTMLDivElement
   private paintBucketSettingsHTML!: HTMLDivElement
   private colorSelectSettingsHTML!: HTMLDivElement
-  
+
   private maskOpacitySlider!: HTMLInputElement
   private brushHardnessSlider!: HTMLInputElement
   private brushSizeSlider!: HTMLInputElement
-  
+
   private brushOpacitySlider!: HTMLInputElement
   private sidebarImage!: HTMLImageElement
   private saveButton!: HTMLButtonElement
   private toolPanel!: HTMLDivElement
-  
+
   private sidePanel!: HTMLDivElement
   private pointerZone!: HTMLDivElement
   private canvasBackground!: HTMLDivElement
@@ -5230,7 +5230,7 @@ class MessageBroker {
 
 class KeyboardManager {
   private keysDown: string[] = []
-  
+
   private maskEditor: MaskEditorDialog
   private messageBroker: MessageBroker
 
