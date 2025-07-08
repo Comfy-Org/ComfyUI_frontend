@@ -270,29 +270,42 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
     originalCallback: ((value: unknown) => void) | undefined,
     nodeId: string
   ) => {
+    let updateInProgress = false
+
     return (value: unknown) => {
-      // 1. Update the widget value in LiteGraph (critical for LiteGraph state)
-      // Validate that the value is of an acceptable type
-      if (
-        value !== null &&
-        value !== undefined &&
-        typeof value !== 'string' &&
-        typeof value !== 'number' &&
-        typeof value !== 'boolean' &&
-        typeof value !== 'object'
-      ) {
-        console.warn(`Invalid widget value type: ${typeof value}`)
-        return
-      }
-      widget.value = value
+      // Prevent circular callbacks - bulletproof recursion guard
+      if (updateInProgress) return
+      updateInProgress = true
 
-      // 2. Call the original callback if it exists
-      if (originalCallback) {
-        originalCallback.call(widget, value)
-      }
+      try {
+        // 1. Update the widget value in LiteGraph (critical for LiteGraph state)
+        // Validate that the value is of an acceptable type
+        if (
+          value !== null &&
+          value !== undefined &&
+          typeof value !== 'string' &&
+          typeof value !== 'number' &&
+          typeof value !== 'boolean' &&
+          typeof value !== 'object'
+        ) {
+          console.warn(`Invalid widget value type: ${typeof value}`)
+          updateInProgress = false
+          return
+        }
 
-      // 3. Update Vue state to maintain synchronization
-      updateVueWidgetState(nodeId, widget.name, value)
+        // Always update widget.value to ensure sync
+        widget.value = value
+
+        // 2. Call the original callback if it exists
+        if (originalCallback) {
+          originalCallback.call(widget, value)
+        }
+
+        // 3. Update Vue state to maintain synchronization
+        updateVueWidgetState(nodeId, widget.name, value)
+      } finally {
+        updateInProgress = false
+      }
     }
   }
 
