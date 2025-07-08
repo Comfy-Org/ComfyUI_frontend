@@ -748,11 +748,28 @@ enum BrushShape {
 }
 
 enum Tools {
-  Pen = 'pen',
+  MaskPen = 'pen',
+  PaintPen = 'rgbPaint',
   Eraser = 'eraser',
-  PaintBucket = 'paintBucket',
-  ColorSelect = 'colorSelect',
-  RGBPaint = 'rgbPaint'
+  MaskBucket = 'paintBucket',
+  MaskColorFill = 'colorSelect'
+}
+
+const allTools = [
+  Tools.MaskPen,
+  Tools.PaintPen,
+  Tools.Eraser,
+  Tools.MaskBucket,
+  Tools.MaskColorFill
+]
+
+const allImageLayers = ['mask', 'rgb'] as const
+type ImageLayer = (typeof allImageLayers)[number]
+
+interface ToolInternalSettings {
+  container: HTMLElement
+  cursor?: string
+  newActiveLayerOnSet?: ImageLayer
 }
 
 enum CompositionOperation {
@@ -2087,7 +2104,7 @@ class BrushTool {
   messageBroker: MessageBroker
 
   private rgbColor: string = '#FF0000' // Default color
-  private activeLayer: 'mask' | 'rgb' = 'mask'
+  private activeLayer: ImageLayer = 'mask'
 
   constructor(maskEditor: MaskEditorDialog) {
     this.maskEditor = maskEditor
@@ -2134,7 +2151,7 @@ class BrushTool {
     )
     this.messageBroker.subscribe(
       'setActiveLayer',
-      (layer: 'mask' | 'rgb') => (this.activeLayer = layer)
+      (layer: ImageLayer) => (this.activeLayer = layer)
     )
     this.messageBroker.subscribe(
       'setBrushSmoothingPrecision',
@@ -2224,7 +2241,11 @@ class BrushTool {
     }
 
     // Only check for line drawing if using the Pen tool
-    if (currentTool === Tools.Pen && event.shiftKey && this.lineStartPoint) {
+    if (
+      currentTool === Tools.MaskPen &&
+      event.shiftKey &&
+      this.lineStartPoint
+    ) {
       this.isDrawingLine = true
       this.drawLine(this.lineStartPoint, coords_canvas, compositionOp)
     } else {
@@ -2468,7 +2489,7 @@ class BrushTool {
     const maskColor = await this.messageBroker.pull('getMaskColor')
     if (
       this.activeLayer === 'rgb' &&
-      (currentTool === Tools.Eraser || currentTool === Tools.RGBPaint)
+      (currentTool === Tools.Eraser || currentTool === Tools.PaintPen)
     ) {
       // Handle RGB painting
       gradient = rgbCtx.createRadialGradient(x, y, 0, x, y, extendedSize)
@@ -2482,7 +2503,7 @@ class BrushTool {
       rgbCtx.fill()
     } else if (
       this.activeLayer === 'mask' &&
-      (currentTool === Tools.Eraser || currentTool === Tools.Pen)
+      (currentTool === Tools.Eraser || currentTool === Tools.MaskPen)
     ) {
       // Handle mask drawing/erasing
       gradient = maskCtx.createRadialGradient(x, y, 0, x, y, extendedSize)
@@ -3197,6 +3218,31 @@ class UIManager {
     return color_select_settings_container
   }
 
+  activeLayer: 'mask' | 'rgb' = 'mask'
+  layerButtons: Record<ImageLayer, HTMLButtonElement> = {
+    mask: document.createElement('button'),
+    rgb: document.createElement('button')
+  }
+  updateButtonsVisibility() {
+    allImageLayers.forEach((layer) => {
+      this.layerButtons[layer].style.display = 'block'
+    })
+    this.layerButtons[this.activeLayer].style.display = 'none'
+  }
+  async setActiveLayer(layer: 'mask' | 'rgb') {
+    this.messageBroker.publish('setActiveLayer', layer)
+    this.activeLayer = layer
+    this.updateButtonsVisibility()
+    const currentTool = await this.messageBroker.pull('currentTool')
+    const maskOnlyTools = [Tools.MaskPen, Tools.MaskBucket, Tools.MaskColorFill]
+    if (maskOnlyTools.includes(currentTool) && layer === 'rgb') {
+      this.setToolTo(Tools.PaintPen)
+    }
+    if (currentTool === Tools.PaintPen && layer === 'mask') {
+      this.setToolTo(Tools.MaskPen)
+    }
+  }
+
   private async createImageLayerSettings() {
     const accentColor = this.darkMode
       ? 'maskEditor_accent_bg_dark'
@@ -3207,38 +3253,22 @@ class UIManager {
     const image_layer_settings_title = this.createHeadline(
       t('maskEditor.Layers')
     )
-    var activeLayer: 'mask' | 'rgb' = 'mask'
 
     // Add a new container for layer selection
     const layer_selection_container = this.createContainer(false)
     layer_selection_container.classList.add(accentColor)
     layer_selection_container.classList.add('maskEditor_layerRow')
 
-    const mask_layer_button = document.createElement('button')
-    mask_layer_button.innerText = 'Activate Mask Layer'
-    mask_layer_button.addEventListener('click', () => {
-      this.messageBroker.publish('setActiveLayer', 'mask')
-      activeLayer = 'mask'
-      updateButtons()
+    this.layerButtons.mask.innerText = 'Activate Mask Layer'
+    this.layerButtons.mask.addEventListener('click', async () => {
+      this.setActiveLayer('mask')
     })
 
-    const rgb_layer_button = document.createElement('button')
-    rgb_layer_button.innerText = 'Activate Paint Layer'
-    rgb_layer_button.addEventListener('click', () => {
-      this.messageBroker.publish('setActiveLayer', 'rgb')
-      activeLayer = 'rgb'
-      updateButtons()
+    this.layerButtons.rgb.innerText = 'Activate Paint Layer'
+    this.layerButtons.rgb.addEventListener('click', async () => {
+      this.setActiveLayer('rgb')
     })
-
-    function updateButtons() {
-      if (activeLayer === 'mask') {
-        mask_layer_button.style.display = 'none'
-        rgb_layer_button.style.display = 'block'
-      } else {
-        mask_layer_button.style.display = 'block'
-        rgb_layer_button.style.display = 'none'
-      }
-    }
+    this.setActiveLayer('mask')
 
     //layer_selection_container.appendChild(mask_layer_button);
     //layer_selection_container.appendChild(rgb_layer_button);
@@ -3360,7 +3390,7 @@ class UIManager {
 
     image_layer_container.appendChild(image_layer_visibility_checkbox)
     image_layer_container.appendChild(image_layer_image_container)
-    image_layer_container.appendChild(mask_layer_button)
+    image_layer_container.appendChild(this.layerButtons.mask)
 
     // Add RGB layer controls similar to Image layer
     const rgbLayerContainer = this.createContainer(false)
@@ -3393,7 +3423,7 @@ class UIManager {
     `
     rgbLayerContainer.appendChild(rgbLayerContainer_checkbox)
     rgbLayerContainer.appendChild(rgb_layer_image_container)
-    rgbLayerContainer.appendChild(rgb_layer_button)
+    rgbLayerContainer.appendChild(this.layerButtons.rgb)
 
     image_layer_settings_container.appendChild(image_layer_settings_title)
     image_layer_settings_container.appendChild(mask_layer_title)
@@ -3638,6 +3668,55 @@ class UIManager {
     return top_bar
   }
 
+  toolElements: HTMLElement[] = []
+  toolSettings: Record<Tools, ToolInternalSettings> = {
+    [Tools.MaskPen]: {
+      container: document.createElement('div'),
+      newActiveLayerOnSet: 'mask'
+    },
+    [Tools.Eraser]: {
+      container: document.createElement('div')
+    },
+    [Tools.PaintPen]: {
+      container: document.createElement('div'),
+      newActiveLayerOnSet: 'rgb'
+    },
+    [Tools.MaskBucket]: {
+      container: document.createElement('div'),
+      cursor: "url('/cursor/paintBucket.png') 30 25, auto",
+      newActiveLayerOnSet: 'mask'
+    },
+    [Tools.MaskColorFill]: {
+      container: document.createElement('div'),
+      cursor: "url('/cursor/colorSelect.png') 15 25, auto",
+      newActiveLayerOnSet: 'mask'
+    }
+  }
+
+  setToolTo(tool: Tools) {
+    this.messageBroker.publish('setTool', tool)
+    for (let toolElement of this.toolElements) {
+      if (toolElement != this.toolSettings[tool].container) {
+        toolElement.classList.remove('maskEditor_toolPanelContainerSelected')
+      } else {
+        toolElement.classList.add('maskEditor_toolPanelContainerSelected')
+        this.brushSettingsHTML.style.display = 'flex'
+        this.colorSelectSettingsHTML.style.display = 'none'
+        this.paintBucketSettingsHTML.style.display = 'none'
+      }
+    }
+    this.messageBroker.publish('setTool', tool)
+    const newActiveLayer = this.toolSettings[tool].newActiveLayerOnSet
+    if (newActiveLayer) {
+      this.setActiveLayer(newActiveLayer)
+    }
+    const cursor = this.toolSettings[tool].cursor
+    this.pointerZone.style.cursor = cursor ?? 'none'
+    if (cursor) {
+      this.brush.style.opacity = '0'
+    }
+  }
+
   private createToolPanel() {
     var tool_panel = document.createElement('div')
     tool_panel.id = 'maskEditor_toolPanel'
@@ -3646,234 +3725,54 @@ class UIManager {
       ? 'maskEditor_toolPanelContainerDark'
       : 'maskEditor_toolPanelContainerLight'
 
-    var toolElements: HTMLElement[] = []
+    this.toolElements = []
+    // mask pen tool
+    const setupToolContainer = (tool: Tools) => {
+      this.toolSettings[tool].container = document.createElement('div')
+      this.toolSettings[tool].container.classList.add(
+        'maskEditor_toolPanelContainer'
+      )
+      if (tool == Tools.MaskPen)
+        this.toolSettings[tool].container.classList.add(
+          'maskEditor_toolPanelContainerSelected'
+        )
+      this.toolSettings[tool].container.classList.add(toolPanelHoverAccent)
+      this.toolSettings[tool].container.innerHTML = iconsHtml[tool]
+      this.toolElements.push(this.toolSettings[tool].container)
+      this.toolSettings[tool].container.addEventListener('click', () => {
+        this.setToolTo(tool)
+      })
+      const activeIndicator = document.createElement('div')
+      activeIndicator.classList.add('maskEditor_toolPanelIndicator')
+      this.toolSettings[tool].container.appendChild(activeIndicator)
+      tool_panel.appendChild(this.toolSettings[tool].container)
+    }
+    allTools.forEach(setupToolContainer)
 
-    //brush tool
+    const setupZoomIndicatorContainer = () => {
+      var toolPanel_zoomIndicator = document.createElement('div')
+      toolPanel_zoomIndicator.classList.add('maskEditor_toolPanelZoomIndicator')
+      toolPanel_zoomIndicator.classList.add(toolPanelHoverAccent)
 
-    var toolPanel_brushToolContainer = document.createElement('div')
-    toolPanel_brushToolContainer.classList.add('maskEditor_toolPanelContainer')
-    toolPanel_brushToolContainer.classList.add(
-      'maskEditor_toolPanelContainerSelected'
-    )
-    toolPanel_brushToolContainer.classList.add(toolPanelHoverAccent)
-    toolPanel_brushToolContainer.innerHTML = `
-    <svg viewBox="0 0 44 44">
-      <path class="cls-1" d="M10.97,15.98v14.04c0,.825.675,1.5,1.5,1.5h23.07c.825,0,1.5-.675,1.5-1.5V15.98c0-.825-.675-1.5-1.5-1.5H12.47c-.825,0-1.5.675-1.5,1.5ZM25.79,28.16c-4.365,1.41-8.355-2.58-6.945-6.945.51-1.575,1.785-2.85,3.36-3.36,4.365-1.41,8.355,2.58,6.945,6.945-.51,1.575-1.785,2.85-3.36,3.36Z"/>
-    </svg>
-    `
-    toolElements.push(toolPanel_brushToolContainer)
+      var toolPanel_zoomText = document.createElement('span')
+      toolPanel_zoomText.id = 'maskEditor_toolPanelZoomText'
+      toolPanel_zoomText.innerText = '100%'
+      this.zoomTextHTML = toolPanel_zoomText
 
-    toolPanel_brushToolContainer.addEventListener('click', () => {
-      //move logic to tool manager
-      this.messageBroker.publish('setTool', Tools.Pen)
-      for (let toolElement of toolElements) {
-        if (toolElement != toolPanel_brushToolContainer) {
-          toolElement.classList.remove('maskEditor_toolPanelContainerSelected')
-        } else {
-          toolElement.classList.add('maskEditor_toolPanelContainerSelected')
-          this.brushSettingsHTML.style.display = 'flex'
-          this.colorSelectSettingsHTML.style.display = 'none'
-          this.paintBucketSettingsHTML.style.display = 'none'
-        }
-      }
-      this.messageBroker.publish('setTool', Tools.Pen)
-      this.messageBroker.publish('setActiveLayer', 'mask')
-      this.pointerZone.style.cursor = 'none'
-    })
+      var toolPanel_DimensionsText = document.createElement('span')
+      toolPanel_DimensionsText.id = 'maskEditor_toolPanelDimensionsText'
+      toolPanel_DimensionsText.innerText = ' '
+      this.dimensionsTextHTML = toolPanel_DimensionsText
 
-    var toolPanel_brushToolIndicator = document.createElement('div')
-    toolPanel_brushToolIndicator.classList.add('maskEditor_toolPanelIndicator')
+      toolPanel_zoomIndicator.appendChild(toolPanel_zoomText)
+      toolPanel_zoomIndicator.appendChild(toolPanel_DimensionsText)
 
-    toolPanel_brushToolContainer.appendChild(toolPanel_brushToolIndicator)
-
-    //eraser tool
-
-    var toolPanel_eraserToolContainer = document.createElement('div')
-    toolPanel_eraserToolContainer.classList.add('maskEditor_toolPanelContainer')
-    toolPanel_eraserToolContainer.classList.add(toolPanelHoverAccent)
-    toolPanel_eraserToolContainer.innerHTML = `
-      <svg viewBox="0 0 44 44">
-        <g>
-          <rect class="cls-2" x="16.68" y="10" width="10.63" height="24" rx="1.16" ry="1.16" transform="translate(22 -9.11) rotate(45)"/>
-          <path class="cls-1" d="M17.27,34.27c-.42,0-.85-.16-1.17-.48l-5.88-5.88c-.31-.31-.48-.73-.48-1.17s.17-.86.48-1.17l15.34-15.34c.62-.62,1.72-.62,2.34,0l5.88,5.88c.65.65.65,1.7,0,2.34l-15.34,15.34c-.32.32-.75.48-1.17.48ZM26.73,10.73c-.18,0-.34.07-.46.19l-15.34,15.34c-.12.12-.19.29-.19.46s.07.34.19.46l5.88,5.88c.26.26.67.26.93,0l15.34-15.34c.26-.26.26-.67,0-.93l-5.88-5.88c-.12-.12-.29-.19-.46-.19Z"/>
-        </g>
-        <path class="cls-3" d="M20.33,11.03h8.32c.64,0,1.16.52,1.16,1.16v15.79h-10.63v-15.79c0-.64.52-1.16,1.16-1.16Z" transform="translate(20.97 -11.61) rotate(45)"/>
-      </svg>
-    `
-    toolElements.push(toolPanel_eraserToolContainer)
-
-    toolPanel_eraserToolContainer.addEventListener('click', () => {
-      //move logic to tool manager
-      this.messageBroker.publish('setTool', Tools.Eraser)
-      for (let toolElement of toolElements) {
-        if (toolElement != toolPanel_eraserToolContainer) {
-          toolElement.classList.remove('maskEditor_toolPanelContainerSelected')
-        } else {
-          toolElement.classList.add('maskEditor_toolPanelContainerSelected')
-          this.brushSettingsHTML.style.display = 'flex'
-          this.colorSelectSettingsHTML.style.display = 'none'
-          this.paintBucketSettingsHTML.style.display = 'none'
-        }
-      }
-      this.messageBroker.publish('setTool', Tools.Eraser)
-      this.pointerZone.style.cursor = 'none'
-    })
-
-    var toolPanel_eraserToolIndicator = document.createElement('div')
-    toolPanel_eraserToolIndicator.classList.add('maskEditor_toolPanelIndicator')
-
-    toolPanel_eraserToolContainer.appendChild(toolPanel_eraserToolIndicator)
-
-    //paint bucket tool
-
-    var toolPanel_paintBucketToolContainer = document.createElement('div')
-    toolPanel_paintBucketToolContainer.classList.add(
-      'maskEditor_toolPanelContainer'
-    )
-    toolPanel_paintBucketToolContainer.classList.add(toolPanelHoverAccent)
-    toolPanel_paintBucketToolContainer.innerHTML = `
-    <svg viewBox="0 0 44 44">
-      <path class="cls-1" d="M33.4,21.76l-11.42,11.41-.04.05c-.61.61-1.6.61-2.21,0l-8.91-8.91c-.61-.61-.61-1.6,0-2.21l.04-.05.3-.29h22.24Z"/>
-      <path class="cls-1" d="M20.83,34.17c-.55,0-1.07-.21-1.46-.6l-8.91-8.91c-.8-.8-.8-2.11,0-2.92l11.31-11.31c.8-.8,2.11-.8,2.92,0l8.91,8.91c.39.39.6.91.6,1.46s-.21,1.07-.6,1.46l-11.31,11.31c-.39.39-.91.6-1.46.6ZM23.24,10.83c-.27,0-.54.1-.75.31l-11.31,11.31c-.41.41-.41,1.09,0,1.5l8.91,8.91c.4.4,1.1.4,1.5,0l11.31-11.31c.2-.2.31-.47.31-.75s-.11-.55-.31-.75l-8.91-8.91c-.21-.21-.48-.31-.75-.31Z"/>
-      <path class="cls-1" d="M34.28,26.85c0,.84-.68,1.52-1.52,1.52s-1.52-.68-1.52-1.52,1.52-2.86,1.52-2.86c0,0,1.52,2.02,1.52,2.86Z"/>
-    </svg>
-    `
-    toolElements.push(toolPanel_paintBucketToolContainer)
-
-    toolPanel_paintBucketToolContainer.addEventListener('click', () => {
-      //move logic to tool manager
-      this.messageBroker.publish('setTool', Tools.PaintBucket)
-      for (let toolElement of toolElements) {
-        if (toolElement != toolPanel_paintBucketToolContainer) {
-          toolElement.classList.remove('maskEditor_toolPanelContainerSelected')
-        } else {
-          toolElement.classList.add('maskEditor_toolPanelContainerSelected')
-          this.brushSettingsHTML.style.display = 'none'
-          this.colorSelectSettingsHTML.style.display = 'none'
-          this.paintBucketSettingsHTML.style.display = 'flex'
-        }
-      }
-      this.messageBroker.publish('setTool', Tools.PaintBucket)
-      this.pointerZone.style.cursor =
-        "url('/cursor/paintBucket.png') 30 25, auto"
-      this.brush.style.opacity = '0'
-    })
-
-    var toolPanel_paintBucketToolIndicator = document.createElement('div')
-    toolPanel_paintBucketToolIndicator.classList.add(
-      'maskEditor_toolPanelIndicator'
-    )
-
-    toolPanel_paintBucketToolContainer.appendChild(
-      toolPanel_paintBucketToolIndicator
-    )
-
-    //color select tool
-
-    var toolPanel_colorSelectToolContainer = document.createElement('div')
-    toolPanel_colorSelectToolContainer.classList.add(
-      'maskEditor_toolPanelContainer'
-    )
-    toolPanel_colorSelectToolContainer.classList.add(toolPanelHoverAccent)
-    toolPanel_colorSelectToolContainer.innerHTML = `
-    <svg viewBox="0 0 44 44">
-      <path class="cls-1" d="M30.29,13.72c-1.09-1.1-2.85-1.09-3.94,0l-2.88,2.88-.75-.75c-.2-.19-.51-.19-.71,0-.19.2-.19.51,0,.71l1.4,1.4-9.59,9.59c-.35.36-.54.82-.54,1.32,0,.14,0,.28.05.41-.05.04-.1.08-.15.13-.39.39-.39,1.01,0,1.4.38.39,1.01.39,1.4,0,.04-.04.08-.09.11-.13.14.04.3.06.45.06.5,0,.97-.19,1.32-.55l9.59-9.59,1.38,1.38c.1.09.22.14.35.14s.26-.05.35-.14c.2-.2.2-.52,0-.71l-.71-.72,2.88-2.89c1.08-1.08,1.08-2.85-.01-3.94ZM19.43,25.82h-2.46l7.15-7.15,1.23,1.23-5.92,5.92Z"/>
-    </svg>
-    `
-    toolElements.push(toolPanel_colorSelectToolContainer)
-    toolPanel_colorSelectToolContainer.addEventListener('click', () => {
-      this.messageBroker.publish('setTool', 'colorSelect')
-      for (let toolElement of toolElements) {
-        if (toolElement != toolPanel_colorSelectToolContainer) {
-          toolElement.classList.remove('maskEditor_toolPanelContainerSelected')
-        } else {
-          toolElement.classList.add('maskEditor_toolPanelContainerSelected')
-          this.brushSettingsHTML.style.display = 'none'
-          this.paintBucketSettingsHTML.style.display = 'none'
-          this.colorSelectSettingsHTML.style.display = 'flex'
-        }
-      }
-      this.messageBroker.publish('setTool', Tools.ColorSelect)
-      this.pointerZone.style.cursor =
-        "url('/cursor/colorSelect.png') 15 25, auto"
-      this.brush.style.opacity = '0'
-    })
-
-    var toolPanel_colorSelectToolIndicator = document.createElement('div')
-    toolPanel_colorSelectToolIndicator.classList.add(
-      'maskEditor_toolPanelIndicator'
-    )
-    toolPanel_colorSelectToolContainer.appendChild(
-      toolPanel_colorSelectToolIndicator
-    )
-
-    //zoom indicator
-    var toolPanel_zoomIndicator = document.createElement('div')
-    toolPanel_zoomIndicator.classList.add('maskEditor_toolPanelZoomIndicator')
-    toolPanel_zoomIndicator.classList.add(toolPanelHoverAccent)
-
-    var toolPanel_zoomText = document.createElement('span')
-    toolPanel_zoomText.id = 'maskEditor_toolPanelZoomText'
-    toolPanel_zoomText.innerText = '100%'
-    this.zoomTextHTML = toolPanel_zoomText
-
-    var toolPanel_DimensionsText = document.createElement('span')
-    toolPanel_DimensionsText.id = 'maskEditor_toolPanelDimensionsText'
-    toolPanel_DimensionsText.innerText = ' '
-    this.dimensionsTextHTML = toolPanel_DimensionsText
-
-    toolPanel_zoomIndicator.appendChild(toolPanel_zoomText)
-    toolPanel_zoomIndicator.appendChild(toolPanel_DimensionsText)
-
-    toolPanel_zoomIndicator.addEventListener('click', () => {
-      this.messageBroker.publish('resetZoom')
-    })
-
-    // RGB Paint Tool
-    var toolPanel_rgbPaintToolContainer = document.createElement('div')
-    toolPanel_rgbPaintToolContainer.classList.add(
-      'maskEditor_toolPanelContainer'
-    )
-    toolPanel_rgbPaintToolContainer.classList.add(toolPanelHoverAccent)
-    toolPanel_rgbPaintToolContainer.innerHTML = `
-      <svg viewBox="0 0 44 44">
-        <path class="cls-1" d="M34,13.93c0,.47-.19.94-.55,1.31l-13.02,13.04c-.09.07-.18.15-.27.22-.07-1.39-1.21-2.48-2.61-2.49.07-.12.16-.24.27-.34l13.04-13.04c.72-.72,1.89-.72,2.6,0,.35.35.55.83.55,1.3Z"/>
-        <path class="cls-1" d="M19.64,29.03c0,4.46-6.46,3.18-9.64,0,3.3-.47,4.75-2.58,7.06-2.58,1.43,0,2.58,1.16,2.58,2.58Z"/>
-      </svg>
-    `
-    toolElements.push(toolPanel_rgbPaintToolContainer)
-
-    toolPanel_rgbPaintToolContainer.addEventListener('click', () => {
-      this.messageBroker.publish('setTool', Tools.RGBPaint)
-      for (let toolElement of toolElements) {
-        if (toolElement != toolPanel_rgbPaintToolContainer) {
-          toolElement.classList.remove('maskEditor_toolPanelContainerSelected')
-        } else {
-          toolElement.classList.add('maskEditor_toolPanelContainerSelected')
-          this.brushSettingsHTML.style.display = 'flex'
-          this.colorSelectSettingsHTML.style.display = 'none'
-          this.paintBucketSettingsHTML.style.display = 'none'
-        }
-      }
-      this.messageBroker.publish('setActiveLayer', 'rgb')
-      this.messageBroker.publish('setTool', Tools.RGBPaint)
-      this.pointerZone.style.cursor = 'none'
-    })
-
-    var toolPanel_rgbPaintToolIndicator = document.createElement('div')
-    toolPanel_rgbPaintToolIndicator.classList.add(
-      'maskEditor_toolPanelIndicator'
-    )
-
-    toolPanel_rgbPaintToolContainer.appendChild(toolPanel_rgbPaintToolIndicator)
-
-    tool_panel.appendChild(toolPanel_brushToolContainer)
-    tool_panel.appendChild(toolPanel_rgbPaintToolContainer)
-    tool_panel.appendChild(toolPanel_eraserToolContainer)
-    tool_panel.appendChild(toolPanel_paintBucketToolContainer)
-    tool_panel.appendChild(toolPanel_colorSelectToolContainer)
-    tool_panel.appendChild(toolPanel_zoomIndicator)
-    tool_panel.appendChild(toolPanel_zoomIndicator)
+      toolPanel_zoomIndicator.addEventListener('click', () => {
+        this.messageBroker.publish('resetZoom')
+      })
+      tool_panel.appendChild(toolPanel_zoomIndicator)
+    }
+    setupZoomIndicatorContainer()
 
     return tool_panel
   }
@@ -3934,7 +3833,7 @@ class UIManager {
 
     // Check which canvas is currently being used for drawing
     const currentTool = await this.messageBroker.pull('currentTool')
-    const isUsingRGBCanvas = currentTool === Tools.RGBPaint
+    const isUsingRGBCanvas = currentTool === Tools.PaintPen
 
     // Use the appropriate canvas rect based on the current tool
     const canvasRect = isUsingRGBCanvas ? rgbCanvasRect : maskCanvasRect
@@ -4333,11 +4232,11 @@ class UIManager {
 
   async updateCursor() {
     const currentTool = await this.messageBroker.pull('currentTool')
-    if (currentTool === Tools.PaintBucket) {
+    if (currentTool === Tools.MaskBucket) {
       this.pointerZone.style.cursor =
         "url('/cursor/paintBucket.png') 30 25, auto"
       this.setBrushOpacity(0)
-    } else if (currentTool === Tools.ColorSelect) {
+    } else if (currentTool === Tools.MaskColorFill) {
       this.pointerZone.style.cursor =
         "url('/cursor/colorSelect.png') 15 25, auto"
       this.setBrushOpacity(0)
@@ -4364,7 +4263,7 @@ class ToolManager {
   messageBroker: MessageBroker
   mouseDownPoint: Point | null = null
 
-  currentTool: Tools = Tools.Pen
+  currentTool: Tools = Tools.MaskPen
   isAdjustingBrush: boolean = false // is user adjusting brush size or hardness with alt + right mouse button
 
   constructor(maskEditor: MaskEditorDialog) {
@@ -4407,7 +4306,7 @@ class ToolManager {
   setTool(tool: Tools) {
     this.currentTool = tool
 
-    if (tool != Tools.ColorSelect) {
+    if (tool != Tools.MaskColorFill) {
       this.messageBroker.publish('clearLastPoint')
     }
   }
@@ -4438,7 +4337,7 @@ class ToolManager {
     }
 
     // RGB painting
-    if (this.currentTool === Tools.RGBPaint && event.button === 0) {
+    if (this.currentTool === Tools.PaintPen && event.button === 0) {
       const offset = { x: event.offsetX, y: event.offsetY }
       const coords_canvas = await this.messageBroker.pull(
         'screenToCanvas',
@@ -4450,14 +4349,14 @@ class ToolManager {
     }
 
     // RGB painting
-    if (this.currentTool === Tools.RGBPaint && event.buttons === 1) {
+    if (this.currentTool === Tools.PaintPen && event.buttons === 1) {
       this.messageBroker.publish('draw', event)
       // this.messageBroker.publish('saveState')
       return
     }
 
     //paint bucket
-    if (this.currentTool === Tools.PaintBucket && event.button === 0) {
+    if (this.currentTool === Tools.MaskBucket && event.button === 0) {
       const offset = { x: event.offsetX, y: event.offsetY }
       const coords_canvas = await this.messageBroker.pull(
         'screenToCanvas',
@@ -4468,7 +4367,7 @@ class ToolManager {
       return
     }
 
-    if (this.currentTool === Tools.ColorSelect && event.button === 0) {
+    if (this.currentTool === Tools.MaskColorFill && event.button === 0) {
       const offset = { x: event.offsetX, y: event.offsetY }
       const coords_canvas = await this.messageBroker.pull(
         'screenToCanvas',
@@ -4485,7 +4384,7 @@ class ToolManager {
       return
     }
 
-    var isDrawingTool = [Tools.Pen, Tools.Eraser, Tools.RGBPaint].includes(
+    var isDrawingTool = [Tools.MaskPen, Tools.Eraser, Tools.PaintPen].includes(
       this.currentTool
     )
     //drawing
@@ -4512,7 +4411,7 @@ class ToolManager {
 
     //prevent drawing with other tools
 
-    var isDrawingTool = [Tools.Pen, Tools.Eraser, Tools.RGBPaint].includes(
+    var isDrawingTool = [Tools.MaskPen, Tools.Eraser, Tools.PaintPen].includes(
       this.currentTool
     )
     if (!isDrawingTool) return
@@ -4520,7 +4419,8 @@ class ToolManager {
     // alt + right mouse button hold brush adjustment
     if (
       this.isAdjustingBrush &&
-      (this.currentTool === Tools.Pen || this.currentTool === Tools.Eraser) &&
+      (this.currentTool === Tools.MaskPen ||
+        this.currentTool === Tools.Eraser) &&
       event.altKey &&
       event.buttons === 2
     ) {
@@ -5514,4 +5414,39 @@ const combineOriginalImageAndPaint = (
   const [resultCanvas, resultCanvasCtx] = createCanvasCopy(originalImage)
   resultCanvasCtx.drawImage(paint, 0, 0)
   return [resultCanvas, resultCanvasCtx]
+}
+
+const iconsHtml: Record<Tools, string> = {
+  [Tools.MaskPen]: `
+    <svg viewBox="0 0 44 44">
+      <path class="cls-1" d="M10.97,15.98v14.04c0,.825.675,1.5,1.5,1.5h23.07c.825,0,1.5-.675,1.5-1.5V15.98c0-.825-.675-1.5-1.5-1.5H12.47c-.825,0-1.5.675-1.5,1.5ZM25.79,28.16c-4.365,1.41-8.355-2.58-6.945-6.945.51-1.575,1.785-2.85,3.36-3.36,4.365-1.41,8.355,2.58,6.945,6.945-.51,1.575-1.785,2.85-3.36,3.36Z"/>
+    </svg>
+  `,
+  [Tools.Eraser]: `
+    <svg viewBox="0 0 44 44">
+      <g>
+        <rect class="cls-2" x="16.68" y="10" width="10.63" height="24" rx="1.16" ry="1.16" transform="translate(22 -9.11) rotate(45)"/>
+        <path class="cls-1" d="M17.27,34.27c-.42,0-.85-.16-1.17-.48l-5.88-5.88c-.31-.31-.48-.73-.48-1.17s.17-.86.48-1.17l15.34-15.34c.62-.62,1.72-.62,2.34,0l5.88,5.88c.65.65.65,1.7,0,2.34l-15.34,15.34c-.32.32-.75.48-1.17.48ZM26.73,10.73c-.18,0-.34.07-.46.19l-15.34,15.34c-.12.12-.19.29-.19.46s.07.34.19.46l5.88,5.88c.26.26.67.26.93,0l15.34-15.34c.26-.26.26-.67,0-.93l-5.88-5.88c-.12-.12-.29-.19-.46-.19Z"/>
+      </g>
+      <path class="cls-3" d="M20.33,11.03h8.32c.64,0,1.16.52,1.16,1.16v15.79h-10.63v-15.79c0-.64.52-1.16,1.16-1.16Z" transform="translate(20.97 -11.61) rotate(45)"/>
+    </svg>
+  `,
+  [Tools.MaskBucket]: `
+    <svg viewBox="0 0 44 44">
+      <path class="cls-1" d="M33.4,21.76l-11.42,11.41-.04.05c-.61.61-1.6.61-2.21,0l-8.91-8.91c-.61-.61-.61-1.6,0-2.21l.04-.05.3-.29h22.24Z"/>
+      <path class="cls-1" d="M20.83,34.17c-.55,0-1.07-.21-1.46-.6l-8.91-8.91c-.8-.8-.8-2.11,0-2.92l11.31-11.31c.8-.8,2.11-.8,2.92,0l8.91,8.91c.39.39.6.91.6,1.46s-.21,1.07-.6,1.46l-11.31,11.31c-.39.39-.91.6-1.46.6ZM23.24,10.83c-.27,0-.54.1-.75.31l-11.31,11.31c-.41.41-.41,1.09,0,1.5l8.91,8.91c.4.4,1.1.4,1.5,0l11.31-11.31c.2-.2.31-.47.31-.75s-.11-.55-.31-.75l-8.91-8.91c-.21-.21-.48-.31-.75-.31Z"/>
+      <path class="cls-1" d="M34.28,26.85c0,.84-.68,1.52-1.52,1.52s-1.52-.68-1.52-1.52,1.52-2.86,1.52-2.86c0,0,1.52,2.02,1.52,2.86Z"/>
+    </svg>
+  `,
+  [Tools.MaskColorFill]: `
+    <svg viewBox="0 0 44 44">
+      <path class="cls-1" d="M30.29,13.72c-1.09-1.1-2.85-1.09-3.94,0l-2.88,2.88-.75-.75c-.2-.19-.51-.19-.71,0-.19.2-.19.51,0,.71l1.4,1.4-9.59,9.59c-.35.36-.54.82-.54,1.32,0,.14,0,.28.05.41-.05.04-.1.08-.15.13-.39.39-.39,1.01,0,1.4.38.39,1.01.39,1.4,0,.04-.04.08-.09.11-.13.14.04.3.06.45.06.5,0,.97-.19,1.32-.55l9.59-9.59,1.38,1.38c.1.09.22.14.35.14s.26-.05.35-.14c.2-.2.2-.52,0-.71l-.71-.72,2.88-2.89c1.08-1.08,1.08-2.85-.01-3.94ZM19.43,25.82h-2.46l7.15-7.15,1.23,1.23-5.92,5.92Z"/>
+    </svg>
+  `,
+  [Tools.PaintPen]: `
+    <svg viewBox="0 0 44 44">
+      <path class="cls-1" d="M34,13.93c0,.47-.19.94-.55,1.31l-13.02,13.04c-.09.07-.18.15-.27.22-.07-1.39-1.21-2.48-2.61-2.49.07-.12.16-.24.27-.34l13.04-13.04c.72-.72,1.89-.72,2.6,0,.35.35.55.83.55,1.3Z"/>
+      <path class="cls-1" d="M19.64,29.03c0,4.46-6.46,3.18-9.64,0,3.3-.47,4.75-2.58,7.06-2.58,1.43,0,2.58,1.16,2.58,2.58Z"/>
+    </svg>
+  `
 }
