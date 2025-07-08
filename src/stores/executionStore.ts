@@ -274,10 +274,11 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!activePrompt.value) return
 
     // Update the executing nodes list
-    if (e.detail === null) {
+    if (typeof e.detail !== 'string') {
       if (activePromptId.value) {
         delete queuedPrompts.value[activePromptId.value]
       }
+      activePromptId.value = null
     }
   }
 
