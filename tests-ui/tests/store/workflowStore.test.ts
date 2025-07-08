@@ -525,8 +525,13 @@ describe('useWorkflowStore', () => {
           { name: 'Level 1 Subgraph' },
           { name: 'Level 2 Subgraph' }
         ]
-      }
-      vi.mocked(comfyApp.canvas).subgraph = mockSubgraph as any
+      } as any
+      vi.mocked(comfyApp.canvas).subgraph = mockSubgraph
+
+      // Mock isSubgraph to return true for our mockSubgraph
+      vi.mocked(isSubgraph).mockImplementation(
+        (obj): obj is Subgraph => obj === mockSubgraph
+      )
 
       // Act: Trigger the update
       store.updateActiveGraph()
@@ -543,8 +548,13 @@ describe('useWorkflowStore', () => {
         name: 'Initial Subgraph',
         pathToRootGraph: [{ name: 'Root' }, { name: 'Initial Subgraph' }],
         isRootGraph: false
-      }
-      vi.mocked(comfyApp.canvas).subgraph = initialSubgraph as any
+      } as any
+      vi.mocked(comfyApp.canvas).subgraph = initialSubgraph
+
+      // Mock isSubgraph to return true for our initialSubgraph
+      vi.mocked(isSubgraph).mockImplementation(
+        (obj): obj is Subgraph => obj === initialSubgraph
+      )
 
       // Trigger initial update based on the *first* workflow opened in beforeEach
       store.updateActiveGraph()
@@ -567,6 +577,11 @@ describe('useWorkflowStore', () => {
       // Before changing workflow, set the canvas state to something different (e.g., root)
       // This ensures the watcher *does* cause a state change we can assert
       vi.mocked(comfyApp.canvas).subgraph = undefined
+
+      // Mock isSubgraph to return false for undefined
+      vi.mocked(isSubgraph).mockImplementation(
+        (_obj): _obj is Subgraph => false
+      )
 
       await store.openWorkflow(workflow2) // This changes activeWorkflow and triggers the watch
       await nextTick() // Allow watcher and potential async operations in updateActiveGraph to complete
