@@ -108,7 +108,11 @@ export const useLitegraphService = () => {
        */
       #setupStrokeStyles() {
         this.strokeStyles['running'] = function (this: LGraphNode) {
-          if (this.id == app.runningNodeId) {
+          const nodeId = String(this.id)
+          const nodeLocatorId = useWorkflowStore().nodeIdToNodeLocatorId(nodeId)
+          const state =
+            useExecutionStore().nodeLocationProgressStates[nodeLocatorId]?.state
+          if (state === 'running') {
             return { color: '#0f0' }
           }
         }
@@ -364,7 +368,9 @@ export const useLitegraphService = () => {
       #setupStrokeStyles() {
         this.strokeStyles['running'] = function (this: LGraphNode) {
           const nodeId = String(this.id)
-          const state = useExecutionStore().nodeProgressStates[nodeId]?.state
+          const nodeLocatorId = useWorkflowStore().nodeIdToNodeLocatorId(nodeId)
+          const state =
+            useExecutionStore().nodeLocationProgressStates[nodeLocatorId]?.state
           if (state === 'running') {
             return { color: '#0f0' }
           }
