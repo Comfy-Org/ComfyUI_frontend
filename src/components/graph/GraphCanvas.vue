@@ -56,6 +56,7 @@
       :zoom-level="canvasStore.canvas?.ds?.scale || 1"
       :data-node-id="nodeData.id"
       @node-click="handleNodeSelect"
+      @update:collapsed="handleNodeCollapse"
     />
   </TransformPane>
 
@@ -456,6 +457,18 @@ const handleNodeSelect = (event: PointerEvent, nodeData: VueNodeData) => {
   node.selected = true
 
   canvasStore.updateSelectedItems()
+}
+
+// Handle node collapse state changes
+const handleNodeCollapse = (nodeId: string, collapsed: boolean) => {
+  if (!nodeManager) return
+
+  const node = nodeManager.getNode(nodeId)
+  if (!node) return
+
+  // Sync collapsed state back to LiteGraph node
+  node.flags = node.flags || {}
+  node.flags.collapsed = collapsed
 }
 
 watchEffect(() => {

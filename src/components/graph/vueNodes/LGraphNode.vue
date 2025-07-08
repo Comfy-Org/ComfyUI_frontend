@@ -115,6 +115,7 @@ const emit = defineEmits<{
     slotIndex: number,
     isInput: boolean
   ]
+  'update:collapsed': [nodeId: string, collapsed: boolean]
 }>()
 
 // LOD (Level of Detail) system based on zoom level
@@ -164,11 +165,8 @@ const handlePointerDown = (event: PointerEvent) => {
 
 const handleCollapse = () => {
   isCollapsed.value = !isCollapsed.value
-  // TODO: Sync with LiteGraph node when integration is complete
-  // if (props.node) {
-  //   props.node.flags = props.node.flags || {}
-  //   props.node.flags.collapsed = isCollapsed.value
-  // }
+  // Emit event so parent can sync with LiteGraph if needed
+  emit('update:collapsed', props.nodeData.id, isCollapsed.value)
 }
 
 const handleSlotClick = (
