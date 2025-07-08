@@ -107,8 +107,15 @@
     </teleport>
   </div>
 </template>
+<script lang="ts">
+interface RecentItem {
+  key: string
+  load?: () => Promise<RecentItem | void>
+  image?: string
+}
+</script>
 
-<script setup lang="ts" generic="T extends { key: string; [key: string]: any }">
+<script setup lang="ts" generic="T extends RecentItem">
 import Divider from 'primevue/divider'
 import { computed, ref } from 'vue'
 
