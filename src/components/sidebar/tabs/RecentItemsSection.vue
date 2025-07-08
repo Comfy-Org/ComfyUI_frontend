@@ -110,7 +110,6 @@
 <script lang="ts">
 interface RecentItem {
   key: string
-  load?: () => Promise<RecentItem | void>
   image?: string
 }
 </script>
@@ -135,13 +134,11 @@ interface Props<T> {
   // optional model preview props
   enablePreview?: boolean
   previewTargetId?: string
-  isModelItem?: (item: T) => boolean
 }
 
 const props = withDefaults(defineProps<Props<T>>(), {
   enablePreview: false,
   previewTargetId: '#model-library-model-preview-container',
-  isModelItem: undefined,
   recentlyAddedItems: () => [],
   recentlyUsedItems: () => []
 })
@@ -183,25 +180,20 @@ const showModelPreview = computed(() => {
   return (
     props.enablePreview &&
     hoveredModel.value &&
-    props.isModelItem &&
-    props.isModelItem(hoveredModel.value) &&
-    shouldShowPreview(hoveredModel.value as ComfyModelDef)
+    hoveredModel.value instanceof ComfyModelDef &&
+    shouldShowPreview(hoveredModel.value)
   )
 })
 
 const handleItemMouseEnter = async (event: MouseEvent, item: T) => {
-  if (!props.enablePreview || !props.isModelItem) return
-
+  if (!props.enablePreview || item instanceof ComfyModelDef === false) return
   const target = event.currentTarget as HTMLElement
-  if (props.isModelItem(item)) {
-    hoveredModel.value = item
-    await handleMouseEnter(target, hoveredModel.value as ComfyModelDef)
-  }
+  hoveredModel.value = item
+  await handleMouseEnter(target, hoveredModel.value)
 }
 
 const handleItemMouseLeave = () => {
   if (!props.enablePreview) return
-
   hoveredModel.value = null
   handleMouseLeave()
 }

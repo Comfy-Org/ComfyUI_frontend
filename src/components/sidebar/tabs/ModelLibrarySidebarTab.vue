@@ -47,7 +47,6 @@
           :get-item-preview-url="getModelPreviewUrl"
           :on-item-click="handleModelClick"
           :enable-preview="true"
-          :is-model-item="(_) => true"
           preview-target-id="#model-library-model-preview-container"
         >
           <template #preview="{ modelDef, previewRef }">
@@ -73,7 +72,7 @@
 <script setup lang="ts">
 import { IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import Button from 'primevue/button'
-import { computed, nextTick, onMounted, ref, toRef, watch } from 'vue'
+import { computed, nextTick, ref, toRef, watch, watchEffect } from 'vue'
 
 import SearchBox from '@/components/common/SearchBox.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
@@ -252,7 +251,7 @@ watch(
   { deep: true }
 )
 
-onMounted(async () => {
+watchEffect(async () => {
   if (
     settingStore.get('Comfy.ModelLibrary.AutoLoadAll') ||
     // if we don't load all, we can't filter the recent items
