@@ -1004,6 +1004,120 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
 
         return '$2.25/Run'
       }
+    },
+    RunwayGen4ImageNode: {
+      displayPrice: '$0.08/Run'
+    },
+    RunwayGen3aTurboVideoNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const durationWidget = node.widgets?.find(
+          (w) => w.name === 'duration'
+        ) as IComboWidget
+
+        if (!durationWidget) return '$0.05/second'
+
+        const duration = Number(durationWidget.value) || 5
+        const cost = (0.05 * duration).toFixed(2)
+        return `$${cost}/Run`
+      }
+    },
+    RunwayGen4TurboVideoNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const durationWidget = node.widgets?.find(
+          (w) => w.name === 'duration'
+        ) as IComboWidget
+
+        if (!durationWidget) return '$0.05/second'
+
+        const duration = Number(durationWidget.value) || 5
+        const cost = (0.05 * duration).toFixed(2)
+        return `$${cost}/Run`
+      }
+    },
+    RodinTextTo3DNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const addonsWidget = node.widgets?.find(
+          (w) => w.name === 'enable_addons' || w.name === 'addons'
+        ) as IComboWidget
+
+        if (!addonsWidget) return '$0.4-1.2/Run (varies with addons)'
+
+        const addonsEnabled = Boolean(addonsWidget.value)
+        return addonsEnabled ? '$1.2/Run' : '$0.4/Run'
+      }
+    },
+    RodinImageTo3DNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const addonsWidget = node.widgets?.find(
+          (w) => w.name === 'enable_addons' || w.name === 'addons'
+        ) as IComboWidget
+
+        if (!addonsWidget) return '$0.4-1.2/Run (varies with addons)'
+
+        const addonsEnabled = Boolean(addonsWidget.value)
+        return addonsEnabled ? '$1.2/Run' : '$0.4/Run'
+      }
+    },
+    TripoTextTo3DNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const modelWidget = node.widgets?.find(
+          (w) => w.name === 'model' || w.name === 'model_version'
+        ) as IComboWidget
+        const textureQualityWidget = node.widgets?.find(
+          (w) => w.name === 'texture_quality'
+        ) as IComboWidget
+
+        if (!modelWidget)
+          return '$0.1-0.3/Run (varies with model & texture quality)'
+
+        const model = String(modelWidget.value)
+        const textureQuality = String(textureQualityWidget?.value || 'standard')
+
+        // V2.5 pricing
+        if (model.includes('v2.5') || model.includes('2.5')) {
+          return textureQuality.includes('detailed') ? '$0.3/Run' : '$0.2/Run'
+        }
+        // V2.0 pricing
+        else if (model.includes('v2.0') || model.includes('2.0')) {
+          return textureQuality.includes('detailed') ? '$0.3/Run' : '$0.2/Run'
+        }
+        // V1.4 or legacy pricing
+        else {
+          return '$0.2/Run'
+        }
+      }
+    },
+    TripoImageTo3DNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const modelWidget = node.widgets?.find(
+          (w) => w.name === 'model' || w.name === 'model_version'
+        ) as IComboWidget
+        const textureQualityWidget = node.widgets?.find(
+          (w) => w.name === 'texture_quality'
+        ) as IComboWidget
+
+        if (!modelWidget)
+          return '$0.2-0.4/Run (varies with model & texture quality)'
+
+        const model = String(modelWidget.value)
+        const textureQuality = String(textureQualityWidget?.value || 'standard')
+
+        // V2.5 pricing
+        if (model.includes('v2.5') || model.includes('2.5')) {
+          return textureQuality.includes('detailed') ? '$0.4/Run' : '$0.3/Run'
+        }
+        // V2.0 pricing
+        else if (model.includes('v2.0') || model.includes('2.0')) {
+          return textureQuality.includes('detailed') ? '$0.4/Run' : '$0.3/Run'
+        }
+        // V1.4 or legacy pricing
+        else {
+          return '$0.3/Run'
+        }
+      }
+    },
+    TripoRefineModelNode: {
+      displayPrice: '$0.3/Run'
     }
   }
 
@@ -1075,7 +1189,13 @@ export const useNodePricing = () => {
       RecraftGenerateVectorImageNode: ['n'],
       MoonvalleyTxt2VideoNode: ['length'],
       MoonvalleyImg2VideoNode: ['length'],
-      MoonvalleyVideo2VideoNode: ['length']
+      MoonvalleyVideo2VideoNode: ['length'],
+      RunwayGen3aTurboVideoNode: ['duration'],
+      RunwayGen4TurboVideoNode: ['duration'],
+      RodinTextTo3DNode: ['enable_addons', 'addons'],
+      RodinImageTo3DNode: ['enable_addons', 'addons'],
+      TripoTextTo3DNode: ['model', 'model_version', 'texture_quality'],
+      TripoImageTo3DNode: ['model', 'model_version', 'texture_quality']
     }
     return widgetMap[nodeType] || []
   }

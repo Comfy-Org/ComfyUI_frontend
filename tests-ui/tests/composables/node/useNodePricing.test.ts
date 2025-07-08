@@ -1022,5 +1022,146 @@ describe('useNodePricing', () => {
         getRelevantWidgetNames('RecraftGenerateColorFromImageNode')
       ).toEqual(['n'])
     })
+
+    it('should include relevant widget names for new nodes', () => {
+      const { getRelevantWidgetNames } = useNodePricing()
+
+      expect(getRelevantWidgetNames('RunwayGen3aTurboVideoNode')).toEqual([
+        'duration'
+      ])
+      expect(getRelevantWidgetNames('RunwayGen4TurboVideoNode')).toEqual([
+        'duration'
+      ])
+      expect(getRelevantWidgetNames('RodinTextTo3DNode')).toEqual([
+        'enable_addons',
+        'addons'
+      ])
+      expect(getRelevantWidgetNames('TripoTextTo3DNode')).toEqual([
+        'model',
+        'model_version',
+        'texture_quality'
+      ])
+    })
+  })
+
+  describe('New API nodes pricing', () => {
+    describe('RunwayML nodes', () => {
+      it('should return static price for RunwayGen4ImageNode', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        const node = createMockNode('RunwayGen4ImageNode')
+
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe('$0.08/Run')
+      })
+
+      it('should calculate dynamic pricing for RunwayGen3aTurboVideoNode', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        const node = createMockNode('RunwayGen3aTurboVideoNode', [
+          { name: 'duration', value: 10 }
+        ])
+
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe('$0.50/Run') // 0.05 * 10
+      })
+
+      it('should return fallback for RunwayGen3aTurboVideoNode without duration', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        const node = createMockNode('RunwayGen3aTurboVideoNode', [])
+
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe('$0.05/second')
+      })
+    })
+
+    describe('Rodin nodes', () => {
+      it('should return base price for RodinTextTo3DNode without addons', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        const node = createMockNode('RodinTextTo3DNode', [
+          { name: 'enable_addons', value: false }
+        ])
+
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe('$0.4/Run')
+      })
+
+      it('should return addon price for RodinTextTo3DNode with addons', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        const node = createMockNode('RodinTextTo3DNode', [
+          { name: 'enable_addons', value: true }
+        ])
+
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe('$1.2/Run')
+      })
+
+      it('should return fallback for RodinTextTo3DNode without widget', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        const node = createMockNode('RodinTextTo3DNode', [])
+
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe('$0.4-1.2/Run (varies with addons)')
+      })
+    })
+
+    describe('Tripo nodes', () => {
+      it('should return v2.5 standard pricing for TripoTextTo3DNode', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        const node = createMockNode('TripoTextTo3DNode', [
+          { name: 'model', value: 'v2.5-20250123' },
+          { name: 'texture_quality', value: 'standard' }
+        ])
+
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe('$0.2/Run')
+      })
+
+      it('should return v2.5 detailed pricing for TripoTextTo3DNode', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        const node = createMockNode('TripoTextTo3DNode', [
+          { name: 'model', value: 'v2.5-20250123' },
+          { name: 'texture_quality', value: 'detailed' }
+        ])
+
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe('$0.3/Run')
+      })
+
+      it('should return v2.0 detailed pricing for TripoImageTo3DNode', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        const node = createMockNode('TripoImageTo3DNode', [
+          { name: 'model', value: 'v2.0-20240919' },
+          { name: 'texture_quality', value: 'detailed' }
+        ])
+
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe('$0.4/Run')
+      })
+
+      it('should return legacy pricing for TripoTextTo3DNode', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        const node = createMockNode('TripoTextTo3DNode', [
+          { name: 'model', value: 'v1.4-legacy' }
+        ])
+
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe('$0.2/Run')
+      })
+
+      it('should return static price for TripoRefineModelNode', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        const node = createMockNode('TripoRefineModelNode')
+
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe('$0.3/Run')
+      })
+
+      it('should return fallback for TripoTextTo3DNode without model', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        const node = createMockNode('TripoTextTo3DNode', [])
+
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe('$0.1-0.3/Run (varies with model & texture quality)')
+      })
+    })
   })
 })
