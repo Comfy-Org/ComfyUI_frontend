@@ -336,6 +336,7 @@
     "noTasksFoundMessage": "В очереди нет задач.",
     "noWorkflowsFound": "Рабочие процессы не найдены.",
     "nodes": "Узлы",
+    "nodesRunning": "запущено узлов",
     "ok": "ОК",
     "openNewIssue": "Открыть новую проблему",
     "overwrite": "Перезаписать",
@@ -798,7 +799,11 @@
     "Ungroup selected group nodes": "Разгруппировать выбранные групповые ноды",
     "Workflow": "Рабочий процесс",
     "Zoom In": "Увеличить",
-    "Zoom Out": "Уменьшить"
+    "Zoom Out": "Уменьшить",
+    "sideToolbar_modelLibrary": "sideToolbar.modelLibrary",
+    "sideToolbar_nodeLibrary": "sideToolbar.nodeLibrary",
+    "sideToolbar_queue": "sideToolbar.queue",
+    "sideToolbar_workflows": "sideToolbar.workflows"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "Больше не показывать это",

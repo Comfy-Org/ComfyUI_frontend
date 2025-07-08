@@ -336,6 +336,7 @@
     "noTasksFoundMessage": "Il n'y a pas de tâches dans la file d'attente.",
     "noWorkflowsFound": "Aucun flux de travail trouvé.",
     "nodes": "Nœuds",
+    "nodesRunning": "nœuds en cours d’exécution",
     "ok": "OK",
     "openNewIssue": "Ouvrir un nouveau problème",
     "overwrite": "Écraser",
@@ -798,7 +799,11 @@
     "Ungroup selected group nodes": "Dégrouper les nœuds de groupe sélectionnés",
     "Workflow": "Flux de travail",
     "Zoom In": "Zoom avant",
-    "Zoom Out": "Zoom arrière"
+    "Zoom Out": "Zoom arrière",
+    "sideToolbar_modelLibrary": "Bibliothèque de modèles",
+    "sideToolbar_nodeLibrary": "Bibliothèque de nœuds",
+    "sideToolbar_queue": "File d'attente",
+    "sideToolbar_workflows": "Workflows"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "Ne plus afficher ce message",

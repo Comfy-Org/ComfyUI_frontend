@@ -336,6 +336,7 @@
     "noTasksFoundMessage": "대기열에 작업이 없습니다.",
     "noWorkflowsFound": "워크플로를 찾을 수 없습니다.",
     "nodes": "노드",
+    "nodesRunning": "노드 실행 중",
     "ok": "확인",
     "openNewIssue": "새 문제 열기",
     "overwrite": "덮어쓰기",
@@ -798,7 +799,11 @@
     "Ungroup selected group nodes": "선택한 그룹 노드 그룹 해제",
     "Workflow": "워크플로",
     "Zoom In": "확대",
-    "Zoom Out": "축소"
+    "Zoom Out": "축소",
+    "sideToolbar_modelLibrary": "sideToolbar.모델 라이브러리",
+    "sideToolbar_nodeLibrary": "sideToolbar.노드 라이브러리",
+    "sideToolbar_queue": "sideToolbar.대기열",
+    "sideToolbar_workflows": "sideToolbar.워크플로우"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "다시 보지 않기",

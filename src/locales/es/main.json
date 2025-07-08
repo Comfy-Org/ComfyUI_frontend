@@ -336,6 +336,7 @@
     "noTasksFoundMessage": "No hay tareas en la cola.",
     "noWorkflowsFound": "No se encontraron flujos de trabajo.",
     "nodes": "Nodos",
+    "nodesRunning": "nodos en ejecución",
     "ok": "OK",
     "openNewIssue": "Abrir nuevo problema",
     "overwrite": "Sobrescribir",
@@ -798,7 +799,11 @@
     "Ungroup selected group nodes": "Desagrupar nodos de grupo seleccionados",
     "Workflow": "Flujo de trabajo",
     "Zoom In": "Acercar",
-    "Zoom Out": "Alejar"
+    "Zoom Out": "Alejar",
+    "sideToolbar_modelLibrary": "sideToolbar.bibliotecaDeModelos",
+    "sideToolbar_nodeLibrary": "sideToolbar.bibliotecaDeNodos",
+    "sideToolbar_queue": "sideToolbar.cola",
+    "sideToolbar_workflows": "sideToolbar.flujosDeTrabajo"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "No mostrar esto de nuevo",
