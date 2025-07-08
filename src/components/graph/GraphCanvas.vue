@@ -193,36 +193,22 @@ watch(
 
 // Update the progress of executing nodes
 watch(
-  () => executionStore.nodeProgressStates,
-  (nodeProgressStates) => {
-    // Clear progress for all nodes first
-    for (const node of comfyApp.graph.nodes) {
-      node.progress = undefined
-    }
-
-    // Then set progress for nodes with progress states
-    for (const nodeId in nodeProgressStates) {
-      const progressState = nodeProgressStates[nodeId]
-      const node = comfyApp.graph.getNodeById(progressState.display_node_id)
-
-      if (node && progressState) {
-        // Only show progress for running nodes
-        if (progressState.state === 'running') {
-          if (node.progress === undefined || node.progress === 0.0) {
-            node.progress = progressState.value / progressState.max
-          } else {
-            // Update progress if it was already set
-            node.progress = Math.min(
-              node.progress,
-              progressState.value / progressState.max
-            )
-          }
-        }
+  () =>
+    [executionStore.nodeLocationProgressStates, canvasStore.canvas] as const,
+  ([nodeLocationProgressStates, canvas]) => {
+    if (!canvas?.graph) return
+    for (const node of canvas.graph.nodes) {
+      const nodeLocatorId = useWorkflowStore().nodeIdToNodeLocatorId(node.id)
+      const progressState = nodeLocationProgressStates[nodeLocatorId]
+      if (progressState && progressState.state === 'running') {
+        node.progress = progressState.value / progressState.max
+      } else {
+        node.progress = undefined
       }
     }
 
     // Force canvas redraw to ensure progress updates are visible
-    comfyApp.graph.setDirtyCanvas(true, false)
+    canvas.graph.setDirtyCanvas(true, false)
   },
   { deep: true }
 )

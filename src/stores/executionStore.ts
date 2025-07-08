@@ -25,6 +25,7 @@ import type {
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 import { useCanvasStore } from './graphStore'
 import { ComfyWorkflow, useWorkflowStore } from './workflowStore'
@@ -52,6 +53,86 @@ export const useExecutionStore = defineStore('execution', () => {
   const lastExecutionError = ref<ExecutionErrorWsMessage | null>(null)
   // This is the progress of all nodes in the currently executing workflow
   const nodeProgressStates = ref<Record<string, NodeProgressState>>({})
+
+  /**
+   * Convert execution context node IDs to NodeLocatorIds
+   * @param nodeId The node ID from execution context (could be hierarchical)
+   * @returns The NodeLocatorId
+   */
+  const executionIdToNodeLocatorId = (
+    nodeId: string | number
+  ): NodeLocatorId => {
+    const nodeIdStr = String(nodeId)
+
+    if (!nodeIdStr.includes(':')) {
+      // It's a top-level node ID
+      return nodeIdStr as NodeLocatorId
+    }
+
+    // It's a hierarchical node ID
+    const parts = nodeIdStr.split(':')
+    const localNodeId = parts[parts.length - 1]
+    const subgraphs = getSubgraphsFromInstanceIds(app.graph, parts)
+    const nodeLocatorId = createNodeLocatorId(subgraphs.at(-1)!.id, localNodeId)
+    return nodeLocatorId
+  }
+
+  const mergeHierarchicalProgressStates = (
+    currentState: NodeProgressState | undefined,
+    newState: NodeProgressState
+  ): NodeProgressState => {
+    if (currentState === undefined) {
+      return newState
+    }
+
+    const mergedState = { ...currentState }
+    if (mergedState.state === 'error') {
+      return mergedState
+    } else if (newState.state === 'running') {
+      const newPerc = newState.max > 0 ? newState.value / newState.max : 0.0
+      if (mergedState.state === 'running') {
+        const oldPerc =
+          mergedState.max > 0 ? mergedState.value / mergedState.max : 0.0
+        if (oldPerc === 0.0) {
+          mergedState.value = newState.value
+          mergedState.max = newState.max
+        } else if (newPerc < oldPerc) {
+          mergedState.value = newState.value
+          mergedState.max = newState.max
+        }
+      } else {
+        mergedState.value = newState.value
+        mergedState.max = newState.max
+      }
+      mergedState.state = 'running'
+    }
+
+    return mergedState
+  }
+
+  const nodeLocationProgressStates = computed<
+    Record<NodeLocatorId, NodeProgressState>
+  >(() => {
+    const result: Record<NodeLocatorId, NodeProgressState> = {}
+
+    const states = nodeProgressStates.value // Apparently doing this inside `Object.entries` causes issues
+    for (const [_, state] of Object.entries(states)) {
+      // Convert the node ID to a NodeLocatorId
+      const parts = String(state.display_node_id).split(':')
+      for (let i = 0; i < parts.length; i++) {
+        const executionId = parts.slice(0, i + 1).join(':')
+        const locatorId = executionIdToNodeLocatorId(executionId)
+        if (!locatorId) continue
+
+        result[locatorId] = mergeHierarchicalProgressStates(
+          result[locatorId],
+          state
+        )
+      }
+    }
+
+    return result
+  })
 
   // Easily access all currently executing node IDs
   const executingNodeIds = computed<NodeId[]>(() => {
@@ -311,27 +392,6 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   /**
-   * Convert execution context node IDs to NodeLocatorIds
-   * @param nodeId The node ID from execution context (could be hierarchical)
-   * @returns The NodeLocatorId
-   */
-  const executionIdToNodeLocatorId = (
-    nodeId: string | number
-  ): NodeLocatorId => {
-    const nodeIdStr = String(nodeId)
-
-    // If it's a hierarchical ID, use the workflow store's conversion
-    if (nodeIdStr.includes(':')) {
-      const result = workflowStore.hierarchicalIdToNodeLocatorId(nodeIdStr)
-      // If conversion fails, return the original ID as-is
-      return result ?? (nodeIdStr as NodeLocatorId)
-    }
-
-    // For simple node IDs, we need the active subgraph context
-    return workflowStore.nodeIdToNodeLocatorId(nodeIdStr)
-  }
-
-  /**
    * Convert a NodeLocatorId to an execution context ID (hierarchical ID)
    * @param locatorId The NodeLocatorId
    * @returns The hierarchical execution ID or null if conversion fails
@@ -399,6 +459,7 @@ export const useExecutionStore = defineStore('execution', () => {
      * All node progress states from progress_state events
      */
     nodeProgressStates,
+    nodeLocationProgressStates,
     bindExecutionEvents,
     unbindExecutionEvents,
     storePrompt,
