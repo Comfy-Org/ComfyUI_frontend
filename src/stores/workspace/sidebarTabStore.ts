@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useModelLibrarySidebarTab } from '@/composables/sidebarTabs/useModelLibrarySidebarTab'
 import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
@@ -25,11 +26,17 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
 
   const registerSidebarTab = (tab: SidebarTabExtension) => {
     sidebarTabs.value = [...sidebarTabs.value, tab]
+    const { t } = useI18n()
+
+    const tooltipFunction = tab.tooltip
+      ? () => t(tab.tooltip as string)
+      : undefined
+
     useCommandStore().registerCommand({
       id: `Workspace.ToggleSidebarTab.${tab.id}`,
       icon: tab.icon,
-      label: tab.title,
-      tooltip: tab.tooltip,
+      label: () => t(tab.title),
+      tooltip: tooltipFunction,
       versionAdded: '1.3.9',
       function: () => {
         toggleSidebarTab(tab.id)

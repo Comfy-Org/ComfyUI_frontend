@@ -17,8 +17,7 @@ const IGNORE_PATTERNS = [
   /^templateWorkflows\./, // Template workflows are loaded dynamically
   /^dataTypes\./, // Data types might be referenced dynamically
   /^contextMenu\./, // Context menu items might be dynamic
-  /^color\./, // Color names might be used dynamically
-  /^menuLabels\./ // Menu labels are constructed dynamically in CommandMenubar.vue
+  /^color\./ // Color names might be used dynamically
 ]
 
 // Get list of staged locale files
