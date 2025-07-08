@@ -993,16 +993,16 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         ) as IComboWidget
 
         // If no length widget exists, default to 5s pricing
-        if (!lengthWidget) return '$2.00/Run'
+        if (!lengthWidget) return '$2.25/Run'
 
         const length = String(lengthWidget.value)
         if (length === '5s') {
-          return '$2.00/Run'
+          return '$2.25/Run'
         } else if (length === '10s') {
           return '$4.00/Run'
         }
 
-        return '$2.00/Run'
+        return '$2.25/Run'
       }
     }
   }
