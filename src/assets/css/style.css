@@ -5,6 +5,7 @@
   @tailwind utilities;
 }
 
+
 :root {
   --fg-color: #000;
   --bg-color: #fff;
@@ -637,3 +638,92 @@ audio.comfy-audio.empty-audio-widget {
   width: calc(100vw - env(titlebar-area-width, 100vw));
 }
 /* End of [Desktop] Electron window specific styles */
+
+/* Vue Node LOD (Level of Detail) System */
+/* These classes control rendering detail based on zoom level */
+
+/* Minimal LOD (zoom <= 0.4) - Title only for performance */
+.lg-node--lod-minimal {
+  min-height: 32px;
+  transition: min-height 0.2s ease;
+  /* Performance optimizations */
+  text-shadow: none;
+  backdrop-filter: none;
+}
+
+.lg-node--lod-minimal .lg-node-body {
+  display: none !important;
+}
+
+/* Reduced LOD (0.4 < zoom <= 0.8) - Essential widgets, simplified styling */
+.lg-node--lod-reduced {
+  transition: opacity 0.1s ease;
+  /* Performance optimizations */
+  text-shadow: none;
+}
+
+.lg-node--lod-reduced .lg-widget-label,
+.lg-node--lod-reduced .lg-slot-label {
+  display: none;
+}
+
+.lg-node--lod-reduced .lg-slot {
+  opacity: 0.6;
+  font-size: 0.75rem;
+}
+
+.lg-node--lod-reduced .lg-widget {
+  margin: 2px 0;
+  font-size: 0.875rem;
+}
+
+/* Full LOD (zoom > 0.8) - Complete detail rendering */
+.lg-node--lod-full {
+  /* Uses default styling - no overrides needed */
+}
+
+/* Smooth transitions between LOD levels */
+.lg-node {
+  transition: min-height 0.2s ease;
+  /* Disable text selection on all nodes */
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.lg-node .lg-slot,
+.lg-node .lg-widget {
+  transition: opacity 0.1s ease, font-size 0.1s ease;
+}
+
+/* Performance optimization during canvas interaction */
+.transform-pane--interacting .lg-node * {
+  transition: none !important;
+}
+
+.transform-pane--interacting .lg-node {
+  will-change: transform;
+}
+
+/* Global performance optimizations for LOD */
+.lg-node--lod-minimal,
+.lg-node--lod-reduced {
+  /* Remove ALL expensive paint effects */
+  box-shadow: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  text-shadow: none !important;
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+  clip-path: none !important;
+}
+
+/* Reduce paint complexity for minimal LOD */
+.lg-node--lod-minimal {
+  /* Skip complex borders */
+  border-radius: 0 !important;
+  /* Use solid colors only */
+  background-image: none !important;
+}
+
