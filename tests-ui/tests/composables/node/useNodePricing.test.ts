@@ -348,7 +348,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.24/Run') // 0.08 * 3
+      expect(price).toBe('$0.27/Run') // 0.09 * 3
     })
 
     it('should multiply price by num_images for Turbo rendering speed', () => {
