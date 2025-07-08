@@ -26,11 +26,13 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
 
   const registerSidebarTab = (tab: SidebarTabExtension) => {
     sidebarTabs.value = [...sidebarTabs.value, tab]
-    const { t } = useI18n()
+    const { t, te } = useI18n()
 
-    const labelFunction = () => t(tab.title)
+    const labelFunction = te(tab.title) ? () => t(tab.title) : tab.title
     const tooltipFunction = tab.tooltip
-      ? () => t(String(tab.tooltip))
+      ? te(String(tab.tooltip))
+        ? () => t(String(tab.tooltip))
+        : String(tab.tooltip)
       : undefined
 
     useCommandStore().registerCommand({
