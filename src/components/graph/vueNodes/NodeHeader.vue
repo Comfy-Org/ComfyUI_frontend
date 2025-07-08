@@ -4,7 +4,7 @@
   </div>
   <div
     v-else
-    class="lg-node-header flex items-center justify-between p-2 rounded-t cursor-move -mt-[30px]"
+    class="lg-node-header flex items-center justify-between p-2 rounded-t-lg cursor-move -mt-[30px]"
     :style="{
       backgroundColor: headerColor,
       color: textColor

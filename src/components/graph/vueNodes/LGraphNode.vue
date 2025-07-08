@@ -5,7 +5,7 @@
   <div
     v-else
     :class="[
-      'lg-node absolute border-2 rounded',
+      'lg-node absolute border-2 rounded-lg',
       'contain-layout contain-style contain-paint',
       selected ? 'border-blue-500 ring-2 ring-blue-300' : 'border-gray-600',
       executing ? 'animate-pulse' : '',
