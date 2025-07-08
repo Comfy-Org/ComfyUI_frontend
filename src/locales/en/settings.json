@@ -2,6 +2,10 @@
   "Comfy-Desktop_AutoUpdate": {
     "name": "Automatically check for updates"
   },
+  "Comfy-Desktop_LaunchOptions": {
+    "name": "Custom Launch Arguments",
+    "tooltip": "Custom command line arguments for launching the backend (e.g., --cpu). Requires restart."
+  },
   "Comfy-Desktop_SendStatistics": {
     "name": "Send anonymous usage metrics"
   },
