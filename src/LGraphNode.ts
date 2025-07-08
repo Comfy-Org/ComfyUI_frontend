@@ -1805,6 +1805,16 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     const widgetIndex = this.widgets.indexOf(widget)
     if (widgetIndex === -1) throw new Error("Widget not found on this node")
 
+    // Clean up slot references to prevent memory leaks
+    if (this.inputs) {
+      for (const input of this.inputs) {
+        if (input._widget === widget) {
+          input._widget = undefined
+          delete input.widget
+        }
+      }
+    }
+
     this.widgets.splice(widgetIndex, 1)
   }
 
