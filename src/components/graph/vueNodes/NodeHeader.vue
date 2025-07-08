@@ -4,40 +4,27 @@
   </div>
   <div
     v-else
-    class="lg-node-header flex items-center justify-between px-3 py-2 rounded-t cursor-move -mt-[30px]"
+    class="lg-node-header flex items-center justify-between p-2 rounded-t cursor-move -mt-[30px]"
     :style="{
       backgroundColor: headerColor,
       color: textColor
     }"
     @dblclick="handleDoubleClick"
   >
+    <!-- Collapse/Expand Button -->
+    <button
+      v-if="!readonly"
+      class="bg-transparent border-transparent flex items-center"
+      title="Toggle collapse"
+      @click.stop="handleCollapse"
+    >
+      <i class="pi pi-chevron-down text-xs leading-none relative top-[1px]"></i>
+    </button>
+
     <!-- Node Title -->
     <span class="text-sm font-medium truncate flex-1">
       {{ nodeInfo?.title || 'Untitled' }}
     </span>
-
-    <!-- Node Controls -->
-    <div class="flex items-center gap-1 ml-2">
-      <!-- Collapse/Expand Button -->
-      <button
-        v-if="!readonly"
-        class="lg-node-header__control p-0.5 rounded hover:bg-white/20 dark-theme:hover:bg-black/20 transition-colors opacity-60 hover:opacity-100"
-        title="Toggle collapse"
-        @click.stop="handleCollapse"
-      >
-        <svg
-          class="w-3 h-3 transition-transform"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <polyline points="6 9 12 15 18 9"></polyline>
-        </svg>
-      </button>
-
-      <!-- Additional controls can be added here -->
-    </div>
   </div>
 </template>
 
