@@ -137,6 +137,9 @@ declare module '@comfyorg/litegraph' {
 
     comfyClass?: string
 
+    /** An optional description for frontend only nodes (shown in tooltips)*/
+    description?: string
+
     /**
      * If the node is a frontend only node and should not be serialized into the prompt.
      */
