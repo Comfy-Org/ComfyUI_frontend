@@ -28,14 +28,11 @@
             @mouseleave="handleItemMouseLeave"
           >
             <div class="item-icon-container">
-              <span
-                v-if="getItemPreviewUrl && getItemPreviewUrl(item)"
-                class="item-preview-icon"
-              >
+              <span v-if="item.image" class="item-preview-icon">
                 <span
                   class="preview-image"
                   :style="{
-                    backgroundImage: `url(${getItemPreviewUrl(item)})`
+                    backgroundImage: `url(${item.image})`
                   }"
                 />
               </span>
@@ -77,14 +74,11 @@
             @mouseleave="handleItemMouseLeave"
           >
             <div class="item-icon-container">
-              <span
-                v-if="getItemPreviewUrl && getItemPreviewUrl(item)"
-                class="item-preview-icon"
-              >
+              <span v-if="item.image" class="item-preview-icon">
                 <span
                   class="preview-image"
                   :style="{
-                    backgroundImage: `url(${getItemPreviewUrl(item)})`
+                    backgroundImage: `url(${item.image})`
                   }"
                 />
               </span>
@@ -116,7 +110,7 @@
 
 <script setup lang="ts" generic="T extends { key: string; [key: string]: any }">
 import Divider from 'primevue/divider'
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 
 import { useModelPreview } from '@/composables/sidebarTabs/useModelPreview'
 import { ComfyModelDef } from '@/stores/modelStore'
@@ -130,7 +124,6 @@ interface Props<T> {
   recentlyUsedTitle: string
   getItemIcon: (item: T) => string
   getItemLabel: (item: T) => string
-  getItemPreviewUrl?: (item: T) => string | null
   onItemClick: (item: T) => void
   // optional model preview props
   enablePreview?: boolean
@@ -142,7 +135,6 @@ const props = withDefaults(defineProps<Props<T>>(), {
   enablePreview: false,
   previewTargetId: '#model-library-model-preview-container',
   isModelItem: undefined,
-  getItemPreviewUrl: undefined,
   recentlyAddedItems: () => [],
   recentlyUsedItems: () => []
 })
@@ -210,20 +202,6 @@ const handleItemMouseLeave = () => {
 defineExpose({
   previewRef
 })
-
-// Load model images for recently added and used items
-const loadModelImages = async (newItems: T[]) => {
-  if (newItems.length > 0) {
-    await Promise.all(
-      newItems
-        .filter((item) => typeof item.load === 'function')
-        .map((item) => item.load!())
-    )
-  }
-}
-
-watch(() => props.recentlyAddedItems, loadModelImages, { immediate: true })
-watch(() => props.recentlyUsedItems, loadModelImages, { immediate: true })
 </script>
 
 <style scoped>
