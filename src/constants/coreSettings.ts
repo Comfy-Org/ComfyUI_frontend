@@ -83,7 +83,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Sidebar location',
     type: 'combo',
     options: ['left', 'right'],
-    defaultValue: 'left'
+    defaultValue: 'left',
+    deprecated: true
   },
   {
     id: 'Comfy.Sidebar.Size',

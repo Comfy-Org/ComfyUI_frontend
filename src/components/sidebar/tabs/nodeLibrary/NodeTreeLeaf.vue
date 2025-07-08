@@ -58,7 +58,6 @@ import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { useSettingStore } from '@/stores/settingStore'
 import { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
 const props = defineProps<{
@@ -72,11 +71,6 @@ const nodeBookmarkStore = useNodeBookmarkStore()
 const isBookmarked = computed(() =>
   nodeBookmarkStore.isBookmarked(nodeDef.value)
 )
-const settingStore = useSettingStore()
-const sidebarLocation = computed<'left' | 'right'>(() =>
-  settingStore.get('Comfy.Sidebar.Location')
-)
-
 const toggleBookmark = async () => {
   await nodeBookmarkStore.toggleBookmark(nodeDef.value)
 }
@@ -101,11 +95,7 @@ const handleNodeHover = async () => {
     previewHeight > availableSpaceBelow
       ? `${Math.max(0, targetRect.top - (previewHeight - availableSpaceBelow) - 20)}px`
       : `${targetRect.top - 40}px`
-  if (sidebarLocation.value === 'left') {
-    nodePreviewStyle.value.left = `${targetRect.right}px`
-  } else {
-    nodePreviewStyle.value.left = `${targetRect.left - 400}px`
-  }
+  nodePreviewStyle.value.left = `${targetRect.right}px`
 }
 
 const container = ref<HTMLElement | null>(null)
