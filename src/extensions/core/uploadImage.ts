@@ -22,16 +22,35 @@ const isMediaUploadComboInput = (inputSpec: InputSpec) => {
   )
 }
 
+const ALLOWED_UPLOAD_KEYS = new Set([
+  'image_upload',
+  'video_upload',
+  'animated_image_upload',
+  'display_name',
+  'control_after_generate',
+  'allow_batch',
+  'image_folder'
+])
+
 const createUploadInput = (
   imageInputName: string,
-  imageInputOptions: InputSpec
-): InputSpec => [
-  'IMAGEUPLOAD',
-  {
-    ...imageInputOptions[1],
-    imageInputName
-  }
-]
+  imageInputSpec: InputSpec
+): InputSpec => {
+  const [, opts] = imageInputSpec
+
+  // retain only the flags that make sense for IMAGEUPLOAD
+  const cleanOpts = Object.fromEntries(
+    Object.entries(opts ?? {}).filter(([k]) => ALLOWED_UPLOAD_KEYS.has(k))
+  )
+
+  return [
+    'IMAGEUPLOAD',
+    {
+      ...cleanOpts,
+      imageInputName
+    }
+  ]
+}
 
 app.registerExtension({
   name: 'Comfy.UploadImage',
