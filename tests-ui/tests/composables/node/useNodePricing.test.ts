@@ -300,14 +300,14 @@ describe('useNodePricing', () => {
   })
 
   describe('dynamic pricing - IdeogramV3', () => {
-    it('should return $0.08 for Quality rendering speed', () => {
+    it('should return $0.09 for Quality rendering speed', () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNode('IdeogramV3', [
         { name: 'rendering_speed', value: 'Quality' }
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.08/Run')
+      expect(price).toBe('$0.09/Run')
     })
 
     it('should return $0.06 for Balanced rendering speed', () => {
@@ -348,7 +348,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.24/Run') // 0.08 * 3
+      expect(price).toBe('$0.27/Run') // 0.09 * 3
     })
 
     it('should multiply price by num_images for Turbo rendering speed', () => {
