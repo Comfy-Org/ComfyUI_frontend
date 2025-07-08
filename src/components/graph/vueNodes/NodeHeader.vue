@@ -13,7 +13,7 @@
   >
     <!-- Collapse/Expand Button -->
     <button
-      v-if="!readonly"
+      v-show="!readonly"
       class="bg-transparent border-transparent flex items-center"
       title="Toggle collapse"
       @click.stop="handleCollapse"
