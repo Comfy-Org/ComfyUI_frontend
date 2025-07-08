@@ -142,7 +142,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget> impl
 
   // TODO: Resolve this workaround. Ref: https://github.com/Comfy-Org/litegraph.js/issues/1022
   get _displayValue(): string {
-    return String(this.value)
+    return this.computedDisabled ? "" : String(this.value)
   }
 
   get labelBaseline() {

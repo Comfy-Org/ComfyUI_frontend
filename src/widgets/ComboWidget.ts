@@ -23,6 +23,7 @@ export class ComboWidget extends BaseSteppedWidget<IStringComboWidget | IComboWi
   override type = "combo" as const
 
   override get _displayValue() {
+    if (this.computedDisabled) return ""
     const { values: rawValues } = this.options
     if (rawValues) {
       const values = typeof rawValues === "function" ? rawValues() : rawValues

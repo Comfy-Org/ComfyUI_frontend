@@ -9,6 +9,7 @@ export class NumberWidget extends BaseSteppedWidget<INumericWidget> implements I
   override type = "number" as const
 
   override get _displayValue() {
+    if (this.computedDisabled) return ""
     return Number(this.value).toFixed(
       this.options.precision !== undefined
         ? this.options.precision
