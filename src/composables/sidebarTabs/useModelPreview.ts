@@ -3,9 +3,11 @@ import { CSSProperties, computed, nextTick, ref } from 'vue'
 import { ComfyModelDef } from '@/stores/modelStore'
 import { useSettingStore } from '@/stores/settingStore'
 
-export function useModelPreview() {
+export function useModelPreview<
+  T extends { $el: HTMLElement } = { $el: HTMLElement }
+>() {
   const isHovered = ref(false)
-  const previewRef = ref<any>(null)
+  const previewRef = ref<T | null>(null)
   const modelPreviewStyle = ref<CSSProperties>({
     position: 'absolute',
     top: '0px',
