@@ -235,6 +235,20 @@ const zHistoryTaskItem = z.object({
   meta: zTaskMeta.optional()
 })
 
+// Raw history item from backend (without taskType)
+const zRawHistoryItem = z.object({
+  prompt_id: zPromptId,
+  prompt: zTaskPrompt,
+  status: zStatus.optional(),
+  outputs: zTaskOutput,
+  meta: zTaskMeta.optional()
+})
+
+// New API response format: { history: [{prompt_id: "...", ...}, ...] }
+const zHistoryResponse = z.object({
+  history: z.array(zRawHistoryItem)
+})
+
 const zTaskItem = z.union([
   zRunningTaskItem,
   zPendingTaskItem,
@@ -257,6 +271,8 @@ export type RunningTaskItem = z.infer<typeof zRunningTaskItem>
 export type PendingTaskItem = z.infer<typeof zPendingTaskItem>
 // `/history`
 export type HistoryTaskItem = z.infer<typeof zHistoryTaskItem>
+export type RawHistoryItem = z.infer<typeof zRawHistoryItem>
+export type HistoryResponse = z.infer<typeof zHistoryResponse>
 export type TaskItem = z.infer<typeof zTaskItem>
 
 export function validateTaskItem(taskItem: unknown) {
