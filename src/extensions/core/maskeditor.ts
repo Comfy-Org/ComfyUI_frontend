@@ -3531,7 +3531,6 @@ class UIManager {
   ) {
     var slider_container = this.createContainer(true)
     var slider_title = this.createContainerTitle(title)
-
     var slider = document.createElement('input')
     slider.classList.add('maskEditor_sidePanelBrushRange')
     slider.setAttribute('type', 'range')
@@ -5346,6 +5345,18 @@ app.registerExtension({
         ComfyApp.clipspace_return_node = selectedNode
         openMaskEditor()
       }
+    },
+    {
+      id: 'Comfy.MaskEditor.BrushSize.Increase',
+      icon: 'pi pi-plus-circle',
+      label: 'Increase Brush Size in MaskEditor',
+      function: () => changeBrushSize((old) => _.clamp(old + 8, 1, 100))
+    },
+    {
+      id: 'Comfy.MaskEditor.BrushSize.Decrease',
+      icon: 'pi pi-minus-circle',
+      label: 'Decrease Brush Size in MaskEditor',
+      function: () => changeBrushSize((old) => _.clamp(old - 8, 1, 100))
     }
   ],
   init() {
@@ -5359,6 +5370,17 @@ app.registerExtension({
     )
   }
 })
+
+const changeBrushSize = async (sizeChanger: (oldSize: number) => number) => {
+  if (!isOpened()) return
+  const maskEditor = MaskEditorDialog.getInstance()
+  if (!maskEditor) return
+  const messageBroker = maskEditor.getMessageBroker()
+  const oldBrushSize = (await messageBroker.pull('brushSettings')).size
+  const newBrushSize = sizeChanger(oldBrushSize)
+  messageBroker.publish('setBrushSize', newBrushSize)
+  messageBroker.publish('updateBrushPreview')
+}
 
 // NOTE: This originally was re-implemented at each individual call site, which is obviously a poorly-maintainable approach. I moved it to be implemented here once, but this should likely be either be implemented as a project-wide utility, or better yet, we should use a networking library that already has retry logic built-in, such as TanStack Query or axios-retry.
 // - @duckcomfy
