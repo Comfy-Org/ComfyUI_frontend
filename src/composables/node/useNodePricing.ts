@@ -151,7 +151,7 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
 
         const renderingSpeed = String(renderingSpeedWidget.value)
         if (renderingSpeed.toLowerCase().includes('quality')) {
-          basePrice = 0.08
+          basePrice = 0.09
         } else if (renderingSpeed.toLowerCase().includes('balanced')) {
           basePrice = 0.06
         } else if (renderingSpeed.toLowerCase().includes('turbo')) {
@@ -322,15 +322,15 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const effectScene = String(effectSceneWidget.value)
         if (
           effectScene.includes('fuzzyfuzzy') ||
-          effectScene.includes('squish') ||
-          effectScene.includes('expansion')
+          effectScene.includes('squish')
         ) {
           return '$0.28/Run'
-        } else if (
-          effectScene.includes('dizzydizzy') ||
-          effectScene.includes('bloombloom')
-        ) {
+        } else if (effectScene.includes('dizzydizzy')) {
           return '$0.49/Run'
+        } else if (effectScene.includes('bloombloom')) {
+          return '$0.49/Run'
+        } else if (effectScene.includes('expansion')) {
+          return '$0.28/Run'
         }
 
         return '$0.28/Run'
@@ -448,12 +448,12 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         } else if (model.includes('ray-2')) {
           if (duration.includes('5s')) {
             if (resolution.includes('4k')) return '$6.37/Run'
-            if (resolution.includes('1080p')) return '$2.30/Run'
+            if (resolution.includes('1080p')) return '$1.59/Run'
             if (resolution.includes('720p')) return '$0.71/Run'
             if (resolution.includes('540p')) return '$0.40/Run'
           } else if (duration.includes('9s')) {
             if (resolution.includes('4k')) return '$11.47/Run'
-            if (resolution.includes('1080p')) return '$4.14/Run'
+            if (resolution.includes('1080p')) return '$2.87/Run'
             if (resolution.includes('720p')) return '$1.28/Run'
             if (resolution.includes('540p')) return '$0.72/Run'
           }
@@ -499,12 +499,12 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         } else if (model.includes('ray-2')) {
           if (duration.includes('5s')) {
             if (resolution.includes('4k')) return '$6.37/Run'
-            if (resolution.includes('1080p')) return '$2.30/Run'
+            if (resolution.includes('1080p')) return '$1.59/Run'
             if (resolution.includes('720p')) return '$0.71/Run'
             if (resolution.includes('540p')) return '$0.40/Run'
           } else if (duration.includes('9s')) {
             if (resolution.includes('4k')) return '$11.47/Run'
-            if (resolution.includes('1080p')) return '$4.14/Run'
+            if (resolution.includes('1080p')) return '$2.87/Run'
             if (resolution.includes('720p')) return '$1.28/Run'
             if (resolution.includes('540p')) return '$0.72/Run'
           }
