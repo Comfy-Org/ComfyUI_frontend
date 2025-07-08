@@ -706,3 +706,24 @@ audio.comfy-audio.empty-audio-widget {
   will-change: transform;
 }
 
+/* Global performance optimizations for LOD */
+.lg-node--lod-minimal,
+.lg-node--lod-reduced {
+  /* Remove ALL expensive paint effects */
+  box-shadow: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  text-shadow: none !important;
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+  clip-path: none !important;
+}
+
+/* Reduce paint complexity for minimal LOD */
+.lg-node--lod-minimal {
+  /* Skip complex borders */
+  border-radius: 0 !important;
+  /* Use solid colors only */
+  background-image: none !important;
+}
+
