@@ -1,8 +1,18 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
+
+// Mock the workflowStore
+vi.mock('@/stores/workflowStore', () => ({
+  useWorkflowStore: vi.fn(() => ({
+    hierarchicalIdToNodeLocatorId: vi.fn(),
+    nodeIdToNodeLocatorId: vi.fn(),
+    nodeLocatorIdToHierarchicalId: vi.fn()
+  }))
+}))
 
 // Remove any previous global types
 declare global {
@@ -23,12 +33,16 @@ vi.mock('@/composables/node/useNodeProgressText', () => ({
   })
 }))
 
-// Create a local mock instead of using global to avoid conflicts
-const mockApp = {
-  graph: {
-    getNodeById: vi.fn()
+// Mock the app import with proper implementation
+vi.mock('@/scripts/app', () => ({
+  app: {
+    graph: {
+      getNodeById: vi.fn()
+    },
+    revokePreviews: vi.fn(),
+    nodePreviewImages: {}
   }
-}
+}))
 
 describe('executionStore - display_component handling', () => {
   function createDisplayComponentEvent(
@@ -48,7 +62,7 @@ describe('executionStore - display_component handling', () => {
 
   function handleDisplayComponentMessage(event: CustomEvent) {
     const { node_id, component } = event.detail
-    const node = mockApp.graph.getNodeById(node_id)
+    const node = vi.mocked(app.graph.getNodeById)(node_id)
     if (node && component === 'ChatHistoryWidget') {
       mockShowChatHistory(node)
     }
@@ -61,23 +75,23 @@ describe('executionStore - display_component handling', () => {
   })
 
   it('handles ChatHistoryWidget display_component messages', () => {
-    const mockNode = { id: '123' }
-    mockApp.graph.getNodeById.mockReturnValue(mockNode)
+    const mockNode = { id: '123' } as any
+    vi.mocked(app.graph.getNodeById).mockReturnValue(mockNode)
 
     const event = createDisplayComponentEvent('123')
     handleDisplayComponentMessage(event)
 
-    expect(mockApp.graph.getNodeById).toHaveBeenCalledWith('123')
+    expect(app.graph.getNodeById).toHaveBeenCalledWith('123')
     expect(mockShowChatHistory).toHaveBeenCalledWith(mockNode)
   })
 
   it('does nothing if node is not found', () => {
-    mockApp.graph.getNodeById.mockReturnValue(null)
+    vi.mocked(app.graph.getNodeById).mockReturnValue(null)
 
     const event = createDisplayComponentEvent('non-existent')
     handleDisplayComponentMessage(event)
 
-    expect(mockApp.graph.getNodeById).toHaveBeenCalledWith('non-existent')
+    expect(app.graph.getNodeById).toHaveBeenCalledWith('non-existent')
     expect(mockShowChatHistory).not.toHaveBeenCalled()
   })
 })
@@ -88,58 +102,66 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
 
   beforeEach(() => {
     setActivePinia(createPinia())
+
+    // Create the mock workflowStore instance
+    const mockWorkflowStore = {
+      hierarchicalIdToNodeLocatorId: vi.fn(),
+      nodeIdToNodeLocatorId: vi.fn(),
+      nodeLocatorIdToHierarchicalId: vi.fn()
+    }
+
+    // Mock the useWorkflowStore function to return our mock
+    vi.mocked(useWorkflowStore).mockReturnValue(mockWorkflowStore as any)
+
+    workflowStore = mockWorkflowStore as any
     store = useExecutionStore()
-    workflowStore = useWorkflowStore()
     vi.clearAllMocks()
   })
 
   describe('executionIdToNodeLocatorId', () => {
     it('should convert hierarchical execution ID to NodeLocatorId', () => {
-      const mockNodeLocatorId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890:456'
-      vi.spyOn(workflowStore, 'hierarchicalIdToNodeLocatorId').mockReturnValue(
-        mockNodeLocatorId as any
-      )
+      // Mock subgraph structure
+      const mockSubgraph = {
+        id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        _nodes: []
+      }
+
+      const mockNode = {
+        id: 123,
+        isSubgraphNode: () => true,
+        subgraph: mockSubgraph
+      } as any
+
+      // Mock app.graph.getNodeById to return the mock node
+      vi.mocked(app.graph.getNodeById).mockReturnValue(mockNode)
 
       const result = store.executionIdToNodeLocatorId('123:456')
 
-      expect(workflowStore.hierarchicalIdToNodeLocatorId).toHaveBeenCalledWith(
-        '123:456'
-      )
-      expect(result).toBe(mockNodeLocatorId)
+      expect(result).toBe('a1b2c3d4-e5f6-7890-abcd-ef1234567890:456')
     })
 
     it('should convert simple node ID to NodeLocatorId', () => {
-      const mockNodeLocatorId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890:123'
-      vi.spyOn(workflowStore, 'nodeIdToNodeLocatorId').mockReturnValue(
-        mockNodeLocatorId as any
-      )
-
       const result = store.executionIdToNodeLocatorId('123')
 
-      expect(workflowStore.nodeIdToNodeLocatorId).toHaveBeenCalledWith('123')
-      expect(result).toBe(mockNodeLocatorId)
+      // For simple node IDs, it should return the ID as-is
+      expect(result).toBe('123')
     })
 
     it('should handle numeric node IDs', () => {
-      const mockNodeLocatorId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890:123'
-      vi.spyOn(workflowStore, 'nodeIdToNodeLocatorId').mockReturnValue(
-        mockNodeLocatorId as any
-      )
-
       const result = store.executionIdToNodeLocatorId(123)
 
-      expect(workflowStore.nodeIdToNodeLocatorId).toHaveBeenCalledWith('123')
-      expect(result).toBe(mockNodeLocatorId)
+      // For numeric IDs, it should convert to string and return as-is
+      expect(result).toBe('123')
     })
 
     it('should return null when conversion fails', () => {
-      vi.spyOn(workflowStore, 'hierarchicalIdToNodeLocatorId').mockReturnValue(
-        null
+      // Mock app.graph.getNodeById to return null (node not found)
+      vi.mocked(app.graph.getNodeById).mockReturnValue(null)
+
+      // This should throw an error as the node is not found
+      expect(() => store.executionIdToNodeLocatorId('999:456')).toThrow(
+        'Subgraph not found: 999'
       )
-
-      const result = store.executionIdToNodeLocatorId('123:456')
-
-      expect(result).toBeNull()
     })
   })
 
