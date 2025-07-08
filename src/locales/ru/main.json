@@ -775,20 +775,20 @@
     "Toggle Bottom Panel": "Переключить нижнюю панель",
     "Toggle Focus Mode": "Переключить режим фокуса",
     "Toggle Logs Bottom Panel": "Переключение нижней панели журналов",
-    "Toggle Model Library Sidebar": "Переключение боковой панели библиотеки моделей",
-    "Toggle Node Library Sidebar": "Переключение боковой панели библиотеки нод",
-    "Toggle Queue Sidebar": "Переключение боковой панели очереди",
     "Toggle Search Box": "Переключить поисковую панель",
     "Toggle Terminal Bottom Panel": "Переключение нижней панели терминала",
     "Toggle Theme (Dark/Light)": "Переключение темы (Тёмная/Светлая)",
-    "Toggle Workflows Sidebar": "Переключение боковой панели рабочих процессов",
     "Toggle the Custom Nodes Manager": "Переключить менеджер пользовательских узлов",
     "Toggle the Custom Nodes Manager Progress Bar": "Переключить индикатор выполнения менеджера пользовательских узлов",
     "Undo": "Отменить",
     "Ungroup selected group nodes": "Разгруппировать выбранные групповые ноды",
     "Workflow": "Рабочий процесс",
     "Zoom In": "Увеличить",
-    "Zoom Out": "Уменьшить"
+    "Zoom Out": "Уменьшить",
+    "sideToolbar_modelLibrary": "sideToolbar.каталогМоделей",
+    "sideToolbar_nodeLibrary": "sideToolbar.каталогУзлов",
+    "sideToolbar_queue": "sideToolbar.очередь",
+    "sideToolbar_workflows": "sideToolbar.рабочиеПроцессы"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "Больше не показывать это",
@@ -1103,6 +1103,7 @@
     "UV": "UV",
     "User": "Пользователь",
     "Validation": "Валидация",
+    "Vue Nodes": "Vue Nodes",
     "Window": "Окно",
     "Workflow": "Рабочий процесс"
   },
