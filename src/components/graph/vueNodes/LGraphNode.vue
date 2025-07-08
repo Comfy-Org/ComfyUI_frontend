@@ -24,15 +24,16 @@
   >
     <!-- Header only updates on title/color changes -->
     <NodeHeader
-      v-memo="[nodeData.title, lodLevel]"
+      v-memo="[nodeData.title, lodLevel, isCollapsed]"
       :node-data="nodeData"
       :readonly="readonly"
       :lod-level="lodLevel"
+      :collapsed="isCollapsed"
       @collapse="handleCollapse"
     />
 
-    <!-- Node Body - rendered based on LOD level -->
-    <div v-if="!isMinimalLOD" class="flex flex-col gap-2 p-2">
+    <!-- Node Body - rendered based on LOD level and collapsed state -->
+    <div v-if="!isMinimalLOD && !isCollapsed" class="flex flex-col gap-2 p-2">
       <!-- Slots only rendered at full detail -->
       <NodeSlots
         v-if="shouldRenderSlots"
@@ -114,7 +115,6 @@ const emit = defineEmits<{
     slotIndex: number,
     isInput: boolean
   ]
-  collapse: []
 }>()
 
 // LOD (Level of Detail) system based on zoom level
@@ -143,6 +143,9 @@ onErrorCaptured((error) => {
 // Track dragging state for will-change optimization
 const isDragging = ref(false)
 
+// Track collapsed state
+const isCollapsed = ref(props.nodeData.flags?.collapsed ?? false)
+
 // Check if node has custom content
 const hasCustomContent = computed(() => {
   // Currently all content is handled through widgets
@@ -160,7 +163,12 @@ const handlePointerDown = (event: PointerEvent) => {
 }
 
 const handleCollapse = () => {
-  emit('collapse')
+  isCollapsed.value = !isCollapsed.value
+  // TODO: Sync with LiteGraph node when integration is complete
+  // if (props.node) {
+  //   props.node.flags = props.node.flags || {}
+  //   props.node.flags.collapsed = isCollapsed.value
+  // }
 }
 
 const handleSlotClick = (

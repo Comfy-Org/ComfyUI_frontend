@@ -18,7 +18,10 @@
       title="Toggle collapse"
       @click.stop="handleCollapse"
     >
-      <i class="pi pi-chevron-down text-xs leading-none relative top-[1px]"></i>
+      <i
+        :class="collapsed ? 'pi pi-chevron-right' : 'pi pi-chevron-down'"
+        class="text-xs leading-none relative top-[1px]"
+      ></i>
     </button>
 
     <!-- Node Title -->
@@ -41,6 +44,7 @@ interface NodeHeaderProps {
   nodeData?: VueNodeData // New clean data structure
   readonly?: boolean
   lodLevel?: LODLevel
+  collapsed?: boolean
 }
 
 const props = defineProps<NodeHeaderProps>()

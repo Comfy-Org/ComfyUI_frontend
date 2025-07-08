@@ -53,6 +53,9 @@ export interface VueNodeData {
   widgets?: SafeWidgetData[]
   inputs?: unknown[]
   outputs?: unknown[]
+  flags?: {
+    collapsed?: boolean
+  }
 }
 
 export interface SpatialMetrics {
