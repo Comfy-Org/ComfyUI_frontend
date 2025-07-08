@@ -2468,62 +2468,117 @@ class BrushTool {
 
   private async draw_shape(point: Point, overrideOpacity?: number) {
     const brushSettings: Brush = this.brushSettings
-    const currentTool = await this.messageBroker.pull('currentTool')
+    const maskCtx = this.maskCtx || (await this.messageBroker.pull('maskCtx'))
+    const rgbCtx = this.rgbCtx || (await this.messageBroker.pull('rgbCtx'))
+    const brushType = await this.messageBroker.pull('brushType')
+    const maskColor = await this.messageBroker.pull('getMaskColor')
     const size = brushSettings.size
-    const sliderOpacity = brushSettings.opacity
+    const brushSettingsSliderOpacity = brushSettings.opacity
     const opacity =
-      overrideOpacity == undefined ? sliderOpacity : overrideOpacity
+      overrideOpacity == undefined
+        ? brushSettingsSliderOpacity
+        : overrideOpacity
     const hardness = brushSettings.hardness
-
     const x = point.x
     const y = point.y
-
     // Extend the gradient radius beyond the brush size
     const extendedSize = size * (2 - hardness)
 
-    let gradient: CanvasGradient
-    let maskCtx: CanvasRenderingContext2D
-    let rgbCtx: CanvasRenderingContext2D
-    rgbCtx = await this.messageBroker.pull('rgbCtx')
-    maskCtx = await this.messageBroker.pull('maskCtx')
-    const maskColor = await this.messageBroker.pull('getMaskColor')
+    const isErasing = maskCtx.globalCompositeOperation === 'destination-out'
+    const currentTool = await this.messageBroker.pull('currentTool')
+
+    // handle paint pen
     if (
       this.activeLayer === 'rgb' &&
       (currentTool === Tools.Eraser || currentTool === Tools.PaintPen)
     ) {
-      // Handle RGB painting
-      gradient = rgbCtx.createRadialGradient(x, y, 0, x, y, extendedSize)
       const rgbaColor = this.hexToRgba(this.rgbColor, opacity)
-      gradient.addColorStop(0, rgbaColor)
-      gradient.addColorStop(hardness, rgbaColor)
-      gradient.addColorStop(1, this.hexToRgba(this.rgbColor, 0))
+      let gradient = rgbCtx.createRadialGradient(x, y, 0, x, y, extendedSize)
+      console.log(hardness)
+      if (hardness === 1) {
+        gradient.addColorStop(0, rgbaColor)
+        gradient.addColorStop(
+          1,
+          this.hexToRgba(this.rgbColor, brushSettingsSliderOpacity)
+        )
+      } else {
+        gradient.addColorStop(0, rgbaColor)
+        gradient.addColorStop(hardness, rgbaColor)
+        gradient.addColorStop(1, this.hexToRgba(this.rgbColor, 0))
+      }
       rgbCtx.fillStyle = gradient
       rgbCtx.beginPath()
-      rgbCtx.arc(x, y, extendedSize, 0, Math.PI * 2, false)
+      if (brushType === BrushShape.Rect) {
+        rgbCtx.rect(
+          x - extendedSize,
+          y - extendedSize,
+          extendedSize * 2,
+          extendedSize * 2
+        )
+      } else {
+        rgbCtx.arc(x, y, extendedSize, 0, Math.PI * 2, false)
+      }
       rgbCtx.fill()
-    } else if (
-      this.activeLayer === 'mask' &&
-      (currentTool === Tools.Eraser || currentTool === Tools.MaskPen)
-    ) {
-      // Handle mask drawing/erasing
-      gradient = maskCtx.createRadialGradient(x, y, 0, x, y, extendedSize)
+      return
+    }
+
+    let gradient = maskCtx.createRadialGradient(x, y, 0, x, y, extendedSize)
+    if (hardness === 1) {
       gradient.addColorStop(
         0,
-        `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
-      )
-      gradient.addColorStop(
-        hardness,
-        `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
+        isErasing
+          ? `rgba(255, 255, 255, ${opacity})`
+          : `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
       )
       gradient.addColorStop(
         1,
-        `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, 0)`
+        isErasing
+          ? `rgba(255, 255, 255, ${opacity})`
+          : `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
       )
-      maskCtx.fillStyle = gradient
-      maskCtx.beginPath()
-      maskCtx.arc(x, y, extendedSize, 0, Math.PI * 2, false)
-      maskCtx.fill()
+    } else {
+      let softness = 1 - hardness
+      let innerStop = Math.max(0, hardness - softness)
+      let outerStop = size / extendedSize
+
+      if (isErasing) {
+        gradient.addColorStop(0, `rgba(255, 255, 255, ${opacity})`)
+        gradient.addColorStop(innerStop, `rgba(255, 255, 255, ${opacity})`)
+        gradient.addColorStop(outerStop, `rgba(255, 255, 255, ${opacity / 2})`)
+        gradient.addColorStop(1, `rgba(255, 255, 255, 0)`)
+      } else {
+        gradient.addColorStop(
+          0,
+          `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
+        )
+        gradient.addColorStop(
+          innerStop,
+          `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
+        )
+        gradient.addColorStop(
+          outerStop,
+          `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity / 2})`
+        )
+        gradient.addColorStop(
+          1,
+          `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, 0)`
+        )
+      }
     }
+
+    maskCtx.fillStyle = gradient
+    maskCtx.beginPath()
+    if (brushType === BrushShape.Rect) {
+      maskCtx.rect(
+        x - extendedSize,
+        y - extendedSize,
+        extendedSize * 2,
+        extendedSize * 2
+      )
+    } else {
+      maskCtx.arc(x, y, extendedSize, 0, Math.PI * 2, false)
+    }
+    maskCtx.fill()
   }
 
   private hexToRgba(hex: string, alpha: number): string {
