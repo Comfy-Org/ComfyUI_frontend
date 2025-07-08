@@ -16,8 +16,8 @@ import type {
   HistoryTaskItem,
   LogsRawResponse,
   LogsWsMessage,
+  NodeProgressState,
   PendingTaskItem,
-  ProgressStateWsMessage,
   ProgressTextWsMessage,
   ProgressWsMessage,
   PromptResponse,
@@ -116,7 +116,7 @@ interface BackendApiCalls {
     promptId: string
   }
   progress_text: ProgressTextWsMessage
-  progress_state: ProgressStateWsMessage
+  progress_state: NodeProgressState
   display_component: DisplayComponentWsMessage
   feature_flags: FeatureFlagsWsMessage
 }
