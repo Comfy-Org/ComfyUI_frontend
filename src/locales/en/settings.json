@@ -324,10 +324,6 @@
       "Bottom": "Bottom"
     }
   },
-  "Comfy_Validation_NodeDefs": {
-    "name": "Validate node definitions (slow)",
-    "tooltip": "Recommended for node developers. This will validate all node definitions on startup."
-  },
   "Comfy_Validation_Workflows": {
     "name": "Validate workflows"
   },

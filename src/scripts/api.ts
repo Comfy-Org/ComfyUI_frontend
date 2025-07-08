@@ -31,10 +31,7 @@ import type {
   ComfyWorkflowJSON,
   NodeId
 } from '@/schemas/comfyWorkflowSchema'
-import {
-  type ComfyNodeDef,
-  validateComfyNodeDef
-} from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { WorkflowTemplates } from '@/types/workflowTemplateTypes'
 
 interface QueuePromptRequestBody {
@@ -533,31 +530,9 @@ export class ComfyApi extends EventTarget {
    * Loads node object definitions for the graph
    * @returns The node definitions
    */
-  async getNodeDefs({ validate = false }: { validate?: boolean } = {}): Promise<
-    Record<string, ComfyNodeDef>
-  > {
+  async getNodeDefs(): Promise<Record<string, ComfyNodeDef>> {
     const resp = await this.fetchApi('/object_info', { cache: 'no-store' })
-    const objectInfoUnsafe = await resp.json()
-    if (!validate) {
-      return objectInfoUnsafe
-    }
-    // Validate node definitions against zod schema. (slow)
-    const objectInfo: Record<string, ComfyNodeDef> = {}
-    for (const key in objectInfoUnsafe) {
-      const validatedDef = validateComfyNodeDef(
-        objectInfoUnsafe[key],
-        /* onError=*/ (errorMessage: string) => {
-          console.warn(
-            `Skipping invalid node definition: ${key}. See debug log for more information.`
-          )
-          console.debug(errorMessage)
-        }
-      )
-      if (validatedDef !== null) {
-        objectInfo[key] = validatedDef
-      }
-    }
-    return objectInfo
+    return await resp.json()
   }
 
   /**
