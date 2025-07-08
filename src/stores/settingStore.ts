@@ -7,6 +7,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { SettingParams } from '@/types/settingTypes'
 import type { TreeNode } from '@/types/treeExplorerTypes'
+import { compareVersions } from '@/utils/formatUtil'
 
 export const getSettingInfo = (setting: SettingParams) => {
   const parts = setting.category || setting.id.split('.')
@@ -83,9 +84,54 @@ export const useSettingStore = defineStore('setting', () => {
    */
   function getDefaultValue<K extends keyof Settings>(key: K): Settings[K] {
     const param = settingsById.value[key]
+
+    const versionedDefault = getVersionedDefaultValue(key, param)
+
+    if (versionedDefault) {
+      return versionedDefault
+    }
+
     return typeof param?.defaultValue === 'function'
       ? param.defaultValue()
       : param?.defaultValue
+  }
+
+  function getVersionedDefaultValue<K extends keyof Settings>(
+    key: K,
+    param: SettingParams
+  ): Settings[K] | null {
+    // get default versioned value, skipping if the key is 'Comfy.InstalledVersion' to prevent infinite loop
+    if (param?.defaultsByInstallVersion && key !== 'Comfy.InstalledVersion') {
+      const installedVersion = get('Comfy.InstalledVersion')
+
+      if (installedVersion) {
+        const sortedVersions = Object.keys(param.defaultsByInstallVersion).sort(
+          (a, b) => compareVersions(a, b)
+        )
+
+        for (const version of sortedVersions.reverse()) {
+          // Ensure the version is in a valid format before comparing
+          if (!isValidVersionFormat(version)) {
+            continue
+          }
+
+          if (compareVersions(installedVersion, version) >= 0) {
+            const versionedDefault = param.defaultsByInstallVersion[version]
+            return typeof versionedDefault === 'function'
+              ? versionedDefault()
+              : versionedDefault
+          }
+        }
+      }
+    }
+
+    return null
+  }
+
+  function isValidVersionFormat(
+    version: string
+  ): version is `${number}.${number}.${number}` {
+    return /^\d+\.\d+\.\d+$/.test(version)
   }
 
   /**
