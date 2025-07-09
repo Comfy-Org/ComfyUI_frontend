@@ -231,19 +231,19 @@
     "label": "Toggle Focus Mode"
   },
   "Workspace_ToggleSidebarTab_model-library": {
-    "label": "Model Library",
+    "label": "Toggle Model Library Sidebar",
     "tooltip": "Model Library"
   },
   "Workspace_ToggleSidebarTab_node-library": {
-    "label": "Node Library",
+    "label": "Toggle Node Library Sidebar",
     "tooltip": "Node Library"
   },
   "Workspace_ToggleSidebarTab_queue": {
-    "label": "Queue",
+    "label": "Toggle Queue Sidebar",
     "tooltip": "Queue"
   },
   "Workspace_ToggleSidebarTab_workflows": {
-    "label": "Workflows",
+    "label": "Toggle Workflows Sidebar",
     "tooltip": "Workflows"
   }
 }
