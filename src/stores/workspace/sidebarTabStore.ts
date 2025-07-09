@@ -27,7 +27,11 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
   const registerSidebarTab = (tab: SidebarTabExtension) => {
     sidebarTabs.value = [...sidebarTabs.value, tab]
 
-    const labelFunction = te(tab.title) ? () => t(tab.title) : tab.title
+    // Generate label in format "Toggle X Sidebar"
+    const labelFunction = () => {
+      const tabTitle = te(tab.title) ? t(tab.title) : tab.title
+      return `Toggle ${tabTitle} Sidebar`
+    }
     const tooltipFunction = tab.tooltip
       ? te(String(tab.tooltip))
         ? () => t(String(tab.tooltip))
