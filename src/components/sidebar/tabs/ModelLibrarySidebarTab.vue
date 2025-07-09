@@ -177,6 +177,9 @@ const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
           const provider = modelToNodeStore.getNodeProvider(model!.directory)
           if (provider) {
             const node = useLitegraphService().addNodeOnGraph(provider.nodeDef)
+            recentItemsStore.logModelUsage(model!).catch((error) => {
+              console.error('Error logging model usage:', error)
+            })
             const widget = node.widgets?.find(
               (widget: IBaseWidget) => widget.name === provider.key
             )
@@ -226,6 +229,9 @@ const handleModelClick = (model: ComfyModelDef): void => {
   const provider = modelToNodeStore.getNodeProvider(model.directory)
   if (provider) {
     const node = useLitegraphService().addNodeOnGraph(provider.nodeDef)
+    recentItemsStore.logModelUsage(model).catch((error) => {
+      console.error('Error logging model usage:', error)
+    })
     const widget = node.widgets?.find(
       (widget: IBaseWidget) => widget.name === provider.key
     )
@@ -259,6 +265,7 @@ watchEffect(async () => {
     settingStore.get('Comfy.Sidebar.RecentItems.ShowRecentlyUsed')
   ) {
     await modelStore.loadModels()
+    await recentItemsStore.loadRecentModels()
   }
 })
 </script>
