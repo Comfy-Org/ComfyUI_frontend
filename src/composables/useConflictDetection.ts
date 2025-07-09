@@ -4,6 +4,7 @@ import config from '@/config'
 import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import { useDialogService } from '@/services/dialogService'
+import { useExtensionStore } from '@/stores/extensionStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { SystemStats } from '@/types'
 import type { components } from '@/types/comfyRegistryTypes'
@@ -412,6 +413,180 @@ export function useConflictDetection() {
   }
 
   /**
+   * Fetches Python import failure information from ComfyUI Manager.
+   * Gets installed packages and checks each one for import failures.
+   * @returns Promise that resolves to import failure data
+   */
+  async function fetchImportFailInfo(): Promise<Record<string, any>> {
+    try {
+      const comfyManagerService = useComfyManagerService()
+
+      // Get installed packages first
+      const installedPacks = await comfyManagerService.listInstalledPacks(
+        abortController.value?.signal
+      )
+
+      if (!installedPacks) {
+        console.warn('[ConflictDetection] No installed packages found')
+        return {}
+      }
+
+      const importFailures: Record<string, any> = {}
+
+      // Check each installed package for import failures
+      // Process in smaller batches to avoid overwhelming the API
+      const packageNames = Object.keys(installedPacks)
+      const batchSize = 10
+
+      for (let i = 0; i < packageNames.length; i += batchSize) {
+        const batch = packageNames.slice(i, i + batchSize)
+
+        const batchResults = await Promise.allSettled(
+          batch.map(async (packageName) => {
+            try {
+              // Try to get import failure info for this package
+              const failInfo = await comfyManagerService.getImportFailInfo(
+                { cnr_id: packageName },
+                abortController.value?.signal
+              )
+
+              if (failInfo) {
+                console.log(
+                  `[ConflictDetection] Import failure found for ${packageName}:`,
+                  failInfo
+                )
+                return { packageName, failInfo }
+              }
+            } catch (error) {
+              // If API returns 400, it means no import failure info available
+              // This is normal for packages that imported successfully
+              if (error && typeof error === 'object' && 'response' in error) {
+                const axiosError = error as any
+                if (axiosError.response?.status === 400) {
+                  return null // No failure info available (normal case)
+                }
+              }
+
+              console.warn(
+                `[ConflictDetection] Failed to check import failure for ${packageName}:`,
+                error
+              )
+            }
+            return null
+          })
+        )
+
+        // Process batch results
+        batchResults.forEach((result) => {
+          if (result.status === 'fulfilled' && result.value) {
+            const { packageName, failInfo } = result.value
+            importFailures[packageName] = failInfo
+          }
+        })
+      }
+
+      return importFailures
+    } catch (error) {
+      console.warn(
+        '[ConflictDetection] Failed to fetch import failure information:',
+        error
+      )
+      return {}
+    }
+  }
+
+  /**
+   * Detects runtime conflicts from Python import failures.
+   * @param importFailInfo Import failure data from Manager API
+   * @returns Array of conflict detection results for failed imports
+   */
+  function detectPythonImportConflicts(
+    importFailInfo: Record<string, any>
+  ): ConflictDetectionResult[] {
+    const results: ConflictDetectionResult[] = []
+
+    if (!importFailInfo || typeof importFailInfo !== 'object') {
+      return results
+    }
+
+    // Process import failures
+    for (const [packageName, failureInfo] of Object.entries(importFailInfo)) {
+      if (failureInfo && typeof failureInfo === 'object') {
+        // Extract error information from Manager API response
+        const errorMsg = failureInfo.msg || 'Unknown import error'
+        const modulePath = failureInfo.path || ''
+
+        // Parse error message to extract missing dependency
+        const missingDependency = extractMissingDependency(errorMsg)
+
+        const conflicts: ConflictDetail[] = [
+          {
+            type: 'python_dependency',
+            current_value: 'missing',
+            required_value: missingDependency
+          }
+        ]
+
+        results.push({
+          package_id: packageName,
+          package_name: packageName,
+          has_conflict: true,
+          conflicts,
+          is_compatible: false
+        })
+
+        console.warn(
+          `[ConflictDetection] Python import failure detected for ${packageName}:`,
+          {
+            path: modulePath,
+            error: errorMsg,
+            missingDependency
+          }
+        )
+      }
+    }
+
+    return results
+  }
+
+  /**
+   * Detects extension loading and execution conflicts.
+   * @returns Array of conflict detection results for extensions
+   */
+  function detectExtensionConflicts(): ConflictDetectionResult[] {
+    const results: ConflictDetectionResult[] = []
+    const extensionStore = useExtensionStore()
+
+    // Check for extensions that failed to load or execute
+    // This is a placeholder - actual implementation would need extension error tracking
+    for (const extension of extensionStore.extensions) {
+      // Check if extension is disabled due to incompatibility
+      if (!extensionStore.isExtensionEnabled(extension.name)) {
+        // Only report as conflict if it's not intentionally disabled
+        if (!extensionStore.isExtensionReadOnly(extension.name)) {
+          const conflicts: ConflictDetail[] = [
+            {
+              type: 'frontend_version', // or create new type 'extension_error'
+              current_value: 'extension_disabled',
+              required_value: 'extension_compatible'
+            }
+          ]
+
+          results.push({
+            package_id: extension.name,
+            package_name: extension.name,
+            has_conflict: true,
+            conflicts,
+            is_compatible: false
+          })
+        }
+      }
+    }
+
+    return results
+  }
+
+  /**
    * Performs complete conflict detection.
    * @returns Promise that resolves to conflict detection response
    */
@@ -454,36 +629,62 @@ export function useConflictDetection() {
       )
 
       const conflictResults = await Promise.allSettled(conflictDetectionTasks)
-      const results: ConflictDetectionResult[] = conflictResults
+      const packageResults: ConflictDetectionResult[] = conflictResults
         .map((result) => (result.status === 'fulfilled' ? result.value : null))
         .filter((result): result is ConflictDetectionResult => result !== null)
 
-      // 4. Generate summary information
-      const summary = generateSummary(results, Date.now() - startTime)
+      // 4. Detect Python import failures
+      const importFailInfo = await fetchImportFailInfo()
+      const importFailResults = detectPythonImportConflicts(importFailInfo)
+      console.log(
+        '[ConflictDetection] Python import failures detected:',
+        importFailResults
+      )
 
-      // 5. Update state
-      detectionResults.value = results
+      // 5. Detect extension conflicts
+      const extensionResults = detectExtensionConflicts()
+      console.log(
+        '[ConflictDetection] Extension conflicts detected:',
+        extensionResults
+      )
+
+      // 6. Combine all results
+      const allResults = [
+        ...packageResults,
+        ...importFailResults,
+        ...extensionResults
+      ]
+
+      // 7. Generate summary information
+      const summary = generateSummary(allResults, Date.now() - startTime)
+
+      // 8. Update state
+      detectionResults.value = allResults
       detectionSummary.value = summary
       lastDetectionTime.value = new Date().toISOString()
 
       console.log('[ConflictDetection] Conflict detection completed:', summary)
 
       // Show dialog if conflicts are detected
-      if (results.some((result) => result.has_conflict)) {
-        const conflictedResults = results.filter(
+      if (allResults.some((result) => result.has_conflict)) {
+        const conflictedResults = allResults.filter(
           (result) => result.has_conflict
         )
+
+        // Merge conflicts for packages with the same name
+        const mergedConflicts = mergeConflictsByPackageName(conflictedResults)
+
         console.log(
           '[ConflictDetection] Showing dialog with conflicts:',
-          conflictedResults
+          mergedConflicts
         )
-        dialogService.showNodeConflictDialog({ conflicts: conflictedResults })
+        dialogService.showNodeConflictDialog({ conflicts: mergedConflicts })
       }
 
       const response: ConflictDetectionResponse = {
         success: true,
         summary,
-        results,
+        results: allResults,
         detected_system_environment: sysEnv
       }
 
@@ -570,6 +771,93 @@ export function useConflictDetection() {
 }
 
 // Helper Functions Implementation
+
+/**
+ * Merges conflict results for packages with the same name.
+ * Combines all conflicts from different detection sources (registry, python, extension)
+ * into a single result per package name.
+ * @param conflicts Array of conflict detection results
+ * @returns Array of merged conflict detection results
+ */
+function mergeConflictsByPackageName(
+  conflicts: ConflictDetectionResult[]
+): ConflictDetectionResult[] {
+  const mergedMap = new Map<string, ConflictDetectionResult>()
+
+  conflicts.forEach((conflict) => {
+    const packageName = conflict.package_name
+
+    if (mergedMap.has(packageName)) {
+      // Package already exists, merge conflicts
+      const existing = mergedMap.get(packageName)!
+
+      // Combine all conflicts, avoiding duplicates
+      const allConflicts = [...existing.conflicts, ...conflict.conflicts]
+      const uniqueConflicts = allConflicts.filter((conflict, index, array) => {
+        // Check if this conflict type already exists
+        return (
+          array.findIndex(
+            (c) =>
+              c.type === conflict.type &&
+              c.current_value === conflict.current_value &&
+              c.required_value === conflict.required_value
+          ) === index
+        )
+      })
+
+      // Update the existing entry
+      mergedMap.set(packageName, {
+        ...existing,
+        conflicts: uniqueConflicts,
+        has_conflict: uniqueConflicts.length > 0,
+        is_compatible: uniqueConflicts.length === 0
+      })
+    } else {
+      // New package, add as-is
+      mergedMap.set(packageName, conflict)
+    }
+  })
+
+  return Array.from(mergedMap.values())
+}
+
+/**
+ * Extracts missing dependency name from Python error message.
+ * @param errorMsg Error message from Python import failure
+ * @returns Name of missing dependency
+ */
+function extractMissingDependency(errorMsg: string): string {
+  // Try to extract module name from common error patterns
+
+  // Pattern 1: "ModuleNotFoundError: No module named 'module_name'"
+  const moduleNotFoundMatch = errorMsg.match(/No module named '([^']+)'/)
+  if (moduleNotFoundMatch) {
+    return moduleNotFoundMatch[1]
+  }
+
+  // Pattern 2: "ImportError: cannot import name 'something' from 'module_name'"
+  const importErrorMatch = errorMsg.match(
+    /cannot import name '[^']+' from '([^']+)'/
+  )
+  if (importErrorMatch) {
+    return importErrorMatch[1]
+  }
+
+  // Pattern 3: "from module_name import something" in the traceback
+  const fromImportMatch = errorMsg.match(/from ([a-zA-Z_][a-zA-Z0-9_]*) import/)
+  if (fromImportMatch) {
+    return fromImportMatch[1]
+  }
+
+  // Pattern 4: "import module_name" in the traceback
+  const importMatch = errorMsg.match(/import ([a-zA-Z_][a-zA-Z0-9_]*)/)
+  if (importMatch) {
+    return importMatch[1]
+  }
+
+  // Fallback: return generic message
+  return 'unknown dependency'
+}
 
 /**
  * Fetches frontend version from config.
@@ -938,7 +1226,8 @@ function generateSummary(
     os: 0,
     accelerator: 0,
     banned: 0,
-    security_pending: 0
+    security_pending: 0,
+    python_dependency: 0
   }
 
   const conflictsByTypeDetails: Record<ConflictType, string[]> = {
@@ -948,7 +1237,8 @@ function generateSummary(
     os: [],
     accelerator: [],
     banned: [],
-    security_pending: []
+    security_pending: [],
+    python_dependency: []
   }
 
   let bannedCount = 0
@@ -996,7 +1286,8 @@ function getEmptySummary(): ConflictDetectionSummary {
       os: [],
       accelerator: [],
       banned: [],
-      security_pending: []
+      security_pending: [],
+      python_dependency: []
     },
     last_check_timestamp: new Date().toISOString(),
     check_duration_ms: 0
