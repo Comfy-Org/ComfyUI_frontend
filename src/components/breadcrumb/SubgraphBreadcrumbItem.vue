@@ -1,5 +1,6 @@
 <template>
   <a
+    ref="wrapperRef"
     v-tooltip.bottom="item.label"
     href="#"
     class="cursor-pointer p-breadcrumb-item-link"
@@ -27,12 +28,23 @@
       }
     }"
   />
+  <InputText
+    v-if="isEditing"
+    ref="itemInputRef"
+    v-model="itemLabel"
+    class="fixed z-[10000] text-[.8rem] px-2 py-2"
+    @blur="inputBlur(true)"
+    @click.stop
+    @keydown.enter="inputBlur(true)"
+    @keydown.esc="inputBlur(false)"
+  />
 </template>
 
 <script setup lang="ts">
+import InputText from 'primevue/inputtext'
 import Menu, { MenuState } from 'primevue/menu'
 import type { MenuItem } from 'primevue/menuitem'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useDialogService } from '@/services/dialogService'
@@ -53,8 +65,40 @@ const props = withDefaults(defineProps<Props>(), {
 
 const { t } = useI18n()
 const menu = ref<InstanceType<typeof Menu> & MenuState>()
+const dialogService = useDialogService()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
+const isEditing = ref(false)
+const itemLabel = ref<string>()
+const itemInputRef = ref<{ $el?: HTMLInputElement }>()
+const wrapperRef = ref<HTMLAnchorElement>()
+
+const rename = async (
+  newName: string | null | undefined,
+  initialName: string
+) => {
+  if (newName && newName !== initialName) {
+    if (workflowStore.activeSubgraph) {
+      workflowStore.activeSubgraph.name = newName
+    } else if (workflowStore.activeWorkflow) {
+      try {
+        await workflowService.renameWorkflow(
+          workflowStore.activeWorkflow,
+          ComfyWorkflow.basePath + appendJsonExt(newName)
+        )
+      } catch (error) {
+        console.error(error)
+        dialogService.showErrorDialog(error)
+        return
+      }
+    }
+
+    // Force the navigation stack to recompute the labels
+    // TODO: investigate if there is a better way to do this
+    const navigationStore = useSubgraphNavigationStore()
+    navigationStore.restoreState(navigationStore.exportState())
+  }
+}
 
 const menuItems = computed<MenuItem[]>(() => {
   return [
@@ -62,7 +106,6 @@ const menuItems = computed<MenuItem[]>(() => {
       label: t('g.rename'),
       icon: 'pi pi-pencil',
       command: async () => {
-        const dialogService = useDialogService()
         let initialName =
           workflowStore.activeSubgraph?.name ??
           workflowStore.activeWorkflow?.filename
@@ -75,26 +118,7 @@ const menuItems = computed<MenuItem[]>(() => {
           defaultValue: initialName
         })
 
-        if (newName && newName !== initialName) {
-          if (workflowStore.activeSubgraph) {
-            workflowStore.activeSubgraph.name = newName
-          } else if (workflowStore.activeWorkflow) {
-            try {
-              await workflowService.renameWorkflow(
-                workflowStore.activeWorkflow,
-                ComfyWorkflow.basePath + appendJsonExt(newName)
-              )
-            } catch (error) {
-              console.error(error)
-              dialogService.showErrorDialog(error)
-            }
-          }
-
-          // Force the navigation stack to recompute the labels
-          // TODO: investigate if there is a better way to do this
-          const navigationStore = useSubgraphNavigationStore()
-          navigationStore.restoreState(navigationStore.exportState())
-        }
+        await rename(newName, initialName)
       }
     },
     {
@@ -130,12 +154,41 @@ const menuItems = computed<MenuItem[]>(() => {
   ]
 })
 
-const handleClick = (event: Event) => {
-  if (props.isActive) {
-    menu.value?.toggle(event)
-  } else {
-    props.item.command?.({ item: props.item, originalEvent: event })
+const handleClick = (event: MouseEvent) => {
+  if (isEditing.value) {
+    return
   }
+
+  if (event.detail === 1) {
+    if (props.isActive) {
+      menu.value?.toggle(event)
+    } else {
+      props.item.command?.({ item: props.item, originalEvent: event })
+    }
+  } else if (props.isActive && event.detail === 2) {
+    menu.value?.hide()
+    event.stopPropagation()
+    event.preventDefault()
+    isEditing.value = true
+    itemLabel.value = props.item.label as string
+    void nextTick(() => {
+      if (itemInputRef.value?.$el) {
+        itemInputRef.value.$el.focus()
+        itemInputRef.value.$el.select()
+        if (wrapperRef.value) {
+          itemInputRef.value.$el.style.width = `${Math.max(200, wrapperRef.value.offsetWidth)}px`
+        }
+      }
+    })
+  }
+}
+
+const inputBlur = async (doRename: boolean) => {
+  if (doRename) {
+    await rename(itemLabel.value, props.item.label as string)
+  }
+
+  isEditing.value = false
 }
 </script>
 

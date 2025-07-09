@@ -22,6 +22,10 @@
     :model="translatedItems"
     :popup="true"
     class="comfy-command-menu"
+    :class="{
+      'comfy-command-menu-top': isTopMenu
+    }"
+    @show="onMenuShow"
   >
     <template #item="{ item, props }">
       <div
@@ -75,7 +79,7 @@ import TieredMenu, {
   type TieredMenuMethods,
   type TieredMenuState
 } from 'primevue/tieredmenu'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
@@ -99,10 +103,13 @@ const aboutPanelStore = useAboutPanelStore()
 const settingStore = useSettingStore()
 const { t } = useI18n()
 
-const menuRef = ref<(TieredMenuMethods & TieredMenuState) | null>(null)
+const menuRef = ref<
+  ({ dirty: boolean } & TieredMenuMethods & TieredMenuState) | null
+>(null)
 const isLargeSidebar = computed(
   () => settingStore.get('Comfy.Sidebar.Size') !== 'small'
 )
+const isTopMenu = computed(() => settingStore.get('Comfy.UseNewMenu') === 'Top')
 
 const translateMenuItem = (item: MenuItem): MenuItem => {
   const label = typeof item.label === 'function' ? item.label() : item.label
@@ -221,6 +228,15 @@ const translatedItems = computed(() => {
 
   return items
 })
+
+const onMenuShow = () => {
+  void nextTick(() => {
+    // Force the menu to show submenus on hover
+    if (menuRef.value) {
+      menuRef.value.dirty = true
+    }
+  })
+}
 </script>
 
 <style scoped>
@@ -243,5 +259,10 @@ const translatedItems = computed(() => {
 <style>
 .comfy-command-menu ul {
   background-color: var(--comfy-menu-secondary-bg) !important;
+}
+
+.comfy-command-menu-top .p-tieredmenu-submenu {
+  left: calc(100% + 15px) !important;
+  top: -4px !important;
 }
 </style>
