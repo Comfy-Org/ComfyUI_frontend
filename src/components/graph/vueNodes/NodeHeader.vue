@@ -4,10 +4,11 @@
   </div>
   <div
     v-else
-    class="lg-node-header flex items-center justify-between p-2 rounded-t-lg cursor-move -mt-[30px]"
+    class="lg-node-header flex items-center justify-between p-2 rounded-t-lg cursor-move"
     :style="{
       backgroundColor: headerColor,
-      color: textColor
+      color: textColor,
+      marginTop: headerOffsetForLiteGraphAlignment
     }"
     @dblclick="handleDoubleClick"
   >
@@ -37,6 +38,7 @@
 
 <script setup lang="ts">
 import type { LGraphNode } from '@comfyorg/litegraph'
+import { LiteGraph } from '@comfyorg/litegraph'
 import { computed, onErrorCaptured, ref } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'
@@ -104,6 +106,11 @@ const textColor = computed(() => {
   const brightness = (r * 299 + g * 587 + b * 114) / 1000
   return brightness > 128 ? '#000' : '#fff'
 })
+
+// Negative margin to align Vue node header with LiteGraph node positioning
+const headerOffsetForLiteGraphAlignment = computed(
+  () => `${-LiteGraph.NODE_TITLE_HEIGHT}px`
+)
 
 // Event handlers
 const handleCollapse = () => {
