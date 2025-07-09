@@ -37,7 +37,7 @@
 
 <script setup lang="ts">
 import type { LGraphNode } from '@comfyorg/litegraph'
-import { computed, onErrorCaptured, ref, watch } from 'vue'
+import { computed, onErrorCaptured, ref } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
@@ -77,16 +77,6 @@ const nodeInfo = computed(() => props.nodeData || props.node)
 
 // Local state for title to provide immediate feedback
 const displayTitle = ref(nodeInfo.value?.title || 'Untitled')
-
-// Watch for external title changes (e.g., from litegraph or other sources)
-watch(
-  () => nodeInfo.value?.title,
-  (newTitle) => {
-    if (newTitle && newTitle !== displayTitle.value) {
-      displayTitle.value = newTitle
-    }
-  }
-)
 
 // Compute header color based on node color property or type
 const headerColor = computed(() => {
