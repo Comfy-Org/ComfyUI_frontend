@@ -30,6 +30,7 @@
       :lod-level="lodLevel"
       :collapsed="isCollapsed"
       @collapse="handleCollapse"
+      @update:title="handleTitleUpdate"
     />
 
     <!-- Node Body - rendered based on LOD level and collapsed state -->
@@ -116,6 +117,7 @@ const emit = defineEmits<{
     isInput: boolean
   ]
   'update:collapsed': [nodeId: string, collapsed: boolean]
+  'update:title': [nodeId: string, newTitle: string]
 }>()
 
 // LOD (Level of Detail) system based on zoom level
@@ -179,6 +181,10 @@ const handleSlotClick = (
     return
   }
   emit('slot-click', event, props.nodeData, slotIndex, isInput)
+}
+
+const handleTitleUpdate = (newTitle: string) => {
+  emit('update:title', props.nodeData.id, newTitle)
 }
 
 // Expose methods for parent to control dragging state

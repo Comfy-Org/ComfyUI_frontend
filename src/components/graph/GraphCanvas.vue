@@ -57,6 +57,7 @@
       :data-node-id="nodeData.id"
       @node-click="handleNodeSelect"
       @update:collapsed="handleNodeCollapse"
+      @update:title="handleNodeTitleUpdate"
     />
   </TransformPane>
 
@@ -469,6 +470,17 @@ const handleNodeCollapse = (nodeId: string, collapsed: boolean) => {
   // Sync collapsed state back to LiteGraph node
   node.flags = node.flags || {}
   node.flags.collapsed = collapsed
+}
+
+// Handle node title updates
+const handleNodeTitleUpdate = (nodeId: string, newTitle: string) => {
+  if (!nodeManager) return
+
+  const node = nodeManager.getNode(nodeId)
+  if (!node) return
+
+  // Update the node title in LiteGraph for persistence
+  node.title = newTitle
 }
 
 watchEffect(() => {

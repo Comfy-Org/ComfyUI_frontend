@@ -25,16 +25,21 @@
     </button>
 
     <!-- Node Title -->
-    <span class="text-sm font-medium truncate flex-1">
-      {{ nodeInfo?.title || 'Untitled' }}
-    </span>
+    <div class="text-sm font-medium truncate flex-1">
+      <EditableText
+        :model-value="displayTitle"
+        :is-editing="isEditing"
+        @edit="handleTitleEdit"
+      />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { LGraphNode } from '@comfyorg/litegraph'
-import { computed, onErrorCaptured, ref } from 'vue'
+import { computed, onErrorCaptured, ref, watch } from 'vue'
 
+import EditableText from '@/components/common/EditableText.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import type { LODLevel } from '@/composables/graph/useLOD'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -52,6 +57,7 @@ const props = defineProps<NodeHeaderProps>()
 const emit = defineEmits<{
   collapse: []
   'title-edit': []
+  'update:title': [newTitle: string]
 }>()
 
 // Error boundary implementation
@@ -64,7 +70,23 @@ onErrorCaptured((error) => {
   return false
 })
 
+// Editing state
+const isEditing = ref(false)
+
 const nodeInfo = computed(() => props.nodeData || props.node)
+
+// Local state for title to provide immediate feedback
+const displayTitle = ref(nodeInfo.value?.title || 'Untitled')
+
+// Watch for external title changes (e.g., from litegraph or other sources)
+watch(
+  () => nodeInfo.value?.title,
+  (newTitle) => {
+    if (newTitle && newTitle !== displayTitle.value) {
+      displayTitle.value = newTitle
+    }
+  }
+)
 
 // Compute header color based on node color property or type
 const headerColor = computed(() => {
@@ -101,7 +123,19 @@ const handleCollapse = () => {
 
 const handleDoubleClick = () => {
   if (!props.readonly) {
+    isEditing.value = true
     emit('title-edit')
+  }
+}
+
+const handleTitleEdit = (newTitle: string) => {
+  isEditing.value = false
+  const trimmedTitle = newTitle.trim()
+  if (trimmedTitle && trimmedTitle !== displayTitle.value) {
+    // Update local state immediately for instant feedback
+    displayTitle.value = trimmedTitle
+    // Emit for litegraph sync
+    emit('update:title', trimmedTitle)
   }
 }
 </script>
