@@ -20,11 +20,13 @@ import { type CSSProperties, computed, ref, watch } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'
 import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
+import { useSubgraphTitleSync } from '@/composables/subgraphTitleSync'
 import { app } from '@/scripts/app'
 import { useCanvasStore, useTitleEditorStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
 
 const settingStore = useSettingStore()
+const { syncSubgraphTitle } = useSubgraphTitleSync()
 
 const showInput = ref(false)
 const editedTitle = ref('')
@@ -41,7 +43,15 @@ const previousCanvasDraggable = ref(true)
 
 const onEdit = (newValue: string) => {
   if (titleEditorStore.titleEditorTarget && newValue.trim() !== '') {
-    titleEditorStore.titleEditorTarget.title = newValue.trim()
+    const trimmedTitle = newValue.trim()
+    titleEditorStore.titleEditorTarget.title = trimmedTitle
+
+    // If this is a subgraph node, keep all data structures in sync
+    const target = titleEditorStore.titleEditorTarget
+    if (target instanceof LGraphNode && target.isSubgraphNode?.()) {
+      syncSubgraphTitle(target, trimmedTitle)
+    }
+
     app.graph.setDirtyCanvas(true, true)
   }
   showInput.value = false
