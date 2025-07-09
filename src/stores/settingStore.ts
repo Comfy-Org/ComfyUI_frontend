@@ -7,7 +7,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { SettingParams } from '@/types/settingTypes'
 import type { TreeNode } from '@/types/treeExplorerTypes'
-import { compareVersions } from '@/utils/formatUtil'
+import { compareVersions, isSemVer } from '@/utils/formatUtil'
 
 export const getSettingInfo = (setting: SettingParams) => {
   const parts = setting.category || setting.id.split('.')
@@ -21,16 +21,24 @@ export interface SettingTreeNode extends TreeNode {
   data?: SettingParams
 }
 
-function tryMigrateDeprecatedValue(setting: SettingParams, value: any) {
+function tryMigrateDeprecatedValue(
+  setting: SettingParams | undefined,
+  value: unknown
+) {
   return setting?.migrateDeprecatedValue?.(value) ?? value
 }
 
-function onChange(setting: SettingParams, newValue: any, oldValue: any) {
+function onChange(
+  setting: SettingParams | undefined,
+  newValue: unknown,
+  oldValue: unknown
+) {
   if (setting?.onChange) {
     setting.onChange(newValue, oldValue)
   }
   // Backward compatibility with old settings dialog.
   // Some extensions still listens event emitted by the old settings dialog.
+  // @ts-expect-error 'setting' is possibly 'undefined'.ts(18048)
   app.ui.settings.dispatchChange(setting.id, newValue, oldValue)
 }
 
@@ -78,12 +86,29 @@ export const useSettingStore = defineStore('setting', () => {
   }
 
   /**
+   * Gets the setting params, asserting the type that is intentionally left off
+   * of {@link settingsById}.
+   * @param key The key of the setting to get.
+   * @returns The setting.
+   */
+  function getSettingById<K extends keyof Settings>(
+    key: K
+  ): SettingParams<Settings[K]> | undefined {
+    return settingsById.value[key] as SettingParams<Settings[K]> | undefined
+  }
+
+  /**
    * Get the default value of a setting.
    * @param key - The key of the setting to get.
    * @returns The default value of the setting.
    */
-  function getDefaultValue<K extends keyof Settings>(key: K): Settings[K] {
-    const param = settingsById.value[key]
+  function getDefaultValue<K extends keyof Settings>(
+    key: K
+  ): Settings[K] | undefined {
+    // Assertion: settingsById is not typed.
+    const param = getSettingById(key)
+
+    if (param === undefined) return
 
     const versionedDefault = getVersionedDefaultValue(key, param)
 
@@ -91,32 +116,33 @@ export const useSettingStore = defineStore('setting', () => {
       return versionedDefault
     }
 
-    return typeof param?.defaultValue === 'function'
+    return typeof param.defaultValue === 'function'
       ? param.defaultValue()
-      : param?.defaultValue
+      : param.defaultValue
   }
 
-  function getVersionedDefaultValue<K extends keyof Settings>(
-    key: K,
-    param: SettingParams
-  ): Settings[K] | null {
+  function getVersionedDefaultValue<
+    K extends keyof Settings,
+    TValue = Settings[K]
+  >(key: K, param: SettingParams<TValue> | undefined): TValue | null {
     // get default versioned value, skipping if the key is 'Comfy.InstalledVersion' to prevent infinite loop
-    if (param?.defaultsByInstallVersion && key !== 'Comfy.InstalledVersion') {
+    const defaultsByInstallVersion = param?.defaultsByInstallVersion
+    if (defaultsByInstallVersion && key !== 'Comfy.InstalledVersion') {
       const installedVersion = get('Comfy.InstalledVersion')
 
       if (installedVersion) {
-        const sortedVersions = Object.keys(param.defaultsByInstallVersion).sort(
-          (a, b) => compareVersions(a, b)
+        const sortedVersions = Object.keys(defaultsByInstallVersion).sort(
+          (a, b) => compareVersions(b, a)
         )
 
-        for (const version of sortedVersions.reverse()) {
+        for (const version of sortedVersions) {
           // Ensure the version is in a valid format before comparing
-          if (!isValidVersionFormat(version)) {
+          if (!isSemVer(version)) {
             continue
           }
 
           if (compareVersions(installedVersion, version) >= 0) {
-            const versionedDefault = param.defaultsByInstallVersion[version]
+            const versionedDefault = defaultsByInstallVersion[version]
             return typeof versionedDefault === 'function'
               ? versionedDefault()
               : versionedDefault
@@ -126,12 +152,6 @@ export const useSettingStore = defineStore('setting', () => {
     }
 
     return null
-  }
-
-  function isValidVersionFormat(
-    version: string
-  ): version is `${number}.${number}.${number}` {
-    return /^\d+\.\d+\.\d+$/.test(version)
   }
 
   /**
