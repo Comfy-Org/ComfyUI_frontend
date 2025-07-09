@@ -888,10 +888,10 @@
     "Toggle Terminal Bottom Panel": "Toggle Terminal Bottom Panel",
     "Toggle Logs Bottom Panel": "Toggle Logs Bottom Panel",
     "Toggle Focus Mode": "Toggle Focus Mode",
-    "Toggle Model Library Sidebar": "Toggle Model Library Sidebar",
-    "Toggle Node Library Sidebar": "Toggle Node Library Sidebar",
-    "Toggle Queue Sidebar": "Toggle Queue Sidebar",
-    "Toggle Workflows Sidebar": "Toggle Workflows Sidebar"
+    "Model Library": "Model Library",
+    "Node Library": "Node Library",
+    "Queue": "Queue",
+    "Workflows": "Workflows"
   },
   "desktopMenu": {
     "reinstall": "Reinstall",
@@ -949,7 +949,8 @@
     "Light": "Light",
     "User": "User",
     "Credits": "Credits",
-    "API Nodes": "API Nodes"
+    "API Nodes": "API Nodes",
+    "Notification Preferences": "Notification Preferences"
   },
   "serverConfigItems": {
     "listen": {
