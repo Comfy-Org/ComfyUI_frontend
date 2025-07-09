@@ -7,13 +7,21 @@ test.describe('Subgraph Breadcrumb Title Sync', () => {
     comfyPage
   }) => {
     // Load a workflow with subgraphs
-    await comfyPage.loadWorkflow('subgraph_example')
+    await comfyPage.loadWorkflow('nested-subgraph')
 
-    // Get the first subgraph node
-    const subgraphNode = await comfyPage.canvas.locator('.node').first()
+    // Get the subgraph node by ID (node 10 is the subgraph)
+    const subgraphNode = await comfyPage.getNodeRefById('10')
 
-    // Double-click on the subgraph node to enter it
-    await subgraphNode.dblclick()
+    // Get node position and double-click on it to enter the subgraph
+    const nodePos = await subgraphNode.getPosition()
+    const nodeSize = await subgraphNode.getSize()
+    await comfyPage.canvas.dblclick({
+      position: {
+        x: nodePos.x + nodeSize.width / 2,
+        y: nodePos.y + nodeSize.height / 2
+      },
+      delay: 5
+    })
 
     // Wait for breadcrumb to appear
     await comfyPage.page.waitForSelector('.subgraph-breadcrumb')
@@ -26,23 +34,34 @@ test.describe('Subgraph Breadcrumb Title Sync', () => {
     await comfyPage.page.keyboard.press('Escape')
 
     // Double-click on the title area of the subgraph node to edit
-    const nodeBounds = await subgraphNode.boundingBox()
-    if (!nodeBounds) throw new Error('Node bounds not found')
-
     await comfyPage.canvas.dblclick({
       position: {
-        x: nodeBounds.x + nodeBounds.width / 2,
-        y: nodeBounds.y + 10 // Title area
-      }
+        x: nodePos.x + nodeSize.width / 2,
+        y: nodePos.y - 10 // Title area is above the node body
+      },
+      delay: 5
     })
 
-    // Type new title
+    // Wait for title editor to appear
+    await expect(comfyPage.page.locator('.node-title-editor')).toBeVisible()
+
+    // Clear existing text and type new title
+    await comfyPage.page.keyboard.press('Control+a')
     const newTitle = 'Updated Subgraph Title'
     await comfyPage.page.keyboard.type(newTitle)
     await comfyPage.page.keyboard.press('Enter')
 
+    // Wait a frame for the update to complete
+    await comfyPage.nextFrame()
+
     // Enter the subgraph again
-    await subgraphNode.dblclick()
+    await comfyPage.canvas.dblclick({
+      position: {
+        x: nodePos.x + nodeSize.width / 2,
+        y: nodePos.y + nodeSize.height / 2
+      },
+      delay: 5
+    })
 
     // Wait for breadcrumb
     await comfyPage.page.waitForSelector('.subgraph-breadcrumb')
