@@ -147,10 +147,6 @@ export interface ConflictDetectionResult {
   conflicts: ConflictDetail[]
   /** @description Overall compatibility status */
   is_compatible: boolean
-  /** @description Whether conflicts can be automatically resolved */
-  can_auto_resolve: boolean
-  /** @description Recommended action to resolve conflicts */
-  recommended_action: RecommendedAction
 }
 
 /**
@@ -159,30 +155,10 @@ export interface ConflictDetectionResult {
 export interface ConflictDetail {
   /** @description Type of conflict detected */
   type: ConflictType
-  /** @description Severity level of the conflict */
-  severity: 'error' | 'warning' | 'info'
   /** @description Human-readable description of the conflict */
-  description: string
-  /** @description Current system value */
   current_value: string
   /** @description Required value for compatibility */
   required_value: string
-  /** @description Optional steps to resolve the conflict */
-  resolution_steps?: string[]
-}
-
-/**
- * Recommended action to resolve conflicts
- */
-export interface RecommendedAction {
-  /** @description Type of action to take */
-  action_type: 'disable' | 'update' | 'ignore' | 'manual_review'
-  /** @description Reason for the recommended action */
-  reason: string
-  /** @description Step-by-step instructions */
-  steps: string[]
-  /** @description Estimated difficulty of implementing the action */
-  estimated_difficulty: 'easy' | 'medium' | 'hard'
 }
 
 /**
@@ -208,24 +184,6 @@ export interface ConflictDetectionSummary {
 }
 
 /**
- * API request/response interfaces
- */
-
-/**
- * Request payload for conflict detection API
- */
-export interface ConflictDetectionRequest {
-  /** @description Current system environment information */
-  system_environment: SystemEnvironment
-  /** @description Optional list of specific package IDs to check */
-  package_ids?: string[]
-  /** @description Whether to include banned packages in the check */
-  include_banned?: boolean
-  /** @description Whether to include security-pending packages in the check */
-  include_security_pending?: boolean
-}
-
-/**
  * Response payload from conflict detection API
  */
 export interface ConflictDetectionResponse {
@@ -241,24 +199,4 @@ export interface ConflictDetectionResponse {
 
   /** @description System environment information detected by the server (for comparison) */
   detected_system_environment?: Partial<SystemEnvironment>
-}
-
-/**
- * Real-time conflict detection event
- */
-export interface ConflictDetectionEvent {
-  /** @description Type of event */
-  event_type:
-    | 'conflict_detected'
-    | 'conflict_resolved'
-    | 'scan_started'
-    | 'scan_completed'
-  /** @description Event timestamp */
-  timestamp: string
-  /** @description Package ID associated with the event, if applicable */
-  package_id?: string
-  /** @description Type of conflict, if applicable */
-  conflict_type?: ConflictType
-  /** @description Additional event details */
-  details?: string
 }
