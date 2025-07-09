@@ -232,10 +232,6 @@
   "Comfy_NodeBadge_ShowApiPricing": {
     "name": "Show API node pricing badge"
   },
-  "Comfy_Notification_ShowVersionUpdates": {
-    "name": "Show version updates",
-    "tooltip": "Show updates for new models, and major new features."
-  },
   "Comfy_NodeSearchBoxImpl": {
     "name": "Node search box implementation",
     "options": {
