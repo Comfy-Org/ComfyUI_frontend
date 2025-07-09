@@ -6,13 +6,12 @@
     :class="{
       'flex items-center gap-1': isActive,
       'p-breadcrumb-item-link-menu-visible': menu?.overlayVisible,
-      'p-breadcrumb-item-link-icon-visible': item.icon || isActive
+      'p-breadcrumb-item-link-icon-visible': isActive
     }"
     @click="handleClick"
   >
-    <i v-if="item.icon" :class="item.icon" class="p-breadcrumb-item-icon" />
     <span class="p-breadcrumb-item-label">{{ item.label }}</span>
-    <i v-if="isActive" class="pi pi-chevron-down text-xs"></i>
+    <i v-if="isActive" class="pi pi-angle-down text-[10px]"></i>
   </a>
   <Menu
     v-if="isActive"

@@ -8,7 +8,8 @@
     :style="{
       '--p-breadcrumb-gap': `${ITEM_GAP}px`,
       '--p-breadcrumb-item-min-width': `${MIN_WIDTH}px`,
-      '--p-breadcrumb-item-padding': `${ITEM_PADDING}px`
+      '--p-breadcrumb-item-padding': `${ITEM_PADDING}px`,
+      '--p-breadcrumb-icon-width': `${ICON_WIDTH}px`
     }"
   >
     <Breadcrumb
@@ -45,6 +46,7 @@ import { useWorkflowStore } from '@/stores/workflowStore'
 const MIN_WIDTH = 28
 const ITEM_GAP = 8
 const ITEM_PADDING = 8
+const ICON_WIDTH = 20
 
 const workflowStore = useWorkflowStore()
 const navigationStore = useSubgraphNavigationStore()
@@ -120,6 +122,9 @@ watch(breadcrumbElement, (el) => {
 
           if (items.length < 3) return
 
+          const itemsWithIcon = items.filter((item) =>
+            item.querySelector('.p-breadcrumb-item-link-icon-visible')
+          ).length
           const separators = el.querySelectorAll(
             '.p-breadcrumb-separator'
           ) as NodeListOf<HTMLElement>
@@ -128,7 +133,8 @@ watch(breadcrumbElement, (el) => {
 
           // items + separators + gaps + icons
           const itemsWidth =
-            (MIN_WIDTH + ITEM_PADDING + ITEM_PADDING) * items.length + 40
+            (MIN_WIDTH + ITEM_PADDING + ITEM_PADDING) * items.length +
+            itemsWithIcon * ICON_WIDTH
           const separatorsWidth = (items.length - 1) * separatorWidth
           const gapsWidth = (items.length - 1) * (ITEM_GAP * 2)
           const totalWidth = itemsWidth + separatorsWidth + gapsWidth

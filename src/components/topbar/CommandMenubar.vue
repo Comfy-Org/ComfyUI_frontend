@@ -1,8 +1,11 @@
 <template>
   <div
-    class="comfyui-logo-wrapper p-1 flex items-center cursor-pointer m-1 rounded-md"
+    class="comfyui-logo-wrapper p-1 flex justify-center items-center cursor-pointer rounded-md mr-2"
     :class="{
       'comfyui-logo-menu-visible': menuRef?.visible
+    }"
+    :style="{
+      minWidth: isLargeSidebar ? '4rem' : 'auto'
     }"
     @click="menuRef?.toggle($event)"
   >
@@ -83,6 +86,7 @@ import { useAboutPanelStore } from '@/stores/aboutPanelStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
+import { useSettingStore } from '@/stores/settingStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { showNativeSystemMenu } from '@/utils/envUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
@@ -92,9 +96,13 @@ const menuItemsStore = useMenuItemStore()
 const commandStore = useCommandStore()
 const dialogStore = useDialogStore()
 const aboutPanelStore = useAboutPanelStore()
+const settingStore = useSettingStore()
 const { t } = useI18n()
 
 const menuRef = ref<(TieredMenuMethods & TieredMenuState) | null>(null)
+const isLargeSidebar = computed(
+  () => settingStore.get('Comfy.Sidebar.Size') !== 'small'
+)
 
 const translateMenuItem = (item: MenuItem): MenuItem => {
   const label = typeof item.label === 'function' ? item.label() : item.label
