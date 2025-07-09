@@ -55,24 +55,53 @@ function addMultilineWidget(
   })
 
   inputEl.addEventListener('wheel', (event: WheelEvent) => {
-    const maxScrollHeight = inputEl.scrollHeight - inputEl.clientHeight
-    const isScrollable = inputEl.scrollHeight > inputEl.clientHeight
-    const isAtTop = inputEl.scrollTop === 0
-    const isAtBottom = inputEl.scrollTop === maxScrollHeight
+    const gesturesEnabled = useSettingStore().get(
+      'LiteGraph.Pointer.TrackpadGestures'
+    )
+    const deltaX = event.deltaX
+    const deltaY = event.deltaY
 
-    if (isScrollable) {
-      // Do not pass wheel to canvas if text can scroll
+    const canScrollY = inputEl.scrollHeight > inputEl.clientHeight
+    const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY)
+
+    // Prevent pinch zoom from zooming the page
+    if (event.ctrlKey) {
+      event.preventDefault()
+      event.stopPropagation()
+      app.canvas.processMouseWheel(event)
+      return
+    }
+
+    // Detect if this is likely a trackpad gesture vs mouse wheel
+    // Trackpads usually have deltaX or smaller deltaY values (< 50)
+    // Mouse wheels typically have larger discrete deltaY values (>= 50)
+    const isLikelyTrackpad = Math.abs(deltaX) > 0 || Math.abs(deltaY) < 50
+
+    // Trackpad gestures: when enabled, trackpad panning goes to canvas
+    if (gesturesEnabled && isLikelyTrackpad) {
+      event.preventDefault()
+      event.stopPropagation()
+      app.canvas.processMouseWheel(event)
+      return
+    }
+
+    // When gestures disabled: horizontal always goes to canvas (no horizontal scroll in textarea)
+    if (isHorizontal) {
+      event.preventDefault()
+      event.stopPropagation()
+      app.canvas.processMouseWheel(event)
+      return
+    }
+
+    // Vertical scrolling when gestures disabled: let textarea scroll if scrollable
+    if (canScrollY) {
       event.stopPropagation()
       return
     }
 
-    if ((event.deltaY < 0 && isAtTop) || (event.deltaY > 0 && isAtBottom)) {
-      app.canvas.processMouseWheel(event)
-    }
-
-    if (event.ctrlKey) {
-      event.stopPropagation()
-    }
+    // If textarea can't scroll vertically, pass to canvas
+    event.preventDefault()
+    app.canvas.processMouseWheel(event)
   })
 
   return widget
