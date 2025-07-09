@@ -1121,7 +1121,9 @@
     "downloads": "ダウンロード",
     "helpCenter": "ヘルプセンター",
     "logout": "ログアウト",
+    "modelLibrary": "モデルライブラリ",
     "newBlankWorkflow": "新しい空のワークフローを作成",
+    "nodeLibrary": "ノードライブラリ",
     "nodeLibraryTab": {
       "groupBy": "グループ化",
       "groupStrategies": {
@@ -1142,6 +1144,7 @@
       "sortMode": "並び替えモード"
     },
     "openWorkflow": "ローカルでワークフローを開く",
+    "queue": "キュー",
     "queueTab": {
       "backToAllTasks": "すべてのタスクに戻る",
       "clearPendingTasks": "保留中のタスクをクリア",

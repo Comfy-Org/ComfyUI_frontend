@@ -1,0 +1,249 @@
+{
+  "Comfy-Desktop_CheckForUpdates": {
+    "label": "Проверить наличие обновлений"
+  },
+  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
+    "label": "Открыть папку пользовательских нод"
+  },
+  "Comfy-Desktop_Folders_OpenInputsFolder": {
+    "label": "Открыть папку входных данных"
+  },
+  "Comfy-Desktop_Folders_OpenLogsFolder": {
+    "label": "Открыть папку логов"
+  },
+  "Comfy-Desktop_Folders_OpenModelConfig": {
+    "label": "Открыть extra_model_paths.yaml"
+  },
+  "Comfy-Desktop_Folders_OpenModelsFolder": {
+    "label": "Открыть папку моделей"
+  },
+  "Comfy-Desktop_Folders_OpenOutputsFolder": {
+    "label": "Открыть папку результатов"
+  },
+  "Comfy-Desktop_OpenDevTools": {
+    "label": "Открыть инструменты разработчика"
+  },
+  "Comfy-Desktop_OpenUserGuide": {
+    "label": "Руководство пользователя для рабочего стола"
+  },
+  "Comfy-Desktop_Quit": {
+    "label": "Выйти"
+  },
+  "Comfy-Desktop_Reinstall": {
+    "label": "Переустановить"
+  },
+  "Comfy-Desktop_Restart": {
+    "label": "Перезагрузить"
+  },
+  "Comfy_BrowseTemplates": {
+    "label": "Просмотр шаблонов"
+  },
+  "Comfy_Canvas_AddEditModelStep": {
+    "label": "Добавить или изменить шаг модели"
+  },
+  "Comfy_Canvas_DeleteSelectedItems": {
+    "label": "Удалить выбранные элементы"
+  },
+  "Comfy_Canvas_FitView": {
+    "label": "Подогнать вид к выбранным нодам"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Down": {
+    "label": "Переместить выбранные узлы вниз"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Left": {
+    "label": "Переместить выбранные узлы влево"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Right": {
+    "label": "Переместить выбранные узлы вправо"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Up": {
+    "label": "Переместить выбранные узлы вверх"
+  },
+  "Comfy_Canvas_ResetView": {
+    "label": "Сбросить вид"
+  },
+  "Comfy_Canvas_Resize": {
+    "label": "Изменить размер выбранных узлов"
+  },
+  "Comfy_Canvas_ToggleLinkVisibility": {
+    "label": "Переключить видимость ссылки"
+  },
+  "Comfy_Canvas_ToggleLock": {
+    "label": "Переключить блокировку холста"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
+    "label": "Обход/Необход выбранных нод"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
+    "label": "Свернуть/Развернуть выбранные ноды"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Mute": {
+    "label": "Отключить/Включить звук выбранных нод"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Pin": {
+    "label": "Закрепить/Открепить выбранные ноды"
+  },
+  "Comfy_Canvas_ToggleSelected_Pin": {
+    "label": "Закрепить/Открепить выбранных нод"
+  },
+  "Comfy_Canvas_ZoomIn": {
+    "label": "Увеличить"
+  },
+  "Comfy_Canvas_ZoomOut": {
+    "label": "Уменьшить"
+  },
+  "Comfy_ClearPendingTasks": {
+    "label": "Очистить ожидающие задачи"
+  },
+  "Comfy_ClearWorkflow": {
+    "label": "Очистить рабочий процесс"
+  },
+  "Comfy_ContactSupport": {
+    "label": "Связаться с поддержкой"
+  },
+  "Comfy_DuplicateWorkflow": {
+    "label": "Дублировать текущий рабочий процесс"
+  },
+  "Comfy_ExportWorkflow": {
+    "label": "Экспорт рабочего процесса"
+  },
+  "Comfy_ExportWorkflowAPI": {
+    "label": "Экспорт рабочего процесса (формат API)"
+  },
+  "Comfy_Feedback": {
+    "label": "Обратная связь"
+  },
+  "Comfy_Graph_ConvertToSubgraph": {
+    "label": "Преобразовать выделенное в подграф"
+  },
+  "Comfy_Graph_FitGroupToContents": {
+    "label": "Подогнать группу к содержимому"
+  },
+  "Comfy_Graph_GroupSelectedNodes": {
+    "label": "Группировать выбранные ноды"
+  },
+  "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
+    "label": "Преобразовать выбранные ноды в групповую ноду"
+  },
+  "Comfy_GroupNode_ManageGroupNodes": {
+    "label": "Управление групповыми нодами"
+  },
+  "Comfy_GroupNode_UngroupSelectedGroupNodes": {
+    "label": "Разгруппировать выбранные групповые ноды"
+  },
+  "Comfy_Help_AboutComfyUI": {
+    "label": "Открыть «О ComfyUI»"
+  },
+  "Comfy_Help_OpenComfyOrgDiscord": {
+    "label": "Открыть Comfy-Org Discord"
+  },
+  "Comfy_Help_OpenComfyUIDocs": {
+    "label": "Открыть документацию ComfyUI"
+  },
+  "Comfy_Help_OpenComfyUIForum": {
+    "label": "Открыть форум Comfy-Org"
+  },
+  "Comfy_Help_OpenComfyUIIssues": {
+    "label": "Открыть ComfyUI  Issues"
+  },
+  "Comfy_Interrupt": {
+    "label": "Прервать"
+  },
+  "Comfy_LoadDefaultWorkflow": {
+    "label": "Загрузить стандартный рабочий процесс"
+  },
+  "Comfy_Manager_CustomNodesManager": {
+    "label": "Менеджер Пользовательских Узлов"
+  },
+  "Comfy_Manager_ToggleManagerProgressDialog": {
+    "label": "Переключить диалоговое окно прогресса"
+  },
+  "Comfy_MaskEditor_OpenMaskEditor": {
+    "label": "Открыть редактор масок для выбранной ноды"
+  },
+  "Comfy_NewBlankWorkflow": {
+    "label": "Новый пустой рабочий процесс"
+  },
+  "Comfy_OpenClipspace": {
+    "label": "Клипспейс"
+  },
+  "Comfy_OpenWorkflow": {
+    "label": "Открыть рабочий процесс"
+  },
+  "Comfy_QueuePrompt": {
+    "label": "Очередь запросов"
+  },
+  "Comfy_QueuePromptFront": {
+    "label": "Очередь запросов (передняя)"
+  },
+  "Comfy_QueueSelectedOutputNodes": {
+    "label": "Добавить выбранные выходные узлы в очередь"
+  },
+  "Comfy_Redo": {
+    "label": "Повторить"
+  },
+  "Comfy_RefreshNodeDefinitions": {
+    "label": "Обновить определения нод"
+  },
+  "Comfy_SaveWorkflow": {
+    "label": "Сохранить рабочий процесс"
+  },
+  "Comfy_SaveWorkflowAs": {
+    "label": "Сохранить рабочий процесс как"
+  },
+  "Comfy_ShowSettingsDialog": {
+    "label": "Показать диалог настроек"
+  },
+  "Comfy_ToggleTheme": {
+    "label": "Переключить тему (Тёмная/Светлая)"
+  },
+  "Comfy_Undo": {
+    "label": "Отменить"
+  },
+  "Comfy_User_OpenSignInDialog": {
+    "label": "Открыть окно входа"
+  },
+  "Comfy_User_SignOut": {
+    "label": "Выйти"
+  },
+  "Workspace_CloseWorkflow": {
+    "label": "Закрыть текущий рабочий процесс"
+  },
+  "Workspace_NextOpenedWorkflow": {
+    "label": "Следующий открытый рабочий процесс"
+  },
+  "Workspace_PreviousOpenedWorkflow": {
+    "label": "Предыдущий открытый рабочий процесс"
+  },
+  "Workspace_SearchBox_Toggle": {
+    "label": "Переключить поисковое окно"
+  },
+  "Workspace_ToggleBottomPanel": {
+    "label": "Переключить нижнюю панель"
+  },
+  "Workspace_ToggleBottomPanelTab_command-terminal": {
+    "label": "Переключить нижнюю панель терминала"
+  },
+  "Workspace_ToggleBottomPanelTab_logs-terminal": {
+    "label": "Переключить нижнюю панель логов"
+  },
+  "Workspace_ToggleFocusMode": {
+    "label": "Переключить режим фокуса"
+  },
+  "Workspace_ToggleSidebarTab_model-library": {
+    "label": "Переключить боковую панель библиотеки моделей",
+    "tooltip": "Библиотека моделей"
+  },
+  "Workspace_ToggleSidebarTab_node-library": {
+    "label": "Переключить боковую панель библиотеки нод",
+    "tooltip": "Библиотека нод"
+  },
+  "Workspace_ToggleSidebarTab_queue": {
+    "label": "Переключить боковую панель очереди",
+    "tooltip": "Очередь"
+  },
+  "Workspace_ToggleSidebarTab_workflows": {
+    "label": "Переключить боковую панель рабочих процессов",
+    "tooltip": "Рабочие процессы"
+  }
+}

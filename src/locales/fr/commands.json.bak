@@ -1,0 +1,249 @@
+{
+  "Comfy-Desktop_CheckForUpdates": {
+    "label": "Vérifier les mises à jour"
+  },
+  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
+    "label": "Ouvrir le dossier des nœuds personnalisés"
+  },
+  "Comfy-Desktop_Folders_OpenInputsFolder": {
+    "label": "Ouvrir le dossier des entrées"
+  },
+  "Comfy-Desktop_Folders_OpenLogsFolder": {
+    "label": "Ouvrir le dossier des journaux"
+  },
+  "Comfy-Desktop_Folders_OpenModelConfig": {
+    "label": "Ouvrir extra_model_paths.yaml"
+  },
+  "Comfy-Desktop_Folders_OpenModelsFolder": {
+    "label": "Ouvrir le dossier des modèles"
+  },
+  "Comfy-Desktop_Folders_OpenOutputsFolder": {
+    "label": "Ouvrir le dossier des sorties"
+  },
+  "Comfy-Desktop_OpenDevTools": {
+    "label": "Ouvrir les outils de développement"
+  },
+  "Comfy-Desktop_OpenUserGuide": {
+    "label": "Guide de l'utilisateur du bureau"
+  },
+  "Comfy-Desktop_Quit": {
+    "label": "Quitter"
+  },
+  "Comfy-Desktop_Reinstall": {
+    "label": "Réinstaller"
+  },
+  "Comfy-Desktop_Restart": {
+    "label": "Redémarrer"
+  },
+  "Comfy_BrowseTemplates": {
+    "label": "Parcourir les modèles"
+  },
+  "Comfy_Canvas_AddEditModelStep": {
+    "label": "Ajouter/Modifier une étape de modèle"
+  },
+  "Comfy_Canvas_DeleteSelectedItems": {
+    "label": "Supprimer les éléments sélectionnés"
+  },
+  "Comfy_Canvas_FitView": {
+    "label": "Ajuster la vue aux nœuds sélectionnés"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Down": {
+    "label": "Déplacer les nœuds sélectionnés vers le bas"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Left": {
+    "label": "Déplacer les nœuds sélectionnés vers la gauche"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Right": {
+    "label": "Déplacer les nœuds sélectionnés vers la droite"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Up": {
+    "label": "Déplacer les nœuds sélectionnés vers le haut"
+  },
+  "Comfy_Canvas_ResetView": {
+    "label": "Réinitialiser la vue"
+  },
+  "Comfy_Canvas_Resize": {
+    "label": "Redimensionner les nœuds sélectionnés"
+  },
+  "Comfy_Canvas_ToggleLinkVisibility": {
+    "label": "Basculer la visibilité du lien sur le canevas"
+  },
+  "Comfy_Canvas_ToggleLock": {
+    "label": "Basculer le verrouillage du canevas"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
+    "label": "Contourner/Ne pas contourner les nœuds sélectionnés"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
+    "label": "Réduire/Étendre les nœuds sélectionnés"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Mute": {
+    "label": "Mettre en sourdine/Activer le son des nœuds sélectionnés"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Pin": {
+    "label": "Épingler/Désépingler les nœuds sélectionnés"
+  },
+  "Comfy_Canvas_ToggleSelected_Pin": {
+    "label": "Épingler/Désépingler les éléments sélectionnés"
+  },
+  "Comfy_Canvas_ZoomIn": {
+    "label": "Zoom avant"
+  },
+  "Comfy_Canvas_ZoomOut": {
+    "label": "Zoom arrière"
+  },
+  "Comfy_ClearPendingTasks": {
+    "label": "Effacer les tâches en attente"
+  },
+  "Comfy_ClearWorkflow": {
+    "label": "Effacer le flux de travail"
+  },
+  "Comfy_ContactSupport": {
+    "label": "Contacter le support"
+  },
+  "Comfy_DuplicateWorkflow": {
+    "label": "Dupliquer le flux de travail actuel"
+  },
+  "Comfy_ExportWorkflow": {
+    "label": "Exporter le flux de travail"
+  },
+  "Comfy_ExportWorkflowAPI": {
+    "label": "Exporter le flux de travail (format API)"
+  },
+  "Comfy_Feedback": {
+    "label": "Retour d'information"
+  },
+  "Comfy_Graph_ConvertToSubgraph": {
+    "label": "Convertir la sélection en sous-graphe"
+  },
+  "Comfy_Graph_FitGroupToContents": {
+    "label": "Ajuster le groupe au contenu"
+  },
+  "Comfy_Graph_GroupSelectedNodes": {
+    "label": "Grouper les nœuds sélectionnés"
+  },
+  "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
+    "label": "Convertir les nœuds sélectionnés en nœud de groupe"
+  },
+  "Comfy_GroupNode_ManageGroupNodes": {
+    "label": "Gérer les nœuds de groupe"
+  },
+  "Comfy_GroupNode_UngroupSelectedGroupNodes": {
+    "label": "Dégrouper les nœuds de groupe sélectionnés"
+  },
+  "Comfy_Help_AboutComfyUI": {
+    "label": "Ouvrir À propos de ComfyUI"
+  },
+  "Comfy_Help_OpenComfyOrgDiscord": {
+    "label": "Ouvrir Comfy-Org Discord"
+  },
+  "Comfy_Help_OpenComfyUIDocs": {
+    "label": "Ouvrir les documents ComfyUI"
+  },
+  "Comfy_Help_OpenComfyUIForum": {
+    "label": "Ouvrir le forum Comfy-Org"
+  },
+  "Comfy_Help_OpenComfyUIIssues": {
+    "label": "Ouvrir les problèmes ComfyUI"
+  },
+  "Comfy_Interrupt": {
+    "label": "Interrompre"
+  },
+  "Comfy_LoadDefaultWorkflow": {
+    "label": "Charger le flux de travail par défaut"
+  },
+  "Comfy_Manager_CustomNodesManager": {
+    "label": "Gestionnaire de Nœuds Personnalisés"
+  },
+  "Comfy_Manager_ToggleManagerProgressDialog": {
+    "label": "Basculer la boîte de dialogue de progression"
+  },
+  "Comfy_MaskEditor_OpenMaskEditor": {
+    "label": "Ouvrir l'éditeur de masque pour le nœud sélectionné"
+  },
+  "Comfy_NewBlankWorkflow": {
+    "label": "Nouveau flux de travail vierge"
+  },
+  "Comfy_OpenClipspace": {
+    "label": "Espace de clip"
+  },
+  "Comfy_OpenWorkflow": {
+    "label": "Ouvrir le flux de travail"
+  },
+  "Comfy_QueuePrompt": {
+    "label": "Invite de file d'attente"
+  },
+  "Comfy_QueuePromptFront": {
+    "label": "Invite de file d'attente (avant)"
+  },
+  "Comfy_QueueSelectedOutputNodes": {
+    "label": "Mettre en file d’attente les nœuds de sortie sélectionnés"
+  },
+  "Comfy_Redo": {
+    "label": "Refaire"
+  },
+  "Comfy_RefreshNodeDefinitions": {
+    "label": "Actualiser les définitions de nœud"
+  },
+  "Comfy_SaveWorkflow": {
+    "label": "Enregistrer le flux de travail"
+  },
+  "Comfy_SaveWorkflowAs": {
+    "label": "Enregistrer le flux de travail sous"
+  },
+  "Comfy_ShowSettingsDialog": {
+    "label": "Afficher la boîte de dialogue des paramètres"
+  },
+  "Comfy_ToggleTheme": {
+    "label": "Changer de thème (Sombre/Clair)"
+  },
+  "Comfy_Undo": {
+    "label": "Annuler"
+  },
+  "Comfy_User_OpenSignInDialog": {
+    "label": "Ouvrir la boîte de dialogue de connexion"
+  },
+  "Comfy_User_SignOut": {
+    "label": "Se déconnecter"
+  },
+  "Workspace_CloseWorkflow": {
+    "label": "Fermer le flux de travail actuel"
+  },
+  "Workspace_NextOpenedWorkflow": {
+    "label": "Flux de travail ouvert suivant"
+  },
+  "Workspace_PreviousOpenedWorkflow": {
+    "label": "Flux de travail ouvert précédent"
+  },
+  "Workspace_SearchBox_Toggle": {
+    "label": "Basculer la boîte de recherche"
+  },
+  "Workspace_ToggleBottomPanel": {
+    "label": "Basculer le panneau inférieur"
+  },
+  "Workspace_ToggleBottomPanelTab_command-terminal": {
+    "label": "Basculer le panneau inférieur du terminal"
+  },
+  "Workspace_ToggleBottomPanelTab_logs-terminal": {
+    "label": "Basculer le panneau inférieur des journaux"
+  },
+  "Workspace_ToggleFocusMode": {
+    "label": "Basculer le mode focus"
+  },
+  "Workspace_ToggleSidebarTab_model-library": {
+    "label": "Basculer la barre latérale de la bibliothèque de modèles",
+    "tooltip": "Bibliothèque de modèles"
+  },
+  "Workspace_ToggleSidebarTab_node-library": {
+    "label": "Basculer la barre latérale de la bibliothèque de nœuds",
+    "tooltip": "Bibliothèque de nœuds"
+  },
+  "Workspace_ToggleSidebarTab_queue": {
+    "label": "Basculer la barre latérale de la file d'attente",
+    "tooltip": "File d'attente"
+  },
+  "Workspace_ToggleSidebarTab_workflows": {
+    "label": "Basculer la barre latérale des flux de travail",
+    "tooltip": "Flux de travail"
+  }
+}

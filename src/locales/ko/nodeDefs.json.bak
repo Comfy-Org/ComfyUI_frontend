@@ -1,0 +1,8660 @@
+{
+  "AddNoise": {
+    "display_name": "노이즈 추가",
+    "inputs": {
+      "latent_image": {
+        "name": "잠재 이미지"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "noise": {
+        "name": "노이즈"
+      },
+      "sigmas": {
+        "name": "시그마 배열"
+      }
+    }
+  },
+  "AlignYourStepsScheduler": {
+    "display_name": "AlignYourSteps 스케쥴러",
+    "inputs": {
+      "denoise": {
+        "name": "노이즈 제거양"
+      },
+      "model_type": {
+        "name": "모델 유형"
+      },
+      "steps": {
+        "name": "스텝 수"
+      }
+    }
+  },
+  "BasicGuider": {
+    "display_name": "기본 가이드",
+    "inputs": {
+      "conditioning": {
+        "name": "조건"
+      },
+      "model": {
+        "name": "모델"
+      }
+    }
+  },
+  "BasicScheduler": {
+    "display_name": "기본 스케줄러",
+    "inputs": {
+      "denoise": {
+        "name": "노이즈 제거양"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "scheduler": {
+        "name": "스케줄러"
+      },
+      "steps": {
+        "name": "스텝 수"
+      }
+    }
+  },
+  "BetaSamplingScheduler": {
+    "display_name": "베타 샘플링 스케줄러",
+    "inputs": {
+      "alpha": {
+        "name": "알파"
+      },
+      "beta": {
+        "name": "베타"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "steps": {
+        "name": "스텝 수"
+      }
+    }
+  },
+  "CFGGuider": {
+    "display_name": "CFG 가이드",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "negative": {
+        "name": "부정 조건"
+      },
+      "positive": {
+        "name": "긍정 조건"
+      }
+    }
+  },
+  "CFGZeroStar": {
+    "display_name": "CFGZeroStar",
+    "inputs": {
+      "model": {
+        "name": "모델"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "패치된 모델"
+      }
+    }
+  },
+  "CLIPAttentionMultiply": {
+    "display_name": "CLIP 어텐션 곱하기",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "k": {
+        "name": "k"
+      },
+      "out": {
+        "name": "out"
+      },
+      "q": {
+        "name": "q"
+      },
+      "v": {
+        "name": "v"
+      }
+    }
+  },
+  "CLIPLoader": {
+    "description": "[조합법]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 / clip-g / clip-l\nstable_audio: t5\nmochi: t5\ncosmos: old t5 xxl",
+    "display_name": "CLIP 로드",
+    "inputs": {
+      "clip_name": {
+        "name": "CLIP 파일명"
+      },
+      "device": {
+        "name": "장치"
+      },
+      "type": {
+        "name": "유형"
+      }
+    }
+  },
+  "CLIPMergeAdd": {
+    "display_name": "CLIP 병합 (더하기)",
+    "inputs": {
+      "clip1": {
+        "name": "CLIP1"
+      },
+      "clip2": {
+        "name": "CLIP2"
+      }
+    }
+  },
+  "CLIPMergeSimple": {
+    "display_name": "CLIP 병합 (단순)",
+    "inputs": {
+      "clip1": {
+        "name": "CLIP1"
+      },
+      "clip2": {
+        "name": "CLIP2"
+      },
+      "ratio": {
+        "name": "비율"
+      }
+    }
+  },
+  "CLIPMergeSubtract": {
+    "display_name": "CLIP 병합 (빼기)",
+    "inputs": {
+      "clip1": {
+        "name": "CLIP1"
+      },
+      "clip2": {
+        "name": "CLIP2"
+      },
+      "multiplier": {
+        "name": "배율"
+      }
+    }
+  },
+  "CLIPSave": {
+    "display_name": "CLIP 저장",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "filename_prefix": {
+        "name": "파일명 접두사"
+      }
+    }
+  },
+  "CLIPSetLastLayer": {
+    "display_name": "CLIP 마지막 레이어 설정",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "stop_at_clip_layer": {
+        "name": "CLIP 레이어 중단점"
+      }
+    }
+  },
+  "CLIPTextEncode": {
+    "description": "CLIP 모델을 사용하여 텍스트 프롬프트를 인코딩하여 확산 모델이 특정 이미지를 생성하도록 유도하는 임베딩으로 변환합니다.",
+    "display_name": "CLIP 텍스트 인코딩 (프롬프트)",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "텍스트 인코딩에 사용되는 CLIP 모델입니다."
+      },
+      "text": {
+        "name": "프롬프트 텍스트",
+        "tooltip": "인코딩할 텍스트입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "확산 모델을 유도하는 데 사용되는 텍스트 임베딩을 포함하는 조건입니다."
+      }
+    }
+  },
+  "CLIPTextEncodeControlnet": {
+    "display_name": "CLIP 텍스트 인코딩 (컨트롤넷)",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "조건"
+      },
+      "text": {
+        "name": "프롬프트 텍스트"
+      }
+    }
+  },
+  "CLIPTextEncodeFlux": {
+    "display_name": "CLIP 텍스트 인코딩 (FLUX)",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "clip_l": {
+        "name": "clip-l 프롬프트"
+      },
+      "guidance": {
+        "name": "가이던스"
+      },
+      "t5xxl": {
+        "name": "t5xxl 프롬프트"
+      }
+    }
+  },
+  "CLIPTextEncodeHiDream": {
+    "display_name": "CLIPTextEncodeHiDream",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "clip_g": {
+        "name": "clip-g 프롬프트"
+      },
+      "clip_l": {
+        "name": "clip-l 프롬프트"
+      },
+      "llama": {
+        "name": "llama 프롬프트"
+      },
+      "t5xxl": {
+        "name": "t5xxl 프롬프트"
+      }
+    }
+  },
+  "CLIPTextEncodeHunyuanDiT": {
+    "display_name": "CLIP 텍스트 인코딩 (HunyuanDiT)",
+    "inputs": {
+      "bert": {
+        "name": "bert 프롬프트"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "mt5xl": {
+        "name": "mt5xl 프롬프트"
+      }
+    }
+  },
+  "CLIPTextEncodeLumina2": {
+    "description": "CLIP 모델을 사용하여 시스템 프롬프트와 사용자 프롬프트를 인코딩하여 특정 이미지를 생성하는 데 사용할 수 있는 임베딩으로 변환합니다.",
+    "display_name": "CLIP 텍스트 인코딩 (Lumina2)",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "텍스트를 인코딩하는 데 사용되는 CLIP 모델입니다."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Lumina2는 두 가지 유형의 시스템 프롬프트를 제공합니다.\nSuperior: 텍스트 프롬프트 또는 사용자 프롬프트를 기반으로 우수한 이미지-텍스트 정렬 정도로 우수한 이미지를 생성하도록 설계된 도우미입니다.\nAlignment: 텍스트 프롬프트를 기반으로 이미지-텍스트 정렬의 최고 수준으로 고품질 이미지를 생성하도록 설계된 도우미입니다."
+      },
+      "user_prompt": {
+        "name": "user_prompt",
+        "tooltip": "인코딩할 텍스트입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "확산 모델을 유도하는 데 사용되는 텍스트 임베딩을 포함하는 조건입니다."
+      }
+    }
+  },
+  "CLIPTextEncodePixArtAlpha": {
+    "description": "텍스트를 인코딩하고 PixArt Alpha의 해상도 조건을 설정합니다. PixArt Sigma에는 적용되지 않습니다.",
+    "display_name": "CLIPTextEncodePixArtAlpha",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "text": {
+        "name": "프롬프트 텍스트"
+      },
+      "width": {
+        "name": "너비"
+      }
+    }
+  },
+  "CLIPTextEncodeSD3": {
+    "display_name": "CLIP 텍스트 인코딩 (SD3)",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "clip_g": {
+        "name": "clip-g 프롬프트"
+      },
+      "clip_l": {
+        "name": "clip-l 프롬프트"
+      },
+      "empty_padding": {
+        "name": "빈_패딩"
+      },
+      "t5xxl": {
+        "name": "t5xxl"
+      }
+    }
+  },
+  "CLIPTextEncodeSDXL": {
+    "display_name": "CLIP 텍스트 인코딩 (SDXL)",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "crop_h": {
+        "name": "크롭 높이"
+      },
+      "crop_w": {
+        "name": "크롭 너비"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "target_height": {
+        "name": "목표 높이"
+      },
+      "target_width": {
+        "name": "목표 너비"
+      },
+      "text_g": {
+        "name": "clip-g 프롬프트"
+      },
+      "text_l": {
+        "name": "clip-l 프롬프트"
+      },
+      "width": {
+        "name": "너비"
+      }
+    }
+  },
+  "CLIPTextEncodeSDXLRefiner": {
+    "display_name": "CLIP 텍스트 인코딩 (SDXL Refiner)",
+    "inputs": {
+      "ascore": {
+        "name": "ascore"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "text": {
+        "name": "텍스트"
+      },
+      "width": {
+        "name": "너비"
+      }
+    }
+  },
+  "CLIPVisionEncode": {
+    "display_name": "CLIP_VISION 인코딩",
+    "inputs": {
+      "clip_vision": {
+        "name": "clip_vision"
+      },
+      "crop": {
+        "name": "자르기 방법"
+      },
+      "image": {
+        "name": "이미지"
+      }
+    }
+  },
+  "CLIPVisionLoader": {
+    "display_name": "CLIP_VISION 로드",
+    "inputs": {
+      "clip_name": {
+        "name": "CLIP 파일명"
+      }
+    }
+  },
+  "Canny": {
+    "display_name": "Canny 경계 필터",
+    "inputs": {
+      "high_threshold": {
+        "name": "높은 임계값"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "low_threshold": {
+        "name": "낮은 임계값"
+      }
+    }
+  },
+  "CheckpointLoader": {
+    "display_name": "구성으로 체크포인트 로드 (지원 중단)",
+    "inputs": {
+      "ckpt_name": {
+        "name": "체크포인트 파일명"
+      },
+      "config_name": {
+        "name": "설정 이름"
+      }
+    }
+  },
+  "CheckpointLoaderSimple": {
+    "description": "확산 모델 체크포인트를 로드합니다. 확산 모델은 잠재 데이터의 노이즈를 제거하는 데 사용됩니다.",
+    "display_name": "체크포인트 로드",
+    "inputs": {
+      "ckpt_name": {
+        "name": "체크포인트 파일명",
+        "tooltip": "로드할 체크포인트(모델)의 이름입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "노이즈 제거를 위한 잠재 모델입니다."
+      },
+      "1": {
+        "tooltip": "텍스트 프롬프트를 인코딩하는 데 사용되는 CLIP 모델입니다."
+      },
+      "2": {
+        "tooltip": "이미지를 잠재 공간으로 인코딩하고 디코딩하는 데 사용되는 VAE 모델입니다."
+      }
+    }
+  },
+  "CheckpointSave": {
+    "display_name": "체크포인트 저장",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "filename_prefix": {
+        "name": "파일명 접두사"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
+  },
+  "CombineHooks2": {
+    "display_name": "후크 결합 [2]",
+    "inputs": {
+      "hooks_A": {
+        "name": "후크 A"
+      },
+      "hooks_B": {
+        "name": "후크 B"
+      }
+    }
+  },
+  "CombineHooks4": {
+    "display_name": "후크 결합 [4]",
+    "inputs": {
+      "hooks_A": {
+        "name": "후크 A"
+      },
+      "hooks_B": {
+        "name": "후크 B"
+      },
+      "hooks_C": {
+        "name": "후크 C"
+      },
+      "hooks_D": {
+        "name": "후크 D"
+      }
+    }
+  },
+  "CombineHooks8": {
+    "display_name": "후크 결합 [8]",
+    "inputs": {
+      "hooks_A": {
+        "name": "후크 A"
+      },
+      "hooks_B": {
+        "name": "후크 B"
+      },
+      "hooks_C": {
+        "name": "후크 C"
+      },
+      "hooks_D": {
+        "name": "후크 D"
+      },
+      "hooks_E": {
+        "name": "후크 E"
+      },
+      "hooks_F": {
+        "name": "후크 F"
+      },
+      "hooks_G": {
+        "name": "후크 G"
+      },
+      "hooks_H": {
+        "name": "후크 H"
+      }
+    }
+  },
+  "ConditioningAverage": {
+    "display_name": "조건 (평균)",
+    "inputs": {
+      "conditioning_from": {
+        "name": "추가 조건"
+      },
+      "conditioning_to": {
+        "name": "대상 조건"
+      },
+      "conditioning_to_strength": {
+        "name": "대상 조건 강도"
+      }
+    }
+  },
+  "ConditioningCombine": {
+    "display_name": "조건 (결합)",
+    "inputs": {
+      "conditioning_1": {
+        "name": "조건 1"
+      },
+      "conditioning_2": {
+        "name": "조건 2"
+      }
+    }
+  },
+  "ConditioningConcat": {
+    "display_name": "조건 (연결)",
+    "inputs": {
+      "conditioning_from": {
+        "name": "추가 조건"
+      },
+      "conditioning_to": {
+        "name": "대상 조건"
+      }
+    }
+  },
+  "ConditioningSetArea": {
+    "display_name": "조건 (영역 설정)",
+    "inputs": {
+      "conditioning": {
+        "name": "조건"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "strength": {
+        "name": "강도"
+      },
+      "width": {
+        "name": "너비"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
+  },
+  "ConditioningSetAreaPercentage": {
+    "display_name": "조건 (비율로 영역 설정)",
+    "inputs": {
+      "conditioning": {
+        "name": "조건"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "strength": {
+        "name": "강도"
+      },
+      "width": {
+        "name": "너비"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
+  },
+  "ConditioningSetAreaPercentageVideo": {
+    "display_name": "비디오 조건 (비율로 영역 설정)",
+    "inputs": {
+      "conditioning": {
+        "name": "조건"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "strength": {
+        "name": "강도"
+      },
+      "temporal": {
+        "name": "시간"
+      },
+      "width": {
+        "name": "너비"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      },
+      "z": {
+        "name": "z"
+      }
+    }
+  },
+  "ConditioningSetAreaStrength": {
+    "display_name": "조건 (영역 강도 설정)",
+    "inputs": {
+      "conditioning": {
+        "name": "조건"
+      },
+      "strength": {
+        "name": "강도"
+      }
+    }
+  },
+  "ConditioningSetDefaultCombine": {
+    "display_name": "조건 (기본 결합 설정)",
+    "inputs": {
+      "cond": {
+        "name": "조건"
+      },
+      "cond_DEFAULT": {
+        "name": "기본 조건"
+      },
+      "hooks": {
+        "name": "후크"
+      }
+    }
+  },
+  "ConditioningSetMask": {
+    "display_name": "조건 (마스크 설정)",
+    "inputs": {
+      "conditioning": {
+        "name": "조건"
+      },
+      "mask": {
+        "name": "마스크"
+      },
+      "set_cond_area": {
+        "name": "조건 영역 설정"
+      },
+      "strength": {
+        "name": "강도"
+      }
+    }
+  },
+  "ConditioningSetProperties": {
+    "display_name": "조건 (속성 설정)",
+    "inputs": {
+      "cond_NEW": {
+        "name": "새 조건"
+      },
+      "hooks": {
+        "name": "후크"
+      },
+      "mask": {
+        "name": "마스크"
+      },
+      "set_cond_area": {
+        "name": "조건 영역 설정"
+      },
+      "strength": {
+        "name": "강도"
+      },
+      "timesteps": {
+        "name": "타임스텝 범위"
+      }
+    }
+  },
+  "ConditioningSetPropertiesAndCombine": {
+    "display_name": "조건 (속성 설정 및 결합)",
+    "inputs": {
+      "cond": {
+        "name": "조건"
+      },
+      "cond_NEW": {
+        "name": "새 조건"
+      },
+      "hooks": {
+        "name": "후크"
+      },
+      "mask": {
+        "name": "마스크"
+      },
+      "set_cond_area": {
+        "name": "조건 영역 설정"
+      },
+      "strength": {
+        "name": "강도"
+      },
+      "timesteps": {
+        "name": "타임스텝 범위"
+      }
+    }
+  },
+  "ConditioningSetTimestepRange": {
+    "display_name": "조건 (타임스텝 범위 설정)",
+    "inputs": {
+      "conditioning": {
+        "name": "조건"
+      },
+      "end": {
+        "name": "끝"
+      },
+      "start": {
+        "name": "시작"
+      }
+    }
+  },
+  "ConditioningStableAudio": {
+    "display_name": "Stable Audio 조건 설정",
+    "inputs": {
+      "negative": {
+        "name": "부정 조건"
+      },
+      "positive": {
+        "name": "긍정 조건"
+      },
+      "seconds_start": {
+        "name": "시작(초)"
+      },
+      "seconds_total": {
+        "name": "전체(초)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정 조건"
+      },
+      "1": {
+        "name": "부정 조건"
+      }
+    }
+  },
+  "ConditioningTimestepsRange": {
+    "display_name": "조건 (타임스텝 범위)",
+    "inputs": {
+      "end_percent": {
+        "name": "종료 퍼센트"
+      },
+      "start_percent": {
+        "name": "시작 퍼센트"
+      }
+    },
+    "outputs": {
+      "1": {
+        "name": "이전 범위"
+      },
+      "2": {
+        "name": "이후 범위"
+      }
+    }
+  },
+  "ConditioningZeroOut": {
+    "display_name": "조건 (0으로 출력)",
+    "inputs": {
+      "conditioning": {
+        "name": "조건"
+      }
+    }
+  },
+  "ControlNetApply": {
+    "display_name": "컨트롤넷 적용 (구형)",
+    "inputs": {
+      "conditioning": {
+        "name": "조건"
+      },
+      "control_net": {
+        "name": "컨트롤넷"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "strength": {
+        "name": "강도"
+      }
+    }
+  },
+  "ControlNetApplyAdvanced": {
+    "display_name": "컨트롤넷 적용",
+    "inputs": {
+      "control_net": {
+        "name": "컨트롤넷"
+      },
+      "end_percent": {
+        "name": "종료 퍼센트"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "negative": {
+        "name": "부정 조건"
+      },
+      "positive": {
+        "name": "긍정 조건"
+      },
+      "start_percent": {
+        "name": "시작 퍼센트"
+      },
+      "strength": {
+        "name": "강도"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정 조건"
+      },
+      "1": {
+        "name": "부정 조건"
+      }
+    }
+  },
+  "ControlNetApplySD3": {
+    "display_name": "컨트롤넷을 VAE와 함께 적용",
+    "inputs": {
+      "control_net": {
+        "name": "컨트롤넷"
+      },
+      "end_percent": {
+        "name": "종료 퍼센트"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "negative": {
+        "name": "부정 조건"
+      },
+      "positive": {
+        "name": "긍정 조건"
+      },
+      "start_percent": {
+        "name": "시작 퍼센트"
+      },
+      "strength": {
+        "name": "강도"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정 조건"
+      },
+      "1": {
+        "name": "부정 조건"
+      }
+    }
+  },
+  "ControlNetInpaintingAliMamaApply": {
+    "display_name": "컨트롤넷 인페인팅 AliMama 적용",
+    "inputs": {
+      "control_net": {
+        "name": "컨트롤넷"
+      },
+      "end_percent": {
+        "name": "종료 퍼센트"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "mask": {
+        "name": "마스크"
+      },
+      "negative": {
+        "name": "부정 조건"
+      },
+      "positive": {
+        "name": "긍정 조건"
+      },
+      "start_percent": {
+        "name": "시작 퍼센트"
+      },
+      "strength": {
+        "name": "강도"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정 조건"
+      },
+      "1": {
+        "name": "부정 조건"
+      }
+    }
+  },
+  "ControlNetLoader": {
+    "display_name": "컨트롤넷 모델 로드",
+    "inputs": {
+      "control_net_name": {
+        "name": "컨트롤넷 파일명"
+      }
+    }
+  },
+  "CosmosImageToVideoLatent": {
+    "display_name": "Cosmos 비디오 생성 (이미지 → 비디오)",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기"
+      },
+      "end_image": {
+        "name": "끝 이미지"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "length": {
+        "name": "길이"
+      },
+      "start_image": {
+        "name": "시작 이미지"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "너비"
+      }
+    }
+  },
+  "CreateHookKeyframe": {
+    "display_name": "후크 키프레임 생성",
+    "inputs": {
+      "prev_hook_kf": {
+        "name": "이전 KF 후크"
+      },
+      "start_percent": {
+        "name": "시작 퍼센트"
+      },
+      "strength_mult": {
+        "name": "강도 곱"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "KF 후크"
+      }
+    }
+  },
+  "CreateHookKeyframesFromFloats": {
+    "display_name": "실수로 후크 키프레임 생성",
+    "inputs": {
+      "end_percent": {
+        "name": "종료 퍼센트"
+      },
+      "floats_strength": {
+        "name": "실수 강도"
+      },
+      "prev_hook_kf": {
+        "name": "이전 KF 후크"
+      },
+      "print_keyframes": {
+        "name": "키프레임 출력"
+      },
+      "start_percent": {
+        "name": "시작 퍼센트"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "KF 후크"
+      }
+    }
+  },
+  "CreateHookKeyframesInterpolated": {
+    "display_name": "보간된 후크 키프레임 생성",
+    "inputs": {
+      "end_percent": {
+        "name": "종료 퍼센트"
+      },
+      "interpolation": {
+        "name": "보간"
+      },
+      "keyframes_count": {
+        "name": "키프레임 카운트"
+      },
+      "prev_hook_kf": {
+        "name": "이전 KF 후크"
+      },
+      "print_keyframes": {
+        "name": "키프레임 출력"
+      },
+      "start_percent": {
+        "name": "시작 퍼센트"
+      },
+      "strength_end": {
+        "name": "종료 강도"
+      },
+      "strength_start": {
+        "name": "시작 강도"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "KF 후크"
+      }
+    }
+  },
+  "CreateHookLora": {
+    "display_name": "후크 LoRA 생성",
+    "inputs": {
+      "lora_name": {
+        "name": "LoRA 파일명"
+      },
+      "prev_hooks": {
+        "name": "이전 후크"
+      },
+      "strength_clip": {
+        "name": "CLIP 강도"
+      },
+      "strength_model": {
+        "name": "모델 강도"
+      }
+    }
+  },
+  "CreateHookLoraModelOnly": {
+    "display_name": "후크 LoRA 생성 (모델 전용)",
+    "inputs": {
+      "lora_name": {
+        "name": "LoRA 파일명"
+      },
+      "prev_hooks": {
+        "name": "이전 후크"
+      },
+      "strength_model": {
+        "name": "모델 강도"
+      }
+    }
+  },
+  "CreateHookModelAsLora": {
+    "display_name": "후크 모델을 LoRA로 생성",
+    "inputs": {
+      "ckpt_name": {
+        "name": "체크포인트 파일명"
+      },
+      "prev_hooks": {
+        "name": "이전 후크"
+      },
+      "strength_clip": {
+        "name": "CLIP 강도"
+      },
+      "strength_model": {
+        "name": "모델 강도"
+      }
+    }
+  },
+  "CreateHookModelAsLoraModelOnly": {
+    "display_name": "후크 모델을 LoRA로 생성 (모델 전용)",
+    "inputs": {
+      "ckpt_name": {
+        "name": "체크포인트 파일명"
+      },
+      "prev_hooks": {
+        "name": "이전 후크"
+      },
+      "strength_model": {
+        "name": "모델 강도"
+      }
+    }
+  },
+  "CreateVideo": {
+    "description": "이미지로부터 비디오를 생성합니다.",
+    "display_name": "비디오 생성",
+    "inputs": {
+      "audio": {
+        "name": "오디오",
+        "tooltip": "비디오에 추가할 오디오입니다."
+      },
+      "fps": {
+        "name": "fps"
+      },
+      "images": {
+        "name": "이미지",
+        "tooltip": "비디오를 생성할 이미지입니다."
+      }
+    }
+  },
+  "CropMask": {
+    "display_name": "마스크 자르기",
+    "inputs": {
+      "height": {
+        "name": "높이"
+      },
+      "mask": {
+        "name": "마스크"
+      },
+      "width": {
+        "name": "너비"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
+  },
+  "DiffControlNetLoader": {
+    "display_name": "컨트롤넷 모델 로드 (차이)",
+    "inputs": {
+      "control_net_name": {
+        "name": "컨트롤넷 파일명"
+      },
+      "model": {
+        "name": "모델"
+      }
+    }
+  },
+  "DifferentialDiffusion": {
+    "display_name": "차등 확산",
+    "inputs": {
+      "model": {
+        "name": "모델"
+      }
+    }
+  },
+  "DiffusersLoader": {
+    "display_name": "Diffusers 로드",
+    "inputs": {
+      "model_path": {
+        "name": "모델 경로"
+      }
+    }
+  },
+  "DisableNoise": {
+    "display_name": "노이즈 비활성화"
+  },
+  "DualCFGGuider": {
+    "display_name": "이중 CFG 가이드",
+    "inputs": {
+      "cfg_cond2_negative": {
+        "name": "(조건2 - 부정 조건) cfg"
+      },
+      "cfg_conds": {
+        "name": "전체 조건 cfg"
+      },
+      "cond1": {
+        "name": "조건1"
+      },
+      "cond2": {
+        "name": "조건2"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "negative": {
+        "name": "부정 조건"
+      }
+    }
+  },
+  "DualCLIPLoader": {
+    "description": "[조합법]\n\nsdxl: clip-l, clip-g\nsd3: clip-l, clip-g / clip-l, t5 / clip-g, t5\nflux: clip-l, t5",
+    "display_name": "이중 CLIP 로드",
+    "inputs": {
+      "clip_name1": {
+        "name": "CLIP 파일명1"
+      },
+      "clip_name2": {
+        "name": "CLIP 파일명2"
+      },
+      "device": {
+        "name": "장치"
+      },
+      "type": {
+        "name": "유형"
+      }
+    }
+  },
+  "EmptyCosmosLatentVideo": {
+    "display_name": "빈 잠재 비디오 (Cosmos)",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "length": {
+        "name": "길이"
+      },
+      "width": {
+        "name": "너비"
+      }
+    }
+  },
+  "EmptyHunyuanLatentVideo": {
+    "display_name": "빈 잠재 비디오 (Hunyuan)",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "length": {
+        "name": "길이"
+      },
+      "width": {
+        "name": "너비"
+      }
+    }
+  },
+  "EmptyImage": {
+    "display_name": "빈 이미지",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기"
+      },
+      "color": {
+        "name": "색"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "width": {
+        "name": "너비"
+      }
+    }
+  },
+  "EmptyLTXVLatentVideo": {
+    "display_name": "빈 잠재 비디오 (LTXV)",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "length": {
+        "name": "길이"
+      },
+      "width": {
+        "name": "너비"
+      }
+    }
+  },
+  "EmptyLatentAudio": {
+    "display_name": "빈 잠재 오디오",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기",
+        "tooltip": "배치의 잠재 이미지 수입니다."
+      },
+      "seconds": {
+        "name": "초"
+      }
+    }
+  },
+  "EmptyLatentHunyuan3Dv2": {
+    "display_name": "EmptyLatentHunyuan3Dv2",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기",
+        "tooltip": "배치에 있는 잠재 이미지의 수입니다."
+      },
+      "resolution": {
+        "name": "해상도"
+      }
+    }
+  },
+  "EmptyLatentImage": {
+    "description": "샘플링을 통해 디노이즈할 빈 잠재 이미지의 새 배치를 생성합니다.",
+    "display_name": "빈 잠재 이미지",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기",
+        "tooltip": "배치의 잠재 이미지 수입니다."
+      },
+      "height": {
+        "name": "높이",
+        "tooltip": "잠재 이미지의 높이(픽셀)입니다."
+      },
+      "width": {
+        "name": "너비",
+        "tooltip": "잠재 이미지의 너비(픽셀)입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "빈 잠재 이미지 배치입니다."
+      }
+    }
+  },
+  "EmptyMochiLatentVideo": {
+    "display_name": "빈 잠재 비디오 (Mochi)",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "length": {
+        "name": "길이"
+      },
+      "width": {
+        "name": "너비"
+      }
+    }
+  },
+  "EmptySD3LatentImage": {
+    "display_name": "빈 잠재 이미지 (SD3)",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "width": {
+        "name": "너비"
+      }
+    }
+  },
+  "ExponentialScheduler": {
+    "display_name": "지수 스케줄러",
+    "inputs": {
+      "sigma_max": {
+        "name": "sigma_max"
+      },
+      "sigma_min": {
+        "name": "sigma_min"
+      },
+      "steps": {
+        "name": "스텝 수"
+      }
+    }
+  },
+  "ExtendIntermediateSigmas": {
+    "display_name": "시그마 배열 중간 구간 확장",
+    "inputs": {
+      "end_at_sigma": {
+        "name": "시그마 종료점"
+      },
+      "sigmas": {
+        "name": "시그마 배열"
+      },
+      "spacing": {
+        "name": "간격 분포 방식"
+      },
+      "start_at_sigma": {
+        "name": "시그마 시작점"
+      },
+      "steps": {
+        "name": "스텝 수"
+      }
+    }
+  },
+  "FeatherMask": {
+    "display_name": "마스크 가장자리 흐리게",
+    "inputs": {
+      "bottom": {
+        "name": "아래쪽"
+      },
+      "left": {
+        "name": "왼쪽"
+      },
+      "mask": {
+        "name": "마스크"
+      },
+      "right": {
+        "name": "오른쪽"
+      },
+      "top": {
+        "name": "위쪽"
+      }
+    }
+  },
+  "FlipSigmas": {
+    "display_name": "시그마 배열 뒤집기",
+    "inputs": {
+      "sigmas": {
+        "name": "시그마 배열"
+      }
+    }
+  },
+  "FluxDisableGuidance": {
+    "description": "이 노드는 Flux 및 Flux와 유사한 모델에서 가이던스 임베드를 완전히 비활성화합니다",
+    "display_name": "가이드 비활성화 (FLUX)",
+    "inputs": {
+      "conditioning": {
+        "name": "조건"
+      }
+    }
+  },
+  "FluxGuidance": {
+    "display_name": "FLUX 가이드",
+    "inputs": {
+      "conditioning": {
+        "name": "조건"
+      },
+      "guidance": {
+        "name": "지침"
+      }
+    }
+  },
+  "FluxProCannyNode": {
+    "description": "컨트롤 이미지(canny)를 사용하여 이미지를 생성합니다.",
+    "display_name": "Flux.1 캐니 제어 이미지",
+    "inputs": {
+      "canny_high_threshold": {
+        "name": "canny 상한 임계값",
+        "tooltip": "윤곽선이 뚜렷할수록 선으로 인식되며, 이 값은 그 상한 임계값입니다. skip_processing이 True이면 무시됩니다."
+      },
+      "canny_low_threshold": {
+        "name": "canny 하한 임계값",
+        "tooltip": "덜 뚜렷한 윤곽선도 강한 선과 연결되면 표시되며, 이 값은 그 하한 임계값입니다. skip_processing이 True이면 무시됩니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "control_image": {
+        "name": "제어 이미지"
+      },
+      "guidance": {
+        "name": "가이던스",
+        "tooltip": "이미지 생성 과정의 가이던스 강도"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "이미지 생성을 위한 프롬프트"
+      },
+      "prompt_upsampling": {
+        "name": "프롬프트 업샘플링",
+        "tooltip": "프롬프트 업샘플링을 수행할지 여부입니다. 활성화 시, 더 창의적인 생성을 위해 프롬프트가 자동으로 수정되지만 결과는 비결정적입니다(같은 시드여도 정확히 같은 결과가 나오지 않습니다)."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노이즈 생성을 위해 사용되는 랜덤 시드입니다."
+      },
+      "skip_preprocessing": {
+        "name": "전처리 건너뛰기",
+        "tooltip": "전처리를 건너뛸지 여부입니다. 제어 이미지가 이미 캐니 처리된 이미지라면 True, 원본 이미지라면 False로 설정하세요."
+      },
+      "steps": {
+        "name": "스텝 수",
+        "tooltip": "이미지 생성 과정의 단계 수"
+      }
+    }
+  },
+  "FluxProDepthNode": {
+    "description": "제어 이미지(깊이)를 사용하여 이미지를 생성합니다.",
+    "display_name": "Flux.1 깊이 제어 이미지",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "control_image": {
+        "name": "제어 이미지"
+      },
+      "guidance": {
+        "name": "가이던스",
+        "tooltip": "이미지 생성 과정의 가이던스 강도"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "이미지 생성을 위한 프롬프트"
+      },
+      "prompt_upsampling": {
+        "name": "프롬프트 업샘플링",
+        "tooltip": "프롬프트에 업샘플링을 수행할지 여부입니다. 활성화하면 프롬프트가 자동으로 더 창의적인 생성이 가능하도록 수정되지만, 결과는 비결정적입니다(같은 시드라도 정확히 같은 결과가 나오지 않습니다)."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노이즈 생성을 위해 사용되는 랜덤 시드입니다."
+      },
+      "skip_preprocessing": {
+        "name": "전처리 건너뛰기",
+        "tooltip": "전처리를 건너뛸지 여부입니다. 제어 이미지가 이미 깊이화된 이미지라면 True로, 원본 이미지라면 False로 설정하세요."
+      },
+      "steps": {
+        "name": "스텝 수",
+        "tooltip": "이미지 생성 과정의 스텝 수"
+      }
+    }
+  },
+  "FluxProExpandNode": {
+    "description": "프롬프트를 기반으로 이미지의 바깥 영역을 확장합니다.",
+    "display_name": "Flux.1 이미지 확장",
+    "inputs": {
+      "bottom": {
+        "name": "하단",
+        "tooltip": "이미지 하단에 확장할 픽셀 수"
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "guidance": {
+        "name": "가이던스",
+        "tooltip": "이미지 생성 과정의 가이던스 강도"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "left": {
+        "name": "좌측",
+        "tooltip": "이미지 좌측에 확장할 픽셀 수"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "이미지 생성을 위한 프롬프트"
+      },
+      "prompt_upsampling": {
+        "name": "프롬프트 업샘플링",
+        "tooltip": "프롬프트에 업샘플링을 수행할지 여부입니다. 활성화 시, 더 창의적인 생성을 위해 프롬프트가 자동으로 수정되지만 결과는 비결정적입니다(같은 시드라도 정확히 같은 결과가 나오지 않습니다)."
+      },
+      "right": {
+        "name": "우측",
+        "tooltip": "이미지 우측에 확장할 픽셀 수"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노이즈 생성을 위해 사용되는 랜덤 시드입니다."
+      },
+      "steps": {
+        "name": "스텝 수",
+        "tooltip": "이미지 생성 과정의 스텝 수"
+      },
+      "top": {
+        "name": "상단",
+        "tooltip": "이미지 상단에 확장할 픽셀 수"
+      }
+    }
+  },
+  "FluxProFillNode": {
+    "description": "마스크와 프롬프트를 기반으로 이미지를 인페인팅합니다.",
+    "display_name": "Flux.1 이미지 채우기",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "guidance": {
+        "name": "가이던스",
+        "tooltip": "이미지 생성 과정의 가이던스 강도"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "mask": {
+        "name": "마스크"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "이미지 생성을 위한 프롬프트"
+      },
+      "prompt_upsampling": {
+        "name": "프롬프트 업샘플링",
+        "tooltip": "프롬프트에 업샘플링을 수행할지 여부입니다. 활성화 시, 더 창의적인 생성을 위해 프롬프트가 자동으로 수정되지만 결과는 비결정적입니다(같은 시드라도 정확히 같은 결과가 나오지 않습니다)."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노이즈 생성을 위해 사용되는 랜덤 시드입니다."
+      },
+      "steps": {
+        "name": "스텝 수",
+        "tooltip": "이미지 생성 과정의 스텝 수"
+      }
+    }
+  },
+  "FluxProUltraImageNode": {
+    "description": "프롬프트와 해상도를 기반으로 api를 통해 Flux Pro 1.1 Ultra로 이미지를 생성합니다.",
+    "display_name": "Flux 1.1 [pro] Ultra 이미지",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비",
+        "tooltip": "이미지의 종횡비; 1:4에서 4:1 사이여야 합니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image_prompt": {
+        "name": "이미지 프롬프트"
+      },
+      "image_prompt_strength": {
+        "name": "이미지 프롬프트 강도",
+        "tooltip": "프롬프트와 이미지 프롬프트 간의 혼합 비율입니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "이미지 생성을 위한 프롬프트"
+      },
+      "prompt_upsampling": {
+        "name": "프롬프트 업샘플링",
+        "tooltip": "프롬프트에 업샘플링을 수행할지 여부입니다. 활성화하면 프롬프트가 자동으로 더 창의적으로 수정되지만, 결과는 비결정적입니다(같은 시드라도 정확히 같은 결과가 나오지 않습니다)."
+      },
+      "raw": {
+        "name": "원본",
+        "tooltip": "True로 설정하면 덜 가공되고 더 자연스러운 이미지를 생성합니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노이즈 생성을 위한 랜덤 시드입니다."
+      }
+    }
+  },
+  "FreSca": {
+    "description": "주파수에 따라 가이던스에 스케일을 적용합니다",
+    "display_name": "FreSca",
+    "inputs": {
+      "freq_cutoff": {
+        "name": "주파수 컷오프",
+        "tooltip": "저주파수로 간주할 중심 주위의 주파수 인덱스 개수"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "scale_high": {
+        "name": "고주파 스케일",
+        "tooltip": "고주파수 성분에 대한 스케일 계수"
+      },
+      "scale_low": {
+        "name": "저주파 스케일",
+        "tooltip": "저주파수 성분에 대한 스케일 계수"
+      }
+    }
+  },
+  "FreeU": {
+    "display_name": "FreeU",
+    "inputs": {
+      "b1": {
+        "name": "b1"
+      },
+      "b2": {
+        "name": "b2"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "s1": {
+        "name": "s1"
+      },
+      "s2": {
+        "name": "s2"
+      }
+    }
+  },
+  "FreeU_V2": {
+    "display_name": "FreeU V2",
+    "inputs": {
+      "b1": {
+        "name": "b1"
+      },
+      "b2": {
+        "name": "b2"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "s1": {
+        "name": "s1"
+      },
+      "s2": {
+        "name": "s2"
+      }
+    }
+  },
+  "GITSScheduler": {
+    "display_name": "GITS 스케줄러",
+    "inputs": {
+      "coeff": {
+        "name": "계수"
+      },
+      "denoise": {
+        "name": "노이즈 제거양"
+      },
+      "steps": {
+        "name": "스텝 수"
+      }
+    }
+  },
+  "GLIGENLoader": {
+    "display_name": "GLIGEN 로드",
+    "inputs": {
+      "gligen_name": {
+        "name": "gligen 파일명"
+      }
+    }
+  },
+  "GLIGENTextBoxApply": {
+    "display_name": "GLIGEN 텍스트 박스 적용",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning_to": {
+        "name": "조건 대상"
+      },
+      "gligen_textbox_model": {
+        "name": "gligen 텍스트상자 모델"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "text": {
+        "name": "텍스트"
+      },
+      "width": {
+        "name": "너비"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
+  },
+  "GetVideoComponents": {
+    "description": "비디오에서 모든 컴포넌트(프레임, 오디오, 프레임레이트)를 추출합니다.",
+    "display_name": "비디오 컴포넌트 추출",
+    "inputs": {
+      "video": {
+        "name": "비디오",
+        "tooltip": "컴포넌트를 추출할 비디오입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "이미지"
+      },
+      "1": {
+        "name": "오디오"
+      },
+      "2": {
+        "name": "fps"
+      }
+    }
+  },
+  "GrowMask": {
+    "display_name": "마스크 확장",
+    "inputs": {
+      "expand": {
+        "name": "확장"
+      },
+      "mask": {
+        "name": "마스크"
+      },
+      "tapered_corners": {
+        "name": "마름모 모서리"
+      }
+    }
+  },
+  "Hunyuan3Dv2Conditioning": {
+    "display_name": "Hunyuan3Dv2Conditioning",
+    "inputs": {
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정 조건"
+      },
+      "1": {
+        "name": "부정 조건"
+      }
+    }
+  },
+  "Hunyuan3Dv2ConditioningMultiView": {
+    "display_name": "Hunyuan3Dv2ConditioningMultiView",
+    "inputs": {
+      "back": {
+        "name": "뒤"
+      },
+      "front": {
+        "name": "앞"
+      },
+      "left": {
+        "name": "왼쪽"
+      },
+      "right": {
+        "name": "오른쪽"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정 조건"
+      },
+      "1": {
+        "name": "부정 조건"
+      }
+    }
+  },
+  "HunyuanImageToVideo": {
+    "display_name": "HunyuanImageToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기"
+      },
+      "guidance_type": {
+        "name": "가이던스 유형"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "length": {
+        "name": "길이"
+      },
+      "positive": {
+        "name": "긍정 조건"
+      },
+      "start_image": {
+        "name": "시작 이미지"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정 조건"
+      },
+      "1": {
+        "name": "잠재 비디오"
+      }
+    }
+  },
+  "HyperTile": {
+    "display_name": "하이퍼 타일",
+    "inputs": {
+      "max_depth": {
+        "name": "최대 깊이"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "scale_depth": {
+        "name": "스케일 깊이"
+      },
+      "swap_size": {
+        "name": "스왑 크기"
+      },
+      "tile_size": {
+        "name": "타일 크기"
+      }
+    }
+  },
+  "HypernetworkLoader": {
+    "display_name": "하이퍼네트워크 로드",
+    "inputs": {
+      "hypernetwork_name": {
+        "name": "하이퍼네트워크 이름"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "strength": {
+        "name": "강도"
+      }
+    }
+  },
+  "IdeogramV1": {
+    "description": "Ideogram V1 모델을 사용하여 동기적으로 이미지를 생성합니다.\n\n이미지 링크는 제한된 기간 동안만 제공되며, 이미지를 보관하려면 반드시 다운로드해야 합니다.",
+    "display_name": "Ideogram V1",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비",
+        "tooltip": "이미지 생성에 사용할 종횡비"
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "magic_prompt_option": {
+        "name": "매직 프롬프트 옵션",
+        "tooltip": "생성 시 MagicPrompt 사용 여부 결정"
+      },
+      "negative_prompt": {
+        "name": "부정 프롬프트",
+        "tooltip": "이미지에서 제외할 내용을 설명"
+      },
+      "num_images": {
+        "name": "이미지 수"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "이미지 생성을 위한 프롬프트"
+      },
+      "seed": {
+        "name": "시드"
+      },
+      "turbo": {
+        "name": "터보",
+        "tooltip": "터보 모드 사용 여부 (더 빠른 생성, 품질 저하 가능성 있음)"
+      }
+    }
+  },
+  "IdeogramV2": {
+    "description": "Ideogram V2 모델을 사용하여 동기적으로 이미지를 생성합니다.\n\n이미지 링크는 일정 기간 동안만 제공되며, 이미지를 보관하려면 반드시 다운로드해야 합니다.",
+    "display_name": "Ideogram V2",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비",
+        "tooltip": "이미지 생성에 사용할 종횡비. 해상도가 AUTO로 설정되지 않은 경우 무시됩니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "magic_prompt_option": {
+        "name": "매직 프롬프트 옵션",
+        "tooltip": "생성 시 MagicPrompt 사용 여부 결정"
+      },
+      "negative_prompt": {
+        "name": "부정 프롬프트",
+        "tooltip": "이미지에서 제외할 내용을 설명"
+      },
+      "num_images": {
+        "name": "이미지 수"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "이미지 생성을 위한 프롬프트"
+      },
+      "resolution": {
+        "name": "해상도",
+        "tooltip": "이미지 생성에 사용할 해상도. AUTO로 설정되지 않은 경우, aspect_ratio 설정을 덮어씁니다."
+      },
+      "seed": {
+        "name": "시드"
+      },
+      "style_type": {
+        "name": "스타일 타입",
+        "tooltip": "생성에 사용할 스타일 타입 (V2 전용)"
+      },
+      "turbo": {
+        "name": "터보",
+        "tooltip": "터보 모드 사용 여부 (더 빠른 생성, 품질 저하 가능성 있음)"
+      }
+    }
+  },
+  "IdeogramV3": {
+    "description": "Ideogram V3 모델을 사용하여 동기적으로 이미지를 생성합니다.\n\n텍스트 프롬프트를 통한 일반 이미지 생성과 mask를 사용한 이미지 편집을 모두 지원합니다.\n이미지 링크는 제한된 기간 동안만 제공되며, 이미지를 보관하려면 반드시 다운로드해야 합니다.",
+    "display_name": "Ideogram V3",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비",
+        "tooltip": "이미지 생성을 위한 종횡비입니다. 해상도가 자동이 아닐 경우 무시됩니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "이미지 편집을 위한 선택적 참조 이미지입니다."
+      },
+      "magic_prompt_option": {
+        "name": "매직 프롬프트 옵션",
+        "tooltip": "생성 시 MagicPrompt 사용 여부를 결정합니다"
+      },
+      "mask": {
+        "name": "마스크",
+        "tooltip": "인페인팅을 위한 선택적 마스크 (흰색 영역이 대체됩니다)"
+      },
+      "num_images": {
+        "name": "이미지 수"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "이미지 생성 또는 편집을 위한 프롬프트"
+      },
+      "rendering_speed": {
+        "name": "렌더링 속도",
+        "tooltip": "생성 속도와 품질 간의 균형을 조절합니다"
+      },
+      "resolution": {
+        "name": "해상도",
+        "tooltip": "이미지 생성을 위한 해상도입니다. 자동이 아닐 경우 종횡비 설정을 덮어씁니다."
+      },
+      "seed": {
+        "name": "시드"
+      }
+    }
+  },
+  "ImageBatch": {
+    "display_name": "이미지 배치",
+    "inputs": {
+      "image1": {
+        "name": "이미지1"
+      },
+      "image2": {
+        "name": "이미지2"
+      }
+    }
+  },
+  "ImageBlend": {
+    "display_name": "이미지 혼합",
+    "inputs": {
+      "blend_factor": {
+        "name": "혼합 계수"
+      },
+      "blend_mode": {
+        "name": "혼합 모드"
+      },
+      "image1": {
+        "name": "이미지1"
+      },
+      "image2": {
+        "name": "이미지2"
+      }
+    }
+  },
+  "ImageBlur": {
+    "display_name": "이미지 흐림",
+    "inputs": {
+      "blur_radius": {
+        "name": "블러 반경"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "sigma": {
+        "name": "시그마"
+      }
+    }
+  },
+  "ImageColorToMask": {
+    "display_name": "이미지 색상을 마스크로 변환",
+    "inputs": {
+      "color": {
+        "name": "색상"
+      },
+      "image": {
+        "name": "이미지"
+      }
+    }
+  },
+  "ImageCompositeMasked": {
+    "display_name": "마스크된 이미지 합성",
+    "inputs": {
+      "destination": {
+        "name": "대상"
+      },
+      "mask": {
+        "name": "마스크"
+      },
+      "resize_source": {
+        "name": "원본 크기 조정"
+      },
+      "source": {
+        "name": "원본"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
+  },
+  "ImageCrop": {
+    "display_name": "이미지 자르기",
+    "inputs": {
+      "height": {
+        "name": "높이"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "width": {
+        "name": "너비"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
+  },
+  "ImageFromBatch": {
+    "display_name": "배치에서 이미지 가져오기",
+    "inputs": {
+      "batch_index": {
+        "name": "배치 번호"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "length": {
+        "name": "길이"
+      }
+    }
+  },
+  "ImageInvert": {
+    "display_name": "이미지 반전",
+    "inputs": {
+      "image": {
+        "name": "이미지"
+      }
+    }
+  },
+  "ImageOnlyCheckpointLoader": {
+    "display_name": "이미지 전용 체크포인트 로드 (img2vid 모델)",
+    "inputs": {
+      "ckpt_name": {
+        "name": "체크포인트 파일명"
+      }
+    }
+  },
+  "ImageOnlyCheckpointSave": {
+    "display_name": "이미지 전용 체크포인트 저장",
+    "inputs": {
+      "clip_vision": {
+        "name": "clip_vision"
+      },
+      "filename_prefix": {
+        "name": "파일명 접두사"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
+  },
+  "ImagePadForOutpaint": {
+    "display_name": "아웃페인팅을 위한 이미지 패딩",
+    "inputs": {
+      "bottom": {
+        "name": "아래"
+      },
+      "feathering": {
+        "name": "가장자리 흐림"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "left": {
+        "name": "왼쪽"
+      },
+      "right": {
+        "name": "오른쪽"
+      },
+      "top": {
+        "name": "위"
+      }
+    }
+  },
+  "ImageQuantize": {
+    "display_name": "이미지 양자화",
+    "inputs": {
+      "colors": {
+        "name": "색상"
+      },
+      "dither": {
+        "name": "디더링"
+      },
+      "image": {
+        "name": "이미지"
+      }
+    }
+  },
+  "ImageRGBToYUV": {
+    "display_name": "ImageRGBToYUV",
+    "inputs": {
+      "image": {
+        "name": "이미지"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Y"
+      },
+      "1": {
+        "name": "U"
+      },
+      "2": {
+        "name": "V"
+      }
+    }
+  },
+  "ImageScale": {
+    "display_name": "이미지 확대",
+    "inputs": {
+      "crop": {
+        "name": "자르기"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "upscale_method": {
+        "name": "확대 방법"
+      },
+      "width": {
+        "name": "너비"
+      }
+    }
+  },
+  "ImageScaleBy": {
+    "display_name": "이미지 확대 비율",
+    "inputs": {
+      "image": {
+        "name": "이미지"
+      },
+      "scale_by": {
+        "name": "배율"
+      },
+      "upscale_method": {
+        "name": "확대 방법"
+      }
+    }
+  },
+  "ImageScaleToTotalPixels": {
+    "display_name": "총 픽셀 수에 맞춰 이미지 크기 조정",
+    "inputs": {
+      "image": {
+        "name": "이미지"
+      },
+      "megapixels": {
+        "name": "메가픽셀수"
+      },
+      "upscale_method": {
+        "name": "확대 방법"
+      }
+    }
+  },
+  "ImageSharpen": {
+    "display_name": "이미지 선명화",
+    "inputs": {
+      "alpha": {
+        "name": "알파"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "sharpen_radius": {
+        "name": "선명화 반경"
+      },
+      "sigma": {
+        "name": "시그마"
+      }
+    }
+  },
+  "ImageToMask": {
+    "display_name": "이미지를 마스크로 변환",
+    "inputs": {
+      "channel": {
+        "name": "채널"
+      },
+      "image": {
+        "name": "이미지"
+      }
+    }
+  },
+  "ImageUpscaleWithModel": {
+    "display_name": "모델을 사용한 이미지 확대",
+    "inputs": {
+      "image": {
+        "name": "이미지"
+      },
+      "upscale_model": {
+        "name": "확대 모델"
+      }
+    }
+  },
+  "ImageYUVToRGB": {
+    "display_name": "ImageYUVToRGB",
+    "inputs": {
+      "U": {
+        "name": "U"
+      },
+      "V": {
+        "name": "V"
+      },
+      "Y": {
+        "name": "Y"
+      }
+    }
+  },
+  "InpaintModelConditioning": {
+    "display_name": "인페인팅 모델 조건 설정",
+    "inputs": {
+      "mask": {
+        "name": "마스크"
+      },
+      "negative": {
+        "name": "부정 조건"
+      },
+      "noise_mask": {
+        "name": "노이즈 마스크",
+        "tooltip": "잠재 데이터에 노이즈 마스크를 추가하여 샘플링이 마스크 내에서만 발생하도록 합니다. 모델에 따라 결과가 개선되거나 완전히 망가질 수 있습니다."
+      },
+      "pixels": {
+        "name": "픽셀 이미지"
+      },
+      "positive": {
+        "name": "긍정 조건"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정 조건"
+      },
+      "1": {
+        "name": "부정 조건"
+      },
+      "2": {
+        "name": "잠재 데이터"
+      }
+    }
+  },
+  "InstructPixToPixConditioning": {
+    "display_name": "InstructPixToPix 조건 설정",
+    "inputs": {
+      "negative": {
+        "name": "부정 조건"
+      },
+      "pixels": {
+        "name": "픽셀"
+      },
+      "positive": {
+        "name": "긍정 조건"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정 조건"
+      },
+      "1": {
+        "name": "부정 조건"
+      },
+      "2": {
+        "name": "잠재 이미지"
+      }
+    }
+  },
+  "InvertMask": {
+    "display_name": "마스크 반전",
+    "inputs": {
+      "mask": {
+        "name": "마스크"
+      }
+    }
+  },
+  "JoinImageWithAlpha": {
+    "display_name": "알파와 함께 이미지 결합",
+    "inputs": {
+      "alpha": {
+        "name": "알파"
+      },
+      "image": {
+        "name": "이미지"
+      }
+    }
+  },
+  "KSampler": {
+    "description": "제공된 모델, 긍정 및 부정 조건을 사용하여 잠재 데이터를 디노이즈합니다.",
+    "display_name": "KSampler",
+    "inputs": {
+      "cfg": {
+        "name": "cfg",
+        "tooltip": "Classifier-Free Guidance 스케일은 창의성과 프롬프트 준수를 균형 있게 조절합니다. 값이 높을수록 프롬프트와 더 밀접하게 일치하는 이미지가 생성되지만, 너무 높은 값은 품질에 부정적인 영향을 미칠 수 있습니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "denoise": {
+        "name": "노이즈 제거양",
+        "tooltip": "적용되는 노이즈 제거의 양으로, 낮은 값은 초기 이미지의 구조를 유지하여 이미지 간 샘플링을 가능하게 합니다."
+      },
+      "latent_image": {
+        "name": "잠재 데이터",
+        "tooltip": "노이즈 제거할 잠재 데이터입니다."
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "입력 잠재 데이터의 노이즈 제거에 사용되는 모델입니다."
+      },
+      "negative": {
+        "name": "부정 조건",
+        "tooltip": "이미지에서 제외하고 싶은 속성을 설명하는 조건입니다."
+      },
+      "positive": {
+        "name": "긍정 조건",
+        "tooltip": "이미지에 포함하고 싶은 속성을 설명하는 조건입니다."
+      },
+      "sampler_name": {
+        "name": "샘플러 이름",
+        "tooltip": "샘플링 시 사용되는 알고리즘으로, 생성된 출력의 품질, 속도 및 스타일에 영향을 미칠 수 있습니다."
+      },
+      "scheduler": {
+        "name": "스케줄러",
+        "tooltip": "스케줄러는 노이즈가 점진적으로 제거되어 이미지를 형성하는 방식을 제어합니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노이즈 생성을 위한 랜덤 시드입니다."
+      },
+      "steps": {
+        "name": "스텝 수",
+        "tooltip": "노이즈 제거 과정에서 사용되는 단계 수입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "노이즈가 제거된 잠재 데이터입니다."
+      }
+    }
+  },
+  "KSamplerAdvanced": {
+    "display_name": "고급 KSampler",
+    "inputs": {
+      "add_noise": {
+        "name": "노이즈 추가"
+      },
+      "cfg": {
+        "name": "cfg"
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "end_at_step": {
+        "name": "종료 스텝"
+      },
+      "latent_image": {
+        "name": "잠재 데이터"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "negative": {
+        "name": "부정 조건"
+      },
+      "noise_seed": {
+        "name": "노이즈 시드"
+      },
+      "positive": {
+        "name": "긍정 조건"
+      },
+      "return_with_leftover_noise": {
+        "name": "잔여 노이즈 반환"
+      },
+      "sampler_name": {
+        "name": "샘플러 이름"
+      },
+      "scheduler": {
+        "name": "스케줄러"
+      },
+      "start_at_step": {
+        "name": "시작 스텝"
+      },
+      "steps": {
+        "name": "스텝 수"
+      }
+    }
+  },
+  "KSamplerSelect": {
+    "display_name": "KSampler (선택)",
+    "inputs": {
+      "sampler_name": {
+        "name": "샘플러 이름"
+      }
+    }
+  },
+  "KarrasScheduler": {
+    "display_name": "Karras 스케줄러",
+    "inputs": {
+      "rho": {
+        "name": "rho"
+      },
+      "sigma_max": {
+        "name": "최대 시그마"
+      },
+      "sigma_min": {
+        "name": "최소 시그마"
+      },
+      "steps": {
+        "name": "스텝 수"
+      }
+    }
+  },
+  "KlingCameraControlI2VNode": {
+    "description": "정지 이미지를 실제 영화 촬영과 유사한 전문적인 카메라 움직임으로 시네마틱 비디오로 변환합니다. 원본 이미지에 초점을 유지하면서 줌, 회전, 패닝, 틸트, 1인칭 시점 등 가상 카메라 동작을 제어할 수 있습니다.",
+    "display_name": "Kling 이미지 투 비디오 (카메라 컨트롤)",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비"
+      },
+      "camera_control": {
+        "name": "카메라 제어",
+        "tooltip": "Kling Camera Controls 노드를 사용하여 생성할 수 있습니다. 비디오 생성 중 카메라의 움직임과 모션을 제어합니다."
+      },
+      "cfg_scale": {
+        "name": "cfg 스케일"
+      },
+      "negative_prompt": {
+        "name": "부정 프롬프트",
+        "tooltip": "비디오에서 제외할 내용을 설명"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "비디오 생성을 위한 프롬프트"
+      },
+      "start_frame": {
+        "name": "start_frame",
+        "tooltip": "참조 이미지 - URL 또는 Base64 인코딩 문자열, 10MB를 초과할 수 없으며, 해상도는 최소 300*300px, 가로세로 비율은 1:2.5 ~ 2.5:1 사이여야 합니다. Base64는 data:image 접두사를 포함하지 않아야 합니다."
+      }
+    },
+    "outputs": {
+      "1": {
+        "name": "비디오 ID"
+      },
+      "2": {
+        "name": "길이"
+      }
+    }
+  },
+  "KlingCameraControlT2VNode": {
+    "description": "텍스트를 실제 영화 촬영과 유사한 전문적인 카메라 움직임이 적용된 시네마틱 비디오로 변환합니다. 원본 텍스트에 초점을 유지하면서 줌, 회전, 팬, 틸트, 1인칭 시점 등 가상 카메라 동작을 제어할 수 있습니다.",
+    "display_name": "Kling 텍스트 투 비디오 (카메라 컨트롤)",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비"
+      },
+      "camera_control": {
+        "name": "카메라 제어",
+        "tooltip": "Kling 카메라 컨트롤 노드를 사용하여 생성할 수 있습니다. 비디오 생성 중 카메라의 움직임과 모션을 제어합니다."
+      },
+      "cfg_scale": {
+        "name": "cfg 스케일"
+      },
+      "negative_prompt": {
+        "name": "부정 프롬프트",
+        "tooltip": "비디오에서 제외할 내용을 설명"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "비디오 생성을 위한 프롬프트"
+      }
+    },
+    "outputs": {
+      "1": {
+        "name": "비디오 ID"
+      },
+      "2": {
+        "name": "길이"
+      }
+    }
+  },
+  "KlingCameraControls": {
+    "description": "Kling 카메라 컨트롤 및 모션 제어 효과를 위한 구성 옵션을 지정할 수 있습니다.",
+    "display_name": "Kling 카메라 컨트롤",
+    "inputs": {
+      "camera_control_type": {
+        "name": "카메라 제어 종류"
+      },
+      "horizontal_movement": {
+        "name": "수평 이동",
+        "tooltip": "카메라의 수평 축(x축) 이동을 제어합니다. 음수는 왼쪽, 양수는 오른쪽을 의미합니다."
+      },
+      "pan": {
+        "name": "수평 회전",
+        "tooltip": "카메라의 수직 평면(x축) 회전을 제어합니다. 음수는 아래쪽 회전, 양수는 위쪽 회전을 의미합니다."
+      },
+      "roll": {
+        "name": "축 회전",
+        "tooltip": "카메라의 롤링(z축) 정도를 제어합니다. 음수는 반시계 방향, 양수는 시계 방향을 의미합니다."
+      },
+      "tilt": {
+        "name": "상하 회전",
+        "tooltip": "카메라의 수평 평면(y축) 회전을 제어합니다. 음수는 왼쪽 회전, 양수는 오른쪽 회전을 의미합니다."
+      },
+      "vertical_movement": {
+        "name": "수직 이동",
+        "tooltip": "카메라의 수직 축(y축) 이동을 제어합니다. 음수는 아래쪽, 양수는 위쪽을 의미합니다."
+      },
+      "zoom": {
+        "name": "확대/축소",
+        "tooltip": "카메라의 초점 거리 변화를 제어합니다. 음수는 좁은 시야각, 양수는 넓은 시야각을 의미합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "카메라 제어"
+      }
+    }
+  },
+  "KlingDualCharacterVideoEffectNode": {
+    "description": "'효과 장면'에 따라 비디오를 생성할 때 다양한 특수 효과를 적용합니다. 첫 번째 이미지는 합성의 왼쪽에, 두 번째 이미지는 오른쪽에 배치됩니다.",
+    "display_name": "Kling 듀얼 캐릭터 비디오 효과",
+    "inputs": {
+      "duration": {
+        "name": "길이"
+      },
+      "effect_scene": {
+        "name": "효과 장면"
+      },
+      "image_left": {
+        "name": "왼쪽 이미지",
+        "tooltip": "왼쪽 이미지"
+      },
+      "image_right": {
+        "name": "오른쪽 이미지",
+        "tooltip": "오른쪽 이미지"
+      },
+      "mode": {
+        "name": "모드"
+      },
+      "model_name": {
+        "name": "모델명"
+      }
+    },
+    "outputs": {
+      "1": {
+        "name": "길이"
+      }
+    }
+  },
+  "KlingImage2VideoNode": {
+    "description": "Kling 이미지에서 비디오로 노드",
+    "display_name": "Kling 비디오 생성 (이미지 → 비디오)",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비"
+      },
+      "cfg_scale": {
+        "name": "cfg 스케일"
+      },
+      "duration": {
+        "name": "길이"
+      },
+      "mode": {
+        "name": "모드"
+      },
+      "model_name": {
+        "name": "모델명"
+      },
+      "negative_prompt": {
+        "name": "부정 프롬프트",
+        "tooltip": "비디오에서 제외할 내용을 설명"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "비디오 생성을 위한 프롬프트"
+      },
+      "start_frame": {
+        "name": "start_frame",
+        "tooltip": "참조 이미지 - URL 또는 Base64 인코딩 문자열, 10MB를 초과할 수 없으며, 해상도는 최소 300*300px, 가로세로 비율은 1:2.5 ~ 2.5:1 사이여야 합니다. Base64에는 data:image 접두사가 포함되지 않아야 합니다."
+      }
+    },
+    "outputs": {
+      "1": {
+        "name": "비디오 ID"
+      },
+      "2": {
+        "name": "길이"
+      }
+    }
+  },
+  "KlingImageGenerationNode": {
+    "description": "Kling 이미지 생성 노드. 텍스트 프롬프트와 선택적 참조 이미지를 사용하여 이미지를 생성합니다.",
+    "display_name": "Kling 이미지 생성 (텍스트 → 이미지)",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비"
+      },
+      "human_fidelity": {
+        "name": "사람 충실도",
+        "tooltip": "피사체 참조 유사도"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "image_fidelity": {
+        "name": "이미지 충실도",
+        "tooltip": "사용자 업로드 이미지의 참조 강도"
+      },
+      "image_type": {
+        "name": "이미지 종류"
+      },
+      "model_name": {
+        "name": "모델 명"
+      },
+      "n": {
+        "name": "개수",
+        "tooltip": "생성할 이미지 수"
+      },
+      "negative_prompt": {
+        "name": "부정 프롬프트",
+        "tooltip": "이미지에서 제외할 내용을 설명"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "이미지 생성을 위한 프롬프트"
+      }
+    }
+  },
+  "KlingLipSyncAudioToVideoNode": {
+    "description": "Kling 립싱크 오디오 투 비디오 노드. 비디오 파일의 입 모양 움직임을 오디오 파일의 오디오 내용에 맞게 동기화합니다.",
+    "display_name": "Kling 립싱크 비디오 오디오와 함께",
+    "inputs": {
+      "audio": {
+        "name": "오디오"
+      },
+      "video": {
+        "name": "비디오"
+      },
+      "voice_language": {
+        "name": "음성 언어"
+      }
+    },
+    "outputs": {
+      "1": {
+        "name": "비디오 ID"
+      },
+      "2": {
+        "name": "재생 시간"
+      }
+    }
+  },
+  "KlingLipSyncTextToVideoNode": {
+    "description": "Kling 립싱크 텍스트-투-비디오 노드입니다. 비디오 파일에서 입 모양 움직임을 텍스트 프롬프트에 맞춰 동기화합니다.",
+    "display_name": "Kling 립싱크 비디오 (텍스트 기반)",
+    "inputs": {
+      "text": {
+        "name": "텍스트",
+        "tooltip": "립싱크 비디오 생성을 위한 텍스트 내용입니다. text2video 모드에서 필수입니다. 최대 길이는 120자입니다."
+      },
+      "video": {
+        "name": "비디오"
+      },
+      "voice": {
+        "name": "음성"
+      },
+      "voice_speed": {
+        "name": "음성 속도",
+        "tooltip": "음성 속도. 유효 범위: 0.8~2.0, 소수점 한 자리까지 입력 가능합니다."
+      }
+    },
+    "outputs": {
+      "1": {
+        "name": "비디오 ID"
+      },
+      "2": {
+        "name": "길이"
+      }
+    }
+  },
+  "KlingSingleImageVideoEffectNode": {
+    "description": "'효과 장면'에 따라 비디오를 생성할 때 다양한 특수 효과를 적용합니다.",
+    "display_name": "Kling 비디오 효과",
+    "inputs": {
+      "duration": {
+        "name": "길이"
+      },
+      "effect_scene": {
+        "name": "효과 장면"
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "참조 이미지. URL 또는 Base64 인코딩 문자열(data:image 접두사 제외). 파일 크기는 10MB를 초과할 수 없으며, 해상도는 최소 300*300px, 가로세로 비율은 1:2.5 ~ 2.5:1 사이여야 합니다."
+      },
+      "model_name": {
+        "name": "모델 명"
+      }
+    },
+    "outputs": {
+      "1": {
+        "name": "비디오 ID"
+      },
+      "2": {
+        "name": "길이"
+      }
+    }
+  },
+  "KlingStartEndFrameNode": {
+    "description": "제공한 시작 이미지와 종료 이미지 사이를 전환하는 비디오 시퀀스를 생성합니다. 이 노드는 중간의 모든 프레임을 만들어 첫 프레임에서 마지막 프레임까지 부드러운 변환을 제공합니다.",
+    "display_name": "Kling 비디오 생성 (시작-끝 프레임)",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비"
+      },
+      "cfg_scale": {
+        "name": "cfg 스케일"
+      },
+      "end_frame": {
+        "name": "끝 프레임",
+        "tooltip": "참조 이미지 - 끝 프레임 제어. URL 또는 Base64 인코딩 문자열, 10MB를 초과할 수 없으며, 해상도는 최소 300*300px이어야 합니다. Base64에는 data:image 접두사가 포함되지 않아야 합니다."
+      },
+      "mode": {
+        "name": "모드",
+        "tooltip": "비디오 생성을 위한 구성. 형식: 모드 / 길이 / 모델명"
+      },
+      "negative_prompt": {
+        "name": "부정 프롬프트",
+        "tooltip": "비디오에서 제외할 내용을 설명"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "비디오 생성을 위한 프롬프트"
+      },
+      "start_frame": {
+        "name": "시작 프레임",
+        "tooltip": "참조 이미지 - URL 또는 Base64 인코딩 문자열, 10MB를 초과할 수 없으며, 해상도는 최소 300*300px, 가로세로 비율은 1:2.5 ~ 2.5:1 사이여야 합니다. Base64에는 data:image 접두사가 포함되지 않아야 합니다."
+      }
+    },
+    "outputs": {
+      "1": {
+        "name": "비디오 ID"
+      },
+      "2": {
+        "name": "길이"
+      }
+    }
+  },
+  "KlingTextToVideoNode": {
+    "description": "Kling 텍스트 투 비디오 노드",
+    "display_name": "Kling 비디오 생성 (텍스트 → 비디오)",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비"
+      },
+      "cfg_scale": {
+        "name": "cfg 스케일"
+      },
+      "mode": {
+        "name": "모드",
+        "tooltip": "비디오 생성을 위한 설정 (형식: 모드 / 길이 / 모델명)"
+      },
+      "negative_prompt": {
+        "name": "부정 프롬프트",
+        "tooltip": "부정 텍스트 프롬프트"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "긍정 텍스트 프롬프트"
+      }
+    },
+    "outputs": {
+      "1": {
+        "name": "비디오 ID"
+      },
+      "2": {
+        "name": "길이"
+      }
+    }
+  },
+  "KlingVideoExtendNode": {
+    "description": "Kling 비디오 확장 노드입니다. 다른 Kling 노드에서 생성된 비디오를 확장합니다. video_id는 다른 Kling 노드를 사용하여 생성됩니다.",
+    "display_name": "Kling 비디오 확장",
+    "inputs": {
+      "cfg_scale": {
+        "name": "cfg 스케일"
+      },
+      "negative_prompt": {
+        "name": "부정 프롬프트",
+        "tooltip": "확장된 비디오에서 피하고 싶은 요소를 위한 부정적인 텍스트 프롬프트"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "비디오 확장을 안내하는 긍정적인 텍스트 프롬프트"
+      },
+      "video_id": {
+        "name": "비디오 ID",
+        "tooltip": "확장할 비디오의 ID입니다. 텍스트-투-비디오, 이미지-투-비디오, 이전 비디오 확장 작업에서 생성된 비디오를 지원합니다. 확장 후 총 길이는 3분을 초과할 수 없습니다."
+      }
+    },
+    "outputs": {
+      "1": {
+        "name": "비디오 ID"
+      },
+      "2": {
+        "name": "길이"
+      }
+    }
+  },
+  "KlingVirtualTryOnNode": {
+    "description": "Kling 가상 착용 노드입니다. 인물 이미지와 의류 이미지를 입력하여 인물에게 의류를 착용시킵니다.",
+    "display_name": "Kling 가상 착용",
+    "inputs": {
+      "cloth_image": {
+        "name": "의상 이미지"
+      },
+      "human_image": {
+        "name": "사람 이미지"
+      },
+      "model_name": {
+        "name": "모델 명"
+      }
+    }
+  },
+  "LTXVAddGuide": {
+    "display_name": "LTXV 가이드 추가",
+    "inputs": {
+      "frame_idx": {
+        "name": "프레임 번호",
+        "tooltip": "조건을 시작할 프레임 번호. 단일 프레임 이미지 또는 1-8 프레임의 비디오의 경우 어떤 프레임 번호 값도 허용됩니다. 9+ 프레임의 비디오의 경우, 프레임 번호는 8의 배수여야 합니다. 그렇지 않으면 가장 가까운 8의 배수로 내림됩니다. 음수 값은 비디오의 끝에서부터 계산됩니다."
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "잠재 비디오에 조건을 부여하는 이미지 또는 비디오. 8*n + 1 프레임이어야 합니다. 비디오가 8*n + 1 프레임이 아닌 경우 가장 가까운 8*n + 1 프레임으로 자릅니다."
+      },
+      "latent": {
+        "name": "잠재 비디오"
+      },
+      "negative": {
+        "name": "부정 조건"
+      },
+      "positive": {
+        "name": "긍정 조건"
+      },
+      "strength": {
+        "name": "강도"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정 조건"
+      },
+      "1": {
+        "name": "부정 조건"
+      },
+      "2": {
+        "name": "잠재 비디오"
+      }
+    }
+  },
+  "LTXVConditioning": {
+    "display_name": "LTXV 조건 설정",
+    "inputs": {
+      "frame_rate": {
+        "name": "프레임율"
+      },
+      "negative": {
+        "name": "부정 조건"
+      },
+      "positive": {
+        "name": "긍정 조건"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정 조건"
+      },
+      "1": {
+        "name": "부정 조건"
+      }
+    }
+  },
+  "LTXVCropGuides": {
+    "display_name": "LTXV 가이드 자르기",
+    "inputs": {
+      "latent": {
+        "name": "잠재 비디오"
+      },
+      "negative": {
+        "name": "부정 조건"
+      },
+      "positive": {
+        "name": "긍정 조건"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정 조건"
+      },
+      "1": {
+        "name": "부정 조건"
+      },
+      "2": {
+        "name": "잠재 비디오"
+      }
+    }
+  },
+  "LTXVImgToVideo": {
+    "display_name": "LTXV 비디오 생성 (이미지 → 비디오)",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "length": {
+        "name": "길이"
+      },
+      "negative": {
+        "name": "부정 조건"
+      },
+      "positive": {
+        "name": "긍정 조건"
+      },
+      "strength": {
+        "name": "강도"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정 조건"
+      },
+      "1": {
+        "name": "부정 조건"
+      },
+      "2": {
+        "name": "잠재 데이터"
+      }
+    }
+  },
+  "LTXVPreprocess": {
+    "display_name": "LTXV 전처리",
+    "inputs": {
+      "image": {
+        "name": "이미지"
+      },
+      "img_compression": {
+        "name": "이미지 압축",
+        "tooltip": "이미지에 적용할 압축의 양."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "출력 이미지"
+      }
+    }
+  },
+  "LTXVScheduler": {
+    "display_name": "LTXV 스케줄러",
+    "inputs": {
+      "base_shift": {
+        "name": "기반 시프트"
+      },
+      "latent": {
+        "name": "잠재 비디오"
+      },
+      "max_shift": {
+        "name": "최대 시프트"
+      },
+      "steps": {
+        "name": "스텝 수"
+      },
+      "stretch": {
+        "name": "늘이기",
+        "tooltip": "시그마를 [종료값, 1] 범위로 늘립니다."
+      },
+      "terminal": {
+        "name": "종료값",
+        "tooltip": "늘린 후 시그마의 종료값입니다."
+      }
+    }
+  },
+  "LaplaceScheduler": {
+    "display_name": "라플라스 스케줄러",
+    "inputs": {
+      "beta": {
+        "name": "beta"
+      },
+      "mu": {
+        "name": "mu"
+      },
+      "sigma_max": {
+        "name": "최대 시그마"
+      },
+      "sigma_min": {
+        "name": "최소 시그마"
+      },
+      "steps": {
+        "name": "스텝 수"
+      }
+    }
+  },
+  "LatentAdd": {
+    "display_name": "잠재 데이터 연산 (더하기)",
+    "inputs": {
+      "samples1": {
+        "name": "잠재 데이터1"
+      },
+      "samples2": {
+        "name": "잠재 데이터2"
+      }
+    }
+  },
+  "LatentApplyOperation": {
+    "display_name": "잠재 데이터 연산 (연산 적용)",
+    "inputs": {
+      "operation": {
+        "name": "연산"
+      },
+      "samples": {
+        "name": "잠재 데이터"
+      }
+    }
+  },
+  "LatentApplyOperationCFG": {
+    "display_name": "잠재 데이터 CFG 연산 (연산 적용)",
+    "inputs": {
+      "model": {
+        "name": "모델"
+      },
+      "operation": {
+        "name": "연산"
+      }
+    }
+  },
+  "LatentBatch": {
+    "display_name": "잠재 데이터 배치 연결",
+    "inputs": {
+      "samples1": {
+        "name": "잠재 데이터1"
+      },
+      "samples2": {
+        "name": "잠재 데이터2"
+      }
+    }
+  },
+  "LatentBatchSeedBehavior": {
+    "display_name": "잠재 데이터 배치 시드 동작",
+    "inputs": {
+      "samples": {
+        "name": "잠재 데이터"
+      },
+      "seed_behavior": {
+        "name": "시드 동작"
+      }
+    }
+  },
+  "LatentBlend": {
+    "display_name": "잠재 데이터 연산 (혼합)",
+    "inputs": {
+      "blend_factor": {
+        "name": "혼합 계수"
+      },
+      "samples1": {
+        "name": "잠재 데이터1"
+      },
+      "samples2": {
+        "name": "잠재 데이터2"
+      }
+    }
+  },
+  "LatentComposite": {
+    "display_name": "잠재 데이터 합성 (위치 기반)",
+    "inputs": {
+      "feather": {
+        "name": "가장자리 흐림"
+      },
+      "samples_from": {
+        "name": "추가 잠재 데이터"
+      },
+      "samples_to": {
+        "name": "대상 잠재 데이터"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
+  },
+  "LatentCompositeMasked": {
+    "display_name": "잠재 데이터 합성 (마스크 기반)",
+    "inputs": {
+      "destination": {
+        "name": "대상"
+      },
+      "mask": {
+        "name": "마스크"
+      },
+      "resize_source": {
+        "name": "원본 크기 조정"
+      },
+      "source": {
+        "name": "원본"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
+  },
+  "LatentCrop": {
+    "display_name": "잠재 데이터 자르기",
+    "inputs": {
+      "height": {
+        "name": "높이"
+      },
+      "samples": {
+        "name": "잠재 데이터"
+      },
+      "width": {
+        "name": "너비"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
+  },
+  "LatentFlip": {
+    "display_name": "잠재 데이터 연산 (뒤집기)",
+    "inputs": {
+      "flip_method": {
+        "name": "뒤집기 방법"
+      },
+      "samples": {
+        "name": "잠재 데이터"
+      }
+    }
+  },
+  "LatentFromBatch": {
+    "display_name": "배치에서 잠재 데이터 가져오기",
+    "inputs": {
+      "batch_index": {
+        "name": "배치_인덱스"
+      },
+      "length": {
+        "name": "길이"
+      },
+      "samples": {
+        "name": "잠재 데이터"
+      }
+    }
+  },
+  "LatentInterpolate": {
+    "display_name": "잠재 데이터 연산 (보간)",
+    "inputs": {
+      "ratio": {
+        "name": "비율"
+      },
+      "samples1": {
+        "name": "잠재 데이터1"
+      },
+      "samples2": {
+        "name": "잠재 데이터2"
+      }
+    }
+  },
+  "LatentMultiply": {
+    "display_name": "잠재 데이터 연산 (곱하기)",
+    "inputs": {
+      "multiplier": {
+        "name": "배율"
+      },
+      "samples": {
+        "name": "잠재 데이터"
+      }
+    }
+  },
+  "LatentOperationSharpen": {
+    "display_name": "잠재 데이터 연산 (선명화)",
+    "inputs": {
+      "alpha": {
+        "name": "알파"
+      },
+      "sharpen_radius": {
+        "name": "선명화 반경"
+      },
+      "sigma": {
+        "name": "시그마"
+      }
+    }
+  },
+  "LatentOperationTonemapReinhard": {
+    "display_name": "잠재 데이터 연산 (톤맵 레인하르트)",
+    "inputs": {
+      "multiplier": {
+        "name": "배율"
+      }
+    }
+  },
+  "LatentRotate": {
+    "display_name": "잠재 데이터 연산 (회전)",
+    "inputs": {
+      "rotation": {
+        "name": "회전"
+      },
+      "samples": {
+        "name": "잠재 데이터"
+      }
+    }
+  },
+  "LatentSubtract": {
+    "display_name": "잠재 데이터 연산 (빼기)",
+    "inputs": {
+      "samples1": {
+        "name": "잠재 데이터1"
+      },
+      "samples2": {
+        "name": "잠재 데이터2"
+      }
+    }
+  },
+  "LatentUpscale": {
+    "display_name": "잠재 데이터 크기 조정",
+    "inputs": {
+      "crop": {
+        "name": "자르기"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "samples": {
+        "name": "잠재 데이터"
+      },
+      "upscale_method": {
+        "name": "업스케일 방법"
+      },
+      "width": {
+        "name": "너비"
+      }
+    }
+  },
+  "LatentUpscaleBy": {
+    "display_name": "잠재 데이터 크기 배율 조정",
+    "inputs": {
+      "samples": {
+        "name": "잠재 데이터"
+      },
+      "scale_by": {
+        "name": "확대율"
+      },
+      "upscale_method": {
+        "name": "확대 방법"
+      }
+    }
+  },
+  "Load3D": {
+    "display_name": "3D 불러오기",
+    "inputs": {
+      "clear": {
+      },
+      "height": {
+        "name": "높이"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "model_file": {
+        "name": "모델 파일"
+      },
+      "upload 3d model": {
+      },
+      "width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "이미지"
+      },
+      "1": {
+        "name": "마스크"
+      },
+      "2": {
+        "name": "메시 경로"
+      },
+      "3": {
+        "name": "노멀"
+      },
+      "4": {
+        "name": "라인아트"
+      },
+      "5": {
+        "name": "카메라 정보"
+      }
+    }
+  },
+  "Load3DAnimation": {
+    "display_name": "3D 불러오기 - 애니메이션",
+    "inputs": {
+      "clear": {
+      },
+      "height": {
+        "name": "높이"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "model_file": {
+        "name": "모델 파일"
+      },
+      "upload 3d model": {
+      },
+      "width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "이미지"
+      },
+      "1": {
+        "name": "마스크"
+      },
+      "2": {
+        "name": "메시 경로"
+      },
+      "3": {
+        "name": "노멀"
+      },
+      "4": {
+        "name": "카메라 정보"
+      }
+    }
+  },
+  "LoadAudio": {
+    "display_name": "오디오 로드",
+    "inputs": {
+      "audio": {
+        "name": "오디오"
+      },
+      "audioUI": {
+        "name": "오디오UI"
+      },
+      "upload": {
+        "name": "업로드할 파일 선택"
+      }
+    }
+  },
+  "LoadImage": {
+    "display_name": "이미지 로드",
+    "inputs": {
+      "image": {
+        "name": "이미지"
+      },
+      "upload": {
+        "name": "업로드할 파일 선택"
+      }
+    }
+  },
+  "LoadImageMask": {
+    "display_name": "마스크 이미지 로드",
+    "inputs": {
+      "channel": {
+        "name": "채널"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "upload": {
+        "name": "업로드할 파일 선택"
+      }
+    }
+  },
+  "LoadImageOutput": {
+    "description": "입력(input) 폴더 대신 출력(output) 폴더에서 이미지를 로드합니다. 새로 고침 버튼을 클릭하면 노드는 이미지 목록을 업데이트하고 자동으로 첫 번째 이미지를 선택하여 쉬운 반복을 가능하게 합니다.",
+    "display_name": "이미지 로드 (출력에서)",
+    "inputs": {
+      "image": {
+        "name": "이미지"
+      },
+      "refresh": {
+      },
+      "upload": {
+        "name": "업로드할 파일 선택"
+      }
+    }
+  },
+  "LoadLatent": {
+    "display_name": "잠재 데이터 로드",
+    "inputs": {
+      "latent": {
+        "name": "잠재 데이터"
+      }
+    }
+  },
+  "LoadVideo": {
+    "display_name": "비디오 불러오기",
+    "inputs": {
+      "file": {
+        "name": "파일"
+      },
+      "upload": {
+        "name": "업로드할 파일 선택"
+      }
+    }
+  },
+  "LoraLoader": {
+    "description": "LoRA는 확산 모델과 CLIP 모델을 부분적으로 변경해서, 잠재 데이터의 노이즈 제거 방향을 바꿉니다. 여러 LoRA 노드를 연결할 수 있습니다.",
+    "display_name": "LoRA 로드",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "LoRA가 적용될 CLIP 모델입니다."
+      },
+      "lora_name": {
+        "name": "LoRA 이름",
+        "tooltip": "LoRA의 이름입니다."
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "LoRA가 적용될 확산 모델입니다."
+      },
+      "strength_clip": {
+        "name": "clip 강도",
+        "tooltip": "CLIP 모델을 적용하는 강도입니다. 이 값은 음수가 될 수 있습니다."
+      },
+      "strength_model": {
+        "name": "모델 강도",
+        "tooltip": "확산 모델을 적용하는 강도입니다. 이 값은 음수가 될 수 있습니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "수정된 확산 모델입니다."
+      },
+      "1": {
+        "tooltip": "수정된 CLIP 모델입니다."
+      }
+    }
+  },
+  "LoraLoaderModelOnly": {
+    "description": "LoRA는 확산 모델과 CLIP 모델을 부분적으로 변경해서, 잠재 데이터의 노이즈 제거 방향을 바꿉니다. 여러 LoRA 노드를 연결할 수 있습니다. (이 노드는 CLIP 모델은 로드하지 않습니다.)",
+    "display_name": "LoRA 로드 (모델 전용)",
+    "inputs": {
+      "lora_name": {
+        "name": "LoRA 이름"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "strength_model": {
+        "name": "모델 강도"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "수정된 확산 모델입니다."
+      }
+    }
+  },
+  "LoraSave": {
+    "display_name": "LoRA 추출 및 저장",
+    "inputs": {
+      "bias_diff": {
+        "name": "차이 편향"
+      },
+      "filename_prefix": {
+        "name": "파일명 접두사"
+      },
+      "lora_type": {
+        "name": "LoRA 유형"
+      },
+      "model_diff": {
+        "name": "모델 차이",
+        "tooltip": "LoRA로 변환 될 ModelSubtract 출력입니다."
+      },
+      "rank": {
+        "name": "순위"
+      },
+      "text_encoder_diff": {
+        "name": "텍스트 인코더 차이",
+        "tooltip": "LoRA로 변환 될 CLIPSubtract 출력입니다."
+      }
+    }
+  },
+  "LotusConditioning": {
+    "display_name": "Lotus 조건 설정",
+    "outputs": {
+      "0": {
+        "name": "조건"
+      }
+    }
+  },
+  "LumaConceptsNode": {
+    "description": "루마 텍스트 투 비디오 및 루마 이미지 투 비디오 노드에서 사용할 하나 이상의 카메라 컨셉을 보관합니다.",
+    "display_name": "Luma 컨셉",
+    "inputs": {
+      "concept1": {
+        "name": "컨셉1"
+      },
+      "concept2": {
+        "name": "컨셉2"
+      },
+      "concept3": {
+        "name": "컨셉3"
+      },
+      "concept4": {
+        "name": "컨셉4"
+      },
+      "luma_concepts": {
+        "name": "luma 컨셉",
+        "tooltip": "여기에 선택한 컨셉에 추가할 선택적 카메라 컨셉입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "luma 컨셉"
+      }
+    }
+  },
+  "LumaImageModifyNode": {
+    "description": "프롬프트와 종횡비에 따라 이미지를 동기적으로 수정합니다.",
+    "display_name": "Luma 이미지 생성 (이미지 → 이미지)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "image_weight": {
+        "name": "이미지 가중치",
+        "tooltip": "이미지의 가중치; 1.0에 가까울수록 이미지가 덜 수정됩니다."
+      },
+      "model": {
+        "name": "모델"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "이미지 생성을 위한 프롬프트"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드를 다시 실행할지 결정하는 시드; 실제 결과는 시드와 상관없이 비결정적입니다."
+      }
+    }
+  },
+  "LumaImageNode": {
+    "description": "프롬프트와 종횡비에 따라 이미지를 동기적으로 생성합니다.",
+    "display_name": "Luma 이미지 생성 (텍스트 → 이미지)",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비"
+      },
+      "character_image": {
+        "name": "캐릭터 참조 이미지",
+        "tooltip": "캐릭터 참조 이미지; 여러 장의 배치가 가능하며, 최대 4개의 이미지를 사용할 수 있습니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image_luma_ref": {
+        "name": "Luma 참조 이미지",
+        "tooltip": "입력 이미지를 사용해 생성에 영향을 주는 Luma Reference 노드 연결; 최대 4개의 이미지를 사용할 수 있습니다."
+      },
+      "model": {
+        "name": "모델"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "이미지 생성을 위한 프롬프트"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드가 다시 실행될지 결정하는 시드; 실제 결과는 시드와 관계없이 비결정적입니다."
+      },
+      "style_image": {
+        "name": "스타일 참조 이미지",
+        "tooltip": "스타일 참조 이미지; 1개의 이미지만 사용됩니다."
+      },
+      "style_image_weight": {
+        "name": "스타일 이미지 가중치",
+        "tooltip": "스타일 이미지의 가중치. 스타일 이미지가 제공되지 않으면 무시됩니다."
+      }
+    }
+  },
+  "LumaImageToVideoNode": {
+    "description": "프롬프트, 입력 이미지, output_size를 기반으로 동기적으로 비디오를 생성합니다.",
+    "display_name": "Luma 이미지 → 비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "duration": {
+        "name": "길이"
+      },
+      "first_image": {
+        "name": "첫 이미지",
+        "tooltip": "생성된 비디오의 첫 프레임."
+      },
+      "last_image": {
+        "name": "마지막 이미지",
+        "tooltip": "생성된 비디오의 마지막 프레임."
+      },
+      "loop": {
+        "name": "루프"
+      },
+      "luma_concepts": {
+        "name": "Luma 컨셉",
+        "tooltip": "선택 사항: Luma 컨셉 노드를 통해 카메라 움직임을 지정하는 카메라 컨셉."
+      },
+      "model": {
+        "name": "모델"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "비디오 생성을 위한 프롬프트"
+      },
+      "resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 상관없이 비결정적입니다."
+      }
+    }
+  },
+  "LumaReferenceNode": {
+    "description": "Luma 이미지 생성 노드에서 사용할 이미지와 가중치를 보관합니다.",
+    "display_name": "Luma 이미지 참조",
+    "inputs": {
+      "image": {
+        "name": "이미지",
+        "tooltip": "참조로 사용할 이미지입니다."
+      },
+      "luma_ref": {
+        "name": "luma_ref"
+      },
+      "weight": {
+        "name": "가중치",
+        "tooltip": "이미지 참조의 가중치입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "luma_ref"
+      }
+    }
+  },
+  "LumaVideoNode": {
+    "description": "프롬프트와 output_size에 따라 동기적으로 비디오를 생성합니다.",
+    "display_name": "Luma 텍스트 투 비디오",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비"
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "duration": {
+        "name": "길이"
+      },
+      "loop": {
+        "name": "루프"
+      },
+      "luma_concepts": {
+        "name": "Luma 컨셉",
+        "tooltip": "카메라 움직임을 제어하기 위한 선택적 Camera Concepts (Luma Concepts 노드 사용)."
+      },
+      "model": {
+        "name": "모델"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "비디오 생성을 위한 프롬프트"
+      },
+      "resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      }
+    }
+  },
+  "Mahiro": {
+    "description": "노이즈 제거의 '방향'을 긍정 조건과 부정 조건 차에 의한 것 보다는 긍정 조건 방향으로 더 크게 작동하도록 가이더 동작을 변경합니다.",
+    "display_name": "마히로",
+    "inputs": {
+      "model": {
+        "name": "모델"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "변경된 모델"
+      }
+    }
+  },
+  "MaskComposite": {
+    "display_name": "마스크 합성",
+    "inputs": {
+      "destination": {
+        "name": "대상"
+      },
+      "operation": {
+        "name": "연산"
+      },
+      "source": {
+        "name": "원본"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
+  },
+  "MaskPreview": {
+    "description": "입력 이미지를 ComfyUI 출력 디렉터리에 저장합니다.",
+    "display_name": "마스크 미리보기",
+    "inputs": {
+      "mask": {
+        "name": "마스크"
+      }
+    }
+  },
+  "MaskToImage": {
+    "display_name": "마스크를 이미지로 변환",
+    "inputs": {
+      "mask": {
+        "name": "마스크"
+      }
+    }
+  },
+  "MinimaxImageToVideoNode": {
+    "description": "MiniMax의 API를 사용하여 이미지와 프롬프트로부터 비디오를 생성합니다",
+    "display_name": "MiniMax 이미지에서 비디오로",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "비디오 생성의 첫 프레임으로 사용할 이미지"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "비디오 생성에 사용할 모델"
+      },
+      "prompt_text": {
+        "name": "프롬프트 텍스트",
+        "tooltip": "비디오 생성을 안내할 텍스트 프롬프트"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노이즈 생성을 위해 사용되는 랜덤 시드입니다."
+      }
+    }
+  },
+  "MinimaxTextToVideoNode": {
+    "description": "MiniMax의 API를 사용하여 프롬프트로부터 비디오를 생성합니다",
+    "display_name": "MiniMax 텍스트 투 비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "비디오 생성을 위해 사용할 모델"
+      },
+      "prompt_text": {
+        "name": "프롬프트 텍스트",
+        "tooltip": "비디오 생성을 안내할 텍스트 프롬프트"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노이즈 생성을 위해 사용되는 랜덤 시드입니다."
+      }
+    }
+  },
+  "ModelComputeDtype": {
+    "display_name": "ModelComputeDtype",
+    "inputs": {
+      "dtype": {
+        "name": "dtype"
+      },
+      "model": {
+        "name": "모델"
+      }
+    }
+  },
+  "ModelMergeAdd": {
+    "display_name": "모델 병합 (더하기)",
+    "inputs": {
+      "model1": {
+        "name": "모델1"
+      },
+      "model2": {
+        "name": "모델2"
+      }
+    }
+  },
+  "ModelMergeAuraflow": {
+    "display_name": "모델 병합 (AuraFlow)",
+    "inputs": {
+      "cond_seq_linear_": {
+        "name": "cond_seq_linear."
+      },
+      "double_layers_0_": {
+        "name": "double_layers.0."
+      },
+      "double_layers_1_": {
+        "name": "double_layers.1."
+      },
+      "double_layers_2_": {
+        "name": "double_layers.2."
+      },
+      "double_layers_3_": {
+        "name": "double_layers.3."
+      },
+      "final_linear_": {
+        "name": "final_linear."
+      },
+      "init_x_linear_": {
+        "name": "init_x_linear."
+      },
+      "modF_": {
+        "name": "modF."
+      },
+      "model1": {
+        "name": "모델1"
+      },
+      "model2": {
+        "name": "모델2"
+      },
+      "positional_encoding": {
+        "name": "positional_encoding"
+      },
+      "register_tokens": {
+        "name": "register_tokens"
+      },
+      "single_layers_0_": {
+        "name": "single_layers.0."
+      },
+      "single_layers_10_": {
+        "name": "single_layers.10."
+      },
+      "single_layers_11_": {
+        "name": "single_layers.11."
+      },
+      "single_layers_12_": {
+        "name": "single_layers.12."
+      },
+      "single_layers_13_": {
+        "name": "single_layers.13."
+      },
+      "single_layers_14_": {
+        "name": "single_layers.14."
+      },
+      "single_layers_15_": {
+        "name": "single_layers.15."
+      },
+      "single_layers_16_": {
+        "name": "single_layers.16."
+      },
+      "single_layers_17_": {
+        "name": "single_layers.17."
+      },
+      "single_layers_18_": {
+        "name": "single_layers.18."
+      },
+      "single_layers_19_": {
+        "name": "single_layers.19."
+      },
+      "single_layers_1_": {
+        "name": "single_layers.1."
+      },
+      "single_layers_20_": {
+        "name": "single_layers.20."
+      },
+      "single_layers_21_": {
+        "name": "single_layers.21."
+      },
+      "single_layers_22_": {
+        "name": "single_layers.22."
+      },
+      "single_layers_23_": {
+        "name": "single_layers.23."
+      },
+      "single_layers_24_": {
+        "name": "single_layers.24."
+      },
+      "single_layers_25_": {
+        "name": "single_layers.25."
+      },
+      "single_layers_26_": {
+        "name": "single_layers.26."
+      },
+      "single_layers_27_": {
+        "name": "single_layers.27."
+      },
+      "single_layers_28_": {
+        "name": "single_layers.28."
+      },
+      "single_layers_29_": {
+        "name": "single_layers.29."
+      },
+      "single_layers_2_": {
+        "name": "single_layers.2."
+      },
+      "single_layers_30_": {
+        "name": "single_layers.30."
+      },
+      "single_layers_31_": {
+        "name": "single_layers.31."
+      },
+      "single_layers_3_": {
+        "name": "single_layers.3."
+      },
+      "single_layers_4_": {
+        "name": "single_layers.4."
+      },
+      "single_layers_5_": {
+        "name": "single_layers.5."
+      },
+      "single_layers_6_": {
+        "name": "single_layers.6."
+      },
+      "single_layers_7_": {
+        "name": "single_layers.7."
+      },
+      "single_layers_8_": {
+        "name": "single_layers.8."
+      },
+      "single_layers_9_": {
+        "name": "single_layers.9."
+      },
+      "t_embedder_": {
+        "name": "t_embedder."
+      }
+    }
+  },
+  "ModelMergeBlocks": {
+    "display_name": "모델 병합 (블록)",
+    "inputs": {
+      "input": {
+        "name": "input"
+      },
+      "middle": {
+        "name": "middle"
+      },
+      "model1": {
+        "name": "모델1"
+      },
+      "model2": {
+        "name": "모델2"
+      },
+      "out": {
+        "name": "out"
+      }
+    }
+  },
+  "ModelMergeCosmos14B": {
+    "display_name": "모델 병합 (Cosmos 14B)",
+    "inputs": {
+      "affline_norm_": {
+        "name": "affline_norm."
+      },
+      "blocks_block0_": {
+        "name": "blocks.block0."
+      },
+      "blocks_block10_": {
+        "name": "blocks.block10."
+      },
+      "blocks_block11_": {
+        "name": "blocks.block11."
+      },
+      "blocks_block12_": {
+        "name": "blocks.block12."
+      },
+      "blocks_block13_": {
+        "name": "blocks.block13."
+      },
+      "blocks_block14_": {
+        "name": "blocks.block14."
+      },
+      "blocks_block15_": {
+        "name": "blocks.block15."
+      },
+      "blocks_block16_": {
+        "name": "blocks.block16."
+      },
+      "blocks_block17_": {
+        "name": "blocks.block17."
+      },
+      "blocks_block18_": {
+        "name": "blocks.block18."
+      },
+      "blocks_block19_": {
+        "name": "blocks.block19."
+      },
+      "blocks_block1_": {
+        "name": "blocks.block1."
+      },
+      "blocks_block20_": {
+        "name": "blocks.block20."
+      },
+      "blocks_block21_": {
+        "name": "blocks.block21."
+      },
+      "blocks_block22_": {
+        "name": "blocks.block22."
+      },
+      "blocks_block23_": {
+        "name": "blocks.block23."
+      },
+      "blocks_block24_": {
+        "name": "blocks.block24."
+      },
+      "blocks_block25_": {
+        "name": "blocks.block25."
+      },
+      "blocks_block26_": {
+        "name": "blocks.block26."
+      },
+      "blocks_block27_": {
+        "name": "blocks.block27."
+      },
+      "blocks_block28_": {
+        "name": "blocks.block28."
+      },
+      "blocks_block29_": {
+        "name": "blocks.block29."
+      },
+      "blocks_block2_": {
+        "name": "blocks.block2."
+      },
+      "blocks_block30_": {
+        "name": "blocks.block30."
+      },
+      "blocks_block31_": {
+        "name": "blocks.block31."
+      },
+      "blocks_block32_": {
+        "name": "blocks.block32."
+      },
+      "blocks_block33_": {
+        "name": "blocks.block33."
+      },
+      "blocks_block34_": {
+        "name": "blocks.block34."
+      },
+      "blocks_block35_": {
+        "name": "blocks.block35."
+      },
+      "blocks_block3_": {
+        "name": "blocks.block3."
+      },
+      "blocks_block4_": {
+        "name": "blocks.block4."
+      },
+      "blocks_block5_": {
+        "name": "blocks.block5."
+      },
+      "blocks_block6_": {
+        "name": "blocks.block6."
+      },
+      "blocks_block7_": {
+        "name": "blocks.block7."
+      },
+      "blocks_block8_": {
+        "name": "blocks.block8."
+      },
+      "blocks_block9_": {
+        "name": "blocks.block9."
+      },
+      "extra_pos_embedder_": {
+        "name": "extra_pos_embedder."
+      },
+      "final_layer_": {
+        "name": "final_layer."
+      },
+      "model1": {
+        "name": "모델1"
+      },
+      "model2": {
+        "name": "모델2"
+      },
+      "pos_embedder_": {
+        "name": "pos_embedder."
+      },
+      "t_embedder_": {
+        "name": "t_embedder."
+      },
+      "x_embedder_": {
+        "name": "x_embedder."
+      }
+    }
+  },
+  "ModelMergeCosmos7B": {
+    "display_name": "모델 병합 (Cosmos 7B)",
+    "inputs": {
+      "affline_norm_": {
+        "name": "affline_norm."
+      },
+      "blocks_block0_": {
+        "name": "blocks.block0."
+      },
+      "blocks_block10_": {
+        "name": "blocks.block10."
+      },
+      "blocks_block11_": {
+        "name": "blocks.block11."
+      },
+      "blocks_block12_": {
+        "name": "blocks.block12."
+      },
+      "blocks_block13_": {
+        "name": "blocks.block13."
+      },
+      "blocks_block14_": {
+        "name": "blocks.block14."
+      },
+      "blocks_block15_": {
+        "name": "blocks.block15."
+      },
+      "blocks_block16_": {
+        "name": "blocks.block16."
+      },
+      "blocks_block17_": {
+        "name": "blocks.block17."
+      },
+      "blocks_block18_": {
+        "name": "blocks.block18."
+      },
+      "blocks_block19_": {
+        "name": "blocks.block19."
+      },
+      "blocks_block1_": {
+        "name": "blocks.block1."
+      },
+      "blocks_block20_": {
+        "name": "blocks.block20."
+      },
+      "blocks_block21_": {
+        "name": "blocks.block21."
+      },
+      "blocks_block22_": {
+        "name": "blocks.block22."
+      },
+      "blocks_block23_": {
+        "name": "blocks.block23."
+      },
+      "blocks_block24_": {
+        "name": "blocks.block24."
+      },
+      "blocks_block25_": {
+        "name": "blocks.block25."
+      },
+      "blocks_block26_": {
+        "name": "blocks.block26."
+      },
+      "blocks_block27_": {
+        "name": "blocks.block27."
+      },
+      "blocks_block2_": {
+        "name": "blocks.block2."
+      },
+      "blocks_block3_": {
+        "name": "blocks.block3."
+      },
+      "blocks_block4_": {
+        "name": "blocks.block4."
+      },
+      "blocks_block5_": {
+        "name": "blocks.block5."
+      },
+      "blocks_block6_": {
+        "name": "blocks.block6."
+      },
+      "blocks_block7_": {
+        "name": "blocks.block7."
+      },
+      "blocks_block8_": {
+        "name": "blocks.block8."
+      },
+      "blocks_block9_": {
+        "name": "blocks.block9."
+      },
+      "extra_pos_embedder_": {
+        "name": "extra_pos_embedder."
+      },
+      "final_layer_": {
+        "name": "final_layer."
+      },
+      "model1": {
+        "name": "모델1"
+      },
+      "model2": {
+        "name": "모델2"
+      },
+      "pos_embedder_": {
+        "name": "pos_embedder."
+      },
+      "t_embedder_": {
+        "name": "t_embedder."
+      },
+      "x_embedder_": {
+        "name": "x_embedder."
+      }
+    }
+  },
+  "ModelMergeFlux1": {
+    "display_name": "모델 병합 (FLUX.1)",
+    "inputs": {
+      "double_blocks_0_": {
+        "name": "double_blocks.0."
+      },
+      "double_blocks_10_": {
+        "name": "double_blocks.10."
+      },
+      "double_blocks_11_": {
+        "name": "double_blocks.11."
+      },
+      "double_blocks_12_": {
+        "name": "double_blocks.12."
+      },
+      "double_blocks_13_": {
+        "name": "double_blocks.13."
+      },
+      "double_blocks_14_": {
+        "name": "double_blocks.14."
+      },
+      "double_blocks_15_": {
+        "name": "double_blocks.15."
+      },
+      "double_blocks_16_": {
+        "name": "double_blocks.16."
+      },
+      "double_blocks_17_": {
+        "name": "double_blocks.17."
+      },
+      "double_blocks_18_": {
+        "name": "double_blocks.18."
+      },
+      "double_blocks_1_": {
+        "name": "double_blocks.1."
+      },
+      "double_blocks_2_": {
+        "name": "double_blocks.2."
+      },
+      "double_blocks_3_": {
+        "name": "double_blocks.3."
+      },
+      "double_blocks_4_": {
+        "name": "double_blocks.4."
+      },
+      "double_blocks_5_": {
+        "name": "double_blocks.5."
+      },
+      "double_blocks_6_": {
+        "name": "double_blocks.6."
+      },
+      "double_blocks_7_": {
+        "name": "double_blocks.7."
+      },
+      "double_blocks_8_": {
+        "name": "double_blocks.8."
+      },
+      "double_blocks_9_": {
+        "name": "double_blocks.9."
+      },
+      "final_layer_": {
+        "name": "final_layer."
+      },
+      "guidance_in": {
+        "name": "guidance_in"
+      },
+      "img_in_": {
+        "name": "img_in."
+      },
+      "model1": {
+        "name": "모델1"
+      },
+      "model2": {
+        "name": "모델2"
+      },
+      "single_blocks_0_": {
+        "name": "single_blocks.0."
+      },
+      "single_blocks_10_": {
+        "name": "single_blocks.10."
+      },
+      "single_blocks_11_": {
+        "name": "single_blocks.11."
+      },
+      "single_blocks_12_": {
+        "name": "single_blocks.12."
+      },
+      "single_blocks_13_": {
+        "name": "single_blocks.13."
+      },
+      "single_blocks_14_": {
+        "name": "single_blocks.14."
+      },
+      "single_blocks_15_": {
+        "name": "single_blocks.15."
+      },
+      "single_blocks_16_": {
+        "name": "single_blocks.16."
+      },
+      "single_blocks_17_": {
+        "name": "single_blocks.17."
+      },
+      "single_blocks_18_": {
+        "name": "single_blocks.18."
+      },
+      "single_blocks_19_": {
+        "name": "single_blocks.19."
+      },
+      "single_blocks_1_": {
+        "name": "single_blocks.1."
+      },
+      "single_blocks_20_": {
+        "name": "single_blocks.20."
+      },
+      "single_blocks_21_": {
+        "name": "single_blocks.21."
+      },
+      "single_blocks_22_": {
+        "name": "single_blocks.22."
+      },
+      "single_blocks_23_": {
+        "name": "single_blocks.23."
+      },
+      "single_blocks_24_": {
+        "name": "single_blocks.24."
+      },
+      "single_blocks_25_": {
+        "name": "single_blocks.25."
+      },
+      "single_blocks_26_": {
+        "name": "single_blocks.26."
+      },
+      "single_blocks_27_": {
+        "name": "single_blocks.27."
+      },
+      "single_blocks_28_": {
+        "name": "single_blocks.28."
+      },
+      "single_blocks_29_": {
+        "name": "single_blocks.29."
+      },
+      "single_blocks_2_": {
+        "name": "single_blocks.2."
+      },
+      "single_blocks_30_": {
+        "name": "single_blocks.30."
+      },
+      "single_blocks_31_": {
+        "name": "single_blocks.31."
+      },
+      "single_blocks_32_": {
+        "name": "single_blocks.32."
+      },
+      "single_blocks_33_": {
+        "name": "single_blocks.33."
+      },
+      "single_blocks_34_": {
+        "name": "single_blocks.34."
+      },
+      "single_blocks_35_": {
+        "name": "single_blocks.35."
+      },
+      "single_blocks_36_": {
+        "name": "single_blocks.36."
+      },
+      "single_blocks_37_": {
+        "name": "single_blocks.37."
+      },
+      "single_blocks_3_": {
+        "name": "single_blocks.3."
+      },
+      "single_blocks_4_": {
+        "name": "single_blocks.4."
+      },
+      "single_blocks_5_": {
+        "name": "single_blocks.5."
+      },
+      "single_blocks_6_": {
+        "name": "single_blocks.6."
+      },
+      "single_blocks_7_": {
+        "name": "single_blocks.7."
+      },
+      "single_blocks_8_": {
+        "name": "single_blocks.8."
+      },
+      "single_blocks_9_": {
+        "name": "single_blocks.9."
+      },
+      "time_in_": {
+        "name": "time_in."
+      },
+      "txt_in_": {
+        "name": "txt_in."
+      },
+      "vector_in_": {
+        "name": "vector_in."
+      }
+    }
+  },
+  "ModelMergeLTXV": {
+    "display_name": "모델 병합 (LTXV)",
+    "inputs": {
+      "adaln_single_": {
+        "name": "adaln_single."
+      },
+      "caption_projection_": {
+        "name": "caption_projection."
+      },
+      "model1": {
+        "name": "모델1"
+      },
+      "model2": {
+        "name": "모델2"
+      },
+      "patchify_proj_": {
+        "name": "patchify_proj."
+      },
+      "proj_out_": {
+        "name": "proj_out."
+      },
+      "scale_shift_table": {
+        "name": "scale_shift_table"
+      },
+      "transformer_blocks_0_": {
+        "name": "transformer_blocks.0."
+      },
+      "transformer_blocks_10_": {
+        "name": "transformer_blocks.10."
+      },
+      "transformer_blocks_11_": {
+        "name": "transformer_blocks.11."
+      },
+      "transformer_blocks_12_": {
+        "name": "transformer_blocks.12."
+      },
+      "transformer_blocks_13_": {
+        "name": "transformer_blocks.13."
+      },
+      "transformer_blocks_14_": {
+        "name": "transformer_blocks.14."
+      },
+      "transformer_blocks_15_": {
+        "name": "transformer_blocks.15."
+      },
+      "transformer_blocks_16_": {
+        "name": "transformer_blocks.16."
+      },
+      "transformer_blocks_17_": {
+        "name": "transformer_blocks.17."
+      },
+      "transformer_blocks_18_": {
+        "name": "transformer_blocks.18."
+      },
+      "transformer_blocks_19_": {
+        "name": "transformer_blocks.19."
+      },
+      "transformer_blocks_1_": {
+        "name": "transformer_blocks.1."
+      },
+      "transformer_blocks_20_": {
+        "name": "transformer_blocks.20."
+      },
+      "transformer_blocks_21_": {
+        "name": "transformer_blocks.21."
+      },
+      "transformer_blocks_22_": {
+        "name": "transformer_blocks.22."
+      },
+      "transformer_blocks_23_": {
+        "name": "transformer_blocks.23."
+      },
+      "transformer_blocks_24_": {
+        "name": "transformer_blocks.24."
+      },
+      "transformer_blocks_25_": {
+        "name": "transformer_blocks.25."
+      },
+      "transformer_blocks_26_": {
+        "name": "transformer_blocks.26."
+      },
+      "transformer_blocks_27_": {
+        "name": "transformer_blocks.27."
+      },
+      "transformer_blocks_2_": {
+        "name": "transformer_blocks.2."
+      },
+      "transformer_blocks_3_": {
+        "name": "transformer_blocks.3."
+      },
+      "transformer_blocks_4_": {
+        "name": "transformer_blocks.4."
+      },
+      "transformer_blocks_5_": {
+        "name": "transformer_blocks.5."
+      },
+      "transformer_blocks_6_": {
+        "name": "transformer_blocks.6."
+      },
+      "transformer_blocks_7_": {
+        "name": "transformer_blocks.7."
+      },
+      "transformer_blocks_8_": {
+        "name": "transformer_blocks.8."
+      },
+      "transformer_blocks_9_": {
+        "name": "transformer_blocks.9."
+      }
+    }
+  },
+  "ModelMergeMochiPreview": {
+    "display_name": "모델 병합 (Mochi Preview)",
+    "inputs": {
+      "blocks_0_": {
+        "name": "blocks.0."
+      },
+      "blocks_10_": {
+        "name": "blocks.10."
+      },
+      "blocks_11_": {
+        "name": "blocks.11."
+      },
+      "blocks_12_": {
+        "name": "blocks.12."
+      },
+      "blocks_13_": {
+        "name": "blocks.13."
+      },
+      "blocks_14_": {
+        "name": "blocks.14."
+      },
+      "blocks_15_": {
+        "name": "blocks.15."
+      },
+      "blocks_16_": {
+        "name": "blocks.16."
+      },
+      "blocks_17_": {
+        "name": "blocks.17."
+      },
+      "blocks_18_": {
+        "name": "blocks.18."
+      },
+      "blocks_19_": {
+        "name": "blocks.19."
+      },
+      "blocks_1_": {
+        "name": "blocks.1."
+      },
+      "blocks_20_": {
+        "name": "blocks.20."
+      },
+      "blocks_21_": {
+        "name": "blocks.21."
+      },
+      "blocks_22_": {
+        "name": "blocks.22."
+      },
+      "blocks_23_": {
+        "name": "blocks.23."
+      },
+      "blocks_24_": {
+        "name": "blocks.24."
+      },
+      "blocks_25_": {
+        "name": "blocks.25."
+      },
+      "blocks_26_": {
+        "name": "blocks.26."
+      },
+      "blocks_27_": {
+        "name": "blocks.27."
+      },
+      "blocks_28_": {
+        "name": "blocks.28."
+      },
+      "blocks_29_": {
+        "name": "blocks.29."
+      },
+      "blocks_2_": {
+        "name": "blocks.2."
+      },
+      "blocks_30_": {
+        "name": "blocks.30."
+      },
+      "blocks_31_": {
+        "name": "blocks.31."
+      },
+      "blocks_32_": {
+        "name": "blocks.32."
+      },
+      "blocks_33_": {
+        "name": "blocks.33."
+      },
+      "blocks_34_": {
+        "name": "blocks.34."
+      },
+      "blocks_35_": {
+        "name": "blocks.35."
+      },
+      "blocks_36_": {
+        "name": "blocks.36."
+      },
+      "blocks_37_": {
+        "name": "blocks.37."
+      },
+      "blocks_38_": {
+        "name": "blocks.38."
+      },
+      "blocks_39_": {
+        "name": "blocks.39."
+      },
+      "blocks_3_": {
+        "name": "blocks.3."
+      },
+      "blocks_40_": {
+        "name": "blocks.40."
+      },
+      "blocks_41_": {
+        "name": "blocks.41."
+      },
+      "blocks_42_": {
+        "name": "blocks.42."
+      },
+      "blocks_43_": {
+        "name": "blocks.43."
+      },
+      "blocks_44_": {
+        "name": "blocks.44."
+      },
+      "blocks_45_": {
+        "name": "blocks.45."
+      },
+      "blocks_46_": {
+        "name": "blocks.46."
+      },
+      "blocks_47_": {
+        "name": "blocks.47."
+      },
+      "blocks_4_": {
+        "name": "blocks.4."
+      },
+      "blocks_5_": {
+        "name": "blocks.5."
+      },
+      "blocks_6_": {
+        "name": "blocks.6."
+      },
+      "blocks_7_": {
+        "name": "blocks.7."
+      },
+      "blocks_8_": {
+        "name": "blocks.8."
+      },
+      "blocks_9_": {
+        "name": "blocks.9."
+      },
+      "final_layer_": {
+        "name": "final_layer."
+      },
+      "model1": {
+        "name": "모델1"
+      },
+      "model2": {
+        "name": "모델2"
+      },
+      "pos_frequencies_": {
+        "name": "pos_frequencies."
+      },
+      "t5_y_embedder_": {
+        "name": "t5_y_embedder."
+      },
+      "t5_yproj_": {
+        "name": "t5_yproj."
+      },
+      "t_embedder_": {
+        "name": "t_embedder."
+      }
+    }
+  },
+  "ModelMergeSD1": {
+    "display_name": "모델 병합 (SD1)",
+    "inputs": {
+      "input_blocks_0_": {
+        "name": "input_blocks.0."
+      },
+      "input_blocks_10_": {
+        "name": "input_blocks.10."
+      },
+      "input_blocks_11_": {
+        "name": "input_blocks.11."
+      },
+      "input_blocks_1_": {
+        "name": "input_blocks.1."
+      },
+      "input_blocks_2_": {
+        "name": "input_blocks.2."
+      },
+      "input_blocks_3_": {
+        "name": "input_blocks.3."
+      },
+      "input_blocks_4_": {
+        "name": "input_blocks.4."
+      },
+      "input_blocks_5_": {
+        "name": "input_blocks.5."
+      },
+      "input_blocks_6_": {
+        "name": "input_blocks.6."
+      },
+      "input_blocks_7_": {
+        "name": "input_blocks.7."
+      },
+      "input_blocks_8_": {
+        "name": "input_blocks.8."
+      },
+      "input_blocks_9_": {
+        "name": "input_blocks.9."
+      },
+      "label_emb_": {
+        "name": "label_emb."
+      },
+      "middle_block_0_": {
+        "name": "middle_blocks.0."
+      },
+      "middle_block_1_": {
+        "name": "middle_blocks.1."
+      },
+      "middle_block_2_": {
+        "name": "middle_blocks.2."
+      },
+      "model1": {
+        "name": "모델1"
+      },
+      "model2": {
+        "name": "모델2"
+      },
+      "out_": {
+        "name": "out."
+      },
+      "output_blocks_0_": {
+        "name": "out_blocks.0."
+      },
+      "output_blocks_10_": {
+        "name": "out_blocks.10."
+      },
+      "output_blocks_11_": {
+        "name": "out_blocks.11."
+      },
+      "output_blocks_1_": {
+        "name": "out_blocks.1."
+      },
+      "output_blocks_2_": {
+        "name": "out_blocks.2."
+      },
+      "output_blocks_3_": {
+        "name": "out_blocks.3."
+      },
+      "output_blocks_4_": {
+        "name": "out_blocks.4."
+      },
+      "output_blocks_5_": {
+        "name": "out_blocks.5."
+      },
+      "output_blocks_6_": {
+        "name": "out_blocks.6."
+      },
+      "output_blocks_7_": {
+        "name": "out_blocks.7."
+      },
+      "output_blocks_8_": {
+        "name": "out_blocks.8."
+      },
+      "output_blocks_9_": {
+        "name": "out_blocks.9."
+      },
+      "time_embed_": {
+        "name": "time_embed."
+      }
+    }
+  },
+  "ModelMergeSD2": {
+    "display_name": "모델 병합 (SD2)",
+    "inputs": {
+      "input_blocks_0_": {
+        "name": "input_blocks.0."
+      },
+      "input_blocks_10_": {
+        "name": "input_blocks.10."
+      },
+      "input_blocks_11_": {
+        "name": "input_blocks.11."
+      },
+      "input_blocks_1_": {
+        "name": "input_blocks.1."
+      },
+      "input_blocks_2_": {
+        "name": "input_blocks.2."
+      },
+      "input_blocks_3_": {
+        "name": "input_blocks.3."
+      },
+      "input_blocks_4_": {
+        "name": "input_blocks.4."
+      },
+      "input_blocks_5_": {
+        "name": "input_blocks.5."
+      },
+      "input_blocks_6_": {
+        "name": "input_blocks.6."
+      },
+      "input_blocks_7_": {
+        "name": "input_blocks.7."
+      },
+      "input_blocks_8_": {
+        "name": "input_blocks.8."
+      },
+      "input_blocks_9_": {
+        "name": "input_blocks.9."
+      },
+      "label_emb_": {
+        "name": "label_emb."
+      },
+      "middle_block_0_": {
+        "name": "middle_blocks.0."
+      },
+      "middle_block_1_": {
+        "name": "middle_blocks.1."
+      },
+      "middle_block_2_": {
+        "name": "middle_blocks.2."
+      },
+      "model1": {
+        "name": "모델1"
+      },
+      "model2": {
+        "name": "모델2"
+      },
+      "out_": {
+        "name": "out."
+      },
+      "output_blocks_0_": {
+        "name": "out_blocks.0."
+      },
+      "output_blocks_10_": {
+        "name": "out_blocks.10."
+      },
+      "output_blocks_11_": {
+        "name": "out_blocks.11."
+      },
+      "output_blocks_1_": {
+        "name": "out_blocks.1."
+      },
+      "output_blocks_2_": {
+        "name": "out_blocks.2."
+      },
+      "output_blocks_3_": {
+        "name": "out_blocks.3."
+      },
+      "output_blocks_4_": {
+        "name": "out_blocks.4."
+      },
+      "output_blocks_5_": {
+        "name": "out_blocks.5."
+      },
+      "output_blocks_6_": {
+        "name": "out_blocks.6."
+      },
+      "output_blocks_7_": {
+        "name": "out_blocks.7."
+      },
+      "output_blocks_8_": {
+        "name": "out_blocks.8."
+      },
+      "output_blocks_9_": {
+        "name": "out_blocks.9."
+      },
+      "time_embed_": {
+        "name": "time_embed."
+      }
+    }
+  },
+  "ModelMergeSD35_Large": {
+    "display_name": "모델 병합 (SD35 Large)",
+    "inputs": {
+      "context_embedder_": {
+        "name": "context_embedder."
+      },
+      "final_layer_": {
+        "name": "final_layer."
+      },
+      "joint_blocks_0_": {
+        "name": "joint_blocks.0."
+      },
+      "joint_blocks_10_": {
+        "name": "joint_blocks.10."
+      },
+      "joint_blocks_11_": {
+        "name": "joint_blocks.11."
+      },
+      "joint_blocks_12_": {
+        "name": "joint_blocks.12."
+      },
+      "joint_blocks_13_": {
+        "name": "joint_blocks.13."
+      },
+      "joint_blocks_14_": {
+        "name": "joint_blocks.14."
+      },
+      "joint_blocks_15_": {
+        "name": "joint_blocks.15."
+      },
+      "joint_blocks_16_": {
+        "name": "joint_blocks.16."
+      },
+      "joint_blocks_17_": {
+        "name": "joint_blocks.17."
+      },
+      "joint_blocks_18_": {
+        "name": "joint_blocks.18."
+      },
+      "joint_blocks_19_": {
+        "name": "joint_blocks.19."
+      },
+      "joint_blocks_1_": {
+        "name": "joint_blocks.1."
+      },
+      "joint_blocks_20_": {
+        "name": "joint_blocks.20."
+      },
+      "joint_blocks_21_": {
+        "name": "joint_blocks.21."
+      },
+      "joint_blocks_22_": {
+        "name": "joint_blocks.22."
+      },
+      "joint_blocks_23_": {
+        "name": "joint_blocks.23."
+      },
+      "joint_blocks_24_": {
+        "name": "joint_blocks.24."
+      },
+      "joint_blocks_25_": {
+        "name": "joint_blocks.25."
+      },
+      "joint_blocks_26_": {
+        "name": "joint_blocks.26."
+      },
+      "joint_blocks_27_": {
+        "name": "joint_blocks.27."
+      },
+      "joint_blocks_28_": {
+        "name": "joint_blocks.28."
+      },
+      "joint_blocks_29_": {
+        "name": "joint_blocks.29."
+      },
+      "joint_blocks_2_": {
+        "name": "joint_blocks.2."
+      },
+      "joint_blocks_30_": {
+        "name": "joint_blocks.30."
+      },
+      "joint_blocks_31_": {
+        "name": "joint_blocks.31."
+      },
+      "joint_blocks_32_": {
+        "name": "joint_blocks.32."
+      },
+      "joint_blocks_33_": {
+        "name": "joint_blocks.33."
+      },
+      "joint_blocks_34_": {
+        "name": "joint_blocks.34."
+      },
+      "joint_blocks_35_": {
+        "name": "joint_blocks.35."
+      },
+      "joint_blocks_36_": {
+        "name": "joint_blocks.36."
+      },
+      "joint_blocks_37_": {
+        "name": "joint_blocks.37."
+      },
+      "joint_blocks_3_": {
+        "name": "joint_blocks.3."
+      },
+      "joint_blocks_4_": {
+        "name": "joint_blocks.4."
+      },
+      "joint_blocks_5_": {
+        "name": "joint_blocks.5."
+      },
+      "joint_blocks_6_": {
+        "name": "joint_blocks.6."
+      },
+      "joint_blocks_7_": {
+        "name": "joint_blocks.7."
+      },
+      "joint_blocks_8_": {
+        "name": "joint_blocks.8."
+      },
+      "joint_blocks_9_": {
+        "name": "joint_blocks.9."
+      },
+      "model1": {
+        "name": "모델1"
+      },
+      "model2": {
+        "name": "모델2"
+      },
+      "pos_embed_": {
+        "name": "pos_embed."
+      },
+      "t_embedder_": {
+        "name": "t_embedder."
+      },
+      "x_embedder_": {
+        "name": "x_embedder."
+      },
+      "y_embedder_": {
+        "name": "y_embedder."
+      }
+    }
+  },
+  "ModelMergeSD3_2B": {
+    "display_name": "모델 병합 (SD3 2B)",
+    "inputs": {
+      "context_embedder_": {
+        "name": "context_embedder."
+      },
+      "final_layer_": {
+        "name": "final_layer."
+      },
+      "joint_blocks_0_": {
+        "name": "joint_blocks.0."
+      },
+      "joint_blocks_10_": {
+        "name": "joint_blocks.10."
+      },
+      "joint_blocks_11_": {
+        "name": "joint_blocks.11."
+      },
+      "joint_blocks_12_": {
+        "name": "joint_blocks.12."
+      },
+      "joint_blocks_13_": {
+        "name": "joint_blocks.13."
+      },
+      "joint_blocks_14_": {
+        "name": "joint_blocks.14."
+      },
+      "joint_blocks_15_": {
+        "name": "joint_blocks.15."
+      },
+      "joint_blocks_16_": {
+        "name": "joint_blocks.16."
+      },
+      "joint_blocks_17_": {
+        "name": "joint_blocks.17."
+      },
+      "joint_blocks_18_": {
+        "name": "joint_blocks.18."
+      },
+      "joint_blocks_19_": {
+        "name": "joint_blocks.19."
+      },
+      "joint_blocks_1_": {
+        "name": "joint_blocks.1."
+      },
+      "joint_blocks_20_": {
+        "name": "joint_blocks.20."
+      },
+      "joint_blocks_21_": {
+        "name": "joint_blocks.21."
+      },
+      "joint_blocks_22_": {
+        "name": "joint_blocks.22."
+      },
+      "joint_blocks_23_": {
+        "name": "joint_blocks.23."
+      },
+      "joint_blocks_2_": {
+        "name": "joint_blocks.2."
+      },
+      "joint_blocks_3_": {
+        "name": "joint_blocks.3."
+      },
+      "joint_blocks_4_": {
+        "name": "joint_blocks.4."
+      },
+      "joint_blocks_5_": {
+        "name": "joint_blocks.5."
+      },
+      "joint_blocks_6_": {
+        "name": "joint_blocks.6."
+      },
+      "joint_blocks_7_": {
+        "name": "joint_blocks.7."
+      },
+      "joint_blocks_8_": {
+        "name": "joint_blocks.8."
+      },
+      "joint_blocks_9_": {
+        "name": "joint_blocks.9."
+      },
+      "model1": {
+        "name": "모델1"
+      },
+      "model2": {
+        "name": "모델2"
+      },
+      "pos_embed_": {
+        "name": "pos_embed."
+      },
+      "t_embedder_": {
+        "name": "t_embedder."
+      },
+      "x_embedder_": {
+        "name": "x_embedder."
+      },
+      "y_embedder_": {
+        "name": "y_embedder."
+      }
+    }
+  },
+  "ModelMergeSDXL": {
+    "display_name": "모델 병합 (SDXL)",
+    "inputs": {
+      "input_blocks_0": {
+        "name": "input_blocks.0"
+      },
+      "input_blocks_1": {
+        "name": "input_blocks.1"
+      },
+      "input_blocks_2": {
+        "name": "input_blocks.2"
+      },
+      "input_blocks_3": {
+        "name": "input_blocks.3"
+      },
+      "input_blocks_4": {
+        "name": "input_blocks.4"
+      },
+      "input_blocks_5": {
+        "name": "input_blocks.5"
+      },
+      "input_blocks_6": {
+        "name": "input_blocks.6"
+      },
+      "input_blocks_7": {
+        "name": "input_blocks.7"
+      },
+      "input_blocks_8": {
+        "name": "input_blocks.8"
+      },
+      "label_emb_": {
+        "name": "label_emb."
+      },
+      "middle_block_0": {
+        "name": "middle_block.0"
+      },
+      "middle_block_1": {
+        "name": "middle_block.1"
+      },
+      "middle_block_2": {
+        "name": "middle_block.2"
+      },
+      "model1": {
+        "name": "모델1"
+      },
+      "model2": {
+        "name": "모델2"
+      },
+      "out_": {
+        "name": "out."
+      },
+      "output_blocks_0": {
+        "name": "output_blocks.0"
+      },
+      "output_blocks_1": {
+        "name": "output_blocks.1"
+      },
+      "output_blocks_2": {
+        "name": "output_blocks.2"
+      },
+      "output_blocks_3": {
+        "name": "output_blocks.3"
+      },
+      "output_blocks_4": {
+        "name": "output_blocks.4"
+      },
+      "output_blocks_5": {
+        "name": "output_blocks.5"
+      },
+      "output_blocks_6": {
+        "name": "output_blocks.6"
+      },
+      "output_blocks_7": {
+        "name": "output_blocks.7"
+      },
+      "output_blocks_8": {
+        "name": "output_blocks.8"
+      },
+      "time_embed_": {
+        "name": "time_embed."
+      }
+    }
+  },
+  "ModelMergeSimple": {
+    "display_name": "모델 병합 (단순)",
+    "inputs": {
+      "model1": {
+        "name": "모델1"
+      },
+      "model2": {
+        "name": "모델2"
+      },
+      "ratio": {
+        "name": "비율"
+      }
+    }
+  },
+  "ModelMergeSubtract": {
+    "display_name": "모델 병합 (빼기)",
+    "inputs": {
+      "model1": {
+        "name": "모델1"
+      },
+      "model2": {
+        "name": "모델2"
+      },
+      "multiplier": {
+        "name": "배율"
+      }
+    }
+  },
+  "ModelMergeWAN2_1": {
+    "description": "1.3B 모델은 30개의 블록, 14B 모델은 40개의 블록을 가지고 있습니다. 이미지 투 비디오 모델에는 추가적인 img_emb가 있습니다.",
+    "display_name": "모델 병합 (WAN2.1)",
+    "inputs": {
+      "blocks_0_": {
+        "name": "blocks.0."
+      },
+      "blocks_10_": {
+        "name": "blocks.10."
+      },
+      "blocks_11_": {
+        "name": "blocks.11."
+      },
+      "blocks_12_": {
+        "name": "blocks.12."
+      },
+      "blocks_13_": {
+        "name": "blocks.13."
+      },
+      "blocks_14_": {
+        "name": "blocks.14."
+      },
+      "blocks_15_": {
+        "name": "blocks.15."
+      },
+      "blocks_16_": {
+        "name": "blocks.16."
+      },
+      "blocks_17_": {
+        "name": "blocks.17."
+      },
+      "blocks_18_": {
+        "name": "blocks.18."
+      },
+      "blocks_19_": {
+        "name": "blocks.19."
+      },
+      "blocks_1_": {
+        "name": "blocks.1."
+      },
+      "blocks_20_": {
+        "name": "blocks.20."
+      },
+      "blocks_21_": {
+        "name": "blocks.21."
+      },
+      "blocks_22_": {
+        "name": "blocks.22."
+      },
+      "blocks_23_": {
+        "name": "blocks.23."
+      },
+      "blocks_24_": {
+        "name": "blocks.24."
+      },
+      "blocks_25_": {
+        "name": "blocks.25."
+      },
+      "blocks_26_": {
+        "name": "blocks.26."
+      },
+      "blocks_27_": {
+        "name": "blocks.27."
+      },
+      "blocks_28_": {
+        "name": "blocks.28."
+      },
+      "blocks_29_": {
+        "name": "blocks.29."
+      },
+      "blocks_2_": {
+        "name": "blocks.2."
+      },
+      "blocks_30_": {
+        "name": "blocks.30."
+      },
+      "blocks_31_": {
+        "name": "blocks.31."
+      },
+      "blocks_32_": {
+        "name": "blocks.32."
+      },
+      "blocks_33_": {
+        "name": "blocks.33."
+      },
+      "blocks_34_": {
+        "name": "blocks.34."
+      },
+      "blocks_35_": {
+        "name": "blocks.35."
+      },
+      "blocks_36_": {
+        "name": "blocks.36."
+      },
+      "blocks_37_": {
+        "name": "blocks.37."
+      },
+      "blocks_38_": {
+        "name": "blocks.38."
+      },
+      "blocks_39_": {
+        "name": "blocks.39."
+      },
+      "blocks_3_": {
+        "name": "blocks.3."
+      },
+      "blocks_4_": {
+        "name": "blocks.4."
+      },
+      "blocks_5_": {
+        "name": "blocks.5."
+      },
+      "blocks_6_": {
+        "name": "blocks.6."
+      },
+      "blocks_7_": {
+        "name": "blocks.7."
+      },
+      "blocks_8_": {
+        "name": "blocks.8."
+      },
+      "blocks_9_": {
+        "name": "blocks.9."
+      },
+      "head_": {
+        "name": "head."
+      },
+      "img_emb_": {
+        "name": "img_emb."
+      },
+      "model1": {
+        "name": "모델1"
+      },
+      "model2": {
+        "name": "모델2"
+      },
+      "patch_embedding_": {
+        "name": "patch_embedding."
+      },
+      "text_embedding_": {
+        "name": "text_embedding."
+      },
+      "time_embedding_": {
+        "name": "time_embedding."
+      },
+      "time_projection_": {
+        "name": "time_projection."
+      }
+    }
+  },
+  "ModelSamplingAuraFlow": {
+    "display_name": "모델 샘플링 (AuraFlow)",
+    "inputs": {
+      "model": {
+        "name": "모델"
+      },
+      "shift": {
+        "name": "시프트"
+      }
+    }
+  },
+  "ModelSamplingContinuousEDM": {
+    "display_name": "모델 샘플링 (연속 EDM)",
+    "inputs": {
+      "model": {
+        "name": "모델"
+      },
+      "sampling": {
+        "name": "샘플링"
+      },
+      "sigma_max": {
+        "name": "최대 시그마"
+      },
+      "sigma_min": {
+        "name": "최소 시그마"
+      }
+    }
+  },
+  "ModelSamplingContinuousV": {
+    "display_name": "모델 샘플링 (연속 V)",
+    "inputs": {
+      "model": {
+        "name": "모델"
+      },
+      "sampling": {
+        "name": "샘플링"
+      },
+      "sigma_max": {
+        "name": "최대 시그마"
+      },
+      "sigma_min": {
+        "name": "최소 시그마"
+      }
+    }
+  },
+  "ModelSamplingDiscrete": {
+    "display_name": "모델 샘플링 (이산)",
+    "inputs": {
+      "model": {
+        "name": "모델"
+      },
+      "sampling": {
+        "name": "샘플링"
+      },
+      "zsnr": {
+        "name": "zsnr"
+      }
+    }
+  },
+  "ModelSamplingFlux": {
+    "display_name": "모델 샘플링 (FLUX)",
+    "inputs": {
+      "base_shift": {
+        "name": "기본 시프트"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "max_shift": {
+        "name": "최대 시프트"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "width": {
+        "name": "너비"
+      }
+    }
+  },
+  "ModelSamplingLTXV": {
+    "display_name": "모델 샘플링 (LTXV)",
+    "inputs": {
+      "base_shift": {
+        "name": "기반 시프트"
+      },
+      "latent": {
+        "name": "잠재 비디오"
+      },
+      "max_shift": {
+        "name": "최대 시프트"
+      },
+      "model": {
+        "name": "모델"
+      }
+    }
+  },
+  "ModelSamplingSD3": {
+    "display_name": "모델 샘플링 (SD3)",
+    "inputs": {
+      "model": {
+        "name": "모델"
+      },
+      "shift": {
+        "name": "시프트"
+      }
+    }
+  },
+  "ModelSamplingStableCascade": {
+    "display_name": "모델 샘플링 (StableCascade)",
+    "inputs": {
+      "model": {
+        "name": "모델"
+      },
+      "shift": {
+        "name": "시프트"
+      }
+    }
+  },
+  "ModelSave": {
+    "display_name": "모델 저장",
+    "inputs": {
+      "filename_prefix": {
+        "name": "파일명 접두사"
+      },
+      "model": {
+        "name": "모델"
+      }
+    }
+  },
+  "Morphology": {
+    "display_name": "이미지 형태 변환",
+    "inputs": {
+      "image": {
+        "name": "이미지"
+      },
+      "kernel_size": {
+        "name": "커널 크기"
+      },
+      "operation": {
+        "name": "연산"
+      }
+    }
+  },
+  "OpenAIDalle2": {
+    "description": "OpenAI의 DALL·E 2 엔드포인트를 통해 동기적으로 이미지를 생성합니다.",
+    "display_name": "OpenAI DALL·E 2",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "이미지 편집을 위한 선택적 참조 이미지."
+      },
+      "mask": {
+        "name": "마스크",
+        "tooltip": "인페인팅을 위한 선택적 마스크 (흰색 영역이 대체됨)"
+      },
+      "n": {
+        "name": "개수",
+        "tooltip": "생성할 이미지 수"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "DALL·E를 위한 텍스트 프롬프트"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "백엔드에 아직 구현되지 않음"
+      },
+      "size": {
+        "name": "크기",
+        "tooltip": "이미지 크기"
+      }
+    }
+  },
+  "OpenAIDalle3": {
+    "description": "OpenAI의 DALL·E 3 엔드포인트를 통해 동기적으로 이미지를 생성합니다.",
+    "display_name": "OpenAI DALL·E 3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "DALL·E를 위한 텍스트 프롬프트"
+      },
+      "quality": {
+        "name": "품질",
+        "tooltip": "이미지 품질"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "백엔드에 아직 구현되지 않음"
+      },
+      "size": {
+        "name": "크기",
+        "tooltip": "이미지 크기"
+      },
+      "style": {
+        "name": "스타일",
+        "tooltip": "Vivid는 모델이 하이퍼리얼하고 극적인 이미지를 생성하도록 유도합니다. Natural은 모델이 더 자연스럽고 덜 하이퍼리얼한 이미지를 생성하도록 합니다."
+      }
+    }
+  },
+  "OpenAIGPTImage1": {
+    "description": "OpenAI의 GPT Image 1 엔드포인트를 통해 동기적으로 이미지를 생성합니다.",
+    "display_name": "OpenAI GPT Image 1",
+    "inputs": {
+      "background": {
+        "name": "배경",
+        "tooltip": "배경이 있는 이미지 또는 없는 이미지를 반환"
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image": {
+        "name": "참조 이미지",
+        "tooltip": "이미지 편집을 위한 선택적 참조 이미지."
+      },
+      "mask": {
+        "name": "마스크",
+        "tooltip": "인페인팅을 위한 선택적 마스크 (흰색 영역이 대체됨)"
+      },
+      "n": {
+        "name": "개수",
+        "tooltip": "생성할 이미지의 수"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "GPT Image 1을 위한 텍스트 프롬프트"
+      },
+      "quality": {
+        "name": "품질",
+        "tooltip": "이미지 품질, 비용과 생성 시간에 영향을 줍니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "백엔드에 아직 구현되지 않음"
+      },
+      "size": {
+        "name": "크기",
+        "tooltip": "이미지 크기"
+      }
+    }
+  },
+  "OptimalStepsScheduler": {
+    "display_name": "OptimalStepsScheduler",
+    "inputs": {
+      "denoise": {
+        "name": "디노이즈"
+      },
+      "model_type": {
+        "name": "모델 종류"
+      },
+      "steps": {
+        "name": "스텝"
+      }
+    }
+  },
+  "PairConditioningCombine": {
+    "display_name": "조건 쌍 (결합)",
+    "inputs": {
+      "negative_A": {
+        "name": "부정 조건 A"
+      },
+      "negative_B": {
+        "name": "부정 조건 B"
+      },
+      "positive_A": {
+        "name": "긍정 조건 A"
+      },
+      "positive_B": {
+        "name": "긍정 조건 B"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정 조건"
+      },
+      "1": {
+        "name": "부정 조건"
+      }
+    }
+  },
+  "PairConditioningSetDefaultCombine": {
+    "display_name": "조건 쌍 (기본 결합 설정)",
+    "inputs": {
+      "hooks": {
+        "name": "후크"
+      },
+      "negative": {
+        "name": "부정 조건"
+      },
+      "negative_DEFAULT": {
+        "name": "기본 부정 조건"
+      },
+      "positive": {
+        "name": "긍정 조건"
+      },
+      "positive_DEFAULT": {
+        "name": "기본 긍정 조건"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정 조건"
+      },
+      "1": {
+        "name": "부정 조건"
+      }
+    }
+  },
+  "PairConditioningSetProperties": {
+    "display_name": "조건 쌍 (속성 설정)",
+    "inputs": {
+      "hooks": {
+        "name": "후크"
+      },
+      "mask": {
+        "name": "마스크"
+      },
+      "negative_NEW": {
+        "name": "새 부정 조건"
+      },
+      "positive_NEW": {
+        "name": "새 긍정 조건"
+      },
+      "set_cond_area": {
+        "name": "조건 영역 설정"
+      },
+      "strength": {
+        "name": "강도"
+      },
+      "timesteps": {
+        "name": "타임스텝 범위"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정 조건"
+      },
+      "1": {
+        "name": "부정 조건"
+      }
+    }
+  },
+  "PairConditioningSetPropertiesAndCombine": {
+    "display_name": "조건 쌍 (속성 설정 및 결합)",
+    "inputs": {
+      "hooks": {
+        "name": "후크"
+      },
+      "mask": {
+        "name": "마스크"
+      },
+      "negative": {
+        "name": "부정 조건"
+      },
+      "negative_NEW": {
+        "name": "새 부정 조건"
+      },
+      "positive": {
+        "name": "긍정 조건"
+      },
+      "positive_NEW": {
+        "name": "새 긍정 조건"
+      },
+      "set_cond_area": {
+        "name": "조건 영역 설정"
+      },
+      "strength": {
+        "name": "강도"
+      },
+      "timesteps": {
+        "name": "타임스텝 범위"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정 조건"
+      },
+      "1": {
+        "name": "부정 조건"
+      }
+    }
+  },
+  "PatchModelAddDownscale": {
+    "display_name": "다운스케일 추가 모델 패치 (Kohya Deep Shrink)",
+    "inputs": {
+      "block_number": {
+        "name": "블록 번호"
+      },
+      "downscale_after_skip": {
+        "name": "스킵 후 다운스케일"
+      },
+      "downscale_factor": {
+        "name": "다운스케일 배율"
+      },
+      "downscale_method": {
+        "name": "다운스케일 방법"
+      },
+      "end_percent": {
+        "name": "종료 퍼센트"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "start_percent": {
+        "name": "시작 퍼센트"
+      },
+      "upscale_method": {
+        "name": "업스케일 방법"
+      }
+    }
+  },
+  "PerpNeg": {
+    "display_name": "Perp-Neg (PerpNegGuider에 의해 지원 중단됨)",
+    "inputs": {
+      "empty_conditioning": {
+        "name": "빈 조건"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "neg_scale": {
+        "name": "부정 스케일"
+      }
+    }
+  },
+  "PerpNegGuider": {
+    "display_name": "PerpNeg 가이드",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "empty_conditioning": {
+        "name": "빈 조건"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "neg_scale": {
+        "name": "부정 스케일"
+      },
+      "negative": {
+        "name": "부정 조건"
+      },
+      "positive": {
+        "name": "긍정 조건"
+      }
+    }
+  },
+  "PerturbedAttentionGuidance": {
+    "display_name": "교란 어텐션 유도 (PAG)",
+    "inputs": {
+      "model": {
+        "name": "모델"
+      },
+      "scale": {
+        "name": "스케일"
+      }
+    }
+  },
+  "PhotoMakerEncode": {
+    "display_name": "포토메이커 인코딩",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "photomaker": {
+        "name": "포토메이커 모델"
+      },
+      "text": {
+        "name": "텍스트"
+      }
+    }
+  },
+  "PhotoMakerLoader": {
+    "display_name": "포토메이커 로드",
+    "inputs": {
+      "photomaker_model_name": {
+        "name": "포토메이커 파일명"
+      }
+    }
+  },
+  "PikaImageToVideoNode2_2": {
+    "description": "이미지와 프롬프트를 Pika API v2.2에 전송하여 비디오를 생성합니다.",
+    "display_name": "Pika 비디오 생성 (이미지 → 비디오)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "duration": {
+        "name": "길이"
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "비디오로 변환할 이미지"
+      },
+      "negative_prompt": {
+        "name": "부정 프롬프트"
+      },
+      "prompt_text": {
+        "name": "프롬프트"
+      },
+      "resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "시드"
+      }
+    }
+  },
+  "PikaScenesV2_2": {
+    "description": "여러 이미지를 결합하여 이미지 속 객체들이 포함된 비디오를 만듭니다. 여러 이미지를 재료로 업로드하고, 이 모든 이미지를 반영한 고품질 비디오를 생성하세요.",
+    "display_name": "Pika Scenes (비디오 이미지 합성)",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비",
+        "tooltip": "종횡비 (가로 / 세로)"
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "duration": {
+        "name": "길이"
+      },
+      "image_ingredient_1": {
+        "name": "이미지 재료 1",
+        "tooltip": "비디오 생성을 위한 재료로 사용할 이미지입니다."
+      },
+      "image_ingredient_2": {
+        "name": "이미지 재료 2",
+        "tooltip": "비디오 생성을 위한 재료로 사용할 이미지입니다."
+      },
+      "image_ingredient_3": {
+        "name": "이미지 재료 3",
+        "tooltip": "비디오 생성을 위한 재료로 사용할 이미지입니다."
+      },
+      "image_ingredient_4": {
+        "name": "이미지 재료 4",
+        "tooltip": "비디오 생성을 위한 재료로 사용할 이미지입니다."
+      },
+      "image_ingredient_5": {
+        "name": "이미지 재료 5",
+        "tooltip": "비디오 생성을 위한 재료로 사용할 이미지입니다."
+      },
+      "ingredients_mode": {
+        "name": "재료 모드"
+      },
+      "negative_prompt": {
+        "name": "부정 프롬프트"
+      },
+      "prompt_text": {
+        "name": "프롬프트 텍스트"
+      },
+      "resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "시드"
+      }
+    }
+  },
+  "PikaStartEndFrameNode2_2": {
+    "description": "첫 번째 프레임과 마지막 프레임을 결합하여 비디오를 생성합니다. 시작점과 종료점을 정의할 두 이미지를 업로드하면, AI가 그 사이를 부드럽게 전환하는 영상을 만들어줍니다.",
+    "display_name": "Pika 비디오 생성 (시작-끝 프레임)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "duration": {
+        "name": "길이"
+      },
+      "image_end": {
+        "name": "끝 이미지",
+        "tooltip": "결합할 마지막 이미지입니다."
+      },
+      "image_start": {
+        "name": "시작 이미지",
+        "tooltip": "결합할 첫 번째 이미지입니다."
+      },
+      "negative_prompt": {
+        "name": "부정 프롬프트"
+      },
+      "prompt_text": {
+        "name": "프롬프트 텍스트"
+      },
+      "resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "시드"
+      }
+    }
+  },
+  "PikaTextToVideoNode2_2": {
+    "description": "텍스트 프롬프트를 Pika API v2.2에 전송하여 비디오를 생성합니다.",
+    "display_name": "Pika 비디오 생성 (텍스트 → 비디오)",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비",
+        "tooltip": "종횡비 (가로 / 세로)"
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "duration": {
+        "name": "길이"
+      },
+      "negative_prompt": {
+        "name": "부정 프롬프트"
+      },
+      "prompt_text": {
+        "name": "프롬프트 텍스트"
+      },
+      "resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "시드"
+      }
+    }
+  },
+  "Pikadditions": {
+    "description": "비디오에 원하는 객체나 이미지를 추가하세요. 비디오를 업로드하고 추가하고 싶은 내용을 지정하면 자연스럽게 통합된 결과를 얻을 수 있습니다.",
+    "display_name": "Pikadditions (비디오 객체 삽입)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "비디오에 추가할 이미지입니다."
+      },
+      "negative_prompt": {
+        "name": "부정 프롬프트"
+      },
+      "prompt_text": {
+        "name": "프롬프트 텍스트"
+      },
+      "seed": {
+        "name": "시드"
+      },
+      "video": {
+        "name": "비디오",
+        "tooltip": "이미지를 추가할 비디오입니다."
+      }
+    }
+  },
+  "Pikaffects": {
+    "description": "특정 Pikaffect로 비디오를 생성합니다. 지원되는 Pikaffect: Cake-ify, Crumble, Crush, Decapitate, Deflate, Dissolve, Explode, Eye-pop, Inflate, Levitate, Melt, Peel, Poke, Squish, Ta-da, Tear",
+    "display_name": "Pikaffects (비디오 효과)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "Pikaffect를 적용할 기준 이미지입니다."
+      },
+      "negative_prompt": {
+        "name": "부정 프롬프트"
+      },
+      "pikaffect": {
+        "name": "pikaffect"
+      },
+      "prompt_text": {
+        "name": "프롬프트 텍스트"
+      },
+      "seed": {
+        "name": "시드"
+      }
+    }
+  },
+  "Pikaswaps": {
+    "description": "비디오의 어떤 객체나 영역도 새로운 이미지나 객체로 교체하세요. 마스크나 좌표를 사용해 교체할 영역을 정의할 수 있습니다.",
+    "display_name": "Pika Swaps (비디오 객체 교체)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "비디오에서 마스킹된 객체를 교체하는 데 사용되는 이미지입니다."
+      },
+      "mask": {
+        "name": "마스크",
+        "tooltip": "비디오에서 교체할 영역을 정의하려면 마스크를 사용하세요."
+      },
+      "negative_prompt": {
+        "name": "부정 프롬프트"
+      },
+      "prompt_text": {
+        "name": "프롬프트 텍스트"
+      },
+      "seed": {
+        "name": "시드"
+      },
+      "video": {
+        "name": "비디오",
+        "tooltip": "객체를 교체할 비디오입니다."
+      }
+    }
+  },
+  "PixverseImageToVideoNode": {
+    "description": "프롬프트와 output_size에 따라 동기적으로 비디오를 생성합니다.",
+    "display_name": "PixVerse 이미지에서 비디오로",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "duration_seconds": {
+        "name": "길이(초)"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "motion_mode": {
+        "name": "모션 모드"
+      },
+      "negative_prompt": {
+        "name": "부정 프롬프트",
+        "tooltip": "이미지에서 원하지 않는 요소에 대한 선택적 텍스트 설명."
+      },
+      "pixverse_template": {
+        "name": "PixVerse 템플릿",
+        "tooltip": "생성 스타일에 영향을 주는 선택적 템플릿으로, PixVerse Template 노드에서 생성됩니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "비디오 생성을 위한 프롬프트"
+      },
+      "quality": {
+        "name": "품질"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "비디오 생성을 위한 시드."
+      }
+    }
+  },
+  "PixverseTemplateNode": {
+    "display_name": "PixVerse 템플릿",
+    "inputs": {
+      "template": {
+        "name": "템플릿"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pixverse 템플릿"
+      }
+    }
+  },
+  "PixverseTextToVideoNode": {
+    "description": "프롬프트와 output_size에 따라 동기적으로 비디오를 생성합니다.",
+    "display_name": "PixVerse 텍스트 투 비디오",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "화면 비율"
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "duration_seconds": {
+        "name": "길이(초)"
+      },
+      "motion_mode": {
+        "name": "모션 모드"
+      },
+      "negative_prompt": {
+        "name": "부정 프롬프트",
+        "tooltip": "이미지에서 원하지 않는 요소에 대한 선택적 텍스트 설명."
+      },
+      "pixverse_template": {
+        "name": "PixVerse 템플릿",
+        "tooltip": "생성 스타일에 영향을 주는 선택적 템플릿으로, PixVerse Template 노드에서 생성됩니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "비디오 생성을 위한 프롬프트"
+      },
+      "quality": {
+        "name": "품질"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "비디오 생성을 위한 시드."
+      }
+    }
+  },
+  "PixverseTransitionVideoNode": {
+    "description": "프롬프트와 output_size에 따라 동기적으로 비디오를 생성합니다.",
+    "display_name": "PixVerse 전환 비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "duration_seconds": {
+        "name": "길이(초)"
+      },
+      "first_frame": {
+        "name": "시작 프레임"
+      },
+      "last_frame": {
+        "name": "끝 프레임"
+      },
+      "motion_mode": {
+        "name": "모션 모드"
+      },
+      "negative_prompt": {
+        "name": "부정 프롬프트",
+        "tooltip": "이미지에서 원하지 않는 요소에 대한 선택적 텍스트 설명입니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "비디오 생성을 위한 프롬프트"
+      },
+      "quality": {
+        "name": "품질"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "비디오 생성을 위한 시드."
+      }
+    }
+  },
+  "PolyexponentialScheduler": {
+    "display_name": "다항 지수 스케줄러",
+    "inputs": {
+      "rho": {
+        "name": "rho"
+      },
+      "sigma_max": {
+        "name": "최대 시그마"
+      },
+      "sigma_min": {
+        "name": "최소 시그마"
+      },
+      "steps": {
+        "name": "스텝 수"
+      }
+    }
+  },
+  "PorterDuffImageComposite": {
+    "display_name": "포터-더프 이미지 합성",
+    "inputs": {
+      "destination": {
+        "name": "대상"
+      },
+      "destination_alpha": {
+        "name": "대상 알파"
+      },
+      "mode": {
+        "name": "모드"
+      },
+      "source": {
+        "name": "원본"
+      },
+      "source_alpha": {
+        "name": "원본 알파"
+      }
+    }
+  },
+  "Preview3D": {
+    "display_name": "3D 미리보기",
+    "inputs": {
+      "camera_info": {
+        "name": "카메라 정보"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "model_file": {
+        "name": "모델 파일"
+      }
+    }
+  },
+  "Preview3DAnimation": {
+    "display_name": "3D 미리보기 - 애니메이션",
+    "inputs": {
+      "camera_info": {
+        "name": "카메라 정보"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "model_file": {
+        "name": "모델 파일"
+      }
+    }
+  },
+  "PreviewAny": {
+    "display_name": "미리보기 아무거나",
+    "inputs": {
+      "preview": {
+      },
+      "source": {
+        "name": "소스"
+      }
+    }
+  },
+  "PreviewAudio": {
+    "display_name": "오디오 미리듣기",
+    "inputs": {
+      "audio": {
+        "name": "오디오"
+      },
+      "audioUI": {
+        "name": "오디오UI"
+      }
+    }
+  },
+  "PreviewImage": {
+    "description": "입력 이미지를 ComfyUI 의 임시(temp) 폴더에 저장합니다.",
+    "display_name": "이미지 미리보기",
+    "inputs": {
+      "images": {
+        "name": "이미지"
+      }
+    }
+  },
+  "PrimitiveBoolean": {
+    "display_name": "논리값",
+    "inputs": {
+      "value": {
+        "name": "값"
+      }
+    }
+  },
+  "PrimitiveFloat": {
+    "display_name": "실수",
+    "inputs": {
+      "value": {
+        "name": "값"
+      }
+    }
+  },
+  "PrimitiveInt": {
+    "display_name": "정수",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "value": {
+        "name": "값"
+      }
+    }
+  },
+  "PrimitiveString": {
+    "display_name": "문자열",
+    "inputs": {
+      "value": {
+        "name": "값"
+      }
+    }
+  },
+  "PrimitiveStringMultiline": {
+    "display_name": "문자열 (여러 줄)",
+    "inputs": {
+      "value": {
+        "name": "값"
+      }
+    }
+  },
+  "QuadrupleCLIPLoader": {
+    "description": "[레시피]\n\nhidream: long clip-l, long clip-g, t5xxl, llama_8b_3.1_instruct",
+    "display_name": "QuadrupleCLIPLoader",
+    "inputs": {
+      "clip_name1": {
+        "name": "clip 이름 1"
+      },
+      "clip_name2": {
+        "name": "clip 이름 2"
+      },
+      "clip_name3": {
+        "name": "clip 이름 3"
+      },
+      "clip_name4": {
+        "name": "clip 이름 4"
+      }
+    }
+  },
+  "RandomNoise": {
+    "display_name": "무작위 노이즈",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "noise_seed": {
+        "name": "노이즈 시드"
+      }
+    }
+  },
+  "RebatchImages": {
+    "display_name": "이미지 배치 재배치",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기"
+      },
+      "images": {
+        "name": "이미지"
+      }
+    }
+  },
+  "RebatchLatents": {
+    "display_name": "잠재 데이터 배치 재배치",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기"
+      },
+      "latents": {
+        "name": "잠재 데이터"
+      }
+    }
+  },
+  "RecraftColorRGB": {
+    "description": "특정 RGB 값을 선택하여 Recraft Color를 생성합니다.",
+    "display_name": "Recraft Color RGB",
+    "inputs": {
+      "b": {
+        "name": "b",
+        "tooltip": "색상의 파란색 값입니다."
+      },
+      "g": {
+        "name": "g",
+        "tooltip": "색상의 초록색 값입니다."
+      },
+      "r": {
+        "name": "r",
+        "tooltip": "색상의 빨간색 값입니다."
+      },
+      "recraft_color": {
+        "name": "recraft 색"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "recraft 색"
+      }
+    }
+  },
+  "RecraftControls": {
+    "description": "Recraft 생성을 커스터마이즈하기 위한 'Recraft 제어'을 생성합니다.",
+    "display_name": "Recraft 제어",
+    "inputs": {
+      "background_color": {
+        "name": "배경색"
+      },
+      "colors": {
+        "name": "색상"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "recraft 제어"
+      }
+    }
+  },
+  "RecraftCreativeUpscaleNode": {
+    "description": "이미지를 동기적으로 업스케일합니다.\n‘크리에이티브 업스케일’ 도구를 사용하여 주어진 래스터 이미지를 향상시키고, 작은 디테일과 얼굴을 정교하게 개선하면서 해상도를 높입니다.",
+    "display_name": "Recraft 크리에이티브 업스케일 이미지",
+    "inputs": {
+      "image": {
+        "name": "이미지"
+      }
+    }
+  },
+  "RecraftCrispUpscaleNode": {
+    "description": "이미지를 동기적으로 업스케일합니다.\n‘선명 업스케일’ 도구를 사용하여 주어진 래스터 이미지를 향상시키고, 해상도를 높여 이미지를 더 선명하고 깨끗하게 만듭니다.",
+    "display_name": "Recraft 선명 업스케일 이미지",
+    "inputs": {
+      "image": {
+        "name": "이미지"
+      }
+    }
+  },
+  "RecraftImageInpaintingNode": {
+    "description": "프롬프트와 마스크를 기반으로 이미지를 수정합니다.",
+    "display_name": "Recraft 이미지 인페인팅",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "mask": {
+        "name": "마스크"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "생성할 이미지의 개수입니다."
+      },
+      "negative_prompt": {
+        "name": "부정 프롬프트",
+        "tooltip": "이미지에서 원하지 않는 요소에 대한 선택적 텍스트 설명입니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "이미지 생성을 위한 프롬프트입니다."
+      },
+      "recraft_style": {
+        "name": "recraft 스타일"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      }
+    }
+  },
+  "RecraftImageToImageNode": {
+    "description": "프롬프트와 강도를 기반으로 이미지를 수정합니다.",
+    "display_name": "Recraft 이미지 생성 (이미지 → 이미지)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "n": {
+        "name": "개수",
+        "tooltip": "생성할 이미지의 수입니다."
+      },
+      "negative_prompt": {
+        "name": "부정 프롬프트",
+        "tooltip": "이미지에서 원하지 않는 요소에 대한 선택적 텍스트 설명입니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "이미지 생성을 위한 프롬프트입니다."
+      },
+      "recraft_controls": {
+        "name": "recraft 제어",
+        "tooltip": "Recraft 제어 노드를 통한 생성에 대한 추가 제어(선택 사항)입니다."
+      },
+      "recraft_style": {
+        "name": "recraft 스타일"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      },
+      "strength": {
+        "name": "강도",
+        "tooltip": "원본 이미지와의 차이를 정의합니다. [0, 1] 범위 내에서, 0은 거의 동일함을, 1은 매우 다름을 의미합니다."
+      }
+    }
+  },
+  "RecraftRemoveBackgroundNode": {
+    "description": "이미지에서 배경을 제거하고, 처리된 이미지와 mask를 반환합니다.",
+    "display_name": "Recraft 배경 제거",
+    "inputs": {
+      "image": {
+        "name": "이미지"
+      }
+    }
+  },
+  "RecraftReplaceBackgroundNode": {
+    "description": "제공된 프롬프트를 기반으로 이미지의 배경을 교체합니다.",
+    "display_name": "Recraft 배경 교체",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "n": {
+        "name": "개수",
+        "tooltip": "생성할 이미지의 수입니다."
+      },
+      "negative_prompt": {
+        "name": "부정 프롬프트",
+        "tooltip": "이미지에서 원하지 않는 요소에 대한 선택적 텍스트 설명입니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "이미지 생성을 위한 프롬프트입니다."
+      },
+      "recraft_style": {
+        "name": "recraft 스타일"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드를 다시 실행할지 결정하는 시드입니다. 실제 결과는 시드와 상관없이 비결정적입니다."
+      }
+    }
+  },
+  "RecraftStyleV3DigitalIllustration": {
+    "description": "realistic_image 스타일과 선택적 하위 스타일을 선택하세요.",
+    "display_name": "Recraft 스타일 - 디지털 일러스트레이션",
+    "inputs": {
+      "substyle": {
+        "name": "하위 스타일"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "recraft 스타일"
+      }
+    }
+  },
+  "RecraftStyleV3InfiniteStyleLibrary": {
+    "description": "Recraft의 무한 스타일 라이브러리에서 기존 UUID를 기반으로 스타일을 선택합니다.",
+    "display_name": "Recraft 스타일 - 무한 스타일 라이브러리",
+    "inputs": {
+      "style_id": {
+        "name": "스타일 ID",
+        "tooltip": "무한 스타일 라이브러리의 스타일 UUID입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "recraft 스타일"
+      }
+    }
+  },
+  "RecraftStyleV3LogoRaster": {
+    "description": "realistic_image 스타일과 선택적 하위 스타일을 선택하세요.",
+    "display_name": "Recraft 스타일 - 로고 래스터",
+    "inputs": {
+      "substyle": {
+        "name": "하위 스타일"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "recraft 스타일"
+      }
+    }
+  },
+  "RecraftStyleV3RealisticImage": {
+    "description": "realistic_image 스타일과 선택적 하위 스타일을 선택하세요.",
+    "display_name": "Recraft 스타일 - 사실적인 이미지",
+    "inputs": {
+      "substyle": {
+        "name": "하위 스타일"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "recraft 스타일"
+      }
+    }
+  },
+  "RecraftTextToImageNode": {
+    "description": "프롬프트와 해상도에 따라 이미지를 동기적으로 생성합니다.",
+    "display_name": "Recraft 이미지 생성 (텍스트 → 이미지)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "n": {
+        "name": "개수",
+        "tooltip": "생성할 이미지의 개수입니다."
+      },
+      "negative_prompt": {
+        "name": "부정 프롬프트",
+        "tooltip": "이미지에서 원하지 않는 요소에 대한 선택적 텍스트 설명입니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "이미지 생성을 위한 프롬프트입니다."
+      },
+      "recraft_controls": {
+        "name": "recraft 제어",
+        "tooltip": "Recraft 제어 노드를 통한 생성에 대한 추가 제어(선택 사항)입니다."
+      },
+      "recraft_style": {
+        "name": "recraft 스타일"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드를 다시 실행할지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      },
+      "size": {
+        "name": "크기",
+        "tooltip": "생성된 이미지의 크기입니다."
+      }
+    }
+  },
+  "RecraftTextToVectorNode": {
+    "description": "프롬프트와 해상도에 따라 SVG를 동기적으로 생성합니다.",
+    "display_name": "Recraft 벡터 생성 (텍스트 → 벡터)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "n": {
+        "name": "개수",
+        "tooltip": "생성할 이미지의 개수입니다."
+      },
+      "negative_prompt": {
+        "name": "부정 프롬프트",
+        "tooltip": "이미지에서 원하지 않는 요소에 대한 선택적 텍스트 설명입니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "이미지 생성을 위한 프롬프트입니다."
+      },
+      "recraft_controls": {
+        "name": "Recraft 제어",
+        "tooltip": "Recraft 제어 노드를 통한 생성에 대한 추가적인 선택적 제어입니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드를 다시 실행할지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      },
+      "size": {
+        "name": "크기",
+        "tooltip": "생성된 이미지의 크기입니다."
+      },
+      "substyle": {
+        "name": "하위 스타일"
+      }
+    }
+  },
+  "RecraftVectorizeImageNode": {
+    "description": "입력 이미지로부터 SVG를 동기적으로 생성합니다.",
+    "display_name": "Recraft 벡터 생성 (이미지 → 벡터)",
+    "inputs": {
+      "image": {
+        "name": "이미지"
+      }
+    }
+  },
+  "RenormCFG": {
+    "display_name": "RenormCFG",
+    "inputs": {
+      "cfg_trunc": {
+        "name": "cfg_trunc"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "renorm_cfg": {
+        "name": "renorm_cfg"
+      }
+    }
+  },
+  "RepeatImageBatch": {
+    "display_name": "이미지 반복 배치 생성",
+    "inputs": {
+      "amount": {
+        "name": "개수"
+      },
+      "image": {
+        "name": "이미지"
+      }
+    }
+  },
+  "RepeatLatentBatch": {
+    "display_name": "잠재 데이터 반복 배치 생성",
+    "inputs": {
+      "amount": {
+        "name": "개수"
+      },
+      "samples": {
+        "name": "잠재 데이터"
+      }
+    }
+  },
+  "RescaleCFG": {
+    "display_name": "CFG 리스케일",
+    "inputs": {
+      "model": {
+        "name": "모델"
+      },
+      "multiplier": {
+        "name": "배율"
+      }
+    }
+  },
+  "SDTurboScheduler": {
+    "display_name": "SD-Turbo 스케줄러",
+    "inputs": {
+      "denoise": {
+        "name": "노이즈 제거양"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "steps": {
+        "name": "스텝 수"
+      }
+    }
+  },
+  "SD_4XUpscale_Conditioning": {
+    "display_name": "SD_4X 확대 조건 설정",
+    "inputs": {
+      "images": {
+        "name": "이미지"
+      },
+      "negative": {
+        "name": "부정 조건"
+      },
+      "noise_augmentation": {
+        "name": "노이즈 증강"
+      },
+      "positive": {
+        "name": "긍정 조건"
+      },
+      "scale_ratio": {
+        "name": "확대율"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정 조건"
+      },
+      "1": {
+        "name": "부정 조건"
+      },
+      "2": {
+        "name": "잠재 이미지"
+      }
+    }
+  },
+  "SV3D_Conditioning": {
+    "display_name": "SV3D 조건 설정",
+    "inputs": {
+      "clip_vision": {
+        "name": "clip_vision"
+      },
+      "elevation": {
+        "name": "고도"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "init_image": {
+        "name": "초기 이미지"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "video_frames": {
+        "name": "비디오 프레임"
+      },
+      "width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정 조건"
+      },
+      "1": {
+        "name": "부정 조건"
+      },
+      "2": {
+        "name": "잠재 데이터"
+      }
+    }
+  },
+  "SVD_img2vid_Conditioning": {
+    "display_name": "SVD 조건 설정 (이미지 → 비디오)",
+    "inputs": {
+      "augmentation_level": {
+        "name": "증강 레벨"
+      },
+      "clip_vision": {
+        "name": "clip_vision"
+      },
+      "fps": {
+        "name": "fps"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "init_image": {
+        "name": "초기 이미지"
+      },
+      "motion_bucket_id": {
+        "name": "모션 버킷 ID"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "video_frames": {
+        "name": "비디오 프레임"
+      },
+      "width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정 조건"
+      },
+      "1": {
+        "name": "부정 조건"
+      },
+      "2": {
+        "name": "잠재 비디오"
+      }
+    }
+  },
+  "SamplerCustom": {
+    "display_name": "사용자 정의 샘플러",
+    "inputs": {
+      "add_noise": {
+        "name": "노이즈 추가"
+      },
+      "cfg": {
+        "name": "cfg"
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "latent_image": {
+        "name": "잠재 데이터"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "negative": {
+        "name": "부정 조건"
+      },
+      "noise_seed": {
+        "name": "노이즈 시드"
+      },
+      "positive": {
+        "name": "긍정 조건"
+      },
+      "sampler": {
+        "name": "샘플러"
+      },
+      "sigmas": {
+        "name": "시그마 배열"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "출력"
+      },
+      "1": {
+        "name": "노이즈 제거된 출력"
+      }
+    }
+  },
+  "SamplerCustomAdvanced": {
+    "display_name": "고급 사용자 정의 샘플러",
+    "inputs": {
+      "guider": {
+        "name": "가이더"
+      },
+      "latent_image": {
+        "name": "잠재 데이터"
+      },
+      "noise": {
+        "name": "노이즈"
+      },
+      "sampler": {
+        "name": "샘플러"
+      },
+      "sigmas": {
+        "name": "시그마 배열"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "출력"
+      },
+      "1": {
+        "name": "노이즈 제거된 출력"
+      }
+    }
+  },
+  "SamplerDPMAdaptative": {
+    "display_name": "DPMAdaptive 샘플러",
+    "inputs": {
+      "accept_safety": {
+        "name": "accept_safety"
+      },
+      "atol": {
+        "name": "atol"
+      },
+      "dcoeff": {
+        "name": "dcoeff"
+      },
+      "eta": {
+        "name": "eta"
+      },
+      "h_init": {
+        "name": "초기 h"
+      },
+      "icoeff": {
+        "name": "icoeff"
+      },
+      "order": {
+        "name": "order"
+      },
+      "pcoeff": {
+        "name": "pcoeff"
+      },
+      "rtol": {
+        "name": "rtol"
+      },
+      "s_noise": {
+        "name": "s_noise"
+      }
+    }
+  },
+  "SamplerDPMPP_2M_SDE": {
+    "display_name": "DPMPP_2M_SDE 샘플러",
+    "inputs": {
+      "eta": {
+        "name": "eta"
+      },
+      "noise_device": {
+        "name": "노이즈 생성 장치"
+      },
+      "s_noise": {
+        "name": "s_noise"
+      },
+      "solver_type": {
+        "name": "Solver 유형"
+      }
+    }
+  },
+  "SamplerDPMPP_2S_Ancestral": {
+    "display_name": "DPMPP_2S_Ancestral 샘플러",
+    "inputs": {
+      "eta": {
+        "name": "eta"
+      },
+      "s_noise": {
+        "name": "s_noise"
+      }
+    }
+  },
+  "SamplerDPMPP_3M_SDE": {
+    "display_name": "DPMPP_3M_SDE 샘플러",
+    "inputs": {
+      "eta": {
+        "name": "eta"
+      },
+      "noise_device": {
+        "name": "노이즈 생성 장치"
+      },
+      "s_noise": {
+        "name": "s_noise"
+      }
+    }
+  },
+  "SamplerDPMPP_SDE": {
+    "display_name": "DPMPP_SDE 샘플러",
+    "inputs": {
+      "eta": {
+        "name": "eta"
+      },
+      "noise_device": {
+        "name": "노이즈 생성 장치"
+      },
+      "r": {
+        "name": "r"
+      },
+      "s_noise": {
+        "name": "s_noise"
+      }
+    }
+  },
+  "SamplerEulerAncestral": {
+    "display_name": "Eluer Ancestral 샘플러",
+    "inputs": {
+      "eta": {
+        "name": "eta"
+      },
+      "s_noise": {
+        "name": "s_noise"
+      }
+    }
+  },
+  "SamplerEulerAncestralCFGPP": {
+    "display_name": "Eluer Acnestral CFG++ 샘플러",
+    "inputs": {
+      "eta": {
+        "name": "eta"
+      },
+      "s_noise": {
+        "name": "s_noise"
+      }
+    }
+  },
+  "SamplerEulerCFGpp": {
+    "display_name": "Eluer CFG++ 샘플러",
+    "inputs": {
+      "version": {
+        "name": "버전"
+      }
+    }
+  },
+  "SamplerLCMUpscale": {
+    "display_name": "LCM 확대 샘플러",
+    "inputs": {
+      "scale_ratio": {
+        "name": "확대율"
+      },
+      "scale_steps": {
+        "name": "확대 스텝 수"
+      },
+      "upscale_method": {
+        "name": "업스케일 방법"
+      }
+    }
+  },
+  "SamplerLMS": {
+    "display_name": "LMS 샘플러",
+    "inputs": {
+      "order": {
+        "name": "순서"
+      }
+    }
+  },
+  "SaveAnimatedPNG": {
+    "display_name": "애니메이션 PNG 저장",
+    "inputs": {
+      "compress_level": {
+        "name": "압축 레벨"
+      },
+      "filename_prefix": {
+        "name": "파일명 접두사"
+      },
+      "fps": {
+        "name": "fps"
+      },
+      "images": {
+        "name": "이미지"
+      }
+    }
+  },
+  "SaveAnimatedWEBP": {
+    "display_name": "애니메이션 WEBP 저장",
+    "inputs": {
+      "filename_prefix": {
+        "name": "파일명 접두사"
+      },
+      "fps": {
+        "name": "fps"
+      },
+      "images": {
+        "name": "이미지"
+      },
+      "lossless": {
+        "name": "무손실"
+      },
+      "method": {
+        "name": "방법"
+      },
+      "quality": {
+        "name": "품질"
+      }
+    }
+  },
+  "SaveAudio": {
+    "display_name": "오디오 저장",
+    "inputs": {
+      "audio": {
+        "name": "오디오"
+      },
+      "audioUI": {
+        "name": "오디오UI"
+      },
+      "filename_prefix": {
+        "name": "파일명 접두사"
+      }
+    }
+  },
+  "SaveGLB": {
+    "display_name": "GLB 저장",
+    "inputs": {
+      "filename_prefix": {
+        "name": "파일명 접두사"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "mesh": {
+        "name": "메시"
+      }
+    }
+  },
+  "SaveImage": {
+    "description": "입력 이미지를 ComfyUI 출력 디렉토리에 저장합니다.",
+    "display_name": "이미지 저장",
+    "inputs": {
+      "filename_prefix": {
+        "name": "파일명 접두사",
+        "tooltip": "저장할 파일의 접두사입니다. 여기에는 %date:yyyy-MM-dd% 또는 %Empty Latent Image.width%와 같은 형식 정보가 포함되어 노드의 값을 포함할 수 있습니다."
+      },
+      "images": {
+        "name": "이미지",
+        "tooltip": "저장할 이미지입니다."
+      }
+    }
+  },
+  "SaveImageWebsocket": {
+    "display_name": "이미지 웹소켓 전송",
+    "inputs": {
+      "images": {
+        "name": "이미지"
+      }
+    }
+  },
+  "SaveLatent": {
+    "display_name": "잠재 데이터 저장",
+    "inputs": {
+      "filename_prefix": {
+        "name": "파일명 접두사"
+      },
+      "samples": {
+        "name": "잠재 데이터"
+      }
+    }
+  },
+  "SaveSVG": {
+    "description": "SVG 파일을 디스크에 저장합니다.",
+    "display_name": "SVG 저장",
+    "inputs": {
+      "filename_prefix": {
+        "name": "파일명 접두사",
+        "tooltip": "저장할 파일의 접두사입니다. %date:yyyy-MM-dd% 또는 %Empty Latent Image.width%와 같이 노드의 값을 포함하는 형식 정보를 사용할 수 있습니다."
+      },
+      "svg": {
+        "name": "svg"
+      }
+    }
+  },
+  "SaveVideo": {
+    "description": "입력 이미지를 ComfyUI 출력 디렉토리에 저장합니다.",
+    "display_name": "비디오 저장",
+    "inputs": {
+      "codec": {
+        "name": "코덱",
+        "tooltip": "비디오에 사용할 코덱입니다."
+      },
+      "filename_prefix": {
+        "name": "파일명 접두사",
+        "tooltip": "저장할 파일의 접두사입니다. %date:yyyy-MM-dd% 또는 %Empty Latent Image.width%와 같이 노드의 값을 포함하는 포맷 정보를 사용할 수 있습니다."
+      },
+      "format": {
+        "name": "포맷",
+        "tooltip": "비디오를 저장할 포맷입니다."
+      },
+      "video": {
+        "name": "비디오",
+        "tooltip": "저장할 비디오입니다."
+      }
+    }
+  },
+  "SaveWEBM": {
+    "display_name": "동영상 저장 (WEBM)",
+    "inputs": {
+      "codec": {
+        "name": "코덱"
+      },
+      "crf": {
+        "name": "crf",
+        "tooltip": "crf가 높을수록 파일 크기는 작지만 품질은 낮아집니다. crf가 낮을수록 파일 크기는 커지지만 품질은 높아집니다."
+      },
+      "filename_prefix": {
+        "name": "파일명_접두사"
+      },
+      "fps": {
+        "name": "fps"
+      },
+      "images": {
+        "name": "이미지"
+      }
+    }
+  },
+  "SelfAttentionGuidance": {
+    "display_name": "셀프 어텐션 가이드",
+    "inputs": {
+      "blur_sigma": {
+        "name": "블러 시그마"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "scale": {
+        "name": "스케일"
+      }
+    }
+  },
+  "SetClipHooks": {
+    "display_name": "CLIP 후크 설정",
+    "inputs": {
+      "apply_to_conds": {
+        "name": "조건에 적용"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "hooks": {
+        "name": "후크"
+      },
+      "schedule_clip": {
+        "name": "clip 스케쥴 사용"
+      }
+    }
+  },
+  "SetFirstSigma": {
+    "display_name": "SetFirstSigma",
+    "inputs": {
+      "sigma": {
+        "name": "시그마"
+      },
+      "sigmas": {
+        "name": "시그마 배열"
+      }
+    }
+  },
+  "SetHookKeyframes": {
+    "display_name": "후크 키프레임 설정",
+    "inputs": {
+      "hook_kf": {
+        "name": "KF 후크"
+      },
+      "hooks": {
+        "name": "후크"
+      }
+    }
+  },
+  "SetLatentNoiseMask": {
+    "display_name": "잠재 데이터에 노이즈 마스크 설정",
+    "inputs": {
+      "mask": {
+        "name": "마스크"
+      },
+      "samples": {
+        "name": "잠재 데이터"
+      }
+    }
+  },
+  "SetUnionControlNetType": {
+    "display_name": "통합 컨트롤넷 유형 설정",
+    "inputs": {
+      "control_net": {
+        "name": "컨트롤넷"
+      },
+      "type": {
+        "name": "유형"
+      }
+    }
+  },
+  "SkipLayerGuidanceDiT": {
+    "description": "모든 DiT 모델에서 사용할 수 있는 '레이어 건너뛰기 가이던스' 노드의 범용 버전입니다.",
+    "display_name": "레이어 건너뛰기 가이던스 (DiT)",
+    "inputs": {
+      "double_layers": {
+        "name": "double_layers"
+      },
+      "end_percent": {
+        "name": "종료 퍼센트"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "rescaling_scale": {
+        "name": "리스케일 크기"
+      },
+      "scale": {
+        "name": "크기"
+      },
+      "single_layers": {
+        "name": "single_layers"
+      },
+      "start_percent": {
+        "name": "시작 퍼센트"
+      }
+    }
+  },
+  "SkipLayerGuidanceSD3": {
+    "description": "SD3 용 레이어 건너뛰기 가이던스 노드입니다.",
+    "display_name": "레이어 건너뛰기 가이던스 (SD3)",
+    "inputs": {
+      "end_percent": {
+        "name": "종료 퍼센트"
+      },
+      "layers": {
+        "name": "layers"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "scale": {
+        "name": "크기"
+      },
+      "start_percent": {
+        "name": "시작 퍼센트"
+      }
+    }
+  },
+  "SolidMask": {
+    "display_name": "단색 마스크",
+    "inputs": {
+      "height": {
+        "name": "높이"
+      },
+      "value": {
+        "name": "값"
+      },
+      "width": {
+        "name": "너비"
+      }
+    }
+  },
+  "SplitImageWithAlpha": {
+    "display_name": "이미지와 알파채널 분리",
+    "inputs": {
+      "image": {
+        "name": "이미지"
+      }
+    }
+  },
+  "SplitSigmas": {
+    "display_name": "시그마 배열 분할 (스텝)",
+    "inputs": {
+      "sigmas": {
+        "name": "시그마 배열"
+      },
+      "step": {
+        "name": "분할 스텝"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "높은 시그마 배열"
+      },
+      "1": {
+        "name": "낮은 시그마 배열"
+      }
+    }
+  },
+  "SplitSigmasDenoise": {
+    "display_name": "시그마 배열 분할 (노이즈 제거양)",
+    "inputs": {
+      "denoise": {
+        "name": "노이즈 제거양"
+      },
+      "sigmas": {
+        "name": "시그마 배열"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "높은 시그마 배열"
+      },
+      "1": {
+        "name": "낮은 시그마 배열"
+      }
+    }
+  },
+  "StabilityStableImageSD_3_5Node": {
+    "description": "프롬프트와 해상도에 따라 이미지를 동기적으로 생성합니다.",
+    "display_name": "Stability AI Stable Diffusion 3.5 이미지",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비",
+        "tooltip": "생성된 이미지의 종횡비입니다."
+      },
+      "cfg_scale": {
+        "name": "cfg 스케일",
+        "tooltip": "디퓨전 과정이 프롬프트 텍스트를 얼마나 엄격하게 따르는지 결정합니다(값이 높을수록 이미지가 프롬프트에 더 가깝게 생성됩니다)."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "image_denoise": {
+        "name": "노이즈 제거양",
+        "tooltip": "입력 이미지의 노이즈 제거 정도; 0.0은 입력 이미지와 동일, 1.0은 이미지가 전혀 제공되지 않은 것과 같습니다."
+      },
+      "model": {
+        "name": "모델"
+      },
+      "negative_prompt": {
+        "name": "부정 프롬프트",
+        "tooltip": "출력 이미지에 나타나지 않길 원하는 키워드입니다. 고급 기능입니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "출력 이미지에서 보고 싶은 내용을 입력하세요. 요소, 색상, 주제를 명확하게 정의하는 강력하고 구체적인 프롬프트가 더 나은 결과를 가져옵니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노이즈 생성을 위해 사용되는 랜덤 시드입니다."
+      },
+      "style_preset": {
+        "name": "스타일 프리셋",
+        "tooltip": "생성된 이미지에 원하는 스타일(선택 사항)입니다."
+      }
+    }
+  },
+  "StabilityStableImageUltraNode": {
+    "description": "프롬프트와 해상도에 따라 이미지를 동기적으로 생성합니다.",
+    "display_name": "Stability AI Stable Image Ultra",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비",
+        "tooltip": "생성된 이미지의 가로세로 비율입니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "image_denoise": {
+        "name": "노이즈 제거양",
+        "tooltip": "입력 이미지의 노이즈 제거 정도입니다. 0.0은 입력 이미지와 동일하며, 1.0은 이미지가 전혀 제공되지 않은 것과 같습니다."
+      },
+      "negative_prompt": {
+        "name": "부정 프롬프트",
+        "tooltip": "출력 이미지에서 보고 싶지 않은 내용을 설명하는 텍스트입니다. 고급 기능입니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "출력 이미지에서 보고 싶은 내용을 입력하세요. 요소, 색상, 주제를 명확하게 정의하는 강력하고 구체적인 프롬프트가 더 나은 결과를 가져옵니다. 특정 단어의 가중치를 조절하려면 `(단어:가중치)` 형식을 사용하세요. 여기서 `단어`는 가중치를 조절하고 싶은 단어이고, `가중치`는 0과 1 사이의 값입니다. 예시: `The sky was a crisp (blue:0.3) and (green:0.8)`는 하늘이 파란색과 초록색이지만 초록색이 더 많다는 의미입니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노이즈 생성을 위한 랜덤 시드 값입니다."
+      },
+      "style_preset": {
+        "name": "스타일 프리셋",
+        "tooltip": "생성된 이미지에 적용할 선택적 스타일입니다."
+      }
+    }
+  },
+  "StabilityUpscaleConservativeNode": {
+    "description": "이미지를 최소한의 변경으로 4K 해상도로 업스케일합니다.",
+    "display_name": "Stability AI 업스케일 보수적",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "creativity": {
+        "name": "창의성",
+        "tooltip": "초기 이미지에 크게 의존하지 않는 추가 디테일이 생성될 가능성을 조절합니다."
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "negative_prompt": {
+        "name": "부정 프롬프트",
+        "tooltip": "출력 이미지에 나타나길 원하지 않는 키워드를 입력하세요. 고급 기능입니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "출력 이미지에서 보고 싶은 내용을 입력하세요. 요소, 색상, 주제를 명확하게 정의하는 강력하고 구체적인 프롬프트가 더 나은 결과를 가져옵니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노이즈 생성을 위한 랜덤 시드입니다."
+      }
+    }
+  },
+  "StabilityUpscaleCreativeNode": {
+    "description": "이미지를 최소한의 변경으로 4K 해상도로 업스케일합니다.",
+    "display_name": "Stability AI 업스케일 크리에이티브",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "creativity": {
+        "name": "창의성",
+        "tooltip": "초기 이미지에 크게 의존하지 않고 추가적인 디테일이 생성될 가능성을 조절합니다."
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "negative_prompt": {
+        "name": "부정 프롬프트",
+        "tooltip": "출력 이미지에 나타나길 원하지 않는 키워드를 입력하세요. 고급 기능입니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "출력 이미지에서 보고 싶은 내용을 입력하세요. 요소, 색상, 주제를 명확하게 정의하는 강력하고 구체적인 프롬프트가 더 나은 결과를 가져옵니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노이즈 생성을 위한 랜덤 시드입니다."
+      },
+      "style_preset": {
+        "name": "스타일 프리셋",
+        "tooltip": "생성된 이미지에 원하는 스타일(선택 사항)을 지정합니다."
+      }
+    }
+  },
+  "StabilityUpscaleFastNode": {
+    "description": "Stability API 호출을 통해 이미지를 원본의 4배 크기로 빠르게 업스케일합니다. 저화질/압축 이미지의 업스케일에 적합합니다.",
+    "display_name": "Stability AI 초고속 업스케일",
+    "inputs": {
+      "image": {
+        "name": "이미지"
+      }
+    }
+  },
+  "StableCascade_EmptyLatentImage": {
+    "display_name": "StableCascade 빈 잠재 이미지",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기"
+      },
+      "compression": {
+        "name": "압축"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "StageC 잠재 이미지"
+      },
+      "1": {
+        "name": "StageB 잠재 이미지"
+      }
+    }
+  },
+  "StableCascade_StageB_Conditioning": {
+    "display_name": "StableCascasde_StageB 조건 설정",
+    "inputs": {
+      "conditioning": {
+        "name": "조건"
+      },
+      "stage_c": {
+        "name": "StageC 잠재 이미지"
+      }
+    }
+  },
+  "StableCascade_StageC_VAEEncode": {
+    "display_name": "StableCascade_StageC VAE 인코딩",
+    "inputs": {
+      "compression": {
+        "name": "압축"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "StageC 잠재 이미지"
+      },
+      "1": {
+        "name": "StageB 잠재 이미지"
+      }
+    }
+  },
+  "StableCascade_SuperResolutionControlnet": {
+    "display_name": "StableCascade 초고해상도 컨트롤넷",
+    "inputs": {
+      "image": {
+        "name": "이미지"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "컨트롤넷 입력"
+      },
+      "1": {
+        "name": "StageC 잠재 이미지"
+      },
+      "2": {
+        "name": "StageB 잠재 이미지"
+      }
+    }
+  },
+  "StableZero123_Conditioning": {
+    "display_name": "StableZero123 조건 설정",
+    "inputs": {
+      "azimuth": {
+        "name": "방위각"
+      },
+      "batch_size": {
+        "name": "배치 크기"
+      },
+      "clip_vision": {
+        "name": "clip_vision"
+      },
+      "elevation": {
+        "name": "고도"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "init_image": {
+        "name": "초기 이미지"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정 조건"
+      },
+      "1": {
+        "name": "부정 조건"
+      },
+      "2": {
+        "name": "잠재 데이터"
+      }
+    }
+  },
+  "StableZero123_Conditioning_Batched": {
+    "display_name": "StableZero123 조건 설정 (배치)",
+    "inputs": {
+      "azimuth": {
+        "name": "방위각"
+      },
+      "azimuth_batch_increment": {
+        "name": "방위각 배치 증가"
+      },
+      "batch_size": {
+        "name": "배치 크기"
+      },
+      "clip_vision": {
+        "name": "clip_vision"
+      },
+      "elevation": {
+        "name": "고도"
+      },
+      "elevation_batch_increment": {
+        "name": "고도 배치 증가"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "init_image": {
+        "name": "초기 이미지"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정 조건"
+      },
+      "1": {
+        "name": "부정 조건"
+      },
+      "2": {
+        "name": "잠재 데이터"
+      }
+    }
+  },
+  "StyleModelApply": {
+    "display_name": "스타일 모델 적용",
+    "inputs": {
+      "clip_vision_output": {
+        "name": "clip_vision 출력"
+      },
+      "conditioning": {
+        "name": "조건"
+      },
+      "strength": {
+        "name": "강도"
+      },
+      "strength_type": {
+        "name": "강도 유형"
+      },
+      "style_model": {
+        "name": "스타일 모델"
+      }
+    }
+  },
+  "StyleModelLoader": {
+    "display_name": "스타일 모델 로드",
+    "inputs": {
+      "style_model_name": {
+        "name": "스타일 모델 이름"
+      }
+    }
+  },
+  "T5TokenizerOptions": {
+    "display_name": "T5 토큰생성기 옵션",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "min_length": {
+        "name": "최소 길이"
+      },
+      "min_padding": {
+        "name": "최소 패딩"
+      }
+    }
+  },
+  "TextEncodeHunyuanVideo_ImageToVideo": {
+    "display_name": "HunyuanVideo 텍스트 인코딩 (이미지 → 비디오)",
+    "inputs": {
+      "clip": {
+        "name": "클립"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision 출력"
+      },
+      "image_interleave": {
+        "name": "이미지 인터리브",
+        "tooltip": "이미지가 텍스트 프롬프트와 비교하여 얼마나 영향을 미치는지. 높은 숫자는 텍스트 프롬프트로부터 더 많은 영향을 받음을 의미합니다."
+      },
+      "prompt": {
+        "name": "프롬프트"
+      }
+    }
+  },
+  "ThresholdMask": {
+    "display_name": "임계값 마스크",
+    "inputs": {
+      "mask": {
+        "name": "마스크"
+      },
+      "value": {
+        "name": "값"
+      }
+    }
+  },
+  "TomePatchModel": {
+    "display_name": "토큰 병합(ToMe) 모델 패치",
+    "inputs": {
+      "model": {
+        "name": "모델"
+      },
+      "ratio": {
+        "name": "비율"
+      }
+    }
+  },
+  "TorchCompileModel": {
+    "display_name": "모델 토치 컴파일",
+    "inputs": {
+      "backend": {
+        "name": "백엔드"
+      },
+      "model": {
+        "name": "모델"
+      }
+    }
+  },
+  "TrimVideoLatent": {
+    "display_name": "잠재 비디오 자르기",
+    "inputs": {
+      "samples": {
+        "name": "샘플"
+      },
+      "trim_amount": {
+        "name": "자르기 양"
+      }
+    }
+  },
+  "TripleCLIPLoader": {
+    "description": "[조합법]\n\nsd3: clip-l, clip-g, t5",
+    "display_name": "삼중 CLIP 로드",
+    "inputs": {
+      "clip_name1": {
+        "name": "CLIP 파일명1"
+      },
+      "clip_name2": {
+        "name": "CLIP 파일명2"
+      },
+      "clip_name3": {
+        "name": "CLIP 파일명3"
+      }
+    }
+  },
+  "UNETLoader": {
+    "display_name": "확산 모델 로드",
+    "inputs": {
+      "unet_name": {
+        "name": "UNet 모델 파일명"
+      },
+      "weight_dtype": {
+        "name": "가중치 데이터 유형"
+      }
+    }
+  },
+  "UNetCrossAttentionMultiply": {
+    "display_name": "UNet 교차 어텐션 곱하기",
+    "inputs": {
+      "k": {
+        "name": "k"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "out": {
+        "name": "out"
+      },
+      "q": {
+        "name": "q"
+      },
+      "v": {
+        "name": "v"
+      }
+    }
+  },
+  "UNetSelfAttentionMultiply": {
+    "display_name": "UNet 셀프 어텐션 곱하기",
+    "inputs": {
+      "k": {
+        "name": "k"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "out": {
+        "name": "out"
+      },
+      "q": {
+        "name": "q"
+      },
+      "v": {
+        "name": "v"
+      }
+    }
+  },
+  "UNetTemporalAttentionMultiply": {
+    "display_name": "UNet 템포럴 어텐션 곱하기",
+    "inputs": {
+      "cross_structural": {
+        "name": "구조적 크로스"
+      },
+      "cross_temporal": {
+        "name": "시간적 크로스"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "self_structural": {
+        "name": "구조적 셀프"
+      },
+      "self_temporal": {
+        "name": "시간적 셀프"
+      }
+    }
+  },
+  "UpscaleModelLoader": {
+    "display_name": "업스케일 모델 로드",
+    "inputs": {
+      "model_name": {
+        "name": "모델 파일명"
+      }
+    }
+  },
+  "VAEDecode": {
+    "description": "잠재 데이터를 픽셀 공간 이미지로 디코딩합니다.",
+    "display_name": "VAE 디코드",
+    "inputs": {
+      "samples": {
+        "name": "잠재 데이터",
+        "tooltip": "디코딩할 잠재입니다."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "잠재 디코딩에 사용되는 VAE 모델입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "디코딩된 이미지입니다."
+      }
+    }
+  },
+  "VAEDecodeAudio": {
+    "display_name": "오디오 VAE 디코드",
+    "inputs": {
+      "samples": {
+        "name": "잠재 오디오"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
+  },
+  "VAEDecodeHunyuan3D": {
+    "display_name": "VAEDecodeHunyuan3D",
+    "inputs": {
+      "num_chunks": {
+        "name": "분할 수"
+      },
+      "octree_resolution": {
+        "name": "옥트리 해상도"
+      },
+      "samples": {
+        "name": "샘플"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
+  },
+  "VAEDecodeTiled": {
+    "display_name": "VAE 디코드 (타일)",
+    "inputs": {
+      "overlap": {
+        "name": "겹침"
+      },
+      "samples": {
+        "name": "잠재 데이터"
+      },
+      "temporal_overlap": {
+        "name": "시간 겹침",
+        "tooltip": "비디오 VAE에만 사용됩니다: 겹치는 프레임의 양."
+      },
+      "temporal_size": {
+        "name": "시간 크기",
+        "tooltip": "비디오 VAE에만 사용됩니다: 한 번에 디코딩할 프레임의 양."
+      },
+      "tile_size": {
+        "name": "타일 크기"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
+  },
+  "VAEEncode": {
+    "display_name": "VAE 인코드",
+    "inputs": {
+      "pixels": {
+        "name": "픽셀 이미지"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
+  },
+  "VAEEncodeAudio": {
+    "display_name": "오디오 VAE 인코드",
+    "inputs": {
+      "audio": {
+        "name": "오디오"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
+  },
+  "VAEEncodeForInpaint": {
+    "display_name": "VAE 인코드 (인페인팅용)",
+    "inputs": {
+      "grow_mask_by": {
+        "name": "마스크 확장"
+      },
+      "mask": {
+        "name": "마스크"
+      },
+      "pixels": {
+        "name": "픽셀"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
+  },
+  "VAEEncodeTiled": {
+    "display_name": "VAE 인코드 (타일)",
+    "inputs": {
+      "overlap": {
+        "name": "겹침"
+      },
+      "pixels": {
+        "name": "픽셀"
+      },
+      "temporal_overlap": {
+        "name": "시간적 겹침",
+        "tooltip": "비디오 VAE에만 사용됩니다: 겹치는 프레임의 양."
+      },
+      "temporal_size": {
+        "name": "시간적 크기",
+        "tooltip": "비디오 VAE에만 사용됩니다: 한 번에 인코딩할 프레임의 양."
+      },
+      "tile_size": {
+        "name": "타일 크기"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
+  },
+  "VAELoader": {
+    "display_name": "VAE 로드",
+    "inputs": {
+      "vae_name": {
+        "name": "vae 파일명"
+      }
+    }
+  },
+  "VAESave": {
+    "display_name": "VAE 저장",
+    "inputs": {
+      "filename_prefix": {
+        "name": "파일명 접두사"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
+  },
+  "VPScheduler": {
+    "display_name": "VP 스케줄러",
+    "inputs": {
+      "beta_d": {
+        "name": "beta_d"
+      },
+      "beta_min": {
+        "name": "beta_min"
+      },
+      "eps_s": {
+        "name": "eps_s"
+      },
+      "steps": {
+        "name": "스텝 수"
+      }
+    }
+  },
+  "VeoVideoGenerationNode": {
+    "description": "Google의 Veo API를 사용하여 텍스트 프롬프트로부터 비디오를 생성합니다",
+    "display_name": "Google Veo2 비디오 생성",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비",
+        "tooltip": "출력 비디오의 가로세로 비율"
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "출력 비디오의 길이(초)"
+      },
+      "enhance_prompt": {
+        "name": "프롬프트 개선",
+        "tooltip": "AI 지원으로 프롬프트를 향상시킬지 여부"
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "비디오 생성을 안내할 선택적 참조 이미지"
+      },
+      "negative_prompt": {
+        "name": "부정 프롬프트",
+        "tooltip": "비디오에서 피해야 할 내용을 안내하는 네거티브 텍스트 프롬프트"
+      },
+      "person_generation": {
+        "name": "사람 생성",
+        "tooltip": "비디오에서 사람 생성을 허용할지 여부"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "비디오에 대한 텍스트 설명"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "비디오 생성용 시드 (0은 무작위)"
+      }
+    }
+  },
+  "VideoLinearCFGGuidance": {
+    "display_name": "비디오 선형 CFG 가이드",
+    "inputs": {
+      "min_cfg": {
+        "name": "최소 cfg"
+      },
+      "model": {
+        "name": "모델"
+      }
+    }
+  },
+  "VideoTriangleCFGGuidance": {
+    "display_name": "비디오 삼각형 CFG 가이드",
+    "inputs": {
+      "min_cfg": {
+        "name": "최소 cfg"
+      },
+      "model": {
+        "name": "모델"
+      }
+    }
+  },
+  "VoxelToMesh": {
+    "display_name": "복셀 → 매시",
+    "inputs": {
+      "algorithm": {
+        "name": "알고리즘"
+      },
+      "threshold": {
+        "name": "임계값"
+      },
+      "voxel": {
+        "name": "복셀"
+      }
+    }
+  },
+  "VoxelToMeshBasic": {
+    "display_name": "복셀 → 매시 (기본)",
+    "inputs": {
+      "threshold": {
+        "name": "임계값"
+      },
+      "voxel": {
+        "name": "복셀"
+      }
+    }
+  },
+  "WanFirstLastFrameToVideo": {
+    "display_name": "WAN 비디오 생성 (시작-끝 프레임)",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기"
+      },
+      "clip_vision_end_image": {
+        "name": "clip 비전 종료 이미지"
+      },
+      "clip_vision_start_image": {
+        "name": "clip 비전 시작 이미지"
+      },
+      "end_image": {
+        "name": "종료 이미지"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "length": {
+        "name": "길이"
+      },
+      "negative": {
+        "name": "부정 조건"
+      },
+      "positive": {
+        "name": "긍정 조건"
+      },
+      "start_image": {
+        "name": "시작 이미지"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정 조건"
+      },
+      "1": {
+        "name": "부정 조건"
+      },
+      "2": {
+        "name": "latent"
+      }
+    }
+  },
+  "WanFunControlToVideo": {
+    "display_name": "WAN 비디오 생성 (Fun Control)",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기"
+      },
+      "clip_vision_output": {
+        "name": "clip 비전 출력"
+      },
+      "control_video": {
+        "name": "제어 비디오"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "length": {
+        "name": "길이"
+      },
+      "negative": {
+        "name": "부정 조건"
+      },
+      "positive": {
+        "name": "긍정 조건"
+      },
+      "start_image": {
+        "name": "시작 이미지"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정 조건"
+      },
+      "1": {
+        "name": "부정 조건"
+      },
+      "2": {
+        "name": "latent"
+      }
+    }
+  },
+  "WanFunInpaintToVideo": {
+    "display_name": "WAN 비디오 생성 (Fun Inpaint)",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision 출력"
+      },
+      "end_image": {
+        "name": "종료 이미지"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "length": {
+        "name": "길이"
+      },
+      "negative": {
+        "name": "부정 조건"
+      },
+      "positive": {
+        "name": "긍정 조건"
+      },
+      "start_image": {
+        "name": "시작 이미지"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정 조건"
+      },
+      "1": {
+        "name": "부정 조건"
+      },
+      "2": {
+        "name": "latent"
+      }
+    }
+  },
+  "WanImageToVideo": {
+    "display_name": "WAN 비디오 생성 (이미지 → 비디오)",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision 출력"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "length": {
+        "name": "길이"
+      },
+      "negative": {
+        "name": "부정 조건"
+      },
+      "positive": {
+        "name": "긍정 조건"
+      },
+      "start_image": {
+        "name": "시작 이미지"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정 조건"
+      },
+      "1": {
+        "name": "부정 조건"
+      },
+      "2": {
+        "name": "잠재 비디오"
+      }
+    }
+  },
+  "WanVaceToVideo": {
+    "display_name": "WAN 비디오 생성 (VACE)",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기"
+      },
+      "control_masks": {
+        "name": "제어 마스크"
+      },
+      "control_video": {
+        "name": "제어 비디오"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "length": {
+        "name": "길이"
+      },
+      "negative": {
+        "name": "부정 조건"
+      },
+      "positive": {
+        "name": "긍정 조건"
+      },
+      "reference_image": {
+        "name": "참조 이미지"
+      },
+      "strength": {
+        "name": "강도"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정 조건"
+      },
+      "1": {
+        "name": "부정 조건"
+      },
+      "2": {
+        "name": "잠재 비디오"
+      },
+      "3": {
+        "name": "잘린 잠재 비디오"
+      }
+    }
+  },
+  "WebcamCapture": {
+    "display_name": "웹캠 캡처",
+    "inputs": {
+      "capture_on_queue": {
+        "name": "큐에서 캡처"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "waiting for camera___": {
+      },
+      "width": {
+        "name": "너비"
+      }
+    }
+  },
+  "unCLIPCheckpointLoader": {
+    "display_name": "unCLIP 체크포인트 로드",
+    "inputs": {
+      "ckpt_name": {
+        "name": "체크포인트 파일명"
+      }
+    }
+  },
+  "unCLIPConditioning": {
+    "display_name": "unCLIP 조건 설정",
+    "inputs": {
+      "clip_vision_output": {
+        "name": "clip_vision 출력"
+      },
+      "conditioning": {
+        "name": "조건"
+      },
+      "noise_augmentation": {
+        "name": "노이즈 증강"
+      },
+      "strength": {
+        "name": "강도"
+      }
+    }
+  }
+}

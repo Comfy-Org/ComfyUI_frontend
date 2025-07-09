@@ -1,0 +1,408 @@
+{
+  "Comfy-Desktop_AutoUpdate": {
+    "name": "自动检查更新"
+  },
+  "Comfy-Desktop_SendStatistics": {
+    "name": "发送匿名使用情况统计"
+  },
+  "Comfy-Desktop_UV_PypiInstallMirror": {
+    "name": "Pypi 安装镜像",
+    "tooltip": "默认 pip 安装镜像"
+  },
+  "Comfy-Desktop_UV_PythonInstallMirror": {
+    "name": "Python安装镜像",
+    "tooltip": "管理的Python安装包从Astral python-build-standalone项目下载。此变量可以设置为镜像URL，以使用不同的Python安装源。提供的URL将替换https://github.com/astral-sh/python-build-standalone/releases/download，例如，在https://github.com/astral-sh/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gz中。可以通过使用file:// URL方案从本地目录读取分发包。"
+  },
+  "Comfy-Desktop_UV_TorchInstallMirror": {
+    "name": "Torch安装镜像",
+    "tooltip": "用于pytorch的Pip安装镜像"
+  },
+  "Comfy-Desktop_WindowStyle": {
+    "name": "窗口样式",
+    "options": {
+      "custom": "自定义",
+      "default": "默认"
+    },
+    "tooltip": "选择自定义选项以隐藏系统标题栏"
+  },
+  "Comfy_Canvas_BackgroundImage": {
+    "name": "画布背景图像",
+    "tooltip": "画布背景的图像 URL。你可以在输出面板中右键点击一张图片，并选择“设为背景”来使用它。"
+  },
+  "Comfy_Canvas_SelectionToolbox": {
+    "name": "显示选择工具箱"
+  },
+  "Comfy_ConfirmClear": {
+    "name": "清除工作流时需要确认"
+  },
+  "Comfy_DOMClippingEnabled": {
+    "name": "启用DOM元素裁剪（启用可能会降低性能）"
+  },
+  "Comfy_DevMode": {
+    "name": "启用开发模式选项（API保存等）"
+  },
+  "Comfy_DisableFloatRounding": {
+    "name": "禁用默认浮点组件四舍五入。",
+    "tooltip": "(需要重新加载页面) 当节点自身设置了四舍五入时，无法禁用该功能。"
+  },
+  "Comfy_DisableSliders": {
+    "name": "禁用节点组件滑块"
+  },
+  "Comfy_EditAttention_Delta": {
+    "name": "Ctrl+上/下 精度"
+  },
+  "Comfy_EnableTooltips": {
+    "name": "启用工具提示"
+  },
+  "Comfy_EnableWorkflowViewRestore": {
+    "name": "在工作流中保存和恢复视图位置及缩放"
+  },
+  "Comfy_FloatRoundingPrecision": {
+    "name": "浮点组件四舍五入的小数位数 [0 = 自动]。",
+    "tooltip": "(需要重新加载页面)"
+  },
+  "Comfy_Graph_CanvasInfo": {
+    "name": "在左下角显示画布信息（fps等）"
+  },
+  "Comfy_Graph_CanvasMenu": {
+    "name": "显示图形画布菜单"
+  },
+  "Comfy_Graph_CtrlShiftZoom": {
+    "name": "启用快速缩放快捷键（Ctrl + Shift + 拖动）"
+  },
+  "Comfy_Graph_LinkMarkers": {
+    "name": "连线中点标记",
+    "options": {
+      "Arrow": "箭头",
+      "Circle": "圆",
+      "None": "无"
+    }
+  },
+  "Comfy_Graph_ZoomSpeed": {
+    "name": "画布缩放速度"
+  },
+  "Comfy_GroupSelectedNodes_Padding": {
+    "name": "选定节点的组内边距"
+  },
+  "Comfy_Group_DoubleClickTitleToEdit": {
+    "name": "双击组标题以编辑"
+  },
+  "Comfy_LinkRelease_Action": {
+    "name": "释放连线时的操作",
+    "options": {
+      "context menu": "上下文菜单",
+      "no action": "无操作",
+      "search box": "搜索框"
+    }
+  },
+  "Comfy_LinkRelease_ActionShift": {
+    "name": "释放连线时的操作（Shift）",
+    "options": {
+      "context menu": "上下文菜单",
+      "no action": "无操作",
+      "search box": "搜索框"
+    }
+  },
+  "Comfy_LinkRenderMode": {
+    "name": "连线渲染样式",
+    "options": {
+      "Hidden": "隐藏",
+      "Linear": "直线",
+      "Spline": "曲线",
+      "Straight": "直角线"
+    }
+  },
+  "Comfy_Load3D_BackgroundColor": {
+    "name": "初始背景颜色",
+    "tooltip": "控制3D场景的默认背景颜色。此设置决定新建3D组件时的背景外观，但每个组件在创建后都可以单独调整。"
+  },
+  "Comfy_Load3D_CameraType": {
+    "name": "摄像机类型",
+    "options": {
+      "orthographic": "正交",
+      "perspective": "透视"
+    },
+    "tooltip": "控制创建新的3D小部件时，默认的相机是透视还是正交。这个默认设置仍然可以在创建后为每个小部件单独切换。"
+  },
+  "Comfy_Load3D_LightAdjustmentIncrement": {
+    "name": "光照调整步长",
+    "tooltip": "控制在3D场景中调整光照强度时的步长。较小的步长值可以实现更精细的光照调整，较大的值则会使每次调整的变化更加明显。"
+  },
+  "Comfy_Load3D_LightIntensity": {
+    "name": "初始光照强度",
+    "tooltip": "设置3D场景中灯光的默认亮度级别。该数值决定新建3D控件时灯光照亮物体的强度，但每个控件在创建后都可以单独调整。"
+  },
+  "Comfy_Load3D_LightIntensityMaximum": {
+    "name": "最大光照强度",
+    "tooltip": "设置3D场景允许的最大光照强度值。此项定义了在调整任何3D控件照明时可设定的最高亮度上限。"
+  },
+  "Comfy_Load3D_LightIntensityMinimum": {
+    "name": "光照强度下限",
+    "tooltip": "设置3D场景允许的最小光照强度值。此项定义在调整任何3D控件照明时可设定的最低亮度。"
+  },
+  "Comfy_Load3D_ShowGrid": {
+    "name": "显示网格",
+    "tooltip": "默认显示网格开关"
+  },
+  "Comfy_Load3D_ShowPreview": {
+    "name": "显示预览",
+    "tooltip": "默认显示预览开关"
+  },
+  "Comfy_Locale": {
+    "name": "语言"
+  },
+  "Comfy_MaskEditor_BrushAdjustmentSpeed": {
+    "name": "画笔调整速度倍增器",
+    "tooltip": "控制调整时画笔大小和硬度变化的速度。更高的值意味着更快的变化。"
+  },
+  "Comfy_MaskEditor_UseDominantAxis": {
+    "name": "将画笔调整锁定到主轴",
+    "tooltip": "启用后，画笔调整将仅根据您移动的方向影响大小或硬度。"
+  },
+  "Comfy_MaskEditor_UseNewEditor": {
+    "name": "使用新画笔编辑器",
+    "tooltip": "切换到新的画笔编辑器界面"
+  },
+  "Comfy_ModelLibrary_AutoLoadAll": {
+    "name": "自动加载所有模型文件夹",
+    "tooltip": "开启后，打开模型库会加载所有文件夹内的模型（可能导致卡顿）。关闭后，仅加载当前文件夹内的模型。"
+  },
+  "Comfy_ModelLibrary_NameFormat": {
+    "name": "在模型库树视图中显示的名称",
+    "options": {
+      "filename": "文件名",
+      "title": "标题"
+    },
+    "tooltip": "选择“文件名”以在模型列表中显示原始文件名的简化视图（不带目录和“.safetensors”后缀名）。选择“标题”以显示可配置的模型元数据标题。"
+  },
+  "Comfy_NodeBadge_NodeIdBadgeMode": {
+    "name": "节点ID标签",
+    "options": {
+      "None": "无",
+      "Show all": "显示全部"
+    }
+  },
+  "Comfy_NodeBadge_NodeLifeCycleBadgeMode": {
+    "name": "节点制作周期标签",
+    "options": {
+      "None": "无",
+      "Show all": "显示全部"
+    }
+  },
+  "Comfy_NodeBadge_NodeSourceBadgeMode": {
+    "name": "节点源标签",
+    "options": {
+      "Hide built-in": "仅第三方",
+      "None": "无",
+      "Show all": "显示全部"
+    }
+  },
+  "Comfy_NodeBadge_ShowApiPricing": {
+    "name": "显示 API 节点定价徽章"
+  },
+  "Comfy_NodeSearchBoxImpl": {
+    "name": "节点搜索框",
+    "options": {
+      "default": "默认",
+      "litegraph (legacy)": "litegraph（旧版）"
+    }
+  },
+  "Comfy_NodeSearchBoxImpl_NodePreview": {
+    "name": "显示节点预览",
+    "tooltip": "仅适用于默认框架"
+  },
+  "Comfy_NodeSearchBoxImpl_ShowCategory": {
+    "name": "显示节点类别",
+    "tooltip": "仅适用于默认框架"
+  },
+  "Comfy_NodeSearchBoxImpl_ShowIdName": {
+    "name": "显示节点ID名称",
+    "tooltip": "仅适用于默认框架"
+  },
+  "Comfy_NodeSearchBoxImpl_ShowNodeFrequency": {
+    "name": "显示节点频率",
+    "tooltip": "仅适用于默认框架"
+  },
+  "Comfy_NodeSuggestions_number": {
+    "name": "节点建议数量",
+    "tooltip": "仅适用于 litegraph"
+  },
+  "Comfy_Node_AllowImageSizeDraw": {
+    "name": "在图像预览下方显示宽度×高度"
+  },
+  "Comfy_Node_AutoSnapLinkToSlot": {
+    "name": "连线自动吸附到节点接口",
+    "tooltip": "在节点上拖动连线时，连线会自动吸附到节点的可用输入接口。"
+  },
+  "Comfy_Node_BypassAllLinksOnDelete": {
+    "name": "删除节点时保留连线",
+    "tooltip": "删除节点时，尝试重新连接其所有输入和输出连线（类似于忽略节点）。"
+  },
+  "Comfy_Node_DoubleClickTitleToEdit": {
+    "name": "双击节点标题以编辑"
+  },
+  "Comfy_Node_MiddleClickRerouteNode": {
+    "name": "中键单击创建新的转接点"
+  },
+  "Comfy_Node_Opacity": {
+    "name": "节点不透明度"
+  },
+  "Comfy_Node_ShowDeprecated": {
+    "name": "在搜索中显示已弃用的节点",
+    "tooltip": "弃用节点在UI中默认隐藏，但在工作流中仍然有效。"
+  },
+  "Comfy_Node_ShowExperimental": {
+    "name": "在搜索中显示实验性节点",
+    "tooltip": "实验节点在UI中标记为实验性，可能在未来版本中发生重大变化或被移除。在生产工作流中谨慎使用。"
+  },
+  "Comfy_Node_SnapHighlightsNode": {
+    "name": "吸附高亮节点",
+    "tooltip": "在拖动连线经过具有可用输入接口的节点时，高亮显示该节点。"
+  },
+  "Comfy_Pointer_ClickBufferTime": {
+    "name": "指针点击漂移延迟",
+    "tooltip": "按下指针按钮后，忽略指针移动的最大时间（毫秒）。\n\n有助于防止在点击时意外移动鼠标。"
+  },
+  "Comfy_Pointer_ClickDrift": {
+    "name": "指针点击漂移（距离）",
+    "tooltip": "如果指针在按住按钮时移动超过此距离，则视为拖动（而不是点击）。\n\n有助于防止在点击时意外移动鼠标"
+  },
+  "Comfy_Pointer_DoubleClickTime": {
+    "name": "双击间隔（最大）",
+    "tooltip": "双击的两次点击之间的最大时间（毫秒）。增加此值有助于解决双击有时未被识别的问题。"
+  },
+  "Comfy_PreviewFormat": {
+    "name": "预览图像格式",
+    "tooltip": "在图像组件中显示预览时，将其转换为轻量级图像，例如webp、jpeg、webp;50等。"
+  },
+  "Comfy_PromptFilename": {
+    "name": "保存工作流时提示文件名"
+  },
+  "Comfy_QueueButton_BatchCountLimit": {
+    "name": "批处理计数限制",
+    "tooltip": "单次添加到队列的最大任务数量"
+  },
+  "Comfy_Queue_MaxHistoryItems": {
+    "name": "队列历史大小",
+    "tooltip": "队列历史中显示的最大任务数量。"
+  },
+  "Comfy_Sidebar_Location": {
+    "name": "侧边栏位置",
+    "options": {
+      "left": "左侧",
+      "right": "右侧"
+    }
+  },
+  "Comfy_Sidebar_Size": {
+    "name": "侧边栏大小",
+    "options": {
+      "normal": "正常",
+      "small": "小"
+    }
+  },
+  "Comfy_Sidebar_UnifiedWidth": {
+    "name": "统一侧边栏宽度"
+  },
+  "Comfy_SnapToGrid_GridSize": {
+    "name": "吸附网格大小",
+    "tooltip": "在按住shift拖动和调整节点大小时，节点将对齐到网格，该选项控制网格。"
+  },
+  "Comfy_TextareaWidget_FontSize": {
+    "name": "文本框组件字体大小"
+  },
+  "Comfy_TextareaWidget_Spellcheck": {
+    "name": "文本框组件拼写检查"
+  },
+  "Comfy_TreeExplorer_ItemPadding": {
+    "name": "树形浏览器项目内边距"
+  },
+  "Comfy_UseNewMenu": {
+    "name": "使用新菜单",
+    "options": {
+      "Bottom": "底部",
+      "Disabled": "禁用",
+      "Top": "顶部"
+    }
+  },
+  "Comfy_Validation_NodeDefs": {
+    "name": "校验节点定义（慢）",
+    "tooltip": "推荐给节点开发者。开启后会在 ComfyUI 启动时校验全部节点定义。"
+  },
+  "Comfy_Validation_Workflows": {
+    "name": "校验工作流"
+  },
+  "Comfy_WidgetControlMode": {
+    "name": "组件控制模式",
+    "options": {
+      "after": "之后",
+      "before": "之前"
+    },
+    "tooltip": "控制组件值的更新时机（随机/增加/减少），可以在执行工作流之前或之后。"
+  },
+  "Comfy_Window_UnloadConfirmation": {
+    "name": "关闭窗口时显示确认"
+  },
+  "Comfy_Workflow_AutoSave": {
+    "name": "自动保存",
+    "options": {
+      "after delay": "延迟后",
+      "off": "关闭"
+    }
+  },
+  "Comfy_Workflow_AutoSaveDelay": {
+    "name": "自动保存延迟（毫秒）",
+    "tooltip": "仅在自动保存设置为“延迟后”时适用。"
+  },
+  "Comfy_Workflow_ConfirmDelete": {
+    "name": "删除工作流时显示确认"
+  },
+  "Comfy_Workflow_Persist": {
+    "name": "持久化工作流状态并在页面（重新）加载时恢复"
+  },
+  "Comfy_Workflow_ShowMissingModelsWarning": {
+    "name": "显示缺失模型警告"
+  },
+  "Comfy_Workflow_ShowMissingNodesWarning": {
+    "name": "显示缺失节点警告"
+  },
+  "Comfy_Workflow_SortNodeIdOnSave": {
+    "name": "保存节点ID到工作流"
+  },
+  "Comfy_Workflow_WorkflowTabsPosition": {
+    "name": "已打开工作流的位置",
+    "options": {
+      "Sidebar": "侧边栏",
+      "Topbar": "顶部栏",
+      "Topbar (2nd-row)": "顶部栏 (第二行)"
+    }
+  },
+  "LiteGraph_Canvas_LowQualityRenderingZoomThreshold": {
+    "name": "低质量渲染缩放阈值",
+    "tooltip": "在缩小时渲染低质量形状"
+  },
+  "LiteGraph_Canvas_MaximumFps": {
+    "name": "最大FPS",
+    "tooltip": "画布允许渲染的最大帧数。限制GPU使用以换取流畅度。如果为0，则使用屏幕刷新率。默认值：0"
+  },
+  "LiteGraph_ContextMenu_Scaling": {
+    "name": "放大时缩放节点组合部件菜单（列表）"
+  },
+  "LiteGraph_Node_DefaultPadding": {
+    "name": "始终收缩新节点",
+    "tooltip": "创建节点时将其缩小到最小可能尺寸。禁用后，新添加的节点会略微加宽以显示控件数值。"
+  },
+  "LiteGraph_Node_TooltipDelay": {
+    "name": "工具提示延迟"
+  },
+  "LiteGraph_Pointer_TrackpadGestures": {
+    "name": "启用触控板手势",
+    "tooltip": "此设置为画布启用触控板模式，允许使用双指捏合缩放和拖动。"
+  },
+  "LiteGraph_Reroute_SplineOffset": {
+    "name": "重新路由样条偏移",
+    "tooltip": "贝塞尔控制点从重新路由中心点的偏移"
+  },
+  "pysssss_SnapToGrid": {
+    "name": "始终吸附到网格"
+  }
+}

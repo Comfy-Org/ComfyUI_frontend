@@ -1121,7 +1121,9 @@
     "downloads": "Descargas",
     "helpCenter": "Centro de ayuda",
     "logout": "Cerrar sesión",
+    "modelLibrary": "Biblioteca de modelos",
     "newBlankWorkflow": "Crear un nuevo flujo de trabajo en blanco",
+    "nodeLibrary": "Biblioteca de nodos",
     "nodeLibraryTab": {
       "groupBy": "Agrupar por",
       "groupStrategies": {
@@ -1142,6 +1144,7 @@
       "sortMode": "Modo de ordenación"
     },
     "openWorkflow": "Abrir flujo de trabajo en el sistema de archivos local",
+    "queue": "Cola",
     "queueTab": {
       "backToAllTasks": "Volver a todas las tareas",
       "clearPendingTasks": "Borrar tareas pendientes",

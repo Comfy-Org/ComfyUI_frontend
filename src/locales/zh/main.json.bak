@@ -1121,7 +1121,9 @@
     "downloads": "下载",
     "helpCenter": "帮助中心",
     "logout": "登出",
+    "modelLibrary": "模型库",
     "newBlankWorkflow": "创建空白工作流",
+    "nodeLibrary": "节点库",
     "nodeLibraryTab": {
       "groupBy": "分组方式",
       "groupStrategies": {
@@ -1142,6 +1144,7 @@
       "sortMode": "排序模式"
     },
     "openWorkflow": "在本地文件系统中打开工作流",
+    "queue": "队列",
     "queueTab": {
       "backToAllTasks": "返回",
       "clearPendingTasks": "清除待处理任务",
