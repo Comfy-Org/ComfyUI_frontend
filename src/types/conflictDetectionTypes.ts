@@ -15,6 +15,7 @@ export type ConflictType =
   | 'accelerator' // GPU/accelerator incompatibility
   | 'banned' // Banned package
   | 'security_pending' // Security verification pending
+  | 'python_dependency' // Python module dependency missing
 
 /**
  * Security scan status for packages
