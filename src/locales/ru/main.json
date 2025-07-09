@@ -1121,7 +1121,9 @@
     "downloads": "Загрузки",
     "helpCenter": "Центр поддержки",
     "logout": "Выйти",
+    "modelLibrary": "Библиотека моделей",
     "newBlankWorkflow": "Создайте новый пустой рабочий процесс",
+    "nodeLibrary": "Библиотека нод",
     "nodeLibraryTab": {
       "groupBy": "Группировать по",
       "groupStrategies": {
@@ -1142,6 +1144,7 @@
       "sortMode": "Режим сортировки"
     },
     "openWorkflow": "Открыть рабочий процесс в локальной файловой системе",
+    "queue": "Очередь",
     "queueTab": {
       "backToAllTasks": "Вернуться ко всем задачам",
       "clearPendingTasks": "Очистить отложенные задачи",

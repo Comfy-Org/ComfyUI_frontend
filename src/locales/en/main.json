@@ -422,6 +422,8 @@
     "themeToggle": "Toggle Theme",
     "helpCenter": "Help Center",
     "logout": "Logout",
+    "queue": "Queue",
+    "nodeLibrary": "Node Library",
     "workflows": "Workflows",
     "browseTemplates": "Browse example templates",
     "openWorkflow": "Open workflow in local file system",
@@ -445,6 +447,7 @@
         "alphabeticalDesc": "Sort alphabetically within groups"
       }
     },
+    "modelLibrary": "Model Library",
     "downloads": "Downloads",
     "queueTab": {
       "showFlatList": "Show Flat List",

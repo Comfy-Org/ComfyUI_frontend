@@ -1121,7 +1121,9 @@
     "downloads": "Téléchargements",
     "helpCenter": "Centre d'aide",
     "logout": "Déconnexion",
+    "modelLibrary": "Bibliothèque de modèles",
     "newBlankWorkflow": "Créer un nouveau flux de travail vierge",
+    "nodeLibrary": "Bibliothèque de nœuds",
     "nodeLibraryTab": {
       "groupBy": "Grouper par",
       "groupStrategies": {
@@ -1142,6 +1144,7 @@
       "sortMode": "Mode de tri"
     },
     "openWorkflow": "Ouvrir le flux de travail dans le système de fichiers local",
+    "queue": "File d'attente",
     "queueTab": {
       "backToAllTasks": "Retour à toutes les tâches",
       "clearPendingTasks": "Effacer les tâches en attente",
