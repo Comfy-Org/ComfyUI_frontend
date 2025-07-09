@@ -1205,205 +1205,307 @@
       "Video API": "動画API"
     },
     "template": {
-      "3D": {
-        "hunyuan-3d-multiview-elf": "Hunyuan3D マルチビュー",
-        "hunyuan-3d-turbo": "Hunyuan3D ターボ",
-        "hunyuan3d-non-multiview-train": "Hunyuan3D",
-        "stable_zero123_example": "Stable Zero123"
-      },
-      "Area Composition": {
-        "area_composition": "エリア構成",
-        "area_composition_reversed": "エリア構成反転",
-        "area_composition_square_area_for_subject": "主題のためのエリア構成スクエア"
-      },
-      "Audio": {
-        "stable_audio_example": "Stable Audio"
-      },
       "Basics": {
         "default": "画像生成",
-        "embedding_example": "埋め込み",
-        "gligen_textbox_example": "Gligenテキストボックス",
         "image2image": "画像から画像へ",
-        "inpain_model_outpainting": "InpaintモデルのOutpainting",
-        "inpaint_example": "Inpaint",
         "lora": "Lora",
-        "lora_multiple": "Lora複数"
+        "lora_multiple": "Lora複数",
+        "inpaint_example": "Inpaint",
+        "inpaint_model_outpainting": "Outpainting",
+        "embedding_example": "埋め込み",
+        "gligen_textbox_example": "Gligenテキストボックス"
+      },
+      "Flux": {
+        "flux_kontext_dev_basic": "Flux Kontext Dev（ベーシック）",
+        "flux_kontext_dev_grouped": "Flux Kontext Dev（グループ化）",
+        "flux_dev_checkpoint_example": "Flux Dev fp8",
+        "flux_schnell": "Flux Schnell fp8",
+        "flux_dev_full_text_to_image": "Flux Devフルテキストから画像へ",
+        "flux_schnell_full_text_to_image": "Flux Schnellフルテキストから画像へ",
+        "flux_fill_inpaint_example": "Flux Inpaint",
+        "flux_fill_outpaint_example": "Flux Outpaint",
+        "flux_canny_model_example": "Flux Cannyモデル",
+        "flux_depth_lora_example": "Flux Depth Lora",
+        "flux_redux_model_example": "Flux Reduxモデル"
+      },
+      "Image": {
+        "image_omnigen2_t2i": "OmniGen2テキストから画像へ",
+        "image_omnigen2_image_edit": "OmniGen2画像編集",
+        "image_cosmos_predict2_2B_t2i": "Cosmos Predict2 2B T2I",
+        "image_chroma_text_to_image": "Chromaテキストから画像へ",
+        "hidream_i1_dev": "HiDream I1 Dev",
+        "hidream_i1_fast": "HiDream I1 Fast",
+        "hidream_i1_full": "HiDream I1 Full",
+        "hidream_e1_full": "HiDream E1 Full",
+        "sd3.5_simple_example": "SD3.5シンプル",
+        "sd3.5_large_canny_controlnet_example": "SD3.5ラージキャニーコントロールネット",
+        "sd3.5_large_depth": "SD3.5ラージデプス",
+        "sd3.5_large_blur": "SD3.5ラージブラー",
+        "sdxl_simple_example": "SDXLシンプル",
+        "sdxl_refiner_prompt_example": "SDXLリファイナープロンプト",
+        "sdxl_revision_text_prompts": "SDXLリビジョンテキストプロンプト",
+        "sdxl_revision_zero_positive": "SDXLリビジョンゼロポジティブ",
+        "sdxlturbo_example": "SDXLターボ",
+        "image_lotus_depth_v1_1": "Lotus Depth"
+      },
+      "Video": {
+        "video_cosmos_predict2_2B_video2world_480p_16fps": "Cosmos Predict2 2B Video2World 480p 16fps",
+        "video_wan_vace_14B_t2v": "Wan VACEテキストからビデオへ",
+        "video_wan_vace_14B_ref2v": "Wan VACEリファレンスからビデオへ",
+        "video_wan_vace_14B_v2v": "Wan VACEコントロールビデオ",
+        "video_wan_vace_outpainting": "Wan VACEアウトペインティング",
+        "video_wan_vace_flf2v": "Wan VACEファースト-ラストフレーム",
+        "video_wan_vace_inpainting": "Wan VACEインペインティング",
+        "video_wan2.1_fun_camera_v1.1_1.3B": "Wan 2.1 Fun Camera 1.3B",
+        "video_wan2.1_fun_camera_v1.1_14B": "Wan 2.1 Fun Camera 14B",
+        "text_to_video_wan": "Wan 2.1テキストからビデオへ",
+        "image_to_video_wan": "Wan 2.1画像からビデオへ",
+        "wan2.1_fun_inp": "Wan 2.1インペインティング",
+        "wan2.1_fun_control": "Wan 2.1 ControlNet",
+        "wan2.1_flf2v_720_f16": "Wan 2.1 FLF2V 720p F16",
+        "ltxv_text_to_video": "LTXVテキストからビデオへ",
+        "ltxv_image_to_video": "LTXV画像からビデオへ",
+        "mochi_text_to_video_example": "Mochiテキストからビデオへ",
+        "hunyuan_video_text_to_video": "Hunyuanビデオテキストからビデオへ",
+        "image_to_video": "SVD画像からビデオへ",
+        "txt_to_image_to_video": "SVDテキストから画像へ、画像からビデオへ"
+      },
+      "Image API": {
+        "api_bfl_flux_1_kontext_multiple_images_input": "BFL Flux.1 Kontext複数画像入力",
+        "api_bfl_flux_1_kontext_pro_image": "BFL Flux.1 Kontext Pro",
+        "api_bfl_flux_1_kontext_max_image": "BFL Flux.1 Kontext Max",
+        "api_bfl_flux_pro_t2i": "BFL Flux[Pro]:テキストから画像へ",
+        "api_luma_photon_i2i": "Luma Photon:画像から画像へ",
+        "api_luma_photon_style_ref": "Luma Photon:スタイル参照",
+        "api_recraft_image_gen_with_color_control": "Recraft:カラーコントロール画像生成",
+        "api_recraft_image_gen_with_style_control": "Recraft:スタイルコントロール画像生成",
+        "api_recraft_vector_gen": "Recraft:ベクター生成",
+        "api_runway_text_to_image": "Runway:テキストから画像へ",
+        "api_runway_reference_to_image": "Runway:リファレンスから画像へ",
+        "api_stability_ai_stable_image_ultra_t2i": "Stability AI:Stable Image Ultraテキストから画像へ",
+        "api_stability_ai_i2i": "Stability AI:画像から画像へ",
+        "api_stability_ai_sd3.5_t2i": "Stability AI:SD3.5テキストから画像へ",
+        "api_stability_ai_sd3.5_i2i": "Stability AI:SD3.5画像から画像へ",
+        "api_ideogram_v3_t2i": "Ideogram V3:テキストから画像へ",
+        "api_openai_image_1_t2i": "OpenAI: GPT-Image-1テキストから画像へ",
+        "api_openai_image_1_i2i": "OpenAI: GPT-Image-1画像から画像へ",
+        "api_openai_image_1_inpaint": "OpenAI: GPT-Image-1インペイント",
+        "api_openai_image_1_multi_inputs": "OpenAI: GPT-Image-1複数入力",
+        "api_openai_dall_e_2_t2i": "OpenAI: Dall-E 2テキストから画像へ",
+        "api_openai_dall_e_2_inpaint": "OpenAI: Dall-E 2インペイント",
+        "api_openai_dall_e_3_t2i": "OpenAI: Dall-E 3テキストから画像へ"
+      },
+      "Video API": {
+        "api_moonvalley_text_to_video": "Moonvalley:テキストからビデオへ",
+        "api_moonvalley_image_to_video": "Moonvalley:画像からビデオへ",
+        "api_kling_i2v": "Kling:画像から動画へ",
+        "api_kling_effects": "Kling:ビデオエフェクト",
+        "api_kling_flf": "Kling:FLF2V",
+        "api_luma_i2v": "Luma:画像から動画へ",
+        "api_luma_t2v": "Luma:テキストから動画へ",
+        "api_hailuo_minimax_t2v": "MiniMax:テキストから動画へ",
+        "api_hailuo_minimax_i2v": "MiniMax:画像から動画へ",
+        "api_pixverse_i2v": "PixVerse:画像から動画へ",
+        "api_pixverse_template_i2v": "PixVerse Templates:画像から動画へ",
+        "api_pixverse_t2v": "PixVerse:テキストから動画へ",
+        "api_runway_gen3a_turbo_image_to_video": "Runway:Gen3a Turbo画像から動画へ",
+        "api_runway_gen4_turo_image_to_video": "Runway:Gen4 Turbo画像から動画へ",
+        "api_runway_first_last_frame": "Runway:ファーストラストフレームから動画へ",
+        "api_pika_i2v": "Pika:画像から動画へ",
+        "api_pika_scene": "Pikaシーン:画像から動画へ",
+        "api_veo2_i2v": "Veo2:画像から動画へ"
+      },
+      "3D API": {
+        "api_rodin_image_to_model": "Rodin:画像からモデルへ",
+        "api_rodin_multiview_to_model": "Rodin:マルチビューからモデルへ",
+        "api_tripo_text_to_model": "Tripo:テキストからモデルへ",
+        "api_tripo_image_to_model": "Tripo:画像からモデルへ",
+        "api_tripo_multiview_to_model": "Tripo:マルチビューからモデルへ"
+      },
+      "LLM API": {
+        "api_openai_chat": "OpenAI:チャット",
+        "api_google_gemini": "Google Gemini:チャット"
+      },
+      "Upscaling": {
+        "hiresfix_latent_workflow": "HiresFix Latentワークフロー",
+        "esrgan_example": "ESRGAN",
+        "hiresfix_esrgan_workflow": "HiresFix ESRGANワークフロー",
+        "latent_upscale_different_prompt_model": "Latent Upscale異なるプロンプトモデル"
       },
       "ControlNet": {
+        "controlnet_example": "Scribble ControlNet",
         "2_pass_pose_worship": "2 Pass Pose Worship",
-        "controlnet_example": "ControlNet",
         "depth_controlnet": "Depth ControlNet",
         "depth_t2i_adapter": "Depth T2Iアダプタ",
         "mixing_controlnets": "ControlNetsの混合"
       },
-      "Flux": {
-        "flux_canny_model_example": "Flux Cannyモデル",
-        "flux_depth_lora_example": "Flux Depth Lora",
-        "flux_dev_checkpoint_example": "Flux Dev",
-        "flux_fill_inpaint_example": "Flux Inpaint",
-        "flux_fill_outpaint_example": "Flux Outpaint",
-        "flux_redux_model_example": "Flux Reduxモデル",
-        "flux_schnell": "Flux Schnell"
+      "Area Composition": {
+        "area_composition": "エリア構成",
+        "area_composition_square_area_for_subject": "主題のためのエリア構成スクエア"
       },
-      "Image": {
-        "hidream_i1_dev": "HiDream I1 Dev",
-        "hidream_i1_fast": "HiDream I1 Fast",
-        "hidream_i1_full": "HiDream I1 Full",
-        "sd3_5_large_blur": "SD3.5 ラージブラー",
-        "sd3_5_large_canny_controlnet_example": "SD3.5 ラージキャニーコントロールネット",
-        "sd3_5_large_depth": "SD3.5 ラージデプス",
-        "sd3_5_simple_example": "SD3.5 シンプル",
-        "sdxl_refiner_prompt_example": "SDXL Refinerプロンプト",
-        "sdxl_revision_text_prompts": "SDXL Revisionテキストプロンプト",
-        "sdxl_revision_zero_positive": "SDXL Revisionゼロポジティブ",
-        "sdxl_simple_example": "SDXLシンプル",
-        "sdxlturbo_example": "SDXLターボ"
+      "3D": {
+        "3d_hunyuan3d_image_to_model": "Hunyuan3D",
+        "3d_hunyuan3d_multiview_to_model": "Hunyuan3Dマルチビュー",
+        "3d_hunyuan3d_multiview_to_model_turbo": "Hunyuan3Dターボ",
+        "stable_zero123_example": "Stable Zero123"
       },
-      "Image API": {
-        "api-openai-dall-e-2-inpaint": "Dall-E 2 インペイント",
-        "api-openai-dall-e-2-t2i": "Dall-E 2 テキストから画像へ",
-        "api-openai-dall-e-3-t2i": "Dall-E 3 テキストから画像へ",
-        "api_bfl_flux_pro_t2i": "BFL Flux 1.1[pro] Ultra テキストから画像へ",
-        "api_ideogram_v3_t2i": "Ideogram V3 テキストから画像へ",
-        "api_luma_photon_i2i": "Luma Photon 画像から画像へ",
-        "api_luma_photon_style_ref": "Luma Photon スタイル参照",
-        "api_openai_image_1_i2i": "OpenAI Image-1 画像から画像へ",
-        "api_openai_image_1_inpaint": "OpenAI Image-1 インペイント",
-        "api_openai_image_1_multi_inputs": "OpenAI Image-1 複数入力",
-        "api_openai_image_1_t2i": "OpenAI Image-1 テキストから画像へ",
-        "api_recraft_image_gen_with_color_control": "Recraft カラーコントロール画像生成",
-        "api_recraft_image_gen_with_style_control": "Recraft スタイルコントロール画像生成",
-        "api_recraft_vector_gen": "Recraft ベクター生成",
-        "api_stability_sd3_t2i": "Stability AI Stable Image Ultra テキストから画像へ"
-      },
-      "Upscaling": {
-        "esrgan_example": "ESRGAN",
-        "hiresfix_esrgan_workflow": "HiresFix ESRGANワークフロー",
-        "hiresfix_latent_workflow": "HiresFix Latentワークフロー",
-        "latent_upscale_different_prompt_model": "Latent Upscale異なるプロンプトモデル"
-      },
-      "Video": {
-        "hunyuan_video_text_to_video": "Hunyuanビデオテキストからビデオへ",
-        "image_to_video": "画像からビデオへ",
-        "image_to_video_wan": "Wan 2.1 画像からビデオへ",
-        "ltxv_image_to_video": "LTXV画像からビデオへ",
-        "ltxv_text_to_video": "LTXVテキストからビデオへ",
-        "mochi_text_to_video_example": "Mochiテキストからビデオへ",
-        "text_to_video_wan": "Wan 2.1 テキストからビデオへ",
-        "txt_to_image_to_video": "テキストから画像へ、画像からビデオへ",
-        "wan2_1_fun_control": "Wan 2.1 ControlNet",
-        "wan2_1_fun_inp": "Wan 2.1 インペインティング"
-      },
-      "Video API": {
-        "api_hailuo_minimax_i2v": "MiniMax 画像から動画へ",
-        "api_kling_i2v": "Kling 画像から動画へ",
-        "api_luma_i2v": "Luma 画像から動画へ",
-        "api_pika_scene": "Pika シーン: 画像から動画へ",
-        "api_pixverse_t2v": "PixVerse テキストから動画へ",
-        "api_pixverse_template_i2v": "PixVerse Template Effects: 画像から動画へ",
-        "api_veo2_i2v": "Veo2 画像から動画へ"
+      "Audio": {
+        "audio_stable_audio_example": "Stable Audio",
+        "audio_ace_step_1_t2a_instrumentals": "ACE-Step v1テキストからインスト音楽",
+        "audio_ace_step_1_t2a_song": "ACE Step v1テキストから歌",
+        "audio_ace_step_1_m2m_editing": "ACE Step v1 M2M編集"
       }
     },
     "templateDescription": {
-      "3D": {
-        "hunyuan-3d-multiview-elf": "Hunyuan3D 2mvで複数ビューからモデルを生成します。",
-        "hunyuan-3d-turbo": "Hunyuan3D 2mv turboで複数ビューからモデルを生成します。",
-        "hunyuan3d-non-multiview-train": "Hunyuan3D 2.0で単一ビューからモデルを生成します。",
-        "stable_zero123_example": "単一画像から3Dビューを生成します。"
+      "Basics": {
+        "default": "テキスト説明から画像を生成します。",
+        "image2image": "テキストプロンプトを使って既存の画像を変換します。",
+        "lora": "LoRAモデルで特定のスタイルやテーマの画像を生成します。",
+        "lora_multiple": "複数のLoRAモデルを組み合わせて画像を生成します。",
+        "inpaint_example": "画像の特定部分をシームレスに編集します。",
+        "inpaint_model_outpainting": "画像を元の境界を超えて拡張します。",
+        "embedding_example": "テキスト反転で一貫したスタイルの画像を生成します。",
+        "gligen_textbox_example": "テキストボックスでオブジェクトの位置を正確に指定して画像を生成します。"
+      },
+      "Flux": {
+        "flux_kontext_dev_basic": "Flux Kontext（全ノード表示）で画像を編集。ワークフロー学習に最適です。",
+        "flux_kontext_dev_grouped": "ノードをグループ化したFlux Kontext。作業スペースがすっきりします。",
+        "flux_dev_checkpoint_example": "Flux Dev fp8量子化版で画像生成。低VRAMデバイス向け、モデルファイル1つでOK、画質はフル版よりやや低め。",
+        "flux_schnell": "Flux Schnell fp8量子化版で高速画像生成。低スペック向け、4ステップで完了。",
+        "flux_dev_full_text_to_image": "Flux Devフル版で高品質画像生成。大きなVRAMと複数モデルファイルが必要ですが、プロンプト追従性・画質ともに最高です。",
+        "flux_schnell_full_text_to_image": "Flux Schnellフル版で高速かつ高品質な画像生成。Apache2.0ライセンス、4ステップで完了。",
+        "flux_fill_inpaint_example": "Fluxで画像の欠損部分を補完します。",
+        "flux_fill_outpaint_example": "Fluxで画像を元の枠を超えて拡張します。",
+        "flux_canny_model_example": "エッジ検出でFlux画像生成をガイドします。",
+        "flux_depth_lora_example": "深度情報でFlux LoRA画像生成をガイドします。",
+        "flux_redux_model_example": "参照画像のスタイルを転送し、Flux Reduxで新しい画像を生成します。"
+      },
+      "Image": {
+        "image_omnigen2_t2i": "OmniGen2の統合7Bマルチモーダルモデルとデュアルパス構造で高品質な画像をテキストから生成します。",
+        "image_omnigen2_image_edit": "OmniGen2の高度な画像編集・テキスト描画機能で自然言語指示による画像編集が可能です。",
+        "image_cosmos_predict2_2B_t2i": "Cosmos-Predict2 2B T2Iで物理的に正確で高精細・高忠実度な画像を生成します。",
+        "image_chroma_text_to_image": "ChromaはFluxをベースに構造を一部変更したモデルです。",
+        "hidream_i1_dev": "HiDream I1 Dev - 28ステップ推論のバランス型。中程度のハードウェア向け。",
+        "hidream_i1_fast": "HiDream I1 Fast - 16ステップの軽量版。低スペックでも高速プレビュー可能。",
+        "hidream_i1_full": "HiDream I1 Full - 50ステップのフル版。最高画質。",
+        "hidream_e1_full": "HiDream E1 - プロ向け自然言語画像編集モデル。",
+        "sd3.5_simple_example": "SD 3.5で画像を生成します。",
+        "sd3.5_large_canny_controlnet_example": "SD 3.5 Canny ControlNetでエッジ検出を使って画像生成をガイドします。",
+        "sd3.5_large_depth": "SD 3.5で深度情報を使って画像生成をガイドします。",
+        "sd3.5_large_blur": "SD 3.5でぼかし参照画像を使って画像生成をガイドします。",
+        "sdxl_simple_example": "SDXLで高品質な画像を生成します。",
+        "sdxl_refiner_prompt_example": "RefinerモデルでSDXL画像を強化します。",
+        "sdxl_revision_text_prompts": "参照画像のコンセプトを転送し、SDXL Revisionで画像生成をガイドします。",
+        "sdxl_revision_zero_positive": "テキストプロンプトと参照画像を組み合わせてSDXL Revisionで画像生成します。",
+        "sdxlturbo_example": "SDXL Turboでワンステップ画像生成。",
+        "image_lotus_depth_v1_1": "ComfyUIでLotus Depthを実行し、高精細な単眼深度推定を実現します。"
+      },
+      "Video": {
+        "video_cosmos_predict2_2B_video2world_480p_16fps": "Cosmos-Predict2 2B Video2Worldで物理的に正確・高忠実度・一貫性のある動画を生成します。",
+        "video_wan_vace_14B_t2v": "Wan VACE-14Bでテキストから高品質な動画を生成。480p/720p対応。",
+        "video_wan_vace_14B_ref2v": "Wan VACEで参照画像のスタイル・内容に合った動画を生成します。",
+        "video_wan_vace_14B_v2v": "Wan VACEで入力動画や参照画像をコントロールして新しい動画を生成します。",
+        "video_wan_vace_outpainting": "Wan VACEのアウトペイントで動画サイズを拡張します。",
+        "video_wan_vace_flf2v": "Wan VACEで開始・終了フレームを指定し、滑らかな動画遷移を生成します。",
+        "video_wan_vace_inpainting": "Wan VACEで動画の特定領域を編集し、周囲の内容を保持します。",
+        "video_wan2.1_fun_camera_v1.1_1.3B": "Wan 2.1 Fun Camera 1.3Bで映画的なカメラワークの動画を生成します。",
+        "video_wan2.1_fun_camera_v1.1_14B": "Wan 2.1 Fun Camera 14Bで高度なカメラ制御の高品質動画を生成します。",
+        "text_to_video_wan": "Wan 2.1でテキストから動画を生成します。",
+        "image_to_video_wan": "Wan 2.1で画像から動画を生成します。",
+        "wan2.1_fun_inp": "Wan 2.1で開始・終了フレームから動画を生成します。",
+        "wan2.1_fun_control": "Wan 2.1 ControlNetでポーズ・深度・エッジ制御による動画生成。",
+        "wan2.1_flf2v_720_f16": "Wan 2.1 FLF2Vで最初と最後のフレームを制御して720p動画を生成します。",
+        "ltxv_text_to_video": "テキストから動画を生成します。",
+        "ltxv_image_to_video": "静止画像から動画を生成します。",
+        "mochi_text_to_video_example": "Mochiモデルでテキストから動画を生成します。",
+        "hunyuan_video_text_to_video": "Hunyuanモデルでテキストから動画を生成します。",
+        "image_to_video": "静止画像から動画を生成します。",
+        "txt_to_image_to_video": "まず画像を生成し、それを動画に変換します。"
+      },
+      "Image API": {
+        "api_bfl_flux_1_kontext_multiple_images_input": "複数画像を入力し、Flux.1 Kontextで編集します。",
+        "api_bfl_flux_1_kontext_pro_image": "Flux.1 Kontext pro imageで画像を編集します。",
+        "api_bfl_flux_1_kontext_max_image": "Flux.1 Kontext max imageで画像を編集します。",
+        "api_bfl_flux_pro_t2i": "FLUX.1 Proで優れたプロンプト追従性と画質の画像を生成します。",
+        "api_luma_photon_i2i": "画像とプロンプトを組み合わせて画像生成をガイドします。",
+        "api_luma_photon_style_ref": "Luma Photonでスタイル参照をブレンドし、正確にコントロールします。",
+        "api_recraft_image_gen_with_color_control": "Recraftでカスタムカラーパレットやブランドビジュアルの画像を生成します。",
+        "api_recraft_image_gen_with_style_control": "ビジュアル例でスタイル・位置合わせ・オブジェクト微調整を制御。スタイル保存・共有でブランド一貫性を実現。",
+        "api_recraft_vector_gen": "RecraftのAIベクター生成でテキストから高品質ベクター画像を生成します。",
+        "api_runway_text_to_image": "RunwayのAIモデルでテキストから高品質画像を生成します。",
+        "api_runway_reference_to_image": "RunwayのAIで参照スタイル・構図から新しい画像を生成します。",
+        "api_stability_ai_stable_image_ultra_t2i": "高品質・高プロンプト追従性の画像を生成。1メガピクセルでプロ用途に最適。",
+        "api_stability_ai_i2i": "Stability AIで高品質な画像変換。プロ編集やスタイル転送に最適。",
+        "api_stability_ai_sd3.5_t2i": "Stability AI SD3.5で高品質・高プロンプト追従性の画像を生成。1メガピクセル対応。",
+        "api_stability_ai_sd3.5_i2i": "Stability AI SD3.5で高品質・高プロンプト追従性の画像変換。1メガピクセル対応。",
+        "api_ideogram_v3_t2i": "Ideogram V3でプロンプト整合性・フォトリアリズム・テキスト描画に優れたプロ品質画像を生成します。",
+        "api_openai_image_1_t2i": "OpenAI GPT Image 1 APIでテキストから画像を生成します。",
+        "api_openai_image_1_i2i": "OpenAI GPT Image 1 APIで画像から画像を生成します。",
+        "api_openai_image_1_inpaint": "OpenAI GPT Image 1 APIでインペイントを行います。",
+        "api_openai_image_1_multi_inputs": "OpenAI GPT Image 1 APIで複数入力から画像を生成します。",
+        "api_openai_dall_e_2_t2i": "OpenAI Dall-E 2 APIでテキストから画像を生成します。",
+        "api_openai_dall_e_2_inpaint": "OpenAI Dall-E 2 APIでインペイントを行います。",
+        "api_openai_dall_e_3_t2i": "OpenAI Dall-E 3 APIでテキストから画像を生成します。"
+      },
+      "Video API": {
+        "api_moonvalley_text_to_video": "Moonvalleyでテキストから1080p映画品質動画を生成。学習データは全てライセンス済み。",
+        "api_moonvalley_image_to_video": "Moonvalleyで画像から1080p映画品質動画を生成。学習データは全てライセンス済み。",
+        "api_kling_i2v": "Klingでアクション・表情・カメラワークのプロンプト追従性に優れた動画を生成します。",
+        "api_kling_effects": "Klingで画像にビジュアルエフェクトを適用し、ダイナミックな動画を生成します。",
+        "api_kling_flf": "Klingで最初と最後のフレームを制御して動画を生成します。",
+        "api_luma_i2v": "Lumaで静止画像から高品質アニメーションを瞬時に生成します。",
+        "api_luma_t2v": "Lumaでシンプルなプロンプトから高品質動画を生成します。",
+        "api_hailuo_minimax_t2v": "MiniMaxでテキストから高品質動画を直接生成。CGI効果や多彩なスタイルに対応。",
+        "api_hailuo_minimax_i2v": "MiniMaxで画像＋テキストからCGI統合の洗練動画を生成します。",
+        "api_pixverse_i2v": "PixVerseで静止画像から動きやエフェクトのあるダイナミック動画を生成します。",
+        "api_pixverse_template_i2v": "PixVerseで静止画像から動きやエフェクトのあるダイナミック動画を生成します。",
+        "api_pixverse_t2v": "PixVerseでプロンプト解釈が正確でダイナミックな動画を生成します。",
+        "api_runway_gen3a_turbo_image_to_video": "Runway Gen3a Turboで静止画像から映画品質動画を生成します。",
+        "api_runway_gen4_turo_image_to_video": "Runway Gen4 Turboで画像からダイナミックな動画を生成します。",
+        "api_runway_first_last_frame": "Runwayで2つのキーフレーム間を滑らかに遷移する動画を生成します。",
+        "api_pika_i2v": "Pika AIで静止画像から滑らかなアニメ動画を生成します。",
+        "api_pika_scene": "Pika Scenesで複数画像を組み込んだ動画を生成します。",
+        "api_veo2_i2v": "Google Veo2 APIで画像から動画を生成します。"
+      },
+      "3D API": {
+        "api_rodin_image_to_model": "Rodin AIで1枚の写真から高精細3Dモデルを生成します。",
+        "api_rodin_multiview_to_model": "Rodinで複数視点から3Dモデルを再構築します。",
+        "api_tripo_text_to_model": "Tripoでテキスト説明から3Dオブジェクトを作成します。",
+        "api_tripo_image_to_model": "Tripoエンジンで2D画像からプロ品質3Dアセットを生成します。",
+        "api_tripo_multiview_to_model": "Tripoの高度なスキャナーで複数角度から3Dモデルを構築します。"
+      },
+      "LLM API": {
+        "api_openai_chat": "OpenAIの高度な言語モデルとインテリジェントな会話を楽しめます。",
+        "api_google_gemini": "Google GeminiのマルチモーダルAIと推論能力を体験できます。"
+      },
+      "Upscaling": {
+        "hiresfix_latent_workflow": "latent空間で画像品質を向上させます。",
+        "esrgan_example": "ESRGANモデルで画像をアップスケールします。",
+        "hiresfix_esrgan_workflow": "中間ステップでESRGANモデルを使って画像をアップスケールします。",
+        "latent_upscale_different_prompt_model": "アップスケールしつつ各パスでプロンプトを変更します。"
+      },
+      "ControlNet": {
+        "controlnet_example": "落書き参照画像で画像生成をガイドします。",
+        "2_pass_pose_worship": "ポーズ参照で画像を生成します。",
+        "depth_controlnet": "深度情報で画像生成をガイドします。",
+        "depth_t2i_adapter": "T2Iアダプターで素早く深度認識画像を生成します。",
+        "mixing_controlnets": "複数のControlNetモデルを組み合わせて画像を生成します。"
       },
       "Area Composition": {
         "area_composition": "エリアで画像構成をコントロールします。",
-        "area_composition_reversed": "エリア構成ワークフローを逆転します。",
-        "area_composition_square_area_for_subject": "被写体の配置を一貫させます。"
+        "area_composition_square_area_for_subject": "エリア構成で被写体の配置を一貫させます。"
+      },
+      "3D": {
+        "3d_hunyuan3d_image_to_model": "Hunyuan3D 2.0で単一画像から3Dモデルを生成します。",
+        "3d_hunyuan3d_multiview_to_model": "Hunyuan3D 2.0 MVで複数ビューから3Dモデルを生成します。",
+        "3d_hunyuan3d_multiview_to_model_turbo": "Hunyuan3D 2.0 MV Turboで複数ビューから3Dモデルを生成します。",
+        "stable_zero123_example": "Stable Zero123で単一画像から3Dビューを生成します。"
       },
       "Audio": {
-        "stable_audio_example": "テキストの説明から音声を生成します。"
-      },
-      "Basics": {
-        "default": "テキストの説明から画像を生成します。",
-        "embedding_example": "テキスト反転を使って一貫したスタイルを実現します。",
-        "gligen_textbox_example": "オブジェクトの位置とサイズを指定します。",
-        "image2image": "テキストプロンプトを使って既存の画像を変換します。",
-        "inpain_model_outpainting": "画像を元の境界を超えて拡張します。",
-        "inpaint_example": "画像の特定部分をシームレスに編集します。",
-        "lora": "LoRAモデルを適用して特定のスタイルや対象を表現します。",
-        "lora_multiple": "複数のLoRAモデルを組み合わせて独自の結果を得ます。"
-      },
-      "ControlNet": {
-        "2_pass_pose_worship": "ポーズ参照から画像を生成します。",
-        "controlnet_example": "参照画像で画像生成をコントロールします。",
-        "depth_controlnet": "深度認識生成で画像を作成します。",
-        "depth_t2i_adapter": "T2Iアダプターで素早く深度認識画像を生成します。",
-        "mixing_controlnets": "複数のControlNetモデルを組み合わせます。"
-      },
-      "Flux": {
-        "flux_canny_model_example": "エッジ検出から画像を生成します。",
-        "flux_depth_lora_example": "深度認識LoRAで画像を生成します。",
-        "flux_dev_checkpoint_example": "Flux開発モデルを使って画像を生成します。",
-        "flux_fill_inpaint_example": "画像の欠損部分を補完します。",
-        "flux_fill_outpaint_example": "Fluxのアウトペイントで画像を拡張します。",
-        "flux_redux_model_example": "参照画像のスタイルを転送し、Fluxで画像生成をガイドします。",
-        "flux_schnell": "Flux Schnellで素早く画像を生成します。"
-      },
-      "Image": {
-        "hidream_e1_full": "HiDream E1で画像を編集します。",
-        "hidream_i1_dev": "HiDream I1 Devで画像を生成します。",
-        "hidream_i1_fast": "HiDream I1で素早く画像を生成します。",
-        "hidream_i1_full": "HiDream I1で画像を生成します。",
-        "sd3_5_large_blur": "SD 3.5でぼかし参照画像から画像を生成します。",
-        "sd3_5_large_canny_controlnet_example": "SD 3.5でエッジ検出を使って画像生成をガイドします。",
-        "sd3_5_large_depth": "SD 3.5で深度認識画像を生成します。",
-        "sd3_5_simple_example": "SD 3.5で画像を生成します。",
-        "sdxl_refiner_prompt_example": "SDXLの出力をリファイナーで強化します。",
-        "sdxl_revision_text_prompts": "参照画像からコンセプトを転送し、SDXLで画像生成をガイドします。",
-        "sdxl_revision_zero_positive": "参照画像とテキストプロンプトを組み合わせてSDXLで画像生成をガイドします。",
-        "sdxl_simple_example": "SDXLで高品質な画像を生成します。",
-        "sdxlturbo_example": "SDXL Turboでワンステップで画像を生成します。"
-      },
-      "Image API": {
-        "api-openai-dall-e-2-inpaint": "Dall-E 2 APIで画像のインペイントを行います。",
-        "api-openai-dall-e-2-t2i": "Dall-E 2 APIでテキストの説明から画像を生成します。",
-        "api-openai-dall-e-3-t2i": "Dall-E 3 APIでテキストの説明から画像を生成します。",
-        "api_bfl_flux_pro_t2i": "FLUX.1 [pro]で優れたプロンプト追従性、画質、ディテール、多様な出力の画像を生成します。",
-        "api_ideogram_v3_t2i": "高品質な画像・プロンプト整合性、フォトリアリズム、テキスト描画で画像を生成します。プロ品質のロゴ、ポスター、ランディングページ、商品写真などを作成。複雑な背景や精密なライティング、リアルな環境ディテールで洗練された空間構成を簡単に作成できます。",
-        "api_luma_photon_i2i": "画像とプロンプトを組み合わせて画像生成をガイドします。",
-        "api_luma_photon_style_ref": "スタイル参照を正確に適用・ブレンドします。Luma Photonは各参照画像の本質を捉え、異なるビジュアル要素を組み合わせつつプロ品質を維持します。",
-        "api_openai_image_1_i2i": "GPT Image 1 APIで画像から画像を生成します。",
-        "api_openai_image_1_inpaint": "GPT Image 1 APIで画像のインペイントを行います。",
-        "api_openai_image_1_multi_inputs": "GPT Image 1 APIで複数入力を使って画像を生成します。",
-        "api_openai_image_1_t2i": "GPT Image 1 APIでテキストの説明から画像を生成します。",
-        "api_recraft_image_gen_with_color_control": "カスタムパレットを作成して複数画像で再利用したり、各写真の色を手動で選択できます。ブランドのカラーパレットに合わせて独自のビジュアルを作成します。",
-        "api_recraft_image_gen_with_style_control": "ビジュアル例でスタイルを制御し、位置合わせやオブジェクトの微調整が可能です。スタイルを保存・共有してブランドの一貫性を保ちます。",
-        "api_recraft_vector_gen": "テキストプロンプトからRecraftのAIベクター生成でベクター画像を作成します。ロゴ、ポスター、アイコンセット、広告、バナー、モックアップに最適な高品質SVGファイルを生成。アプリやウェブサイト用のブランドベクターイラストを数秒で作成します。",
-        "api_stability_sd3_t2i": "高品質でプロンプト追従性の高い画像を生成します。1メガピクセル解像度でプロ用途に最適です。"
-      },
-      "Upscaling": {
-        "esrgan_example": "アップスケールモデルで画像品質を向上させます。",
-        "hiresfix_esrgan_workflow": "中間ステップでアップスケールモデルを使用します。",
-        "hiresfix_latent_workflow": "latent空間で画像品質を向上させます。",
-        "latent_upscale_different_prompt_model": "アップスケールしつつパスごとにプロンプトを変更します。"
-      },
-      "Video": {
-        "hunyuan_video_text_to_video": "Hunyuanモデルで動画を生成します。",
-        "image_to_video": "画像をアニメーション動画に変換します。",
-        "image_to_video_wan": "画像から素早く動画を生成します。",
-        "ltxv_image_to_video": "静止画像を動画に変換します。",
-        "ltxv_text_to_video": "テキストの説明から動画を生成します。",
-        "mochi_text_to_video_example": "Mochiモデルで動画を作成します。",
-        "text_to_video_wan": "テキストの説明から素早く動画を生成します。",
-        "txt_to_image_to_video": "テキストから画像を生成し、それを動画に変換します。",
-        "wan2_1_flf2v_720_f16": "最初と最後のフレームを制御して動画を生成します。",
-        "wan2_1_fun_control": "ポーズ、深度、エッジ制御などで動画生成をガイドします。",
-        "wan2_1_fun_inp": "開始フレームと終了フレームから動画を作成します。"
-      },
-      "Video API": {
-        "api_hailuo_minimax_i2v": "画像とテキストから洗練された動画を作成。CGI統合や流行のAIハグなどのエフェクトも。多彩なスタイルやテーマから選択可能です。",
-        "api_kling_i2v": "アクション、表情、カメラワークのプロンプト追従性に優れた動画を作成します。複雑なシーケンシャルアクションもサポートし、あなたがシーンの監督になれます。",
-        "api_luma_i2v": "静止画像から瞬時に高品質なアニメーションを作成します。",
-        "api_pika_scene": "複数の画像を素材として使い、それらを組み込んだ動画を生成します。",
-        "api_pixverse_t2v": "プロンプト解釈が正確で、ダイナミックな動画を生成します。",
-        "api_pixverse_template_i2v": "静止画像を動きやエフェクトのあるダイナミックな動画に変換します。",
-        "api_veo2_i2v": "Google Veo2 APIで画像から動画を生成します。"
+        "audio_stable_audio_example": "テキスト説明から音声を生成します。",
+        "audio_ace_step_1_t2a_instrumentals": "ACE-Step v1でテキストからインスト音楽を生成します。",
+        "audio_ace_step_1_t2a_song": "ACE-Step v1でテキストからボーカル付き楽曲を生成。多言語・スタイルカスタマイズ対応。",
+        "audio_ace_step_1_m2m_editing": "ACE-Step v1 M2Mで既存楽曲のスタイルや歌詞を編集します。"
       }
     },
     "title": "テンプレートを利用して開始"
