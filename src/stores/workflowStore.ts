@@ -1,7 +1,6 @@
-import type { LGraph, Subgraph } from '@comfyorg/litegraph'
 import _ from 'lodash'
 import { defineStore } from 'pinia'
-import { type Raw, computed, markRaw, ref, shallowRef, watch } from 'vue'
+import { computed, markRaw, ref, watch } from 'vue'
 
 import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
@@ -157,12 +156,12 @@ export interface WorkflowStore {
   syncWorkflows: (dir?: string) => Promise<void>
   reorderWorkflows: (from: number, to: number) => void
 
+  /** An ordered list of all parent subgraphs, ending with the current subgraph. */
+  subgraphNamePath: string[]
   /** `true` if any subgraph is currently being viewed. */
   isSubgraphActive: boolean
-  activeSubgraph: Subgraph | undefined
   /** Updates the {@link subgraphNamePath} and {@link isSubgraphActive} values. */
   updateActiveGraph: () => void
-  executionIdToCurrentId: (id: string) => any
 }
 
 export const useWorkflowStore = defineStore('workflow', () => {
@@ -428,61 +427,24 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }
   }
 
+  /** @see WorkflowStore.subgraphNamePath */
+  const subgraphNamePath = ref<string[]>([])
   /** @see WorkflowStore.isSubgraphActive */
   const isSubgraphActive = ref(false)
 
-  /** @see WorkflowStore.activeSubgraph */
-  const activeSubgraph = shallowRef<Raw<Subgraph>>()
-
   /** @see WorkflowStore.updateActiveGraph */
   const updateActiveGraph = () => {
-    const subgraph = comfyApp.canvas?.subgraph
-    activeSubgraph.value = subgraph ? markRaw(subgraph) : undefined
     if (!comfyApp.canvas) return
 
+    const { subgraph } = comfyApp.canvas
     isSubgraphActive.value = isSubgraph(subgraph)
-  }
 
-  const subgraphNodeIdToSubgraph = (id: string, graph: LGraph | Subgraph) => {
-    const node = graph.getNodeById(id)
-    if (node?.isSubgraphNode()) return node.subgraph
-  }
+    if (subgraph) {
+      const [, ...pathFromRoot] = subgraph.pathToRootGraph
 
-  const getSubgraphsFromInstanceIds = (
-    currentGraph: LGraph | Subgraph,
-    subgraphNodeIds: string[],
-    subgraphs: Subgraph[] = []
-  ): Subgraph[] => {
-    const currentPart = subgraphNodeIds.shift()
-    if (currentPart === undefined) return subgraphs
-
-    const subgraph = subgraphNodeIdToSubgraph(currentPart, currentGraph)
-    if (subgraph === undefined) throw new Error('Subgraph not found')
-
-    subgraphs.push(subgraph)
-    return getSubgraphsFromInstanceIds(subgraph, subgraphNodeIds, subgraphs)
-  }
-
-  const executionIdToCurrentId = (id: string) => {
-    const subgraph = activeSubgraph.value
-
-    // Short-circuit: ID belongs to the parent workflow / no active subgraph
-    if (!id.includes(':')) {
-      return !subgraph ? id : undefined
-    } else if (!subgraph) {
-      return
-    }
-
-    // Parse the hierarchical ID (e.g., "123:456:789")
-    const subgraphNodeIds = id.split(':')
-
-    // Start from the root graph
-    const { graph } = comfyApp
-
-    // If the last subgraph is the active subgraph, return the node ID
-    const subgraphs = getSubgraphsFromInstanceIds(graph, subgraphNodeIds)
-    if (subgraphs.at(-1) === subgraph) {
-      return subgraphNodeIds.at(-1)
+      subgraphNamePath.value = pathFromRoot.map((graph) => graph.name)
+    } else {
+      subgraphNamePath.value = []
     }
   }
 
@@ -511,10 +473,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
     getWorkflowByPath,
     syncWorkflows,
 
+    subgraphNamePath,
     isSubgraphActive,
-    activeSubgraph,
-    updateActiveGraph,
-    executionIdToCurrentId
+    updateActiveGraph
   }
 }) satisfies () => WorkflowStore
 

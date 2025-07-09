@@ -69,7 +69,6 @@ declare module '@comfyorg/litegraph/dist/interfaces' {
  *  ComfyUI extensions of litegraph
  */
 declare module '@comfyorg/litegraph' {
-  import type { ExecutableLGraphNode } from '@comfyorg/litegraph'
   import type { IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
   interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
@@ -98,10 +97,7 @@ declare module '@comfyorg/litegraph' {
     /** @deprecated groupNode */
     setInnerNodes?(nodes: LGraphNode[]): void
     /** Originally a group node API. */
-    getInnerNodes?(
-      nodes?: ExecutableLGraphNode[],
-      subgraphs?: WeakSet<LGraphNode>
-    ): ExecutableLGraphNode[]
+    getInnerNodes?(): LGraphNode[]
     /** @deprecated groupNode */
     convertToNodes?(): LGraphNode[]
     recreate?(): Promise<LGraphNode>

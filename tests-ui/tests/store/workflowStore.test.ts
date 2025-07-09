@@ -492,7 +492,7 @@ describe('useWorkflowStore', () => {
       // Assert
       console.debug(store.isSubgraphActive)
       expect(store.isSubgraphActive).toBe(false) // Should default to false
-      expect(store.activeSubgraph).toBeUndefined() // Should default to empty
+      expect(store.subgraphNamePath).toEqual([]) // Should default to empty
     })
 
     it('should correctly update state when the root graph is active', async () => {
@@ -505,7 +505,7 @@ describe('useWorkflowStore', () => {
 
       // Assert: Check store state
       expect(store.isSubgraphActive).toBe(false)
-      expect(store.activeSubgraph).toBeUndefined()
+      expect(store.subgraphNamePath).toEqual([]) // Path is empty for root graph
     })
 
     it('should correctly update state when a subgraph is active', async () => {
@@ -527,7 +527,10 @@ describe('useWorkflowStore', () => {
 
       // Assert: Check store state
       expect(store.isSubgraphActive).toBe(true)
-      expect(store.activeSubgraph).toEqual(mockSubgraph)
+      expect(store.subgraphNamePath).toEqual([
+        'Level 1 Subgraph',
+        'Level 2 Subgraph'
+      ]) // Path excludes the root
     })
 
     it('should update automatically when activeWorkflow changes', async () => {
@@ -545,7 +548,7 @@ describe('useWorkflowStore', () => {
 
       // Verify initial state
       expect(store.isSubgraphActive).toBe(true)
-      expect(store.activeSubgraph).toEqual(initialSubgraph)
+      expect(store.subgraphNamePath).toEqual(['Initial Subgraph'])
 
       // Act: Change the active workflow
       const workflow2 = store.createTemporary('workflow2.json')
@@ -566,7 +569,7 @@ describe('useWorkflowStore', () => {
 
       // Assert: Check that the state was updated by the watcher based on the *new* canvas state
       expect(store.isSubgraphActive).toBe(false) // Should reflect the change to undefined subgraph
-      expect(store.activeSubgraph).toBeUndefined()
+      expect(store.subgraphNamePath).toEqual([]) // Path should be empty for root
     })
   })
 })

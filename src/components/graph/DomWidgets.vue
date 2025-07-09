@@ -21,14 +21,16 @@ import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useCanvasStore } from '@/stores/graphStore'
 
 const domWidgetStore = useDomWidgetStore()
-const widgetStates = computed(() => domWidgetStore.activeWidgetStates)
+const widgetStates = computed(() =>
+  Array.from(domWidgetStore.widgetStates.values())
+)
 
 const updateWidgets = () => {
   const lgCanvas = canvasStore.canvas
   if (!lgCanvas) return
 
   const lowQuality = lgCanvas.low_quality
-  for (const widgetState of widgetStates.value) {
+  for (const widgetState of domWidgetStore.widgetStates.values()) {
     const widget = widgetState.widget
     const node = widget.node as LGraphNode
 

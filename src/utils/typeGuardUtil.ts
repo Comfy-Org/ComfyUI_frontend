@@ -21,9 +21,3 @@ export const isAbortError = (
 export const isSubgraph = (
   item: LGraph | Subgraph | undefined | null
 ): item is Subgraph => item?.isRootGraph === false
-
-/**
- * Check if an item is non-nullish.
- */
-export const isNonNullish = <T>(item: T | undefined | null): item is T =>
-  item != null
