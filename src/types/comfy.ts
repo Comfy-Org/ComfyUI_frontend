@@ -48,6 +48,10 @@ export interface ComfyExtension {
    */
   name: string
   /**
+   * API version this extension is using (set automatically by import)
+   */
+  apiVersion?: string
+  /**
    * The commands defined by the extension
    */
   commands?: ComfyCommand[]
