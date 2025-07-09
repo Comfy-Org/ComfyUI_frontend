@@ -61,6 +61,11 @@ export interface ShowDialogOptions {
 
 export const useDialogStore = defineStore('dialog', () => {
   const dialogStack = ref<DialogInstance[]>([])
+
+  /**
+   * The key of the currently active (top-most) dialog.
+   * Only the active dialog can be closed with the ESC key.
+   */
   const activeKey = ref<string | null>(null)
 
   const genDialogKey = () => `dialog-${Math.random().toString(36).slice(2, 9)}`
@@ -105,7 +110,7 @@ export const useDialogStore = defineStore('dialog', () => {
 
     activeKey.value =
       dialogStack.value.length > 0
-        ? dialogStack.value[dialogStack.value.length - 1].key
+      ? dialogStack.value[dialogStack.value.length - 1].key
         : null
 
     updateCloseOnEscapeStates()
@@ -235,6 +240,7 @@ export const useDialogStore = defineStore('dialog', () => {
     showDialog,
     closeDialog,
     showExtensionDialog,
-    isDialogOpen
+    isDialogOpen,
+    activeKey
   }
 })
