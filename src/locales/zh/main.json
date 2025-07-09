@@ -1484,7 +1484,8 @@
     "title": "欢迎使用 ComfyUI"
   },
   "whatsNewPopup": {
-    "learnMore": "了解更多"
+    "learnMore": "了解更多",
+    "noReleaseNotes": "暂无更新说明。"
   },
   "workflowService": {
     "enterFilename": "输入文件名",
