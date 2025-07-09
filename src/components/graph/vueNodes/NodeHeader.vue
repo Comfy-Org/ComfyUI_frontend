@@ -56,7 +56,6 @@ const props = defineProps<NodeHeaderProps>()
 
 const emit = defineEmits<{
   collapse: []
-  'title-edit': []
   'update:title': [newTitle: string]
 }>()
 
@@ -114,7 +113,6 @@ const handleCollapse = () => {
 const handleDoubleClick = () => {
   if (!props.readonly) {
     isEditing.value = true
-    emit('title-edit')
   }
 }
 
