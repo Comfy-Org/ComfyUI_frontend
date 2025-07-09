@@ -51,30 +51,3 @@ export function getVersionDifference(
 export function isValidVersion(version: string): boolean {
   return semver.valid(version) !== null
 }
-
-/**
- * Gets a human-readable description of a version range
- * @param range Version range string
- * @returns Description of what the range means
- */
-export function describeVersionRange(range: string): string {
-  if (range.startsWith('>=')) {
-    return `version ${range.substring(2)} or higher`
-  } else if (range.startsWith('>')) {
-    return `version higher than ${range.substring(1)}`
-  } else if (range.startsWith('<=')) {
-    return `version ${range.substring(2)} or lower`
-  } else if (range.startsWith('<')) {
-    return `version lower than ${range.substring(1)}`
-  } else if (range.startsWith('^')) {
-    return `compatible with version ${range.substring(1)}`
-  } else if (range.startsWith('~')) {
-    return `approximately version ${range.substring(1)}`
-  } else if (range.includes(' - ')) {
-    const [min, max] = range.split(' - ')
-    return `version between ${min} and ${max}`
-  } else if (range.includes('||')) {
-    return `one of multiple version ranges: ${range}`
-  }
-  return `version ${range}`
-}

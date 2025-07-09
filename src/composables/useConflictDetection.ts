@@ -3,6 +3,7 @@ import { computed, getCurrentInstance, onUnmounted, readonly, ref } from 'vue'
 import config from '@/config'
 import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
+import { useDialogService } from '@/services/dialogService'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { SystemStats } from '@/types'
 import type { components } from '@/types/comfyRegistryTypes'
@@ -13,17 +14,12 @@ import type {
   ConflictDetectionSummary,
   ConflictType,
   NodePackRequirements,
-  RecommendedAction,
   SupportedAccelerator,
   SupportedOS,
   SystemEnvironment
 } from '@/types/conflictDetectionTypes'
 import type { components as ManagerComponents } from '@/types/generatedManagerTypes'
-import {
-  cleanVersion,
-  describeVersionRange,
-  satisfiesVersion
-} from '@/utils/versionUtil'
+import { cleanVersion, satisfiesVersion } from '@/utils/versionUtil'
 
 /**
  * Composable for conflict detection system.
@@ -45,6 +41,9 @@ export function useConflictDetection() {
   // Registry API request cancellation
   const abortController = ref<AbortController | null>(null)
 
+  // Dialog service for showing conflict modal
+  const dialogService = useDialogService()
+
   // Computed properties
   const hasConflicts = computed(() =>
     detectionResults.value.some((result) => result.has_conflict)
@@ -63,12 +62,6 @@ export function useConflictDetection() {
   const securityPendingPackages = computed(() =>
     detectionResults.value.filter((result) =>
       result.conflicts.some((conflict) => conflict.type === 'security_pending')
-    )
-  )
-
-  const criticalConflicts = computed(() =>
-    detectionResults.value.flatMap((result) =>
-      result.conflicts.filter((conflict) => conflict.severity === 'error')
     )
   )
 
@@ -392,11 +385,8 @@ export function useConflictDetection() {
     if (packageReq.is_banned) {
       conflicts.push({
         type: 'banned',
-        severity: 'error',
-        description: `Package is banned: ${packageReq.ban_reason || 'Unknown reason'}`,
         current_value: 'installed',
-        required_value: 'not_banned',
-        resolution_steps: ['Remove package', 'Find alternative package']
+        required_value: 'not_banned'
       })
     }
 
@@ -404,33 +394,20 @@ export function useConflictDetection() {
     if (!packageReq.has_registry_data) {
       conflicts.push({
         type: 'security_pending',
-        severity: 'warning',
-        description:
-          'Registry data not available - compatibility cannot be verified',
         current_value: 'no_registry_data',
-        required_value: 'registry_data_available',
-        resolution_steps: [
-          'Check if package exists in Registry',
-          'Verify package name is correct',
-          'Try again later if Registry is temporarily unavailable'
-        ]
+        required_value: 'registry_data_available'
       })
     }
 
     // Generate result
     const hasConflict = conflicts.length > 0
-    const canAutoResolve = conflicts.every(
-      (c) => c.resolution_steps && c.resolution_steps.length > 0
-    )
 
     return {
       package_id: packageReq.package_id,
       package_name: packageReq.package_name,
       has_conflict: hasConflict,
       conflicts,
-      is_compatible: !hasConflict,
-      can_auto_resolve: canAutoResolve,
-      recommended_action: determineRecommendedAction(conflicts)
+      is_compatible: !hasConflict
     }
   }
 
@@ -490,6 +467,18 @@ export function useConflictDetection() {
       lastDetectionTime.value = new Date().toISOString()
 
       console.log('[ConflictDetection] Conflict detection completed:', summary)
+
+      // Show dialog if conflicts are detected
+      if (results.some((result) => result.has_conflict)) {
+        const conflictedResults = results.filter(
+          (result) => result.has_conflict
+        )
+        console.log(
+          '[ConflictDetection] Showing dialog with conflicts:',
+          conflictedResults
+        )
+        dialogService.showNodeConflictDialog({ conflicts: conflictedResults })
+      }
 
       const response: ConflictDetectionResponse = {
         success: true,
@@ -571,7 +560,6 @@ export function useConflictDetection() {
     conflictedPackages,
     bannedPackages,
     securityPendingPackages,
-    criticalConflicts,
 
     // Methods
     performConflictDetection,
@@ -876,51 +864,10 @@ function checkVersionConflict(
     const isCompatible = satisfiesVersion(cleanCurrent, supportedVersion)
 
     if (!isCompatible) {
-      // Generate user-friendly description using shared utility
-      const rangeDescription = describeVersionRange(supportedVersion)
-      const description = `${type} version incompatible: requires ${rangeDescription}`
-
-      // Generate resolution steps based on version range type
-      let resolutionSteps: string[] = []
-
-      if (supportedVersion.startsWith('>=')) {
-        const minVersion = supportedVersion.substring(2).trim()
-        resolutionSteps = [
-          `Update ${type} to version ${minVersion} or higher`,
-          'Check release notes for compatibility changes'
-        ]
-      } else if (supportedVersion.includes(' - ')) {
-        resolutionSteps = [
-          'Verify your version is within the supported range',
-          `Supported range: ${supportedVersion}`
-        ]
-      } else if (supportedVersion.includes('||')) {
-        resolutionSteps = [
-          'Check which version ranges are supported',
-          `Supported: ${supportedVersion}`
-        ]
-      } else if (
-        supportedVersion.startsWith('^') ||
-        supportedVersion.startsWith('~')
-      ) {
-        resolutionSteps = [
-          `Compatible versions: ${supportedVersion}`,
-          'Consider updating or downgrading as needed'
-        ]
-      } else {
-        resolutionSteps = [
-          `Required version: ${supportedVersion}`,
-          'Check if your version is compatible'
-        ]
-      }
-
       return {
         type,
-        severity: 'warning',
-        description,
         current_value: currentVersion,
-        required_value: supportedVersion,
-        resolution_steps: resolutionSteps
+        required_value: supportedVersion
       }
     }
 
@@ -932,14 +879,8 @@ function checkVersionConflict(
     )
     return {
       type,
-      severity: 'info',
-      description: `Unable to parse version requirement: ${supportedVersion}`,
       current_value: currentVersion,
-      required_value: supportedVersion,
-      resolution_steps: [
-        'Check version format in Registry',
-        'Manually verify compatibility'
-      ]
+      required_value: supportedVersion
     }
   }
 }
@@ -957,11 +898,8 @@ function checkOSConflict(
 
   return {
     type: 'os',
-    severity: 'error',
-    description: `Unsupported operating system`,
     current_value: currentOS,
-    required_value: supportedOS.join(', '),
-    resolution_steps: ['Switch to supported OS', 'Find alternative package']
+    required_value: supportedOS.join(', ')
   }
 }
 
@@ -981,38 +919,8 @@ function checkAcceleratorConflict(
 
   return {
     type: 'accelerator',
-    severity: 'error',
-    description: `Required GPU/accelerator not available`,
     current_value: availableAccelerators.join(', '),
-    required_value: supportedAccelerators.join(', '),
-    resolution_steps: ['Install GPU drivers', 'Install CUDA/ROCm']
-  }
-}
-
-/**
- * Determines recommended action based on detected conflicts.
- */
-function determineRecommendedAction(
-  conflicts: ConflictDetail[]
-): RecommendedAction {
-  if (conflicts.length === 0) {
-    return {
-      action_type: 'ignore',
-      reason: 'No conflicts detected',
-      steps: [],
-      estimated_difficulty: 'easy'
-    }
-  }
-
-  const hasError = conflicts.some((c) => c.severity === 'error')
-
-  return {
-    action_type: hasError ? 'disable' : 'manual_review',
-    reason: hasError
-      ? 'Critical compatibility issues found'
-      : 'Warning items need review',
-    steps: conflicts.flatMap((c) => c.resolution_steps || []),
-    estimated_difficulty: hasError ? 'hard' : 'medium'
+    required_value: supportedAccelerators.join(', ')
   }
 }
 

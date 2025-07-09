@@ -12,6 +12,9 @@ import TopUpCreditsDialogContent from '@/components/dialog/content/TopUpCreditsD
 import UpdatePasswordContent from '@/components/dialog/content/UpdatePasswordContent.vue'
 import ManagerDialogContent from '@/components/dialog/content/manager/ManagerDialogContent.vue'
 import ManagerHeader from '@/components/dialog/content/manager/ManagerHeader.vue'
+import NodeConflictDialogContent from '@/components/dialog/content/manager/NodeConflictDialogContent.vue'
+import NodeConflictFooter from '@/components/dialog/content/manager/NodeConflictFooter.vue'
+import NodeConflictHeader from '@/components/dialog/content/manager/NodeConflictHeader.vue'
 import ManagerProgressFooter from '@/components/dialog/footer/ManagerProgressFooter.vue'
 import ComfyOrgHeader from '@/components/dialog/header/ComfyOrgHeader.vue'
 import ManagerProgressHeader from '@/components/dialog/header/ManagerProgressHeader.vue'
@@ -424,6 +427,32 @@ export const useDialogService = () => {
     }
   }
 
+  function showNodeConflictDialog(
+    props: InstanceType<typeof NodeConflictDialogContent>['$props'] = {}
+  ) {
+    dialogStore.showDialog({
+      key: 'global-node-conflict',
+      headerComponent: NodeConflictHeader,
+      footerComponent: NodeConflictFooter,
+      component: NodeConflictDialogContent,
+      dialogComponentProps: {
+        closable: true,
+        pt: {
+          header: { class: '!p-0 !m-0' },
+          content: { class: '!p-0 overflow-y-hidden' },
+          footer: { class: '!p-0' },
+          pcCloseButton: {
+            root: {
+              class:
+                '!w-7 !h-7 !border-none !outline-none !p-2 !m-1.5 !bg-black text-white'
+            }
+          }
+        }
+      },
+      props
+    })
+  }
+
   return {
     showLoadWorkflowWarning,
     showMissingModelsWarning,
@@ -440,6 +469,7 @@ export const useDialogService = () => {
     showTopUpCreditsDialog,
     showUpdatePasswordDialog,
     showExtensionDialog,
+    showNodeConflictDialog,
     prompt,
     confirm,
     toggleManagerDialog,
