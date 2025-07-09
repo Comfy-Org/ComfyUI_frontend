@@ -712,11 +712,26 @@ export class ComfyApi extends EventTarget {
     try {
       const res = await this.fetchApi(`/history?max_items=${max_items}`)
       const json: Promise<HistoryTaskItem[]> = await res.json()
+      const historyItems = Object.values(json).map((item) => ({
+        ...item,
+        taskType: 'History'
+      }))
+
+      // Sort by execution_start timestamp in descending order (newest first)
+      historyItems.sort((a, b) => {
+        const getExecutionStartTimestamp = (item: HistoryTaskItem) => {
+          if (!item.status?.messages) return 0
+          const executionStartMessage = item.status.messages.find(
+            (msg) => msg[0] === 'execution_start'
+          )
+          return executionStartMessage ? executionStartMessage[1].timestamp : 0
+        }
+
+        return getExecutionStartTimestamp(b) - getExecutionStartTimestamp(a)
+      })
+
       return {
-        History: Object.values(json).map((item) => ({
-          ...item,
-          taskType: 'History'
-        }))
+        History: historyItems
       }
     } catch (error) {
       console.error(error)
