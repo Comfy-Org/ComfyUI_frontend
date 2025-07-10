@@ -11,7 +11,7 @@ export class ViewHelperManager implements ViewHelperManagerInterface {
   private getActiveCamera: () => THREE.Camera
   private getControls: () => OrbitControls
   private nodeStorage: NodeStorageInterface
-  
+
   private renderer: THREE.WebGLRenderer
 
   constructor(

@@ -14,7 +14,6 @@ export class CameraManager implements CameraManagerInterface {
   orthographicCamera: THREE.OrthographicCamera
   activeCamera: THREE.Camera
 
-  
   private renderer: THREE.WebGLRenderer
   private eventManager: EventManagerInterface
   private nodeStorage: NodeStorageInterface

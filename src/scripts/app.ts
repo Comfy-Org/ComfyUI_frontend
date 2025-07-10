@@ -418,17 +418,6 @@ export class ComfyApp {
         }
       }
 
-      // Paste the combined canvas if it exists
-      if (
-        ComfyApp.clipspace.imgs?.[ComfyApp.clipspace.combinedIndex] &&
-        node.imgs &&
-        combinedImgSrc
-      ) {
-        const combinedImg = new Image()
-        combinedImg.src = combinedImgSrc
-        node.imgs.push(combinedImg) // Add the combined canvas to the node's images
-      }
-
       // Paste the RGB canvas if paintedindex exists
       if (
         ComfyApp.clipspace.imgs?.[ComfyApp.clipspace.paintedIndex] &&
@@ -438,6 +427,17 @@ export class ComfyApp {
         paintedImg.src =
           ComfyApp.clipspace.imgs[ComfyApp.clipspace.paintedIndex].src
         node.imgs.push(paintedImg) // Add the RGB canvas to the node's images
+      }
+
+      // Paste the combined canvas if it exists
+      if (
+        ComfyApp.clipspace.imgs?.[ComfyApp.clipspace.combinedIndex] &&
+        node.imgs &&
+        combinedImgSrc
+      ) {
+        const combinedImg = new Image()
+        combinedImg.src = combinedImgSrc
+        node.imgs.push(combinedImg) // Add the combined canvas to the node's images
       }
 
       if (node.widgets) {
