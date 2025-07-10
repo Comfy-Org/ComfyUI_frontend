@@ -1,5 +1,6 @@
 import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
-import { Ref, ref, onUnmounted } from 'vue'
+import { throttle } from 'lodash'
+import { Ref, onUnmounted, ref } from 'vue'
 
 export function useContextMenuOverride() {
   const dragging = ref(false)
@@ -10,9 +11,15 @@ export function useContextMenuOverride() {
   const observer: Ref<MutationObserver | null> = ref(null)
   const intervalId: Ref<ReturnType<typeof setInterval> | null> = ref(null)
 
-  const OriginalContextMenu = LiteGraph.ContextMenu as any
-
-  (LiteGraph as any).ContextMenu = function (items: any, options: any, ref_window: any) {
+  interface OriginalContextMenu {
+    new (items: any[], options: any, ref_window?: any): any
+  }
+  const OriginalContextMenu = LiteGraph.ContextMenu as OriginalContextMenu
+  ;(LiteGraph as any).ContextMenu = function (
+    items: any[],
+    options: any,
+    ref_window?: any
+  ) {
     if (observer.value) {
       try {
         observer.value.disconnect()
@@ -24,14 +31,22 @@ export function useContextMenuOverride() {
 
     const instance = new OriginalContextMenu(items, options, ref_window)
 
-    // Remove old menus
-    document.querySelectorAll('.litecontextmenu').forEach((el, i, arr) => {
-      if (i < arr.length - 1) el.remove()
+    const seen = new Set()
+
+    document.querySelectorAll('.litecontextmenu').forEach((el) => {
+      const content = el.innerHTML.trim()
+      if (seen.has(content)) {
+        el.remove() // Remove duplicate
+      } else {
+        seen.add(content) // Keep the first occurrence
+      }
     })
 
     // Set current menu element
-    menuElement.value = document.querySelector('.litecontextmenu') as HTMLElement | null
-    
+    menuElement.value = document.querySelector(
+      '.litecontextmenu'
+    ) as HTMLElement | null
+
     if (menuElement.value) {
       observer.value = new MutationObserver((mutations) => {
         for (const mutation of mutations) {
@@ -41,20 +56,18 @@ export function useContextMenuOverride() {
               temp.value = menuElement.value
               startTime.value = Date.now()
 
-              intervalId.value = setInterval(() => {
-                endTime.value = Date.now()
-                if (dragging.value) {
-                  if (temp.value) {
-                    document.body.appendChild(temp.value)
-                  }
+              const reattachFrame = () => {
+                if (dragging.value && temp.value) {
+                  document.body.appendChild(temp.value)
                   dragging.value = false
-                  clearInterval(intervalId.value!)
                   menuElement.value = null
+                  return
                 }
-                if (endTime.value - startTime.value > 500) {
-                  clearInterval(intervalId.value!)
+                if (Date.now() - startTime.value < 500) {
+                  requestAnimationFrame(reattachFrame)
                 }
-              }, 16)
+              }
+              requestAnimationFrame(reattachFrame)
             }
           }
         }
@@ -69,7 +82,11 @@ export function useContextMenuOverride() {
   const processMouseMove = LGraphCanvas.prototype.processMouseMove
 
   LGraphCanvas.prototype.processMouseMove = function (e: PointerEvent) {
-    menuElement.value = document.querySelector('.litecontextmenu') as HTMLElement | null
+    if (!menuElement.value) {
+      menuElement.value = document.querySelector(
+        '.litecontextmenu'
+      ) as HTMLElement | null
+    }
     const prevOffset = [...this.ds.offset]
     processMouseMove.call(this, e)
 
@@ -78,10 +95,23 @@ export function useContextMenuOverride() {
       if (menuElement.value) {
         const dx = this.ds.offset[0] - prevOffset[0]
         const dy = this.ds.offset[1] - prevOffset[1]
-        const left = parseFloat(menuElement.value.style.left || '0')
-        const top = parseFloat(menuElement.value.style.top || '0')
-        menuElement.value.style.left = `${left + dx}px`
-        menuElement.value.style.top = `${top + dy}px`
+
+        const throttledUpdateMenuPosition = throttle(
+          (dx: number, dy: number) => {
+            try {
+              if (menuElement.value) {
+                const left = parseFloat(menuElement.value.style.left || '0')
+                const top = parseFloat(menuElement.value.style.top || '0')
+                menuElement.value.style.left = `${left + dx}px`
+                menuElement.value.style.top = `${top + dy}px`
+              }
+            } catch (error) {
+              console.warn('Failed to update menu position:', error)
+            }
+          },
+          16
+        )
+        throttledUpdateMenuPosition(dx, dy)
         menuElement.value.style.setProperty('z-index', 'inherit', 'important')
       }
     } else {
@@ -89,8 +119,10 @@ export function useContextMenuOverride() {
     }
   }
 
-  // 🔻 Cleanup on unmount
+  // Cleanup on unmount
   onUnmounted(() => {
+    LGraphCanvas.prototype.processMouseMove = processMouseMove
+
     if (observer.value) {
       observer.value.disconnect()
       observer.value = null
