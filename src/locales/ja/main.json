@@ -1484,7 +1484,8 @@
     "title": "ComfyUIへようこそ"
   },
   "whatsNewPopup": {
-    "learnMore": "詳細はこちら"
+    "learnMore": "詳細はこちら",
+    "noReleaseNotes": "リリースノートはありません。"
   },
   "workflowService": {
     "enterFilename": "ファイル名を入力",

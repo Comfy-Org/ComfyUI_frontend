@@ -32,28 +32,32 @@
 
     <div class="whats-new-popup" @click.stop>
       <!-- Close Button -->
-      <button class="close-button" aria-label="Close" @click="closePopup">
+      <button
+        class="close-button"
+        :aria-label="$t('g.close')"
+        @click="closePopup"
+      >
         <div class="close-icon"></div>
       </button>
 
       <!-- Release Content -->
       <div class="popup-content">
         <div class="content-text" v-html="formattedContent"></div>
-      </div>
 
-      <!-- Actions Section -->
-      <div class="popup-actions">
-        <a
-          class="learn-more-link"
-          :href="changelogUrl"
-          target="_blank"
-          rel="noopener,noreferrer"
-          @click="closePopup"
-        >
-          {{ $t('whatsNewPopup.learnMore') }}
-        </a>
-        <!-- TODO: CTA button -->
-        <!-- <button class="cta-button" @click="handleCTA">CTA</button> -->
+        <!-- Actions Section -->
+        <div class="popup-actions">
+          <a
+            class="learn-more-link"
+            :href="changelogUrl"
+            target="_blank"
+            rel="noopener,noreferrer"
+            @click="closePopup"
+          >
+            {{ $t('whatsNewPopup.learnMore') }}
+          </a>
+          <!-- TODO: CTA button -->
+          <!-- <button class="cta-button" @click="handleCTA">CTA</button> -->
+        </div>
       </div>
     </div>
   </div>
@@ -68,7 +72,7 @@ import type { ReleaseNote } from '@/services/releaseService'
 import { useReleaseStore } from '@/stores/releaseStore'
 import { formatVersionAnchor } from '@/utils/formatUtil'
 
-const { locale } = useI18n()
+const { locale, t } = useI18n()
 const releaseStore = useReleaseStore()
 
 // Local state for dismissed status
@@ -101,13 +105,12 @@ const changelogUrl = computed(() => {
 // Format release content for display using marked
 const formattedContent = computed(() => {
   if (!latestRelease.value?.content) {
-    return '<p>No release notes available.</p>'
+    return `<p>${t('whatsNewPopup.noReleaseNotes')}</p>`
   }
 
   try {
     // Use marked to parse markdown to HTML
     return marked(latestRelease.value.content, {
-      breaks: true, // Convert line breaks to <br>
       gfm: true // Enable GitHub Flavored Markdown
     })
   } catch (error) {
@@ -199,14 +202,10 @@ defineExpose({
 }
 
 .whats-new-popup {
-  padding: 32px 32px 24px;
   background: #353535;
   border-radius: 12px;
   max-width: 400px;
   width: 400px;
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
   outline: 1px solid #4e4e4e;
   outline-offset: -1px;
   box-shadow: 0px 8px 32px rgba(0, 0, 0, 0.3);
@@ -217,6 +216,10 @@ defineExpose({
 .popup-content {
   display: flex;
   flex-direction: column;
+  gap: 24px;
+  overflow: hidden;
+  padding: 32px 32px 24px;
+  border-radius: 12px;
 }
 
 /* Close button */
@@ -224,17 +227,17 @@ defineExpose({
   position: absolute;
   top: 0;
   right: 0;
-  width: 31px;
-  height: 31px;
-  padding: 6px 7px;
+  width: 32px;
+  height: 32px;
+  padding: 6px;
   background: #7c7c7c;
-  border-radius: 15.5px;
+  border-radius: 16px;
   border: none;
   cursor: pointer;
   display: flex;
   justify-content: center;
   align-items: center;
-  transform: translate(50%, -50%);
+  transform: translate(30%, -30%);
   transition:
     background-color 0.2s ease,
     transform 0.1s ease;
@@ -247,7 +250,7 @@ defineExpose({
 
 .close-button:active {
   background: #6a6a6a;
-  transform: translate(50%, -50%) scale(0.95);
+  transform: translate(30%, -30%) scale(0.95);
 }
 
 .close-icon {
@@ -288,73 +291,45 @@ defineExpose({
 .content-text {
   color: white;
   font-size: 14px;
-  font-family: 'Inter', sans-serif;
-  font-weight: 400;
   line-height: 1.5;
   word-wrap: break-word;
 }
 
 /* Style the markdown content */
+/* Title */
+.content-text :deep(*) {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
 .content-text :deep(h1) {
-  color: white;
-  font-size: 20px;
-  font-weight: 700;
-  margin: 0 0 16px 0;
-  line-height: 1.3;
-}
-
-.content-text :deep(h2) {
-  color: white;
-  font-size: 18px;
-  font-weight: 600;
-  margin: 16px 0 12px 0;
-  line-height: 1.3;
-}
-
-.content-text :deep(h2:first-child) {
-  margin-top: 0;
-}
-
-.content-text :deep(h3) {
-  color: white;
   font-size: 16px;
-  font-weight: 600;
-  margin: 12px 0 8px 0;
-  line-height: 1.3;
+  font-weight: 700;
+  margin-bottom: 8px;
 }
 
-.content-text :deep(h3:first-child) {
-  margin-top: 0;
+/* Version subtitle - targets the first p tag after h1 */
+.content-text :deep(h1 + p) {
+  color: #c0c0c0;
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 16px;
+  opacity: 0.8;
 }
 
-.content-text :deep(h4) {
-  color: white;
-  font-size: 14px;
-  font-weight: 600;
-  margin: 8px 0 6px 0;
-}
-
-.content-text :deep(h4:first-child) {
-  margin-top: 0;
-}
-
+/* Regular paragraphs - short description */
 .content-text :deep(p) {
-  margin: 0 0 12px 0;
-  line-height: 1.6;
+  margin-bottom: 16px;
+  color: #e0e0e0;
 }
 
-.content-text :deep(p:first-child) {
-  margin-top: 0;
-}
-
-.content-text :deep(p:last-child) {
-  margin-bottom: 0;
-}
-
+/* List */
 .content-text :deep(ul),
 .content-text :deep(ol) {
-  margin: 0 0 12px 0;
-  padding-left: 24px;
+  margin-bottom: 16px;
+  padding-left: 0;
+  list-style: none;
 }
 
 .content-text :deep(ul:first-child),
@@ -367,12 +342,63 @@ defineExpose({
   margin-bottom: 0;
 }
 
+/* List items */
+.content-text :deep(li) {
+  margin-bottom: 8px;
+  position: relative;
+  padding-left: 20px;
+}
+
+.content-text :deep(li:last-child) {
+  margin-bottom: 0;
+}
+
+/* Custom bullet points */
+.content-text :deep(li::before) {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10px;
+  display: flex;
+  width: 8px;
+  height: 8px;
+  justify-content: center;
+  align-items: center;
+  aspect-ratio: 1/1;
+  border-radius: 100px;
+  background: #60a5fa;
+}
+
+/* List item strong text */
+.content-text :deep(li strong) {
+  color: #fff;
+  font-size: 14px;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.content-text :deep(li p) {
+  font-size: 12px;
+  margin-bottom: 0;
+  line-height: 2;
+}
+
+/* Code styling */
+.content-text :deep(code) {
+  background-color: #2a2a2a;
+  border: 1px solid #4a4a4a;
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: #f8f8f2;
+  white-space: nowrap;
+}
+
 /* Remove top margin for first media element */
 .content-text :deep(img:first-child),
 .content-text :deep(video:first-child),
 .content-text :deep(iframe:first-child) {
   margin-top: -32px; /* Align with the top edge of the popup content */
-  margin-bottom: 12px;
+  margin-bottom: 24px;
 }
 
 /* Media elements */
@@ -381,8 +407,7 @@ defineExpose({
 .content-text :deep(iframe) {
   width: calc(100% + 64px);
   height: auto;
-  border-radius: 6px;
-  margin: 12px -32px;
+  margin: 24px -32px;
   display: block;
 }
 
@@ -397,7 +422,6 @@ defineExpose({
 .learn-more-link {
   color: #60a5fa;
   font-size: 14px;
-  font-family: 'Inter', sans-serif;
   font-weight: 500;
   line-height: 18.2px;
   text-decoration: none;
@@ -417,7 +441,6 @@ defineExpose({
   border: none;
   color: #121212;
   font-size: 14px;
-  font-family: 'Inter', sans-serif;
   font-weight: 500;
   cursor: pointer;
 }

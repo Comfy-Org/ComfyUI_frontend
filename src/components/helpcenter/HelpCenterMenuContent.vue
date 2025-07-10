@@ -162,7 +162,7 @@ const TIME_UNITS = {
 const SUBMENU_CONFIG = {
   DELAY_MS: 100,
   OFFSET_PX: 8,
-  Z_INDEX: 1002
+  Z_INDEX: 10001
 } as const
 
 // Composables
