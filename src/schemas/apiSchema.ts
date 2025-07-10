@@ -335,7 +335,7 @@ const zUserDataFullInfo = z.object({
   path: z.string(),
   size: z.number(),
   modified: z.number(),
-  created: z.number().optional()
+  created: z.number()
 })
 const zBookmarkCustomization = z.object({
   icon: z.string().optional(),

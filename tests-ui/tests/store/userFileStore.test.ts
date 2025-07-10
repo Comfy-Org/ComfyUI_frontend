@@ -33,8 +33,8 @@ describe('useUserFileStore', () => {
   describe('syncFiles', () => {
     it('should add new files', async () => {
       const mockFiles = [
-        { path: 'file1.txt', modified: 123, size: 100 },
-        { path: 'file2.txt', modified: 456, size: 200 }
+        { path: 'file1.txt', modified: 123, size: 100, created: 123 },
+        { path: 'file2.txt', modified: 456, size: 200, created: 456 }
       ]
       vi.mocked(api.listUserDataFullInfo).mockResolvedValue(mockFiles)
 
@@ -46,11 +46,21 @@ describe('useUserFileStore', () => {
     })
 
     it('should update existing files', async () => {
-      const initialFile = { path: 'file1.txt', modified: 123, size: 100 }
+      const initialFile = {
+        path: 'file1.txt',
+        modified: 123,
+        size: 100,
+        created: 123
+      }
       vi.mocked(api.listUserDataFullInfo).mockResolvedValue([initialFile])
       await store.syncFiles('dir')
 
-      const updatedFile = { path: 'file1.txt', modified: 456, size: 200 }
+      const updatedFile = {
+        path: 'file1.txt',
+        modified: 456,
+        size: 200,
+        created: 123
+      }
       vi.mocked(api.listUserDataFullInfo).mockResolvedValue([updatedFile])
       await store.syncFiles('dir')
 
@@ -61,13 +71,15 @@ describe('useUserFileStore', () => {
 
     it('should remove non-existent files', async () => {
       const initialFiles = [
-        { path: 'file1.txt', modified: 123, size: 100 },
-        { path: 'file2.txt', modified: 456, size: 200 }
+        { path: 'file1.txt', modified: 123, size: 100, created: 123 },
+        { path: 'file2.txt', modified: 456, size: 200, created: 456 }
       ]
       vi.mocked(api.listUserDataFullInfo).mockResolvedValue(initialFiles)
       await store.syncFiles('dir')
 
-      const updatedFiles = [{ path: 'file1.txt', modified: 123, size: 100 }]
+      const updatedFiles = [
+        { path: 'file1.txt', modified: 123, size: 100, created: 123 }
+      ]
       vi.mocked(api.listUserDataFullInfo).mockResolvedValue(updatedFiles)
       await store.syncFiles('dir')
 
@@ -76,7 +88,9 @@ describe('useUserFileStore', () => {
     })
 
     it('should sync root directory when no directory is specified', async () => {
-      const mockFiles = [{ path: 'file1.txt', modified: 123, size: 100 }]
+      const mockFiles = [
+        { path: 'file1.txt', modified: 123, size: 100, created: 123 }
+      ]
       vi.mocked(api.listUserDataFullInfo).mockResolvedValue(mockFiles)
 
       await store.syncFiles()
