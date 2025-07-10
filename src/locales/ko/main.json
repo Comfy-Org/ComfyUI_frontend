@@ -799,11 +799,7 @@
     "Ungroup selected group nodes": "선택한 그룹 노드 그룹 해제",
     "Workflow": "워크플로",
     "Zoom In": "확대",
-    "Zoom Out": "축소",
-    "sideToolbar_modelLibrary": "sideToolbar.모델 라이브러리",
-    "sideToolbar_nodeLibrary": "sideToolbar.노드 라이브러리",
-    "sideToolbar_queue": "sideToolbar.대기열",
-    "sideToolbar_workflows": "sideToolbar.워크플로우"
+    "Zoom Out": "축소"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "다시 보지 않기",

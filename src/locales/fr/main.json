@@ -799,11 +799,7 @@
     "Ungroup selected group nodes": "Dégrouper les nœuds de groupe sélectionnés",
     "Workflow": "Flux de travail",
     "Zoom In": "Zoom avant",
-    "Zoom Out": "Zoom arrière",
-    "sideToolbar_modelLibrary": "Bibliothèque de modèles",
-    "sideToolbar_nodeLibrary": "Bibliothèque de nœuds",
-    "sideToolbar_queue": "File d'attente",
-    "sideToolbar_workflows": "Workflows"
+    "Zoom Out": "Zoom arrière"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "Ne plus afficher ce message",

@@ -799,11 +799,7 @@
     "Ungroup selected group nodes": "Разгруппировать выбранные групповые ноды",
     "Workflow": "Рабочий процесс",
     "Zoom In": "Увеличить",
-    "Zoom Out": "Уменьшить",
-    "sideToolbar_modelLibrary": "sideToolbar.modelLibrary",
-    "sideToolbar_nodeLibrary": "sideToolbar.nodeLibrary",
-    "sideToolbar_queue": "sideToolbar.queue",
-    "sideToolbar_workflows": "sideToolbar.workflows"
+    "Zoom Out": "Уменьшить"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "Больше не показывать это",
