@@ -38,13 +38,26 @@ vi.mock('@/scripts/app', () => ({
 // Mock the stores
 vi.mock('@/stores/settingStore')
 
-// Mock the model log service
-vi.mock('@/services/modelLogService', () => ({
-  ComfyModelLog: vi.fn().mockImplementation(() => ({
-    get: vi.fn().mockResolvedValue({}),
-    save: vi.fn().mockResolvedValue(undefined)
-  }))
-}))
+vi.mock('@/services/modelLogService', () => {
+  const mockActiveState: Record<string, number> = {}
+  return {
+    ComfyModelLog: {
+      fromAPI: vi.fn().mockResolvedValue({
+        activeState: mockActiveState,
+        updateModelUsage: vi.fn((key: string, timestamp?: number) => {
+          mockActiveState[key] = timestamp || Date.now()
+        }),
+        save: vi.fn().mockResolvedValue(undefined),
+        isLoaded: true,
+        isModified: false
+      }),
+      // Add static properties for testing
+      dir: 'models',
+      filename: 'models_usage.json',
+      filePath: 'models/models_usage.json'
+    }
+  }
+})
 
 describe('useRecentItemsStore', () => {
   let recentItemsStore: ReturnType<typeof useRecentItemsStore>
@@ -337,16 +350,30 @@ describe('useRecentItemsStore', () => {
       })
 
       // Mock the model log service
-      vi.mock('@/services/modelLogService', () => ({
-        ComfyModelLog: vi.fn().mockImplementation(() => ({
-          get: vi.fn().mockResolvedValue({
-            'checkpoints/model1.safetensors': 1700000100,
-            'checkpoints/model2.safetensors': 1700000300,
-            'checkpoints/model3.safetensors': 1700000050
-          }),
-          save: vi.fn().mockResolvedValue(undefined)
-        }))
-      }))
+      vi.mock('@/services/modelLogService', () => {
+        const mockActiveState: Record<string, number> = {
+          'checkpoints/model1.safetensors': 1700000100,
+          'checkpoints/model2.safetensors': 1700000300,
+          'checkpoints/model3.safetensors': 1700000050
+        }
+
+        return {
+          ComfyModelLog: {
+            fromAPI: vi.fn().mockResolvedValue({
+              activeState: mockActiveState,
+              updateModelUsage: vi.fn((key: string, timestamp?: number) => {
+                mockActiveState[key] = timestamp || Date.now()
+              }),
+              save: vi.fn().mockResolvedValue(undefined),
+              isLoaded: true,
+              isModified: false
+            }),
+            dir: 'models',
+            filename: 'models_usage.json',
+            filePath: 'models/models_usage.json'
+          }
+        }
+      })
 
       // Mock the modelStore to return our ComfyModelDef instances
       vi.spyOn(modelStore, 'models', 'get').mockReturnValue(modelDefs)
@@ -389,22 +416,6 @@ describe('useRecentItemsStore', () => {
       // Mock the modelStore to return only 2 models
       vi.spyOn(modelStore, 'models', 'get').mockReturnValue(modelDefs)
 
-      // Usage log contains a model that no longer exists
-      const usageLog = {
-        'checkpoints/model1.safetensors': 1700000100,
-        'checkpoints/model2.safetensors': 1700000300,
-        'checkpoints/deleted-model.safetensors': 1700000400 // This model doesn't exist
-      }
-
-      // Mock the ComfyModelLog constructor to return an instance with our usage log
-      const mockModelLogInstance = {
-        get: vi.fn().mockResolvedValue(usageLog),
-        save: vi.fn().mockResolvedValue(undefined)
-      }
-      vi.mocked(ComfyModelLog).mockImplementation(
-        () => mockModelLogInstance as any
-      )
-
       // Create a new store instance to get the mocked service
       recentItemsStore = useRecentItemsStore()
 
@@ -416,6 +427,43 @@ describe('useRecentItemsStore', () => {
       expect(recentModels).toHaveLength(2) // Should filter out the deleted model
       expect(recentModels[0].file_name).toBe('model2.safetensors')
       expect(recentModels[1].file_name).toBe('model1.safetensors')
+    })
+  })
+
+  describe('logModelUsage', () => {
+    it('should update model usage and save', async () => {
+      const modelDef = new ComfyModelDef(
+        'test-model.safetensors',
+        'checkpoints',
+        0,
+        1700000000,
+        1700000000,
+        12345678
+      )
+      Object.defineProperty(modelDef, 'key', {
+        get: () => 'checkpoints/test-model.safetensors',
+        configurable: true
+      })
+
+      const mockModelLogInstance = {
+        activeState: {},
+        updateModelUsage: vi.fn(),
+        save: vi.fn().mockResolvedValue(undefined),
+        isLoaded: true,
+        isModified: false
+      }
+
+      vi.mocked(ComfyModelLog.fromAPI).mockResolvedValue(
+        mockModelLogInstance as any
+      )
+
+      await recentItemsStore.loadRecentModels()
+      await recentItemsStore.logModelUsage(modelDef)
+
+      expect(mockModelLogInstance.updateModelUsage).toHaveBeenCalledWith(
+        'checkpoints/test-model.safetensors'
+      )
+      expect(mockModelLogInstance.save).toHaveBeenCalled()
     })
   })
 
