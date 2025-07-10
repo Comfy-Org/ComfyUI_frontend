@@ -52,16 +52,24 @@ export const useRecentItemsStore = defineStore('recentItems', () => {
       .slice(0, maxRecentItemCount.value)
   })
 
-  const recentlyUsedModels = computed(() => {
+  const sortedModelEntries = computed(() => {
     if (!modelLog.value) return []
 
     return Object.entries(modelLog.value.activeState)
       .map(([key, lastUsed]) => ({ key, last_used: lastUsed }))
       .filter((a) => typeof a.last_used === 'number')
       .sort((a, b) => b.last_used - a.last_used)
+  })
+
+  const modelLookupMap = computed(() => {
+    return new Map(modelStore.models.map((model) => [model.key, model]))
+  })
+
+  const recentlyUsedModels = computed(() => {
+    return sortedModelEntries.value
       .slice(0, maxRecentItemCount.value)
-      .map((entry) => modelStore.models.find((m) => m.key === entry.key))
-      .filter((a) => !!a) as ComfyModelDef[]
+      .map((entry) => modelLookupMap.value.get(entry.key))
+      .filter((model): model is ComfyModelDef => !!model)
   })
 
   const logModelUsage = async (model: ComfyModelDef) => {

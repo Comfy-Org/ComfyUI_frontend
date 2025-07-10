@@ -141,7 +141,8 @@ const props = withDefaults(defineProps<Props<T>>(), {
   enablePreview: false,
   previewTargetId: '#model-library-model-preview-container',
   recentlyAddedItems: () => [],
-  recentlyUsedItems: () => []
+  recentlyUsedItems: () => [],
+  isComfyModelDef: (_item: RecentItem) => false
 })
 
 const hasRecentItems = computed(
