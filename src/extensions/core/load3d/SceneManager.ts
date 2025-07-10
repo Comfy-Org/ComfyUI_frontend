@@ -21,7 +21,7 @@ export class SceneManager implements SceneManagerInterface {
   private renderer: THREE.WebGLRenderer
 
   private getActiveCamera: () => THREE.Camera
-  
+
   private getControls: () => OrbitControls
 
   constructor(
