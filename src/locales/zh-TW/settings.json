@@ -6,7 +6,7 @@
     "name": "傳送匿名使用統計資料"
   },
   "Comfy-Desktop_UV_PypiInstallMirror": {
-    "name": "Pypi 安裝鏡像站",
+    "name": "PyPI 安裝鏡像站",
     "tooltip": "預設 pip 安裝鏡像站"
   },
   "Comfy-Desktop_UV_PythonInstallMirror": {
@@ -15,7 +15,7 @@
   },
   "Comfy-Desktop_UV_TorchInstallMirror": {
     "name": "Torch 安裝鏡像站",
-    "tooltip": "pytorch 的 pip 安裝鏡像站"
+    "tooltip": "PyTorch 的 pip 安裝鏡像站"
   },
   "Comfy-Desktop_WindowStyle": {
     "name": "視窗樣式",
@@ -90,7 +90,7 @@
   "Comfy_LinkRelease_Action": {
     "name": "釋放連結時的動作（無修飾鍵）",
     "options": {
-      "context menu": "內容選單",
+      "context menu": "右鍵選單",
       "no action": "無動作",
       "search box": "搜尋框"
     }
@@ -277,7 +277,7 @@
   },
   "Comfy_PreviewFormat": {
     "name": "預覽圖片格式",
-    "tooltip": "在圖片小工具中顯示預覽時，將其轉換為輕量級圖片格式，例如 webp、jpeg、webp;50 等。"
+    "tooltip": "在圖片元件中顯示預覽時，將其轉換為輕量級圖片格式，例如 webp、jpeg、webp;50 等。"
   },
   "Comfy_PromptFilename": {
     "name": "儲存工作流程時提示輸入檔案名稱"
@@ -407,6 +407,6 @@
     "tooltip": "貝茲控制點相對於重導中心點的偏移量"
   },
   "pysssss_SnapToGrid": {
-    "name": "總是對齊網格"
+    "name": "總是對齊格線"
   }
 }

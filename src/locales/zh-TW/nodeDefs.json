@@ -1,9 +1,9 @@
 {
   "AddNoise": {
-    "display_name": "AddNoise",
+    "display_name": "新增雜訊",
     "inputs": {
       "latent_image": {
-        "name": "潛在影像"
+        "name": "latent 影像"
       },
       "model": {
         "name": "model"
@@ -20,7 +20,7 @@
     "display_name": "AlignYourStepsScheduler",
     "inputs": {
       "denoise": {
-        "name": "去雜訊"
+        "name": "去雜訊強度"
       },
       "model_type": {
         "name": "model_type"
@@ -31,7 +31,7 @@
     }
   },
   "BasicGuider": {
-    "display_name": "BasicGuider",
+    "display_name": "基礎引導器",
     "inputs": {
       "conditioning": {
         "name": "條件設定"
@@ -71,7 +71,7 @@
         "name": "model"
       },
       "steps": {
-        "name": "步數"
+        "name": "步驟數"
       }
     }
   },
@@ -126,7 +126,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "[配方]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 xxl/ clip-g / clip-l\nstable_audio: t5 base\nmochi: t5 xxl\ncosmos: 舊 t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\n hidream: llama-3.1（推薦）或 t5",
+    "description": "[配方]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 xxl/ clip-g / clip-l\nstable_audio: t5 base\nmochi: t5 xxl\ncosmos: 舊 t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1（推薦）或 t5",
     "display_name": "載入 CLIP",
     "inputs": {
       "clip_name": {
@@ -180,7 +180,7 @@
     }
   },
   "CLIPSave": {
-    "display_name": "CLIPSave",
+    "display_name": "CLIP 儲存",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -197,7 +197,7 @@
         "name": "clip"
       },
       "stop_at_clip_layer": {
-        "name": "停止於 clip 層"
+        "name": "停止於 CLIP 層"
       }
     }
   },
@@ -368,10 +368,10 @@
         "name": "目標寬度"
       },
       "text_g": {
-        "name": "正向提示詞"
+        "name": "文字 G"
       },
       "text_l": {
-        "name": "負向提示詞"
+        "name": "文字 L"
       },
       "width": {
         "name": "寬度"
@@ -427,7 +427,7 @@
         "name": "高閾值"
       },
       "image": {
-        "name": "圖片"
+        "name": "影像"
       },
       "low_threshold": {
         "name": "低閾值"
@@ -446,7 +446,7 @@
     }
   },
   "CheckpointLoaderSimple": {
-    "description": "載入一個擴散模型檢查點，擴散模型用於對 latent 進行去雜訊處理。",
+    "description": "載入一個擴散模型檢查點，擴散模型用於對潛在空間進行去噪處理。",
     "display_name": "載入檢查點",
     "inputs": {
       "ckpt_name": {
@@ -456,13 +456,13 @@
     },
     "outputs": {
       "0": {
-        "tooltip": "用於對 latent 進行去雜訊處理的模型。"
+        "tooltip": "用於對潛在空間進行去噪處理的模型。"
       },
       "1": {
         "tooltip": "用於編碼文字提示的 CLIP 模型。"
       },
       "2": {
-        "tooltip": "用於將影像與 latent space 之間進行編碼與解碼的 VAE 模型。"
+        "tooltip": "用於將影像與潛在空間之間進行編碼與解碼的 VAE 模型。"
       }
     }
   },
@@ -473,7 +473,7 @@
         "name": "clip"
       },
       "filename_prefix": {
-        "name": "檔名字首"
+        "name": "檔名前綴"
       },
       "model": {
         "name": "模型"
@@ -495,7 +495,7 @@
     }
   },
   "CombineHooks4": {
-    "display_name": "組合掛鉤 [4]",
+    "display_name": "合併 Hooks [4]",
     "inputs": {
       "hooks_A": {
         "name": "hooks_A"
@@ -541,7 +541,7 @@
     }
   },
   "ConditioningAverage": {
-    "display_name": "ConditioningAverage",
+    "display_name": "條件設定（平均）",
     "inputs": {
       "conditioning_from": {
         "name": "conditioning_from"
@@ -623,10 +623,10 @@
     }
   },
   "ConditioningSetAreaPercentageVideo": {
-    "display_name": "ConditioningSetAreaPercentageVideo",
+    "display_name": "條件設定（影片區域百分比）",
     "inputs": {
       "conditioning": {
-        "name": "conditioning"
+        "name": "條件設定"
       },
       "height": {
         "name": "高度"
@@ -635,7 +635,7 @@
         "name": "強度"
       },
       "temporal": {
-        "name": "時間"
+        "name": "時間軸"
       },
       "width": {
         "name": "寬度"
@@ -652,10 +652,10 @@
     }
   },
   "ConditioningSetAreaStrength": {
-    "display_name": "ConditioningSetAreaStrength",
+    "display_name": "條件設定（區域強度）",
     "inputs": {
       "conditioning": {
-        "name": "conditioning"
+        "name": "條件設定"
       },
       "strength": {
         "name": "強度"
@@ -677,13 +677,13 @@
     }
   },
   "ConditioningSetMask": {
-    "display_name": "條件設定（設置 mask）",
+    "display_name": "條件設定（設置遮罩）",
     "inputs": {
       "conditioning": {
         "name": "條件"
       },
       "mask": {
-        "name": "mask"
+        "name": "遮罩"
       },
       "set_cond_area": {
         "name": "設定條件區域"
@@ -700,7 +700,7 @@
         "name": "cond_NEW"
       },
       "hooks": {
-        "name": "掛鉤"
+        "name": "hooks"
       },
       "mask": {
         "name": "遮罩"
@@ -743,10 +743,10 @@
     }
   },
   "ConditioningSetTimestepRange": {
-    "display_name": "ConditioningSetTimestepRange",
+    "display_name": "條件設定（時間步範圍）",
     "inputs": {
       "conditioning": {
-        "name": "conditioning"
+        "name": "條件設定"
       },
       "end": {
         "name": "結束"
@@ -757,7 +757,7 @@
     }
   },
   "ConditioningStableAudio": {
-    "display_name": "ConditioningStableAudio",
+    "display_name": "條件設定（Stable Audio）",
     "inputs": {
       "negative": {
         "name": "負向"
@@ -801,10 +801,10 @@
     }
   },
   "ConditioningZeroOut": {
-    "display_name": "ConditioningZeroOut",
+    "display_name": "條件設定（歸零）",
     "inputs": {
       "conditioning": {
-        "name": "conditioning"
+        "name": "條件設定"
       }
     }
   },
@@ -812,13 +812,13 @@
     "display_name": "套用 ControlNet（舊版）",
     "inputs": {
       "conditioning": {
-        "name": "conditioning"
+        "name": "條件設定"
       },
       "control_net": {
         "name": "control_net"
       },
       "image": {
-        "name": "圖片"
+        "name": "影像"
       },
       "strength": {
         "name": "強度"
@@ -838,10 +838,10 @@
         "name": "影像"
       },
       "negative": {
-        "name": "negative"
+        "name": "負向"
       },
       "positive": {
-        "name": "positive"
+        "name": "正向"
       },
       "start_percent": {
         "name": "起始百分比"
@@ -855,15 +855,15 @@
     },
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "正向"
       },
       "1": {
-        "name": "negative"
+        "name": "負向"
       }
     }
   },
   "ControlNetApplySD3": {
-    "display_name": "使用 Controlnet 與 VAE",
+    "display_name": "套用 ControlNet (SD3)",
     "inputs": {
       "control_net": {
         "name": "control_net"
@@ -872,13 +872,13 @@
         "name": "結束百分比"
       },
       "image": {
-        "name": "圖片"
+        "name": "影像"
       },
       "negative": {
-        "name": "negative"
+        "name": "負向"
       },
       "positive": {
-        "name": "positive"
+        "name": "正向"
       },
       "start_percent": {
         "name": "起始百分比"
@@ -892,18 +892,18 @@
     },
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "正向"
       },
       "1": {
-        "name": "negative"
+        "name": "負向"
       }
     }
   },
   "ControlNetInpaintingAliMamaApply": {
-    "display_name": "ControlNetInpaintingAliMamaApply",
+    "display_name": "套用 ControlNet 修補（AliMama）",
     "inputs": {
       "control_net": {
-        "name": "controlnet"
+        "name": "control_net"
       },
       "end_percent": {
         "name": "結束百分比"
@@ -948,7 +948,7 @@
     }
   },
   "CosmosImageToVideoLatent": {
-    "display_name": "CosmosImageToVideoLatent",
+    "display_name": "Cosmos 圖片轉影片潛在編碼",
     "inputs": {
       "batch_size": {
         "name": "批次大小"
@@ -963,7 +963,7 @@
         "name": "長度"
       },
       "start_image": {
-        "name": "起始圖片"
+        "name": "起始影像"
       },
       "vae": {
         "name": "vae"
@@ -1005,7 +1005,7 @@
         "name": "前一個 Hook 關鍵影格"
       },
       "print_keyframes": {
-        "name": "列印關鍵影格"
+        "name": "顯示關鍵影格"
       },
       "start_percent": {
         "name": "起始百分比"
@@ -1125,13 +1125,13 @@
         "name": "每秒影格數"
       },
       "images": {
-        "name": "圖片",
+        "name": "影像",
         "tooltip": "用來建立影片的圖片。"
       }
     }
   },
   "CropMask": {
-    "display_name": "CropMask",
+    "display_name": "裁剪遮罩",
     "inputs": {
       "height": {
         "name": "高度"
@@ -1170,7 +1170,7 @@
     }
   },
   "DiffusersLoader": {
-    "display_name": "DiffusersLoader",
+    "display_name": "Diffusers 載入器",
     "inputs": {
       "model_path": {
         "name": "model_path"
@@ -1181,7 +1181,7 @@
     "display_name": "停用雜訊"
   },
   "DualCFGGuider": {
-    "display_name": "DualCFGGuider",
+    "display_name": "雙 CFG 引導器",
     "inputs": {
       "cfg_cond2_negative": {
         "name": "cfg cond2 負面"
@@ -1205,7 +1205,7 @@
   },
   "DualCLIPLoader": {
     "description": "[配方]\n\nsdxl：clip-l、clip-g\nsd3：clip-l、clip-g / clip-l、t5 / clip-g、t5\nflux：clip-l、t5\nhidream：至少需有 t5 或 llama，建議同時使用 t5 與 llama",
-    "display_name": "DualCLIPLoader",
+    "display_name": "雙 CLIP 載入器",
     "inputs": {
       "clip_name1": {
         "name": "clip_name1"
@@ -1256,7 +1256,7 @@
     }
   },
   "EmptyImage": {
-    "display_name": "EmptyImage",
+    "display_name": "空白圖片",
     "inputs": {
       "batch_size": {
         "name": "批次大小"
@@ -1290,11 +1290,11 @@
     }
   },
   "EmptyLatentAudio": {
-    "display_name": "EmptyLatentAudio",
+    "display_name": "空白潛空間音訊",
     "inputs": {
       "batch_size": {
         "name": "批次大小",
-        "tooltip": "此批次中的 latent 影像數量。"
+        "tooltip": "此批次中的潛空間影像數量。"
       },
       "seconds": {
         "name": "秒數"
@@ -1368,7 +1368,7 @@
     }
   },
   "ExponentialScheduler": {
-    "display_name": "ExponentialScheduler",
+    "display_name": "指數排程器",
     "inputs": {
       "sigma_max": {
         "name": "最大 sigma"
@@ -1377,7 +1377,7 @@
         "name": "最小 sigma"
       },
       "steps": {
-        "name": "步數"
+        "name": "步驟數"
       }
     }
   },
@@ -1402,7 +1402,7 @@
     }
   },
   "FeatherMask": {
-    "display_name": "FeatherMask",
+    "display_name": "羽化遮罩",
     "inputs": {
       "bottom": {
         "name": "下方"
@@ -1411,7 +1411,7 @@
         "name": "左側"
       },
       "mask": {
-        "name": "mask"
+        "name": "遮罩"
       },
       "right": {
         "name": "右側"
@@ -1434,7 +1434,7 @@
     "display_name": "FluxDisableGuidance",
     "inputs": {
       "conditioning": {
-        "name": "conditioning"
+        "name": "條件設定"
       }
     }
   },
@@ -1462,7 +1462,7 @@
         "tooltip": "Canny 邊緣偵測的低閾值；若 skip_processing 為 True 則忽略"
       },
       "control_after_generate": {
-        "name": "control after generate"
+        "name": "生成後控制"
       },
       "control_image": {
         "name": "control_image"
@@ -1477,10 +1477,10 @@
       },
       "prompt_upsampling": {
         "name": "prompt_upsampling",
-        "tooltip": "是否對提示詞進行升頻。如果啟用，會自動修改提示詞以產生更具創意的結果，但結果將不具決定性（相同種子不會產生完全相同的結果）。"
+        "tooltip": "是否對提示詞進行向上採樣。如果啟用，會自動修改提示詞以產生更具創意的結果，但結果將不具決定性（相同種子不會產生完全相同的結果）。"
       },
       "seed": {
-        "name": "seed",
+        "name": "種子",
         "tooltip": "用於產生雜訊的隨機種子。"
       },
       "skip_preprocessing": {
@@ -1512,8 +1512,8 @@
         "tooltip": "用於影像生成的提示詞"
       },
       "prompt_upsampling": {
-        "name": "提示詞升頻",
-        "tooltip": "是否對提示詞進行升頻。啟用時，會自動修改提示詞以產生更具創意的生成結果，但結果具有不確定性（相同種子不會產生完全相同的結果）。"
+        "name": "提示詞向上採樣",
+        "tooltip": "是否對提示詞進行向上採樣。啟用時，會自動修改提示詞以產生更具創意的生成結果，但結果具有不確定性（相同種子不會產生完全相同的結果）。"
       },
       "seed": {
         "name": "種子",
@@ -1524,7 +1524,7 @@
         "tooltip": "是否跳過前處理；如果 control_image 已經是深度化影像請設為 True，若為原始影像請設為 False。"
       },
       "steps": {
-        "name": "步數",
+        "name": "步驟數",
         "tooltip": "影像生成過程的步數"
       }
     }
@@ -1556,19 +1556,19 @@
         "tooltip": "用於生成影像的提示詞"
       },
       "prompt_upsampling": {
-        "name": "提示詞升頻",
-        "tooltip": "是否對提示詞進行升頻。啟用時，會自動修改提示詞以產生更具創意的生成結果，但結果具有不確定性（相同種子不會產生完全相同的結果）。"
+        "name": "提示詞向上採樣",
+        "tooltip": "是否對提示詞進行向上採樣。啟用時，會自動修改提示詞以產生更具創意的生成結果，但結果具有不確定性（相同種子不會產生完全相同的結果）。"
       },
       "right": {
         "name": "右側",
         "tooltip": "在影像右側擴展的像素數"
       },
       "seed": {
-        "name": "隨機種子",
+        "name": "種子",
         "tooltip": "用於產生雜訊的隨機種子。"
       },
       "steps": {
-        "name": "步數",
+        "name": "步驟數",
         "tooltip": "影像生成過程的步數"
       },
       "top": {
@@ -1599,15 +1599,15 @@
         "tooltip": "用於生成影像的提示詞"
       },
       "prompt_upsampling": {
-        "name": "提示詞升頻",
-        "tooltip": "是否對提示詞進行升頻。啟用時，會自動修改提示詞以產生更具創意的結果，但結果具有不確定性（相同種子不會產生完全相同的結果）。"
+        "name": "提示詞向上採樣",
+        "tooltip": "是否對提示詞進行向上採樣。啟用時，會自動修改提示詞以產生更具創意的結果，但結果具有不確定性（相同種子不會產生完全相同的結果）。"
       },
       "seed": {
         "name": "種子",
         "tooltip": "用於產生雜訊的隨機種子。"
       },
       "steps": {
-        "name": "步數",
+        "name": "步驟數",
         "tooltip": "影像生成過程的步數"
       }
     }
@@ -1635,15 +1635,15 @@
         "tooltip": "用於影像生成的提示詞"
       },
       "prompt_upsampling": {
-        "name": "提示詞升頻",
-        "tooltip": "是否對提示詞進行升頻。啟用時，會自動修改提示詞以產生更具創意的結果，但結果具有不確定性（相同種子不會產生完全相同的結果）。"
+        "name": "提示詞向上採樣",
+        "tooltip": "是否對提示詞進行向上採樣。啟用時，會自動修改提示詞以產生更具創意的結果，但結果具有不確定性（相同種子不會產生完全相同的結果）。"
       },
       "raw": {
         "name": "原始",
         "tooltip": "若為 True，則產生較少處理、更自然的影像。"
       },
       "seed": {
-        "name": "隨機種子",
+        "name": "種子",
         "tooltip": "用於產生雜訊的隨機種子。"
       }
     }
@@ -1716,10 +1716,10 @@
         "name": "coeff"
       },
       "denoise": {
-        "name": "去雜訊"
+        "name": "去雜訊強度"
       },
       "steps": {
-        "name": "步數"
+        "name": "步驟數"
       }
     }
   },
@@ -1852,10 +1852,10 @@
         "name": "長度"
       },
       "positive": {
-        "name": "positive"
+        "name": "正向"
       },
       "start_image": {
-        "name": "起始圖片"
+        "name": "起始影像"
       },
       "vae": {
         "name": "vae"
@@ -1866,10 +1866,10 @@
     },
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "正向"
       },
       "1": {
-        "name": "latent"
+        "name": "潛在空間"
       }
     }
   },
@@ -1889,7 +1889,7 @@
         "name": "交換區大小"
       },
       "tile_size": {
-        "name": "磁磚尺寸"
+        "name": "切片尺寸"
       }
     }
   },
@@ -1997,7 +1997,7 @@
         "name": "生成後控制"
       },
       "image": {
-        "name": "參考圖片",
+        "name": "參考影像",
         "tooltip": "（選填）用於影像編輯的參考圖片。"
       },
       "magic_prompt_option": {
@@ -2005,11 +2005,11 @@
         "tooltip": "決定是否在生成時使用 MagicPrompt"
       },
       "mask": {
-        "name": "mask",
-        "tooltip": "（選填）用於修補的 mask（白色區域將被取代）"
+        "name": "遮罩",
+        "tooltip": "（選填）用於修補的遮罩（白色區域將被取代）"
       },
       "num_images": {
-        "name": "生成張數"
+        "name": "影像數量"
       },
       "prompt": {
         "name": "提示詞",
@@ -2071,7 +2071,7 @@
     }
   },
   "ImageColorToMask": {
-    "display_name": "ImageColorToMask",
+    "display_name": "顏色轉遮罩",
     "inputs": {
       "color": {
         "name": "顏色"
@@ -2082,7 +2082,7 @@
     }
   },
   "ImageCompositeMasked": {
-    "display_name": "ImageCompositeMasked",
+    "display_name": "影像合成（遮罩）",
     "inputs": {
       "destination": {
         "name": "目標圖像"
@@ -2111,7 +2111,7 @@
         "name": "高度"
       },
       "image": {
-        "name": "圖片"
+        "name": "影像"
       },
       "width": {
         "name": "寬度"
@@ -2125,7 +2125,7 @@
     }
   },
   "ImageFromBatch": {
-    "display_name": "ImageFromBatch",
+    "display_name": "從批次擷取影像",
     "inputs": {
       "batch_index": {
         "name": "批次索引"
@@ -2155,13 +2155,13 @@
     }
   },
   "ImageOnlyCheckpointSave": {
-    "display_name": "ImageOnlyCheckpointSave",
+    "display_name": "儲存僅影像檢查點",
     "inputs": {
       "clip_vision": {
         "name": "clip_vision"
       },
       "filename_prefix": {
-        "name": "檔名字首"
+        "name": "檔名前綴"
       },
       "model": {
         "name": "model"
@@ -2181,7 +2181,7 @@
         "name": "羽化"
       },
       "image": {
-        "name": "圖片"
+        "name": "影像"
       },
       "left": {
         "name": "左邊"
@@ -2209,7 +2209,7 @@
     }
   },
   "ImageRGBToYUV": {
-    "display_name": "ImageRGBToYUV",
+    "display_name": "RGB 轉 YUV",
     "inputs": {
       "image": {
         "name": "影像"
@@ -2237,7 +2237,7 @@
         "name": "高度"
       },
       "image": {
-        "name": "圖片"
+        "name": "影像"
       },
       "upscale_method": {
         "name": "放大方法"
@@ -2251,13 +2251,13 @@
     "display_name": "放大圖片倍率",
     "inputs": {
       "image": {
-        "name": "image"
+        "name": "影像"
       },
       "scale_by": {
-        "name": "scale_by"
+        "name": "縮放倍數"
       },
       "upscale_method": {
-        "name": "upscale_method"
+        "name": "放大方法"
       }
     }
   },
@@ -2265,13 +2265,13 @@
     "display_name": "將影像縮放至總像素數",
     "inputs": {
       "image": {
-        "name": "image"
+        "name": "影像"
       },
       "megapixels": {
         "name": "百萬像素"
       },
       "upscale_method": {
-        "name": "upscale_method"
+        "name": "放大方法"
       }
     }
   },
@@ -2307,7 +2307,7 @@
     "display_name": "圖片放大（使用模型）",
     "inputs": {
       "image": {
-        "name": "圖片"
+        "name": "影像"
       },
       "upscale_model": {
         "name": "放大模型"
@@ -2315,7 +2315,7 @@
     }
   },
   "ImageYUVToRGB": {
-    "display_name": "ImageYUVToRGB",
+    "display_name": "YUV 轉 RGB",
     "inputs": {
       "U": {
         "name": "U"
@@ -2329,23 +2329,23 @@
     }
   },
   "InpaintModelConditioning": {
-    "display_name": "InpaintModelConditioning",
+    "display_name": "修補模型條件設定",
     "inputs": {
       "mask": {
         "name": "遮罩"
       },
       "negative": {
-        "name": "negative"
+        "name": "負向"
       },
       "noise_mask": {
         "name": "雜訊遮罩",
-        "tooltip": "在 latent 上加入雜訊遮罩，這樣取樣只會發生在遮罩範圍內。根據模型不同，可能會改善結果，也可能完全失效。"
+        "tooltip": "在潛在空間上加入雜訊遮罩，這樣取樣只會發生在遮罩範圍內。根據模型不同，可能會改善結果，也可能完全失效。"
       },
       "pixels": {
         "name": "像素"
       },
       "positive": {
-        "name": "positive"
+        "name": "正向"
       },
       "vae": {
         "name": "vae"
@@ -2353,18 +2353,18 @@
     },
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "正向"
       },
       "1": {
-        "name": "negative"
+        "name": "負向"
       },
       "2": {
-        "name": "latent"
+        "name": "潛在空間"
       }
     }
   },
   "InstructPixToPixConditioning": {
-    "display_name": "InstructPixToPixConditioning",
+    "display_name": "指令式像素轉像素條件設定",
     "inputs": {
       "negative": {
         "name": "負向"
@@ -2387,12 +2387,12 @@
         "name": "負向"
       },
       "2": {
-        "name": "潛空間"
+        "name": "潛在空間"
       }
     }
   },
   "InvertMask": {
-    "display_name": "InvertMask",
+    "display_name": "反轉遮罩",
     "inputs": {
       "mask": {
         "name": "遮罩"
@@ -2411,7 +2411,7 @@
     }
   },
   "KSampler": {
-    "description": "使用提供的模型，以及正向與負向條件來去除 latent 影像中的雜訊。",
+    "description": "使用提供的模型，以及正向與負向條件來去除潛在空間影像中的雜訊。",
     "display_name": "KSampler",
     "inputs": {
       "cfg": {
@@ -2423,15 +2423,15 @@
       },
       "denoise": {
         "name": "去雜訊強度",
-        "tooltip": "應用的去雜訊程度，數值較低時會保留初始影像的結構，適合影像轉影像取樣。"
+        "tooltip": "應用的去噪程度，數值較低時會保留初始影像的結構，適合影像轉影像取樣。"
       },
       "latent_image": {
-        "name": "latent 影像",
-        "tooltip": "要去雜訊的 latent 影像。"
+        "name": "潛在空間影像",
+        "tooltip": "要去噪的潛在空間影像。"
       },
       "model": {
         "name": "模型",
-        "tooltip": "用於去除輸入 latent 雜訊的模型。"
+        "tooltip": "用於去除輸入潛在空間雜訊的模型。"
       },
       "negative": {
         "name": "負向條件",
@@ -2450,17 +2450,17 @@
         "tooltip": "排程器控制雜訊如何逐步移除以形成影像。"
       },
       "seed": {
-        "name": "隨機種子",
+        "name": "種子",
         "tooltip": "用於產生雜訊的隨機種子。"
       },
       "steps": {
-        "name": "步數",
-        "tooltip": "去雜訊過程中所使用的步數。"
+        "name": "步驟數",
+        "tooltip": "去噪過程中所使用的步數。"
       }
     },
     "outputs": {
       "0": {
-        "tooltip": "去雜訊後的 latent。"
+        "tooltip": "去噪後的潛在空間。"
       }
     }
   },
@@ -2480,7 +2480,7 @@
         "name": "結束步數"
       },
       "latent_image": {
-        "name": "latent 圖像"
+        "name": "潛在空間影像"
       },
       "model": {
         "name": "模型"
@@ -2507,12 +2507,12 @@
         "name": "起始步數"
       },
       "steps": {
-        "name": "步數"
+        "name": "步驟數"
       }
     }
   },
   "KSamplerSelect": {
-    "display_name": "KSamplerSelect",
+    "display_name": "K採樣器選擇",
     "inputs": {
       "sampler_name": {
         "name": "取樣器名稱"
@@ -2520,7 +2520,7 @@
     }
   },
   "KarrasScheduler": {
-    "display_name": "KarrasScheduler",
+    "display_name": "Karras 排程器",
     "inputs": {
       "rho": {
         "name": "rho"
@@ -2532,7 +2532,7 @@
         "name": "最小 sigma"
       },
       "steps": {
-        "name": "步數"
+        "name": "步驟數"
       }
     }
   },
@@ -2551,8 +2551,8 @@
         "name": "cfg_scale"
       },
       "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "反向文字提示"
+        "name": "負向提示詞",
+        "tooltip": "負向文字提示"
       },
       "prompt": {
         "name": "prompt",
@@ -2568,7 +2568,7 @@
         "name": "video_id"
       },
       "2": {
-        "name": "duration"
+        "name": "時長"
       }
     }
   },
@@ -2587,7 +2587,7 @@
         "name": "cfg_scale"
       },
       "negative_prompt": {
-        "name": "negative_prompt",
+        "name": "負向提示詞",
         "tooltip": "負向文字提示"
       },
       "prompt": {
@@ -2600,7 +2600,7 @@
         "name": "video_id"
       },
       "2": {
-        "name": "duration"
+        "name": "時長"
       }
     }
   },
@@ -2647,7 +2647,7 @@
     "display_name": "Kling 雙角色影片特效",
     "inputs": {
       "duration": {
-        "name": "duration"
+        "name": "時長"
       },
       "effect_scene": {
         "name": "effect_scene"
@@ -2669,7 +2669,7 @@
     },
     "outputs": {
       "1": {
-        "name": "duration"
+        "name": "時長"
       }
     }
   },
@@ -2684,7 +2684,7 @@
         "name": "cfg_scale"
       },
       "duration": {
-        "name": "duration"
+        "name": "時長"
       },
       "mode": {
         "name": "mode"
@@ -2693,8 +2693,8 @@
         "name": "model_name"
       },
       "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "反向文字提示"
+        "name": "負向提示詞",
+        "tooltip": "負向文字提示"
       },
       "prompt": {
         "name": "prompt",
@@ -2710,7 +2710,7 @@
         "name": "video_id"
       },
       "2": {
-        "name": "duration"
+        "name": "時長"
       }
     }
   },
@@ -2726,7 +2726,7 @@
         "tooltip": "主體參考相似度"
       },
       "image": {
-        "name": "image"
+        "name": "影像"
       },
       "image_fidelity": {
         "name": "image_fidelity",
@@ -2743,8 +2743,8 @@
         "tooltip": "生成圖像數量"
       },
       "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "反向文字提示"
+        "name": "負向提示詞",
+        "tooltip": "負向文字提示"
       },
       "prompt": {
         "name": "prompt",
@@ -2805,16 +2805,16 @@
   },
   "KlingSingleImageVideoEffectNode": {
     "description": "根據 effect_scene 產生影片時，實現不同的特殊效果。",
-    "display_name": "Kling 視訊特效",
+    "display_name": "Kling 影片特效",
     "inputs": {
       "duration": {
-        "name": "duration"
+        "name": "時長"
       },
       "effect_scene": {
         "name": "effect_scene"
       },
       "image": {
-        "name": "image",
+        "name": "影像",
         "tooltip": "參考圖片。可為 URL 或 Base64 編碼字串（不含 data:image 前綴）。檔案大小不得超過 10MB，解析度不得低於 300*300 像素，長寬比需介於 1:2.5 ~ 2.5:1 之間"
       },
       "model_name": {
@@ -2826,7 +2826,7 @@
         "name": "video_id"
       },
       "2": {
-        "name": "duration"
+        "name": "時長"
       }
     }
   },
@@ -2849,8 +2849,8 @@
         "tooltip": "用於影片生成的設定，格式為：mode / duration / model_name。"
       },
       "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "反向文字提示"
+        "name": "負向提示詞",
+        "tooltip": "負向文字提示"
       },
       "prompt": {
         "name": "prompt",
@@ -2866,7 +2866,7 @@
         "name": "video_id"
       },
       "2": {
-        "name": "duration"
+        "name": "時長"
       }
     }
   },
@@ -2885,7 +2885,7 @@
         "tooltip": "用於影片生成的設定，格式為：mode / duration / model_name。"
       },
       "negative_prompt": {
-        "name": "negative_prompt",
+        "name": "負向提示詞",
         "tooltip": "負向文字提示"
       },
       "prompt": {
@@ -2898,7 +2898,7 @@
         "name": "video_id"
       },
       "2": {
-        "name": "duration"
+        "name": "時長"
       }
     }
   },
@@ -2910,7 +2910,7 @@
         "name": "cfg_scale"
       },
       "negative_prompt": {
-        "name": "negative_prompt",
+        "name": "負向提示詞",
         "tooltip": "用於避免在延伸影片中出現的負向文字提示"
       },
       "prompt": {
@@ -2927,7 +2927,7 @@
         "name": "video_id"
       },
       "2": {
-        "name": "duration"
+        "name": "時長"
       }
     }
   },
@@ -2947,7 +2947,7 @@
     }
   },
   "LTXVAddGuide": {
-    "display_name": "LTXVAddGuide",
+    "display_name": "LTXV 添加引導",
     "inputs": {
       "frame_idx": {
         "name": "起始幀索引",
@@ -2958,13 +2958,13 @@
         "tooltip": "用於條件化 latent 視訊的影像或影片。必須為 8*n + 1 幀。如果影片不是 8*n + 1 幀，將會裁切至最接近的 8*n + 1 幀。"
       },
       "latent": {
-        "name": "latent"
+        "name": "潛在空間"
       },
       "negative": {
-        "name": "negative"
+        "name": "負向"
       },
       "positive": {
-        "name": "positive"
+        "name": "正向"
       },
       "strength": {
         "name": "強度"
@@ -2975,18 +2975,18 @@
     },
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "正向"
       },
       "1": {
-        "name": "negative"
+        "name": "負向"
       },
       "2": {
-        "name": "latent"
+        "name": "潛在空間"
       }
     }
   },
   "LTXVConditioning": {
-    "display_name": "LTXVConditioning",
+    "display_name": "LTXV 條件化",
     "inputs": {
       "frame_rate": {
         "name": "影格率"
@@ -3008,7 +3008,7 @@
     }
   },
   "LTXVCropGuides": {
-    "display_name": "LTXVCropGuides",
+    "display_name": "LTXV 裁剪引導",
     "inputs": {
       "latent": {
         "name": "潛在空間"
@@ -3033,7 +3033,7 @@
     }
   },
   "LTXVImgToVideo": {
-    "display_name": "LTXVImgToVideo",
+    "display_name": "LTXV 圖片轉影片",
     "inputs": {
       "batch_size": {
         "name": "批次大小"
@@ -3042,7 +3042,7 @@
         "name": "高度"
       },
       "image": {
-        "name": "圖片"
+        "name": "影像"
       },
       "length": {
         "name": "長度"
@@ -3071,15 +3071,15 @@
         "name": "負向"
       },
       "2": {
-        "name": "潛空間"
+        "name": "潛在空間"
       }
     }
   },
   "LTXVPreprocess": {
-    "display_name": "LTXVPreprocess",
+    "display_name": "LTXV 預處理",
     "inputs": {
       "image": {
-        "name": "image"
+        "name": "影像"
       },
       "img_compression": {
         "name": "img_compression",
@@ -3093,19 +3093,19 @@
     }
   },
   "LTXVScheduler": {
-    "display_name": "LTXVScheduler",
+    "display_name": "LTXV 排程器",
     "inputs": {
       "base_shift": {
         "name": "基礎偏移"
       },
       "latent": {
-        "name": "潛空間"
+        "name": "潛在空間"
       },
       "max_shift": {
         "name": "最大偏移"
       },
       "steps": {
-        "name": "步數"
+        "name": "步驟數"
       },
       "stretch": {
         "name": "拉伸",
@@ -3118,7 +3118,7 @@
     }
   },
   "LaplaceScheduler": {
-    "display_name": "LaplaceScheduler",
+    "display_name": "Laplace 排程器",
     "inputs": {
       "beta": {
         "name": "beta"
@@ -3133,12 +3133,12 @@
         "name": "最小 sigma"
       },
       "steps": {
-        "name": "步數"
+        "name": "步驟數"
       }
     }
   },
   "LatentAdd": {
-    "display_name": "LatentAdd",
+    "display_name": "潛空間相加",
     "inputs": {
       "samples1": {
         "name": "samples1"
@@ -3149,7 +3149,7 @@
     }
   },
   "LatentApplyOperation": {
-    "display_name": "LatentApplyOperation",
+    "display_name": "潛空間應用操作",
     "inputs": {
       "operation": {
         "name": "操作"
@@ -3160,7 +3160,7 @@
     }
   },
   "LatentApplyOperationCFG": {
-    "display_name": "LatentApplyOperationCFG",
+    "display_name": "潛空間應用操作 CFG",
     "inputs": {
       "model": {
         "name": "model"
@@ -3171,7 +3171,7 @@
     }
   },
   "LatentBatch": {
-    "display_name": "LatentBatch",
+    "display_name": "潛空間批次",
     "inputs": {
       "samples1": {
         "name": "samples1"
@@ -3182,7 +3182,7 @@
     }
   },
   "LatentBatchSeedBehavior": {
-    "display_name": "LatentBatchSeedBehavior",
+    "display_name": "潛空間批次種子行為",
     "inputs": {
       "samples": {
         "name": "樣本"
@@ -3227,7 +3227,7 @@
     }
   },
   "LatentCompositeMasked": {
-    "display_name": "LatentCompositeMasked",
+    "display_name": "潛空間遮罩合成",
     "inputs": {
       "destination": {
         "name": "destination"
@@ -3295,7 +3295,7 @@
     }
   },
   "LatentInterpolate": {
-    "display_name": "LatentInterpolate",
+    "display_name": "潛空間插值",
     "inputs": {
       "ratio": {
         "name": "比例"
@@ -3309,7 +3309,7 @@
     }
   },
   "LatentMultiply": {
-    "display_name": "LatentMultiply",
+    "display_name": "潛空間相乘",
     "inputs": {
       "multiplier": {
         "name": "乘數"
@@ -3320,7 +3320,7 @@
     }
   },
   "LatentOperationSharpen": {
-    "display_name": "LatentOperationSharpen",
+    "display_name": "潛空間銳化操作",
     "inputs": {
       "alpha": {
         "name": "alpha"
@@ -3334,7 +3334,7 @@
     }
   },
   "LatentOperationTonemapReinhard": {
-    "display_name": "LatentOperationTonemapReinhard",
+    "display_name": "潛空間 Reinhard 色調映射",
     "inputs": {
       "multiplier": {
         "name": "乘數"
@@ -3353,7 +3353,7 @@
     }
   },
   "LatentSubtract": {
-    "display_name": "LatentSubtract",
+    "display_name": "潛空間相減",
     "inputs": {
       "samples1": {
         "name": "samples1"
@@ -3406,7 +3406,7 @@
         "name": "高度"
       },
       "image": {
-        "name": "圖片"
+        "name": "影像"
       },
       "model_file": {
         "name": "模型檔案"
@@ -3447,7 +3447,7 @@
         "name": "高度"
       },
       "image": {
-        "name": "圖片"
+        "name": "影像"
       },
       "model_file": {
         "name": "模型檔案"
@@ -3477,7 +3477,7 @@
     }
   },
   "LoadAudio": {
-    "display_name": "LoadAudio",
+    "display_name": "載入音訊",
     "inputs": {
       "audio": {
         "name": "音訊"
@@ -3494,7 +3494,7 @@
     "display_name": "載入圖片",
     "inputs": {
       "image": {
-        "name": "圖片"
+        "name": "影像"
       },
       "upload": {
         "name": "選擇要上傳的檔案"
@@ -3508,7 +3508,7 @@
         "name": "通道"
       },
       "image": {
-        "name": "圖片"
+        "name": "影像"
       },
       "upload": {
         "name": "選擇要上傳的檔案"
@@ -3520,7 +3520,7 @@
     "display_name": "載入圖片（來自輸出）",
     "inputs": {
       "image": {
-        "name": "圖片"
+        "name": "影像"
       },
       "refresh": {
       },
@@ -3533,7 +3533,7 @@
     "display_name": "LoadLatent",
     "inputs": {
       "latent": {
-        "name": "潛空間"
+        "name": "潛在空間"
       }
     }
   },
@@ -3583,7 +3583,7 @@
     }
   },
   "LoraLoaderModelOnly": {
-    "description": "LoRA 用於修改 diffusion 和 CLIP 模型，改變 latent 去雜訊的方式，例如套用風格。多個 LoRA 節點可以串接在一起使用。",
+    "description": "LoRA 用於修改 diffusion 和 CLIP 模型，改變 latent 去噪的方式，例如套用風格。多個 LoRA 節點可以串接在一起使用。",
     "display_name": "LoraLoaderModelOnly",
     "inputs": {
       "lora_name": {
@@ -3609,7 +3609,7 @@
         "name": "偏差差異"
       },
       "filename_prefix": {
-        "name": "檔名字首"
+        "name": "檔名前綴"
       },
       "lora_type": {
         "name": "lora類型"
@@ -3774,7 +3774,7 @@
     "display_name": "Luma 參考",
     "inputs": {
       "image": {
-        "name": "圖片",
+        "name": "影像",
         "tooltip": "用作參考的圖片。"
       },
       "luma_ref": {
@@ -3809,7 +3809,7 @@
       },
       "luma_concepts": {
         "name": "luma_concepts",
-        "tooltip": "（選填）透過 Luma Concepts 節點指定攝影機運動的相機概念。"
+        "tooltip": "（選填）透過 Luma Concepts 節點指定相機運動的相機概念。"
       },
       "model": {
         "name": "模型"
@@ -3842,7 +3842,7 @@
     }
   },
   "MaskComposite": {
-    "display_name": "MaskComposite",
+    "display_name": "遮罩合成",
     "inputs": {
       "destination": {
         "name": "destination"
@@ -3866,7 +3866,7 @@
     "display_name": "MaskPreview",
     "inputs": {
       "mask": {
-        "name": "mask"
+        "name": "遮罩"
       }
     }
   },
@@ -3898,7 +3898,7 @@
         "tooltip": "用於引導影片生成的文字提示"
       },
       "seed": {
-        "name": "隨機種子",
+        "name": "種子",
         "tooltip": "用於產生雜訊的隨機種子。"
       }
     }
@@ -3919,7 +3919,7 @@
         "tooltip": "用於引導影片生成的文字提示"
       },
       "seed": {
-        "name": "隨機種子",
+        "name": "種子",
         "tooltip": "用於產生雜訊的隨機種子。"
       }
     }
@@ -3939,10 +3939,10 @@
     "display_name": "ModelMergeAdd",
     "inputs": {
       "model1": {
-        "name": "model1"
+        "name": "模型 1"
       },
       "model2": {
-        "name": "model2"
+        "name": "模型 2"
       }
     }
   },
@@ -3974,10 +3974,10 @@
         "name": "modF."
       },
       "model1": {
-        "name": "model1"
+        "name": "模型 1"
       },
       "model2": {
-        "name": "model2"
+        "name": "模型 2"
       },
       "positional_encoding": {
         "name": "positional_encoding"
@@ -4096,10 +4096,10 @@
         "name": "中間"
       },
       "model1": {
-        "name": "model1"
+        "name": "模型 1"
       },
       "model2": {
-        "name": "model2"
+        "name": "模型 2"
       },
       "out": {
         "name": "輸出"
@@ -4227,10 +4227,10 @@
         "name": "final_layer."
       },
       "model1": {
-        "name": "model1"
+        "name": "模型 1"
       },
       "model2": {
-        "name": "model2"
+        "name": "模型 2"
       },
       "pos_embedder_": {
         "name": "pos_embedder."
@@ -4340,10 +4340,10 @@
         "name": "final_layer."
       },
       "model1": {
-        "name": "model1"
+        "name": "模型 1"
       },
       "model2": {
-        "name": "model2"
+        "name": "模型 2"
       },
       "pos_embedder_": {
         "name": "pos_embedder."
@@ -4426,10 +4426,10 @@
         "name": "img_in."
       },
       "model1": {
-        "name": "model1"
+        "name": "模型 1"
       },
       "model2": {
-        "name": "model2"
+        "name": "模型 2"
       },
       "single_blocks_0_": {
         "name": "single_blocks.0."
@@ -4557,7 +4557,7 @@
     }
   },
   "ModelMergeLTXV": {
-    "display_name": "ModelMergeLTXV",
+    "display_name": "模型合併 (LTXV)",
     "inputs": {
       "adaln_single_": {
         "name": "adaln_single."
@@ -4566,10 +4566,10 @@
         "name": "caption_projection."
       },
       "model1": {
-        "name": "model1"
+        "name": "模型 1"
       },
       "model2": {
-        "name": "model2"
+        "name": "模型 2"
       },
       "patchify_proj_": {
         "name": "patchify_proj."
@@ -4667,7 +4667,7 @@
     }
   },
   "ModelMergeMochiPreview": {
-    "display_name": "ModelMergeMochiPreview",
+    "display_name": "模型合併 (Mochi 預覽)",
     "inputs": {
       "blocks_0_": {
         "name": "blocks.0."
@@ -4817,10 +4817,10 @@
         "name": "final_layer."
       },
       "model1": {
-        "name": "model1"
+        "name": "模型 1"
       },
       "model2": {
-        "name": "model2"
+        "name": "模型 2"
       },
       "pos_frequencies_": {
         "name": "pos_frequencies."
@@ -4837,7 +4837,7 @@
     }
   },
   "ModelMergeSD1": {
-    "display_name": "ModelMergeSD1",
+    "display_name": "模型合併 (SD1)",
     "inputs": {
       "input_blocks_0_": {
         "name": "input_blocks.0."
@@ -4888,10 +4888,10 @@
         "name": "middle_block.2."
       },
       "model1": {
-        "name": "model1"
+        "name": "模型 1"
       },
       "model2": {
-        "name": "model2"
+        "name": "模型 2"
       },
       "out_": {
         "name": "out."
@@ -4938,7 +4938,7 @@
     }
   },
   "ModelMergeSD2": {
-    "display_name": "ModelMergeSD2",
+    "display_name": "模型合併 (SD2)",
     "inputs": {
       "input_blocks_0_": {
         "name": "input_blocks.0."
@@ -4989,10 +4989,10 @@
         "name": "middle_block.2."
       },
       "model1": {
-        "name": "model1"
+        "name": "模型 1"
       },
       "model2": {
-        "name": "model2"
+        "name": "模型 2"
       },
       "out_": {
         "name": "out."
@@ -5039,7 +5039,7 @@
     }
   },
   "ModelMergeSD35_Large": {
-    "display_name": "ModelMergeSD35_Large",
+    "display_name": "模型合併 (SD3.5 Large)",
     "inputs": {
       "context_embedder_": {
         "name": "context_embedder."
@@ -5162,10 +5162,10 @@
         "name": "joint_blocks.9."
       },
       "model1": {
-        "name": "model1"
+        "name": "模型 1"
       },
       "model2": {
-        "name": "model2"
+        "name": "模型 2"
       },
       "pos_embed_": {
         "name": "pos_embed."
@@ -5182,7 +5182,7 @@
     }
   },
   "ModelMergeSD3_2B": {
-    "display_name": "ModelMergeSD3_2B",
+    "display_name": "模型合併 (SD3 2B)",
     "inputs": {
       "context_embedder_": {
         "name": "context_embedder."
@@ -5263,10 +5263,10 @@
         "name": "joint_blocks.9."
       },
       "model1": {
-        "name": "model1"
+        "name": "模型 1"
       },
       "model2": {
-        "name": "model2"
+        "name": "模型 2"
       },
       "pos_embed_": {
         "name": "pos_embed."
@@ -5283,7 +5283,7 @@
     }
   },
   "ModelMergeSDXL": {
-    "display_name": "ModelMergeSDXL",
+    "display_name": "模型合併 (SDXL)",
     "inputs": {
       "input_blocks_0": {
         "name": "input_blocks.0"
@@ -5325,10 +5325,10 @@
         "name": "middle_block.2"
       },
       "model1": {
-        "name": "model1"
+        "name": "模型 1"
       },
       "model2": {
-        "name": "model2"
+        "name": "模型 2"
       },
       "out_": {
         "name": "out."
@@ -5366,13 +5366,13 @@
     }
   },
   "ModelMergeSimple": {
-    "display_name": "ModelMergeSimple",
+    "display_name": "簡易模型合併",
     "inputs": {
       "model1": {
-        "name": "model1"
+        "name": "模型 1"
       },
       "model2": {
-        "name": "model2"
+        "name": "模型 2"
       },
       "ratio": {
         "name": "比例"
@@ -5380,13 +5380,13 @@
     }
   },
   "ModelMergeSubtract": {
-    "display_name": "ModelMergeSubtract",
+    "display_name": "模型合併（減法）",
     "inputs": {
       "model1": {
-        "name": "model1"
+        "name": "模型 1"
       },
       "model2": {
-        "name": "model2"
+        "name": "模型 2"
       },
       "multiplier": {
         "name": "乘數"
@@ -5395,7 +5395,7 @@
   },
   "ModelMergeWAN2_1": {
     "description": "1.3B 模型有 30 個區塊，14B 模型有 40 個區塊。影像轉影片模型有額外的 img_emb。",
-    "display_name": "ModelMergeWAN2_1",
+    "display_name": "模型合併 (WAN2.1)",
     "inputs": {
       "blocks_0_": {
         "name": "blocks.0."
@@ -5524,10 +5524,10 @@
         "name": "img_emb."
       },
       "model1": {
-        "name": "model1"
+        "name": "模型 1"
       },
       "model2": {
-        "name": "model2"
+        "name": "模型 2"
       },
       "patch_embedding_": {
         "name": "patch_embedding."
@@ -5544,7 +5544,7 @@
     }
   },
   "ModelSamplingAuraFlow": {
-    "display_name": "ModelSamplingAuraFlow",
+    "display_name": "模型取樣 AuraFlow",
     "inputs": {
       "model": {
         "name": "model"
@@ -5555,7 +5555,7 @@
     }
   },
   "ModelSamplingContinuousEDM": {
-    "display_name": "ModelSamplingContinuousEDM",
+    "display_name": "模型取樣連續 EDM",
     "inputs": {
       "model": {
         "name": "model"
@@ -5572,7 +5572,7 @@
     }
   },
   "ModelSamplingContinuousV": {
-    "display_name": "ModelSamplingContinuousV",
+    "display_name": "模型取樣連續 V",
     "inputs": {
       "model": {
         "name": "model"
@@ -5589,7 +5589,7 @@
     }
   },
   "ModelSamplingDiscrete": {
-    "display_name": "ModelSamplingDiscrete",
+    "display_name": "模型取樣離散",
     "inputs": {
       "model": {
         "name": "model"
@@ -5603,7 +5603,7 @@
     }
   },
   "ModelSamplingFlux": {
-    "display_name": "ModelSamplingFlux",
+    "display_name": "模型取樣 Flux",
     "inputs": {
       "base_shift": {
         "name": "基礎偏移"
@@ -5623,13 +5623,13 @@
     }
   },
   "ModelSamplingLTXV": {
-    "display_name": "ModelSamplingLTXV",
+    "display_name": "模型取樣 LTXV",
     "inputs": {
       "base_shift": {
         "name": "基礎偏移"
       },
       "latent": {
-        "name": "latent"
+        "name": "潛在空間"
       },
       "max_shift": {
         "name": "最大偏移"
@@ -5640,18 +5640,18 @@
     }
   },
   "ModelSamplingSD3": {
-    "display_name": "ModelSamplingSD3",
+    "display_name": "模型取樣 SD3",
     "inputs": {
       "model": {
         "name": "model"
       },
       "shift": {
-        "name": "shift"
+        "name": "偏移"
       }
     }
   },
   "ModelSamplingStableCascade": {
-    "display_name": "ModelSamplingStableCascade",
+    "display_name": "模型取樣 Stable Cascade",
     "inputs": {
       "model": {
         "name": "model"
@@ -5662,10 +5662,10 @@
     }
   },
   "ModelSave": {
-    "display_name": "ModelSave",
+    "display_name": "儲存模型",
     "inputs": {
       "filename_prefix": {
-        "name": "檔名字首"
+        "name": "檔名前綴"
       },
       "model": {
         "name": "model"
@@ -5691,7 +5691,7 @@
     "display_name": "OpenAI DALL·E 2",
     "inputs": {
       "control_after_generate": {
-        "name": "產生後控制"
+        "name": "生成後控制"
       },
       "image": {
         "name": "參考影像",
@@ -5790,16 +5790,16 @@
     }
   },
   "OptimalStepsScheduler": {
-    "display_name": "OptimalStepsScheduler",
+    "display_name": "最佳步數排程器",
     "inputs": {
       "denoise": {
-        "name": "去雜訊"
+        "name": "去雜訊強度"
       },
       "model_type": {
         "name": "model_type"
       },
       "steps": {
-        "name": "步數"
+        "name": "步驟數"
       }
     }
   },
@@ -5821,10 +5821,10 @@
     },
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "正向"
       },
       "1": {
-        "name": "negative"
+        "name": "負向"
       }
     }
   },
@@ -5860,7 +5860,7 @@
     "display_name": "條件配對組屬性",
     "inputs": {
       "hooks": {
-        "name": "掛鉤"
+        "name": "hooks"
       },
       "mask": {
         "name": "遮罩"
@@ -5900,13 +5900,13 @@
         "name": "遮罩"
       },
       "negative": {
-        "name": "negative"
+        "name": "負向"
       },
       "negative_NEW": {
         "name": "negative_NEW"
       },
       "positive": {
-        "name": "positive"
+        "name": "正向"
       },
       "positive_NEW": {
         "name": "positive_NEW"
@@ -5923,10 +5923,10 @@
     },
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "正向"
       },
       "1": {
-        "name": "negative"
+        "name": "負向"
       }
     }
   },
@@ -5974,7 +5974,7 @@
     }
   },
   "PerpNegGuider": {
-    "display_name": "PerpNegGuider",
+    "display_name": "垂直負向引導器",
     "inputs": {
       "cfg": {
         "name": "cfg"
@@ -5997,7 +5997,7 @@
     }
   },
   "PerturbedAttentionGuidance": {
-    "display_name": "PerturbedAttentionGuidance",
+    "display_name": "擾動注意力引導",
     "inputs": {
       "model": {
         "name": "模型"
@@ -6008,13 +6008,13 @@
     }
   },
   "PhotoMakerEncode": {
-    "display_name": "PhotoMakerEncode",
+    "display_name": "PhotoMaker 編碼",
     "inputs": {
       "clip": {
         "name": "clip"
       },
       "image": {
-        "name": "圖片"
+        "name": "影像"
       },
       "photomaker": {
         "name": "photomaker"
@@ -6025,7 +6025,7 @@
     }
   },
   "PhotoMakerLoader": {
-    "display_name": "PhotoMakerLoader",
+    "display_name": "PhotoMaker 載入器",
     "inputs": {
       "photomaker_model_name": {
         "name": "photomaker_model_name"
@@ -6034,7 +6034,7 @@
   },
   "PikaImageToVideoNode2_2": {
     "description": "將圖像與提示詞發送至 Pika API v2.2 以生成影片。",
-    "display_name": "Pika 圖像轉影片",
+    "display_name": "Pika 影像轉影片",
     "inputs": {
       "control_after_generate": {
         "name": "生成後控制"
@@ -6047,7 +6047,7 @@
         "tooltip": "要轉換為影片的圖像"
       },
       "negative_prompt": {
-        "name": "反向提示詞"
+        "name": "負向提示詞"
       },
       "prompt_text": {
         "name": "提示詞"
@@ -6065,49 +6065,49 @@
     "display_name": "Pika Scenes（影片影像合成）",
     "inputs": {
       "aspect_ratio": {
-        "name": "aspect_ratio",
+        "name": "長寬比",
         "tooltip": "長寬比（寬度 / 高度）"
       },
       "control_after_generate": {
-        "name": "control after generate"
+        "name": "生成後控制"
       },
       "duration": {
-        "name": "duration"
+        "name": "時長"
       },
       "image_ingredient_1": {
-        "name": "image_ingredient_1",
+        "name": "影像素材_1",
         "tooltip": "將用作影片素材的圖片。"
       },
       "image_ingredient_2": {
-        "name": "image_ingredient_2",
+        "name": "影像素材_2",
         "tooltip": "將用作影片素材的圖片。"
       },
       "image_ingredient_3": {
-        "name": "image_ingredient_3",
+        "name": "影像素材_3",
         "tooltip": "將用作影片素材的圖片。"
       },
       "image_ingredient_4": {
-        "name": "image_ingredient_4",
+        "name": "影像素材_4",
         "tooltip": "將用作影片素材的圖片。"
       },
       "image_ingredient_5": {
-        "name": "image_ingredient_5",
+        "name": "影像素材_5",
         "tooltip": "將用作影片素材的圖片。"
       },
       "ingredients_mode": {
-        "name": "ingredients_mode"
+        "name": "素材模式"
       },
       "negative_prompt": {
-        "name": "negative_prompt"
+        "name": "負向提示詞"
       },
       "prompt_text": {
-        "name": "prompt_text"
+        "name": "提示文字"
       },
       "resolution": {
-        "name": "resolution"
+        "name": "解析度"
       },
       "seed": {
-        "name": "seed"
+        "name": "種子"
       }
     }
   },
@@ -6116,30 +6116,30 @@
     "display_name": "Pika 首尾影格轉影片",
     "inputs": {
       "control_after_generate": {
-        "name": "control after generate"
+        "name": "生成後控制"
       },
       "duration": {
-        "name": "duration"
+        "name": "時長"
       },
       "image_end": {
-        "name": "image_end",
+        "name": "結束影像",
         "tooltip": "要結合的最後一張圖片。"
       },
       "image_start": {
-        "name": "image_start",
+        "name": "起始影像",
         "tooltip": "要結合的第一張圖片。"
       },
       "negative_prompt": {
-        "name": "negative_prompt"
+        "name": "負向提示詞"
       },
       "prompt_text": {
-        "name": "prompt_text"
+        "name": "提示文字"
       },
       "resolution": {
-        "name": "resolution"
+        "name": "解析度"
       },
       "seed": {
-        "name": "seed"
+        "name": "種子"
       }
     }
   },
@@ -6158,7 +6158,7 @@
         "name": "時長"
       },
       "negative_prompt": {
-        "name": "反向提示"
+        "name": "負向提示"
       },
       "prompt_text": {
         "name": "提示文字"
@@ -6179,11 +6179,11 @@
         "name": "生成後控制"
       },
       "image": {
-        "name": "圖片",
+        "name": "影像",
         "tooltip": "要加入到影片中的圖片。"
       },
       "negative_prompt": {
-        "name": "反向提示"
+        "name": "負向提示"
       },
       "prompt_text": {
         "name": "提示文字"
@@ -6202,14 +6202,14 @@
     "display_name": "Pikaffects（影片特效）",
     "inputs": {
       "control_after_generate": {
-        "name": "產生後控制"
+        "name": "生成後控制"
       },
       "image": {
-        "name": "圖片",
+        "name": "影像",
         "tooltip": "要套用 Pikaffect 的參考圖片。"
       },
       "negative_prompt": {
-        "name": "反向提示"
+        "name": "負向提示"
       },
       "pikaffect": {
         "name": "Pikaffect"
@@ -6230,7 +6230,7 @@
         "name": "生成後控制"
       },
       "image": {
-        "name": "圖片",
+        "name": "影像",
         "tooltip": "用來替換影片中被遮罩物件的圖片。"
       },
       "mask": {
@@ -6238,7 +6238,7 @@
         "tooltip": "使用遮罩來定義影片中要替換的區域"
       },
       "negative_prompt": {
-        "name": "反向提示"
+        "name": "負向提示"
       },
       "prompt_text": {
         "name": "提示文字"
@@ -6254,7 +6254,7 @@
   },
   "PixverseImageToVideoNode": {
     "description": "根據提示詞與輸出尺寸同步生成影片。",
-    "display_name": "PixVerse 圖像轉影片",
+    "display_name": "PixVerse 影像轉影片",
     "inputs": {
       "control_after_generate": {
         "name": "生成後控制"
@@ -6269,7 +6269,7 @@
         "name": "動作模式"
       },
       "negative_prompt": {
-        "name": "反向提示詞",
+        "name": "負向提示詞",
         "tooltip": "可選的文字描述，用於排除不希望出現在圖像中的元素。"
       },
       "pixverse_template": {
@@ -6319,7 +6319,7 @@
         "name": "動作模式"
       },
       "negative_prompt": {
-        "name": "反向提示詞",
+        "name": "負向提示詞",
         "tooltip": "可選的文字描述，用於排除不希望出現在影像中的元素。"
       },
       "pixverse_template": {
@@ -6359,7 +6359,7 @@
         "name": "動作模式"
       },
       "negative_prompt": {
-        "name": "反向提示詞",
+        "name": "負向提示詞",
         "tooltip": "可選的文字描述，用於排除不希望出現在影像中的元素。"
       },
       "prompt": {
@@ -6376,7 +6376,7 @@
     }
   },
   "PolyexponentialScheduler": {
-    "display_name": "PolyexponentialScheduler",
+    "display_name": "多指數排程器",
     "inputs": {
       "rho": {
         "name": "rho"
@@ -6388,12 +6388,12 @@
         "name": "最小 sigma"
       },
       "steps": {
-        "name": "步數"
+        "name": "步驟數"
       }
     }
   },
   "PorterDuffImageComposite": {
-    "display_name": "Porter-Duff 圖像合成",
+    "display_name": "Porter-Duff 影像合成",
     "inputs": {
       "destination": {
         "name": "destination"
@@ -6419,7 +6419,7 @@
         "name": "camera_info"
       },
       "image": {
-        "name": "image"
+        "name": "影像"
       },
       "model_file": {
         "name": "model_file"
@@ -6433,7 +6433,7 @@
         "name": "camera_info"
       },
       "image": {
-        "name": "image"
+        "name": "影像"
       },
       "model_file": {
         "name": "model_file"
@@ -6532,7 +6532,7 @@
     }
   },
   "RandomNoise": {
-    "display_name": "RandomNoise",
+    "display_name": "隨機雜訊",
     "inputs": {
       "control_after_generate": {
         "name": "生成後控制"
@@ -6643,7 +6643,7 @@
         "tooltip": "要生成的影像數量。"
       },
       "negative_prompt": {
-        "name": "反向提示詞",
+        "name": "負向提示詞",
         "tooltip": "可選的文字描述，用於指定影像中不希望出現的元素。"
       },
       "prompt": {
@@ -6674,7 +6674,7 @@
         "tooltip": "要生成的影像數量。"
       },
       "negative_prompt": {
-        "name": "反向提示詞",
+        "name": "負向提示詞",
         "tooltip": "可選的文字描述，用於指定影像中不希望出現的元素。"
       },
       "prompt": {
@@ -6715,14 +6715,14 @@
         "name": "生成後控制"
       },
       "image": {
-        "name": "圖片"
+        "name": "影像"
       },
       "n": {
         "name": "生成數量",
         "tooltip": "要生成的圖片數量。"
       },
       "negative_prompt": {
-        "name": "反向提示詞",
+        "name": "負向提示詞",
         "tooltip": "可選的文字描述，用於指定圖片中不希望出現的元素。"
       },
       "prompt": {
@@ -6807,7 +6807,7 @@
         "tooltip": "要生成的圖像數量。"
       },
       "negative_prompt": {
-        "name": "負面提示詞",
+        "name": "負向提示詞",
         "tooltip": "可選的文字描述，用於指定圖像中不希望出現的元素。"
       },
       "prompt": {
@@ -6843,7 +6843,7 @@
         "tooltip": "要生成的圖片數量。"
       },
       "negative_prompt": {
-        "name": "反向提示詞",
+        "name": "負向提示詞",
         "tooltip": "可選的文字描述，用於指定圖片中不希望出現的元素。"
       },
       "prompt": {
@@ -6897,7 +6897,7 @@
         "name": "數量"
       },
       "image": {
-        "name": "image"
+        "name": "影像"
       }
     }
   },
@@ -6927,7 +6927,7 @@
     "display_name": "SDTurboScheduler",
     "inputs": {
       "denoise": {
-        "name": "去雜訊"
+        "name": "去雜訊強度"
       },
       "model": {
         "name": "model"
@@ -6964,7 +6964,7 @@
         "name": "負向"
       },
       "2": {
-        "name": "latent"
+        "name": "潛在空間"
       }
     }
   },
@@ -6981,7 +6981,7 @@
         "name": "高度"
       },
       "init_image": {
-        "name": "初始圖片"
+        "name": "初始影像"
       },
       "vae": {
         "name": "vae"
@@ -7001,7 +7001,7 @@
         "name": "負向"
       },
       "2": {
-        "name": "潛空間"
+        "name": "潛在空間"
       }
     }
   },
@@ -7021,7 +7021,7 @@
         "name": "高度"
       },
       "init_image": {
-        "name": "初始圖片"
+        "name": "初始影像"
       },
       "motion_bucket_id": {
         "name": "動作分組 ID"
@@ -7044,7 +7044,7 @@
         "name": "負向"
       },
       "2": {
-        "name": "潛空間"
+        "name": "潛在空間"
       }
     }
   },
@@ -7061,7 +7061,7 @@
         "name": "生成後控制"
       },
       "latent_image": {
-        "name": "潛在影像"
+        "name": "latent 影像"
       },
       "model": {
         "name": "model"
@@ -7079,7 +7079,7 @@
         "name": "取樣器"
       },
       "sigmas": {
-        "name": "西格瑪值"
+        "name": "Sigma 值"
       }
     },
     "outputs": {
@@ -7087,7 +7087,7 @@
         "name": "輸出"
       },
       "1": {
-        "name": "去雜訊輸出"
+        "name": "去噪輸出"
       }
     }
   },
@@ -7098,7 +7098,7 @@
         "name": "引導器"
       },
       "latent_image": {
-        "name": "潛在影像"
+        "name": "latent 影像"
       },
       "noise": {
         "name": "雜訊"
@@ -7107,7 +7107,7 @@
         "name": "取樣器"
       },
       "sigmas": {
-        "name": "西格瑪值"
+        "name": "Sigma 值"
       }
     },
     "outputs": {
@@ -7115,7 +7115,7 @@
         "name": "輸出"
       },
       "1": {
-        "name": "去雜訊輸出"
+        "name": "去噪輸出"
       }
     }
   },
@@ -7272,7 +7272,7 @@
         "name": "壓縮等級"
       },
       "filename_prefix": {
-        "name": "檔名字首"
+        "name": "檔名前綴"
       },
       "fps": {
         "name": "每秒影格數"
@@ -7286,10 +7286,10 @@
     "display_name": "SaveAnimatedWEBP",
     "inputs": {
       "filename_prefix": {
-        "name": "檔名字首"
+        "name": "檔名前綴"
       },
       "fps": {
-        "name": "每秒幀數"
+        "name": "每秒影格數"
       },
       "images": {
         "name": "圖片"
@@ -7306,7 +7306,7 @@
     }
   },
   "SaveAudio": {
-    "display_name": "SaveAudio",
+    "display_name": "儲存音訊",
     "inputs": {
       "audio": {
         "name": "音訊"
@@ -7315,7 +7315,7 @@
         "name": "音訊介面"
       },
       "filename_prefix": {
-        "name": "檔名字首"
+        "name": "檔名前綴"
       }
     }
   },
@@ -7323,10 +7323,10 @@
     "display_name": "SaveGLB",
     "inputs": {
       "filename_prefix": {
-        "name": "檔名字首"
+        "name": "檔名前綴"
       },
       "image": {
-        "name": "圖片"
+        "name": "影像"
       },
       "mesh": {
         "name": "mesh"
@@ -7338,11 +7338,11 @@
     "display_name": "儲存圖片",
     "inputs": {
       "filename_prefix": {
-        "name": "檔名字首",
+        "name": "檔名前綴",
         "tooltip": "要儲存檔案的字首。這可以包含格式化資訊，例如 %date:yyyy-MM-dd% 或 %Empty Latent Image.width%，以便從節點中包含數值。"
       },
       "images": {
-        "name": "圖片",
+        "name": "影像",
         "tooltip": "要儲存的圖片。"
       }
     }
@@ -7359,7 +7359,7 @@
     "display_name": "SaveLatent",
     "inputs": {
       "filename_prefix": {
-        "name": "檔名字首"
+        "name": "檔名前綴"
       },
       "samples": {
         "name": "samples"
@@ -7371,7 +7371,7 @@
     "display_name": "儲存 SVG",
     "inputs": {
       "filename_prefix": {
-        "name": "檔名字首",
+        "name": "檔名前綴",
         "tooltip": "要儲存檔案的字首。這可以包含格式化資訊，例如 %date:yyyy-MM-dd% 或 %Empty Latent Image.width%，以便從節點中包含數值。"
       },
       "svg": {
@@ -7388,7 +7388,7 @@
         "tooltip": "影片要使用的編碼器。"
       },
       "filename_prefix": {
-        "name": "檔名字首",
+        "name": "檔名前綴",
         "tooltip": "要儲存檔案的字首。這可以包含格式化資訊，例如 %date:yyyy-MM-dd% 或 %Empty Latent Image.width%，以便從節點中包含數值。"
       },
       "format": {
@@ -7412,7 +7412,7 @@
         "tooltip": "CRF 值越高，畫質越低但檔案較小；CRF 值越低，畫質越高但檔案較大。"
       },
       "filename_prefix": {
-        "name": "檔名字首"
+        "name": "檔名前綴"
       },
       "fps": {
         "name": "每秒影格數"
@@ -7446,7 +7446,7 @@
         "name": "clip"
       },
       "hooks": {
-        "name": "掛鉤"
+        "name": "hooks"
       },
       "schedule_clip": {
         "name": "排程 clip"
@@ -7476,7 +7476,7 @@
     }
   },
   "SetLatentNoiseMask": {
-    "display_name": "設定潛在雜訊遮罩",
+    "display_name": "設定 latent 雜訊遮罩",
     "inputs": {
       "mask": {
         "name": "遮罩"
@@ -7499,34 +7499,34 @@
   },
   "SkipLayerGuidanceDiT": {
     "description": "可用於所有 DiT 模型的通用 SkipLayerGuidance 節點版本。",
-    "display_name": "SkipLayerGuidanceDiT",
+    "display_name": "跳過層引導 DiT",
     "inputs": {
       "double_layers": {
-        "name": "double_layers"
+        "name": "雙層"
       },
       "end_percent": {
-        "name": "end_percent"
+        "name": "結束百分比"
       },
       "model": {
         "name": "model"
       },
       "rescaling_scale": {
-        "name": "rescaling_scale"
+        "name": "重新縮放比例"
       },
       "scale": {
-        "name": "scale"
+        "name": "縮放"
       },
       "single_layers": {
-        "name": "single_layers"
+        "name": "單層"
       },
       "start_percent": {
-        "name": "start_percent"
+        "name": "起始百分比"
       }
     }
   },
   "SkipLayerGuidanceSD3": {
     "description": "可用於所有 DiT 模型的通用 SkipLayerGuidance 節點版本。",
-    "display_name": "SkipLayerGuidanceSD3",
+    "display_name": "跳過層引導 SD3",
     "inputs": {
       "end_percent": {
         "name": "結束百分比"
@@ -7546,7 +7546,7 @@
     }
   },
   "SolidMask": {
-    "display_name": "SolidMask",
+    "display_name": "實色遮罩",
     "inputs": {
       "height": {
         "name": "高度"
@@ -7568,7 +7568,7 @@
     }
   },
   "SplitSigmas": {
-    "display_name": "SplitSigmas",
+    "display_name": "分割 Sigmas",
     "inputs": {
       "sigmas": {
         "name": "sigmas"
@@ -7587,10 +7587,10 @@
     }
   },
   "SplitSigmasDenoise": {
-    "display_name": "SplitSigmasDenoise",
+    "display_name": "分割 Sigmas（去噪）",
     "inputs": {
       "denoise": {
-        "name": "去雜訊"
+        "name": "去雜訊強度"
       },
       "sigmas": {
         "name": "sigmas"
@@ -7610,7 +7610,7 @@
     "display_name": "Stability AI Stable Diffusion 3.5 圖像",
     "inputs": {
       "aspect_ratio": {
-        "name": "aspect_ratio",
+        "name": "長寬比",
         "tooltip": "生成圖像的長寬比。"
       },
       "cfg_scale": {
@@ -7618,20 +7618,20 @@
         "tooltip": "擴散過程對提示詞文本的遵循程度（數值越高，圖像越貼近您的提示詞）"
       },
       "control_after_generate": {
-        "name": "control after generate"
+        "name": "生成後控制"
       },
       "image": {
-        "name": "image"
+        "name": "影像"
       },
       "image_denoise": {
         "name": "image_denoise",
-        "tooltip": "輸入圖像的去雜訊程度；0.0 代表與輸入圖像完全相同，1.0 則如同未提供任何圖像。"
+        "tooltip": "輸入圖像的去噪程度；0.0 代表與輸入圖像完全相同，1.0 則如同未提供任何圖像。"
       },
       "model": {
         "name": "model"
       },
       "negative_prompt": {
-        "name": "negative_prompt",
+        "name": "負向提示詞",
         "tooltip": "您不希望在輸出圖像中出現的關鍵字。這是進階功能。"
       },
       "prompt": {
@@ -7639,7 +7639,7 @@
         "tooltip": "您希望在輸出圖像中看到的內容。明確且具體描述元素、顏色與主題的強力提示詞，將帶來更佳的結果。"
       },
       "seed": {
-        "name": "seed",
+        "name": "種子",
         "tooltip": "用於產生雜訊的隨機種子。"
       },
       "style_preset": {
@@ -7653,21 +7653,21 @@
     "display_name": "Stability AI Stable Image Ultra",
     "inputs": {
       "aspect_ratio": {
-        "name": "aspect_ratio",
+        "name": "長寬比",
         "tooltip": "生成影像的長寬比。"
       },
       "control_after_generate": {
-        "name": "control after generate"
+        "name": "生成後控制"
       },
       "image": {
-        "name": "image"
+        "name": "影像"
       },
       "image_denoise": {
         "name": "image_denoise",
-        "tooltip": "輸入影像的去雜訊程度；0.0 代表與輸入影像完全相同，1.0 則如同未提供任何影像。"
+        "tooltip": "輸入影像的去噪程度；0.0 代表與輸入影像完全相同，1.0 則如同未提供任何影像。"
       },
       "negative_prompt": {
-        "name": "negative_prompt",
+        "name": "負向提示詞",
         "tooltip": "描述您不希望在輸出影像中出現內容的文字。這是進階功能。"
       },
       "prompt": {
@@ -7675,7 +7675,7 @@
         "tooltip": "您希望在輸出影像中看到的內容。強而有力且具體的提示詞，能清楚定義元素、顏色與主題，將帶來更佳的結果。若要控制特定詞語的權重，請使用格式 `(word:weight)`，其中 `word` 是您想控制權重的詞語，`weight` 是介於 0 到 1 之間的數值。例如：`The sky was a crisp (blue:0.3) and (green:0.8)` 代表天空同時有藍色與綠色，但綠色比例高於藍色。"
       },
       "seed": {
-        "name": "seed",
+        "name": "種子",
         "tooltip": "用於產生雜訊的隨機種子。"
       },
       "style_preset": {
@@ -7699,7 +7699,7 @@
         "name": "影像"
       },
       "negative_prompt": {
-        "name": "反向提示詞",
+        "name": "負向提示詞",
         "tooltip": "您不希望在輸出影像中看到的關鍵字。這是進階功能。"
       },
       "prompt": {
@@ -7707,7 +7707,7 @@
         "tooltip": "您希望在輸出影像中看到什麼。明確且具描述性的提示詞，能清楚定義元素、顏色與主題，將帶來更佳的結果。"
       },
       "seed": {
-        "name": "隨機種子",
+        "name": "種子",
         "tooltip": "用於產生雜訊的隨機種子。"
       }
     }
@@ -7727,7 +7727,7 @@
         "name": "影像"
       },
       "negative_prompt": {
-        "name": "反向提示詞",
+        "name": "負向提示詞",
         "tooltip": "您不希望在輸出影像中出現的關鍵字。這是進階功能。"
       },
       "prompt": {
@@ -7735,7 +7735,7 @@
         "tooltip": "您希望在輸出影像中看到什麼。明確描述元素、顏色與主題的強烈提示詞將帶來更佳效果。"
       },
       "seed": {
-        "name": "隨機種子",
+        "name": "種子",
         "tooltip": "用於產生雜訊的隨機種子。"
       },
       "style_preset": {
@@ -7754,7 +7754,7 @@
     }
   },
   "StableCascade_EmptyLatentImage": {
-    "display_name": "StableCascade_EmptyLatentImage",
+    "display_name": "StableCascade 空白潛在影像",
     "inputs": {
       "batch_size": {
         "name": "批次大小"
@@ -7779,10 +7779,10 @@
     }
   },
   "StableCascade_StageB_Conditioning": {
-    "display_name": "StableCascade_StageB_Conditioning",
+    "display_name": "StableCascade 階段 B 條件設定",
     "inputs": {
       "conditioning": {
-        "name": "conditioning"
+        "name": "條件設定"
       },
       "stage_c": {
         "name": "stage_c"
@@ -7790,13 +7790,13 @@
     }
   },
   "StableCascade_StageC_VAEEncode": {
-    "display_name": "StableCascade_StageC_VAEEncode",
+    "display_name": "StableCascade 階段 C VAE 編碼",
     "inputs": {
       "compression": {
         "name": "壓縮"
       },
       "image": {
-        "name": "圖片"
+        "name": "影像"
       },
       "vae": {
         "name": "vae"
@@ -7812,10 +7812,10 @@
     }
   },
   "StableCascade_SuperResolutionControlnet": {
-    "display_name": "StableCascade_SuperResolutionControlnet",
+    "display_name": "StableCascade 超解析度 ControlNet",
     "inputs": {
       "image": {
-        "name": "圖片"
+        "name": "影像"
       },
       "vae": {
         "name": "vae"
@@ -7834,7 +7834,7 @@
     }
   },
   "StableZero123_Conditioning": {
-    "display_name": "StableZero123_Conditioning",
+    "display_name": "StableZero123 條件設定",
     "inputs": {
       "azimuth": {
         "name": "方位角"
@@ -7852,7 +7852,7 @@
         "name": "高度"
       },
       "init_image": {
-        "name": "初始圖片"
+        "name": "初始影像"
       },
       "vae": {
         "name": "vae"
@@ -7869,12 +7869,12 @@
         "name": "負向"
       },
       "2": {
-        "name": "latent"
+        "name": "潛在空間"
       }
     }
   },
   "StableZero123_Conditioning_Batched": {
-    "display_name": "StableZero123_Conditioning_Batched",
+    "display_name": "StableZero123 條件設定（批次）",
     "inputs": {
       "azimuth": {
         "name": "方位角"
@@ -7898,7 +7898,7 @@
         "name": "高度"
       },
       "init_image": {
-        "name": "初始圖片"
+        "name": "初始影像"
       },
       "vae": {
         "name": "vae"
@@ -7915,7 +7915,7 @@
         "name": "負向"
       },
       "2": {
-        "name": "latent"
+        "name": "潛在空間"
       }
     }
   },
@@ -7926,7 +7926,7 @@
         "name": "clip_vision_output"
       },
       "conditioning": {
-        "name": "conditioning"
+        "name": "條件設定"
       },
       "strength": {
         "name": "強度"
@@ -7948,7 +7948,7 @@
     }
   },
   "T5TokenizerOptions": {
-    "display_name": "T5TokenizerOptions",
+    "display_name": "T5 分詞器選項",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -7962,7 +7962,7 @@
     }
   },
   "TextEncodeHunyuanVideo_ImageToVideo": {
-    "display_name": "TextEncodeHunyuanVideo_ImageToVideo",
+    "display_name": "文字編碼 HunyuanVideo 影像轉影片",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -7980,10 +7980,10 @@
     }
   },
   "ThresholdMask": {
-    "display_name": "ThresholdMask",
+    "display_name": "闾值遮罩",
     "inputs": {
       "mask": {
-        "name": "mask"
+        "name": "遮罩"
       },
       "value": {
         "name": "數值"
@@ -7991,7 +7991,7 @@
     }
   },
   "TomePatchModel": {
-    "display_name": "TomePatchModel",
+    "display_name": "Tome 修補模型",
     "inputs": {
       "model": {
         "name": "model"
@@ -8002,7 +8002,7 @@
     }
   },
   "TorchCompileModel": {
-    "display_name": "TorchCompileModel",
+    "display_name": "Torch 編譯模型",
     "inputs": {
       "backend": {
         "name": "backend"
@@ -8013,7 +8013,7 @@
     }
   },
   "TrimVideoLatent": {
-    "display_name": "TrimVideoLatent",
+    "display_name": "裁剪影片潛在空間",
     "inputs": {
       "samples": {
         "name": "samples"
@@ -8025,7 +8025,7 @@
   },
   "TripleCLIPLoader": {
     "description": "[配方]\n\nsd3：clip-l、clip-g、t5",
-    "display_name": "TripleCLIPLoader",
+    "display_name": "載入三重 CLIP",
     "inputs": {
       "clip_name1": {
         "name": "clip_name1"
@@ -8050,7 +8050,7 @@
     }
   },
   "UNetCrossAttentionMultiply": {
-    "display_name": "UNetCrossAttentionMultiply",
+    "display_name": "UNet 交叉注意力倍增",
     "inputs": {
       "k": {
         "name": "k"
@@ -8070,7 +8070,7 @@
     }
   },
   "UNetSelfAttentionMultiply": {
-    "display_name": "UNetSelfAttentionMultiply",
+    "display_name": "UNet 自注意力倍增",
     "inputs": {
       "k": {
         "name": "k"
@@ -8090,7 +8090,7 @@
     }
   },
   "UNetTemporalAttentionMultiply": {
-    "display_name": "UNetTemporalAttentionMultiply",
+    "display_name": "UNet 時間注意力倍增",
     "inputs": {
       "cross_structural": {
         "name": "交叉結構"
@@ -8137,7 +8137,7 @@
     }
   },
   "VAEDecodeAudio": {
-    "display_name": "VAEDecodeAudio",
+    "display_name": "VAE 解碼音訊",
     "inputs": {
       "samples": {
         "name": "samples"
@@ -8148,7 +8148,7 @@
     }
   },
   "VAEDecodeHunyuan3D": {
-    "display_name": "VAEDecodeHunyuan3D",
+    "display_name": "VAE 解碼 Hunyuan3D",
     "inputs": {
       "num_chunks": {
         "name": "分塊數量"
@@ -8201,7 +8201,7 @@
     }
   },
   "VAEEncodeAudio": {
-    "display_name": "VAEEncodeAudio",
+    "display_name": "VAE 編碼音訊",
     "inputs": {
       "audio": {
         "name": "音訊"
@@ -8218,7 +8218,7 @@
         "name": "擴展遮罩範圍"
       },
       "mask": {
-        "name": "mask"
+        "name": "遮罩"
       },
       "pixels": {
         "name": "pixels"
@@ -8262,7 +8262,7 @@
     }
   },
   "VAESave": {
-    "display_name": "VAESave",
+    "display_name": "儲存 VAE",
     "inputs": {
       "filename_prefix": {
         "name": "檔名前綴"
@@ -8273,7 +8273,7 @@
     }
   },
   "VPScheduler": {
-    "display_name": "VPScheduler",
+    "display_name": "VP 調度器",
     "inputs": {
       "beta_d": {
         "name": "beta_d"
@@ -8285,7 +8285,7 @@
         "name": "eps_s"
       },
       "steps": {
-        "name": "步數"
+        "name": "步驟數"
       }
     }
   },
@@ -8294,44 +8294,44 @@
     "display_name": "Google Veo2 影片生成",
     "inputs": {
       "aspect_ratio": {
-        "name": "aspect_ratio",
+        "name": "長寬比",
         "tooltip": "輸出影片的長寬比"
       },
       "control_after_generate": {
-        "name": "control after generate"
+        "name": "生成後控制"
       },
       "duration_seconds": {
-        "name": "duration_seconds",
+        "name": "持續秒數",
         "tooltip": "輸出影片的秒數"
       },
       "enhance_prompt": {
-        "name": "enhance_prompt",
+        "name": "增強提示詞",
         "tooltip": "是否使用 AI 協助增強提示詞"
       },
       "image": {
-        "name": "image",
+        "name": "影像",
         "tooltip": "可選的參考圖片，用於引導影片生成"
       },
       "negative_prompt": {
-        "name": "negative_prompt",
+        "name": "負向提示詞",
         "tooltip": "用於引導影片中應避免內容的負面文字提示"
       },
       "person_generation": {
-        "name": "person_generation",
+        "name": "生成人物",
         "tooltip": "是否允許在影片中生成人物"
       },
       "prompt": {
-        "name": "prompt",
+        "name": "提示詞",
         "tooltip": "影片的文字描述"
       },
       "seed": {
-        "name": "seed",
+        "name": "種子",
         "tooltip": "影片生成的種子（0 為隨機）"
       }
     }
   },
   "VideoLinearCFGGuidance": {
-    "display_name": "VideoLinearCFGGuidance",
+    "display_name": "影片線性 CFG 引導",
     "inputs": {
       "min_cfg": {
         "name": "最小 cfg"
@@ -8342,7 +8342,7 @@
     }
   },
   "VideoTriangleCFGGuidance": {
-    "display_name": "VideoTriangleCFGGuidance",
+    "display_name": "影片三角 CFG 引導",
     "inputs": {
       "min_cfg": {
         "name": "min_cfg"
@@ -8353,7 +8353,7 @@
     }
   },
   "VoxelToMesh": {
-    "display_name": "VoxelToMesh",
+    "display_name": "體素轉網格",
     "inputs": {
       "algorithm": {
         "name": "演算法"
@@ -8367,10 +8367,10 @@
     }
   },
   "VoxelToMeshBasic": {
-    "display_name": "VoxelToMeshBasic",
+    "display_name": "體素轉網格（基礎）",
     "inputs": {
       "threshold": {
-        "name": "閾值"
+        "name": "臨界值"
       },
       "voxel": {
         "name": "voxel"
@@ -8378,7 +8378,7 @@
     }
   },
   "WanFirstLastFrameToVideo": {
-    "display_name": "WanFirstLastFrameToVideo",
+    "display_name": "Wan 首尾影格轉影片",
     "inputs": {
       "batch_size": {
         "name": "批次大小"
@@ -8399,10 +8399,10 @@
         "name": "長度"
       },
       "negative": {
-        "name": "negative"
+        "name": "負向"
       },
       "positive": {
-        "name": "positive"
+        "name": "正向"
       },
       "start_image": {
         "name": "起始影像"
@@ -8416,18 +8416,18 @@
     },
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "正向"
       },
       "1": {
-        "name": "negative"
+        "name": "負向"
       },
       "2": {
-        "name": "latent"
+        "name": "潛在空間"
       }
     }
   },
   "WanFunControlToVideo": {
-    "display_name": "WanFunControlToVideo",
+    "display_name": "WanFun 控制轉影片",
     "inputs": {
       "batch_size": {
         "name": "批次大小"
@@ -8445,13 +8445,13 @@
         "name": "長度"
       },
       "negative": {
-        "name": "negative"
+        "name": "負向"
       },
       "positive": {
-        "name": "positive"
+        "name": "正向"
       },
       "start_image": {
-        "name": "起始圖片"
+        "name": "起始影像"
       },
       "vae": {
         "name": "vae"
@@ -8462,18 +8462,18 @@
     },
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "正向"
       },
       "1": {
-        "name": "negative"
+        "name": "負向"
       },
       "2": {
-        "name": "潛空間"
+        "name": "潛在空間"
       }
     }
   },
   "WanFunInpaintToVideo": {
-    "display_name": "WanFunInpaintToVideo",
+    "display_name": "WanFun 修補轉影片",
     "inputs": {
       "batch_size": {
         "name": "批次大小"
@@ -8497,7 +8497,7 @@
         "name": "正向"
       },
       "start_image": {
-        "name": "起始圖片"
+        "name": "起始影像"
       },
       "vae": {
         "name": "vae"
@@ -8514,12 +8514,12 @@
         "name": "負向"
       },
       "2": {
-        "name": "潛空間"
+        "name": "潛在空間"
       }
     }
   },
   "WanImageToVideo": {
-    "display_name": "WanImageToVideo",
+    "display_name": "WAN 影像轉影片",
     "inputs": {
       "batch_size": {
         "name": "批次大小"
@@ -8534,13 +8534,13 @@
         "name": "長度"
       },
       "negative": {
-        "name": "negative"
+        "name": "負向"
       },
       "positive": {
-        "name": "positive"
+        "name": "正向"
       },
       "start_image": {
-        "name": "起始圖片"
+        "name": "起始影像"
       },
       "vae": {
         "name": "vae"
@@ -8551,18 +8551,18 @@
     },
     "outputs": {
       "0": {
-        "name": "positive"
+        "name": "正向"
       },
       "1": {
-        "name": "negative"
+        "name": "負向"
       },
       "2": {
-        "name": "潛空間"
+        "name": "潛在空間"
       }
     }
   },
   "WanVaceToVideo": {
-    "display_name": "WanVaceToVideo",
+    "display_name": "WAN 人臉轉影片",
     "inputs": {
       "batch_size": {
         "name": "批次大小"
@@ -8586,7 +8586,7 @@
         "name": "正向"
       },
       "reference_image": {
-        "name": "參考圖片"
+        "name": "參考影像"
       },
       "strength": {
         "name": "強度"
@@ -8606,7 +8606,7 @@
         "name": "負向"
       },
       "2": {
-        "name": "潛空間"
+        "name": "潛在空間"
       },
       "3": {
         "name": "裁剪潛空間"
@@ -8634,7 +8634,7 @@
     }
   },
   "unCLIPCheckpointLoader": {
-    "display_name": "unCLIPCheckpointLoader",
+    "display_name": "unCLIP 檢查點載入器",
     "inputs": {
       "ckpt_name": {
         "name": "ckpt_name"
@@ -8642,13 +8642,13 @@
     }
   },
   "unCLIPConditioning": {
-    "display_name": "unCLIPConditioning",
+    "display_name": "unCLIP 條件化",
     "inputs": {
       "clip_vision_output": {
         "name": "clip_vision_output"
       },
       "conditioning": {
-        "name": "conditioning"
+        "name": "條件設定"
       },
       "noise_augmentation": {
         "name": "雜訊增強"

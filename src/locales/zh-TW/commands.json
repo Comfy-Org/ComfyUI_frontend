@@ -51,10 +51,10 @@
     "label": "將選取的節點下移"
   },
   "Comfy_Canvas_MoveSelectedNodes_Left": {
-    "label": "將選取的節點向左移動"
+    "label": "左移選取的節點"
   },
   "Comfy_Canvas_MoveSelectedNodes_Right": {
-    "label": "將選取的節點向右移動"
+    "label": "右移選取的節點"
   },
   "Comfy_Canvas_MoveSelectedNodes_Up": {
     "label": "上移選取的節點"
@@ -72,13 +72,13 @@
     "label": "畫布切換鎖定"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
-    "label": "繞過／取消繞過所選節點"
+    "label": "略過/取消略過選取的節點"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
     "label": "收合／展開選取的節點"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
-    "label": "靜音/取消靜音已選節點"
+    "label": "停用/啟用選取的節點"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Pin": {
     "label": "釘選/取消釘選已選取的節點"
@@ -171,10 +171,10 @@
     "label": "開啟工作流程"
   },
   "Comfy_QueuePrompt": {
-    "label": "加入佇列提示"
+    "label": "將提示詞加入佇列"
   },
   "Comfy_QueuePromptFront": {
-    "label": "將提示加入佇列（前端）"
+    "label": "將提示詞加入佇列前方"
   },
   "Comfy_QueueSelectedOutputNodes": {
     "label": "佇列所選的輸出節點"
