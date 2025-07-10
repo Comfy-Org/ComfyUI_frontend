@@ -53,6 +53,9 @@ export interface VueNodeData {
   widgets?: SafeWidgetData[]
   inputs?: unknown[]
   outputs?: unknown[]
+  flags?: {
+    collapsed?: boolean
+  }
 }
 
 export interface SpatialMetrics {
@@ -201,7 +204,8 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
       executing: false, // Will be updated separately based on execution state
       widgets: safeWidgets,
       inputs: node.inputs ? [...node.inputs] : undefined,
-      outputs: node.outputs ? [...node.outputs] : undefined
+      outputs: node.outputs ? [...node.outputs] : undefined,
+      flags: node.flags ? { ...node.flags } : undefined
     }
   }
 

@@ -331,6 +331,14 @@
   "Comfy_Validation_Workflows": {
     "name": "워크플로 유효성 검사"
   },
+  "Comfy_VueNodes_Enabled": {
+    "name": "Vue 노드 렌더링 활성화",
+    "tooltip": "노드를 캔버스 요소 대신 Vue 컴포넌트로 렌더링합니다. 실험적인 기능입니다."
+  },
+  "Comfy_VueNodes_Widgets": {
+    "name": "Vue 위젯 활성화",
+    "tooltip": "Vue 노드 내에서 위젯을 Vue 컴포넌트로 렌더링합니다."
+  },
   "Comfy_WidgetControlMode": {
     "name": "위젯 제어 모드",
     "options": {
