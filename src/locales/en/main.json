@@ -1592,6 +1592,7 @@
     "loadError": "Failed to load help: {error}"
   },
   "whatsNewPopup": {
-    "learnMore": "Learn more"
+    "learnMore": "Learn more",
+    "noReleaseNotes": "No release notes available."
   }
 }

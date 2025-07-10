@@ -1587,7 +1587,8 @@
     "title": "Bienvenido a ComfyUI"
   },
   "whatsNewPopup": {
-    "learnMore": "Aprende más"
+    "learnMore": "Aprende más",
+    "noReleaseNotes": "No hay notas de la versión disponibles."
   },
   "workflowService": {
     "enterFilename": "Introduzca el nombre del archivo",
