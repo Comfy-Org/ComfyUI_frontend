@@ -799,11 +799,7 @@
     "Ungroup selected group nodes": "Desagrupar nodos de grupo seleccionados",
     "Workflow": "Flujo de trabajo",
     "Zoom In": "Acercar",
-    "Zoom Out": "Alejar",
-    "sideToolbar_modelLibrary": "sideToolbar.bibliotecaDeModelos",
-    "sideToolbar_nodeLibrary": "sideToolbar.bibliotecaDeNodos",
-    "sideToolbar_queue": "sideToolbar.cola",
-    "sideToolbar_workflows": "sideToolbar.flujosDeTrabajo"
+    "Zoom Out": "Alejar"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "No mostrar esto de nuevo",
