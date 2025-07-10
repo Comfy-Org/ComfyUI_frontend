@@ -1100,6 +1100,7 @@
     "Node Search Box": "ノード検索ボックス",
     "Node Widget": "ノードウィジェット",
     "NodeLibrary": "ノードライブラリ",
+    "Notification Preferences": "通知設定",
     "Pointer": "ポインタ",
     "Queue": "キュー",
     "QueueButton": "キューボタン",
@@ -1484,7 +1485,8 @@
     "title": "ComfyUIへようこそ"
   },
   "whatsNewPopup": {
-    "learnMore": "詳細はこちら"
+    "learnMore": "詳細はこちら",
+    "noReleaseNotes": "リリースノートはありません。"
   },
   "workflowService": {
     "enterFilename": "ファイル名を入力",

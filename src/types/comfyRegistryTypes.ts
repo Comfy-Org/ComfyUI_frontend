@@ -933,6 +933,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/comfy-nodes/{comfyNodeName}/node': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Retrieve a node by ComfyUI node name
+     * @description Returns the node that contains a ComfyUI node with the specified name
+     */
+    get: operations['getNodeByComfyNodeName']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/nodes/{nodeId}': {
     parameters: {
       query?: never
@@ -2922,7 +2942,7 @@ export interface paths {
       cookie?: never
     }
     /** Get Prompt Details */
-    get: operations['Moonvalley']
+    get: operations['MoonvalleyGetPrompt']
     put?: never
     post?: never
     delete?: never
@@ -2931,7 +2951,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/proxy/moonvalley/prompts': {
+  '/proxy/moonvalley/text-to-video': {
     parameters: {
       query?: never
       header?: never
@@ -2940,8 +2960,42 @@ export interface paths {
     }
     get?: never
     put?: never
-    /** Create Text-to-Video or Image-to-Video Prompt */
-    post: operations['MoonvalleyCreatePrompt']
+    /** Create Text to Video Prompt */
+    post: operations['MoonvalleyTextToVideo']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/moonvalley/text-to-image': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Create Text to Image Prompt */
+    post: operations['MoonvalleyTextToImage']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/proxy/moonvalley/prompts/image-to-video': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Create Image to Video Prompt */
+    post: operations['MoonvalleyImageToVideo']
     delete?: never
     options?: never
     head?: never
@@ -2957,15 +3011,15 @@ export interface paths {
     }
     get?: never
     put?: never
-    /** Create Video-to-Video Prompt */
-    post: operations['MoonvalleyCreateVideoToVideoPrompt']
+    /** Create Video to Video Prompt */
+    post: operations['MoonvalleyVideoToVideo']
     delete?: never
     options?: never
     head?: never
     patch?: never
     trace?: never
   }
-  '/proxy/moonvalley/prompts/text-to-image': {
+  '/proxy/moonvalley/prompts/video-to-video/resize': {
     parameters: {
       query?: never
       header?: never
@@ -2974,8 +3028,8 @@ export interface paths {
     }
     get?: never
     put?: never
-    /** Create Text-to-Image Prompt */
-    post: operations['MoonvalleyCreateTextToImagePrompt']
+    /** Resize a video */
+    post: operations['MoonvalleyVideoToVideoResize']
     delete?: never
     options?: never
     head?: never
@@ -2991,8 +3045,8 @@ export interface paths {
     }
     get?: never
     put?: never
-    /** Upload File */
-    post: operations['MoonvalleyUploadFile']
+    /** Upload Files */
+    post: operations['MoonvalleyUpload']
     delete?: never
     options?: never
     head?: never
@@ -8709,6 +8763,22 @@ export interface components {
       /** @default 0 */
       conditioning_frame_index: number
     }
+    MoonvalleyTextToImageRequest: {
+      prompt_text?: string
+      image_url?: string
+      inference_params?: components['schemas']['MoonvalleyInferenceParams']
+      webhook_url?: string
+    }
+    MoonvalleyTextToVideoRequest: {
+      prompt_text?: string
+      image_url?: string
+      inference_params?: components['schemas']['MoonvalleyInferenceParams']
+      webhook_url?: string
+    }
+    MoonvalleyVideoToVideoRequest: components['schemas']['MoonvalleyTextToVideoRequest'] & {
+      video_url: string
+      control_type: string
+    }
     MoonvalleyPromptResponse: {
       id?: string
       status?: string
@@ -8720,26 +8790,23 @@ export interface components {
       frame_conditioning?: Record<string, never>
       error?: Record<string, never>
     }
-    MoonvalleyCreatePromptRequest: {
-      prompt_text: string
-      image_url?: string
-      inference_params?: components['schemas']['MoonvalleyInferenceParams']
-      webhook_url?: string
+    MoonvalleyImageToVideoRequest: components['schemas']['MoonvalleyTextToVideoRequest'] & {
+      keyframes?: {
+        [key: string]: {
+          image_url?: string
+        }
+      }
     }
-    MoonvalleyCreatePromptResponse: {
-      id?: string
-      status?: string
-      approximate_wait_time?: number
+    MoonvalleyResizeVideoRequest: components['schemas']['MoonvalleyVideoToVideoRequest'] & {
+      frame_position?: number[]
+      frame_resolution?: number[]
+      scale?: number[]
     }
-    MoonvalleyCreateVideoToVideoRequest: {
-      prompt_text: string
-      video_url: string
-      /** @enum {string} */
-      control_type: 'motion_control'
-      inference_params?: components['schemas']['MoonvalleyInferenceParams']
-      webhook_url?: string
+    MoonvalleyUploadFileRequest: {
+      /** Format: binary */
+      file?: string
     }
-    MoonvalleyUploadResponse: {
+    MoonvalleyUploadFileResponse: {
       access_url?: string
     }
     /** @description GitHub release webhook payload based on official webhook documentation */
@@ -11287,6 +11354,47 @@ export interface operations {
       }
     }
   }
+  getNodeByComfyNodeName: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The name of the ComfyUI node */
+        comfyNodeName: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Node details */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Node']
+        }
+      }
+      /** @description No node found containing the specified ComfyUI node name */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
   getNode: {
     parameters: {
       query?: {
@@ -11742,6 +11850,14 @@ export interface operations {
           status?: components['schemas']['NodeVersionStatus']
           /** @description The reason for the status change. */
           status_reason?: string
+          /** @description Supported versions of ComfyUI frontend */
+          supported_comfyui_frontend_version?: string
+          /** @description Supported versions of ComfyUI */
+          supported_comfyui_version?: string
+          /** @description List of operating systems that this node supports */
+          supported_os?: string[]
+          /** @description List of accelerators (e.g. CUDA, DirectML, ROCm) that this node supports */
+          supported_accelerators?: string[]
         }
       }
     }
@@ -18760,7 +18876,7 @@ export interface operations {
       }
     }
   }
-  Moonvalley: {
+  MoonvalleyGetPrompt: {
     parameters: {
       query?: never
       header?: never
@@ -18771,7 +18887,7 @@ export interface operations {
     }
     requestBody?: never
     responses: {
-      /** @description Prompt details */
+      /** @description Prompt details retrieved */
       200: {
         headers: {
           [name: string]: unknown
@@ -18782,7 +18898,7 @@ export interface operations {
       }
     }
   }
-  MoonvalleyCreatePrompt: {
+  MoonvalleyTextToVideo: {
     parameters: {
       query?: never
       header?: never
@@ -18791,7 +18907,7 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': components['schemas']['MoonvalleyCreatePromptRequest']
+        'application/json': components['schemas']['MoonvalleyTextToVideoRequest']
       }
     }
     responses: {
@@ -18801,12 +18917,12 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['MoonvalleyCreatePromptResponse']
+          'application/json': components['schemas']['MoonvalleyPromptResponse']
         }
       }
     }
   }
-  MoonvalleyCreateVideoToVideoPrompt: {
+  MoonvalleyTextToImage: {
     parameters: {
       query?: never
       header?: never
@@ -18815,7 +18931,7 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': components['schemas']['MoonvalleyCreateVideoToVideoRequest']
+        'application/json': components['schemas']['MoonvalleyTextToImageRequest']
       }
     }
     responses: {
@@ -18825,12 +18941,12 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['MoonvalleyCreatePromptResponse']
+          'application/json': components['schemas']['MoonvalleyPromptResponse']
         }
       }
     }
   }
-  MoonvalleyCreateTextToImagePrompt: {
+  MoonvalleyImageToVideo: {
     parameters: {
       query?: never
       header?: never
@@ -18839,7 +18955,7 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': components['schemas']['MoonvalleyCreatePromptRequest']
+        'application/json': components['schemas']['MoonvalleyImageToVideoRequest']
       }
     }
     responses: {
@@ -18849,12 +18965,12 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['MoonvalleyCreatePromptResponse']
+          'application/json': components['schemas']['MoonvalleyPromptResponse']
         }
       }
     }
   }
-  MoonvalleyUploadFile: {
+  MoonvalleyVideoToVideo: {
     parameters: {
       query?: never
       header?: never
@@ -18863,20 +18979,65 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'multipart/form-data': {
-          /** Format: binary */
-          file?: string
-        }
+        'application/json': components['schemas']['MoonvalleyVideoToVideoRequest']
       }
     }
     responses: {
-      /** @description Upload successful */
+      /** @description Prompt created */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MoonvalleyPromptResponse']
+        }
+      }
+    }
+  }
+  MoonvalleyVideoToVideoResize: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MoonvalleyResizeVideoRequest']
+      }
+    }
+    responses: {
+      /** @description Prompt created */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MoonvalleyPromptResponse']
+        }
+      }
+    }
+  }
+  MoonvalleyUpload: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'multipart/form-data': components['schemas']['MoonvalleyUploadFileRequest']
+      }
+    }
+    responses: {
+      /** @description File uploaded successfully */
       200: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['MoonvalleyUploadResponse']
+          'application/json': components['schemas']['MoonvalleyUploadFileResponse']
         }
       }
     }
