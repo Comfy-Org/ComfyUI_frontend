@@ -331,6 +331,14 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.20.3'
   },
   {
+    id: 'Comfy.Notification.ShowVersionUpdates',
+    category: ['Comfy', 'Notification Preferences'],
+    name: 'Show version updates',
+    tooltip: 'Show updates for new models, and major new features.',
+    type: 'boolean',
+    defaultValue: true
+  },
+  {
     id: 'Comfy.ConfirmClear',
     category: ['Comfy', 'Workflow', 'ConfirmClear'],
     name: 'Require confirmation when clearing workflow',
@@ -748,6 +756,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: false,
     versionAdded: '1.8.7'
+  },
+  {
+    id: 'Comfy.InstalledVersion',
+    name: 'The frontend version that was running when the user first installed ComfyUI',
+    type: 'hidden',
+    defaultValue: null,
+    versionAdded: '1.24.0'
   },
   {
     id: 'LiteGraph.ContextMenu.Scaling',

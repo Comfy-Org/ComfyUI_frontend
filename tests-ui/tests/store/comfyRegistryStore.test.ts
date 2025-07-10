@@ -72,6 +72,14 @@ describe('useComfyRegistryStore', () => {
     error: ReturnType<typeof ref<string | null>>
     listAllPacks: ReturnType<typeof vi.fn>
     getPackById: ReturnType<typeof vi.fn>
+    inferPackFromNodeName: ReturnType<typeof vi.fn>
+    search: ReturnType<typeof vi.fn>
+    getPackVersions: ReturnType<typeof vi.fn>
+    getPackByVersion: ReturnType<typeof vi.fn>
+    getPublisherById: ReturnType<typeof vi.fn>
+    listPacksForPublisher: ReturnType<typeof vi.fn>
+    getNodeDefs: ReturnType<typeof vi.fn>
+    postPackReview: ReturnType<typeof vi.fn>
   }
 
   beforeEach(() => {
@@ -106,7 +114,15 @@ describe('useComfyRegistryStore', () => {
         // Otherwise return paginated results
         return Promise.resolve(mockListResult)
       }),
-      getPackById: vi.fn().mockResolvedValue(mockNodePack)
+      getPackById: vi.fn().mockResolvedValue(mockNodePack),
+      inferPackFromNodeName: vi.fn().mockResolvedValue(mockNodePack),
+      search: vi.fn().mockResolvedValue(mockListResult),
+      getPackVersions: vi.fn().mockResolvedValue([]),
+      getPackByVersion: vi.fn().mockResolvedValue({}),
+      getPublisherById: vi.fn().mockResolvedValue({}),
+      listPacksForPublisher: vi.fn().mockResolvedValue([]),
+      getNodeDefs: vi.fn().mockResolvedValue({}),
+      postPackReview: vi.fn().mockResolvedValue({})
     }
 
     vi.mocked(useComfyRegistryService).mockReturnValue(
@@ -185,5 +201,59 @@ describe('useComfyRegistryStore', () => {
       { node_id: packIds },
       expect.any(Object) // abort signal
     )
+  })
+
+  describe('inferPackFromNodeName', () => {
+    it('should fetch a pack by comfy node name', async () => {
+      const store = useComfyRegistryStore()
+      const nodeName = 'KSampler'
+
+      const result = await store.inferPackFromNodeName.call(nodeName)
+
+      expect(result).toEqual(mockNodePack)
+      expect(mockRegistryService.inferPackFromNodeName).toHaveBeenCalledWith(
+        nodeName,
+        expect.any(Object) // abort signal
+      )
+    })
+
+    it('should cache results', async () => {
+      const store = useComfyRegistryStore()
+      const nodeName = 'KSampler'
+
+      // First call
+      const result1 = await store.inferPackFromNodeName.call(nodeName)
+      expect(mockRegistryService.inferPackFromNodeName).toHaveBeenCalledTimes(1)
+
+      // Second call - should use cache
+      const result2 = await store.inferPackFromNodeName.call(nodeName)
+      expect(mockRegistryService.inferPackFromNodeName).toHaveBeenCalledTimes(1)
+      expect(result2).toEqual(result1)
+    })
+
+    it('should handle null results when node is not found', async () => {
+      mockRegistryService.inferPackFromNodeName.mockResolvedValueOnce(null)
+
+      const store = useComfyRegistryStore()
+      const result = await store.inferPackFromNodeName.call('NonExistentNode')
+
+      expect(result).toBeNull()
+    })
+
+    it('should clear cache when clearCache is called', async () => {
+      const store = useComfyRegistryStore()
+      const nodeName = 'KSampler'
+
+      // First call to populate cache
+      await store.inferPackFromNodeName.call(nodeName)
+      expect(mockRegistryService.inferPackFromNodeName).toHaveBeenCalledTimes(1)
+
+      // Clear cache
+      store.clearCache()
+
+      // Call again - should hit the service again
+      await store.inferPackFromNodeName.call(nodeName)
+      expect(mockRegistryService.inferPackFromNodeName).toHaveBeenCalledTimes(2)
+    })
   })
 })

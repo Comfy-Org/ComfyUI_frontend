@@ -57,6 +57,15 @@ declare module '@comfyorg/litegraph/dist/types/widgets' {
 }
 
 /**
+ * ComfyUI extensions of litegraph interfaces
+ */
+declare module '@comfyorg/litegraph/dist/interfaces' {
+  interface IWidgetLocator {
+    [key: symbol]: unknown
+  }
+}
+
+/**
  *  ComfyUI extensions of litegraph
  */
 declare module '@comfyorg/litegraph' {

@@ -32,6 +32,13 @@
     "error": "Error",
     "help": "Help",
     "loading": "Loading",
+    "loadingPanel": "Loading {panel} panel...",
+    "preview": "PREVIEW",
+    "addNodeFilterCondition": "Add node filter condition",
+    "architecture": "Architecture",
+    "author": "Author",
+    "usageHint": "Usage hint",
+    "triggerPhrase": "Trigger phrase",
     "findIssues": "Find Issues",
     "reportIssue": "Send Report",
     "reportIssueTooltip": "Submit the error report to Comfy Org",
@@ -123,7 +130,10 @@
     "copy": "Copy",
     "imageUrl": "Image URL",
     "clear": "Clear",
-    "copyURL": "Copy URL"
+    "copyURL": "Copy URL",
+    "releaseTitle": "{package} {version} Release",
+    "progressCountOf": "of",
+    "keybindingAlreadyExists": "Keybinding already exists on"
   },
   "manager": {
     "title": "Custom Nodes Manager",
@@ -186,7 +196,7 @@
   "issueReport": {
     "submitErrorReport": "Submit Error Report (Optional)",
     "provideEmail": "Give us your email (optional)",
-    "provideAdditionalDetails": "Provide additional details (optional)",
+    "provideAdditionalDetails": "Provide additional details",
     "stackTrace": "Stack Trace",
     "systemStats": "System Stats",
     "contactFollowUp": "Contact me for follow up",
@@ -939,7 +949,8 @@
     "Light": "Light",
     "User": "User",
     "Credits": "Credits",
-    "API Nodes": "API Nodes"
+    "API Nodes": "API Nodes",
+    "Notification Preferences": "Notification Preferences"
   },
   "serverConfigItems": {
     "listen": {
@@ -1478,6 +1489,7 @@
     "loadError": "Failed to load help: {error}"
   },
   "whatsNewPopup": {
-    "learnMore": "Learn more"
+    "learnMore": "Learn more",
+    "noReleaseNotes": "No release notes available."
   }
 }
