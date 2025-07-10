@@ -81,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onErrorCaptured, ref, toRef } from 'vue'
+import { computed, onErrorCaptured, ref, toRef, watch } from 'vue'
 
 // Import the VueNodeData type
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
@@ -148,6 +148,16 @@ const isDragging = ref(false)
 
 // Track collapsed state
 const isCollapsed = ref(props.nodeData.flags?.collapsed ?? false)
+
+// Watch for external changes to the collapsed state
+watch(
+  () => props.nodeData.flags?.collapsed,
+  (newCollapsed) => {
+    if (newCollapsed !== undefined && newCollapsed !== isCollapsed.value) {
+      isCollapsed.value = newCollapsed
+    }
+  }
+)
 
 // Check if node has custom content
 const hasCustomContent = computed(() => {
