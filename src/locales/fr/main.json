@@ -785,13 +785,13 @@
     "Toggle Bottom Panel": "Basculer le panneau inférieur",
     "Toggle Focus Mode": "Basculer le mode focus",
     "Toggle Logs Bottom Panel": "Basculer le panneau inférieur des journaux",
-    "Toggle Model Library Sidebar": "Basculer la barre latérale de la bibliothèque de modèles",
-    "Toggle Node Library Sidebar": "Basculer la barre latérale de la bibliothèque de nœuds",
-    "Toggle Queue Sidebar": "Basculer la barre latérale de la file d'attente",
+    "Toggle Model Library Sidebar": "Afficher/Masquer la barre latérale de la bibliothèque de modèles",
+    "Toggle Node Library Sidebar": "Afficher/Masquer la barre latérale de la bibliothèque de nœuds",
+    "Toggle Queue Sidebar": "Afficher/Masquer la barre latérale de la file d’attente",
     "Toggle Search Box": "Basculer la boîte de recherche",
     "Toggle Terminal Bottom Panel": "Basculer le panneau inférieur du terminal",
     "Toggle Theme (Dark/Light)": "Basculer le thème (Sombre/Clair)",
-    "Toggle Workflows Sidebar": "Basculer la barre latérale des flux de travail",
+    "Toggle Workflows Sidebar": "Afficher/Masquer la barre latérale des workflows",
     "Toggle the Custom Nodes Manager": "Basculer le gestionnaire de nœuds personnalisés",
     "Toggle the Custom Nodes Manager Progress Bar": "Basculer la barre de progression du gestionnaire de nœuds personnalisés",
     "Undo": "Annuler",
@@ -1099,6 +1099,7 @@
     "Node Search Box": "Boîte de Recherche de Nœud",
     "Node Widget": "Widget de Nœud",
     "NodeLibrary": "Bibliothèque de Nœuds",
+    "Notification Preferences": "Préférences de notification",
     "Pointer": "Pointeur",
     "Queue": "File d'Attente",
     "QueueButton": "Bouton de File d'Attente",
@@ -1483,7 +1484,8 @@
     "title": "Bienvenue sur ComfyUI"
   },
   "whatsNewPopup": {
-    "learnMore": "En savoir plus"
+    "learnMore": "En savoir plus",
+    "noReleaseNotes": "Aucune note de version disponible."
   },
   "workflowService": {
     "enterFilename": "Entrez le nom du fichier",

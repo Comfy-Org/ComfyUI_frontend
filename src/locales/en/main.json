@@ -196,7 +196,7 @@
   "issueReport": {
     "submitErrorReport": "Submit Error Report (Optional)",
     "provideEmail": "Give us your email (optional)",
-    "provideAdditionalDetails": "Provide additional details (optional)",
+    "provideAdditionalDetails": "Provide additional details",
     "stackTrace": "Stack Trace",
     "systemStats": "System Stats",
     "contactFollowUp": "Contact me for follow up",
@@ -949,7 +949,8 @@
     "Light": "Light",
     "User": "User",
     "Credits": "Credits",
-    "API Nodes": "API Nodes"
+    "API Nodes": "API Nodes",
+    "Notification Preferences": "Notification Preferences"
   },
   "serverConfigItems": {
     "listen": {
@@ -1488,6 +1489,7 @@
     "loadError": "Failed to load help: {error}"
   },
   "whatsNewPopup": {
-    "learnMore": "Learn more"
+    "learnMore": "Learn more",
+    "noReleaseNotes": "No release notes available."
   }
 }

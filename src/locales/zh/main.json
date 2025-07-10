@@ -1099,6 +1099,7 @@
     "Node Search Box": "节点搜索框",
     "Node Widget": "节点组件",
     "NodeLibrary": "节点库",
+    "Notification Preferences": "通知偏好",
     "Pointer": "指针",
     "Queue": "队列",
     "QueueButton": "执行按钮",
@@ -1483,7 +1484,8 @@
     "title": "欢迎使用 ComfyUI"
   },
   "whatsNewPopup": {
-    "learnMore": "了解更多"
+    "learnMore": "了解更多",
+    "noReleaseNotes": "暂无更新说明。"
   },
   "workflowService": {
     "enterFilename": "输入文件名",

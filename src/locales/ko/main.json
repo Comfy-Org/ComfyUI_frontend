@@ -787,11 +787,11 @@
     "Toggle Logs Bottom Panel": "로그 하단 패널 전환",
     "Toggle Model Library Sidebar": "모델 라이브러리 사이드바 전환",
     "Toggle Node Library Sidebar": "노드 라이브러리 사이드바 전환",
-    "Toggle Queue Sidebar": "실행 대기열 사이드바 전환",
+    "Toggle Queue Sidebar": "대기열 사이드바 전환",
     "Toggle Search Box": "검색 상자 전환",
     "Toggle Terminal Bottom Panel": "터미널 하단 패널 전환",
     "Toggle Theme (Dark/Light)": "테마 전환 (어두운/밝은)",
-    "Toggle Workflows Sidebar": "워크플로 사이드바 전환",
+    "Toggle Workflows Sidebar": "워크플로우 사이드바 전환",
     "Toggle the Custom Nodes Manager": "커스텀 노드 매니저 전환",
     "Toggle the Custom Nodes Manager Progress Bar": "커스텀 노드 매니저 진행률 표시줄 전환",
     "Undo": "실행 취소",
@@ -1099,6 +1099,7 @@
     "Node Search Box": "노드 검색 상자",
     "Node Widget": "노드 위젯",
     "NodeLibrary": "노드 라이브러리",
+    "Notification Preferences": "알림 환경설정",
     "Pointer": "포인터",
     "Queue": "실행 대기열",
     "QueueButton": "실행 대기열 버튼",
@@ -1483,7 +1484,8 @@
     "title": "ComfyUI에 오신 것을 환영합니다"
   },
   "whatsNewPopup": {
-    "learnMore": "자세히 알아보기"
+    "learnMore": "자세히 알아보기",
+    "noReleaseNotes": "릴리스 노트가 없습니다."
   },
   "workflowService": {
     "enterFilename": "파일 이름 입력",
