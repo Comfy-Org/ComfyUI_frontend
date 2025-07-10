@@ -229,7 +229,8 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
     combo: {
       key: 'e',
       ctrl: true,
-      shift: true
+      shift: true,
+      code: 'KeyE'
     },
     commandId: 'Comfy.Graph.ConvertToSubgraph'
   }
