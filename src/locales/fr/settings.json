@@ -259,6 +259,10 @@
     "name": "Le snap met en évidence le nœud",
     "tooltip": "Lorsque vous faites glisser un lien sur un nœud avec une fente d'entrée viable, mettez en évidence le nœud"
   },
+  "Comfy_Notification_ShowVersionUpdates": {
+    "name": "Afficher les mises à jour de version",
+    "tooltip": "Afficher les mises à jour pour les nouveaux modèles et les nouvelles fonctionnalités majeures."
+  },
   "Comfy_Pointer_ClickBufferTime": {
     "name": "Délai de dérive du clic du pointeur",
     "tooltip": "Après avoir appuyé sur un bouton de pointeur, c'est le temps maximum (en millisecondes) que le mouvement du pointeur peut être ignoré.\n\nAide à prévenir que les objets soient déplacés involontairement si le pointeur est déplacé lors du clic."

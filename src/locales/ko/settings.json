@@ -259,6 +259,10 @@
     "name": "스냅 하이라이트 노드",
     "tooltip": "링크를 유효한 입력 슬롯이 있는 노드 위로 드래그할 때 노드를 강조 표시합니다."
   },
+  "Comfy_Notification_ShowVersionUpdates": {
+    "name": "버전 업데이트 표시",
+    "tooltip": "새 모델과 주요 신규 기능에 대한 업데이트를 표시합니다."
+  },
   "Comfy_Pointer_ClickBufferTime": {
     "name": "포인터 클릭 드리프트 지연",
     "tooltip": "포인터 버튼을 누른 후, 포인터 움직임을 무시할 수 있는 최대 시간(밀리초)입니다.\n\n클릭하는 동안 포인터가 움직여 의도치 않게 객체가 밀리는 것을 방지합니다."

@@ -955,7 +955,8 @@
     "Light": "Light",
     "User": "User",
     "Credits": "Credits",
-    "API Nodes": "API Nodes"
+    "API Nodes": "API Nodes",
+    "Notification Preferences": "Notification Preferences"
   },
   "serverConfigItems": {
     "listen": {
@@ -1494,6 +1495,7 @@
     "loadError": "Failed to load help: {error}"
   },
   "whatsNewPopup": {
-    "learnMore": "Learn more"
+    "learnMore": "Learn more",
+    "noReleaseNotes": "No release notes available."
   }
 }

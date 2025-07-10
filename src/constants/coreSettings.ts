@@ -352,6 +352,14 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.20.3'
   },
   {
+    id: 'Comfy.Notification.ShowVersionUpdates',
+    category: ['Comfy', 'Notification Preferences'],
+    name: 'Show version updates',
+    tooltip: 'Show updates for new models, and major new features.',
+    type: 'boolean',
+    defaultValue: true
+  },
+  {
     id: 'Comfy.ConfirmClear',
     category: ['Comfy', 'Workflow', 'ConfirmClear'],
     name: 'Require confirmation when clearing workflow',

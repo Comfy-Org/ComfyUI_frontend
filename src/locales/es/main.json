@@ -785,13 +785,13 @@
     "Toggle Bottom Panel": "Alternar panel inferior",
     "Toggle Focus Mode": "Alternar modo de enfoque",
     "Toggle Logs Bottom Panel": "Alternar panel inferior de registros",
-    "Toggle Model Library Sidebar": "Alternar barra lateral de biblioteca de modelos",
-    "Toggle Node Library Sidebar": "Alternar barra lateral de biblioteca de nodos",
-    "Toggle Queue Sidebar": "Alternar barra lateral de cola",
+    "Toggle Model Library Sidebar": "Alternar barra lateral de la biblioteca de modelos",
+    "Toggle Node Library Sidebar": "Alternar barra lateral de la biblioteca de nodos",
+    "Toggle Queue Sidebar": "Alternar barra lateral de la cola",
     "Toggle Search Box": "Alternar caja de búsqueda",
     "Toggle Terminal Bottom Panel": "Alternar panel inferior de terminal",
     "Toggle Theme (Dark/Light)": "Alternar tema (Oscuro/Claro)",
-    "Toggle Workflows Sidebar": "Alternar barra lateral de flujos de trabajo",
+    "Toggle Workflows Sidebar": "Alternar barra lateral de los flujos de trabajo",
     "Toggle the Custom Nodes Manager": "Alternar el Administrador de Nodos Personalizados",
     "Toggle the Custom Nodes Manager Progress Bar": "Alternar la Barra de Progreso del Administrador de Nodos Personalizados",
     "Undo": "Deshacer",
@@ -1099,6 +1099,7 @@
     "Node Search Box": "Caja de Búsqueda de Nodo",
     "Node Widget": "Widget de Nodo",
     "NodeLibrary": "Biblioteca de Nodos",
+    "Notification Preferences": "Preferencias de notificación",
     "Pointer": "Puntero",
     "Queue": "Cola",
     "QueueButton": "Botón de Cola",
@@ -1489,7 +1490,8 @@
     "title": "Bienvenido a ComfyUI"
   },
   "whatsNewPopup": {
-    "learnMore": "Aprende más"
+    "learnMore": "Aprende más",
+    "noReleaseNotes": "No hay notas de la versión disponibles."
   },
   "workflowService": {
     "enterFilename": "Introduzca el nombre del archivo",

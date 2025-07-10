@@ -259,6 +259,10 @@
     "name": "Number of nodes suggestions",
     "tooltip": "Only for litegraph searchbox/context menu"
   },
+  "Comfy_Notification_ShowVersionUpdates": {
+    "name": "Show version updates",
+    "tooltip": "Show updates for new models, and major new features."
+  },
   "Comfy_Pointer_ClickBufferTime": {
     "name": "Pointer click drift delay",
     "tooltip": "After pressing a pointer button down, this is the maximum time (in milliseconds) that pointer movement can be ignored for.\n\nHelps prevent objects from being unintentionally nudged if the pointer is moved whilst clicking."
