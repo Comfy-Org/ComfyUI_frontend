@@ -47,6 +47,7 @@
           :get-item-preview-url="getModelPreviewUrl"
           :on-item-click="handleModelClick"
           :enable-preview="true"
+          :is-comfy-model-def="(_item: ComfyModelDef) => true"
           preview-target-id="#model-library-model-preview-container"
         >
           <template #preview="{ modelDef, previewRef }">

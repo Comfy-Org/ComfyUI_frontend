@@ -134,6 +134,7 @@ interface Props<T> {
   // optional model preview props
   enablePreview?: boolean
   previewTargetId?: string
+  isComfyModelDef?: (item: T) => boolean
 }
 
 const props = withDefaults(defineProps<Props<T>>(), {
@@ -185,8 +186,12 @@ const showModelPreview = computed(() => {
   )
 })
 
+function _isComfyModelDef(item: T): item is T & ComfyModelDef {
+  return props.isComfyModelDef ? props.isComfyModelDef(item) : false
+}
+
 const handleItemMouseEnter = async (event: MouseEvent, item: T) => {
-  if (!props.enablePreview || item instanceof ComfyModelDef === false) return
+  if (!props.enablePreview || !_isComfyModelDef(item)) return
   const target = event.currentTarget as HTMLElement
   hoveredModel.value = item
   await handleMouseEnter(target, hoveredModel.value)
