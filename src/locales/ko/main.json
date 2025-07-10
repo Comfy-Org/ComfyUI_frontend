@@ -1484,7 +1484,8 @@
     "title": "ComfyUI에 오신 것을 환영합니다"
   },
   "whatsNewPopup": {
-    "learnMore": "자세히 알아보기"
+    "learnMore": "자세히 알아보기",
+    "noReleaseNotes": "릴리스 노트가 없습니다."
   },
   "workflowService": {
     "enterFilename": "파일 이름 입력",

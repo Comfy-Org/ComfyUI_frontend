@@ -24,6 +24,10 @@ import ruCommands from './locales/ru/commands.json'
 import ru from './locales/ru/main.json'
 import ruNodes from './locales/ru/nodeDefs.json'
 import ruSettings from './locales/ru/settings.json'
+import zhTWCommands from './locales/zh-TW/commands.json'
+import zhTW from './locales/zh-TW/main.json'
+import zhTWNodes from './locales/zh-TW/nodeDefs.json'
+import zhTWSettings from './locales/zh-TW/settings.json'
 import zhCommands from './locales/zh/commands.json'
 import zh from './locales/zh/main.json'
 import zhNodes from './locales/zh/nodeDefs.json'
@@ -41,6 +45,7 @@ function buildLocale<M, N, C, S>(main: M, nodes: N, commands: C, settings: S) {
 const messages = {
   en: buildLocale(en, enNodes, enCommands, enSettings),
   zh: buildLocale(zh, zhNodes, zhCommands, zhSettings),
+  'zh-TW': buildLocale(zhTW, zhTWNodes, zhTWCommands, zhTWSettings),
   ru: buildLocale(ru, ruNodes, ruCommands, ruSettings),
   ja: buildLocale(ja, jaNodes, jaCommands, jaSettings),
   ko: buildLocale(ko, koNodes, koCommands, koSettings),

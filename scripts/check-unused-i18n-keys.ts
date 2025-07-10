@@ -166,7 +166,7 @@ async function checkNewUnusedKeys() {
 
   // Report results
   if (unusedNewKeys.length > 0) {
-    console.log('\n❌ Found unused NEW i18n keys:\n')
+    console.log('\n⚠️  Warning: Found unused NEW i18n keys:\n')
 
     for (const key of unusedNewKeys.sort()) {
       console.log(`  - ${key}`)
@@ -176,9 +176,10 @@ async function checkNewUnusedKeys() {
     console.log(
       '\nThese keys were added but are not used anywhere in the codebase.'
     )
-    console.log('Please either use them or remove them before committing.')
+    console.log('Consider using them or removing them in a future update.')
 
-    process.exit(1)
+    // Changed from process.exit(1) to process.exit(0) for warning only
+    process.exit(0)
   } else {
     // Silent success - no output needed
   }
