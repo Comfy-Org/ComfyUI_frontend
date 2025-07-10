@@ -467,9 +467,11 @@ const handleNodeCollapse = (nodeId: string, collapsed: boolean) => {
   const node = nodeManager.getNode(nodeId)
   if (!node) return
 
-  // Sync collapsed state back to LiteGraph node
-  node.flags = node.flags || {}
-  node.flags.collapsed = collapsed
+  // Use LiteGraph's collapse method if the state needs to change
+  const currentCollapsed = node.flags?.collapsed ?? false
+  if (currentCollapsed !== collapsed) {
+    node.collapse()
+  }
 }
 
 // Handle node title updates
