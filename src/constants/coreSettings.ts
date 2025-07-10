@@ -290,6 +290,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     options: [
       { value: 'en', text: 'English' },
       { value: 'zh', text: '中文' },
+      { value: 'zh-TW', text: '繁體中文' },
       { value: 'ru', text: 'Русский' },
       { value: 'ja', text: '日本語' },
       { value: 'ko', text: '한국어' },
