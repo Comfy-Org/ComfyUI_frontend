@@ -137,8 +137,6 @@ const handleTitleEdit = (newTitle: string) => {
   isEditing.value = false
   const trimmedTitle = newTitle.trim()
   if (trimmedTitle && trimmedTitle !== displayTitle.value) {
-    // Update local state immediately for instant feedback
-    displayTitle.value = trimmedTitle
     // Emit for litegraph sync
     emit('update:title', trimmedTitle)
   }
