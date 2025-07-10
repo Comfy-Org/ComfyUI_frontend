@@ -2,7 +2,8 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
-import { useModelStore } from '@/stores/modelStore'
+import { ComfyModelLog } from '@/services/modelLogService'
+import { ComfyModelDef, useModelStore } from '@/stores/modelStore'
 import { useRecentItemsStore } from '@/stores/recentItemsStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 
@@ -36,6 +37,14 @@ vi.mock('@/scripts/app', () => ({
 
 // Mock the stores
 vi.mock('@/stores/settingStore')
+
+// Mock the model log service
+vi.mock('@/services/modelLogService', () => ({
+  ComfyModelLog: vi.fn().mockImplementation(() => ({
+    get: vi.fn().mockResolvedValue({}),
+    save: vi.fn().mockResolvedValue(undefined)
+  }))
+}))
 
 describe('useRecentItemsStore', () => {
   let recentItemsStore: ReturnType<typeof useRecentItemsStore>
@@ -130,6 +139,10 @@ describe('useRecentItemsStore', () => {
       'Comfy.Sidebar.RecentItems.MaxCount': 5
     } as any)
 
+    vi.mocked(api.getUserData).mockResolvedValue({
+      'Comfy.Sidebar.RecentItems.MaxCount': 5
+    } as any)
+
     // Setup setting store with max count setting
     await mockSettingStore.loadSettingValues()
     mockSettingStore.addSetting({
@@ -157,8 +170,14 @@ describe('useRecentItemsStore', () => {
     )
     vi.mocked(api.getUserData).mockResolvedValue({
       status: 200,
-      json: () => Promise.resolve({ favorites: [] })
+      json: () =>
+        Promise.resolve({
+          'checkpoints/model1.safetensors': 1700000100,
+          'checkpoints/model2.safetensors': 1700000300,
+          'checkpoints/model3.safetensors': 1700000050
+        })
     } as Response)
+
     vi.mocked(api.storeUserData).mockResolvedValue({
       status: 200
     } as Response)
@@ -294,52 +313,109 @@ describe('useRecentItemsStore', () => {
   })
 
   describe('recentlyUsedModels', () => {
-    it('should return empty array when no models exist', () => {
+    it('should return empty array when no usage log exists', () => {
       expect(recentItemsStore.recentlyUsedModels).toEqual([])
     })
 
-    it('should return models sorted by last_modified (most recent first)', async () => {
-      await modelStore.loadModelFolders()
-      await modelStore.getLoadedModelFolder('checkpoints')
+    it('should return models sorted by usage log (most recent first)', async () => {
+      // Create proper ComfyModelDef instances with correct key property
+      const modelDefs = mockModels.map((model) => {
+        const modelDef = new ComfyModelDef(
+          model.name,
+          'checkpoints',
+          model.pathIndex,
+          model.date_created,
+          model.last_modified,
+          model.size
+        )
+        // Mock the key property to return the expected format
+        Object.defineProperty(modelDef, 'key', {
+          get: () => `checkpoints/${model.name}`,
+          configurable: true
+        })
+        return modelDef
+      })
+
+      // Mock the model log service
+      vi.mock('@/services/modelLogService', () => ({
+        ComfyModelLog: vi.fn().mockImplementation(() => ({
+          get: vi.fn().mockResolvedValue({
+            'checkpoints/model1.safetensors': 1700000100,
+            'checkpoints/model2.safetensors': 1700000300,
+            'checkpoints/model3.safetensors': 1700000050
+          }),
+          save: vi.fn().mockResolvedValue(undefined)
+        }))
+      }))
+
+      // Mock the modelStore to return our ComfyModelDef instances
+      vi.spyOn(modelStore, 'models', 'get').mockReturnValue(modelDefs)
+      // Create a new store instance to get the mocked service
+      recentItemsStore = useRecentItemsStore()
+
+      // Load the recent models to populate the usage log
+      await recentItemsStore.loadRecentModels()
+
       const recentModels = recentItemsStore.recentlyUsedModels
 
       expect(recentModels).toHaveLength(3)
-      expect(recentModels[0].last_modified).toBe(1700000400)
-      expect(recentModels[1].last_modified).toBe(1700000200)
-      expect(recentModels[2].last_modified).toBe(1700000000)
+      expect(recentModels[0].file_name).toBe('model2.safetensors') // most recent usage
+      expect(recentModels[1].file_name).toBe('model1.safetensors')
+      expect(recentModels[2].file_name).toBe('model3.safetensors') // least recent usage
     })
 
-    it('should handle models without last_modified property', async () => {
-      const modelsWithoutLastModified = [
-        {
-          name: 'model1.safetensors',
-          pathIndex: 0,
-          created: 1700000000,
-          modified: 1700000000,
-          size: 12345678,
-          date_created: 1700000000
-          // No last_modified property
-        },
-        {
-          name: 'model2.safetensors',
-          pathIndex: 0,
-          created: 1700000200,
-          modified: 1700000200,
-          size: 23456789,
-          date_created: 1700000200,
-          last_modified: 1700000300
-        }
-      ]
-
-      vi.mocked(api.getModels).mockResolvedValue(modelsWithoutLastModified)
-
+    it('should handle models that no longer exist in model store', async () => {
       await modelStore.loadModelFolders()
       await modelStore.getLoadedModelFolder('checkpoints')
+
+      // Create proper ComfyModelDef instances (only first 2 models) with correct key property
+      const modelDefs = mockModels.slice(0, 2).map((model) => {
+        const modelDef = new ComfyModelDef(
+          model.name,
+          'checkpoints',
+          model.pathIndex,
+          model.date_created,
+          model.last_modified,
+          model.size
+        )
+        // Mock the key property to return the expected format
+        Object.defineProperty(modelDef, 'key', {
+          get: () => `checkpoints/${model.name}`,
+          configurable: true
+        })
+        return modelDef
+      })
+
+      // Mock the modelStore to return only 2 models
+      vi.spyOn(modelStore, 'models', 'get').mockReturnValue(modelDefs)
+
+      // Usage log contains a model that no longer exists
+      const usageLog = {
+        'checkpoints/model1.safetensors': 1700000100,
+        'checkpoints/model2.safetensors': 1700000300,
+        'checkpoints/deleted-model.safetensors': 1700000400 // This model doesn't exist
+      }
+
+      // Mock the ComfyModelLog constructor to return an instance with our usage log
+      const mockModelLogInstance = {
+        get: vi.fn().mockResolvedValue(usageLog),
+        save: vi.fn().mockResolvedValue(undefined)
+      }
+      vi.mocked(ComfyModelLog).mockImplementation(
+        () => mockModelLogInstance as any
+      )
+
+      // Create a new store instance to get the mocked service
+      recentItemsStore = useRecentItemsStore()
+
+      // Load the recent models to populate the usage log
+      await recentItemsStore.loadRecentModels()
+
       const recentModels = recentItemsStore.recentlyUsedModels
 
-      expect(recentModels).toHaveLength(2)
-      expect(recentModels[0].last_modified).to.not.equal(1700000300) // shouldn't be model2
-      expect(recentModels[1].last_modified).toBeDefined() // default to now()
+      expect(recentModels).toHaveLength(2) // Should filter out the deleted model
+      expect(recentModels[0].file_name).toBe('model2.safetensors')
+      expect(recentModels[1].file_name).toBe('model1.safetensors')
     })
   })
 
