@@ -706,8 +706,8 @@
       "Basics": {
         "default": "Image Generation",
         "image2image": "Image to Image",
-        "lora": "Lora",
-        "lora_multiple": "Lora Multiple",
+        "lora": "LoRA",
+        "lora_multiple": "LoRA Multiple",
         "inpaint_example": "Inpaint",
         "inpaint_model_outpainting": "Outpaint",
         "embedding_example": "Embedding",
@@ -723,7 +723,7 @@
         "flux_fill_inpaint_example": "Flux Inpaint",
         "flux_fill_outpaint_example": "Flux Outpaint",
         "flux_canny_model_example": "Flux Canny Model",
-        "flux_depth_lora_example": "Flux Depth Lora",
+        "flux_depth_lora_example": "Flux Depth LoRA",
         "flux_redux_model_example": "Flux Redux Model"
       },
       "Image": {
