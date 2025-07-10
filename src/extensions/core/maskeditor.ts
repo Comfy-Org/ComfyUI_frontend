@@ -4013,11 +4013,6 @@ class UIManager {
       }
     }
 
-    console.log(ComfyApp.clipspace)
-    console.log('IMG: ', this.image)
-    console.log('MASK: ', mask_image)
-    console.log('Paint: ', this.paint_image)
-
     maskCanvas.width = this.image.width
     maskCanvas.height = this.image.height
 
@@ -5339,7 +5334,6 @@ app.registerExtension({
           selectedNode.previewMediaType !== 'image'
         )
           return
-
         ComfyApp.copyToClipspace(selectedNode)
         // @ts-expect-error clipspace_return_node is an extension property added at runtime
         ComfyApp.clipspace_return_node = selectedNode
@@ -5424,7 +5418,7 @@ type Ref = { filename: string; subfolder?: string; type?: string }
  * */
 const replaceClipspaceImages = (
   newMainOutput: Ref,
-  extraImagesShownButNotOutputted?: Ref[]
+  otherImagesInClipspace?: Ref[]
 ) => {
   try {
     if (!ComfyApp?.clipspace?.widgets?.length) return
@@ -5436,7 +5430,7 @@ const replaceClipspaceImages = (
 
     ComfyApp!.clipspace!.widgets![firstImageWidgetIndex].value = newMainOutput
 
-    extraImagesShownButNotOutputted?.forEach((extraImage, extraImageIndex) => {
+    otherImagesInClipspace?.forEach((extraImage, extraImageIndex) => {
       const extraImageWidgetIndex = firstImageWidgetIndex + extraImageIndex + 1
       ComfyApp!.clipspace!.widgets![extraImageWidgetIndex].value = extraImage
     })
